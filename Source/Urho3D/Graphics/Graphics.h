@@ -189,8 +189,6 @@ public:
     bool SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset = 0);
     /// Set index buffer.
     void SetIndexBuffer(IndexBuffer* buffer);
-    /// Set Pipeline State
-    void SetPipelineState(PipelineState* pipelineState);
     void BeginDebug(const ea::string_view& debugName);
     void BeginDebug(const ea::string& debugName);
     void BeginDebug(const char* debugName);
@@ -479,13 +477,6 @@ public:
     /// Return current pixel shader.
     ShaderVariation* GetPixelShader() const { return pixelShader_; }
 
-    /// Return texture unit index by name.
-    TextureUnit GetTextureUnit(const ea::string& name);
-    /// Return texture unit name by index.
-    const ea::string& GetTextureUnitName(TextureUnit unit);
-    /// Return current texture by texture unit index.
-    Texture* GetTexture(unsigned index) const;
-
     /// Return default texture filtering mode.
     TextureFilterMode GetDefaultTextureFilterMode() const { return defaultTextureFilterMode_; }
 
@@ -666,10 +657,6 @@ public:
     /// Get the SDL_Window as a void* to avoid having to include the graphics implementation
     void* GetSDLWindow() { return window_; }
 
-    /// Process dirtied state before draw.
-    /// TODO(diligent): Revisit
-    void PrepareDraw();
-
     /// Getters.
     /// @{
     RenderBackend GetRenderBackend() const;
@@ -687,30 +674,6 @@ private:
     void CheckFeatureSupport();
     /// Reset cached rendering state.
     void ResetCachedState();
-    /// Initialize texture unit mappings.
-    void SetTextureUnitMappings();
-    /// Create intermediate texture for multisampled backbuffer resolve. No-op if already exists.
-    void CreateResolveTexture();
-    /// Clean up all framebuffers. Called when destroying the context. Used only on OpenGL.
-    void CleanupFramebuffers();
-    /// Create a framebuffer using either extension or core functionality. Used only on OpenGL.
-    unsigned CreateFramebuffer();
-    /// Delete a framebuffer using either extension or core functionality. Used only on OpenGL.
-    void DeleteFramebuffer(unsigned fbo);
-    /// Bind a framebuffer using either extension or core functionality. Used only on OpenGL.
-    void BindFramebuffer(unsigned fbo);
-    /// Bind a framebuffer color attachment using either extension or core functionality. Used only on OpenGL.
-    void BindColorAttachment(unsigned index, unsigned target, unsigned object, bool isRenderBuffer);
-    /// Bind a framebuffer depth attachment using either extension or core functionality. Used only on OpenGL.
-    void BindDepthAttachment(unsigned object, bool isRenderBuffer);
-    /// Bind a framebuffer stencil attachment using either extension or core functionality. Used only on OpenGL.
-    void BindStencilAttachment(unsigned object, bool isRenderBuffer);
-    /// Check FBO completeness using either extension or core functionality. Used only on OpenGL.
-    bool CheckFramebuffer();
-    /// Set vertex attrib divisor. No-op if unsupported. Used only on OpenGL.
-    void SetVertexAttribDivisor(unsigned location, unsigned divisor);
-    /// Release/clear GPU objects and optionally close the window. Used only on OpenGL.
-    void Release(bool clearGPUObjects, bool closeWindow);
 
     /// Mutex for accessing the GPU objects vector from several threads.
     Mutex gpuObjectMutex_;
@@ -785,8 +748,6 @@ private:
     PipelineState* pipelineState_{nullptr};
     /// Textures in use.
     Texture* textures_[MAX_TEXTURE_UNITS]{};
-    /// Texture unit mappings.
-    ea::unordered_map<ea::string, TextureUnit> textureUnits_;
     /// Rendertargets in use.
     RenderSurface* renderTargets_[MAX_RENDERTARGETS]{};
     /// Constan buffer ranges in use.

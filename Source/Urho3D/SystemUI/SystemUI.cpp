@@ -310,10 +310,6 @@ void SystemUI::OnRenderEnd()
 
     impl_->RenderDrawData(ui::GetDrawData());
     impl_->RenderSecondaryWindows();
-
-    // TODO(diligent): Remove those
-    graphics->SetVertexBuffer(nullptr);
-    graphics->SetIndexBuffer(nullptr);
 }
 
 void SystemUI::OnMouseVisibilityChanged(StringHash, VariantMap& args)

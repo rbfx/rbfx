@@ -253,7 +253,6 @@ Graphics::Graphics(Context* context)
     , shaderExtension_(".hlsl")
     , apiName_("Diligent")
 {
-    SetTextureUnitMappings();
     ResetCachedState();
 
     // TODO(diligent): Revisit this
@@ -545,389 +544,71 @@ void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, un
 
 bool Graphics::ResolveToTexture(Texture2D* destination, const IntRect& viewport)
 {
-    assert(0);
+    URHO3D_ASSERT(false);
     return false;
-    /*if (!destination || !destination->GetRenderSurface())
-        return false;
-
-    URHO3D_PROFILE("ResolveToTexture");
-
-    IntRect vpCopy = viewport;
-    if (vpCopy.right_ <= vpCopy.left_)
-        vpCopy.right_ = vpCopy.left_ + 1;
-    if (vpCopy.bottom_ <= vpCopy.top_)
-        vpCopy.bottom_ = vpCopy.top_ + 1;
-
-    D3D11_BOX srcBox;
-    srcBox.left = Clamp(vpCopy.left_, 0, width_);
-    srcBox.top = Clamp(vpCopy.top_, 0, height_);
-    srcBox.right = Clamp(vpCopy.right_, 0, width_);
-    srcBox.bottom = Clamp(vpCopy.bottom_, 0, height_);
-    srcBox.front = 0;
-    srcBox.back = 1;
-
-    ID3D11Resource* source = nullptr;
-    const bool resolve = screenParams_.multiSample_ > 1;
-    impl_->defaultRenderTargetView_->GetResource(&source);
-
-    if (!resolve)
-    {
-        if (!srcBox.left && !srcBox.top && srcBox.right == width_ && srcBox.bottom == height_)
-            impl_->deviceContext_->CopyResource((ID3D11Resource*)destination->GetGPUObject(), source);
-        else
-            impl_->deviceContext_->CopySubresourceRegion((ID3D11Resource*)destination->GetGPUObject(), 0, 0, 0, 0,
-    source, 0, &srcBox);
-    }
-    else
-    {
-        if (!srcBox.left && !srcBox.top && srcBox.right == width_ && srcBox.bottom == height_)
-        {
-            impl_->deviceContext_->ResolveSubresource((ID3D11Resource*)destination->GetGPUObject(), 0, source, 0,
-    (DXGI_FORMAT) destination->GetFormat());
-        }
-        else
-        {
-            CreateResolveTexture();
-
-            if (impl_->resolveTexture_)
-            {
-                impl_->deviceContext_->ResolveSubresource(impl_->resolveTexture_, 0, source, 0,
-    DXGI_FORMAT_R8G8B8A8_UNORM);
-                impl_->deviceContext_->CopySubresourceRegion((ID3D11Resource*)destination->GetGPUObject(), 0, 0, 0, 0,
-    impl_->resolveTexture_, 0, &srcBox);
-            }
-        }
-    }
-
-    source->Release();
-
-    return true;*/
 }
 
 bool Graphics::ResolveToTexture(Texture2D* texture)
 {
-    assert(0);
+    URHO3D_ASSERT(false);
     return false;
-    /*if (!texture)
-        return false;
-    RenderSurface* surface = texture->GetRenderSurface();
-    if (!surface)
-        return false;
-
-    texture->SetResolveDirty(false);
-    surface->SetResolveDirty(false);
-    ID3D11Resource* source = (ID3D11Resource*)texture->GetGPUObject();
-    ID3D11Resource* dest = (ID3D11Resource*)texture->GetResolveTexture();
-    if (!source || !dest)
-        return false;
-
-    impl_->deviceContext_->ResolveSubresource(dest, 0, source, 0, (DXGI_FORMAT)texture->GetFormat());
-    return true;*/
 }
 
 bool Graphics::ResolveToTexture(TextureCube* texture)
 {
-    assert(0);
-    return 0;
-    // if (!texture)
-    //     return false;
-
-    // texture->SetResolveDirty(false);
-    // ID3D11Resource* source = (ID3D11Resource*)texture->GetGPUObject();
-    // ID3D11Resource* dest = (ID3D11Resource*)texture->GetResolveTexture();
-    // if (!source || !dest)
-    //     return false;
-
-    // for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
-    //{
-    //     // Resolve only the surface(s) that were actually rendered to
-    //     RenderSurface* surface = texture->GetRenderSurface((CubeMapFace)i);
-    //     if (!surface->IsResolveDirty())
-    //         continue;
-
-    //    surface->SetResolveDirty(false);
-    //    unsigned subResource = D3D11CalcSubresource(0, i, texture->GetLevels());
-    //    impl_->deviceContext_->ResolveSubresource(dest, subResource, source, subResource,
-    //    (DXGI_FORMAT)texture->GetFormat());
-    //}
-
-    // return true;
+    URHO3D_ASSERT(false);
+    return false;
 }
 
 void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCount)
 {
-    assert(pipelineState_);
-    if (!vertexCount)
-        return;
-    PrepareDraw();
-    unsigned primitiveCount;
-
-    PRIMITIVE_TOPOLOGY primitiveTopology;
-    GetPrimitiveType(vertexCount, pipelineState_->GetDesc().primitiveType_, primitiveCount, primitiveTopology);
-
-    DrawAttribs drawAttrs;
-    drawAttrs.NumVertices = vertexCount;
-    drawAttrs.StartVertexLocation = vertexStart;
-    drawAttrs.Flags = DRAW_FLAG_VERIFY_ALL;
-    impl_->deviceContext_->Draw(drawAttrs);
-
-    numPrimitives_ += primitiveCount;
-    ++numBatches_;
-    /*
-
-
-    unsigned primitiveCount;
-    D3D_PRIMITIVE_TOPOLOGY d3dPrimitiveType;
-
-    if (fillMode_ == FILL_POINT)
-        type = POINT_LIST;
-
-    GetPrimitiveType(vertexCount, type, primitiveCount, d3dPrimitiveType);
-    if (d3dPrimitiveType != primitiveType_)
-    {
-        impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
-        primitiveType_ = d3dPrimitiveType;
-    }
-    impl_->deviceContext_->Draw(vertexCount, vertexStart);
-
-    */
+    URHO3D_ASSERT(false);
 }
 
 void Graphics::Draw(
     PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex, unsigned vertexCount)
 {
-    if (!indexCount || !pipelineState_)
-        return;
-    PrepareDraw();
-
-    unsigned primitiveCount;
-    PRIMITIVE_TOPOLOGY primitiveTopology;
-
-    GetPrimitiveType(indexCount, type, primitiveCount, primitiveTopology);
-
-    DrawIndexedAttribs drawAttrs;
-    drawAttrs.BaseVertex = 0;
-    drawAttrs.FirstIndexLocation = indexStart;
-    drawAttrs.NumIndices = indexCount;
-    drawAttrs.Flags = DRAW_FLAG_VERIFY_ALL;
-    drawAttrs.IndexType = DiligentIndexBufferType[IndexBuffer::GetIndexBufferType(indexBuffer_)];
-
-    impl_->deviceContext_->DrawIndexed(drawAttrs);
-
-    numPrimitives_ += primitiveCount;
-    ++numBatches_;
-    /*
-
-
-    unsigned primitiveCount;
-    D3D_PRIMITIVE_TOPOLOGY d3dPrimitiveType;
-
-    if (fillMode_ == FILL_POINT)
-        type = POINT_LIST;
-
-    GetPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
-    if (d3dPrimitiveType != primitiveType_)
-    {
-        impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
-        primitiveType_ = d3dPrimitiveType;
-    }
-    impl_->deviceContext_->DrawIndexed(indexCount, indexStart, 0);
-
-    numPrimitives_ += primitiveCount;
-    ++numBatches_;*/
+    URHO3D_ASSERT(false);
 }
 
 void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex,
     unsigned minVertex, unsigned vertexCount)
 {
-//    if (!impl_->shaderProgram_)
-//        return;
-
-    PrepareDraw();
-    assert(0);
-    /*
-
-    unsigned primitiveCount;
-    D3D_PRIMITIVE_TOPOLOGY d3dPrimitiveType;
-
-    if (fillMode_ == FILL_POINT)
-        type = POINT_LIST;
-
-    GetPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
-    if (d3dPrimitiveType != primitiveType_)
-    {
-        impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
-        primitiveType_ = d3dPrimitiveType;
-    }
-    impl_->deviceContext_->DrawIndexed(indexCount, indexStart, baseVertexIndex);
-
-    numPrimitives_ += primitiveCount;
-    ++numBatches_;*/
+    URHO3D_ASSERT(false);
 }
 
 void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned minVertex,
     unsigned vertexCount, unsigned instanceCount)
 {
-    if (!indexCount || !instanceCount || !pipelineState_)
-        return;
-
-    PrepareDraw();
-
-    assert(impl_->vertexBuffers_[0]);
-    unsigned primitiveCount;
-
-    PRIMITIVE_TOPOLOGY primitiveTopology;
-    GetPrimitiveType(vertexCount, pipelineState_->GetDesc().primitiveType_, primitiveCount, primitiveTopology);
-
-    DrawIndexedAttribs drawAttrs;
-    drawAttrs.NumIndices = indexCount;
-    drawAttrs.NumInstances = instanceCount;
-    drawAttrs.FirstIndexLocation = indexStart;
-    drawAttrs.BaseVertex = 0;
-    drawAttrs.FirstInstanceLocation = 0;
-    drawAttrs.Flags = DRAW_FLAG_VERIFY_ALL;
-    drawAttrs.IndexType = DiligentIndexBufferType[IndexBuffer::GetIndexBufferType(indexBuffer_)];
-
-    impl_->deviceContext_->DrawIndexed(drawAttrs);
-
-    numPrimitives_ += instanceCount * primitiveCount;
-    ++numBatches_;
+    URHO3D_ASSERT(false);
 }
 
 void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex,
     unsigned minVertex, unsigned vertexCount, unsigned instanceCount)
 {
-    assert(0);
-    /*if (!indexCount || !instanceCount || !impl_->shaderProgram_)
-        return;
-
-    PrepareDraw();
-
-    unsigned primitiveCount;
-    D3D_PRIMITIVE_TOPOLOGY d3dPrimitiveType;
-
-    if (fillMode_ == FILL_POINT)
-        type = POINT_LIST;
-
-    GetPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
-    if (d3dPrimitiveType != primitiveType_)
-    {
-        impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
-        primitiveType_ = d3dPrimitiveType;
-    }
-    impl_->deviceContext_->DrawIndexedInstanced(indexCount, instanceCount, indexStart, baseVertexIndex, 0);
-
-    numPrimitives_ += instanceCount * primitiveCount;
-    ++numBatches_;*/
+    URHO3D_ASSERT(false);
 }
 
 void Graphics::SetVertexBuffer(VertexBuffer* buffer)
 {
-    // Note: this is not multi-instance safe
-    static ea::vector<VertexBuffer*> vertexBuffers(1);
-    vertexBuffers[0] = buffer;
-    SetVertexBuffers(vertexBuffers);
+    URHO3D_ASSERT(false);
 }
 
 bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsigned instanceOffset)
 {
-    if (buffers.size() > MAX_VERTEX_STREAMS)
-    {
-        URHO3D_LOGERROR("Too many vertex buffers");
-        return false;
-    }
-
-    for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
-    {
-        VertexBuffer* buffer = nullptr;
-        bool changed = false;
-
-        buffer = i < buffers.size() ? buffers[i] : nullptr;
-        if (buffer)
-        {
-            // On vulkan backend, if we use a buffer that had been lost
-            // diligent will thrown a assert.
-            //
-            if (buffer->IsDataLost())
-                return false;
-            const ea::vector<VertexElement>& elements = buffer->GetElements();
-            // Check if buffer has per-instance data
-            bool hasInstanceData = elements.size() && elements[0].perInstance_;
-            unsigned offset = hasInstanceData ? instanceOffset * buffer->GetVertexSize() : 0;
-
-            if (buffer != vertexBuffers_[i] || offset != impl_->vertexOffsets_[i])
-            {
-                vertexBuffers_[i] = buffer;
-                impl_->vertexBuffers_[i] = buffer->GetHandle();
-                impl_->vertexOffsets_[i] = offset;
-                changed = true;
-            }
-        }
-        else if (vertexBuffers_[i])
-        {
-            vertexBuffers_[i] = nullptr;
-            impl_->vertexBuffers_[i] = nullptr;
-            impl_->vertexOffsets_[i] = 0;
-            changed = true;
-        }
-
-        if (changed)
-        {
-            impl_->vertexDeclarationDirty_ = true;
-
-            if (impl_->firstDirtyVB_ == M_MAX_UNSIGNED)
-                impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = i;
-            else
-            {
-                if (i < impl_->firstDirtyVB_)
-                    impl_->firstDirtyVB_ = i;
-                if (i > impl_->lastDirtyVB_)
-                    impl_->lastDirtyVB_ = i;
-            }
-        }
-    }
-
-    return true;
+    URHO3D_ASSERT(false);
+    return false;
 }
 
 bool Graphics::SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer>>& buffers, unsigned instanceOffset)
 {
-    ea::vector<VertexBuffer*> bufferPointers;
-    bufferPointers.reserve(buffers.size());
-    for (auto& buffer : buffers)
-        bufferPointers.push_back(buffer.Get());
-    return SetVertexBuffers(bufferPointers, instanceOffset);
+    URHO3D_ASSERT(false);
+    return false;
 }
 
 void Graphics::SetIndexBuffer(IndexBuffer* buffer)
 {
-    if (buffer != indexBuffer_)
-    {
-        if (buffer)
-            impl_->deviceContext_->SetIndexBuffer(buffer->GetHandle(), 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-        else
-            impl_->deviceContext_->SetIndexBuffer(nullptr, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-        indexBuffer_ = buffer;
-    }
-    /*if (buffer != indexBuffer_)
-    {
-        if (buffer)
-            impl_->deviceContext_->IASetIndexBuffer((ID3D11Buffer*)buffer->GetGPUObject(),
-                buffer->GetIndexSize() == sizeof(unsigned short) ? DXGI_FORMAT_R16_UINT : DXGI_FORMAT_R32_UINT, 0);
-        else
-            impl_->deviceContext_->IASetIndexBuffer(nullptr, DXGI_FORMAT_UNKNOWN, 0);
-
-        indexBuffer_ = buffer;
-    }*/
-}
-
-void Graphics::SetPipelineState(PipelineState* pipelineState)
-{
-    impl_->deviceContext_->SetPipelineState(pipelineState->GetHandle());
-    impl_->deviceContext_->SetStencilRef(pipelineState->GetDesc().stencilReferenceValue_);
-
-    // TODO(diligent): We shouldn't need it cached
-    pipelineState_ = pipelineState;
+    URHO3D_ASSERT(false);
 }
 
 ShaderProgramReflection* Graphics::GetShaderProgramLayout(ShaderVariation* vs, ShaderVariation* ps)
@@ -1277,28 +958,6 @@ VertexBuffer* Graphics::GetVertexBuffer(unsigned index) const
     return nullptr;
 }
 
-TextureUnit Graphics::GetTextureUnit(const ea::string& name)
-{
-    URHO3D_ASSERT(false);
-    return MAX_TEXTURE_UNITS;
-}
-
-const ea::string& Graphics::GetTextureUnitName(TextureUnit unit)
-{
-    for (auto i = textureUnits_.begin(); i != textureUnits_.end(); ++i)
-    {
-        if (i->second == unit)
-            return i->first;
-    }
-    return EMPTY_STRING;
-}
-
-Texture* Graphics::GetTexture(unsigned index) const
-{
-    URHO3D_ASSERT(false);
-    return nullptr;
-}
-
 RenderSurface* Graphics::GetRenderTarget(unsigned index) const
 {
     URHO3D_ASSERT(false);
@@ -1405,107 +1064,87 @@ const PipelineStateOutputDesc& Graphics::GetCurrentOutputDesc() const
 
 TextureFormat Graphics::GetAlphaFormat()
 {
-    // TODO(diligent): Revisit
-    using namespace Diligent;
-    return TEX_FORMAT_R8_UNORM;
+    return TextureFormat::TEX_FORMAT_R8_UNORM;
 }
 
 TextureFormat Graphics::GetLuminanceFormat()
 {
-    // Note: not same sampling behavior as on D3D9; need to sample the R channel only
-    using namespace Diligent;
-    return TEX_FORMAT_R8_UNORM;
+    return TextureFormat::TEX_FORMAT_R8_UNORM;
 }
 
 TextureFormat Graphics::GetLuminanceAlphaFormat()
 {
-    // Note: not same sampling behavior as on D3D9; need to sample the RG channels
-    using namespace Diligent;
-    return TEX_FORMAT_RG8_UNORM;
+    return TextureFormat::TEX_FORMAT_RG8_UNORM;
 }
 
 TextureFormat Graphics::GetRGBFormat()
 {
-    using namespace Diligent;
-    return TEX_FORMAT_RGBA8_UNORM;
+    return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
 }
 
 TextureFormat Graphics::GetRGBAFormat()
 {
-    using namespace Diligent;
-    return TEX_FORMAT_RGBA8_UNORM;
+    return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
 }
 
 TextureFormat Graphics::GetRGBA16Format()
 {
-    using namespace Diligent;
-    return TEX_FORMAT_RGBA16_UNORM;
+    return TextureFormat::TEX_FORMAT_RGBA16_UNORM;
 }
 
 TextureFormat Graphics::GetRGBAFloat16Format()
 {
-    using namespace Diligent;
-    return TEX_FORMAT_RGBA16_FLOAT;
+    return TextureFormat::TEX_FORMAT_RGBA16_FLOAT;
 }
 
 TextureFormat Graphics::GetRGBAFloat32Format()
 {
-    using namespace Diligent;
-    return TEX_FORMAT_RGBA32_FLOAT;
+    return TextureFormat::TEX_FORMAT_RGBA32_FLOAT;
 }
 
 TextureFormat Graphics::GetRG16Format()
 {
-    using namespace Diligent;
-    return TEX_FORMAT_RG16_UNORM;
+    return TextureFormat::TEX_FORMAT_RG16_UNORM;
 }
 
 TextureFormat Graphics::GetRGFloat16Format()
 {
-    using namespace Diligent;
-    return TEX_FORMAT_RG16_FLOAT;
+    return TextureFormat::TEX_FORMAT_RG16_FLOAT;
 }
 
 TextureFormat Graphics::GetRGFloat32Format()
 {
-    using namespace Diligent;
-    return TEX_FORMAT_RG32_FLOAT;
+    return TextureFormat::TEX_FORMAT_RG32_FLOAT;
 }
 
 TextureFormat Graphics::GetFloat16Format()
 {
-    using namespace Diligent;
-    return TEX_FORMAT_R16_FLOAT;
+    return TextureFormat::TEX_FORMAT_R16_FLOAT;
 }
 
 TextureFormat Graphics::GetFloat32Format()
 {
-    using namespace Diligent;
-    return TEX_FORMAT_R32_FLOAT;
+    return TextureFormat::TEX_FORMAT_R32_FLOAT;
 }
 
 TextureFormat Graphics::GetLinearDepthFormat()
 {
-    using namespace Diligent;
-    return TEX_FORMAT_D32_FLOAT;
+    return TextureFormat::TEX_FORMAT_D32_FLOAT;
 }
 
 TextureFormat Graphics::GetDepthStencilFormat()
 {
-    using namespace Diligent;
-    return TEX_FORMAT_D24_UNORM_S8_UINT;
+    return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
 }
 
 TextureFormat Graphics::GetReadableDepthFormat()
 {
-    using namespace Diligent;
-    return TEX_FORMAT_D24_UNORM_S8_UINT;
+    return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
 }
 
 TextureFormat Graphics::GetReadableDepthStencilFormat()
 {
-    using namespace Diligent;
-    return TEX_FORMAT_D24_UNORM_S8_UINT;
+    return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
 }
 
 TextureFormat Graphics::GetFormat(const ea::string& formatName)
@@ -1663,33 +1302,6 @@ void Graphics::ResetCachedState()
     impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = M_MAX_UNSIGNED;
 }
 
-void Graphics::PrepareDraw()
-{
-    if (impl_->firstDirtyVB_ < M_MAX_UNSIGNED)
-    {
-        impl_->deviceContext_->SetVertexBuffers(impl_->firstDirtyVB_, impl_->lastDirtyVB_ - impl_->firstDirtyVB_ + 1,
-            &impl_->vertexBuffers_[impl_->firstDirtyVB_], &impl_->vertexOffsets_[impl_->firstDirtyVB_],
-            RESOURCE_STATE_TRANSITION_MODE_TRANSITION, SET_VERTEX_BUFFERS_FLAG_NONE);
-        impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = M_MAX_UNSIGNED;
-    }
-
-    static const float blendFactors[] = {1.f, 1.f, 1.f, 1.f};
-    impl_->deviceContext_->SetBlendFactors(blendFactors);
-
-    if (impl_->scissorRectDirty_)
-    {
-        Diligent::Rect rect;
-        rect.left = scissorRect_.left_;
-        rect.top = scissorRect_.top_;
-        rect.right = scissorRect_.right_;
-        rect.bottom = scissorRect_.bottom_;
-
-        impl_->deviceContext_->SetScissorRects(
-            1, &rect, impl_->swapChain_->GetDesc().Width, impl_->swapChain_->GetDesc().Height);
-        impl_->scissorRectDirty_ = false;
-    }
-}
-
 void Graphics::BeginDebug(const ea::string_view& debugName)
 {
     impl_->deviceContext_->BeginDebugGroup(debugName.data());
@@ -1705,54 +1317,6 @@ void Graphics::BeginDebug(const char* debugName)
 void Graphics::EndDebug()
 {
     impl_->deviceContext_->EndDebugGroup();
-}
-
-void Graphics::CreateResolveTexture()
-{
-    assert(0);
-    /*if (impl_->resolveTexture_)
-        return;
-
-    D3D11_TEXTURE2D_DESC textureDesc;
-    memset(&textureDesc, 0, sizeof textureDesc);
-    textureDesc.Width = (UINT)width_;
-    textureDesc.Height = (UINT)height_;
-    textureDesc.MipLevels = 1;
-    textureDesc.ArraySize = 1;
-    textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    textureDesc.SampleDesc.Count = 1;
-    textureDesc.SampleDesc.Quality = 0;
-    textureDesc.Usage = D3D11_USAGE_DEFAULT;
-    textureDesc.CPUAccessFlags = 0;
-
-    HRESULT hr = impl_->device_->CreateTexture2D(&textureDesc, nullptr, &impl_->resolveTexture_);
-    if (FAILED(hr))
-    {
-        URHO3D_SAFE_RELEASE(impl_->resolveTexture_);
-        URHO3D_LOGD3DERROR("Could not create resolve texture", hr);
-    }*/
-}
-
-void Graphics::SetTextureUnitMappings()
-{
-    textureUnits_["DiffMap"] = TU_DIFFUSE;
-    textureUnits_["DiffCubeMap"] = TU_DIFFUSE;
-    textureUnits_["NormalMap"] = TU_NORMAL;
-    textureUnits_["SpecMap"] = TU_SPECULAR;
-    textureUnits_["EmissiveMap"] = TU_EMISSIVE;
-    textureUnits_["EnvMap"] = TU_ENVIRONMENT;
-    textureUnits_["EnvCubeMap"] = TU_ENVIRONMENT;
-    textureUnits_["LightRampMap"] = TU_LIGHTRAMP;
-    textureUnits_["LightSpotMap"] = TU_LIGHTSHAPE;
-    textureUnits_["LightCubeMap"] = TU_LIGHTSHAPE;
-    textureUnits_["ShadowMap"] = TU_SHADOWMAP;
-#ifdef DESKTOP_GRAPHICS
-    textureUnits_["FaceSelectCubeMap"] = TU_FACESELECT;
-    textureUnits_["IndirectionCubeMap"] = TU_INDIRECTION;
-    textureUnits_["VolumeMap"] = TU_VOLUMEMAP;
-    textureUnits_["ZoneCubeMap"] = TU_ZONE;
-    textureUnits_["ZoneVolumeMap"] = TU_ZONE;
-#endif
 }
 
 void Graphics::SetTextureForUpdate(Texture* texture)

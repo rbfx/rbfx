@@ -29,7 +29,9 @@
 #include "Urho3D/Graphics/RenderSurface.h"
 #include "Urho3D/Graphics/Texture.h"
 #include "Urho3D/Graphics/VertexBuffer.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/DeviceContext.h>
 
@@ -37,6 +39,16 @@
 
 namespace Urho3D
 {
+
+namespace
+{
+
+Diligent::VALUE_TYPE GetIndexType(IndexBuffer* indexBuffer)
+{
+    return indexBuffer->GetIndexSize() == 2 ? Diligent::VT_UINT16 : Diligent::VT_UINT32;
+}
+
+}
 
 GeometryBufferArray::GeometryBufferArray(const Geometry* geometry, VertexBuffer* instancingBuffer)
     : GeometryBufferArray(geometry->GetVertexBuffers(), geometry->GetIndexBuffer(), instancingBuffer)
@@ -77,6 +89,9 @@ void DrawCommandQueue::Execute()
     RenderContext* renderContext = graphics_->GetRenderContext();
     Diligent::IDeviceContext* deviceContext = graphics_->GetImpl()->GetDeviceContext();
 
+    const RenderBackend& backend = renderContext->GetRenderDevice()->GetBackend();
+    const bool isBaseVertexAndInstanceSupported = !IsOpenGLESBackend(backend);
+
     // Constant buffers to store all shader parameters for queue
     ea::vector<Diligent::IBuffer*> uniformBuffers;
     const unsigned numUniformBuffers = constantBuffers_.collection_.GetNumBuffers();
@@ -99,11 +114,18 @@ void DrawCommandQueue::Execute()
     PrimitiveType currentPrimitiveType{};
     unsigned currentScissorRect = M_MAX_UNSIGNED;
 
-    // Temporary collections
-    ea::vector<VertexBuffer*> tempVertexBuffers;
+    // Set common state
+    const float blendFactors[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    deviceContext->SetBlendFactors(blendFactors);
 
     for (const DrawCommandDescription& cmd : drawCommands_)
     {
+        if (cmd.baseVertexIndex_ != 0 && !isBaseVertexAndInstanceSupported)
+        {
+            URHO3D_LOGWARNING("Base vertex index is not supported by current graphics API");
+            continue;
+        }
+
         // Set pipeline state
         if (cmd.pipelineState_ != currentPipelineState)
         {
@@ -115,7 +137,9 @@ void DrawCommandQueue::Execute()
                 continue;
 
             // Skip this pipeline if something goes wrong.
-            graphics_->SetPipelineState(cmd.pipelineState_);
+            deviceContext->SetPipelineState(cmd.pipelineState_->GetHandle());
+            deviceContext->SetStencilRef(cmd.pipelineState_->GetDesc().stencilReferenceValue_);
+
             currentPipelineState = cmd.pipelineState_;
             currentShaderResourceBinding = cmd.pipelineState_->GetShaderResourceBinding();
             currentShaderReflection = cmd.pipelineState_->GetReflection();
@@ -143,23 +167,38 @@ void DrawCommandQueue::Execute()
         // Set index buffer
         if (cmd.inputBuffers_.indexBuffer_ != currentIndexBuffer)
         {
-            graphics_->SetIndexBuffer(cmd.inputBuffers_.indexBuffer_);
+            Diligent::IBuffer* indexBufferHandle =
+                cmd.inputBuffers_.indexBuffer_ ? cmd.inputBuffers_.indexBuffer_->GetHandle() : nullptr;
+            deviceContext->SetIndexBuffer(indexBufferHandle, 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
             currentIndexBuffer = cmd.inputBuffers_.indexBuffer_;
         }
 
         // Set vertex buffers
         if (cmd.inputBuffers_.vertexBuffers_ != currentVertexBuffers || cmd.instanceCount_ != 0)
         {
-            tempVertexBuffers.clear();
-            tempVertexBuffers.assign(cmd.inputBuffers_.vertexBuffers_.begin(), cmd.inputBuffers_.vertexBuffers_.end());
-            for (VertexBuffer* vertexBuffer : tempVertexBuffers)
+            ea::array<Diligent::IBuffer*, MaxVertexStreams> vertexBufferHandles{};
+            ea::array<Diligent::Uint64, MaxVertexStreams> vertexBufferOffsets{};
+
+            for (unsigned i = 0; i < MaxVertexStreams; ++i)
             {
-                if (vertexBuffer)
-                    vertexBuffer->Resolve();
+                VertexBuffer* vertexBuffer = cmd.inputBuffers_.vertexBuffers_[i];
+                if (!vertexBuffer)
+                    continue;
+
+                vertexBuffer->Resolve();
+
+                const ea::vector<VertexElement>& vertexElements = vertexBuffer->GetElements();
+                const bool needInstanceOffset =
+                    !isBaseVertexAndInstanceSupported && !vertexElements.empty() && vertexElements[0].perInstance_;
+
+                vertexBufferHandles[i] = vertexBuffer->GetHandle();
+                vertexBufferOffsets[i] = needInstanceOffset ? cmd.instanceStart_ * vertexBuffer->GetVertexSize() : 0;
             }
-            // If something goes wrong here, skip current command
-            if (!graphics_->SetVertexBuffers(tempVertexBuffers, cmd.instanceStart_))
-                continue;
+
+            deviceContext->SetVertexBuffers(0, MaxVertexStreams, vertexBufferHandles.data(), vertexBufferOffsets.data(),
+                Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::SET_VERTEX_BUFFERS_FLAG_NONE);
+
             currentVertexBuffers = cmd.inputBuffers_.vertexBuffers_;
         }
 
@@ -198,38 +237,29 @@ void DrawCommandQueue::Execute()
         deviceContext->CommitShaderResources(
             currentShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
-        // Invoke appropriate draw command
-        const unsigned vertexStart = 0;
-        const unsigned vertexCount = 0;
-        if (cmd.instanceCount_ != 0)
+        if (currentIndexBuffer)
         {
-            if (cmd.baseVertexIndex_ == 0)
-            {
-                graphics_->DrawInstanced(currentPrimitiveType, cmd.indexStart_, cmd.indexCount_,
-                    vertexStart, vertexCount, cmd.instanceCount_);
-            }
-            else
-            {
-                graphics_->DrawInstanced(currentPrimitiveType, cmd.indexStart_, cmd.indexCount_,
-                    cmd.baseVertexIndex_, vertexStart, vertexCount, cmd.instanceCount_);
-            }
+            Diligent::DrawIndexedAttribs drawAttrs;
+            drawAttrs.NumIndices = cmd.indexCount_;
+            drawAttrs.NumInstances = ea::max(1u, cmd.instanceCount_);
+            drawAttrs.FirstIndexLocation = cmd.indexStart_;
+            drawAttrs.FirstInstanceLocation = isBaseVertexAndInstanceSupported ? cmd.instanceStart_ : 0;
+            drawAttrs.BaseVertex = cmd.baseVertexIndex_;
+            drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
+            drawAttrs.IndexType = GetIndexType(currentIndexBuffer);
+
+            deviceContext->DrawIndexed(drawAttrs);
         }
         else
         {
-            if (!currentIndexBuffer)
-            {
-                graphics_->Draw(currentPrimitiveType, cmd.indexStart_, cmd.indexCount_);
-            }
-            else if (cmd.baseVertexIndex_ == 0)
-            {
-                graphics_->Draw(currentPrimitiveType, cmd.indexStart_, cmd.indexCount_,
-                    vertexStart, vertexCount);
-            }
-            else
-            {
-                graphics_->Draw(currentPrimitiveType, cmd.indexStart_, cmd.indexCount_,
-                    cmd.baseVertexIndex_, vertexStart, vertexCount);
-            }
+            Diligent::DrawAttribs drawAttrs;
+            drawAttrs.NumVertices = cmd.indexCount_;
+            drawAttrs.NumInstances = ea::max(1u, cmd.instanceCount_);
+            drawAttrs.StartVertexLocation = cmd.indexStart_;
+            drawAttrs.FirstInstanceLocation = isBaseVertexAndInstanceSupported ? cmd.instanceStart_ : 0;
+            drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
+
+            deviceContext->Draw(drawAttrs);
         }
     }
 }
