@@ -159,4 +159,71 @@ TextureFormat SetTextureFormatSRGB(TextureFormat format, bool sRGB)
     return iter != map.end() ? iter->second : format;
 }
 
+RenderBackend SelectRenderBackend(ea::optional<RenderBackend> requestedBackend)
+{
+    static const EnumArray<RenderBackend, PlatformId> defaultBackend{{
+        RenderBackend::D3D11, // Windows
+        RenderBackend::D3D11, // UniversalWindowsPlatform
+        RenderBackend::OpenGL, // Linux
+        RenderBackend::OpenGL, // Android
+        RenderBackend::OpenGL, // RaspberryPi
+        RenderBackend::OpenGL, // MacOS
+        RenderBackend::OpenGL, // iOS
+        RenderBackend::OpenGL, // tvOS
+        RenderBackend::OpenGL, // Web
+    }};
+
+    ea::vector<RenderBackend> supportedBackends;
+#if D3D11_SUPPORTED
+    supportedBackends.push_back(RenderBackend::D3D11);
+#endif
+#if D3D12_SUPPORTED
+    supportedBackends.push_back(RenderBackend::D3D12);
+#endif
+#if GL_SUPPORTED || GLES_SUPPORTED
+    supportedBackends.push_back(RenderBackend::OpenGL);
+#endif
+#if VULKAN_SUPPORTED
+    supportedBackends.push_back(RenderBackend::Vulkan);
+#endif
+
+    URHO3D_ASSERT(!supportedBackends.empty(), "Unexpected engine configuration");\
+
+    const PlatformId platform = GetPlatform();
+    const RenderBackend backend = requestedBackend.value_or(defaultBackend[platform]);
+    if (supportedBackends.contains(backend))
+        return backend;
+
+    return supportedBackends.front();
+}
+
+ShaderTranslationPolicy SelectShaderTranslationPolicy(
+    RenderBackend backend, ea::optional<ShaderTranslationPolicy> requestedPolicy)
+{
+    static const EnumArray<ShaderTranslationPolicy, RenderBackend> defaultPolicy{{
+        ShaderTranslationPolicy::Translate, // D3D11
+        ShaderTranslationPolicy::Translate, // D3D12
+        ShaderTranslationPolicy::Verbatim, // OpenGL
+        ShaderTranslationPolicy::Optimize // Vulkan
+    }};
+
+    ea::vector<ShaderTranslationPolicy> supportedPolicies;
+    if (backend == RenderBackend::OpenGL)
+        supportedPolicies.push_back(ShaderTranslationPolicy::Verbatim);
+#ifdef URHO3D_SHADER_TRANSLATOR
+    supportedPolicies.push_back(ShaderTranslationPolicy::Translate);
+#endif
+#ifdef URHO3D_SHADER_OPTIMIZER
+    supportedPolicies.push_back(ShaderTranslationPolicy::Optimize);
+#endif
+
+    URHO3D_ASSERT(!supportedPolicies.empty(), "Unexpected engine configuration");
+
+    const ShaderTranslationPolicy policy = requestedPolicy.value_or(defaultPolicy[backend]);
+    if (supportedPolicies.contains(policy))
+        return policy;
+
+    return supportedPolicies.front();
+}
+
 } // namespace Urho3D

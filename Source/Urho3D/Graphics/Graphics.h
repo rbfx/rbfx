@@ -66,6 +66,17 @@ class RenderContext;
 
 struct ShaderParameter;
 
+/// Graphics settings that should be configured before initialization.
+struct GraphicsSettings : public RenderDeviceSettings
+{
+    /// Current shader translation policy.
+    ShaderTranslationPolicy shaderTranslationPolicy_{};
+    /// Whether to log all compiled shaders.
+    bool logShaderSources_{};
+    /// Whether the shader validation is enabled.
+    bool validateShaders_{};
+};
+
 /// CPU-side scratch buffer for vertex data updates.
 struct ScratchBuffer
 {
@@ -111,10 +122,9 @@ public:
     /// Destruct. Release the Direct3D11 device and close the window.
     ~Graphics() override;
 
-    /// Set whether shaders are checked for invalid symbols.
-    void SetShaderValidationEnabled(bool enabled) { validateShaders_ = enabled; }
-    /// Set external window handle. Only effective before setting the initial screen mode.
-    void SetExternalWindow(void* window);
+    /// Configure before initial setup.
+    void Configure(const GraphicsSettings& settings) { settings_ = settings; }
+
     /// Set window title.
     /// @property
     void SetWindowTitle(const ea::string& windowTitle);
@@ -136,13 +146,10 @@ public:
     bool SetDefaultWindowModes(const WindowSettings& commonSettings);
     /// Set default window modes. Deprecated. Return true if successful.
     bool SetMode(int width, int height, bool fullscreen, bool borderless, bool resizable,
-        bool highDPI, bool vsync, bool tripleBuffer, int multiSample, int monitor, int refreshRate, bool gpuDebug);
+        bool highDPI, bool vsync, bool tripleBuffer, int multiSample, int monitor, int refreshRate);
     /// Set screen resolution only. Deprecated. Return true if successful.
     bool SetMode(int width, int height);
 
-    /// Set allowed screen orientations as a space-separated list of "LandscapeLeft", "LandscapeRight", "Portrait" and "PortraitUpsideDown". Affects currently only iOS platform.
-    /// @property
-    void SetOrientations(const ea::string& orientations);
     /// Toggle between full screen and windowed mode. Return true if successful.
     bool ToggleFullscreen();
     /// Close the window.
@@ -305,11 +312,8 @@ public:
     /// Return graphics implementation, which holds the actual API-specific resources.
     GraphicsImpl* GetImpl() const { return impl_; }
 
-    /// Return whether shader validation is enabled.
-    bool IsShaderValidationEnabled() const { return validateShaders_; }
-
     /// Return OS-specific external window handle. Null if not in use.
-    void* GetExternalWindow() const { return externalWindow_; }
+    void* GetExternalWindow() const { return settings_.externalWindowHandle_; }
 
     /// Return SDL window.
     SDL_Window* GetWindow() const { return window_; }
@@ -352,9 +356,6 @@ public:
     /// @property
     bool GetFullscreen() const { return GetWindowSettings().mode_ == WindowMode::Fullscreen; }
 
-    /// Return whether gpu debug is enabled.
-    bool GetGPUDebug() const { return gpuDebug_; }
-
     /// Return whether window is borderless.
     /// @property
     bool GetBorderless() const { return GetWindowSettings().mode_ == WindowMode::Borderless; }
@@ -380,10 +381,6 @@ public:
     /// Return whether rendering output is dithered.
     /// @property
     bool GetDither() const;
-
-    /// Return allowed screen orientations.
-    /// @property
-    const ea::string& GetOrientations() const { return orientations_; }
 
     /// Return whether graphics context is lost and can not render or load GPU resources.
     /// @property
@@ -618,16 +615,6 @@ public:
     /// @nobind
     void SetUBO(unsigned object);
 
-    RenderBackend GetRenderBackend() const;
-    void SetRenderBackend(RenderBackend backend);
-
-    unsigned GetAdapterId() const;
-    void SetAdapterId(unsigned adapterId);
-    void SetGPUDebug(bool enable) { gpuDebug_ = enable; }
-
-    unsigned GetSwapChainRTFormat();
-    unsigned GetSwapChainDepthFormat();
-
     const PipelineStateOutputDesc& GetCurrentOutputDesc() const;
 
     /// Return the API-specific alpha texture format.
@@ -679,19 +666,14 @@ public:
     /// Get the SDL_Window as a void* to avoid having to include the graphics implementation
     void* GetSDLWindow() { return window_; }
 
-    void SetLogShaderSources(bool enable) { logShaderSources_ = enable; }
-    bool GetLogShaderSources() const { return logShaderSources_; }
-    void SetPolicyGLSL(ShaderTranslationPolicy policy) { policyGlsl_ = policy; }
-    ShaderTranslationPolicy GetPolicyGLSL() const { return policyGlsl_; }
-    void SetPolicyHLSL(ShaderTranslationPolicy policy) { policyHlsl_ = policy; }
-    ShaderTranslationPolicy GetPolicyHLSL() const { return policyHlsl_; }
-
     /// Process dirtied state before draw.
     /// TODO(diligent): Revisit
     void PrepareDraw();
 
     /// Getters.
     /// @{
+    RenderBackend GetRenderBackend() const;
+    const GraphicsSettings& GetSettings() const { return settings_; }
     RenderDevice* GetRenderDevice() const { return renderDevice_.Get(); }
     RenderContext* GetRenderContext() const { return renderContext_.Get(); }
     /// @}
@@ -740,8 +722,6 @@ private:
     ea::string windowTitle_;
     /// Window icon image.
     WeakPtr<Image> windowIcon_;
-    /// External window, null if not in use (default.)
-    void* externalWindow_{};
     /// Most recently applied window settings. It may not represent actual window state
     /// if window was resized by user or Graphics::SetScreenMode was explicitly called.
     WindowSettings primaryWindowSettings_;
@@ -749,8 +729,6 @@ private:
     WindowSettings secondaryWindowSettings_;
     /// Window position.
     IntVector2 position_;
-    /// Whether the shader validation is enabled.
-    bool validateShaders_{};
     /// Light pre-pass rendering support flag.
     bool lightPrepassSupport_{};
     /// Deferred rendering support flag.
@@ -881,8 +859,6 @@ private:
     mutable ea::string lastShaderName_;
     /// Shader precache utility.
     SharedPtr<ShaderPrecache> shaderPrecache_;
-    /// Allowed screen orientations.
-    ea::string orientations_;
     /// Graphics API name.
     ea::string apiName_;
     /// Global shader defines.
@@ -890,13 +866,10 @@ private:
     /// Hash of global shader defines.
     StringHash globalShaderDefinesHash_;
 
+    GraphicsSettings settings_;
+
     SharedPtr<RenderDevice> renderDevice_;
     WeakPtr<RenderContext> renderContext_;
-
-    bool logShaderSources_{};
-    ShaderTranslationPolicy policyGlsl_{ShaderTranslationPolicy::Verbatim};
-    ShaderTranslationPolicy policyHlsl_{ShaderTranslationPolicy::Translate};
-    bool gpuDebug_{};
 
     /// OpenGL3 support flag.
     static bool gl3Support;

@@ -148,7 +148,7 @@ bool Shader::BeginLoad(Deserializer& source)
     ProcessSource(shaderCode, timeStamp, source);
 
     // Validate shader code
-    if (graphics->IsShaderValidationEnabled())
+    if (graphics->GetSettings().validateShaders_)
     {
         static const auto characterMask = GenerateAllowedCharacterMask();
         static const unsigned maxSnippetSize = 5;
@@ -271,7 +271,7 @@ void Shader::ProcessSource(ea::string& code, FileTime& timeStamp, Deserializer& 
                 line.erase(line.end() - 1);
 
             // If shader validation is enabled, trim comments manually to avoid validating comment contents
-            if (!graphics->IsShaderValidationEnabled() || !line.trimmed().starts_with("//"))
+            if (!graphics->GetSettings().validateShaders_ || !line.trimmed().starts_with("//"))
                 code += line;
 
             ++numNewLines;

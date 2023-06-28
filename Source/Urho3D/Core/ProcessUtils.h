@@ -54,7 +54,8 @@ enum class PlatformId
 
     Web,
 
-    Unknown
+    Count,
+    Unknown = Count
 };
 
 /// Initialize the FPU to round-to-nearest, single precision mode.

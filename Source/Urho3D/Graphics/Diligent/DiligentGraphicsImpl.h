@@ -89,8 +89,6 @@ public:
     /// supported. On D3D feature level 10.1+, uses the standard level. Below that uses the best quality.
     unsigned GetMultiSampleQuality(Diligent::TEXTURE_FORMAT format, unsigned sampleCount) const;
 
-    unsigned FindBestAdapter(Diligent::IEngineFactory* engineFactory, Diligent::Version& version);
-
 private:
     /// Graphics device.
     Diligent::IRenderDevice* device_;
@@ -170,9 +168,9 @@ private:
 //    /// Shader program in use.
 //    ShaderProgram* shaderProgram_;
     /// Current running backend
-    RenderBackend renderBackend_;
+    //RenderBackend renderBackend_;
     /// Current adapter id
-    unsigned adapterId_;
+    //unsigned adapterId_;
 #ifdef PLATFORM_MACOS
     SDL_MetalView metalView_;
 #endif

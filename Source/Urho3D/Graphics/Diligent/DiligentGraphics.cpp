@@ -251,7 +251,6 @@ Graphics::Graphics(Context* context)
     , position_(SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED)
     , shaderPath_("Shaders/HLSL/")
     , shaderExtension_(".hlsl")
-    , orientations_("LandscapeLeft LandscapeRight")
     , apiName_("Diligent")
 {
     SetTextureUnitMappings();
@@ -350,17 +349,9 @@ bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
 
     if (!renderDevice_)
     {
-        RenderDeviceSettings deviceSettings;
-
-        deviceSettings.backend_ = GetRenderBackend();
-        deviceSettings.externalWindowHandle_ = externalWindow_;
-        deviceSettings.gpuDebug_ = gpuDebug_;
-        if (impl_->adapterId_ != M_MAX_UNSIGNED)
-            deviceSettings.adapterId_ = impl_->adapterId_;
-
         try
         {
-            renderDevice_ = MakeShared<RenderDevice>(context_, deviceSettings, windowSettings);
+            renderDevice_ = MakeShared<RenderDevice>(context_, settings_, windowSettings);
             renderContext_ = renderDevice_->GetRenderContext();
         }
         catch (const RuntimeException& ex)
@@ -507,7 +498,7 @@ bool Graphics::BeginFrame()
     if (!IsInitialized())
         return false;
 
-    if (!externalWindow_)
+    if (!GetExternalWindow())
     {
         // To prevent a loop of endless device loss and flicker, do not attempt to render when in fullscreen
         // and the window is minimized
@@ -1403,37 +1394,7 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType type, unsigned in
 
 RenderBackend Graphics::GetRenderBackend() const
 {
-    return impl_->renderBackend_;
-}
-void Graphics::SetRenderBackend(RenderBackend renderBackend)
-{
-    if (impl_->device_)
-    {
-        URHO3D_LOGERROR("Render Backend cannot be change after graphics initialization.");
-        return;
-    }
-    impl_->renderBackend_ = renderBackend;
-}
-unsigned Graphics::GetAdapterId() const
-{
-    return impl_->adapterId_;
-}
-void Graphics::SetAdapterId(unsigned adapterId)
-{
-    if (impl_->device_)
-    {
-        URHO3D_LOGERROR("Cannot change Adapter ID after graphics initialization.");
-        return;
-    }
-    impl_->adapterId_ = adapterId;
-}
-unsigned Graphics::GetSwapChainRTFormat()
-{
-    return impl_->swapChain_->GetDesc().ColorBufferFormat;
-}
-unsigned Graphics::GetSwapChainDepthFormat()
-{
-    return impl_->swapChain_->GetDesc().DepthBufferFormat;
+    return renderDevice_ ? renderDevice_->GetBackend() : RenderBackend::OpenGL;
 }
 
 const PipelineStateOutputDesc& Graphics::GetCurrentOutputDesc() const

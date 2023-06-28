@@ -41,6 +41,7 @@
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
 #include "../RenderAPI/PipelineState.h"
+#include "../RenderAPI/RenderAPIUtils.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
 #include "../Input/FreeFlyController.h"
@@ -127,69 +128,6 @@ typedef struct _CrtMemBlockHeader
 
 namespace Urho3D
 {
-
-namespace
-{
-
-/// TODO(diligent): Extract it from Engine.cpp
-RenderBackend GetDefaultRenderBackend()
-{
-#if URHO3D_PLATFORM_WINDOWS
-    return RenderBackend::D3D11;
-#endif
-#if URHO3D_PLATFORM_UNIVERSAL_WINDOWS
-    return RenderBackend::D3D11;
-#endif
-
-#if URHO3D_PLATFORM_LINUX
-    return RenderBackend::OpenGL;
-#endif
-#if URHO3D_PLATFORM_ANDROID
-    return RenderBackend::OpenGL;
-#endif
-#if URHO3D_PLATFORM_RASPBERRY_PI
-    return RenderBackend::OpenGL;
-#endif
-
-#if URHO3D_PLATFORM_MACOS
-    // TODO(diligent): Replace with Metal/Vulkan later?
-    return RenderBackend::OpenGL;
-#endif
-#if URHO3D_PLATFORM_IOS
-    return RenderBackend::OpenGL;
-#endif
-#if URHO3D_PLATFORM_TVOS
-    return RenderBackend::OpenGL;
-#endif
-
-#if URHO3D_PLATFORM_WEB
-    return RenderBackend::OpenGL;
-#endif
-}
-
-RenderBackend GetRenderBackend(const ea::optional<RenderBackend>& requestedBackend)
-{
-    RenderBackend backend = GetDefaultRenderBackend();
-#if D3D11_SUPPORTED
-    if (requestedBackend == RenderBackend::D3D11)
-        backend = RenderBackend::D3D11;
-#endif
-#if D3D12_SUPPORTED
-    if (requestedBackend == RenderBackend::D3D12)
-        backend = RenderBackend::D3D12;
-#endif
-#if GL_SUPPORTED || GLES_SUPPORTED
-    if (requestedBackend == RenderBackend::OpenGL)
-        backend = RenderBackend::OpenGL;
-#endif
-#if VULKAN_SUPPORTED
-    if (requestedBackend == RenderBackend::Vulkan)
-        backend = RenderBackend::Vulkan;
-#endif
-    return backend;
-}
-
-}
 
 extern const char* logLevelNames[];
 
@@ -385,24 +323,17 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         auto* graphics = GetSubsystem<Graphics>();
         auto* renderer = GetSubsystem<Renderer>();
 
-        graphics->SetExternalWindow(GetParameter(EP_EXTERNAL_WINDOW).GetVoidPtr());
+        GraphicsSettings graphicsSettings;
+        graphicsSettings.backend_ = SelectRenderBackend(GetParameter(EP_RENDER_BACKEND).GetOptional<RenderBackend>());
+        graphicsSettings.externalWindowHandle_ = GetParameter(EP_EXTERNAL_WINDOW).GetVoidPtr();
+        graphicsSettings.gpuDebug_ = GetParameter(EP_GPU_DEBUG).GetBool();
+        graphicsSettings.adapterId_ = GetParameter(EP_RENDER_ADAPTER_ID).GetOptional<unsigned>();
+        graphicsSettings.shaderTranslationPolicy_ = SelectShaderTranslationPolicy(
+            graphicsSettings.backend_, GetParameter(EP_SHADER_POLICY).GetOptional<ShaderTranslationPolicy>());
+        graphics->Configure(graphicsSettings);
+
         graphics->SetWindowTitle(GetParameter(EP_WINDOW_TITLE).GetString());
         graphics->SetWindowIcon(cache->GetResource<Image>(GetParameter(EP_WINDOW_ICON).GetString()));
-        graphics->SetOrientations(GetParameter(EP_ORIENTATIONS).GetString());
-        graphics->SetShaderValidationEnabled(GetParameter(EP_VALIDATE_SHADERS).GetBool());
-        graphics->SetLogShaderSources(GetParameter(EP_SHADER_LOG_SOURCES).GetBool());
-        graphics->SetPolicyGLSL(static_cast<ShaderTranslationPolicy>(GetParameter(EP_SHADER_POLICY_GLSL).GetInt()));
-        graphics->SetPolicyHLSL(static_cast<ShaderTranslationPolicy>(GetParameter(EP_SHADER_POLICY_HLSL).GetInt()));
-
-        const RenderBackend renderBackend =
-            GetRenderBackend(GetParameter(EP_RENDER_BACKEND).GetOptional<RenderBackend>());
-        graphics->SetRenderBackend(renderBackend);
-        auto adapterIdParam = GetParameter(EP_RENDER_ADAPTER_ID);
-        if (adapterIdParam != Variant::EMPTY)
-            graphics->SetAdapterId(adapterIdParam.GetUInt());
-
-        const bool gpuDebug = GetParameter(EP_GPU_DEBUG).GetBool();
-        graphics->SetGPUDebug(gpuDebug);
 
         SubscribeToEvent(E_SCREENMODE, [this](VariantMap& eventData)
         {
@@ -434,6 +365,7 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         windowSettings.multiSample_ = GetParameter(EP_MULTI_SAMPLE).GetInt();
         windowSettings.monitor_ = GetParameter(EP_MONITOR).GetInt();
         windowSettings.refreshRate_ = GetParameter(EP_REFRESH_RATE).GetInt();
+        windowSettings.orientations_ = GetParameter(EP_ORIENTATIONS).GetString().split(' ');
 
         if (!graphics->SetDefaultWindowModes(windowSettings))
             return false;
@@ -1126,8 +1058,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "Data;CoreData");
     engineParameters_->DefineVariable(EP_RESOURCE_PREFIX_PATHS, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_SHADER_CACHE_DIR, "conf://ShaderCache");
-    engineParameters_->DefineVariable(EP_SHADER_POLICY_GLSL, static_cast<int>(ShaderTranslationPolicy::Verbatim));
-    engineParameters_->DefineVariable(EP_SHADER_POLICY_HLSL, static_cast<int>(ShaderTranslationPolicy::Translate));
+    engineParameters_->DefineVariable(EP_SHADER_POLICY).SetOptional<int>();
     engineParameters_->DefineVariable(EP_SHADER_LOG_SOURCES, false);
     engineParameters_->DefineVariable(EP_SHADOWS, true).Overridable();
     engineParameters_->DefineVariable(EP_SOUND, true);

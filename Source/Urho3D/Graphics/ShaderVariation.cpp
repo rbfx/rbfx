@@ -257,33 +257,14 @@ ea::string ShaderVariation::GetCachedVariationName(ea::string_view extension) co
 
 bool ShaderVariation::NeedShaderTranslation() const
 {
-    const RenderBackend backend = graphics_->GetRenderBackend();
-    if (backend == RenderBackend::OpenGL)
-    {
-        const ShaderTranslationPolicy policy = graphics_->GetPolicyGLSL();
-        return policy != ShaderTranslationPolicy::Verbatim;
-    }
-
-    return true;
+    const ShaderTranslationPolicy policy = graphics_->GetSettings().shaderTranslationPolicy_;
+    return policy != ShaderTranslationPolicy::Verbatim;
 }
 
 bool ShaderVariation::NeedShaderOptimization() const
 {
-    const RenderBackend backend = graphics_->GetRenderBackend();
-    switch (backend)
-    {
-    case RenderBackend::Vulkan:
-        // TODO(diligent): Revisit this. Can we not optimize SPIRV? Does glslang provide legalized SPIRV?
-        return true;
-
-    case RenderBackend::OpenGL: //
-        return graphics_->GetPolicyGLSL() == ShaderTranslationPolicy::Optimize;
-
-    case RenderBackend::D3D11:
-    case RenderBackend::D3D12: return graphics_->GetPolicyHLSL() == ShaderTranslationPolicy::Optimize;
-
-    default: return false;
-    }
+    const ShaderTranslationPolicy policy = graphics_->GetSettings().shaderTranslationPolicy_;
+    return policy == ShaderTranslationPolicy::Optimize;
 }
 
 ea::string ShaderVariation::PrepareGLSLShaderCode(const ea::string& originalShaderCode) const

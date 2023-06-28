@@ -41,7 +41,7 @@ void LogShaderSource(const FileIdentifier& fileName, ea::string_view defines, ea
 {
     auto context = Context::GetInstance();
     auto graphics = context->GetSubsystem<Graphics>();
-    if (!graphics->GetLogShaderSources())
+    if (!graphics->GetSettings().logShaderSources_)
         return;
 
     auto vfs = context->GetSubsystem<VirtualFileSystem>();

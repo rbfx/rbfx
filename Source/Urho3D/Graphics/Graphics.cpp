@@ -107,14 +107,6 @@ WindowMode ToWindowMode(bool fullscreen, bool borderless)
 GraphicsCaps Graphics::caps;
 unsigned Graphics::maxBonesHWSkinned = 0;
 
-void Graphics::SetExternalWindow(void* window)
-{
-    if (!window_)
-        externalWindow_ = window;
-    else
-        URHO3D_LOGERROR("Window already opened, can not set external window");
-}
-
 void Graphics::SetWindowTitle(const ea::string& windowTitle)
 {
     windowTitle_ = windowTitle;
@@ -140,12 +132,6 @@ void Graphics::SetWindowPosition(const IntVector2& position)
 void Graphics::SetWindowPosition(int x, int y)
 {
     SetWindowPosition(IntVector2(x, y));
-}
-
-void Graphics::SetOrientations(const ea::string& orientations)
-{
-    orientations_ = orientations.trimmed();
-    SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.c_str());
 }
 
 bool Graphics::SetWindowModes(const WindowSettings& primarySettings, const WindowSettings& secondarySettings)
@@ -176,10 +162,8 @@ bool Graphics::SetDefaultWindowModes(const WindowSettings& commonSettings)
 }
 
 bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, bool resizable,
-    bool /*highDPI*/, bool vsync, bool /*tripleBuffer*/, int multiSample, int monitor, int refreshRate, bool gpuDebug)
+    bool /*highDPI*/, bool vsync, bool /*tripleBuffer*/, int multiSample, int monitor, int refreshRate)
 {
-    gpuDebug_ = gpuDebug;
-
     WindowSettings params;
     params.size_ = {width, height};
     params.mode_ = ToWindowMode(fullscreen, borderless);
