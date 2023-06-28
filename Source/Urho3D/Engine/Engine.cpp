@@ -167,29 +167,25 @@ RenderBackend GetDefaultRenderBackend()
 #endif
 }
 
-RenderBackend GetRenderBackend(const Variant& requestedValue)
+RenderBackend GetRenderBackend(const ea::optional<RenderBackend>& requestedBackend)
 {
     RenderBackend backend = GetDefaultRenderBackend();
-    if (requestedValue.GetType() == VAR_INT)
-    {
-        const RenderBackend requestedBackend = static_cast<RenderBackend>(requestedValue.GetInt());
 #if D3D11_SUPPORTED
-        if (requestedBackend == RenderBackend::D3D11)
-            backend = RenderBackend::D3D11;
+    if (requestedBackend == RenderBackend::D3D11)
+        backend = RenderBackend::D3D11;
 #endif
 #if D3D12_SUPPORTED
-        if (requestedBackend == RenderBackend::D3D12)
-            backend = RenderBackend::D3D12;
+    if (requestedBackend == RenderBackend::D3D12)
+        backend = RenderBackend::D3D12;
 #endif
 #if GL_SUPPORTED || GLES_SUPPORTED
-        if (requestedBackend == RenderBackend::OpenGL)
-            backend = RenderBackend::OpenGL;
+    if (requestedBackend == RenderBackend::OpenGL)
+        backend = RenderBackend::OpenGL;
 #endif
 #if VULKAN_SUPPORTED
-        if (requestedBackend == RenderBackend::Vulkan)
-            backend = RenderBackend::Vulkan;
+    if (requestedBackend == RenderBackend::Vulkan)
+        backend = RenderBackend::Vulkan;
 #endif
-    }
     return backend;
 }
 
@@ -398,7 +394,8 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         graphics->SetPolicyGLSL(static_cast<ShaderTranslationPolicy>(GetParameter(EP_SHADER_POLICY_GLSL).GetInt()));
         graphics->SetPolicyHLSL(static_cast<ShaderTranslationPolicy>(GetParameter(EP_SHADER_POLICY_HLSL).GetInt()));
 
-        const RenderBackend renderBackend = GetRenderBackend(GetParameter(EP_RENDER_BACKEND));
+        const RenderBackend renderBackend =
+            GetRenderBackend(GetParameter(EP_RENDER_BACKEND).GetOptional<RenderBackend>());
         graphics->SetRenderBackend(renderBackend);
         auto adapterIdParam = GetParameter(EP_RENDER_ADAPTER_ID);
         if (adapterIdParam != Variant::EMPTY)
@@ -1156,7 +1153,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_WINDOW_WIDTH, 0); //.Overridable();
     engineParameters_->DefineVariable(EP_WORKER_THREADS, true);
     engineParameters_->DefineVariable(EP_PSO_CACHE, "conf://psocache.bin");
-    engineParameters_->DefineVariable(EP_RENDER_BACKEND, Variant::EMPTY);
+    engineParameters_->DefineVariable(EP_RENDER_BACKEND).SetOptional<int>();
 }
 
 void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)
