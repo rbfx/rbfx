@@ -317,6 +317,11 @@ void StaticModel::ApplyMaterialList(const ea::string& fileName)
         return;
 
     const StringVector lines = file->ReadLines();
+    ApplyMaterialList(lines);
+}
+
+void StaticModel::ApplyMaterialList(const StringVector& lines)
+{
     for (unsigned index = 0; index < ea::min(batches_.size(), lines.size()); ++index)
     {
         auto* material = cache->GetResource<Material>(lines[index]);
