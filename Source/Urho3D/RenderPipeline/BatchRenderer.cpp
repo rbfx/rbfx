@@ -482,7 +482,7 @@ private:
         if (resourcesDirty)
         {
             for (const ShaderResourceDesc& desc : globalResources_)
-                drawQueue_.AddShaderResource(desc.name_, desc.texture_);
+                AddShaderResource(drawQueue_, desc.name_, desc.texture_);
 
             const auto& materialTextures = current_.material_->GetTextures();
             bool materialHasEnvironmentMap = false;
@@ -494,23 +494,23 @@ private:
                 if (texture.first == TU_EMISSIVE && current_.lightmapTexture_)
                     continue;
                 // TODO(diligent): Revisit material system
-                drawQueue_.AddShaderResource(Material::TextureUnitToShaderResource(texture.first), texture.second);
+                AddShaderResource(drawQueue_, Material::TextureUnitToShaderResource(texture.first), texture.second);
             }
 
             if (current_.lightmapTexture_)
-                drawQueue_.AddShaderResource(ShaderResources::EmissiveMap, current_.lightmapTexture_);
+                AddShaderResource(drawQueue_, ShaderResources::EmissiveMap, current_.lightmapTexture_);
             if (current_.pixelLightRamp_)
-                drawQueue_.AddShaderResource(ShaderResources::LightRampMap, current_.pixelLightRamp_);
+                AddShaderResource(drawQueue_, ShaderResources::LightRampMap, current_.pixelLightRamp_);
             if (current_.pixelLightShape_)
-                drawQueue_.AddShaderResource(ShaderResources::LightSpotMap, current_.pixelLightShape_);
+                AddShaderResource(drawQueue_, ShaderResources::LightSpotMap, current_.pixelLightShape_);
             if (current_.pixelLightShadowMap_)
-                drawQueue_.AddShaderResource(ShaderResources::ShadowMap, current_.pixelLightShadowMap_);
+                AddShaderResource(drawQueue_, ShaderResources::ShadowMap, current_.pixelLightShadowMap_);
             if (enabled_.ambientLighting_ && !materialHasEnvironmentMap)
             {
-                drawQueue_.AddShaderResource(ShaderResources::EnvMap, current_.reflectionProbeTextures_[0]);
-#ifdef DESKTOP_GRAPHICS
-                drawQueue_.AddShaderResource(ShaderResources::ZoneCubeMap, current_.reflectionProbeTextures_[1]);
-#endif
+                AddNullableShaderResource(drawQueue_, ShaderResources::EnvMap, TextureType::TextureCube,
+                    current_.reflectionProbeTextures_[0]);
+                AddNullableShaderResource(drawQueue_, ShaderResources::ZoneCubeMap, TextureType::TextureCube,
+                    current_.reflectionProbeTextures_[1]);
             }
 
             drawQueue_.CommitShaderResources();

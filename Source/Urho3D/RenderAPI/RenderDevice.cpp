@@ -10,6 +10,7 @@
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/RenderAPI/DeviceObject.h"
 #include "Urho3D/RenderAPI/GAPIIncludes.h"
+#include "Urho3D/RenderAPI/RawTexture.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
 
@@ -699,6 +700,11 @@ RenderDevice::RenderDevice(
         Diligent::GetTextureFormatAttribs(desc.DepthBufferFormat).Name);
 }
 
+void RenderDevice::PostInitialize()
+{
+    InitializeDefaultObjects();
+}
+
 RenderDevice::~RenderDevice()
 {
     SendDeviceObjectEvent(DeviceObjectEvent::Destroy);
@@ -1135,9 +1141,11 @@ bool RenderDevice::EmulateLossAndRestore()
     {
         SendDeviceObjectEvent(DeviceObjectEvent::Invalidate);
         OnDeviceLost(this);
+        ReleaseDefaultObjects();
 
         URHO3D_LOGINFO("Emulated context lost");
 
+        InitializeDefaultObjects();
         SendDeviceObjectEvent(DeviceObjectEvent::Restore);
         OnDeviceRestored(this);
 
@@ -1159,6 +1167,7 @@ void RenderDevice::InvalidateGLESContext()
     URHO3D_LOGINFO("OpenGL context is lost");
     SendDeviceObjectEvent(DeviceObjectEvent::Invalidate);
     OnDeviceLost(this);
+    ReleaseDefaultObjects();
     deviceContextGL_->InvalidateState();
     renderDeviceGLES_->Invalidate();
     glContext_ = nullptr;
@@ -1178,6 +1187,7 @@ bool RenderDevice::RestoreGLESContext()
     }
 
     renderDeviceGLES_->Resume(nullptr);
+    InitializeDefaultObjects();
     SendDeviceObjectEvent(DeviceObjectEvent::Restore);
     OnDeviceRestored(this);
     URHO3D_LOGINFO("OpenGL context is restored");
@@ -1308,6 +1318,35 @@ void RenderDevice::SendDeviceObjectEvent(DeviceObjectEvent event)
 bool RenderDevice::IsTextureFormatSupported(TextureFormat format) const
 {
     return renderDevice_->GetTextureFormatInfo(format).Supported;
+}
+
+void RenderDevice::InitializeDefaultObjects()
+{
+    const auto createDefaultTexture = [&](const TextureType type, Diligent::RESOURCE_DIMENSION_SUPPORT flag)
+    {
+        const TextureFormat format = TextureFormat::TEX_FORMAT_RGBA8_UNORM;
+        if (!(renderDevice_->GetTextureFormatInfoExt(format).Dimensions & flag))
+            return;
+
+        RawTextureParams params;
+        params.type_ = type;
+        params.format_ = format;
+        params.size_ = {1, 1, 1};
+        defaultTextures_[type] = ea::make_unique<RawTexture>(context_, params);
+
+        const unsigned char data[4]{};
+        defaultTextures_[type]->Update(0, IntVector3::ZERO, IntVector3::ONE, 0, data);
+    };
+
+    createDefaultTexture(TextureType::Texture2D, Diligent::RESOURCE_DIMENSION_SUPPORT_TEX_2D);
+    createDefaultTexture(TextureType::TextureCube, Diligent::RESOURCE_DIMENSION_SUPPORT_TEX_CUBE);
+    createDefaultTexture(TextureType::Texture3D, Diligent::RESOURCE_DIMENSION_SUPPORT_TEX_3D);
+    createDefaultTexture(TextureType::Texture2DArray, Diligent::RESOURCE_DIMENSION_SUPPORT_TEX_2D_ARRAY);
+}
+
+void RenderDevice::ReleaseDefaultObjects()
+{
+    defaultTextures_ = {};
 }
 
 } // namespace Urho3D

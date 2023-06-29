@@ -14,6 +14,7 @@
 #include <EASTL/optional.h>
 #include <EASTL/shared_ptr.h>
 #include <EASTL/tuple.h>
+#include <EASTL/unique_ptr.h>
 #include <EASTL/unordered_set.h>
 #include <EASTL/vector.h>
 
@@ -50,6 +51,7 @@ namespace Urho3D
 {
 
 class DeviceObject;
+class RawTexture;
 class RenderContext;
 
 /// Wrapper for window and GAPI backend.
@@ -68,6 +70,8 @@ public:
     /// Throws RuntimeException if unrecoverable error occurs.
     RenderDevice(Context* context, const RenderDeviceSettings& deviceSettings, const WindowSettings& windowSettings);
     ~RenderDevice() override;
+    /// Post-initialize, when RenderDevice is visible to the engine.
+    void PostInitialize();
 
     /// Create swap chain for secondary window. It is not supported for some platforms and backends.
     /// @note For OpenGL, unique shared context should be set as current before calling this function.
@@ -104,6 +108,7 @@ public:
     IntVector2 GetWindowSize() const;
     float GetDpiScale() const;
     FrameIndex GetFrameIndex() const { return frameIndex_; }
+    RawTexture* GetDefaultTexture(TextureType type) const { return defaultTextures_[type].get(); }
     /// @}
 
     /// Static utilities.
@@ -123,6 +128,9 @@ private:
     void InitializeWindow();
     void InitializeFactory();
     void InitializeDevice();
+
+    void InitializeDefaultObjects();
+    void ReleaseDefaultObjects();
 
     void InvalidateGLESContext();
     bool RestoreGLESContext();
@@ -147,6 +155,8 @@ private:
 
     ea::unordered_set<DeviceObject*> deviceObjects_;
     Mutex deviceObjectsMutex_;
+
+    EnumArray<ea::unique_ptr<RawTexture>, TextureType> defaultTextures_;
 
     // Keep aliases at the end to ensure they are destroyed first and don't affect real order of destruction.
 #if D3D11_SUPPORTED

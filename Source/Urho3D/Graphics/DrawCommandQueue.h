@@ -9,29 +9,16 @@
 #include "Urho3D/Graphics/ConstantBufferCollection.h"
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/RenderAPI/PipelineState.h"
+#include "Urho3D/RenderAPI/RawTexture.h"
 #include "Urho3D/RenderAPI/ShaderProgramReflection.h"
+
+#include <EASTL/optional.h>
 
 namespace Urho3D
 {
 
 class Graphics;
 class RawBuffer;
-class Texture;
-
-/// Reference to input shader resource. Only textures are supported now.
-struct ShaderResourceDesc
-{
-    StringHash name_{};
-    Texture* texture_{};
-};
-
-/// Generic description of shader parameter.
-/// Beware of Variant allocations for types larger than Vector4!
-struct ShaderParameterDesc
-{
-    StringHash name_;
-    Variant value_;
-};
 
 /// Shader resource group, range in array.
 using ShaderResourceRange = ea::pair<unsigned, unsigned>;
@@ -146,14 +133,21 @@ public:
         constantBuffers_.currentGroup_ = MAX_SHADER_PARAMETER_GROUPS;
     }
 
-    /// Add shader resource.
-    void AddShaderResource(StringHash name, Texture* texture)
+    /// Add non-null shader resource.
+    void AddShaderResource(StringHash name, RawTexture* texture, RawTexture* backupTexture = nullptr)
+    {
+        AddNullableShaderResource(name, texture->GetParams().type_, texture, backupTexture);
+    }
+
+    /// Add nullable shader resource.
+    void AddNullableShaderResource(
+        StringHash name, TextureType type, RawTexture* texture, RawTexture* backupTexture = nullptr)
     {
         const ShaderResourceReflection* shaderParameter = currentShaderProgramReflection_->GetShaderResource(name);
         if (!shaderParameter || !shaderParameter->variable_)
             return;
 
-        shaderResources_.push_back(ShaderResourceData{shaderParameter->variable_, texture});
+        shaderResources_.push_back(ShaderResourceData{shaderParameter->variable_, texture, backupTexture, type});
         ++currentShaderResourceGroup_.second;
     }
 
@@ -271,7 +265,9 @@ private:
     struct ShaderResourceData
     {
         Diligent::IShaderResourceVariable* variable_{};
-        Texture* texture_{};
+        RawTexture* texture_{};
+        RawTexture* backupTexture_{};
+        TextureType type_{};
     };
 
     /// Shader resources.

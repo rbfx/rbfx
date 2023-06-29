@@ -830,4 +830,19 @@ enum class StaticPipelineStateId : unsigned
 /// Keep entire string because it should be used only on startup.
 using NamedSamplerStateDesc = ea::pair<ea::string, SamplerStateDesc>;
 
+/// Reference to input shader resource. Only textures are supported now.
+struct ShaderResourceDesc
+{
+    StringHash name_{};
+    Texture* texture_{};
+};
+
+/// Generic description of shader parameter.
+/// Beware of Variant allocations for types larger than Vector4!
+struct ShaderParameterDesc
+{
+    StringHash name_;
+    Variant value_;
+};
+
 }

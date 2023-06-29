@@ -7,8 +7,6 @@
 #include "Urho3D/Graphics/DrawCommandQueue.h"
 
 #include "Urho3D/Graphics/Graphics.h"
-#include "Urho3D/Graphics/RenderSurface.h"
-#include "Urho3D/Graphics/Texture.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
@@ -26,6 +24,17 @@ namespace
 Diligent::VALUE_TYPE GetIndexType(RawBuffer* indexBuffer)
 {
     return indexBuffer->GetStride() == 2 ? Diligent::VT_UINT16 : Diligent::VT_UINT32;
+}
+
+RawTexture* GetReadableTexture(
+    RenderContext* renderContext, TextureType type, RawTexture* texture, RawTexture* backupTexture)
+{
+    if (texture && !renderContext->IsBoundAsRenderTarget(texture))
+        return texture;
+    else if (backupTexture && !renderContext->IsBoundAsRenderTarget(backupTexture))
+        return backupTexture;
+    else
+        return renderContext->GetRenderDevice()->GetDefaultTexture(type);
 }
 
 }
@@ -180,12 +189,9 @@ void DrawCommandQueue::Execute()
         for (unsigned i = cmd.shaderResources_.first; i < cmd.shaderResources_.second; ++i)
         {
             const ShaderResourceData& data = shaderResources_[i];
-            Texture* texture = data.texture_;
 
-            if (renderContext->IsBoundAsRenderTarget(texture))
-                texture = texture->GetBackupTexture(); // TODO(diligent): We should have default backup texture!
-            if (!texture)
-                continue;
+            // TODO(diligent): Resolve and mip generation should be done outside of this loop
+            RawTexture* texture = GetReadableTexture(renderContext, data.type_, data.texture_, data.backupTexture_);
             if (texture->GetResolveDirty())
                 texture->Resolve();
             if (texture->GetLevelsDirty())

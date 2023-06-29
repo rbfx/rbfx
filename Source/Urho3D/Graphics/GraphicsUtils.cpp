@@ -6,10 +6,6 @@
 
 #include "Urho3D/Graphics/GraphicsUtils.h"
 
-#include "Urho3D/Graphics/DrawCommandQueue.h"
-#include "Urho3D/Graphics/Geometry.h"
-#include "Urho3D/Graphics/IndexBuffer.h"
-#include "Urho3D/Graphics/VertexBuffer.h"
 #include "Urho3D/IO/Log.h"
 
 #include "Urho3D/DebugNew.h"
@@ -81,23 +77,6 @@ void InitializeInputLayoutAndPrimitiveType(
     const VertexBufferArray vertexBuffers = ToVertexBufferArray(geometry, instancingBuffer);
     InitializeInputLayout(desc.inputLayout_, vertexBuffers);
     desc.primitiveType_ = geometry->GetPrimitiveType();
-}
-
-void SetBuffersFromGeometry(DrawCommandQueue& drawQueue, const Geometry* geometry, VertexBuffer* instancingBuffer)
-{
-    const auto& vertexBuffers = geometry->GetVertexBuffers();
-    IndexBuffer* indexBuffer = geometry->GetIndexBuffer();
-
-    URHO3D_ASSERT(vertexBuffers.size() + (instancingBuffer ? 1 : 0) <= MaxVertexStreams);
-
-    RawVertexBufferArray mergedVertexBuffers{};
-    for (unsigned i = 0; i < vertexBuffers.size(); ++i)
-        mergedVertexBuffers[i] = vertexBuffers[i];
-    if (instancingBuffer)
-        mergedVertexBuffers[vertexBuffers.size()] = instancingBuffer;
-
-    drawQueue.SetVertexBuffers(mergedVertexBuffers);
-    drawQueue.SetIndexBuffer(indexBuffer);
 }
 
 } // namespace Urho3D

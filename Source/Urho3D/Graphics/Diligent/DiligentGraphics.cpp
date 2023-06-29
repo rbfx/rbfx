@@ -359,6 +359,8 @@ bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
             return false;
         }
 
+        renderDevice_->PostInitialize();
+
         renderDevice_->OnDeviceLost.Subscribe(this, [this]()
         {
             for (GPUObject* gpuObject : gpuObjects_)
