@@ -9,6 +9,7 @@
 #include "Urho3D/Core/ProcessUtils.h"
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/RenderAPI/DeviceObject.h"
+#include "Urho3D/RenderAPI/DrawCommandQueue.h"
 #include "Urho3D/RenderAPI/GAPIIncludes.h"
 #include "Urho3D/RenderAPI/RawTexture.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
@@ -544,6 +545,7 @@ public:
     {
         CreateDepthStencil();
         CreateRenderTarget();
+        UpdateDesc();
     }
 
     /// Implement ISwapChainGL
@@ -563,7 +565,7 @@ public:
         nativeSwapChain_->Present(SyncInterval);
     }
 
-    const Diligent::SwapChainDesc& DILIGENT_CALL_TYPE GetDesc() const override { return nativeSwapChain_->GetDesc(); }
+    const Diligent::SwapChainDesc& DILIGENT_CALL_TYPE GetDesc() const override { return swapChainDesc_; }
 
     void DILIGENT_CALL_TYPE Resize(
         Diligent::Uint32 newWidth, Diligent::Uint32 newHeight, Diligent::SURFACE_TRANSFORM NewTransform) override
@@ -573,6 +575,7 @@ public:
         const Diligent::Uint32 oldHeight = swapChainDesc.Height;
 
         nativeSwapChain_->Resize(newWidth, newHeight, NewTransform);
+        UpdateDesc();
 
         if (swapChainDesc.Width != oldWidth || swapChainDesc.Height != oldHeight)
         {
@@ -649,6 +652,12 @@ private:
         msaaRenderTargetView_ = msaaRenderTarget_->GetDefaultView(Diligent::TEXTURE_VIEW_RENDER_TARGET);
     }
 
+    void UpdateDesc()
+    {
+        swapChainDesc_ = nativeSwapChain_->GetDesc();
+        swapChainDesc_.DepthBufferFormat = depthFormat_;
+    }
+
     const TextureFormat depthFormat_{};
     const unsigned multiSample_{};
 
@@ -659,6 +668,8 @@ private:
     Diligent::RefCntAutoPtr<Diligent::ITextureView> depthBufferView_;
     Diligent::RefCntAutoPtr<Diligent::ITexture> msaaRenderTarget_;
     Diligent::RefCntAutoPtr<Diligent::ITextureView> msaaRenderTargetView_;
+
+    Diligent::SwapChainDesc swapChainDesc_;
 };
 
 #if URHO3D_PLATFORM_UNIVERSAL_WINDOWS
@@ -686,6 +697,7 @@ RenderDevice::RenderDevice(
     , deviceSettings_(deviceSettings)
     , windowSettings_(windowSettings)
     , renderPool_(MakeShared<RenderPool>(this))
+    , defaultQueue_(MakeShared<DrawCommandQueue>(this))
 {
     if (deviceSettings_.externalWindowHandle_)
         windowSettings_.mode_ = WindowMode::Windowed;

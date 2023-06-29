@@ -5,12 +5,12 @@
 #pragma once
 
 #include "Urho3D/Core/Object.h"
-#include "Urho3D/Graphics/DrawCommandQueue.h"
 #include "Urho3D/Graphics/Geometry.h"
 #include "Urho3D/Graphics/GraphicsDefs.h"
 #include "Urho3D/Graphics/IndexBuffer.h"
 #include "Urho3D/Graphics/Texture.h"
 #include "Urho3D/Graphics/VertexBuffer.h"
+#include "Urho3D/RenderAPI/DrawCommandQueue.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
 namespace Urho3D

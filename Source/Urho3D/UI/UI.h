@@ -25,7 +25,7 @@
 #pragma once
 
 #include "../Core/Object.h"
-#include "../Graphics/DrawCommandQueue.h"
+#include "../RenderAPI/DrawCommandQueue.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../RenderPipeline/BatchStateCache.h"
 #include "../UI/Cursor.h"

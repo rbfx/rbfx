@@ -404,9 +404,8 @@ bool Texture::GetSRGB() const
 
 bool Texture::CreateForImage(const RawTextureParams& baseParams, Image* image)
 {
-    Graphics* graphics = GetSubsystem<Graphics>();
-    Renderer* renderer = GetSubsystem<Renderer>();
-    RenderDevice* renderDevice = graphics ? graphics->GetRenderDevice() : nullptr;
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    auto renderer = GetSubsystem<Renderer>();
 
     const MaterialQuality quality = renderer ? renderer->GetTextureQuality() : QUALITY_HIGH;
     const auto [mostDetailedLevel, numLevels] =

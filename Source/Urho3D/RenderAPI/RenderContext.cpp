@@ -6,6 +6,7 @@
 
 #include "Urho3D/RenderAPI/RenderContext.h"
 
+#include "Urho3D/RenderAPI/DrawCommandQueue.h"
 #include "Urho3D/RenderAPI/RawTexture.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/RenderAPI/RenderPool.h"
@@ -136,6 +137,11 @@ void RenderContext::ClearRenderTarget(unsigned index, const Color& color)
 
     handle_->ClearRenderTarget(
         currentRenderTargets_[index], color.Data(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+}
+
+void RenderContext::Execute(DrawCommandQueue* drawQueue)
+{
+    drawQueue->ExecuteInContext(this);
 }
 
 void RenderContext::UpdateCurrentRenderTargetInfo()

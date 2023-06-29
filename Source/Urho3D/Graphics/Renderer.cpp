@@ -1766,8 +1766,6 @@ void Renderer::Initialize()
     graphics_ = graphics;
     graphics_->SetGlobalShaderDefines(globalShaderDefinesString_);
 
-    defaultDrawQueue_ = MakeShared<DrawCommandQueue>(graphics_->GetRenderDevice());
-
     hardwareSkinningSupported_ = graphics_->GetCaps().maxVertexShaderUniforms_ >= 256;
 
     if (!graphics_->GetShadowMapFormat())

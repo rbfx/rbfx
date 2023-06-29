@@ -25,15 +25,16 @@
 #include "../RmlUI/RmlRenderer.h"
 
 #include "../Core/Context.h"
-#include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/IndexBuffer.h"
-#include "../Graphics/Renderer.h"
+#include "../Graphics/Material.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../IO/Log.h"
 #include "../Math/Matrix4.h"
+#include "../Resource/Image.h"
 #include "../Resource/ResourceCache.h"
+#include "Urho3D/RenderAPI/DrawCommandQueue.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
@@ -101,12 +102,10 @@ RmlRenderer::RmlRenderer(Context* context)
 
 void RmlRenderer::BeginRendering()
 {
-    auto graphics = GetSubsystem<Graphics>();
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    RenderContext* renderContext = renderDevice->GetRenderContext();
 
-    RenderDevice* renderDevice = graphics->GetRenderDevice();
-    RenderContext* renderContext = graphics->GetRenderContext();
-
-    drawQueue_ = GetSubsystem<Renderer>()->GetDefaultDrawQueue();
+    drawQueue_ = renderDevice->GetDefaultQueue();
     vertexBuffer_->Discard();
     indexBuffer_->Discard();
     drawQueue_->Reset();
@@ -125,7 +124,7 @@ void RmlRenderer::BeginRendering()
     const PipelineStateOutputDesc& outputDesc = renderContext->GetCurrentRenderTargetsDesc();
     const bool isSwapChain = renderContext->IsSwapChainRenderTarget();
     isRenderSurfaceSRGB_ = IsTextureFormatSRGB(outputDesc.renderTargetFormats_[0]);
-    viewportSize_ = graphics->GetViewport().Size();
+    viewportSize_ = renderContext->GetCurrentViewport().Size();
 
     // On OpenGL, flip the projection if rendering to a texture so that the texture can be addressed in the
     // same way as a render texture produced on Direct3D.
@@ -153,16 +152,19 @@ void RmlRenderer::BeginRendering()
 
 void RmlRenderer::EndRendering()
 {
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    RenderContext* renderContext = renderDevice->GetRenderContext();
+
     vertexBuffer_->Commit();
     indexBuffer_->Commit();
-    drawQueue_->Execute();
+    renderContext->Execute(drawQueue_);
     drawQueue_ = nullptr;
 }
 
 void RmlRenderer::InitializeGraphics()
 {
-    auto graphics = GetSubsystem<Graphics>();
-    if (!graphics || !graphics->IsInitialized())
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    if (!renderDevice)
         return;
 
     batchStateCache_ = MakeShared<DefaultUIBatchStateCache>(context_);
@@ -186,7 +188,7 @@ Material* RmlRenderer::GetBatchMaterial(Texture2D* texture)
 {
     if (!texture)
         return noTextureMaterial_;
-    else if (texture->GetFormat() == Graphics::GetAlphaFormat())
+    else if (texture->GetFormat() == TextureFormat::TEX_FORMAT_R8_UNORM)
         return alphaMapMaterial_;
     else
         return diffMapMaterial_;
@@ -195,7 +197,8 @@ Material* RmlRenderer::GetBatchMaterial(Texture2D* texture)
 void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* indices, int num_indices,
     Rml::TextureHandle textureHandle, const Rml::Vector2f& translation)
 {
-    auto graphics = GetSubsystem<Graphics>();
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    RenderContext* renderContext = renderDevice->GetRenderContext();
 
     const auto [firstVertex, vertexData] = vertexBuffer_->AddVertices(num_vertices);
     const auto [firstIndex, indexData] = indexBuffer_->AddIndices(num_indices);
@@ -231,8 +234,8 @@ void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* i
     const unsigned samplerStateHash = texture ? texture->GetSamplerStateDesc().ToHash() : 0;
     batchStateCreateContext_.defaultSampler_ = texture ? &texture->GetSamplerStateDesc() : nullptr;
 
-    const UIBatchStateKey batchStateKey{
-        isRenderSurfaceSRGB_, graphics->GetCurrentOutputDesc(), material, pass, BLEND_ALPHA, samplerStateHash};
+    const UIBatchStateKey batchStateKey{isRenderSurfaceSRGB_, renderContext->GetCurrentRenderTargetsDesc(), material,
+        pass, BLEND_ALPHA, samplerStateHash};
     PipelineState* pipelineState = batchStateCache_->GetOrCreatePipelineState(batchStateKey, batchStateCreateContext_);
 
     IntRect scissor;

@@ -935,15 +935,12 @@ Material* UI::GetBatchMaterial(const UIBatch& batch) const
 
 void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsigned batchStart, unsigned batchEnd)
 {
-    // Engine does not render when window is closed or device is lost
-    assert(graphics_ && graphics_->IsInitialized() && !graphics_->IsDeviceLost());
-
     if (batches.empty())
         return;
 
-    RenderDevice* renderDevice = graphics_->GetRenderDevice();
-    RenderContext* renderContext = graphics_->GetRenderContext();
-    DrawCommandQueue* drawQueue = renderer_->GetDefaultDrawQueue();
+    RenderDevice* renderDevice = GetSubsystem<RenderDevice>();
+    RenderContext* renderContext = renderDevice->GetRenderContext();
+    DrawCommandQueue* drawQueue = renderDevice->GetDefaultQueue();
 
     const RenderBackend backend = renderDevice->GetBackend();
     const PipelineStateOutputDesc& outputDesc = renderContext->GetCurrentRenderTargetsDesc();
@@ -1065,7 +1062,7 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
         lastCustomMaterial = batch.customMaterial_;
     }
 
-    drawQueue->Execute();
+    renderContext->Execute(drawQueue);
 }
 
 void UI::GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, UIElement* element, IntRect currentScissor)
@@ -2012,7 +2009,8 @@ void UI::HandleEndAllViewsRender(StringHash eventType, VariantMap& eventData)
     {
         if (RenderSurface* surface = texture_->GetRenderSurface())
         {
-            RenderContext* renderContext = graphics_->GetRenderContext();
+            auto renderDevice = GetSubsystem<RenderDevice>();
+            RenderContext* renderContext = renderDevice->GetRenderContext();
 
             const RenderTargetView renderTargets[] = {surface->GetView()};
             renderContext->SetRenderTargets(ea::nullopt, renderTargets);

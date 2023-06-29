@@ -25,7 +25,7 @@
 #include "../Core/Context.h"
 #include "../Core/IteratorRange.h"
 #include "../Graphics/Drawable.h"
-#include "../Graphics/DrawCommandQueue.h"
+#include "../RenderAPI/DrawCommandQueue.h"
 #include "../Graphics/OcclusionBuffer.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/OctreeQuery.h"
@@ -48,6 +48,8 @@
 #include "../RenderPipeline/SceneProcessor.h"
 #include "../Graphics/OutlineGroup.h"
 #include "../RenderPipeline/ShadowMapAllocator.h"
+#include "../RenderAPI/RenderContext.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../Scene/Scene.h"
 
 #include "../DebugNew.h"
@@ -187,11 +189,13 @@ SceneProcessor::SceneProcessor(RenderPipelineInterface* renderPipeline, const ea
     ShadowMapAllocator* shadowMapAllocator, InstancingBuffer* instancingBuffer)
     : Object(renderPipeline->GetContext())
     , graphics_(GetSubsystem<Graphics>())
+    , renderDevice_(GetSubsystem<RenderDevice>())
+    , renderContext_(renderDevice_->GetRenderContext())
     , renderPipeline_(renderPipeline)
     , debugger_(renderPipeline_->GetDebugger())
     , shadowMapAllocator_(shadowMapAllocator)
     , instancingBuffer_(instancingBuffer)
-    , drawQueue_(GetSubsystem<Renderer>()->GetDefaultDrawQueue())
+    , drawQueue_(renderDevice_->GetDefaultQueue())
     , cameraProcessor_(MakeShared<CameraProcessor>(context_))
     , pipelineStateBuilder_(MakeShared<PipelineStateBuilder>(context_,
         this, cameraProcessor_, shadowMapAllocator_, instancingBuffer_))
@@ -387,7 +391,7 @@ void SceneProcessor::RenderShadowMaps()
             drawQueue_->Reset();
             batchRenderer_->RenderBatches({ *drawQueue_, split }, split.GetShadowBatches());
             shadowMapAllocator_->BeginShadowMapRendering(split.GetShadowMap());
-            drawQueue_->Execute();
+            renderContext_->Execute(drawQueue_);
 
 #ifdef URHO3D_DEBUG
             ++renderIdx;
@@ -438,7 +442,7 @@ void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera*
 
     batchRenderer_->RenderLightVolumeBatches(ctx, GetLightVolumeBatches());
 
-    drawQueue_->Execute();
+    renderContext_->Execute(drawQueue_);
 
 #ifdef URHO3D_DEBUG
     graphics_->EndDebug();
@@ -469,7 +473,7 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
         drawQueue_->SetScissorRect(batchGroup.scissorRect_);
     batchRenderer_->RenderBatches(ctx, batchGroup);
 
-    drawQueue_->Execute();
+    renderContext_->Execute(drawQueue_);
 
 #ifdef URHO3D_DEBUG
     graphics_->EndDebug();

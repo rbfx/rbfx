@@ -16,6 +16,7 @@
 namespace Urho3D
 {
 
+class DrawCommandQueue;
 class RenderDevice;
 class RenderPool;
 class RawTexture;
@@ -43,6 +44,9 @@ public:
     void ClearDepthStencil(ClearTargetFlags flags, float depth = 1.0f, unsigned stencil = 0);
     /// Clear render target at given index. Viewport and scissor are ignored.
     void ClearRenderTarget(unsigned index, const Color& color);
+
+    /// Execute draw commands from queue.
+    void Execute(DrawCommandQueue* drawQueue);
 
     /// Check if the texture is already bound as a render target.
     bool IsBoundAsRenderTarget(const RawTexture* texture) const;

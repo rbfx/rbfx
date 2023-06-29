@@ -126,6 +126,8 @@ private:
         ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters);
 
     Graphics* graphics_{};
+    RenderDevice* renderDevice_{};
+    RenderContext* renderContext_{};
     RenderPipelineInterface* renderPipeline_{};
     RenderPipelineDebugger* debugger_{};
 

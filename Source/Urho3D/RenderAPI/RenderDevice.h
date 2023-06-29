@@ -51,6 +51,7 @@ namespace Urho3D
 {
 
 class DeviceObject;
+class DrawCommandQueue;
 class RawTexture;
 class RenderContext;
 class RenderPool;
@@ -112,6 +113,7 @@ public:
     float GetDpiScale() const;
     FrameIndex GetFrameIndex() const { return frameIndex_; }
     RawTexture* GetDefaultTexture(TextureType type) const { return defaultTextures_[type].get(); }
+    DrawCommandQueue* GetDefaultQueue() const { return defaultQueue_; }
     /// @}
 
     /// Static utilities.
@@ -164,6 +166,7 @@ private:
 
     EnumArray<ea::unique_ptr<RawTexture>, TextureType> defaultTextures_;
     SharedPtr<RenderPool> renderPool_;
+    SharedPtr<DrawCommandQueue> defaultQueue_;
 
     // Keep aliases at the end to ensure they are destroyed first and don't affect real order of destruction.
 #if D3D11_SUPPORTED

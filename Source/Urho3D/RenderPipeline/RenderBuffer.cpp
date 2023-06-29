@@ -28,6 +28,7 @@
 #include "../Graphics/Graphics.h"
 #include "../RenderAPI/PipelineState.h"
 #include "../RenderAPI/RenderAPIUtils.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture2D.h"
@@ -80,7 +81,7 @@ Texture2D* RenderBuffer::GetTexture2D() const
 RenderBuffer::RenderBuffer(RenderPipelineInterface* renderPipeline)
     : Object(renderPipeline->GetContext())
     , renderer_(GetSubsystem<Renderer>())
-    , renderDevice_(GetSubsystem<Graphics>()->GetRenderDevice())
+    , renderDevice_(GetSubsystem<RenderDevice>())
 {
     renderPipeline->OnRenderBegin.Subscribe(this, &RenderBuffer::OnRenderBegin);
     renderPipeline->OnRenderEnd.Subscribe(this, &RenderBuffer::OnRenderEnd);

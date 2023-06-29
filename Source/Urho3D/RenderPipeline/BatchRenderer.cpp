@@ -24,7 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/Camera.h"
-#include "../Graphics/DrawCommandQueue.h"
+#include "../RenderAPI/DrawCommandQueue.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsUtils.h"
 #include "../Graphics/Octree.h"
@@ -482,7 +482,10 @@ private:
         if (resourcesDirty)
         {
             for (const ShaderResourceDesc& desc : globalResources_)
-                AddShaderResource(drawQueue_, desc.name_, desc.texture_);
+            {
+                if (desc.texture_)
+                    AddShaderResource(drawQueue_, desc.name_, desc.texture_);
+            }
 
             const auto& materialTextures = current_.material_->GetTextures();
             bool materialHasEnvironmentMap = false;

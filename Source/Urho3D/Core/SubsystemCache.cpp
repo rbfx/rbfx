@@ -41,6 +41,7 @@
 #include "../Particles/ParticleGraphSystem.h"
 #endif
 #include "../Plugins/PluginManager.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Localization.h"
 #if URHO3D_NETWORK

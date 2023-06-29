@@ -7,7 +7,6 @@
 #include "Urho3D/RenderAPI/DeviceObject.h"
 
 #include "Urho3D/Core/Context.h"
-#include "Urho3D/Graphics/Graphics.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 
 #include "Urho3D/DebugNew.h"
@@ -15,20 +14,8 @@
 namespace Urho3D
 {
 
-namespace
-{
-
-RenderDevice* GetRenderDeviceFrom(Context* context)
-{
-    auto graphics = context->GetSubsystem<Graphics>();
-    return graphics ? graphics->GetRenderDevice() : nullptr;
-}
-
-} // namespace
-
 DeviceObject::DeviceObject(Context* context)
-    : renderDevice_(GetRenderDeviceFrom(context))
-    , graphics_(context->GetSubsystem<Graphics>())
+    : renderDevice_(context->GetSubsystem<RenderDevice>())
 {
     if (renderDevice_)
         renderDevice_->AddDeviceObject(this);

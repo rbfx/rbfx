@@ -242,7 +242,7 @@ void WindowSettingsDemo::InitSettings()
     SubscribeToEvent(applyButton, E_RELEASED,
         [this, graphics]
     {
-        RenderDevice* renderDevice = graphics->GetRenderDevice();
+        auto* renderDevice = GetSubsystem<RenderDevice>();
 
         const unsigned monitor = monitorControl_->GetSelection();
         if (monitor == M_MAX_UNSIGNED)
@@ -279,8 +279,7 @@ void WindowSettingsDemo::InitSettings()
 
 void WindowSettingsDemo::SynchronizeSettings()
 {
-    auto* graphics = GetSubsystem<Graphics>();
-    RenderDevice* renderDevice = graphics->GetRenderDevice();
+    auto* renderDevice = GetSubsystem<RenderDevice>();
     const WindowSettings& windowSettings = renderDevice->GetWindowSettings();
 
     // Synchronize monitor

@@ -572,14 +572,6 @@ public:
     void FreeScratchBuffer(void* buffer);
     /// Clean up too large scratch buffers.
     void CleanupScratchBuffers();
-    /// Clean up shader parameters when a shader variation is released or destroyed.
-    void CleanupShaderPrograms(ShaderVariation* variation);
-    /// Clean up a render surface from all FBOs. Used only on OpenGL.
-    /// @nobind
-    void CleanupRenderSurface(RenderSurface* surface);
-    /// Get or create a constant buffer. Will be shared between shaders if possible.
-    /// @nobind
-    ConstantBuffer* GetOrCreateConstantBuffer(ShaderType type, unsigned index, unsigned size);
     /// Mark the FBO needing an update. Used only on OpenGL.
     /// @nobind
     void MarkFBODirty();
@@ -589,8 +581,6 @@ public:
     /// Bind a UBO, avoiding redundant operation. Used only on OpenGL.
     /// @nobind
     void SetUBO(unsigned object);
-
-    const PipelineStateOutputDesc& GetCurrentOutputDesc() const;
 
     /// Return the API-specific alpha texture format.
     static TextureFormat GetAlphaFormat();
@@ -645,8 +635,6 @@ public:
     /// @{
     RenderBackend GetRenderBackend() const;
     const GraphicsSettings& GetSettings() const { return settings_; }
-    RenderDevice* GetRenderDevice() const { return renderDevice_.Get(); }
-    RenderContext* GetRenderContext() const { return renderContext_.Get(); }
     /// @}
 
 private:
@@ -814,7 +802,6 @@ private:
     GraphicsSettings settings_;
 
     SharedPtr<RenderDevice> renderDevice_;
-    WeakPtr<RenderContext> renderContext_;
 
     /// OpenGL3 support flag.
     static bool gl3Support;

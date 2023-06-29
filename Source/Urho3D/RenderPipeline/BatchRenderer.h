@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Core/Object.h"
-#include "../Graphics/DrawCommandQueue.h"
+#include "../RenderAPI/DrawCommandQueue.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
 #include "../RenderPipeline/PipelineBatchSortKey.h"

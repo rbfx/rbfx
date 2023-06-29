@@ -24,7 +24,7 @@
 
 #include "../Container/FlagSet.h"
 #include "../Core/Object.h"
-#include "../Graphics/DrawCommandQueue.h"
+#include "../RenderAPI/DrawCommandQueue.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../RenderAPI/PipelineState.h"
 #include "../RenderAPI/RenderContext.h"
@@ -183,6 +183,7 @@ private:
     RenderPipelineInterface* renderPipeline_{};
     Graphics* graphics_{};
     Renderer* renderer_{};
+    RenderDevice* renderDevice_{};
     RenderContext* renderContext_{};
     RenderPipelineDebugger* debugger_{};
     SharedPtr<DrawCommandQueue> drawQueue_;

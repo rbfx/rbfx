@@ -69,6 +69,8 @@ private:
     bool LoadByteCode(const FileIdentifier& binaryShaderName);
     void SaveByteCode(const FileIdentifier& binaryShaderName);
 
+    /// Cached pointer to Graphics subsystem.
+    WeakPtr<Graphics> graphics_;
     /// Source shader.
     WeakPtr<Shader> owner_;
     /// Defines to use when compiling the shader.

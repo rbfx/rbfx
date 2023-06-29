@@ -29,6 +29,7 @@
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture.h"
 #include "Urho3D/RenderAPI/RawTexture.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/RenderAPI/RenderTargetView.h"
 
 #include "../DebugNew.h"
@@ -128,8 +129,8 @@ IntRect RenderSurface::GetRect(Graphics* graphics, const RenderSurface* renderSu
 
 unsigned RenderSurface::GetFormat(Graphics* graphics, const RenderSurface* renderSurface)
 {
-    const auto rtv =
-        renderSurface ? renderSurface->GetView() : RenderTargetView::SwapChainColor(graphics->GetRenderDevice());
+    auto renderDevice = graphics->GetSubsystem<RenderDevice>();
+    const auto rtv = renderSurface ? renderSurface->GetView() : RenderTargetView::SwapChainColor(renderDevice);
     return rtv.GetFormat();
 }
 

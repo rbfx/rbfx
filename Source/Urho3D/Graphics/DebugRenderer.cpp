@@ -38,6 +38,8 @@
 #include "../Graphics/Renderer.h"
 #include "../Math/Polyhedron.h"
 #include "../Resource/ResourceCache.h"
+#include "../RenderAPI/RenderContext.h"
+#include "../RenderAPI/RenderDevice.h"
 
 #include "../DebugNew.h"
 
@@ -544,10 +546,8 @@ void DebugRenderer::Render()
     if (!HasContent())
         return;
 
-    auto* renderer = GetSubsystem<Renderer>();
-    auto* graphics = GetSubsystem<Graphics>();
-    // Engine does not render when window is closed or device is lost
-    assert(graphics && graphics->IsInitialized() && !graphics->IsDeviceLost());
+    auto* renderDevice = GetSubsystem<RenderDevice>();
+    auto* renderContext = renderDevice->GetRenderContext();
 
     URHO3D_PROFILE("RenderDebugGeometry");
 
@@ -641,7 +641,7 @@ void DebugRenderer::Render()
     if (!pipelineStatesInitialized_)
         InitializePipelineStates();
 
-    DrawCommandQueue* drawQueue = renderer->GetDefaultDrawQueue();
+    DrawCommandQueue* drawQueue = renderDevice->GetDefaultQueue();
     drawQueue->Reset();
 
     const auto setDefaultConstants = [&]()
@@ -669,7 +669,7 @@ void DebugRenderer::Render()
 
     drawQueue->SetVertexBuffers({vertexBuffer_});
 
-    const PipelineStateOutputDesc& outputDesc = graphics->GetCurrentOutputDesc();
+    const PipelineStateOutputDesc& outputDesc = renderContext->GetCurrentRenderTargetsDesc();
 
     unsigned start = 0;
     unsigned count = 0;
@@ -706,7 +706,7 @@ void DebugRenderer::Render()
         drawQueue->Draw(start, count);
     }
 
-    drawQueue->Execute();
+    renderContext->Execute(drawQueue);
 }
 
 bool DebugRenderer::IsInside(const BoundingBox& box) const

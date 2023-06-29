@@ -53,6 +53,7 @@
 #include "../RmlUI/RmlSerializableInspector.h"
 #include "../RmlUI/RmlUIComponent.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
 
 #include <atomic>
 #include <EASTL/fixed_vector.h>
@@ -582,13 +583,13 @@ bool RmlUI::IsInputCapturedInternal() const
 
 void RmlUI::Render()
 {
-    Graphics* graphics = GetSubsystem<Graphics>();
-    if (!graphics || !graphics->IsInitialized())
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    if (!renderDevice)
         return;
 
     URHO3D_PROFILE("RenderUI");
 
-    RenderContext* renderContext = graphics->GetRenderContext();
+    RenderContext* renderContext = renderDevice->GetRenderContext();
     if (!renderSurface_)
     {
         renderContext->SetSwapChainRenderTargets();

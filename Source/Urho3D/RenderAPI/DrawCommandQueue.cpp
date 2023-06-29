@@ -4,7 +4,7 @@
 
 #include "Urho3D/Precompiled.h"
 
-#include "Urho3D/Graphics/DrawCommandQueue.h"
+#include "Urho3D/RenderAPI/DrawCommandQueue.h"
 
 #include "Urho3D/RenderAPI/RawBuffer.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
@@ -66,12 +66,11 @@ void DrawCommandQueue::Reset()
     scissorRects_.push_back(IntRect::ZERO);
 }
 
-void DrawCommandQueue::Execute()
+void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
 {
     if (drawCommands_.empty())
         return;
 
-    RenderContext* renderContext = renderDevice_->GetRenderContext();
     RenderPool* renderPool = renderContext->GetRenderPool();
     Diligent::IDeviceContext* deviceContext = renderContext->GetHandle();
 

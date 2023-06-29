@@ -5,8 +5,8 @@
 #pragma once
 
 #include "Urho3D/Core/Object.h"
-#include "Urho3D/Graphics/ConstantBufferCollection.h"
 #include "Urho3D/IO/Log.h"
+#include "Urho3D/RenderAPI/ConstantBufferCollection.h"
 #include "Urho3D/RenderAPI/PipelineState.h"
 #include "Urho3D/RenderAPI/RawTexture.h"
 #include "Urho3D/RenderAPI/ShaderProgramReflection.h"
@@ -15,6 +15,7 @@ namespace Urho3D
 {
 
 class RawBuffer;
+class RenderContext;
 
 /// Shader resource group, range in array.
 using ShaderResourceRange = ea::pair<unsigned, unsigned>;
@@ -238,7 +239,7 @@ public:
     }
 
     /// Execute commands in the queue.
-    void Execute();
+    void ExecuteInContext(RenderContext* renderContext);
 
 private:
     RenderDevice* renderDevice_{};

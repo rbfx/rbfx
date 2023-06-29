@@ -27,7 +27,6 @@
 #include "../Core/Mutex.h"
 #include "../Graphics/Batch.h"
 #include "../Graphics/Drawable.h"
-#include "../Graphics/DrawCommandQueue.h"
 #include "../RenderAPI/PipelineState.h"
 #include "../Graphics/Viewport.h"
 #include "../Math/Color.h"
@@ -319,8 +318,6 @@ public:
 
     /// Return new or existing pipeline state.
     SharedPtr<PipelineState> GetOrCreatePipelineState(const PipelineStateDesc& desc);
-    /// Return default draw queue that can be used to cook and execute draw commands from main thread.
-    DrawCommandQueue* GetDefaultDrawQueue() { return defaultDrawQueue_.Get(); }
     /// Return backbuffer viewport by index.
     /// @property{get_viewports}
     Viewport* GetViewport(unsigned index) const;
@@ -747,7 +744,6 @@ private:
     SkinningMode skinningMode_{};
     /// Number of bones used for software skinning.
     unsigned numSoftwareSkinningBones_{ 4 };
-    SharedPtr<DrawCommandQueue> defaultDrawQueue_;
 
     FrameStatistics frameStats_;
 };

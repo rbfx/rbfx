@@ -60,10 +60,11 @@ void Texture2DArray::RegisterObject(Context* context)
 
 bool Texture2DArray::BeginLoad(Deserializer& source)
 {
+    auto graphics = GetSubsystem<Graphics>();
     auto* cache = GetSubsystem<ResourceCache>();
 
     // In headless mode, do not actually load the texture, just return success
-    if (!graphics_)
+    if (!graphics)
         return true;
 
     cache->ResetDependencies(this);
@@ -111,8 +112,10 @@ bool Texture2DArray::BeginLoad(Deserializer& source)
 
 bool Texture2DArray::EndLoad()
 {
+    auto graphics = GetSubsystem<Graphics>();
+
     // In headless mode, do not actually load the texture, just return success
-    if (!graphics_ || graphics_->IsDeviceLost())
+    if (!graphics || graphics->IsDeviceLost())
         return true;
 
     // If over the texture budget, see if materials can be freed to allow textures to be freed

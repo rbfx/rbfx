@@ -38,9 +38,6 @@ public:
     const ea::string& GetDebugName() const { return debugName_; }
     void SetDebugName(const ea::string& debugName) { debugName_ = debugName; }
 
-    /// TODO(diligent): Remove this
-    class Graphics* GetGraphics() const { return graphics_; }
-
     /// Internal: process device object event.
     void ProcessDeviceObjectEvent(DeviceObjectEvent event);
 
@@ -54,9 +51,6 @@ protected:
     ea::string debugName_;
     /// Android only: whether the data is lost due to context loss.
     bool dataLost_{};
-
-    /// TODO(diligent): Remove this
-    WeakPtr<class Graphics> graphics_;
 };
 
 } // namespace Urho3D

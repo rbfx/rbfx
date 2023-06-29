@@ -22,7 +22,7 @@
 
 #include "../Precompiled.h"
 
-#include "../Graphics/Renderer.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/BatchRenderer.h"
 #include "../RenderPipeline/InstancingBuffer.h"
 #include "../RenderPipeline/LightmapRenderPipeline.h"
@@ -92,8 +92,10 @@ void LightmapRenderPipelineView::RenderGeometryBuffer(Viewport* viewport, int te
     renderBufferManager->ClearColor(albedoBuffer_, Color::TRANSPARENT_BLACK);
     renderBufferManager->ClearColor(emissionBuffer_, Color::TRANSPARENT_BLACK);
 
-    auto renderer = GetSubsystem<Renderer>();
-    DrawCommandQueue* drawQueue = renderer->GetDefaultDrawQueue();
+    auto renderDevice = GetSubsystem<RenderDevice>();
+
+    RenderContext* renderContext = renderDevice->GetRenderContext();
+    DrawCommandQueue* drawQueue = renderDevice->GetDefaultQueue();
     BatchRenderer* batchRenderer = sceneProcessor->GetBatchRenderer();
 
     RenderBuffer* const gBuffer[] = {
@@ -112,7 +114,7 @@ void LightmapRenderPipelineView::RenderGeometryBuffer(Viewport* viewport, int te
     batchRenderer->RenderBatches({ *drawQueue, *viewport->GetCamera() }, pass->GetDeferredBatches());
     instancingBuffer->End();
 
-    drawQueue->Execute();
+    renderContext->Execute(drawQueue);
 
     // Do not end the renderer so textures are available outside
     //OnRenderEnd(this, frameInfo);

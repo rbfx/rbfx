@@ -30,9 +30,7 @@
 #include "../Core/Macros.h"
 #include "../Core/Profiler.h"
 #include "../Engine/EngineEvents.h"
-#include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../Input/Input.h"
@@ -91,8 +89,7 @@ void SystemUI::PlatformInitialize()
     static const unsigned defaultNumVertices = 16 * 1024;
     static const unsigned defaultNumIndices = 32 * 1024;
 
-    Graphics* graphics = GetSubsystem<Graphics>();
-    RenderDevice* renderDevice = graphics->GetRenderDevice();
+    auto renderDevice = GetSubsystem<RenderDevice>();
 
     ImGuiIO& io = ui::GetIO();
     io.DisplaySize = ToImGui(renderDevice->GetSwapChainSize());
@@ -224,9 +221,9 @@ void SystemUI::OnInputEnd()
         ui::UpdatePlatformWindows();
     }
 
-    Input* input = GetSubsystem<Input>();
-    Graphics* graphics = GetSubsystem<Graphics>();
-    if (!graphics || !graphics->IsInitialized())
+    auto input = GetSubsystem<Input>();
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    if (!renderDevice)
         return;
 
     if (fontTextures_.empty())
@@ -303,8 +300,8 @@ void SystemUI::OnRenderEnd()
         io.WantSetMousePos = true;
     }
 
-    Graphics* graphics = GetSubsystem<Graphics>();
-    RenderContext* renderContext = graphics->GetRenderContext();
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    RenderContext* renderContext = renderDevice->GetRenderContext();
     renderContext->SetSwapChainRenderTargets();
     renderContext->SetFullViewport();
 
@@ -424,7 +421,7 @@ SharedPtr<Texture2D> SystemUI::AllocateFontTexture(ImFontAtlas* atlas) const
     SharedPtr<Texture2D> fontTexture = MakeShared<Texture2D>(context_);
     fontTexture->SetNumLevels(1);
     fontTexture->SetFilterMode(FILTER_BILINEAR);
-    fontTexture->SetSize(width, height, Graphics::GetRGBAFormat());
+    fontTexture->SetSize(width, height, TextureFormat::TEX_FORMAT_RGBA8_UNORM);
     fontTexture->SetData(0, 0, 0, width, height, pixels);
 
     return fontTexture;

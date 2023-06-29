@@ -56,8 +56,10 @@ void Texture2D::RegisterObject(Context* context)
 
 bool Texture2D::BeginLoad(Deserializer& source)
 {
+    auto graphics = GetSubsystem<Graphics>();
+
     // In headless mode, do not actually load the texture, just return success
-    if (!graphics_)
+    if (!graphics)
         return true;
 
     // Load the image data for EndLoad()
@@ -82,8 +84,10 @@ bool Texture2D::BeginLoad(Deserializer& source)
 
 bool Texture2D::EndLoad()
 {
+    auto graphics = GetSubsystem<Graphics>();
+
     // In headless mode, do not actually load the texture, just return success
-    if (!graphics_ || graphics_->IsDeviceLost())
+    if (!graphics || graphics->IsDeviceLost())
         return true;
 
     // If over the texture budget, see if materials can be freed to allow textures to be freed

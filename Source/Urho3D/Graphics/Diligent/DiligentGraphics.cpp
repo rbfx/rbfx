@@ -265,6 +265,8 @@ Graphics::Graphics(Context* context)
 
 Graphics::~Graphics()
 {
+    context_->RemoveSubsystem<RenderDevice>();
+
     // Reset State
     impl_->deviceContext_->SetRenderTargets(0, nullptr, nullptr, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     // impl_->deviceContext_->SetPipelineState(nullptr);
@@ -351,7 +353,7 @@ bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
         try
         {
             renderDevice_ = MakeShared<RenderDevice>(context_, settings_, windowSettings);
-            renderContext_ = renderDevice_->GetRenderContext();
+            context_->RegisterSubsystem(renderDevice_);
         }
         catch (const RuntimeException& ex)
         {
@@ -389,8 +391,9 @@ bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
     CheckFeatureSupport();
 
     // Clear the initial window contents to black
-    renderContext_->SetSwapChainRenderTargets();
-    renderContext_->ClearRenderTarget(0, Color::BLACK);
+    RenderContext* renderContext = renderDevice_->GetRenderContext();
+    renderContext->SetSwapChainRenderTargets();
+    renderContext->ClearRenderTarget(0, Color::BLACK);
     renderDevice_->Present();
 
     OnScreenModeChanged();
@@ -534,13 +537,14 @@ void Graphics::EndFrame()
 
 void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, unsigned stencil)
 {
-    URHO3D_ASSERT(renderContext_);
+    URHO3D_ASSERT(renderDevice_);
 
     BeginDebug("Clear");
+    RenderContext* renderContext = renderDevice_->GetRenderContext();
     if (flags.Test(CLEAR_COLOR))
-        renderContext_->ClearRenderTarget(0, color);
+        renderContext->ClearRenderTarget(0, color);
     if (flags.Test(CLEAR_DEPTH) || flags.Test(CLEAR_STENCIL))
-        renderContext_->ClearDepthStencil(flags, depth, stencil);
+        renderContext->ClearDepthStencil(flags, depth, stencil);
     EndDebug();
 }
 
@@ -747,7 +751,10 @@ void Graphics::Restore()
     if (renderDevice_)
     {
         if (!renderDevice_->Restore())
+        {
             renderDevice_ = nullptr;
+            context_->RemoveSubsystem<RenderDevice>();
+        }
     }
 }
 
@@ -765,10 +772,11 @@ void Graphics::SetTextureParametersDirty()
 
 void Graphics::ResetRenderTargets()
 {
-    URHO3D_ASSERT(renderContext_);
+    URHO3D_ASSERT(renderDevice_);
 
-    renderContext_->SetSwapChainRenderTargets();
-    renderContext_->SetFullViewport();
+    RenderContext* renderContext = renderDevice_->GetRenderContext();
+    renderContext->SetSwapChainRenderTargets();
+    renderContext->SetFullViewport();
 }
 
 void Graphics::ResetRenderTarget(unsigned index)
@@ -1027,31 +1035,9 @@ void Graphics::OnWindowMoved()
     SendEvent(E_WINDOWPOS, eventData);
 }
 
-void Graphics::CleanupShaderPrograms(ShaderVariation* variation)
-{
-    URHO3D_ASSERT(false);
-}
-
-void Graphics::CleanupRenderSurface(RenderSurface* surface)
-{
-    URHO3D_ASSERT(false);
-}
-
-ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType type, unsigned index, unsigned size)
-{
-    URHO3D_ASSERT(false);
-    return nullptr;
-}
-
 RenderBackend Graphics::GetRenderBackend() const
 {
     return renderDevice_ ? renderDevice_->GetBackend() : RenderBackend::OpenGL;
-}
-
-const PipelineStateOutputDesc& Graphics::GetCurrentOutputDesc() const
-{
-    URHO3D_ASSERT(renderContext_);
-    return renderContext_->GetCurrentRenderTargetsDesc();
 }
 
 TextureFormat Graphics::GetAlphaFormat()
@@ -1322,8 +1308,8 @@ void Graphics::SetUBO(unsigned object)
 
 const IntRect& Graphics::GetViewport() const
 {
-    URHO3D_ASSERT(renderContext_);
-    return renderContext_->GetCurrentViewport();
+    URHO3D_ASSERT(false);
+    return IntRect::ZERO;
 }
 
 } // namespace Urho3D

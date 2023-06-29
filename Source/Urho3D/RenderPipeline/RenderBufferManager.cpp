@@ -141,9 +141,10 @@ RenderBufferManager::RenderBufferManager(RenderPipelineInterface* renderPipeline
     , renderPipeline_(renderPipeline)
     , graphics_(GetSubsystem<Graphics>())
     , renderer_(GetSubsystem<Renderer>())
-    , renderContext_(graphics_->GetRenderContext())
+    , renderDevice_(GetSubsystem<RenderDevice>())
+    , renderContext_(renderDevice_->GetRenderContext())
     , debugger_(renderPipeline_->GetDebugger())
-    , drawQueue_(renderer_->GetDefaultDrawQueue())
+    , drawQueue_(renderDevice_->GetDefaultQueue())
     , pipelineStates_(context_)
 {
     // Order is important. RenderBufferManager should receive callbacks before any of render buffers
@@ -357,7 +358,7 @@ StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(BlendMode ble
 
 PipelineState* RenderBufferManager::GetQuadPipelineState(StaticPipelineStateId id)
 {
-    return pipelineStates_.GetState(id, graphics_->GetCurrentOutputDesc());
+    return pipelineStates_.GetState(id, renderContext_->GetCurrentRenderTargetsDesc());
 }
 
 void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadParams& params, bool flipVertical)
@@ -427,7 +428,7 @@ void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadP
     SetBuffersFromGeometry(*drawQueue_, quadGeometry);
     drawQueue_->DrawIndexed(quadGeometry->GetIndexStart(), quadGeometry->GetIndexCount());
 
-    drawQueue_->Execute();
+    renderContext_->Execute(drawQueue_);
 
 #ifdef URHO3D_DEBUG
     graphics_->EndDebug();
@@ -435,7 +436,7 @@ void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadP
 
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
     {
-        debugger_->ReportQuad(debugComment, graphics_->GetViewport().Size());
+        debugger_->ReportQuad(debugComment, renderContext_->GetCurrentViewport().Size());
     }
 }
 

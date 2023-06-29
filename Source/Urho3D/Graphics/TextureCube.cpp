@@ -77,9 +77,10 @@ void TextureCube::RegisterObject(Context* context)
 bool TextureCube::BeginLoad(Deserializer& source)
 {
     auto* cache = GetSubsystem<ResourceCache>();
+    auto graphics = GetSubsystem<Graphics>();
 
     // In headless mode, do not actually load the texture, just return success
-    if (!graphics_)
+    if (!graphics)
         return true;
 
     cache->ResetDependencies(this);
@@ -101,8 +102,10 @@ bool TextureCube::BeginLoad(Deserializer& source)
 
 bool TextureCube::EndLoad()
 {
+    auto graphics = GetSubsystem<Graphics>();
+
     // In headless mode, do not actually load the texture, just return success
-    if (!graphics_ || graphics_->IsDeviceLost())
+    if (!graphics || graphics->IsDeviceLost())
         return true;
 
     // If over the texture budget, see if materials can be freed to allow textures to be freed

@@ -94,6 +94,7 @@ template <class T> ConstByteSpan ToByteSpan(const T& value)
 
 ShaderVariation::ShaderVariation(Shader* owner, ShaderType type, const ea::string& defines)
     : RawShader(owner->GetContext(), type)
+    , graphics_(GetSubsystem<Graphics>())
     , owner_(owner)
     , defines_(defines)
 {

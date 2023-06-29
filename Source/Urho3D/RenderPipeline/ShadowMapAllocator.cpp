@@ -27,6 +27,7 @@
 #include "../Graphics/Renderer.h"
 #include "../RenderPipeline/ShadowMapAllocator.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
 
 #include "../DebugNew.h"
 
@@ -51,7 +52,8 @@ ShadowMapAllocator::ShadowMapAllocator(Context* context)
     : Object(context)
     , graphics_(context_->GetSubsystem<Graphics>())
     , renderer_(context_->GetSubsystem<Renderer>())
-    , renderContext_(graphics_->GetRenderContext())
+    , renderDevice_(context_->GetSubsystem<RenderDevice>())
+    , renderContext_(renderDevice_->GetRenderContext())
 {
     CacheSettings();
 }
