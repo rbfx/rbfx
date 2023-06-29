@@ -26,6 +26,7 @@
 #include "../Graphics/Camera.h"
 #include "../Graphics/DrawCommandQueue.h"
 #include "../Graphics/Graphics.h"
+#include "../Graphics/GraphicsUtils.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Texture2D.h"
@@ -656,16 +657,16 @@ private:
     /// @{
     void CommitDrawCalls(unsigned numInstances, const SourceBatch& sourceBatch)
     {
-        IndexBuffer* indexBuffer = current_.geometry_->GetIndexBuffer();
+        const bool hasIndexBuffer = current_.geometry_->GetIndexBuffer() != nullptr;
 
         if (dirty_.geometry_)
-            drawQueue_.SetBuffers({ current_.geometry_->GetVertexBuffers(), indexBuffer, nullptr });
+            SetBuffersFromGeometry(drawQueue_, current_.geometry_);
 
         for (unsigned i = 0; i < numInstances; ++i)
         {
             objectParameterBuilder_.AddBatchUniformsToDrawQueue(drawQueue_, cameraNode_, sourceBatch, i);
 
-            if (indexBuffer != nullptr)
+            if (hasIndexBuffer)
                 drawQueue_.DrawIndexed(current_.geometry_->GetIndexStart(), current_.geometry_->GetIndexCount());
             else
                 drawQueue_.Draw(current_.geometry_->GetVertexStart(), current_.geometry_->GetVertexCount());
@@ -676,8 +677,7 @@ private:
     {
         assert(instancingGroup_.count_ > 0);
         Geometry* geometry = instancingGroup_.geometry_;
-        drawQueue_.SetBuffers({ geometry->GetVertexBuffers(), geometry->GetIndexBuffer(),
-            instancingBuffer_.GetVertexBuffer() });
+        SetBuffersFromGeometry(drawQueue_, geometry, instancingBuffer_.GetVertexBuffer());
         drawQueue_.DrawIndexedInstanced(geometry->GetIndexStart(), geometry->GetIndexCount(),
             instancingGroup_.start_, instancingGroup_.count_);
         instancingGroup_.count_ = 0;

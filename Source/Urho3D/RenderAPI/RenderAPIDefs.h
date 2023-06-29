@@ -23,6 +23,8 @@
 namespace Urho3D
 {
 
+class RawBuffer;
+
 /// Maximum number of bound render targets supported by the engine. Hardware limit could be lower.
 static constexpr unsigned MaxRenderTargets = 8;
 /// Maximum number of bound vertex buffers supported by the engine.
@@ -166,6 +168,8 @@ enum class BufferFlag
     Discard = 1 << 2,
     /// Buffer can be accessed via unordered access view.
     BindUnorderedAccess = 1 << 3,
+    /// Buffer contains instance data. This hint is used only on OpenGL ES platforms to emulate base instance.
+    PerInstanceData = 1 << 4,
 };
 URHO3D_FLAGSET(BufferFlag, BufferFlags);
 
@@ -632,5 +636,7 @@ struct URHO3D_API GraphicsPipelineStateDesc
     void RecalculateHash() { hash_ = MakeHash(Tie()); }
     /// @}
 };
+
+using RawVertexBufferArray = ea::array<RawBuffer*, MaxVertexStreams>;
 
 } // namespace Urho3D

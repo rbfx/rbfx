@@ -22,8 +22,9 @@
 
 #include "../Precompiled.h"
 
+#include "../Graphics/Geometry.h"
 #include "../Graphics/Graphics.h"
-#include "../Graphics/PipelineStateUtils.h"
+#include "../Graphics/GraphicsUtils.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture2D.h"
@@ -424,7 +425,7 @@ void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadP
     }
     drawQueue_->CommitShaderResources();
 
-    drawQueue_->SetBuffers(GeometryBufferArray{ quadGeometry });
+    SetBuffersFromGeometry(*drawQueue_, quadGeometry);
     drawQueue_->DrawIndexed(quadGeometry->GetIndexStart(), quadGeometry->GetIndexCount());
 
     drawQueue_->Execute();

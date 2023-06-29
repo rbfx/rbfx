@@ -1,34 +1,14 @@
-//
 // Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #include "Urho3D/Precompiled.h"
 
 #include "Urho3D/Graphics/DrawCommandQueue.h"
 
 #include "Urho3D/Graphics/Graphics.h"
-#include "Urho3D/Graphics/GraphicsImpl.h"
 #include "Urho3D/Graphics/RenderSurface.h"
 #include "Urho3D/Graphics/Texture.h"
-#include "Urho3D/Graphics/VertexBuffer.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
@@ -43,16 +23,11 @@ namespace Urho3D
 namespace
 {
 
-Diligent::VALUE_TYPE GetIndexType(IndexBuffer* indexBuffer)
+Diligent::VALUE_TYPE GetIndexType(RawBuffer* indexBuffer)
 {
-    return indexBuffer->GetIndexSize() == 2 ? Diligent::VT_UINT16 : Diligent::VT_UINT32;
+    return indexBuffer->GetStride() == 2 ? Diligent::VT_UINT16 : Diligent::VT_UINT32;
 }
 
-}
-
-GeometryBufferArray::GeometryBufferArray(const Geometry* geometry, VertexBuffer* instancingBuffer)
-    : GeometryBufferArray(geometry->GetVertexBuffers(), geometry->GetIndexBuffer(), instancingBuffer)
-{
 }
 
 DrawCommandQueue::DrawCommandQueue(Graphics* graphics)
@@ -87,7 +62,7 @@ void DrawCommandQueue::Execute()
         return;
 
     RenderContext* renderContext = graphics_->GetRenderContext();
-    Diligent::IDeviceContext* deviceContext = graphics_->GetImpl()->GetDeviceContext();
+    Diligent::IDeviceContext* deviceContext = renderContext->GetHandle();
 
     const RenderBackend& backend = renderContext->GetRenderDevice()->GetBackend();
     const bool isBaseVertexAndInstanceSupported = !IsOpenGLESBackend(backend);
@@ -108,8 +83,8 @@ void DrawCommandQueue::Execute()
     PipelineState* currentPipelineState = nullptr;
     Diligent::IShaderResourceBinding* currentShaderResourceBinding = nullptr;
     ShaderProgramReflection* currentShaderReflection = nullptr;
-    IndexBuffer* currentIndexBuffer = nullptr;
-    ea::array<VertexBuffer*, MAX_VERTEX_STREAMS> currentVertexBuffers{};
+    RawBuffer* currentIndexBuffer = nullptr;
+    RawVertexBufferArray currentVertexBuffers{};
     ShaderResourceRange currentShaderResources;
     PrimitiveType currentPrimitiveType{};
     unsigned currentScissorRect = M_MAX_UNSIGNED;
@@ -165,41 +140,40 @@ void DrawCommandQueue::Execute()
         }
 
         // Set index buffer
-        if (cmd.inputBuffers_.indexBuffer_ != currentIndexBuffer)
+        if (cmd.indexBuffer_ != currentIndexBuffer)
         {
-            Diligent::IBuffer* indexBufferHandle =
-                cmd.inputBuffers_.indexBuffer_ ? cmd.inputBuffers_.indexBuffer_->GetHandle() : nullptr;
+            Diligent::IBuffer* indexBufferHandle = cmd.indexBuffer_ ? cmd.indexBuffer_->GetHandle() : nullptr;
             deviceContext->SetIndexBuffer(indexBufferHandle, 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
-            currentIndexBuffer = cmd.inputBuffers_.indexBuffer_;
+            currentIndexBuffer = cmd.indexBuffer_;
         }
 
         // Set vertex buffers
-        if (cmd.inputBuffers_.vertexBuffers_ != currentVertexBuffers || cmd.instanceCount_ != 0)
+        if (cmd.vertexBuffers_ != currentVertexBuffers
+            || (cmd.instanceCount_ != 0 && !isBaseVertexAndInstanceSupported))
         {
             ea::array<Diligent::IBuffer*, MaxVertexStreams> vertexBufferHandles{};
             ea::array<Diligent::Uint64, MaxVertexStreams> vertexBufferOffsets{};
 
             for (unsigned i = 0; i < MaxVertexStreams; ++i)
             {
-                VertexBuffer* vertexBuffer = cmd.inputBuffers_.vertexBuffers_[i];
+                RawBuffer* vertexBuffer = cmd.vertexBuffers_[i];
                 if (!vertexBuffer)
                     continue;
 
                 vertexBuffer->Resolve();
 
-                const ea::vector<VertexElement>& vertexElements = vertexBuffer->GetElements();
                 const bool needInstanceOffset =
-                    !isBaseVertexAndInstanceSupported && !vertexElements.empty() && vertexElements[0].perInstance_;
+                    !isBaseVertexAndInstanceSupported && vertexBuffer->GetFlags().Test(BufferFlag::PerInstanceData);
 
                 vertexBufferHandles[i] = vertexBuffer->GetHandle();
-                vertexBufferOffsets[i] = needInstanceOffset ? cmd.instanceStart_ * vertexBuffer->GetVertexSize() : 0;
+                vertexBufferOffsets[i] = needInstanceOffset ? cmd.instanceStart_ * vertexBuffer->GetStride() : 0;
             }
 
             deviceContext->SetVertexBuffers(0, MaxVertexStreams, vertexBufferHandles.data(), vertexBufferOffsets.data(),
                 Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::SET_VERTEX_BUFFERS_FLAG_NONE);
 
-            currentVertexBuffers = cmd.inputBuffers_.vertexBuffers_;
+            currentVertexBuffers = cmd.vertexBuffers_;
         }
 
         // Set resources

@@ -154,6 +154,8 @@ bool VertexBuffer::SetSize(unsigned vertexCount, const ea::vector<VertexElement>
         flags |= BufferFlag::Shadowed;
     if (dynamic)
         flags |= BufferFlag::Dynamic;
+    if (!elements_.empty() && elements_[0].perInstance_)
+        flags |= BufferFlag::PerInstanceData;
 
     return Create(BufferType::Vertex, vertexCount_ * vertexSize_, vertexSize_, flags, nullptr);
 }
@@ -228,7 +230,15 @@ unsigned VertexBuffer::GetElementOffset(const ea::vector<VertexElement>& element
 
 ea::vector<VertexElement> VertexBuffer::GetElements(unsigned elementMask)
 {
-    return Utils::GetVertexElements(elementMask);
+    ea::vector<VertexElement> ret;
+
+    for (unsigned i = 0; i < MAX_LEGACY_VERTEX_ELEMENTS; ++i)
+    {
+        if (elementMask & (1u << i))
+            ret.push_back(LEGACY_VERTEXELEMENTS[i]);
+    }
+
+    return ret;
 }
 
 unsigned VertexBuffer::GetVertexSize(const ea::vector<VertexElement>& elements)

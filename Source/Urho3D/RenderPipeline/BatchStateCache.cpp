@@ -25,7 +25,7 @@
 #include "../Graphics/Geometry.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Material.h"
-#include "../Graphics/PipelineStateUtils.h"
+#include "../Graphics/GraphicsUtils.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Technique.h"
 #include "../RenderPipeline/BatchStateCache.h"

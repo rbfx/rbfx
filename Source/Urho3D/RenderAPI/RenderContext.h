@@ -48,6 +48,7 @@ public:
 
     /// Getters.
     /// @{
+    Diligent::IDeviceContext* GetHandle() const { return handle_; }
     RenderDevice* GetRenderDevice() const { return renderDevice_; }
     const IntVector2& GetCurrentRenderTargetSize() const { return currentDimensions_; }
     const PipelineStateOutputDesc& GetCurrentRenderTargetsDesc() const { return currentOutputDesc_; }

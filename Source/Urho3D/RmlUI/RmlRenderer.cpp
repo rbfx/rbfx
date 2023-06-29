@@ -114,7 +114,9 @@ void RmlRenderer::BeginRendering()
 
     VertexBuffer* vertexBuffer = vertexBuffer_->GetVertexBuffer();
     IndexBuffer* indexBuffer = indexBuffer_->GetIndexBuffer();
-    drawQueue_->SetBuffers({ { vertexBuffer }, indexBuffer, nullptr });
+
+    drawQueue_->SetVertexBuffers({vertexBuffer});
+    drawQueue_->SetIndexBuffer(indexBuffer);
 
     batchStateCreateContext_.vertexBuffer_ = vertexBuffer;
     batchStateCreateContext_.indexBuffer_ = indexBuffer;

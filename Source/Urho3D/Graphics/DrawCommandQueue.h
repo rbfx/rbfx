@@ -1,40 +1,21 @@
-//
 // Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Graphics/ConstantBuffer.h"
-#include "../Graphics/ConstantBufferCollection.h"
-#include "../Graphics/Geometry.h"
-#include "../Graphics/IndexBuffer.h"
-#include "../RenderAPI/PipelineState.h"
-#include "../IO/Log.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Graphics/ConstantBuffer.h"
+#include "Urho3D/Graphics/ConstantBufferCollection.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/RenderAPI/PipelineState.h"
 #include "Urho3D/RenderAPI/ShaderProgramReflection.h"
 
 namespace Urho3D
 {
 
 class Graphics;
+class RawBuffer;
 class Texture;
 
 /// Reference to input shader resource. Only textures are supported now.
@@ -55,53 +36,12 @@ struct ShaderParameterDesc
 /// Shader resource group, range in array.
 using ShaderResourceRange = ea::pair<unsigned, unsigned>;
 
-/// Set of input buffers with vertex and index data.
-struct GeometryBufferArray
-{
-    IndexBuffer* indexBuffer_{};
-    ea::array<VertexBuffer*, MAX_VERTEX_STREAMS> vertexBuffers_{};
-
-    GeometryBufferArray() = default;
-
-    GeometryBufferArray(std::initializer_list<VertexBuffer*> vertexBuffers,
-        IndexBuffer* indexBuffer, VertexBuffer* instancingBuffer)
-    {
-        ea::span<VertexBuffer* const> tempVertexBuffers(vertexBuffers.begin(), static_cast<unsigned>(vertexBuffers.size()));
-        Initialize(tempVertexBuffers, indexBuffer, instancingBuffer);
-    }
-
-    template <class Container>
-    GeometryBufferArray(Container&& vertexBuffers, IndexBuffer* indexBuffer, VertexBuffer* instancingBuffer)
-    {
-        Initialize(vertexBuffers, indexBuffer, instancingBuffer);
-    }
-
-    explicit GeometryBufferArray(const Geometry* geometry, VertexBuffer* instancingBuffer = nullptr);
-
-private:
-    template <class Container>
-    void Initialize(Container&& vertexBuffers, IndexBuffer* indexBuffer, VertexBuffer* instancingBuffer)
-    {
-        using eastl::size;
-        using eastl::begin;
-        using eastl::end;
-
-        const unsigned numVertexBuffers = size(vertexBuffers);
-        assert(numVertexBuffers + !!instancingBuffer <= MAX_VERTEX_STREAMS);
-
-        const auto iter = ea::copy(begin(vertexBuffers), end(vertexBuffers), vertexBuffers_.begin());
-        if (instancingBuffer)
-            *iter = instancingBuffer;
-
-        indexBuffer_ = indexBuffer;
-    }
-};
-
 /// Description of draw command.
 struct DrawCommandDescription
 {
     PipelineState* pipelineState_{};
-    GeometryBufferArray inputBuffers_;
+    RawVertexBufferArray vertexBuffers_{};
+    RawBuffer* indexBuffer_{};
 
     ea::array<ConstantBufferCollectionRef, MAX_SHADER_PARAMETER_GROUPS> constantBuffers_;
 
@@ -133,7 +73,8 @@ public:
     /// Set pipeline state. Must be called first.
     void SetPipelineState(PipelineState* pipelineState)
     {
-        assert(pipelineState);
+        URHO3D_ASSERT(pipelineState);
+
         currentDrawCommand_.pipelineState_ = pipelineState;
         currentShaderProgramReflection_ = pipelineState->GetReflection();
     }
@@ -224,16 +165,23 @@ public:
         currentShaderResourceGroup_.second = currentShaderResourceGroup_.first;
     }
 
-    /// Set vertex and index buffers.
-    void SetBuffers(const GeometryBufferArray& buffers)
+    /// Set vertex buffers.
+    void SetVertexBuffers(RawVertexBufferArray buffers)
     {
-        currentDrawCommand_.inputBuffers_ = buffers;
+        currentDrawCommand_.vertexBuffers_ = buffers;
+    }
+
+    /// Set index buffer.
+    void SetIndexBuffer(RawBuffer* buffer)
+    {
+        currentDrawCommand_.indexBuffer_ = buffer;
     }
 
     /// Enqueue draw non-indexed geometry.
     void Draw(unsigned vertexStart, unsigned vertexCount)
     {
-        currentDrawCommand_.inputBuffers_.indexBuffer_ = nullptr;
+        URHO3D_ASSERT(!currentDrawCommand_.indexBuffer_);
+
         currentDrawCommand_.indexStart_ = vertexStart;
         currentDrawCommand_.indexCount_ = vertexCount;
         currentDrawCommand_.baseVertexIndex_ = 0;
@@ -245,7 +193,8 @@ public:
     /// Enqueue draw indexed geometry.
     void DrawIndexed(unsigned indexStart, unsigned indexCount)
     {
-        assert(currentDrawCommand_.inputBuffers_.indexBuffer_);
+        URHO3D_ASSERT(currentDrawCommand_.indexBuffer_);
+
         currentDrawCommand_.indexStart_ = indexStart;
         currentDrawCommand_.indexCount_ = indexCount;
         currentDrawCommand_.baseVertexIndex_ = 0;
@@ -261,7 +210,8 @@ public:
     /// Enqueue draw indexed geometry with vertex index offset.
     void DrawIndexed(unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex)
     {
-        assert(currentDrawCommand_.inputBuffers_.indexBuffer_);
+        URHO3D_ASSERT(currentDrawCommand_.indexBuffer_);
+
         currentDrawCommand_.indexStart_ = indexStart;
         currentDrawCommand_.indexCount_ = indexCount;
         currentDrawCommand_.baseVertexIndex_ = baseVertexIndex;
@@ -273,7 +223,8 @@ public:
     /// Enqueue draw indexed, instanced geometry.
     void DrawIndexedInstanced(unsigned indexStart, unsigned indexCount, unsigned instanceStart, unsigned instanceCount)
     {
-        assert(currentDrawCommand_.inputBuffers_.indexBuffer_);
+        URHO3D_ASSERT(currentDrawCommand_.indexBuffer_);
+
         currentDrawCommand_.indexStart_ = indexStart;
         currentDrawCommand_.indexCount_ = indexCount;
         currentDrawCommand_.baseVertexIndex_ = 0;
@@ -286,7 +237,8 @@ public:
     void DrawIndexedInstanced(unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex,
         unsigned instanceStart, unsigned instanceCount)
     {
-        assert(currentDrawCommand_.inputBuffers_.indexBuffer_);
+        URHO3D_ASSERT(currentDrawCommand_.indexBuffer_);
+
         currentDrawCommand_.indexStart_ = indexStart;
         currentDrawCommand_.indexCount_ = indexCount;
         currentDrawCommand_.baseVertexIndex_ = baseVertexIndex;

@@ -1030,7 +1030,7 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
             drawQueue->CommitShaderParameterGroup(SP_MATERIAL);
         }
 
-        drawQueue->SetBuffers({ { vertexBuffer_ }, nullptr, nullptr });
+        drawQueue->SetVertexBuffers({vertexBuffer_});
 
         IntRect scissor = batch.scissor_;
         scissor.left_ = (int)(scissor.left_ * uiScale_);

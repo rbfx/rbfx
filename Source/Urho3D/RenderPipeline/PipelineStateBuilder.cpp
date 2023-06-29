@@ -23,7 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../Graphics/Graphics.h"
-#include "../Graphics/PipelineStateUtils.h"
+#include "../Graphics/GraphicsUtils.h"
 #include "../Graphics/Renderer.h"
 #include "../IO/Log.h"
 #include "../RenderPipeline/CameraProcessor.h"

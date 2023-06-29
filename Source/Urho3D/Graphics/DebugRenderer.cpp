@@ -34,7 +34,7 @@
 #include "../Graphics/VertexBuffer.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/Geometry.h"
-#include "../Graphics/PipelineStateUtils.h"
+#include "../Graphics/GraphicsUtils.h"
 #include "../Graphics/Renderer.h"
 #include "../Math/Polyhedron.h"
 #include "../Resource/ResourceCache.h"
@@ -667,7 +667,7 @@ void DebugRenderer::Render()
         }
     };
 
-    drawQueue->SetBuffers({ { vertexBuffer_ }, nullptr, nullptr });
+    drawQueue->SetVertexBuffers({vertexBuffer_});
 
     const PipelineStateOutputDesc& outputDesc = graphics->GetCurrentOutputDesc();
 
