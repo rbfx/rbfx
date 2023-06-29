@@ -6,10 +6,11 @@
 
 #include "Urho3D/Graphics/DrawCommandQueue.h"
 
-#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/RenderAPI/RawBuffer.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderAPI/RenderPool.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/DeviceContext.h>
 
@@ -39,8 +40,8 @@ RawTexture* GetReadableTexture(
 
 }
 
-DrawCommandQueue::DrawCommandQueue(Graphics* graphics)
-    : graphics_(graphics)
+DrawCommandQueue::DrawCommandQueue(RenderDevice* renderDevice)
+    : renderDevice_(renderDevice)
 {
 }
 
@@ -51,8 +52,8 @@ void DrawCommandQueue::Reset()
     currentShaderResourceGroup_ = {};
     currentShaderProgramReflection_ = nullptr;
 
-    // Clear shadep parameters
-    constantBuffers_.collection_.ClearAndInitialize(graphics_->GetCaps().constantBufferOffsetAlignment_);
+    // Clear shader parameters
+    constantBuffers_.collection_.ClearAndInitialize(renderDevice_->GetCaps().constantBufferOffsetAlignment_);
     constantBuffers_.currentData_ = nullptr;
     constantBuffers_.currentHashes_.fill(0);
 
@@ -70,11 +71,12 @@ void DrawCommandQueue::Execute()
     if (drawCommands_.empty())
         return;
 
-    RenderContext* renderContext = graphics_->GetRenderContext();
+    RenderContext* renderContext = renderDevice_->GetRenderContext();
+    RenderPool* renderPool = renderContext->GetRenderPool();
     Diligent::IDeviceContext* deviceContext = renderContext->GetHandle();
 
     const RenderBackend& backend = renderContext->GetRenderDevice()->GetBackend();
-    const bool isBaseVertexAndInstanceSupported = !IsOpenGLESBackend(backend);
+    const bool isBaseVertexAndInstanceSupported = !IsOpenGLESBackend(backend); // TODO(diligent): Use device caps
 
     // Constant buffers to store all shader parameters for queue
     ea::vector<Diligent::IBuffer*> uniformBuffers;
@@ -83,7 +85,7 @@ void DrawCommandQueue::Execute()
     for (unsigned i = 0; i < numUniformBuffers; ++i)
     {
         const unsigned size = constantBuffers_.collection_.GetGPUBufferSize(i);
-        ConstantBuffer* uniformBuffer = graphics_->GetOrCreateConstantBuffer(VS, i, size);
+        RawBuffer* uniformBuffer = renderPool->GetUniformBuffer(i, size);
         uniformBuffer->Update(constantBuffers_.collection_.GetBufferData(i));
         uniformBuffers[i] = uniformBuffer->GetHandle();
     }

@@ -40,7 +40,11 @@ bool ConstantBuffer::SetSize(unsigned size)
     size += 15;
     size &= 0xfffffff0;
 
-    return Create(BufferType::Uniform, size, 0, BufferFlag::Dynamic | BufferFlag::Discard);
+    RawBufferParams params;
+    params.type_ = BufferType::Uniform;
+    params.size_ = size;
+    params.flags_ = BufferFlag::Dynamic | BufferFlag::Discard;
+    return Create(params);
 }
 
 }

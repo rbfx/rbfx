@@ -94,22 +94,6 @@ struct ScratchBuffer
     bool reserved_;
 };
 
-/// Graphics capabilities aggregator.
-/// TODO: Move all other things here
-struct GraphicsCaps
-{
-    bool constantBuffersSupported_{};
-    bool globalUniformsSupported_{};
-
-    unsigned maxVertexShaderUniforms_{};
-    unsigned maxPixelShaderUniforms_{};
-    unsigned constantBufferOffsetAlignment_{};
-
-    unsigned maxTextureSize_{};
-    unsigned maxRenderTargetSize_{};
-    unsigned maxNumRenderTargets_{};
-};
-
 /// %Graphics subsystem. Manages the application window, rendering state and GPU resources.
 class URHO3D_API Graphics : public Object
 {
@@ -652,7 +636,7 @@ public:
     /// Return whether is using an OpenGL 3 context. Return always false on DirectX 11.
     static bool GetGL3Support();
     /// Return graphics capabilities.
-    static const GraphicsCaps& GetCaps() { return caps; }
+    static const RenderDeviceCaps& GetCaps() { return caps; }
 
     /// Get the SDL_Window as a void* to avoid having to include the graphics implementation
     void* GetSDLWindow() { return window_; }
@@ -835,7 +819,7 @@ private:
     /// OpenGL3 support flag.
     static bool gl3Support;
     /// Graphics capabilities. Static for easier access.
-    static GraphicsCaps caps;
+    static RenderDeviceCaps caps;
     /// Max number of bones which can be skinned on GPU. Zero means default value.
     static unsigned maxBonesHWSkinned;
 };

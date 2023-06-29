@@ -13,6 +13,7 @@
 #include "Urho3D/RenderAPI/RawTexture.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
+#include "Urho3D/RenderAPI/RenderPool.h"
 
 #include <Diligent/Common/interface/DefaultRawMemoryAllocator.hpp>
 #include <Diligent/Graphics/GraphicsAccessories/interface/GraphicsAccessories.hpp>
@@ -684,6 +685,7 @@ RenderDevice::RenderDevice(
     : Object(context)
     , deviceSettings_(deviceSettings)
     , windowSettings_(windowSettings)
+    , renderPool_(MakeShared<RenderPool>(this))
 {
     if (deviceSettings_.externalWindowHandle_)
         windowSettings_.mode_ = WindowMode::Windowed;
@@ -692,6 +694,7 @@ RenderDevice::RenderDevice(
     InitializeWindow();
     InitializeFactory();
     InitializeDevice();
+    InitializeCaps();
 
     const Diligent::SwapChainDesc& desc = swapChain_->GetDesc();
     URHO3D_LOGINFO("RenderDevice is initialized for {}: size={}x{}px ({}x{}dp), color={}, depth={}",
@@ -921,6 +924,18 @@ void RenderDevice::InitializeDevice()
     }
 
     renderContext_ = MakeShared<RenderContext>(this);
+}
+
+void RenderDevice::InitializeCaps()
+{
+    const Diligent::GraphicsAdapterInfo& adapterInfo = renderDevice_->GetAdapterInfo();
+
+    caps_.maxVertexShaderUniforms_ = 4096;
+    caps_.maxPixelShaderUniforms_ = 4096;
+    caps_.constantBufferOffsetAlignment_ = adapterInfo.Buffer.ConstantBufferOffsetAlignment;
+    caps_.maxTextureSize_ = adapterInfo.Texture.MaxTexture2DDimension;
+    caps_.maxRenderTargetSize_ = adapterInfo.Texture.MaxTexture2DDimension;
+    caps_.maxNumRenderTargets_ = MaxRenderTargets;
 }
 
 Diligent::RefCntAutoPtr<Diligent::ISwapChain> RenderDevice::CreateSecondarySwapChain(
@@ -1342,11 +1357,13 @@ void RenderDevice::InitializeDefaultObjects()
     createDefaultTexture(TextureType::TextureCube, Diligent::RESOURCE_DIMENSION_SUPPORT_TEX_CUBE);
     createDefaultTexture(TextureType::Texture3D, Diligent::RESOURCE_DIMENSION_SUPPORT_TEX_3D);
     createDefaultTexture(TextureType::Texture2DArray, Diligent::RESOURCE_DIMENSION_SUPPORT_TEX_2D_ARRAY);
+    renderPool_->Restore();
 }
 
 void RenderDevice::ReleaseDefaultObjects()
 {
     defaultTextures_ = {};
+    renderPool_->Invalidate();
 }
 
 } // namespace Urho3D

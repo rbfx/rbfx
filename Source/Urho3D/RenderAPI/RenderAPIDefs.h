@@ -144,6 +144,18 @@ struct URHO3D_API RenderDeviceSettings
     ea::optional<unsigned> adapterId_;
 };
 
+/// Capabilities of the render device.
+struct URHO3D_API RenderDeviceCaps
+{
+    unsigned maxVertexShaderUniforms_{}; // TODO(diligent): Fill me
+    unsigned maxPixelShaderUniforms_{}; // TODO(diligent): Fill me
+    unsigned constantBufferOffsetAlignment_{};
+
+    unsigned maxTextureSize_{};
+    unsigned maxRenderTargetSize_{}; // TODO(diligent): Fill me
+    unsigned maxNumRenderTargets_{}; // TODO(diligent): Fill me
+};
+
 /// GPU buffer types.
 enum class BufferType
 {

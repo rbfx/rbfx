@@ -149,15 +149,18 @@ bool VertexBuffer::SetSize(unsigned vertexCount, const ea::vector<VertexElement>
     UpdateOffsets();
     MarkPipelineStateHashDirty();
 
-    BufferFlags flags;
+    RawBufferParams params;
+    params.type_ = BufferType::Vertex;
+    params.size_ = vertexCount_ * vertexSize_;
+    params.stride_ = vertexSize_;
     if (shadowedPending_)
-        flags |= BufferFlag::Shadowed;
+        params.flags_ |= BufferFlag::Shadowed;
     if (dynamic)
-        flags |= BufferFlag::Dynamic;
+        params.flags_ |= BufferFlag::Dynamic;
     if (!elements_.empty() && elements_[0].perInstance_)
-        flags |= BufferFlag::PerInstanceData;
+        params.flags_ |= BufferFlag::PerInstanceData;
 
-    return Create(BufferType::Vertex, vertexCount_ * vertexSize_, vertexSize_, flags, nullptr);
+    return Create(params, nullptr);
 }
 
 void VertexBuffer::UpdateOffsets()

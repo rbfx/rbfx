@@ -53,8 +53,6 @@ int GetTextureColorSpaceHint(bool linearInput, bool srgbTexture)
 ShaderProgramCompositor::ShaderProgramCompositor(Context* context)
     : Object(context)
 {
-    auto graphics = GetSubsystem<Graphics>();
-    constantBuffersSupported_ = graphics->GetCaps().constantBuffersSupported_;
 }
 
 void ShaderProgramCompositor::SetSettings(const ShaderProgramCompositorSettings& settings)
@@ -131,8 +129,7 @@ void ShaderProgramCompositor::SetupShaders(ShaderProgramDesc& result, Pass* pass
 void ShaderProgramCompositor::ApplyCommonDefines(ShaderProgramDesc& result,
     DrawableProcessorPassFlags flags, Pass* pass) const
 {
-    if (constantBuffersSupported_)
-        result.AddCommonShaderDefines("URHO3D_USE_CBUFFERS");
+    result.AddCommonShaderDefines("URHO3D_USE_CBUFFERS");
 
     if (isCameraReversed_)
         result.AddCommonShaderDefines("URHO3D_CAMERA_REVERSED");

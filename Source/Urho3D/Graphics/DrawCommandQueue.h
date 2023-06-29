@@ -5,19 +5,15 @@
 #pragma once
 
 #include "Urho3D/Core/Object.h"
-#include "Urho3D/Graphics/ConstantBuffer.h"
 #include "Urho3D/Graphics/ConstantBufferCollection.h"
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/RenderAPI/PipelineState.h"
 #include "Urho3D/RenderAPI/RawTexture.h"
 #include "Urho3D/RenderAPI/ShaderProgramReflection.h"
 
-#include <EASTL/optional.h>
-
 namespace Urho3D
 {
 
-class Graphics;
 class RawBuffer;
 
 /// Shader resource group, range in array.
@@ -52,7 +48,7 @@ class DrawCommandQueue : public RefCounted
 {
 public:
     /// Construct.
-    DrawCommandQueue(Graphics* graphics);
+    DrawCommandQueue(RenderDevice* renderDevice);
 
     /// Reset queue.
     void Reset();
@@ -245,8 +241,7 @@ public:
     void Execute();
 
 private:
-    /// Cached pointer to Graphics.
-    Graphics* graphics_{};
+    RenderDevice* renderDevice_{};
 
     /// Shader parameters data when constant buffers are used.
     struct ConstantBuffersData

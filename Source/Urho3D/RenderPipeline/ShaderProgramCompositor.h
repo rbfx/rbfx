@@ -137,7 +137,6 @@ private:
 
     /// External configuration
     /// @{
-    bool constantBuffersSupported_{};
     ShaderProgramCompositorSettings settings_;
     bool isCameraOrthographic_{};
     bool isCameraClipped_{};

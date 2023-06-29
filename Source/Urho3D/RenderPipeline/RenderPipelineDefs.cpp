@@ -51,7 +51,7 @@ void RenderPipelineSettings::AdjustToSupported(Context* context)
     if (!graphics)
         return;
 
-    const GraphicsCaps& caps = Graphics::GetCaps();
+    const RenderDeviceCaps& caps = Graphics::GetCaps();
 
     // RenderBufferManagerSettings
     renderBufferManager_.multiSampleLevel_ = GetClosestMutliSampleLevel(graphics, renderBufferManager_.multiSampleLevel_);

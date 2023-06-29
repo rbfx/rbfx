@@ -18,13 +18,22 @@
 namespace Urho3D
 {
 
+/// Parameters of the RawBuffer.
+struct RawBufferParams
+{
+    BufferType type_{};
+    unsigned size_{};
+    unsigned stride_{};
+    BufferFlags flags_{};
+};
+
 /// Common class for buffer on GPU and/or CPU.
 class URHO3D_API RawBuffer : public Object, public DeviceObject
 {
     URHO3D_OBJECT(RawBuffer, Object);
 
 public:
-    explicit RawBuffer(Context* context);
+    RawBuffer(Context* context, const RawBufferParams& params, const void* data = nullptr);
     ~RawBuffer() override;
 
     /// Implement DeviceObject.
@@ -51,12 +60,12 @@ public:
 
     /// Getters.
     /// @{
-    BufferType GetBufferType() const { return type_; }
-    unsigned GetSize() const { return size_; }
-    unsigned GetStride() const { return stride_; }
-    BufferFlags GetFlags() const { return flags_; }
+    BufferType GetBufferType() const { return params_.type_; }
+    unsigned GetSize() const { return params_.size_; }
+    unsigned GetStride() const { return params_.stride_; }
+    BufferFlags GetFlags() const { return params_.flags_; }
     bool IsLocked() const { return !!unlockImpl_; }
-    bool IsShadowed() const { return flags_.Test(BufferFlag::Shadowed); }
+    bool IsShadowed() const { return params_.flags_.Test(BufferFlag::Shadowed); }
     unsigned char* GetShadowData() { return shadowData_.get(); }
     ea::shared_array<unsigned char> GetShadowDataShared() { return shadowData_; }
     const unsigned char* GetShadowData() const { return shadowData_.get(); }
@@ -65,17 +74,14 @@ public:
     /// @}
 
 protected:
+    explicit RawBuffer(Context* context);
     /// Create buffer. If data is provided, it should contain exactly `size` bytes.
-    /// TODO(diligent): This function should be public but it's easy to misuse if called for derived classes.
-    bool Create(BufferType type, unsigned size, unsigned stride, BufferFlags flags, const void* data = nullptr);
+    bool Create(const RawBufferParams& params, const void* data = nullptr);
 
 private:
     bool CreateGPU(const void* data);
 
-    BufferType type_{};
-    unsigned size_{};
-    unsigned stride_{};
-    BufferFlags flags_{};
+    RawBufferParams params_;
 
     Diligent::RefCntAutoPtr<Diligent::IBuffer> handle_;
     Diligent::USAGE internalUsage_{};

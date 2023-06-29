@@ -1039,18 +1039,8 @@ void Graphics::CleanupRenderSurface(RenderSurface* surface)
 
 ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType type, unsigned index, unsigned size)
 {
-    // Ensure that different shader types and index slots get unique buffers, even if the size is same
-    unsigned key = type | (index << 1) | (size << 4);
-    auto i = impl_->allConstantBuffers_.find(key);
-    if (i != impl_->allConstantBuffers_.end())
-        return i->second.Get();
-    else
-    {
-        SharedPtr<ConstantBuffer> newConstantBuffer(MakeShared<ConstantBuffer>(context_));
-        newConstantBuffer->SetSize(size);
-        impl_->allConstantBuffers_[key] = newConstantBuffer;
-        return newConstantBuffer.Get();
-    }
+    URHO3D_ASSERT(false);
+    return nullptr;
 }
 
 RenderBackend Graphics::GetRenderBackend() const
@@ -1218,14 +1208,7 @@ void Graphics::CheckFeatureSupport()
     sRGBSupport_ = true;
     sRGBWriteSupport_ = true;
 
-    auto deviceFeatures = impl_->device_->GetDeviceInfo().Features;
-    caps.maxVertexShaderUniforms_ = 4096;
-    caps.maxPixelShaderUniforms_ = 4096;
-    caps.constantBuffersSupported_ = true;
-    caps.constantBufferOffsetAlignment_ = impl_->device_->GetAdapterInfo().Buffer.ConstantBufferOffsetAlignment;
-    caps.maxTextureSize_ = impl_->device_->GetAdapterInfo().Texture.MaxTexture2DDimension;
-    caps.maxRenderTargetSize_ = impl_->device_->GetAdapterInfo().Texture.MaxTexture2DDimension;
-    caps.maxNumRenderTargets_ = MAX_RENDER_TARGETS;
+    caps = renderDevice_->GetCaps();
 
 #ifdef URHO3D_COMPUTE
     computeSupport_ = true;

@@ -339,8 +339,7 @@ StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(BlendMode ble
 {
     ea::string defines = shaderDefines;
     defines += " URHO3D_GEOMETRY_STATIC";
-    if (graphics_->GetCaps().constantBuffersSupported_)
-        defines += " URHO3D_USE_CBUFFERS";
+    defines += " URHO3D_USE_CBUFFERS";
 
     PipelineStateDesc desc;
 #ifdef URHO3D_DEBUG

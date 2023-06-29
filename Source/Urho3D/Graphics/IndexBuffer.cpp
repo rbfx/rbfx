@@ -51,13 +51,16 @@ bool IndexBuffer::SetSize(unsigned indexCount, bool largeIndices, bool dynamic)
     indexSize_ = (unsigned)(largeIndices ? sizeof(unsigned) : sizeof(unsigned short));
     MarkPipelineStateHashDirty();
 
-    BufferFlags flags;
+    RawBufferParams params;
+    params.type_ = BufferType::Index;
+    params.size_ = indexCount_ * indexSize_;
+    params.stride_ = indexSize_;
     if (shadowedPending_)
-        flags |= BufferFlag::Shadowed;
+        params.flags_ |= BufferFlag::Shadowed;
     if (dynamic)
-        flags |= BufferFlag::Dynamic;
+        params.flags_ |= BufferFlag::Dynamic;
 
-    return Create(BufferType::Index, indexCount_ * indexSize_, indexSize_, flags, nullptr);
+    return Create(params, nullptr);
 }
 
 bool IndexBuffer::GetUsedVertexRange(unsigned start, unsigned count, unsigned& minVertex, unsigned& vertexCount)

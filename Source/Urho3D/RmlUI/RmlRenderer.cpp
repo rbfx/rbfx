@@ -173,8 +173,7 @@ void RmlRenderer::InitializeGraphics()
     indexBuffer_->Initialize(1024, true);
 
     ea::string baseDefines = "VERTEXCOLOR ";
-    if (graphics->GetCaps().constantBuffersSupported_)
-        baseDefines += "URHO3D_USE_CBUFFERS ";
+    baseDefines += "URHO3D_USE_CBUFFERS ";
     const ea::string alphaMapDefines = baseDefines + "ALPHAMAP ";
     const ea::string diffMapDefines = baseDefines + "DIFFMAP ";
 

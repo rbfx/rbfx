@@ -53,6 +53,7 @@ namespace Urho3D
 class DeviceObject;
 class RawTexture;
 class RenderContext;
+class RenderPool;
 
 /// Wrapper for window and GAPI backend.
 class URHO3D_API RenderDevice : public Object
@@ -97,7 +98,9 @@ public:
     const RenderBackend GetBackend() const { return deviceSettings_.backend_; }
     const RenderDeviceSettings& GetDeviceSettings() const { return deviceSettings_; }
     const WindowSettings& GetWindowSettings() const { return windowSettings_; }
+    const RenderDeviceCaps& GetCaps() const { return caps_; }
     RenderContext* GetRenderContext() const { return renderContext_; }
+    RenderPool* GetRenderPool() const { return renderPool_; }
     SDL_Window* GetSDLWindow() const { return window_.get(); }
     void* GetMetalView() const { return metalView_.get(); }
     Diligent::IEngineFactory* GetFactory() { return factory_.RawPtr(); }
@@ -128,6 +131,7 @@ private:
     void InitializeWindow();
     void InitializeFactory();
     void InitializeDevice();
+    void InitializeCaps();
 
     void InitializeDefaultObjects();
     void ReleaseDefaultObjects();
@@ -139,6 +143,8 @@ private:
 
     RenderDeviceSettings deviceSettings_;
     WindowSettings windowSettings_;
+
+    RenderDeviceCaps caps_;
 
     ea::shared_ptr<SDL_Window> window_;
     ea::shared_ptr<void> metalView_;
@@ -157,6 +163,7 @@ private:
     Mutex deviceObjectsMutex_;
 
     EnumArray<ea::unique_ptr<RawTexture>, TextureType> defaultTextures_;
+    SharedPtr<RenderPool> renderPool_;
 
     // Keep aliases at the end to ensure they are destroyed first and don't affect real order of destruction.
 #if D3D11_SUPPORTED

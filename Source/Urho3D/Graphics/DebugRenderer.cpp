@@ -757,8 +757,7 @@ void DebugRenderer::InitializePipelineStates()
         desc.colorWriteEnabled_ = true;
 
         ea::string shaderDefines = "VERTEXCOLOR ";
-        if (graphics->GetCaps().constantBuffersSupported_)
-            shaderDefines += "URHO3D_USE_CBUFFERS ";
+        shaderDefines += "URHO3D_USE_CBUFFERS ";
 
         desc.vertexShader_ = graphics->GetShader(VS, "v2/X_Basic", shaderDefines);
         desc.pixelShader_ = graphics->GetShader(PS, "v2/X_Basic", shaderDefines);

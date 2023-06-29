@@ -17,6 +17,7 @@ namespace Urho3D
 {
 
 class RenderDevice;
+class RenderPool;
 class RawTexture;
 
 /// Render context that consumes render commands.
@@ -50,6 +51,7 @@ public:
     /// @{
     Diligent::IDeviceContext* GetHandle() const { return handle_; }
     RenderDevice* GetRenderDevice() const { return renderDevice_; }
+    RenderPool* GetRenderPool() const { return renderPool_; }
     const IntVector2& GetCurrentRenderTargetSize() const { return currentDimensions_; }
     const PipelineStateOutputDesc& GetCurrentRenderTargetsDesc() const { return currentOutputDesc_; }
     bool IsSwapChainRenderTarget() const { return isSwapChain_; }
@@ -60,6 +62,7 @@ private:
     void UpdateCurrentRenderTargetInfo();
 
     RenderDevice* renderDevice_{};
+    SharedPtr<RenderPool> renderPool_;
     Diligent::RefCntAutoPtr<Diligent::IDeviceContext> handle_;
 
     /// Current render target info.

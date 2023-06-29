@@ -180,11 +180,8 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
         pixelShaderDefines_ += " URHO3D_LINEAR_OUTPUT";
     }
 
-    if (graphics->GetCaps().constantBuffersSupported_)
-    {
-        vertexShaderDefines_ += " URHO3D_USE_CBUFFERS";
-        pixelShaderDefines_ += " URHO3D_USE_CBUFFERS";
-    }
+    vertexShaderDefines_ += " URHO3D_USE_CBUFFERS";
+    pixelShaderDefines_ += " URHO3D_USE_CBUFFERS";
 
     desc.vertexShader_ = graphics->GetShader(VS, key.pass_->GetVertexShader(), vertexShaderDefines_);
     desc.pixelShader_ = graphics->GetShader(PS, key.pass_->GetPixelShader(), pixelShaderDefines_);

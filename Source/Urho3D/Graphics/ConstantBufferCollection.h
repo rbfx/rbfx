@@ -22,8 +22,7 @@
 
 #pragma once
 
-#include "../IO/Log.h"
-#include "../Graphics/GraphicsDefs.h"
+#include "Urho3D/IO/Log.h"
 
 #include <EASTL/span.h>
 #include <EASTL/vector.h>

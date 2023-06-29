@@ -21,6 +21,13 @@ RawBuffer::RawBuffer(Context* context)
 {
 }
 
+RawBuffer::RawBuffer(Context* context, const RawBufferParams& params, const void* data)
+    : Object(context)
+    , DeviceObject(context)
+{
+    Create(params, data);
+}
+
 RawBuffer::~RawBuffer()
 {
     Destroy();
@@ -37,14 +44,14 @@ void RawBuffer::Restore()
 {
     URHO3D_ASSERT(!IsLocked());
 
-    if (size_ == 0)
+    if (params_.size_ == 0)
     {
         dataLost_ = false;
     }
     else if (shadowData_)
     {
-        const bool isDynamic = flags_.Test(BufferFlag::Dynamic);
-        if (flags_.Test(BufferFlag::Dynamic))
+        const bool isDynamic = params_.flags_.Test(BufferFlag::Dynamic);
+        if (params_.flags_.Test(BufferFlag::Dynamic))
         {
             CreateGPU(nullptr);
             Update(shadowData_.get());
@@ -70,44 +77,41 @@ void RawBuffer::Destroy()
     shadowData_ = nullptr;
 }
 
-bool RawBuffer::Create(BufferType type, unsigned size, unsigned stride, BufferFlags flags, const void* data)
+bool RawBuffer::Create(const RawBufferParams& params, const void* data)
 {
     Destroy();
 
-    type_ = type;
-    size_ = size;
-    stride_ = stride;
-    flags_ = flags;
+    params_ = params;
     needResolve_ = false;
-    if (size_ == 0)
+    if (params_.size_ == 0)
         return true;
 
     if (!renderDevice_)
     {
         // If there's no render device, buffer must be shadowed
-        flags_.Set(BufferFlag::Shadowed);
+        params_.flags_.Set(BufferFlag::Shadowed);
     }
     else
     {
         // If buffer is dynamic, next-gen backend is used, and Discard is not set, shadow buffer is required
         const RenderBackend backend = renderDevice_->GetBackend();
         const bool isNextGen = backend != RenderBackend::D3D11 && backend != RenderBackend::OpenGL;
-        if (isNextGen && flags_.Test(BufferFlag::Dynamic) && !flags_.Test(BufferFlag::Discard))
+        if (isNextGen && params_.flags_.Test(BufferFlag::Dynamic) && !params_.flags_.Test(BufferFlag::Discard))
         {
-            flags_.Set(BufferFlag::Shadowed);
+            params_.flags_.Set(BufferFlag::Shadowed);
             needResolve_ = true;
         }
     }
 
     // Dynamic buffer cannot be bound as UAV
-    if (flags_.Test(BufferFlag::BindUnorderedAccess) && flags_.Test(BufferFlag::Dynamic))
+    if (params_.flags_.Test(BufferFlag::BindUnorderedAccess) && params_.flags_.Test(BufferFlag::Dynamic))
     {
         URHO3D_ASSERTLOG(false, "Dynamic buffer cannot be bound as UAV and is demoted");
         return false;
     }
 
     // Dynamic buffer cannot have initial data
-    if (flags_.Test(BufferFlag::Dynamic) && data)
+    if (params_.flags_.Test(BufferFlag::Dynamic) && data)
     {
         URHO3D_ASSERTLOG(false, "Dynamic buffer cannot have initial data");
         return false;
@@ -115,14 +119,14 @@ bool RawBuffer::Create(BufferType type, unsigned size, unsigned stride, BufferFl
 
     // Dynamic buffers on OpenGL are weird, don't use them
     if (renderDevice_ && renderDevice_->GetBackend() == RenderBackend::OpenGL)
-        flags_.Unset(BufferFlag::Dynamic);
+        params_.flags_.Unset(BufferFlag::Dynamic);
 
     // Create CPU buffer
-    if (flags_.Test(BufferFlag::Shadowed))
+    if (params_.flags_.Test(BufferFlag::Shadowed))
     {
-        shadowData_ = ea::shared_array<unsigned char>(new unsigned char[size_]);
+        shadowData_ = ea::shared_array<unsigned char>(new unsigned char[params_.size_]);
         if (data)
-            memcpy(shadowData_.get(), data, size_);
+            memcpy(shadowData_.get(), data, params_.size_);
     }
 
     // Create GPU buffer
@@ -147,14 +151,14 @@ bool RawBuffer::CreateGPU(const void* data)
     Diligent::BufferDesc bufferDesc;
     bufferDesc.Name = debugName_.c_str();
 
-    bufferDesc.BindFlags = bufferTypeToBindFlag[type_];
-    if (flags_.Test(BufferFlag::BindUnorderedAccess))
+    bufferDesc.BindFlags = bufferTypeToBindFlag[params_.type_];
+    if (params_.flags_.Test(BufferFlag::BindUnorderedAccess))
         bufferDesc.BindFlags |= Diligent::BIND_UNORDERED_ACCESS;
 
     // TODO: Revisit this place if we add other usages
     bufferDesc.Usage = Diligent::USAGE_DEFAULT;
     bufferDesc.CPUAccessFlags = Diligent::CPU_ACCESS_NONE;
-    if (renderDevice_->GetBackend() != RenderBackend::OpenGL && flags_.Test(BufferFlag::Dynamic))
+    if (renderDevice_->GetBackend() != RenderBackend::OpenGL && params_.flags_.Test(BufferFlag::Dynamic))
     {
         bufferDesc.Usage = Diligent::USAGE_DYNAMIC;
         bufferDesc.CPUAccessFlags = Diligent::CPU_ACCESS_WRITE;
@@ -162,22 +166,22 @@ bool RawBuffer::CreateGPU(const void* data)
     internalUsage_ = bufferDesc.Usage;
 
     bufferDesc.Mode = Diligent::BUFFER_MODE_UNDEFINED;
-    bufferDesc.Size = size_;
-    bufferDesc.ElementByteStride = stride_;
+    bufferDesc.Size = params_.size_;
+    bufferDesc.ElementByteStride = params_.stride_;
 
     Diligent::IRenderDevice* device = renderDevice_->GetRenderDevice();
     Diligent::IDeviceContext* immediateContext = renderDevice_->GetImmediateContext();
 
     Diligent::BufferData bufferData;
     bufferData.pData = data;
-    bufferData.DataSize = size_;
+    bufferData.DataSize = params_.size_;
     bufferData.pContext = immediateContext;
 
     device->CreateBuffer(bufferDesc, data ? &bufferData : nullptr, &handle_);
     if (!handle_)
     {
-        URHO3D_LOGERROR("Failed to create buffer: type={} size={} stride={} flags=0b{:b}", type_, size_, stride_,
-            flags_.AsInteger());
+        URHO3D_LOGERROR("Failed to create buffer: type={} size={} stride={} flags=0b{:b}", params_.type_, params_.size_,
+            params_.stride_, params_.flags_.AsInteger());
         return false;
     }
 
@@ -186,7 +190,7 @@ bool RawBuffer::CreateGPU(const void* data)
 
 void RawBuffer::Update(const void* data, unsigned size)
 {
-    const unsigned dataSize = size ? size : size_;
+    const unsigned dataSize = size ? size : params_.size_;
     UpdateRange(data, 0, dataSize);
 }
 
@@ -194,8 +198,9 @@ void RawBuffer::UpdateRange(const void* data, unsigned offset, unsigned size)
 {
     URHO3D_ASSERT(!IsLocked());
     URHO3D_ASSERT(data, "Data must not be null");
-    URHO3D_ASSERT(offset + size <= size_, "Range must be within buffer size");
-    URHO3D_ASSERT(offset == 0 || !flags_.Test(BufferFlag::Dynamic), "Dynamic buffer cannot be partially updated");
+    URHO3D_ASSERT(offset + size <= params_.size_, "Range must be within buffer size");
+    URHO3D_ASSERT(
+        offset == 0 || !params_.flags_.Test(BufferFlag::Dynamic), "Dynamic buffer cannot be partially updated");
 
     if (size == 0)
     {
@@ -203,7 +208,7 @@ void RawBuffer::UpdateRange(const void* data, unsigned offset, unsigned size)
         return;
     }
 
-    if (flags_.Test(BufferFlag::Shadowed))
+    if (params_.flags_.Test(BufferFlag::Shadowed))
     {
         void* cpuBuffer = &shadowData_[offset];
         if (cpuBuffer != data)
@@ -240,7 +245,7 @@ void* RawBuffer::Map()
     URHO3D_ASSERT(!IsLocked());
 
     // If shadowed, return shadow data and upload it on unlock
-    if (flags_.Test(BufferFlag::Shadowed))
+    if (params_.flags_.Test(BufferFlag::Shadowed))
     {
         unlockImpl_ = [=]() { Update(shadowData_.get()); };
         return shadowData_.get();
@@ -263,7 +268,7 @@ void* RawBuffer::Map()
 
     // If hardware static buffer, return temporary buffer
     // TODO(diligent): Use allocator here
-    auto cpuBufferHolder = ea::shared_array<unsigned char>(new unsigned char[size_]);
+    auto cpuBufferHolder = ea::shared_array<unsigned char>(new unsigned char[params_.size_]);
     unlockImpl_ = [=]() { Update(cpuBufferHolder.get()); };
     return cpuBufferHolder.get();
 }

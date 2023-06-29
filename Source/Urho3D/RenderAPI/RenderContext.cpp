@@ -8,6 +8,7 @@
 
 #include "Urho3D/RenderAPI/RawTexture.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderAPI/RenderPool.h"
 
 #include "Urho3D/DebugNew.h"
 
@@ -28,6 +29,7 @@ IntVector2 GetTextureDimensions(Diligent::ITexture* texture)
 RenderContext::RenderContext(RenderDevice* renderDevice)
     : Object(renderDevice->GetContext())
     , renderDevice_(renderDevice)
+    , renderPool_(renderDevice->GetRenderPool())
     , handle_(renderDevice->GetImmediateContext())
 {
 }
