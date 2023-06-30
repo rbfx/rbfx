@@ -119,12 +119,12 @@ void InitializeImmutableSampler(
     memcpy(&destSampler.Desc.BorderColor, sourceSampler.borderColor_.Data(), 4 * sizeof(float));
 }
 
-void InitializeImmutableSamplers(ea::vector<Diligent::ImmutableSamplerDesc>& result, const PipelineStateDesc& desc,
+void InitializeImmutableSamplers(ea::vector<Diligent::ImmutableSamplerDesc>& result, const ImmutableSamplersDesc& desc,
     const ShaderProgramReflection& reflection)
 {
     static const auto defaultSampler = SamplerStateDesc::Bilinear();
 
-    const ea::span<const StringHash> samplerNames{desc.samplers_.names_.data(), desc.samplers_.size_};
+    const ea::span<const StringHash> samplerNames{desc.names_.data(), desc.size_};
     for (const auto& [nameHash, resourceDesc] : reflection.GetShaderResources())
     {
         const auto iter = ea::find(samplerNames.begin(), samplerNames.end(), nameHash);
@@ -132,7 +132,7 @@ void InitializeImmutableSamplers(ea::vector<Diligent::ImmutableSamplerDesc>& res
         if (iter != samplerNames.end())
         {
             const auto index = static_cast<unsigned>(iter - samplerNames.begin());
-            sourceSampler = &desc.samplers_.desc_[index];
+            sourceSampler = &desc.desc_[index];
         }
         else
         {
@@ -230,6 +230,23 @@ VertexShaderAttributeVector GetGLVertexAttributes(GLuint programObject)
 
 } // namespace
 
+const ea::string& PipelineStateDesc::GetDebugName() const
+{
+    const ea::string* result = nullptr;
+    ea::visit([&result](const auto& desc) { result = &desc.debugName_; }, desc_);
+    return *result;
+}
+
+const GraphicsPipelineStateDesc* PipelineStateDesc::AsGraphics() const
+{
+    return GetType() == PipelineStateType::Graphics ? &ea::get<0>(desc_) : nullptr;
+}
+
+const ComputePipelineStateDesc* PipelineStateDesc::AsCompute() const
+{
+    return GetType() == PipelineStateType::Compute ? &ea::get<1>(desc_) : nullptr;
+}
+
 PipelineState::PipelineState(PipelineStateCache* owner, const PipelineStateDesc& desc)
     : Object(owner->GetContext())
     , DeviceObject(owner->GetContext())
@@ -237,7 +254,7 @@ PipelineState::PipelineState(PipelineStateCache* owner, const PipelineStateDesc&
     , desc_(desc)
 {
     // TODO(diligent): Get rid of copying the name
-    SetDebugName(desc_.debugName_);
+    SetDebugName(desc_.GetDebugName());
     CreateGPU();
 }
 
@@ -264,11 +281,20 @@ void PipelineState::Restore()
         return;
 
     RestoreDependency(GetSubsystem<PipelineStateCache>());
-    RestoreDependency(desc_.vertexShader_);
-    RestoreDependency(desc_.pixelShader_);
-    RestoreDependency(desc_.geometryShader_);
-    RestoreDependency(desc_.hullShader_);
-    RestoreDependency(desc_.domainShader_);
+
+    if (const GraphicsPipelineStateDesc* graphicsDesc = desc_.AsGraphics())
+    {
+        RestoreDependency(graphicsDesc->vertexShader_);
+        RestoreDependency(graphicsDesc->pixelShader_);
+        RestoreDependency(graphicsDesc->geometryShader_);
+        RestoreDependency(graphicsDesc->hullShader_);
+        RestoreDependency(graphicsDesc->domainShader_);
+    }
+
+    if (const ComputePipelineStateDesc* computeDesc = desc_.AsCompute())
+    {
+        RestoreDependency(computeDesc->computeShader_);
+    }
 
     CreateGPU();
 }
@@ -279,6 +305,14 @@ void PipelineState::Destroy()
 }
 
 void PipelineState::CreateGPU()
+{
+    if (const GraphicsPipelineStateDesc* graphicsDesc = desc_.AsGraphics())
+        CreateGPU(*graphicsDesc);
+    else if (const ComputePipelineStateDesc* computeDesc = desc_.AsCompute())
+        CreateGPU(*computeDesc);
+}
+
+void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
 {
     static const Diligent::PRIMITIVE_TOPOLOGY primitiveTopology[] = {
         Diligent::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, // TRIANGLE_LIST
@@ -404,22 +438,22 @@ void PipelineState::CreateGPU()
     const bool hasSeparableShaderPrograms = renderDevice->GetDeviceInfo().Features.SeparablePrograms;
     URHO3D_ASSERT(isOpenGL || hasSeparableShaderPrograms);
     const ea::span<const InputLayoutElementDesc> vertexElements{
-        desc_.inputLayout_.elements_.data(), desc_.inputLayout_.size_};
+        desc.inputLayout_.elements_.data(), desc.inputLayout_.size_};
 
     Diligent::GraphicsPipelineStateCreateInfo ci;
 
     ea::vector<Diligent::LayoutElement> layoutElements;
     ea::vector<Diligent::ImmutableSamplerDesc> immutableSamplers;
 
-    Diligent::IShader* vertexShader = desc_.vertexShader_ ? desc_.vertexShader_->GetHandle() : nullptr;
-    Diligent::IShader* pixelShader = desc_.pixelShader_ ? desc_.pixelShader_->GetHandle() : nullptr;
-    Diligent::IShader* domainShader = desc_.domainShader_ ? desc_.domainShader_->GetHandle() : nullptr;
-    Diligent::IShader* hullShader = desc_.hullShader_ ? desc_.hullShader_->GetHandle() : nullptr;
-    Diligent::IShader* geometryShader = desc_.geometryShader_ ? desc_.geometryShader_->GetHandle() : nullptr;
+    Diligent::IShader* vertexShader = desc.vertexShader_ ? desc.vertexShader_->GetHandle() : nullptr;
+    Diligent::IShader* pixelShader = desc.pixelShader_ ? desc.pixelShader_->GetHandle() : nullptr;
+    Diligent::IShader* domainShader = desc.domainShader_ ? desc.domainShader_->GetHandle() : nullptr;
+    Diligent::IShader* hullShader = desc.hullShader_ ? desc.hullShader_->GetHandle() : nullptr;
+    Diligent::IShader* geometryShader = desc.geometryShader_ ? desc.geometryShader_->GetHandle() : nullptr;
 
     // TODO(diligent): Revisit
     for (RawShader* shader :
-        {desc_.vertexShader_, desc_.pixelShader_, desc_.domainShader_, desc_.hullShader_, desc_.geometryShader_})
+        {desc.vertexShader_, desc.pixelShader_, desc.domainShader_, desc.hullShader_, desc.geometryShader_})
     {
         if (shader)
             shader->OnReloaded.Subscribe(this, &PipelineState::Invalidate);
@@ -429,7 +463,7 @@ void PipelineState::CreateGPU()
     if (!isOpenGL)
     {
         const VertexShaderAttributeVector& vertexShaderAttributes =
-            desc_.vertexShader_->GetBytecode().vertexAttributes_;
+            desc.vertexShader_->GetBytecode().vertexAttributes_;
         InitializeLayoutElements(layoutElements, vertexElements, vertexShaderAttributes);
         ci.GraphicsPipeline.InputLayout.NumElements = layoutElements.size();
         ci.GraphicsPipeline.InputLayout.LayoutElements = layoutElements.data();
@@ -441,23 +475,23 @@ void PipelineState::CreateGPU()
         Diligent::IShader* const shaders[] = {vertexShader, pixelShader, domainShader, hullShader, geometryShader};
         reflection_ = MakeShared<ShaderProgramReflection>(shaders);
 
-        InitializeImmutableSamplers(immutableSamplers, desc_, *reflection_);
+        InitializeImmutableSamplers(immutableSamplers, desc.samplers_, *reflection_);
         ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
         ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
     }
 
 #ifdef URHO3D_DEBUG
-    const ea::string debugName = Format("{}#{}", desc_.debugName_, desc_.ToHash());
+    const ea::string debugName = Format("{}#{}", desc.debugName_, desc.ToHash());
     ci.PSODesc.Name = debugName.c_str();
 #endif
 
-    ci.GraphicsPipeline.PrimitiveTopology = primitiveTopology[desc_.primitiveType_];
+    ci.GraphicsPipeline.PrimitiveTopology = primitiveTopology[desc.primitiveType_];
 
-    ci.GraphicsPipeline.NumRenderTargets = desc_.output_.numRenderTargets_;
-    for (unsigned i = 0; i < desc_.output_.numRenderTargets_; ++i)
-        ci.GraphicsPipeline.RTVFormats[i] = desc_.output_.renderTargetFormats_[i];
-    ci.GraphicsPipeline.DSVFormat = desc_.output_.depthStencilFormat_;
-    ci.GraphicsPipeline.SmplDesc.Count = desc_.output_.multiSample_;
+    ci.GraphicsPipeline.NumRenderTargets = desc.output_.numRenderTargets_;
+    for (unsigned i = 0; i < desc.output_.numRenderTargets_; ++i)
+        ci.GraphicsPipeline.RTVFormats[i] = desc.output_.renderTargetFormats_[i];
+    ci.GraphicsPipeline.DSVFormat = desc.output_.depthStencilFormat_;
+    ci.GraphicsPipeline.SmplDesc.Count = desc.output_.multiSample_;
 
     ci.pVS = vertexShader;
     ci.pPS = pixelShader;
@@ -465,51 +499,51 @@ void PipelineState::CreateGPU()
     ci.pHS = hullShader;
     ci.pGS = geometryShader;
 
-    ci.GraphicsPipeline.BlendDesc.AlphaToCoverageEnable = desc_.alphaToCoverageEnabled_;
+    ci.GraphicsPipeline.BlendDesc.AlphaToCoverageEnable = desc.alphaToCoverageEnabled_;
     ci.GraphicsPipeline.BlendDesc.IndependentBlendEnable = false;
     if (ci.GraphicsPipeline.NumRenderTargets > 0)
     {
-        ci.GraphicsPipeline.BlendDesc.RenderTargets[0].BlendEnable = isBlendEnabled[desc_.blendMode_];
-        ci.GraphicsPipeline.BlendDesc.RenderTargets[0].SrcBlend = sourceBlend[desc_.blendMode_];
-        ci.GraphicsPipeline.BlendDesc.RenderTargets[0].DestBlend = destBlend[desc_.blendMode_];
-        ci.GraphicsPipeline.BlendDesc.RenderTargets[0].BlendOp = blendOperation[desc_.blendMode_];
-        ci.GraphicsPipeline.BlendDesc.RenderTargets[0].SrcBlendAlpha = sourceAlphaBlend[desc_.blendMode_];
-        ci.GraphicsPipeline.BlendDesc.RenderTargets[0].DestBlendAlpha = destAlphaBlend[desc_.blendMode_];
-        ci.GraphicsPipeline.BlendDesc.RenderTargets[0].BlendOpAlpha = blendOperation[desc_.blendMode_];
+        ci.GraphicsPipeline.BlendDesc.RenderTargets[0].BlendEnable = isBlendEnabled[desc.blendMode_];
+        ci.GraphicsPipeline.BlendDesc.RenderTargets[0].SrcBlend = sourceBlend[desc.blendMode_];
+        ci.GraphicsPipeline.BlendDesc.RenderTargets[0].DestBlend = destBlend[desc.blendMode_];
+        ci.GraphicsPipeline.BlendDesc.RenderTargets[0].BlendOp = blendOperation[desc.blendMode_];
+        ci.GraphicsPipeline.BlendDesc.RenderTargets[0].SrcBlendAlpha = sourceAlphaBlend[desc.blendMode_];
+        ci.GraphicsPipeline.BlendDesc.RenderTargets[0].DestBlendAlpha = destAlphaBlend[desc.blendMode_];
+        ci.GraphicsPipeline.BlendDesc.RenderTargets[0].BlendOpAlpha = blendOperation[desc.blendMode_];
         ci.GraphicsPipeline.BlendDesc.RenderTargets[0].RenderTargetWriteMask =
-            desc_.colorWriteEnabled_ ? Diligent::COLOR_MASK_ALL : Diligent::COLOR_MASK_NONE;
+            desc.colorWriteEnabled_ ? Diligent::COLOR_MASK_ALL : Diligent::COLOR_MASK_NONE;
     }
 
     ci.GraphicsPipeline.DepthStencilDesc.DepthEnable = true;
-    ci.GraphicsPipeline.DepthStencilDesc.DepthWriteEnable = desc_.depthWriteEnabled_;
-    ci.GraphicsPipeline.DepthStencilDesc.DepthFunc = comparisonFunction[desc_.depthCompareFunction_];
-    ci.GraphicsPipeline.DepthStencilDesc.StencilEnable = desc_.stencilTestEnabled_;
-    ci.GraphicsPipeline.DepthStencilDesc.StencilReadMask = desc_.stencilCompareMask_;
-    ci.GraphicsPipeline.DepthStencilDesc.StencilWriteMask = desc_.stencilWriteMask_;
-    ci.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilFailOp = stencilOp[desc_.stencilOperationOnStencilFailed_];
-    ci.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilDepthFailOp = stencilOp[desc_.stencilOperationOnDepthFailed_];
-    ci.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilPassOp = stencilOp[desc_.stencilOperationOnPassed_];
-    ci.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilFunc = comparisonFunction[desc_.stencilCompareFunction_];
-    ci.GraphicsPipeline.DepthStencilDesc.BackFace.StencilFailOp = stencilOp[desc_.stencilOperationOnStencilFailed_];
-    ci.GraphicsPipeline.DepthStencilDesc.BackFace.StencilDepthFailOp = stencilOp[desc_.stencilOperationOnDepthFailed_];
-    ci.GraphicsPipeline.DepthStencilDesc.BackFace.StencilPassOp = stencilOp[desc_.stencilOperationOnPassed_];
-    ci.GraphicsPipeline.DepthStencilDesc.BackFace.StencilFunc = comparisonFunction[desc_.stencilCompareFunction_];
+    ci.GraphicsPipeline.DepthStencilDesc.DepthWriteEnable = desc.depthWriteEnabled_;
+    ci.GraphicsPipeline.DepthStencilDesc.DepthFunc = comparisonFunction[desc.depthCompareFunction_];
+    ci.GraphicsPipeline.DepthStencilDesc.StencilEnable = desc.stencilTestEnabled_;
+    ci.GraphicsPipeline.DepthStencilDesc.StencilReadMask = desc.stencilCompareMask_;
+    ci.GraphicsPipeline.DepthStencilDesc.StencilWriteMask = desc.stencilWriteMask_;
+    ci.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilFailOp = stencilOp[desc.stencilOperationOnStencilFailed_];
+    ci.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilDepthFailOp = stencilOp[desc.stencilOperationOnDepthFailed_];
+    ci.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilPassOp = stencilOp[desc.stencilOperationOnPassed_];
+    ci.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilFunc = comparisonFunction[desc.stencilCompareFunction_];
+    ci.GraphicsPipeline.DepthStencilDesc.BackFace.StencilFailOp = stencilOp[desc.stencilOperationOnStencilFailed_];
+    ci.GraphicsPipeline.DepthStencilDesc.BackFace.StencilDepthFailOp = stencilOp[desc.stencilOperationOnDepthFailed_];
+    ci.GraphicsPipeline.DepthStencilDesc.BackFace.StencilPassOp = stencilOp[desc.stencilOperationOnPassed_];
+    ci.GraphicsPipeline.DepthStencilDesc.BackFace.StencilFunc = comparisonFunction[desc.stencilCompareFunction_];
 
     unsigned depthBits = 24;
     if (ci.GraphicsPipeline.DSVFormat == Diligent::TEX_FORMAT_R16_TYPELESS)
         depthBits = 16;
-    const int scaledDepthBias = isOpenGL ? 0 : (int)(desc_.constantDepthBias_ * (1 << depthBits));
+    const int scaledDepthBias = isOpenGL ? 0 : (int)(desc.constantDepthBias_ * (1 << depthBits));
 
-    ci.GraphicsPipeline.RasterizerDesc.FillMode = fillMode[desc_.fillMode_];
-    ci.GraphicsPipeline.RasterizerDesc.CullMode = cullMode[desc_.cullMode_];
+    ci.GraphicsPipeline.RasterizerDesc.FillMode = fillMode[desc.fillMode_];
+    ci.GraphicsPipeline.RasterizerDesc.CullMode = cullMode[desc.cullMode_];
     ci.GraphicsPipeline.RasterizerDesc.FrontCounterClockwise = false;
     ci.GraphicsPipeline.RasterizerDesc.DepthBias = scaledDepthBias;
-    ci.GraphicsPipeline.RasterizerDesc.SlopeScaledDepthBias = desc_.slopeScaledDepthBias_;
+    ci.GraphicsPipeline.RasterizerDesc.SlopeScaledDepthBias = desc.slopeScaledDepthBias_;
     ci.GraphicsPipeline.RasterizerDesc.DepthClipEnable = true;
-    ci.GraphicsPipeline.RasterizerDesc.ScissorEnable = desc_.scissorTestEnabled_;
-    ci.GraphicsPipeline.RasterizerDesc.AntialiasedLineEnable = !isOpenGL && desc_.lineAntiAlias_;
+    ci.GraphicsPipeline.RasterizerDesc.ScissorEnable = desc.scissorTestEnabled_;
+    ci.GraphicsPipeline.RasterizerDesc.AntialiasedLineEnable = !isOpenGL && desc.lineAntiAlias_;
 
-    ci.GraphicsPipeline.RasterizerDesc.ScissorEnable = desc_.scissorTestEnabled_;
+    ci.GraphicsPipeline.RasterizerDesc.ScissorEnable = desc.scissorTestEnabled_;
 
     ci.PSODesc.ResourceLayout.DefaultVariableType = Diligent::SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC;
 
@@ -529,7 +563,7 @@ void PipelineState::CreateGPU()
         {
             reflection_ = MakeShared<ShaderProgramReflection>(programObjects[0]);
 
-            InitializeImmutableSamplers(immutableSamplers, desc_, *reflection_);
+            InitializeImmutableSamplers(immutableSamplers, desc.samplers_, *reflection_);
             ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
             ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
         }
@@ -554,6 +588,11 @@ void PipelineState::CreateGPU()
 
     handle_->CreateShaderResourceBinding(&shaderResourceBinding_, true);
     reflection_->ConnectToShaderVariables(shaderResourceBinding_);
+}
+
+void PipelineState::CreateGPU(const ComputePipelineStateDesc& desc)
+{
+    URHO3D_ASSERT(false, "Not implemented yet");
 }
 
 void PipelineState::DestroyGPU()
@@ -591,13 +630,8 @@ const ByteVector& PipelineStateCache::GetCachedData()
     return cachedData_;
 }
 
-SharedPtr<PipelineState> PipelineStateCache::GetPipelineState(PipelineStateDesc desc)
+SharedPtr<PipelineState> PipelineStateCache::GetPipelineState(const PipelineStateDesc& desc)
 {
-    if (!desc.IsInitialized())
-        return nullptr;
-
-    desc.RecalculateHash();
-
     WeakPtr<PipelineState>& weakPipelineState = states_[desc];
     SharedPtr<PipelineState> pipelineState = weakPipelineState.Lock();
     if (!pipelineState)
@@ -606,6 +640,22 @@ SharedPtr<PipelineState> PipelineStateCache::GetPipelineState(PipelineStateDesc 
         weakPipelineState = pipelineState;
     }
     return pipelineState;
+}
+
+SharedPtr<PipelineState> PipelineStateCache::GetGraphicsPipelineState(const GraphicsPipelineStateDesc& desc)
+{
+    if (!desc.IsInitialized())
+        return nullptr;
+
+    return GetPipelineState(PipelineStateDesc{desc});
+}
+
+SharedPtr<PipelineState> PipelineStateCache::GetComputePipelineState(const ComputePipelineStateDesc& desc)
+{
+    if (!desc.IsInitialized())
+        return nullptr;
+
+    return GetPipelineState(PipelineStateDesc{desc});
 }
 
 void PipelineStateCache::ReleasePipelineState(const PipelineStateDesc& desc)

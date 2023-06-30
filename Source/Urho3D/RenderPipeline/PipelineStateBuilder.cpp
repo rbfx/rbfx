@@ -263,7 +263,7 @@ void PipelineStateBuilder::SetupUserPassState(const Drawable* drawable,
 }
 
 void PipelineStateBuilder::SetupInputLayoutAndPrimitiveType(
-    PipelineStateDesc& pipelineStateDesc, const ShaderProgramDesc& shaderProgramDesc, const Geometry* geometry) const
+    GraphicsPipelineStateDesc& pipelineStateDesc, const ShaderProgramDesc& shaderProgramDesc, const Geometry* geometry) const
 {
     if (shaderProgramDesc.isInstancingUsed_)
         InitializeInputLayoutAndPrimitiveType(pipelineStateDesc, geometry, instancingBuffer_->GetVertexBuffer());
@@ -271,7 +271,7 @@ void PipelineStateBuilder::SetupInputLayoutAndPrimitiveType(
         InitializeInputLayoutAndPrimitiveType(pipelineStateDesc, geometry);
 }
 
-void PipelineStateBuilder::SetupShaders(PipelineStateDesc& pipelineStateDesc, ShaderProgramDesc& shaderProgramDesc) const
+void PipelineStateBuilder::SetupShaders(GraphicsPipelineStateDesc& pipelineStateDesc, ShaderProgramDesc& shaderProgramDesc) const
 {
     for (ea::string& shaderDefines : shaderProgramDesc.shaderDefines_)
         shaderDefines += shaderProgramDesc.commonShaderDefines_;

@@ -63,7 +63,7 @@ SharedPtr<PipelineState> CreateRenderPipeline(
     auto renderer = renderDevice->GetContext()->GetSubsystem<Renderer>();
     auto graphics = renderDevice->GetContext()->GetSubsystem<Graphics>();
 
-    PipelineStateDesc desc;
+    GraphicsPipelineStateDesc desc;
     desc.debugName_ = Format("ImGUI Render Pipeline (Color: {}, Depth: {})",
         Diligent::GetTextureFormatAttribs(colorBufferFormat).Name,
         Diligent::GetTextureFormatAttribs(depthBufferFormat).Name);

@@ -96,7 +96,6 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
     RawBuffer* currentIndexBuffer = nullptr;
     RawVertexBufferArray currentVertexBuffers{};
     ShaderResourceRange currentShaderResources;
-    PrimitiveType currentPrimitiveType{};
     unsigned currentScissorRect = M_MAX_UNSIGNED;
 
     // Set common state
@@ -123,12 +122,12 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
 
             // Skip this pipeline if something goes wrong.
             deviceContext->SetPipelineState(cmd.pipelineState_->GetHandle());
-            deviceContext->SetStencilRef(cmd.pipelineState_->GetDesc().stencilReferenceValue_);
+            if (const GraphicsPipelineStateDesc* graphicsDesc = cmd.pipelineState_->GetDesc().AsGraphics())
+                deviceContext->SetStencilRef(graphicsDesc->stencilReferenceValue_);
 
             currentPipelineState = cmd.pipelineState_;
             currentShaderResourceBinding = cmd.pipelineState_->GetShaderResourceBinding();
             currentShaderReflection = cmd.pipelineState_->GetReflection();
-            currentPrimitiveType = currentPipelineState->GetDesc().primitiveType_;
 
             // Reset current shader resources because mapping can be different
             currentShaderResources = {};

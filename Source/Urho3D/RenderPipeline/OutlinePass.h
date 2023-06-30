@@ -52,7 +52,7 @@ public:
     /// @{
     AddBatchResult AddCustomBatch(
         unsigned threadIndex, Drawable* drawable, unsigned sourceBatchIndex, Technique* technique) override;
-    bool CreatePipelineState(PipelineStateDesc& desc, PipelineStateBuilder* builder,
+    bool CreatePipelineState(GraphicsPipelineStateDesc& desc, PipelineStateBuilder* builder,
         const BatchStateCreateKey& key, const BatchStateCreateContext& ctx) override;
     /// @}
 

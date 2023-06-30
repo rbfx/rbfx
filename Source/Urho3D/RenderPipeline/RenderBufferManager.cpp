@@ -115,12 +115,12 @@ Vector4 CalculateViewportOffsetAndScale(const IntVector2& textureSize, const Int
 #endif
 }
 
-PipelineStateDesc GetClearPipelineStateDesc(Graphics* graphics, ClearTargetFlags flags)
+GraphicsPipelineStateDesc GetClearPipelineStateDesc(Graphics* graphics, ClearTargetFlags flags)
 {
     const ea::string shaderName = "v2/X_ClearFramebuffer";
     const ea::string shaderDefines = "URHO3D_USE_CBUFFERS ";
 
-    PipelineStateDesc desc;
+    GraphicsPipelineStateDesc desc;
     desc.debugName_ = shaderName;
     desc.vertexShader_ = graphics->GetShader(VS, shaderName, shaderDefines);
     desc.pixelShader_ = graphics->GetShader(PS, shaderName, shaderDefines);
@@ -325,7 +325,7 @@ Vector4 RenderBufferManager::GetDefaultClipToUVSpaceOffsetAndScale() const
     return CalculateViewportOffsetAndScale(size, IntRect{ IntVector2::ZERO, size });
 }
 
-StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(PipelineStateDesc desc)
+StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(GraphicsPipelineStateDesc desc)
 {
     Geometry* quadGeometry = renderer_->GetQuadGeometry();
 
@@ -342,7 +342,7 @@ StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(BlendMode ble
     defines += " URHO3D_GEOMETRY_STATIC";
     defines += " URHO3D_USE_CBUFFERS";
 
-    PipelineStateDesc desc;
+    GraphicsPipelineStateDesc desc;
 #ifdef URHO3D_DEBUG
     desc.debugName_ = shaderName;
 #endif

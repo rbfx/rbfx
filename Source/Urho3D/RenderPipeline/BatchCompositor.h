@@ -146,7 +146,7 @@ public:
         unsigned deferredPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex);
 
     /// Callback for pipeline state initialization.
-    virtual bool CreatePipelineState(PipelineStateDesc& desc, PipelineStateBuilder* builder,
+    virtual bool CreatePipelineState(GraphicsPipelineStateDesc& desc, PipelineStateBuilder* builder,
         const BatchStateCreateKey& key, const BatchStateCreateContext& ctx) { return false; }
 
     void SetForwardOutputDesc(const PipelineStateOutputDesc& desc);

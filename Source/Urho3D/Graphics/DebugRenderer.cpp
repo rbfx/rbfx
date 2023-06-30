@@ -752,7 +752,7 @@ void DebugRenderer::InitializePipelineStates()
     auto createPipelineState = [&](PrimitiveType primitiveType, BlendMode blendMode, CompareMode depthCompare,
         bool depthWriteEnabled, bool lineAntiAlias, const ea::string& debugName)
     {
-        PipelineStateDesc desc;
+        GraphicsPipelineStateDesc desc;
         InitializeInputLayout(desc.inputLayout_, {vertexBuffer_});
         desc.colorWriteEnabled_ = true;
 

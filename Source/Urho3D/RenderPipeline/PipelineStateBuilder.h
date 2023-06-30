@@ -57,8 +57,8 @@ public:
 
     /// Helpers for passes that override pipeline state creation.
     /// @{
-    void SetupInputLayoutAndPrimitiveType(PipelineStateDesc& pipelineStateDesc, const ShaderProgramDesc& shaderProgramDesc, const Geometry* geometry) const;
-    void SetupShaders(PipelineStateDesc& pipelineStateDesc, ShaderProgramDesc& shaderProgramDesc) const;
+    void SetupInputLayoutAndPrimitiveType(GraphicsPipelineStateDesc& pipelineStateDesc, const ShaderProgramDesc& shaderProgramDesc, const Geometry* geometry) const;
+    void SetupShaders(GraphicsPipelineStateDesc& pipelineStateDesc, ShaderProgramDesc& shaderProgramDesc) const;
     /// @}
 
     ShaderProgramCompositor* GetShaderProgramCompositor() const { return compositor_; }
@@ -95,7 +95,7 @@ private:
 
     /// Re-used objects
     /// @{
-    PipelineStateDesc pipelineStateDesc_;
+    GraphicsPipelineStateDesc pipelineStateDesc_;
     ShaderProgramDesc shaderProgramDesc_;
     /// @}
 };

@@ -19,6 +19,7 @@
 
 #include <EASTL/algorithm.h>
 #include <EASTL/string.h>
+#include <EASTL/variant.h>
 #include <EASTL/unordered_map.h>
 
 namespace Urho3D
@@ -27,17 +28,51 @@ namespace Urho3D
 class Geometry;
 class PipelineStateCache;
 
-/// Description structure used to create PipelineState.
-/// Should contain all relevant information about input layout,
-/// shader resources and parameters and pipeline configuration.
-/// PipelineState is automatically updated on shader reload.
-/// TODO(diligent): Rework this
-struct PipelineStateDesc : public GraphicsPipelineStateDesc
+/// Description of graphics pipeline state.
+/// It does not specify shaders to avoid dependency on device objects.
+struct URHO3D_API GraphicsPipelineStateDesc
 {
-    /// Debug info.
-    /// @{
     ea::string debugName_{};
+
+    /// Blend state.
+    /// @{
+    bool colorWriteEnabled_{};
+    BlendMode blendMode_{};
+    bool alphaToCoverageEnabled_{};
     /// @}
+
+    /// Rasterizer state.
+    /// @{
+    FillMode fillMode_{};
+    CullMode cullMode_{};
+    float constantDepthBias_{};
+    float slopeScaledDepthBias_{};
+    bool scissorTestEnabled_{};
+    bool lineAntiAlias_{};
+    /// @}
+
+    /// Depth-stencil state.
+    /// @{
+    bool depthWriteEnabled_{};
+    bool stencilTestEnabled_{};
+    CompareMode depthCompareFunction_{};
+    CompareMode stencilCompareFunction_{};
+    StencilOp stencilOperationOnPassed_{};
+    StencilOp stencilOperationOnStencilFailed_{};
+    StencilOp stencilOperationOnDepthFailed_{};
+    unsigned stencilReferenceValue_{};
+    unsigned stencilCompareMask_{};
+    unsigned stencilWriteMask_{};
+    /// @}
+
+    /// Input layout.
+    InputLayoutDesc inputLayout_;
+    /// Primitive topology.
+    PrimitiveType primitiveType_{};
+    /// Render Target(s) and Depth Stencil formats.
+    PipelineStateOutputDesc output_;
+    /// Immutable Samplers.
+    ImmutableSamplersDesc samplers_;
 
     /// Shaders
     /// @{
@@ -48,38 +83,96 @@ struct PipelineStateDesc : public GraphicsPipelineStateDesc
     SharedPtr<RawShader> geometryShader_;
     /// @}
 
-    bool operator ==(const PipelineStateDesc& rhs) const
+    /// Operators.
+    /// @{
+    auto Tie() const
     {
-        if (hash_ != rhs.hash_)
-            return false;
-
-        return GraphicsPipelineStateDesc::operator==(rhs)
-            && vertexShader_ == rhs.vertexShader_
-            && pixelShader_ == rhs.pixelShader_
-            && geometryShader_ == rhs.geometryShader_
-            && hullShader_ == rhs.hullShader_
-            && domainShader_ == rhs.domainShader_;
+        return ea::tie( //
+            colorWriteEnabled_, //
+            blendMode_, //
+            alphaToCoverageEnabled_, //
+            fillMode_, //
+            cullMode_, //
+            constantDepthBias_, //
+            slopeScaledDepthBias_, //
+            scissorTestEnabled_, //
+            lineAntiAlias_, //
+            depthWriteEnabled_, //
+            stencilTestEnabled_, //
+            depthCompareFunction_, //
+            stencilCompareFunction_, //
+            stencilOperationOnPassed_, //
+            stencilOperationOnStencilFailed_, //
+            stencilOperationOnDepthFailed_, //
+            stencilReferenceValue_, //
+            stencilCompareMask_, //
+            stencilWriteMask_, //
+            inputLayout_, //
+            primitiveType_, //
+            output_, //
+            samplers_, //
+            vertexShader_, //
+            pixelShader_, //
+            domainShader_, //
+            hullShader_, //
+            geometryShader_ //
+        );
     }
 
-    /// Return whether the description structure is properly initialized.
-    bool IsInitialized() const
-    {
-        return vertexShader_ && pixelShader_;
-    }
+    bool operator==(const GraphicsPipelineStateDesc& rhs) const { return Tie() == rhs.Tie(); }
+    bool operator!=(const GraphicsPipelineStateDesc& rhs) const { return Tie() != rhs.Tie(); }
+    unsigned ToHash() const { return ea::max(1u, MakeHash(Tie())); }
+    bool IsInitialized() const { return vertexShader_ && pixelShader_; }
+    /// @}
+};
 
-    void RecalculateHash()
-    {
-        GraphicsPipelineStateDesc::RecalculateHash();
+/// Description of compute pipeline state.
+/// It does not specify shaders to avoid dependency on device objects.
+struct URHO3D_API ComputePipelineStateDesc
+{
+    ea::string debugName_{};
 
-        CombineHash(hash_, MakeHash(vertexShader_));
-        CombineHash(hash_, MakeHash(pixelShader_));
-        CombineHash(hash_, MakeHash(domainShader_));
-        CombineHash(hash_, MakeHash(hullShader_));
-        CombineHash(hash_, MakeHash(geometryShader_));
+    /// Immutable Samplers.
+    ImmutableSamplersDesc samplers_;
+    /// Compute shader.
+    SharedPtr<RawShader> computeShader_;
 
-        // Consider 0-hash invalid
-        hash_ = ea::max(1u, hash_);
-    }
+    /// Operators.
+    /// @{
+    auto Tie() const { return ea::tie(samplers_, computeShader_); }
+
+    bool operator==(const ComputePipelineStateDesc& rhs) const { return Tie() == rhs.Tie(); }
+    bool operator!=(const ComputePipelineStateDesc& rhs) const { return Tie() != rhs.Tie(); }
+    unsigned ToHash() const { return ea::max(1u, MakeHash(Tie())); }
+    bool IsInitialized() const { return computeShader_; }
+    /// @}
+};
+
+class URHO3D_API PipelineStateDesc
+{
+public:
+    PipelineStateDesc() = default;
+    PipelineStateDesc(const GraphicsPipelineStateDesc& desc) : desc_(desc), hash_(desc.ToHash()) {}
+    PipelineStateDesc(const ComputePipelineStateDesc& desc) : desc_(desc), hash_(desc.ToHash()) {}
+
+    unsigned ToHash() const { return hash_; }
+
+    PipelineStateType GetType() const { return static_cast<PipelineStateType>(desc_.index()); }
+    const ea::string& GetDebugName() const;
+    const GraphicsPipelineStateDesc* AsGraphics() const;
+    const ComputePipelineStateDesc* AsCompute() const;
+
+    /// Operators.
+    /// @{
+    auto Tie() const { return ea::tie(hash_, desc_); }
+
+    bool operator==(const PipelineStateDesc& rhs) const { return Tie() == rhs.Tie(); }
+    bool operator!=(const PipelineStateDesc& rhs) const { return Tie() != rhs.Tie(); }
+    /// @}
+
+private:
+    ea::variant<GraphicsPipelineStateDesc, ComputePipelineStateDesc> desc_;
+    unsigned hash_{};
 };
 
 /// Cooked pipeline state. It's not an Object to keep it lightweight.
@@ -109,6 +202,8 @@ public:
 
 private:
     void CreateGPU();
+    void CreateGPU(const GraphicsPipelineStateDesc& desc);
+    void CreateGPU(const ComputePipelineStateDesc& desc);
     void DestroyGPU();
 
     WeakPtr<PipelineStateCache> owner_;
@@ -135,9 +230,14 @@ public:
 
     /// Create new or return existing pipeline state. Returned state may be invalid.
     /// Return nullptr if description is malformed.
-    SharedPtr<PipelineState> GetPipelineState(PipelineStateDesc desc);
+    SharedPtr<PipelineState> GetPipelineState(const PipelineStateDesc& desc);
     /// Get GPU Pipeline cache device object.
     Diligent::IPipelineStateCache* GetHandle() { return handle_; }
+
+    /// Create new or return existing graphics pipeline state.
+    SharedPtr<PipelineState> GetGraphicsPipelineState(const GraphicsPipelineStateDesc& desc);
+    /// Create new or return existing compute pipeline state.
+    SharedPtr<PipelineState> GetComputePipelineState(const ComputePipelineStateDesc& desc);
 
     /// Internal. Remove pipeline state with given description from cache.
     void ReleasePipelineState(const PipelineStateDesc& desc);

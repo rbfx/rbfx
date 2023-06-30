@@ -566,87 +566,13 @@ struct URHO3D_API ImmutableSamplersDesc
     /// @}
 };
 
-/// Description of graphics pipeline state.
-/// It does not specify shaders to avoid dependency on device objects.
-struct URHO3D_API GraphicsPipelineStateDesc
+/// Pipeline state type.
+enum class PipelineStateType
 {
-    /// Blend state.
-    /// @{
-    bool colorWriteEnabled_{};
-    BlendMode blendMode_{};
-    bool alphaToCoverageEnabled_{};
-    /// @}
+    Graphics,
+    Compute,
 
-    /// Rasterizer state.
-    /// @{
-    FillMode fillMode_{};
-    CullMode cullMode_{};
-    float constantDepthBias_{};
-    float slopeScaledDepthBias_{};
-    bool scissorTestEnabled_{};
-    bool lineAntiAlias_{};
-    /// @}
-
-    /// Depth-stencil state.
-    /// @{
-    bool depthWriteEnabled_{};
-    bool stencilTestEnabled_{};
-    CompareMode depthCompareFunction_{};
-    CompareMode stencilCompareFunction_{};
-    StencilOp stencilOperationOnPassed_{};
-    StencilOp stencilOperationOnStencilFailed_{};
-    StencilOp stencilOperationOnDepthFailed_{};
-    unsigned stencilReferenceValue_{};
-    unsigned stencilCompareMask_{};
-    unsigned stencilWriteMask_{};
-    /// @}
-
-    /// Input layout.
-    InputLayoutDesc inputLayout_;
-    /// Primitive topology.
-    PrimitiveType primitiveType_{};
-    /// Render Target(s) and Depth Stencil formats.
-    PipelineStateOutputDesc output_;
-    /// Immutable Samplers.
-    ImmutableSamplersDesc samplers_;
-
-    /// Cached hash of the structure.
-    unsigned hash_{};
-    unsigned ToHash() const { return hash_; }
-
-    /// Operators.
-    /// @{
-    auto Tie() const {
-        return ea::tie( //
-            colorWriteEnabled_, //
-            blendMode_, //
-            alphaToCoverageEnabled_, //
-            fillMode_, //
-            cullMode_, //
-            constantDepthBias_, //
-            slopeScaledDepthBias_, //
-            scissorTestEnabled_, //
-            lineAntiAlias_, //
-            depthWriteEnabled_, //
-            stencilTestEnabled_, //
-            depthCompareFunction_, //
-            stencilCompareFunction_, //
-            stencilOperationOnPassed_, //
-            stencilOperationOnStencilFailed_, //
-            stencilOperationOnDepthFailed_, //
-            stencilReferenceValue_, //
-            stencilCompareMask_, //
-            stencilWriteMask_, //
-            inputLayout_, //
-            primitiveType_, //
-            output_, //
-            samplers_);
-    }
-
-    bool operator==(const GraphicsPipelineStateDesc& rhs) const { return Tie() == rhs.Tie(); }
-    bool operator!=(const GraphicsPipelineStateDesc& rhs) const { return Tie() != rhs.Tie(); }
-    void RecalculateHash() { hash_ = MakeHash(Tie()); }
-    /// @}
+    Count
 };
 
 using RawVertexBufferArray = ea::array<RawBuffer*, MaxVertexStreams>;

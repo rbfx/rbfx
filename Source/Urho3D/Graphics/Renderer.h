@@ -317,7 +317,7 @@ public:
     unsigned GetNumViewports() const { return viewports_.size(); }
 
     /// Return new or existing pipeline state.
-    SharedPtr<PipelineState> GetOrCreatePipelineState(const PipelineStateDesc& desc);
+    SharedPtr<PipelineState> GetOrCreatePipelineState(const GraphicsPipelineStateDesc& desc);
     /// Return backbuffer viewport by index.
     /// @property{get_viewports}
     Viewport* GetViewport(unsigned index) const;

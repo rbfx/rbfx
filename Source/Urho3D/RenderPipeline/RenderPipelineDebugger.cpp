@@ -42,10 +42,15 @@ namespace Urho3D
 namespace
 {
 
-ea::tuple<ea::string, ea::string> MakeSortKey(const PipelineState& pipelineState)
+ea::string MakeSortKey(const PipelineState& pipelineState)
 {
-    const PipelineStateDesc& desc = pipelineState.GetDesc();
-    return { desc.vertexShader_->GetDebugName(), desc.pixelShader_->GetDebugName() };
+    if (const GraphicsPipelineStateDesc* graphicsDesc = pipelineState.GetDesc().AsGraphics())
+        return ea::string::joined(
+            {graphicsDesc->vertexShader_->GetDebugName(), graphicsDesc->pixelShader_->GetDebugName()}, " ");
+    else if (const ComputePipelineStateDesc* computeDesc = pipelineState.GetDesc().AsCompute())
+        return computeDesc->computeShader_->GetDebugName();
+    else
+        return "";
 }
 
 ea::tuple<ea::string> MakeSortKey(const Material& material)
@@ -154,8 +159,21 @@ ea::string DebugFrameSnapshot::ScenePipelineStatesToString() const
     for (PipelineState* pipelineState : GetSortedObjects(scenePipelineStates_))
     {
         const PipelineStateDesc& desc = pipelineState->GetDesc();
-        result += Format("- {}: VS={} PS={}\n", static_cast<void*>(pipelineState),
-            static_cast<void*>(desc.vertexShader_), static_cast<void*>(desc.pixelShader_));
+
+        if (const GraphicsPipelineStateDesc* graphicsDesc = desc.AsGraphics())
+        {
+            result += Format("- {}: VS={} PS={} GS={} HS={} DS={}\n", static_cast<void*>(pipelineState),
+                static_cast<void*>(graphicsDesc->vertexShader_), static_cast<void*>(graphicsDesc->pixelShader_),
+                static_cast<void*>(graphicsDesc->geometryShader_), static_cast<void*>(graphicsDesc->hullShader_),
+                static_cast<void*>(graphicsDesc->domainShader_));
+        }
+
+        if (const ComputePipelineStateDesc* computeDesc = desc.AsCompute())
+        {
+            result += Format(
+                "- {}: CS={}\n", static_cast<void*>(pipelineState), static_cast<void*>(computeDesc->computeShader_));
+        }
+
     }
     return result;
 }
@@ -213,8 +231,23 @@ void RenderPipelineDebugger::ReportSceneBatch(const DebugFrameSnapshotBatch& sce
     snapshot_.sceneMaterials_.insert(sceneBatch.material_);
 
     const PipelineStateDesc& pipelineStateDesc = sceneBatch.pipelineState_->GetDesc();
-    snapshot_.sceneShaders_.insert(pipelineStateDesc.vertexShader_);
-    snapshot_.sceneShaders_.insert(pipelineStateDesc.pixelShader_);
+
+    if (const GraphicsPipelineStateDesc* graphicsDesc = pipelineStateDesc.AsGraphics())
+    {
+        snapshot_.sceneShaders_.insert(graphicsDesc->vertexShader_);
+        snapshot_.sceneShaders_.insert(graphicsDesc->pixelShader_);
+        if (graphicsDesc->geometryShader_)
+            snapshot_.sceneShaders_.insert(graphicsDesc->geometryShader_);
+        if (graphicsDesc->hullShader_)
+            snapshot_.sceneShaders_.insert(graphicsDesc->hullShader_);
+        if (graphicsDesc->domainShader_)
+            snapshot_.sceneShaders_.insert(graphicsDesc->domainShader_);
+    }
+
+    if (const ComputePipelineStateDesc* computeDesc = pipelineStateDesc.AsCompute())
+    {
+        snapshot_.sceneShaders_.insert(computeDesc->computeShader_);
+    }
 }
 
 void RenderPipelineDebugger::ReportQuad(ea::string_view debugComment, const IntVector2& size)

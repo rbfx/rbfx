@@ -611,11 +611,11 @@ void Renderer::ApplyShadowMapFilter(View* view, Texture2D* shadowMap, float blur
         (shadowMapFilterInstance_->*shadowMapFilter_)(view, shadowMap, blurScale);
 }
 
-SharedPtr<PipelineState> Renderer::GetOrCreatePipelineState(const PipelineStateDesc& desc)
+SharedPtr<PipelineState> Renderer::GetOrCreatePipelineState(const GraphicsPipelineStateDesc& desc)
 {
     // TODO(diligent): Revisit
     auto pipelineStateCache = GetSubsystem<PipelineStateCache>();
-    return pipelineStateCache->GetPipelineState(desc);
+    return pipelineStateCache->GetGraphicsPipelineState(desc);
 }
 
 Viewport* Renderer::GetViewport(unsigned index) const

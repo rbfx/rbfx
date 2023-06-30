@@ -144,7 +144,7 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
     Graphics* graphics = GetSubsystem<Graphics>();
     Renderer* renderer = GetSubsystem<Renderer>();
 
-    PipelineStateDesc desc;
+    GraphicsPipelineStateDesc desc;
 #ifdef URHO3D_DEBUG
     desc.debugName_ = "UI Batch Pipeline - " + key.material_->GetName();
 #endif

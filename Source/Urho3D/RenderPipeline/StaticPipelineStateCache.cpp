@@ -23,7 +23,7 @@ void StaticPipelineStateCache::Invalidate()
     caches_.clear();
 }
 
-StaticPipelineStateId StaticPipelineStateCache::CreateState(const PipelineStateDesc& desc)
+StaticPipelineStateId StaticPipelineStateCache::CreateState(const GraphicsPipelineStateDesc& desc)
 {
     const unsigned index = desc_.size();
     desc_.push_back(desc);
@@ -54,7 +54,7 @@ PipelineState* StaticPipelineStateCache::GetState(StaticPipelineStateId id, cons
     PerOutputCache& cache = caches_[outputHash];
     cache.outputDesc_ = outputDesc;
 
-    PipelineStateDesc pipelineDesc = desc_[index];
+    GraphicsPipelineStateDesc pipelineDesc = desc_[index];
     pipelineDesc.output_ = outputDesc;
 
     auto renderer = GetSubsystem<Renderer>();

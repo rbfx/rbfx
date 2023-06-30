@@ -26,7 +26,7 @@ public:
     void Invalidate();
 
     /// Create new pipeline state.
-    StaticPipelineStateId CreateState(const PipelineStateDesc& desc);
+    StaticPipelineStateId CreateState(const GraphicsPipelineStateDesc& desc);
     /// Get or create pipeline state for given ID and output layout.
     PipelineState* GetState(StaticPipelineStateId id, const PipelineStateOutputDesc& outputDesc);
 
@@ -37,7 +37,7 @@ private:
         ea::vector<SharedPtr<PipelineState>> pipelineStates_;
     };
 
-    ea::vector<PipelineStateDesc> desc_;
+    ea::vector<GraphicsPipelineStateDesc> desc_;
     ea::unordered_map<unsigned, PerOutputCache> caches_;
 };
 

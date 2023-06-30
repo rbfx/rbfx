@@ -100,7 +100,7 @@ DrawableProcessorPass::AddBatchResult OutlineScenePass::AddCustomBatch(
     return {batchAdded, false};
 }
 
-bool OutlineScenePass::CreatePipelineState(PipelineStateDesc& desc, PipelineStateBuilder* builder,
+bool OutlineScenePass::CreatePipelineState(GraphicsPipelineStateDesc& desc, PipelineStateBuilder* builder,
     const BatchStateCreateKey& key, const BatchStateCreateContext& ctx)
 {
     ShaderProgramCompositor* compositor = builder->GetShaderProgramCompositor();

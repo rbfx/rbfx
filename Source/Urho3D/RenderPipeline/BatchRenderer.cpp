@@ -299,7 +299,7 @@ private:
         dirty_.pipelineState_ = current_.pipelineState_ != pipelineBatch.pipelineState_;
         current_.pipelineState_ = pipelineBatch.pipelineState_;
 
-        const float constantDepthBias = current_.pipelineState_->GetDesc().constantDepthBias_;
+        const float constantDepthBias = current_.pipelineState_->GetDesc().AsGraphics()->constantDepthBias_;
         dirty_.cameraConstants_ = current_.constantDepthBias_ != constantDepthBias;
         current_.constantDepthBias_ = constantDepthBias;
 

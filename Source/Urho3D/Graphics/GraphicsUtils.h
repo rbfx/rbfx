@@ -11,6 +11,7 @@
 #include "Urho3D/Graphics/Texture.h"
 #include "Urho3D/Graphics/VertexBuffer.h"
 #include "Urho3D/RenderAPI/DrawCommandQueue.h"
+#include "Urho3D/RenderAPI/PipelineState.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
 namespace Urho3D
