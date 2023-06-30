@@ -1686,28 +1686,6 @@ Component* Node::GetComponent(StringHash type, bool recursive) const
     return nullptr;
 }
 
-Component* Node::GetComponentImplementation(StringHash type, bool recursive) const
-{
-    for (auto i = components_.begin(); i != components_.end(); ++i)
-    {
-        if ((*i)->GetTypeInfo()->IsTypeOf(type))
-            return i->Get();
-    }
-
-    if (recursive)
-    {
-        for (auto i = children_.begin(); i != children_.end(); ++i)
-        {
-            Component* component = (*i)->GetComponentImplementation(type, true);
-            if (component)
-                return component;
-        }
-    }
-
-    return nullptr;
-}
-
-
 Component* Node::GetNthComponent(StringHash type, unsigned index) const
 {
     for (const auto& component : components_)
