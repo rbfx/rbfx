@@ -115,19 +115,32 @@ struct URHO3D_API MouseButtonMapping
 
     unsigned mouseButton_{};
 };
+/// Helper class to translate UI button to input value.
+struct URHO3D_API ScreenButtonMapping
+{
+    ScreenButtonMapping();
+    ScreenButtonMapping(const ea::string& elementName);
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive);
+
+    ea::string elementName_{};
+};
+
 
 struct URHO3D_API ActionMapping
 {
-    ea::fixed_vector<KeyboardKeyMapping, 1> keyboardKeys_;
+    ea::fixed_vector<KeyboardKeyMapping, 2> keyboardKeys_;
     ea::fixed_vector<MouseButtonMapping, 1> mouseButtons_;
-    ea::fixed_vector<ControllerButtonMapping, 1> controllerButtons_;
+    ea::fixed_vector<ControllerButtonMapping, 2> controllerButtons_;
     ea::fixed_vector<ControllerAxisMapping, 1> controllerAxes_;
     ea::fixed_vector<ControllerHatMapping, 1> controllerHats_;
+    ea::fixed_vector<ScreenButtonMapping, 1> screenButtons_;
 
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive);
     /// Evaluate action state based on current input.
-    float Evaluate(Input* input, bool isUIInFocus, float deadZone, int ignoreJoystickId) const;
+    float Evaluate(Input* input, UI* ui, float deadZone, int ignoreJoystickId) const;
 };
 }
 
@@ -175,6 +188,9 @@ public:
 
     /// Map mouse button to the action.
     void MapMouseButton(const ea::string& action, MouseButton mouseButton);
+
+    /// Map screen button to the action.
+    void MapScreenButton(const ea::string& action, const ea::string& elementName);
 
     /// Get mapping for the action.
     const Detail::ActionMapping& GetMapping(const ea::string& action) const;

@@ -135,6 +135,11 @@ void Vehicle2::Init()
     vehicle->ResetWheels();
 }
 
+void Vehicle2::SetInputMap(InputMap* inputMap)
+{
+    inputMap_ = inputMap;
+}
+
 void Vehicle2::CreateEmitter(Vector3 place)
 {
     auto* cache = GetSubsystem<ResourceCache>();
@@ -171,7 +176,7 @@ void Vehicle2::FixedUpdate(float timeStep)
     if (accelerator < 0.0f)
         accelerator *= 0.5f;
 
-    if (controls_.buttons_ & CTRL_BRAKE)
+    if (inputMap_->Evaluate("Brake"))
     {
         brake = true;
     }

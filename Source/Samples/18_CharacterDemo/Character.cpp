@@ -103,7 +103,7 @@ void Character::FixedUpdate(float timeStep)
         body->ApplyImpulse(brakeForce);
 
         // Jump. Must release jump control between jumps
-        if (controls_.IsDown(CTRL_JUMP))
+        if (inputMap_->Evaluate("Jump"))
         {
             if (okToJump_)
             {
@@ -135,6 +135,11 @@ void Character::FixedUpdate(float timeStep)
 
     // Reset grounded flag for next frame
     onGround_ = false;
+}
+
+void Character::SetInputMap(InputMap* inputMap)
+{
+    inputMap_ = inputMap;
 }
 
 void Character::HandleNodeCollision(StringHash eventType, VariantMap& eventData)

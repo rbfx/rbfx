@@ -23,7 +23,7 @@
 #pragma once
 
 #include <Urho3D/Input/MoveAndOrbitComponent.h>
-#include <Urho3D/Input/Controls.h>
+#include <Urho3D/Input/InputMap.h>
 
 namespace Urho3D
 {
@@ -67,8 +67,8 @@ public:
     /// Initialize the vehicle. Create rendering and physics components. Called by the application.
     void Init();
 
-    /// Movement controls.
-    Controls controls_;
+    void SetInputMap(InputMap* inputMap);
+    InputMap* GetInputMap() const { return inputMap_; }
 
 private:
     /// Initialize a wheel and remember its scene node and ID.
@@ -112,4 +112,6 @@ private:
 
     /// Current left/right steering amount (-1 to 1).
     float steering_{};
+    /// Input map.
+    SharedPtr<InputMap> inputMap_;
 };

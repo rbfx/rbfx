@@ -218,7 +218,9 @@ void KinematicCharacterDemo::CreateCharacter()
     // Remember it so that we can set the controls. Use a ea::weak_ptr because the scene hierarchy already owns it
     // and keeps it alive as long as it's not removed from the hierarchy
     character_ = objectNode->CreateComponent<KinematicCharacter>();
-    objectNode->CreateComponent<MoveAndOrbitController>()->LoadInputMap("Input/MoveAndOrbit.inputmap");
+    const auto moveAndOrbit = objectNode->CreateComponent<MoveAndOrbitController>();
+    moveAndOrbit->LoadInputMap("Input/MoveAndOrbit.inputmap");
+    character_->SetInputMap(moveAndOrbit->GetInputMap());
 
     kinematicCharacter_ = objectNode->CreateComponent<KinematicCharacterController>();
     kinematicCharacter_->SetDiameter(0.7f);
@@ -270,47 +272,10 @@ void KinematicCharacterDemo::Update(float timeStep)
 
     if (character_)
     {
-        // Clear previous controls
-        character_->controls_.Set(CTRL_FORWARD | CTRL_BACK | CTRL_LEFT | CTRL_RIGHT | CTRL_JUMP, false);
-
-        // Update controls using touch utility class
-        if (touch_)
-            touch_->UpdateTouches(character_->controls_);
-
         // Update controls using keys
         auto* ui = GetSubsystem<UI>();
         if (!ui->GetFocusElement())
         {
-            if (!touch_ || !touch_->useGyroscope_)
-            {
-                character_->controls_.Set(CTRL_FORWARD, dPadAdapter_.GetScancodeDown(SCANCODE_UP));
-                character_->controls_.Set(CTRL_BACK, dPadAdapter_.GetScancodeDown(SCANCODE_DOWN));
-                character_->controls_.Set(CTRL_LEFT, dPadAdapter_.GetScancodeDown(SCANCODE_LEFT));
-                character_->controls_.Set(CTRL_RIGHT, dPadAdapter_.GetScancodeDown(SCANCODE_RIGHT));
-                character_->controls_.Set(CTRL_CROUCH, input->GetKeyDown(KEY_SHIFT));
-            }
-            character_->controls_.Set(CTRL_JUMP, input->GetKeyDown(KEY_SPACE));
-
-            // Add character yaw & pitch from the mouse motion or touch input
-            if (touchEnabled_)
-            {
-                for (unsigned i = 0; i < input->GetNumTouches(); ++i)
-                {
-                    TouchState* state = input->GetTouch(i);
-                    if (!state->touchedElement_)    // Touch on empty space
-                    {
-                        auto* camera = cameraNode_->GetComponent<Camera>();
-                        if (!camera)
-                            return;
-
-                        auto* graphics = GetSubsystem<Graphics>();
-                        character_->controls_.yaw_ += TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.x_;
-                        character_->controls_.pitch_ += TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.y_;
-                    }
-                }
-            }
-            // Limit pitch
-            character_->controls_.pitch_ = Clamp(character_->controls_.pitch_, -80.0f, 80.0f);
             // Set rotation already here so that it's updated every rendering frame instead of every physics frame
             character_->GetNode()->SetRotation(Quaternion(character_->GetYaw(), Vector3::UP));
 

@@ -1,6 +1,26 @@
 {
 	"actions": [
 		{
+			"key": "Jump",
+			"value": {
+				"buttons": [
+					{
+						"controller": true
+					}
+				],
+				"keys": [
+					{
+						"scancode": "Space"
+					}
+				],
+				"screenButtons": [
+					{
+						"elementName": "Button1"
+					}
+				]
+			}
+		},
+		{
 			"key": "LookDown",
 			"value": {
 				"axes": [
@@ -54,6 +74,16 @@
 			}
 		},
 		{
+			"key": "Crouch",
+			"value": {
+				"keys": [
+					{
+						"scancode": "Left Shift"
+					}
+				]
+			}
+		},
+		{
 			"key": "Left",
 			"value": {
 				"axes": [
@@ -68,6 +98,21 @@
 					},
 					{
 						"scancode": "Left"
+					}
+				]
+			}
+		},
+		{
+			"key": "Brake",
+			"value": {
+				"keys": [
+					{
+						"scancode": "F"
+					}
+				],
+				"screenButtons": [
+					{
+						"elementName": "Button0"
 					}
 				]
 			}

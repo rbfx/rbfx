@@ -23,7 +23,7 @@
 #pragma once
 
 #include <Urho3D/Input/MoveAndOrbitComponent.h>
-#include <Urho3D/Input/Controls.h>
+#include <Urho3D/Input/InputMap.h>
 #include <Urho3D/Physics/PhysicsUtils.h>
 #include <Urho3D/Scene/LogicComponent.h>
 
@@ -72,9 +72,6 @@ public :
 
     void SetPitch(float pitch) override;
 
-    /// Movement controls.
-    Controls controls_;
-
     /// Get steering value.
     float GetSteering() { return steering_; }
 
@@ -86,6 +83,9 @@ public :
 
     /// Get wheel width.
     float GetWheelWidth() { return wheelWidth_; }
+
+    void SetInputMap(InputMap* inputMap);
+    InputMap* GetInputMap() const { return inputMap_; }
 
 private:
     /// Creates particle emitter.
@@ -125,4 +125,6 @@ private:
     Vector3 connectionPoints_[4];
     /// Do not recreate emitters if they are already created.
     bool emittersCreated;
+    /// Input map.
+    SharedPtr<InputMap> inputMap_;
 };

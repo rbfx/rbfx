@@ -25,6 +25,7 @@
 
 #include <Urho3D/Input/Controls.h>
 #include <Urho3D/Input/MoveAndOrbitComponent.h>
+#include <Urho3D/Input/InputMap.h>
 
 namespace Urho3D
 {
@@ -98,8 +99,8 @@ public:
         //platformBody_ = platformBody;
     }
 
-    /// Movement controls. Assigned by the main program each frame.
-    Controls controls_;
+    void SetInputMap(InputMap* inputMap);
+    InputMap* GetInputMap() const { return inputMap_; }
 
 private:
     bool IsNodeMovingPlatform(Node *node) const;
@@ -126,4 +127,6 @@ protected:
 
     // moving platform data
     MovingData movingData_[2];
+    /// Input map.
+    SharedPtr<InputMap> inputMap_;
 };

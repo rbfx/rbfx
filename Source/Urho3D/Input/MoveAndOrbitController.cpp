@@ -30,6 +30,7 @@
 #include "Urho3D/IO/VirtualFileSystem.h"
 #include "Urho3D/Resource/ResourceCache.h"
 #include "Urho3D/Scene/Node.h"
+#include "Urho3D/Scene/Scene.h"
 
 namespace Urho3D
 {
@@ -37,7 +38,7 @@ namespace Urho3D
 MoveAndOrbitController::MoveAndOrbitController(Context* context)
     : BaseClassName(context)
 {
-    SetUpdateEventMask(USE_UPDATE);
+    UpdateEventSubscription();
 }
 
 void MoveAndOrbitController::RegisterObject(Context* context)
@@ -91,15 +92,27 @@ void MoveAndOrbitController::SetRotationUIElement(UIElement* element)
     rotationUIElement_ = element;
 }
 
-void MoveAndOrbitController::DelayedStart()
+void MoveAndOrbitController::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    LogicComponent::DelayedStart();
-    ConnectToComponent();
+    Component::OnNodeSet(previousNode, currentNode);
+
+    connectToComponentCalled_ = false;
+    UpdateEventSubscription();
 }
 
-void MoveAndOrbitController::Update(float timeStep)
+void MoveAndOrbitController::OnSceneSet(Scene* scene)
 {
-    LogicComponent::Update(timeStep);
+    Component::OnSceneSet(scene);
+
+    UpdateEventSubscription();
+}
+
+void MoveAndOrbitController::HandleInputEnd(StringHash eventName, VariantMap& eventData)
+{
+    if (!connectToComponentCalled_)
+    {
+        ConnectToComponent();
+    }
 
     if (!component_)
         return;
@@ -128,6 +141,7 @@ void MoveAndOrbitController::Update(float timeStep)
         auto sensitivity = inputMap_->GetMetadata(AXIS_ROTATION_SENSITIVITY).GetFloat();
         if (sensitivity == 0)
             sensitivity = DEFAULT_AXIS_ROTATION_SENSITIVITY;
+        const float timeStep = context_->GetSubsystem<Time>()->GetTimeStep();
         yaw += turnRight * sensitivity * timeStep;
         pitch += lookDown * sensitivity * timeStep;
     }
@@ -144,8 +158,8 @@ void MoveAndOrbitController::Update(float timeStep)
     if (movementTouch)
     {
         const auto sensitivity = GetSensitivity(TOUCH_MOVEMENT_SENSITIVITY, DEFAULT_TOUCH_MOVEMENT_SENSITIVITY);
-        float halfAreaSize = Min(movementRect.Width(),movementRect.Height())*0.45f;
-        float fullMotion = Min(dpi/sensitivity,halfAreaSize);
+        const float halfAreaSize = Min(movementRect.Width(),movementRect.Height())*0.45f;
+        const float fullMotion = Min(dpi/sensitivity,halfAreaSize);
         const auto delta = movementTouch->position_ - movementTouchOrigin_;
         right += Clamp(delta.x_ / fullMotion, -1.0f, 1.0f);
         forward -= Clamp(delta.y_ / fullMotion, -1.0f, 1.0f);
@@ -154,8 +168,8 @@ void MoveAndOrbitController::Update(float timeStep)
     if (rotationTouch)
     {
         const auto sensitivity = GetSensitivity(TOUCH_ROTATION_SENSITIVITY, DEFAULT_TOUCH_ROTATION_SENSITIVITY);
-        float halfAreaSize = Min(rotationRect.Width(),rotationRect.Height())*0.45f;
-        float halfPiDistance = Min(dpi/sensitivity,halfAreaSize);
+        const float halfAreaSize = Min(rotationRect.Width(),rotationRect.Height())*0.45f;
+        const float halfPiDistance = Min(dpi/sensitivity,halfAreaSize);
         yaw += static_cast<float>(rotationTouch->delta_.x_)/halfPiDistance*90.0f;
         pitch += static_cast<float>(rotationTouch->delta_.y_)/halfPiDistance*90.0f;
     }
@@ -177,6 +191,24 @@ void MoveAndOrbitController::Update(float timeStep)
         component_->SetVelocity(velocity);
 }
 
+
+void MoveAndOrbitController::UpdateEventSubscription()
+{
+    auto subscribe = IsEnabledEffective() && (GetScene() && GetScene()->IsUpdateEnabled());
+    if (subscribed_ != subscribe)
+    {
+        subscribed_ = subscribe;
+        if (subscribed_)
+        {
+            SubscribeToEvent(E_INPUTEND, URHO3D_HANDLER(MoveAndOrbitController, HandleInputEnd));
+        }
+        else
+        {
+            UnsubscribeFromEvent(E_INPUTEND);
+        }
+    }
+}
+
 void MoveAndOrbitController::ConnectToComponent()
 {
     if (node_)
@@ -188,7 +220,11 @@ void MoveAndOrbitController::ConnectToComponent()
         }
     }
     else
+    {
         component_ = nullptr;
+    }
+
+    connectToComponentCalled_ = true;
 }
 
 void MoveAndOrbitController::EvaluateTouchRects(IntRect& movementRect, IntRect& rotationRect) const
@@ -233,6 +269,7 @@ void MoveAndOrbitController::EvaluateTouchRects(IntRect& movementRect, IntRect& 
         rotationRect = IntRect(rotationRect.Min() + IntVector2(halfSize.x_, 0), rotationRect.Max());
     }
 }
+
 void MoveAndOrbitController::FindTouchStates(const IntRect& movementRect, const IntRect& rotationRect,
     TouchState*& movementTouch, TouchState*& rotationTouch)
 {

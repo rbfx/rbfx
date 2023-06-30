@@ -97,8 +97,6 @@ protected:
         "    <replace sel=\"/element/element[./attribute[@name='Name' and @value='Button1']]/element[./attribute[@name='Name' and @value='Label']]/attribute[@name='Text']/@value\">Jump</replace>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Button1']]\">"
         "        <element type=\"Text\">"
-        "            <attribute name=\"Name\" value=\"KeyBinding\" />"
-        "            <attribute name=\"Text\" value=\"SPACE\" />"
         "        </element>"
         "    </add>"
         "</patch>";

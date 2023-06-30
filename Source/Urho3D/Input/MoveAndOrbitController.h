@@ -30,9 +30,9 @@ namespace Urho3D
 class MoveAndOrbitComponent;
 class InputTranslator;
 
-class URHO3D_API MoveAndOrbitController : public LogicComponent
+class URHO3D_API MoveAndOrbitController : public Component
 {
-    URHO3D_OBJECT(MoveAndOrbitController, LogicComponent);
+    URHO3D_OBJECT(MoveAndOrbitController, Component);
 
 public:
     static inline constexpr float DEFAULT_MOUSE_SENSITIVITY{0.1f};
@@ -89,15 +89,18 @@ public:
     UIElement* GetMovementUIElement() const { return movementUIElement_; }
     /// Get UI element to filter touch events for rotation.
     UIElement* GetRotationUIElement() const { return rotationUIElement_; }
-
-
-    /// Called before the first update. At this point all other components of the node should exist. Will also be called
-    /// if update events are not wanted; in that case the event is immediately unsubscribed afterward.
-    void DelayedStart() override;
-    /// Called on scene update, variable timestep.
-    void Update(float timeStep) override;
+protected:
+    /// Handle scene node being assigned at creation.
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
+    /// Handle scene being assigned.
+    void OnSceneSet(Scene* scene) override;
 
 private:
+    /// Called on input end.
+    void HandleInputEnd(StringHash eventName, VariantMap& eventData);
+    /// Subscribe/unsubscribe to update events based on current enabled state and update event mask.
+    void UpdateEventSubscription();
+
     /// Connect to MoveAndOrbitComponent if possible.
     void ConnectToComponent();
     /// Evaluate active touch areas.
@@ -113,13 +116,19 @@ private:
     /// Component that provides animation states for the model.
     WeakPtr<MoveAndOrbitComponent> component_;
 
-    /// UI element to filter touch events
+    /// UI element to filter touch events.
     WeakPtr<UIElement> movementUIElement_{};
-    /// UI element to filter touch events
+    /// UI element to filter touch events.
     WeakPtr<UIElement> rotationUIElement_{};
-
+    /// Is controller subscribed to events.
+    bool subscribed_{};
+    /// Is ConnectToComponent already called for the current node.
+    bool connectToComponentCalled_{};
+    /// Touch id for movement gesture.
     int movementTouchId_{-1};
+    /// Touch id for rotation gesture.
     int rotationTouchId_{-1};
+    /// Position where the touch gesture started.
     IntVector2 movementTouchOrigin_{};
 };
 

@@ -95,7 +95,7 @@ void KinematicCharacter::FixedUpdate(float timeStep)
     Vector3 moveDir = GetVelocity();
     onGround_ = kinematicController_->OnGround();
 
-    if (controls_.IsDown(CTRL_CROUCH))
+    if (inputMap_->Evaluate("Crouch"))
     {
         kinematicController_->SetHeight(0.9f);
         kinematicController_->SetOffset(Vector3(0.0f, 0.45f, 0.0f));
@@ -131,7 +131,7 @@ void KinematicCharacter::FixedUpdate(float timeStep)
         }
         isJumping_ = false;
         // Jump. Must release jump control between jumps
-        if (controls_.IsDown(CTRL_JUMP))
+        if (inputMap_->Evaluate("Jump"))
         {
             isJumping_ = true;
             if (okToJump_)
@@ -204,6 +204,11 @@ void KinematicCharacter::FixedPostUpdate(float timeStep)
     // shift and clear
     movingData_[1] = movingData_[0];
     movingData_[0].node_ = 0;
+}
+
+void KinematicCharacter::SetInputMap(InputMap* inputMap)
+{
+    inputMap_ = inputMap;
 }
 
 bool KinematicCharacter::IsNodeMovingPlatform(Node *node) const

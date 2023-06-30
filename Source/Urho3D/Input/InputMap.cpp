@@ -34,17 +34,17 @@ namespace
 {
 
 static const char* scancodeNames[] = {
-    "",
-    "CTRL",
-    "SHIFT",
-    "ALT",
-    "A",
+    "", // 0
+    "Ctrl",
+    "Shift",
+    "Alt",
+    "A", // 4
     "B",
     "C",
     "D",
     "E",
     "F",
-    "G",
+    "G", // 10
     "H",
     "I",
     "J",
@@ -54,7 +54,7 @@ static const char* scancodeNames[] = {
     "N",
     "O",
     "P",
-    "Q",
+    "Q", //20
     "R",
     "S",
     "T",
@@ -64,7 +64,7 @@ static const char* scancodeNames[] = {
     "X",
     "Y",
     "Z",
-    "1",
+    "1", //30
     "2",
     "3",
     "4",
@@ -74,7 +74,7 @@ static const char* scancodeNames[] = {
     "8",
     "9",
     "0",
-    "Return",
+    "Return", //40
     "Escape",
     "Backspace",
     "Tab",
@@ -84,7 +84,7 @@ static const char* scancodeNames[] = {
     "[",
     "]",
     "\\",
-    "#",
+    "#", //50
     ";",
     "'",
     "`",
@@ -94,7 +94,7 @@ static const char* scancodeNames[] = {
     "CapsLock",
     "F1",
     "F2",
-    "F3",
+    "F3", //60
     "F4",
     "F5",
     "F6",
@@ -104,7 +104,7 @@ static const char* scancodeNames[] = {
     "F10",
     "F11",
     "F12",
-    "PrintScreen",
+    "PrintScreen", //70
     "ScrollLock",
     "Pause",
     "Insert",
@@ -114,7 +114,7 @@ static const char* scancodeNames[] = {
     "End",
     "PageDown",
     "Right",
-    "Left",
+    "Left", //80
     "Down",
     "Up",
     "Numlock",
@@ -124,7 +124,7 @@ static const char* scancodeNames[] = {
     "Keypad +",
     "Keypad Enter",
     "Keypad 1",
-    "Keypad 2",
+    "Keypad 2", //90
     "Keypad 3",
     "Keypad 4",
     "Keypad 5",
@@ -134,7 +134,7 @@ static const char* scancodeNames[] = {
     "Keypad 9",
     "Keypad 0",
     "Keypad .",
-    "Non US Backslash",
+    "Non US Backslash", //100
     "Application",
     "Power",
     "Keypad =",
@@ -144,17 +144,17 @@ static const char* scancodeNames[] = {
     "F16",
     "F17",
     "F18",
-    "F19",
+    "F19", //110
     "F20",
     "F21",
     "F22",
     "F23",
-    "F24",
+    "F24", //115
     "Execute",
     "Help",
     "Menu",
     "Select",
-    "Stop",
+    "Stop", //120
     "Again",
     "Undo",
     "Cut",
@@ -162,31 +162,31 @@ static const char* scancodeNames[] = {
     "Paste",
     "Find",
     "Mute",
-    "VolumeUp",
-    "VolumeDown",
-    "KP Comma",
-    "KP_EQUALSAS400",
-    "INTERNATIONAL1",
-    "Keypad ,",
-    "Keypad = (AS400)",
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
+    "Volume Up",
+    "Volume Down",
+    "Locking Caps Lock", //130
+    "Locking Num Lock",
+    "Locking Scroll Lock",
+    "KP Comma", // 133
+    "KP EQUALSAS400",
+    "International1", //135
+    "International2",
+    "International3",
+    "International4",
+    "International5",
+    "International6", //140
+    "International7",
+    "International8",
+    "International9",
+    "Lang1",
+    "Lang2",
+    "Lang3",
+    "Lang4",
+    "Lang5",
+    "Lang6",
+    "Lang7", //150
+    "Lang8",
+    "Lang9",
     "AltErase",
     "SysReq",
     "Cancel",
@@ -194,27 +194,27 @@ static const char* scancodeNames[] = {
     "Prior",
     "Return",
     "Separator",
-    "Out",
+    "Out", //160
     "Oper",
     "Clear / Again",
     "CrSel",
-    "ExSel",
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    "Keypad 00",
+    "ExSel", //164
+    "165",
+    "166",
+    "167",
+    "168",
+    "169",
+    "170", //170
+    "171",
+    "172",
+    "173",
+    "174",
+    "175",
+    "Keypad 00", //176
     "Keypad 000",
     "ThousandsSeparator",
     "DecimalSeparator",
-    "CurrencyUnit",
+    "CurrencyUnit", //180
     "CurrencySubUnit",
     "Keypad (",
     "Keypad )",
@@ -224,7 +224,7 @@ static const char* scancodeNames[] = {
     "Keypad Backspace",
     "Keypad A",
     "Keypad B",
-    "Keypad C",
+    "Keypad C", //190
     "Keypad D",
     "Keypad E",
     "Keypad F",
@@ -234,7 +234,7 @@ static const char* scancodeNames[] = {
     "Keypad <",
     "Keypad >",
     "Keypad &",
-    "Keypad &&",
+    "Keypad &&", //200
     "Keypad |",
     "Keypad ||",
     "Keypad :",
@@ -244,7 +244,7 @@ static const char* scancodeNames[] = {
     "Keypad !",
     "Keypad MemStore",
     "Keypad MemRecall",
-    "Keypad MemClear",
+    "Keypad MemClear", //210
     "Keypad MemAdd",
     "Keypad MemSubtract",
     "Keypad MemMultiply",
@@ -254,44 +254,44 @@ static const char* scancodeNames[] = {
     "Keypad ClearEntry",
     "Keypad Binary",
     "Keypad Octal",
-    "Keypad Decimal",
+    "Keypad Decimal", //220
     "Keypad Hexadecimal",
-    NULL,
-    NULL,
+    "222",
+    "223",
     "Left Ctrl",
     "Left Shift",
     "Left Alt",
     "Left GUI",
     "Right Ctrl",
     "Right Shift",
-    "Right Alt",
+    "Right Alt", //230
     "Right GUI",
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    "ModeSwitch",
+    "232",
+    "233",
+    "234",
+    "235",
+    "236",
+    "237",
+    "238",
+    "239",
+    "240",
+    "241",
+    "242",
+    "243",
+    "244",
+    "245",
+    "246",
+    "247",
+    "248",
+    "249",
+    "250",
+    "251",
+    "252",
+    "253",
+    "254",
+    "255",
+    "256",
+    "ModeSwitch", //257
     "AudioNext",
     "AudioPrev",
     "AudioStop",
@@ -367,7 +367,19 @@ ControllerButtonMapping::ControllerButtonMapping(unsigned buttonIndex)
 void ControllerButtonMapping::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "controller", controller_, false);
-    SerializeOptionalValue(archive, "button", button_, 0);
+    if (controller_)
+    {
+        static const char* buttonNames[] = {"A", "B", "X", "Y", "Back", "Guide", "Start", "LeftStick", "RightStick",
+            "LeftShoulder", "RightShoulder", "Up", "Down", "Left", "Right", "Misc1", "Paddle1", "Paddle2",
+            "Paddle3", "Paddle4", "Touchpad", nullptr};
+        SerializeOptionalValue(archive, "button", button_, 0,
+            [&](Archive& archive, const char* name, auto& value)
+            { SerializeEnum<unsigned, unsigned>(archive, name, value, buttonNames); });
+    }
+    else
+    {
+        SerializeOptionalValue(archive, "button", button_, 0);
+    }
 }
 
 ControllerAxisMapping::ControllerAxisMapping()
@@ -470,6 +482,20 @@ MouseButtonFlags MouseButtonMapping::GetMask() const
     return static_cast<MouseButtonFlags>(1 << mouseButton_);
 }
 
+ScreenButtonMapping::ScreenButtonMapping()
+{
+}
+
+ScreenButtonMapping::ScreenButtonMapping(const ea::string& elementName)
+    : elementName_(elementName)
+{
+}
+
+void ScreenButtonMapping::SerializeInBlock(Archive& archive)
+{
+    SerializeOptionalValue(archive, "elementName", elementName_, EMPTY_STRING);
+}
+
 void ActionMapping::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "keys", keyboardKeys_, EmptyObject{},
@@ -482,14 +508,33 @@ void ActionMapping::SerializeInBlock(Archive& archive)
         [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, value, "hat"); });
     SerializeOptionalValue(archive, "mouseButtons", mouseButtons_, EmptyObject{},
         [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, value, "button"); });
+    SerializeOptionalValue(archive, "screenButtons", screenButtons_, EmptyObject{},
+        [&](Archive& archive, const char* name, auto& value) { SerializeVector(archive, name, value, "element"); });
 }
 
-float ActionMapping::Evaluate(Input* input, bool isUIInFocus, float deadZone, int ignoreJoystickId) const
+float ActionMapping::Evaluate(Input* input, UI* ui, float deadZone, int ignoreJoystickId) const
 {
-    if (!isUIInFocus)
+    const UIElement* elementInFocus = (ui != nullptr) ? ui->GetFocusElement(): nullptr;
+
+    if (!elementInFocus)
     {
         for (auto& key : keyboardKeys_)
         {
+            switch (key.scancode_)
+            {
+            case 1:
+                if (input->GetKeyDown(KEY_LCTRL) || input->GetKeyDown(KEY_RCTRL))
+                    return 1.0f;
+                break;
+            case 2:
+                if (input->GetKeyDown(KEY_LSHIFT) || input->GetKeyDown(KEY_RSHIFT))
+                    return 1.0f;
+                break;
+            case 3:
+                if (input->GetKeyDown(KEY_LALT) || input->GetKeyDown(KEY_RALT))
+                    return 1.0f;
+                break;
+            }
             if (input->GetScancodeDown(key.scancode_))
             {
                 return 1.0f;
@@ -507,6 +552,26 @@ float ActionMapping::Evaluate(Input* input, bool isUIInFocus, float deadZone, in
     {
         return 0.0f;
     }
+
+    if (ui != nullptr && !screenButtons_.empty())
+    {
+        const unsigned numTouches = input->GetNumTouches();
+        for (unsigned i = 0; i < numTouches; ++i)
+        {
+            const auto touch = input->GetTouch(i);
+            if (touch && touch->GetTouchedElement())
+            {
+                for (auto& screenButton : screenButtons_)
+                {
+                    if (screenButton.elementName_ == touch->GetTouchedElement()->GetName())
+                    {
+                        return 1.0f;
+                    }
+                }
+            }
+        }
+    }
+
     const unsigned numJoysticks = input->GetNumJoysticks();
     float sum = 0.0f;
     for (unsigned i = 0; i < numJoysticks; ++i)
@@ -650,9 +715,6 @@ void InputMap::MapHat(const ea::string& action, HatPosition hatPosition)
 
 void InputMap::MapMouseButton(const ea::string& action, MouseButton mouseButton)
 {
-    if (mouseButton == MOUSEB_NONE)
-        return;
-
     unsigned value;
 
     switch (mouseButton)
@@ -674,6 +736,17 @@ void InputMap::MapMouseButton(const ea::string& action, MouseButton mouseButton)
     }
     auto& map = GetOrAddMapping(action);
     map.mouseButtons_.emplace_back(mouseButton);
+}
+
+void InputMap::MapScreenButton(const ea::string& action, const ea::string& elementName)
+{
+    for (auto kv : actions_)
+    {
+        ea::erase_if(kv.second.screenButtons_,
+            [=](const Detail::ScreenButtonMapping& m) { return m.elementName_ == elementName; });
+    }
+    auto& map = GetOrAddMapping(action);
+    map.screenButtons_.emplace_back(elementName);
 }
 
 const Detail::ActionMapping& InputMap::GetMapping(const ea::string& action) const
@@ -723,7 +796,7 @@ float InputMap::Evaluate(const ea::string& action)
         return 0.0f;
     const auto input = context_->GetSubsystem<Input>();
     const auto ui = context_->GetSubsystem<UI>();
-    return it->second.Evaluate(input, ui ? ui->GetFocusElement() != nullptr : false, deadZone_, ignoreJoystickId_);
+    return it->second.Evaluate(input, ui, deadZone_, ignoreJoystickId_);
 }
 
 Detail::ActionMapping& InputMap::GetOrAddMapping(const ea::string& action)

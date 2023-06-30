@@ -145,6 +145,11 @@ void Vehicle::Init()
     GetWheelComponents();
 }
 
+void Vehicle::SetInputMap(InputMap* inputMap)
+{
+    inputMap_ = inputMap;
+}
+
 void Vehicle::InitWheel(const ea::string& name, const Vector3& offset, WeakPtr<Node>& wheelNode, unsigned& wheelNodeID)
 {
     auto* cache = GetSubsystem<ResourceCache>();

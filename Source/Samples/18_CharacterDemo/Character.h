@@ -24,6 +24,7 @@
 
 #include <Urho3D/Input/MoveAndOrbitComponent.h>
 #include <Urho3D/Input/Controls.h>
+#include <Urho3D/Input/InputMap.h>
 
 using namespace Urho3D;
 
@@ -56,8 +57,8 @@ public:
     /// Handle physics world update. Called by LogicComponent base class.
     void FixedUpdate(float timeStep) override;
 
-    /// Movement controls. Assigned by the main program each frame.
-    Controls controls_;
+    void SetInputMap(InputMap* inputMap);
+    InputMap* GetInputMap() const { return inputMap_; }
 
 private:
     /// Handle physics collision event.
@@ -69,4 +70,7 @@ private:
     bool okToJump_;
     /// In air timer. Due to possible physics inaccuracy, character can be off ground for max. 1/10 second and still be allowed to move.
     float inAirTimer_;
+
+    /// Input map.
+    SharedPtr<InputMap> inputMap_;
 };

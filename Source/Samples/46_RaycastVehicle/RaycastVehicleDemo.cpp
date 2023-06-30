@@ -149,7 +149,10 @@ void RaycastVehicleDemo::CreateVehicle()
     vehicleNode->SetPosition(Vector3(0.0f, 25.0f, 0.0f));
     // Create the vehicle logic component
     vehicle_ = vehicleNode->CreateComponent<Vehicle2>();
-    vehicleNode->CreateComponent<MoveAndOrbitController>()->LoadInputMap("Input/MoveAndOrbit.inputmap");
+    const auto moveAndOrbit = vehicleNode->CreateComponent<MoveAndOrbitController>();
+    moveAndOrbit->LoadInputMap("Input/MoveAndOrbit.inputmap");
+    vehicle_->SetInputMap(moveAndOrbit->GetInputMap());
+
     // Create the rendering and physics components
     vehicle_->Init();
 }
@@ -192,32 +195,6 @@ void RaycastVehicleDemo::Update(float timeStep)
         // Get movement controls and assign them to the vehicle component. If UI has a focused element, clear controls
         if (!ui->GetFocusElement())
         {
-            vehicle_->controls_.Set(CTRL_FORWARD, input->GetKeyDown(KEY_W));
-            vehicle_->controls_.Set(CTRL_BACK, input->GetKeyDown(KEY_S));
-            vehicle_->controls_.Set(CTRL_LEFT, input->GetKeyDown(KEY_A));
-            vehicle_->controls_.Set(CTRL_RIGHT, input->GetKeyDown(KEY_D));
-            vehicle_->controls_.Set(CTRL_BRAKE, input->GetKeyDown(KEY_F));
-            // Add yaw & pitch from the mouse motion or touch input. Used only for the camera, does not affect motion
-            if (touchEnabled_)
-            {
-                for (unsigned i = 0; i < input->GetNumTouches(); ++i)
-                {
-                    TouchState* state = input->GetTouch(i);
-                    if (!state->touchedElement_) // Touch on empty space
-                    {
-                        auto* camera = cameraNode_->GetComponent<Camera>();
-                        if (!camera)
-                        {
-                            return;
-                        }
-                        auto* graphics = GetSubsystem<Graphics>();
-                        vehicle_->controls_.yaw_ += TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.x_;
-                        vehicle_->controls_.pitch_ += TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.y_;
-                    }
-                }
-            }
-            // Limit pitch
-            vehicle_->controls_.pitch_ = Clamp(vehicle_->controls_.pitch_, 0.0f, 80.0f);
             // Check for loading / saving the scene
             if (input->GetKeyPress(KEY_F5))
             {
@@ -238,10 +215,6 @@ void RaycastVehicleDemo::Update(float timeStep)
                     vehicle_ = vehicleNode->GetComponent<Vehicle2>();
                 }
             }
-        }
-        else
-        {
-            vehicle_->controls_.Set(CTRL_FORWARD | CTRL_BACK | CTRL_LEFT | CTRL_RIGHT | CTRL_BRAKE, false);
         }
     }
 }
