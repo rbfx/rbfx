@@ -225,6 +225,7 @@ set(EMSCRIPTEN_TOTAL_MEMORY 128 CACHE STRING  "Memory limit in megabytes. Set to
 
 # Misc
 rbfx_dependent_option(URHO3D_PLUGIN_LIST "List of plugins to be statically linked with Editor and Player executables" "103_GamePlugin;113_InputLogger" URHO3D_SAMPLES "")
+option               (URHO3D_PARALLEL_BUILD     "MSVC-only: enable parallel builds. A bool or a number of processors to use." ON)
 
 option(URHO3D_PLAYER                            "Build player application"                              ${URHO3D_ENABLE_ALL})
 cmake_dependent_option(URHO3D_EDITOR            "Build editor application"                              ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)
