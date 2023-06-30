@@ -1257,8 +1257,8 @@ SharedPtr<Model> ModelView::ExportModel(const ea::string& name) const
 
 ResourceRefList ModelView::ExportMaterialList() const
 {
-    ResourceRefList result;
-    result.type_ = Material::GetTypeStatic();
+    ResourceRefList result(Material::GetTypeStatic());
+
     for (const GeometryView& geometry : geometries_)
         result.names_.push_back(geometry.material_);
     return result;
