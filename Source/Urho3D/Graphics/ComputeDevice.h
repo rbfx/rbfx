@@ -50,7 +50,7 @@ namespace Urho3D
 class ConstantBuffer;
 class IndexBuffer;
 class Graphics;
-class ShaderVariation;
+class RawShader;
 class Texture;
 class VertexBuffer;
 
@@ -96,7 +96,7 @@ public:
     /// Sets a structured-buffer/SSBO for read/write usage.
     bool SetWriteBuffer(ComputeBuffer* buffer, CD_UNIT unit);
     /// Sets or clears the compute shader to use.
-    bool SetProgram(ShaderVariation* computeShader);
+    bool SetProgram(RawShader* computeShader);
     /// Dispatches the compute call, will queue a barrier as needed.
     void Dispatch(unsigned xDim, unsigned yDim, unsigned zDim);
     /// Apply all dirty GPU object bindings.
@@ -143,7 +143,7 @@ private:
     /// Handle to the graphics object for device specific access.
     Graphics* graphics_;
     /// Active compute shader that will be invoked with dispatch.
-    WeakPtr<ShaderVariation> computeShader_;
+    WeakPtr<RawShader> computeShader_;
     /// Tag the shader program as dirty.
     bool programDirty_;
 };

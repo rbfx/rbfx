@@ -22,10 +22,12 @@
 
 #include "../Precompiled.h"
 
+#include "../RenderPipeline/LightmapRenderPipeline.h"
+
+#include "../RenderAPI/DrawCommandQueue.h"
 #include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/BatchRenderer.h"
 #include "../RenderPipeline/InstancingBuffer.h"
-#include "../RenderPipeline/LightmapRenderPipeline.h"
 #include "../RenderPipeline/RenderBufferManager.h"
 #include "../RenderPipeline/ScenePass.h"
 #include "../RenderPipeline/SceneProcessor.h"

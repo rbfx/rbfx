@@ -50,6 +50,19 @@ Quaternion faceRotations[MAX_CUBEMAP_FACES] = {
     Quaternion(0, 180, 0),
 };
 
+ea::span<const unsigned> GetRayCounts(unsigned numLevels)
+{
+    static const unsigned rayCounts[]{1, 8, 16};
+    static const unsigned rayCounts128[]{1, 8, 16, 16, 16, 16, 32, 32};
+    static const unsigned rayCounts256[]{1, 8, 16, 16, 16, 16, 16, 32, 32};
+    if (numLevels == 7)
+        return rayCounts128;
+    else if (numLevels == 8)
+        return rayCounts256;
+    else
+        return rayCounts;
+}
+
 }
 
 CubemapRenderer::CubemapRenderer(Scene* scene)
@@ -282,31 +295,20 @@ void CubemapRenderer::QueueFaceUpdate(CubeMapFace face)
     renderer->QueueRenderSurface(surface);
 }
 
-void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* destTexture, ea::span<const unsigned> rayCounts)
+void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* destTexture)
 {
 #if !defined(URHO3D_COMPUTE)
     URHO3D_LOGERROR("CubemapRenderer::FilterCubemap cannot be executed without URHO3D_COMPUTE enabled");
 #else
+    const unsigned numLevels = destTexture->GetLevels();
+    EnsurePipelineStates(numLevels);
+
     auto graphics = GetSubsystem<Graphics>();
     auto computeDevice = GetSubsystem<ComputeDevice>();
 
-    const unsigned numLevels = destTexture->GetLevels();
-    const float roughStep = 1.0f / (float)(numLevels - 1);
-
-    ea::fixed_vector<ShaderVariation*, 64> shaders;
-    for (unsigned i = 0; i < numLevels; ++i)
-    {
-        const unsigned levelWidth = destTexture->GetLevelWidth(i);
-        const unsigned rayCount = rayCounts[Clamp<unsigned>(i, 0, rayCounts.size() - 1)];
-
-        const ea::string shaderParams = Format("RAY_COUNT={} FILTER_RES={} FILTER_INV_RES={} ROUGHNESS={}",
-            rayCount, levelWidth, 1.0f / levelWidth, roughStep * i);
-        shaders.push_back(graphics->GetShader(CS, "v2/C_FilterCubemap", shaderParams));
-    }
-
     // go through them cubemap -> level
 #ifdef URHO3D_DILIGENT
-    computeDevice->SetReadTexture(sourceTexture, "srcTex");
+    computeDevice->SetReadTexture(sourceTexture, "sSourceTexture");
     ea::string writeUnit = "outputTexture";
 #else
     ComputeDevice->SetReadTexture(sourceTexture, 0);
@@ -316,7 +318,7 @@ void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* des
     for (unsigned i = 0; i < numLevels; ++i)
     {
         computeDevice->SetWriteTexture(destTexture, writeUnit, UINT_MAX, i);
-        computeDevice->SetProgram(shaders[i]);
+        computeDevice->SetProgram(cachedPipelineStates_->pipelineStates_[i]->GetDesc().AsCompute()->computeShader_);
         computeDevice->Dispatch(destTexture->GetLevelWidth(i), destTexture->GetLevelHeight(i), 6);
     }
     computeDevice->SetWriteTexture(nullptr, writeUnit, 0, 0);
@@ -324,18 +326,36 @@ void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* des
 #endif
 }
 
-void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* destTexture)
+void CubemapRenderer::EnsurePipelineStates(unsigned numLevels)
 {
-    const unsigned rayCounts[]{1, 8, 16};
-    const unsigned rayCounts128[]{1, 8, 16, 16, 16, 16, 32, 32};
-    const unsigned rayCounts256[]{1, 8, 16, 16, 16, 16, 16, 32, 32};
+    if (cachedPipelineStates_ && cachedPipelineStates_->numLevels_ == numLevels)
+        return;
 
-    if (destTexture->GetWidth() == 128)
-        FilterCubemap(sourceTexture, destTexture, rayCounts128);
-    else if (destTexture->GetWidth() == 256)
-        FilterCubemap(sourceTexture, destTexture, rayCounts256);
-    else
-        FilterCubemap(sourceTexture, destTexture, rayCounts);
+    auto graphics = GetSubsystem<Graphics>();
+    auto pipelineStateCache = GetSubsystem<PipelineStateCache>();
+
+    CachedPipelineStates cache;
+    cache.numLevels_ = numLevels;
+
+    const auto rayCounts = GetRayCounts(numLevels);
+    const float roughStep = 1.0f / static_cast<float>(numLevels - 1);
+    for (unsigned i = 0; i < numLevels; ++i)
+    {
+        const unsigned levelWidth = 1 << (numLevels - 1 - i);
+        const unsigned rayCount = rayCounts[ea::max(i, rayCounts.size() - 1)];
+
+        const ea::string shaderParams = Format("RAY_COUNT={} FILTER_RES={} FILTER_INV_RES={} ROUGHNESS={}",
+            rayCount, levelWidth, 1.0f / levelWidth, roughStep * i);
+
+        ComputePipelineStateDesc desc;
+        desc.debugName_ = Format("C_FilterCubemap: {} of {}", i, numLevels);
+        desc.computeShader_ = graphics->GetShader(CS, "v2/C_FilterCubemap", shaderParams);
+        desc.samplers_.Add("SourceTexture", SamplerStateDesc::Bilinear());
+
+        cache.pipelineStates_.push_back(pipelineStateCache->GetComputePipelineState(desc));
+    }
+
+    cachedPipelineStates_ = cache;
 }
 
 }

@@ -32,6 +32,7 @@
 #include "../RenderPipeline/RenderPipelineDebugger.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
 #include "../RenderPipeline/ShaderConsts.h"
+#include "../RenderAPI/DrawCommandQueue.h"
 #include "../RenderAPI/RenderContext.h"
 #include "../RenderAPI/RenderDevice.h"
 #include "../RenderAPI/RenderAPIUtils.h"
@@ -156,6 +157,10 @@ RenderBufferManager::RenderBufferManager(RenderPipelineInterface* renderPipeline
     viewportDepthBuffer_ = MakeShared<ViewportDepthStencilRenderBuffer>(renderPipeline_);
 
     InitializePipelineStates();
+}
+
+RenderBufferManager::~RenderBufferManager()
+{
 }
 
 void RenderBufferManager::SetSettings(const RenderBufferManagerSettings& settings)

@@ -18,6 +18,18 @@ namespace Urho3D
 namespace
 {
 
+ea::span<const ShaderType> GetShaderTypes(PipelineStateType pipelineType)
+{
+    static const ShaderType graphicsShaderTypes[] = {VS, PS, GS, HS, DS};
+    static const ShaderType computeShaderTypes[] = {CS};
+    switch (pipelineType)
+    {
+    case PipelineStateType::Graphics: return graphicsShaderTypes;
+    case PipelineStateType::Compute: return computeShaderTypes;
+    default: URHO3D_ASSERT(false); return {};
+    }
+}
+
 unsigned GetScalarUniformSize(Diligent::SHADER_CODE_BASIC_TYPE basicType)
 {
     switch (basicType)
@@ -445,8 +457,11 @@ void ShaderProgramReflection::RecalculateUniformHash()
     }
 }
 
-void ShaderProgramReflection::ConnectToShaderVariables(Diligent::IShaderResourceBinding* binding)
+void ShaderProgramReflection::ConnectToShaderVariables(
+    PipelineStateType pipelineType, Diligent::IShaderResourceBinding* binding)
 {
+    const auto shaderTypes = GetShaderTypes(pipelineType);
+
     // TODO(diligent): Revisit this place? Do we want to reuse it for compute shaders?
     const unsigned maxShaderType = CS;
     for (UniformBufferReflection& uniformBuffer : uniformBuffers_)
@@ -454,11 +469,10 @@ void ShaderProgramReflection::ConnectToShaderVariables(Diligent::IShaderResource
         if (uniformBuffer.size_ == 0)
             continue;
 
-        for (unsigned i = 0; i < maxShaderType; ++i)
+        for (ShaderType shaderType : shaderTypes)
         {
-            const Diligent::SHADER_TYPE shaderType = ToInternalShaderType(static_cast<ShaderType>(i));
             Diligent::IShaderResourceVariable* shaderVariable =
-                binding->GetVariableByName(shaderType, uniformBuffer.internalName_.c_str());
+                binding->GetVariableByName(ToInternalShaderType(shaderType), uniformBuffer.internalName_.c_str());
             if (shaderVariable)
                 uniformBuffer.variables_.push_back(shaderVariable);
         }
@@ -466,11 +480,10 @@ void ShaderProgramReflection::ConnectToShaderVariables(Diligent::IShaderResource
 
     for (auto& [nameHash, resource] : shaderResources_)
     {
-        for (unsigned i = 0; i < maxShaderType; ++i)
+        for (ShaderType shaderType : shaderTypes)
         {
-            const Diligent::SHADER_TYPE shaderType = ToInternalShaderType(static_cast<ShaderType>(i));
             Diligent::IShaderResourceVariable* shaderVariable =
-                binding->GetVariableByName(shaderType, resource.internalName_.c_str());
+                binding->GetVariableByName(ToInternalShaderType(shaderType), resource.internalName_.c_str());
             if (shaderVariable)
             {
                 resource.variable_ = shaderVariable;

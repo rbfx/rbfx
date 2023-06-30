@@ -53,8 +53,8 @@ struct URHO3D_API RawTextureParams
 
 struct URHO3D_API RawTextureUAVKey
 {
-    bool canWrite_{};
-    bool canRead_{};
+    bool canWrite_{true};
+    bool canRead_{true};
     /// The first array slice or cube face to be viewed.
     unsigned firstSlice_{};
     /// The first mip level to be viewed.
@@ -63,6 +63,13 @@ struct URHO3D_API RawTextureUAVKey
     unsigned numSlices_{};
     /// The number of mip levels to be viewed. 0 to deduce automatically.
     unsigned numLevels_{};
+
+    // clang-format off
+    RawTextureUAVKey& ReadOnly() { canWrite_ = false; return *this; }
+    RawTextureUAVKey& WriteOnly() { canRead_ = false; return *this; }
+    RawTextureUAVKey& FromLevel(unsigned level, unsigned numLevels = 0) { firstLevel_ = level; numLevels_ = numLevels; return *this; }
+    RawTextureUAVKey& FromSlice(unsigned slice, unsigned numSlices = 0) { firstSlice_ = slice; numSlices_ = numSlices; return *this; }
+    // clang-format on
 
     /// Operators.
     /// @{

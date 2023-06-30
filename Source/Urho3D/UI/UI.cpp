@@ -63,6 +63,7 @@
 #include "../UI/Window.h"
 #include "../UI/View3D.h"
 #include "../UI/UIComponent.h"
+#include "Urho3D/RenderAPI/DrawCommandQueue.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"

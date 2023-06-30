@@ -24,7 +24,6 @@
 
 #include "../Container/FlagSet.h"
 #include "../Core/Object.h"
-#include "../RenderAPI/DrawCommandQueue.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../RenderAPI/PipelineState.h"
 #include "../RenderAPI/RenderContext.h"
@@ -34,6 +33,7 @@
 namespace Urho3D
 {
 
+class DrawCommandQueue;
 class RenderPipelineInterface;
 struct FrameInfo;
 
@@ -67,6 +67,8 @@ class URHO3D_API RenderBufferManager : public Object
 
 public:
     explicit RenderBufferManager(RenderPipelineInterface* renderPipeline);
+    ~RenderBufferManager() override;
+
     void SetSettings(const RenderBufferManagerSettings& settings);
     void SetFrameSettings(const RenderBufferManagerFrameSettings& frameSettings);
 

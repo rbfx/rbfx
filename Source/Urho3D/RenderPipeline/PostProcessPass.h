@@ -24,7 +24,6 @@
 
 #include "../Container/FlagSet.h"
 #include "../Core/Object.h"
-#include "../RenderAPI/DrawCommandQueue.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
 
 #include <EASTL/vector.h>

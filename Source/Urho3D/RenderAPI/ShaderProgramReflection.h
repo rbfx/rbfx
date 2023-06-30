@@ -95,7 +95,7 @@ public:
     const ShaderResourceReflectionMap& GetShaderResources() const { return shaderResources_; }
     /// @}
 
-    void ConnectToShaderVariables(Diligent::IShaderResourceBinding* binding);
+    void ConnectToShaderVariables(PipelineStateType pipelineType, Diligent::IShaderResourceBinding* binding);
 
 private:
     void ReflectShader(Diligent::IShader* shader);

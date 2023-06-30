@@ -480,10 +480,7 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
         ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
     }
 
-#ifdef URHO3D_DEBUG
-    const ea::string debugName = Format("{}#{}", desc.debugName_, desc.ToHash());
-    ci.PSODesc.Name = debugName.c_str();
-#endif
+    ci.PSODesc.Name = desc.debugName_.c_str();
 
     ci.GraphicsPipeline.PrimitiveTopology = primitiveTopology[desc.primitiveType_];
 
@@ -587,12 +584,75 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
     }
 
     handle_->CreateShaderResourceBinding(&shaderResourceBinding_, true);
-    reflection_->ConnectToShaderVariables(shaderResourceBinding_);
+    reflection_->ConnectToShaderVariables(desc_.GetType(), shaderResourceBinding_);
 }
 
 void PipelineState::CreateGPU(const ComputePipelineStateDesc& desc)
 {
-    URHO3D_ASSERT(false, "Not implemented yet");
+    Diligent::IRenderDevice* renderDevice = renderDevice_->GetRenderDevice();
+    const bool isOpenGL = renderDevice_->GetBackend() == RenderBackend::OpenGL;
+    const bool hasSeparableShaderPrograms = renderDevice->GetDeviceInfo().Features.SeparablePrograms;
+    URHO3D_ASSERT(isOpenGL || hasSeparableShaderPrograms);
+
+    Diligent::ComputePipelineStateCreateInfo ci;
+
+    ea::vector<Diligent::ImmutableSamplerDesc> immutableSamplers;
+
+    Diligent::IShader* computeShader = desc.computeShader_->GetHandle();
+    desc.computeShader_->OnReloaded.Subscribe(this, &PipelineState::Invalidate);
+
+    // On OpenGL, uniform layout initialization may be postponed.
+    if (hasSeparableShaderPrograms)
+    {
+        Diligent::IShader* const shaders[] = {computeShader};
+        reflection_ = MakeShared<ShaderProgramReflection>(shaders);
+
+        InitializeImmutableSamplers(immutableSamplers, desc.samplers_, *reflection_);
+        ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
+        ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
+    }
+
+    ci.PSODesc.Name = desc.debugName_.c_str();
+
+    ci.pCS = computeShader;
+
+    ci.PSODesc.ResourceLayout.DefaultVariableType = Diligent::SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC;
+
+    PipelineStateCache* psoCache = GetSubsystem<PipelineStateCache>();
+    ci.pPSOCache = psoCache->GetHandle();
+
+#if GL_SUPPORTED || GLES_SUPPORTED
+    auto patchInputLayout = [&](GLuint* programObjects, Diligent::Uint32 numPrograms)
+    {
+        if (!hasSeparableShaderPrograms)
+        {
+            reflection_ = MakeShared<ShaderProgramReflection>(programObjects[0]);
+
+            InitializeImmutableSamplers(immutableSamplers, desc.samplers_, *reflection_);
+            ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
+            ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
+        }
+    };
+
+    ci.GLProgramLinkedCallbackUserData = &patchInputLayout;
+    ci.GLProgramLinkedCallback =
+        [](Diligent::Uint32* programObjects, Diligent::Uint32 numProgramObjects, void* userData)
+    {
+        const auto& callback = *reinterpret_cast<decltype(patchInputLayout)*>(userData);
+        callback(programObjects, numProgramObjects);
+    };
+#endif
+
+    renderDevice->CreateComputePipelineState(ci, &handle_);
+
+    if (!handle_)
+    {
+        URHO3D_LOGERROR("Failed to create PipelineState '{}'", GetDebugName());
+        return;
+    }
+
+    handle_->CreateShaderResourceBinding(&shaderResourceBinding_, true);
+    reflection_->ConnectToShaderVariables(desc_.GetType(), shaderResourceBinding_);
 }
 
 void PipelineState::DestroyGPU()

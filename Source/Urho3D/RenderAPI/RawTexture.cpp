@@ -540,6 +540,8 @@ bool RawTexture::CreateGPU()
             URHO3D_LOGERROR("Failed to create unordered access view for texture");
             return false;
         }
+
+        handles_.uavs_[RawTextureUAVKey{}] = handles_.uav_;
     }
 
     return true;

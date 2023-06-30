@@ -59,7 +59,7 @@ ComputeDevice::~ComputeDevice()
     ReleaseLocalState();
 }
 
-bool ComputeDevice::SetProgram(ShaderVariation* shaderVariation)
+bool ComputeDevice::SetProgram(RawShader* shaderVariation)
 {
     if (shaderVariation && shaderVariation->GetShaderType() != CS)
     {

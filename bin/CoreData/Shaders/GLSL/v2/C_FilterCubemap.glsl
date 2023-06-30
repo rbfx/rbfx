@@ -3,7 +3,7 @@
 #define PI 3.141596
 
 layout(binding = 0)
-uniform samplerCube srcTex;
+uniform samplerCube sSourceTexture;
 
 layout(binding = 1, rgba8)
 uniform image2DArray outputTexture;
@@ -92,7 +92,7 @@ void main()
             vec3 hemisphere = ImportanceSample(h, ROUGHNESS);
 			vec3 finalDir = tanFrame * hemisphere;
 
-            color.rgb += textureLod(srcTex, finalDir, 0).rgb;
+            color.rgb += textureLod(sSourceTexture, finalDir, 0).rgb;
         }
         color.rgb /= RAY_COUNT;
 

@@ -28,6 +28,7 @@
 #include "../Core/Signal.h"
 #include "../Graphics/ReflectionProbeData.h"
 #include "../Math/BoundingBox.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../Scene/Component.h"
 #include "../Scene/TrackedComponent.h"
@@ -110,6 +111,12 @@ public:
     CubemapUpdateResult Update(const CubemapUpdateParameters& params);
 
 private:
+    struct CachedPipelineStates
+    {
+        unsigned numLevels_{};
+        ea::vector<SharedPtr<PipelineState>> pipelineStates_;
+    };
+
     void InitializeRenderPipeline();
     void InitializeCameras();
 
@@ -125,7 +132,7 @@ private:
     void ProcessFaceRendered();
     void ProcessCubemapRendered();
 
-    void FilterCubemap(TextureCube* sourceTexture, TextureCube* destTexture, ea::span<const unsigned> rayCounts);
+    void EnsurePipelineStates(unsigned numLevels);
     void FilterCubemap(TextureCube* sourceTexture, TextureCube* destTexture);
 
     WeakPtr<Scene> scene_;
@@ -142,6 +149,8 @@ private:
     WeakPtr<TextureCube> currentViewportTexture_;
     WeakPtr<TextureCube> currentFilteredTexture_;
     bool viewportsConnectedToSelf_{};
+
+    ea::optional<CachedPipelineStates> cachedPipelineStates_;
 };
 
 }
