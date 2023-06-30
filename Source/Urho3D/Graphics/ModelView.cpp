@@ -1255,7 +1255,7 @@ SharedPtr<Model> ModelView::ExportModel(const ea::string& name) const
     return model;
 }
 
-ResourceRefList& ModelView::ExportMaterialList() const
+ResourceRefList ModelView::ExportMaterialList() const
 {
     ResourceRefList result;
     result.type_ = Material::GetTypeStatic();
