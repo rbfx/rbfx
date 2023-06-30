@@ -194,6 +194,7 @@ public:
     /// Getters
     /// @{
     bool IsValid() const { return !!reflection_; }
+    PipelineStateType GetPipelineType() const { return desc_.GetType(); }
     const PipelineStateDesc& GetDesc() const { return desc_; }
     ShaderProgramReflection* GetReflection() const { return reflection_; }
     Diligent::IPipelineState* GetHandle() const { return handle_; }

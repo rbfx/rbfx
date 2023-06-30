@@ -91,8 +91,17 @@ public:
         return &iter->second;
     }
 
+    const ShaderResourceReflection* GetUnorderedAccessView(StringHash name) const
+    {
+        const auto iter = unorderedAccessViews_.find(name);
+        if (iter == unorderedAccessViews_.end())
+            return nullptr;
+        return &iter->second;
+    }
+
     const ShaderParameterReflectionMap& GetUniforms() const { return uniforms_; }
     const ShaderResourceReflectionMap& GetShaderResources() const { return shaderResources_; }
+    const ShaderResourceReflectionMap& GetUnorderedAccessViews() const { return unorderedAccessViews_; }
     /// @}
 
     void ConnectToShaderVariables(PipelineStateType pipelineType, Diligent::IShaderResourceBinding* binding);
@@ -106,12 +115,14 @@ private:
     void AddUniform(ea::string_view name, ShaderParameterGroup group, unsigned offset, unsigned size);
     void AddUniform(ShaderParameterGroup group, const Diligent::ShaderCodeVariableDesc& desc);
     void AddShaderResource(StringHash name, ea::string_view internalName);
+    void AddUnorderedAccessView(StringHash name, ea::string_view internalName);
     void RecalculateUniformHash();
 
 private:
     UniformBufferReflectionArray uniformBuffers_;
     ShaderParameterReflectionMap uniforms_;
     ShaderResourceReflectionMap shaderResources_;
+    ShaderResourceReflectionMap unorderedAccessViews_;
 };
 
 } // namespace Urho3D

@@ -39,6 +39,11 @@ RenderContext::~RenderContext()
 {
 }
 
+void RenderContext::ResetRenderTargets()
+{
+    SetRenderTargets(ea::nullopt, {});
+}
+
 void RenderContext::SetSwapChainRenderTargets()
 {
     const RenderTargetView depthStencil = RenderTargetView::SwapChainDepthStencil(renderDevice_);

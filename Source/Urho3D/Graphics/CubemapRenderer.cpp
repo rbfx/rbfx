@@ -24,13 +24,15 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/Camera.h"
-#include "../Graphics/ComputeDevice.h"
 #include "../Graphics/CubemapRenderer.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/TextureCube.h"
 #include "../RenderPipeline/RenderPipeline.h"
+#include "../RenderAPI/DrawCommandQueue.h"
+#include "../RenderAPI/RenderContext.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../Scene/Node.h"
 
 #include <EASTL/fixed_vector.h>
@@ -303,26 +305,30 @@ void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* des
     const unsigned numLevels = destTexture->GetLevels();
     EnsurePipelineStates(numLevels);
 
-    auto graphics = GetSubsystem<Graphics>();
-    auto computeDevice = GetSubsystem<ComputeDevice>();
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    RenderContext* renderContext = renderDevice->GetRenderContext();
+    DrawCommandQueue* drawQueue = renderDevice->GetDefaultQueue();
 
-    // go through them cubemap -> level
-#ifdef URHO3D_DILIGENT
-    computeDevice->SetReadTexture(sourceTexture, "sSourceTexture");
-    ea::string writeUnit = "outputTexture";
-#else
-    ComputeDevice->SetReadTexture(sourceTexture, 0);
-    const unsigned writeUnit = 1;
-#endif
+    for (unsigned i = 0; i < numLevels; ++i)
+        destTexture->CreateUAV(RawTextureUAVKey{}.FromLevel(i));
+
+    drawQueue->Reset();
 
     for (unsigned i = 0; i < numLevels; ++i)
     {
-        computeDevice->SetWriteTexture(destTexture, writeUnit, UINT_MAX, i);
-        computeDevice->SetProgram(cachedPipelineStates_->pipelineStates_[i]->GetDesc().AsCompute()->computeShader_);
-        computeDevice->Dispatch(destTexture->GetLevelWidth(i), destTexture->GetLevelHeight(i), 6);
+        drawQueue->SetPipelineState(cachedPipelineStates_->pipelineStates_[i]);
+
+        drawQueue->AddShaderResource("SourceTexture", sourceTexture);
+        drawQueue->CommitShaderResources();
+
+        drawQueue->AddUnorderedAccessView("OutputTexture", destTexture, RawTextureUAVKey{}.FromLevel(i));
+        drawQueue->CommitUnorderedAccessViews();
+
+        drawQueue->Dispatch({destTexture->GetLevelWidth(i), destTexture->GetLevelHeight(i), 6});
     }
-    computeDevice->SetWriteTexture(nullptr, writeUnit, 0, 0);
-    computeDevice->ApplyBindings();
+
+    renderContext->ResetRenderTargets();
+    renderContext->Execute(drawQueue);
 #endif
 }
 

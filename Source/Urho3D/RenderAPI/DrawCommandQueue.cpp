@@ -50,6 +50,7 @@ void DrawCommandQueue::Reset()
     // Reset state accumulators
     currentDrawCommand_ = {};
     currentShaderResourceGroup_ = {};
+    currentUnorderedAccessViewGroup_ = {};
     currentShaderProgramReflection_ = nullptr;
 
     // Clear shader parameters
@@ -96,6 +97,7 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
     RawBuffer* currentIndexBuffer = nullptr;
     RawVertexBufferArray currentVertexBuffers{};
     ShaderResourceRange currentShaderResources;
+    ShaderResourceRange currentUnorderedAccessViews;
     unsigned currentScissorRect = M_MAX_UNSIGNED;
 
     // Set common state
@@ -131,6 +133,7 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
 
             // Reset current shader resources because mapping can be different
             currentShaderResources = {};
+            currentUnorderedAccessViews = {};
         }
 
         // Set scissor
@@ -186,18 +189,41 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
         }
 
         // Set resources
-        for (unsigned i = cmd.shaderResources_.first; i < cmd.shaderResources_.second; ++i)
+        if (currentShaderResources != cmd.shaderResources_)
         {
-            const ShaderResourceData& data = shaderResources_[i];
+            for (unsigned i = cmd.shaderResources_.first; i < cmd.shaderResources_.second; ++i)
+            {
+                const ShaderResourceData& data = shaderResources_[i];
 
-            // TODO(diligent): Resolve and mip generation should be done outside of this loop
-            RawTexture* texture = GetReadableTexture(renderContext, data.type_, data.texture_, data.backupTexture_);
-            if (texture->GetResolveDirty())
-                texture->Resolve();
-            if (texture->GetLevelsDirty())
-                texture->GenerateLevels();
+                // TODO(diligent): Resolve and mip generation should be done outside of this loop
+                RawTexture* texture = GetReadableTexture(renderContext, data.type_, data.texture_, data.backupTexture_);
+                if (texture->GetResolveDirty())
+                    texture->Resolve();
+                if (texture->GetLevelsDirty())
+                    texture->GenerateLevels();
 
-            data.variable_->Set(texture->GetHandles().srv_);
+                data.variable_->Set(texture->GetHandles().srv_);
+            }
+
+            currentShaderResources = cmd.shaderResources_;
+        }
+
+        if (currentUnorderedAccessViews != cmd.unorderedAccessViews_)
+        {
+            for (unsigned i = cmd.unorderedAccessViews_.first; i < cmd.unorderedAccessViews_.second; ++i)
+            {
+                const UnorderedAccessViewData& data = unorderedAccessViews_[i];
+
+                RawTexture* texture = data.texture_;
+                if (texture->GetResolveDirty())
+                    texture->Resolve();
+                if (texture->GetLevelsDirty())
+                    texture->GenerateLevels();
+
+                data.variable_->Set(data.view_);
+            }
+
+            currentUnorderedAccessViews = cmd.unorderedAccessViews_;
         }
 
         for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
@@ -217,29 +243,40 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
         deviceContext->CommitShaderResources(
             currentShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
-        if (currentIndexBuffer)
+        if (currentPipelineState->GetPipelineType() == PipelineStateType::Graphics)
         {
-            Diligent::DrawIndexedAttribs drawAttrs;
-            drawAttrs.NumIndices = cmd.indexCount_;
-            drawAttrs.NumInstances = ea::max(1u, cmd.instanceCount_);
-            drawAttrs.FirstIndexLocation = cmd.indexStart_;
-            drawAttrs.FirstInstanceLocation = isBaseVertexAndInstanceSupported ? cmd.instanceStart_ : 0;
-            drawAttrs.BaseVertex = cmd.baseVertexIndex_;
-            drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
-            drawAttrs.IndexType = GetIndexType(currentIndexBuffer);
+            if (currentIndexBuffer)
+            {
+                Diligent::DrawIndexedAttribs drawAttrs;
+                drawAttrs.NumIndices = cmd.indexCount_;
+                drawAttrs.NumInstances = ea::max(1u, cmd.instanceCount_);
+                drawAttrs.FirstIndexLocation = cmd.indexStart_;
+                drawAttrs.FirstInstanceLocation = isBaseVertexAndInstanceSupported ? cmd.instanceStart_ : 0;
+                drawAttrs.BaseVertex = cmd.baseVertexIndex_;
+                drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
+                drawAttrs.IndexType = GetIndexType(currentIndexBuffer);
 
-            deviceContext->DrawIndexed(drawAttrs);
+                deviceContext->DrawIndexed(drawAttrs);
+            }
+            else
+            {
+                Diligent::DrawAttribs drawAttrs;
+                drawAttrs.NumVertices = cmd.indexCount_;
+                drawAttrs.NumInstances = ea::max(1u, cmd.instanceCount_);
+                drawAttrs.StartVertexLocation = cmd.indexStart_;
+                drawAttrs.FirstInstanceLocation = isBaseVertexAndInstanceSupported ? cmd.instanceStart_ : 0;
+                drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
+
+                deviceContext->Draw(drawAttrs);
+            }
         }
-        else
+        else if (currentPipelineState->GetPipelineType() == PipelineStateType::Compute)
         {
-            Diligent::DrawAttribs drawAttrs;
-            drawAttrs.NumVertices = cmd.indexCount_;
-            drawAttrs.NumInstances = ea::max(1u, cmd.instanceCount_);
-            drawAttrs.StartVertexLocation = cmd.indexStart_;
-            drawAttrs.FirstInstanceLocation = isBaseVertexAndInstanceSupported ? cmd.instanceStart_ : 0;
-            drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
-
-            deviceContext->Draw(drawAttrs);
+            Diligent::DispatchComputeAttribs dispatchAttrs;
+            dispatchAttrs.ThreadGroupCountX = cmd.numGroups_.x_;
+            dispatchAttrs.ThreadGroupCountY = cmd.numGroups_.y_;
+            dispatchAttrs.ThreadGroupCountZ = cmd.numGroups_.z_;
+            deviceContext->DispatchCompute(dispatchAttrs);
         }
     }
 }

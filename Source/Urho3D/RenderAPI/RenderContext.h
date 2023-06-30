@@ -30,6 +30,8 @@ public:
     explicit RenderContext(RenderDevice* renderDevice);
     ~RenderContext() override;
 
+    /// Reset render targets and depth-stencil buffer.
+    void ResetRenderTargets();
     /// Set backbuffer render target and associated depth-stencil buffer.
     void SetSwapChainRenderTargets();
     /// Set specified render targets and depth-stencil buffer. Either can be null.

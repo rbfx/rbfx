@@ -30,6 +30,7 @@ struct DrawCommandDescription
     ea::array<ConstantBufferCollectionRef, MAX_SHADER_PARAMETER_GROUPS> constantBuffers_;
 
     ShaderResourceRange shaderResources_;
+    ShaderResourceRange unorderedAccessViews_;
 
     /// Index of scissor rectangle. 0 if disabled.
     unsigned scissorRect_{};
@@ -41,6 +42,7 @@ struct DrawCommandDescription
     unsigned baseVertexIndex_{};
     unsigned instanceStart_{};
     unsigned instanceCount_{};
+    IntVector3 numGroups_{};
     /// @}
 };
 
@@ -156,6 +158,32 @@ public:
         currentShaderResourceGroup_.second = currentShaderResourceGroup_.first;
     }
 
+    /// Add unordered access view.
+    void AddUnorderedAccessView(StringHash name, RawTexture* texture, const RawTextureUAVKey& key)
+    {
+        const ShaderResourceReflection* uav = currentShaderProgramReflection_->GetUnorderedAccessView(name);
+        if (!uav || !uav->variable_)
+            return;
+
+        Diligent::ITextureView* view = texture->GetUAV(key);
+        if (!view)
+        {
+            URHO3D_ASSERTLOG(false, "Requested UAV for texture does not exist");
+            return;
+        }
+
+        unorderedAccessViews_.push_back(UnorderedAccessViewData{uav->variable_, texture, view});
+        ++currentUnorderedAccessViewGroup_.second;
+    }
+
+    /// Commit unordered access views added since previous commit.
+    void CommitUnorderedAccessViews()
+    {
+        currentDrawCommand_.unorderedAccessViews_ = currentUnorderedAccessViewGroup_;
+        currentUnorderedAccessViewGroup_.first = unorderedAccessViews_.size();
+        currentUnorderedAccessViewGroup_.second = currentUnorderedAccessViewGroup_.first;
+    }
+
     /// Set vertex buffers.
     void SetVertexBuffers(RawVertexBufferArray buffers)
     {
@@ -171,6 +199,7 @@ public:
     /// Enqueue draw non-indexed geometry.
     void Draw(unsigned vertexStart, unsigned vertexCount)
     {
+        URHO3D_ASSERT(currentDrawCommand_.pipelineState_->GetPipelineType() == PipelineStateType::Graphics);
         URHO3D_ASSERT(!currentDrawCommand_.indexBuffer_);
 
         currentDrawCommand_.indexStart_ = vertexStart;
@@ -184,6 +213,7 @@ public:
     /// Enqueue draw indexed geometry.
     void DrawIndexed(unsigned indexStart, unsigned indexCount)
     {
+        URHO3D_ASSERT(currentDrawCommand_.pipelineState_->GetPipelineType() == PipelineStateType::Graphics);
         URHO3D_ASSERT(currentDrawCommand_.indexBuffer_);
 
         currentDrawCommand_.indexStart_ = indexStart;
@@ -201,6 +231,7 @@ public:
     /// Enqueue draw indexed geometry with vertex index offset.
     void DrawIndexed(unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex)
     {
+        URHO3D_ASSERT(currentDrawCommand_.pipelineState_->GetPipelineType() == PipelineStateType::Graphics);
         URHO3D_ASSERT(currentDrawCommand_.indexBuffer_);
 
         currentDrawCommand_.indexStart_ = indexStart;
@@ -214,6 +245,7 @@ public:
     /// Enqueue draw indexed, instanced geometry.
     void DrawIndexedInstanced(unsigned indexStart, unsigned indexCount, unsigned instanceStart, unsigned instanceCount)
     {
+        URHO3D_ASSERT(currentDrawCommand_.pipelineState_->GetPipelineType() == PipelineStateType::Graphics);
         URHO3D_ASSERT(currentDrawCommand_.indexBuffer_);
 
         currentDrawCommand_.indexStart_ = indexStart;
@@ -228,6 +260,7 @@ public:
     void DrawIndexedInstanced(unsigned indexStart, unsigned indexCount, unsigned baseVertexIndex,
         unsigned instanceStart, unsigned instanceCount)
     {
+        URHO3D_ASSERT(currentDrawCommand_.pipelineState_->GetPipelineType() == PipelineStateType::Graphics);
         URHO3D_ASSERT(currentDrawCommand_.indexBuffer_);
 
         currentDrawCommand_.indexStart_ = indexStart;
@@ -235,6 +268,15 @@ public:
         currentDrawCommand_.baseVertexIndex_ = baseVertexIndex;
         currentDrawCommand_.instanceStart_ = instanceStart;
         currentDrawCommand_.instanceCount_ = instanceCount;
+        drawCommands_.push_back(currentDrawCommand_);
+    }
+
+    /// Dispatch compute shader.
+    void Dispatch(const IntVector3& numGroups)
+    {
+        URHO3D_ASSERT(currentDrawCommand_.pipelineState_->GetPipelineType() == PipelineStateType::Compute);
+
+        currentDrawCommand_.numGroups_ = numGroups;
         drawCommands_.push_back(currentDrawCommand_);
     }
 
@@ -266,8 +308,17 @@ private:
         TextureType type_{};
     };
 
+    struct UnorderedAccessViewData
+    {
+        Diligent::IShaderResourceVariable* variable_{};
+        RawTexture* texture_{};
+        Diligent::ITextureView* view_{};
+    };
+
     /// Shader resources.
     ea::vector<ShaderResourceData> shaderResources_;
+    /// Unordered access views.
+    ea::vector<UnorderedAccessViewData> unorderedAccessViews_;
     /// Scissor rects.
     ea::vector<IntRect> scissorRects_;
     /// Draw operations.
@@ -277,6 +328,9 @@ private:
     DrawCommandDescription currentDrawCommand_;
     /// Current shader resource group.
     ShaderResourceRange currentShaderResourceGroup_;
+    /// Current unordered access view group.
+    ShaderResourceRange currentUnorderedAccessViewGroup_;
+    /// Current shader program reflection.
     ShaderProgramReflection* currentShaderProgramReflection_{};
 
 };

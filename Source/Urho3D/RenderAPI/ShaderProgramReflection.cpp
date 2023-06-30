@@ -124,9 +124,17 @@ ea::optional<ea::string_view> SanitizeUniformName(ea::string_view name)
     return name.substr(pos + 1);
 }
 
-ea::optional<ea::string_view> SanitizeResourceName(ea::string_view name)
+ea::optional<ea::string_view> SanitizeSRVName(ea::string_view name)
 {
     if (name.empty() || name[0] != 's')
+        return ea::nullopt;
+
+    return name.substr(1);
+}
+
+ea::optional<ea::string_view> SanitizeUAVName(ea::string_view name)
+{
+    if (name.empty() || name[0] != 'u')
         return ea::nullopt;
 
     return name.substr(1);
@@ -292,9 +300,15 @@ ShaderProgramReflection::ShaderProgramReflection(unsigned programObject)
         GLenum type = 0;
         glGetActiveUniform(programObject, uniformIndex, maxNameLength, nullptr, &elementCount, &type, name);
 
-        if (const auto sanitatedResourceName = SanitizeResourceName(name))
+        if (const auto sanitatedSRVName = SanitizeSRVName(name))
         {
-            AddShaderResource(StringHash{*sanitatedResourceName}, name);
+            AddShaderResource(StringHash{*sanitatedSRVName}, name);
+            continue;
+        }
+
+        if (const auto sanitatedUAVName = SanitizeUAVName(name))
+        {
+            AddUnorderedAccessView(StringHash{*sanitatedUAVName}, name);
             continue;
         }
 
@@ -342,8 +356,15 @@ void ShaderProgramReflection::ReflectShader(Diligent::IShader* shader)
 
         case Diligent::SHADER_RESOURCE_TYPE_TEXTURE_SRV:
         {
-            if (const auto sanitatedName = SanitizeResourceName(desc.Name))
+            if (const auto sanitatedName = SanitizeSRVName(desc.Name))
                 AddShaderResource(StringHash{*sanitatedName}, desc.Name);
+            break;
+        }
+
+        case Diligent::SHADER_RESOURCE_TYPE_TEXTURE_UAV:
+        {
+            if (const auto sanitatedName = SanitizeUAVName(desc.Name))
+                AddUnorderedAccessView(StringHash{*sanitatedName}, desc.Name);
             break;
         }
 
@@ -436,6 +457,18 @@ void ShaderProgramReflection::AddShaderResource(StringHash name, ea::string_view
     shaderResources_.emplace(name, ShaderResourceReflection{ea::string{internalName}});
 }
 
+void ShaderProgramReflection::AddUnorderedAccessView(StringHash name, ea::string_view internalName)
+{
+    const ShaderResourceReflection* oldResource = GetUnorderedAccessView(name);
+    if (oldResource)
+    {
+        URHO3D_LOGWARNING("Unordered access view '{}' is referenced by multiple shader stages", internalName);
+        return;
+    }
+
+    unorderedAccessViews_.emplace(name, ShaderResourceReflection{ea::string{internalName}});
+}
+
 void ShaderProgramReflection::RecalculateUniformHash()
 {
     for (UniformBufferReflection& uniformBuffer : uniformBuffers_)
@@ -479,6 +512,20 @@ void ShaderProgramReflection::ConnectToShaderVariables(
     }
 
     for (auto& [nameHash, resource] : shaderResources_)
+    {
+        for (ShaderType shaderType : shaderTypes)
+        {
+            Diligent::IShaderResourceVariable* shaderVariable =
+                binding->GetVariableByName(ToInternalShaderType(shaderType), resource.internalName_.c_str());
+            if (shaderVariable)
+            {
+                resource.variable_ = shaderVariable;
+                break;
+            }
+        }
+    }
+
+    for (auto& [nameHash, resource] : unorderedAccessViews_)
     {
         for (ShaderType shaderType : shaderTypes)
         {

@@ -365,6 +365,7 @@ Diligent::ITextureView* RawTexture::CreateUAV(const RawTextureUAVKey& key)
         return nullptr;
     }
 
+    handles_.uavs_[key] = view;
     handles_.uavs_[effectiveKey] = view;
     return view;
 }

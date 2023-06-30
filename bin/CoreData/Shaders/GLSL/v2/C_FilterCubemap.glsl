@@ -6,7 +6,7 @@ layout(binding = 0)
 uniform samplerCube sSourceTexture;
 
 layout(binding = 1, rgba8)
-uniform image2DArray outputTexture;
+uniform image2DArray uOutputTexture;
 
 vec2 Hammersley(uint seed, uint ct)
 {
@@ -96,6 +96,6 @@ void main()
         }
         color.rgb /= RAY_COUNT;
 
-        imageStore(outputTexture, ivec3(dispatchThreadId), color);
+        imageStore(uOutputTexture, ivec3(dispatchThreadId), color);
     }
 }
