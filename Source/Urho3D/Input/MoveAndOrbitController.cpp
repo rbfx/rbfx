@@ -41,10 +41,15 @@ MoveAndOrbitController::MoveAndOrbitController(Context* context)
     UpdateEventSubscription();
 }
 
+MoveAndOrbitController::~MoveAndOrbitController()
+{
+}
+
 void MoveAndOrbitController::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<MoveAndOrbitController>();
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Input Map", GetInputMapAttr, SetInputMapAttr, ResourceRef, ResourceRef(InputMap::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE(
+        "Input Map", GetInputMapAttr, SetInputMapAttr, ResourceRef, ResourceRef(InputMap::GetTypeStatic()), AM_DEFAULT);
 }
 
 void MoveAndOrbitController::ApplyAttributes()
@@ -138,9 +143,7 @@ void MoveAndOrbitController::HandleInputEnd(StringHash eventName, VariantMap& ev
     }
 
     {
-        auto sensitivity = inputMap_->GetMetadata(AXIS_ROTATION_SENSITIVITY).GetFloat();
-        if (sensitivity == 0)
-            sensitivity = DEFAULT_AXIS_ROTATION_SENSITIVITY;
+        auto sensitivity = GetSensitivity(AXIS_ROTATION_SENSITIVITY, DEFAULT_AXIS_ROTATION_SENSITIVITY);
         const float timeStep = context_->GetSubsystem<Time>()->GetTimeStep();
         yaw += turnRight * sensitivity * timeStep;
         pitch += lookDown * sensitivity * timeStep;

@@ -30,7 +30,6 @@
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/Zone.h>
-#include <Urho3D/Input/Controls.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Input/MoveAndOrbitController.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -47,10 +46,12 @@
 
 #include "Character.h"
 #include "CharacterDemo.h"
-#include "Touch.h"
 
 #include <Urho3D/DebugNew.h>
 
+const float CAMERA_MIN_DIST = 1.0f;
+const float CAMERA_INITIAL_DIST = 5.0f;
+const float CAMERA_MAX_DIST = 20.0f;
 
 CharacterDemo::CharacterDemo(Context* context)
     : Sample(context)
@@ -69,8 +70,6 @@ void CharacterDemo::Start()
 {
     // Execute base class startup
     Sample::Start();
-    if (touchEnabled_)
-        touch_ = new Touch(context_, TOUCH_SENSITIVITY);
 
     dPadAdapter_.SetEnabled(true);
 
@@ -288,10 +287,6 @@ void CharacterDemo::Update(float timeStep)
             if (input->GetKeyPress(KEY_F))
                 firstPerson_ = !firstPerson_;
 
-            // Turn on/off gyroscope on mobile platform
-            if (touch_ && input->GetKeyPress(KEY_G))
-                touch_->useGyroscope_ = !touch_->useGyroscope_;
-
             // Check for loading / saving the scene
             if (input->GetKeyPress(KEY_F5))
             {
@@ -343,7 +338,7 @@ void CharacterDemo::HandlePostUpdate(StringHash eventType, VariantMap& eventData
 
         // Collide camera ray with static physics objects (layer bitmask 2) to ensure we see the character properly
         Vector3 rayDir = dir * Vector3::BACK;
-        float rayDistance = touch_ ? touch_->cameraDistance_ : CAMERA_INITIAL_DIST;
+        float rayDistance = CAMERA_INITIAL_DIST;
         PhysicsRaycastResult result;
         scene_->GetComponent<PhysicsWorld>()->RaycastSingle(result, Ray(aimPoint, rayDir), rayDistance, 2);
         if (result.body_)

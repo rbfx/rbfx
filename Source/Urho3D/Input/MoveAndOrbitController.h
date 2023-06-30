@@ -59,6 +59,8 @@ public:
 
     /// Construct.
     explicit MoveAndOrbitController(Context* context);
+    /// Destruct.
+    ~MoveAndOrbitController() override;
 
     /// Register object factory and attributes.
     static void RegisterObject(Context* context);

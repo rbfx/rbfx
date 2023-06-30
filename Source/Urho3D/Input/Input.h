@@ -564,4 +564,8 @@ private:
 #endif
 };
 
+/// Register Input library objects.
+/// @nobind
+void URHO3D_API RegisterInputLibrary(Context* context);
+
 }

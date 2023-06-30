@@ -47,6 +47,8 @@ void Vehicle2::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Steering", float, steering_, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Controls Yaw", GetYaw, SetYaw, float, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Controls Pitch", GetPitch, SetPitch, float, 0.0f, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE(
+        "Input Map", GetInputMapAttr, SetInputMapAttr, ResourceRef, ResourceRef(InputMap::GetTypeStatic()), AM_DEFAULT);
 }
 
 Vehicle2::Vehicle2(Urho3D::Context* context)
@@ -138,6 +140,17 @@ void Vehicle2::Init()
 void Vehicle2::SetInputMap(InputMap* inputMap)
 {
     inputMap_ = inputMap;
+}
+
+void Vehicle2::SetInputMapAttr(const ResourceRef& value)
+{
+    auto* cache = GetSubsystem<ResourceCache>();
+    SetInputMap(cache->GetResource<InputMap>(value.name_));
+}
+
+ResourceRef Vehicle2::GetInputMapAttr() const
+{
+    return GetResourceRef(inputMap_, InputMap::GetTypeStatic());
 }
 
 void Vehicle2::CreateEmitter(Vector3 place)

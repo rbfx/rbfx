@@ -58,6 +58,8 @@ void KinematicCharacter::RegisterObject(Context* context)
     // We specify the Default attribute mode which means it will be used both for saving into file, and network replication
     URHO3D_ACCESSOR_ATTRIBUTE("Controls Yaw", GetYaw, SetYaw, float, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Controls Pitch", GetPitch, SetPitch, float, 0.0f, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE(
+        "Input Map", GetInputMapAttr, SetInputMapAttr, ResourceRef, ResourceRef(InputMap::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ATTRIBUTE("On Ground", bool, onGround_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("OK To Jump", bool, okToJump_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("In Air Timer", float, inAirTimer_, 0.0f, AM_DEFAULT);
@@ -209,6 +211,17 @@ void KinematicCharacter::FixedPostUpdate(float timeStep)
 void KinematicCharacter::SetInputMap(InputMap* inputMap)
 {
     inputMap_ = inputMap;
+}
+
+void KinematicCharacter::SetInputMapAttr(const ResourceRef& value)
+{
+    auto* cache = GetSubsystem<ResourceCache>();
+    SetInputMap(cache->GetResource<InputMap>(value.name_));
+}
+
+ResourceRef KinematicCharacter::GetInputMapAttr() const
+{
+    return GetResourceRef(inputMap_, InputMap::GetTypeStatic());
 }
 
 bool KinematicCharacter::IsNodeMovingPlatform(Node *node) const

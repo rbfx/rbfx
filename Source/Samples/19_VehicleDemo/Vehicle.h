@@ -67,8 +67,14 @@ public:
     /// Initialize the vehicle. Create rendering and physics components. Called by the application.
     void Init();
 
+    /// Set input map.
     void SetInputMap(InputMap* inputMap);
+    /// Return input map.
     InputMap* GetInputMap() const { return inputMap_; }
+    /// Set input map attribute.
+    void SetInputMapAttr(const ResourceRef& value);
+    /// Return input map attribute.
+    ResourceRef GetInputMapAttr() const;
 
 private:
     /// Initialize a wheel and remember its scene node and ID.

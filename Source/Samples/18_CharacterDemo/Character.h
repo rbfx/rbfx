@@ -23,7 +23,6 @@
 #pragma once
 
 #include <Urho3D/Input/MoveAndOrbitComponent.h>
-#include <Urho3D/Input/Controls.h>
 #include <Urho3D/Input/InputMap.h>
 
 using namespace Urho3D;
@@ -57,8 +56,14 @@ public:
     /// Handle physics world update. Called by LogicComponent base class.
     void FixedUpdate(float timeStep) override;
 
+    /// Set input map.
     void SetInputMap(InputMap* inputMap);
+    /// Return input map.
     InputMap* GetInputMap() const { return inputMap_; }
+    /// Set input map attribute.
+    void SetInputMapAttr(const ResourceRef& value);
+    /// Return input map attribute.
+    ResourceRef GetInputMapAttr() const;
 
 private:
     /// Handle physics collision event.

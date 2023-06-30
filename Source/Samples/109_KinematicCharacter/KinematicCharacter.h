@@ -23,7 +23,6 @@
 
 #pragma once
 
-#include <Urho3D/Input/Controls.h>
 #include <Urho3D/Input/MoveAndOrbitComponent.h>
 #include <Urho3D/Input/InputMap.h>
 
@@ -99,8 +98,14 @@ public:
         //platformBody_ = platformBody;
     }
 
+    /// Set input map.
     void SetInputMap(InputMap* inputMap);
+    /// Return input map.
     InputMap* GetInputMap() const { return inputMap_; }
+    /// Set input map attribute.
+    void SetInputMapAttr(const ResourceRef& value);
+    /// Return input map attribute.
+    ResourceRef GetInputMapAttr() const;
 
 private:
     bool IsNodeMovingPlatform(Node *node) const;

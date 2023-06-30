@@ -34,7 +34,6 @@ class Scene;
 }
 
 class Character;
-class Touch;
 
 /// Moving character example.
 /// This sample demonstrates:
@@ -116,8 +115,6 @@ private:
     /// Handle application post-update. Update camera position after character has moved.
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
 
-    /// Touch utility object.
-    SharedPtr<Touch> touch_;
     /// The controllable character component.
     WeakPtr<Character> character_;
     /// First person camera flag.

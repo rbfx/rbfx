@@ -84,8 +84,14 @@ public :
     /// Get wheel width.
     float GetWheelWidth() { return wheelWidth_; }
 
+    /// Set input map.
     void SetInputMap(InputMap* inputMap);
+    /// Return input map.
     InputMap* GetInputMap() const { return inputMap_; }
+    /// Set input map attribute.
+    void SetInputMapAttr(const ResourceRef& value);
+    /// Return input map attribute.
+    ResourceRef GetInputMapAttr() const;
 
 private:
     /// Creates particle emitter.
