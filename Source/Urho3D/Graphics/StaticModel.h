@@ -80,6 +80,8 @@ public:
     void SetOcclusionLodLevel(unsigned level);
     /// Apply default materials from a material list file. If filename is empty (default), the model's resource name with extension .txt will be used.
     void ApplyMaterialList(const ea::string& fileName = EMPTY_STRING);
+    /// Apply materials from ResourceRefList, type must be of Material.
+    void ApplyMaterialList(ResourceRefList& list);
 
     /// Return model.
     /// @property

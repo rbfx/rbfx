@@ -316,10 +316,19 @@ void StaticModel::ApplyMaterialList(const ea::string& fileName)
     if (!file)
         return;
 
-    const StringVector lines = file->ReadLines();
-    for (unsigned index = 0; index < ea::min(batches_.size(), lines.size()); ++index)
+    Deserializer& deserializer = file->AsDeserializer();
+    ApplyMaterialList(deserializer.ReadResourceRefList());
+}
+
+void StaticModel::ApplyMaterialList(ResourceRefList& list)
+{
+    if (list.type_ != Material::GetTypeStatic())
+        return;
+
+    auto* cache = GetSubsystem<ResourceCache>();
+    for (unsigned index = 0; index < ea::min(batches_.size(), list.names_.size()); ++index)
     {
-        auto* material = cache->GetResource<Material>(lines[index]);
+        auto* material = cache->GetResource<Material>(list.names_[index]);
         if (material)
             SetMaterial(index, material);
     }
