@@ -926,7 +926,7 @@ Material* UI::GetBatchMaterial(const UIBatch& batch) const
 
     if (!batch.texture_)
         return noTextureMaterial_;
-    else if (batch.texture_->GetFormat() == Graphics::GetAlphaFormat())
+    else if (batch.texture_->GetFormat() == TextureFormat::TEX_FORMAT_R8_UNORM)
         return alphaMapMaterial_;
     else if (batch.blendMode_ != BLEND_ALPHA && batch.blendMode_ != BLEND_ADDALPHA && batch.blendMode_ != BLEND_PREMULALPHA)
         return diffMapAlphaMaskMaterial_;
@@ -2109,7 +2109,7 @@ void UI::ResizeRootElement()
         {
             TextureFormat format = texture_->GetFormat();
             if (!format)
-                format = Graphics::GetRGBAFormat();
+                format = TextureFormat::TEX_FORMAT_RGBA8_UNORM;
             const auto flags = texture_->GetParams().flags_ | TextureFlag::BindRenderTarget;
             if (texture_->SetSize(effectiveSize.x_, effectiveSize.y_, format, flags, texture_->GetMultiSample()))
                 texture_->GetRenderSurface()->SetUpdateMode(SURFACE_MANUALUPDATE);

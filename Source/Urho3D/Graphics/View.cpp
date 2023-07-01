@@ -1843,8 +1843,8 @@ void View::SetRenderTargets(RenderPathCommand& command)
             Texture* texture = FindNamedTexture(command.outputs_[index].first, true, false);
 
             // Check for depth only rendering (by specifying a depth texture as the sole output)
-            if (!index && command.outputs_.size() == 1 && texture && (texture->GetFormat() == Graphics::GetReadableDepthFormat() ||
-                                                                      texture->GetFormat() == Graphics::GetDepthStencilFormat()))
+            if (!index && command.outputs_.size() == 1 && texture && (texture->GetFormat() == TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT ||
+                                                                      texture->GetFormat() == TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT))
             {
                 useColorWrite = false;
                 useCustomDepth = true;
@@ -2091,7 +2091,7 @@ void View::AllocateScreenBuffers()
     // Also, if rendering to a texture with full deferred rendering, it must be RGBA to comply with the rest of the buffers,
     // unless using OpenGL 3
     if (((deferred_ || hasScenePassToRTs) && !renderTarget_) || (!Graphics::GetGL3Support() && deferredAmbient_ && renderTarget_
-        && renderTarget_->GetParentTexture()->GetFormat() != Graphics::GetRGBAFormat()))
+        && renderTarget_->GetParentTexture()->GetFormat() != TextureFormat::TEX_FORMAT_RGBA8_UNORM))
             needSubstitute = true;
     // Also need substitute if rendering to backbuffer using a custom (readable) depth buffer
     if (!renderTarget_ && hasCustomDepth)
@@ -2109,19 +2109,19 @@ void View::AllocateScreenBuffers()
     }
 
     // Follow final rendertarget format, or use RGB to match the backbuffer format
-    TextureFormat format = renderTarget_ ? renderTarget_->GetParentTexture()->GetFormat() : Graphics::GetRGBFormat();
+    TextureFormat format = renderTarget_ ? renderTarget_->GetParentTexture()->GetFormat() : TextureFormat::TEX_FORMAT_RGBA8_UNORM;
 
     // If HDR rendering is enabled use RGBA16f and reserve a buffer
     if (renderer_->GetHDRRendering())
     {
-        format = Graphics::GetRGBAFloat16Format();
+        format = TextureFormat::TEX_FORMAT_RGBA16_FLOAT;
         needSubstitute = true;
     }
 
 #ifdef URHO3D_OPENGL
     // On OpenGL 2 ensure that all MRT buffers are RGBA in deferred rendering
     if (deferred_ && !renderer_->GetHDRRendering() && !Graphics::GetGL3Support())
-        format = Graphics::GetRGBAFormat();
+        format = TextureFormat::TEX_FORMAT_RGBA8_UNORM;
 #endif
 
     if (hasViewportRead)

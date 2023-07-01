@@ -45,7 +45,7 @@ Pass* GetFirstPass(Technique* technique, const ea::vector<unsigned>& passIndices
     return nullptr;
 }
 
-const TextureFormat outlineTextureFormat = static_cast<TextureFormat>(Graphics::GetRGBAFormat());
+const TextureFormat outlineTextureFormat = TextureFormat::TEX_FORMAT_RGBA8_UNORM;
 
 } // namespace
 

@@ -68,9 +68,9 @@ TextureFormat GetStitchTextureFormat(unsigned numChannels)
 {
     switch (numChannels)
     {
-    case 1: return Graphics::GetFloat32Format();
-    case 2: return Graphics::GetRGFloat32Format();
-    case 4: return Graphics::GetRGBAFloat32Format();
+    case 1: return TextureFormat::TEX_FORMAT_R32_FLOAT;
+    case 2: return TextureFormat::TEX_FORMAT_RG32_FLOAT;
+    case 4: return TextureFormat::TEX_FORMAT_RGBA32_FLOAT;
     default:
         assert(0);
         return TextureFormat::TEX_FORMAT_UNKNOWN;

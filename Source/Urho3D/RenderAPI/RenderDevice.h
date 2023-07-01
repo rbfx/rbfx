@@ -93,6 +93,12 @@ public:
 
     /// Check if texture format is supported on hardware.
     bool IsTextureFormatSupported(TextureFormat format) const;
+    /// Check if texture format is supported on hardware as render target or depth stencil.
+    bool IsRenderTargetFormatSupported(TextureFormat format) const;
+    /// Check if given level of MSAA is supported on hardware.
+    bool IsMultiSampleSupported(TextureFormat format, int multiSample) const;
+    /// Select supported multi-sample level for given format.
+    int GetSupportedMultiSample(TextureFormat format, int multiSample) const;
 
     /// Getters.
     /// @{

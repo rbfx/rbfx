@@ -25,7 +25,6 @@
 #include "../Core/Context.h"
 #include "../Core/Mutex.h"
 #include "../Graphics/Drawable.h"
-#include "../Graphics/Graphics.h"
 #include "../RenderAPI/PipelineState.h"
 #include "../RenderAPI/RenderAPIUtils.h"
 #include "../RenderAPI/RenderDevice.h"
@@ -113,12 +112,11 @@ TextureRenderBuffer::TextureRenderBuffer(RenderPipelineInterface* renderPipeline
         sizeMultiplier_ = size;
 
     const bool isPersistent = params.flags_.Test(RenderBufferFlag::Persistent);
-    auto graphics = GetSubsystem<Graphics>();
-    const bool isDepthStencil = params_.textureFormat_ == graphics->GetDepthStencilFormat()
-        || params_.textureFormat_ == graphics->GetReadableDepthFormat()
-        || params_.textureFormat_ == graphics->GetReadableDepthStencilFormat()
-        || params_.textureFormat_ == graphics->GetShadowMapFormat()
-        || params_.textureFormat_ == graphics->GetHiresShadowMapFormat();
+    const bool isDepthStencil = //
+        params_.textureFormat_ == TextureFormat::TEX_FORMAT_D16_UNORM
+        || params_.textureFormat_ == TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT
+        || params_.textureFormat_ == TextureFormat::TEX_FORMAT_D32_FLOAT
+        || params_.textureFormat_ == TextureFormat::TEX_FORMAT_D32_FLOAT_S8X24_UINT;
 
     if (isPersistent || isDepthStencil)
         persistenceKey_ = GetObjectID();

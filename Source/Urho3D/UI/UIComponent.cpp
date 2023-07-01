@@ -166,8 +166,8 @@ UIComponent::UIComponent(Context* context)
     texture_->SetAddressMode(TextureCoordinate::U, ADDRESS_CLAMP);
     texture_->SetAddressMode(TextureCoordinate::V, ADDRESS_CLAMP);
     texture_->SetNumLevels(1);                                        // No mipmaps
-    if (texture_->SetSize(UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE, Graphics::GetRGBAFormat(),
-        TextureFlag::BindRenderTarget))
+    if (texture_->SetSize(UICOMPONENT_DEFAULT_TEXTURE_SIZE, UICOMPONENT_DEFAULT_TEXTURE_SIZE,
+            TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFlag::BindRenderTarget))
         texture_->GetRenderSurface()->SetUpdateMode(SURFACE_MANUALUPDATE);
     else
         URHO3D_LOGERROR("Resizing of UI rendertarget texture failed.");

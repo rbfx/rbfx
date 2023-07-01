@@ -124,9 +124,9 @@ void DefaultRenderPipelineView::ApplySettings()
                 "deferred", "base", "litbase", "light");
 
             deferred_ = DeferredLightingData{};
-            deferred_->albedoBuffer_ = renderBufferManager_->CreateColorBuffer({ Graphics::GetRGBAFormat() });
-            deferred_->specularBuffer_ = renderBufferManager_->CreateColorBuffer({ Graphics::GetRGBAFormat() });
-            deferred_->normalBuffer_ = renderBufferManager_->CreateColorBuffer({ Graphics::GetRGBAFormat() });
+            deferred_->albedoBuffer_ = renderBufferManager_->CreateColorBuffer({TextureFormat::TEX_FORMAT_RGBA8_UNORM});
+            deferred_->specularBuffer_ = renderBufferManager_->CreateColorBuffer({TextureFormat::TEX_FORMAT_RGBA8_UNORM});
+            deferred_->normalBuffer_ = renderBufferManager_->CreateColorBuffer({TextureFormat::TEX_FORMAT_RGBA8_UNORM});
         }
         else
         {

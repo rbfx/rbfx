@@ -97,7 +97,7 @@ void RmlCanvasComponent::SetUISize(IntVector2 size)
         return;
     }
 
-    if (texture_->SetSize(size.x_, size.y_, Graphics::GetRGBAFormat(), TextureFlag::BindRenderTarget))
+    if (texture_->SetSize(size.x_, size.y_, TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFlag::BindRenderTarget))
     {
         RenderSurface* surface = texture_->GetRenderSurface();
         surface->SetUpdateMode(SURFACE_MANUALUPDATE);

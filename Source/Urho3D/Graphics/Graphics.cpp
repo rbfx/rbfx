@@ -104,7 +104,6 @@ WindowMode ToWindowMode(bool fullscreen, bool borderless)
 
 }
 
-RenderDeviceCaps Graphics::caps;
 unsigned Graphics::maxBonesHWSkinned = 0;
 
 void Graphics::SetWindowTitle(const ea::string& windowTitle)

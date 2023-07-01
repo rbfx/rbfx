@@ -346,11 +346,9 @@ bool FontFaceBitmap::Save(Serializer& dest, int pointSize, const ea::string& ind
 
 unsigned FontFaceBitmap::ConvertFormatToNumComponents(TextureFormat format)
 {
-    if (format == Graphics::GetRGBAFormat())
+    if (format == TextureFormat::TEX_FORMAT_RGBA8_UNORM)
         return 4;
-    else if (format == Graphics::GetRGBFormat())
-        return 3;
-    else if (format == Graphics::GetLuminanceAlphaFormat())
+    else if (format == TextureFormat::TEX_FORMAT_RG8_UNORM)
         return 2;
     else
         return 1;

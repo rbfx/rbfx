@@ -147,6 +147,13 @@ struct URHO3D_API RenderDeviceSettings
 /// Capabilities of the render device.
 struct URHO3D_API RenderDeviceCaps
 {
+    bool computeShaders_{};
+    bool drawBaseVertex_{};
+    bool drawBaseInstance_{};
+
+    bool srgbOutput_{};
+    bool hdrOutput_{};
+
     unsigned maxVertexShaderUniforms_{}; // TODO(diligent): Fill me
     unsigned maxPixelShaderUniforms_{}; // TODO(diligent): Fill me
     unsigned constantBufferOffsetAlignment_{};

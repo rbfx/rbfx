@@ -46,6 +46,7 @@
 #include "../Graphics/Zone.h"
 #include "../Input/InputEvents.h"
 #include "../IO/Log.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
@@ -1072,7 +1073,7 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
 
     case SHADOWQUALITY_VSM:
     case SHADOWQUALITY_BLUR_VSM:
-        shadowMapFormat = graphics_->GetRGFloat32Format();
+        shadowMapFormat = TextureFormat::TEX_FORMAT_RG32_FLOAT;
         shadowMapFlags = TextureFlag::BindRenderTarget;
         multiSample = vsmMultiSample_;
         break;
@@ -1135,7 +1136,7 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
 Texture* Renderer::GetScreenBuffer(int width, int height, TextureFormat format, int multiSample, bool autoResolve, bool cubemap, bool filtered, bool srgb,
     unsigned persistentKey)
 {
-    bool depthStencil = (format == Graphics::GetDepthStencilFormat()) || (format == Graphics::GetReadableDepthFormat()) || format == Graphics::GetReadableDepthStencilFormat();
+    bool depthStencil = (format == TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT);
     if (depthStencil)
     {
         filtered = false;
@@ -1238,7 +1239,7 @@ RenderSurface* Renderer::GetDepthStencil(int width, int height, int multiSample,
         return nullptr;
     else
     {
-        return static_cast<Texture2D*>(GetScreenBuffer(width, height, Graphics::GetDepthStencilFormat(), multiSample, autoResolve,
+        return static_cast<Texture2D*>(GetScreenBuffer(width, height, TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT, multiSample, autoResolve,
             false, false, false))->GetRenderSurface();
     }
 }
@@ -1756,6 +1757,7 @@ void Renderer::ResetScreenBufferAllocations()
 void Renderer::Initialize()
 {
     auto* graphics = GetSubsystem<Graphics>();
+    auto* renderDevice = GetSubsystem<RenderDevice>();
     auto* cache = GetSubsystem<ResourceCache>();
 
     if (!graphics || !graphics->IsInitialized() || !cache)
@@ -1766,7 +1768,7 @@ void Renderer::Initialize()
     graphics_ = graphics;
     graphics_->SetGlobalShaderDefines(globalShaderDefinesString_);
 
-    hardwareSkinningSupported_ = graphics_->GetCaps().maxVertexShaderUniforms_ >= 256;
+    hardwareSkinningSupported_ = renderDevice->GetCaps().maxVertexShaderUniforms_ >= 256;
 
     if (!graphics_->GetShadowMapFormat())
         drawShadows_ = false;
@@ -2020,7 +2022,7 @@ void Renderer::CreateGeometries()
         faceSelectCubeMap_->SetName("FaceSelectCubeMap");
 #endif
         faceSelectCubeMap_->SetNumLevels(1);
-        faceSelectCubeMap_->SetSize(1, graphics_->GetRGBAFormat());
+        faceSelectCubeMap_->SetSize(1, TextureFormat::TEX_FORMAT_RGBA8_UNORM);
         faceSelectCubeMap_->SetFilterMode(FILTER_NEAREST);
 
         indirectionCubeMap_ = MakeShared<TextureCube>(context_);
@@ -2028,7 +2030,7 @@ void Renderer::CreateGeometries()
         indirectionCubeMap_->SetName("IndirectionCubeMap");
 #endif
         indirectionCubeMap_->SetNumLevels(1);
-        indirectionCubeMap_->SetSize(256, graphics_->GetRGBAFormat());
+        indirectionCubeMap_->SetSize(256, TextureFormat::TEX_FORMAT_RGBA8_UNORM);
         indirectionCubeMap_->SetFilterMode(FILTER_BILINEAR);
         indirectionCubeMap_->SetAddressMode(COORD_U, ADDRESS_CLAMP);
         indirectionCubeMap_->SetAddressMode(COORD_V, ADDRESS_CLAMP);
@@ -2043,7 +2045,7 @@ void Renderer::CreateGeometries()
     blackCubeMap_->SetName("BlackCubeMap");
 #endif
     blackCubeMap_->SetNumLevels(1);
-    blackCubeMap_->SetSize(1, graphics_->GetRGBAFormat());
+    blackCubeMap_->SetSize(1, TextureFormat::TEX_FORMAT_RGBA8_UNORM);
     blackCubeMap_->SetFilterMode(FILTER_NEAREST);
     const unsigned char blackCubeMapData[4] = { 0, 0, 0, 255 };
     for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)

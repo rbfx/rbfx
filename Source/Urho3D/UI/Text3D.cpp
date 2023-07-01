@@ -750,7 +750,7 @@ void Text3D::UpdateTextMaterials(bool forceUpdate)
                 Pass* pass = tech ? tech->GetPass("alpha") : nullptr;
                 if (pass)
                 {
-                    if (texture && texture->GetFormat() == Graphics::GetAlphaFormat())
+                    if (texture && texture->GetFormat() == TextureFormat::TEX_FORMAT_R8_UNORM)
                         pass->SetPixelShaderDefines("ALPHAMAP");
                     else
                         pass->SetPixelShaderDefines("");

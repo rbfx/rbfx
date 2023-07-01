@@ -243,8 +243,6 @@ static void HandleDbgMessageCallbacks(
     }
 }
 
-bool Graphics::gl3Support = false;
-
 Graphics::Graphics(Context* context)
     : Object(context)
     , impl_(new GraphicsImpl())
@@ -387,8 +385,6 @@ bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
     impl_->device_ = renderDevice_->GetRenderDevice();
     impl_->deviceContext_ = renderDevice_->GetImmediateContext();
     impl_->swapChain_ = renderDevice_->GetSwapChain();
-
-    CheckFeatureSupport();
 
     // Clear the initial window contents to black
     RenderContext* renderContext = renderDevice_->GetRenderContext();
@@ -880,32 +876,6 @@ bool Graphics::IsInitialized() const
     return window_ != nullptr && impl_->device_ != nullptr;
 }
 
-ea::vector<int> Graphics::GetMultiSampleLevels() const
-{
-    using namespace Diligent;
-    ea::vector<int> ret;
-    ret.emplace_back(1);
-
-    if (!impl_->device_)
-        return ret;
-    const TextureFormatInfoExt& colorFmtInfo =
-        impl_->device_->GetTextureFormatInfoExt(GetSRGB() ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_RGBA8_UNORM);
-    if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_64)
-        ret.emplace_back(64);
-    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_32)
-        ret.emplace_back(32);
-    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_16)
-        ret.emplace_back(16);
-    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_8)
-        ret.emplace_back(8);
-    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_4)
-        ret.emplace_back(4);
-    else if (colorFmtInfo.SampleCounts & SAMPLE_COUNT_2)
-        ret.emplace_back(2);
-
-    return ret;
-}
-
 TextureFormat Graphics::GetFormat(CompressedFormat format) const
 {
     switch (format)
@@ -1040,130 +1010,45 @@ RenderBackend Graphics::GetRenderBackend() const
     return renderDevice_ ? renderDevice_->GetBackend() : RenderBackend::OpenGL;
 }
 
-TextureFormat Graphics::GetAlphaFormat()
-{
-    return TextureFormat::TEX_FORMAT_R8_UNORM;
-}
-
-TextureFormat Graphics::GetLuminanceFormat()
-{
-    return TextureFormat::TEX_FORMAT_R8_UNORM;
-}
-
-TextureFormat Graphics::GetLuminanceAlphaFormat()
-{
-    return TextureFormat::TEX_FORMAT_RG8_UNORM;
-}
-
-TextureFormat Graphics::GetRGBFormat()
-{
-    return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
-}
-
-TextureFormat Graphics::GetRGBAFormat()
-{
-    return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
-}
-
-TextureFormat Graphics::GetRGBA16Format()
-{
-    return TextureFormat::TEX_FORMAT_RGBA16_UNORM;
-}
-
-TextureFormat Graphics::GetRGBAFloat16Format()
-{
-    return TextureFormat::TEX_FORMAT_RGBA16_FLOAT;
-}
-
-TextureFormat Graphics::GetRGBAFloat32Format()
-{
-    return TextureFormat::TEX_FORMAT_RGBA32_FLOAT;
-}
-
-TextureFormat Graphics::GetRG16Format()
-{
-    return TextureFormat::TEX_FORMAT_RG16_UNORM;
-}
-
-TextureFormat Graphics::GetRGFloat16Format()
-{
-    return TextureFormat::TEX_FORMAT_RG16_FLOAT;
-}
-
-TextureFormat Graphics::GetRGFloat32Format()
-{
-    return TextureFormat::TEX_FORMAT_RG32_FLOAT;
-}
-
-TextureFormat Graphics::GetFloat16Format()
-{
-    return TextureFormat::TEX_FORMAT_R16_FLOAT;
-}
-
-TextureFormat Graphics::GetFloat32Format()
-{
-    return TextureFormat::TEX_FORMAT_R32_FLOAT;
-}
-
-TextureFormat Graphics::GetLinearDepthFormat()
-{
-    return TextureFormat::TEX_FORMAT_D32_FLOAT;
-}
-
-TextureFormat Graphics::GetDepthStencilFormat()
-{
-    return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
-}
-
-TextureFormat Graphics::GetReadableDepthFormat()
-{
-    return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
-}
-
-TextureFormat Graphics::GetReadableDepthStencilFormat()
-{
-    return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
-}
-
 TextureFormat Graphics::GetFormat(const ea::string& formatName)
 {
     ea::string nameLower = formatName.to_lower();
     nameLower.trim();
 
     if (nameLower == "a")
-        return GetAlphaFormat();
+        return TextureFormat::TEX_FORMAT_R8_UNORM;
     if (nameLower == "l")
-        return GetLuminanceFormat();
+        return TextureFormat::TEX_FORMAT_R8_UNORM;
     if (nameLower == "la")
-        return GetLuminanceAlphaFormat();
+        return TextureFormat::TEX_FORMAT_RG8_UNORM;
     if (nameLower == "rgb")
-        return GetRGBFormat();
+        return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
     if (nameLower == "rgba")
-        return GetRGBAFormat();
+        return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
     if (nameLower == "rgba16")
-        return GetRGBA16Format();
+        return TextureFormat::TEX_FORMAT_RGBA16_UNORM;
     if (nameLower == "rgba16f")
-        return GetRGBAFloat16Format();
+        return TextureFormat::TEX_FORMAT_RGBA16_FLOAT;
     if (nameLower == "rgba32f")
-        return GetRGBAFloat32Format();
+        return TextureFormat::TEX_FORMAT_RGBA32_FLOAT;
     if (nameLower == "rg16")
-        return GetRG16Format();
+        return TextureFormat::TEX_FORMAT_RG16_UNORM;
     if (nameLower == "rg16f")
-        return GetRGFloat16Format();
+        return TextureFormat::TEX_FORMAT_RG16_FLOAT;
     if (nameLower == "rg32f")
-        return GetRGFloat32Format();
+        return TextureFormat::TEX_FORMAT_RG32_FLOAT;
     if (nameLower == "r16f")
-        return GetFloat16Format();
+        return TextureFormat::TEX_FORMAT_R16_FLOAT;
     if (nameLower == "r32f" || nameLower == "float")
-        return GetFloat32Format();
+        return TextureFormat::TEX_FORMAT_R32_FLOAT;
     if (nameLower == "lineardepth" || nameLower == "depth")
-        return GetLinearDepthFormat();
+        return TextureFormat::TEX_FORMAT_D32_FLOAT;
     if (nameLower == "d24s8")
-        return GetDepthStencilFormat();
+        return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
     if (nameLower == "readabledepth" || nameLower == "hwdepth")
-        return GetReadableDepthFormat();
+        return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
 
-    return GetRGBFormat();
+    return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
 }
 
 unsigned Graphics::GetMaxBones()
@@ -1173,32 +1058,6 @@ unsigned Graphics::GetMaxBones()
         return maxBonesHWSkinned;
 
     return 128;
-}
-
-bool Graphics::GetGL3Support()
-{
-    return gl3Support;
-}
-
-void Graphics::CheckFeatureSupport()
-{
-    anisotropySupport_ = true;
-    dxtTextureSupport_ = true;
-    lightPrepassSupport_ = true;
-    deferredSupport_ = true;
-    hardwareShadowSupport_ = true;
-    instancingSupport_ = true;
-    shadowMapFormat_ = TEX_FORMAT_D16_UNORM;
-    hiresShadowMapFormat_ = TEX_FORMAT_D24_UNORM_S8_UINT;
-    dummyColorFormat_ = TEX_FORMAT_UNKNOWN;
-    sRGBSupport_ = true;
-    sRGBWriteSupport_ = true;
-
-    caps = renderDevice_->GetCaps();
-
-#ifdef URHO3D_COMPUTE
-    computeSupport_ = true;
-#endif
 }
 
 void Graphics::ResetCachedState()
@@ -1288,22 +1147,6 @@ void Graphics::BeginDebug(const char* debugName)
 void Graphics::EndDebug()
 {
     impl_->deviceContext_->EndDebugGroup();
-}
-
-void Graphics::SetTextureForUpdate(Texture* texture)
-{
-}
-
-void Graphics::MarkFBODirty()
-{
-}
-
-void Graphics::SetVBO(unsigned object)
-{
-}
-
-void Graphics::SetUBO(unsigned object)
-{
 }
 
 const IntRect& Graphics::GetViewport() const

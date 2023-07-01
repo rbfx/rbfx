@@ -148,14 +148,6 @@ void ValidateWindowSettings(WindowSettings& settings)
     }
 }
 
-unsigned GetSupportedMultiSample(Diligent::IRenderDevice* device, unsigned multiSample, TextureFormat textureFormat)
-{
-    const Diligent::TextureFormatInfoExt& formatInfo = device->GetTextureFormatInfoExt(textureFormat);
-    while (multiSample > 1 && ((formatInfo.SampleCounts & multiSample) == 0))
-        multiSample >>= 1;
-    return ea::max(1u, multiSample);
-}
-
 unsigned ToSDLFlag(WindowMode mode)
 {
     switch (mode)
@@ -927,7 +919,7 @@ void RenderDevice::InitializeDevice()
     if (nativeSwapChain)
     {
         const unsigned multiSample =
-            GetSupportedMultiSample(renderDevice_, windowSettings_.multiSample_, swapChainDesc.ColorBufferFormat);
+            GetSupportedMultiSample(swapChainDesc.ColorBufferFormat, windowSettings_.multiSample_);
 
         auto& defaultAllocator = Diligent::DefaultRawMemoryAllocator::GetAllocator();
         swapChain_ = NEW_RC_OBJ(defaultAllocator, "ProxySwapChainMS instance", ProxySwapChainMS)(
@@ -941,6 +933,14 @@ void RenderDevice::InitializeDevice()
 void RenderDevice::InitializeCaps()
 {
     const Diligent::GraphicsAdapterInfo& adapterInfo = renderDevice_->GetAdapterInfo();
+
+    caps_.computeShaders_ = adapterInfo.Features.ComputeShaders == Diligent::DEVICE_FEATURE_STATE_ENABLED;
+    caps_.drawBaseVertex_ = (adapterInfo.DrawCommand.CapFlags & Diligent::DRAW_COMMAND_CAP_FLAG_BASE_VERTEX) != 0;
+    caps_.drawBaseInstance_ = !IsOpenGLESBackend(deviceSettings_.backend_);
+
+    caps_.srgbOutput_ = IsRenderTargetFormatSupported(TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB)
+        || IsRenderTargetFormatSupported(TextureFormat::TEX_FORMAT_BGRA8_UNORM_SRGB);
+    caps_.hdrOutput_ = IsRenderTargetFormatSupported(TextureFormat::TEX_FORMAT_RGBA16_FLOAT);
 
     caps_.maxVertexShaderUniforms_ = 4096;
     caps_.maxPixelShaderUniforms_ = 4096;
@@ -1345,6 +1345,28 @@ void RenderDevice::SendDeviceObjectEvent(DeviceObjectEvent event)
 bool RenderDevice::IsTextureFormatSupported(TextureFormat format) const
 {
     return renderDevice_->GetTextureFormatInfo(format).Supported;
+}
+
+bool RenderDevice::IsRenderTargetFormatSupported(TextureFormat format) const
+{
+    const Diligent::TextureFormatInfoExt& info = renderDevice_->GetTextureFormatInfoExt(format);
+    return (info.BindFlags & (Diligent::BIND_RENDER_TARGET | Diligent::BIND_DEPTH_STENCIL)) != 0;
+}
+
+bool RenderDevice::IsMultiSampleSupported(TextureFormat format, int multiSample) const
+{
+    const Diligent::TextureFormatInfoExt& info = renderDevice_->GetTextureFormatInfoExt(format);
+    return (info.SampleCounts & multiSample) != 0;
+}
+
+int RenderDevice::GetSupportedMultiSample(TextureFormat format, int multiSample) const
+{
+    multiSample = NextPowerOfTwo(Clamp(multiSample, 1, 16));
+
+    const Diligent::TextureFormatInfoExt& formatInfo = renderDevice_->GetTextureFormatInfoExt(format);
+    while (multiSample > 1 && ((formatInfo.SampleCounts & multiSample) == 0))
+        multiSample >>= 1;
+    return ea::max(1, multiSample);
 }
 
 void RenderDevice::InitializeDefaultObjects()

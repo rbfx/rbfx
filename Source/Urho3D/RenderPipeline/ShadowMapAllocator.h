@@ -91,8 +91,6 @@ private:
     IntVector2 shadowAtlasPageSize_;
     /// @}
 
-    /// Dummy color map for workaround, if needed.
-    SharedPtr<Texture2D> dummyColorTexture_;
     ea::vector<AtlasPage> pages_;
 };
 

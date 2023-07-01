@@ -57,9 +57,8 @@ void AmbientOcclusionPass::SetSettings(const AmbientOcclusionPassSettings& setti
 
 void AmbientOcclusionPass::InitializeTextures()
 {
-    const TextureFormat format = Graphics::GetRGBAFormat();
     const Vector2 sizeMultiplier = Vector2::ONE / static_cast<float>(1 << settings_.downscale_);
-    const RenderBufferParams params{format, 1, RenderBufferFlag::BilinearFiltering};
+    const RenderBufferParams params{TextureFormat::TEX_FORMAT_RGBA8_UNORM, 1, RenderBufferFlag::BilinearFiltering};
     textures_.currentTarget_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
     textures_.previousTarget_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
     textures_.noise_ = context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/SSAONoise.png");

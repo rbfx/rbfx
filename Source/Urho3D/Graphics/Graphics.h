@@ -99,7 +99,6 @@ class URHO3D_API Graphics : public Object
 {
     URHO3D_OBJECT(Graphics, Object);
 
-    friend class ComputeDevice; // OpenGL needs this to mess with texture slots.
 public:
     /// Construct.
     explicit Graphics(Context* context);
@@ -222,9 +221,6 @@ public:
     void ClearTransformSources();
     /// Set texture.
     void SetTexture(unsigned index, Texture* texture);
-    /// Bind texture unit 0 for update. Called by Texture. Used only on OpenGL.
-    /// @nobind
-    void SetTextureForUpdate(Texture* texture);
     /// Dirty texture parameters of all textures (when global settings change.)
     /// @nobind
     void SetTextureParametersDirty();
@@ -377,56 +373,27 @@ public:
     unsigned GetNumBatches() const { return numBatches_; }
 
     /// Return dummy color texture format for shadow maps. Is "NULL" (consume no video memory) if supported.
-    TextureFormat GetDummyColorFormat() const { return dummyColorFormat_; }
+    TextureFormat GetDummyColorFormat() const { return TextureFormat::TEX_FORMAT_UNKNOWN; }
 
     /// Return shadow map depth texture format, or 0 if not supported.
-    TextureFormat GetShadowMapFormat() const { return shadowMapFormat_; }
+    TextureFormat GetShadowMapFormat() const { return TextureFormat::TEX_FORMAT_UNKNOWN; }
 
     /// Return 24-bit shadow map depth texture format, or 0 if not supported.
-    TextureFormat GetHiresShadowMapFormat() const { return hiresShadowMapFormat_; }
+    TextureFormat GetHiresShadowMapFormat() const { return TextureFormat::TEX_FORMAT_UNKNOWN; }
 
     /// Return whether hardware instancing is supported.
     /// @property
-    bool GetInstancingSupport() const { return instancingSupport_; }
-
-    /// Return whether light pre-pass rendering is supported.
-    /// @property
-    bool GetLightPrepassSupport() const { return lightPrepassSupport_; }
-
-    /// Return whether deferred rendering is supported.
-    /// @property
-    bool GetDeferredSupport() const { return deferredSupport_; }
-
-    /// Return whether anisotropic texture filtering is supported.
-    bool GetAnisotropySupport() const { return anisotropySupport_; }
+    bool GetInstancingSupport() const { return true; }
 
     /// Return whether shadow map depth compare is done in hardware.
     /// @property
-    bool GetHardwareShadowSupport() const { return hardwareShadowSupport_; }
-
-    /// Return whether a readable hardware depth format is available.
-    /// @property
-    bool GetReadableDepthSupport() const { return GetReadableDepthFormat() != 0; }
-
-    /// Return whether sRGB conversion on texture sampling is supported.
-    /// @property
-    bool GetSRGBSupport() const { return sRGBSupport_; }
-
-    /// Return whether sRGB conversion on rendertarget writing is supported.
-    /// @property
-    bool GetSRGBWriteSupport() const { return sRGBWriteSupport_; }
-
-    /// Return whether compute shaders are supported.
-    bool GetComputeSupport() const { return computeSupport_; }
+    bool GetHardwareShadowSupport() const { return true; }
 
     /// Return supported fullscreen resolutions (third component is refreshRate). Will be empty if listing the resolutions is not supported on the platform (e.g. Web).
     /// @property
     ea::vector<IntVector3> GetResolutions(int monitor) const;
     /// Return index of the best resolution for requested width, height and refresh rate.
     unsigned FindBestResolutionIndex(int monitor, int width, int height, int refreshRate) const;
-    /// Return supported multisampling levels.
-    /// @property
-    ea::vector<int> GetMultiSampleLevels() const;
     /// Return the desktop resolution.
     /// @property
     IntVector2 GetDesktopResolution(int monitor) const;
@@ -572,50 +539,7 @@ public:
     void FreeScratchBuffer(void* buffer);
     /// Clean up too large scratch buffers.
     void CleanupScratchBuffers();
-    /// Mark the FBO needing an update. Used only on OpenGL.
-    /// @nobind
-    void MarkFBODirty();
-    /// Bind a VBO, avoiding redundant operation. Used only on OpenGL.
-    /// @nobind
-    void SetVBO(unsigned object);
-    /// Bind a UBO, avoiding redundant operation. Used only on OpenGL.
-    /// @nobind
-    void SetUBO(unsigned object);
 
-    /// Return the API-specific alpha texture format.
-    static TextureFormat GetAlphaFormat();
-    /// Return the API-specific luminance texture format.
-    static TextureFormat GetLuminanceFormat();
-    /// Return the API-specific luminance alpha texture format.
-    static TextureFormat GetLuminanceAlphaFormat();
-    /// Return the API-specific RGB texture format.
-    static TextureFormat GetRGBFormat();
-    /// Return the API-specific RGBA texture format.
-    static TextureFormat GetRGBAFormat();
-    /// Return the API-specific RGBA 16-bit texture format.
-    static TextureFormat GetRGBA16Format();
-    /// Return the API-specific RGBA 16-bit float texture format.
-    static TextureFormat GetRGBAFloat16Format();
-    /// Return the API-specific RGBA 32-bit float texture format.
-    static TextureFormat GetRGBAFloat32Format();
-    /// Return the API-specific RG 16-bit texture format.
-    static TextureFormat GetRG16Format();
-    /// Return the API-specific RG 16-bit float texture format.
-    static TextureFormat GetRGFloat16Format();
-    /// Return the API-specific RG 32-bit float texture format.
-    static TextureFormat GetRGFloat32Format();
-    /// Return the API-specific single channel 16-bit float texture format.
-    static TextureFormat GetFloat16Format();
-    /// Return the API-specific single channel 32-bit float texture format.
-    static TextureFormat GetFloat32Format();
-    /// Return the API-specific linear depth texture format.
-    static TextureFormat GetLinearDepthFormat();
-    /// Return the API-specific hardware depth-stencil texture format.
-    static TextureFormat GetDepthStencilFormat();
-    /// Return the API-specific readable hardware depth format, or 0 if not supported.
-    static TextureFormat GetReadableDepthFormat();
-    /// Return the API-specific readable hardware depth-stencil format, or 0 if not supported.
-    static TextureFormat GetReadableDepthStencilFormat();
     /// Return the API-specific texture format from a textual description, for example "rgb".
     static TextureFormat GetFormat(const ea::string& formatName);
 
@@ -624,9 +548,7 @@ public:
     /// Return maximum number of supported bones for skinning.
     static unsigned GetMaxBones();
     /// Return whether is using an OpenGL 3 context. Return always false on DirectX 11.
-    static bool GetGL3Support();
-    /// Return graphics capabilities.
-    static const RenderDeviceCaps& GetCaps() { return caps; }
+    static bool GetGL3Support() { return true; }
 
     /// Get the SDL_Window as a void* to avoid having to include the graphics implementation
     void* GetSDLWindow() { return window_; }
@@ -642,8 +564,6 @@ private:
     void CreateWindowIcon();
     /// Called when screen mode is successfully changed by the backend.
     void OnScreenModeChanged();
-    /// Check supported rendering features.
-    void CheckFeatureSupport();
     /// Reset cached rendering state.
     void ResetCachedState();
 
@@ -664,30 +584,12 @@ private:
     WindowSettings secondaryWindowSettings_;
     /// Window position.
     IntVector2 position_;
-    /// Light pre-pass rendering support flag.
-    bool lightPrepassSupport_{};
-    /// Deferred rendering support flag.
-    bool deferredSupport_{};
-    /// Anisotropic filtering support flag.
-    bool anisotropySupport_{};
-    /// DXT format support flag.
-    bool dxtTextureSupport_{};
     /// ETC1 format support flag.
     bool etcTextureSupport_{};
     /// ETC2 format support flag.
     bool etc2TextureSupport_{};
     /// PVRTC formats support flag.
     bool pvrtcTextureSupport_{};
-    /// Hardware shadow map depth compare support flag.
-    bool hardwareShadowSupport_{};
-    /// Instancing support flag.
-    bool instancingSupport_{};
-    /// sRGB conversion on read support flag.
-    bool sRGBSupport_{};
-    /// sRGB conversion on write support flag.
-    bool sRGBWriteSupport_{};
-    /// Compute shaders support.
-    bool computeSupport_{};
     /// Number of primitives this frame.
     unsigned numPrimitives_{};
     /// Number of batches this frame.
@@ -698,12 +600,6 @@ private:
     ea::vector<GPUObject*> gpuObjects_;
     /// Scratch buffers.
     ea::vector<ScratchBuffer> scratchBuffers_;
-    /// Shadow map dummy color texture format.
-    TextureFormat dummyColorFormat_{};
-    /// Shadow map depth texture format.
-    TextureFormat shadowMapFormat_{};
-    /// Shadow map 24-bit depth texture format.
-    TextureFormat hiresShadowMapFormat_{};
     /// Vertex buffers in use.
     VertexBuffer* vertexBuffers_[MAX_VERTEX_STREAMS]{};
     /// Index buffer in use.
@@ -803,10 +699,6 @@ private:
 
     SharedPtr<RenderDevice> renderDevice_;
 
-    /// OpenGL3 support flag.
-    static bool gl3Support;
-    /// Graphics capabilities. Static for easier access.
-    static RenderDeviceCaps caps;
     /// Max number of bones which can be skinned on GPU. Zero means default value.
     static unsigned maxBonesHWSkinned;
 };

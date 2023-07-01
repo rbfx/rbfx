@@ -65,8 +65,8 @@ void AutoExposurePass::InitializeTextures()
     const RenderBufferFlags flagFixedBilinear = RenderBufferFlag::BilinearFiltering | RenderBufferFlag::FixedTextureSize;
     const RenderBufferFlags flagFixedNearest = RenderBufferFlag::FixedTextureSize;
     const RenderBufferFlags flagFixedNearestPersistent = RenderBufferFlag::FixedTextureSize | RenderBufferFlag::Persistent;
-    const auto rgbaFormat = Graphics::GetRGBAFloat16Format();
-    const auto rgFormat = Graphics::GetRGFloat16Format();
+    const auto rgbaFormat = TextureFormat::TEX_FORMAT_RGBA16_FLOAT;
+    const auto rgFormat = TextureFormat::TEX_FORMAT_RG16_FLOAT;
 
     textures_.color128_ = renderBufferManager_->CreateColorBuffer({ rgbaFormat, 1, flagFixedBilinear }, { 128, 128 });
     textures_.lum64_ = renderBufferManager_->CreateColorBuffer({ rgFormat, 1, flagFixedBilinear }, { 64, 64 });

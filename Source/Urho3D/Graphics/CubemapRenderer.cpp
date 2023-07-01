@@ -129,7 +129,8 @@ void CubemapRenderer::DisconnectViewportsFromTexture(TextureCube* texture) const
 
 void CubemapRenderer::DefineTexture(TextureCube* texture, const CubemapRenderingSettings& settings, TextureFlags flags)
 {
-    texture->SetSize(settings.textureSize_, Graphics::GetRGBAFormat(), flags | TextureFlag::BindRenderTarget);
+    texture->SetSize(
+        settings.textureSize_, TextureFormat::TEX_FORMAT_RGBA8_UNORM, flags | TextureFlag::BindRenderTarget);
     texture->SetFilterMode(FILTER_TRILINEAR);
 }
 
