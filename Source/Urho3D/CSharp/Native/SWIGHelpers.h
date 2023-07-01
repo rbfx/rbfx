@@ -12,18 +12,7 @@ template<typename T> T& deref(SwigValueWrapper<T>* ptr) { return (T&)*ptr; }
 namespace pod
 {
 
-#define DEFINE_POD_HELPER_STRUCT(type, n) \
-    struct type##n \
-    { \
-        type##n() \
-        { \
-        } \
-        type##n(type v) \
-        { \
-            data[0] = v; \
-        } \
-        type data[n]; \
-    };
+#define DEFINE_POD_HELPER_STRUCT(type, n) struct type##n { type data[n]; };
 DEFINE_POD_HELPER_STRUCT(int, 2);
 DEFINE_POD_HELPER_STRUCT(int, 3);
 DEFINE_POD_HELPER_STRUCT(int, 4);
@@ -47,4 +36,5 @@ To convert(const From& from)
     memcpy(&value, &from, sizeof(from));
     return value;
 }
+
 }
