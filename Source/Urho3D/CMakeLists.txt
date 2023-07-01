@@ -34,7 +34,6 @@ macro (define_engine_source_files)
             Urho3D.h
             Graphics/Direct3D11/D3D11GraphicsImpl.cpp
             Graphics/Direct3D11/D3D11GraphicsImpl.h
-            Graphics/GraphicsImpl.h
             Graphics/OpenGL/OGLGraphicsImpl.h
             Graphics/Diligent/DiligentGraphicsImpl.cpp
             Graphics/Diligent/DiligentGraphicsImpl.h

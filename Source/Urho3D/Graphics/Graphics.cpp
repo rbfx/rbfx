@@ -34,7 +34,6 @@
 #include "../Graphics/GlobalIllumination.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/LightBaker.h"
 #include "../Graphics/LightProbeGroup.h"
@@ -403,12 +402,6 @@ void Graphics::PrecacheShaders(Deserializer& source)
     URHO3D_PROFILE("PrecacheShaders");
 
     ShaderPrecache::LoadShaders(this, source);
-}
-
-void Graphics::SetGlobalShaderDefines(const ea::string& globalShaderDefines)
-{
-    globalShaderDefines_ = globalShaderDefines;
-    globalShaderDefinesHash_ = globalShaderDefines_;
 }
 
 void Graphics::SetShaderCacheDir(const FileIdentifier& path)

@@ -45,7 +45,6 @@ class ShaderProgramReflection;
 class File;
 class Image;
 class IndexBuffer;
-class GraphicsImpl;
 class RenderSurface;
 class Shader;
 class ShaderPrecache;
@@ -143,12 +142,6 @@ public:
     void EndFrame();
     /// Clear any or all of rendertarget, depth buffer and stencil buffer.
     void Clear(ClearTargetFlags flags, const Color& color = Color::TRANSPARENT_BLACK, float depth = 1.0f, unsigned stencil = 0);
-    /// Resolve multisampled backbuffer to a texture rendertarget. The texture's size should match the viewport size.
-    bool ResolveToTexture(Texture2D* destination, const IntRect& viewport);
-    /// Resolve a multisampled texture on itself.
-    bool ResolveToTexture(Texture2D* texture);
-    /// Resolve a multisampled cube texture on itself.
-    bool ResolveToTexture(TextureCube* texture);
     /// Draw non-indexed geometry.
     void Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCount);
     /// Draw indexed geometry.
@@ -175,8 +168,6 @@ public:
     void BeginDebug(const char* debugName);
     void EndDebug();
 
-    /// Return constant buffer layout for given shaders.
-    ShaderProgramReflection* GetShaderProgramLayout(ShaderVariation* vs, ShaderVariation* ps);
     /// Set shaders.
     void SetShaders(ShaderVariation* vs, ShaderVariation* ps);
     /// Set shader float constants.
@@ -273,15 +264,10 @@ public:
     /// Set shader cache directory, Direct3D only. This can either be an absolute path or a path within the resource system.
     /// @property
     void SetShaderCacheDir(const FileIdentifier& path);
-    /// Set global shader defines.
-    void SetGlobalShaderDefines(const ea::string& globalShaderDefines);
 
     /// Return whether rendering initialized.
     /// @property
     bool IsInitialized() const;
-
-    /// Return graphics implementation, which holds the actual API-specific resources.
-    GraphicsImpl* GetImpl() const { return impl_; }
 
     /// Return OS-specific external window handle. Null if not in use.
     void* GetExternalWindow() const { return settings_.externalWindowHandle_; }
@@ -409,102 +395,15 @@ public:
     ShaderVariation* GetShader(ShaderType type, const ea::string& name, const ea::string& defines = EMPTY_STRING) const;
     /// Return a shader variation by name and defines.
     ShaderVariation* GetShader(ShaderType type, const char* name, const char* defines) const;
-    /// Return current vertex buffer by index.
-    VertexBuffer* GetVertexBuffer(unsigned index) const;
-
-    /// Return current index buffer.
-    IndexBuffer* GetIndexBuffer() const { return indexBuffer_; }
-
-    /// Return current vertex shader.
-    ShaderVariation* GetVertexShader() const { return vertexShader_; }
-
-    /// Return current pixel shader.
-    ShaderVariation* GetPixelShader() const { return pixelShader_; }
 
     /// Return default texture filtering mode.
     TextureFilterMode GetDefaultTextureFilterMode() const { return defaultTextureFilterMode_; }
 
     /// Return default texture max. anisotropy level.
     unsigned GetDefaultTextureAnisotropy() const { return defaultTextureAnisotropy_; }
-
-    /// Return current rendertarget by index.
-    RenderSurface* GetRenderTarget(unsigned index) const;
-
-    /// Return current depth-stencil surface.
-    RenderSurface* GetDepthStencil() const { return depthStencil_; }
-
-    /// Return the viewport coordinates.
-    const IntRect& GetViewport() const;
-
-    /// Return blending mode.
-    BlendMode GetBlendMode() const { return blendMode_; }
-
-    /// Return whether alpha-to-coverage is enabled.
-    bool GetAlphaToCoverage() const { return alphaToCoverage_; }
-
-    /// Return whether color write is enabled.
-    bool GetColorWrite() const { return colorWrite_; }
-
-    /// Return hardware culling mode.
-    CullMode GetCullMode() const { return cullMode_; }
-
-    /// Return depth constant bias.
-    float GetDepthConstantBias() const { return constantDepthBias_; }
-
-    /// Return depth slope scaled bias.
-    float GetDepthSlopeScaledBias() const { return slopeScaledDepthBias_; }
-
-    /// Return depth compare mode.
-    CompareMode GetDepthTest() const { return depthTestMode_; }
-
-    /// Return whether depth write is enabled.
-    bool GetDepthWrite() const { return depthWrite_; }
-
-    /// Return polygon fill mode.
-    FillMode GetFillMode() const { return fillMode_; }
-
-    /// Return whether line antialiasing is enabled.
-    bool GetLineAntiAlias() const { return lineAntiAlias_; }
-
-    /// Return whether stencil test is enabled.
-    bool GetStencilTest() const { return stencilTest_; }
-
-    /// Return whether scissor test is enabled.
-    bool GetScissorTest() const { return scissorTest_; }
-
-    /// Return scissor rectangle coordinates.
-    const IntRect& GetScissorRect() const { return scissorRect_; }
-
-    /// Return stencil compare mode.
-    CompareMode GetStencilTestMode() const { return stencilTestMode_; }
-
-    /// Return stencil operation to do if stencil test passes.
-    StencilOp GetStencilPass() const { return stencilPass_; }
-
-    /// Return stencil operation to do if stencil test fails.
-    StencilOp GetStencilFail() const { return stencilFail_; }
-
-    /// Return stencil operation to do if depth compare fails.
-    StencilOp GetStencilZFail() const { return stencilZFail_; }
-
-    /// Return stencil reference value.
-    unsigned GetStencilRef() const { return stencilRef_; }
-
-    /// Return stencil compare bitmask.
-    unsigned GetStencilCompareMask() const { return stencilCompareMask_; }
-
-    /// Return stencil write bitmask.
-    unsigned GetStencilWriteMask() const { return stencilWriteMask_; }
-
     /// Return shader cache directory, Direct3D and Diligent only
     /// @property
     const FileIdentifier& GetShaderCacheDir() const { return shaderCacheDir_; }
-
-    /// Return global shader defines.
-    const ea::string& GetGlobalShaderDefines() const { return globalShaderDefines_; }
-
-    /// Return global shader defines hash.
-    StringHash GetGlobalShaderDefinesHash() const { return globalShaderDefinesHash_; }
 
     /// Return current rendertarget width and height.
     IntVector2 GetRenderTargetDimensions() const;
@@ -553,11 +452,7 @@ private:
     void CreateWindowIcon();
     /// Called when screen mode is successfully changed by the backend.
     void OnScreenModeChanged();
-    /// Reset cached rendering state.
-    void ResetCachedState();
 
-    /// Implementation.
-    GraphicsImpl* impl_;
     /// SDL window.
     SDL_Window* window_{};
     /// Window title.
@@ -585,76 +480,10 @@ private:
     unsigned maxScratchBufferRequest_{};
     /// Scratch buffers.
     ea::vector<ScratchBuffer> scratchBuffers_;
-    /// Vertex buffers in use.
-    VertexBuffer* vertexBuffers_[MAX_VERTEX_STREAMS]{};
-    /// Index buffer in use.
-    IndexBuffer* indexBuffer_{};
-    /// Current vertex declaration hash.
-    unsigned long long vertexDeclarationHash_{};
-    /// Current primitive type.
-    unsigned primitiveType_{};
-    /// Vertex shader in use.
-    ShaderVariation* vertexShader_{};
-    /// Pixel shader in use.
-    ShaderVariation* pixelShader_{};
-    /// PipelineState in use.
-    PipelineState* pipelineState_{nullptr};
-    /// Textures in use.
-    Texture* textures_[MAX_TEXTURE_UNITS]{};
-    /// Rendertargets in use.
-    RenderSurface* renderTargets_[MAX_RENDERTARGETS]{};
-    /// Depth-stencil surface in use.
-    RenderSurface* depthStencil_{};
     /// Default texture filtering mode.
     TextureFilterMode defaultTextureFilterMode_{FILTER_TRILINEAR};
     /// Default texture max. anisotropy level.
     unsigned defaultTextureAnisotropy_{4};
-    /// Blending mode.
-    BlendMode blendMode_{};
-    /// Alpha-to-coverage enable.
-    bool alphaToCoverage_{};
-    /// Color write enable.
-    bool colorWrite_{};
-    /// Hardware culling mode.
-    CullMode cullMode_{};
-    /// Depth constant bias.
-    float constantDepthBias_{};
-    /// Depth slope scaled bias.
-    float slopeScaledDepthBias_{};
-    /// Depth compare mode.
-    CompareMode depthTestMode_{};
-    /// Depth write enable flag.
-    bool depthWrite_{};
-    /// Line antialiasing enable flag.
-    bool lineAntiAlias_{};
-    /// Polygon fill mode.
-    FillMode fillMode_{};
-    /// Scissor test enable flag.
-    bool scissorTest_{};
-    /// Scissor test rectangle.
-    IntRect scissorRect_;
-    /// Stencil test compare mode.
-    CompareMode stencilTestMode_{};
-    /// Stencil operation on pass.
-    StencilOp stencilPass_{};
-    /// Stencil operation on fail.
-    StencilOp stencilFail_{};
-    /// Stencil operation on depth fail.
-    StencilOp stencilZFail_{};
-    /// Stencil test reference value.
-    unsigned stencilRef_{};
-    /// Stencil compare bitmask.
-    unsigned stencilCompareMask_{};
-    /// Stencil write bitmask.
-    unsigned stencilWriteMask_{};
-    /// Current custom clip plane in post-projection space.
-    Vector4 clipPlane_;
-    /// Stencil test enable flag.
-    bool stencilTest_{};
-    /// Custom clip plane enable flag.
-    bool useClipPlane_{};
-    /// Remembered shader parameter sources.
-    const void* shaderParameterSources_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Base directory for shaders.
     ea::string shaderPath_;
     /// Shader name prefix for universal shaders.
@@ -673,10 +502,6 @@ private:
     SharedPtr<ShaderPrecache> shaderPrecache_;
     /// Graphics API name.
     ea::string apiName_;
-    /// Global shader defines.
-    ea::string globalShaderDefines_;
-    /// Hash of global shader defines.
-    StringHash globalShaderDefinesHash_;
 
     GraphicsSettings settings_;
 

@@ -593,7 +593,6 @@ using BoneCollisionShapeFlags = Urho3D::BoneCollisionShape;
 %csattribute(Urho3D::ShaderVariation, %arg(ea::string), Defines, GetDefines, SetDefines);
 %csattribute(Urho3D::ShaderVariation, %arg(ea::string), CompilerOutput, GetCompilerOutput);
 %csattribute(Urho3D::Graphics, %arg(bool), IsInitialized, IsInitialized);
-%csattribute(Urho3D::Graphics, %arg(Urho3D::GraphicsImpl *), Impl, GetImpl);
 %csattribute(Urho3D::Graphics, %arg(bool), IsShaderValidationEnabled, IsShaderValidationEnabled, SetShaderValidationEnabled);
 %csattribute(Urho3D::Graphics, %arg(void *), ExternalWindow, GetExternalWindow, SetExternalWindow);
 %csattribute(Urho3D::Graphics, %arg(SDL_Window *), Window, GetWindow);

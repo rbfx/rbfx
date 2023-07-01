@@ -24,7 +24,6 @@
 
 #include "../Graphics/Camera.h"
 #include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture.h"

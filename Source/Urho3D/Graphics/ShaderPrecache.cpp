@@ -23,7 +23,6 @@
 #include "../Precompiled.h"
 
 #include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/ShaderPrecache.h"
 #include "../Graphics/ShaderVariation.h"
 #include "../IO/File.h"

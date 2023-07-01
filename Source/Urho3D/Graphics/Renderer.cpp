@@ -30,7 +30,6 @@
 #include "../Graphics/Geometry.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/OcclusionBuffer.h"
@@ -328,9 +327,6 @@ void Renderer::SetGlobalShaderDefine(ea::string_view define, bool enabled)
         ea::vector<ea::string> definesVector;
         ea::copy(globalShaderDefines_.begin(), globalShaderDefines_.end(), ea::back_inserter(definesVector));
         globalShaderDefinesString_ = ea::string::joined(definesVector, " ");
-
-        if (graphics_)
-            graphics_->SetGlobalShaderDefines(globalShaderDefinesString_);
 
         ReloadShaders();
     }
@@ -1766,7 +1762,6 @@ void Renderer::Initialize()
     URHO3D_PROFILE("InitRenderer");
 
     graphics_ = graphics;
-    graphics_->SetGlobalShaderDefines(globalShaderDefinesString_);
 
     hardwareSkinningSupported_ = renderDevice->GetCaps().maxVertexShaderUniforms_ >= 256;
 

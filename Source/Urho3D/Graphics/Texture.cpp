@@ -24,7 +24,6 @@
 
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/Renderer.h"
 #include "../IO/FileSystem.h"

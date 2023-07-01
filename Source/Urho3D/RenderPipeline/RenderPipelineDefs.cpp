@@ -25,7 +25,6 @@
 #include "../Core/Context.h"
 #include "../IO/Log.h"
 #include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
 

@@ -1,4 +1,3 @@
-#include "../../../Urho3D/Graphics/GraphicsImpl.h"
 #include "../../../Urho3D/Graphics/Texture2D.h"
 #include "../../../Urho3D/SystemUI/SystemUI.h"
 

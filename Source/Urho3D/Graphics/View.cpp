@@ -33,7 +33,6 @@
 #include "../Graphics/GlobalIllumination.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/OcclusionBuffer.h"
 #include "../Graphics/Octree.h"
@@ -1540,7 +1539,7 @@ void View::ExecuteRenderPathCommands()
                 {
                     if (!currentRenderTarget_)
                     {
-                        graphics_->ResolveToTexture(dynamic_cast<Texture2D*>(viewportTextures_[0]), viewRect_);
+                        //graphics_->ResolveToTexture(dynamic_cast<Texture2D*>(viewportTextures_[0]), viewRect_);
                         currentViewportTexture_ = viewportTextures_[0];
                         viewportModified = false;
                         usedResolve_ = true;
@@ -1833,7 +1832,7 @@ void View::SetRenderTargets(RenderPathCommand& command)
         rtSizeNow.y_);
 
     if (!useCustomDepth)
-        graphics_->SetDepthStencil(GetDepthStencil(graphics_->GetRenderTarget(0)));
+        graphics_->SetDepthStencil(GetDepthStencil(nullptr/*graphics_->GetRenderTarget(0)*/));
     graphics_->SetViewport(viewport);
     graphics_->SetColorWrite(useColorWrite);
 }
@@ -1864,8 +1863,8 @@ bool View::SetTextures(RenderPathCommand& command)
         {
             graphics_->SetTexture(i, texture);
             // Check if the current depth stencil is being sampled
-            if (graphics_->GetDepthStencil() && texture == graphics_->GetDepthStencil()->GetParentTexture())
-                allowDepthWrite = false;
+            //if (graphics_->GetDepthStencil() && texture == graphics_->GetDepthStencil()->GetParentTexture())
+            //    allowDepthWrite = false;
         }
         else
         {
@@ -1897,7 +1896,7 @@ void View::RenderQuad(RenderPathCommand& command)
     SetCameraShaderParameters(camera_);
 
     // During renderpath commands the G-Buffer or viewport texture is assumed to always be viewport-sized
-    IntRect viewport = graphics_->GetViewport();
+    IntRect viewport = IntRect::ZERO;// graphics_->GetViewport();
     IntVector2 viewSize = IntVector2(viewport.Width(), viewport.Height());
     SetGBufferShaderParameters(viewSize, IntRect(0, 0, viewSize.x_, viewSize.y_));
 

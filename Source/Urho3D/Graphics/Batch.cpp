@@ -28,7 +28,6 @@
 #include "../Graphics/Camera.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/ShaderVariation.h"
@@ -247,7 +246,7 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
 
     // Set camera & viewport shader parameters
     auto cameraHash = static_cast<unsigned>(reinterpret_cast<size_t>(camera));
-    IntRect viewport = graphics->GetViewport();
+    IntRect viewport = IntRect::ZERO;// graphics->GetViewport();
     IntVector2 viewSize = IntVector2(viewport.Width(), viewport.Height());
     auto viewportHash = static_cast<unsigned>(viewSize.x_) | static_cast<unsigned>(viewSize.y_) << 16u;
     if (graphics->NeedParameterUpdate(SP_CAMERA, reinterpret_cast<const void*>(static_cast<size_t>(cameraHash + viewportHash))))
@@ -285,7 +284,7 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
     }
 
     // Set zone-related shader parameters
-    BlendMode blend = graphics->GetBlendMode();
+    BlendMode blend = BLEND_REPLACE;//graphics->GetBlendMode();
     // If the pass is additive, override fog color to black so that shaders do not need a separate additive path
     bool overrideFogColorToBlack = blend == BLEND_ADD || blend == BLEND_ADDALPHA;
     auto zoneHash = static_cast<unsigned>(reinterpret_cast<size_t>(zone_));

@@ -28,7 +28,6 @@
 #include "../../Graphics/Geometry.h"
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/GraphicsEvents.h"
-#include "../../Graphics/GraphicsImpl.h"
 #include "../../Graphics/IndexBuffer.h"
 #include "../../RenderAPI/PipelineState.h"
 #include "../../Graphics/Renderer.h"
@@ -243,14 +242,11 @@ static void HandleDbgMessageCallbacks(
 
 Graphics::Graphics(Context* context)
     : Object(context)
-    , impl_(new GraphicsImpl())
     , position_(SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED)
     , shaderPath_("Shaders/HLSL/")
     , shaderExtension_(".hlsl")
     , apiName_("Diligent")
 {
-    ResetCachedState();
-
     // TODO(diligent): Revisit this
     //SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1");
     SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
@@ -261,81 +257,7 @@ Graphics::Graphics(Context* context)
 
 Graphics::~Graphics()
 {
-    context_->RemoveSubsystem<RenderDevice>();
-
-    // Reset State
-    impl_->deviceContext_->SetRenderTargets(0, nullptr, nullptr, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-    // impl_->deviceContext_->SetPipelineState(nullptr);
-    impl_->deviceContext_->SetIndexBuffer(nullptr, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-    impl_->deviceContext_->SetVertexBuffers(0, 0, nullptr, 0, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-    impl_->deviceContext_->Flush();
-
-//    if (impl_->device_)
-//    {
-//        impl_->device_->IdleGPU();
-//
-//        if (impl_->swapChain_)
-//            impl_->swapChain_->Release();
-//
-//        impl_->deviceContext_->Release();
-//        impl_->device_->Release();
-//    }
-    //{
-    //    MutexLock lock(gpuObjectMutex_);
-
-    //    // Release all GPU objects that still exist
-    //    for (auto i = gpuObjects_.begin(); i != gpuObjects_.end(); ++i)
-    //        (*i)->Release();
-    //    gpuObjects_.clear();
-    //}
-
-    // impl_->vertexDeclarations_.clear();
-    // impl_->allConstantBuffers_.clear();
-
-    // for (auto i = impl_->blendStates_.begin(); i != impl_->blendStates_.end(); ++i)
-    //{
-    //     URHO3D_SAFE_RELEASE(i->second);
-    // }
-    // impl_->blendStates_.clear();
-
-    // for (auto i = impl_->depthStates_.begin(); i != impl_->depthStates_.end(); ++i)
-    //{
-    //     URHO3D_SAFE_RELEASE(i->second);
-    // }
-    // impl_->depthStates_.clear();
-
-    // for (auto i = impl_->rasterizerStates_.begin();
-    //      i != impl_->rasterizerStates_.end(); ++i)
-    //{
-    //     URHO3D_SAFE_RELEASE(i->second);
-    // }
-    // impl_->rasterizerStates_.clear();
-
-    // URHO3D_SAFE_RELEASE(impl_->defaultRenderTargetView_);
-    // URHO3D_SAFE_RELEASE(impl_->defaultDepthStencilView_);
-    // URHO3D_SAFE_RELEASE(impl_->defaultDepthTexture_);
-    // URHO3D_SAFE_RELEASE(impl_->resolveTexture_);
-    // URHO3D_SAFE_RELEASE(impl_->swapChain_);
-    // URHO3D_SAFE_RELEASE(impl_->deviceContext_);
-    // URHO3D_SAFE_RELEASE(impl_->device_);
-
-//#ifdef PLATFORM_MACOS
-//    if (impl_->metalView_)
-//    {
-//        SDL_Metal_DestroyView(impl_->metalView_);
-//        impl_->metalView_ = nullptr;
-//    }
-//#endif
-//
-//    if (window_)
-//    {
-//        SDL_ShowCursor(SDL_TRUE);
-//        SDL_DestroyWindow(window_);
-//        window_ = nullptr;
-//    }
-
-    delete impl_;
-    impl_ = nullptr;
+    Close();
 
     context_->ReleaseSDL();
 }
@@ -370,9 +292,6 @@ bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
     }
 
     window_ = renderDevice_->GetSDLWindow();
-    impl_->device_ = renderDevice_->GetRenderDevice();
-    impl_->deviceContext_ = renderDevice_->GetImmediateContext();
-    impl_->swapChain_ = renderDevice_->GetSwapChain();
 
     // Clear the initial window contents to black
     RenderContext* renderContext = renderDevice_->GetRenderContext();
@@ -386,19 +305,13 @@ bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
 
 void Graphics::Close()
 {
-    if (impl_->deviceContext_)
-        impl_->deviceContext_->Flush();
-
-    //if (window_)
-    //{
-    //    SDL_ShowCursor(SDL_TRUE);
-    //    SDL_DestroyWindow(window_);
-    //    window_ = nullptr;
-    //}
+    context_->RemoveSubsystem<RenderDevice>();
+    renderDevice_ = nullptr;
 }
 
 bool Graphics::TakeScreenShot(Image& destImage)
 {
+    // TODO(diligent): Implement
     URHO3D_PROFILE("TakeScreenShot");
     if (!IsInitialized())
         return false;
@@ -497,7 +410,6 @@ bool Graphics::BeginFrame()
     numPrimitives_ = 0;
     numBatches_ = 0;
 
-    ea::string output = Format("Begin Frame {}\n", impl_->GetDeviceContext()->GetFrameNumber());
     SendEvent(E_BEGINRENDERING);
     return true;
 }
@@ -530,24 +442,6 @@ void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, un
     if (flags.Test(CLEAR_DEPTH) || flags.Test(CLEAR_STENCIL))
         renderContext->ClearDepthStencil(flags, depth, stencil);
     EndDebug();
-}
-
-bool Graphics::ResolveToTexture(Texture2D* destination, const IntRect& viewport)
-{
-    URHO3D_ASSERT(false);
-    return false;
-}
-
-bool Graphics::ResolveToTexture(Texture2D* texture)
-{
-    URHO3D_ASSERT(false);
-    return false;
-}
-
-bool Graphics::ResolveToTexture(TextureCube* texture)
-{
-    URHO3D_ASSERT(false);
-    return false;
 }
 
 void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCount)
@@ -599,12 +493,6 @@ bool Graphics::SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer>>& buffe
 void Graphics::SetIndexBuffer(IndexBuffer* buffer)
 {
     URHO3D_ASSERT(false);
-}
-
-ShaderProgramReflection* Graphics::GetShaderProgramLayout(ShaderVariation* vs, ShaderVariation* ps)
-{
-    URHO3D_ASSERT(false);
-    return nullptr;
 }
 
 void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
@@ -728,10 +616,7 @@ void Graphics::Restore()
     if (renderDevice_)
     {
         if (!renderDevice_->Restore())
-        {
-            renderDevice_ = nullptr;
-            context_->RemoveSubsystem<RenderDevice>();
-        }
+            Close();
     }
 }
 
@@ -842,7 +727,7 @@ void Graphics::SetClipPlane(bool enable, const Plane& clipPlane, const Matrix3x4
 
 bool Graphics::IsInitialized() const
 {
-    return window_ != nullptr && impl_->device_ != nullptr;
+    return renderDevice_ != nullptr;
 }
 
 TextureFormat Graphics::GetFormat(CompressedFormat format) const
@@ -901,18 +786,6 @@ ShaderVariation* Graphics::GetShader(ShaderType type, const char* name, const ch
     return lastShader_ ? lastShader_->GetVariation(type, defines) : nullptr;
 }
 
-VertexBuffer* Graphics::GetVertexBuffer(unsigned index) const
-{
-    URHO3D_ASSERT(false);
-    return nullptr;
-}
-
-RenderSurface* Graphics::GetRenderTarget(unsigned index) const
-{
-    URHO3D_ASSERT(false);
-    return nullptr;
-}
-
 IntVector2 Graphics::GetRenderTargetDimensions() const
 {
     URHO3D_ASSERT(false);
@@ -952,7 +825,7 @@ void Graphics::OnWindowResized()
 
 void Graphics::OnWindowMoved()
 {
-    if (!impl_->device_ || !window_ || GetFullscreen())
+    if (!renderDevice_ || !window_ || GetFullscreen())
         return;
 
     int newX, newY;
@@ -1029,99 +902,28 @@ unsigned Graphics::GetMaxBones()
     return 128;
 }
 
-void Graphics::ResetCachedState()
-{
-//    for (auto& constantBuffer : constantBuffers_)
-//        constantBuffer = {};
-
-    for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
-    {
-        vertexBuffers_[i] = nullptr;
-        impl_->vertexBuffers_[i] = nullptr;
-        // impl_->vertexSizes_[i] = 0;
-        impl_->vertexOffsets_[i] = 0;
-    }
-
-    for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
-    {
-        textures_[i] = nullptr;
-        impl_->shaderResourceViews_[i] = nullptr;
-        impl_->samplers_[i] = nullptr;
-    }
-
-    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-    {
-        renderTargets_[i] = nullptr;
-        impl_->renderTargetViews_[i] = nullptr;
-    }
-
-    ea::fill(ea::begin(impl_->constantBuffers_), ea::end(impl_->constantBuffers_), nullptr);
-    ea::fill(ea::begin(impl_->constantBuffersStartSlots_), ea::end(impl_->constantBuffersStartSlots_), 0u);
-    ea::fill(ea::begin(impl_->constantBuffersNumSlots_), ea::end(impl_->constantBuffersNumSlots_), 0u);
-
-    depthStencil_ = nullptr;
-
-    indexBuffer_ = nullptr;
-    vertexDeclarationHash_ = 0;
-    primitiveType_ = 0;
-    vertexShader_ = nullptr;
-    pixelShader_ = nullptr;
-    blendMode_ = BLEND_REPLACE;
-    alphaToCoverage_ = false;
-    colorWrite_ = true;
-    cullMode_ = CULL_CCW;
-    constantDepthBias_ = 0.0f;
-    slopeScaledDepthBias_ = 0.0f;
-    depthTestMode_ = CMP_LESSEQUAL;
-    depthWrite_ = true;
-    fillMode_ = FILL_SOLID;
-    lineAntiAlias_ = false;
-    scissorTest_ = false;
-    scissorRect_ = IntRect::ZERO;
-    stencilTest_ = false;
-    stencilTestMode_ = CMP_ALWAYS;
-    stencilPass_ = OP_KEEP;
-    stencilFail_ = OP_KEEP;
-    stencilZFail_ = OP_KEEP;
-    stencilRef_ = 0;
-    stencilCompareMask_ = M_MAX_UNSIGNED;
-    stencilWriteMask_ = M_MAX_UNSIGNED;
-    useClipPlane_ = false;
-    impl_->texturesDirty_ = true;
-    impl_->vertexDeclarationDirty_ = true;
-    impl_->blendStateDirty_ = true;
-    impl_->depthStateDirty_ = true;
-    impl_->rasterizerStateDirty_ = true;
-    impl_->scissorRectDirty_ = true;
-    impl_->stencilRefDirty_ = true;
-    impl_->blendStateHash_ = M_MAX_UNSIGNED;
-    impl_->depthStateHash_ = M_MAX_UNSIGNED;
-    impl_->rasterizerStateHash_ = M_MAX_UNSIGNED;
-    impl_->firstDirtyTexture_ = impl_->lastDirtyTexture_ = M_MAX_UNSIGNED;
-    impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = M_MAX_UNSIGNED;
-}
-
 void Graphics::BeginDebug(const ea::string_view& debugName)
 {
-    impl_->deviceContext_->BeginDebugGroup(debugName.data());
-}
-void Graphics::BeginDebug(const ea::string& debugName)
-{
-    impl_->deviceContext_->BeginDebugGroup(debugName.data());
-}
-void Graphics::BeginDebug(const char* debugName)
-{
-    impl_->deviceContext_->BeginDebugGroup(debugName);
-}
-void Graphics::EndDebug()
-{
-    impl_->deviceContext_->EndDebugGroup();
+    Diligent::IDeviceContext* deviceContext = renderDevice_->GetImmediateContext();
+    deviceContext->BeginDebugGroup(debugName.data());
 }
 
-const IntRect& Graphics::GetViewport() const
+void Graphics::BeginDebug(const ea::string& debugName)
 {
-    URHO3D_ASSERT(false);
-    return IntRect::ZERO;
+    Diligent::IDeviceContext* deviceContext = renderDevice_->GetImmediateContext();
+    deviceContext->BeginDebugGroup(debugName.data());
+}
+
+void Graphics::BeginDebug(const char* debugName)
+{
+    Diligent::IDeviceContext* deviceContext = renderDevice_->GetImmediateContext();
+    deviceContext->BeginDebugGroup(debugName);
+}
+
+void Graphics::EndDebug()
+{
+    Diligent::IDeviceContext* deviceContext = renderDevice_->GetImmediateContext();
+    deviceContext->EndDebugGroup();
 }
 
 } // namespace Urho3D

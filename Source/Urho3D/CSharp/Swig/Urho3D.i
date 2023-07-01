@@ -126,7 +126,6 @@ using namespace Urho3D;
 	SDL_Cursor*,
 	SDL_Surface*,
 	SDL_Window*,
-	Urho3D::GraphicsImpl*,
     ImFont*,
     tracy::SourceLocationData*
 }
