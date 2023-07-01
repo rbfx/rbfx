@@ -45,6 +45,22 @@ int GetClosestMutliSampleLevel(Graphics* graphics, int level)
 
 }
 
+BatchStateCacheCallback::~BatchStateCacheCallback()
+{
+}
+
+UIBatchStateCacheCallback::~UIBatchStateCacheCallback()
+{
+}
+
+RenderPipelineInterface::~RenderPipelineInterface()
+{
+}
+
+LightProcessorCallback::~LightProcessorCallback()
+{
+}
+
 void RenderPipelineSettings::AdjustToSupported(Context* context)
 {
     auto graphics = context->GetSubsystem<Graphics>();
