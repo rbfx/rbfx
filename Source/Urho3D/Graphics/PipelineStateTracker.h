@@ -88,6 +88,8 @@ class URHO3D_API PipelineStateTracker
     friend class PipelineStateSubscription;
 
 public:
+    /// Destruct.
+    virtual ~PipelineStateTracker();
     /// Return (partial) pipeline state hash. Save to call from multiple threads as long as the object is not changing.
     unsigned GetPipelineStateHash() const
     {
