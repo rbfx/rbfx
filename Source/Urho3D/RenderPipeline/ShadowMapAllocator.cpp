@@ -157,7 +157,7 @@ bool ShadowMapAllocator::BeginShadowMapRendering(const ShadowMapRegion& shadowMa
 
         renderContext_->ClearDepthStencil(CLEAR_DEPTH);
         if (settings_.enableVarianceShadowMaps_)
-            renderContext_->ClearRenderTarget(0, Color::BLACK);
+            renderContext_->ClearRenderTarget(0, Color::WHITE);
     }
 
     renderContext_->SetViewport(shadowMap.rect_);

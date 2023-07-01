@@ -227,6 +227,17 @@ void AmbientOcclusionPass::Execute(Camera* camera)
     if (settings_.strength_ <= 0.0f)
         return;
 
+    if (renderBufferManager_->GetDepthStencilTexture()->GetParams().multiSample_ != 1)
+    {
+        static bool logged = false;
+        if (!logged)
+        {
+            URHO3D_LOGWARNING("AmbientOcclusionPass: MSAA is not supported");
+            logged = true;
+        }
+        return;
+    }
+
     // Convert texture coordinates into clip space
     Matrix4 clipToTextureSpace = Matrix4::IDENTITY;
     clipToTextureSpace.SetScale(Vector3(0.5f, 0.5f, 1.0f));

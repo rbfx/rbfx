@@ -423,7 +423,8 @@ void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadP
     }
     for (const ShaderResourceDesc& shaderResource : params.resources_)
     {
-        if (!params.bindSecondaryColorToDiffuse_ || shaderResource.name_ != ShaderResources::DiffMap)
+        const bool canBind = !params.bindSecondaryColorToDiffuse_ || shaderResource.name_ != ShaderResources::DiffMap;
+        if (canBind && shaderResource.texture_)
             drawQueue_->AddShaderResource(shaderResource.name_, shaderResource.texture_);
     }
     drawQueue_->CommitShaderResources();

@@ -106,9 +106,11 @@ void RenderPipelineSettings::AdjustToSupported(Context* context)
     // TODO: Check if instancing is actually supported, i.e. if there's enough vertex attributes
 
     // RenderPipelineSettings
-    const bool ssaoSupported = true; // TODO(diligent): Do anything about it?
-
-    ssao_.enabled_ = ssaoSupported && ssao_.enabled_;
+    if (renderBufferManager_.multiSampleLevel_ != 1)
+    {
+        URHO3D_LOGWARNING("SSAO is not supported for multi-sampled render targets, disabling");
+        ssao_.enabled_ = false;
+    }
 }
 
 void RenderPipelineSettings::PropagateImpliedSettings()

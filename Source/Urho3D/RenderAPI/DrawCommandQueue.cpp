@@ -62,6 +62,7 @@ void DrawCommandQueue::Reset()
 
     // Clear arrays and draw commands
     shaderResources_.clear();
+    unorderedAccessViews_.clear();
     drawCommands_.clear();
     scissorRects_.clear();
     scissorRects_.push_back(IntRect::ZERO);
