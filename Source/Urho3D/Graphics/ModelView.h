@@ -300,7 +300,7 @@ public:
     bool ImportModel(const Model* model);
     void ExportModel(Model* model) const;
     SharedPtr<Model> ExportModel(const ea::string& name = EMPTY_STRING) const;
-    StringVector ExportMaterialList() const;
+    ResourceRefList ExportMaterialList() const;
     /// @}
 
     /// Calculate bounding box.
