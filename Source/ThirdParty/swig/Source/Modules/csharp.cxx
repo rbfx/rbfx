@@ -4079,7 +4079,7 @@ public:
 	  if (SwigType_ispointer(returntype) || (typenode && Getattr(typenode, "abstracts"))) {
 	    /* initialize pointers to something sane. Same for abstract
 	       classes when a reference is returned. */
-	    Wrapper_add_localv(w, "c_result", SwigType_lstr(returntype, "c_result"), "= 0", NIL);
+	    Wrapper_add_localv(w, "c_result", SwigType_lstr(returntype, "c_result"), "= {}", NIL);
 	  } else {
 	    /* If returning a reference, initialize the pointer to a sane
 	       default - if a C# exception occurs, then the pointer returns
@@ -4151,7 +4151,7 @@ public:
     if ((c_ret_type = Swig_typemap_lookup("ctype", n, "", 0))) {
       if (!is_void && !ignored_method) {
 	String *jretval_decl = NewStringf("%s jresult", c_ret_type);
-	Wrapper_add_localv(w, "jresult", jretval_decl, "= 0", NIL);
+	Wrapper_add_localv(w, "jresult", jretval_decl, "= {}", NIL);
 	Delete(jretval_decl);
       }
     } else {
@@ -4225,7 +4225,7 @@ public:
 	/* Add to local variables */
 	Printf(c_decl, "%s %s", c_param_type, arg);
 	if (!ignored_method)
-	  Wrapper_add_localv(w, arg, c_decl, (!(SwigType_ispointer(pt) || SwigType_isreference(pt)) ? "" : "= 0"), NIL);
+	  Wrapper_add_localv(w, arg, c_decl, (!(SwigType_ispointer(pt) || SwigType_isreference(pt)) ? "" : "= {}"), NIL);
 
 	/* Add input marshalling code */
 	if ((tm = Getattr(p, "tmap:directorin"))) {
