@@ -213,7 +213,13 @@ public:
     float Evaluate(const ea::string& action);
 
     /// Get scancode names.
-    static const char* const* GetScanCodeNames();
+    static ea::span<const char*> GetScanCodeNames();
+    /// Get controller button names.
+    static ea::span<const char*> GetControllerButtonNames();
+    /// Get controller directional pad (hat) names.
+    static ea::span<const char*> GetControllerHatNames();
+    /// Get mouse button names.
+    static ea::span<const char*> GetMouseButtonNames();
 
     /// Load input map from config or resources.
     static SharedPtr<InputMap> Load(Context* context, const ea::string& name);
