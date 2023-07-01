@@ -47,6 +47,8 @@ namespace Urho3D
 class URHO3D_API ScriptRuntimeApi
 {
 public:
+    /// Destruct.
+    virtual ~ScriptRuntimeApi();
     /// Returns true if path contains a valid managed assembly with a class that inherits from PluginApplication.
     virtual bool VerifyAssembly(const ea::string& path) = 0;
     /// Modifies specified assembly by setting it's version to specified one.
