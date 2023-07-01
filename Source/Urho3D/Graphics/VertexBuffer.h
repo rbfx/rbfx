@@ -26,7 +26,6 @@
 
 #include "../Container/ByteVector.h"
 #include "../Core/Object.h"
-#include "../Graphics/GPUObject.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/PipelineStateTracker.h"
 #include "../Math/Vector4.h"

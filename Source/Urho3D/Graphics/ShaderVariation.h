@@ -23,7 +23,6 @@
 #pragma once
 
 #include "Urho3D/Container/Ptr.h"
-#include "Urho3D/Graphics/GPUObject.h"
 #include "Urho3D/Graphics/GraphicsDefs.h"
 #include "Urho3D/RenderAPI/RawShader.h"
 

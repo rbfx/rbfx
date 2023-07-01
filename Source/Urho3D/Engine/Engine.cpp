@@ -89,9 +89,6 @@
 #include "../Particles/ParticleGraphSystem.h"
 #endif
 #include "../Plugins/PluginManager.h"
-#ifdef URHO3D_COMPUTE
-#include "../Graphics/ComputeDevice.h"
-#endif
 #include "../Utility/AnimationVelocityExtractor.h"
 #include "../Utility/AssetPipeline.h"
 #include "../Utility/AssetTransformer.h"
@@ -283,9 +280,6 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
     {
         context_->RegisterSubsystem(new Graphics(context_));
         context_->RegisterSubsystem(new Renderer(context_));
-#ifdef URHO3D_COMPUTE
-        context_->RegisterSubsystem(new ComputeDevice(context_, context_->GetSubsystem<Graphics>()));
-#endif
     }
     context_->RegisterSubsystem(new StateManager(context_));
 #ifdef URHO3D_PARTICLE_GRAPH

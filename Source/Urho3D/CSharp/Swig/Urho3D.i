@@ -240,18 +240,12 @@ AddEqualityOperators(Urho3D::ColorFrame);
 AddEqualityOperators(Urho3D::TextureFrame);
 AddEqualityOperators(Urho3D::Variant);
 
-%ignore Urho3D::GPUObject::OnDeviceLost;
-%ignore Urho3D::GPUObject::OnDeviceReset;
-%ignore Urho3D::GPUObject::Release;
 %ignore Urho3D::VertexBuffer::OnDeviceLost;
 %ignore Urho3D::VertexBuffer::OnDeviceReset;
 %ignore Urho3D::VertexBuffer::Release;
 %ignore Urho3D::IndexBuffer::OnDeviceLost;
 %ignore Urho3D::IndexBuffer::OnDeviceReset;
 %ignore Urho3D::IndexBuffer::Release;
-%ignore Urho3D::ConstantBuffer::OnDeviceLost;
-%ignore Urho3D::ConstantBuffer::OnDeviceReset;
-%ignore Urho3D::ConstantBuffer::Release;
 %ignore Urho3D::ShaderVariation::OnDeviceLost;
 %ignore Urho3D::ShaderVariation::OnDeviceReset;
 %ignore Urho3D::ShaderVariation::Release;
@@ -606,7 +600,6 @@ public:
 %ignore Urho3D::Renderer::SetLightVolumeBatchShaders;
 %ignore Urho3D::IndexBufferDesc;
 %ignore Urho3D::VertexBufferDesc;
-%ignore Urho3D::GPUObject::GetGraphics;
 %ignore Urho3D::Terrain::GetHeightData; // eastl::shared_array<float>
 %ignore Urho3D::Geometry::GetRawData;
 %ignore Urho3D::Geometry::SetRawVertexData;
@@ -669,8 +662,6 @@ public:
 }
 %include "generated/Urho3D/_pre_graphics.i"
 %include "Urho3D/Graphics/GraphicsDefs.h"
-%interface_custom("%s", "I%s", Urho3D::GPUObject);
-%include "Urho3D/Graphics/GPUObject.h"
 %include "Urho3D/Graphics/PipelineStateTracker.h"
 %include "Urho3D/Graphics/IndexBuffer.h"
 %include "Urho3D/Graphics/VertexBuffer.h"
@@ -701,13 +692,8 @@ public:
 %include "Urho3D/Graphics/BillboardSet.h"
 %include "Urho3D/Graphics/DecalSet.h"
 %include "Urho3D/Graphics/Light.h"
-%include "Urho3D/Graphics/ConstantBuffer.h"
 %include "Urho3D/Graphics/ShaderVariation.h"
 %include "Urho3D/Graphics/ShaderPrecache.h"
-#if defined(URHO3D_COMPUTE)
-%include "Urho3D/Graphics/ComputeDevice.h"
-%include "Urho3D/Graphics/ComputeBuffer.h"
-#endif
 %include "Urho3D/Graphics/Tangent.h"
 //%include "Urho3D/Graphics/VertexDeclaration.h"
 %include "Urho3D/Graphics/Camera.h"

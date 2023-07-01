@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include "../../Graphics/ConstantBuffer.h"
 #include "../../Graphics/GraphicsDefs.h"
 #include "../../Math/Color.h"
 
@@ -56,7 +55,7 @@ namespace Urho3D
 
 //using ShaderProgramMap = ea::unordered_map<ea::pair<ShaderVariation*, ShaderVariation*>, SharedPtr<ShaderProgram>>;
 //using VertexDeclarationMap = ea::unordered_map<unsigned long long, SharedPtr<VertexDeclaration>>;
-using ConstantBufferMap = ea::unordered_map<unsigned, SharedPtr<ConstantBuffer>>;
+//using ConstantBufferMap = ea::unordered_map<unsigned, SharedPtr<ConstantBuffer>>;
 
 class DiligentConstantBufferManager;
 class DiligentCommonPipelines;
@@ -162,7 +161,7 @@ private:
     /// Vertex declarations.
 //    VertexDeclarationMap vertexDeclarations_;
     /// Constant buffer search map.
-    ConstantBufferMap allConstantBuffers_;
+    //ConstantBufferMap allConstantBuffers_;
 //    /// Shader programs.
 //    ShaderProgramMap shaderPrograms_;
 //    /// Shader program in use.

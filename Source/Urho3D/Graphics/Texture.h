@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include "../Graphics/GPUObject.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Math/Color.h"

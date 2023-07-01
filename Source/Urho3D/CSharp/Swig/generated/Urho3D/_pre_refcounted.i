@@ -187,8 +187,6 @@ URHO3D_REFCOUNTED(Urho3D::StaticModel);
 URHO3D_REFCOUNTED(Urho3D::AnimatedModel);
 URHO3D_REFCOUNTED(Urho3D::AnimationController);
 URHO3D_REFCOUNTED(Urho3D::BillboardSet);
-URHO3D_REFCOUNTED(Urho3D::ComputeBuffer);
-URHO3D_REFCOUNTED(Urho3D::ComputeDevice);
 URHO3D_REFCOUNTED(Urho3D::CubemapRenderer);
 URHO3D_REFCOUNTED(Urho3D::CustomGeometry);
 URHO3D_REFCOUNTED(Urho3D::DecalSet);

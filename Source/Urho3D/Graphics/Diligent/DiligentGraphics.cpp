@@ -25,8 +25,6 @@
 #include "../../Core/Context.h"
 #include "../../Core/ProcessUtils.h"
 #include "../../Core/Profiler.h"
-#include "../../Graphics/ComputeDevice.h"
-#include "../../Graphics/ConstantBuffer.h"
 #include "../../Graphics/Geometry.h"
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/GraphicsEvents.h"
@@ -361,18 +359,8 @@ bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
 
         renderDevice_->PostInitialize();
 
-        renderDevice_->OnDeviceLost.Subscribe(this, [this]()
-        {
-            for (GPUObject* gpuObject : gpuObjects_)
-                gpuObject->OnDeviceLost();
-            SendEvent(E_DEVICELOST);
-        });
-        renderDevice_->OnDeviceRestored.Subscribe(this, [this]()
-        {
-            for (GPUObject* gpuObject : gpuObjects_)
-                gpuObject->OnDeviceReset();
-            SendEvent(E_DEVICERESET);
-        });
+        renderDevice_->OnDeviceLost.Subscribe(this, [this]() { SendEvent(E_DEVICELOST); });
+        renderDevice_->OnDeviceRestored.Subscribe(this, [this]() { SendEvent(E_DEVICERESET); });
 
         apiName_ = ToString(GetRenderBackend());
     }
@@ -624,11 +612,6 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
     URHO3D_ASSERT(false);
 }
 
-void Graphics::SetShaderConstantBuffers(ea::span<const ConstantBufferRange> constantBuffers)
-{
-    URHO3D_ASSERT(false);
-}
-
 void Graphics::SetShaderParameter(StringHash param, const float data[], unsigned count)
 {
     URHO3D_ASSERT(false);
@@ -727,7 +710,6 @@ void Graphics::SetDefaultTextureFilterMode(TextureFilterMode mode)
     if (mode != defaultTextureFilterMode_)
     {
         defaultTextureFilterMode_ = mode;
-        SetTextureParametersDirty();
     }
 }
 
@@ -738,7 +720,6 @@ void Graphics::SetDefaultTextureAnisotropy(unsigned level)
     if (level != defaultTextureAnisotropy_)
     {
         defaultTextureAnisotropy_ = level;
-        SetTextureParametersDirty();
     }
 }
 
@@ -751,18 +732,6 @@ void Graphics::Restore()
             renderDevice_ = nullptr;
             context_->RemoveSubsystem<RenderDevice>();
         }
-    }
-}
-
-void Graphics::SetTextureParametersDirty()
-{
-    MutexLock lock(gpuObjectMutex_);
-
-    for (auto i = gpuObjects_.begin(); i != gpuObjects_.end(); ++i)
-    {
-        Texture* texture = dynamic_cast<Texture*>(*i);
-        if (texture)
-            ;//texture->SetParametersDirty();
     }
 }
 
@@ -1062,8 +1031,8 @@ unsigned Graphics::GetMaxBones()
 
 void Graphics::ResetCachedState()
 {
-    for (auto& constantBuffer : constantBuffers_)
-        constantBuffer = {};
+//    for (auto& constantBuffer : constantBuffers_)
+//        constantBuffer = {};
 
     for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
     {

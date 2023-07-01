@@ -30,6 +30,7 @@
 #include "../Graphics/ReflectionProbe.h"
 #include "../Graphics/TextureCube.h"
 #include "../IO/FileSystem.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLElement.h"
@@ -326,11 +327,8 @@ void ReflectionProbeManager::FillUpdateQueue()
 
 void ReflectionProbeManager::ConsumeUpdateQueue()
 {
-#if !defined(URHO3D_COMPUTE)
-    const bool filterCubemapsEffective = false;
-#else
-    const bool filterCubemapsEffective = filterCubemaps_;
-#endif
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    const bool filterCubemapsEffective = filterCubemaps_ && renderDevice && renderDevice->GetCaps().computeShaders_;
 
     unsigned numStaticProbesRendered = 0;
     unsigned numRenderedFaces = 0;

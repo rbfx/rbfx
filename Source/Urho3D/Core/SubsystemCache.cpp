@@ -30,9 +30,6 @@
 #include "../Core/WorkQueue.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
-#if URHO3D_COMPUTE
-#include "../Graphics/ComputeDevice.h"
-#endif
 #include "../IO/FileSystem.h"
 #if URHO3D_LOGGING
 #include "../IO/Log.h"

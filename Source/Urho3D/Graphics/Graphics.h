@@ -41,12 +41,10 @@ struct SDL_Window;
 namespace Urho3D
 {
 
-class ComputeDevice;
 class ShaderProgramReflection;
 class File;
 class Image;
 class IndexBuffer;
-class GPUObject;
 class GraphicsImpl;
 class RenderSurface;
 class Shader;
@@ -181,8 +179,6 @@ public:
     ShaderProgramReflection* GetShaderProgramLayout(ShaderVariation* vs, ShaderVariation* ps);
     /// Set shaders.
     void SetShaders(ShaderVariation* vs, ShaderVariation* ps);
-    /// Set shader constant buffers.
-    void SetShaderConstantBuffers(ea::span<const ConstantBufferRange> constantBuffers);
     /// Set shader float constants.
     void SetShaderParameter(StringHash param, const float data[], unsigned count);
     /// Set shader float constant.
@@ -221,9 +217,6 @@ public:
     void ClearTransformSources();
     /// Set texture.
     void SetTexture(unsigned index, Texture* texture);
-    /// Dirty texture parameters of all textures (when global settings change.)
-    /// @nobind
-    void SetTextureParametersDirty();
     /// Set default texture filtering mode. Called by Renderer before rendering.
     void SetDefaultTextureFilterMode(TextureFilterMode mode);
     /// Set default texture anisotropy level. Called by Renderer before rendering.
@@ -529,10 +522,6 @@ public:
     void Minimize();
     /// Raises window if it was minimized.
     void Raise() const;
-    /// Add a GPU object to keep track of. Called by GPUObject.
-    void AddGPUObject(GPUObject* object);
-    /// Remove a GPU object. Called by GPUObject.
-    void RemoveGPUObject(GPUObject* object);
     /// Reserve a CPU-side scratch buffer.
     void* ReserveScratchBuffer(unsigned size);
     /// Free a CPU-side scratch buffer.
@@ -567,8 +556,6 @@ private:
     /// Reset cached rendering state.
     void ResetCachedState();
 
-    /// Mutex for accessing the GPU objects vector from several threads.
-    Mutex gpuObjectMutex_;
     /// Implementation.
     GraphicsImpl* impl_;
     /// SDL window.
@@ -596,8 +583,6 @@ private:
     unsigned numBatches_{};
     /// Largest scratch buffer request this frame.
     unsigned maxScratchBufferRequest_{};
-    /// GPU objects.
-    ea::vector<GPUObject*> gpuObjects_;
     /// Scratch buffers.
     ea::vector<ScratchBuffer> scratchBuffers_;
     /// Vertex buffers in use.
@@ -618,8 +603,6 @@ private:
     Texture* textures_[MAX_TEXTURE_UNITS]{};
     /// Rendertargets in use.
     RenderSurface* renderTargets_[MAX_RENDERTARGETS]{};
-    /// Constan buffer ranges in use.
-    ConstantBufferRange constantBuffers_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Depth-stencil surface in use.
     RenderSurface* depthStencil_{};
     /// Default texture filtering mode.

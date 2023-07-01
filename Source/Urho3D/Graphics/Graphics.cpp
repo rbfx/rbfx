@@ -27,8 +27,6 @@
 #include "../Graphics/Animation.h"
 #include "../Graphics/AnimationController.h"
 #include "../Graphics/Camera.h"
-#include "../Graphics/ComputeBuffer.h"
-#include "../Graphics/ConstantBuffer.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/CustomGeometry.h"
 #include "../Graphics/DebugRenderer.h"
@@ -418,20 +416,6 @@ void Graphics::SetShaderCacheDir(const FileIdentifier& path)
     shaderCacheDir_ = path;
 }
 
-void Graphics::AddGPUObject(GPUObject* object)
-{
-    MutexLock lock(gpuObjectMutex_);
-
-    gpuObjects_.push_back(object);
-}
-
-void Graphics::RemoveGPUObject(GPUObject* object)
-{
-    MutexLock lock(gpuObjectMutex_);
-
-    gpuObjects_.erase_first(object);
-}
-
 void* Graphics::ReserveScratchBuffer(unsigned size)
 {
     if (!size)
@@ -587,9 +571,6 @@ void RegisterGraphicsLibrary(Context* context)
     OcclusionBuffer::RegisterObject(context);
     ReflectionProbe::RegisterObject(context);
     ReflectionProbeManager::RegisterObject(context);
-#if defined(URHO3D_COMPUTE)
-    ComputeBuffer::RegisterObject(context);
-#endif
 }
 
 

@@ -300,13 +300,16 @@ void CubemapRenderer::QueueFaceUpdate(CubeMapFace face)
 
 void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* destTexture)
 {
-#if !defined(URHO3D_COMPUTE)
-    URHO3D_LOGERROR("CubemapRenderer::FilterCubemap cannot be executed without URHO3D_COMPUTE enabled");
-#else
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    if (!renderDevice->GetCaps().computeShaders_)
+    {
+        URHO3D_LOGERROR("CubemapRenderer::FilterCubemap cannot be executed without compute shader support");
+        return;
+    }
+
     const unsigned numLevels = destTexture->GetLevels();
     EnsurePipelineStates(numLevels);
 
-    auto renderDevice = GetSubsystem<RenderDevice>();
     RenderContext* renderContext = renderDevice->GetRenderContext();
     DrawCommandQueue* drawQueue = renderDevice->GetDefaultQueue();
 
@@ -330,7 +333,6 @@ void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* des
 
     renderContext->ResetRenderTargets();
     renderContext->Execute(drawQueue);
-#endif
 }
 
 void CubemapRenderer::EnsurePipelineStates(unsigned numLevels)

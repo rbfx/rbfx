@@ -25,7 +25,6 @@
 #include <EASTL/shared_array.h>
 
 #include "../Core/Object.h"
-#include "../Graphics/GPUObject.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/PipelineStateTracker.h"
 #include "Urho3D/RenderAPI/RawBuffer.h"
