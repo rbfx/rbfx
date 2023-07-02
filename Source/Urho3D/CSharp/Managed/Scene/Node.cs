@@ -42,7 +42,7 @@ namespace Urho3DNet
         }
 
         /// <summary>
-        /// Get first occurrence of a component type
+        /// Get first occurrence of a component type.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns>Found component or null.</returns>
@@ -52,7 +52,7 @@ namespace Urho3DNet
         }
 
         /// <summary>
-        /// Get all components of a type
+        /// Get all components of a type.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns>List of found components.</returns>
@@ -71,6 +71,38 @@ namespace Urho3DNet
         public T GetParentComponent<T>(bool fullTraversal = false) where T : Component
         {
             return (T)GetParentComponent(typeof(T).Name, fullTraversal);
+        }
+
+        /// <summary>
+        /// Get first occurrence of a component derived from the type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns>Found component or null.</returns>
+        public T GetDerivedComponent<T>() where T : Component
+        {
+            return (T)GetDerivedComponent(typeof(T).Name);
+        }
+
+        /// <summary>
+        /// Get all components that derives from type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns>List of found components.</returns>
+        public ComponentList GetDerivedComponents<T>(bool recursive = false) where T : Component
+        {
+            ComponentList componentList = new ComponentList();
+            GetDerivedComponents(componentList, typeof(T).Name, recursive);
+            return componentList;
+        }
+
+        /// <summary>
+        /// Return component in parent node that derives from type. If there are several, returns the first. May optional traverse up to the root node.
+        /// </summary>
+        /// <typeparam name="T">Type of the component.</typeparam>
+        /// <returns>Found component or null.</returns>
+        public T GetParentDerivedComponent<T>(bool fullTraversal = false) where T : Component
+        {
+            return (T)GetParentDerivedComponent(typeof(T).Name, fullTraversal);
         }
     }
 }
