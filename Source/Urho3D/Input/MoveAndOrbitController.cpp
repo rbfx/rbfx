@@ -232,20 +232,21 @@ void MoveAndOrbitController::ConnectToComponent()
 
 void MoveAndOrbitController::EvaluateTouchRects(IntRect& movementRect, IntRect& rotationRect) const
 {
-    IntRect screenRect;
+    IntRect screenRect{IntRect::ZERO};
 
-    const auto renderer = GetSubsystem<Renderer>();
-    if (renderer)
+    if (const auto renderer = GetSubsystem<Renderer>())
     {
-        const auto viewport = renderer->GetViewportForScene(GetScene(), 0);
-        screenRect = viewport->GetRect();
-        if (screenRect == IntRect::ZERO)
+        if (const auto viewport = renderer->GetViewportForScene(GetScene(), 0))
         {
-            const auto graphics = GetSubsystem<Graphics>();
-            if (graphics)
-            {
-                screenRect = graphics->GetViewport();
-            }
+            screenRect = viewport->GetRect();
+        }
+    }
+
+    if (screenRect == IntRect::ZERO)
+    {
+        if (const auto graphics = GetSubsystem<Graphics>())
+        {
+            screenRect = graphics->GetViewport();
         }
     }
 
@@ -267,7 +268,7 @@ void MoveAndOrbitController::EvaluateTouchRects(IntRect& movementRect, IntRect& 
     }
     if (movementUIElement_ == rotationUIElement_)
     {
-        auto halfSize = IntVector2(movementRect.Width() / 2, movementRect.Height());
+        const auto halfSize = IntVector2(movementRect.Width() / 2, movementRect.Height());
         movementRect = IntRect(movementRect.Min(), movementRect.Min() + halfSize);
         rotationRect = IntRect(rotationRect.Min() + IntVector2(halfSize.x_, 0), rotationRect.Max());
     }
