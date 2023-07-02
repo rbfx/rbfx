@@ -29,6 +29,8 @@
 #include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Plugins/PluginManager.h>
+#include <Urho3D/RenderAPI/RenderContext.h>
+#include <Urho3D/RenderAPI/RenderDevice.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
 #if URHO3D_RMLUI
@@ -88,9 +90,13 @@ public:
 
         SubscribeToEvent(E_BEGINRENDERING, [this]
         {
-            auto graphics = GetSubsystem<Graphics>();
-            graphics->SetRenderTarget(0, backbuffer_->GetTexture());
-            graphics->Clear(CLEAR_COLOR, 0x245953_rgb);
+            auto renderDevice = GetSubsystem<RenderDevice>();
+            RenderContext* renderContext = renderDevice->GetRenderContext();
+
+            RenderTargetView renderTargets[] = {RenderTargetView::Texture(backbuffer_->GetTexture())};
+            renderContext->SetRenderTargets(ea::nullopt, renderTargets);
+            renderContext->ClearRenderTarget(0, 0x245953_rgb);
+
             UnsubscribeFromEvent(E_BEGINRENDERING);
         });
     }

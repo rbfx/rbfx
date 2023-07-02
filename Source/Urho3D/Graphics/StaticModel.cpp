@@ -26,7 +26,6 @@
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../Graphics/AnimatedModel.h"
-#include "../Graphics/Batch.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/Material.h"

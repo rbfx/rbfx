@@ -36,7 +36,6 @@
 #include "../Graphics/Technique.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/VertexBuffer.h"
-#include "../Graphics/View.h"
 #include "../IO/Log.h"
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../Scene/Node.h"
@@ -314,9 +313,8 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
     if (GetScene() != eventData[P_SCENE].GetPtr())
         return;
 
-    auto view = static_cast<View*>(eventData[P_VIEW].GetPtr());
     auto renderPipelineView = static_cast<RenderPipelineView*>(eventData[P_RENDERPIPELINEVIEW].GetPtr());
-    frame_ = renderPipelineView ? renderPipelineView->GetFrameInfo() : view->GetFrameInfo();
+    frame_ = renderPipelineView->GetFrameInfo();
 
     URHO3D_PROFILE("UpdateRenderer2D");
 

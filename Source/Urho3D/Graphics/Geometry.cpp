@@ -24,7 +24,6 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/Geometry.h"
-#include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/VertexBuffer.h"
@@ -192,21 +191,6 @@ void Geometry::SetRawIndexData(const ea::shared_array<unsigned char>& data, unsi
 {
     rawIndexData_ = data;
     rawIndexSize_ = indexSize;
-}
-
-void Geometry::Draw(Graphics* graphics)
-{
-    if (indexBuffer_ && indexCount_ > 0)
-    {
-        graphics->SetIndexBuffer(indexBuffer_);
-        graphics->SetVertexBuffers(vertexBuffers_);
-        graphics->Draw(primitiveType_, indexStart_, indexCount_, vertexStart_, vertexCount_);
-    }
-    else if (vertexCount_ > 0)
-    {
-        graphics->SetVertexBuffers(vertexBuffers_);
-        graphics->Draw(primitiveType_, vertexStart_, vertexCount_);
-    }
 }
 
 VertexBuffer* Geometry::GetVertexBuffer(unsigned index) const

@@ -34,7 +34,6 @@ namespace Urho3D
 
 class IndexBuffer;
 class Ray;
-class Graphics;
 class VertexBuffer;
 
 /// Defines one or more vertex buffers, an index buffer and a draw range.
@@ -75,8 +74,6 @@ public:
     void SetRawVertexData(const ea::shared_array<unsigned char>& data, unsigned elementMask);
     /// Override raw index data to be returned for CPU-side operations.
     void SetRawIndexData(const ea::shared_array<unsigned char>& data, unsigned indexSize);
-    /// Draw.
-    void Draw(Graphics* graphics);
 
     /// Return all vertex buffers.
     const ea::vector<SharedPtr<VertexBuffer> >& GetVertexBuffers() const { return vertexBuffers_; }

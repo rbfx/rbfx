@@ -261,6 +261,8 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
             renderer->SetTextureQuality((MaterialQuality)quality);
         }
 
+// TODO(diligent): Do something about this
+#if 0
         // Material quality
         else if (key == '2')
         {
@@ -310,6 +312,7 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
         // Instancing
         else if (key == '8')
             renderer->SetDynamicInstancing(!renderer->GetDynamicInstancing());
+#endif
 
         // Take screenshot
         else if (key == '9')

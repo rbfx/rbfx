@@ -23,8 +23,8 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
-#include "../Graphics/Batch.h"
 #include "../Graphics/Camera.h"
+#include "../Graphics/Material.h"
 #include "../Graphics/Skybox.h"
 #include "../Graphics/TextureCube.h"
 #include "../Resource/ImageCube.h"

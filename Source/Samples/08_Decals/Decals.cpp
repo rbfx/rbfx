@@ -309,6 +309,7 @@ void Decals::Update(float timeStep)
 void Decals::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)
 {
     // If draw debug mode is enabled, draw viewport debug geometry. Disable depth test so that we can see the effect of occlusion
+    // TODO(diligent): Revisit
     if (drawDebug_)
-        GetSubsystem<Renderer>()->DrawDebugGeometry(false);
+        ;//GetSubsystem<Renderer>()->DrawDebugGeometry(false);
 }

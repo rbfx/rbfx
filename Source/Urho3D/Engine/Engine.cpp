@@ -373,13 +373,6 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
 
         graphics->SetShaderCacheDir(FileIdentifier::FromUri(GetParameter(EP_SHADER_CACHE_DIR).GetString()));
 
-        if (HasParameter(EP_DUMP_SHADERS))
-            graphics->BeginDumpShaders(GetParameter(EP_DUMP_SHADERS).GetString());
-
-        renderer->SetDrawShadows(GetParameter(EP_SHADOWS).GetBool());
-        if (renderer->GetDrawShadows() && GetParameter(EP_LOW_QUALITY_SHADOWS).GetBool())
-            renderer->SetShadowQuality(SHADOWQUALITY_SIMPLE_16BIT);
-        renderer->SetMaterialQuality((MaterialQuality)GetParameter(EP_MATERIAL_QUALITY).GetInt());
         renderer->SetTextureQuality((MaterialQuality)GetParameter(EP_TEXTURE_QUALITY).GetInt());
         renderer->SetTextureFilterMode((TextureFilterMode)GetParameter(EP_TEXTURE_FILTER_MODE).GetInt());
         renderer->SetTextureAnisotropy(GetParameter(EP_TEXTURE_ANISOTROPY).GetInt());
@@ -915,9 +908,6 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addFlag("--nosound", EP_SOUND, false, "Disable sound");
     addFlag("--noip", EP_SOUND_INTERPOLATION, false, "Disable sound interpolation");
     addOptionInt("--speakermode", EP_SOUND_MODE, "Force sound speaker output mode (default is automatic)");
-    auto* optNoShadows = addFlag("--noshadows", EP_SHADOWS, false, "Disable shadows");
-    auto optLowQualityShadows = addFlag("--lqshadows", EP_LOW_QUALITY_SHADOWS, true, "Use low quality shadows")->excludes(optNoShadows);
-    optNoShadows->excludes(optLowQualityShadows);
     addFlag("--nothreads", EP_WORKER_THREADS, false, "Disable multithreading");
     addFlag("-v,--vsync", EP_VSYNC, true, "Enable vsync");
     addFlag("-w,--windowed", EP_BORDERLESS, false, "Windowed mode");
@@ -945,16 +935,6 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addOptionString("--pf,--resource-packages", EP_RESOURCE_PACKAGES, "Resource packages")->type_name("path1;path2;...");
     addOptionString("--ap,--autoload-paths", EP_AUTOLOAD_PATHS, "Resource autoload paths")->type_name("path1;path2;...");
     addOptionString("--cn,--config-name", EP_CONFIG_NAME, "Config name")->type_name("filename");
-    addOptionString("--ds,--dump-shaders", EP_DUMP_SHADERS, "Dump shaders")->type_name("filename");
-    addFlagInternal("--mq,--material-quality", "Material quality", [&](CLI::results_t res) {
-        unsigned value = 0;
-        if (CLI::detail::lexical_cast(res[0], value) && value >= QUALITY_LOW && value <= QUALITY_MAX)
-        {
-            engineParameters[EP_MATERIAL_QUALITY] = value;
-            return true;
-        }
-        return false;
-    })->type_name(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).c_str())->type_size(1);
     addFlagInternal("--tq", "Texture quality", [&](CLI::results_t res) {
         unsigned value = 0;
         if (CLI::detail::lexical_cast(res[0], value) && value >= QUALITY_LOW && value <= QUALITY_MAX)
@@ -1027,7 +1007,6 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_AUTOLOAD_PATHS, "Autoload");
     engineParameters_->DefineVariable(EP_CONFIG_NAME, "EngineParameters.json");
     engineParameters_->DefineVariable(EP_BORDERLESS, true).Overridable();
-    engineParameters_->DefineVariable(EP_DUMP_SHADERS, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_ENGINE_AUTO_LOAD_SCRIPTS, false);
     engineParameters_->DefineVariable(EP_ENGINE_CLI_PARAMETERS, true);
     engineParameters_->DefineVariable(EP_EXTERNAL_WINDOW, static_cast<void*>(nullptr));
@@ -1038,9 +1017,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_LOG_LEVEL, LOG_TRACE);
     engineParameters_->DefineVariable(EP_LOG_NAME, "conf://Urho3D.log");
     engineParameters_->DefineVariable(EP_LOG_QUIET, false);
-    engineParameters_->DefineVariable(EP_LOW_QUALITY_SHADOWS, false).Overridable();
     engineParameters_->DefineVariable(EP_MAIN_PLUGIN, EMPTY_STRING);
-    engineParameters_->DefineVariable(EP_MATERIAL_QUALITY, QUALITY_HIGH).Overridable();
     engineParameters_->DefineVariable(EP_MONITOR, 0).Overridable();
     engineParameters_->DefineVariable(EP_MULTI_SAMPLE, 1);
     engineParameters_->DefineVariable(EP_ORGANIZATION_NAME, "Urho3D Rebel Fork");
@@ -1054,7 +1031,6 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_SHADER_CACHE_DIR, "conf://ShaderCache");
     engineParameters_->DefineVariable(EP_SHADER_POLICY).SetOptional<int>();
     engineParameters_->DefineVariable(EP_SHADER_LOG_SOURCES, false);
-    engineParameters_->DefineVariable(EP_SHADOWS, true).Overridable();
     engineParameters_->DefineVariable(EP_SOUND, true);
     engineParameters_->DefineVariable(EP_SOUND_BUFFER, 100);
     engineParameters_->DefineVariable(EP_SOUND_INTERPOLATION, true);

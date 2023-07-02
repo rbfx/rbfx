@@ -26,12 +26,12 @@
 
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
-#include "../Graphics/Batch.h"
 #include "../Graphics/BillboardSet.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/IndexBuffer.h"
+#include "../Graphics/Material.h"
 #include "../Graphics/OctreeQuery.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../IO/MemoryBuffer.h"

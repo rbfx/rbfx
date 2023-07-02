@@ -24,7 +24,6 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/Material.h"
-#include "../Graphics/RenderPath.h"
 #include "../Graphics/StaticModel.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Technique.h"

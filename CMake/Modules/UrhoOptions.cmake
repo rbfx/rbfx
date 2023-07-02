@@ -208,7 +208,6 @@ set_property(CACHE URHO3D_NETFX PROPERTY STRINGS netstandard2.1)
 set(URHO3D_NETFX_RUNTIME_VERSION OFF CACHE STRING "Version of runtime to use.")
 option                (URHO3D_DEBUG_ASSERT       "Enable Urho3D assert macros"                           ${URHO3D_ENABLE_ALL}                                    )
 cmake_dependent_option(URHO3D_FILEWATCHER        "Watch filesystem for resource changes"                 ${URHO3D_ENABLE_ALL} "URHO3D_THREADING;NOT UWP"      OFF)
-option                (URHO3D_SPHERICAL_HARMONICS "Use spherical harmonics for ambient lighting"         ON)
 option                (URHO3D_HASH_DEBUG         "Enable StringHash name debugging"                      ${URHO3D_ENABLE_ALL}                                    )
 option                (URHO3D_MONOLITHIC_HEADER  "Create Urho3DAll.h which includes all engine headers." OFF                                                     )
 cmake_dependent_option(URHO3D_MINIDUMPS          "Enable writing minidumps on crash"                     ${URHO3D_ENABLE_ALL} "MSVC;NOT UWP"                  OFF)
@@ -239,9 +238,6 @@ endif ()
 
 # TODO(diligent): Remove this define
 set (URHO3D_DILIGENT ON)
-
-# Whether to use legacy renderer. Only OpenGL support legacy renderer.
-cmake_dependent_option(URHO3D_LEGACY_RENDERER "Use legacy renderer by default" OFF "URHO3D_OPENGL" OFF)
 
 if (URHO3D_CSHARP)
     set (URHO3D_MONOLITHIC_HEADER ON)   # Used by wrapper code
