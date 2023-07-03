@@ -140,7 +140,7 @@ void CharacterDemo::CreateScene()
     auto* shape = floorNode->CreateComponent<CollisionShape>();
     shape->SetBox(Vector3::ONE);
 
-    // Create door
+    // Create swing doors based on physics
     {
         auto* doorPrefab = cache->GetResource<PrefabResource>("Prefabs/Door.prefab");
         Node* objectNode = scene_->CreateChild("Door");
@@ -152,6 +152,15 @@ void CharacterDemo::CreateScene()
         objectNode->SetPosition(Vector3(2, 0.5f, 2));
         prefabReference = objectNode->CreateComponent<PrefabReference>();
         prefabReference->SetPrefab(doorPrefab);
+    }
+    // Create sliding door
+    {
+        auto* doorPrefab = cache->GetResource<PrefabResource>("Prefabs/SlidingDoor.prefab");
+        Node* objectNode = scene_->CreateChild("SlidingDoor");
+        objectNode->SetPosition(Vector3(-3, 0, -3));
+        auto* prefabReference = objectNode->CreateComponent<PrefabReference>();
+        prefabReference->SetPrefab(doorPrefab);
+        prefabReference->Inline(PrefabInlineFlag::None);
     }
     // Create mushrooms of varying sizes
     const unsigned NUM_MUSHROOMS = 60;
@@ -331,7 +340,9 @@ void CharacterDemo::Update(float timeStep)
             // Check for loading / saving the scene
             if (input->GetKeyPress(KEY_F5))
             {
-                File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/CharacterDemo.xml", FILE_WRITE);
+                auto fileName =GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/CharacterDemo.xml";
+                context_->GetSubsystem<FileSystem>()->CreateDir(GetParentPath(fileName));
+                File saveFile(context_, fileName, FILE_WRITE);
                 scene_->SaveXML(saveFile);
             }
             if (input->GetKeyPress(KEY_F7))

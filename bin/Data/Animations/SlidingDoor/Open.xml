@@ -1,0 +1,10 @@
+<animation length="1.0">
+    <variant name="Left/@/Position" type="Vector3" interpolation="spline" tension="0.7">
+        <keyframe time="0.0" value="-0.5 1.0 0.0"/>
+        <keyframe time="1.0" value="-1.5 1.0 0.0"/>
+    </variant>
+    <variant name="Right/@/Position" type="Vector3" interpolation="spline" tension="0.7">
+        <keyframe time="0.0" value="0.5 1.0 0.0"/>
+        <keyframe time="1.0" value="1.5 1.0 0.0"/>
+    </variant>
+</animation>

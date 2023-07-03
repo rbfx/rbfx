@@ -110,7 +110,7 @@ private:
     /// Create static scene content.
     void CreateScene();
     /// Create controllable character.
-    void CreateCharacter();
+    void CreateCharacter(const Vector3& position);
     /// Construct an instruction text to the UI.
     void CreateInstructions();
     /// Subscribe to necessary events.

@@ -77,7 +77,10 @@ void KinematicCharacterDemo::Start()
     CreateScene();
 
     // Create the controllable character
-    CreateCharacter();
+    CreateCharacter(Vector3(0,0,4));
+
+    // Create the controllable character
+    CreateCharacter(Vector3::ZERO);
 
     // Create the UI content
     CreateInstructions();
@@ -141,6 +144,16 @@ void KinematicCharacterDemo::CreateScene()
     auto* shape = floorNode->CreateComponent<CollisionShape>();
     shape->SetBox(Vector3::ONE);
 
+    // Create sliding door
+    {
+        auto* doorPrefab = cache->GetResource<PrefabResource>("Prefabs/SlidingDoor.prefab");
+        Node* objectNode = scene_->CreateChild("SlidingDoor");
+        objectNode->SetPosition(Vector3(-3, 0, -3));
+        auto* prefabReference = objectNode->CreateComponent<PrefabReference>();
+        prefabReference->SetPrefab(doorPrefab);
+        prefabReference->Inline(PrefabInlineFlag::None);
+    }
+
     // Create mushrooms of varying sizes
     const unsigned NUM_MUSHROOMS = 60;
     auto* mushroomPrefab = cache->GetResource<PrefabResource>("Prefabs/Mushroom.prefab");
@@ -178,12 +191,12 @@ void KinematicCharacterDemo::CreateScene()
     }
 }
 
-void KinematicCharacterDemo::CreateCharacter()
+void KinematicCharacterDemo::CreateCharacter(const Vector3& position)
 {
     auto* cache = GetSubsystem<ResourceCache>();
 
     Node* objectNode = scene_->CreateChild("Jack");
-    objectNode->SetPosition(Vector3(0.0f, 1.0f, 0.0f));
+    objectNode->SetPosition(position);
 
     // spin node
     Node* adjustNode = objectNode->CreateChild("AdjNode");
