@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "Urho3D/Physics//RigidBody.h"
 #include "Urho3D/Scene/Component.h"
+#include "Urho3D/Physics/RigidBody.h"
 
 class btCapsuleShape;
 class btPairCachingGhostObject;

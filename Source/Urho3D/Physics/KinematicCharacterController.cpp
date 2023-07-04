@@ -22,15 +22,13 @@
 
 #include "../Precompiled.h"
 
-#include "KinematicCharacterController.h"
-
-#include "../Core/Context.h"
-#include "../IO/Log.h"
-#include "../Physics/CollisionShape.h"
-#include "../Physics/PhysicsEvents.h"
-#include "../Physics/PhysicsUtils.h"
-#include "../Physics/PhysicsWorld.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Physics/KinematicCharacterController.h"
+#include "Urho3D/Physics/PhysicsEvents.h"
+#include "Urho3D/Physics/PhysicsUtils.h"
+#include "Urho3D/Physics/PhysicsWorld.h"
+#include "Urho3D/Scene/Scene.h"
 
 #include <Bullet/BulletDynamics/Character/btKinematicCharacterController.h>
 #include <Bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
