@@ -78,9 +78,8 @@ bool HasStencilBuffer(RenderSurface* renderSurface)
     if (!renderSurface)
         return true;
 
-    const unsigned format = renderSurface->GetParentTexture()->GetFormat();
-    return format == TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT
-        || format == TextureFormat::TEX_FORMAT_D32_FLOAT_S8X24_UINT;
+    const TextureFormat format = renderSurface->GetParentTexture()->GetFormat();
+    return IsStencilTextureFormat(format);
 }
 
 bool HasReadableDepth(RenderSurface* renderSurface)
@@ -495,7 +494,7 @@ void RenderBufferManager::OnViewportDefined(RenderSurface* renderTarget, const I
 
     RenderBufferParams depthParams = colorParams;
     depthParams.flags_ |= RenderBufferFlag::Persistent;
-    depthParams.textureFormat_ = TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
+    depthParams.textureFormat_ = renderDevice_->GetDefaultDepthStencilFormat();
 
     if (colorOutputParams_ != colorParams || depthStencilOutputParams_ != depthParams)
     {

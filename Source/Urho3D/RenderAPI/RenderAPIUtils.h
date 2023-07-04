@@ -31,6 +31,9 @@ URHO3D_API IntVector3 GetMipLevelSize(const IntVector3& size, unsigned level);
 URHO3D_API bool IsTextureFormatSRGB(TextureFormat format);
 URHO3D_API TextureFormat SetTextureFormatSRGB(TextureFormat format, bool sRGB = true);
 
+URHO3D_API bool IsDepthTextureFormat(TextureFormat format);
+URHO3D_API bool IsStencilTextureFormat(TextureFormat format);
+
 URHO3D_API RenderBackend SelectRenderBackend(ea::optional<RenderBackend> requestedBackend);
 URHO3D_API ShaderTranslationPolicy SelectShaderTranslationPolicy(
     RenderBackend backend, ea::optional<ShaderTranslationPolicy> requestedPolicy);

@@ -43,6 +43,7 @@
 #include "../Graphics/Zone.h"
 #include "../Input/InputEvents.h"
 #include "../IO/Log.h"
+#include "../RenderAPI/RenderAPIUtils.h"
 #include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../Resource/ResourceCache.h"
@@ -604,7 +605,7 @@ Geometry* Renderer::GetQuadGeometry()
 Texture* Renderer::GetScreenBuffer(int width, int height, TextureFormat format, int multiSample, bool autoResolve, bool cubemap, bool filtered, bool srgb,
     unsigned persistentKey)
 {
-    bool depthStencil = (format == TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT);
+    bool depthStencil = IsDepthTextureFormat(format);
     if (depthStencil)
     {
         filtered = false;
@@ -695,34 +696,6 @@ Texture* Renderer::GetScreenBuffer(int width, int height, TextureFormat format, 
         buffer->ResetUseTimer();
         return buffer;
     }
-}
-
-RenderSurface* Renderer::GetDepthStencil(int width, int height, int multiSample, bool autoResolve)
-{
-    // TODO(diligent): Revisit this
-    const bool isOpenGL = graphics_->GetRenderBackend() == RenderBackend::OpenGL;
-    // Return the default depth-stencil surface if applicable
-    if (!isOpenGL && width == graphics_->GetWidth() && height == graphics_->GetHeight() && multiSample == 1 &&
-        graphics_->GetMultiSample() == multiSample)
-        return nullptr;
-    else
-    {
-        return static_cast<Texture2D*>(GetScreenBuffer(width, height, TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT, multiSample, autoResolve,
-            false, false, false))->GetRenderSurface();
-    }
-}
-
-RenderSurface* Renderer::GetDepthStencil(RenderSurface* renderSurface)
-{
-    // If using the backbuffer, return the backbuffer depth-stencil
-    if (!renderSurface)
-        return nullptr;
-
-    if (RenderSurface* linkedDepthStencil = renderSurface->GetLinkedDepthStencil())
-        return linkedDepthStencil;
-
-    return GetDepthStencil(renderSurface->GetWidth(), renderSurface->GetHeight(),
-        renderSurface->GetMultiSample(), renderSurface->GetAutoResolve());
 }
 
 void Renderer::UpdateQueuedViewport(unsigned index)

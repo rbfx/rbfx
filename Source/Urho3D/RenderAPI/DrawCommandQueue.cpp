@@ -155,6 +155,9 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
         // Set index buffer
         if (cmd.indexBuffer_ != currentIndexBuffer)
         {
+            if (cmd.indexBuffer_)
+                cmd.indexBuffer_->Resolve();
+
             Diligent::IBuffer* indexBufferHandle = cmd.indexBuffer_ ? cmd.indexBuffer_->GetHandle() : nullptr;
             deviceContext->SetIndexBuffer(indexBufferHandle, 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 

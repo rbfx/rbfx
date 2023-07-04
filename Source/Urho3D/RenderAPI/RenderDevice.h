@@ -106,6 +106,8 @@ public:
     const RenderDeviceSettings& GetDeviceSettings() const { return deviceSettings_; }
     const WindowSettings& GetWindowSettings() const { return windowSettings_; }
     const RenderDeviceCaps& GetCaps() const { return caps_; }
+    TextureFormat GetDefaultDepthStencilFormat() const { return defaultDepthStencilFormat_; }
+    TextureFormat GetDefaultDepthFormat() const { return defaultDepthFormat_; }
     RenderContext* GetRenderContext() const { return renderContext_; }
     RenderPool* GetRenderPool() const { return renderPool_; }
     SDL_Window* GetSDLWindow() const { return window_.get(); }
@@ -139,6 +141,7 @@ private:
     void InitializeWindow();
     void InitializeFactory();
     void InitializeDevice();
+    void InitializeMultiSampleSwapChain(Diligent::ISwapChain* nativeSwapChain);
     void InitializeCaps();
 
     void InitializeDefaultObjects();
@@ -153,6 +156,8 @@ private:
     WindowSettings windowSettings_;
 
     RenderDeviceCaps caps_;
+    TextureFormat defaultDepthStencilFormat_{};
+    TextureFormat defaultDepthFormat_{};
 
     ea::shared_ptr<SDL_Window> window_;
     ea::shared_ptr<void> metalView_;

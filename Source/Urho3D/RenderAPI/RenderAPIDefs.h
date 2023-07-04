@@ -189,6 +189,8 @@ enum class BufferFlag
     BindUnorderedAccess = 1 << 3,
     /// Buffer contains instance data. This hint is used only on OpenGL ES platforms to emulate base instance.
     PerInstanceData = 1 << 4,
+    /// Buffer data cannot change after creation. Data updates lead to buffer recreation.
+    Immutable = 1 << 5,
 };
 URHO3D_FLAGSET(BufferFlag, BufferFlags);
 

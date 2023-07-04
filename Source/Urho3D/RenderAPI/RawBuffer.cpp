@@ -86,6 +86,12 @@ bool RawBuffer::Create(const RawBufferParams& params, const void* data)
     if (params_.size_ == 0)
         return true;
 
+    if (params_.flags_.Test(BufferFlag::Dynamic) && params_.flags_.Test(BufferFlag::Immutable))
+    {
+        URHO3D_ASSERTLOG(false, "Dynamic buffer cannot be immutable");
+        return false;
+    }
+
     if (!renderDevice_)
     {
         // If there's no render device, buffer must be shadowed
@@ -100,6 +106,11 @@ bool RawBuffer::Create(const RawBufferParams& params, const void* data)
         {
             params_.flags_.Set(BufferFlag::Shadowed);
             needResolve_ = true;
+        }
+        else if (params_.flags_.Test(BufferFlag::Immutable))
+        {
+            // Immutable buffer is always shadowed
+            params_.flags_.Set(BufferFlag::Shadowed);
         }
     }
 
@@ -129,8 +140,8 @@ bool RawBuffer::Create(const RawBufferParams& params, const void* data)
             memcpy(shadowData_.get(), data, params_.size_);
     }
 
-    // Create GPU buffer
-    if (renderDevice_)
+    // Create GPU buffer, postpone if Immutable and no data
+    if (renderDevice_ && (!params_.flags_.Test(BufferFlag::Immutable) || data != nullptr))
     {
         if (!CreateGPU(data))
             return false;
@@ -156,7 +167,7 @@ bool RawBuffer::CreateGPU(const void* data)
         bufferDesc.BindFlags |= Diligent::BIND_UNORDERED_ACCESS;
 
     // TODO: Revisit this place if we add other usages
-    bufferDesc.Usage = Diligent::USAGE_DEFAULT;
+    bufferDesc.Usage = params_.flags_.Test(BufferFlag::Immutable) ? Diligent::USAGE_IMMUTABLE : Diligent::USAGE_DEFAULT;
     bufferDesc.CPUAccessFlags = Diligent::CPU_ACCESS_NONE;
     if (renderDevice_->GetBackend() != RenderBackend::OpenGL && params_.flags_.Test(BufferFlag::Dynamic))
     {
@@ -200,7 +211,11 @@ void RawBuffer::UpdateRange(const void* data, unsigned offset, unsigned size)
     URHO3D_ASSERT(data, "Data must not be null");
     URHO3D_ASSERT(offset + size <= params_.size_, "Range must be within buffer size");
     URHO3D_ASSERT(
-        offset == 0 || !params_.flags_.Test(BufferFlag::Dynamic), "Dynamic buffer cannot be partially updated");
+        offset == 0 || (!params_.flags_.Test(BufferFlag::Dynamic) && !params_.flags_.Test(BufferFlag::Immutable)),
+        "Dynamic and immutable buffers cannot be partially updated");
+
+    if (params_.flags_.Test(BufferFlag::Immutable) && renderDevice_ && handle_)
+        URHO3D_LOGWARNING("Recreating immutable buffer '{}' due to RawBuffer::UpdateRange call", debugName_);
 
     if (size == 0)
     {
@@ -227,6 +242,10 @@ void RawBuffer::UpdateRange(const void* data, unsigned offset, unsigned size)
                 memcpy(gpuBuffer, data, size);
                 immediateContext->UnmapBuffer(handle_, Diligent::MAP_WRITE);
             }
+        }
+        else if (internalUsage_ == Diligent::USAGE_IMMUTABLE)
+        {
+            CreateGPU(data);
         }
         else
         {

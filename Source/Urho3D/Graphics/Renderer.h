@@ -347,10 +347,6 @@ public:
     /// Allocate a rendertarget or depth-stencil texture for deferred rendering or postprocessing. Should only be called during actual rendering, not before.
     Texture* GetScreenBuffer
         (int width, int height, TextureFormat format, int multiSample, bool autoResolve, bool cubemap, bool filtered, bool srgb, unsigned persistentKey = 0);
-    /// Allocate a depth-stencil surface that does not need to be readable. Should only be called during actual rendering, not before.
-    RenderSurface* GetDepthStencil(int width, int height, int multiSample, bool autoResolve);
-    /// Allocate a depth-stencil surface that does not need to be readable. Should only be called during actual rendering, not before.
-    RenderSurface* GetDepthStencil(RenderSurface* renderSurface);
 
 private:
     /// Initialize when screen mode initially set.

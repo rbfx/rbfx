@@ -112,11 +112,7 @@ TextureRenderBuffer::TextureRenderBuffer(RenderPipelineInterface* renderPipeline
         sizeMultiplier_ = size;
 
     const bool isPersistent = params.flags_.Test(RenderBufferFlag::Persistent);
-    const bool isDepthStencil = //
-        params_.textureFormat_ == TextureFormat::TEX_FORMAT_D16_UNORM
-        || params_.textureFormat_ == TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT
-        || params_.textureFormat_ == TextureFormat::TEX_FORMAT_D32_FLOAT
-        || params_.textureFormat_ == TextureFormat::TEX_FORMAT_D32_FLOAT_S8X24_UINT;
+    const bool isDepthStencil = IsDepthTextureFormat(params_.textureFormat_);
 
     if (isPersistent || isDepthStencil)
         persistenceKey_ = GetObjectID();

@@ -169,6 +169,14 @@ bool ValidateCaps(RawTextureParams& params, RenderDevice* renderDevice)
         return true;
 
     Diligent::IRenderDevice* device = renderDevice->GetRenderDevice();
+
+    // Attempt to fall back from D24S8 to D32S8 if the former is not supported
+    if (params.format_ == TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT
+        && !(device->GetTextureFormatInfoExt(params.format_).BindFlags & Diligent::BIND_DEPTH_STENCIL))
+    {
+        params.format_ = TextureFormat::TEX_FORMAT_D32_FLOAT_S8X24_UINT;
+    }
+
     const Diligent::TextureFormatInfoExt& formatInfo = device->GetTextureFormatInfoExt(params.format_);
     const Diligent::BIND_FLAGS allowedFlags = formatInfo.BindFlags;
 

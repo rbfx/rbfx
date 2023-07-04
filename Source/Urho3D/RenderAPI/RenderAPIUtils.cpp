@@ -10,6 +10,8 @@
 #include "Urho3D/Core/ProcessUtils.h"
 #include "Urho3D/Core/StringUtils.h"
 
+#include <Diligent/Graphics/GraphicsAccessories/interface/GraphicsAccessories.hpp>
+
 namespace Urho3D
 {
 
@@ -157,6 +159,17 @@ TextureFormat SetTextureFormatSRGB(TextureFormat format, bool sRGB)
     const auto& map = sRGB ? textureFormatMapSRGB.first : textureFormatMapSRGB.second;
     const auto iter = map.find(format);
     return iter != map.end() ? iter->second : format;
+}
+
+bool IsDepthTextureFormat(TextureFormat format)
+{
+    const Diligent::COMPONENT_TYPE componentType = Diligent::GetTextureFormatAttribs(format).ComponentType;
+    return componentType == Diligent::COMPONENT_TYPE_DEPTH || componentType == Diligent::COMPONENT_TYPE_DEPTH_STENCIL;
+}
+
+bool IsStencilTextureFormat(TextureFormat format)
+{
+    return Diligent::GetTextureFormatAttribs(format).ComponentType == Diligent::COMPONENT_TYPE_DEPTH_STENCIL;
 }
 
 RenderBackend SelectRenderBackend(ea::optional<RenderBackend> requestedBackend)

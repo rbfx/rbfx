@@ -381,6 +381,31 @@ ea::shared_ptr<void> CreateGLContext(SDL_Window* window)
     return glContext ? ea::shared_ptr<void>(glContext, SDL_GL_DeleteContext) : nullptr;
 }
 
+TextureFormat SelectDefaultDepthFormat(Diligent::IRenderDevice* device, bool needStencil)
+{
+    static const TextureFormat depthStencilFormats[] = {
+        TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT,
+        TextureFormat::TEX_FORMAT_D32_FLOAT_S8X24_UINT,
+        TextureFormat::TEX_FORMAT_D32_FLOAT,
+        TextureFormat::TEX_FORMAT_D16_UNORM,
+    };
+    static const TextureFormat depthOnlyFormats[] = {
+        TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT,
+        TextureFormat::TEX_FORMAT_D32_FLOAT,
+        TextureFormat::TEX_FORMAT_D32_FLOAT_S8X24_UINT,
+        TextureFormat::TEX_FORMAT_D16_UNORM,
+    };
+
+    for (TextureFormat format : (needStencil ? depthStencilFormats : depthOnlyFormats))
+    {
+        if (device->GetTextureFormatInfoExt(format).BindFlags & Diligent::BIND_DEPTH_STENCIL)
+            return format;
+    }
+
+    URHO3D_ASSERT(false);
+    return TextureFormat::TEX_FORMAT_UNKNOWN;
+}
+
 #if GL_SUPPORTED || GLES_SUPPORTED
 class ProxySwapChainGL : public Diligent::SwapChainBase<Diligent::ISwapChainGL>
 {
@@ -792,8 +817,8 @@ void RenderDevice::InitializeDevice()
         {TextureFormat::TEX_FORMAT_BGRA8_UNORM, TextureFormat::TEX_FORMAT_BGRA8_UNORM_SRGB},
     };
 
-    // TODO(diligent): Why is that?
-    const bool isBGRA = deviceSettings_.backend_ == RenderBackend::Vulkan;
+    // Don't bother with deducing the format for now
+    const bool isBGRA = false;
 
     Diligent::SwapChainDesc swapChainDesc{};
     swapChainDesc.ColorBufferFormat = colorFormats[isBGRA][windowSettings_.sRGB_];
@@ -809,7 +834,6 @@ void RenderDevice::InitializeDevice()
     fullscreenDesc.RefreshRateNumerator = windowSettings_.refreshRate_;
     fullscreenDesc.RefreshRateDenominator = 1;
 
-    Diligent::RefCntAutoPtr<Diligent::ISwapChain> nativeSwapChain;
     switch (deviceSettings_.backend_)
     {
 #if D3D11_SUPPORTED
@@ -822,8 +846,11 @@ void RenderDevice::InitializeDevice()
         createInfo.D3D11ValidationFlags = Diligent::D3D11_VALIDATION_FLAG_VERIFY_COMMITTED_RESOURCE_RELEVANCE;
 
         factoryD3D11_->CreateDeviceAndContextsD3D11(createInfo, &renderDevice_, &deviceContext_);
+
+        Diligent::RefCntAutoPtr<Diligent::ISwapChain> nativeSwapChain;
         factoryD3D11_->CreateSwapChainD3D11(
             renderDevice_, deviceContext_, swapChainDesc, fullscreenDesc, nativeWindow, &nativeSwapChain);
+        InitializeMultiSampleSwapChain(nativeSwapChain);
 
         renderDeviceD3D11_ =
             Diligent::RefCntAutoPtr<Diligent::IRenderDeviceD3D11>(renderDevice_, Diligent::IID_RenderDeviceD3D11);
@@ -846,8 +873,11 @@ void RenderDevice::InitializeDevice()
         createInfo.AdapterId = FindBestAdapter(factory_, createInfo.GraphicsAPIVersion, deviceSettings_.adapterId_);
 
         factoryD3D12_->CreateDeviceAndContextsD3D12(createInfo, &renderDevice_, &deviceContext_);
+
+        Diligent::RefCntAutoPtr<Diligent::ISwapChain> nativeSwapChain;
         factoryD3D12_->CreateSwapChainD3D12(
             renderDevice_, deviceContext_, swapChainDesc, fullscreenDesc, nativeWindow, &nativeSwapChain);
+        InitializeMultiSampleSwapChain(nativeSwapChain);
 
         renderDeviceD3D12_ =
             Diligent::RefCntAutoPtr<Diligent::IRenderDeviceD3D12>(renderDevice_, Diligent::IID_RenderDeviceD3D12);
@@ -876,7 +906,10 @@ void RenderDevice::InitializeDevice()
         createInfo.AdapterId = FindBestAdapter(factory_, createInfo.GraphicsAPIVersion, deviceSettings_.adapterId_);
 
         factoryVulkan_->CreateDeviceAndContextsVk(createInfo, &renderDevice_, &deviceContext_);
+
+        Diligent::RefCntAutoPtr<Diligent::ISwapChain> nativeSwapChain;
         factoryVulkan_->CreateSwapChainVk(renderDevice_, deviceContext_, swapChainDesc, nativeWindow, &nativeSwapChain);
+        InitializeMultiSampleSwapChain(nativeSwapChain);
 
         renderDeviceVulkan_ =
             Diligent::RefCntAutoPtr<Diligent::IRenderDeviceVk>(renderDevice_, Diligent::IID_RenderDeviceVk);
@@ -906,6 +939,8 @@ void RenderDevice::InitializeDevice()
         auto& defaultAllocator = Diligent::DefaultRawMemoryAllocator::GetAllocator();
         swapChainGL_ = NEW_RC_OBJ(defaultAllocator, "ProxySwapChainGL instance", ProxySwapChainGL)(
             renderDevice_, deviceContext_, swapChainDesc, window_.get());
+        defaultDepthStencilFormat_ = swapChainGL_->GetDesc().DepthBufferFormat;
+        defaultDepthFormat_ = SelectDefaultDepthFormat(renderDevice_, false);
         deviceContextGL_->SetSwapChain(swapChainGL_);
 
         swapChain_ = swapChainGL_;
@@ -915,19 +950,21 @@ void RenderDevice::InitializeDevice()
     default: throw RuntimeException("Unsupported render backend");
     }
 
-    // Wrap native swap chain with proxy that supports MSAA
-    if (nativeSwapChain)
-    {
-        const unsigned multiSample =
-            GetSupportedMultiSample(swapChainDesc.ColorBufferFormat, windowSettings_.multiSample_);
-
-        auto& defaultAllocator = Diligent::DefaultRawMemoryAllocator::GetAllocator();
-        swapChain_ = NEW_RC_OBJ(defaultAllocator, "ProxySwapChainMS instance", ProxySwapChainMS)(
-            renderDevice_, deviceContext_, nativeSwapChain, TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT, multiSample);
-        windowSettings_.multiSample_ = multiSample;
-    }
-
     renderContext_ = MakeShared<RenderContext>(this);
+}
+
+void RenderDevice::InitializeMultiSampleSwapChain(Diligent::ISwapChain* nativeSwapChain)
+{
+    defaultDepthStencilFormat_ = SelectDefaultDepthFormat(renderDevice_, true);
+    defaultDepthFormat_ = SelectDefaultDepthFormat(renderDevice_, false);
+
+    const TextureFormat colorFormat = nativeSwapChain->GetDesc().ColorBufferFormat;
+    const unsigned multiSample = GetSupportedMultiSample(colorFormat, windowSettings_.multiSample_);
+
+    auto& defaultAllocator = Diligent::DefaultRawMemoryAllocator::GetAllocator();
+    swapChain_ = NEW_RC_OBJ(defaultAllocator, "ProxySwapChainMS instance", ProxySwapChainMS)(
+        renderDevice_, deviceContext_, nativeSwapChain, defaultDepthStencilFormat_, multiSample);
+    windowSettings_.multiSample_ = multiSample;
 }
 
 void RenderDevice::InitializeCaps()
@@ -1344,7 +1381,7 @@ void RenderDevice::SendDeviceObjectEvent(DeviceObjectEvent event)
 
 bool RenderDevice::IsTextureFormatSupported(TextureFormat format) const
 {
-    return renderDevice_->GetTextureFormatInfo(format).Supported;
+    return renderDevice_->GetTextureFormatInfoExt(format).BindFlags != Diligent::BIND_NONE;
 }
 
 bool RenderDevice::IsRenderTargetFormatSupported(TextureFormat format) const

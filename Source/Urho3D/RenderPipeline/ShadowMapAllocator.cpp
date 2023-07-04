@@ -71,12 +71,14 @@ void ShadowMapAllocator::SetSettings(const ShadowMapAllocatorSettings& settings)
 
 void ShadowMapAllocator::CacheSettings()
 {
+    auto renderDevice = GetSubsystem<RenderDevice>();
+
     shadowOutputDesc_ = {};
     if (settings_.enableVarianceShadowMaps_)
     {
         shadowMapFormat_ = TextureFormat::TEX_FORMAT_RG32_FLOAT;
 
-        shadowOutputDesc_.depthStencilFormat_ = TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
+        shadowOutputDesc_.depthStencilFormat_ = renderDevice->GetDefaultDepthFormat();
         shadowOutputDesc_.numRenderTargets_ = 1;
         shadowOutputDesc_.renderTargetFormats_[0] = shadowMapFormat_;
         shadowOutputDesc_.multiSample_ = settings_.varianceShadowMapMultiSample_;
@@ -85,7 +87,7 @@ void ShadowMapAllocator::CacheSettings()
     {
         shadowMapFormat_ = settings_.use16bitShadowMaps_ //
             ? TextureFormat::TEX_FORMAT_D16_UNORM //
-            : TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
+            : renderDevice->GetDefaultDepthFormat();
 
         shadowOutputDesc_.depthStencilFormat_ = shadowMapFormat_;
         shadowOutputDesc_.numRenderTargets_ = 0;
@@ -143,11 +145,12 @@ bool ShadowMapAllocator::BeginShadowMapRendering(const ShadowMapRegion& shadowMa
     else
     {
         // The shadow map is a color rendertarget
-        RenderSurface* depthStencil = renderer_->GetDepthStencil(
-            shadowMapTexture->GetWidth(), shadowMapTexture->GetHeight(), shadowMapTexture->GetMultiSample(), false);
+        Texture* depthStencil =
+            renderer_->GetScreenBuffer(shadowMapTexture->GetWidth(), shadowMapTexture->GetHeight(),
+                shadowOutputDesc_.depthStencilFormat_, shadowMapTexture->GetMultiSample(), false, false, false, false);
 
         const RenderTargetView renderTargets[] = {RenderTargetView::Texture(shadowMapTexture)};
-        renderContext_->SetRenderTargets(depthStencil->GetView(), renderTargets);
+        renderContext_->SetRenderTargets(RenderTargetView::Texture(depthStencil), renderTargets);
     }
 
     // Clear whole texture if needed

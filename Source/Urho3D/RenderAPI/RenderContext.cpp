@@ -8,6 +8,7 @@
 
 #include "Urho3D/RenderAPI/DrawCommandQueue.h"
 #include "Urho3D/RenderAPI/RawTexture.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/RenderAPI/RenderPool.h"
 
@@ -126,7 +127,7 @@ void RenderContext::ClearDepthStencil(ClearTargetFlags flags, float depth, unsig
     Diligent::CLEAR_DEPTH_STENCIL_FLAGS internalFlags;
     if (flags.Test(CLEAR_DEPTH))
         internalFlags |= Diligent::CLEAR_DEPTH_FLAG;
-    if (flags.Test(CLEAR_STENCIL))
+    if (flags.Test(CLEAR_STENCIL) && IsStencilTextureFormat(currentDepthStencil_->GetTexture()->GetDesc().Format))
         internalFlags |= Diligent::CLEAR_STENCIL_FLAG;
     handle_->ClearDepthStencil(
         currentDepthStencil_, internalFlags, depth, stencil, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
