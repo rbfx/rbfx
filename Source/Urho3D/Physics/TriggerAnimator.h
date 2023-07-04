@@ -25,6 +25,8 @@
 #include "Urho3D/Scene/Component.h"
 #include "Urho3D/Graphics/Animation.h"
 
+#include <EASTL/hash_set.h>
+
 namespace Urho3D
 {
 /// %Component that runs animation when triggered.
