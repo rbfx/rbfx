@@ -77,9 +77,6 @@ void KinematicCharacterDemo::Start()
     CreateScene();
 
     // Create the controllable character
-    CreateCharacter(Vector3(0,0,4));
-
-    // Create the controllable character
     CreateCharacter(Vector3::ZERO);
 
     // Create the UI content

@@ -161,6 +161,65 @@ void KinematicCharacterController::HandlePhysicsPostStep(StringHash eventType, V
 
 void KinematicCharacterController::HandlePhysicsPostUpdate(StringHash eventType, VariantMap& eventData)
 {
+    if (rigidBody_ || (rigidBody_ = GetComponent<RigidBody>()))
+    {
+        physicsCollisionData_[PhysicsCollision::P_NODEA] = GetNode();
+        physicsCollisionData_[PhysicsCollision::P_BODYA] = rigidBody_;
+        physicsCollisionData_[PhysicsCollision::P_TRIGGER] = true;
+        physicsCollisionData_[PhysicsCollision::P_CONTACTS] = VariantVector{};
+        
+        activeTriggerFlag_ = !activeTriggerFlag_;
+        const int num = kinematicController_->getGhostObject()->getNumOverlappingObjects();
+        for (int i = 0; i < num; ++i)
+        {
+            if (const auto* other = kinematicController_->getGhostObject()->getOverlappingObject(i))
+            {
+                // Send event when touching trigger
+                if (other->getUserPointer() && !other->hasContactResponse())
+                {
+                    SharedPtr<RigidBody> body{static_cast<RigidBody*>(other->getUserPointer())};
+                    if (body == rigidBody_)
+                        continue;
+
+                    auto itPair = activeTriggerContacts_.emplace(body, activeTriggerFlag_);
+                    if (!itPair.second)
+                    {
+                        itPair.first->second = activeTriggerFlag_;
+
+                        using namespace PhysicsCollisionStart;
+                        physicsCollisionData_[P_NODEB] = body->GetNode();
+                        physicsCollisionData_[P_BODYB] = body;
+                        SendEvent(E_PHYSICSCOLLISION, physicsCollisionData_);
+                    }
+                    else
+                    {
+                        using namespace PhysicsCollisionStart;
+                        physicsCollisionData_[P_NODEB] = body->GetNode();
+                        physicsCollisionData_[P_BODYB] = body;
+                        SendEvent(E_PHYSICSCOLLISIONSTART, physicsCollisionData_);
+                    }
+                }
+            }
+        }
+
+        for (auto itKV = activeTriggerContacts_.begin(), last = activeTriggerContacts_.end();
+             itKV != last;)
+        {
+            if(itKV->second != activeTriggerFlag_)
+            {
+                using namespace PhysicsCollisionEnd;
+                physicsCollisionData_[P_NODEB] = itKV->first->GetNode();
+                physicsCollisionData_[P_BODYB] = itKV->first;
+                SendEvent(E_PHYSICSCOLLISIONEND, physicsCollisionData_);
+                itKV = activeTriggerContacts_.erase(itKV);
+            }
+            else
+            {
+                ++itKV;
+            }
+        }
+    }
+
     if (physicsWorld_ && physicsWorld_->GetInterpolation())
     {
         const float timeStep = eventData[PhysicsPostUpdate::P_TIMESTEP].GetFloat();

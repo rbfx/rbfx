@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Scene/Component.h"
+#include "Urho3D/Physics//RigidBody.h"
+#include "Urho3D/Scene/Component.h"
 
 class btCapsuleShape;
 class btPairCachingGhostObject;
@@ -168,6 +169,10 @@ protected:
     ea::unique_ptr<btCapsuleShape> shape_;
     ea::unique_ptr<btPairCachingGhostObject> pairCachingGhostObject_;
     ea::unique_ptr<btKinematicCharacterController> kinematicController_;
+    /// Rigid body on the same Node as the controller.
+    WeakPtr<RigidBody> rigidBody_;
+    ea::unordered_map<SharedPtr<RigidBody>, bool> activeTriggerContacts_;
+    bool activeTriggerFlag_{};
 
     Vector3 colShapeOffset_{ 0.0f, 0.9f, 0.0f };
     bool readdToWorld_{ false };
@@ -182,6 +187,9 @@ protected:
     Vector3 nextPosition_;
     Vector3 latestPosition_;
     /// @}
+
+    /// Cached event data for physics collision.
+    VariantMap physicsCollisionData_;
 };
 
 }
