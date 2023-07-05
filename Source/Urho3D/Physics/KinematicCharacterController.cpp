@@ -80,6 +80,7 @@ void KinematicCharacterController::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Fall Speed", GetFallSpeed, SetFallSpeed, float, 55.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Jump Speed", GetJumpSpeed, SetJumpSpeed, float, 9.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Max Slope", GetMaxSlope, SetMaxSlope, float, 45.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Activate Triggers", bool, activateTriggers_, true, AM_DEFAULT);
 }
 
 void KinematicCharacterController::OnSetAttribute(const AttributeInfo& attr, const Variant& src)
@@ -159,64 +160,7 @@ void KinematicCharacterController::HandlePhysicsPostStep(StringHash eventType, V
 
 void KinematicCharacterController::HandlePhysicsPostUpdate(StringHash eventType, VariantMap& eventData)
 {
-    if (rigidBody_ || (rigidBody_ = GetComponent<RigidBody>()))
-    {
-        physicsCollisionData_[PhysicsCollision::P_NODEA] = GetNode();
-        physicsCollisionData_[PhysicsCollision::P_BODYA] = rigidBody_;
-        physicsCollisionData_[PhysicsCollision::P_TRIGGER] = true;
-        physicsCollisionData_[PhysicsCollision::P_CONTACTS] = VariantVector{};
-        
-        activeTriggerFlag_ = !activeTriggerFlag_;
-        const int num = kinematicController_->getGhostObject()->getNumOverlappingObjects();
-        for (int i = 0; i < num; ++i)
-        {
-            if (const auto* other = kinematicController_->getGhostObject()->getOverlappingObject(i))
-            {
-                // Send event when touching trigger
-                if (other->getUserPointer() && !other->hasContactResponse())
-                {
-                    SharedPtr<RigidBody> body{static_cast<RigidBody*>(other->getUserPointer())};
-                    if (body == rigidBody_)
-                        continue;
-
-                    auto itPair = activeTriggerContacts_.emplace(body, activeTriggerFlag_);
-                    if (!itPair.second)
-                    {
-                        itPair.first->second = activeTriggerFlag_;
-
-                        using namespace PhysicsCollisionStart;
-                        physicsCollisionData_[P_NODEB] = body->GetNode();
-                        physicsCollisionData_[P_BODYB] = body;
-                        SendEvent(E_PHYSICSCOLLISION, physicsCollisionData_);
-                    }
-                    else
-                    {
-                        using namespace PhysicsCollisionStart;
-                        physicsCollisionData_[P_NODEB] = body->GetNode();
-                        physicsCollisionData_[P_BODYB] = body;
-                        SendEvent(E_PHYSICSCOLLISIONSTART, physicsCollisionData_);
-                    }
-                }
-            }
-        }
-
-        for (auto itKV = activeTriggerContacts_.begin(), last = activeTriggerContacts_.end();
-             itKV != last;)
-        {
-            if(itKV->second != activeTriggerFlag_)
-            {
-                using namespace PhysicsCollisionEnd;
-                physicsCollisionData_[P_NODEB] = itKV->first->GetNode();
-                physicsCollisionData_[P_BODYB] = itKV->first;
-                SendEvent(E_PHYSICSCOLLISIONEND, physicsCollisionData_);
-                itKV = activeTriggerContacts_.erase(itKV);
-            }
-            else
-            {
-                ++itKV;
-            }
-        }
-    }
+    ActivateTriggers();
 
     if (physicsWorld_ && physicsWorld_->GetInterpolation())
     {
@@ -232,6 +176,65 @@ void KinematicCharacterController::HandlePhysicsPostUpdate(StringHash eventType,
     }
 
     node_->SetWorldPosition(latestPosition_);
+}
+
+void KinematicCharacterController::ActivateTriggers()
+{
+    if (!activateTriggers_)
+        return;
+
+    physicsCollisionData_[PhysicsCollision::P_NODEA] = GetNode();
+    physicsCollisionData_[PhysicsCollision::P_BODYA] = static_cast<RigidBody*>(nullptr);
+    physicsCollisionData_[PhysicsCollision::P_TRIGGER] = true;
+    physicsCollisionData_[PhysicsCollision::P_CONTACTS] = VariantVector{};
+
+    activeTriggerFlag_ = !activeTriggerFlag_;
+    const int num = kinematicController_->getGhostObject()->getNumOverlappingObjects();
+    for (int i = 0; i < num; ++i)
+    {
+        if (const auto* other = kinematicController_->getGhostObject()->getOverlappingObject(i))
+        {
+            // Send event when touching trigger
+            if (other->getUserPointer() && !other->hasContactResponse())
+            {
+                SharedPtr<RigidBody> body{static_cast<RigidBody*>(other->getUserPointer())};
+
+                auto itPair = activeTriggerContacts_.emplace(body, activeTriggerFlag_);
+                if (!itPair.second)
+                {
+                    itPair.first->second = activeTriggerFlag_;
+
+                    using namespace PhysicsCollisionStart;
+                    physicsCollisionData_[P_NODEB] = body->GetNode();
+                    physicsCollisionData_[P_BODYB] = body;
+                    SendEvent(E_PHYSICSCOLLISION, physicsCollisionData_);
+                }
+                else
+                {
+                    using namespace PhysicsCollisionStart;
+                    physicsCollisionData_[P_NODEB] = body->GetNode();
+                    physicsCollisionData_[P_BODYB] = body;
+                    SendEvent(E_PHYSICSCOLLISIONSTART, physicsCollisionData_);
+                }
+            }
+        }
+    }
+
+    for (auto itKV = activeTriggerContacts_.begin(), last = activeTriggerContacts_.end(); itKV != last;)
+    {
+        if (itKV->second != activeTriggerFlag_)
+        {
+            using namespace PhysicsCollisionEnd;
+            physicsCollisionData_[P_NODEB] = itKV->first->GetNode();
+            physicsCollisionData_[P_BODYB] = itKV->first;
+            SendEvent(E_PHYSICSCOLLISIONEND, physicsCollisionData_);
+            itKV = activeTriggerContacts_.erase(itKV);
+        }
+        else
+        {
+            ++itKV;
+        }
+    }
 }
 
 btCapsuleShape* KinematicCharacterController::GetOrCreateShape()
@@ -419,6 +422,11 @@ void KinematicCharacterController::SetDiameter(float diameter)
         diameter_ = diameter;
         ResetShape();
     }
+}
+
+void KinematicCharacterController::SetActivateTriggers(bool activateTriggers)
+{
+    activateTriggers_ = activateTriggers;
 }
 
 void KinematicCharacterController::SetOffset(const Vector3& offset)

@@ -76,6 +76,14 @@ ResourceRef TriggerAnimator::GetExitAnimationAttr() const
     return GetResourceRef(exitAnimation_, Animation::GetTypeStatic());
 }
 
+void TriggerAnimator::OnEnter()
+{
+}
+
+void TriggerAnimator::OnExit()
+{
+}
+
 void TriggerAnimator::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     Component::OnNodeSet(previousNode, currentNode);
@@ -98,6 +106,7 @@ void TriggerAnimator::RegisterEnter(Node* node)
         {
             isEntered_ = true;
             StartAnimation(enterAnimation_);
+            OnEnter();
         }
     }
     activeCollisions_.insert(node);
@@ -114,6 +123,7 @@ void TriggerAnimator::RegisterExit(Node* node)
         {
             isEntered_ = false;
             StartAnimation(exitAnimation_);
+            OnExit();
         }
     }
 }

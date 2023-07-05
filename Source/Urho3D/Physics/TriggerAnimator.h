@@ -51,6 +51,11 @@ public:
     /// Return exit animation attribute.
     ResourceRef GetExitAnimationAttr() const;
 
+    /// Executed when first compatible body enters the trigger.
+    virtual void OnEnter();
+    /// Executed when last compatible body leaves the trigger.
+    virtual void OnExit();
+
 protected:
     /// Handle scene node being assigned at creation.
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
@@ -63,7 +68,7 @@ protected:
     void HandlePhysicsCollisionEnd(StringHash eventType, VariantMap& eventData);
     /// Update subscriptions.
     void UpdateSubscriptions();
-
+    /// Start selected animation. The argument should be either enter or exit animation.
     void StartAnimation(Animation* animation);
 
 private:

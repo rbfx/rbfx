@@ -87,6 +87,10 @@ public:
     void SetDiameter(float diameter);
     /// Return character diameter.
     float GetDiameter() const { return diameter_; }
+    /// Set activate triggers flag.
+    void SetActivateTriggers(bool activateTriggers);
+    /// Get activate triggers flag.
+    bool GetActivateTriggers() const { return activateTriggers_; }
     /// Set character collider offset.
     void SetOffset(const Vector3& offset);
     /// Return character collider offset.
@@ -149,6 +153,8 @@ protected:
     void HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData);
     void HandlePhysicsPostUpdate(StringHash eventType, VariantMap& eventData);
 
+    void ActivateTriggers();
+
 protected:
     unsigned colLayer_{ 1 };
     unsigned colMask_{ 0xffff };
@@ -162,6 +168,7 @@ protected:
     float maxSlope_{ 45.0f };
     float linearDamping_{ 0.2f };
     float angularDamping_{ 0.2f };
+    bool activateTriggers_ {true};
     Vector3 gravity_{ Vector3(0.0f, -14.0f, 0.0f) };
 
     WeakPtr<PhysicsWorld> physicsWorld_;
@@ -169,8 +176,6 @@ protected:
     ea::unique_ptr<btCapsuleShape> shape_;
     ea::unique_ptr<btPairCachingGhostObject> pairCachingGhostObject_;
     ea::unique_ptr<btKinematicCharacterController> kinematicController_;
-    /// Rigid body on the same Node as the controller.
-    WeakPtr<RigidBody> rigidBody_;
     ea::unordered_map<SharedPtr<RigidBody>, bool> activeTriggerContacts_;
     bool activeTriggerFlag_{};
 
