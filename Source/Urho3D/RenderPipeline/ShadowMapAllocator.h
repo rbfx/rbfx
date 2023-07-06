@@ -76,8 +76,6 @@ private:
 
     /// External dependencies
     /// @{
-    Graphics* graphics_{};
-    Renderer* renderer_{};
     RenderDevice* renderDevice_{};
     RenderContext* renderContext_{};
     /// @}
@@ -92,6 +90,7 @@ private:
     /// @}
 
     ea::vector<AtlasPage> pages_;
+    SharedPtr<Texture2D> vsmDepthTexture_;
 };
 
 }

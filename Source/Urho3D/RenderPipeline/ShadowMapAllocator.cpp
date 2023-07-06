@@ -20,16 +20,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Renderer.h"
-#include "../RenderPipeline/ShadowMapAllocator.h"
+#include "Urho3D/RenderPipeline/ShadowMapAllocator.h"
+
+#include "Urho3D/Core/Context.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -50,8 +49,6 @@ ShadowMapRegion ShadowMapRegion::GetSplit(unsigned split, const IntVector2& numS
 
 ShadowMapAllocator::ShadowMapAllocator(Context* context)
     : Object(context)
-    , graphics_(context_->GetSubsystem<Graphics>())
-    , renderer_(context_->GetSubsystem<Renderer>())
     , renderDevice_(context_->GetSubsystem<RenderDevice>())
     , renderContext_(renderDevice_->GetRenderContext())
 {
@@ -144,13 +141,8 @@ bool ShadowMapAllocator::BeginShadowMapRendering(const ShadowMapRegion& shadowMa
     }
     else
     {
-        // The shadow map is a color rendertarget
-        Texture* depthStencil =
-            renderer_->GetScreenBuffer(shadowMapTexture->GetWidth(), shadowMapTexture->GetHeight(),
-                shadowOutputDesc_.depthStencilFormat_, shadowMapTexture->GetMultiSample(), false, false, false, false);
-
         const RenderTargetView renderTargets[] = {RenderTargetView::Texture(shadowMapTexture)};
-        renderContext_->SetRenderTargets(RenderTargetView::Texture(depthStencil), renderTargets);
+        renderContext_->SetRenderTargets(RenderTargetView::Texture(vsmDepthTexture_), renderTargets);
     }
 
     // Clear whole texture if needed
@@ -199,19 +191,24 @@ void ShadowMapAllocator::AllocatePage()
 #endif
     // Disable mipmaps from the shadow map
     newShadowMap->SetNumLevels(1);
-    newShadowMap->SetSize(shadowAtlasPageSize_.x_, shadowAtlasPageSize_.y_, shadowMapFormat_, textureFlags, multiSample);
-
-#ifndef GL_ES_VERSION_2_0
-    // OpenGL (desktop) and D3D11: shadow compare mode needs to be specifically enabled for the shadow map
     newShadowMap->SetFilterMode(FILTER_BILINEAR);
     newShadowMap->SetShadowCompare(isDepthTexture);
-#endif
+    newShadowMap->SetSize(shadowAtlasPageSize_.x_, shadowAtlasPageSize_.y_, shadowMapFormat_, textureFlags, multiSample);
 
     // Store allocate shadow map
     AtlasPage& element = pages_.emplace_back();
     element.index_ = pages_.size() - 1;
     element.texture_ = newShadowMap;
     element.areaAllocator_.Reset(shadowAtlasPageSize_.x_, shadowAtlasPageSize_.y_, shadowAtlasPageSize_.x_, shadowAtlasPageSize_.y_);
+
+    if (!settings_.enableVarianceShadowMaps_)
+        vsmDepthTexture_ = nullptr;
+    else if (!vsmDepthTexture_ || vsmDepthTexture_->GetSize() != shadowAtlasPageSize_)
+    {
+        vsmDepthTexture_ = MakeShared<Texture2D>(context_);
+        vsmDepthTexture_->SetSize(shadowAtlasPageSize_.x_, shadowAtlasPageSize_.y_,
+            shadowOutputDesc_.depthStencilFormat_, TextureFlag::BindDepthStencil, multiSample);
+    }
 }
 
 }
