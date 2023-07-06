@@ -71,12 +71,6 @@ RenderSurface* GetRenderSurfaceFromTexture(Texture* texture, CubeMapFace face = 
 
 }
 
-Texture2D* RenderBuffer::GetTexture2D() const
-{
-    Texture* texture = GetTexture();
-    return texture ? texture->Cast<Texture2D>() : nullptr;
-}
-
 RenderBuffer::RenderBuffer(RenderPipelineInterface* renderPipeline)
     : Object(renderPipeline->GetContext())
     , renderer_(GetSubsystem<Renderer>())
@@ -141,7 +135,7 @@ void TextureRenderBuffer::OnRenderEnd(const CommonFrameInfo& frameInfo)
     bufferIsReady_ = false;
 }
 
-Texture* TextureRenderBuffer::GetTexture() const
+RawTexture* TextureRenderBuffer::GetTexture() const
 {
     URHO3D_ASSERT(CheckIfBufferIsReady());
     return currentTexture_;
@@ -164,7 +158,7 @@ ViewportColorRenderBuffer::ViewportColorRenderBuffer(RenderPipelineInterface* re
 {
 }
 
-Texture* ViewportColorRenderBuffer::GetTexture() const
+RawTexture* ViewportColorRenderBuffer::GetTexture() const
 {
     URHO3D_ASSERT(CheckIfBufferIsReady());
     return renderTarget_ ? renderTarget_->GetParentTexture() : nullptr;
@@ -193,7 +187,7 @@ ViewportDepthStencilRenderBuffer::ViewportDepthStencilRenderBuffer(RenderPipelin
 {
 }
 
-Texture* ViewportDepthStencilRenderBuffer::GetTexture() const
+RawTexture* ViewportDepthStencilRenderBuffer::GetTexture() const
 {
     URHO3D_ASSERT(CheckIfBufferIsReady());
     return depthStencil_ ? depthStencil_->GetParentTexture() : nullptr;

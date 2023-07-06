@@ -59,14 +59,22 @@ void LightmapRenderPipelineView::RenderGeometryBuffer(Viewport* viewport, int te
 
     const Vector2 size = Vector2::ONE * textureSize;
     const RenderBufferFlags flags = RenderBufferFlag::FixedTextureSize | RenderBufferFlag::Persistent;
+    const TextureFormat depthFormat = TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
     const TextureFormat colorFormat = TextureFormat::TEX_FORMAT_RGBA32_FLOAT;
-    depthBuffer_ = renderBufferManager->CreateColorBuffer({ TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT, 1, flags }, size);
+    depthBuffer_ = renderBufferManager->CreateColorBuffer({ depthFormat, 1, flags }, size);
     positionBuffer_ = renderBufferManager->CreateColorBuffer({ colorFormat, 1, flags }, size);
     smoothPositionBuffer_ = renderBufferManager->CreateColorBuffer({ colorFormat, 1, flags }, size);
     faceNormalBuffer_ = renderBufferManager->CreateColorBuffer({ colorFormat, 1, flags }, size);
     smoothNormalBuffer_ = renderBufferManager->CreateColorBuffer({ colorFormat, 1, flags }, size);
     albedoBuffer_ = renderBufferManager->CreateColorBuffer({ colorFormat, 1, flags }, size);
     emissionBuffer_ = renderBufferManager->CreateColorBuffer({ colorFormat, 1, flags }, size);
+
+    PipelineStateOutputDesc outputDesc;
+    outputDesc.depthStencilFormat_ = depthFormat;
+    outputDesc.numRenderTargets_ = 6;
+    for (unsigned i = 0; i < outputDesc.numRenderTargets_; ++i)
+        outputDesc.renderTargetFormats_[i] = colorFormat;
+    pass->SetDeferredOutputDesc(outputDesc);
 
     // Use main viewport as render target because it's not used anyway
     CommonFrameInfo frameInfo;

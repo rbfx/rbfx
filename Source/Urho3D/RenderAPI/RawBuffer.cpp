@@ -86,6 +86,10 @@ bool RawBuffer::Create(const RawBufferParams& params, const void* data)
     if (params_.size_ == 0)
         return true;
 
+    static const bool disableDefaultBuffers = false; // TODO(diligent): This is a workaround for a bug in Vulkan driver
+    if (disableDefaultBuffers && !params_.flags_.Test(BufferFlag::Dynamic))
+        params_.flags_.Set(BufferFlag::Immutable);
+
     if (params_.flags_.Test(BufferFlag::Dynamic) && params_.flags_.Test(BufferFlag::Immutable))
     {
         URHO3D_ASSERTLOG(false, "Dynamic buffer cannot be immutable");

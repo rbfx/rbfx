@@ -484,7 +484,7 @@ private:
             for (const ShaderResourceDesc& desc : globalResources_)
             {
                 if (desc.texture_)
-                    AddShaderResource(drawQueue_, desc.name_, desc.texture_);
+                    drawQueue_.AddShaderResource(desc.name_, desc.texture_);
             }
 
             const auto& materialTextures = current_.material_->GetTextures();

@@ -45,12 +45,12 @@ public:
 
     /// Return geometry buffer textures
     /// @{
-    Texture2D* GetPositionBuffer() const { return positionBuffer_->GetTexture2D(); }
-    Texture2D* GetSmoothPositionBuffer() const { return smoothPositionBuffer_->GetTexture2D(); }
-    Texture2D* GetFaceNormalBuffer() const { return faceNormalBuffer_->GetTexture2D(); }
-    Texture2D* GetSmoothNormalBuffer() const { return smoothNormalBuffer_->GetTexture2D(); }
-    Texture2D* GetAlbedoBuffer() const { return albedoBuffer_->GetTexture2D(); }
-    Texture2D* GetEmissionBuffer() const { return emissionBuffer_->GetTexture2D(); }
+    RawTexture* GetPositionBuffer() const { return positionBuffer_->GetTexture(); }
+    RawTexture* GetSmoothPositionBuffer() const { return smoothPositionBuffer_->GetTexture(); }
+    RawTexture* GetFaceNormalBuffer() const { return faceNormalBuffer_->GetTexture(); }
+    RawTexture* GetSmoothNormalBuffer() const { return smoothNormalBuffer_->GetTexture(); }
+    RawTexture* GetAlbedoBuffer() const { return albedoBuffer_->GetTexture(); }
+    RawTexture* GetEmissionBuffer() const { return emissionBuffer_->GetTexture(); }
     /// @}
 
     /// Implement RenderPipelineInterface

@@ -201,7 +201,7 @@ void OutlinePass::Execute(Camera* camera)
     const StaticPipelineStateId pipelineState = inLinearSpace ? pipelineStateLinear_ : pipelineStateGamma_;
 
     auto texture = outlineBuffer_->GetTexture();
-    const Vector2 inputInvSize = Vector2::ONE / texture->GetSize().ToVector2();
+    const Vector2 inputInvSize = Vector2::ONE / texture->GetParams().size_.ToVector2();
 
     const ShaderParameterDesc result[] = {{"InputInvSize", inputInvSize}};
     const ShaderResourceDesc shaderResources[] = {{"DiffMap", texture}};

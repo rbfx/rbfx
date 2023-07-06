@@ -136,10 +136,10 @@ public:
         StaticPipelineStateId pipelineStateId, ea::span<const ShaderResourceDesc> resources,
         ea::span<const ShaderParameterDesc> parameters, bool flipVertical = false);
     /// Draw region of input texture into into currently bound render buffer. sRGB is taken into account.
-    void DrawTextureRegion(ea::string_view debugComment, Texture* sourceTexture, const IntRect& sourceRect,
+    void DrawTextureRegion(ea::string_view debugComment, RawTexture* sourceTexture, const IntRect& sourceRect,
         ColorSpaceTransition mode = ColorSpaceTransition::None, bool flipVertical = false);
     /// Draw input texture into into currently bound render buffer. sRGB is taken into account.
-    void DrawTexture(ea::string_view debugComment, Texture* sourceTexture,
+    void DrawTexture(ea::string_view debugComment, RawTexture* sourceTexture,
         ColorSpaceTransition mode = ColorSpaceTransition::None, bool flipVertical = false);
 
     /// Return depth-stencil buffer. Stays the same during the frame.
@@ -149,11 +149,11 @@ public:
 
     /// Return readable depth texture.
     /// It's not allowed to write depth and read it from shader input simultaneously for same depth-stencil buffer.
-    Texture2D* GetDepthStencilTexture() const { return depthStencilBuffer_->GetTexture2D(); };
+    RawTexture* GetDepthStencilTexture() const { return depthStencilBuffer_->GetTexture(); };
     /// Return secondary color render buffer texture that can be used while writing to color render buffer.
     /// Texture content is defined at the moment of previous SwapColorBuffers.
     /// Content is undefined if SwapColorBuffers was not called during current frame.
-    Texture2D* GetSecondaryColorTexture() const { return readableColorBuffer_ ? readableColorBuffer_->GetTexture2D() : nullptr; }
+    RawTexture* GetSecondaryColorTexture() const { return readableColorBuffer_ ? readableColorBuffer_->GetTexture() : nullptr; }
 
     /// Return size of output region (not size of output texture itself).
     IntVector2 GetOutputSize() const { return viewportRect_.Size(); }
@@ -177,7 +177,7 @@ private:
 
     void InitializePipelineStates();
     void ResetCachedRenderBuffers();
-    void CopyTextureRegion(ea::string_view debugComment, Texture* sourceTexture, const IntRect& sourceRect,
+    void CopyTextureRegion(ea::string_view debugComment, RawTexture* sourceTexture, const IntRect& sourceRect,
         RenderTargetView destinationSurface, const IntRect& destinationRect, ColorSpaceTransition mode, bool flipVertical);
 
     /// External dependencies

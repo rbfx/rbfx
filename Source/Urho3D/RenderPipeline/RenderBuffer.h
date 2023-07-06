@@ -34,9 +34,9 @@
 namespace Urho3D
 {
 
+class RawTexture;
 class RenderSurface;
 class RenderPipelineInterface;
-class Texture;
 class Texture2D;
 struct CommonFrameInfo;
 struct FrameInfo;
@@ -49,15 +49,12 @@ class URHO3D_API RenderBuffer : public Object, public IDFamily<RenderBuffer>
 
 public:
     /// Return readable texture. May return null if not supported.
-    virtual Texture* GetTexture() const = 0;
+    virtual RawTexture* GetTexture() const = 0;
     /// Return render surface. Face could be specified for cubemap texture.
     virtual RenderTargetView GetView(unsigned slice = 0) const = 0;
     /// Return effective viewport rectangle.
     /// Always equal to whole texture for TextureRenderBuffer, not so for viewport buffers.
     virtual IntRect GetViewportRect() const = 0;
-
-    /// Return readable Texture2D or null if not supported or use different texture type.
-    Texture2D* GetTexture2D() const;
 
 protected:
     RenderBuffer(RenderPipelineInterface* renderPipeline);
@@ -87,7 +84,7 @@ public:
 
     /// RenderBuffer implementation
     /// @{
-    Texture* GetTexture() const override;
+    RawTexture* GetTexture() const override;
     RenderTargetView GetView(unsigned slice) const override;
     IntRect GetViewportRect() const override;
     /// @}
@@ -123,7 +120,7 @@ public:
 
     /// RenderBuffer implementation
     /// @{
-    Texture* GetTexture() const override;
+    RawTexture* GetTexture() const override;
     RenderTargetView GetView(unsigned slice) const override;
     IntRect GetViewportRect() const override { return CheckIfBufferIsReady() ? viewportRect_ : IntRect::ZERO; }
     /// @}
@@ -148,7 +145,7 @@ public:
 
     /// RenderBuffer implementation
     /// @{
-    Texture* GetTexture() const override;
+    RawTexture* GetTexture() const override;
     RenderTargetView GetView(unsigned slice) const override;
     IntRect GetViewportRect() const override { return CheckIfBufferIsReady() ? viewportRect_ : IntRect::ZERO; }
     /// @}

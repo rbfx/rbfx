@@ -58,11 +58,6 @@ Texture2D* GetParentTexture2D(RenderSurface* renderSurface)
     return renderSurface && renderSurface->GetParentTexture() ? renderSurface->GetParentTexture()->Cast<Texture2D>() : nullptr;
 }
 
-Texture2D* GetParentTexture2D(RenderBuffer* renderBuffer)
-{
-    return renderBuffer && renderBuffer->GetTexture() ? renderBuffer->GetTexture()->Cast<Texture2D>() : nullptr;
-}
-
 ea::optional<RenderSurface*> GetLinkedDepthStencil(RenderSurface* renderSurface)
 {
     if (!renderSurface)
@@ -202,7 +197,7 @@ void RenderBufferManager::SwapColorBuffers(bool synchronizeContents)
     if (synchronizeContents)
     {
         SetRenderTargets(depthStencilBuffer_, { writeableColorBuffer_ });
-        DrawTexture("Synchronize readable and writeable color buffers", readableColorBuffer_->GetTexture2D());
+        DrawTexture("Synchronize readable and writeable color buffers", readableColorBuffer_->GetTexture());
     }
 }
 
@@ -417,7 +412,7 @@ void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadP
 
     if (params.bindSecondaryColorToDiffuse_)
     {
-        if (Texture2D* secondaryColor = GetSecondaryColorTexture())
+        if (RawTexture* secondaryColor = GetSecondaryColorTexture())
             drawQueue_->AddShaderResource(ShaderResources::DiffMap, secondaryColor);
     }
     for (const ShaderResourceDesc& shaderResource : params.resources_)
@@ -566,9 +561,9 @@ void RenderBufferManager::OnRenderEnd(const CommonFrameInfo& frameInfo)
 {
     if (writeableColorBuffer_ != viewportColorBuffer_.Get())
     {
-        Texture* colorTexture = writeableColorBuffer_->GetTexture();
+        RawTexture* colorTexture = writeableColorBuffer_->GetTexture();
         CopyTextureRegion("Copy final color to output RenderSurface", colorTexture,
-            colorTexture->GetRect(), viewportColorBuffer_->GetView(),
+            IntRect{IntVector2::ZERO, colorTexture->GetParams().size_.ToIntVector2()}, viewportColorBuffer_->GetView(),
             viewportColorBuffer_->GetViewportRect(), ColorSpaceTransition::Automatic, false);
 
         // If viewport is reused for ping-ponging, optimize away final copy
@@ -601,7 +596,7 @@ void RenderBufferManager::InitializePipelineStates()
 }
 
 void RenderBufferManager::CopyTextureRegion(ea::string_view debugComment,
-    Texture* sourceTexture, const IntRect& sourceRect,
+    RawTexture* sourceTexture, const IntRect& sourceRect,
     RenderTargetView destinationSurface, const IntRect& destinationRect, ColorSpaceTransition mode, bool flipVertical)
 {
     renderContext_->SetRenderTargets(ea::nullopt, {&destinationSurface, 1});
@@ -609,17 +604,17 @@ void RenderBufferManager::CopyTextureRegion(ea::string_view debugComment,
     DrawTextureRegion(debugComment, sourceTexture, sourceRect, mode, flipVertical);
 }
 
-void RenderBufferManager::DrawTextureRegion(ea::string_view debugComment, Texture* sourceTexture,
+void RenderBufferManager::DrawTextureRegion(ea::string_view debugComment, RawTexture* sourceTexture,
     const IntRect& sourceRect, ColorSpaceTransition mode, bool flipVertical)
 {
-    if (!sourceTexture->IsInstanceOf<Texture2D>())
+    if (sourceTexture->GetParams().type_ != TextureType::Texture2D)
     {
         URHO3D_LOGERROR("Draw texture is supported only for Texture2D");
         return;
     }
 
     const TextureFormat destinationFormat = renderContext_->GetCurrentRenderTargetsDesc().renderTargetFormats_[0];
-    const bool isSRGBSource = IsTextureFormatSRGB(sourceTexture->GetFormat());
+    const bool isSRGBSource = IsTextureFormatSRGB(sourceTexture->GetParams().format_);
     const bool isSRGBDestination = IsTextureFormatSRGB(destinationFormat);
 
     DrawQuadParams callParams;
@@ -631,10 +626,11 @@ void RenderBufferManager::DrawTextureRegion(ea::string_view debugComment, Textur
     else
         callParams.pipelineStateId_ = copyLinearToGammaTexturePipelineState_;
 
-    callParams.invInputSize_ = Vector2::ONE / sourceTexture->GetSize().ToVector2();
+    const IntVector2 size = sourceTexture->GetParams().size_.ToIntVector2();
+    callParams.invInputSize_ = Vector2::ONE / size.ToVector2();
 
-    const IntRect effectiveSourceRect = sourceRect != IntRect::ZERO ? sourceRect : sourceTexture->GetRect();
-    callParams.clipToUVOffsetAndScale_ = CalculateViewportOffsetAndScale(sourceTexture->GetSize(), effectiveSourceRect);
+    const IntRect effectiveSourceRect = sourceRect != IntRect::ZERO ? sourceRect : IntRect{IntVector2::ZERO, size};
+    callParams.clipToUVOffsetAndScale_ = CalculateViewportOffsetAndScale(size, effectiveSourceRect);
 
     const ShaderResourceDesc shaderResources[] = { { ShaderResources::DiffMap, sourceTexture } };
     callParams.resources_ = shaderResources;
@@ -642,7 +638,7 @@ void RenderBufferManager::DrawTextureRegion(ea::string_view debugComment, Textur
     DrawQuad(debugComment, callParams, flipVertical);
 }
 
-void RenderBufferManager::DrawTexture(ea::string_view debugComment, Texture* sourceTexture,
+void RenderBufferManager::DrawTexture(ea::string_view debugComment, RawTexture* sourceTexture,
     ColorSpaceTransition mode, bool flipVertical)
 {
     DrawTextureRegion(debugComment, sourceTexture, IntRect::ZERO, mode, flipVertical);

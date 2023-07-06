@@ -834,7 +834,7 @@ using NamedSamplerStateDesc = ea::pair<ea::string, SamplerStateDesc>;
 struct ShaderResourceDesc
 {
     StringHash name_{};
-    Texture* texture_{};
+    RawTexture* texture_{};
 };
 
 /// Generic description of shader parameter.

@@ -89,8 +89,8 @@ void BloomPass::InitializeStates()
 
 unsigned BloomPass::GatherBrightRegions(RenderBuffer* destination)
 {
-    Texture2D* viewportTexture = renderBufferManager_->GetSecondaryColorTexture();
-    const IntVector2 inputSize = viewportTexture->GetSize();
+    RawTexture* viewportTexture = renderBufferManager_->GetSecondaryColorTexture();
+    const IntVector2 inputSize = viewportTexture->GetParams().size_.ToIntVector2();
     const Vector2 inputInvSize = Vector2::ONE / inputSize.ToVector2();
 
     const ShaderResourceDesc shaderResources[] = { { "DiffMap", viewportTexture } };
@@ -113,7 +113,7 @@ void BloomPass::BlurTexture(RenderBuffer* final, RenderBuffer* temporary)
     ShaderResourceDesc shaderResources[1];
     shaderResources[0].name_ = "DiffMap";
 
-    const Vector2 inputInvSize = Vector2::ONE / final->GetTexture2D()->GetSize().ToVector2();
+    const Vector2 inputInvSize = Vector2::ONE / final->GetTexture()->GetParams().size_.ToVector2();
     const auto shaderParameters = GetShaderParameters(inputInvSize);
 
     DrawQuadParams drawParams;
@@ -121,12 +121,12 @@ void BloomPass::BlurTexture(RenderBuffer* final, RenderBuffer* temporary)
     drawParams.parameters_ = shaderParameters;
     drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
 
-    shaderResources[0].texture_ = final->GetTexture2D();
+    shaderResources[0].texture_ = final->GetTexture();
     drawParams.pipelineStateId_ = pipelineStates_->blurH_;
     renderBufferManager_->SetRenderTargets(nullptr, { temporary });
     renderBufferManager_->DrawQuad("Blur vertically", drawParams);
 
-    shaderResources[0].texture_ = temporary->GetTexture2D();
+    shaderResources[0].texture_ = temporary->GetTexture();
     drawParams.pipelineStateId_ = pipelineStates_->blurV_;
     renderBufferManager_->SetRenderTargets(nullptr, { final });
     renderBufferManager_->DrawQuad("Blur horizontally", drawParams);
@@ -135,7 +135,7 @@ void BloomPass::BlurTexture(RenderBuffer* final, RenderBuffer* temporary)
 void BloomPass::ApplyBloom(RenderBuffer* bloom, float intensity)
 {
     const ShaderResourceDesc shaderResources[] = {
-        { "DiffMap", bloom->GetTexture2D() }
+        { "DiffMap", bloom->GetTexture() }
     };
     const ShaderParameterDesc shaderParameters[] = {
         { Bloom_LuminanceWeights, luminanceWeights_ },
@@ -147,7 +147,7 @@ void BloomPass::ApplyBloom(RenderBuffer* bloom, float intensity)
 void BloomPass::CopyTexture(RenderBuffer* source, RenderBuffer* destination)
 {
     renderBufferManager_->SetRenderTargets(nullptr, { destination });
-    renderBufferManager_->DrawTexture("Downscale bloom", source->GetTexture2D());
+    renderBufferManager_->DrawTexture("Downscale bloom", source->GetTexture());
 }
 
 void BloomPass::Execute(Camera* camera)
