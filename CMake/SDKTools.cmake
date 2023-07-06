@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017-2022 the rbfx project.
+# Copyright (c) 2017-2023 the rbfx project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,14 +19,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+# This file is included by rbfx build system when crosscompiling to targets that
+# do not natively run on build host. This file helps crosscompiler to comsume
+# tools built for the host system.
+#
+foreach (cfg MinSizeRel Release RelWithDebInfo Debug)
+    set(SDK_TOOLS_CONFIG ${CMAKE_CURRENT_LIST_DIR}/SDKTools-${cfg}.cmake)
+    if (EXISTS "${SDK_TOOLS_CONFIG}")
+        include (${CMAKE_CURRENT_LIST_DIR}/SDKTools-${cfg}.cmake)
+    endif ()
+    if (TOOL_ANY_EXIST)
+        message(STATUS "Using tools from ${cfg} SDK at ${URHO3D_SDK}")
+        break()
+    endif ()
+endforeach ()
 
-add_library(CLI11 INTERFACE)
-target_include_directories(CLI11
-    INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-)
-
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.hpp)
-
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS CLI11 EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
+if (NOT TOOL_ANY_EXIST)
+    message(WARNING "SDK tools were not found!")
 endif ()
