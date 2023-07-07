@@ -23,8 +23,10 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Threading.Tasks;
 using Urho3DNet.CSharp;
 
 namespace Urho3DNet
@@ -39,6 +41,10 @@ namespace Urho3DNet
         public static Context Instance { get; private set; }
 
         private readonly Dictionary<uint, Type> _factoryTypes = new Dictionary<uint, Type>();
+
+        private object _gate = new object();
+        private List<Action> _executionQueue;
+        private List<Action> _backQueue;
 
         public static void SetRuntimeApi(ScriptRuntimeApi impl)
         {
@@ -144,6 +150,48 @@ namespace Urho3DNet
         public T GetSubsystem<T>() where T: Object
         {
             return (T) GetSubsystem(new StringHash(typeof(T).Name));
+        }
+
+        public ConfiguredTaskAwaitable<bool> ToMainThreadAsync()
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            InvokeOnMainThread(() => tcs.TrySetResult(true));
+            return tcs.Task.ConfigureAwait(false);
+        }
+
+        public void InvokeOnMainThread(Action func)
+        {
+            lock (_gate)
+            {
+                if (_executionQueue == null)
+                {
+                    _executionQueue = new List<Action>();
+                    _backQueue = new List<Action>();
+                    Engine.SubscribeToEvent(E.Update, ProcessExecutionQueue);
+                }
+                _executionQueue.Add(func);
+            }
+        }
+
+        private void ProcessExecutionQueue(VariantMap obj)
+        {
+            lock (_gate)
+            {
+                (_executionQueue, _backQueue) = (_backQueue, _executionQueue);
+            }
+
+            foreach (var action in _backQueue)
+            {
+                try
+                {
+                    action();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Failed to execute task on main thread: {ex}.");
+                }
+            }
+            _backQueue.Clear();
         }
 
         #region Interop

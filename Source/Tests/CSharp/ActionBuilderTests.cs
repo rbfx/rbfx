@@ -30,30 +30,29 @@ namespace Urho3DNet.Tests
         [Fact]
         public async Task SimpleAction_MoveBy_NodePositionUpdated()
         {
-            await ApplicationRunner.RunAsync(app=>{
-                var startPos = new Vector3(0, 1, 0);
-                var moveBy = new Vector3(2, 0, 0);
+            await RbfxTestFramework.Context.ToMainThreadAsync();
+            var startPos = new Vector3(0, 1, 0);
+            var moveBy = new Vector3(2, 0, 0);
 
-                var actionManager = new ActionManager(app.Context);
-                var node = new Node(app.Context);
-                node.AddRef();
-                try
+            var actionManager = new ActionManager(RbfxTestFramework.Context);
+            var node = new Node(RbfxTestFramework.Context);
+            node.AddRef();
+            try
+            {
+                node.Position = startPos;
+                using (var builder = new ActionBuilder(RbfxTestFramework.Context))
                 {
-                    node.Position = startPos;
-                    using (var builder = new ActionBuilder(app.Context))
-                    {
-                        builder.MoveBy(0.1f, moveBy).Run(actionManager, node);
-                    }
-                    actionManager.Update(0.0f);
-                    actionManager.Update(0.1f);
+                    builder.MoveBy(0.1f, moveBy).Run(actionManager, node);
+                }
+                actionManager.Update(0.0f);
+                actionManager.Update(0.1f);
 
-                    Assert.Equal(startPos + moveBy, node.Position);
-                }
-                finally
-                {
-                    node.ReleaseRef();
-                }
-            });
+                Assert.Equal(startPos + moveBy, node.Position);
+            }
+            finally
+            {
+                node.ReleaseRef();
+            }
         }
     }
 }
