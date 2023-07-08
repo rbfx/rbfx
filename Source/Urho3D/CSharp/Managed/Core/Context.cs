@@ -42,10 +42,6 @@ namespace Urho3DNet
 
         private readonly Dictionary<uint, Type> _factoryTypes = new Dictionary<uint, Type>();
 
-        private object _gate = new object();
-        private List<Action> _executionQueue;
-        private List<Action> _backQueue;
-
         public static void SetRuntimeApi(ScriptRuntimeApi impl)
         {
             Script.GetRuntimeApi()?.Dispose();
@@ -155,43 +151,9 @@ namespace Urho3DNet
         public ConfiguredTaskAwaitable<bool> ToMainThreadAsync()
         {
             var tcs = new TaskCompletionSource<bool>();
-            InvokeOnMainThread(() => tcs.TrySetResult(true));
+            var workQueue = GetSubsystem<WorkQueue>();
+            workQueue.PostTaskForMainThread((threadId, queue) => tcs.TrySetResult(true));
             return tcs.Task.ConfigureAwait(false);
-        }
-
-        public void InvokeOnMainThread(Action func)
-        {
-            lock (_gate)
-            {
-                if (_executionQueue == null)
-                {
-                    _executionQueue = new List<Action>();
-                    _backQueue = new List<Action>();
-                    Engine.SubscribeToEvent(E.Update, ProcessExecutionQueue);
-                }
-                _executionQueue.Add(func);
-            }
-        }
-
-        private void ProcessExecutionQueue(VariantMap obj)
-        {
-            lock (_gate)
-            {
-                (_executionQueue, _backQueue) = (_backQueue, _executionQueue);
-            }
-
-            foreach (var action in _backQueue)
-            {
-                try
-                {
-                    action();
-                }
-                catch (Exception ex)
-                {
-                    Log.Error($"Failed to execute task on main thread: {ex}.");
-                }
-            }
-            _backQueue.Clear();
         }
 
         #region Interop

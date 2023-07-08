@@ -56,7 +56,7 @@ namespace Urho3DNet.Tests
         /// <summary>
         /// Application main thread.
         /// </summary>
-        private Thread _thread;
+        private System.Threading.Thread _thread;
 
         /// <summary>
         /// ManualResetEvent to synchronise with application creation.
@@ -73,7 +73,7 @@ namespace Urho3DNet.Tests
             _instance = this;
 
             // Run the application main thread.
-            _thread = new Thread(RunApp);
+            _thread = new System.Threading.Thread(RunApp);
             _thread.Start();
 
             // Wait for application to run.
@@ -97,14 +97,13 @@ namespace Urho3DNet.Tests
         public static ConfiguredTaskAwaitable<bool> ToMainThreadAsync(ITestOutputHelper testOutputHelper = null)
         {
             var tcs = new TaskCompletionSource<bool>();
-            Context.InvokeOnMainThread(() =>
+            var workQueue = Context.GetSubsystem<WorkQueue>();
+            workQueue.PostTaskForMainThread((threadId, queue) =>
             {
                 _instance._app.Ptr.TestOutput = testOutputHelper;
                 tcs.TrySetResult(true);
             });
             return tcs.Task.ConfigureAwait(false);
-
-            return Context.ToMainThreadAsync();
         }
 
         /// <summary>

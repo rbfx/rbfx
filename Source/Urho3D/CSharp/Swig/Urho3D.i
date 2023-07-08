@@ -352,6 +352,13 @@ namespace SDL
 %include "Urho3D/Core/Timer.h"
 %include "Urho3D/Core/Spline.h"
 %include "Urho3D/Core/Mutex.h"
+%include "Urho3D/Core/Thread.h"
+
+%ignore Urho3D::WorkQueue::PostTask;
+%ignore Urho3D::WorkQueue::PostTaskForThread;
+%ignore Urho3D::WorkQueue::PostTaskForMainThread;
+%ignore Urho3D::WorkQueue::PostDelayedTaskForMainThread;
+%include "Urho3D/Core/WorkQueue.h"
 
 // --------------------------------------- Container ------------------------------------
 %include "Urho3D/Container/ByteVector.h"

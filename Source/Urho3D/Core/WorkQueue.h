@@ -77,8 +77,10 @@ class WorkQueueVector : public MultiVector<T>
 public:
     /// Clear collection, considering number of threads in WorkQueue.
     void Clear();
+#ifndef SWIG
     /// Insert new element. Thread-safe as long as called from WorkQueue threads (or main thread).
     auto Insert(const T& value);
+#endif
     /// Emplace element. Thread-safe as long as called from WorkQueue threads (or main thread).
     template <class ... Args>
     T& Emplace(Args&& ... args);
@@ -326,12 +328,14 @@ void WorkQueueVector<T>::Clear()
     MultiVector<T>::Clear(WorkQueue::GetThreadIndexCount());
 }
 
+#ifndef SWIG
 template <class T>
 auto WorkQueueVector<T>::Insert(const T& value)
 {
     const unsigned threadIndex = WorkQueue::GetThreadIndex();
     return this->PushBack(threadIndex, value);
 }
+#endif
 
 template <class T>
 template <class ... Args>
