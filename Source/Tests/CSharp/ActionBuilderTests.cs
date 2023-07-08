@@ -22,38 +22,38 @@
 
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Urho3DNet.Tests
 {
     public class ActionBuilderTests
     {
+        private readonly ITestOutputHelper _output;
+
+        public ActionBuilderTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         [Fact]
         public async Task SimpleAction_MoveBy_NodePositionUpdated()
         {
-            await ApplicationRunner.RunAsync(app=>{
-                var startPos = new Vector3(0, 1, 0);
-                var moveBy = new Vector3(2, 0, 0);
-
-                var actionManager = new ActionManager(app.Context);
-                var node = new Node(app.Context);
-                node.AddRef();
-                try
+            await RbfxTestFramework.ToMainThreadAsync(_output);
+            var startPos = new Vector3(0, 1, 0);
+            var moveBy = new Vector3(2, 0, 0);
+            var actionManager = new ActionManager(RbfxTestFramework.Context);
+            using (SharedPtr<Node> node = new Node(RbfxTestFramework.Context))
+            {
+                node.Ptr.Position = startPos;
+                using (var builder = new ActionBuilder(RbfxTestFramework.Context))
                 {
-                    node.Position = startPos;
-                    using (var builder = new ActionBuilder(app.Context))
-                    {
-                        builder.MoveBy(0.1f, moveBy).Run(actionManager, node);
-                    }
-                    actionManager.Update(0.0f);
-                    actionManager.Update(0.1f);
+                    builder.MoveBy(0.1f, moveBy).Run(actionManager, node);
+                }
+                actionManager.Update(0.0f);
+                actionManager.Update(0.1f);
 
-                    Assert.Equal(startPos + moveBy, node.Position);
-                }
-                finally
-                {
-                    node.ReleaseRef();
-                }
-            });
+                Assert.Equal(startPos + moveBy, node.Ptr.Position);
+            }
         }
     }
 }
