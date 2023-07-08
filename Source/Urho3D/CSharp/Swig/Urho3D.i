@@ -10,6 +10,7 @@ using namespace Urho3D;
 #define static_assert(...)
 #define EASTLAllocatorType eastl::allocator
 
+%include "Ignores.i"
 %include "stl.i"
 %include "stdint.i"
 %include "typemaps.i"
@@ -334,6 +335,8 @@ namespace SDL
 %ignore Urho3D::Detail::CriticalSection;
 %ignore Urho3D::MutexLock;
 %ignore Urho3D::ObjectReflectionRegistry::GetReflection(StringHash typeNameHash) const;
+%ignore Urho3D::Object::IsInstanceOf(const TypeInfo* typeInfo);
+%ignore Urho3D::Object::SubscribeToEventManual;
 
 %include "Object.i"
 %director Urho3D::AttributeAccessor;
