@@ -48,7 +48,7 @@ public:
 
 private:
     void Update(float timeStep) override;
-    void OnDataModelInitialized(Rml::DataModelConstructor& constructor) override;
+    void OnDataModelInitialized() override;
 
     int serverPort_{2345};
     Rml::String connectionAddress_{"localhost"};

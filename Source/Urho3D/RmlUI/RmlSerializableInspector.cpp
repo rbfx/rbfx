@@ -214,23 +214,24 @@ void RmlSerializableInspector::Connect(Serializable* serializable)
     DirtyVariable("type");
 }
 
-void RmlSerializableInspector::OnDataModelInitialized(Rml::DataModelConstructor& constructor)
+void RmlSerializableInspector::OnDataModelInitialized()
 {
-    constructor.RegisterArray<Rml::StringList>();
+    Rml::DataModelConstructor* constructor = GetDataModelConstructor();
+    constructor->RegisterArray<Rml::StringList>();
     static const auto getVariant = [](const Rml::Variant& src, Rml::Variant& dest) { dest = src; };
     static const auto setVariant = [](Rml::Variant& dest, const Rml::Variant& src) { dest = src; };
-    constructor.RegisterScalar<Rml::Variant>(getVariant, setVariant);
-    if (auto attributeHandle = constructor.RegisterStruct<RmlSerializableAttribute>())
+    constructor->RegisterScalar<Rml::Variant>(getVariant, setVariant);
+    if (auto attributeHandle = constructor->RegisterStruct<RmlSerializableAttribute>())
     {
         attributeHandle.RegisterMember("name", &RmlSerializableAttribute::name_);
         attributeHandle.RegisterMember("type", &RmlSerializableAttribute::type_);
         attributeHandle.RegisterMember("enum_selector", &RmlSerializableAttribute::enumSelector_);
         attributeHandle.RegisterMember("value", &RmlSerializableAttribute::GetValue, &RmlSerializableAttribute::SetValue);
     }
-    constructor.RegisterArray<ea::vector<RmlSerializableAttribute>>();
+    constructor->RegisterArray<ea::vector<RmlSerializableAttribute>>();
 
-    constructor.Bind("attributes", &attributes_);
-    constructor.Bind("type", &type_);
+    constructor->Bind("attributes", &attributes_);
+    constructor->Bind("type", &type_);
 
     SubscribeToEvent(GetUI(), "RmlSerializableInspector_CloseWindow", &RmlSerializableInspector::Remove);
 }

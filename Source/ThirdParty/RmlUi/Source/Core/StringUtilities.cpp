@@ -29,6 +29,7 @@
 #include "../../Include/RmlUi/Core/StringUtilities.h"
 #include "../../Include/RmlUi/Core/Log.h"
 #include <algorithm>
+#include <limits.h>
 #include <sstream>
 #include <stdarg.h>
 #include <stdio.h>
@@ -173,10 +174,13 @@ String StringUtilities::DecodeRml(const String& s)
 						String tmp = s.substr(start, j);
 						const char* begin = tmp.c_str();
 						char* end;
-						uint32_t code_point = strtoul(begin, &end, 16);
-						result += ToUTF8(static_cast<Character>(code_point));
-						i = start + (end - begin) + 1;
-						continue;
+						unsigned long code_point = strtoul(begin, &end, 16);
+						if (code_point != 0 && code_point != ULONG_MAX)
+						{
+							result += ToUTF8(static_cast<Character>(code_point));
+							i = start + (end - begin) + 1;
+							continue;
+						}
 					}
 				}
 				else
@@ -194,10 +198,13 @@ String StringUtilities::DecodeRml(const String& s)
 						String tmp = s.substr(start, j);
 						const char* begin = tmp.c_str();
 						char* end;
-						uint32_t code_point = strtoul(begin, &end, 10);
-						result += ToUTF8(static_cast<Character>(code_point));
-						i = start + (end - begin) + 1;
-						continue;
+						unsigned long code_point = strtoul(begin, &end, 10);
+						if (code_point != 0 && code_point != ULONG_MAX)
+						{
+							result += ToUTF8(static_cast<Character>(code_point));
+							i = start + (end - begin) + 1;
+							continue;
+						}
 					}
 				}
 			}
