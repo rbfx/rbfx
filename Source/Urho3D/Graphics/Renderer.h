@@ -344,9 +344,6 @@ public:
     Geometry* GetLightGeometry(Light* light);
     /// Return quad geometry used in postprocessing.
     Geometry* GetQuadGeometry();
-    /// Allocate a rendertarget or depth-stencil texture for deferred rendering or postprocessing. Should only be called during actual rendering, not before.
-    Texture* GetScreenBuffer
-        (int width, int height, TextureFormat format, int multiSample, bool autoResolve, bool cubemap, bool filtered, bool srgb, unsigned persistentKey = 0);
 
 private:
     /// Initialize when screen mode initially set.
@@ -359,14 +356,6 @@ private:
     void CreateGeometries();
     /// Update a queued viewport for rendering.
     void UpdateQueuedViewport(unsigned index);
-    /// Prepare for rendering of a new view.
-    void PrepareViewRender();
-    /// Remove unused occlusion and screen buffers.
-    void RemoveUnusedBuffers();
-    /// Reset screem buffer allocation counts.
-    void ResetScreenBufferAllocations();
-    /// Remove all occlusion and screen buffers.
-    void ResetBuffers();
     /// Handle screen mode event.
     void HandleScreenMode(StringHash eventType, VariantMap& eventData);
     /// Handle render update event.
@@ -395,10 +384,6 @@ private:
     /// Default spotlight attenuation texture.
     SharedPtr<Texture2D> defaultLightSpot_;
     SharedPtr<TextureCube> blackCubeMap_;
-    /// Screen buffers by resolution and format.
-    ea::unordered_map<unsigned long long, ea::vector<SharedPtr<Texture> > > screenBuffers_;
-    /// Current screen buffer allocations by resolution and format.
-    ea::unordered_map<unsigned long long, unsigned> screenBufferAllocations_;
     /// Backbuffer viewports.
     ea::vector<SharedPtr<Viewport> > viewports_;
     /// Render surface viewports queued for update.

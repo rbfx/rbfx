@@ -542,17 +542,11 @@ void Renderer::Render()
 
     // Render RenderPipeline views.
     for (RenderPipelineView* renderPipelineView : ea::reverse(renderPipelineViews_))
-    {
-        PrepareViewRender();
         renderPipelineView->Render();
-    }
 
     // Copy the number of batches & primitives from Graphics so that we can account for 3D geometry only
     numPrimitives_ = graphics_->GetNumPrimitives();
     numBatches_ = graphics_->GetNumBatches();
-
-    // Remove unused occlusion buffers and renderbuffers
-    RemoveUnusedBuffers();
 
     // All views done, custom rendering can now be done before UI
     SendEvent(E_ENDALLVIEWSRENDER);
@@ -600,102 +594,6 @@ Geometry* Renderer::GetLightGeometry(Light* light)
 Geometry* Renderer::GetQuadGeometry()
 {
     return dirLightGeometry_;
-}
-
-Texture* Renderer::GetScreenBuffer(int width, int height, TextureFormat format, int multiSample, bool autoResolve, bool cubemap, bool filtered, bool srgb,
-    unsigned persistentKey)
-{
-    bool depthStencil = IsDepthTextureFormat(format);
-    if (depthStencil)
-    {
-        filtered = false;
-        srgb = false;
-    }
-
-    if (cubemap)
-        height = width;
-
-    multiSample = Clamp(multiSample, 1, 16);
-    if (multiSample == 1)
-        autoResolve = false;
-
-    auto searchKey = (unsigned long long)format << 32u | multiSample << 24u | width << 12u | height;
-    if (filtered)
-        searchKey |= 0x8000000000000000ULL;
-    if (srgb)
-        searchKey |= 0x4000000000000000ULL;
-    if (cubemap)
-        searchKey |= 0x2000000000000000ULL;
-    if (autoResolve)
-        searchKey |= 0x1000000000000000ULL;
-
-    // Add persistent key if defined
-    if (persistentKey)
-        searchKey += (unsigned long long)persistentKey << 32u;
-
-    // If new size or format, initialize the allocation stats
-    if (screenBuffers_.find(searchKey) == screenBuffers_.end())
-        screenBufferAllocations_[searchKey] = 0;
-
-    // Reuse depth-stencil buffers whenever the size matches, instead of allocating new
-    // Unless persistency specified
-    unsigned allocations = screenBufferAllocations_[searchKey];
-    if (!depthStencil || persistentKey)
-        ++screenBufferAllocations_[searchKey];
-
-    if (allocations >= screenBuffers_[searchKey].size())
-    {
-        SharedPtr<Texture> newBuffer;
-
-        if (!cubemap)
-        {
-            SharedPtr<Texture2D> newTex2D(MakeShared<Texture2D>(context_));
-            /// \todo Mipmaps disabled for now. Allow to request mipmapped buffer?
-            newTex2D->SetNumLevels(1);
-            TextureFlags flags = depthStencil ? TextureFlag::BindDepthStencil : TextureFlag::BindRenderTarget;
-            if (!autoResolve)
-                flags |= TextureFlag::NoMultiSampledAutoResolve;
-            newTex2D->SetSize(width, height, format, depthStencil ? TextureFlag::BindDepthStencil : TextureFlag::BindRenderTarget, multiSample);
-
-#ifdef URHO3D_OPENGL
-            // OpenGL hack: clear persistent floating point screen buffers to ensure the initial contents aren't illegal (NaN)?
-            // Otherwise eg. the AutoExposure post process will not work correctly
-            if (persistentKey && Texture::GetDataType(format) == GL_FLOAT)
-            {
-                // Note: this loses current rendertarget assignment
-                graphics_->ResetRenderTargets();
-                graphics_->SetRenderTarget(0, newTex2D);
-                graphics_->SetDepthStencil((RenderSurface*)nullptr);
-                graphics_->SetViewport(IntRect(0, 0, width, height));
-                graphics_->Clear(CLEAR_COLOR);
-            }
-#endif
-
-            newBuffer = newTex2D;
-        }
-        else
-        {
-            SharedPtr<TextureCube> newTexCube(MakeShared<TextureCube>(context_));
-            newTexCube->SetNumLevels(1);
-            newTexCube->SetSize(width, format, TextureFlag::BindRenderTarget, multiSample);
-
-            newBuffer = newTexCube;
-        }
-
-        newBuffer->SetSRGB(srgb);
-        newBuffer->SetFilterMode(filtered ? FILTER_BILINEAR : FILTER_NEAREST);
-        newBuffer->ResetUseTimer();
-        screenBuffers_[searchKey].push_back(newBuffer);
-
-        URHO3D_LOGTRACE("Allocated new screen buffer size " + ea::to_string(width) + "x" + ea::to_string(height) + " format " + ea::to_string(format));
-        return newBuffer;
-    }
-    else
-    {
-        Texture* buffer = screenBuffers_[searchKey][allocations];
-        buffer->ResetUseTimer();
-        return buffer;
-    }
 }
 
 void Renderer::UpdateQueuedViewport(unsigned index)
@@ -749,43 +647,6 @@ void Renderer::UpdateQueuedViewport(unsigned index)
     renderPipelineView->Update(frame_);
 }
 
-void Renderer::PrepareViewRender()
-{
-    ResetScreenBufferAllocations();
-}
-
-void Renderer::RemoveUnusedBuffers()
-{
-    for (auto i = screenBuffers_.begin(); i !=
-        screenBuffers_.end();)
-    {
-        auto current = i++;
-        ea::vector<SharedPtr<Texture> >& buffers = current->second;
-        for (unsigned j = buffers.size() - 1; j < buffers.size(); --j)
-        {
-            Texture* buffer = buffers[j];
-            if (buffer->GetUseTimer() > MAX_BUFFER_AGE)
-            {
-                URHO3D_LOGTRACE("Removed unused screen buffer size " + ea::to_string(buffer->GetWidth()) + "x" + ea::to_string(buffer->GetHeight()) +
-                         " format " + ea::to_string(buffer->GetFormat()));
-                buffers.erase_at(j);
-            }
-        }
-        if (buffers.empty())
-        {
-            screenBufferAllocations_.erase(current->first);
-            screenBuffers_.erase(current);
-        }
-    }
-}
-
-void Renderer::ResetScreenBufferAllocations()
-{
-    for (auto i = screenBufferAllocations_.begin(); i !=
-        screenBufferAllocations_.end(); ++i)
-        i->second = 0;
-}
-
 void Renderer::Initialize()
 {
     auto* graphics = GetSubsystem<Graphics>();
@@ -808,7 +669,6 @@ void Renderer::Initialize()
     CreateGeometries();
 
     viewports_.resize(1);
-    ResetBuffers();
 
     initialized_ = true;
 
@@ -920,12 +780,6 @@ void Renderer::CreateGeometries()
     const unsigned char blackCubeMapData[4] = { 0, 0, 0, 255 };
     for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
         blackCubeMap_->SetData((CubeMapFace)i, 0, 0, 0, 1, 1, blackCubeMapData);
-}
-
-void Renderer::ResetBuffers()
-{
-    screenBuffers_.clear();
-    screenBufferAllocations_.clear();
 }
 
 void Renderer::HandleScreenMode(StringHash eventType, VariantMap& eventData)

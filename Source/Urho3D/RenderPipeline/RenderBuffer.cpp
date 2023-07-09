@@ -28,7 +28,7 @@
 #include "../RenderAPI/PipelineState.h"
 #include "../RenderAPI/RenderAPIUtils.h"
 #include "../RenderAPI/RenderDevice.h"
-#include "../Graphics/Renderer.h"
+#include "../RenderAPI/RenderPool.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/TextureCube.h"
@@ -73,7 +73,6 @@ RenderSurface* GetRenderSurfaceFromTexture(Texture* texture, CubeMapFace face = 
 
 RenderBuffer::RenderBuffer(RenderPipelineInterface* renderPipeline)
     : Object(renderPipeline->GetContext())
-    , renderer_(GetSubsystem<Renderer>())
     , renderDevice_(GetSubsystem<RenderDevice>())
 {
     renderPipeline->OnRenderBegin.Subscribe(this, &RenderBuffer::OnRenderBegin);
@@ -104,12 +103,6 @@ TextureRenderBuffer::TextureRenderBuffer(RenderPipelineInterface* renderPipeline
         fixedSize_ = VectorRoundToInt(size);
     else
         sizeMultiplier_ = size;
-
-    const bool isPersistent = params.flags_.Test(RenderBufferFlag::Persistent);
-    const bool isDepthStencil = IsDepthTextureFormat(params_.textureFormat_);
-
-    if (isPersistent || isDepthStencil)
-        persistenceKey_ = GetObjectID();
 }
 
 TextureRenderBuffer::~TextureRenderBuffer()
@@ -118,14 +111,30 @@ TextureRenderBuffer::~TextureRenderBuffer()
 
 void TextureRenderBuffer::OnRenderBegin(const CommonFrameInfo& frameInfo)
 {
+    RenderPool* renderPool = renderDevice_->GetRenderPool();
+
     currentSize_ = CalculateRenderTargetSize(frameInfo.viewportRect_, sizeMultiplier_, fixedSize_);
-    const bool autoResolve = !params_.flags_.Test(RenderBufferFlag::NoMultiSampledAutoResolve);
+
+    const bool noAutoResolve = params_.flags_.Test(RenderBufferFlag::NoMultiSampledAutoResolve);
     const bool isCubemap = params_.flags_.Test(RenderBufferFlag::CubeMap);
     const bool isFiltered = params_.flags_.Test(RenderBufferFlag::BilinearFiltering);
+    const bool isPersistent = params_.flags_.Test(RenderBufferFlag::Persistent);
+    const bool isDepthStencil = IsDepthTextureFormat(params_.textureFormat_);
 
-    currentTexture_ = renderer_->GetScreenBuffer(currentSize_.x_, currentSize_.y_,
-        params_.textureFormat_, params_.multiSampleLevel_, autoResolve,
-        isCubemap, isFiltered, false, persistenceKey_);
+    RawTextureParams params;
+    params.type_ = isCubemap ? TextureType::TextureCube : TextureType::Texture2D;
+    params.format_ = params_.textureFormat_;
+    params.flags_.Set(isDepthStencil ? TextureFlag::BindDepthStencil : TextureFlag::BindRenderTarget);
+    if (noAutoResolve)
+        params.flags_.Set(TextureFlag::NoMultiSampledAutoResolve);
+
+    params.size_ = currentSize_.ToIntVector3();
+    params.numLevels_ = 1;
+    params.multiSample_ = params_.multiSampleLevel_;
+
+    currentTexture_ = renderPool->GetTexture(params, isPersistent ? this : nullptr);
+    currentTexture_->SetSamplerStateDesc(isFiltered ? SamplerStateDesc::Bilinear() : SamplerStateDesc::Nearest());
+
     bufferIsReady_ = true;
 }
 

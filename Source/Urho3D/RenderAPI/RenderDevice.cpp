@@ -1276,8 +1276,10 @@ void RenderDevice::Present()
             UpdateSwapChainSize();
     }
 
-    frameIndex_ = static_cast<FrameIndex>(static_cast<unsigned long long>(frameIndex_) + 1);
-    URHO3D_ASSERT(frameIndex_ != FrameIndex::None, "How did you exhaust 2^64 frames?");
+    renderPool_->OnFrameEnd();
+
+    frameIndex_ = static_cast<FrameIndex>(static_cast<long long>(frameIndex_) + 1);
+    URHO3D_ASSERT(frameIndex_ > FrameIndex::None, "How did you exhaust 2^63 frames?");
 }
 
 IntVector2 RenderDevice::GetSwapChainSize() const

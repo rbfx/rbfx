@@ -48,6 +48,7 @@ struct URHO3D_API RawTextureParams
     }
     bool operator==(const RawTextureParams& rhs) const { return Tie() == rhs.Tie(); }
     bool operator!=(const RawTextureParams& rhs) const { return Tie() != rhs.Tie(); }
+    unsigned ToHash() const { return MakeHash(Tie()); }
     /// @}
 };
 

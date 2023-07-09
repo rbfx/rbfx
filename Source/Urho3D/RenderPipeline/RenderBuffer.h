@@ -23,7 +23,6 @@
 #pragma once
 
 #include "../Container/FlagSet.h"
-#include "../Container/IndexAllocator.h"
 #include "../Core/Object.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
@@ -37,13 +36,12 @@ namespace Urho3D
 class RawTexture;
 class RenderSurface;
 class RenderPipelineInterface;
-class Texture2D;
 struct CommonFrameInfo;
 struct FrameInfo;
 
 /// Base class fro writable texture or texture region. Readability is not guaranteed.
 /// TODO(diligent): Get rid of this class and use Texture instead
-class URHO3D_API RenderBuffer : public Object, public IDFamily<RenderBuffer>
+class URHO3D_API RenderBuffer : public Object
 {
     URHO3D_OBJECT(RenderBuffer, Object);
 
@@ -67,7 +65,6 @@ protected:
     virtual void OnRenderEnd(const CommonFrameInfo& frameInfo) = 0;
     /// @}
 
-    Renderer* renderer_{};
     RenderDevice* renderDevice_{};
     bool bufferIsReady_{};
 };
@@ -98,14 +95,12 @@ private:
     RenderBufferParams params_;
     Vector2 sizeMultiplier_ = Vector2::ONE;
     IntVector2 fixedSize_;
-    /// If not zero, texture will keep content between frames.
-    unsigned persistenceKey_{};
     /// @}
 
     /// Current frame info
     /// @{
     IntVector2 currentSize_;
-    Texture* currentTexture_{};
+    RawTexture* currentTexture_{};
     /// @}
 };
 

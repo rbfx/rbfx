@@ -35,7 +35,7 @@ static constexpr unsigned MaxNumVertexElements = 2 * Diligent::MAX_LAYOUT_ELEMEN
 static constexpr unsigned MaxNumImmutableSamplers = 16;
 
 /// Index of the frame, counted by the presents of the primary swap chain.
-enum class FrameIndex : unsigned long long
+enum class FrameIndex : long long
 {
     None,
     First
