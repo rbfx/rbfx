@@ -32,7 +32,6 @@ namespace Urho3D
 {
 
 class Camera;
-class RenderPath;
 class Scene;
 class XMLFile;
 class RenderPipelineView;

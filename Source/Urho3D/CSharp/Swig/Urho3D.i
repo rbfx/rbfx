@@ -224,8 +224,6 @@ AddEqualityOperators(Urho3D::Splite);
 AddEqualityOperators(Urho3D::JSONValue);
 AddEqualityOperators(Urho3D::PListValue);
 AddEqualityOperators(Urho3D::VertexElement);
-AddEqualityOperators(Urho3D::RenderTargetInfo);
-AddEqualityOperators(Urho3D::RenderPathCommand);
 AddEqualityOperators(Urho3D::Bone);
 AddEqualityOperators(Urho3D::ModelMorph);
 AddEqualityOperators(Urho3D::AnimationKeyFrame);
@@ -580,6 +578,20 @@ public:
 %include "Urho3D/IK/IKSolver.h"
 %include "Urho3D/IK/IKSolverComponent.h"
 #endif
+
+// ------------------------------------- RenderAPI -------------------------------------
+%ignore Urho3D::RawBuffer::GetHandle;
+%ignore Urho3D::RawShader::GetHandle;
+%ignore Urho3D::RawTexture::CreateUAV;
+%ignore Urho3D::RawTexture::GetUAV;
+%ignore Urho3D::RawTexture::GetHandles;
+%ignore Urho3D::RawTextureHandles;
+
+%include "Urho3D/RenderAPI/RawBuffer.h"
+%include "Urho3D/RenderAPI/RawShader.h"
+%include "Urho3D/RenderAPI/RawTexture.h"
+%include "Urho3D/RenderAPI/RenderAPIDefs.h"
+
 // --------------------------------------- Graphics ---------------------------------------
 %ignore Urho3D::FrustumOctreeQuery::TestDrawables;
 %ignore Urho3D::SphereOctreeQuery::TestDrawables;
@@ -606,8 +618,6 @@ public:
 %ignore Urho3D::Geometry::GetRawDataShared;
 %ignore Urho3D::IndexBuffer::GetShadowDataShared;
 %ignore Urho3D::VertexBuffer::GetShadowDataShared;
-%ignore Urho3D::RenderPathCommand::outputs_;    // Needs Pair<String, CubeMapFace>
-%ignore Urho3D::RenderPathCommand::textureNames_;    // Needs array of strings
 %ignore Urho3D::VertexBufferMorph::morphData_;      // Needs SharedPtrArray
 %ignore Urho3D::DecalVertex::blendIndices_;
 %ignore Urho3D::DecalVertex::blendWeights_;
@@ -616,9 +626,6 @@ public:
 %ignore Urho3D::CustomGeometry::MakeCircleGraph;
 %ignore Urho3D::CustomGeometry::ProcessRayQuery;
 %ignore Urho3D::OcclusionBufferData::dataWithSafety_;
-%ignore Urho3D::ScenePassInfo::batchQueue_;
-%ignore Urho3D::LightQueryResult;
-%ignore Urho3D::View::GetLightQueues;
 %ignore Urho3D::Drawable::GetMutableLightProbeTetrahedronHint;
 %ignore Urho3D::Skybox::GetImage;   // Needs ImageCube
 %ignore Urho3D::Drawable2D::layer_;
@@ -653,6 +660,7 @@ public:
 %ignore Urho3D::AnimationState::CalculateNodeTracks;
 %ignore Urho3D::AnimationState::CalculateAttributeTracks;
 %ignore Urho3D::Animation::GetVariantTracks;
+%ignore Urho3D::RenderSurface::GetView;
 %rename(DrawableFlags) Urho3D::DrawableFlag;
 
 %apply void* VOID_INT_PTR {
@@ -1016,7 +1024,6 @@ using ImGuiConfigFlags = unsigned;
 %template(TextureMap)                   eastl::unordered_map<Urho3D::TextureUnit, Urho3D::SharedPtr<Urho3D::Texture>>;
 %template(AttributeAnimationInfos)      eastl::unordered_map<eastl::string, Urho3D::SharedPtr<Urho3D::AttributeAnimationInfo>>;
 %template(VertexBufferMorphMap)         eastl::unordered_map<unsigned, Urho3D::VertexBufferMorph>;
-%template(ShaderParameterMap)           eastl::unordered_map<Urho3D::StringHash, Urho3D::ShaderParameter>;
 %template(ObjectMap)                    eastl::unordered_map<Urho3D::StringHash, Urho3D::SharedPtr<Urho3D::Object>>;
 %template(TextureMap)                   eastl::unordered_map<Urho3D::TextureUnit, Urho3D::SharedPtr<Urho3D::Texture>>;
 
@@ -1044,8 +1051,6 @@ using Vector3 = Urho3D::Vector3;
 
 %template(ObjectList)                       eastl::vector<Urho3D::Object*>;
 %template(SoundSourceList)                  eastl::vector<Urho3D::SoundSource*>;
-//%template(BatchList)                      eastl::vector<Urho3D::Batch*>;
-//%template(BatchGroupList)                 eastl::vector<Urho3D::BatchGroup*>;
 %template(ComponentList)                    eastl::vector<Urho3D::Component*>;
 %template(ComponentRefList)                 eastl::vector<Urho3D::SharedPtr<Urho3D::Component>>;
 %template(DrawableList)                     eastl::vector<Urho3D::Drawable*>;
@@ -1083,8 +1088,6 @@ using Vector3 = Urho3D::Vector3;
 %template(GeometryList)                     eastl::vector<Urho3D::SharedPtr<Urho3D::Geometry>>;
 //%template(ConnectionList)                 eastl::vector<Urho3D::SharedPtr<Urho3D::Connection>>;
 %template(GeometriesList)                   eastl::vector<eastl::vector<Urho3D::SharedPtr<Urho3D::Geometry>>>;
-%template(RenderPathCommandList)            eastl::vector<Urho3D::RenderPathCommand>;
-%template(RenderTargetInfoList)             eastl::vector<Urho3D::RenderTargetInfo>;
 %template(BonesList)                        eastl::vector<Urho3D::Bone>;
 %template(ModelMorphList)                   eastl::vector<Urho3D::ModelMorph>;
 %template(AnimationStateList)               eastl::vector<Urho3D::SharedPtr<Urho3D::AnimationState>>;

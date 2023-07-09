@@ -91,7 +91,9 @@ struct URHO3D_API FullscreenMode
 
     /// Operators.
     /// @{
+#ifndef SWIG
     auto Tie() const { return ea::tie(size_.x_, size_.y_, refreshRate_); }
+#endif
     bool operator==(const FullscreenMode& rhs) const { return Tie() == rhs.Tie(); }
     bool operator!=(const FullscreenMode& rhs) const { return Tie() != rhs.Tie(); }
     bool operator<(const FullscreenMode& rhs) const { return Tie() < rhs.Tie(); }
@@ -317,7 +319,7 @@ enum class TextureCoordinate
 
     Count
 };
-static constexpr auto MaxTextureCoordinates = static_cast<unsigned>(TextureCoordinate::Count);
+static constexpr unsigned MaxTextureCoordinates = static_cast<unsigned>(TextureCoordinate::Count);
 
 /// Blending mode.
 enum BlendMode
@@ -426,6 +428,7 @@ struct URHO3D_API SamplerStateDesc
 
     /// Operators.
     /// @{
+#ifndef SWIG
     auto Tie() const
     {
         return ea::tie( //
@@ -437,6 +440,7 @@ struct URHO3D_API SamplerStateDesc
             addressMode_[TextureCoordinate::V], //
             addressMode_[TextureCoordinate::W]);
     }
+#endif
 
     bool operator==(const SamplerStateDesc& rhs) const { return Tie() == rhs.Tie(); }
     bool operator!=(const SamplerStateDesc& rhs) const { return Tie() != rhs.Tie(); }
@@ -454,6 +458,7 @@ struct URHO3D_API PipelineStateOutputDesc
 
     /// Operators.
     /// @{
+#ifndef SWIG
     auto Tie() const
     {
         return ea::make_tuple( //
@@ -461,6 +466,7 @@ struct URHO3D_API PipelineStateOutputDesc
             ea::span<const TextureFormat>(renderTargetFormats_.data(), numRenderTargets_), //
             multiSample_);
     }
+#endif
 
     bool operator==(const PipelineStateOutputDesc& rhs) const { return Tie() == rhs.Tie(); }
     bool operator!=(const PipelineStateOutputDesc& rhs) const { return Tie() != rhs.Tie(); }
@@ -504,6 +510,7 @@ struct URHO3D_API InputLayoutElementDesc
 
     /// Operators.
     /// @{
+#ifndef SWIG
     auto Tie() const
     {
         return ea::tie( //
@@ -515,6 +522,7 @@ struct URHO3D_API InputLayoutElementDesc
             elementSemantic_, //
             elementSemanticIndex_);
     }
+#endif
 
     bool operator==(const InputLayoutElementDesc& rhs) const { return Tie() == rhs.Tie(); }
     bool operator!=(const InputLayoutElementDesc& rhs) const { return Tie() != rhs.Tie(); }
@@ -530,7 +538,9 @@ struct URHO3D_API InputLayoutDesc
 
     /// Operators.
     /// @{
+#ifndef SWIG
     auto Tie() const { return ea::make_tuple(ea::span<const InputLayoutElementDesc>(elements_.data(), size_)); }
+#endif
 
     bool operator==(const InputLayoutDesc& rhs) const { return Tie() == rhs.Tie(); }
     bool operator!=(const InputLayoutDesc& rhs) const { return Tie() != rhs.Tie(); }
@@ -563,11 +573,14 @@ struct URHO3D_API ImmutableSamplersDesc
 
     /// Operators.
     /// @{
-    auto Tie() const {
+#ifndef SWIG
+    auto Tie() const
+    {
         return ea::make_tuple( //
             ea::span<const StringHash>(names_.data(), size_), //
             ea::span<const SamplerStateDesc>(desc_.data(), size_));
     }
+#endif
 
     bool operator==(const ImmutableSamplersDesc& rhs) const { return Tie() == rhs.Tie(); }
     bool operator!=(const ImmutableSamplersDesc& rhs) const { return Tie() != rhs.Tie(); }

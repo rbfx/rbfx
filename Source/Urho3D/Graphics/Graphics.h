@@ -60,8 +60,6 @@ class ShaderResourceBinding;
 class RenderDevice;
 class RenderContext;
 
-struct ShaderParameter;
-
 /// Graphics settings that should be configured before initialization.
 struct GraphicsSettings : public RenderDeviceSettings
 {

@@ -199,11 +199,9 @@ URHO3D_REFCOUNTED(Urho3D::Octree);
 URHO3D_REFCOUNTED(Urho3D::ParticleEffect);
 URHO3D_REFCOUNTED(Urho3D::ParticleEmitter);
 URHO3D_REFCOUNTED(Urho3D::ReflectionProbeManager);
-URHO3D_REFCOUNTED(Urho3D::RenderPath);
 URHO3D_REFCOUNTED(Urho3D::Renderer);
 URHO3D_REFCOUNTED(Urho3D::RibbonTrail);
 URHO3D_REFCOUNTED(Urho3D::Shader);
-URHO3D_REFCOUNTED(Urho3D::ShaderPrecache);
 URHO3D_REFCOUNTED(Urho3D::ShaderProgram);
 URHO3D_REFCOUNTED(Urho3D::Skybox);
 URHO3D_REFCOUNTED(Urho3D::SoftwareModelAnimator);
@@ -214,7 +212,6 @@ URHO3D_REFCOUNTED(Urho3D::Texture2DArray);
 URHO3D_REFCOUNTED(Urho3D::Texture3D);
 URHO3D_REFCOUNTED(Urho3D::TextureCube);
 URHO3D_REFCOUNTED(Urho3D::Zone);
-URHO3D_REFCOUNTED(Urho3D::View);
 URHO3D_REFCOUNTED(Urho3D::ParticleGraphEffect);
 URHO3D_REFCOUNTED(Urho3D::ParticleGraph);
 URHO3D_REFCOUNTED(Urho3D::ParticleGraphLayer);
@@ -414,6 +411,8 @@ URHO3D_REFCOUNTED(Urho3D::Actions::Sequence);
 URHO3D_REFCOUNTED(Urho3D::Actions::ShaderParameterAction);
 URHO3D_REFCOUNTED(Urho3D::Actions::ShaderParameterTo);
 URHO3D_REFCOUNTED(Urho3D::Actions::ShaderParameterFromTo);
+URHO3D_REFCOUNTED(Urho3D::RawBuffer);
+URHO3D_REFCOUNTED(Urho3D::RawShader);
 
 // Manually added
 URHO3D_REFCOUNTED(Urho3D::NetworkObject);

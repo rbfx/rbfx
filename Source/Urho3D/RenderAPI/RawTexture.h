@@ -42,10 +42,12 @@ struct URHO3D_API RawTextureParams
 
     /// Operators.
     /// @{
+#ifndef SWIG
     auto Tie() const
     {
         return ea::tie(type_, format_, flags_, size_, arraySize_, numLevels_, multiSample_, numLevelsRTV_);
     }
+#endif
     bool operator==(const RawTextureParams& rhs) const { return Tie() == rhs.Tie(); }
     bool operator!=(const RawTextureParams& rhs) const { return Tie() != rhs.Tie(); }
     unsigned ToHash() const { return MakeHash(Tie()); }
@@ -74,7 +76,9 @@ struct URHO3D_API RawTextureUAVKey
 
     /// Operators.
     /// @{
+#ifndef SWIG
     auto Tie() const { return ea::tie(canWrite_, canRead_, firstSlice_, firstLevel_, numSlices_, numLevels_); }
+#endif
     bool operator==(const RawTextureUAVKey& rhs) const { return Tie() == rhs.Tie(); }
     bool operator!=(const RawTextureUAVKey& rhs) const { return Tie() != rhs.Tie(); }
     unsigned ToHash() const { return MakeHash(Tie()); }
