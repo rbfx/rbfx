@@ -27,6 +27,8 @@
 
 #ifdef URHO3D_SHADER_OPTIMIZER
     #include <spirv-tools/optimizer.hpp>
+#else
+#include <Urho3D/Core/Assert.h>
 #endif
 
 namespace Urho3D
