@@ -44,6 +44,7 @@ struct ISwapChainD3D11;
 struct ISwapChainD3D12;
 struct ISwapChainGL;
 struct ISwapChainVk;
+struct ITexture;
 
 } // namespace Diligent
 
@@ -87,6 +88,9 @@ public:
     bool Restore();
     /// Emulate device loss and restore. Only applicable for Android.
     bool EmulateLossAndRestore();
+
+    /// Take the screenshot from current back buffer.
+    bool TakeScreenShot(IntVector2& size, ByteVector& data);
 
     /// Present the frame. Should be called between engine frames.
     void Present();
@@ -151,6 +155,9 @@ private:
     bool RestoreGLESContext();
 
     void SendDeviceObjectEvent(DeviceObjectEvent event);
+
+    Diligent::RefCntAutoPtr<Diligent::ITexture> GetResolvedBackBuffer();
+    Diligent::RefCntAutoPtr<Diligent::ITexture> ReadTextureToStaging(Diligent::ITexture* sourceTexture);
 
     RenderDeviceSettings deviceSettings_;
     WindowSettings windowSettings_;

@@ -1262,6 +1262,120 @@ bool RenderDevice::RestoreGLESContext()
 #endif
 }
 
+bool RenderDevice::TakeScreenShot(IntVector2& size, ByteVector& data)
+{
+    const bool flipY = deviceSettings_.backend_ == RenderBackend::OpenGL;
+
+    const auto resolvedBackBuffer = GetResolvedBackBuffer();
+    if (!resolvedBackBuffer)
+    {
+        URHO3D_LOGERROR("Failed to create resolve texture for RenderDevice::TakeScreenShot");
+        return false;
+    }
+
+    const auto stagingTexture = ReadTextureToStaging(resolvedBackBuffer);
+    if (!stagingTexture)
+    {
+        URHO3D_LOGERROR("Failed to create staging texture for RenderDevice::TakeScreenShot");
+        return false;
+    }
+
+    Diligent::MappedTextureSubresource mappedData;
+    deviceContext_->MapTextureSubresource(
+        stagingTexture, 0, 0, Diligent::MAP_READ, Diligent::MAP_FLAG_NONE, nullptr, mappedData);
+
+    if (!mappedData.pData)
+    {
+        URHO3D_LOGERROR("Failed to map staging texture for RenderDevice::TakeScreenShot");
+        return false;
+    }
+
+    const Diligent::TextureDesc& desc = stagingTexture->GetDesc();
+    const auto& formatInfo = Diligent::GetTextureFormatAttribs(desc.Format);
+    if (formatInfo.GetElementSize() != 4 || formatInfo.ComponentType == Diligent::COMPONENT_TYPE_COMPRESSED)
+    {
+        URHO3D_LOGERROR("Unexpected backbuffer for RenderDevice::TakeScreenShot");
+        return false;
+    }
+
+    size = {static_cast<int>(desc.Width), static_cast<int>(desc.Height)};
+
+    const unsigned elementSize = formatInfo.GetElementSize();
+    const unsigned rowSize = desc.Width * elementSize;
+    data.resize(desc.Width * desc.Height * elementSize);
+
+    const auto srcBuffer = reinterpret_cast<const unsigned char*>(mappedData.pData);
+    auto destBuffer = reinterpret_cast<unsigned char*>(data.data());
+    for (unsigned i = 0; i < size.y_; ++i)
+    {
+        const unsigned row = flipY ? size.y_ - i - 1 : i;
+        memcpy(destBuffer, srcBuffer + row * mappedData.Stride, rowSize);
+        destBuffer += rowSize;
+    }
+
+    deviceContext_->UnmapTextureSubresource(stagingTexture, 0, 0);
+    return true;
+}
+
+Diligent::RefCntAutoPtr<Diligent::ITexture> RenderDevice::GetResolvedBackBuffer()
+{
+    Diligent::ITexture* backBuffer = swapChain_->GetCurrentBackBufferRTV()->GetTexture();
+    const Diligent::TextureDesc& backBufferDesc = backBuffer->GetDesc();
+
+    if (backBufferDesc.SampleCount == 1)
+        return Diligent::RefCntAutoPtr<Diligent::ITexture>{backBuffer};
+
+    Diligent::TextureDesc textureDesc;
+    textureDesc.Type = Diligent::RESOURCE_DIM_TEX_2D;
+    textureDesc.Name = "RenderDevice::TakeScreenShot resolve texture";
+    textureDesc.Usage = Diligent::USAGE_DEFAULT;
+    textureDesc.Format = backBufferDesc.Format;
+    textureDesc.Width = backBufferDesc.Width;
+    textureDesc.Height = backBufferDesc.Height;
+    textureDesc.BindFlags = Diligent::BIND_RENDER_TARGET;
+
+    Diligent::RefCntAutoPtr<Diligent::ITexture> resolvedBackBuffer;
+    renderDevice_->CreateTexture(textureDesc, nullptr, &resolvedBackBuffer);
+    if (!resolvedBackBuffer)
+        return {};
+
+    Diligent::ResolveTextureSubresourceAttribs attribs;
+    attribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+    attribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+    deviceContext_->ResolveTextureSubresource(backBuffer, resolvedBackBuffer, attribs);
+
+    return resolvedBackBuffer;
+}
+
+Diligent::RefCntAutoPtr<Diligent::ITexture> RenderDevice::ReadTextureToStaging(Diligent::ITexture* sourceTexture)
+{
+    const Diligent::TextureDesc& sourceTextureDesc = sourceTexture->GetDesc();
+
+    Diligent::TextureDesc textureDesc;
+    textureDesc.Type = Diligent::RESOURCE_DIM_TEX_2D;
+    textureDesc.Name = "RenderDevice::TakeScreenShot staging texture";
+    textureDesc.Usage = Diligent::USAGE_STAGING;
+    textureDesc.CPUAccessFlags = Diligent::CPU_ACCESS_READ;
+    textureDesc.Format = sourceTextureDesc.Format;
+    textureDesc.Width = sourceTextureDesc.Width;
+    textureDesc.Height = sourceTextureDesc.Height;
+
+    Diligent::RefCntAutoPtr<Diligent::ITexture> stagingTexture;
+    renderDevice_->CreateTexture(textureDesc, nullptr, &stagingTexture);
+    if (!stagingTexture)
+        return {};
+
+    Diligent::CopyTextureAttribs attribs;
+    attribs.pSrcTexture = sourceTexture;
+    attribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+    attribs.pDstTexture = stagingTexture;
+    attribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+    deviceContext_->CopyTexture(attribs);
+    deviceContext_->WaitForIdle();
+
+    return stagingTexture;
+}
+
 void RenderDevice::Present()
 {
     swapChain_->Present(windowSettings_.vSync_ ? 1 : 0);

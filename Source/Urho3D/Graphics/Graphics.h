@@ -224,10 +224,6 @@ public:
     /// @property
     bool GetSRGB() const { return GetWindowSettings().sRGB_; }
 
-    /// Return whether rendering output is dithered.
-    /// @property
-    bool GetDither() const;
-
     /// Return whether graphics context is lost and can not render or load GPU resources.
     /// @property
     bool IsDeviceLost() const;

@@ -320,9 +320,14 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
             Graphics* graphics = GetSubsystem<Graphics>();
             Image screenshot(context_);
             graphics->TakeScreenShot(screenshot);
-            // Here we save in the Data folder with date and time appended
-            screenshot.SavePNG(GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Screenshot_" +
-                Time::GetTimeStamp().replaced(':', '_').replaced('.', '_').replaced(' ', '_') + ".png");
+
+            // Save into app directory
+            const ea::string screenshotPath = GetSubsystem<Engine>()->GetAppPreferencesDir() + "Screenshots/";
+            const ea::string screenshotName =
+                "Screenshot_" + Time::GetTimeStamp().replaced(':', '_').replaced('.', '_').replaced(' ', '_') + ".png";
+
+            GetSubsystem<FileSystem>()->CreateDirsRecursive(screenshotPath);
+            screenshot.SavePNG(screenshotPath + screenshotName);
         }
     }
 }

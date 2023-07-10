@@ -162,47 +162,6 @@ namespace Urho3D
 {
 using namespace Diligent;
 
-static const Diligent::VALUE_TYPE DiligentIndexBufferType[] = {
-    Diligent::VT_UNDEFINED, Diligent::VT_UINT16, Diligent::VT_UINT32};
-
-static void GetPrimitiveType(unsigned elementCount, PrimitiveType type, unsigned& primitiveCount,
-    Diligent::PRIMITIVE_TOPOLOGY& primitiveTopology)
-{
-    switch (type)
-    {
-    case TRIANGLE_LIST:
-        primitiveCount = elementCount / 3;
-        primitiveTopology = PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-        break;
-
-    case LINE_LIST:
-        primitiveCount = elementCount / 2;
-        primitiveTopology = PRIMITIVE_TOPOLOGY_LINE_LIST;
-        break;
-
-    case POINT_LIST:
-        primitiveCount = elementCount;
-        primitiveTopology = PRIMITIVE_TOPOLOGY_POINT_LIST;
-        break;
-
-    case TRIANGLE_STRIP:
-        primitiveCount = elementCount - 2;
-        primitiveTopology = PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-        break;
-
-    case LINE_STRIP:
-        primitiveCount = elementCount - 1;
-        primitiveTopology = PRIMITIVE_TOPOLOGY_LINE_STRIP;
-        break;
-
-    case TRIANGLE_FAN:
-        // Triangle fan is not supported on D3D11
-        primitiveCount = 0;
-        primitiveTopology = PRIMITIVE_TOPOLOGY_UNDEFINED;
-        break;
-    }
-}
-
 static void HandleDbgMessageCallbacks(
     Diligent::DEBUG_MESSAGE_SEVERITY severity, const char* msg, const char* func, const char* file, int line)
 {
@@ -310,87 +269,18 @@ void Graphics::Close()
 
 bool Graphics::TakeScreenShot(Image& destImage)
 {
-    // TODO(diligent): Implement
     URHO3D_PROFILE("TakeScreenShot");
     if (!IsInitialized())
         return false;
 
-    assert(0);
-    return false;
-    // if (!impl_->device_)
-    //     return false;
+    IntVector2 size;
+    ByteVector data;
+    if (!renderDevice_->TakeScreenShot(size, data))
+        return false;
 
-    // D3D11_TEXTURE2D_DESC textureDesc;
-    // memset(&textureDesc, 0, sizeof textureDesc);
-    // textureDesc.Width = (UINT)width_;
-    // textureDesc.Height = (UINT)height_;
-    // textureDesc.MipLevels = 1;
-    // textureDesc.ArraySize = 1;
-    // textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    // textureDesc.SampleDesc.Count = 1;
-    // textureDesc.SampleDesc.Quality = 0;
-    // textureDesc.Usage = D3D11_USAGE_STAGING;
-    // textureDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-
-    // ID3D11Texture2D* stagingTexture = nullptr;
-    // HRESULT hr = impl_->device_->CreateTexture2D(&textureDesc, nullptr, &stagingTexture);
-    // if (FAILED(hr))
-    //{
-    //     URHO3D_SAFE_RELEASE(stagingTexture);
-    //     URHO3D_LOGD3DERROR("Could not create staging texture for screenshot", hr);
-    //     return false;
-    // }
-
-    // ID3D11Resource* source = nullptr;
-    // impl_->defaultRenderTargetView_->GetResource(&source);
-
-    // if (screenParams_.multiSample_ > 1)
-    //{
-    //     // If backbuffer is multisampled, need another DEFAULT usage texture to resolve the data to first
-    //     CreateResolveTexture();
-
-    //    if (!impl_->resolveTexture_)
-    //    {
-    //        stagingTexture->Release();
-    //        source->Release();
-    //        return false;
-    //    }
-
-    //    impl_->deviceContext_->ResolveSubresource(impl_->resolveTexture_, 0, source, 0, DXGI_FORMAT_R8G8B8A8_UNORM);
-    //    impl_->deviceContext_->CopyResource(stagingTexture, impl_->resolveTexture_);
-    //}
-    // else
-    //    impl_->deviceContext_->CopyResource(stagingTexture, source);
-
-    // source->Release();
-
-    // D3D11_MAPPED_SUBRESOURCE mappedData;
-    // mappedData.pData = nullptr;
-    // hr = impl_->deviceContext_->Map(stagingTexture, 0, D3D11_MAP_READ, 0, &mappedData);
-    // if (FAILED(hr) || !mappedData.pData)
-    //{
-    //     URHO3D_LOGD3DERROR("Could not map staging texture for screenshot", hr);
-    //     stagingTexture->Release();
-    //     return false;
-    // }
-
-    // destImage.SetSize(width_, height_, 3);
-    // unsigned char* destData = destImage.GetData();
-    // for (int y = 0; y < height_; ++y)
-    //{
-    //     unsigned char* src = (unsigned char*)mappedData.pData + y * mappedData.RowPitch;
-    //     for (int x = 0; x < width_; ++x)
-    //     {
-    //         *destData++ = *src++;
-    //         *destData++ = *src++;
-    //         *destData++ = *src++;
-    //         ++src;
-    //     }
-    // }
-
-    // impl_->deviceContext_->Unmap(stagingTexture, 0);
-    // stagingTexture->Release();
-    // return true;
+    destImage.SetSize(size.x_, size.y_, 4);
+    destImage.SetData(data.data());
+    return true;
 }
 
 bool Graphics::BeginFrame()
@@ -544,11 +434,6 @@ IntVector2 Graphics::GetRenderTargetDimensions() const
 {
     URHO3D_ASSERT(false);
     return IntVector2::ZERO;
-}
-
-bool Graphics::GetDither() const
-{
-    return false;
 }
 
 bool Graphics::IsDeviceLost() const
