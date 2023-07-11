@@ -139,10 +139,6 @@ public:
     void EndFrame();
     /// Clear any or all of rendertarget, depth buffer and stencil buffer.
     void Clear(ClearTargetFlags flags, const Color& color = Color::TRANSPARENT_BLACK, float depth = 1.0f, unsigned stencil = 0);
-    void BeginDebug(const ea::string_view& debugName);
-    void BeginDebug(const ea::string& debugName);
-    void BeginDebug(const char* debugName);
-    void EndDebug();
 
     /// Set default texture filtering mode. Called by Renderer before rendering.
     void SetDefaultTextureFilterMode(TextureFilterMode mode);

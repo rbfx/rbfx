@@ -38,6 +38,7 @@
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderAPI/RenderScope.h"
 
 #include "../DebugNew.h"
 
@@ -154,6 +155,7 @@ void RmlRenderer::EndRendering()
 {
     auto renderDevice = GetSubsystem<RenderDevice>();
     RenderContext* renderContext = renderDevice->GetRenderContext();
+    const RenderScope renderScope(renderContext, "RmlRenderer::EndRendering");
 
     vertexBuffer_->Commit();
     indexBuffer_->Commit();

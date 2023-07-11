@@ -33,6 +33,7 @@
 #include "../RenderAPI/DrawCommandQueue.h"
 #include "../RenderAPI/RenderContext.h"
 #include "../RenderAPI/RenderDevice.h"
+#include "../RenderAPI/RenderScope.h"
 #include "../Scene/Node.h"
 
 #include <EASTL/fixed_vector.h>
@@ -312,6 +313,8 @@ void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* des
 
     RenderContext* renderContext = renderDevice->GetRenderContext();
     DrawCommandQueue* drawQueue = renderDevice->GetDefaultQueue();
+
+    const RenderScope renderScope(renderContext, "CubemapRenderer::FilterCubemap");
 
     for (unsigned i = 0; i < numLevels; ++i)
         destTexture->CreateUAV(RawTextureUAVKey{}.FromLevel(i));

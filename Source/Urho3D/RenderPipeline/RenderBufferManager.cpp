@@ -36,6 +36,7 @@
 #include "../RenderAPI/RenderContext.h"
 #include "../RenderAPI/RenderDevice.h"
 #include "../RenderAPI/RenderAPIUtils.h"
+#include "../RenderAPI/RenderScope.h"
 
 #include <EASTL/optional.h>
 
@@ -365,9 +366,7 @@ void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadP
     if (!pipelineState || !pipelineState->IsValid())
         return;
 
-#ifdef URHO3D_DEBUG
-    graphics_->BeginDebug("RenderBufferManager::DrawQuad");
-#endif
+    const RenderScope renderScope(renderContext_, debugComment);
 
     Geometry* quadGeometry = renderer_->GetQuadGeometry();
     Matrix3x4 modelMatrix = Matrix3x4::IDENTITY;
@@ -427,10 +426,6 @@ void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadP
     drawQueue_->DrawIndexed(quadGeometry->GetIndexStart(), quadGeometry->GetIndexCount());
 
     renderContext_->Execute(drawQueue_);
-
-#ifdef URHO3D_DEBUG
-    graphics_->EndDebug();
-#endif
 
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
     {

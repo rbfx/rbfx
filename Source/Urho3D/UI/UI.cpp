@@ -67,6 +67,7 @@
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderAPI/RenderScope.h"
 
 #include <cassert>
 #include <SDL.h>
@@ -468,6 +469,9 @@ void UI::RenderUpdate()
 void UI::Render()
 {
     URHO3D_PROFILE("RenderUI");
+
+    RenderDevice* renderDevice = GetSubsystem<RenderDevice>();
+    const RenderScope renderScope(renderDevice->GetRenderContext(), "UI::Render");
 
     // If the OS cursor is visible, apply its shape now if changed
     bool osCursorVisible = GetSubsystem<Input>()->IsMouseVisible();

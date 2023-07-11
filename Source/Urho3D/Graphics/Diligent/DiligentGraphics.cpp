@@ -324,13 +324,11 @@ void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, un
 {
     URHO3D_ASSERT(renderDevice_);
 
-    BeginDebug("Clear");
     RenderContext* renderContext = renderDevice_->GetRenderContext();
     if (flags.Test(CLEAR_COLOR))
         renderContext->ClearRenderTarget(0, color);
     if (flags.Test(CLEAR_DEPTH) || flags.Test(CLEAR_STENCIL))
         renderContext->ClearDepthStencil(flags, depth, stencil);
-    EndDebug();
 }
 
 void Graphics::SetDefaultTextureFilterMode(TextureFilterMode mode)
@@ -498,30 +496,6 @@ unsigned Graphics::GetMaxBones()
         return maxBonesHWSkinned;
 
     return 128;
-}
-
-void Graphics::BeginDebug(const ea::string_view& debugName)
-{
-    Diligent::IDeviceContext* deviceContext = renderDevice_->GetImmediateContext();
-    deviceContext->BeginDebugGroup(debugName.data());
-}
-
-void Graphics::BeginDebug(const ea::string& debugName)
-{
-    Diligent::IDeviceContext* deviceContext = renderDevice_->GetImmediateContext();
-    deviceContext->BeginDebugGroup(debugName.data());
-}
-
-void Graphics::BeginDebug(const char* debugName)
-{
-    Diligent::IDeviceContext* deviceContext = renderDevice_->GetImmediateContext();
-    deviceContext->BeginDebugGroup(debugName);
-}
-
-void Graphics::EndDebug()
-{
-    Diligent::IDeviceContext* deviceContext = renderDevice_->GetImmediateContext();
-    deviceContext->EndDebugGroup();
 }
 
 } // namespace Urho3D

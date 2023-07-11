@@ -40,6 +40,7 @@
 #include "../Resource/ResourceCache.h"
 #include "../RenderAPI/RenderContext.h"
 #include "../RenderAPI/RenderDevice.h"
+#include "../RenderAPI/RenderScope.h"
 
 #include "../DebugNew.h"
 
@@ -548,6 +549,8 @@ void DebugRenderer::Render()
 
     auto* renderDevice = GetSubsystem<RenderDevice>();
     auto* renderContext = renderDevice->GetRenderContext();
+
+    const RenderScope renderScope(renderContext, "DebugRenderer::Render");
 
     URHO3D_PROFILE("RenderDebugGeometry");
 

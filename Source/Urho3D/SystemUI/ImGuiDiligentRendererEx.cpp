@@ -12,6 +12,7 @@
 #include "Urho3D/RenderAPI/PipelineState.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderAPI/RenderScope.h"
 #include "Urho3D/SystemUI/ImGui.h"
 
 #include <Diligent/Common/interface/Cast.hpp>
@@ -174,11 +175,15 @@ void ImGuiDiligentRendererEx::EndFrame()
 
 void ImGuiDiligentRendererEx::RenderDrawData(ImDrawData* drawData)
 {
+    const RenderScope renderScope(renderDevice_->GetRenderContext(), "ImGUI: Render main viewport");
+
     RenderDrawDataWith(drawData, primaryPipelineState_);
 }
 
 void ImGuiDiligentRendererEx::RenderSecondaryWindows()
 {
+    const RenderScope renderScope(renderDevice_->GetRenderContext(), "ImGUI: Render secondary viewport");
+
     const bool isOpenGL = renderDevice_->GetBackend() == RenderBackend::OpenGL;
     isCachedStateInvalid_ = false;
 

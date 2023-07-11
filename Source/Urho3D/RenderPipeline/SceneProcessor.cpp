@@ -50,6 +50,7 @@
 #include "../RenderPipeline/ShadowMapAllocator.h"
 #include "../RenderAPI/RenderContext.h"
 #include "../RenderAPI/RenderDevice.h"
+#include "../RenderAPI/RenderScope.h"
 #include "../Scene/Scene.h"
 
 #include "../DebugNew.h"
@@ -366,16 +367,18 @@ void SceneProcessor::RenderShadowMaps()
 
     URHO3D_PROFILE("RenderShadowMaps");
 
-#ifdef URHO3D_DEBUG
-    graphics_->BeginDebug("SceneProcessor::RenderShadowMaps");
-    unsigned renderIdx = 0;
-#endif
+    const RenderScope renderScope(renderContext_, "SceneProcessor::RenderShadowMaps");
 
     const auto& lightsByShadowMap = drawableProcessor_->GetLightProcessorsByShadowMap();
     for (LightProcessor* sceneLight : lightsByShadowMap)
     {
+        const RenderScope renderScopeLight(renderContext_, "Light 0x{} '{}'",
+            static_cast<void*>(sceneLight->GetLight()), sceneLight->GetLight()->GetNode()->GetName());
+
         for (const ShadowSplitProcessor& split : sceneLight->GetSplits())
         {
+            const RenderScope renderScopeSplit(renderContext_, "Split #{}", split.GetSplitIndex());
+
             if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
             {
                 const ea::string passName = Format("ShadowMap.[{}].{}",
@@ -383,20 +386,10 @@ void SceneProcessor::RenderShadowMaps()
                 debugger_->BeginPass(passName);
             }
 
-#ifdef URHO3D_DEBUG
-            graphics_->BeginDebug(
-                Format("ShadowMap.[{}].{}.{}", split.GetLight()->GetFullNameDebug(), split.GetSplitIndex(), renderIdx));
-#endif
-
             drawQueue_->Reset();
             batchRenderer_->RenderBatches({ *drawQueue_, split }, split.GetShadowBatches());
             shadowMapAllocator_->BeginShadowMapRendering(split.GetShadowMap());
             renderContext_->Execute(drawQueue_);
-
-#ifdef URHO3D_DEBUG
-            ++renderIdx;
-            graphics_->EndDebug();
-#endif
 
             if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
             {
@@ -404,10 +397,6 @@ void SceneProcessor::RenderShadowMaps()
             }
         }
     }
-
-#ifdef URHO3D_DEBUG
-    graphics_->EndDebug();
-#endif
 }
 
 void SceneProcessor::RenderSceneBatches(ea::string_view debugName, Camera* camera,
@@ -430,9 +419,7 @@ void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera*
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->BeginPass(debugName);
 
-#ifdef URHO3D_DEBUG
-    graphics_->BeginDebug(debugName);
-#endif
+    const RenderScope renderScope(renderContext_, debugName);
 
     drawQueue_->Reset();
 
@@ -443,10 +430,6 @@ void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera*
     batchRenderer_->RenderLightVolumeBatches(ctx, GetLightVolumeBatches());
 
     renderContext_->Execute(drawQueue_);
-
-#ifdef URHO3D_DEBUG
-    graphics_->EndDebug();
-#endif
 
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->EndPass();
@@ -459,9 +442,7 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->BeginPass(debugName);
 
-#ifdef URHO3D_DEBUG
-    graphics_->BeginDebug(debugName);
-#endif
+    const RenderScope renderScope(renderContext_, debugName);
 
     drawQueue_->Reset();
 
@@ -474,10 +455,6 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
     batchRenderer_->RenderBatches(ctx, batchGroup);
 
     renderContext_->Execute(drawQueue_);
-
-#ifdef URHO3D_DEBUG
-    graphics_->EndDebug();
-#endif
 
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->EndPass();

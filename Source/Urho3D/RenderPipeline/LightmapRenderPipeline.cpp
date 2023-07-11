@@ -26,6 +26,7 @@
 
 #include "../RenderAPI/DrawCommandQueue.h"
 #include "../RenderAPI/RenderDevice.h"
+#include "../RenderAPI/RenderScope.h"
 #include "../RenderPipeline/BatchRenderer.h"
 #include "../RenderPipeline/InstancingBuffer.h"
 #include "../RenderPipeline/RenderBufferManager.h"
@@ -107,6 +108,8 @@ void LightmapRenderPipelineView::RenderGeometryBuffer(Viewport* viewport, int te
     RenderContext* renderContext = renderDevice->GetRenderContext();
     DrawCommandQueue* drawQueue = renderDevice->GetDefaultQueue();
     BatchRenderer* batchRenderer = sceneProcessor->GetBatchRenderer();
+
+    const RenderScope renderScope(renderContext, "LightmapRenderPipelineView::RenderGeometryBuffer");
 
     RenderBuffer* const gBuffer[] = {
         positionBuffer_,
