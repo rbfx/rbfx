@@ -135,9 +135,6 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
 
         compositor_->ProcessUserBatch(shaderProgramDesc_, batchCompositorPass->GetFlags(),
             key.drawable_, key.geometry_, key.geometryType_, key.material_, key.pass_, light, hasShadow, subpass);
-#ifdef  URHO3D_DEBUG
-        pipelineStateDesc_.debugName_ = Format("DrawablePipeline({})",key.material_->GetName());
-#endif
         SetupUserPassState(key.drawable_, key.material_, key.pass_, lightMaskToStencil);
 
         // Support negative lights
@@ -173,9 +170,8 @@ void PipelineStateBuilder::SetupShadowPassState(unsigned splitIndex, const Light
     const float biasMultiplier = lightParams.shadowDepthBiasMultiplier_[splitIndex];
     const BiasParameters& biasParameters = lightProcessor->GetLight()->GetShadowBias();
 
-#ifdef URHO3D_DEBUG
-    pipelineStateDesc_.debugName_ = Format("ShadowPass({})|Split: {}", pass->GetName(), splitIndex);
-#endif
+    pipelineStateDesc_.debugName_ = Format("Shadow Pass for material '{}'", material->GetName());
+
     if (shadowMapAllocator_->GetSettings().enableVarianceShadowMaps_)
     {
         pipelineStateDesc_.colorWriteEnabled_ = true;
@@ -205,9 +201,7 @@ void PipelineStateBuilder::SetupShadowPassState(unsigned splitIndex, const Light
 void PipelineStateBuilder::SetupLightVolumePassState(const LightProcessor* lightProcessor)
 {
     const Light* light = lightProcessor->GetLight();
-#if defined URHO3D_DEBUG
-    pipelineStateDesc_.debugName_ = "LightVolumePass";
-#endif
+    pipelineStateDesc_.debugName_ = "Light Volume Pass";
     pipelineStateDesc_.colorWriteEnabled_ = true;
     pipelineStateDesc_.blendMode_ = light->IsNegative() ? BLEND_SUBTRACT : BLEND_ADD;
 
@@ -239,6 +233,8 @@ void PipelineStateBuilder::SetupLightVolumePassState(const LightProcessor* light
 void PipelineStateBuilder::SetupUserPassState(const Drawable* drawable,
     const Material* material, const Pass* pass, bool lightMaskToStencil)
 {
+    pipelineStateDesc_.debugName_ = Format("User Pass '{}' for material '{}'", pass->GetName(), material->GetName());
+
     pipelineStateDesc_.depthWriteEnabled_ = pass->GetDepthWrite();
     pipelineStateDesc_.depthCompareFunction_ = pass->GetDepthTestMode();
 

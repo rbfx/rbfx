@@ -341,9 +341,7 @@ StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(BlendMode ble
     defines += " URHO3D_USE_CBUFFERS";
 
     GraphicsPipelineStateDesc desc;
-#ifdef URHO3D_DEBUG
-    desc.debugName_ = shaderName;
-#endif
+    desc.debugName_ = Format("Quad with {}({})", shaderName, defines);
     desc.blendMode_ = blendMode;
     desc.vertexShader_ = graphics_->GetShader(VS, shaderName, defines);
     desc.pixelShader_ = graphics_->GetShader(PS, shaderName, defines);

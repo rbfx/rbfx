@@ -186,9 +186,8 @@ void ShadowMapAllocator::AllocatePage()
 
     auto newShadowMap = MakeShared<Texture2D>(context_);
 
-#ifdef URHO3D_DEBUG
-    newShadowMap->SetName("ShadowMap");
-#endif
+    newShadowMap->SetName(Format("Dynamic ShadowMap #{}", pages_.size()));
+
     // Disable mipmaps from the shadow map
     newShadowMap->SetNumLevels(1);
     newShadowMap->SetFilterMode(FILTER_BILINEAR);

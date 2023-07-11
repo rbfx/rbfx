@@ -708,17 +708,13 @@ void Renderer::ReloadTextures()
 void Renderer::CreateGeometries()
 {
     SharedPtr<VertexBuffer> dlvb(MakeShared<VertexBuffer>(context_));
-#ifdef URHO3D_DEBUG
     dlvb->SetDebugName("DirectionalLight");
-#endif
     dlvb->SetShadowed(true);
     dlvb->SetSize(4, MASK_POSITION);
     dlvb->Update(dirLightVertexData);
 
     SharedPtr<IndexBuffer> dlib(MakeShared<IndexBuffer>(context_));
-#ifdef URHO3D_DEBUG
     dlib->SetDebugName("DirectionalLight");
-#endif
     dlib->SetShadowed(true);
     dlib->SetSize(6, false);
     dlib->Update(dirLightIndexData);
@@ -729,17 +725,13 @@ void Renderer::CreateGeometries()
     dirLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, dlib->GetIndexCount());
 
     SharedPtr<VertexBuffer> slvb(MakeShared<VertexBuffer>(context_));
-#ifdef URHO3D_DEBUG
     slvb->SetDebugName("SpotLight");
-#endif
     slvb->SetShadowed(true);
     slvb->SetSize(8, MASK_POSITION);
     slvb->Update(spotLightVertexData);
 
     SharedPtr<IndexBuffer> slib(MakeShared<IndexBuffer>(context_));
-#ifdef URHO3D_DEBUG
     slib->SetDebugName("SpotLight");
-#endif
     slib->SetShadowed(true);
     slib->SetSize(36, false);
     slib->Update(spotLightIndexData);
@@ -750,17 +742,13 @@ void Renderer::CreateGeometries()
     spotLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, slib->GetIndexCount());
 
     SharedPtr<VertexBuffer> plvb(MakeShared<VertexBuffer>(context_));
-#ifdef URHO3D_DEBUG
     plvb->SetDebugName("PointLight");
-#endif
     plvb->SetShadowed(true);
     plvb->SetSize(24, MASK_POSITION);
     plvb->Update(pointLightVertexData);
 
     SharedPtr<IndexBuffer> plib(MakeShared<IndexBuffer>(context_));
-#ifdef URHO3D_DEBUG
     plib->SetDebugName("PointLight");
-#endif
     plib->SetShadowed(true);
     plib->SetSize(132, false);
     plib->Update(pointLightIndexData);
@@ -771,9 +759,7 @@ void Renderer::CreateGeometries()
     pointLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, plib->GetIndexCount());
 
     blackCubeMap_ = MakeShared<TextureCube>(context_);
-#ifdef URHO3D_DEBUG
     blackCubeMap_->SetName("BlackCubeMap");
-#endif
     blackCubeMap_->SetNumLevels(1);
     blackCubeMap_->SetSize(1, TextureFormat::TEX_FORMAT_RGBA8_UNORM);
     blackCubeMap_->SetFilterMode(FILTER_NEAREST);

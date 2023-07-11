@@ -67,9 +67,7 @@ void RawShader::CreateGPU()
         return;
 
     Diligent::ShaderCreateInfo createInfo;
-#ifdef URHO3D_DEBUG
     createInfo.Desc.Name = GetDebugName().c_str();
-#endif
     createInfo.Desc.ShaderType = ToInternalShaderType(bytecode_.type_);
     createInfo.Desc.UseCombinedTextureSamplers = true;
     createInfo.EntryPoint = "main";

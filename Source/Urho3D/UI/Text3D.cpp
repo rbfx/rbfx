@@ -60,9 +60,8 @@ Text3D::Text3D(Context* context) :
     usingSDFShader_(false),
     fontDataLost_(false)
 {
-#ifdef URHO3D_DEBUG
-    vertexBuffer_->SetDebugName("Text3D");
-#endif
+    vertexBuffer_->SetDebugName("Text3D Geometry");
+
     text_.SetEffectDepthBias(DEFAULT_EFFECT_DEPTH_BIAS);
 }
 

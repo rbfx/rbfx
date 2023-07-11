@@ -58,9 +58,7 @@ DebugRenderer::DebugRenderer(Context* context)
     , pipelineStates_(context)
 {
     vertexBuffer_ = MakeShared<VertexBuffer>(context_);
-#ifdef URHO3D_DEBUG
     vertexBuffer_->SetDebugName("DebugRenderer");
-#endif
 
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(DebugRenderer, HandleEndFrame));
 }
@@ -753,7 +751,7 @@ void DebugRenderer::InitializePipelineStates()
     auto* graphics = GetSubsystem<Graphics>();
 
     auto createPipelineState = [&](PrimitiveType primitiveType, BlendMode blendMode, CompareMode depthCompare,
-        bool depthWriteEnabled, bool lineAntiAlias, const ea::string& debugName)
+        bool depthWriteEnabled, bool lineAntiAlias, ea::string_view debugName)
     {
         GraphicsPipelineStateDesc desc;
         InitializeInputLayout(desc.inputLayout_, {vertexBuffer_});
@@ -771,9 +769,7 @@ void DebugRenderer::InitializePipelineStates()
         desc.blendMode_ = blendMode;
         desc.lineAntiAlias_ = lineAntiAlias;
 
-#ifdef URHO3D_DEBUG
-        desc.debugName_ = Format("DebugRenderer({})", debugName);
-#endif
+        desc.debugName_ = Format("DebugRenderer for {}", debugName);
 
         return pipelineStates_.CreateState(desc);
     };
@@ -781,12 +777,12 @@ void DebugRenderer::InitializePipelineStates()
     for (bool lineAntiAlias : { false, true })
     {
         const BlendMode blendMode = lineAntiAlias_ ? BLEND_ALPHA : BLEND_REPLACE;
-        depthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, blendMode, CMP_LESSEQUAL, true, lineAntiAlias, "DepthLines");
-        noDepthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, blendMode, CMP_ALWAYS, false, lineAntiAlias, "NoDepthLines");
+        depthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, blendMode, CMP_LESSEQUAL, true, lineAntiAlias, "Lines with Depth Test");
+        noDepthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, blendMode, CMP_ALWAYS, false, lineAntiAlias, "Lines without Depth Test");
     }
 
-    depthTrianglesPipelineState_ = createPipelineState(TRIANGLE_LIST, BLEND_ALPHA, CMP_LESSEQUAL, false, false, "DepthTriangles");
-    noDepthTrianglesPipelineState_ = createPipelineState(TRIANGLE_LIST, BLEND_ALPHA, CMP_ALWAYS, false, false, "NoDepthTriangles");
+    depthTrianglesPipelineState_ = createPipelineState(TRIANGLE_LIST, BLEND_ALPHA, CMP_LESSEQUAL, false, false, "Triangles with Depth Test");
+    noDepthTrianglesPipelineState_ = createPipelineState(TRIANGLE_LIST, BLEND_ALPHA, CMP_ALWAYS, false, false, "Triangles without Depth Test");
 }
 
 }

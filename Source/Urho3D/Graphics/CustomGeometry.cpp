@@ -50,6 +50,7 @@ CustomGeometry::CustomGeometry(Context* context)
     , materialsAttr_(Material::GetTypeStatic())
     , dynamic_(false)
 {
+    vertexBuffer_->SetDebugName("CustomGeometry Geometry");
     vertexBuffer_->SetShadowed(true);
     SetNumGeometries(1);
 }

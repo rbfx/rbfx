@@ -105,9 +105,8 @@ bool OutlineScenePass::CreatePipelineState(GraphicsPipelineStateDesc& desc, Pipe
 {
     ShaderProgramCompositor* compositor = builder->GetShaderProgramCompositor();
 
-#ifdef URHO3D_DEBUG
-    desc.debugName_ = Format("OutlinePass({})", key.material_->GetName());
-#endif
+    desc.debugName_ = Format("Outline Pass for material '{}'", key.material_->GetName());
+
     desc.depthWriteEnabled_ = false;
     desc.depthCompareFunction_ = CMP_ALWAYS;
 

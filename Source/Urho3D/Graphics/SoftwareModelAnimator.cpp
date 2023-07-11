@@ -275,6 +275,7 @@ void SoftwareModelAnimator::CloneModelGeometries()
 
         // Clone buffer
         auto clonedVertexBuffer = MakeShared<VertexBuffer>(context_);
+        clonedVertexBuffer->SetDebugName(Format("{}: Animated Copy", originalVertexBuffer->GetDebugName()));
         clonedVertexBuffer->SetShadowed(true);
         clonedVertexBuffer->SetSize(originalVertexBuffer->GetVertexCount(), clonedBufferMask, true);
         CopyMorphVertices(clonedVertexBuffer->GetShadowData(), originalVertexBuffer->GetShadowData(),

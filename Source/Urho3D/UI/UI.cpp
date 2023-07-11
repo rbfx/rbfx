@@ -870,10 +870,9 @@ void UI::Initialize()
 
     vertexBuffer_ = MakeShared<VertexBuffer>(context_);
     debugVertexBuffer_ = MakeShared<VertexBuffer>(context_);
-#ifdef URHO3D_DEBUG
-    vertexBuffer_->SetDebugName("UI Vertex");
-    debugVertexBuffer_->SetDebugName("UI Vertex Debug");
-#endif
+
+    vertexBuffer_->SetDebugName("UI Batches");
+    debugVertexBuffer_->SetDebugName("UI Debug Info");
 
     batchStateCache_ = MakeShared<DefaultUIBatchStateCache>(context_);
 

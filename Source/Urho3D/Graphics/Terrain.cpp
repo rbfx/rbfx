@@ -638,9 +638,7 @@ void Terrain::CreatePatchGeometry(TerrainPatch* patch)
     Geometry* maxLodGeometry = patch->GetMaxLodGeometry();
     Geometry* occlusionGeometry = patch->GetOcclusionGeometry();
 
-#ifdef  URHO3D_DEBUG
-    vertexBuffer->SetDebugName(Format("Terrain[]", patch->GetCoordinates().ToString()));
-#endif
+    vertexBuffer->SetDebugName(Format("Terrain patch at {}", patch->GetCoordinates().ToString()));
 
     // Scale in lightmap is intentionally ignored here
     // because lightmapper itself needs Terrain with lightmap UV but without lightmapping during rendering
