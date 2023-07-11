@@ -993,6 +993,7 @@ Diligent::RefCntAutoPtr<Diligent::ISwapChain> RenderDevice::CreateSecondarySwapC
     const auto metalView = IsMetalBackend(deviceSettings_.backend_) ? CreateMetalView(sdlWindow) : nullptr;
     Diligent::NativeWindow nativeWindow = GetNativeWindow(sdlWindow, metalView.get());
     Diligent::SwapChainDesc swapChainDesc{};
+    swapChainDesc.IsPrimary = false;
     swapChainDesc.ColorBufferFormat = swapChain_->GetDesc().ColorBufferFormat;
     swapChainDesc.DepthBufferFormat =
         hasDepthBuffer ? swapChain_->GetDesc().DepthBufferFormat : TextureFormat::TEX_FORMAT_UNKNOWN;
@@ -1187,56 +1188,84 @@ void RenderDevice::UpdateWindowSettings(const WindowSettings& settings)
 
 bool RenderDevice::Restore()
 {
-#if URHO3D_PLATFORM_ANDROID && GLES_SUPPORTED
-    URHO3D_ASSERT(deviceSettings_.backend_ == RenderBackend::OpenGL);
-
-    if (!SDL_GL_GetCurrentContext())
+#if URHO3D_PLATFORM_ANDROID
+    if (deviceSettings_.backend_ == RenderBackend::Vulkan)
     {
-        InvalidateGLESContext();
-        return RestoreGLESContext();
+        // We don't have to handle context loss on Android Vulkan.
+        // Mandatory resource recreation will be handled by Diligent,
+        // and optional memory optimization is not implemented yet.
+        return true;
+    }
+    else if (deviceSettings_.backend_ == RenderBackend::OpenGL)
+    {
+        if (!SDL_GL_GetCurrentContext())
+        {
+            InvalidateGLESContext();
+            return RestoreGLESContext();
+        }
+        return true;
+    }
+    else
+    {
+        URHO3D_ASSERT(false, "Unsupported render backend");
+        return true;
     }
 #endif
     return true;
 }
 
+void RenderDevice::InvalidateDeviceState()
+{
+    ReleaseDefaultObjects();
+    SendDeviceObjectEvent(DeviceObjectEvent::Invalidate);
+    OnDeviceLost(this);
+}
+
+void RenderDevice::RestoreDeviceState()
+{
+    SendDeviceObjectEvent(DeviceObjectEvent::Restore);
+    OnDeviceRestored(this);
+    InitializeDefaultObjects();
+}
+
 bool RenderDevice::EmulateLossAndRestore()
 {
-    if (GetPlatform() != PlatformId::Android)
+    static const int delayMs = 250;
+    if (deviceSettings_.backend_ == RenderBackend::Vulkan)
     {
-        SendDeviceObjectEvent(DeviceObjectEvent::Invalidate);
-        OnDeviceLost(this);
-        ReleaseDefaultObjects();
-
+        InvalidateVulkanContext();
         URHO3D_LOGINFO("Emulated context lost");
+        SDL_Delay(delayMs);
+        return RestoreVulkanContext();
+    }
+    else if (GetPlatform() == PlatformId::Android)
+    {
+        URHO3D_ASSERT(deviceSettings_.backend_ == RenderBackend::OpenGL);
 
-        InitializeDefaultObjects();
-        SendDeviceObjectEvent(DeviceObjectEvent::Restore);
-        OnDeviceRestored(this);
-
+        InvalidateGLESContext();
+        URHO3D_LOGINFO("Emulated context lost");
+        SDL_Delay(delayMs);
+        return RestoreGLESContext();
+    }
+    else
+    {
+        InvalidateDeviceState();
+        URHO3D_LOGINFO("Emulated context lost");
+        RestoreDeviceState();
         return true;
     }
-
-    // TODO(diligent): Support Vulkan on Android
-    if (deviceSettings_.backend_ != RenderBackend::OpenGL)
-        return true;
-
-    InvalidateGLESContext();
-    SDL_Delay(250);
-    return RestoreGLESContext();
 }
 
 void RenderDevice::InvalidateGLESContext()
 {
 #if URHO3D_PLATFORM_ANDROID && GLES_SUPPORTED
     URHO3D_LOGINFO("OpenGL context is lost");
-    SendDeviceObjectEvent(DeviceObjectEvent::Invalidate);
-    OnDeviceLost(this);
-    ReleaseDefaultObjects();
+    InvalidateDeviceState();
     deviceContextGL_->InvalidateState();
     renderDeviceGLES_->Invalidate();
     glContext_ = nullptr;
 #else
-    URHO3D_LOGWARNING("RenderDevice::InvalidateGLContext is supported only for Android platform");
+    URHO3D_LOGWARNING("RenderDevice::InvalidateGLESContext is supported only for Android platform");
 #endif
 }
 
@@ -1251,13 +1280,65 @@ bool RenderDevice::RestoreGLESContext()
     }
 
     renderDeviceGLES_->Resume(nullptr);
-    InitializeDefaultObjects();
-    SendDeviceObjectEvent(DeviceObjectEvent::Restore);
-    OnDeviceRestored(this);
+    RestoreDeviceState();
     URHO3D_LOGINFO("OpenGL context is restored");
     return true;
 #else
-    URHO3D_LOGWARNING("RenderDevice::RestoreGLContext is supported only for Android platform");
+    URHO3D_LOGWARNING("RenderDevice::RestoreGLESContext is supported only for Android platform");
+    return true;
+#endif
+}
+
+void RenderDevice::InvalidateVulkanContext()
+{
+#if VULKAN_SUPPORTED
+    URHO3D_LOGINFO("Vulkan context is lost");
+    InvalidateDeviceState();
+
+    Diligent::RefCntWeakPtr<Diligent::ISwapChain> oldSwapChain{swapChain_};
+    Diligent::RefCntWeakPtr<Diligent::ISwapChain> oldSwapChainVulkan{swapChainVulkan_};
+
+    oldNativeSwapChainDesc_ = ea::make_unique<Diligent::SwapChainDesc>(swapChainVulkan_->GetDesc());
+    swapChain_ = nullptr;
+    swapChainVulkan_ = nullptr;
+
+    URHO3D_ASSERT(!oldSwapChain.IsValid() && !oldSwapChainVulkan.IsValid());
+#else
+    URHO3D_LOGWARNING("RenderDevice::InvalidateVulkanContext is supported only for Vulkan backend");
+#endif
+}
+
+bool RenderDevice::RestoreVulkanContext()
+{
+#if VULKAN_SUPPORTED
+    Diligent::NativeWindow nativeWindow = GetNativeWindow(window_.get(), metalView_.get());
+
+    Diligent::SwapChainDesc swapChainDesc{};
+    swapChainDesc.ColorBufferFormat = oldNativeSwapChainDesc_->ColorBufferFormat;
+    swapChainDesc.DepthBufferFormat = oldNativeSwapChainDesc_->DepthBufferFormat;
+    swapChainDesc.Width = oldNativeSwapChainDesc_->Width;
+    swapChainDesc.Height = oldNativeSwapChainDesc_->Height;
+    swapChainDesc.PreTransform = oldNativeSwapChainDesc_->PreTransform;
+
+    Diligent::RefCntAutoPtr<Diligent::ISwapChain> nativeSwapChain;
+    factoryVulkan_->CreateSwapChainVk(renderDevice_, deviceContext_, swapChainDesc, nativeWindow, &nativeSwapChain);
+    if (!nativeSwapChain)
+    {
+        URHO3D_LOGERROR("Failed to restore swap chain");
+        return false;
+    }
+
+    InitializeMultiSampleSwapChain(nativeSwapChain);
+    swapChain_->Resize(swapChainDesc.Width, swapChainDesc.Height, swapChainDesc.PreTransform);
+
+    swapChainVulkan_ = Diligent::RefCntAutoPtr<Diligent::ISwapChainVk>(nativeSwapChain, Diligent::IID_SwapChainVk);
+    oldNativeSwapChainDesc_ = nullptr;
+
+    RestoreDeviceState();
+    URHO3D_LOGINFO("Vulkan context is restored");
+    return true;
+#else
+    URHO3D_LOGWARNING("RenderDevice::RestoreVulkanContext is supported only for Vulkan backend");
     return true;
 #endif
 }

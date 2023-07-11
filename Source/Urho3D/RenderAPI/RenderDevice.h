@@ -45,6 +45,7 @@ struct ISwapChainD3D12;
 struct ISwapChainGL;
 struct ISwapChainVk;
 struct ITexture;
+struct SwapChainDesc;
 
 } // namespace Diligent
 
@@ -154,6 +155,12 @@ private:
     void InvalidateGLESContext();
     bool RestoreGLESContext();
 
+    void InvalidateVulkanContext();
+    bool RestoreVulkanContext();
+
+    void InvalidateDeviceState();
+    void RestoreDeviceState();
+
     void SendDeviceObjectEvent(DeviceObjectEvent event);
 
     Diligent::RefCntAutoPtr<Diligent::ITexture> GetResolvedBackBuffer();
@@ -185,6 +192,8 @@ private:
     EnumArray<ea::unique_ptr<RawTexture>, TextureType> defaultTextures_;
     SharedPtr<RenderPool> renderPool_;
     SharedPtr<DrawCommandQueue> defaultQueue_;
+
+    ea::unique_ptr<Diligent::SwapChainDesc> oldNativeSwapChainDesc_;
 
     // Keep aliases at the end to ensure they are destroyed first and don't affect real order of destruction.
 #if D3D11_SUPPORTED

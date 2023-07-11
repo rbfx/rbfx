@@ -121,6 +121,9 @@ void SystemUI::PlatformInitialize()
     }
 
     impl_ = ea::make_unique<ImGuiDiligentRendererEx>(renderDevice);
+
+    // Ensure that swap chain is initialized
+    impl_->NewFrame();
 }
 
 void SystemUI::PlatformShutdown()

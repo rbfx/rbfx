@@ -168,11 +168,6 @@ void ImGuiDiligentRendererEx::NewFrame()
     Diligent::ImGuiDiligentRenderer::NewFrame(swapChainDesc.Width, swapChainDesc.Height, swapChainDesc.PreTransform);
 }
 
-void ImGuiDiligentRendererEx::EndFrame()
-{
-    Diligent::ImGuiDiligentRenderer::EndFrame();
-}
-
 void ImGuiDiligentRendererEx::RenderDrawData(ImDrawData* drawData)
 {
     const RenderScope renderScope(renderDevice_->GetRenderContext(), "ImGUI: Render main viewport");

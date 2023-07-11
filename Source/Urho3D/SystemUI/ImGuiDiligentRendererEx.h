@@ -21,7 +21,6 @@ public:
     ImGuiDiligentRendererEx(RenderDevice* renderDevice);
     ~ImGuiDiligentRendererEx();
     void NewFrame();
-    void EndFrame();
     void RenderDrawData(ImDrawData* drawData);
     void RenderSecondaryWindows();
 
