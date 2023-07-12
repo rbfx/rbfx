@@ -494,7 +494,7 @@ void TextureBaseGL::CreateViewInternal(const TextureViewDesc& OrigViewDesc, ITex
                 false, // Do NOT create texture view OpenGL object
                 bIsDefaultView);
         }
-        else if (ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL)
+        else if (ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL || ViewDesc.ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL)
         {
             VERIFY(ViewDesc.NumMipLevels == 1, "Only single mip level can be bound as DSV");
             pViewOGL = NEW_RC_OBJ(TexViewAllocator, "TextureViewGLImpl instance", TextureViewGLImpl, bIsDefaultView ? this : nullptr)(

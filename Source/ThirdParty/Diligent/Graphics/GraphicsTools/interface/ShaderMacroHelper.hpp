@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -57,7 +57,7 @@ class ShaderMacroHelper
 {
 public:
     template <typename DefinitionType>
-    void AddShaderMacro(const Char* Name, DefinitionType Definition)
+    ShaderMacroHelper& AddShaderMacro(const Char* Name, DefinitionType Definition)
     {
 #if DILIGENT_DEBUG
         for (size_t i = 0; i < m_Macros.size() && m_Macros[i].Definition != nullptr; ++i)
@@ -70,7 +70,7 @@ public:
 #endif
         std::ostringstream ss;
         ss << Definition;
-        AddShaderMacro<const Char*>(Name, ss.str().c_str());
+        return AddShaderMacro<const Char*>(Name, ss.str().c_str());
     }
 
     ShaderMacroHelper() = default;
@@ -150,10 +150,10 @@ public:
     }
 
     template <typename DefinitionType>
-    void UpdateMacro(const Char* Name, DefinitionType Definition)
+    ShaderMacroHelper& UpdateMacro(const Char* Name, DefinitionType Definition)
     {
         RemoveMacro(Name);
-        AddShaderMacro(Name, Definition);
+        return AddShaderMacro(Name, Definition);
     }
 
 private:
@@ -163,22 +163,23 @@ private:
 };
 
 template <>
-inline void ShaderMacroHelper::AddShaderMacro(const Char* Name, const Char* Definition)
+inline ShaderMacroHelper& ShaderMacroHelper::AddShaderMacro(const Char* Name, const Char* Definition)
 {
     Reopen();
     const auto* PooledDefinition = m_StringPool.insert(Definition).first->c_str();
     const auto* PooledName       = m_StringPool.insert(Name).first->c_str();
     m_Macros.emplace_back(PooledName, PooledDefinition);
+    return *this;
 }
 
 template <>
-inline void ShaderMacroHelper::AddShaderMacro(const Char* Name, bool Definition)
+inline ShaderMacroHelper& ShaderMacroHelper::AddShaderMacro(const Char* Name, bool Definition)
 {
-    AddShaderMacro<const Char*>(Name, Definition ? "1" : "0");
+    return AddShaderMacro<const Char*>(Name, Definition ? "1" : "0");
 }
 
 template <>
-inline void ShaderMacroHelper::AddShaderMacro(const Char* Name, float Definition)
+inline ShaderMacroHelper& ShaderMacroHelper::AddShaderMacro(const Char* Name, float Definition)
 {
     std::ostringstream ss;
 
@@ -189,22 +190,22 @@ inline void ShaderMacroHelper::AddShaderMacro(const Char* Name, float Definition
         ss << std::fixed << std::setprecision(1);
 
     ss << Definition;
-    AddShaderMacro<const Char*>(Name, ss.str().c_str());
+    return AddShaderMacro<const Char*>(Name, ss.str().c_str());
 }
 
 template <>
-inline void ShaderMacroHelper::AddShaderMacro(const Char* Name, Uint32 Definition)
+inline ShaderMacroHelper& ShaderMacroHelper::AddShaderMacro(const Char* Name, Uint32 Definition)
 {
     // Make sure that uint constants have the 'u' suffix to avoid problems in GLES.
     std::ostringstream ss;
     ss << Definition << 'u';
-    AddShaderMacro<const Char*>(Name, ss.str().c_str());
+    return AddShaderMacro<const Char*>(Name, ss.str().c_str());
 }
 
 template <>
-inline void ShaderMacroHelper::AddShaderMacro(const Char* Name, Uint8 Definition)
+inline ShaderMacroHelper& ShaderMacroHelper::AddShaderMacro(const Char* Name, Uint8 Definition)
 {
-    AddShaderMacro(Name, Uint32{Definition});
+    return AddShaderMacro(Name, Uint32{Definition});
 }
 
 #define ADD_SHADER_MACRO_ENUM_VALUE(Helper, EnumValue) Helper.AddShaderMacro(#EnumValue, static_cast<int>(EnumValue));

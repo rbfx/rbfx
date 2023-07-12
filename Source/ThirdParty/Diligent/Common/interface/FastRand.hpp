@@ -27,6 +27,8 @@
 
 #pragma once
 
+#include <chrono>
+
 #include "../../Platforms/Basic/interface/DebugUtilities.hpp"
 
 namespace Diligent
@@ -51,6 +53,11 @@ public:
     {
         State = StateType{214013} * State + StateType{2531011};
         return (State >> StateType{16}) & Max;
+    }
+
+    static StateType GenerateSeed()
+    {
+        return static_cast<StateType>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
     }
 
 private:

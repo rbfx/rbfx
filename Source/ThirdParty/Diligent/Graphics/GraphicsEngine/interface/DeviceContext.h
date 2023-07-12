@@ -966,13 +966,13 @@ struct SetRenderTargetsAttribs
 
     /// Pointer to the ITextureView that represents the depth stencil to
     /// bind to the device. The view type must be
-    /// Diligent::TEXTURE_VIEW_DEPTH_STENCIL.
+    /// Diligent::TEXTURE_VIEW_DEPTH_STENCIL or Diligent::TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL.
     ITextureView*                  pDepthStencil        DEFAULT_INITIALIZER(nullptr);
 
     /// Shading rate texture view. Set null to disable variable rate shading.
     ITextureView*                  pShadingRateMap      DEFAULT_INITIALIZER(nullptr);
 
-    /// State transition mode of the render targets, depth stencil buffer 
+    /// State transition mode of the render targets, depth stencil buffer
     /// and shading rate map being set (see Diligent::RESOURCE_STATE_TRANSITION_MODE).
     RESOURCE_STATE_TRANSITION_MODE StateTransitionMode  DEFAULT_INITIALIZER(RESOURCE_STATE_TRANSITION_MODE_NONE);
 
@@ -1471,7 +1471,7 @@ struct CopyBLASAttribs
         pSrc             {_pSrc             },
         pDst             {_pDst             },
         Mode             {_Mode             },
-        SrcTransitionMode{_SrcTransitionMode}, 
+        SrcTransitionMode{_SrcTransitionMode},
         DstTransitionMode{_DstTransitionMode}
     {
     }
@@ -1513,7 +1513,7 @@ struct CopyTLASAttribs
         pSrc             {_pSrc             },
         pDst             {_pDst             },
         Mode             {_Mode             },
-        SrcTransitionMode{_SrcTransitionMode}, 
+        SrcTransitionMode{_SrcTransitionMode},
         DstTransitionMode{_DstTransitionMode}
     {
     }
@@ -1921,7 +1921,7 @@ struct StateTransitionDesc
     /// \note For aliasing transition (STATE_TRANSITION_FLAG_ALIASING flag is set),
     ///       pResource may be null, which indicates that any sparse or
     ///       normal resource could cause aliasing.
-    IDeviceObject* pResource       DEFAULT_INITIALIZER(nullptr);	
+    IDeviceObject* pResource       DEFAULT_INITIALIZER(nullptr);
 
     /// When transitioning a texture, first mip level of the subresource range to transition.
     Uint32 FirstMipLevel     DEFAULT_INITIALIZER(0);
@@ -2297,7 +2297,7 @@ DILIGENT_BEGIN_INTERFACE(IDeviceContext, IObject)
     ///                                   array must be Diligent::TEXTURE_VIEW_RENDER_TARGET.
     /// \param [in] pDepthStencil       - Pointer to the ITextureView that represents the depth stencil to
     ///                                   bind to the device. The view type must be
-    ///                                   Diligent::TEXTURE_VIEW_DEPTH_STENCIL.
+    ///                                   Diligent::TEXTURE_VIEW_DEPTH_STENCIL or Diligent::TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL.
     /// \param [in] StateTransitionMode - State transition mode of the render targets and depth stencil buffer being set (see Diligent::RESOURCE_STATE_TRANSITION_MODE).
     ///
     /// \remarks     The device context will keep strong references to all bound render target
@@ -3158,7 +3158,7 @@ DILIGENT_BEGIN_INTERFACE(IDeviceContext, IObject)
     ///           Where
     ///               PerPrimitiveRate - vertex shader output value (HLSL: SV_ShadingRate; GLSL: gl_PrimitiveShadingRateEXT).
     ///               TextureRate      - texel value from the shading rate texture, see SetRenderTargetsAttribs::pShadingRateMap.
-    /// 
+    ///
     ///               SHADING_RATE ApplyCombiner(SHADING_RATE_COMBINER Combiner, SHADING_RATE OriginalRate, SHADING_RATE NewRate)
     ///               {
     ///                   switch (Combiner)

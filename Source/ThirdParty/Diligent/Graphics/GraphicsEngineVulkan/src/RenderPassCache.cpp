@@ -65,6 +65,7 @@ static RenderPassDesc GetImplicitRenderPassDesc(
     Uint32                                                        NumRenderTargets,
     const TEXTURE_FORMAT                                          RTVFormats[],
     TEXTURE_FORMAT                                                DSVFormat,
+    bool                                                          ReadOnlyDepth,
     Uint8                                                         SampleCount,
     TEXTURE_FORMAT                                                ShadingRateTexFormat,
     uint2                                                         ShadingRateTileSize,
@@ -82,6 +83,8 @@ static RenderPassDesc GetImplicitRenderPassDesc(
     AttachmentReference* pDepthAttachmentReference = nullptr;
     if (DSVFormat != TEX_FORMAT_UNKNOWN)
     {
+        const RESOURCE_STATE DepthAttachmentState = ReadOnlyDepth ? RESOURCE_STATE_DEPTH_READ : RESOURCE_STATE_DEPTH_WRITE;
+
         auto& DepthAttachment = Attachments[AttachmentInd];
 
         DepthAttachment.Format      = DSVFormat;
@@ -94,12 +97,12 @@ static RenderPassDesc GetImplicitRenderPassDesc(
                                                                // this uses the access type VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT.
         DepthAttachment.StencilLoadOp  = ATTACHMENT_LOAD_OP_LOAD;
         DepthAttachment.StencilStoreOp = ATTACHMENT_STORE_OP_STORE;
-        DepthAttachment.InitialState   = RESOURCE_STATE_DEPTH_WRITE;
-        DepthAttachment.FinalState     = RESOURCE_STATE_DEPTH_WRITE;
+        DepthAttachment.InitialState   = DepthAttachmentState;
+        DepthAttachment.FinalState     = DepthAttachmentState;
 
         pDepthAttachmentReference                  = &AttachmentReferences[AttachmentInd];
         pDepthAttachmentReference->AttachmentIndex = AttachmentInd;
-        pDepthAttachmentReference->State           = RESOURCE_STATE_DEPTH_WRITE;
+        pDepthAttachmentReference->State           = DepthAttachmentState;
 
         ++AttachmentInd;
     }
@@ -208,7 +211,7 @@ RenderPassVkImpl* RenderPassCache::GetRenderPass(const RenderPassCacheKey& Key)
         SubpassDesc           Subpass;
         ShadingRateAttachment ShadingRate;
 
-        auto RPDesc = GetImplicitRenderPassDesc(Key.NumRenderTargets, Key.RTVFormats, Key.DSVFormat, Key.SampleCount, SRFormat, SRTileSize,
+        auto RPDesc = GetImplicitRenderPassDesc(Key.NumRenderTargets, Key.RTVFormats, Key.DSVFormat, Key.ReadOnlyDSV, Key.SampleCount, SRFormat, SRTileSize,
                                                 Attachments, AttachmentReferences, Subpass, ShadingRate);
 
         std::stringstream PassNameSS;

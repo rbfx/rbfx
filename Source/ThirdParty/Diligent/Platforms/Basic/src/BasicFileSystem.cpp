@@ -343,4 +343,10 @@ std::string BasicFileSystem::FileDialog(const FileDialogAttribs& DialogAttribs)
     return "";
 }
 
+std::string BasicFileSystem::OpenFolderDialog(const char* Title)
+{
+    LOG_WARNING_MESSAGE("Open folder dialog is not implemented on this platform");
+    return "";
+}
+
 } // namespace Diligent

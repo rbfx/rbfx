@@ -1647,8 +1647,18 @@ void DeviceContextVkImpl::TransitionRenderTargets(RESOURCE_STATE_TRANSITION_MODE
 
     if (m_pBoundDepthStencil)
     {
+        const bool bReadOnly = m_pBoundDepthStencil->GetDesc().ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL;
+
+        const RESOURCE_STATE NewState = bReadOnly ?
+            RESOURCE_STATE_DEPTH_READ :
+            RESOURCE_STATE_DEPTH_WRITE;
+
+        const VkImageLayout ExpectedLayout = bReadOnly ?
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL :
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
         auto* pDepthBufferVk = m_pBoundDepthStencil->GetTexture<TextureVkImpl>();
-        TransitionOrVerifyTextureState(*pDepthBufferVk, StateTransitionMode, RESOURCE_STATE_DEPTH_WRITE, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        TransitionOrVerifyTextureState(*pDepthBufferVk, StateTransitionMode, NewState, ExpectedLayout,
                                        "Binding depth-stencil buffer (DeviceContextVkImpl::TransitionRenderTargets)");
     }
 
@@ -1708,6 +1718,7 @@ void DeviceContextVkImpl::ChooseRenderPassAndFramebuffer()
         auto* pDepthBuffer        = m_pBoundDepthStencil->GetTexture();
         FBKey.DSV                 = m_pBoundDepthStencil->GetVulkanImageView();
         RenderPassKey.DSVFormat   = m_pBoundDepthStencil->GetDesc().Format;
+        RenderPassKey.ReadOnlyDSV = m_pBoundDepthStencil->GetDesc().ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL;
         RenderPassKey.SampleCount = static_cast<Uint8>(pDepthBuffer->GetDesc().SampleCount);
     }
     else

@@ -336,6 +336,10 @@ DILIGENT_TYPED_ENUM(TEXTURE_VIEW_TYPE, Uint8)
     /// as the shading rate source for rendering operations
     TEXTURE_VIEW_SHADING_RATE,
 
+    /// A texture view will define a read-only depth stencil view that will be used
+    /// as the target for rendering operations
+    TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL,
+
     /// Helper value that stores that total number of texture views
     TEXTURE_VIEW_NUM_VIEWS
 };
@@ -1840,7 +1844,7 @@ struct DeviceFeatures
     }
 
     /// Comparison operator tests if two structures are equivalent
-    bool operator == (const DeviceFeatures& RHS) const 
+    bool operator == (const DeviceFeatures& RHS) const
     {
         return memcmp(this, &RHS, sizeof(DeviceFeatures)) == 0;
     }
@@ -2073,7 +2077,7 @@ struct SamplerProperties
     constexpr bool operator==(const SamplerProperties& RHS) const
     {
         return BorderSamplingModeSupported   == RHS.BorderSamplingModeSupported   &&
-               AnisotropicFilteringSupported == RHS.AnisotropicFilteringSupported && 
+               AnisotropicFilteringSupported == RHS.AnisotropicFilteringSupported &&
                LODBiasSupported              == RHS.LODBiasSupported;
     }
 #endif
@@ -2107,10 +2111,10 @@ struct WaveOpProperties
     /// \return
     /// - True if all members of the two structures are equal.
     /// - False otherwise.
-    constexpr bool operator==(const WaveOpProperties& RHS) const 
+    constexpr bool operator==(const WaveOpProperties& RHS) const
     {
         return MinSize         == RHS.MinSize         &&
-               MaxSize         == RHS.MaxSize         && 
+               MaxSize         == RHS.MaxSize         &&
                SupportedStages == RHS.SupportedStages &&
                Features        == RHS.Features;
     }
@@ -2145,7 +2149,7 @@ struct BufferProperties
     constexpr bool operator==(const BufferProperties& RHS) const
     {
         return ConstantBufferOffsetAlignment   == RHS.ConstantBufferOffsetAlignment &&
-               StructuredBufferOffsetAlignment == RHS.StructuredBufferOffsetAlignment;         
+               StructuredBufferOffsetAlignment == RHS.StructuredBufferOffsetAlignment;
     }
 #endif
 
@@ -2224,7 +2228,7 @@ struct RayTracingProperties
     /// \return
     /// - True if all members of the two structures are equal.
     /// - False otherwise.
-    constexpr bool operator==(const RayTracingProperties& RHS) const 
+    constexpr bool operator==(const RayTracingProperties& RHS) const
     {
         return MaxRecursionDepth        == RHS.MaxRecursionDepth        &&
                ShaderGroupHandleSize    == RHS.ShaderGroupHandleSize    &&
@@ -2302,7 +2306,7 @@ struct ComputeShaderProperties
     /// \return
     /// - True if all members of the two structures are equal.
     /// - False otherwise.
-    constexpr bool operator == (const ComputeShaderProperties& RHS) const 
+    constexpr bool operator == (const ComputeShaderProperties& RHS) const
     {
         return SharedMemorySize          == RHS.SharedMemorySize          &&
                MaxThreadGroupInvocations == RHS.MaxThreadGroupInvocations &&
@@ -2342,7 +2346,7 @@ struct NDCAttribs
     /// \return
     /// - True if all members of the two structures are equal.
     /// - False otherwise.
-    constexpr bool operator == (const NDCAttribs& RHS) const 
+    constexpr bool operator == (const NDCAttribs& RHS) const
     {
         return MinZ          == RHS.MinZ          &&
                ZtoDepthScale == RHS.ZtoDepthScale &&
@@ -2370,7 +2374,7 @@ struct RenderDeviceShaderVersionInfo
     Version MSL DEFAULT_INITIALIZER({});
 
 #if DILIGENT_CPP_INTERFACE
-    constexpr bool operator == (const RenderDeviceShaderVersionInfo& RHS) const 
+    constexpr bool operator == (const RenderDeviceShaderVersionInfo& RHS) const
     {
         return HLSL   == RHS.HLSL   &&
                GLSL   == RHS.GLSL   &&
@@ -2378,7 +2382,7 @@ struct RenderDeviceShaderVersionInfo
                MSL    == RHS.MSL;
     }
 
-    constexpr bool operator != (const RenderDeviceShaderVersionInfo& RHS) const 
+    constexpr bool operator != (const RenderDeviceShaderVersionInfo& RHS) const
     {
         return !(*this == RHS);
     }
@@ -2444,13 +2448,13 @@ struct RenderDeviceInfo
     /// \return
     /// - True if all members of the two structures are equal.
     /// - False otherwise.
-    constexpr bool operator == (const RenderDeviceInfo& RHS) const 
+    constexpr bool operator == (const RenderDeviceInfo& RHS) const
     {
         return Type             == RHS.Type       &&
                APIVersion       == RHS.APIVersion &&
                Features         == RHS.Features   &&
                NDC              == RHS.NDC        &&
-               MaxShaderVersion == RHS.MaxShaderVersion; 
+               MaxShaderVersion == RHS.MaxShaderVersion;
     }
 #endif
 };
@@ -2590,7 +2594,7 @@ typedef struct AdapterMemoryInfo AdapterMemoryInfo;
 
 /// Defines how shading rates coming from the different sources (base rate,
 /// primitive rate and VRS image rate) are combined.
-/// The combiner may be described by the following function: 
+/// The combiner may be described by the following function:
 ///     ApplyCombiner(SHADING_RATE_COMBINER Combiner, SHADING_RATE OriginalRate, SHADING_RATE NewRate).
 /// See IDeviceContext::SetShadingRate() for details.
 DILIGENT_TYPED_ENUM(SHADING_RATE_COMBINER, Uint8)
@@ -2805,7 +2809,7 @@ DILIGENT_TYPED_ENUM(SHADING_RATE_CAP_FLAGS, Uint16)
     /// Intermediate targets must be scaled to the final resolution in a separate pass.
     /// Intermediate targets can only be sampled with an immutable sampler created with SAMPLER_FLAG_SUBSAMPLED flag.
     /// If supported, rendering to the subsampled render targets may be more optimal.
-    /// 
+    ///
     /// \note  Both NON_SUBSAMPLED and SUBSAMPLED modes may be supported by a device.
     SHADING_RATE_CAP_FLAG_SUBSAMPLED_RENDER_TARGET              = 1u << 12
 };
@@ -2884,7 +2888,7 @@ struct ShadingRateProperties
                Format                   == RHS.Format                   &&
                ShadingRateTextureAccess == RHS.ShadingRateTextureAccess &&
                BindFlags                == RHS.BindFlags                &&
-               MaxSabsampledArraySlices == RHS.MaxSabsampledArraySlices && 
+               MaxSabsampledArraySlices == RHS.MaxSabsampledArraySlices &&
                memcmp(ShadingRates, RHS.ShadingRates, sizeof(ShadingRates)) == 0 &&
                memcmp(MinTileSize,  RHS.MinTileSize,  sizeof(MinTileSize))  == 0 &&
                memcmp(MaxTileSize,  RHS.MaxTileSize,  sizeof(MaxTileSize))  == 0;
@@ -3029,7 +3033,7 @@ DILIGENT_TYPED_ENUM(SPARSE_RESOURCE_CAP_FLAGS, Uint32)
     /// Specifies if textures with mip level dimensions that are not integer multiples of the corresponding
     /// dimensions of the sparse texture tile may be placed in the mip tail.
     /// If this capability is not reported, only mip levels with dimensions smaller than the
-    /// SparseTextureProperties::TilesSize will be placed in the mip tail. 
+    /// SparseTextureProperties::TilesSize will be placed in the mip tail.
     SPARSE_RESOURCE_CAP_FLAG_ALIGNED_MIP_SIZE          = 1u << 12,
 
     /// Specifies whether the device can consistently access non-resident (without bound memory) regions of a resource.
@@ -3109,7 +3113,7 @@ struct SparseResourceProperties
     /// \return
     /// - True if all members of the two structures are equal.
     /// - False otherwise.
-    constexpr bool operator==(const SparseResourceProperties& RHS) const 
+    constexpr bool operator==(const SparseResourceProperties& RHS) const
     {
         return AddressSpaceSize  == RHS.AddressSpaceSize  &&
                ResourceSpaceSize == RHS.ResourceSpaceSize &&

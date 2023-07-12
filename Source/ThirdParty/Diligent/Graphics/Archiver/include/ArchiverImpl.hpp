@@ -56,16 +56,17 @@ class ArchiverImpl final : public ObjectBase<IArchiver>
 public:
     using TBase = ObjectBase<IArchiver>;
 
-    ArchiverImpl(IReferenceCounters* pRefCounters, SerializationDeviceImpl* pDevice);
+    ArchiverImpl(IReferenceCounters*      pRefCounters,
+                 SerializationDeviceImpl* pDevice);
     ~ArchiverImpl();
 
     IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_Archiver, TBase)
 
     /// Implementation of IArchiver::SerializeToBlob().
-    virtual Bool DILIGENT_CALL_TYPE SerializeToBlob(IDataBlob** ppBlob) override final;
+    virtual Bool DILIGENT_CALL_TYPE SerializeToBlob(Uint32 ContentVersion, IDataBlob** ppBlob) override final;
 
     /// Implementation of IArchiver::SerializeToStream().
-    virtual Bool DILIGENT_CALL_TYPE SerializeToStream(IFileStream* pStream) override final;
+    virtual Bool DILIGENT_CALL_TYPE SerializeToStream(Uint32 ContentVersion, IFileStream* pStream) override final;
 
     /// Implementation of IArchiver::AddShader().
     virtual Bool DILIGENT_CALL_TYPE AddShader(IShader* pShader) override final;

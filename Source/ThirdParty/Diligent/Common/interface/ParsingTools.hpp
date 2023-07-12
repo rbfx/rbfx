@@ -67,6 +67,11 @@ inline bool IsStatementSeparator(Char Symbol) noexcept
     return Symbol == ';' || Symbol == '}';
 }
 
+/// Returns true if the character is a digit between 0 and 9
+inline bool IsDigit(Char Symbol) noexcept
+{
+    return Symbol >= '0' && Symbol <= '9';
+}
 
 /// Skips all characters until the end of the line.
 

@@ -584,6 +584,8 @@ void ValidateGraphicsPipelineCreateInfo(const GraphicsPipelineStateCreateInfo& C
             LOG_PSO_ERROR_AND_THROW("NumRenderTargets must be 0 when explicit render pass is used.");
         if (GraphicsPipeline.DSVFormat != TEX_FORMAT_UNKNOWN)
             LOG_PSO_ERROR_AND_THROW("DSVFormat must be TEX_FORMAT_UNKNOWN when explicit render pass is used.");
+        if (GraphicsPipeline.UseReadOnlyDSV)
+            LOG_PSO_ERROR_AND_THROW("UseReadOnlyDSV must be false when explicit render pass is used.");
 
         for (Uint32 rt = 0; rt < MAX_RENDER_TARGETS; ++rt)
         {

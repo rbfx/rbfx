@@ -81,12 +81,14 @@ public:
         static_assert(TEXTURE_VIEW_RENDER_TARGET == 2, "TEXTURE_VIEW_RENDER_TARGET == 2 expected");
         static_assert(TEXTURE_VIEW_DEPTH_STENCIL == 3, "TEXTURE_VIEW_DEPTH_STENCIL == 3 expected");
         static_assert(TEXTURE_VIEW_UNORDERED_ACCESS == 4, "TEXTURE_VIEW_UNORDERED_ACCESS == 4 expected");
+        static_assert(TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL == 6, "TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL == 6 expected");
 #define INIT_TEX_VIEW_FORMAT_INFO(TexFmt, SRVFmt, RTVFmt, DSVFmt, UAVFmt)\
         {\
-            m_ViewFormats[ TexFmt ][TEXTURE_VIEW_SHADER_RESOURCE-1]  = TEX_FORMAT_##SRVFmt; \
-            m_ViewFormats[ TexFmt ][TEXTURE_VIEW_RENDER_TARGET-1]    = TEX_FORMAT_##RTVFmt; \
-            m_ViewFormats[ TexFmt ][TEXTURE_VIEW_DEPTH_STENCIL-1]    = TEX_FORMAT_##DSVFmt; \
-            m_ViewFormats[ TexFmt ][TEXTURE_VIEW_UNORDERED_ACCESS-1] = TEX_FORMAT_##UAVFmt; \
+            m_ViewFormats[ TexFmt ][TEXTURE_VIEW_SHADER_RESOURCE-1]         = TEX_FORMAT_##SRVFmt; \
+            m_ViewFormats[ TexFmt ][TEXTURE_VIEW_RENDER_TARGET-1]           = TEX_FORMAT_##RTVFmt; \
+            m_ViewFormats[ TexFmt ][TEXTURE_VIEW_DEPTH_STENCIL-1]           = TEX_FORMAT_##DSVFmt; \
+            m_ViewFormats[ TexFmt ][TEXTURE_VIEW_UNORDERED_ACCESS-1]        = TEX_FORMAT_##UAVFmt; \
+            m_ViewFormats[ TexFmt ][TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL-1] = TEX_FORMAT_##DSVFmt; \
         }
 
         INIT_TEX_VIEW_FORMAT_INFO( TEX_FORMAT_UNKNOWN,                 UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN);
@@ -428,9 +430,10 @@ const Char* GetTexViewTypeLiteralName(TEXTURE_VIEW_TYPE ViewType)
         INIT_TEX_VIEW_TYPE_NAME( TEXTURE_VIEW_DEPTH_STENCIL );
         INIT_TEX_VIEW_TYPE_NAME( TEXTURE_VIEW_UNORDERED_ACCESS );
         INIT_TEX_VIEW_TYPE_NAME( TEXTURE_VIEW_SHADING_RATE );
+        INIT_TEX_VIEW_TYPE_NAME( TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL );
 #undef  INIT_TEX_VIEW_TYPE_NAME
         // clang-format on
-        static_assert(TEXTURE_VIEW_NUM_VIEWS == TEXTURE_VIEW_SHADING_RATE + 1, "Not all texture views names initialized.");
+        static_assert(TEXTURE_VIEW_NUM_VIEWS == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL + 1, "Not all texture views names initialized.");
 
         bIsInit = true;
     }

@@ -110,6 +110,7 @@ void TextureBaseD3D11::CreateViewInternal(const TextureViewDesc& ViewDesc, IText
             break;
 
             case TEXTURE_VIEW_DEPTH_STENCIL:
+            case TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL:
             {
                 VERIFY(m_Desc.BindFlags & BIND_DEPTH_STENCIL, "BIND_DEPTH_STENCIL is not set");
                 ID3D11DepthStencilView* pDSV = nullptr;

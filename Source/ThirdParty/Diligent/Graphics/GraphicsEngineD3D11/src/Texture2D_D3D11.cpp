@@ -234,7 +234,7 @@ void Texture2D_D3D11::CreateDSV(const TextureViewDesc& DSVDesc, ID3D11DepthStenc
 {
     VERIFY(ppD3D11DSV && *ppD3D11DSV == nullptr, "DSV pointer address is null or contains non-null pointer to an existing object");
 
-    VERIFY(DSVDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL, "Incorrect view type: depth stencil is expected");
+    VERIFY(DSVDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL || DSVDesc.ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL, "Incorrect view type: depth stencil is expected");
     if (!(DSVDesc.TextureDim == RESOURCE_DIM_TEX_2D || DSVDesc.TextureDim == RESOURCE_DIM_TEX_2D_ARRAY))
         LOG_ERROR_AND_THROW("Unsupported texture type. Only RESOURCE_DIM_TEX_2D or RESOURCE_DIM_TEX_2D_ARRAY is allowed");
 

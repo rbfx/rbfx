@@ -307,12 +307,12 @@ void ValidateFramebufferDesc(const FramebufferDesc& Desc, IRenderDevice* pDevice
                 }
 
                 const auto& ViewDesc = pAttachment->GetDesc();
-                if (ViewDesc.ViewType != TEXTURE_VIEW_DEPTH_STENCIL)
+                if (ViewDesc.ViewType != TEXTURE_VIEW_DEPTH_STENCIL && ViewDesc.ViewType != TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL)
                 {
                     LOG_FRAMEBUFFER_ERROR_AND_THROW("attachment at index ", AttchRef.AttachmentIndex,
                                                     " is used as depth-stencil attachment by subpass ",
                                                     i, " of render pass '", RPDesc.Name,
-                                                    "', but is not a TEXTURE_VIEW_DEPTH_STENCIL.");
+                                                    "', but is not a TEXTURE_VIEW_DEPTH_STENCIL or TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL.");
                 }
 
                 const auto& TexDesc = pAttachment->GetTexture()->GetDesc();

@@ -59,6 +59,7 @@ public:
     static std::vector<std::unique_ptr<FindFileData>> Search(const Char* SearchPattern);
 
     static std::string FileDialog(const FileDialogAttribs& DialogAttribs);
+    static std::string OpenFolderDialog(const char* Title);
 
     static std::string GetCurrentDirectory();
     static std::string GetLocalAppDataDirectory(const char* AppName = nullptr, bool Create = true);

@@ -216,7 +216,7 @@ Bool ArchiverFactoryImpl::RemoveDeviceData(const IDataBlob*          pSrcArchive
 
     try
     {
-        DeviceObjectArchive ObjectArchive{pSrcArchive};
+        DeviceObjectArchive ObjectArchive{DeviceObjectArchive::CreateInfo{pSrcArchive}};
 
         while (DeviceFlags != ARCHIVE_DEVICE_DATA_FLAG_NONE)
         {
@@ -250,8 +250,8 @@ Bool ArchiverFactoryImpl::AppendDeviceData(const IDataBlob*          pSrcArchive
 
     try
     {
-        DeviceObjectArchive       ObjectArchive{pSrcArchive};
-        const DeviceObjectArchive DevObjectArchive{pDeviceArchive};
+        DeviceObjectArchive       ObjectArchive{DeviceObjectArchive::CreateInfo{pSrcArchive}};
+        const DeviceObjectArchive DevObjectArchive{DeviceObjectArchive::CreateInfo{pDeviceArchive}};
 
         while (DeviceFlags != ARCHIVE_DEVICE_DATA_FLAG_NONE)
         {
@@ -286,10 +286,10 @@ Bool ArchiverFactoryImpl::MergeArchives(
 
     try
     {
-        DeviceObjectArchive MergedArchive{ppSrcArchives[0]};
+        DeviceObjectArchive MergedArchive{DeviceObjectArchive::CreateInfo{ppSrcArchives[0]}};
         for (Uint32 i = 1; i < NumSrcArchives; ++i)
         {
-            const DeviceObjectArchive Archive{ppSrcArchives[i]};
+            const DeviceObjectArchive Archive{DeviceObjectArchive::CreateInfo{ppSrcArchives[i]}};
             MergedArchive.Merge(Archive);
         }
 
@@ -306,7 +306,7 @@ Bool ArchiverFactoryImpl::PrintArchiveContent(const IDataBlob* pArchive) const
 {
     try
     {
-        DeviceObjectArchive ObjArchive{pArchive};
+        DeviceObjectArchive ObjArchive{DeviceObjectArchive::CreateInfo{pArchive}};
 
         LOG_INFO_MESSAGE(ObjArchive.ToString());
         return true;

@@ -648,7 +648,7 @@ void DearchiverBase::UnpackPipelineStateImpl(const PipelineStateUnpackInfo& Unpa
         m_Cache.PSO.Set(ResType, UnpackInfo.Name, *ppPSO);
 }
 
-bool DearchiverBase::LoadArchive(const IDataBlob* pArchiveData, bool MakeCopy)
+bool DearchiverBase::LoadArchive(const IDataBlob* pArchiveData, Uint32 ContentVersion, bool MakeCopy)
 {
     if (pArchiveData == nullptr)
         return false;
@@ -664,7 +664,7 @@ bool DearchiverBase::LoadArchive(const IDataBlob* pArchiveData, bool MakeCopy)
             }
         }
 
-        auto       pObjArchive = std::make_unique<DeviceObjectArchive>(pArchiveData, MakeCopy);
+        auto       pObjArchive = std::make_unique<DeviceObjectArchive>(DeviceObjectArchive::CreateInfo{pArchiveData, ContentVersion, MakeCopy});
         const auto ArchiveIdx  = m_Archives.size();
 
         const auto& ArchiveResources = pObjArchive->GetNamedResources();
@@ -674,10 +674,19 @@ bool DearchiverBase::LoadArchive(const IDataBlob* pArchiveData, bool MakeCopy)
             const auto*    ResName      = it.first.GetName();
             constexpr auto MakeNameCopy = true;
 
-            const auto inserted = m_ResNameToArchiveIdx.emplace(NamedResourceKey{ResType, ResName, MakeNameCopy}, ArchiveIdx).second;
-            if (!inserted)
+            const auto it_inserted = m_ResNameToArchiveIdx.emplace(NamedResourceKey{ResType, ResName, MakeNameCopy}, ArchiveIdx);
+            if (!it_inserted.second)
             {
-                LOG_ERROR_MESSAGE("Resource with name '", ResName, "' already exists in the archive.");
+                const auto& OtherArchiveResources = m_Archives[it_inserted.first->second].pObjArchive->GetNamedResources();
+                const auto  it_other              = OtherArchiveResources.find(NamedResourceKey{ResType, ResName});
+
+                const auto IsDuplicate =
+                    (it_other != OtherArchiveResources.end()) &&
+                    (it.second == it_other->second);
+                if (!IsDuplicate)
+                {
+                    LOG_ERROR_MESSAGE("Resource with name '", ResName, "' already exists in the archive.");
+                }
             }
         }
 
@@ -865,7 +874,7 @@ bool DearchiverBase::Store(IDataBlob** ppArchive) const
 
     try
     {
-        DeviceObjectArchive MergedArchive;
+        DeviceObjectArchive MergedArchive{!m_Archives.empty() ? m_Archives.front().pObjArchive->GetContentVersion() : 0};
         for (const auto& Archive : m_Archives)
         {
             if (Archive.pObjArchive)
@@ -884,6 +893,11 @@ bool DearchiverBase::Store(IDataBlob** ppArchive) const
 void DearchiverBase::Reset()
 {
     m_Archives.clear();
+}
+
+Uint32 DearchiverBase::GetContentVersion() const
+{
+    return !m_Archives.empty() ? m_Archives.front().pObjArchive->GetContentVersion() : ~0u;
 }
 
 } // namespace Diligent

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,6 +26,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <cstdio>
 #include <sys/stat.h>
@@ -34,6 +35,7 @@
 #include <glob.h>
 #include <mutex>
 #include <pwd.h>
+#include <errno.h>
 
 #include "LinuxFileSystem.hpp"
 #include "Errors.hpp"
@@ -237,6 +239,15 @@ std::string LinuxFileSystem::GetLocalAppDataDirectory(const char* AppName, bool 
 #else
     AppDataDir += ".cache";
 #endif
+
+    if (AppName == nullptr)
+    {
+#ifdef _GNU_SOURCE
+        AppName = program_invocation_short_name;
+#elif defined(__APPLE__)
+        AppName = getprogname();
+#endif
+    }
 
     if (AppName != nullptr)
     {

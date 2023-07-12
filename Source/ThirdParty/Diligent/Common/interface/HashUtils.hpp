@@ -42,6 +42,7 @@
 #include "../../Graphics/GraphicsEngine/interface/PipelineResourceSignature.h"
 #include "../../Graphics/GraphicsEngine/interface/PipelineState.h"
 #include "../../Graphics/GraphicsTools/interface/VertexPool.h"
+#include "../../Common/interface/RefCntAutoPtr.hpp"
 #include "Align.hpp"
 
 #define LOG_HASH_CONFLICTS 1
@@ -1347,6 +1348,16 @@ struct StdHasher
 
 namespace std
 {
+
+template <typename T>
+struct hash<Diligent::RefCntAutoPtr<T>>
+{
+    size_t operator()(const Diligent::RefCntAutoPtr<T>& Key) const noexcept
+    {
+        return std::hash<const T*>{}(static_cast<const T*>(Key));
+    }
+};
+
 
 template <>
 struct hash<Diligent::HashMapStringKey>

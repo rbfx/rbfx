@@ -1580,7 +1580,12 @@ TGlslangToSpvTraverser::TGlslangToSpvTraverser(unsigned int spvVersion,
     builder.setSource(TranslateSourceLanguage(glslangIntermediate->getSource(), glslangIntermediate->getProfile()),
                       glslangIntermediate->getVersion());
 
-    if (options.generateDebugInfo) {
+    if (options.emitNonSemanticShaderDebugSource)
+            this->options.emitNonSemanticShaderDebugInfo = true;
+    if (options.emitNonSemanticShaderDebugInfo)
+            this->options.generateDebugInfo = true;
+
+    if (this->options.generateDebugInfo) {
         builder.setEmitOpLines();
         builder.setSourceFile(glslangIntermediate->getSourceFile());
 
@@ -1607,8 +1612,8 @@ TGlslangToSpvTraverser::TGlslangToSpvTraverser(unsigned int spvVersion,
             builder.addInclude(iItr->first, iItr->second);
     }
 
-    builder.setEmitNonSemanticShaderDebugInfo(options.emitNonSemanticShaderDebugInfo);
-    builder.setEmitNonSemanticShaderDebugSource(options.emitNonSemanticShaderDebugSource);
+    builder.setEmitNonSemanticShaderDebugInfo(this->options.emitNonSemanticShaderDebugInfo);
+    builder.setEmitNonSemanticShaderDebugSource(this->options.emitNonSemanticShaderDebugSource);
 
     stdBuiltins = builder.import("GLSL.std.450");
 
@@ -3393,7 +3398,7 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
             break;
 
 
-    
+
         case glslang::EOpHitObjectRecordHitNV:
         case glslang::EOpHitObjectRecordHitMotionNV:
         case glslang::EOpHitObjectRecordHitWithIndexNV:
@@ -3573,7 +3578,7 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
             } else if (arg == 2) {
                 continue;
             }
-        } 
+        }
 #endif
 
         // for l-values, pass the address, for r-values, pass the value
@@ -3617,8 +3622,8 @@ bool TGlslangToSpvTraverser::visitAggregate(glslang::TVisit visit, glslang::TInt
              } else if ((arg == 10 && glslangOp == glslang::EOpTraceKHR) ||
                         (arg == 11 && glslangOp == glslang::EOpTraceRayMotionNV) ||
                         (arg == 1  && glslangOp == glslang::EOpExecuteCallableKHR) ||
-                        (arg == 1  && glslangOp == glslang::EOpHitObjectExecuteShaderNV) || 
-                        (arg == 11 && glslangOp == glslang::EOpHitObjectTraceRayNV) || 
+                        (arg == 1  && glslangOp == glslang::EOpHitObjectExecuteShaderNV) ||
+                        (arg == 11 && glslangOp == glslang::EOpHitObjectTraceRayNV) ||
                         (arg == 12 && glslangOp == glslang::EOpHitObjectTraceRayMotionNV)) {
                  const int set = glslangOp == glslang::EOpExecuteCallableKHR ? 1 : 0;
                  const int location = glslangOperands[arg]->getAsConstantUnion()->getConstArray()[0].getUConst();
@@ -4501,7 +4506,7 @@ spv::Id TGlslangToSpvTraverser::convertGlslangToSpvType(const glslang::TType& ty
         builder.addCapability(spv::CapabilityShaderInvocationReorderNV);
         spvType = builder.makeHitObjectNVType();
     }
-    break;    
+    break;
 #ifndef GLSLANG_WEB
     case glslang::EbtSpirvType: {
         // GL_EXT_spirv_intrinsics
@@ -4510,50 +4515,56 @@ spv::Id TGlslangToSpvTraverser::convertGlslangToSpvType(const glslang::TType& ty
 
         std::vector<spv::IdImmediate> operands;
         for (const auto& typeParam : spirvType.typeParams) {
-            // Constant expression
-            if (typeParam.constant->isLiteral()) {
-                if (typeParam.constant->getBasicType() == glslang::EbtFloat) {
-                    float floatValue = static_cast<float>(typeParam.constant->getConstArray()[0].getDConst());
-                    unsigned literal;
-                    static_assert(sizeof(literal) == sizeof(floatValue), "sizeof(unsigned) != sizeof(float)");
-                    memcpy(&literal, &floatValue, sizeof(literal));
-                    operands.push_back({false, literal});
-                } else if (typeParam.constant->getBasicType() == glslang::EbtInt) {
-                    unsigned literal = typeParam.constant->getConstArray()[0].getIConst();
-                    operands.push_back({false, literal});
-                } else if (typeParam.constant->getBasicType() == glslang::EbtUint) {
-                    unsigned literal = typeParam.constant->getConstArray()[0].getUConst();
-                    operands.push_back({false, literal});
-                } else if (typeParam.constant->getBasicType() == glslang::EbtBool) {
-                    unsigned literal = typeParam.constant->getConstArray()[0].getBConst();
-                    operands.push_back({false, literal});
-                } else if (typeParam.constant->getBasicType() == glslang::EbtString) {
-                    auto str = typeParam.constant->getConstArray()[0].getSConst()->c_str();
-                    unsigned literal = 0;
-                    char* literalPtr = reinterpret_cast<char*>(&literal);
-                    unsigned charCount = 0;
-                    char ch = 0;
-                    do {
-                        ch = *(str++);
-                        *(literalPtr++) = ch;
-                        ++charCount;
-                        if (charCount == 4) {
-                            operands.push_back({false, literal});
-                            literalPtr = reinterpret_cast<char*>(&literal);
-                            charCount = 0;
-                        }
-                    } while (ch != 0);
-
-                    // Partial literal is padded with 0
-                    if (charCount > 0) {
-                        for (; charCount < 4; ++charCount)
-                            *(literalPtr++) = 0;
+            if (typeParam.constant != nullptr) {
+                // Constant expression
+                if (typeParam.constant->isLiteral()) {
+                    if (typeParam.constant->getBasicType() == glslang::EbtFloat) {
+                        float floatValue = static_cast<float>(typeParam.constant->getConstArray()[0].getDConst());
+                        unsigned literal;
+                        static_assert(sizeof(literal) == sizeof(floatValue), "sizeof(unsigned) != sizeof(float)");
+                        memcpy(&literal, &floatValue, sizeof(literal));
                         operands.push_back({false, literal});
-                    }
+                    } else if (typeParam.constant->getBasicType() == glslang::EbtInt) {
+                        unsigned literal = typeParam.constant->getConstArray()[0].getIConst();
+                        operands.push_back({false, literal});
+                    } else if (typeParam.constant->getBasicType() == glslang::EbtUint) {
+                        unsigned literal = typeParam.constant->getConstArray()[0].getUConst();
+                        operands.push_back({false, literal});
+                    } else if (typeParam.constant->getBasicType() == glslang::EbtBool) {
+                        unsigned literal = typeParam.constant->getConstArray()[0].getBConst();
+                        operands.push_back({false, literal});
+                    } else if (typeParam.constant->getBasicType() == glslang::EbtString) {
+                        auto str = typeParam.constant->getConstArray()[0].getSConst()->c_str();
+                        unsigned literal = 0;
+                        char* literalPtr = reinterpret_cast<char*>(&literal);
+                        unsigned charCount = 0;
+                        char ch = 0;
+                        do {
+                            ch = *(str++);
+                            *(literalPtr++) = ch;
+                            ++charCount;
+                            if (charCount == 4) {
+                                operands.push_back({false, literal});
+                                literalPtr = reinterpret_cast<char*>(&literal);
+                                charCount = 0;
+                            }
+                        } while (ch != 0);
+
+                        // Partial literal is padded with 0
+                        if (charCount > 0) {
+                            for (; charCount < 4; ++charCount)
+                                *(literalPtr++) = 0;
+                            operands.push_back({false, literal});
+                        }
+                    } else
+                        assert(0); // Unexpected type
                 } else
-                    assert(0); // Unexpected type
-            } else
-                operands.push_back({true, createSpvConstant(*typeParam.constant)});
+                    operands.push_back({true, createSpvConstant(*typeParam.constant)});
+            } else {
+                // Type specifier
+                assert(typeParam.type != nullptr);
+                operands.push_back({true, convertGlslangToSpvType(*typeParam.type)});
+            }
         }
 
         assert(spirvInst.set == ""); // Currently, couldn't be extended instructions.
@@ -7200,7 +7211,7 @@ spv::Id TGlslangToSpvTraverser::createUnaryOperation(glslang::TOperator op, OpDe
     case glslang::EOpHitObjectGetShaderRecordBufferHandleNV:
         unaryOp = spv::OpHitObjectGetShaderRecordBufferHandleNV;
         break;
-    
+
 #endif
 
     case glslang::EOpCopyObject:
@@ -9068,7 +9079,7 @@ spv::Id TGlslangToSpvTraverser::createMiscOperation(glslang::TOperator op, spv::
             builder.createNoResultOp(spv::OpReorderThreadWithHitObjectNV, operands);
         }
         return 0;
-    
+
     }
         break;
 #endif // GLSLANG_WEB
@@ -10036,27 +10047,32 @@ int GetSpirvGeneratorVersion()
 }
 
 // Write SPIR-V out to a binary file
-void OutputSpvBin(const std::vector<unsigned int>& spirv, const char* baseName)
+bool OutputSpvBin(const std::vector<unsigned int>& spirv, const char* baseName)
 {
     std::ofstream out;
     out.open(baseName, std::ios::binary | std::ios::out);
-    if (out.fail())
+    if (out.fail()) {
         printf("ERROR: Failed to open file: %s\n", baseName);
+        return false;
+    }
     for (int i = 0; i < (int)spirv.size(); ++i) {
         unsigned int word = spirv[i];
         out.write((const char*)&word, 4);
     }
     out.close();
+    return true;
 }
 
 // Write SPIR-V out to a text file with 32-bit hexadecimal words
-void OutputSpvHex(const std::vector<unsigned int>& spirv, const char* baseName, const char* varName)
+bool OutputSpvHex(const std::vector<unsigned int>& spirv, const char* baseName, const char* varName)
 {
 #if !defined(GLSLANG_WEB)
     std::ofstream out;
     out.open(baseName, std::ios::binary | std::ios::out);
-    if (out.fail())
+    if (out.fail()) {
         printf("ERROR: Failed to open file: %s\n", baseName);
+        return false;
+    }
     out << "\t// " <<
         GetSpirvGeneratorVersion() <<
         GLSLANG_VERSION_MAJOR << "." << GLSLANG_VERSION_MINOR << "." << GLSLANG_VERSION_PATCH <<
@@ -10083,6 +10099,7 @@ void OutputSpvHex(const std::vector<unsigned int>& spirv, const char* baseName, 
     }
     out.close();
 #endif
+    return true;
 }
 
 //

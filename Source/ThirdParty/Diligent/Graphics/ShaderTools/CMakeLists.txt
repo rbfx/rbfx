@@ -185,7 +185,7 @@ if(NOT "${FILE2STRING_PATH}" STREQUAL "")
                     VERBATIM
     )
 else()
-    message(WARNING "File2String utility is currently unavailable on this host system. This is not an issues unless you modify HLSLDefinitions.fxh file")
+    message(WARNING "File2String utility is currently unavailable on this host system. This is not an issue unless you modify HLSLDefinitions.fxh file")
 endif()
 
 set_common_target_properties(Diligent-ShaderTools)

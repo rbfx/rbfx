@@ -1496,17 +1496,21 @@ void DeviceContextD3D11Impl::SetRenderTargetsExt(const SetRenderTargetsAttribs& 
 
         if (m_pBoundDepthStencil)
         {
+            const RESOURCE_STATE NewState = m_pBoundDepthStencil->GetDesc().ViewType == TEXTURE_VIEW_DEPTH_STENCIL ?
+                RESOURCE_STATE_DEPTH_WRITE :
+                RESOURCE_STATE_DEPTH_READ;
+
             auto* pTex = m_pBoundDepthStencil->GetTexture<TextureBaseD3D11>();
             if (Attribs.StateTransitionMode == RESOURCE_STATE_TRANSITION_MODE_TRANSITION)
             {
                 UnbindTextureFromInput(*pTex, pTex->GetD3D11Texture());
                 if (pTex->IsInKnownState())
-                    pTex->SetState(RESOURCE_STATE_DEPTH_WRITE);
+                    pTex->SetState(NewState);
             }
 #ifdef DILIGENT_DEVELOPMENT
             else if (Attribs.StateTransitionMode == RESOURCE_STATE_TRANSITION_MODE_VERIFY)
             {
-                DvpVerifyTextureState(*pTex, RESOURCE_STATE_DEPTH_WRITE, "Setting depth-stencil buffer (DeviceContextD3D11Impl::SetRenderTargets)");
+                DvpVerifyTextureState(*pTex, NewState, "Setting depth-stencil buffer (DeviceContextD3D11Impl::SetRenderTargets)");
             }
 #endif
         }

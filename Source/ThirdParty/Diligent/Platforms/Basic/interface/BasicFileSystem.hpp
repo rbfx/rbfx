@@ -237,6 +237,7 @@ public:
                                        bool        IsToDirectory);
 
     static std::string FileDialog(const FileDialogAttribs& DialogAttribs);
+    static std::string OpenFolderDialog(const char* Title);
 
 protected:
     static String m_strWorkingDirectory;

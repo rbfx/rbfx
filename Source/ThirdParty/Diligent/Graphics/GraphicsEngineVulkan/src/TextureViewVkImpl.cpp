@@ -56,6 +56,7 @@ TextureViewVkImpl::TextureViewVkImpl(IReferenceCounters*                 pRefCou
 TextureViewVkImpl::~TextureViewVkImpl()
 {
     if (m_Desc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL ||
+        m_Desc.ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL ||
         m_Desc.ViewType == TEXTURE_VIEW_RENDER_TARGET ||
         m_Desc.ViewType == TEXTURE_VIEW_SHADING_RATE)
     {

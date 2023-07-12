@@ -1018,7 +1018,7 @@ inline bool DeviceContextBase<ImplementationTraits>::SetRenderTargets(const SetR
     {
         const auto& DSVDesc = Attribs.pDepthStencil->GetDesc();
         const auto& TexDesc = Attribs.pDepthStencil->GetTexture()->GetDesc();
-        DEV_CHECK_ERR(DSVDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL,
+        DEV_CHECK_ERR(DSVDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL || DSVDesc.ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL,
                       "Texture view object named '", DSVDesc.Name ? DSVDesc.Name : "", "' has incorrect view type (", GetTexViewTypeLiteralName(DSVDesc.ViewType), "). Depth stencil view is expected");
         DEV_CHECK_ERR(m_pBoundFramebuffer || (TexDesc.MiscFlags & MISC_TEXTURE_FLAG_MEMORYLESS) == 0,
                       "Memoryless depth buffer '", TexDesc.Name, "' must be used within a framebuffer");

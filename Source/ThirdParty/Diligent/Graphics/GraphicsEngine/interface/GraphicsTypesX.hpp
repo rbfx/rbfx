@@ -750,16 +750,16 @@ struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSig
         return SyncDesc();
     }
 
-    void ClearResources()
+    PipelineResourceSignatureDescX& ClearResources()
     {
         ResCopy.clear();
-        SyncDesc();
+        return SyncDesc();
     }
 
-    void ClearImmutableSamplers()
+    PipelineResourceSignatureDescX& ClearImmutableSamplers()
     {
         ImtblSamCopy.clear();
-        SyncDesc();
+        return SyncDesc();
     }
 
     PipelineResourceSignatureDescX& SetBindingIndex(Uint8 _BindingIndex) noexcept
@@ -782,10 +782,11 @@ struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSig
         return *this;
     }
 
-    void Clear()
+    PipelineResourceSignatureDescX& Clear()
     {
         PipelineResourceSignatureDescX CleanDesc;
         std::swap(*this, CleanDesc);
+        return *this;
     }
 
 private:
@@ -924,22 +925,25 @@ struct PipelineResourceLayoutDescX : PipelineResourceLayoutDesc
         return SyncDesc();
     }
 
-    void ClearVariables()
+    PipelineResourceLayoutDescX& ClearVariables()
     {
         VarCopy.clear();
         SyncDesc();
+        return *this;
     }
 
-    void ClearImmutableSamplers()
+    PipelineResourceLayoutDescX& ClearImmutableSamplers()
     {
         ImtblSamCopy.clear();
         SyncDesc();
+        return *this;
     }
 
-    void Clear()
+    PipelineResourceLayoutDescX& Clear()
     {
         PipelineResourceLayoutDescX CleanDesc;
         std::swap(*this, CleanDesc);
+        return *this;
     }
 
 private:

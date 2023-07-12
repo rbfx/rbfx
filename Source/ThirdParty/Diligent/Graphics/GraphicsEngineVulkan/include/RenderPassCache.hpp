@@ -68,11 +68,13 @@ public:
                            Uint32               _SampleCount,
                            const TEXTURE_FORMAT _RTVFormats[],
                            TEXTURE_FORMAT       _DSVFormat,
-                           bool                 _EnableVRS) :
+                           bool                 _EnableVRS,
+                           bool                 _ReadOnlyDSV) :
             // clang-format off
             NumRenderTargets{static_cast<decltype(NumRenderTargets)>(_NumRenderTargets)},
             SampleCount     {static_cast<decltype(SampleCount)>     (_SampleCount)     },
             EnableVRS       {_EnableVRS                                                },
+            ReadOnlyDSV     {_ReadOnlyDSV                                              },
             DSVFormat       {_DSVFormat                                                }
         // clang-format on
         {
@@ -84,6 +86,7 @@ public:
         Uint8          NumRenderTargets               = 0;
         Uint8          SampleCount                    = 0;
         bool           EnableVRS                      = false;
+        bool           ReadOnlyDSV                    = false;
         TEXTURE_FORMAT DSVFormat                      = TEX_FORMAT_UNKNOWN;
         TEXTURE_FORMAT RTVFormats[MAX_RENDER_TARGETS] = {};
 
@@ -94,7 +97,8 @@ public:
                 NumRenderTargets != rhs.NumRenderTargets ||
                 SampleCount      != rhs.SampleCount      ||
                 EnableVRS        != rhs.EnableVRS        ||
-                DSVFormat        != rhs.DSVFormat)
+                DSVFormat        != rhs.DSVFormat        ||
+                ReadOnlyDSV      != rhs.ReadOnlyDSV)
             {
                 return false;
             }
@@ -111,7 +115,7 @@ public:
         {
             if (Hash == 0)
             {
-                Hash = ComputeHash(NumRenderTargets, SampleCount, DSVFormat, EnableVRS);
+                Hash = ComputeHash(NumRenderTargets, SampleCount, DSVFormat, EnableVRS, ReadOnlyDSV);
                 for (Uint32 rt = 0; rt < NumRenderTargets; ++rt)
                     HashCombine(Hash, RTVFormats[rt]);
             }

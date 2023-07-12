@@ -62,4 +62,18 @@ inline bool IsNullOrEmptyStr(const char* Str)
     return Str == NULL || Str[0] == '\0';
 }
 
+inline const char* GetOrdinalNumberSuffix(unsigned int Num)
+{
+    if (Num == 11 || Num == 12 || Num == 13)
+        return "th";
+
+    switch (Num % 10)
+    {
+        case 1: return "st";
+        case 2: return "nd";
+        case 3: return "rd";
+        default: return "th";
+    }
+}
+
 DILIGENT_END_NAMESPACE // namespace Diligent

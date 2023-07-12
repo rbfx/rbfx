@@ -1,5 +1,6 @@
 ## Current progress
 
+* Archiver and render state cache: added content version (API253004)
 * Added `RenderDeviceShaderVersionInfo` struct and `RenderDeviceInfo::MaxShaderVersion` member (API253003)
 * Added texture component swizzle (API253002)
   * Added `TEXTURE_COMPONENT_SWIZZLE` enum and `TextureComponentMapping` struct

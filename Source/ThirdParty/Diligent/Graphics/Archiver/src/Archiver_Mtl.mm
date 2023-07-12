@@ -288,15 +288,15 @@ struct CompiledShaderMtl final : SerializedShaderImpl::CompiledShader
 
     virtual SerializedData Serialize(ShaderCreateInfo ShaderCI) const override final
     {
-        const auto& Source = ShaderMtl.GetMslData().Source;
+        SerializedData ShaderData = SerializeMslSourceAndMtlArchiveData(ShaderMtl);
         
         ShaderCI.FilePath       = nullptr;
-        ShaderCI.ByteCode       = nullptr;
+        ShaderCI.Source         = nullptr;
         ShaderCI.Macros         = nullptr;
         ShaderCI.SourceLanguage = SHADER_SOURCE_LANGUAGE_MSL_VERBATIM;
-        ShaderCI.Source         = Source.c_str();
-        ShaderCI.SourceLength   = Source.length();
-        
+        ShaderCI.ByteCode       = ShaderData.Ptr();
+        ShaderCI.ByteCodeSize   = ShaderData.Size();
+
         return SerializedShaderImpl::SerializeCreateInfo(ShaderCI);
     }
     
@@ -435,29 +435,24 @@ SerializedData CompileMtlShader(const CompileMtlShaderAttribs& Attribs) noexcept
 
 #undef LOG_PATCH_SHADER_ERROR_AND_THROW
     
-    ShaderMtlImpl::ArchiveData ShaderMtlArchiveData{
+    // Pack shader Mtl acrhive data into the byte code.
+    // The data is unpacked by DearchiverMtlImpl::UnpackShader().
+    const ShaderMtlImpl::ArchiveData ShaderMtlArchiveData{
         std::move(ParsedMsl.BufferInfoMap),
         MslData.ComputeGroupSize,
         IORemapping
     };
     
-    auto SerializeShaderData = [&](auto& Ser){
-        Ser.SerializeBytes(pByteCode->GetConstDataPtr(), pByteCode->GetSize());
-        ShaderMtlImpl::ArchiveData ArchiveData;
-        constexpr auto SerMode = std::remove_reference<decltype(Ser)>::type::GetMode();
-        ShaderMtlSerializer<SerMode>::SerializeArchiveData(Ser, ShaderMtlArchiveData);
-    };
-
     SerializedData ShaderData;
     {
         Serializer<SerializerMode::Measure> Ser;
-        SerializeShaderData(Ser);
+        ShaderMtlSerializer<SerializerMode::Measure>::SerializeBytecode(Ser, pByteCode->GetConstDataPtr(), pByteCode->GetSize(), ShaderMtlArchiveData);
         ShaderData = Ser.AllocateData(GetRawAllocator());
     }
 
     {
         Serializer<SerializerMode::Write> Ser{ShaderData};
-        SerializeShaderData(Ser);
+        ShaderMtlSerializer<SerializerMode::Write>::SerializeBytecode(Ser, pByteCode->GetConstDataPtr(), pByteCode->GetSize(), ShaderMtlArchiveData);
         VERIFY_EXPR(Ser.IsEnded());
     }
 

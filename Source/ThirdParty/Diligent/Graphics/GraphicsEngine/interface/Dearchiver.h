@@ -222,9 +222,15 @@ DILIGENT_BEGIN_INTERFACE(IDearchiver, IObject)
 {
     /// Lodas a device object archive.
 
-    /// \param [in] pArchive - A pointer to the source raw data to load objects from.
-    /// \param [in] MakeCopy - Whether to make a copy of the archive, or use the
-    ///                        the original contents.
+    /// \param [in] pArchive       - A pointer to the source raw data to load objects from.
+    /// \param [in] ContentVersion - The expected version of the content in the archive.
+    ///                              If the version of the content in the archive does not
+    ///                              match the expected version, the method will fail.
+    ///                              If default value is used (~0u aka 0xFFFFFFFF), the version
+    ///                              will not be checked.
+    /// \param [in] MakeCopy       - Whether to make a copy of the archive, or use the
+    ///                              the original contents.
+    ///
     /// \return     true if the archive has been loaded successfully, and false otherwise.
     ///
     /// \note       If the archive was not copied, the dearchiver will keep a strong reference
@@ -238,7 +244,8 @@ DILIGENT_BEGIN_INTERFACE(IDearchiver, IObject)
     ///             with other methods.
     VIRTUAL Bool METHOD(LoadArchive)(THIS_
                                      const IDataBlob* pArchive,
-                                     Bool             MakeCopy DEFAULT_VALUE(false)) PURE;
+                                     Uint32           ContentVersion DEFAULT_VALUE(~0u),
+                                     Bool             MakeCopy       DEFAULT_VALUE(false)) PURE;
 
     /// Unpacks a shader from the device object archive.
 
@@ -311,6 +318,10 @@ DILIGENT_BEGIN_INTERFACE(IDearchiver, IObject)
     /// \warning    This method is not thread-safe and must not be called simultaneously
     ///             with other methods.
     VIRTUAL void METHOD(Reset)(THIS) PURE;
+
+    /// Returns the content version of the archive.
+    /// If no data has been loaded, returns ~0u (aka 0xFFFFFFFF).
+    VIRTUAL Uint32 METHOD(GetContentVersion)(THIS) CONST PURE;
 };
 DILIGENT_END_INTERFACE
 
@@ -325,6 +336,7 @@ DILIGENT_END_INTERFACE
 #    define IDearchiver_UnpackRenderPass(This, ...)        CALL_IFACE_METHOD(Dearchiver, UnpackRenderPass,        This, __VA_ARGS__)
 #    define IDearchiver_Store(This, ...)                   CALL_IFACE_METHOD(Dearchiver, Store,                   This, __VA_ARGS__)
 #    define IDearchiver_Reset(This)                        CALL_IFACE_METHOD(Dearchiver, Reset,                   This)
+#    define IDearchiver_GetContentVersion(This)            CALL_IFACE_METHOD(Dearchiver, GetContentVersion,       This)
 
 #endif
 

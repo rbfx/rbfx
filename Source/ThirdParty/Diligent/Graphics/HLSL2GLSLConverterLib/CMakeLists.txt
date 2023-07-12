@@ -60,7 +60,7 @@ if(NOT "${FILE2STRING_PATH}" STREQUAL "")
                        VERBATIM
     )
 else()
-    message(WARNING "File2String utility is currently unavailable on this host system. This is not an issues unless you modify GLSLDefinitions.h file")
+    message(WARNING "File2String utility is currently unavailable on this host system. This is not an issue unless you modify GLSLDefinitions.h file")
 endif()
 
 source_group("src" FILES ${SOURCE})

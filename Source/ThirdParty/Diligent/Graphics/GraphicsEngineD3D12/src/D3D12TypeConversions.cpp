@@ -281,7 +281,6 @@ void TextureViewDesc_to_D3D12_DSV_DESC(const TextureViewDesc&         DSVDesc,
                                        Uint32                         SampleCount)
 {
     TextureViewDesc_to_D3D_DSV_DESC(DSVDesc, D3D12DSVDesc, SampleCount);
-    D3D12DSVDesc.Flags = D3D12_DSV_FLAG_NONE;
 }
 
 void TextureViewDesc_to_D3D12_UAV_DESC(const TextureViewDesc&            UAVDesc,

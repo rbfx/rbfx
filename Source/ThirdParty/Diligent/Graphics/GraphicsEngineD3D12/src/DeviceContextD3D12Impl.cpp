@@ -1262,18 +1262,15 @@ void DeviceContextD3D12Impl::CommitRenderTargets(RESOURCE_STATE_TRANSITION_MODE 
 
     if (pDSV)
     {
+        const RESOURCE_STATE NewState = m_pBoundDepthStencil->GetDesc().ViewType == TEXTURE_VIEW_DEPTH_STENCIL ?
+            RESOURCE_STATE_DEPTH_WRITE :
+            RESOURCE_STATE_DEPTH_READ;
+
         auto* pTexture = ClassPtrCast<TextureD3D12Impl>(pDSV->GetTexture());
-        //if (bReadOnlyDepth)
-        //{
-        //  TransitionResource(*pTexture, D3D12_RESOURCE_STATE_DEPTH_READ);
-        //  m_pCommandList->OMSetRenderTargets( NumRTVs, RTVHandles, FALSE, &DSV->GetDSV_DepthReadOnly() );
-        //}
-        //else
-        {
-            TransitionOrVerifyTextureState(CmdCtx, *pTexture, StateTransitionMode, RESOURCE_STATE_DEPTH_WRITE, "Setting depth-stencil buffer (DeviceContextD3D12Impl::CommitRenderTargets)");
-            DSVHandle = pDSV->GetCPUDescriptorHandle();
-            VERIFY_EXPR(DSVHandle.ptr != 0);
-        }
+
+        TransitionOrVerifyTextureState(CmdCtx, *pTexture, StateTransitionMode, NewState, "Setting depth-stencil buffer (DeviceContextD3D12Impl::CommitRenderTargets)");
+        DSVHandle = pDSV->GetCPUDescriptorHandle();
+        VERIFY_EXPR(DSVHandle.ptr != 0);
     }
 
     if (NumRenderTargets > 0 || DSVHandle.ptr != 0)

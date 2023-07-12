@@ -523,6 +523,7 @@ void ValidatedAndCorrectTextureViewDesc(const TextureDesc& TexDesc, TextureViewD
                 case TEXTURE_VIEW_RENDER_TARGET:
                 case TEXTURE_VIEW_DEPTH_STENCIL:
                 case TEXTURE_VIEW_UNORDERED_ACCESS:
+                case TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL:
                     ViewDesc.TextureDim = RESOURCE_DIM_TEX_2D_ARRAY;
                     break;
 

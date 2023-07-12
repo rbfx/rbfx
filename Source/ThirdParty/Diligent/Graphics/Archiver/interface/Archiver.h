@@ -85,18 +85,26 @@ DEFINE_FLAG_ENUM_OPERATORS(ARCHIVE_DEVICE_DATA_FLAGS)
 /// Render state object archiver interface
 DILIGENT_BEGIN_INTERFACE(IArchiver, IObject)
 {
-    /// Writes an archive to a memory blob
+    /// Writes archive to a memory blob
+
+    /// \param [in]  ContentVersion - user-provided content version that will be stored in the archive header.
+    /// \param [out] ppBlob         - memory location where a pointer to the data blob will be stored.
 
     /// \note
     ///     The method is *not* thread-safe and must not be called from multiple threads simultaneously.
     VIRTUAL Bool METHOD(SerializeToBlob)(THIS_
+                                         Uint32      ContentVersion,
                                          IDataBlob** ppBlob) PURE;
 
-    /// Writes an archive to a file stream
+    /// Writes archive to a file stream
+
+    /// \param [in]  ContentVersion - user-provided content version that will be stored in the archive header.
+    /// \param [out] pStream        - a pointer to the stream to write the archive to.
 
     /// \note
     ///     The method is *not* thread-safe and must not be called from multiple threads simultaneously.
     VIRTUAL Bool METHOD(SerializeToStream)(THIS_
+                                           Uint32       ContentVersion,
                                            IFileStream* pStream) PURE;
 
     /// Adds a shader to the archive.

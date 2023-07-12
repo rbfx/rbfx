@@ -59,7 +59,8 @@ static DeviceObjectArchive::ResourceType PipelineTypeToArchiveResourceType(PIPEL
     }
 }
 
-ArchiverImpl::ArchiverImpl(IReferenceCounters* pRefCounters, SerializationDeviceImpl* pDevice) :
+ArchiverImpl::ArchiverImpl(IReferenceCounters*      pRefCounters,
+                           SerializationDeviceImpl* pDevice) :
     TBase{pRefCounters},
     m_pSerializationDevice{pDevice}
 {}
@@ -68,13 +69,13 @@ ArchiverImpl::~ArchiverImpl()
 {
 }
 
-Bool ArchiverImpl::SerializeToBlob(IDataBlob** ppBlob)
+Bool ArchiverImpl::SerializeToBlob(Uint32 ContentVersion, IDataBlob** ppBlob)
 {
     DEV_CHECK_ERR(ppBlob != nullptr, "ppBlob must not be null");
     if (ppBlob == nullptr)
         return false;
 
-    DeviceObjectArchive Archive;
+    DeviceObjectArchive Archive{ContentVersion};
 
     // A hash map that maps shader byte code to the index in the archive, for each device type
     std::array<std::unordered_map<size_t, Uint32>, static_cast<size_t>(DeviceType::Count)> BytecodeHashToIdx;
@@ -208,14 +209,14 @@ Bool ArchiverImpl::SerializeToBlob(IDataBlob** ppBlob)
 }
 
 
-Bool ArchiverImpl::SerializeToStream(IFileStream* pStream)
+Bool ArchiverImpl::SerializeToStream(Uint32 ContentVersion, IFileStream* pStream)
 {
     DEV_CHECK_ERR(pStream != nullptr, "pStream must not be null");
     if (pStream == nullptr)
         return false;
 
     RefCntAutoPtr<IDataBlob> pDataBlob;
-    if (!SerializeToBlob(&pDataBlob))
+    if (!SerializeToBlob(ContentVersion, &pDataBlob))
         return false;
 
     return pStream->Write(pDataBlob->GetConstDataPtr(), pDataBlob->GetSize());

@@ -1,1 +1,1 @@
-"v2023.3", "SPIRV-Tools v2023.3 unknown hash, 2023-05-21T19:14:28"
+"v2023.3", "SPIRV-Tools v2023.3 nuget/0.0.19-alpha-83-gee60750414"

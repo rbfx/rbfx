@@ -569,6 +569,7 @@ VulkanUtilities::ImageViewWrapper TextureVkImpl::CreateImageView(TextureViewDesc
     VERIFY(ViewDesc.ViewType == TEXTURE_VIEW_SHADER_RESOURCE ||
            ViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET ||
            ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL ||
+           ViewDesc.ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL ||
            ViewDesc.ViewType == TEXTURE_VIEW_UNORDERED_ACCESS ||
            ViewDesc.ViewType == TEXTURE_VIEW_SHADING_RATE,
            "Unexpected view type");
@@ -604,7 +605,7 @@ VulkanUtilities::ImageViewWrapper TextureVkImpl::CreateImageView(TextureViewDesc
             break;
 
         case RESOURCE_DIM_TEX_3D:
-            if (ViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET || ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL)
+            if (ViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET || ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL || ViewDesc.ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL)
             {
                 VERIFY_EXPR(m_pDevice->GetAdapterInfo().Texture.TextureView2DOn3DSupported);
                 VERIFY(m_Desc.Usage != USAGE_SPARSE, "Can not create 2D texture view on a 3D sparse texture");
@@ -683,7 +684,7 @@ VulkanUtilities::ImageViewWrapper TextureVkImpl::CreateImageView(TextureViewDesc
 
     const auto& FmtAttribs = GetTextureFormatAttribs(CorrectedViewFormat);
 
-    if (ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL)
+    if (ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL || ViewDesc.ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL)
     {
         // When an imageView of a depth/stencil image is used as a depth/stencil framebuffer attachment,
         // the aspectMask is ignored and both depth and stencil image subresources are used. (11.5)

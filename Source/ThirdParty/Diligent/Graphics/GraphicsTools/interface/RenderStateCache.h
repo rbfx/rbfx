@@ -117,9 +117,14 @@ DILIGENT_BEGIN_INTERFACE(IRenderStateCache, IObject)
 {
     /// Loads the cache contents.
 
-    /// \param [in] pCacheData - A pointer to the cache data to load objects from.
-    /// \param [in] MakeCopy   - Whether to make a copy of the data blob, or use the
-    ///                          the original contents.
+    /// \param [in] pCacheData     - A pointer to the cache data to load objects from.
+    /// \param [in] ContentVersion - The expected version of the content in the cache.
+    ///                              If the version of the content in the cache does not
+    ///                              match the expected version, the method will fail.
+    ///                              If default value is used (~0u aka 0xFFFFFFFF), the version
+    ///                              will not be checked.
+    /// \param [in] MakeCopy       - Whether to make a copy of the data blob, or use the
+    ///                              the original contents.
     /// \return     true if the data were loaded successfully, and false otherwise.
     ///
     /// \note       If the data were not copied, the cache will keep a strong reference
@@ -133,7 +138,8 @@ DILIGENT_BEGIN_INTERFACE(IRenderStateCache, IObject)
     ///             with other methods.
     VIRTUAL bool METHOD(Load)(THIS_
                               const IDataBlob* pCacheData,
-                              bool             MakeCopy DEFAULT_VALUE(false)) PURE;
+                              Uint32           ContentVersion DEFAULT_VALUE(~0u), 
+                              bool             MakeCopy       DEFAULT_VALUE(false)) PURE;
 
     /// Creates a shader object from cached data.
 
@@ -191,11 +197,30 @@ DILIGENT_BEGIN_INTERFACE(IRenderStateCache, IObject)
                                                  IPipelineState**                      ppPipelineState) PURE;
 
     /// Writes cache contents to a memory blob.
+
+    /// \param [in]   ContentVersion - The version of the content to write.
+    /// \param [out]  ppBlob         - Address of the memory location where a pointer to the created
+    ///                                data blob will be written.
+    ///
+    /// \return     true if the data was written successfully, and false otherwise.
+    ///
+    /// \remarks    If ContentVersion is ~0u (aka 0xFFFFFFFF), the version of the
+    ///             previously loaded content will be used, or 0 if none was loaded.
     VIRTUAL Bool METHOD(WriteToBlob)(THIS_
+                                     Uint32      ContentVersion, 
                                      IDataBlob** ppBlob) PURE;
 
     /// Writes cache contents to a file stream.
+
+    /// \param [in]  ContentVersion - The version of the content to write.
+    /// \param [in]  pStream        - Pointer to the IFileStream interface to use for writing.
+    ///
+    /// \return     true if the data was written successfully, and false otherwise.
+    ///
+    /// \remarks    If ContentVersion is ~0u (aka 0xFFFFFFFF), the version of the
+    ///             previously loaded content will be used, or 0 if none was loaded.
     VIRTUAL Bool METHOD(WriteToStream)(THIS_
+                                       Uint32       ContentVersion, 
                                        IFileStream* pStream) PURE;
 
 
@@ -216,6 +241,10 @@ DILIGENT_BEGIN_INTERFACE(IRenderStateCache, IObject)
     VIRTUAL Uint32 METHOD(Reload)(THIS_
                                   ReloadGraphicsPipelineCallbackType ReloadGraphicsPipeline DEFAULT_VALUE(nullptr), 
                                   void*                              pUserData              DEFAULT_VALUE(nullptr)) PURE;
+
+    /// Returns the content version of the cache data.
+    /// If no data has been loaded, returns ~0u (aka 0xFFFFFFFF).
+    VIRTUAL Uint32 METHOD(GetContentVersion)(THIS) CONST PURE;
 };
 DILIGENT_END_INTERFACE
 
@@ -234,6 +263,7 @@ DILIGENT_END_INTERFACE
 #    define IRenderStateCache_WriteToStream(This, ...)                 CALL_IFACE_METHOD(RenderStateCache, WriteToStream,                This, __VA_ARGS__)
 #    define IRenderStateCache_Reset(This)                              CALL_IFACE_METHOD(RenderStateCache, Reset,                        This)
 #    define IRenderStateCache_Reload(This, ...)                        CALL_IFACE_METHOD(RenderStateCache, Reload,                       This, __VA_ARGS__)
+#    define IRenderStateCache_GetContentVersion(This)                  CALL_IFACE_METHOD(RenderStateCache, GetContentVersion,            This)
 // clang-format on
 
 #endif

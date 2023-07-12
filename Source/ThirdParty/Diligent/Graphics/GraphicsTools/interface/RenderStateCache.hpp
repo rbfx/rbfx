@@ -73,7 +73,7 @@ public:
         {
             // Save render state cache data to the file
             RefCntAutoPtr<IDataBlob> pCacheData;
-            if (m_pCache->WriteToBlob(&pCacheData))
+            if (m_pCache->WriteToBlob(m_CacheContentVersion, &pCacheData))
             {
                 if (pCacheData)
                 {
@@ -166,7 +166,7 @@ public:
         VERIFY_EXPR(m_pCache);
     }
 
-    void LoadCacheFromFile(const char* FilePath, bool UpdateOnExit)
+    void LoadCacheFromFile(const char* FilePath, bool UpdateOnExit, Uint32 CacheContentVersion = ~0u)
     {
         if (!m_pCache)
         {
@@ -182,6 +182,8 @@ public:
 
         if (UpdateOnExit)
             m_CacheFilePath = FilePath;
+
+        m_CacheContentVersion = CacheContentVersion;
 
         if (!FileSystem::FileExists(FilePath))
             return;
@@ -200,8 +202,24 @@ public:
             return;
         }
 
-        if (!m_pCache->Load(pCacheData))
+        if (!m_pCache->Load(pCacheData, CacheContentVersion))
+        {
             LOG_ERROR_MESSAGE("Failed to load render state cache data from file ", FilePath);
+            return;
+        }
+    }
+
+    void SetCacheFilePath(const char* FilePath)
+    {
+        if (FilePath == nullptr)
+            m_CacheFilePath.clear();
+        else
+            m_CacheFilePath = FilePath;
+    }
+
+    const std::string& GetCacheFilePath() const
+    {
+        return m_CacheFilePath;
     }
 
 private:
@@ -221,6 +239,7 @@ private:
 private:
     RefCntAutoPtr<IRenderStateCache> m_pCache;
     std::string                      m_CacheFilePath;
+    Uint32                           m_CacheContentVersion = 0;
 };
 
 /// Special string to indicate that the render state cache file should be stored in the application data folder.

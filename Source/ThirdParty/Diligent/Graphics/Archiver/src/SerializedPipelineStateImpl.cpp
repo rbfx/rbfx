@@ -366,7 +366,7 @@ ShaderCreateInfo DILIGENT_CALL_TYPE SerializedPipelineStateImpl::GetPatchedShade
         }
         if (Type == DeviceType::Metal_MacOS || Type == DeviceType::Metal_iOS)
         {
-            // See DeviceObjectArchiveMtlImpl::UnpackShader
+            // See DeviceObjectArchiveMtlImpl::UnpackShader and ShaderMtlSerializer<>::SerializeSource
             Serializer<SerializerMode::Read> Ser{SerializedData{const_cast<void*>(ShaderCI.ByteCode), ShaderCI.ByteCodeSize}};
             Ser.SerializeBytes(ShaderCI.ByteCode, ShaderCI.ByteCodeSize);
         }

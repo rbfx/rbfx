@@ -550,6 +550,7 @@ void TextureD3D12Impl::CreateViewInternal(const TextureViewDesc& ViewDesc, IText
             break;
 
             case TEXTURE_VIEW_DEPTH_STENCIL:
+            case TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL:
             {
                 VERIFY(m_Desc.BindFlags & BIND_DEPTH_STENCIL, "BIND_DEPTH_STENCIL is not set");
                 ViewDescriptor = pDeviceD3D12Impl->AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
@@ -658,7 +659,7 @@ void TextureD3D12Impl::CreateRTV(const TextureViewDesc& RTVDesc, D3D12_CPU_DESCR
 
 void TextureD3D12Impl::CreateDSV(const TextureViewDesc& DSVDesc, D3D12_CPU_DESCRIPTOR_HANDLE DSVHandle)
 {
-    VERIFY(DSVDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL, "Incorrect view type: depth stencil is expected");
+    VERIFY(DSVDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL || DSVDesc.ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL, "Incorrect view type: depth stencil is expected");
     VERIFY_EXPR(DSVDesc.Format != TEX_FORMAT_UNKNOWN);
 
     D3D12_DEPTH_STENCIL_VIEW_DESC D3D12_DSVDesc;
