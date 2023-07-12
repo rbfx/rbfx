@@ -66,6 +66,13 @@ namespace Urho3DNet
         }
 
         /// <summary>
+        /// Implicitly convert SharedPtr into boolean.
+        /// </summary>
+        /// <param name="@this">SharedPtr object instance.</param>
+        /// <returns>Returns true if SharedPtr is not null and the stored object pointer is not null either.</returns>
+        public static implicit operator bool(SharedPtr<T> @this) => @this?._ptr != null;
+
+        /// <summary>
         /// Implicitly convert SharedPtr into value.
         /// </summary>
         /// <param name="@this">SharedPtr object instance.</param>

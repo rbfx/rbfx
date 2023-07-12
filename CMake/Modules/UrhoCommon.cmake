@@ -25,6 +25,9 @@ include(${CMAKE_CURRENT_LIST_DIR}/VSSolution.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CCache.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/UrhoOptions.cmake)
 
+set(PERMISSIONS_644 OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
+set(PERMISSIONS_755 OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
+
 if (EMSCRIPTEN AND "${CMAKE_GENERATOR}" STREQUAL "Ninja")
     # Workaround for following error:
     #   The install of the Samples target requires changing an RPATH from the build
@@ -37,10 +40,12 @@ endif ()
 # Ensure variable is in the cache.
 set(RBFX_CSPROJ_LIST "" CACHE STRING "A list of C# projects." FORCE)
 
-if (URHO3D_SDK)
-    # These will be re-set in engine build later, or used in SDK builds.
-    set (PACKAGE_TOOL    "${URHO3D_SDK}/bin/PackageTool")
-    set (SWIG_EXECUTABLE "${URHO3D_SDK}/bin/swig")
+if (DEFINED URHO3D_SDK)
+    if (DESKTOP)
+        message(FATAL_ERROR "URHO3D_SDK is can not be defined for a desktop platform.")
+    else ()
+        include("${URHO3D_SDK}/share/CMake/SDKTools.cmake")
+    endif ()
 endif ()
 
 if (EMSCRIPTEN)
@@ -283,25 +288,25 @@ function (create_pak PAK_DIR PAK_FILE)
     cmake_parse_arguments(PARSE_ARGV 2 PAK "NO_COMPRESS" "" "DEPENDS")
 
     get_filename_component(NAME "${PAK_FILE}" NAME)
-    if (CMAKE_CROSSCOMPILING)
-        if (TARGET Urho3D-Native)
-            set (DEPENDENCY Urho3D-Native)
-        endif ()
-    else ()
-        if (TARGET PackageTool)
-            set (DEPENDENCY PackageTool)
-        endif ()
-    endif ()
 
     if (NOT PAK_NO_COMPRESS)
         list (APPEND PAK_FLAGS -c)
+    endif ()
+
+    if (NOT EXISTS "${PACKAGE_TOOL}")
+        if (TARGET PackageTool)
+            set(PACKAGE_TOOL "$<TARGET_FILE:PackageTool>")
+            set(PACKAGE_TOOL_TARGET PackageTool)
+        else ()
+            message(FATAL_ERROR "PackageTool is required, but missing. Either set URHO3D_SDK to path of installed SDK built on current host or set PACKAGE_TOOL to path of PackageTool executable.")
+        endif ()
     endif ()
 
     set_property (SOURCE ${PAK_FILE} PROPERTY GENERATED TRUE)
     add_custom_command(
         OUTPUT "${PAK_FILE}"
         COMMAND "${PACKAGE_TOOL}" "${PAK_DIR}" "${PAK_FILE}" -q ${PAK_FLAGS}
-        DEPENDS ${DEPENDENCY} ${PAK_DEPENDS}
+        DEPENDS ${PACKAGE_TOOL_TARGET} ${PAK_DEPENDS}
         COMMENT "Packaging ${NAME}"
     )
 endfunction ()
@@ -348,15 +353,11 @@ function (package_resources_web)
         DEPENDS ${PAK_FILES}
         COMMENT "Packaging ${PAK_OUTPUT}"
     )
-    if (CMAKE_CROSSCOMPILING)
-        if (TARGET Urho3D-Native)
-            add_dependencies("${PAK_OUTPUT}" Urho3D-Native)
-        endif ()
-    else ()
-        if (TARGET PackageTool)
-            add_dependencies("${PAK_OUTPUT}" PackageTool)
-        endif ()
+
+    if (TARGET PackageTool)
+        add_dependencies("${PAK_OUTPUT}" PackageTool)
     endif ()
+
     if (PAK_INSTALL_TO)
         install(FILES "${PAK_RELATIVE_DIR}${PAK_OUTPUT}" "${PAK_RELATIVE_DIR}${PAK_OUTPUT}.data" DESTINATION ${PAK_INSTALL_TO})
     endif ()
@@ -412,3 +413,21 @@ function (install_third_party_libs)
     endif ()
 endfunction ()
 
+macro (return_if_not_tool ToolName)
+    string(TOUPPER "${ToolName}" _TOOL_NAME)
+    string(TOUPPER "${URHO3D_TOOLS}" _URHO3D_TOOLS)
+    if (NOT DESKTOP)
+        unset(_URHO3D_TOOLS)
+        # message(STATUS "Tool ${ToolName} OFF (not desktop)")
+        return ()
+    elseif ("${_URHO3D_TOOLS}" MATCHES "1|ON|YES|TRUE|Y|on|yes|true|y|On|Yes|True")
+        # message(STATUS "Tool ${ToolName} ON (all tools enabled)")
+    elseif ("${_TOOL_NAME}" IN_LIST _URHO3D_TOOLS)
+        # message(STATUS "Tool ${ToolName} ON (specific tools enabled)")
+    else ()
+        unset(_URHO3D_TOOLS)
+        # message(STATUS "Tool ${ToolName} OFF")
+        return ()
+    endif ()
+    unset(_URHO3D_TOOLS)
+endmacro ()

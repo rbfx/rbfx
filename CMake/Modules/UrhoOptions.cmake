@@ -20,24 +20,22 @@
 # THE SOFTWARE.
 #
 
-if (NOT MINI_URHO)
-    # Source environment
-    if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
-        execute_process(COMMAND cmd /c set OUTPUT_VARIABLE ENVIRONMENT)
-    else ()
-        execute_process(COMMAND env OUTPUT_VARIABLE ENVIRONMENT)
-    endif ()
-    string(REGEX REPLACE "=[^\n]*\n?" ";" ENVIRONMENT "${ENVIRONMENT}")
-    set(IMPORT_URHO3D_VARIABLES_FROM_ENV BUILD_SHARED_LIBS MINI_URHO SWIG_EXECUTABLE SWIG_DIR)
-    foreach(key ${ENVIRONMENT})
-        list (FIND IMPORT_URHO3D_VARIABLES_FROM_ENV ${key} _index)
-        if ("${key}" MATCHES "^(URHO3D_|CMAKE_|ANDROID_).+" OR ${_index} GREATER -1)
-            if (NOT DEFINED ${key})
-                set (${key} $ENV{${key}} CACHE STRING "" FORCE)
-            endif ()
-        endif ()
-    endforeach()
+# Source environment
+if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
+    execute_process(COMMAND cmd /c set OUTPUT_VARIABLE ENVIRONMENT)
+else ()
+    execute_process(COMMAND env OUTPUT_VARIABLE ENVIRONMENT)
 endif ()
+string(REGEX REPLACE "=[^\n]*\n?" ";" ENVIRONMENT "${ENVIRONMENT}")
+set(IMPORT_URHO3D_VARIABLES_FROM_ENV BUILD_SHARED_LIBS SWIG_EXECUTABLE SWIG_DIR)
+foreach(key ${ENVIRONMENT})
+    list (FIND IMPORT_URHO3D_VARIABLES_FROM_ENV ${key} _index)
+    if ("${key}" MATCHES "^(URHO3D_|CMAKE_|ANDROID_).+" OR ${_index} GREATER -1)
+        if (NOT DEFINED ${key})
+            set (${key} $ENV{${key}} CACHE STRING "" FORCE)
+        endif ()
+    endif ()
+endforeach()
 
 # https://cmake.org/cmake/help/v3.18/policy/CMP0077.html
 # Note that cmake_minimum_required() + project() resets policies, so dependencies using lower CMake version would not
@@ -196,13 +194,7 @@ option                (URHO3D_SHADER_TRANSLATOR  "Enable shader translation from
 option                (URHO3D_SHADER_OPTIMIZER   "Enable shader optimization via SPIRV-Tools"            ON)
 
 # Features
-set (URHO3D_CSHARP_TOOLS ${URHO3D_CSHARP})
 cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "BUILD_SHARED_LIBS;NOT MINGW"   OFF)
-if (NOT MINI_URHO)
-    # Keep C# tools in minimal build if we requested them. This is a workaround for building swig as a native tool during crosscompiling.
-	# Otherwise it would fail because we build tools with -DBUILD_SHARED_LIBS=OFF due to cryptic build errors, and C# is disabled in static builds.
-    set (URHO3D_CSHARP_TOOLS ${URHO3D_CSHARP})
-endif ()
 # Valid values at https://docs.microsoft.com/en-us/dotnet/standard/frameworks
 # At the moment only netstandard2.1 supported
 set(URHO3D_NETFX netstandard2.1 CACHE STRING "TargetFramework value for .NET libraries")
@@ -230,7 +222,7 @@ option               (URHO3D_PARALLEL_BUILD     "MSVC-only: enable parallel buil
 option(URHO3D_PLAYER                            "Build player application"                              ${URHO3D_ENABLE_ALL})
 cmake_dependent_option(URHO3D_EDITOR            "Build editor application"                              ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)
 cmake_dependent_option(URHO3D_EXTRAS            "Build extra tools"                                     ${URHO3D_ENABLE_ALL} "NOT EMSCRIPTEN;NOT MOBILE;NOT UWP"    OFF)
-cmake_dependent_option(URHO3D_TOOLS             "Tools enabled"                                         ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)
+cmake_dependent_option(URHO3D_TOOLS             "Tools enabled. Bool or a list of tool target names."   ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)
 option(URHO3D_SAMPLES                           "Build samples"                                         OFF)
 cmake_dependent_option(URHO3D_MERGE_STATIC_LIBS "Merge third party dependency libs to Urho3D.a"         OFF "NOT BUILD_SHARED_LIBS"                          OFF)
 option(URHO3D_NO_EDITOR_PLAYER_EXE              "Do not build editor or player executables."            OFF)
@@ -265,7 +257,7 @@ if (ANDROID OR EMSCRIPTEN OR IOS)
     if (NOT URHO3D_GLES3)
         set (URHO3D_SYSTEMUI OFF)
     endif ()
-elseif ((URHO3D_TOOLS OR URHO3D_EDITOR) AND NOT MINI_URHO)
+elseif ((URHO3D_TOOLS OR URHO3D_EDITOR))
     set (URHO3D_SYSTEMUI ON)
     set (URHO3D_FILEWATCHER ON)
     set (URHO3D_LOGGING ON)

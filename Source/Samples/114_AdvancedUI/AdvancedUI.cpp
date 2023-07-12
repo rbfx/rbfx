@@ -53,19 +53,20 @@ AdvancedUIWindow::AdvancedUIWindow(Context* context)
     ea::reverse(savedGames_.begin(), savedGames_.end());
 }
 
-void AdvancedUIWindow::OnDataModelInitialized(Rml::DataModelConstructor& constructor)
+void AdvancedUIWindow::OnDataModelInitialized()
 {
-    constructor.RegisterArray<StringVector>();
+    Rml::DataModelConstructor* constructor = GetDataModelConstructor();
+    constructor->RegisterArray<StringVector>();
 
-    constructor.Bind("saved_games", &savedGames_);
-    constructor.Bind("game_to_load", &gameToLoad_);
-    constructor.Bind("is_game_played", &isGamePlayed_);
+    constructor->Bind("saved_games", &savedGames_);
+    constructor->Bind("game_to_load", &gameToLoad_);
+    constructor->Bind("is_game_played", &isGamePlayed_);
 
-    constructor.BindEventCallback("on_continue", WrapCallback(&AdvancedUIWindow::OnContinue));
-    constructor.BindEventCallback("on_new_game", WrapCallback(&AdvancedUIWindow::OnNewGame));
-    constructor.BindEventCallback("on_load_game", WrapCallback(&AdvancedUIWindow::OnLoadGame));
-    constructor.BindEventCallback("on_settings", WrapCallback(&AdvancedUIWindow::OnSettings));
-    constructor.BindEventCallback("on_exit", WrapCallback(&AdvancedUIWindow::OnExit));
+    constructor->BindEventCallback("on_continue", WrapCallback(&AdvancedUIWindow::OnContinue));
+    constructor->BindEventCallback("on_new_game", WrapCallback(&AdvancedUIWindow::OnNewGame));
+    constructor->BindEventCallback("on_load_game", WrapCallback(&AdvancedUIWindow::OnLoadGame));
+    constructor->BindEventCallback("on_settings", WrapCallback(&AdvancedUIWindow::OnSettings));
+    constructor->BindEventCallback("on_exit", WrapCallback(&AdvancedUIWindow::OnExit));
 }
 
 AdvancedUI* AdvancedUIWindow::GetSample() const
