@@ -146,8 +146,8 @@ void TriggerAnimator::HandlePhysicsCollisionEnd(StringHash eventType, VariantMap
 {
     using namespace PhysicsCollisionEnd;
 
-    auto nodeA = static_cast<Node*>(eventData[P_NODEA].GetVoidPtr());
-    auto nodeB = static_cast<Node*>(eventData[P_NODEB].GetVoidPtr());
+    const auto nodeA = static_cast<Node*>(eventData[P_NODEA].GetVoidPtr());
+    const auto nodeB = static_cast<Node*>(eventData[P_NODEB].GetVoidPtr());
     Node* other = nullptr;
     if (nodeA == GetNode())
         other = nodeB;
@@ -158,7 +158,7 @@ void TriggerAnimator::HandlePhysicsCollisionEnd(StringHash eventType, VariantMap
 
 void TriggerAnimator::UpdateSubscriptions()
 {
-    bool subscribe = GetNode() != nullptr && IsEnabledEffective();
+    const bool subscribe = GetNode() != nullptr && IsEnabledEffective();
     if (subscribe != isSubscribed_)
     {
         isSubscribed_ = subscribe;
