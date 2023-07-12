@@ -80,6 +80,7 @@
 
 /// =================================== Extensions ===================================
 #extension GL_ARB_shading_language_420pack: enable
+#extension GL_EXT_clip_cull_distance: enable
 #extension GL_EXT_shader_texture_lod: enable
 #extension GL_OES_standard_derivatives : enable
 
@@ -129,6 +130,10 @@
 
 #if !defined(GL_ES) || defined(GL_EXT_shader_texture_lod)
     #define URHO3D_FEATURE_CUBEMAP_LOD
+#endif
+
+#if !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
+    #define URHO3D_FEATURE_CLIP_DISTANCE
 #endif
 
 #ifdef D3D11

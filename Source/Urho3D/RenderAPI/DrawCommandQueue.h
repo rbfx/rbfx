@@ -56,6 +56,9 @@ public:
     /// Reset queue.
     void Reset();
 
+    /// Set clip plane enabled for all draw commands in the queue.
+    void SetClipPlaneEnabled(bool enable) { clipPlaneEnabled_ = enable; }
+
     /// Set pipeline state. Must be called first.
     void SetPipelineState(PipelineState* pipelineState)
     {
@@ -314,6 +317,9 @@ private:
         RawTexture* texture_{};
         Diligent::ITextureView* view_{};
     };
+
+    /// Whether to enable clip plane.
+    bool clipPlaneEnabled_{};
 
     /// Shader resources.
     ea::vector<ShaderResourceData> shaderResources_;

@@ -7,12 +7,18 @@
 #include "Urho3D/RenderAPI/RenderContext.h"
 
 #include "Urho3D/RenderAPI/DrawCommandQueue.h"
+#include "Urho3D/RenderAPI/GAPIIncludes.h"
 #include "Urho3D/RenderAPI/RawTexture.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/RenderAPI/RenderPool.h"
 
 #include "Urho3D/DebugNew.h"
+
+// Define missing extensions on Android
+#ifndef GL_CLIP_DISTANCE0_EXT
+    #define GL_CLIP_DISTANCE0_EXT 0x3000
+#endif
 
 namespace Urho3D
 {
@@ -34,6 +40,7 @@ RenderContext::RenderContext(RenderDevice* renderDevice)
     , renderPool_(renderDevice->GetRenderPool())
     , handle_(renderDevice->GetImmediateContext())
 {
+    renderDevice_->OnDeviceLost.Subscribe(this, &RenderContext::ResetCachedContextState);
 }
 
 RenderContext::~RenderContext()
@@ -145,6 +152,31 @@ void RenderContext::ClearRenderTarget(unsigned index, const Color& color)
         currentRenderTargets_[index], color.Data(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
+void RenderContext::SetClipPlaneEnabled(bool enable)
+{
+    if (cachedContextState_.clipPlaneEnabled_ == enable)
+        return;
+
+    if (!renderDevice_->GetCaps().clipDistance_)
+        return;
+
+    cachedContextState_.clipPlaneEnabled_ = enable;
+    if (renderDevice_->GetBackend() == RenderBackend::OpenGL)
+    {
+#if GL_SUPPORTED
+        if (enable)
+            glEnable(GL_CLIP_DISTANCE0);
+        else
+            glDisable(GL_CLIP_DISTANCE0);
+#elif GLES_SUPPORTED
+        if (enable)
+            glEnable(GL_CLIP_DISTANCE0_EXT);
+        else
+            glDisable(GL_CLIP_DISTANCE0_EXT);
+#endif
+    }
+}
+
 void RenderContext::Execute(DrawCommandQueue* drawQueue)
 {
     drawQueue->ExecuteInContext(this);
@@ -161,6 +193,11 @@ void RenderContext::UpdateCurrentRenderTargetInfo()
     Diligent::ITextureView* view = !currentRenderTargets_.empty() ? currentRenderTargets_[0] : currentDepthStencil_;
     currentDimensions_ = view ? GetTextureDimensions(view->GetTexture()) : IntVector2::ZERO;
     currentOutputDesc_.multiSample_ = view ? view->GetTexture()->GetDesc().SampleCount : 1;
+}
+
+void RenderContext::ResetCachedContextState()
+{
+    cachedContextState_ = {};
 }
 
 bool RenderContext::IsBoundAsRenderTarget(const RawTexture* texture) const

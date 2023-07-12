@@ -47,6 +47,8 @@ public:
     /// Clear render target at given index. Viewport and scissor are ignored.
     void ClearRenderTarget(unsigned index, const Color& color);
 
+    /// Set whether the clip plane is enabled. Only used for OpenGL.
+    void SetClipPlaneEnabled(bool enable);
     /// Execute draw commands from queue.
     void Execute(DrawCommandQueue* drawQueue);
 
@@ -66,6 +68,7 @@ public:
 
 private:
     void UpdateCurrentRenderTargetInfo();
+    void ResetCachedContextState();
 
     RenderDevice* renderDevice_{};
     SharedPtr<RenderPool> renderPool_;
@@ -80,6 +83,11 @@ private:
     IntVector2 currentDimensions_;
     IntRect currentViewport_;
     /// @}
+
+    struct CachedContextState
+    {
+        bool clipPlaneEnabled_{};
+    } cachedContextState_;
 };
 
 } // namespace Urho3D

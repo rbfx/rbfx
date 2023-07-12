@@ -152,6 +152,7 @@ struct URHO3D_API RenderDeviceCaps
     bool computeShaders_{};
     bool drawBaseVertex_{};
     bool drawBaseInstance_{};
+    bool clipDistance_{};
 
     bool srgbOutput_{};
     bool hdrOutput_{};

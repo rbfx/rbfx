@@ -47,6 +47,8 @@ DrawCommandQueue::DrawCommandQueue(RenderDevice* renderDevice)
 
 void DrawCommandQueue::Reset()
 {
+    clipPlaneEnabled_ = false;
+
     // Reset state accumulators
     currentDrawCommand_ = {};
     currentShaderResourceGroup_ = {};
@@ -104,6 +106,7 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
     // Set common state
     const float blendFactors[] = {1.0f, 1.0f, 1.0f, 1.0f};
     deviceContext->SetBlendFactors(blendFactors);
+    renderContext->SetClipPlaneEnabled(clipPlaneEnabled_);
 
     for (const DrawCommandDescription& cmd : drawCommands_)
     {

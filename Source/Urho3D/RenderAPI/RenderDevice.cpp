@@ -985,6 +985,29 @@ void RenderDevice::InitializeCaps()
     caps_.maxTextureSize_ = adapterInfo.Texture.MaxTexture2DDimension;
     caps_.maxRenderTargetSize_ = adapterInfo.Texture.MaxTexture2DDimension;
     caps_.maxNumRenderTargets_ = MaxRenderTargets;
+
+    ea::unordered_set<ea::string> supportedExtensions;
+#if GL_SUPPORTED || GLES_SUPPORTED
+    if (deviceSettings_.backend_ == RenderBackend::OpenGL)
+    {
+        GLint numExtensions = 0;
+        glGetIntegerv(GL_NUM_EXTENSIONS, &numExtensions);
+        for (int i = 0; i < numExtensions; ++i)
+        {
+            const auto extension = reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, i));
+            supportedExtensions.emplace(extension);
+        }
+    }
+#endif
+
+    if (IsOpenGLESBackend(deviceSettings_.backend_))
+    {
+        caps_.clipDistance_ = supportedExtensions.contains("GL_EXT_clip_cull_distance");
+    }
+    else
+    {
+        caps_.clipDistance_ = true;
+    }
 }
 
 Diligent::RefCntAutoPtr<Diligent::ISwapChain> RenderDevice::CreateSecondarySwapChain(

@@ -445,6 +445,7 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
     const RenderScope renderScope(renderContext_, debugName);
 
     drawQueue_->Reset();
+    drawQueue_->SetClipPlaneEnabled(camera->GetUseClipping());
 
     BatchRenderingContext ctx{ *drawQueue_, *camera };
     ctx.globalResources_ = globalResources;

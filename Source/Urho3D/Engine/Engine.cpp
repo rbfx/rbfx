@@ -324,6 +324,8 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         graphicsSettings.adapterId_ = GetParameter(EP_RENDER_ADAPTER_ID).GetOptional<unsigned>();
         graphicsSettings.shaderTranslationPolicy_ = SelectShaderTranslationPolicy(
             graphicsSettings.backend_, GetParameter(EP_SHADER_POLICY).GetOptional<ShaderTranslationPolicy>());
+        graphicsSettings.logShaderSources_ = GetParameter(EP_SHADER_LOG_SOURCES).GetBool();
+        graphicsSettings.validateShaders_ = GetParameter(EP_VALIDATE_SHADERS).GetBool();
         graphics->Configure(graphicsSettings);
 
         graphics->SetWindowTitle(GetParameter(EP_WINDOW_TITLE).GetString());
