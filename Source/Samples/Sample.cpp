@@ -261,59 +261,6 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
             renderer->SetTextureQuality((MaterialQuality)quality);
         }
 
-// TODO(diligent): Do something about this
-#if 0
-        // Material quality
-        else if (key == '2')
-        {
-            auto quality = (unsigned)renderer->GetMaterialQuality();
-            ++quality;
-            if (quality > QUALITY_HIGH)
-                quality = QUALITY_LOW;
-            renderer->SetMaterialQuality((MaterialQuality)quality);
-        }
-
-        // Specular lighting
-        else if (key == '3')
-            renderer->SetSpecularLighting(!renderer->GetSpecularLighting());
-
-        // Shadow rendering
-        else if (key == '4')
-            renderer->SetDrawShadows(!renderer->GetDrawShadows());
-
-        // Shadow map resolution
-        else if (key == '5')
-        {
-            int shadowMapSize = renderer->GetShadowMapSize();
-            shadowMapSize *= 2;
-            if (shadowMapSize > 2048)
-                shadowMapSize = 512;
-            renderer->SetShadowMapSize(shadowMapSize);
-        }
-
-        // Shadow depth and filtering quality
-        else if (key == '6')
-        {
-            ShadowQuality quality = renderer->GetShadowQuality();
-            quality = (ShadowQuality)(quality + 1);
-            if (quality > SHADOWQUALITY_BLUR_VSM)
-                quality = SHADOWQUALITY_SIMPLE_16BIT;
-            renderer->SetShadowQuality(quality);
-        }
-
-        // Occlusion culling
-        else if (key == '7')
-        {
-            bool occlusion = renderer->GetMaxOccluderTriangles() > 0;
-            occlusion = !occlusion;
-            renderer->SetMaxOccluderTriangles(occlusion ? 5000 : 0);
-        }
-
-        // Instancing
-        else if (key == '8')
-            renderer->SetDynamicInstancing(!renderer->GetDynamicInstancing());
-#endif
-
         // Take screenshot
         else if (key == '9')
         {

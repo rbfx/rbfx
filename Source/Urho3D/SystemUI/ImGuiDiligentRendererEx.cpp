@@ -32,9 +32,9 @@ namespace Urho3D
 namespace
 {
 
-// TODO(diligent): Revisit
-static const unsigned initialVertexBufferSize = 5000;
-static const unsigned initialIndexBufferSize  = 10000;
+// Default sizes are enough for default debug HUD.
+static const unsigned initialVertexBufferSize = 2500;
+static const unsigned initialIndexBufferSize = 5000;
 
 ImGuiDiligentRendererEx* GetBackendData()
 {
@@ -281,7 +281,7 @@ void ImGuiDiligentRendererEx::RenderWindow(ImGuiViewport* viewport, void* render
         }
     }
 
-#if GL_SUPPORTED || GLES_SUPPORTED
+    #if GL_SUPPORTED || GLES_SUPPORTED
     // On OpenGL, set swap chain and invalidate cached context state
     if (renderDevice_->GetBackend() == RenderBackend::OpenGL)
     {
@@ -294,12 +294,11 @@ void ImGuiDiligentRendererEx::RenderWindow(ImGuiViewport* viewport, void* render
 
         glEnable(GL_FRAMEBUFFER_SRGB);
     }
-#endif
+    #endif
 
     const Diligent::SwapChainDesc& swapChainDesc = userData->swapChain_->GetDesc();
     Diligent::ImGuiDiligentRenderer::NewFrame(swapChainDesc.Width, swapChainDesc.Height, swapChainDesc.PreTransform);
 
-    // TODO(diligent): Get rid of depth buffer
     Diligent::ITextureView* renderTarget = userData->swapChain_->GetCurrentBackBufferRTV();
     deviceContext->SetRenderTargets(1, &renderTarget, nullptr, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     if (!(viewport->Flags & ImGuiViewportFlags_NoRendererClear))
@@ -312,11 +311,11 @@ void ImGuiDiligentRendererEx::RenderWindow(ImGuiViewport* viewport, void* render
 
 void ImGuiDiligentRendererEx::SwapBuffers(ImGuiViewport* viewport, void* renderArg)
 {
-#if GL_SUPPORTED || GLES_SUPPORTED
+    #if GL_SUPPORTED || GLES_SUPPORTED
     // On OpenGL, swap chain is presented automatically
     if (renderDevice_->GetBackend() == RenderBackend::OpenGL)
         return;
-#endif
+    #endif
 
     auto userData = GetViewportData(viewport);
     userData->swapChain_->Present(0);

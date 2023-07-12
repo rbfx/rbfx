@@ -22,12 +22,8 @@
 
 #pragma once
 
-#include "Urho3D/Graphics/GraphicsDefs.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
 #include "Urho3D/Shader/ShaderDefs.h"
-
-// TODO(diligent): Revisit
-#include <Diligent/Graphics/GraphicsEngine/interface/Shader.h>
 
 #include <EASTL/optional.h>
 

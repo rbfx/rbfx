@@ -53,16 +53,8 @@ endmacro()
 define_engine_source_files (Container Core IO Math)
 
 if (NOT MINI_URHO)
-    define_engine_source_files (Audio Engine Input Plugins RenderAPI RenderPipeline Resource Scene Script Shader UI Utility)
-    define_engine_source_files (NORECURSE . Graphics)
+    define_engine_source_files (Audio Engine Graphics Input Plugins RenderAPI RenderPipeline Resource Scene Script Shader UI Utility)
     list (REMOVE_ITEM SOURCE_FILES BindAll.cpp)     # Utility file for BindTool.
-    if (URHO3D_OPENGL)
-        define_engine_source_files (Graphics/OpenGL)
-    elseif (URHO3D_D3D11)
-        define_engine_source_files (Graphics/Direct3D11)
-    elseif (URHO3D_DILIGENT)
-        define_engine_source_files (Graphics/Diligent)
-    endif ()
 else ()
     # URHO_MINI is a reduced version of library meant for native tools. Scripting is not needed.
     set (URHO3D_CSHARP OFF)
@@ -341,11 +333,6 @@ if (URHO3D_PROFILING)
     target_link_libraries(Urho3D PUBLIC Tracy)
 endif ()
 
-# TODO(diligent): Remove it later
-if (D3D11_SUPPORTED)
-    target_link_libraries(Urho3D PUBLIC dxguid)
-endif ()
-
 if (WEB)
     target_link_libraries(Urho3D PUBLIC "-s WASM=$<BOOL:EMSCRIPTEN_WASM>")
     if (URHO3D_THREADING)
@@ -363,7 +350,7 @@ if (WEB)
         target_link_libraries(Urho3D PUBLIC "-s INITIAL_MEMORY=${EMSCRIPTEN_TOTAL_MEMORY_BYTES}")
     endif ()
     target_link_libraries(Urho3D PUBLIC "-s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2")
-    # TODO(diligent): Remove FULL_ES3 if glMapBufferRange and glUnmapBuffer are removed from Diligent
+    # TODO: Try to remove FULL_ES3. We only need it for glMapBufferRange and glUnmapBuffer.
     target_link_libraries(Urho3D PUBLIC "-s FULL_ES3=1")
 endif ()
 

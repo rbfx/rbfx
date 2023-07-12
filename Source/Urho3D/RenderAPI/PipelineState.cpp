@@ -451,7 +451,6 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
     Diligent::IShader* hullShader = desc.hullShader_ ? desc.hullShader_->GetHandle() : nullptr;
     Diligent::IShader* geometryShader = desc.geometryShader_ ? desc.geometryShader_->GetHandle() : nullptr;
 
-    // TODO(diligent): Revisit
     for (RawShader* shader :
         {desc.vertexShader_, desc.pixelShader_, desc.domainShader_, desc.hullShader_, desc.geometryShader_})
     {

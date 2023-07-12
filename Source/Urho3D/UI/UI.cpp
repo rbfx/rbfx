@@ -68,6 +68,7 @@
 #include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/RenderAPI/RenderScope.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
 
 #include <cassert>
 #include <SDL.h>
@@ -1056,8 +1057,7 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
         }
         else if (batch.texture_)
         {
-            // TODO(diligent): Revisit constants
-            drawQueue->AddShaderResource("DiffMap", batch.texture_);
+            drawQueue->AddShaderResource(ShaderResources::DiffMap, batch.texture_);
         }
         drawQueue->CommitShaderResources();
 

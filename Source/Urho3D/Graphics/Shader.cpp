@@ -181,7 +181,7 @@ bool Shader::EndLoad()
 
 ea::string Shader::GetShaderName() const
 {
-    // TODO(diligent): Revisit?
+    // TODO: Revisit this in the future, we don't really need GLSL/v2 prefix anymore.
     static const ea::string prefix = "Shaders/GLSL/v2";
     const ea::string& name = GetName();
     if (!name.starts_with(prefix))
@@ -229,7 +229,8 @@ void Shader::ProcessSource(ea::string& code, FileTime& timeStamp, Deserializer& 
     auto* graphics = GetSubsystem<Graphics>();
 
     const ea::string& fileName = source.GetName();
-    const bool isGLSL = true; // TODO(diligent): Do we want to support other shader languages?
+    // TODO: Support HLSL and MSL shaders.
+    const bool isGLSL = true;
 
     // Add file to index
     unsigned& fileIndex = fileToIndexMapping[fileName];

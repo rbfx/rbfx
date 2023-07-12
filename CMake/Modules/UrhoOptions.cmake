@@ -236,9 +236,6 @@ if (WIN32)
     option(URHO3D_WIN32_CONSOLE "Show log messages in win32 console"                     OFF)
 endif ()
 
-# TODO(diligent): Remove this define
-set (URHO3D_DILIGENT ON)
-
 if (URHO3D_CSHARP)
     set (URHO3D_MONOLITHIC_HEADER ON)   # Used by wrapper code
 endif ()
@@ -251,10 +248,6 @@ elseif ((URHO3D_TOOLS OR URHO3D_EDITOR) AND NOT MINI_URHO)
     set (URHO3D_FILEWATCHER ON)
     set (URHO3D_LOGGING ON)
     set (URHO3D_HASH_DEBUG ON)
-endif ()
-
-if (URHO3D_D3D11)
-    set (URHO3D_SHADER_TRANSLATOR ON)
 endif ()
 
 if (EMSCRIPTEN)

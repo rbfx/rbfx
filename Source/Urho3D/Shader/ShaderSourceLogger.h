@@ -32,8 +32,4 @@ namespace Urho3D
 
 URHO3D_API void LogShaderSource(const FileIdentifier& fileName, ea::string_view defines, ea::string_view source);
 
-/// TODO(diligent): Remove this version
-URHO3D_API void LogShaderSource(const ea::string& fileName, ShaderType type, ea::string_view defines,
-    ea::string_view source, ea::string_view extension);
-
 } // namespace Urho3D

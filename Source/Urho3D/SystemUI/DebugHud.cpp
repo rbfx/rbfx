@@ -194,7 +194,7 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
 
     if (mode & DEBUGHUD_SHOW_MODE)
     {
-        // TODO(diligent): Add more stats?
+        // TODO: Add more stats?
         const ImGuiStyle& style = ui::GetStyle();
         const ImGuiContext& g = *ui::GetCurrentContext();
         ui::SetCursorPos({style.WindowPadding.x, ui::GetWindowSize().y - ui::GetStyle().WindowPadding.y - g.Font->FontSize});

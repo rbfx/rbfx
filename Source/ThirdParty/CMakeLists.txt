@@ -190,7 +190,6 @@ if (NOT MINI_URHO)
     # Tracy's headers are included even in non-profiled builds in order to provide stub profiler macros.
     add_subdirectory (tracy)
 
-    # TODO(diligent): Get rid of File2String tool
     set (DILIGENT_INSTALL_CORE OFF CACHE BOOL "")
     set (DILIGENT_NO_GLSLANG ON CACHE BOOL "")
     set (DILIGENT_NO_HLSL ON CACHE BOOL "")

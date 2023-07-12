@@ -247,7 +247,6 @@ enum ShaderType
 };
 
 /// Texture format, equivalent to Diligent::TEXTURE_FORMAT.
-/// TODO(diligent): Use stricter typing?
 using TextureFormat = Diligent::TEXTURE_FORMAT;
 
 /// Vertex declaration element semantics.

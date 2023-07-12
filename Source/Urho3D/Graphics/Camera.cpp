@@ -483,8 +483,7 @@ Matrix4 Camera::GetEffectiveGPUViewProjection(float constantDepthBias) const
 {
     Matrix4 projection = GetGPUProjection();
 
-    // glPolygonOffset is not supported in GL ES 2.0
-    // TODO(diligent): It is supported in GL ES 3.0, get rid of this hack
+    // OpenGL depth offset is weird, emulate it here.
     const bool isOpenGL = graphics_ && graphics_->GetRenderBackend() == RenderBackend::OpenGL;
     if (isOpenGL)
     {

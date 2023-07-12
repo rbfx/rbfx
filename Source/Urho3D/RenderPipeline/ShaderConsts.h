@@ -113,7 +113,7 @@ namespace ShaderConsts
 /// See _Samplers.glsl for descriptions.
 namespace ShaderResources
 {
-    // TODO(diligent): Revisit names
+    // TODO: Revisit names
     URHO3D_SHADER_RESOURCE(DiffMap);
     URHO3D_SHADER_RESOURCE(NormalMap);
     URHO3D_SHADER_RESOURCE(SpecMap);

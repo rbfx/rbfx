@@ -212,7 +212,6 @@ private:
 
     Diligent::RefCntAutoPtr<Diligent::IPipelineState> handle_{};
     Diligent::RefCntAutoPtr<Diligent::IShaderResourceBinding> shaderResourceBinding_{};
-    // TODO(diligent): We may want to actually share reflection objects between pipeline states.
     SharedPtr<ShaderProgramReflection> reflection_;
 };
 

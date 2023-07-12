@@ -214,7 +214,7 @@ bool ShaderVariation::LoadByteCode(const FileIdentifier& binaryShaderName)
 
 void ShaderVariation::SaveByteCode(const FileIdentifier& binaryShaderName)
 {
-    // TODO(diligent): Revisit this
+    // TODO: Enable shader cache in Web. Currently it is disabled because of suboptimal persistent storage support.
     if (GetPlatform() == PlatformId::Web)
         return;
 
@@ -230,30 +230,11 @@ void ShaderVariation::SaveByteCode(const FileIdentifier& binaryShaderName)
 
 ea::string ShaderVariation::GetCachedVariationName(ea::string_view extension) const
 {
-    // TODO(diligent): Extract both typeSuffix and backendSuffix to common place
-    static const ea::string typeSuffix[] = {
-        "vertex",
-        "pixel",
-        "geometry",
-        "hull",
-        "domain",
-        "compute",
-    };
-
-    static const ea::string backendNames[] = {
-        "d3d11",
-        "d3d12",
-        "opengl",
-        "vulkan",
-        "metal",
-    };
-
-    const RenderBackend backend = graphics_->GetRenderBackend();
-    const ea::string& backendName = backendNames[static_cast<unsigned>(backend)];
+    const ea::string backendName = ToString(graphics_->GetRenderBackend()).to_lower();
     const ea::string shortName = owner_->GetShaderName();
-    const ShaderType shaderType = GetShaderType();
+    const ea::string shaderTypeName = ToString(GetShaderType()).to_lower();
     const StringHash definesHash{defines_};
-    return Format("{}_{}_{}_{}.{}", shortName, typeSuffix[shaderType], definesHash.ToString(), backendName, extension);
+    return Format("{}_{}_{}_{}.{}", shortName, shaderTypeName, definesHash.ToString(), backendName, extension);
 }
 
 bool ShaderVariation::NeedShaderTranslation() const

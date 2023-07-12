@@ -222,7 +222,7 @@ private:
         // Then remove it from the string.
         const char placeholder = '\1';
 
-        // TODO(diligent): Optimize it?
+        // TODO: Optimize it?
         for (const std::string& name : samplers_)
         {
             for (size_t pos = hlsl.find(name, 0); pos != std::string::npos; pos = hlsl.find(name, pos))

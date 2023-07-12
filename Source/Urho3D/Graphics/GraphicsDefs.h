@@ -186,41 +186,6 @@ enum RenderSurfaceUpdateMode
     SURFACE_UPDATEALWAYS
 };
 
-/// Shader parameter groups for determining need to update. On APIs that support constant buffers, these correspond to different constant buffers.
-static const char* shaderParameterGroupNames[] = {
-    "Frame",
-    "Camera",
-    "Zone",
-    "Light",
-    "Material",
-    "Object",
-    "Custom",
-    nullptr,
-};
-
-//TODO(diligent): Refactor ShaderVariant to use this
-static const char* elementSemanticNames[] = {
-    "POSITION",
-    "NORMAL",
-    "BINORMAL",
-    "TANGENT",
-    "TEXCOORD",
-    "COLOR",
-    "BLENDWEIGHT",
-    "BLENDINDICES",
-    "OBJECTINDEX",
-    nullptr
-};
-static ea::unordered_map<ea::string, ShaderParameterGroup> constantBuffersNamesLookup = {
-    { "Frame", ShaderParameterGroup::SP_FRAME },
-    { "Camera", ShaderParameterGroup::SP_CAMERA },
-    { "Zone", ShaderParameterGroup::SP_ZONE },
-    { "Light", ShaderParameterGroup::SP_LIGHT },
-    { "Material", ShaderParameterGroup::SP_MATERIAL },
-    { "Object", ShaderParameterGroup::SP_OBJECT },
-    { "Custom", ShaderParameterGroup::SP_CUSTOM }
-};
-
 /// Texture units.
 /// @manualbind
 enum TextureUnit
@@ -381,18 +346,5 @@ URHO3D_FLAGSET(VertexMask, VertexMaskFlags);
 
 static const int MAX_RENDERTARGETS = (int)MaxRenderTargets;
 static const int MAX_VERTEX_STREAMS = (int)MaxVertexStreams;
-
-/// TODO(diligent): revisit
-#ifdef URHO3D_DEBUG
-static ea::string ConstantBufferDebugNames[] = {
-    "FrameCB",
-    "CameraCB",
-    "ZoneCB",
-    "LightCB",
-    "MaterialCB",
-    "ObjectCB",
-    "CustomCB"
-};
-#endif
 
 }

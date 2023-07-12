@@ -39,6 +39,7 @@
 #include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/RenderAPI/RenderScope.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
 
 #include "../DebugNew.h"
 
@@ -253,8 +254,7 @@ void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* i
 
     if (texture)
     {
-        // TODO(diligent): Revisit constants
-        drawQueue_->AddShaderResource("DiffMap", texture);
+        drawQueue_->AddShaderResource(ShaderResources::DiffMap, texture);
         textures_.emplace_back(texture);
     }
     drawQueue_->CommitShaderResources();
