@@ -22,7 +22,7 @@ UNIFORM_BUFFER_END(6, Custom)
 void main()
 {
 #ifdef ALPHAMASK
-    half alpha = texture2D(sDiffMap, vTexCoord).a;
+    half alpha = texture(sDiffMap, vTexCoord).a;
     if (alpha < 0.5)
         discard;
 #endif

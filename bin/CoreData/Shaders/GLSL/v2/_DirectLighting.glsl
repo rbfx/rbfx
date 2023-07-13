@@ -43,7 +43,7 @@
     #ifdef URHO3D_LIGHT_DIRECTIONAL
         #define GetLightDistanceAttenuation(normalizedDistance) 1.0
     #elif defined(URHO3D_LIGHT_CUSTOM_RAMP)
-        #define GetLightDistanceAttenuation(normalizedDistance) texture2D(sLightRampMap, vec2((normalizedDistance), 0.0)).r
+        #define GetLightDistanceAttenuation(normalizedDistance) texture(sLightRampMap, vec2((normalizedDistance), 0.0)).r
     #else
         half GetLightDistanceAttenuation(half normalizedDistance)
         {
@@ -61,13 +61,13 @@
                 bvec3 binEnough = greaterThanEqual(shapePos.xyw, c.xxx);
                 bvec2 smallEnough = lessThanEqual(shapePos.xy, c.yy);
                 return all(binEnough) && all(smallEnough)
-                    ? texture2DProj(sLightSpotMap, shapePos).rgb * cLightColor.rgb
+                    ? textureProj(sLightSpotMap, shapePos).rgb * cLightColor.rgb
                     : vec3(0.0, 0.0, 0.0);
             }
         #elif defined(URHO3D_LIGHT_POINT)
             half3 GetLightColorFromShape(vec4 shapePos)
             {
-                return textureCube(sLightSpotMap, shapePos.xyz).rgb * cLightColor.rgb;
+                return texture(sLightSpotMap, shapePos.xyz).rgb * cLightColor.rgb;
             }
         #elif defined(URHO3D_LIGHT_DIRECTIONALPOINT)
             #define GetLightColorFromShape(shapePos) (cLightColor.rgb)

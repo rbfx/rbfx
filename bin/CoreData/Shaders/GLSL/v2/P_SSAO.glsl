@@ -48,7 +48,7 @@ UNIFORM_BUFFER_END(6, Custom)
 /// Sample view-space position from depth texture.
 vec3 SamplePosition(vec2 texCoord)
 {
-    float depth = texture2D(sDepthBuffer, texCoord).r;
+    float depth = texture(sDepthBuffer, texCoord).r;
     vec4 position = vec4(texCoord, depth, 1.0) * cTextureToView;
     return position.xyz / position.w;
 }
@@ -57,7 +57,7 @@ vec3 SamplePosition(vec2 texCoord)
 #ifdef DEFERRED
 half3 SampleNormal(vec2 texCoord)
 {
-    half3 worldNormal = DecodeNormal(texture2D(sNormalMap, texCoord));
+    half3 worldNormal = DecodeNormal(texture(sNormalMap, texCoord));
     half3 normal = (vec4(worldNormal, 0.0) * cWorldToView).xyz;
     return normal;
 }
@@ -67,7 +67,7 @@ half3 SampleNormal(vec2 texCoord)
 half3 SampleWorldNormal(vec2 texCoord)
 {
 #ifdef DEFERRED
-    return DecodeNormal(texture2D(sNormalMap, texCoord));
+    return DecodeNormal(texture(sNormalMap, texCoord));
 #else
     return vec3(0.0, 0.0, 0.0);
 #endif
@@ -157,7 +157,7 @@ half GetSampleWeight(float baseZ, float sampleZ, half3 baseNormal, half3 sampleN
 void CalculateBlur(inout half4 finalColor, inout half finalWeight,
     vec2 texCoord, vec3 basePosition, half3 baseNormal, half weightFactor)
 {
-    half4 color = texture2D(sDiffMap, texCoord);
+    half4 color = texture(sDiffMap, texCoord);
 
     vec3 position = SamplePosition(texCoord);
     half3 normal = SampleWorldNormal(texCoord);
@@ -204,7 +204,7 @@ void main()
     // Sample textures at the position
     vec3 position = SamplePosition(vTexCoord);
     half3 normal = SampleOrReconstructNormal(position, vTexCoord);
-    half3 noise = DecodeNormal(texture2D(sDiffMap, vTexCoord / cInputInvSize / 4.0));
+    half3 noise = DecodeNormal(texture(sDiffMap, vTexCoord / cInputInvSize / 4.0));
 
     // Sample points around position
     half weightSum = 0.00001;
@@ -238,7 +238,7 @@ void main()
     vec3 basePosition = SamplePosition(baseTexCoord);
     half3 baseNormal = SampleWorldNormal(baseTexCoord);
 
-    half4 occlusion = sampleWeights[0] * texture2D(sDiffMap, baseTexCoord);
+    half4 occlusion = sampleWeights[0] * texture(sDiffMap, baseTexCoord);
     half weightSum = sampleWeights[0];
 
     for (int i = 1; i <= NUM_BLUR_SAMPLES; ++i)
@@ -251,12 +251,12 @@ void main()
 #endif
 
 #ifdef PREVIEW
-    half4 ao = texture2D(sDiffMap, vTexCoord);
+    half4 ao = texture(sDiffMap, vTexCoord);
     gl_FragColor = vec4(ao.a, ao.a, ao.a, 1.0);
 #endif
 
 #ifdef COMBINE
-    half4 ao = texture2D(sDiffMap, vTexCoord);
+    half4 ao = texture(sDiffMap, vTexCoord);
     gl_FragColor = vec4(ao.xyz, 1.0 - ao.a);
 #endif
 }

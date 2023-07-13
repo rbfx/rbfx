@@ -55,7 +55,7 @@ void main()
     #endif
 
     #ifdef DIFFMAP
-        vec4 diffInput = texture2D(sDiffMap, vTexCoord);
+        vec4 diffInput = texture(sDiffMap, vTexCoord);
         #ifdef ALPHAMASK
             if (diffInput.a < 0.5)
                 discard;
@@ -63,7 +63,7 @@ void main()
         diffColor *= diffInput;
     #endif
     #ifdef ALPHAMAP
-        float alphaInput = texture2D(sDiffMap, vTexCoord).r;
+        float alphaInput = texture(sDiffMap, vTexCoord).r;
         diffColor.a *= alphaInput;
     #endif
 

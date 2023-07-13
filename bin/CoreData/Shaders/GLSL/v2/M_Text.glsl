@@ -49,7 +49,7 @@ void main()
     half4 finalColor = vColor;
 
 #ifdef SIGNED_DISTANCE_FIELD
-    half distance = texture2D(sDiffMap, vTexCoord).a;
+    half distance = texture(sDiffMap, vTexCoord).a;
     half width = GetBorderWidth(distance);
 
     half mainWeight = GetOpacity(distance, width);
@@ -57,10 +57,10 @@ void main()
         const float inv2v2 = 0.354; // 1 / (2 * sqrt(2))
         vec2 deltaUV = inv2v2 * fwidth(vTexCoord);
         vec4 square = vec4(vTexCoord - deltaUV, vTexCoord + deltaUV);
-        mainWeight += GetOpacity(texture2D(sDiffMap, square.xy).a, width);
-        mainWeight += GetOpacity(texture2D(sDiffMap, square.zw).a, width);
-        mainWeight += GetOpacity(texture2D(sDiffMap, square.xw).a, width);
-        mainWeight += GetOpacity(texture2D(sDiffMap, square.zy).a, width);
+        mainWeight += GetOpacity(texture(sDiffMap, square.xy).a, width);
+        mainWeight += GetOpacity(texture(sDiffMap, square.zw).a, width);
+        mainWeight += GetOpacity(texture(sDiffMap, square.xw).a, width);
+        mainWeight += GetOpacity(texture(sDiffMap, square.zy).a, width);
         // Divide by 4 instead of 5 to make font sharper
         mainWeight = min(0.25 * mainWeight, 1.0);
     #endif
@@ -71,7 +71,7 @@ void main()
     #endif
 
     #ifdef TEXT_EFFECT_SHADOW
-        half shadowDistance = texture2D(sDiffMap, vTexCoord + cShadowOffset).a;
+        half shadowDistance = texture(sDiffMap, vTexCoord + cShadowOffset).a;
         half shadowWeight = step(0.5, shadowDistance);
         finalColor.rgb = mix(cShadowColor.rgb, finalColor.rgb, shadowWeight);
     #endif
@@ -79,9 +79,9 @@ void main()
     finalColor.a = mainWeight;
 #else
     #ifdef ALPHAMAP
-        finalColor.a *= texture2D(sDiffMap, vTexCoord).r;
+        finalColor.a *= texture(sDiffMap, vTexCoord).r;
     #else
-        finalColor *= texture2D(sDiffMap, vTexCoord);
+        finalColor *= texture(sDiffMap, vTexCoord);
     #endif
 #endif
 

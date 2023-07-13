@@ -40,11 +40,11 @@ void main()
 
     vec2 posOffset = cGBufferInvSize.xy * cFXAAParams.x;
 
-    vec3 rgbNW = texture2D(sDiffMap, vScreenPos + vec2(-posOffset.x, -posOffset.y)).rgb;
-    vec3 rgbNE = texture2D(sDiffMap, vScreenPos + vec2(posOffset.x, -posOffset.y)).rgb;
-    vec3 rgbSW = texture2D(sDiffMap, vScreenPos + vec2(-posOffset.x, posOffset.y)).rgb;
-    vec3 rgbSE = texture2D(sDiffMap, vScreenPos + vec2(posOffset.x, posOffset.y)).rgb;
-    vec3 rgbM  = texture2D(sDiffMap, vScreenPos).rgb;
+    vec3 rgbNW = texture(sDiffMap, vScreenPos + vec2(-posOffset.x, -posOffset.y)).rgb;
+    vec3 rgbNE = texture(sDiffMap, vScreenPos + vec2(posOffset.x, -posOffset.y)).rgb;
+    vec3 rgbSW = texture(sDiffMap, vScreenPos + vec2(-posOffset.x, posOffset.y)).rgb;
+    vec3 rgbSE = texture(sDiffMap, vScreenPos + vec2(posOffset.x, posOffset.y)).rgb;
+    vec3 rgbM  = texture(sDiffMap, vScreenPos).rgb;
 
     vec3 luma = vec3(0.299, 0.587, 0.114);
     float lumaNW = dot(rgbNW, luma);
@@ -73,11 +73,11 @@ void main()
         dir *= cFXAAParams.z;
 
         vec3 rgbA = (1.0/2.0) * (
-            texture2D(sDiffMap, vScreenPos + dir * (1.0/3.0 - 0.5)).xyz +
-            texture2D(sDiffMap, vScreenPos + dir * (2.0/3.0 - 0.5)).xyz);
+            texture(sDiffMap, vScreenPos + dir * (1.0/3.0 - 0.5)).xyz +
+            texture(sDiffMap, vScreenPos + dir * (2.0/3.0 - 0.5)).xyz);
         vec3 rgbB = rgbA * (1.0/2.0) + (1.0/4.0) * (
-            texture2D(sDiffMap, vScreenPos + dir * (0.0/3.0 - 0.5)).xyz +
-            texture2D(sDiffMap, vScreenPos + dir * (3.0/3.0 - 0.5)).xyz);
+            texture(sDiffMap, vScreenPos + dir * (0.0/3.0 - 0.5)).xyz +
+            texture(sDiffMap, vScreenPos + dir * (3.0/3.0 - 0.5)).xyz);
         float lumaB = dot(rgbB, luma);
 
         vec3 rgbOut;

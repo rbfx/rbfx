@@ -89,52 +89,40 @@ vec3 DirectionToUV(vec3 vec, vec2 bias)
     }
 
     /// Sample shadow map texture with given offset
-    // TODO(diligent): Get rid of "identity"
-    #define SampleShadowOffset(shadowPos, identity, dx, dy) \
+    #define SampleShadowOffset(shadowPos, dx, dy) \
         textureProjOffset(sShadowMap, (shadowPos), ivec2(dx, dy))
-
-    /// Return UV coordinate offset corresponding to one texel
-    #ifndef URHO3D_LIGHT_POINT
-        #define GetShadowTexelOffset(shadowPos_w) (cShadowMapInvSize * shadowPos_w)
-    #else
-        #define GetShadowTexelOffset(shadowPos_w) cShadowMapInvSize
-    #endif
 #endif
 
 /// Sample shadow map texture with predefined filtering at given 4-coordinate
 half SampleShadowFiltered(vec4 shadowPos)
 {
     #if defined(URHO3D_VARIANCE_SHADOW_MAP)
-        vec2 moments = texture2D(sShadowMap, shadowPos.xy / shadowPos.w).rg;
+        vec2 moments = texture(sShadowMap, shadowPos.xy / shadowPos.w).rg;
         return cShadowIntensity.y + cShadowIntensity.x * EvaluateVarianceShadow(moments, shadowPos.z / shadowPos.w);
 
     #elif URHO3D_SHADOW_PCF_SIZE == 2
-        vec2 offsets = GetShadowTexelOffset(shadowPos.w);
-
         half4 shadowSamples;
-        shadowSamples.x = SampleShadow(shadowPos);
-        shadowSamples.y = SampleShadow(shadowPos + vec4(offsets.x, 0.0, 0.0, 0.0));
-        shadowSamples.z = SampleShadow(shadowPos + vec4(0.0, offsets.y, 0.0, 0.0));
-        shadowSamples.w = SampleShadow(shadowPos + vec4(offsets.xy, 0.0, 0.0));
+        shadowSamples.x = SampleShadowOffset(shadowPos, 0, 0);
+        shadowSamples.y = SampleShadowOffset(shadowPos, 1, 0);
+        shadowSamples.z = SampleShadowOffset(shadowPos, 0, 1);
+        shadowSamples.w = SampleShadowOffset(shadowPos, 1, 1);
 
         return cShadowIntensity.y + dot(cShadowIntensity.xxxx, shadowSamples);
 
     #elif URHO3D_SHADOW_PCF_SIZE == 3
-        vec2 offsets = GetShadowTexelOffset(shadowPos.w);
-
         half sample4 = SampleShadow(shadowPos);
 
         half4 sample2;
-        sample2.x = SampleShadowOffset(shadowPos, offsets, -1,  0);
-        sample2.y = SampleShadowOffset(shadowPos, offsets,  1,  0);
-        sample2.z = SampleShadowOffset(shadowPos, offsets,  0, -1);
-        sample2.w = SampleShadowOffset(shadowPos, offsets,  0,  1);
+        sample2.x = SampleShadowOffset(shadowPos, -1,  0);
+        sample2.y = SampleShadowOffset(shadowPos,  1,  0);
+        sample2.z = SampleShadowOffset(shadowPos,  0, -1);
+        sample2.w = SampleShadowOffset(shadowPos,  0,  1);
 
         half4 sample1;
-        sample1.x = SampleShadowOffset(shadowPos, offsets, -1, -1);
-        sample1.y = SampleShadowOffset(shadowPos, offsets,  1, -1);
-        sample1.z = SampleShadowOffset(shadowPos, offsets, -1,  1);
-        sample1.w = SampleShadowOffset(shadowPos, offsets,  1,  1);
+        sample1.x = SampleShadowOffset(shadowPos, -1, -1);
+        sample1.y = SampleShadowOffset(shadowPos,  1, -1);
+        sample1.z = SampleShadowOffset(shadowPos, -1,  1);
+        sample1.w = SampleShadowOffset(shadowPos,  1,  1);
 
         const half3 factors = vec3(4.0 / 16.0, 2.0 / 16.0, 1.0 / 16.0);
         half average = sample4 * factors.x
@@ -144,39 +132,37 @@ half SampleShadowFiltered(vec4 shadowPos)
         return cShadowIntensity.y + cShadowIntensity.x * average;
 
     #elif URHO3D_SHADOW_PCF_SIZE == 5
-        vec2 offsets = GetShadowTexelOffset(shadowPos.w);
-
         half sample41 = SampleShadow(shadowPos);
 
         half4 sample26;
-        sample26.x = SampleShadowOffset(shadowPos, offsets, -1,  0);
-        sample26.y = SampleShadowOffset(shadowPos, offsets,  1,  0);
-        sample26.z = SampleShadowOffset(shadowPos, offsets,  0, -1);
-        sample26.w = SampleShadowOffset(shadowPos, offsets,  0,  1);
+        sample26.x = SampleShadowOffset(shadowPos, -1,  0);
+        sample26.y = SampleShadowOffset(shadowPos,  1,  0);
+        sample26.z = SampleShadowOffset(shadowPos,  0, -1);
+        sample26.w = SampleShadowOffset(shadowPos,  0,  1);
 
         half4 sample16;
-        sample16.x = SampleShadowOffset(shadowPos, offsets, -1, -1);
-        sample16.y = SampleShadowOffset(shadowPos, offsets,  1, -1);
-        sample16.z = SampleShadowOffset(shadowPos, offsets, -1,  1);
-        sample16.w = SampleShadowOffset(shadowPos, offsets,  1,  1);
+        sample16.x = SampleShadowOffset(shadowPos, -1, -1);
+        sample16.y = SampleShadowOffset(shadowPos,  1, -1);
+        sample16.z = SampleShadowOffset(shadowPos, -1,  1);
+        sample16.w = SampleShadowOffset(shadowPos,  1,  1);
 
         half4 sample7;
-        sample7.x = SampleShadowOffset(shadowPos, offsets, -2,  0);
-        sample7.y = SampleShadowOffset(shadowPos, offsets,  2,  0);
-        sample7.z = SampleShadowOffset(shadowPos, offsets,  0, -2);
-        sample7.w = SampleShadowOffset(shadowPos, offsets,  0,  2);
+        sample7.x = SampleShadowOffset(shadowPos, -2,  0);
+        sample7.y = SampleShadowOffset(shadowPos,  2,  0);
+        sample7.z = SampleShadowOffset(shadowPos,  0, -2);
+        sample7.w = SampleShadowOffset(shadowPos,  0,  2);
 
         half4 sample4_1;
-        sample4_1.x = SampleShadowOffset(shadowPos, offsets, -2, -1);
-        sample4_1.y = SampleShadowOffset(shadowPos, offsets, -1, -2);
-        sample4_1.z = SampleShadowOffset(shadowPos, offsets,  2, -1);
-        sample4_1.w = SampleShadowOffset(shadowPos, offsets,  1, -2);
+        sample4_1.x = SampleShadowOffset(shadowPos, -2, -1);
+        sample4_1.y = SampleShadowOffset(shadowPos, -1, -2);
+        sample4_1.z = SampleShadowOffset(shadowPos,  2, -1);
+        sample4_1.w = SampleShadowOffset(shadowPos,  1, -2);
 
         half4 sample4_2;
-        sample4_2.x = SampleShadowOffset(shadowPos, offsets, -2, 1);
-        sample4_2.y = SampleShadowOffset(shadowPos, offsets, -1, 2);
-        sample4_2.z = SampleShadowOffset(shadowPos, offsets,  2, 1);
-        sample4_2.w = SampleShadowOffset(shadowPos, offsets,  1, 2);
+        sample4_2.x = SampleShadowOffset(shadowPos, -2, 1);
+        sample4_2.y = SampleShadowOffset(shadowPos, -1, 2);
+        sample4_2.z = SampleShadowOffset(shadowPos,  2, 1);
+        sample4_2.w = SampleShadowOffset(shadowPos,  1, 2);
 
         const half4 factors = vec4(26.0 / 273.0, 16.0 / 273.0, 7.0 / 273.0, 4.0 / 273.0);
         half average = sample41 * (41.0 / 273.0)

@@ -50,7 +50,7 @@ void main()
 #ifdef URHO3D_PIXEL_SHADER
 void main()
 {
-    vec3 finalColor = texture2D(sDiffMap, vScreenPos).rgb;
+    vec3 finalColor = texture(sDiffMap, vScreenPos).rgb;
 
 #ifdef REINHARD
     finalColor = Reinhard(finalColor);

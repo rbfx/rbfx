@@ -43,30 +43,30 @@ void main()
 void main()
 {
 #ifdef BRIGHT
-    half3 inputColor = texture2D(sDiffMap, vTexCoord).rgb;
+    half3 inputColor = texture(sDiffMap, vTexCoord).rgb;
     gl_FragColor = vec4(BrightFilter(inputColor), 1.0);
 #endif
 
 #ifdef BLURH
-    half3 inputColor = texture2D(sDiffMap, vTexCoord + vec2(-2.0, 0.0) * cInputInvSize).rgb * 0.1;
-    inputColor += texture2D(sDiffMap, vTexCoord + vec2(-1.0, 0.0) * cInputInvSize).rgb * 0.25;
-    inputColor += texture2D(sDiffMap, vTexCoord + vec2(0.0, 0.0) * cInputInvSize).rgb * 0.3;
-    inputColor += texture2D(sDiffMap, vTexCoord + vec2(1.0, 0.0) * cInputInvSize).rgb * 0.25;
-    inputColor += texture2D(sDiffMap, vTexCoord + vec2(2.0, 0.0) * cInputInvSize).rgb * 0.1;
+    half3 inputColor = texture(sDiffMap, vTexCoord + vec2(-2.0, 0.0) * cInputInvSize).rgb * 0.1;
+    inputColor += texture(sDiffMap, vTexCoord + vec2(-1.0, 0.0) * cInputInvSize).rgb * 0.25;
+    inputColor += texture(sDiffMap, vTexCoord + vec2(0.0, 0.0) * cInputInvSize).rgb * 0.3;
+    inputColor += texture(sDiffMap, vTexCoord + vec2(1.0, 0.0) * cInputInvSize).rgb * 0.25;
+    inputColor += texture(sDiffMap, vTexCoord + vec2(2.0, 0.0) * cInputInvSize).rgb * 0.1;
     gl_FragColor = vec4(inputColor, 1.0);
 #endif
 
 #ifdef BLURV
-    half3 inputColor = texture2D(sDiffMap, vTexCoord + vec2(0.0, -2.0) * cInputInvSize).rgb * 0.1;
-    inputColor += texture2D(sDiffMap, vTexCoord + vec2(0.0, -1.0) * cInputInvSize).rgb * 0.25;
-    inputColor += texture2D(sDiffMap, vTexCoord + vec2(0.0, 0.0) * cInputInvSize).rgb * 0.3;
-    inputColor += texture2D(sDiffMap, vTexCoord + vec2(0.0, 1.0) * cInputInvSize).rgb * 0.25;
-    inputColor += texture2D(sDiffMap, vTexCoord + vec2(0.0, 2.0) * cInputInvSize).rgb * 0.1;
+    half3 inputColor = texture(sDiffMap, vTexCoord + vec2(0.0, -2.0) * cInputInvSize).rgb * 0.1;
+    inputColor += texture(sDiffMap, vTexCoord + vec2(0.0, -1.0) * cInputInvSize).rgb * 0.25;
+    inputColor += texture(sDiffMap, vTexCoord + vec2(0.0, 0.0) * cInputInvSize).rgb * 0.3;
+    inputColor += texture(sDiffMap, vTexCoord + vec2(0.0, 1.0) * cInputInvSize).rgb * 0.25;
+    inputColor += texture(sDiffMap, vTexCoord + vec2(0.0, 2.0) * cInputInvSize).rgb * 0.1;
     gl_FragColor = vec4(inputColor, 1.0);
 #endif
 
 #ifdef COMBINE
-    half3 bloom = cIntensity * texture2D(sDiffMap, vTexCoord).rgb;
+    half3 bloom = cIntensity * texture(sDiffMap, vTexCoord).rgb;
     gl_FragColor = vec4(bloom, 1.0);
 #endif
 }

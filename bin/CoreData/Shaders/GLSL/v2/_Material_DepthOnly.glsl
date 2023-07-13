@@ -25,7 +25,7 @@ void FillVertexOutputs(VertexTransform vertexTransform)
 void DefaultPixelShader()
 {
 #ifdef ALPHAMASK
-    fixed alpha = texture2D(sDiffMap, vTexCoord.xy).a;
+    fixed alpha = texture(sDiffMap, vTexCoord.xy).a;
     if (alpha < 0.5)
         discard;
 #endif

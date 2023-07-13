@@ -28,7 +28,7 @@ void main()
 SAMPLER(0, sampler2D sTexture)
 void main()
 {
-    vec4 color = vColor * texture2D(sTexture, vTexCoord);
+    vec4 color = vColor * texture(sTexture, vTexCoord);
 #ifdef URHO3D_LINEAR_OUTPUT
     color.rgb = GammaToLinearSpace(color.rgb);
 #endif

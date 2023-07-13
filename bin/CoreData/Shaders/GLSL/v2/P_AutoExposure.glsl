@@ -20,10 +20,10 @@ UNIFORM_BUFFER_END(6, Custom)
 float GatherAvgLum(sampler2D texSampler, vec2 texCoord)
 {
     float lumAvg = 0.0;
-    lumAvg += texture2D(texSampler, texCoord + vec2(1.0, -1.0) * cInputInvSize).r;
-    lumAvg += texture2D(texSampler, texCoord + vec2(-1.0, 1.0) * cInputInvSize).r;
-    lumAvg += texture2D(texSampler, texCoord + vec2(1.0, 1.0) * cInputInvSize).r;
-    lumAvg += texture2D(texSampler, texCoord + vec2(1.0, -1.0) * cInputInvSize).r;
+    lumAvg += texture(texSampler, texCoord + vec2(1.0, -1.0) * cInputInvSize).r;
+    lumAvg += texture(texSampler, texCoord + vec2(-1.0, 1.0) * cInputInvSize).r;
+    lumAvg += texture(texSampler, texCoord + vec2(1.0, 1.0) * cInputInvSize).r;
+    lumAvg += texture(texSampler, texCoord + vec2(1.0, -1.0) * cInputInvSize).r;
     return lumAvg / 4.0;
 }
 
@@ -55,10 +55,10 @@ void main()
 #ifdef LUMINANCE64
     const vec3 LumWeights = vec3(0.2126, 0.7152, 0.0722);
     float logLumSum = 0.0;
-    logLumSum += log(dot(texture2D(sDiffMap, vTexCoord + vec2(-0.5, -0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
-    logLumSum += log(dot(texture2D(sDiffMap, vTexCoord + vec2(-0.5, 0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
-    logLumSum += log(dot(texture2D(sDiffMap, vTexCoord + vec2(0.5, 0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
-    logLumSum += log(dot(texture2D(sDiffMap, vTexCoord + vec2(0.5, -0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
+    logLumSum += log(dot(texture(sDiffMap, vTexCoord + vec2(-0.5, -0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
+    logLumSum += log(dot(texture(sDiffMap, vTexCoord + vec2(-0.5, 0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
+    logLumSum += log(dot(texture(sDiffMap, vTexCoord + vec2(0.5, 0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
+    logLumSum += log(dot(texture(sDiffMap, vTexCoord + vec2(0.5, -0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
     gl_FragColor.r = logLumSum * 0.25;
 #endif
 
@@ -75,16 +75,16 @@ void main()
 #endif
 
 #ifdef ADAPTLUMINANCE
-    float previousLuminance = texture2D(sDiffMap, vTexCoord).r;
-    float currentLuminance = texture2D(sNormalMap, vTexCoord).r;
+    float previousLuminance = texture(sDiffMap, vTexCoord).r;
+    float currentLuminance = texture(sNormalMap, vTexCoord).r;
     gl_FragColor.r = previousLuminance + (currentLuminance - previousLuminance) * (1.0 - exp(-cDeltaTime * cAdaptRate));
 #endif
 
 #ifdef EXPOSURE
-    vec3 color = texture2D(sDiffMap, vScreenPos).rgb;
+    vec3 color = texture(sDiffMap, vScreenPos).rgb;
 
     #ifdef AUTOEXPOSURE
-        float luminance = texture2D(sNormalMap, vTexCoord).r;
+        float luminance = texture(sNormalMap, vTexCoord).r;
         float ev100 = GetEV100(luminance);
         float exposure = clamp(GetExposure(ev100), cMinMaxExposure.x, cMinMaxExposure.y);
     #else

@@ -29,7 +29,7 @@ void main()
 
 vec4 Sample(vec2 offset)
 {
-    return texture2D(sDiffMap, vTexCoord + offset * cInputInvSize);
+    return texture(sDiffMap, vTexCoord + offset * cInputInvSize);
 }
 
 void main()

@@ -160,7 +160,7 @@
     #define URHO3D_NUM_RENDER_TARGETS 1
 #endif
 
-// TODO(diligent): Remove gl_FragColor and gl_FragData
+/// Define gl_FragColor and gl_FragData for convenience.
 #if defined(URHO3D_PIXEL_SHADER) && URHO3D_NUM_RENDER_TARGETS > 0
     out vec4 _fragData[URHO3D_NUM_RENDER_TARGETS];
 
@@ -187,18 +187,8 @@
 #define UNIFORM_BUFFER_END(index, name) };
 #define SAMPLER(index, decl) _URHO3D_LAYOUT(index) uniform decl;
 
-// TODO(diligent): Get rid of UNIFORM_HIGHP and SAMPLER_HIGHP
 #define UNIFORM_HIGHP(decl) UNIFORM(highp decl)
 #define SAMPLER_HIGHP(index, decl) SAMPLER(index, highp decl)
-
-// TODO(diligent): Get rid of those aliases
-#define texture2D texture
-#define texture2DProj textureProj
-#define texture3D texture
-#define textureCube texture
-#define textureCubeLod textureLod
-#define texture2DLod textureLod
-#define texture2DLodOffset textureLodOffset
 
 
 /// =================================== Consolidate ShaderProgramCompositor defines ===================================
