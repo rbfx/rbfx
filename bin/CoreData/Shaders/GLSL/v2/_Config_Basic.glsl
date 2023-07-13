@@ -224,19 +224,9 @@
     #define SAMPLER(index, decl) uniform decl;
 #endif
 
-#ifndef GL_ES
-    #define UNIFORM_HIGHP(decl) UNIFORM(decl)
-    #define SAMPLER_HIGHP(index, decl) SAMPLER(index, decl)
-#else
-    /// Use max available precision by default
-    #ifdef URHO3D_FEATURE_HIGHP_IN_STAGE
-        #define UNIFORM_HIGHP(decl) UNIFORM(decl)
-        #define SAMPLER_HIGHP(index, decl) SAMPLER(index, highp decl)
-    #else
-        #define UNIFORM_HIGHP(decl)
-        #define SAMPLER_HIGHP(index, decl) SAMPLER(index, mediump decl)
-    #endif
-#endif
+// TODO(diligent): Get rid of UNIFORM_HIGHP and SAMPLER_HIGHP
+#define UNIFORM_HIGHP(decl) UNIFORM(highp decl)
+#define SAMPLER_HIGHP(index, decl) SAMPLER(index, highp decl)
 
 /// Compatible texture samplers for GL3
 #ifdef GL3

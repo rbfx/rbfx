@@ -1,12 +1,10 @@
-#version 430
-
 #define PI 3.141596
 
-layout(binding = 0)
-uniform samplerCube sSourceTexture;
+layout(binding = 0, rgba8)
+uniform mediump writeonly image2DArray uOutputTexture;
 
-layout(binding = 1, rgba8)
-uniform image2DArray uOutputTexture;
+layout(binding = 1)
+uniform mediump samplerCube sSourceTexture;
 
 vec2 Hammersley(uint seed, uint ct)
 {
@@ -16,7 +14,7 @@ vec2 Hammersley(uint seed, uint ct)
 	bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
 	bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
 	bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
-	const float radInv = float(bits) * 2.3283064365386963e-10;
+	float radInv = float(bits) * 2.3283064365386963e-10;
 	return vec2(float(seed) / float(ct), radInv);
 }
 
@@ -33,7 +31,7 @@ vec3 ImportanceSample(vec2 interval, float roughness)
 	float roughFactor = roughness * roughness;
     roughFactor *= roughFactor;
 
-	const float phi = PI * 2.0 * interval.x;
+	float phi = PI * 2.0 * interval.x;
 	float cosTheta = sqrt((1.0 - interval.y) / (1.0 + (roughFactor - 1.0) * interval.y));
 	float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
 
@@ -86,15 +84,15 @@ void main()
         vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
 
         // gather samples on the dome, could instead use importance sampling
-        for (uint i = 0; i < RAY_COUNT; ++i)
+        for (uint i = 0u; i < RAY_COUNT; ++i)
         {
             vec2 h = Hammersley(i, RAY_COUNT);
             vec3 hemisphere = ImportanceSample(h, ROUGHNESS);
 			vec3 finalDir = tanFrame * hemisphere;
 
-            color.rgb += textureLod(sSourceTexture, finalDir, 0).rgb;
+            color.rgb += textureLod(sSourceTexture, finalDir, 0.0).rgb;
         }
-        color.rgb /= RAY_COUNT;
+        color.rgb /= float(RAY_COUNT);
 
         imageStore(uOutputTexture, ivec3(dispatchThreadId), color);
     }

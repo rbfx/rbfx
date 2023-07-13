@@ -269,11 +269,15 @@ ea::string ShaderVariation::PrepareGLSLShaderCode(const ea::string& originalShad
         }
         else
         {
-#if GLES_SUPPORTED
-            shaderCode += "#version 300 es\n";
-#else
-            shaderCode += "#version 410\n";
-#endif
+            const bool isOpenGLES = IsOpenGLESBackend(renderBackend);
+            const bool isCompute = GetShaderType() == CS;
+
+            static const char* versions[2][2] = {
+                {"#version 410\n", "#version 430\n"},
+                {"#version 300 es\n", "#version 310 es\n"},
+            };
+
+            shaderCode += versions[isOpenGLES][isCompute];
         }
     }
 

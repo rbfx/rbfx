@@ -310,6 +310,8 @@ void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* des
 
     const unsigned numLevels = destTexture->GetLevels();
     EnsurePipelineStates(numLevels);
+    if (!cachedPipelineStates_)
+        return;
 
     RenderContext* renderContext = renderDevice->GetRenderContext();
     DrawCommandQueue* drawQueue = renderDevice->GetDefaultQueue();
@@ -353,10 +355,10 @@ void CubemapRenderer::EnsurePipelineStates(unsigned numLevels)
     const float roughStep = 1.0f / static_cast<float>(numLevels - 1);
     for (unsigned i = 0; i < numLevels; ++i)
     {
-        const unsigned levelWidth = 1 << (numLevels - 1 - i);
+        const auto levelWidth = static_cast<float>(1 << (numLevels - 1 - i));
         const unsigned rayCount = rayCounts[ea::max<unsigned>(i, rayCounts.size() - 1)];
 
-        const ea::string shaderParams = Format("RAY_COUNT={} FILTER_RES={} FILTER_INV_RES={} ROUGHNESS={}",
+        const ea::string shaderParams = Format("RAY_COUNT={}u FILTER_RES={}u FILTER_INV_RES={:.7f} ROUGHNESS={:.7f}",
             rayCount, levelWidth, 1.0f / levelWidth, roughStep * i);
 
         ComputePipelineStateDesc desc;
@@ -364,7 +366,14 @@ void CubemapRenderer::EnsurePipelineStates(unsigned numLevels)
         desc.computeShader_ = graphics->GetShader(CS, "v2/C_FilterCubemap", shaderParams);
         desc.samplers_.Add("SourceTexture", SamplerStateDesc::Bilinear());
 
-        cache.pipelineStates_.push_back(pipelineStateCache->GetComputePipelineState(desc));
+        auto pipelineState = pipelineStateCache->GetComputePipelineState(desc);
+        if (!pipelineState->IsValid())
+        {
+            URHO3D_LOGERROR("CubemapRenderer::FilterCubemap failed to create pipeline state");
+            return;
+        }
+
+        cache.pipelineStates_.push_back(pipelineState);
     }
 
     cachedPipelineStates_ = cache;

@@ -33,7 +33,7 @@ half3 EvaluateSH2(half4 normal, half4 SHBr, half4 SHBg, half4 SHBb, half4 SHC)
 
 #ifdef URHO3D_NUM_VERTEX_LIGHTS
     // Calculate intensity of vertex light
-    float GetVertexLight(int index, vec3 worldPos, half3 normal)
+    half GetVertexLight(int index, vec3 worldPos, half3 normal)
     {
         half3 lightDir = cVertexLights[index * 3 + 1].xyz;
         vec3 lightPos = cVertexLights[index * 3 + 2].xyz;

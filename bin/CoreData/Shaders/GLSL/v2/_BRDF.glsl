@@ -126,7 +126,7 @@ half3 Direct_SimpleSpecular(half3 lightColor, half3 albedo, half3 specular,
     half3 lightVec, half3 normal, half3 halfVec, half specularPower, half specularIntensity)
 {
     half NoL = max(dot(normal, lightVec), 0.0);
-    float brdf = BRDF_Direct_BlinnPhongSpecular(normal, halfVec, specularPower);
+    half brdf = BRDF_Direct_BlinnPhongSpecular(normal, halfVec, specularPower);
     return NoL * lightColor * (albedo + specular * (brdf * specularIntensity));
 }
 
