@@ -220,6 +220,9 @@ option                (URHO3D_PACKAGING          "Enable *.pak file creation"   
 cmake_dependent_option(EMSCRIPTEN_WASM           "Use wasm instead of asm.js"                            ON                   "EMSCRIPTEN"                           OFF)
 set(EMSCRIPTEN_TOTAL_MEMORY 128 CACHE STRING  "Memory limit in megabytes. Set to 0 for dynamic growth. Must be multiple of 64KB.")
 
+# Graphics configuration
+option                (URHO3D_DEBUG_GRAPHICS     "Enable debug checks in renderer"                       OFF)
+
 # Misc
 rbfx_dependent_option(URHO3D_PLUGIN_LIST "List of plugins to be statically linked with Editor and Player executables" "103_GamePlugin;113_InputLogger" URHO3D_SAMPLES "")
 

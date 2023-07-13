@@ -190,9 +190,14 @@ if (NOT MINI_URHO)
     # Tracy's headers are included even in non-profiled builds in order to provide stub profiler macros.
     add_subdirectory (tracy)
 
-    set (DILIGENT_INSTALL_CORE OFF CACHE BOOL "")
-    set (DILIGENT_NO_GLSLANG ON CACHE BOOL "")
-    set (DILIGENT_NO_HLSL ON CACHE BOOL "")
+    set (DILIGENT_INSTALL_CORE OFF CACHE BOOL "" FORCE)
+    set (DILIGENT_NO_GLSLANG ON CACHE BOOL "" FORCE)
+    set (DILIGENT_NO_HLSL ON CACHE BOOL "" FORCE)
+    if (NOT URHO3D_DEBUG_GRAPHICS)
+        set (DILIGENT_MSVC_DEBUG_COMPILE_OPTIONS "/wd4189" CACHE STRING "" FORCE)
+    else ()
+        set (DILIGENT_MSVC_DEBUG_COMPILE_OPTIONS "" CACHE STRING "" FORCE)
+    endif ()
     add_subdirectory (Diligent)
     install_third_party_libs (
         Diligent-AndroidPlatform
@@ -230,6 +235,11 @@ if (NOT MINI_URHO)
         volk_headers
         Vulkan-Headers
     )
+    if (NOT URHO3D_DEBUG_GRAPHICS)
+        get_target_property(DILIGENT_COMPILE_DEFS Diligent-PublicBuildSettings INTERFACE_COMPILE_DEFINITIONS)
+        string(REPLACE "$<$<CONFIG:DEBUG>:DILIGENT_DEVELOPMENT;DILIGENT_DEBUG>" "" DILIGENT_COMPILE_DEFS "${DILIGENT_COMPILE_DEFS}")
+        set_property(TARGET Diligent-PublicBuildSettings PROPERTY INTERFACE_COMPILE_DEFINITIONS ${DILIGENT_COMPILE_DEFS})
+    endif ()
 endif ()
 
 if (URHO3D_CSHARP_TOOLS AND DESKTOP)
