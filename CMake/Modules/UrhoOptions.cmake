@@ -222,6 +222,10 @@ set(EMSCRIPTEN_TOTAL_MEMORY 128 CACHE STRING  "Memory limit in megabytes. Set to
 
 # Graphics configuration
 option                (URHO3D_DEBUG_GRAPHICS     "Enable debug checks in renderer"                       OFF)
+option                (URHO3D_GRAPHICS_NO_GL     "Disable OpenGL backend in renderer"                    OFF)
+option                (URHO3D_GRAPHICS_NO_D3D11  "Disable Direct3D11 backend in renderer"                OFF)
+option                (URHO3D_GRAPHICS_NO_D3D12  "Disable Direct3D12 backend in renderer"                OFF)
+option                (URHO3D_GRAPHICS_NO_VULKAN "Disable Vulkan backend in renderer"                    OFF)
 
 # Misc
 rbfx_dependent_option(URHO3D_PLUGIN_LIST "List of plugins to be statically linked with Editor and Player executables" "103_GamePlugin;113_InputLogger" URHO3D_SAMPLES "")
