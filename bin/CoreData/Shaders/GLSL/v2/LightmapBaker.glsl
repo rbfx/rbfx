@@ -23,6 +23,7 @@ UNIFORM_BUFFER_END(4, Material)
 
 #include "_Uniforms.glsl"
 #include "_Samplers.glsl"
+#include "_SamplerUtils.glsl"
 #include "_VertexLayout.glsl"
 
 #include "_VertexTransform.glsl"

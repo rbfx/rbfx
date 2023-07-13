@@ -12,6 +12,7 @@
 #include "_VertexTransform.glsl"
 #include "_VertexScreenPos.glsl"
 #include "_Samplers.glsl"
+#include "_SamplerUtils.glsl"
 
 #ifdef URHO3D_PIXEL_SHADER
     UNIFORM_BUFFER_BEGIN(6, Custom)

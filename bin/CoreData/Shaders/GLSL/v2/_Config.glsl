@@ -48,10 +48,6 @@
 // #define URHO3D_DISABLE_SPECULAR_SAMPLING
 // #define URHO3D_DISABLE_EMISSIVE_SAMPLING
 
-/// Configures whether to disable built-in texture declarations.
-/// TODO(diligent): Consider splitting _Samplers.glsl into two files instead.
-// #define URHO3D_DISABLE_TEXTURES
-
 /// =================================== Material defines ===================================
 
 /// Whether to disable all lighting calculation.

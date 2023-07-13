@@ -5,6 +5,7 @@
 #include "_VertexScreenPos.glsl"
 #include "_GammaCorrection.glsl"
 #include "_Samplers.glsl"
+#include "_SamplerUtils.glsl"
 #include "_DirectLighting.glsl"
 #include "_Shadow.glsl"
 #include "_Fog.glsl"
