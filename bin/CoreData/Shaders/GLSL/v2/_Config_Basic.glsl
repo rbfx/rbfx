@@ -22,12 +22,6 @@
 // #define URHO3D_VERTEX_SHADER
 // #define URHO3D_PIXEL_SHADER
 
-/// Whether high precision is supported for all shader stages.
-// #define URHO3D_FEATURE_HIGHP
-
-/// Whether high precision is supported for current shader stage.
-// #define URHO3D_FEATURE_HIGHP_IN_STAGE
-
 /// Whether Y axis of clip space is the opposite of Y axis of render target texture.
 // #define URHO3D_FEATURE_FRAMEBUFFER_Y_INVERTED
 
@@ -109,10 +103,6 @@
     #define URHO3D_PIXEL_SHADER
 #endif
 
-#if !defined(GL_ES) || defined(GL_FRAGMENT_PRECISION_HIGH)
-    #define URHO3D_FEATURE_HIGHP
-#endif
-
 #if !defined(GL_ES) || defined(GL_FRAGMENT_PRECISION_HIGH) || defined(URHO3D_VERTEX_SHADER)
     #define URHO3D_FEATURE_HIGHP_IN_STAGE
 #endif
@@ -128,11 +118,7 @@
 /// =================================== Precision ===================================
 
 #ifdef GL_ES
-    #ifdef URHO3D_FEATURE_HIGHP_IN_STAGE
-        precision highp float;
-    #else
-        precision mediump float;
-    #endif
+    precision highp float;
 #endif
 
 /// =================================== Global functions ===================================
@@ -149,11 +135,7 @@
     #define VERTEX_OUTPUT(decl) in decl;
 #endif
 
-#ifdef URHO3D_FEATURE_HIGHP
-    #define VERTEX_OUTPUT_HIGHP(decl) VERTEX_OUTPUT(highp decl)
-#else
-    #define VERTEX_OUTPUT_HIGHP(decl) VERTEX_OUTPUT(mediump decl)
-#endif
+#define VERTEX_OUTPUT_HIGHP(decl) VERTEX_OUTPUT(highp decl)
 
 /// Default to 1 render target if not defined.
 #ifndef URHO3D_NUM_RENDER_TARGETS
