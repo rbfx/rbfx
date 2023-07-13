@@ -28,12 +28,6 @@
 /// Whether high precision is supported for current shader stage.
 // #define URHO3D_FEATURE_HIGHP_IN_STAGE
 
-/// Whether standard derivatives are supported.
-// #define URHO3D_FEATURE_DERIVATIVES
-
-/// Whether textureCubeLod is supported.
-// #define URHO3D_FEATURE_CUBEMAP_LOD
-
 /// Whether Y axis of clip space is the opposite of Y axis of render target texture.
 // #define URHO3D_FEATURE_FRAMEBUFFER_Y_INVERTED
 
@@ -81,7 +75,6 @@
 /// =================================== Extensions ===================================
 #extension GL_ARB_shading_language_420pack: enable
 #extension GL_EXT_clip_cull_distance: enable
-#extension GL_EXT_shader_texture_lod: enable
 #extension GL_OES_standard_derivatives : enable
 
 /// =================================== Types and constants ===================================
@@ -124,14 +117,6 @@
     #define URHO3D_FEATURE_HIGHP_IN_STAGE
 #endif
 
-#if !defined(GL_ES) || defined(GL_OES_standard_derivatives)
-    #define URHO3D_FEATURE_DERIVATIVES
-#endif
-
-#if !defined(GL_ES) || defined(GL_EXT_shader_texture_lod)
-    #define URHO3D_FEATURE_CUBEMAP_LOD
-#endif
-
 #if !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
     #define URHO3D_FEATURE_CLIP_DISTANCE
 #endif
@@ -158,19 +143,10 @@
 /// =================================== Stage inputs and outputs ===================================
 
 #if defined(URHO3D_VERTEX_SHADER)
-    #ifdef GL3
-        #define VERTEX_INPUT(decl) in decl;
-        #define VERTEX_OUTPUT(decl) out decl;
-    #else
-        #define VERTEX_INPUT(decl) attribute decl;
-        #define VERTEX_OUTPUT(decl) varying decl;
-    #endif
+    #define VERTEX_INPUT(decl) in decl;
+    #define VERTEX_OUTPUT(decl) out decl;
 #elif defined(URHO3D_PIXEL_SHADER)
-    #ifdef GL3
-        #define VERTEX_OUTPUT(decl) in decl;
-    #else
-        #define VERTEX_OUTPUT(decl) varying decl;
-    #endif
+    #define VERTEX_OUTPUT(decl) in decl;
 #endif
 
 #ifdef URHO3D_FEATURE_HIGHP
@@ -184,18 +160,12 @@
     #define URHO3D_NUM_RENDER_TARGETS 1
 #endif
 
-/// gl_FragData and gl_FragColor: color outputs of pixel shader.
+// TODO(diligent): Remove gl_FragColor and gl_FragData
 #if defined(URHO3D_PIXEL_SHADER) && URHO3D_NUM_RENDER_TARGETS > 0
-    #ifdef GL3
-        out vec4 _fragData[URHO3D_NUM_RENDER_TARGETS];
+    out vec4 _fragData[URHO3D_NUM_RENDER_TARGETS];
 
-        #define gl_FragColor _fragData[0]
-        #define gl_FragData _fragData
-    #else
-        #if URHO3D_NUM_RENDER_TARGETS > 1
-            #define gl_FragColor gl_FragData[0]
-        #endif
-    #endif
+    #define gl_FragColor _fragData[0]
+    #define gl_FragData _fragData
 #endif
 
 /// Don't take chances: vertex position must be the same.
@@ -206,40 +176,29 @@
 
 /// =================================== Uniforms ===================================
 
-#ifdef URHO3D_USE_CBUFFERS
-    #ifdef GL_ARB_shading_language_420pack
-        #define _URHO3D_LAYOUT(index) layout(binding=index)
-    #else
-        #define _URHO3D_LAYOUT(index)
-    #endif
-
-    #define UNIFORM_BUFFER_BEGIN(index, name) _URHO3D_LAYOUT(index) uniform name {
-    #define UNIFORM(decl) decl;
-    #define UNIFORM_BUFFER_END(index, name) };
-    #define SAMPLER(index, decl) _URHO3D_LAYOUT(index) uniform decl;
+#ifdef GL_ARB_shading_language_420pack
+    #define _URHO3D_LAYOUT(index) layout(binding=index)
 #else
-    #define UNIFORM_BUFFER_BEGIN(index, name)
-    #define UNIFORM(decl) uniform decl;
-    #define UNIFORM_BUFFER_END(index, name)
-    #define SAMPLER(index, decl) uniform decl;
+    #define _URHO3D_LAYOUT(index)
 #endif
+
+#define UNIFORM_BUFFER_BEGIN(index, name) _URHO3D_LAYOUT(index) uniform name {
+#define UNIFORM(decl) decl;
+#define UNIFORM_BUFFER_END(index, name) };
+#define SAMPLER(index, decl) _URHO3D_LAYOUT(index) uniform decl;
 
 // TODO(diligent): Get rid of UNIFORM_HIGHP and SAMPLER_HIGHP
 #define UNIFORM_HIGHP(decl) UNIFORM(highp decl)
 #define SAMPLER_HIGHP(index, decl) SAMPLER(index, highp decl)
 
-/// Compatible texture samplers for GL3
-#ifdef GL3
-    #define texture2D texture
-    #define texture2DProj textureProj
-    #define texture3D texture
-    #define textureCube texture
-    #define textureCubeLod textureLod
-    #define texture2DLod textureLod
-    #define texture2DLodOffset textureLodOffset
-#elif defined(GL_ES) && defined(GL_EXT_shader_texture_lod)
-    #define textureCubeLod textureCubeLodEXT
-#endif
+// TODO(diligent): Get rid of those aliases
+#define texture2D texture
+#define texture2DProj textureProj
+#define texture3D texture
+#define textureCube texture
+#define textureCubeLod textureLod
+#define texture2DLod textureLod
+#define texture2DLodOffset textureLodOffset
 
 
 /// =================================== Consolidate ShaderProgramCompositor defines ===================================

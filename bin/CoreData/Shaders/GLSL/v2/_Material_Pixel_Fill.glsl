@@ -90,7 +90,7 @@
 /// out: SurfaceData.oneMinusReflectivity
 /// out: SurfaceData.roughness
 /// out: SurfaceData.occlusion
-#if (URHO3D_SPECULAR == 2) && defined(URHO3D_FEATURE_DERIVATIVES) && defined(URHO3D_PHYSICAL_MATERIAL)
+#if (URHO3D_SPECULAR == 2) && defined(URHO3D_PHYSICAL_MATERIAL)
     half _GetAdjustedFragmentRoughness(half roughness, half3 normal)
     {
         half3 dNdx = dFdx(normal);

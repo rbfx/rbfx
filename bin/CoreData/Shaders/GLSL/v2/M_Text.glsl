@@ -28,18 +28,14 @@ void main()
 #ifdef URHO3D_PIXEL_SHADER
 
 /// Whether to supersample SDF font.
-#if defined(SIGNED_DISTANCE_FIELD) && defined(URHO3D_FEATURE_DERIVATIVES)
+#if defined(SIGNED_DISTANCE_FIELD)
     #define URHO3D_FONT_SUPERSAMPLE
 #endif
 
 /// Return width of SDF font border.
 half GetBorderWidth(half distance)
 {
-#ifdef URHO3D_FEATURE_DERIVATIVES
     return fwidth(distance);
-#else
-    return 0.005;
-#endif
 }
 
 /// Return letter opacity.

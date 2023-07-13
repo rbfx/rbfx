@@ -177,8 +177,7 @@ void RmlRenderer::InitializeGraphics()
     indexBuffer_ = MakeShared<DynamicIndexBuffer>(context_);
     indexBuffer_->Initialize(1024, true);
 
-    ea::string baseDefines = "VERTEXCOLOR ";
-    baseDefines += "URHO3D_USE_CBUFFERS ";
+    const ea::string baseDefines = "VERTEXCOLOR ";
     const ea::string alphaMapDefines = baseDefines + "ALPHAMAP ";
     const ea::string diffMapDefines = baseDefines + "DIFFMAP ";
 

@@ -177,7 +177,7 @@
 /// =================================== Propagate implications ===================================
 
 /// If per-pixel reflection is used for PBR material, blur reflection according to surface roughness.
-#if defined(URHO3D_FEATURE_CUBEMAP_LOD) && defined(URHO3D_PHYSICAL_MATERIAL) && !defined(URHO3D_VERTEX_REFLECTION)
+#if defined(URHO3D_PHYSICAL_MATERIAL) && !defined(URHO3D_VERTEX_REFLECTION)
     #define URHO3D_BLUR_REFLECTION
 #endif
 

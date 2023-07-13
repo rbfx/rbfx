@@ -128,8 +128,6 @@ void ShaderProgramCompositor::SetupShaders(ShaderProgramDesc& result, Pass* pass
 void ShaderProgramCompositor::ApplyCommonDefines(ShaderProgramDesc& result,
     DrawableProcessorPassFlags flags, Pass* pass) const
 {
-    result.AddCommonShaderDefines("URHO3D_USE_CBUFFERS");
-
     if (isCameraReversed_)
         result.AddCommonShaderDefines("URHO3D_CAMERA_REVERSED");
 

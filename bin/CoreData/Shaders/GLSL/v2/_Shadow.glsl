@@ -85,21 +85,13 @@ vec3 DirectionToUV(vec3 vec, vec2 bias)
     /// Sample shadow map texture at given 4-coordinate
     half SampleShadow(vec4 shadowPos)
     {
-        #if defined(GL3)
-            return textureProj(sShadowMap, shadowPos);
-        #else
-            return shadow2DProj(sShadowMap, shadowPos).r;
-        #endif
+        return textureProj(sShadowMap, shadowPos);
     }
 
     /// Sample shadow map texture with given offset
-    #if defined(GL3)
-        #define SampleShadowOffset(shadowPos, identity, dx, dy) \
-            textureProjOffset(sShadowMap, (shadowPos), ivec2(dx, dy))
-    #else
-        #define SampleShadowOffset(shadowPos, identity, dx, dy) \
-            SampleShadow((shadowPos) + vec4(identity.x * float(dx), identity.y * float(dy), 0.0, 0.0))
-    #endif
+    // TODO(diligent): Get rid of "identity"
+    #define SampleShadowOffset(shadowPos, identity, dx, dy) \
+        textureProjOffset(sShadowMap, (shadowPos), ivec2(dx, dy))
 
     /// Return UV coordinate offset corresponding to one texel
     #ifndef URHO3D_LIGHT_POINT

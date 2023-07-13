@@ -1,5 +1,3 @@
-// TODO(diligent): Revisit shaders, remove unused options like URHO3D_USE_CBUFFERS
-#define URHO3D_USE_CBUFFERS
 #include "_Config.glsl"
 #include "_GammaCorrection.glsl"
 

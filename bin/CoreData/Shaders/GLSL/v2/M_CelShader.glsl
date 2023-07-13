@@ -25,12 +25,8 @@ void main()
 // Under MIT License
 float AntiAliasedStep(float threshold, float value)
 {
-#ifdef URHO3D_FEATURE_DERIVATIVES
     float afwidth = length(vec2(dFdx(value), dFdy(value))) * 0.7071068;
-    return smoothstep(threshold-afwidth, threshold+afwidth, value);
-#else
-    return step(threshold, value);
-#endif
+    return smoothstep(threshold - afwidth, threshold + afwidth, value);
 }
 
 void main()

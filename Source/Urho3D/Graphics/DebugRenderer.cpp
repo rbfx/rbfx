@@ -757,9 +757,7 @@ void DebugRenderer::InitializePipelineStates()
         InitializeInputLayout(desc.inputLayout_, {vertexBuffer_});
         desc.colorWriteEnabled_ = true;
 
-        ea::string shaderDefines = "VERTEXCOLOR ";
-        shaderDefines += "URHO3D_USE_CBUFFERS ";
-
+        const ea::string shaderDefines = "VERTEXCOLOR ";
         desc.vertexShader_ = graphics->GetShader(VS, "v2/X_Basic", shaderDefines);
         desc.pixelShader_ = graphics->GetShader(PS, "v2/X_Basic", shaderDefines);
 

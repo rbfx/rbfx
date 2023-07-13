@@ -281,10 +281,6 @@ ea::string ShaderVariation::PrepareGLSLShaderCode(const ea::string& originalShad
         }
     }
 
-    // TODO(diligent): Remove these defines
-    shaderCode += "#define DESKTOP_GRAPHICS\n";
-    shaderCode += "#define GL3\n";
-
     static const char* shaderTypeDefines[] = {
         "#define COMPILEVS\n", // VS
         "#define COMPILEPS\n", // PS
