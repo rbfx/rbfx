@@ -96,7 +96,6 @@ void InitializeImmutableSampler(Diligent::ImmutableSamplerDesc& destSampler, con
         Diligent::TEXTURE_ADDRESS_WRAP, // ADDRESS_WRAP
         Diligent::TEXTURE_ADDRESS_MIRROR, // ADDRESS_MIRROR
         Diligent::TEXTURE_ADDRESS_CLAMP, // ADDRESS_CLAMP
-        Diligent::TEXTURE_ADDRESS_BORDER // ADDRESS_BORDER
     };
 
     // TODO(diligent): Configure defaults
@@ -116,7 +115,6 @@ void InitializeImmutableSampler(Diligent::ImmutableSamplerDesc& destSampler, con
     destSampler.Desc.ComparisonFunc = Diligent::COMPARISON_FUNC_LESS_EQUAL;
     destSampler.Desc.MinLOD = -M_INFINITY;
     destSampler.Desc.MaxLOD = M_INFINITY;
-    memcpy(&destSampler.Desc.BorderColor, sourceSampler.borderColor_.Data(), 4 * sizeof(float));
 }
 
 void InitializeImmutableSamplers(ea::vector<Diligent::ImmutableSamplerDesc>& result, const ImmutableSamplersDesc& desc,

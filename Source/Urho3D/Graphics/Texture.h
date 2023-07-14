@@ -68,9 +68,6 @@ public:
     void SetAnisotropy(unsigned level);
     /// Set shadow compare mode.
     void SetShadowCompare(bool enable);
-    /// Set border color for border addressing mode.
-    /// @property
-    void SetBorderColor(const Color& color);
 
     /// @}
 
@@ -141,10 +138,6 @@ public:
 
     /// Return whether shadow compare is enabled.
     bool GetShadowCompare() const { return GetSamplerStateDesc().shadowCompare_; }
-
-    /// Return border color.
-    /// @property
-    const Color& GetBorderColor() const { return GetSamplerStateDesc().borderColor_; }
 
     /// Return whether the texture data are in linear space (instead of gamma space).
     bool GetLinear() const { return linear_; }

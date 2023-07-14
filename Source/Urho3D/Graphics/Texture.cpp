@@ -107,7 +107,6 @@ static const char* addressModeNames[] =
     "wrap",
     "mirror",
     "clamp",
-    "border",
     nullptr
 };
 
@@ -160,13 +159,6 @@ void Texture::SetShadowCompare(bool enable)
 {
     auto desc = GetSamplerStateDesc();
     desc.shadowCompare_ = enable;
-    SetSamplerStateDesc(desc);
-}
-
-void Texture::SetBorderColor(const Color& color)
-{
-    auto desc = GetSamplerStateDesc();
-    desc.borderColor_ = color;
     SetSamplerStateDesc(desc);
 }
 
@@ -265,9 +257,6 @@ void Texture::SetParameters(const XMLElement& element)
                 SetAddressMode(coordIndex, (TextureAddressMode)GetStringListIndex(mode.c_str(), addressModeNames, ADDRESS_WRAP));
             }
         }
-
-        if (name == "border")
-            SetBorderColor(paramElem.GetColor("color"));
 
         if (name == "filter")
         {

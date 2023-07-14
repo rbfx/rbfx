@@ -304,7 +304,6 @@ enum TextureAddressMode : unsigned char
     ADDRESS_WRAP = 0,
     ADDRESS_MIRROR,
     ADDRESS_CLAMP,
-    ADDRESS_BORDER,
     MAX_ADDRESSMODES
 };
 
@@ -399,8 +398,6 @@ URHO3D_FLAGSET(ClearTarget, ClearTargetFlags);
 /// Description of immutable texture sampler bound to the pipeline.
 struct URHO3D_API SamplerStateDesc
 {
-    // TODO(diligent): Remove border color
-    Color borderColor_{0.0f, 0.0f, 0.0f, 0.0f};
     TextureFilterMode filterMode_{FILTER_DEFAULT};
     unsigned char anisotropy_{};
     bool shadowCompare_{};
@@ -430,7 +427,6 @@ struct URHO3D_API SamplerStateDesc
     auto Tie() const
     {
         return ea::tie( //
-            borderColor_, //
             filterMode_, //
             anisotropy_, //
             shadowCompare_, //

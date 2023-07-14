@@ -403,7 +403,6 @@ using BoneCollisionShapeFlags = Urho3D::BoneCollisionShape;
 %csattribute(Urho3D::Texture, %arg(Urho3D::TextureFilterMode), FilterMode, GetFilterMode, SetFilterMode);
 %csattribute(Urho3D::Texture, %arg(unsigned int), Anisotropy, GetAnisotropy, SetAnisotropy);
 %csattribute(Urho3D::Texture, %arg(bool), ShadowCompare, GetShadowCompare, SetShadowCompare);
-%csattribute(Urho3D::Texture, %arg(Urho3D::Color), BorderColor, GetBorderColor, SetBorderColor);
 %csattribute(Urho3D::Texture, %arg(bool), Linear, GetLinear, SetLinear);
 %csattribute(Urho3D::Texture, %arg(bool), Srgb, GetSRGB, SetSRGB);
 %csattribute(Urho3D::Texture, %arg(bool), UnorderedAccess, GetUnorderedAccess, SetUnorderedAccess);

@@ -2214,8 +2214,6 @@ private:
 
         if (samplerParams.wrapU_ != ADDRESS_WRAP)
         {
-            URHO3D_ASSERT(samplerParams.wrapU_ != ADDRESS_BORDER);
-
             XMLElement childElement = rootElement.CreateChild("address");
             childElement.SetAttribute("coord", "u");
             childElement.SetAttribute("mode", addressModeNames[samplerParams.wrapU_]);
@@ -2223,8 +2221,6 @@ private:
 
         if (samplerParams.wrapV_ != ADDRESS_WRAP)
         {
-            URHO3D_ASSERT(samplerParams.wrapV_ != ADDRESS_BORDER);
-
             XMLElement childElement = rootElement.CreateChild("address");
             childElement.SetAttribute("coord", "v");
             childElement.SetAttribute("mode", addressModeNames[samplerParams.wrapV_]);
