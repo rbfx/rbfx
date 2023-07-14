@@ -1610,6 +1610,12 @@ bool RenderDevice::IsRenderTargetFormatSupported(TextureFormat format) const
     return (info.BindFlags & (Diligent::BIND_RENDER_TARGET | Diligent::BIND_DEPTH_STENCIL)) != 0;
 }
 
+bool RenderDevice::IsUnorderedAccessFormatSupported(TextureFormat format) const
+{
+    const Diligent::TextureFormatInfoExt& info = renderDevice_->GetTextureFormatInfoExt(format);
+    return (info.BindFlags & Diligent::BIND_UNORDERED_ACCESS) != 0;
+}
+
 bool RenderDevice::IsMultiSampleSupported(TextureFormat format, int multiSample) const
 {
     const Diligent::TextureFormatInfoExt& info = renderDevice_->GetTextureFormatInfoExt(format);

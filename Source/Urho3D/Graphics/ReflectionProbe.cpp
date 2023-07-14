@@ -50,6 +50,12 @@ static const ea::vector<ea::string> reflectionProbeTypeNames = {
     "Custom Texture",
 };
 
+bool SupportFiltering(RenderDevice* device)
+{
+    return device && device->GetCaps().computeShaders_
+        && device->IsUnorderedAccessFormatSupported(TextureFormat::TEX_FORMAT_RGBA8_UNORM);
+}
+
 void AppendReference(ea::span<ReflectionProbeReference, 2> result, const ReflectionProbeReference& newReference)
 {
     if (!result[0] || newReference.IsMoreImportantThan(result[0]))
@@ -328,7 +334,7 @@ void ReflectionProbeManager::FillUpdateQueue()
 void ReflectionProbeManager::ConsumeUpdateQueue()
 {
     auto renderDevice = GetSubsystem<RenderDevice>();
-    const bool filterCubemapsEffective = filterCubemaps_ && renderDevice && renderDevice->GetCaps().computeShaders_;
+    const bool filterCubemapsEffective = filterCubemaps_ && SupportFiltering(renderDevice);
 
     unsigned numStaticProbesRendered = 0;
     unsigned numRenderedFaces = 0;
@@ -376,7 +382,7 @@ void ReflectionProbeManager::ConsumeUpdateQueue()
         {
             // TODO: Create correct texture from the start
             const TextureFlags probeFlags = probeTexture->GetParams().flags_;
-            if (!probeFlags.Test(TextureFlag::BindUnorderedAccess))
+            if (filterCubemapsEffective && !probeFlags.Test(TextureFlag::BindUnorderedAccess))
             {
                 probeTexture->SetSize(probeTexture->GetWidth(), probeTexture->GetFormat(),
                     probeFlags | TextureFlag::BindUnorderedAccess);
