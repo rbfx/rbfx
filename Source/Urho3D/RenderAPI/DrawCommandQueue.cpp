@@ -79,7 +79,7 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
     Diligent::IDeviceContext* deviceContext = renderContext->GetHandle();
 
     const RenderBackend& backend = renderContext->GetRenderDevice()->GetBackend();
-    const bool isBaseVertexAndInstanceSupported = !IsOpenGLESBackend(backend); // TODO(diligent): Use device caps
+    const RenderDeviceCaps& caps = renderContext->GetRenderDevice()->GetCaps();
 
     // Constant buffers to store all shader parameters for queue
     ea::vector<Diligent::IBuffer*> uniformBuffers;
@@ -110,7 +110,7 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
 
     for (const DrawCommandDescription& cmd : drawCommands_)
     {
-        if (cmd.baseVertexIndex_ != 0 && !isBaseVertexAndInstanceSupported)
+        if (cmd.baseVertexIndex_ != 0 && !caps.drawBaseVertex_)
         {
             URHO3D_LOGWARNING("Base vertex index is not supported by current graphics API");
             continue;
@@ -169,7 +169,7 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
 
         // Set vertex buffers
         if (cmd.vertexBuffers_ != currentVertexBuffers
-            || (cmd.instanceCount_ != 0 && !isBaseVertexAndInstanceSupported))
+            || (cmd.instanceCount_ != 0 && !caps.drawBaseInstance_))
         {
             ea::array<Diligent::IBuffer*, MaxVertexStreams> vertexBufferHandles{};
             ea::array<Diligent::Uint64, MaxVertexStreams> vertexBufferOffsets{};
@@ -183,7 +183,7 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
                 vertexBuffer->Resolve();
 
                 const bool needInstanceOffset =
-                    !isBaseVertexAndInstanceSupported && vertexBuffer->GetFlags().Test(BufferFlag::PerInstanceData);
+                    !caps.drawBaseInstance_ && vertexBuffer->GetFlags().Test(BufferFlag::PerInstanceData);
 
                 vertexBufferHandles[i] = vertexBuffer->GetHandle();
                 vertexBufferOffsets[i] = needInstanceOffset ? cmd.instanceStart_ * vertexBuffer->GetStride() : 0;
@@ -258,7 +258,7 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
                 drawAttrs.NumIndices = cmd.indexCount_;
                 drawAttrs.NumInstances = ea::max(1u, cmd.instanceCount_);
                 drawAttrs.FirstIndexLocation = cmd.indexStart_;
-                drawAttrs.FirstInstanceLocation = isBaseVertexAndInstanceSupported ? cmd.instanceStart_ : 0;
+                drawAttrs.FirstInstanceLocation = caps.drawBaseInstance_ ? cmd.instanceStart_ : 0;
                 drawAttrs.BaseVertex = cmd.baseVertexIndex_;
                 drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
                 drawAttrs.IndexType = GetIndexType(currentIndexBuffer);
@@ -271,7 +271,7 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
                 drawAttrs.NumVertices = cmd.indexCount_;
                 drawAttrs.NumInstances = ea::max(1u, cmd.instanceCount_);
                 drawAttrs.StartVertexLocation = cmd.indexStart_;
-                drawAttrs.FirstInstanceLocation = isBaseVertexAndInstanceSupported ? cmd.instanceStart_ : 0;
+                drawAttrs.FirstInstanceLocation = caps.drawBaseInstance_ ? cmd.instanceStart_ : 0;
                 drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
 
                 deviceContext->Draw(drawAttrs);

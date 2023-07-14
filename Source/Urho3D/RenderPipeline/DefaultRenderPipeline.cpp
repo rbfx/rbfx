@@ -507,6 +507,26 @@ void DefaultRenderPipelineView::Render()
     }
 }
 
+void DefaultRenderPipelineView::DrawDebugGeometries(bool depthTest)
+{
+    const FrameInfo& fullFrameInfo = sceneProcessor_->GetFrameInfo();
+    auto debug = fullFrameInfo.scene_->GetComponent<DebugRenderer>();
+
+    const auto& geometries = sceneProcessor_->GetDrawableProcessor()->GetGeometries();
+    for (Drawable* geometry : geometries)
+        geometry->DrawDebugGeometry(debug, depthTest);
+}
+
+void DefaultRenderPipelineView::DrawDebugLights(bool depthTest)
+{
+    const FrameInfo& fullFrameInfo = sceneProcessor_->GetFrameInfo();
+    auto debug = fullFrameInfo.scene_->GetComponent<DebugRenderer>();
+
+    const auto& lights = sceneProcessor_->GetDrawableProcessor()->GetLights();
+    for (Drawable* light : lights)
+        light->DrawDebugGeometry(debug, depthTest);
+}
+
 unsigned DefaultRenderPipelineView::RecalculatePipelineStateHash() const
 {
     unsigned hash = settingsPipelineStateHash_;

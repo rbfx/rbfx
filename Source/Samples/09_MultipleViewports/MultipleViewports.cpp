@@ -229,9 +229,8 @@ void MultipleViewports::Update(float timeStep)
 
 void MultipleViewports::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)
 {
-    // TODO(diligent): Revisit
     // If draw debug mode is enabled, draw viewport debug geometry, which will show eg. drawable bounding boxes and skeleton
     // bones. Disable depth test so that we can see the effect of occlusion
     if (drawDebug_)
-        ;// GetSubsystem<Renderer>()->DrawDebugGeometry(false);
+        GetSubsystem<Renderer>()->DrawDebugGeometry(false);
 }

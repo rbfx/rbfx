@@ -335,6 +335,8 @@ public:
     void Update(float timeStep);
     /// Render. Called by Engine.
     void Render();
+    /// Add debug geometry to the debug renderer.
+    void DrawDebugGeometry(bool depthTest);
     /// Queue a render surface's viewports for rendering. Called by the surface, or by View.
     void QueueRenderSurface(RenderSurface* renderTarget);
     /// Queue a viewport for rendering. Null surface means backbuffer.

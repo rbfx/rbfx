@@ -153,17 +153,15 @@ struct URHO3D_API RenderDeviceCaps
     bool drawBaseVertex_{};
     bool drawBaseInstance_{};
     bool clipDistance_{};
+    bool readOnlyDepth_{};
 
     bool srgbOutput_{};
     bool hdrOutput_{};
 
-    unsigned maxVertexShaderUniforms_{}; // TODO(diligent): Fill me
-    unsigned maxPixelShaderUniforms_{}; // TODO(diligent): Fill me
     unsigned constantBufferOffsetAlignment_{};
 
     unsigned maxTextureSize_{};
-    unsigned maxRenderTargetSize_{}; // TODO(diligent): Fill me
-    unsigned maxNumRenderTargets_{}; // TODO(diligent): Fill me
+    unsigned maxRenderTargetSize_{};
 };
 
 /// GPU buffer types.
@@ -217,7 +215,7 @@ enum class TextureFlag
 {
     None = 0,
     /// Texture can be used as possibly sampled shader resource.
-    /// TODO(diligent): This is always true for now. Remove?
+    /// TODO: Every texture is a shader resource implicitly, consider changing this.
     // BindShaderResource = 1 << 0,
 
     /// Texture can be used as render target.
@@ -483,7 +481,7 @@ enum class DeviceObjectEvent
 };
 
 /// Hard-coded uniform buffer slots.
-/// TODO(diligent): Make it more flexible?
+/// TODO: Make it more flexible using name hashes instead of fixed slots.
 enum ShaderParameterGroup
 {
     SP_FRAME = 0,

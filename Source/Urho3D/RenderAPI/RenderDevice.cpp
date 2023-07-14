@@ -80,15 +80,12 @@ void ValidateWindowSettings(WindowSettings& settings)
 {
     const PlatformId platform = GetPlatform();
 
-    // TODO(diligent): Revisit high-DPI support
-
     // iOS and tvOS app always take the fullscreen (and with status bar hidden)
-    // TODO(diligent): What about Android?
     if (platform == PlatformId::iOS || platform == PlatformId::tvOS)
         settings.mode_ = WindowMode::Fullscreen;
 
     // Emscripten cannot be truly fullscreen
-    // TODO(diligent): Maybe it should be only WindowMode::Windowed?
+    // TODO: Maybe it should be only WindowMode::Windowed?
     if (platform == PlatformId::Web)
     {
         if (settings.mode_ == WindowMode::Fullscreen)
@@ -975,16 +972,21 @@ void RenderDevice::InitializeCaps()
     caps_.drawBaseVertex_ = (adapterInfo.DrawCommand.CapFlags & Diligent::DRAW_COMMAND_CAP_FLAG_BASE_VERTEX) != 0;
     caps_.drawBaseInstance_ = !IsOpenGLESBackend(deviceSettings_.backend_);
 
+    // OpenGL does not have clear specification when it is allowed
+    // to bind read-only depth texture both as depth-stencil view and as shader resource.
+    // It certainly does not work in WebGL.
+    caps_.readOnlyDepth_ = GetPlatform() != PlatformId::Web;
+
     caps_.srgbOutput_ = IsRenderTargetFormatSupported(TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB)
         || IsRenderTargetFormatSupported(TextureFormat::TEX_FORMAT_BGRA8_UNORM_SRGB);
     caps_.hdrOutput_ = IsRenderTargetFormatSupported(TextureFormat::TEX_FORMAT_RGBA16_FLOAT);
 
-    caps_.maxVertexShaderUniforms_ = 4096;
-    caps_.maxPixelShaderUniforms_ = 4096;
     caps_.constantBufferOffsetAlignment_ = adapterInfo.Buffer.ConstantBufferOffsetAlignment;
     caps_.maxTextureSize_ = adapterInfo.Texture.MaxTexture2DDimension;
+    // TODO: Add constant to Diligent.
+    // - OpenGL: GL_MAX_VIEWPORT_DIMS
+    // - Vulkan: VkPhysicalDeviceLimits::maxViewportDimensions
     caps_.maxRenderTargetSize_ = adapterInfo.Texture.MaxTexture2DDimension;
-    caps_.maxNumRenderTargets_ = MaxRenderTargets;
 
     ea::unordered_set<ea::string> supportedExtensions;
 #if GL_SUPPORTED || GLES_SUPPORTED

@@ -495,8 +495,6 @@ void ShaderProgramReflection::ConnectToShaderVariables(
 {
     const auto shaderTypes = GetShaderTypes(pipelineType);
 
-    // TODO(diligent): Revisit this place? Do we want to reuse it for compute shaders?
-    const unsigned maxShaderType = CS;
     for (UniformBufferReflection& uniformBuffer : uniformBuffers_)
     {
         if (uniformBuffer.size_ == 0)

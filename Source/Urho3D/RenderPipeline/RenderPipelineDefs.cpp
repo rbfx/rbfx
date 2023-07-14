@@ -88,7 +88,7 @@ void RenderPipelineSettings::AdjustToSupported(Context* context)
     // BatchRendererSettings
 
     // SceneProcessorSettings
-    const bool deferredSupported = true; // TODO(diligent): Do anything about it?
+    const bool deferredSupported = caps.readOnlyDepth_;
     if (sceneProcessor_.IsDeferredLighting() && !deferredSupported)
         sceneProcessor_.lightingMode_ = DirectLightingMode::Forward;
 

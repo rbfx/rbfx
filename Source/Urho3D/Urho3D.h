@@ -133,7 +133,8 @@
 #endif
 
 // Diligent platform defines.
-// TODO(diligent): Why do we need those here?
+// This is needed so the user can include Diligent-using headers without linking to Diligent-PublicBuildSettings.
+// TODO: Can we resolve this at CMake level?
 #if URHO3D_PLATFORM_WINDOWS
     #define PLATFORM_WIN32 1
 #endif
@@ -165,4 +166,3 @@
 #if URHO3D_PLATFORM_WEB
     #define PLATFORM_EMSCRIPTEN 1
 #endif
-

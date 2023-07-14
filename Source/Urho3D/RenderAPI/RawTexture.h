@@ -122,6 +122,7 @@ struct URHO3D_API RawTextureHandles
 /// This behavior can be changed in derived classes.
 /// RawTexture is RAII object that's not supposed to be in invalid state.
 /// However, this behavior can also be changed in derived classes.
+/// TODO(diligent): Clear texture on restore?
 class URHO3D_API RawTexture : public DeviceObject
 {
 public:
@@ -174,7 +175,6 @@ protected:
     /// Create empty texture.
     explicit RawTexture(Context* context);
     /// Validate parameters and create GPU texture.
-    /// TODO(diligent): Consider adding data pointer.
     bool Create(const RawTextureParams& params);
 
     /// Create GPU texture from current parameters.

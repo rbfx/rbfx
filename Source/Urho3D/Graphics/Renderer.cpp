@@ -552,6 +552,20 @@ void Renderer::Render()
     SendEvent(E_ENDALLVIEWSRENDER);
 }
 
+void Renderer::DrawDebugGeometry(bool depthTest)
+{
+    URHO3D_PROFILE("RendererDrawDebug");
+
+    for (RenderPipelineView* view : renderPipelineViews_)
+    {
+        if (!view || !view->GetRenderPipeline()->GetSettings().drawDebugGeometry_)
+            continue;
+
+        view->DrawDebugGeometries(depthTest);
+        view->DrawDebugLights(depthTest);
+    }
+}
+
 void Renderer::QueueRenderSurface(RenderSurface* renderTarget)
 {
     if (renderTarget)
@@ -660,7 +674,7 @@ void Renderer::Initialize()
 
     graphics_ = graphics;
 
-    hardwareSkinningSupported_ = renderDevice->GetCaps().maxVertexShaderUniforms_ >= 256;
+    hardwareSkinningSupported_ = true;
 
     defaultLightRamp_ = cache->GetResource<Texture2D>("Textures/Ramp.png");
     defaultLightSpot_ = cache->GetResource<Texture2D>("Textures/Spot.png");

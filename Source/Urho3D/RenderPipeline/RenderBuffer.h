@@ -40,7 +40,6 @@ struct CommonFrameInfo;
 struct FrameInfo;
 
 /// Base class fro writable texture or texture region. Readability is not guaranteed.
-/// TODO(diligent): Get rid of this class and use Texture instead
 class URHO3D_API RenderBuffer : public Object
 {
     URHO3D_OBJECT(RenderBuffer, Object);

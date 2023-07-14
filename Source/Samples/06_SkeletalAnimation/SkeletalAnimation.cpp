@@ -213,7 +213,6 @@ void SkeletalAnimation::HandlePostRenderUpdate(StringHash eventType, VariantMap&
     // If draw debug mode is enabled, draw viewport debug geometry, which will show eg. drawable bounding boxes and skeleton
     // bones. Note that debug geometry has to be separately requested each frame. Disable depth test so that we can see the
     // bones properly
-    // TODO(diligent): Revisit
     if (drawDebug_)
-        ;//GetSubsystem<Renderer>()->DrawDebugGeometry(false);
+        GetSubsystem<Renderer>()->DrawDebugGeometry(false);
 }
