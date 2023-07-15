@@ -602,7 +602,6 @@ private:
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_RoughnessToLODFactor0,
             current_.reflectionProbes_[0]->roughnessToLODFactor_);
 
-#ifdef DESKTOP_GRAPHICS
         if (settings_.cubemapBoxProjection_)
         {
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_CubemapCenter1,
@@ -617,7 +616,6 @@ private:
             current_.reflectionProbes_[1]->roughnessToLODFactor_);
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_ReflectionBlendFactor,
             current_.reflectionProbesBlendFactor_);
-#endif
     }
 
     void AddVertexLightConstants()

@@ -506,7 +506,8 @@ void LightProcessor::CookShaderParameters(Camera* cullCamera, const DrawableProc
     }
 
     float normalOffset = light_->GetShadowBias().normalOffset_;
-#ifdef GL_ES_VERSION_2_0
+// TODO(diligent): Revisit this place
+#if 0
     if (normalOffset > 0.0f)
         normalOffset *= renderer->GetMobileNormalOffsetMul();
 #endif

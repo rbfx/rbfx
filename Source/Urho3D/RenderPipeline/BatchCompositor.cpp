@@ -376,7 +376,7 @@ void BatchCompositor::BeginShadowBatchesComposition(unsigned lightIndex, ShadowS
             Technique* tech = material->FindTechnique(drawable, shadowMaterialQuality_);
             if (!tech)
                 continue;
-            Pass* pass = tech->GetSupportedPass(shadowPassIndex_);
+            Pass* pass = tech->GetPass(shadowPassIndex_);
             if (!pass)
                 continue;
 

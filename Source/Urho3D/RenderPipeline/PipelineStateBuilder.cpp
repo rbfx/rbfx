@@ -184,7 +184,8 @@ void PipelineStateBuilder::SetupShadowPassState(unsigned splitIndex, const Light
         pipelineStateDesc_.constantDepthBias_ = biasMultiplier * biasParameters.constantBias_;
         pipelineStateDesc_.slopeScaledDepthBias_ = biasMultiplier * biasParameters.slopeScaledBias_;
 
-#ifdef GL_ES_VERSION_2_0
+// TODO(diligent): Revisit this place
+#if 0
         const float multiplier = renderer_->GetMobileShadowBiasMul();
         const float addition = renderer_->GetMobileShadowBiasAdd();
         desc.constantDepthBias_ = desc.constantDepthBias_ * multiplier + addition;

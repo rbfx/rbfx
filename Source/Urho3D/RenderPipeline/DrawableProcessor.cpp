@@ -543,7 +543,6 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
                 {
                     lightAccumulator.reflectionProbes_[0] = probe0.data_;
 
-#ifdef DESKTOP_GRAPHICS
                     if (reflectionMode >= ReflectionMode::BlendProbes && probe1.data_)
                     {
                         lightAccumulator.reflectionProbes_[1] = probe1.data_;
@@ -555,7 +554,6 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
                     {
                         lightAccumulator.reflectionProbesBlendFactor_ = 1.0f - probe0.volume_;
                     }
-#endif
                 }
 
             }

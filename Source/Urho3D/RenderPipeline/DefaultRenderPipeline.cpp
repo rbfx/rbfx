@@ -152,14 +152,12 @@ void DefaultRenderPipelineView::ApplySettings()
         postProcessPasses_.push_back(pass);
     }
 
-#ifdef DESKTOP_GRAPHICS
     if (settings_.ssao_.enabled_ && settings_.renderBufferManager_.readableDepth_)
     {
         ssaoPass_ = MakeShared<AmbientOcclusionPass>(this, renderBufferManager_);
         ssaoPass_->SetSettings(settings_.ssao_);
         postProcessPasses_.push_back(ssaoPass_);
     }
-#endif
 
     if (settings_.bloom_.enabled_)
     {
@@ -366,7 +364,6 @@ void DefaultRenderPipelineView::Render()
         ? fogColorInGammaSpace.GammaToLinear()
         : fogColorInGammaSpace;
 
-#ifdef DESKTOP_GRAPHICS
     if (settings_.sceneProcessor_.IsDeferredLighting())
     {
         // Draw deferred GBuffer
@@ -415,7 +412,6 @@ void DefaultRenderPipelineView::Render()
         renderBufferManager_->SetOutputRenderTargets();
     }
     else
-#endif
     {
         renderBufferManager_->ClearOutput(effectiveFogColor, 1.0f, 0);
         renderBufferManager_->SetOutputRenderTargets();
@@ -471,12 +467,10 @@ void DefaultRenderPipelineView::Render()
         sceneProcessor_->RenderSceneBatches("Outline", camera, batches, {}, cameraParameters);
     }
 
-#ifdef DESKTOP_GRAPHICS
     if (ssaoPass_ && deferred_)
     {
         ssaoPass_->SetNormalBuffer(deferred_->normalBuffer_);
     }
-#endif
 
     for (PostProcessPass* postProcessPass : postProcessPasses_)
         postProcessPass->Execute(camera);

@@ -269,7 +269,6 @@ bool Material::BeginLoadXML(Deserializer& source)
                 // Detect cube maps and arrays by file extension: they are defined by an XML file
                 if (GetExtension(name) == ".xml")
                 {
-#ifdef DESKTOP_GRAPHICS
                     StringHash type = ParseTextureTypeXml(cache, name);
                     if (!type && textureElem.HasAttribute("unit"))
                     {
@@ -283,7 +282,6 @@ bool Material::BeginLoadXML(Deserializer& source)
                     else if (type == Texture2DArray::GetTypeStatic())
                         cache->BackgroundLoadResource<Texture2DArray>(name, true, this);
                     else
-#endif
                         cache->BackgroundLoadResource<TextureCube>(name, true, this);
                 }
                 else
@@ -330,7 +328,6 @@ bool Material::BeginLoadJSON(Deserializer& source)
                 // Detect cube maps and arrays by file extension: they are defined by an XML file
                 if (GetExtension(name) == ".xml")
                 {
-#ifdef DESKTOP_GRAPHICS
                     StringHash type = ParseTextureTypeXml(cache, name);
                     if (!type && !unitString.empty())
                     {
@@ -344,7 +341,6 @@ bool Material::BeginLoadJSON(Deserializer& source)
                     else if (type == Texture2DArray::GetTypeStatic())
                         cache->BackgroundLoadResource<Texture2DArray>(name, true, this);
                     else
-#endif
                         cache->BackgroundLoadResource<TextureCube>(name, true, this);
                 }
                 else
@@ -422,7 +418,6 @@ bool Material::Load(const XMLElement& source)
             // Detect cube maps and arrays by file extension: they are defined by an XML file
             if (GetExtension(name) == ".xml")
             {
-#ifdef DESKTOP_GRAPHICS
                 StringHash type = ParseTextureTypeXml(cache, name);
                 if (!type && unit == TU_VOLUMEMAP)
                     type = Texture3D::GetTypeStatic();
@@ -432,7 +427,6 @@ bool Material::Load(const XMLElement& source)
                 else if (type == Texture2DArray::GetTypeStatic())
                     SetTextureInternal(unit, cache->GetResource<Texture2DArray>(name));
                 else
-#endif
                     SetTextureInternal(unit, cache->GetResource<TextureCube>(name));
             }
             else
@@ -580,7 +574,6 @@ bool Material::Load(const JSONValue& source)
             // Detect cube maps and arrays by file extension: they are defined by an XML file
             if (GetExtension(textureName) == ".xml")
             {
-#ifdef DESKTOP_GRAPHICS
                 StringHash type = ParseTextureTypeXml(cache, textureName);
                 if (!type && unit == TU_VOLUMEMAP)
                     type = Texture3D::GetTypeStatic();
@@ -590,7 +583,6 @@ bool Material::Load(const JSONValue& source)
                 else if (type == Texture2DArray::GetTypeStatic())
                     SetTextureInternal(unit, cache->GetResource<Texture2DArray>(textureName));
                 else
-#endif
                     SetTextureInternal(unit, cache->GetResource<TextureCube>(textureName));
             }
             else
@@ -1211,7 +1203,7 @@ Technique* Material::FindTechnique(Drawable* drawable, MaterialQuality materialQ
         const TechniqueEntry& entry = techniques[i];
         Technique* tech = entry.technique_;
 
-        if (!tech || (!tech->IsSupported()) || materialQuality < entry.qualityLevel_)
+        if (!tech || materialQuality < entry.qualityLevel_)
             continue;
         if (lodDistance >= entry.lodDistance_)
             return tech;
@@ -1231,7 +1223,7 @@ Pass* Material::GetDefaultPass() const
 {
     static const unsigned basePassIndex = Technique::GetPassIndex("base");
     if (Technique* tech = GetTechnique(0))
-        return tech->GetSupportedPass(basePassIndex);
+        return tech->GetPass(basePassIndex);
     return nullptr;
 }
 

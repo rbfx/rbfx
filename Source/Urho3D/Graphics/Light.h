@@ -62,11 +62,8 @@ enum LightImportance
 static const float SHADOW_MIN_QUANTIZE = 0.1f;
 static const float SHADOW_MIN_VIEW = 1.0f;
 static const int MAX_LIGHT_SPLITS = 6;
-#ifdef DESKTOP_GRAPHICS
+// TODO(diligent): Revisit max number of cascades on mobiles
 static const unsigned MAX_CASCADE_SPLITS = 4;
-#else
-static const unsigned MAX_CASCADE_SPLITS = 1;
-#endif
 
 static const LightType DEFAULT_LIGHTTYPE = LIGHT_POINT;
 static const LightImportance DEFAULT_LIGHTIMPORTANCE = LI_AUTO;

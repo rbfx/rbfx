@@ -50,7 +50,6 @@ LightmapRenderPipelineView::~LightmapRenderPipelineView()
 
 void LightmapRenderPipelineView::RenderGeometryBuffer(Viewport* viewport, int textureSize)
 {
-#ifdef DESKTOP_GRAPHICS
     auto renderBufferManager = MakeShared<RenderBufferManager>(this);
     auto shadowMapAllocator = MakeShared<ShadowMapAllocator>(context_);
     auto instancingBuffer = MakeShared<InstancingBuffer>(context_);
@@ -131,7 +130,6 @@ void LightmapRenderPipelineView::RenderGeometryBuffer(Viewport* viewport, int te
 
     // Do not end the renderer so textures are available outside
     //OnRenderEnd(this, frameInfo);
-#endif
 }
 
 }

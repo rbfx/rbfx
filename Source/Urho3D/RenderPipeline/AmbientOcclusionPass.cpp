@@ -36,8 +36,6 @@
 namespace Urho3D
 {
 
-#ifdef DESKTOP_GRAPHICS
-
 AmbientOcclusionPass::AmbientOcclusionPass(
     RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager)
     : PostProcessPass(renderPipeline, renderBufferManager)
@@ -256,8 +254,4 @@ void AmbientOcclusionPass::Execute(Camera* camera)
     }
 }
 
-#endif
-
 } // namespace Urho3D
-
-

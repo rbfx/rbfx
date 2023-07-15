@@ -81,11 +81,9 @@ const ea::vector<MaterialInspectorWidget::TextureUnitDesc> MaterialInspectorWidg
     {false, TU_SPECULAR,    "Specular",     "TU_SPECULAR: Metallic-Roughness-Occlusion map or Specular texture"},
     {false, TU_EMISSIVE,    "Emissive",     "TU_EMISSIVE: Emissive map or light map"},
     {false, TU_ENVIRONMENT, "Environment",  "TU_ENVIRONMENT: Texture with environment reflection"},
-#ifdef DESKTOP_GRAPHICS
     {true,  TU_VOLUMEMAP,   "* Volume",     "TU_VOLUMEMAP: Desktop only, custom unit"},
     {true,  TU_CUSTOM1,     "* Custom 1",   "TU_CUSTOM1: Desktop only, custom unit"},
     {true,  TU_CUSTOM2,     "* Custom 2",   "TU_CUSTOM2: Desktop only, custom unit"},
-#endif
 };
 
 const ea::vector<MaterialInspectorWidget::PropertyDesc> MaterialInspectorWidget::properties{

@@ -495,7 +495,6 @@ using BoneCollisionShapeFlags = Urho3D::BoneCollisionShape;
 %csattribute(Urho3D::Pass, %arg(Urho3D::BlendMode), BlendMode, GetBlendMode, SetBlendMode);
 %csattribute(Urho3D::Pass, %arg(Urho3D::CullMode), CullMode, GetCullMode, SetCullMode);
 %csattribute(Urho3D::Pass, %arg(Urho3D::CompareMode), DepthTestMode, GetDepthTestMode, SetDepthTestMode);
-%csattribute(Urho3D::Pass, %arg(Urho3D::PassLightingMode), LightingMode, GetLightingMode, SetLightingMode);
 %csattribute(Urho3D::Pass, %arg(unsigned int), ShadersLoadedFrameNumber, GetShadersLoadedFrameNumber);
 %csattribute(Urho3D::Pass, %arg(bool), ColorWrite, GetColorWrite, SetColorWrite);
 %csattribute(Urho3D::Pass, %arg(bool), DepthWrite, GetDepthWrite, SetDepthWrite);

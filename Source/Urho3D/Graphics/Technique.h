@@ -69,14 +69,6 @@ static const char* lightingModeNames[] =
     nullptr
 };
 
-/// Lighting mode of a pass.
-enum PassLightingMode
-{
-    LIGHTING_UNLIT = 0,
-    LIGHTING_PERVERTEX,
-    LIGHTING_PERPIXEL
-};
-
 /// %Material rendering pass, which defines shaders and render state.
 class URHO3D_API Pass : public RefCounted, public PipelineStateTracker
 {
@@ -95,9 +87,6 @@ public:
     /// Set depth compare mode.
     /// @property
     void SetDepthTestMode(CompareMode mode);
-    /// Set pass lighting mode, affects what shader variations will be attempted to be loaded.
-    /// @property
-    void SetLightingMode(PassLightingMode mode);
     /// Set depth write on/off.
     /// @property
     void SetDepthWrite(bool enable);
@@ -107,9 +96,6 @@ public:
     /// Set alpha-to-coverage on/off.
     /// @property
     void SetAlphaToCoverage(bool enable);
-    /// Set whether requires desktop level hardware.
-    /// @property{set_desktop}
-    void SetIsDesktop(bool enable);
     /// Set vertex shader name.
     /// @property
     void SetVertexShader(const ea::string& name);
@@ -151,10 +137,6 @@ public:
     /// @property
     CompareMode GetDepthTestMode() const { return depthTestMode_; }
 
-    /// Return pass lighting mode.
-    /// @property
-    PassLightingMode GetLightingMode() const { return lightingMode_; }
-
     /// Return last shaders loaded frame number.
     unsigned GetShadersLoadedFrameNumber() const { return shadersLoadedFrameNumber_; }
 
@@ -169,10 +151,6 @@ public:
     /// Return alpha-to-coverage mode.
     /// @property
     bool GetAlphaToCoverage() const { return alphaToCoverage_; }
-
-    /// Return whether requires desktop level hardware.
-    /// @property
-    bool IsDesktop() const { return isDesktop_; }
 
     /// Return whether the pass uses cutout transparency via ALPHAMASK.
     bool IsAlphaMask() const { return isAlphaMask_; }
@@ -228,8 +206,6 @@ private:
     CullMode cullMode_;
     /// Depth compare mode.
     CompareMode depthTestMode_;
-    /// Lighting mode.
-    PassLightingMode lightingMode_;
     /// Last shaders loaded frame number.
     unsigned shadersLoadedFrameNumber_;
     /// Color write mode.
@@ -238,8 +214,6 @@ private:
     bool depthWrite_;
     /// Alpha-to-coverage mode.
     bool alphaToCoverage_;
-    /// Require desktop level hardware flag.
-    bool isDesktop_;
     /// Whether the pass uses cutout transparency via ALPHAMASK.
     bool isAlphaMask_{};
     /// Vertex shader name.
@@ -285,9 +259,6 @@ public:
     /// Load resource from stream. May be called from a worker thread. Return true if successful.
     bool BeginLoad(Deserializer& source) override;
 
-    /// Set whether requires desktop level hardware.
-    /// @property{set_desktop}
-    void SetIsDesktop(bool enable);
     /// Create a new pass.
     Pass* CreatePass(const ea::string& name);
     /// Remove a pass.
@@ -296,14 +267,6 @@ public:
     void ReleaseShaders();
     /// Clone the technique. Passes will be deep copied to allow independent modification.
     SharedPtr<Technique> Clone(const ea::string& cloneName = EMPTY_STRING) const;
-
-    /// Return whether requires desktop level hardware.
-    /// @property
-    bool IsDesktop() const { return isDesktop_; }
-
-    /// Return whether technique is supported by the current hardware.
-    /// @property
-    bool IsSupported() const { return !isDesktop_ || desktopSupport_; }
 
     /// Return whether has a pass.
     bool HasPass(unsigned passIndex) const { return passIndex < passes_.size() && passes_[passIndex] != nullptr; }
@@ -316,16 +279,6 @@ public:
 
     /// Return a pass by name, or null if not found. This overload should not be called in time-critical rendering loops; use a pre-acquired pass index instead.
     Pass* GetPass(const ea::string& name) const;
-
-    /// Return a pass that is supported for rendering, or null if not found.
-    Pass* GetSupportedPass(unsigned passIndex) const
-    {
-        Pass* pass = passIndex < passes_.size() ? passes_[passIndex] : nullptr;
-        return pass && (!pass->IsDesktop() || desktopSupport_) ? pass : nullptr;
-    }
-
-    /// Return a supported pass by name. This overload should not be called in time-critical rendering loops; use a pre-acquired pass index instead.
-    Pass* GetSupportedPass(const ea::string& name) const;
 
     /// Return number of passes.
     /// @property
@@ -361,10 +314,6 @@ public:
     static unsigned shadowPassIndex;
 
 private:
-    /// Require desktop GPU flag.
-    bool isDesktop_;
-    /// Cached desktop GPU support flag.
-    bool desktopSupport_;
     /// Passes.
     ea::vector<SharedPtr<Pass> > passes_;
     /// Cached clones with added shader compilation defines.

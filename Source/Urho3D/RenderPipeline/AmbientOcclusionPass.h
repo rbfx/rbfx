@@ -41,7 +41,6 @@ class URHO3D_API AmbientOcclusionPass : public PostProcessPass
 {
     URHO3D_OBJECT(AmbientOcclusionPass, PostProcessPass)
 
-#ifdef DESKTOP_GRAPHICS
 public:
     AmbientOcclusionPass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager);
 
@@ -86,8 +85,6 @@ protected:
         StaticPipelineStateId preview_{};
     };
     ea::optional<CachedStates> pipelineStates_;
-
-#endif
 };
 
 } // namespace Urho3D
