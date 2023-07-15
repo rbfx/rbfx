@@ -33,6 +33,7 @@
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Viewport.h"
 #include "../Input/Input.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/AutoExposurePass.h"
 #include "../RenderPipeline/BatchRenderer.h"
 #include "../RenderPipeline/BloomPass.h"
@@ -341,6 +342,7 @@ void DefaultRenderPipelineView::Render()
 {
     URHO3D_PROFILE("ExecuteRenderPipeline");
 
+    const RenderDeviceCaps& caps = GetSubsystem<RenderDevice>()->GetCaps();
     const FrameInfo& fullFrameInfo = sceneProcessor_->GetFrameInfo();
 
     const bool hasRefraction = alphaPass_->HasRefractionBatches();
@@ -434,16 +436,14 @@ void DefaultRenderPipelineView::Render()
     if (hasRefraction)
         renderBufferManager_->SwapColorBuffers(true);
 
-#ifdef DESKTOP_GRAPHICS
+    const bool supportReadOnlyDepth = caps.readOnlyDepth_;
     ShaderResourceDesc depthAndColorTextures[] = {
-        { ShaderResources::DepthBuffer, renderBufferManager_->GetDepthStencilTexture() },
-        { ShaderResources::EmissiveMap, renderBufferManager_->GetSecondaryColorTexture() },
+        {ShaderResources::DepthBuffer, supportReadOnlyDepth ? renderBufferManager_->GetDepthStencilTexture() : nullptr},
+        {ShaderResources::EmissiveMap, renderBufferManager_->GetSecondaryColorTexture()},
     };
-#else
-    ShaderResourceDesc depthAndColorTextures[] = {
-        { ShaderResources::EmissiveMap, renderBufferManager_->GetSecondaryColorTexture() },
-    };
-#endif
+
+    if (supportReadOnlyDepth)
+        renderBufferManager_->SetOutputRenderTargets(true);
 
     sceneProcessor_->RenderSceneBatches("Alpha", camera, alphaPass_->GetBatches(),
         depthAndColorTextures, cameraParameters);

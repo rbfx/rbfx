@@ -97,16 +97,16 @@ TextureFormat GetColorTextureFormat(bool needHDR, bool needSRGB)
         return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
 }
 
-Vector4 CalculateViewportOffsetAndScale(const IntVector2& textureSize, const IntRect& viewportRect)
+Vector4 CalculateViewportOffsetAndScale(
+    RenderDevice* renderDevice, const IntVector2& textureSize, const IntRect& viewportRect)
 {
     const Vector2 halfViewportScale = 0.5f * viewportRect.Size().ToVector2() / textureSize.ToVector2();
     const float xOffset = static_cast<float>(viewportRect.left_) / textureSize.x_ + halfViewportScale.x_;
     const float yOffset = static_cast<float>(viewportRect.top_) / textureSize.y_ + halfViewportScale.y_;
-#ifdef URHO3D_OPENGL
-    return { xOffset, 1.0f - yOffset, halfViewportScale.x_, halfViewportScale.y_ };
-#else
+    // TODO: Do we want to flip this in OpenGL? It would make sense but it doesn't work.
+    // const bool isOpenGL = renderDevice->GetBackend() == RenderBackend::OpenGL;
+    // return { xOffset, 1.0f - yOffset, halfViewportScale.x_, halfViewportScale.y_ };
     return { xOffset, yOffset, halfViewportScale.x_, halfViewportScale.y_ };
-#endif
 }
 
 GraphicsPipelineStateDesc GetClearPipelineStateDesc(Graphics* graphics, ClearTargetFlags flags)
@@ -320,7 +320,7 @@ void RenderBufferManager::ClearOutput(const Color& color, float depth, unsigned 
 Vector4 RenderBufferManager::GetDefaultClipToUVSpaceOffsetAndScale() const
 {
     const IntVector2 size = GetOutputSize();
-    return CalculateViewportOffsetAndScale(size, IntRect{ IntVector2::ZERO, size });
+    return CalculateViewportOffsetAndScale(renderDevice_, size, IntRect{ IntVector2::ZERO, size });
 }
 
 StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(GraphicsPipelineStateDesc desc)
@@ -370,11 +370,10 @@ void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadP
     Matrix4 projection = Matrix4::IDENTITY;
     if (flipVertical)
         projection.m11_ = -1.0f;
-#ifdef URHO3D_OPENGL
-    modelMatrix.m23_ = 0.0f;
-#else
-    modelMatrix.m23_ = 0.5f;
-#endif
+
+    // OpenGL z range is [-1, 1] instead of [0, 1], draw quad at z = 0.5 for consistency
+    const bool isOpenGL = renderDevice_->GetBackend() == RenderBackend::OpenGL;
+    modelMatrix.m23_ = isOpenGL ? 0.0f : 0.5f;
 
     drawQueue_->Reset();
     drawQueue_->SetPipelineState(pipelineState);
@@ -518,14 +517,15 @@ void RenderBufferManager::OnRenderBegin(const CommonFrameInfo& frameInfo)
     const bool isMultiSampleMatching = outputMultiSample == colorOutputParams_.multiSampleLevel_;
     const bool isFilterMatching = isBilinearFilteredOutput == colorOutputParams_.flags_.Test(RenderBufferFlag::BilinearFiltering);
     const bool isColorUsageMatching = isSimpleTextureOutput || !needSimpleTexture;
+    const bool isOutputMatching =
+        isColorFormatMatching && isMultiSampleMatching && isFilterMatching && isColorUsageMatching;
 
     const bool needSecondaryBuffer = frameSettings_.supportColorReadWrite_;
-    const bool needSubstitutePrimaryBuffer = !isColorFormatMatching
-         || !isMultiSampleMatching || !isFilterMatching || !isColorUsageMatching;
     const bool needSubstituteDepthBuffer = !isMultiSampleMatching || !outputDepthStencil.has_value()
-        || ((needSecondaryBuffer || needSubstitutePrimaryBuffer) && outputDepthStencil.value() == nullptr)
+        || ((needSecondaryBuffer || !isOutputMatching) && outputDepthStencil.value() == nullptr)
         || (settings_.readableDepth_ && (!outputHasReadableDepth || !isSimpleTextureOutput))
         || (settings_.stencilBuffer_ && !outputHasStencil);
+    const bool needSubstitutePrimaryBuffer = !isOutputMatching || needSubstituteDepthBuffer;
 
     // Allocate substitute buffers if necessary
     if (needSubstitutePrimaryBuffer && !substituteRenderBuffers_[0])
@@ -622,7 +622,7 @@ void RenderBufferManager::DrawTextureRegion(ea::string_view debugComment, RawTex
     callParams.invInputSize_ = Vector2::ONE / size.ToVector2();
 
     const IntRect effectiveSourceRect = sourceRect != IntRect::ZERO ? sourceRect : IntRect{IntVector2::ZERO, size};
-    callParams.clipToUVOffsetAndScale_ = CalculateViewportOffsetAndScale(size, effectiveSourceRect);
+    callParams.clipToUVOffsetAndScale_ = CalculateViewportOffsetAndScale(renderDevice_, size, effectiveSourceRect);
 
     const ShaderResourceDesc shaderResources[] = { { ShaderResources::DiffMap, sourceTexture } };
     callParams.resources_ = shaderResources;

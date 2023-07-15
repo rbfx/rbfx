@@ -26,9 +26,9 @@
 #ifdef URHO3D_LIGHT_PASS
     /// Sample geometry buffer at position.
     #ifdef URHO3D_LIGHT_DIRECTIONAL
-        #define SampleGeometryBuffer(texture, screenPos) texture(texture, screenPos.xy)
+        #define SampleGeometryBuffer(bufferTexture, screenPos) texture(bufferTexture, screenPos.xy)
     #else
-        #define SampleGeometryBuffer(texture, screenPos) textureProj(texture, screenPos)
+        #define SampleGeometryBuffer(bufferTexture, screenPos) textureProj(bufferTexture, screenPos)
     #endif
 
     /// Return world position from depth.

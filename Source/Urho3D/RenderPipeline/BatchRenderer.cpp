@@ -33,6 +33,7 @@
 #include "../Graphics/TextureCube.h"
 #include "../Graphics/Zone.h"
 #include "../IO/Log.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/BatchRenderer.h"
 #include "../RenderPipeline/DrawableProcessor.h"
 #include "../RenderPipeline/InstancingBuffer.h"
@@ -52,21 +53,27 @@ namespace
 {
 
 /// Return shader parameter for camera depth mode.
-Vector4 GetCameraDepthModeParameter(const Camera& camera)
+Vector4 GetCameraDepthModeParameter(RenderBackend backend, const Camera& camera)
 {
     Vector4 depthMode = Vector4::ZERO;
     if (camera.IsOrthographic())
     {
         depthMode.x_ = 1.0f;
-#ifdef URHO3D_OPENGL
-        depthMode.z_ = 0.5f;
-        depthMode.w_ = 0.5f;
-#else
-        depthMode.z_ = 1.0f;
-#endif
+        if (backend == RenderBackend::OpenGL)
+        {
+            depthMode.z_ = 0.5f;
+            depthMode.w_ = 0.5f;
+        }
+        else
+        {
+            depthMode.z_ = 1.0f;
+            depthMode.w_ = 0.0f;
+        }
     }
     else
+    {
         depthMode.w_ = 1.0f / camera.GetFarClip();
+    }
     return depthMode;
 }
 
@@ -246,6 +253,7 @@ public:
         BatchRenderFlags flags, unsigned startInstance)
         : BatchRenderingContext(ctx)
         , settings_(settings)
+        , backend_(ctx.camera_.GetSubsystem<RenderDevice>()->GetBackend())
         , numVertexLights_(drawableProcessor.GetSettings().maxVertexLights_)
         , debugger_(debugger)
         , drawableProcessor_(drawableProcessor)
@@ -554,7 +562,7 @@ private:
                 lightParams.shadowNormalBias_[outputShadowSplit_->GetSplitIndex()]);
         }
 
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthMode, GetCameraDepthModeParameter(camera_));
+        drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthMode, GetCameraDepthModeParameter(backend_, camera_));
         drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthReconstruct, GetCameraDepthReconstructParameter(camera_));
 
         Vector3 nearVector, farVector;
@@ -746,6 +754,7 @@ private:
     /// External state (required)
     /// @{
     const BatchRendererSettings& settings_;
+    const RenderBackend backend_{};
     const unsigned numVertexLights_{};
     RenderPipelineDebugger* debugger_{};
     const DrawableProcessor& drawableProcessor_;

@@ -28,6 +28,7 @@
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Viewport.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
@@ -123,6 +124,9 @@ Camera* Viewport::GetCamera() const
 
 IntRect Viewport::GetEffectiveRect(RenderSurface* renderTarget, bool compensateRenderTargetFlip) const
 {
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    const bool isOpenGL = renderDevice->GetBackend() == RenderBackend::OpenGL;
+
     const IntVector2 renderTargetSize = RenderSurface::GetSize(GetSubsystem<Graphics>(), renderTarget);
 
     if (rect_ == IntRect::ZERO)
@@ -139,8 +143,7 @@ IntRect Viewport::GetEffectiveRect(RenderSurface* renderTarget, bool compensateR
         rect.right_ = Clamp(rect_.right_, rect.left_ + 1, renderTargetSize.x_);
         rect.bottom_ = Clamp(rect_.bottom_, rect.top_ + 1, renderTargetSize.y_);
 
-#ifdef URHO3D_OPENGL
-        if (renderTarget && compensateRenderTargetFlip)
+        if (isOpenGL && renderTarget && compensateRenderTargetFlip)
         {
             // On OpenGL the render to texture is flipped vertically.
             // Flip the viewport rectangle to compensate.
@@ -148,7 +151,6 @@ IntRect Viewport::GetEffectiveRect(RenderSurface* renderTarget, bool compensateR
             rect.bottom_ = renderTargetSize.y_ - rect.bottom_;
             ea::swap(rect.top_, rect.bottom_);
         }
-#endif
 
         return rect;
     }

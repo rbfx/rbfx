@@ -29,6 +29,7 @@
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Texture2D.h"
 #include "../Resource/ResourceCache.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/RenderPipeline/RenderBufferManager.h"
 #include "Urho3D/RenderPipeline/ShaderConsts.h"
 
@@ -105,13 +106,12 @@ void AmbientOcclusionPass::EvaluateAO(Camera* camera, const Matrix4& viewToTextu
         0.0f,  0.0f, 0.0f, 1.0f
     };
 
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    const bool isOpenGL = renderDevice->GetBackend() == RenderBackend::OpenGL;
+
     const Vector2 inputInvSize = renderBufferManager_->GetInvOutputSize();
 
-#ifdef URHO3D_OPENGL
-    const bool invertY = camera->GetFlipVertical();
-#else
-    const bool invertY = !camera->GetFlipVertical();
-#endif
+    const bool invertY = isOpenGL == camera->GetFlipVertical();
     const Matrix4 worldToViewSpace = camera->GetView().ToMatrix4();
     const Matrix4 worldToViewSpaceCorrected = invertY ? flipMatrix * worldToViewSpace : worldToViewSpace;
 
