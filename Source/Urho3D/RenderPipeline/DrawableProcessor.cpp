@@ -231,6 +231,7 @@ void DrawableProcessor::OnCollectStatistics(RenderPipelineStats& stats)
 {
     stats.numOccluders_ += sortedOccluders_.size();
     stats.numLights_ += lights_.size();
+    stats.numGeometries_ += geometries_.Size();
     stats.numShadowedLights_ += numShadowedLights_;
 }
 
@@ -480,7 +481,7 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
         for (unsigned sourceBatchIndex = 0; sourceBatchIndex < sourceBatches.size(); ++sourceBatchIndex)
         {
             const SourceBatch& sourceBatch = sourceBatches[sourceBatchIndex];
-            if (!sourceBatch.geometry_ || sourceBatch.numWorldTransforms_ == 0)
+            if (!sourceBatch.geometry_ || sourceBatch.geometry_->IsEmpty() || sourceBatch.numWorldTransforms_ == 0)
                 continue;
 
             // Find current technique

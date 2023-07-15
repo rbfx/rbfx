@@ -399,20 +399,10 @@ Technique* Renderer::GetDefaultTechnique() const
 unsigned Renderer::GetNumGeometries() const
 {
     unsigned numGeometries = 0;
-    // TODO(diligent): Revisit
-#if 0
-    unsigned lastView = allViews ? views_.size() : 1;
 
-    for (unsigned i = 0; i < lastView; ++i)
-    {
-        // Use the source view's statistics if applicable
-        View* view = GetActualView(views_[i]);
-        if (!view)
-            continue;
+    for (const RenderPipelineView* view : renderPipelineViews_)
+        numGeometries += view ? view->GetStats().numGeometries_ : 0;
 
-        numGeometries += view->GetGeometries().size();
-    }
-#endif
     return numGeometries;
 }
 
@@ -421,11 +411,7 @@ unsigned Renderer::GetNumLights() const
     unsigned numLights = 0;
 
     for (const RenderPipelineView* view : renderPipelineViews_)
-    {
-        if (!view)
-            continue;
-        numLights += view->GetStats().numLights_;
-    }
+        numLights += view ? view->GetStats().numLights_ : 0;
 
     return numLights;
 }
@@ -435,11 +421,7 @@ unsigned Renderer::GetNumShadowMaps() const
     unsigned numShadowMaps = 0;
 
     for (const RenderPipelineView* view : renderPipelineViews_)
-    {
-        if (!view)
-            continue;
-        numShadowMaps += view->GetStats().numShadowedLights_;
-    }
+        numShadowMaps += view ? view->GetStats().numShadowedLights_ : 0;
 
     return numShadowMaps;
 }
@@ -449,11 +431,7 @@ unsigned Renderer::GetNumOccluders() const
     unsigned numOccluders = 0;
 
     for (const RenderPipelineView* view : renderPipelineViews_)
-    {
-        if (!view)
-            continue;
-        numOccluders += view->GetStats().numOccluders_;
-    }
+        numOccluders += view ? view->GetStats().numOccluders_ : 0;
 
     return numOccluders;
 }

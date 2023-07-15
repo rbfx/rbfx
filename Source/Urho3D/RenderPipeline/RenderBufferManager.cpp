@@ -458,7 +458,6 @@ void RenderBufferManager::DrawFeedbackViewportQuad(ea::string_view debugComment,
 
 void RenderBufferManager::OnPipelineStatesInvalidated()
 {
-    // TODO(diligent): Why needed?
     pipelineStates_.Invalidate();
 }
 

@@ -291,6 +291,8 @@ ea::string ShaderVariation::PrepareGLSLShaderCode(const ea::string& originalShad
     };
     shaderCode += shaderTypeDefines[GetShaderType()];
 
+    shaderCode += Format("#define URHO3D_{}\n", ToString(renderBackend).to_upper());
+
     shaderCode += "#define MAXBONES " + ea::to_string(Graphics::GetMaxBones()) + "\n";
 
     // Prepend the defines to the shader code
@@ -300,15 +302,6 @@ ea::string ShaderVariation::PrepareGLSLShaderCode(const ea::string& originalShad
         const ea::string defineString = "#define " + define.replaced('=', ' ') + " \n";
         shaderCode += defineString;
     }
-
-#if URHO3D_PLATFORM_WEB
-    shaderCode += "#define WEBGL\n";
-#endif
-
-    // TODO(diligent): Revisit this define
-    if (renderBackend == RenderBackend::D3D11 || renderBackend == RenderBackend::D3D12
-        || renderBackend == RenderBackend::Vulkan)
-        shaderCode += "#define D3D11\n";
 
     // When version define found, do not insert it a second time
     if (!versionTag)

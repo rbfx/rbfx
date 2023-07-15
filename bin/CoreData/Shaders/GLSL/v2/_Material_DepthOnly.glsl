@@ -32,7 +32,7 @@ void DefaultPixelShader()
 
 #ifdef URHO3D_VARIANCE_SHADOW_MAP
     float depth = vDepth.x / vDepth.y;
-    #ifndef D3D11
+    #ifndef URHO3D_OPENGL
         // Remap from [-1, 1] to [0, 1] for OpenGL
         depth = depth * 0.5 + 0.5;
     #endif

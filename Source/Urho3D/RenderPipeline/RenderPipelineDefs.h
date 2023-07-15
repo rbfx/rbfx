@@ -244,6 +244,8 @@ struct RenderPipelineStats
     unsigned numLights_{};
     /// Total number of lights with shadows processed.
     unsigned numShadowedLights_{};
+    /// Total number of geometries in the frame (excluding shadow casters).
+    unsigned numGeometries_{};
     /// Number of occluders rendered.
     unsigned numOccluders_{};
 };

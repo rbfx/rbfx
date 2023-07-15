@@ -162,7 +162,6 @@ void DynamicGeometry::CreateScene()
     {
         const unsigned numVertices = 18;
 
-        // TODO(diligent): Normals are lost
         float vertexData[] = {
             // Position             Normal
             0.0f, 0.5f, 0.0f,       0.0f, 0.0f, 0.0f,

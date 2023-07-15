@@ -205,8 +205,8 @@ Graphics::Graphics(Context* context)
     , shaderExtension_(".hlsl")
     , apiName_("Diligent")
 {
-    // TODO(diligent): Revisit this
-    //SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1");
+    // TODO: This can be used to have DPI scaling work on Windows, but it leads to blurry fonts
+    // SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1");
     SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
     context_->RequireSDL(SDL_INIT_VIDEO);
 

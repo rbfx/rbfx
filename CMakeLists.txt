@@ -44,9 +44,6 @@ set (CMAKE_MODULE_PATH ${rbfx_SOURCE_DIR}/CMake/Modules)
 # Include common utilities
 include(UrhoCommon)
 
-# TODO(diligent): Restore
-set (URHO3D_WINVER 0x0A00 CACHE STRING "" FORCE)
-
 # Enable testing
 if (URHO3D_TESTING)
     include (CTest)
@@ -116,9 +113,8 @@ else ()
 endif ()
 
 if (WIN32)
-    # TODO(diligent): Connect _WIN32_WINNT and DX12 support
     if (NOT DEFINED URHO3D_WINVER)
-        if (UWP)
+        if (UWP OR NOT URHO3D_GRAPHICS_NO_D3D12)
             set (URHO3D_WINVER 0x0A00)
         else ()
             set (URHO3D_WINVER 0x0601)

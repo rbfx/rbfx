@@ -251,8 +251,7 @@ PipelineState::PipelineState(PipelineStateCache* owner, const PipelineStateDesc&
     , owner_(owner)
     , desc_(desc)
 {
-    // TODO(diligent): Get rid of copying the name
-    SetDebugName(desc_.GetDebugName());
+    SetDebugName(Format("{} #{}", desc_.GetDebugName(), desc_.ToHash()));
     CreateGPU();
 }
 
@@ -478,7 +477,7 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
         ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
     }
 
-    ci.PSODesc.Name = desc.debugName_.c_str();
+    ci.PSODesc.Name = GetDebugName().c_str();
 
     ci.GraphicsPipeline.PrimitiveTopology = primitiveTopology[desc.primitiveType_];
 
@@ -611,7 +610,7 @@ void PipelineState::CreateGPU(const ComputePipelineStateDesc& desc)
         ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
     }
 
-    ci.PSODesc.Name = desc.debugName_.c_str();
+    ci.PSODesc.Name = GetDebugName().c_str();
 
     ci.pCS = computeShader;
 

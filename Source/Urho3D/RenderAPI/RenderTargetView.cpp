@@ -134,7 +134,7 @@ int RenderTargetView::GetMultiSample() const
     switch (type_)
     {
     case Type::SwapChainColor:
-    case Type::SwapChainDepthStencil: return 1; // TODO(diligent): Support multi-sampling
+    case Type::SwapChainDepthStencil: return renderDevice_->GetWindowSettings().multiSample_;
 
     case Type::Resource:
     case Type::ResourceSlice:

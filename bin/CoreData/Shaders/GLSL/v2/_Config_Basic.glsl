@@ -111,7 +111,7 @@
     #define URHO3D_FEATURE_CLIP_DISTANCE
 #endif
 
-#ifdef D3D11
+#ifndef URHO3D_OPENGL
     #define URHO3D_FEATURE_FRAMEBUFFER_Y_INVERTED
 #endif
 
