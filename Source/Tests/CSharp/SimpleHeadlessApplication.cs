@@ -42,12 +42,19 @@ namespace Urho3DNet.Tests
         /// <exception cref="Exception"></exception>
         private void OnLogMessage(VariantMap args)
         {
-            var helper = TestOutput;
-            if (helper != null)
+            try
             {
-                var logLevel = (LogLevel)args[E.LogMessage.Level].Int;
-                var message = args[E.LogMessage.Message].String;
-                helper.WriteLine($"{logLevel}: {message}");
+                var helper = TestOutput;
+                if (helper != null)
+                {
+                    var logLevel = (LogLevel)args[E.LogMessage.Level].Int;
+                    var message = args[E.LogMessage.Message].String;
+                    helper.WriteLine($"{logLevel}: {message}");
+                }
+            }
+            catch (NullReferenceException)
+            {
+                //TestOutput may be disposed internally.
             }
         }
     }
