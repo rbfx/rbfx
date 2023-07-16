@@ -30,7 +30,7 @@ namespace Urho3D
 
 ShakeComponent::ShakeComponent(Context* context)
     : BaseClassName(context)
-    , perlinNoise_(RandomEngine{})
+    , perlinNoise_(RandomEngine::GetDefaultEngine())
 {
     SetUpdateEventMask(USE_NO_EVENT);
 }

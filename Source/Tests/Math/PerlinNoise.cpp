@@ -31,11 +31,12 @@ TEST_CASE("Perlin noise 1D")
     double max = ea::numeric_limits<double>::min();
     double min = ea::numeric_limits<double>::max();
 
-    PerlinNoise noise{RandomEngine{0}};
+    RandomEngine randomEngine{0};
+    const PerlinNoise noise{randomEngine};
 
     for (unsigned i = 0; i < 1024; ++i)
     {
-        double val = noise.GetDouble(i * 1.1f);
+        const double val = noise.GetDouble(i * 1.1);
         min = Min(min, val);
         max = Max(max, val);
     }
@@ -49,7 +50,8 @@ TEST_CASE("Perlin noise 3D")
     double max = ea::numeric_limits<double>::min();
     double min = ea::numeric_limits<double>::max();
 
-    PerlinNoise noise{RandomEngine{0}};
+    RandomEngine randomEngine{0};
+    const PerlinNoise noise{randomEngine};
 
     for (unsigned x = 0; x < 100; ++x)
     {
@@ -57,7 +59,7 @@ TEST_CASE("Perlin noise 3D")
         {
             for (unsigned z = 0; z < 100; ++z)
             {
-                double val = noise.GetDouble(x * 1.1, y * 1.1, z * 1.1);
+                const double val = noise.GetDouble(x * 1.1, y * 1.1, z * 1.1);
                 min = Min(min, val);
                 max = Max(max, val);
             }
