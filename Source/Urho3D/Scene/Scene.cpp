@@ -22,31 +22,31 @@
 
 #include "../Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/Profiler.h"
-#include "../Core/WorkQueue.h"
-#include "../Graphics/Texture2D.h"
-#include "../IO/Archive.h"
-#include "../IO/File.h"
-#include "../IO/Log.h"
-#include "../IO/PackageFile.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/ResourceEvents.h"
-#include "../Resource/XMLFile.h"
-#include "../Resource/JSONFile.h"
-#include "../Scene/Component.h"
-#include "../Scene/ObjectAnimation.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
-#include "../Scene/SceneResource.h"
-#include "../Scene/SplinePath.h"
-#include "../Scene/UnknownComponent.h"
-#include "../Scene/ValueAnimation.h"
-#include "../Scene/PrefabReference.h"
-#include "../Scene/PrefabResource.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/IO/Archive.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/PackageFile.h"
+#include "Urho3D/Resource/JSONFile.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/ResourceEvents.h"
+#include "Urho3D/Resource/XMLFile.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Scene/ObjectAnimation.h"
+#include "Urho3D/Scene/PrefabReference.h"
+#include "Urho3D/Scene/PrefabResource.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
+#include "Urho3D/Scene/SceneResource.h"
+#include "Urho3D/Scene/ShakeComponent.h"
+#include "Urho3D/Scene/SplinePath.h"
+#include "Urho3D/Scene/UnknownComponent.h"
+#include "Urho3D/Scene/ValueAnimation.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -1398,6 +1398,7 @@ void RegisterSceneLibrary(Context* context)
     SplinePath::RegisterObject(context);
     PrefabReference::RegisterObject(context);
     PrefabResource::RegisterObject(context);
+    ShakeComponent::RegisterObject(context);
 }
 
 }

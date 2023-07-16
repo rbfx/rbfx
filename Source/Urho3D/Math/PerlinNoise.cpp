@@ -88,7 +88,7 @@ double PerlinNoise::GetDouble(double x, int repeat) const
 
     const double res = Lerp(aa, bb, u);
 
-    return (res + 1.0) / 2.0;
+    return res + 0.5;
 }
 
 double PerlinNoise::Fade(double t)
