@@ -207,11 +207,16 @@ void Editor::Setup()
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = resourcePrefixPath_;
     engineParameters_[EP_WINDOW_MAXIMIZE] = true;
     engineParameters_[EP_ENGINE_AUTO_LOAD_SCRIPTS] = false;
-    // TODO: Consider scaling fonts based on DPI. ImGuiConfigFlags_DpiEnableScaleFonts seems to create issues.
-    engineParameters_[EP_SYSTEMUI_FLAGS] = 0;
+
+    // TODO: Consider scaling fonts based on DPI. ImGuiConfigFlags_DpiEnableScaleFonts seems to create issues on Retina.
+    unsigned imguiFlags = 0;
+    if (GetPlatform() == PlatformId::Windows)
+        imguiFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
 #if URHO3D_SYSTEMUI_VIEWPORTS
-    engineParameters_[EP_SYSTEMUI_FLAGS] = engineParameters_[EP_SYSTEMUI_FLAGS].GetUInt() | ImGuiConfigFlags_ViewportsEnable;
+    imguiFlags |= ImGuiConfigFlags_ViewportsEnable;
 #endif
+
+    engineParameters_[EP_SYSTEMUI_FLAGS] = imguiFlags;
 
     PluginApplication::RegisterStaticPlugins();
 }

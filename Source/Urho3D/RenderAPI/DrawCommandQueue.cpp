@@ -102,6 +102,7 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
     ShaderResourceRange currentShaderResources;
     ShaderResourceRange currentUnorderedAccessViews;
     unsigned currentScissorRect = M_MAX_UNSIGNED;
+    ea::optional<unsigned> currentStencilRef;
 
     // Set common state
     const float blendFactors[] = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -128,8 +129,6 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
 
             // Skip this pipeline if something goes wrong.
             deviceContext->SetPipelineState(cmd.pipelineState_->GetHandle());
-            if (const GraphicsPipelineStateDesc* graphicsDesc = cmd.pipelineState_->GetDesc().AsGraphics())
-                deviceContext->SetStencilRef(graphicsDesc->stencilReferenceValue_);
 
             currentPipelineState = cmd.pipelineState_;
             currentShaderResourceBinding = cmd.pipelineState_->GetShaderResourceBinding();
@@ -153,6 +152,13 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
 
             deviceContext->SetScissorRects(1, &internalRect, 0, 0);
             currentScissorRect = cmd.scissorRect_;
+        }
+
+        // Set stencil ref
+        if (cmd.stencilRef_ != currentStencilRef)
+        {
+            deviceContext->SetStencilRef(cmd.stencilRef_);
+            currentStencilRef = cmd.stencilRef_;
         }
 
         // Set index buffer

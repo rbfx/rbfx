@@ -34,6 +34,8 @@ struct DrawCommandDescription
 
     /// Index of scissor rectangle. 0 if disabled.
     unsigned scissorRect_{};
+    /// Stencil reference value.
+    unsigned stencilRef_{};
 
     /// Draw call parameters
     /// @{
@@ -66,6 +68,12 @@ public:
 
         currentDrawCommand_.pipelineState_ = pipelineState;
         currentShaderProgramReflection_ = pipelineState->GetReflection();
+    }
+
+    /// Set stencil reference value.
+    void SetStencilRef(unsigned ref)
+    {
+        currentDrawCommand_.stencilRef_ = ref;
     }
 
     /// Set scissor rect.

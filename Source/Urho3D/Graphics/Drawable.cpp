@@ -321,7 +321,6 @@ Geometry* Drawable::GetGeometryIfNotEmpty(Geometry* geometry)
 unsigned Drawable::RecalculatePipelineStateHash() const
 {
     unsigned hash = 0;
-    CombineHash(hash, GetLightMaskInZone() & PORTABLE_LIGHTMASK);
     CombineHash(hash, static_cast<unsigned>(giType_));
     CombineHash(hash, reflectionMode_ >= ReflectionMode::BlendProbes);
     return hash;

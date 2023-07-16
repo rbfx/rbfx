@@ -25,6 +25,7 @@
 #include "../Core/Context.h"
 #include "../Graphics/Camera.h"
 #include "../RenderAPI/DrawCommandQueue.h"
+#include "../Graphics/Drawable.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsUtils.h"
 #include "../Graphics/Octree.h"
@@ -316,6 +317,8 @@ private:
 
         dirty_.geometry_ = current_.geometry_ != pipelineBatch.geometry_;
         current_.geometry_ = pipelineBatch.geometry_;
+
+        current_.drawable_ = pipelineBatch.drawable_;
     }
 
     void CheckDirtyReflectionProbe(const LightAccumulator& lightAccumulator)
@@ -725,6 +728,9 @@ private:
             if (dirty_.pipelineState_)
                 drawQueue_.SetPipelineState(current_.pipelineState_);
 
+            if (enabled_.lightMaskToStencil_)
+                drawQueue_.SetStencilRef(current_.drawable_->GetLightMaskInZone() & PORTABLE_LIGHTMASK);
+
             UpdateDirtyConstants();
             UpdateDirtyResources();
 
@@ -773,6 +779,7 @@ private:
             , pixelLighting_(flags.Test(BatchRenderFlag::EnablePixelLights))
             , anyLighting_(ambientLighting_ || vertexLighting_ || pixelLighting_)
             , colorOutput_(!flags.Test(BatchRenderFlag::DisableColorOutput))
+            , lightMaskToStencil_(flags.Test(BatchRenderFlag::LightMaskToStencil))
         {
         }
 
@@ -781,6 +788,7 @@ private:
         bool pixelLighting_;
         bool anyLighting_;
         bool colorOutput_;
+        bool lightMaskToStencil_;
     } const enabled_;
 
     struct DirtyStateFlags
@@ -852,6 +860,7 @@ private:
 
         Material* material_{};
         Geometry* geometry_{};
+        Drawable* drawable_{};
     } current_;
 
     struct InstancingGroupState

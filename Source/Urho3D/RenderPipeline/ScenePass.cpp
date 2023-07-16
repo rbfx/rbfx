@@ -92,6 +92,11 @@ void UnorderedScenePass::OnBatchesReady()
         deferredBatchGroup_.flags_ |= BatchRenderFlag::DisableColorOutput;
         baseBatchGroup_.flags_ |= BatchRenderFlag::DisableColorOutput;
     }
+
+    if (GetFlags().Test(DrawableProcessorPassFlag::DeferredLightMaskToStencil))
+    {
+        deferredBatchGroup_.flags_ |= BatchRenderFlag::LightMaskToStencil;
+    }
 }
 
 void UnorderedScenePass::PrepareInstancingBuffer(BatchRenderer* batchRenderer)

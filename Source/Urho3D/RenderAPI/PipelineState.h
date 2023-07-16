@@ -60,7 +60,6 @@ struct URHO3D_API GraphicsPipelineStateDesc
     StencilOp stencilOperationOnPassed_{};
     StencilOp stencilOperationOnStencilFailed_{};
     StencilOp stencilOperationOnDepthFailed_{};
-    unsigned stencilReferenceValue_{};
     unsigned stencilCompareMask_{};
     unsigned stencilWriteMask_{};
     /// @}
@@ -104,7 +103,6 @@ struct URHO3D_API GraphicsPipelineStateDesc
             stencilOperationOnPassed_, //
             stencilOperationOnStencilFailed_, //
             stencilOperationOnDepthFailed_, //
-            stencilReferenceValue_, //
             stencilCompareMask_, //
             stencilWriteMask_, //
             inputLayout_, //

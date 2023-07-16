@@ -228,7 +228,6 @@ void PipelineStateBuilder::SetupLightVolumePassState(const LightProcessor* light
     pipelineStateDesc_.stencilTestEnabled_ = true;
     pipelineStateDesc_.stencilCompareFunction_ = CMP_NOTEQUAL;
     pipelineStateDesc_.stencilCompareMask_ = light->GetLightMaskEffective() & PORTABLE_LIGHTMASK;
-    pipelineStateDesc_.stencilReferenceValue_ = 0;
 }
 
 void PipelineStateBuilder::SetupUserPassState(const Drawable* drawable,
@@ -254,8 +253,6 @@ void PipelineStateBuilder::SetupUserPassState(const Drawable* drawable,
         pipelineStateDesc_.stencilTestEnabled_ = true;
         pipelineStateDesc_.stencilOperationOnPassed_ = OP_REF;
         pipelineStateDesc_.stencilWriteMask_ = PORTABLE_LIGHTMASK;
-        // TODO(diligent): Remove stencilReferenceValue_?
-        pipelineStateDesc_.stencilReferenceValue_ = drawable->GetLightMaskInZone() & PORTABLE_LIGHTMASK;
     }
 }
 
