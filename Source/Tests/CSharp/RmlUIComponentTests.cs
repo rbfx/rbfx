@@ -22,11 +22,19 @@
 
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Urho3DNet.Tests
 {
     public class RmlUIComponentTests
     {
+        private readonly ITestOutputHelper _output;
+
+        public RmlUIComponentTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         public class CusomUIComponent : RmlUIComponent
         {
             public CusomUIComponent(Context context) : base(context)
@@ -73,17 +81,18 @@ namespace Urho3DNet.Tests
         [Fact]
         public async Task RmlUIComponent_OnDataModelInitialized()
         {
-            /*await ApplicationRunner.RunAsync(app => {
-                if (!app.Context.IsReflected<CusomUIComponent>())
-                {
-                    app.Context.AddFactoryReflection(typeof(CusomUIComponent));
-                }
-                using (var node = new Node(app.Context))
-                {
-                    var component = node.CreateComponent<CusomUIComponent>();
-                    component.SetResource("UI/HelloRmlUI.rml");
-                }
-            });*/
+            await RbfxTestFramework.ToMainThreadAsync(_output);
+            var context = RbfxTestFramework.Context;
+            if (!context.IsReflected<CusomUIComponent>())
+            {
+                context.AddFactoryReflection(typeof(CusomUIComponent));
+            }
+
+            using (var node = new Node(context))
+            {
+                var component = node.CreateComponent<CusomUIComponent>();
+                component.SetResource("UI/HelloRmlUI.rml");
+            }
         }
     }
 }
