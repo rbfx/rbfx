@@ -675,6 +675,12 @@ public:
     /// Return all user variables.
     const StringVariantMap& GetVars() const { return vars_; }
 
+    /// Return all components derived from class. Optionally recursive.
+    void GetDerivedComponents(ea::vector<Component*>& dest, StringHash type, bool recursive = false) const;
+    /// Return first component derived from class.
+    Component* GetDerivedComponent(StringHash type, bool recursive = false) const;
+    /// Return first component derived from class.
+    Component* GetParentDerivedComponent(StringHash type, bool fullTraversal = false) const;
     /// Return first component derived from class.
     template <class T> T* GetDerivedComponent(bool recursive = false) const;
     /// Return first component derived from class in the parent node, or if fully traversing then the first node up the tree with one.
@@ -764,6 +770,8 @@ private:
     void GetChildrenWithTagRecursive(ea::vector<Node*>& dest, const ea::string& tag) const;
     /// Return specific components recursively.
     void GetComponentsRecursive(ea::vector<Component*>& dest, StringHash type) const;
+    /// Return components derived from type recursively.
+    void GetDerivedComponentsRecursive(ea::vector<Component*>& dest, StringHash type) const;
     /// Clone node recursively.
     Node* CloneRecursive(Node* parent, SceneResolver& resolver);
     /// Remove a component from this node with the specified iterator.

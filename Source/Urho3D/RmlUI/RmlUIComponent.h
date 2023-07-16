@@ -47,6 +47,10 @@ class URHO3D_API RmlUIComponent : public LogicComponent
 {
     URHO3D_OBJECT(RmlUIComponent, LogicComponent);
 
+    using GetterFunc = eastl::function<void(Variant&)>;
+    using SetterFunc = eastl::function<void(const Variant&)>;
+    using EventFunc = eastl::function<void(const VariantVector&)>;
+
 public:
     /// Construct.
     explicit RmlUIComponent(Context* context);
@@ -86,6 +90,11 @@ public:
     /// Return navigation manager.
     RmlNavigationManager& GetNavigationManager() const { return *navigationManager_; }
 
+    // Bind data model property.
+    bool BindDataModelProperty(const ea::string& name, GetterFunc getter, SetterFunc setter);
+    // Bind data model event.
+    bool BindDataModelEvent(const ea::string& name, EventFunc eventCallback);
+
 protected:
     /// Data model facade
     /// @{
@@ -124,7 +133,7 @@ protected:
     /// If load failed, only first callback will be called.
     /// @{
     virtual ea::string GetDataModelName() { return GetTypeName(); }
-    virtual void OnDataModelInitialized(Rml::DataModelConstructor& constructor) {}
+    virtual void OnDataModelInitialized() {}
 
     virtual void OnDocumentPreLoad() {}
     virtual void OnDocumentPostLoad() {}
@@ -132,12 +141,15 @@ protected:
     virtual void OnDocumentPostUnload() {}
     /// @}
 
-private:
+    /// Get data model constructor. Only available in OnDataModelInitialized method.
+    Rml::DataModelConstructor* GetDataModelConstructor() const { return modelConstructor_.get(); }
+
     /// Implement Component
     /// @{
     void OnSetEnabled() override;
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// @}
+private:
 
     /// Open a window document if it was not already open.
     void OpenInternal();
@@ -156,7 +168,7 @@ private:
     void UpdateDocumentOpen();
     void UpdateConnectedCanvas();
 
-    Rml::DataModelConstructor CreateDataModel();
+    void CreateDataModel();
     void RemoveDataModel();
 
     void OnNavigableGroupChanged();
@@ -185,6 +197,9 @@ private:
     Rml::DataModelHandle dataModel_;
     /// Name of the data model.
     ea::string dataModelName_;
+
+    /// Data model constructor.
+    ea::unique_ptr<Rml::DataModelConstructor> modelConstructor_;
 };
 
 }

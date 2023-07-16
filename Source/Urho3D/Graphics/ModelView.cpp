@@ -29,6 +29,7 @@
 #include "../Graphics/Model.h"
 #include "../Graphics/Tangent.h"
 #include "../Graphics/VertexBuffer.h"
+#include "../Graphics/Material.h"
 #include "../IO/Log.h"
 
 #include <EASTL/numeric.h>
@@ -1254,11 +1255,12 @@ SharedPtr<Model> ModelView::ExportModel(const ea::string& name) const
     return model;
 }
 
-StringVector ModelView::ExportMaterialList() const
+ResourceRefList ModelView::ExportMaterialList() const
 {
-    StringVector result;
+    ResourceRefList result(Material::GetTypeStatic());
+
     for (const GeometryView& geometry : geometries_)
-        result.push_back(geometry.material_);
+        result.names_.push_back(geometry.material_);
     return result;
 }
 

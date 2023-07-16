@@ -219,6 +219,8 @@ URHO3D_FLAGSET(PostProcessPassFlag, PostProcessPassFlags);
 class BatchStateCacheCallback
 {
 public:
+    /// Destruct.
+    virtual ~BatchStateCacheCallback();
     /// Create pipeline state for given context and key.
     /// Only attributes that constribute to pipeline state hashes are safe to use.
     virtual SharedPtr<PipelineState> CreateBatchPipelineState(
@@ -229,6 +231,8 @@ public:
 class UIBatchStateCacheCallback
 {
 public:
+    /// Destruct.
+    virtual ~UIBatchStateCacheCallback();
     /// Create pipeline state for given key.
     /// Only attributes that constribute to pipeline state hashes are safe to use.
     virtual SharedPtr<PipelineState> CreateUIBatchPipelineState(const UIBatchStateKey& key, const UIBatchStateCreateContext& ctx) = 0;
@@ -249,6 +253,7 @@ struct RenderPipelineStats
 class URHO3D_API RenderPipelineInterface
 {
 public:
+    virtual ~RenderPipelineInterface();
     virtual Context* GetContext() const = 0;
     virtual RenderPipelineDebugger* GetDebugger() = 0;
 
@@ -281,6 +286,8 @@ struct ShadowMapRegion
 class LightProcessorCallback
 {
 public:
+    /// Destruct.
+    virtual ~LightProcessorCallback();
     /// Return whether light needs shadow.
     virtual bool IsLightShadowed(Light* light) = 0;
     /// Return best shadow map size for given light. Should be safe to call from multiple threads.

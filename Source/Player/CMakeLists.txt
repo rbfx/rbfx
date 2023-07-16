@@ -20,10 +20,6 @@
 # THE SOFTWARE.
 #
 
-if (MINI_URHO)
-    return ()
-endif ()
-
 file (GLOB SOURCE_FILES *.cpp *.h)
 
 if (URHO3D_NO_EDITOR_PLAYER_EXE)

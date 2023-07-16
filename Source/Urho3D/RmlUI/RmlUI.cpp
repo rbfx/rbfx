@@ -539,6 +539,80 @@ void RmlUI::SetRenderTarget(std::nullptr_t, const Color& clearColor)
     SetRenderTarget(static_cast<RenderSurface*>(nullptr), clearColor);
 }
 
+/// Try to convert variant from RmlUI to Urho3D.
+bool FromRmlUi(const Rml::Variant& src, Variant& dst)
+{
+    switch (src.GetType())
+    {
+    case Rml::Variant::NONE: dst = Variant{}; return true;
+    case Rml::Variant::BOOL: dst = src.Get<bool>(); return true;
+    case Rml::Variant::INT: dst = src.Get<int>(); return true;
+    case Rml::Variant::INT64: dst = static_cast<long long>(src.Get<int64_t>()); return true;
+    case Rml::Variant::FLOAT: dst = src.Get<float>(); return true;
+    case Rml::Variant::DOUBLE: dst = src.Get<double>(); return true;
+    case Rml::Variant::STRING: dst = src.Get<Rml::String>(); return true;
+    case Rml::Variant::VOIDPTR: dst = src.Get<void*>(); return true;
+    case Rml::Variant::VECTOR2: dst = ToVector2(src.Get<Rml::Vector2f>()); return true;
+    case Rml::Variant::VECTOR3: dst = ToVector3(src.Get<Rml::Vector3f>()); return true;
+    case Rml::Variant::VECTOR4: dst = ToVector4(src.Get<Rml::Vector4f>()); return true;
+    case Rml::Variant::COLOURF: dst = ToColor(src.Get<Rml::Colourf>()); return true;
+    case Rml::Variant::COLOURB: dst = ToColor(src.Get<Rml::Colourb>()); return true;
+    case Rml::Variant::BYTE: dst = src.Get<Rml::byte>(); return true;
+    case Rml::Variant::CHAR: dst = src.Get<char>(); return true;
+    case Rml::Variant::UINT: dst = src.Get<unsigned>(); return true;
+    case Rml::Variant::UINT64: dst = static_cast<unsigned long long>(src.Get<uint64_t>()); return true;
+    case Rml::Variant::SCRIPTINTERFACE: break;
+    case Rml::Variant::TRANSFORMPTR: break;
+    case Rml::Variant::TRANSITIONLIST: break;
+    case Rml::Variant::ANIMATIONLIST: break;
+    case Rml::Variant::DECORATORSPTR: break;
+    case Rml::Variant::FONTEFFECTSPTR: break;
+    }
+    URHO3D_LOGERROR("This variant type conversion is not supported: {}", src.GetType());
+
+    return false;
+}
+
+/// Try to convert variant from Urho3D to RmlUI.
+bool ToRmlUi(const Variant& src, Rml::Variant& dst)
+{
+    switch (src.GetType())
+    {
+    case VAR_NONE: dst = {}; return true;
+    case VAR_BOOL: dst = src.Get<bool>(); return true;
+    case VAR_INT: dst = src.Get<int>(); return true;
+    case VAR_INT64: dst = static_cast<int64_t>(src.Get<long long>()); return true;
+    case VAR_FLOAT: dst = src.Get<float>(); return true;
+    case VAR_DOUBLE: dst = src.Get<double>(); return true;
+    case VAR_STRING: dst = src.Get<ea::string>(); return true;
+    case VAR_VOIDPTR: dst = src.Get<void*>(); return true;
+    case VAR_VECTOR2: dst = ToRmlUi(src.Get<Vector2>()); return true;
+    case VAR_VECTOR3: dst = ToRmlUi(src.Get<Vector3>()); return true;
+    case VAR_VECTOR4: dst = ToRmlUi(src.Get<Vector4>()); return true;
+    case VAR_COLOR: dst = ToRmlUi(src.Get<Color>()); return true;
+    case VAR_QUATERNION: break;
+    case VAR_BUFFER: break;
+    case VAR_RESOURCEREF: break;
+    case VAR_RESOURCEREFLIST: break;
+    case VAR_VARIANTVECTOR: break;
+    case VAR_VARIANTMAP: break;
+    case VAR_INTRECT: break;
+    case VAR_INTVECTOR2: break;
+    case VAR_PTR: break;
+    case VAR_MATRIX3: break;
+    case VAR_MATRIX3X4: break;
+    case VAR_MATRIX4: break;
+    case VAR_STRINGVECTOR: break;
+    case VAR_RECT: break;
+    case VAR_INTVECTOR3: break;
+    case VAR_CUSTOM: break;
+    case VAR_VARIANTCURVE: break;
+    case VAR_STRINGVARIANTMAP: break;
+    }
+    URHO3D_LOGERROR("This variant type conversion is not supported: {}", Variant::GetTypeNameList()[src.GetType()]);
+    return false;
+}
+
 IntVector2 RmlUI::GetDesiredCanvasSize() const
 {
     RenderSurface* renderSurface = renderSurface_;

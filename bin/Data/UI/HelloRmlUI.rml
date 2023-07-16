@@ -8,12 +8,12 @@
     <p>Sample Window</p>
     <div data-model="SimpleWindow">
         <h3>Text</h3>
-        <b>&#66;old text</b>, <i>italic text</i>, <s><span>striked out text</span></s>.
+        <b>Bold text</b>, <i>italic text</i>, <s><span>striked out text</span></s>.
         <hr/>
         <h3>Buttons</h3>
         <button data-event-click="count">Clicked {{counter}} times!</button>
         <input type="submit" disabled>Click!</input>
-        <button onclick="sound:&#x53;ounds/PlayerFist.wav">Sound!</button>
+        <button onclick="sound:Sounds/PlayerFist.wav">Sound!</button>
         <h3>Inputs</h3>
         <textarea></textarea>
         <input type="checkbox" checked="false"/> <label>Greatness</label><br/>

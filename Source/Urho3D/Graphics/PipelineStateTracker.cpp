@@ -71,6 +71,10 @@ void PipelineStateTracker::RemoveSubscriberReference(PipelineStateTracker* subsc
     subscriber->MarkPipelineStateHashDirty();
 }
 
+PipelineStateTracker::~PipelineStateTracker()
+{
+}
+
 void PipelineStateTracker::MarkPipelineStateHashDirty()
 {
     const unsigned oldHash = pipelineStateHash_.exchange(0, std::memory_order_relaxed);
