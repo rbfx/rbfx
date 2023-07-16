@@ -26,8 +26,8 @@
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/GraphicsUtils.h"
-#include "../Graphics/Renderer.h"
 #include "../Graphics/Technique.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../RenderPipeline/BatchStateCache.h"
 #include "../RenderPipeline/ShaderConsts.h"
 
@@ -141,8 +141,8 @@ PipelineState* DefaultUIBatchStateCache::GetOrCreatePipelineState(
 SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
     const UIBatchStateKey& key, const UIBatchStateCreateContext& ctx)
 {
-    Graphics* graphics = GetSubsystem<Graphics>();
-    Renderer* renderer = GetSubsystem<Renderer>();
+    auto graphics = GetSubsystem<Graphics>();
+    auto pipelineStateCache = GetSubsystem<PipelineStateCache>();
 
     GraphicsPipelineStateDesc desc;
 
@@ -183,7 +183,7 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
     desc.vertexShader_ = graphics->GetShader(VS, key.pass_->GetVertexShader(), vertexShaderDefines_);
     desc.pixelShader_ = graphics->GetShader(PS, key.pass_->GetPixelShader(), pixelShaderDefines_);
 
-    return renderer->GetOrCreatePipelineState(desc);
+    return pipelineStateCache->GetGraphicsPipelineState(desc);
 }
 
 }

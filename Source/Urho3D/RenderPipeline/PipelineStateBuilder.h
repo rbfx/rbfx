@@ -89,7 +89,7 @@ private:
     /// @}
 
     Graphics* graphics_{};
-    Renderer* renderer_{};
+    PipelineStateCache* pipelineStateCache_{};
 
     SharedPtr<ShaderProgramCompositor> compositor_;
 

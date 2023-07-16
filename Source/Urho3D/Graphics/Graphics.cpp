@@ -58,8 +58,9 @@
 #include "../Graphics/VertexBuffer.h"
 #include "../Graphics/Viewport.h"
 #include "../Graphics/Zone.h"
-#include "../IO/FileSystem.h"
+#include "../IO/VirtualFileSystem.h"
 #include "../IO/Log.h"
+#include "Urho3D/RenderAPI/PipelineState.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 
 #include <SDL.h>
@@ -175,6 +176,40 @@ bool Graphics::SetMode(int width, int height)
     WindowSettings params = GetWindowSettings();
     params.size_ = {width, height};
     return SetDefaultWindowModes(params);
+}
+
+void Graphics::InitializePipelineStateCache(const FileIdentifier& fileName)
+{
+    auto psoCache = context_->RegisterSubsystem<PipelineStateCache>();
+
+    ByteVector cachedData;
+    if (fileName)
+    {
+        auto vfs = GetSubsystem<VirtualFileSystem>();
+        if (vfs->Exists(fileName))
+        {
+            if (const AbstractFilePtr file = vfs->OpenFile(fileName, FILE_READ))
+            {
+                cachedData.resize(file->GetSize());
+                file->Read(cachedData.data(), cachedData.size());
+            }
+        }
+    }
+
+    psoCache->Initialize(cachedData);
+}
+
+void Graphics::SavePipelineStateCache(const FileIdentifier& fileName)
+{
+    if (!fileName)
+        return;
+
+    auto psoCache = GetSubsystem<PipelineStateCache>();
+    const auto cachedData = psoCache->GetCachedData();
+
+    auto vfs = GetSubsystem<VirtualFileSystem>();
+    if (const AbstractFilePtr file = vfs->OpenFile(fileName, FILE_WRITE))
+        file->Write(cachedData.data(), cachedData.size());
 }
 
 bool Graphics::ToggleFullscreen()

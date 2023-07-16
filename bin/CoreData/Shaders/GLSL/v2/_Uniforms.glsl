@@ -271,7 +271,7 @@ UNIFORM_BUFFER_END(4, Material)
         #endif
         #ifdef URHO3D_GEOMETRY_SKINNED
             /// Object to world space matrices for each bone.
-            UNIFORM_HIGHP(vec4 cSkinMatrices[MAXBONES * 3])
+            UNIFORM_HIGHP(vec4 cSkinMatrices[URHO3D_MAXBONES * 3])
         #endif
         UNIFORM_BUFFER_END(5, Object)
     #endif

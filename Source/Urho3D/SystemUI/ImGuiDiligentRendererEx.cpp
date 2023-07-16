@@ -61,7 +61,7 @@ bool IsSRGBTextureFormat(TextureFormat format)
 SharedPtr<PipelineState> CreateRenderPipeline(
     RenderDevice* renderDevice, TextureFormat colorBufferFormat, TextureFormat depthBufferFormat, unsigned multiSample)
 {
-    auto renderer = renderDevice->GetContext()->GetSubsystem<Renderer>();
+    auto pipelineStateCache = renderDevice->GetContext()->GetSubsystem<PipelineStateCache>();
     auto graphics = renderDevice->GetContext()->GetSubsystem<Graphics>();
 
     GraphicsPipelineStateDesc desc;
@@ -103,7 +103,7 @@ SharedPtr<PipelineState> CreateRenderPipeline(
 
     desc.samplers_.Add("Texture", SamplerStateDesc::Bilinear(ADDRESS_WRAP));
 
-    return renderer->GetOrCreatePipelineState(desc);
+    return pipelineStateCache->GetGraphicsPipelineState(desc);
 }
 
 } // namespace

@@ -26,6 +26,7 @@
 #include "../Graphics/Texture2D.h"
 #include "../RenderPipeline/RenderBufferManager.h"
 #include "../RenderPipeline/AutoExposurePass.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/RenderPipeline/ShaderConsts.h"
 
 #include "../DebugNew.h"
@@ -38,6 +39,9 @@ AutoExposurePass::AutoExposurePass(
     : PostProcessPass(renderPipeline, renderBufferManager)
 {
     InitializeTextures();
+
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    renderDevice->OnDeviceRestored.Subscribe(this, [&] { isAdaptedLuminanceInitialized_ = false; });
 }
 
 void AutoExposurePass::SetSettings(const AutoExposurePassSettings& settings)

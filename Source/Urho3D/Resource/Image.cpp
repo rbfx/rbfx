@@ -1653,6 +1653,31 @@ Color Image::GetPixelTrilinear(float x, float y, float z) const
     return colorNear.Lerp(colorFar, zF);
 }
 
+TextureFormat Image::GetGPUFormat() const
+{
+    if (!IsCompressed())
+    {
+        switch (GetComponents())
+        {
+        case 1: return Diligent::TEX_FORMAT_R8_UNORM;
+        case 2: return Diligent::TEX_FORMAT_RG8_UNORM;
+        case 4: return Diligent::TEX_FORMAT_RGBA8_UNORM;
+        default: return Diligent::TEX_FORMAT_UNKNOWN;
+        }
+    }
+    else
+    {
+        switch (GetCompressedFormat())
+        {
+        case CF_RGBA: return Diligent::TEX_FORMAT_RGBA8_UNORM;
+        case CF_DXT1: return Diligent::TEX_FORMAT_BC1_UNORM;
+        case CF_DXT3: return Diligent::TEX_FORMAT_BC2_UNORM;
+        case CF_DXT5: return Diligent::TEX_FORMAT_BC3_UNORM;
+        default: return Diligent::TEX_FORMAT_UNKNOWN;
+        }
+    }
+}
+
 SharedPtr<Image> Image::GetNextLevel() const
 {
     if (IsCompressed())

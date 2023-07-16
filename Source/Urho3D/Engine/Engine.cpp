@@ -374,6 +374,7 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
             graphics->Maximize();
 
         graphics->SetShaderCacheDir(FileIdentifier::FromUri(GetParameter(EP_SHADER_CACHE_DIR).GetString()));
+        graphics->InitializePipelineStateCache(FileIdentifier::FromUri(GetParameter(EP_PSO_CACHE).GetString()));
 
         renderer->SetTextureQuality((MaterialQuality)GetParameter(EP_TEXTURE_QUALITY).GetInt());
         renderer->SetTextureFilterMode((TextureFilterMode)GetParameter(EP_TEXTURE_FILTER_MODE).GetInt());
@@ -408,25 +409,6 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
 
     if (!headless_)
     {
-        context_->RegisterSubsystem(new PipelineStateCache(context_));
-
-        auto psoCache = GetSubsystem<PipelineStateCache>();
-        ByteVector cachedData;
-        // TODO(diligent): Extract to function?
-        if (const auto cacheFileId = FileIdentifier::FromUri(GetParameter(EP_PSO_CACHE).GetString()))
-        {
-            auto vfs = GetSubsystem<VirtualFileSystem>();
-            if (vfs->Exists(cacheFileId))
-            {
-                if (const AbstractFilePtr file = vfs->OpenFile(cacheFileId, FILE_READ))
-                {
-                    cachedData.resize(file->GetSize());
-                    file->Read(cachedData.data(), cachedData.size());
-                }
-            }
-        }
-        psoCache->Initialize(cachedData);
-
 #ifdef URHO3D_SYSTEMUI
         context_->RegisterSubsystem(new SystemUI(context_,
             GetParameter(EP_SYSTEMUI_FLAGS).GetUInt()));
@@ -1079,23 +1061,12 @@ void Engine::HandleEndFrame(StringHash eventType, VariantMap& eventData)
 
 void Engine::DoExit()
 {
-    // Save Pipeline State Cache into disk before exit
-    if (auto psoCache = GetSubsystem<PipelineStateCache>())
-    {
-        const auto cachedData = psoCache->GetCachedData();
-
-        // TODO(diligent): Extract to function?
-        if (const auto cacheFileId = FileIdentifier::FromUri(GetParameter(EP_PSO_CACHE).GetString()))
-        {
-            auto vfs = GetSubsystem<VirtualFileSystem>();
-            if (const AbstractFilePtr file = vfs->OpenFile(cacheFileId, FILE_WRITE))
-                file->Write(cachedData.data(), cachedData.size());
-        }
-    }
-
     auto* graphics = GetSubsystem<Graphics>();
     if (graphics)
+    {
+        graphics->SavePipelineStateCache(FileIdentifier::FromUri(GetParameter(EP_PSO_CACHE).GetString()));
         graphics->Close();
+    }
 
     SaveConfigFile();
 

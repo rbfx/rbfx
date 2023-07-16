@@ -124,7 +124,6 @@ RenderPipeline::~RenderPipeline()
 
 void RenderPipeline::RegisterObject(Context* context)
 {
-    // TODO(diligent): Default anisotropy and filtering should be here
     context->AddFactoryReflection<RenderPipeline>();
     URHO3D_ENUM_ATTRIBUTE_EX("Color Space", settings_.renderBufferManager_.colorSpace_, MarkSettingsDirty, colorSpaceNames, RenderPipelineColorSpace::GammaLDR, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Material Quality", settings_.sceneProcessor_.materialQuality_, MarkSettingsDirty, materialQualityNames, SceneProcessorSettings{}.materialQuality_, AM_DEFAULT);

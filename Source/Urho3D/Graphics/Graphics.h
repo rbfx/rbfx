@@ -127,6 +127,12 @@ public:
     /// Set screen resolution only. Deprecated. Return true if successful.
     bool SetMode(int width, int height);
 
+    /// Initialize pipeline state cache.
+    /// Should be called after GPU is initialized and before pipeline states are created.
+    void InitializePipelineStateCache(const FileIdentifier& fileName);
+    /// Save pipeline state cache.
+    void SavePipelineStateCache(const FileIdentifier& fileName);
+
     /// Toggle between full screen and windowed mode. Return true if successful.
     bool ToggleFullscreen();
     /// Close the window.

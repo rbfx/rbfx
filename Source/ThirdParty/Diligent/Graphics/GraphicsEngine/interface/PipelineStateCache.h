@@ -46,6 +46,9 @@ DILIGENT_TYPED_ENUM(PSO_CACHE_MODE, Uint8)
 
     /// PSO cache will be used to store PSOs.
     PSO_CACHE_MODE_STORE = 1u << 1,
+
+    /// PSO cache will assert if PSO is not found in the cache.
+    PSO_CACHE_FLAG_VERBOSE = 1u << 2
 };
 DEFINE_FLAG_ENUM_OPERATORS(PSO_CACHE_MODE);
 

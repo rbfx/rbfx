@@ -55,32 +55,6 @@ ea::pair<unsigned, unsigned> GetLevelsOffsetAndCount(const Image& image, unsigne
     return {effectiveMostDetailedMip, effectiveNumLevels};
 }
 
-// TODO(diligent): This can be in common place?
-TextureFormat GetImageFormat(const Image& image)
-{
-    if (!image.IsCompressed())
-    {
-        switch (image.GetComponents())
-        {
-        case 1: return Diligent::TEX_FORMAT_R8_UNORM;
-        case 2: return Diligent::TEX_FORMAT_RG8_UNORM;
-        case 4: return Diligent::TEX_FORMAT_RGBA8_UNORM;
-        default: return Diligent::TEX_FORMAT_UNKNOWN;
-        }
-    }
-    else
-    {
-        switch (image.GetCompressedFormat())
-        {
-        case CF_RGBA: return Diligent::TEX_FORMAT_RGBA8_UNORM;
-        case CF_DXT1: return Diligent::TEX_FORMAT_BC1_UNORM;
-        case CF_DXT3: return Diligent::TEX_FORMAT_BC2_UNORM;
-        case CF_DXT5: return Diligent::TEX_FORMAT_BC3_UNORM;
-        default: return Diligent::TEX_FORMAT_UNKNOWN;
-        }
-    }
-};
-
 TextureFormat ToHardwareFormat(const TextureFormat format, RenderDevice* renderDevice)
 {
     if (format == Diligent::TEX_FORMAT_UNKNOWN)
@@ -97,7 +71,7 @@ bool IsCompressedEffective(const Image& image, RenderDevice* renderDevice)
     if (!image.IsCompressed())
         return false;
     // Don't decompress if there is no GPU at all
-    return !renderDevice || renderDevice->IsTextureFormatSupported(GetImageFormat(image));
+    return !renderDevice || renderDevice->IsTextureFormatSupported(image.GetGPUFormat());
 }
 
 } // namespace
@@ -404,7 +378,7 @@ bool Texture::CreateForImage(const RawTextureParams& baseParams, Image* image)
     RawTextureParams params = baseParams;
     params.size_ = GetMipLevelSize(image->GetSize(), mostDetailedLevel);
     params.numLevels_ = numLevels;
-    params.format_ = ToHardwareFormat(GetImageFormat(*image), renderDevice);
+    params.format_ = ToHardwareFormat(image->GetGPUFormat(), renderDevice);
     if (requestedSRGB_)
         params.format_ = SetTextureFormatSRGB(params.format_);
     return Create(params);
@@ -413,7 +387,7 @@ bool Texture::CreateForImage(const RawTextureParams& baseParams, Image* image)
 bool Texture::UpdateFromImage(unsigned arraySlice, Image* image)
 {
     const TextureFormat internalFormat = GetFormat();
-    const TextureFormat imageFormat = GetImageFormat(*image);
+    const TextureFormat imageFormat = image->GetGPUFormat();
 
     if (!image->IsCompressed() && (SetTextureFormatSRGB(internalFormat, false) == imageFormat))
     {

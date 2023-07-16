@@ -25,7 +25,7 @@
 #include "Urho3D/Graphics/ShaderVariation.h"
 
 #include "Urho3D/Core/ProcessUtils.h"
-#include "Urho3D/Graphics/Graphics.h" // TODO(diligent): This is needed only for MAXBONES, refactor?
+#include "Urho3D/Graphics/Graphics.h"
 #include "Urho3D/Graphics/Shader.h"
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/IO/VirtualFileSystem.h"
@@ -292,8 +292,6 @@ ea::string ShaderVariation::PrepareGLSLShaderCode(const ea::string& originalShad
     shaderCode += shaderTypeDefines[GetShaderType()];
 
     shaderCode += Format("#define URHO3D_{}\n", ToString(renderBackend).to_upper());
-
-    shaderCode += "#define MAXBONES " + ea::to_string(Graphics::GetMaxBones()) + "\n";
 
     // Prepend the defines to the shader code
     const StringVector defineVec = defines_.split(' ');

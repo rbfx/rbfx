@@ -359,13 +359,6 @@ void Renderer::SetNumSoftwareSkinningBones(unsigned numBones)
     numSoftwareSkinningBones_ = numBones;
 }
 
-SharedPtr<PipelineState> Renderer::GetOrCreatePipelineState(const GraphicsPipelineStateDesc& desc)
-{
-    // TODO(diligent): Revisit
-    auto pipelineStateCache = GetSubsystem<PipelineStateCache>();
-    return pipelineStateCache->GetGraphicsPipelineState(desc);
-}
-
 Viewport* Renderer::GetViewport(unsigned index) const
 {
     return index < viewports_.size() ? viewports_[index] : nullptr;

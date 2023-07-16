@@ -24,8 +24,8 @@
 
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsUtils.h"
-#include "../Graphics/Renderer.h"
 #include "../IO/Log.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../RenderPipeline/CameraProcessor.h"
 #include "../RenderPipeline/ShaderConsts.h"
 #include "../RenderPipeline/InstancingBuffer.h"
@@ -69,7 +69,7 @@ PipelineStateBuilder::PipelineStateBuilder(Context* context,
     , shadowMapAllocator_(shadowMapAllocator)
     , instancingBuffer_(instancingBuffer)
     , graphics_(GetSubsystem<Graphics>())
-    , renderer_(GetSubsystem<Renderer>())
+    , pipelineStateCache_(GetSubsystem<PipelineStateCache>())
     , compositor_(MakeShared<ShaderProgramCompositor>(context_))
 {
 }
@@ -154,7 +154,7 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
     }
 
 
-    return renderer_->GetOrCreatePipelineState(pipelineStateDesc_);
+    return pipelineStateCache_->GetGraphicsPipelineState(pipelineStateDesc_);
 }
 
 void PipelineStateBuilder::ClearState()

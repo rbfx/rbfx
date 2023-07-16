@@ -498,10 +498,10 @@ void BillboardSet::UpdateBufferSize()
         geometryTypeUpdate_ = false;
     }
 
-    // TODO(diligent): These checks look way too lose. Revisit.
-    bool largeIndices = (numBillboards * 4) >= 65536;
+    const bool wasLargeIndices = indexBuffer_->GetIndexSize() == 4;
+    const bool largeIndices = wasLargeIndices || (numBillboards * 4 >= 65536);
 
-    if (indexBuffer_->GetIndexCount() < numBillboards * 6)
+    if (indexBuffer_->GetIndexCount() < numBillboards * 6 || wasLargeIndices != largeIndices)
         indexBuffer_->SetSize(numBillboards * 6, largeIndices);
 
     bufferSizeDirty_ = false;

@@ -122,7 +122,6 @@ struct URHO3D_API RawTextureHandles
 /// This behavior can be changed in derived classes.
 /// RawTexture is RAII object that's not supposed to be in invalid state.
 /// However, this behavior can also be changed in derived classes.
-/// TODO(diligent): Clear texture on restore?
 class URHO3D_API RawTexture : public DeviceObject
 {
 public:

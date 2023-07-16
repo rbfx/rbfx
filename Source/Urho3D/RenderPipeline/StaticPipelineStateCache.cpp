@@ -6,8 +6,6 @@
 
 #include "Urho3D/RenderPipeline/StaticPipelineStateCache.h"
 
-#include "Urho3D/Graphics/Renderer.h"
-
 #include "Urho3D/DebugNew.h"
 
 namespace Urho3D
@@ -57,8 +55,8 @@ PipelineState* StaticPipelineStateCache::GetState(StaticPipelineStateId id, cons
     GraphicsPipelineStateDesc pipelineDesc = desc_[index];
     pipelineDesc.output_ = outputDesc;
 
-    auto renderer = GetSubsystem<Renderer>();
-    auto pipelineState = renderer->GetOrCreatePipelineState(pipelineDesc);
+    auto pipelineStateCache = GetSubsystem<PipelineStateCache>();
+    auto pipelineState = pipelineStateCache->GetGraphicsPipelineState(pipelineDesc);
 
     auto& states = cache.pipelineStates_;
     if (index >= states.size())

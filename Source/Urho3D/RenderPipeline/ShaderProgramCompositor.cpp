@@ -189,6 +189,9 @@ void ShaderProgramCompositor::ApplyGeometryVertexDefines(ShaderProgramDesc& resu
         result.AddShaderDefines(VS, geometryDefines[geometryTypeIndex]);
     else
         result.AddShaderDefines(VS, Format("URHO3D_GEOMETRY_CUSTOM={} ", geometryTypeIndex));
+
+    if (geometryType == GEOM_SKINNED)
+        result.AddShaderDefines(VS, Format("URHO3D_MAXBONES={} ", Graphics::GetMaxBones()));
 }
 
 void ShaderProgramCompositor::ApplyPixelLightPixelAndCommonDefines(ShaderProgramDesc& result,
