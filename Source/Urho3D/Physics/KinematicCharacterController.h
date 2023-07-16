@@ -153,6 +153,7 @@ protected:
     void HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData);
     void HandlePhysicsPostUpdate(StringHash eventType, VariantMap& eventData);
 
+    void SendCollisionEvent(StringHash physicsEvent, StringHash nodeEvent, RigidBody* otherBody);
     void ActivateTriggers();
 
 protected:
@@ -195,6 +196,8 @@ protected:
 
     /// Cached event data for physics collision.
     VariantMap physicsCollisionData_;
+    /// Cached event data for node collision.
+    VariantMap nodeCollisionData_;
 };
 
 }

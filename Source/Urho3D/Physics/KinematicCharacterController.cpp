@@ -56,6 +56,12 @@ KinematicCharacterController::KinematicCharacterController(Context* context)
 {
     pairCachingGhostObject_ = ea::make_unique<btPairCachingGhostObject>();
     pairCachingGhostObject_->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
+
+    physicsCollisionData_[PhysicsCollision::P_TRIGGER] = true;
+    physicsCollisionData_[PhysicsCollision::P_CONTACTS] = VariantVector{};
+
+    nodeCollisionData_[NodeCollision::P_TRIGGER] = true;
+    nodeCollisionData_[NodeCollision::P_CONTACTS] = VariantVector{};
 }
 
 KinematicCharacterController::~KinematicCharacterController()
@@ -178,6 +184,37 @@ void KinematicCharacterController::HandlePhysicsPostUpdate(StringHash eventType,
     node_->SetWorldPosition(latestPosition_);
 }
 
+void KinematicCharacterController::SendCollisionEvent(StringHash physicsEvent, StringHash nodeEvent,
+    RigidBody* otherBody)
+{
+    if (!otherBody)
+        return;
+
+    {
+        using namespace PhysicsCollision;
+        physicsCollisionData_[P_NODEB] = otherBody->GetNode();
+        physicsCollisionData_[P_BODYB] = otherBody;
+        SendEvent(physicsEvent, physicsCollisionData_);
+    }
+
+    if (GetNode())
+    {
+        using namespace NodeCollision;
+        nodeCollisionData_[P_BODY].Clear();
+        nodeCollisionData_[P_OTHERNODE] = otherBody->GetNode();
+        nodeCollisionData_[P_OTHERBODY] = otherBody;
+        GetNode()->SendEvent(nodeEvent, nodeCollisionData_);
+    }
+    if (otherBody->GetNode())
+    {
+        using namespace NodeCollision;
+        nodeCollisionData_[P_BODY] = otherBody;
+        nodeCollisionData_[P_OTHERNODE] = GetNode();
+        nodeCollisionData_[P_OTHERBODY].Clear();
+        otherBody->GetNode()->SendEvent(nodeEvent, nodeCollisionData_);
+    }
+}
+
 void KinematicCharacterController::ActivateTriggers()
 {
     if (!activateTriggers_)
@@ -185,8 +222,6 @@ void KinematicCharacterController::ActivateTriggers()
 
     physicsCollisionData_[PhysicsCollision::P_NODEA] = GetNode();
     physicsCollisionData_[PhysicsCollision::P_BODYA] = static_cast<RigidBody*>(nullptr);
-    physicsCollisionData_[PhysicsCollision::P_TRIGGER] = true;
-    physicsCollisionData_[PhysicsCollision::P_CONTACTS] = VariantVector{};
 
     activeTriggerFlag_ = !activeTriggerFlag_;
     const int num = kinematicController_->getGhostObject()->getNumOverlappingObjects();
@@ -198,23 +233,19 @@ void KinematicCharacterController::ActivateTriggers()
             if (other->getUserPointer() && !other->hasContactResponse())
             {
                 SharedPtr<RigidBody> body{static_cast<RigidBody*>(other->getUserPointer())};
-
-                auto itPair = activeTriggerContacts_.emplace(body, activeTriggerFlag_);
-                if (!itPair.second)
+                if (body && body->GetNode())
                 {
-                    itPair.first->second = activeTriggerFlag_;
+                    auto itPair = activeTriggerContacts_.emplace(body, activeTriggerFlag_);
+                    if (!itPair.second)
+                    {
+                        itPair.first->second = activeTriggerFlag_;
 
-                    using namespace PhysicsCollisionStart;
-                    physicsCollisionData_[P_NODEB] = body->GetNode();
-                    physicsCollisionData_[P_BODYB] = body;
-                    SendEvent(E_PHYSICSCOLLISION, physicsCollisionData_);
-                }
-                else
-                {
-                    using namespace PhysicsCollisionStart;
-                    physicsCollisionData_[P_NODEB] = body->GetNode();
-                    physicsCollisionData_[P_BODYB] = body;
-                    SendEvent(E_PHYSICSCOLLISIONSTART, physicsCollisionData_);
+                        SendCollisionEvent(E_PHYSICSCOLLISION, E_NODECOLLISION, body);
+                    }
+                    else
+                    {
+                        SendCollisionEvent(E_PHYSICSCOLLISIONSTART, E_NODECOLLISIONSTART, body);
+                    }
                 }
             }
         }
@@ -224,10 +255,8 @@ void KinematicCharacterController::ActivateTriggers()
     {
         if (itKV->second != activeTriggerFlag_)
         {
-            using namespace PhysicsCollisionEnd;
-            physicsCollisionData_[P_NODEB] = itKV->first->GetNode();
-            physicsCollisionData_[P_BODYB] = itKV->first;
-            SendEvent(E_PHYSICSCOLLISIONEND, physicsCollisionData_);
+            SendCollisionEvent(E_PHYSICSCOLLISIONEND, E_NODECOLLISIONEND, itKV->first);
+
             itKV = activeTriggerContacts_.erase(itKV);
         }
         else

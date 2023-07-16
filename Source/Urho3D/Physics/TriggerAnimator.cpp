@@ -128,31 +128,19 @@ void TriggerAnimator::RegisterExit(Node* node)
     }
 }
 
-void TriggerAnimator::HandlePhysicsCollisionStart(StringHash eventType, VariantMap& eventData)
+void TriggerAnimator::HandleNodeCollisionStart(StringHash eventType, VariantMap& eventData)
 {
-    using namespace PhysicsCollisionStart;
+    using namespace NodeCollisionStart;
 
-    auto nodeA = static_cast<Node*>(eventData[P_NODEA].GetVoidPtr());
-    auto nodeB = static_cast<Node*>(eventData[P_NODEB].GetVoidPtr());
-    Node* other = nullptr;
-    if (nodeA == GetNode())
-        other = nodeB;
-    else if (nodeB == GetNode())
-        other = nodeA;
+    Node* other = static_cast<Node*>(eventData[P_OTHERNODE].GetVoidPtr());
     RegisterEnter(other);
 }
 
-void TriggerAnimator::HandlePhysicsCollisionEnd(StringHash eventType, VariantMap& eventData)
+void TriggerAnimator::HandleNodeCollisionEnd(StringHash eventType, VariantMap& eventData)
 {
-    using namespace PhysicsCollisionEnd;
+    using namespace NodeCollisionEnd;
 
-    const auto nodeA = static_cast<Node*>(eventData[P_NODEA].GetVoidPtr());
-    const auto nodeB = static_cast<Node*>(eventData[P_NODEB].GetVoidPtr());
-    Node* other = nullptr;
-    if (nodeA == GetNode())
-        other = nodeB;
-    else if (nodeB == GetNode())
-        other = nodeA;
+    const auto other = static_cast<Node*>(eventData[P_OTHERNODE].GetVoidPtr());
     RegisterExit(other);
 }
 
@@ -164,8 +152,8 @@ void TriggerAnimator::UpdateSubscriptions()
         isSubscribed_ = subscribe;
         if (isSubscribed_)
         {
-            SubscribeToEvent(E_PHYSICSCOLLISIONSTART, URHO3D_HANDLER(TriggerAnimator, HandlePhysicsCollisionStart));
-            SubscribeToEvent(E_PHYSICSCOLLISIONEND, URHO3D_HANDLER(TriggerAnimator, HandlePhysicsCollisionEnd));
+            SubscribeToEvent(GetNode(), E_NODECOLLISIONSTART, URHO3D_HANDLER(TriggerAnimator, HandleNodeCollisionStart));
+            SubscribeToEvent(GetNode(), E_NODECOLLISIONEND, URHO3D_HANDLER(TriggerAnimator, HandleNodeCollisionEnd));
         }
         else
         {

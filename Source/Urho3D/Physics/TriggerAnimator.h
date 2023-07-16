@@ -63,9 +63,9 @@ protected:
     void RegisterEnter(Node* node);
     void RegisterExit(Node* node);
     /// Handle trigger been entered.
-    void HandlePhysicsCollisionStart(StringHash eventType, VariantMap& eventData);
+    void HandleNodeCollisionStart(StringHash eventType, VariantMap& eventData);
     /// Handle trigger been exited.
-    void HandlePhysicsCollisionEnd(StringHash eventType, VariantMap& eventData);
+    void HandleNodeCollisionEnd(StringHash eventType, VariantMap& eventData);
     /// Update subscriptions.
     void UpdateSubscriptions();
     /// Start selected animation. The argument should be either enter or exit animation.
