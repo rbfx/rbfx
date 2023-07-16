@@ -41,9 +41,7 @@ macro (define_engine_source_files)
         )
         list (APPEND HEADER_FILES ${_files})
         # Install them
-        if (NOT MINI_URHO)
-            install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
-        endif ()
+        install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
         # Get source files
         file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.cpp)
         list (APPEND SOURCE_FILES ${_files})
@@ -52,13 +50,8 @@ endmacro()
 
 define_engine_source_files (Container Core IO Math)
 
-if (NOT MINI_URHO)
-    define_engine_source_files (Audio Engine Graphics Input Plugins RenderAPI RenderPipeline Resource Scene Script Shader UI Utility)
-    list (REMOVE_ITEM SOURCE_FILES BindAll.cpp)     # Utility file for BindTool.
-else ()
-    # URHO_MINI is a reduced version of library meant for native tools. Scripting is not needed.
-    set (URHO3D_CSHARP OFF)
-endif ()
+define_engine_source_files (Audio Engine Graphics Input Plugins RenderAPI RenderPipeline Resource Scene Script Shader UI Utility)
+list (REMOVE_ITEM SOURCE_FILES BindAll.cpp)     # Utility file for BindTool.
 
 if (URHO3D_PARTICLE_GRAPH)
     define_engine_source_files (Particles)
@@ -139,9 +132,6 @@ foreach (var ${__cmake_variables})
     endif ()
 endforeach()
 
-if (MINI_URHO)
-    target_compile_definitions(Urho3D PUBLIC -DMINI_URHO)
-endif ()
 target_compile_definitions(Urho3D PUBLIC -DNOMINMAX -DURHO3D_DEBUG=$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>)
 
 # Set platform definitions
@@ -449,9 +439,6 @@ if (URHO3D_CSHARP)
 endif ()
 
 ################################################### SDK preparation ####################################################
-if (MINI_URHO)
-    return ()
-endif ()
 
 if (URHO3D_MERGE_STATIC_LIBS)
     # Merge static libraries of third party dependencies to final engine static library

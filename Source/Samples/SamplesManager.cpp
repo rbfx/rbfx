@@ -146,9 +146,13 @@
 #if URHO3D_RMLUI
 #include "114_AdvancedUI/AdvancedUI.h"
 #endif
+#if URHO3D_PHYSICS
 #include "115_RayCast/RayCastSample.h"
+#endif
 #include "116_VirtualFileSystem/VFSSample.h"
+#if URHO3D_PHYSICS
 #include "117_PointerAdapter/PointerAdapterSample.h"
+#endif
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -403,9 +407,13 @@ void SamplesManager::Start()
 #if URHO3D_RMLUI
     RegisterSample<AdvancedUI>();
 #endif
+#if URHO3D_PHYSICS
     RegisterSample<RayCastSample>();
+#endif
     RegisterSample<VFSSample>();
+#if URHO3D_PHYSICS
     RegisterSample<PointerAdapterSample>();
+#endif
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);

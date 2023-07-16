@@ -21,6 +21,7 @@
 //
 
 #include "Urho3D/Precompiled.h"
+#include "Urho3D/Core/Assert.h"
 
 #include "Urho3D/Shader/ShaderOptimizer.h"
 

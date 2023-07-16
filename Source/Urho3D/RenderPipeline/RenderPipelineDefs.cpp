@@ -53,6 +53,22 @@ TextureFormat GetTextureFormat(RenderPipelineColorSpace colorSpace)
 
 }
 
+BatchStateCacheCallback::~BatchStateCacheCallback()
+{
+}
+
+UIBatchStateCacheCallback::~UIBatchStateCacheCallback()
+{
+}
+
+RenderPipelineInterface::~RenderPipelineInterface()
+{
+}
+
+LightProcessorCallback::~LightProcessorCallback()
+{
+}
+
 void RenderPipelineSettings::AdjustToSupported(Context* context)
 {
     auto renderDevice = context->GetSubsystem<RenderDevice>();

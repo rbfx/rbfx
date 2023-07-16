@@ -294,8 +294,7 @@ void ParseUniversalShader(SpirVShader& output, ShaderType shaderType, ea::string
 #else
     URHO3D_ASSERTLOG(0, "URHO3D_SHADER_TRANSLATOR should be enabled to use ParseUniversalShader");
 
-    SpirVShader shader;
-    return shader;
+    output = {};
 #endif
 }
 
@@ -323,8 +322,7 @@ void TranslateSpirVShader(TargetShader& output, const SpirVShader& shader, Targe
 #else
     URHO3D_ASSERTLOG(0, "URHO3D_SHADER_TRANSLATOR should be enabled to use TranslateSpirVShader");
 
-    SpirVShader shader;
-    return shader;
+    output = {};
 #endif
 }
 

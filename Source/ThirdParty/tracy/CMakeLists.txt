@@ -96,13 +96,11 @@ if (URHO3D_PROFILING)
         target_include_directories(TracyProfiler PRIVATE .)
         set_target_properties(TracyProfiler PROPERTIES OUTPUT_NAME Profiler)
         setup_tracy_profiler_target(TracyProfiler)
-        if (NOT MINI_URHO)
-            install (TARGETS TracyProfiler
-                LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
-                RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
-                ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
-            )
-        endif ()
+        install (TARGETS TracyProfiler
+            LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
+            RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
+            ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
+        )
         # Lib for editor to easily consume profiler
         add_library (TracyEmbedded STATIC ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES})
         setup_tracy_profiler_target(TracyEmbedded)
@@ -110,20 +108,16 @@ if (URHO3D_PROFILING)
         target_compile_definitions(TracyEmbedded PRIVATE -DTRACY_NO_ROOT_WINDOW=1 -DTRACY_EMBED_WINDOW=1)
     endif ()
 
-    if (NOT MINI_URHO)
-        install (TARGETS Tracy EXPORT Urho3D
-            LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
-            RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
-            ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
-        )
-    endif ()
+    install (TARGETS Tracy EXPORT Urho3D
+        LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
+        RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
+        ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
+    )
 endif ()
 
-if (NOT MINI_URHO)
-    # Headers are required even in non-profiled builds so we can keep all profiling macros.
-    install (FILES Tracy.hpp TracyC.h TracyOpenGL.hpp DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/tracy/)
-    foreach (dir common client)
-        install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${dir}/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/tracy/${dir}/ FILES_MATCHING PATTERN *.h)
-        install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${dir}/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/tracy/${dir}/ FILES_MATCHING PATTERN *.hpp)
-    endforeach ()
-endif ()
+# Headers are required even in non-profiled builds so we can keep all profiling macros.
+install (FILES Tracy.hpp TracyC.h TracyOpenGL.hpp DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/tracy/)
+foreach (dir common client)
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${dir}/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/tracy/${dir}/ FILES_MATCHING PATTERN *.h)
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${dir}/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/tracy/${dir}/ FILES_MATCHING PATTERN *.hpp)
+endforeach ()

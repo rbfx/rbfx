@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,16 +27,15 @@
  */
 
 #include "TextureResource.h"
-#include "TextureDatabase.h"
+#include "../../Include/RmlUi/Core/Core.h"
 #include "../../Include/RmlUi/Core/Log.h"
-#include "../../Include/RmlUi/Core/RenderInterface.h"
 #include "../../Include/RmlUi/Core/Profiling.h"
+#include "../../Include/RmlUi/Core/RenderInterface.h"
+#include "TextureDatabase.h"
 
 namespace Rml {
 
-TextureResource::TextureResource()
-{
-}
+TextureResource::TextureResource() {}
 
 TextureResource::~TextureResource()
 {
@@ -70,114 +69,75 @@ void TextureResource::Reset()
 	source.clear();
 }
 
-// Returns the resource's underlying texture.
-TextureHandle TextureResource::GetHandle(RenderInterface* render_interface)
+TextureHandle TextureResource::GetHandle()
 {
-	auto texture_iterator = texture_data.find(render_interface);
-	if (texture_iterator == texture_data.end())
-	{
-		Load(render_interface);
-		texture_iterator = texture_data.find(render_interface);
-	}
-
-	return texture_iterator->second.first;
+	if (!loaded)
+		Load();
+	return handle;
 }
 
-// Returns the dimensions of the resource's texture.
-Vector2i TextureResource::GetDimensions(RenderInterface* render_interface)
+Vector2i TextureResource::GetDimensions()
 {
-	auto texture_iterator = texture_data.find(render_interface);
-	if (texture_iterator == texture_data.end())
-	{
-		Load(render_interface);
-		texture_iterator = texture_data.find(render_interface);
-	}
-
-	return texture_iterator->second.second;
+	if (!loaded)
+		Load();
+	return dimensions;
 }
 
-// Returns the resource's source.
 const String& TextureResource::GetSource() const
 {
 	return source;
 }
 
-// Releases the texture's handle.
-void TextureResource::Release(RenderInterface* render_interface)
+void TextureResource::Release()
 {
-	if (!render_interface)
+	if (loaded)
 	{
-		for (auto& interface_data_pair : texture_data)
-		{
-			TextureHandle handle = interface_data_pair.second.first;
-			if (handle)
-				interface_data_pair.first->ReleaseTexture(handle);
-		}
+		RenderInterface* render_interface = ::Rml::GetRenderInterface();
+		RMLUI_ASSERT(render_interface);
+		render_interface->ReleaseTexture(handle);
 
-		texture_data.clear();
-	}
-	else
-	{
-		auto texture_iterator = texture_data.find(render_interface);
-		if (texture_iterator == texture_data.end())
-			return;
-
-		TextureHandle handle = texture_iterator->second.first;
-		if (handle)
-			texture_iterator->first->ReleaseTexture(handle);
-
-		texture_data.erase(render_interface);
+		handle = {};
+		dimensions = {};
+		loaded = false;
 	}
 }
 
-bool TextureResource::Load(RenderInterface* render_interface)
+bool TextureResource::IsLoaded() const
+{
+	return loaded;
+}
+
+bool TextureResource::Load()
 {
 	RMLUI_ZoneScoped;
+	RenderInterface* render_interface = ::Rml::GetRenderInterface();
+
+	loaded = true;
 
 	// Generate the texture from the callback function if we have one.
 	if (texture_callback)
 	{
-		Vector2i dimensions;
-		UniquePtr<const byte[]> data = nullptr;
-
 		TextureCallback& callback_fnc = *texture_callback;
-
-		if (!callback_fnc(source, data, dimensions) || !data)
+		if (!callback_fnc(render_interface, source, handle, dimensions) || !handle)
 		{
 			Log::Message(Log::LT_WARNING, "Failed to generate texture from callback function %s.", source.c_str());
-			texture_data[render_interface] = TextureData(0, Vector2i(0, 0));
-
+			handle = {};
+			dimensions = {};
 			return false;
 		}
 
-		TextureHandle handle;
-		bool success = render_interface->GenerateTexture(handle, data.get(), dimensions);
-
-		if (success)
-		{
-			texture_data[render_interface] = TextureData(handle, dimensions);
-		}
-		else
-		{
-			Log::Message(Log::LT_WARNING, "Failed to generate internal texture %s.", source.c_str());
-			texture_data[render_interface] = TextureData(0, Vector2i(0, 0));
-		}
-
-		return success;
+		return true;
 	}
 
 	// No callback function, load the texture through the render interface.
-	TextureHandle handle;
-	Vector2i dimensions;
 	if (!render_interface->LoadTexture(handle, dimensions, source))
 	{
 		Log::Message(Log::LT_WARNING, "Failed to load texture from %s.", source.c_str());
-		texture_data[render_interface] = TextureData(0, Vector2i(0, 0));
-
+		handle = {};
+		dimensions = {};
 		return false;
 	}
 
-	texture_data[render_interface] = TextureData(handle, dimensions);
 	return true;
 }
 

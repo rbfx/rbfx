@@ -56,23 +56,24 @@ void AdvancedNetworkingUI::Stop()
     network->StopServer();
 }
 
-void AdvancedNetworkingUI::OnDataModelInitialized(Rml::DataModelConstructor& constructor)
+void AdvancedNetworkingUI::OnDataModelInitialized()
 {
+    auto constructor = GetDataModelConstructor();
     Network* network = GetSubsystem<Network>();
 
-    constructor.Bind("port", &serverPort_);
-    constructor.Bind("connectionAddress", &connectionAddress_);
-    constructor.BindFunc("isServer", [=](Rml::Variant& result) { result = network->IsServerRunning(); });
-    constructor.BindFunc("isClient", [=](Rml::Variant& result) { result = network->GetServerConnection() != nullptr; });
-    constructor.Bind("cheatAutoMovementCircle", &cheatAutoMovementCircle_);
-    constructor.Bind("cheatAutoAimHand", &cheatAutoAimHand_);
-    constructor.Bind("cheatAutoClick", &checkAutoClick_);
+    constructor->Bind("port", &serverPort_);
+    constructor->Bind("connectionAddress", &connectionAddress_);
+    constructor->BindFunc("isServer", [=](Rml::Variant& result) { result = network->IsServerRunning(); });
+    constructor->BindFunc("isClient", [=](Rml::Variant& result) { result = network->GetServerConnection() != nullptr; });
+    constructor->Bind("cheatAutoMovementCircle", &cheatAutoMovementCircle_);
+    constructor->Bind("cheatAutoAimHand", &cheatAutoAimHand_);
+    constructor->Bind("cheatAutoClick", &checkAutoClick_);
 
-    constructor.BindEventCallback("onStartServer",
+    constructor->BindEventCallback("onStartServer",
         [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { StartServer(); });
-    constructor.BindEventCallback("onConnectToServer",
+    constructor->BindEventCallback("onConnectToServer",
         [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { ConnectToServer(connectionAddress_); });
-    constructor.BindEventCallback("onStop",
+    constructor->BindEventCallback("onStop",
         [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList&) { Stop(); });
 }
 

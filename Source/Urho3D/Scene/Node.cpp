@@ -1634,6 +1634,60 @@ const Variant& Node::GetVarByHash(StringHash key) const
     return i != vars_.end() ? i->second : Variant::EMPTY;
 }
 
+void Node::GetDerivedComponents(ea::vector<Component*>& dest, StringHash type, bool recursive) const
+{
+    dest.clear();
+
+    if (!recursive)
+    {
+        for (auto i = components_.begin(); i != components_.end(); ++i)
+        {
+            if ((*i)->GetTypeInfo()->IsTypeOf(type))
+                dest.push_back(i->Get());
+        }
+    }
+    else
+        GetDerivedComponentsRecursive(dest, type);
+}
+
+Component* Node::GetDerivedComponent(StringHash type, bool recursive) const
+{
+    for (auto i = components_.begin(); i != components_.end(); ++i)
+    {
+        if ((*i)->GetTypeInfo()->IsTypeOf(type))
+            return *i;
+    }
+
+    if (recursive)
+    {
+        for (auto i = children_.begin(); i != children_.end(); ++i)
+        {
+            auto* component = (*i)->GetDerivedComponent(type, true);
+            if (component)
+                return component;
+        }
+    }
+
+    return nullptr;
+}
+
+Component* Node::GetParentDerivedComponent(StringHash type, bool fullTraversal) const
+{
+    Node* current = GetParent();
+    while (current)
+    {
+        auto* soughtComponent = current->GetDerivedComponent(type);
+        if (soughtComponent)
+            return soughtComponent;
+
+        if (fullTraversal)
+            current = current->GetParent();
+        else
+            break;
+    }
+    return 0;
+}
+
 bool Node::GetChildLazy(WeakPtr<Node>& childNode, StringHash nameHash, SceneLookupFlags flags) const
 {
     // Try to use existing weak pointer. This should be the most common case.
@@ -2121,6 +2175,17 @@ void Node::GetComponentsRecursive(ea::vector<Component*>& dest, StringHash type)
     }
     for (auto i = children_.begin(); i != children_.end(); ++i)
         (*i)->GetComponentsRecursive(dest, type);
+}
+
+void Node::GetDerivedComponentsRecursive(ea::vector<Component*>& dest, StringHash type) const
+{
+    for (auto i = components_.begin(); i != components_.end(); ++i)
+    {
+        if ((*i)->GetTypeInfo()->IsTypeOf(type))
+            dest.push_back(i->Get());
+    }
+    for (auto i = children_.begin(); i != children_.end(); ++i)
+        (*i)->GetDerivedComponentsRecursive(dest, type);
 }
 
 void Node::GetChildrenWithTagRecursive(ea::vector<Node*>& dest, const ea::string& tag) const
