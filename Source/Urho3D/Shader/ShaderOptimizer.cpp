@@ -73,52 +73,7 @@ bool OptimizeSpirVShader(SpirVShader& shader, ea::string& optimizerOutput, Targe
     if (isVulkan)
         spirvOptimizer.RegisterLegalizationPasses();
 
-    // Same as RegisterPerformancePasses(), but CreateAggressiveDCEPass is forced to preserve interface.
-    spirvOptimizer //
-        .RegisterPass(spvtools::CreateWrapOpKillPass())
-        .RegisterPass(spvtools::CreateDeadBranchElimPass())
-        .RegisterPass(spvtools::CreateMergeReturnPass())
-        .RegisterPass(spvtools::CreateInlineExhaustivePass())
-        .RegisterPass(spvtools::CreateEliminateDeadFunctionsPass())
-        .RegisterPass(spvtools::CreateAggressiveDCEPass(true))
-        .RegisterPass(spvtools::CreatePrivateToLocalPass())
-        .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
-        .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
-        .RegisterPass(spvtools::CreateAggressiveDCEPass(true))
-        .RegisterPass(spvtools::CreateScalarReplacementPass())
-        .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
-        .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
-        .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
-        .RegisterPass(spvtools::CreateAggressiveDCEPass(true))
-        .RegisterPass(spvtools::CreateLocalMultiStoreElimPass())
-        .RegisterPass(spvtools::CreateAggressiveDCEPass(true))
-        .RegisterPass(spvtools::CreateCCPPass())
-        .RegisterPass(spvtools::CreateAggressiveDCEPass(true))
-        .RegisterPass(spvtools::CreateLoopUnrollPass(true))
-        .RegisterPass(spvtools::CreateDeadBranchElimPass())
-        .RegisterPass(spvtools::CreateRedundancyEliminationPass())
-        .RegisterPass(spvtools::CreateCombineAccessChainsPass())
-        .RegisterPass(spvtools::CreateSimplificationPass())
-        .RegisterPass(spvtools::CreateScalarReplacementPass())
-        .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
-        .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
-        .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
-        .RegisterPass(spvtools::CreateAggressiveDCEPass(true))
-        .RegisterPass(spvtools::CreateSSARewritePass())
-        .RegisterPass(spvtools::CreateAggressiveDCEPass(true))
-        .RegisterPass(spvtools::CreateVectorDCEPass())
-        .RegisterPass(spvtools::CreateDeadInsertElimPass())
-        .RegisterPass(spvtools::CreateDeadBranchElimPass())
-        .RegisterPass(spvtools::CreateSimplificationPass())
-        .RegisterPass(spvtools::CreateIfConversionPass())
-        .RegisterPass(spvtools::CreateCopyPropagateArraysPass())
-        .RegisterPass(spvtools::CreateReduceLoadSizePass())
-        .RegisterPass(spvtools::CreateAggressiveDCEPass(true))
-        .RegisterPass(spvtools::CreateBlockMergePass())
-        .RegisterPass(spvtools::CreateRedundancyEliminationPass())
-        .RegisterPass(spvtools::CreateDeadBranchElimPass())
-        .RegisterPass(spvtools::CreateBlockMergePass())
-        .RegisterPass(spvtools::CreateSimplificationPass());
+    spirvOptimizer.RegisterPerformancePasses(true);
 
     spvtools::OptimizerOptions optimizerOptions;
     optimizerOptions.set_run_validator(!isVulkan);
