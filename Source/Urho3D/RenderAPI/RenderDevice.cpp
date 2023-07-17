@@ -1368,6 +1368,11 @@ bool RenderDevice::RestoreVulkanContext()
 #endif
 }
 
+void RenderDevice::QueuePipelineStateReload(PipelineState* pipelineState)
+{
+    pipelineStatesToReload_.emplace_back(pipelineState);
+}
+
 bool RenderDevice::TakeScreenShot(IntVector2& size, ByteVector& data)
 {
     const bool flipY = deviceSettings_.backend_ == RenderBackend::OpenGL;
@@ -1497,6 +1502,13 @@ void RenderDevice::Present()
     }
 
     renderPool_->OnFrameEnd();
+
+    for (PipelineState* pipelineState : pipelineStatesToReload_)
+    {
+        if (pipelineState)
+            pipelineState->Restore();
+    }
+    pipelineStatesToReload_.clear();
 
     frameIndex_ = static_cast<FrameIndex>(static_cast<long long>(frameIndex_) + 1);
     URHO3D_ASSERT(frameIndex_ > FrameIndex::None, "How did you exhaust 2^63 frames?");

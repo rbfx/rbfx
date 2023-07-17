@@ -63,6 +63,7 @@ private:
     bool ProcessShaderSource(ea::string_view& translatedSource, const SpirVShader*& translatedSpirv,
         ConstByteSpan& translatedBytecode, ea::string_view originalShaderCode);
 
+    void OnReloaded();
     bool Create();
     bool CompileFromSource();
     bool LoadByteCode(const FileIdentifier& binaryShaderName);

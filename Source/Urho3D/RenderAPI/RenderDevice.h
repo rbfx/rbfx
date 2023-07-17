@@ -54,6 +54,7 @@ namespace Urho3D
 
 class DeviceObject;
 class DrawCommandQueue;
+class PipelineState;
 class RawTexture;
 class RenderContext;
 class RenderPool;
@@ -89,6 +90,8 @@ public:
     bool Restore();
     /// Emulate device loss and restore. Only applicable for Android.
     bool EmulateLossAndRestore();
+    /// Queue pipeline state reload at the end of the frame.
+    void QueuePipelineStateReload(PipelineState* pipelineState);
 
     /// Take the screenshot from current back buffer.
     bool TakeScreenShot(IntVector2& size, ByteVector& data);
@@ -196,6 +199,7 @@ private:
     SharedPtr<DrawCommandQueue> defaultQueue_;
 
     ea::unique_ptr<Diligent::SwapChainDesc> oldNativeSwapChainDesc_;
+    ea::vector<WeakPtr<PipelineState>> pipelineStatesToReload_;
 
     // Keep aliases at the end to ensure they are destroyed first and don't affect real order of destruction.
 #if D3D11_SUPPORTED

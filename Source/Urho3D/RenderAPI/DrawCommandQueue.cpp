@@ -134,9 +134,6 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
         // Set pipeline state
         if (cmd.pipelineState_ != currentPipelineState)
         {
-            // TODO(diligent): This is used for shader reloading. Make better?
-            cmd.pipelineState_->Restore();
-
             // TODO(diligent): Revisit error checking. Use default pipeline?
             if (!cmd.pipelineState_->GetHandle())
                 continue;

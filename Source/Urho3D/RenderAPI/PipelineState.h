@@ -29,7 +29,6 @@ class Geometry;
 class PipelineStateCache;
 
 /// Description of graphics pipeline state.
-/// It does not specify shaders to avoid dependency on device objects.
 struct URHO3D_API GraphicsPipelineStateDesc
 {
     ea::string debugName_{};
@@ -125,7 +124,6 @@ struct URHO3D_API GraphicsPipelineStateDesc
 };
 
 /// Description of compute pipeline state.
-/// It does not specify shaders to avoid dependency on device objects.
 struct URHO3D_API ComputePipelineStateDesc
 {
     ea::string debugName_{};

@@ -101,7 +101,7 @@ ShaderVariation::ShaderVariation(Shader* owner, ShaderType type, const ea::strin
     SetDebugName(GetShaderVariationName());
     Create();
 
-    owner->OnReloaded.Subscribe(this, &ShaderVariation::Create);
+    owner->OnReloaded.Subscribe(this, &ShaderVariation::OnReloaded);
 }
 
 ea::string ShaderVariation::GetShaderName() const
@@ -112,6 +112,11 @@ ea::string ShaderVariation::GetShaderName() const
 ea::string ShaderVariation::GetShaderVariationName() const
 {
     return Format("{}({})", GetShaderName(), GetDefines());
+}
+
+void ShaderVariation::OnReloaded()
+{
+    Create();
 }
 
 bool ShaderVariation::Create()
@@ -134,7 +139,11 @@ bool ShaderVariation::Create()
     {
         // Compile shader if don't have valid bytecode
         if (!CompileFromSource())
+        {
+            // Notify everyone if compilation failed
+            CreateFromBinary({GetShaderType()});
             return false;
+        }
 
         // Save the bytecode after successful compile, but not if the source is from a package
         if (owner_->GetTimeStamp())

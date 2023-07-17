@@ -270,6 +270,9 @@ PipelineState::~PipelineState()
 void PipelineState::Invalidate()
 {
     DestroyGPU();
+
+    if (renderDevice_)
+        renderDevice_->QueuePipelineStateReload(this);
 }
 
 void PipelineState::Restore()
@@ -430,6 +433,8 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
         // Point fill mode not supported
     };
 
+    DestroyGPU();
+
     Diligent::IRenderDevice* renderDevice = renderDevice_->GetRenderDevice();
     const bool isOpenGL = renderDevice_->GetBackend() == RenderBackend::OpenGL;
     const bool hasSeparableShaderPrograms = renderDevice->GetDeviceInfo().Features.SeparablePrograms;
@@ -577,6 +582,8 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
 
     if (!handle_)
     {
+        DestroyGPU();
+
         URHO3D_LOGERROR("Failed to create PipelineState '{}'", GetDebugName());
         return;
     }
@@ -587,6 +594,8 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
 
 void PipelineState::CreateGPU(const ComputePipelineStateDesc& desc)
 {
+    DestroyGPU();
+
     Diligent::IRenderDevice* renderDevice = renderDevice_->GetRenderDevice();
     const bool isOpenGL = renderDevice_->GetBackend() == RenderBackend::OpenGL;
     const bool hasSeparableShaderPrograms = renderDevice->GetDeviceInfo().Features.SeparablePrograms;
@@ -645,6 +654,8 @@ void PipelineState::CreateGPU(const ComputePipelineStateDesc& desc)
 
     if (!handle_)
     {
+        DestroyGPU();
+
         URHO3D_LOGERROR("Failed to create PipelineState '{}'", GetDebugName());
         return;
     }
