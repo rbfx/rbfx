@@ -152,6 +152,11 @@ class URHO3D_API InputMap : public SimpleResource
 public:
     const float DEFAULT_DEADZONE{0.1f};
 
+    /// Map from string to action mapping. Cache string hashes.
+    using StringActionMappingMap = ea::unordered_map<ea::string, Detail::ActionMapping, ea::hash<ea::string>, ea::equal_to<ea::string>,
+        EASTLAllocatorType, true>;
+
+
     /// Construct.
     explicit InputMap(Context* context);
     ~InputMap() override;
@@ -194,6 +199,8 @@ public:
 
     /// Get mapping for the action.
     const Detail::ActionMapping& GetMapping(const ea::string& action) const;
+    /// Get mapping for the action.
+    const Detail::ActionMapping& GetMappingByHash(StringHash actionHash) const;
 
     /// Add new metadata variable or overwrite old value.
     void AddMetadata(const ea::string& name, const Variant& value);
@@ -207,10 +214,12 @@ public:
     bool HasMetadata() const;
 
     /// Get all action mappings.
-    const ea::unordered_map<ea::string, Detail::ActionMapping>& GetMappings() const { return actions_; }
+    const StringActionMappingMap& GetMappings() const { return actions_; }
 
     /// Evaluate action state.
     float Evaluate(const ea::string& action);
+    /// Evaluate action state by action string hash.
+    float EvaluateByHash(StringHash actionHash);
 
     /// Get scancode names.
     static ea::span<const char*> GetScanCodeNames();
@@ -228,7 +237,7 @@ private:
     Detail::ActionMapping& GetOrAddMapping(const ea::string& action);
 
     /// All mapped actions.
-    ea::unordered_map<ea::string, Detail::ActionMapping> actions_;
+    StringActionMappingMap actions_;
     /// Extra data: sensitivity, controller axis dead zone, etc.
     StringVariantMap metadata_;
     /// Axis dead zone.

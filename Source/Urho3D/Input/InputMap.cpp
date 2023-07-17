@@ -753,10 +753,19 @@ void InputMap::MapScreenButton(const ea::string& action, const ea::string& eleme
 const Detail::ActionMapping& InputMap::GetMapping(const ea::string& action) const
 {
     static Detail::ActionMapping empty;
-    auto it = actions_.find(action);
-    if (it == actions_.end())
+    const auto iter = actions_.find(action);
+    if (iter == actions_.end())
         return empty;
-    return it->second;
+    return iter->second;
+}
+
+const Detail::ActionMapping& InputMap::GetMappingByHash(StringHash actionHash) const
+{
+    static Detail::ActionMapping empty;
+    const auto iter = actions_.find_by_hash(actionHash.Value());
+    if (iter == actions_.end())
+        return empty;
+    return iter->second;
 }
 
 
@@ -792,12 +801,22 @@ bool InputMap::HasMetadata() const
 float InputMap::Evaluate(const ea::string& action)
 {
     static Detail::ActionMapping empty;
-    auto it = actions_.find(action);
-    if (it == actions_.end())
+    auto iter = actions_.find(action);
+    if (iter == actions_.end())
         return 0.0f;
     const auto input = context_->GetSubsystem<Input>();
     const auto ui = context_->GetSubsystem<UI>();
-    return it->second.Evaluate(input, ui, deadZone_, ignoreJoystickId_);
+    return iter->second.Evaluate(input, ui, deadZone_, ignoreJoystickId_);
+}
+
+float InputMap::EvaluateByHash(StringHash actionHash)
+{
+    const auto iter = actions_.find_by_hash(actionHash.Value());
+    if (iter != actions_.end())
+        return 0.0f;
+    const auto input = context_->GetSubsystem<Input>();
+    const auto ui = context_->GetSubsystem<UI>();
+    return iter->second.Evaluate(input, ui, deadZone_, ignoreJoystickId_);
 }
 
 Detail::ActionMapping& InputMap::GetOrAddMapping(const ea::string& action)
