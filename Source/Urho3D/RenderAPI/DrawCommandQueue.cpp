@@ -81,16 +81,30 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
     const RenderBackend& backend = renderContext->GetRenderDevice()->GetBackend();
     const RenderDeviceCaps& caps = renderContext->GetRenderDevice()->GetCaps();
 
-    // Constant buffers to store all shader parameters for queue
-    ea::vector<Diligent::IBuffer*> uniformBuffers;
+    // Update constant buffers to store all shader parameters for queue
     const unsigned numUniformBuffers = constantBuffers_.collection_.GetNumBuffers();
-    uniformBuffers.resize(numUniformBuffers);
+    temp_.uniformBuffers_.resize(numUniformBuffers);
     for (unsigned i = 0; i < numUniformBuffers; ++i)
     {
         const unsigned size = constantBuffers_.collection_.GetGPUBufferSize(i);
         RawBuffer* uniformBuffer = renderPool->GetUniformBuffer(i, size);
         uniformBuffer->Update(constantBuffers_.collection_.GetBufferData(i));
-        uniformBuffers[i] = uniformBuffer->GetHandle();
+        temp_.uniformBuffers_[i] = uniformBuffer->GetHandle();
+    }
+
+    // Update shader resources
+    temp_.shaderResourceViews_.resize(shaderResources_.size());
+    for (unsigned i = 0; i < shaderResources_.size(); ++i)
+    {
+        const ShaderResourceData& data = shaderResources_[i];
+
+        RawTexture* texture = GetReadableTexture(renderContext, data.type_, data.texture_, data.backupTexture_);
+        if (texture->GetResolveDirty())
+            texture->Resolve();
+        if (texture->GetLevelsDirty())
+            texture->GenerateLevels();
+
+        temp_.shaderResourceViews_[i] = texture->GetHandles().srv_;
     }
 
     // Cached current state
@@ -205,18 +219,7 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
         if (currentShaderResources != cmd.shaderResources_)
         {
             for (unsigned i = cmd.shaderResources_.first; i < cmd.shaderResources_.second; ++i)
-            {
-                const ShaderResourceData& data = shaderResources_[i];
-
-                // TODO(diligent): Resolve and mip generation should be done outside of this loop
-                RawTexture* texture = GetReadableTexture(renderContext, data.type_, data.texture_, data.backupTexture_);
-                if (texture->GetResolveDirty())
-                    texture->Resolve();
-                if (texture->GetLevelsDirty())
-                    texture->GenerateLevels();
-
-                data.variable_->Set(texture->GetHandles().srv_);
-            }
+                shaderResources_[i].variable_->Set(temp_.shaderResourceViews_[i]);
 
             currentShaderResources = cmd.shaderResources_;
         }
@@ -246,7 +249,7 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
             if (!uniformBufferReflection)
                 continue;
 
-            Diligent::IBuffer* uniformBuffer = uniformBuffers[cmd.constantBuffers_[i].index_];
+            Diligent::IBuffer* uniformBuffer = temp_.uniformBuffers_[cmd.constantBuffers_[i].index_];
             for (Diligent::IShaderResourceVariable* variable : uniformBufferReflection->variables_)
             {
                 variable->SetBufferRange(uniformBuffer, cmd.constantBuffers_[i].offset_, cmd.constantBuffers_[i].size_);

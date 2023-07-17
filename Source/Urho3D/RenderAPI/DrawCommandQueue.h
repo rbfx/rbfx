@@ -343,6 +343,12 @@ private:
     /// Current shader program reflection.
     ShaderProgramReflection* currentShaderProgramReflection_{};
 
+    /// Temporary storage for executing draw commands.
+    struct Temporary
+    {
+        ea::vector<Diligent::IBuffer*> uniformBuffers_;
+        ea::vector<Diligent::ITextureView*> shaderResourceViews_;
+    } temp_;
 };
 
 }
