@@ -222,13 +222,13 @@ public:
     float EvaluateByHash(StringHash actionHash);
 
     /// Get scancode names.
-    static ea::span<const char*> GetScanCodeNames();
+    static ea::span<ea::string_view> GetScanCodeNames();
     /// Get controller button names.
-    static ea::span<const char*> GetControllerButtonNames();
+    static ea::span<ea::string_view> GetControllerButtonNames();
     /// Get controller directional pad (hat) names.
-    static ea::span<const char*> GetControllerHatNames();
+    static ea::span<ea::string_view> GetControllerHatNames();
     /// Get mouse button names.
-    static ea::span<const char*> GetMouseButtonNames();
+    static ea::span<ea::string_view> GetMouseButtonNames();
 
     /// Load input map from config or resources.
     static SharedPtr<InputMap> Load(Context* context, const ea::string& name);

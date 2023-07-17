@@ -33,7 +33,7 @@ namespace Urho3D
 namespace
 {
 
-static ea::array<const char*, 291> scancodeNames{{
+static ea::array<ea::string_view, 291> scancodeNames{{
     "", // 0
     "Ctrl",
     "Shift",
@@ -327,13 +327,13 @@ static ea::array<const char*, 291> scancodeNames{{
     "EndCall" // 290
 }};
 
-static ea::array<const char*, 21> controllerButtonNames {
+static ea::array<ea::string_view, 21> controllerButtonNames{
     {"A", "B", "X", "Y", "Back", "Guide", "Start", "LeftStick", "RightStick", "LeftShoulder", "RightShoulder", "Up",
         "Down", "Left", "Right", "Misc1", "Paddle1", "Paddle2", "Paddle3", "Paddle4", "Touchpad"}};
 
-static ea::array<const char*, 4> controllerHatNames{{"Up", "Right", "Down", "Left"}};
+static ea::array<ea::string_view, 4> controllerHatNames{{"Up", "Right", "Down", "Left"}};
 
-static ea::array<const char*, 5> mouseButtonNames{{"Left", "Middle", "Right", "X1", "X2"}};
+static ea::array<ea::string_view, 5> mouseButtonNames{{"Left", "Middle", "Right", "X1", "X2"}};
 } // namespace
 
 namespace Detail
@@ -825,22 +825,22 @@ Detail::ActionMapping& InputMap::GetOrAddMapping(const ea::string& action)
 }
 
 
-ea::span<const char*> InputMap::GetScanCodeNames()
+ea::span<ea::string_view> InputMap::GetScanCodeNames()
 {
     return scancodeNames;
 }
 
-ea::span<const char*> InputMap::GetControllerButtonNames()
+ea::span<ea::string_view> InputMap::GetControllerButtonNames()
 {
     return controllerButtonNames;
 }
 
-ea::span<const char*> InputMap::GetControllerHatNames()
+ea::span<ea::string_view> InputMap::GetControllerHatNames()
 {
     return controllerHatNames;
 }
 
-ea::span<const char*> InputMap::GetMouseButtonNames()
+ea::span<ea::string_view> InputMap::GetMouseButtonNames()
 {
     return mouseButtonNames;
 }

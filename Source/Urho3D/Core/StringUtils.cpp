@@ -755,7 +755,8 @@ unsigned GetStringListIndex(const char* value, const char* const* strings, unsig
     return defaultIndex;
 }
 
-unsigned GetStringListIndex(const char* value, ea::span<const char*> strings, unsigned defaultIndex, bool caseSensitive)
+unsigned GetStringListIndex(
+    const ea::string_view& value, ea::span<ea::string_view> strings, unsigned defaultIndex, bool caseSensitive)
 {
     unsigned i = 0;
     while (i < strings.size())
