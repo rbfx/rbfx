@@ -133,12 +133,17 @@ public:
     /// Resulting state may be invalid.
     PipelineState* GetOrCreatePipelineState(const BatchStateCreateKey& key,
         const BatchStateCreateContext& ctx, BatchStateCacheCallback* callback);
+    /// Return existing or create new placeholder pipeline state. Not thread safe.
+    /// Resulting state may be invalid in case of emergencies.
+    PipelineState* GetOrCreatePlaceholderPipelineState(unsigned vertexStride, BatchStateCacheCallback* callback);
 
 private:
     /// Current output description. Invalid on start.
     ea::optional<PipelineStateOutputDesc> outputDesc_;
     /// Cached states, possibly invalid.
     ea::unordered_map<BatchStateLookupKey, CachedBatchState> cache_;
+    /// Cached placeholder states.
+    ea::unordered_map<unsigned, SharedPtr<PipelineState>> placeholderCache_;
 };
 
 /// Key used to lookup cached pipeline states for UI batches.

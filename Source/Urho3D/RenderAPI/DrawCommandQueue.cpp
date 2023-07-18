@@ -134,9 +134,8 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
         // Set pipeline state
         if (cmd.pipelineState_ != currentPipelineState)
         {
-            // TODO(diligent): Revisit error checking. Use default pipeline?
             if (!cmd.pipelineState_->GetHandle())
-                continue;
+                continue; // We shouldn't get here
 
             // Skip this pipeline if something goes wrong.
             deviceContext->SetPipelineState(cmd.pipelineState_->GetHandle());

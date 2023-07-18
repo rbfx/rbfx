@@ -190,6 +190,9 @@ private:
     void ProcessGeometryBatch(const GeometryBatch& geometryBatch);
     void ResolveDelayedBatches(BatchCompositorSubpass subpass, const WorkQueueVector<PipelineBatchDesc>& delayedBatches,
         BatchStateCache& cache, WorkQueueVector<PipelineBatch>& batches);
+    void AddPipelineBatch(const PipelineBatchDesc& desc, BatchStateCache& cache,
+        WorkQueueVector<PipelineBatch>& batches, WorkQueueVector<PipelineBatchDesc>& delayedBatches);
+    PipelineState* GetPlaceholderPipelineState(BatchStateCache& cache, PipelineState* original);
 
     /// Pipeline state caches
     /// @{

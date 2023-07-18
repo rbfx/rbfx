@@ -53,6 +53,8 @@ public:
     /// @{
     SharedPtr<PipelineState> CreateBatchPipelineState(const BatchStateCreateKey& key,
         const BatchStateCreateContext& ctx, const PipelineStateOutputDesc& outputDesc) override;
+    SharedPtr<PipelineState> CreateBatchPipelineStatePlaceholder(
+        unsigned vertexStride, const PipelineStateOutputDesc& outputDesc) override;
     /// @}
 
     /// Helpers for passes that override pipeline state creation.

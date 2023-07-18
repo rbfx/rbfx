@@ -34,28 +34,6 @@
 namespace Urho3D
 {
 
-namespace
-{
-
-/// Add batch or delayed batch.
-void AddPipelineBatch(const PipelineBatchDesc& desc, BatchStateCache& cache,
-    WorkQueueVector<PipelineBatch>& batches, WorkQueueVector<PipelineBatchDesc>& delayedBatches)
-{
-    PipelineState* pipelineState = cache.GetPipelineState(desc.GetKey());
-    if (pipelineState)
-    {
-        if (pipelineState->IsValid())
-        {
-            PipelineBatch& pipelineBatch = batches.Emplace(desc);
-            pipelineBatch.pipelineState_ = pipelineState;
-        }
-    }
-    else
-        delayedBatches.Insert(desc);
-}
-
-}
-
 BatchCompositorPass::BatchCompositorPass(RenderPipelineInterface* renderPipeline,
     DrawableProcessor* drawableProcessor, BatchStateCacheCallback* callback, DrawableProcessorPassFlags flags,
     unsigned deferredPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex)
@@ -203,12 +181,47 @@ void BatchCompositorPass::ResolveDelayedBatches(BatchCompositorSubpass subpass,
     for (const PipelineBatchDesc& desc : delayedBatches)
     {
         PipelineState* pipelineState = cache.GetOrCreatePipelineState(desc.GetKey(), ctx, batchStateCacheCallback_);
-        if (pipelineState && pipelineState->IsValid())
+        if (pipelineState)
         {
             PipelineBatch& pipelineBatch = batches.Emplace(desc);
-            pipelineBatch.pipelineState_ = pipelineState;
+            if (pipelineState->IsValid())
+                pipelineBatch.pipelineState_ = pipelineState;
+            else if (PipelineState* placeholderPipelineState = GetPlaceholderPipelineState(cache, pipelineState))
+            {
+                pipelineBatch.pipelineState_ = placeholderPipelineState;
+                pipelineBatch.geometryType_ = GEOM_STATIC_NOINSTANCING;
+            }
+            else
+            {
+                // This should never happen
+                batches.PopBack(WorkQueue::GetThreadIndex());
+            }
         }
     }
+}
+
+void BatchCompositorPass::AddPipelineBatch(const PipelineBatchDesc& desc, BatchStateCache& cache,
+    WorkQueueVector<PipelineBatch>& batches, WorkQueueVector<PipelineBatchDesc>& delayedBatches)
+{
+    PipelineState* pipelineState = cache.GetPipelineState(desc.GetKey());
+    if (pipelineState && pipelineState->IsValid())
+    {
+        PipelineBatch& pipelineBatch = batches.Emplace(desc);
+        pipelineBatch.pipelineState_ = pipelineState;
+    }
+    else
+        delayedBatches.Insert(desc);
+}
+
+PipelineState* BatchCompositorPass::GetPlaceholderPipelineState(BatchStateCache& cache, PipelineState* original)
+{
+    const PipelineStateDesc& desc = original->GetDesc();
+    const GraphicsPipelineStateDesc* graphicsDesc = desc.AsGraphics();
+    if (!graphicsDesc || graphicsDesc->inputLayout_.size_ == 0)
+        return nullptr;
+
+    const unsigned vertexSize = graphicsDesc->inputLayout_.elements_[0].bufferStride_;
+    return cache.GetOrCreatePlaceholderPipelineState(vertexSize, batchStateCacheCallback_);
 }
 
 BatchCompositor::BatchCompositor(RenderPipelineInterface* renderPipeline,

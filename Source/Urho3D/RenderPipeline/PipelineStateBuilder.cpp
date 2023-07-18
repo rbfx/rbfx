@@ -153,8 +153,30 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
         SetupShaders(pipelineStateDesc_, shaderProgramDesc_);
     }
 
-
     return pipelineStateCache_->GetGraphicsPipelineState(pipelineStateDesc_);
+}
+
+SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineStatePlaceholder(
+    unsigned vertexStride, const PipelineStateOutputDesc& outputDesc)
+{
+    GraphicsPipelineStateDesc desc;
+
+    desc.debugName_ = Format("Pipeline State Placeholder for vertex stride {}", vertexStride);
+    desc.colorWriteEnabled_ = true;
+    desc.depthWriteEnabled_ = true;
+    desc.depthCompareFunction_ = CMP_ALWAYS;
+
+    desc.inputLayout_.size_ = 1;
+    desc.inputLayout_.elements_[0].bufferStride_ = vertexStride;
+    desc.inputLayout_.elements_[0].elementType_ = TYPE_VECTOR3;
+    desc.inputLayout_.elements_[0].elementSemantic_ = SEM_POSITION;
+
+    desc.output_ = outputDesc;
+
+    desc.vertexShader_ = graphics_->GetShader(VS, "v2/X_PlaceholderShader", "");
+    desc.pixelShader_ = graphics_->GetShader(PS, "v2/X_PlaceholderShader", "");
+
+    return pipelineStateCache_->GetGraphicsPipelineState(desc);
 }
 
 void PipelineStateBuilder::ClearState()

@@ -179,6 +179,13 @@ public:
         return { outerIndex, innerIndex };
     }
 
+    /// Pop element from back of specified outer vector.
+    void PopBack(unsigned outerIndex)
+    {
+        auto& inner = outer_[outerIndex];
+        inner.pop_back();
+    }
+
     /// Return size.
     unsigned Size() const
     {

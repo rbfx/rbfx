@@ -435,6 +435,17 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
 
     DestroyGPU();
 
+    for (RawShader* shader :
+        {desc.vertexShader_, desc.pixelShader_, desc.domainShader_, desc.hullShader_, desc.geometryShader_})
+    {
+        if (shader && !shader->GetHandle())
+        {
+            URHO3D_LOGERROR("Failed to create PipelineState '{}' due to failed {} shader compilation", GetDebugName(),
+                ToString(shader->GetShaderType()));
+            return;
+        }
+    }
+
     Diligent::IRenderDevice* renderDevice = renderDevice_->GetRenderDevice();
     const bool isOpenGL = renderDevice_->GetBackend() == RenderBackend::OpenGL;
     const bool hasSeparableShaderPrograms = renderDevice->GetDeviceInfo().Features.SeparablePrograms;
@@ -595,6 +606,13 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
 void PipelineState::CreateGPU(const ComputePipelineStateDesc& desc)
 {
     DestroyGPU();
+
+    if (desc.computeShader_ && !desc.computeShader_->GetHandle())
+    {
+        URHO3D_LOGERROR("Failed to create PipelineState '{}' due to failed {} shader compilation", GetDebugName(),
+            ToString(desc.computeShader_->GetShaderType()));
+        return;
+    }
 
     Diligent::IRenderDevice* renderDevice = renderDevice_->GetRenderDevice();
     const bool isOpenGL = renderDevice_->GetBackend() == RenderBackend::OpenGL;

@@ -226,9 +226,12 @@ public:
     /// Destruct.
     virtual ~BatchStateCacheCallback();
     /// Create pipeline state for given context and key.
-    /// Only attributes that constribute to pipeline state hashes are safe to use.
+    /// Only attributes that contribute to pipeline state hashes are safe to use.
     virtual SharedPtr<PipelineState> CreateBatchPipelineState(const BatchStateCreateKey& key,
         const BatchStateCreateContext& ctx, const PipelineStateOutputDesc& outputDesc) = 0;
+    /// Create placeholder pipeline state when actual pipeline state creation fails.
+    virtual SharedPtr<PipelineState> CreateBatchPipelineStatePlaceholder(
+        unsigned vertexStride, const PipelineStateOutputDesc& outputDesc) = 0;
 };
 
 /// Pipeline state cache callback used to create actual pipeline state for UI batches.

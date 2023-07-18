@@ -92,6 +92,15 @@ PipelineState* BatchStateCache::GetOrCreatePipelineState(const BatchStateCreateK
     return entry.pipelineState_;
 }
 
+PipelineState* BatchStateCache::GetOrCreatePlaceholderPipelineState(
+    unsigned vertexStride, BatchStateCacheCallback* callback)
+{
+    SharedPtr<PipelineState>& entry = placeholderCache_[vertexStride];
+    if (!entry)
+        entry = callback->CreateBatchPipelineStatePlaceholder(vertexStride, *outputDesc_);
+    return entry && entry->IsValid() ? entry : nullptr;
+}
+
 void UIBatchStateCache::Invalidate()
 {
     cache_.clear();
