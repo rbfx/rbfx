@@ -151,12 +151,12 @@ template <class T> struct EnumStringSafeCaster
     using UnderlyingInteger = std::underlying_type_t<T>;
     ea::span<ea::string_view> enumConstants_{};
 
-    ea::string_view ToArchive(Archive& archive, const char* name, const T& value) const
+    ea::string ToArchive(Archive& archive, const char* name, const T& value) const
     {
         UnderlyingInteger index = static_cast<UnderlyingInteger>(value);
         if (index < 0 || index >= enumConstants_.size())
             return ea::to_string(index);
-        return enumConstants_[index];
+        return ea::string{enumConstants_[index]};
     }
 
     T FromArchive(Archive& archive, const char* name, const ea::string& value) const
