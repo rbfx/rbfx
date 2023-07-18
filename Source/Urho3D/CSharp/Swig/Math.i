@@ -31,7 +31,7 @@
     %typemap(argout)                 const CPP_TYPE & ""
     %typemap(csin)         CPP_TYPE, const CPP_TYPE &, CPP_TYPE & "ref $csinput"
     %typemap(directorin)   CPP_TYPE & "$input = addr($1);"
-    %typemap(directorin)   const CPP_TYPE &, CPP_TYPE %{ $input = addr($1); %}
+    %typemap(directorin)   const CPP_TYPE &, CPP_TYPE %{ $input = pod::convert<CPP_TYPE,POD_TYPE>($1); %}
     %typemap(csdirectorin) const CPP_TYPE &, CPP_TYPE "$iminput"
     %typemap(csdirectorin) CPP_TYPE &                 "ref $iminput"
 

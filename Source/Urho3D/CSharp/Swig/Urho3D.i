@@ -404,7 +404,6 @@ namespace SDL
 
 %include "generated/Urho3D/_pre_input.i"
 %include "Urho3D/Input/InputConstants.h"
-%include "Urho3D/Input/Controls.h"
 %include "Urho3D/Input/Input.h"
 %include "Urho3D/Input/MultitouchAdapter.h"
 %include "Urho3D/Input/AxisAdapter.h"
@@ -550,7 +549,12 @@ public:
 %include "Urho3D/Scene/PrefabResource.h"
 
 // --------------------------------------- Extra components ---------------------------------------
+%ignore Urho3D::InputMap::GetMappings;
+
 %include "Urho3D/Input/FreeFlyController.h"
+%include "Urho3D/Input/MoveAndOrbitComponent.h"
+%include "Urho3D/Input/MoveAndOrbitController.h"
+%include "Urho3D/Input/InputMap.h"
 
 // --------------------------------------- Audio ---------------------------------------
 %ignore Urho3D::BufferedSoundStream::AddData(const ea::shared_array<signed char>& data, unsigned numBytes);

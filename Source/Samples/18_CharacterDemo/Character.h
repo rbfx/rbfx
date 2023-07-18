@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include <Urho3D/Input/Controls.h>
-#include <Urho3D/Scene/LogicComponent.h>
+#include <Urho3D/Input/MoveAndOrbitComponent.h>
+#include <Urho3D/Input/InputMap.h>
 
 using namespace Urho3D;
 
@@ -37,13 +37,12 @@ const float MOVE_FORCE = 0.8f;
 const float INAIR_MOVE_FORCE = 0.02f;
 const float BRAKE_FORCE = 0.2f;
 const float JUMP_FORCE = 7.0f;
-const float YAW_SENSITIVITY = 0.1f;
 const float INAIR_THRESHOLD_TIME = 0.1f;
 
 /// Character component, responsible for physical movement according to controls, as well as animation.
-class Character : public LogicComponent
+class Character : public MoveAndOrbitComponent
 {
-    URHO3D_OBJECT(Character, LogicComponent);
+    URHO3D_OBJECT(Character, MoveAndOrbitComponent);
 
 public:
     /// Construct.
@@ -57,8 +56,14 @@ public:
     /// Handle physics world update. Called by LogicComponent base class.
     void FixedUpdate(float timeStep) override;
 
-    /// Movement controls. Assigned by the main program each frame.
-    Controls controls_;
+    /// Set input map.
+    void SetInputMap(InputMap* inputMap);
+    /// Return input map.
+    InputMap* GetInputMap() const { return inputMap_; }
+    /// Set input map attribute.
+    void SetInputMapAttr(const ResourceRef& value);
+    /// Return input map attribute.
+    ResourceRef GetInputMapAttr() const;
 
 private:
     /// Handle physics collision event.
@@ -70,4 +75,7 @@ private:
     bool okToJump_;
     /// In air timer. Due to possible physics inaccuracy, character can be off ground for max. 1/10 second and still be allowed to move.
     float inAirTimer_;
+
+    /// Input map.
+    SharedPtr<InputMap> inputMap_;
 };

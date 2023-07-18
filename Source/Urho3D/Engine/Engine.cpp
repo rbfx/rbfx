@@ -42,9 +42,7 @@
 #include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
-#include "../Input/FreeFlyController.h"
 #include "../Input/DirectionalPadAdapter.h"
-#include "../Input/PointerAdapter.h"
 #include "../IO/FileSystem.h"
 #include "../IO/VirtualFileSystem.h"
 #include "../IO/MountedDirectory.h"
@@ -261,10 +259,7 @@ bool Engine::Initialize(const StringVariantMap& parameters)
 
     // Register the rest of the subsystems
     context_->RegisterSubsystem(new Input(context_));
-    context_->AddFactoryReflection<FreeFlyController>();
-    context_->AddFactoryReflection<PointerAdapter>();
-    context_->AddFactoryReflection<DirectionAggregator>();
-    context_->AddFactoryReflection<DirectionalPadAdapter>();
+    RegisterInputLibrary(context_);
 
     context_->RegisterSubsystem(new UI(context_));
 

@@ -354,9 +354,10 @@ public:
     /// Return joystick state by index, or null if does not exist. 0 = first connected joystick.
     /// @property{get_joysticksByIndex}
     JoystickState* GetJoystickByIndex(unsigned index);
-    /// Return joystick state by name, or null if does not exist.
-    /// @property{get_joysticksByName}
+    /// Return joystick state by joystick id, or null if does not exist.
     JoystickState* GetJoystickByName(const ea::string& name);
+    /// Return joystick id that provides readings from accelerometer sensor. Return -1 if accelerometer not found.
+    SDL_JoystickID FindAccelerometerJoystickId() const;
 
     /// Return whether fullscreen toggle is enabled.
     /// @property
@@ -562,5 +563,9 @@ private:
     bool emscriptenPointerLock_;
 #endif
 };
+
+/// Register Input library objects.
+/// @nobind
+void URHO3D_API RegisterInputLibrary(Context* context);
 
 }

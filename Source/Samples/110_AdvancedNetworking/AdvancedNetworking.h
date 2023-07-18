@@ -27,6 +27,7 @@
 #include "AdvancedNetworkingRaycast.h"
 
 #include <Urho3D/Network/Connection.h>
+#include <Urho3D/Input/InputMap.h>
 
 #include <EASTL/optional.h>
 
@@ -111,6 +112,8 @@ private:
     ea::vector<ServerRaycastInfo> serverRaycasts_;
     /// Instructions text.
     SharedPtr<Text> instructionsText_;
+    /// Input map.
+    SharedPtr<InputMap> inputMap_;
 
     /// Text with statistics
     SharedPtr<Text> statsText_;

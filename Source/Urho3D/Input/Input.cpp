@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,23 +23,29 @@
 
 #include "../Precompiled.h"
 
-#include "../Audio/Audio.h"
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/Mutex.h"
-#include "../Core/ProcessUtils.h"
-#include "../Core/Profiler.h"
-#include "../Core/StringUtils.h"
-#include "../Core/Thread.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsEvents.h"
-#include "../Input/Input.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
-#include "../IO/RWOpsWrapper.h"
-#include "../Resource/ResourceCache.h"
-#include "../UI/Text.h"
-#include "../UI/UI.h"
+#include "Urho3D/Audio/Audio.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Mutex.h"
+#include "Urho3D/Core/ProcessUtils.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/GraphicsEvents.h"
+#include "Urho3D/Input/DirectionalPadAdapter.h"
+#include "Urho3D/Input/FreeFlyController.h"
+#include "Urho3D/Input/Input.h"
+#include "Urho3D/Input/InputMap.h"
+#include "Urho3D/Input/MoveAndOrbitComponent.h"
+#include "Urho3D/Input/MoveAndOrbitController.h"
+#include "Urho3D/Input/PointerAdapter.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/RWOpsWrapper.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/UI/Text.h"
+#include "Urho3D/UI/UI.h"
 
 #ifdef _WIN32
 #include "../Engine/Engine.h"
@@ -386,7 +393,8 @@ Input::Input(Context* context) :
     focusedThisFrame_(false),
     suppressNextMouseMove_(false),
     mouseMoveScaled_(false),
-    initialized_(false)
+    initialized_(false),
+    mouseMove_(0,0)
 {
     OnRawInput.Subscribe(this, RawInputPriority::SDLRawInput, &Input::OnSDLRawInput);
 
@@ -1525,6 +1533,26 @@ JoystickState* Input::GetJoystickByName(const ea::string& name)
     }
 
     return nullptr;
+}
+
+SDL_JoystickID Input::FindAccelerometerJoystickId() const
+{
+    // Check if "accelerometer as joystick" option enabled in SDL (it is ON by default)
+    const auto accelerometerAsJoystick = SDL_GetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK);
+    if (!accelerometerAsJoystick || std::string_view("0") != accelerometerAsJoystick)
+    {
+        // Find and ignore virtual joystick id.
+        // SDL defines a virtual joystick as having 3 axis and no buttons or hats.
+        for (auto& joystickKeyValue : joysticks_)
+        {
+            auto& joystick = joystickKeyValue.second;
+            if (joystick.GetNumAxes() == 3 && joystick.GetNumButtons() == 0 && joystick.GetNumHats() == 0)
+            {
+                return joystickKeyValue.first;
+            }
+        }
+    }
+    return -1;
 }
 
 JoystickState* Input::GetJoystick(SDL_JoystickID id)
@@ -2756,6 +2784,17 @@ IntVector2 Input::GetBackbufferSize() const
         return SystemToBackbuffer(explicitWindowRect_->Size());
     else
         return {graphics_->GetWidth(), graphics_->GetHeight()};
+}
+
+void RegisterInputLibrary(Context* context)
+{
+    InputMap::RegisterObject(context);
+    FreeFlyController::RegisterObject(context);
+    MoveAndOrbitComponent::RegisterObject(context);
+    MoveAndOrbitController::RegisterObject(context);
+    context->AddFactoryReflection<PointerAdapter>();
+    context->AddFactoryReflection<DirectionAggregator>();
+    context->AddFactoryReflection<DirectionalPadAdapter>();
 }
 
 }
