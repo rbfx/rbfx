@@ -56,6 +56,8 @@ public:
     void InitializeVirtualFileSystem();
     /// Run one frame.
     void RunFrame();
+    /// Web only. Process canvas resize event.
+    void OnCanvasResize(int width, int height, bool isFullScreen, float dpiScale);
     /// Create the console and return it. May return null if engine configuration does not allow creation (headless mode).
     Console* CreateConsole();
     /// Create the debug hud.

@@ -97,8 +97,9 @@
 #include "../Actions/ActionManager.h"
 #endif
 
-#ifdef __EMSCRIPTEN__
+#ifdef URHO3D_PLATFORM_WEB
 #include <emscripten/emscripten.h>
+#include <emscripten/bind.h>
 #endif
 
 #include "StateManager.h"
@@ -121,6 +122,22 @@ typedef struct _CrtMemBlockHeader
     long lRequest;
     unsigned char gap[nNoMansLandSize];
 } _CrtMemBlockHeader;
+#endif
+
+#ifdef URHO3D_PLATFORM_WEB
+static void OnCanvasResize(int width, int height, bool isFullScreen, float dpiScale)
+{
+    if (auto context = Context::GetInstance())
+    {
+        if (auto engine = context->GetSubsystem<Engine>())
+            engine->OnCanvasResize(width, height, isFullScreen, dpiScale);
+    }
+}
+
+EMSCRIPTEN_BINDINGS(Module)
+{
+    emscripten::function("JSCanvasSize", &OnCanvasResize);
+}
 #endif
 
 namespace Urho3D
@@ -520,6 +537,69 @@ void Engine::RunFrame()
 
     // Mark a frame for profiling
     URHO3D_PROFILE_FRAME();
+}
+
+void Engine::OnCanvasResize(int width, int height, bool isFullScreen, float dpiScale)
+{
+    URHO3D_LOGINFO(
+        "Web canvas resized to {}x{}{} with DPI scale={}", width, height, isFullScreen ? " FullScreen" : " ", dpiScale);
+
+    auto input = GetSubsystem<Input>();
+    auto ui = GetSubsystem<UI>();
+    auto graphics = GetSubsystem<Graphics>();
+#ifdef URHO3D_RMLUI
+    auto rmlUi = GetSubsystem<RmlUI>();
+#endif
+
+    bool uiCursorVisible = false;
+    bool systemCursorVisible = false;
+    MouseMode mouseMode{};
+
+    // Detect current system pointer state
+    if (input)
+    {
+        systemCursorVisible = input->IsMouseVisible();
+        mouseMode = input->GetMouseMode();
+    }
+
+    if (ui)
+    {
+        ui->SetScale(dpiScale);
+
+        // Detect current UI pointer state
+        if (Cursor* cursor = ui->GetCursor())
+            uiCursorVisible = cursor->IsVisible();
+    }
+
+#ifdef URHO3D_RMLUI
+    if (rmlUi)
+        rmlUi->SetScale(dpiScale);
+#endif
+
+    // Apply new resolution
+    graphics->SetMode(width, height);
+
+    // Reset the pointer state as it was before resolution change
+    if (input)
+    {
+        if (uiCursorVisible)
+            input->SetMouseVisible(false);
+        else
+            input->SetMouseVisible(systemCursorVisible);
+
+        input->SetMouseMode(mouseMode);
+    }
+
+    if (ui)
+    {
+        if (Cursor* cursor = ui->GetCursor())
+        {
+            cursor->SetVisible(uiCursorVisible);
+
+            const IntVector2 mousePos = input->GetMousePosition();
+            cursor->SetPosition(ui->ConvertSystemToUI(mousePos));
+        }
+    }
 }
 
 Console* Engine::CreateConsole()

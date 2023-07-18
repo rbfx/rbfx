@@ -70,11 +70,40 @@
     #undef None
 #endif
 
+#ifdef WIN32
+// Prefer the high-performance GPU on switchable GPU systems
+extern "C"
+{
+    __declspec(dllexport) DWORD NvOptimusEnablement = 1;
+    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
+
 namespace Urho3D
 {
 
 namespace
 {
+
+static void DebugMessageCallback(
+    Diligent::DEBUG_MESSAGE_SEVERITY severity, const char* msg, const char* func, const char* file, int line)
+{
+    ea::string message = Format("[diligent] {}", ea::string(msg == nullptr ? "" : msg));
+    if (func)
+        message += Format("function: {}", func);
+    if (file)
+        message += Format("file:     {}", file);
+    if (line)
+        message += Format("line:     {}", line);
+
+    switch (severity)
+    {
+    case Diligent::DEBUG_MESSAGE_SEVERITY_INFO: URHO3D_LOGINFO(message); break;
+    case Diligent::DEBUG_MESSAGE_SEVERITY_WARNING: URHO3D_LOGWARNING(message); break;
+    case Diligent::DEBUG_MESSAGE_SEVERITY_ERROR: URHO3D_LOGERROR(message); break;
+    case Diligent::DEBUG_MESSAGE_SEVERITY_FATAL_ERROR: URHO3D_LOGERROR(message); break;
+    }
+}
 
 void ValidateWindowSettings(WindowSettings& settings)
 {
@@ -713,6 +742,8 @@ RenderDevice::RenderDevice(
     , renderPool_(MakeShared<RenderPool>(this))
     , defaultQueue_(MakeShared<DrawCommandQueue>(this))
 {
+    Diligent::SetDebugMessageCallback(&DebugMessageCallback);
+
     if (deviceSettings_.externalWindowHandle_)
         windowSettings_.mode_ = WindowMode::Windowed;
 

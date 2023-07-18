@@ -42,16 +42,6 @@
 #include "../../RenderAPI/RenderContext.h"
 #include "../../RenderAPI/RenderDevice.h"
 
-// TODO(diligent): This is Web-only, revisit
-// @{
-#include "../../Input/Input.h"
-#include "../../UI/Cursor.h"
-#include "../../UI/UI.h"
-#ifdef URHO3D_RMLUI
-    #include "../../RmlUI/RmlUI.h"
-#endif
-// @}
-
 #include <Diligent/Platforms/interface/PlatformDefinitions.h>
 #include <Diligent/Primitives/interface/CommonDefinitions.h>
 #include <Diligent/Primitives/interface/DebugOutput.h>
@@ -63,140 +53,14 @@
 
 #include <SDL.h>
 
-#if URHO3D_PLATFORM_WEB
-#include <emscripten/emscripten.h>
-#include <emscripten/bind.h>
-#endif
-
 #include "../../DebugNew.h"
 
 #ifdef _MSC_VER
     #pragma warning(disable : 4355)
 #endif
 
-#ifdef WIN32
-// Prefer the high-performance GPU on switchable GPU systems
-extern "C"
-{
-    __declspec(dllexport) DWORD NvOptimusEnablement = 1;
-    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
-}
-#endif
-
-#if URHO3D_PLATFORM_WEB
-static void JSCanvasSize(int width, int height, bool fullscreen, float scale)
-{
-    URHO3D_LOGINFOF("JSCanvasSize: width=%d height=%d fullscreen=%d ui scale=%f", width, height, fullscreen, scale);
-
-    using namespace Urho3D;
-
-    auto context = Context::GetInstance();
-    if (context)
-    {
-        bool uiCursorVisible = false;
-        bool systemCursorVisible = false;
-        MouseMode mouseMode{};
-
-        // Detect current system pointer state
-        Input* input = context->GetSubsystem<Input>();
-        if (input)
-        {
-            systemCursorVisible = input->IsMouseVisible();
-            mouseMode = input->GetMouseMode();
-        }
-
-        UI* ui = context->GetSubsystem<UI>();
-        if (ui)
-        {
-            ui->SetScale(scale);
-
-            // Detect current UI pointer state
-            Cursor* cursor = ui->GetCursor();
-            if (cursor)
-                uiCursorVisible = cursor->IsVisible();
-        }
-
-#ifdef URHO3D_RMLUI
-        if (RmlUI* ui = context->GetSubsystem<RmlUI>())
-            ui->SetScale(scale);
-#endif
-
-        // Apply new resolution
-        context->GetSubsystem<Graphics>()->SetMode(width, height);
-
-        // Reset the pointer state as it was before resolution change
-        if (input)
-        {
-            if (uiCursorVisible)
-                input->SetMouseVisible(false);
-            else
-                input->SetMouseVisible(systemCursorVisible);
-
-            input->SetMouseMode(mouseMode);
-        }
-
-        if (ui)
-        {
-            Cursor* cursor = ui->GetCursor();
-            if (cursor)
-            {
-                cursor->SetVisible(uiCursorVisible);
-
-                IntVector2 pos = input->GetMousePosition();
-                pos = ui->ConvertSystemToUI(pos);
-
-                cursor->SetPosition(pos);
-            }
-        }
-    }
-}
-
-using namespace emscripten;
-EMSCRIPTEN_BINDINGS(Module)
-{
-    function("JSCanvasSize", &JSCanvasSize);
-}
-#endif
-
 namespace Urho3D
 {
-using namespace Diligent;
-
-static void HandleDbgMessageCallbacks(
-    Diligent::DEBUG_MESSAGE_SEVERITY severity, const char* msg, const char* func, const char* file, int line)
-{
-    ea::string logMsg = Format("(diligent) {}", ea::string(msg == nullptr ? "" : msg));
-    ea::vector<ea::pair<ea::string, ea::string>> additionalInfo;
-
-    ea::string lineStr = Format("{}", line);
-    if (func)
-        additionalInfo.push_back(ea::make_pair<ea::string, ea::string>(ea::string("function"), ea::string(func)));
-    if (file)
-        additionalInfo.push_back(ea::make_pair<ea::string, ea::string>(ea::string("file"), ea::string(file)));
-    if (line)
-        additionalInfo.push_back(ea::make_pair<ea::string, ea::string>(ea::string("line"), ea::string(lineStr)));
-
-    if (additionalInfo.size() > 0)
-    {
-        logMsg.append("\n");
-        for (uint8_t i = 0; i < additionalInfo.size(); ++i)
-        {
-            logMsg.append(additionalInfo[i].first);
-            logMsg.append(": ");
-            logMsg.append(additionalInfo[i].second);
-            if (i < additionalInfo.size() - 1)
-                logMsg.append(" | ");
-        }
-    }
-
-    switch (severity)
-    {
-    case Diligent::DEBUG_MESSAGE_SEVERITY_INFO: URHO3D_LOGINFO(logMsg); break;
-    case Diligent::DEBUG_MESSAGE_SEVERITY_WARNING: URHO3D_LOGWARNING(logMsg); break;
-    case Diligent::DEBUG_MESSAGE_SEVERITY_ERROR: URHO3D_LOGERROR(logMsg); break;
-    case Diligent::DEBUG_MESSAGE_SEVERITY_FATAL_ERROR: URHO3D_LOGERROR("[fatal]{}", logMsg.c_str()); break;
-    }
-}
 
 Graphics::Graphics(Context* context)
     : Object(context)
@@ -209,8 +73,6 @@ Graphics::Graphics(Context* context)
     // SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1");
     SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
     context_->RequireSDL(SDL_INIT_VIDEO);
-
-    Diligent::SetDebugMessageCallback(&HandleDbgMessageCallbacks);
 }
 
 Graphics::~Graphics()
@@ -376,15 +238,11 @@ TextureFormat Graphics::GetFormat(CompressedFormat format) const
 {
     switch (format)
     {
-    case CF_RGBA: return TEX_FORMAT_RGBA8_UNORM;
-
-    case CF_DXT1: return TEX_FORMAT_BC1_UNORM;
-
-    case CF_DXT3: return TEX_FORMAT_BC2_UNORM;
-
-    case CF_DXT5: return TEX_FORMAT_BC3_UNORM;
-
-    default: return TEX_FORMAT_UNKNOWN;
+    case CF_RGBA: return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
+    case CF_DXT1: return TextureFormat::TEX_FORMAT_BC1_UNORM;
+    case CF_DXT3: return TextureFormat::TEX_FORMAT_BC2_UNORM;
+    case CF_DXT5: return TextureFormat::TEX_FORMAT_BC3_UNORM;
+    default: return TextureFormat::TEX_FORMAT_UNKNOWN;
     }
 }
 
