@@ -1242,6 +1242,28 @@ void RenderDevice::UpdateWindowSettings(const WindowSettings& settings)
     }
 }
 
+void RenderDevice::SetDefaultTextureFilterMode(TextureFilterMode filterMode)
+{
+    URHO3D_ASSERT(filterMode != FILTER_DEFAULT, "Invalid texture filter mode");
+
+    if (defaultTextureFilterMode_ == filterMode)
+        return;
+
+    defaultTextureFilterMode_ = filterMode;
+    defaultTextureParametersDirty_ = true;
+}
+
+void RenderDevice::SetDefaultTextureAnisotropy(int anisotropy)
+{
+    anisotropy = ea::max(1, anisotropy);
+
+    if (defaultTextureAnisotropy_ == anisotropy)
+        return;
+
+    defaultTextureAnisotropy_ = anisotropy;
+    defaultTextureParametersDirty_ = true;
+}
+
 bool RenderDevice::Restore()
 {
 #if URHO3D_PLATFORM_ANDROID
@@ -1540,6 +1562,21 @@ void RenderDevice::Present()
             pipelineState->Restore();
     }
     pipelineStatesToReload_.clear();
+
+    if (defaultTextureParametersDirty_)
+    {
+        defaultTextureParametersDirty_ = false;
+
+        MutexLock lock(deviceObjectsMutex_);
+        for (DeviceObject* object : deviceObjects_)
+        {
+            if (auto pipelineState = dynamic_cast<PipelineState*>(object))
+            {
+                pipelineState->Invalidate();
+                pipelineState->Restore();
+            }
+        }
+    }
 
     frameIndex_ = static_cast<FrameIndex>(static_cast<long long>(frameIndex_) + 1);
     URHO3D_ASSERT(frameIndex_ > FrameIndex::None, "How did you exhaust 2^63 frames?");

@@ -153,10 +153,6 @@ public:
     /// Clear any or all of rendertarget, depth buffer and stencil buffer.
     void Clear(ClearTargetFlags flags, const Color& color = Color::TRANSPARENT_BLACK, float depth = 1.0f, unsigned stencil = 0);
 
-    /// Set default texture filtering mode. Called by Renderer before rendering.
-    void SetDefaultTextureFilterMode(TextureFilterMode mode);
-    /// Set default texture anisotropy level. Called by Renderer before rendering.
-    void SetDefaultTextureAnisotropy(unsigned level);
     /// Reset all rendertargets, depth-stencil surface and viewport.
     void ResetRenderTargets();
     /// Set shader cache directory, Direct3D only. This can either be an absolute path or a path within the resource system.
@@ -286,12 +282,6 @@ public:
     /// Return a shader variation by name and defines.
     ShaderVariation* GetShader(ShaderType type, const char* name, const char* defines) const;
 
-    /// Return default texture filtering mode.
-    TextureFilterMode GetDefaultTextureFilterMode() const { return defaultTextureFilterMode_; }
-
-    /// Return default texture max. anisotropy level.
-    unsigned GetDefaultTextureAnisotropy() const { return defaultTextureAnisotropy_; }
-
     /// Return current rendertarget width and height.
     IntVector2 GetRenderTargetDimensions() const;
 
@@ -364,10 +354,6 @@ private:
     unsigned maxScratchBufferRequest_{};
     /// Scratch buffers.
     ea::vector<ScratchBuffer> scratchBuffers_;
-    /// Default texture filtering mode.
-    TextureFilterMode defaultTextureFilterMode_{FILTER_TRILINEAR};
-    /// Default texture max. anisotropy level.
-    unsigned defaultTextureAnisotropy_{4};
     /// Base directory for shaders.
     ea::string shaderPath_;
     /// Shader name prefix for universal shaders.

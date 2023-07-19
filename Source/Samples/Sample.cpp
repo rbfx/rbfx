@@ -261,6 +261,16 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
             renderer->SetTextureQuality((MaterialQuality)quality);
         }
 
+        // Default texture filter
+        else if (key == '2')
+        {
+            auto filterMode = (unsigned)renderer->GetTextureFilterMode();
+            ++filterMode;
+            if (filterMode > FILTER_ANISOTROPIC)
+                filterMode = FILTER_NEAREST;
+            renderer->SetTextureFilterMode((TextureFilterMode)filterMode);
+        }
+
         // Take screenshot
         else if (key == '9')
         {

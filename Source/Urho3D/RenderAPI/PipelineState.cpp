@@ -76,7 +76,7 @@ void InitializeLayoutElementsMetadata(
 }
 
 void InitializeImmutableSampler(Diligent::ImmutableSamplerDesc& destSampler, const SamplerStateDesc& sourceSampler,
-    const ea::string& samplerName, Diligent::SHADER_TYPE shaderStages)
+    const ea::string& samplerName, RenderDevice* renderDevice, Diligent::SHADER_TYPE shaderStages)
 {
     static const Diligent::FILTER_TYPE minMagFilter[][2] = {
         {Diligent::FILTER_TYPE_POINT, Diligent::FILTER_TYPE_COMPARISON_POINT}, // FILTER_NEAREST
@@ -98,10 +98,11 @@ void InitializeImmutableSampler(Diligent::ImmutableSamplerDesc& destSampler, con
         Diligent::TEXTURE_ADDRESS_CLAMP, // ADDRESS_CLAMP
     };
 
-    // TODO(diligent): Configure defaults
-    const int anisotropy = sourceSampler.anisotropy_ ? sourceSampler.anisotropy_ : 4;
-    const TextureFilterMode filterMode =
-        sourceSampler.filterMode_ != FILTER_DEFAULT ? sourceSampler.filterMode_ : FILTER_TRILINEAR;
+    const int anisotropy =
+        sourceSampler.anisotropy_ ? sourceSampler.anisotropy_ : renderDevice->GetDefaultTextureAnisotropy();
+    const TextureFilterMode filterMode = sourceSampler.filterMode_ != FILTER_DEFAULT
+        ? sourceSampler.filterMode_
+        : renderDevice->GetDefaultTextureFilterMode();
 
     destSampler.ShaderStages = shaderStages;
     destSampler.SamplerOrTextureName = samplerName.c_str();
@@ -118,7 +119,7 @@ void InitializeImmutableSampler(Diligent::ImmutableSamplerDesc& destSampler, con
 }
 
 void InitializeImmutableSamplers(ea::vector<Diligent::ImmutableSamplerDesc>& result, const ImmutableSamplersDesc& desc,
-    const ShaderProgramReflection& reflection, Diligent::SHADER_TYPE shaderStages)
+    const ShaderProgramReflection& reflection, RenderDevice* renderDevice, Diligent::SHADER_TYPE shaderStages)
 {
     static const auto defaultSampler = SamplerStateDesc::Bilinear();
 
@@ -139,7 +140,7 @@ void InitializeImmutableSamplers(ea::vector<Diligent::ImmutableSamplerDesc>& res
 
         const ea::string& internalName = resourceDesc.internalName_;
         Diligent::ImmutableSamplerDesc& destSampler = result.emplace_back();
-        InitializeImmutableSampler(destSampler, *sourceSampler, internalName, shaderStages);
+        InitializeImmutableSampler(destSampler, *sourceSampler, internalName, renderDevice, shaderStages);
     }
 }
 
@@ -488,7 +489,7 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
         reflection_ = MakeShared<ShaderProgramReflection>(shaders);
 
         InitializeImmutableSamplers(
-            immutableSamplers, desc.samplers_, *reflection_, Diligent::SHADER_TYPE_ALL_GRAPHICS);
+            immutableSamplers, desc.samplers_, *reflection_, renderDevice_, Diligent::SHADER_TYPE_ALL_GRAPHICS);
         ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
         ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
     }
@@ -574,7 +575,7 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
             reflection_ = MakeShared<ShaderProgramReflection>(programObjects[0]);
 
             InitializeImmutableSamplers(
-                immutableSamplers, desc.samplers_, *reflection_, Diligent::SHADER_TYPE_ALL_GRAPHICS);
+                immutableSamplers, desc.samplers_, *reflection_, renderDevice_, Diligent::SHADER_TYPE_ALL_GRAPHICS);
             ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
             ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
         }
@@ -632,7 +633,8 @@ void PipelineState::CreateGPU(const ComputePipelineStateDesc& desc)
         Diligent::IShader* const shaders[] = {computeShader};
         reflection_ = MakeShared<ShaderProgramReflection>(shaders);
 
-        InitializeImmutableSamplers(immutableSamplers, desc.samplers_, *reflection_, Diligent::SHADER_TYPE_COMPUTE);
+        InitializeImmutableSamplers(
+            immutableSamplers, desc.samplers_, *reflection_, renderDevice_, Diligent::SHADER_TYPE_COMPUTE);
         ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
         ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
     }
@@ -653,7 +655,8 @@ void PipelineState::CreateGPU(const ComputePipelineStateDesc& desc)
         {
             reflection_ = MakeShared<ShaderProgramReflection>(programObjects[0]);
 
-            InitializeImmutableSamplers(immutableSamplers, desc.samplers_, *reflection_, Diligent::SHADER_TYPE_COMPUTE);
+            InitializeImmutableSamplers(
+                immutableSamplers, desc.samplers_, *reflection_, renderDevice_, Diligent::SHADER_TYPE_COMPUTE);
             ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
             ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
         }

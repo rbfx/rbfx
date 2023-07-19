@@ -50,14 +50,11 @@ static const char* qualityTexts[] =
     "High"
 };
 
-static const char* shadowQualityTexts[] =
-{
-    "16bit Low",
-    "24bit Low",
-    "16bit High",
-    "24bit High",
-    "VSM",
-    "Blur VSM"
+static const char* filterModeTexts[] = {
+    "Nearest",
+    "Bilinear",
+    "Trilinear",
+    "Anisotropic",
 };
 
 static const unsigned FPS_UPDATE_INTERVAL_MS = 500;
@@ -198,9 +195,10 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
         const ImGuiStyle& style = ui::GetStyle();
         const ImGuiContext& g = *ui::GetCurrentContext();
         ui::SetCursorPos({style.WindowPadding.x, ui::GetWindowSize().y - ui::GetStyle().WindowPadding.y - g.Font->FontSize});
-        ui::Text("API:%s | Tex:%s",
+        ui::Text("API:%s | Tex:%s | Filter:%s",
             graphics->GetApiName().c_str(),
-            qualityTexts[renderer->GetTextureQuality()]);
+            qualityTexts[renderer->GetTextureQuality()],
+            filterModeTexts[renderer->GetTextureFilterMode()]);
     }
 }
 

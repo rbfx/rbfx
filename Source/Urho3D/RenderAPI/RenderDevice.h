@@ -86,6 +86,10 @@ public:
     void UpdateSwapChainSize();
     /// Change window settings. Some settings cannot be changed in runtime.
     void UpdateWindowSettings(const WindowSettings& settings);
+    /// Change default texture filtering.
+    void SetDefaultTextureFilterMode(TextureFilterMode filterMode);
+    /// Change default texture anisotropy level.
+    void SetDefaultTextureAnisotropy(int anisotropy);
     /// Restore device if is was lost. Only applicable for Android.
     bool Restore();
     /// Emulate device loss and restore. Only applicable for Android.
@@ -116,6 +120,8 @@ public:
     const RenderDeviceSettings& GetDeviceSettings() const { return deviceSettings_; }
     const WindowSettings& GetWindowSettings() const { return windowSettings_; }
     const RenderDeviceCaps& GetCaps() const { return caps_; }
+    TextureFilterMode GetDefaultTextureFilterMode() const { return defaultTextureFilterMode_; }
+    int GetDefaultTextureAnisotropy() const { return defaultTextureAnisotropy_; }
     TextureFormat GetDefaultDepthStencilFormat() const { return defaultDepthStencilFormat_; }
     TextureFormat GetDefaultDepthFormat() const { return defaultDepthFormat_; }
     RenderContext* GetRenderContext() const { return renderContext_; }
@@ -173,6 +179,10 @@ private:
 
     RenderDeviceSettings deviceSettings_;
     WindowSettings windowSettings_;
+
+    bool defaultTextureParametersDirty_{};
+    TextureFilterMode defaultTextureFilterMode_{FILTER_TRILINEAR};
+    int defaultTextureAnisotropy_{4};
 
     RenderDeviceCaps caps_;
     TextureFormat defaultDepthStencilFormat_{};

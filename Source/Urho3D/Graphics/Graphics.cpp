@@ -636,24 +636,6 @@ void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, un
         renderContext->ClearDepthStencil(flags, depth, stencil);
 }
 
-void Graphics::SetDefaultTextureFilterMode(TextureFilterMode mode)
-{
-    if (mode != defaultTextureFilterMode_)
-    {
-        defaultTextureFilterMode_ = mode;
-    }
-}
-
-void Graphics::SetDefaultTextureAnisotropy(unsigned level)
-{
-    level = Max(level, 1U);
-
-    if (level != defaultTextureAnisotropy_)
-    {
-        defaultTextureAnisotropy_ = level;
-    }
-}
-
 void Graphics::Restore()
 {
     if (renderDevice_)

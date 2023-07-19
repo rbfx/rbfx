@@ -485,12 +485,13 @@ void Renderer::Update(float timeStep)
 void Renderer::Render()
 {
     // Engine does not render when window is closed or device is lost
-    assert(graphics_ && graphics_->IsInitialized());
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    URHO3D_ASSERT(renderDevice);
 
     URHO3D_PROFILE("RenderViews");
 
-    graphics_->SetDefaultTextureFilterMode(textureFilterMode_);
-    graphics_->SetDefaultTextureAnisotropy((unsigned)textureAnisotropy_);
+    renderDevice->SetDefaultTextureFilterMode(textureFilterMode_);
+    renderDevice->SetDefaultTextureAnisotropy(textureAnisotropy_);
 
     // If no views that render to the backbuffer, clear the screen so that e.g. the UI is not rendered on top of previous frame
     bool hasBackbufferViews = false;
@@ -516,6 +517,7 @@ void Renderer::Render()
         renderPipelineView->Render();
 
     // Copy the number of batches & primitives from Graphics so that we can account for 3D geometry only
+    // TODO(diligent): Implement this
     numPrimitives_ = graphics_->GetNumPrimitives();
     numBatches_ = graphics_->GetNumBatches();
 
