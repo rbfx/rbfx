@@ -339,7 +339,7 @@ public:
     /// Parse a shader parameter value from a string. Retunrs either a bool, a float, or a 2 to 4-component vector.
     static Variant ParseShaderParameterValue(const ea::string& value);
 
-    /// TODO(diligent): Remove this
+    /// Return shader resource name for given texture unit.
     static StringHash TextureUnitToShaderResource(TextureUnit unit);
 
 private:

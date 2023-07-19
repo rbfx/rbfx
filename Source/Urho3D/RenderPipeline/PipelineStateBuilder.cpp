@@ -315,10 +315,10 @@ void PipelineStateBuilder::SetupLightSamplers(const LightProcessor* lightProcess
 void PipelineStateBuilder::SetupSamplersForUserOrShadowPass(
     const Material* material, bool hasLightmap, bool hasAmbient, bool isRefractionPass)
 {
-    // TODO(diligent): Make configurable
-    static const auto lightMapSampler = SamplerStateDesc::Bilinear();
-    static const auto reflectionMapSampler = SamplerStateDesc::Bilinear();
-    static const auto refractionMapSampler = SamplerStateDesc::Bilinear();
+    // TODO: Make configurable
+    static const auto lightMapSampler = SamplerStateDesc::Trilinear();
+    static const auto reflectionMapSampler = SamplerStateDesc::Trilinear();
+    static const auto refractionMapSampler = SamplerStateDesc::Trilinear();
 
     bool materialHasEnvironmentMap = false;
     for (const auto& [unit, texture] : material->GetTextures())

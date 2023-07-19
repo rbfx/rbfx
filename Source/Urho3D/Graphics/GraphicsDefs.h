@@ -179,7 +179,8 @@ enum RenderSurfaceUpdateMode
 };
 
 /// Texture units.
-/// @manualbind
+/// TODO: The only reason to have TextureUnit in the engine is compatibility with old materials.
+/// Remove it in favor of named resources and migrate old `Material`s.
 enum TextureUnit
 {
     TU_DIFFUSE = 0,

@@ -507,7 +507,7 @@ private:
                 // Emissive texture is used for lightmaps and refraction background, skip if necessary
                 if (texture.first == TU_EMISSIVE && current_.lightmapTexture_)
                     continue;
-                // TODO(diligent): Revisit material system
+
                 AddShaderResource(drawQueue_, Material::TextureUnitToShaderResource(texture.first), texture.second);
             }
 

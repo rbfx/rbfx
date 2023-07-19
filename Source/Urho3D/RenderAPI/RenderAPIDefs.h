@@ -419,6 +419,13 @@ struct URHO3D_API SamplerStateDesc
         desc.addressMode_.fill(addressMode);
         return desc;
     }
+    static SamplerStateDesc Trilinear(TextureAddressMode addressMode = ADDRESS_CLAMP)
+    {
+        SamplerStateDesc desc;
+        desc.filterMode_ = FILTER_TRILINEAR;
+        desc.addressMode_.fill(addressMode);
+        return desc;
+    }
     /// @}
 
     /// Operators.

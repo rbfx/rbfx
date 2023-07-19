@@ -735,14 +735,6 @@ IntVector2 Graphics::GetRenderTargetDimensions() const
     return IntVector2::ZERO;
 }
 
-bool Graphics::IsDeviceLost() const
-{
-    // Direct3D11 graphics context is never considered lost
-    /// \todo The device could be lost in case of graphics adapters getting disabled during runtime. This is not
-    /// currently handled
-    return false;
-}
-
 void Graphics::OnWindowResized()
 {
     if (!renderDevice_ || GetPlatform() == PlatformId::Web)

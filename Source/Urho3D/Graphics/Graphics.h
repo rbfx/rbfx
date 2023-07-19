@@ -233,10 +233,6 @@ public:
     /// @property
     bool GetSRGB() const { return GetWindowSettings().sRGB_; }
 
-    /// Return whether graphics context is lost and can not render or load GPU resources.
-    /// @property
-    bool IsDeviceLost() const;
-
     /// Return number of primitives drawn this frame.
     /// @property
     unsigned GetNumPrimitives() const { return numPrimitives_; }

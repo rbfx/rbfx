@@ -62,7 +62,7 @@ enum LightImportance
 static const float SHADOW_MIN_QUANTIZE = 0.1f;
 static const float SHADOW_MIN_VIEW = 1.0f;
 static const int MAX_LIGHT_SPLITS = 6;
-// TODO(diligent): Revisit max number of cascades on mobiles
+// TODO: Revisit max number of cascades on mobiles
 static const unsigned MAX_CASCADE_SPLITS = 4;
 
 static const LightType DEFAULT_LIGHTTYPE = LIGHT_POINT;

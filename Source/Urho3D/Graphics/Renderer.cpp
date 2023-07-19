@@ -437,7 +437,7 @@ void Renderer::Update(float timeStep)
 
     // If device lost, do not perform update. This is because any dynamic vertex/index buffer updates happen already here,
     // and if the device is lost, the updates queue up, causing memory use to rise constantly
-    if (!graphics_ || !graphics_->IsInitialized() || graphics_->IsDeviceLost())
+    if (!graphics_ || !graphics_->IsInitialized())
         return;
 
     // Set up the frameinfo structure for this frame
@@ -485,7 +485,7 @@ void Renderer::Update(float timeStep)
 void Renderer::Render()
 {
     // Engine does not render when window is closed or device is lost
-    assert(graphics_ && graphics_->IsInitialized() && !graphics_->IsDeviceLost());
+    assert(graphics_ && graphics_->IsInitialized());
 
     URHO3D_PROFILE("RenderViews");
 

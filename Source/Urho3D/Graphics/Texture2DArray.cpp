@@ -111,10 +111,8 @@ bool Texture2DArray::BeginLoad(Deserializer& source)
 
 bool Texture2DArray::EndLoad()
 {
-    auto graphics = GetSubsystem<Graphics>();
-
     // In headless mode, do not actually load the texture, just return success
-    if (!graphics || graphics->IsDeviceLost())
+    if (!renderDevice_)
         return true;
 
     // If over the texture budget, see if materials can be freed to allow textures to be freed
