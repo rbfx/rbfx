@@ -51,6 +51,11 @@ public:
     /// Recycle all transient textures.
     void RecycleTextures();
 
+    /// Allocate scratch buffer. Don't store the pointer between frames.
+    void* AllocateScratchBuffer(unsigned size);
+    /// Release scratch buffer.
+    void ReleaseScratchBuffer(void* buffer);
+
 private:
     struct TextureCacheEntry
     {
@@ -79,6 +84,13 @@ private:
     unsigned numAddedTextures_{};
     unsigned numRemovedTextures_{};
     FrameIndex lastLogFrame_{};
+
+    ByteVector scratchBuffer_;
+    unsigned scratchBufferOffset_{};
+    ea::vector<void*> scratchBufferAllocations_;
+
+    ea::vector<void*> temporaryScratchBufferAllocations_;
+    unsigned temporaryScratchBufferAllocationsSize_{};
 };
 
 } // namespace Urho3D

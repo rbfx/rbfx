@@ -19,6 +19,7 @@ RenderPool::RenderPool(RenderDevice* renderDevice)
     : Object(renderDevice->GetContext())
     , renderDevice_(renderDevice)
 {
+    scratchBuffer_.resize(64 * 1024);
 }
 
 RenderPool::~RenderPool()
@@ -125,6 +126,55 @@ void RenderPool::RecycleTextures()
         lastLogFrame_ = currentFrame;
         numAddedTextures_ = 0;
         numRemovedTextures_ = 0;
+    }
+}
+
+void* RenderPool::AllocateScratchBuffer(unsigned size)
+{
+    size = (size + 15) & ~15;
+
+    if (scratchBufferOffset_ + size > scratchBuffer_.size())
+    {
+        void* buffer = malloc(size);
+        temporaryScratchBufferAllocations_.push_back(buffer);
+        temporaryScratchBufferAllocationsSize_ += size;
+        return buffer;
+    }
+    else
+    {
+        void* buffer = scratchBuffer_.data() + scratchBufferOffset_;
+        scratchBufferAllocations_.push_back(buffer);
+        scratchBufferOffset_ += size;
+        return buffer;
+    }
+}
+
+void RenderPool::ReleaseScratchBuffer(void* buffer)
+{
+    const bool isTemporary = temporaryScratchBufferAllocations_.contains(buffer);
+    const bool isStandard = scratchBufferAllocations_.contains(buffer);
+    URHO3D_ASSERT(isTemporary != isStandard);
+
+    if (isTemporary)
+    {
+        free(buffer);
+        temporaryScratchBufferAllocations_.erase_first(buffer);
+    }
+    else if (isStandard)
+    {
+        scratchBufferAllocations_.erase_first(buffer);
+    }
+
+    const bool isLastAllocation = scratchBufferAllocations_.empty() && temporaryScratchBufferAllocations_.empty();
+    if (isLastAllocation)
+    {
+        if (temporaryScratchBufferAllocationsSize_ != 0)
+        {
+            const unsigned newCapacity = (scratchBuffer_.size() + temporaryScratchBufferAllocationsSize_) * 3 / 2;
+            scratchBuffer_.resize(newCapacity);
+        }
+        scratchBufferOffset_ = 0;
+        temporaryScratchBufferAllocationsSize_ = 0;
     }
 }
 

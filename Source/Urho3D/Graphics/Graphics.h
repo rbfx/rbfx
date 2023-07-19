@@ -78,23 +78,6 @@ struct GraphicsSettings : public RenderDeviceSettings
     bool cacheShaders_{};
 };
 
-/// CPU-side scratch buffer for vertex data updates.
-struct ScratchBuffer
-{
-    ScratchBuffer() :
-        size_(0),
-        reserved_(false)
-    {
-    }
-
-    /// Buffer data.
-    ea::shared_array<unsigned char> data_;
-    /// Data size.
-    unsigned size_;
-    /// Reserved flag.
-    bool reserved_;
-};
-
 /// %Graphics subsystem. Manages the application window, rendering state and GPU resources.
 class URHO3D_API Graphics : public Object
 {
@@ -298,12 +281,6 @@ public:
     void Minimize();
     /// Raises window if it was minimized.
     void Raise() const;
-    /// Reserve a CPU-side scratch buffer.
-    void* ReserveScratchBuffer(unsigned size);
-    /// Free a CPU-side scratch buffer.
-    void FreeScratchBuffer(void* buffer);
-    /// Clean up too large scratch buffers.
-    void CleanupScratchBuffers();
 
     /// Sets the maximum number of supported bones for hardware skinning. Check GPU capabilities before setting.
     static void SetMaxBones(unsigned maxBones);
@@ -350,10 +327,6 @@ private:
     unsigned numPrimitives_{};
     /// Number of batches this frame.
     unsigned numBatches_{};
-    /// Largest scratch buffer request this frame.
-    unsigned maxScratchBufferRequest_{};
-    /// Scratch buffers.
-    ea::vector<ScratchBuffer> scratchBuffers_;
     /// Base directory for shaders.
     ea::string shaderPath_;
     /// Shader name prefix for universal shaders.

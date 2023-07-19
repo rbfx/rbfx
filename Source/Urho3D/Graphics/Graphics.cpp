@@ -246,9 +246,6 @@ void Graphics::EndFrame()
 
         renderDevice_->Present();
     }
-
-    // Clean up too large scratch buffers
-    CleanupScratchBuffers();
 }
 
 void Graphics::SetWindowTitle(const ea::string& windowTitle)
@@ -508,84 +505,6 @@ void Graphics::Raise() const
         return;
 
     SDL_RaiseWindow(window_);
-}
-
-void* Graphics::ReserveScratchBuffer(unsigned size)
-{
-    if (!size)
-        return nullptr;
-
-    if (size > maxScratchBufferRequest_)
-        maxScratchBufferRequest_ = size;
-
-    // First check for a free buffer that is large enough
-    for (auto i = scratchBuffers_.begin(); i != scratchBuffers_.end(); ++i)
-    {
-        if (!i->reserved_ && i->size_ >= size)
-        {
-            i->reserved_ = true;
-            return i->data_.get();
-        }
-    }
-
-    // Then check if a free buffer can be resized
-    for (auto i = scratchBuffers_.begin(); i != scratchBuffers_.end(); ++i)
-    {
-        if (!i->reserved_)
-        {
-            i->data_.reset(new unsigned char[size]);
-            i->size_ = size;
-            i->reserved_ = true;
-
-            URHO3D_LOGTRACE("Resized scratch buffer to size " + ea::to_string(size));
-
-            return i->data_.get();
-        }
-    }
-
-    // Finally allocate a new buffer
-    ScratchBuffer newBuffer;
-    newBuffer.data_.reset(new unsigned char[size]);
-    newBuffer.size_ = size;
-    newBuffer.reserved_ = true;
-    scratchBuffers_.push_back(newBuffer);
-
-    URHO3D_LOGDEBUG("Allocated scratch buffer with size " + ea::to_string(size));
-
-    return newBuffer.data_.get();
-}
-
-void Graphics::FreeScratchBuffer(void* buffer)
-{
-    if (!buffer)
-        return;
-
-    for (auto i = scratchBuffers_.begin(); i != scratchBuffers_.end(); ++i)
-    {
-        if (i->reserved_ && i->data_.get() == buffer)
-        {
-            i->reserved_ = false;
-            return;
-        }
-    }
-
-    URHO3D_LOGWARNING("Reserved scratch buffer " + ToStringHex((unsigned)(size_t)buffer) + " not found");
-}
-
-void Graphics::CleanupScratchBuffers()
-{
-    for (auto i = scratchBuffers_.begin(); i != scratchBuffers_.end(); ++i)
-    {
-        if (!i->reserved_ && i->size_ > maxScratchBufferRequest_ * 2 && i->size_ >= 1024 * 1024)
-        {
-            i->data_.reset(maxScratchBufferRequest_ > 0 ? (new unsigned char[maxScratchBufferRequest_]) : nullptr);
-            i->size_ = maxScratchBufferRequest_;
-
-            URHO3D_LOGTRACE("Resized scratch buffer to size " + ea::to_string(maxScratchBufferRequest_));
-        }
-    }
-
-    maxScratchBufferRequest_ = 0;
 }
 
 void Graphics::CreateWindowIcon()

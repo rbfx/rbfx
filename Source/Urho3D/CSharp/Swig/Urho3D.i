@@ -614,7 +614,6 @@ public:
 %ignore Urho3D::ProcessLightWork;
 %ignore Urho3D::CheckVisibilityWork;
 %ignore Urho3D::ELEMENT_TYPESIZES;
-%ignore Urho3D::ScratchBuffer;
 %ignore Urho3D::Drawable::batches_;
 %ignore Urho3D::Light::SetLightQueue;
 %ignore Urho3D::Light::GetLightQueue;

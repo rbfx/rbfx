@@ -8,6 +8,7 @@
 
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderAPI/RenderPool.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/DeviceContext.h>
 #include <Diligent/Graphics/GraphicsEngine/interface/RenderDevice.h>
@@ -292,8 +293,12 @@ void* RawBuffer::Map()
     }
 
     // If hardware static buffer, return temporary buffer
-    // TODO(diligent): Use allocator here
-    auto cpuBufferHolder = ea::shared_array<unsigned char>(new unsigned char[params_.size_]);
+    RenderPool* renderPool = renderDevice_->GetRenderPool();
+
+    const auto temporaryBuffer = reinterpret_cast<unsigned char*>(renderPool->AllocateScratchBuffer(params_.size_));
+    const auto deleter = [=](unsigned char* ptr) { renderPool->ReleaseScratchBuffer(ptr); };
+    auto cpuBufferHolder = ea::shared_ptr<unsigned char>(temporaryBuffer, deleter);
+
     unlockImpl_ = [=]() { Update(cpuBufferHolder.get()); };
     return cpuBufferHolder.get();
 }
