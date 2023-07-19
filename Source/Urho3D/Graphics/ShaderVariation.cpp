@@ -132,8 +132,9 @@ bool ShaderVariation::Create()
         return false;
     }
 
-    const FileIdentifier& cacheDir = graphics_->GetShaderCacheDir();
-    const FileIdentifier binaryShaderName = cacheDir + GetCachedVariationName("bin");
+    const GraphicsSettings& settings = graphics_->GetSettings();
+    const FileIdentifier& cacheDir = settings.shaderCacheDir_;
+    const FileIdentifier binaryShaderName = cacheDir + GetCachedVariationName("bytecode");
 
     if (!LoadByteCode(binaryShaderName))
     {
@@ -146,7 +147,7 @@ bool ShaderVariation::Create()
         }
 
         // Save the bytecode after successful compile, but not if the source is from a package
-        if (owner_->GetTimeStamp())
+        if (settings.cacheShaders_ && owner_->GetTimeStamp())
             SaveByteCode(binaryShaderName);
     }
 
@@ -163,8 +164,8 @@ bool ShaderVariation::CompileFromSource()
     ConstByteSpan translatedBytecode;
     const bool processed = ProcessShaderSource(translatedSource, translatedSpirv, translatedBytecode, sourceCode);
 
-    const FileIdentifier& cacheDir = graphics_->GetShaderCacheDir();
-    const FileIdentifier loggedSourceShaderName = cacheDir + GetCachedVariationName("txt");
+    const FileIdentifier& cacheDir = graphics_->GetSettings().shaderCacheDir_;
+    const FileIdentifier loggedSourceShaderName = cacheDir + GetCachedVariationName("glsl");
     LogShaderSource(loggedSourceShaderName, defines_, translatedSource);
 
     if (!processed)

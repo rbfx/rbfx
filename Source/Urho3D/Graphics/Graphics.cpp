@@ -59,6 +59,7 @@
 #include "../Graphics/VertexBuffer.h"
 #include "../Graphics/Viewport.h"
 #include "../Graphics/Zone.h"
+#include "../IO/FileSystem.h"
 #include "../IO/VirtualFileSystem.h"
 #include "../IO/Log.h"
 #include "Urho3D/RenderAPI/PipelineState.h"
@@ -124,6 +125,30 @@ Graphics::~Graphics()
     Close();
 
     context_->ReleaseSDL();
+}
+
+void Graphics::Configure(const GraphicsSettings& settings)
+{
+    settings_ = settings;
+
+    // Be careful: delete only the files we write ourselves
+    if (settings_.discardShaderCache_)
+    {
+        auto fs = GetSubsystem<FileSystem>();
+        auto vfs = GetSubsystem<VirtualFileSystem>();
+
+        StringVector cachedShaders;
+        vfs->Scan(cachedShaders, settings_.shaderCacheDir_, "*.bytecode", SCAN_FILES | SCAN_APPEND);
+        vfs->Scan(cachedShaders, settings_.shaderCacheDir_, "*.glsl", SCAN_FILES | SCAN_APPEND);
+
+        for (const ea::string& fileName : cachedShaders)
+        {
+            const ea::string absoluteFileName =
+                vfs->GetAbsoluteNameFromIdentifier(settings_.shaderCacheDir_ + fileName);
+            if (!absoluteFileName.empty())
+                fs->Delete(absoluteFileName);
+        }
+    }
 }
 
 bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
@@ -483,11 +508,6 @@ void Graphics::Raise() const
         return;
 
     SDL_RaiseWindow(window_);
-}
-
-void Graphics::SetShaderCacheDir(const FileIdentifier& path)
-{
-    shaderCacheDir_ = path;
 }
 
 void* Graphics::ReserveScratchBuffer(unsigned size)

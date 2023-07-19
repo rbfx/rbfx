@@ -65,10 +65,17 @@ struct GraphicsSettings : public RenderDeviceSettings
 {
     /// Current shader translation policy.
     ShaderTranslationPolicy shaderTranslationPolicy_{};
+
+    /// Directory to store cached compiled shaders and logged shader sources.
+    FileIdentifier shaderCacheDir_;
     /// Whether to log all compiled shaders.
     bool logShaderSources_{};
     /// Whether the shader validation is enabled.
     bool validateShaders_{};
+    /// Whether to discard shader cache on the disk.
+    bool discardShaderCache_{};
+    /// Whether to cache shaders compiled during this run on the disk.
+    bool cacheShaders_{};
 };
 
 /// CPU-side scratch buffer for vertex data updates.
@@ -100,7 +107,7 @@ public:
     ~Graphics() override;
 
     /// Configure before initial setup.
-    void Configure(const GraphicsSettings& settings) { settings_ = settings; }
+    void Configure(const GraphicsSettings& settings);
 
     /// Set window title.
     /// @property
@@ -288,9 +295,6 @@ public:
 
     /// Return default texture max. anisotropy level.
     unsigned GetDefaultTextureAnisotropy() const { return defaultTextureAnisotropy_; }
-    /// Return shader cache directory, Direct3D and Diligent only
-    /// @property
-    const FileIdentifier& GetShaderCacheDir() const { return shaderCacheDir_; }
 
     /// Return current rendertarget width and height.
     IntVector2 GetRenderTargetDimensions() const;
@@ -374,8 +378,6 @@ private:
     ea::string universalShaderNamePrefix_{ "v2/" };
     /// Format string for universal shaders.
     ea::string universalShaderPath_{ "Shaders/GLSL/{}.glsl" };
-    /// Cache directory for Direct3D binary shaders.
-    FileIdentifier shaderCacheDir_;
     /// File extension for shaders.
     ea::string shaderExtension_;
     /// Last used shader in shader variation query.

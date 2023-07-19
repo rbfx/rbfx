@@ -341,8 +341,12 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         graphicsSettings.adapterId_ = GetParameter(EP_RENDER_ADAPTER_ID).GetOptional<unsigned>();
         graphicsSettings.shaderTranslationPolicy_ = SelectShaderTranslationPolicy(
             graphicsSettings.backend_, GetParameter(EP_SHADER_POLICY).GetOptional<ShaderTranslationPolicy>());
+
+        graphicsSettings.shaderCacheDir_ = FileIdentifier::FromUri(GetParameter(EP_SHADER_CACHE_DIR).GetString());
         graphicsSettings.logShaderSources_ = GetParameter(EP_SHADER_LOG_SOURCES).GetBool();
         graphicsSettings.validateShaders_ = GetParameter(EP_VALIDATE_SHADERS).GetBool();
+        graphicsSettings.discardShaderCache_ = GetParameter(EP_DISCARD_SHADER_CACHE).GetBool();
+        graphicsSettings.cacheShaders_ = GetParameter(EP_SAVE_SHADER_CACHE).GetBool();
         graphics->Configure(graphicsSettings);
 
         graphics->SetWindowTitle(GetParameter(EP_WINDOW_TITLE).GetString());
@@ -390,7 +394,6 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         if (GetParameter(EP_WINDOW_MAXIMIZE).GetBool())
             graphics->Maximize();
 
-        graphics->SetShaderCacheDir(FileIdentifier::FromUri(GetParameter(EP_SHADER_CACHE_DIR).GetString()));
         graphics->InitializePipelineStateCache(FileIdentifier::FromUri(GetParameter(EP_PSO_CACHE).GetString()));
 
         renderer->SetTextureQuality((MaterialQuality)GetParameter(EP_TEXTURE_QUALITY).GetInt());
@@ -1030,6 +1033,8 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addOptionString("--plugins", EP_PLUGINS, "Plugins to be loaded")->type_name("plugin1;plugin2;...");
     addOptionString("--main", EP_MAIN_PLUGIN, "Plugin to be treated as main entry point")->type_name("plugin");
     addFlag("--log-shader-sources", EP_SHADER_LOG_SOURCES, true, "Log shader sources into shader cache directory");
+    addFlag("--discard-shader-cache", EP_DISCARD_SHADER_CACHE, true, "Discard all cached shader bytecode and logged shader sources");
+    addFlag("--no-save-shader-cache", EP_SAVE_SHADER_CACHE, false, "Disable saving shader bytecode to cache directory");
 
     addFlag("--d3d11", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::D3D11), "Use Direct3D11 rendering backend");
     addFlag("--d3d12", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::D3D12), "Use Direct3D12 rendering backend");
@@ -1071,6 +1076,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_AUTOLOAD_PATHS, "Autoload");
     engineParameters_->DefineVariable(EP_CONFIG_NAME, "EngineParameters.json");
     engineParameters_->DefineVariable(EP_BORDERLESS, true).Overridable();
+    engineParameters_->DefineVariable(EP_DISCARD_SHADER_CACHE, false);
     engineParameters_->DefineVariable(EP_ENGINE_AUTO_LOAD_SCRIPTS, false);
     engineParameters_->DefineVariable(EP_ENGINE_CLI_PARAMETERS, true);
     engineParameters_->DefineVariable(EP_EXTERNAL_WINDOW, static_cast<void*>(nullptr));
@@ -1092,6 +1098,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_RESOURCE_PACKAGES, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "Data;CoreData");
     engineParameters_->DefineVariable(EP_RESOURCE_PREFIX_PATHS, EMPTY_STRING);
+    engineParameters_->DefineVariable(EP_SAVE_SHADER_CACHE, true);
     engineParameters_->DefineVariable(EP_SHADER_CACHE_DIR, "conf://ShaderCache");
     engineParameters_->DefineVariable(EP_SHADER_POLICY).SetOptional<int>();
     engineParameters_->DefineVariable(EP_SHADER_LOG_SOURCES, false);
