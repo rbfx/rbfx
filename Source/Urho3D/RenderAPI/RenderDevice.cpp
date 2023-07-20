@@ -85,7 +85,45 @@ namespace Urho3D
 namespace
 {
 
-static void DebugMessageCallback(
+template <class T, class U> void CopyOptionalMember(T& dest, const U& src)
+{
+    if (src)
+        dest = *src;
+}
+
+void CopyBackendDeviceSettings(Diligent::EngineVkCreateInfo& createInfo, RenderDeviceSettingsVulkan& settings)
+{
+    CopyOptionalMember(createInfo.MainDescriptorPoolSize, settings.mainDescriptorPoolSize_);
+    CopyOptionalMember(createInfo.DynamicDescriptorPoolSize, settings.dynamicDescriptorPoolSize_);
+    CopyOptionalMember(createInfo.DeviceLocalMemoryPageSize, settings.deviceLocalMemoryPageSize_);
+    CopyOptionalMember(createInfo.HostVisibleMemoryPageSize, settings.hostVisibleMemoryPageSize_);
+    CopyOptionalMember(createInfo.DeviceLocalMemoryReserveSize, settings.deviceLocalMemoryReserveSize_);
+    CopyOptionalMember(createInfo.HostVisibleMemoryReserveSize, settings.hostVisibleMemoryReserveSize_);
+    CopyOptionalMember(createInfo.UploadHeapPageSize, settings.uploadHeapPageSize_);
+    CopyOptionalMember(createInfo.DynamicHeapSize, settings.dynamicHeapSize_);
+    CopyOptionalMember(createInfo.DynamicHeapPageSize, settings.dynamicHeapPageSize_);
+    for (unsigned i = 1; i < Diligent::QUERY_TYPE_NUM_TYPES; ++i)
+        CopyOptionalMember(createInfo.QueryPoolSizes[i], settings.queryPoolSizes_[i]);
+}
+
+void CopyBackendDeviceSettings(Diligent::EngineD3D12CreateInfo& createInfo, RenderDeviceSettingsD3D12& settings)
+{
+    for (unsigned i = 0; i < 4; ++i)
+        CopyOptionalMember(createInfo.CPUDescriptorHeapAllocationSize[i], settings.cpuDescriptorHeapAllocationSize_[i]);
+    for (unsigned i = 0; i < 2; ++i)
+    {
+        CopyOptionalMember(createInfo.GPUDescriptorHeapSize[i], settings.gpuDescriptorHeapSize_[i]);
+        CopyOptionalMember(createInfo.GPUDescriptorHeapDynamicSize[i], settings.gpuDescriptorHeapDynamicSize_[i]);
+        CopyOptionalMember(
+            createInfo.DynamicDescriptorAllocationChunkSize[i], settings.dynamicDescriptorAllocationChunkSize_[i]);
+    }
+    CopyOptionalMember(createInfo.DynamicHeapPageSize, settings.dynamicHeapPageSize_);
+    CopyOptionalMember(createInfo.NumDynamicHeapPagesToReserve, settings.numDynamicHeapPagesToReserve_);
+    for (unsigned i = 1; i < Diligent::QUERY_TYPE_NUM_TYPES; ++i)
+        CopyOptionalMember(createInfo.QueryPoolSizes[i], settings.queryPoolSizes_[i]);
+}
+
+void DebugMessageCallback(
     Diligent::DEBUG_MESSAGE_SEVERITY severity, const char* msg, const char* func, const char* file, int line)
 {
     ea::string message = Format("[diligent] {}", ea::string(msg == nullptr ? "" : msg));
@@ -893,11 +931,9 @@ void RenderDevice::InitializeDevice()
     case RenderBackend::D3D12:
     {
         Diligent::EngineD3D12CreateInfo createInfo;
+        CopyBackendDeviceSettings(createInfo, deviceSettings_.d3d12_);
+
         createInfo.GraphicsAPIVersion = Diligent::Version{11, 0};
-        // TODO(diligent): Revisit limits, make configurable?
-        createInfo.GPUDescriptorHeapDynamicSize[0] = 32768;
-        createInfo.DynamicDescriptorAllocationChunkSize[0] = 32;
-        createInfo.DynamicDescriptorAllocationChunkSize[1] = 8;
         createInfo.AdapterId = FindBestAdapter(factory_, createInfo.GraphicsAPIVersion, deviceSettings_.adapterId_);
 
         factoryD3D12_->CreateDeviceAndContextsD3D12(createInfo, &renderDevice_, &deviceContext_);
@@ -920,6 +956,8 @@ void RenderDevice::InitializeDevice()
     case RenderBackend::Vulkan:
     {
         Diligent::EngineVkCreateInfo createInfo;
+        CopyBackendDeviceSettings(createInfo, deviceSettings_.vulkan_);
+
         const char* const ppIgnoreDebugMessages[] = {
             // Validation Performance Warning: [ UNASSIGNED-CoreValidation-Shader-OutputNotConsumed ]
             // vertex shader writes to output location 1.0 which is not consumed by fragment shader
@@ -927,8 +965,6 @@ void RenderDevice::InitializeDevice()
         };
         createInfo.Features = Diligent::DeviceFeatures{Diligent::DEVICE_FEATURE_STATE_OPTIONAL};
         createInfo.Features.TransferQueueTimestampQueries = Diligent::DEVICE_FEATURE_STATE_DISABLED;
-        // TODO(diligent): Revisit limits, make configurable?
-        createInfo.DynamicHeapSize = 32 << 20;
         createInfo.ppIgnoreDebugMessageNames = ppIgnoreDebugMessages;
         createInfo.IgnoreDebugMessageCount = _countof(ppIgnoreDebugMessages);
         createInfo.AdapterId = FindBestAdapter(factory_, createInfo.GraphicsAPIVersion, deviceSettings_.adapterId_);

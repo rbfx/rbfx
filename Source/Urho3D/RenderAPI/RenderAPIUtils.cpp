@@ -9,6 +9,7 @@
 #include "Urho3D/Core/Macros.h"
 #include "Urho3D/Core/ProcessUtils.h"
 #include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
 
 #include <Diligent/Graphics/GraphicsAccessories/interface/GraphicsAccessories.hpp>
 
@@ -17,6 +18,31 @@ namespace Urho3D
 
 namespace
 {
+
+// TODO: Move to common place
+struct OptionalSerializer
+{
+    template <class T> void operator()(Archive& archive, const char* name, T& value) const
+    {
+        if (!value)
+        {
+            URHO3D_ASSERT(archive.IsInput());
+            value.emplace();
+        }
+        SerializeValue(archive, name, *value);
+    }
+};
+
+void SerializeQueryTypes(Archive& archive, ea::optional<unsigned> (&sizes)[Diligent::QUERY_TYPE_NUM_TYPES])
+{
+    // clang-format off
+    SerializeStrictlyOptionalValue(archive, "queryPoolSize_occlusion", sizes[Diligent::QUERY_TYPE_OCCLUSION], ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "queryPoolSize_binaryOcclusion", sizes[Diligent::QUERY_TYPE_BINARY_OCCLUSION], ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "queryPoolSize_timestamp", sizes[Diligent::QUERY_TYPE_TIMESTAMP], ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "queryPoolSize_pipelineStatistics", sizes[Diligent::QUERY_TYPE_PIPELINE_STATISTICS], ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "queryPoolSize_duration", sizes[Diligent::QUERY_TYPE_DURATION], ea::nullopt, OptionalSerializer{});
+    // clang-format on
+}
 
 const ea::array<ea::string, MAX_VERTEX_ELEMENT_SEMANTICS> shaderInputsNames = {
     "iPos", // SEM_POSITION
@@ -237,6 +263,59 @@ ShaderTranslationPolicy SelectShaderTranslationPolicy(
         return policy;
 
     return supportedPolicies.front();
+}
+
+void SerializeValue(Archive& archive, const char* name, Diligent::VulkanDescriptorPoolSize& value)
+{
+    auto block = archive.OpenUnorderedBlock(name);
+    SerializeValueAsType<unsigned>(archive, "maxDescriptorSets", value.MaxDescriptorSets);
+    SerializeValueAsType<unsigned>(archive, "numSeparateSamplerDescriptors", value.NumSeparateSamplerDescriptors);
+    SerializeValueAsType<unsigned>(archive, "numCombinedSamplerDescriptors", value.NumCombinedSamplerDescriptors);
+    SerializeValueAsType<unsigned>(archive, "numSampledImageDescriptors", value.NumSampledImageDescriptors);
+    SerializeValueAsType<unsigned>(archive, "numStorageImageDescriptors", value.NumStorageImageDescriptors);
+    SerializeValueAsType<unsigned>(archive, "numUniformBufferDescriptors", value.NumUniformBufferDescriptors);
+    SerializeValueAsType<unsigned>(archive, "numStorageBufferDescriptors", value.NumStorageBufferDescriptors);
+    SerializeValueAsType<unsigned>(archive, "numUniformTexelBufferDescriptors", value.NumUniformTexelBufferDescriptors);
+    SerializeValueAsType<unsigned>(archive, "numStorageTexelBufferDescriptors", value.NumStorageTexelBufferDescriptors);
+    SerializeValueAsType<unsigned>(archive, "numInputAttachmentDescriptors", value.NumInputAttachmentDescriptors);
+    SerializeValueAsType<unsigned>(archive, "numAccelStructDescriptors", value.NumAccelStructDescriptors);
+}
+
+void SerializeValue(Archive& archive, const char* name, RenderDeviceSettingsVulkan& value)
+{
+    auto block = archive.OpenUnorderedBlock(name);
+    // clang-format off
+    SerializeStrictlyOptionalValue(archive, "mainDescriptorPoolSize", value.mainDescriptorPoolSize_, ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "dynamicDescriptorPoolSize", value.dynamicDescriptorPoolSize_, ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "deviceLocalMemoryPageSize", value.deviceLocalMemoryPageSize_, ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "hostVisibleMemoryPageSize", value.hostVisibleMemoryPageSize_, ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "deviceLocalMemoryReserveSize", value.deviceLocalMemoryReserveSize_, ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "hostVisibleMemoryReserveSize", value.hostVisibleMemoryReserveSize_, ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "uploadHeapPageSize", value.uploadHeapPageSize_, ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "dynamicHeapSize", value.dynamicHeapSize_, ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "dynamicHeapPageSize", value.dynamicHeapPageSize_, ea::nullopt, OptionalSerializer{});
+    SerializeQueryTypes(archive, value.queryPoolSizes_);
+    // clang-format on
+}
+
+void SerializeValue(Archive& archive, const char* name, RenderDeviceSettingsD3D12& value)
+{
+    auto block = archive.OpenUnorderedBlock(name);
+    // clang-format off
+    SerializeStrictlyOptionalValue(archive, "mainDescriptorPoolSize_cvb_srv_uav", value.cpuDescriptorHeapAllocationSize_[0], ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "mainDescriptorPoolSize_sampler", value.cpuDescriptorHeapAllocationSize_[1], ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "mainDescriptorPoolSize_rtv", value.cpuDescriptorHeapAllocationSize_[2], ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "mainDescriptorPoolSize_dsv", value.cpuDescriptorHeapAllocationSize_[3], ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "gpuDescriptorHeapSize_cvb_srv_uav", value.gpuDescriptorHeapSize_[0], ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "gpuDescriptorHeapSize_sampler", value.gpuDescriptorHeapSize_[1], ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "gpuDescriptorHeapDynamicSize_cvb_srv_uav", value.gpuDescriptorHeapDynamicSize_[0], ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "gpuDescriptorHeapDynamicSize_sampler", value.gpuDescriptorHeapDynamicSize_[1], ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "dynamicDescriptorAllocationChunkSize_cvb_srv_uav", value.dynamicDescriptorAllocationChunkSize_[0], ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "dynamicDescriptorAllocationChunkSize_sampler", value.dynamicDescriptorAllocationChunkSize_[1], ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "dynamicHeapPageSize", value.dynamicHeapPageSize_, ea::nullopt, OptionalSerializer{});
+    SerializeStrictlyOptionalValue(archive, "numDynamicHeapPagesToReserve", value.numDynamicHeapPagesToReserve_, ea::nullopt, OptionalSerializer{});
+    SerializeQueryTypes(archive, value.queryPoolSizes_);
+    // clang-format on
 }
 
 } // namespace Urho3D

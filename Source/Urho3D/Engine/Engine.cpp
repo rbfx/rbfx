@@ -42,6 +42,7 @@
 #include "../Graphics/GraphicsEvents.h"
 #include "../RenderAPI/PipelineState.h"
 #include "../RenderAPI/RenderAPIUtils.h"
+#include "../Resource/JSONArchive.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
 #include "../Input/FreeFlyController.h"
@@ -341,6 +342,11 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         graphicsSettings.adapterId_ = GetParameter(EP_RENDER_ADAPTER_ID).GetOptional<unsigned>();
         graphicsSettings.shaderTranslationPolicy_ = SelectShaderTranslationPolicy(
             graphicsSettings.backend_, GetParameter(EP_SHADER_POLICY).GetOptional<ShaderTranslationPolicy>());
+
+        const auto vulkanTweaks = FromJSONString<RenderDeviceSettingsVulkan>(GetParameter(EP_TWEAK_VULKAN).GetString());
+        graphicsSettings.vulkan_ = vulkanTweaks.value_or(RenderDeviceSettingsVulkan{});
+        const auto d3d12Tweaks = FromJSONString<RenderDeviceSettingsD3D12>(GetParameter(EP_TWEAK_D3D12).GetString());
+        graphicsSettings.d3d12_ = d3d12Tweaks.value_or(RenderDeviceSettingsD3D12{});
 
         graphicsSettings.shaderCacheDir_ = FileIdentifier::FromUri(GetParameter(EP_SHADER_CACHE_DIR).GetString());
         graphicsSettings.logShaderSources_ = GetParameter(EP_SHADER_LOG_SOURCES).GetBool();
@@ -1069,6 +1075,13 @@ void Engine::SaveConfigFile()
 
 void Engine::PopulateDefaultParameters()
 {
+    RenderDeviceSettingsVulkan vulkanTweaks;
+    vulkanTweaks.dynamicHeapSize_ = 32 * 1024 * 1024;
+
+    RenderDeviceSettingsD3D12 d3d12Tweaks;
+    d3d12Tweaks.gpuDescriptorHeapSize_[0] = 32 * 1024;
+    d3d12Tweaks.gpuDescriptorHeapDynamicSize_[0] = 24 * 1024;
+
     engineParameters_ = MakeShared<ConfigFile>(context_);
 
     engineParameters_->DefineVariable(EP_APPLICATION_NAME, "Unspecified Application");
@@ -1113,6 +1126,8 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_TEXTURE_QUALITY, QUALITY_HIGH).Overridable();
     engineParameters_->DefineVariable(EP_TIME_OUT, 0);
     engineParameters_->DefineVariable(EP_TOUCH_EMULATION, false);
+    engineParameters_->DefineVariable(EP_TWEAK_D3D12, ToJSONString(d3d12Tweaks).value_or(""));
+    engineParameters_->DefineVariable(EP_TWEAK_VULKAN, ToJSONString(vulkanTweaks).value_or(""));
     engineParameters_->DefineVariable(EP_VALIDATE_SHADERS, false);
     engineParameters_->DefineVariable(EP_VSYNC, false).Overridable();
     engineParameters_->DefineVariable(EP_WINDOW_HEIGHT, 0); //.Overridable();

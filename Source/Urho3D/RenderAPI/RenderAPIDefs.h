@@ -133,6 +133,38 @@ struct URHO3D_API WindowSettings
     StringVector orientations_{"LandscapeLeft", "LandscapeRight"};
 };
 
+/// Extra tweaks for Vulkan backend.
+struct RenderDeviceSettingsVulkan
+{
+    ea::optional<Diligent::VulkanDescriptorPoolSize> mainDescriptorPoolSize_;
+    ea::optional<Diligent::VulkanDescriptorPoolSize> dynamicDescriptorPoolSize_;
+
+    ea::optional<unsigned> deviceLocalMemoryPageSize_;
+    ea::optional<unsigned> hostVisibleMemoryPageSize_;
+    ea::optional<unsigned> deviceLocalMemoryReserveSize_;
+    ea::optional<unsigned> hostVisibleMemoryReserveSize_;
+
+    ea::optional<unsigned> uploadHeapPageSize_;
+    ea::optional<unsigned> dynamicHeapSize_;
+    ea::optional<unsigned> dynamicHeapPageSize_;
+
+    ea::optional<unsigned> queryPoolSizes_[Diligent::QUERY_TYPE_NUM_TYPES];
+};
+
+/// Extra tweaks for D3D12 backend.
+struct RenderDeviceSettingsD3D12
+{
+    ea::optional<unsigned> cpuDescriptorHeapAllocationSize_[4];
+    ea::optional<unsigned> gpuDescriptorHeapSize_[2];
+    ea::optional<unsigned> gpuDescriptorHeapDynamicSize_[2];
+    ea::optional<unsigned> dynamicDescriptorAllocationChunkSize_[2];
+
+    ea::optional<unsigned> dynamicHeapPageSize_;
+    ea::optional<unsigned> numDynamicHeapPagesToReserve_;
+
+    ea::optional<unsigned> queryPoolSizes_[Diligent::QUERY_TYPE_NUM_TYPES];
+};
+
 /// Immutable settings of the render device.
 struct URHO3D_API RenderDeviceSettings
 {
@@ -144,6 +176,11 @@ struct URHO3D_API RenderDeviceSettings
     bool gpuDebug_{};
     /// Adapter ID.
     ea::optional<unsigned> adapterId_;
+
+    /// Extra tweaks for Vulkan backend.
+    RenderDeviceSettingsVulkan vulkan_;
+    /// Extra tweaks for D3D12 backend.
+    RenderDeviceSettingsD3D12 d3d12_;
 };
 
 /// Capabilities of the render device.

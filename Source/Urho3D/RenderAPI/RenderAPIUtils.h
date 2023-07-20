@@ -38,4 +38,7 @@ URHO3D_API RenderBackend SelectRenderBackend(ea::optional<RenderBackend> request
 URHO3D_API ShaderTranslationPolicy SelectShaderTranslationPolicy(
     RenderBackend backend, ea::optional<ShaderTranslationPolicy> requestedPolicy);
 
+URHO3D_API void SerializeValue(Archive& archive, const char* name, RenderDeviceSettingsVulkan& value);
+URHO3D_API void SerializeValue(Archive& archive, const char* name, RenderDeviceSettingsD3D12& value);
+
 } // namespace Urho3D
