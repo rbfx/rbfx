@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -112,7 +112,7 @@ void TextureBaseD3D11::CreateViewInternal(const TextureViewDesc& ViewDesc, IText
             case TEXTURE_VIEW_DEPTH_STENCIL:
             case TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL:
             {
-                VERIFY(m_Desc.BindFlags & BIND_DEPTH_STENCIL, "BIND_DEPTH_STENCIL is not set");
+                VERIFY(m_Desc.BindFlags & BIND_DEPTH_STENCIL, "BIND_DEPTH_STENCIL flag is not set");
                 ID3D11DepthStencilView* pDSV = nullptr;
                 CreateDSV(UpdatedViewDesc, &pDSV);
                 pD3D11View.Attach(pDSV);

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -38,19 +38,30 @@
 
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
-/// This enumeration is used by PipelineStateCacheDesc structure.
+/// Pipeline state cache mode.
 DILIGENT_TYPED_ENUM(PSO_CACHE_MODE, Uint8)
 {
     /// PSO cache will be used to load PSOs from it.
-    PSO_CACHE_MODE_LOAD  = 1u << 0,
+    PSO_CACHE_MODE_LOAD  = 1u << 0u,
 
     /// PSO cache will be used to store PSOs.
-    PSO_CACHE_MODE_STORE = 1u << 1,
+    PSO_CACHE_MODE_STORE = 1u << 1u,
 
-    /// PSO cache will assert if PSO is not found in the cache.
-    PSO_CACHE_FLAG_VERBOSE = 1u << 2
+    /// PSO cache will be used to load and store PSOs.
+    PSO_CACHE_MODE_LOAD_STORE = PSO_CACHE_MODE_LOAD | PSO_CACHE_MODE_STORE
 };
 DEFINE_FLAG_ENUM_OPERATORS(PSO_CACHE_MODE);
+
+/// Pipeline state cache flags.
+DILIGENT_TYPED_ENUM(PSO_CACHE_FLAGS, Uint8)
+{
+    /// No flags.
+    PSO_CACHE_FLAG_NONE = 0u,
+
+    /// Print diagnostic messages e.g. when PSO is not found in the cache.
+    PSO_CACHE_FLAG_VERBOSE = 1u << 0u
+};
+DEFINE_FLAG_ENUM_OPERATORS(PSO_CACHE_FLAGS);
 
 /// Pipeline state cache description
 struct PipelineStateCacheDesc DILIGENT_DERIVE(DeviceObjectAttribs)
@@ -61,7 +72,10 @@ struct PipelineStateCacheDesc DILIGENT_DERIVE(DeviceObjectAttribs)
     ///       and loading PSOs from it on another.
     ///       Vulkan PSO cache depends on the GPU device, driver version and other parameters,
     ///       so the cache must be generated and used on the same device.
-    PSO_CACHE_MODE Mode DEFAULT_INITIALIZER(PSO_CACHE_MODE_LOAD | PSO_CACHE_MODE_STORE);
+    PSO_CACHE_MODE Mode DEFAULT_INITIALIZER(PSO_CACHE_MODE_LOAD_STORE);
+
+    /// PSO cache flags, see Diligent::PSO_CACHE_FLAGS.
+    PSO_CACHE_FLAGS Flags DEFAULT_INITIALIZER(PSO_CACHE_FLAG_NONE);
 
     // ImmediateContextMask ?
 };

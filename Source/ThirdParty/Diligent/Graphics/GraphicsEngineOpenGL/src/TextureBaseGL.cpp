@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -488,7 +488,7 @@ void TextureBaseGL::CreateViewInternal(const TextureViewDesc& OrigViewDesc, ITex
         }
         else if (ViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET)
         {
-            VERIFY(ViewDesc.NumMipLevels == 1, "Only single mip level can be bound as RTV");
+            VERIFY(ViewDesc.NumMipLevels == 1, "Only a single mip level can be bound as RTV");
             pViewOGL = NEW_RC_OBJ(TexViewAllocator, "TextureViewGLImpl instance", TextureViewGLImpl, bIsDefaultView ? this : nullptr)(
                 pDeviceGLImpl, ViewDesc, this,
                 false, // Do NOT create texture view OpenGL object
@@ -496,7 +496,7 @@ void TextureBaseGL::CreateViewInternal(const TextureViewDesc& OrigViewDesc, ITex
         }
         else if (ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL || ViewDesc.ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL)
         {
-            VERIFY(ViewDesc.NumMipLevels == 1, "Only single mip level can be bound as DSV");
+            VERIFY(ViewDesc.NumMipLevels == 1, "Only a single mip level can be bound as DSV");
             pViewOGL = NEW_RC_OBJ(TexViewAllocator, "TextureViewGLImpl instance", TextureViewGLImpl, bIsDefaultView ? this : nullptr)(
                 pDeviceGLImpl, ViewDesc, this,
                 false, // Do NOT create texture view OpenGL object

@@ -1262,7 +1262,9 @@ void DeviceContextD3D12Impl::CommitRenderTargets(RESOURCE_STATE_TRANSITION_MODE 
 
     if (pDSV)
     {
-        const RESOURCE_STATE NewState = m_pBoundDepthStencil->GetDesc().ViewType == TEXTURE_VIEW_DEPTH_STENCIL ?
+        const auto ViewType = m_pBoundDepthStencil->GetDesc().ViewType;
+        VERIFY_EXPR(ViewType == TEXTURE_VIEW_DEPTH_STENCIL || ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL);
+        const auto NewState = ViewType == TEXTURE_VIEW_DEPTH_STENCIL ?
             RESOURCE_STATE_DEPTH_WRITE :
             RESOURCE_STATE_DEPTH_READ;
 

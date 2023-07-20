@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -552,7 +552,7 @@ void TextureD3D12Impl::CreateViewInternal(const TextureViewDesc& ViewDesc, IText
             case TEXTURE_VIEW_DEPTH_STENCIL:
             case TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL:
             {
-                VERIFY(m_Desc.BindFlags & BIND_DEPTH_STENCIL, "BIND_DEPTH_STENCIL is not set");
+                VERIFY(m_Desc.BindFlags & BIND_DEPTH_STENCIL, "BIND_DEPTH_STENCIL flag is not set");
                 ViewDescriptor = pDeviceD3D12Impl->AllocateDescriptors(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
                 CreateDSV(UpdatedViewDesc, ViewDescriptor.GetCpuHandle());
             }

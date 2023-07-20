@@ -607,7 +607,7 @@ void SwapChainVkImpl::InitBuffersAndViews()
         DepthBufferDesc.Name                            = "Main depth buffer";
         RefCntAutoPtr<ITexture> pDepthBufferTex;
         m_pRenderDevice->CreateTexture(DepthBufferDesc, nullptr, static_cast<ITexture**>(&pDepthBufferTex));
-        auto pDSV         = pDepthBufferTex->GetDefaultView(TEXTURE_VIEW_DEPTH_STENCIL);
+        auto* pDSV        = pDepthBufferTex->GetDefaultView(TEXTURE_VIEW_DEPTH_STENCIL);
         m_pDepthBufferDSV = RefCntAutoPtr<ITextureViewVk>(pDSV, IID_TextureViewVk);
     }
 }

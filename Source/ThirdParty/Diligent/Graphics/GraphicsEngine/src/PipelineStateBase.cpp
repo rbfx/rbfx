@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -584,8 +584,8 @@ void ValidateGraphicsPipelineCreateInfo(const GraphicsPipelineStateCreateInfo& C
             LOG_PSO_ERROR_AND_THROW("NumRenderTargets must be 0 when explicit render pass is used.");
         if (GraphicsPipeline.DSVFormat != TEX_FORMAT_UNKNOWN)
             LOG_PSO_ERROR_AND_THROW("DSVFormat must be TEX_FORMAT_UNKNOWN when explicit render pass is used.");
-        if (GraphicsPipeline.UseReadOnlyDSV)
-            LOG_PSO_ERROR_AND_THROW("UseReadOnlyDSV must be false when explicit render pass is used.");
+        if (GraphicsPipeline.ReadOnlyDSV)
+            LOG_PSO_ERROR_AND_THROW("ReadOnlyDSV must be false when explicit render pass is used.");
 
         for (Uint32 rt = 0; rt < MAX_RENDER_TARGETS; ++rt)
         {
@@ -623,6 +623,9 @@ void ValidateGraphicsPipelineCreateInfo(const GraphicsPipelineStateCreateInfo& C
             {
                 LOG_PSO_ERROR_AND_THROW(FmtAttribs.Name, " is not a valid depth buffer format.");
             }
+
+            if (GraphicsPipeline.ReadOnlyDSV && GraphicsPipeline.DepthStencilDesc.DepthWriteEnable)
+                LOG_PSO_ERROR_AND_THROW("DepthStencilDesc.DepthWriteEnable can't be true when ReadOnlyDSV is true.");
         }
 
         for (Uint32 rt = GraphicsPipeline.NumRenderTargets; rt < _countof(GraphicsPipeline.RTVFormats); ++rt)

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -1647,7 +1647,9 @@ void DeviceContextVkImpl::TransitionRenderTargets(RESOURCE_STATE_TRANSITION_MODE
 
     if (m_pBoundDepthStencil)
     {
-        const bool bReadOnly = m_pBoundDepthStencil->GetDesc().ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL;
+        const auto ViewType = m_pBoundDepthStencil->GetDesc().ViewType;
+        VERIFY_EXPR(ViewType == TEXTURE_VIEW_DEPTH_STENCIL || ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL);
+        const bool bReadOnly = ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL;
 
         const RESOURCE_STATE NewState = bReadOnly ?
             RESOURCE_STATE_DEPTH_READ :

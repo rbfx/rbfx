@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 #include "PipelineStateCacheD3D12Impl.hpp"
 #include "RenderDeviceD3D12Impl.hpp"
 #include "DataBlobImpl.hpp"
+#include "StringTools.hpp"
 
 namespace Diligent
 {
@@ -58,26 +59,36 @@ PipelineStateCacheD3D12Impl::~PipelineStateCacheD3D12Impl()
 
 CComPtr<ID3D12DeviceChild> PipelineStateCacheD3D12Impl::LoadComputePipeline(const wchar_t* Name, const D3D12_COMPUTE_PIPELINE_STATE_DESC& Desc)
 {
-    VERIFY_EXPR(Name != nullptr);
+    if (Name == nullptr)
+    {
+        DEV_ERROR("Pipeline name must not be null");
+        return {};
+    }
+
     CComPtr<ID3D12DeviceChild> d3d12PSO;
     if ((m_Desc.Mode & PSO_CACHE_MODE_LOAD) != 0)
     {
         auto hr = m_pLibrary->LoadComputePipeline(Name, &Desc, IID_PPV_ARGS(&d3d12PSO));
-        if ((m_Desc.Mode & PSO_CACHE_FLAG_VERBOSE) != 0)
-            DEV_CHECK_ERR(SUCCEEDED(hr), "Failed to load compute pipeline from the library");
+        if (FAILED(hr) && (m_Desc.Flags & PSO_CACHE_FLAG_VERBOSE) != 0)
+            LOG_ERROR_MESSAGE("Failed to load compute pipeline '", NarrowString(Name), "' from the library");
     }
     return d3d12PSO;
 }
 
 CComPtr<ID3D12DeviceChild> PipelineStateCacheD3D12Impl::LoadGraphicsPipeline(const wchar_t* Name, const D3D12_GRAPHICS_PIPELINE_STATE_DESC& Desc)
 {
-    VERIFY_EXPR(Name != nullptr);
+    if (Name == nullptr)
+    {
+        DEV_ERROR("Pipeline name must not be null");
+        return {};
+    }
+
     CComPtr<ID3D12DeviceChild> d3d12PSO;
     if ((m_Desc.Mode & PSO_CACHE_MODE_LOAD) != 0)
     {
         auto hr = m_pLibrary->LoadGraphicsPipeline(Name, &Desc, IID_PPV_ARGS(&d3d12PSO));
-        if ((m_Desc.Mode & PSO_CACHE_FLAG_VERBOSE) != 0)
-            DEV_CHECK_ERR(SUCCEEDED(hr), "Failed to load graphics pipeline from the library");
+        if (FAILED(hr) && (m_Desc.Flags & PSO_CACHE_FLAG_VERBOSE) != 0)
+            LOG_ERROR_MESSAGE("Failed to load graphics pipeline '", NarrowString(Name), "' from the library");
     }
     return d3d12PSO;
 }
@@ -89,8 +100,8 @@ bool PipelineStateCacheD3D12Impl::StorePipeline(const wchar_t* Name, ID3D12Devic
         return false;
 
     auto hr = m_pLibrary->StorePipeline(Name, static_cast<ID3D12PipelineState*>(pPSO));
-    if (FAILED(hr))
-        LOG_INFO_MESSAGE("Failed to add pipeline to the library");
+    if (FAILED(hr) && (m_Desc.Flags & PSO_CACHE_FLAG_VERBOSE) != 0)
+        LOG_ERROR_MESSAGE("Failed to add pipeline '", NarrowString(Name), "' to the library");
 
     return SUCCEEDED(hr);
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -522,8 +522,8 @@ void ValidatedAndCorrectTextureViewDesc(const TextureDesc& TexDesc, TextureViewD
 
                 case TEXTURE_VIEW_RENDER_TARGET:
                 case TEXTURE_VIEW_DEPTH_STENCIL:
-                case TEXTURE_VIEW_UNORDERED_ACCESS:
                 case TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL:
+                case TEXTURE_VIEW_UNORDERED_ACCESS:
                     ViewDesc.TextureDim = RESOURCE_DIM_TEX_2D_ARRAY;
                     break;
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -314,9 +314,9 @@ struct GraphicsPipelineDesc
     /// Must be TEX_FORMAT_UNKNOWN when pRenderPass is not null.
     TEXTURE_FORMAT DSVFormat     DEFAULT_INITIALIZER(TEX_FORMAT_UNKNOWN);
 
-    /// Indicates that the pipeline will be used with read-only depth-stencil attachment.
+    /// Indicates that the pipeline will be used with read-only depth-stencil buffer.
     /// Must be false when pRenderPass is not null.
-    Bool UseReadOnlyDSV          DEFAULT_INITIALIZER(False);
+    Bool ReadOnlyDSV             DEFAULT_INITIALIZER(False);
 
     /// Multisampling parameters.
     SampleDesc SmplDesc;
@@ -344,7 +344,7 @@ struct GraphicsPipelineDesc
               SubpassIndex      == Rhs.SubpassIndex      &&
               ShadingRateFlags  == Rhs.ShadingRateFlags  &&
               DSVFormat         == Rhs.DSVFormat         &&
-              UseReadOnlyDSV    == Rhs.UseReadOnlyDSV    &&
+              ReadOnlyDSV       == Rhs.ReadOnlyDSV    &&
               SmplDesc          == Rhs.SmplDesc          &&
               NodeMask          == Rhs.NodeMask))
             return false;

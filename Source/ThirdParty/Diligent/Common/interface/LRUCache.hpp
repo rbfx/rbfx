@@ -80,6 +80,14 @@ public:
                  InitDataType&& InitData // May throw
                  ) noexcept(false)
     {
+        if (m_MaxSize.load() == 0 && m_CurrSize.load() == 0)
+        {
+            DataType Data;
+            size_t   DataSize = 0;
+            InitData(Data, DataSize); // May throw
+            return Data;
+        }
+
         // Get the data wrapper. Since this is a shared pointer, it may not be destroyed
         // while we keep one, even if it is popped from the cache by another thread.
         auto pDataWrpr = GetDataWrapper(Key);

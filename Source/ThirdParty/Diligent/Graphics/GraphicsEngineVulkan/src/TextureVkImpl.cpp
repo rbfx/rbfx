@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -605,7 +605,9 @@ VulkanUtilities::ImageViewWrapper TextureVkImpl::CreateImageView(TextureViewDesc
             break;
 
         case RESOURCE_DIM_TEX_3D:
-            if (ViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET || ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL || ViewDesc.ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL)
+            if (ViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET ||
+                ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL ||
+                ViewDesc.ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL)
             {
                 VERIFY_EXPR(m_pDevice->GetAdapterInfo().Texture.TextureView2DOn3DSupported);
                 VERIFY(m_Desc.Usage != USAGE_SPARSE, "Can not create 2D texture view on a 3D sparse texture");

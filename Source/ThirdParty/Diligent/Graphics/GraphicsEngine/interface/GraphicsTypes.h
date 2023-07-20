@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -328,6 +328,11 @@ DILIGENT_TYPED_ENUM(TEXTURE_VIEW_TYPE, Uint8)
     /// as the target for rendering operations
     TEXTURE_VIEW_DEPTH_STENCIL,
 
+    /// A texture view will define a read-only depth stencil view that will be used
+    /// as depth stencil source for rendering operations, but can also be simultaneously
+    /// read from shaders.
+    TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL,
+
     /// A texture view will define an unordered access view that will be used
     /// for unordered read/write operations from the shaders
     TEXTURE_VIEW_UNORDERED_ACCESS,
@@ -335,10 +340,6 @@ DILIGENT_TYPED_ENUM(TEXTURE_VIEW_TYPE, Uint8)
     /// A texture view will define a variable shading rate view that will be used
     /// as the shading rate source for rendering operations
     TEXTURE_VIEW_SHADING_RATE,
-
-    /// A texture view will define a read-only depth stencil view that will be used
-    /// as the target for rendering operations
-    TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL,
 
     /// Helper value that stores that total number of texture views
     TEXTURE_VIEW_NUM_VIEWS
