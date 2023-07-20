@@ -334,21 +334,6 @@ void Renderer::SetTextureQuality(MaterialQuality quality)
     }
 }
 
-void Renderer::SetMobileShadowBiasMul(float mul)
-{
-    mobileShadowBiasMul_ = mul;
-}
-
-void Renderer::SetMobileShadowBiasAdd(float add)
-{
-    mobileShadowBiasAdd_ = add;
-}
-
-void Renderer::SetMobileNormalOffsetMul(float mul)
-{
-    mobileNormalOffsetMul_ = mul;
-}
-
 void Renderer::SetSkinningMode(SkinningMode mode)
 {
     skinningMode_ = mode;

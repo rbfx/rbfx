@@ -188,13 +188,14 @@ void PipelineStateBuilder::ClearState()
 void PipelineStateBuilder::SetupShadowPassState(unsigned splitIndex, const LightProcessor* lightProcessor,
         const Material* material, const Pass* pass)
 {
+    const ShadowMapAllocatorSettings& settings = shadowMapAllocator_->GetSettings();
     const CookedLightParams& lightParams = lightProcessor->GetParams();
-    const float biasMultiplier = lightParams.shadowDepthBiasMultiplier_[splitIndex];
+    const float biasMultiplier = lightParams.shadowDepthBiasMultiplier_[splitIndex] * settings.depthBiasScale_;
     const BiasParameters& biasParameters = lightProcessor->GetLight()->GetShadowBias();
 
     pipelineStateDesc_.debugName_ = Format("Shadow Pass for material '{}'", material->GetName());
 
-    if (shadowMapAllocator_->GetSettings().enableVarianceShadowMaps_)
+    if (settings.enableVarianceShadowMaps_)
     {
         pipelineStateDesc_.colorWriteEnabled_ = true;
         pipelineStateDesc_.constantDepthBias_ = 0.0f;
@@ -203,16 +204,9 @@ void PipelineStateBuilder::SetupShadowPassState(unsigned splitIndex, const Light
     else
     {
         pipelineStateDesc_.colorWriteEnabled_ = false;
-        pipelineStateDesc_.constantDepthBias_ = biasMultiplier * biasParameters.constantBias_;
+        pipelineStateDesc_.constantDepthBias_ =
+            biasMultiplier * biasParameters.constantBias_ + settings.depthBiasOffset_;
         pipelineStateDesc_.slopeScaledDepthBias_ = biasMultiplier * biasParameters.slopeScaledBias_;
-
-// TODO(diligent): Revisit this place
-#if 0
-        const float multiplier = renderer_->GetMobileShadowBiasMul();
-        const float addition = renderer_->GetMobileShadowBiasAdd();
-        desc.constantDepthBias_ = desc.constantDepthBias_ * multiplier + addition;
-        desc.slopeScaledDepthBias_ *= multiplier;
-#endif
     }
 
     pipelineStateDesc_.depthWriteEnabled_ = pass->GetDepthWrite();

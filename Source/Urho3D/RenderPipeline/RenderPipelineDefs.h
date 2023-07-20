@@ -333,6 +333,7 @@ struct DrawableProcessorSettings
     unsigned maxVertexLights_{ 4 };
     unsigned maxPixelLights_{ 4 };
     unsigned pcfKernelSize_{ 1 };
+    float normalOffsetScale_{1.0f};
     LightProcessorCacheSettings lightProcessorCache_;
 
     /// Utility operators
@@ -342,6 +343,7 @@ struct DrawableProcessorSettings
         unsigned hash = 0;
         CombineHash(hash, maxVertexLights_);
         CombineHash(hash, pcfKernelSize_);
+        CombineHash(hash, MakeHash(normalOffsetScale_));
         return hash;
     }
 
@@ -350,6 +352,7 @@ struct DrawableProcessorSettings
         maxVertexLights_ = Clamp(maxVertexLights_, 0u, 4u);
         maxPixelLights_ = Clamp(maxPixelLights_, 0u, 256u);
         pcfKernelSize_ = Clamp(pcfKernelSize_, 1u, 5u);
+        normalOffsetScale_ = ea::max(0.0f, normalOffsetScale_);
 
         // Kernel size of 4 is not supported
         if (pcfKernelSize_ == 4)
@@ -362,7 +365,8 @@ struct DrawableProcessorSettings
             && maxVertexLights_ == rhs.maxVertexLights_
             && maxPixelLights_ == rhs.maxPixelLights_
             && pcfKernelSize_ == rhs.pcfKernelSize_
-            && lightProcessorCache_ == rhs.lightProcessorCache_;
+            && lightProcessorCache_ == rhs.lightProcessorCache_
+            && normalOffsetScale_ == rhs.normalOffsetScale_;
     }
 
     bool operator!=(const DrawableProcessorSettings& rhs) const { return !(*this == rhs); }
@@ -449,6 +453,9 @@ struct ShadowMapAllocatorSettings
     bool use16bitShadowMaps_{};
     unsigned shadowAtlasPageSize_{ 2048 };
 
+    float depthBiasScale_{1.0f};
+    float depthBiasOffset_{0.0f};
+
     /// Utility operators
     /// @{
     unsigned CalculatePipelineStateHash() const
@@ -456,6 +463,8 @@ struct ShadowMapAllocatorSettings
         unsigned hash = 0;
         CombineHash(hash, enableVarianceShadowMaps_);
         CombineHash(hash, use16bitShadowMaps_);
+        CombineHash(hash, MakeHash(depthBiasScale_));
+        CombineHash(hash, MakeHash(depthBiasOffset_));
         return hash;
     }
 
@@ -463,6 +472,7 @@ struct ShadowMapAllocatorSettings
     {
         varianceShadowMapMultiSample_ = Clamp(ClosestPowerOfTwo(varianceShadowMapMultiSample_), 1u, 16u);
         shadowAtlasPageSize_ = Clamp(ClosestPowerOfTwo(shadowAtlasPageSize_), 128u, 16 * 1024u);
+        depthBiasScale_ = ea::max(0.0f, depthBiasScale_);
     }
 
     bool operator==(const ShadowMapAllocatorSettings& rhs) const
@@ -470,7 +480,9 @@ struct ShadowMapAllocatorSettings
         return enableVarianceShadowMaps_ == rhs.enableVarianceShadowMaps_
             && varianceShadowMapMultiSample_ == rhs.varianceShadowMapMultiSample_
             && use16bitShadowMaps_ == rhs.use16bitShadowMaps_
-            && shadowAtlasPageSize_ == rhs.shadowAtlasPageSize_;
+            && shadowAtlasPageSize_ == rhs.shadowAtlasPageSize_
+            && depthBiasScale_ == rhs.depthBiasScale_
+            && depthBiasOffset_ == rhs.depthBiasOffset_;
     }
 
     bool operator!=(const ShadowMapAllocatorSettings& rhs) const { return !(*this == rhs); }

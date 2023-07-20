@@ -505,13 +505,7 @@ void LightProcessor::CookShaderParameters(Camera* cullCamera, const DrawableProc
         }
     }
 
-    float normalOffset = light_->GetShadowBias().normalOffset_;
-// TODO(diligent): Revisit this place
-#if 0
-    if (normalOffset > 0.0f)
-        normalOffset *= renderer->GetMobileNormalOffsetMul();
-#endif
-
+    const float normalOffset = light_->GetShadowBias().normalOffset_ * settings.normalOffsetScale_;
     for (unsigned i = 0; i < numActiveSplits_; ++i)
         cookedParams_.shadowNormalBias_[i] = splits_[i].GetShadowMapTexelSizeInWorldSpace() * normalOffset;
 }

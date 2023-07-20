@@ -218,15 +218,6 @@ public:
     /// Set texture quality level. See the QUALITY constants in GraphicsDefs.h.
     /// @property
     void SetTextureQuality(MaterialQuality quality);
-    /// Set shadow depth bias multiplier for mobile platforms to counteract possible worse shadow map precision. Default 1.0 (no effect).
-    /// @property
-    void SetMobileShadowBiasMul(float mul);
-    /// Set shadow depth bias addition for mobile platforms to counteract possible worse shadow map precision. Default 0.0 (no effect).
-    /// @property
-    void SetMobileShadowBiasAdd(float add);
-    /// Set shadow normal offset multiplier for mobile platforms to counteract possible worse shadow map precision. Default 1.0 (no effect).
-    /// @property
-    void SetMobileNormalOffsetMul(float mul);
     /// Set skinning mode.
     void SetSkinningMode(SkinningMode mode);
     /// Set number of bones used for software skinning.
@@ -256,18 +247,6 @@ public:
     /// Return texture quality level.
     /// @property
     MaterialQuality GetTextureQuality() const { return textureQuality_; }
-
-    /// Return shadow depth bias multiplier for mobile platforms.
-    /// @property
-    float GetMobileShadowBiasMul() const { return mobileShadowBiasMul_; }
-
-    /// Return shadow depth bias addition for mobile platforms.
-    /// @property
-    float GetMobileShadowBiasAdd() const { return mobileShadowBiasAdd_; }
-
-    /// Return shadow normal offset multiplier for mobile platforms.
-    /// @property
-    float GetMobileNormalOffsetMul() const { return mobileNormalOffsetMul_; }
 
     /// Return skinning mode.
     SkinningMode GetSkinningMode() const { return skinningMode_; }
@@ -402,12 +381,6 @@ private:
     TextureFilterMode textureFilterMode_{FILTER_TRILINEAR};
     /// Texture quality level.
     MaterialQuality textureQuality_{QUALITY_HIGH};
-    /// Mobile platform shadow depth bias multiplier.
-    float mobileShadowBiasMul_{1.0f};
-    /// Mobile platform shadow depth bias addition.
-    float mobileShadowBiasAdd_{};
-    /// Mobile platform shadow normal offset multiplier.
-    float mobileNormalOffsetMul_{1.0f};
     /// Number of occlusion buffers in use.
     unsigned numOcclusionBuffers_{};
     /// Number of temporary shadow cameras in use.
