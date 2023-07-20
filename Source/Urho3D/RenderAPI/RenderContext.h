@@ -30,6 +30,9 @@ public:
     explicit RenderContext(RenderDevice* renderDevice);
     ~RenderContext() override;
 
+    /// Reset statistics.
+    void ResetStats() { stats_ = {}; }
+
     /// Reset render targets and depth-stencil buffer.
     void ResetRenderTargets();
     /// Set backbuffer render target and associated depth-stencil buffer.
@@ -58,6 +61,8 @@ public:
     /// Getters.
     /// @{
     Diligent::IDeviceContext* GetHandle() const { return handle_; }
+    const RenderDeviceStats& GetStats() const { return stats_; }
+    RenderDeviceStats& GetMutableStats() { return stats_; }
     RenderDevice* GetRenderDevice() const { return renderDevice_; }
     RenderPool* GetRenderPool() const { return renderPool_; }
     const IntVector2& GetCurrentRenderTargetSize() const { return currentDimensions_; }
@@ -73,6 +78,8 @@ private:
     RenderDevice* renderDevice_{};
     SharedPtr<RenderPool> renderPool_;
     Diligent::RefCntAutoPtr<Diligent::IDeviceContext> handle_;
+
+    RenderDeviceStats stats_;
 
     /// Current render target info.
     /// @{

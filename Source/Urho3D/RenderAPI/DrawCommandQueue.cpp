@@ -77,6 +77,7 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
 
     RenderPool* renderPool = renderContext->GetRenderPool();
     Diligent::IDeviceContext* deviceContext = renderContext->GetHandle();
+    RenderDeviceStats& stats = renderContext->GetMutableStats();
 
     const RenderBackend& backend = renderContext->GetRenderDevice()->GetBackend();
     const RenderDeviceCaps& caps = renderContext->GetRenderDevice()->GetCaps();
@@ -269,6 +270,9 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
                 drawAttrs.IndexType = GetIndexType(currentIndexBuffer);
 
                 deviceContext->DrawIndexed(drawAttrs);
+
+                stats.numDraws_ += 1;
+                stats.numPrimitives_ += drawAttrs.NumIndices * drawAttrs.NumInstances;
             }
             else
             {
@@ -280,6 +284,9 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
                 drawAttrs.Flags = Diligent::DRAW_FLAG_VERIFY_ALL;
 
                 deviceContext->Draw(drawAttrs);
+
+                stats.numDraws_ += 1;
+                stats.numPrimitives_ += drawAttrs.NumVertices * drawAttrs.NumInstances;
             }
         }
         else if (currentPipelineState->GetPipelineType() == PipelineStateType::Compute)
@@ -289,6 +296,8 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
             dispatchAttrs.ThreadGroupCountY = cmd.numGroups_.y_;
             dispatchAttrs.ThreadGroupCountZ = cmd.numGroups_.z_;
             deviceContext->DispatchCompute(dispatchAttrs);
+
+            stats.numDispatches_ += 1;
         }
     }
 }

@@ -261,14 +261,6 @@ public:
     /// @property
     unsigned GetNumViews() const { return renderPipelineViews_.size(); }
 
-    /// Return number of primitives rendered.
-    /// @property
-    unsigned GetNumPrimitives() const { return numPrimitives_; }
-
-    /// Return number of batches rendered.
-    /// @property
-    unsigned GetNumBatches() const { return numBatches_; }
-
     /// Return number of geometries rendered.
     /// @property
     unsigned GetNumGeometries() const;
@@ -381,14 +373,6 @@ private:
     TextureFilterMode textureFilterMode_{FILTER_TRILINEAR};
     /// Texture quality level.
     MaterialQuality textureQuality_{QUALITY_HIGH};
-    /// Number of occlusion buffers in use.
-    unsigned numOcclusionBuffers_{};
-    /// Number of temporary shadow cameras in use.
-    unsigned numShadowCameras_{};
-    /// Number of primitives (3D geometry only).
-    unsigned numPrimitives_{};
-    /// Number of batches (3D geometry only).
-    unsigned numBatches_{};
     /// Initialized flag.
     bool initialized_{};
     /// Flag for views needing reset.

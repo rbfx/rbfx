@@ -429,8 +429,6 @@ void Renderer::Update(float timeStep)
     frame_.frameNumber_ = GetSubsystem<Time>()->GetFrameNumber();
     frame_.timeStep_ = timeStep;
     frame_.camera_ = nullptr;
-    numShadowCameras_ = 0;
-    numOcclusionBuffers_ = 0;
     updatedOctrees_.clear();
 
     // Assign viewports to the render surface
@@ -500,11 +498,6 @@ void Renderer::Render()
     // Render RenderPipeline views.
     for (RenderPipelineView* renderPipelineView : ea::reverse(renderPipelineViews_))
         renderPipelineView->Render();
-
-    // Copy the number of batches & primitives from Graphics so that we can account for 3D geometry only
-    // TODO(diligent): Implement this
-    numPrimitives_ = graphics_->GetNumPrimitives();
-    numBatches_ = graphics_->GetNumBatches();
 
     // All views done, custom rendering can now be done before UI
     SendEvent(E_ENDALLVIEWSRENDER);

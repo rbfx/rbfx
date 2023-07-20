@@ -1590,6 +1590,7 @@ void RenderDevice::Present()
             UpdateSwapChainSize();
     }
 
+    // Execute postponed work
     renderPool_->OnFrameEnd();
 
     for (PipelineState* pipelineState : pipelineStatesToReload_)
@@ -1614,6 +1615,23 @@ void RenderDevice::Present()
         }
     }
 
+    stats_ = renderContext_->GetStats();
+    renderContext_->ResetStats();
+
+    if (statsTimer_.GetMSec(false) >= StatsPeriodMs)
+    {
+        statsTimer_.Reset();
+        prevMaxStats_ = maxStats_;
+        maxStats_ = stats_;
+    }
+    else
+    {
+        maxStats_.numPrimitives_ = ea::max(maxStats_.numPrimitives_, stats_.numPrimitives_);
+        maxStats_.numDraws_ = ea::max(maxStats_.numDraws_, stats_.numDraws_);
+        maxStats_.numDispatches_ = ea::max(maxStats_.numDispatches_, stats_.numDispatches_);
+    }
+
+    // Increment frame index
     frameIndex_ = static_cast<FrameIndex>(static_cast<long long>(frameIndex_) + 1);
     URHO3D_ASSERT(frameIndex_ > FrameIndex::None, "How did you exhaust 2^63 frames?");
 }

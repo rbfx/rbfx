@@ -7,6 +7,7 @@
 #include "Urho3D/Core/Mutex.h"
 #include "Urho3D/Core/Object.h"
 #include "Urho3D/Core/Signal.h"
+#include "Urho3D/Core/Timer.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
 #include <Diligent/Common/interface/RefCntAutoPtr.hpp>
@@ -120,6 +121,8 @@ public:
     const RenderDeviceSettings& GetDeviceSettings() const { return deviceSettings_; }
     const WindowSettings& GetWindowSettings() const { return windowSettings_; }
     const RenderDeviceCaps& GetCaps() const { return caps_; }
+    const RenderDeviceStats& GetStats() const { return stats_; }
+    const RenderDeviceStats& GetMaxStats() const { return prevMaxStats_; }
     TextureFilterMode GetDefaultTextureFilterMode() const { return defaultTextureFilterMode_; }
     int GetDefaultTextureAnisotropy() const { return defaultTextureAnisotropy_; }
     TextureFormat GetDefaultDepthStencilFormat() const { return defaultDepthStencilFormat_; }
@@ -210,6 +213,12 @@ private:
 
     ea::unique_ptr<Diligent::SwapChainDesc> oldNativeSwapChainDesc_;
     ea::vector<WeakPtr<PipelineState>> pipelineStatesToReload_;
+
+    static constexpr unsigned StatsPeriodMs = 333;
+    Timer statsTimer_;
+    RenderDeviceStats stats_;
+    RenderDeviceStats maxStats_;
+    RenderDeviceStats prevMaxStats_;
 
     // Keep aliases at the end to ensure they are destroyed first and don't affect real order of destruction.
 #if D3D11_SUPPORTED

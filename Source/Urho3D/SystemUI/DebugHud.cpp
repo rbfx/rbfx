@@ -33,6 +33,7 @@
 #include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/Renderer.h"
 #include "../IO/Log.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../SystemUI/SystemUI.h"
 #include "../UI/UI.h"
 
@@ -95,11 +96,6 @@ void DebugHud::CycleMode()
     }
 }
 
-void DebugHud::SetUseRendererStats(bool enable)
-{
-    useRendererStats_ = enable;
-}
-
 void DebugHud::Toggle(DebugHudModeFlags mode)
 {
     SetMode(GetMode() ^ mode);
@@ -135,8 +131,10 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
     if (mode == DEBUGHUD_SHOW_NONE)
         return;
 
-    Renderer* renderer = GetSubsystem<Renderer>();
-    Graphics* graphics = GetSubsystem<Graphics>();
+    auto renderer = GetSubsystem<Renderer>();
+    auto graphics = GetSubsystem<Graphics>();
+    auto renderDevice = GetSubsystem<RenderDevice>();
+
     if (mode & DEBUGHUD_SHOW_STATS)
     {
         const FrameStatistics& stats = renderer->GetFrameStats();
@@ -149,27 +147,17 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
             fpsTimer_.Reset();
         }
 
-        unsigned primitives, batches;
-        if (!useRendererStats_)
-        {
-            primitives = graphics->GetNumPrimitives();
-            batches = graphics->GetNumBatches();
-        }
-        else
-        {
-            primitives = context_->GetSubsystem<Renderer>()->GetNumPrimitives();
-            batches = context_->GetSubsystem<Renderer>()->GetNumBatches();
-        }
-
         numChangedAnimations_[1] += stats.changedAnimations_;
 
         float left_offset = ui::GetCursorPos().x;
 
         ui::Text("FPS %d", fps_);
         ui::SetCursorPosX(left_offset);
-        ui::Text("Triangles %u", primitives);
+        ui::Text("Triangles %u", renderDevice->GetMaxStats().numPrimitives_);
         ui::SetCursorPosX(left_offset);
-        ui::Text("Batches %u", batches);
+        ui::Text("Draws %u", renderDevice->GetMaxStats().numDraws_);
+        ui::SetCursorPosX(left_offset);
+        ui::Text("Dispatches %u", renderDevice->GetMaxStats().numDispatches_);
         ui::SetCursorPosX(left_offset);
         ui::Text("Views %u", renderer->GetNumViews());
         ui::SetCursorPosX(left_offset);

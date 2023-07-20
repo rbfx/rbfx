@@ -227,9 +227,6 @@ bool Graphics::BeginFrame()
             return false;
     }
 
-    numPrimitives_ = 0;
-    numBatches_ = 0;
-
     SendEvent(E_BEGINRENDERING);
     return true;
 }

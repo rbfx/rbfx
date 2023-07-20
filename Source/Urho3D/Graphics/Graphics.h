@@ -212,14 +212,6 @@ public:
     /// @property
     bool GetSRGB() const { return GetWindowSettings().sRGB_; }
 
-    /// Return number of primitives drawn this frame.
-    /// @property
-    unsigned GetNumPrimitives() const { return numPrimitives_; }
-
-    /// Return number of batches drawn this frame.
-    /// @property
-    unsigned GetNumBatches() const { return numBatches_; }
-
     /// Return dummy color texture format for shadow maps. Is "NULL" (consume no video memory) if supported.
     TextureFormat GetDummyColorFormat() const { return TextureFormat::TEX_FORMAT_UNKNOWN; }
 
@@ -323,10 +315,6 @@ private:
     bool etc2TextureSupport_{};
     /// PVRTC formats support flag.
     bool pvrtcTextureSupport_{};
-    /// Number of primitives this frame.
-    unsigned numPrimitives_{};
-    /// Number of batches this frame.
-    unsigned numBatches_{};
     /// Base directory for shaders.
     ea::string shaderPath_;
     /// Shader name prefix for universal shaders.

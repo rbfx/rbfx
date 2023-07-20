@@ -134,7 +134,7 @@ struct URHO3D_API WindowSettings
 };
 
 /// Extra tweaks for Vulkan backend.
-struct RenderDeviceSettingsVulkan
+struct URHO3D_API RenderDeviceSettingsVulkan
 {
     ea::optional<Diligent::VulkanDescriptorPoolSize> mainDescriptorPoolSize_;
     ea::optional<Diligent::VulkanDescriptorPoolSize> dynamicDescriptorPoolSize_;
@@ -152,7 +152,7 @@ struct RenderDeviceSettingsVulkan
 };
 
 /// Extra tweaks for D3D12 backend.
-struct RenderDeviceSettingsD3D12
+struct URHO3D_API RenderDeviceSettingsD3D12
 {
     ea::optional<unsigned> cpuDescriptorHeapAllocationSize_[4];
     ea::optional<unsigned> gpuDescriptorHeapSize_[2];
@@ -199,6 +199,17 @@ struct URHO3D_API RenderDeviceCaps
 
     unsigned maxTextureSize_{};
     unsigned maxRenderTargetSize_{};
+};
+
+/// Statistics of the render device and/or context.
+struct URHO3D_API RenderDeviceStats
+{
+    /// Number of primitives drawn (triangles, lines, patches, etc.)
+    unsigned numPrimitives_{};
+    /// Number of draw operations.
+    unsigned numDraws_{};
+    /// Number of compute dispatches.
+    unsigned numDispatches_{};
 };
 
 /// GPU buffer types.
