@@ -36,11 +36,14 @@ struct URHO3D_API ConfigVariableDefinition
     ConfigVariableDefinition& SetDefault(const Variant& value);
     ConfigVariableDefinition& SetOptional(VariantType type);
     ConfigVariableDefinition& Overridable();
+    ConfigVariableDefinition& CommandLinePriority();
 
     template <class T> ConfigVariableDefinition& SetOptional() { return SetOptional(GetVariantType<T>()); }
 
     /// Whether to allow overriding this parameter in user configuration.
     bool overridable_{};
+    /// Whether this parameter should be applied as soon as possible when specified in the command line.
+    bool commandLinePriority_{};
     /// Default value of the variable. Also defines variable type.
     Variant defaultValue_{};
     /// Type of the variable. May be different from default value type if default value is null.
@@ -70,6 +73,8 @@ public:
     ConfigVariableDefinition& DefineVariable(const ea::string& name, const Variant& defaultValue = Variant::EMPTY);
     /// Define new variables or update defaults for existing ones.
     void DefineVariables(const StringVariantMap& defaults);
+    /// Update values for priority variables.
+    void UpdatePriorityVariables(const StringVariantMap& defaults);
     /// Set variable value.
     void SetVariable(const ea::string& name, const Variant& value);
     /// Return whether variable is explicitly defined.

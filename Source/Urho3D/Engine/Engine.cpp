@@ -242,6 +242,8 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
     URHO3D_PROFILE("InitEngine");
 
     engineParameters_->DefineVariables(applicationParameters);
+    engineParameters_->UpdatePriorityVariables(commandLineParameters);
+
     auto* fileSystem = GetSubsystem<FileSystem>();
 
     appPreferencesDir_ = GetParameter(EP_APPLICATION_PREFERENCES_DIR).GetString();
@@ -1086,7 +1088,7 @@ void Engine::PopulateDefaultParameters()
 
     engineParameters_->DefineVariable(EP_APPLICATION_NAME, "Unspecified Application");
     engineParameters_->DefineVariable(EP_APPLICATION_PREFERENCES_DIR, EMPTY_STRING);
-    engineParameters_->DefineVariable(EP_AUTOLOAD_PATHS, "Autoload");
+    engineParameters_->DefineVariable(EP_AUTOLOAD_PATHS, "Autoload").CommandLinePriority();
     engineParameters_->DefineVariable(EP_CONFIG_NAME, "EngineParameters.json");
     engineParameters_->DefineVariable(EP_BORDERLESS, true).Overridable();
     engineParameters_->DefineVariable(EP_DISCARD_SHADER_CACHE, false);
@@ -1097,9 +1099,9 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_FULL_SCREEN, false).Overridable();
     engineParameters_->DefineVariable(EP_GPU_DEBUG, false);
     engineParameters_->DefineVariable(EP_HEADLESS, false);
-    engineParameters_->DefineVariable(EP_LOG_LEVEL, LOG_TRACE);
-    engineParameters_->DefineVariable(EP_LOG_NAME, "conf://Urho3D.log");
-    engineParameters_->DefineVariable(EP_LOG_QUIET, false);
+    engineParameters_->DefineVariable(EP_LOG_LEVEL, LOG_TRACE).CommandLinePriority();
+    engineParameters_->DefineVariable(EP_LOG_NAME, "conf://Urho3D.log").CommandLinePriority();
+    engineParameters_->DefineVariable(EP_LOG_QUIET, false).CommandLinePriority();
     engineParameters_->DefineVariable(EP_MAIN_PLUGIN, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_MONITOR, 0).Overridable();
     engineParameters_->DefineVariable(EP_MULTI_SAMPLE, 1);
@@ -1108,9 +1110,9 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_PACKAGE_CACHE_DIR, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_PLUGINS, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_REFRESH_RATE, 0).Overridable();
-    engineParameters_->DefineVariable(EP_RESOURCE_PACKAGES, EMPTY_STRING);
-    engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "Data;CoreData");
-    engineParameters_->DefineVariable(EP_RESOURCE_PREFIX_PATHS, EMPTY_STRING);
+    engineParameters_->DefineVariable(EP_RESOURCE_PACKAGES, EMPTY_STRING).CommandLinePriority();
+    engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "Data;CoreData").CommandLinePriority();
+    engineParameters_->DefineVariable(EP_RESOURCE_PREFIX_PATHS, EMPTY_STRING).CommandLinePriority();
     engineParameters_->DefineVariable(EP_SAVE_SHADER_CACHE, true);
     engineParameters_->DefineVariable(EP_SHADER_CACHE_DIR, "conf://ShaderCache");
     engineParameters_->DefineVariable(EP_SHADER_POLICY).SetOptional<int>();

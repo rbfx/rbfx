@@ -52,6 +52,12 @@ ConfigVariableDefinition& ConfigVariableDefinition::Overridable()
     return *this;
 }
 
+ConfigVariableDefinition& ConfigVariableDefinition::CommandLinePriority()
+{
+    commandLinePriority_ = true;
+    return *this;
+}
+
 void ConfigFile::ConfigFlavor::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "Flavor", flavor_.components_);
@@ -73,6 +79,20 @@ void ConfigFile::DefineVariables(const StringVariantMap& defaults)
 {
     for (const auto& [name, value] : defaults)
         DefineVariable(name, value);
+}
+
+void ConfigFile::UpdatePriorityVariables(const StringVariantMap& defaults)
+{
+    for (const auto& [name, value] : defaults)
+    {
+        const auto iter = definitions_.find(name);
+        if (iter == definitions_.end())
+            continue;
+
+        ConfigVariableDefinition& desc = iter->second;
+        if (desc.commandLinePriority_)
+            desc.SetDefault(value);
+    }
 }
 
 void ConfigFile::SetVariable(const ea::string& name, const Variant& value)
