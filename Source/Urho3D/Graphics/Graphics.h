@@ -138,9 +138,6 @@ public:
 
     /// Reset all rendertargets, depth-stencil surface and viewport.
     void ResetRenderTargets();
-    /// Set shader cache directory, Direct3D only. This can either be an absolute path or a path within the resource system.
-    /// @property
-    void SetShaderCacheDir(const FileIdentifier& path);
 
     /// Return whether rendering initialized.
     /// @property
