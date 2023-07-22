@@ -49,11 +49,6 @@ namespace Urho3DNet.Tests
         private SharedPtr<Context> _context = (Context)null!;
 
         /// <summary>
-        /// Current WorkQueue subsystem.
-        /// </summary>
-        private WorkQueue _workQueue;
-
-        /// <summary>
         /// Ticking application.
         /// </summary>
         private SharedPtr<SimpleHeadlessApplication> _app = (SimpleHeadlessApplication)null!;
@@ -102,7 +97,8 @@ namespace Urho3DNet.Tests
         public static ConfiguredTaskAwaitable<bool> ToMainThreadAsync(ITestOutputHelper testOutputHelper = null)
         {
             var tcs = new TaskCompletionSource<bool>();
-            _instance._workQueue.PostTaskForMainThread((threadId, queue) =>
+            var workQueue = Context.GetSubsystem<WorkQueue>();
+            workQueue.PostTaskForMainThread((threadId, queue) =>
             {
                 _instance._app.Ptr.TestOutput = testOutputHelper;
                 tcs.TrySetResult(true);
@@ -120,7 +116,6 @@ namespace Urho3DNet.Tests
             {
                 _context = new Context();
                 _app = new SimpleHeadlessApplication(_context);
-                _workQueue = Context.GetSubsystem<WorkQueue>();
                 // Signal about application creation.
                 _initLock.Set();
                 isSet = true;
@@ -131,9 +126,8 @@ namespace Urho3DNet.Tests
                 // Make sure that the constructor can continue to run.
                 if (!isSet)
                     _initLock.Set();
-                _workQueue.Dispose();
-                _app.Dispose();
-                _context.Dispose();
+                _app?.Dispose();
+                _context?.Dispose();
             }
         }
 
