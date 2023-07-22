@@ -35,6 +35,7 @@
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Scene/SceneResource.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/Utility/AssetPipeline.h>
 
@@ -62,7 +63,8 @@ void Foundation_StandardFileTypes(Context* context, Project* project)
     {
         if (desc.HasExtension({".scene"}) || ctx.HasXMLRoot("scene")
             // Support new scene format with legacy extension too
-            || (desc.HasExtension(".xml") && ctx.HasXMLRoot("resource") && ctx.xmlFile_->GetRoot().HasAttribute("_id")))
+            || (desc.HasExtension(".xml") && ctx.HasXMLRoot(SceneResource::GetXmlRootName())
+                && ctx.xmlFile_->GetRoot().HasAttribute("_id")))
         {
             desc.AddObjectType<Scene>();
         }
