@@ -518,7 +518,7 @@ void Network::HandleApplicationExit(StringHash eventType, VariantMap& eventData)
     {
         // Since we block main thread until all connections close, we must manually invoke queued callbacks, because MsQuic connection and
         // stream callbacks depend on WorkQueue::CallFromMainThread to do object deinitialization (which also sends events) in main thread.
-        //queue->ProcessMainThreadTasks();
+        queue->CompleteAll();
         std::this_thread::yield();
     }
 }

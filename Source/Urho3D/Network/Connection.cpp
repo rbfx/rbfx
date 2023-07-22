@@ -400,7 +400,7 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
     auto* vfs = GetSubsystem<VirtualFileSystem>();
     const ea::string& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
-    
+
     for (unsigned i = 0; i < vfs->NumMountPoints(); ++i)
     {
         const auto package = dynamic_cast<PackageFile*>(vfs->GetMountPoint(i));
@@ -984,7 +984,9 @@ ea::string Connection::GetAddress() const
 
 unsigned short Connection::GetPort() const
 {
-    return 0; // wtConnection_->port_;
+    if (transportConnection_)
+        return transportConnection_->GetPort();
+    return 0;
 }
 
 void Connection::ProcessPackets()
