@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -61,7 +61,10 @@ public:
     ~PipelineStateGLImpl();
 
     /// Queries the specific interface, see IObject::QueryInterface() for details
-    virtual void DILIGENT_CALL_TYPE QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface) override;
+    virtual void DILIGENT_CALL_TYPE QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface) override final;
+
+    /// Implementation of IPipelineStateGL::GetGLProgramHandle()
+    virtual GLuint DILIGENT_CALL_TYPE GetGLProgramHandle(SHADER_TYPE Stage) const override final;
 
     void CommitProgram(GLContextState& State);
 

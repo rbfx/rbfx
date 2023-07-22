@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -96,7 +96,7 @@ public:
                   Uint32               DstZ);
 
     /// Implementation of ITextureGL::GetGLTextureHandle().
-    virtual GLuint DILIGENT_CALL_TYPE GetGLTextureHandle() override final { return GetGLHandle(); }
+    virtual GLuint DILIGENT_CALL_TYPE GetGLTextureHandle() const override final { return GetGLHandle(); }
 
     /// Implementation of ITexture::GetNativeHandle() in OpenGL backend.
     virtual Uint64 DILIGENT_CALL_TYPE GetNativeHandle() override final { return BitCast<Uint64>(GetGLTextureHandle()); }

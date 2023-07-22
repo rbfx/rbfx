@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -317,6 +317,8 @@ BufferVkImpl::BufferVkImpl(IReferenceCounters*        pRefCounters,
 
         VERIFY(IsPowerOfTwo(RequiredAlignment), "Alignment is not power of 2!");
         m_MemoryAllocation = pRenderDeviceVk->AllocateMemory(MemReqs.size, RequiredAlignment, MemoryTypeIndex, AllocateFlags);
+        if (!m_MemoryAllocation)
+            LOG_ERROR_AND_THROW("Failed to allocate memory for buffer '", m_Desc.Name, "'.");
 
         m_BufferMemoryAlignedOffset = AlignUp(VkDeviceSize{m_MemoryAllocation.UnalignedOffset}, RequiredAlignment);
         VERIFY(m_MemoryAllocation.Size >= MemReqs.size + (m_BufferMemoryAlignedOffset - m_MemoryAllocation.UnalignedOffset), "Size of memory allocation is too small");
@@ -377,6 +379,9 @@ BufferVkImpl::BufferVkImpl(IReferenceCounters*        pRefCounters,
                 // and vkInvalidateMappedMemoryRanges are NOT needed to flush host writes to the device or make device writes visible
                 // to the host (10.2)
                 auto StagingMemoryAllocation = pRenderDeviceVk->AllocateMemory(StagingBufferMemReqs, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                if (!StagingMemoryAllocation)
+                    LOG_ERROR_AND_THROW("Failed to allocate staging memory for buffer '", m_Desc.Name, "'.");
+
                 auto StagingBufferMemory     = StagingMemoryAllocation.Page->GetVkMemory();
                 auto AlignedStagingMemOffset = AlignUp(VkDeviceSize{StagingMemoryAllocation.UnalignedOffset}, StagingBufferMemReqs.alignment);
                 VERIFY_EXPR(StagingMemoryAllocation.Size >= StagingBufferMemReqs.size + (AlignedStagingMemOffset - StagingMemoryAllocation.UnalignedOffset));

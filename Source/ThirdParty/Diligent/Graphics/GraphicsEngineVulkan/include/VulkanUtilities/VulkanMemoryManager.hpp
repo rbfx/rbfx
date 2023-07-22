@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -82,6 +82,15 @@ struct VulkanMemoryAllocation
         return *this;
     }
     // clang-format on
+
+    bool IsValid() const
+    {
+        return Page != nullptr;
+    }
+    explicit operator bool() const
+    {
+        return IsValid();
+    }
 
     // Destructor immediately returns the allocation to the parent page.
     // The allocation must not be in use by the GPU.

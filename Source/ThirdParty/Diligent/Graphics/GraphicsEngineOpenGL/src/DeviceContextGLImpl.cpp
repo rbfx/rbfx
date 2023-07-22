@@ -495,8 +495,14 @@ void DeviceContextGLImpl::BeginSubpass()
                 auto        FirstLastUse   = m_pActiveRenderPass->GetAttachmentFirstLastUse(DepthAttachmentIndex);
                 if (FirstLastUse.first == m_SubpassIndex && AttachmentDesc.LoadOp == ATTACHMENT_LOAD_OP_CLEAR)
                 {
+                    const auto& FmtAttribs = GetTextureFormatAttribs(AttachmentDesc.Format);
+
+                    auto ClearFlags = CLEAR_DEPTH_FLAG;
+                    if (FmtAttribs.ComponentType == COMPONENT_TYPE_DEPTH_STENCIL)
+                        ClearFlags |= CLEAR_STENCIL_FLAG;
+
                     const auto& ClearVal = m_AttachmentClearValues[DepthAttachmentIndex].DepthStencil;
-                    ClearDepthStencil(pDSV, CLEAR_DEPTH_FLAG | CLEAR_STENCIL_FLAG, ClearVal.Depth, ClearVal.Stencil, RESOURCE_STATE_TRANSITION_MODE_NONE);
+                    ClearDepthStencil(pDSV, ClearFlags, ClearVal.Depth, ClearVal.Stencil, RESOURCE_STATE_TRANSITION_MODE_NONE);
                 }
             }
         }

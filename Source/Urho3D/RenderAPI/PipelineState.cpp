@@ -13,6 +13,11 @@
 
 #include <Diligent/Graphics/GraphicsEngine/interface/RenderDevice.h>
 
+#if GL_SUPPORTED || GLES_SUPPORTED
+    #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/PipelineStateGL.h>
+    #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/ShaderGL.h>
+#endif
+
 #include "Urho3D/DebugNew.h"
 
 namespace Urho3D
@@ -190,8 +195,14 @@ void InitializeLayoutElements(ea::vector<Diligent::LayoutElement>& result,
 }
 
 #if GL_SUPPORTED || GLES_SUPPORTED
+    #define CHECK_ERROR_AND_RETURN(message) \
+        if (glGetError() != GL_NO_ERROR) \
+        { \
+            URHO3D_ASSERTLOG(false, message); \
+            return; \
+        }
 
-VertexShaderAttributeVector GetGLVertexAttributes(GLuint programObject)
+ea::pair<VertexShaderAttributeVector, StringVector> GetGLVertexAttributes(GLuint programObject)
 {
     GLint numActiveAttribs = 0;
     GLint maxNameLength = 0;
@@ -202,6 +213,7 @@ VertexShaderAttributeVector GetGLVertexAttributes(GLuint programObject)
     attributeName.resize(maxNameLength, '\0');
 
     VertexShaderAttributeVector result;
+    StringVector resultNames;
     for (int attribIndex = 0; attribIndex < numActiveAttribs; ++attribIndex)
     {
         GLint attributeSize = 0;
@@ -215,6 +227,7 @@ VertexShaderAttributeVector GetGLVertexAttributes(GLuint programObject)
             URHO3D_ASSERT(location != -1);
 
             result.push_back({element->semantic_, element->semanticIndex_, static_cast<unsigned>(location)});
+            resultNames.push_back(attributeName);
         }
         else
         {
@@ -222,9 +235,79 @@ VertexShaderAttributeVector GetGLVertexAttributes(GLuint programObject)
         }
     }
 
-    return result;
+    return {result, resultNames};
 }
 
+class TemporaryGLProgram
+{
+public:
+    TemporaryGLProgram(ea::span<Diligent::IShader* const> shaders, bool separablePrograms)
+    {
+        programObject_ = glCreateProgram();
+        if (!programObject_)
+        {
+            URHO3D_ASSERTLOG(false, "glCreateProgram() failed");
+            return;
+        }
+
+        if (separablePrograms)
+            glProgramParameteri(programObject_, GL_PROGRAM_SEPARABLE, GL_TRUE);
+
+        for (Diligent::IShader* shader : shaders)
+        {
+            // Link only vertex shader if separable shader programs are used.
+            if (shader && (!separablePrograms || shader->GetDesc().ShaderType == Diligent::SHADER_TYPE_VERTEX))
+            {
+                glAttachShader(programObject_, static_cast<Diligent::IShaderGL*>(shader)->GetGLShaderHandle());
+                CHECK_ERROR_AND_RETURN("glAttachShader() failed");
+            }
+        }
+
+        glLinkProgram(programObject_);
+        CHECK_ERROR_AND_RETURN("glLinkProgram() failed");
+
+        int isLinked = GL_FALSE;
+        glGetProgramiv(programObject_, GL_LINK_STATUS, &isLinked);
+        CHECK_ERROR_AND_RETURN("glGetProgramiv() failed");
+
+        if (!isLinked)
+        {
+            int lengthWithNull = 0;
+            glGetProgramiv(programObject_, GL_INFO_LOG_LENGTH, &lengthWithNull);
+
+            ea::vector<char> shaderProgramInfoLog(lengthWithNull);
+            glGetProgramInfoLog(programObject_, lengthWithNull, nullptr, shaderProgramInfoLog.data());
+
+            URHO3D_LOGERROR("Failed to link shader program:\n{}", shaderProgramInfoLog.data());
+            return;
+        }
+
+        const auto [attributes, names] = GetGLVertexAttributes(programObject_);
+        vertexAttributes_ = attributes;
+        vertexAttributeNames_ = names;
+    }
+
+    ~TemporaryGLProgram()
+    {
+        if (programObject_)
+        {
+            glDeleteProgram(programObject_);
+            if (glGetError() != GL_NO_ERROR)
+                URHO3D_ASSERTLOG(false, "glDeleteProgram() failed");
+        }
+    }
+
+    GLuint GetHandle() const { return programObject_; }
+    const VertexShaderAttributeVector& GetVertexAttributes() const { return vertexAttributes_; }
+    const StringVector& GetVertexAttributeNames() const { return vertexAttributeNames_; }
+
+private:
+    GLuint programObject_{};
+    VertexShaderAttributeVector vertexAttributes_;
+    StringVector vertexAttributeNames_;
+};
+
+    #undef CHECK_ERROR_AND_RETURN
 #endif
 
 } // namespace
@@ -464,6 +547,7 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
     Diligent::IShader* domainShader = desc.domainShader_ ? desc.domainShader_->GetHandle() : nullptr;
     Diligent::IShader* hullShader = desc.hullShader_ ? desc.hullShader_->GetHandle() : nullptr;
     Diligent::IShader* geometryShader = desc.geometryShader_ ? desc.geometryShader_->GetHandle() : nullptr;
+    Diligent::IShader* const shaderHandles[] = {vertexShader, pixelShader, domainShader, hullShader, geometryShader};
 
     for (RawShader* shader :
         {desc.vertexShader_, desc.pixelShader_, desc.domainShader_, desc.hullShader_, desc.geometryShader_})
@@ -472,27 +556,40 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
             shader->OnReloaded.Subscribe(this, &PipelineState::Invalidate);
     }
 
-    // On OpenGL, vertex layout initialization is postponed until the program is linked.
+    VertexShaderAttributeVector vertexAttributes;
+    StringVector vertexAttributeNames;
     if (!isOpenGL)
     {
-        const VertexShaderAttributeVector& vertexShaderAttributes =
-            desc.vertexShader_->GetBytecode().vertexAttributes_;
-        InitializeLayoutElements(layoutElements, vertexElements, vertexShaderAttributes);
-        ci.GraphicsPipeline.InputLayout.NumElements = layoutElements.size();
-        ci.GraphicsPipeline.InputLayout.LayoutElements = layoutElements.data();
-    }
+        // On all backends except OpenGL vertex input is precompiled.
+        vertexAttributes = desc.vertexShader_->GetBytecode().vertexAttributes_;
 
-    // On OpenGL, uniform layout initialization may be postponed.
-    if (hasSeparableShaderPrograms)
+        reflection_ = MakeShared<ShaderProgramReflection>(shaderHandles);
+    }
+    else
     {
-        Diligent::IShader* const shaders[] = {vertexShader, pixelShader, domainShader, hullShader, geometryShader};
-        reflection_ = MakeShared<ShaderProgramReflection>(shaders);
+#if GL_SUPPORTED || GLES_SUPPORTED
+        // On OpenGL we should create temporary program and reflect vertex inputs.
+        // If separable shader programs are not supported, we should also reflect everything else.
+        TemporaryGLProgram glProgram{shaderHandles, hasSeparableShaderPrograms};
 
-        InitializeImmutableSamplers(
-            immutableSamplers, desc.samplers_, *reflection_, renderDevice_, Diligent::SHADER_TYPE_ALL_GRAPHICS);
-        ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
-        ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
+        vertexAttributes = glProgram.GetVertexAttributes();
+        vertexAttributeNames = glProgram.GetVertexAttributeNames();
+
+        if (hasSeparableShaderPrograms)
+            reflection_ = MakeShared<ShaderProgramReflection>(shaderHandles);
+        else
+            reflection_ = MakeShared<ShaderProgramReflection>(glProgram.GetHandle());
+#endif
     }
+
+    InitializeLayoutElements(layoutElements, vertexElements, vertexAttributes);
+    ci.GraphicsPipeline.InputLayout.NumElements = layoutElements.size();
+    ci.GraphicsPipeline.InputLayout.LayoutElements = layoutElements.data();
+
+    InitializeImmutableSamplers(
+        immutableSamplers, desc.samplers_, *reflection_, renderDevice_, Diligent::SHADER_TYPE_ALL_GRAPHICS);
+    ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
+    ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
 
     ci.PSODesc.Name = GetDebugName().c_str();
 
@@ -561,35 +658,6 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
     PipelineStateCache* psoCache = GetSubsystem<PipelineStateCache>();
     ci.pPSOCache = psoCache->GetHandle();
 
-#if GL_SUPPORTED || GLES_SUPPORTED
-    auto patchInputLayout = [&](GLuint* programObjects, Diligent::Uint32 numPrograms)
-    {
-        const auto vertexShaderAttributes = GetGLVertexAttributes(programObjects[0]);
-
-        InitializeLayoutElements(layoutElements, vertexElements, vertexShaderAttributes);
-        ci.GraphicsPipeline.InputLayout.NumElements = layoutElements.size();
-        ci.GraphicsPipeline.InputLayout.LayoutElements = layoutElements.data();
-
-        if (!hasSeparableShaderPrograms)
-        {
-            reflection_ = MakeShared<ShaderProgramReflection>(programObjects[0]);
-
-            InitializeImmutableSamplers(
-                immutableSamplers, desc.samplers_, *reflection_, renderDevice_, Diligent::SHADER_TYPE_ALL_GRAPHICS);
-            ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
-            ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
-        }
-    };
-
-    ci.GLProgramLinkedCallbackUserData = &patchInputLayout;
-    ci.GLProgramLinkedCallback =
-        [](Diligent::Uint32* programObjects, Diligent::Uint32 numProgramObjects, void* userData)
-    {
-        const auto& callback = *reinterpret_cast<decltype(patchInputLayout)*>(userData);
-        callback(programObjects, numProgramObjects);
-    };
-#endif
-
     renderDevice->CreateGraphicsPipelineState(ci, &handle_);
 
     if (!handle_)
@@ -599,6 +667,16 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
         URHO3D_LOGERROR("Failed to create PipelineState '{}'", GetDebugName());
         return;
     }
+
+#if GL_SUPPORTED || GLES_SUPPORTED
+    if (isOpenGL)
+    {
+        const auto handleGl = static_cast<Diligent::IPipelineStateGL*>(handle_.RawPtr());
+        const GLuint programObject = handleGl->GetGLProgramHandle(Diligent::SHADER_TYPE_VERTEX);
+        for (unsigned i = 0; i < vertexAttributes.size(); ++i)
+            glBindAttribLocation(programObject, vertexAttributes[i].inputIndex_, vertexAttributeNames[i].c_str());
+    }
+#endif
 
     handle_->CreateShaderResourceBinding(&shaderResourceBinding_, true);
     reflection_->ConnectToShaderVariables(desc_.GetType(), shaderResourceBinding_);
@@ -625,19 +703,25 @@ void PipelineState::CreateGPU(const ComputePipelineStateDesc& desc)
     ea::vector<Diligent::ImmutableSamplerDesc> immutableSamplers;
 
     Diligent::IShader* computeShader = desc.computeShader_->GetHandle();
+    Diligent::IShader* const shaderHandles[] = {computeShader};
     desc.computeShader_->OnReloaded.Subscribe(this, &PipelineState::Invalidate);
 
-    // On OpenGL, uniform layout initialization may be postponed.
     if (hasSeparableShaderPrograms)
     {
-        Diligent::IShader* const shaders[] = {computeShader};
-        reflection_ = MakeShared<ShaderProgramReflection>(shaders);
-
-        InitializeImmutableSamplers(
-            immutableSamplers, desc.samplers_, *reflection_, renderDevice_, Diligent::SHADER_TYPE_COMPUTE);
-        ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
-        ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
+        reflection_ = MakeShared<ShaderProgramReflection>(shaderHandles);
     }
+    else
+    {
+#if GL_SUPPORTED || GLES_SUPPORTED
+        TemporaryGLProgram glProgram{shaderHandles, hasSeparableShaderPrograms};
+        reflection_ = MakeShared<ShaderProgramReflection>(glProgram.GetHandle());
+#endif
+    }
+
+    InitializeImmutableSamplers(
+        immutableSamplers, desc.samplers_, *reflection_, renderDevice_, Diligent::SHADER_TYPE_COMPUTE);
+    ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
+    ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
 
     ci.PSODesc.Name = GetDebugName().c_str();
 
@@ -647,29 +731,6 @@ void PipelineState::CreateGPU(const ComputePipelineStateDesc& desc)
 
     PipelineStateCache* psoCache = GetSubsystem<PipelineStateCache>();
     ci.pPSOCache = psoCache->GetHandle();
-
-#if GL_SUPPORTED || GLES_SUPPORTED
-    auto patchInputLayout = [&](GLuint* programObjects, Diligent::Uint32 numPrograms)
-    {
-        if (!hasSeparableShaderPrograms)
-        {
-            reflection_ = MakeShared<ShaderProgramReflection>(programObjects[0]);
-
-            InitializeImmutableSamplers(
-                immutableSamplers, desc.samplers_, *reflection_, renderDevice_, Diligent::SHADER_TYPE_COMPUTE);
-            ci.PSODesc.ResourceLayout.NumImmutableSamplers = immutableSamplers.size();
-            ci.PSODesc.ResourceLayout.ImmutableSamplers = immutableSamplers.data();
-        }
-    };
-
-    ci.GLProgramLinkedCallbackUserData = &patchInputLayout;
-    ci.GLProgramLinkedCallback =
-        [](Diligent::Uint32* programObjects, Diligent::Uint32 numProgramObjects, void* userData)
-    {
-        const auto& callback = *reinterpret_cast<decltype(patchInputLayout)*>(userData);
-        callback(programObjects, numProgramObjects);
-    };
-#endif
 
     renderDevice->CreateComputePipelineState(ci, &handle_);
 

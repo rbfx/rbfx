@@ -26,6 +26,14 @@
     #else
         #include <GL/glew.h>
     #endif
+
+    #ifndef GL_CLIP_DISTANCE0_EXT
+        #define GL_CLIP_DISTANCE0_EXT 0x3000
+    #endif
+
+    #ifndef GL_PROGRAM_SEPARABLE
+        #define GL_PROGRAM_SEPARABLE 0x8258
+    #endif
 #endif
 
 #if VULKAN_SUPPORTED

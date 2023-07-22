@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,30 +42,40 @@ static const INTERFACE_ID IID_PipelineStateGL =
 #include "../../../Primitives/interface/DefineInterfaceHelperMacros.h"
 
 #define IPipelineStateGLInclusiveMethods \
-    IPipelineStateInclusiveMethods
-//IPipelineStateGLMethods PipelineStateGL
-
-#if DILIGENT_CPP_INTERFACE
+    IPipelineStateInclusiveMethods;      \
+    IPipelineStateGLMethods PipelineStateGL
 
 /// Exposes OpenGL-specific functionality of a pipeline state object.
-DILIGENT_BEGIN_INTERFACE(IPipelineStateGL, IPipelineState){};
-DILIGENT_END_INTERFACE
+DILIGENT_BEGIN_INTERFACE(IPipelineStateGL, IPipelineState)
+{
+    // clang-format off
 
-#endif
+    /// Returns OpenGL program handle for the specified shader stage.
+    ///
+    /// \param [in] Stage - Shader stage.
+    /// \return OpenGL program handle for the specified shader stage.
+    ///
+    /// \remarks    If device supports separable programs, the function
+    ///             returns the handle of the program for the specified
+    ///             shader stage. Otherwise, the function returns the handle
+    ///             of the program that contains all shaders, if Stage is
+    ///             one of the active shader stages, or zero otherwise.
+    VIRTUAL GLuint METHOD(GetGLProgramHandle)(THIS_
+                                              SHADER_TYPE Stage) CONST PURE;
+
+    // clang-format on
+};
+DILIGENT_END_INTERFACE
 
 #include "../../../Primitives/interface/UndefInterfaceHelperMacros.h"
 
 #if DILIGENT_C_INTERFACE
 
-struct IPipelineStateGLVtbl
-{
-    IPipelineStateGLInclusiveMethods;
-};
+// clang-format off
 
-typedef struct IPipelineStateGL
-{
-    struct IPipelineStateGLVtbl* pVtbl;
-} IPipelineStateGL;
+#    define IPipelineStateGL_GetGLProgramHandle(This, ...) CALL_IFACE_METHOD(PipelineStateGL, GetGLProgramHandle, This, __VA_ARGS__)
+
+// clang-format on
 
 #endif
 DILIGENT_END_NAMESPACE // namespace Diligent

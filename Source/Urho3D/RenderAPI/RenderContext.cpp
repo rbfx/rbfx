@@ -15,11 +15,6 @@
 
 #include "Urho3D/DebugNew.h"
 
-// Define missing extensions on Android
-#ifndef GL_CLIP_DISTANCE0_EXT
-    #define GL_CLIP_DISTANCE0_EXT 0x3000
-#endif
-
 namespace Urho3D
 {
 

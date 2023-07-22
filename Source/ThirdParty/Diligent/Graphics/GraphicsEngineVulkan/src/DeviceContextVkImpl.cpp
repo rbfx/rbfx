@@ -1978,7 +1978,7 @@ void DeviceContextVkImpl::MapBuffer(IBuffer* pBuffer, MAP_TYPE MapType, MAP_FLAG
                           BuffDesc.Name, "': Vulkan buffer must be mapped for writing with MAP_FLAG_DISCARD or MAP_FLAG_NO_OVERWRITE flag. Context Id: ", GetContextId());
 
             auto& DynAllocation = pBufferVk->m_DynamicData[GetContextId()];
-            if ((MapFlags & MAP_FLAG_DISCARD) != 0 || DynAllocation.pDynamicMemMgr == nullptr)
+            if ((MapFlags & MAP_FLAG_DISCARD) != 0 || !DynAllocation)
             {
                 DynAllocation = AllocateDynamicSpace(BuffDesc.Size, pBufferVk->m_DynamicOffsetAlignment);
             }
@@ -1998,7 +1998,7 @@ void DeviceContextVkImpl::MapBuffer(IBuffer* pBuffer, MAP_TYPE MapType, MAP_FLAG
                 // Reuse the same allocation
             }
 
-            if (DynAllocation.pDynamicMemMgr != nullptr)
+            if (DynAllocation)
             {
                 auto* CPUAddress = DynAllocation.pDynamicMemMgr->GetCPUAddress();
                 pMappedData      = CPUAddress + DynAllocation.AlignedOffset;
@@ -2462,15 +2462,16 @@ void DeviceContextVkImpl::MapTextureSubresource(ITexture*                 pTextu
         {
             Alignment = std::max(Alignment, VkDeviceSize{FmtAttribs.ComponentSize});
         }
-        auto Allocation = AllocateDynamicSpace(CopyInfo.MemorySize, static_cast<Uint32>(Alignment));
+        if (auto Allocation = AllocateDynamicSpace(CopyInfo.MemorySize, static_cast<Uint32>(Alignment)))
+        {
+            MappedData.pData       = reinterpret_cast<Uint8*>(Allocation.pDynamicMemMgr->GetCPUAddress()) + Allocation.AlignedOffset;
+            MappedData.Stride      = CopyInfo.RowStride;
+            MappedData.DepthStride = CopyInfo.DepthStride;
 
-        MappedData.pData       = reinterpret_cast<Uint8*>(Allocation.pDynamicMemMgr->GetCPUAddress()) + Allocation.AlignedOffset;
-        MappedData.Stride      = CopyInfo.RowStride;
-        MappedData.DepthStride = CopyInfo.DepthStride;
-
-        auto it = m_MappedTextures.emplace(MappedTextureKey{&TextureVk, MipLevel, ArraySlice}, MappedTexture{CopyInfo, std::move(Allocation)});
-        if (!it.second)
-            LOG_ERROR_MESSAGE("Mip level ", MipLevel, ", slice ", ArraySlice, " of texture '", TexDesc.Name, "' has already been mapped");
+            auto it = m_MappedTextures.emplace(MappedTextureKey{&TextureVk, MipLevel, ArraySlice}, MappedTexture{CopyInfo, std::move(Allocation)});
+            if (!it.second)
+                LOG_ERROR_MESSAGE("Mip level ", MipLevel, ", slice ", ArraySlice, " of texture '", TexDesc.Name, "' has already been mapped");
+        }
     }
     else if (TexDesc.Usage == USAGE_STAGING)
     {

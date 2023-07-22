@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -67,6 +67,9 @@ public:
 
     /// Implementation of IShader::GetConstantBufferDesc() in OpenGL backend.
     virtual const ShaderCodeBufferDesc* DILIGENT_CALL_TYPE GetConstantBufferDesc(Uint32 Index) const override final;
+
+    /// Implementation of IShaderGL::GetGLShaderHandle() in OpenGL backend.
+    virtual GLuint DILIGENT_CALL_TYPE GetGLShaderHandle() const override final { return m_GLShaderObj; }
 
     static GLObjectWrappers::GLProgramObj LinkProgram(ShaderGLImpl* const* ppShaders, Uint32 NumShaders, bool IsSeparableProgram);
 

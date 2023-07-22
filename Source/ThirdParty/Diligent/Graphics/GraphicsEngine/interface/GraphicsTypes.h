@@ -3535,6 +3535,15 @@ struct EngineD3D12CreateInfo DILIGENT_DERIVE(EngineCreateInfo)
     /// that can be allocated across all SRB objects.
     /// Note that due to heap fragmentation, releasing two chunks of sizes
     /// N and M does not necessarily make the chunk of size N+M available.
+    ///
+    /// When the application exits, the engine prints the GPU descriptor heap
+    /// statistics to the log, for example:
+    ///
+    ///     Diligent Engine: Info: D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER     GPU heap max allocated size (static|dynamic): 0/128 (0.00%) | 0/1920 (0.00%).
+    ///     Diligent Engine: Info: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV GPU heap max allocated size (static|dynamic): 9/16384 (0.05%) | 128/32768 (0.39%).
+    ///
+    /// An application should monitor the GPU descriptor heap statistics and
+    /// set GPUDescriptorHeapSize and GPUDescriptorHeapDynamicSize accordingly.
     Uint32 GPUDescriptorHeapSize[2]
 #if DILIGENT_CPP_INTERFACE
         {
@@ -3598,6 +3607,13 @@ struct EngineD3D12CreateInfo DILIGENT_DERIVE(EngineCreateInfo)
     Uint32 NumDynamicHeapPagesToReserve DEFAULT_INITIALIZER(1);
 
     /// Query pool size for each query type.
+    ///
+    /// \remarks    In Direct3D12, queries are allocated from the pool, and
+    ///             one pool may contain multiple queries of different types.
+    ///             QueryPoolSizes array specifies the number of queries
+    ///             of each type that will be allocated from a single pool.
+    ///             The engine will create as many pools as necessary to
+    ///             satisfy the requested number of queries.
     Uint32 QueryPoolSizes[QUERY_TYPE_NUM_TYPES]
 #if DILIGENT_CPP_INTERFACE
         {
@@ -3753,20 +3769,27 @@ struct EngineVkCreateInfo DILIGENT_DERIVE(EngineCreateInfo)
 #endif
     ;
 
-    /// Allocation granularity for device-local memory
+    /// Allocation granularity for device-local memory.
+    ///
+    /// \remarks    Device-local memory is used for USAGE_DEFAULT and USAGE_IMMUTABLE
+    ///             GPU resources, such as buffers and textures.
+    ///
+    ///             If there is no available GPU memory, the resource will fail to be created.
     Uint32 DeviceLocalMemoryPageSize        DEFAULT_INITIALIZER(16 << 20);
 
-    /// Allocation granularity for host-visible memory
+    /// Allocation granularity for host-visible memory.
+    ///
+    /// \remarks   Host-visible memory is primarily used to upload data to GPU resources.
     Uint32 HostVisibleMemoryPageSize        DEFAULT_INITIALIZER(16 << 20);
 
     /// Amount of device-local memory reserved by the engine.
     /// The engine does not pre-allocate the memory, but rather keeps free
-    /// pages when resources are released
+    /// pages when resources are released.
     Uint32 DeviceLocalMemoryReserveSize     DEFAULT_INITIALIZER(256 << 20);
 
     /// Amount of host-visible memory reserved by the engine.
     /// The engine does not pre-allocate the memory, but rather keeps free
-    /// pages when resources are released
+    /// pages when resources are released.
     Uint32 HostVisibleMemoryReserveSize     DEFAULT_INITIALIZER(256 << 20);
 
     /// Page size of the upload heap that is allocated by immediate/deferred
@@ -3774,17 +3797,81 @@ struct EngineVkCreateInfo DILIGENT_DERIVE(EngineCreateInfo)
     /// suballocations.
     /// Upload heap is used to update resources with IDeviceContext::UpdateBuffer()
     /// and IDeviceContext::UpdateTexture().
+    ///
+    /// \remarks    Upload pages are allocated in host-visible memory. When a
+    ///             page becomes available, the engiene will keep it alive
+    ///             if the total size of the host-visible memory is less than
+    ///             HostVisibleMemoryReserveSize. Otherwise, the page will
+    ///             be released.
+    ///
+    ///             On exit, the engine prints the number of pages that were
+    ///             allocated by each context to the log, for example:
+    ///
+    ///                 Diligent Engine: Info: Upload heap of immediate context peak used/allocated frame size: 80.00 MB / 80.00 MB (80 pages)
+    ///
     Uint32 UploadHeapPageSize               DEFAULT_INITIALIZER(1 << 20);
 
     /// Size of the dynamic heap (the buffer that is used to suballocate
     /// memory for dynamic resources) shared by all contexts.
+    /// 
+    /// \remarks    The dynamic heap is used to allocate memory for dynamic
+    ///             resources. Each time a dynamic buffer or dynamic texture is mapped,
+    ///             the engine allocates a new chunk of memory from the dynamic heap.
+    ///             At the end of the frame, all dynamic memory allocated for the frame
+    ///             is recycled. However, it may not became available again until
+    ///             all command buffers that reference the memory are executed by the GPU
+    ///             (which typically happens 1-2 frames later). If space in the dynamic
+    ///             heap is exhausted, the engine will wait for up to 60 ms for the
+    ///             space released from previous frames to become available. If the space
+    ///             is still not available, the engine will fail to map the resource
+    ///             and return null pointer.
+    ///             The dynamic heap is shared by all contexts and cannot be resized
+    ///             on the fly. The application should track the amount of dynamic memory
+    ///             it needs and set this variable accordingly. When the application exits,
+    ///             the engine prints dynamic heap statistics to the log, for example:
+    ///
+    ///                 Diligent Engine: Info: Dynamic memory manager usage stats:
+    ///                 Total size: 8.00 MB. Peak allocated size: 0.50 MB. Peak utilization: 6.2%
+    ///
+    ///             The peak allocated size (0.50 MB in the example above) is the value that
+    ///             should be used to guide setting this variable. An application should always
+    ///             allow some extra space in the dynamic heap to avoid running out of dynamic memory.
     Uint32 DynamicHeapSize                  DEFAULT_INITIALIZER(8 << 20);
 
     /// Size of the memory chunk suballocated by immediate/deferred context from
-    /// the global dynamic heap to perform lock-free dynamic suballocations
+    /// the global dynamic heap to perform lock-free dynamic suballocations.
+    ///
+    /// \remarks    Dynamic memory is not allocated directly from the dynamic heap.
+    ///             Instead, when a context needs to allocate memory for a dynamic
+    ///             resource, it allocates a chunk of memory from the global dynamic
+    ///             heap (which requires synchronization with other contexts), and
+    ///             then performs lock-free suballocations from the chunk.
+    ///             The size of this chunk is set by DynamicHeapPageSize variable.
+    ///
+    ///             When the application exits, the engine prints dynamic heap statistics
+    ///             for each context to the log, for example:
+    ///
+    ///                 Diligent Engine: Info: Dynamic heap of immediate context usage stats:
+    ///                                        Peak used/aligned/allocated size: 94.14 KB / 94.56 KB / 256.00 KB (1 page). Peak efficiency (used/aligned): 99.6%. Peak utilization (used/allocated): 36.8%
+    ///
+    ///             * Peak used size is the total amount of memory required for dynamic resources
+    ///               allocated by the context during the frame.
+    ///             * Peak aligned size is the total amount of memory required for dynamic resources
+    ///               allocated by the context during the frame, accounting for necessary alignment. This
+    ///               value is always greater than or equal to the peak used size.   
+    ///             * Peak allocated size is the total amount of memory allocated from the dynamic
+    ///               heap by the context during the frame. This value is always a multiple of
+    ///               DynamicHeapPageSize.
     Uint32 DynamicHeapPageSize              DEFAULT_INITIALIZER(256 << 10);
 
     /// Query pool size for each query type.
+    ///
+    /// \remarks    In Vulkan, queries are allocated from the pool, and
+    ///             one pool may contain multiple queries of different types.
+    ///             QueryPoolSizes array specifies the number of queries
+    ///             of each type that will be allocated from a single pool.
+    ///             The engine will create as many pools as necessary to
+    ///             satisfy the requested number of queries.
     Uint32 QueryPoolSizes[QUERY_TYPE_NUM_TYPES]
 #if DILIGENT_CPP_INTERFACE
     {
@@ -3826,6 +3913,13 @@ struct EngineMtlCreateInfo DILIGENT_DERIVE(EngineCreateInfo)
     Uint32 DynamicHeapPageSize       DEFAULT_INITIALIZER(4 << 20);
 
     /// Query pool size for each query type.
+    ///
+    /// \remarks    In Metal, queries are allocated from the pool, and
+    ///             one pool may contain multiple queries of different types.
+    ///             QueryPoolSizes array specifies the number of queries
+    ///             of each type that will be allocated from a single pool.
+    ///             The engine will create as many pools as necessary to
+    ///             satisfy the requested number of queries.
     Uint32 QueryPoolSizes[QUERY_TYPE_NUM_TYPES]
     #if DILIGENT_CPP_INTERFACE
     {

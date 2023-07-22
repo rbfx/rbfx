@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -75,7 +75,7 @@ public:
     const GLObjectWrappers::GLBufferObj& GetGLHandle() const { return m_GlBuffer; }
 
     /// Implementation of IBufferGL::GetGLBufferHandle().
-    virtual GLuint DILIGENT_CALL_TYPE GetGLBufferHandle() override final { return GetGLHandle(); }
+    virtual GLuint DILIGENT_CALL_TYPE GetGLBufferHandle() const override final { return GetGLHandle(); }
 
     /// Implementation of IBuffer::GetNativeHandle() in OpenGL backend.
     virtual Uint64 DILIGENT_CALL_TYPE GetNativeHandle() override final { return BitCast<Uint64>(GetGLBufferHandle()); }

@@ -21,7 +21,7 @@ struct RenderPoolSettings
 {
     unsigned textureCacheMinFrames_{1};
     unsigned textureCacheMaxFrames_{1000};
-    float textureCacheMinLoadFactor_{0.25f};
+    float textureCacheMinLoadFactor_{0.1f};
     unsigned logPeriod_{1000};
 };
 

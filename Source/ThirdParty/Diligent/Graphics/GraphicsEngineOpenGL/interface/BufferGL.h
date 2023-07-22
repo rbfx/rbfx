@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,7 +49,7 @@ static const INTERFACE_ID IID_BufferGL =
 DILIGENT_BEGIN_INTERFACE(IBufferGL, IBuffer)
 {
     /// Returns OpenGL buffer handle
-    VIRTUAL GLuint METHOD(GetGLBufferHandle)(THIS) PURE;
+    VIRTUAL GLuint METHOD(GetGLBufferHandle)(THIS) CONST PURE;
 };
 DILIGENT_END_INTERFACE
 

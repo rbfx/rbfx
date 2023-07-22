@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,25 +42,26 @@ static const INTERFACE_ID IID_ShaderGL =
 #include "../../../Primitives/interface/DefineInterfaceHelperMacros.h"
 
 #define IShaderGLInclusiveMethods \
-    IShaderInclusiveMethods
-//IShaderGLMethods ShaderGL
-
-#if DILIGENT_CPP_INTERFACE
+    IShaderInclusiveMethods;      \
+    IShaderGLMethods ShaderGL
 
 /// Exposes OpenGL-specific functionality of a shader object.
-DILIGENT_BEGIN_INTERFACE(IShaderGL, IShader){};
+DILIGENT_BEGIN_INTERFACE(IShaderGL, IShader)
+{
+    /// Returns OpenGL shader object handle.
+    VIRTUAL GLuint METHOD(GetGLShaderHandle)(THIS) CONST PURE;
+};
 DILIGENT_END_INTERFACE
-
-#endif
 
 #include "../../../Primitives/interface/UndefInterfaceHelperMacros.h"
 
 #if DILIGENT_C_INTERFACE
 
-typedef struct IShaderGLVtbl
-{
-    IShaderGLInclusiveMethods;
-} IShaderGLVtbl;
+// clang-format off
+
+#    define IShaderGL_GetGLShaderHandle(This) CALL_IFACE_METHOD(ShaderGL, GetGLShaderHandle, This)
+
+// clang-format on
 
 #endif
 

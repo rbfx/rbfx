@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,7 +49,7 @@ static const INTERFACE_ID IID_TextureGL =
 DILIGENT_BEGIN_INTERFACE(ITextureGL, ITexture)
 {
     /// Returns OpenGL texture handle
-    VIRTUAL GLuint METHOD(GetGLTextureHandle)(THIS) PURE;
+    VIRTUAL GLuint METHOD(GetGLTextureHandle)(THIS) CONST PURE;
 
     /// Returns bind target of the native OpenGL texture
     VIRTUAL GLenum METHOD(GetBindTarget)(THIS) CONST PURE;

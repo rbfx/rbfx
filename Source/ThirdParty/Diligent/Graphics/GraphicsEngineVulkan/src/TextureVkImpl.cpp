@@ -214,6 +214,9 @@ TextureVkImpl::TextureVkImpl(IReferenceCounters*        pRefCounters,
             const auto ImageMemoryFlags = IsMemoryless ? VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             VERIFY(IsPowerOfTwo(MemReqs.alignment), "Alignment is not power of 2!");
             m_MemoryAllocation = pRenderDeviceVk->AllocateMemory(MemReqs, ImageMemoryFlags);
+            if (!m_MemoryAllocation)
+                LOG_ERROR_AND_THROW("Failed to allocate memory for texture '", m_Desc.Name, "'.");
+
             auto AlignedOffset = AlignUp(m_MemoryAllocation.UnalignedOffset, MemReqs.alignment);
             VERIFY_EXPR(m_MemoryAllocation.Size >= MemReqs.size + (AlignedOffset - m_MemoryAllocation.UnalignedOffset));
             auto Memory = m_MemoryAllocation.Page->GetVkMemory();
@@ -240,7 +243,7 @@ TextureVkImpl::TextureVkImpl(IReferenceCounters*        pRefCounters,
 
 void TextureVkImpl::InitializeTextureContent(const TextureData&          InitData,
                                              const TextureFormatAttribs& FmtAttribs,
-                                             const VkImageCreateInfo&    ImageCI)
+                                             const VkImageCreateInfo&    ImageCI) noexcept(false)
 {
     const auto& LogicalDevice = GetDevice()->GetLogicalDevice();
 
@@ -349,6 +352,9 @@ void TextureVkImpl::InitializeTextureContent(const TextureData&          InitDat
     // and vkInvalidateMappedMemoryRanges are NOT needed to flush host writes to the device or make device writes visible
     // to the host (10.2)
     auto StagingMemoryAllocation = GetDevice()->AllocateMemory(StagingBufferMemReqs, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    if (!StagingMemoryAllocation)
+        LOG_ERROR_AND_THROW("Failed to allocate staging memory for texture '", m_Desc.Name, "'.");
+
     auto StagingBufferMemory     = StagingMemoryAllocation.Page->GetVkMemory();
     auto AlignedStagingMemOffset = AlignUp(StagingMemoryAllocation.UnalignedOffset, StagingBufferMemReqs.alignment);
     VERIFY_EXPR(StagingMemoryAllocation.Size >= StagingBufferMemReqs.size + (AlignedStagingMemOffset - StagingMemoryAllocation.UnalignedOffset));
@@ -467,7 +473,10 @@ void TextureVkImpl::CreateStagingTexture(const TextureData* pInitData, const Tex
     VkMemoryRequirements StagingBufferMemReqs = LogicalDevice.GetBufferMemoryRequirements(m_StagingBuffer);
     VERIFY(IsPowerOfTwo(StagingBufferMemReqs.alignment), "Alignment is not power of 2!");
 
-    m_MemoryAllocation           = GetDevice()->AllocateMemory(StagingBufferMemReqs, MemProperties);
+    m_MemoryAllocation = GetDevice()->AllocateMemory(StagingBufferMemReqs, MemProperties);
+    if (!m_MemoryAllocation)
+        LOG_ERROR_AND_THROW("Failed to allocate memory for staging texture '", m_Desc.Name, "'.");
+
     auto StagingBufferMemory     = m_MemoryAllocation.Page->GetVkMemory();
     auto AlignedStagingMemOffset = AlignUp(m_MemoryAllocation.UnalignedOffset, StagingBufferMemReqs.alignment);
     VERIFY_EXPR(m_MemoryAllocation.Size >= StagingBufferMemReqs.size + (AlignedStagingMemOffset - m_MemoryAllocation.UnalignedOffset));
