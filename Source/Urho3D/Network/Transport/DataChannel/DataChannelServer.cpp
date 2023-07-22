@@ -20,13 +20,13 @@
 // THE SOFTWARE.
 //
 
-#ifndef EMSCRIPTEN
-#include <rtc/websocketserver.hpp>
-#endif
-
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
 #include <Urho3D/Network/Transport/DataChannel/DataChannelConnection.h>
+
+#ifndef URHO3D_PLATFORM_WEB
+#include <rtc/websocketserver.hpp>
+#endif
 
 namespace Urho3D
 {
@@ -43,7 +43,7 @@ void DataChannelServer::RegisterObject(Context* context)
 
 bool DataChannelServer::Listen(const URL& url)
 {
-#ifndef EMSCRIPTEN
+#ifndef URHO3D_PLATFORM_WEB
     // Signaling server
     rtc::WebSocketServer::Configuration config = {};
     config.enableTls = url.scheme_ == "wss";
@@ -75,14 +75,14 @@ bool DataChannelServer::Listen(const URL& url)
 
 void DataChannelServer::Stop()
 {
-#ifndef EMSCRIPTEN
+#ifndef URHO3D_PLATFORM_WEB
     webSocketServer_->stop();
 #endif
 }
 
 void DataChannelServer::OnDisconnected(DataChannelConnection* connection)
 {
-#ifndef EMSCRIPTEN
+#ifndef URHO3D_PLATFORM_WEB
     onDisconnected_(connection);
     connections_.erase_first(SharedPtr(connection));
 #endif

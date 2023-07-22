@@ -106,7 +106,7 @@ private:
     VectorBuffer readBuffer_;
     /// Read buffer read cursor.
     unsigned readPosition_ = 0;
-#ifdef EMSCRIPTEN
+#ifdef URHO3D_PLATFORM_WEB
     /// HTTP request handle.
     int requestHandle_ = 0;
 #endif

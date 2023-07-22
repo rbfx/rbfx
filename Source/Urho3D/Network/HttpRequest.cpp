@@ -27,7 +27,7 @@
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Network/HttpRequest.h>
 
-#ifdef EMSCRIPTEN
+#ifdef URHO3D_PLATFORM_WEB
 #include <emscripten.h>
 #else
 #include <Civetweb/civetweb.h>
@@ -52,7 +52,7 @@ HttpRequest::HttpRequest(const ea::string& url, const ea::string& verb, const ea
     size_ = M_MAX_UNSIGNED;
     URHO3D_LOGDEBUG("HTTP {} request to URL {}", verb_, url_.ToString());
 
-#if defined(EMSCRIPTEN)
+#if defined(URHO3D_PLATFORM_WEB)
     if (!headers.empty())
         Log::GetLogger("HttpRequest").Warning("Custom headers in Web builds are not supported and were ignored!");
 
@@ -89,12 +89,12 @@ HttpRequest::HttpRequest(const ea::string& url, const ea::string& verb, const ea
     Run();
 #else
     URHO3D_LOGERROR("HTTP request will not execute as threading is disabled");
-#endif  // EMSCRIPTEN
+#endif  // URHO3D_PLATFORM_WEB
 }
 
 HttpRequest::~HttpRequest()
 {
-#ifdef EMSCRIPTEN
+#ifdef URHO3D_PLATFORM_WEB
     if (requestHandle_)
     {
         emscripten_async_wget2_abort(requestHandle_);
@@ -106,7 +106,7 @@ HttpRequest::~HttpRequest()
 
 void HttpRequest::ThreadFunction()
 {
-#ifndef EMSCRIPTEN
+#ifndef URHO3D_PLATFORM_WEB
     URHO3D_PROFILE_THREAD("HttpRequest Thread");
 
     char errorBuffer[ERROR_BUFFER_SIZE];
@@ -176,7 +176,7 @@ void HttpRequest::ThreadFunction()
         MutexLock lock(mutex_);
         state_ = HTTP_CLOSED;
     }
-#endif  // EMSCRIPTEN
+#endif  // URHO3D_PLATFORM_WEB
 }
 
 unsigned HttpRequest::Read(void* dest, unsigned size)

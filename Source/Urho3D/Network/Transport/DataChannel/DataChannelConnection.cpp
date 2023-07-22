@@ -52,7 +52,7 @@ bool DataChannelConnection::Connect(const URL& url)
     URL finalUrl = url;
     if (finalUrl.scheme_.empty())
         finalUrl.scheme_ = "ws";    // A well-formed URL is required in web builds
-#if EMSCRIPTEN
+#if URHO3D_PLATFORM_WEB
     auto websocket = std::make_shared<rtc::WebSocket>();
 #else
     rtc::WebSocket::Configuration config = {};
@@ -71,7 +71,7 @@ void DataChannelConnection::Disconnect()
     {
         AddRef();    // Ensure this object is alive until all callbacks are done executing.
         state_ = State::Disconnecting;
-#ifndef EMSCRIPTEN
+#ifndef URHO3D_PLATFORM_WEB
         peer_->resetCallbacks();
         peer_->close();
 #endif
@@ -121,7 +121,7 @@ void DataChannelConnection::OnDataChannelConnected(int index)
     }
 
     state_ = State::Connected;
-#ifndef EMSCRIPTEN
+#ifndef URHO3D_PLATFORM_WEB
     if (peer_->remoteAddress().has_value())
         address_ = peer_->remoteAddress().value().c_str();
 #endif
@@ -139,7 +139,7 @@ void DataChannelConnection::OnDataChannelDisconnected(int index)
     // Web builds may call this callback multiple times for an already open datachannel!
     if (state_ == State::Disconnected)
         return;
-#ifndef EMSCRIPTEN
+#ifndef URHO3D_PLATFORM_WEB
     dataChannels_[index]->resetCallbacks();
 #endif
     dataChannels_[index] = nullptr;
