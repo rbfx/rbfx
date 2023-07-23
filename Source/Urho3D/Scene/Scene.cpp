@@ -142,11 +142,16 @@ bool Scene::Load(Deserializer& source)
 
     StopAsyncLoading();
 
-    // Check ID
-    if (source.ReadFileID() != "USCN")
+    constexpr BinaryMagic sceneBinaryMagic{{'U', 'S', 'C', 'N'}};
+
+    const InternalResourceFormat format = PeekResourceFormat(source, sceneBinaryMagic);
+
+    switch (format)
     {
-        URHO3D_LOGERROR(source.GetName() + " is not a valid scene file");
-        return false;
+    case InternalResourceFormat::Json: return LoadJSON(source);
+    case InternalResourceFormat::Xml: return LoadXML(source);
+    case InternalResourceFormat::Binary: break; // Fall through to binary load.
+    default: URHO3D_LOGERROR(source.GetName() + " is not a valid scene file"); return false;
     }
 
     URHO3D_LOGINFO("Loading scene from " + source.GetName());

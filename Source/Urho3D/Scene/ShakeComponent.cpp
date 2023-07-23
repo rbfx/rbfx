@@ -101,8 +101,6 @@ void ShakeComponent::Update(float timeStep)
         return;
     }
 
-    LogicComponent::Update(timeStep);
-
     time_ += timeStep * timeScale_;
     trauma_ = Max(0.0f, trauma_ - traumaFalloff_ * timeStep);
     if (trauma_ == 0.0f)
