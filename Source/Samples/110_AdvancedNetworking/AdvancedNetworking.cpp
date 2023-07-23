@@ -37,6 +37,7 @@
 #include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
+#include <Urho3D/Input/MoveAndOrbitController.h>
 #include <Urho3D/Math/RandomEngine.h>
 #include <Urho3D/Network/Connection.h>
 #include <Urho3D/Network/Network.h>
@@ -210,6 +211,8 @@ void AdvancedNetworking::CreateScene()
 
     // Set an initial position for the camera scene node above the plane
     cameraNode_->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
+
+    inputMap_ = InputMap::Load(context_, "Input/MoveAndOrbit.inputmap");
 }
 
 void AdvancedNetworking::CreateUI()
@@ -488,14 +491,21 @@ void AdvancedNetworking::ProcessClientMovement(NetworkObject* clientObject)
     // Calculate movement direction
     const Quaternion rotation(0.0f, yaw_, 0.0f);
     Vector3 direction;
-    if (input->GetKeyDown(KEY_W) || (autoMovement && autoMovementPhase_ == 3))
-        direction += rotation * Vector3::FORWARD;
-    if (input->GetKeyDown(KEY_S) || (autoMovement && autoMovementPhase_ == 1))
-        direction += rotation * Vector3::BACK;
-    if (input->GetKeyDown(KEY_A) || (autoMovement && autoMovementPhase_ == 2))
-        direction += rotation * Vector3::LEFT;
-    if (input->GetKeyDown(KEY_D) || (autoMovement && autoMovementPhase_ == 0))
-        direction += rotation * Vector3::RIGHT;
+    if (inputMap_)
+    {
+        if (inputMap_->Evaluate(MoveAndOrbitController::ACTION_FORWARD) > 0.5f
+            || (autoMovement && autoMovementPhase_ == 3))
+            direction += rotation * Vector3::FORWARD;
+        if (inputMap_->Evaluate(MoveAndOrbitController::ACTION_BACK) > 0.5f
+            || (autoMovement && autoMovementPhase_ == 1))
+            direction += rotation * Vector3::BACK;
+        if (inputMap_->Evaluate(MoveAndOrbitController::ACTION_LEFT) > 0.5f
+            || (autoMovement && autoMovementPhase_ == 2))
+            direction += rotation * Vector3::LEFT;
+        if (inputMap_->Evaluate(MoveAndOrbitController::ACTION_RIGHT) > 0.5f
+            || (autoMovement && autoMovementPhase_ == 0))
+            direction += rotation * Vector3::RIGHT;
+    }
     direction = direction.NormalizedOrDefault();
 
     // Ability to jump is checked inside of PredictedKinematicController

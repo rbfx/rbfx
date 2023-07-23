@@ -49,6 +49,7 @@
         <attribute name="Hover Image Offset" value="0 0" />
         <attribute name="Pressed Image Offset" value="0 0" />
     </element>
+<!--
     <element type="Button">
         <attribute name="Name" value="Hat0" />
         <attribute name="Position" value="12 -12" />
@@ -59,4 +60,5 @@
         <attribute name="Hover Image Offset" value="0 0" />
         <attribute name="Pressed Image Offset" value="0 0" />
     </element>
+-->
 </element>

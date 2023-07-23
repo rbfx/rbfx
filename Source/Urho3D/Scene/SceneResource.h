@@ -65,6 +65,9 @@ public:
     /// Return scene. It may be modified.
     Scene* GetScene() const { return scene_; }
 
+    /// Get name of XML root element.
+    static const char* GetXmlRootName();
+
 private:
     SharedPtr<Scene> scene_;
 

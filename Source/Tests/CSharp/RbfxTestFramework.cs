@@ -126,22 +126,8 @@ namespace Urho3DNet.Tests
                 // Make sure that the constructor can continue to run.
                 if (!isSet)
                     _initLock.Set();
-                try
-                {
-                    _app?.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    Trace.WriteLine(ex);
-                }
-                try
-                {
-                    _context?.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    Trace.WriteLine(ex);
-                }
+                _app?.Dispose();
+                _context?.Dispose();
             }
         }
 

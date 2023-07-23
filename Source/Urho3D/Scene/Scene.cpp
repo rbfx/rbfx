@@ -26,6 +26,7 @@
 #include "Urho3D/Core/CoreEvents.h"
 #include "Urho3D/Core/Profiler.h"
 #include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/DebugNew.h"
 #include "Urho3D/Graphics/Texture2D.h"
 #include "Urho3D/IO/Archive.h"
 #include "Urho3D/IO/Log.h"
@@ -33,6 +34,7 @@
 #include "Urho3D/Resource/JSONFile.h"
 #include "Urho3D/Resource/ResourceCache.h"
 #include "Urho3D/Resource/ResourceEvents.h"
+#include "Urho3D/Resource/XMLArchive.h"
 #include "Urho3D/Resource/XMLFile.h"
 #include "Urho3D/Scene/Component.h"
 #include "Urho3D/Scene/ObjectAnimation.h"
@@ -45,8 +47,6 @@
 #include "Urho3D/Scene/SplinePath.h"
 #include "Urho3D/Scene/UnknownComponent.h"
 #include "Urho3D/Scene/ValueAnimation.h"
-
-#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -193,15 +193,25 @@ bool Scene::LoadXML(const XMLElement& source)
 
     StopAsyncLoading();
 
-    // Load the whole scene, then perform post-load if successfully loaded
-    // Note: the scene filename and checksum can not be set, as we only used an XML element
-    if (Node::LoadXML(source))
+    if (source.GetName() == SceneResource::GetXmlRootName())
     {
-        FinishLoading(nullptr);
+        XMLInputArchive archive{context_, source, source.GetFile()};
+        ArchiveBlock block = archive.OpenUnorderedBlock(SceneResource::GetXmlRootName());
+        SerializeInBlock(archive, false, PrefabSaveFlag::None);
         return true;
     }
     else
-        return false;
+    {
+        // Load the whole scene, then perform post-load if successfully loaded
+        // Note: the scene filename and checksum can not be set, as we only used an XML element
+        if (Node::LoadXML(source))
+        {
+            FinishLoading(nullptr);
+            return true;
+        }
+        throw ArchiveException("Cannot load Scene from legacy XML format");
+    }
+    return false;
 }
 
 bool Scene::LoadJSON(const JSONValue& source)
@@ -261,13 +271,7 @@ bool Scene::LoadXML(Deserializer& source)
 
     Clear();
 
-    if (Node::LoadXML(xml->GetRoot()))
-    {
-        FinishLoading(&source);
-        return true;
-    }
-    else
-        return false;
+    return LoadXML(xml->GetRoot());
 }
 
 bool Scene::LoadJSON(Deserializer& source)

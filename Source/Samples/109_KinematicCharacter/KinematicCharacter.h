@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +23,8 @@
 
 #pragma once
 
-#include <Urho3D/Input/Controls.h>
-#include <Urho3D/Scene/LogicComponent.h>
+#include <Urho3D/Input/MoveAndOrbitComponent.h>
+#include <Urho3D/Input/InputMap.h>
 
 namespace Urho3D
 {
@@ -46,7 +47,6 @@ const float MOVE_FORCE = 0.2f;
 const float INAIR_MOVE_FORCE = 0.2f;
 const float BRAKE_FORCE = 0.2f;
 const float JUMP_FORCE = 7.0f;
-const float YAW_SENSITIVITY = 0.1f;
 const float INAIR_THRESHOLD_TIME = 0.1f;
 
 //=============================================================================
@@ -73,9 +73,9 @@ struct MovingData
 //=============================================================================
 //=============================================================================
 /// Character component, responsible for physical movement according to controls, as well as animation.
-class KinematicCharacter : public LogicComponent
+class KinematicCharacter : public MoveAndOrbitComponent
 {
-    URHO3D_OBJECT(KinematicCharacter, LogicComponent);
+    URHO3D_OBJECT(KinematicCharacter, MoveAndOrbitComponent);
 
 public:
     /// Construct.
@@ -98,8 +98,14 @@ public:
         //platformBody_ = platformBody;
     }
 
-    /// Movement controls. Assigned by the main program each frame.
-    Controls controls_;
+    /// Set input map.
+    void SetInputMap(InputMap* inputMap);
+    /// Return input map.
+    InputMap* GetInputMap() const { return inputMap_; }
+    /// Set input map attribute.
+    void SetInputMapAttr(const ResourceRef& value);
+    /// Return input map attribute.
+    ResourceRef GetInputMapAttr() const;
 
 private:
     bool IsNodeMovingPlatform(Node *node) const;
@@ -126,4 +132,6 @@ protected:
 
     // moving platform data
     MovingData movingData_[2];
+    /// Input map.
+    SharedPtr<InputMap> inputMap_;
 };
