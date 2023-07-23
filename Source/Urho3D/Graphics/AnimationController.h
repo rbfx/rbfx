@@ -108,6 +108,9 @@ struct URHO3D_API AnimationParameters
     bool operator==(const AnimationParameters& rhs) const;
     bool operator!=(const AnimationParameters& rhs) const { return !(*this == rhs); }
     /// @}
+
+    /// Empty AnimationParameters.
+    static const AnimationParameters EMPTY;
 };
 
 /// %Component that drives an AnimatedModel's animations.
@@ -146,7 +149,7 @@ public:
     ea::vector<AnimationParameters> GetAnimationParameters() const;
     unsigned GetNumAnimations() const { return animations_.size(); }
     unsigned GetAnimationLayer(unsigned index) const { return animations_[index].params_.layer_; }
-    const AnimationParameters& GetAnimationParameters(unsigned index) const { return animations_[index].params_; }
+    const AnimationParameters& GetAnimationParameters(unsigned index) const;
     unsigned GetRevision() const { return revision_; }
     void UpdatePose();
     /// @}

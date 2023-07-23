@@ -100,6 +100,8 @@ bool MatchesQuery(const AnimationParameters& params, Animation* animation, unsig
 
 }
 
+const AnimationParameters AnimationParameters::EMPTY {};
+
 AnimationParameters::AnimationParameters(Animation* animation)
     : animation_(animation)
     , animationName_(animation ? animation_->GetNameHash() : StringHash::Empty)
@@ -455,6 +457,13 @@ void AnimationController::Update(float timeStep)
 
     // Node and attribute animations need to be applied manually
     CommitNodeAndAttributeAnimations();
+}
+
+const AnimationParameters& AnimationController::GetAnimationParameters(unsigned index) const
+{
+    if (index >= animations_.size())
+        return AnimationParameters::EMPTY;
+    return animations_[index].params_;
 }
 
 void AnimationController::UpdatePose()

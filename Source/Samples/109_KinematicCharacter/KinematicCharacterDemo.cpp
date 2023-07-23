@@ -78,7 +78,7 @@ void KinematicCharacterDemo::Start()
     CreateScene();
 
     // Create the controllable character
-    CreateCharacter();
+    CreateCharacter(Vector3::ZERO);
 
     // Create the UI content
     CreateInstructions();
@@ -142,6 +142,16 @@ void KinematicCharacterDemo::CreateScene()
     auto* shape = floorNode->CreateComponent<CollisionShape>();
     shape->SetBox(Vector3::ONE);
 
+    // Create sliding door
+    {
+        auto* doorPrefab = cache->GetResource<PrefabResource>("Prefabs/SlidingDoor.prefab");
+        Node* objectNode = scene_->CreateChild("SlidingDoor");
+        objectNode->SetPosition(Vector3(-3, 0, -3));
+        auto* prefabReference = objectNode->CreateComponent<PrefabReference>();
+        prefabReference->SetPrefab(doorPrefab);
+        prefabReference->Inline(PrefabInlineFlag::None);
+    }
+
     // Create mushrooms of varying sizes
     const unsigned NUM_MUSHROOMS = 60;
     auto* mushroomPrefab = cache->GetResource<PrefabResource>("Prefabs/Mushroom.prefab");
@@ -179,12 +189,12 @@ void KinematicCharacterDemo::CreateScene()
     }
 }
 
-void KinematicCharacterDemo::CreateCharacter()
+void KinematicCharacterDemo::CreateCharacter(const Vector3& position)
 {
     auto* cache = GetSubsystem<ResourceCache>();
 
     Node* objectNode = scene_->CreateChild("Jack");
-    objectNode->SetPosition(Vector3(0.0f, 1.0f, 0.0f));
+    objectNode->SetPosition(position);
 
     // spin node
     Node* adjustNode = objectNode->CreateChild("AdjNode");
@@ -200,20 +210,7 @@ void KinematicCharacterDemo::CreateCharacter()
     // Set the head bone for manual control
     object->GetSkeleton().GetBone("Mutant:Head")->animated_ = false;
 
-    // Create rigidbody
-    auto* body = objectNode->CreateComponent<RigidBody>();
-    body->SetCollisionLayer(1);
-    body->SetKinematic(true);
-    body->SetTrigger(true);
-
-    // Set zero angular factor so that physics doesn't turn the character on its own.
-    // Instead we will control the character yaw manually
-    body->SetAngularFactor(Vector3::ZERO);
-
-    // Set the rigidbody to signal collision also when in rest, so that we get ground collisions properly
-    body->SetCollisionEventMode(COLLISION_ALWAYS);
-
-    // Create the character logic component, which takes care of steering the rigidbody
+    // Create the character logic component, which takes care of steering the fake rigidbody
     // Remember it so that we can set the controls. Use a ea::weak_ptr because the scene hierarchy already owns it
     // and keeps it alive as long as it's not removed from the hierarchy
     character_ = objectNode->CreateComponent<KinematicCharacter>();
