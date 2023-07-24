@@ -100,6 +100,7 @@ SharedPtr<PipelineState> CreateRenderPipeline(
     desc.depthCompareFunction_ = CMP_ALWAYS;
     desc.depthWriteEnabled_ = false;
     desc.blendMode_ = BLEND_ALPHA;
+    desc.scissorTestEnabled_ = true;
 
     desc.samplers_.Add("Texture", SamplerStateDesc::Bilinear(ADDRESS_WRAP));
 
