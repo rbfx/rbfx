@@ -43,6 +43,7 @@
 #include "Urho3D/Scene/PrefabResource.h"
 #include "Urho3D/Scene/SceneEvents.h"
 #include "Urho3D/Scene/SceneResource.h"
+#include "Urho3D/Scene/ShakeComponent.h"
 #include "Urho3D/Scene/SplinePath.h"
 #include "Urho3D/Scene/UnknownComponent.h"
 #include "Urho3D/Scene/ValueAnimation.h"
@@ -143,11 +144,16 @@ bool Scene::Load(Deserializer& source)
 
     StopAsyncLoading();
 
-    // Check ID
-    if (source.ReadFileID() != "USCN")
+    constexpr BinaryMagic sceneBinaryMagic{{'U', 'S', 'C', 'N'}};
+
+    const InternalResourceFormat format = PeekResourceFormat(source, sceneBinaryMagic);
+
+    switch (format)
     {
-        URHO3D_LOGERROR(source.GetName() + " is not a valid scene file");
-        return false;
+    case InternalResourceFormat::Json: return LoadJSON(source);
+    case InternalResourceFormat::Xml: return LoadXML(source);
+    case InternalResourceFormat::Binary: break; // Fall through to binary load.
+    default: URHO3D_LOGERROR(source.GetName() + " is not a valid scene file"); return false;
     }
 
     URHO3D_LOGINFO("Loading scene from " + source.GetName());
@@ -1403,6 +1409,7 @@ void RegisterSceneLibrary(Context* context)
     SplinePath::RegisterObject(context);
     PrefabReference::RegisterObject(context);
     PrefabResource::RegisterObject(context);
+    ShakeComponent::RegisterObject(context);
 }
 
 }
