@@ -20,13 +20,14 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
+
+#include "Urho3D/Scene/Scene.h"
 
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Core/CoreEvents.h"
 #include "Urho3D/Core/Profiler.h"
 #include "Urho3D/Core/WorkQueue.h"
-#include "Urho3D/DebugNew.h"
 #include "Urho3D/Graphics/Texture2D.h"
 #include "Urho3D/IO/Archive.h"
 #include "Urho3D/IO/Log.h"
@@ -40,12 +41,13 @@
 #include "Urho3D/Scene/ObjectAnimation.h"
 #include "Urho3D/Scene/PrefabReference.h"
 #include "Urho3D/Scene/PrefabResource.h"
-#include "Urho3D/Scene/Scene.h"
 #include "Urho3D/Scene/SceneEvents.h"
 #include "Urho3D/Scene/SceneResource.h"
 #include "Urho3D/Scene/SplinePath.h"
 #include "Urho3D/Scene/UnknownComponent.h"
 #include "Urho3D/Scene/ValueAnimation.h"
+
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
