@@ -209,13 +209,14 @@ bool RawBuffer::CreateGPU(const void* data)
 void RawBuffer::Update(const void* data, unsigned size)
 {
     const unsigned dataSize = size ? size : params_.size_;
-    UpdateRange(data, 0, dataSize);
+    if (dataSize != 0)
+        UpdateRange(data, 0, dataSize);
 }
 
 void RawBuffer::UpdateRange(const void* data, unsigned offset, unsigned size)
 {
     URHO3D_ASSERT(!IsLocked());
-    URHO3D_ASSERT(data, "Data must not be null");
+    URHO3D_ASSERT(data || size == 0, "Data must not be null");
     URHO3D_ASSERT(offset + size <= params_.size_, "Range must be within buffer size");
     URHO3D_ASSERT(
         offset == 0 || (!params_.flags_.Test(BufferFlag::Dynamic) && !params_.flags_.Test(BufferFlag::Immutable)),
