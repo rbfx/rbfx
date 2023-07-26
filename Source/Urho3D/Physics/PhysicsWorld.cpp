@@ -37,6 +37,7 @@
 #include "../Physics/PhysicsEvents.h"
 #include "../Physics/PhysicsUtils.h"
 #include "../Physics/PhysicsWorld.h"
+#include "../Physics/TriggerAnimator.h"
 #include "../Physics/RaycastVehicle.h"
 #include "../Physics/RigidBody.h"
 #include "../Scene/Scene.h"
@@ -1182,6 +1183,7 @@ void RegisterPhysicsLibrary(Context* context)
     PhysicsWorld::RegisterObject(context);
     RaycastVehicle::RegisterObject(context);
     KinematicCharacterController::RegisterObject(context);
+    TriggerAnimator::RegisterObject(context);
 }
 
 }

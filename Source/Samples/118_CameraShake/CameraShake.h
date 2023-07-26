@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,48 +22,40 @@
 
 #pragma once
 
-#include <Urho3D/Core/Object.h>
-
-using namespace Urho3D;
+#include "Sample.h"
+#include "Urho3D/Scene/ShakeComponent.h"
 
 namespace Urho3D
 {
-    class Controls;
+
+class Node;
+class Scene;
+
 }
 
-const float CAMERA_MIN_DIST = 1.0f;
-const float CAMERA_INITIAL_DIST = 5.0f;
-const float CAMERA_MAX_DIST = 20.0f;
-
-/// Mobile framework for Android/iOS
-/// Gamepad from NinjaSnowWar
-/// Touches patterns:
-///     - 1 finger touch  = pick object through raycast
-///     - 1 or 2 fingers drag  = rotate camera
-///     - 2 fingers sliding in opposite direction (up/down) = zoom in/out
-///
-/// Setup:
-/// - Call the update function 'UpdateTouches()' from HandleUpdate or equivalent update handler function
-class Touch : public Object
+/// Static 3D scene example.
+/// This sample demonstrates:
+///     - Creating a 3D scene with static content
+///     - Displaying the scene using the Renderer subsystem
+///     - Handling keyboard and mouse input to move a freelook camera
+class CameraShake : public Sample
 {
-    URHO3D_OBJECT(Touch, Object);
+    URHO3D_OBJECT(CameraShake, Sample);
 
 public:
     /// Construct.
-    Touch(Context* context, float touchSensitivity);
-    /// Destruct.
-    ~Touch() override;
+    explicit CameraShake(Context* context);
 
-    /// Update touch controls for the current frame.
-    void UpdateTouches(Controls& controls);
+    /// Setup after engine initialization and before running the main loop.
+    void Start() override;
 
-    /// Touch sensitivity.
-    float touchSensitivity_;
-    /// Current camera zoom distance.
-    float cameraDistance_;
-    /// Zoom flag.
-    bool zoom_;
-    /// Gyroscope on/off flag.
-    bool useGyroscope_;
+    void Update(float timeStep) override;
+private:
+    /// Construct the scene content.
+    void CreateScene();
+    /// Construct an instruction text to the UI.
+    void CreateInstructions();
+    /// Set up a viewport for displaying the scene.
+    void SetupViewport();
+    ShakeComponent* shakeComponent_{};
 };
-

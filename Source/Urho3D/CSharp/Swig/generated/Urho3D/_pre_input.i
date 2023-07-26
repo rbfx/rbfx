@@ -635,6 +635,17 @@ using PointerAdapterFlags = Urho3D::PointerAdapterMask;
 %csattribute(Urho3D::PointerAdapter, %arg(Urho3D::IntVector2), PointerPosition, GetPointerPosition);
 %csattribute(Urho3D::PointerAdapter, %arg(Urho3D::IntVector2), UIPointerPosition, GetUIPointerPosition);
 %csattribute(Urho3D::PointerAdapter, %arg(Urho3D::DirectionAggregator *), DirectionAggregator, GetDirectionAggregator);
+%csattribute(Urho3D::Detail::ControllerButtonMapping, %arg(Urho3D::ControllerButton), ControllerButton, GetControllerButton);
+%csattribute(Urho3D::Detail::ControllerButtonMapping, %arg(unsigned int), GenericButton, GetGenericButton);
+%csattribute(Urho3D::Detail::ControllerAxisMapping, %arg(Urho3D::ControllerAxis), ControllerAxis, GetControllerAxis);
+%csattribute(Urho3D::Detail::ControllerAxisMapping, %arg(unsigned int), GenericAxis, GetGenericAxis);
+%csattribute(Urho3D::InputMap, %arg(float), DeadZone, GetDeadZone, SetDeadZone);
+%csattribute(Urho3D::InputMap, %arg(ea::unordered_map<ea::string, Detail::ActionMapping>), Mappings, GetMappings);
+%csattribute(Urho3D::MoveAndOrbitComponent, %arg(Urho3D::Vector3), Velocity, GetVelocity);
+%csattribute(Urho3D::MoveAndOrbitController, %arg(Urho3D::InputMap *), InputMap, GetInputMap, SetInputMap);
+%csattribute(Urho3D::MoveAndOrbitController, %arg(Urho3D::ResourceRef), InputMapAttr, GetInputMapAttr, SetInputMapAttr);
+%csattribute(Urho3D::MoveAndOrbitController, %arg(Urho3D::UIElement *), MovementUIElement, GetMovementUIElement, SetMovementUIElement);
+%csattribute(Urho3D::MoveAndOrbitController, %arg(Urho3D::UIElement *), RotationUIElement, GetRotationUIElement, SetRotationUIElement);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {

@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include <Urho3D/Input/Controls.h>
-#include <Urho3D/Scene/LogicComponent.h>
+#include <Urho3D/Input/MoveAndOrbitComponent.h>
+#include <Urho3D/Input/InputMap.h>
 
 namespace Urho3D
 {
@@ -41,15 +41,14 @@ const unsigned CTRL_BACK = 2;
 const unsigned CTRL_LEFT = 4;
 const unsigned CTRL_RIGHT = 8;
 
-const float YAW_SENSITIVITY = 0.1f;
 const float ENGINE_POWER = 10.0f;
 const float DOWN_FORCE = 10.0f;
 const float MAX_WHEEL_ANGLE = 22.5f;
 
 /// Vehicle component, responsible for physical movement according to controls.
-class Vehicle : public LogicComponent
+class Vehicle : public MoveAndOrbitComponent
 {
-    URHO3D_OBJECT(Vehicle, LogicComponent)
+    URHO3D_OBJECT(Vehicle, MoveAndOrbitComponent)
 
 public:
     /// Construct.
@@ -63,11 +62,19 @@ public:
     /// Handle physics world update. Called by LogicComponent base class.
     void FixedUpdate(float timeStep) override;
 
+    void SetPitch(float pitch) override;
+
     /// Initialize the vehicle. Create rendering and physics components. Called by the application.
     void Init();
 
-    /// Movement controls.
-    Controls controls_;
+    /// Set input map.
+    void SetInputMap(InputMap* inputMap);
+    /// Return input map.
+    InputMap* GetInputMap() const { return inputMap_; }
+    /// Set input map attribute.
+    void SetInputMapAttr(const ResourceRef& value);
+    /// Return input map attribute.
+    ResourceRef GetInputMapAttr() const;
 
 private:
     /// Initialize a wheel and remember its scene node and ID.
@@ -111,4 +118,6 @@ private:
 
     /// Current left/right steering amount (-1 to 1).
     float steering_{};
+    /// Input map.
+    SharedPtr<InputMap> inputMap_;
 };

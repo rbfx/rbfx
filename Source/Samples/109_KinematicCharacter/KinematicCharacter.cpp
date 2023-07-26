@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +38,7 @@
 #include "KinematicCharacter.h"
 
 KinematicCharacter::KinematicCharacter(Context* context) :
-    LogicComponent(context),
+    BaseClassName(context),
     onGround_(false),
     okToJump_(true),
     inAirTimer_(0.0f),
@@ -55,8 +56,10 @@ void KinematicCharacter::RegisterObject(Context* context)
 
     // These macros register the class attributes to the Context for automatic load / save handling.
     // We specify the Default attribute mode which means it will be used both for saving into file, and network replication
-    URHO3D_ATTRIBUTE("Controls Yaw", float, controls_.yaw_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Controls Pitch", float, controls_.pitch_, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Controls Yaw", GetYaw, SetYaw, float, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Controls Pitch", GetPitch, SetPitch, float, 0.0f, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE(
+        "Input Map", GetInputMapAttr, SetInputMapAttr, ResourceRef, ResourceRef(InputMap::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ATTRIBUTE("On Ground", bool, onGround_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("OK To Jump", bool, okToJump_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("In Air Timer", float, inAirTimer_, 0.0f, AM_DEFAULT);
@@ -91,18 +94,10 @@ void KinematicCharacter::FixedUpdate(float timeStep)
 
     // Update movement & animation
     const Quaternion& rot = node_->GetRotation();
-    Vector3 moveDir = Vector3::ZERO;
+    Vector3 moveDir = GetVelocity();
     onGround_ = kinematicController_->OnGround();
 
-    if (controls_.IsDown(CTRL_FORWARD))
-        moveDir += Vector3::FORWARD;
-    if (controls_.IsDown(CTRL_BACK))
-        moveDir += Vector3::BACK;
-    if (controls_.IsDown(CTRL_LEFT))
-        moveDir += Vector3::LEFT;
-    if (controls_.IsDown(CTRL_RIGHT))
-        moveDir += Vector3::RIGHT;
-    if (controls_.IsDown(CTRL_CROUCH))
+    if (inputMap_->Evaluate("Crouch"))
     {
         kinematicController_->SetHeight(0.9f);
         kinematicController_->SetOffset(Vector3(0.0f, 0.45f, 0.0f));
@@ -138,7 +133,7 @@ void KinematicCharacter::FixedUpdate(float timeStep)
         }
         isJumping_ = false;
         // Jump. Must release jump control between jumps
-        if (controls_.IsDown(CTRL_JUMP))
+        if (inputMap_->Evaluate("Jump"))
         {
             isJumping_ = true;
             if (okToJump_)
@@ -211,6 +206,22 @@ void KinematicCharacter::FixedPostUpdate(float timeStep)
     // shift and clear
     movingData_[1] = movingData_[0];
     movingData_[0].node_ = 0;
+}
+
+void KinematicCharacter::SetInputMap(InputMap* inputMap)
+{
+    inputMap_ = inputMap;
+}
+
+void KinematicCharacter::SetInputMapAttr(const ResourceRef& value)
+{
+    auto* cache = GetSubsystem<ResourceCache>();
+    SetInputMap(cache->GetResource<InputMap>(value.name_));
+}
+
+ResourceRef KinematicCharacter::GetInputMapAttr() const
+{
+    return GetResourceRef(inputMap_, InputMap::GetTypeStatic());
 }
 
 bool KinematicCharacter::IsNodeMovingPlatform(Node *node) const

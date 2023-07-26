@@ -37,9 +37,12 @@ public:
     explicit PerlinNoise(RandomEngine& engine);
     /// Return noise value as double.
     double GetDouble(double x, double y, double z, int repeat = NumPer) const;
+    /// Return noise value as double.
+    double GetDouble(double x, int repeat = NumPer) const;
     /// Return noise value as float.
     float Get(float x, float y, float z, int repeat = NumPer) const { return static_cast<float>(GetDouble(x, y, z, repeat)); }
-
+    /// Return noise value as float.
+    float Get(float x, int repeat = NumPer) const { return static_cast<float>(GetDouble(x, repeat)); }
 private:
     /// Apply 5-th order smoothstep.
     static double Fade(double t);
@@ -47,6 +50,8 @@ private:
     static int Inc(int coord, int repeat) { return AbsMod(coord + 1, repeat); }
     /// Return random gradient.
     double Grad(int hash, double x, double y, double z) const;
+    /// Return random gradient.
+    double Grad(int hash, double x) const;
 
     /// Permutations.
     ea::array<int, NumPer * 2> p_{};

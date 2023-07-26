@@ -10,6 +10,7 @@ using namespace Urho3D;
 #define static_assert(...)
 #define EASTLAllocatorType eastl::allocator
 
+%include "Ignores.i"
 %include "stl.i"
 %include "stdint.i"
 %include "typemaps.i"
@@ -334,6 +335,8 @@ namespace SDL
 %ignore Urho3D::Detail::CriticalSection;
 %ignore Urho3D::MutexLock;
 %ignore Urho3D::ObjectReflectionRegistry::GetReflection(StringHash typeNameHash) const;
+%ignore Urho3D::Object::IsInstanceOf(const TypeInfo* typeInfo);
+%ignore Urho3D::Object::SubscribeToEventManual;
 
 %include "Object.i"
 %director Urho3D::AttributeAccessor;
@@ -352,6 +355,13 @@ namespace SDL
 %include "Urho3D/Core/Timer.h"
 %include "Urho3D/Core/Spline.h"
 %include "Urho3D/Core/Mutex.h"
+%include "Urho3D/Core/Thread.h"
+
+%ignore Urho3D::WorkQueue::PostTask;
+%ignore Urho3D::WorkQueue::PostTaskForThread;
+%ignore Urho3D::WorkQueue::PostTaskForMainThread;
+%ignore Urho3D::WorkQueue::PostDelayedTaskForMainThread;
+%include "Urho3D/Core/WorkQueue.h"
 
 // --------------------------------------- Container ------------------------------------
 %include "Urho3D/Container/ByteVector.h"
@@ -394,7 +404,6 @@ namespace SDL
 
 %include "generated/Urho3D/_pre_input.i"
 %include "Urho3D/Input/InputConstants.h"
-%include "Urho3D/Input/Controls.h"
 %include "Urho3D/Input/Input.h"
 %include "Urho3D/Input/MultitouchAdapter.h"
 %include "Urho3D/Input/AxisAdapter.h"
@@ -538,9 +547,15 @@ public:
 %include "Urho3D/Scene/TrackedComponent.h"
 %include "Urho3D/Scene/PrefabReference.h"
 %include "Urho3D/Scene/PrefabResource.h"
+%include "Urho3D/Scene/ShakeComponent.h"
 
 // --------------------------------------- Extra components ---------------------------------------
+%ignore Urho3D::InputMap::GetMappings;
+
 %include "Urho3D/Input/FreeFlyController.h"
+%include "Urho3D/Input/MoveAndOrbitComponent.h"
+%include "Urho3D/Input/MoveAndOrbitController.h"
+%include "Urho3D/Input/InputMap.h"
 
 // --------------------------------------- Audio ---------------------------------------
 %ignore Urho3D::BufferedSoundStream::AddData(const ea::shared_array<signed char>& data, unsigned numBytes);
@@ -863,6 +878,7 @@ public:
 %include "Urho3D/Physics/RaycastVehicle.h"
 %include "Urho3D/Physics/RigidBody.h"
 %include "Urho3D/Physics/KinematicCharacterController.h"
+%include "Urho3D/Physics/TriggerAnimator.h"
 %template(PhysicsRaycastResultVector)   eastl::vector<Urho3D::PhysicsRaycastResult>;
 %template(RigidBodyVector)              eastl::vector<Urho3D::RigidBody*>;
 #endif
@@ -932,6 +948,14 @@ using ImGuiConfigFlags = unsigned;
 
 // --------------------------------------- RmlUI ---------------------------------------
 #if URHO3D_RMLUI
+%ignore Urho3D::FromRmlUi;
+%ignore Urho3D::ToRmlUi;
+%ignore Urho3D::RmlUIComponent::BindDataModelProperty;
+%ignore Urho3D::RmlUIComponent::BindDataModelEvent;
+
+// SWIG applies `override new` modifier by mistake.
+%csmethodmodifiers Urho3D::RmlUIComponent::OnNodeSet "protected override";
+
 %include "Urho3D/RmlUI/RmlSystem.h"
 %include "Urho3D/RmlUI/RmlUI.h"
 %include "Urho3D/RmlUI/RmlUIComponent.h"

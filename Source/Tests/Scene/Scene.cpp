@@ -24,6 +24,7 @@
 #include "../SceneUtils.h"
 
 #include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/IO/MemoryBuffer.h>
 
 TEST_CASE("Scene lookup")
 {
@@ -55,3 +56,52 @@ TEST_CASE("Scene lookup")
     CHECK(Tests::GetAttributeValue(child20->FindComponentAttribute("@/Name")) == Variant(child20->GetName()));
     CHECK(Tests::GetAttributeValue(child20->FindComponentAttribute("@StaticModel/LOD Bias")) == Variant(1.0f));
 }
+
+TEST_CASE("Scene LoadXML from SceneResource")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    MemoryBuffer xml{R"(<resource _id="1">
+	<nodes>
+		<node _id="3">
+		</node>
+	</nodes>
+</resource>)"};
+
+    auto scene = MakeShared<Scene>(context);
+    REQUIRE(scene->LoadXML(xml));
+
+    REQUIRE(1 == scene->GetNumChildren());
+}
+
+TEST_CASE("Scene LoadXML from old XML")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    MemoryBuffer xml{R"(<scene>
+		<node>
+		</node>
+</scene>)"};
+
+    auto scene = MakeShared<Scene>(context);
+    REQUIRE(scene->LoadXML(xml));
+
+    REQUIRE(1 == scene->GetNumChildren());
+}
+
+//TODO: Figure out how to make this test succeed
+//TEST_CASE("Scene LoadXML from incorrect XML returns false")
+//{
+//    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+//    MemoryBuffer xml{R"(<unknown/>)"};
+//
+//    auto scene = MakeShared<Scene>(context);
+//    REQUIRE(!scene->LoadXML(xml));
+//}
+//
+//TEST_CASE("Scene LoadXML from incorrect resource returns false")
+//{
+//    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+//    MemoryBuffer xml{R"(<resource><resource></resource></resource>)"};
+//
+//    auto scene = MakeShared<Scene>(context);
+//    REQUIRE(!scene->LoadXML(xml));
+//}
