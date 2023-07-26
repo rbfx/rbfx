@@ -37,18 +37,19 @@ namespace
 {
 template <typename T> struct GetValue
 {
-    void operator()(UpdateContext& context, unsigned uniformIndex, const ParticleGraphPin& pin0)
+    void operator()(const UpdateContext& context, unsigned uniformIndex, const ParticleGraphPin& pin0)
     {
-        auto dst = context.GetScalar<T>(pin0.GetMemoryReference());
+        auto dst = context.GetSpan<T>(pin0.GetMemoryReference());
         dst[0] = context.layer_->GetUniform(uniformIndex).Get<T>();
     }
 };
 template <typename T> struct SetValue
 {
-    void operator()(UpdateContext& context, unsigned uniformIndex, const ParticleGraphPin& pin0, const ParticleGraphPin& pin1)
+    void operator()(
+        const UpdateContext& context, unsigned uniformIndex, const ParticleGraphPin& pin0, const ParticleGraphPin& pin1)
     {
-        auto src = context.GetScalar<T>(pin1.GetMemoryReference());
-        auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
+        auto src = context.GetSpan<T>(pin1.GetMemoryReference());
+        auto dst = context.GetSpan<T>(pin0.GetMemoryReference());
         context.layer_->GetUniform(uniformIndex) = src[0];
         dst[0] = src[0];
     }

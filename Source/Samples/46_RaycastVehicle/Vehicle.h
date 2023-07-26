@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include <Urho3D/Input/Controls.h>
+#include <Urho3D/Input/MoveAndOrbitComponent.h>
+#include <Urho3D/Input/InputMap.h>
 #include <Urho3D/Physics/PhysicsUtils.h>
 #include <Urho3D/Scene/LogicComponent.h>
 
@@ -40,15 +41,14 @@ const unsigned CTRL_BACK = (1u << 1u);
 const unsigned CTRL_LEFT = (1u << 2u);
 const unsigned CTRL_RIGHT = (1u << 3u);
 const unsigned CTRL_BRAKE = (1u << 4u);
-const float YAW_SENSITIVITY = 0.1f;
 const float ENGINE_POWER = 10.0f;
 const float MAX_WHEEL_ANGLE = 22.5f;
 
 // Vehicle component, responsible for physical movement according to controls.
 // Encapsulates RaycastVehicle
-class Vehicle2 : public LogicComponent
+class Vehicle2 : public MoveAndOrbitComponent
 {
-    URHO3D_OBJECT(Vehicle2, LogicComponent)
+    URHO3D_OBJECT(Vehicle2, MoveAndOrbitComponent)
 
 public :
     /// Construct.
@@ -70,8 +70,7 @@ public :
     /// Updating wheel effects here.
     void PostUpdate(float timeStep) override;
 
-    /// Movement controls.
-    Controls controls_;
+    void SetPitch(float pitch) override;
 
     /// Get steering value.
     float GetSteering() { return steering_; }
@@ -84,6 +83,15 @@ public :
 
     /// Get wheel width.
     float GetWheelWidth() { return wheelWidth_; }
+
+    /// Set input map.
+    void SetInputMap(InputMap* inputMap);
+    /// Return input map.
+    InputMap* GetInputMap() const { return inputMap_; }
+    /// Set input map attribute.
+    void SetInputMapAttr(const ResourceRef& value);
+    /// Return input map attribute.
+    ResourceRef GetInputMapAttr() const;
 
 private:
     /// Creates particle emitter.
@@ -123,4 +131,6 @@ private:
     Vector3 connectionPoints_[4];
     /// Do not recreate emitters if they are already created.
     bool emittersCreated;
+    /// Input map.
+    SharedPtr<InputMap> inputMap_;
 };

@@ -46,9 +46,6 @@ namespace Urho3D
 namespace
 {
 
-/// Cube shadow map padding, in pixels.
-const float cubeShadowMapPadding = 2.0f;
-
 /// Return current light fade.
 float GetLightFade(Light* light)
 {
@@ -421,6 +418,7 @@ void LightProcessor::CookShaderParameters(Camera* cullCamera, const DrawableProc
     case LIGHT_POINT:
     {
         const auto& splitViewport = splits_[0].GetShadowMap().rect_;
+        const unsigned cubeShadowMapPadding = splits_[0].GetShadowMapPadding();
         const float viewportSizeX = static_cast<float>(splitViewport.Width());
         const float viewportSizeY = static_cast<float>(splitViewport.Height());
         const float viewportOffsetX = static_cast<float>(splitViewport.Left());

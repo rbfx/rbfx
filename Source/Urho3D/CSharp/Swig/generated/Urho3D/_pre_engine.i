@@ -64,6 +64,12 @@
 %ignore Urho3D::EP_RESOURCE_PREFIX_PATHS;
 %constant const char* EpShaderCacheDir = "ShaderCacheDir";
 %ignore Urho3D::EP_SHADER_CACHE_DIR;
+%constant const char* EpShaderLogSources = "ShaderLogSource";
+%ignore Urho3D::EP_SHADER_LOG_SOURCES;
+%constant const char* EpShaderPolicyGlsl = "ShaderPolicyGLSL";
+%ignore Urho3D::EP_SHADER_POLICY_GLSL;
+%constant const char* EpShaderPolicyHlsl = "ShaderPolicyHLSL";
+%ignore Urho3D::EP_SHADER_POLICY_HLSL;
 %constant const char* EpShadows = "Shadows";
 %ignore Urho3D::EP_SHADOWS;
 %constant const char* EpSoundBuffer = "SoundBuffer";

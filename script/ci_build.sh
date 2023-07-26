@@ -7,6 +7,7 @@
 # ci_compiler:     msvc|gcc|gcc-*|clang|clang-*|mingw
 # ci_build_type:   dbg|rel
 # ci_lib_type:     lib|dll
+# ci_workspace_dir: actions workspace directory
 # ci_source_dir:   source code directory
 # ci_build_dir:    cmake cache directory
 # ci_sdk_dir:      sdk installation directory
@@ -31,6 +32,7 @@ echo "ci_arch=$ci_arch"
 echo "ci_compiler=$ci_compiler"
 echo "ci_build_type=$ci_build_type"
 echo "ci_lib_type=$ci_lib_type"
+echo "ci_workspace_dir=$ci_workspace_dir"
 echo "ci_source_dir=$ci_source_dir"
 echo "ci_build_dir=$ci_build_dir"
 echo "ci_sdk_dir=$ci_sdk_dir"
@@ -123,6 +125,13 @@ then
 fi
 
 function action-dependencies() {
+    # Make tools executable. 
+    # TODO: This should not be necessary, but for some reason installed tools lose executable flag.
+    if [[ -e $ci_workspace_dir/host-sdk ]];
+    then
+      find $ci_workspace_dir/host-sdk/bin/ -type f -exec chmod +x {} \;
+    fi
+
     if [[ "$ci_platform" == "linux" ]];
     then
         # Linux dependencies
@@ -226,41 +235,36 @@ function action-generate() {
     cmake "${ci_cmake_params[@]}"
 }
 
-# Default build path using plain CMake.
 function action-build() {
-    # ci_platform:     windows|linux|macos|android|ios|web
-    if [[ "$ci_platform" == "macos" || "$ci_platform" == "ios" ]];
+    if [[ "$ci_compiler" == "msvc" ]];
     then
-      NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
+      # Custom compiler build paths used only on windows.
+      ccache_path=$(realpath /c/ProgramData/chocolatey/lib/ccache/tools/ccache-*)
+      cp $ccache_path/ccache.exe $ccache_path/cl.exe  # https://github.com/ccache/ccache/wiki/MS-Visual-Studio
+      $ccache_path/ccache.exe -s
+      cmake --build $ci_build_dir --config "${types[$ci_build_type]}" -- -r -maxcpucount:$NUMBER_OF_PROCESSORS -p:TrackFileAccess=false -p:UseMultiToolTask=true -p:CLToolPath=$ccache_path && \
+      $ccache_path/ccache.exe -s
+    elif [[ "$ci_platform" == "android" ]];
+    then
+      # Custom platform build paths used only on android.
+      cd $ci_source_dir/android
+      ccache -s
+      gradle wrapper                                && \
+      ./gradlew "${android_types[$ci_build_type]}"  && \
+      ccache -s
     else
-      NUMBER_OF_PROCESSORS=$(nproc)
+      # Default build path using plain CMake.
+      # ci_platform:     windows|linux|macos|android|ios|web
+      if [[ "$ci_platform" == "macos" || "$ci_platform" == "ios" ]];
+      then
+        NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
+      else
+        NUMBER_OF_PROCESSORS=$(nproc)
+      fi
+      ccache -s
+      cmake --build $ci_build_dir --parallel $NUMBER_OF_PROCESSORS --config "${types[$ci_build_type]}" && \
+      ccache -s
     fi
-
-    ccache -s
-    cmake --build $ci_build_dir --parallel $NUMBER_OF_PROCESSORS --config "${types[$ci_build_type]}" && \
-    ccache -s
-}
-
-# Custom compiler build paths used only on windows.
-function action-build-msvc() {
-    ccache_path=$(realpath /c/ProgramData/chocolatey/lib/ccache/tools/ccache-*)
-    cp $ccache_path/ccache.exe $ccache_path/cl.exe  # https://github.com/ccache/ccache/wiki/MS-Visual-Studio
-    $ccache_path/ccache.exe -s
-    cmake --build $ci_build_dir --config "${types[$ci_build_type]}" -- -r -maxcpucount:$NUMBER_OF_PROCESSORS -p:TrackFileAccess=false -p:UseMultiToolTask=true -p:CLToolPath=$ccache_path && \
-    $ccache_path/ccache.exe -s
-}
-
-function action-build-mingw() {
-    action-build    # Default build using CMake.
-}
-
-# Custom platform build paths used only on android.
-function action-build-android() {
-    cd $ci_source_dir/android
-    ccache -s
-    gradle wrapper                                && \
-    ./gradlew "${android_types[$ci_build_type]}"  && \
-    ccache -s
 }
 
 function action-install() {

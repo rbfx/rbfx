@@ -20,33 +20,35 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/Profiler.h"
-#include "../Core/WorkQueue.h"
-#include "../Graphics/Texture2D.h"
-#include "../IO/Archive.h"
-#include "../IO/File.h"
-#include "../IO/Log.h"
-#include "../IO/PackageFile.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/ResourceEvents.h"
-#include "../Resource/XMLFile.h"
-#include "../Resource/JSONFile.h"
-#include "../Scene/Component.h"
-#include "../Scene/ObjectAnimation.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
-#include "../Scene/SceneResource.h"
-#include "../Scene/SplinePath.h"
-#include "../Scene/UnknownComponent.h"
-#include "../Scene/ValueAnimation.h"
-#include "../Scene/PrefabReference.h"
-#include "../Scene/PrefabResource.h"
+#include "Urho3D/Scene/Scene.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/IO/Archive.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/PackageFile.h"
+#include "Urho3D/Resource/JSONFile.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/ResourceEvents.h"
+#include "Urho3D/Resource/XMLArchive.h"
+#include "Urho3D/Resource/XMLFile.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Scene/ObjectAnimation.h"
+#include "Urho3D/Scene/PrefabReference.h"
+#include "Urho3D/Scene/PrefabResource.h"
+#include "Urho3D/Scene/SceneEvents.h"
+#include "Urho3D/Scene/SceneResource.h"
+#include "Urho3D/Scene/ShakeComponent.h"
+#include "Urho3D/Scene/SplinePath.h"
+#include "Urho3D/Scene/UnknownComponent.h"
+#include "Urho3D/Scene/ValueAnimation.h"
+
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -142,11 +144,16 @@ bool Scene::Load(Deserializer& source)
 
     StopAsyncLoading();
 
-    // Check ID
-    if (source.ReadFileID() != "USCN")
+    constexpr BinaryMagic sceneBinaryMagic{{'U', 'S', 'C', 'N'}};
+
+    const InternalResourceFormat format = PeekResourceFormat(source, sceneBinaryMagic);
+
+    switch (format)
     {
-        URHO3D_LOGERROR(source.GetName() + " is not a valid scene file");
-        return false;
+    case InternalResourceFormat::Json: return LoadJSON(source);
+    case InternalResourceFormat::Xml: return LoadXML(source);
+    case InternalResourceFormat::Binary: break; // Fall through to binary load.
+    default: URHO3D_LOGERROR(source.GetName() + " is not a valid scene file"); return false;
     }
 
     URHO3D_LOGINFO("Loading scene from " + source.GetName());
@@ -193,15 +200,25 @@ bool Scene::LoadXML(const XMLElement& source)
 
     StopAsyncLoading();
 
-    // Load the whole scene, then perform post-load if successfully loaded
-    // Note: the scene filename and checksum can not be set, as we only used an XML element
-    if (Node::LoadXML(source))
+    if (source.GetName() == SceneResource::GetXmlRootName())
     {
-        FinishLoading(nullptr);
+        XMLInputArchive archive{context_, source, source.GetFile()};
+        ArchiveBlock block = archive.OpenUnorderedBlock(SceneResource::GetXmlRootName());
+        SerializeInBlock(archive, false, PrefabSaveFlag::None);
         return true;
     }
     else
-        return false;
+    {
+        // Load the whole scene, then perform post-load if successfully loaded
+        // Note: the scene filename and checksum can not be set, as we only used an XML element
+        if (Node::LoadXML(source))
+        {
+            FinishLoading(nullptr);
+            return true;
+        }
+        throw ArchiveException("Cannot load Scene from legacy XML format");
+    }
+    return false;
 }
 
 bool Scene::LoadJSON(const JSONValue& source)
@@ -261,13 +278,7 @@ bool Scene::LoadXML(Deserializer& source)
 
     Clear();
 
-    if (Node::LoadXML(xml->GetRoot()))
-    {
-        FinishLoading(&source);
-        return true;
-    }
-    else
-        return false;
+    return LoadXML(xml->GetRoot());
 }
 
 bool Scene::LoadJSON(Deserializer& source)
@@ -1398,6 +1409,7 @@ void RegisterSceneLibrary(Context* context)
     SplinePath::RegisterObject(context);
     PrefabReference::RegisterObject(context);
     PrefabResource::RegisterObject(context);
+    ShakeComponent::RegisterObject(context);
 }
 
 }

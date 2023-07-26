@@ -26,6 +26,7 @@ env:
   CCACHE_MAXSIZE: 5G
   CCACHE_LIMIT_MULTIPLE: 0.6
   # paths
+  ci_workspace_dir: ${{ github.workspace }}
   ci_source_dir: ${{ github.workspace }}/source-code
   ci_build_script: ./source-code/script/ci_build.sh
   ci_build_dir: ${{ github.workspace }}/cmake-build
@@ -58,6 +59,160 @@ jobs:
           github-token: ${{ github.token }}
           action-task: discord-commits
           discord-username: GitHub
+
+  Windows-Tools:
+    if: github.event.pull_request.draft == false
+    runs-on: windows-2022
+    needs: [CheckSkipCI]
+    env:
+      BUILD_SHARED_LIBS: ON
+      URHO3D_GRAPHICS_API: OpenGL
+      URHO3D_ENABLE_ALL: OFF
+      URHO3D_SAMPLES: OFF
+      URHO3D_TESTING: OFF
+      URHO3D_SHADER_TRANSLATOR: OFF
+      URHO3D_SHADER_OPTIMIZER: OFF
+      URHO3D_TOOLS: "swig;PackageTool"
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: ${{ env.ci_source_dir }}
+          fetch-depth: 1
+
+      - name: Build Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: ${{ env.ccache_prefix }}-${{ github.job }}
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1
+        with:
+          cmake-version: '${{ env.CMAKE_VERSION }}'
+
+      - name: Generate
+        shell: bash
+        run: cmake '-S${{ env.ci_source_dir }}' '-B${{ env.ci_build_dir }}' '-DCMAKE_INSTALL_PREFIX=${{ env.ci_sdk_dir }}' -DCMAKE_BUILD_TYPE=Release -DURHO3D_PARALLEL_BUILD=$NUMBER_OF_PROCESSORS
+
+      - name: Build
+        shell: bash
+        run: cmake --build '${{ env.ci_build_dir }}' --config Release --parallel $NUMBER_OF_PROCESSORS
+
+      - name: Install
+        shell: bash
+        run: cmake --install '${{ env.ci_build_dir }}' --config Release
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
+          path: ${{ env.ci_sdk_dir }}
+
+  Linux-Tools:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-20.04
+    needs: [CheckSkipCI]
+    env:
+      BUILD_SHARED_LIBS: ON
+      URHO3D_GRAPHICS_API: OpenGL
+      URHO3D_ENABLE_ALL: OFF
+      URHO3D_SAMPLES: OFF
+      URHO3D_TESTING: OFF
+      URHO3D_SHADER_TRANSLATOR: OFF
+      URHO3D_SHADER_OPTIMIZER: OFF
+      URHO3D_TOOLS: "swig;PackageTool"
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: ${{ env.ci_source_dir }}
+          fetch-depth: 1
+
+      - name: Build Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: ${{ env.ccache_prefix }}-${{ github.job }}
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1
+        with:
+          cmake-version: '${{ env.CMAKE_VERSION }}'
+
+      - name: Dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build ccache xvfb libgl1-mesa-dev libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev \
+            libxrender-dev libxss-dev libasound2-dev libpulse-dev libibus-1.0-dev libdbus-1-dev libreadline6-dev libudev-dev uuid-dev libtbb-dev
+
+      - name: Generate
+        shell: bash
+        run: cmake '-S${{ env.ci_source_dir }}' '-B${{ env.ci_build_dir }}' '-DCMAKE_INSTALL_PREFIX=${{ env.ci_sdk_dir }}' -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        shell: bash
+        run: cmake --build '${{ env.ci_build_dir }}' --config Release --parallel $(nproc)
+
+      - name: Install
+        shell: bash
+        run: cmake --install '${{ env.ci_build_dir }}' --config Release
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
+          path: ${{ env.ci_sdk_dir }}
+
+  MacOS-Tools:
+    if: github.event.pull_request.draft == false
+    runs-on: macos-11
+    needs: [CheckSkipCI]
+    env:
+      BUILD_SHARED_LIBS: ON
+      URHO3D_GRAPHICS_API: OpenGL
+      URHO3D_ENABLE_ALL: OFF
+      URHO3D_SAMPLES: OFF
+      URHO3D_TESTING: OFF
+      URHO3D_SHADER_TRANSLATOR: OFF
+      URHO3D_SHADER_OPTIMIZER: OFF
+      URHO3D_TOOLS: "swig;PackageTool"
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: ${{ env.ci_source_dir }}
+          fetch-depth: 1
+
+      - name: Build Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: ${{ env.ccache_prefix }}-${{ github.job }}
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v1
+        with:
+          cmake-version: '${{ env.CMAKE_VERSION }}'
+
+      - name: Generate
+        shell: bash
+        run: cmake -S${{ env.ci_source_dir }} -B${{ env.ci_build_dir }} '-DCMAKE_INSTALL_PREFIX=${{ env.ci_sdk_dir }}' -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        shell: bash
+        run: cmake --build '${{ env.ci_build_dir }}' --config Release --parallel $(sysctl -n hw.ncpu)
+
+      - name: Install
+        shell: bash
+        run: cmake --install '${{ env.ci_build_dir }}' --config Release
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
+          path: ${{ env.ci_sdk_dir }}
 
   Windows:
     if: github.event.pull_request.draft == false
@@ -134,7 +289,7 @@ jobs:
 
       - name: Build
         shell: bash
-        run: ${{ env.ci_build_script }} build-${{ env.ci_compiler }}
+        run: ${{ env.ci_build_script }} build
 
       - name: Test (Native)
         if: matrix.ci_compiler == 'msvc'
@@ -153,13 +308,13 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
   UWP:
     if: github.event.pull_request.draft == false
     runs-on: windows-2022
-    needs: [CheckSkipCI]
+    needs: [CheckSkipCI, Windows-Tools]
 
     strategy:
       fail-fast: false
@@ -193,6 +348,7 @@ jobs:
                         (matrix.ci_lib_type == 'dll')                 &&
                         (matrix.ci_compiler == 'msvc')
                     }}
+      URHO3D_SDK: ${{ github.workspace }}/host-sdk
 
     steps:
       - uses: actions/checkout@v3
@@ -207,6 +363,11 @@ jobs:
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: 'rbfx-Windows-Tools-${{ github.sha }}'
+          path: host-sdk/
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
@@ -229,7 +390,7 @@ jobs:
 
       - name: Build
         shell: bash
-        run: ${{ env.ci_build_script }} build-${{ env.ci_compiler }}
+        run: ${{ env.ci_build_script }} build
 
       - name: Install
         shell: bash
@@ -238,7 +399,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
   Linux:
@@ -327,7 +488,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
   MacOS:
@@ -415,13 +576,13 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_arch }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
   Android:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-20.04
-    needs: [CheckSkipCI]
+    needs: [CheckSkipCI, Linux-Tools]
 
     strategy:
       fail-fast: false
@@ -432,10 +593,7 @@ jobs:
 
     env:
       ci_platform: android
-      ci_arch: ${{ matrix.ci_arch }}
-      ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_build_type: ${{ matrix.ci_build_type }}
-      ci_compiler: ${{ matrix.ci_compiler }}
       ci_artifacts: ${{ (
                           github.ref == 'refs/heads/master'           ||
                           startsWith(github.ref, 'refs/tags/nuget/')  ||
@@ -443,6 +601,7 @@ jobs:
                         )                                             &&
                         (matrix.ci_build_type == 'rel')
                     }}
+      URHO3D_SDK: ${{ github.workspace }}/host-sdk
 
     steps:
       - uses: actions/checkout@v3
@@ -458,9 +617,13 @@ jobs:
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_build_type }}
 
+      - uses: actions/download-artifact@v3
+        with:
+          name: 'rbfx-Linux-Tools-${{ github.sha }}'
+          path: host-sdk/
+
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
-        if: matrix.ci_lib_type == 'dll'
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
@@ -473,24 +636,25 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} dependencies
 
-      - name: Generate
-        shell: bash
-        run: ${{ env.ci_build_script }} generate
+      # Not applicable on Android, because build is performed through Gradle.
+      #- name: Generate
+      #  shell: bash
+      #  run: ${{ env.ci_build_script }} generate
 
       - name: Build
         shell: bash
-        run: ${{ env.ci_build_script }} build-android
+        run: ${{ env.ci_build_script }} build
 
       - uses: actions/upload-artifact@v3
         if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_build_type }}-${{ github.sha }}'
           path: '**/*.apk'
 
   iOS:
     if: github.event.pull_request.draft == false
     runs-on: macos-11
-    needs: [CheckSkipCI]
+    needs: [CheckSkipCI, MacOS-Tools]
 
     strategy:
       fail-fast: false
@@ -504,10 +668,8 @@ jobs:
 
     env:
       ci_platform: ios
-      ci_arch: ${{ matrix.ci_arch }}
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_build_type: ${{ matrix.ci_build_type }}
-      ci_compiler: ${{ matrix.ci_compiler }}
       ci_artifacts: ${{ (
                           github.ref == 'refs/heads/master'           ||
                           startsWith(github.ref, 'refs/tags/nuget/')  ||
@@ -515,6 +677,7 @@ jobs:
                         )                                             &&
                         (matrix.ci_build_type == 'rel')
                     }}
+      URHO3D_SDK: ${{ github.workspace }}/host-sdk
 
     steps:
       - uses: actions/checkout@v3
@@ -529,6 +692,11 @@ jobs:
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: 'rbfx-MacOS-Tools-${{ github.sha }}'
+          path: host-sdk/
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
@@ -560,13 +728,13 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ env.ci_build_type }}-${{ env.ci_lib_type }}-${{ github.sha }}'
           path: '**/*.app'
 
   Web:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-20.04
-    needs: [CheckSkipCI]
+    needs: [CheckSkipCI, Linux-Tools]
 
     strategy:
       fail-fast: false
@@ -583,10 +751,8 @@ jobs:
     env:
       BINARYEN_CORES: 1
       ci_platform: web
-      ci_arch: ${{ matrix.ci_arch }}
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_build_type: ${{ matrix.ci_build_type }}
-      ci_compiler: ${{ matrix.ci_compiler }}
       ci_artifacts: ${{ (
                           github.ref == 'refs/heads/master'           ||
                           startsWith(github.ref, 'refs/tags/nuget/')  ||
@@ -594,6 +760,7 @@ jobs:
                         )                                             &&
                         (matrix.ci_build_type == 'rel')
                     }}
+      URHO3D_SDK: ${{ github.workspace }}/host-sdk
 
     steps:
       - uses: mymindstorm/setup-emsdk@v12
@@ -612,6 +779,11 @@ jobs:
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: 'rbfx-Linux-Tools-${{ github.sha }}'
+          path: host-sdk/
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v1
@@ -648,7 +820,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ env.ci_build_type }}-${{ env.ci_lib_type }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
   NuGet:

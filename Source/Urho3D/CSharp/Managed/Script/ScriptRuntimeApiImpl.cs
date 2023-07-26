@@ -100,6 +100,7 @@ namespace Urho3DNet
             {
                 GCHandle newHandle = GCHandle.Alloc(gcHandle.Target, strong ? GCHandleType.Normal : GCHandleType.Weak);
                 GC.KeepAlive(gcHandle.Target);
+                gcHandle.Free();
                 return GCHandle.ToIntPtr(newHandle);
             }
             if (gcHandle.IsAllocated)

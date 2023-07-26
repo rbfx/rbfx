@@ -43,7 +43,7 @@ Now you are inside of the docker image.
 
 Run this if you need to configure the rbfx. The output folder is set to a path inside docker container for perfomance.
 ```console
-cmake -DURHO3D_TESTING=OFF -DURHO3D_PROFILING=OFF -DURHO3D_SAMPLES=OFF -DURHO3D_GLOW=OFF -DURHO3D_CSHARP=ON -S /rbfx -B /cmake-build-clang
+cmake -DURHO3D_TESTING=OFF -DURHO3D_PROFILING=OFF -DURHO3D_SAMPLES=OFF -DURHO3D_GLOW=ON -DURHO3D_RMLUI=ON -DURHO3D_CSHARP=ON -S /rbfx -B /cmake-build-clang
 ```
 
 The following commands would generate the Urho3D SWIG files:

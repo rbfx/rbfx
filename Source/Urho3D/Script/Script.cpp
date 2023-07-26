@@ -43,6 +43,10 @@ Script::~Script()
 {
 }
 
+ScriptRuntimeApi::~ScriptRuntimeApi()
+{
+}
+
 void ScriptRuntimeApi::DereferenceAndDispose(RefCounted* instance)
 {
     if (instance == nullptr || !instance->HasScriptObject())

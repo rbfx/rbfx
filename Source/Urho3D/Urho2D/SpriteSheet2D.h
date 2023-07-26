@@ -51,6 +51,11 @@ public:
     bool BeginLoad(Deserializer& source) override;
     /// Finish resource loading. Always called from the main thread. Return true if successful.
     bool EndLoad() override;
+    /// Save resource. Return true if successful.
+    bool Save(Serializer& dest) const override;
+
+    /// Save to an XML element. Return true if successful.
+    bool Save(XMLElement& dest) const;
 
     /// Set texture.
     /// @property

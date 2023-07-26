@@ -1161,7 +1161,14 @@ void AnimatedModel::UpdateSoftwareSkinningState()
     {
         // Fallback to software skinning if too many bones affect the model
         if (geometrySkinMatrices_.empty() && model_->GetSkeleton().GetNumBones() > Graphics::GetMaxBones())
+        {
+            URHO3D_LOGWARNING(
+                "Model {} have {} bones, but only {} can be skinned on GPU. "
+                "Falling back to software skinning.",
+                model_->GetName(), model_->GetSkeleton().GetNumBones(), Graphics::GetMaxBones());
+
             softwareSkinning_ = true;
+        }
     }
 }
 

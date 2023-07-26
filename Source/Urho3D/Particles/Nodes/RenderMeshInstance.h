@@ -55,12 +55,13 @@ public:
     void Init(ParticleGraphNode* node, ParticleGraphLayerInstance* layer) override;
 
     void OnSceneSet(Scene* scene) override;
+    void UpdateDrawableAttributes() override;
 
     ~RenderMeshInstance() override;
 
     ea::vector<Matrix3x4>& Prepare(unsigned numParticles);
 
-    template <typename T> void operator()(UpdateContext& context, unsigned numParticles, T transforms)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Matrix3x4>& transforms)
     {
         auto& dst = Prepare(numParticles);
         auto* graphNode = static_cast<RenderMesh*>(GetGraphNode());

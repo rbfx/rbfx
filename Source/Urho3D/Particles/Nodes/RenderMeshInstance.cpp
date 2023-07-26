@@ -86,6 +86,7 @@ void RenderMeshInstance::Init(ParticleGraphNode* node, ParticleGraphLayerInstanc
     sceneNode_->AddComponent(drawable_, 0);
     drawable_->SetModelAttr(graphNode->GetModel());
     drawable_->SetMaterialsAttr(graphNode->GetMaterial());
+    UpdateDrawableAttributes();
     OnSceneSet(GetScene());
 }
 
@@ -101,6 +102,11 @@ void RenderMeshInstance::OnSceneSet(Scene* scene)
         octree_ = scene->GetOrCreateComponent<Octree>();
         octree_->AddManualDrawable(drawable_);
     }
+}
+
+void RenderMeshInstance::UpdateDrawableAttributes()
+{
+    CopyDrawableAttributes(drawable_, GetEmitter());
 }
 
 RenderMeshInstance::~RenderMeshInstance()

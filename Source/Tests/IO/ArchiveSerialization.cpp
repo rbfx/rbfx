@@ -28,11 +28,12 @@
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Input/InputMap.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/BinaryArchive.h>
 #include <Urho3D/Resource/BinaryFile.h>
-#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/JSONArchive.h>
+#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLArchive.h>
 #include <Urho3D/Scene/Scene.h>
 
@@ -516,5 +517,66 @@ TEST_CASE("Scene is serialized to archive")
             REQUIRE(jsonFile->LoadObject(*objectFromJSON));
             REQUIRE(Tests::CompareNodes(*sourceScene, *objectFromJSON));
         }
+    }
+}
+
+TEST_CASE("Enum safe serialization")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    auto values = InputMap::GetScanCodeNames();
+
+    // Serialize value
+    {
+        JSONValue root;
+        JSONOutputArchive archive{context, root};
+        auto scanCode = SCANCODE_0;
+        auto block = archive.OpenSafeUnorderedBlock("root");
+        SerializeEnum(archive, "value", scanCode, values);
+        CHECK(root["value"].GetString() == "0");
+    }
+    {
+        JSONValue root;
+        JSONOutputArchive archive{context, root};
+        auto scanCode = SDL_SCANCODE_ENDCALL;
+        auto block = archive.OpenSafeUnorderedBlock("root");
+        SerializeEnum(archive, "value", scanCode, values);
+        CHECK(root["value"].GetString() == "EndCall");
+    }
+    {
+        JSONValue root;
+        JSONOutputArchive archive{context, root};
+        auto scanCode = static_cast<Scancode>(512);
+        auto block = archive.OpenSafeUnorderedBlock("root");
+        SerializeEnum(archive, "value", scanCode, values);
+        CHECK(root["value"].GetString() == "512");
+    }
+    // Deserialize value
+    {
+        JSONValue root;
+        root["value"] = "0";
+        JSONInputArchive archive{context, root};
+        Scancode scanCode{};
+        auto block = archive.OpenSafeUnorderedBlock("root");
+        SerializeEnum(archive, "value", scanCode, values);
+        CHECK(scanCode == SCANCODE_0);
+    }
+    {
+        JSONValue root;
+        root["value"] = "EndCall";
+        JSONInputArchive archive{context, root};
+        Scancode scanCode{};
+        auto block = archive.OpenSafeUnorderedBlock("root");
+        SerializeEnum(archive, "value", scanCode, values);
+        CHECK(scanCode == static_cast<Scancode>(SDL_SCANCODE_ENDCALL));
+    }
+    {
+        JSONValue root;
+        root["value"] = "512";
+        JSONInputArchive archive{context, root};
+        Scancode scanCode{};
+        auto block = archive.OpenSafeUnorderedBlock("root");
+        SerializeEnum(archive, "value", scanCode, values);
+        CHECK(scanCode == static_cast<Scancode>(512));
     }
 }

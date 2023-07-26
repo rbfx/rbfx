@@ -28,20 +28,20 @@
 namespace Urho3D
 {
 
-template <typename T> SpanVariant<T>::SpanVariant(UpdateContext& context, ParticleGraphPinRef& pinRef)
-{
-    type_ = pinRef.type_;
-    if (type_ == ParticleGraphContainerType::Sparse)
-    {
-        data_ = context.layer_->GetAttributeValues<T>(pinRef.index_).data_;
-        indices_ = context.indices_.data();
-    }
-    else
-    {
-        const auto tempLocation = context.layer_->GetLayer()->GetIntermediateValues()[pinRef.index_];
-        data_ = reinterpret_cast<T*>(context.tempBuffer_.data() + tempLocation.offset_);
-        indices_ = nullptr;
-    }
-}
+//template <typename T> SpanVariant<T>::SpanVariant(UpdateContext& context, ParticleGraphPinRef& pinRef)
+//{
+//    type_ = pinRef.type_;
+//    if (type_ == ParticleGraphContainerType::Sparse)
+//    {
+//        data_ = context.layer_->GetAttributeValues<T>(pinRef.index_).data_;
+//        indices_ = context.indices_.data();
+//    }
+//    else
+//    {
+//        const auto tempLocation = context.layer_->GetLayer()->GetIntermediateValues()[pinRef.index_];
+//        data_ = reinterpret_cast<T*>(context.tempBuffer_.data() + tempLocation.offset_);
+//        indices_ = nullptr;
+//    }
+//}
 
 } // namespace Urho3D

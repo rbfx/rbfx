@@ -44,19 +44,15 @@
 #include "../SystemUI/SystemUI.h"
 #endif
 
-#ifndef MINI_URHO
 #include <SDL.h>
-#endif
 
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
 
-#ifndef MINI_URHO
 // Keeps track of how many times SDL was initialised so we know when to call SDL_Quit().
 static int sdlInitCounter = 0;
-#endif
 
 // Global context instance. Set in Context constructor.
 static Context* contextInstance = nullptr;
@@ -145,12 +141,11 @@ Context::Context()
 
 Context::~Context()
 {
-#ifndef MINI_URHO
     // Destroying resource cache does clear it, however some resources depend on resource cache being available when
     // destructor executes.
     if (auto* cache = GetSubsystem<ResourceCache>())
         cache->Clear();
-#endif
+
     // Destroy PluginManager last because it may unload DLLs and make some classes destructors unavailable.
     SharedPtr<Object> pluginManager{GetSubsystem("PluginManager")};
 
@@ -223,7 +218,6 @@ VariantMap& Context::GetEventDataMap()
     return ret;
 }
 
-#ifndef MINI_URHO
 bool Context::RequireSDL(unsigned int sdlFlags)
 {
     // Always increment, the caller must match with ReleaseSDL(), regardless of
@@ -268,7 +262,6 @@ void Context::ReleaseSDL()
     if (sdlInitCounter < 0)
         URHO3D_LOGERROR("Too many calls to Context::ReleaseSDL()!");
 }
-#endif // ifndef MINI_URHO
 
 void Context::SetUnitTest(bool isUnitTest)
 {

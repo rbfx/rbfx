@@ -35,8 +35,8 @@ namespace ParticleGraphNodes
 class BoxInstance final : public Box::InstanceBase
 {
 public:
-    template <typename Pos, typename Vel>
-    void operator()(UpdateContext& context, unsigned numParticles, Pos pos, Vel vel)
+    void operator()(
+        const UpdateContext& context, unsigned numParticles, const SparseSpan<Vector3>& pos, const SparseSpan<Vector3>& vel)
     {
         const Box* box = static_cast<Box*>(GetGraphNode());
         const Matrix3x4 m = Matrix3x4(box->GetTranslation(), box->GetRotation(), box->GetScale());

@@ -61,6 +61,11 @@ void ModelViewTab::OnResourceLoaded(const ea::string& resourceName)
     auto cache = GetSubsystem<ResourceCache>();
     model_ = cache->GetResource<Model>(resourceName);
     staticModel_->SetModel(model_);
+    ResetCamera();
+}
+
+void ModelViewTab::ResetCamera()
+{
     if (model_)
     {
         state_.LookAt(model_->GetBoundingBox());

@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -15,7 +15,7 @@
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -32,7 +32,6 @@
 
 namespace Rml {
 
-// Attempts to load a texture.
 void Texture::Set(const String& source, const String& source_path)
 {
 	resource = TextureDatabase::Fetch(source, source_path);
@@ -44,7 +43,6 @@ void Texture::Set(const String& name, const TextureCallback& callback)
 	resource->Set(name, callback);
 }
 
-// Returns the texture's source name. This is usually the name of the file the texture was loaded from.
 const String& Texture::GetSource() const
 {
 	static String empty_string;
@@ -54,22 +52,20 @@ const String& Texture::GetSource() const
 	return resource->GetSource();
 }
 
-// Returns the texture's handle. 
-TextureHandle Texture::GetHandle(RenderInterface* render_interface) const
+TextureHandle Texture::GetHandle() const
 {
 	if (!resource)
 		return 0;
 
-	return resource->GetHandle(render_interface);
+	return resource->GetHandle();
 }
 
-// Returns the texture's dimensions.
-Vector2i Texture::GetDimensions(RenderInterface* render_interface) const
+Vector2i Texture::GetDimensions() const
 {
 	if (!resource)
-		return Vector2i(0, 0);
+		return {};
 
-	return resource->GetDimensions(render_interface);
+	return resource->GetDimensions();
 }
 
 bool Texture::operator==(const Texture& other) const

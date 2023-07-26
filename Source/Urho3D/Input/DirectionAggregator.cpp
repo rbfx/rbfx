@@ -46,22 +46,7 @@ DirectionAggregator::DirectionAggregator(Context* context)
     else
         touchSensitivity_ = 2.0f / 96.0f;
 
-    // Check if "accelerometer as joystick" option enabled in SDL (it is ON by default)
-    const auto accelerometerAsJoystick = SDL_GetHint("SDL_HINT_ACCELEROMETER_AS_JOYSTICK");
-    if (!accelerometerAsJoystick || std::string_view("0") != accelerometerAsJoystick)
-    {
-        // Find and ignore virtual joystick id.
-        // SDL defines a virtual joystick as having 3 axis and no buttons or hats.
-        const unsigned numJoysticks = input_->GetNumJoysticks();
-        for (unsigned i = 0; i < numJoysticks; ++i)
-        {
-            const auto* joystick = input_->GetJoystickByIndex(i);
-            if (joystick->GetNumAxes() == 3 && joystick->GetNumButtons() == 0 && joystick->GetNumHats() == 0)
-            {
-                ignoreJoystickId_ = static_cast<unsigned>(joystick->joystickID_);
-            }
-        }
-    }
+    this->ignoreJoystickId_ = input_->FindAccelerometerJoystickId();
 }
 
 DirectionAggregator::~DirectionAggregator()

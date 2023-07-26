@@ -19,8 +19,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+return_if_not_tool(RampGenerator)
 
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (RampGenerator ${SOURCE_FILES})
 target_link_libraries (RampGenerator Urho3D)
-install(TARGETS RampGenerator RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG})
+install(TARGETS RampGenerator EXPORT Urho3D RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG} PERMISSIONS ${PERMISSIONS_755})

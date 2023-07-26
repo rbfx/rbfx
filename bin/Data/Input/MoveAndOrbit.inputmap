@@ -1,0 +1,171 @@
+{
+	"actions": [
+		{
+			"key": "Jump",
+			"value": {
+				"buttons": [
+					{
+						"controller": true
+					}
+				],
+				"keys": [
+					{
+						"scancode": "Space"
+					}
+				],
+				"screenButtons": [
+					{
+						"elementName": "Button1"
+					}
+				]
+			}
+		},
+		{
+			"key": "LookDown",
+			"value": {
+				"axes": [
+					{
+						"axis": 3,
+						"controller": true
+					}
+				]
+			}
+		},
+		{
+			"key": "Right",
+			"value": {
+				"axes": [
+					{
+						"controller": true
+					}
+				],
+				"keys": [
+					{
+						"scancode": "D"
+					},
+					{
+						"scancode": "Right"
+					}
+				]
+			}
+		},
+		{
+			"key": "LookUp",
+			"value": {
+				"axes": [
+					{
+						"axis": 3,
+						"controller": true,
+						"pressed": -1.0
+					}
+				]
+			}
+		},
+		{
+			"key": "TurnLeft",
+			"value": {
+				"axes": [
+					{
+						"axis": 2,
+						"controller": true,
+						"pressed": -1.0
+					}
+				]
+			}
+		},
+		{
+			"key": "Crouch",
+			"value": {
+				"keys": [
+					{
+						"scancode": "Left Shift"
+					}
+				]
+			}
+		},
+		{
+			"key": "Left",
+			"value": {
+				"axes": [
+					{
+						"controller": true,
+						"pressed": -1.0
+					}
+				],
+				"keys": [
+					{
+						"scancode": "A"
+					},
+					{
+						"scancode": "Left"
+					}
+				]
+			}
+		},
+		{
+			"key": "Brake",
+			"value": {
+				"keys": [
+					{
+						"scancode": "F"
+					}
+				],
+				"screenButtons": [
+					{
+						"elementName": "Button0"
+					}
+				]
+			}
+		},
+		{
+			"key": "Forward",
+			"value": {
+				"axes": [
+					{
+						"axis": 1,
+						"controller": true,
+						"pressed": -1.0
+					}
+				],
+				"keys": [
+					{
+						"scancode": "W"
+					},
+					{
+						"scancode": "Up"
+					}
+				]
+			}
+		},
+		{
+			"key": "TurnRight",
+			"value": {
+				"axes": [
+					{
+						"axis": 2,
+						"controller": true
+					}
+				]
+			}
+		},
+		{
+			"key": "Back",
+			"value": {
+				"axes": [
+					{
+						"axis": 1,
+						"controller": true
+					}
+				],
+				"keys": [
+					{
+						"scancode": "S"
+					},
+					{
+						"scancode": "Down"
+					}
+				]
+			}
+		}
+	]
+}
