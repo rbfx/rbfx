@@ -55,6 +55,8 @@ public:
     virtual void OnEnter();
     /// Executed when last compatible body leaves the trigger.
     virtual void OnExit();
+    /// Filter entering node. Returns true if the trigger should react on the object.
+    virtual bool Filter(Node* node);
 
 protected:
     /// Handle scene node being assigned at creation.
