@@ -117,6 +117,23 @@ ImVec4 GetItemColor(const HierarchyItemFlags& flags)
     }
 }
 
+unsigned GetVisibleChildCount(Node* node, bool showTemporary)
+{
+    return showTemporary ? node->GetNumChildren() : node->GetNumPersistentChildren();
+}
+
+unsigned GetVisibleComponentCount(Node* node, bool showTemporary)
+{
+    return showTemporary ? node->GetNumComponents() : node->GetNumPersistentComponents();
+}
+
+unsigned GetVisibleItemsCount(Node* node, bool showTemporary, bool showComponents)
+{
+    const unsigned numChildren = GetVisibleChildCount(node, showTemporary);
+    const unsigned numComponents = showComponents ? GetVisibleComponentCount(node, showTemporary) : 0;
+    return numChildren + numComponents;
+}
+
 }
 
 SceneHierarchyWidget::SceneHierarchyWidget(Context* context)
@@ -178,7 +195,7 @@ void SceneHierarchyWidget::RenderNode(SceneSelection& selection, Node* node)
 
     ProcessItemIfActive(selection, node);
 
-    const bool isEmpty = node->GetChildren().empty() && (!settings_.showComponents_ || node->GetComponents().empty());
+    const unsigned numItems = GetVisibleItemsCount(node, settings_.showTemporary_, settings_.showComponents_);
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
         | ImGuiTreeNodeFlags_OpenOnDoubleClick
         | ImGuiTreeNodeFlags_SpanAvailWidth
@@ -187,8 +204,10 @@ void SceneHierarchyWidget::RenderNode(SceneSelection& selection, Node* node)
         flags |= ImGuiTreeNodeFlags_DefaultOpen;
     if (selection.IsSelected(node))
         flags |= ImGuiTreeNodeFlags_Selected;
-    if (isEmpty)
+    if (numItems == 0)
         flags |= ImGuiTreeNodeFlags_Leaf;
+    if (numItems <= 2)
+        flags |= ImGuiTreeNodeFlags_DefaultOpen;
     HierarchyItemFlags itemFlags = HierarchyItemFlag::Node;
     if (node->IsTemporaryEffective())
         itemFlags |= HierarchyItemFlag::Temporary;

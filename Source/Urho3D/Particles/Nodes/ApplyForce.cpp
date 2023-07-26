@@ -28,7 +28,6 @@
 #include "../ParticleGraphLayerInstance.h"
 #include "../ParticleGraphSystem.h"
 #include "../Span.h"
-#include "../UpdateContext.h"
 #include "ApplyForceInstance.h"
 
 namespace Urho3D

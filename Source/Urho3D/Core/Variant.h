@@ -764,7 +764,7 @@ public:
     Variant& operator =(unsigned rhs)
     {
         SetType(VAR_INT);
-        value_.int_ = (int)rhs;
+        value_.int_ = static_cast<int>(rhs);
         return *this;
     }
 
@@ -772,7 +772,7 @@ public:
     Variant& operator =(const StringHash& rhs)
     {
         SetType(VAR_INT);
-        value_.int_ = (int)rhs.Value();
+        value_.int_ = static_cast<int>(rhs.Value());
         return *this;
     }
 
@@ -1351,7 +1351,20 @@ public:
     StringHash GetStringHash() const { return type_ == VAR_INT ? StringHash(GetUInt()) : StringHash::Empty; }
 
     /// Return bool or false on type mismatch.
-    bool GetBool() const { return type_ == VAR_BOOL ? value_.bool_ : false; }
+    bool GetBool() const
+    {
+        switch (type_)
+        {
+            case VAR_BOOL: return value_.bool_;
+            case VAR_INT: return static_cast<bool>(value_.int_);
+            case VAR_INT64: return static_cast<bool>(value_.int64_);
+            case VAR_FLOAT: return static_cast<bool>(value_.float_);
+            case VAR_DOUBLE: return static_cast<bool>(value_.double_);
+            case VAR_VOIDPTR: return value_.voidPtr_;
+            case VAR_PTR: return value_.weakPtr_;
+            default: return false;
+        }
+    }
 
     /// Return float or zero on type mismatch. Ints and doubles are converted.
     float GetFloat() const

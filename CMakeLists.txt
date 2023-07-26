@@ -362,7 +362,8 @@ message(STATUS "  Physics         ${URHO3D_PHYSICS}")
 message(STATUS "  Physics2D       ${URHO3D_PHYSICS2D}")
 message(STATUS "  Plugins         ${URHO3D_PLUGINS}")
 message(STATUS "  RmlUI           ${URHO3D_RMLUI}")
-message(STATUS "  Samples         ${URHO3D_SAMPLES}")
+message(STATUS "  SPIR-V Cross    ${URHO3D_SHADER_TRANSLATOR}")
+message(STATUS "  SPIR-V Optimize ${URHO3D_SHADER_OPTIMIZER}")
 message(STATUS "  Threading       ${URHO3D_THREADING}")
 message(STATUS "  WebP            ${URHO3D_WEBP}")
 if (URHO3D_CSHARP)
@@ -412,9 +413,6 @@ if (CLANG_TIDY)
 endif()
 
 ################################################### SDK preparation ####################################################
-if (MINI_URHO)
-    return ()
-endif ()
 
 # Install CMake modules and toolchains provided by and for Urho3D
 install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Toolchains/ DESTINATION ${DEST_SHARE_DIR}/CMake/Toolchains)    # Note: the trailing slash is significant
@@ -427,7 +425,11 @@ file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 if (NOT ANDROID)
     # Multi-config projects store data files in parent dir of binary files.
     string (REPLACE "/$<CONFIG>" "" RUNTIME_OUTPUT_DIRECTORY_NO_CONFIG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-    foreach(dir Data CoreData EditorData Autoload)
+    set (INSTALL_DATA_DIRS Data CoreData Autoload)
+    if (URHO3D_EDITOR)
+        list(APPEND INSTALL_DATA_DIRS EditorData)
+    endif ()
+    foreach(dir ${INSTALL_DATA_DIRS})
         create_symlink(${CMAKE_CURRENT_SOURCE_DIR}/bin/${dir} ${RUNTIME_OUTPUT_DIRECTORY_NO_CONFIG}/${dir})
         # /${dir}/../ trick is used for installing Autoload subdirs.
         install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/${dir} DESTINATION ${CMAKE_INSTALL_PREFIX}/${DEST_BIN_DIR}/${dir}/../)

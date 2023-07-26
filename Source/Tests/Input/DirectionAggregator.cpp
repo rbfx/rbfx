@@ -89,11 +89,11 @@ TEST_CASE("DirectionAggregator tests")
     {
         SendAxisEvent(input, 0, 1.0f);
         CHECK(Vector2(1.0f, 0.0f).Equals(adapter.GetDirection()));
-        adapter.SetJoystickEnabled(false);
+        adapter.SetSubscriptionMask(adapter.GetSubscriptionMask() & ~DirectionAggregatorMask::Joystick);
         CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
         SendAxisEvent(input, 0, 1.0f);
         CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
-        adapter.SetJoystickEnabled(true);
+        adapter.SetSubscriptionMask(adapter.GetSubscriptionMask() | ~DirectionAggregatorMask::Joystick);
         CHECK(Vector2::ZERO.Equals(adapter.GetDirection()));
     }
 }

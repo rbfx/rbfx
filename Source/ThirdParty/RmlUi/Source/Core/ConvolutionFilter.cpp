@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -15,7 +15,7 @@
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -33,11 +33,9 @@
 
 namespace Rml {
 
-ConvolutionFilter::ConvolutionFilter()
-{}
+ConvolutionFilter::ConvolutionFilter() {}
 
-ConvolutionFilter::~ConvolutionFilter()
-{}
+ConvolutionFilter::~ConvolutionFilter() {}
 
 bool ConvolutionFilter::Initialise(int _kernel_radius, FilterOperation _operation)
 {
@@ -80,15 +78,13 @@ void ConvolutionFilter::Run(byte* destination, const Vector2i destination_dimens
 	const int source_bytes_per_pixel = (source_color_format == ColorFormat::RGBA8 ? 4 : 1);
 	const int source_alpha_offset = (source_color_format == ColorFormat::RGBA8 ? 3 : 0);
 
-	const float initial_opacity = (operation == FilterOperation::Erosion ? FLT_MAX : 0.f);
-
 	const Vector2i kernel_radius = (kernel_size - Vector2i(1)) / 2;
 
 	for (int y = 0; y < destination_dimensions.y; ++y)
 	{
 		for (int x = 0; x < destination_dimensions.x; ++x)
 		{
-			float opacity = initial_opacity;
+			float opacity = 0.f;
 
 			for (int kernel_y = 0; kernel_y < kernel_size.y; ++kernel_y)
 			{
@@ -96,21 +92,17 @@ void ConvolutionFilter::Run(byte* destination, const Vector2i destination_dimens
 
 				for (int kernel_x = 0; kernel_x < kernel_size.x; ++kernel_x)
 				{
-					float pixel_opacity = 0.f;
-
 					const int source_x = x - source_offset.x - kernel_radius.x + kernel_x;
-					if (source_y >= 0 && source_y < source_dimensions.y &&
-						source_x >= 0 && source_x < source_dimensions.x)
+					if (source_y >= 0 && source_y < source_dimensions.y && source_x >= 0 && source_x < source_dimensions.x)
 					{
 						const int source_index = (source_y * source_dimensions.x + source_x) * source_bytes_per_pixel + source_alpha_offset;
-						pixel_opacity = float(source[source_index]) * kernel[kernel_y * kernel_size.x + kernel_x];
-					}
+						const float pixel_opacity = float(source[source_index]) * kernel[kernel_y * kernel_size.x + kernel_x];
 
-					switch (operation)
-					{
-					case FilterOperation::Sum:      opacity += pixel_opacity; break;
-					case FilterOperation::Dilation: opacity = Math::Max(opacity, pixel_opacity); break;
-					case FilterOperation::Erosion:  opacity = Math::Min(opacity, pixel_opacity); break;
+						switch (operation)
+						{
+						case FilterOperation::Sum: opacity += pixel_opacity; break;
+						case FilterOperation::Dilation: opacity = Math::Max(opacity, pixel_opacity); break;
+						}
 					}
 				}
 			}

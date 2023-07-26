@@ -77,8 +77,10 @@ class WorkQueueVector : public MultiVector<T>
 public:
     /// Clear collection, considering number of threads in WorkQueue.
     void Clear();
+#ifndef SWIG
     /// Insert new element. Thread-safe as long as called from WorkQueue threads (or main thread).
     auto Insert(const T& value);
+#endif
     /// Emplace element. Thread-safe as long as called from WorkQueue threads (or main thread).
     template <class ... Args>
     T& Emplace(Args&& ... args);
@@ -138,6 +140,9 @@ public:
     /// Post the task for main thread.
     void PostTaskForMainThread(TaskFunction&& task, TaskPriority priority = TaskPriority::Medium);
     template <class T> void PostTaskForMainThread(T task, TaskPriority priority = TaskPriority::Medium);
+    /// Post delayed task for main thread. It is guaranteed to be invoked between frames.
+    void PostDelayedTaskForMainThread(TaskFunction&& task);
+    template <class T> void PostDelayedTaskForMainThread(T task);
 
     /// Complete tasks with Immediate priority, posted from this thread.
     /// Can be called only from main thread or from another task.
@@ -323,12 +328,14 @@ void WorkQueueVector<T>::Clear()
     MultiVector<T>::Clear(WorkQueue::GetThreadIndexCount());
 }
 
+#ifndef SWIG
 template <class T>
 auto WorkQueueVector<T>::Insert(const T& value)
 {
     const unsigned threadIndex = WorkQueue::GetThreadIndex();
     return this->PushBack(threadIndex, value);
 }
+#endif
 
 template <class T>
 template <class ... Args>
@@ -390,6 +397,11 @@ template <class T> void WorkQueue::PostTaskForThread(T task, TaskPriority priori
 template <class T> void WorkQueue::PostTaskForMainThread(T task, TaskPriority priority)
 {
     PostTaskForMainThread(WrapTask(ea::move(task)), priority);
+}
+
+template <class T> void WorkQueue::PostDelayedTaskForMainThread(T task)
+{
+    PostDelayedTaskForMainThread(WrapTask(ea::move(task)));
 }
 
 }

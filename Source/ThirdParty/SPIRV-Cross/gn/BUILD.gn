@@ -1,4 +1,5 @@
 # Copyright (C) 2019 Google, Inc.
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,6 +39,8 @@ source_set("spirv_cross_sources") {
     "../spirv_cross_util.hpp",
     "../spirv_glsl.cpp",
     "../spirv_glsl.hpp",
+    "../spirv_hlsl.cpp",
+    "../spirv_hlsl.hpp",
     "../spirv_msl.cpp",
     "../spirv_msl.hpp",
     "../spirv_parser.cpp",
@@ -46,7 +49,9 @@ source_set("spirv_cross_sources") {
     "../spirv_reflect.hpp",
   ]
 
-  cflags = [ "-fno-exceptions" ]
+  if (!is_win) {
+    cflags = [ "-fno-exceptions" ]
+  }
 
   if (is_clang) {
     cflags_cc = [

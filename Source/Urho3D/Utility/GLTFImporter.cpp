@@ -2459,7 +2459,6 @@ private:
         if (isAlphaMask)
         {
             shaderDefines += "ALPHAMASK ";
-            // TODO: Add support in standard shader
             material.SetShaderParameter("AlphaCutoff", static_cast<float>(sourceMaterial.alphaCutoff));
         }
 
@@ -2667,7 +2666,7 @@ public:
         return GetImportedModel(meshIndex, skinIndex).model_;
     }
 
-    const StringVector& GetModelMaterials(int meshIndex, int skinIndex) const
+    const ResourceRefList& GetModelMaterials(int meshIndex, int skinIndex) const
     {
         return GetImportedModel(meshIndex, skinIndex).materials_;
     }
@@ -2682,7 +2681,7 @@ private:
 
         SharedPtr<ModelView> modelView_;
         SharedPtr<Model> model_;
-        StringVector materials_;
+        ResourceRefList materials_;
 
         bool alreadyProcessedAsLOD_{};
     };
@@ -3569,10 +3568,13 @@ private:
         staticModel.SetModel(model);
         staticModel.SetCastShadows(true);
 
-        const StringVector& materialList = modelImporter_.GetModelMaterials(meshIndex, skinIndex);
-        for (unsigned i = 0; i < materialList.size(); ++i)
+        const ResourceRefList& materialList = modelImporter_.GetModelMaterials(meshIndex, skinIndex);
+        if (materialList.type_ != Material::GetTypeStatic())
+            return;
+
+        for (unsigned i = 0; i < materialList.names_.size(); ++i)
         {
-            auto material = cache->GetResource<Material>(materialList[i]);
+            auto material = cache->GetResource<Material>(materialList.names_[i]);
             staticModel.SetMaterial(i, material);
         }
     }

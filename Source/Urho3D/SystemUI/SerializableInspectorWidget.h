@@ -28,7 +28,7 @@
 namespace Urho3D
 {
 
-struct SerializableHookContext
+struct AttributeHookContext
 {
     const WeakSerializableVector* objects_{};
     const AttributeInfo* info_{};
@@ -36,8 +36,20 @@ struct SerializableHookContext
     bool isDefaultValue_{};
 };
 
-using SerializableHookKey = ea::pair<ea::string /*class*/, ea::string /*attribute*/>;
-using SerializableHookFunction = ea::function<bool(const SerializableHookContext& ctx, Variant& boxedValue)>;
+enum class ObjectHookType
+{
+    /// Rendered before default attributes rendering.
+    Prepend,
+    /// Rendered after default attributes rendering.
+    Append,
+    /// Rendered instead of default attributes rendering.
+    Replace,
+};
+
+using AttributeHookKey = ea::pair<ea::string /*class*/, ea::string /*attribute*/>;
+using AttributeHookFunction = ea::function<bool(const AttributeHookContext& ctx, Variant& boxedValue)>;
+using ObjectHookKey = ea::pair<ea::string /*class*/, ObjectHookType /*type*/>;
+using ObjectHookFunction = ea::function<void(const WeakSerializableVector& objects)>;
 
 /// SystemUI widget used to edit materials.
 class URHO3D_API SerializableInspectorWidget : public Object
@@ -45,9 +57,20 @@ class URHO3D_API SerializableInspectorWidget : public Object
     URHO3D_OBJECT(SerializableInspectorWidget, Object);
 
 public:
-    static void RegisterHook(const SerializableHookKey& key, const SerializableHookFunction& function);
-    static void UnregisterHook(const SerializableHookKey& key);
-    static const SerializableHookFunction& GetHook(const SerializableHookKey& key);
+    /// Hooks used to customize attribute rendering.
+    /// @{
+    static void RegisterAttributeHook(const AttributeHookKey& key, const AttributeHookFunction& function);
+    static void UnregisterAttributeHook(const AttributeHookKey& key);
+    static const AttributeHookFunction& GetAttributeHook(const AttributeHookKey& key);
+    /// @}
+
+    /// Hooks used to customize object rendering.
+    /// TODO: Object hooks cannot change object's attributes (yet)
+    /// @{
+    static void RegisterObjectHook(const ObjectHookKey& key, const ObjectHookFunction& function);
+    static void UnregisterObjectHook(const ObjectHookKey& key);
+    static const ObjectHookFunction& GetObjectHook(const ObjectHookKey& key);
+    /// @}
 
     Signal<void(const WeakSerializableVector& objects, const AttributeInfo* attribute)> OnEditAttributeBegin;
     Signal<void(const WeakSerializableVector& objects, const AttributeInfo* attribute)> OnEditAttributeEnd;
@@ -67,6 +90,7 @@ private:
     void PruneObjects();
     void RenderAttribute(const AttributeInfo& info);
     void RenderAction(const AttributeInfo& info);
+    void RenderObjects();
 
     WeakSerializableVector objects_;
     ea::vector<ea::pair<const AttributeInfo*, Variant>> pendingSetAttributes_;

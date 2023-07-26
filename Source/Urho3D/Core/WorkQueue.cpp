@@ -460,10 +460,13 @@ void WorkQueue::PostTaskForMainThread(TaskFunction&& task, TaskPriority priority
     if (Thread::IsMainThread())
         task(0, this);
     else
-    {
-        MutexLock lock(mainThreadTasksMutex_);
-        mainThreadTasks_.push_back(ea::move(task));
-    }
+        PostDelayedTaskForMainThread(ea::move(task));
+}
+
+void WorkQueue::PostDelayedTaskForMainThread(TaskFunction&& task)
+{
+    MutexLock lock(mainThreadTasksMutex_);
+    mainThreadTasks_.push_back(ea::move(task));
 }
 
 void WorkQueue::CompleteImmediateForAnotherThread(unsigned threadIndex)

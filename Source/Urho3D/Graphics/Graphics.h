@@ -750,6 +750,8 @@ public:
     /// Return the API-specific texture format from a textual description, for example "rgb".
     static unsigned GetFormat(const ea::string& formatName);
 
+    /// Sets the maximum number of supported bones for hardware skinning. Check GPU capabilities before setting.
+    static void SetMaxBones(unsigned maxBones);
     /// Return maximum number of supported bones for skinning.
     static unsigned GetMaxBones();
     /// Return whether is using an OpenGL 3 context. Return always false on DirectX 11.
@@ -759,6 +761,13 @@ public:
 
     /// Get the SDL_Window as a void* to avoid having to include the graphics implementation
     void* GetSDLWindow() { return window_; }
+
+    void SetLogShaderSources(bool enable) { logShaderSources_ = enable; }
+    bool GetLogShaderSources() const { return logShaderSources_; }
+    void SetPolicyGLSL(ShaderTranslationPolicy policy) { policyGlsl_ = policy; }
+    ShaderTranslationPolicy GetPolicyGLSL() const { return policyGlsl_; }
+    void SetPolicyHLSL(ShaderTranslationPolicy policy) { policyHlsl_ = policy; }
+    ShaderTranslationPolicy GetPolicyHLSL() const { return policyHlsl_; }
 
 private:
     /// Create the application window.
@@ -978,10 +987,16 @@ private:
     /// Hash of global shader defines.
     StringHash globalShaderDefinesHash_;
 
+    bool logShaderSources_{};
+    ShaderTranslationPolicy policyGlsl_{ShaderTranslationPolicy::Verbatim};
+    ShaderTranslationPolicy policyHlsl_{ShaderTranslationPolicy::Translate};
+
     /// OpenGL3 support flag.
     static bool gl3Support;
     /// Graphics capabilities. Static for easier access.
     static GraphicsCaps caps;
+    /// Max number of bones which can be skinned on GPU. Zero means default value.
+    static unsigned maxBonesHWSkinned;
 };
 
 /// Register Graphics library objects.

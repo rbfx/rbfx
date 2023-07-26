@@ -256,6 +256,7 @@ using PostProcessPassFlags = Urho3D::PostProcessPassFlag;
 %csattribute(Urho3D::ShadowSplitProcessor, %arg(ea::vector<Drawable *>), ShadowCasters, GetShadowCasters);
 %csattribute(Urho3D::ShadowSplitProcessor, %arg(Urho3D::ShadowMapRegion), ShadowMap, GetShadowMap);
 %csattribute(Urho3D::ShadowSplitProcessor, %arg(float), ShadowMapTexelSizeInWorldSpace, GetShadowMapTexelSizeInWorldSpace);
+%csattribute(Urho3D::ShadowSplitProcessor, %arg(unsigned int), ShadowMapPadding, GetShadowMapPadding);
 %csattribute(Urho3D::ShadowSplitProcessor, %arg(Urho3D::FloatRange), CascadeZRange, GetCascadeZRange);
 %csattribute(Urho3D::ShadowSplitProcessor, %arg(Urho3D::Camera *), ShadowCamera, GetShadowCamera);
 %csattribute(Urho3D::ShadowSplitProcessor, %arg(ea::vector<PipelineBatch>), MutableUnsortedShadowBatches, GetMutableUnsortedShadowBatches);

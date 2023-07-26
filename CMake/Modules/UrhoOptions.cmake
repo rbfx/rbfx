@@ -20,24 +20,22 @@
 # THE SOFTWARE.
 #
 
-if (NOT MINI_URHO)
-    # Source environment
-    if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
-        execute_process(COMMAND cmd /c set OUTPUT_VARIABLE ENVIRONMENT)
-    else ()
-        execute_process(COMMAND env OUTPUT_VARIABLE ENVIRONMENT)
-    endif ()
-    string(REGEX REPLACE "=[^\n]*\n?" ";" ENVIRONMENT "${ENVIRONMENT}")
-    set(IMPORT_URHO3D_VARIABLES_FROM_ENV BUILD_SHARED_LIBS MINI_URHO SWIG_EXECUTABLE SWIG_DIR)
-    foreach(key ${ENVIRONMENT})
-        list (FIND IMPORT_URHO3D_VARIABLES_FROM_ENV ${key} _index)
-        if ("${key}" MATCHES "^(URHO3D_|CMAKE_|ANDROID_).+" OR ${_index} GREATER -1)
-            if (NOT DEFINED ${key})
-                set (${key} $ENV{${key}} CACHE STRING "" FORCE)
-            endif ()
-        endif ()
-    endforeach()
+# Source environment
+if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Windows")
+    execute_process(COMMAND cmd /c set OUTPUT_VARIABLE ENVIRONMENT)
+else ()
+    execute_process(COMMAND env OUTPUT_VARIABLE ENVIRONMENT)
 endif ()
+string(REGEX REPLACE "=[^\n]*\n?" ";" ENVIRONMENT "${ENVIRONMENT}")
+set(IMPORT_URHO3D_VARIABLES_FROM_ENV BUILD_SHARED_LIBS SWIG_EXECUTABLE SWIG_DIR)
+foreach(key ${ENVIRONMENT})
+    list (FIND IMPORT_URHO3D_VARIABLES_FROM_ENV ${key} _index)
+    if ("${key}" MATCHES "^(URHO3D_|CMAKE_|ANDROID_).+" OR ${_index} GREATER -1)
+        if (NOT DEFINED ${key})
+            set (${key} $ENV{${key}} CACHE STRING "" FORCE)
+        endif ()
+    endif ()
+endforeach()
 
 # https://cmake.org/cmake/help/v3.18/policy/CMP0077.html
 # Note that cmake_minimum_required() + project() resets policies, so dependencies using lower CMake version would not
@@ -192,15 +190,11 @@ option                (URHO3D_RMLUI              "HTML subset UIs via RmlUI midd
 option                (URHO3D_PARTICLE_GRAPH     "Particle Graph Effects"                                ${URHO3D_ENABLE_ALL})
 cmake_dependent_option(URHO3D_COMPUTE            "Enable Compute shaders"                                ${URHO3D_ENABLE_ALL} "NOT EMSCRIPTEN;NOT MOBILE;NOT URHO3D_GLES2" OFF)
 option                (URHO3D_ACTIONS            "Tweening actions"                                      ${URHO3D_ENABLE_ALL})
+option                (URHO3D_SHADER_TRANSLATOR  "Enable shader translation from universal GLSL shaders to other GAPI via glslang and SPIRV-Cross" ON)
+option                (URHO3D_SHADER_OPTIMIZER   "Enable shader optimization via SPIRV-Tools"            ON)
 
 # Features
-set (URHO3D_CSHARP_TOOLS ${URHO3D_CSHARP})
 cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "BUILD_SHARED_LIBS;NOT MINGW"   OFF)
-if (NOT MINI_URHO)
-    # Keep C# tools in minimal build if we requested them. This is a workaround for building swig as a native tool during crosscompiling.
-	# Otherwise it would fail because we build tools with -DBUILD_SHARED_LIBS=OFF due to cryptic build errors, and C# is disabled in static builds.
-    set (URHO3D_CSHARP_TOOLS ${URHO3D_CSHARP})
-endif ()
 # Valid values at https://docs.microsoft.com/en-us/dotnet/standard/frameworks
 # At the moment only netstandard2.1 supported
 set(URHO3D_NETFX netstandard2.1 CACHE STRING "TargetFramework value for .NET libraries")
@@ -223,11 +217,12 @@ set(EMSCRIPTEN_TOTAL_MEMORY 128 CACHE STRING  "Memory limit in megabytes. Set to
 
 # Misc
 rbfx_dependent_option(URHO3D_PLUGIN_LIST "List of plugins to be statically linked with Editor and Player executables" "103_GamePlugin;113_InputLogger" URHO3D_SAMPLES "")
+option               (URHO3D_PARALLEL_BUILD     "MSVC-only: enable parallel builds. A bool or a number of processors to use." ON)
 
 option(URHO3D_PLAYER                            "Build player application"                              ${URHO3D_ENABLE_ALL})
 cmake_dependent_option(URHO3D_EDITOR            "Build editor application"                              ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)
 cmake_dependent_option(URHO3D_EXTRAS            "Build extra tools"                                     ${URHO3D_ENABLE_ALL} "NOT EMSCRIPTEN;NOT MOBILE;NOT UWP"    OFF)
-cmake_dependent_option(URHO3D_TOOLS             "Tools enabled"                                         ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)
+cmake_dependent_option(URHO3D_TOOLS             "Tools enabled. Bool or a list of tool target names."   ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)
 option(URHO3D_SAMPLES                           "Build samples"                                         OFF)
 cmake_dependent_option(URHO3D_MERGE_STATIC_LIBS "Merge third party dependency libs to Urho3D.a"         OFF "NOT BUILD_SHARED_LIBS"                          OFF)
 option(URHO3D_NO_EDITOR_PLAYER_EXE              "Do not build editor or player executables."            OFF)
@@ -235,7 +230,7 @@ option(URHO3D_SSL                               "Enable OpenSSL support"        
 
 if (WIN32)
     set(URHO3D_GRAPHICS_API D3D11 CACHE STRING "Graphics API")
-    set_property(CACHE URHO3D_GRAPHICS_API PROPERTY STRINGS D3D9 D3D11 OpenGL)
+    set_property(CACHE URHO3D_GRAPHICS_API PROPERTY STRINGS D3D11 OpenGL)
     option(URHO3D_WIN32_CONSOLE "Show log messages in win32 console"                     OFF)
 elseif (IOS OR ANDROID)
     set(URHO3D_GRAPHICS_API GLES2 CACHE STRING "Graphics API")
@@ -249,12 +244,8 @@ if (URHO3D_GLES2 OR URHO3D_GLES3)
     set (URHO3D_OPENGL ON)
 endif ()
 
-cmake_dependent_option(URHO3D_SPIRV "Enable universal GLSL shaders for other GAPIs via glslang and SpirV" ON "URHO3D_D3D11" OFF)
 # Whether to use legacy renderer. Only OpenGL support legacy renderer.
 cmake_dependent_option(URHO3D_LEGACY_RENDERER "Use legacy renderer by default" OFF "URHO3D_OPENGL" OFF)
-if (URHO3D_D3D9)
-    set (URHO3D_LEGACY_RENDERER ON)
-endif ()
 
 if (URHO3D_CSHARP)
     set (URHO3D_MONOLITHIC_HEADER ON)   # Used by wrapper code
@@ -266,11 +257,15 @@ if (ANDROID OR EMSCRIPTEN OR IOS)
     if (NOT URHO3D_GLES3)
         set (URHO3D_SYSTEMUI OFF)
     endif ()
-elseif ((URHO3D_TOOLS OR URHO3D_EDITOR) AND NOT MINI_URHO)
+elseif ((URHO3D_TOOLS OR URHO3D_EDITOR))
     set (URHO3D_SYSTEMUI ON)
     set (URHO3D_FILEWATCHER ON)
     set (URHO3D_LOGGING ON)
     set (URHO3D_HASH_DEBUG ON)
+endif ()
+
+if (URHO3D_D3D11)
+    set (URHO3D_SHADER_TRANSLATOR ON)
 endif ()
 
 if (EMSCRIPTEN)

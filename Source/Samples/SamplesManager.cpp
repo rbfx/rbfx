@@ -146,8 +146,14 @@
 #if URHO3D_RMLUI
 #include "114_AdvancedUI/AdvancedUI.h"
 #endif
+#if URHO3D_PHYSICS
 #include "115_RayCast/RayCastSample.h"
+#endif
 #include "116_VirtualFileSystem/VFSSample.h"
+#if URHO3D_PHYSICS
+#include "117_PointerAdapter/PointerAdapterSample.h"
+#include "118_CameraShake/CameraShake.h"
+#endif
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -178,7 +184,14 @@ void SamplesManager::Setup()
     engineParameters_[EP_ORIENTATIONS] = "Portrait";
 #endif
     if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS))
+    {
         engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
+        if (GetPlatform() == PlatformId::MacOS ||
+            GetPlatform() == PlatformId::iOS)
+            engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";../Resources;../..";
+        else
+            engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
+    }
     engineParameters_[EP_AUTOLOAD_PATHS] = "Autoload";
 #if DESKTOP
     GetCommandLineParser().add_option("--sample", commandLineArgsTemp_);
@@ -231,7 +244,9 @@ void SamplesManager::Start()
     inspectorNode_ = MakeShared<Scene>(context_);
     sampleSelectionScreen_ = MakeShared<SampleSelectionScreen>(context_);
     // Keyboard arrow keys are already handled by UI
-    sampleSelectionScreen_->dpadAdapter_.SetKeyboardEnabled(false);
+    DirectionalPadAdapterFlags flags = sampleSelectionScreen_->dpadAdapter_.GetSubscriptionMask();
+    flags.Set(DirectionalPadAdapterMask::Keyboard, false);
+    sampleSelectionScreen_->dpadAdapter_.SetSubscriptionMask(static_cast<DirectionalPadAdapterMask>(flags));
     context_->GetSubsystem<StateManager>()->EnqueueState(sampleSelectionScreen_);
 
 #if URHO3D_SYSTEMUI
@@ -396,8 +411,14 @@ void SamplesManager::Start()
 #if URHO3D_RMLUI
     RegisterSample<AdvancedUI>();
 #endif
+#if URHO3D_PHYSICS
     RegisterSample<RayCastSample>();
+#endif
     RegisterSample<VFSSample>();
+#if URHO3D_PHYSICS
+    RegisterSample<PointerAdapterSample>();
+#endif
+    RegisterSample<CameraShake>();
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);

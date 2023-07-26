@@ -1,0 +1,9 @@
+/Package.swift
+
+/.github/
+/.reuse/
+
+/reference/
+/samples/
+/shaders*/
+/tests-other/

@@ -47,7 +47,7 @@ private:
     /// Implement RmlUIComponent
     /// @{
     void Update(float timeStep) override;
-    void OnDataModelInitialized(Rml::DataModelConstructor& constructor) override;
+    void OnDataModelInitialized() override;
     /// @}
 
     void OnContinue();

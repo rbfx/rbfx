@@ -384,11 +384,12 @@ void SystemUI::ReallocateFontTexture()
     ImGuiIO& io = ui::GetIO();
     ImGuiPlatformIO& platform_io = ui::GetPlatformIO();
 
+    // Initialize per-screen font atlases.
+    ClearPerScreenFonts();
+
     // Store main atlas, imgui expects it.
     io.Fonts->TexID = AllocateFontTexture(io.Fonts);
 
-    // Initialize per-screen font atlases.
-    ClearPerScreenFonts();
     io.AllFonts.push_back(io.Fonts);
     for (ImGuiPlatformMonitor& monitor : platform_io.Monitors)
     {

@@ -65,6 +65,8 @@ void RunFrame(Context* context, float timeStep, float maxTimeStep = M_LARGE_VALU
 Resource* GetOrCreateResource(
     Context* context, StringHash type, const ea::string& name, ea::function<SharedPtr<Resource>(Context*)> factory);
 
+void SendMouseMoveEvent(Input* input, IntVector2 pos, IntVector2 delta = IntVector2::ZERO);
+
 void SendKeyEvent(Input* input, StringHash eventId, Scancode scancode, Key key);
 
 void SendDPadEvent(Input* input, HatPosition position, int hatIndex = 0, int joystickId = 0);

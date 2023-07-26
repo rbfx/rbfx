@@ -127,6 +127,12 @@ void ActionDemo::CreateUI()
     pos += step;
     AddElement(pos, ActionBuilder(context_).MoveBy(1.0f, offset).ElasticInOut().DelayTime(2.0f).JumpBy(-offset).Build());
     pos += step;
+    AddElement(pos,
+        ActionBuilder(context_)
+            .MoveByQuadratic(1.0f, offset * 0.5f + Vector2(+40,0), offset)
+            .DelayTime(2.0f)
+            .JumpBy(-offset)
+            .Build());
     AddElement(pos, ActionBuilder(context_).RemoveSelf().DelayTime(1.0f).Build());
 }
 

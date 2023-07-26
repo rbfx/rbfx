@@ -172,9 +172,19 @@ VariantType PatternMatchingNode::EvaluateOutputPinType(ParticleGraphPin& pin)
 void PatternMatchingNode::Update(UpdateContext& context, const NodePattern& pattern)
 {
     ea::fixed_vector<ParticleGraphPinRef, NodePattern::ExpectedNumberOfPins> pinRefs;
+    bool allScalar = true;
     for (auto& pin: pins_)
     {
         pinRefs.push_back(pin.GetMemoryReference());
+        allScalar &= pin.GetContainerType() == ParticleGraphContainerType::Scalar;
+    }
+
+    // Index optimization
+    if (allScalar && context.indices_.size() > 1)
+    {
+        UpdateContext contextCopy = context;
+        contextCopy.indices_ = contextCopy.indices_.subspan(0, 1);
+        return pattern.updateFunction_(contextCopy, pinRefs.data());
     }
 
     return pattern.updateFunction_(context, pinRefs.data());

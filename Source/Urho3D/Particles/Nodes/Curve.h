@@ -45,8 +45,9 @@ public:
         void Update(UpdateContext& context) override;
         Curve* GetNodeInstace() { return node_; }
 
-        template <typename T, typename Out>
-        void operator()(UpdateContext& context, unsigned numParticles, T t, Out out)
+        template <typename Out>
+        void operator()(
+            const UpdateContext& context, unsigned numParticles, const SparseSpan<float>& t, const SparseSpan<Out>& out)
         {
             auto* node = GetNodeInstace();
             for (unsigned i = 0; i < numParticles; ++i)

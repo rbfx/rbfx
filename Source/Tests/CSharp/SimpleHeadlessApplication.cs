@@ -1,90 +1,60 @@
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using Xunit.Abstractions;
 
 namespace Urho3DNet.Tests
 {
+    /// <summary>
+    /// Test application.
+    /// </summary>
     public class SimpleHeadlessApplication : Application
     {
-        private Queue<QueueItem> _tasks = new Queue<QueueItem>();
-
         public SimpleHeadlessApplication(Context context) : base(context)
         {
         }
 
+        /// <summary>
+        /// Setup headless application.
+        /// </summary>
         public override void Setup()
         {
             base.Setup();
-
             EngineParameters[Urho3D.EpHeadless] = true;
-
         }
 
-        private void HandleUpdate(VariantMap obj)
-        {
-            for (;;)
-            {
-                QueueItem item;
-                lock (_tasks)
-                {
-                    if (_tasks.Count == 0)
-                    {
-                        return;
-                    }
-
-                    item = _tasks.Dequeue();
-                }
-
-                item.Run(this);
-            }
-        }
-
+        /// <summary>
+        /// Start headless application.
+        /// </summary>
         public override void Start()
         {
             base.Start();
-            SubscribeToEvent(E.Update, HandleUpdate);
+            SubscribeToEvent(E.LogMessage, OnLogMessage);
         }
 
-        public async Task<bool> RunAsync(Action<Application> action)
+        /// <summary>
+        /// Current test output.
+        /// </summary>
+        public ITestOutputHelper? TestOutput { get; set; }
+
+        /// <summary>
+        /// Handle log messages.
+        /// </summary>
+        /// <param name="args">Log message arguments.</param>
+        /// <exception cref="Exception"></exception>
+        private void OnLogMessage(VariantMap args)
         {
-            var tcs = new QueueItem(action);
-            lock (_tasks)
+            try
             {
-                _tasks.Enqueue(tcs);
-            }
-
-            await tcs.RunAsync();
-            return true;
-        }
-
-        class QueueItem
-        {
-            private readonly TaskCompletionSource<bool> _tcs;
-            private readonly Action<Application> _action;
-
-            public QueueItem(Action<Application> action)
-            {
-                _tcs = new TaskCompletionSource<bool>();
-                _action = action;
-            }
-
-            public async Task RunAsync()
-            {
-                await _tcs.Task;
-            }
-
-            public void Run(Application app)
-            {
-                try
+                var helper = TestOutput;
+                if (helper != null)
                 {
-                    _action(app);
+                    var logLevel = (LogLevel)args[E.LogMessage.Level].Int;
+                    var message = args[E.LogMessage.Message].String;
+                    helper.WriteLine($"{logLevel}: {message}");
                 }
-                catch (Exception ex)
-                {
-                    _tcs.TrySetException(ex);
-                }
-
-                _tcs.TrySetResult(true);
+            }
+            catch (NullReferenceException)
+            {
+                //TestOutput may be disposed internally.
             }
         }
     }

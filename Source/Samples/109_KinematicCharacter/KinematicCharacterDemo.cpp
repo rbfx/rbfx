@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,32 +26,34 @@
 #include <Urho3D/Graphics/AnimatedModel.h>
 #include <Urho3D/Graphics/AnimationController.h>
 #include <Urho3D/Graphics/Camera.h>
+#include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/Graphics/Light.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/Zone.h>
-#include <Urho3D/Input/Controls.h>
 #include <Urho3D/Input/Input.h>
+#include <Urho3D/Input/MoveAndOrbitController.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Physics/CollisionShape.h>
 #include <Urho3D/Physics/KinematicCharacterController.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Graphics/DebugRenderer.h>
-#include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/PrefabReference.h>
 #include <Urho3D/Scene/PrefabResource.h>
+#include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
 
 #include "KinematicCharacter.h"
 #include "KinematicCharacterDemo.h"
-#include "../18_CharacterDemo/Touch.h"
 
 #include <Urho3D/DebugNew.h>
 
+const float CAMERA_MIN_DIST = 1.0f;
+const float CAMERA_INITIAL_DIST = 5.0f;
+const float CAMERA_MAX_DIST = 20.0f;
 
 KinematicCharacterDemo::KinematicCharacterDemo(Context* context)
     : Sample(context)
@@ -68,8 +71,6 @@ void KinematicCharacterDemo::Start()
 {
     // Execute base class startup
     Sample::Start();
-    if (touchEnabled_)
-        touch_ = new Touch(context_, TOUCH_SENSITIVITY);
 
     dPadAdapter_.SetEnabled(true);
 
@@ -77,7 +78,7 @@ void KinematicCharacterDemo::Start()
     CreateScene();
 
     // Create the controllable character
-    CreateCharacter();
+    CreateCharacter(Vector3::ZERO);
 
     // Create the UI content
     CreateInstructions();
@@ -141,6 +142,16 @@ void KinematicCharacterDemo::CreateScene()
     auto* shape = floorNode->CreateComponent<CollisionShape>();
     shape->SetBox(Vector3::ONE);
 
+    // Create sliding door
+    {
+        auto* doorPrefab = cache->GetResource<PrefabResource>("Prefabs/SlidingDoor.prefab");
+        Node* objectNode = scene_->CreateChild("SlidingDoor");
+        objectNode->SetPosition(Vector3(-3, 0, -3));
+        auto* prefabReference = objectNode->CreateComponent<PrefabReference>();
+        prefabReference->SetPrefab(doorPrefab);
+        prefabReference->Inline(PrefabInlineFlag::None);
+    }
+
     // Create mushrooms of varying sizes
     const unsigned NUM_MUSHROOMS = 60;
     auto* mushroomPrefab = cache->GetResource<PrefabResource>("Prefabs/Mushroom.prefab");
@@ -178,12 +189,12 @@ void KinematicCharacterDemo::CreateScene()
     }
 }
 
-void KinematicCharacterDemo::CreateCharacter()
+void KinematicCharacterDemo::CreateCharacter(const Vector3& position)
 {
     auto* cache = GetSubsystem<ResourceCache>();
 
     Node* objectNode = scene_->CreateChild("Jack");
-    objectNode->SetPosition(Vector3(0.0f, 1.0f, 0.0f));
+    objectNode->SetPosition(position);
 
     // spin node
     Node* adjustNode = objectNode->CreateChild("AdjNode");
@@ -199,23 +210,14 @@ void KinematicCharacterDemo::CreateCharacter()
     // Set the head bone for manual control
     object->GetSkeleton().GetBone("Mutant:Head")->animated_ = false;
 
-    // Create rigidbody
-    auto* body = objectNode->CreateComponent<RigidBody>();
-    body->SetCollisionLayer(1);
-    body->SetKinematic(true);
-    body->SetTrigger(true);
-
-    // Set zero angular factor so that physics doesn't turn the character on its own.
-    // Instead we will control the character yaw manually
-    body->SetAngularFactor(Vector3::ZERO);
-
-    // Set the rigidbody to signal collision also when in rest, so that we get ground collisions properly
-    body->SetCollisionEventMode(COLLISION_ALWAYS);
-
-    // Create the character logic component, which takes care of steering the rigidbody
+    // Create the character logic component, which takes care of steering the fake rigidbody
     // Remember it so that we can set the controls. Use a ea::weak_ptr because the scene hierarchy already owns it
     // and keeps it alive as long as it's not removed from the hierarchy
     character_ = objectNode->CreateComponent<KinematicCharacter>();
+    const auto moveAndOrbit = objectNode->CreateComponent<MoveAndOrbitController>();
+    moveAndOrbit->LoadInputMap("Input/MoveAndOrbit.inputmap");
+    character_->SetInputMap(moveAndOrbit->GetInputMap());
+
     kinematicCharacter_ = objectNode->CreateComponent<KinematicCharacterController>();
     kinematicCharacter_->SetDiameter(0.7f);
     kinematicCharacter_->SetHeight(1.8f);
@@ -266,62 +268,16 @@ void KinematicCharacterDemo::Update(float timeStep)
 
     if (character_)
     {
-        // Clear previous controls
-        character_->controls_.Set(CTRL_FORWARD | CTRL_BACK | CTRL_LEFT | CTRL_RIGHT | CTRL_JUMP, false);
-
-        // Update controls using touch utility class
-        if (touch_)
-            touch_->UpdateTouches(character_->controls_);
-
         // Update controls using keys
         auto* ui = GetSubsystem<UI>();
         if (!ui->GetFocusElement())
         {
-            if (!touch_ || !touch_->useGyroscope_)
-            {
-                character_->controls_.Set(CTRL_FORWARD, dPadAdapter_.GetScancodeDown(SCANCODE_UP));
-                character_->controls_.Set(CTRL_BACK, dPadAdapter_.GetScancodeDown(SCANCODE_DOWN));
-                character_->controls_.Set(CTRL_LEFT, dPadAdapter_.GetScancodeDown(SCANCODE_LEFT));
-                character_->controls_.Set(CTRL_RIGHT, dPadAdapter_.GetScancodeDown(SCANCODE_RIGHT));
-                character_->controls_.Set(CTRL_CROUCH, input->GetKeyDown(KEY_SHIFT));
-            }
-            character_->controls_.Set(CTRL_JUMP, input->GetKeyDown(KEY_SPACE));
-
-            // Add character yaw & pitch from the mouse motion or touch input
-            if (touchEnabled_)
-            {
-                for (unsigned i = 0; i < input->GetNumTouches(); ++i)
-                {
-                    TouchState* state = input->GetTouch(i);
-                    if (!state->touchedElement_)    // Touch on empty space
-                    {
-                        auto* camera = cameraNode_->GetComponent<Camera>();
-                        if (!camera)
-                            return;
-
-                        auto* graphics = GetSubsystem<Graphics>();
-                        character_->controls_.yaw_ += TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.x_;
-                        character_->controls_.pitch_ += TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.y_;
-                    }
-                }
-            }
-            else
-            {
-                character_->controls_.yaw_ += (float)input->GetMouseMoveX() * YAW_SENSITIVITY;
-                character_->controls_.pitch_ += (float)input->GetMouseMoveY() * YAW_SENSITIVITY;
-            }
-            // Limit pitch
-            character_->controls_.pitch_ = Clamp(character_->controls_.pitch_, -80.0f, 80.0f);
             // Set rotation already here so that it's updated every rendering frame instead of every physics frame
-            character_->GetNode()->SetRotation(Quaternion(character_->controls_.yaw_, Vector3::UP));
+            character_->GetNode()->SetRotation(Quaternion(character_->GetYaw(), Vector3::UP));
 
             // Switch between 1st and 3rd person
             if (input->GetKeyPress(KEY_F))
                 firstPerson_ = !firstPerson_;
-
-            // Turn on/off gyroscope on mobile platform
-            if (touch_ && input->GetKeyPress(KEY_G))
-                touch_->useGyroscope_ = !touch_->useGyroscope_;
 
             // Check for loading / saving the scene
             if (input->GetKeyPress(KEY_F5))
@@ -362,11 +318,11 @@ void KinematicCharacterDemo::HandlePostUpdate(StringHash eventType, VariantMap& 
 
     // Get camera lookat dir from character yaw + pitch
     const Quaternion& rot = characterNode->GetRotation();
-    Quaternion dir = rot * Quaternion(character_->controls_.pitch_, Vector3::RIGHT);
+    Quaternion dir = rot * Quaternion(character_->GetPitch(), Vector3::RIGHT);
 
     // Turn head to camera pitch, but limit to avoid unnatural animation
     Node* headNode = characterNode->GetChild("Mutant:Head", true);
-    float limitPitch = Clamp(character_->controls_.pitch_, -45.0f, 45.0f);
+    float limitPitch = Clamp(character_->GetPitch(), -45.0f, 45.0f);
     Quaternion headDir = rot * Quaternion(limitPitch, Vector3(1.0f, 0.0f, 0.0f));
     // This could be expanded to look at an arbitrary target, now just look at a point in front
     Vector3 headWorldTarget = headNode->GetWorldPosition() + headDir * Vector3(0.0f, 0.0f, -1.0f);
@@ -384,7 +340,7 @@ void KinematicCharacterDemo::HandlePostUpdate(StringHash eventType, VariantMap& 
 
         // Collide camera ray with static physics objects (layer bitmask 2) to ensure we see the character properly
         Vector3 rayDir = dir * Vector3::BACK;
-        float rayDistance = touch_ ? touch_->cameraDistance_ : CAMERA_INITIAL_DIST;
+        float rayDistance = CAMERA_INITIAL_DIST;
         PhysicsRaycastResult result;
         scene_->GetComponent<PhysicsWorld>()->RaycastSingle(result, Ray(aimPoint, rayDir), rayDistance, 2);
         if (result.body_)

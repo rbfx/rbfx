@@ -85,6 +85,7 @@ public:
     Matrix4 GetWorldToShadowSpaceMatrix(float subPixelOffset) const;
     const ShadowMapRegion& GetShadowMap() const { return shadowMap_; }
     float GetShadowMapTexelSizeInWorldSpace() const { return shadowMapWorldSpaceTexelSize_; }
+    unsigned GetShadowMapPadding() const { return shadowMapPadding_; }
     const FloatRange& GetCascadeZRange() const { return cascadeZRange_; }
     Camera* GetShadowCamera() const { return shadowCamera_; }
     /// @}
@@ -122,6 +123,7 @@ private:
 
     ShadowMapRegion shadowMap_;
     float shadowMapWorldSpaceTexelSize_{};
+    unsigned shadowMapPadding_{};
     /// @}
 
     /// Shadow casters

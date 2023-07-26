@@ -202,6 +202,7 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
     , coreDataPath_(projectPath_ + "CoreData/")
     , cachePath_(projectPath_ + "Cache/")
     , tempPath_(projectPath_ + "Temp/")
+    , artifactsPath_(projectPath_ + "Artifacts/")
     , projectJsonPath_(projectPath_ + "Project.json")
     , settingsJsonPath_(settingsJsonPath)
     , cacheJsonPath_(projectPath_ + "Cache.json")
@@ -525,6 +526,13 @@ void Project::EnsureDirectoryInitialized()
         fs->CreateDirsRecursive(tempPath_);
     }
 
+    if (!fs->DirExists(artifactsPath_))
+    {
+        if (fs->FileExists(artifactsPath_))
+            fs->Delete(artifactsPath_);
+        fs->CreateDirsRecursive(artifactsPath_);
+    }
+
     if (!fs->DirExists(coreDataPath_))
     {
         if (fs->FileExists(coreDataPath_))
@@ -689,6 +697,10 @@ void Project::SaveGitIgnore()
 
     content += "# Ignore preview screenshot\n";
     content += "/Preview.png\n";
+    content += "\n";
+
+    content += "# Ignore artifacts\n";
+    content += "/Artifacts/\n";
     content += "\n";
 
     content += "# Ignore internal files\n";

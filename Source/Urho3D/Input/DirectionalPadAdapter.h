@@ -27,20 +27,16 @@
 
 namespace Urho3D
 {
-namespace DirectionalPadAdapterDetail
-{
 
-enum class SubscriptionMask : unsigned
+enum class DirectionalPadAdapterMask : unsigned
 {
     None = 0,
     Keyboard = 1 << 0,
     Joystick = 1 << 1,
-    Update = 1 << 2,
-    All = Keyboard | Joystick | Update,
+    KeyRepeat = 1 << 2,
+    All = Keyboard | Joystick | KeyRepeat,
 };
-URHO3D_FLAGSET(SubscriptionMask, SubscriptionFlags);
-
-} // namespace DirectionalPadAdapterDetail
+URHO3D_FLAGSET(DirectionalPadAdapterMask, DirectionalPadAdapterFlags);
 
 /// Adapter to translate gamepad axis and DPad messages along with keyboard (WASD and arrows) and externally provided
 /// directions into keyboard arrow messages.
@@ -76,25 +72,18 @@ private:
         bool IsActive() const { return !activeSources_.empty(); }
     };
 
-    typedef DirectionalPadAdapterDetail::SubscriptionFlags SubscriptionFlags;
-    typedef DirectionalPadAdapterDetail::SubscriptionMask SubscriptionMask;
-
 public:
     /// Construct.
     explicit DirectionalPadAdapter(Context* context);
 
     /// Set enabled flag. The object subscribes for events when enabled.
     void SetEnabled(bool enabled);
-    /// Set keyboard enabled flag.
-    void SetKeyboardEnabled(bool enabled);
-    /// Set joystick enabled flag.
-    void SetJoystickEnabled(bool enabled);
+    /// Set input device subscription mask.
+    void SetSubscriptionMask(DirectionalPadAdapterFlags mask);
     /// Set axis upper threshold. Axis value greater than threshold is interpreted as key press.
     void SetAxisUpperThreshold(float threshold);
     /// Set axis lower threshold. Axis value lower than threshold is interpreted as key press.
     void SetAxisLowerThreshold(float threshold);
-    /// Set key repeat enabled flag.
-    void SetKeyRepeatEnabled(bool enabled);
     /// Set repeat delay in seconds.
     void SetRepeatDelay(float delayInSeconds);
     /// Set repeat interval in seconds.
@@ -102,12 +91,8 @@ public:
 
     /// Get enabled flag.
     bool IsEnabled() const { return enabled_; }
-    /// Get keyboard enabled flag.
-    bool IsKeyboardEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Keyboard; }
-    /// Set joystick enabled flag.
-    bool IsJoystickEnabled(bool enabled) const { return enabledSubscriptions_ & SubscriptionMask::Joystick; }
-    /// Get enabled flag.
-    bool IsKeyRepeatEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Update; }
+    /// Get input device subscription mask.
+    DirectionalPadAdapterFlags GetSubscriptionMask() const { return enabledSubscriptions_; }
 
     /// Check if a key is held down by Key code. Only Up, Down, Left and Right keys are supported.
     bool GetKeyDown(Key key) const;
@@ -125,7 +110,7 @@ public:
     float GetRepeatInterval() const { return repeatInterval_; }
 
 private:
-    void UpdateSubscriptions(SubscriptionFlags flags);
+    void UpdateSubscriptions(DirectionalPadAdapterFlags flags);
 
     void HandleInputFocus(StringHash eventType, VariantMap& args);
     void HandleUpdate(StringHash eventType, VariantMap& args);
@@ -148,9 +133,9 @@ private:
     /// Is adapter enabled
     bool enabled_{false};
     /// Enabled subscriptions
-    SubscriptionFlags enabledSubscriptions_{SubscriptionMask::All};
+    DirectionalPadAdapterFlags enabledSubscriptions_{DirectionalPadAdapterMask::All};
     /// Active subscriptions bitmask
-    SubscriptionFlags subscriptionFlags_{SubscriptionMask::None};
+    DirectionalPadAdapterFlags subscriptionFlags_{DirectionalPadAdapterMask::None};
     Input* input_{};
     AggregatedState up_;
     AggregatedState down_;

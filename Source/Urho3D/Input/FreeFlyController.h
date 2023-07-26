@@ -127,6 +127,8 @@ private:
     ea::optional<Quaternion> lastKnownCameraRotation_;
     /// Last known yaw, pitch and roll to prevent gimbal lock.
     Vector3 lastKnownEulerAngles_;
+    /// Joystick to ignore (SDL gyroscope virtual joystick)
+    int ignoreJoystickId_{-1};
 
     /// Whether the rotation is performing now.
     bool isActive_{};
