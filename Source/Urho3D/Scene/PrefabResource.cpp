@@ -22,7 +22,9 @@
 
 #include <Urho3D/Precompiled.h>
 
+#include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/Scene/PrefabReference.h>
 #include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 
@@ -43,6 +45,20 @@ PrefabResource::~PrefabResource()
 void PrefabResource::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<PrefabResource>();
+}
+
+Node* PrefabResource::InstantiateReference(Node* parentNode)
+{
+    Node* instanceNode = parentNode->CreateChild(GetFileName(GetName()));
+
+    auto prefabReference = instanceNode->CreateComponent<PrefabReference>();
+    prefabReference->SetPrefab(this);
+
+    const NodePrefab& nodePrefab = GetNodePrefab();
+    if (!nodePrefab.IsEmpty())
+        nodePrefab.GetNode().Export(instanceNode);
+
+    return instanceNode;
 }
 
 void PrefabResource::NormalizeIds()
