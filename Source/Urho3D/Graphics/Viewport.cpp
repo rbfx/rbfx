@@ -125,7 +125,7 @@ Camera* Viewport::GetCamera() const
 IntRect Viewport::GetEffectiveRect(RenderSurface* renderTarget, bool compensateRenderTargetFlip) const
 {
     auto renderDevice = GetSubsystem<RenderDevice>();
-    const bool isOpenGL = renderDevice->GetBackend() == RenderBackend::OpenGL;
+    const bool isOpenGL = renderDevice && renderDevice->GetBackend() == RenderBackend::OpenGL;
 
     const IntVector2 renderTargetSize = RenderSurface::GetSize(GetSubsystem<Graphics>(), renderTarget);
 
