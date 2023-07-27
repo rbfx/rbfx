@@ -84,6 +84,11 @@ void TriggerAnimator::OnExit()
 {
 }
 
+bool TriggerAnimator::Filter(Node* node)
+{
+    return true;
+}
+
 void TriggerAnimator::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     Component::OnNodeSet(previousNode, currentNode);
@@ -100,6 +105,10 @@ void TriggerAnimator::RegisterEnter(Node* node)
 {
     if (!node)
         return;
+
+    if (!Filter(node))
+        return;
+
     if (activeCollisions_.empty())
     {
         if (!isEntered_)
