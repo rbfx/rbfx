@@ -231,3 +231,16 @@
     #endif
     #define SELECT_FRONT_BACK_FACE(frontValue, backValue) ((IS_FRONT_FACE) ? (frontValue) : (backValue))
 #endif // URHO3D_PIXEL_SHADER
+
+
+/// =================================== Deprecated ===================================
+
+// Aliases for easier migration.
+// TODO: Remove those later
+#define texture2D texture
+#define texture2DProj textureProj
+#define texture3D texture
+#define textureCube texture
+#define textureCubeLod textureLod
+#define texture2DLod textureLod
+#define texture2DLodOffset textureLodOffset
