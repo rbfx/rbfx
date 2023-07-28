@@ -45,7 +45,7 @@ void main()
 void main()
 {
 #ifdef URHO3D_DEPTH_ONLY_PASS
-    DefaultPixelShader();
+    DepthOnlyPixelShader(sDiffMap, vTexCoord);
 #else
     SurfaceData surfaceData;
 
