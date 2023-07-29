@@ -38,7 +38,7 @@ void main()
 
     FillSurfaceCommon(surfaceData);
     FillSurfaceAmbient(surfaceData, sEmissiveMap, vTexCoord2);
-    FillSurfaceNormal(surfaceData);
+    FillSurfaceNormal(surfaceData, vNormal, sNormalMap, vTexCoord, vTangent, vBitangentXY);
     FillSurfaceMetallicRoughnessOcclusion(surfaceData);
     FillSurfaceReflectionColor(surfaceData);
     FillSurfaceBackground(surfaceData);

@@ -5,7 +5,6 @@
     #define URHO3D_SURFACE_NEED_BACKGROUND_DEPTH
 #endif
 #define URHO3D_SURFACE_NEED_NORMAL
-#define URHO3D_SURFACE_NEED_NORMAL_IN_TANGENT_SPACE
 #define URHO3D_CUSTOM_MATERIAL_UNIFORMS
 
 #ifndef NORMALMAP
@@ -43,7 +42,7 @@ void main()
 
     FillSurfaceCommon(surfaceData);
     FillSurfaceAmbient(surfaceData, sEmissiveMap, vTexCoord2);
-    FillSurfaceNormal(surfaceData);
+    FillSurfaceNormal(surfaceData, vNormal, sNormalMap, vTexCoord, vTangent, vBitangentXY);
     FillSurfaceMetallicRoughnessOcclusion(surfaceData);
     FillSurfaceReflectionColor(surfaceData);
 

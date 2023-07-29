@@ -37,9 +37,6 @@ struct SurfaceData
 #ifdef URHO3D_SURFACE_NEED_NORMAL
     /// Normal in world space, with normal mapping applied.
     half3 normal;
-#endif
-
-#ifdef URHO3D_SURFACE_NEED_NORMAL_IN_TANGENT_SPACE
     /// Normal in tangent space. If there's no normal map, it's always equal to (0, 0, 1).
     half3 normalInTangentSpace;
 #endif

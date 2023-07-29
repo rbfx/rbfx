@@ -38,7 +38,6 @@
 /// Configures what data pixel shader needs to prepare for user shader:
 // #define URHO3D_SURFACE_NEED_AMBIENT
 // #define URHO3D_SURFACE_NEED_NORMAL
-// #define URHO3D_SURFACE_NEED_NORMAL_IN_TANGENT_SPACE
 // #define URHO3D_SURFACE_NEED_BACKGROUND_DEPTH
 // #define URHO3D_SURFACE_NEED_BACKGROUND_COLOR
 

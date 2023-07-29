@@ -69,47 +69,56 @@
     #define FillSurfaceAmbient(surfaceData, lightMap, texCoord)
 #endif
 
-/// Fill normal for fragment.
-/// out: SurfaceData.normal
-/// out: SurfaceData.normalInTangentSpace
+/// =================================== Surface normal ===================================
+
+/// @def FillSurfaceNormal(surfaceData, normal, normalMap, texCoord, tangent, bitangentXY)
+/// @brief Fill surface normal in SurfaceData.
+/// @param[in] vertexNormal Vertex normal.
+/// @param[in,optional] normalMap Normal map texture. Ignored if URHO3D_NORMAL_MAPPING is not defined.
+/// @param[in,optional] texCoord Texture coordinate for normal map lookup.
+/// @param[in,optional] vertexTangent Vertex tangent.
+/// @param[in,optional] vertexBitangentXY Vertex bitangent XY.
+/// @param[out] surfaceData.normal
+/// @param[out] surfaceData.normalInTangentSpace
+
 #ifdef URHO3D_SURFACE_NEED_NORMAL
-    half3 _GetFragmentNormalEx(out half3 normalInTangentSpace)
-    {
     #ifdef URHO3D_NORMAL_MAPPING
-        normalInTangentSpace = DecodeNormal(texture(sNormalMap, vTexCoord));
-        mediump mat3 tbn = mat3(vTangent.xyz, vec3(vBitangentXY.xy, vTangent.w), vNormal);
-        half3 normal = normalize(tbn * normalInTangentSpace);
+        half3 _GetSurfaceNormal(
+            out half3 normalInTangentSpace,
+            sampler2D normalMap, vec2 texCoord, half3 vertexNormal, half4 vertexTangent, half2 vertexBitangentXY)
+        {
+            normalInTangentSpace = DecodeNormal(texture(normalMap, texCoord));
+            mediump mat3 tbn = mat3(vertexTangent.xyz, vec3(vertexBitangentXY, vertexTangent.w), vertexNormal);
+            half3 normal = normalize(tbn * normalInTangentSpace);
+
+        #ifdef URHO3D_SURFACE_TWO_SIDED
+            normal *= SELECT_FRONT_BACK_FACE(1.0, -1.0);
+        #endif
+
+            return normal;
+        }
+
+        #define FillSurfaceNormal(surfaceData, vertexNormal, normalMap, texCoord, vertexTangent, vertexBitangentXY) \
+            surfaceData.normal = _GetSurfaceNormal( \
+                surfaceData.normalInTangentSpace, normalMap, texCoord, vertexNormal, vertexTangent, vertexBitangentXY)
     #else
-        normalInTangentSpace = vec3(0.0, 0.0, 1.0);
-        half3 normal = normalize(vNormal);
-    #endif
+        half3 _GetSurfaceNormal(out half3 normalInTangentSpace, half3 vertexNormal)
+        {
+            normalInTangentSpace = vec3(0.0, 0.0, 1.0);
+            half3 normal = normalize(vertexNormal);
 
-    #ifdef URHO3D_SURFACE_TWO_SIDED
-        normal *= SELECT_FRONT_BACK_FACE(1.0, -1.0);
-    #endif
+        #ifdef URHO3D_SURFACE_TWO_SIDED
+            normal *= SELECT_FRONT_BACK_FACE(1.0, -1.0);
+        #endif
 
-        return normal;
-    }
+            return normal;
+        }
 
-    half3 _GetFragmentNormal()
-    {
-        half3 normalInTangentSpace;
-        return _GetFragmentNormalEx(normalInTangentSpace);
-    }
-
-    #ifdef URHO3D_SURFACE_NEED_NORMAL_IN_TANGENT_SPACE
-        #define FillSurfaceNormal(surfaceData) \
-            surfaceData.normal = _GetFragmentNormalEx(surfaceData.normalInTangentSpace)
-    #else
-        #define FillSurfaceNormal(surfaceData) \
-            surfaceData.normal = _GetFragmentNormal()
+        #define FillSurfaceNormal(surfaceData, vertexNormal, normalMap, texCoord, vertexTangent, vertexBitangentXY) \
+            surfaceData.normal = _GetSurfaceNormal(surfaceData.normalInTangentSpace, vertexNormal)
     #endif
 #else
-    #ifdef URHO3D_SURFACE_NEED_NORMAL_IN_TANGENT_SPACE
-        #error URHO3D_SURFACE_NEED_NORMAL_IN_TANGENT_SPACE requires URHO3D_SURFACE_NEED_NORMAL
-    #else
-        #define FillSurfaceNormal(surfaceData)
-    #endif
+    #define FillSurfaceNormal(surfaceData, vertexNormal, normalMap, texCoord, vertexTangent, vertexBitangentXY)
 #endif
 
 /// Fill reflectivity (or metalness), roughness and occlusion for fragment.
