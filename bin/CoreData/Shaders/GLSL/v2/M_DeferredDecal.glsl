@@ -53,7 +53,7 @@ void main()
     SurfaceData surfaceData;
 
     FillSurfaceCommon(surfaceData);
-    FillSurfaceAmbient(surfaceData);
+    FillSurfaceAmbient(surfaceData, sEmissiveMap, vTexCoord2);
     FillSurfaceBackgroundDepth(surfaceData);
 
     vec4 worldPos = vec4(GetDeferredWorldPos(surfaceData.backgroundDepth) + cCameraPos, 1.0);

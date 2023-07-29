@@ -43,22 +43,30 @@
     FillSurfaceScreenPosition(surfaceData); \
 }
 
-/// Fill ambient lighting for fragment.
-/// out: SurfaceData.ambientLighting
-#ifdef URHO3D_SURFACE_NEED_AMBIENT
-    half3 _GetFragmentAmbient()
-    {
-        half3 ambientLighting = vAmbientAndVertexLigthing;
-    #ifdef URHO3D_HAS_LIGHTMAP
-        ambientLighting += GammaToLightSpace(2.0 * texture(sEmissiveMap, vTexCoord2).rgb);
-    #endif
-        return ambientLighting;
-    }
+/// =================================== Ambient lighting ===================================
 
-    #define FillSurfaceAmbient(surfaceData) \
-        surfaceData.ambientLighting = _GetFragmentAmbient()
+/// @def FillSurfaceAmbient(surfaceData, lightMap, texCoord)
+/// @brief Fill ambient lighting in SurfaceData.
+/// @param[in,optional] lightMap Lightmap texture. Ignored if URHO3D_HAS_LIGHTMAP is not defined.
+/// @param[in,optional] texCoord Texture coordinate for lightmap lookup. Ignored if URHO3D_HAS_LIGHTMAP is not defined.
+/// @param[out] surfaceData.ambientLighting
+
+#ifdef URHO3D_SURFACE_NEED_AMBIENT
+    #ifdef URHO3D_HAS_LIGHTMAP
+        half3 _GetSurfaceLightmap(sampler2D lightMap, vec2 texCoord)
+        {
+            // TODO: Support lightmaps in linear space.
+            return GammaToLightSpace(2.0 * texture(lightMap, texCoord).rgb);
+        }
+
+        #define FillSurfaceAmbient(surfaceData, lightMap, texCoord) \
+            surfaceData.ambientLighting = vAmbientAndVertexLigthing + _GetSurfaceLightmap(lightMap, texCoord)
+    #else
+        #define FillSurfaceAmbient(surfaceData, lightMap, texCoord) \
+            surfaceData.ambientLighting = vAmbientAndVertexLigthing
+    #endif
 #else
-    #define FillSurfaceAmbient(surfaceData)
+    #define FillSurfaceAmbient(surfaceData, lightMap, texCoord)
 #endif
 
 /// Fill normal for fragment.
