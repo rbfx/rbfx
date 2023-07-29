@@ -19,6 +19,7 @@ void main()
     SurfaceData surfaceData;
 
     FillSurfaceCommon(surfaceData);
+    FillSurfaceAmbient(surfaceData);
     FillSurfaceNormal(surfaceData);
     FillSurfaceMetallicRoughnessOcclusion(surfaceData);
     FillSurfaceReflectionColor(surfaceData);

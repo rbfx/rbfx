@@ -41,6 +41,7 @@ void main()
     SurfaceData surfaceData;
 
     FillSurfaceCommon(surfaceData);
+    FillSurfaceAmbient(surfaceData);
     FillSurfaceNormal(surfaceData);
     FillSurfaceAlbedoSpecular(surfaceData);
 

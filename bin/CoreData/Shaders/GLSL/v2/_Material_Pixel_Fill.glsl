@@ -2,10 +2,46 @@
 /// Don't include!
 /// Fill SurfaceData structure.
 
-/// Fill fog factor in fragment data.
-/// out: SurfaceData.fogFactor
+/// =================================== Non-customizable properties ===================================
+
+/// @def FillSurfaceFogFactor(surfaceData)
+/// @brief Fill fog factor in SurfaceData.
+/// @param[out] surfaceData.fogFactor
+
+/// @def FillSurfaceEyeVector(surfaceData)
+/// @brief Fill eye vector in SurfaceData.
+/// @param[out,optional] surfaceData.eyeVec
+
+/// @def FillSurfaceScreenPosition(surfaceData)
+/// @brief Fill screen position in SurfaceData.
+/// @param[out,optional] surfaceData.screenPos
+
+/// @def FillSurfaceCommon(surfaceData)
+/// @brief Same as FillSurfaceFogFactor, FillSurfaceEyeVector, FillSurfaceScreenPosition together.
+
 #define FillSurfaceFogFactor(surfaceData) \
     surfaceData.fogFactor = GetFogFactor(vWorldDepth)
+
+#ifdef URHO3D_PIXEL_NEED_EYE_VECTOR
+    #define FillSurfaceEyeVector(surfaceData) \
+        surfaceData.eyeVec = normalize(vEyeVec)
+#else
+    #define FillSurfaceEyeVector(surfaceData)
+#endif
+
+#ifdef URHO3D_PIXEL_NEED_SCREEN_POSITION
+    #define FillSurfaceScreenPosition(surfaceData) \
+        surfaceData.screenPos = vScreenPos.xy / vScreenPos.w
+#else
+    #define FillSurfaceScreenPosition(surfaceData)
+#endif
+
+#define FillSurfaceCommon(surfaceData) \
+{ \
+    FillSurfaceFogFactor(surfaceData); \
+    FillSurfaceEyeVector(surfaceData); \
+    FillSurfaceScreenPosition(surfaceData); \
+}
 
 /// Fill ambient lighting for fragment.
 /// out: SurfaceData.ambientLighting
@@ -23,24 +59,6 @@
         surfaceData.ambientLighting = _GetFragmentAmbient()
 #else
     #define FillSurfaceAmbient(surfaceData)
-#endif
-
-/// Fill eye vector for fragment.
-/// out: SurfaceData.eyeVec
-#ifdef URHO3D_PIXEL_NEED_EYE_VECTOR
-    #define FillSurfaceEyeVector(surfaceData) \
-        surfaceData.eyeVec = normalize(vEyeVec)
-#else
-    #define FillSurfaceEyeVector(surfaceData)
-#endif
-
-/// Fill screen position for fragment.
-/// out: SurfaceData.screenPos
-#ifdef URHO3D_PIXEL_NEED_SCREEN_POSITION
-    #define FillSurfaceScreenPosition(surfaceData) \
-        surfaceData.screenPos = vScreenPos.xy / vScreenPos.w
-#else
-    #define FillSurfaceScreenPosition(surfaceData)
 #endif
 
 /// Fill normal for fragment.
@@ -323,13 +341,6 @@ void _GetFragmentAlbedoSpecular(half oneMinusReflectivity, out half4 albedo, out
 #else
     #define FillSurfaceBackgroundDepth(surfaceData)
 #endif
-
-/// Fill common surface data not affected by material.
-#define FillSurfaceCommon(surfaceData) \
-    FillSurfaceFogFactor(surfaceData); \
-    FillSurfaceAmbient(surfaceData); \
-    FillSurfaceEyeVector(surfaceData); \
-    FillSurfaceScreenPosition(surfaceData)
 
 /// Fill surface background from samplers.
 #define FillSurfaceBackground(surfaceData) \
