@@ -243,6 +243,11 @@ if (NOT URHO3D_DEBUG_GRAPHICS)
     string(REPLACE "$<$<CONFIG:DEBUG>:DILIGENT_DEVELOPMENT;DILIGENT_DEBUG>" "" DILIGENT_COMPILE_DEFS "${DILIGENT_COMPILE_DEFS}")
     set_property(TARGET Diligent-PublicBuildSettings PROPERTY INTERFACE_COMPILE_DEFINITIONS ${DILIGENT_COMPILE_DEFS})
 endif ()
+file(GLOB_RECURSE DILIGENT_INCLUDE_DIRS LIST_DIRECTORIES true RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/Diligent "Diligent/**")
+list(FILTER DILIGENT_INCLUDE_DIRS INCLUDE REGEX ".+/interface$")
+foreach(DIR ${DILIGENT_INCLUDE_DIRS})
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Diligent/${DIR} DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/Diligent/${DIR}/..)
+endforeach()
 
 # When crosscompiling, swig will be built as part of native tools build. See Source/CMakeLists.txt.
 add_subdirectory(swig)
