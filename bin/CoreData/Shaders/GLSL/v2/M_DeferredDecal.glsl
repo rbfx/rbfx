@@ -76,7 +76,7 @@ void main()
         surfaceData.normal = normalize((vec4(0.0, 0.0, -1.0, 0.0) * vToModelSpace).xyz);
     #endif
 
-    FillSurfaceMetallicRoughnessOcclusion(surfaceData);
+    FillSurfaceMetallicRoughnessOcclusion(surfaceData, sSpecMap, vTexCoord, sEmissiveMap, vTexCoord);
     FillSurfaceReflectionColor(surfaceData);
     FillSurfaceAlbedoSpecular(surfaceData);
     FillSurfaceEmission(surfaceData);

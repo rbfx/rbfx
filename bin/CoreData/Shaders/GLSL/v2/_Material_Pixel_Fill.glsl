@@ -121,12 +121,26 @@
     #define FillSurfaceNormal(surfaceData, vertexNormal, normalMap, texCoord, vertexTangent, vertexBitangentXY)
 #endif
 
-/// Fill reflectivity (or metalness), roughness and occlusion for fragment.
-/// out: SurfaceData.oneMinusReflectivity
-/// out: SurfaceData.roughness
-/// out: SurfaceData.occlusion
+/// =================================== Surface metalness/roughness/occlusion ===================================
+
+/// @def FillSurfaceMetallicRoughnessOcclusion(surfaceData, rmoMap, rmoTexCoord, occlusionMap, occlusionTexCoord)
+/// @brief Fill surface metallness aka reflectivity, roughness and occlusion in SurfaceData.
+/// @param[in,optional] rmoMap Properties texture to simultaneously load roughness, metallness and occlusion.
+///     Ignored if URHO3D_PHYSICAL_MATERIAL is not defined or URHO3D_MATERIAL_HAS_SPECULAR is not defined.
+/// @param[in,optional] rmoTexCoord Texture coordinate for properties map lookup.
+///     Ignored if URHO3D_PHYSICAL_MATERIAL is not defined or URHO3D_MATERIAL_HAS_SPECULAR is not defined.
+/// @param[in,optional] occlusionMap Occlusion map texture for non-PBR renderer.
+///     Ignored if URHO3D_HAS_LIGHTMAP is defined, URHO3D_PHYSICAL_MATERIAL is defined,
+///     AO is not defined or URHO3D_MATERIAL_HAS_EMISSIVE is not defined.
+/// @param[in,optional] occlusionTexCoord Texture coordinate for occlusion map lookup.
+///     Ignored if URHO3D_HAS_LIGHTMAP is defined, URHO3D_PHYSICAL_MATERIAL is defined,
+///     AO is not defined or URHO3D_MATERIAL_HAS_EMISSIVE is not defined.
+/// @param[out] surfaceData.oneMinusReflectivity
+/// @param[out] surfaceData.roughness
+/// @param[out] surfaceData.occlusion
+
 #if (URHO3D_SPECULAR == 2) && defined(URHO3D_PHYSICAL_MATERIAL)
-    half _GetAdjustedFragmentRoughness(half roughness, half3 normal)
+    half _GetAdjustedSurfaceRoughness(half roughness, half3 normal)
     {
         half3 dNdx = dFdx(normal);
         half3 dNdy = dFdy(normal);
@@ -141,21 +155,14 @@
     }
 
     #define _AdjustFragmentRoughness(surfaceData) \
-        surfaceData.roughness = _GetAdjustedFragmentRoughness(surfaceData.roughness, surfaceData.normal)
+        surfaceData.roughness = _GetAdjustedSurfaceRoughness(surfaceData.roughness, surfaceData.normal)
 #else
     #define _AdjustFragmentRoughness(surfaceData)
 #endif
 
 #ifdef URHO3D_PHYSICAL_MATERIAL
-    void _GetFragmentMetallicRoughnessOcclusion(out half oneMinusReflectivity, out half roughness, out half occlusion)
+    void _GetSurfaceMRO(out half oneMinusReflectivity, out half roughness, out half occlusion, half3 rmo)
     {
-    #ifdef URHO3D_MATERIAL_HAS_SPECULAR
-        half3 rmo = texture(sSpecMap, vTexCoord).rga;
-        rmo.xy *= vec2(cRoughness, cMetallic);
-    #else
-        half3 rmo = vec3(cRoughness, cMetallic, 1.0);
-    #endif
-
         const half minRoughness = 0.089;
         half oneMinusDielectricReflectivity = 1.0 - 0.16 * cDielectricReflectance * cDielectricReflectance;
 
@@ -163,10 +170,28 @@
         oneMinusReflectivity = oneMinusDielectricReflectivity - oneMinusDielectricReflectivity * rmo.y;
         occlusion = rmo.z;
     }
+
+    #ifdef URHO3D_MATERIAL_HAS_SPECULAR
+        half3 _GetBaseRMO(sampler2D propertiesMap, vec2 texCoord)
+        {
+            half3 rmo = texture(propertiesMap, texCoord).rga;
+            rmo.xy *= vec2(cRoughness, cMetallic);
+            return rmo;
+        }
+    #else
+        #define _GetBaseRMO(propertiesMap, texCoord) vec3(cRoughness, cMetallic, 1.0)
+    #endif
+
+    #define FillSurfaceMetallicRoughnessOcclusion(surfaceData, rmoMap, rmoTexCoord, occlusionMap, occlusionTexCoord) \
+    { \
+        _GetSurfaceMRO(surfaceData.oneMinusReflectivity, surfaceData.roughness, surfaceData.occlusion, \
+            _GetBaseRMO(rmoMap, rmoTexCoord)); \
+        _AdjustFragmentRoughness(surfaceData); \
+    }
 #else
-    void _GetFragmentMetallicRoughnessOcclusion(out half oneMinusReflectivity, out half roughness, out half occlusion)
+    void _GetSurfaceMR(out half oneMinusReflectivity, out half roughness)
     {
-    // Consider non-PBR materials either non-reflective or 100% reflective
+        // Consider non-PBR materials either non-reflective or 100% reflective
     #ifdef ENVCUBEMAP
         oneMinusReflectivity = 0.0;
     #else
@@ -174,18 +199,21 @@
     #endif
 
         roughness = 0.5;
+    }
 
     #if !defined(URHO3D_HAS_LIGHTMAP) && defined(AO) && defined(URHO3D_MATERIAL_HAS_EMISSIVE)
-        occlusion = texture(sEmissiveMap, vTexCoord).r;
+        #define _GetSurfaceOcclusion(occlusionMap, texCoord) texture(occlusionMap, texCoord).r
     #else
-        occlusion = 1.0;
+        #define _GetSurfaceOcclusion(occlusionMap, texCoord) 1.0
     #endif
+
+    #define FillSurfaceMetallicRoughnessOcclusion(surfaceData, rmoMap, rmoTexCoord, occlusionMap, occlusionTexCoord) \
+    { \
+        _GetSurfaceMR(surfaceData.oneMinusReflectivity, surfaceData.roughness); \
+        surfaceData.occlusion = _GetSurfaceOcclusion(occlusionMap, occlusionTexCoord); \
+        _AdjustFragmentRoughness(surfaceData); \
     }
 #endif
-
-#define FillSurfaceMetallicRoughnessOcclusion(surfaceData) \
-    _GetFragmentMetallicRoughnessOcclusion(surfaceData.oneMinusReflectivity, surfaceData.roughness, surfaceData.occlusion); \
-    _AdjustFragmentRoughness(surfaceData)
 
 /// Fill surface albedo and specular.
 /// out: SurfaceData.albedo
