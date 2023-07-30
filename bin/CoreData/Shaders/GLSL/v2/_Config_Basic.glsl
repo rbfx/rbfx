@@ -66,10 +66,13 @@
 /// [Pixel shader only] Select value for front and back faces separately.
 // #define SELECT_FRONT_BACK_FACE(frontValue, backValue)
 
+
 /// =================================== Extensions ===================================
+
 #extension GL_ARB_shading_language_420pack: enable
 #extension GL_EXT_clip_cull_distance: enable
 #extension GL_OES_standard_derivatives : enable
+
 
 /// =================================== Types and constants ===================================
 
@@ -125,6 +128,13 @@
 
 #define SaturateMediump(x) min(x, M_MEDIUMP_FLT_MAX)
 #define Saturate(x) clamp(x, 0.0, 1.0)
+
+
+/// =================================== Utility macros ===================================
+
+#define _CONCATENATE_IMPL(a, b) a##b
+#define CONCATENATE(a, b) _CONCATENATE_IMPL(a, b)
+
 
 /// =================================== Stage inputs and outputs ===================================
 

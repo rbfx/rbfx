@@ -58,14 +58,16 @@ void main()
 {
 #ifdef URHO3D_MATERIAL_HAS_DIFFUSE
     vec4 albedoInput = texture(sDiffMap, vTexCoord);
-    vec4 albedo = GammaToLinearSpaceAlpha(cMatDiffColor) * DiffMap_ToLinear(albedoInput);
+    vec4 albedo = GammaToLinearSpaceAlpha(cMatDiffColor)
+        * CONCATENATE(Texture_ToLinearAlpha_, URHO3D_MATERIAL_DIFFUSE_HINT)(albedoInput);
 #else
     vec4 albedo = GammaToLinearSpaceAlpha(cMatDiffColor);
 #endif
 
 #ifdef URHO3D_MATERIAL_HAS_EMISSIVE
     vec4 emissiveInput = texture(sEmissiveMap, vTexCoord);
-    vec3 emissive = GammaToLinearSpace(cMatEmissiveColor) * EmissiveMap_ToLinear(emissiveInput.rgb);
+    vec3 emissive = GammaToLinearSpace(cMatEmissiveColor)
+        * CONCATENATE(Texture_ToLinear_, URHO3D_MATERIAL_EMISSIVE_HINT)(emissiveInput.rgb);
 #else
     vec3 emissive = GammaToLinearSpace(cMatEmissiveColor);
 #endif
