@@ -22,7 +22,7 @@ VERTEX_OUTPUT_HIGHP(vec2 vDetailTexCoord)
 void main()
 {
     VertexTransform vertexTransform = GetVertexTransform();
-    FillVertexOutputs(vertexTransform);
+    FillVertexOutputs(vertexTransform, cNormalScale);
     vDetailTexCoord = vTexCoord * cDetailTiling;
 }
 #endif

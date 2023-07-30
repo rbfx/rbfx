@@ -2,13 +2,18 @@
 /// Don't include!
 /// Material vertex shader implementation.
 
-/// Fill vertex transform attributes:
-/// - gl_Position
-/// - vWorldDepth
-/// - vNormal
-/// - vTangent
-/// - vBitangentXY
-void FillVertexTransformOutputs(VertexTransform vertexTransform)
+/// @def FillVertexTransformOutputs(vertexTransform, normalScale)
+/// @brief Fill vertex attributes related to vertex position.
+/// @param[in] vertexTransform VertexTransform structure.
+/// @param[in] normalScale Tangent and binormal axes scale. Used to fade out the influence of normal map. 1 is default.
+/// @param[out] gl_Position
+/// @param[out] vWorldDepth
+/// @param[out] vWorldPos
+/// @param[out] vNormal
+/// @param[out] vTangent
+/// @param[out] vBitangentXY
+
+void FillVertexTransformOutputs(VertexTransform vertexTransform, half normalScale)
 {
     gl_Position = WorldToClipSpace(vertexTransform.position.xyz);
     vWorldDepth = GetDepth(gl_Position);
@@ -22,8 +27,8 @@ void FillVertexTransformOutputs(VertexTransform vertexTransform)
 #endif
 
 #ifdef URHO3D_PIXEL_NEED_TANGENT
-    vTangent = cNormalScale * vec4(vertexTransform.tangent.xyz, vertexTransform.bitangent.z);
-    vBitangentXY = cNormalScale * vertexTransform.bitangent.xy;
+    vTangent = normalScale * vec4(vertexTransform.tangent.xyz, vertexTransform.bitangent.z);
+    vBitangentXY = normalScale * vertexTransform.bitangent.xy;
 #endif
 }
 
@@ -110,8 +115,8 @@ void FillLightOutputs(VertexTransform vertexTransform)
     FillReflectionVectorOutput(worldPos)
 
 /// Fill all abovementioned outputs.
-#define FillVertexOutputs(vertexTransform) \
-    FillVertexTransformOutputs(vertexTransform); \
+#define FillVertexOutputs(vertexTransform, normalScale) \
+    FillVertexTransformOutputs(vertexTransform, normalScale); \
     FillTexCoordOutputs(); \
     FillLightOutputs(vertexTransform); \
     FillScreenPosOutput(gl_Position); \

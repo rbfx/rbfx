@@ -7,7 +7,7 @@
 void main()
 {
     VertexTransform vertexTransform = GetVertexTransform();
-    FillVertexOutputs(vertexTransform);
+    FillVertexOutputs(vertexTransform, cNormalScale);
 }
 #endif
 

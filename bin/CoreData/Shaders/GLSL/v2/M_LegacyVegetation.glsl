@@ -38,7 +38,7 @@ void main()
     worldPos.z -= windStrength * cos(windPeriod);
     vertexTransform.position.xyz = worldPos;
 
-    FillVertexOutputs(vertexTransform);
+    FillVertexOutputs(vertexTransform, cNormalScale);
 }
 #endif
 

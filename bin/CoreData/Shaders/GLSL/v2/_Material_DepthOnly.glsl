@@ -22,7 +22,8 @@ VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
 #endif
 
 #ifdef URHO3D_VERTEX_SHADER
-void FillVertexOutputs(VertexTransform vertexTransform)
+
+void _FillVertexOutputs(VertexTransform vertexTransform)
 {
     gl_Position = WorldToClipSpace(vertexTransform.position.xyz);
     ApplyClipPlane(gl_Position);
@@ -33,6 +34,10 @@ void FillVertexOutputs(VertexTransform vertexTransform)
     vDepth = gl_Position.zw;
 #endif
 }
+
+#define FillVertexOutputs(vertexTransform, normalScale) \
+    _FillVertexOutputs(vertexTransform)
+
 #endif // URHO3D_VERTEX_SHADER
 
 #ifdef URHO3D_PIXEL_SHADER

@@ -22,7 +22,7 @@ UNIFORM_BUFFER_END(4, Material)
 void main()
 {
     VertexTransform vertexTransform = GetVertexTransform();
-    FillVertexOutputs(vertexTransform);
+    FillVertexOutputs(vertexTransform, cNormalScale);
 }
 #endif
 
