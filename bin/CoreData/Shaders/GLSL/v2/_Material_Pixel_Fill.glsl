@@ -348,24 +348,41 @@
     AdjustAlbedoForPremultiplyAlpha(surfaceData.albedo, surfaceData.oneMinusReflectivity); \
 }
 
-/// Fill surface emission.
-/// out: SurfaceData.emission
+/// =================================== Surface emission ===================================
+
+/// @def FillSurfaceEmission(surfaceData, emissiveMap, texCoord, colorSpace)
+/// @brief Fill surface emission value.
+/// @param[in,optional] emissiveMap Emissive map.
+///     Ignored if URHO3D_SURFACE_NEED_AMBIENT is not defined, URHO3D_MATERIAL_HAS_EMISSIVE is not defined,
+///     AO is defined, or URHO3D_HAS_LIGHTMAP is defined.
+/// @param[in,optional] texCoord Texture coordinate for emissive map lookup.
+///     Ignored if URHO3D_SURFACE_NEED_AMBIENT is not defined, URHO3D_MATERIAL_HAS_EMISSIVE is not defined,
+///     AO is defined, or URHO3D_HAS_LIGHTMAP is defined.
+/// @param[in,optional] colorSpace Color space of emissive map. 0 for sRGB, 1 for linear.
+///     Ignored if URHO3D_SURFACE_NEED_AMBIENT is not defined, URHO3D_MATERIAL_HAS_EMISSIVE is not defined,
+///     AO is defined, or URHO3D_HAS_LIGHTMAP is defined.
+/// @param[out] surfaceData.emission
+
 #ifdef URHO3D_SURFACE_NEED_AMBIENT
     #ifndef URHO3D_HAS_LIGHTMAP
         #if defined(URHO3D_MATERIAL_HAS_EMISSIVE) && !defined(AO)
-            #define FillSurfaceEmission(surfaceData) \
-                surfaceData.emission = GammaToLightSpace(cMatEmissiveColor) * EmissiveMap_ToLight(texture(sEmissiveMap, vTexCoord).rgb)
+            #define _FillSurfaceEmission(surfaceData, emissiveMap, texCoord, colorSpace) \
+                surfaceData.emission = GammaToLightSpace(cMatEmissiveColor) * Texture_ToLight_##colorSpace(texture(emissiveMap, texCoord).rgb)
         #else
-            #define FillSurfaceEmission(surfaceData) \
+            #define _FillSurfaceEmission(surfaceData, emissiveMap, texCoord, colorSpace) \
                 surfaceData.emission = GammaToLightSpace(cMatEmissiveColor)
         #endif
     #else
-        #define FillSurfaceEmission(surfaceData) \
+        #define _FillSurfaceEmission(surfaceData, emissiveMap, texCoord, colorSpace) \
             surfaceData.emission = vec3(0.0)
     #endif
 #else
-    #define FillSurfaceEmission(surfaceData)
+    #define _FillSurfaceEmission(surfaceData, emissiveMap, texCoord, colorSpace)
 #endif
+
+// Force macro expansion for colorSpace.
+#define FillSurfaceEmission(surfaceData, emissiveMap, texCoord, colorSpace) \
+    _FillSurfaceEmission(surfaceData, emissiveMap, texCoord, colorSpace)
 
 #ifdef URHO3D_BOX_PROJECTION
     half3 ApplyBoxProjection(half3 reflectionVec, vec3 worldPos, vec4 cubemapCenter, vec3 boxMin, vec3 boxMax)

@@ -58,7 +58,7 @@ void main()
     FillSurfaceBaseAlbedo(surfaceData, vColor, sDiffMap, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
     FillSurfaceBaseSpecular(surfaceData, sSpecMap, vTexCoord);
     FillSurfaceAlbedoSpecular(surfaceData);
-    FillSurfaceEmission(surfaceData);
+    FillSurfaceEmission(surfaceData, sEmissiveMap, vTexCoord, URHO3D_MATERIAL_EMISSIVE_HINT);
 
     half3 surfaceColor = GetSurfaceColor(surfaceData);
     half surfaceAlpha = GetSurfaceAlpha(surfaceData);
