@@ -40,7 +40,7 @@ void main()
     FillSurfaceAmbient(surfaceData, sEmissiveMap, vTexCoord2);
     FillSurfaceNormal(surfaceData, vNormal, sNormalMap, vTexCoord, vTangent, vBitangentXY);
     FillSurfaceMetallicRoughnessOcclusion(surfaceData, sSpecMap, vTexCoord, sEmissiveMap, vTexCoord);
-    FillSurfaceReflectionColor(surfaceData);
+    FillSurfaceReflectionColor(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
     FillSurfaceBackground(surfaceData);
     FillSurfaceBaseAlbedo(surfaceData, vColor, sDiffMap, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
     FillSurfaceBaseSpecular(surfaceData, sSpecMap, vTexCoord);
