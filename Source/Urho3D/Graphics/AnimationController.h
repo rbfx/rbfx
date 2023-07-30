@@ -76,7 +76,7 @@ public:
     /// Time operations.
     /// @{
     float GetTime() const { return time_.Value(); }
-    void SetTime(float time);
+    void SetTime(float time) { time_.Set(time); }
     WrappedScalarRange<float> Update(float scaledTimeStep);
     /// @}
 
@@ -123,6 +123,7 @@ public:
 
     /// Empty AnimationParameters.
     static const AnimationParameters EMPTY;
+
 private:
     /// Animation to be played.
     /// Animation can be replicated over network only if is exists as named Resource on all machines.

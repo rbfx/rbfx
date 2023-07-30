@@ -189,11 +189,6 @@ AnimationParameters& AnimationParameters::KeepOnZeroWeight()
     return *this;
 }
 
-void AnimationParameters::SetTime(float time)
-{
-    time_.Set(time);
-}
-
 WrappedScalarRange<float> AnimationParameters::Update(float scaledTimeStep)
 {
     return looped_ ? time_.UpdateWrapped(scaledTimeStep) : time_.UpdateClamped(scaledTimeStep, true);

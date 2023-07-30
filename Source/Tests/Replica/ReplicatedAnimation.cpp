@@ -149,7 +149,7 @@ TEST_CASE("Animation is synchronized between client and server")
         {
             const AnimationParameters& serverParams = serverAnimationController->GetAnimationParameters(1);
             const AnimationParameters& clientParams = clientAnimationController->GetAnimationParameters(1);
-            REQUIRE(clientParams.GetAnimation == animation1);
+            REQUIRE(clientParams.GetAnimation() == animation1);
             REQUIRE(clientParams.GetTime() + clientDelay == Catch::Approx(serverParams.GetTime()));
             REQUIRE(clientParams.blendMode_ == ABM_ADDITIVE);
         }
