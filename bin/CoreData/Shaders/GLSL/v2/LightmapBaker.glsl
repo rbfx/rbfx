@@ -49,7 +49,7 @@ void main()
     vNormal = vertexTransform.normal;
     vWorldPos = vertexTransform.position.xyz;
     vMetadata = vec4(cLightmapGeometry, cLightmapPositionBias.x, cLightmapPositionBias.y, 0.0);
-    vTexCoord = GetTransformedTexCoord();
+    vTexCoord = GetTransformedTexCoord(cUOffset, cVOffset);
 }
 #endif
 

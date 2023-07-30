@@ -2,13 +2,21 @@
 /// Don't include!
 /// Default depth-only vertex and pixel shaders.
 
-/// @def FillVertexOutputs(vertexTransform)
-/// @brief Fill vertex outputs that may be used by the pixel shader.
+/// @def FillVertexTransformOutputs(vertexTransform)
+/// @brief Fill vertex position and clip distance, if enabled.
 /// @param[in] vertexTransform VertexTransform structure.
 /// @param[out] gl_Position Fills the position in clip space.
-/// @param[out,optional] gl_ClipDistance[0] Fills the clip plane distance, if enabled.
-/// @param[out,optional] vTexCoord Fills the texture coordinate, if requested.
-/// @param[out,optional] vDepth Fills the depth, if VSM is used.
+/// @param[out,optional] gl_ClipDistance[0]
+
+/// @def FillTexCoordOutput(uOffset, vOffset)
+/// @brief Fill texture coordinates if requested.
+/// @param[in] uOffset U offset for texture coordinate.
+/// @param[in] vOffset V offset for texture coordinate.
+/// @param[out] vTexCoord
+
+/// @def FillDepthOutput()
+/// @brief Fill depth if VSM is used.
+/// @param[out] vDepth
 
 /// @def DepthOnlyPixelShader(albedoMap, texCoord)
 /// @brief Default depth-only pixel shader.
@@ -23,20 +31,32 @@ VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
 
 #ifdef URHO3D_VERTEX_SHADER
 
-void _FillVertexOutputs(VertexTransform vertexTransform)
+void FillVertexTransformOutputs(VertexTransform vertexTransform)
 {
     gl_Position = WorldToClipSpace(vertexTransform.position.xyz);
     ApplyClipPlane(gl_Position);
-#ifdef URHO3D_PIXEL_NEED_TEXCOORD
-    vTexCoord = GetTransformedTexCoord();
-#endif
-#ifdef URHO3D_VARIANCE_SHADOW_MAP
-    vDepth = gl_Position.zw;
-#endif
 }
 
-#define FillVertexOutputs(vertexTransform, normalScale) \
-    _FillVertexOutputs(vertexTransform)
+#ifdef URHO3D_PIXEL_NEED_TEXCOORD
+    #define FillTexCoordOutput(uOffset, vOffset) \
+        vTexCoord = GetTransformedTexCoord(uOffset, vOffset);
+#else
+    #define FillTexCoordOutput(uOffset, vOffset)
+#endif
+
+#ifdef URHO3D_VARIANCE_SHADOW_MAP
+    #define FillDepthOutput() \
+        vDepth = gl_Position.zw;
+#else
+    #define FillDepthOutput()
+#endif
+
+#define FillVertexOutputs(vertexTransform, normalScale, uOffset, vOffset, lightMapScaleOffset) \
+{ \
+    FillVertexTransformOutputs(vertexTransform); \
+    FillTexCoordOutput(uOffset, vOffset); \
+    FillDepthOutput(); \
+}
 
 #endif // URHO3D_VERTEX_SHADER
 

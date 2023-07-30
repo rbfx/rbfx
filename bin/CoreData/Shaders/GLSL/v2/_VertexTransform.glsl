@@ -14,22 +14,14 @@ mediump mat3 GetNormalMatrix(mat4 modelMatrix)
 }
 
 /// Return transformed primary UV coordinate.
-vec2 GetTransformedTexCoord()
+vec2 GetTransformedTexCoord(vec4 uOffset, vec4 vOffset)
 {
     #ifdef URHO3D_VERTEX_HAS_TEXCOORD0
-        return vec2(dot(iTexCoord, cUOffset.xy) + cUOffset.w, dot(iTexCoord, cVOffset.xy) + cVOffset.w);
+        return vec2(dot(iTexCoord, uOffset.xy) + uOffset.w, dot(iTexCoord, vOffset.xy) + vOffset.w);
     #else
         return vec2(0.0, 0.0);
     #endif
 }
-
-#ifdef URHO3D_HAS_LIGHTMAP
-    /// Return transformed secondary UV coordinate for ligthmap.
-    vec2 GetLightMapTexCoord()
-    {
-        return iTexCoord1 * cLMOffset.xy + cLMOffset.zw;
-    }
-#endif
 
 /// Return position in clip space from position in world space.
 vec4 WorldToClipSpace(vec3 worldPos)

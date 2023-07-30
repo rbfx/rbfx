@@ -31,7 +31,7 @@ UNIFORM_BUFFER_END(4, Material)
 void main()
 {
     VertexTransform vertexTransform = GetVertexTransform();
-    FillVertexOutputs(vertexTransform, cNormalScale);
+    FillVertexOutputs(vertexTransform, cNormalScale, cUOffset, cVOffset, cLMOffset);
     vTexCoord += cElapsedTime * cNoiseSpeed;
 }
 #endif

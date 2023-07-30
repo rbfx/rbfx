@@ -3,7 +3,7 @@
 /// Material vertex shader implementation.
 
 /// @def FillVertexTransformOutputs(vertexTransform, normalScale)
-/// @brief Fill vertex attributes related to vertex position.
+/// @brief Fill vertex attributes related to vertex position, whichever requested.
 /// @param[in] vertexTransform VertexTransform structure.
 /// @param[in] normalScale Tangent and binormal axes scale. Used to fade out the influence of normal map. 1 is default.
 /// @param[out] gl_Position
@@ -12,6 +12,21 @@
 /// @param[out] vNormal
 /// @param[out] vTangent
 /// @param[out] vBitangentXY
+
+/// @def FillTexCoordOutput(uOffset, vOffset)
+/// @brief Fill texture coordinates if requested.
+/// @param[in] uOffset U offset for texture coordinate.
+/// @param[in] vOffset V offset for texture coordinate.
+/// @param[out] vTexCoord
+
+/// @def FillLightMapTexCoordOutput(scaleOffset)
+/// @brief Fill lightmap texture coordinates if requested.
+/// @param[in] scaleOffset XY scale and XY offset for lightmap texture coordinate.
+/// @param[out] vTexCoord2
+
+/// @def FillColorOutput()
+/// @brief Fill vertex color if requested.
+/// @param[out] vColor
 
 void FillVertexTransformOutputs(VertexTransform vertexTransform, half normalScale)
 {
@@ -32,24 +47,26 @@ void FillVertexTransformOutputs(VertexTransform vertexTransform, half normalScal
 #endif
 }
 
-/// Fill texcoord attributes:
-/// - vTexCoord
-/// - vTexCoord2
-/// - vColor
-void FillTexCoordOutputs()
-{
 #ifdef URHO3D_PIXEL_NEED_TEXCOORD
-    vTexCoord = GetTransformedTexCoord();
+    #define FillTexCoordOutput(uOffset, vOffset) \
+        vTexCoord = GetTransformedTexCoord(uOffset, vOffset);
+#else
+    #define FillTexCoordOutput(uOffset, vOffset)
 #endif
 
 #ifdef URHO3D_PIXEL_NEED_LIGHTMAP_UV
-    vTexCoord2 = GetLightMapTexCoord();
+    #define FillLightMapTexCoordOutput(scaleOffset) \
+        vTexCoord2 = iTexCoord1 * scaleOffset.xy + scaleOffset.zw;
+#else
+    #define FillLightMapTexCoordOutput(scaleOffset)
 #endif
 
 #ifdef URHO3D_PIXEL_NEED_VERTEX_COLOR
-    vColor = iColor;
+    #define FillColorOutput() \
+        vColor = iColor;
+#else
+    #define FillColorOutput()
 #endif
-}
 
 /// Fill lighting attributes:
 /// - vAmbientAndVertexLigthing
@@ -115,9 +132,11 @@ void FillLightOutputs(VertexTransform vertexTransform)
     FillReflectionVectorOutput(worldPos)
 
 /// Fill all abovementioned outputs.
-#define FillVertexOutputs(vertexTransform, normalScale) \
+#define FillVertexOutputs(vertexTransform, normalScale, uOffset, vOffset, lightMapScaleOffset) \
     FillVertexTransformOutputs(vertexTransform, normalScale); \
-    FillTexCoordOutputs(); \
+    FillTexCoordOutput(uOffset, vOffset); \
+    FillLightMapTexCoordOutput(lightMapScaleOffset); \
+    FillColorOutput(); \
     FillLightOutputs(vertexTransform); \
     FillScreenPosOutput(gl_Position); \
     FillEyeAndReflectionVectorOutputs(vertexTransform.position.xyz) \
