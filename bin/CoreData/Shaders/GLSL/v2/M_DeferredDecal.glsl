@@ -10,6 +10,7 @@ vec2 vTexCoord;
 
 #include "_Config.glsl"
 #include "_Uniforms.glsl"
+#include "_DefaultSamplers.glsl"
 
 UNIFORM_BUFFER_BEGIN(4, Material)
     DEFAULT_MATERIAL_UNIFORMS

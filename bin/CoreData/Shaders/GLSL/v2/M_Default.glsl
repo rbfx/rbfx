@@ -1,6 +1,7 @@
 #define URHO3D_PIXEL_NEED_TEXCOORD
 
 #include "_Material.glsl"
+#include "_DefaultSamplers.glsl"
 
 #ifdef URHO3D_VERTEX_SHADER
 void main()

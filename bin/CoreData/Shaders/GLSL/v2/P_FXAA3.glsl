@@ -49,7 +49,7 @@
 #include "_VertexLayout.glsl"
 #include "_VertexTransform.glsl"
 #include "_VertexScreenPos.glsl"
-#include "_Samplers.glsl"
+#include "_DefaultSamplers.glsl"
 #include "_SamplerUtils.glsl"
 
 VERTEX_OUTPUT_HIGHP(vec2 vScreenPos)

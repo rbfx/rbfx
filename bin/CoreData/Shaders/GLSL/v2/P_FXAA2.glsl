@@ -11,7 +11,7 @@
 #include "_VertexLayout.glsl"
 #include "_VertexTransform.glsl"
 #include "_VertexScreenPos.glsl"
-#include "_Samplers.glsl"
+#include "_DefaultSamplers.glsl"
 #include "_SamplerUtils.glsl"
 
 #ifdef URHO3D_PIXEL_SHADER

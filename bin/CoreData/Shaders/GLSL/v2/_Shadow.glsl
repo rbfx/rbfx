@@ -5,8 +5,8 @@
     #error Include _Config.glsl before _Shadow.glsl
 #endif
 
-#ifndef _SAMPLERS_GLSL_
-    #error Include _Samplers.glsl before _Shadow.glsl
+#ifndef _INTERNAL_SAMPLERS_GLSL_
+    #error Include _InternalSamplers.glsl before _Shadow.glsl
 #endif
 
 #ifdef URHO3D_HAS_SHADOW

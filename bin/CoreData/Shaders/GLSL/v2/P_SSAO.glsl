@@ -3,7 +3,7 @@
 #include "_VertexLayout.glsl"
 #include "_VertexTransform.glsl"
 #include "_VertexScreenPos.glsl"
-#include "_Samplers.glsl"
+#include "_DefaultSamplers.glsl"
 #include "_SamplerUtils.glsl"
 #include "_GammaCorrection.glsl"
 

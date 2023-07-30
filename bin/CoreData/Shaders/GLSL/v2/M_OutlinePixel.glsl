@@ -7,7 +7,7 @@
 
 #include "_Config.glsl"
 #include "_Uniforms.glsl"
-#include "_Samplers.glsl"
+#include "_DefaultSamplers.glsl"
 #include "_SamplerUtils.glsl"
 #include "_Material_Common.glsl"
 
