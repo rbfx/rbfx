@@ -47,22 +47,6 @@
 %csattribute(Urho3D::Constraint, %arg(float), Erp, GetERP, SetERP);
 %csattribute(Urho3D::Constraint, %arg(float), Cfm, GetCFM, SetCFM);
 %csattribute(Urho3D::Constraint, %arg(bool), DisableCollision, GetDisableCollision, SetDisableCollision);
-%csattribute(Urho3D::KinematicCharacterController, %arg(Urho3D::Vector3), RawPosition, GetRawPosition);
-%csattribute(Urho3D::KinematicCharacterController, %arg(unsigned int), CollisionLayer, GetCollisionLayer, SetCollisionLayer);
-%csattribute(Urho3D::KinematicCharacterController, %arg(unsigned int), CollisionMask, GetCollisionMask, SetCollisionMask);
-%csattribute(Urho3D::KinematicCharacterController, %arg(Urho3D::Vector3), Gravity, GetGravity, SetGravity);
-%csattribute(Urho3D::KinematicCharacterController, %arg(float), LinearDamping, GetLinearDamping, SetLinearDamping);
-%csattribute(Urho3D::KinematicCharacterController, %arg(float), AngularDamping, GetAngularDamping, SetAngularDamping);
-%csattribute(Urho3D::KinematicCharacterController, %arg(float), Height, GetHeight, SetHeight);
-%csattribute(Urho3D::KinematicCharacterController, %arg(float), Diameter, GetDiameter, SetDiameter);
-%csattribute(Urho3D::KinematicCharacterController, %arg(Urho3D::Vector3), Offset, GetOffset, SetOffset);
-%csattribute(Urho3D::KinematicCharacterController, %arg(float), StepHeight, GetStepHeight, SetStepHeight);
-%csattribute(Urho3D::KinematicCharacterController, %arg(float), MaxJumpHeight, GetMaxJumpHeight, SetMaxJumpHeight);
-%csattribute(Urho3D::KinematicCharacterController, %arg(float), FallSpeed, GetFallSpeed, SetFallSpeed);
-%csattribute(Urho3D::KinematicCharacterController, %arg(float), JumpSpeed, GetJumpSpeed, SetJumpSpeed);
-%csattribute(Urho3D::KinematicCharacterController, %arg(float), MaxSlope, GetMaxSlope, SetMaxSlope);
-%csattribute(Urho3D::KinematicCharacterController, %arg(Urho3D::Vector3), AngularVelocity, GetAngularVelocity);
-%csattribute(Urho3D::KinematicCharacterController, %arg(Urho3D::Vector3), LinearVelocity, GetLinearVelocity);
 %csattribute(Urho3D::RigidBody, %arg(Urho3D::PhysicsWorld *), PhysicsWorld, GetPhysicsWorld);
 %csattribute(Urho3D::RigidBody, %arg(btRigidBody *), Body, GetBody);
 %csattribute(Urho3D::RigidBody, %arg(btCompoundShape *), CompoundShape, GetCompoundShape);
@@ -93,11 +77,33 @@
 %csattribute(Urho3D::RigidBody, %arg(unsigned int), CollisionLayer, GetCollisionLayer, SetCollisionLayer);
 %csattribute(Urho3D::RigidBody, %arg(unsigned int), CollisionMask, GetCollisionMask, SetCollisionMask);
 %csattribute(Urho3D::RigidBody, %arg(Urho3D::CollisionEventMode), CollisionEventMode, GetCollisionEventMode, SetCollisionEventMode);
+%csattribute(Urho3D::KinematicCharacterController, %arg(Urho3D::Vector3), RawPosition, GetRawPosition);
+%csattribute(Urho3D::KinematicCharacterController, %arg(unsigned int), CollisionLayer, GetCollisionLayer, SetCollisionLayer);
+%csattribute(Urho3D::KinematicCharacterController, %arg(unsigned int), CollisionMask, GetCollisionMask, SetCollisionMask);
+%csattribute(Urho3D::KinematicCharacterController, %arg(bool), IsTrigger, IsTrigger, SetTrigger);
+%csattribute(Urho3D::KinematicCharacterController, %arg(Urho3D::Vector3), Gravity, GetGravity, SetGravity);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), LinearDamping, GetLinearDamping, SetLinearDamping);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), AngularDamping, GetAngularDamping, SetAngularDamping);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), Height, GetHeight, SetHeight);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), Diameter, GetDiameter, SetDiameter);
+%csattribute(Urho3D::KinematicCharacterController, %arg(bool), ActivateTriggers, GetActivateTriggers, SetActivateTriggers);
+%csattribute(Urho3D::KinematicCharacterController, %arg(Urho3D::Vector3), Offset, GetOffset, SetOffset);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), StepHeight, GetStepHeight, SetStepHeight);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), MaxJumpHeight, GetMaxJumpHeight, SetMaxJumpHeight);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), FallSpeed, GetFallSpeed, SetFallSpeed);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), JumpSpeed, GetJumpSpeed, SetJumpSpeed);
+%csattribute(Urho3D::KinematicCharacterController, %arg(float), MaxSlope, GetMaxSlope, SetMaxSlope);
+%csattribute(Urho3D::KinematicCharacterController, %arg(Urho3D::Vector3), AngularVelocity, GetAngularVelocity);
+%csattribute(Urho3D::KinematicCharacterController, %arg(Urho3D::Vector3), LinearVelocity, GetLinearVelocity);
 %csattribute(Urho3D::RaycastVehicle, %arg(int), NumWheels, GetNumWheels);
 %csattribute(Urho3D::RaycastVehicle, %arg(float), MaxSideSlipSpeed, GetMaxSideSlipSpeed, SetMaxSideSlipSpeed);
 %csattribute(Urho3D::RaycastVehicle, %arg(float), InAirRPM, GetInAirRPM, SetInAirRPM);
 %csattribute(Urho3D::RaycastVehicle, %arg(Urho3D::IntVector3), CoordinateSystem, GetCoordinateSystem, SetCoordinateSystem);
 %csattribute(Urho3D::RaycastVehicle, %arg(Urho3D::VariantVector), WheelDataAttr, GetWheelDataAttr, SetWheelDataAttr);
+%csattribute(Urho3D::TriggerAnimator, %arg(Urho3D::ResourceRef), EnterAnimationAttr, GetEnterAnimationAttr, SetEnterAnimationAttr);
+%csattribute(Urho3D::TriggerAnimator, %arg(Urho3D::Animation *), EnterAnimation, GetEnterAnimation, SetEnterAnimation);
+%csattribute(Urho3D::TriggerAnimator, %arg(Urho3D::ResourceRef), ExitAnimationAttr, GetExitAnimationAttr, SetExitAnimationAttr);
+%csattribute(Urho3D::TriggerAnimator, %arg(Urho3D::Animation *), ExitAnimation, GetExitAnimation, SetExitAnimation);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {
