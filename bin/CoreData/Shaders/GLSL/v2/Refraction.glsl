@@ -50,7 +50,7 @@ void main()
     half2 distortionDistance = surfaceData.normalInTangentSpace.xy * (cNoiseStrength * surfaceData.albedo.a);
     surfaceData.screenPos += distortionDistance;
 
-    FillSurfaceBackground(surfaceData);
+    FillSurfaceBackground(surfaceData, sEmissiveMap, sDepthBuffer);
 
     gl_FragColor = vec4(surfaceData.backgroundColor,1);
 }

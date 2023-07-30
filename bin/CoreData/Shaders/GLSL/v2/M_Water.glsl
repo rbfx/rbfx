@@ -50,7 +50,7 @@ void main()
     surfaceData.screenPos += surfaceData.normalInTangentSpace.xy * cNoiseStrength;
 
 #ifndef URHO3D_ADDITIVE_BLENDING
-    FillSurfaceBackground(surfaceData);
+    FillSurfaceBackground(surfaceData, sEmissiveMap, sDepthBuffer);
 #endif
 
     // Water doesn't accept diffuse lighting, set albedo to zero

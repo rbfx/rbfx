@@ -495,26 +495,40 @@
     #define FillSurfaceReflectionColor(surfaceData, refMap0, refMap1, reflectionVec, worldPos)
 #endif
 
-/// Fill surface background color.
-/// out: SurfaceData.backgroundColor
+/// =================================== Surface background color and depth ===================================
+
+/// @def FillSurfaceBackgroundColor(surfaceData, colorMap)
+/// @brief Fill corresponding background color.
+/// @param[in] colorMap Background color map.
+/// @param[in] surfaceData.screenPos
+/// @param[out] surfaceData.backgroundColor
+
+/// @def FillSurfaceBackgroundDepth(surfaceData, depthMap)
+/// @brief Fill corresponding background depth.
+/// @param[in] depthMap Background depth map.
+/// @param[in] surfaceData.screenPos
+/// @param[out] surfaceData.backgroundDepth
+
+/// @def FillSurfaceBackground(surfaceData, colorMap, depthMap)
+/// @brief Same as FillSurfaceBackgroundColor and FillSurfaceBackgroundDepth.
+
 #ifdef URHO3D_SURFACE_NEED_BACKGROUND_COLOR
-    #define FillSurfaceBackgroundColor(surfaceData) \
-        surfaceData.backgroundColor = texture(sEmissiveMap, surfaceData.screenPos).rgb
+    #define FillSurfaceBackgroundColor(surfaceData, colorMap) \
+        surfaceData.backgroundColor = texture(colorMap, surfaceData.screenPos).rgb
 #else
-    #define FillSurfaceBackgroundColor(surfaceData)
+    #define FillSurfaceBackgroundColor(surfaceData, colorMap)
 #endif
 
-/// Fill surface background depth.
-/// out: SurfaceData.backgroundDepth
 #ifdef URHO3D_SURFACE_NEED_BACKGROUND_DEPTH
-    #define FillSurfaceBackgroundDepth(surfaceData) \
-        surfaceData.backgroundDepth = ReconstructDepth(texture(sDepthBuffer, surfaceData.screenPos).r)
+    #define FillSurfaceBackgroundDepth(surfaceData, depthMap) \
+        surfaceData.backgroundDepth = ReconstructDepth(texture(depthMap, surfaceData.screenPos).r)
 #else
-    #define FillSurfaceBackgroundDepth(surfaceData)
+    #define FillSurfaceBackgroundDepth(surfaceData, depthMap)
 #endif
 
-/// Fill surface background from samplers.
-#define FillSurfaceBackground(surfaceData) \
-    FillSurfaceBackgroundColor(surfaceData); \
-    FillSurfaceBackgroundDepth(surfaceData)
+#define FillSurfaceBackground(surfaceData, colorMap, depthMap) \
+{ \
+    FillSurfaceBackgroundColor(surfaceData, colorMap); \
+    FillSurfaceBackgroundDepth(surfaceData, depthMap); \
+}
 

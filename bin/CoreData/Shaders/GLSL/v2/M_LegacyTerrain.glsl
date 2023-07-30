@@ -36,7 +36,7 @@ void main()
     FillSurfaceNormal(surfaceData, vNormal, sNormalMap, vTexCoord, vTangent, vBitangentXY);
     FillSurfaceMetallicRoughnessOcclusion(surfaceData, sSpecMap, vTexCoord, sEmissiveMap, vTexCoord);
     FillSurfaceReflectionColor(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
-    FillSurfaceBackground(surfaceData);
+    FillSurfaceBackground(surfaceData, sEmissiveMap, sDepthBuffer);
 
     half3 weights = texture(sDiffMap, vTexCoord).rgb;
     half sumWeights = weights.r + weights.g + weights.b;
