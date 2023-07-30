@@ -390,8 +390,8 @@
 
 /// =================================== Surface reflection color ===================================
 
-/// @def FillSurfaceReflectionColor(surfaceData, refMap0, refMap1, reflectionVec, worldPos)
-/// @brief Fill surface reflection color(s).
+/// @def FillSurfaceCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos)
+/// @brief Fill surface reflection color(s) from cubemap.
 /// @param[in] refMap0 Primary reflection map.
 /// @param[in,optional] refMap1 Secondary reflection map.
 ///     Ignored if URHO3D_SURFACE_NEED_REFLECTION_COLOR or URHO3D_BLEND_REFLECTIONS are not defined.
@@ -402,11 +402,19 @@
 ///     Ignored unless URHO3D_BOX_PROJECTION is defined.
 /// @param[in,optional] surfaceData.screenPos
 ///     Ignored unless URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT is defined.
-/// @param[in] surfaceData.normal
+/// @param[in,optional] surfaceData.normal
+///     Ignored if URHO3D_VERTEX_REFLECTION is defined.
 /// @param[in,optional] surfaceData.eyeVec
-///     Ignored if URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT is defined.
+///     Ignored if URHO3D_VERTEX_REFLECTION is defined.
 /// @param[in,optional] surfaceData.roughness
 ///     Ignored unless URHO3D_BLUR_REFLECTION is defined.
+/// @param[out] surfaceData.reflectionColor
+
+/// @def FillSurfacePlanarReflection(surfaceData, refMap, planeX, planeY)
+/// @brief Fill surface reflection color from flat texture.
+/// @param[in] refMap Reflection map.
+/// @param[in] surfaceData.screenPos
+/// @param[in] surfaceData.normal
 /// @param[out] surfaceData.reflectionColor
 
 #ifdef URHO3D_BOX_PROJECTION
@@ -438,20 +446,20 @@
         && defined(URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT)
 
         /// Planar reflections don't support reflection blending
-        #define FillSurfaceReflectionColor(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
-            surfaceData.reflectionColor[0] = \
-                texture(refMap0, GetPlanarReflectionUV(surfaceData.screenPos, vec4(surfaceData.normal, 1.0)));
+        #define FillSurfacePlanarReflection(surfaceData, refMap, planeX, planeY) \
+            surfaceData.reflectionColor[0] = texture(refMap, \
+                GetPlanarReflectionUV(surfaceData.screenPos, vec4(surfaceData.normal, 1.0), planeX, planeY));
 
     #elif defined(URHO3D_VERTEX_REFLECTION)
 
         #ifdef URHO3D_BLEND_REFLECTIONS
-            #define FillSurfaceReflectionColor(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
+            #define FillSurfaceCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
             { \
                 surfaceData.reflectionColor[0] = texture(refMap0, reflectionVec); \
                 surfaceData.reflectionColor[1] = texture(refMap1, reflectionVec); \
             }
         #else
-            #define FillSurfaceReflectionColor(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
+            #define FillSurfaceCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
                 surfaceData.reflectionColor[0] = texture(refMap0, reflectionVec);
         #endif
 
@@ -469,7 +477,7 @@
         }
 
         #ifdef URHO3D_BLEND_REFLECTIONS
-            #define FillSurfaceReflectionColor(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
+            #define FillSurfaceCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
             { \
                 half3 refVec0 = reflect(-surfaceData.eyeVec, surfaceData.normal); \
                 half3 refVec1 = refVec0; \
@@ -481,7 +489,7 @@
                     _SampleReflection(refMap0, refVec0, surfaceData.roughness, cRoughnessToLODFactor0); \
             }
         #else
-            #define FillSurfaceReflectionColor(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
+            #define FillSurfaceCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
             { \
                 half3 refVec0 = reflect(-surfaceData.eyeVec, surfaceData.normal); \
                 AdjustReflectionVector(refVec0, worldPos, cCubemapCenter0, cProjectionBoxMin0, cProjectionBoxMax0); \
@@ -491,8 +499,14 @@
         #endif
 
     #endif
-#else
-    #define FillSurfaceReflectionColor(surfaceData, refMap0, refMap1, reflectionVec, worldPos)
+#endif
+
+#ifndef FillSurfaceCubeReflection
+    #define FillSurfaceCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos)
+#endif
+
+#ifndef FillSurfacePlanarReflection
+    #define FillSurfacePlanarReflection(surfaceData, refMap, planeX, planeY)
 #endif
 
 /// =================================== Surface background color and depth ===================================

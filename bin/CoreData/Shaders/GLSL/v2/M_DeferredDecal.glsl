@@ -78,7 +78,8 @@ void main()
     #endif
 
     FillSurfaceMetallicRoughnessOcclusion(surfaceData, sSpecMap, vTexCoord, sEmissiveMap, vTexCoord);
-    FillSurfaceReflectionColor(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
+    FillSurfaceCubeReflection(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
+    FillSurfacePlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);
     FillSurfaceBaseAlbedo(surfaceData, vColor, sDiffMap, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
     FillSurfaceBaseSpecular(surfaceData, sSpecMap, vTexCoord);
     FillSurfaceAlbedoSpecular(surfaceData);

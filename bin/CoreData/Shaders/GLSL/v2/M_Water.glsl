@@ -45,7 +45,8 @@ void main()
     FillSurfaceAmbient(surfaceData, sEmissiveMap, vTexCoord2);
     FillSurfaceNormal(surfaceData, vNormal, sNormalMap, vTexCoord, vTangent, vBitangentXY);
     FillSurfaceMetallicRoughnessOcclusion(surfaceData, sSpecMap, vTexCoord, sEmissiveMap, vTexCoord);
-    FillSurfaceReflectionColor(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
+    FillSurfaceCubeReflection(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
+    FillSurfacePlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);
 
     // Apply noise to screen position used for background sampling
     surfaceData.screenPos += surfaceData.normalInTangentSpace.xy * cNoiseStrength;
