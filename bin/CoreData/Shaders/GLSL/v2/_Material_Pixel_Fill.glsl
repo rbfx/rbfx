@@ -47,8 +47,10 @@
 
 /// @def FillSurfaceAmbient(surfaceData, lightMap, texCoord)
 /// @brief Fill ambient lighting in SurfaceData.
-/// @param[in,optional] lightMap Lightmap texture. Ignored if URHO3D_HAS_LIGHTMAP is not defined.
-/// @param[in,optional] texCoord Texture coordinate for lightmap lookup. Ignored if URHO3D_HAS_LIGHTMAP is not defined.
+/// @param[in,optional] lightMap Lightmap texture.
+///     Ignored if URHO3D_HAS_LIGHTMAP is not defined.
+/// @param[in,optional] texCoord Texture coordinate for lightmap lookup.
+///     Ignored if URHO3D_HAS_LIGHTMAP is not defined.
 /// @param[out] surfaceData.ambientLighting
 
 #ifdef URHO3D_SURFACE_NEED_AMBIENT
@@ -74,10 +76,14 @@
 /// @def FillSurfaceNormal(surfaceData, normal, normalMap, texCoord, tangent, bitangentXY)
 /// @brief Fill surface normal in SurfaceData.
 /// @param[in] vertexNormal Vertex normal.
-/// @param[in,optional] normalMap Normal map texture. Ignored if URHO3D_NORMAL_MAPPING is not defined.
+/// @param[in,optional] normalMap Normal map texture.
+///     Ignored if URHO3D_NORMAL_MAPPING is not defined.
 /// @param[in,optional] texCoord Texture coordinate for normal map lookup.
+///     Ignored if URHO3D_NORMAL_MAPPING is not defined.
 /// @param[in,optional] vertexTangent Vertex tangent.
+///     Ignored if URHO3D_NORMAL_MAPPING is not defined.
 /// @param[in,optional] vertexBitangentXY Vertex bitangent XY.
+///     Ignored if URHO3D_NORMAL_MAPPING is not defined.
 /// @param[out] surfaceData.normal
 /// @param[out] surfaceData.normalInTangentSpace
 
@@ -129,7 +135,7 @@
 ///     Ignored if URHO3D_PHYSICAL_MATERIAL is not defined or URHO3D_MATERIAL_HAS_SPECULAR is not defined.
 /// @param[in,optional] rmoTexCoord Texture coordinate for properties map lookup.
 ///     Ignored if URHO3D_PHYSICAL_MATERIAL is not defined or URHO3D_MATERIAL_HAS_SPECULAR is not defined.
-/// @param[in,optional] occlusionMap Occlusion map texture for non-PBR renderer.
+/// @param[in,optional] occlusionMap Occlusion map texture for non-PBR material.
 ///     Ignored if URHO3D_HAS_LIGHTMAP is defined, URHO3D_PHYSICAL_MATERIAL is defined,
 ///     AO is not defined or URHO3D_MATERIAL_HAS_EMISSIVE is not defined.
 /// @param[in,optional] occlusionTexCoord Texture coordinate for occlusion map lookup.
@@ -215,48 +221,132 @@
     }
 #endif
 
-/// Fill surface albedo and specular.
-/// out: SurfaceData.albedo
-/// out: SurfaceData.specular
-void _GetFragmentAlbedoSpecular(half oneMinusReflectivity, out half4 albedo, out half3 specular)
-{
-#ifdef URHO3D_MATERIAL_HAS_DIFFUSE
-    half4 albedoInput = texture(sDiffMap, vTexCoord);
-    #ifdef ALPHAMASK
-        if (albedoInput.a < cAlphaCutoff)
-            discard;
-    #endif
+/// =================================== Surface albedo and specular ===================================
 
-    albedo = GammaToLightSpaceAlpha(cMatDiffColor) * DiffMap_ToLight(albedoInput);
+/// @def CutoutByAlpha(alpha)
+/// @brief Discard fragment if alpha is less than cAlphaCutoff and if ALPHAMASK is defined.
+/// @param[in] alpha Alpha value to test.
+
+/// @def ModulateAlbedoByVertexColor(albedo, vertexColor)
+/// @brief Modulate albedo by vertex color.
+/// @param[in,out] albedo Albedo value.
+/// @param[in,optional] vertexColor Vertex color.
+///     Ignored if URHO3D_PIXEL_NEED_VERTEX_COLOR is not defined.
+
+/// @def DeduceAlbedoSpecularForPBR(albedo, specular, oneMinusReflectivity)
+/// @brief Deduce effective albedo and specular for PBR material from base albedo and metallness.
+/// @param[in,out] albedo Base albedo as input, effective albedo as output.
+/// @param[out] specular Effective specular.
+/// @param[in] oneMinusReflectivity Inverse of metallness.
+
+/// @def AdjustAlbedoForPremultiplyAlpha(albedo, oneMinusReflectivity)
+/// @brief Adjust albedo (and alpha) value in premultiplied alpha mode.
+/// @param[in,out] albedo Albedo value with alpha.
+/// @param[in] oneMinusReflectivity Inverse of metallness.
+
+/// @def FillSurfaceBaseAlbedo(surfaceData, vertexColor, albedoMap, albedoTexCoord, colorSpace)
+/// @brief Fill surface base albedo value.
+///     For PBR material, this is used for both albedo and specular, depending on metallness.
+///     For non-PBR material, this is used for diffuse color.
+/// @param[in,optional] vertexColor Vertex color to modulate texture and material.
+///     Ignored if URHO3D_PIXEL_NEED_VERTEX_COLOR is not defined.
+/// @param[in,optional] albedoMap Albedo map.
+///     Ignored if URHO3D_MATERIAL_HAS_DIFFUSE is not defined.
+/// @param[in,optional] albedoTexCoord Texture coordinate for albedo map lookup.
+///     Ignored if URHO3D_MATERIAL_HAS_DIFFUSE is not defined.
+/// @param[in,optional] colorSpace Color space of albedo map. 0 for sRGB, 1 for linear.
+///     Ignored if URHO3D_MATERIAL_HAS_DIFFUSE is not defined.
+/// @param[out] surfaceData.albedo
+
+/// @def FillSurfaceBaseSpecular(surfaceData, specMap, specTexCoord)
+/// @brief Fill surface base specular value.
+///     For PBR material, this is no-op because specular PBR workflow is not supported now.
+///     For non-PBR material, this is used for specular color.
+/// @param[in,optional] specMap Specular map.
+///     Ignored if URHO3D_MATERIAL_HAS_SPECULAR is not defined.
+/// @param[in,optional] specTexCoord Texture coordinate for specular map lookup.
+///     Ignored if URHO3D_MATERIAL_HAS_SPECULAR is not defined.
+/// @param[out] surfaceData.specular
+
+/// @def FillSurfaceAlbedoSpecular(surfaceData)
+/// @brief Finalize surface albedo and specular value (which should be properly filled).
+///     Same as DeduceAlbedoSpecularForPBR and AdjustAlbedoForPremultiplyAlpha together.
+
+#ifdef ALPHAMASK
+    #define CutoutByAlpha(alpha) { if (alpha < cAlphaCutoff) discard; }
 #else
-    albedo = GammaToLightSpaceAlpha(cMatDiffColor);
+    #define CutoutByAlpha(alpha)
 #endif
 
+// TODO: Why linear color space?
 #ifdef URHO3D_PIXEL_NEED_VERTEX_COLOR
-    albedo *= LinearToLightSpaceAlpha(vColor);
+    #define ModulateAlbedoByVertexColor(albedo, vertexColor) \
+        albedo *= LinearToLightSpaceAlpha(vertexColor)
+#else
+    #define ModulateAlbedoByVertexColor(albedo, vertexColor)
 #endif
 
 #ifdef URHO3D_PHYSICAL_MATERIAL
-    specular = albedo.rgb * (1.0 - oneMinusReflectivity);
-    albedo.rgb *= oneMinusReflectivity;
+    #define DeduceAlbedoSpecularForPBR(albedo, specular, oneMinusReflectivity) \
+    { \
+        specular = albedo.rgb * (1.0 - oneMinusReflectivity); \
+        albedo.rgb *= oneMinusReflectivity; \
+    }
 #else
-    #ifdef URHO3D_MATERIAL_HAS_SPECULAR
-        specular = GammaToLightSpace(cMatSpecColor.rgb * texture(sSpecMap, vTexCoord).rgb);
-    #else
-        specular = GammaToLightSpace(cMatSpecColor.rgb);
-    #endif
+    #define DeduceAlbedoSpecularForPBR(albedo, specular, oneMinusReflectivity)
 #endif
 
 #ifdef URHO3D_PREMULTIPLY_ALPHA
-    albedo.rgb *= albedo.a;
     #ifdef URHO3D_PHYSICAL_MATERIAL
-        albedo.a = 1.0 - oneMinusReflectivity + albedo.a * oneMinusReflectivity;
+        #define AdjustAlbedoForPremultiplyAlpha(albedo, oneMinusReflectivity) \
+            albedo = vec4(albedo.rgb * albedo.a, 1.0 - oneMinusReflectivity + albedo.a * oneMinusReflectivity)
+    #else
+        #define AdjustAlbedoForPremultiplyAlpha(albedo, oneMinusReflectivity) \
+            albedo.rgb *= albedo.a
+    #endif
+#else
+    #define AdjustAlbedoForPremultiplyAlpha(albedo, oneMinusReflectivity)
+#endif
+
+#ifdef URHO3D_MATERIAL_HAS_DIFFUSE
+    #define _FillSurfaceBaseAlbedo(surfaceData, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
+    { \
+        half4 albedoInput = texture(albedoMap, albedoTexCoord); \
+        CutoutByAlpha(albedoInput.a); \
+        surfaceData.albedo = GammaToLightSpaceAlpha(cMatDiffColor) * Texture_ToLightAlpha_##colorSpace(albedoInput); \
+        ModulateAlbedoByVertexColor(surfaceData.albedo, vertexColor); \
+    }
+#else
+    #define _FillSurfaceBaseAlbedo(surfaceData, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
+    { \
+        surfaceData.albedo = GammaToLightSpaceAlpha(cMatDiffColor); \
+        ModulateAlbedoByVertexColor(surfaceData.albedo, vertexColor); \
+    }
+#endif
+
+// Force macro expansion for colorSpace.
+#define FillSurfaceBaseAlbedo(surfaceData, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
+    _FillSurfaceBaseAlbedo(surfaceData, vertexColor, albedoMap, albedoTexCoord, colorSpace)
+
+#ifdef URHO3D_PHYSICAL_MATERIAL
+    // Specular workflow is not supported for PBR materials.
+    #define FillSurfaceBaseSpecular(surfaceData, specMap, specTexCoord) \
+        surfaceData.specular = vec3(0.0, 0.0, 0.0)
+#else
+    #ifdef URHO3D_MATERIAL_HAS_SPECULAR
+        #define FillSurfaceBaseSpecular(surfaceData, specMap, specTexCoord) \
+            surfaceData.specular = GammaToLightSpace(cMatSpecColor.rgb * texture(specMap, specTexCoord).rgb)
+    #else
+        #define FillSurfaceBaseSpecular(surfaceData, specMap, specTexCoord) \
+            surfaceData.specular = GammaToLightSpace(cMatSpecColor.rgb)
     #endif
 #endif
-}
 
 #define FillSurfaceAlbedoSpecular(surfaceData) \
-    _GetFragmentAlbedoSpecular(surfaceData.oneMinusReflectivity, surfaceData.albedo, surfaceData.specular)
+{ \
+    DeduceAlbedoSpecularForPBR(surfaceData.albedo, surfaceData.specular, surfaceData.oneMinusReflectivity); \
+    AdjustAlbedoForPremultiplyAlpha(surfaceData.albedo, surfaceData.oneMinusReflectivity); \
+}
 
 /// Fill surface emission.
 /// out: SurfaceData.emission
