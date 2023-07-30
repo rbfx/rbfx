@@ -45,7 +45,9 @@ class URHO3D_API AnimationParameters
 public:
     AnimationParameters() = default;
     explicit AnimationParameters(Animation* animation);
+    AnimationParameters(Animation* animation, float minTime, float maxTime);
     AnimationParameters(Context* context, const ea::string& animationName);
+    AnimationParameters(Context* context, const ea::string& animationName, float minTime, float maxTime);
 
     /// Helper utility to fade animation out and remove it later.
     bool RemoveDelayed(float fadeTime);
