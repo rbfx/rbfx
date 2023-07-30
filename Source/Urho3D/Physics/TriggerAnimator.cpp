@@ -65,6 +65,11 @@ ResourceRef TriggerAnimator::GetEnterAnimationAttr() const
     return GetResourceRef(enterAnimation_, Animation::GetTypeStatic());
 }
 
+void TriggerAnimator::SetEnterAnimation(Animation* value)
+{
+    enterAnimation_ = value;
+}
+
 void TriggerAnimator::SetExitAnimationAttr(const ResourceRef& value)
 {
     auto* cache = GetSubsystem<ResourceCache>();
@@ -74,6 +79,11 @@ void TriggerAnimator::SetExitAnimationAttr(const ResourceRef& value)
 ResourceRef TriggerAnimator::GetExitAnimationAttr() const
 {
     return GetResourceRef(exitAnimation_, Animation::GetTypeStatic());
+}
+
+void TriggerAnimator::SetExitAnimation(Animation* value)
+{
+    exitAnimation_ = value;
 }
 
 void TriggerAnimator::OnEnter()
