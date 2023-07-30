@@ -631,6 +631,7 @@ using PointerAdapterFlags = Urho3D::PointerAdapterMask;
 %csattribute(Urho3D::Detail::ControllerAxisMapping, %arg(Urho3D::ControllerAxis), ControllerAxis, GetControllerAxis);
 %csattribute(Urho3D::Detail::ControllerAxisMapping, %arg(unsigned int), GenericAxis, GetGenericAxis);
 %csattribute(Urho3D::Detail::MouseButtonMapping, %arg(Urho3D::MouseButtonFlags), Mask, GetMask);
+%csattribute(Urho3D::MoveAndOrbitComponent, %arg(Urho3D::Vector3), Velocity, GetVelocity);
 %csattribute(Urho3D::InputMap, %arg(float), DeadZone, GetDeadZone, SetDeadZone);
 %csattribute(Urho3D::InputMap, %arg(Urho3D::InputMap::StringActionMappingMap), Mappings, GetMappings);
 %csattribute(Urho3D::MoveAndOrbitController, %arg(Urho3D::InputMap *), InputMap, GetInputMap, SetInputMap);
