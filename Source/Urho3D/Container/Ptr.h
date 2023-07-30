@@ -193,7 +193,7 @@ public:
     {
         if (this->GetRefCounted() != rhs.GetRefCounted())
         {
-            ThisType temp{std::move(rhs)};
+            ThisType temp{ea::move(rhs)};
             this->Swap(temp);
         }
         return *this;
