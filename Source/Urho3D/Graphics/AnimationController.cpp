@@ -89,7 +89,7 @@ URHO3D_FLAGSET(AnimationParameterMask, AnimationParameterFlags);
 
 bool MatchesQuery(const AnimationParameters& params, Animation* animation, unsigned layer)
 {
-    if (animation && params.animation_ != animation)
+    if (animation && params.GetAnimation() != animation)
         return false;
 
     if (layer != M_MAX_UNSIGNED && params.layer_ != layer)
@@ -187,6 +187,16 @@ AnimationParameters& AnimationParameters::KeepOnZeroWeight()
 {
     removeOnZeroWeight_ = false;
     return *this;
+}
+
+void AnimationParameters::SetTime(float time)
+{
+    time_.Set(time);
+}
+
+WrappedScalarRange<float> AnimationParameters::Update(float scaledTimeStep)
+{
+    return looped_ ? time_.UpdateWrapped(scaledTimeStep) : time_.UpdateClamped(scaledTimeStep, true);
 }
 
 AnimationParameters AnimationParameters::FromVariantSpan(Context* context, ea::span<const Variant> variants)
@@ -429,7 +439,7 @@ void AnimationController::Update(float timeStep)
     pendingTriggers_.clear();
     for (auto& [params, state] : animations_)
     {
-        if (!params.animation_)
+        if (!params.GetAnimation())
             continue;
         UpdateInstance(params, timeStep, true);
         if (!params.removed_)
@@ -586,7 +596,7 @@ void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> 
 void AnimationController::AddAnimation(const AnimationParameters& params)
 {
     const unsigned instanceIndex = ea::count_if(animations_.begin(), animations_.end(),
-        [&](const AnimationInstance& instance) { return instance.params_.animation_ == params.animation_; });
+        [&](const AnimationInstance& instance) { return instance.params_.GetAnimation() == params.GetAnimation(); });
 
     AnimationInstance& instance = animations_.emplace_back();
     instance.params_ = params;
@@ -609,7 +619,7 @@ void AnimationController::UpdateAnimation(unsigned index, const AnimationParamet
     }
 
     AnimationInstance& instance = animations_[index];
-    if (instance.params_.animation_ != params.animation_ || instance.params_.instanceIndex_ != params.instanceIndex_)
+    if (instance.params_.GetAnimation() != params.GetAnimation() || instance.params_.instanceIndex_ != params.instanceIndex_)
     {
         URHO3D_ASSERTLOG(0, "Animation and instance index cannot be changed by AnimationController::UpdateAnimation");
         return;
@@ -692,7 +702,7 @@ unsigned AnimationController::PlayNewExclusive(const AnimationParameters& params
 
 unsigned AnimationController::PlayExisting(const AnimationParameters& params, float fadeInTime)
 {
-    const unsigned index = FindLastAnimation(params.animation_);
+    const unsigned index = FindLastAnimation(params.GetAnimation());
     if (index == M_MAX_UNSIGNED)
     {
         PlayNew(params, fadeInTime);
@@ -785,7 +795,7 @@ bool AnimationController::UpdateAnimationTime(Animation* animation, float time)
     if (index != M_MAX_UNSIGNED)
     {
         AnimationParameters params = GetAnimationParameters(index);
-        params.time_.Set(time);
+        params.SetTime(time);
         UpdateAnimation(index, params);
         return true;
     }
@@ -895,7 +905,7 @@ float AnimationController::GetTime(const ea::string& name) const
 {
     Animation* animation = GetAnimationByName(name);
     const AnimationParameters* params = GetLastAnimationParameters(animation);
-    return params ? params->time_.Value() : 0.0f;
+    return params ? params->GetTime() : 0.0f;
 }
 
 float AnimationController::GetWeight(const ea::string& name) const
@@ -1087,9 +1097,7 @@ ea::optional<float> AnimationController::UpdateInstanceTime(AnimationParameters&
     if (scaledTimeStep == 0.0f)
         return ea::nullopt;
 
-    const auto delta = params.looped_
-        ? params.time_.UpdateWrapped(scaledTimeStep)
-        : params.time_.UpdateClamped(scaledTimeStep, true);
+    const auto delta = params.Update(scaledTimeStep);
 
     const float positiveOvertime = delta.End() - delta.Max();
     const float negativeOvertime = delta.End() - delta.Min();
@@ -1099,11 +1107,12 @@ ea::optional<float> AnimationController::UpdateInstanceTime(AnimationParameters&
 
     if (fireTriggers)
     {
-        const float length = params.animation_->GetLength();
-        for (const AnimationTriggerPoint& trigger : params.animation_->GetTriggers())
+        Animation* animation = params.GetAnimation();
+        const float length = animation->GetLength();
+        for (const AnimationTriggerPoint& trigger : animation->GetTriggers())
         {
             if (delta.ContainsExcludingBegin(ea::min(trigger.time_, length)))
-                pendingTriggers_.emplace_back(params.animation_, &trigger);
+                pendingTriggers_.emplace_back(animation, &trigger);
         }
     }
 
@@ -1147,12 +1156,12 @@ void AnimationController::ApplyInstanceRemoval(AnimationParameters& params, bool
 
 void AnimationController::EnsureStateInitialized(AnimationState* state, const AnimationParameters& params)
 {
-    state->Initialize(params.animation_, params.startBone_, params.blendMode_);
+    state->Initialize(params.GetAnimation(), params.startBone_, params.blendMode_);
 }
 
 void AnimationController::UpdateState(AnimationState* state, const AnimationParameters& params) const
 {
-    state->Update(params.looped_, params.time_.Value(), params.weight_);
+    state->Update(params.looped_, params.GetTime(), params.weight_);
 }
 
 void AnimationController::SortAnimationStates()

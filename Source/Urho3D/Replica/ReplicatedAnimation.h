@@ -33,7 +33,7 @@ namespace Urho3D
 
 class Animation;
 class AnimationController;
-struct AnimationParameters;
+class AnimationParameters;
 
 /// Behavior that replicates animation over network.
 /// TODO: This behavior doesn't really replicate any animation now, it only does essential setup on the server.

@@ -678,6 +678,7 @@ public:
 %ignore Urho3D::AnimationState::CalculateModelTracks;
 %ignore Urho3D::AnimationState::CalculateNodeTracks;
 %ignore Urho3D::AnimationState::CalculateAttributeTracks;
+%ignore Urho3D::AnimationParameters::Update;
 %ignore Urho3D::Animation::GetVariantTracks;
 %rename(DrawableFlags) Urho3D::DrawableFlag;
 
