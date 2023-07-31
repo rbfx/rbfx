@@ -44,7 +44,7 @@ void main()
     FillSurfaceCubeReflection(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
     FillSurfacePlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);
     FillSurfaceBackground(surfaceData, sEmissiveMap, sDepthBuffer);
-    FillSurfaceBaseAlbedo(surfaceData, vColor, sDiffMap, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
+    FillSurfaceBaseAlbedo(surfaceData, cMatDiffColor, vColor, sDiffMap, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
     FillSurfaceBaseSpecular(surfaceData, sSpecMap, vTexCoord);
     FillSurfaceAlbedoSpecular(surfaceData);
     FillSurfaceEmission(surfaceData, sEmissiveMap, vTexCoord, URHO3D_MATERIAL_EMISSIVE_HINT);

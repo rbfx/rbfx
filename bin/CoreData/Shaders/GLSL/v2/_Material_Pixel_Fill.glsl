@@ -245,10 +245,11 @@
 /// @param[in,out] albedo Albedo value with alpha.
 /// @param[in] oneMinusReflectivity Inverse of metallness.
 
-/// @def FillSurfaceBaseAlbedo(surfaceData, vertexColor, albedoMap, albedoTexCoord, colorSpace)
+/// @def FillSurfaceBaseAlbedo(surfaceData, albedoColor, vertexColor, albedoMap, albedoTexCoord, colorSpace)
 /// @brief Fill surface base albedo value.
 ///     For PBR material, this is used for both albedo and specular, depending on metallness.
 ///     For non-PBR material, this is used for diffuse color.
+/// @param[in] albedoColor Albedo color in gamma space. If texture is present, it will be modulated by this color.
 /// @param[in,optional] vertexColor Vertex color to modulate texture and material.
 ///     Ignored if URHO3D_PIXEL_NEED_VERTEX_COLOR is not defined.
 /// @param[in,optional] albedoMap Albedo map.
@@ -313,24 +314,24 @@
 #endif
 
 #ifdef URHO3D_MATERIAL_HAS_DIFFUSE
-    #define _FillSurfaceBaseAlbedo(surfaceData, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
+    #define _FillSurfaceBaseAlbedo(surfaceData, albedoColor, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
     { \
         half4 albedoInput = texture(albedoMap, albedoTexCoord); \
         CutoutByAlpha(albedoInput.a); \
-        surfaceData.albedo = GammaToLightSpaceAlpha(cMatDiffColor) * Texture_ToLightAlpha_##colorSpace(albedoInput); \
+        surfaceData.albedo = GammaToLightSpaceAlpha(albedoColor) * Texture_ToLightAlpha_##colorSpace(albedoInput); \
         ModulateAlbedoByVertexColor(surfaceData.albedo, vertexColor); \
     }
 #else
-    #define _FillSurfaceBaseAlbedo(surfaceData, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
+    #define _FillSurfaceBaseAlbedo(surfaceData, albedoColor, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
     { \
-        surfaceData.albedo = GammaToLightSpaceAlpha(cMatDiffColor); \
+        surfaceData.albedo = GammaToLightSpaceAlpha(albedoColor); \
         ModulateAlbedoByVertexColor(surfaceData.albedo, vertexColor); \
     }
 #endif
 
 // Force macro expansion for colorSpace.
-#define FillSurfaceBaseAlbedo(surfaceData, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
-    _FillSurfaceBaseAlbedo(surfaceData, vertexColor, albedoMap, albedoTexCoord, colorSpace)
+#define FillSurfaceBaseAlbedo(surfaceData, albedoColor, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
+    _FillSurfaceBaseAlbedo(surfaceData, albedoColor, vertexColor, albedoMap, albedoTexCoord, colorSpace)
 
 #ifdef URHO3D_PHYSICAL_MATERIAL
     // Specular workflow is not supported for PBR materials.
