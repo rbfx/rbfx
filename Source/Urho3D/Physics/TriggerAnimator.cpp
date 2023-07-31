@@ -199,12 +199,12 @@ void TriggerAnimator::StartAnimation(Animation* animation)
 
     if (animationController->GetNumAnimations() > 0)
     {
-        auto otherAnimation = (animation == enterAnimation_) ? exitAnimation_ : enterAnimation_;
-        auto existingAnimationIndex = animationController->FindLastAnimation(otherAnimation);
+        const auto otherAnimation = (animation == enterAnimation_) ? exitAnimation_ : enterAnimation_;
+        const auto existingAnimationIndex = animationController->FindLastAnimation(otherAnimation);
         if (existingAnimationIndex != M_MAX_UNSIGNED)
         {
-            auto state = animationController->GetAnimationParameters(existingAnimationIndex);
-            auto time = state.time_.Value() / (state.animation_->GetLength()+ea::numeric_limits<float>::epsilon());
+            const auto state = animationController->GetAnimationParameters(existingAnimationIndex);
+            const auto time = state.GetTime() / (state.GetAnimation()->GetLength() + ea::numeric_limits<float>::epsilon());
 
             animationParameters.Time((1.0f - time) * animation->GetLength());
         }

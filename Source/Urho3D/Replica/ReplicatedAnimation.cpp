@@ -143,10 +143,10 @@ void ReplicatedAnimation::UpdateLookupsOnServer()
     for (unsigned i = 0; i < animationController_->GetNumAnimations(); ++i)
     {
         const AnimationParameters& params = animationController_->GetAnimationParameters(i);
-        if (animationLookup_.find(params.animationName_) != animationLookup_.end())
+        if (animationLookup_.find(params.GetAnimationName()) != animationLookup_.end())
             continue;
 
-        const ea::string& name = params.animation_->GetName();
+        const ea::string& name = params.GetAnimation()->GetName();
         animationLookup_[StringHash{name}] = name;
         server_.newAnimationLookups_.push_back(name);
     }
@@ -179,7 +179,7 @@ void ReplicatedAnimation::WriteSnapshot(Serializer& dest)
     for (unsigned i = 0; i < numAnimations; ++i)
     {
         const AnimationParameters& params = animationController_->GetAnimationParameters(i);
-        server_.snapshotBuffer_.WriteStringHash(params.animationName_);
+        server_.snapshotBuffer_.WriteStringHash(params.GetAnimationName());
         params.Serialize(server_.snapshotBuffer_);
     }
 

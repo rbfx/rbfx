@@ -38,10 +38,9 @@ TEST_CASE("AnimationController should remove animation on completion")
     auto controller = node->CreateComponent<AnimationController>();
     AnimationParameters params(
         context->GetSubsystem<ResourceCache>()->GetResource<Animation>("Animations/SlidingDoor/Open.xml"));
-    params.time_ = {0.0f, 0.0f, params.animation_->GetLength()};
     params.removeOnCompletion_ = true;
     controller->PlayNewExclusive(params, 0.0f);
-    auto length = params.animation_->GetLength();
+    const auto length = params.GetAnimation()->GetLength();
     Tests::RunFrame(context, length + 1.0f);
 
     CHECK(0 == controller->GetNumAnimations());
