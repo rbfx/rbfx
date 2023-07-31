@@ -113,17 +113,16 @@ namespace ShaderConsts
 /// See _Samplers.glsl for descriptions.
 namespace ShaderResources
 {
-    // TODO: Revisit names
-    URHO3D_SHADER_RESOURCE(DiffMap);
-    URHO3D_SHADER_RESOURCE(NormalMap);
-    URHO3D_SHADER_RESOURCE(SpecMap);
-    URHO3D_SHADER_RESOURCE(EmissiveMap);
-    URHO3D_SHADER_RESOURCE(EnvMap);
-    URHO3D_SHADER_RESOURCE(LightRampMap);
-    URHO3D_SHADER_RESOURCE(LightSpotMap);
+    URHO3D_SHADER_RESOURCE(Albedo);
+    URHO3D_SHADER_RESOURCE(Normal);
+    URHO3D_SHADER_RESOURCE(Properties);
+    URHO3D_SHADER_RESOURCE(Emission);
+    URHO3D_SHADER_RESOURCE(Reflection0);
+    URHO3D_SHADER_RESOURCE(Reflection1);
+    URHO3D_SHADER_RESOURCE(LightRamp);
+    URHO3D_SHADER_RESOURCE(LightShape);
     URHO3D_SHADER_RESOURCE(ShadowMap);
     URHO3D_SHADER_RESOURCE(DepthBuffer);
-    URHO3D_SHADER_RESOURCE(ZoneCubeMap);
 }
 
 }

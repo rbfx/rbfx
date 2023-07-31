@@ -298,9 +298,9 @@ void PipelineStateBuilder::SetupLightSamplers(const LightProcessor* lightProcess
     if (light)
     {
         if (Texture* rampTexture = light->GetRampTexture())
-            pipelineStateDesc_.samplers_.Add(ShaderResources::LightRampMap, rampTexture->GetSamplerStateDesc());
+            pipelineStateDesc_.samplers_.Add(ShaderResources::LightRamp, rampTexture->GetSamplerStateDesc());
         if (Texture* shapeTexture = light->GetShapeTexture())
-            pipelineStateDesc_.samplers_.Add(ShaderResources::LightSpotMap, shapeTexture->GetSamplerStateDesc());
+            pipelineStateDesc_.samplers_.Add(ShaderResources::LightShape, shapeTexture->GetSamplerStateDesc());
     }
     if (lightProcessor && lightProcessor->HasShadow())
         pipelineStateDesc_.samplers_.Add(ShaderResources::ShadowMap, shadowMapAllocator_->GetSamplerStateDesc());
@@ -319,35 +319,35 @@ void PipelineStateBuilder::SetupSamplersForUserOrShadowPass(
     {
         if (texture.value_)
         {
-            if (nameHash == ShaderResources::EmissiveMap && hasLightmap)
+            if (nameHash == ShaderResources::Emission && hasLightmap)
                 continue;
-            if (nameHash == ShaderResources::EnvMap)
+            if (nameHash == ShaderResources::Reflection0)
                 materialHasEnvironmentMap = true;
             pipelineStateDesc_.samplers_.Add(nameHash, texture.value_->GetSamplerStateDesc());
         }
     }
 
     if (hasLightmap)
-        pipelineStateDesc_.samplers_.Add(ShaderResources::EmissiveMap, lightMapSampler);
+        pipelineStateDesc_.samplers_.Add(ShaderResources::Emission, lightMapSampler);
 
     if (hasAmbient)
     {
         if (!materialHasEnvironmentMap)
-            pipelineStateDesc_.samplers_.Add(ShaderResources::EnvMap, reflectionMapSampler);
-        pipelineStateDesc_.samplers_.Add(ShaderResources::ZoneCubeMap, reflectionMapSampler);
+            pipelineStateDesc_.samplers_.Add(ShaderResources::Reflection0, reflectionMapSampler);
+        pipelineStateDesc_.samplers_.Add(ShaderResources::Reflection1, reflectionMapSampler);
     }
 
     if (isRefractionPass)
-        pipelineStateDesc_.samplers_.Add(ShaderResources::EmissiveMap, refractionMapSampler);
+        pipelineStateDesc_.samplers_.Add(ShaderResources::Emission, refractionMapSampler);
 
     pipelineStateDesc_.samplers_.Add(ShaderResources::DepthBuffer, SamplerStateDesc::Nearest());
 }
 
 void PipelineStateBuilder::SetupGeometryBufferSamplers()
 {
-    pipelineStateDesc_.samplers_.Add(ShaderResources::DiffMap, SamplerStateDesc::Nearest());
-    pipelineStateDesc_.samplers_.Add(ShaderResources::SpecMap, SamplerStateDesc::Nearest());
-    pipelineStateDesc_.samplers_.Add(ShaderResources::NormalMap, SamplerStateDesc::Nearest());
+    pipelineStateDesc_.samplers_.Add(ShaderResources::Albedo, SamplerStateDesc::Nearest());
+    pipelineStateDesc_.samplers_.Add(ShaderResources::Properties, SamplerStateDesc::Nearest());
+    pipelineStateDesc_.samplers_.Add(ShaderResources::Normal, SamplerStateDesc::Nearest());
     pipelineStateDesc_.samplers_.Add(ShaderResources::DepthBuffer, SamplerStateDesc::Nearest());
 }
 

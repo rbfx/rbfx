@@ -86,7 +86,7 @@ inline Color GetMaterialDiffuseColor(const Material* material)
 /// Return material diffuse texture and UV offsets.
 inline Texture* GetMaterialDiffuseTexture(const Material* material, Vector4& uOffset, Vector4& vOffset)
 {
-    Texture* texture = material->GetTexture(ShaderResources::DiffMap);
+    Texture* texture = material->GetTexture(ShaderResources::Albedo);
     if (!texture)
         return {};
 
@@ -169,14 +169,14 @@ inline SharedPtr<Material> CreateBakingMaterial(Material* bakingMaterial, Materi
 
     ea::string shaderDefines;
 
-    if (Texture* diffuseMap = sourceMaterial->GetTexture(ShaderResources::DiffMap))
+    if (Texture* diffuseMap = sourceMaterial->GetTexture(ShaderResources::Albedo))
     {
-        material->SetTexture(ShaderResources::DiffMap, diffuseMap);
+        material->SetTexture(ShaderResources::Albedo, diffuseMap);
         shaderDefines += "DIFFMAP ";
     }
-    if (Texture* emissiveMap = sourceMaterial->GetTexture(ShaderResources::EmissiveMap))
+    if (Texture* emissiveMap = sourceMaterial->GetTexture(ShaderResources::Emission))
     {
-        material->SetTexture(ShaderResources::EmissiveMap, emissiveMap);
+        material->SetTexture(ShaderResources::Emission, emissiveMap);
         shaderDefines += "EMISSIVEMAP ";
     }
 

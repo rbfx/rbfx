@@ -38,9 +38,9 @@ void main()
 void main()
 {
     float depth = ReconstructDepth(SampleGeometryBuffer(sDepthBuffer, vScreenPos).r);
-    half4 albedoInput = SampleGeometryBuffer(sDiffMap, vScreenPos);
-    half4 specularInput = SampleGeometryBuffer(sSpecMap, vScreenPos);
-    half4 normalInput = SampleGeometryBuffer(sNormalMap, vScreenPos);
+    half4 albedoInput = SampleGeometryBuffer(sAlbedo, vScreenPos);
+    half4 specularInput = SampleGeometryBuffer(sProperties, vScreenPos);
+    half4 normalInput = SampleGeometryBuffer(sNormal, vScreenPos);
 
     vec4 worldPos = GetDeferredWorldPos(vScreenPos, depth);
     half3 eyeVec = normalize(-worldPos.xyz);

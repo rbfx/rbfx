@@ -7,7 +7,7 @@
 
 #ifdef URHO3D_PIXEL_SHADER
 
-/// Convert sampled value from sNormalMap to normal in tangent space.
+/// Convert sampled value from sNormal to normal in tangent space.
 half3 DecodeNormal(half4 normalInput)
 {
     #ifdef PACKEDNORMAL

@@ -54,7 +54,7 @@ void main()
     SurfaceData surfaceData;
 
     Surface_SetCommon(surfaceData);
-    Surface_SetAmbient(surfaceData, sEmissiveMap, vTexCoord2);
+    Surface_SetAmbient(surfaceData, sEmission, vTexCoord2);
     Surface_SetBackgroundDepth(surfaceData, sDepthBuffer);
 
     vec4 worldPos = vec4(GetDeferredWorldPos(surfaceData.backgroundDepth) + cCameraPos, 1.0);
@@ -69,7 +69,7 @@ void main()
 
     // Get normal
     #ifdef NORMALMAP
-        vec3 localNormal = DecodeNormal(texture(sNormalMap, vTexCoord.xy)) * vec3(1.0, 1.0, -1.0);
+        vec3 localNormal = DecodeNormal(texture(sNormal, vTexCoord.xy)) * vec3(1.0, 1.0, -1.0);
         vec4 normalInModelSpace = vToModelSpace * vec4(localNormal, 0.0);
 
         surfaceData.normal = normalize(normalInModelSpace.xyz);
@@ -77,14 +77,14 @@ void main()
         surfaceData.normal = normalize((vec4(0.0, 0.0, -1.0, 0.0) * vToModelSpace).xyz);
     #endif
 
-    Surface_SetPhysicalProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sSpecMap, vTexCoord);
-    Surface_SetLegacyProperties(surfaceData, cMatSpecColor.a, sEmissiveMap, vTexCoord);
-    Surface_SetCubeReflection(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
-    Surface_SetPlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);
-    Surface_SetBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sDiffMap, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
-    Surface_SetBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sSpecMap, vTexCoord);
+    Surface_SetPhysicalProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sProperties, vTexCoord);
+    Surface_SetLegacyProperties(surfaceData, cMatSpecColor.a, sEmission, vTexCoord);
+    Surface_SetCubeReflection(surfaceData, sReflection0, sReflection1, vReflectionVec, vWorldPos);
+    Surface_SetPlanarReflection(surfaceData, sReflection0, cReflectionPlaneX, cReflectionPlaneY);
+    Surface_SetBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sAlbedo, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
+    Surface_SetBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sProperties, vTexCoord);
     Surface_SetAlbedoSpecular(surfaceData);
-    Surface_SetEmission(surfaceData, cMatEmissiveColor, sEmissiveMap, vTexCoord, URHO3D_MATERIAL_EMISSIVE_HINT);
+    Surface_SetEmission(surfaceData, cMatEmissiveColor, sEmission, vTexCoord, URHO3D_MATERIAL_EMISSIVE_HINT);
     Surface_ApplySoftFadeOut(surfaceData, vWorldDepth, cFadeOffsetScale);
 
     // TODO: Make configurable

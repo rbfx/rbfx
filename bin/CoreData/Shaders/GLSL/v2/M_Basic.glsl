@@ -46,10 +46,10 @@ void main()
 
     #ifdef URHO3D_MATERIAL_HAS_DIFFUSE
         #ifdef ALPHAMAP
-            half alphaInput = texture(sDiffMap, vTexCoord).r;
+            half alphaInput = texture(sAlbedo, vTexCoord).r;
             diffColor.a *= alphaInput;
         #else
-            half4 diffInput = texture(sDiffMap, vTexCoord);
+            half4 diffInput = texture(sAlbedo, vTexCoord);
             #ifdef ALPHAMASK
                 if (diffInput.a < 0.5)
                     discard;

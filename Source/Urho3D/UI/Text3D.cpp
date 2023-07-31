@@ -693,7 +693,7 @@ void Text3D::UpdateTextMaterials(bool forceUpdate)
 
         Material* material = batches_[i].material_;
         Texture* texture = uiBatches_[i].texture_;
-        material->SetTexture(ShaderResources::DiffMap, texture);
+        material->SetTexture(ShaderResources::Albedo, texture);
 
         if (isSDFFont)
         {

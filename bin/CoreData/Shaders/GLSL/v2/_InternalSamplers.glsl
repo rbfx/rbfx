@@ -7,11 +7,11 @@
 
 #ifdef URHO3D_PIXEL_SHADER
 
-SAMPLER(0, sampler2D sLightRampMap)
+SAMPLER(0, sampler2D sLightRamp)
 #ifndef URHO3D_LIGHT_POINT
-    SAMPLER(1, sampler2D sLightSpotMap)
+    SAMPLER(1, sampler2D sLightShape)
 #else
-    SAMPLER(1, samplerCube sLightSpotMap)
+    SAMPLER(1, samplerCube sLightShape)
 #endif
 #if defined(URHO3D_VARIANCE_SHADOW_MAP)
     SAMPLER_HIGHP(2, sampler2D sShadowMap)

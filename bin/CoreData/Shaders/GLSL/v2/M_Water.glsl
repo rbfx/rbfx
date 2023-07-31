@@ -42,18 +42,18 @@ void main()
     SurfaceData surfaceData;
 
     Surface_SetCommon(surfaceData);
-    Surface_SetAmbient(surfaceData, sEmissiveMap, vTexCoord2);
-    Surface_SetNormal(surfaceData, vNormal, sNormalMap, vTexCoord, vTangent, vBitangentXY);
-    Surface_SetPhysicalProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sSpecMap, vTexCoord);
-    Surface_SetLegacyProperties(surfaceData, cMatSpecColor.a, sEmissiveMap, vTexCoord);
-    Surface_SetCubeReflection(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
-    Surface_SetPlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);
+    Surface_SetAmbient(surfaceData, sEmission, vTexCoord2);
+    Surface_SetNormal(surfaceData, vNormal, sNormal, vTexCoord, vTangent, vBitangentXY);
+    Surface_SetPhysicalProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sProperties, vTexCoord);
+    Surface_SetLegacyProperties(surfaceData, cMatSpecColor.a, sEmission, vTexCoord);
+    Surface_SetCubeReflection(surfaceData, sReflection0, sReflection1, vReflectionVec, vWorldPos);
+    Surface_SetPlanarReflection(surfaceData, sReflection0, cReflectionPlaneX, cReflectionPlaneY);
 
     // Apply noise to screen position used for background sampling
     surfaceData.screenPos += surfaceData.normalInTangentSpace.xy * cNoiseStrength;
 
 #ifndef URHO3D_ADDITIVE_BLENDING
-    Surface_SetBackground(surfaceData, sEmissiveMap, sDepthBuffer);
+    Surface_SetBackground(surfaceData, sEmission, sDepthBuffer);
 #endif
 
     // Water doesn't accept diffuse lighting, set albedo to zero

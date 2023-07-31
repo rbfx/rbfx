@@ -183,7 +183,7 @@ void RenderToTexture::CreateScene()
             // as its diffuse texture, then assign the material to the screen plane object
             SharedPtr<Material> renderMaterial(new Material(context_));
             renderMaterial->SetTechnique(0, cache->GetResource<Technique>("Techniques/DiffUnlit.xml"));
-            renderMaterial->SetTexture(ShaderResources::DiffMap, renderTexture);
+            renderMaterial->SetTexture(ShaderResources::Albedo, renderTexture);
             // Since the screen material is on top of the box model and may Z-fight, use negative depth bias
             // to push it forward (particularly necessary on mobiles with possibly less Z resolution)
             renderMaterial->SetDepthBias(BiasParameters(-0.001f, 0.0f));

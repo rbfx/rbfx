@@ -56,7 +56,7 @@ SimplePostProcessPass::SimplePostProcessPass(RenderPipelineInterface* renderPipe
 
     const bool colorReadAndWrite = flags_.Test(PostProcessPassFlag::NeedColorOutputReadAndWrite);
     if (colorReadAndWrite)
-        samplersAdjusted.emplace_back(ShaderResources::DiffMap, SamplerStateDesc::Bilinear());
+        samplersAdjusted.emplace_back(ShaderResources::Albedo, SamplerStateDesc::Bilinear());
 
     pipelineState_ =
         renderBufferManager_->CreateQuadPipelineState(blendMode, shaderName, shaderDefines, samplersAdjusted);

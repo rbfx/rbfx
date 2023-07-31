@@ -190,7 +190,7 @@ UIComponent::UIComponent(Context* context)
 
     material_ = MakeShared<Material>(context_);
     material_->SetTechnique(0, GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/Diff.xml"));
-    material_->SetTexture(ShaderResources::DiffMap, texture_);
+    material_->SetTexture(ShaderResources::Albedo, texture_);
 }
 
 UIComponent::~UIComponent() = default;

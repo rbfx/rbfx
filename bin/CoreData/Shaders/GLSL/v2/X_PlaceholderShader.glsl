@@ -1,7 +1,7 @@
 #include "_Config.glsl"
 
 // Samplers
-SAMPLER(0, sampler2D sDiffMap)
+SAMPLER(0, sampler2D sAlbedo)
 
 // Uniforms
 UNIFORM_BUFFER_BEGIN(1, Camera)

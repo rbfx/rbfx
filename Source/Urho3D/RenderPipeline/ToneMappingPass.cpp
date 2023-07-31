@@ -66,7 +66,7 @@ void ToneMappingPass::InitializeStates()
         break;
     }
 
-    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::DiffMap, SamplerStateDesc::Bilinear()}};
+    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::Albedo, SamplerStateDesc::Bilinear()}};
     toneMappingState_ =
         renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_ToneMapping", defines, samplers);
 }

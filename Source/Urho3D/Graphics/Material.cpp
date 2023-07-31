@@ -75,19 +75,19 @@ ea::string ParseTextureUnitName(ea::string name)
         "zone",
     };
 
-    static const ea::unordered_map<ea::string, ea::string> mapping = {
-        {"diffuse", ShaderResources::DiffMap},
-        {"diff", ShaderResources::DiffMap},
-        {"albedo", ShaderResources::DiffMap},
-        {"normal", ShaderResources::NormalMap},
-        {"norm", ShaderResources::NormalMap},
-        {"specular", ShaderResources::SpecMap},
-        {"spec", ShaderResources::SpecMap},
-        {"emissive", ShaderResources::EmissiveMap},
-        {"environment", ShaderResources::EnvMap},
-        {"env", ShaderResources::EnvMap},
+    static const ea::unordered_map<ea::string, ea::string> nameToUniform = {
+        {"diffuse", ShaderResources::Albedo},
+        {"diff", ShaderResources::Albedo},
+        {"albedo", ShaderResources::Albedo},
+        {"normal", ShaderResources::Normal},
+        {"norm", ShaderResources::Normal},
+        {"specular", ShaderResources::Properties},
+        {"spec", ShaderResources::Properties},
+        {"emissive", ShaderResources::Emission},
+        {"environment", ShaderResources::Reflection0},
+        {"env", ShaderResources::Reflection0},
         {"depth", ShaderResources::DepthBuffer},
-        {"zone", ShaderResources::ZoneCubeMap},
+        {"zone", ShaderResources::Reflection1},
         {"volume", "Volume"},
         {"custom1", "Custom1"},
         {"custom2", "Custom2"},
@@ -95,8 +95,8 @@ ea::string ParseTextureUnitName(ea::string name)
         {"indirection", "Indirection"},
         {"light", "LightBuffer"},
         // These units are not supported in practice
-        {"lightramp", ShaderResources::LightRampMap},
-        {"lightshape", ShaderResources::LightSpotMap},
+        {"lightramp", ShaderResources::LightRamp},
+        {"lightshape", ShaderResources::LightShape},
         {"shadowmap", ShaderResources::ShadowMap},
     };
 

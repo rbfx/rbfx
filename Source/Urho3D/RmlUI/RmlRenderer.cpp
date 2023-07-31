@@ -253,7 +253,7 @@ void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* i
 
     if (texture)
     {
-        drawQueue_->AddShaderResource(ShaderResources::DiffMap, texture);
+        drawQueue_->AddShaderResource(ShaderResources::Albedo, texture);
         textures_.emplace_back(texture);
     }
     drawQueue_->CommitShaderResources();

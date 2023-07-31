@@ -397,9 +397,9 @@ void DefaultRenderPipelineView::Render()
 
         // Draw deferred lights
         const ShaderResourceDesc geometryBuffer[] = {
-            { ShaderResources::DiffMap, deferred_->albedoBuffer_->GetTexture() },
-            { ShaderResources::SpecMap, deferred_->specularBuffer_->GetTexture() },
-            { ShaderResources::NormalMap, deferred_->normalBuffer_->GetTexture() },
+            { ShaderResources::Albedo, deferred_->albedoBuffer_->GetTexture() },
+            { ShaderResources::Properties, deferred_->specularBuffer_->GetTexture() },
+            { ShaderResources::Normal, deferred_->normalBuffer_->GetTexture() },
             { ShaderResources::DepthBuffer, renderBufferManager_->GetDepthStencilTexture() }
         };
         const ShaderParameterDesc cameraParameters[] = {
@@ -435,7 +435,7 @@ void DefaultRenderPipelineView::Render()
     const bool supportReadOnlyDepth = caps.readOnlyDepth_;
     ShaderResourceDesc depthAndColorTextures[] = {
         {ShaderResources::DepthBuffer, supportReadOnlyDepth ? renderBufferManager_->GetDepthStencilTexture() : nullptr},
-        {ShaderResources::EmissiveMap, renderBufferManager_->GetSecondaryColorTexture()},
+        {ShaderResources::Emission, renderBufferManager_->GetSecondaryColorTexture()},
     };
 
     if (supportReadOnlyDepth)

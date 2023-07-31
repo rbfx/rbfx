@@ -408,11 +408,11 @@ void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadP
     if (params.bindSecondaryColorToDiffuse_)
     {
         if (RawTexture* secondaryColor = GetSecondaryColorTexture())
-            drawQueue_->AddShaderResource(ShaderResources::DiffMap, secondaryColor);
+            drawQueue_->AddShaderResource(ShaderResources::Albedo, secondaryColor);
     }
     for (const ShaderResourceDesc& shaderResource : params.resources_)
     {
-        const bool canBind = !params.bindSecondaryColorToDiffuse_ || shaderResource.name_ != ShaderResources::DiffMap;
+        const bool canBind = !params.bindSecondaryColorToDiffuse_ || shaderResource.name_ != ShaderResources::Albedo;
         if (canBind && shaderResource.texture_)
             drawQueue_->AddShaderResource(shaderResource.name_, shaderResource.texture_);
     }
@@ -571,7 +571,7 @@ void RenderBufferManager::ResetCachedRenderBuffers()
 
 void RenderBufferManager::InitializePipelineStates()
 {
-    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::DiffMap, SamplerStateDesc::Bilinear()}};
+    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::Albedo, SamplerStateDesc::Bilinear()}};
 
     copyTexturePipelineState_ = CreateQuadPipelineState(BLEND_REPLACE, "v2/X_CopyFramebuffer", "", samplers);
     copyGammaToLinearTexturePipelineState_ =
@@ -623,7 +623,7 @@ void RenderBufferManager::DrawTextureRegion(ea::string_view debugComment, RawTex
     const IntRect effectiveSourceRect = sourceRect != IntRect::ZERO ? sourceRect : IntRect{IntVector2::ZERO, size};
     callParams.clipToUVOffsetAndScale_ = CalculateViewportOffsetAndScale(renderDevice_, size, effectiveSourceRect);
 
-    const ShaderResourceDesc shaderResources[] = { { ShaderResources::DiffMap, sourceTexture } };
+    const ShaderResourceDesc shaderResources[] = { { ShaderResources::Albedo, sourceTexture } };
     callParams.resources_ = shaderResources;
 
     DrawQuad(debugComment, callParams, flipVertical);

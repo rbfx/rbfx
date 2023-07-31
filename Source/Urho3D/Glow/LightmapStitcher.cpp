@@ -103,7 +103,7 @@ SharedPtr<Scene> CreateStitchingScene(Context* context,
         auto material = MakeShared<Material>(context);
         auto technique = cache->GetResource<Technique>(settings.stitchBackgroundTechniqueName_);
         material->SetTechnique(0, technique);
-        material->SetTexture(ShaderResources::DiffMap, inputTexture);
+        material->SetTexture(ShaderResources::Albedo, inputTexture);
         material->SetRenderOrder(0);
 
         auto staticModel = backgroundNode->CreateComponent<StaticModel>();
@@ -124,7 +124,7 @@ SharedPtr<Scene> CreateStitchingScene(Context* context,
             auto material = MakeShared<Material>(context);
             auto technique = cache->GetResource<Technique>(settings.stitchSeamsTechniqueName_);
             material->SetTechnique(0, technique);
-            material->SetTexture(ShaderResources::DiffMap, inputTexture);
+            material->SetTexture(ShaderResources::Albedo, inputTexture);
             material->SetShaderParameter("MatDiffColor", Color(1.0f, 1.0f, 1.0f, alpha));
             material->SetRenderOrder(1 + i);
 

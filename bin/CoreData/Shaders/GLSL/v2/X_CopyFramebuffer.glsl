@@ -5,7 +5,7 @@
 #include "_VertexTransform.glsl"
 #include "_VertexScreenPos.glsl"
 
-SAMPLER(0, sampler2D sDiffMap)
+SAMPLER(0, sampler2D sAlbedo)
 
 VERTEX_OUTPUT_HIGHP(vec2 vScreenPos)
 
@@ -21,7 +21,7 @@ void main()
 #ifdef URHO3D_PIXEL_SHADER
 void main()
 {
-    vec4 color = texture(sDiffMap, vScreenPos);
+    vec4 color = texture(sAlbedo, vScreenPos);
     #if defined(URHO3D_GAMMA_TO_LINEAR)
         gl_FragColor = GammaToLinearSpaceAlpha(color);
     #elif defined(URHO3D_LINEAR_TO_GAMMA)

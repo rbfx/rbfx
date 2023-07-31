@@ -90,7 +90,7 @@ ImageCube* Skybox::GetImage() const
     if (!material)
         return nullptr;
 
-    Texture* texture = material->GetTexture(ShaderResources::DiffMap);
+    Texture* texture = material->GetTexture(ShaderResources::Albedo);
     if (!texture || !texture->IsInstanceOf<TextureCube>())
         return nullptr;
 

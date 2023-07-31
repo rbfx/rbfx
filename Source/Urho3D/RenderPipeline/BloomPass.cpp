@@ -74,7 +74,7 @@ void BloomPass::InitializeTextures()
 
 void BloomPass::InitializeStates()
 {
-    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::DiffMap, SamplerStateDesc::Bilinear()}};
+    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::Albedo, SamplerStateDesc::Bilinear()}};
 
     pipelineStates_ = CachedStates{};
     pipelineStates_->bright_ =
@@ -93,7 +93,7 @@ unsigned BloomPass::GatherBrightRegions(RenderBuffer* destination)
     const IntVector2 inputSize = viewportTexture->GetParams().size_.ToIntVector2();
     const Vector2 inputInvSize = Vector2::ONE / inputSize.ToVector2();
 
-    const ShaderResourceDesc shaderResources[] = { { ShaderResources::DiffMap, viewportTexture } };
+    const ShaderResourceDesc shaderResources[] = { { ShaderResources::Albedo, viewportTexture } };
     const auto shaderParameters = GetShaderParameters(inputInvSize);
 
     DrawQuadParams drawParams;
@@ -111,7 +111,7 @@ unsigned BloomPass::GatherBrightRegions(RenderBuffer* destination)
 void BloomPass::BlurTexture(RenderBuffer* final, RenderBuffer* temporary)
 {
     ShaderResourceDesc shaderResources[1];
-    shaderResources[0].name_ = ShaderResources::DiffMap;
+    shaderResources[0].name_ = ShaderResources::Albedo;
 
     const Vector2 inputInvSize = Vector2::ONE / final->GetTexture()->GetParams().size_.ToVector2();
     const auto shaderParameters = GetShaderParameters(inputInvSize);
@@ -135,7 +135,7 @@ void BloomPass::BlurTexture(RenderBuffer* final, RenderBuffer* temporary)
 void BloomPass::ApplyBloom(RenderBuffer* bloom, float intensity)
 {
     const ShaderResourceDesc shaderResources[] = {
-        { ShaderResources::DiffMap, bloom->GetTexture() }
+        { ShaderResources::Albedo, bloom->GetTexture() }
     };
     const ShaderParameterDesc shaderParameters[] = {
         { Bloom_LuminanceWeights, luminanceWeights_ },

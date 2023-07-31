@@ -30,7 +30,7 @@ void main()
 
 vec4 Sample(vec2 offset)
 {
-    return texture(sDiffMap, vTexCoord + offset * cInputInvSize);
+    return texture(sAlbedo, vTexCoord + offset * cInputInvSize);
 }
 
 void main()

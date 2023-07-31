@@ -175,7 +175,7 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
             desc.samplers_.Add(nameHash, texture.value_->GetSamplerStateDesc());
     }
     if (ctx.defaultSampler_)
-        desc.samplers_.Add(ShaderResources::DiffMap, *ctx.defaultSampler_);
+        desc.samplers_.Add(ShaderResources::Albedo, *ctx.defaultSampler_);
 
     vertexShaderDefines_ = key.pass_->GetEffectiveVertexShaderDefines();
     pixelShaderDefines_ = key.pass_->GetEffectivePixelShaderDefines();

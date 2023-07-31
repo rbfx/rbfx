@@ -221,7 +221,7 @@ void Water::SetupViewport()
     RenderSurface* surface = renderTexture->GetRenderSurface();
     SharedPtr<Viewport> rttViewport(new Viewport(context_, scene_, reflectionCamera));
     surface->SetViewport(0, rttViewport);
-    waterMaterial_->SetTexture(ShaderResources::EnvMap, renderTexture);
+    waterMaterial_->SetTexture(ShaderResources::Reflection0, renderTexture);
 }
 
 void Water::MoveCamera(float timeStep)

@@ -78,11 +78,11 @@ const StringVector fillModes{"Solid", "Wireframe", "Points"};
 
 // TODO(diligent): Revisit this before merge!
 const ea::vector<MaterialInspectorWidget::TextureUnitDesc> MaterialInspectorWidget::textureUnits{
-    {ShaderResources::DiffMap,      "Albedo",       "TU_DIFFUSE: Albedo map or Diffuse texture with optional alpha channel"},
-    {ShaderResources::NormalMap,    "Normal",       "TU_NORMAL: Normal map"},
-    {ShaderResources::SpecMap,      "Specular",     "TU_SPECULAR: Metallic-Roughness-Occlusion map or Specular texture"},
-    {ShaderResources::EmissiveMap,  "Emissive",     "TU_EMISSIVE: Emissive map or light map"},
-    {ShaderResources::EnvMap,       "Environment",  "TU_ENVIRONMENT: Texture with environment reflection"},
+    {ShaderResources::Albedo,      "Albedo",       "TU_DIFFUSE: Albedo map or Diffuse texture with optional alpha channel"},
+    {ShaderResources::Normal,    "Normal",       "TU_NORMAL: Normal map"},
+    {ShaderResources::Properties,      "Specular",     "TU_SPECULAR: Metallic-Roughness-Occlusion map or Specular texture"},
+    {ShaderResources::Emission,  "Emissive",     "TU_EMISSIVE: Emissive map or light map"},
+    {ShaderResources::Reflection0,       "Environment",  "TU_ENVIRONMENT: Texture with environment reflection"},
 };
 
 const ea::vector<MaterialInspectorWidget::PropertyDesc> MaterialInspectorWidget::properties{

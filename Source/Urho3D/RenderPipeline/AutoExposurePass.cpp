@@ -83,14 +83,14 @@ void AutoExposurePass::InitializeTextures()
 
 void AutoExposurePass::InitializeStates()
 {
-    static const NamedSamplerStateDesc lumSamplers[] = {{ShaderResources::DiffMap, SamplerStateDesc::Bilinear()}};
+    static const NamedSamplerStateDesc lumSamplers[] = {{ShaderResources::Albedo, SamplerStateDesc::Bilinear()}};
     static const NamedSamplerStateDesc adaptedLumSamplers[] = {
-        {ShaderResources::DiffMap, SamplerStateDesc::Bilinear()},
-        {ShaderResources::NormalMap, SamplerStateDesc::Bilinear()},
+        {ShaderResources::Albedo, SamplerStateDesc::Bilinear()},
+        {ShaderResources::Normal, SamplerStateDesc::Bilinear()},
     };
     static const NamedSamplerStateDesc applySamplers[] = {
-        {ShaderResources::DiffMap, SamplerStateDesc::Bilinear()},
-        {ShaderResources::NormalMap, SamplerStateDesc::Bilinear()},
+        {ShaderResources::Albedo, SamplerStateDesc::Bilinear()},
+        {ShaderResources::Normal, SamplerStateDesc::Bilinear()},
     };
 
     pipelineStates_ = CachedStates{};
@@ -124,7 +124,7 @@ void AutoExposurePass::EvaluateDownsampledColorBuffer()
 void AutoExposurePass::EvaluateLuminance()
 {
     ShaderResourceDesc shaderResources[1];
-    shaderResources[0].name_ = ShaderResources::DiffMap;
+    shaderResources[0].name_ = ShaderResources::Albedo;
     ShaderParameterDesc shaderParameters[1];
     shaderParameters[0].name_ = "InputInvSize";
 
@@ -165,8 +165,8 @@ void AutoExposurePass::EvaluateAdaptedLuminance()
     renderBufferManager_->DrawTexture("Store previous luminance", sourceBuffer->GetTexture());
 
     const ShaderResourceDesc shaderResources[] = {
-        { ShaderResources::DiffMap, textures_.prevAdaptedLum_->GetTexture() },
-        { ShaderResources::NormalMap, textures_.lum1_->GetTexture() }
+        { ShaderResources::Albedo, textures_.prevAdaptedLum_->GetTexture() },
+        { ShaderResources::Normal, textures_.lum1_->GetTexture() }
     };
     const ShaderParameterDesc shaderParameters[] = {
         { "AdaptRate", settings_.adaptRate_ },
@@ -198,7 +198,7 @@ void AutoExposurePass::Execute(Camera* camera)
     }
 
     const ShaderResourceDesc shaderResources[] = {
-        { ShaderResources::NormalMap, settings_.autoExposure_ ? textures_.adaptedLum_->GetTexture() : nullptr }
+        { ShaderResources::Normal, settings_.autoExposure_ ? textures_.adaptedLum_->GetTexture() : nullptr }
     };
     const ShaderParameterDesc shaderParameters[] = {
         { "MinMaxExposure", Vector2(settings_.minExposure_, settings_.maxExposure_) },

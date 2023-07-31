@@ -253,7 +253,7 @@ void ShaderProgramCompositor::ApplyLayoutVertexAndCommonDefinesForUserPass(
 
 void ShaderProgramCompositor::ApplyMaterialPixelDefinesForUserPass(ShaderProgramDesc& result, Material* material) const
 {
-    if (Texture* diffuseTexture = material->GetTexture(ShaderResources::DiffMap))
+    if (Texture* diffuseTexture = material->GetTexture(ShaderResources::Albedo))
     {
         result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_DIFFUSE");
         const int hint = GetTextureColorSpaceHint(diffuseTexture->GetLinear(), diffuseTexture->GetSRGB());
@@ -262,19 +262,19 @@ void ShaderProgramCompositor::ApplyMaterialPixelDefinesForUserPass(ShaderProgram
         result.AddShaderDefines(PS, Format("URHO3D_MATERIAL_DIFFUSE_HINT={}", ea::min(1, hint)));
     }
 
-    if (material->GetTexture(ShaderResources::NormalMap))
+    if (material->GetTexture(ShaderResources::Normal))
         result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_NORMAL");
 
-    if (material->GetTexture(ShaderResources::SpecMap))
+    if (material->GetTexture(ShaderResources::Properties))
         result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_SPECULAR");
 
-    if (Texture* envTexture = material->GetTexture(ShaderResources::EnvMap))
+    if (Texture* envTexture = material->GetTexture(ShaderResources::Reflection0))
     {
         if (envTexture->IsInstanceOf<Texture2D>())
             result.AddCommonShaderDefines("URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT");
     }
 
-    if (Texture* emissiveTexture = material->GetTexture(ShaderResources::EmissiveMap))
+    if (Texture* emissiveTexture = material->GetTexture(ShaderResources::Emission))
     {
         result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_EMISSIVE");
         const int hint = GetTextureColorSpaceHint(emissiveTexture->GetLinear(), emissiveTexture->GetSRGB());
@@ -321,7 +321,7 @@ void ShaderProgramCompositor::ApplyDefinesForShadowPass(ShaderProgramDesc& resul
     {
         if (vertexBuffer->HasElement(SEM_TEXCOORD, 0))
             result.AddShaderDefines(VS, "URHO3D_VERTEX_HAS_TEXCOORD0");
-        if (Texture* diffuseTexture = material->GetTexture(ShaderResources::DiffMap))
+        if (Texture* diffuseTexture = material->GetTexture(ShaderResources::Albedo))
             result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_DIFFUSE");
     }
 

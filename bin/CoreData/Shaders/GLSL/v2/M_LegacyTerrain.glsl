@@ -33,21 +33,21 @@ void main()
     SurfaceData surfaceData;
 
     Surface_SetCommon(surfaceData);
-    Surface_SetAmbient(surfaceData, sEmissiveMap, vTexCoord2);
-    Surface_SetNormal(surfaceData, vNormal, sNormalMap, vTexCoord, vTangent, vBitangentXY);
-    Surface_SetPhysicalProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sSpecMap, vTexCoord);
-    Surface_SetLegacyProperties(surfaceData, cMatSpecColor.a, sEmissiveMap, vTexCoord);
-    Surface_SetCubeReflection(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
-    Surface_SetPlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);
-    Surface_SetBackground(surfaceData, sEmissiveMap, sDepthBuffer);
+    Surface_SetAmbient(surfaceData, sEmission, vTexCoord2);
+    Surface_SetNormal(surfaceData, vNormal, sNormal, vTexCoord, vTangent, vBitangentXY);
+    Surface_SetPhysicalProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sProperties, vTexCoord);
+    Surface_SetLegacyProperties(surfaceData, cMatSpecColor.a, sEmission, vTexCoord);
+    Surface_SetCubeReflection(surfaceData, sReflection0, sReflection1, vReflectionVec, vWorldPos);
+    Surface_SetPlanarReflection(surfaceData, sReflection0, cReflectionPlaneX, cReflectionPlaneY);
+    Surface_SetBackground(surfaceData, sEmission, sDepthBuffer);
 
-    half3 weights = texture(sDiffMap, vTexCoord).rgb;
+    half3 weights = texture(sAlbedo, vTexCoord).rgb;
     half sumWeights = weights.r + weights.g + weights.b;
     weights /= sumWeights;
     surfaceData.albedo =
-        weights.r * texture(sNormalMap, vDetailTexCoord) +
-        weights.g * texture(sSpecMap, vDetailTexCoord) +
-        weights.b * texture(sEmissiveMap, vDetailTexCoord);
+        weights.r * texture(sNormal, vDetailTexCoord) +
+        weights.g * texture(sProperties, vDetailTexCoord) +
+        weights.b * texture(sEmission, vDetailTexCoord);
     surfaceData.albedo = GammaToLightSpaceAlpha(cMatDiffColor) * GammaToLightSpaceAlpha(surfaceData.albedo);
 
     surfaceData.specular = GammaToLightSpace(cMatSpecColor.rgb);

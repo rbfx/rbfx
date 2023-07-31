@@ -41,17 +41,17 @@ void main()
     SurfaceData surfaceData;
 
     Surface_SetCommon(surfaceData);
-    Surface_SetAmbient(surfaceData, sEmissiveMap, vTexCoord2);
-    Surface_SetNormal(surfaceData, vNormal, sNormalMap, vTexCoord, vTangent, vBitangentXY);
-    Surface_SetBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sDiffMap, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
-    Surface_SetBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sSpecMap, vTexCoord);
+    Surface_SetAmbient(surfaceData, sEmission, vTexCoord2);
+    Surface_SetNormal(surfaceData, vNormal, sNormal, vTexCoord, vTangent, vBitangentXY);
+    Surface_SetBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sAlbedo, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
+    Surface_SetBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sProperties, vTexCoord);
     Surface_SetAlbedoSpecular(surfaceData);
 
     // Apply noise to screen position used for background sampling
     half2 distortionDistance = surfaceData.normalInTangentSpace.xy * (cNoiseStrength * surfaceData.albedo.a);
     surfaceData.screenPos += distortionDistance;
 
-    Surface_SetBackground(surfaceData, sEmissiveMap, sDepthBuffer);
+    Surface_SetBackground(surfaceData, sEmission, sDepthBuffer);
 
     gl_FragColor = vec4(surfaceData.backgroundColor,1);
 }

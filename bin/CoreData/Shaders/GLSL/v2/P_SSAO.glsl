@@ -58,7 +58,7 @@ vec3 SamplePosition(vec2 texCoord)
 #ifdef DEFERRED
 half3 SampleNormal(vec2 texCoord)
 {
-    half3 worldNormal = DecodeNormal(texture(sNormalMap, texCoord));
+    half3 worldNormal = DecodeNormal(texture(sNormal, texCoord));
     half3 normal = (vec4(worldNormal, 0.0) * cWorldToView).xyz;
     return normal;
 }
@@ -68,7 +68,7 @@ half3 SampleNormal(vec2 texCoord)
 half3 SampleWorldNormal(vec2 texCoord)
 {
 #ifdef DEFERRED
-    return DecodeNormal(texture(sNormalMap, texCoord));
+    return DecodeNormal(texture(sNormal, texCoord));
 #else
     return vec3(0.0, 0.0, 0.0);
 #endif
@@ -158,7 +158,7 @@ half GetSampleWeight(float baseZ, float sampleZ, half3 baseNormal, half3 sampleN
 void CalculateBlur(inout half4 finalColor, inout half finalWeight,
     vec2 texCoord, vec3 basePosition, half3 baseNormal, half weightFactor)
 {
-    half4 color = texture(sDiffMap, texCoord);
+    half4 color = texture(sAlbedo, texCoord);
 
     vec3 position = SamplePosition(texCoord);
     half3 normal = SampleWorldNormal(texCoord);
@@ -205,7 +205,7 @@ void main()
     // Sample textures at the position
     vec3 position = SamplePosition(vTexCoord);
     half3 normal = SampleOrReconstructNormal(position, vTexCoord);
-    half3 noise = DecodeNormal(texture(sDiffMap, vTexCoord / cInputInvSize / 4.0));
+    half3 noise = DecodeNormal(texture(sAlbedo, vTexCoord / cInputInvSize / 4.0));
 
     // Sample points around position
     half weightSum = 0.00001;
@@ -239,7 +239,7 @@ void main()
     vec3 basePosition = SamplePosition(baseTexCoord);
     half3 baseNormal = SampleWorldNormal(baseTexCoord);
 
-    half4 occlusion = sampleWeights[0] * texture(sDiffMap, baseTexCoord);
+    half4 occlusion = sampleWeights[0] * texture(sAlbedo, baseTexCoord);
     half weightSum = sampleWeights[0];
 
     for (int i = 1; i <= NUM_BLUR_SAMPLES; ++i)
@@ -252,12 +252,12 @@ void main()
 #endif
 
 #ifdef PREVIEW
-    half4 ao = texture(sDiffMap, vTexCoord);
+    half4 ao = texture(sAlbedo, vTexCoord);
     gl_FragColor = vec4(ao.a, ao.a, ao.a, 1.0);
 #endif
 
 #ifdef COMBINE
-    half4 ao = texture(sDiffMap, vTexCoord);
+    half4 ao = texture(sAlbedo, vTexCoord);
     gl_FragColor = vec4(ao.xyz, 1.0 - ao.a);
 #endif
 }

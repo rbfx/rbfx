@@ -56,36 +56,36 @@ void main()
 #ifdef LUMINANCE64
     const vec3 LumWeights = vec3(0.2126, 0.7152, 0.0722);
     float logLumSum = 0.0;
-    logLumSum += log(dot(texture(sDiffMap, vTexCoord + vec2(-0.5, -0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
-    logLumSum += log(dot(texture(sDiffMap, vTexCoord + vec2(-0.5, 0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
-    logLumSum += log(dot(texture(sDiffMap, vTexCoord + vec2(0.5, 0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
-    logLumSum += log(dot(texture(sDiffMap, vTexCoord + vec2(0.5, -0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
+    logLumSum += log(dot(texture(sAlbedo, vTexCoord + vec2(-0.5, -0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
+    logLumSum += log(dot(texture(sAlbedo, vTexCoord + vec2(-0.5, 0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
+    logLumSum += log(dot(texture(sAlbedo, vTexCoord + vec2(0.5, 0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
+    logLumSum += log(dot(texture(sAlbedo, vTexCoord + vec2(0.5, -0.5) * cInputInvSize).rgb, LumWeights) + 1e-4);
     gl_FragColor.r = logLumSum * 0.25;
 #endif
 
 #ifdef LUMINANCE16
-    gl_FragColor.r = GatherAvgLum(sDiffMap, vTexCoord);
+    gl_FragColor.r = GatherAvgLum(sAlbedo, vTexCoord);
 #endif
 
 #ifdef LUMINANCE4
-    gl_FragColor.r = GatherAvgLum(sDiffMap, vTexCoord);
+    gl_FragColor.r = GatherAvgLum(sAlbedo, vTexCoord);
 #endif
 
 #ifdef LUMINANCE1
-    gl_FragColor.r = exp(GatherAvgLum(sDiffMap, vTexCoord));
+    gl_FragColor.r = exp(GatherAvgLum(sAlbedo, vTexCoord));
 #endif
 
 #ifdef ADAPTLUMINANCE
-    float previousLuminance = texture(sDiffMap, vTexCoord).r;
-    float currentLuminance = texture(sNormalMap, vTexCoord).r;
+    float previousLuminance = texture(sAlbedo, vTexCoord).r;
+    float currentLuminance = texture(sNormal, vTexCoord).r;
     gl_FragColor.r = previousLuminance + (currentLuminance - previousLuminance) * (1.0 - exp(-cDeltaTime * cAdaptRate));
 #endif
 
 #ifdef EXPOSURE
-    vec3 color = texture(sDiffMap, vScreenPos).rgb;
+    vec3 color = texture(sAlbedo, vScreenPos).rgb;
 
     #ifdef AUTOEXPOSURE
-        float luminance = texture(sNormalMap, vTexCoord).r;
+        float luminance = texture(sNormal, vTexCoord).r;
         float ev100 = GetEV100(luminance);
         float exposure = clamp(GetExposure(ev100), cMinMaxExposure.x, cMinMaxExposure.y);
     #else

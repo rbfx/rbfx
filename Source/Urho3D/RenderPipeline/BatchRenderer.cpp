@@ -502,28 +502,28 @@ private:
             bool materialHasEnvironmentMap = false;
             for (const auto& [nameHash, texture] : materialTextures)
             {
-                if (nameHash == ShaderResources::EnvMap)
+                if (nameHash == ShaderResources::Reflection0)
                     materialHasEnvironmentMap = true;
                 // Emissive texture is used for lightmaps and refraction background, skip if necessary
-                if (nameHash == ShaderResources::EmissiveMap && current_.lightmapTexture_)
+                if (nameHash == ShaderResources::Emission && current_.lightmapTexture_)
                     continue;
 
                 AddShaderResource(drawQueue_, nameHash, texture.value_);
             }
 
             if (current_.lightmapTexture_)
-                AddShaderResource(drawQueue_, ShaderResources::EmissiveMap, current_.lightmapTexture_);
+                AddShaderResource(drawQueue_, ShaderResources::Emission, current_.lightmapTexture_);
             if (current_.pixelLightRamp_)
-                AddShaderResource(drawQueue_, ShaderResources::LightRampMap, current_.pixelLightRamp_);
+                AddShaderResource(drawQueue_, ShaderResources::LightRamp, current_.pixelLightRamp_);
             if (current_.pixelLightShape_)
-                AddShaderResource(drawQueue_, ShaderResources::LightSpotMap, current_.pixelLightShape_);
+                AddShaderResource(drawQueue_, ShaderResources::LightShape, current_.pixelLightShape_);
             if (current_.pixelLightShadowMap_)
                 AddShaderResource(drawQueue_, ShaderResources::ShadowMap, current_.pixelLightShadowMap_);
             if (enabled_.ambientLighting_ && !materialHasEnvironmentMap)
             {
-                AddNullableShaderResource(drawQueue_, ShaderResources::EnvMap, TextureType::TextureCube,
+                AddNullableShaderResource(drawQueue_, ShaderResources::Reflection0, TextureType::TextureCube,
                     current_.reflectionProbeTextures_[0]);
-                AddNullableShaderResource(drawQueue_, ShaderResources::ZoneCubeMap, TextureType::TextureCube,
+                AddNullableShaderResource(drawQueue_, ShaderResources::Reflection1, TextureType::TextureCube,
                     current_.reflectionProbeTextures_[1]);
             }
 

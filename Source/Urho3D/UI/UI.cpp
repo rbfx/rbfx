@@ -1057,7 +1057,7 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
         }
         else if (batch.texture_)
         {
-            drawQueue->AddShaderResource(ShaderResources::DiffMap, batch.texture_);
+            drawQueue->AddShaderResource(ShaderResources::Albedo, batch.texture_);
         }
         drawQueue->CommitShaderResources();
 

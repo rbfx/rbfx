@@ -300,7 +300,7 @@ SharedPtr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMode ble
 
     newMaterial->SetTechnique(0, techIt->second.Get());
     newMaterial->SetName(texture->GetName() + "_" + blendModeNames[blendMode]);
-    newMaterial->SetTexture(ShaderResources::DiffMap, texture);
+    newMaterial->SetTexture(ShaderResources::Albedo, texture);
 
     return newMaterial;
 }

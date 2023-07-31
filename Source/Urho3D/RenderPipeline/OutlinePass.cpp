@@ -127,12 +127,12 @@ bool OutlineScenePass::CreatePipelineState(GraphicsPipelineStateDesc& desc, Pipe
     shaderProgramDesc_.shaderName_[PS] = "v2/M_OutlinePixel";
     shaderProgramDesc_.shaderDefines_[PS] = "";
 
-    const Texture* diffMap = key.material_->GetTexture(ShaderResources::DiffMap);
+    const Texture* diffMap = key.material_->GetTexture(ShaderResources::Albedo);
     const bool needAlphaMask = key.pass_->IsAlphaMask() || (key.pass_->GetBlendMode() != BLEND_REPLACE && diffMap);
     if (needAlphaMask)
     {
         shaderProgramDesc_.AddShaderDefines(PS, "ALPHAMASK");
-        desc.samplers_.Add(ShaderResources::DiffMap, diffMap->GetSamplerStateDesc());
+        desc.samplers_.Add(ShaderResources::Albedo, diffMap->GetSamplerStateDesc());
     }
 
     builder->SetupInputLayoutAndPrimitiveType(desc, shaderProgramDesc_, key.geometry_);
@@ -179,7 +179,7 @@ void OutlinePass::OnRenderBegin(const CommonFrameInfo& frameInfo)
         outlineBuffer_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
     }
 
-    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::DiffMap, SamplerStateDesc::Bilinear()}};
+    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::Albedo, SamplerStateDesc::Bilinear()}};
     if (pipelineStateLinear_ == StaticPipelineStateId::Invalid)
     {
         pipelineStateLinear_ = renderBufferManager_->CreateQuadPipelineState(
@@ -203,7 +203,7 @@ void OutlinePass::Execute(Camera* camera)
     const Vector2 inputInvSize = Vector2::ONE / texture->GetParams().size_.ToVector2();
 
     const ShaderParameterDesc result[] = {{"InputInvSize", inputInvSize}};
-    const ShaderResourceDesc shaderResources[] = {{ShaderResources::DiffMap, texture}};
+    const ShaderResourceDesc shaderResources[] = {{ShaderResources::Albedo, texture}};
 
     renderBufferManager_->SetOutputRenderTargets();
     renderBufferManager_->DrawViewportQuad("Apply outline", pipelineState, shaderResources, result);

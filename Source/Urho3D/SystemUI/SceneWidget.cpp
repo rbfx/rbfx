@@ -138,7 +138,7 @@ void SceneWidget::SetSkyboxTexture(Texture* texture)
         auto material = MakeShared<Material>(context_);
         auto* cache = context_->GetSubsystem<ResourceCache>();
         material->SetTechnique(0, cache->GetResource<Technique>("Techniques/DiffSkybox.xml"));
-        material->SetTexture(ShaderResources::DiffMap, texture);
+        material->SetTexture(ShaderResources::Albedo, texture);
         material->SetCullMode(CULL_NONE);
         skybox->SetMaterial(material);
     }
