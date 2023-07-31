@@ -46,7 +46,7 @@ void main()
     FillSurfacePlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);
     FillSurfaceBackground(surfaceData, sEmissiveMap, sDepthBuffer);
     FillSurfaceBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sDiffMap, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
-    FillSurfaceBaseSpecular(surfaceData, sSpecMap, vTexCoord);
+    FillSurfaceBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sSpecMap, vTexCoord);
     FillSurfaceAlbedoSpecular(surfaceData);
     FillSurfaceEmission(surfaceData, cMatEmissiveColor, sEmissiveMap, vTexCoord, URHO3D_MATERIAL_EMISSIVE_HINT);
 

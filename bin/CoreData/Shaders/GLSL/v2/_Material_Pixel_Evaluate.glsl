@@ -48,7 +48,7 @@
         #endif
 
         half3 diffuseAndSpecularColor = Indirect_SimpleReflection(
-            surfaceData.ambientLighting, gammaReflectionColor, surfaceData.albedo.rgb, cMatEnvMapColor);
+            surfaceData.ambientLighting, gammaReflectionColor, surfaceData.albedo.rgb, surfaceData.reflectionTint);
 
     #else
 
@@ -137,7 +137,7 @@ half3 GetSurfaceColor(SurfaceData surfaceData)
 {
     half3 surfaceColor = surfaceData.albedo.rgb;
 #ifdef URHO3D_REFLECTION_MAPPING
-    surfaceColor += GammaToLightSpace(cMatEnvMapColor * surfaceData.reflectionColor.rgb);
+    surfaceColor += GammaToLightSpace(surfaceData.reflectionTint * surfaceData.reflectionColor.rgb);
 #endif
 
 #ifdef URHO3D_GBUFFER_PASS

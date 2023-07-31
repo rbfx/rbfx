@@ -44,7 +44,7 @@ void main()
     FillSurfaceAmbient(surfaceData, sEmissiveMap, vTexCoord2);
     FillSurfaceNormal(surfaceData, vNormal, sNormalMap, vTexCoord, vTangent, vBitangentXY);
     FillSurfaceBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sDiffMap, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
-    FillSurfaceBaseSpecular(surfaceData, sSpecMap, vTexCoord);
+    FillSurfaceBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sSpecMap, vTexCoord);
     FillSurfaceAlbedoSpecular(surfaceData);
 
     // Apply noise to screen position used for background sampling

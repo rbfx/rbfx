@@ -284,11 +284,13 @@
 ///     Ignored if URHO3D_MATERIAL_HAS_DIFFUSE is not defined.
 /// @param[out] surfaceData.albedo
 
-/// @def FillSurfaceBaseSpecular(surfaceData, specMap, specTexCoord)
+/// @def FillSurfaceBaseSpecular(surfaceData, specColor, reflectionColor, specMap, specTexCoord)
 /// @brief Fill surface base specular value.
 ///     For PBR material, this is no-op because specular PBR workflow is not supported now.
 ///     For non-PBR material, this is used for specular color.
-/// @param[in,optional] specMap Specular map.
+/// @param[in] specColor Specular color in gamma space.
+/// @param[in] reflectionColor Reflection color in gamma space.
+/// @param[in,optional] specMap Specular map in gamma space.
 ///     Ignored if URHO3D_MATERIAL_HAS_SPECULAR is not defined.
 /// @param[in,optional] specTexCoord Texture coordinate for specular map lookup.
 ///     Ignored if URHO3D_MATERIAL_HAS_SPECULAR is not defined.
@@ -359,16 +361,29 @@
 
 #ifdef URHO3D_PHYSICAL_MATERIAL
     // Specular workflow is not supported for PBR materials.
-    #define FillSurfaceBaseSpecular(surfaceData, specMap, specTexCoord) \
+    #define FillSurfaceBaseSpecular(surfaceData, specColor, reflectionColor, specMap, specTexCoord) \
         surfaceData.specular = vec3(0.0, 0.0, 0.0)
 #else
     #ifdef URHO3D_MATERIAL_HAS_SPECULAR
-        #define FillSurfaceBaseSpecular(surfaceData, specMap, specTexCoord) \
-            surfaceData.specular = GammaToLightSpace(cMatSpecColor.rgb * texture(specMap, specTexCoord).rgb)
+        #define _FillSurfaceBaseSpecular(surfaceData, specColor, specMap, specTexCoord) \
+            surfaceData.specular = GammaToLightSpace(specColor.rgb * texture(specMap, specTexCoord).rgb)
     #else
-        #define FillSurfaceBaseSpecular(surfaceData, specMap, specTexCoord) \
-            surfaceData.specular = GammaToLightSpace(cMatSpecColor.rgb)
+        #define _FillSurfaceBaseSpecular(surfaceData, specColor, specMap, specTexCoord) \
+            surfaceData.specular = GammaToLightSpace(specColor.rgb)
     #endif
+
+    #ifdef URHO3D_REFLECTION_MAPPING
+        #define _FillSurfaceReflectionTint(surfaceData, value) \
+            surfaceData.reflectionTint = value
+    #else
+        #define _FillSurfaceReflectionTint(surfaceData, value)
+    #endif
+
+    #define FillSurfaceBaseSpecular(surfaceData, specColor, reflectionColor, specMap, specTexCoord) \
+    { \
+        _FillSurfaceBaseSpecular(surfaceData, specColor, specMap, specTexCoord); \
+        _FillSurfaceReflectionTint(surfaceData, reflectionColor); \
+    }
 #endif
 
 #define FillSurfaceAlbedoSpecular(surfaceData) \

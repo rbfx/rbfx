@@ -19,6 +19,11 @@ struct SurfaceData
     /// Specular color.
     half3 specular;
 
+#ifdef URHO3D_REFLECTION_MAPPING
+    /// Reflection tint in gamma space for non-PBR renderer. In PBR renderer it's identical to specular color.
+    half3 reflectionTint;
+#endif
+
 #ifdef URHO3D_SURFACE_NEED_AMBIENT
     /// Ambient lighting for surface, including global ambient, vertex lights and lightmaps.
     half3 ambientLighting;
