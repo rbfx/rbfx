@@ -129,19 +129,28 @@
 
 /// =================================== Surface metalness/roughness/occlusion ===================================
 
-/// @def FillSurfaceMetallicRoughnessOcclusion(surfaceData, rmoMap, rmoTexCoord, occlusionMap, occlusionTexCoord)
+/// @def FillPhysicalSurfaceProperties(surfaceData, roughnessValue, metallnessValue, rmoMap, rmoTexCoord)
 /// @brief Fill surface metallness aka reflectivity, roughness and occlusion in SurfaceData.
+/// @param[in] roughnessValue Roughness value. If texture is used, this value is multiplied by texture value.
+/// @param[in] metallnessValue Metallness value. If texture is used, this value is multiplied by texture value.
 /// @param[in,optional] rmoMap Properties texture to simultaneously load roughness, metallness and occlusion.
 ///     Ignored if URHO3D_PHYSICAL_MATERIAL is not defined or URHO3D_MATERIAL_HAS_SPECULAR is not defined.
 /// @param[in,optional] rmoTexCoord Texture coordinate for properties map lookup.
 ///     Ignored if URHO3D_PHYSICAL_MATERIAL is not defined or URHO3D_MATERIAL_HAS_SPECULAR is not defined.
+/// @param[in,optional] surfaceData.normal
+///     Ignored unless high-quality specular is enabled (URHO3D_SPECULAR == 2).
+/// @param[out] surfaceData.oneMinusReflectivity
+/// @param[out] surfaceData.roughness
+/// @param[out] surfaceData.occlusion
+
+/// @def FillLegacySurfaceProperties(surfaceData, occlusionMap, occlusionTexCoord)
+/// @brief Fill surface metallness, roughness and occlusion approximately for legacy materials.
 /// @param[in,optional] occlusionMap Occlusion map texture for non-PBR material.
-///     Ignored if URHO3D_HAS_LIGHTMAP is defined, URHO3D_PHYSICAL_MATERIAL is defined,
+///     Ignored if URHO3D_HAS_LIGHTMAP is defined,
 ///     AO is not defined or URHO3D_MATERIAL_HAS_EMISSIVE is not defined.
 /// @param[in,optional] occlusionTexCoord Texture coordinate for occlusion map lookup.
-///     Ignored if URHO3D_HAS_LIGHTMAP is defined, URHO3D_PHYSICAL_MATERIAL is defined,
+///     Ignored if URHO3D_HAS_LIGHTMAP is defined,
 ///     AO is not defined or URHO3D_MATERIAL_HAS_EMISSIVE is not defined.
-/// @param[in,optional] surfaceData.normal
 /// @param[out] surfaceData.oneMinusReflectivity
 /// @param[out] surfaceData.roughness
 /// @param[out] surfaceData.occlusion
@@ -168,7 +177,7 @@
 #endif
 
 #ifdef URHO3D_PHYSICAL_MATERIAL
-    void _GetSurfaceMRO(out half oneMinusReflectivity, out half roughness, out half occlusion, half3 rmo)
+    void _GetSurfaceRMO(out half oneMinusReflectivity, out half roughness, out half occlusion, half3 rmo)
     {
         const half minRoughness = 0.089;
         half oneMinusDielectricReflectivity = 1.0 - 0.16 * cDielectricReflectance * cDielectricReflectance;
@@ -179,20 +188,21 @@
     }
 
     #ifdef URHO3D_MATERIAL_HAS_SPECULAR
-        half3 _GetBaseRMO(sampler2D propertiesMap, vec2 texCoord)
+        half3 _GetBaseRMO(sampler2D propertiesMap, vec2 texCoord, half roughnessValue, half metallnessValue)
         {
             half3 rmo = texture(propertiesMap, texCoord).rga;
-            rmo.xy *= vec2(cRoughness, cMetallic);
+            rmo.xy *= vec2(roughnessValue, metallnessValue);
             return rmo;
         }
     #else
-        #define _GetBaseRMO(propertiesMap, texCoord) vec3(cRoughness, cMetallic, 1.0)
+        #define _GetBaseRMO(propertiesMap, texCoord, roughnessValue, metallnessValue) \
+            vec3(roughnessValue, metallnessValue, 1.0)
     #endif
 
-    #define FillSurfaceMetallicRoughnessOcclusion(surfaceData, rmoMap, rmoTexCoord, occlusionMap, occlusionTexCoord) \
+    #define FillPhysicalSurfaceProperties(surfaceData, roughnessValue, metallnessValue, rmoMap, rmoTexCoord) \
     { \
-        _GetSurfaceMRO(surfaceData.oneMinusReflectivity, surfaceData.roughness, surfaceData.occlusion, \
-            _GetBaseRMO(rmoMap, rmoTexCoord)); \
+        _GetSurfaceRMO(surfaceData.oneMinusReflectivity, surfaceData.roughness, surfaceData.occlusion, \
+            _GetBaseRMO(rmoMap, rmoTexCoord, roughnessValue, metallnessValue)); \
         _AdjustFragmentRoughness(surfaceData); \
     }
 #else
@@ -214,12 +224,20 @@
         #define _GetSurfaceOcclusion(occlusionMap, texCoord) 1.0
     #endif
 
-    #define FillSurfaceMetallicRoughnessOcclusion(surfaceData, rmoMap, rmoTexCoord, occlusionMap, occlusionTexCoord) \
+    #define FillLegacySurfaceProperties(surfaceData, occlusionMap, occlusionTexCoord) \
     { \
         _GetSurfaceMR(surfaceData.oneMinusReflectivity, surfaceData.roughness); \
         surfaceData.occlusion = _GetSurfaceOcclusion(occlusionMap, occlusionTexCoord); \
         _AdjustFragmentRoughness(surfaceData); \
     }
+#endif
+
+#ifndef FillPhysicalSurfaceProperties
+    #define FillPhysicalSurfaceProperties(surfaceData, roughnessValue, metallnessValue, rmoMap, rmoTexCoord)
+#endif
+
+#ifndef FillLegacySurfaceProperties
+    #define FillLegacySurfaceProperties(surfaceData, occlusionMap, occlusionTexCoord)
 #endif
 
 /// =================================== Surface albedo and specular ===================================

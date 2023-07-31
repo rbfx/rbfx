@@ -40,7 +40,8 @@ void main()
     FillSurfaceCommon(surfaceData);
     FillSurfaceAmbient(surfaceData, sEmissiveMap, vTexCoord2);
     FillSurfaceNormal(surfaceData, vNormal, sNormalMap, vTexCoord, vTangent, vBitangentXY);
-    FillSurfaceMetallicRoughnessOcclusion(surfaceData, sSpecMap, vTexCoord, sEmissiveMap, vTexCoord);
+    FillPhysicalSurfaceProperties(surfaceData, cRoughness, cMetallic, sSpecMap, vTexCoord);
+    FillLegacySurfaceProperties(surfaceData, sEmissiveMap, vTexCoord);
     FillSurfaceCubeReflection(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
     FillSurfacePlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);
     FillSurfaceBackground(surfaceData, sEmissiveMap, sDepthBuffer);
