@@ -85,10 +85,11 @@ void main()
     Surface_SetBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sSpecMap, vTexCoord);
     Surface_SetAlbedoSpecular(surfaceData);
     Surface_SetEmission(surfaceData, cMatEmissiveColor, sEmissiveMap, vTexCoord, URHO3D_MATERIAL_EMISSIVE_HINT);
+    Surface_ApplySoftFadeOut(surfaceData, vWorldDepth, cFadeOffsetScale);
 
     // TODO: Make configurable
     half3 surfaceColor = GetSurfaceColor(surfaceData);
-    half surfaceAlpha = GetSurfaceAlpha(surfaceData, cFadeOffsetScale) * smoothstep(0.5, 0.45, abs(modelSpace.z));
+    half surfaceAlpha = surfaceData.albedo.a * smoothstep(0.5, 0.45, abs(modelSpace.z));
     if (surfaceAlpha < 1.0/255.0)
     {
         discard;

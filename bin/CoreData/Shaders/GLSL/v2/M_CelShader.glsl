@@ -49,6 +49,7 @@ void main()
     Surface_SetBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sSpecMap, vTexCoord);
     Surface_SetAlbedoSpecular(surfaceData);
     Surface_SetEmission(surfaceData, cMatEmissiveColor, sEmissiveMap, vTexCoord, URHO3D_MATERIAL_EMISSIVE_HINT);
+    Surface_ApplySoftFadeOut(surfaceData, vWorldDepth, cFadeOffsetScale);
 
 #ifdef URHO3D_AMBIENT_PASS
     half3 surfaceColor = CalculateAmbientLighting(surfaceData);
@@ -77,8 +78,7 @@ void main()
 
 #endif
 
-    half surfaceAlpha = GetSurfaceAlpha(surfaceData, cFadeOffsetScale);
-    gl_FragColor = GetFragmentColorAlpha(surfaceColor, surfaceAlpha, surfaceData.fogFactor);
+    gl_FragColor = GetFragmentColorAlpha(surfaceColor, surfaceData.albedo.a, surfaceData.fogFactor);
 #endif
 
 }

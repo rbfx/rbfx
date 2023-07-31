@@ -588,3 +588,24 @@
     Surface_SetBackgroundDepth(surfaceData, depthMap); \
 }
 
+/// =================================== Surface soft fade out ===================================
+
+/// @def Surface_ApplySoftFadeOut(surfaceData, worldDepth, fadeOffsetScale)
+/// @brief Apply soft fade out to the surface alpha.
+/// @param[in] worldDepth Depth of the surface in world space units.
+/// @param[in] fadeOffsetScale Constant offset and scale of the fade out.
+/// @param[in] surfaceData.backgroundDepth
+/// @param[in,out] surfaceData.albedo.a
+
+half GetSoftParticleFade(half fragmentDepth, half backgroundDepth, half2 fadeOffsetScale)
+{
+    half depthDelta = backgroundDepth - fragmentDepth - fadeOffsetScale.x;
+    return clamp(depthDelta * fadeOffsetScale.y, 0.0, 1.0);
+}
+
+#ifdef URHO3D_SOFT_PARTICLES
+    #define Surface_ApplySoftFadeOut(surfaceData, worldDepth, fadeOffsetScale) \
+        surfaceData.albedo.a *= GetSoftParticleFade(worldDepth, surfaceData.backgroundDepth, fadeOffsetScale)
+#else
+    #define Surface_ApplySoftFadeOut(surfaceData, worldDepth, fadeOffsetScale)
+#endif
