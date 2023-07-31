@@ -3,15 +3,15 @@
 
 /// Return final surface alpha with optionally applied fade out.
 #ifdef URHO3D_SOFT_PARTICLES
-    half GetSoftParticleFade(half fragmentDepth, half backgroundDepth)
+    half GetSoftParticleFade(half fragmentDepth, half backgroundDepth, half2 fadeOffsetScale)
     {
-        half depthDelta = backgroundDepth - fragmentDepth - cFadeOffsetScale.x;
-        return clamp(depthDelta * cFadeOffsetScale.y, 0.0, 1.0);
+        half depthDelta = backgroundDepth - fragmentDepth - fadeOffsetScale.x;
+        return clamp(depthDelta * fadeOffsetScale.y, 0.0, 1.0);
     }
-    #define GetSurfaceAlpha(surfaceData) \
-        surfaceData.albedo.a * GetSoftParticleFade(vWorldDepth, surfaceData.backgroundDepth)
+    #define GetSurfaceAlpha(surfaceData, fadeOffsetScale) \
+        surfaceData.albedo.a * GetSoftParticleFade(vWorldDepth, surfaceData.backgroundDepth, fadeOffsetScale)
 #else
-    #define GetSurfaceAlpha(surfaceData) surfaceData.albedo.a
+    #define GetSurfaceAlpha(surfaceData, fadeOffsetScale) surfaceData.albedo.a
 #endif
 
 #ifdef URHO3D_IS_LIT

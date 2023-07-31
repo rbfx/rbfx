@@ -88,7 +88,7 @@ void main()
 
     // TODO: Make configurable
     half3 surfaceColor = GetSurfaceColor(surfaceData);
-    half surfaceAlpha = GetSurfaceAlpha(surfaceData) * smoothstep(0.5, 0.45, abs(modelSpace.z));
+    half surfaceAlpha = GetSurfaceAlpha(surfaceData, cFadeOffsetScale) * smoothstep(0.5, 0.45, abs(modelSpace.z));
     if (surfaceAlpha < 1.0/255.0)
     {
         discard;

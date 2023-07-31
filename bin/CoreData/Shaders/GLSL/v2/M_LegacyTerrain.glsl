@@ -56,7 +56,7 @@ void main()
 #endif
 
     half3 surfaceColor = GetSurfaceColor(surfaceData);
-    half surfaceAlpha = GetSurfaceAlpha(surfaceData);
+    half surfaceAlpha = GetSurfaceAlpha(surfaceData, cFadeOffsetScale);
     gl_FragColor = GetFragmentColorAlpha(surfaceColor, surfaceAlpha, surfaceData.fogFactor);
 }
 #endif
