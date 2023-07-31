@@ -500,15 +500,15 @@ private:
 
             const auto& materialTextures = current_.material_->GetTextures();
             bool materialHasEnvironmentMap = false;
-            for (const auto& texture : materialTextures)
+            for (const auto& [nameHash, texture] : materialTextures)
             {
-                if (texture.first == TU_ENVIRONMENT)
+                if (nameHash == ShaderResources::EnvMap)
                     materialHasEnvironmentMap = true;
                 // Emissive texture is used for lightmaps and refraction background, skip if necessary
-                if (texture.first == TU_EMISSIVE && current_.lightmapTexture_)
+                if (nameHash == ShaderResources::EmissiveMap && current_.lightmapTexture_)
                     continue;
 
-                AddShaderResource(drawQueue_, Material::TextureUnitToShaderResource(texture.first), texture.second);
+                AddShaderResource(drawQueue_, nameHash, texture.value_);
             }
 
             if (current_.lightmapTexture_)

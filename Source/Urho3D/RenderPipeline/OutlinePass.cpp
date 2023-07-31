@@ -127,7 +127,7 @@ bool OutlineScenePass::CreatePipelineState(GraphicsPipelineStateDesc& desc, Pipe
     shaderProgramDesc_.shaderName_[PS] = "v2/M_OutlinePixel";
     shaderProgramDesc_.shaderDefines_[PS] = "";
 
-    const Texture* diffMap = key.material_->GetTexture(TU_DIFFUSE);
+    const Texture* diffMap = key.material_->GetTexture(ShaderResources::DiffMap);
     const bool needAlphaMask = key.pass_->IsAlphaMask() || (key.pass_->GetBlendMode() != BLEND_REPLACE && diffMap);
     if (needAlphaMask)
     {
@@ -203,7 +203,7 @@ void OutlinePass::Execute(Camera* camera)
     const Vector2 inputInvSize = Vector2::ONE / texture->GetParams().size_.ToVector2();
 
     const ShaderParameterDesc result[] = {{"InputInvSize", inputInvSize}};
-    const ShaderResourceDesc shaderResources[] = {{"DiffMap", texture}};
+    const ShaderResourceDesc shaderResources[] = {{ShaderResources::DiffMap, texture}};
 
     renderBufferManager_->SetOutputRenderTargets();
     renderBufferManager_->DrawViewportQuad("Apply outline", pipelineState, shaderResources, result);

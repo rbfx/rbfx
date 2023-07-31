@@ -132,9 +132,9 @@ void AmbientOcclusionPass::EvaluateAO(Camera* camera, const Matrix4& viewToTextu
     };
 
     const ShaderResourceDesc shaderResources[] = {
-        {"DepthBuffer", renderBufferManager_->GetDepthStencilTexture()},
-        {"DiffMap", textures_.noise_},
-        {"NormalMap", normalBuffer_ ? normalBuffer_->GetTexture() : nullptr}
+        {ShaderResources::DepthBuffer, renderBufferManager_->GetDepthStencilTexture()},
+        {ShaderResources::DiffMap, textures_.noise_},
+        {ShaderResources::NormalMap, normalBuffer_ ? normalBuffer_->GetTexture() : nullptr}
     };
 
     DrawQuadParams drawParams;
@@ -180,9 +180,9 @@ void AmbientOcclusionPass::BlurTexture(const Matrix4& textureToViewSpace)
     {
         renderBufferManager_->SetRenderTargets(nullptr, {textures_.currentTarget_});
         const ShaderResourceDesc shaderResources[] = {
-            {"DiffMap", textures_.previousTarget_->GetTexture()},
-            {"DepthBuffer", renderBufferManager_->GetDepthStencilTexture()},
-            {"NormalMap", normalBuffer_ ? normalBuffer_->GetTexture() : nullptr}};
+            {ShaderResources::DiffMap, textures_.previousTarget_->GetTexture()},
+            {ShaderResources::DepthBuffer, renderBufferManager_->GetDepthStencilTexture()},
+            {ShaderResources::NormalMap, normalBuffer_ ? normalBuffer_->GetTexture() : nullptr}};
         drawParams.resources_ = shaderResources;
         shaderParameters[0].value_ = Vector2(blurStep.x_, 0.0f);
         renderBufferManager_->DrawQuad("SSAO Blur Horizontally", drawParams);
@@ -192,9 +192,9 @@ void AmbientOcclusionPass::BlurTexture(const Matrix4& textureToViewSpace)
     {
         renderBufferManager_->SetRenderTargets(nullptr, {textures_.currentTarget_});
         const ShaderResourceDesc shaderResources[] = {
-            {"DiffMap", textures_.previousTarget_->GetTexture()},
-            {"DepthBuffer", renderBufferManager_->GetDepthStencilTexture()},
-            {"NormalMap", normalBuffer_ ? normalBuffer_->GetTexture() : nullptr}};
+            {ShaderResources::DiffMap, textures_.previousTarget_->GetTexture()},
+            {ShaderResources::DepthBuffer, renderBufferManager_->GetDepthStencilTexture()},
+            {ShaderResources::NormalMap, normalBuffer_ ? normalBuffer_->GetTexture() : nullptr}};
         drawParams.resources_ = shaderResources;
         shaderParameters[0].value_ = Vector2(0.0f, blurStep.y_);
         renderBufferManager_->DrawQuad("SSAO Blur Vertically", drawParams);
@@ -207,7 +207,7 @@ void AmbientOcclusionPass::Blit(StaticPipelineStateId pipelineStateId)
     renderBufferManager_->SetOutputRenderTargets();
 
     const ShaderResourceDesc shaderResources[] = {
-        {"DiffMap", textures_.previousTarget_->GetTexture()}};
+        {ShaderResources::DiffMap, textures_.previousTarget_->GetTexture()}};
 
     renderBufferManager_->DrawViewportQuad("SSAO Combine", pipelineStateId, shaderResources, {});
 }

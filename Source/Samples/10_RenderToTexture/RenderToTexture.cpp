@@ -32,6 +32,7 @@
 #include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
+#include <Urho3D/RenderPipeline/ShaderConsts.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Font.h>
@@ -182,7 +183,7 @@ void RenderToTexture::CreateScene()
             // as its diffuse texture, then assign the material to the screen plane object
             SharedPtr<Material> renderMaterial(new Material(context_));
             renderMaterial->SetTechnique(0, cache->GetResource<Technique>("Techniques/DiffUnlit.xml"));
-            renderMaterial->SetTexture(TU_DIFFUSE, renderTexture);
+            renderMaterial->SetTexture(ShaderResources::DiffMap, renderTexture);
             // Since the screen material is on top of the box model and may Z-fight, use negative depth bias
             // to push it forward (particularly necessary on mobiles with possibly less Z resolution)
             renderMaterial->SetDepthBias(BiasParameters(-0.001f, 0.0f));

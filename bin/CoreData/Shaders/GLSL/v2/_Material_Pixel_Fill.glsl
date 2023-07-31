@@ -129,12 +129,12 @@
 
 /// =================================== Surface metalness/roughness/occlusion ===================================
 
-/// @def Surface_SetPhysicalProperties(surfaceData, roughnessValue, metallnessValue, dielectricReflectance, rmoMap, rmoTexCoord)
-/// @brief Fill surface metallness aka reflectivity, roughness and occlusion in SurfaceData.
+/// @def Surface_SetPhysicalProperties(surfaceData, roughnessValue, metalnessValue, dielectricReflectance, rmoMap, rmoTexCoord)
+/// @brief Fill surface metalness aka reflectivity, roughness and occlusion in SurfaceData.
 /// @param[in] roughnessValue Roughness value. If texture is used, this value is multiplied by texture value.
-/// @param[in] metallnessValue Metallness value. If texture is used, this value is multiplied by texture value.
+/// @param[in] metalnessValue Metalness value. If texture is used, this value is multiplied by texture value.
 /// @param[in] dielectricReflectance Reflectance value used for dielectrics. It cannot be sampled from texture.
-/// @param[in,optional] rmoMap Properties texture to simultaneously load roughness, metallness and occlusion.
+/// @param[in,optional] rmoMap Properties texture to simultaneously load roughness, metalness and occlusion.
 ///     Ignored if URHO3D_PHYSICAL_MATERIAL is not defined or URHO3D_MATERIAL_HAS_SPECULAR is not defined.
 /// @param[in,optional] rmoTexCoord Texture coordinate for properties map lookup.
 ///     Ignored if URHO3D_PHYSICAL_MATERIAL is not defined or URHO3D_MATERIAL_HAS_SPECULAR is not defined.
@@ -145,7 +145,7 @@
 /// @param[out] surfaceData.occlusion
 
 /// @def Surface_SetLegacyProperties(surfaceData, specularPower, occlusionMap, occlusionTexCoord)
-/// @brief Fill surface metallness, roughness and occlusion approximately for legacy materials.
+/// @brief Fill surface metalness, roughness and occlusion approximately for legacy materials.
 /// @param[in] specularPower Specular power value.
 /// @param[in,optional] occlusionMap Occlusion map texture for non-PBR material.
 ///     Ignored if URHO3D_HAS_LIGHTMAP is defined,
@@ -191,21 +191,21 @@
     }
 
     #ifdef URHO3D_MATERIAL_HAS_SPECULAR
-        half3 _GetBaseRMO(sampler2D propertiesMap, vec2 texCoord, half roughnessValue, half metallnessValue)
+        half3 _GetBaseRMO(sampler2D propertiesMap, vec2 texCoord, half roughnessValue, half metalnessValue)
         {
             half3 rmo = texture(propertiesMap, texCoord).rga;
-            rmo.xy *= vec2(roughnessValue, metallnessValue);
+            rmo.xy *= vec2(roughnessValue, metalnessValue);
             return rmo;
         }
     #else
-        #define _GetBaseRMO(propertiesMap, texCoord, roughnessValue, metallnessValue) \
-            vec3(roughnessValue, metallnessValue, 1.0)
+        #define _GetBaseRMO(propertiesMap, texCoord, roughnessValue, metalnessValue) \
+            vec3(roughnessValue, metalnessValue, 1.0)
     #endif
 
-    #define Surface_SetPhysicalProperties(surfaceData, roughnessValue, metallnessValue, dielectricReflectance, rmoMap, rmoTexCoord) \
+    #define Surface_SetPhysicalProperties(surfaceData, roughnessValue, metalnessValue, dielectricReflectance, rmoMap, rmoTexCoord) \
     { \
         _GetSurfaceRMO(surfaceData.oneMinusReflectivity, surfaceData.roughness, surfaceData.occlusion, \
-            _GetBaseRMO(rmoMap, rmoTexCoord, roughnessValue, metallnessValue), dielectricReflectance); \
+            _GetBaseRMO(rmoMap, rmoTexCoord, roughnessValue, metalnessValue), dielectricReflectance); \
         _Surface_AdjustRoughness(surfaceData); \
     }
 #else
@@ -236,7 +236,7 @@
 #endif
 
 #ifndef Surface_SetPhysicalProperties
-    #define Surface_SetPhysicalProperties(surfaceData, roughnessValue, metallnessValue, dielectricReflectance, rmoMap, rmoTexCoord)
+    #define Surface_SetPhysicalProperties(surfaceData, roughnessValue, metalnessValue, dielectricReflectance, rmoMap, rmoTexCoord)
 #endif
 
 #ifndef Surface_SetLegacyProperties
@@ -257,20 +257,20 @@
 ///     Ignored if URHO3D_PIXEL_NEED_VERTEX_COLOR is not defined.
 
 /// @def DeduceAlbedoSpecularForPBR(albedo, specular, oneMinusReflectivity)
-/// @brief Deduce effective albedo and specular for PBR material from base albedo and metallness.
+/// @brief Deduce effective albedo and specular for PBR material from base albedo and metalness.
 /// @param[in,out] albedo Base albedo as input, effective albedo as output.
 /// @param[out] specular Effective specular.
-/// @param[in] oneMinusReflectivity Inverse of metallness.
+/// @param[in] oneMinusReflectivity Inverse of metalness.
 
 /// @def AdjustAlbedoForPremultiplyAlpha(albedo, oneMinusReflectivity)
 /// @brief Adjust albedo (and alpha) value in premultiplied alpha mode.
 /// @param[in,out] albedo Albedo value with alpha.
-/// @param[in] oneMinusReflectivity Inverse of metallness.
+/// @param[in] oneMinusReflectivity Inverse of metalness.
 
 /// @def Surface_SetBaseAlbedo(
 ///     surfaceData, albedoColor, alphaCutoff, vertexColor, albedoMap, albedoTexCoord, colorSpace)
 /// @brief Fill surface base albedo value.
-///     For PBR material, this is used for both albedo and specular, depending on metallness.
+///     For PBR material, this is used for both albedo and specular, depending on metalness.
 ///     For non-PBR material, this is used for diffuse color.
 /// @param[in] albedoColor Albedo color in gamma space. If texture is present, it will be modulated by this color.
 /// @param[in] alphaCutoff Alpha cutoff value.

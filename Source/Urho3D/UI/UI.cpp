@@ -1053,7 +1053,7 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
         if (batch.customMaterial_)
         {
             for (const auto& texture : batch.customMaterial_->GetTextures())
-                drawQueue->AddShaderResource(Material::TextureUnitToShaderResource(texture.first), texture.second);
+                drawQueue->AddShaderResource(texture.first, texture.second.value_);
         }
         else if (batch.texture_)
         {

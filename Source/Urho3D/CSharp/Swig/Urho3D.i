@@ -183,7 +183,6 @@ CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
 %ignore Urho3D::end;
 
 %ignore Urho3D::textureFilterModeNames;
-%ignore Urho3D::textureUnitNames;
 %ignore Urho3D::cullModeNames;
 %ignore Urho3D::fillModeNames;
 %ignore Urho3D::blendModeNames;
@@ -1049,11 +1048,9 @@ using ImGuiConfigFlags = unsigned;
 %template(ValueAnimationInfoMap)        eastl::unordered_map<eastl::string, Urho3D::SharedPtr<Urho3D::ValueAnimationInfo>>;
 %template(AnimationTrackMap)            eastl::unordered_map<Urho3D::StringHash, Urho3D::AnimationTrack>;
 %template(MaterialShaderParameterMap)   eastl::unordered_map<Urho3D::StringHash, Urho3D::MaterialShaderParameter>;
-%template(TextureMap)                   eastl::unordered_map<Urho3D::TextureUnit, Urho3D::SharedPtr<Urho3D::Texture>>;
 %template(AttributeAnimationInfos)      eastl::unordered_map<eastl::string, Urho3D::SharedPtr<Urho3D::AttributeAnimationInfo>>;
 %template(VertexBufferMorphMap)         eastl::unordered_map<unsigned, Urho3D::VertexBufferMorph>;
 %template(ObjectMap)                    eastl::unordered_map<Urho3D::StringHash, Urho3D::SharedPtr<Urho3D::Object>>;
-%template(TextureMap)                   eastl::unordered_map<Urho3D::TextureUnit, Urho3D::SharedPtr<Urho3D::Texture>>;
 
 using Vector3 = Urho3D::Vector3;
 %template(StringHashList)                   eastl::vector<Urho3D::StringHash>;

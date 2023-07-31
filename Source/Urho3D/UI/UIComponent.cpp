@@ -35,6 +35,7 @@
 #include "../Graphics/VertexBuffer.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../Resource/ResourceCache.h"
 #include "../IO/Log.h"
 #include "../UI/UI.h"
@@ -189,7 +190,7 @@ UIComponent::UIComponent(Context* context)
 
     material_ = MakeShared<Material>(context_);
     material_->SetTechnique(0, GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/Diff.xml"));
-    material_->SetTexture(TU_DIFFUSE, texture_);
+    material_->SetTexture(ShaderResources::DiffMap, texture_);
 }
 
 UIComponent::~UIComponent() = default;

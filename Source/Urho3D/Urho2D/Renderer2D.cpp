@@ -37,6 +37,7 @@
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../IO/Log.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../Scene/Node.h"
 #include "../Scene/Scene.h"
@@ -299,7 +300,7 @@ SharedPtr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMode ble
 
     newMaterial->SetTechnique(0, techIt->second.Get());
     newMaterial->SetName(texture->GetName() + "_" + blendModeNames[blendMode]);
-    newMaterial->SetTexture(TU_DIFFUSE, texture);
+    newMaterial->SetTexture(ShaderResources::DiffMap, texture);
 
     return newMaterial;
 }

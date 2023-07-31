@@ -315,16 +315,15 @@ void PipelineStateBuilder::SetupSamplersForUserOrShadowPass(
     static const auto refractionMapSampler = SamplerStateDesc::Trilinear();
 
     bool materialHasEnvironmentMap = false;
-    for (const auto& [unit, texture] : material->GetTextures())
+    for (const auto& [nameHash, texture] : material->GetTextures())
     {
-        if (texture)
+        if (texture.value_)
         {
-            const StringHash textureName = Material::TextureUnitToShaderResource(unit);
-            if (textureName == ShaderResources::EmissiveMap && hasLightmap)
+            if (nameHash == ShaderResources::EmissiveMap && hasLightmap)
                 continue;
-            if (textureName == ShaderResources::EnvMap)
+            if (nameHash == ShaderResources::EnvMap)
                 materialHasEnvironmentMap = true;
-            pipelineStateDesc_.samplers_.Add(textureName, texture->GetSamplerStateDesc());
+            pipelineStateDesc_.samplers_.Add(nameHash, texture.value_->GetSamplerStateDesc());
         }
     }
 

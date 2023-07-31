@@ -33,6 +33,7 @@
 #include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
+#include <Urho3D/RenderPipeline/ShaderConsts.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Font.h>
@@ -220,7 +221,7 @@ void Water::SetupViewport()
     RenderSurface* surface = renderTexture->GetRenderSurface();
     SharedPtr<Viewport> rttViewport(new Viewport(context_, scene_, reflectionCamera));
     surface->SetViewport(0, rttViewport);
-    waterMaterial_->SetTexture(TU_ENVIRONMENT, renderTexture);
+    waterMaterial_->SetTexture(ShaderResources::EnvMap, renderTexture);
 }
 
 void Water::MoveCamera(float timeStep)

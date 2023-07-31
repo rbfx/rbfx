@@ -169,13 +169,10 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
     desc.blendMode_ = key.blendMode_;
     desc.scissorTestEnabled_ = true;
 
-    for (const auto& [unit, texture] : key.material_->GetTextures())
+    for (const auto& [nameHash, texture] : key.material_->GetTextures())
     {
-        if (texture)
-        {
-            const StringHash textureName = Material::TextureUnitToShaderResource(unit);
-            desc.samplers_.Add(textureName, texture->GetSamplerStateDesc());
-        }
+        if (texture.value_)
+            desc.samplers_.Add(nameHash, texture.value_->GetSamplerStateDesc());
     }
     if (ctx.defaultSampler_)
         desc.samplers_.Add(ShaderResources::DiffMap, *ctx.defaultSampler_);

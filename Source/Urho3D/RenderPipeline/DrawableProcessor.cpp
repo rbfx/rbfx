@@ -406,7 +406,7 @@ void DrawableProcessor::CheckMaterialForAuxiliaryRenderSurfaces(Material* materi
     for (const auto& item : material->GetTextures())
     {
         // Skip if not render targets
-        Texture* texture = item.second;
+        Texture* texture = item.second.value_;
         if (!texture || !texture->IsRenderTarget())
             continue;
 

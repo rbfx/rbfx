@@ -28,6 +28,7 @@
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Technique.h"
 #include "../Graphics/Terrain.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
 
@@ -85,7 +86,7 @@ inline Color GetMaterialDiffuseColor(const Material* material)
 /// Return material diffuse texture and UV offsets.
 inline Texture* GetMaterialDiffuseTexture(const Material* material, Vector4& uOffset, Vector4& vOffset)
 {
-    Texture* texture = material->GetTexture(TU_DIFFUSE);
+    Texture* texture = material->GetTexture(ShaderResources::DiffMap);
     if (!texture)
         return {};
 
@@ -168,14 +169,14 @@ inline SharedPtr<Material> CreateBakingMaterial(Material* bakingMaterial, Materi
 
     ea::string shaderDefines;
 
-    if (Texture* diffuseMap = sourceMaterial->GetTexture(TU_DIFFUSE))
+    if (Texture* diffuseMap = sourceMaterial->GetTexture(ShaderResources::DiffMap))
     {
-        material->SetTexture(TU_DIFFUSE, diffuseMap);
+        material->SetTexture(ShaderResources::DiffMap, diffuseMap);
         shaderDefines += "DIFFMAP ";
     }
-    if (Texture* emissiveMap = sourceMaterial->GetTexture(TU_EMISSIVE))
+    if (Texture* emissiveMap = sourceMaterial->GetTexture(ShaderResources::EmissiveMap))
     {
-        material->SetTexture(TU_EMISSIVE, emissiveMap);
+        material->SetTexture(ShaderResources::EmissiveMap, emissiveMap);
         shaderDefines += "EMISSIVEMAP ";
     }
 

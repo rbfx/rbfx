@@ -171,7 +171,7 @@ UNIFORM_BUFFER_END(3, Light)
 /// cMatEmissiveColor: Material emissive color in gamma space.
 /// cRoughness: Perceptual roughness of PBR material.
 /// cMatEnvMapColor: Environment reflection color for non-PBR material in gamma space.
-/// cMetallic: Metallness of PBR material.
+/// cMetallic: Metalness of PBR material.
 /// cMatSpecColor.rgb: Color of specular reflection for non-PBR material in gamma space.
 /// cMatSpecColor.a: Specular reflection power for non-PBR material.
 /// cFadeOffsetScale.x: Difference in linear depth between background surface and geometry

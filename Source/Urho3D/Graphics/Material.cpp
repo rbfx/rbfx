@@ -42,7 +42,6 @@
 #include "../Resource/ResourceCache.h"
 #include "../Resource/ResourceEvents.h"
 #include "../Resource/XMLFile.h"
-#include "../Resource/JSONFile.h"
 #include "../RenderPipeline/ShaderConsts.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
@@ -55,34 +54,67 @@ namespace Urho3D
 
 extern const char* wrapModeNames[];
 
-TextureUnit ParseTextureUnitName(ea::string name)
+ea::string ParseTextureUnitName(ea::string name)
 {
+    static const ea::vector<ea::string> unitToName = {
+        "diffuse",
+        "normal",
+        "specular",
+        "emissive",
+        "environment",
+        "volume",
+        "custom1",
+        "custom2",
+        "lightramp",
+        "lightshape",
+        "shadowmap",
+        "faceselect",
+        "indirection",
+        "depth",
+        "light",
+        "zone",
+    };
+
+    static const ea::unordered_map<ea::string, ea::string> mapping = {
+        {"diffuse", ShaderResources::DiffMap},
+        {"diff", ShaderResources::DiffMap},
+        {"albedo", ShaderResources::DiffMap},
+        {"normal", ShaderResources::NormalMap},
+        {"norm", ShaderResources::NormalMap},
+        {"specular", ShaderResources::SpecMap},
+        {"spec", ShaderResources::SpecMap},
+        {"emissive", ShaderResources::EmissiveMap},
+        {"environment", ShaderResources::EnvMap},
+        {"env", ShaderResources::EnvMap},
+        {"depth", ShaderResources::DepthBuffer},
+        {"zone", ShaderResources::ZoneCubeMap},
+        {"volume", "Volume"},
+        {"custom1", "Custom1"},
+        {"custom2", "Custom2"},
+        {"faceselect", "FaceSelect"},
+        {"indirection", "Indirection"},
+        {"light", "LightBuffer"},
+        // These units are not supported in practice
+        {"lightramp", ShaderResources::LightRampMap},
+        {"lightshape", ShaderResources::LightSpotMap},
+        {"shadowmap", ShaderResources::ShadowMap},
+    };
+
     name.make_lower();
     name.trim();
 
-    auto unit = (TextureUnit)GetStringListIndex(name.c_str(), textureUnitNames, MAX_TEXTURE_UNITS);
-    if (unit == MAX_TEXTURE_UNITS)
+    if (name.length() < 3)
     {
-        // Check also for shorthand names
-        if (name == "diff")
-            unit = TU_DIFFUSE;
-        else if (name == "albedo")
-            unit = TU_DIFFUSE;
-        else if (name == "norm")
-            unit = TU_NORMAL;
-        else if (name == "spec")
-            unit = TU_SPECULAR;
-        else if (name == "env")
-            unit = TU_ENVIRONMENT;
-        // Finally check for specifying the texture unit directly as a number
-        else if (name.length() < 3)
-            unit = (TextureUnit)Clamp(ToInt(name), 0, MAX_TEXTURE_UNITS - 1);
+        const int textureUnit = ToInt(name);
+        if (textureUnit >= 0 && textureUnit < unitToName.size())
+            name = unitToName[textureUnit];
     }
 
-    if (unit == MAX_TEXTURE_UNITS)
-        URHO3D_LOGERROR("Unknown texture unit name " + name);
+    const auto iter = nameToUniform.find(name);
+    if (iter != nameToUniform.end())
+        return iter->second;
 
-    return unit;
+    return name;
 }
 
 StringHash ParseTextureTypeName(const ea::string& name)
@@ -205,15 +237,10 @@ bool Material::BeginLoad(Deserializer& source)
         if (BeginLoadXML(source))
             return true;
     }
-    else if (format == InternalResourceFormat::Json)
-    {
-        if (BeginLoadJSON(source))
-            return true;
-    }
 
     // All loading failed
+    loadXMLFile_.Reset();
     ResetToDefaults();
-    loadJSONFile_.Reset();
     return false;
 }
 
@@ -232,14 +259,7 @@ bool Material::EndLoad()
         success = Load(rootElem);
     }
 
-    if (loadJSONFile_)
-    {
-        JSONValue rootVal = loadJSONFile_->GetRoot();
-        success = Load(rootVal);
-    }
-
     loadXMLFile_.Reset();
-    loadJSONFile_.Reset();
     return success;
 }
 
@@ -265,90 +285,27 @@ bool Material::BeginLoadXML(Deserializer& source)
             XMLElement textureElem = rootElem.GetChild("texture");
             while (textureElem)
             {
-                ea::string name = textureElem.GetAttribute("name");
+                ea::string resourceName = textureElem.GetAttribute("name");
                 // Detect cube maps and arrays by file extension: they are defined by an XML file
-                if (GetExtension(name) == ".xml")
+                if (GetExtension(resourceName) == ".xml")
                 {
-                    StringHash type = ParseTextureTypeXml(cache, name);
-                    if (!type && textureElem.HasAttribute("unit"))
-                    {
-                        TextureUnit unit = ParseTextureUnitName(textureElem.GetAttribute("unit"));
-                        if (unit == TU_VOLUMEMAP)
-                            type = Texture3D::GetTypeStatic();
-                    }
+                    StringHash type = ParseTextureTypeXml(cache, resourceName);
+                    if (!type && textureElem.HasAttribute("type"))
+                        type = textureElem.GetAttribute("type");
 
                     if (type == Texture3D::GetTypeStatic())
-                        cache->BackgroundLoadResource<Texture3D>(name, true, this);
+                        cache->BackgroundLoadResource<Texture3D>(resourceName, true, this);
                     else if (type == Texture2DArray::GetTypeStatic())
-                        cache->BackgroundLoadResource<Texture2DArray>(name, true, this);
+                        cache->BackgroundLoadResource<Texture2DArray>(resourceName, true, this);
                     else
-                        cache->BackgroundLoadResource<TextureCube>(name, true, this);
+                        cache->BackgroundLoadResource<TextureCube>(resourceName, true, this);
                 }
                 else
-                    cache->BackgroundLoadResource<Texture2D>(name, true, this);
+                    cache->BackgroundLoadResource<Texture2D>(resourceName, true, this);
                 textureElem = textureElem.GetNext("texture");
             }
         }
 
-        return true;
-    }
-
-    return false;
-}
-
-bool Material::BeginLoadJSON(Deserializer& source)
-{
-    // Attempt to load a JSON file
-    ResetToDefaults();
-    loadXMLFile_.Reset();
-
-    // Attempt to load from JSON file instead
-    loadJSONFile_ = MakeShared<JSONFile>(context_);
-    if (loadJSONFile_->Load(source))
-    {
-        // If async loading, scan the XML content beforehand for technique & texture resources
-        // and request them to also be loaded. Can not do anything else at this point
-        if (GetAsyncLoadState() == ASYNC_LOADING)
-        {
-            auto* cache = GetSubsystem<ResourceCache>();
-            const JSONValue& rootVal = loadJSONFile_->GetRoot();
-
-            JSONArray techniqueArray = rootVal.Get("techniques").GetArray();
-            for (unsigned i = 0; i < techniqueArray.size(); i++)
-            {
-                const JSONValue& techVal = techniqueArray[i];
-                cache->BackgroundLoadResource<Technique>(techVal.Get("name").GetString(), true, this);
-            }
-
-            JSONObject textureObject = rootVal.Get("textures").GetObject();
-            for (auto it = textureObject.begin(); it != textureObject.end(); it++)
-            {
-                ea::string unitString = it->first;
-                ea::string name = it->second.GetString();
-                // Detect cube maps and arrays by file extension: they are defined by an XML file
-                if (GetExtension(name) == ".xml")
-                {
-                    StringHash type = ParseTextureTypeXml(cache, name);
-                    if (!type && !unitString.empty())
-                    {
-                        TextureUnit unit = ParseTextureUnitName(unitString);
-                        if (unit == TU_VOLUMEMAP)
-                            type = Texture3D::GetTypeStatic();
-                    }
-
-                    if (type == Texture3D::GetTypeStatic())
-                        cache->BackgroundLoadResource<Texture3D>(name, true, this);
-                    else if (type == Texture2DArray::GetTypeStatic())
-                        cache->BackgroundLoadResource<Texture2DArray>(name, true, this);
-                    else
-                        cache->BackgroundLoadResource<TextureCube>(name, true, this);
-                }
-                else
-                    cache->BackgroundLoadResource<Texture2D>(name, true, this);
-            }
-        }
-
-        // JSON material was successfully loaded
         return true;
     }
 
@@ -409,29 +366,28 @@ bool Material::Load(const XMLElement& source)
     XMLElement textureElem = source.GetChild("texture");
     while (textureElem)
     {
-        TextureUnit unit = TU_DIFFUSE;
-        if (textureElem.HasAttribute("unit"))
-            unit = ParseTextureUnitName(textureElem.GetAttribute("unit"));
-        if (unit < MAX_TEXTURE_UNITS)
-        {
-            ea::string name = textureElem.GetAttribute("name");
-            // Detect cube maps and arrays by file extension: they are defined by an XML file
-            if (GetExtension(name) == ".xml")
-            {
-                StringHash type = ParseTextureTypeXml(cache, name);
-                if (!type && unit == TU_VOLUMEMAP)
-                    type = Texture3D::GetTypeStatic();
+        ea::string uniformName = textureElem.GetAttribute("uniform");
+        if (uniformName.empty() && textureElem.HasAttribute("unit"))
+            uniformName = ParseTextureUnitName(textureElem.GetAttribute("unit"));
 
-                if (type == Texture3D::GetTypeStatic())
-                    SetTextureInternal(unit, cache->GetResource<Texture3D>(name));
-                else if (type == Texture2DArray::GetTypeStatic())
-                    SetTextureInternal(unit, cache->GetResource<Texture2DArray>(name));
-                else
-                    SetTextureInternal(unit, cache->GetResource<TextureCube>(name));
-            }
+        const ea::string resourceName = textureElem.GetAttribute("name");
+        // Detect cube maps and arrays by file extension: they are defined by an XML file
+        if (GetExtension(resourceName) == ".xml")
+        {
+            StringHash type = ParseTextureTypeXml(cache, resourceName);
+            if (!type && textureElem.HasAttribute("type"))
+                type = textureElem.GetAttribute("type");
+
+            if (type == Texture3D::GetTypeStatic())
+                SetTextureInternal(uniformName, cache->GetResource<Texture3D>(resourceName));
+            else if (type == Texture2DArray::GetTypeStatic())
+                SetTextureInternal(uniformName, cache->GetResource<Texture2DArray>(resourceName));
             else
-                SetTextureInternal(unit, cache->GetResource<Texture2D>(name));
+                SetTextureInternal(uniformName, cache->GetResource<TextureCube>(resourceName));
         }
+        else
+            SetTextureInternal(uniformName, cache->GetResource<Texture2D>(resourceName));
+
         textureElem = textureElem.GetNext("texture");
     }
     RefreshTextureEventSubscriptions();
@@ -514,166 +470,6 @@ bool Material::Load(const XMLElement& source)
     return true;
 }
 
-bool Material::Load(const JSONValue& source)
-{
-    ResetToDefaults();
-
-    if (source.IsNull())
-    {
-        URHO3D_LOGERROR("Can not load material from null JSON element");
-        return false;
-    }
-
-    auto* cache = GetSubsystem<ResourceCache>();
-
-    const JSONValue& shaderVal = source.Get("shader");
-    if (!shaderVal.IsNull())
-    {
-        vertexShaderDefines_ = shaderVal.Get("vsdefines").GetString();
-        pixelShaderDefines_ = shaderVal.Get("psdefines").GetString();
-    }
-
-    // Load techniques
-    JSONArray techniquesArray = source.Get("techniques").GetArray();
-    techniques_.clear();
-    techniques_.reserve(techniquesArray.size());
-
-    for (unsigned i = 0; i < techniquesArray.size(); i++)
-    {
-        const JSONValue& techVal = techniquesArray[i];
-        auto* tech = cache->GetResource<Technique>(techVal.Get("name").GetString());
-        if (tech)
-        {
-            TechniqueEntry newTechnique;
-            newTechnique.technique_ = newTechnique.original_ = tech;
-            JSONValue qualityVal = techVal.Get("quality");
-            if (!qualityVal.IsNull())
-                newTechnique.qualityLevel_ = (MaterialQuality)qualityVal.GetInt();
-            JSONValue lodDistanceVal = techVal.Get("loddistance");
-            if (!lodDistanceVal.IsNull())
-                newTechnique.lodDistance_ = lodDistanceVal.GetFloat();
-            techniques_.push_back(newTechnique);
-        }
-    }
-
-    SortTechniques();
-    ApplyShaderDefines();
-
-    // Load textures
-    JSONObject textureObject = source.Get("textures").GetObject();
-    for (auto it = textureObject.begin(); it != textureObject.end(); it++)
-    {
-        ea::string textureUnit = it->first;
-        ea::string textureName = it->second.GetString();
-
-        TextureUnit unit = TU_DIFFUSE;
-        unit = ParseTextureUnitName(textureUnit);
-
-        if (unit < MAX_TEXTURE_UNITS)
-        {
-            // Detect cube maps and arrays by file extension: they are defined by an XML file
-            if (GetExtension(textureName) == ".xml")
-            {
-                StringHash type = ParseTextureTypeXml(cache, textureName);
-                if (!type && unit == TU_VOLUMEMAP)
-                    type = Texture3D::GetTypeStatic();
-
-                if (type == Texture3D::GetTypeStatic())
-                    SetTextureInternal(unit, cache->GetResource<Texture3D>(textureName));
-                else if (type == Texture2DArray::GetTypeStatic())
-                    SetTextureInternal(unit, cache->GetResource<Texture2DArray>(textureName));
-                else
-                    SetTextureInternal(unit, cache->GetResource<TextureCube>(textureName));
-            }
-            else
-                SetTextureInternal(unit, cache->GetResource<Texture2D>(textureName));
-        }
-    }
-    RefreshTextureEventSubscriptions();
-
-    // Get shader parameters
-    batchedParameterUpdate_ = true;
-    JSONObject parameterObject = source.Get("shaderParameters").GetObject();
-
-    for (auto it = parameterObject.begin(); it != parameterObject.end(); it++)
-    {
-        ea::string name = it->first;
-        if (it->second.IsString())
-            SetShaderParameter(name, ParseShaderParameterValue(it->second.GetString()));
-        else if (it->second.IsObject())
-        {
-            JSONObject valueObj = it->second.GetObject();
-            SetShaderParameter(name, Variant(valueObj["type"].GetString(), valueObj["value"].GetString()));
-        }
-    }
-    batchedParameterUpdate_ = false;
-
-    // Load shader parameter animations
-    JSONObject paramAnimationsObject = source.Get("shaderParameterAnimations").GetObject();
-    for (auto it = paramAnimationsObject.begin(); it != paramAnimationsObject.end(); it++)
-    {
-        ea::string name = it->first;
-        JSONValue paramAnimVal = it->second;
-
-        SharedPtr<ValueAnimation> animation(MakeShared<ValueAnimation>(context_));
-        if (!animation->LoadJSON(paramAnimVal))
-        {
-            URHO3D_LOGERROR("Could not load parameter animation");
-            return false;
-        }
-
-        ea::string wrapModeString = paramAnimVal.Get("wrapmode").GetString();
-        WrapMode wrapMode = WM_LOOP;
-        for (int i = 0; i <= WM_CLAMP; ++i)
-        {
-            if (wrapModeString == wrapModeNames[i])
-            {
-                wrapMode = (WrapMode)i;
-                break;
-            }
-        }
-
-        float speed = paramAnimVal.Get("speed").GetFloat();
-        SetShaderParameterAnimation(name, animation, wrapMode, speed);
-    }
-
-    JSONValue cullVal = source.Get("cull");
-    if (!cullVal.IsNull())
-        SetCullMode((CullMode)GetStringListIndex(cullVal.GetString().c_str(), cullModeNames, CULL_CCW));
-
-    JSONValue shadowCullVal = source.Get("shadowcull");
-    if (!shadowCullVal.IsNull())
-        SetShadowCullMode((CullMode)GetStringListIndex(shadowCullVal.GetString().c_str(), cullModeNames, CULL_CCW));
-
-    JSONValue fillVal = source.Get("fill");
-    if (!fillVal.IsNull())
-        SetFillMode((FillMode)GetStringListIndex(fillVal.GetString().c_str(), fillModeNames, FILL_SOLID));
-
-    JSONValue depthBiasVal = source.Get("depthbias");
-    if (!depthBiasVal.IsNull())
-        SetDepthBias(BiasParameters(depthBiasVal.Get("constant").GetFloat(), depthBiasVal.Get("slopescaled").GetFloat(), depthBiasVal.Get("normaloffset").GetFloat()));
-
-    JSONValue alphaToCoverageVal = source.Get("alphatocoverage");
-    if (!alphaToCoverageVal.IsNull())
-        SetAlphaToCoverage(alphaToCoverageVal.GetBool());
-
-    JSONValue lineAntiAliasVal = source.Get("lineantialias");
-    if (!lineAntiAliasVal.IsNull())
-        SetLineAntiAlias(lineAntiAliasVal.GetBool());
-
-    JSONValue renderOrderVal = source.Get("renderorder");
-    if (!renderOrderVal.IsNull())
-        SetRenderOrder((unsigned char)renderOrderVal.GetUInt());
-
-    JSONValue occlusionVal = source.Get("occlusion");
-    if (!occlusionVal.IsNull())
-        SetOcclusion(occlusionVal.GetBool());
-
-    RefreshShaderParameterHash();
-    RefreshMemoryUse();
-    return true;
-}
-
 bool Material::Save(XMLElement& dest) const
 {
     if (dest.IsNull())
@@ -696,14 +492,16 @@ bool Material::Save(XMLElement& dest) const
     }
 
     // Write texture units
-    for (unsigned j = 0; j < MAX_TEXTURE_UNITS; ++j)
+    auto textures = textures_.values();
+    const auto isLess = [](const MaterialTexture& lhs, const MaterialTexture& rhs) { return lhs.name_ < rhs.name_; };
+    ea::sort(textures.begin(), textures.end(), isLess);
+    for (const MaterialTexture& texture : textures)
     {
-        Texture* texture = GetTexture((TextureUnit)j);
-        if (texture)
+        if (texture.value_)
         {
             XMLElement textureElem = dest.CreateChild("texture");
-            textureElem.SetString("unit", textureUnitNames[j]);
-            textureElem.SetString("name", texture->GetName());
+            textureElem.SetString("uniform", texture.name_);
+            textureElem.SetString("name", texture.value_->GetName());
         }
     }
 
@@ -779,108 +577,6 @@ bool Material::Save(XMLElement& dest) const
     // Write occlusion
     XMLElement occlusionElem = dest.CreateChild("occlusion");
     occlusionElem.SetBool("enable", occlusion_);
-
-    return true;
-}
-
-bool Material::Save(JSONValue& dest) const
-{
-    // Write techniques
-    JSONArray techniquesArray;
-    techniquesArray.reserve(techniques_.size());
-    for (unsigned i = 0; i < techniques_.size(); ++i)
-    {
-        const TechniqueEntry& entry = techniques_[i];
-        if (!entry.technique_)
-            continue;
-
-        JSONValue techniqueVal;
-        techniqueVal.Set("name", entry.technique_->GetName());
-        techniqueVal.Set("quality", (int) entry.qualityLevel_);
-        techniqueVal.Set("loddistance", entry.lodDistance_);
-        techniquesArray.push_back(techniqueVal);
-    }
-    dest.Set("techniques", techniquesArray);
-
-    // Write texture units
-    JSONValue texturesValue;
-    for (unsigned j = 0; j < MAX_TEXTURE_UNITS; ++j)
-    {
-        Texture* texture = GetTexture((TextureUnit)j);
-        if (texture)
-            texturesValue.Set(textureUnitNames[j], texture->GetName());
-    }
-    dest.Set("textures", texturesValue);
-
-    // Write shader compile defines
-    if (!vertexShaderDefines_.empty() || !pixelShaderDefines_.empty())
-    {
-        JSONValue shaderVal;
-        if (!vertexShaderDefines_.empty())
-            shaderVal.Set("vsdefines", vertexShaderDefines_);
-        if (!pixelShaderDefines_.empty())
-            shaderVal.Set("psdefines", pixelShaderDefines_);
-        dest.Set("shader", shaderVal);
-    }
-
-    // Write shader parameters
-    JSONValue shaderParamsVal;
-    for (auto j = shaderParameters_.begin();
-         j != shaderParameters_.end(); ++j)
-    {
-        if (j->second.value_.GetType() != VAR_BUFFER && j->second.value_.GetType() != VAR_INT && j->second.value_.GetType() != VAR_BOOL)
-            shaderParamsVal.Set(j->second.name_, j->second.value_.ToString());
-        else
-        {
-            JSONObject valueObj;
-            valueObj["type"] = j->second.value_.GetTypeName();
-            valueObj["value"] = j->second.value_.ToString();
-            shaderParamsVal.Set(j->second.name_, valueObj);
-        }
-    }
-    dest.Set("shaderParameters", shaderParamsVal);
-
-    // Write shader parameter animations
-    JSONValue shaderParamAnimationsVal;
-    for (auto j = shaderParameterAnimationInfos_.begin();
-         j != shaderParameterAnimationInfos_.end(); ++j)
-    {
-        ShaderParameterAnimationInfo* info = j->second;
-        JSONValue paramAnimationVal;
-        if (!info->GetAnimation()->SaveJSON(paramAnimationVal))
-            return false;
-
-        paramAnimationVal.Set("wrapmode", wrapModeNames[info->GetWrapMode()]);
-        paramAnimationVal.Set("speed", info->GetSpeed());
-        shaderParamAnimationsVal.Set(info->GetName(), paramAnimationVal);
-    }
-    dest.Set("shaderParameterAnimations", shaderParamAnimationsVal);
-
-    // Write culling modes
-    dest.Set("cull", cullModeNames[cullMode_]);
-    dest.Set("shadowcull", cullModeNames[shadowCullMode_]);
-
-    // Write fill mode
-    dest.Set("fill", fillModeNames[fillMode_]);
-
-    // Write depth bias
-    JSONValue depthBiasValue;
-    depthBiasValue.Set("constant", depthBias_.constantBias_);
-    depthBiasValue.Set("slopescaled", depthBias_.slopeScaledBias_);
-    depthBiasValue.Set("normaloffset", depthBias_.normalOffset_);
-    dest.Set("depthbias", depthBiasValue);
-
-    // Write alpha-to-coverage
-    dest.Set("alphatocoverage", alphaToCoverage_);
-
-    // Write line anti-alias
-    dest.Set("lineantialias", lineAntiAlias_);
-
-    // Write render order
-    dest.Set("renderorder", (unsigned) renderOrder_);
-
-    // Write occlusion
-    dest.Set("occlusion", occlusion_);
 
     return true;
 }
@@ -1013,20 +709,25 @@ void Material::SetShaderParameterAnimationSpeed(const ea::string& name, float sp
         info->SetSpeed(speed);
 }
 
-void Material::SetTexture(TextureUnit unit, Texture* texture)
+void Material::SetTexture(ea::string_view name, Texture* texture)
 {
-    SetTextureInternal(unit, texture);
+    SetTextureInternal(name, texture);
     RefreshTextureEventSubscriptions();
 }
 
-void Material::SetTextureInternal(TextureUnit unit, Texture* texture)
+void Material::SetTextureInternal(ea::string_view name, Texture* texture)
 {
-    if (unit < MAX_TEXTURE_UNITS)
+    const auto iter = textures_.find(StringHash{name});
+    if (iter != textures_.end())
     {
         if (texture)
-            textures_[unit] = texture;
+            iter->second.value_ = texture;
         else
-            textures_.erase(unit);
+            textures_.erase(iter);
+    }
+    else
+    {
+        textures_.emplace(StringHash{name}, MaterialTexture{ea::string{name}, SharedPtr<Texture>{texture}});
     }
 }
 
@@ -1227,10 +928,10 @@ Pass* Material::GetDefaultPass() const
     return nullptr;
 }
 
-Texture* Material::GetTexture(TextureUnit unit) const
+Texture* Material::GetTexture(StringHash nameHash) const
 {
-    auto i = textures_.find(unit);
-    return i != textures_.end() ? i->second : nullptr;
+    const auto iter = textures_.find(nameHash);
+    return iter != textures_.end() ? iter->second.value_ : nullptr;
 }
 
 const Variant& Material::GetShaderParameter(const ea::string& name) const
@@ -1260,11 +961,6 @@ float Material::GetShaderParameterAnimationSpeed(const ea::string& name) const
 Scene* Material::GetScene() const
 {
     return scene_;
-}
-
-ea::string Material::GetTextureUnitName(TextureUnit unit)
-{
-    return textureUnitNames[unit];
 }
 
 Variant Material::ParseShaderParameterValue(const ea::string& value)
@@ -1343,7 +1039,7 @@ void Material::RefreshMemoryUse()
     unsigned memoryUse = sizeof(Material);
 
     memoryUse += techniques_.size() * sizeof(TechniqueEntry);
-    memoryUse += MAX_TEXTURE_UNITS * sizeof(SharedPtr<Texture>);
+    memoryUse += textures_.size() * sizeof(SharedPtr<Texture>);
     memoryUse += shaderParameters_.size() * sizeof(MaterialShaderParameter);
 
     SetMemoryUse(memoryUse);
@@ -1426,7 +1122,7 @@ void Material::RefreshTextureEventSubscriptions()
     UnsubscribeFromEvent(E_RELOADFINISHED);
     const auto onReload = [this] { MarkPipelineStateHashDirty(); };
     for (const auto& item : textures_)
-        SubscribeToEvent(item.second, E_RELOADFINISHED, onReload);
+        SubscribeToEvent(item.second.value_, E_RELOADFINISHED, onReload);
     MarkPipelineStateHashDirty();
 }
 
@@ -1442,44 +1138,15 @@ unsigned Material::RecalculatePipelineStateHash() const
     CombineHash(hash, MakeHash(depthBias_.slopeScaledBias_));
     CombineHash(hash, alphaToCoverage_);
     CombineHash(hash, specular_);
-    for (const auto& [unit, texture] : textures_)
+    for (const auto& [nameHash, info] : textures_)
     {
-        CombineHash(hash, unit);
-        CombineHash(hash, texture->GetSRGB());
-        CombineHash(hash, texture->GetLinear());
-        CombineHash(hash, texture->GetSamplerStateDesc().ToHash());
+        CombineHash(hash, nameHash.Value());
+        CombineHash(hash, info.value_->GetSRGB());
+        CombineHash(hash, info.value_->GetLinear());
+        CombineHash(hash, info.value_->GetSamplerStateDesc().ToHash());
     }
 
     return hash;
-}
-
-StringHash Material::TextureUnitToShaderResource(TextureUnit unit)
-{
-    static const auto mapping = []
-    {
-        ea::array<StringHash, MAX_TEXTURE_UNITS> result;
-
-        result[TU_DIFFUSE] = ShaderResources::DiffMap;
-        result[TU_NORMAL] = ShaderResources::NormalMap;
-        result[TU_SPECULAR] = ShaderResources::SpecMap;
-        result[TU_EMISSIVE] = ShaderResources::EmissiveMap;
-        result[TU_ENVIRONMENT] = ShaderResources::EnvMap;
-        //result[TU_VOLUMEMAP] = "";
-        result[TU_CUSTOM1] = "Custom1";
-        result[TU_CUSTOM2] = "Custom2";
-        result[TU_LIGHTRAMP] = ShaderResources::LightRampMap;
-        result[TU_LIGHTSHAPE] = ShaderResources::LightSpotMap;
-        result[TU_SHADOWMAP] = ShaderResources::ShadowMap;
-        //result[TU_FACESELECT] = "";
-        //result[TU_INDIRECTION] = "";
-        result[TU_DEPTHBUFFER] = ShaderResources::DepthBuffer;
-        //result[TU_LIGHTBUFFER] = "";
-        result[TU_ZONE] = ShaderResources::ZoneCubeMap;
-
-        return result;
-    }();
-
-    return mapping[unit];
 }
 
 }

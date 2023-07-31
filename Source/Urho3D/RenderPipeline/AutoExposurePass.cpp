@@ -124,7 +124,7 @@ void AutoExposurePass::EvaluateDownsampledColorBuffer()
 void AutoExposurePass::EvaluateLuminance()
 {
     ShaderResourceDesc shaderResources[1];
-    shaderResources[0].name_ = "DiffMap";
+    shaderResources[0].name_ = ShaderResources::DiffMap;
     ShaderParameterDesc shaderParameters[1];
     shaderParameters[0].name_ = "InputInvSize";
 
@@ -165,8 +165,8 @@ void AutoExposurePass::EvaluateAdaptedLuminance()
     renderBufferManager_->DrawTexture("Store previous luminance", sourceBuffer->GetTexture());
 
     const ShaderResourceDesc shaderResources[] = {
-        { "DiffMap", textures_.prevAdaptedLum_->GetTexture() },
-        { "NormalMap", textures_.lum1_->GetTexture() }
+        { ShaderResources::DiffMap, textures_.prevAdaptedLum_->GetTexture() },
+        { ShaderResources::NormalMap, textures_.lum1_->GetTexture() }
     };
     const ShaderParameterDesc shaderParameters[] = {
         { "AdaptRate", settings_.adaptRate_ },
@@ -198,7 +198,7 @@ void AutoExposurePass::Execute(Camera* camera)
     }
 
     const ShaderResourceDesc shaderResources[] = {
-        { "NormalMap", settings_.autoExposure_ ? textures_.adaptedLum_->GetTexture() : nullptr }
+        { ShaderResources::NormalMap, settings_.autoExposure_ ? textures_.adaptedLum_->GetTexture() : nullptr }
     };
     const ShaderParameterDesc shaderParameters[] = {
         { "MinMaxExposure", Vector2(settings_.minExposure_, settings_.maxExposure_) },

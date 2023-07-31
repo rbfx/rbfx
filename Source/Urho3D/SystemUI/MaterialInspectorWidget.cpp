@@ -29,6 +29,7 @@
 #include "../Graphics/Texture3D.h"
 #include "../Graphics/TextureCube.h"
 #include "../IO/FileSystem.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../Resource/ResourceCache.h"
 #include "../SystemUI/SystemUI.h"
 
@@ -75,15 +76,13 @@ const StringVector fillModes{"Solid", "Wireframe", "Points"};
 
 }
 
+// TODO(diligent): Revisit this before merge!
 const ea::vector<MaterialInspectorWidget::TextureUnitDesc> MaterialInspectorWidget::textureUnits{
-    {false, TU_DIFFUSE,     "Albedo",       "TU_DIFFUSE: Albedo map or Diffuse texture with optional alpha channel"},
-    {false, TU_NORMAL,      "Normal",       "TU_NORMAL: Normal map"},
-    {false, TU_SPECULAR,    "Specular",     "TU_SPECULAR: Metallic-Roughness-Occlusion map or Specular texture"},
-    {false, TU_EMISSIVE,    "Emissive",     "TU_EMISSIVE: Emissive map or light map"},
-    {false, TU_ENVIRONMENT, "Environment",  "TU_ENVIRONMENT: Texture with environment reflection"},
-    {true,  TU_VOLUMEMAP,   "* Volume",     "TU_VOLUMEMAP: Desktop only, custom unit"},
-    {true,  TU_CUSTOM1,     "* Custom 1",   "TU_CUSTOM1: Desktop only, custom unit"},
-    {true,  TU_CUSTOM2,     "* Custom 2",   "TU_CUSTOM2: Desktop only, custom unit"},
+    {ShaderResources::DiffMap,      "Albedo",       "TU_DIFFUSE: Albedo map or Diffuse texture with optional alpha channel"},
+    {ShaderResources::NormalMap,    "Normal",       "TU_NORMAL: Normal map"},
+    {ShaderResources::SpecMap,      "Specular",     "TU_SPECULAR: Metallic-Roughness-Occlusion map or Specular texture"},
+    {ShaderResources::EmissiveMap,  "Emissive",     "TU_EMISSIVE: Emissive map or light map"},
+    {ShaderResources::EnvMap,       "Environment",  "TU_ENVIRONMENT: Texture with environment reflection"},
 };
 
 const ea::vector<MaterialInspectorWidget::PropertyDesc> MaterialInspectorWidget::properties{
@@ -266,8 +265,8 @@ void MaterialInspectorWidget::RenderContent()
         OnEditBegin(this);
         for (Material* material : materials_)
         {
-            for (const auto& [unit, texture] : pendingSetTextures_)
-                material->SetTexture(unit, texture);
+            for (const auto& [name, texture] : pendingSetTextures_)
+                material->SetTexture(name, texture);
         }
         OnEditEnd(this);
     }
@@ -538,20 +537,20 @@ void MaterialInspectorWidget::RenderTextures()
 
 void MaterialInspectorWidget::RenderTextureUnit(const TextureUnitDesc& desc)
 {
-    const IdScopeGuard guard(desc.unit_);
+    const IdScopeGuard guard(desc.uniform_.c_str());
 
     auto cache = GetSubsystem<ResourceCache>();
 
-    Texture* texture = materials_[0]->GetTexture(desc.unit_);
+    Texture* texture = materials_[0]->GetTexture(desc.uniform_);
     const bool isUndefined = ea::any_of(materials_.begin() + 1, materials_.end(),
-        [&](const Material* material) { return material->GetTexture(desc.unit_) != texture; });
+        [&](const Material* material) { return material->GetTexture(desc.uniform_) != texture; });
 
     Widgets::ItemLabel(desc.name_, Widgets::GetItemLabelColor(isUndefined, texture == nullptr));
     if (ui::IsItemHovered())
         ui::SetTooltip("%s", desc.hint_.c_str());
 
     if (ui::Button(ICON_FA_TRASH_CAN))
-        pendingSetTextures_.emplace_back(desc.unit_, nullptr);
+        pendingSetTextures_.emplace_back(desc.uniform_, nullptr);
     if (ui::IsItemHovered())
         ui::SetTooltip("Remove texture from this unit");
     ui::SameLine();
@@ -570,9 +569,9 @@ void MaterialInspectorWidget::RenderTextureUnit(const TextureUnitDesc& desc)
     if (Widgets::EditResourceRef(textureType, textureName, &allowedTextureTypes))
     {
         if (const auto texture = dynamic_cast<Texture*>(cache->GetResource(textureType, textureName)))
-            pendingSetTextures_.emplace_back(desc.unit_, texture);
+            pendingSetTextures_.emplace_back(desc.uniform_, texture);
         else
-            pendingSetTextures_.emplace_back(desc.unit_, nullptr);
+            pendingSetTextures_.emplace_back(desc.uniform_, nullptr);
     }
 }
 

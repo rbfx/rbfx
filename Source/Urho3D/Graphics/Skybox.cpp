@@ -27,6 +27,7 @@
 #include "../Graphics/Material.h"
 #include "../Graphics/Skybox.h"
 #include "../Graphics/TextureCube.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../Resource/ImageCube.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Node.h"
@@ -89,7 +90,7 @@ ImageCube* Skybox::GetImage() const
     if (!material)
         return nullptr;
 
-    Texture* texture = material->GetTexture(TU_DIFFUSE);
+    Texture* texture = material->GetTexture(ShaderResources::DiffMap);
     if (!texture || !texture->IsInstanceOf<TextureCube>())
         return nullptr;
 

@@ -102,7 +102,7 @@ void RenderingShowcase::CreateScene()
     // Create the camera (not included in the scene file)
     cameraNode_ = cameraScene_->CreateChild("Camera");
     cameraNode_->CreateComponent<Camera>();
-    cameraNode_->CreateComponent<FreeFlyController>()->SetAcceleratedSpeed(2.0f);
+    cameraNode_->CreateComponent<FreeFlyController>();
 
     Node* probeObjectNode = cameraNode_->CreateChild();
     probeObjectNode->SetPosition({ 0.0f, 0.0f, 1.0f });

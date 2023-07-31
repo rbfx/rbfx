@@ -42,30 +42,8 @@ class Texture;
 class Texture2D;
 class TextureCube;
 class ValueAnimationInfo;
-class JSONFile;
 
 static const unsigned char DEFAULT_RENDER_ORDER = 128;
-
-static const char* textureUnitNames[] =
-{
-    "diffuse",
-    "normal",
-    "specular",
-    "emissive",
-    "environment",
-    "volume",
-    "custom1",
-    "custom2",
-    "lightramp",
-    "lightshape",
-    "shadowmap",
-    "faceselect",
-    "indirection",
-    "depth",
-    "light",
-    "zone",
-    nullptr
-};
 
 static const char* cullModeNames[] =
 {
@@ -82,6 +60,15 @@ static const char* fillModeNames[] =
     "point",
     nullptr
 };
+
+struct MaterialTexture
+{
+    ea::string name_;
+    SharedPtr<Texture> value_;
+};
+
+/// Map from string to Texture. Cache string hashes.
+using StringTextureMap = ea::unordered_map<StringHash, MaterialTexture>;
 
 /// %Material's shader parameter definition.
 struct MaterialShaderParameter
@@ -171,11 +158,6 @@ public:
     /// Save to an XML element. Return true if successful.
     bool Save(XMLElement& dest) const;
 
-    /// Load from a JSON value. Return true if successful.
-    bool Load(const JSONValue& source);
-    /// Save to a JSON value. Return true if successful.
-    bool Save(JSONValue& dest) const;
-
     /// Set number of techniques.
     /// @property
     void SetNumTechniques(unsigned num);
@@ -200,8 +182,7 @@ public:
     /// Set shader parameter animation speed.
     void SetShaderParameterAnimationSpeed(const ea::string& name, float speed);
     /// Set texture.
-    /// @property{set_textures}
-    void SetTexture(TextureUnit unit, Texture* texture);
+    void SetTexture(ea::string_view name, Texture* texture);
     /// Set texture coordinate transform.
     void SetUVTransform(const Vector2& offset, float rotation, const Vector2& repeat);
     /// Set texture coordinate transform.
@@ -263,11 +244,10 @@ public:
     /// Return default pass. Used by UI materials. It's base pass of 0-th technique assigned to Material.
     Pass* GetDefaultPass() const;
     /// Return texture by unit.
-    /// @property{get_textures}
-    Texture* GetTexture(TextureUnit unit) const;
+    Texture* GetTexture(StringHash nameHash) const;
 
     /// Return all textures.
-    const ea::unordered_map<TextureUnit, SharedPtr<Texture> >& GetTextures() const { return textures_; }
+    const StringTextureMap& GetTextures() const { return textures_; }
 
     /// Return additional vertex shader defines.
     /// @property
@@ -334,17 +314,10 @@ public:
     /// Return shader parameter hash value. Used as an optimization to avoid setting shader parameters unnecessarily.
     unsigned GetShaderParameterHash() const { return shaderParameterHash_; }
 
-    /// Return name for texture unit.
-    static ea::string GetTextureUnitName(TextureUnit unit);
     /// Parse a shader parameter value from a string. Retunrs either a bool, a float, or a 2 to 4-component vector.
     static Variant ParseShaderParameterValue(const ea::string& value);
 
-    /// Return shader resource name for given texture unit.
-    static StringHash TextureUnitToShaderResource(TextureUnit unit);
-
 private:
-    /// Helper function for loading JSON files.
-    bool BeginLoadJSON(Deserializer& source);
     /// Helper function for loading XML files.
     bool BeginLoadXML(Deserializer& source);
 
@@ -365,14 +338,14 @@ private:
     /// Refresh subscriptions to texture events.
     void RefreshTextureEventSubscriptions();
     /// Set texture without event resubscription.
-    void SetTextureInternal(TextureUnit unit, Texture* texture);
+    void SetTextureInternal(ea::string_view name, Texture* texture);
     /// Recalculate hash of pipeline state configuration.
     unsigned RecalculatePipelineStateHash() const override;
 
     /// Techniques.
     ea::vector<TechniqueEntry> techniques_;
     /// Textures.
-    ea::unordered_map<TextureUnit, SharedPtr<Texture> > textures_;
+    StringTextureMap textures_;
     /// %Shader parameters.
     ea::unordered_map<StringHash, MaterialShaderParameter> shaderParameters_;
     /// %Shader parameters animation infos.
@@ -409,8 +382,6 @@ private:
     bool batchedParameterUpdate_{};
     /// XML file used while loading.
     SharedPtr<XMLFile> loadXMLFile_;
-    /// JSON file used while loading.
-    SharedPtr<JSONFile> loadJSONFile_;
     /// Associated scene for shader parameter animation updates.
     WeakPtr<Scene> scene_;
 };

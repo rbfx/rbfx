@@ -77,8 +77,7 @@ private:
 
     struct TextureUnitDesc
     {
-        bool desktop_{};
-        TextureUnit unit_;
+        ea::string uniform_;
         ea::string name_;
         ea::string hint_;
     };
@@ -122,7 +121,7 @@ private:
 
     ea::vector<ea::pair<const PropertyDesc*, Variant>> pendingSetProperties_;
 
-    ea::vector<ea::pair<TextureUnit, Texture*>> pendingSetTextures_;
+    ea::vector<ea::pair<ea::string, Texture*>> pendingSetTextures_;
 
     ShaderParameterNames shaderParameterNames_;
     ea::vector<ea::pair<ea::string, Variant>> pendingSetShaderParameters_;

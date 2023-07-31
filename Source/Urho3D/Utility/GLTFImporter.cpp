@@ -2508,7 +2508,7 @@ private:
             }
 
             const SharedPtr<Texture2D> diffuseTexture = textureImporter_.ReferenceTextureAsIs(pbr.baseColorTexture.index);
-            material.SetTexture(TU_DIFFUSE, diffuseTexture);
+            material.SetTexture(ShaderResources::DiffMap, diffuseTexture);
         }
     }
 
@@ -2559,7 +2559,7 @@ private:
 
             const SharedPtr<Texture2D> metallicRoughnessTexture = textureImporter_.ReferenceRoughnessMetallicOcclusionTexture(
                 metallicRoughnessTextureIndex, occlusionTextureIndex);
-            material.SetTexture(TU_SPECULAR, metallicRoughnessTexture);
+            material.SetTexture(ShaderResources::SpecMap, metallicRoughnessTexture);
         }
     }
 
@@ -2579,7 +2579,7 @@ private:
 
             const SharedPtr<Texture2D> normalTexture = textureImporter_.ReferenceTextureAsIs(
                 normalTextureIndex);
-            material.SetTexture(TU_NORMAL, normalTexture);
+            material.SetTexture(ShaderResources::NormalMap, normalTexture);
         }
     }
 
@@ -2599,7 +2599,7 @@ private:
             }
 
             const SharedPtr<Texture2D> emissiveTexture = textureImporter_.ReferenceTextureAsIs(emissiveTextureIndex);
-            material.SetTexture(TU_EMISSIVE, emissiveTexture);
+            material.SetTexture(ShaderResources::EmissiveMap, emissiveTexture);
         }
     }
 

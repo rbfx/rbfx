@@ -30,6 +30,7 @@
 #include "../RenderPipeline/LightProcessor.h"
 #include "../RenderPipeline/PipelineStateBuilder.h"
 #include "../RenderPipeline/SceneProcessor.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../RenderPipeline/ShadowMapAllocator.h"
 
 #include <EASTL/span.h>
@@ -252,7 +253,7 @@ void ShaderProgramCompositor::ApplyLayoutVertexAndCommonDefinesForUserPass(
 
 void ShaderProgramCompositor::ApplyMaterialPixelDefinesForUserPass(ShaderProgramDesc& result, Material* material) const
 {
-    if (Texture* diffuseTexture = material->GetTexture(TU_DIFFUSE))
+    if (Texture* diffuseTexture = material->GetTexture(ShaderResources::DiffMap))
     {
         result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_DIFFUSE");
         const int hint = GetTextureColorSpaceHint(diffuseTexture->GetLinear(), diffuseTexture->GetSRGB());
@@ -261,19 +262,19 @@ void ShaderProgramCompositor::ApplyMaterialPixelDefinesForUserPass(ShaderProgram
         result.AddShaderDefines(PS, Format("URHO3D_MATERIAL_DIFFUSE_HINT={}", ea::min(1, hint)));
     }
 
-    if (material->GetTexture(TU_NORMAL))
+    if (material->GetTexture(ShaderResources::NormalMap))
         result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_NORMAL");
 
-    if (material->GetTexture(TU_SPECULAR))
+    if (material->GetTexture(ShaderResources::SpecMap))
         result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_SPECULAR");
 
-    if (Texture* envTexture = material->GetTexture(TU_ENVIRONMENT))
+    if (Texture* envTexture = material->GetTexture(ShaderResources::EnvMap))
     {
         if (envTexture->IsInstanceOf<Texture2D>())
             result.AddCommonShaderDefines("URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT");
     }
 
-    if (Texture* emissiveTexture = material->GetTexture(TU_EMISSIVE))
+    if (Texture* emissiveTexture = material->GetTexture(ShaderResources::EmissiveMap))
     {
         result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_EMISSIVE");
         const int hint = GetTextureColorSpaceHint(emissiveTexture->GetLinear(), emissiveTexture->GetSRGB());
@@ -320,7 +321,7 @@ void ShaderProgramCompositor::ApplyDefinesForShadowPass(ShaderProgramDesc& resul
     {
         if (vertexBuffer->HasElement(SEM_TEXCOORD, 0))
             result.AddShaderDefines(VS, "URHO3D_VERTEX_HAS_TEXCOORD0");
-        if (Texture* diffuseTexture = material->GetTexture(TU_DIFFUSE))
+        if (Texture* diffuseTexture = material->GetTexture(ShaderResources::DiffMap))
             result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_DIFFUSE");
     }
 
