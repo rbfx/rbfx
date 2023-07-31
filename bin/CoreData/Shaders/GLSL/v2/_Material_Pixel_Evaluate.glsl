@@ -95,7 +95,8 @@
     #elif URHO3D_SPECULAR > 0
         half3 lightColor = Direct_SimpleSpecular(lightData.lightColor,
             surfaceData.albedo.rgb, surfaceData.specular,
-            lightData.lightVec.xyz, surfaceData.normal, halfVec, cMatSpecColor.a, cLightColor.a);
+            lightData.lightVec.xyz, surfaceData.normal, halfVec,
+            RoughnessToSpecularPower(surfaceData.roughness), cLightColor.a);
     #else
         half3 lightColor = Direct_Simple(lightData.lightColor,
             surfaceData.albedo.rgb, lightData.lightVec.xyz, surfaceData.normal);
@@ -115,14 +116,8 @@ half3 GetSurfaceColor(SurfaceData surfaceData)
 #endif
 
 #ifdef URHO3D_GBUFFER_PASS
-    #ifdef URHO3D_PHYSICAL_MATERIAL
-        half roughness = surfaceData.roughness;
-    #else
-        half roughness = 1.0 - cMatSpecColor.a / 255.0;
-    #endif
-
     gl_FragData[1] = vec4(surfaceData.fogFactor * surfaceData.albedo.rgb, 0.0);
-    gl_FragData[2] = vec4(surfaceData.fogFactor * surfaceData.specular, roughness);
+    gl_FragData[2] = vec4(surfaceData.fogFactor * surfaceData.specular, surfaceData.roughness);
     gl_FragData[3] = vec4(surfaceData.normal * 0.5 + 0.5, 0.0);
 #elif defined(URHO3D_LIGHT_PASS)
     surfaceColor += CalculateDirectLighting(surfaceData);

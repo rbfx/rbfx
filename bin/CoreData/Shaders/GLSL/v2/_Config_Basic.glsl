@@ -129,6 +129,9 @@
 #define SaturateMediump(x) min(x, M_MEDIUMP_FLT_MAX)
 #define Saturate(x) clamp(x, 0.0, 1.0)
 
+half SpecularPowerToRoughness(half specularPower) { return 1.0 - specularPower / 255.0; }
+half RoughnessToSpecularPower(half roughness) { return (1.0 - roughness) * 255.0; }
+
 
 /// =================================== Utility macros ===================================
 

@@ -41,7 +41,7 @@ void main()
     FillSurfaceAmbient(surfaceData, sEmissiveMap, vTexCoord2);
     FillSurfaceNormal(surfaceData, vNormal, sNormalMap, vTexCoord, vTangent, vBitangentXY);
     FillPhysicalSurfaceProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sSpecMap, vTexCoord);
-    FillLegacySurfaceProperties(surfaceData, sEmissiveMap, vTexCoord);
+    FillLegacySurfaceProperties(surfaceData, cMatSpecColor.a, sEmissiveMap, vTexCoord);
     FillSurfaceCubeReflection(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
     FillSurfacePlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);
     FillSurfaceBackground(surfaceData, sEmissiveMap, sDepthBuffer);
@@ -57,14 +57,8 @@ void main()
 #endif
 
 #ifdef URHO3D_GBUFFER_PASS
-    #ifdef URHO3D_PHYSICAL_MATERIAL
-        half roughness = surfaceData.roughness;
-    #else
-        half roughness = 1.0 - cMatSpecColor.a / 255.0;
-    #endif
-
     gl_FragData[1] = vec4(surfaceData.fogFactor * surfaceData.albedo.rgb, 0.0);
-    gl_FragData[2] = vec4(surfaceData.fogFactor * surfaceData.specular, roughness);
+    gl_FragData[2] = vec4(surfaceData.fogFactor * surfaceData.specular, surfaceData.roughness);
     gl_FragData[3] = vec4(surfaceData.normal * 0.5 + 0.5, 0.0);
 #elif defined(URHO3D_LIGHT_PASS)
     DirectLightData lightData = GetForwardDirectLightData();

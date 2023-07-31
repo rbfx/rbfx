@@ -144,8 +144,9 @@
 /// @param[out] surfaceData.roughness
 /// @param[out] surfaceData.occlusion
 
-/// @def FillLegacySurfaceProperties(surfaceData, occlusionMap, occlusionTexCoord)
+/// @def FillLegacySurfaceProperties(surfaceData, specularPower, occlusionMap, occlusionTexCoord)
 /// @brief Fill surface metallness, roughness and occlusion approximately for legacy materials.
+/// @param[in] specularPower Specular power value.
 /// @param[in,optional] occlusionMap Occlusion map texture for non-PBR material.
 ///     Ignored if URHO3D_HAS_LIGHTMAP is defined,
 ///     AO is not defined or URHO3D_MATERIAL_HAS_EMISSIVE is not defined.
@@ -208,7 +209,7 @@
         _AdjustFragmentRoughness(surfaceData); \
     }
 #else
-    void _GetSurfaceMR(out half oneMinusReflectivity, out half roughness)
+    void _GetSurfaceMR(out half oneMinusReflectivity, out half roughness, half specularPower)
     {
         // Consider non-PBR materials either non-reflective or 100% reflective
     #ifdef ENVCUBEMAP
@@ -217,7 +218,7 @@
         oneMinusReflectivity = 1.0;
     #endif
 
-        roughness = 0.5;
+        roughness = SpecularPowerToRoughness(specularPower);
     }
 
     #if !defined(URHO3D_HAS_LIGHTMAP) && defined(AO) && defined(URHO3D_MATERIAL_HAS_EMISSIVE)
@@ -226,9 +227,9 @@
         #define _GetSurfaceOcclusion(occlusionMap, texCoord) 1.0
     #endif
 
-    #define FillLegacySurfaceProperties(surfaceData, occlusionMap, occlusionTexCoord) \
+    #define FillLegacySurfaceProperties(surfaceData, specularPower, occlusionMap, occlusionTexCoord) \
     { \
-        _GetSurfaceMR(surfaceData.oneMinusReflectivity, surfaceData.roughness); \
+        _GetSurfaceMR(surfaceData.oneMinusReflectivity, surfaceData.roughness, specularPower); \
         surfaceData.occlusion = _GetSurfaceOcclusion(occlusionMap, occlusionTexCoord); \
         _AdjustFragmentRoughness(surfaceData); \
     }
@@ -239,7 +240,7 @@
 #endif
 
 #ifndef FillLegacySurfaceProperties
-    #define FillLegacySurfaceProperties(surfaceData, occlusionMap, occlusionTexCoord)
+    #define FillLegacySurfaceProperties(surfaceData, specularPower, occlusionMap, occlusionTexCoord)
 #endif
 
 /// =================================== Surface albedo and specular ===================================
