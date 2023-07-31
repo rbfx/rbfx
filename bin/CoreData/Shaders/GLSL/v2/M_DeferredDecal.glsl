@@ -31,7 +31,7 @@ VERTEX_OUTPUT_HIGHP(vec3 vFarRay)
 void main()
 {
     VertexTransform vertexTransform = GetVertexTransform();
-    FillVertexOutputs(vertexTransform, cNormalScale, cUOffset, cVOffset, cLMOffset);
+    Vertex_SetAll(vertexTransform, cNormalScale, cUOffset, cVOffset, cLMOffset);
     vToModelSpace = inverse(cModel);
     vScreenPos = GetDeferredScreenPos(gl_Position);
     vFarRay = GetDeferredFarRay(gl_Position);

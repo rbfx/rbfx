@@ -2,23 +2,23 @@
 /// Don't include!
 /// Default depth-only vertex and pixel shaders.
 
-/// @def FillVertexTransformOutputs(vertexTransform)
+/// @def Vertex_SetTransform(vertexTransform)
 /// @brief Fill vertex position and clip distance, if enabled.
 /// @param[in] vertexTransform VertexTransform structure.
 /// @param[out] gl_Position Fills the position in clip space.
 /// @param[out,optional] gl_ClipDistance[0]
 
-/// @def FillTexCoordOutput(uOffset, vOffset)
+/// @def Vertex_SetTexCoord(uOffset, vOffset)
 /// @brief Fill texture coordinates if requested.
 /// @param[in] uOffset U offset for texture coordinate.
 /// @param[in] vOffset V offset for texture coordinate.
 /// @param[out] vTexCoord
 
-/// @def FillDepthOutput()
+/// @def Vertex_SetDepth()
 /// @brief Fill depth if VSM is used.
 /// @param[out] vDepth
 
-/// @def DepthOnlyPixelShader(albedoMap, texCoord)
+/// @def Pixel_DepthOnly(albedoMap, texCoord)
 /// @brief Default depth-only pixel shader.
 /// @param[in,optional] albedoMap Albedo map texture used for alpha cutout. Ignored unless ALPHAMASK is defined.
 /// @param[in,optional] texCoord Texture coordinate for albedo map sampling. Ignored unless ALPHAMASK is defined.
@@ -31,31 +31,31 @@ VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
 
 #ifdef URHO3D_VERTEX_SHADER
 
-void FillVertexTransformOutputs(VertexTransform vertexTransform)
+void Vertex_SetTransform(VertexTransform vertexTransform)
 {
     gl_Position = WorldToClipSpace(vertexTransform.position.xyz);
     ApplyClipPlane(gl_Position);
 }
 
 #ifdef URHO3D_PIXEL_NEED_TEXCOORD
-    #define FillTexCoordOutput(uOffset, vOffset) \
+    #define Vertex_SetTexCoord(uOffset, vOffset) \
         vTexCoord = GetTransformedTexCoord(uOffset, vOffset);
 #else
-    #define FillTexCoordOutput(uOffset, vOffset)
+    #define Vertex_SetTexCoord(uOffset, vOffset)
 #endif
 
 #ifdef URHO3D_VARIANCE_SHADOW_MAP
-    #define FillDepthOutput() \
+    #define Vertex_SetDepth() \
         vDepth = gl_Position.zw;
 #else
-    #define FillDepthOutput()
+    #define Vertex_SetDepth()
 #endif
 
-#define FillVertexOutputs(vertexTransform, normalScale, uOffset, vOffset, lightMapScaleOffset) \
+#define Vertex_SetAll(vertexTransform, normalScale, uOffset, vOffset, lightMapScaleOffset) \
 { \
-    FillVertexTransformOutputs(vertexTransform); \
-    FillTexCoordOutput(uOffset, vOffset); \
-    FillDepthOutput(); \
+    Vertex_SetTransform(vertexTransform); \
+    Vertex_SetTexCoord(uOffset, vOffset); \
+    Vertex_SetDepth(); \
 }
 
 #endif // URHO3D_VERTEX_SHADER
@@ -77,7 +77,7 @@ void FillVertexTransformOutputs(VertexTransform vertexTransform)
 #endif
 
 #ifdef ALPHAMASK
-    void _DepthOnlyPixelShader(sampler2D albedoMap, vec2 texCoord)
+    void _Pixel_DepthOnly(sampler2D albedoMap, vec2 texCoord)
     {
         fixed alpha = texture(albedoMap, texCoord).a;
         if (alpha < 0.5)
@@ -86,9 +86,9 @@ void FillVertexTransformOutputs(VertexTransform vertexTransform)
         _CopyDepthToColor();
     }
 
-    #define DepthOnlyPixelShader(albedoMap, texcoord) _DepthOnlyPixelShader(albedoMap, (texcoord).xy)
+    #define Pixel_DepthOnly(albedoMap, texcoord) _Pixel_DepthOnly(albedoMap, (texcoord).xy)
 #else
-    #define DepthOnlyPixelShader(albedoMap, texcoord) _CopyDepthToColor()
+    #define Pixel_DepthOnly(albedoMap, texcoord) _CopyDepthToColor()
 #endif
 
 #endif // URHO3D_PIXEL_SHADER

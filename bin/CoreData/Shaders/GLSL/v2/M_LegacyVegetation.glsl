@@ -38,7 +38,7 @@ void main()
     worldPos.z -= windStrength * cos(windPeriod);
     vertexTransform.position.xyz = worldPos;
 
-    FillVertexOutputs(vertexTransform, cNormalScale, cUOffset, cVOffset, cLMOffset);
+    Vertex_SetAll(vertexTransform, cNormalScale, cUOffset, cVOffset, cLMOffset);
 }
 #endif
 
@@ -46,7 +46,7 @@ void main()
 void main()
 {
 #ifdef URHO3D_DEPTH_ONLY_PASS
-    DepthOnlyPixelShader(sDiffMap, vTexCoord);
+    Pixel_DepthOnly(sDiffMap, vTexCoord);
 #else
     SurfaceData surfaceData;
 
