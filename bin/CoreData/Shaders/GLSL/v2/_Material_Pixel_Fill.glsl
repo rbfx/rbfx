@@ -4,48 +4,48 @@
 
 /// =================================== Non-customizable properties ===================================
 
-/// @def FillSurfaceFogFactor(surfaceData)
+/// @def Surface_SetFogFactor(surfaceData)
 /// @brief Fill fog factor in SurfaceData.
 /// @param[out] surfaceData.fogFactor
 
-/// @def FillSurfaceEyeVector(surfaceData)
+/// @def Surface_SetEyeVector(surfaceData)
 /// @brief Fill eye vector in SurfaceData.
 /// @param[out] surfaceData.eyeVec
 
-/// @def FillSurfaceScreenPosition(surfaceData)
+/// @def Surface_SetScreenPosition(surfaceData)
 /// @brief Fill screen position in SurfaceData.
 /// @param[out] surfaceData.screenPos
 
-/// @def FillSurfaceCommon(surfaceData)
-/// @brief Same as FillSurfaceFogFactor, FillSurfaceEyeVector, FillSurfaceScreenPosition together.
+/// @def Surface_SetCommon(surfaceData)
+/// @brief Same as Surface_SetFogFactor, Surface_SetEyeVector, Surface_SetScreenPosition together.
 
-#define FillSurfaceFogFactor(surfaceData) \
+#define Surface_SetFogFactor(surfaceData) \
     surfaceData.fogFactor = GetFogFactor(vWorldDepth)
 
 #ifdef URHO3D_PIXEL_NEED_EYE_VECTOR
-    #define FillSurfaceEyeVector(surfaceData) \
+    #define Surface_SetEyeVector(surfaceData) \
         surfaceData.eyeVec = normalize(vEyeVec)
 #else
-    #define FillSurfaceEyeVector(surfaceData)
+    #define Surface_SetEyeVector(surfaceData)
 #endif
 
 #ifdef URHO3D_PIXEL_NEED_SCREEN_POSITION
-    #define FillSurfaceScreenPosition(surfaceData) \
+    #define Surface_SetScreenPosition(surfaceData) \
         surfaceData.screenPos = vScreenPos.xy / vScreenPos.w
 #else
-    #define FillSurfaceScreenPosition(surfaceData)
+    #define Surface_SetScreenPosition(surfaceData)
 #endif
 
-#define FillSurfaceCommon(surfaceData) \
+#define Surface_SetCommon(surfaceData) \
 { \
-    FillSurfaceFogFactor(surfaceData); \
-    FillSurfaceEyeVector(surfaceData); \
-    FillSurfaceScreenPosition(surfaceData); \
+    Surface_SetFogFactor(surfaceData); \
+    Surface_SetEyeVector(surfaceData); \
+    Surface_SetScreenPosition(surfaceData); \
 }
 
 /// =================================== Ambient lighting ===================================
 
-/// @def FillSurfaceAmbient(surfaceData, lightMap, texCoord)
+/// @def Surface_SetAmbient(surfaceData, lightMap, texCoord)
 /// @brief Fill ambient lighting in SurfaceData.
 /// @param[in,optional] lightMap Lightmap texture.
 ///     Ignored if URHO3D_HAS_LIGHTMAP is not defined.
@@ -61,19 +61,19 @@
             return GammaToLightSpace(2.0 * texture(lightMap, texCoord).rgb);
         }
 
-        #define FillSurfaceAmbient(surfaceData, lightMap, texCoord) \
+        #define Surface_SetAmbient(surfaceData, lightMap, texCoord) \
             surfaceData.ambientLighting = vAmbientAndVertexLigthing + _GetSurfaceLightmap(lightMap, texCoord)
     #else
-        #define FillSurfaceAmbient(surfaceData, lightMap, texCoord) \
+        #define Surface_SetAmbient(surfaceData, lightMap, texCoord) \
             surfaceData.ambientLighting = vAmbientAndVertexLigthing
     #endif
 #else
-    #define FillSurfaceAmbient(surfaceData, lightMap, texCoord)
+    #define Surface_SetAmbient(surfaceData, lightMap, texCoord)
 #endif
 
 /// =================================== Surface normal ===================================
 
-/// @def FillSurfaceNormal(surfaceData, normal, normalMap, texCoord, tangent, bitangentXY)
+/// @def Surface_SetNormal(surfaceData, normal, normalMap, texCoord, tangent, bitangentXY)
 /// @brief Fill surface normal in SurfaceData.
 /// @param[in] vertexNormal Vertex normal.
 /// @param[in,optional] normalMap Normal map texture.
@@ -104,7 +104,7 @@
             return normal;
         }
 
-        #define FillSurfaceNormal(surfaceData, vertexNormal, normalMap, texCoord, vertexTangent, vertexBitangentXY) \
+        #define Surface_SetNormal(surfaceData, vertexNormal, normalMap, texCoord, vertexTangent, vertexBitangentXY) \
             surfaceData.normal = _GetSurfaceNormal( \
                 surfaceData.normalInTangentSpace, normalMap, texCoord, vertexNormal, vertexTangent, vertexBitangentXY)
     #else
@@ -120,16 +120,16 @@
             return normal;
         }
 
-        #define FillSurfaceNormal(surfaceData, vertexNormal, normalMap, texCoord, vertexTangent, vertexBitangentXY) \
+        #define Surface_SetNormal(surfaceData, vertexNormal, normalMap, texCoord, vertexTangent, vertexBitangentXY) \
             surfaceData.normal = _GetSurfaceNormal(surfaceData.normalInTangentSpace, vertexNormal)
     #endif
 #else
-    #define FillSurfaceNormal(surfaceData, vertexNormal, normalMap, texCoord, vertexTangent, vertexBitangentXY)
+    #define Surface_SetNormal(surfaceData, vertexNormal, normalMap, texCoord, vertexTangent, vertexBitangentXY)
 #endif
 
 /// =================================== Surface metalness/roughness/occlusion ===================================
 
-/// @def FillPhysicalSurfaceProperties(surfaceData, roughnessValue, metallnessValue, dielectricReflectance, rmoMap, rmoTexCoord)
+/// @def Surface_SetPhysicalProperties(surfaceData, roughnessValue, metallnessValue, dielectricReflectance, rmoMap, rmoTexCoord)
 /// @brief Fill surface metallness aka reflectivity, roughness and occlusion in SurfaceData.
 /// @param[in] roughnessValue Roughness value. If texture is used, this value is multiplied by texture value.
 /// @param[in] metallnessValue Metallness value. If texture is used, this value is multiplied by texture value.
@@ -144,7 +144,7 @@
 /// @param[out] surfaceData.roughness
 /// @param[out] surfaceData.occlusion
 
-/// @def FillLegacySurfaceProperties(surfaceData, specularPower, occlusionMap, occlusionTexCoord)
+/// @def Surface_SetLegacyProperties(surfaceData, specularPower, occlusionMap, occlusionTexCoord)
 /// @brief Fill surface metallness, roughness and occlusion approximately for legacy materials.
 /// @param[in] specularPower Specular power value.
 /// @param[in,optional] occlusionMap Occlusion map texture for non-PBR material.
@@ -172,10 +172,10 @@
         return sqrt(sqrt(squareRoughness));
     }
 
-    #define _AdjustFragmentRoughness(surfaceData) \
+    #define _Surface_AdjustRoughness(surfaceData) \
         surfaceData.roughness = _GetAdjustedSurfaceRoughness(surfaceData.roughness, surfaceData.normal)
 #else
-    #define _AdjustFragmentRoughness(surfaceData)
+    #define _Surface_AdjustRoughness(surfaceData)
 #endif
 
 #ifdef URHO3D_PHYSICAL_MATERIAL
@@ -202,11 +202,11 @@
             vec3(roughnessValue, metallnessValue, 1.0)
     #endif
 
-    #define FillPhysicalSurfaceProperties(surfaceData, roughnessValue, metallnessValue, dielectricReflectance, rmoMap, rmoTexCoord) \
+    #define Surface_SetPhysicalProperties(surfaceData, roughnessValue, metallnessValue, dielectricReflectance, rmoMap, rmoTexCoord) \
     { \
         _GetSurfaceRMO(surfaceData.oneMinusReflectivity, surfaceData.roughness, surfaceData.occlusion, \
             _GetBaseRMO(rmoMap, rmoTexCoord, roughnessValue, metallnessValue), dielectricReflectance); \
-        _AdjustFragmentRoughness(surfaceData); \
+        _Surface_AdjustRoughness(surfaceData); \
     }
 #else
     void _GetSurfaceMR(out half oneMinusReflectivity, out half roughness, half specularPower)
@@ -227,20 +227,20 @@
         #define _GetSurfaceOcclusion(occlusionMap, texCoord) 1.0
     #endif
 
-    #define FillLegacySurfaceProperties(surfaceData, specularPower, occlusionMap, occlusionTexCoord) \
+    #define Surface_SetLegacyProperties(surfaceData, specularPower, occlusionMap, occlusionTexCoord) \
     { \
         _GetSurfaceMR(surfaceData.oneMinusReflectivity, surfaceData.roughness, specularPower); \
         surfaceData.occlusion = _GetSurfaceOcclusion(occlusionMap, occlusionTexCoord); \
-        _AdjustFragmentRoughness(surfaceData); \
+        _Surface_AdjustRoughness(surfaceData); \
     }
 #endif
 
-#ifndef FillPhysicalSurfaceProperties
-    #define FillPhysicalSurfaceProperties(surfaceData, roughnessValue, metallnessValue, dielectricReflectance, rmoMap, rmoTexCoord)
+#ifndef Surface_SetPhysicalProperties
+    #define Surface_SetPhysicalProperties(surfaceData, roughnessValue, metallnessValue, dielectricReflectance, rmoMap, rmoTexCoord)
 #endif
 
-#ifndef FillLegacySurfaceProperties
-    #define FillLegacySurfaceProperties(surfaceData, specularPower, occlusionMap, occlusionTexCoord)
+#ifndef Surface_SetLegacyProperties
+    #define Surface_SetLegacyProperties(surfaceData, specularPower, occlusionMap, occlusionTexCoord)
 #endif
 
 /// =================================== Surface albedo and specular ===================================
@@ -267,7 +267,7 @@
 /// @param[in,out] albedo Albedo value with alpha.
 /// @param[in] oneMinusReflectivity Inverse of metallness.
 
-/// @def FillSurfaceBaseAlbedo(
+/// @def Surface_SetBaseAlbedo(
 ///     surfaceData, albedoColor, alphaCutoff, vertexColor, albedoMap, albedoTexCoord, colorSpace)
 /// @brief Fill surface base albedo value.
 ///     For PBR material, this is used for both albedo and specular, depending on metallness.
@@ -285,7 +285,7 @@
 ///     Ignored if URHO3D_MATERIAL_HAS_DIFFUSE is not defined.
 /// @param[out] surfaceData.albedo
 
-/// @def FillSurfaceBaseSpecular(surfaceData, specColor, reflectionColor, specMap, specTexCoord)
+/// @def Surface_SetBaseSpecular(surfaceData, specColor, reflectionColor, specMap, specTexCoord)
 /// @brief Fill surface base specular value.
 ///     For PBR material, this is no-op because specular PBR workflow is not supported now.
 ///     For non-PBR material, this is used for specular color.
@@ -297,7 +297,7 @@
 ///     Ignored if URHO3D_MATERIAL_HAS_SPECULAR is not defined.
 /// @param[out] surfaceData.specular
 
-/// @def FillSurfaceAlbedoSpecular(surfaceData)
+/// @def Surface_SetAlbedoSpecular(surfaceData)
 /// @brief Finalize surface albedo and specular value (which should be properly filled).
 ///     Same as DeduceAlbedoSpecularForPBR and AdjustAlbedoForPremultiplyAlpha together.
 /// @param[in,out] surfaceData.albedo
@@ -341,7 +341,7 @@
 #endif
 
 #ifdef URHO3D_MATERIAL_HAS_DIFFUSE
-    #define _FillSurfaceBaseAlbedo(surfaceData, albedoColor, alphaCutoff, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
+    #define _Surface_SetBaseAlbedo(surfaceData, albedoColor, alphaCutoff, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
     { \
         half4 albedoInput = texture(albedoMap, albedoTexCoord); \
         CutoutByAlpha(albedoInput.a, alphaCutoff); \
@@ -349,7 +349,7 @@
         ModulateAlbedoByVertexColor(surfaceData.albedo, vertexColor); \
     }
 #else
-    #define _FillSurfaceBaseAlbedo(surfaceData, albedoColor, alphaCutoff, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
+    #define _Surface_SetBaseAlbedo(surfaceData, albedoColor, alphaCutoff, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
     { \
         surfaceData.albedo = GammaToLightSpaceAlpha(albedoColor); \
         ModulateAlbedoByVertexColor(surfaceData.albedo, vertexColor); \
@@ -357,37 +357,37 @@
 #endif
 
 // Force macro expansion for colorSpace.
-#define FillSurfaceBaseAlbedo(surfaceData, albedoColor, alphaCutoff, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
-    _FillSurfaceBaseAlbedo(surfaceData, albedoColor, alphaCutoff, vertexColor, albedoMap, albedoTexCoord, colorSpace)
+#define Surface_SetBaseAlbedo(surfaceData, albedoColor, alphaCutoff, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
+    _Surface_SetBaseAlbedo(surfaceData, albedoColor, alphaCutoff, vertexColor, albedoMap, albedoTexCoord, colorSpace)
 
 #ifdef URHO3D_PHYSICAL_MATERIAL
     // Specular workflow is not supported for PBR materials.
-    #define FillSurfaceBaseSpecular(surfaceData, specColor, reflectionColor, specMap, specTexCoord) \
+    #define Surface_SetBaseSpecular(surfaceData, specColor, reflectionColor, specMap, specTexCoord) \
         surfaceData.specular = vec3(0.0, 0.0, 0.0)
 #else
     #ifdef URHO3D_MATERIAL_HAS_SPECULAR
-        #define _FillSurfaceBaseSpecular(surfaceData, specColor, specMap, specTexCoord) \
+        #define _Surface_SetBaseSpecular(surfaceData, specColor, specMap, specTexCoord) \
             surfaceData.specular = GammaToLightSpace(specColor.rgb * texture(specMap, specTexCoord).rgb)
     #else
-        #define _FillSurfaceBaseSpecular(surfaceData, specColor, specMap, specTexCoord) \
+        #define _Surface_SetBaseSpecular(surfaceData, specColor, specMap, specTexCoord) \
             surfaceData.specular = GammaToLightSpace(specColor.rgb)
     #endif
 
     #ifdef URHO3D_REFLECTION_MAPPING
-        #define _FillSurfaceReflectionTint(surfaceData, value) \
+        #define _Surface_SetReflectionTint(surfaceData, value) \
             surfaceData.reflectionTint = value
     #else
-        #define _FillSurfaceReflectionTint(surfaceData, value)
+        #define _Surface_SetReflectionTint(surfaceData, value)
     #endif
 
-    #define FillSurfaceBaseSpecular(surfaceData, specColor, reflectionColor, specMap, specTexCoord) \
+    #define Surface_SetBaseSpecular(surfaceData, specColor, reflectionColor, specMap, specTexCoord) \
     { \
-        _FillSurfaceBaseSpecular(surfaceData, specColor, specMap, specTexCoord); \
-        _FillSurfaceReflectionTint(surfaceData, reflectionColor); \
+        _Surface_SetBaseSpecular(surfaceData, specColor, specMap, specTexCoord); \
+        _Surface_SetReflectionTint(surfaceData, reflectionColor); \
     }
 #endif
 
-#define FillSurfaceAlbedoSpecular(surfaceData) \
+#define Surface_SetAlbedoSpecular(surfaceData) \
 { \
     DeduceAlbedoSpecularForPBR(surfaceData.albedo, surfaceData.specular, surfaceData.oneMinusReflectivity); \
     AdjustAlbedoForPremultiplyAlpha(surfaceData.albedo, surfaceData.oneMinusReflectivity); \
@@ -395,7 +395,7 @@
 
 /// =================================== Surface emission ===================================
 
-/// @def FillSurfaceEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace)
+/// @def Surface_SetEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace)
 /// @brief Fill surface emission value.
 /// @param[in] emissiveColor Emissive color in gamma space. If texture is present, it will be modulated by this color.
 /// @param[in,optional] emissiveMap Emissive map.
@@ -412,27 +412,27 @@
 #ifdef URHO3D_SURFACE_NEED_AMBIENT
     #ifndef URHO3D_HAS_LIGHTMAP
         #if defined(URHO3D_MATERIAL_HAS_EMISSIVE) && !defined(AO)
-            #define _FillSurfaceEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
+            #define _Surface_SetEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
                 surfaceData.emission = GammaToLightSpace(emissiveColor) * Texture_ToLight_##colorSpace(texture(emissiveMap, texCoord).rgb)
         #else
-            #define _FillSurfaceEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
+            #define _Surface_SetEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
                 surfaceData.emission = GammaToLightSpace(emissiveColor)
         #endif
     #else
-        #define _FillSurfaceEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
+        #define _Surface_SetEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
             surfaceData.emission = vec3(0.0)
     #endif
 #else
-    #define _FillSurfaceEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace)
+    #define _Surface_SetEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace)
 #endif
 
 // Force macro expansion for colorSpace.
-#define FillSurfaceEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
-    _FillSurfaceEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace)
+#define Surface_SetEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
+    _Surface_SetEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace)
 
 /// =================================== Surface reflection color ===================================
 
-/// @def FillSurfaceCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos)
+/// @def Surface_SetCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos)
 /// @brief Fill surface reflection color(s) from cubemap.
 /// @param[in] refMap0 Primary reflection map.
 /// @param[in,optional] refMap1 Secondary reflection map.
@@ -452,7 +452,7 @@
 ///     Ignored unless URHO3D_BLUR_REFLECTION is defined.
 /// @param[out] surfaceData.reflectionColor
 
-/// @def FillSurfacePlanarReflection(surfaceData, refMap, planeX, planeY)
+/// @def Surface_SetPlanarReflection(surfaceData, refMap, planeX, planeY)
 /// @brief Fill surface reflection color from flat texture.
 /// @param[in] refMap Reflection map.
 /// @param[in] surfaceData.screenPos
@@ -488,20 +488,20 @@
         && defined(URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT)
 
         /// Planar reflections don't support reflection blending
-        #define FillSurfacePlanarReflection(surfaceData, refMap, planeX, planeY) \
+        #define Surface_SetPlanarReflection(surfaceData, refMap, planeX, planeY) \
             surfaceData.reflectionColor[0] = texture(refMap, \
                 GetPlanarReflectionUV(surfaceData.screenPos, vec4(surfaceData.normal, 1.0), planeX, planeY));
 
     #elif defined(URHO3D_VERTEX_REFLECTION)
 
         #ifdef URHO3D_BLEND_REFLECTIONS
-            #define FillSurfaceCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
+            #define Surface_SetCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
             { \
                 surfaceData.reflectionColor[0] = texture(refMap0, reflectionVec); \
                 surfaceData.reflectionColor[1] = texture(refMap1, reflectionVec); \
             }
         #else
-            #define FillSurfaceCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
+            #define Surface_SetCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
                 surfaceData.reflectionColor[0] = texture(refMap0, reflectionVec);
         #endif
 
@@ -519,7 +519,7 @@
         }
 
         #ifdef URHO3D_BLEND_REFLECTIONS
-            #define FillSurfaceCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
+            #define Surface_SetCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
             { \
                 half3 refVec0 = reflect(-surfaceData.eyeVec, surfaceData.normal); \
                 half3 refVec1 = refVec0; \
@@ -531,7 +531,7 @@
                     _SampleReflection(refMap0, refVec0, surfaceData.roughness, cRoughnessToLODFactor0); \
             }
         #else
-            #define FillSurfaceCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
+            #define Surface_SetCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
             { \
                 half3 refVec0 = reflect(-surfaceData.eyeVec, surfaceData.normal); \
                 AdjustReflectionVector(refVec0, worldPos, cCubemapCenter0, cProjectionBoxMin0, cProjectionBoxMax0); \
@@ -543,48 +543,48 @@
     #endif
 #endif
 
-#ifndef FillSurfaceCubeReflection
-    #define FillSurfaceCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos)
+#ifndef Surface_SetCubeReflection
+    #define Surface_SetCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos)
 #endif
 
-#ifndef FillSurfacePlanarReflection
-    #define FillSurfacePlanarReflection(surfaceData, refMap, planeX, planeY)
+#ifndef Surface_SetPlanarReflection
+    #define Surface_SetPlanarReflection(surfaceData, refMap, planeX, planeY)
 #endif
 
 /// =================================== Surface background color and depth ===================================
 
-/// @def FillSurfaceBackgroundColor(surfaceData, colorMap)
+/// @def Surface_SetBackgroundColor(surfaceData, colorMap)
 /// @brief Fill corresponding background color.
 /// @param[in] colorMap Background color map.
 /// @param[in] surfaceData.screenPos
 /// @param[out] surfaceData.backgroundColor
 
-/// @def FillSurfaceBackgroundDepth(surfaceData, depthMap)
+/// @def Surface_SetBackgroundDepth(surfaceData, depthMap)
 /// @brief Fill corresponding background depth.
 /// @param[in] depthMap Background depth map.
 /// @param[in] surfaceData.screenPos
 /// @param[out] surfaceData.backgroundDepth
 
-/// @def FillSurfaceBackground(surfaceData, colorMap, depthMap)
-/// @brief Same as FillSurfaceBackgroundColor and FillSurfaceBackgroundDepth.
+/// @def Surface_SetBackground(surfaceData, colorMap, depthMap)
+/// @brief Same as Surface_SetBackgroundColor and Surface_SetBackgroundDepth.
 
 #ifdef URHO3D_SURFACE_NEED_BACKGROUND_COLOR
-    #define FillSurfaceBackgroundColor(surfaceData, colorMap) \
+    #define Surface_SetBackgroundColor(surfaceData, colorMap) \
         surfaceData.backgroundColor = texture(colorMap, surfaceData.screenPos).rgb
 #else
-    #define FillSurfaceBackgroundColor(surfaceData, colorMap)
+    #define Surface_SetBackgroundColor(surfaceData, colorMap)
 #endif
 
 #ifdef URHO3D_SURFACE_NEED_BACKGROUND_DEPTH
-    #define FillSurfaceBackgroundDepth(surfaceData, depthMap) \
+    #define Surface_SetBackgroundDepth(surfaceData, depthMap) \
         surfaceData.backgroundDepth = ReconstructDepth(texture(depthMap, surfaceData.screenPos).r)
 #else
-    #define FillSurfaceBackgroundDepth(surfaceData, depthMap)
+    #define Surface_SetBackgroundDepth(surfaceData, depthMap)
 #endif
 
-#define FillSurfaceBackground(surfaceData, colorMap, depthMap) \
+#define Surface_SetBackground(surfaceData, colorMap, depthMap) \
 { \
-    FillSurfaceBackgroundColor(surfaceData, colorMap); \
-    FillSurfaceBackgroundDepth(surfaceData, depthMap); \
+    Surface_SetBackgroundColor(surfaceData, colorMap); \
+    Surface_SetBackgroundDepth(surfaceData, depthMap); \
 }
 

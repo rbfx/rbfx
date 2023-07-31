@@ -50,18 +50,18 @@ void main()
 #else
     SurfaceData surfaceData;
 
-    FillSurfaceCommon(surfaceData);
-    FillSurfaceAmbient(surfaceData, sEmissiveMap, vTexCoord2);
-    FillSurfaceNormal(surfaceData, vNormal, sNormalMap, vTexCoord, vTangent, vBitangentXY);
-    FillPhysicalSurfaceProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sSpecMap, vTexCoord);
-    FillLegacySurfaceProperties(surfaceData, cMatSpecColor.a, sEmissiveMap, vTexCoord);
-    FillSurfaceCubeReflection(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
-    FillSurfacePlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);
-    FillSurfaceBackground(surfaceData, sEmissiveMap, sDepthBuffer);
-    FillSurfaceBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sDiffMap, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
-    FillSurfaceBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sSpecMap, vTexCoord);
-    FillSurfaceAlbedoSpecular(surfaceData);
-    FillSurfaceEmission(surfaceData, cMatEmissiveColor, sEmissiveMap, vTexCoord, URHO3D_MATERIAL_EMISSIVE_HINT);
+    Surface_SetCommon(surfaceData);
+    Surface_SetAmbient(surfaceData, sEmissiveMap, vTexCoord2);
+    Surface_SetNormal(surfaceData, vNormal, sNormalMap, vTexCoord, vTangent, vBitangentXY);
+    Surface_SetPhysicalProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sSpecMap, vTexCoord);
+    Surface_SetLegacyProperties(surfaceData, cMatSpecColor.a, sEmissiveMap, vTexCoord);
+    Surface_SetCubeReflection(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
+    Surface_SetPlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);
+    Surface_SetBackground(surfaceData, sEmissiveMap, sDepthBuffer);
+    Surface_SetBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sDiffMap, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
+    Surface_SetBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sSpecMap, vTexCoord);
+    Surface_SetAlbedoSpecular(surfaceData);
+    Surface_SetEmission(surfaceData, cMatEmissiveColor, sEmissiveMap, vTexCoord, URHO3D_MATERIAL_EMISSIVE_HINT);
 
     half3 surfaceColor = GetSurfaceColor(surfaceData);
     half surfaceAlpha = GetSurfaceAlpha(surfaceData, cFadeOffsetScale);

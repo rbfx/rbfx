@@ -53,9 +53,9 @@ void main()
 {
     SurfaceData surfaceData;
 
-    FillSurfaceCommon(surfaceData);
-    FillSurfaceAmbient(surfaceData, sEmissiveMap, vTexCoord2);
-    FillSurfaceBackgroundDepth(surfaceData, sDepthBuffer);
+    Surface_SetCommon(surfaceData);
+    Surface_SetAmbient(surfaceData, sEmissiveMap, vTexCoord2);
+    Surface_SetBackgroundDepth(surfaceData, sDepthBuffer);
 
     vec4 worldPos = vec4(GetDeferredWorldPos(surfaceData.backgroundDepth) + cCameraPos, 1.0);
     vec4 modelSpace = worldPos * vToModelSpace;
@@ -77,14 +77,14 @@ void main()
         surfaceData.normal = normalize((vec4(0.0, 0.0, -1.0, 0.0) * vToModelSpace).xyz);
     #endif
 
-    FillPhysicalSurfaceProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sSpecMap, vTexCoord);
-    FillLegacySurfaceProperties(surfaceData, cMatSpecColor.a, sEmissiveMap, vTexCoord);
-    FillSurfaceCubeReflection(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
-    FillSurfacePlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);
-    FillSurfaceBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sDiffMap, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
-    FillSurfaceBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sSpecMap, vTexCoord);
-    FillSurfaceAlbedoSpecular(surfaceData);
-    FillSurfaceEmission(surfaceData, cMatEmissiveColor, sEmissiveMap, vTexCoord, URHO3D_MATERIAL_EMISSIVE_HINT);
+    Surface_SetPhysicalProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sSpecMap, vTexCoord);
+    Surface_SetLegacyProperties(surfaceData, cMatSpecColor.a, sEmissiveMap, vTexCoord);
+    Surface_SetCubeReflection(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
+    Surface_SetPlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);
+    Surface_SetBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sDiffMap, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
+    Surface_SetBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sSpecMap, vTexCoord);
+    Surface_SetAlbedoSpecular(surfaceData);
+    Surface_SetEmission(surfaceData, cMatEmissiveColor, sEmissiveMap, vTexCoord, URHO3D_MATERIAL_EMISSIVE_HINT);
 
     // TODO: Make configurable
     half3 surfaceColor = GetSurfaceColor(surfaceData);

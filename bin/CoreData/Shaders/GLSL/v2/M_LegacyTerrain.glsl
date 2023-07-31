@@ -32,14 +32,14 @@ void main()
 {
     SurfaceData surfaceData;
 
-    FillSurfaceCommon(surfaceData);
-    FillSurfaceAmbient(surfaceData, sEmissiveMap, vTexCoord2);
-    FillSurfaceNormal(surfaceData, vNormal, sNormalMap, vTexCoord, vTangent, vBitangentXY);
-    FillPhysicalSurfaceProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sSpecMap, vTexCoord);
-    FillLegacySurfaceProperties(surfaceData, cMatSpecColor.a, sEmissiveMap, vTexCoord);
-    FillSurfaceCubeReflection(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
-    FillSurfacePlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);
-    FillSurfaceBackground(surfaceData, sEmissiveMap, sDepthBuffer);
+    Surface_SetCommon(surfaceData);
+    Surface_SetAmbient(surfaceData, sEmissiveMap, vTexCoord2);
+    Surface_SetNormal(surfaceData, vNormal, sNormalMap, vTexCoord, vTangent, vBitangentXY);
+    Surface_SetPhysicalProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sSpecMap, vTexCoord);
+    Surface_SetLegacyProperties(surfaceData, cMatSpecColor.a, sEmissiveMap, vTexCoord);
+    Surface_SetCubeReflection(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
+    Surface_SetPlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);
+    Surface_SetBackground(surfaceData, sEmissiveMap, sDepthBuffer);
 
     half3 weights = texture(sDiffMap, vTexCoord).rgb;
     half sumWeights = weights.r + weights.g + weights.b;
