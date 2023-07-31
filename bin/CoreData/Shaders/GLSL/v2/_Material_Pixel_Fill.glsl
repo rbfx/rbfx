@@ -256,7 +256,7 @@
 ///     Ignored if URHO3D_MATERIAL_HAS_DIFFUSE is not defined.
 /// @param[in,optional] albedoTexCoord Texture coordinate for albedo map lookup.
 ///     Ignored if URHO3D_MATERIAL_HAS_DIFFUSE is not defined.
-/// @param[in,optional] colorSpace Color space of albedo map. 0 for sRGB, 1 for linear.
+/// @param[in,optional] colorSpace Color space of albedo map. 0 for gamma, 1 for linear.
 ///     Ignored if URHO3D_MATERIAL_HAS_DIFFUSE is not defined.
 /// @param[out] surfaceData.albedo
 
@@ -355,15 +355,16 @@
 
 /// =================================== Surface emission ===================================
 
-/// @def FillSurfaceEmission(surfaceData, emissiveMap, texCoord, colorSpace)
+/// @def FillSurfaceEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace)
 /// @brief Fill surface emission value.
+/// @param[in] emissiveColor Emissive color in gamma space. If texture is present, it will be modulated by this color.
 /// @param[in,optional] emissiveMap Emissive map.
 ///     Ignored if URHO3D_SURFACE_NEED_AMBIENT is not defined, URHO3D_MATERIAL_HAS_EMISSIVE is not defined,
 ///     AO is defined, or URHO3D_HAS_LIGHTMAP is defined.
 /// @param[in,optional] texCoord Texture coordinate for emissive map lookup.
 ///     Ignored if URHO3D_SURFACE_NEED_AMBIENT is not defined, URHO3D_MATERIAL_HAS_EMISSIVE is not defined,
 ///     AO is defined, or URHO3D_HAS_LIGHTMAP is defined.
-/// @param[in,optional] colorSpace Color space of emissive map. 0 for sRGB, 1 for linear.
+/// @param[in,optional] colorSpace Color space of emissive map. 0 for gamma, 1 for linear.
 ///     Ignored if URHO3D_SURFACE_NEED_AMBIENT is not defined, URHO3D_MATERIAL_HAS_EMISSIVE is not defined,
 ///     AO is defined, or URHO3D_HAS_LIGHTMAP is defined.
 /// @param[out] surfaceData.emission
@@ -371,23 +372,23 @@
 #ifdef URHO3D_SURFACE_NEED_AMBIENT
     #ifndef URHO3D_HAS_LIGHTMAP
         #if defined(URHO3D_MATERIAL_HAS_EMISSIVE) && !defined(AO)
-            #define _FillSurfaceEmission(surfaceData, emissiveMap, texCoord, colorSpace) \
-                surfaceData.emission = GammaToLightSpace(cMatEmissiveColor) * Texture_ToLight_##colorSpace(texture(emissiveMap, texCoord).rgb)
+            #define _FillSurfaceEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
+                surfaceData.emission = GammaToLightSpace(emissiveColor) * Texture_ToLight_##colorSpace(texture(emissiveMap, texCoord).rgb)
         #else
-            #define _FillSurfaceEmission(surfaceData, emissiveMap, texCoord, colorSpace) \
-                surfaceData.emission = GammaToLightSpace(cMatEmissiveColor)
+            #define _FillSurfaceEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
+                surfaceData.emission = GammaToLightSpace(emissiveColor)
         #endif
     #else
-        #define _FillSurfaceEmission(surfaceData, emissiveMap, texCoord, colorSpace) \
+        #define _FillSurfaceEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
             surfaceData.emission = vec3(0.0)
     #endif
 #else
-    #define _FillSurfaceEmission(surfaceData, emissiveMap, texCoord, colorSpace)
+    #define _FillSurfaceEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace)
 #endif
 
 // Force macro expansion for colorSpace.
-#define FillSurfaceEmission(surfaceData, emissiveMap, texCoord, colorSpace) \
-    _FillSurfaceEmission(surfaceData, emissiveMap, texCoord, colorSpace)
+#define FillSurfaceEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
+    _FillSurfaceEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace)
 
 /// =================================== Surface reflection color ===================================
 
