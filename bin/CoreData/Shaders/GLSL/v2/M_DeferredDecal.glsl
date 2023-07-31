@@ -77,7 +77,7 @@ void main()
         surfaceData.normal = normalize((vec4(0.0, 0.0, -1.0, 0.0) * vToModelSpace).xyz);
     #endif
 
-    FillPhysicalSurfaceProperties(surfaceData, cRoughness, cMetallic, sSpecMap, vTexCoord);
+    FillPhysicalSurfaceProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sSpecMap, vTexCoord);
     FillLegacySurfaceProperties(surfaceData, sEmissiveMap, vTexCoord);
     FillSurfaceCubeReflection(surfaceData, sEnvMap, sZoneCubeMap, vReflectionVec, vWorldPos);
     FillSurfacePlanarReflection(surfaceData, sEnvMap, cReflectionPlaneX, cReflectionPlaneY);

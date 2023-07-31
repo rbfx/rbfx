@@ -129,10 +129,11 @@
 
 /// =================================== Surface metalness/roughness/occlusion ===================================
 
-/// @def FillPhysicalSurfaceProperties(surfaceData, roughnessValue, metallnessValue, rmoMap, rmoTexCoord)
+/// @def FillPhysicalSurfaceProperties(surfaceData, roughnessValue, metallnessValue, dielectricReflectance, rmoMap, rmoTexCoord)
 /// @brief Fill surface metallness aka reflectivity, roughness and occlusion in SurfaceData.
 /// @param[in] roughnessValue Roughness value. If texture is used, this value is multiplied by texture value.
 /// @param[in] metallnessValue Metallness value. If texture is used, this value is multiplied by texture value.
+/// @param[in] dielectricReflectance Reflectance value used for dielectrics. It cannot be sampled from texture.
 /// @param[in,optional] rmoMap Properties texture to simultaneously load roughness, metallness and occlusion.
 ///     Ignored if URHO3D_PHYSICAL_MATERIAL is not defined or URHO3D_MATERIAL_HAS_SPECULAR is not defined.
 /// @param[in,optional] rmoTexCoord Texture coordinate for properties map lookup.
@@ -177,10 +178,11 @@
 #endif
 
 #ifdef URHO3D_PHYSICAL_MATERIAL
-    void _GetSurfaceRMO(out half oneMinusReflectivity, out half roughness, out half occlusion, half3 rmo)
+    void _GetSurfaceRMO(out half oneMinusReflectivity, out half roughness, out half occlusion,
+        half3 rmo, half dielectricReflectance)
     {
         const half minRoughness = 0.089;
-        half oneMinusDielectricReflectivity = 1.0 - 0.16 * cDielectricReflectance * cDielectricReflectance;
+        half oneMinusDielectricReflectivity = 1.0 - 0.16 * dielectricReflectance * dielectricReflectance;
 
         roughness = max(rmo.x, minRoughness);
         oneMinusReflectivity = oneMinusDielectricReflectivity - oneMinusDielectricReflectivity * rmo.y;
@@ -199,10 +201,10 @@
             vec3(roughnessValue, metallnessValue, 1.0)
     #endif
 
-    #define FillPhysicalSurfaceProperties(surfaceData, roughnessValue, metallnessValue, rmoMap, rmoTexCoord) \
+    #define FillPhysicalSurfaceProperties(surfaceData, roughnessValue, metallnessValue, dielectricReflectance, rmoMap, rmoTexCoord) \
     { \
         _GetSurfaceRMO(surfaceData.oneMinusReflectivity, surfaceData.roughness, surfaceData.occlusion, \
-            _GetBaseRMO(rmoMap, rmoTexCoord, roughnessValue, metallnessValue)); \
+            _GetBaseRMO(rmoMap, rmoTexCoord, roughnessValue, metallnessValue), dielectricReflectance); \
         _AdjustFragmentRoughness(surfaceData); \
     }
 #else
@@ -233,7 +235,7 @@
 #endif
 
 #ifndef FillPhysicalSurfaceProperties
-    #define FillPhysicalSurfaceProperties(surfaceData, roughnessValue, metallnessValue, rmoMap, rmoTexCoord)
+    #define FillPhysicalSurfaceProperties(surfaceData, roughnessValue, metallnessValue, dielectricReflectance, rmoMap, rmoTexCoord)
 #endif
 
 #ifndef FillLegacySurfaceProperties
