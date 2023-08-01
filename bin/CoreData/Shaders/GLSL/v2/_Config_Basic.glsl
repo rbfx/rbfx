@@ -196,7 +196,7 @@ half RoughnessToSpecularPower(half roughness) { return (1.0 - roughness) * 255.0
     #define URHO3D_MAX_SHADOW_CASCADES 1
 #endif
 
-#if defined(URHO3D_SHADOW_PASS)
+#if defined(URHO3D_SHADOW_PASS) || URHO3D_NUM_RENDER_TARGETS == 0
     #define URHO3D_DEPTH_ONLY_PASS
 #endif
 

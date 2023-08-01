@@ -311,7 +311,7 @@ bool Technique::BeginLoad(Deserializer& source)
             StringVector passPSTextures;
 
             // Emulate old behavior if not configured
-            if (newPass->GetIndex() != shadowPassIndex && newPass->GetName() != "depth")
+            if (newPass->GetIndex() != shadowPassIndex)
             {
                 passPSTextures = {//
                     ShaderResources::Albedo, //
