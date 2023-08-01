@@ -259,7 +259,6 @@ void CrowdNavigation::SpawnJack(const Vector3& pos, Node* jackGroup)
     jackNode->SetPosition(pos);
     auto* modelObject = jackNode->CreateComponent<AnimatedModel>();
     modelObject->SetModel(cache->GetResource<Model>("Models/Jack.mdl"));
-    modelObject->SetMaterial(cache->GetResource<Material>("Materials/Jack.xml"));
     modelObject->SetCastShadows(true);
     jackNode->CreateComponent<AnimationController>();
 
