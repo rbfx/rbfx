@@ -50,19 +50,6 @@ Pass::Pass(const ea::string& name) :
 {
     name_ = name.to_lower();
     index_ = Technique::GetPassIndex(name_);
-
-    // TODO: Load this from technique
-    if (index_ == Technique::shadowPassIndex)
-    {
-        vertexDynamicTextures_ = {};
-        pixelDynamicTextures_ = {};
-    }
-    else
-    {
-        vertexDynamicTextures_ = {};
-        pixelDynamicTextures_ = {
-            ShaderResources::Albedo, ShaderResources::Normal, ShaderResources::Properties, ShaderResources::Emission};
-    }
 }
 
 Pass::~Pass() = default;
@@ -146,6 +133,20 @@ void Pass::SetPixelShaderDefineExcludes(const ea::string& excludes)
     MarkPipelineStateHashDirty();
 }
 
+void Pass::SetVertexTextureDefines(const StringVector& textures)
+{
+    vertexTextureDefines_ = textures;
+    ReleaseShaders();
+    MarkPipelineStateHashDirty();
+}
+
+void Pass::SetPixelTextureDefines(const StringVector& textures)
+{
+    pixelTextureDefines_ = textures;
+    ReleaseShaders();
+    MarkPipelineStateHashDirty();
+}
+
 void Pass::ReleaseShaders()
 {
     vertexShaders_.clear();
@@ -219,6 +220,8 @@ unsigned Pass::RecalculatePipelineStateHash() const
     CombineHash(hash, MakeHash(pixelShaderDefines_));
     CombineHash(hash, MakeHash(vertexShaderDefineExcludes_));
     CombineHash(hash, MakeHash(pixelShaderDefineExcludes_));
+    CombineHash(hash, MakeHash(vertexTextureDefines_));
+    CombineHash(hash, MakeHash(pixelTextureDefines_));
     return hash;
 }
 
@@ -304,6 +307,27 @@ bool Technique::BeginLoad(Deserializer& source)
             newPass->SetVertexShaderDefineExcludes(passExcludes + passElem.GetAttribute("vsexcludes"));
             newPass->SetPixelShaderDefineExcludes(passExcludes + passElem.GetAttribute("psexcludes"));
 
+            StringVector passVSTextures;
+            StringVector passPSTextures;
+
+            // Emulate old behavior if not configured
+            if (newPass->GetIndex() != shadowPassIndex && newPass->GetName() != "depth")
+            {
+                passPSTextures = {//
+                    ShaderResources::Albedo, //
+                    ShaderResources::Normal, //
+                    ShaderResources::Properties, //
+                    ShaderResources::Emission};
+            }
+
+            if (passElem.HasAttribute("vstextures"))
+                passVSTextures = passElem.GetAttribute("vstextures").split(' ');
+            if (passElem.HasAttribute("pstextures"))
+                passPSTextures = passElem.GetAttribute("pstextures").split(' ');
+
+            newPass->SetVertexTextureDefines(passVSTextures);
+            newPass->SetPixelTextureDefines(passPSTextures);
+
             if (passElem.HasAttribute("blend"))
             {
                 ea::string blend = passElem.GetAttributeLower("blend");
@@ -378,6 +402,8 @@ SharedPtr<Technique> Technique::Clone(const ea::string& cloneName) const
         newPass->SetPixelShaderDefines(srcPass->GetPixelShaderDefines());
         newPass->SetVertexShaderDefineExcludes(srcPass->GetVertexShaderDefineExcludes());
         newPass->SetPixelShaderDefineExcludes(srcPass->GetPixelShaderDefineExcludes());
+        newPass->SetVertexTextureDefines(srcPass->GetVertexTextureDefines());
+        newPass->SetPixelTextureDefines(srcPass->GetPixelTextureDefines());
     }
 
     return ret;

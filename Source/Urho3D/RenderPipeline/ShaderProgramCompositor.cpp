@@ -265,9 +265,9 @@ void ShaderProgramCompositor::ApplyLayoutVertexAndCommonDefinesForUserPass(
 void ShaderProgramCompositor::ApplyMaterialPixelDefinesForUserPass(
     ShaderProgramDesc& result, Material* material, Pass* pass) const
 {
-    for (const ea::string& name : pass->GetVertexDynamicTextures())
+    for (const ea::string& name : pass->GetVertexTextureDefines())
         AddTextureDefine(result, VS, material, name);
-    for (const ea::string& name : pass->GetPixelDynamicTextures())
+    for (const ea::string& name : pass->GetPixelTextureDefines())
         AddTextureDefine(result, PS, material, name);
 }
 
@@ -298,9 +298,9 @@ void ShaderProgramCompositor::ApplyAmbientLightingVertexAndCommonDefinesForUserP
 void ShaderProgramCompositor::ApplyDefinesForShadowPass(ShaderProgramDesc& result,
     Light* light, VertexBuffer* vertexBuffer, Material* material, Pass* pass) const
 {
-    for (const ea::string& name : pass->GetVertexDynamicTextures())
+    for (const ea::string& name : pass->GetVertexTextureDefines())
         AddTextureDefine(result, VS, material, name);
-    for (const ea::string& name : pass->GetPixelDynamicTextures())
+    for (const ea::string& name : pass->GetPixelTextureDefines())
         AddTextureDefine(result, PS, material, name);
 
     if (vertexBuffer->HasElement(SEM_NORMAL))

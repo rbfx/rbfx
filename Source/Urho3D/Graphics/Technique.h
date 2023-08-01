@@ -114,6 +114,8 @@ public:
     /// Set pixel shader define excludes. Use to mark defines that the shader code will not recognize, to prevent compiling redundant shader variations.
     /// @property
     void SetPixelShaderDefineExcludes(const ea::string& excludes);
+    void SetVertexTextureDefines(const StringVector& textures);
+    void SetPixelTextureDefines(const StringVector& textures);
     /// Reset shader pointers.
     void ReleaseShaders();
     /// Mark shaders loaded this frame.
@@ -185,11 +187,11 @@ public:
     /// Return pixel shaders.
     ea::vector<SharedPtr<ShaderVariation> >& GetPixelShaders() { return pixelShaders_; }
 
-    /// Return names of dynamically tracked textures during vertex shader compilation.
-    const StringVector& GetVertexDynamicTextures() const { return vertexDynamicTextures_; }
+    /// Return names of textures to be reported as defines in vertex shader code.
+    const StringVector& GetVertexTextureDefines() const { return vertexTextureDefines_; }
 
-    /// Return names of dynamically tracked textures during pixel shader compilation.
-    const StringVector& GetPixelDynamicTextures() const { return pixelDynamicTextures_; }
+    /// Return names of textures to be reported as defines in pixel shader code.
+    const StringVector& GetPixelTextureDefines() const { return pixelTextureDefines_; }
 
     /// Return vertex shaders with extra defines from the renderpath.
     ea::vector<SharedPtr<ShaderVariation> >& GetVertexShaders(const StringHash& extraDefinesHash);
@@ -242,11 +244,10 @@ private:
     ea::unordered_map<StringHash, ea::vector<SharedPtr<ShaderVariation> > > extraVertexShaders_;
     /// Pixel shaders with extra defines from the renderpath.
     ea::unordered_map<StringHash, ea::vector<SharedPtr<ShaderVariation> > > extraPixelShaders_;
+    StringVector vertexTextureDefines_;
+    StringVector pixelTextureDefines_;
     /// Pass name.
     ea::string name_;
-
-    StringVector vertexDynamicTextures_;
-    StringVector pixelDynamicTextures_;
 };
 
 /// %Material technique. Consists of several passes.
