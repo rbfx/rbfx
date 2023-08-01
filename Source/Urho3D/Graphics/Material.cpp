@@ -366,9 +366,9 @@ bool Material::Load(const XMLElement& source)
     XMLElement textureElem = source.GetChild("texture");
     while (textureElem)
     {
-        ea::string uniformName = textureElem.GetAttribute("uniform");
-        if (uniformName.empty() && textureElem.HasAttribute("unit"))
-            uniformName = ParseTextureUnitName(textureElem.GetAttribute("unit"));
+        ea::string slotName = textureElem.GetAttribute("slot");
+        if (slotName.empty() && textureElem.HasAttribute("unit"))
+            slotName = ParseTextureUnitName(textureElem.GetAttribute("unit"));
 
         const ea::string resourceName = textureElem.GetAttribute("name");
         // Detect cube maps and arrays by file extension: they are defined by an XML file
@@ -379,14 +379,14 @@ bool Material::Load(const XMLElement& source)
                 type = textureElem.GetAttribute("type");
 
             if (type == Texture3D::GetTypeStatic())
-                SetTextureInternal(uniformName, cache->GetResource<Texture3D>(resourceName));
+                SetTextureInternal(slotName, cache->GetResource<Texture3D>(resourceName));
             else if (type == Texture2DArray::GetTypeStatic())
-                SetTextureInternal(uniformName, cache->GetResource<Texture2DArray>(resourceName));
+                SetTextureInternal(slotName, cache->GetResource<Texture2DArray>(resourceName));
             else
-                SetTextureInternal(uniformName, cache->GetResource<TextureCube>(resourceName));
+                SetTextureInternal(slotName, cache->GetResource<TextureCube>(resourceName));
         }
         else
-            SetTextureInternal(uniformName, cache->GetResource<Texture2D>(resourceName));
+            SetTextureInternal(slotName, cache->GetResource<Texture2D>(resourceName));
 
         textureElem = textureElem.GetNext("texture");
     }
@@ -500,7 +500,7 @@ bool Material::Save(XMLElement& dest) const
         if (texture.value_)
         {
             XMLElement textureElem = dest.CreateChild("texture");
-            textureElem.SetString("uniform", texture.name_);
+            textureElem.SetString("slot", texture.name_);
             textureElem.SetString("name", texture.value_->GetName());
         }
     }
