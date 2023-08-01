@@ -313,8 +313,6 @@ void ShaderProgramCompositor::ApplyDefinesForShadowPass(ShaderProgramDesc& resul
     {
         if (vertexBuffer->HasElement(SEM_TEXCOORD, 0))
             result.AddShaderDefines(VS, "URHO3D_VERTEX_HAS_TEXCOORD0");
-        if (Texture* diffuseTexture = material->GetTexture(ShaderResources::Albedo))
-            result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_DIFFUSE");
     }
 
     result.AddCommonShaderDefines("URHO3D_SHADOW_PASS");

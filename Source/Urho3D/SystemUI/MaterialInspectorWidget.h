@@ -77,7 +77,6 @@ private:
 
     struct TextureUnitDesc
     {
-        ea::string uniform_;
         ea::string name_;
         ea::string hint_;
     };
