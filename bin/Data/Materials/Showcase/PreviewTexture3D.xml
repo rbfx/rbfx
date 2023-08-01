@@ -1,11 +1,7 @@
 <?xml version="1.0"?>
 <material>
 	<technique name="Techniques/PreviewTexture.xml" quality="0" loddistance="0.000000" />
-	<texture unit="diffuse" name="Textures/TerrainWeights.dds" />
-	<texture unit="normal" name="Textures/TerrainDetail1.dds" />
-	<texture unit="specular" name="Textures/TerrainDetail2.dds" />
-	<texture unit="emissive" name="Textures/TerrainDetail3.dds" />
-	<texture unit="custom1" name="Textures/LUTIdentity.xml" />
+	<texture slot="Texture" name="Textures/LUTIdentity.xml" />
 	<shader vsdefines="TEXTURE3D" psdefines="TEXTURE3D" />
 	<parameter name="VOffset" value="0 1 0 0" />
 	<parameter name="AlphaCutoff" value="0.500000" />

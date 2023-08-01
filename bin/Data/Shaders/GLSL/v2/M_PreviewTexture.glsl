@@ -9,10 +9,10 @@
 #include "_VertexTransform.glsl"
 
 #ifdef TEXTURE2DARRAY
-    SAMPLER(6, sampler2DArray sCustom1)
+    SAMPLER(6, sampler2DArray sTexture)
 #endif
 #ifdef TEXTURE3D
-    SAMPLER(6, sampler3D sCustom1)
+    SAMPLER(6, sampler3D sTexture)
 #endif
 
 VERTEX_OUTPUT_HIGHP(vec3 vWorldPos)
@@ -34,11 +34,11 @@ void main()
     vec3 texCoord = vWorldPos;
 
     #ifdef TEXTURE2DARRAY
-        float numSlices = textureSize(sCustom1, 0).z;
+        float numSlices = textureSize(sTexture, 0).z;
         texCoord.z = mod(texCoord.z * 10 + 0.5, numSlices) - 0.5;
     #endif
 
-    half4 diffColor = texture(sCustom1, texCoord);
+    half4 diffColor = texture(sTexture, texCoord);
     gl_FragColor = GammaToLightSpaceAlpha(diffColor);
 }
 #endif
