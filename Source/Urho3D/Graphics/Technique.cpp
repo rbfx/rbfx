@@ -30,6 +30,7 @@
 #include "../Graphics/Material.h"
 #include "../Graphics/ShaderVariation.h"
 #include "../IO/Log.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
 
@@ -49,6 +50,19 @@ Pass::Pass(const ea::string& name) :
 {
     name_ = name.to_lower();
     index_ = Technique::GetPassIndex(name_);
+
+    // TODO: Load this from technique
+    if (index_ == Technique::shadowPassIndex)
+    {
+        vertexDynamicTextures_ = {};
+        pixelDynamicTextures_ = {};
+    }
+    else
+    {
+        vertexDynamicTextures_ = {};
+        pixelDynamicTextures_ = {
+            ShaderResources::Albedo, ShaderResources::Normal, ShaderResources::Properties, ShaderResources::Emission};
+    }
 }
 
 Pass::~Pass() = default;

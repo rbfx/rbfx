@@ -6,6 +6,11 @@
 #define URHO3D_SURFACE_VOLUMETRIC
 #define URHO3D_CUSTOM_MATERIAL_UNIFORMS
 
+#define URHO3D_MATERIAL_ALBEDO URHO3D_TEXTURE_ALBEDO
+#define URHO3D_MATERIAL_NORMAL URHO3D_TEXTURE_NORMAL
+#define URHO3D_MATERIAL_PROPERTIES URHO3D_TEXTURE_PROPERTIES
+#define URHO3D_MATERIAL_EMISSION URHO3D_TEXTURE_EMISSION
+
 vec2 vTexCoord;
 
 #include "_Config.glsl"
@@ -81,10 +86,10 @@ void main()
     Surface_SetLegacyProperties(surfaceData, cMatSpecColor.a, sEmission, vTexCoord);
     Surface_SetCubeReflection(surfaceData, sReflection0, sReflection1, vReflectionVec, vWorldPos);
     Surface_SetPlanarReflection(surfaceData, sReflection0, cReflectionPlaneX, cReflectionPlaneY);
-    Surface_SetBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sAlbedo, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
+    Surface_SetBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sAlbedo, vTexCoord, URHO3D_MATERIAL_ALBEDO);
     Surface_SetBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sProperties, vTexCoord);
     Surface_SetAlbedoSpecular(surfaceData);
-    Surface_SetEmission(surfaceData, cMatEmissiveColor, sEmission, vTexCoord, URHO3D_MATERIAL_EMISSIVE_HINT);
+    Surface_SetEmission(surfaceData, cMatEmissiveColor, sEmission, vTexCoord, URHO3D_MATERIAL_EMISSION);
     Surface_ApplySoftFadeOut(surfaceData, vWorldDepth, cFadeOffsetScale);
 
     // TODO: Make configurable

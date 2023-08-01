@@ -16,6 +16,11 @@
     #define ENVCUBEMAP
 #endif
 
+#define URHO3D_MATERIAL_ALBEDO URHO3D_TEXTURE_ALBEDO
+#define URHO3D_MATERIAL_NORMAL URHO3D_TEXTURE_NORMAL
+#define URHO3D_MATERIAL_PROPERTIES URHO3D_TEXTURE_PROPERTIES
+#define URHO3D_MATERIAL_EMISSION URHO3D_TEXTURE_EMISSION
+
 #include "_Config.glsl"
 #include "_Uniforms.glsl"
 #include "_DefaultSamplers.glsl"
@@ -43,7 +48,7 @@ void main()
     Surface_SetCommon(surfaceData);
     Surface_SetAmbient(surfaceData, sEmission, vTexCoord2);
     Surface_SetNormal(surfaceData, vNormal, sNormal, vTexCoord, vTangent, vBitangentXY);
-    Surface_SetBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sAlbedo, vTexCoord, URHO3D_MATERIAL_DIFFUSE_HINT);
+    Surface_SetBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sAlbedo, vTexCoord, URHO3D_MATERIAL_ALBEDO);
     Surface_SetBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sProperties, vTexCoord);
     Surface_SetAlbedoSpecular(surfaceData);
 

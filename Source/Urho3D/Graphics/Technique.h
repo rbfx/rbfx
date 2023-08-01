@@ -185,6 +185,12 @@ public:
     /// Return pixel shaders.
     ea::vector<SharedPtr<ShaderVariation> >& GetPixelShaders() { return pixelShaders_; }
 
+    /// Return names of dynamically tracked textures during vertex shader compilation.
+    const StringVector& GetVertexDynamicTextures() const { return vertexDynamicTextures_; }
+
+    /// Return names of dynamically tracked textures during pixel shader compilation.
+    const StringVector& GetPixelDynamicTextures() const { return pixelDynamicTextures_; }
+
     /// Return vertex shaders with extra defines from the renderpath.
     ea::vector<SharedPtr<ShaderVariation> >& GetVertexShaders(const StringHash& extraDefinesHash);
     /// Return pixel shaders with extra defines from the renderpath.
@@ -238,6 +244,9 @@ private:
     ea::unordered_map<StringHash, ea::vector<SharedPtr<ShaderVariation> > > extraPixelShaders_;
     /// Pass name.
     ea::string name_;
+
+    StringVector vertexDynamicTextures_;
+    StringVector pixelDynamicTextures_;
 };
 
 /// %Material technique. Consists of several passes.

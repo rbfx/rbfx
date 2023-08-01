@@ -135,9 +135,9 @@
 /// @param[in] metalnessValue Metalness value. If texture is used, this value is multiplied by texture value.
 /// @param[in] dielectricReflectance Reflectance value used for dielectrics. It cannot be sampled from texture.
 /// @param[in,optional] rmoMap Properties texture to simultaneously load roughness, metalness and occlusion.
-///     Ignored if URHO3D_PHYSICAL_MATERIAL is not defined or URHO3D_MATERIAL_HAS_SPECULAR is not defined.
+///     Ignored if URHO3D_PHYSICAL_MATERIAL is not defined or URHO3D_MATERIAL_PROPERTIES is 0.
 /// @param[in,optional] rmoTexCoord Texture coordinate for properties map lookup.
-///     Ignored if URHO3D_PHYSICAL_MATERIAL is not defined or URHO3D_MATERIAL_HAS_SPECULAR is not defined.
+///     Ignored if URHO3D_PHYSICAL_MATERIAL is not defined or URHO3D_MATERIAL_PROPERTIES is 0.
 /// @param[in,optional] surfaceData.normal
 ///     Ignored unless high-quality specular is enabled (URHO3D_SPECULAR == 2).
 /// @param[out] surfaceData.oneMinusReflectivity
@@ -149,10 +149,10 @@
 /// @param[in] specularPower Specular power value.
 /// @param[in,optional] occlusionMap Occlusion map texture for non-PBR material.
 ///     Ignored if URHO3D_HAS_LIGHTMAP is defined,
-///     AO is not defined or URHO3D_MATERIAL_HAS_EMISSIVE is not defined.
+///     AO is not defined or URHO3D_MATERIAL_EMISSION is 0.
 /// @param[in,optional] occlusionTexCoord Texture coordinate for occlusion map lookup.
 ///     Ignored if URHO3D_HAS_LIGHTMAP is defined,
-///     AO is not defined or URHO3D_MATERIAL_HAS_EMISSIVE is not defined.
+///     AO is not defined or URHO3D_MATERIAL_EMISSION is 0.
 /// @param[out] surfaceData.oneMinusReflectivity
 /// @param[out] surfaceData.roughness
 /// @param[out] surfaceData.occlusion
@@ -190,7 +190,7 @@
         occlusion = rmo.z;
     }
 
-    #ifdef URHO3D_MATERIAL_HAS_SPECULAR
+    #if URHO3D_MATERIAL_PROPERTIES
         half3 _GetBaseRMO(sampler2D propertiesMap, vec2 texCoord, half roughnessValue, half metalnessValue)
         {
             half3 rmo = texture(propertiesMap, texCoord).rga;
@@ -221,7 +221,7 @@
         roughness = SpecularPowerToRoughness(specularPower);
     }
 
-    #if !defined(URHO3D_HAS_LIGHTMAP) && defined(AO) && defined(URHO3D_MATERIAL_HAS_EMISSIVE)
+    #if !defined(URHO3D_HAS_LIGHTMAP) && defined(AO) && URHO3D_MATERIAL_EMISSION
         #define _GetSurfaceOcclusion(occlusionMap, texCoord) texture(occlusionMap, texCoord).r
     #else
         #define _GetSurfaceOcclusion(occlusionMap, texCoord) 1.0
@@ -278,11 +278,11 @@
 /// @param[in,optional] vertexColor Vertex color to modulate texture and material.
 ///     Ignored if URHO3D_PIXEL_NEED_VERTEX_COLOR is not defined.
 /// @param[in,optional] albedoMap Albedo map.
-///     Ignored if URHO3D_MATERIAL_HAS_DIFFUSE is not defined.
+///     Ignored if URHO3D_MATERIAL_ALBEDO is 0.
 /// @param[in,optional] albedoTexCoord Texture coordinate for albedo map lookup.
-///     Ignored if URHO3D_MATERIAL_HAS_DIFFUSE is not defined.
+///     Ignored if URHO3D_MATERIAL_ALBEDO is 0.
 /// @param[in,optional] colorSpace Color space of albedo map. 0 for gamma, 1 for linear.
-///     Ignored if URHO3D_MATERIAL_HAS_DIFFUSE is not defined.
+///     Ignored if URHO3D_MATERIAL_ALBEDO is 0.
 /// @param[out] surfaceData.albedo
 
 /// @def Surface_SetBaseSpecular(surfaceData, specColor, reflectionColor, specMap, specTexCoord)
@@ -292,9 +292,9 @@
 /// @param[in] specColor Specular color in gamma space.
 /// @param[in] reflectionColor Reflection color in gamma space.
 /// @param[in,optional] specMap Specular map in gamma space.
-///     Ignored if URHO3D_MATERIAL_HAS_SPECULAR is not defined.
+///     Ignored if URHO3D_MATERIAL_PROPERTIES is 0.
 /// @param[in,optional] specTexCoord Texture coordinate for specular map lookup.
-///     Ignored if URHO3D_MATERIAL_HAS_SPECULAR is not defined.
+///     Ignored if URHO3D_MATERIAL_PROPERTIES is 0.
 /// @param[out] surfaceData.specular
 
 /// @def Surface_SetAlbedoSpecular(surfaceData)
@@ -340,7 +340,7 @@
     #define AdjustAlbedoForPremultiplyAlpha(albedo, oneMinusReflectivity)
 #endif
 
-#ifdef URHO3D_MATERIAL_HAS_DIFFUSE
+#if URHO3D_MATERIAL_ALBEDO
     #define _Surface_SetBaseAlbedo(surfaceData, albedoColor, alphaCutoff, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
     { \
         half4 albedoInput = texture(albedoMap, albedoTexCoord); \
@@ -365,7 +365,7 @@
     #define Surface_SetBaseSpecular(surfaceData, specColor, reflectionColor, specMap, specTexCoord) \
         surfaceData.specular = vec3(0.0, 0.0, 0.0)
 #else
-    #ifdef URHO3D_MATERIAL_HAS_SPECULAR
+    #if URHO3D_MATERIAL_PROPERTIES
         #define _Surface_SetBaseSpecular(surfaceData, specColor, specMap, specTexCoord) \
             surfaceData.specular = GammaToLightSpace(specColor.rgb * texture(specMap, specTexCoord).rgb)
     #else
@@ -399,19 +399,19 @@
 /// @brief Fill surface emission value.
 /// @param[in] emissiveColor Emissive color in gamma space. If texture is present, it will be modulated by this color.
 /// @param[in,optional] emissiveMap Emissive map.
-///     Ignored if URHO3D_SURFACE_NEED_AMBIENT is not defined, URHO3D_MATERIAL_HAS_EMISSIVE is not defined,
+///     Ignored if URHO3D_SURFACE_NEED_AMBIENT is not defined, URHO3D_MATERIAL_EMISSION is 0,
 ///     AO is defined, or URHO3D_HAS_LIGHTMAP is defined.
 /// @param[in,optional] texCoord Texture coordinate for emissive map lookup.
-///     Ignored if URHO3D_SURFACE_NEED_AMBIENT is not defined, URHO3D_MATERIAL_HAS_EMISSIVE is not defined,
+///     Ignored if URHO3D_SURFACE_NEED_AMBIENT is not defined, URHO3D_MATERIAL_EMISSION is 0,
 ///     AO is defined, or URHO3D_HAS_LIGHTMAP is defined.
 /// @param[in,optional] colorSpace Color space of emissive map. 0 for gamma, 1 for linear.
-///     Ignored if URHO3D_SURFACE_NEED_AMBIENT is not defined, URHO3D_MATERIAL_HAS_EMISSIVE is not defined,
+///     Ignored if URHO3D_SURFACE_NEED_AMBIENT is not defined, URHO3D_MATERIAL_EMISSION is 0,
 ///     AO is defined, or URHO3D_HAS_LIGHTMAP is defined.
 /// @param[out] surfaceData.emission
 
 #ifdef URHO3D_SURFACE_NEED_AMBIENT
     #ifndef URHO3D_HAS_LIGHTMAP
-        #if defined(URHO3D_MATERIAL_HAS_EMISSIVE) && !defined(AO)
+        #if URHO3D_MATERIAL_EMISSION && !defined(AO)
             #define _Surface_SetEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
                 surfaceData.emission = GammaToLightSpace(emissiveColor) * Texture_ToLight_##colorSpace(texture(emissiveMap, texCoord).rgb)
         #else

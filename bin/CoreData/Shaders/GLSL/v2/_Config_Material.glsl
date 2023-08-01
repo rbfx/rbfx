@@ -29,37 +29,17 @@
 /// Whether to blur reflection according to surface roughness.
 // #define URHO3D_BLUR_REFLECTION
 
-/// =================================== Disable inputs ===================================
-
-#ifdef URHO3D_DISABLE_DIFFUSE_SAMPLING
-    #ifdef URHO3D_MATERIAL_HAS_DIFFUSE
-        #undef URHO3D_MATERIAL_HAS_DIFFUSE
-    #endif
-#endif
-
-#ifdef URHO3D_DISABLE_NORMAL_SAMPLING
-    #ifdef URHO3D_MATERIAL_HAS_NORMAL
-        #undef URHO3D_MATERIAL_HAS_NORMAL
-    #endif
-#endif
-
-#ifdef URHO3D_DISABLE_SPECULAR_SAMPLING
-    #ifdef URHO3D_MATERIAL_HAS_SPECULAR
-        #undef URHO3D_MATERIAL_HAS_SPECULAR
-    #endif
-#endif
-
-#ifdef URHO3D_DISABLE_EMISSIVE_SAMPLING
-    #ifdef URHO3D_MATERIAL_HAS_EMISSIVE
-        #undef URHO3D_MATERIAL_HAS_EMISSIVE
-    #endif
-#endif
-
 /// =================================== Convert material defines ===================================
 
 #if defined(PBR)
     #ifndef URHO3D_PHYSICAL_MATERIAL
         #define URHO3D_PHYSICAL_MATERIAL
+    #endif
+#endif
+
+#if defined(PLANEREFLECTION)
+    #ifndef URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT
+        #define URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT
     #endif
 #endif
 

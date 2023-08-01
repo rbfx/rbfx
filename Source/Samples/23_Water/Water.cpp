@@ -222,6 +222,8 @@ void Water::SetupViewport()
     SharedPtr<Viewport> rttViewport(new Viewport(context_, scene_, reflectionCamera));
     surface->SetViewport(0, rttViewport);
     waterMaterial_->SetTexture(ShaderResources::Reflection0, renderTexture);
+    waterMaterial_->SetVertexShaderDefines(waterMaterial_->GetVertexShaderDefines() + "PLANEREFLECTION ");
+    waterMaterial_->SetPixelShaderDefines(waterMaterial_->GetPixelShaderDefines() + "PLANEREFLECTION ");
 }
 
 void Water::MoveCamera(float timeStep)

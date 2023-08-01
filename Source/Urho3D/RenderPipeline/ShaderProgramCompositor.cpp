@@ -48,6 +48,17 @@ int GetTextureColorSpaceHint(bool linearInput, bool srgbTexture)
     return static_cast<int>(linearInput) + static_cast<int>(srgbTexture);
 }
 
+void AddTextureDefine(ShaderProgramDesc& result, ShaderType shaderType, Material* material, const ea::string& name)
+{
+    if (Texture* texture = material->GetTexture(name))
+    {
+        const int hint = GetTextureColorSpaceHint(texture->GetLinear(), texture->GetSRGB());
+        if (hint > 1)
+            URHO3D_LOGWARNING("Texture {} cannot be both sRGB and Linear", material->GetName());
+        result.AddShaderDefines(shaderType, Format("URHO3D_TEXTURE_{}={}", name.to_upper(), ea::min(1, hint) + 1));
+    }
+}
+
 }
 
 ShaderProgramCompositor::ShaderProgramCompositor(Context* context)
@@ -76,7 +87,7 @@ void ShaderProgramCompositor::ProcessUserBatch(ShaderProgramDesc& result, Drawab
     ApplyGeometryVertexDefines(result, flags, geometry, geometryType);
 
     ApplyLayoutVertexAndCommonDefinesForUserPass(result, geometry->GetVertexBuffer(0));
-    ApplyMaterialPixelDefinesForUserPass(result, material);
+    ApplyMaterialPixelDefinesForUserPass(result, material, pass);
 
     ApplyNormalTangentSpaceDefines(result, geometryType, geometry->GetVertexBuffer(0));
 
@@ -251,37 +262,13 @@ void ShaderProgramCompositor::ApplyLayoutVertexAndCommonDefinesForUserPass(
         result.AddCommonShaderDefines("URHO3D_VERTEX_HAS_COLOR");
 }
 
-void ShaderProgramCompositor::ApplyMaterialPixelDefinesForUserPass(ShaderProgramDesc& result, Material* material) const
+void ShaderProgramCompositor::ApplyMaterialPixelDefinesForUserPass(
+    ShaderProgramDesc& result, Material* material, Pass* pass) const
 {
-    if (Texture* diffuseTexture = material->GetTexture(ShaderResources::Albedo))
-    {
-        result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_DIFFUSE");
-        const int hint = GetTextureColorSpaceHint(diffuseTexture->GetLinear(), diffuseTexture->GetSRGB());
-        if (hint > 1)
-            URHO3D_LOGWARNING("Texture {} cannot be both sRGB and Linear", diffuseTexture->GetName());
-        result.AddShaderDefines(PS, Format("URHO3D_MATERIAL_DIFFUSE_HINT={}", ea::min(1, hint)));
-    }
-
-    if (material->GetTexture(ShaderResources::Normal))
-        result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_NORMAL");
-
-    if (material->GetTexture(ShaderResources::Properties))
-        result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_SPECULAR");
-
-    if (Texture* envTexture = material->GetTexture(ShaderResources::Reflection0))
-    {
-        if (envTexture->IsInstanceOf<Texture2D>())
-            result.AddCommonShaderDefines("URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT");
-    }
-
-    if (Texture* emissiveTexture = material->GetTexture(ShaderResources::Emission))
-    {
-        result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_EMISSIVE");
-        const int hint = GetTextureColorSpaceHint(emissiveTexture->GetLinear(), emissiveTexture->GetSRGB());
-        if (hint > 1)
-            URHO3D_LOGWARNING("Texture {} cannot be both sRGB and Linear", emissiveTexture->GetName());
-        result.AddShaderDefines(PS, Format("URHO3D_MATERIAL_EMISSIVE_HINT={}", ea::min(1, hint)));
-    }
+    for (const ea::string& name : pass->GetVertexDynamicTextures())
+        AddTextureDefine(result, VS, material, name);
+    for (const ea::string& name : pass->GetPixelDynamicTextures())
+        AddTextureDefine(result, PS, material, name);
 }
 
 void ShaderProgramCompositor::ApplyAmbientLightingVertexAndCommonDefinesForUserPass(ShaderProgramDesc& result,
@@ -311,6 +298,11 @@ void ShaderProgramCompositor::ApplyAmbientLightingVertexAndCommonDefinesForUserP
 void ShaderProgramCompositor::ApplyDefinesForShadowPass(ShaderProgramDesc& result,
     Light* light, VertexBuffer* vertexBuffer, Material* material, Pass* pass) const
 {
+    for (const ea::string& name : pass->GetVertexDynamicTextures())
+        AddTextureDefine(result, VS, material, name);
+    for (const ea::string& name : pass->GetPixelDynamicTextures())
+        AddTextureDefine(result, PS, material, name);
+
     if (vertexBuffer->HasElement(SEM_NORMAL))
         result.AddShaderDefines(VS, "URHO3D_VERTEX_HAS_NORMAL");
 

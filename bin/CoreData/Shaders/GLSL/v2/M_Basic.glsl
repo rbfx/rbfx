@@ -44,7 +44,7 @@ void main()
         diffColor *= vColor;
     #endif
 
-    #ifdef URHO3D_MATERIAL_HAS_DIFFUSE
+    #if URHO3D_TEXTURE_ALBEDO
         #ifdef ALPHAMAP
             half alphaInput = texture(sAlbedo, vTexCoord).r;
             diffColor.a *= alphaInput;

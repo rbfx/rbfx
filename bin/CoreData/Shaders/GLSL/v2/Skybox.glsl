@@ -30,6 +30,6 @@ void main()
 #ifdef URHO3D_PIXEL_SHADER
 void main()
 {
-    gl_FragColor = GammaToLightSpaceAlpha(cMatDiffColor) * CONCATENATE(Texture_ToLightAlpha_, URHO3D_MATERIAL_DIFFUSE_HINT)(texture(sAlbedo, vTexCoord));
+    gl_FragColor = GammaToLightSpaceAlpha(cMatDiffColor) * CONCATENATE(Texture_ToLightAlpha_, URHO3D_TEXTURE_ALBEDO)(texture(sAlbedo, vTexCoord));
 }
 #endif

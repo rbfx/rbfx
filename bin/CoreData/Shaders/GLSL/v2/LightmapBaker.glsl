@@ -56,18 +56,18 @@ void main()
 #ifdef URHO3D_PIXEL_SHADER
 void main()
 {
-#ifdef URHO3D_MATERIAL_HAS_DIFFUSE
+#if URHO3D_TEXTURE_ALBEDO
     vec4 albedoInput = texture(sAlbedo, vTexCoord);
     vec4 albedo = GammaToLinearSpaceAlpha(cMatDiffColor)
-        * CONCATENATE(Texture_ToLinearAlpha_, URHO3D_MATERIAL_DIFFUSE_HINT)(albedoInput);
+        * CONCATENATE(Texture_ToLinearAlpha_, URHO3D_TEXTURE_ALBEDO)(albedoInput);
 #else
     vec4 albedo = GammaToLinearSpaceAlpha(cMatDiffColor);
 #endif
 
-#ifdef URHO3D_MATERIAL_HAS_EMISSIVE
+#if URHO3D_TEXTURE_EMISSION
     vec4 emissiveInput = texture(sEmission, vTexCoord);
     vec3 emissive = GammaToLinearSpace(cMatEmissiveColor)
-        * CONCATENATE(Texture_ToLinear_, URHO3D_MATERIAL_EMISSIVE_HINT)(emissiveInput.rgb);
+        * CONCATENATE(Texture_ToLinear_, URHO3D_TEXTURE_EMISSION)(emissiveInput.rgb);
 #else
     vec3 emissive = GammaToLinearSpace(cMatEmissiveColor);
 #endif
