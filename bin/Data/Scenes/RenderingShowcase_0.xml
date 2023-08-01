@@ -1245,7 +1245,7 @@
 			<attribute name="Variables" />
 			<component type="StaticModel" id="174">
 				<attribute name="Model" value="Model;Models/TeaPot.mdl" />
-				<attribute name="Material" value="Material;Materials/Constant/Mirror.xml;Materials/Constant/Mirror.xml" />
+				<attribute name="Material" value="Material;Materials/Constant/LegacyMirror.xml;Materials/Constant/LegacyMirror.xml" />
 			</component>
 		</node>
 		<node id="452">
