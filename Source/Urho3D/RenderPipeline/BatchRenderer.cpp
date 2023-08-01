@@ -718,8 +718,13 @@ private:
             ? sourceBatch.numWorldTransforms_ : 1u;
 
         const bool resetInstancingGroup = instancingGroup_.count_ == 0 || dirty_.IsAnythingDirty();
+
         if constexpr (DebuggerEnabled)
             debugger_->ReportSceneBatch(DebugFrameSnapshotBatch{ drawableProcessor_, pipelineBatch, resetInstancingGroup });
+
+        if (current_.geometry_->GetEffectiveIndexCount() == 0)
+            return;
+
         if (resetInstancingGroup)
         {
             if (instancingGroup_.count_ > 0)

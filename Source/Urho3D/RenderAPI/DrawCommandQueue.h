@@ -212,6 +212,7 @@ public:
     {
         URHO3D_ASSERT(currentDrawCommand_.pipelineState_->GetPipelineType() == PipelineStateType::Graphics);
         URHO3D_ASSERT(!currentDrawCommand_.indexBuffer_);
+        URHO3D_ASSERT(vertexCount > 0);
 
         currentDrawCommand_.indexStart_ = vertexStart;
         currentDrawCommand_.indexCount_ = vertexCount;
@@ -226,6 +227,7 @@ public:
     {
         URHO3D_ASSERT(currentDrawCommand_.pipelineState_->GetPipelineType() == PipelineStateType::Graphics);
         URHO3D_ASSERT(currentDrawCommand_.indexBuffer_);
+        URHO3D_ASSERT(indexCount > 0);
 
         currentDrawCommand_.indexStart_ = indexStart;
         currentDrawCommand_.indexCount_ = indexCount;
@@ -240,6 +242,7 @@ public:
     {
         URHO3D_ASSERT(currentDrawCommand_.pipelineState_->GetPipelineType() == PipelineStateType::Graphics);
         URHO3D_ASSERT(currentDrawCommand_.indexBuffer_);
+        URHO3D_ASSERT(indexCount > 0);
 
         currentDrawCommand_.indexStart_ = indexStart;
         currentDrawCommand_.indexCount_ = indexCount;
@@ -254,6 +257,7 @@ public:
     {
         URHO3D_ASSERT(currentDrawCommand_.pipelineState_->GetPipelineType() == PipelineStateType::Graphics);
         URHO3D_ASSERT(currentDrawCommand_.indexBuffer_);
+        URHO3D_ASSERT(indexCount > 0);
 
         currentDrawCommand_.indexStart_ = indexStart;
         currentDrawCommand_.indexCount_ = indexCount;
@@ -269,6 +273,7 @@ public:
     {
         URHO3D_ASSERT(currentDrawCommand_.pipelineState_->GetPipelineType() == PipelineStateType::Graphics);
         URHO3D_ASSERT(currentDrawCommand_.indexBuffer_);
+        URHO3D_ASSERT(indexCount > 0);
 
         currentDrawCommand_.indexStart_ = indexStart;
         currentDrawCommand_.indexCount_ = indexCount;
