@@ -638,7 +638,7 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
     ci.GraphicsPipeline.DepthStencilDesc.BackFace.StencilFunc = comparisonFunction[desc.stencilCompareFunction_];
 
     unsigned depthBits = 24;
-    if (ci.GraphicsPipeline.DSVFormat == Diligent::TEX_FORMAT_R16_TYPELESS)
+    if (ci.GraphicsPipeline.DSVFormat == Diligent::TEX_FORMAT_D16_UNORM)
         depthBits = 16;
     const int scaledDepthBias = isOpenGL ? 0 : (int)(desc.constantDepthBias_ * (1 << depthBits));
 
