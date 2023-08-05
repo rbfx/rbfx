@@ -63,6 +63,38 @@ void DrawNode(DebugRenderer* debug, bool oriented,
     }
 }
 
+struct BendCalculationParams
+{
+    Quaternion parentNodeRotation_;
+    Vector3 startPosition_;
+    Vector3 targetPosition_;
+
+    Vector3 targetDirectionInLocalSpace_;
+    Vector3 bendDirectionInNodeSpace_;
+    Vector3 bendDirectionInLocalSpace_;
+
+    Node* bendTarget_{};
+    float bendTargetWeight_{};
+};
+
+ea::pair<Vector3, Vector3> CalculateBendDirectionsInternal(
+    const Transform& frameOfReference, const BendCalculationParams& params)
+{
+    const float bendTargetWeight = params.bendTarget_ ? params.bendTargetWeight_ : 0.0f;
+    const Vector3 bendTargetPosition = params.bendTarget_ ? params.bendTarget_->GetWorldPosition() : Vector3::ZERO;
+    const Vector3 bendTargetDirection = bendTargetPosition - Lerp(params.startPosition_, params.targetPosition_, 0.5f);
+
+    const Quaternion chainRotation{frameOfReference.rotation_ * params.targetDirectionInLocalSpace_,
+        params.targetPosition_ - params.startPosition_};
+    const Vector3 originalDirection = params.parentNodeRotation_ * params.bendDirectionInNodeSpace_;
+    const Vector3 currentDirection0 = chainRotation * frameOfReference.rotation_ * params.bendDirectionInLocalSpace_;
+    const Vector3 currentDirection1 = bendTargetDirection.Normalized();
+    const Vector3 currentDirection = Lerp(currentDirection0, currentDirection1, bendTargetWeight);
+
+    return {originalDirection, currentDirection};
+}
+
+
 }
 
 IKSolverComponent::IKSolverComponent(Context* context)
@@ -473,7 +505,9 @@ void IKLimbSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 {
     chain_.UpdateLengths();
 
-    local_.defaultDirection_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * bendDirection_;
+    local_.bendDirection_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * bendDirection_;
+    local_.targetDirection_ = inverseFrameOfReference.rotation_
+        * (chain_.GetEndNode()->position_ - chain_.GetBeginNode()->position_).Normalized();
 }
 
 void IKLimbSolver::EnsureInitialized()
@@ -530,21 +564,20 @@ Vector3 IKLimbSolver::GetTargetPosition() const
 }
 
 ea::pair<Vector3, Vector3> IKLimbSolver::CalculateBendDirections(
-    const Transform& frameOfReference, const Vector3& toeTargetPosition) const
+    const Transform& frameOfReference, const Vector3& targetPosition) const
 {
-    IKNode& firstBone = *chain_.GetBeginNode();
+    BendCalculationParams params;
 
-    const float bendTargetWeight = bendTarget_ ? bendWeight_ : 0.0f;
-    const Vector3 bendTargetPosition = bendTarget_ ? bendTarget_->GetWorldPosition() : Vector3::ZERO;
-    const Vector3 bendTargetDirection =
-        bendTargetPosition - Lerp(firstBone.position_, toeTargetPosition, 0.5f);
+    params.parentNodeRotation_ = node_->GetWorldRotation();
+    params.startPosition_ = chain_.GetBeginNode()->position_;
+    params.targetPosition_ = targetPosition;
+    params.targetDirectionInLocalSpace_ = local_.targetDirection_;
+    params.bendDirectionInNodeSpace_ = bendDirection_;
+    params.bendDirectionInLocalSpace_ = local_.bendDirection_;
+    params.bendTarget_ = bendTarget_;
+    params.bendTargetWeight_ = bendWeight_;
 
-    const Vector3 originalDirection = node_->GetWorldRotation() * bendDirection_;
-    const Vector3 currentDirection0 = frameOfReference.rotation_ * local_.defaultDirection_;
-    const Vector3 currentDirection1 = bendTargetDirection.Normalized();
-    const Vector3 currentDirection = Lerp(currentDirection0, currentDirection1, bendTargetWeight);
-
-    return {originalDirection, currentDirection};
+    return CalculateBendDirectionsInternal(frameOfReference, params);
 }
 
 IKLegSolver::IKLegSolver(Context* context)
@@ -710,7 +743,9 @@ void IKLegSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
     local_.defaultThighToToeDistance_ = (toeBone.position_ - thighBone.position_).Length();
     local_.tiptoeTweakOffset_ = local_.defaultThighToToeDistance_ * 0.5f;
 
-    local_.defaultDirection_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * bendDirection_;
+    local_.bendDirection_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * bendDirection_;
+    local_.targetDirection_ = inverseFrameOfReference.rotation_
+        * (legChain_.GetEndNode()->position_ - legChain_.GetBeginNode()->position_).Normalized();
     local_.defaultFootRotation_ = calfBone.rotation_.Inverse() * heelBone.rotation_;
     local_.defaultToeOffset_ = heelBone.rotation_.Inverse() * (toeBone.position_ - heelBone.position_);
     local_.defaultToeRotation_ = heelBone.rotation_.Inverse() * toeBone.rotation_;
@@ -818,18 +853,18 @@ Vector3 IKLegSolver::SnapToReachablePosition(const Vector3& toeToHeel, const Vec
 ea::pair<Vector3, Vector3> IKLegSolver::CalculateBendDirections(
     const Transform& frameOfReference, const Vector3& toeTargetPosition) const
 {
-    IKNode& thighBone = *legChain_.GetBeginNode();
+    BendCalculationParams params;
 
-    const float bendTargetWeight = bendTarget_ ? bendWeight_ : 0.0f;
-    const Vector3 bendTargetPosition = bendTarget_ ? bendTarget_->GetWorldPosition() : Vector3::ZERO;
-    const Vector3 bendTargetDirection = bendTargetPosition - Lerp(thighBone.position_, toeTargetPosition, 0.5f);
+    params.parentNodeRotation_ = node_->GetWorldRotation();
+    params.startPosition_ = legChain_.GetBeginNode()->position_;
+    params.targetPosition_ = toeTargetPosition;
+    params.targetDirectionInLocalSpace_ = local_.targetDirection_;
+    params.bendDirectionInNodeSpace_ = bendDirection_;
+    params.bendDirectionInLocalSpace_ = local_.bendDirection_;
+    params.bendTarget_ = bendTarget_;
+    params.bendTargetWeight_ = bendWeight_;
 
-    const Vector3 originalDirection = node_->GetWorldRotation() * bendDirection_;
-    const Vector3 currentDirection0 = frameOfReference.rotation_ * local_.defaultDirection_;
-    const Vector3 currentDirection1 = bendTargetDirection.Normalized();
-    const Vector3 currentDirection = Lerp(currentDirection0, currentDirection1, bendTargetWeight);
-
-    return {originalDirection, currentDirection};
+    return CalculateBendDirectionsInternal(frameOfReference, params);
 }
 
 Quaternion IKLegSolver::CalculateLegRotation(
@@ -1246,8 +1281,10 @@ void IKArmSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
     armChain_.UpdateLengths();
     shoulderSegment_.UpdateLength();
 
-    local_.defaultDirection_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * bendDirection_;
+    local_.bendDirection_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * bendDirection_;
     local_.up_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * upDirection_;
+    local_.targetDirection_ = inverseFrameOfReference.rotation_
+        * (armChain_.GetEndNode()->position_ - armChain_.GetBeginNode()->position_).Normalized();
 
     local_.shoulderRotation_ = inverseFrameOfReference * shoulderSegment_.beginNode_->rotation_;
     local_.armOffset_ = inverseFrameOfReference * shoulderSegment_.endNode_->position_;
@@ -1320,18 +1357,18 @@ void IKArmSolver::RotateShoulder(const Quaternion& rotation)
 ea::pair<Vector3, Vector3> IKArmSolver::CalculateBendDirections(
     const Transform& frameOfReference, const Vector3& handTargetPosition) const
 {
-    IKNode& shoulderBone = *shoulderSegment_.beginNode_;
+    BendCalculationParams params;
 
-    const float bendTargetWeight = bendTarget_ ? bendWeight_ : 0.0f;
-    const Vector3 bendTargetPosition = bendTarget_ ? bendTarget_->GetWorldPosition() : Vector3::ZERO;
-    const Vector3 bendTargetDirection = bendTargetPosition - Lerp(shoulderBone.position_, handTargetPosition, 0.5f);
+    params.parentNodeRotation_ = node_->GetWorldRotation();
+    params.startPosition_ = shoulderSegment_.beginNode_->position_;
+    params.targetPosition_ = handTargetPosition;
+    params.targetDirectionInLocalSpace_ = local_.targetDirection_;
+    params.bendDirectionInNodeSpace_ = bendDirection_;
+    params.bendDirectionInLocalSpace_ = local_.bendDirection_;
+    params.bendTarget_ = bendTarget_;
+    params.bendTargetWeight_ = bendWeight_;
 
-    const Vector3 originalDirection = node_->GetWorldRotation() * bendDirection_;
-    const Vector3 currentDirection0 = frameOfReference.rotation_ * local_.defaultDirection_;
-    const Vector3 currentDirection1 = bendTargetDirection.Normalized();
-    const Vector3 currentDirection = Lerp(currentDirection0, currentDirection1, bendTargetWeight);
-
-    return {originalDirection, currentDirection};
+    return CalculateBendDirectionsInternal(frameOfReference, params);
 }
 
 Quaternion IKArmSolver::CalculateMaxShoulderRotation(const Vector3& handTargetPosition) const
