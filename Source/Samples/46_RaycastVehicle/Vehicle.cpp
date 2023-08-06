@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -44,13 +45,15 @@ void Vehicle2::RegisterObject(Context* context)
     context->AddFactoryReflection<Vehicle2>();
 
     URHO3D_ATTRIBUTE("Steering", float, steering_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Controls Yaw", float, controls_.yaw_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Controls Pitch", float, controls_.pitch_, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Controls Yaw", GetYaw, SetYaw, float, 0.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Controls Pitch", GetPitch, SetPitch, float, 0.0f, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE(
+        "Input Map", GetInputMapAttr, SetInputMapAttr, ResourceRef, ResourceRef(InputMap::GetTypeStatic()), AM_DEFAULT);
 }
 
 Vehicle2::Vehicle2(Urho3D::Context* context)
-    : LogicComponent(context),
-      steering_(0.0f)
+    : BaseClassName(context)
+    , steering_(0.0f)
 {
     SetUpdateEventMask(USE_FIXEDUPDATE | USE_POSTUPDATE);
     engineForce_ = 0.0f;
@@ -134,6 +137,22 @@ void Vehicle2::Init()
     vehicle->ResetWheels();
 }
 
+void Vehicle2::SetInputMap(InputMap* inputMap)
+{
+    inputMap_ = inputMap;
+}
+
+void Vehicle2::SetInputMapAttr(const ResourceRef& value)
+{
+    auto* cache = GetSubsystem<ResourceCache>();
+    SetInputMap(cache->GetResource<InputMap>(value.name_));
+}
+
+ResourceRef Vehicle2::GetInputMapAttr() const
+{
+    return GetResourceRef(inputMap_, InputMap::GetTypeStatic());
+}
+
 void Vehicle2::CreateEmitter(Vector3 place)
 {
     auto* cache = GetSubsystem<ResourceCache>();
@@ -161,28 +180,16 @@ void Vehicle2::ApplyAttributes()
 
 void Vehicle2::FixedUpdate(float timeStep)
 {
-    float newSteering = 0.0f;
-    float accelerator = 0.0f;
     bool brake = false;
     auto* vehicle = node_->GetComponent<RaycastVehicle>();
     // Read controls
-    if (controls_.buttons_ & CTRL_LEFT)
-    {
-        newSteering = -1.0f;
-    }
-    if (controls_.buttons_ & CTRL_RIGHT)
-    {
-        newSteering = 1.0f;
-    }
-    if (controls_.buttons_ & CTRL_FORWARD)
-    {
-        accelerator = 1.0f;
-    }
-    if (controls_.buttons_ & CTRL_BACK)
-    {
-        accelerator = -0.5f;
-    }
-    if (controls_.buttons_ & CTRL_BRAKE)
+    const auto vel = GetVelocity();
+    const float newSteering = vel.x_;
+    float accelerator = vel.z_;
+    if (accelerator < 0.0f)
+        accelerator *= 0.5f;
+
+    if (inputMap_->Evaluate("Brake"))
     {
         brake = true;
     }
@@ -249,4 +256,9 @@ void Vehicle2::PostUpdate(float timeStep)
         }
     }
     prevVelocity_ = velocity;
+}
+
+void Vehicle2::SetPitch(float pitch)
+{
+    MoveAndOrbitComponent::SetPitch(Clamp(pitch, 0.0f, 80.0f));
 }

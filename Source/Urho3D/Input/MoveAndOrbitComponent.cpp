@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,54 +20,36 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
-#include "../Core/Variant.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Input/MoveAndOrbitComponent.h"
 
 namespace Urho3D
 {
 
-/// %Controls sent over the network.
-class URHO3D_API Controls
+MoveAndOrbitComponent::MoveAndOrbitComponent(Context* context)
+    : BaseClassName(context)
 {
-public:
-    /// Construct.
-    Controls();
-    /// Destruct.
-    ~Controls();
-
-    /// Reset to initial state.
-    void Reset();
-
-    /// Set or release buttons.
-    void Set(unsigned buttons, bool down = true)
-    {
-        if (down)
-            buttons_ |= buttons;
-        else
-            buttons_ &= ~buttons;
-    }
-
-    /// Check if a button is held down.
-    bool IsDown(unsigned button) const
-    {
-        return (buttons_ & button) != 0;
-    }
-
-    /// Check if a button was pressed on this frame. Requires previous frame's controls.
-    bool IsPressed(unsigned button, const Controls& previousControls) const
-    {
-        return (buttons_ & button) != 0 && (previousControls.buttons_ & button) == 0;
-    }
-
-    /// Button state.
-    unsigned buttons_;
-    /// Mouse yaw.
-    float yaw_;
-    /// Mouse pitch.
-    float pitch_;
-    /// Extra control data.
-    VariantMap extraData_;
-};
-
+    
 }
+
+void MoveAndOrbitComponent::RegisterObject(Context* context)
+{
+    context->AddFactoryReflection<MoveAndOrbitComponent>();
+}
+
+void MoveAndOrbitComponent::SetVelocity(const Vector3& velocity)
+{
+    velocity_ = velocity;
+}
+
+void MoveAndOrbitComponent::SetYaw(float yaw)
+{
+    yaw_ = yaw;
+}
+
+void MoveAndOrbitComponent::SetPitch(float pitch)
+{
+    pitch_ = Clamp(pitch, -90.0f, 90.0f);
+}
+
+} // namespace Urho3D

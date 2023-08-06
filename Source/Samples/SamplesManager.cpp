@@ -152,6 +152,7 @@
 #include "116_VirtualFileSystem/VFSSample.h"
 #if URHO3D_PHYSICS
 #include "117_PointerAdapter/PointerAdapterSample.h"
+#include "118_CameraShake/CameraShake.h"
 #endif
 #include "Rotator.h"
 
@@ -414,6 +415,7 @@ void SamplesManager::Start()
 #if URHO3D_PHYSICS
     RegisterSample<PointerAdapterSample>();
 #endif
+    RegisterSample<CameraShake>();
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);

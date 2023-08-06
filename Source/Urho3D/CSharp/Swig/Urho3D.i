@@ -394,7 +394,6 @@ namespace SDL
 
 %include "generated/Urho3D/_pre_input.i"
 %include "Urho3D/Input/InputConstants.h"
-%include "Urho3D/Input/Controls.h"
 %include "Urho3D/Input/Input.h"
 %include "Urho3D/Input/MultitouchAdapter.h"
 %include "Urho3D/Input/AxisAdapter.h"
@@ -538,9 +537,15 @@ public:
 %include "Urho3D/Scene/TrackedComponent.h"
 %include "Urho3D/Scene/PrefabReference.h"
 %include "Urho3D/Scene/PrefabResource.h"
+%include "Urho3D/Scene/ShakeComponent.h"
 
 // --------------------------------------- Extra components ---------------------------------------
+%ignore Urho3D::InputMap::GetMappings;
+
 %include "Urho3D/Input/FreeFlyController.h"
+%include "Urho3D/Input/MoveAndOrbitComponent.h"
+%include "Urho3D/Input/MoveAndOrbitController.h"
+%include "Urho3D/Input/InputMap.h"
 
 // --------------------------------------- Audio ---------------------------------------
 %ignore Urho3D::BufferedSoundStream::AddData(const ea::shared_array<signed char>& data, unsigned numBytes);
@@ -669,6 +674,7 @@ public:
 %ignore Urho3D::AnimationState::CalculateModelTracks;
 %ignore Urho3D::AnimationState::CalculateNodeTracks;
 %ignore Urho3D::AnimationState::CalculateAttributeTracks;
+%ignore Urho3D::AnimationParameters::Update;
 %ignore Urho3D::Animation::GetVariantTracks;
 %ignore Urho3D::RenderSurface::GetView;
 %ignore Urho3D::RenderSurface::GetReadOnlyDepthView;
@@ -864,6 +870,7 @@ public:
 %include "Urho3D/Physics/RaycastVehicle.h"
 %include "Urho3D/Physics/RigidBody.h"
 %include "Urho3D/Physics/KinematicCharacterController.h"
+%include "Urho3D/Physics/TriggerAnimator.h"
 %template(PhysicsRaycastResultVector)   eastl::vector<Urho3D::PhysicsRaycastResult>;
 %template(RigidBodyVector)              eastl::vector<Urho3D::RigidBody*>;
 #endif

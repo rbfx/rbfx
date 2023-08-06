@@ -132,7 +132,7 @@ private:
     /// Joystick axis adapter
     AxisAdapter axisAdapter_{};
     /// Joystick to ignore (SDL gyroscope virtual joystick)
-    unsigned ignoreJoystickId_{ea::numeric_limits<unsigned>::max()};
+    int ignoreJoystickId_{-1};
     /// UI element to filter touch events
     WeakPtr<UIElement> uiElement_{};
     /// Identifier of active touch

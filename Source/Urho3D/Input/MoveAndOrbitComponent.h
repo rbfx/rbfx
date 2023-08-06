@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,28 +20,41 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#pragma once
 
-#include "../Input/Controls.h"
-
+#include "Urho3D/Scene/LogicComponent.h"
 namespace Urho3D
 {
 
-Controls::Controls() :
-    buttons_(0),
-    yaw_(0.f),
-    pitch_(0.f)
+class URHO3D_API MoveAndOrbitComponent : public LogicComponent
 {
-}
+    URHO3D_OBJECT(MoveAndOrbitComponent, LogicComponent);
 
-Controls::~Controls() = default;
+public:
+    /// Construct.
+    explicit MoveAndOrbitComponent(Context* context);
 
-void Controls::Reset()
-{
-    buttons_ = 0;
-    yaw_ = 0.0f;
-    pitch_ = 0.0f;
-    extraData_.clear();
-}
+    /// Register object factory and attributes.
+    static void RegisterObject(Context* context);
 
-}
+    /// Set movement velocity in node's local space.
+    virtual void SetVelocity(const Vector3& velocity);
+    /// Set yaw angle in degrees.
+    virtual void SetYaw(float yaw);
+    /// Set pitch angle in degrees.
+    virtual void SetPitch(float pitch);
+
+    /// Get movement velocity in node's local space.
+    const Vector3& GetVelocity() const { return velocity_; }
+    /// Get yaw angle in degrees.
+    float GetYaw() const { return yaw_; }
+    /// Get pitch angle in degrees.
+    float GetPitch() const { return pitch_; }
+
+private:
+    Vector3 velocity_{};
+    float yaw_{};
+    float pitch_{};
+};
+
+} // namespace Urho3D

@@ -36,7 +36,6 @@ class KinematicCharacterController;
 }
 
 class Character;
-class Touch;
 
 /// Moving character example.
 /// This sample demonstrates:
@@ -110,7 +109,7 @@ private:
     /// Create static scene content.
     void CreateScene();
     /// Create controllable character.
-    void CreateCharacter();
+    void CreateCharacter(const Vector3& position);
     /// Construct an instruction text to the UI.
     void CreateInstructions();
     /// Subscribe to necessary events.
@@ -121,8 +120,6 @@ private:
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
     void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
 
-    /// Touch utility object.
-    SharedPtr<Touch> touch_;
     /// The controllable character component.
     WeakPtr<KinematicCharacter> character_;
     WeakPtr<KinematicCharacterController> kinematicCharacter_;

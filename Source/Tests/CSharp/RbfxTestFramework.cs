@@ -126,6 +126,8 @@ namespace Urho3DNet.Tests
                 // Make sure that the constructor can continue to run.
                 if (!isSet)
                     _initLock.Set();
+                _app?.Dispose();
+                _context?.Dispose();
             }
         }
 
@@ -144,7 +146,6 @@ namespace Urho3DNet.Tests
             {
                 Debug.WriteLine(ex);
             }
-            _context?.Dispose();
             base.Dispose();
         }
     }
