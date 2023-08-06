@@ -1296,10 +1296,17 @@ public:
     {
         if (type_ == VAR_INT)
             return value_.int_;
+        else if (type_ == VAR_INT64)
+            return static_cast<int>(value_.int64_);
         else if (type_ == VAR_FLOAT)
             return static_cast<int>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<int>(value_.double_);
+        else if (type_ == VAR_STRING)
+        {
+            char* end;
+            return static_cast<int>(strtol(value_.string_.c_str(), &end, 10));
+        }
         else
             return 0;
     }
@@ -1315,6 +1322,11 @@ public:
             return static_cast<long long>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<long long>(value_.double_);
+        else if (type_ == VAR_STRING)
+        {
+            char* end;
+            return static_cast<long long>(strtoll(value_.string_.c_str(), &end, 10));
+        }
         else
             return 0;
     }
@@ -1330,6 +1342,11 @@ public:
             return static_cast<unsigned long long>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<unsigned long long>(value_.double_);
+        else if (type_ == VAR_STRING)
+        {
+            char* end;
+            return static_cast<unsigned long long>(strtoull(value_.string_.c_str(), &end, 10));
+        }
         else
             return 0;
     }
@@ -1339,10 +1356,17 @@ public:
     {
         if (type_ == VAR_INT)
             return static_cast<unsigned>(value_.int_);
+        if (type_ == VAR_INT64)
+            return static_cast<unsigned>(value_.int64_);
         else if (type_ == VAR_FLOAT)
             return static_cast<unsigned>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<unsigned>(value_.double_);
+        else if (type_ == VAR_STRING)
+        {
+            char* end;
+            return static_cast<unsigned>(strtoull(value_.string_.c_str(), &end, 10));
+        }
         else
             return 0;
     }
