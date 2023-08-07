@@ -90,6 +90,7 @@ public:
     Rml::Element* AsElement() { return this; }
     const Rml::Element* AsElement() const { return this; }
     RmlUIComponent* GetOwner() const { return owner_; }
+    Rml::Element* GetTargetElement() const { return targetElement_.get(); }
     /// @}
 
     /// Return properties of the navigable.
@@ -139,6 +140,8 @@ private:
 
     template <class T> void ForEach(Rml::Element* element, const T& func);
     template <class T> void ForEachChild(Rml::Element* element, const T& func);
+
+    Rml::ObserverPtr<Rml::Element> targetElement_;
 
     const Rml::String group_;
     WeakPtr<RmlUIComponent> owner_;

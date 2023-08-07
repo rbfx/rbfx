@@ -24,16 +24,15 @@
 
 #pragma once
 
-
-#include "../Core/Object.h"
-#include "../Core/Signal.h"
-#include "../Graphics/Texture2D.h"
-#include "../Math/Vector2.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Core/Signal.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Input/DirectionalPadAdapter.h"
+#include "Urho3D/Math/Vector2.h"
 
 #include <EASTL/vector.h>
 #include <EASTL/string.h>
 #include <RmlUi/Core/ElementDocument.h>
-#include <RmlUi/Core/EventListener.h>
 #include <RmlUi/Core/Context.h>
 
 
@@ -162,6 +161,9 @@ private:
     bool isRendering_ = true;
     /// Other instances of RmlUI.
     ea::vector<WeakPtr<RmlUI>> siblingSubsystems_;
+
+    /// Joystick adapter for directional input.
+    SharedPtr<DirectionalPadAdapter> directionInput_;
 
     friend class Detail::RmlPlugin;
 };

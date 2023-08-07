@@ -29,6 +29,9 @@
 #include "../RmlUI/RmlUIComponent.h"
 
 #include <RmlUi/Core/ElementDocument.h>
+#include <Core/Elements/ElementFormControlInput.h>
+#include <Core/Elements/ElementFormControlSelect.h>
+#include <Core/Elements/ElementFormControlTextArea.h>
 
 #include "../DebugNew.h"
 
@@ -86,6 +89,26 @@ RmlNavigationManager::~RmlNavigationManager()
 
 void RmlNavigationManager::HandleDirectionKeyEvent(StringHash eventType, VariantMap& eventData)
 {
+    // Let control in focus handle directional input.
+    auto elementInFocus = owner_->GetDocument()->GetFocusLeafNode();
+    if (auto formControl = dynamic_cast<Rml::ElementFormControl*>(elementInFocus))
+    {
+        if (auto inputControl = dynamic_cast<Rml::ElementFormControlInput*>(elementInFocus))
+        {
+            auto& typeName = inputControl->GetTypeName();
+            if (typeName == "range" || typeName == "text" || typeName == "password")
+                return;
+        }
+        else if (dynamic_cast<Rml::ElementFormControlSelect*>(elementInFocus))
+        {
+            return;
+        }
+        else if (dynamic_cast<Rml::ElementFormControlTextArea*>(elementInFocus))
+        {
+            return;
+        }
+    }
+
     const bool pressed = eventType == E_KEYDOWN;
     const auto key = static_cast<Key>(eventData[KeyDown::P_KEY].GetUInt());
     const Vector2 direction = KeyToDirection(key);

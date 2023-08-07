@@ -44,6 +44,32 @@ namespace
 
 const Rml::String elementTag{"navigable"};
 
+// Copy behaviour from ElementLabel.
+const Rml::StringList matching_tags = {"button", "input", "textarea", "select"};
+
+// Get the first descending element whose tag name matches one of tags.
+static Rml::Element* TagMatchRecursive(const Rml::StringList& tags, Rml::Element* element)
+{
+    const int num_children = element->GetNumChildren();
+
+    for (int i = 0; i < num_children; i++)
+    {
+        Rml::Element* child = element->GetChild(i);
+
+        for (const Rml::String& tag : tags)
+        {
+            if (child->GetTagName() == tag)
+                return child;
+        }
+
+        Rml::Element* matching_element = TagMatchRecursive(tags, child);
+        if (matching_element)
+            return matching_element;
+    }
+
+    return nullptr;
+}
+
 bool IsEventNeeded(bool value, NavigableEventMode eventMode)
 {
     switch (eventMode)
@@ -231,24 +257,49 @@ void RmlNavigable::Release()
 
 void RmlNavigable::SetNavigated(bool navigated, NavigableEventMode eventMode)
 {
-    ForEach(this, [navigated](Rml::Element* innerElement)
+    if (navigated)
     {
-        innerElement->SetPseudoClass("navigated", navigated);
-    });
+        auto element = TagMatchRecursive(matching_tags, this);
+        targetElement_ = (element) ? element->GetObserverPtr() : nullptr;
+    }
+
+    if (targetElement_)
+    {
+        targetElement_->SetPseudoClass("navigated", navigated);
+    }
 
     if (IsEventNeeded(navigated, eventMode))
     {
         Rml::Dictionary parameters;
         DispatchEvent(navigated ? "navigated" : "abandoned", parameters);
     }
+
+    if (!navigated)
+    {
+        targetElement_ = nullptr;
+    }
 }
 
 void RmlNavigable::SetPressed(bool pressed, NavigableInputSource inputSource, NavigableEventMode eventMode)
 {
-    ForEach(this, [pressed](Rml::Element* innerElement)
+    if (auto target = targetElement_.get())
     {
-        innerElement->SetPseudoClass("pressed", pressed);
-    });
+        target->SetPseudoClass("pressed", pressed);
+        if (!pressed)
+        {
+            bool isFocused = target == this->GetOwnerDocument()->GetFocusLeafNode();
+
+            if (!isFocused)
+            {
+                target->Focus();
+                target->Click();
+            }
+            else
+            {
+                this->Focus();
+            }
+        }
+    }
 
     if (IsEventNeeded(pressed, eventMode))
     {

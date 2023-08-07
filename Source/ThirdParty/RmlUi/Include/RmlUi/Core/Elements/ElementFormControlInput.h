@@ -52,6 +52,10 @@ public:
 	ElementFormControlInput(const String& tag);
 	virtual ~ElementFormControlInput();
 
+	/// Returns the control's type name.
+	/// @return The type name.
+	const String& GetTypeName() const { return type_name; }
+
 	/// Returns a string representation of the current value of the form control.
 	/// @return The value of the form control.
 	String GetValue() const override;

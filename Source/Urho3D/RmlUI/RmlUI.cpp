@@ -262,6 +262,7 @@ static const ea::unordered_map<unsigned, uint16_t> keyMap{
 RmlUI::RmlUI(Context* context, const char* name)
     : Object(context)
     , name_(name)
+    , directionInput_(MakeShared<DirectionalPadAdapter>(context_))
 {
     // Initializing first instance of RmlUI, initialize backend library as well.
     if (rmlInstanceCounter.fetch_add(1) == 0)
@@ -284,6 +285,13 @@ RmlUI::RmlUI(Context* context, const char* name)
 
     Input* input = context_->GetSubsystem<Input>();
     URHO3D_ASSERT(input);
+
+    // Only handle joystick input as the keyboard is handled directly.
+    directionInput_->SetSubscriptionMask(DirectionalPadAdapterMask::Joystick);
+    SubscribeToEvent(directionInput_, E_KEYUP, &RmlUI::HandleKeyDown);
+    SubscribeToEvent(directionInput_, E_KEYDOWN, &RmlUI::HandleKeyUp);
+    directionInput_->SetEnabled(true);
+
     SubscribeToEvent(input, E_MOUSEBUTTONDOWN, &RmlUI::HandleMouseButtonDown);
     SubscribeToEvent(input, E_MOUSEBUTTONUP, &RmlUI::HandleMouseButtonUp);
     SubscribeToEvent(input, E_MOUSEMOVE, &RmlUI::HandleMouseMove);
