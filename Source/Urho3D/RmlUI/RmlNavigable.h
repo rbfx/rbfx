@@ -22,6 +22,7 @@
 #pragma once
 
 #include "../Core/Object.h"
+#include "Core/EventListener.h"
 
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementInstancer.h>
@@ -61,6 +62,16 @@ enum class NavigablePressMode
     Toggle,
     /// Navigable is pressed when mouse button or key pressed, and depressed only when another element is pressed.
     StickyToggle,
+};
+
+class RmlNavigableEventListener : public Rml::EventListener
+{
+public:
+    ~RmlNavigableEventListener() override;
+    /// Process the incoming Event
+    virtual void ProcessEvent(Rml::Event& event);
+
+    bool enabled_{true};
 };
 
 /// UI element that can be navigated with arrows.
@@ -151,6 +162,9 @@ private:
 
     Vector2 position_;
     bool disabled_{};
+
+    Rml::UniquePtr<RmlNavigableEventListener> clickBlocker_;
+
     struct Cache
     {
         bool hovered_{};

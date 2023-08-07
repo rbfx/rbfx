@@ -28,11 +28,12 @@
 #include "../RmlUI/RmlNavigationManager.h"
 #include "../RmlUI/RmlUIComponent.h"
 
-#include <RmlUi/Core/Element.h>
-#include <RmlUi/Core/ElementDocument.h>
-#include <RmlUi/Core/Factory.h>
-#include <RmlUi/Core/PropertyDefinition.h>
+#include <RmlUi/Source/Core/EventDispatcher.h>
 #include <RmlUi/Core/StyleSheetSpecification.h>
+#include <RmlUi/Core/PropertyDefinition.h>
+#include <RmlUi/Core/Factory.h>
+#include <RmlUi/Core/ElementDocument.h>
+#include <RmlUi/Core/Element.h>
 
 #include "../DebugNew.h"
 
@@ -101,14 +102,27 @@ void RmlNavigable::Register()
     Rml::RegisterEventType("depressed", true, false);
 }
 
+RmlNavigableEventListener::~RmlNavigableEventListener()
+{
+}
+
+void RmlNavigableEventListener::ProcessEvent(Rml::Event& event)
+{
+    if (enabled_)
+        event.StopPropagation();
+}
+
 RmlNavigable::RmlNavigable(const Rml::String& tag, const Rml::String& group)
     : Rml::Element(tag)
     , group_(group)
+    , clickBlocker_(Rml::MakeUnique<RmlNavigableEventListener>())
 {
+    GetEventDispatcher()->AttachEvent(Rml::EventId::Click, clickBlocker_.get(), true);
 }
 
 RmlNavigable::~RmlNavigable()
 {
+    GetEventDispatcher()->DetachEvent(Rml::EventId::Click, clickBlocker_.get(), true);
 }
 
 void RmlNavigable::OnResize()
@@ -293,8 +307,10 @@ void RmlNavigable::SetPressed(bool pressed, NavigableInputSource inputSource, Na
 
             if (!isFocused || !RmlNavigationManager::DoesElementHandleDirectionKeys(target))
             {
+                clickBlocker_->enabled_ = false;
                 target->Focus();
                 target->Click();
+                clickBlocker_->enabled_ = true;
             }
             else
             {
