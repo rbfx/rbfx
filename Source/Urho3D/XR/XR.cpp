@@ -478,7 +478,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         // Print the runtime name and version, that will be useful information to have
         XrInstanceProperties instProps = { XR_TYPE_INSTANCE_PROPERTIES };
         if (xrGetInstanceProperties(instance_, &instProps) == XR_SUCCESS)
-            URHO3D_LOGINFOF("OpenXR Runtime is: {} version {}", instProps.runtimeName, instProps.runtimeVersion);
+            URHO3D_LOGINFO("OpenXR Runtime is: {} version {}", instProps.runtimeName, instProps.runtimeVersion);
 
         if (supportsDebug)
         {

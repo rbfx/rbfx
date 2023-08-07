@@ -660,7 +660,7 @@ void Node::SetTransform(const Vector3& position, const Quaternion& rotation, con
     MarkDirty();
 }
 
-void Node::SetTransform(const Matrix3x4& matrix)
+void Node::SetTransformMatrix(const Matrix3x4& matrix)
 {
     SetTransform(matrix.Translation(), matrix.Rotation(), matrix.Scale());
 }
@@ -1439,16 +1439,6 @@ Node* Node::GetChild(unsigned index) const
     return index < children_.size() ? children_[index] : nullptr;
 }
 
-Node* Node::GetChild(const ea::string& name, bool recursive) const
-{
-    return GetChild(StringHash(name), recursive);
-}
-
-Node* Node::GetChild(const char* name, bool recursive) const
-{
-    return GetChild(StringHash(name), recursive);
-}
-
 Node* Node::GetChild(StringHash nameHash, bool recursive) const
 {
     for (auto i = children_.begin(); i != children_.end(); ++i)
@@ -1589,7 +1579,7 @@ bool Node::HasTag(const ea::string& tag) const
     return impl_->tags_.contains(tag);
 }
 
-bool Node::IsChildOf(Node* node) const
+bool Node::IsChildOf(const Node* node) const
 {
     Node* parent = parent_;
     while (parent)
@@ -1642,6 +1632,91 @@ const Variant& Node::GetVarByHash(StringHash key) const
 {
     auto i = vars_.find_by_hash(key.Value());
     return i != vars_.end() ? i->second : Variant::EMPTY;
+}
+
+void Node::GetDerivedComponents(ea::vector<Component*>& dest, StringHash type, bool recursive) const
+{
+    dest.clear();
+
+    if (!recursive)
+    {
+        for (auto i = components_.begin(); i != components_.end(); ++i)
+        {
+            if ((*i)->GetTypeInfo()->IsTypeOf(type))
+                dest.push_back(i->Get());
+        }
+    }
+    else
+        GetDerivedComponentsRecursive(dest, type);
+}
+
+Component* Node::GetDerivedComponent(StringHash type, bool recursive) const
+{
+    for (auto i = components_.begin(); i != components_.end(); ++i)
+    {
+        if ((*i)->GetTypeInfo()->IsTypeOf(type))
+            return *i;
+    }
+
+    if (recursive)
+    {
+        for (auto i = children_.begin(); i != children_.end(); ++i)
+        {
+            auto* component = (*i)->GetDerivedComponent(type, true);
+            if (component)
+                return component;
+        }
+    }
+
+    return nullptr;
+}
+
+Component* Node::GetParentDerivedComponent(StringHash type, bool fullTraversal) const
+{
+    Node* current = GetParent();
+    while (current)
+    {
+        auto* soughtComponent = current->GetDerivedComponent(type);
+        if (soughtComponent)
+            return soughtComponent;
+
+        if (fullTraversal)
+            current = current->GetParent();
+        else
+            break;
+    }
+    return 0;
+}
+
+bool Node::GetChildLazy(WeakPtr<Node>& childNode, StringHash nameHash, SceneLookupFlags flags) const
+{
+    // Try to use existing weak pointer. This should be the most common case.
+    if (childNode)
+    {
+        const bool isNameGood = !flags.Test(SceneLookupFlag::ValidateName) || childNode->GetNameHash() == nameHash;
+        const bool isRelationGood = !flags.Test(SceneLookupFlag::ValidateRelation) || childNode->IsChildOf(this);
+        if (isNameGood && isRelationGood)
+        {
+#ifdef _DEBUG
+            if (childNode->GetNameHash() != nameHash)
+                URHO3D_LOGWARNING("Change of node name is ignored during lazy lookup");
+            if (!childNode->IsChildOf(this))
+                URHO3D_LOGWARNING("Change of node hierarchy is ignored during lazy lookup");
+#endif
+            return true;
+        }
+
+        childNode = nullptr;
+    }
+
+    // Try to find and cache the node.
+    if (Node* node = GetChild(nameHash, flags.Test(SceneLookupFlag::Recursive)))
+    {
+        childNode = node;
+        return true;
+    }
+
+    return false;
 }
 
 Component* Node::GetComponent(StringHash type, bool recursive) const
@@ -1933,7 +2008,7 @@ void Node::SetTransformSilent(const Vector3& position, const Quaternion& rotatio
     scale_ = scale;
 }
 
-void Node::SetTransformSilent(const Matrix3x4& matrix)
+void Node::SetTransformMatrixSilent(const Matrix3x4& matrix)
 {
     SetTransformSilent(matrix.Translation(), matrix.Rotation(), matrix.Scale());
 }
@@ -2023,7 +2098,7 @@ Component* Node::SafeCreateComponent(const ea::string& typeName, StringHash type
 
 void Node::UpdateWorldTransform() const
 {
-    Matrix3x4 transform = GetTransform();
+    Matrix3x4 transform = GetTransformMatrix();
 
     // Assume the root node (scene) has identity transform
     if (IsTransformHierarchyRoot())
@@ -2100,6 +2175,17 @@ void Node::GetComponentsRecursive(ea::vector<Component*>& dest, StringHash type)
     }
     for (auto i = children_.begin(); i != children_.end(); ++i)
         (*i)->GetComponentsRecursive(dest, type);
+}
+
+void Node::GetDerivedComponentsRecursive(ea::vector<Component*>& dest, StringHash type) const
+{
+    for (auto i = components_.begin(); i != components_.end(); ++i)
+    {
+        if ((*i)->GetTypeInfo()->IsTypeOf(type))
+            dest.push_back(i->Get());
+    }
+    for (auto i = children_.begin(); i != children_.end(); ++i)
+        (*i)->GetDerivedComponentsRecursive(dest, type);
 }
 
 void Node::GetChildrenWithTagRecursive(ea::vector<Node*>& dest, const ea::string& tag) const

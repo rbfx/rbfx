@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -15,7 +15,7 @@
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -38,32 +38,29 @@ namespace Rml {
 struct Texture;
 
 /**
-	Base class for tiled decorators.
+    Base class for tiled decorators.
 
-	@author Peter Curry
+    @author Peter Curry
  */
 
-class DecoratorTiled : public Decorator
-{
+class DecoratorTiled : public Decorator {
 public:
 	DecoratorTiled();
 	virtual ~DecoratorTiled();
 
 	/**
-		Stores the orientation of a tile.
+	    Stores the orientation of a tile.
 	 */
-	enum TileOrientation
-	{
-		ORIENTATION_NONE,       // No orientation.
-		FLIP_HORIZONTAL,        // Flipped horizontally.
-		FLIP_VERTICAL,          // Flipped vertically.
-		ROTATE_180,             // Rotated 180 degrees clockwise.
+	enum TileOrientation {
+		ORIENTATION_NONE, // No orientation.
+		FLIP_HORIZONTAL,  // Flipped horizontally.
+		FLIP_VERTICAL,    // Flipped vertically.
+		ROTATE_180,       // Rotated 180 degrees clockwise.
 	};
 	/**
-		Stores the fit mode of a tile.
+	    Stores the fit mode of a tile.
 	 */
-	enum TileFitMode
-	{
+	enum TileFitMode {
 		FILL,       // Tile is stretched to boundaries.
 		CONTAIN,    // Tile is stretched to boundaries, keeping aspect ratio fixed, 'letter-boxed'.
 		COVER,      // Tile is stretched to cover the boundaries, keeping aspect ratio fixed.
@@ -72,18 +69,17 @@ public:
 	};
 
 	/**
-		Structure for storing the different tiles the tiled decorator uses internally over its
-		surface.
+	    Structure for storing the different tiles the tiled decorator uses internally over its
+	    surface.
 
-		@author Peter Curry
+	    @author Peter Curry
 	 */
-	struct Tile
-	{
+	struct Tile {
 		/// Constructs the tile with safe default values.
 		Tile();
 
 		/// Calculates the tile's dimensions from the texture and texture coordinates.
-		void CalculateDimensions(Element* element, const Texture& texture) const;
+		void CalculateDimensions(const Texture& texture) const;
 		/// Get the dimensions (in px) that this tile is ideally displayed as.
 		/// Uses the dp-ratio of the current element and 'display_scale' to calculate the dimensions.
 		Vector2f GetNaturalDimensions(Element* element) const;
@@ -91,19 +87,17 @@ public:
 		/// Generates geometry to render this tile across a surface.
 		/// @param[out] vertices The array to store the generated vertex data.
 		/// @param[out] indices The array to store the generated index data.
-		/// @param[in] element The element hosting the decorator.
+		/// @param[in] computed_values The computed values of the element being decorated.
 		/// @param[in] surface_origin The starting point of the first tile to generate.
 		/// @param[in] surface_dimensions The dimensions of the surface to be tiled.
 		/// @param[in] tile_dimensions The dimensions to render this tile at.
-		void GenerateGeometry(Vector< Vertex >& vertices, Vector< int >& indices, Element* element, Vector2f surface_origin, Vector2f surface_dimensions, Vector2f tile_dimensions) const;
+		void GenerateGeometry(Vector<Vertex>& vertices, Vector<int>& indices, const ComputedValues& computed_values, Vector2f surface_origin,
+			Vector2f surface_dimensions, Vector2f tile_dimensions) const;
 
-		struct TileData
-		{
-			Vector2f size; // 'px' units
+		struct TileData {
+			Vector2f size;         // 'px' units
 			Vector2f texcoords[2]; // relative units
 		};
-
-		using TileDataMap = SmallUnorderedMap< RenderInterface*, TileData >;
 
 		int texture_index;
 
@@ -113,13 +107,13 @@ public:
 		// Position and size within the texture, absolute units (px)
 		Vector2f position, size;
 
-		mutable TileDataMap data;
+		mutable TileData tile_data;
+		mutable bool tile_data_calculated = false;
 
 		TileOrientation orientation;
 
 		TileFitMode fit_mode;
-		Style::LengthPercentage align[2]; 
-
+		Style::LengthPercentage align[2];
 	};
 
 protected:

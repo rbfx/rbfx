@@ -64,6 +64,7 @@ private:
     void RebuildSolvers();
     void SetOriginalTransforms();
     void UpdateOriginalTransforms();
+    void SendIKEvent(bool preSolve);
 
     bool solveWhenPaused_{};
     IKSettings settings_;

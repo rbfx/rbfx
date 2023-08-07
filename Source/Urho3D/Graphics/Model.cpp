@@ -32,6 +32,7 @@
 #include "../IO/Log.h"
 #include "../IO/File.h"
 #include "../IO/FileSystem.h"
+#include "../IO/VirtualFileSystem.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
 
@@ -133,6 +134,8 @@ bool Model::BeginLoad(Deserializer& source)
         unsigned vertexSize = VertexBuffer::GetVertexSize(desc.vertexElements_);
         desc.dataSize_ = desc.vertexCount_ * vertexSize;
 
+        buffer->SetDebugName(Format("Model '{}' Vertex Buffer #{}", GetName(), i));
+
         // Prepare vertex buffer data to be uploaded during EndLoad()
         if (async)
         {
@@ -145,9 +148,9 @@ bool Model::BeginLoad(Deserializer& source)
             desc.data_.reset(); // Make sure no previous data
             buffer->SetShadowed(true);
             buffer->SetSize(desc.vertexCount_, desc.vertexElements_);
-            void* dest = buffer->Lock(0, desc.vertexCount_);
+            void* dest = buffer->Map();
             source.Read(dest, desc.vertexCount_ * vertexSize);
-            buffer->Unlock();
+            buffer->Unmap();
         }
 
         memoryUse += sizeof(VertexBuffer) + desc.vertexCount_ * vertexSize;
@@ -164,6 +167,7 @@ bool Model::BeginLoad(Deserializer& source)
         unsigned indexSize = source.ReadUInt();
 
         SharedPtr<IndexBuffer> buffer(MakeShared<IndexBuffer>(context_));
+        buffer->SetDebugName(Format("Model '{}' Index Buffer #{}", GetName(), i));
 
         // Prepare index buffer data to be uploaded during EndLoad()
         if (async)
@@ -180,9 +184,9 @@ bool Model::BeginLoad(Deserializer& source)
             loadIBData_[i].data_.reset(); // Make sure no previous data
             buffer->SetShadowed(true);
             buffer->SetSize(indexCount, indexSize > sizeof(unsigned short));
-            void* dest = buffer->Lock(0, indexCount);
+            void* dest = buffer->Map();
             source.Read(dest, indexCount * indexSize);
-            buffer->Unlock();
+            buffer->Unmap();
         }
 
         memoryUse += sizeof(IndexBuffer) + indexCount * indexSize;
@@ -332,7 +336,7 @@ bool Model::EndLoad()
         {
             buffer->SetShadowed(true);
             buffer->SetSize(desc.vertexCount_, desc.vertexElements_);
-            buffer->SetData(desc.data_.get());
+            buffer->Update(desc.data_.get());
         }
     }
 
@@ -345,7 +349,7 @@ bool Model::EndLoad()
         {
             buffer->SetShadowed(true);
             buffer->SetSize(desc.indexCount_, desc.indexSize_ > sizeof(unsigned short));
-            buffer->SetData(desc.data_.get());
+            buffer->Update(desc.data_.get());
         }
     }
 
@@ -469,17 +473,15 @@ bool Model::Save(Serializer& dest) const
     // Write metadata
     if (HasMetadata())
     {
-        auto* destFile = dynamic_cast<File*>(&dest);
-        if (destFile)
+        auto vfs = GetSubsystem<VirtualFileSystem>();
+        const ea::string xmlName = ReplaceExtension(dest.GetName(), ".xml");
+        if (auto destXmlFile = vfs->OpenFile(xmlName, FILE_WRITE))
         {
-            ea::string xmlName = ReplaceExtension(destFile->GetName(), ".xml");
-
             SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
             XMLElement rootElem = xml->CreateRoot("model");
             SaveMetadataToXML(rootElem);
 
-            File xmlFile(context_, xmlName, FILE_WRITE);
-            xml->Save(xmlFile);
+            xml->Save(*destXmlFile);
         }
         else
             URHO3D_LOGWARNING("Can not save model metadata when not saving into a file");
@@ -642,18 +644,13 @@ SharedPtr<Model> Model::Clone(const ea::string& cloneName) const
         if (origBuffer)
         {
             cloneBuffer = MakeShared<VertexBuffer>(context_);
-            cloneBuffer->SetSize(origBuffer->GetVertexCount(), origBuffer->GetElements(), origBuffer->IsDynamic());
+            cloneBuffer->SetDebugName(origBuffer->GetDebugName());
             cloneBuffer->SetShadowed(origBuffer->IsShadowed());
+            cloneBuffer->SetSize(origBuffer->GetVertexCount(), origBuffer->GetElements(), origBuffer->IsDynamic());
             if (origBuffer->IsShadowed())
-                cloneBuffer->SetData(origBuffer->GetShadowData());
+                cloneBuffer->Update(origBuffer->GetShadowData());
             else
-            {
-                void* origData = origBuffer->Lock(0, origBuffer->GetVertexCount());
-                if (origData)
-                    cloneBuffer->SetData(origData);
-                else
-                    URHO3D_LOGERROR("Failed to lock original vertex buffer for copying");
-            }
+                URHO3D_LOGERROR("Failed to read original vertex buffer");
             vbMapping[origBuffer] = cloneBuffer;
         }
 
@@ -669,19 +666,14 @@ SharedPtr<Model> Model::Clone(const ea::string& cloneName) const
         if (origBuffer)
         {
             cloneBuffer = MakeShared<IndexBuffer>(context_);
+            cloneBuffer->SetDebugName(origBuffer->GetDebugName());
+            cloneBuffer->SetShadowed(origBuffer->IsShadowed());
             cloneBuffer->SetSize(origBuffer->GetIndexCount(), origBuffer->GetIndexSize() == sizeof(unsigned),
                 origBuffer->IsDynamic());
-            cloneBuffer->SetShadowed(origBuffer->IsShadowed());
             if (origBuffer->IsShadowed())
-                cloneBuffer->SetData(origBuffer->GetShadowData());
+                cloneBuffer->Update(origBuffer->GetShadowData());
             else
-            {
-                void* origData = origBuffer->Lock(0, origBuffer->GetIndexCount());
-                if (origData)
-                    cloneBuffer->SetData(origData);
-                else
-                    URHO3D_LOGERROR("Failed to lock original index buffer for copying");
-            }
+                URHO3D_LOGERROR("Failed to read original index buffer");
             ibMapping[origBuffer] = cloneBuffer;
         }
 

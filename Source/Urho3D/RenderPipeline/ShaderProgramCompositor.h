@@ -25,6 +25,8 @@
 #include "../Core/Object.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
 
+#include <EASTL/utility.h>
+
 namespace Urho3D
 {
 
@@ -111,14 +113,17 @@ private:
         DrawableProcessorPassFlags flags, Geometry* geometry, GeometryType geometryType) const;
     void ApplyPixelLightPixelAndCommonDefines(ShaderProgramDesc& result,
         Light* light, bool hasShadow, bool materialHasSpecular) const;
+    void ApplyNormalTangentSpaceDefines(
+        ShaderProgramDesc& result, GeometryType geometryType, VertexBuffer* vertexBuffer) const;
     /// @}
 
     bool IsInstancingUsed(DrawableProcessorPassFlags flags, Geometry* geometry, GeometryType geometryType) const;
+    ea::pair<bool, bool> IsNormalAndTangentAvailable(GeometryType geometryType, VertexBuffer* vertexBuffer) const;
 
     /// Apply user pass defines
     /// @{
     void ApplyLayoutVertexAndCommonDefinesForUserPass(ShaderProgramDesc& result, VertexBuffer* vertexBuffer) const;
-    void ApplyMaterialPixelDefinesForUserPass(ShaderProgramDesc& result, Material* material) const;
+    void ApplyMaterialPixelDefinesForUserPass(ShaderProgramDesc& result, Material* material, Pass* pass) const;
     void ApplyAmbientLightingVertexAndCommonDefinesForUserPass(ShaderProgramDesc& result,
         Drawable* drawable, bool isGeometryBufferPass) const;
     /// @}
@@ -132,7 +137,6 @@ private:
 
     /// External configuration
     /// @{
-    bool constantBuffersSupported_{};
     ShaderProgramCompositorSettings settings_;
     bool isCameraOrthographic_{};
     bool isCameraClipped_{};

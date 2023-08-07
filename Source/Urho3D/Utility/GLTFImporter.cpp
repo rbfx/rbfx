@@ -663,6 +663,14 @@ struct GLTFNode : public ea::enable_shared_from_this<GLTFNode>
     /// @}
 
     const ea::string& GetEffectiveName() const { return uniqueBoneName_ ? *uniqueBoneName_ : name_; }
+
+    /// Check if this node subtree contains nothing but empty nodes.
+    bool IsRecursivelyEmpty() const
+    {
+        return !mesh_ && !skin_ && containedInSkins_.empty()
+            && ea::all_of(children_.begin(), children_.end(),
+                [](const GLTFNodePtr& child) { return child->IsRecursivelyEmpty(); });
+    }
 };
 
 /// Represents Urho skeleton which may be composed from one or more GLTF skins.
@@ -1126,6 +1134,7 @@ private:
             GLTFSkeleton& skeleton = skeletons_[skeletonIndex];
             skeleton.index_ = skeletonIndex;
             InitializeSkeletonRootNode(skeleton);
+            AppendEmptyNodesToSkeleton(skeleton);
             AssignSkeletonBoneNames(skeleton);
             if (base_.GetSettings().cleanupBoneNames_)
                 CleanupSkeletonBoneNames(skeleton);
@@ -1164,6 +1173,33 @@ private:
             if (!skeleton.rootNode_ || (skeleton.rootNode_->skeletonIndex_ != skeleton.index_))
                 throw RuntimeException("Cannot find root of the skeleton when processing skin #{}", skinIndex);
         }
+    }
+
+    void AppendEmptyNodesToSkeleton(GLTFSkeleton& skeleton) const
+    {
+        if (!base_.GetSettings().addEmptyNodesToSkeleton_)
+            return;
+
+        ForEachSkeletonNode(*skeleton.rootNode_, skeleton.index_,
+            [&](GLTFNode& boneNode)
+        {
+            for (const GLTFNodePtr& child : boneNode.children_)
+            {
+                if (child->skeletonIndex_ == skeleton.index_)
+                    continue;
+
+                // For each direct child of the bone node that is not a part of the skeleton,
+                // check if it is empty and if so, add it to the skeleton.
+                if (!child->IsRecursivelyEmpty())
+                    continue;
+
+                ForEach(ea::span<const GLTFNodePtr>{&child, 1u},
+                    [&](GLTFNode& emptyNode)
+                {
+                    emptyNode.skeletonIndex_ = skeleton.index_;
+                });
+            }
+        });
     }
 
     void AssignSkeletonBoneNames(GLTFSkeleton& skeleton) const
@@ -2159,7 +2195,7 @@ private:
             "wrap",
             "mirror",
             "clamp",
-            "border"
+            "", // border is not supported
         };
 
         static const ea::string filterModeNames[] =
@@ -2423,7 +2459,6 @@ private:
         if (isAlphaMask)
         {
             shaderDefines += "ALPHAMASK ";
-            // TODO: Add support in standard shader
             material.SetShaderParameter("AlphaCutoff", static_cast<float>(sourceMaterial.alphaCutoff));
         }
 
@@ -2473,7 +2508,7 @@ private:
             }
 
             const SharedPtr<Texture2D> diffuseTexture = textureImporter_.ReferenceTextureAsIs(pbr.baseColorTexture.index);
-            material.SetTexture(TU_DIFFUSE, diffuseTexture);
+            material.SetTexture(ShaderResources::Albedo, diffuseTexture);
         }
     }
 
@@ -2524,7 +2559,7 @@ private:
 
             const SharedPtr<Texture2D> metallicRoughnessTexture = textureImporter_.ReferenceRoughnessMetallicOcclusionTexture(
                 metallicRoughnessTextureIndex, occlusionTextureIndex);
-            material.SetTexture(TU_SPECULAR, metallicRoughnessTexture);
+            material.SetTexture(ShaderResources::Properties, metallicRoughnessTexture);
         }
     }
 
@@ -2544,7 +2579,7 @@ private:
 
             const SharedPtr<Texture2D> normalTexture = textureImporter_.ReferenceTextureAsIs(
                 normalTextureIndex);
-            material.SetTexture(TU_NORMAL, normalTexture);
+            material.SetTexture(ShaderResources::Normal, normalTexture);
         }
     }
 
@@ -2564,7 +2599,7 @@ private:
             }
 
             const SharedPtr<Texture2D> emissiveTexture = textureImporter_.ReferenceTextureAsIs(emissiveTextureIndex);
-            material.SetTexture(TU_EMISSIVE, emissiveTexture);
+            material.SetTexture(ShaderResources::Emission, emissiveTexture);
         }
     }
 
@@ -2631,7 +2666,7 @@ public:
         return GetImportedModel(meshIndex, skinIndex).model_;
     }
 
-    const StringVector& GetModelMaterials(int meshIndex, int skinIndex) const
+    const ResourceRefList& GetModelMaterials(int meshIndex, int skinIndex) const
     {
         return GetImportedModel(meshIndex, skinIndex).materials_;
     }
@@ -2646,7 +2681,7 @@ private:
 
         SharedPtr<ModelView> modelView_;
         SharedPtr<Model> model_;
-        StringVector materials_;
+        ResourceRefList materials_;
 
         bool alreadyProcessedAsLOD_{};
     };
@@ -3533,10 +3568,13 @@ private:
         staticModel.SetModel(model);
         staticModel.SetCastShadows(true);
 
-        const StringVector& materialList = modelImporter_.GetModelMaterials(meshIndex, skinIndex);
-        for (unsigned i = 0; i < materialList.size(); ++i)
+        const ResourceRefList& materialList = modelImporter_.GetModelMaterials(meshIndex, skinIndex);
+        if (materialList.type_ != Material::GetTypeStatic())
+            return;
+
+        for (unsigned i = 0; i < materialList.names_.size(); ++i)
         {
-            auto material = cache->GetResource<Material>(materialList[i]);
+            auto material = cache->GetResource<Material>(materialList.names_[i]);
             staticModel.SetMaterial(i, material);
         }
     }
@@ -3743,6 +3781,7 @@ void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& va
     SerializeValue(archive, "repairLooping", value.repairLooping_);
     SerializeValue(archive, "skipTag", value.skipTag_);
     SerializeValue(archive, "keepNamesOnMerge", value.keepNamesOnMerge_);
+    SerializeValue(archive, "addEmptyNodesToSkeleton", value.addEmptyNodesToSkeleton_);
 
     SerializeValue(archive, "offsetMatrixError", value.offsetMatrixError_);
     SerializeValue(archive, "keyFrameTimeError", value.keyFrameTimeError_);

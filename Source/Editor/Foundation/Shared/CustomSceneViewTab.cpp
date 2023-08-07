@@ -53,6 +53,11 @@ CustomSceneViewTab::~CustomSceneViewTab()
 void CustomSceneViewTab::RenderTitle()
 {
     ui::Text("%s", GetActiveResourceName().c_str());
+    ui::SameLine(GetContentSize().x_ - 100);
+    if (ui::Button("Reset camera", ImVec2(100,0)))
+    {
+        ResetCamera();
+    }
 }
 
 void CustomSceneViewTab::RenderContent()
@@ -73,6 +78,14 @@ void CustomSceneViewTab::RenderContent()
         ui::EndChild();
 
         cameraController_->ProcessInput(preview_->GetCamera(), state_);
+    }
+}
+
+void CustomSceneViewTab::ResetCamera()
+{
+    if (preview_)
+    {
+        preview_->LookAt(BoundingBox(-0.5f, 0.5f));
     }
 }
 

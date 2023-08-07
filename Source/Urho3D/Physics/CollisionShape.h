@@ -163,6 +163,9 @@ public:
     /// Visualize the component as debug geometry.
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
+    /// Draw the shape as debug geometry.
+    void DrawDebugGeometry(DebugRenderer* debug, const Color& color, bool depthTest);
+
     /// Set as a box.
     void SetBox(const Vector3& size, const Vector3& position = Vector3::ZERO, const Quaternion& rotation = Quaternion::IDENTITY);
     /// Set as a sphere.

@@ -28,12 +28,14 @@ namespace Urho3DNet
     /// Marks field as serializable. May be used to customize attribute name or mode as well as forcing serialization of
     /// private fields.
     /// </summary>
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
     public class SerializeFieldAttribute : System.Attribute
     {
         /// <summary>
         /// Name which will be used for exposing field to the engine. If no name is provided a name of field will be used.
         /// </summary>
         public string Name = null;
+
         /// <summary>
         /// Attribute mode defines various properties like serializability, editor visibility, network synchronization.
         /// </summary>
@@ -460,7 +462,7 @@ namespace Urho3DNet
                     continue;
 
                 var attribute = Attribute.GetCustomAttribute(field, typeof(SerializeFieldAttribute)) as SerializeFieldAttribute;
-                if (field.IsPrivate && attribute == null)
+                if (attribute == null)
                     continue;
 
                 Type fieldType = field.FieldType;
@@ -506,16 +508,14 @@ namespace Urho3DNet
                 if (property.DeclaringType?.Assembly == serializableType.Assembly)
                     continue;
 
-                // Properties must have both getter and setter for them to be serializable.
-                if (property.GetMethod == null || property.SetMethod == null)
-                    continue;
-
                 // Private (even if partially) properties are not serialized by default.
                 var attribute = Attribute.GetCustomAttribute(property, typeof(SerializeFieldAttribute)) as SerializeFieldAttribute;
-                if ((property.GetMethod.IsPrivate || property.SetMethod.IsPrivate) && attribute == null)
+                // Only properties with the attribute set should be considered.
+                if (attribute == null)
                     continue;
 
-                if (!property.CanRead || !property.CanWrite)
+                // Properties must have both getter and setter for them to be serializable.
+                if (property.GetMethod == null || property.SetMethod == null || !property.CanRead || !property.CanWrite)
                 {
                     Log.Warning($"Trying to register attribute {property.DeclaringType?.FullName}.{property.Name} which is not readable and writable.");
                     continue;

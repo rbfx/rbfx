@@ -40,15 +40,16 @@ public:
     ~RenderBillboardInstance() override;
     void Init(ParticleGraphNode* node, ParticleGraphLayerInstance* layer) override;
     void OnSceneSet(Scene* scene) override;
+    void UpdateDrawableAttributes() override;
 
     void Prepare(unsigned numParticles);
     void UpdateParticle(unsigned index, const Vector3& pos, const Vector2& size, float frameIndex, Color& color,
         float rotation, Vector3& direction);
     void Commit();
 
-    template <typename Pin0, typename Pin1, typename Frame, typename Color, typename Rotation, typename Direction>
-    void operator()(UpdateContext& context, unsigned numParticles, Pin0 pin0, Pin1 pin1, Frame frame, Color color,
-        Rotation rotation, Direction direction)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Vector3>& pin0,
+        const SparseSpan<Vector2>& pin1, const SparseSpan<float>& frame, const SparseSpan<Color>& color,
+        const SparseSpan<float>& rotation, const SparseSpan<Vector3>& direction)
     {
         Prepare(numParticles);
         for (unsigned i = 0; i < numParticles; ++i)

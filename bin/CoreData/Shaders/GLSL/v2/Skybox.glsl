@@ -10,11 +10,13 @@
     VERTEX_OUTPUT(int vInstID)
 #endif
 
-#include "_Samplers.glsl"
+#include "_SamplerUtils.glsl"
 #include "_VertexLayout.glsl"
 
 #include "_VertexTransform.glsl"
 #include "_GammaCorrection.glsl"
+
+SAMPLER(0, samplerCube sAlbedo)
 
 VERTEX_OUTPUT_HIGHP(vec3 vTexCoord)
 
@@ -39,6 +41,6 @@ void main()
 #ifdef URHO3D_PIXEL_SHADER
 void main()
 {
-    gl_FragColor = GammaToLightSpaceAlpha(cMatDiffColor) * DiffMap_ToLight(textureCube(sDiffCubeMap, vTexCoord));
+    gl_FragColor = GammaToLightSpaceAlpha(cMatDiffColor) * CONCATENATE(Texture_ToLightAlpha_, URHO3D_TEXTURE_ALBEDO)(texture(sAlbedo, vTexCoord));
 }
 #endif

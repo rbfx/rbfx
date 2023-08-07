@@ -146,8 +146,14 @@
 #if URHO3D_RMLUI
 #include "114_AdvancedUI/AdvancedUI.h"
 #endif
+#if URHO3D_PHYSICS
 #include "115_RayCast/RayCastSample.h"
+#endif
 #include "116_VirtualFileSystem/VFSSample.h"
+#if URHO3D_PHYSICS
+#include "117_PointerAdapter/PointerAdapterSample.h"
+#include "118_CameraShake/CameraShake.h"
+#endif
 #if URHO3D_XR
 #include "120_VRSample/VRSimple.h"
 #endif
@@ -170,18 +176,23 @@ SamplesManager::SamplesManager(Context* context) :
 void SamplesManager::Setup()
 {
     // Modify engine startup parameters
-    engineParameters_[EP_WINDOW_TITLE] = "rbfx samples";
-    engineParameters_[EP_LOG_NAME]     = GetSubsystem<FileSystem>()->GetAppPreferencesDir("rbfx", "samples") + GetTypeName() + ".log";
-    engineParameters_[EP_FULL_SCREEN]  = false;
+    engineParameters_[EP_WINDOW_TITLE] = "Samples";
+    engineParameters_[EP_APPLICATION_NAME] = "Built-in Samples";
+    engineParameters_[EP_LOG_NAME]     = "conf://Samples.log";
+    engineParameters_[EP_BORDERLESS]   = false;
     engineParameters_[EP_HEADLESS]     = false;
     engineParameters_[EP_SOUND]        = true;
-    engineParameters_[EP_HIGH_DPI]     = true;
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;Data";
-#if MOBILE
-    engineParameters_[EP_ORIENTATIONS] = "Portrait";
-#endif
+    engineParameters_[EP_ORIENTATIONS] = "LandscapeLeft LandscapeRight Portrait";
+    engineParameters_[EP_WINDOW_RESIZABLE] = true;
     if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS))
-        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
+    {
+        if (GetPlatform() == PlatformId::MacOS ||
+            GetPlatform() == PlatformId::iOS)
+            engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";../Resources;../..";
+        else
+            engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
+    }
     engineParameters_[EP_AUTOLOAD_PATHS] = "Autoload";
 #if DESKTOP
     GetCommandLineParser().add_option("--sample", commandLineArgsTemp_);
@@ -234,7 +245,9 @@ void SamplesManager::Start()
     inspectorNode_ = MakeShared<Scene>(context_);
     sampleSelectionScreen_ = MakeShared<SampleSelectionScreen>(context_);
     // Keyboard arrow keys are already handled by UI
-    sampleSelectionScreen_->dpadAdapter_.SetKeyboardEnabled(false);
+    DirectionalPadAdapterFlags flags = sampleSelectionScreen_->dpadAdapter_.GetSubscriptionMask();
+    flags.Set(DirectionalPadAdapterMask::Keyboard, false);
+    sampleSelectionScreen_->dpadAdapter_.SetSubscriptionMask(static_cast<DirectionalPadAdapterMask>(flags));
     context_->GetSubsystem<StateManager>()->EnqueueState(sampleSelectionScreen_);
 
 #if URHO3D_SYSTEMUI
@@ -242,12 +255,12 @@ void SamplesManager::Start()
         debugHud->ToggleAll();
 #endif
     auto* input = context_->GetSubsystem<Input>();
-    SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
-    SubscribeToEvent(&sampleSelectionScreen_->dpadAdapter_, E_KEYUP, [this](StringHash, VariantMap& args) { OnArrowKeyPress(args); });
-    SubscribeToEvent(input, E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
-    SubscribeToEvent(E_SAMPLE_EXIT_REQUESTED, [this](StringHash, VariantMap&) { OnCloseCurrentSample(); });
-    SubscribeToEvent(E_JOYSTICKBUTTONDOWN, [this](StringHash, VariantMap& args) { OnButtonPress(args); });
-    SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap& args) { OnFrameStart(); });
+    SubscribeToEvent(E_RELEASED, &SamplesManager::OnClickSample);
+    SubscribeToEvent(&sampleSelectionScreen_->dpadAdapter_, E_KEYUP, &SamplesManager::OnArrowKeyPress);
+    SubscribeToEvent(input, E_KEYUP, &SamplesManager::OnKeyPress);
+    SubscribeToEvent(E_SAMPLE_EXIT_REQUESTED, &SamplesManager::OnCloseCurrentSample);
+    SubscribeToEvent(E_JOYSTICKBUTTONDOWN, &SamplesManager::OnButtonPress);
+    SubscribeToEvent(E_BEGINFRAME, &SamplesManager::OnFrameStart);
 
 #if URHO3D_RMLUI
     auto* rmlUi = context_->GetSubsystem<RmlUI>();
@@ -395,17 +408,22 @@ void SamplesManager::Start()
     RegisterSample<AggregatedInput>();
 #if URHO3D_ACTIONS
     RegisterSample<ActionDemo>();
-#endif	
+#endif
 #if URHO3D_RMLUI
     RegisterSample<AdvancedUI>();
 #endif
+#if URHO3D_PHYSICS
     RegisterSample<RayCastSample>();
+#endif
     RegisterSample<VFSSample>();
+#if URHO3D_PHYSICS
+    RegisterSample<PointerAdapterSample>();
+#endif
+    RegisterSample<CameraShake>();
 
 #if URHO3D_XR
     RegisterSample<VRSimple>();
 #endif
-
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);
 }
@@ -430,12 +448,6 @@ void SamplesManager::StartSample(StringHash sampleType)
     UI* ui = context_->GetSubsystem<UI>();
     ui->SetFocusElement(nullptr);
 
-#if MOBILE
-    Graphics* graphics = context_->GetSubsystem<Graphics>();
-    graphics->SetOrientations("LandscapeLeft LandscapeRight");
-    IntVector2 screenSize = graphics->GetSize();
-    graphics->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
-#endif
     StringVariantMap args;
     args["Args"] = GetArgs();
     context_->GetSubsystem<StateManager>()->EnqueueState(sampleType, args);
@@ -607,12 +619,6 @@ void SamplesManager::OnFrameStart()
             Input* input = context_->GetSubsystem<Input>();
             UI* ui = context_->GetSubsystem<UI>();
             stateManager->EnqueueState(sampleSelectionScreen_);
-#if MOBILE
-            Graphics* graphics = context_->GetSubsystem<Graphics>();
-            graphics->SetOrientations("Portrait");
-            IntVector2 screenSize = graphics->GetSize();
-            graphics->SetMode(Min(screenSize.x_, screenSize.y_), Max(screenSize.x_, screenSize.y_));
-#endif
         }
         else
         {

@@ -45,11 +45,11 @@ OutlineGroup::MaterialKey::MaterialKey(const Material& material)
         }
     }
 
-    for (const auto& [unit, value] : material.GetTextures())
+    for (const auto& [nameHash, texture] : material.GetTextures())
     {
         unsigned hash = 0;
-        CombineHash(hash, unit);
-        CombineHash(hash, MakeHash(value.Get()));
+        CombineHash(hash, nameHash.Value());
+        CombineHash(hash, MakeHash(texture.value_.Get()));
         resourcesHash_ += hash;
     }
 }
@@ -82,6 +82,7 @@ void OutlineGroup::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Color", GetColor, SetColor, Color, Color::WHITE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Render Order", GetRenderOrder, SetRenderOrder, unsigned, DEFAULT_RENDER_ORDER, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Is Debug", IsDebug, SetDebug, bool, false, AM_DEFAULT);
     // TODO: Not resolved on load
     URHO3D_ACCESSOR_ATTRIBUTE("Drawables", GetDrawablesAttr, SetDrawablesAttr, VariantVector, Variant::emptyVariantVector, AM_DEFAULT);
 }
@@ -173,8 +174,8 @@ Material* OutlineGroup::GetOutlineMaterial(Material* referenceMaterial)
     auto material = MakeShared<Material>(context_);
     for (const auto& [_, nameValue] : referenceMaterial->GetShaderParameters())
         material->SetShaderParameter(nameValue.name_, nameValue.value_);
-    for (const auto& [unit, value] : referenceMaterial->GetTextures())
-        material->SetTexture(unit, value);
+    for (const auto& [_, texture] : referenceMaterial->GetTextures())
+        material->SetTexture(texture.name_, texture.value_);
 
     material->SetShaderParameter(ShaderConsts::Custom_OutlineColor, color_.ToVector4(), true);
     material->SetRenderOrder(renderOrder_);

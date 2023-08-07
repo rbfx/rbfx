@@ -30,6 +30,7 @@
 #include "../Graphics/Material.h"
 #include "../Graphics/ShaderVariation.h"
 #include "../IO/Log.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
 
@@ -42,21 +43,13 @@ Pass::Pass(const ea::string& name) :
     blendMode_(BLEND_REPLACE),
     cullMode_(MAX_CULLMODES),
     depthTestMode_(CMP_LESSEQUAL),
-    lightingMode_(LIGHTING_UNLIT),
     shadersLoadedFrameNumber_(0),
     alphaToCoverage_(false),
-    depthWrite_(true),
-    isDesktop_(false)
+    colorWrite_(true),
+    depthWrite_(true)
 {
     name_ = name.to_lower();
     index_ = Technique::GetPassIndex(name_);
-
-    // Guess default lighting mode from pass name
-    if (index_ == Technique::basePassIndex || index_ == Technique::alphaPassIndex || index_ == Technique::materialPassIndex ||
-        index_ == Technique::deferredPassIndex)
-        lightingMode_ = LIGHTING_PERVERTEX;
-    else if (index_ == Technique::lightPassIndex || index_ == Technique::litBasePassIndex || index_ == Technique::litAlphaPassIndex)
-        lightingMode_ = LIGHTING_PERPIXEL;
 }
 
 Pass::~Pass() = default;
@@ -79,9 +72,10 @@ void Pass::SetDepthTestMode(CompareMode mode)
     MarkPipelineStateHashDirty();
 }
 
-void Pass::SetLightingMode(PassLightingMode mode)
+void Pass::SetColorWrite(bool enable)
 {
-    lightingMode_ = mode;
+    colorWrite_ = enable;
+    MarkPipelineStateHashDirty();
 }
 
 void Pass::SetDepthWrite(bool enable)
@@ -94,12 +88,6 @@ void Pass::SetAlphaToCoverage(bool enable)
 {
     alphaToCoverage_ = enable;
     MarkPipelineStateHashDirty();
-}
-
-
-void Pass::SetIsDesktop(bool enable)
-{
-    isDesktop_ = enable;
 }
 
 void Pass::SetVertexShader(const ea::string& name)
@@ -141,6 +129,20 @@ void Pass::SetVertexShaderDefineExcludes(const ea::string& excludes)
 void Pass::SetPixelShaderDefineExcludes(const ea::string& excludes)
 {
     pixelShaderDefineExcludes_ = excludes;
+    ReleaseShaders();
+    MarkPipelineStateHashDirty();
+}
+
+void Pass::SetVertexTextureDefines(const StringVector& textures)
+{
+    vertexTextureDefines_ = textures;
+    ReleaseShaders();
+    MarkPipelineStateHashDirty();
+}
+
+void Pass::SetPixelTextureDefines(const StringVector& textures)
+{
+    pixelTextureDefines_ = textures;
     ReleaseShaders();
     MarkPipelineStateHashDirty();
 }
@@ -209,6 +211,7 @@ unsigned Pass::RecalculatePipelineStateHash() const
     CombineHash(hash, blendMode_);
     CombineHash(hash, cullMode_);
     CombineHash(hash, depthTestMode_);
+    CombineHash(hash, colorWrite_);
     CombineHash(hash, depthWrite_);
     CombineHash(hash, alphaToCoverage_);
     CombineHash(hash, MakeHash(vertexShaderName_));
@@ -217,6 +220,8 @@ unsigned Pass::RecalculatePipelineStateHash() const
     CombineHash(hash, MakeHash(pixelShaderDefines_));
     CombineHash(hash, MakeHash(vertexShaderDefineExcludes_));
     CombineHash(hash, MakeHash(pixelShaderDefineExcludes_));
+    CombineHash(hash, MakeHash(vertexTextureDefines_));
+    CombineHash(hash, MakeHash(pixelTextureDefines_));
     return hash;
 }
 
@@ -231,15 +236,9 @@ unsigned Technique::shadowPassIndex = 0;
 
 ea::unordered_map<ea::string, unsigned> Technique::passIndices;
 
-Technique::Technique(Context* context) :
-    Resource(context),
-    isDesktop_(false)
+Technique::Technique(Context* context)
+    : Resource(context)
 {
-#ifdef DESKTOP_GRAPHICS
-    desktopSupport_ = true;
-#else
-    desktopSupport_ = false;
-#endif
 }
 
 Technique::~Technique() = default;
@@ -261,8 +260,6 @@ bool Technique::BeginLoad(Deserializer& source)
         return false;
 
     XMLElement rootElem = xml->GetRoot();
-    if (rootElem.HasAttribute("desktop"))
-        isDesktop_ = rootElem.GetBool("desktop");
 
     ea::string globalVS = rootElem.GetAttribute("vs");
     ea::string globalPS = rootElem.GetAttribute("ps");
@@ -280,9 +277,6 @@ bool Technique::BeginLoad(Deserializer& source)
         if (passElem.HasAttribute("name"))
         {
             Pass* newPass = CreatePass(passElem.GetAttribute("name"));
-
-            if (passElem.HasAttribute("desktop"))
-                newPass->SetIsDesktop(passElem.GetBool("desktop"));
 
             // Append global defines only when pass does not redefine the shader
             if (passElem.HasAttribute("vs"))
@@ -313,12 +307,26 @@ bool Technique::BeginLoad(Deserializer& source)
             newPass->SetVertexShaderDefineExcludes(passExcludes + passElem.GetAttribute("vsexcludes"));
             newPass->SetPixelShaderDefineExcludes(passExcludes + passElem.GetAttribute("psexcludes"));
 
-            if (passElem.HasAttribute("lighting"))
+            StringVector passVSTextures;
+            StringVector passPSTextures;
+
+            // Emulate old behavior if not configured
+            if (newPass->GetIndex() != shadowPassIndex)
             {
-                ea::string lighting = passElem.GetAttributeLower("lighting");
-                newPass->SetLightingMode((PassLightingMode)GetStringListIndex(lighting.c_str(), lightingModeNames,
-                    LIGHTING_UNLIT));
+                passPSTextures = {//
+                    ShaderResources::Albedo, //
+                    ShaderResources::Normal, //
+                    ShaderResources::Properties, //
+                    ShaderResources::Emission};
             }
+
+            if (passElem.HasAttribute("vstextures"))
+                passVSTextures = passElem.GetAttribute("vstextures").split(' ');
+            if (passElem.HasAttribute("pstextures"))
+                passPSTextures = passElem.GetAttribute("pstextures").split(' ');
+
+            newPass->SetVertexTextureDefines(passVSTextures);
+            newPass->SetPixelTextureDefines(passPSTextures);
 
             if (passElem.HasAttribute("blend"))
             {
@@ -341,6 +349,9 @@ bool Technique::BeginLoad(Deserializer& source)
                     newPass->SetDepthTestMode((CompareMode)GetStringListIndex(depthTest.c_str(), compareModeNames, CMP_LESS));
             }
 
+            if (passElem.HasAttribute("colorwrite"))
+                newPass->SetColorWrite(passElem.GetBool("colorwrite"));
+
             if (passElem.HasAttribute("depthwrite"))
                 newPass->SetDepthWrite(passElem.GetBool("depthwrite"));
 
@@ -356,11 +367,6 @@ bool Technique::BeginLoad(Deserializer& source)
     return true;
 }
 
-void Technique::SetIsDesktop(bool enable)
-{
-    isDesktop_ = enable;
-}
-
 void Technique::ReleaseShaders()
 {
     for (auto i = passes_.begin(); i != passes_.end(); ++i)
@@ -374,7 +380,6 @@ void Technique::ReleaseShaders()
 SharedPtr<Technique> Technique::Clone(const ea::string& cloneName) const
 {
     SharedPtr<Technique> ret(MakeShared<Technique>(context_));
-    ret->SetIsDesktop(isDesktop_);
     ret->SetName(cloneName);
 
     // Deep copy passes
@@ -388,16 +393,17 @@ SharedPtr<Technique> Technique::Clone(const ea::string& cloneName) const
         newPass->SetCullMode(srcPass->GetCullMode());
         newPass->SetBlendMode(srcPass->GetBlendMode());
         newPass->SetDepthTestMode(srcPass->GetDepthTestMode());
-        newPass->SetLightingMode(srcPass->GetLightingMode());
+        newPass->SetColorWrite(srcPass->GetColorWrite());
         newPass->SetDepthWrite(srcPass->GetDepthWrite());
         newPass->SetAlphaToCoverage(srcPass->GetAlphaToCoverage());
-        newPass->SetIsDesktop(srcPass->IsDesktop());
         newPass->SetVertexShader(srcPass->GetVertexShader());
         newPass->SetPixelShader(srcPass->GetPixelShader());
         newPass->SetVertexShaderDefines(srcPass->GetVertexShaderDefines());
         newPass->SetPixelShaderDefines(srcPass->GetPixelShaderDefines());
         newPass->SetVertexShaderDefineExcludes(srcPass->GetVertexShaderDefineExcludes());
         newPass->SetPixelShaderDefineExcludes(srcPass->GetPixelShaderDefineExcludes());
+        newPass->SetVertexTextureDefines(srcPass->GetVertexTextureDefines());
+        newPass->SetPixelTextureDefines(srcPass->GetPixelTextureDefines());
     }
 
     return ret;
@@ -443,12 +449,6 @@ Pass* Technique::GetPass(const ea::string& name) const
 {
     auto i = passIndices.find(name.to_lower());
     return i != passIndices.end() ? GetPass(i->second) : nullptr;
-}
-
-Pass* Technique::GetSupportedPass(const ea::string& name) const
-{
-    auto i = passIndices.find(name.to_lower());
-    return i != passIndices.end() ? GetSupportedPass(i->second) : nullptr;
 }
 
 unsigned Technique::GetNumPasses() const

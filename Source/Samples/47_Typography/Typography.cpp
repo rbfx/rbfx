@@ -22,7 +22,6 @@
 
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/ProcessUtils.h>
-#include <Urho3D/Graphics/RenderPath.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/UI/CheckBox.h>
@@ -79,13 +78,6 @@ void Typography::Start()
     // Add a checkbox to toggle the background color.
     CreateCheckbox("White background", URHO3D_HANDLER(Typography, HandleWhiteBackground))
         ->SetChecked(false);
-
-    // Add a checkbox to toggle SRGB output conversion (if available).
-    // This will give more correct text output for FreeType fonts, as the FreeType rasterizer
-    // outputs linear coverage values rather than SRGB values. However, this feature isn't
-    // available on all platforms.
-    CreateCheckbox("Graphics::SetSRGB", URHO3D_HANDLER(Typography, HandleSRGB))
-        ->SetChecked(GetSubsystem<Graphics>()->GetSRGB());
 
     // Add a checkbox for the global ForceAutoHint setting. This affects character spacing.
     CreateCheckbox("UI::SetForceAutoHint", URHO3D_HANDLER(Typography, HandleForceAutoHint))
@@ -157,7 +149,8 @@ void Typography::CreateText()
     }
 }
 
-SharedPtr<CheckBox> Typography::CreateCheckbox(const ea::string& label, EventHandler* handler)
+template <class T>
+SharedPtr<CheckBox> Typography::CreateCheckbox(const ea::string& label, T handler)
 {
     SharedPtr<UIElement> container(new UIElement(context_));
     container->SetAlignment(HA_LEFT, VA_TOP);
@@ -178,7 +171,8 @@ SharedPtr<CheckBox> Typography::CreateCheckbox(const ea::string& label, EventHan
     return box;
 }
 
-SharedPtr<DropDownList> Typography::CreateMenu(const ea::string& label, const char** items, EventHandler* handler)
+template <class T>
+SharedPtr<DropDownList> Typography::CreateMenu(const ea::string& label, const char** items, T handler)
 {
     SharedPtr<UIElement> container(new UIElement(context_));
     container->SetAlignment(HA_LEFT, VA_TOP);
@@ -235,25 +229,6 @@ void Typography::HandleForceAutoHint(StringHash eventType, VariantMap& eventData
     auto* box = static_cast<CheckBox*>(eventData[Toggled::P_ELEMENT].GetPtr());
     bool checked = box->IsChecked();
     GetSubsystem<UI>()->SetForceAutoHint(checked);
-}
-
-void Typography::HandleSRGB(StringHash eventType, VariantMap& eventData)
-{
-    auto* box = static_cast<CheckBox*>(eventData[Toggled::P_ELEMENT].GetPtr());
-    bool checked = box->IsChecked();
-
-    auto* graphics = GetSubsystem<Graphics>();
-    if (graphics->GetSRGBWriteSupport())
-    {
-        graphics->SetSRGB(checked);
-    }
-    else
-    {
-        URHO3D_LOGWARNING("Graphics::GetSRGBWriteSupport returned false");
-
-        // Note: PostProcess/GammaCorrection.xml implements SRGB conversion.
-        // However, post-processing filters don't affect the UI layer.
-    }
 }
 
 void Typography::HandleFontHintLevel(StringHash eventType, VariantMap& eventData)

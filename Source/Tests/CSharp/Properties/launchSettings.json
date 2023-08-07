@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Urho3DNet.Tests": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

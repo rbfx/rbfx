@@ -38,8 +38,13 @@ public:
     virtual void Update(UpdateContext& context) = 0;
     /// Handle scene change in instance.
     virtual void OnSceneSet(Scene* scene);
+    /// Handle drawable attribute change.
+    virtual void UpdateDrawableAttributes();
 
     virtual void Reset();
+protected:
+    /// Copy drawable attributes from emitter.
+    void CopyDrawableAttributes(Drawable* drawable, ParticleGraphEmitter* emitter);
 };
 
 } // namespace Urho3D

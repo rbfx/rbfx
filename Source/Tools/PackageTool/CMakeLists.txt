@@ -19,10 +19,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+return_if_not_tool(PackageTool)
 
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (PackageTool ${SOURCE_FILES})
 # Minimal engine builds which this target uses do not merge third party dependencies to monolithic lib. Link to
 # dependencies explicitly.
 target_link_libraries (PackageTool Urho3D LZ4)
-install(TARGETS PackageTool RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG})
+install(TARGETS PackageTool EXPORT Urho3D RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG} PERMISSIONS ${PERMISSIONS_755})

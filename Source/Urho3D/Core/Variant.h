@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <EASTL/optional.h>
+#include <EASTL/type_traits.h>
 #include <EASTL/vector.h>
 #include <EASTL/unordered_map.h>
 #include <EASTL/unique_ptr.h>
@@ -764,7 +766,7 @@ public:
     Variant& operator =(unsigned rhs)
     {
         SetType(VAR_INT);
-        value_.int_ = (int)rhs;
+        value_.int_ = static_cast<int>(rhs);
         return *this;
     }
 
@@ -772,7 +774,7 @@ public:
     Variant& operator =(const StringHash& rhs)
     {
         SetType(VAR_INT);
-        value_.int_ = (int)rhs.Value();
+        value_.int_ = static_cast<int>(rhs.Value());
         return *this;
     }
 
@@ -1351,7 +1353,20 @@ public:
     StringHash GetStringHash() const { return type_ == VAR_INT ? StringHash(GetUInt()) : StringHash::Empty; }
 
     /// Return bool or false on type mismatch.
-    bool GetBool() const { return type_ == VAR_BOOL ? value_.bool_ : false; }
+    bool GetBool() const
+    {
+        switch (type_)
+        {
+            case VAR_BOOL: return value_.bool_;
+            case VAR_INT: return static_cast<bool>(value_.int_);
+            case VAR_INT64: return static_cast<bool>(value_.int64_);
+            case VAR_FLOAT: return static_cast<bool>(value_.float_);
+            case VAR_DOUBLE: return static_cast<bool>(value_.double_);
+            case VAR_VOIDPTR: return value_.voidPtr_;
+            case VAR_PTR: return value_.weakPtr_;
+            default: return false;
+        }
+    }
 
     /// Return float or zero on type mismatch. Ints and doubles are converted.
     float GetFloat() const
@@ -1555,7 +1570,13 @@ public:
     bool IsEmpty() const { return type_ == VAR_NONE; }
 
     /// Return the value, template version.
-    template <class T> T Get() const;
+    template <class T> T Get(ea::enable_if_t<!ea::is_enum_v<T>, int> = 0) const;
+
+    /// Return the value casted to enum.
+    template <class T> T Get(ea::enable_if_t<ea::is_enum_v<T>, int> = 0) const;
+
+    /// Return the value as optional.
+    template <class T> ea::optional<T> GetOptional() const;
 
     /// Return a pointer to a modifiable buffer or null on type mismatch.
     VariantBuffer* GetBufferPtr()
@@ -1714,99 +1735,112 @@ template <> inline VariantType GetVariantType<VariantCurve>() { return VAR_VARIA
 template <> inline VariantType GetVariantType<StringVariantMap>() { return VAR_STRINGVARIANTMAP; }
 
 // Specializations of Variant::Get<T>
-template <> URHO3D_API int Variant::Get<int>() const;
+template <> URHO3D_API int Variant::Get<int>(int) const;
 
-template <> URHO3D_API unsigned Variant::Get<unsigned>() const;
+template <> URHO3D_API unsigned Variant::Get<unsigned>(int) const;
 
-template <> URHO3D_API long long Variant::Get<long long>() const;
+template <> URHO3D_API long long Variant::Get<long long>(int) const;
 
-template <> URHO3D_API unsigned long long Variant::Get<unsigned long long>() const;
+template <> URHO3D_API unsigned long long Variant::Get<unsigned long long>(int) const;
 
-template <> URHO3D_API StringHash Variant::Get<StringHash>() const;
+template <> URHO3D_API StringHash Variant::Get<StringHash>(int) const;
 
-template <> URHO3D_API bool Variant::Get<bool>() const;
+template <> URHO3D_API bool Variant::Get<bool>(int) const;
 
-template <> URHO3D_API float Variant::Get<float>() const;
+template <> URHO3D_API float Variant::Get<float>(int) const;
 
-template <> URHO3D_API double Variant::Get<double>() const;
+template <> URHO3D_API double Variant::Get<double>(int) const;
 
-template <> URHO3D_API const Vector2& Variant::Get<const Vector2&>() const;
+template <> URHO3D_API const Vector2& Variant::Get<const Vector2&>(int) const;
 
-template <> URHO3D_API const Vector3& Variant::Get<const Vector3&>() const;
+template <> URHO3D_API const Vector3& Variant::Get<const Vector3&>(int) const;
 
-template <> URHO3D_API const Vector4& Variant::Get<const Vector4&>() const;
+template <> URHO3D_API const Vector4& Variant::Get<const Vector4&>(int) const;
 
-template <> URHO3D_API const Quaternion& Variant::Get<const Quaternion&>() const;
+template <> URHO3D_API const Quaternion& Variant::Get<const Quaternion&>(int) const;
 
-template <> URHO3D_API const Color& Variant::Get<const Color&>() const;
+template <> URHO3D_API const Color& Variant::Get<const Color&>(int) const;
 
-template <> URHO3D_API const ea::string& Variant::Get<const ea::string&>() const;
+template <> URHO3D_API const ea::string& Variant::Get<const ea::string&>(int) const;
 
-template <> URHO3D_API const Rect& Variant::Get<const Rect&>() const;
+template <> URHO3D_API const Rect& Variant::Get<const Rect&>(int) const;
 
-template <> URHO3D_API const IntRect& Variant::Get<const IntRect&>() const;
+template <> URHO3D_API const IntRect& Variant::Get<const IntRect&>(int) const;
 
-template <> URHO3D_API const IntVector2& Variant::Get<const IntVector2&>() const;
+template <> URHO3D_API const IntVector2& Variant::Get<const IntVector2&>(int) const;
 
-template <> URHO3D_API const IntVector3& Variant::Get<const IntVector3&>() const;
+template <> URHO3D_API const IntVector3& Variant::Get<const IntVector3&>(int) const;
 
-template <> URHO3D_API const VariantBuffer& Variant::Get<const VariantBuffer&>() const;
+template <> URHO3D_API const VariantBuffer& Variant::Get<const VariantBuffer&>(int) const;
 
-template <> URHO3D_API void* Variant::Get<void*>() const;
+template <> URHO3D_API void* Variant::Get<void*>(int) const;
 
-template <> URHO3D_API RefCounted* Variant::Get<RefCounted*>() const;
+template <> URHO3D_API RefCounted* Variant::Get<RefCounted*>(int) const;
 
-template <> URHO3D_API const Matrix3& Variant::Get<const Matrix3&>() const;
+template <> URHO3D_API const Matrix3& Variant::Get<const Matrix3&>(int) const;
 
-template <> URHO3D_API const Matrix3x4& Variant::Get<const Matrix3x4&>() const;
+template <> URHO3D_API const Matrix3x4& Variant::Get<const Matrix3x4&>(int) const;
 
-template <> URHO3D_API const Matrix4& Variant::Get<const Matrix4&>() const;
+template <> URHO3D_API const Matrix4& Variant::Get<const Matrix4&>(int) const;
 
-template <> URHO3D_API const VariantCurve& Variant::Get<const VariantCurve&>() const;
+template <> URHO3D_API const VariantCurve& Variant::Get<const VariantCurve&>(int) const;
 
-template <> URHO3D_API ResourceRef Variant::Get<ResourceRef>() const;
+template <> URHO3D_API ResourceRef Variant::Get<ResourceRef>(int) const;
 
-template <> URHO3D_API ResourceRefList Variant::Get<ResourceRefList>() const;
+template <> URHO3D_API ResourceRefList Variant::Get<ResourceRefList>(int) const;
 
-template <> URHO3D_API VariantVector Variant::Get<VariantVector>() const;
+template <> URHO3D_API VariantVector Variant::Get<VariantVector>(int) const;
 
-template <> URHO3D_API StringVector Variant::Get<StringVector>() const;
+template <> URHO3D_API StringVector Variant::Get<StringVector>(int) const;
 
-template <> URHO3D_API VariantMap Variant::Get<VariantMap>() const;
+template <> URHO3D_API VariantMap Variant::Get<VariantMap>(int) const;
 
-template <> URHO3D_API Vector2 Variant::Get<Vector2>() const;
+template <> URHO3D_API Vector2 Variant::Get<Vector2>(int) const;
 
-template <> URHO3D_API Vector3 Variant::Get<Vector3>() const;
+template <> URHO3D_API Vector3 Variant::Get<Vector3>(int) const;
 
-template <> URHO3D_API Vector4 Variant::Get<Vector4>() const;
+template <> URHO3D_API Vector4 Variant::Get<Vector4>(int) const;
 
-template <> URHO3D_API Quaternion Variant::Get<Quaternion>() const;
+template <> URHO3D_API Quaternion Variant::Get<Quaternion>(int) const;
 
-template <> URHO3D_API Color Variant::Get<Color>() const;
+template <> URHO3D_API Color Variant::Get<Color>(int) const;
 
-template <> URHO3D_API ea::string Variant::Get<ea::string>() const;
+template <> URHO3D_API ea::string Variant::Get<ea::string>(int) const;
 
-template <> URHO3D_API Rect Variant::Get<Rect>() const;
+template <> URHO3D_API Rect Variant::Get<Rect>(int) const;
 
-template <> URHO3D_API IntRect Variant::Get<IntRect>() const;
+template <> URHO3D_API IntRect Variant::Get<IntRect>(int) const;
 
-template <> URHO3D_API IntVector2 Variant::Get<IntVector2>() const;
+template <> URHO3D_API IntVector2 Variant::Get<IntVector2>(int) const;
 
-template <> URHO3D_API IntVector3 Variant::Get<IntVector3>() const;
+template <> URHO3D_API IntVector3 Variant::Get<IntVector3>(int) const;
 
-template <> URHO3D_API VariantBuffer Variant::Get<VariantBuffer >() const;
+template <> URHO3D_API VariantBuffer Variant::Get<VariantBuffer >(int) const;
 
-template <> URHO3D_API Matrix3 Variant::Get<Matrix3>() const;
+template <> URHO3D_API Matrix3 Variant::Get<Matrix3>(int) const;
 
-template <> URHO3D_API Matrix3x4 Variant::Get<Matrix3x4>() const;
+template <> URHO3D_API Matrix3x4 Variant::Get<Matrix3x4>(int) const;
 
-template <> URHO3D_API Matrix4 Variant::Get<Matrix4>() const;
+template <> URHO3D_API Matrix4 Variant::Get<Matrix4>(int) const;
 
-template <> URHO3D_API VariantCurve Variant::Get<VariantCurve>() const;
+template <> URHO3D_API VariantCurve Variant::Get<VariantCurve>(int) const;
 
-template <> URHO3D_API StringVariantMap Variant::Get<StringVariantMap>() const;
+template <> URHO3D_API StringVariantMap Variant::Get<StringVariantMap>(int) const;
 
 // Implementations
+template <class T> T Variant::Get(ea::enable_if_t<ea::is_enum_v<T>, int>) const
+{
+    return static_cast<T>(Get<int>());
+}
+
+template <class T> ea::optional<T> Variant::GetOptional() const
+{
+    if (IsEmpty())
+        return ea::nullopt;
+    else
+        return Get<T>();
+}
+
 template <class T> const T* CustomVariantValue::GetValuePtr() const
 {
     if (IsType<T>())

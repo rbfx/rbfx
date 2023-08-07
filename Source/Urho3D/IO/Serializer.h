@@ -51,6 +51,10 @@ public:
 
     /// Write bytes to the stream. Return number of bytes actually written.
     virtual unsigned Write(const void* data, unsigned size) = 0;
+#ifndef SWIG
+    /// Return name of the stream.
+    virtual const ea::string& GetName() const;
+#endif
 
     /// Write a 64-bit integer.
     bool WriteInt64(long long value);

@@ -129,6 +129,8 @@ private:
 
 protected:
     Graphics* graphics_{};
+    RenderDevice* renderDevice_{};
+    RenderContext* renderContext_{};
     RenderPipelineInterface* renderPipeline_{};
     RenderPipelineDebugger* debugger_{};
 

@@ -194,9 +194,15 @@ function(SWIG_ADD_SOURCE_TO_MODULE name outfiles infile)
 
   # Urho3D: Add dependencies on targets which may provide swig executable.
   if (TARGET swig)
-      list (APPEND SWIG_TARGETS swig)
-  elseif (TARGET Urho3D-Native)
-      list (APPEND SWIG_TARGETS Urho3D-Native)
+    list (APPEND SWIG_TARGETS swig)
+  endif ()
+
+  if (NOT EXISTS "${SWIG_EXECUTABLE}")
+    if (TARGET swig)
+      set (SWIG_EXECUTABLE "$<TARGET_FILE:swig>")
+    else ()
+      message(FATAL_ERROR "swig is required, but missing. Either set URHO3D_SDK to path of installed SDK built on current host or set SWIG_EXECUTABLE to path of swig executable.")
+    endif ()
   endif ()
 
   add_custom_command(

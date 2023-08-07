@@ -1,3 +1,15 @@
+#include <Urho3D/Urho3D.h>
+#include <Urho3D/Core/CommandLine.h>
+#include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Core/StringUtils.h>
+#include <Urho3D/Engine/Application.h>
+#include <Urho3D/Engine/EngineDefs.h>
+#include <Urho3D/Graphics/Graphics.h>
+#include <Urho3D/Input/Input.h>
+#include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/Resource/JSONFile.h>
+#include <Urho3D/SystemUI/SystemUI.h>
+
 #include <algorithm>
 #include <assert.h>
 #include <atomic>
@@ -49,18 +61,6 @@
 #include "ResolvService.hpp"
 //#include "NativeWindow.hpp"
 //#include "HttpRequest.hpp"
-
-#include <Urho3D/Urho3D.h>
-#include <Urho3D/Core/CommandLine.h>
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Core/StringUtils.h>
-#include <Urho3D/Engine/Application.h>
-#include <Urho3D/Engine/EngineDefs.h>
-#include <Urho3D/Graphics/Graphics.h>
-#include <Urho3D/Input/Input.h>
-#include <Urho3D/IO/FileSystem.h>
-#include <Urho3D/Resource/JSONFile.h>
-#include <Urho3D/SystemUI/SystemUI.h>
 
 using namespace Urho3D;
 

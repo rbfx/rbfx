@@ -46,13 +46,13 @@ public:
         BatchStateCacheCallback* callback, const StringVector& outlinedPasses, DrawableProcessorPassFlags flags = DrawableProcessorPassFlag::None);
 
     /// Initialize outline groups from scene. Should be called every frame.
-    void SetOutlineGroups(Scene* scene);
+    void SetOutlineGroups(Scene* scene, bool drawDebugOutlines);
 
     /// Implement ScenePass
     /// @{
     AddBatchResult AddCustomBatch(
         unsigned threadIndex, Drawable* drawable, unsigned sourceBatchIndex, Technique* technique) override;
-    bool CreatePipelineState(PipelineStateDesc& desc, PipelineStateBuilder* builder,
+    bool CreatePipelineState(GraphicsPipelineStateDesc& desc, PipelineStateBuilder* builder,
         const BatchStateCreateKey& key, const BatchStateCreateContext& ctx) override;
     /// @}
 
@@ -88,7 +88,7 @@ public:
 
     /// Implement PostProcessPass.
     /// @{
-    PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::NeedColorOutputReadAndWrite; }
+    PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::None; }
     void Execute(Camera* camera) override;
     /// @}
 
@@ -99,8 +99,8 @@ private:
 
     bool enabled_{};
 
-    SharedPtr<PipelineState> pipelineStateGamma_;
-    SharedPtr<PipelineState> pipelineStateLinear_;
+    StaticPipelineStateId pipelineStateGamma_{};
+    StaticPipelineStateId pipelineStateLinear_{};
     SharedPtr<RenderBuffer> outlineBuffer_;
 };
 

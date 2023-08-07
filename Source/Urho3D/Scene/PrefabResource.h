@@ -28,6 +28,8 @@
 namespace Urho3D
 {
 
+class Node;
+
 /// Prefab resource.
 /// Constains representation of nodes and components with attributes, ready to be instantiated.
 class URHO3D_API PrefabResource : public SimpleResource
@@ -40,6 +42,9 @@ public:
 
     static void RegisterObject(Context* context);
 
+    /// Instantiate prefab into a scene or node as PrefabReference.
+    Node* InstantiateReference(Node* parentNode);
+
     void NormalizeIds();
 
     void SerializeInBlock(Archive& archive) override;
@@ -49,6 +54,8 @@ public:
 
     const NodePrefab& GetNodePrefab() const;
     NodePrefab& GetMutableNodePrefab();
+
+    const NodePrefab& GetNodePrefabSlice(ea::string_view path) const;
 
 private:
     bool LoadLegacyXML(const XMLElement& source) override;

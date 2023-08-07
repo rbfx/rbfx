@@ -20,19 +20,14 @@
 # THE SOFTWARE.
 #
 
-if (NOT DESKTOP OR UWP)
-    # Tools are only useful on desktops. We will build win32 tools when targetting UWP.
+if (NOT DESKTOP)
+    # Tools are only useful on desktops. We will build win32 tools when targeting UWP.
     return ()
 endif ()
 
-if (URHO3D_TOOLS OR URHO3D_PACKAGING)
-    add_subdirectory(PackageTool)
-endif ()
-
-if (URHO3D_TOOLS AND NOT MINI_URHO)
-    add_subdirectory(RampGenerator)
-    add_subdirectory(SpritePacker)
-    add_subdirectory(ScriptPlayer)
-endif ()
+add_subdirectory(PackageTool)
+add_subdirectory(RampGenerator)
+add_subdirectory(SpritePacker)
+add_subdirectory(ScriptPlayer)
 
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} Tools)

@@ -29,7 +29,6 @@
 #include "../Graphics/AnimatedModel.h"
 #include "../Graphics/Animation.h"
 #include "../Graphics/AnimationState.h"
-#include "../Graphics/Batch.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/DrawableEvents.h"
@@ -1161,7 +1160,14 @@ void AnimatedModel::UpdateSoftwareSkinningState()
     {
         // Fallback to software skinning if too many bones affect the model
         if (geometrySkinMatrices_.empty() && model_->GetSkeleton().GetNumBones() > Graphics::GetMaxBones())
+        {
+            URHO3D_LOGWARNING(
+                "Model {} have {} bones, but only {} can be skinned on GPU. "
+                "Falling back to software skinning.",
+                model_->GetName(), model_->GetSkeleton().GetNumBones(), Graphics::GetMaxBones());
+
             softwareSkinning_ = true;
+        }
     }
 }
 

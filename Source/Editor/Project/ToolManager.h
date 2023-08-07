@@ -62,7 +62,7 @@ private:
     void Update();
     void ScanBlender(bool force = false);
     void ScanFBX2glTF(bool force = false);
-    void RenderStatus(bool found, const ea::string& path);
+    void RenderStatus(bool found, const ea::string& path, const ea::string& hint);
 
     struct Blender
     {

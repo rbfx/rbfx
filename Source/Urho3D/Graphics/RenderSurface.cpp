@@ -24,24 +24,26 @@
 
 #include "../Graphics/Camera.h"
 #include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture.h"
+#include "Urho3D/RenderAPI/RawTexture.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderAPI/RenderTargetView.h"
 
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
 
+RenderSurface::RenderSurface(Texture* parentTexture, unsigned slice)
+    : parentTexture_(parentTexture)
+    , slice_(slice)
+{
+}
+
 RenderSurface::~RenderSurface()
 {
-    // only release if parent texture hasn't expired, in that case
-    // parent texture was deleted and will have called release on render surface
-    if (!parentTexture_.Expired())
-    {
-        Release();
-    }
 }
 
 void RenderSurface::SetNumViewports(unsigned num)
@@ -99,11 +101,6 @@ IntVector2 RenderSurface::GetSize() const
     return { GetWidth(), GetHeight() };
 }
 
-TextureUsage RenderSurface::GetUsage() const
-{
-    return parentTexture_->GetUsage();
-}
-
 int RenderSurface::GetMultiSample() const
 {
     return parentTexture_->GetMultiSample();
@@ -129,9 +126,11 @@ IntRect RenderSurface::GetRect(Graphics* graphics, const RenderSurface* renderSu
     return { IntVector2::ZERO, GetSize(graphics, renderSurface) };
 }
 
-unsigned RenderSurface::GetFormat(Graphics* /*graphics*/, const RenderSurface* renderSurface)
+unsigned RenderSurface::GetFormat(Graphics* graphics, const RenderSurface* renderSurface)
 {
-    return renderSurface ? renderSurface->GetParentTexture()->GetFormat() : Graphics::GetRGBFormat();
+    auto renderDevice = graphics->GetSubsystem<RenderDevice>();
+    const auto rtv = renderSurface ? renderSurface->GetView() : RenderTargetView::SwapChainColor(renderDevice);
+    return rtv.GetFormat();
 }
 
 int RenderSurface::GetMultiSample(Graphics* graphics, const RenderSurface* renderSurface)
@@ -142,6 +141,26 @@ int RenderSurface::GetMultiSample(Graphics* graphics, const RenderSurface* rende
 bool RenderSurface::GetSRGB(Graphics* graphics, const RenderSurface* renderSurface)
 {
     return renderSurface ? renderSurface->GetParentTexture()->GetSRGB() : graphics->GetSRGB();
+}
+
+RenderTargetView RenderSurface::GetView() const
+{
+    return RenderTargetView::TextureSlice(parentTexture_, slice_);
+}
+
+RenderTargetView RenderSurface::GetReadOnlyDepthView() const
+{
+    return RenderTargetView::ReadOnlyDepthSlice(parentTexture_, slice_);
+}
+
+bool RenderSurface::IsRenderTarget() const
+{
+    return parentTexture_->IsRenderTarget();
+}
+
+bool RenderSurface::IsDepthStencil() const
+{
+    return parentTexture_->IsDepthStencil();
 }
 
 }

@@ -62,11 +62,8 @@ enum LightImportance
 static const float SHADOW_MIN_QUANTIZE = 0.1f;
 static const float SHADOW_MIN_VIEW = 1.0f;
 static const int MAX_LIGHT_SPLITS = 6;
-#ifdef DESKTOP_GRAPHICS
+// TODO: Revisit max number of cascades on mobiles
 static const unsigned MAX_CASCADE_SPLITS = 4;
-#else
-static const unsigned MAX_CASCADE_SPLITS = 1;
-#endif
 
 static const LightType DEFAULT_LIGHTTYPE = LIGHT_POINT;
 static const LightImportance DEFAULT_LIGHTIMPORTANCE = LI_AUTO;
@@ -85,8 +82,6 @@ static const float DEFAULT_SHADOWNEARFARRATIO = 0.002f;
 static const float DEFAULT_SHADOWMAXEXTRUSION = 1000.0f;
 static const float DEFAULT_SHADOWSPLIT = 1000.0f;
 static const float DEFAULT_TEMPERATURE = 6590.0f;
-static const float DEFAULT_RADIUS = 0.0f;
-static const float DEFAULT_LENGTH = 0.0f;
 
 /// Depth bias parameters. Used both by lights (for shadow mapping) and materials.
 struct URHO3D_API BiasParameters

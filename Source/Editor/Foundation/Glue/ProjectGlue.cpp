@@ -69,6 +69,9 @@ public:
 
         if (!gameViewTab_->IsPlaying())
         {
+            closeGameViewTabAfter_ = !gameViewTab_->IsOpen();
+            gameViewTab_->Open();
+
             tabToFocusAfter_ = sceneViewTab_;
             sceneViewTab_->SetupPluginContext();
             project_->Save();
@@ -83,6 +86,9 @@ public:
         {
             tabToFocusAfter_->Focus();
             tabToFocusAfter_ = nullptr;
+
+            if (closeGameViewTabAfter_)
+                gameViewTab_->Close();
         }
         gameViewTab_->TogglePlayed();
     }
@@ -91,6 +97,7 @@ private:
     const WeakPtr<Engine> engine_;
 
     WeakPtr<EditorTab> tabToFocusAfter_;
+    bool closeGameViewTabAfter_{};
 };
 
 }

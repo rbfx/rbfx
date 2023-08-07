@@ -104,8 +104,8 @@ TEST_CASE("Animation is synchronized between client and server")
         {
             const AnimationParameters& serverParams = serverAnimationController->GetAnimationParameters(0);
             const AnimationParameters& clientParams = clientAnimationController->GetAnimationParameters(0);
-            REQUIRE(clientParams.animation_ == animation1);
-            REQUIRE(clientParams.time_.Value() + clientDelay == Catch::Approx(serverParams.time_.Value()));
+            REQUIRE(clientParams.GetAnimation() == animation1);
+            REQUIRE(clientParams.GetTime() + clientDelay == Catch::Approx(serverParams.GetTime()));
         }
     }
 
@@ -123,8 +123,8 @@ TEST_CASE("Animation is synchronized between client and server")
         {
             const AnimationParameters& serverParams = serverAnimationController->GetAnimationParameters(0);
             const AnimationParameters& clientParams = clientAnimationController->GetAnimationParameters(0);
-            REQUIRE(clientParams.animation_ == animation2);
-            REQUIRE(clientParams.time_.Value() + clientDelay == Catch::Approx(serverParams.time_.Value()));
+            REQUIRE(clientParams.GetAnimation() == animation2);
+            REQUIRE(clientParams.GetTime() + clientDelay == Catch::Approx(serverParams.GetTime()));
         }
     }
 
@@ -142,15 +142,15 @@ TEST_CASE("Animation is synchronized between client and server")
         {
             const AnimationParameters& serverParams = serverAnimationController->GetAnimationParameters(0);
             const AnimationParameters& clientParams = clientAnimationController->GetAnimationParameters(0);
-            REQUIRE(clientParams.animation_ == animation2);
-            REQUIRE(clientParams.time_.Value() + clientDelay == Catch::Approx(serverParams.time_.Value()));
+            REQUIRE(clientParams.GetAnimation() == animation2);
+            REQUIRE(clientParams.GetTime() + clientDelay == Catch::Approx(serverParams.GetTime()));
             REQUIRE(clientParams.blendMode_ == ABM_LERP);
         }
         {
             const AnimationParameters& serverParams = serverAnimationController->GetAnimationParameters(1);
             const AnimationParameters& clientParams = clientAnimationController->GetAnimationParameters(1);
-            REQUIRE(clientParams.animation_ == animation1);
-            REQUIRE(clientParams.time_.Value() + clientDelay == Catch::Approx(serverParams.time_.Value()));
+            REQUIRE(clientParams.GetAnimation() == animation1);
+            REQUIRE(clientParams.GetTime() + clientDelay == Catch::Approx(serverParams.GetTime()));
             REQUIRE(clientParams.blendMode_ == ABM_ADDITIVE);
         }
     }

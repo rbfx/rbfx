@@ -16,10 +16,6 @@
 %ignore Urho3D::EP_ENGINE_CLI_PARAMETERS;
 %constant const char* EpExternalWindow = "ExternalWindow";
 %ignore Urho3D::EP_EXTERNAL_WINDOW;
-%constant const char* EpFlushGpu = "FlushGPU";
-%ignore Urho3D::EP_FLUSH_GPU;
-%constant const char* EpForceGl2 = "ForceGL2";
-%ignore Urho3D::EP_FORCE_GL2;
 %constant const char* EpFrameLimiter = "FrameLimiter";
 %ignore Urho3D::EP_FRAME_LIMITER;
 %constant const char* EpFullScreen = "FullScreen";
@@ -28,8 +24,6 @@
 %ignore Urho3D::EP_GPU_DEBUG;
 %constant const char* EpHeadless = "Headless";
 %ignore Urho3D::EP_HEADLESS;
-%constant const char* EpHighDpi = "HighDPI";
-%ignore Urho3D::EP_HIGH_DPI;
 %constant const char* EpLogLevel = "LogLevel";
 %ignore Urho3D::EP_LOG_LEVEL;
 %constant const char* EpLogName = "LogName";
@@ -64,6 +58,12 @@
 %ignore Urho3D::EP_RESOURCE_PREFIX_PATHS;
 %constant const char* EpShaderCacheDir = "ShaderCacheDir";
 %ignore Urho3D::EP_SHADER_CACHE_DIR;
+%constant const char* EpShaderLogSources = "ShaderLogSource";
+%ignore Urho3D::EP_SHADER_LOG_SOURCES;
+%constant const char* EpShaderPolicyGlsl = "ShaderPolicyGLSL";
+%ignore Urho3D::EP_SHADER_POLICY_GLSL;
+%constant const char* EpShaderPolicyHlsl = "ShaderPolicyHLSL";
+%ignore Urho3D::EP_SHADER_POLICY_HLSL;
 %constant const char* EpShadows = "Shadows";
 %ignore Urho3D::EP_SHADOWS;
 %constant const char* EpSoundBuffer = "SoundBuffer";
@@ -88,8 +88,6 @@
 %ignore Urho3D::EP_TIME_OUT;
 %constant const char* EpTouchEmulation = "TouchEmulation";
 %ignore Urho3D::EP_TOUCH_EMULATION;
-%constant const char* EpTripleBuffer = "TripleBuffer";
-%ignore Urho3D::EP_TRIPLE_BUFFER;
 %constant const char* EpValidateShaders = "ValidateShaders";
 %ignore Urho3D::EP_VALIDATE_SHADERS;
 %constant const char* EpVsync = "VSync";

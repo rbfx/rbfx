@@ -88,7 +88,7 @@ void SplashScreen::Activate(StringVariantMap& bundle)
 
     maxResourceCounter_ = Max(cache->GetNumBackgroundLoadResources(), 1);
 
-    SetViewport(0, MakeShared<Viewport>(context_, scene_, nullptr, nullptr));
+    SetViewport(0, MakeShared<Viewport>(context_, scene_, nullptr));
     if (sound_)
         soundSource_->Play(sound_);
 

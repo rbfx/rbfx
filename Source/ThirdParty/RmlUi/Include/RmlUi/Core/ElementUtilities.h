@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -15,7 +15,7 @@
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -36,20 +36,19 @@ namespace Rml {
 
 class Box;
 class Context;
-class RenderInterface;
-namespace Style { class ComputedValues; }
+namespace Style {
+	class ComputedValues;
+}
 
 /**
-	Utility functions for dealing with elements.
+    Utility functions for dealing with elements.
 
-	@author Lloyd Weehuizen
+    @author Lloyd Weehuizen
  */
 
-class RMLUICORE_API ElementUtilities
-{
+class RMLUICORE_API ElementUtilities {
 public:
-	enum PositionAnchor
-	{
+	enum PositionAnchor {
 		TOP = 1 << 0,
 		BOTTOM = 1 << 1,
 		LEFT = 1 << 2,
@@ -100,8 +99,7 @@ public:
 	static bool SetClippingRegion(Element* element, Context* context = nullptr);
 	/// Applies the clip region from the render interface to the renderer
 	/// @param[in] context The context to read the clip region from
-	/// @param[in] render_interface The render interface to update.
-	static void ApplyActiveClipRegion(Context* context, RenderInterface* render_interface);
+	static void ApplyActiveClipRegion(Context* context);
 
 	/// Formats the contents of an element. This does not need to be called for ordinary elements, but can be useful
 	/// for non-DOM elements of custom elements.
@@ -124,9 +122,9 @@ public:
 	static bool PositionElement(Element* element, Vector2f offset, PositionAnchor anchor);
 
 	/// Applies an element's accumulated transform matrix, determined from its and ancestor's `perspective' and `transform' properties.
-	/// Note: All calls to RenderInterface::SetTransform must go through here.
-	/// @param[in] element		The element whose transform to apply.
+	/// @param[in] element The element whose transform to apply.
 	/// @return true if a render interface is available to set the transform.
+	/// @note All calls to RenderInterface::SetTransform must go through here.
 	static bool ApplyTransform(Element& element);
 
 	/// Creates data views and data controllers if a data model applies to the element.

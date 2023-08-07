@@ -41,27 +41,18 @@ struct UpdateContext
     ea::span<uint8_t> tempBuffer_;
     ParticleGraphLayerInstance* layer_;
 
-    template <typename ValueType> ea::span<ValueType> GetSpan(const ParticleGraphPinRef& pin);
-    template <typename ValueType> ScalarSpan<ValueType> GetScalar(const ParticleGraphPinRef& pin);
-    template <typename ValueType> SparseSpan<ValueType> GetSparse(const ParticleGraphPinRef& pin);
+    template <typename ValueType> SparseSpan<ValueType> GetSpan(const ParticleGraphPinRef& pin) const;
 };
 
-template <typename ValueType> ea::span<ValueType> UpdateContext::GetSpan(const ParticleGraphPinRef& pin)
+template <typename ValueType> SparseSpan<ValueType> UpdateContext::GetSpan(const ParticleGraphPinRef& pin) const
 {
-    assert(pin.type_ == ParticleGraphContainerType::Span);
-    return layer_->GetSpan<ValueType>(pin.index_);
-}
-
-template <typename ValueType> ScalarSpan<ValueType> UpdateContext::GetScalar(const ParticleGraphPinRef& pin)
-{
-    assert(pin.type_ == ParticleGraphContainerType::Scalar);
-    return layer_->GetScalar<ValueType>(pin.index_);
-}
-
-template <typename ValueType> SparseSpan<ValueType> UpdateContext::GetSparse(const ParticleGraphPinRef& pin)
-{
-    assert(pin.type_ == ParticleGraphContainerType::Sparse);
-    return layer_->GetSparse<ValueType>(pin.index_, indices_);
+    switch (pin.type_)
+    {
+    case ParticleGraphContainerType::Span: return layer_->GetSpan<ValueType>(pin.index_);
+    case ParticleGraphContainerType::Scalar: return layer_->GetScalar<ValueType>(pin.index_);
+    case ParticleGraphContainerType::Sparse: return layer_->GetSparse<ValueType>(pin.index_, indices_);
+    default: assert(!"Invalid pin container type"); return layer_->GetSparse<ValueType>(pin.index_, indices_);
+    }
 }
 
 } // namespace Urho3D

@@ -29,6 +29,7 @@
 #include <Urho3D/Graphics/Technique.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Input/Input.h>
+#include <Urho3D/RenderPipeline/ShaderConsts.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/RmlUI/RmlUI.h>
 #include <Urho3D/RmlUI/RmlCanvasComponent.h>
@@ -44,14 +45,15 @@ SimpleWindow::SimpleWindow(Context* context)
     SetResource("UI/HelloRmlUI.rml");
 }
 
-void SimpleWindow::OnDataModelInitialized(Rml::DataModelConstructor& constructor)
+void SimpleWindow::OnDataModelInitialized()
 {
+    Rml::DataModelConstructor* constructor = GetDataModelConstructor();
     // Create a data model for connecting UI with state kept in this class.
     // Important: there can only be one data model with given name per unique RmlUI subsystem!
-    constructor.Bind("slider_value", &sliderValue_);
-    constructor.Bind("counter", &counter_);
-    constructor.Bind("progress", &progress_);
-    constructor.BindEventCallback("count", &SimpleWindow::CountClicks, this);
+    constructor->Bind("slider_value", &sliderValue_);
+    constructor->Bind("counter", &counter_);
+    constructor->Bind("progress", &progress_);
+    constructor->BindEventCallback("count", &SimpleWindow::CountClicks, this);
 
     // Act on pressing window close button.
     RmlUI* ui = GetUI();
@@ -132,7 +134,7 @@ void HelloRmlUI::InitWindow()
     // Create a material that will display UI texture on a cube.
     material_ = MakeShared<Material>(context_);
     material_->SetTechnique(0, GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/DiffUnlit.xml"));
-    material_->SetTexture(TU_DIFFUSE, texture_);
+    material_->SetTexture(ShaderResources::Albedo, texture_);
 
     // Create a component that sets up UI rendering.
     auto* renderer = boxNode->CreateComponent<RmlCanvasComponent>();

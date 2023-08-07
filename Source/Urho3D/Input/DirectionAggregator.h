@@ -29,10 +29,8 @@
 
 namespace Urho3D
 {
-namespace DirectionAggregatorDetail
-{
 
-enum class SubscriptionMask : unsigned
+enum class DirectionAggregatorMask : unsigned
 {
     None = 0,
     Keyboard = 1 << 0,
@@ -40,9 +38,7 @@ enum class SubscriptionMask : unsigned
     Touch = 1 << 2,
     All = Keyboard | Joystick | Touch,
 };
-URHO3D_FLAGSET(SubscriptionMask, SubscriptionFlags);
-
-} // namespace DirectionAggregatorDetail
+URHO3D_FLAGSET(DirectionAggregatorMask, DirectionAggregatorFlags);
 
 /// Class to aggregate all movement inputs into a single direction vector.
 class URHO3D_API DirectionAggregator : public Object
@@ -78,8 +74,6 @@ private:
 
     /// Type definition for active input sources
     typedef ea::fixed_vector<AxisState, 4> InputVector;
-    typedef DirectionAggregatorDetail::SubscriptionFlags SubscriptionFlags;
-    typedef DirectionAggregatorDetail::SubscriptionMask SubscriptionMask;
 
 public:
     /// Construct.
@@ -89,12 +83,8 @@ public:
 
     /// Set enabled flag. The object subscribes for events when enabled.
     void SetEnabled(bool enabled);
-    /// Set keyboard enabled flag.
-    void SetKeyboardEnabled(bool enabled);
-    /// Set joystick enabled flag.
-    void SetJoystickEnabled(bool enabled);
-    /// Set touch enabled flag.
-    void SetTouchEnabled(bool enabled);
+    /// Set input device subscription mask.
+    void SetSubscriptionMask(DirectionAggregatorFlags mask);
     /// Set UI element to filter touch events. Only touch events originated in the element going to be handled.
     void SetUIElement(UIElement* element);
     /// Set dead zone to mitigate axis drift.
@@ -102,12 +92,8 @@ public:
 
     /// Get enabled flag.
     bool IsEnabled() const { return enabled_; }
-    /// Get keyboard enabled flag.
-    bool IsKeyboardEnabled() const { return enabledSubscriptions_ & SubscriptionMask::Keyboard; }
-    /// Set joystick enabled flag.
-    bool IsJoystickEnabled(bool enabled) const { return enabledSubscriptions_ & SubscriptionMask::Joystick; }
-    /// Set touch enabled flag.
-    bool IsTouchEnabled(bool enabled) const { return enabledSubscriptions_ & SubscriptionMask::Touch; }
+    /// Get input device subscription mask.
+    DirectionAggregatorFlags GetSubscriptionMask() const { return enabledSubscriptions_; }
     /// Get UI element to filter touch events.
     UIElement* GetUIElement() const { return uiElement_; }
     /// Get dead zone.
@@ -117,7 +103,7 @@ public:
     Vector2 GetDirection() const;
 
 private:
-    void UpdateSubscriptions(DirectionAggregatorDetail::SubscriptionFlags flags);
+    void UpdateSubscriptions(DirectionAggregatorFlags flags);
 
     void HandleInputFocus(StringHash eventType, VariantMap& args);
     void HandleKeyDown(StringHash eventType, VariantMap& args);
@@ -134,9 +120,9 @@ private:
     /// Is aggregator enabled
     bool enabled_{false};
     /// Enabled subscriptions
-    SubscriptionFlags enabledSubscriptions_{SubscriptionMask::All};
+    DirectionAggregatorFlags enabledSubscriptions_{DirectionAggregatorMask::All};
     /// Active subscriptions bitmask
-    SubscriptionFlags subscriptionFlags_{SubscriptionMask::None};
+    DirectionAggregatorFlags subscriptionFlags_{DirectionAggregatorMask::None};
     /// Cached input subsystem pointer
     Input* input_{};
     /// Collection of active vertical axis inputs
@@ -146,7 +132,7 @@ private:
     /// Joystick axis adapter
     AxisAdapter axisAdapter_{};
     /// Joystick to ignore (SDL gyroscope virtual joystick)
-    unsigned ignoreJoystickId_{ea::numeric_limits<unsigned>::max()};
+    int ignoreJoystickId_{-1};
     /// UI element to filter touch events
     WeakPtr<UIElement> uiElement_{};
     /// Identifier of active touch

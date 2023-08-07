@@ -34,15 +34,14 @@ macro (define_engine_source_files)
             Urho3D.h
             Graphics/Direct3D11/D3D11GraphicsImpl.cpp
             Graphics/Direct3D11/D3D11GraphicsImpl.h
-            Graphics/GraphicsImpl.h
             Graphics/OpenGL/OGLGraphicsImpl.h
+            Graphics/Diligent/DiligentGraphicsImpl.cpp
+            Graphics/Diligent/DiligentGraphicsImpl.h
             IK/IKConverters.h
         )
         list (APPEND HEADER_FILES ${_files})
         # Install them
-        if (NOT MINI_URHO)
-            install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
-        endif ()
+        install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
         # Get source files
         file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.cpp)
         list (APPEND SOURCE_FILES ${_files})
@@ -51,19 +50,8 @@ endmacro()
 
 define_engine_source_files (Container Core IO Math)
 
-if (NOT MINI_URHO)
-    define_engine_source_files (Audio Engine Input Plugins RenderPipeline Resource Scene Script UI Utility)
-    define_engine_source_files (NORECURSE . Graphics)
-    list (REMOVE_ITEM SOURCE_FILES BindAll.cpp)     # Utility file for BindTool.
-    if (URHO3D_OPENGL)
-        define_engine_source_files (Graphics/OpenGL)
-    elseif (URHO3D_D3D11)
-        define_engine_source_files (Graphics/Direct3D11)
-    endif ()
-else ()
-    # URHO_MINI is a reduced version of library meant for native tools. Scripting is not needed.
-    set (URHO3D_CSHARP OFF)
-endif ()
+define_engine_source_files (Audio Engine Graphics Input Plugins RenderAPI RenderPipeline Resource Scene Script Shader UI Utility)
+list (REMOVE_ITEM SOURCE_FILES BindAll.cpp)     # Utility file for BindTool.
 
 if (URHO3D_PARTICLE_GRAPH)
     define_engine_source_files (Particles)
@@ -133,21 +121,6 @@ if (URHO3D_XR)
     
     define_engine_source_files (XR)
 endif ()
-
-# Remove compute source files as needed
-if (NOT URHO3D_COMPUTE)
-    list(REMOVE_ITEM SOURCE_FILES
-        Graphics/Direct3D11/D3D11ComputeBuffer.cpp
-        Graphics/Direct3D11/D3D11ComputeDevice.cpp
-        Graphics/OpenGL/OGLComputeBuffer.cpp
-        Graphics/OpenGL/OGLComputeDevice.cpp
-        Graphics/ComputeBuffer.cpp
-        Graphics/ComputeBuffer.h
-        Graphics/ComputeDevice.cpp
-        Graphics/ComputeDevice.h
-    )
-endif ()
-
 # Group source code in VS solution
 group_sources()
 
@@ -182,9 +155,6 @@ foreach (var ${__cmake_variables})
     endif ()
 endforeach()
 
-if (MINI_URHO)
-    target_compile_definitions(Urho3D PUBLIC -DMINI_URHO)
-endif ()
 target_compile_definitions(Urho3D PUBLIC -DNOMINMAX -DURHO3D_DEBUG=$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>)
 
 # Set platform definitions
@@ -200,8 +170,8 @@ if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
 endif ()
 
-# Link dependencies
-set (THIRD_PARTY_DEPENDENCIES
+# Public dependencies that are available to the user or are exposed in the public API or headers
+set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     FreeType
     LZ4
     PugiXml
@@ -219,25 +189,40 @@ set (THIRD_PARTY_DEPENDENCIES
     Box2D
     WebP
     ImGui
-    LibCpuId
     GLEW
     nativefiledialog
     CLI11
     fmt
     spdlog
     EASTL
-    entt
     ETCPACK
     xatlas
     embree
     RmlUi
+    tinygltf
+    enkiTS
+    Diligent-Common
+    Diligent-GraphicsEngineOpenGL-static
+    Diligent-GraphicsEngineVk-static
+    Diligent-GraphicsEngineD3D11-static
+    Diligent-GraphicsEngineD3D12-static
+    Diligent-GraphicsEngineMetal-static
+    Diligent-HLSL2GLSLConverterLib
+    Vulkan-Headers
+)
+
+# Private dependencies that are hidden from the user and are not exposed in the public API or headers
+set (PRIVATE_THIRD_PARTY_DEPENDENCIES
     glslang
+    glslang-default-resource-limits
     SPIRV
     spirv-cross-core
     spirv-cross-glsl
     spirv-cross-msl
     spirv-cross-hlsl
-    tinygltf
+    SPIRV-Tools
+    SPIRV-Tools-opt
+    SPIRV-Reflect
 )
 
 if (URHO3D_XR)
@@ -249,7 +234,7 @@ if (URHO3D_XR)
 endif ()
 
 if (URHO3D_MERGE_STATIC_LIBS)
-    list (APPEND THIRD_PARTY_DEPENDENCIES Bullet)
+    list (APPEND PUBLIC_THIRD_PARTY_DEPENDENCIES Bullet)
 elseif (TARGET Bullet)
     # This library can not be exported from .dll on windows platforms.
     if (WEB AND BUILD_SHARED_LIBS)
@@ -261,7 +246,7 @@ elseif (TARGET Bullet)
     endif ()
 endif ()
 
-foreach (dep ${THIRD_PARTY_DEPENDENCIES})
+foreach (dep ${PUBLIC_THIRD_PARTY_DEPENDENCIES})
     if (TARGET "${dep}")
         # By linking them as private but inheriting definitions/options/dirs we avoid having
         # to export third party lib targets in a monolithic dll build.
@@ -314,6 +299,17 @@ foreach (dep ${THIRD_PARTY_DEPENDENCIES})
     endif ()
 endforeach()
 
+foreach (dep ${PRIVATE_THIRD_PARTY_DEPENDENCIES})
+    if (TARGET "${dep}")
+        target_link_libraries(Urho3D PRIVATE ${dep})
+
+        get_target_property(_TARGET_TYPE ${dep} TYPE)
+        if (URHO3D_MERGE_STATIC_LIBS AND NOT BUILD_SHARED_LIBS AND ${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
+            list (APPEND DEPENDENCY_TARGET_FILES $<TARGET_FILE:${dep}>)
+        endif ()
+    endif ()
+endforeach ()
+
 if (URHO3D_SSE)
     if (MSVC)
         if (URHO3D_64BIT AND "${URHO3D_SSE}" MATCHES "SSE2?")
@@ -358,28 +354,6 @@ if (URHO3D_PROFILING)
     target_link_libraries(Urho3D PUBLIC Tracy)
 endif ()
 
-# Graphics
-if (NOT MINI_URHO)
-    if (URHO3D_OPENGL)
-        if (APPLE)
-            # Do nothing
-        elseif (WIN32)
-            target_link_libraries (Urho3D PUBLIC opengl32)
-        elseif (ANDROID OR ARM)
-            if (URHO3D_GLES2)
-                target_link_libraries (Urho3D PUBLIC GLESv1_CM GLESv2)
-            elseif (URHO3D_GLES3)
-                target_link_libraries (Urho3D PUBLIC GLESv3)
-            endif ()
-        else ()
-            target_link_libraries (Urho3D PUBLIC GL)
-        endif ()
-    else ()
-        find_package(DirectX REQUIRED D3D11)
-        target_link_libraries (Urho3D PUBLIC ${DIRECT3D_LIBRARIES})
-    endif ()
-endif ()
-
 if (WEB)
     target_link_libraries(Urho3D PUBLIC "-s WASM=$<BOOL:EMSCRIPTEN_WASM>")
     if (URHO3D_THREADING)
@@ -389,13 +363,16 @@ if (WEB)
     set_target_properties(Urho3D PROPERTIES LINK_FLAGS_RELEASE -sAGGRESSIVE_VARIABLE_ELIMINATION=1)
     target_compile_options(Urho3D PUBLIC $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:${EMCC_WITH_SOURCE_MAPS_FLAG}>)
     target_link_libraries(Urho3D PUBLIC -sDISABLE_EXCEPTION_CATCHING=1 -sFORCE_FILESYSTEM=1 -sDISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 -lidbfs.js)
-    target_link_libraries(Urho3D PUBLIC "-s ${EXTRA_}EXPORTED_RUNTIME_METHODS=['Pointer_stringify']" --bind)
+    target_link_libraries(Urho3D PUBLIC --bind)
     if (NOT EMSCRIPTEN_TOTAL_MEMORY OR "${EMSCRIPTEN_TOTAL_MEMORY}" STREQUAL "0")
         target_link_libraries(Urho3D PUBLIC "-s ALLOW_MEMORY_GROWTH=1" --no-heap-copy)
     else ()
         math(EXPR EMSCRIPTEN_TOTAL_MEMORY_BYTES "${EMSCRIPTEN_TOTAL_MEMORY} * 1024 * 1024")
         target_link_libraries(Urho3D PUBLIC "-s INITIAL_MEMORY=${EMSCRIPTEN_TOTAL_MEMORY_BYTES}")
     endif ()
+    target_link_libraries(Urho3D PUBLIC "-s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2")
+    # TODO: Try to remove FULL_ES3. We only need it for glMapBufferRange and glUnmapBuffer.
+    target_link_libraries(Urho3D PUBLIC "-s FULL_ES3=1")
 endif ()
 
 if (BUILD_SHARED_LIBS)
@@ -403,7 +380,7 @@ if (BUILD_SHARED_LIBS)
         PRIVATE -DURHO3D_EXPORTS=1 -DAL_EXPORTS=1 -DBOX2D_EXPORTS=1 -DCIVETWEB_DLL_EXPORTS=1 -DEASTL_EXPORTS=1
             -DEASTDC_EXPORTS=1 -DURHO3D_EXPORTS=1 -DFMT_EXPORT=1 -DGLEW_BUILD=1 -DIMGUI_EXPORTS=1
             -DLZ4_DLL_EXPORT=1 -DNFD_EXPORTS=1 -DPUGIXML_EXPORTS=1 -DSDL_EXPORTS=1 -DTRACY_EXPORTS=1 -DRmlCore_EXPORTS=1
-            -DRmlDebugger_EXPORTS=1
+            -DRmlDebugger_EXPORTS=1 -DGLSLANG_EXPORTING=1
     )
 else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)
@@ -493,9 +470,6 @@ if (URHO3D_CSHARP)
 endif ()
 
 ################################################### SDK preparation ####################################################
-if (MINI_URHO)
-    return ()
-endif ()
 
 if (URHO3D_MERGE_STATIC_LIBS)
     # Merge static libraries of third party dependencies to final engine static library
@@ -574,3 +548,6 @@ foreach (config Debug RelWithDebInfo Release MinSizeRel)
 endforeach ()
 file (GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h CONTENT ${URHO3D_H_DATA})
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h DESTINATION ${DEST_INCLUDE_DIR})
+file(GLOB ROOT_HEADERS *.h)
+list(REMOVE_ITEM ROOT_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h)
+install (FILES ${ROOT_HEADERS} DESTINATION ${DEST_INCLUDE_DIR})

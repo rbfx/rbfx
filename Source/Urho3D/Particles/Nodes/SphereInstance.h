@@ -35,8 +35,8 @@ namespace ParticleGraphNodes
 class SphereInstance final : public Sphere::InstanceBase
 {
 public:
-    template <typename Pos, typename Vel>
-    void operator()(UpdateContext& context, unsigned numParticles, Pos pos, Vel vel)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Vector3>& pos,
+        const SparseSpan<Vector3>& vel)
     {
         const Sphere* sphere = static_cast<Sphere*>(GetGraphNode());
         const Matrix3x4 m = Matrix3x4(sphere->GetTranslation(), sphere->GetRotation(), sphere->GetScale());

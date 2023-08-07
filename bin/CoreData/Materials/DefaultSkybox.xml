@@ -1,5 +1,5 @@
 <material>
-	<texture unit="diffuse" name="Textures/DefaultSkybox.xml" />
+	<texture slot="Albedo" name="Textures/DefaultSkybox.xml" />
 	<technique name="Techniques/DiffSkybox.xml" />
 	<cull value="none" />
 	<shadowcull value="ccw" />

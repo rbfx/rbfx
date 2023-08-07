@@ -33,7 +33,6 @@
 
 namespace Urho3D
 {
-using namespace DirectionAggregatorDetail;
 
 /// Construct.
 DirectionAggregator::DirectionAggregator(Context* context)
@@ -47,22 +46,7 @@ DirectionAggregator::DirectionAggregator(Context* context)
     else
         touchSensitivity_ = 2.0f / 96.0f;
 
-    // Check if "accelerometer as joystick" option enabled in SDL (it is ON by default)
-    const auto accelerometerAsJoystick = SDL_GetHint("SDL_HINT_ACCELEROMETER_AS_JOYSTICK");
-    if (!accelerometerAsJoystick || std::string_view("0") != accelerometerAsJoystick)
-    {
-        // Find and ignore virtual joystick id.
-        // SDL defines a virtual joystick as having 3 axis and no buttons or hats.
-        const unsigned numJoysticks = input_->GetNumJoysticks();
-        for (unsigned i = 0; i < numJoysticks; ++i)
-        {
-            const auto* joystick = input_->GetJoystickByIndex(i);
-            if (joystick->GetNumAxes() == 3 && joystick->GetNumButtons() == 0 && joystick->GetNumHats() == 0)
-            {
-                ignoreJoystickId_ = static_cast<unsigned>(joystick->joystickID_);
-            }
-        }
-    }
+    this->ignoreJoystickId_ = input_->FindAccelerometerJoystickId();
 }
 
 DirectionAggregator::~DirectionAggregator()
@@ -81,52 +65,14 @@ void DirectionAggregator::SetEnabled(bool enabled)
         }
         else
         {
-            UpdateSubscriptions(SubscriptionMask::None);
+            UpdateSubscriptions(DirectionAggregatorMask::None);
         }
     }
 }
 
-/// Set keyboard enabled flag.
-void DirectionAggregator::SetKeyboardEnabled(bool enabled)
+void DirectionAggregator::SetSubscriptionMask(DirectionAggregatorFlags mask)
 {
-    if (enabled)
-    {
-        enabledSubscriptions_ |= SubscriptionMask::Keyboard;
-    }
-    else
-    {
-        enabledSubscriptions_ &= ~SubscriptionMask::Keyboard;
-    }
-    if (IsEnabled())
-        UpdateSubscriptions(enabledSubscriptions_);
-}
-
-/// Set joystick enabled flag.
-void DirectionAggregator::SetJoystickEnabled(bool enabled)
-{
-    if (enabled)
-    {
-        enabledSubscriptions_ |= SubscriptionMask::Joystick;
-    }
-    else
-    {
-        enabledSubscriptions_ &= ~SubscriptionMask::Joystick;
-    }
-    if (IsEnabled())
-        UpdateSubscriptions(enabledSubscriptions_);
-}
-
-/// Set touch enabled flag.
-void DirectionAggregator::SetTouchEnabled(bool enabled)
-{
-    if (enabled)
-    {
-        enabledSubscriptions_ |= SubscriptionMask::Touch;
-    }
-    else
-    {
-        enabledSubscriptions_ &= ~SubscriptionMask::Touch;
-    }
+    enabledSubscriptions_ = mask;
     if (IsEnabled())
         UpdateSubscriptions(enabledSubscriptions_);
 }
@@ -137,14 +83,14 @@ void DirectionAggregator::SetUIElement(UIElement* element) { uiElement_ = elemen
 /// Set dead zone to mitigate axis drift.
 void DirectionAggregator::SetDeadZone(float deadZone) { axisAdapter_.SetDeadZone(deadZone); }
 
-void DirectionAggregator::UpdateSubscriptions(SubscriptionFlags flags)
+void DirectionAggregator::UpdateSubscriptions(DirectionAggregatorFlags flags)
 {
     const auto toSubscribe = flags & ~subscriptionFlags_;
     const auto toUnsubscribe = subscriptionFlags_ & ~flags;
 
     if (!subscriptionFlags_ && flags)
     {
-        SubscribeToEvent(input_, E_INPUTFOCUS, URHO3D_HANDLER(DirectionAggregator, HandleInputFocus));
+        SubscribeToEvent(input_, E_INPUTFOCUS, &DirectionAggregator::HandleInputFocus);
     }
     else if (subscriptionFlags_ && !flags)
     {
@@ -152,12 +98,12 @@ void DirectionAggregator::UpdateSubscriptions(SubscriptionFlags flags)
     }
 
     subscriptionFlags_ = flags;
-    if (toSubscribe & SubscriptionMask::Keyboard)
+    if (toSubscribe & DirectionAggregatorMask::Keyboard)
     {
-        SubscribeToEvent(input_, E_KEYUP, URHO3D_HANDLER(DirectionAggregator, HandleKeyUp));
-        SubscribeToEvent(input_, E_KEYDOWN, URHO3D_HANDLER(DirectionAggregator, HandleKeyDown));
+        SubscribeToEvent(input_, E_KEYUP, &DirectionAggregator::HandleKeyUp);
+        SubscribeToEvent(input_, E_KEYDOWN, &DirectionAggregator::HandleKeyDown);
     }
-    else if (toUnsubscribe & SubscriptionMask::Keyboard)
+    else if (toUnsubscribe & DirectionAggregatorMask::Keyboard)
     {
         UnsubscribeFromEvent(E_KEYUP);
         UnsubscribeFromEvent(E_KEYDOWN);
@@ -166,14 +112,14 @@ void DirectionAggregator::UpdateSubscriptions(SubscriptionFlags flags)
         ea::erase_if(horizontalAxis_, predicate);
         ea::erase_if(verticalAxis_, predicate);
     }
-    if (toSubscribe & SubscriptionMask::Joystick)
+    if (toSubscribe & DirectionAggregatorMask::Joystick)
     {
-        SubscribeToEvent(input_, E_JOYSTICKAXISMOVE, URHO3D_HANDLER(DirectionAggregator, HandleJoystickAxisMove));
-        SubscribeToEvent(input_, E_JOYSTICKHATMOVE, URHO3D_HANDLER(DirectionAggregator, HandleJoystickHatMove));
+        SubscribeToEvent(input_, E_JOYSTICKAXISMOVE, &DirectionAggregator::HandleJoystickAxisMove);
+        SubscribeToEvent(input_, E_JOYSTICKHATMOVE, &DirectionAggregator::HandleJoystickHatMove);
         SubscribeToEvent(
-            input_, E_JOYSTICKDISCONNECTED, URHO3D_HANDLER(DirectionAggregator, HandleJoystickDisconnected));
+            input_, E_JOYSTICKDISCONNECTED, &DirectionAggregator::HandleJoystickDisconnected);
     }
-    else if (toUnsubscribe & SubscriptionMask::Joystick)
+    else if (toUnsubscribe & DirectionAggregatorMask::Joystick)
     {
         UnsubscribeFromEvent(E_JOYSTICKAXISMOVE);
         UnsubscribeFromEvent(E_JOYSTICKHATMOVE);
@@ -183,13 +129,13 @@ void DirectionAggregator::UpdateSubscriptions(SubscriptionFlags flags)
         ea::erase_if(horizontalAxis_, predicate);
         ea::erase_if(verticalAxis_, predicate);
     }
-    if (toSubscribe & SubscriptionMask::Touch)
+    if (toSubscribe & DirectionAggregatorMask::Touch)
     {
-        SubscribeToEvent(input_, E_TOUCHBEGIN, URHO3D_HANDLER(DirectionAggregator, HandleTouchBegin));
-        SubscribeToEvent(input_, E_TOUCHMOVE, URHO3D_HANDLER(DirectionAggregator, HandleTouchMove));
-        SubscribeToEvent(input_, E_TOUCHEND, URHO3D_HANDLER(DirectionAggregator, HandleTouchEnd));
+        SubscribeToEvent(input_, E_TOUCHBEGIN, &DirectionAggregator::HandleTouchBegin);
+        SubscribeToEvent(input_, E_TOUCHMOVE, &DirectionAggregator::HandleTouchMove);
+        SubscribeToEvent(input_, E_TOUCHEND, &DirectionAggregator::HandleTouchEnd);
     }
-    else if (toUnsubscribe & SubscriptionMask::Touch)
+    else if (toUnsubscribe & DirectionAggregatorMask::Touch)
     {
         UnsubscribeFromEvent(E_TOUCHBEGIN);
         UnsubscribeFromEvent(E_TOUCHMOVE);
@@ -344,7 +290,7 @@ void DirectionAggregator::HandleTouchMove(StringHash eventType, VariantMap& args
     // Do nothing if not tracking touch
     if (!activeTouchId_.has_value())
         return;
-    // Start tracking touch
+    // Validate touch id
     using namespace TouchBegin;
     const int touchId = args[P_TOUCHID].GetInt();
     if (touchId != activeTouchId_.value())
@@ -368,7 +314,7 @@ void DirectionAggregator::HandleTouchEnd(StringHash eventType, VariantMap& args)
     // Do nothing if not tracking touch
     if (!activeTouchId_.has_value())
         return;
-    // Start tracking touch
+    // Stop tracking touch
     using namespace TouchBegin;
     const int touchId = args[P_TOUCHID].GetInt();
     if (touchId != activeTouchId_.value())

@@ -3,7 +3,8 @@
 #include "_VertexLayout.glsl"
 #include "_VertexTransform.glsl"
 #include "_VertexScreenPos.glsl"
-#include "_Samplers.glsl"
+#include "_DefaultSamplers.glsl"
+#include "_SamplerUtils.glsl"
 #include "_GammaCorrection.glsl"
 
 VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
@@ -29,7 +30,7 @@ void main()
 
 vec4 Sample(vec2 offset)
 {
-    return texture2D(sDiffMap, vTexCoord + offset * cInputInvSize);
+    return texture(sAlbedo, vTexCoord + offset * cInputInvSize);
 }
 
 void main()
@@ -44,17 +45,17 @@ void main()
     half4 sample3 = Sample(offset.yz);
     half4 sample4 = Sample(offset.yy);
 
-    half3 averageColor = (2 * sample0.rgb + sample1.rgb + sample2.rgb + sample3.rgb + sample4.rgb) * 0.2;
-    half averageAlpha = (2 * sample0.a + sample1.a + sample2.a + sample3.a + sample4.a) * 0.2;
+    half3 averageColor = (2.0 * sample0.rgb + sample1.rgb + sample2.rgb + sample3.rgb + sample4.rgb) * 0.2;
+    half averageAlpha = (2.0 * sample0.a + sample1.a + sample2.a + sample3.a + sample4.a) * 0.2;
 
 #ifdef EDGEDETECTION
     // Edge detection for color and alpha, with heuristics to scale up edge between two solid colors
-    half4 edge4 = abs(4 * sample0 - sample1 - sample2 - sample3 - sample4);
+    half4 edge4 = abs(4.0 * sample0 - sample1 - sample2 - sample3 - sample4);
     half edgeScale = max(0.0, averageAlpha);
     half edge = edgeScale * max(max(edge4.r, edge4.g), max(edge4.b, edge4.a));
 #else
     // Simple edge detection based on alpha
-    half edge = sin(averageAlpha * 3.1415926535897932384626433832795);
+    half edge = sin(averageAlpha * M_PI);
 #endif
 
     half3 color = averageColor / max(0.001, averageAlpha);

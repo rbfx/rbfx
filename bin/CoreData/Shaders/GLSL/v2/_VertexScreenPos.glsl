@@ -17,7 +17,7 @@ mediump mat3 GetCameraRot()
 #endif
 }
 
-vec4 GetScreenPos(const vec4 clipPos)
+vec4 GetScreenPos(vec4 clipPos)
 {
     return vec4(
         clipPos.x * cGBufferOffsets.z + cGBufferOffsets.x * clipPos.w,
@@ -30,7 +30,7 @@ vec4 GetScreenPos(const vec4 clipPos)
         clipPos.w);
 }
 
-vec2 GetScreenPosPreDiv(const vec4 clipPos)
+vec2 GetScreenPosPreDiv(vec4 clipPos)
 {
     return vec2(
         clipPos.x / clipPos.w * cGBufferOffsets.z + cGBufferOffsets.x,
@@ -41,7 +41,7 @@ vec2 GetScreenPosPreDiv(const vec4 clipPos)
 #endif
 }
 
-vec2 GetQuadTexCoord(const vec4 clipPos)
+vec2 GetQuadTexCoord(vec4 clipPos)
 {
     return vec2(
         clipPos.x / clipPos.w * 0.5 + 0.5,
@@ -52,14 +52,14 @@ vec2 GetQuadTexCoord(const vec4 clipPos)
 #endif
 }
 
-vec2 GetQuadTexCoordNoFlip(const vec3 worldPos)
+vec2 GetQuadTexCoordNoFlip(vec3 worldPos)
 {
     return vec2(
         worldPos.x * 0.5 + 0.5,
         -worldPos.y * 0.5 + 0.5);
 }
 
-vec3 GetFarRay(const vec4 clipPos)
+vec3 GetFarRay(vec4 clipPos)
 {
     vec3 frustumSize = STEREO_VAR(cFrustumSize).xyz;
     vec3 viewRay = vec3(
@@ -70,7 +70,7 @@ vec3 GetFarRay(const vec4 clipPos)
     return viewRay * GetCameraRot();
 }
 
-vec3 GetNearRay(const vec4 clipPos)
+vec3 GetNearRay(vec4 clipPos)
 {
     vec3 frustumSize = STEREO_VAR(cFrustumSize).xyz;
     vec3 viewRay = vec3(

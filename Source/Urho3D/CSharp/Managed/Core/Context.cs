@@ -23,8 +23,10 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Threading.Tasks;
 using Urho3DNet.CSharp;
 
 namespace Urho3DNet
@@ -144,6 +146,14 @@ namespace Urho3DNet
         public T GetSubsystem<T>() where T: Object
         {
             return (T) GetSubsystem(new StringHash(typeof(T).Name));
+        }
+
+        public ConfiguredTaskAwaitable<bool> ToMainThreadAsync()
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            var workQueue = GetSubsystem<WorkQueue>();
+            workQueue.PostTaskForMainThread((threadId, queue) => tcs.TrySetResult(true));
+            return tcs.Task.ConfigureAwait(false);
         }
 
         #region Interop

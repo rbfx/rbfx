@@ -321,7 +321,6 @@ Geometry* Drawable::GetGeometryIfNotEmpty(Geometry* geometry)
 unsigned Drawable::RecalculatePipelineStateHash() const
 {
     unsigned hash = 0;
-    CombineHash(hash, GetLightMaskInZone() & PORTABLE_LIGHTMASK);
     CombineHash(hash, static_cast<unsigned>(giType_));
     CombineHash(hash, reflectionMode_ >= ReflectionMode::BlendProbes);
     return hash;
@@ -472,10 +471,10 @@ void Drawable::RemoveFromOctree()
 void Drawable::RequestUpdateBatchesDelayed(const FrameInfo& frame)
 {
     auto workQueue = context_->GetSubsystem<WorkQueue>();
-    workQueue->CallFromMainThread([this, &frame](unsigned)
+    workQueue->PostTaskForMainThread([this, &frame]()
     {
         UpdateBatchesDelayed(frame);
-    });
+    }, TaskPriority::Immediate);
 }
 
 bool WriteDrawablesToOBJ(const ea::vector<Drawable*>& drawables, File* outputFile, bool asZUp, bool asRightHanded, bool writeLightmapUV)

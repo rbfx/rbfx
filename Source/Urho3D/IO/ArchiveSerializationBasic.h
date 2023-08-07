@@ -131,6 +131,73 @@ struct EnumStringCaster
     }
 };
 
+template <> struct EnumStringCaster<unsigned>
+{
+    const char* const* enumConstants_{};
+
+    ea::string ToArchive(Archive& archive, const char* name, const unsigned& value) const
+    {
+        return enumConstants_[value];
+    }
+
+    unsigned FromArchive(Archive& archive, const char* name, const ea::string& value) const
+    {
+        return GetStringListIndex(value.c_str(), enumConstants_, 0);
+    }
+};
+
+template <class T> struct EnumStringSafeCaster
+{
+    using UnderlyingInteger = std::underlying_type_t<T>;
+    ea::span<ea::string_view> enumConstants_{};
+
+    ea::string ToArchive(Archive& archive, const char* name, const T& value) const
+    {
+        UnderlyingInteger index = static_cast<UnderlyingInteger>(value);
+        if (index < 0 || index >= enumConstants_.size())
+            return ea::to_string(index);
+        return ea::string{enumConstants_[index]};
+    }
+
+    T FromArchive(Archive& archive, const char* name, const ea::string& value) const
+    {
+        constexpr unsigned invalidIndex = ea::numeric_limits<unsigned>::max();
+        unsigned index = GetStringListIndex(value.c_str(), enumConstants_, invalidIndex);
+        if (index == invalidIndex)
+        {
+            char* end;
+            const unsigned long res = std::strtoul(value.c_str(), &end, 10);
+            index = (res == ULONG_MAX) ? 0 : static_cast<unsigned>(res);
+        }
+        return static_cast<T>(index);
+    }
+};
+
+template <> struct EnumStringSafeCaster<unsigned>
+{
+    ea::span<ea::string_view> enumConstants_{};
+
+    ea::string_view ToArchive(Archive& archive, const char* name, const unsigned& value) const
+    {
+        if (value >= enumConstants_.size())
+            return ea::to_string(value);
+        return enumConstants_[value];
+    }
+
+    unsigned FromArchive(Archive& archive, const char* name, const ea::string& value) const
+    {
+        constexpr unsigned invalidIndex = ea::numeric_limits<unsigned>::max();
+        unsigned index = GetStringListIndex(value, enumConstants_, invalidIndex);
+        if (index == invalidIndex)
+        {
+            char* end;
+            const unsigned long res = std::strtoul(value.c_str(), &end, 10);
+            index = (res == ULONG_MAX) ? 0 : static_cast<unsigned>(res);
+        }
+        return index;
+    }
+};
+
 }
 
 /// Check whether the object can be serialized from/to Archive block.
@@ -225,6 +292,14 @@ void SerializeValueAsType(Archive& archive, const char* name, U& value, const TC
         value = caster.FromArchive(archive, name, convertedValue);
 }
 
+/// Serialize enum as integer.
+template <class T, std::enable_if_t<std::is_enum_v<T>, int> = 0>
+inline void SerializeValue(Archive& archive, const char* name, T& value)
+{
+    using UnderlyingInteger = std::underlying_type_t<T>;
+    SerializeValueAsType<UnderlyingInteger>(archive, name, value);
+}
+
 /// Serialize string hash as integer or as string.
 inline void SerializeStringHash(Archive& archive, const char* name, StringHash& value, const ea::string_view stringHint)
 {
@@ -234,7 +309,7 @@ inline void SerializeStringHash(Archive& archive, const char* name, StringHash& 
         SerializeValueAsType<ea::string>(archive, name, value, Detail::StringHashCaster{stringHint});
 }
 
-/// Serialize enum as integer as integer or as string.
+/// Serialize enum as integer or as string.
 template <class EnumType, class UnderlyingInteger = std::underlying_type_t<EnumType>>
 void SerializeEnum(Archive& archive, const char* name, EnumType& value, const char* const* enumConstants)
 {
@@ -244,6 +319,17 @@ void SerializeEnum(Archive& archive, const char* name, EnumType& value, const ch
         SerializeValueAsType<UnderlyingInteger>(archive, name, value);
     else
         SerializeValueAsType<ea::string>(archive, name, value, Detail::EnumStringCaster<EnumType>{enumConstants});
+}
+
+/// Serialize enum as integer or as string.
+template <class EnumType, class UnderlyingInteger = std::underlying_type_t<EnumType>>
+void SerializeEnum(Archive& archive, const char* name, EnumType& value, const ea::span<ea::string_view> enumConstants)
+{
+    if (!archive.IsHumanReadable())
+        SerializeValueAsType<UnderlyingInteger>(archive, name, value);
+    else
+        SerializeValueAsType<ea::string>(
+            archive, name, value, Detail::EnumStringSafeCaster<EnumType>{enumConstants});
 }
 
 /// Serialize optional element or block.
@@ -305,7 +391,7 @@ void SerializeOptionalValue(Archive& archive, const char* name, T& value, const 
 
 /// Wrapper that consumes ArchiveException and converts it to boolean status.
 template <class T>
-bool ConsumeArchiveException(const T& lambda)
+bool ConsumeArchiveException(const T& lambda, bool errorOnException = true)
 {
     try
     {
@@ -314,7 +400,10 @@ bool ConsumeArchiveException(const T& lambda)
     }
     catch (const ArchiveException& e)
     {
-        URHO3D_LOGERROR("Serialization error: {}", e.what());
+        if (errorOnException)
+            URHO3D_LOGERROR("Serialization error: {}", e.what());
+        else
+            URHO3D_LOGDEBUG("Archive cannot be serialization: {}", e.what());
         return false;
     }
 }

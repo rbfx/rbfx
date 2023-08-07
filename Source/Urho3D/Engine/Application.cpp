@@ -86,7 +86,7 @@ int Application::Run()
         if (engineParameters_[EP_ENGINE_CLI_PARAMETERS].GetBool())
         {
             // Register engine command line arguments
-            Engine::DefineParameters(commandLine_, engineParameters_);
+            Engine::DefineParameters(commandLine_, commandLineParameters_);
         }
 #endif
 
@@ -112,7 +112,7 @@ int Application::Run()
         }
 #endif
 
-        if (!engine_->Initialize(engineParameters_))
+        if (!engine_->Initialize(engineParameters_, commandLineParameters_))
         {
             ErrorExit();
             return exitCode_;

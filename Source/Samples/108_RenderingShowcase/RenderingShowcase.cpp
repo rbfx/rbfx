@@ -45,6 +45,9 @@ RenderingShowcase::RenderingShowcase(Context* context)
     sceneNames_.push_back({ "0" });
     sceneNames_.push_back({ "2_Dynamic", "2_BakedDirect", "2_BakedIndirect", "2_BakedDirectIndirect" });
     sceneNames_.push_back({ "3_MixedBoxProbes", "3_MixedProbes" });
+    // Web doesn't like exceptions
+    if (GetPlatform() != PlatformId::Web)
+        sceneNames_.push_back({ "6_InvalidShader" });
     // Keep 1 last because it may crash mobile browsers
     sceneNames_.push_back({ "1" });
 }
@@ -99,7 +102,7 @@ void RenderingShowcase::CreateScene()
     // Create the camera (not included in the scene file)
     cameraNode_ = cameraScene_->CreateChild("Camera");
     cameraNode_->CreateComponent<Camera>();
-    cameraNode_->CreateComponent<FreeFlyController>()->SetAcceleratedSpeed(2.0f);
+    cameraNode_->CreateComponent<FreeFlyController>();
 
     Node* probeObjectNode = cameraNode_->CreateChild();
     probeObjectNode->SetPosition({ 0.0f, 0.0f, 1.0f });

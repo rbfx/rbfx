@@ -2,8 +2,8 @@
 <material>
 	<technique name="Techniques/DeferredDecalNear.xml" quality="0" loddistance="0.000000" />
 	<technique name="Techniques/DeferredDecalFar.xml" quality="0" loddistance="1.000000" />
-	<texture unit="diffuse" name="Textures/Decal/DecalMat.Diffuse.png" />
-	<texture unit="normal" name="Textures/Decal/DecalMat.Normal.dds" />
+	<texture slot="Albedo" name="Textures/Decal/DecalMat.Diffuse.png" />
+	<texture slot="Normal" name="Textures/Decal/DecalMat.Normal.dds" />
 	<shader vsdefines="NORMALMAP" psdefines="NORMALMAP" />
 	<parameter name="MatEnvMapColor" value="1 1 1" />
 	<parameter name="NormalScale" value="1.000000" />

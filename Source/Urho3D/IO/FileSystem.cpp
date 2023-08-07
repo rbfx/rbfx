@@ -39,9 +39,7 @@
 #include <SDL_rwops.h>
 #endif
 
-#ifndef MINI_URHO
 #include <SDL_filesystem.h>
-#endif
 
 #include <sys/stat.h>
 #include <cstdio>
@@ -114,12 +112,12 @@ int DoSystemCommand(const ea::string& commandLine, bool redirectToLog, Context* 
 #if defined(TVOS) || defined(IOS) || defined(UWP)
     return -1;
 #else
-#if !defined(__EMSCRIPTEN__) && !defined(MINI_URHO)
+#if !defined(__EMSCRIPTEN__)
     if (!redirectToLog)
 #endif
         return system(commandLine.c_str());
 
-#if !defined(__EMSCRIPTEN__) && !defined(MINI_URHO)
+#if !defined(__EMSCRIPTEN__)
     // Get a platform-agnostic temporary file name for stderr redirection
     ea::string stderrFilename;
     ea::string adjustedCommandLine(commandLine);
@@ -922,7 +920,6 @@ ea::string FileSystem::GetUserDocumentsDir() const
 ea::string FileSystem::GetAppPreferencesDir(const ea::string& org, const ea::string& app) const
 {
     ea::string dir;
-#ifndef MINI_URHO
     char* prefPath = SDL_GetPrefPath(org.c_str(), app.c_str());
     if (prefPath)
     {
@@ -930,7 +927,6 @@ ea::string FileSystem::GetAppPreferencesDir(const ea::string& org, const ea::str
         SDL_free(prefPath);
     }
     else
-#endif
         URHO3D_LOGWARNING("Could not get application preferences directory");
 
     return dir;
@@ -1563,14 +1559,10 @@ bool GetRelativePath(const ea::string& fromPath, const ea::string& toPath, ea::s
 ea::string FileSystem::GetTemporaryDir() const
 {
 #if defined(_WIN32)
-#if defined(MINI_URHO)
-    return getenv("TMP");
-#else
     wchar_t pathName[MAX_PATH];
     pathName[0] = 0;
     GetTempPathW(SDL_arraysize(pathName), pathName);
     return AddTrailingSlash(WideToMultiByte(pathName));
-#endif
 #else
     if (char* pathName = getenv("TMPDIR"))
         return AddTrailingSlash(pathName);

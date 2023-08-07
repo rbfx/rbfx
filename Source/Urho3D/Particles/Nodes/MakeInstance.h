@@ -34,8 +34,8 @@ template <typename... Values> struct MakeInstance
 
 template <typename Value0, typename Value1, typename Value2> struct MakeInstance<Value0, Value1, Value2>
 {
-    template <typename X, typename Y, typename Out>
-    void operator()(UpdateContext& context, unsigned numParticles, X x, Y y, Out out)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Value0>& x,
+        const SparseSpan<Value1>& y, const SparseSpan<Value2>& out)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {
@@ -46,8 +46,8 @@ template <typename Value0, typename Value1, typename Value2> struct MakeInstance
 template <typename Value0, typename Value1, typename Value2, typename Value3>
 struct MakeInstance<Value0, Value1, Value2, Value3>
 {
-    template <typename X, typename Y, typename Z, typename Out>
-    void operator()(UpdateContext& context, unsigned numParticles, X x, Y y, Z z, Out out)
+    void operator()(const UpdateContext& context, unsigned numParticles, const SparseSpan<Value0>& x,
+        const SparseSpan<Value1>& y, const SparseSpan<Value2>& z, const SparseSpan<Value3>& out)
     {
         for (unsigned i = 0; i < numParticles; ++i)
         {

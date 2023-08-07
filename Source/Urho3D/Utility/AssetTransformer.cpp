@@ -56,9 +56,10 @@ AssetTransformerInput::AssetTransformerInput(
 void AssetTransformerInput::SerializeInBlock(Archive& archive)
 {
     SerializeValue(archive, "flavor", flavor_.components_);
+    SerializeValue(archive, "originalResourceName", originalResourceName_);
     SerializeValue(archive, "originalInputFileName", originalInputFileName_);
-    SerializeValue(archive, "resourceName", resourceName_);
 
+    SerializeValue(archive, "resourceName", resourceName_);
     SerializeValue(archive, "inputFileName", inputFileName_);
     SerializeValue(archive, "inputFileTime", inputFileTime_);
 

@@ -25,6 +25,7 @@
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Texture2D.h"
 #include "../RenderPipeline/RenderBufferManager.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
 #include "../RenderPipeline/ToneMappingPass.h"
 
 #include "../DebugNew.h"
@@ -42,7 +43,7 @@ void ToneMappingPass::SetMode(ToneMappingMode mode)
 {
     if (mode_ != mode)
     {
-        toneMappingState_ = nullptr;
+        toneMappingState_ = StaticPipelineStateId::Invalid;
         mode_ = mode;
     }
 }
@@ -65,17 +66,15 @@ void ToneMappingPass::InitializeStates()
         break;
     }
 
-    toneMappingState_  = renderBufferManager_->CreateQuadPipelineState(
-        BLEND_REPLACE, "v2/P_ToneMapping", defines);
+    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::Albedo, SamplerStateDesc::Bilinear()}};
+    toneMappingState_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_ToneMapping", defines, samplers);
 }
 
 void ToneMappingPass::Execute(Camera* camera)
 {
-    if (!toneMappingState_)
+    if (toneMappingState_ == StaticPipelineStateId::Invalid)
         InitializeStates();
-
-    if (!toneMappingState_->IsValid())
-        return;
 
     renderBufferManager_->SwapColorBuffers(false);
 

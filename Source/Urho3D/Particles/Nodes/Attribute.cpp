@@ -40,44 +40,15 @@ namespace
 
 template <typename T> struct CopyValues
 {
-    void operator()(UpdateContext& context, const ParticleGraphPin& pin0, const ParticleGraphPin& pin1)
+    void operator()(const UpdateContext& context, const ParticleGraphPin& pin0, const ParticleGraphPin& pin1)
     {
         const unsigned numParticles = context.indices_.size();
-        switch (pin1.GetContainerType())
+
+        auto src = context.GetSpan<T>(pin1.GetMemoryReference());
+        auto dst = context.GetSpan<T>(pin0.GetMemoryReference());
+        for (unsigned i = 0; i < numParticles; ++i)
         {
-        case ParticleGraphContainerType::Auto:
-            assert(!"ParticleGraphContainerType::Auto");
-            break;
-        case ParticleGraphContainerType::Scalar:
-        {
-            auto src = context.GetScalar<T>(pin1.GetMemoryReference());
-            auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
-            for (unsigned i = 0; i < numParticles; ++i)
-            {
-                dst[i] = src[i];
-            }
-        }
-        break;
-        case ParticleGraphContainerType::Span:
-        {
-            auto src = context.GetSpan<T>(pin1.GetMemoryReference());
-            auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
-            for (unsigned i = 0; i < numParticles; ++i)
-            {
-                dst[i] = src[i];
-            }
-        }
-        break;
-        case ParticleGraphContainerType::Sparse:
-        {
-            auto src = context.GetSparse<T>(pin1.GetMemoryReference());
-            auto dst = context.GetSparse<T>(pin0.GetMemoryReference());
-            for (unsigned i = 0; i < numParticles; ++i)
-            {
-                dst[i] = src[i];
-            }
-        }
-        break;
+            dst[i] = src[i];
         }
     }
 };

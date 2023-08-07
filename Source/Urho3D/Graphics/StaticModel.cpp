@@ -26,7 +26,6 @@
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../Graphics/AnimatedModel.h"
-#include "../Graphics/Batch.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/Material.h"
@@ -316,13 +315,8 @@ void StaticModel::ApplyMaterialList(const ea::string& fileName)
     if (!file)
         return;
 
-    const StringVector lines = file->ReadLines();
-    for (unsigned index = 0; index < ea::min(batches_.size(), lines.size()); ++index)
-    {
-        auto* material = cache->GetResource<Material>(lines[index]);
-        if (material)
-            SetMaterial(index, material);
-    }
+    Deserializer& deserializer = file->AsDeserializer();
+    SetMaterialsAttr(deserializer.ReadResourceRefList());
 }
 
 Material* StaticModel::GetMaterial(unsigned index) const

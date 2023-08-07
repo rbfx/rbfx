@@ -75,8 +75,25 @@ public:
 
     /// Set particles effect attribute.
     void SetEffectAttr(const ResourceRef& value);
+    /// Set view mask. Is and'ed with camera's view mask to see if the object should be rendered.
+    void SetViewMask(unsigned mask);
+    /// Set light mask. Is and'ed with light's and zone's light mask to see if the object should be lit.
+    void SetLightMask(unsigned mask);
+    /// Set shadow mask. Is and'ed with light's light mask and zone's shadow mask to see if the object should be
+    /// rendered to a shadow map.
+    void SetShadowMask(unsigned mask);
+    /// Set zone mask. Is and'ed with zone's zone mask to see if the object should belong to the zone.
+    void SetZoneMask(unsigned mask);
     /// Set particles effect attribute.
     ResourceRef GetEffectAttr() const;
+    /// Return view mask.
+    unsigned GetViewMask() const { return viewMask_; }
+    /// Return light mask.
+    unsigned GetLightMask() const { return lightMask_; }
+    /// Return shadow mask.
+    unsigned GetShadowMask() const { return shadowMask_; }
+    /// Return zone mask.
+    unsigned GetZoneMask() const { return zoneMask_; }
 
     /// Create a new particle. Return true if there was room.
     bool EmitNewParticle(unsigned layer);
@@ -102,11 +119,22 @@ private:
     void HandleScenePostUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle live reload of the particle effect.
     void HandleEffectReloadFinished(StringHash eventType, VariantMap& eventData);
+    /// Update all drawable attributes.
+    void UpdateDrawables();
 
     /// Particle effect.
     SharedPtr<ParticleGraphEffect> effect_;
 
     ea::vector<ParticleGraphLayerInstance> layers_;
+
+    /// View mask.
+    unsigned viewMask_{DEFAULT_VIEWMASK};
+    /// Light mask.
+    unsigned lightMask_{DEFAULT_LIGHTMASK};
+    /// Shadow mask.
+    unsigned shadowMask_{DEFAULT_SHADOWMASK};
+    /// Zone mask.
+    unsigned zoneMask_{DEFAULT_ZONEMASK};
 
     /// Last scene timestep.
     float lastTimeStep_{};

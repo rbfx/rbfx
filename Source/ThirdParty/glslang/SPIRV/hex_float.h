@@ -23,19 +23,6 @@
 #include <limits>
 #include <sstream>
 
-#if defined(_MSC_VER) && _MSC_VER < 1800
-namespace std {
-bool isnan(double f)
-{
-  return ::_isnan(f) != 0;
-}
-bool isinf(double f)
-{
-  return ::_finite(f) == 0;
-}
-}
-#endif
-
 #include "bitutils.h"
 
 namespace spvutils {
@@ -784,8 +771,8 @@ inline std::istream& ParseNormalFloat(std::istream& is, bool negate_value,
   if (val.isInfinity()) {
     // Fail the parse.  Emulate standard behaviour by setting the value to
     // the closest normal value, and set the fail bit on the stream.
-    value.set_value((value.isNegative() | negate_value) ? T::lowest()
-                                                        : T::max());
+    value.set_value((value.isNegative() || negate_value) ? T::lowest()
+                                                         : T::max());
     is.setstate(std::ios_base::failbit);
   }
   return is;

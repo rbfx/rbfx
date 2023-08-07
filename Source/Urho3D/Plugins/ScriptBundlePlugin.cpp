@@ -34,7 +34,7 @@ namespace Urho3D
 ScriptBundlePlugin::ScriptBundlePlugin(Context* context)
     : Plugin(context)
 {
-    SubscribeToEvent(E_FILECHANGED, [this](StringHash, VariantMap& args)
+    SubscribeToEvent(E_FILECHANGED, [this](VariantMap& args)
     {
         using namespace FileChanged;
         const ea::string& name = args[P_RESOURCENAME].GetString();

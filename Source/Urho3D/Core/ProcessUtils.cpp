@@ -20,15 +20,19 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/ProcessUtils.h"
-#include "../Core/StringUtils.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
+#include "Urho3D/Core/ProcessUtils.h"
+
+#include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
 
 #include <cstdio>
 #include <fcntl.h>
+#include <thread>
+#include <EASTL/fixed_vector.h>
+#include <enkiTS/src/TaskScheduler.h>
 
 #ifdef __APPLE__
 #include "TargetConditionals.h"
@@ -39,8 +43,6 @@
 #include <mach/mach_host.h>
 #elif defined(TVOS)
 extern "C" unsigned SDL_TVOS_GetActiveProcessorCount();
-#elif !defined(__linux__) && !defined(__EMSCRIPTEN__) && !defined(UWP)
-#include <LibCpuId/libcpuid.h>
 #endif
 
 #if defined(_WIN32)
@@ -109,9 +111,7 @@ inline void SetFPUState(unsigned control)
 extern "C" RPCRTAPI RPC_STATUS RPC_ENTRY RpcStringFreeA(RPC_CSTR* String);
 #endif
 
-#ifndef MINI_URHO
 #include <SDL.h>
-#endif
 
 #include "../DebugNew.h"
 
@@ -124,67 +124,6 @@ static bool consoleOpened = false;
 static ea::string currentLine;
 static ea::vector<ea::string> arguments;
 static ea::string miniDumpDir;
-
-#if defined(IOS)
-static void GetCPUData(host_basic_info_data_t* data)
-{
-    mach_msg_type_number_t infoCount;
-    infoCount = HOST_BASIC_INFO_COUNT;
-    host_info(mach_host_self(), HOST_BASIC_INFO, (host_info_t)data, &infoCount);
-}
-#elif defined(__linux__)
-struct CpuCoreCount
-{
-    unsigned numPhysicalCores_;
-    unsigned numLogicalCores_;
-};
-
-// This function is used by all the target triplets with Linux as the OS, such as Android, RPI, desktop Linux, etc
-static void GetCPUData(struct CpuCoreCount* data)
-{
-    // Sanity check
-    assert(data);
-    // At least return 1 core
-    data->numPhysicalCores_ = data->numLogicalCores_ = 1;
-
-    FILE* fp;
-    int res;
-    unsigned i, j;
-
-    fp = fopen("/sys/devices/system/cpu/present", "r");
-    if (fp)
-    {
-        res = fscanf(fp, "%d-%d", &i, &j);                          // NOLINT(cert-err34-c)
-        fclose(fp);
-
-        if (res == 2 && i == 0)
-        {
-            data->numPhysicalCores_ = data->numLogicalCores_ = j + 1;
-
-            fp = fopen("/sys/devices/system/cpu/cpu0/topology/thread_siblings_list", "r");
-            if (fp)
-            {
-                res = fscanf(fp, "%d,%d,%d,%d", &i, &j, &i, &j);    // NOLINT(cert-err34-c)
-                fclose(fp);
-
-                // Having sibling thread(s) indicates the CPU is using HT/SMT technology
-                if (res > 1)
-                    data->numPhysicalCores_ /= res;
-            }
-        }
-    }
-}
-
-#elif !defined(__EMSCRIPTEN__) && !defined(TVOS) && !defined(UWP)
-static void GetCPUData(struct cpu_id_t* data)
-{
-    if (cpu_identify(nullptr, data) < 0)
-    {
-        data->num_logical_cpus = 1;
-        data->num_cores = 1;
-    }
-}
-#endif
 
 void InitFPU()
 {
@@ -202,9 +141,7 @@ void InitFPU()
 
 void ErrorDialog(const ea::string& title, const ea::string& message)
 {
-#ifndef MINI_URHO
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title.c_str(), message.c_str(), nullptr);
-#endif
 }
 
 void ErrorExit(const ea::string& message, int exitCode)
@@ -485,73 +422,62 @@ ea::string GetPlatformName()
 
 unsigned GetNumPhysicalCPUs()
 {
-#if defined(UWP)
-    return 1;
-#elif defined(IOS)
+    int cpuCount = 0;
+#if defined(URHO3D_PLATFORM_IOS)
     host_basic_info_data_t data;
-    GetCPUData(&data);
-#if TARGET_OS_SIMULATOR
-    // Hardcoded to dual-core on simulator mode even if the host has more
-    return Min(2, data.physical_cpu);
-#else
-    return data.physical_cpu;
+    mach_msg_type_number_t infoCount;
+    infoCount = HOST_BASIC_INFO_COUNT;
+    host_info(mach_host_self(), HOST_BASIC_INFO, (host_info_t)&data, &infoCount);
+    cpuCount = data.physical_cpu;
+#elif defined(URHO3D_PLATFORM_TVOS)
+    cpuCount = SDL_TVOS_GetActiveProcessorCount();
+#elif defined(URHO3D_PLATFORM_MACOS)
+    size_t size = sizeof(cpuCount);
+    sysctlbyname("hw.physicalcpu", &cpuCount, &size, nullptr, 0);
+#elif defined(URHO3D_PLATFORM_LINUX)
+    FILE* fp = fopen("/proc/cpuinfo", "rb");
+    if (fp)
+    {
+        char line[1024];
+        while (fgets(line, sizeof(line), fp))
+        {
+            int id = 0;
+            if (sscanf(line, "core id%*[\t]: %d", &id) == 1)
+                cpuCount = Max(cpuCount, static_cast<unsigned>(id + 1));
+        }
+        fclose(fp);
+    }
+#elif defined(URHO3D_PLATFORM_WEB)
+#ifndef __EMSCRIPTEN_PTHREADS__
+    cpuCount = 1; // Targeting a single-threaded Emscripten build.
+#endif  // __EMSCRIPTEN_PTHREADS__
+#elif defined(URHO3D_PLATFORM_WINDOWS)
+    DWORD bufferSize = 0;
+    GetLogicalProcessorInformation(nullptr, &bufferSize);
+    if (ERROR_INSUFFICIENT_BUFFER == GetLastError())
+    {
+        const size_t entryCount = bufferSize / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+        ea::fixed_vector<SYSTEM_LOGICAL_PROCESSOR_INFORMATION, 64> entries(entryCount);
+        if (GetLogicalProcessorInformation(entries.data(), &bufferSize))
+        {
+            for (const auto& entry : entries)
+            {
+                if (entry.Relationship == RelationProcessorCore)
+                    cpuCount++;
+            }
+        }
+    }
 #endif
-#elif defined(TVOS)
-#if TARGET_OS_SIMULATOR
-    return Min(2, SDL_TVOS_GetActiveProcessorCount());
-#else
-    return SDL_TVOS_GetActiveProcessorCount();
-#endif
-#elif defined(__linux__)
-    struct CpuCoreCount data{};
-    GetCPUData(&data);
-    return data.numPhysicalCores_;
-#elif defined(__EMSCRIPTEN__)
-#ifdef __EMSCRIPTEN_PTHREADS__
-    return emscripten_num_logical_cores();
-#else
-    return 1; // Targeting a single-threaded Emscripten build.
-#endif
-#else
-    struct cpu_id_t data;
-    GetCPUData(&data);
-    return (unsigned)data.num_cores;
-#endif
+    // This is as good as it gets on remaining platforms.
+    if (cpuCount == 0)
+        cpuCount = std::thread::hardware_concurrency();
+
+    return Max(1, cpuCount);
 }
 
 unsigned GetNumLogicalCPUs()
 {
-#if defined(UWP)
-    return 1;
-#elif defined(IOS)
-    host_basic_info_data_t data;
-    GetCPUData(&data);
-#if TARGET_OS_SIMULATOR
-    return Min(2, data.logical_cpu);
-#else
-    return data.logical_cpu;
-#endif
-#elif defined(TVOS)
-#if TARGET_OS_SIMULATOR
-    return Min(2, SDL_TVOS_GetActiveProcessorCount());
-#else
-    return SDL_TVOS_GetActiveProcessorCount();
-#endif
-#elif defined(__linux__)
-    struct CpuCoreCount data{};
-    GetCPUData(&data);
-    return data.numLogicalCores_;
-#elif defined(__EMSCRIPTEN__)
-#ifdef __EMSCRIPTEN_PTHREADS__
-    return emscripten_num_logical_cores();
-#else
-    return 1; // Targeting a single-threaded Emscripten build.
-#endif
-#else
-    struct cpu_id_t data;
-    GetCPUData(&data);
-    return (unsigned)data.num_logical_cpus;
-#endif
+    return ea::max(1u, enki::GetNumHardwareThreads());
 }
 
 void SetMiniDumpDir(const ea::string& pathName)
@@ -561,7 +487,6 @@ void SetMiniDumpDir(const ea::string& pathName)
 
 ea::string GetMiniDumpDir()
 {
-#ifndef MINI_URHO
     if (miniDumpDir.empty())
     {
         char* pathName = SDL_GetPrefPath("urho3d", "crashdumps");
@@ -572,7 +497,6 @@ ea::string GetMiniDumpDir()
             return ret;
         }
     }
-#endif
 
     return miniDumpDir;
 }
@@ -648,7 +572,7 @@ ea::string GetHostName()
 }
 
 // Disable Windows OS version functionality when compiling mini version for Web, see https://github.com/urho3d/Urho3D/issues/1998
-#if defined(_WIN32) && defined(HAVE_RTL_OSVERSIONINFOW) && !defined(MINI_URHO)
+#if defined(_WIN32) && defined(HAVE_RTL_OSVERSIONINFOW)
 using RtlGetVersionPtr = NTSTATUS (WINAPI *)(PRTL_OSVERSIONINFOW);
 
 static void GetOS(RTL_OSVERSIONINFOW *r)
@@ -669,7 +593,7 @@ ea::string GetOSVersion()
     struct utsname u{};
     if (uname(&u) == 0)
         return ea::string(u.sysname) + " " + u.release;
-#elif defined(_WIN32) && defined(HAVE_RTL_OSVERSIONINFOW) && !defined(MINI_URHO)
+#elif defined(_WIN32) && defined(HAVE_RTL_OSVERSIONINFOW)
     RTL_OSVERSIONINFOW r;
     GetOS(&r);
     // https://msdn.microsoft.com/en-us/library/windows/desktop/ms724832(v=vs.85).aspx

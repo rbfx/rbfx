@@ -18,7 +18,7 @@ IF (WIN32)
 
   SET(COMMON_CXX_FLAGS "")
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /EHsc")        # catch C++ exceptions only and extern "C" functions never throw a C++ exception
-  SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /MP")          # compile source files in parallel
+  # SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /MP")          # compile source files in parallel
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /GR")          # enable runtime type information (on by default)
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /Qvec-")       # disable auto vectorizer
   SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} /Qfast-transcendentals-") # disable fast transcendentals, prevents sin(x),cos(x) -> sincos(x) optimization
@@ -71,7 +71,7 @@ IF (WIN32)
 
   SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /IGNORE:4217")  # locally defined symbol XXX imported in function YYY (happens as the ISPC API layer uses exported library functions)
   SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /IGNORE:4049")  # warning LNK4049: locally defined symbol _rtcOccluded1M imported
-  
+
   INCLUDE(msvc_post)
 
   # remove libmmd dependency
@@ -107,7 +107,7 @@ ELSE()
     SET(CMAKE_CXX_FLAGS "")
   ENDIF()
 
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") 
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")                       # enables most warnings
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security")  # enables string format vulnerability warnings
 
@@ -137,7 +137,7 @@ ELSE()
       SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "-fno-stack-protector")
     ENDIF()
   ENDMACRO()
-  
+
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -restrict")                   # enable restrict keyword
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-inline-max-total-size")   # no size limit when performing inlining
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -no-inline-max-per-compile")  # no maximal number of inlinings per compilation unit
@@ -162,7 +162,7 @@ ELSE()
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -g")              # generate debug information
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DNDEBUG")        # disable assertions
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3")             # enable full optimizations
-  
+
   IF (APPLE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")   # makes sure code runs on older MacOSX versions
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")             # link against libc++ which supports C++11 features

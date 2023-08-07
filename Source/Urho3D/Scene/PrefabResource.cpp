@@ -22,7 +22,9 @@
 
 #include <Urho3D/Precompiled.h>
 
+#include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/Scene/PrefabReference.h>
 #include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 
@@ -43,6 +45,20 @@ PrefabResource::~PrefabResource()
 void PrefabResource::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<PrefabResource>();
+}
+
+Node* PrefabResource::InstantiateReference(Node* parentNode)
+{
+    Node* instanceNode = parentNode->CreateChild(GetFileName(GetName()));
+
+    auto prefabReference = instanceNode->CreateComponent<PrefabReference>();
+    prefabReference->SetPrefab(this);
+
+    const NodePrefab& nodePrefab = GetNodePrefab();
+    if (!nodePrefab.IsEmpty())
+        nodePrefab.GetNode().Export(instanceNode);
+
+    return instanceNode;
 }
 
 void PrefabResource::NormalizeIds()
@@ -68,6 +84,12 @@ void PrefabResource::SerializeInBlock(Archive& archive)
 const NodePrefab& PrefabResource::GetNodePrefab() const
 {
     return !prefab_.GetChildren().empty() ? prefab_.GetChildren()[0] : NodePrefab::Empty;
+}
+
+const NodePrefab& PrefabResource::GetNodePrefabSlice(ea::string_view path) const
+{
+    const NodePrefab& nodePrefab = GetNodePrefab();
+    return nodePrefab.FindChild(path);
 }
 
 NodePrefab& PrefabResource::GetMutableNodePrefab()

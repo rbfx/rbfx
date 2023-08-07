@@ -252,7 +252,7 @@ PluginManager::PluginManager(Context* context)
     AddDynamicPlugin(scriptBundlePlugin);
 #endif
 
-    SubscribeToEvent(E_ENDFRAMEPRIVATE, [this](StringHash, VariantMap&) { Update(false); });
+    SubscribeToEvent(E_ENDFRAMEPRIVATE, [this] { Update(false); });
 }
 
 PluginManager::~PluginManager()

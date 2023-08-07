@@ -23,24 +23,64 @@
 #include "../Precompiled.h"
 
 #include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsImpl.h"
+#include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/Material.h"
+#include "../Graphics/Renderer.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+
+#include <Diligent/Graphics/GraphicsAccessories/interface/GraphicsAccessories.hpp>
 
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
 
+namespace
+{
+
+ea::pair<unsigned, unsigned> GetLevelsOffsetAndCount(const Image& image, unsigned numLevels, unsigned mostDetailedMip)
+{
+    const unsigned maxNumLevels =
+        image.IsCompressed() ? image.GetNumCompressedLevels() : GetMipLevelCount(image.GetSize());
+    const unsigned effectiveMostDetailedMip = ea::min(mostDetailedMip, maxNumLevels - 1);
+    const unsigned effectiveNumLevels = numLevels == 0
+        ? maxNumLevels - effectiveMostDetailedMip
+        : ea::min(numLevels, maxNumLevels - effectiveMostDetailedMip);
+    return {effectiveMostDetailedMip, effectiveNumLevels};
+}
+
+TextureFormat ToHardwareFormat(const TextureFormat format, RenderDevice* renderDevice)
+{
+    if (format == Diligent::TEX_FORMAT_UNKNOWN)
+        return Diligent::TEX_FORMAT_RGBA8_UNORM;
+
+    if (renderDevice && !renderDevice->IsTextureFormatSupported(format))
+        return Diligent::TEX_FORMAT_RGBA8_UNORM;
+
+    return format;
+}
+
+bool IsCompressedEffective(const Image& image, RenderDevice* renderDevice)
+{
+    if (!image.IsCompressed())
+        return false;
+    // Don't decompress if there is no GPU at all
+    return !renderDevice || renderDevice->IsTextureFormatSupported(image.GetGPUFormat());
+}
+
+} // namespace
+
 static const char* addressModeNames[] =
 {
     "wrap",
     "mirror",
     "clamp",
-    "border",
     nullptr
 };
 
@@ -55,9 +95,9 @@ static const char* filterModeNames[] =
     nullptr
 };
 
-Texture::Texture(Context* context) :
-    ResourceWithMetadata(context),
-    GPUObject(GetSubsystem<Graphics>())
+Texture::Texture(Context* context)
+    : ResourceWithMetadata(context)
+    , RawTexture(context)
 {
 }
 
@@ -65,45 +105,45 @@ Texture::~Texture() = default;
 
 void Texture::SetNumLevels(unsigned levels)
 {
-    if (usage_ > TEXTURE_RENDERTARGET)
-        requestedLevels_ = 1;
-    else
-        requestedLevels_ = levels;
+    requestedLevels_ = levels;
 }
 
 void Texture::SetFilterMode(TextureFilterMode mode)
 {
-    filterMode_ = mode;
-    parametersDirty_ = true;
+    auto desc = GetSamplerStateDesc();
+    desc.filterMode_ = mode;
+    SetSamplerStateDesc(desc);
 }
 
 void Texture::SetAddressMode(TextureCoordinate coord, TextureAddressMode mode)
 {
-    addressModes_[coord] = mode;
-    parametersDirty_ = true;
+    auto desc = GetSamplerStateDesc();
+    desc.addressMode_[coord] = mode;
+    SetSamplerStateDesc(desc);
 }
 
 void Texture::SetAnisotropy(unsigned level)
 {
-    anisotropy_ = level;
-    parametersDirty_ = true;
+    auto desc = GetSamplerStateDesc();
+    desc.anisotropy_ = level;
+    SetSamplerStateDesc(desc);
 }
 
 void Texture::SetShadowCompare(bool enable)
 {
-    shadowCompare_ = enable;
-    parametersDirty_ = true;
-}
-
-void Texture::SetBorderColor(const Color& color)
-{
-    borderColor_ = color;
-    parametersDirty_ = true;
+    auto desc = GetSamplerStateDesc();
+    desc.shadowCompare_ = enable;
+    SetSamplerStateDesc(desc);
 }
 
 void Texture::SetLinear(bool linear)
 {
     linear_ = linear;
+}
+
+void Texture::SetSRGB(bool enable)
+{
+    requestedSRGB_ = enable;
 }
 
 void Texture::SetBackupTexture(Texture* texture)
@@ -133,23 +173,23 @@ int Texture::GetMipsToSkip(MaterialQuality quality) const
 
 int Texture::GetLevelWidth(unsigned level) const
 {
-    if (level > levels_)
+    if (level > GetLevels())
         return 0;
-    return Max(width_ >> level, 1);
+    return Max(GetWidth() >> level, 1);
 }
 
 int Texture::GetLevelHeight(unsigned level) const
 {
-    if (level > levels_)
+    if (level > GetLevels())
         return 0;
-    return Max(height_ >> level, 1);
+    return Max(GetHeight() >> level, 1);
 }
 
 int Texture::GetLevelDepth(unsigned level) const
 {
-    if (level > levels_)
+    if (level > GetLevels())
         return 0;
-    return Max(depth_ >> level, 1);
+    return Max(GetDepth() >> level, 1);
 }
 
 unsigned Texture::GetDataSize(int width, int height, int depth) const
@@ -159,10 +199,10 @@ unsigned Texture::GetDataSize(int width, int height, int depth) const
 
 unsigned Texture::GetComponents() const
 {
-    if (!width_ || IsCompressed())
+    if (!GetWidth() || IsCompressed())
         return 0;
     else
-        return GetRowDataSize(width_) / width_;
+        return GetRowDataSize(GetWidth()) / GetWidth();
 }
 
 void Texture::SetParameters(XMLFile* file)
@@ -191,9 +231,6 @@ void Texture::SetParameters(const XMLElement& element)
                 SetAddressMode(coordIndex, (TextureAddressMode)GetStringListIndex(mode.c_str(), addressModeNames, ADDRESS_WRAP));
             }
         }
-
-        if (name == "border")
-            SetBorderColor(paramElem.GetColor("color"));
 
         if (name == "filter")
         {
@@ -226,48 +263,53 @@ void Texture::SetParameters(const XMLElement& element)
     }
 }
 
-void Texture::SetParametersDirty()
+bool Texture::CreateGPU()
 {
-    parametersDirty_ = true;
-}
+    if (!RawTexture::CreateGPU())
+        return false;
 
-void Texture::SetLevelsDirty()
-{
-    if (usage_ == TEXTURE_RENDERTARGET && levels_ > 1)
-        levelsDirty_ = true;
-}
+    const bool isRTV = GetParams().flags_.Test(TextureFlag::BindRenderTarget);
+    const bool isDSV = GetParams().flags_.Test(TextureFlag::BindDepthStencil);
 
-unsigned Texture::CheckMaxLevels(int width, int height, unsigned requestedLevels)
-{
-    unsigned maxLevels = 1;
-    while (width > 1 || height > 1)
+    if (isRTV)
+        SubscribeToEvent(E_RENDERSURFACEUPDATE, &Texture::HandleRenderSurfaceUpdate);
+    else
+        UnsubscribeFromEvent(E_RENDERSURFACEUPDATE);
+
+    if (isRTV || isDSV)
     {
-        ++maxLevels;
-        width = width > 1 ? (width >> 1u) : 1;
-        height = height > 1 ? (height >> 1u) : 1;
+        auto renderSurfaceHandles = GetHandles().renderSurfaces_;
+        const unsigned numRenderSurfaces = renderSurfaceHandles.size();
+
+        if (renderSurfaces_.size() != numRenderSurfaces)
+        {
+            renderSurfaces_.clear();
+            for (unsigned i = 0; i < numRenderSurfaces; ++i)
+                renderSurfaces_.push_back(MakeShared<RenderSurface>(this, i));
+        }
+
+        for (unsigned i = 0; i < numRenderSurfaces; ++i)
+            renderSurfaces_[i]->Restore(renderSurfaceHandles[i]);
     }
 
-    if (!requestedLevels || maxLevels < requestedLevels)
-        return maxLevels;
-    else
-        return requestedLevels;
+    SetMemoryUse(CalculateMemoryUseGPU());
+    return true;
 }
 
-unsigned Texture::CheckMaxLevels(int width, int height, int depth, unsigned requestedLevels)
+void Texture::DestroyGPU()
 {
-    unsigned maxLevels = 1;
-    while (width > 1 || height > 1 || depth > 1)
-    {
-        ++maxLevels;
-        width = width > 1 ? (width >> 1u) : 1;
-        height = height > 1 ? (height >> 1u) : 1;
-        depth = depth > 1 ? (depth >> 1u) : 1;
-    }
+    for (RenderSurface* renderSurface : renderSurfaces_)
+        renderSurface->Invalidate();
 
-    if (!requestedLevels || maxLevels < requestedLevels)
-        return maxLevels;
-    else
-        return requestedLevels;
+    RawTexture::DestroyGPU();
+}
+
+bool Texture::TryRestore()
+{
+    auto* cache = GetSubsystem<ResourceCache>();
+    if (cache->Exists(GetName()))
+        return cache->ReloadResource(this);
+    return false;
 }
 
 void Texture::CheckTextureBudget(StringHash type)
@@ -282,6 +324,155 @@ void Texture::CheckTextureBudget(StringHash type)
     // Therefore free unused materials first
     if (textureUse > textureBudget)
         cache->ReleaseResources(Material::GetTypeStatic());
+}
+
+void Texture::HandleRenderSurfaceUpdate()
+{
+    auto* renderer = GetSubsystem<Renderer>();
+
+    for (RenderSurface* renderSurface : renderSurfaces_)
+    {
+        if (renderSurface->GetUpdateMode() == SURFACE_UPDATEALWAYS || renderSurface->IsUpdateQueued())
+        {
+            if (renderer)
+                renderer->QueueRenderSurface(renderSurface);
+            renderSurface->ResetUpdateQueued();
+        }
+    }
+}
+
+bool Texture::IsCompressed() const
+{
+    const auto& formatInfo = Diligent::GetTextureFormatAttribs(GetParams().format_);
+    return formatInfo.ComponentType == Diligent::COMPONENT_TYPE_COMPRESSED;
+}
+
+unsigned Texture::GetDataSize(int width, int height) const
+{
+    const auto& formatInfo = Diligent::GetTextureFormatAttribs(GetParams().format_);
+    return GetRowDataSize(width) * ((height + formatInfo.BlockHeight - 1) / formatInfo.BlockHeight);
+}
+
+unsigned Texture::GetRowDataSize(int width) const
+{
+    const auto& formatInfo = Diligent::GetTextureFormatAttribs(GetParams().format_);
+    return formatInfo.GetElementSize() * ((width + formatInfo.BlockWidth - 1) / formatInfo.BlockWidth);
+}
+
+bool Texture::GetSRGB() const
+{
+    return IsTextureFormatSRGB(GetParams().format_);
+}
+
+bool Texture::CreateForImage(const RawTextureParams& baseParams, Image* image)
+{
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    auto renderer = GetSubsystem<Renderer>();
+
+    const MaterialQuality quality = renderer ? renderer->GetTextureQuality() : QUALITY_HIGH;
+    const auto [mostDetailedLevel, numLevels] =
+        GetLevelsOffsetAndCount(*image, baseParams.numLevels_, GetMipsToSkip(quality));
+
+    mostDetailedLevel_ = mostDetailedLevel;
+
+    RawTextureParams params = baseParams;
+    params.size_ = GetMipLevelSize(image->GetSize(), mostDetailedLevel);
+    params.numLevels_ = numLevels;
+    params.format_ = ToHardwareFormat(image->GetGPUFormat(), renderDevice);
+    if (requestedSRGB_)
+        params.format_ = SetTextureFormatSRGB(params.format_);
+    return Create(params);
+}
+
+bool Texture::UpdateFromImage(unsigned arraySlice, Image* image)
+{
+    const TextureFormat internalFormat = GetFormat();
+    const TextureFormat imageFormat = image->GetGPUFormat();
+
+    if (!image->IsCompressed() && (SetTextureFormatSRGB(internalFormat, false) == imageFormat))
+    {
+        // If not compressed and not converted, upload image data as is
+        const Image* currentLevel = image;
+        SharedPtr<Image> currentLevelHolder;
+        for (unsigned level = 0; level < mostDetailedLevel_; ++level)
+        {
+            currentLevelHolder = currentLevel->GetNextLevel();
+            currentLevel = currentLevelHolder;
+        }
+
+        for (unsigned level = 0; level < GetLevels(); ++level)
+        {
+            Update(level, IntVector3::ZERO, currentLevel->GetSize(), arraySlice, currentLevel->GetData());
+            currentLevelHolder = currentLevel->GetNextLevel();
+            currentLevel = currentLevelHolder;
+        }
+    }
+    else if (SetTextureFormatSRGB(internalFormat, false) == TextureFormat::TEX_FORMAT_RGBA8_UNORM)
+    {
+        // RGBA8 is default format, use it if hardware format is not available.
+        URHO3D_LOGWARNING("Image '{}' is converted to RGBA8 format on upload to GPU", GetName());
+
+        for (unsigned level = 0; level < GetLevels(); ++level)
+        {
+            const auto decompressedLevel = image->GetDecompressedImageLevel(mostDetailedLevel_ + level);
+            if (!decompressedLevel)
+                return false;
+
+            Update(level, IntVector3::ZERO, decompressedLevel->GetSize(), arraySlice, decompressedLevel->GetData());
+        }
+    }
+    else
+    {
+        URHO3D_ASSERT(image->IsCompressed());
+
+        // Upload compressed image data as is
+        for (unsigned level = 0; level < GetLevels(); ++level)
+        {
+            const CompressedLevel imageLevel = image->GetCompressedLevel(mostDetailedLevel_ + level);
+            const IntVector3 levelSize{imageLevel.width_, imageLevel.height_, imageLevel.depth_};
+            Update(level, IntVector3::ZERO, levelSize, arraySlice, imageLevel.data_);
+        }
+    }
+
+    return true;
+}
+
+bool Texture::ReadToImage(unsigned arraySlice, unsigned level, Image* image)
+{
+    static const TextureFormat supportedFormats[] = {
+        TextureFormat::TEX_FORMAT_RGBA8_UNORM,
+        TextureFormat::TEX_FORMAT_BGRA8_UNORM,
+        TextureFormat::TEX_FORMAT_BGRX8_UNORM,
+    };
+
+    const auto imageFormat = SetTextureFormatSRGB(GetFormat(), false);
+    if (ea::find(ea::begin(supportedFormats), ea::end(supportedFormats), imageFormat) == ea::end(supportedFormats))
+    {
+        URHO3D_LOGWARNING("Unsupported texture format, can not convert to Image");
+        return false;
+    }
+
+    const unsigned numComponents = 4;
+    const IntVector3 levelSize = GetMipLevelSize(GetParams().size_, level);
+    image->SetSize(levelSize.x_, levelSize.y_, levelSize.z_, numComponents);
+
+    const unsigned numTexels = levelSize.x_ * levelSize.y_ * levelSize.z_;
+    unsigned char* imageData = image->GetData();
+    if (!Read(arraySlice, level, imageData, numTexels * numComponents))
+        return false;
+
+    if (imageFormat == TextureFormat::TEX_FORMAT_BGRA8_UNORM || imageFormat == TextureFormat::TEX_FORMAT_BGRX8_UNORM)
+    {
+        for (unsigned i = 0; i < numTexels; ++i)
+            ea::swap(imageData[i * numComponents], imageData[i * numComponents + 2]);
+    }
+    if (imageFormat == TextureFormat::TEX_FORMAT_BGRX8_UNORM)
+    {
+        for (unsigned i = 0; i < numTexels; ++i)
+            imageData[i * numComponents + 3] = 255;
+    }
+
+    return true;
 }
 
 }

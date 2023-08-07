@@ -36,8 +36,8 @@
 #include "../Graphics/Technique.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/VertexBuffer.h"
-#include "../Graphics/View.h"
 #include "../IO/Log.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../Scene/Node.h"
 #include "../Scene/Scene.h"
@@ -145,7 +145,7 @@ void Renderer2D::UpdateBatchesDelayed(const FrameInfo& frame)
         bool largeIndices = (indexCount * 4 / 6) > 0xffff;
         indexBuffer_->SetSize(indexCount, largeIndices);
 
-        void* buffer = indexBuffer_->Lock(0, indexCount, true);
+        void* buffer = indexBuffer_->Map();
         if (buffer)
         {
             unsigned quadCount = indexCount / 6;
@@ -180,7 +180,7 @@ void Renderer2D::UpdateBatchesDelayed(const FrameInfo& frame)
                 }
             }
 
-            indexBuffer_->Unlock();
+            indexBuffer_->Unmap();
         }
         else
         {
@@ -196,12 +196,14 @@ void Renderer2D::UpdateBatchesDelayed(const FrameInfo& frame)
     {
         unsigned vertexCount = viewBatchInfo.vertexCount_;
         VertexBuffer* vertexBuffer = viewBatchInfo.vertexBuffer_;
+        vertexBuffer->SetDebugName("Renderer2D Batches");
+
         if (vertexBuffer->GetVertexCount() < vertexCount)
             vertexBuffer->SetSize(vertexCount, MASK_VERTEX2D, true);
 
         if (vertexCount)
         {
-            auto* dest = reinterpret_cast<Vertex2D*>(vertexBuffer->Lock(0, vertexCount, true));
+            auto* dest = reinterpret_cast<Vertex2D*>(vertexBuffer->Map());
             if (dest)
             {
                 const ea::vector<const SourceBatch2D*>& sourceBatches = viewBatchInfo.sourceBatches_;
@@ -213,7 +215,7 @@ void Renderer2D::UpdateBatchesDelayed(const FrameInfo& frame)
                     dest += vertices.size();
                 }
 
-                vertexBuffer->Unlock();
+                vertexBuffer->Unmap();
             }
             else
                 URHO3D_LOGERROR("Failed to lock vertex buffer");
@@ -298,24 +300,9 @@ SharedPtr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMode ble
 
     newMaterial->SetTechnique(0, techIt->second.Get());
     newMaterial->SetName(texture->GetName() + "_" + blendModeNames[blendMode]);
-    newMaterial->SetTexture(TU_DIFFUSE, texture);
+    newMaterial->SetTexture(ShaderResources::Albedo, texture);
 
     return newMaterial;
-}
-
-void CheckDrawableVisibilityWork(const WorkItem* item, unsigned threadIndex)
-{
-    URHO3D_PROFILE("CheckDrawableVisibilityWork");
-    auto* renderer = reinterpret_cast<Renderer2D*>(item->aux_);
-    auto** start = reinterpret_cast<Drawable2D**>(item->start_);
-    auto** end = reinterpret_cast<Drawable2D**>(item->end_);
-
-    while (start != end)
-    {
-        Drawable2D* drawable = *start++;
-        if (renderer->CheckVisibility(drawable))
-            drawable->MarkInView(renderer->frame_);
-    }
 }
 
 void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventData)
@@ -326,9 +313,8 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
     if (GetScene() != eventData[P_SCENE].GetPtr())
         return;
 
-    auto view = static_cast<View*>(eventData[P_VIEW].GetPtr());
     auto renderPipelineView = static_cast<RenderPipelineView*>(eventData[P_RENDERPIPELINEVIEW].GetPtr());
-    frame_ = renderPipelineView ? renderPipelineView->GetFrameInfo() : view->GetFrameInfo();
+    frame_ = renderPipelineView->GetFrameInfo();
 
     URHO3D_PROFILE("UpdateRenderer2D");
 
@@ -341,29 +327,11 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
         URHO3D_PROFILE("CheckDrawableVisibility");
 
         auto* queue = GetSubsystem<WorkQueue>();
-        int numWorkItems = queue->GetNumThreads() + 1; // Worker threads + main thread
-        int drawablesPerItem = drawables_.size() / numWorkItems;
-
-        auto start = drawables_.begin();
-        for (int i = 0; i < numWorkItems; ++i)
+        ForEachParallel(queue, drawables_, [this](unsigned, Drawable2D* drawable)
         {
-            SharedPtr<WorkItem> item = queue->GetFreeItem();
-            item->priority_ = M_MAX_UNSIGNED;
-            item->workFunction_ = CheckDrawableVisibilityWork;
-            item->aux_ = this;
-
-            auto end = drawables_.end();
-            if (i < numWorkItems - 1 && end - start > drawablesPerItem)
-                end = start + drawablesPerItem;
-
-            item->start_ = &(*start);
-            item->end_ = &(*end);
-            queue->AddWorkItem(item);
-
-            start = end;
-        }
-
-        queue->Complete(M_MAX_UNSIGNED);
+            if (CheckVisibility(drawable))
+                drawable->MarkInView(frame_);
+        });
     }
 
     ViewBatchInfo2D& viewBatchInfo = viewBatchInfos_[camera];

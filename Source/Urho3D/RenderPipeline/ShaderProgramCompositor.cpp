@@ -23,7 +23,6 @@
 #include "../Precompiled.h"
 
 #include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/Renderer.h"
 #include "../IO/Log.h"
 #include "../RenderPipeline/CameraProcessor.h"
@@ -31,6 +30,7 @@
 #include "../RenderPipeline/LightProcessor.h"
 #include "../RenderPipeline/PipelineStateBuilder.h"
 #include "../RenderPipeline/SceneProcessor.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../RenderPipeline/ShadowMapAllocator.h"
 
 #include <EASTL/span.h>
@@ -48,13 +48,22 @@ int GetTextureColorSpaceHint(bool linearInput, bool srgbTexture)
     return static_cast<int>(linearInput) + static_cast<int>(srgbTexture);
 }
 
+void AddTextureDefine(ShaderProgramDesc& result, ShaderType shaderType, Material* material, const ea::string& name)
+{
+    if (Texture* texture = material->GetTexture(name))
+    {
+        const int hint = GetTextureColorSpaceHint(texture->GetLinear(), texture->GetSRGB());
+        if (hint > 1)
+            URHO3D_LOGWARNING("Texture {} cannot be both sRGB and Linear", material->GetName());
+        result.AddShaderDefines(shaderType, Format("URHO3D_TEXTURE_{}={}", name.to_upper(), ea::min(1, hint) + 1));
+    }
+}
+
 }
 
 ShaderProgramCompositor::ShaderProgramCompositor(Context* context)
     : Object(context)
 {
-    auto graphics = GetSubsystem<Graphics>();
-    constantBuffersSupported_ = graphics->GetCaps().constantBuffersSupported_;
 }
 
 void ShaderProgramCompositor::SetSettings(const ShaderProgramCompositorSettings& settings)
@@ -78,7 +87,9 @@ void ShaderProgramCompositor::ProcessUserBatch(ShaderProgramDesc& result, Drawab
     ApplyGeometryVertexDefines(result, flags, geometry, geometryType);
 
     ApplyLayoutVertexAndCommonDefinesForUserPass(result, geometry->GetVertexBuffer(0));
-    ApplyMaterialPixelDefinesForUserPass(result, material);
+    ApplyMaterialPixelDefinesForUserPass(result, material, pass);
+
+    ApplyNormalTangentSpaceDefines(result, geometryType, geometry->GetVertexBuffer(0));
 
     if (isCameraClipped_)
         result.AddShaderDefines(VS, "URHO3D_CLIP_PLANE");
@@ -129,9 +140,6 @@ void ShaderProgramCompositor::SetupShaders(ShaderProgramDesc& result, Pass* pass
 void ShaderProgramCompositor::ApplyCommonDefines(ShaderProgramDesc& result,
     DrawableProcessorPassFlags flags, Pass* pass) const
 {
-    if (constantBuffersSupported_)
-        result.AddCommonShaderDefines("URHO3D_USE_CBUFFERS");
-
     if (isCameraReversed_)
         result.AddCommonShaderDefines("URHO3D_CAMERA_REVERSED");
 
@@ -195,6 +203,9 @@ void ShaderProgramCompositor::ApplyGeometryVertexDefines(ShaderProgramDesc& resu
         result.AddShaderDefines(VS, geometryDefines[geometryTypeIndex]);
     else
         result.AddShaderDefines(VS, Format("URHO3D_GEOMETRY_CUSTOM={} ", geometryTypeIndex));
+
+    if (geometryType == GEOM_SKINNED)
+        result.AddShaderDefines(VS, Format("URHO3D_MAXBONES={} ", Graphics::GetMaxBones()));
 }
 
 void ShaderProgramCompositor::ApplyPixelLightPixelAndCommonDefines(ShaderProgramDesc& result,
@@ -227,6 +238,16 @@ void ShaderProgramCompositor::ApplyPixelLightPixelAndCommonDefines(ShaderProgram
     }
 }
 
+void ShaderProgramCompositor::ApplyNormalTangentSpaceDefines(
+    ShaderProgramDesc& result, GeometryType geometryType, VertexBuffer* vertexBuffer) const
+{
+    const auto [hasNormal, hasTangent] = IsNormalAndTangentAvailable(geometryType, vertexBuffer);
+    if (hasNormal)
+        result.AddCommonShaderDefines("URHO3D_VERTEX_NORMAL_AVAILABLE");
+    if (hasTangent)
+        result.AddCommonShaderDefines("URHO3D_VERTEX_TANGENT_AVAILABLE");
+}
+
 void ShaderProgramCompositor::ApplyLayoutVertexAndCommonDefinesForUserPass(
     ShaderProgramDesc& result, VertexBuffer* vertexBuffer) const
 {
@@ -243,37 +264,13 @@ void ShaderProgramCompositor::ApplyLayoutVertexAndCommonDefinesForUserPass(
         result.AddCommonShaderDefines("URHO3D_VERTEX_HAS_COLOR");
 }
 
-void ShaderProgramCompositor::ApplyMaterialPixelDefinesForUserPass(ShaderProgramDesc& result, Material* material) const
+void ShaderProgramCompositor::ApplyMaterialPixelDefinesForUserPass(
+    ShaderProgramDesc& result, Material* material, Pass* pass) const
 {
-    if (Texture* diffuseTexture = material->GetTexture(TU_DIFFUSE))
-    {
-        result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_DIFFUSE");
-        const int hint = GetTextureColorSpaceHint(diffuseTexture->GetLinear(), diffuseTexture->GetSRGB());
-        if (hint > 1)
-            URHO3D_LOGWARNING("Texture {} cannot be both sRGB and Linear", diffuseTexture->GetName());
-        result.AddShaderDefines(PS, Format("URHO3D_MATERIAL_DIFFUSE_HINT={}", ea::min(1, hint)));
-    }
-
-    if (material->GetTexture(TU_NORMAL))
-        result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_NORMAL");
-
-    if (material->GetTexture(TU_SPECULAR))
-        result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_SPECULAR");
-
-    if (Texture* envTexture = material->GetTexture(TU_ENVIRONMENT))
-    {
-        if (envTexture->IsInstanceOf<Texture2D>())
-            result.AddCommonShaderDefines("URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT");
-    }
-
-    if (Texture* emissiveTexture = material->GetTexture(TU_EMISSIVE))
-    {
-        result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_EMISSIVE");
-        const int hint = GetTextureColorSpaceHint(emissiveTexture->GetLinear(), emissiveTexture->GetSRGB());
-        if (hint > 1)
-            URHO3D_LOGWARNING("Texture {} cannot be both sRGB and Linear", emissiveTexture->GetName());
-        result.AddShaderDefines(PS, Format("URHO3D_MATERIAL_EMISSIVE_HINT={}", ea::min(1, hint)));
-    }
+    for (const ea::string& name : pass->GetVertexTextureDefines())
+        AddTextureDefine(result, VS, material, name);
+    for (const ea::string& name : pass->GetPixelTextureDefines())
+        AddTextureDefine(result, PS, material, name);
 }
 
 void ShaderProgramCompositor::ApplyAmbientLightingVertexAndCommonDefinesForUserPass(ShaderProgramDesc& result,
@@ -288,12 +285,8 @@ void ShaderProgramCompositor::ApplyAmbientLightingVertexAndCommonDefinesForUserP
     if (drawable->GetGlobalIlluminationType() == GlobalIlluminationType::UseLightMap)
         result.AddCommonShaderDefines("URHO3D_HAS_LIGHTMAP");
 
-#ifdef DESKTOP_GRAPHICS
-#ifndef GL_ES_VERSION_2_0
     if (drawable->GetReflectionMode() >= ReflectionMode::BlendProbes)
         result.AddCommonShaderDefines("URHO3D_BLEND_REFLECTIONS");
-#endif
-#endif
 
     static const ea::string ambientModeDefines[] = {
         "URHO3D_AMBIENT_CONSTANT ",
@@ -307,6 +300,11 @@ void ShaderProgramCompositor::ApplyAmbientLightingVertexAndCommonDefinesForUserP
 void ShaderProgramCompositor::ApplyDefinesForShadowPass(ShaderProgramDesc& result,
     Light* light, VertexBuffer* vertexBuffer, Material* material, Pass* pass) const
 {
+    for (const ea::string& name : pass->GetVertexTextureDefines())
+        AddTextureDefine(result, VS, material, name);
+    for (const ea::string& name : pass->GetPixelTextureDefines())
+        AddTextureDefine(result, PS, material, name);
+
     if (vertexBuffer->HasElement(SEM_NORMAL))
         result.AddShaderDefines(VS, "URHO3D_VERTEX_HAS_NORMAL");
 
@@ -317,8 +315,6 @@ void ShaderProgramCompositor::ApplyDefinesForShadowPass(ShaderProgramDesc& resul
     {
         if (vertexBuffer->HasElement(SEM_TEXCOORD, 0))
             result.AddShaderDefines(VS, "URHO3D_VERTEX_HAS_TEXCOORD0");
-        if (Texture* diffuseTexture = material->GetTexture(TU_DIFFUSE))
-            result.AddShaderDefines(PS, "URHO3D_MATERIAL_HAS_DIFFUSE");
     }
 
     result.AddCommonShaderDefines("URHO3D_SHADOW_PASS");
@@ -343,6 +339,27 @@ bool ShaderProgramCompositor::IsInstancingUsed(
     return !flags.Test(DrawableProcessorPassFlag::DisableInstancing)
         && settings_.instancingBuffer_.enableInstancing_
         && geometry->IsInstanced(geometryType);
+}
+
+ea::pair<bool, bool> ShaderProgramCompositor::IsNormalAndTangentAvailable(
+    GeometryType geometryType, VertexBuffer* vertexBuffer) const
+{
+    switch (geometryType)
+    {
+    case GEOM_BILLBOARD:
+    case GEOM_DIRBILLBOARD:
+    case GEOM_TRAIL_FACE_CAMERA:
+    case GEOM_TRAIL_BONE:
+        return {true, true};
+    case GEOM_STATIC:
+    case GEOM_SKINNED:
+    case GEOM_INSTANCED:
+    case GEOM_STATIC_NOINSTANCING:
+        return {vertexBuffer->HasElement(SEM_NORMAL), vertexBuffer->HasElement(SEM_TANGENT)};
+    default:
+        // This is just an assumption to prevent disabled normal mapping in case of unknown geometry type
+        return {true, true};
+    }
 }
 
 }

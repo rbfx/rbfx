@@ -128,8 +128,7 @@ public:
     Quaternion GetCurrentChainRotation() const { return currentChainRotation_; }
 
 private:
-    void RotateChain(const Quaternion& chainRotation);
-    void RotateSegmentsToTarget(const Vector3& newPos1, const Vector3& newPos2);
+    void ResetChainToOriginal();
 
     IKNodeSegment segments_[2];
     Quaternion currentChainRotation_;

@@ -57,6 +57,36 @@ private:
     Vector3 delta_{Vector3::ZERO};
 };
 
+/// Move by 3D or 2D offset action. Target should have attribute "Position" of type Vector3, Vector2, IntVector2 or
+/// IntVector3.
+class URHO3D_API MoveByQuadratic : public MoveBy
+{
+    URHO3D_OBJECT(MoveByQuadratic, MoveBy)
+public:
+    /// Construct.
+    explicit MoveByQuadratic(Context* context);
+
+    /// Set control point delta.
+    void SetControlDelta(const Vector3& delta);
+
+    /// Get control point delta.
+    const Vector3& GetControlDelta() const { return control_; }
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
+
+private:
+    Vector3 control_{Vector3::ZERO};
+};
+
+
 /// Move instantly by 3D offset action. Target should have attribute "Position" of type Vector3 or IntVector3.
 class URHO3D_API JumpBy : public AttributeAction
 {

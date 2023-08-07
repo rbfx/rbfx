@@ -37,6 +37,7 @@ namespace Urho3D
 CameraProcessor::CameraProcessor(Context* context)
     : Object(context)
 {
+    graphics_ = GetSubsystem<Graphics>();
 }
 
 void CameraProcessor::SetCameras(ea::span<Camera* const> cameras)
@@ -85,14 +86,10 @@ void CameraProcessor::UpdateCamera(const FrameInfo& frameInfo, Camera* camera)
 
 void CameraProcessor::OnUpdateBegin(const FrameInfo& frameInfo)
 {
-    flipCameraForRendering_ = false;
-
-#ifdef URHO3D_OPENGL
     // On OpenGL, flip the projection if rendering to a texture so that the texture can be addressed in the same way
     // as a render texture produced on Direct3D
-    if (frameInfo.renderTarget_)
-        flipCameraForRendering_ = true;
-#endif
+    const bool isOpenGL = graphics_->GetRenderBackend() == RenderBackend::OpenGL;
+    flipCameraForRendering_ = frameInfo.renderTarget_ && isOpenGL;
 
     for (Camera* camera : cameras_)
     {

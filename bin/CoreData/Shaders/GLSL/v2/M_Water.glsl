@@ -5,7 +5,6 @@
     #define URHO3D_SURFACE_NEED_BACKGROUND_DEPTH
 #endif
 #define URHO3D_SURFACE_NEED_NORMAL
-#define URHO3D_SURFACE_NEED_NORMAL_IN_TANGENT_SPACE
 #define URHO3D_CUSTOM_MATERIAL_UNIFORMS
 
 #ifndef NORMALMAP
@@ -16,8 +15,14 @@
     #define ENVCUBEMAP
 #endif
 
+#define URHO3D_MATERIAL_ALBEDO URHO3D_TEXTURE_ALBEDO
+#define URHO3D_MATERIAL_NORMAL URHO3D_TEXTURE_NORMAL
+#define URHO3D_MATERIAL_PROPERTIES URHO3D_TEXTURE_PROPERTIES
+#define URHO3D_MATERIAL_EMISSION URHO3D_TEXTURE_EMISSION
+
 #include "_Config.glsl"
 #include "_Uniforms.glsl"
+#include "_DefaultSamplers.glsl"
 
 UNIFORM_BUFFER_BEGIN(4, Material)
     DEFAULT_MATERIAL_UNIFORMS
@@ -31,7 +36,7 @@ UNIFORM_BUFFER_END(4, Material)
 void main()
 {
     VertexTransform vertexTransform = GetVertexTransform();
-    FillVertexOutputs(vertexTransform);
+    Vertex_SetAll(vertexTransform, cNormalScale, cUOffset, cVOffset, cLMOffset);
     vTexCoord += cElapsedTime * cNoiseSpeed;
 }
 #endif
@@ -41,16 +46,19 @@ void main()
 {
     SurfaceData surfaceData;
 
-    FillSurfaceCommon(surfaceData);
-    FillSurfaceNormal(surfaceData);
-    FillSurfaceMetallicRoughnessOcclusion(surfaceData);
-    FillSurfaceReflectionColor(surfaceData);
+    Surface_SetCommon(surfaceData);
+    Surface_SetAmbient(surfaceData, sEmission, vTexCoord2);
+    Surface_SetNormal(surfaceData, vNormal, sNormal, vTexCoord, vTangent, vBitangentXY);
+    Surface_SetPhysicalProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sProperties, vTexCoord);
+    Surface_SetLegacyProperties(surfaceData, cMatSpecColor.a, sEmission, vTexCoord);
+    Surface_SetCubeReflection(surfaceData, sReflection0, sReflection1, vReflectionVec, vWorldPos);
+    Surface_SetPlanarReflection(surfaceData, sReflection0, cReflectionPlaneX, cReflectionPlaneY);
 
     // Apply noise to screen position used for background sampling
     surfaceData.screenPos += surfaceData.normalInTangentSpace.xy * cNoiseStrength;
 
 #ifndef URHO3D_ADDITIVE_BLENDING
-    FillSurfaceBackground(surfaceData);
+    Surface_SetBackground(surfaceData, sEmission, sDepthBuffer);
 #endif
 
     // Water doesn't accept diffuse lighting, set albedo to zero

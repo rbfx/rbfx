@@ -30,19 +30,17 @@ namespace Urho3DNet.Tests
         [Fact]
         public async Task AddAndRemoveDrawable()
         {
-            await ApplicationRunner.RunAsync(app =>
-            {
-                using var outline = SharedPtr.MakeShared<OutlineGroup>(app.Context);
-                Assert.NotNull(outline.Ptr);
-                using var staticModel = SharedPtr.MakeShared<StaticModel>(app.Context);
-                Assert.False(outline.Ptr.HasDrawable(staticModel));
-                Assert.False(outline.Ptr.RemoveDrawable(staticModel));
-                Assert.True(outline.Ptr.AddDrawable(staticModel));
-                Assert.True(outline.Ptr.HasDrawable(staticModel));
-                Assert.False(outline.Ptr.AddDrawable(staticModel));
-                Assert.True(outline.Ptr.RemoveDrawable(staticModel));
-                Assert.False(outline.Ptr.HasDrawable(staticModel));
-            });
+            await RbfxTestFramework.Context.ToMainThreadAsync();
+            using var outline = SharedPtr.MakeShared<OutlineGroup>(RbfxTestFramework.Context);
+            Assert.NotNull(outline.Ptr);
+            using var staticModel = SharedPtr.MakeShared<StaticModel>(RbfxTestFramework.Context);
+            Assert.False(outline.Ptr.HasDrawable(staticModel));
+            Assert.False(outline.Ptr.RemoveDrawable(staticModel));
+            Assert.True(outline.Ptr.AddDrawable(staticModel));
+            Assert.True(outline.Ptr.HasDrawable(staticModel));
+            Assert.False(outline.Ptr.AddDrawable(staticModel));
+            Assert.True(outline.Ptr.RemoveDrawable(staticModel));
+            Assert.False(outline.Ptr.HasDrawable(staticModel));
         }
     }
 }

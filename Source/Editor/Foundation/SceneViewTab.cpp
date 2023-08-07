@@ -53,7 +53,7 @@ namespace
 {
 
 const auto Hotkey_RewindSimulation = EditorHotkey{"SceneViewTab.RewindSimulation"}.Press(KEY_UNKNOWN);
-const auto Hotkey_TogglePaused = EditorHotkey{"SceneViewTab.TogglePaused"}.Press(KEY_PAUSE);
+const auto Hotkey_TogglePaused = EditorHotkey{"SceneViewTab.TogglePaused"}.Press(KEY_PAUSE).MaybeMouse();
 
 const auto Hotkey_Cut = EditorHotkey{"SceneViewTab.Cut"}.Ctrl().Press(KEY_X);
 const auto Hotkey_Copy = EditorHotkey{"SceneViewTab.Copy"}.Ctrl().Press(KEY_C);
@@ -217,8 +217,8 @@ SceneViewTab::SceneViewTab(Context* context)
     BindHotkey(Hotkey_CreateSiblingNode, &SceneViewTab::CreateNodeNextToSelection);
     BindHotkey(Hotkey_CreateChildNode, &SceneViewTab::CreateNodeInSelection);
 
-    SubscribeToEvent(E_BEGINPLUGINRELOAD, [this](StringHash, VariantMap&) { BeginPluginReload(); });
-    SubscribeToEvent(E_ENDPLUGINRELOAD, [this](StringHash, VariantMap&) { EndPluginReload(); });
+    SubscribeToEvent(E_BEGINPLUGINRELOAD, &SceneViewTab::BeginPluginReload);
+    SubscribeToEvent(E_ENDPLUGINRELOAD, &SceneViewTab::EndPluginReload);
 }
 
 SceneViewTab::~SceneViewTab()

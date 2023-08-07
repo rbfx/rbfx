@@ -6,10 +6,16 @@
 #define URHO3D_SURFACE_VOLUMETRIC
 #define URHO3D_CUSTOM_MATERIAL_UNIFORMS
 
+#define URHO3D_MATERIAL_ALBEDO URHO3D_TEXTURE_ALBEDO
+#define URHO3D_MATERIAL_NORMAL URHO3D_TEXTURE_NORMAL
+#define URHO3D_MATERIAL_PROPERTIES URHO3D_TEXTURE_PROPERTIES
+#define URHO3D_MATERIAL_EMISSION URHO3D_TEXTURE_EMISSION
+
 vec2 vTexCoord;
 
 #include "_Config.glsl"
 #include "_Uniforms.glsl"
+#include "_DefaultSamplers.glsl"
 
 UNIFORM_BUFFER_BEGIN(4, Material)
     DEFAULT_MATERIAL_UNIFORMS
@@ -30,7 +36,7 @@ VERTEX_OUTPUT_HIGHP(vec3 vFarRay)
 void main()
 {
     VertexTransform vertexTransform = GetVertexTransform();
-    FillVertexOutputs(vertexTransform);
+    Vertex_SetAll(vertexTransform, cNormalScale, cUOffset, cVOffset, cLMOffset);
     vToModelSpace = inverse(cModel);
     vScreenPos = GetDeferredScreenPos(gl_Position);
     vFarRay = GetDeferredFarRay(gl_Position);
@@ -52,8 +58,9 @@ void main()
 {
     SurfaceData surfaceData;
 
-    FillSurfaceCommon(surfaceData);
-    FillSurfaceBackgroundDepth(surfaceData);
+    Surface_SetCommon(surfaceData);
+    Surface_SetAmbient(surfaceData, sEmission, vTexCoord2);
+    Surface_SetBackgroundDepth(surfaceData, sDepthBuffer);
 
     vec4 worldPos = vec4(GetDeferredWorldPos(surfaceData.backgroundDepth) + cCameraPos, 1.0);
     vec4 modelSpace = worldPos * vToModelSpace;
@@ -67,7 +74,7 @@ void main()
 
     // Get normal
     #ifdef NORMALMAP
-        vec3 localNormal = DecodeNormal(texture2D(sNormalMap, vTexCoord.xy)) * vec3(1.0, 1.0, -1.0);
+        vec3 localNormal = DecodeNormal(texture(sNormal, vTexCoord.xy)) * vec3(1.0, 1.0, -1.0);
         vec4 normalInModelSpace = vToModelSpace * vec4(localNormal, 0.0);
 
         surfaceData.normal = normalize(normalInModelSpace.xyz);
@@ -75,14 +82,19 @@ void main()
         surfaceData.normal = normalize((vec4(0.0, 0.0, -1.0, 0.0) * vToModelSpace).xyz);
     #endif
 
-    FillSurfaceMetallicRoughnessOcclusion(surfaceData);
-    FillSurfaceReflectionColor(surfaceData);
-    FillSurfaceAlbedoSpecular(surfaceData);
-    FillSurfaceEmission(surfaceData);
+    Surface_SetPhysicalProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sProperties, vTexCoord);
+    Surface_SetLegacyProperties(surfaceData, cMatSpecColor.a, sEmission, vTexCoord);
+    Surface_SetCubeReflection(surfaceData, sReflection0, sReflection1, vReflectionVec, vWorldPos);
+    Surface_SetPlanarReflection(surfaceData, sReflection0, cReflectionPlaneX, cReflectionPlaneY);
+    Surface_SetBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sAlbedo, vTexCoord, URHO3D_MATERIAL_ALBEDO);
+    Surface_SetBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sProperties, vTexCoord);
+    Surface_SetAlbedoSpecular(surfaceData);
+    Surface_SetEmission(surfaceData, cMatEmissiveColor, sEmission, vTexCoord, URHO3D_MATERIAL_EMISSION);
+    Surface_ApplySoftFadeOut(surfaceData, vWorldDepth, cFadeOffsetScale);
 
     // TODO: Make configurable
     half3 surfaceColor = GetSurfaceColor(surfaceData);
-    half surfaceAlpha = GetSurfaceAlpha(surfaceData) * smoothstep(0.5, 0.45, abs(modelSpace.z));
+    half surfaceAlpha = surfaceData.albedo.a * smoothstep(0.5, 0.45, abs(modelSpace.z));
     if (surfaceAlpha < 1.0/255.0)
     {
         discard;

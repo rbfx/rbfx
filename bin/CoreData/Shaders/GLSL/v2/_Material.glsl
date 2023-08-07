@@ -13,7 +13,8 @@
 #endif
 
 #include "_Uniforms.glsl"
-#include "_Samplers.glsl"
+#include "_InternalSamplers.glsl"
+#include "_SamplerUtils.glsl"
 #include "_VertexLayout.glsl"
 
 #include "_VertexTransform.glsl"

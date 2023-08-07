@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +22,6 @@
 //
 
 #include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Light.h>
@@ -31,19 +31,20 @@
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/Terrain.h>
 #include <Urho3D/Graphics/Zone.h>
-#include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Input/Input.h>
+#include <Urho3D/Input/MoveAndOrbitController.h>
+#include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Physics/CollisionShape.h>
 #include <Urho3D/Physics/Constraint.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Scene/PrefabReference.h>
+#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
-#include <Urho3D/Scene/PrefabReference.h>
-#include <Urho3D/Scene/PrefabResource.h>
 
 #include "RaycastVehicleDemo.h"
 #include "Vehicle.h"
@@ -148,6 +149,10 @@ void RaycastVehicleDemo::CreateVehicle()
     vehicleNode->SetPosition(Vector3(0.0f, 25.0f, 0.0f));
     // Create the vehicle logic component
     vehicle_ = vehicleNode->CreateComponent<Vehicle2>();
+    const auto moveAndOrbit = vehicleNode->CreateComponent<MoveAndOrbitController>();
+    moveAndOrbit->LoadInputMap("Input/MoveAndOrbit.inputmap");
+    vehicle_->SetInputMap(moveAndOrbit->GetInputMap());
+
     // Create the rendering and physics components
     vehicle_->Init();
 }
@@ -190,37 +195,6 @@ void RaycastVehicleDemo::Update(float timeStep)
         // Get movement controls and assign them to the vehicle component. If UI has a focused element, clear controls
         if (!ui->GetFocusElement())
         {
-            vehicle_->controls_.Set(CTRL_FORWARD, input->GetKeyDown(KEY_W));
-            vehicle_->controls_.Set(CTRL_BACK, input->GetKeyDown(KEY_S));
-            vehicle_->controls_.Set(CTRL_LEFT, input->GetKeyDown(KEY_A));
-            vehicle_->controls_.Set(CTRL_RIGHT, input->GetKeyDown(KEY_D));
-            vehicle_->controls_.Set(CTRL_BRAKE, input->GetKeyDown(KEY_F));
-            // Add yaw & pitch from the mouse motion or touch input. Used only for the camera, does not affect motion
-            if (touchEnabled_)
-            {
-                for (unsigned i = 0; i < input->GetNumTouches(); ++i)
-                {
-                    TouchState* state = input->GetTouch(i);
-                    if (!state->touchedElement_) // Touch on empty space
-                    {
-                        auto* camera = cameraNode_->GetComponent<Camera>();
-                        if (!camera)
-                        {
-                            return;
-                        }
-                        auto* graphics = GetSubsystem<Graphics>();
-                        vehicle_->controls_.yaw_ += TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.x_;
-                        vehicle_->controls_.pitch_ += TOUCH_SENSITIVITY * camera->GetFov() / graphics->GetHeight() * state->delta_.y_;
-                    }
-                }
-            }
-            else
-            {
-                vehicle_->controls_.yaw_ += (float)input->GetMouseMoveX() * YAW_SENSITIVITY;
-                vehicle_->controls_.pitch_ += (float)input->GetMouseMoveY() * YAW_SENSITIVITY;
-            }
-            // Limit pitch
-            vehicle_->controls_.pitch_ = Clamp(vehicle_->controls_.pitch_, 0.0f, 80.0f);
             // Check for loading / saving the scene
             if (input->GetKeyPress(KEY_F5))
             {
@@ -242,10 +216,6 @@ void RaycastVehicleDemo::Update(float timeStep)
                 }
             }
         }
-        else
-        {
-            vehicle_->controls_.Set(CTRL_FORWARD | CTRL_BACK | CTRL_LEFT | CTRL_RIGHT | CTRL_BRAKE, false);
-        }
     }
 }
 
@@ -258,8 +228,8 @@ void RaycastVehicleDemo::HandlePostUpdate(StringHash eventType, VariantMap& even
     Node* vehicleNode = vehicle_->GetNode();
     // Physics update has completed. Position camera behind vehicle
     Quaternion dir(vehicleNode->GetRotation().YawAngle(), Vector3::UP);
-    dir = dir * Quaternion(vehicle_->controls_.yaw_, Vector3::UP);
-    dir = dir * Quaternion(vehicle_->controls_.pitch_, Vector3::RIGHT);
+    dir = dir * Quaternion(vehicle_->GetYaw(), Vector3::UP);
+    dir = dir * Quaternion(vehicle_->GetPitch(), Vector3::RIGHT);
     Vector3 cameraTargetPos =
         vehicleNode->GetPosition() - dir * Vector3(0.0f, 0.0f, CAMERA_DISTANCE);
     Vector3 cameraStartPos = vehicleNode->GetPosition();

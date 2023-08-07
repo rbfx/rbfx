@@ -1601,7 +1601,7 @@
 					<attribute name="Forearm Bone Name" value="LeftForeArm" />
 					<attribute name="Hand Bone Name" value="LeftHand" />
 					<attribute name="Target Name" value="LeftHand_Target" />
-					<attribute name="Shoulder Weight" value="0.4 0.1" />
+					<attribute name="Shoulder Weight" value="0.2 0.1" />
 					<attribute name="Bend Direction" value="0 0 -1" />
 				</component>
 				<component type="IKArmSolver" id="414">
@@ -1610,7 +1610,7 @@
 					<attribute name="Forearm Bone Name" value="RightForeArm" />
 					<attribute name="Hand Bone Name" value="RightHand" />
 					<attribute name="Target Name" value="RightHand_Target" />
-					<attribute name="Shoulder Weight" value="0.4 0.1" />
+					<attribute name="Shoulder Weight" value="0.2 0.1" />
 					<attribute name="Bend Direction" value="0 0 -1" />
 				</component>
 				<component type="IKHeadSolver" id="416">
@@ -2443,7 +2443,7 @@
 				<attribute name="Forearm Bone Name" value="LeftForeArm" />
 				<attribute name="Hand Bone Name" value="LeftHand" />
 				<attribute name="Target Name" value="LeftHand_Target" />
-				<attribute name="Shoulder Weight" value="0.4 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<component type="IKArmSolver" id="178">
@@ -2452,7 +2452,7 @@
 				<attribute name="Forearm Bone Name" value="RightForeArm" />
 				<attribute name="Hand Bone Name" value="RightHand" />
 				<attribute name="Target Name" value="RightHand_Target" />
-				<attribute name="Shoulder Weight" value="0.4 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<component type="IKHeadSolver" id="397">
@@ -3322,7 +3322,7 @@
 				<attribute name="Forearm Bone Name" value="LeftForeArm" />
 				<attribute name="Hand Bone Name" value="LeftHand" />
 				<attribute name="Target Name" value="LeftHand_Target" />
-				<attribute name="Shoulder Weight" value="0.4 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<component type="IKArmSolver" id="491">
@@ -3331,7 +3331,7 @@
 				<attribute name="Forearm Bone Name" value="RightForeArm" />
 				<attribute name="Hand Bone Name" value="RightHand" />
 				<attribute name="Target Name" value="RightHand_Target" />
-				<attribute name="Shoulder Weight" value="0.4 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<component type="IKHeadSolver" id="492">
@@ -18560,7 +18560,7 @@
 				<attribute name="Forearm Bone Name" value="RightForeArm" />
 				<attribute name="Hand Bone Name" value="RightHand" />
 				<attribute name="Target Name" value="Target" />
-				<attribute name="Shoulder Weight" value="0.5 0.2" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<node id="59">
@@ -19268,7 +19268,7 @@
 				<attribute name="Forearm Bone Name" value="LeftForeArm" />
 				<attribute name="Hand Bone Name" value="LeftHand" />
 				<attribute name="Target Name" value="LeftHand_Target" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<component type="IKArmSolver" id="349">
@@ -19277,7 +19277,7 @@
 				<attribute name="Forearm Bone Name" value="RightForeArm" />
 				<attribute name="Hand Bone Name" value="RightHand" />
 				<attribute name="Target Name" value="RightHand_Target" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<node id="102">
@@ -20021,7 +20021,7 @@
 				<attribute name="Forearm Bone Name" value="LeftForeArm" />
 				<attribute name="Hand Bone Name" value="LeftHand" />
 				<attribute name="Target Name" value="LeftHand_Target" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<component type="IKArmSolver" id="796">
@@ -20030,7 +20030,7 @@
 				<attribute name="Forearm Bone Name" value="RightForeArm" />
 				<attribute name="Hand Bone Name" value="RightHand" />
 				<attribute name="Target Name" value="RightHand_Target" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<node id="240">
@@ -20770,7 +20770,7 @@
 				<attribute name="Forearm Bone Name" value="LeftForeArm" />
 				<attribute name="Hand Bone Name" value="LeftHand" />
 				<attribute name="Target Name" value="LeftHand_Target" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<component type="IKArmSolver" id="817">
@@ -20779,7 +20779,7 @@
 				<attribute name="Forearm Bone Name" value="RightForeArm" />
 				<attribute name="Hand Bone Name" value="RightHand" />
 				<attribute name="Target Name" value="RightHand_Target" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<node id="246">
@@ -21519,7 +21519,7 @@
 				<attribute name="Forearm Bone Name" value="LeftForeArm" />
 				<attribute name="Hand Bone Name" value="LeftHand" />
 				<attribute name="Target Name" value="LeftHand_Target" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<component type="IKArmSolver" id="1085">
@@ -21528,7 +21528,7 @@
 				<attribute name="Forearm Bone Name" value="RightForeArm" />
 				<attribute name="Hand Bone Name" value="RightHand" />
 				<attribute name="Target Name" value="RightHand_Target" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<node id="320">
@@ -22268,7 +22268,7 @@
 				<attribute name="Forearm Bone Name" value="LeftForeArm" />
 				<attribute name="Hand Bone Name" value="LeftHand" />
 				<attribute name="Target Name" value="LeftHand_Target" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<component type="IKArmSolver" id="834">
@@ -22277,7 +22277,7 @@
 				<attribute name="Forearm Bone Name" value="RightForeArm" />
 				<attribute name="Hand Bone Name" value="RightHand" />
 				<attribute name="Target Name" value="RightHand_Target" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<node id="251">
@@ -23018,7 +23018,7 @@
 				<attribute name="Hand Bone Name" value="LeftHand" />
 				<attribute name="Target Name" value="LeftHand_Target" />
 				<attribute name="Bend Target Name" value="BendTarget" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<component type="IKArmSolver" id="845">
@@ -23028,7 +23028,7 @@
 				<attribute name="Hand Bone Name" value="RightHand" />
 				<attribute name="Target Name" value="RightHand_Target" />
 				<attribute name="Bend Target Name" value="BendTarget" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<node id="256">
@@ -23782,7 +23782,7 @@
 				<attribute name="Hand Bone Name" value="LeftHand" />
 				<attribute name="Target Name" value="LeftHand_Target" />
 				<attribute name="Bend Target Name" value="BendTarget" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<component type="IKArmSolver" id="878">
@@ -23792,7 +23792,7 @@
 				<attribute name="Hand Bone Name" value="RightHand" />
 				<attribute name="Target Name" value="RightHand_Target" />
 				<attribute name="Bend Target Name" value="BendTarget" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<node id="262">
@@ -24545,7 +24545,7 @@
 				<attribute name="Forearm Bone Name" value="LeftForeArm" />
 				<attribute name="Hand Bone Name" value="LeftHand" />
 				<attribute name="Target Name" value="LeftHand_Target" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<component type="IKArmSolver" id="890">
@@ -24554,7 +24554,7 @@
 				<attribute name="Forearm Bone Name" value="RightForeArm" />
 				<attribute name="Hand Bone Name" value="RightHand" />
 				<attribute name="Target Name" value="RightHand_Target" />
-				<attribute name="Shoulder Weight" value="0.5 0.1" />
+				<attribute name="Shoulder Weight" value="0.2 0.1" />
 				<attribute name="Bend Direction" value="0 0 -1" />
 			</component>
 			<node id="268">

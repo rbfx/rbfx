@@ -72,7 +72,7 @@ VERTEX_OUTPUT_HIGHP(float vWorldDepth)
 
 /// Calculate planar reflection vector.
 #ifdef URHO3D_MATERIAL_HAS_PLANAR_ENVIRONMENT
-    half2 GetPlanarReflectionUV(vec2 screenPos, half4 normal)
+    half2 GetPlanarReflectionUV(vec2 screenPos, half4 normal, half4 planeX, half4 planeY)
     {
         // Screen position y has different direction for DX and GL.
         // Flip reflection vertically unless it's already flipped.
@@ -81,8 +81,8 @@ VERTEX_OUTPUT_HIGHP(float vWorldDepth)
         #endif
 
         // Apply normal distortion, don't undershoot Y
-        screenPos.x += dot(cReflectionPlaneX, normal);
-        screenPos.y += max(0.0, dot(cReflectionPlaneY, normal));
+        screenPos.x += dot(planeX, normal);
+        screenPos.y += max(0.0, dot(planeY, normal));
         return screenPos;
     }
 #endif

@@ -136,6 +136,122 @@ public:
     }
 };
 
+class MoveByVec3QuadraticState : public AttributeActionState
+{
+    Vector3 positionDelta_;
+    Vector3 startPosition_;
+    Vector3 previousPosition_;
+    Vector3 controlDelta_;
+
+public:
+
+    MoveByVec3QuadraticState(MoveByQuadratic* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
+    {
+        positionDelta_ = action->GetPositionDelta();
+        controlDelta_ = action->GetControlDelta();
+        previousPosition_ = startPosition_ = Get<Vector3>();
+    }
+
+    void Update(float time, Variant& value) override
+    {
+        const auto _time = 1.0f - time;
+        const auto currentPos = value.GetVector3();
+        auto diff = currentPos - previousPosition_;
+        startPosition_ = startPosition_ + diff;
+        const auto newPos = startPosition_ + controlDelta_ * 2.0f * time * _time + positionDelta_ * time * time;
+        value = newPos;
+        previousPosition_ = newPos;
+    }
+};
+
+class MoveByIntVec3QuadraticState : public AttributeActionState
+{
+    Vector3 positionDelta_;
+    Vector3 controlDelta_;
+    IntVector3 startPosition_;
+    IntVector3 previousPosition_;
+
+public:
+
+    MoveByIntVec3QuadraticState(MoveByQuadratic* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
+    {
+        positionDelta_ = action->GetPositionDelta();
+        controlDelta_ = action->GetControlDelta();
+        previousPosition_ = startPosition_ = Get<IntVector3>();
+    }
+
+    void Update(float time, Variant& value) override
+    {
+        const auto _time = 1.0f - time;
+        const auto currentPos = value.GetIntVector3();
+        const auto diff = currentPos - previousPosition_;
+        startPosition_ = startPosition_ + diff;
+        const auto newPos = startPosition_ + (controlDelta_ * 2.0f * time * _time + positionDelta_ * time * time).ToIntVector3();
+        value = newPos;
+        previousPosition_ = newPos;
+    }
+};
+
+class MoveByVec2QuadraticState : public AttributeActionState
+{
+    Vector2 positionDelta_;
+    Vector2 controlDelta_;
+    Vector2 startPosition_;
+    Vector2 previousPosition_;
+
+public:
+
+    MoveByVec2QuadraticState(MoveByQuadratic* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
+    {
+        positionDelta_ = action->GetPositionDelta().ToVector2();
+        controlDelta_ = action->GetControlDelta().ToVector2();
+        previousPosition_ = startPosition_ = Get<Vector2>();
+    }
+
+    void Update(float time, Variant& value) override
+    {
+        const auto _time = 1.0f - time;
+        const auto currentPos = value.GetVector2();
+        const auto diff = currentPos - previousPosition_;
+        startPosition_ = startPosition_ + diff;
+        const auto newPos = startPosition_ + controlDelta_ * 2.0f * time * _time + positionDelta_ * time * time;
+        value = newPos;
+        previousPosition_ = newPos;
+    }
+};
+
+class MoveByIntVec2QuadraticState : public AttributeActionState
+{
+    Vector2 positionDelta_;
+    Vector2 controlDelta_;
+    IntVector2 startPosition_;
+    IntVector2 previousPosition_;
+
+public:
+    MoveByIntVec2QuadraticState(MoveByQuadratic* action, Object* target, AttributeInfo* attribute)
+        : AttributeActionState(action, target, attribute)
+    {
+        positionDelta_ = action->GetPositionDelta().ToVector2();
+        controlDelta_ = action->GetControlDelta().ToVector2();
+        previousPosition_ = startPosition_ = Get<IntVector2>();
+    }
+
+    void Update(float time, Variant& value) override
+    {
+        const auto _time = 1.0f - time;
+        const auto currentPos = value.GetIntVector2();
+        const auto diff = currentPos - previousPosition_;
+        startPosition_ = startPosition_ + diff;
+        const auto newPos =
+            startPosition_ + (controlDelta_ * 2.0f * time * _time + positionDelta_ * time * time).ToIntVector2();
+        value = newPos;
+        previousPosition_ = newPos;
+    }
+};
+
 class JumpByVec3State : public AttributeActionState
 {
     Vector3 positionDelta_;
@@ -320,6 +436,51 @@ SharedPtr<ActionState> MoveBy::StartAction(Object* target)
     return BaseClassName::StartAction(target);
 }
 
+/// ------------------------------------------------------------------------------
+/// Construct.
+MoveByQuadratic::MoveByQuadratic(Context* context)
+    : BaseClassName(context)
+{
+}
+
+/// Set position delta.
+void MoveByQuadratic::SetControlDelta(const Vector3& pos)
+{
+    control_ = pos;
+}
+
+SharedPtr<FiniteTimeAction> MoveByQuadratic::Reverse() const
+{
+    auto result = MakeShared<MoveByQuadratic>(context_);
+    result->SetDuration(GetDuration());
+    result->SetPositionDelta(-GetPositionDelta());
+    result->SetControlDelta(-GetControlDelta());
+    return result;
+}
+
+/// Serialize content from/to archive. May throw ArchiveException.
+void MoveByQuadratic::SerializeInBlock(Archive& archive)
+{
+    BaseClassName::SerializeInBlock(archive);
+    SerializeOptionalValue(archive, "control", control_, Vector3::ZERO);
+}
+
+/// Create new action state from the action.
+SharedPtr<ActionState> MoveByQuadratic::StartAction(Object* target)
+{
+    if (auto attribute = GetAttribute(target))
+    {
+        switch (attribute->type_)
+        {
+        case VAR_VECTOR2: return MakeShared<MoveByVec2QuadraticState>(this, target, attribute);
+        case VAR_VECTOR3: return MakeShared<MoveByVec3QuadraticState>(this, target, attribute);
+        case VAR_INTVECTOR2: return MakeShared<MoveByIntVec2QuadraticState>(this, target, attribute);
+        case VAR_INTVECTOR3: return MakeShared<MoveByIntVec3QuadraticState>(this, target, attribute);
+        default: URHO3D_LOGERROR(Format("Attribute {} is not of valid type.", GetAttributeName())); break;
+        }
+    }
+    return BaseClassName::StartAction(target);
+}
 /// ------------------------------------------------------------------------------
 /// Construct.
 JumpBy::JumpBy(Context* context)

@@ -20,131 +20,512 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/CoreEvents.h"
-#include "../Core/ProcessUtils.h"
-#include "../Core/Profiler.h"
-#include "../Core/Thread.h"
-#include "../Core/Timer.h"
-#include "../Core/WorkQueue.h"
-#include "../IO/Log.h"
+#include "Urho3D/Core/WorkQueue.h"
+
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/ProcessUtils.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/Core/Timer.h"
+#include "Urho3D/IO/Log.h"
+
+#ifdef URHO3D_THREADING
+#include <enkiTS/src/TaskScheduler.h>
+#endif
 
 namespace Urho3D
 {
 
-/// Thread index.
-static thread_local unsigned currentThreadIndex = M_MAX_UNSIGNED;
-static unsigned maxThreadIndex = 1;
+namespace
+{
 
-/// Worker thread managed by the work queue.
-class WorkerThread : public Thread, public RefCounted
+// Context and WorkQueue are singletons anyway, keep the values here for quick access
+unsigned threadIndexCount{};
+WorkQueue* workQueue{};
+
+#ifdef URHO3D_THREADING
+template <class T>
+struct ReleaseInternalTask : enki::ICompletable
+{
+    enki::Dependency dependency_;
+
+    void OnDependenciesComplete(enki::TaskScheduler* taskScheduler, uint32_t threadNum) override
+    {
+        enki::ICompletable::OnDependenciesComplete(taskScheduler, threadNum);
+
+        auto task = const_cast<T*>(static_cast<const T*>(dependency_.GetDependencyTask()));
+        task->Release();
+    }
+};
+#endif
+
+TaskPriority ConvertLegacyPriority(unsigned priority)
+{
+    return priority == M_MAX_UNSIGNED
+        ? TaskPriority::Immediate
+        : static_cast<TaskPriority>(static_cast<unsigned>(TaskPriority::Low) - ea::min(priority, 2u));
+}
+
+}
+
+#ifdef URHO3D_THREADING
+
+template <class T> WorkQueue::TaskPool<T>::TaskPool()
+{
+}
+
+template <class T> WorkQueue::TaskPool<T>::~TaskPool()
+{
+}
+
+template <class T> T* WorkQueue::TaskPool<T>::Allocate()
+{
+    MutexLock lock(mutex_);
+
+    if (freeItems_.empty())
+    {
+        pool_.push_back(ea::make_unique<T>(this));
+        return pool_.back().get();
+    }
+    else
+    {
+        T* item = freeItems_.back();
+        freeItems_.pop_back();
+        return item;
+    }
+}
+
+template <class T> void WorkQueue::TaskPool<T>::Release(T* item)
+{
+    MutexLock lock(mutex_);
+    freeItems_.push_back(item);
+}
+
+template <class T> unsigned WorkQueue::TaskPool<T>::GetNumUsed() const
+{
+    MutexLock lock(mutex_);
+    return pool_.size() - freeItems_.size();
+}
+
+template <class T> WorkQueue::TaskStack<T>::TaskStack()
+{
+}
+
+template <class T> WorkQueue::TaskStack<T>::~TaskStack()
+{
+}
+
+template <class T> WorkQueue::TaskStack<T>::TaskStack(TaskStack<T>&& other)
+    : pool_(ea::move(other.pool_))
+{
+}
+
+template <class T> WorkQueue::TaskStack<T>& WorkQueue::TaskStack<T>::operator=(TaskStack<T>&& other)
+{
+    pool_ = ea::move(other.pool_);
+    return *this;
+}
+
+template <class T> T* WorkQueue::TaskStack<T>::Allocate()
+{
+    if (nextFreeIndex_ == pool_.size())
+    {
+        ++nextFreeIndex_;
+        pool_.push_back(ea::make_unique<T>());
+        return pool_.back().get();
+    }
+    else
+    {
+        return pool_[nextFreeIndex_++].get();
+    }
+}
+
+template <class T> void WorkQueue::TaskStack<T>::Purge()
+{
+    nextFreeIndex_ = 0;
+}
+
+class WorkQueue::InternalTaskInPool : public enki::ITaskSet
 {
 public:
-    /// Construct.
-    WorkerThread(WorkQueue* owner, unsigned index) :
-        owner_(owner),
-        index_(index)
+    TaskFunction function_;
+
+    InternalTaskInPool(TaskPool<InternalTaskInPool>* owner)
+        : owner_(owner)
     {
+        releaser_.SetDependency(releaser_.dependency_, this);
     }
 
-    /// Process work items until stopped.
-    void ThreadFunction() override
+    void Release()
     {
-        URHO3D_PROFILE_THREAD(Format("WorkerThread {}", (uint64_t)GetCurrentThreadID()).c_str());
-        currentThreadIndex = index_;
-        // Init FPU state first
-        InitFPU();
-        owner_->ProcessItems(index_);
+        owner_->Release(this);
     }
 
-    /// Return thread index.
-    unsigned GetIndex() const { return index_; }
+    void ExecuteRange(enki::TaskSetPartition range, uint32_t threadNum) override
+    {
+        URHO3D_ASSERT(function_);
+        function_(threadNum, workQueue);
+        function_ = nullptr;
+    }
 
 private:
-    /// Work queue.
-    WorkQueue* owner_;
-    /// Thread index.
-    unsigned index_;
+    TaskPool<InternalTaskInPool>* owner_{};
+    ReleaseInternalTask<InternalTaskInPool> releaser_;
 };
 
-WorkQueue::WorkQueue(Context* context) :
-    Object(context),
-    shutDown_(false),
-    pausing_(false),
-    paused_(false),
-    completing_(false),
-    tolerance_(10),
-    lastSize_(0),
-    maxNonThreadedWorkMs_(5)
+class WorkQueue::InternalPinnedTaskInPool : public enki::IPinnedTask
 {
-    currentThreadIndex = 0;
-    maxThreadIndex = 1;
-    mainThreadTasks_.Clear();
-    SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(WorkQueue, HandleBeginFrame));
+public:
+    TaskFunction function_;
+
+    InternalPinnedTaskInPool(TaskPool<InternalPinnedTaskInPool>* owner)
+        : owner_(owner)
+    {
+        releaser_.SetDependency(releaser_.dependency_, this);
+    }
+
+    void Release()
+    {
+        owner_->Release(this);
+    }
+
+    void Execute() override
+    {
+        URHO3D_ASSERT(function_);
+        function_(threadNum, workQueue);
+        function_ = nullptr;
+    }
+
+private:
+    TaskPool<InternalPinnedTaskInPool>* owner_{};
+    ReleaseInternalTask<InternalPinnedTaskInPool> releaser_;
+};
+
+class WorkQueue::InternalTaskInStack : public enki::ITaskSet
+{
+public:
+    TaskFunction function_;
+    enki::Dependency observerDependency_;
+
+    void ExecuteRange(enki::TaskSetPartition range, uint32_t threadNum) override
+    {
+        URHO3D_ASSERT(function_);
+        function_(threadNum, workQueue);
+        function_ = nullptr;
+    }
+};
+
+class WorkQueue::InternalPinnedTaskInStack : public enki::IPinnedTask
+{
+public:
+    TaskFunction function_;
+    enki::Dependency observerDependency_;
+
+    void Execute() override
+    {
+        URHO3D_ASSERT(function_);
+        function_(threadNum, workQueue);
+        function_ = nullptr;
+    }
+};
+
+class WorkQueue::TaskCompletionObserver
+    : public enki::ITaskSet
+    , public MovableNonCopyable
+{
+public:
+    TaskCompletionObserver() = default;
+
+    void AddDependency(InternalTaskInStack* internalTask)
+    {
+        SetDependency(internalTask->observerDependency_, internalTask);
+    }
+
+    void ExecuteRange(enki::TaskSetPartition range, uint32_t threadNum) override
+    {
+    }
+};
+
+#endif
+
+WorkQueue::WorkQueue(Context* context)
+    : Object(context)
+{
+    if (workQueue == nullptr)
+    {
+        threadIndexCount = 1;
+        workQueue = this;
+    }
+
+    SubscribeToEvent(E_BEGINFRAME, &WorkQueue::Update);
 }
 
 WorkQueue::~WorkQueue()
 {
-    // Stop the worker threads. First make sure they are not waiting for work items
-    shutDown_ = true;
-    Resume();
+#ifdef URHO3D_THREADING
+    if (taskScheduler_)
+    {
+        taskScheduler_->ShutdownNow();
+        taskScheduler_ = nullptr;
+    }
+#endif
 
-    for (unsigned i = 0; i < threads_.size(); ++i)
-        threads_[i]->Stop();
+    if (workQueue == this)
+    {
+        threadIndexCount = 0;
+        workQueue = nullptr;
+    }
 }
 
-void WorkQueue::CreateThreads(unsigned numThreads)
+void WorkQueue::Initialize(unsigned numThreads)
 {
-#ifdef URHO3D_THREADING
     // Other subsystems may initialize themselves according to the number of threads.
     // Therefore allow creating the threads only once, after which the amount is fixed
-    if (!threads_.empty())
+    if (numProcessingThreads_ > 0)
         return;
 
-    // Start threads in paused mode
-    Pause();
+    numProcessingThreads_ = numThreads + 1;
+    threadIndexCount = 1;
 
-    maxThreadIndex = numThreads + 1;
-    for (unsigned i = 0; i < numThreads; ++i)
+#ifdef URHO3D_THREADING
+    if (numThreads > 0)
     {
-        SharedPtr<WorkerThread> thread(new WorkerThread(this, i + 1));
-        thread->SetName(Format("Worker {}", i + 1));
-        thread->Run();
-        threads_.push_back(thread);
+        taskScheduler_ = ea::make_unique<enki::TaskScheduler>();
+        taskScheduler_->Initialize(numProcessingThreads_);
+
+        threadIndexCount = taskScheduler_->GetNumTaskThreads();
+
+        localTaskStack_.resize(threadIndexCount);
+        localPinnedTaskStack_.resize(threadIndexCount);
+        pendingImmediateTasks_.resize(threadIndexCount);
+
+        URHO3D_LOGINFO("Created {} worker thread{}", numThreads, numThreads > 1 ? "s" : "");
     }
-    mainThreadTasks_.Clear();
-#else
-    URHO3D_LOGERROR("Can not create worker threads as threading is disabled");
 #endif
 }
 
-void WorkQueue::CallFromMainThread(WorkFunction workFunction)
+void WorkQueue::Update()
 {
-    if (GetThreadIndex() == 0)
+    ProcessPostedTasks();
+    ProcessMainThreadTasks();
+}
+
+void WorkQueue::ProcessPostedTasks()
+{
+#ifdef URHO3D_THREADING
+    if (taskScheduler_)
     {
-        workFunction(0);
+        CompleteImmediateForThisThread();
+        taskScheduler_->RunPinnedTasks();
+        for (auto& stack : localTaskStack_)
+            stack.Purge();
+        for (auto& stack : localPinnedTaskStack_)
+            stack.Purge();
+    }
+#endif
+
+    if (!fallbackTaskQueue_.empty())
+    {
+        HiresTimer timer;
+        for (auto& [_, task] : fallbackTaskQueue_)
+        {
+            if (timer.GetUSec(false) >= maxNonThreadedWorkMs_ * 1000LL)
+                break;
+
+            task(0, this);
+            task = nullptr;
+        }
+        PurgeProcessedTasksInFallbackQueue();
+    }
+}
+
+void WorkQueue::ProcessMainThreadTasks()
+{
+#ifdef URHO3D_THREADING
+    if (taskScheduler_)
+        taskScheduler_->RunPinnedTasks();
+#endif
+
+    {
+        MutexLock lock(mainThreadTasksMutex_);
+        ea::swap(mainThreadTasks_, mainThreadTasksSwap_);
+    }
+
+    for (const auto& callback : mainThreadTasksSwap_)
+        callback(0, this);
+    mainThreadTasksSwap_.clear();
+}
+
+void WorkQueue::PurgeProcessedTasksInFallbackQueue()
+{
+    ea::erase_if(fallbackTaskQueue_,
+        [](const ea::pair<TaskPriority, TaskFunction>& priorityAndTask) { return !priorityAndTask.second; });
+}
+
+#ifdef URHO3D_THREADING
+template <class T> void WorkQueue::SetupInternalTask(T* internalTask, TaskFunction&& task, TaskPriority priority)
+{
+    internalTask->function_ = ea::move(task);
+    internalTask->m_Priority = static_cast<enki::TaskPriority>(priority);
+}
+#endif
+
+void WorkQueue::PostTask(TaskFunction&& task, TaskPriority priority)
+{
+    if (!IsProcessingThread())
+    {
+        auto wrappedTask = [task = ea::move(task), priority](unsigned, WorkQueue* queue) mutable
+        { queue->PostTask(ea::move(task), priority); };
+
+        PostTaskForMainThread(ea::move(wrappedTask), priority);
         return;
     }
 
-    mainThreadTasks_.Insert(ea::move(workFunction));
+#ifdef URHO3D_THREADING
+    if (taskScheduler_)
+    {
+        if (priority == TaskPriority::Immediate)
+        {
+            const unsigned threadIndex = GetThreadIndex();
+            InternalTaskInStack* internalTask = localTaskStack_[threadIndex].Allocate();
+            SetupInternalTask(internalTask, ea::move(task), priority);
+            pendingImmediateTasks_[threadIndex].push_back(internalTask);
+        }
+        else
+        {
+            InternalTaskInPool* internalTask = globalTaskPool_.Allocate();
+            SetupInternalTask(internalTask, ea::move(task), priority);
+            taskScheduler_->AddTaskSetToPipe(internalTask);
+        }
+        return;
+    }
+#endif
+
+    if (priority == TaskPriority::Immediate)
+        task(0, this);
+    else
+        fallbackTaskQueue_.emplace_back(priority, ea::move(task));
+}
+
+void WorkQueue::PostTaskForThread(TaskFunction&& task, TaskPriority priority, unsigned threadIndex)
+{
+    if (!IsProcessingThread())
+    {
+        auto wrappedTask = [task = ea::move(task), priority, threadIndex](unsigned, WorkQueue* queue) mutable
+        { queue->PostTaskForThread(ea::move(task), priority, threadIndex); };
+
+        PostTaskForMainThread(ea::move(wrappedTask), priority);
+        return;
+    }
+
+#ifdef URHO3D_THREADING
+    if (taskScheduler_)
+    {
+        if (priority == TaskPriority::Immediate)
+        {
+            InternalPinnedTaskInStack* internalTask = localPinnedTaskStack_[GetThreadIndex()].Allocate();
+            SetupInternalTask(internalTask, ea::move(task), priority);
+            internalTask->threadNum = threadIndex;
+            taskScheduler_->AddPinnedTask(internalTask);
+        }
+        else
+        {
+            InternalPinnedTaskInPool* internalTask = globalPinnedTaskPool_.Allocate();
+            SetupInternalTask(internalTask, ea::move(task), priority);
+            internalTask->threadNum = threadIndex;
+            taskScheduler_->AddPinnedTask(internalTask);
+        }
+        return;
+    }
+#endif
+
+    if (priority == TaskPriority::Immediate)
+        task(0, this);
+    else
+        fallbackTaskQueue_.emplace_back(priority, ea::move(task));
+}
+
+void WorkQueue::PostTaskForMainThread(TaskFunction&& task, TaskPriority priority)
+{
+#ifdef URHO3D_THREADING
+    if (taskScheduler_ && IsProcessingThread())
+    {
+        PostTaskForThread(ea::move(task), priority, 0);
+        return;
+    }
+#endif
+
+    if (Thread::IsMainThread())
+        task(0, this);
+    else
+        PostDelayedTaskForMainThread(ea::move(task));
+}
+
+void WorkQueue::PostDelayedTaskForMainThread(TaskFunction&& task)
+{
+    MutexLock lock(mainThreadTasksMutex_);
+    mainThreadTasks_.push_back(ea::move(task));
+}
+
+void WorkQueue::CompleteImmediateForAnotherThread(unsigned threadIndex)
+{
+#ifdef URHO3D_THREADING
+    static const auto priority = static_cast<enki::TaskPriority>(TaskPriority::Immediate);
+    if (taskScheduler_)
+    {
+        auto& pendingTasks = pendingImmediateTasks_[threadIndex];
+        if (!pendingTasks.empty())
+        {
+            enki::ICompletable observerTask;
+            for (InternalTaskInStack* task : pendingTasks)
+                task->observerDependency_.SetDependency(task, &observerTask);
+
+            for (InternalTaskInStack* task : pendingTasks)
+                taskScheduler_->AddTaskSetToPipe(task);
+            taskScheduler_->WaitforTask(&observerTask, priority);
+
+            for (InternalTaskInStack* task : pendingTasks)
+                task->observerDependency_.ClearDependency();
+            pendingTasks.clear();
+        }
+    }
+#endif
+    // Fallback queue never contains immediate tasks
+}
+
+void WorkQueue::CompleteImmediateForThisThread()
+{
+#ifdef URHO3D_THREADING
+    if (taskScheduler_)
+    {
+        const unsigned threadIndex = GetThreadIndex();
+        CompleteImmediateForAnotherThread(threadIndex);
+        taskScheduler_->RunPinnedTasks();
+    }
+#endif
+}
+
+void WorkQueue::CompleteAll()
+{
+#ifdef URHO3D_THREADING
+    if (taskScheduler_)
+        taskScheduler_->WaitforAll();
+#endif
+
+    if (!fallbackTaskQueue_.empty())
+    {
+        for (auto& [taskPriority, task] : fallbackTaskQueue_)
+            task(0, this);
+        fallbackTaskQueue_.clear();
+    }
 }
 
 SharedPtr<WorkItem> WorkQueue::GetFreeItem()
 {
-    if (!poolItems_.empty())
-    {
-        SharedPtr<WorkItem> item = poolItems_.front();
-        poolItems_.pop_front();
-        return item;
-    }
-    else
-    {
-        // No usable items found, create a new one set it as pooled and return it.
-        SharedPtr<WorkItem> item(new WorkItem());
-        item->pooled_ = true;
-        return item;
-    }
+    // This function is deprecated, so we don't care about performance here.
+    return MakeShared<WorkItem>();
 }
 
 void WorkQueue::AddWorkItem(const SharedPtr<WorkItem>& item)
@@ -155,44 +536,7 @@ void WorkQueue::AddWorkItem(const SharedPtr<WorkItem>& item)
         return;
     }
 
-    // Check for duplicate items.
-    assert(ea::find(workItems_.begin(), workItems_.end(), item) == workItems_.end());
-
-    // Push to the main thread list to keep item alive
-    // Clear completed flag in case item is reused
-    workItems_.push_back(item);
-    item->completed_ = false;
-
-    // Make sure worker threads' list is safe to modify
-    if (threads_.size() && !paused_)
-        queueMutex_.Acquire();
-
-    // Find position for new item
-    if (queue_.empty())
-        queue_.push_back(item.Get());
-    else
-    {
-        bool inserted = false;
-
-        for (auto i = queue_.begin(); i != queue_.end(); ++i)
-        {
-            if ((*i)->priority_ <= item->priority_)
-            {
-                queue_.insert(i, item.Get());
-                inserted = true;
-                break;
-            }
-        }
-
-        if (!inserted)
-            queue_.push_back(item.Get());
-    }
-
-    if (threads_.size())
-    {
-        queueMutex_.Release();
-        paused_ = false;
-    }
+    PostTask([=] { item->workFunction_(item, GetThreadIndex()); }, ConvertLegacyPriority(item->priority_));
 }
 
 SharedPtr<WorkItem> WorkQueue::AddWorkItem(ea::function<void(unsigned threadIndex)> workFunction, unsigned priority)
@@ -205,288 +549,51 @@ SharedPtr<WorkItem> WorkQueue::AddWorkItem(ea::function<void(unsigned threadInde
     return item;
 }
 
-bool WorkQueue::RemoveWorkItem(SharedPtr<WorkItem> item)
+unsigned WorkQueue::GetNumIncomplete() const
 {
-    if (!item)
-        return false;
-
-    MutexLock lock(queueMutex_);
-
-    // Can only remove successfully if the item was not yet taken by threads for execution
-    auto i = ea::find(queue_.begin(), queue_.end(), item.Get());
-    if (i != queue_.end())
-    {
-        auto j = ea::find(workItems_.begin(), workItems_.end(), item);
-        if (j != workItems_.end())
-        {
-            queue_.erase(i);
-            ReturnToPool(item);
-            workItems_.erase(j);
-            return true;
-        }
-    }
-
-    return false;
+    unsigned result = fallbackTaskQueue_.size();
+#ifdef URHO3D_THREADING
+    result += globalTaskPool_.GetNumUsed();
+    result += globalPinnedTaskPool_.GetNumUsed();
+#endif
+    return result;
 }
 
-unsigned WorkQueue::RemoveWorkItems(const ea::vector<SharedPtr<WorkItem> >& items)
+bool WorkQueue::IsCompleted() const
 {
-    MutexLock lock(queueMutex_);
-    unsigned removed = 0;
-
-    for (auto i = items.begin(); i != items.end(); ++i)
-    {
-        auto j = ea::find(queue_.begin(), queue_.end(), i->Get());
-        if (j != queue_.end())
-        {
-            auto k = ea::find(workItems_.begin(), workItems_.end(), *i);
-            if (k != workItems_.end())
-            {
-                queue_.erase(j);
-                ReturnToPool(*k);
-                workItems_.erase(k);
-                ++removed;
-            }
-        }
-    }
-
-    return removed;
-}
-
-void WorkQueue::Pause()
-{
-    if (!paused_)
-    {
-        pausing_ = true;
-
-        queueMutex_.Acquire();
-        paused_ = true;
-
-        pausing_ = false;
-    }
-}
-
-void WorkQueue::Resume()
-{
-    if (paused_)
-    {
-        queueMutex_.Release();
-        paused_ = false;
-    }
-}
-
-
-void WorkQueue::Complete(unsigned priority)
-{
-    completing_ = true;
-
-    if (threads_.size())
-    {
-        Resume();
-
-        // Take work items also in the main thread until queue empty or no high-priority items anymore
-        while (!queue_.empty())
-        {
-            queueMutex_.Acquire();
-            if (!queue_.empty() && queue_.front()->priority_ >= priority)
-            {
-                WorkItem* item = queue_.front();
-                queue_.pop_front();
-                queueMutex_.Release();
-                item->workFunction_(item, 0);
-                item->completed_ = true;
-            }
-            else
-            {
-                queueMutex_.Release();
-                break;
-            }
-        }
-
-        // Wait for threaded work to complete
-        while (!IsCompleted(priority))
-        {
-        }
-
-        // If no work at all remaining, pause worker threads by leaving the mutex locked
-        if (queue_.empty())
-            Pause();
-    }
-    else
-    {
-        // No worker threads: ensure all high-priority items are completed in the main thread
-        while (!queue_.empty() && queue_.front()->priority_ >= priority)
-        {
-            WorkItem* item = queue_.front();
-            queue_.pop_front();
-            item->workFunction_(item, 0);
-            item->completed_ = true;
-        }
-    }
-
-    PurgeCompleted(priority);
-    completing_ = false;
-
-    ProcessMainThreadTasks();
-}
-
-unsigned WorkQueue::GetNumIncomplete(unsigned priority) const
-{
-    unsigned incomplete = 0;
-    for (const auto& workItem : workItems_)
-    {
-        if (workItem->priority_ >= priority && !workItem->completed_)
-            ++incomplete;
-    }
-
-    return incomplete;
-}
-
-bool WorkQueue::IsCompleted(unsigned priority) const
-{
-    for (const auto & workItem : workItems_)
-    {
-        if (workItem->priority_ >= priority && !workItem->completed_)
-            return false;
-    }
-
-    return true;
-}
-
-void WorkQueue::ProcessMainThreadTasks()
-{
-    for (const auto& callback : mainThreadTasks_)
-        callback(0);
-    mainThreadTasks_.Clear();
-}
-
-void WorkQueue::ProcessItems(unsigned threadIndex)
-{
-    bool wasActive = false;
-
-    for (;;)
-    {
-        if (shutDown_)
-            return;
-
-        if (pausing_ && !wasActive)
-            Time::Sleep(0);
-        else
-        {
-            queueMutex_.Acquire();
-            if (!queue_.empty())
-            {
-                wasActive = true;
-
-                WorkItem* item = queue_.front();
-                queue_.pop_front();
-                queueMutex_.Release();
-                item->workFunction_(item, threadIndex);
-                item->completed_ = true;
-            }
-            else
-            {
-                wasActive = false;
-
-                queueMutex_.Release();
-                Time::Sleep(0);
-            }
-        }
-    }
-}
-
-void WorkQueue::PurgeCompleted(unsigned priority)
-{
-    // Purge completed work items and send completion events. Do not signal items lower than priority threshold,
-    // as those may be user submitted and lead to eg. scene manipulation that could happen in the middle of the
-    // render update, which is not allowed
-    for (auto i = workItems_.begin(); i != workItems_.end();)
-    {
-        if ((*i)->completed_ && (*i)->priority_ >= priority)
-        {
-            if ((*i)->sendEvent_)
-            {
-                using namespace WorkItemCompleted;
-
-                VariantMap& eventData = GetEventDataMap();
-                eventData[P_ITEM] = i->Get();
-                SendEvent(E_WORKITEMCOMPLETED, eventData);
-            }
-
-            ReturnToPool(*i);
-            i = workItems_.erase(i);
-        }
-        else
-            ++i;
-    }
-}
-
-void WorkQueue::PurgePool()
-{
-    unsigned currentSize = poolItems_.size();
-    int difference = lastSize_ - currentSize;
-
-    // Difference tolerance, should be fairly significant to reduce the pool size.
-    for (unsigned i = 0; !poolItems_.empty() && difference > tolerance_ && i < (unsigned)difference; i++)
-        poolItems_.pop_front();
-
-    lastSize_ = currentSize;
-}
-
-void WorkQueue::ReturnToPool(SharedPtr<WorkItem>& item)
-{
-    // Check if this was a pooled item and set it to usable
-    if (item->pooled_)
-    {
-        // Reset the values to their defaults. This should
-        // be safe to do here as the completed event has
-        // already been handled and this is part of the
-        // internal pool.
-        item->start_ = nullptr;
-        item->end_ = nullptr;
-        item->aux_ = nullptr;
-        item->workFunction_ = nullptr;
-        item->priority_ = M_MAX_UNSIGNED;
-        item->sendEvent_ = false;
-        item->completed_ = false;
-
-        poolItems_.push_back(item);
-    }
-}
-
-void WorkQueue::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
-{
-    ProcessMainThreadTasks();
-
-    // If no worker threads, complete low-priority work here
-    if (threads_.empty() && !queue_.empty())
-    {
-        URHO3D_PROFILE("CompleteWorkNonthreaded");
-
-        HiresTimer timer;
-
-        while (!queue_.empty() && timer.GetUSec(false) < maxNonThreadedWorkMs_ * 1000LL)
-        {
-            WorkItem* item = queue_.front();
-            queue_.pop_front();
-            item->workFunction_(item, 0);
-            item->completed_ = true;
-        }
-    }
-
-    // Complete and signal items down to the lowest priority
-    PurgeCompleted(0);
-    PurgePool();
+    return GetNumIncomplete() == 0;
 }
 
 unsigned WorkQueue::GetThreadIndex()
 {
-    return currentThreadIndex;
+#ifdef URHO3D_THREADING
+    if (workQueue && workQueue->taskScheduler_)
+        return workQueue->taskScheduler_->GetThreadNum();
+#endif
+    return Thread::IsMainThread() ? 0u : M_MAX_UNSIGNED;
 }
 
-unsigned WorkQueue::GetMaxThreadIndex()
+unsigned WorkQueue::GetThreadIndexCount()
 {
-    return maxThreadIndex;
+    return threadIndexCount;
+}
+
+bool WorkQueue::IsProcessingThread()
+{
+    return GetThreadIndex() < threadIndexCount;
+}
+
+void WorkQueue::CallFromMainThread(WorkFunction workFunction)
+{
+    PostTaskForMainThread([=] { workFunction(0u); }, TaskPriority::Immediate);
+}
+
+void WorkQueue::Complete(unsigned priority)
+{
+    if (priority == M_MAX_UNSIGNED)
+        CompleteImmediateForThisThread();
+    else
+        CompleteAll();
 }
 
 }

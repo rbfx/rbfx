@@ -34,7 +34,6 @@ class Scene;
 }
 
 class Character;
-class Touch;
 
 /// Moving character example.
 /// This sample demonstrates:
@@ -97,8 +96,6 @@ protected:
         "    <replace sel=\"/element/element[./attribute[@name='Name' and @value='Button1']]/element[./attribute[@name='Name' and @value='Label']]/attribute[@name='Text']/@value\">Jump</replace>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Button1']]\">"
         "        <element type=\"Text\">"
-        "            <attribute name=\"Name\" value=\"KeyBinding\" />"
-        "            <attribute name=\"Text\" value=\"SPACE\" />"
         "        </element>"
         "    </add>"
         "</patch>";
@@ -118,8 +115,6 @@ private:
     /// Handle application post-update. Update camera position after character has moved.
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
 
-    /// Touch utility object.
-    SharedPtr<Touch> touch_;
     /// The controllable character component.
     WeakPtr<Character> character_;
     /// First person camera flag.

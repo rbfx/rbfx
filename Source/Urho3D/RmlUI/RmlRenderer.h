@@ -84,7 +84,7 @@ private:
     /// Constant between BeginRendering/EndRendering
     /// @{
     UIBatchStateCreateContext batchStateCreateContext_;
-    RenderSurface* renderSurface_{};
+    bool flipRect_{};
     bool isRenderSurfaceSRGB_{};
     IntVector2 viewportSize_{};
     DrawCommandQueue* drawQueue_{};

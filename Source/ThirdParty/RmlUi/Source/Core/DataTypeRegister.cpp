@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,7 @@ DataTypeRegister::DataTypeRegister()
 		String value;
 		if (!arguments[0].GetInto(value))
 			return {};
-		return Variant(StringUtilities::ToLower(value));
+		return Variant(StringUtilities::ToLower(std::move(value)));
 	});
 
 	transform_register.Register("to_upper", [](const VariantList& arguments) -> Variant {
@@ -98,7 +98,7 @@ DataTypeRegister::DataTypeRegister()
 		double value;
 		if (!arguments[0].GetInto(value))
 			return {};
-		return Variant(Math::RoundFloat(value));
+		return Variant(Math::Round(value));
 	});
 }
 

@@ -10,6 +10,7 @@ using namespace Urho3D;
 #define static_assert(...)
 #define EASTLAllocatorType eastl::allocator
 
+%include "Ignores.i"
 %include "stl.i"
 %include "stdint.i"
 %include "typemaps.i"
@@ -126,7 +127,6 @@ using namespace Urho3D;
 	SDL_Cursor*,
 	SDL_Surface*,
 	SDL_Window*,
-	Urho3D::GraphicsImpl*,
     ImFont*,
     tracy::SourceLocationData*
 }
@@ -183,7 +183,6 @@ CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
 %ignore Urho3D::end;
 
 %ignore Urho3D::textureFilterModeNames;
-%ignore Urho3D::textureUnitNames;
 %ignore Urho3D::cullModeNames;
 %ignore Urho3D::fillModeNames;
 %ignore Urho3D::blendModeNames;
@@ -202,7 +201,9 @@ CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
 // Containers
 using StringMap = eastl::unordered_map<Urho3D::StringHash, eastl::string>;
 %template(ObjectReflectionMap) eastl::unordered_map<Urho3D::StringHash, Urho3D::SharedPtr<Urho3D::ObjectReflection>>;
+#if defined(URHO3D_PHYSICS)
 %template(CollisionGeometryDataCache) eastl::unordered_map<eastl::pair<Urho3D::Model*, unsigned>, Urho3D::SharedPtr<Urho3D::CollisionGeometryData>>;
+#endif
 
 // Declare inheritable classes in this file
 %include "Context.i"
@@ -225,8 +226,6 @@ AddEqualityOperators(Urho3D::Splite);
 AddEqualityOperators(Urho3D::JSONValue);
 AddEqualityOperators(Urho3D::PListValue);
 AddEqualityOperators(Urho3D::VertexElement);
-AddEqualityOperators(Urho3D::RenderTargetInfo);
-AddEqualityOperators(Urho3D::RenderPathCommand);
 AddEqualityOperators(Urho3D::Bone);
 AddEqualityOperators(Urho3D::ModelMorph);
 AddEqualityOperators(Urho3D::AnimationKeyFrame);
@@ -240,18 +239,12 @@ AddEqualityOperators(Urho3D::ColorFrame);
 AddEqualityOperators(Urho3D::TextureFrame);
 AddEqualityOperators(Urho3D::Variant);
 
-%ignore Urho3D::GPUObject::OnDeviceLost;
-%ignore Urho3D::GPUObject::OnDeviceReset;
-%ignore Urho3D::GPUObject::Release;
 %ignore Urho3D::VertexBuffer::OnDeviceLost;
 %ignore Urho3D::VertexBuffer::OnDeviceReset;
 %ignore Urho3D::VertexBuffer::Release;
 %ignore Urho3D::IndexBuffer::OnDeviceLost;
 %ignore Urho3D::IndexBuffer::OnDeviceReset;
 %ignore Urho3D::IndexBuffer::Release;
-%ignore Urho3D::ConstantBuffer::OnDeviceLost;
-%ignore Urho3D::ConstantBuffer::OnDeviceReset;
-%ignore Urho3D::ConstantBuffer::Release;
 %ignore Urho3D::ShaderVariation::OnDeviceLost;
 %ignore Urho3D::ShaderVariation::OnDeviceReset;
 %ignore Urho3D::ShaderVariation::Release;
@@ -332,6 +325,8 @@ namespace SDL
 %ignore Urho3D::Detail::CriticalSection;
 %ignore Urho3D::MutexLock;
 %ignore Urho3D::ObjectReflectionRegistry::GetReflection(StringHash typeNameHash) const;
+%ignore Urho3D::Object::IsInstanceOf(const TypeInfo* typeInfo);
+%ignore Urho3D::Object::SubscribeToEventManual;
 
 %include "Object.i"
 %director Urho3D::AttributeAccessor;
@@ -350,6 +345,13 @@ namespace SDL
 %include "Urho3D/Core/Timer.h"
 %include "Urho3D/Core/Spline.h"
 %include "Urho3D/Core/Mutex.h"
+%include "Urho3D/Core/Thread.h"
+
+%ignore Urho3D::WorkQueue::PostTask;
+%ignore Urho3D::WorkQueue::PostTaskForThread;
+%ignore Urho3D::WorkQueue::PostTaskForMainThread;
+%ignore Urho3D::WorkQueue::PostDelayedTaskForMainThread;
+%include "Urho3D/Core/WorkQueue.h"
 
 // --------------------------------------- Container ------------------------------------
 %include "Urho3D/Container/ByteVector.h"
@@ -390,17 +392,14 @@ namespace SDL
 %ignore Urho3D::TouchState::GetTouchedElement;
 %ignore Urho3D::Input::OnRawInput;
 
-%ignore Urho3D::DirectionAggregatorDetail::SubscriptionMask;
-%ignore Urho3D::DirectionalPadAdapterDetail::SubscriptionMask;
-
 %include "generated/Urho3D/_pre_input.i"
 %include "Urho3D/Input/InputConstants.h"
-%include "Urho3D/Input/Controls.h"
 %include "Urho3D/Input/Input.h"
 %include "Urho3D/Input/MultitouchAdapter.h"
 %include "Urho3D/Input/AxisAdapter.h"
 %include "Urho3D/Input/DirectionalPadAdapter.h"
 %include "Urho3D/Input/DirectionAggregator.h"
+%include "Urho3D/Input/PointerAdapter.h"
 
 // --------------------------------------- IO ---------------------------------------
 %ignore Urho3D::GetWideNativePath;
@@ -528,6 +527,7 @@ public:
 %include "Urho3D/Scene/Component.h"
 %include "Urho3D/Scene/Node.h"
 %include "Urho3D/Scene/Scene.h"
+%include "Urho3D/Scene/SceneResource.h"
 %include "Urho3D/Scene/SplinePath.h"
 %include "Urho3D/Scene/ValueAnimation.h"
 %include "Urho3D/Scene/LogicComponent.h"
@@ -537,9 +537,15 @@ public:
 %include "Urho3D/Scene/TrackedComponent.h"
 %include "Urho3D/Scene/PrefabReference.h"
 %include "Urho3D/Scene/PrefabResource.h"
+%include "Urho3D/Scene/ShakeComponent.h"
 
 // --------------------------------------- Extra components ---------------------------------------
+%ignore Urho3D::InputMap::GetMappings;
+
 %include "Urho3D/Input/FreeFlyController.h"
+%include "Urho3D/Input/MoveAndOrbitComponent.h"
+%include "Urho3D/Input/MoveAndOrbitController.h"
+%include "Urho3D/Input/InputMap.h"
 
 // --------------------------------------- Audio ---------------------------------------
 %ignore Urho3D::BufferedSoundStream::AddData(const ea::shared_array<signed char>& data, unsigned numBytes);
@@ -588,6 +594,20 @@ public:
 %include "Urho3D/IK/IKSolver.h"
 %include "Urho3D/IK/IKSolverComponent.h"
 #endif
+
+// ------------------------------------- RenderAPI -------------------------------------
+%ignore Urho3D::RawBuffer::GetHandle;
+%ignore Urho3D::RawShader::GetHandle;
+%ignore Urho3D::RawTexture::CreateUAV;
+%ignore Urho3D::RawTexture::GetUAV;
+%ignore Urho3D::RawTexture::GetHandles;
+%ignore Urho3D::RawTextureHandles;
+
+%include "Urho3D/RenderAPI/RawBuffer.h"
+%include "Urho3D/RenderAPI/RawShader.h"
+%include "Urho3D/RenderAPI/RawTexture.h"
+%include "Urho3D/RenderAPI/RenderAPIDefs.h"
+
 // --------------------------------------- Graphics ---------------------------------------
 %ignore Urho3D::FrustumOctreeQuery::TestDrawables;
 %ignore Urho3D::SphereOctreeQuery::TestDrawables;
@@ -595,12 +615,9 @@ public:
 %ignore Urho3D::PointOctreeQuery::TestDrawables;
 %ignore Urho3D::BoxOctreeQuery::TestDrawables;
 %ignore Urho3D::OctreeQuery::TestDrawables;
-%ignore Urho3D::UpdateDrawablesWork;
 %ignore Urho3D::ProcessLightWork;
 %ignore Urho3D::CheckVisibilityWork;
-%ignore Urho3D::CheckDrawableVisibilityWork;
 %ignore Urho3D::ELEMENT_TYPESIZES;
-%ignore Urho3D::ScratchBuffer;
 %ignore Urho3D::Drawable::batches_;
 %ignore Urho3D::Light::SetLightQueue;
 %ignore Urho3D::Light::GetLightQueue;
@@ -609,7 +626,6 @@ public:
 %ignore Urho3D::Renderer::SetLightVolumeBatchShaders;
 %ignore Urho3D::IndexBufferDesc;
 %ignore Urho3D::VertexBufferDesc;
-%ignore Urho3D::GPUObject::GetGraphics;
 %ignore Urho3D::Terrain::GetHeightData; // eastl::shared_array<float>
 %ignore Urho3D::Geometry::GetRawData;
 %ignore Urho3D::Geometry::SetRawVertexData;
@@ -617,10 +633,7 @@ public:
 %ignore Urho3D::Geometry::GetRawDataShared;
 %ignore Urho3D::IndexBuffer::GetShadowDataShared;
 %ignore Urho3D::VertexBuffer::GetShadowDataShared;
-%ignore Urho3D::RenderPathCommand::outputs_;    // Needs Pair<String, CubeMapFace>
-%ignore Urho3D::RenderPathCommand::textureNames_;    // Needs array of strings
 %ignore Urho3D::VertexBufferMorph::morphData_;      // Needs SharedPtrArray
-%ignore Urho3D::ShaderVariation::GetConstantBufferSizes;
 %ignore Urho3D::DecalVertex::blendIndices_;
 %ignore Urho3D::DecalVertex::blendWeights_;
 %ignore Urho3D::ShaderVariation::elementSemanticNames;
@@ -628,9 +641,6 @@ public:
 %ignore Urho3D::CustomGeometry::MakeCircleGraph;
 %ignore Urho3D::CustomGeometry::ProcessRayQuery;
 %ignore Urho3D::OcclusionBufferData::dataWithSafety_;
-%ignore Urho3D::ScenePassInfo::batchQueue_;
-%ignore Urho3D::LightQueryResult;
-%ignore Urho3D::View::GetLightQueues;
 %ignore Urho3D::Drawable::GetMutableLightProbeTetrahedronHint;
 %ignore Urho3D::Skybox::GetImage;   // Needs ImageCube
 %ignore Urho3D::Drawable2D::layer_;
@@ -664,6 +674,10 @@ public:
 %ignore Urho3D::AnimationState::CalculateModelTracks;
 %ignore Urho3D::AnimationState::CalculateNodeTracks;
 %ignore Urho3D::AnimationState::CalculateAttributeTracks;
+%ignore Urho3D::AnimationParameters::Update;
+%ignore Urho3D::Animation::GetVariantTracks;
+%ignore Urho3D::RenderSurface::GetView;
+%ignore Urho3D::RenderSurface::GetReadOnlyDepthView;
 %rename(DrawableFlags) Urho3D::DrawableFlag;
 
 %apply void* VOID_INT_PTR {
@@ -672,8 +686,6 @@ public:
 }
 %include "generated/Urho3D/_pre_graphics.i"
 %include "Urho3D/Graphics/GraphicsDefs.h"
-%interface_custom("%s", "I%s", Urho3D::GPUObject);
-%include "Urho3D/Graphics/GPUObject.h"
 %include "Urho3D/Graphics/PipelineStateTracker.h"
 %include "Urho3D/Graphics/IndexBuffer.h"
 %include "Urho3D/Graphics/VertexBuffer.h"
@@ -683,7 +695,6 @@ public:
 %include "Urho3D/Graphics/OctreeQuery.h"
 %interface_custom("%s", "I%s", Urho3D::Octant);
 %include "Urho3D/Graphics/Octree.h"
-%include "Urho3D/Graphics/RenderPath.h"
 %include "Urho3D/Graphics/Viewport.h"
 %include "Urho3D/Graphics/RenderSurface.h"
 %include "Urho3D/Graphics/Texture.h"
@@ -691,7 +702,6 @@ public:
 %include "Urho3D/Graphics/Texture2DArray.h"
 %include "Urho3D/Graphics/Texture3D.h"
 %include "Urho3D/Graphics/TextureCube.h"
-//%include "Urho3D/Graphics/Batch.h"
 %include "Urho3D/Graphics/Skeleton.h"
 %include "Urho3D/Graphics/Model.h"
 %include "Urho3D/Graphics/StaticModel.h"
@@ -704,18 +714,11 @@ public:
 %include "Urho3D/Graphics/BillboardSet.h"
 %include "Urho3D/Graphics/DecalSet.h"
 %include "Urho3D/Graphics/Light.h"
-%include "Urho3D/Graphics/ConstantBuffer.h"
 %include "Urho3D/Graphics/ShaderVariation.h"
-%include "Urho3D/Graphics/ShaderPrecache.h"
-#if defined(URHO3D_COMPUTE)
-%include "Urho3D/Graphics/ComputeDevice.h"
-%include "Urho3D/Graphics/ComputeBuffer.h"
-#endif
 %include "Urho3D/Graphics/Tangent.h"
 //%include "Urho3D/Graphics/VertexDeclaration.h"
 %include "Urho3D/Graphics/Camera.h"
 %include "Urho3D/Graphics/GlobalIllumination.h"
-%include "Urho3D/Graphics/View.h"
 %include "Urho3D/Graphics/Material.h"
 %include "Urho3D/Graphics/CustomGeometry.h"
 %include "Urho3D/Graphics/ParticleEffect.h"
@@ -867,6 +870,7 @@ public:
 %include "Urho3D/Physics/RaycastVehicle.h"
 %include "Urho3D/Physics/RigidBody.h"
 %include "Urho3D/Physics/KinematicCharacterController.h"
+%include "Urho3D/Physics/TriggerAnimator.h"
 %template(PhysicsRaycastResultVector)   eastl::vector<Urho3D::PhysicsRaycastResult>;
 %template(RigidBodyVector)              eastl::vector<Urho3D::RigidBody*>;
 #endif
@@ -933,6 +937,22 @@ using ImGuiConfigFlags = unsigned;
 %include "Urho3D/UI/Window.h"
 %include "Urho3D/UI/View3D.h"
 %nocsattribute Urho3D::LineEdit::GetCursor;
+
+// --------------------------------------- RmlUI ---------------------------------------
+#if URHO3D_RMLUI
+%ignore Urho3D::FromRmlUi;
+%ignore Urho3D::ToRmlUi;
+%ignore Urho3D::RmlUIComponent::BindDataModelProperty;
+%ignore Urho3D::RmlUIComponent::BindDataModelEvent;
+
+// SWIG applies `override new` modifier by mistake.
+%csmethodmodifiers Urho3D::RmlUIComponent::OnNodeSet "protected override";
+
+%include "Urho3D/RmlUI/RmlSystem.h"
+%include "Urho3D/RmlUI/RmlUI.h"
+%include "Urho3D/RmlUI/RmlUIComponent.h"
+%include "Urho3D/RmlUI/RmlCanvasComponent.h"
+#endif
 
 // --------------------------------------- Urho2D ---------------------------------------
 #if URHO3D_URHO2D
@@ -1035,12 +1055,9 @@ using ImGuiConfigFlags = unsigned;
 %template(ValueAnimationInfoMap)        eastl::unordered_map<eastl::string, Urho3D::SharedPtr<Urho3D::ValueAnimationInfo>>;
 %template(AnimationTrackMap)            eastl::unordered_map<Urho3D::StringHash, Urho3D::AnimationTrack>;
 %template(MaterialShaderParameterMap)   eastl::unordered_map<Urho3D::StringHash, Urho3D::MaterialShaderParameter>;
-%template(TextureMap)                   eastl::unordered_map<Urho3D::TextureUnit, Urho3D::SharedPtr<Urho3D::Texture>>;
 %template(AttributeAnimationInfos)      eastl::unordered_map<eastl::string, Urho3D::SharedPtr<Urho3D::AttributeAnimationInfo>>;
 %template(VertexBufferMorphMap)         eastl::unordered_map<unsigned, Urho3D::VertexBufferMorph>;
-%template(ShaderParameterMap)           eastl::unordered_map<Urho3D::StringHash, Urho3D::ShaderParameter>;
 %template(ObjectMap)                    eastl::unordered_map<Urho3D::StringHash, Urho3D::SharedPtr<Urho3D::Object>>;
-%template(TextureMap)                   eastl::unordered_map<Urho3D::TextureUnit, Urho3D::SharedPtr<Urho3D::Texture>>;
 
 using Vector3 = Urho3D::Vector3;
 %template(StringHashList)                   eastl::vector<Urho3D::StringHash>;
@@ -1066,8 +1083,6 @@ using Vector3 = Urho3D::Vector3;
 
 %template(ObjectList)                       eastl::vector<Urho3D::Object*>;
 %template(SoundSourceList)                  eastl::vector<Urho3D::SoundSource*>;
-//%template(BatchList)                      eastl::vector<Urho3D::Batch*>;
-//%template(BatchGroupList)                 eastl::vector<Urho3D::BatchGroup*>;
 %template(ComponentList)                    eastl::vector<Urho3D::Component*>;
 %template(ComponentRefList)                 eastl::vector<Urho3D::SharedPtr<Urho3D::Component>>;
 %template(DrawableList)                     eastl::vector<Urho3D::Drawable*>;
@@ -1105,8 +1120,6 @@ using Vector3 = Urho3D::Vector3;
 %template(GeometryList)                     eastl::vector<Urho3D::SharedPtr<Urho3D::Geometry>>;
 //%template(ConnectionList)                 eastl::vector<Urho3D::SharedPtr<Urho3D::Connection>>;
 %template(GeometriesList)                   eastl::vector<eastl::vector<Urho3D::SharedPtr<Urho3D::Geometry>>>;
-%template(RenderPathCommandList)            eastl::vector<Urho3D::RenderPathCommand>;
-%template(RenderTargetInfoList)             eastl::vector<Urho3D::RenderTargetInfo>;
 %template(BonesList)                        eastl::vector<Urho3D::Bone>;
 %template(ModelMorphList)                   eastl::vector<Urho3D::ModelMorph>;
 %template(AnimationStateList)               eastl::vector<Urho3D::SharedPtr<Urho3D::AnimationState>>;

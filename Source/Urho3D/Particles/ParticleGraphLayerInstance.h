@@ -92,8 +92,8 @@ public:
 
     template <typename ValueType>
     SparseSpan<ValueType> GetSparse(unsigned attributeIndex, const ea::span<unsigned>& indices);
-    template <typename ValueType> ScalarSpan<ValueType> GetScalar(unsigned pinIndex);
-    template <typename ValueType> ea::span<ValueType> GetSpan(unsigned pinIndex);
+    template <typename ValueType> SparseSpan<ValueType> GetScalar(unsigned pinIndex);
+    template <typename ValueType> SparseSpan<ValueType> GetSpan(unsigned pinIndex);
 
     /// Get emitter.
     ParticleGraphEmitter* GetEmitter() const { return emitter_; }
@@ -110,6 +110,9 @@ public:
     /// Reset the particle emitter layer completely. Removes current particles, sets emitting state on, and resets the
     /// emission timer.
     void Reset();
+
+    /// Update all drawable attributes. Executed by ParticleGraphEmitter.
+    void UpdateDrawables();
 
     /// Get effect layer.
     ParticleGraphLayer* GetLayer() const { return layer_; }
@@ -139,7 +142,7 @@ private:
     /// Memory used to store all layer related arrays: nodes, indices, attributes.
     ea::vector<uint8_t> attributes_;
     /// Temp memory needed for graph calculation.
-    /// TODO: Should be replaced with memory pool as it could be shared between multiple emitter instancies.
+    /// TODO: Should be replaced with memory pool as it could be shared between multiple emitter instances.
     ea::vector<uint8_t> temp_;
     /// Node instances for emit graph
     ea::span<ParticleGraphNodeInstance*> emitNodeInstances_;
@@ -149,6 +152,10 @@ private:
     ea::span<ParticleGraphNodeInstance*> updateNodeInstances_;
     /// All indices of the particle system.
     ea::span<unsigned> indices_;
+    /// All indices set to 0.
+    ea::span<unsigned> scalarIndices_;
+    /// All indices going in natural order (0, 1, ...).
+    ea::span<unsigned> naturalIndices_;
     /// Particle indices to be removed.
     ea::span<unsigned> destructionQueue_;
     /// Number of particles to destroy at end of the frame.
@@ -195,17 +202,18 @@ template <typename ValueType> SparseSpan<ValueType> ParticleGraphLayerInstance::
     return SparseSpan<ValueType>(values, indices);
 }
 
-template <typename ValueType> ScalarSpan<ValueType> ParticleGraphLayerInstance::GetScalar(unsigned pinIndex)
+template <typename ValueType> SparseSpan<ValueType> ParticleGraphLayerInstance::GetScalar(unsigned pinIndex)
 {
     const auto& attr = layer_->GetIntermediateValues()[pinIndex];
     const auto values = attr.MakeSpan<ValueType>(temp_);
-    return ScalarSpan<ValueType>(values);
+    return SparseSpan<ValueType>(values, scalarIndices_);
 }
 
-template <typename ValueType> ea::span<ValueType> ParticleGraphLayerInstance::GetSpan(unsigned pinIndex)
+template <typename ValueType> SparseSpan<ValueType> ParticleGraphLayerInstance::GetSpan(unsigned pinIndex)
 {
     const auto& attr = layer_->GetIntermediateValues()[pinIndex];
-    return attr.MakeSpan<ValueType>(temp_);
+    const auto values = attr.MakeSpan<ValueType>(temp_);
+    return SparseSpan<ValueType>(values, naturalIndices_);
 }
 
 } // namespace Urho3D

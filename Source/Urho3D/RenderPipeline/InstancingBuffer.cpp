@@ -70,6 +70,7 @@ void InstancingBuffer::Initialize()
         }
 
         vertexBuffer_ = MakeShared<DynamicVertexBuffer>(context_);
+        vertexBuffer_->SetDebugName("InstancingBuffer");
         vertexBuffer_->Initialize(128, vertexElements);
     }
 }

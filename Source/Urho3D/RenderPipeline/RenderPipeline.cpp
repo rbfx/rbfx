@@ -168,8 +168,14 @@ void RenderPipeline::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Bloom Iteration Factor", float, settings_.bloom_.iterationFactor_, MarkSettingsDirty, BloomPassSettings{}.iterationFactor_, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Tone Mapping Mode", settings_.toneMapping_, MarkSettingsDirty, toneMappingModeNames, ToneMappingMode::None, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Post Process Antialiasing", settings_.antialiasing_, MarkSettingsDirty, postProcessAntialiasingNames, PostProcessAntialiasing::None, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Post Process Grey Scale", bool, settings_.greyScale_, MarkSettingsDirty, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Hue Shift", float, settings_.hueShift_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Saturation", float, settings_.saturation_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Brightness", float, settings_.brightness_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Contrast", float, settings_.contrast_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Draw Debug Geometry", bool, settings_.drawDebugGeometry_, MarkSettingsDirty, true, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Depth Bias Scale", float, settings_.shadowMapAllocator_.depthBiasScale_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Depth Bias Offset", float, settings_.shadowMapAllocator_.depthBiasOffset_, MarkSettingsDirty, 0.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Normal Offset Scale", float, settings_.sceneProcessor_.normalOffsetScale_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
 }
 
 void RenderPipeline::SetSettings(const RenderPipelineSettings& settings)

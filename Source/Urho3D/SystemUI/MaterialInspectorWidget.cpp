@@ -29,6 +29,7 @@
 #include "../Graphics/Texture3D.h"
 #include "../Graphics/TextureCube.h"
 #include "../IO/FileSystem.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../Resource/ResourceCache.h"
 #include "../SystemUI/SystemUI.h"
 
@@ -75,17 +76,13 @@ const StringVector fillModes{"Solid", "Wireframe", "Points"};
 
 }
 
+// TODO(diligent): Revisit this before merge!
 const ea::vector<MaterialInspectorWidget::TextureUnitDesc> MaterialInspectorWidget::textureUnits{
-    {false, TU_DIFFUSE,     "Albedo",       "TU_DIFFUSE: Albedo map or Diffuse texture with optional alpha channel"},
-    {false, TU_NORMAL,      "Normal",       "TU_NORMAL: Normal map"},
-    {false, TU_SPECULAR,    "Specular",     "TU_SPECULAR: Metallic-Roughness-Occlusion map or Specular texture"},
-    {false, TU_EMISSIVE,    "Emissive",     "TU_EMISSIVE: Emissive map or light map"},
-    {false, TU_ENVIRONMENT, "Environment",  "TU_ENVIRONMENT: Texture with environment reflection"},
-#ifdef DESKTOP_GRAPHICS
-    {true,  TU_VOLUMEMAP,   "* Volume",     "TU_VOLUMEMAP: Desktop only, custom unit"},
-    {true,  TU_CUSTOM1,     "* Custom 1",   "TU_CUSTOM1: Desktop only, custom unit"},
-    {true,  TU_CUSTOM2,     "* Custom 2",   "TU_CUSTOM2: Desktop only, custom unit"},
-#endif
+    {ShaderResources::Albedo,       "Albedo map or Diffuse texture with optional alpha channel."},
+    {ShaderResources::Normal,       "Normal map, ignored unless normal mapping is enabled."},
+    {ShaderResources::Properties,   "Roughness-Metalness-Occlusion map or Specular map."},
+    {ShaderResources::Emission,     "Emission map. May also be used as AO map for legacy materials."},
+    {ShaderResources::Reflection0,  "Reflection map override."},
 };
 
 const ea::vector<MaterialInspectorWidget::PropertyDesc> MaterialInspectorWidget::properties{
@@ -255,6 +252,11 @@ void MaterialInspectorWidget::RenderContent()
     RenderTextures();
     RenderShaderParameters();
 
+    ui::Separator();
+    const bool forceSave = ui::Button(ICON_FA_FLOPPY_DISK " Force Save");
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Materials are always saved on edit. You can force save even if there are no changes.");
+
     if (pendingSetTechniques_)
     {
         OnEditBegin(this);
@@ -268,8 +270,8 @@ void MaterialInspectorWidget::RenderContent()
         OnEditBegin(this);
         for (Material* material : materials_)
         {
-            for (const auto& [unit, texture] : pendingSetTextures_)
-                material->SetTexture(unit, texture);
+            for (const auto& [name, texture] : pendingSetTextures_)
+                material->SetTexture(name, texture);
         }
         OnEditEnd(this);
     }
@@ -298,6 +300,12 @@ void MaterialInspectorWidget::RenderContent()
             for (const auto& [desc, value] : pendingSetProperties_)
                 desc->setter_(material, value);
         }
+        OnEditEnd(this);
+    }
+
+    if (forceSave)
+    {
+        OnEditBegin(this);
         OnEditEnd(this);
     }
 }
@@ -540,20 +548,20 @@ void MaterialInspectorWidget::RenderTextures()
 
 void MaterialInspectorWidget::RenderTextureUnit(const TextureUnitDesc& desc)
 {
-    const IdScopeGuard guard(desc.unit_);
+    const IdScopeGuard guard(desc.name_.c_str());
 
     auto cache = GetSubsystem<ResourceCache>();
 
-    Texture* texture = materials_[0]->GetTexture(desc.unit_);
+    Texture* texture = materials_[0]->GetTexture(desc.name_);
     const bool isUndefined = ea::any_of(materials_.begin() + 1, materials_.end(),
-        [&](const Material* material) { return material->GetTexture(desc.unit_) != texture; });
+        [&](const Material* material) { return material->GetTexture(desc.name_) != texture; });
 
     Widgets::ItemLabel(desc.name_, Widgets::GetItemLabelColor(isUndefined, texture == nullptr));
     if (ui::IsItemHovered())
         ui::SetTooltip("%s", desc.hint_.c_str());
 
     if (ui::Button(ICON_FA_TRASH_CAN))
-        pendingSetTextures_.emplace_back(desc.unit_, nullptr);
+        pendingSetTextures_.emplace_back(desc.name_, nullptr);
     if (ui::IsItemHovered())
         ui::SetTooltip("Remove texture from this unit");
     ui::SameLine();
@@ -572,9 +580,9 @@ void MaterialInspectorWidget::RenderTextureUnit(const TextureUnitDesc& desc)
     if (Widgets::EditResourceRef(textureType, textureName, &allowedTextureTypes))
     {
         if (const auto texture = dynamic_cast<Texture*>(cache->GetResource(textureType, textureName)))
-            pendingSetTextures_.emplace_back(desc.unit_, texture);
+            pendingSetTextures_.emplace_back(desc.name_, texture);
         else
-            pendingSetTextures_.emplace_back(desc.unit_, nullptr);
+            pendingSetTextures_.emplace_back(desc.name_, nullptr);
     }
 }
 

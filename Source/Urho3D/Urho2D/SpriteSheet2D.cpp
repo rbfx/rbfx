@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -51,6 +52,59 @@ void SpriteSheet2D::RegisterObject(Context* context)
     context->AddFactoryReflection<SpriteSheet2D>();
 }
 
+bool SpriteSheet2D::Save(Serializer& dest) const
+{
+    // Only XML format supported at the moment.
+    SharedPtr<XMLFile> xml(MakeShared<XMLFile>(context_));
+    XMLElement rootElem = xml->CreateRoot("TextureAtlas");
+    Save(rootElem);
+    return xml->Save(dest);
+}
+
+bool SpriteSheet2D::Save(XMLElement& rootElem) const
+{
+    if (rootElem.IsNull())
+    {
+        URHO3D_LOGERROR("Can not save SpriteSheet2D to null XML element");
+        return false;
+    }
+
+    if (texture_)
+    {
+        ea::string imagePath;
+        if (Urho3D::GetRelativePath(Urho3D::GetParentPath(GetName()), texture_->GetName(), imagePath))
+        {
+            rootElem.SetAttribute("imagePath", Urho3D::RemoveTrailingSlash(imagePath));
+        }
+        else
+        {
+            rootElem.SetAttribute("imagePath", texture_->GetName());
+        }
+    }
+
+    for (auto& subTex: GetSpriteMapping())
+    {
+        XMLElement subTextureElem = rootElem.CreateChild("SubTexture");
+        subTextureElem.SetAttribute("name", subTex.first);
+        auto sprite = subTex.second;
+        auto rect = sprite->GetRectangle();
+        subTextureElem.SetInt("x", rect.Left());
+        subTextureElem.SetInt("y", rect.Top());
+        subTextureElem.SetInt("width", rect.Width());
+        subTextureElem.SetInt("height", rect.Height());
+        auto offset = sprite->GetOffset();
+        subTextureElem.SetInt("frameX", offset.x_);
+        subTextureElem.SetInt("frameY", offset.y_);
+        auto hotSpot = sprite->GetHotSpot();
+        hotSpot.y_ = 1.0f - hotSpot.y_;
+        auto frame = ((hotSpot * rect.Size().ToVector2() - offset.ToVector2()) * 2.0f).ToIntVector2();
+        subTextureElem.SetInt("frameWidth", frame.x_);
+        subTextureElem.SetInt("frameHeight", frame.y_);
+    }
+
+    return true;
+}
+
 bool SpriteSheet2D::BeginLoad(Deserializer& source)
 {
     if (GetName().empty())
@@ -97,7 +151,10 @@ void SpriteSheet2D::SetTexture(Texture2D* texture)
 void SpriteSheet2D::DefineSprite(const ea::string& name, const IntRect& rectangle, const Vector2& hotSpot, const IntVector2& offset)
 {
     if (!texture_)
+    {
+        URHO3D_LOGERROR("Could not define sprite: no texture found");
         return;
+    }
 
     if (GetSprite(name))
         return;

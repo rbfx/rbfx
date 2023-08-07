@@ -48,6 +48,10 @@ void ParticleGraphEmitter::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Effect", GetEffectAttr, SetEffectAttr, ResourceRef,
                                     ResourceRef(ParticleGraphEmitter::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("View Mask", GetViewMask, SetViewMask, unsigned, DEFAULT_VIEWMASK, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Light Mask", GetLightMask, SetLightMask, unsigned, DEFAULT_LIGHTMASK, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Shadow Mask", GetShadowMask, SetShadowMask, unsigned, DEFAULT_SHADOWMASK, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Zone Mask", GetZoneMask, SetZoneMask, unsigned, DEFAULT_ZONEMASK, AM_DEFAULT);
 }
 
 void ParticleGraphEmitter::OnSetEnabled()
@@ -137,6 +141,50 @@ void ParticleGraphEmitter::SetEffectAttr(const ResourceRef& value)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     SetEffect(cache->GetResource<ParticleGraphEffect>(value.name_));
+}
+
+void ParticleGraphEmitter::SetViewMask(unsigned mask)
+{
+    if (viewMask_ != mask)
+    {
+        viewMask_ = mask;
+        UpdateDrawables();
+    }
+}
+
+void ParticleGraphEmitter::SetLightMask(unsigned mask)
+{
+    if (lightMask_ != mask)
+    {
+        lightMask_ = mask;
+        UpdateDrawables();
+    }
+}
+
+void ParticleGraphEmitter::SetShadowMask(unsigned mask)
+{
+    if (shadowMask_ != mask)
+    {
+        shadowMask_ = mask;
+        UpdateDrawables();
+    }
+}
+
+void ParticleGraphEmitter::SetZoneMask(unsigned mask)
+{
+    if (zoneMask_ != mask)
+    {
+        zoneMask_ = mask;
+        UpdateDrawables();
+    }
+}
+
+void ParticleGraphEmitter::UpdateDrawables()
+{
+    for (auto& layer : layers_)
+    {
+        layer.UpdateDrawables();
+    }
 }
 
 ResourceRef ParticleGraphEmitter::GetEffectAttr() const

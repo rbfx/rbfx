@@ -52,6 +52,8 @@
 #include "../RmlUI/RmlNavigable.h"
 #include "../RmlUI/RmlSerializableInspector.h"
 #include "../RmlUI/RmlUIComponent.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
 
 #include <atomic>
 #include <EASTL/fixed_vector.h>
@@ -539,6 +541,80 @@ void RmlUI::SetRenderTarget(std::nullptr_t, const Color& clearColor)
     SetRenderTarget(static_cast<RenderSurface*>(nullptr), clearColor);
 }
 
+/// Try to convert variant from RmlUI to Urho3D.
+bool FromRmlUi(const Rml::Variant& src, Variant& dst)
+{
+    switch (src.GetType())
+    {
+    case Rml::Variant::NONE: dst = Variant{}; return true;
+    case Rml::Variant::BOOL: dst = src.Get<bool>(); return true;
+    case Rml::Variant::INT: dst = src.Get<int>(); return true;
+    case Rml::Variant::INT64: dst = static_cast<long long>(src.Get<int64_t>()); return true;
+    case Rml::Variant::FLOAT: dst = src.Get<float>(); return true;
+    case Rml::Variant::DOUBLE: dst = src.Get<double>(); return true;
+    case Rml::Variant::STRING: dst = src.Get<Rml::String>(); return true;
+    case Rml::Variant::VOIDPTR: dst = src.Get<void*>(); return true;
+    case Rml::Variant::VECTOR2: dst = ToVector2(src.Get<Rml::Vector2f>()); return true;
+    case Rml::Variant::VECTOR3: dst = ToVector3(src.Get<Rml::Vector3f>()); return true;
+    case Rml::Variant::VECTOR4: dst = ToVector4(src.Get<Rml::Vector4f>()); return true;
+    case Rml::Variant::COLOURF: dst = ToColor(src.Get<Rml::Colourf>()); return true;
+    case Rml::Variant::COLOURB: dst = ToColor(src.Get<Rml::Colourb>()); return true;
+    case Rml::Variant::BYTE: dst = src.Get<Rml::byte>(); return true;
+    case Rml::Variant::CHAR: dst = src.Get<char>(); return true;
+    case Rml::Variant::UINT: dst = src.Get<unsigned>(); return true;
+    case Rml::Variant::UINT64: dst = static_cast<unsigned long long>(src.Get<uint64_t>()); return true;
+    case Rml::Variant::SCRIPTINTERFACE: break;
+    case Rml::Variant::TRANSFORMPTR: break;
+    case Rml::Variant::TRANSITIONLIST: break;
+    case Rml::Variant::ANIMATIONLIST: break;
+    case Rml::Variant::DECORATORSPTR: break;
+    case Rml::Variant::FONTEFFECTSPTR: break;
+    }
+    URHO3D_LOGERROR("This variant type conversion is not supported: {}", src.GetType());
+
+    return false;
+}
+
+/// Try to convert variant from Urho3D to RmlUI.
+bool ToRmlUi(const Variant& src, Rml::Variant& dst)
+{
+    switch (src.GetType())
+    {
+    case VAR_NONE: dst = {}; return true;
+    case VAR_BOOL: dst = src.Get<bool>(); return true;
+    case VAR_INT: dst = src.Get<int>(); return true;
+    case VAR_INT64: dst = static_cast<int64_t>(src.Get<long long>()); return true;
+    case VAR_FLOAT: dst = src.Get<float>(); return true;
+    case VAR_DOUBLE: dst = src.Get<double>(); return true;
+    case VAR_STRING: dst = src.Get<ea::string>(); return true;
+    case VAR_VOIDPTR: dst = src.Get<void*>(); return true;
+    case VAR_VECTOR2: dst = ToRmlUi(src.Get<Vector2>()); return true;
+    case VAR_VECTOR3: dst = ToRmlUi(src.Get<Vector3>()); return true;
+    case VAR_VECTOR4: dst = ToRmlUi(src.Get<Vector4>()); return true;
+    case VAR_COLOR: dst = ToRmlUi(src.Get<Color>()); return true;
+    case VAR_QUATERNION: break;
+    case VAR_BUFFER: break;
+    case VAR_RESOURCEREF: break;
+    case VAR_RESOURCEREFLIST: break;
+    case VAR_VARIANTVECTOR: break;
+    case VAR_VARIANTMAP: break;
+    case VAR_INTRECT: break;
+    case VAR_INTVECTOR2: break;
+    case VAR_PTR: break;
+    case VAR_MATRIX3: break;
+    case VAR_MATRIX3X4: break;
+    case VAR_MATRIX4: break;
+    case VAR_STRINGVECTOR: break;
+    case VAR_RECT: break;
+    case VAR_INTVECTOR3: break;
+    case VAR_CUSTOM: break;
+    case VAR_VARIANTCURVE: break;
+    case VAR_STRINGVARIANTMAP: break;
+    }
+    URHO3D_LOGERROR("This variant type conversion is not supported: {}", Variant::GetTypeNameList()[src.GetType()]);
+    return false;
+}
+
 IntVector2 RmlUI::GetDesiredCanvasSize() const
 {
     RenderSurface* renderSurface = renderSurface_;
@@ -581,24 +657,25 @@ bool RmlUI::IsInputCapturedInternal() const
 
 void RmlUI::Render()
 {
-    Graphics* graphics = GetSubsystem<Graphics>();
-    Renderer* renderer = GetSubsystem<Renderer>();
-    if (!graphics || !graphics->IsInitialized())
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    if (!renderDevice)
         return;
 
     URHO3D_PROFILE("RenderUI");
-    graphics->ResetRenderTargets();
-    if (renderSurface_)
-    {
-        graphics->SetDepthStencil(renderer->GetDepthStencil(renderSurface_));
-        graphics->SetRenderTarget(0, renderSurface_);
-        graphics->SetViewport(IntRect(0, 0, renderSurface_->GetWidth(), renderSurface_->GetHeight()));
 
-        if (clearColor_.a_ > 0)
-            graphics->Clear(CLEAR_COLOR, clearColor_);
+    RenderContext* renderContext = renderDevice->GetRenderContext();
+    if (!renderSurface_)
+    {
+        renderContext->SetSwapChainRenderTargets();
     }
     else
-        graphics->SetRenderTarget(0, (RenderSurface*)nullptr);
+    {
+        const RenderTargetView renderTargets[] = {renderSurface_->GetView()};
+        renderContext->SetRenderTargets(ea::nullopt, renderTargets);
+        if (clearColor_.a_ > 0)
+            renderContext->ClearRenderTarget(0, clearColor_);
+    }
+    renderContext->SetFullViewport();
 
     if (auto rmlRenderer = dynamic_cast<Detail::RmlRenderer*>(Rml::GetRenderInterface()))
     {
@@ -626,11 +703,11 @@ void RmlUI::HandleResourceReloaded(StringHash eventType, VariantMap& eventData)
 {
     (void)eventType;
     using namespace FileChanged;
-    const ea::string& fileName = eventData[P_FILENAME].GetString();
+    const ea::string& resourceName = eventData[P_RESOURCENAME].GetString();
     Detail::RmlFile* file = static_cast<Detail::RmlFile*>(Rml::GetFileInterface());
-    if (file->IsFileLoaded(fileName))
+    if (file->IsResourceLoaded(resourceName))
     {
-        file->ClearLoadedFiles();
+        file->ClearLoadedResources();
 
         Rml::ReleaseTextures();
         Rml::Factory::ClearStyleSheetCache();
@@ -655,7 +732,7 @@ Rml::ElementDocument* RmlUI::ReloadDocument(Rml::ElementDocument* document)
     assert(document->GetContext() == rmlContext_);
 
     // Keep some properties of the old document
-    const Vector2 oldPosition = ToVector2(document->GetAbsoluteOffset(Rml::Box::BORDER));
+    const Vector2 oldPosition = ToVector2(document->GetAbsoluteOffset(Rml::BoxArea::Border));
     const Rml::ModalFlag oldModal = document->IsModal() ? Rml::ModalFlag::Modal : Rml::ModalFlag::None;
     const bool oldVisible = document->IsVisible();
 

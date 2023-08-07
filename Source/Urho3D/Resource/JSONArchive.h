@@ -26,6 +26,8 @@
 #include "../Resource/JSONFile.h"
 #include "../Resource/JSONValue.h"
 
+#include <EASTL/optional.h>
+
 namespace Urho3D
 {
 
@@ -180,4 +182,38 @@ private:
     const JSONValue& rootValue_;
 };
 
+/// Save object to JSON string.
+template <class T> ea::optional<ea::string> ToJSONString(T& object)
+{
+    ea::optional<ea::string> result;
+    ConsumeArchiveException(
+        [&]
+    {
+        JSONFile jsonFile{Context::GetInstance()};
+        JSONOutputArchive archive(&jsonFile);
+        SerializeValue(archive, "object", object);
+        result = jsonFile.ToString();
+    });
+    return result;
 }
+
+/// Load object from JSON string.
+template <class T> ea::optional<T> FromJSONString(const ea::string& jsonString)
+{
+    ea::optional<T> result;
+    ConsumeArchiveException(
+        [&]
+    {
+        JSONFile jsonFile{Context::GetInstance()};
+        if (!jsonFile.FromString(jsonString))
+            throw ArchiveException("Failed to parse JSON string");
+
+        JSONInputArchive archive(&jsonFile);
+        T resultObject;
+        SerializeValue(archive, "object", resultObject);
+        result = ea::move(resultObject);
+    });
+    return result;
+}
+
+} // namespace Urho3D

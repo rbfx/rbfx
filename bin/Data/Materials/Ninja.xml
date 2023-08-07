@@ -1,0 +1,5 @@
+<material>
+    <technique name="Techniques/Diff.xml" />
+    <texture slot="Albedo" name="Textures/Ninja.dds" />
+    <parameter name="MatSpecColor" value="0 0 0 1" />
+</material>

@@ -26,10 +26,9 @@
 #include "../Graphics/Camera.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
-#include "../Graphics/RenderPath.h"
 #include "../Graphics/RenderSurface.h"
-#include "../Graphics/View.h"
 #include "../Graphics/Viewport.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
@@ -45,27 +44,24 @@ Viewport::Viewport(Context* context) :
     rect_(IntRect::ZERO),
     drawDebug_(true)
 {
-    SetRenderPath((RenderPath*)nullptr);
 }
 
-Viewport::Viewport(Context* context, Scene* scene, Camera* camera, RenderPath* renderPath) :
+Viewport::Viewport(Context* context, Scene* scene, Camera* camera) :
     Object(context),
     scene_(scene),
     camera_(camera),
     rect_(IntRect::ZERO),
     drawDebug_(true)
 {
-    SetRenderPath(renderPath);
 }
 
-Viewport::Viewport(Context* context, Scene* scene, Camera* camera, const IntRect& rect, RenderPath* renderPath) :   // NOLINT(modernize-pass-by-value)
+Viewport::Viewport(Context* context, Scene* scene, Camera* camera, const IntRect& rect) :   // NOLINT(modernize-pass-by-value)
     Object(context),
     scene_(scene),
     camera_(camera),
     rect_(rect),
     drawDebug_(true)
 {
-    SetRenderPath(renderPath);
 }
 
 Viewport::Viewport(Context* context, Scene* scene, Camera* camera, const IntRect& rect, RenderPipeline* renderPipeline)
@@ -100,13 +96,10 @@ void Viewport::RegisterObject(Context* context)
 
 void Viewport::SetScene(Scene* scene)
 {
-#ifndef URHO3D_LEGACY_RENDERER
     if (!!scene_ != !!scene)
     {
         renderPipelineView_ = nullptr;
-        view_ = nullptr;
     }
-#endif
 
     scene_ = scene;
 }
@@ -131,29 +124,6 @@ void Viewport::SetDrawDebug(bool enable)
     drawDebug_ = enable;
 }
 
-void Viewport::SetRenderPath(RenderPath* renderPath)
-{
-    if (renderPath)
-        renderPath_ = renderPath;
-    else
-    {
-        auto* renderer = GetSubsystem<Renderer>();
-        if (renderer)
-            renderPath_ = renderer->GetDefaultRenderPath();
-    }
-}
-
-bool Viewport::SetRenderPath(XMLFile* file)
-{
-    SharedPtr<RenderPath> newRenderPath(new RenderPath());
-    if (newRenderPath->Load(file))
-    {
-        renderPath_ = newRenderPath;
-        return true;
-    }
-    return false;
-}
-
 Scene* Viewport::GetScene() const
 {
     return scene_;
@@ -166,6 +136,9 @@ Camera* Viewport::GetCamera() const
 
 IntRect Viewport::GetEffectiveRect(RenderSurface* renderTarget, bool compensateRenderTargetFlip) const
 {
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    const bool isOpenGL = renderDevice && renderDevice->GetBackend() == RenderBackend::OpenGL;
+
     const IntVector2 renderTargetSize = RenderSurface::GetSize(GetSubsystem<Graphics>(), renderTarget);
 
     if (rect_ == IntRect::ZERO)
@@ -182,8 +155,7 @@ IntRect Viewport::GetEffectiveRect(RenderSurface* renderTarget, bool compensateR
         rect.right_ = Clamp(rect_.right_, rect.left_ + 1, renderTargetSize.x_);
         rect.bottom_ = Clamp(rect_.bottom_, rect.top_ + 1, renderTargetSize.y_);
 
-#ifdef URHO3D_OPENGL
-        if (renderTarget && compensateRenderTargetFlip)
+        if (isOpenGL && renderTarget && compensateRenderTargetFlip)
         {
             // On OpenGL the render to texture is flipped vertically.
             // Flip the viewport rectangle to compensate.
@@ -191,7 +163,6 @@ IntRect Viewport::GetEffectiveRect(RenderSurface* renderTarget, bool compensateR
             rect.bottom_ = renderTargetSize.y_ - rect.bottom_;
             ea::swap(rect.top_, rect.bottom_);
         }
-#endif
 
         return rect;
     }
@@ -200,11 +171,6 @@ IntRect Viewport::GetEffectiveRect(RenderSurface* renderTarget, bool compensateR
 Camera* Viewport::GetCullCamera() const
 {
     return cullCamera_;
-}
-
-View* Viewport::GetView() const
-{
-    return view_;
 }
 
 RenderPipelineView* Viewport::GetRenderPipelineView() const
@@ -222,11 +188,6 @@ RenderPipelineView* Viewport::GetRenderPipelineView() const
         return nullptr;
 
     return renderPipelineView_;
-}
-
-RenderPath* Viewport::GetRenderPath() const
-{
-    return renderPath_;
 }
 
 Ray Viewport::GetScreenRay(int x, int y) const
@@ -303,7 +264,6 @@ Vector3 Viewport::ScreenToWorldPoint(int x, int y, float depth) const
 
 void Viewport::AllocateView()
 {
-#ifndef URHO3D_LEGACY_RENDERER
     // If automatic render pipeline, expire it on scene mismatch
     if (autoRenderPipeline_ && renderPipeline_ && renderPipeline_->GetScene() != scene_)
         renderPipeline_ = nullptr;
@@ -318,10 +278,6 @@ void Viewport::AllocateView()
     // Expire view on pipeline mismatch
     if (renderPipeline_ && (!renderPipelineView_ || renderPipelineView_->GetRenderPipeline() != renderPipeline_))
         renderPipelineView_ = renderPipeline_->Instantiate();
-#endif
-
-    if (!renderPipelineView_)
-        view_ = MakeShared<View>(context_);
 }
 
 Camera* Viewport::GetEye(int idx) const

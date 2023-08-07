@@ -26,6 +26,7 @@
 
 #include "../Core/CoreEvents.h"
 #include "../Graphics/Camera.h"
+#include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
@@ -40,6 +41,7 @@ FreeFlyController::FreeFlyController(Context* context)
     : Component(context)
     , multitouchAdapter_(context)
 {
+    ignoreJoystickId_ = GetSubsystem<Input>()->FindAccelerometerJoystickId();
     SubscribeToEvent(&multitouchAdapter_, E_MULTITOUCH, URHO3D_HANDLER(FreeFlyController, HandleMultitouch));
 }
 
@@ -53,7 +55,7 @@ void FreeFlyController::OnNodeSet(Node* previousNode, Node* currentNode)
 
 void FreeFlyController::UpdateEventSubscription()
 {
-    bool enabled = IsEnabledEffective();
+    const bool enabled = IsEnabledEffective();
 
     multitouchAdapter_.SetEnabled(enabled);
 
@@ -384,8 +386,13 @@ void FreeFlyController::HandleKeyboardMouseAndJoysticks(float timeStep)
     for (unsigned joystickIndex = 0; joystickIndex < numJoysticks; ++joystickIndex)
     {
         const auto state = input->GetJoystickByIndex(joystickIndex);
-        if (state)
+        const bool isAccelerometer =
+            state->GetNumAxes() == 3 && state->GetNumButtons() == 0 && state->GetNumHats() == 0;
+        if (state && !isAccelerometer)
         {
+            if (state->joystickID_ == ignoreJoystickId_)
+                continue;
+
             switch (state->type_)
             {
             // Ignore odd devices

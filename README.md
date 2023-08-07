@@ -56,14 +56,20 @@ Here are some reasons why you may want to try this one:
 
 ## Using the Framework
 
-It is recommended to check out [Sample Project on GitHub](https://github.com/rbfx/sample-project).
+There are two template projects that you can use as example.
 
-This project demonstrates full pipeline: from code and assets to build and publishing.
+[Empty Project](https://github.com/rbfx/empty-project) is the absolute minimum of code
+that is required to get things running on Desktop platforms.
+Check it out if you don't care about recommended high-level workflow and want to do things your way.
 
-This project is automatically published to [itch.io](https://eugeneko.itch.io/sample-project).
+[Sample Project](https://github.com/rbfx/sample-project) demonstrates recommended workflow
+which enables certain high-level features like writing your code once and then running it
+both from Editor and standalone. Sample Project is also Mobile and Web friendly
+and is deployed to [itch.io](https://eugeneko.itch.io/sample-project).
 
-If you want to build the project or the Framework for your platform,
-it's recommended to check out how GitHub Actions are configured.
+Building the project is usually straighforward on Desktop platforms: standard CMake configure and build.
+On Mobile and Web platforms extra steps may be needed.
+If you cannot figure it out, check how our GitHub Actions are configured.
 
 
 ## Supported Platforms

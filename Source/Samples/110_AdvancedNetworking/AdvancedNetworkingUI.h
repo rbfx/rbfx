@@ -40,7 +40,7 @@ public:
 
     void StartServer();
     void ConnectToServer(const ea::string& address);
-    void Stop();
+    void Stop() override;
 
     bool GetCheatAutoMovementCircle() const { return cheatAutoMovementCircle_; }
     bool GetCheatAutoAimHand() const { return cheatAutoAimHand_; }
@@ -48,7 +48,7 @@ public:
 
 private:
     void Update(float timeStep) override;
-    void OnDataModelInitialized(Rml::DataModelConstructor& constructor) override;
+    void OnDataModelInitialized() override;
 
     int serverPort_{2345};
     Rml::String connectionAddress_{"localhost"};
