@@ -87,23 +87,39 @@ RmlNavigationManager::~RmlNavigationManager()
 {
 }
 
-void RmlNavigationManager::HandleDirectionKeyEvent(StringHash eventType, VariantMap& eventData)
+bool RmlNavigationManager::DoesElementHandleDirectionKeys(Rml::Element* element)
 {
-    // Let control in focus handle directional input.
-    auto elementInFocus = owner_->GetDocument()->GetFocusLeafNode();
-    if (auto formControl = dynamic_cast<Rml::ElementFormControl*>(elementInFocus))
+    if (!element)
     {
-        if (auto inputControl = dynamic_cast<Rml::ElementFormControlInput*>(elementInFocus))
+        return false;
+    }
+
+    if (auto formControl = dynamic_cast<Rml::ElementFormControl*>(element))
+    {
+        if (const auto inputControl = dynamic_cast<Rml::ElementFormControlInput*>(element))
         {
             auto& typeName = inputControl->GetTypeName();
             if (typeName == "range" || typeName == "text" || typeName == "password")
-                return;
+                return true;
         }
-        else if (dynamic_cast<Rml::ElementFormControlSelect*>(elementInFocus))
+        else if (dynamic_cast<Rml::ElementFormControlSelect*>(element))
         {
-            return;
+            return true;
         }
-        else if (dynamic_cast<Rml::ElementFormControlTextArea*>(elementInFocus))
+        else if (dynamic_cast<Rml::ElementFormControlTextArea*>(element))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+void RmlNavigationManager::HandleDirectionKeyEvent(StringHash eventType, VariantMap& eventData)
+{
+    // Let control in focus handle directional input.
+    if (auto doc = owner_->GetDocument())
+    {
+        if (DoesElementHandleDirectionKeys(doc->GetFocusLeafNode()))
         {
             return;
         }

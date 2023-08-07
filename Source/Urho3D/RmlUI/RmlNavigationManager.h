@@ -70,6 +70,7 @@ public:
     /// @{
     void AddNavigable(RmlNavigable* navigable);
     void RemoveNavigable(RmlNavigable* navigable);
+    static bool DoesElementHandleDirectionKeys(Rml::Element* element);
     /// @}
 
 private:

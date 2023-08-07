@@ -289,7 +289,7 @@ void RmlNavigable::SetPressed(bool pressed, NavigableInputSource inputSource, Na
         {
             bool isFocused = target == this->GetOwnerDocument()->GetFocusLeafNode();
 
-            if (!isFocused)
+            if (!isFocused || !RmlNavigationManager::DoesElementHandleDirectionKeys(target))
             {
                 target->Focus();
                 target->Click();
