@@ -259,6 +259,8 @@ void RmlNavigable::SetNavigated(bool navigated, NavigableEventMode eventMode)
 {
     if (navigated)
     {
+        this->Focus();
+
         auto element = TagMatchRecursive(matching_tags, this);
         targetElement_ = (element) ? element->GetObserverPtr() : nullptr;
     }
