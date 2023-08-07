@@ -50,7 +50,7 @@ public:
 
     const ea::string& GetName() const override { return name_; }
 
-    ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const override;
+    ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName, FileMode mode) const override;
     FileIdentifier GetIdentifierFromAbsoluteName(const ea::string& absoluteFileName) const override;
 
     void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter,

@@ -43,7 +43,7 @@ ea::optional<FileTime> MountPoint::GetLastModifiedTime(
         return ea::nullopt;
 }
 
-ea::string MountPoint::GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const
+ea::string MountPoint::GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName, FileMode mode) const
 {
     return EMPTY_STRING;
 }

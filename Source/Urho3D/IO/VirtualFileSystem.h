@@ -75,7 +75,7 @@ public:
     /// Return modification time. Return 0 if not supported or file doesn't exist.
     FileTime GetLastModifiedTime(const FileIdentifier& fileName, bool creationIsModification) const;
     /// Return absolute file name for *existing* identifier in this mount point, if supported.
-    ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const;
+    ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName, FileMode mode = FILE_READ) const;
     /// Return canonical file identifier, if possible.
     FileIdentifier GetCanonicalIdentifier(const FileIdentifier& fileName) const;
     /// Works even if the file does not exist.
