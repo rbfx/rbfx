@@ -1271,6 +1271,8 @@ public:
     void SetCustomVariantValue(const CustomVariantValue& value);
     /// Set custom value without copying.
     void SetCustomVariantValue(CustomVariantValue&& value);
+    /// Convert variant value. Returns variant of VAR_NONE type if conversion fails / not possible.
+    Variant Convert(VariantType targetType) const;
     /// Set custom value.
     template <class T> void SetCustom(T value)
     {
@@ -1302,11 +1304,6 @@ public:
             return static_cast<int>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<int>(value_.double_);
-        else if (type_ == VAR_STRING)
-        {
-            char* end;
-            return static_cast<int>(strtol(value_.string_.c_str(), &end, 10));
-        }
         else
             return 0;
     }
@@ -1322,11 +1319,6 @@ public:
             return static_cast<long long>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<long long>(value_.double_);
-        else if (type_ == VAR_STRING)
-        {
-            char* end;
-            return static_cast<long long>(strtoll(value_.string_.c_str(), &end, 10));
-        }
         else
             return 0;
     }
@@ -1342,11 +1334,6 @@ public:
             return static_cast<unsigned long long>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<unsigned long long>(value_.double_);
-        else if (type_ == VAR_STRING)
-        {
-            char* end;
-            return static_cast<unsigned long long>(strtoull(value_.string_.c_str(), &end, 10));
-        }
         else
             return 0;
     }
@@ -1362,11 +1349,6 @@ public:
             return static_cast<unsigned>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<unsigned>(value_.double_);
-        else if (type_ == VAR_STRING)
-        {
-            char* end;
-            return static_cast<unsigned>(strtoull(value_.string_.c_str(), &end, 10));
-        }
         else
             return 0;
     }
