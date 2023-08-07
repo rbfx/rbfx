@@ -56,7 +56,7 @@ void InitializeInputLayout(InputLayoutDesc& desc, const VertexBufferArray& verte
                 layoutElement.bufferIndex_ = bufferIndex;
                 layoutElement.bufferStride_ = vertexBuffer->GetVertexSize();
                 layoutElement.elementOffset_ = vertexElement.offset_;
-                layoutElement.instanceStepRate_ = vertexElement.perInstance_ ? 1 : 0;
+                layoutElement.instanceStepRate_ = vertexElement.stepRate_;
 
                 layoutElement.elementType_ = vertexElement.type_;
                 layoutElement.elementSemantic_ = vertexElement.semantic_;

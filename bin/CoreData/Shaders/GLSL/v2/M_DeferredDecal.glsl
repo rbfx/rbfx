@@ -62,7 +62,7 @@ void main()
     Surface_SetAmbient(surfaceData, sEmission, vTexCoord2);
     Surface_SetBackgroundDepth(surfaceData, sDepthBuffer);
 
-    vec4 worldPos = vec4(GetDeferredWorldPos(surfaceData.backgroundDepth) + cCameraPos, 1.0);
+    vec4 worldPos = vec4(GetDeferredWorldPos(surfaceData.backgroundDepth) + cCameraPos.xyz, 1.0);
     vec4 modelSpace = worldPos * vToModelSpace;
     vTexCoord = modelSpace.xy + vec2(0.5, 0.5);
     vTexCoord.y = 1.0 - vTexCoord.y;

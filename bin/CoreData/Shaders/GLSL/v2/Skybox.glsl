@@ -25,13 +25,13 @@ void main()
 {
     mat4 modelMatrix = GetModelMatrix();
     vec4 worldPos = vec4(iPos.xyz, 0.0) * modelMatrix;
-    worldPos.xyz += STEREO_VAR(cCameraPos);    
+    worldPos.xyz += STEREO_VAR(cCameraPos).xyz;
     worldPos.w = 1.0;
-    
+
     gl_Position = WorldToClipSpace(worldPos.xyz);
     gl_Position.z = gl_Position.w;
     vTexCoord = iPos.xyz;
-    
+
     #ifdef URHO3D_XR
         vInstID = gl_InstanceID;
     #endif

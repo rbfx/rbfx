@@ -32,7 +32,7 @@ UNIFORM_BUFFER_BEGIN(1, Camera)
     /// Clip plane in clip space.
     UNIFORM_HIGHP(vec4 cClipPlane)
     /// Camera position in world space.
-    UNIFORM_HIGHP(vec3 cCameraPos VIEW_XR)
+    UNIFORM_HIGHP(vec4 cCameraPos VIEW_XR)
     /// Distance to near clip plane in units.
     UNIFORM_HIGHP(float cNearClip)
     /// Distance to far clip plane in units.
@@ -47,7 +47,7 @@ UNIFORM_BUFFER_BEGIN(1, Camera)
     /// xy: Linear dimensions of far clip plane in units.
     /// z: Distance to far clip plane.
     /// TODO(legacy): Probably don't need z component, should be identical to cFarClip.
-    UNIFORM_HIGHP(vec3 cFrustumSize VIEW_XR)
+    UNIFORM_HIGHP(vec4 cFrustumSize VIEW_XR)
     /// Transform that is applied to clip position xy to get underlying texture uv.
     /// Basically describes current viewport.
     /// xy: Translation part.

@@ -157,7 +157,7 @@ bool VertexBuffer::SetSize(unsigned vertexCount, const ea::vector<VertexElement>
         params.flags_ |= BufferFlag::Shadowed;
     if (dynamic)
         params.flags_ |= BufferFlag::Dynamic;
-    if (!elements_.empty() && elements_[0].perInstance_)
+    if (!elements_.empty() && elements_[0].stepRate_ != 0)
         params.flags_ |= BufferFlag::PerInstanceData;
 
     return Create(params, nullptr);
@@ -322,6 +322,8 @@ void VertexBuffer::SetUnpackedData(const Vector4 data[], unsigned start, unsigne
 
 void VertexBuffer::ChangeElementStepRate(unsigned stepRate)
 {
+    // TODO(xr): This method should not be needed
+    /*
     bool anyChanged = false;
     for (auto& element : elements_)
     {
@@ -333,6 +335,7 @@ void VertexBuffer::ChangeElementStepRate(unsigned stepRate)
     }
 
     UpdateOffsets();
+    */
 }
 
 void VertexBuffer::UnpackVertexData(const void* source, unsigned sourceStride,

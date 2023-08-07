@@ -43,28 +43,23 @@
 #include "../XR/VREvents.h"
 #include "../Resource/XMLElement.h"
 #include "../Resource/XMLFile.h"
+#include "Urho3D/RenderAPI/GAPIIncludes.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
 
-#include "../DebugNew.h"
+#if D3D11_SUPPORTED
+    #include <Diligent/Graphics/GraphicsEngineD3D11/interface/RenderDeviceD3D11.h>
+#endif
 
 // need this for loading the GLBs
 #include <ThirdParty/tinygltf/tiny_gltf.h>
 
 #include <iostream>
 
-#ifdef URHO3D_D3D11
-    #include "../Graphics/Direct3D11/D3D11GraphicsImpl.h"
-    #include <d3d11.h>
-#endif
-
-#ifdef URHO3D_OPENGL
-    #include "../Graphics/OpenGL/OGLGraphicsImpl.h"
-    #ifdef WIN32
-        #include <Unknwn.h>
-    #endif
-#endif
-
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform_defines.h>
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform.h>
+
+#include "../DebugNew.h"
 
 namespace Urho3D
 {
@@ -121,13 +116,19 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
   X(xrCreateDebugUtilsMessengerEXT) \
   X(xrDestroyDebugUtilsMessengerEXT)
 
-#ifdef URHO3D_D3D11
-    #define XR_PLATFORM(X) \
+#if D3D11_SUPPORTED
+    #define XR_PLATFORM_D3D11(X) \
         X(xrGetD3D11GraphicsRequirementsKHR)
-#elif URHO3D_OPENGL
-    #define XR_PLATFORM(X) \
+#endif
+
+#if GL_SUPPORTED || GLES_SUPPORTED
+    #define XR_PLATFORM_GL(X) \
         X(xrGetOpenGLGraphicsRequirementsKHR)
 #endif
+
+#define XR_PLATFORM(X) \
+    XR_PLATFORM_D3D11(X) \
+    XR_PLATFORM_GL(X)
 
 #define XR_EXTENSION_BASED(X) \
     X(xrLoadControllerModelMSFT) \
@@ -328,7 +329,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
     struct OpenXR::Opaque
     {
-#ifdef URHO3D_D3D11
+#if D3D11_SUPPORTED
         XrSwapchainImageD3D11KHR swapImages_[4] = { };
         XrSwapchainImageD3D11KHR depthImages_[4] = { };
 #endif
@@ -407,7 +408,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         };
 
         ea::vector<const char*> activeExt;
-#ifdef URHO3D_D3D11
+#if D3D11_SUPPORTED
         activeExt.push_back(XR_KHR_D3D11_ENABLE_EXTENSION_NAME);
 #elif defined(URHO3D_OPENGL)
     #ifdef GL_ES_VERSION_2_0
@@ -630,7 +631,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
     bool OpenXR::OpenSession()
     {
-        auto graphics = GetSubsystem<Graphics>();
+        auto renderDevice = GetSubsystem<RenderDevice>();
 
         XrActionSetCreateInfo actionCreateInfo = { XR_TYPE_ACTION_SET_CREATE_INFO };
         strcpy_s(actionCreateInfo.actionSetName, 64, "default");
@@ -640,14 +641,19 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         XrSessionCreateInfo sessionCreateInfo = { XR_TYPE_SESSION_CREATE_INFO };
         sessionCreateInfo.systemId = system_;
 
-#if URHO3D_D3D11
-        XrGraphicsBindingD3D11KHR binding = { XR_TYPE_GRAPHICS_BINDING_D3D11_KHR };
-        binding.device = graphics->GetImpl()->GetDevice();
-        sessionCreateInfo.next = &binding;
+#if D3D11_SUPPORTED
+        if (renderDevice->GetBackend() == RenderBackend::D3D11)
+        {
+            const auto renderDeviceD3D11 = static_cast<Diligent::IRenderDeviceD3D11*>(renderDevice->GetRenderDevice());
 
-        XrGraphicsRequirementsD3D11KHR requisite = { XR_TYPE_GRAPHICS_REQUIREMENTS_D3D11_KHR };
-        auto errCode = xrGetD3D11GraphicsRequirementsKHR(instance_, system_, &requisite);
-        XR_COMMON_ER("graphics requirements");
+            XrGraphicsBindingD3D11KHR binding = { XR_TYPE_GRAPHICS_BINDING_D3D11_KHR };
+            binding.device = renderDeviceD3D11->GetD3D11Device();
+            sessionCreateInfo.next = &binding;
+
+            XrGraphicsRequirementsD3D11KHR requisite = { XR_TYPE_GRAPHICS_REQUIREMENTS_D3D11_KHR };
+            auto errCode = xrGetD3D11GraphicsRequirementsKHR(instance_, system_, &requisite);
+            XR_COMMON_ER("graphics requirements");
+        }
 #endif
 #if URHO3D_OPENGL
     #ifdef WIN32 // Win32 is never GLES as far as I'm aware?
@@ -666,7 +672,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
     #endif
 #endif
 
-        errCode = xrCreateSession(instance_, &sessionCreateInfo, &session_);
+        auto errCode = xrCreateSession(instance_, &sessionCreateInfo, &session_);
         XR_COMMON_ER("session");
 
         // attempt stage-space first
@@ -712,11 +718,9 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
     bool OpenXR::CreateSwapchain()
     {
-        auto graphics = GetSubsystem<Graphics>();
-
         for (int j = 0; j < 4; ++j)
         {
-#ifdef URHO3D_D3D11
+#if D3D11_SUPPORTED
             opaque_->swapImages_[j].type = XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR;
             opaque_->swapImages_[j].next = nullptr;
             opaque_->depthImages_[j].type = XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR;
@@ -741,12 +745,12 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         // take first of RGBA/SRGBA supported.
         for (auto fmt : fmts)
         {
-            if (fmt == graphics->GetRGBAFormat())
+            if (0) //(fmt == graphics->GetRGBAFormat())
             {
                 backbufferFormat_ = fmt;
                 break;
             }
-#if URHO3D_D3D11
+#if D3D11_SUPPORTED
             else if (fmt == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
 #elif URHO3D_OPENGL
             else if (fmt == GL_SRGB8)
@@ -761,12 +765,12 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         // We'll be able to count on details like MSAA-Quality being compatible.
         for (auto fmt : fmts)
         {
-            if (fmt == graphics->GetDepthStencilFormat())
+            if (0) //if (fmt == graphics->GetDepthStencilFormat())
             {
                 depthFormat_ = fmt;
                 break;
             }
-#ifdef URHO3D_D3D11
+#if D3D11_SUPPORTED
             if (fmt == DXGI_FORMAT_D24_UNORM_S8_UINT) // what we actually construct, as opposed to typeless
             {
                 depthFormat_ = fmt;
@@ -815,7 +819,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         else
             depthImgCount_ = 0;
 
-#ifdef URHO3D_D3D11
+#if D3D11_SUPPORTED
         // bump the d3d-ref count
         for (int i = 0; i < imgCount_; ++i)
             opaque_->swapImages_[i].texture->AddRef();
@@ -847,6 +851,8 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
     void OpenXR::CreateEyeTextures()
     {
+        auto renderDevice = GetSubsystem<RenderDevice>();
+
         sharedTexture_ = new Texture2D(GetContext());
         sharedDS_.Reset();
 
@@ -860,20 +866,21 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         {
             sharedDS_ = new Texture2D(GetContext());
             sharedDS_->SetNumLevels(1);
-            sharedDS_->SetSize(eyeTexWidth_ * 2, eyeTexHeight_, Graphics::GetDepthStencilFormat(), TEXTURE_DEPTHSTENCIL, msaaLevel_);
+            sharedDS_->SetSize(eyeTexWidth_ * 2, eyeTexHeight_, renderDevice->GetDefaultDepthStencilFormat(),
+                TextureFlag::BindDepthStencil, msaaLevel_);
         }
 
         for (unsigned i = 0; i < imgCount_; ++i)
         {
             eyeColorTextures_[i] = new Texture2D(GetContext());
 
-#ifdef URHO3D_D3D11
+#if D3D11_SUPPORTED
             // NOTE: D3D11 we can get most info from queries more easily
-            eyeColorTextures_[i]->CreateFromExternal(opaque_->swapImages_[i].texture, msaaLevel_, backbufferFormat_ == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+            eyeColorTextures_[i]->CreateFromD3D11Texture2D(opaque_->swapImages_[i].texture, msaaLevel_);
             if (depthChain_)
             {
                 eyeDepthTextures_[i] = new Texture2D(GetContext());
-                eyeDepthTextures_[i]->CreateFromExternal(opaque_->depthImages_[i].texture, msaaLevel_, false);
+                eyeDepthTextures_[i]->CreateFromD3D11Texture2D(opaque_->depthImages_[i].texture, msaaLevel_);
             }
 #endif
 
@@ -1497,11 +1504,11 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
                 VertexBuffer* vtx = new VertexBuffer(GetContext());
                 vtx->SetSize(vtxData.size(), { VertexElement(TYPE_VECTOR3, SEM_POSITION) });
-                vtx->SetData(vtxData.data());
+                vtx->Update(vtxData.data());
 
                 IndexBuffer* idx = new IndexBuffer(GetContext());
                 idx->SetSize(indices.size(), true);
-                idx->SetData(indices.data());
+                idx->Update(indices.data());
 
                 hiddenAreaMesh_[eye] = new Geometry(GetContext());
                 hiddenAreaMesh_[eye]->SetVertexBuffer(0, vtx);
@@ -1540,11 +1547,11 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
                 VertexBuffer* vtx = new VertexBuffer(GetContext());
                 vtx->SetSize(vtxData.size(), { VertexElement(TYPE_VECTOR3, SEM_POSITION) });
-                vtx->SetData(vtxData.data());
+                vtx->Update(vtxData.data());
 
                 IndexBuffer* idx = new IndexBuffer(GetContext());
                 idx->SetSize(indices.size(), true);
-                idx->SetData(indices.data());
+                idx->Update(indices.data());
 
                 visibleAreaMesh_[eye] = new Geometry(GetContext());
                 visibleAreaMesh_[eye]->SetVertexBuffer(0, vtx);
@@ -1619,11 +1626,11 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
                 VertexBuffer* vtx = new VertexBuffer(GetContext());
                 vtx->SetSize(vtxData.size(), { VertexElement(TYPE_VECTOR3, SEM_POSITION), VertexElement(TYPE_UBYTE4_NORM, SEM_COLOR) });
-                vtx->SetData(vtxData.data());
+                vtx->Update(vtxData.data());
 
                 IndexBuffer* idx = new IndexBuffer(GetContext());
                 idx->SetSize(newIndices.size(), false);
-                idx->SetData(newIndices.data());
+                idx->Update(newIndices.data());
 
                 radialAreaMesh_[eye] = new Geometry(GetContext());
                 radialAreaMesh_[eye]->SetVertexBuffer(0, vtx);
@@ -1758,7 +1765,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                     auto& q = nodeStates[i].nodePose.orientation;
                     Quaternion outQ = Quaternion(q.w, q.x, q.y, q.z);
 
-                    bone->SetTransform(Matrix3x4(t, outQ, Vector3(1,1,1)));
+                    bone->SetTransformMatrix(Matrix3x4(t, outQ, Vector3(1,1,1)));
                 }
             }
         }
@@ -1865,7 +1872,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
             static const ea::string lastTrans = "LastTransform";
             static const ea::string lastTransWS = "LastTransformWS";
 
-            leftHand->SetVar(lastTrans, leftHand->GetTransform());
+            leftHand->SetVar(lastTrans, leftHand->GetTransformMatrix());
             leftHand->SetVar(lastTransWS, leftHand->GetWorldTransform());
             leftHand->SetEnabled(handGrips_[VR_HAND_LEFT]->location_.locationFlags & (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT));
             leftHand->SetPosition(lp);
@@ -1875,7 +1882,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
             auto rq = uxrGetQuat(handGrips_[VR_HAND_RIGHT]->location_.pose.orientation);
             auto rp = uxrGetVec(handGrips_[VR_HAND_RIGHT]->location_.pose.position);
 
-            rightHand->SetVar(lastTrans, leftHand->GetTransform());
+            rightHand->SetVar(lastTrans, leftHand->GetTransformMatrix());
             rightHand->SetVar(lastTransWS, leftHand->GetWorldTransform());
             rightHand->SetEnabled(handGrips_[VR_HAND_RIGHT]->location_.locationFlags & (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT));
             rightHand->SetPosition(rp);
@@ -1982,10 +1989,10 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 n.matrix[1], n.matrix[5], n.matrix[9], n.matrix[13],
                 n.matrix[2], n.matrix[6], n.matrix[10], n.matrix[14]
             );
-            node->SetTransform(mat);
+            node->SetTransformMatrix(mat);
         }
         else
-            node->SetTransform(Matrix3x4::IDENTITY);
+            node->SetTransformMatrix(Matrix3x4::IDENTITY);
 
         if (n.mesh != -1)
         {
@@ -2059,7 +2066,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
                     VertexBuffer* buff = new VertexBuffer(ctx);
                     buff->SetSize(verts.size(), { VertexElement(TYPE_VECTOR3, SEM_POSITION, 0, 0), VertexElement(TYPE_VECTOR3, SEM_NORMAL, 0, 0), VertexElement(TYPE_VECTOR2, SEM_TEXCOORD, 0, 0) });
-                    buff->SetData(verts.data());
+                    buff->Update(verts.data());
                     vertexBuffers.push_back(SharedPtr<VertexBuffer>(buff));
 
                     if (prim.indices != -1)
@@ -2078,7 +2085,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                                 indexData[i] = indices[i];
 
                             idxBuffer->SetSize(access.count, true, false);
-                            idxBuffer->SetData(indexData.data());
+                            idxBuffer->Update(indexData.data());
                         }
                         else if (gltf.accessors[prim.indices].componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
                         {
@@ -2094,7 +2101,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                             }
 
                             idxBuffer->SetSize(access.count, false, false);
-                            idxBuffer->SetData(indexData.data());
+                            idxBuffer->Update(indexData.data());
                         }
                         else
                         {
@@ -2129,11 +2136,9 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
     SharedPtr<Texture2D> LoadGLTFTexture(Context* ctx, tinygltf::Model& gltf, int index)
     {
-        auto gfx = ctx->GetSubsystem<Graphics>();
-
         auto img = gltf.images[index];
         SharedPtr<Texture2D> tex(new Texture2D(ctx));
-        tex->SetSize(img.width, img.height, gfx->GetRGBAFormat());
+        tex->SetSize(img.width, img.height, TextureFormat::TEX_FORMAT_RGBA8_UNORM);
 
         auto view = gltf.bufferViews[img.bufferView];
 
@@ -2142,7 +2147,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         Image image(ctx);
         if (image.Load(buff))
         {
-            tex->SetData(&image, true);
+            tex->SetData(&image);
             return tex;
         }
 
@@ -2158,9 +2163,9 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         SharedPtr<Material> material = ctx->GetSubsystem<ResourceCache>()->GetResource<Material>("Materials/XRController.xml")->Clone();
         if (!gltf.materials.empty() && !gltf.textures.empty())
         {
-            material->SetTexture(TU_DIFFUSE, LoadGLTFTexture(ctx, gltf, 0));
+            material->SetTexture(ShaderResources::Albedo, LoadGLTFTexture(ctx, gltf, 0));
             if (gltf.materials[0].normalTexture.index)
-                material->SetTexture(TU_NORMAL, LoadGLTFTexture(ctx, gltf, gltf.materials[0].normalTexture.index));
+                material->SetTexture(ShaderResources::Normal, LoadGLTFTexture(ctx, gltf, gltf.materials[0].normalTexture.index));
         }
 
         auto scene = gltf.scenes[gltf.defaultScene];

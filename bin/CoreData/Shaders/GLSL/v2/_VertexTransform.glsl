@@ -30,16 +30,12 @@ vec4 WorldToClipSpace(vec3 worldPos)
         vec4 clipped = vec4(worldPos, 1.0) * cViewProj[gl_InstanceID & 1];
         float eyeOffsetScale[2] = { -0.5f, 0.5f };
         vec4 eyeClipEdge[2] = { vec4(-1.0f, 0.0f, 0.0f, 1.0f), vec4(1.0f, 0.0f, 0.0f, 1.0f) };
-        
-        #ifdef GL3
-            gl_ClipDistance[0] = dot(clipped, eyeClipEdge[gl_InstanceID & 1]);
-        #else
-            gl_ClipVertex = dot(clipped, eyeClipEdge[gl_InstanceID & 1]);
-        #endif
-        
+
+        gl_ClipDistance[0] = dot(clipped, eyeClipEdge[gl_InstanceID & 1]);
+
         clipped.x *= 0.5f;
         clipped.x += eyeOffsetScale[gl_InstanceID & 1] * clipped.w;
-        
+
         return clipped;
     #else
         return vec4(worldPos, 1.0) * cViewProj;
@@ -189,9 +185,9 @@ mat4 GetModelMatrix()
     mediump mat3 GetFaceCameraRotation(vec3 position, half3 direction)
     {
     #ifdef URHO3D_XR
-        half3 cameraDir = normalize(position - cCameraPos);
+        half3 cameraDir = normalize(position - cCameraPos.xyz);
     #else
-        half3 cameraDir = normalize(position - cCameraPos[gl_InstanceID & 1]);
+        half3 cameraDir = normalize(position - cCameraPos[gl_InstanceID & 1].xyz);
     #endif
         half3 front = normalize(direction);
         half3 right = normalize(cross(front, cameraDir));

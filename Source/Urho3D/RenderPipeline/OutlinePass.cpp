@@ -135,7 +135,8 @@ bool OutlineScenePass::CreatePipelineState(GraphicsPipelineStateDesc& desc, Pipe
         desc.samplers_.Add(ShaderResources::Albedo, diffMap->GetSamplerStateDesc());
     }
 
-    builder->SetupInputLayoutAndPrimitiveType(desc, shaderProgramDesc_, key.geometry_);
+    const bool isStereo = GetFlags().Test(DrawableProcessorPassFlag::StereoInstancing);
+    builder->SetupInputLayoutAndPrimitiveType(desc, shaderProgramDesc_, key.geometry_, isStereo);
     builder->SetupShaders(desc, shaderProgramDesc_);
 
     return true;

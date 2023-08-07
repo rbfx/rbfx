@@ -54,7 +54,7 @@ namespace
 {
 
 /// Return shader parameter for camera depth mode.
-Vector4 GetCameraDepthModeParameter(RenderBackend backend, const Camera& camera)
+Vector4 GetCameraDepthModeParameter(const Camera& camera, RenderBackend backend)
 {
     Vector4 depthMode = Vector4::ZERO;
     if (camera.IsOrthographic())
@@ -561,25 +561,25 @@ private:
 
 #define CAM_FLD(TARGET, CODE) { TARGET [0] CODE, TARGET [1] CODE }
 #define CAM_FUNC(TARGET, FUNC) { FUNC(*TARGET[0]), FUNC(*TARGET[1]) }
+#define CAM_FUNC1(TARGET, FUNC, PARAM) { FUNC(*TARGET[0], PARAM), FUNC(*TARGET[1], PARAM) }
 
             typedef ea::pair<Matrix4, Matrix4> MatrixDual;
-            typedef ea::pair<Vector4, Vector3> Vec3Dual; // vector alignment in cbuffer, 4 bytes of space gets padded to round out to a float4
             typedef ea::pair<Vector4, Vector4> Vec4Dual;
 
             MatrixDual cameraEffectiveTransforms = CAM_FLD(cameras, ->GetEffectiveWorldTransform().ToMatrix4());
-            Vec3Dual cameraPos = { Vector4(cameraEffectiveTransforms.first.Translation(), 0.0f), Vector3(cameraEffectiveTransforms.second.Translation()) };
+            Vec4Dual cameraPos = { {cameraEffectiveTransforms.first.Translation(), 0.0f}, {cameraEffectiveTransforms.second.Translation(), 0.0f} };
             MatrixDual cameraView = CAM_FLD(cameras, ->GetView().ToMatrix4());
-            
-            drawQueue_.AddCBufferParameter(ShaderConsts::Camera_CameraPos, cameraPos);
-            drawQueue_.AddCBufferParameter(ShaderConsts::Camera_ViewInv, cameraEffectiveTransforms);
-            drawQueue_.AddCBufferParameter(ShaderConsts::Camera_View, cameraView);
+
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_CameraPos, cameraPos);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_ViewInv, cameraEffectiveTransforms);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_View, cameraView);
 
             const float nearClip = camera_.GetNearClip();
             const float farClip = camera_.GetFarClip();
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_NearClip, nearClip);
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_FarClip, farClip);
 
-            Vector4 depthModes[2] = CAM_FUNC(cameras, GetCameraDepthModeParameter);
+            Vector4 depthModes[2] = CAM_FUNC1(cameras, GetCameraDepthModeParameter, backend_);
             Vector4 depthRecon[2] = CAM_FUNC(cameras, GetCameraDepthReconstructParameter);
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthMode, ea::span<const Vector4> { depthModes });
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthReconstruct, ea::span<const Vector4> { depthRecon });
@@ -588,12 +588,12 @@ private:
             Vector3 farVector3[2]{};
             cameras[0]->GetFrustumSize(nearVector3[0], farVector3[0]);
             cameras[1]->GetFrustumSize(nearVector3[1], farVector3[1]);
-            Vec3Dual farVectors = { Vector4(farVector3[0], 0), farVector3[1] };
-            drawQueue_.AddCBufferParameter(ShaderConsts::Camera_FrustumSize, farVectors);
+            Vec4Dual farVectors = { {farVector3[0], 0.0f}, {farVector3[1], 0.0f} };
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_FrustumSize, farVectors);
 
             MatrixDual viewProj = CAM_FLD(cameras, ->GetEffectiveGPUViewProjection(constantDepthBias));
-            drawQueue_.AddCBufferParameter(ShaderConsts::Camera_ViewProj, viewProj);
-            drawQueue_.AddCBufferParameter(ShaderConsts::Camera_ClipPlane, clipPlane_);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_ViewProj, viewProj);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_ClipPlane, clipPlane_);
 
             if (!enabled_.colorOutput_)
                 return;
@@ -612,6 +612,7 @@ private:
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogColor, fogColors[0].Lerp(fogColors[1], 0.5f));
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogParams, fogParams[0].Lerp(fogParams[1], 0.5f));
 
+#undef CAM_FUNC1
 #undef CAM_FUNC
 #undef CAM_FLD
         }
@@ -619,7 +620,7 @@ private:
         {
             // Not stereoscopic rendering, single eye
             const Matrix3x4 cameraEffectiveTransform = camera_.GetEffectiveWorldTransform();
-            drawQueue_.AddShaderParameter(ShaderConsts::Camera_CameraPos, cameraEffectiveTransform.Translation());
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_CameraPos, Vector4(cameraEffectiveTransform.Translation(), 0.0f));
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_ViewInv, cameraEffectiveTransform);
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_View, camera_.GetView());
 
@@ -635,12 +636,12 @@ private:
                     lightParams.shadowNormalBias_[outputShadowSplit_->GetSplitIndex()]);
             }
 
-            drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthMode, GetCameraDepthModeParameter(backend_, camera_));
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthMode, GetCameraDepthModeParameter(camera_, backend_));
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthReconstruct, GetCameraDepthReconstructParameter(camera_));
 
             Vector3 nearVector, farVector;
             camera_.GetFrustumSize(nearVector, farVector);
-            drawQueue_.AddShaderParameter(ShaderConsts::Camera_FrustumSize, farVector);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_FrustumSize, Vector4(farVector, 0.0f));
 
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_ViewProj, camera_.GetEffectiveGPUViewProjection(constantDepthBias));
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_ClipPlane, clipPlane_);

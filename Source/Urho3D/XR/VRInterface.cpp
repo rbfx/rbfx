@@ -25,7 +25,7 @@
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Scene/Node.h>
-#include <Urho3D/Graphics/PipelineState.h>
+#include <Urho3D/RenderAPI/PipelineState.h>
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
@@ -99,33 +99,33 @@ void VRInterface::CreateEyeTextures()
     {
         sharedTexture_ = new Texture2D(GetContext());
         sharedTexture_->SetNumLevels(1);
-        sharedTexture_->SetSize(eyeTexWidth_ * 2, eyeTexHeight_, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET, msaaLevel_);
+        sharedTexture_->SetSize(eyeTexWidth_ * 2, eyeTexHeight_, TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFlag::BindRenderTarget, msaaLevel_);
         sharedTexture_->SetFilterMode(FILTER_BILINEAR);
 
         sharedDS_ = new Texture2D(GetContext());
         sharedDS_->SetNumLevels(1);
-        sharedDS_->SetSize(eyeTexWidth_ * 2, eyeTexHeight_, Graphics::GetDepthStencilFormat(), TEXTURE_DEPTHSTENCIL, msaaLevel_);
+        sharedDS_->SetSize(eyeTexWidth_ * 2, eyeTexHeight_, TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT, TextureFlag::BindDepthStencil, msaaLevel_);
         sharedTexture_->GetRenderSurface()->SetLinkedDepthStencil(sharedDS_->GetRenderSurface());
     }
     else // TODO: are we going to make this path functional again? Maybe there is merit for ultra-wide FOV?
     {
         leftTexture_ = new Texture2D(GetContext());
         leftTexture_->SetNumLevels(1);
-        leftTexture_->SetSize(eyeTexWidth_, eyeTexHeight_, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET, msaaLevel_);
+        leftTexture_->SetSize(eyeTexWidth_, eyeTexHeight_, TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFlag::BindRenderTarget, msaaLevel_);
         leftTexture_->SetFilterMode(FILTER_BILINEAR);
 
         rightTexture_ = new Texture2D(GetContext());
         rightTexture_->SetNumLevels(1);
-        rightTexture_->SetSize(eyeTexWidth_, eyeTexHeight_, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET, msaaLevel_);
+        rightTexture_->SetSize(eyeTexWidth_, eyeTexHeight_, TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFlag::BindRenderTarget, msaaLevel_);
         rightTexture_->SetFilterMode(FILTER_BILINEAR);
 
         leftDS_ = new Texture2D(GetContext());
         leftDS_->SetNumLevels(1);
-        leftDS_->SetSize(eyeTexWidth_, eyeTexHeight_, Graphics::GetDepthStencilFormat(), TEXTURE_DEPTHSTENCIL, msaaLevel_);
+        leftDS_->SetSize(eyeTexWidth_, eyeTexHeight_, TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT, TextureFlag::BindDepthStencil, msaaLevel_);
 
         rightDS_ = new Texture2D(GetContext());
         rightDS_->SetNumLevels(1);
-        rightDS_->SetSize(eyeTexWidth_, eyeTexHeight_, Graphics::GetDepthStencilFormat(), TEXTURE_DEPTHSTENCIL, msaaLevel_);
+        rightDS_->SetSize(eyeTexWidth_, eyeTexHeight_, TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT, TextureFlag::BindDepthStencil, msaaLevel_);
 
         leftTexture_->GetRenderSurface()->SetLinkedDepthStencil(leftDS_->GetRenderSurface());
         rightTexture_->GetRenderSurface()->SetLinkedDepthStencil(rightDS_->GetRenderSurface());
@@ -194,9 +194,9 @@ void VRInterface::UpdateRig(Scene* scene, Node* head, Node* leftEye, Node* right
     if (sharedTexture_ == nullptr)
         CreateEyeTextures();
 
-    head->SetVar(VRLastTransform, head->GetTransform());
+    head->SetVar(VRLastTransform, head->GetTransformMatrix());
     head->SetVar(VRLastTransformWS, head->GetWorldTransform());
-    head->SetTransform(GetHeadTransform());
+    head->SetTransformMatrix(GetHeadTransform());
 
     if (leftEye == nullptr)
         leftEye = head->CreateChild("Left_Eye");
@@ -221,8 +221,8 @@ void VRInterface::UpdateRig(Scene* scene, Node* head, Node* leftEye, Node* right
 
     if (GetRuntime() == VRRuntime::OPENVR)
     {
-        leftEye->SetTransform(GetEyeLocalTransform(VR_EYE_LEFT));
-        rightEye->SetTransform(GetEyeLocalTransform(VR_EYE_RIGHT));
+        leftEye->SetTransformMatrix(GetEyeLocalTransform(VR_EYE_LEFT));
+        rightEye->SetTransformMatrix(GetEyeLocalTransform(VR_EYE_RIGHT));
 
         // uhhh ... what, and it's only the eyes, everyone else's transforms are good
         // buddha ... I hope this isn't backend specific
@@ -231,8 +231,8 @@ void VRInterface::UpdateRig(Scene* scene, Node* head, Node* leftEye, Node* right
     }
     else if (GetRuntime() == VRRuntime::OPENXR)
     {
-        leftEye->SetTransform(GetEyeLocalTransform(VR_EYE_LEFT));
-        rightEye->SetTransform(GetEyeLocalTransform(VR_EYE_RIGHT));
+        leftEye->SetTransformMatrix(GetEyeLocalTransform(VR_EYE_LEFT));
+        rightEye->SetTransformMatrix(GetEyeLocalTransform(VR_EYE_RIGHT));
     }
     else
         URHO3D_LOGERROR("Unknown VR runtime specified");
@@ -329,6 +329,8 @@ SharedPtr<XRBinding> VRInterface::GetInputBinding(const ea::string& path, VRHand
 
 void VRInterface::DrawEyeMask()
 {
+    // TODO(xr): Fix me
+#if 0
     // TODO: is there a meaningful difference between going with z-fail or stencil? Both have to do VS to find clip-space?
     if (hiddenAreaMesh_[0] && hiddenAreaMesh_[1])
     {
@@ -337,7 +339,7 @@ void VRInterface::DrawEyeMask()
 
         if (!eyeMaskPipelineState_)
         {
-            PipelineStateDesc stateDesc = { };
+            GraphicsPipelineStateDesc stateDesc = { };
             stateDesc.InitializeInputLayout(GeometryBufferArray{ { hiddenAreaMesh_[0]->GetVertexBuffer(0) }, hiddenAreaMesh_[0]->GetIndexBuffer(), nullptr });
             stateDesc.indexType_ = IBT_UINT32;
             stateDesc.primitiveType_ = TRIANGLE_LIST;
@@ -387,10 +389,13 @@ void VRInterface::DrawEyeMask()
 
         gfx->SetViewport(oldViewport);
     }
+#endif
 }
 
 void VRInterface::DrawRadialMask(BlendMode blendMode, Color inside, Color outside, float power)
 {
+    // TODO(xr): Fix me
+#if 0
     if (radialAreaMesh_[0] && radialAreaMesh_[1])
     {
         auto renderer = GetSubsystem<Renderer>();
@@ -398,7 +403,7 @@ void VRInterface::DrawRadialMask(BlendMode blendMode, Color inside, Color outsid
 
         if (!simpleVignettePipelineState_[blendMode])
         {
-            PipelineStateDesc stateDesc = { };
+            GraphicsPipelineStateDesc stateDesc = { };
             stateDesc.InitializeInputLayout(GeometryBufferArray{ { radialAreaMesh_[0]->GetVertexBuffer(0) }, radialAreaMesh_[0]->GetIndexBuffer(), nullptr });
             stateDesc.indexType_ = IBT_UINT32;
             stateDesc.primitiveType_ = TRIANGLE_LIST;
@@ -449,6 +454,7 @@ void VRInterface::DrawRadialMask(BlendMode blendMode, Color inside, Color outsid
 
         gfx->SetViewport(oldViewport);
     }
+#endif
 }
 
 void VRInterface::SetCurrentActionSet(const ea::string& setName)

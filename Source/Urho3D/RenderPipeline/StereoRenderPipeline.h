@@ -53,6 +53,8 @@ public:
     virtual void Render() override;
     virtual const FrameInfo& GetFrameInfo() const override;
     virtual const RenderPipelineStats& GetStats() const override;
+    void DrawDebugGeometries(bool depthTest) override;
+    void DrawDebugLights(bool depthTest) override;
     /// @}
 
     /// Implement RenderPipelineInterface

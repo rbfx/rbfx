@@ -99,26 +99,20 @@ if (URHO3D_ACTIONS)
 endif ()
 
 if (URHO3D_XR)
-    if (URHO3D_D3D11)
-        add_definitions(-DXR_USE_PLATFORM_WIN32
-            -DXR_OS_WINDOWS
-            -DXR_USE_TIMESPEC
-            -DXR_USE_GRAPHICS_API_D3D11)
+    add_definitions(-DXR_USE_TIMESPEC)
+    if (PLATFORM_WIN32 OR PLATFORM_UNIVERSAL_WINDOWS)
+        add_definitions(-DXR_OS_WINDOWS -DXR_USE_PLATFORM_WIN32)
     endif ()
-    if (URHO3D_OPENGL)
-        if (LINUX)
-            add_definitions(-DXR_USE_PLATFORM_LINUX
-                -DXR_OS_LINUX
-                -DXR_USE_TIMESPEC
-                -DXR_USE_GRAPHICS_API_OPENGL)
-        else ()
-            add_definitions(-DXR_USE_PLATFORM_WIN32
-                -DXR_OS_WINDOWS
-                -DXR_USE_TIMESPEC
-                -DXR_USE_GRAPHICS_API_OPENGL)
-        endif ()
+    if (PLATFORM_LINUX)
+        add_definitions(-DXR_OS_LINUX -DXR_USE_PLATFORM_LINUX)
     endif ()
-    
+    if (D3D11_SUPPORTED)
+        add_definitions(-DXR_USE_GRAPHICS_API_D3D11)
+    endif ()
+    if (GL_SUPPORTED)
+        add_definitions(-DXR_USE_GRAPHICS_API_OPENGL)
+    endif ()
+
     define_engine_source_files (XR)
 endif ()
 # Group source code in VS solution

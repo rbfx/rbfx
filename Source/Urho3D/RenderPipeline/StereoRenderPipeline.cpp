@@ -32,6 +32,9 @@
 #include "../Graphics/OctreeQuery.h"
 #include "../Graphics/Renderer.h"
 #include "../Scene/Scene.h"
+#include "../RenderAPI/RenderContext.h"
+#include "../RenderAPI/RenderDevice.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../RenderPipeline/ShadowMapAllocator.h"
 #if URHO3D_SYSTEMUI
     #include "../SystemUI/SystemUI.h"
@@ -434,6 +437,24 @@ bool StereoRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vie
         ApplySettings();
     }
 
+    renderBufferManager_->OnViewportDefined(frameInfo_.renderTarget_, frameInfo_.viewportRect_);
+
+    const unsigned outputMultiSample = renderBufferManager_->GetOutputMultiSample();
+    const TextureFormat outputColorFormat = renderBufferManager_->GetOutputColorFormat();
+    const TextureFormat outputDepthFormat = renderBufferManager_->GetOutputDepthStencilFormat();
+
+    const PipelineStateOutputDesc standardOutputDesc{outputDepthFormat, 1, {outputColorFormat}, outputMultiSample};
+
+    opaquePass_->SetForwardOutputDesc(standardOutputDesc);
+    if (depthPrePass_)
+        depthPrePass_->SetForwardOutputDesc(standardOutputDesc);
+    postOpaquePass_->SetForwardOutputDesc(standardOutputDesc);
+    alphaPass_->SetForwardOutputDesc(standardOutputDesc);
+    postAlphaPass_->SetForwardOutputDesc(standardOutputDesc);
+
+    auto batchCompositor = sceneProcessor_->GetBatchCompositor();
+    batchCompositor->SetShadowOutputDesc(shadowMapAllocator_->GetShadowOutputDesc());
+
     return true;
 }
 
@@ -469,7 +490,7 @@ void StereoRenderPipelineView::Update(const FrameInfo& frameInfo)
         OnPipelineStatesInvalidated(this);
     }
 
-    outlineScenePass_->SetOutlineGroups(sceneProcessor_->GetFrameInfo().scene_);
+    outlineScenePass_->SetOutlineGroups(sceneProcessor_->GetFrameInfo().scene_, false);
 
     sceneProcessor_->Update();
 
@@ -483,6 +504,9 @@ void StereoRenderPipelineView::Render()
 {
     URHO3D_PROFILE("ExecuteRenderPipeline");
 
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    auto renderContext = renderDevice->GetRenderContext();
+
     const bool hasRefraction = alphaPass_->HasRefractionBatches();
     RenderBufferManagerFrameSettings frameSettings;
     frameSettings.supportColorReadWrite_ = postProcessFlags_.Test(PostProcessPassFlag::NeedColorOutputReadAndWrite);
@@ -495,18 +519,12 @@ void StereoRenderPipelineView::Render()
     SendViewEvent(E_BEGINVIEWRENDER);
     SendViewEvent(E_VIEWBUFFERSREADY);
 
-    // HACK: Graphics may keep expired vertex buffers for some reason, reset it just in case
-    graphics_->SetVertexBuffer(nullptr);
-
     sceneProcessor_->PrepareDrawablesBeforeRendering();
     sceneProcessor_->PrepareInstancingBuffer();
 
     // shadowmaps, make sure we're single step instancing
     instancingBuffer_->GetVertexBuffer()->ChangeElementStepRate(1u);
     sceneProcessor_->RenderShadowMaps();
-
-    // make sure we clear out vtx buffers because of step-rate change to make sure nothing is sticky
-    graphics_->SetVertexBuffer(nullptr);
 
     // going into pass drawing, make sure we're two step instancing
     instancingBuffer_->GetVertexBuffer()->ChangeElementStepRate(2u);
@@ -543,16 +561,10 @@ void StereoRenderPipelineView::Render()
     if (hasRefraction)
         renderBufferManager_->SwapColorBuffers(true);
 
-#ifdef DESKTOP_GRAPHICS
     ShaderResourceDesc depthAndColorTextures[] = {
-        { TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture() },
-        { TU_EMISSIVE, renderBufferManager_->GetSecondaryColorTexture() },
+        { ShaderResources::DepthBuffer, renderBufferManager_->GetDepthStencilTexture() },
+        { ShaderResources::Emission, renderBufferManager_->GetSecondaryColorTexture() },
     };
-#else
-    ShaderResourceDesc depthAndColorTextures[] = {
-        { TU_EMISSIVE, renderBufferManager_->GetSecondaryColorTexture() },
-    };
-#endif
 
     sceneProcessor_->RenderSceneBatches("Alpha", camera, alphaPass_->GetBatches(),
         depthAndColorTextures, cameraParameters, 2);
@@ -582,8 +594,6 @@ void StereoRenderPipelineView::Render()
 
     // going into post-process, switch back to single step instancing
     instancingBuffer_->GetVertexBuffer()->ChangeElementStepRate(1u);
-    // make sure we clear out vtx buffers because of step-rate change to make sure nothing is sticky
-    graphics_->SetVertexBuffer(nullptr);
 
     // Not going to work, something will need to be done
     const auto outSize = renderBufferManager_->GetOutputSize(); // used for debug view
@@ -596,10 +606,14 @@ void StereoRenderPipelineView::Render()
     auto debug = sceneProcessor_->GetFrameInfo().scene_->GetComponent<DebugRenderer>();
     if (settings_.drawDebugGeometry_ && debug && debug->IsEnabledEffective() && debug->HasContent())
     {
+        static const IntRect viewportRects[] = {//
+            IntRect(0, 0, outSize.x_ / 2, outSize.y_), //
+            IntRect(outSize.x_ / 2, 0, outSize.x_, outSize.y_)};
+
         renderBufferManager_->SetOutputRenderTargets();
         for (int i = 0; i < 2; ++i)
         {
-            graphics_->SetViewport(i == 0 ? IntRect(0, 0, outSize.x_ / 2, outSize.y_) : IntRect(outSize.x_ / 2, 0, outSize.x_, outSize.y_));
+            renderContext->SetViewport(viewportRects[i]);
             debug->SetView(frameInfo_.viewport_->GetEye(i));
             debug->Render();
         }
@@ -610,7 +624,6 @@ void StereoRenderPipelineView::Render()
 
     SendViewEvent(E_ENDVIEWRENDER);
     OnRenderEnd(this, frameInfo_);
-    graphics_->SetColorWrite(true);
 
     // Update statistics
     stats_ = {};
@@ -637,6 +650,14 @@ const FrameInfo& StereoRenderPipelineView::GetFrameInfo() const
 const RenderPipelineStats& StereoRenderPipelineView::GetStats() const
 {
     return stats_;
+}
+
+void StereoRenderPipelineView::DrawDebugGeometries(bool depthTest)
+{
+}
+
+void StereoRenderPipelineView::DrawDebugLights(bool depthTest)
+{
 }
 
 void StereoRenderPipelineView::SendViewEvent(StringHash eventType)

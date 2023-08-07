@@ -43,17 +43,6 @@ add_subdirectory(spdlog)
 add_subdirectory(SDL)
 add_subdirectory(ETCPACK)
 
-if (URHO3D_XR)
-    add_definitions(-DDISABLE_STD_FILESYSTEM=1)
-    
-    if (URHO3D_UWP)
-        set (DYNAMIC_LOADER ON CACHE BOOL "")
-        add_definitions(-DDYNAMIC_LOADER=1)
-    endif ()
-    
-    add_subdirectory(OpenXRSDK)
-endif ()
-
 if (NOT WEB)
     add_subdirectory(enkiTS)
 endif ()
@@ -259,6 +248,18 @@ list(FILTER DILIGENT_INCLUDE_DIRS INCLUDE REGEX ".+/interface$")
 foreach(DIR ${DILIGENT_INCLUDE_DIRS})
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Diligent/${DIR} DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/Diligent/${DIR}/..)
 endforeach()
+
+# Setup OpenXR after Diligent to use platform defines
+if (URHO3D_XR)
+    add_definitions(-DDISABLE_STD_FILESYSTEM=1)
+
+    if (URHO3D_UWP)
+        set (DYNAMIC_LOADER ON CACHE BOOL "")
+        add_definitions(-DDYNAMIC_LOADER=1)
+    endif ()
+
+    add_subdirectory(OpenXRSDK)
+endif ()
 
 # When crosscompiling, swig will be built as part of native tools build. See Source/CMakeLists.txt.
 add_subdirectory(swig)

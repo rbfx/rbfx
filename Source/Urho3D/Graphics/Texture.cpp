@@ -263,11 +263,8 @@ void Texture::SetParameters(const XMLElement& element)
     }
 }
 
-bool Texture::CreateGPU()
+void Texture::OnCreateGPU()
 {
-    if (!RawTexture::CreateGPU())
-        return false;
-
     const bool isRTV = GetParams().flags_.Test(TextureFlag::BindRenderTarget);
     const bool isDSV = GetParams().flags_.Test(TextureFlag::BindDepthStencil);
 
@@ -293,15 +290,12 @@ bool Texture::CreateGPU()
     }
 
     SetMemoryUse(CalculateMemoryUseGPU());
-    return true;
 }
 
-void Texture::DestroyGPU()
+void Texture::OnDestroyGPU()
 {
     for (RenderSurface* renderSurface : renderSurfaces_)
         renderSurface->Invalidate();
-
-    RawTexture::DestroyGPU();
 }
 
 bool Texture::TryRestore()
