@@ -208,13 +208,13 @@ FileTime VirtualFileSystem::GetLastModifiedTime(const FileIdentifier& fileName, 
     return 0;
 }
 
-ea::string VirtualFileSystem::GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName, FileMode mode) const
+ea::string VirtualFileSystem::GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const
 {
     MutexLock lock(mountMutex_);
 
     for (MountPoint* mountPoint : ea::reverse(mountPoints_))
     {
-        ea::string result = mountPoint->GetAbsoluteNameFromIdentifier(fileName, mode);
+        const ea::string result = mountPoint->GetAbsoluteNameFromIdentifier(fileName);
         if (!result.empty())
             return result;
     }
