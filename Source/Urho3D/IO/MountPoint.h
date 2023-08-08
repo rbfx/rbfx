@@ -63,7 +63,11 @@ public:
     virtual const ea::string& GetName() const = 0;
 
     /// Return absolute file name for *existing* identifier in this mount point, if supported.
-    virtual ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName, FileMode mode) const;
+    virtual ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const;
+
+    /// Return absolute file name for the identifier in this mount point, if supported.
+    virtual ea::string GetWritableAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const;
+    
 
     /// Return identifier in this mount point for absolute file name, if supported.
     /// Works even if the file does not exist.

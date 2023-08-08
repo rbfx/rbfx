@@ -208,19 +208,35 @@ FileTime VirtualFileSystem::GetLastModifiedTime(const FileIdentifier& fileName, 
     return 0;
 }
 
-ea::string VirtualFileSystem::GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName, FileMode mode) const
+ea::string VirtualFileSystem::GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const
 {
     MutexLock lock(mountMutex_);
 
     for (MountPoint* mountPoint : ea::reverse(mountPoints_))
     {
-        ea::string result = mountPoint->GetAbsoluteNameFromIdentifier(fileName, mode);
+        ea::string result = mountPoint->GetAbsoluteNameFromIdentifier(fileName);
         if (!result.empty())
             return result;
     }
 
     return EMPTY_STRING;
 }
+
+ea::string VirtualFileSystem::GetWritableAbsoluteNameFromIdentifier(
+    const FileIdentifier& fileName) const
+{
+    MutexLock lock(mountMutex_);
+
+    for (MountPoint* mountPoint : ea::reverse(mountPoints_))
+    {
+        ea::string result = mountPoint->GetWritableAbsoluteNameFromIdentifier(fileName);
+        if (!result.empty())
+            return result;
+    }
+
+    return EMPTY_STRING;
+}
+
 
 FileIdentifier VirtualFileSystem::GetCanonicalIdentifier(const FileIdentifier& fileName) const
 {

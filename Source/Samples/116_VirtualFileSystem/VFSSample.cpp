@@ -108,6 +108,7 @@ void VFSSample::RenderUi()
             canonicalForm_ = vfs->GetCanonicalIdentifier(fileIdentifier_);
             exists_ = vfs->Exists(fileIdentifier_);
             absoluteFileName_ = vfs->GetAbsoluteNameFromIdentifier(fileIdentifier_);
+            writableAbsoluteFileName_ = vfs->GetWritableAbsoluteNameFromIdentifier(fileIdentifier_);
             readOnlyFile_ = vfs->OpenFile(fileIdentifier_, FILE_READ);
             modificationTime_ = vfs->GetLastModifiedTime(fileIdentifier_, true);
             reversedUri_ = vfs->GetIdentifierFromAbsoluteName(absoluteFileName_).ToUri();
@@ -150,6 +151,16 @@ void VFSSample::RenderUi()
         }
         if (!absoluteFileName_.empty())
             ui::Text("%s", absoluteFileName_.c_str());
+
+        {
+            ColorScopeGuard colorScopeGuard{ImGuiCol_Text, Color::YELLOW};
+            ui::Text("writable absolute path: ");
+            ui::SameLine();
+            if (writableAbsoluteFileName_.empty())
+                ui::Text("[not found]");
+        }
+        if (!writableAbsoluteFileName_.empty())
+            ui::Text("%s", writableAbsoluteFileName_.c_str());
 
         {
             ColorScopeGuard colorScopeGuard{ImGuiCol_Text, Color::YELLOW};
