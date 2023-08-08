@@ -310,7 +310,7 @@ void PipelineStateBuilder::SetupSamplersForUserOrShadowPass(
     const Material* material, bool hasLightmap, bool hasAmbient, bool isRefractionPass)
 {
     // TODO: Make configurable
-    static const auto lightMapSampler = SamplerStateDesc::Trilinear();
+    static const auto lightMapSampler = SamplerStateDesc::Default();
     static const auto reflectionMapSampler = SamplerStateDesc::Trilinear();
     static const auto refractionMapSampler = SamplerStateDesc::Trilinear();
 
