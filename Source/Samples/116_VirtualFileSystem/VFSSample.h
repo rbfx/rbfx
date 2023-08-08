@@ -70,8 +70,6 @@ private:
     bool exists_{};
     /// Absolute path to the file.
     ea::string absoluteFileName_;
-    /// Absolute path to the file to write.
-    ea::string writableAbsoluteFileName_;
     /// File opened for reading.
     AbstractFilePtr readOnlyFile_;
     /// File modification time.

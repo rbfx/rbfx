@@ -49,8 +49,7 @@ public:
 
     const ea::string& GetName() const override;
 
-    ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const override;
-    ea::string GetWritableAbsoluteNameFromIdentifier(const FileIdentifier& fileNamemode) const override;
+    ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName, FileMode mode) const override;
 
     FileIdentifier GetIdentifierFromAbsoluteName(const ea::string& absoluteFileName) const override;
 
