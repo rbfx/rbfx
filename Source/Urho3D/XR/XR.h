@@ -22,11 +22,13 @@
 
 #pragma once
 
-#include "../XR/VRInterface.h"
-#include "../Graphics/Model.h"
-#include "../Core/Variant.h"
+#include "Urho3D/Core/Variant.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/XR/VRInterface.h"
 
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr.h>
+
+#include <EASTL/shared_ptr.h>
 
 namespace Urho3D
 {

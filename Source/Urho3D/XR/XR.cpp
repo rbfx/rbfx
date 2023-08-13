@@ -20,33 +20,34 @@
 // THE SOFTWARE.
 //
 
-#include "../XR/XR.h"
+#include "Urho3D/XR/XR.h"
 
-#include "../Graphics/AnimatedModel.h"
-#include "../Core/CoreEvents.h"
-#include "../Engine/Engine.h"
-#include "../IO/File.h"
-#include "../Graphics/Geometry.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/IndexBuffer.h"
-#include "../Resource/Localization.h"
-#include "../IO/Log.h"
-#include "../Graphics/Material.h"
-#include "../IO/MemoryBuffer.h"
-#include "../Scene/Node.h"
-#include "../Resource/ResourceCache.h"
-#include "../Scene/Scene.h"
-#include "../Graphics/StaticModel.h"
-#include "../Graphics/Texture2D.h"
-#include "../Graphics/VertexBuffer.h"
-#include "../XR/VREvents.h"
-#include "../Resource/XMLElement.h"
-#include "../Resource/XMLFile.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Engine/Engine.h"
+#include "Urho3D/Graphics/AnimatedModel.h"
+#include "Urho3D/Graphics/Geometry.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/GraphicsEvents.h"
+#include "Urho3D/Graphics/IndexBuffer.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/StaticModel.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Graphics/VertexBuffer.h"
+#include "Urho3D/IO/File.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/MemoryBuffer.h"
 #include "Urho3D/RenderAPI/GAPIIncludes.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/RenderPipeline/ShaderConsts.h"
+#include "Urho3D/Resource/Localization.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/XMLElement.h"
+#include "Urho3D/Resource/XMLFile.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/XR/OpenXRAPI.h"
+#include "Urho3D/XR/VREvents.h"
 
 #if D3D11_SUPPORTED
     #include <Diligent/Graphics/GraphicsEngineD3D11/interface/RenderDeviceD3D11.h>
@@ -121,163 +122,6 @@ SharedPtr<Node> LoadGLTFModel(Context* ctx, tinygltf::Model& model);
 const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
 #define XR_INIT_TYPE(D, T) for (auto& a : D) a.type = T
-
-#define XR_FOREACH(X)\
-  X(xrDestroyInstance)\
-  X(xrPollEvent)\
-  X(xrResultToString)\
-  X(xrGetSystem)\
-  X(xrGetSystemProperties)\
-  X(xrCreateSession)\
-  X(xrDestroySession)\
-  X(xrCreateReferenceSpace)\
-  X(xrGetReferenceSpaceBoundsRect)\
-  X(xrCreateActionSpace)\
-  X(xrLocateSpace)\
-  X(xrDestroySpace)\
-  X(xrEnumerateViewConfigurations)\
-  X(xrEnumerateViewConfigurationViews)\
-  X(xrCreateSwapchain)\
-  X(xrDestroySwapchain)\
-  X(xrEnumerateSwapchainImages)\
-  X(xrAcquireSwapchainImage)\
-  X(xrWaitSwapchainImage)\
-  X(xrReleaseSwapchainImage)\
-  X(xrBeginSession)\
-  X(xrEndSession)\
-  X(xrWaitFrame)\
-  X(xrBeginFrame)\
-  X(xrEndFrame)\
-  X(xrLocateViews)\
-  X(xrStringToPath)\
-  X(xrCreateActionSet)\
-  X(xrDestroyActionSet)\
-  X(xrCreateAction)\
-  X(xrDestroyAction)\
-  X(xrSuggestInteractionProfileBindings)\
-  X(xrAttachSessionActionSets)\
-  X(xrGetActionStateBoolean)\
-  X(xrGetActionStateFloat)\
-  X(xrGetActionStateVector2f)\
-  X(xrSyncActions)\
-  X(xrApplyHapticFeedback)\
-  X(xrCreateHandTrackerEXT)\
-  X(xrDestroyHandTrackerEXT)\
-  X(xrLocateHandJointsEXT) \
-  X(xrGetVisibilityMaskKHR) \
-  X(xrCreateDebugUtilsMessengerEXT) \
-  X(xrDestroyDebugUtilsMessengerEXT)
-
-#if D3D11_SUPPORTED
-    #define XR_PLATFORM_D3D11(X) \
-        X(xrGetD3D11GraphicsRequirementsKHR)
-#endif
-
-#if GL_SUPPORTED || GLES_SUPPORTED
-    #define XR_PLATFORM_GL(X) \
-        X(xrGetOpenGLGraphicsRequirementsKHR)
-#endif
-
-#define XR_PLATFORM(X) \
-    XR_PLATFORM_D3D11(X) \
-    XR_PLATFORM_GL(X)
-
-#define XR_EXTENSION_BASED(X) \
-    X(xrLoadControllerModelMSFT) \
-    X(xrGetControllerModelKeyMSFT) \
-    X(xrGetControllerModelStateMSFT) \
-    X(xrGetControllerModelPropertiesMSFT)
-
-#define XR_DECLARE(fn) static PFN_##fn fn;
-#define XR_LOAD(fn) xrGetInstanceProcAddr(instance_, #fn, (PFN_xrVoidFunction*) &fn);
-
-    XR_FOREACH(XR_DECLARE)
-    XR_PLATFORM(XR_DECLARE)
-    XR_EXTENSION_BASED(XR_DECLARE)
-
-#define XR_ERRNAME(ENUM) { ENUM, #ENUM },
-
-        static ea::map<int, const char*> xrErrorNames = {
-            XR_ERRNAME(XR_SUCCESS)
-            XR_ERRNAME(XR_TIMEOUT_EXPIRED)
-            XR_ERRNAME(XR_SESSION_LOSS_PENDING)
-            XR_ERRNAME(XR_EVENT_UNAVAILABLE)
-            XR_ERRNAME(XR_SPACE_BOUNDS_UNAVAILABLE)
-            XR_ERRNAME(XR_SESSION_NOT_FOCUSED)
-            XR_ERRNAME(XR_FRAME_DISCARDED)
-            XR_ERRNAME(XR_ERROR_VALIDATION_FAILURE)
-            XR_ERRNAME(XR_ERROR_RUNTIME_FAILURE)
-            XR_ERRNAME(XR_ERROR_OUT_OF_MEMORY)
-            XR_ERRNAME(XR_ERROR_API_VERSION_UNSUPPORTED)
-            XR_ERRNAME(XR_ERROR_INITIALIZATION_FAILED)
-            XR_ERRNAME(XR_ERROR_FUNCTION_UNSUPPORTED)
-            XR_ERRNAME(XR_ERROR_FEATURE_UNSUPPORTED)
-            XR_ERRNAME(XR_ERROR_EXTENSION_NOT_PRESENT)
-            XR_ERRNAME(XR_ERROR_LIMIT_REACHED)
-            XR_ERRNAME(XR_ERROR_SIZE_INSUFFICIENT)
-            XR_ERRNAME(XR_ERROR_HANDLE_INVALID)
-            XR_ERRNAME(XR_ERROR_INSTANCE_LOST)
-            XR_ERRNAME(XR_ERROR_SESSION_RUNNING)
-            XR_ERRNAME(XR_ERROR_SESSION_NOT_RUNNING)
-            XR_ERRNAME(XR_ERROR_SESSION_LOST)
-            XR_ERRNAME(XR_ERROR_SYSTEM_INVALID)
-            XR_ERRNAME(XR_ERROR_PATH_INVALID)
-            XR_ERRNAME(XR_ERROR_PATH_COUNT_EXCEEDED)
-            XR_ERRNAME(XR_ERROR_PATH_FORMAT_INVALID)
-            XR_ERRNAME(XR_ERROR_PATH_UNSUPPORTED)
-            XR_ERRNAME(XR_ERROR_LAYER_INVALID)
-            XR_ERRNAME(XR_ERROR_LAYER_LIMIT_EXCEEDED)
-            XR_ERRNAME(XR_ERROR_SWAPCHAIN_RECT_INVALID)
-            XR_ERRNAME(XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED)
-            XR_ERRNAME(XR_ERROR_ACTION_TYPE_MISMATCH)
-            XR_ERRNAME(XR_ERROR_SESSION_NOT_READY)
-            XR_ERRNAME(XR_ERROR_SESSION_NOT_STOPPING)
-            XR_ERRNAME(XR_ERROR_TIME_INVALID)
-            XR_ERRNAME(XR_ERROR_REFERENCE_SPACE_UNSUPPORTED)
-            XR_ERRNAME(XR_ERROR_FILE_ACCESS_ERROR)
-            XR_ERRNAME(XR_ERROR_FILE_CONTENTS_INVALID)
-            XR_ERRNAME(XR_ERROR_FORM_FACTOR_UNSUPPORTED)
-            XR_ERRNAME(XR_ERROR_FORM_FACTOR_UNAVAILABLE)
-            XR_ERRNAME(XR_ERROR_API_LAYER_NOT_PRESENT)
-            XR_ERRNAME(XR_ERROR_CALL_ORDER_INVALID)
-            XR_ERRNAME(XR_ERROR_GRAPHICS_DEVICE_INVALID)
-            XR_ERRNAME(XR_ERROR_POSE_INVALID)
-            XR_ERRNAME(XR_ERROR_INDEX_OUT_OF_RANGE)
-            XR_ERRNAME(XR_ERROR_VIEW_CONFIGURATION_TYPE_UNSUPPORTED)
-            XR_ERRNAME(XR_ERROR_ENVIRONMENT_BLEND_MODE_UNSUPPORTED)
-            XR_ERRNAME(XR_ERROR_NAME_DUPLICATED)
-            XR_ERRNAME(XR_ERROR_NAME_INVALID)
-            XR_ERRNAME(XR_ERROR_ACTIONSET_NOT_ATTACHED)
-            XR_ERRNAME(XR_ERROR_ACTIONSETS_ALREADY_ATTACHED)
-            XR_ERRNAME(XR_ERROR_LOCALIZED_NAME_DUPLICATED)
-            XR_ERRNAME(XR_ERROR_LOCALIZED_NAME_INVALID)
-            XR_ERRNAME(XR_ERROR_GRAPHICS_REQUIREMENTS_CALL_MISSING)
-            XR_ERRNAME(XR_ERROR_RUNTIME_UNAVAILABLE)
-            XR_ERRNAME(XR_ERROR_ANDROID_THREAD_SETTINGS_ID_INVALID_KHR)
-            XR_ERRNAME(XR_ERROR_ANDROID_THREAD_SETTINGS_FAILURE_KHR)
-            XR_ERRNAME(XR_ERROR_CREATE_SPATIAL_ANCHOR_FAILED_MSFT)
-            XR_ERRNAME(XR_ERROR_SECONDARY_VIEW_CONFIGURATION_TYPE_NOT_ENABLED_MSFT)
-            XR_ERRNAME(XR_ERROR_CONTROLLER_MODEL_KEY_INVALID_MSFT)
-            XR_ERRNAME(XR_ERROR_REPROJECTION_MODE_UNSUPPORTED_MSFT)
-            XR_ERRNAME(XR_ERROR_COMPUTE_NEW_SCENE_NOT_COMPLETED_MSFT)
-            XR_ERRNAME(XR_ERROR_SCENE_COMPONENT_ID_INVALID_MSFT)
-            XR_ERRNAME(XR_ERROR_SCENE_COMPONENT_TYPE_MISMATCH_MSFT)
-            XR_ERRNAME(XR_ERROR_SCENE_MESH_BUFFER_ID_INVALID_MSFT)
-            XR_ERRNAME(XR_ERROR_SCENE_COMPUTE_FEATURE_INCOMPATIBLE_MSFT)
-            XR_ERRNAME(XR_ERROR_SCENE_COMPUTE_CONSISTENCY_MISMATCH_MSFT)
-            XR_ERRNAME(XR_ERROR_DISPLAY_REFRESH_RATE_UNSUPPORTED_FB)
-            XR_ERRNAME(XR_ERROR_COLOR_SPACE_UNSUPPORTED_FB)
-            XR_ERRNAME(XR_ERROR_SPATIAL_ANCHOR_NAME_NOT_FOUND_MSFT)
-            XR_ERRNAME(XR_ERROR_SPATIAL_ANCHOR_NAME_INVALID_MSFT)
-    };
-
-    const char* xrGetErrorStr(XrResult r)
-    {
-        auto found = xrErrorNames.find(r);
-        if (found != xrErrorNames.end())
-            return found->second;
-        return "Unknown XR Error";
-    }
 
     Vector3 uxrGetVec(XrVector3f v)
     {
@@ -524,9 +368,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
             return false;
         }
 
-        XR_FOREACH(XR_LOAD);
-        XR_PLATFORM(XR_LOAD);
-        XR_EXTENSION_BASED(XR_LOAD);
+        LoadOpenXRAPI(instance_);
 
         // Print the runtime name and version, that will be useful information to have
         XrInstanceProperties instProps = { XR_TYPE_INSTANCE_PROPERTIES };
@@ -669,6 +511,8 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
         if (messenger_)
             xrDestroyDebugUtilsMessengerEXT(messenger_);
+
+        UnloadOpenXRAPI();
 
         if (instance_)
             xrDestroyInstance(instance_);
