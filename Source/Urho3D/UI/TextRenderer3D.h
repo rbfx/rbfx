@@ -26,6 +26,7 @@
 
 #include "../Scene/LogicComponent.h"
 #include "../UI/Text3D.h"
+#include "../UI/Font.h"
 
 #include <EASTL/unordered_map.h>
 
