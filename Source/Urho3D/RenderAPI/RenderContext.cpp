@@ -129,7 +129,7 @@ void RenderContext::ClearDepthStencil(ClearTargetFlags flags, float depth, unsig
     Diligent::CLEAR_DEPTH_STENCIL_FLAGS internalFlags;
     if (flags.Test(CLEAR_DEPTH))
         internalFlags |= Diligent::CLEAR_DEPTH_FLAG;
-    if (flags.Test(CLEAR_STENCIL) && IsStencilTextureFormat(currentDepthStencil_->GetTexture()->GetDesc().Format))
+    if (flags.Test(CLEAR_STENCIL) && IsDepthStencilTextureFormat(currentDepthStencil_->GetTexture()->GetDesc().Format))
         internalFlags |= Diligent::CLEAR_STENCIL_FLAG;
     handle_->ClearDepthStencil(
         currentDepthStencil_, internalFlags, depth, stencil, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
@@ -180,10 +180,10 @@ void RenderContext::Execute(DrawCommandQueue* drawQueue)
 void RenderContext::UpdateCurrentRenderTargetInfo()
 {
     currentOutputDesc_.depthStencilFormat_ =
-        currentDepthStencil_ ? currentDepthStencil_->GetTexture()->GetDesc().Format : Diligent::TEX_FORMAT_UNKNOWN;
+        currentDepthStencil_ ? currentDepthStencil_->GetDesc().Format : Diligent::TEX_FORMAT_UNKNOWN;
     currentOutputDesc_.numRenderTargets_ = currentRenderTargets_.size();
     for (unsigned i = 0; i < currentRenderTargets_.size(); ++i)
-        currentOutputDesc_.renderTargetFormats_[i] = currentRenderTargets_[i]->GetTexture()->GetDesc().Format;
+        currentOutputDesc_.renderTargetFormats_[i] = currentRenderTargets_[i]->GetDesc().Format;
 
     Diligent::ITextureView* view = !currentRenderTargets_.empty() ? currentRenderTargets_[0] : currentDepthStencil_;
     currentDimensions_ = view ? GetTextureDimensions(view->GetTexture()) : IntVector2::ZERO;

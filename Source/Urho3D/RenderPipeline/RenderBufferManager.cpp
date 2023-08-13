@@ -75,7 +75,7 @@ bool HasStencilBuffer(RenderSurface* renderSurface)
         return true;
 
     const TextureFormat format = renderSurface->GetParentTexture()->GetFormat();
-    return IsStencilTextureFormat(format);
+    return IsDepthStencilTextureFormat(format);
 }
 
 bool HasReadableDepth(RenderSurface* renderSurface)

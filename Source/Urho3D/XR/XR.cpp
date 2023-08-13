@@ -44,6 +44,7 @@
 #include "../Resource/XMLElement.h"
 #include "../Resource/XMLFile.h"
 #include "Urho3D/RenderAPI/GAPIIncludes.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/RenderPipeline/ShaderConsts.h"
 
@@ -63,6 +64,57 @@
 
 namespace Urho3D
 {
+
+namespace
+{
+
+ea::vector<int64_t> GetSwapChainFormats(XrSession session)
+{
+    unsigned count = 0;
+    xrEnumerateSwapchainFormats(session, 0, &count, 0);
+
+    ea::vector<int64_t> result;
+    result.resize(count);
+    xrEnumerateSwapchainFormats(session, count, &count, result.data());
+
+    return result;
+}
+
+/// Non-sRGB formats behave weirdly because e.g. Oculus Quest 2 expects input in sRGB formats and
+/// treats non-sRGB formats as sRGB so the engine gets confused.
+/// Use non-sRGB formats only if there is no other choice.
+/// https://developer.oculus.com/resources/color-management-guide/
+bool IsFallbackTextureFormat(TextureFormat format)
+{
+    return SetTextureFormatSRGB(format, true) != format;
+}
+
+ea::pair<TextureFormat, int64_t> SelectColorFormat(RenderBackend backend, const ea::vector<int64_t>& formats)
+{
+    for (bool fallback : {false, true})
+    {
+        for (const auto internalFormat : formats)
+        {
+            const TextureFormat textureFormat = GetTextureFormatFromInternal(backend, internalFormat);
+            if (IsColorTextureFormat(textureFormat) && IsFallbackTextureFormat(textureFormat) == fallback)
+                return {textureFormat, internalFormat};
+        }
+    }
+    return {TextureFormat::TEX_FORMAT_UNKNOWN, 0};
+}
+
+ea::pair<TextureFormat, int64_t> SelectDepthFormat(RenderBackend backend, const ea::vector<int64_t>& formats)
+{
+    for (const auto internalFormat : formats)
+    {
+        const TextureFormat textureFormat = GetTextureFormatFromInternal(backend, internalFormat);
+        if (IsDepthTextureFormat(textureFormat))
+            return {textureFormat, internalFormat};
+    }
+    return {TextureFormat::TEX_FORMAT_UNKNOWN, 0};
+}
+
+}
 
 SharedPtr<Node> LoadGLTFModel(Context* ctx, tinygltf::Model& model);
 
@@ -718,6 +770,8 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
     bool OpenXR::CreateSwapchain()
     {
+        auto renderDevice = GetSubsystem<RenderDevice>();
+
         for (int j = 0; j < 4; ++j)
         {
 #if D3D11_SUPPORTED
@@ -736,52 +790,16 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 #endif
         }
 
-        unsigned fmtCt = 0;
-        xrEnumerateSwapchainFormats(session_, 0, &fmtCt, 0);
-        ea::vector<int64_t> fmts;
-        fmts.resize(fmtCt);
-        xrEnumerateSwapchainFormats(session_, fmtCt, &fmtCt, fmts.data());
+        const auto internalFormats = GetSwapChainFormats(session_);
+        const auto [colorFormat, colorFormatInternal] = SelectColorFormat(renderDevice->GetBackend(), internalFormats);
+        const auto [depthFormat, depthFormatInternal] = SelectDepthFormat(renderDevice->GetBackend(), internalFormats);
 
-        // take first of RGBA/SRGBA supported.
-        for (auto fmt : fmts)
-        {
-            if (0) //(fmt == graphics->GetRGBAFormat())
-            {
-                backbufferFormat_ = fmt;
-                break;
-            }
-#if D3D11_SUPPORTED
-            else if (fmt == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
-#elif URHO3D_OPENGL
-            else if (fmt == GL_SRGB8)
-#endif
-            {
-                backbufferFormat_ = fmt;
-                break;
-            }
-        }
-
-        // See if we've got a depth format we can handle, if we do this means we'll produce swapchains
-        // We'll be able to count on details like MSAA-Quality being compatible.
-        for (auto fmt : fmts)
-        {
-            if (0) //if (fmt == graphics->GetDepthStencilFormat())
-            {
-                depthFormat_ = fmt;
-                break;
-            }
-#if D3D11_SUPPORTED
-            if (fmt == DXGI_FORMAT_D24_UNORM_S8_UINT) // what we actually construct, as opposed to typeless
-            {
-                depthFormat_ = fmt;
-                break;
-            }
-#endif
-        }
+        backbufferFormat_ = colorFormat;
+        depthFormat_ = depthFormat;
 
         XrSwapchainCreateInfo swapInfo = { XR_TYPE_SWAPCHAIN_CREATE_INFO };
         swapInfo.usageFlags = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
-        swapInfo.format = backbufferFormat_;
+        swapInfo.format = colorFormatInternal;
         swapInfo.width = eyeTexWidth_ * 2; // note: if eventually supported array targets this will change.
         swapInfo.height = eyeTexHeight_;
         swapInfo.sampleCount = msaaLevel_;
@@ -798,11 +816,11 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         // If we found a depth format than construct swapchains for depth.
         // Doing this should mean we've done as much as possible to prevent ourselves from blocking due to something.
         // At the present, checking we have depth-info-ext to do anything with it.
-        if (supportsDepthExt_ && depthFormat_)
+        if (supportsDepthExt_ && depthFormatInternal)
         {
             XrSwapchainCreateInfo swapInfo = { XR_TYPE_SWAPCHAIN_CREATE_INFO };
             swapInfo.usageFlags = XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
-            swapInfo.format = depthFormat_;
+            swapInfo.format = depthFormatInternal;
             swapInfo.width = eyeTexWidth_ * 2; // note: if eventually supported array targets this will change.
             swapInfo.height = eyeTexHeight_;
             swapInfo.sampleCount = msaaLevel_;
@@ -872,17 +890,27 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
         for (unsigned i = 0; i < imgCount_; ++i)
         {
-            eyeColorTextures_[i] = new Texture2D(GetContext());
-
-#if D3D11_SUPPORTED
-            // NOTE: D3D11 we can get most info from queries more easily
-            eyeColorTextures_[i]->CreateFromD3D11Texture2D(opaque_->swapImages_[i].texture, msaaLevel_);
+            eyeColorTextures_[i] = MakeShared<Texture2D>(GetContext());
             if (depthChain_)
+                eyeDepthTextures_[i] = MakeShared<Texture2D>(GetContext());
+
+            switch (renderDevice->GetBackend())
             {
-                eyeDepthTextures_[i] = new Texture2D(GetContext());
-                eyeDepthTextures_[i]->CreateFromD3D11Texture2D(opaque_->depthImages_[i].texture, msaaLevel_);
-            }
+#if D3D11_SUPPORTED
+            case RenderBackend::D3D11:
+                // NOTE: D3D11 we can get most info from queries more easily
+                eyeColorTextures_[i]->CreateFromD3D11Texture2D(
+                    opaque_->swapImages_[i].texture, backbufferFormat_, msaaLevel_);
+
+                if (depthChain_)
+                {
+                    eyeDepthTextures_[i]->CreateFromD3D11Texture2D(
+                        opaque_->depthImages_[i].texture, depthFormat_, msaaLevel_);
+                }
+                break;
 #endif
+            default: URHO3D_ASSERT(false); break;
+            }
 
 #ifdef URHO3D_OPENGL
             // Queries pain, we already know this information so just pass it

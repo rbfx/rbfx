@@ -280,6 +280,37 @@ unsigned long long GetMipLevelSizeInBytes(const IntVector3& size, unsigned level
     return sizeInBlocks.x_ * sizeInBlocks.y_ * sizeInBlocks.z_ * GetBlockSize(format);
 }
 
+Diligent::RefCntAutoPtr<Diligent::ITextureView> GetDefaultView(
+    Diligent::ITexture* texture, Diligent::TEXTURE_VIEW_TYPE viewType, TextureFormat format)
+{
+    Diligent::RefCntAutoPtr<Diligent::ITextureView> view;
+    view = texture->GetDefaultView(viewType);
+
+    if (!view)
+    {
+        Diligent::TextureViewDesc viewDesc;
+        viewDesc.ViewType = viewType;
+        viewDesc.Format = format;
+        switch (viewType)
+        {
+        case Diligent::TEXTURE_VIEW_SHADER_RESOURCE:
+            if ((texture->GetDesc().MiscFlags & Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS) != 0)
+                viewDesc.Flags |= Diligent::TEXTURE_VIEW_FLAG_ALLOW_MIP_MAP_GENERATION;
+            break;
+
+        case Diligent::TEXTURE_VIEW_UNORDERED_ACCESS:
+            viewDesc.AccessFlags |= Diligent::UAV_ACCESS_FLAG_READ_WRITE;
+            break;
+
+        default: break;
+        }
+
+        texture->CreateView(viewDesc, &view);
+    }
+
+    return view;
+}
+
 } // namespace
 
 RawTexture::RawTexture(Context* context)
@@ -422,7 +453,7 @@ bool RawTexture::Create(const RawTextureParams& params)
     return true;
 }
 
-bool RawTexture::CreateFromHandle(Diligent::ITexture* texture, int msaaLevel)
+bool RawTexture::CreateFromHandle(Diligent::ITexture* texture, TextureFormat format, int msaaLevel)
 {
     DestroyGPU();
 
@@ -439,7 +470,7 @@ bool RawTexture::CreateFromHandle(Diligent::ITexture* texture, int msaaLevel)
         return false;
     }
 
-    params_.format_ = textureDesc.Format;
+    params_.format_ = format != TextureFormat::TEX_FORMAT_UNKNOWN ? format : textureDesc.Format;
 
     // TODO(xr): Revisit this flag
     params_.flags_ |= TextureFlag::NoMultiSampledAutoResolve;
@@ -460,10 +491,10 @@ bool RawTexture::CreateFromHandle(Diligent::ITexture* texture, int msaaLevel)
 
     handles_.texture_ = texture;
 
-    return CreateViews(textureDesc.BindFlags);
+    return InitializeDefaultViews(textureDesc.BindFlags);
 }
 
-bool RawTexture::CreateFromD3D11Texture2D(void* d3d11Texture2D, int msaaLevel)
+bool RawTexture::CreateFromD3D11Texture2D(void* d3d11Texture2D, TextureFormat format, int msaaLevel)
 {
 #if D3D11_SUPPORTED
     if (renderDevice_ && renderDevice_->GetBackend() == RenderBackend::D3D11)
@@ -478,7 +509,7 @@ bool RawTexture::CreateFromD3D11Texture2D(void* d3d11Texture2D, int msaaLevel)
             return false;
         }
 
-        return CreateFromHandle(texture, msaaLevel);
+        return CreateFromHandle(texture, format, msaaLevel);
     }
 #endif
 
@@ -571,7 +602,7 @@ bool RawTexture::InitializeDefaultViews(Diligent::BIND_FLAGS bindFlags)
     if (bindFlags & Diligent::BIND_SHADER_RESOURCE)
     {
         Diligent::ITexture* texture = handles_.resolvedTexture_ ? handles_.resolvedTexture_ : handles_.texture_;
-        handles_.srv_ = texture->GetDefaultView(Diligent::TEXTURE_VIEW_SHADER_RESOURCE);
+        handles_.srv_ = GetDefaultView(texture, Diligent::TEXTURE_VIEW_SHADER_RESOURCE, params_.format_);
 
         if (!handles_.srv_)
         {
@@ -582,7 +613,7 @@ bool RawTexture::InitializeDefaultViews(Diligent::BIND_FLAGS bindFlags)
 
     if (bindFlags & Diligent::BIND_RENDER_TARGET)
     {
-        handles_.rtv_ = handles_.texture_->GetDefaultView(Diligent::TEXTURE_VIEW_RENDER_TARGET);
+        handles_.rtv_ = GetDefaultView(handles_.texture_, Diligent::TEXTURE_VIEW_RENDER_TARGET, params_.format_);
 
         if (!handles_.rtv_)
         {
@@ -599,7 +630,7 @@ bool RawTexture::InitializeDefaultViews(Diligent::BIND_FLAGS bindFlags)
 
     if (bindFlags & Diligent::BIND_DEPTH_STENCIL)
     {
-        handles_.dsv_ = handles_.texture_->GetDefaultView(Diligent::TEXTURE_VIEW_DEPTH_STENCIL);
+        handles_.dsv_ = GetDefaultView(handles_.texture_, Diligent::TEXTURE_VIEW_DEPTH_STENCIL, params_.format_);
 
         if (!handles_.dsv_)
         {
@@ -633,101 +664,7 @@ bool RawTexture::InitializeDefaultViews(Diligent::BIND_FLAGS bindFlags)
 
     if (bindFlags & Diligent::BIND_UNORDERED_ACCESS)
     {
-        handles_.uav_ = handles_.texture_->GetDefaultView(Diligent::TEXTURE_VIEW_UNORDERED_ACCESS);
-
-        if (!handles_.uav_)
-        {
-            URHO3D_LOGERROR("Failed to create unordered access view for texture");
-            return false;
-        }
-
-        handles_.uavs_[RawTextureUAVKey{}] = handles_.uav_;
-    }
-
-    OnCreateGPU();
-    return true;
-}
-
-bool RawTexture::CreateViews(Diligent::BIND_FLAGS bindFlags)
-{
-    if (bindFlags & Diligent::BIND_SHADER_RESOURCE)
-    {
-        Diligent::ITexture* texture = handles_.resolvedTexture_ ? handles_.resolvedTexture_ : handles_.texture_;
-
-        Diligent::TextureViewDesc viewDesc;
-        viewDesc.ViewType = Diligent::TEXTURE_VIEW_SHADER_RESOURCE;
-        if ((texture->GetDesc().MiscFlags & Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS) != 0)
-            viewDesc.Flags |= Diligent::TEXTURE_VIEW_FLAG_ALLOW_MIP_MAP_GENERATION;
-        texture->CreateView(viewDesc, &handles_.srv_);
-
-        if (!handles_.srv_)
-        {
-            URHO3D_LOGERROR("Failed to create shader resource view for texture");
-            return false;
-        }
-    }
-
-    if (bindFlags & Diligent::BIND_RENDER_TARGET)
-    {
-        Diligent::TextureViewDesc viewDesc;
-        viewDesc.ViewType = Diligent::TEXTURE_VIEW_RENDER_TARGET;
-        handles_.texture_->CreateView(viewDesc, &handles_.rtv_);
-
-        if (!handles_.rtv_)
-        {
-            URHO3D_LOGERROR("Failed to create render target view for texture");
-            return false;
-        }
-
-        if (!CreateRenderSurfaces(handles_.rtv_, Diligent::TEXTURE_VIEW_RENDER_TARGET, handles_.renderSurfaces_))
-        {
-            URHO3D_LOGERROR("Failed to create render surfaces for texture");
-            return false;
-        }
-    }
-
-    if (bindFlags & Diligent::BIND_DEPTH_STENCIL)
-    {
-        Diligent::TextureViewDesc viewDesc;
-        viewDesc.ViewType = Diligent::TEXTURE_VIEW_DEPTH_STENCIL;
-        handles_.texture_->CreateView(viewDesc, &handles_.dsv_);
-
-        if (!handles_.dsv_)
-        {
-            URHO3D_LOGERROR("Failed to create depth-stencil view for texture");
-            return false;
-        }
-
-        if (!CreateRenderSurfaces(handles_.dsv_, Diligent::TEXTURE_VIEW_DEPTH_STENCIL, handles_.renderSurfaces_))
-        {
-            URHO3D_LOGERROR("Failed to create render surfaces for texture");
-            return false;
-        }
-
-        Diligent::TextureViewDesc dsvReadOnlyDesc = handles_.dsv_->GetDesc();
-        dsvReadOnlyDesc.ViewType = Diligent::TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL;
-        handles_.texture_->CreateView(dsvReadOnlyDesc, &handles_.dsvReadOnly_);
-
-        if (!handles_.dsvReadOnly_)
-        {
-            URHO3D_LOGERROR("Failed to create read-only depth-stencil view for texture");
-            return false;
-        }
-
-        if (!CreateRenderSurfaces(handles_.dsvReadOnly_, Diligent::TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL,
-                handles_.renderSurfacesReadOnly_))
-        {
-            URHO3D_LOGERROR("Failed to create read-only render surfaces for texture");
-            return false;
-        }
-    }
-
-    if (bindFlags & Diligent::BIND_UNORDERED_ACCESS)
-    {
-        Diligent::TextureViewDesc viewDesc;
-        viewDesc.ViewType = Diligent::TEXTURE_VIEW_DEPTH_STENCIL;
-        viewDesc.AccessFlags = Diligent::UAV_ACCESS_FLAG_READ_WRITE;
-        handles_.texture_->CreateView(viewDesc, &handles_.uav_);
+        handles_.uav_ = GetDefaultView(handles_.texture_, Diligent::TEXTURE_VIEW_UNORDERED_ACCESS, params_.format_);
 
         if (!handles_.uav_)
         {

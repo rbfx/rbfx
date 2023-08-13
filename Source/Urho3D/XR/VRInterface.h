@@ -350,9 +350,9 @@ namespace Urho3D
         /// Only exists if it was necessary to create a pipeline ourselves for the viewport as a default.
         SharedPtr<StereoRenderPipeline> pipeline_;
         /// Graphics format for the backbuffer from the swapchain.
-        unsigned backbufferFormat_{ 0u };
+        TextureFormat backbufferFormat_{};
         /// Graphics format for the depthbuffer swapchain, 0 if we for some reason lack that.
-        unsigned depthFormat_{ 0u };
+        TextureFormat depthFormat_{};
         /// Active backbuffer textures.
         SharedPtr<Texture2D> leftTexture_, rightTexture_, sharedTexture_, leftDS_, rightDS_, sharedDS_;
         /// Hidden area mesh.
