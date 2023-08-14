@@ -49,8 +49,13 @@
 #include "Urho3D/XR/OpenXRAPI.h"
 #include "Urho3D/XR/VREvents.h"
 
+#include <Diligent/Graphics/GraphicsEngine/interface/DeviceContext.h>
 #if D3D11_SUPPORTED
     #include <Diligent/Graphics/GraphicsEngineD3D11/interface/RenderDeviceD3D11.h>
+#endif
+#if D3D12_SUPPORTED
+    #include <Diligent/Graphics/GraphicsEngineD3D12/interface/RenderDeviceD3D12.h>
+    #include <Diligent/Graphics/GraphicsEngineD3D12/interface/CommandQueueD3D12.h>
 #endif
 
 // need this for loading the GLBs
@@ -160,6 +165,30 @@ XrSessionPtr CreateSession(RenderDevice* renderDevice, XrInstance instance, XrSy
 
         XrGraphicsBindingD3D11KHR binding = {XR_TYPE_GRAPHICS_BINDING_D3D11_KHR};
         binding.device = renderDeviceD3D11->GetD3D11Device();
+        sessionCreateInfo.next = &binding;
+
+        if (!URHO3D_CHECK_OPENXR(xrCreateSession(instance, &sessionCreateInfo, &session)))
+            return nullptr;
+
+        break;
+    }
+#endif
+#if D3D12_SUPPORTED
+    case RenderBackend::D3D12:
+    {
+        XrGraphicsRequirementsD3D12KHR requisite = {XR_TYPE_GRAPHICS_REQUIREMENTS_D3D12_KHR};
+        if (!URHO3D_CHECK_OPENXR(xrGetD3D12GraphicsRequirementsKHR(instance, system, &requisite)))
+            return nullptr;
+
+        const auto renderDeviceD3D12 = static_cast<Diligent::IRenderDeviceD3D12*>(renderDevice->GetRenderDevice());
+        const auto immediateContext = renderDevice->GetImmediateContext();
+        const auto commandQueue = immediateContext->LockCommandQueue();
+        immediateContext->UnlockCommandQueue();
+        const auto commandQueueD3D12 = static_cast<Diligent::ICommandQueueD3D12*>(commandQueue);
+
+        XrGraphicsBindingD3D12KHR binding = {XR_TYPE_GRAPHICS_BINDING_D3D12_KHR};
+        binding.device = renderDeviceD3D12->GetD3D12Device();
+        binding.queue = commandQueueD3D12->GetD3D12CommandQueue();
         sessionCreateInfo.next = &binding;
 
         if (!URHO3D_CHECK_OPENXR(xrCreateSession(instance, &sessionCreateInfo, &session)))
@@ -282,6 +311,31 @@ public:
 };
 #endif
 
+#if D3D12_SUPPORTED
+class OpenXRSwapChainD3D12 : public OpenXRSwapChainBase<XrSwapchainImageD3D12KHR, XR_TYPE_SWAPCHAIN_IMAGE_D3D12_KHR>
+{
+public:
+    using BaseClass = OpenXRSwapChainBase<XrSwapchainImageD3D12KHR, XR_TYPE_SWAPCHAIN_IMAGE_D3D12_KHR>;
+
+    OpenXRSwapChainD3D12(Context* context, XrSession session, TextureFormat format, int64_t internalFormat,
+        const IntVector2& eyeSize, int msaaLevel)
+        : BaseClass(session, format, internalFormat, eyeSize, msaaLevel)
+    {
+        auto renderDevice = context->GetSubsystem<RenderDevice>();
+
+        const unsigned numImages = images_.size();
+        textures_.resize(numImages);
+        for (unsigned i = 0; i < numImages; ++i)
+        {
+            URHO3D_ASSERT(arraySize_ == 1);
+
+            textures_[i] = MakeShared<Texture2D>(context);
+            textures_[i]->CreateFromD3D12Resource(images_[i].texture, format, msaaLevel);
+        }
+    }
+};
+#endif
+
 #if GL_SUPPORTED
 class OpenXRSwapChainGL : public OpenXRSwapChainBase<XrSwapchainImageOpenGLKHR, XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR>
 {
@@ -320,6 +374,11 @@ OpenXRSwapChainPtr CreateSwapChain(Context* context, XrSession session, TextureF
 #if D3D11_SUPPORTED
     case RenderBackend::D3D11:
         result = ea::make_shared<OpenXRSwapChainD3D11>(context, session, format, internalFormat, eyeSize, msaaLevel);
+        break;
+#endif
+#if D3D12_SUPPORTED
+    case RenderBackend::D3D12:
+        result = ea::make_shared<OpenXRSwapChainD3D12>(context, session, format, internalFormat, eyeSize, msaaLevel);
         break;
 #endif
 #if GL_SUPPORTED

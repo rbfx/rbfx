@@ -18,6 +18,9 @@
 #if D3D11_SUPPORTED
     #include <Diligent/Graphics/GraphicsEngineD3D11/interface/RenderDeviceD3D11.h>
 #endif
+#if D3D12_SUPPORTED
+    #include <Diligent/Graphics/GraphicsEngineD3D12/interface/RenderDeviceD3D12.h>
+#endif
 #if GL_SUPPORTED || GLES_SUPPORTED
     #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/RenderDeviceGL.h>
 #endif
@@ -517,6 +520,29 @@ bool RawTexture::CreateFromD3D11Texture2D(void* d3d11Texture2D, TextureFormat fo
 #endif
 
     URHO3D_ASSERT(false, "RawTexture::CreateFromD3D11Texture2D is not supported on this platform");
+    return false;
+}
+
+bool RawTexture::CreateFromD3D12Resource(void* d3d12Resource, TextureFormat format, int msaaLevel)
+{
+#if D3D12_SUPPORTED
+    if (renderDevice_ && renderDevice_->GetBackend() == RenderBackend::D3D12)
+    {
+        auto deviceD3D12 = static_cast<Diligent::IRenderDeviceD3D12*>(renderDevice_->GetRenderDevice());
+        Diligent::RefCntAutoPtr<Diligent::ITexture> texture;
+        deviceD3D12->CreateTextureFromD3DResource(
+            reinterpret_cast<ID3D12Resource*>(d3d12Resource), Diligent::RESOURCE_STATE_UNKNOWN, &texture);
+        if (!texture)
+        {
+            URHO3D_LOGERROR("Failed to create texture from existing ID3D11Texture2D pointer");
+            return false;
+        }
+
+        return CreateFromHandle(texture, format, msaaLevel);
+    }
+#endif
+
+    URHO3D_ASSERT(false, "RawTexture::CreateFromD3D12Resource is not supported on this platform");
     return false;
 }
 

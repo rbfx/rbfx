@@ -329,8 +329,9 @@ TextureFormat GetTextureFormatFromInternal(RenderBackend backend, unsigned inter
 {
     switch (backend)
     {
-#if D3D11_SUPPORTED
+#if D3D11_SUPPORTED || D3D12_SUPPORTED
     case RenderBackend::D3D11:
+    case RenderBackend::D3D12:
         switch (internalFormat)
         {
         case DXGI_FORMAT_R8G8B8A8_UNORM: return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
