@@ -24,6 +24,7 @@
 
 #include "Urho3D/Core/Variant.h"
 #include "Urho3D/Graphics/Model.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
 #include "Urho3D/XR/VRInterface.h"
 
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr.h>
@@ -32,8 +33,33 @@
 
 namespace Urho3D
 {
+
 class AnimatedModel;
+class Texture2D;
 class XMLFile;
+
+using XrSessionPtr = ea::shared_ptr<XrSession_T>;
+using XrSwapchainPtr = ea::shared_ptr<XrSwapchain_T>;
+
+class OpenXRSwapChain
+{
+public:
+    virtual ~OpenXRSwapChain() = default;
+
+    Texture2D* GetTexture(unsigned index) const { return textures_[index]; }
+    unsigned GetNumTextures() const { return textures_.size(); }
+    TextureFormat GetFormat() const { return format_; }
+    XrSwapchain GetHandle() const { return swapChain_.get(); }
+
+protected:
+    OpenXRSwapChain() = default;
+
+    ea::vector<SharedPtr<Texture2D>> textures_;
+    TextureFormat format_;
+    XrSwapchainPtr swapChain_;
+};
+
+using OpenXRSwapChainPtr = ea::shared_ptr<OpenXRSwapChain>;
 
 /**
 
@@ -119,8 +145,6 @@ public:
 protected:
     bool OpenSession();
     bool CreateSwapchain();
-    void CloseSession();
-    void DestroySwapchain();
     void UpdateBindings(float time);
     void UpdateBindingBound();
     void GetHiddenAreaMask();
@@ -130,21 +154,11 @@ protected:
     SharedPtr<XMLFile> manifest_;
     XrInstance instance_ = { };
     XrSystemId system_ = { };
-    XrSession session_ = { };
-    XrSwapchain swapChain_ = { };
-    XrSwapchain depthChain_ = { };
+    XrSessionPtr session_;
+    OpenXRSwapChainPtr swapChain_;
+    OpenXRSwapChainPtr depthChain_;
     XrView views_[2] = { { XR_TYPE_VIEW }, { XR_TYPE_VIEW } };
     XrDebugUtilsMessengerEXT messenger_ = { };
-
-    // OXR headers are a complete mess, getting platform specific object defs creates a mess of platform includes, including "WIN32_EXTRA_FAT"
-    struct Opaque;
-    /// Contains hidden objects that are obscured due to header inclusion complexities with #defines.
-    ea::unique_ptr<Opaque> opaque_;
-
-    SharedPtr<Texture2D> eyeColorTextures_[4];
-    SharedPtr<Texture2D> eyeDepthTextures_[4];
-    unsigned imgCount_ = { };
-    unsigned depthImgCount_{ };
 
     // Pointless head-space.
     XrSpace headSpace_ = { };

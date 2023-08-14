@@ -10,6 +10,9 @@
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr.h>
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform.h>
 
+namespace Urho3D
+{
+
 #define URHO3D_ENUMERATE_OPENXR_API_CORE(X) \
     X(xrPollEvent) \
     X(xrResultToString) \
@@ -109,12 +112,12 @@
 
 #define URHO3D_DECLARE_OPENXR_API(fn) extern PFN_##fn fn;
 
-namespace Urho3D
-{
-
 URHO3D_ENUMERATE_OPENXR_API(URHO3D_DECLARE_OPENXR_API)
 
 const char* xrGetErrorStr(XrResult result);
+bool xrCheckResult(XrResult result, const char* expr, const char* file, int line, const char* func);
+
+#define URHO3D_CHECK_OPENXR(expr) xrCheckResult(expr, #expr, __FILE__, __LINE__, __FUNCTION__)
 
 /// Initialize OpenXR API functions from given instance.
 void LoadOpenXRAPI(XrInstance instance);

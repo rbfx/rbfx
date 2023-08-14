@@ -4,6 +4,8 @@
 
 #include "Urho3D/XR/OpenXRAPI.h"
 
+#include "Urho3D/IO/Log.h"
+
 #include "Urho3D/DebugNew.h"
 
 #define URHO3D_DEFINE_OPENXR_API(fn) PFN_##fn fn;
@@ -100,6 +102,16 @@ const char* xrGetErrorStr(XrResult result)
     if (iter != xrErrorNames.end())
         return iter->second;
     return "Unknown";
+}
+
+bool xrCheckResult(XrResult result, const char* expr, const char* file, int line, const char* func)
+{
+    if (result == XrResult::XR_SUCCESS)
+        return true;
+
+    URHO3D_LOGERROR(
+        "OpenXR error {}\nexpr: {}\nfile: {}\nline: {}\nfunc: {}", xrGetErrorStr(result), expr, file, line, func);
+    return false;
 }
 
 void LoadOpenXRAPI(XrInstance instance)

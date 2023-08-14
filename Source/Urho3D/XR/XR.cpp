@@ -115,6 +115,180 @@ ea::pair<TextureFormat, int64_t> SelectDepthFormat(RenderBackend backend, const 
     return {TextureFormat::TEX_FORMAT_UNKNOWN, 0};
 }
 
+XrSessionPtr CreateSession(RenderDevice* renderDevice, XrInstance instance, XrSystemId system)
+{
+    XrSessionCreateInfo sessionCreateInfo = { XR_TYPE_SESSION_CREATE_INFO };
+    sessionCreateInfo.systemId = system;
+
+    XrSession session{};
+    switch (renderDevice->GetBackend())
+    {
+#if D3D11_SUPPORTED
+    case RenderBackend::D3D11:
+    {
+        XrGraphicsRequirementsD3D11KHR requisite = {XR_TYPE_GRAPHICS_REQUIREMENTS_D3D11_KHR};
+        if (!URHO3D_CHECK_OPENXR(xrGetD3D11GraphicsRequirementsKHR(instance, system, &requisite)))
+            return nullptr;
+
+        const auto renderDeviceD3D11 = static_cast<Diligent::IRenderDeviceD3D11*>(renderDevice->GetRenderDevice());
+
+        XrGraphicsBindingD3D11KHR binding = {XR_TYPE_GRAPHICS_BINDING_D3D11_KHR};
+        binding.device = renderDeviceD3D11->GetD3D11Device();
+        sessionCreateInfo.next = &binding;
+
+        if (!URHO3D_CHECK_OPENXR(xrCreateSession(instance, &sessionCreateInfo, &session)))
+            return nullptr;
+
+        break;
+    }
+#endif
+#if GL_SUPPORTED
+    case RenderBackend::OpenGL:
+    {
+        XrGraphicsRequirementsOpenGLKHR requisite = {XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR};
+        if (!URHO3D_CHECK_OPENXR(xrGetOpenGLGraphicsRequirementsKHR(instance, system, &requisite)))
+            return nullptr;
+
+    #if URHO3D_PLATFORM_WINDOWS
+        XrGraphicsBindingOpenGLWin32KHR binding = {XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR};
+        binding.hDC = wglGetCurrentDC();
+        binding.hGLRC = wglGetCurrentContext();
+        sessionCreateInfo.next = &binding;
+    #else
+        URHO3D_ASSERTLOG(false, "OpenXR is not implemented for this platform");
+        return nullptr;
+    #endif
+
+        if (!URHO3D_CHECK_OPENXR(xrCreateSession(instance, &sessionCreateInfo, &session)))
+            return nullptr;
+
+        break;
+    }
+#endif
+    default: URHO3D_ASSERTLOG(false, "OpenXR is not implemented for this backend"); return nullptr;
+    }
+
+    const auto wrappedSession = XrSessionPtr(session, [](XrSession session) { xrDestroySession(session); });
+    return wrappedSession;
+}
+
+template <class T, XrStructureType ImageStructureType>
+class OpenXRSwapChainBase : public OpenXRSwapChain
+{
+public:
+    OpenXRSwapChainBase(
+        XrSession session, TextureFormat format, int64_t internalFormat, const IntVector2& eyeSize, int msaaLevel)
+    {
+        format_ = format;
+
+        XrSwapchainCreateInfo swapInfo = {XR_TYPE_SWAPCHAIN_CREATE_INFO};
+        swapInfo.usageFlags = XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
+
+        if (IsDepthTextureFormat(format))
+            swapInfo.usageFlags |= XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        else
+            swapInfo.usageFlags |= XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT;
+
+        swapInfo.format = internalFormat;
+        swapInfo.width = eyeSize.x_ * 2; // note: if eventually supported array targets this will change.
+        swapInfo.height = eyeSize.y_;
+        swapInfo.sampleCount = msaaLevel;
+        swapInfo.faceCount = 1;
+        swapInfo.arraySize = 1; // note: if eventually supported array targets this will change
+        swapInfo.mipCount = 1;
+
+        XrSwapchain swapChain;
+        if (!URHO3D_CHECK_OPENXR(xrCreateSwapchain(session, &swapInfo, &swapChain)))
+            return;
+
+        swapChain_ = XrSwapchainPtr(swapChain, [](XrSwapchain swapChain) { xrDestroySwapchain(swapChain); });
+
+        uint32_t numImages = 0;
+        if (!URHO3D_CHECK_OPENXR(xrEnumerateSwapchainImages(swapChain_.get(), 0, &numImages, nullptr)))
+            return;
+
+        ea::vector<T> images(numImages);
+        for (T& image : images)
+        {
+            image.type = ImageStructureType;
+            image.next = nullptr;
+        }
+
+        const auto imagesPtr = reinterpret_cast<XrSwapchainImageBaseHeader*>(images.data());
+        if (!URHO3D_CHECK_OPENXR(xrEnumerateSwapchainImages(swapChain_.get(), numImages, &numImages, imagesPtr)))
+            return;
+
+        images_ = ea::move(images);
+    }
+
+    virtual ~OpenXRSwapChainBase()
+    {
+        for (Texture2D* texture : textures_)
+            texture->Destroy();
+    }
+
+protected:
+    ea::vector<T> images_;
+};
+
+#if D3D11_SUPPORTED
+class OpenXRSwapChainD3D11 : public OpenXRSwapChainBase<XrSwapchainImageD3D11KHR, XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR>
+{
+public:
+    using BaseClass = OpenXRSwapChainBase<XrSwapchainImageD3D11KHR, XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR>;
+
+    OpenXRSwapChainD3D11(Context* context, XrSession session, TextureFormat format, int64_t internalFormat,
+        const IntVector2& eyeSize, int msaaLevel)
+        : BaseClass(session, format, internalFormat, eyeSize, msaaLevel)
+    {
+        auto renderDevice = context->GetSubsystem<RenderDevice>();
+
+        const unsigned numImages = images_.size();
+        textures_.resize(numImages);
+        for (unsigned i = 0; i < numImages; ++i)
+        {
+            textures_[i] = MakeShared<Texture2D>(context);
+            textures_[i]->CreateFromD3D11Texture2D(images_[i].texture, format, msaaLevel);
+        }
+    }
+};
+#endif
+
+#ifdef URHO3D_OPENGL
+    #ifndef GL_ES_VERSION_2_0
+        XrSwapchainImageOpenGLKHR swapImages_[4] = { };
+        XrSwapchainImageOpenGLKHR depthImages_[4] = { };
+    #else
+        XrSwapchainImageOpenGLESKHR swapImages_[4] = { };
+        XrSwapchainImageOpenGLESKHR depthImages_[4] = { };
+    #endif
+#ifndef GL_ES_VERSION_2_0
+            opaque_->swapImages_[j].type = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR;
+#else
+            opaque_->swapImages_[j].type = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_ES_KHR;
+#endif
+#endif
+
+
+OpenXRSwapChainPtr CreateSwapChain(Context* context, XrSession session, TextureFormat format, int64_t internalFormat,
+    const IntVector2& eyeSize, int msaaLevel)
+{
+    auto renderDevice = context->GetSubsystem<RenderDevice>();
+
+    OpenXRSwapChainPtr result;
+    switch (renderDevice->GetBackend())
+    {
+#if D3D11_SUPPORTED
+    case RenderBackend::D3D11:
+        result = ea::make_shared<OpenXRSwapChainD3D11>(context, session, format, internalFormat, eyeSize, msaaLevel);
+        break;
+#endif
+    default: URHO3D_ASSERTLOG(false, "OpenXR is not implemented for this backend"); break;
+    }
+
+    return result && result->GetNumTextures() != 0 ? result : nullptr;
+}
+
 }
 
 SharedPtr<Node> LoadGLTFModel(Context* ctx, tinygltf::Model& model);
@@ -223,33 +397,13 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         return { outLocalPos, projection };
     }
 
-    struct OpenXR::Opaque
-    {
-#if D3D11_SUPPORTED
-        XrSwapchainImageD3D11KHR swapImages_[4] = { };
-        XrSwapchainImageD3D11KHR depthImages_[4] = { };
-#endif
-#ifdef URHO3D_OPENGL
-    #ifndef GL_ES_VERSION_2_0
-        XrSwapchainImageOpenGLKHR swapImages_[4] = { };
-        XrSwapchainImageOpenGLKHR depthImages_[4] = { };
-    #else
-        XrSwapchainImageOpenGLESKHR swapImages_[4] = { };
-        XrSwapchainImageOpenGLESKHR depthImages_[4] = { };
-    #endif
-#endif
-    };
-
     OpenXR::OpenXR(Context* ctx) :
         BaseClassName(ctx),
         instance_(0),
-        session_(0),
         swapChain_{},
         sessionLive_(false)
     {
         useSingleTexture_ = true;
-
-        opaque_.reset(new Opaque());
 
         SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(OpenXR, HandlePreUpdate));
         SubscribeToEvent(E_ENDRENDERING, URHO3D_HANDLER(OpenXR, HandlePostRender));
@@ -257,7 +411,6 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
     OpenXR::~OpenXR()
     {
-        opaque_.reset();
         Shutdown();
     }
 
@@ -497,7 +650,8 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         sessionLive_ = false;
         extensions_.clear();
 
-        DestroySwapchain();
+        swapChain_ = nullptr;
+        depthChain_ = nullptr;
 
 #define DTOR_XR(N, S) if (S) xrDestroy ## N(S)
 
@@ -506,8 +660,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
 #undef DTOR_SPACE
 
-        CloseSession();
-        session_ = { };
+        session_ = nullptr;
 
         if (messenger_)
             xrDestroyDebugUtilsMessengerEXT(messenger_);
@@ -529,47 +682,9 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
     {
         auto renderDevice = GetSubsystem<RenderDevice>();
 
-        XrActionSetCreateInfo actionCreateInfo = { XR_TYPE_ACTION_SET_CREATE_INFO };
-        strcpy_s(actionCreateInfo.actionSetName, 64, "default");
-        strcpy_s(actionCreateInfo.localizedActionSetName, 128, "default");
-        actionCreateInfo.priority = 0;
-
-        XrSessionCreateInfo sessionCreateInfo = { XR_TYPE_SESSION_CREATE_INFO };
-        sessionCreateInfo.systemId = system_;
-
-#if D3D11_SUPPORTED
-        if (renderDevice->GetBackend() == RenderBackend::D3D11)
-        {
-            const auto renderDeviceD3D11 = static_cast<Diligent::IRenderDeviceD3D11*>(renderDevice->GetRenderDevice());
-
-            XrGraphicsBindingD3D11KHR binding = { XR_TYPE_GRAPHICS_BINDING_D3D11_KHR };
-            binding.device = renderDeviceD3D11->GetD3D11Device();
-            sessionCreateInfo.next = &binding;
-
-            XrGraphicsRequirementsD3D11KHR requisite = { XR_TYPE_GRAPHICS_REQUIREMENTS_D3D11_KHR };
-            auto errCode = xrGetD3D11GraphicsRequirementsKHR(instance_, system_, &requisite);
-            XR_COMMON_ER("graphics requirements");
-        }
-#endif
-#if URHO3D_OPENGL
-    #ifdef WIN32 // Win32 is never GLES as far as I'm aware?
-        XrGraphicsRequirementsOpenGLKHR requisite = { XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR };
-        auto errCode = xrGetOpenGLGraphicsRequirementsKHR(instance_, system_, &requisite);
-        XR_COMMON_ER("graphics requirements");
-
-        XrGraphicsBindingOpenGLWin32KHR binding = { XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR };
-
-        binding.hDC = wglGetCurrentDC();
-        binding.hGLRC = wglGetCurrentContext();
-
-        sessionCreateInfo.next = &binding;
-    #else
-        #error Incomplete OpenXR intialization, require Linux/Android+GLES
-    #endif
-#endif
-
-        auto errCode = xrCreateSession(instance_, &sessionCreateInfo, &session_);
-        XR_COMMON_ER("session");
+        session_ = CreateSession(renderDevice, instance_, system_);
+        if (!session_)
+            return false;
 
         // attempt stage-space first
         XrReferenceSpaceCreateInfo refSpaceInfo = { XR_TYPE_REFERENCE_SPACE_CREATE_INFO };
@@ -577,12 +692,12 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         refSpaceInfo.poseInReferenceSpace.orientation = { 0.0f, 0.0f, 0.0f, 1.0f };
         refSpaceInfo.poseInReferenceSpace.position = { 0.0f, 0.0f, 0.0f };
 
-        errCode = xrCreateReferenceSpace(session_, &refSpaceInfo, &headSpace_);
+        auto errCode = xrCreateReferenceSpace(session_.get(), &refSpaceInfo, &headSpace_);
         // Failed? Then do local space, but can this even fail?
         if (errCode != XR_SUCCESS)
         {
             refSpaceInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
-            errCode = xrCreateReferenceSpace(session_, &refSpaceInfo, &headSpace_);
+            errCode = xrCreateReferenceSpace(session_.get(), &refSpaceInfo, &headSpace_);
             XR_COMMON_ER("reference space");
             isRoomScale_ = false;
         }
@@ -593,7 +708,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         viewSpaceInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_VIEW;
         viewSpaceInfo.poseInReferenceSpace.orientation = { 0.0f, 0.0f, 0.0f, 1.0f };
         viewSpaceInfo.poseInReferenceSpace.position = { 0.0f, 0.0f, 0.0f };
-        errCode = xrCreateReferenceSpace(session_, &viewSpaceInfo, &viewSpace_);
+        errCode = xrCreateReferenceSpace(session_.get(), &viewSpaceInfo, &viewSpace_);
         XR_COMMON_ER("view reference space");
 
         if (manifest_)
@@ -605,168 +720,40 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         return true;
     }
 
-    void OpenXR::CloseSession()
-    {
-        if (session_)
-            xrDestroySession(session_);
-        session_ = 0;
-    }
-
     bool OpenXR::CreateSwapchain()
     {
         auto renderDevice = GetSubsystem<RenderDevice>();
 
-        for (int j = 0; j < 4; ++j)
-        {
-#if D3D11_SUPPORTED
-            opaque_->swapImages_[j].type = XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR;
-            opaque_->swapImages_[j].next = nullptr;
-            opaque_->depthImages_[j].type = XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR;
-            opaque_->depthImages_[j].next = nullptr;
-#endif
-#ifdef URHO3D_OPENGL
-#ifndef GL_ES_VERSION_2_0
-            opaque_->swapImages_[j].type = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR;
-#else
-            opaque_->swapImages_[j].type = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_ES_KHR;
-#endif
-            opaque_->swapImages_[j].next = nullptr;
-#endif
-        }
-
-        const auto internalFormats = GetSwapChainFormats(session_);
+        const auto internalFormats = GetSwapChainFormats(session_.get());
         const auto [colorFormat, colorFormatInternal] = SelectColorFormat(renderDevice->GetBackend(), internalFormats);
         const auto [depthFormat, depthFormatInternal] = SelectDepthFormat(renderDevice->GetBackend(), internalFormats);
 
-        backbufferFormat_ = colorFormat;
-        depthFormat_ = depthFormat;
+        swapChain_ = CreateSwapChain(GetContext(), session_.get(), colorFormat, colorFormatInternal,
+            IntVector2(eyeTexWidth_, eyeTexHeight_), msaaLevel_);
+        if (!swapChain_)
+            return false;
 
-        XrSwapchainCreateInfo swapInfo = { XR_TYPE_SWAPCHAIN_CREATE_INFO };
-        swapInfo.usageFlags = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
-        swapInfo.format = colorFormatInternal;
-        swapInfo.width = eyeTexWidth_ * 2; // note: if eventually supported array targets this will change.
-        swapInfo.height = eyeTexHeight_;
-        swapInfo.sampleCount = msaaLevel_;
-        swapInfo.faceCount = 1;
-        swapInfo.arraySize = 1; // note: if we support array targets and layered this changes, we're still as single texture mode
-        swapInfo.mipCount = 1;
-
-        auto errCode = xrCreateSwapchain(session_, &swapInfo, &swapChain_);
-        XR_COMMON_ER("swapchain")
-
-        errCode = xrEnumerateSwapchainImages(swapChain_, 4, &imgCount_, (XrSwapchainImageBaseHeader*)opaque_->swapImages_);
-        XR_COMMON_ER("swapchain images")
-
-        // If we found a depth format than construct swapchains for depth.
-        // Doing this should mean we've done as much as possible to prevent ourselves from blocking due to something.
-        // At the present, checking we have depth-info-ext to do anything with it.
         if (supportsDepthExt_ && depthFormatInternal)
         {
-            XrSwapchainCreateInfo swapInfo = { XR_TYPE_SWAPCHAIN_CREATE_INFO };
-            swapInfo.usageFlags = XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
-            swapInfo.format = depthFormatInternal;
-            swapInfo.width = eyeTexWidth_ * 2; // note: if eventually supported array targets this will change.
-            swapInfo.height = eyeTexHeight_;
-            swapInfo.sampleCount = msaaLevel_;
-            swapInfo.faceCount = 1;
-            swapInfo.arraySize = 1; // note: if we support array targets and layered this changes, we're still as single texture mode
-            swapInfo.mipCount = 1;
-
-            auto errCode = xrCreateSwapchain(session_, &swapInfo, &depthChain_);
-            XR_COMMON_ER("swapchain")
-
-            errCode = xrEnumerateSwapchainImages(depthChain_, 4, &depthImgCount_, (XrSwapchainImageBaseHeader*)opaque_->depthImages_);
-            XR_COMMON_ER("swapchain images")
-        }
-        else
-            depthImgCount_ = 0;
-
-#if D3D11_SUPPORTED
-        // bump the d3d-ref count
-        for (int i = 0; i < imgCount_; ++i)
-            opaque_->swapImages_[i].texture->AddRef();
-        for (int i = 0; i < depthImgCount_; ++i)
-            opaque_->depthImages_[i].texture->AddRef();
-#endif
-
-        CreateEyeTextures();
-
-        return true;
-    }
-
-    void OpenXR::DestroySwapchain()
-    {
-        for (int i = 0; i < 4; ++i)
-        {
-            eyeColorTextures_[i].Reset();
-            eyeDepthTextures_[i].Reset();
+            depthChain_ = CreateSwapChain(GetContext(), session_.get(), depthFormat, depthFormatInternal,
+                IntVector2(eyeTexWidth_, eyeTexHeight_), msaaLevel_);
         }
 
-        if (swapChain_)
-            xrDestroySwapchain(swapChain_);
-        if (depthChain_)
-            xrDestroySwapchain(depthChain_);
-
-        swapChain_ = { };
-        depthChain_ = { };
-    }
-
-    void OpenXR::CreateEyeTextures()
-    {
-        auto renderDevice = GetSubsystem<RenderDevice>();
-
-        sharedTexture_ = new Texture2D(GetContext());
-        sharedDS_.Reset();
-
-        // OXR we never use these, TODO: remove from SteamVR as well.
-        leftTexture_.Reset();
-        rightTexture_.Reset();
-        leftDS_.Reset();
-        rightDS_.Reset();
-
-        if (depthChain_ == 0)
+        if (!depthChain_)
         {
-            sharedDS_ = new Texture2D(GetContext());
+            sharedDS_ = MakeShared<Texture2D>(GetContext());
             sharedDS_->SetNumLevels(1);
             sharedDS_->SetSize(eyeTexWidth_ * 2, eyeTexHeight_, renderDevice->GetDefaultDepthStencilFormat(),
                 TextureFlag::BindDepthStencil, msaaLevel_);
         }
 
-        for (unsigned i = 0; i < imgCount_; ++i)
-        {
-            eyeColorTextures_[i] = MakeShared<Texture2D>(GetContext());
-            if (depthChain_)
-                eyeDepthTextures_[i] = MakeShared<Texture2D>(GetContext());
+        return true;
+    }
 
-            switch (renderDevice->GetBackend())
-            {
-#if D3D11_SUPPORTED
-            case RenderBackend::D3D11:
-                // NOTE: D3D11 we can get most info from queries more easily
-                eyeColorTextures_[i]->CreateFromD3D11Texture2D(
-                    opaque_->swapImages_[i].texture, backbufferFormat_, msaaLevel_);
-
-                if (depthChain_)
-                {
-                    eyeDepthTextures_[i]->CreateFromD3D11Texture2D(
-                        opaque_->depthImages_[i].texture, depthFormat_, msaaLevel_);
-                }
-                break;
-#endif
-            default: URHO3D_ASSERT(false); break;
-            }
-
-#ifdef URHO3D_OPENGL
-            // Queries pain, we already know this information so just pass it
-            eyeColorTextures_[i]->CreateFromExternal(opaque_->swapImages_[i].image, eyeTexWidth_ * 2, eyeTexHeight_, msaaLevel_, backbufferFormat_, TEXTURE_RENDERTARGET);
-            if (depthChain_)
-            {
-                eyeDepthTextures_[i] = new Texture2D(GetContext());
-                eyeDepthTextures_[i]->CreateFromExternal(opaque_->depthImages_[i].image, eyeTexWidth_ * 2, eyeTexHeight_, msaaLevel_, depthFormat_, TEXTURE_RENDERTARGET);
-            }
-#endif
-            eyeColorTextures_[i]->GetRenderSurface()->SetLinkedDepthStencil(depthChain_ ? eyeDepthTextures_[i]->GetRenderSurface() : sharedDS_->GetRenderSurface());
-        }
+    void OpenXR::CreateEyeTextures()
+    {
+        // TODO(xr): Remove this function.
+        // it doesn't really make sense to recreate the texture without recreating the swapchain
     }
 
     void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
@@ -799,7 +786,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 case XR_SESSION_STATE_READY: {
                     XrSessionBeginInfo beginInfo = { XR_TYPE_SESSION_BEGIN_INFO };
                     beginInfo.primaryViewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
-                    auto res = xrBeginSession(session_, &beginInfo);
+                    auto res = xrBeginSession(session_.get(), &beginInfo);
                     if (res != XR_SUCCESS)
                     {
                         URHO3D_LOGERRORF("Failed to begin XR session: %s", xrGetErrorStr(res));
@@ -818,7 +805,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                     SendEvent(E_VRRESUME);
                     break;
                 case XR_SESSION_STATE_STOPPING:
-                    xrEndSession(session_);
+                    xrEndSession(session_.get());
                     sessionLive_ = false;
                     break;
                 case XR_SESSION_STATE_EXITING:
@@ -837,11 +824,11 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
             return;
 
         XrFrameState frameState = { XR_TYPE_FRAME_STATE };
-        xrWaitFrame(session_, nullptr, &frameState);
+        xrWaitFrame(session_.get(), nullptr, &frameState);
         predictedTime_ = frameState.predictedDisplayTime;
 
         XrFrameBeginInfo begInfo = { XR_TYPE_FRAME_BEGIN_INFO };
-        xrBeginFrame(session_, &begInfo);
+        xrBeginFrame(session_.get(), &begInfo);
     // head stuff
         headLoc_.next = &headVel_;
         xrLocateSpace(viewSpace_, headSpace_, frameState.predictedDisplayTime, &headLoc_);
@@ -872,7 +859,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
         XrViewState viewState = { XR_TYPE_VIEW_STATE };
         unsigned viewCt = 0;
-        xrLocateViews(session_, &viewInfo, &viewState, 2, &viewCt, views_);
+        xrLocateViews(session_.get(), &viewInfo, &viewState, 2, &viewCt, views_);
 
     // handle actions
         if (activeActionSet_)
@@ -885,7 +872,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
             XrActionsSyncInfo sync = { XR_TYPE_ACTIONS_SYNC_INFO };
             sync.activeActionSets = &activeSet;
             sync.countActiveActionSets = 1;
-            xrSyncActions(session_, &sync);
+            xrSyncActions(session_.get(), &sync);
 
             using namespace BeginFrame;
             UpdateBindings(data[P_TIMESTEP].GetFloat());
@@ -898,7 +885,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         {
             XrSwapchainImageAcquireInfo acquireInfo = { XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
             unsigned imgID;
-            auto res = xrAcquireSwapchainImage(swapChain_, &acquireInfo, &imgID);
+            auto res = xrAcquireSwapchainImage(swapChain_->GetHandle(), &acquireInfo, &imgID);
             if (res != XR_SUCCESS)
             {
                 URHO3D_LOGERRORF("Failed to acquire swapchain: %s", xrGetErrorStr(res));
@@ -907,12 +894,12 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
             XrSwapchainImageWaitInfo waitInfo = { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
             waitInfo.timeout = XR_INFINITE_DURATION;
-            res = xrWaitSwapchainImage(swapChain_, &waitInfo);
+            res = xrWaitSwapchainImage(swapChain_->GetHandle(), &waitInfo);
             if (res != XR_SUCCESS)
                 URHO3D_LOGERRORF("Failed to wait on swapchain: %s", xrGetErrorStr(res));
 
             // update which shared-texture we're using so UpdateRig will do things correctly.
-            sharedTexture_ = eyeColorTextures_[imgID];
+            sharedTexture_ = swapChain_->GetTexture(imgID);
 
             // If we've got depth then do the same and setup the linked depth stencil for the above shared texture.
             if (depthChain_)
@@ -921,13 +908,13 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 // in such a fashion that reuse is not a good thing.
                 unsigned depthID;
                 XrSwapchainImageAcquireInfo acquireInfo = { XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
-                auto res = xrAcquireSwapchainImage(depthChain_, &acquireInfo, &depthID);
+                auto res = xrAcquireSwapchainImage(depthChain_->GetHandle(), &acquireInfo, &depthID);
                 if (res == XR_SUCCESS)
                 {
                     XrSwapchainImageWaitInfo waitInfo = { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
                     waitInfo.timeout = XR_INFINITE_DURATION;
-                    res = xrWaitSwapchainImage(depthChain_, &waitInfo);
-                    sharedDS_ = eyeDepthTextures_[depthID];
+                    res = xrWaitSwapchainImage(depthChain_->GetHandle(), &waitInfo);
+                    sharedDS_ = depthChain_->GetTexture(depthID);
                     sharedTexture_->GetRenderSurface()->SetLinkedDepthStencil(sharedDS_->GetRenderSurface());
                 }
             }
@@ -941,11 +928,11 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 #define CHECKVIEW(EYE) (views_[EYE].fov.angleLeft == 0 || views_[EYE].fov.angleRight == 0 || views_[EYE].fov.angleUp == 0 || views_[EYE].fov.angleDown == 0)
 
             XrSwapchainImageReleaseInfo releaseInfo = { XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
-            xrReleaseSwapchainImage(swapChain_, &releaseInfo);
+            xrReleaseSwapchainImage(swapChain_->GetHandle(), &releaseInfo);
             if (depthChain_)
             {
                 XrSwapchainImageReleaseInfo releaseInfo = { XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
-                xrReleaseSwapchainImage(depthChain_, &releaseInfo);
+                xrReleaseSwapchainImage(depthChain_->GetHandle(), &releaseInfo);
             }
 
             // it's harmless but checking this will prevent early bad draws with null FOV
@@ -955,13 +942,13 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
             XrCompositionLayerProjectionView eyes[2] = { { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW }, { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW } };
             eyes[VR_EYE_LEFT].subImage.imageArrayIndex = 0;
-            eyes[VR_EYE_LEFT].subImage.swapchain = swapChain_;
+            eyes[VR_EYE_LEFT].subImage.swapchain = swapChain_->GetHandle();
             eyes[VR_EYE_LEFT].subImage.imageRect = { { 0, 0 }, { eyeTexWidth_, eyeTexHeight_} };
             eyes[VR_EYE_LEFT].fov = views_[VR_EYE_LEFT].fov;
             eyes[VR_EYE_LEFT].pose = views_[VR_EYE_LEFT].pose;
 
             eyes[VR_EYE_RIGHT].subImage.imageArrayIndex = 0;
-            eyes[VR_EYE_RIGHT].subImage.swapchain = swapChain_;
+            eyes[VR_EYE_RIGHT].subImage.swapchain = swapChain_->GetHandle();
             eyes[VR_EYE_RIGHT].subImage.imageRect = { { eyeTexWidth_, 0 }, { eyeTexWidth_, eyeTexHeight_} };
             eyes[VR_EYE_RIGHT].fov = views_[VR_EYE_RIGHT].fov;
             eyes[VR_EYE_RIGHT].pose = views_[VR_EYE_RIGHT].pose;
@@ -970,12 +957,11 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                     { XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR }, { XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR }
             };
 
-            // May we ever have a depth-chain without this in theory?
-            if (supportsDepthExt_ && depthChain_)
+            if (depthChain_)
             {
                 // depth
                 depth[VR_EYE_LEFT].subImage.imageArrayIndex = 0;
-                depth[VR_EYE_LEFT].subImage.swapchain = depthChain_;
+                depth[VR_EYE_LEFT].subImage.swapchain = depthChain_->GetHandle();
                 depth[VR_EYE_LEFT].subImage.imageRect = { { 0, 0 }, { eyeTexWidth_, eyeTexHeight_} };
                 depth[VR_EYE_LEFT].minDepth = 0.0f; // spec says range of 0-1, so doesn't respect GL -1 to 1?
                 depth[VR_EYE_LEFT].maxDepth = 1.0f;
@@ -983,7 +969,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 depth[VR_EYE_LEFT].farZ = lastFarDist_;
 
                 depth[VR_EYE_RIGHT].subImage.imageArrayIndex = 0;
-                depth[VR_EYE_RIGHT].subImage.swapchain = depthChain_;
+                depth[VR_EYE_RIGHT].subImage.swapchain = depthChain_->GetHandle();
                 depth[VR_EYE_RIGHT].subImage.imageRect = { { eyeTexWidth_, 0 }, { eyeTexWidth_, eyeTexHeight_} };
                 depth[VR_EYE_RIGHT].minDepth = 0.0f;
                 depth[VR_EYE_RIGHT].maxDepth = 1.0f;
@@ -1010,7 +996,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
             endInfo.environmentBlendMode = blendMode_;
             endInfo.displayTime = predictedTime_;
 
-            xrEndFrame(session_, &endInfo);
+            xrEndFrame(session_.get(), &endInfo);
         }
     }
 
@@ -1133,9 +1119,9 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                     if (handed)
                     {
                         spaceInfo.subactionPath = handPaths[0];
-                        xrCreateActionSpace(session_, &spaceInfo, &binding->actionSpace_);
+                        xrCreateActionSpace(session_.get(), &spaceInfo, &binding->actionSpace_);
                         spaceInfo.subactionPath = handPaths[1];
-                        xrCreateActionSpace(session_, &spaceInfo, &otherHand->actionSpace_);
+                        xrCreateActionSpace(session_.get(), &spaceInfo, &otherHand->actionSpace_);
 
                         if (child.GetBool("grip"))
                         {
@@ -1149,7 +1135,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                         }
                     }
                     else
-                        xrCreateActionSpace(session_, &spaceInfo, &binding->actionSpace_);
+                        xrCreateActionSpace(session_.get(), &spaceInfo, &binding->actionSpace_);
                 }
 
                 DUPLEX(set_, createSet);
@@ -1225,7 +1211,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 XrSessionActionSetsAttachInfo attachInfo = { XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO };
                 attachInfo.actionSets = &xrSet->actionSet_;
                 attachInfo.countActionSets = 1;
-                xrAttachSessionActionSets(session_, &attachInfo);
+                xrAttachSessionActionSets(session_.get(), &attachInfo);
 
                 UpdateBindingBound();
             }
@@ -1263,7 +1249,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 {
                 case VAR_BOOL: {
                     XrActionStateBoolean boolC = { XR_TYPE_ACTION_STATE_BOOLEAN };
-                    if (xrGetActionStateBoolean(session_, &getInfo, &boolC) == XR_SUCCESS)
+                    if (xrGetActionStateBoolean(session_.get(), &getInfo, &boolC) == XR_SUCCESS)
                     {
                         bind->active_ = boolC.isActive;
                         if (boolC.changedSinceLastSync)
@@ -1279,7 +1265,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                     break;
                 case VAR_FLOAT: {
                     XrActionStateFloat floatC = { XR_TYPE_ACTION_STATE_FLOAT };
-                    if (xrGetActionStateFloat(session_, &getInfo, &floatC) == XR_SUCCESS)
+                    if (xrGetActionStateFloat(session_.get(), &getInfo, &floatC) == XR_SUCCESS)
                     {
                         bind->active_ = floatC.isActive;
                         if (floatC.changedSinceLastSync || !Equals(floatC.currentState, bind->GetFloat()))
@@ -1295,7 +1281,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                     break;
                 case VAR_VECTOR2: {
                     XrActionStateVector2f vec = { XR_TYPE_ACTION_STATE_VECTOR2F };
-                    if (xrGetActionStateVector2f(session_, &getInfo, &vec) == XR_SUCCESS)
+                    if (xrGetActionStateVector2f(session_.get(), &getInfo, &vec) == XR_SUCCESS)
                     {
                         bind->active_ = vec.isActive;
                         Vector2 v(vec.currentState.x, vec.currentState.y);
@@ -1312,7 +1298,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                     break;
                 case VAR_VECTOR3: {
                     XrActionStatePose pose = { XR_TYPE_ACTION_STATE_POSE };
-                    if (xrGetActionStatePose(session_, &getInfo, &pose) == XR_SUCCESS)
+                    if (xrGetActionStatePose(session_.get(), &getInfo, &pose) == XR_SUCCESS)
                     {
                         // Should we be sending events for these? As it's tracking sensor stuff I think not? It's effectively always changing and we know that's the case.
                         bind->active_ = pose.isActive;
@@ -1324,7 +1310,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 } break;
                 case VAR_MATRIX3X4: {
                     XrActionStatePose pose = { XR_TYPE_ACTION_STATE_POSE };
-                    if (xrGetActionStatePose(session_, &getInfo, &pose) == XR_SUCCESS)
+                    if (xrGetActionStatePose(session_.get(), &getInfo, &pose) == XR_SUCCESS)
                     {
                         // Should we be sending events for these? As it's tracking sensor stuff I think not? It's effectively always changing and we know that's the case.
                         bind->active_ = pose.isActive;
@@ -1354,7 +1340,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         // hidden
             {
 
-                xrGetVisibilityMaskKHR(session_, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR, &mask);
+                xrGetVisibilityMaskKHR(session_.get(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR, &mask);
 
                 ea::vector<XrVector2f> verts;
                 verts.resize(mask.vertexCountOutput);
@@ -1367,7 +1353,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 mask.vertices = verts.data();
                 mask.indices = indices.data();
 
-                xrGetVisibilityMaskKHR(session_, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR, &mask);
+                xrGetVisibilityMaskKHR(session_.get(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR, &mask);
 
                 ea::vector<Vector3> vtxData;
                 vtxData.resize(verts.size());
@@ -1397,7 +1383,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 mask.indexCountOutput = 0;
                 mask.vertexCountOutput = 0;
 
-                xrGetVisibilityMaskKHR(session_, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_VISIBLE_TRIANGLE_MESH_KHR, &mask);
+                xrGetVisibilityMaskKHR(session_.get(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_VISIBLE_TRIANGLE_MESH_KHR, &mask);
 
                 ea::vector<XrVector2f> verts;
                 verts.resize(mask.vertexCountOutput);
@@ -1410,7 +1396,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 mask.vertices = verts.data();
                 mask.indices = indices.data();
 
-                xrGetVisibilityMaskKHR(session_, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_VISIBLE_TRIANGLE_MESH_KHR, &mask);
+                xrGetVisibilityMaskKHR(session_.get(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_VISIBLE_TRIANGLE_MESH_KHR, &mask);
 
                 ea::vector<Vector3> vtxData;
                 vtxData.resize(verts.size());
@@ -1446,7 +1432,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 mask.indexCountOutput = 0;
                 mask.vertexCountOutput = 0;
 
-                xrGetVisibilityMaskKHR(session_, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_LINE_LOOP_KHR, &mask);
+                xrGetVisibilityMaskKHR(session_.get(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_LINE_LOOP_KHR, &mask);
 
                 ea::vector<XrVector2f> verts;
                 verts.resize(mask.vertexCountOutput);
@@ -1459,7 +1445,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 mask.vertices = verts.data();
                 mask.indices = indices.data();
 
-                xrGetVisibilityMaskKHR(session_, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_LINE_LOOP_KHR, &mask);
+                xrGetVisibilityMaskKHR(session_.get(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_LINE_LOOP_KHR, &mask);
 
                 struct V {
                     Vector3 pos;
@@ -1523,8 +1509,8 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
         XrControllerModelKeyStateMSFT states[2] = { { XR_TYPE_CONTROLLER_MODEL_KEY_STATE_MSFT }, { XR_TYPE_CONTROLLER_MODEL_KEY_STATE_MSFT } };
         XrResult errCodes[2];
-        errCodes[0] = xrGetControllerModelKeyMSFT(session_, handPaths[0], &states[0]);
-        errCodes[1] = xrGetControllerModelKeyMSFT(session_, handPaths[1], &states[1]);
+        errCodes[0] = xrGetControllerModelKeyMSFT(session_.get(), handPaths[0], &states[0]);
+        errCodes[1] = xrGetControllerModelKeyMSFT(session_.get(), handPaths[1], &states[1]);
 
         for (int i = 0; i < 2; ++i)
         {
@@ -1537,14 +1523,14 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
             if (errCodes[i] == XR_SUCCESS)
             {
                 unsigned dataSize = 0;
-                auto loadErr = xrLoadControllerModelMSFT(session_, states[i].modelKey, 0, &dataSize, nullptr);
+                auto loadErr = xrLoadControllerModelMSFT(session_.get(), states[i].modelKey, 0, &dataSize, nullptr);
                 if (loadErr == XR_SUCCESS)
                 {
                     std::vector<unsigned char> data;
                     data.resize(dataSize);
 
                     // Can we actually fail in this case if the above was successful? Assuming that data/data-size are correct I would expect not?
-                    if (xrLoadControllerModelMSFT(session_, states[i].modelKey, data.size(), &dataSize, data.data()) == XR_SUCCESS)
+                    if (xrLoadControllerModelMSFT(session_.get(), states[i].modelKey, data.size(), &dataSize, data.data()) == XR_SUCCESS)
                     {
                         tinygltf::Model model;
                         tinygltf::TinyGLTF ctx;
@@ -1564,7 +1550,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                         props.nodeCapacityInput = 256;
                         props.nodeCountOutput = 0;
                         props.nodeProperties = wandModels_[i].properties_;
-                        if (xrGetControllerModelPropertiesMSFT(session_, states[i].modelKey, &props) == XR_SUCCESS)
+                        if (xrGetControllerModelPropertiesMSFT(session_.get(), states[i].modelKey, &props) == XR_SUCCESS)
                         {
                             wandModels_[i].numProperties_ = props.nodeCountOutput;
                         }
@@ -1611,7 +1597,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         state.nodeCapacityInput = 256;
         state.nodeStates = nodeStates;
 
-        auto errCode = xrGetControllerModelStateMSFT(session_, wandModels_[hand].modelKey_, &state);
+        auto errCode = xrGetControllerModelStateMSFT(session_.get(), wandModels_[hand].modelKey_, &state);
         if (errCode == XR_SUCCESS)
         {
             auto node = model;
@@ -1810,7 +1796,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         vib.amplitude = amplitude;
         vib.frequency = freq;
         vib.duration = duration * 1000.0f;
-        xrApplyHapticFeedback(xr_->session_, &info, (XrHapticBaseHeader*)&vib);
+        xrApplyHapticFeedback(xr_->session_.get(), &info, (XrHapticBaseHeader*)&vib);
     }
 
     void OpenXR::UpdateBindingBound()
@@ -1826,7 +1812,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
                 XrBoundSourcesForActionEnumerateInfo info = { XR_TYPE_BOUND_SOURCES_FOR_ACTION_ENUMERATE_INFO };
                 info.action = bind->action_;
                 unsigned binds = 0;
-                xrEnumerateBoundSourcesForAction(session_, &info, 0, &binds, nullptr);
+                xrEnumerateBoundSourcesForAction(session_.get(), &info, 0, &binds, nullptr);
                 b->isBound_ = binds > 0;
 
                 if (b->isAimPose_)
