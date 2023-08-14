@@ -343,6 +343,21 @@ TextureFormat GetTextureFormatFromInternal(RenderBackend backend, unsigned inter
         default: return TextureFormat::TEX_FORMAT_UNKNOWN;
         }
 #endif
+#if VULKAN_SUPPORTED
+    case RenderBackend::Vulkan:
+    {
+        switch (internalFormat)
+        {
+        case VK_FORMAT_R8G8B8A8_UNORM: return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
+        case VK_FORMAT_R8G8B8A8_SRGB: return TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB;
+        case VK_FORMAT_D16_UNORM: return TextureFormat::TEX_FORMAT_D16_UNORM;
+        case VK_FORMAT_D24_UNORM_S8_UINT: return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
+        case VK_FORMAT_D32_SFLOAT: return TextureFormat::TEX_FORMAT_D32_FLOAT;
+        case VK_FORMAT_D32_SFLOAT_S8_UINT: return TextureFormat::TEX_FORMAT_D32_FLOAT_S8X24_UINT;
+        default: return TextureFormat::TEX_FORMAT_UNKNOWN;
+        }
+    }
+#endif
 #if GL_SUPPORTED || GLES_SUPPORTED
     case RenderBackend::OpenGL:
     {

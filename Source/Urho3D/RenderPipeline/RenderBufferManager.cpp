@@ -464,6 +464,8 @@ void RenderBufferManager::OnPipelineStatesInvalidated()
 void RenderBufferManager::OnViewportDefined(RenderSurface* renderTarget, const IntRect& viewportRect)
 {
     Texture2D* outputTexture = GetParentTexture2D(renderTarget);
+    const ea::optional<RenderSurface*> outputDepthStencil = GetLinkedDepthStencil(renderTarget);
+
     const bool isBilinearFilteredOutput = outputTexture && outputTexture->GetFilterMode() != FILTER_NEAREST;
     const int outputMultiSample = RenderSurface::GetMultiSample(graphics_, renderTarget);
 
@@ -479,7 +481,7 @@ void RenderBufferManager::OnViewportDefined(RenderSurface* renderTarget, const I
 
     RenderBufferParams depthParams = colorParams;
     depthParams.flags_ |= RenderBufferFlag::Persistent;
-    depthParams.textureFormat_ = renderDevice_->GetDefaultDepthStencilFormat();
+    depthParams.textureFormat_ = RenderSurface::GetDepthFormat(graphics_, outputDepthStencil.value_or(nullptr));
 
     if (colorOutputParams_ != colorParams || depthStencilOutputParams_ != depthParams)
     {
@@ -495,7 +497,7 @@ void RenderBufferManager::OnRenderBegin(const CommonFrameInfo& frameInfo)
     viewportRect_ = frameInfo.viewportRect_;
 
     // Get parameters of output render surface
-    const unsigned outputFormat = RenderSurface::GetFormat(graphics_, frameInfo.renderTarget_);
+    const unsigned outputFormat = RenderSurface::GetColorFormat(graphics_, frameInfo.renderTarget_);
     const int outputMultiSample = RenderSurface::GetMultiSample(graphics_, frameInfo.renderTarget_);
 
     const ea::optional<RenderSurface*> outputDepthStencil = GetLinkedDepthStencil(frameInfo.renderTarget_);

@@ -57,6 +57,10 @@
     #include <Diligent/Graphics/GraphicsEngineD3D12/interface/RenderDeviceD3D12.h>
     #include <Diligent/Graphics/GraphicsEngineD3D12/interface/CommandQueueD3D12.h>
 #endif
+#if VULKAN_SUPPORTED
+    #include <Diligent/Graphics/GraphicsEngineVulkan/interface/RenderDeviceVk.h>
+    #include <Diligent/Graphics/GraphicsEngineVulkan/interface/CommandQueueVk.h>
+#endif
 
 // need this for loading the GLBs
 #include <ThirdParty/tinygltf/tiny_gltf.h>
@@ -189,6 +193,33 @@ XrSessionPtr CreateSession(RenderDevice* renderDevice, XrInstance instance, XrSy
         XrGraphicsBindingD3D12KHR binding = {XR_TYPE_GRAPHICS_BINDING_D3D12_KHR};
         binding.device = renderDeviceD3D12->GetD3D12Device();
         binding.queue = commandQueueD3D12->GetD3D12CommandQueue();
+        sessionCreateInfo.next = &binding;
+
+        if (!URHO3D_CHECK_OPENXR(xrCreateSession(instance, &sessionCreateInfo, &session)))
+            return nullptr;
+
+        break;
+    }
+#endif
+#if 0 && VULKAN_SUPPORTED // TODO(xr): Vulkan has requirements on the device and instance that we don't meet
+    case RenderBackend::Vulkan:
+    {
+        XrGraphicsRequirementsVulkanKHR requisite = {XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR};
+        if (!URHO3D_CHECK_OPENXR(xrGetVulkanGraphicsRequirementsKHR(instance, system, &requisite)))
+            return nullptr;
+
+        const auto renderDeviceVk = static_cast<Diligent::IRenderDeviceVk*>(renderDevice->GetRenderDevice());
+        const auto immediateContext = renderDevice->GetImmediateContext();
+        const auto commandQueue = immediateContext->LockCommandQueue();
+        immediateContext->UnlockCommandQueue();
+        const auto commandQueueVk = static_cast<Diligent::ICommandQueueVk*>(commandQueue);
+
+        XrGraphicsBindingVulkanKHR binding = {XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR};
+        binding.instance = renderDeviceVk->GetVkInstance();
+        binding.physicalDevice = renderDeviceVk->GetVkPhysicalDevice();
+        binding.device = renderDeviceVk->GetVkDevice();
+        binding.queueFamilyIndex = commandQueueVk->GetQueueFamilyIndex();
+        binding.queueIndex = 0; // TODO(xr): Revisit this place
         sessionCreateInfo.next = &binding;
 
         if (!URHO3D_CHECK_OPENXR(xrCreateSession(instance, &sessionCreateInfo, &session)))
@@ -336,6 +367,40 @@ public:
 };
 #endif
 
+#if D3D12_SUPPORTED
+class OpenXRSwapChainVulkan : public OpenXRSwapChainBase<XrSwapchainImageVulkanKHR, XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR>
+{
+public:
+    using BaseClass = OpenXRSwapChainBase<XrSwapchainImageVulkanKHR, XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR>;
+
+    OpenXRSwapChainVulkan(Context* context, XrSession session, TextureFormat format, int64_t internalFormat,
+        const IntVector2& eyeSize, int msaaLevel)
+        : BaseClass(session, format, internalFormat, eyeSize, msaaLevel)
+    {
+        auto renderDevice = context->GetSubsystem<RenderDevice>();
+
+        const bool isDepth = IsDepthTextureFormat(format);
+        const unsigned numImages = images_.size();
+        textures_.resize(numImages);
+        for (unsigned i = 0; i < numImages; ++i)
+        {
+            URHO3D_ASSERT(arraySize_ == 1);
+
+            RawTextureParams params;
+            params.type_ = TextureType::Texture2D;
+            params.format_ = format;
+            params.flags_ = isDepth ? TextureFlag::BindDepthStencil : TextureFlag::BindRenderTarget;
+            params.size_ = eyeSize.ToIntVector3(1);
+            params.numLevels_ = 1;
+            params.multiSample_ = msaaLevel;
+
+            textures_[i] = MakeShared<Texture2D>(context);
+            textures_[i]->CreateFromVulkanImage(reinterpret_cast<uint64_t>(images_[i].image), params);
+        }
+    }
+};
+#endif
+
 #if GL_SUPPORTED
 class OpenXRSwapChainGL : public OpenXRSwapChainBase<XrSwapchainImageOpenGLKHR, XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR>
 {
@@ -379,6 +444,11 @@ OpenXRSwapChainPtr CreateSwapChain(Context* context, XrSession session, TextureF
 #if D3D12_SUPPORTED
     case RenderBackend::D3D12:
         result = ea::make_shared<OpenXRSwapChainD3D12>(context, session, format, internalFormat, eyeSize, msaaLevel);
+        break;
+#endif
+#if VULKAN_SUPPORTED
+    case RenderBackend::Vulkan:
+        result = ea::make_shared<OpenXRSwapChainVulkan>(context, session, format, internalFormat, eyeSize, msaaLevel);
         break;
 #endif
 #if GL_SUPPORTED

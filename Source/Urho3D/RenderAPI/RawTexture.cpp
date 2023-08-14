@@ -21,6 +21,9 @@
 #if D3D12_SUPPORTED
     #include <Diligent/Graphics/GraphicsEngineD3D12/interface/RenderDeviceD3D12.h>
 #endif
+#if VULKAN_SUPPORTED
+    #include <Diligent/Graphics/GraphicsEngineVulkan/interface/RenderDeviceVk.h>
+#endif
 #if GL_SUPPORTED || GLES_SUPPORTED
     #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/RenderDeviceGL.h>
 #endif
@@ -534,7 +537,7 @@ bool RawTexture::CreateFromD3D12Resource(void* d3d12Resource, TextureFormat form
             reinterpret_cast<ID3D12Resource*>(d3d12Resource), Diligent::RESOURCE_STATE_UNKNOWN, &texture);
         if (!texture)
         {
-            URHO3D_LOGERROR("Failed to create texture from existing ID3D11Texture2D pointer");
+            URHO3D_LOGERROR("Failed to create texture from existing ID3D12Resource pointer");
             return false;
         }
 
@@ -546,14 +549,56 @@ bool RawTexture::CreateFromD3D12Resource(void* d3d12Resource, TextureFormat form
     return false;
 }
 
+bool RawTexture::CreateFromVulkanImage(uint64_t vkImage, const RawTextureParams& params)
+{
+#if VULKAN_SUPPORTED
+    if (renderDevice_ && renderDevice_->GetBackend() == RenderBackend::Vulkan)
+    {
+        Diligent::TextureDesc textureDesc;
+        textureDesc.Type = textureTypeToDimensions[params.type_];
+        textureDesc.Usage = Diligent::USAGE_DEFAULT;
+        textureDesc.Format = params.format_;
+        textureDesc.Width = params.size_.x_;
+        textureDesc.Height = params.size_.y_;
+        if (params.type_ == TextureType::Texture3D)
+            textureDesc.Depth = params.size_.z_;
+        else
+            textureDesc.ArraySize = params.arraySize_;
+
+        if (params.flags_.Test(TextureFlag::BindRenderTarget))
+            textureDesc.BindFlags |= Diligent::BIND_RENDER_TARGET;
+        if (params.flags_.Test(TextureFlag::BindDepthStencil))
+            textureDesc.BindFlags |= Diligent::BIND_DEPTH_STENCIL;
+        if (params.flags_.Test(TextureFlag::BindUnorderedAccess))
+            textureDesc.BindFlags |= Diligent::BIND_UNORDERED_ACCESS;
+
+        textureDesc.MipLevels = params.numLevels_;
+        textureDesc.SampleCount = params.multiSample_;
+
+        auto deviceVk = static_cast<Diligent::IRenderDeviceVk*>(renderDevice_->GetRenderDevice());
+        Diligent::RefCntAutoPtr<Diligent::ITexture> texture;
+        deviceVk->CreateTextureFromVulkanImage(
+            reinterpret_cast<VkImage>(vkImage), textureDesc, Diligent::RESOURCE_STATE_UNKNOWN, &texture);
+        if (!texture)
+        {
+            URHO3D_LOGERROR("Failed to create texture from existing VkImage pointer");
+            return false;
+        }
+
+        return CreateFromHandle(texture, params.format_, params.multiSample_);
+    }
+#endif
+
+    URHO3D_ASSERT(false, "RawTexture::CreateFromVulkanImage is not supported on this platform");
+    return false;
+}
+
 bool RawTexture::CreateFromGLTexture(
     unsigned handle, TextureType type, TextureFlags flags, TextureFormat format, unsigned arraySize, int msaaLevel)
 {
 #if GL_SUPPORTED || GLES_SUPPORTED
     if (renderDevice_ && renderDevice_->GetBackend() == RenderBackend::OpenGL)
     {
-        auto deviceGL = static_cast<Diligent::IRenderDeviceGL*>(renderDevice_->GetRenderDevice());
-
         Diligent::TextureDesc textureDesc;
         textureDesc.Type = textureTypeToDimensions[type];
         textureDesc.Usage = Diligent::USAGE_DEFAULT;
@@ -568,6 +613,7 @@ bool RawTexture::CreateFromGLTexture(
         if (flags.Test(TextureFlag::BindUnorderedAccess))
             textureDesc.BindFlags |= Diligent::BIND_UNORDERED_ACCESS;
 
+        auto deviceGL = static_cast<Diligent::IRenderDeviceGL*>(renderDevice_->GetRenderDevice());
         Diligent::RefCntAutoPtr<Diligent::ITexture> texture;
         deviceGL->CreateTextureFromGLHandle(
             handle, 0, textureDesc, Diligent::RESOURCE_STATE_UNKNOWN, &texture);

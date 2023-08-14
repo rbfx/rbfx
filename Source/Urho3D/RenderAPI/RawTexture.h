@@ -134,6 +134,8 @@ public:
     bool CreateFromD3D11Texture2D(void* d3d11Texture2D, TextureFormat format, int msaaLevel);
     /// Create texture from raw ID3D12Resource pointer.
     bool CreateFromD3D12Resource(void* d3d12Resource, TextureFormat format, int msaaLevel);
+    /// Create texture from VkImage handle.
+    bool CreateFromVulkanImage(uint64_t vkImage, const RawTextureParams& params);
     /// Create texture from raw OpenGL handle.
     bool CreateFromGLTexture(
         unsigned handle, TextureType type, TextureFlags flags, TextureFormat format, unsigned arraySize, int msaaLevel);

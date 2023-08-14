@@ -132,7 +132,8 @@ public:
     /// @{
     static IntVector2 GetSize(Graphics* graphics, const RenderSurface* renderSurface);
     static IntRect GetRect(Graphics* graphics, const RenderSurface* renderSurface);
-    static unsigned GetFormat(Graphics* graphics, const RenderSurface* renderSurface);
+    static TextureFormat GetColorFormat(Graphics* graphics, const RenderSurface* renderSurface);
+    static TextureFormat GetDepthFormat(Graphics* graphics, const RenderSurface* renderSurface);
     static int GetMultiSample(Graphics* graphics, const RenderSurface* renderSurface);
     static bool GetSRGB(Graphics* graphics, const RenderSurface* renderSurface);
     /// @}

@@ -38,8 +38,35 @@ class AnimatedModel;
 class Texture2D;
 class XMLFile;
 
-using XrSessionPtr = ea::shared_ptr<XrSession_T>;
-using XrSwapchainPtr = ea::shared_ptr<XrSwapchain_T>;
+template <class T>
+class XrObjectPtr
+{
+public:
+    XrObjectPtr() = default;
+    XrObjectPtr(std::nullptr_t) {}
+
+    template <class U>
+    XrObjectPtr(T object, U deleter)
+    {
+        const auto wrappedDeleter = [deleter](T* ptr)
+        {
+            deleter(*ptr);
+            delete ptr;
+        };
+
+        ptr_ = ea::shared_ptr<T>{new T{object}, wrappedDeleter};
+    }
+
+    T get() const { return ptr_ ? *ptr_ : T{}; }
+
+    operator bool() const { return ptr_ && *ptr_; }
+
+private:
+    ea::shared_ptr<T> ptr_;
+};
+
+using XrSessionPtr = XrObjectPtr<XrSession>;
+using XrSwapchainPtr = XrObjectPtr<XrSwapchain>;
 
 class OpenXRSwapChain
 {
