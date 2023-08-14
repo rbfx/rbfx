@@ -132,6 +132,9 @@ public:
     bool CreateFromHandle(Diligent::ITexture* texture, TextureFormat format, int msaaLevel);
     /// Create texture from raw ID3D11Texture2D pointer.
     bool CreateFromD3D11Texture2D(void* d3d11Texture2D, TextureFormat format, int msaaLevel);
+    /// Create texture from raw OpenGL handle.
+    bool CreateFromGLTexture(
+        unsigned handle, TextureType type, TextureFlags flags, TextureFormat format, unsigned arraySize, int msaaLevel);
 
     /// Set default sampler to be used for this texture.
     void SetSamplerStateDesc(const SamplerStateDesc& desc) { samplerDesc_ = desc; }

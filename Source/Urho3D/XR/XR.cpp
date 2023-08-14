@@ -69,6 +69,23 @@ namespace Urho3D
 namespace
 {
 
+const char* GetBackendExtensionName(Context* context)
+{
+    auto renderDevice = context->GetSubsystem<RenderDevice>();
+    switch (renderDevice->GetBackend())
+    {
+    case RenderBackend::D3D11: return XR_KHR_D3D11_ENABLE_EXTENSION_NAME;
+    case RenderBackend::D3D12: return XR_KHR_D3D12_ENABLE_EXTENSION_NAME;
+    case RenderBackend::Vulkan: return XR_KHR_VULKAN_ENABLE_EXTENSION_NAME;
+#if GLES_SUPPORTED
+    case RenderBackend::OpenGL: return XR_KHR_OPENGL_ES_ENABLE_EXTENSION_NAME;
+#else
+    case RenderBackend::OpenGL: return XR_KHR_OPENGL_ENABLE_EXTENSION_NAME;
+#endif
+    default: return "";
+    }
+}
+
 ea::vector<int64_t> GetSwapChainFormats(XrSession session)
 {
     unsigned count = 0;
@@ -85,9 +102,15 @@ ea::vector<int64_t> GetSwapChainFormats(XrSession session)
 /// treats non-sRGB formats as sRGB so the engine gets confused.
 /// Use non-sRGB formats only if there is no other choice.
 /// https://developer.oculus.com/resources/color-management-guide/
-bool IsFallbackTextureFormat(TextureFormat format)
+bool IsFallbackColorFormat(TextureFormat format)
 {
     return SetTextureFormatSRGB(format, true) != format;
+}
+
+/// 16-bit depth is just not enough.
+bool IsFallbackDepthFormat(TextureFormat format)
+{
+    return format == TextureFormat::TEX_FORMAT_D16_UNORM;
 }
 
 ea::pair<TextureFormat, int64_t> SelectColorFormat(RenderBackend backend, const ea::vector<int64_t>& formats)
@@ -97,7 +120,7 @@ ea::pair<TextureFormat, int64_t> SelectColorFormat(RenderBackend backend, const 
         for (const auto internalFormat : formats)
         {
             const TextureFormat textureFormat = GetTextureFormatFromInternal(backend, internalFormat);
-            if (IsColorTextureFormat(textureFormat) && IsFallbackTextureFormat(textureFormat) == fallback)
+            if (IsColorTextureFormat(textureFormat) && IsFallbackColorFormat(textureFormat) == fallback)
                 return {textureFormat, internalFormat};
         }
     }
@@ -106,11 +129,14 @@ ea::pair<TextureFormat, int64_t> SelectColorFormat(RenderBackend backend, const 
 
 ea::pair<TextureFormat, int64_t> SelectDepthFormat(RenderBackend backend, const ea::vector<int64_t>& formats)
 {
-    for (const auto internalFormat : formats)
+    for (bool fallback : {false, true})
     {
-        const TextureFormat textureFormat = GetTextureFormatFromInternal(backend, internalFormat);
-        if (IsDepthTextureFormat(textureFormat))
-            return {textureFormat, internalFormat};
+        for (const auto internalFormat : formats)
+        {
+            const TextureFormat textureFormat = GetTextureFormatFromInternal(backend, internalFormat);
+            if (IsDepthTextureFormat(textureFormat) && IsFallbackDepthFormat(textureFormat) == fallback)
+                return {textureFormat, internalFormat};
+        }
     }
     return {TextureFormat::TEX_FORMAT_UNKNOWN, 0};
 }
@@ -190,11 +216,11 @@ public:
             swapInfo.usageFlags |= XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT;
 
         swapInfo.format = internalFormat;
-        swapInfo.width = eyeSize.x_ * 2; // note: if eventually supported array targets this will change.
+        swapInfo.width = eyeSize.x_ * (arraySize_ == 1 ? 2 : 1);
         swapInfo.height = eyeSize.y_;
         swapInfo.sampleCount = msaaLevel;
         swapInfo.faceCount = 1;
-        swapInfo.arraySize = 1; // note: if eventually supported array targets this will change
+        swapInfo.arraySize = arraySize_;
         swapInfo.mipCount = 1;
 
         XrSwapchain swapChain;
@@ -247,6 +273,8 @@ public:
         textures_.resize(numImages);
         for (unsigned i = 0; i < numImages; ++i)
         {
+            URHO3D_ASSERT(arraySize_ == 1);
+
             textures_[i] = MakeShared<Texture2D>(context);
             textures_[i]->CreateFromD3D11Texture2D(images_[i].texture, format, msaaLevel);
         }
@@ -254,21 +282,32 @@ public:
 };
 #endif
 
-#ifdef URHO3D_OPENGL
-    #ifndef GL_ES_VERSION_2_0
-        XrSwapchainImageOpenGLKHR swapImages_[4] = { };
-        XrSwapchainImageOpenGLKHR depthImages_[4] = { };
-    #else
-        XrSwapchainImageOpenGLESKHR swapImages_[4] = { };
-        XrSwapchainImageOpenGLESKHR depthImages_[4] = { };
-    #endif
-#ifndef GL_ES_VERSION_2_0
-            opaque_->swapImages_[j].type = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR;
-#else
-            opaque_->swapImages_[j].type = XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_ES_KHR;
-#endif
-#endif
+#if GL_SUPPORTED
+class OpenXRSwapChainGL : public OpenXRSwapChainBase<XrSwapchainImageOpenGLKHR, XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR>
+{
+public:
+    using BaseClass = OpenXRSwapChainBase<XrSwapchainImageOpenGLKHR, XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR>;
 
+    OpenXRSwapChainGL(Context* context, XrSession session, TextureFormat format, int64_t internalFormat,
+        const IntVector2& eyeSize, int msaaLevel)
+        : BaseClass(session, format, internalFormat, eyeSize, msaaLevel)
+    {
+        auto renderDevice = context->GetSubsystem<RenderDevice>();
+
+        const bool isDepth = IsDepthTextureFormat(format);
+        const unsigned numImages = images_.size();
+        textures_.resize(numImages);
+        for (unsigned i = 0; i < numImages; ++i)
+        {
+            URHO3D_ASSERT(arraySize_ == 1);
+
+            textures_[i] = MakeShared<Texture2D>(context);
+            textures_[i]->CreateFromGLTexture(images_[i].image, TextureType::Texture2D,
+                isDepth ? TextureFlag::BindDepthStencil : TextureFlag::BindRenderTarget, format, arraySize_, msaaLevel);
+        }
+    }
+};
+#endif
 
 OpenXRSwapChainPtr CreateSwapChain(Context* context, XrSession session, TextureFormat format, int64_t internalFormat,
     const IntVector2& eyeSize, int msaaLevel)
@@ -281,6 +320,11 @@ OpenXRSwapChainPtr CreateSwapChain(Context* context, XrSession session, TextureF
 #if D3D11_SUPPORTED
     case RenderBackend::D3D11:
         result = ea::make_shared<OpenXRSwapChainD3D11>(context, session, format, internalFormat, eyeSize, msaaLevel);
+        break;
+#endif
+#if GL_SUPPORTED
+    case RenderBackend::OpenGL:
+        result = ea::make_shared<OpenXRSwapChainGL>(context, session, format, internalFormat, eyeSize, msaaLevel);
         break;
 #endif
     default: URHO3D_ASSERTLOG(false, "OpenXR is not implemented for this backend"); break;
@@ -457,15 +501,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         };
 
         ea::vector<const char*> activeExt;
-#if D3D11_SUPPORTED
-        activeExt.push_back(XR_KHR_D3D11_ENABLE_EXTENSION_NAME);
-#elif defined(URHO3D_OPENGL)
-    #ifdef GL_ES_VERSION_2_0
-            activeExt.push_back(XR_KHR_OPENGL_ES_ENABLE_EXTENSION_NAME);
-    #else
-            activeExt.push_back(XR_KHR_OPENGL_ENABLE_EXTENSION_NAME);
-    #endif
-#endif
+        activeExt.push_back(GetBackendExtensionName(GetContext()));
 
         bool supportsDebug = false;
         if (SupportsExt(extensions_, XR_EXT_DEBUG_UTILS_EXTENSION_NAME))

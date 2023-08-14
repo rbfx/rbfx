@@ -20,21 +20,21 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/XR/VRInterface.h>
+#include "Urho3D/XR/VRInterface.h"
 
-#include <Urho3D/Graphics/Camera.h>
-#include <Urho3D/Graphics/Graphics.h>
-#include <Urho3D/Scene/Node.h>
-#include <Urho3D/RenderAPI/PipelineState.h>
-#include <Urho3D/Graphics/Renderer.h>
-#include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Scene/Scene.h>
-#include <Urho3D/Resource/XMLFile.h>
-#include <Urho3D/RenderPipeline/StereoRenderPipeline.h>
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/RenderAPI/PipelineState.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderPipeline/StereoRenderPipeline.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/XMLFile.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/Scene/Scene.h"
 
-#include <Urho3D/IO/Log.h>
-
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -134,6 +134,8 @@ void VRInterface::CreateEyeTextures()
 
 void VRInterface::PrepareRig(Node* headRoot)
 {
+    auto renderDevice = headRoot->GetContext()->GetSubsystem<RenderDevice>();
+
     headRoot->SetWorldPosition(Vector3(0, 0, 0));
     headRoot->SetWorldRotation(Quaternion::IDENTITY);
     auto head = headRoot->CreateChild("Head");
@@ -143,10 +145,12 @@ void VRInterface::PrepareRig(Node* headRoot)
 
     auto leftCam = leftEye->GetOrCreateComponent<Camera>();
     auto rightCam = rightEye->GetOrCreateComponent<Camera>();
-#ifdef URHO3D_OPENGL
-    leftCam->SetFlipVertical(true);
-    rightCam->SetFlipVertical(true);
-#endif
+
+    if (renderDevice->GetBackend() == RenderBackend::OpenGL)
+    {
+        leftCam->SetFlipVertical(true);
+        rightCam->SetFlipVertical(true);
+    }
 
     auto leftHand = headRoot->CreateChild("Left_Hand");
     auto rightHand = headRoot->CreateChild("Right_Hand");

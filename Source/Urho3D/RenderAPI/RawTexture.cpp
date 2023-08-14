@@ -18,6 +18,9 @@
 #if D3D11_SUPPORTED
     #include <Diligent/Graphics/GraphicsEngineD3D11/interface/RenderDeviceD3D11.h>
 #endif
+#if GL_SUPPORTED || GLES_SUPPORTED
+    #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/RenderDeviceGL.h>
+#endif
 
 namespace Urho3D
 {
@@ -502,7 +505,7 @@ bool RawTexture::CreateFromD3D11Texture2D(void* d3d11Texture2D, TextureFormat fo
         auto deviceD3D11 = static_cast<Diligent::IRenderDeviceD3D11*>(renderDevice_->GetRenderDevice());
         Diligent::RefCntAutoPtr<Diligent::ITexture> texture;
         deviceD3D11->CreateTexture2DFromD3DResource(
-            reinterpret_cast<ID3D11Texture2D*>(d3d11Texture2D), Diligent::RESOURCE_STATE_UNDEFINED, &texture);
+            reinterpret_cast<ID3D11Texture2D*>(d3d11Texture2D), Diligent::RESOURCE_STATE_UNKNOWN, &texture);
         if (!texture)
         {
             URHO3D_LOGERROR("Failed to create texture from existing ID3D11Texture2D pointer");
@@ -514,6 +517,45 @@ bool RawTexture::CreateFromD3D11Texture2D(void* d3d11Texture2D, TextureFormat fo
 #endif
 
     URHO3D_ASSERT(false, "RawTexture::CreateFromD3D11Texture2D is not supported on this platform");
+    return false;
+}
+
+bool RawTexture::CreateFromGLTexture(
+    unsigned handle, TextureType type, TextureFlags flags, TextureFormat format, unsigned arraySize, int msaaLevel)
+{
+#if GL_SUPPORTED || GLES_SUPPORTED
+    if (renderDevice_ && renderDevice_->GetBackend() == RenderBackend::OpenGL)
+    {
+        auto deviceGL = static_cast<Diligent::IRenderDeviceGL*>(renderDevice_->GetRenderDevice());
+
+        Diligent::TextureDesc textureDesc;
+        textureDesc.Type = textureTypeToDimensions[type];
+        textureDesc.Usage = Diligent::USAGE_DEFAULT;
+        textureDesc.Format = format;
+        if (type == TextureType::Texture2DArray)
+            textureDesc.ArraySize = arraySize;
+
+        if (flags.Test(TextureFlag::BindRenderTarget))
+            textureDesc.BindFlags |= Diligent::BIND_RENDER_TARGET;
+        if (flags.Test(TextureFlag::BindDepthStencil))
+            textureDesc.BindFlags |= Diligent::BIND_DEPTH_STENCIL;
+        if (flags.Test(TextureFlag::BindUnorderedAccess))
+            textureDesc.BindFlags |= Diligent::BIND_UNORDERED_ACCESS;
+
+        Diligent::RefCntAutoPtr<Diligent::ITexture> texture;
+        deviceGL->CreateTextureFromGLHandle(
+            handle, 0, textureDesc, Diligent::RESOURCE_STATE_UNKNOWN, &texture);
+        if (!texture)
+        {
+            URHO3D_LOGERROR("Failed to create texture from existing GL texture handle");
+            return false;
+        }
+
+        return CreateFromHandle(texture, format, msaaLevel);
+    }
+#endif
+
+    URHO3D_ASSERT(false, "RawTexture::CreateFromGLTexture is not supported on this platform");
     return false;
 }
 

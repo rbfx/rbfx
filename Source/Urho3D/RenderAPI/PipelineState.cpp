@@ -224,7 +224,8 @@ ea::pair<VertexShaderAttributeVector, StringVector> GetGLVertexAttributes(GLuint
         if (const auto element = ParseVertexAttribute(attributeName.c_str()))
         {
             const int location = glGetAttribLocation(programObject, attributeName.c_str());
-            URHO3D_ASSERT(location != -1);
+            if (location == -1)
+                continue;
 
             result.push_back({element->semantic_, element->semanticIndex_, static_cast<unsigned>(location)});
             resultNames.push_back(attributeName);

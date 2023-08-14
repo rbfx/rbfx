@@ -55,6 +55,7 @@ protected:
     OpenXRSwapChain() = default;
 
     ea::vector<SharedPtr<Texture2D>> textures_;
+    unsigned arraySize_{1}; // note: if eventually supported array targets this will change
     TextureFormat format_;
     XrSwapchainPtr swapChain_;
 };

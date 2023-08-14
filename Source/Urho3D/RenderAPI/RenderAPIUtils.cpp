@@ -347,8 +347,10 @@ TextureFormat GetTextureFormatFromInternal(RenderBackend backend, unsigned inter
     {
         switch (internalFormat)
         {
-        case GL_RGB8: return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
-        case GL_SRGB8: return TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB;
+        case GL_RGB8:
+        case GL_RGBA8: return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
+        case GL_SRGB8:
+        case GL_SRGB8_ALPHA8: return TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB;
         case GL_DEPTH_COMPONENT16: return TextureFormat::TEX_FORMAT_D16_UNORM;
         case GL_DEPTH_COMPONENT24: return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
         case GL_DEPTH_COMPONENT32F: return TextureFormat::TEX_FORMAT_D32_FLOAT;
