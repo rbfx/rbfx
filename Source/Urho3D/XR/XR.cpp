@@ -1092,6 +1092,9 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         {
 #define CHECKVIEW(EYE) (views_[EYE].fov.angleLeft == 0 || views_[EYE].fov.angleRight == 0 || views_[EYE].fov.angleUp == 0 || views_[EYE].fov.angleDown == 0)
 
+            auto renderDevice = GetSubsystem<RenderDevice>();
+            renderDevice->GetImmediateContext()->Flush();
+
             XrSwapchainImageReleaseInfo releaseInfo = { XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
             xrReleaseSwapchainImage(swapChain_->GetHandle(), &releaseInfo);
             if (depthChain_)
