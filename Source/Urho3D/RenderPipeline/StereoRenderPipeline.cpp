@@ -46,7 +46,8 @@
 #include "../RenderPipeline/BloomPass.h"
 #include "../RenderPipeline/ToneMappingPass.h"
 
-#include "../XR/XR.h"
+// TODO(xr): Revisit
+//#include "../XR/XR.h"
 
 #include "../DebugNew.h"
 
@@ -543,8 +544,9 @@ void StereoRenderPipelineView::Render()
     // Need to at least squeeze an uber post-processing into that to justify it.
     // Samsung Odyssey+ OXR reported recommended resolution is 3864 x 2420 which is just plain massive 9.3 million
     // compared to 1080p's 2 million.
-    auto xr = GetSubsystem<OpenXR>();
-    xr->DrawEyeMask();
+    // TODO(xr): Revisit
+    //auto xr = GetSubsystem<OpenXR>();
+    //xr->DrawEyeMask();
 
     const ShaderParameterDesc cameraParameters[] = {
         {VSP_GBUFFEROFFSETS, renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale()},
@@ -619,8 +621,9 @@ void StereoRenderPipelineView::Render()
         }
     }
 
-    if (xr->IsVignetteEnabled())
-        xr->DrawRadialMask(BlendMode::BLEND_ALPHA, xr->GetVignetteInsideColor(), xr->GetVignetteOutsideColor(), xr->GetVignettePower());
+    // TODO(xr): Revisit
+    //if (xr->IsVignetteEnabled())
+    //    xr->DrawRadialMask(BlendMode::BLEND_ALPHA, xr->GetVignetteInsideColor(), xr->GetVignetteOutsideColor(), xr->GetVignettePower());
 
     SendViewEvent(E_ENDVIEWRENDER);
     OnRenderEnd(this, frameInfo_);

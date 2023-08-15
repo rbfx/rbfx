@@ -191,7 +191,7 @@ option                (URHO3D_ACTIONS            "Tweening actions"             
 option                (URHO3D_SHADER_TRANSLATOR  "Enable shader translation from universal GLSL shaders to other GAPI via glslang and SPIRV-Cross" ${URHO3D_ENABLE_ALL})
 option                (URHO3D_SHADER_OPTIMIZER   "Enable shader optimization via SPIRV-Tools"            ${URHO3D_ENABLE_ALL})
 # Note: None of the rules below are necessarilly permanent, to be removed 1 by 1 as supported. Add MacOS exclusion as OpenXR SDK doesn't recognize it as a platform.
-cmake_dependent_option(URHO3D_XR                 "Enable OpenXR support"                                 ${URHO3D_ENABLE_ALL} "NOT WEB;NOT MOBILE;NOT MACOS" OFF)
+cmake_dependent_option(URHO3D_XR                 "Enable OpenXR support"                                 ${URHO3D_ENABLE_ALL} "NOT LINUX;NOT MACOS;NOT MOBILE;NOT UWP;NOT EMSCRIPTEN;NOT MINGW" OFF)
 
 # Features
 cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "BUILD_SHARED_LIBS;NOT MINGW"   OFF)

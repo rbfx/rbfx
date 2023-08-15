@@ -578,7 +578,7 @@ bool RawTexture::CreateFromVulkanImage(uint64_t vkImage, const RawTextureParams&
         auto deviceVk = static_cast<Diligent::IRenderDeviceVk*>(renderDevice_->GetRenderDevice());
         Diligent::RefCntAutoPtr<Diligent::ITexture> texture;
         deviceVk->CreateTextureFromVulkanImage(
-            reinterpret_cast<VkImage>(vkImage), textureDesc, Diligent::RESOURCE_STATE_UNKNOWN, &texture);
+            (VkImage)vkImage, textureDesc, Diligent::RESOURCE_STATE_UNKNOWN, &texture);
         if (!texture)
         {
             URHO3D_LOGERROR("Failed to create texture from existing VkImage pointer");

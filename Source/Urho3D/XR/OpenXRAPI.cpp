@@ -6,6 +6,8 @@
 
 #include "Urho3D/IO/Log.h"
 
+#include <EASTL/unordered_map.h>
+
 #include "Urho3D/DebugNew.h"
 
 #define URHO3D_DEFINE_OPENXR_API(fn) PFN_##fn fn;
@@ -23,7 +25,7 @@ const char* xrGetErrorStr(XrResult result)
 #define DEFINE_ERROR(code) { code, #code }
     // clang-format on
 
-    static ea::map<int, const char*> xrErrorNames = {
+    static const ea::unordered_map<int, const char*> xrErrorNames = {
         DEFINE_ERROR(XR_SUCCESS),
         DEFINE_ERROR(XR_TIMEOUT_EXPIRED),
         DEFINE_ERROR(XR_SESSION_LOSS_PENDING),

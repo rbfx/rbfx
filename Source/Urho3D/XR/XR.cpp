@@ -395,7 +395,7 @@ public:
             params.multiSample_ = msaaLevel;
 
             textures_[i] = MakeShared<Texture2D>(context);
-            textures_[i]->CreateFromVulkanImage(reinterpret_cast<uint64_t>(images_[i].image), params);
+            textures_[i]->CreateFromVulkanImage((uint64_t)images_[i].image, params);
         }
     }
 };
@@ -605,7 +605,11 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
     bool OpenXR::Initialize(const ea::string& manifestPath)
     {
+        auto engine = GetSubsystem<Engine>();
         auto graphics = GetSubsystem<Graphics>();
+
+        // TODO(xr): This is a hack, revisit
+        engine->SetMaxInactiveFps(engine->GetMaxFps());
 
         if (instance_ != 0)
         {
