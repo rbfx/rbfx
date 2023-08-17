@@ -336,15 +336,22 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         auto* renderer = GetSubsystem<Renderer>();
 
         const RenderBackend backend = SelectRenderBackend(GetParameter(EP_RENDER_BACKEND).GetOptional<RenderBackend>());
+        const bool needXR = GetParameter(EP_XR).GetBool();
 
-#ifdef URHO3D_XR
-        auto* xr = context_->RegisterSubsystem<OpenXR>();
-        if (!xr->InitializeSystem(backend))
+        if (needXR)
         {
-            URHO3D_LOGERROR("Failed to initialize OpenXR subsystem");
-            context_->RemoveSubsystem<OpenXR>();
-        }
+#ifdef URHO3D_XR
+            auto* xr = context_->RegisterSubsystem<OpenXR>();
+            if (!xr->InitializeSystem(backend))
+            {
+                URHO3D_LOGERROR("Failed to initialize OpenXR subsystem");
+                return false;
+            }
+#else
+            URHO3D_LOGERROR("OpenXR subsystem is not available in this build configuration");
+            return false;
 #endif
+        }
 
         GraphicsSettings graphicsSettings;
         graphicsSettings.backend_ = backend;
@@ -1052,6 +1059,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addFlag("--log-shader-sources", EP_SHADER_LOG_SOURCES, true, "Log shader sources into shader cache directory");
     addFlag("--discard-shader-cache", EP_DISCARD_SHADER_CACHE, true, "Discard all cached shader bytecode and logged shader sources");
     addFlag("--no-save-shader-cache", EP_SAVE_SHADER_CACHE, false, "Disable saving shader bytecode to cache directory");
+    addFlag("--xr", EP_XR, true, "Launch the engine in XR mode");
 
     addFlag("--d3d11", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::D3D11), "Use Direct3D11 rendering backend");
     addFlag("--d3d12", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::D3D12), "Use Direct3D12 rendering backend");
@@ -1152,6 +1160,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_WORKER_THREADS, true);
     engineParameters_->DefineVariable(EP_PSO_CACHE, "conf://psocache.bin");
     engineParameters_->DefineVariable(EP_RENDER_BACKEND).SetOptional<int>();
+    engineParameters_->DefineVariable(EP_XR, false);
 }
 
 void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)

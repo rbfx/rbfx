@@ -53,6 +53,8 @@
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform_defines.h>
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform.h>
 
+#include <EASTL/optional.h>
+
 #include "../DebugNew.h"
 
 namespace Urho3D
@@ -185,6 +187,71 @@ XrDebugUtilsMessengerEXTPtr CreateDebugMessengerXR(XrInstance instance)
 
     const auto deleter = [](XrDebugUtilsMessengerEXT messenger) { xrDestroyDebugUtilsMessengerEXT(messenger); };
     return XrDebugUtilsMessengerEXTPtr(messenger, deleter);
+}
+
+ea::optional<XrSystemId> GetSystemXR(XrInstance instance)
+{
+    XrSystemGetInfo sysInfo = {XR_TYPE_SYSTEM_GET_INFO};
+    sysInfo.formFactor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
+
+    XrSystemId systemId;
+    if (!URHO3D_CHECK_OPENXR(xrGetSystem(instance, &sysInfo, &systemId)))
+        return ea::nullopt;
+
+    return systemId;
+}
+
+ea::string GetSystemNameXR(XrInstance instance, XrSystemId system)
+{
+    XrSystemProperties properties = {XR_TYPE_SYSTEM_PROPERTIES};
+    if (!URHO3D_CHECK_OPENXR(xrGetSystemProperties(instance, system, &properties)))
+        return "";
+    return properties.systemName;
+}
+
+ea::vector<XrEnvironmentBlendMode> GetBlendModesXR(XrInstance instance, XrSystemId system)
+{
+    uint32_t count = 0;
+    xrEnumerateEnvironmentBlendModes(instance, system, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 0, &count, nullptr);
+
+    ea::vector<XrEnvironmentBlendMode> result(count);
+    xrEnumerateEnvironmentBlendModes(
+        instance, system, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, count, &count, result.data());
+
+    if (count == 0)
+    {
+        URHO3D_LOGERROR("Failed to get OpenXR blend modes");
+        return {};
+    }
+
+    return result;
+}
+
+ea::vector<XrViewConfigurationType> GetViewConfigurationsXR(XrInstance instance, XrSystemId system)
+{
+    uint32_t count = 0;
+    xrEnumerateViewConfigurations(instance, system, 0, &count, nullptr);
+
+    ea::vector<XrViewConfigurationType> result(count);
+    xrEnumerateViewConfigurations(instance, system, count, &count, result.data());
+
+    return result;
+}
+
+ea::vector<XrViewConfigurationView> GetViewConfigurationViewsXR(XrInstance instance, XrSystemId system)
+{
+    ea::vector<XrViewConfigurationView> result;
+    result.push_back(XrViewConfigurationView{XR_TYPE_VIEW_CONFIGURATION_VIEW});
+    result.push_back(XrViewConfigurationView{XR_TYPE_VIEW_CONFIGURATION_VIEW});
+
+    unsigned count = 0;
+    if (URHO3D_CHECK_OPENXR(xrEnumerateViewConfigurationViews(
+            instance, system, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 2, &count, result.data())))
+    {
+        return result;
+    }
+
+    return {};
 }
 
 ea::vector<int64_t> GetSwapChainFormats(XrSession session)
@@ -670,7 +737,8 @@ OpenXR::OpenXR(Context* ctx)
 
 OpenXR::~OpenXR()
 {
-    Shutdown();
+    // TODO(xr): We shouldn't need this call
+    ShutdownSession();
 }
 
 bool OpenXR::InitializeSystem(RenderBackend backend)
@@ -695,6 +763,36 @@ bool OpenXR::InitializeSystem(RenderBackend backend)
 
     if (features_.debugOutput_)
         debugMessenger_ = CreateDebugMessengerXR(instance_.get());
+
+    const auto systemId = GetSystemXR(instance_.get());
+    if (!systemId)
+        return false;
+
+    system_ = *systemId;
+    systemName_ = GetSystemNameXR(instance_.get(), system_);
+
+    const auto blendModes = GetBlendModesXR(instance_.get(), system_);
+    if (blendModes.empty())
+        return false;
+
+    blendMode_ = blendModes[0];
+
+    const auto viewConfigurations = GetViewConfigurationsXR(instance_.get(), system_);
+    if (!viewConfigurations.contains(XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO))
+    {
+        URHO3D_LOGERROR("Stereo rendering not supported on this device");
+        return false;
+    }
+
+    const auto views = GetViewConfigurationViewsXR(instance_.get(), system_);
+    if (views.empty())
+        return false;
+
+    recommendedMultiSample_ = views[VR_EYE_LEFT].recommendedSwapchainSampleCount;
+    recommendedEyeTextureSize_.x_ =
+        ea::min(views[VR_EYE_LEFT].recommendedImageRectWidth, views[VR_EYE_RIGHT].recommendedImageRectWidth);
+    recommendedEyeTextureSize_.y_ =
+        ea::min(views[VR_EYE_LEFT].recommendedImageRectHeight, views[VR_EYE_RIGHT].recommendedImageRectHeight);
 
     return true;
 }
@@ -726,78 +824,27 @@ void OpenXR::InitializeActiveExtensions(RenderBackend backend)
         ActivateOptionalExtension(activeExtensions_, supportedExtensions_, extension.c_str());
 }
 
-bool OpenXR::Initialize(const ea::string& manifestPath)
+bool OpenXR::InitializeSession(const VRSessionParameters& params)
 {
+    auto cache = GetSubsystem<ResourceCache>();
     auto engine = GetSubsystem<Engine>();
-    auto graphics = GetSubsystem<Graphics>();
 
     // TODO(xr): This is a hack, revisit
     engine->SetMaxInactiveFps(engine->GetMaxFps());
 
-    manifest_ = new XMLFile(GetContext());
-    auto cache = GetSubsystem<ResourceCache>();
-    if (!manifest_->LoadFile(cache->GetResourceFileName(manifestPath)))
-        manifest_.Reset();
-
-    XrSystemGetInfo sysInfo = { XR_TYPE_SYSTEM_GET_INFO };
-    sysInfo.formFactor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
-
-#define XR_COMMON_ER(TERM) if (errCode != XrResult::XR_SUCCESS) { \
-URHO3D_LOGERRORF("Unable to produce OpenXR " TERM " ID: %s", xrGetErrorStr(errCode)); \
-Shutdown(); \
-return false; }
-
-    auto errCode = xrGetSystem(instance_.get(), &sysInfo, &system_);
-    XR_COMMON_ER("system ID");
-
-    uint32_t blendCount = 0;
-    errCode = xrEnumerateEnvironmentBlendModes(instance_.get(), system_, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 1, &blendCount, &blendMode_);
-    XR_COMMON_ER("blending mode");
-
-    XrSystemProperties sysProps = { XR_TYPE_SYSTEM_PROPERTIES };
-    errCode = xrGetSystemProperties(instance_.get(), system_, &sysProps);
-    XR_COMMON_ER("system properties");
-    systemName_ = sysProps.systemName;
-
-    unsigned viewConfigCt = 0;
-    XrViewConfigurationType viewConfigurations[4];
-    errCode = xrEnumerateViewConfigurations(instance_.get(), system_, 4, &viewConfigCt, viewConfigurations);
-    XR_COMMON_ER("view config");
-    bool stereo = false;
-    for (auto v : viewConfigurations)
+    manifest_ = cache->GetResource<XMLFile>(params.manifestPath_);
+    if (!manifest_)
     {
-        if (v == XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO)
-            stereo = true;
-    }
-
-    if (!stereo)
-    {
-        URHO3D_LOGERROR("Stereo rendering not supported on this device");
-        Shutdown();
+        URHO3D_LOGERROR("Unable to load OpenXR manifest '{}'", params.manifestPath_);
         return false;
     }
 
-    unsigned viewCt = 0;
-    XrViewConfigurationView views[2] = { { XR_TYPE_VIEW_CONFIGURATION_VIEW }, { XR_TYPE_VIEW_CONFIGURATION_VIEW } };
-    errCode = xrEnumerateViewConfigurationViews(instance_.get(), system_, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 2, &viewCt, views);
-    XR_COMMON_ER("view config views")
-
-    trueEyeTexWidth_ = eyeTexWidth_ = (int)Min(views[VR_EYE_LEFT].recommendedImageRectWidth, views[VR_EYE_RIGHT].recommendedImageRectWidth);
-    trueEyeTexHeight_ = eyeTexHeight_ = (int)Min(views[VR_EYE_LEFT].recommendedImageRectHeight, views[VR_EYE_RIGHT].recommendedImageRectHeight);
-    msaaLevel_ = Min(msaaLevel_, views[VR_EYE_LEFT].maxSwapchainSampleCount);
-
-    eyeTexWidth_ = eyeTexWidth_ * renderTargetScale_;
-    eyeTexHeight_ = eyeTexHeight_ * renderTargetScale_;
+    multiSample_ = params.multiSample_ ? params.multiSample_ : recommendedMultiSample_;
+    eyeTextureSize_ = VectorRoundToInt(recommendedEyeTextureSize_.ToVector2() * params.resolutionScale_);
 
     if (!OpenSession())
     {
-        Shutdown();
-        return false;
-    }
-
-    if (!CreateSwapchain())
-    {
-        Shutdown();
+        ShutdownSession();
         return false;
     }
 
@@ -806,12 +853,13 @@ return false; }
     return true;
 }
 
-void OpenXR::Shutdown()
-{
-    // already shutdown?
-    if (instance_ == 0)
-        return;
+#define XR_COMMON_ER(TERM) if (errCode != XrResult::XR_SUCCESS) { \
+URHO3D_LOGERRORF("Unable to produce OpenXR " TERM " ID: %s", xrGetErrorStr(errCode)); \
+ShutdownSession(); \
+return false; }
 
+void OpenXR::ShutdownSession()
+{
     for (int i = 0; i < 2; ++i)
     {
         wandModels_[i] = { };
@@ -824,7 +872,6 @@ void OpenXR::Shutdown()
     actionSets_.clear();
     activeActionSet_.Reset();
     sessionLive_ = false;
-    supportedExtensions_.clear();
 
     swapChain_ = nullptr;
     depthChain_ = nullptr;
@@ -838,13 +885,8 @@ void OpenXR::Shutdown()
 
     session_ = nullptr;
 
-    system_ = { };
-    blendMode_ = { };
     headSpace_ = { };
     viewSpace_ = { };
-
-    debugMessenger_ = nullptr;
-    instance_ = nullptr;
 }
 
 bool OpenXR::OpenSession()
@@ -886,43 +928,23 @@ bool OpenXR::OpenSession()
     // if there's a default action set, then use it.
     VRInterface::SetCurrentActionSet("default");
 
-    return true;
-}
-
-bool OpenXR::CreateSwapchain()
-{
-    auto renderDevice = GetSubsystem<RenderDevice>();
-
+    // Create swap chains
     const auto internalFormats = GetSwapChainFormats(session_.get());
     const auto [colorFormat, colorFormatInternal] = SelectColorFormat(renderDevice->GetBackend(), internalFormats);
     const auto [depthFormat, depthFormatInternal] = SelectDepthFormat(renderDevice->GetBackend(), internalFormats);
 
-    swapChain_ = CreateSwapChainXR(GetContext(), session_.get(), colorFormat, colorFormatInternal,
-        IntVector2(eyeTexWidth_, eyeTexHeight_), msaaLevel_);
+    swapChain_ = CreateSwapChainXR(
+        GetContext(), session_.get(), colorFormat, colorFormatInternal, eyeTextureSize_, multiSample_);
     if (!swapChain_)
         return false;
 
     if (features_.depthLayer_ && depthFormatInternal)
     {
-        depthChain_ = CreateSwapChainXR(GetContext(), session_.get(), depthFormat, depthFormatInternal,
-            IntVector2(eyeTexWidth_, eyeTexHeight_), msaaLevel_);
-    }
-
-    if (!depthChain_)
-    {
-        sharedDS_ = MakeShared<Texture2D>(GetContext());
-        sharedDS_->SetNumLevels(1);
-        sharedDS_->SetSize(eyeTexWidth_ * 2, eyeTexHeight_, renderDevice->GetDefaultDepthStencilFormat(),
-            TextureFlag::BindDepthStencil, msaaLevel_);
+        depthChain_ = CreateSwapChainXR(
+            GetContext(), session_.get(), depthFormat, depthFormatInternal, eyeTextureSize_, multiSample_);
     }
 
     return true;
-}
-
-void OpenXR::CreateEyeTextures()
-{
-    // TODO(xr): Remove this function.
-    // it doesn't really make sense to recreate the texture without recreating the swapchain
 }
 
 void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
@@ -1068,7 +1090,7 @@ void OpenXR::HandlePreRender()
             URHO3D_LOGERRORF("Failed to wait on swapchain: %s", xrGetErrorStr(res));
 
         // update which shared-texture we're using so UpdateRig will do things correctly.
-        sharedTexture_ = swapChain_->GetTexture(imgID);
+        currentBackBufferColor_ = swapChain_->GetTexture(imgID);
 
         // If we've got depth then do the same and setup the linked depth stencil for the above shared texture.
         if (depthChain_)
@@ -1083,8 +1105,8 @@ void OpenXR::HandlePreRender()
                 XrSwapchainImageWaitInfo waitInfo = { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
                 waitInfo.timeout = XR_INFINITE_DURATION;
                 res = xrWaitSwapchainImage(depthChain_->GetHandle(), &waitInfo);
-                sharedDS_ = depthChain_->GetTexture(depthID);
-                sharedTexture_->GetRenderSurface()->SetLinkedDepthStencil(sharedDS_->GetRenderSurface());
+                currentBackBufferDepth_ = depthChain_->GetTexture(depthID);
+                currentBackBufferColor_->GetRenderSurface()->SetLinkedDepthStencil(currentBackBufferDepth_->GetRenderSurface());
             }
         }
     }
@@ -1115,13 +1137,13 @@ void OpenXR::HandlePostRender(StringHash, VariantMap&)
         XrCompositionLayerProjectionView eyes[2] = { { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW }, { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW } };
         eyes[VR_EYE_LEFT].subImage.imageArrayIndex = 0;
         eyes[VR_EYE_LEFT].subImage.swapchain = swapChain_->GetHandle();
-        eyes[VR_EYE_LEFT].subImage.imageRect = { { 0, 0 }, { eyeTexWidth_, eyeTexHeight_} };
+        eyes[VR_EYE_LEFT].subImage.imageRect = { { 0, 0 }, { eyeTextureSize_.x_, eyeTextureSize_.y_} };
         eyes[VR_EYE_LEFT].fov = views_[VR_EYE_LEFT].fov;
         eyes[VR_EYE_LEFT].pose = views_[VR_EYE_LEFT].pose;
 
         eyes[VR_EYE_RIGHT].subImage.imageArrayIndex = 0;
         eyes[VR_EYE_RIGHT].subImage.swapchain = swapChain_->GetHandle();
-        eyes[VR_EYE_RIGHT].subImage.imageRect = { { eyeTexWidth_, 0 }, { eyeTexWidth_, eyeTexHeight_} };
+        eyes[VR_EYE_RIGHT].subImage.imageRect = { { eyeTextureSize_.x_, 0 }, { eyeTextureSize_.x_, eyeTextureSize_.y_} };
         eyes[VR_EYE_RIGHT].fov = views_[VR_EYE_RIGHT].fov;
         eyes[VR_EYE_RIGHT].pose = views_[VR_EYE_RIGHT].pose;
 
@@ -1134,7 +1156,7 @@ void OpenXR::HandlePostRender(StringHash, VariantMap&)
             // depth
             depth[VR_EYE_LEFT].subImage.imageArrayIndex = 0;
             depth[VR_EYE_LEFT].subImage.swapchain = depthChain_->GetHandle();
-            depth[VR_EYE_LEFT].subImage.imageRect = { { 0, 0 }, { eyeTexWidth_, eyeTexHeight_} };
+            depth[VR_EYE_LEFT].subImage.imageRect = { { 0, 0 }, { eyeTextureSize_.x_, eyeTextureSize_.y_} };
             depth[VR_EYE_LEFT].minDepth = 0.0f; // spec says range of 0-1, so doesn't respect GL -1 to 1?
             depth[VR_EYE_LEFT].maxDepth = 1.0f;
             depth[VR_EYE_LEFT].nearZ = lastNearDist_;
@@ -1142,7 +1164,7 @@ void OpenXR::HandlePostRender(StringHash, VariantMap&)
 
             depth[VR_EYE_RIGHT].subImage.imageArrayIndex = 0;
             depth[VR_EYE_RIGHT].subImage.swapchain = depthChain_->GetHandle();
-            depth[VR_EYE_RIGHT].subImage.imageRect = { { eyeTexWidth_, 0 }, { eyeTexWidth_, eyeTexHeight_} };
+            depth[VR_EYE_RIGHT].subImage.imageRect = { { eyeTextureSize_.x_, 0 }, { eyeTextureSize_.x_, eyeTextureSize_.y_} };
             depth[VR_EYE_RIGHT].minDepth = 0.0f;
             depth[VR_EYE_RIGHT].maxDepth = 1.0f;
             depth[VR_EYE_RIGHT].nearZ = lastNearDist_;

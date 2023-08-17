@@ -37,6 +37,13 @@ namespace Urho3D
     class Scene;
     class StereoRenderPipeline;
 
+    struct VRSessionParameters
+    {
+        ea::string manifestPath_;
+        int multiSample_{};
+        float resolutionScale_{1.0f};
+    };
+
     /// Identifier of backing runtime for VRInterface. Currently only OpenXR is implmented.
     enum class VRRuntime
     {
@@ -212,15 +219,10 @@ namespace Urho3D
         /// Scale correction can also be done on the VRRig node.
         void SetScaleCorrection(float value) { scaleCorrection_ = value; }
 
+        /// Returns recommended MSAA level.
+        int GetRecommendedMultiSample() const { return recommendedMultiSample_; }
         /// Returns the currently chosen MSAA level.
-        int GetMSAALevel() const { return msaaLevel_; }
-        /// Change MSAA level, have to call CreateEyeTextures() to update.
-        void SetMSAALevel(int level);
-
-        /// Can use render-scale to resize targets if FPS is too low.
-        float GetRenderScale() const { return renderTargetScale_; }
-        /// Sets the scale factor for the render-targets, have to call CreateEyeTextures() to update.
-        virtual void SetRenderScale(float value);
+        int GetMultiSample() const { return multiSample_; }
 
         /// Returns whether we're rendering to 1 double-wide texture or 2 independent eye textures.
         bool IsSingleTexture() const { return useSingleTexture_; }
@@ -233,17 +235,14 @@ namespace Urho3D
         void SetAutoDrawEyeMasks(bool state) { autoClearMasks_ = state; }
 
         /// Viewport rectangle for left eye, required for multipass single-RT.
-        IntRect GetLeftEyeRect() const { return IntRect(0, 0, eyeTexWidth_, eyeTexHeight_); }
+        IntRect GetLeftEyeRect() const { return {IntVector2::ZERO, eyeTextureSize_}; }
         /// Viewport rectangle for right eye, required for multipass single-RT.
-        IntRect GetRightEyeRect() const { return useSingleTexture_ ? IntRect(eyeTexWidth_, 0, eyeTexWidth_ * 2, eyeTexHeight_) : IntRect(0, 0, eyeTexWidth_, eyeTexHeight_); }
+        IntRect GetRightEyeRect() const { return useSingleTexture_ ? IntRect(eyeTextureSize_.x_, 0, eyeTextureSize_.x_ * 2, eyeTextureSize_.y_) : GetLeftEyeRect(); }
 
         /// Return the classification of VR runtime being used,
         virtual VRRuntime GetRuntime() const = 0;
         /// Return a string name for the runtime, spaces are not allowed as this will be passed along to shaders.
         virtual const char* GetRuntimeName() const = 0;
-
-        /// Constructs the backing eye textures. Overridable for APIs that work with swapchains.
-        virtual void CreateEyeTextures();
 
         /// Constructs the head, eye, and hand nodes for a rig at a given node. The rig is effectively the worldspace locator. This rig is considered standard.
         void PrepareRig(Node* vrRig);
@@ -255,10 +254,10 @@ namespace Urho3D
         /// Called by ConfigureRig to setup hands. Responsible for models and transforms
         virtual void UpdateHands(Scene* scene, Node* rigRoot, Node* leftHand, Node* rightHand) = 0;
 
-        /// Initializes the VR system providing a manifest.
-        virtual bool Initialize(const ea::string& manifestPath) = 0;
-        /// Shutsdown the VR system.
-        virtual void Shutdown() = 0;
+        /// Initializes the VR session.
+        virtual bool InitializeSession(const VRSessionParameters& params) = 0;
+        /// Shuts down the VR session.
+        virtual void ShutdownSession() = 0;
 
         /// Activates a haptic for a given hand.
         virtual void TriggerHaptic(VRHand hand, float durationSeconds, float cyclesPerSec, float amplitude) = 0;
@@ -299,11 +298,6 @@ namespace Urho3D
         /// INTERFACE: Sets the current action set.
         virtual void SetCurrentActionSet(SharedPtr<XRActionGroup>) = 0;
 
-        /// Returns the side-by-side color texture.
-        SharedPtr<Texture2D> GetSharedTexture() const { return sharedTexture_; }
-        /// Returns the side-by-side depth texture.
-        SharedPtr<Texture2D> GetSharedDepth() const { return sharedDS_; }
-
         /// Returns the system name, ie. Windows Mixed Reality.
         ea::string GetSystemName() const { return systemName_; }
 
@@ -322,22 +316,20 @@ namespace Urho3D
     protected:
         /// Name of the system being run, ie. Windows Mixed Reality
         ea::string systemName_;
-        /// MSAA level to use, 4 is generally what is recommended.
-        int msaaLevel_ = 1;
-        /// Texture width API recommended.
-        int trueEyeTexWidth_ = 0;
-        /// Texture height API recommended.
-        int trueEyeTexHeight_ = 0;
-        /// Texture width after scaling.
-        int eyeTexWidth_;
-        /// Texture height after scaling.
-        int eyeTexHeight_;
+        /// MSAA level recommended by API.
+        int recommendedMultiSample_{1};
+        /// Texture size recommended by API.
+        IntVector2 recommendedEyeTextureSize_;
+
+        /// Effective MSAA level to use.
+        int multiSample_{};
+        /// Effective texture size.
+        IntVector2 eyeTextureSize_;
+
         /// External IPD adjustment.
         float ipdCorrection_ = 0.0f;
         /// Scaling factor correct by.
         float scaleCorrection_ = 1.0f;
-        /// Scaling factor to apply to recommended render-target resolutions. Such as going lower res or higher res.
-        float renderTargetScale_ = 1.0f;
         /// Whether to automatically invoke the hidden area masks, if on then renderpath must not clear (or not clear depth at least)
         bool autoClearMasks_ = true;
         /// Indicates if using a single double-wide texture via instanced-stereo instead of separate images.
@@ -349,8 +341,9 @@ namespace Urho3D
         SharedPtr<Viewport> viewport_;
         /// Only exists if it was necessary to create a pipeline ourselves for the viewport as a default.
         SharedPtr<StereoRenderPipeline> pipeline_;
-        /// Active backbuffer textures.
-        SharedPtr<Texture2D> leftTexture_, rightTexture_, sharedTexture_, leftDS_, rightDS_, sharedDS_;
+        /// Back buffer textures active in current frame.
+        SharedPtr<Texture2D> currentBackBufferColor_;
+        SharedPtr<Texture2D> currentBackBufferDepth_;
         /// Hidden area mesh.
         SharedPtr<Geometry> hiddenAreaMesh_[2];
         /// Visible area mesh.

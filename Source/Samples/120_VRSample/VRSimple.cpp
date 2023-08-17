@@ -62,6 +62,13 @@ VRSimple::VRSimple(Context* context) :
 
 void VRSimple::Start()
 {
+    auto xr = GetSubsystem<OpenXR>();
+    if (!xr)
+    {
+        CloseSample();
+        return;
+    }
+
     // Execute base class startup
     Sample::Start();
 
@@ -81,10 +88,7 @@ void VRSimple::Start()
     SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(VRSimple, Update));
     SubscribeToEvent(E_VRCONTROLLERCHANGE, URHO3D_HANDLER(VRSimple, HandleControllerChange));
 
-    if (GetSubsystem<OpenXR>() == nullptr)
-        GetContext()->RegisterSubsystem<OpenXR>();
-
-    GetSubsystem<OpenXR>()->Initialize("xr_manifest.xml");
+    xr->InitializeSession(VRSessionParameters{"xr_manifest.xml"});
 
     SetupXRScene();
 }
@@ -92,7 +96,7 @@ void VRSimple::Start()
 void VRSimple::Stop()
 {
     if (auto xr = GetSubsystem<OpenXR>())
-        xr->Shutdown();
+        xr->ShutdownSession();
 
     Sample::Stop();
 }

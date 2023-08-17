@@ -62,76 +62,6 @@ VRInterface::~VRInterface()
     viewport_.Reset();
 }
 
-void VRInterface::SetMSAALevel(int level)
-{
-    if (msaaLevel_ != level)
-    {
-        msaaLevel_ = Clamp(level, 1, 16);
-        CreateEyeTextures();
-    }
-}
-
-void VRInterface::SetRenderScale(float value)
-{
-    if (value != renderTargetScale_)
-    {
-        renderTargetScale_ = Clamp(renderTargetScale_, 0.25f, 2.0f);
-        if (trueEyeTexWidth_ > 0)
-        {
-            eyeTexWidth_ = trueEyeTexWidth_ * renderTargetScale_;
-            eyeTexHeight_ = trueEyeTexHeight_ * renderTargetScale_;
-        }
-        CreateEyeTextures();
-    }
-}
-
-void VRInterface::CreateEyeTextures()
-{
-    sharedTexture_.Reset();
-    leftTexture_.Reset();
-    rightTexture_.Reset();
-
-    sharedDS_.Reset();
-    leftDS_.Reset();
-    rightDS_.Reset();
-
-    if (useSingleTexture_)
-    {
-        sharedTexture_ = new Texture2D(GetContext());
-        sharedTexture_->SetNumLevels(1);
-        sharedTexture_->SetSize(eyeTexWidth_ * 2, eyeTexHeight_, TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFlag::BindRenderTarget, msaaLevel_);
-        sharedTexture_->SetFilterMode(FILTER_BILINEAR);
-
-        sharedDS_ = new Texture2D(GetContext());
-        sharedDS_->SetNumLevels(1);
-        sharedDS_->SetSize(eyeTexWidth_ * 2, eyeTexHeight_, TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT, TextureFlag::BindDepthStencil, msaaLevel_);
-        sharedTexture_->GetRenderSurface()->SetLinkedDepthStencil(sharedDS_->GetRenderSurface());
-    }
-    else // TODO: are we going to make this path functional again? Maybe there is merit for ultra-wide FOV?
-    {
-        leftTexture_ = new Texture2D(GetContext());
-        leftTexture_->SetNumLevels(1);
-        leftTexture_->SetSize(eyeTexWidth_, eyeTexHeight_, TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFlag::BindRenderTarget, msaaLevel_);
-        leftTexture_->SetFilterMode(FILTER_BILINEAR);
-
-        rightTexture_ = new Texture2D(GetContext());
-        rightTexture_->SetNumLevels(1);
-        rightTexture_->SetSize(eyeTexWidth_, eyeTexHeight_, TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFlag::BindRenderTarget, msaaLevel_);
-        rightTexture_->SetFilterMode(FILTER_BILINEAR);
-
-        leftDS_ = new Texture2D(GetContext());
-        leftDS_->SetNumLevels(1);
-        leftDS_->SetSize(eyeTexWidth_, eyeTexHeight_, TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT, TextureFlag::BindDepthStencil, msaaLevel_);
-
-        rightDS_ = new Texture2D(GetContext());
-        rightDS_->SetNumLevels(1);
-        rightDS_->SetSize(eyeTexWidth_, eyeTexHeight_, TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT, TextureFlag::BindDepthStencil, msaaLevel_);
-
-        leftTexture_->GetRenderSurface()->SetLinkedDepthStencil(leftDS_->GetRenderSurface());
-        rightTexture_->GetRenderSurface()->SetLinkedDepthStencil(rightDS_->GetRenderSurface());
-    }
-}
-
 void VRInterface::PrepareRig(Node* headRoot)
 {
     auto renderDevice = headRoot->GetContext()->GetSubsystem<RenderDevice>();
@@ -194,10 +124,6 @@ void VRInterface::UpdateRig(Scene* scene, Node* head, Node* leftEye, Node* right
         head = headRoot->CreateChild("Head");
     }
 
-    // no textures? create them now?
-    if (sharedTexture_ == nullptr)
-        CreateEyeTextures();
-
     head->SetVar(VRLastTransform, head->GetTransformMatrix());
     head->SetVar(VRLastTransformWS, head->GetWorldTransform());
     head->SetTransformMatrix(GetHeadTransform());
@@ -248,9 +174,9 @@ void VRInterface::UpdateRig(Scene* scene, Node* head, Node* leftEye, Node* right
     if (viewport_ == nullptr)
         URHO3D_LOGWARNING("VRInterface requires a Viewport to be specified, not specifying one will cause a default to be constructed");
 
-    if (sharedTexture_ && forSinglePass)
+    if (currentBackBufferColor_ && forSinglePass)
     {
-        auto surface = sharedTexture_->GetRenderSurface();
+        auto surface = currentBackBufferColor_->GetRenderSurface();
         if (surface == nullptr) // no surface then we're not actually read
             return;
 
@@ -262,7 +188,7 @@ void VRInterface::UpdateRig(Scene* scene, Node* head, Node* leftEye, Node* right
 
             viewport_->SetEye(leftCam, 0);
             viewport_->SetEye(rightCam, 1);
-            viewport_->SetRect({ 0, 0, sharedTexture_->GetWidth(), sharedTexture_->GetHeight() });
+            viewport_->SetRect({ 0, 0, currentBackBufferColor_->GetWidth(), currentBackBufferColor_->GetHeight() });
             surface->SetViewport(0, viewport_);
         }
         else
@@ -279,8 +205,8 @@ void VRInterface::UpdateRig(Scene* scene, Node* head, Node* leftEye, Node* right
     else
     {
         // TODO: why is this still here?
-        auto leftSurface = useSingleTexture_ ? sharedTexture_->GetRenderSurface() : leftTexture_->GetRenderSurface();
-        auto rightSurface = useSingleTexture_ ? sharedTexture_->GetRenderSurface() : rightTexture_->GetRenderSurface();
+        auto leftSurface = currentBackBufferColor_->GetRenderSurface();
+        auto rightSurface = currentBackBufferColor_->GetRenderSurface();
 
         if (leftSurface->GetViewport(0) == nullptr)
         {
