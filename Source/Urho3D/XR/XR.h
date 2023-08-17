@@ -1,24 +1,6 @@
-//
-// Copyright (c) 2022 the RBFX project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2022-2023 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
@@ -38,15 +20,13 @@ class AnimatedModel;
 class Texture2D;
 class XMLFile;
 
-template <class T>
-class XrObjectPtr
+template <class T> class XrObjectPtr
 {
 public:
     XrObjectPtr() = default;
     XrObjectPtr(std::nullptr_t) {}
 
-    template <class U>
-    XrObjectPtr(T object, U deleter)
+    template <class U> XrObjectPtr(T object, U deleter)
     {
         const auto wrappedDeleter = [deleter](T* ptr)
         {
@@ -123,6 +103,7 @@ To-Do:
 class URHO3D_API OpenXR : public VRInterface
 {
     URHO3D_OBJECT(OpenXR, VRInterface);
+
 public:
     OpenXR(Context*);
     virtual ~OpenXR();
@@ -137,7 +118,7 @@ public:
     virtual void Shutdown() override;
 
     // XR is currently single-texture only.
-    virtual void SetSingleTexture(bool state) override { }
+    virtual void SetSingleTexture(bool state) override {}
 
     /// XR is successfully initialized. Session may not be live though.
     virtual bool IsConnected() const override { return instance_ && session_; }
@@ -181,7 +162,8 @@ protected:
     void UpdateBindings(float time);
     void UpdateBindingBound();
     void GetHiddenAreaMask();
-    /// Attempts to load controller models, note that this can only be done if there are grip actions bound for some reason.
+    /// Attempts to load controller models, note that this can only be done if there are grip actions bound for some
+    /// reason.
     void LoadControllerModels();
 
     StringVector supportedExtensions_;
@@ -197,30 +179,32 @@ protected:
     } features_;
 
     SharedPtr<XMLFile> manifest_;
-    XrInstance instance_ = { };
-    XrSystemId system_ = { };
+    XrInstance instance_ = {};
+    XrSystemId system_ = {};
     XrSessionPtr session_;
     OpenXRSwapChainPtr swapChain_;
     OpenXRSwapChainPtr depthChain_;
-    XrView views_[2] = { { XR_TYPE_VIEW }, { XR_TYPE_VIEW } };
-    XrDebugUtilsMessengerEXT messenger_ = { };
+    XrView views_[2] = {{XR_TYPE_VIEW}, {XR_TYPE_VIEW}};
+    XrDebugUtilsMessengerEXT messenger_ = {};
 
     // Pointless head-space.
-    XrSpace headSpace_ = { };
-    XrSpace viewSpace_ = { };
+    XrSpace headSpace_ = {};
+    XrSpace viewSpace_ = {};
     /// Location tracking of the head.
-    XrSpaceLocation headLoc_ = { XR_TYPE_SPACE_LOCATION };
+    XrSpaceLocation headLoc_ = {XR_TYPE_SPACE_LOCATION};
     /// Velocity tracking information of the head.
-    XrSpaceVelocity headVel_ = { XR_TYPE_SPACE_VELOCITY };
+    XrSpaceVelocity headVel_ = {XR_TYPE_SPACE_VELOCITY};
 
-    /// Blending mode the compositor will be told to use. Assumed that when not opaque the correct mode will be be received from querying.
-    XrEnvironmentBlendMode blendMode_ = { XR_ENVIRONMENT_BLEND_MODE_OPAQUE  };
+    /// Blending mode the compositor will be told to use. Assumed that when not opaque the correct mode will be be
+    /// received from querying.
+    XrEnvironmentBlendMode blendMode_ = {XR_ENVIRONMENT_BLEND_MODE_OPAQUE};
     /// Predicted time for display of the next frame.
-    XrTime predictedTime_ = { };
+    XrTime predictedTime_ = {};
     /// Whether the session is currently active or not.
     bool sessionLive_ = false;
 
-    struct ControllerModel {
+    struct ControllerModel
+    {
         XrControllerModelKeyMSFT modelKey_ = 0;
         SharedPtr<Node> model_;
         XrControllerModelNodePropertiesMSFT properties_[256];
@@ -233,8 +217,13 @@ protected:
     class XRActionBinding : public XRBinding
     {
         URHO3D_OBJECT(XRActionBinding, XRBinding);
+
     public:
-        XRActionBinding(Context* ctx, OpenXR* xr) : XRBinding(ctx), xr_(xr) { }
+        XRActionBinding(Context* ctx, OpenXR* xr)
+            : XRBinding(ctx)
+            , xr_(xr)
+        {
+        }
         virtual ~XRActionBinding();
 
         /// If haptic this will trigger a vibration.
@@ -243,18 +232,18 @@ protected:
         /// Reference to owning OpenXR instance.
         OpenXR* xr_;
         /// Action itself, possibly shared in the case of sub-path handed actions.
-        XrAction action_ = { };
+        XrAction action_ = {};
         /// Owning actionset that contains this action.
-        XrActionSet set_ = { };
+        XrActionSet set_ = {};
         /// Indicates handed-ness for the OXR query.
         XrPath subPath_ = XR_NULL_PATH;
         /// If we're a space action we'll have an action space.
-        XrSpace actionSpace_ = { };
+        XrSpace actionSpace_ = {};
 
         /// Position and orientation from space location.
-        XrSpaceLocation location_ = { XR_TYPE_SPACE_LOCATION };
+        XrSpaceLocation location_ = {XR_TYPE_SPACE_LOCATION};
         /// Linear and Angular velocity from space location.
-        XrSpaceVelocity velocity_ = { XR_TYPE_SPACE_VELOCITY };
+        XrSpaceVelocity velocity_ = {XR_TYPE_SPACE_VELOCITY};
         /// only 1 of the subpath handlers will do deletion, this indicates who will do it.
         bool responsibleForDelete_ = true;
     };
@@ -263,10 +252,13 @@ protected:
     {
         URHO3D_OBJECT(XRActionSet, XRActionGroup)
     public:
-        XRActionSet(Context* ctx) : XRActionGroup(ctx) { }
+        XRActionSet(Context* ctx)
+            : XRActionGroup(ctx)
+        {
+        }
         virtual ~XRActionSet();
 
-        XrActionSet actionSet_ = { };
+        XrActionSet actionSet_ = {};
     };
 
     /// Cached grip pose bindings to avoid constant queries.
@@ -277,4 +269,4 @@ protected:
     SharedPtr<XRActionBinding> handHaptics_[2];
 };
 
-}
+} // namespace Urho3D
