@@ -95,6 +95,9 @@
 #ifdef URHO3D_ACTIONS
 #include "../Actions/ActionManager.h"
 #endif
+#ifdef URHO3D_XR
+    #include "Urho3D/XR/XR.h"
+#endif
 
 #ifdef URHO3D_PLATFORM_WEB
 #include <emscripten/emscripten.h>
@@ -332,8 +335,19 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         auto* graphics = GetSubsystem<Graphics>();
         auto* renderer = GetSubsystem<Renderer>();
 
+        const RenderBackend backend = SelectRenderBackend(GetParameter(EP_RENDER_BACKEND).GetOptional<RenderBackend>());
+
+#ifdef URHO3D_XR
+        auto* xr = context_->RegisterSubsystem<OpenXR>();
+        if (!xr->InitializeSystem(backend))
+        {
+            URHO3D_LOGERROR("Failed to initialize OpenXR subsystem");
+            context_->RemoveSubsystem<OpenXR>();
+        }
+#endif
+
         GraphicsSettings graphicsSettings;
-        graphicsSettings.backend_ = SelectRenderBackend(GetParameter(EP_RENDER_BACKEND).GetOptional<RenderBackend>());
+        graphicsSettings.backend_ = backend;
         graphicsSettings.externalWindowHandle_ = GetParameter(EP_EXTERNAL_WINDOW).GetVoidPtr();
         graphicsSettings.gpuDebug_ = GetParameter(EP_GPU_DEBUG).GetBool();
         graphicsSettings.adapterId_ = GetParameter(EP_RENDER_ADAPTER_ID).GetOptional<unsigned>();

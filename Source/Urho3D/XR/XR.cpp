@@ -78,10 +78,44 @@ namespace Urho3D
 namespace
 {
 
-const char* GetBackendExtensionName(Context* context)
+StringVector EnumerateExtensionsXR()
 {
-    auto renderDevice = context->GetSubsystem<RenderDevice>();
-    switch (renderDevice->GetBackend())
+    uint32_t count = 0;
+    xrEnumerateInstanceExtensionProperties(nullptr, 0, &count, nullptr);
+
+    ea::vector<XrExtensionProperties> extensions;
+    extensions.resize(count, XrExtensionProperties{XR_TYPE_EXTENSION_PROPERTIES});
+    xrEnumerateInstanceExtensionProperties(nullptr, extensions.size(), &count, extensions.data());
+
+    StringVector result;
+    for (const XrExtensionProperties& extension : extensions)
+        result.push_back(extension.extensionName);
+    return result;
+}
+
+bool IsExtensionSupported(const StringVector& extensions, const char* name)
+{
+    for (const ea::string& ext : extensions)
+    {
+        if (ext.comparei(name) == 0)
+            return true;
+    }
+    return false;
+}
+
+bool ActivateOptionalExtension(StringVector& result, const StringVector& extensions, const char* name)
+{
+    if (IsExtensionSupported(extensions, name))
+    {
+        result.push_back(name);
+        return true;
+    }
+    return false;
+}
+
+const char* GetBackendExtensionName(RenderBackend backend)
+{
+    switch (backend)
     {
     case RenderBackend::D3D11: return XR_KHR_D3D11_ENABLE_EXTENSION_NAME;
     case RenderBackend::D3D12: return XR_KHR_D3D12_ENABLE_EXTENSION_NAME;
@@ -93,6 +127,15 @@ const char* GetBackendExtensionName(Context* context)
 #endif
     default: return "";
     }
+}
+
+ea::vector<const char*> ToCStringVector(const StringVector& strings)
+{
+    ea::vector<const char*> result;
+    result.reserve(strings.size());
+    for (const ea::string& string : strings)
+        result.push_back(string.c_str());
+    return result;
 }
 
 ea::vector<int64_t> GetSwapChainFormats(XrSession session)
@@ -150,7 +193,7 @@ ea::pair<TextureFormat, int64_t> SelectDepthFormat(RenderBackend backend, const 
     return {TextureFormat::TEX_FORMAT_UNKNOWN, 0};
 }
 
-XrSessionPtr CreateSession(RenderDevice* renderDevice, XrInstance instance, XrSystemId system)
+XrSessionPtr CreateSessionXR(RenderDevice* renderDevice, XrInstance instance, XrSystemId system)
 {
     XrSessionCreateInfo sessionCreateInfo = { XR_TYPE_SESSION_CREATE_INFO };
     sessionCreateInfo.systemId = system;
@@ -367,7 +410,7 @@ public:
 };
 #endif
 
-#if D3D12_SUPPORTED
+#if VULKAN_SUPPORTED
 class OpenXRSwapChainVulkan : public OpenXRSwapChainBase<XrSwapchainImageVulkanKHR, XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR>
 {
 public:
@@ -428,7 +471,7 @@ public:
 };
 #endif
 
-OpenXRSwapChainPtr CreateSwapChain(Context* context, XrSession session, TextureFormat format, int64_t internalFormat,
+OpenXRSwapChainPtr CreateSwapChainXR(Context* context, XrSession session, TextureFormat format, int64_t internalFormat,
     const IntVector2& eyeSize, int msaaLevel)
 {
     auto renderDevice = context->GetSubsystem<RenderDevice>();
@@ -570,11 +613,8 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         return { outLocalPos, projection };
     }
 
-    OpenXR::OpenXR(Context* ctx) :
-        BaseClassName(ctx),
-        instance_(0),
-        swapChain_{},
-        sessionLive_(false)
+    OpenXR::OpenXR(Context* ctx)
+        : BaseClassName(ctx)
     {
         useSingleTexture_ = true;
 
@@ -587,20 +627,39 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         Shutdown();
     }
 
-    void OpenXR::QueryExtensions()
+    bool OpenXR::InitializeSystem(RenderBackend backend)
     {
-        extensions_.clear();
+        supportedExtensions_ = EnumerateExtensionsXR();
+        InitializeActiveExtensions(backend);
 
-        unsigned extCt = 0;
-        xrEnumerateInstanceExtensionProperties(nullptr, 0, &extCt, nullptr);
-        ea::vector<XrExtensionProperties> extensions;
-        extensions.resize(extCt);
-        for (auto& x : extensions)
-            x = { XR_TYPE_EXTENSION_PROPERTIES };
-        xrEnumerateInstanceExtensionProperties(nullptr, extensions.size(), &extCt, extensions.data());
+        return true;
+    }
 
-        for (auto e : extensions)
-            extensions_.push_back(ea::string(e.extensionName));
+    void OpenXR::InitializeActiveExtensions(RenderBackend backend)
+    {
+        activeExtensions_ = {GetBackendExtensionName(backend)};
+
+        features_.debugOutput_ = ActivateOptionalExtension( //
+            activeExtensions_, supportedExtensions_, XR_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        features_.visibilityMask_ = ActivateOptionalExtension( //
+            activeExtensions_, supportedExtensions_, XR_KHR_VISIBILITY_MASK_EXTENSION_NAME);
+        features_.controllerModel_ = ActivateOptionalExtension(
+            activeExtensions_, supportedExtensions_, XR_MSFT_CONTROLLER_MODEL_EXTENSION_NAME);
+        features_.depthLayer_ = ActivateOptionalExtension(
+            activeExtensions_, supportedExtensions_, XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME);
+
+        // Controllers
+        ActivateOptionalExtension(
+            activeExtensions_, supportedExtensions_, XR_HTC_VIVE_COSMOS_CONTROLLER_INTERACTION_EXTENSION_NAME);
+        ActivateOptionalExtension(
+            activeExtensions_, supportedExtensions_, XR_HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_EXTENSION_NAME);
+        ActivateOptionalExtension( //
+            activeExtensions_, supportedExtensions_, XR_EXT_HP_MIXED_REALITY_CONTROLLER_EXTENSION_NAME);
+        ActivateOptionalExtension( //
+            activeExtensions_, supportedExtensions_, XR_EXT_SAMSUNG_ODYSSEY_CONTROLLER_EXTENSION_NAME);
+
+        for (const ea::string& extension : userExtensions_)
+            ActivateOptionalExtension(activeExtensions_, supportedExtensions_, extension.c_str());
     }
 
     bool OpenXR::Initialize(const ea::string& manifestPath)
@@ -622,56 +681,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         if (!manifest_->LoadFile(cache->GetResourceFileName(manifestPath)))
             manifest_.Reset();
 
-        QueryExtensions();
-
-        static auto SupportsExt = [](const StringVector& extensions, const char* name) {
-            for (auto ext : extensions)
-            {
-                if (ext.comparei(name) == 0)
-                    return true;
-            }
-            return false;
-        };
-
-        ea::vector<const char*> activeExt;
-        activeExt.push_back(GetBackendExtensionName(GetContext()));
-
-        bool supportsDebug = false;
-        if (SupportsExt(extensions_, XR_EXT_DEBUG_UTILS_EXTENSION_NAME))
-        {
-            activeExt.push_back(XR_EXT_DEBUG_UTILS_EXTENSION_NAME);
-            supportsDebug = true;
-        }
-        if (SupportsExt(extensions_, XR_KHR_VISIBILITY_MASK_EXTENSION_NAME))
-        {
-            activeExt.push_back(XR_KHR_VISIBILITY_MASK_EXTENSION_NAME);
-            supportsMask_ = true;
-        }
-        if (SupportsExt(extensions_, XR_MSFT_CONTROLLER_MODEL_EXTENSION_NAME))
-        {
-            activeExt.push_back(XR_MSFT_CONTROLLER_MODEL_EXTENSION_NAME);
-            supportsControllerModel_ = true;
-        }
-        if (SupportsExt(extensions_, XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME))
-        {
-            activeExt.push_back(XR_KHR_COMPOSITION_LAYER_DEPTH_EXTENSION_NAME);
-            /* at the moment we don't function correctly
-            * presumably has to do with RenderBufferManager */
-            supportsDepthExt_ = true;
-        }
-
-        // Controllers
-        if (SupportsExt(extensions_, XR_HTC_VIVE_COSMOS_CONTROLLER_INTERACTION_EXTENSION_NAME))
-            activeExt.push_back(XR_HTC_VIVE_COSMOS_CONTROLLER_INTERACTION_EXTENSION_NAME);
-        if (SupportsExt(extensions_, XR_HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_EXTENSION_NAME))
-            activeExt.push_back(XR_HTC_VIVE_FOCUS3_CONTROLLER_INTERACTION_EXTENSION_NAME);
-        if (SupportsExt(extensions_, XR_EXT_HP_MIXED_REALITY_CONTROLLER_EXTENSION_NAME))
-            activeExt.push_back(XR_EXT_HP_MIXED_REALITY_CONTROLLER_EXTENSION_NAME);
-        if (SupportsExt(extensions_, XR_EXT_SAMSUNG_ODYSSEY_CONTROLLER_EXTENSION_NAME))
-            activeExt.push_back(XR_EXT_SAMSUNG_ODYSSEY_CONTROLLER_EXTENSION_NAME);
-
-        for (auto e : extraExtensions_)
-            activeExt.push_back(e.c_str());
+        const auto activeExtensions = ToCStringVector(activeExtensions_);
 
         XrInstanceCreateInfo info = { XR_TYPE_INSTANCE_CREATE_INFO };
         strcpy_s(info.applicationInfo.engineName, 128, "RBFX");
@@ -679,8 +689,8 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         info.applicationInfo.engineVersion = (1 << 24) + (0 << 16) + 0; // TODO: get an actual engine version
         info.applicationInfo.applicationVersion = 0; // TODO: application version?
         info.applicationInfo.apiVersion = XR_CURRENT_API_VERSION;
-        info.enabledExtensionCount = activeExt.size();
-        info.enabledExtensionNames = activeExt.data();
+        info.enabledExtensionCount = activeExtensions.size();
+        info.enabledExtensionNames = activeExtensions.data();
 
         instance_ = 0x0;
         auto errCode = xrCreateInstance(&info, &instance_);
@@ -697,7 +707,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         if (xrGetInstanceProperties(instance_, &instProps) == XR_SUCCESS)
             URHO3D_LOGINFO("OpenXR Runtime is: {} version {}", instProps.runtimeName, instProps.runtimeVersion);
 
-        if (supportsDebug)
+        if (features_.debugOutput_)
         {
             XrDebugUtilsMessengerCreateInfoEXT debugUtils = { XR_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
             debugUtils.messageTypes =
@@ -817,7 +827,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         actionSets_.clear();
         activeActionSet_.Reset();
         sessionLive_ = false;
-        extensions_.clear();
+        supportedExtensions_.clear();
 
         swapChain_ = nullptr;
         depthChain_ = nullptr;
@@ -851,7 +861,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
     {
         auto renderDevice = GetSubsystem<RenderDevice>();
 
-        session_ = CreateSession(renderDevice, instance_, system_);
+        session_ = CreateSessionXR(renderDevice, instance_, system_);
         if (!session_)
             return false;
 
@@ -897,14 +907,14 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
         const auto [colorFormat, colorFormatInternal] = SelectColorFormat(renderDevice->GetBackend(), internalFormats);
         const auto [depthFormat, depthFormatInternal] = SelectDepthFormat(renderDevice->GetBackend(), internalFormats);
 
-        swapChain_ = CreateSwapChain(GetContext(), session_.get(), colorFormat, colorFormatInternal,
+        swapChain_ = CreateSwapChainXR(GetContext(), session_.get(), colorFormat, colorFormatInternal,
             IntVector2(eyeTexWidth_, eyeTexHeight_), msaaLevel_);
         if (!swapChain_)
             return false;
 
-        if (supportsDepthExt_ && depthFormatInternal)
+        if (features_.depthLayer_ && depthFormatInternal)
         {
-            depthChain_ = CreateSwapChain(GetContext(), session_.get(), depthFormat, depthFormatInternal,
+            depthChain_ = CreateSwapChainXR(GetContext(), session_.get(), depthFormat, depthFormatInternal,
                 IntVector2(eyeTexWidth_, eyeTexHeight_), msaaLevel_);
         }
 
@@ -1503,7 +1513,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
     void OpenXR::GetHiddenAreaMask()
     {
         // extension wasn't supported
-        if (!supportsMask_)
+        if (!features_.visibilityMask_)
             return;
 
         for (int eye = 0; eye < 2; ++eye)
@@ -1672,7 +1682,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
     void OpenXR::LoadControllerModels()
     {
-        if (!supportsControllerModel_ || !IsLive())
+        if (!features_.controllerModel_ || !IsLive())
             return;
 
         XrPath handPaths[2];
@@ -1749,7 +1759,7 @@ const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
     void OpenXR::UpdateControllerModel(VRHand hand, SharedPtr<Node> model)
     {
-        if (!supportsControllerModel_)
+        if (!features_.controllerModel_)
             return;
 
         if (model == nullptr)

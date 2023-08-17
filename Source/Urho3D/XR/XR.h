@@ -65,9 +65,11 @@ private:
     ea::shared_ptr<T> ptr_;
 };
 
+using XrInstancePtr = XrObjectPtr<XrInstance>;
 using XrSessionPtr = XrObjectPtr<XrSession>;
 using XrSwapchainPtr = XrObjectPtr<XrSwapchain>;
 
+/// Interface that wraps OpenXR swap chain and integrates it with the engine rendering API.
 class OpenXRSwapChain
 {
 public:
@@ -125,10 +127,11 @@ public:
     OpenXR(Context*);
     virtual ~OpenXR();
 
+    /// Initialize the OpenXR subsystem. Renderer backend is not yet initialized at this point.
+    bool InitializeSystem(RenderBackend backend);
+
     virtual VRRuntime GetRuntime() const override { return VRRuntime::OPENXR; }
     virtual const char* GetRuntimeName() const override { return "OPEN_XR"; }
-
-    virtual void QueryExtensions();
 
     virtual bool Initialize(const ea::string& manifestPath) override;
     virtual void Shutdown() override;
@@ -167,10 +170,12 @@ public:
     SharedPtr<Node> GetControllerModel(VRHand hand);
     void UpdateControllerModel(VRHand hand, SharedPtr<Node>);
 
-    const StringVector GetExtensions() const { return extensions_; }
-    void SetExtraExtensions(const StringVector& ext) { extraExtensions_ = ext; }
+    const StringVector GetExtensions() const { return supportedExtensions_; }
+    void SetUserExtensions(const StringVector& ext) { userExtensions_ = ext; }
 
 protected:
+    void InitializeActiveExtensions(RenderBackend backend);
+
     bool OpenSession();
     bool CreateSwapchain();
     void UpdateBindings(float time);
@@ -178,6 +183,18 @@ protected:
     void GetHiddenAreaMask();
     /// Attempts to load controller models, note that this can only be done if there are grip actions bound for some reason.
     void LoadControllerModels();
+
+    StringVector supportedExtensions_;
+    StringVector userExtensions_;
+    StringVector activeExtensions_;
+
+    struct ExtensionFeatures
+    {
+        bool debugOutput_{};
+        bool visibilityMask_{};
+        bool controllerModel_{};
+        bool depthLayer_{};
+    } features_;
 
     SharedPtr<XMLFile> manifest_;
     XrInstance instance_ = { };
@@ -202,12 +219,6 @@ protected:
     XrTime predictedTime_ = { };
     /// Whether the session is currently active or not.
     bool sessionLive_ = false;
-    /// Indicates whether visibility mask is supported.
-    bool supportsMask_ = false;
-    /// Indicates that controller model is supported.
-    bool supportsControllerModel_ = false;
-    /// Indicates that we support the depth extension so we can provide that to help out time-warp.
-    bool supportsDepthExt_ = false;
 
     struct ControllerModel {
         XrControllerModelKeyMSFT modelKey_ = 0;
@@ -264,11 +275,6 @@ protected:
     SharedPtr<XRActionBinding> handAims_[2];
     /// Cached haptic outputs to avoid constant queries.
     SharedPtr<XRActionBinding> handHaptics_[2];
-
-    /// List of extensions reported.
-    StringVector extensions_;
-    /// List of additional extensions you want.
-    StringVector extraExtensions_;
 };
 
 }
