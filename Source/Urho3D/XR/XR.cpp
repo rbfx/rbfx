@@ -149,6 +149,44 @@ XrInstancePtr CreateInstanceXR(
     return XrInstancePtr(instance, deleter);
 }
 
+XrBool32 XRAPI_PTR DebugMessageLoggerXR(XrDebugUtilsMessageSeverityFlagsEXT severity,
+    XrDebugUtilsMessageTypeFlagsEXT types, const XrDebugUtilsMessengerCallbackDataEXT* msg, void* user_data)
+{
+    if (severity & XR_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+        URHO3D_LOGERROR("XR Error: {}, {}", msg->functionName, msg->message);
+    else if (severity & XR_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+        URHO3D_LOGWARNING("XR Warning: {}, {}", msg->functionName, msg->message);
+    else if (severity & XR_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+        URHO3D_LOGINFO("XR Info: {}, {}", msg->functionName, msg->message);
+    else if (severity & XR_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+        URHO3D_LOGDEBUG("XR Debug: {}, {}", msg->functionName, msg->message);
+
+    return false;
+};
+
+XrDebugUtilsMessengerEXTPtr CreateDebugMessengerXR(XrInstance instance)
+{
+    XrDebugUtilsMessengerCreateInfoEXT debugUtils = {XR_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
+
+    debugUtils.userCallback = DebugMessageLoggerXR;
+    debugUtils.messageTypes = XR_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+        | XR_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT //
+        | XR_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT //
+        | XR_DEBUG_UTILS_MESSAGE_TYPE_CONFORMANCE_BIT_EXT;
+    debugUtils.messageSeverities = XR_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
+        | XR_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT //
+        | XR_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT //
+        | XR_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+
+    XrDebugUtilsMessengerEXT messenger;
+    xrCreateDebugUtilsMessengerEXT(instance, &debugUtils, &messenger);
+    if (!messenger)
+        return nullptr;
+
+    const auto deleter = [](XrDebugUtilsMessengerEXT messenger) { xrDestroyDebugUtilsMessengerEXT(messenger); };
+    return XrDebugUtilsMessengerEXTPtr(messenger, deleter);
+}
+
 ea::vector<int64_t> GetSwapChainFormats(XrSession session)
 {
     unsigned count = 0;
@@ -655,6 +693,9 @@ bool OpenXR::InitializeSystem(RenderBackend backend)
     if (xrGetInstanceProperties(instance_.get(), &instProps) == XR_SUCCESS)
         URHO3D_LOGINFO("OpenXR Runtime is: {} version 0x{:x}", instProps.runtimeName, instProps.runtimeVersion);
 
+    if (features_.debugOutput_)
+        debugMessenger_ = CreateDebugMessengerXR(instance_.get());
+
     return true;
 }
 
@@ -697,41 +738,6 @@ bool OpenXR::Initialize(const ea::string& manifestPath)
     auto cache = GetSubsystem<ResourceCache>();
     if (!manifest_->LoadFile(cache->GetResourceFileName(manifestPath)))
         manifest_.Reset();
-
-    if (features_.debugOutput_)
-    {
-        XrDebugUtilsMessengerCreateInfoEXT debugUtils = { XR_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
-        debugUtils.messageTypes =
-            XR_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-            XR_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-            XR_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT |
-            XR_DEBUG_UTILS_MESSAGE_TYPE_CONFORMANCE_BIT_EXT;
-        debugUtils.messageSeverities =
-            XR_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-            XR_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-            XR_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-            XR_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-
-        debugUtils.userData = GetSubsystem<Log>();
-        debugUtils.userCallback = [](XrDebugUtilsMessageSeverityFlagsEXT severity, XrDebugUtilsMessageTypeFlagsEXT types, const XrDebugUtilsMessengerCallbackDataEXT *msg, void* user_data) {
-            auto log = ((Log*)user_data);
-
-            if (severity & XR_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-                log->GetLogger().Write(LOG_ERROR, Urho3D::ToString("XR Error: %s, %s", msg->functionName, msg->message));
-            else if (severity & XR_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-                log->GetLogger().Write(LOG_WARNING, Urho3D::ToString("XR Warning: %s, %s", msg->functionName, msg->message));
-            else if (severity & XR_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
-                log->GetLogger().Write(LOG_INFO, Urho3D::ToString("XR Info: %s, %s", msg->functionName, msg->message));
-            else if (severity & XR_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
-                log->GetLogger().Write(LOG_DEBUG, Urho3D::ToString("XR Verbose: %s, %s", msg->functionName, msg->message));
-
-            // std::cout as well so we can see it in IDE output without needing log when in stepping though code
-            std::cout << msg->functionName << " : " << msg->message << std::endl;
-            return (XrBool32)XR_FALSE;
-        };
-
-        xrCreateDebugUtilsMessengerEXT(instance_.get(), &debugUtils, &messenger_);
-    }
 
     XrSystemGetInfo sysInfo = { XR_TYPE_SYSTEM_GET_INFO };
     sysInfo.formFactor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
@@ -832,15 +838,12 @@ void OpenXR::Shutdown()
 
     session_ = nullptr;
 
-    if (messenger_)
-        xrDestroyDebugUtilsMessengerEXT(messenger_);
-
     system_ = { };
     blendMode_ = { };
     headSpace_ = { };
     viewSpace_ = { };
-    messenger_ = { };
 
+    debugMessenger_ = nullptr;
     instance_ = nullptr;
 }
 

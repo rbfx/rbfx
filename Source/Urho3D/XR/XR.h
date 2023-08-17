@@ -46,6 +46,7 @@ private:
 };
 
 using XrInstancePtr = XrObjectPtr<XrInstance>;
+using XrDebugUtilsMessengerEXTPtr = XrObjectPtr<XrDebugUtilsMessengerEXT>;
 using XrSessionPtr = XrObjectPtr<XrSession>;
 using XrSwapchainPtr = XrObjectPtr<XrSwapchain>;
 
@@ -179,13 +180,14 @@ protected:
     } features_;
 
     SharedPtr<XMLFile> manifest_;
+
     XrInstancePtr instance_;
+    XrDebugUtilsMessengerEXTPtr debugMessenger_;
     XrSystemId system_ = {};
     XrSessionPtr session_;
     OpenXRSwapChainPtr swapChain_;
     OpenXRSwapChainPtr depthChain_;
     XrView views_[2] = {{XR_TYPE_VIEW}, {XR_TYPE_VIEW}};
-    XrDebugUtilsMessengerEXT messenger_ = {};
 
     // Pointless head-space.
     XrSpace headSpace_ = {};
