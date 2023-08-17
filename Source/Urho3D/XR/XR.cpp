@@ -6,6 +6,7 @@
 
 #include "Urho3D/Core/CoreEvents.h"
 #include "Urho3D/Engine/Engine.h"
+#include "Urho3D/Engine/EngineDefs.h"
 #include "Urho3D/Graphics/AnimatedModel.h"
 #include "Urho3D/Graphics/Geometry.h"
 #include "Urho3D/Graphics/Graphics.h"
@@ -118,6 +119,34 @@ ea::vector<const char*> ToCStringVector(const StringVector& strings)
     for (const ea::string& string : strings)
         result.push_back(string.c_str());
     return result;
+}
+
+XrInstancePtr CreateInstanceXR(
+    const StringVector& extensions, const ea::string& engineName, const ea::string& applicationName)
+{
+    const auto extensionNames = ToCStringVector(extensions);
+
+    XrInstanceCreateInfo info = {XR_TYPE_INSTANCE_CREATE_INFO};
+    strncpy(info.applicationInfo.engineName, engineName.c_str(), XR_MAX_ENGINE_NAME_SIZE);
+    strncpy(info.applicationInfo.applicationName, applicationName.c_str(), XR_MAX_APPLICATION_NAME_SIZE);
+    info.applicationInfo.engineVersion = (1 << 24) + (0 << 16) + 0; // TODO: get an actual engine version
+    info.applicationInfo.applicationVersion = 0; // TODO: application version?
+    info.applicationInfo.apiVersion = XR_CURRENT_API_VERSION;
+    info.enabledExtensionCount = extensionNames.size();
+    info.enabledExtensionNames = extensionNames.data();
+
+    XrInstance instance;
+    if (!URHO3D_CHECK_OPENXR(xrCreateInstance(&info, &instance)))
+        return nullptr;
+
+    LoadOpenXRAPI(instance);
+
+    const auto deleter = [](XrInstance instance)
+    {
+        UnloadOpenXRAPI();
+        xrDestroyInstance(instance);
+    };
+    return XrInstancePtr(instance, deleter);
 }
 
 ea::vector<int64_t> GetSwapChainFormats(XrSession session)
@@ -608,8 +637,23 @@ OpenXR::~OpenXR()
 
 bool OpenXR::InitializeSystem(RenderBackend backend)
 {
+    if (instance_)
+    {
+        URHO3D_LOGERROR("OpenXR is already initialized");
+        return false;
+    }
+
     supportedExtensions_ = EnumerateExtensionsXR();
     InitializeActiveExtensions(backend);
+
+    auto engine = GetSubsystem<Engine>();
+    const ea::string& engineName = "Rebel Fork of Urho3D";
+    const ea::string& applicationName = engine->GetParameter(EP_APPLICATION_NAME).GetString();
+    instance_ = CreateInstanceXR(activeExtensions_, engineName, applicationName);
+
+    XrInstanceProperties instProps = {XR_TYPE_INSTANCE_PROPERTIES};
+    if (xrGetInstanceProperties(instance_.get(), &instProps) == XR_SUCCESS)
+        URHO3D_LOGINFO("OpenXR Runtime is: {} version 0x{:x}", instProps.runtimeName, instProps.runtimeVersion);
 
     return true;
 }
@@ -649,42 +693,10 @@ bool OpenXR::Initialize(const ea::string& manifestPath)
     // TODO(xr): This is a hack, revisit
     engine->SetMaxInactiveFps(engine->GetMaxFps());
 
-    if (instance_ != 0)
-    {
-        URHO3D_LOGERROR("OpenXR is already initialized");
-        return false;
-    }
-
     manifest_ = new XMLFile(GetContext());
     auto cache = GetSubsystem<ResourceCache>();
     if (!manifest_->LoadFile(cache->GetResourceFileName(manifestPath)))
         manifest_.Reset();
-
-    const auto activeExtensions = ToCStringVector(activeExtensions_);
-
-    XrInstanceCreateInfo info = { XR_TYPE_INSTANCE_CREATE_INFO };
-    strcpy_s(info.applicationInfo.engineName, 128, "RBFX");
-    strcpy_s(info.applicationInfo.applicationName, 128, "RBFX"); // TODO: get a proper name from some configuration
-    info.applicationInfo.engineVersion = (1 << 24) + (0 << 16) + 0; // TODO: get an actual engine version
-    info.applicationInfo.applicationVersion = 0; // TODO: application version?
-    info.applicationInfo.apiVersion = XR_CURRENT_API_VERSION;
-    info.enabledExtensionCount = activeExtensions.size();
-    info.enabledExtensionNames = activeExtensions.data();
-
-    instance_ = 0x0;
-    auto errCode = xrCreateInstance(&info, &instance_);
-    if (errCode != XrResult::XR_SUCCESS)
-    {
-        URHO3D_LOGERRORF("Unable to create OpenXR instance: %s", xrGetErrorStr(errCode));
-        return false;
-    }
-
-    LoadOpenXRAPI(instance_);
-
-    // Print the runtime name and version, that will be useful information to have
-    XrInstanceProperties instProps = { XR_TYPE_INSTANCE_PROPERTIES };
-    if (xrGetInstanceProperties(instance_, &instProps) == XR_SUCCESS)
-        URHO3D_LOGINFO("OpenXR Runtime is: {} version {}", instProps.runtimeName, instProps.runtimeVersion);
 
     if (features_.debugOutput_)
     {
@@ -718,7 +730,7 @@ bool OpenXR::Initialize(const ea::string& manifestPath)
             return (XrBool32)XR_FALSE;
         };
 
-        xrCreateDebugUtilsMessengerEXT(instance_, &debugUtils, &messenger_);
+        xrCreateDebugUtilsMessengerEXT(instance_.get(), &debugUtils, &messenger_);
     }
 
     XrSystemGetInfo sysInfo = { XR_TYPE_SYSTEM_GET_INFO };
@@ -729,21 +741,21 @@ URHO3D_LOGERRORF("Unable to produce OpenXR " TERM " ID: %s", xrGetErrorStr(errCo
 Shutdown(); \
 return false; }
 
-    errCode = xrGetSystem(instance_, &sysInfo, &system_);
+    auto errCode = xrGetSystem(instance_.get(), &sysInfo, &system_);
     XR_COMMON_ER("system ID");
 
     uint32_t blendCount = 0;
-    errCode = xrEnumerateEnvironmentBlendModes(instance_, system_, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 1, &blendCount, &blendMode_);
+    errCode = xrEnumerateEnvironmentBlendModes(instance_.get(), system_, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 1, &blendCount, &blendMode_);
     XR_COMMON_ER("blending mode");
 
     XrSystemProperties sysProps = { XR_TYPE_SYSTEM_PROPERTIES };
-    errCode = xrGetSystemProperties(instance_, system_, &sysProps);
+    errCode = xrGetSystemProperties(instance_.get(), system_, &sysProps);
     XR_COMMON_ER("system properties");
     systemName_ = sysProps.systemName;
 
     unsigned viewConfigCt = 0;
     XrViewConfigurationType viewConfigurations[4];
-    errCode = xrEnumerateViewConfigurations(instance_, system_, 4, &viewConfigCt, viewConfigurations);
+    errCode = xrEnumerateViewConfigurations(instance_.get(), system_, 4, &viewConfigCt, viewConfigurations);
     XR_COMMON_ER("view config");
     bool stereo = false;
     for (auto v : viewConfigurations)
@@ -761,7 +773,7 @@ return false; }
 
     unsigned viewCt = 0;
     XrViewConfigurationView views[2] = { { XR_TYPE_VIEW_CONFIGURATION_VIEW }, { XR_TYPE_VIEW_CONFIGURATION_VIEW } };
-    errCode = xrEnumerateViewConfigurationViews(instance_, system_, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 2, &viewCt, views);
+    errCode = xrEnumerateViewConfigurationViews(instance_.get(), system_, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 2, &viewCt, views);
     XR_COMMON_ER("view config views")
 
     trueEyeTexWidth_ = eyeTexWidth_ = (int)Min(views[VR_EYE_LEFT].recommendedImageRectWidth, views[VR_EYE_RIGHT].recommendedImageRectWidth);
@@ -823,24 +835,20 @@ void OpenXR::Shutdown()
     if (messenger_)
         xrDestroyDebugUtilsMessengerEXT(messenger_);
 
-    UnloadOpenXRAPI();
-
-    if (instance_)
-        xrDestroyInstance(instance_);
-
-    instance_ = { };
     system_ = { };
     blendMode_ = { };
     headSpace_ = { };
     viewSpace_ = { };
     messenger_ = { };
+
+    instance_ = nullptr;
 }
 
 bool OpenXR::OpenSession()
 {
     auto renderDevice = GetSubsystem<RenderDevice>();
 
-    session_ = CreateSessionXR(renderDevice, instance_, system_);
+    session_ = CreateSessionXR(renderDevice, instance_.get(), system_);
     if (!session_)
         return false;
 
@@ -921,7 +929,7 @@ void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
         return;
 
     XrEventDataBuffer eventBuffer = { XR_TYPE_EVENT_DATA_BUFFER };
-    while (xrPollEvent(instance_, &eventBuffer) == XR_SUCCESS)
+    while (xrPollEvent(instance_.get(), &eventBuffer) == XR_SUCCESS)
     {
         switch (eventBuffer.type)
         {
@@ -1168,8 +1176,8 @@ void OpenXR::BindActions(SharedPtr<XMLFile> doc)
     auto sets = root.GetChild("actionsets");
 
     XrPath handPaths[2];
-    xrStringToPath(instance_, "/user/hand/left", &handPaths[VR_HAND_LEFT]);
-    xrStringToPath(instance_, "/user/hand/right", &handPaths[VR_HAND_RIGHT]);
+    xrStringToPath(instance_.get(), "/user/hand/left", &handPaths[VR_HAND_LEFT]);
+    xrStringToPath(instance_.get(), "/user/hand/right", &handPaths[VR_HAND_RIGHT]);
 
     for (auto set = root.GetChild("actionset"); set.NotNull(); set = set.GetNext("actionset"))
     {
@@ -1180,7 +1188,7 @@ void OpenXR::BindActions(SharedPtr<XMLFile> doc)
         strncpy(setCreateInfo.localizedActionSetName, setLocalName.c_str(), XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE);
 
         XrActionSet createSet = { };
-        auto errCode = xrCreateActionSet(instance_, &setCreateInfo, &createSet);
+        auto errCode = xrCreateActionSet(instance_.get(), &setCreateInfo, &createSet);
         if (errCode != XR_SUCCESS)
         {
             URHO3D_LOGERRORF("Failed to create ActionSet: %s, error: %s", setName.c_str(), xrGetErrorStr(errCode));
@@ -1317,7 +1325,7 @@ void OpenXR::BindActions(SharedPtr<XMLFile> doc)
             ea::string device = child.GetAttribute("device");
 
             XrPath devicePath;
-            xrStringToPath(instance_, device.c_str(), &devicePath);
+            xrStringToPath(instance_.get(), device.c_str(), &devicePath);
 
             XrInteractionProfileSuggestedBinding suggest = { XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING };
             suggest.interactionProfile = devicePath;
@@ -1329,7 +1337,7 @@ void OpenXR::BindActions(SharedPtr<XMLFile> doc)
                 ea::string bindStr = bind.GetAttribute("path");
 
                 XrPath bindPath;
-                xrStringToPath(instance_, bindStr.c_str(), &bindPath);
+                xrStringToPath(instance_.get(), bindStr.c_str(), &bindPath);
 
                 XrActionSuggestedBinding b = { };
 
@@ -1350,7 +1358,7 @@ void OpenXR::BindActions(SharedPtr<XMLFile> doc)
                 suggest.countSuggestedBindings = bindings.size();
                 suggest.suggestedBindings = bindings.data();
 
-                auto res = xrSuggestInteractionProfileBindings(instance_, &suggest);
+                auto res = xrSuggestInteractionProfileBindings(instance_.get(), &suggest);
                 if (res != XR_SUCCESS)
                     URHO3D_LOGERRORF("Failed to suggest bindings: %s", xrGetErrorStr(res));
             }
@@ -1665,8 +1673,8 @@ void OpenXR::LoadControllerModels()
         return;
 
     XrPath handPaths[2];
-    xrStringToPath(instance_, "/user/hand/left", &handPaths[0]);
-    xrStringToPath(instance_, "/user/hand/right", &handPaths[1]);
+    xrStringToPath(instance_.get(), "/user/hand/left", &handPaths[0]);
+    xrStringToPath(instance_.get(), "/user/hand/right", &handPaths[1]);
 
     XrControllerModelKeyStateMSFT states[2] = { { XR_TYPE_CONTROLLER_MODEL_KEY_STATE_MSFT }, { XR_TYPE_CONTROLLER_MODEL_KEY_STATE_MSFT } };
     XrResult errCodes[2];

@@ -179,7 +179,7 @@ protected:
     } features_;
 
     SharedPtr<XMLFile> manifest_;
-    XrInstance instance_ = {};
+    XrInstancePtr instance_;
     XrSystemId system_ = {};
     XrSessionPtr session_;
     OpenXRSwapChainPtr swapChain_;
