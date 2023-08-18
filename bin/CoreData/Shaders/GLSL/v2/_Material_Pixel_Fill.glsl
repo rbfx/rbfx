@@ -2,6 +2,19 @@
 /// Don't include!
 /// Fill SurfaceData structure.
 
+#ifndef URHO3D_MATERIAL_ALBEDO
+    #define URHO3D_MATERIAL_ALBEDO 0
+#endif
+#ifndef URHO3D_MATERIAL_NORMAL
+    #define URHO3D_MATERIAL_NORMAL 0
+#endif
+#ifndef URHO3D_MATERIAL_PROPERTIES
+    #define URHO3D_MATERIAL_PROPERTIES 0
+#endif
+#ifndef URHO3D_MATERIAL_EMISSION
+    #define URHO3D_MATERIAL_EMISSION 0
+#endif
+
 /// =================================== Non-customizable properties ===================================
 
 /// @def Surface_SetFogFactor(surfaceData)
