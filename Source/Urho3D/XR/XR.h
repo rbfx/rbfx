@@ -50,6 +50,14 @@ using XrDebugUtilsMessengerEXTPtr = XrObjectPtr<XrDebugUtilsMessengerEXT>;
 using XrSessionPtr = XrObjectPtr<XrSession>;
 using XrSwapchainPtr = XrObjectPtr<XrSwapchain>;
 
+/// Tweaks that should be applied before graphics initialization.
+struct OpenXRTweaks
+{
+    StringVector vulkanInstanceExtensions_;
+    StringVector vulkanDeviceExtensions_;
+    unsigned adapterId_{};
+};
+
 /// Interface that wraps OpenXR swap chain and integrates it with the engine rendering API.
 class OpenXRSwapChain
 {
@@ -150,11 +158,13 @@ public:
     SharedPtr<Node> GetControllerModel(VRHand hand);
     void UpdateControllerModel(VRHand hand, SharedPtr<Node>);
 
+    const OpenXRTweaks& GetTweaks() const { return tweaks_; }
     const StringVector GetExtensions() const { return supportedExtensions_; }
     void SetUserExtensions(const StringVector& ext) { userExtensions_ = ext; }
 
 protected:
     void InitializeActiveExtensions(RenderBackend backend);
+    bool InitializeTweaks(RenderBackend backend);
 
     bool OpenSession();
     void UpdateBindings(float time);
@@ -180,7 +190,9 @@ protected:
 
     XrInstancePtr instance_;
     XrDebugUtilsMessengerEXTPtr debugMessenger_;
-    XrSystemId system_ = {};
+    XrSystemId system_{};
+    OpenXRTweaks tweaks_;
+
     XrSessionPtr session_;
     OpenXRSwapChainPtr swapChain_;
     OpenXRSwapChainPtr depthChain_;

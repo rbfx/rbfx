@@ -136,6 +136,9 @@ struct URHO3D_API WindowSettings
 /// Extra tweaks for Vulkan backend.
 struct URHO3D_API RenderDeviceSettingsVulkan
 {
+    StringVector instanceExtensions_;
+    StringVector deviceExtensions_;
+
     ea::optional<Diligent::VulkanDescriptorPoolSize> mainDescriptorPoolSize_;
     ea::optional<Diligent::VulkanDescriptorPoolSize> dynamicDescriptorPoolSize_;
 

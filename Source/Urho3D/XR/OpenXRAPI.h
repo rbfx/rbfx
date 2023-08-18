@@ -81,6 +81,9 @@ namespace Urho3D
 
 #if VULKAN_SUPPORTED
     #define URHO3D_ENUMERATE_OPENXR_API_VULKAN(X) \
+        X(xrGetVulkanInstanceExtensionsKHR) \
+        X(xrGetVulkanDeviceExtensionsKHR) \
+        X(xrGetVulkanGraphicsDeviceKHR) \
         X(xrGetVulkanGraphicsRequirementsKHR)
 #else
     #define URHO3D_ENUMERATE_OPENXR_API_VULKAN(X)

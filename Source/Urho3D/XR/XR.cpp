@@ -41,8 +41,9 @@
     #include <Diligent/Graphics/GraphicsEngineD3D12/interface/CommandQueueD3D12.h>
 #endif
 #if VULKAN_SUPPORTED
-    #include <Diligent/Graphics/GraphicsEngineVulkan/interface/RenderDeviceVk.h>
     #include <Diligent/Graphics/GraphicsEngineVulkan/interface/CommandQueueVk.h>
+    #include <Diligent/Graphics/GraphicsEngineVulkan/interface/EngineFactoryVk.h>
+    #include <Diligent/Graphics/GraphicsEngineVulkan/interface/RenderDeviceVk.h>
 #endif
 
 // need this for loading the GLBs
@@ -112,15 +113,6 @@ const char* GetBackendExtensionName(RenderBackend backend)
 #endif
     default: return "";
     }
-}
-
-ea::vector<const char*> ToCStringVector(const StringVector& strings)
-{
-    ea::vector<const char*> result;
-    result.reserve(strings.size());
-    for (const ea::string& string : strings)
-        result.push_back(string.c_str());
-    return result;
 }
 
 XrInstancePtr CreateInstanceXR(
@@ -254,6 +246,26 @@ ea::vector<XrViewConfigurationView> GetViewConfigurationViewsXR(XrInstance insta
     return {};
 }
 
+#if VULKAN_SUPPORTED
+StringVector GetVulkanInstanceExtensionsXR(XrInstance instance, XrSystemId system)
+{
+    uint32_t bufferSize = 0;
+    xrGetVulkanInstanceExtensionsKHR(instance, system, 0, &bufferSize, nullptr);
+    ea::string buffer(bufferSize, '\0');
+    xrGetVulkanInstanceExtensionsKHR(instance, system, bufferSize, &bufferSize, buffer.data());
+    return buffer.split(' ');
+}
+
+StringVector GetVulkanDeviceExtensionsXR(XrInstance instance, XrSystemId system)
+{
+    uint32_t bufferSize = 0;
+    xrGetVulkanDeviceExtensionsKHR(instance, system, 0, &bufferSize, nullptr);
+    ea::string buffer(bufferSize, '\0');
+    xrGetVulkanDeviceExtensionsKHR(instance, system, bufferSize, &bufferSize, buffer.data());
+    return buffer.split(' ');
+}
+#endif
+
 ea::vector<int64_t> GetSwapChainFormats(XrSession session)
 {
     unsigned count = 0;
@@ -360,7 +372,7 @@ XrSessionPtr CreateSessionXR(RenderDevice* renderDevice, XrInstance instance, Xr
         break;
     }
 #endif
-#if 0 && VULKAN_SUPPORTED // TODO(xr): Vulkan has requirements on the device and instance that we don't meet
+#if VULKAN_SUPPORTED
     case RenderBackend::Vulkan:
     {
         XrGraphicsRequirementsVulkanKHR requisite = {XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR};
@@ -424,6 +436,7 @@ public:
         XrSession session, TextureFormat format, int64_t internalFormat, const IntVector2& eyeSize, int msaaLevel)
     {
         format_ = format;
+        textureSize_ = arraySize_ == 1 ? eyeSize * IntVector2{2, 1} : eyeSize;
 
         XrSwapchainCreateInfo swapInfo = {XR_TYPE_SWAPCHAIN_CREATE_INFO};
         swapInfo.usageFlags = XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
@@ -434,8 +447,8 @@ public:
             swapInfo.usageFlags |= XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT;
 
         swapInfo.format = internalFormat;
-        swapInfo.width = eyeSize.x_ * (arraySize_ == 1 ? 2 : 1);
-        swapInfo.height = eyeSize.y_;
+        swapInfo.width = textureSize_.x_;
+        swapInfo.height = textureSize_.y_;
         swapInfo.sampleCount = msaaLevel;
         swapInfo.faceCount = 1;
         swapInfo.arraySize = arraySize_;
@@ -473,6 +486,7 @@ public:
 
 protected:
     ea::vector<T> images_;
+    IntVector2 textureSize_;
 };
 
 #if D3D11_SUPPORTED
@@ -548,7 +562,7 @@ public:
             params.type_ = TextureType::Texture2D;
             params.format_ = format;
             params.flags_ = isDepth ? TextureFlag::BindDepthStencil : TextureFlag::BindRenderTarget;
-            params.size_ = eyeSize.ToIntVector3(1);
+            params.size_ = textureSize_.ToIntVector3(1);
             params.numLevels_ = 1;
             params.multiSample_ = msaaLevel;
 
@@ -750,6 +764,12 @@ bool OpenXR::InitializeSystem(RenderBackend backend)
     }
 
     supportedExtensions_ = EnumerateExtensionsXR();
+    if (!IsExtensionSupported(supportedExtensions_, GetBackendExtensionName(backend)))
+    {
+        URHO3D_LOGERROR("Renderer backend is not supported by OpenXR runtime");
+        return false;
+    }
+
     InitializeActiveExtensions(backend);
 
     auto engine = GetSubsystem<Engine>();
@@ -794,6 +814,9 @@ bool OpenXR::InitializeSystem(RenderBackend backend)
     recommendedEyeTextureSize_.y_ =
         ea::min(views[VR_EYE_LEFT].recommendedImageRectHeight, views[VR_EYE_RIGHT].recommendedImageRectHeight);
 
+    if (!InitializeTweaks(backend))
+        return false;
+
     return true;
 }
 
@@ -822,6 +845,63 @@ void OpenXR::InitializeActiveExtensions(RenderBackend backend)
 
     for (const ea::string& extension : userExtensions_)
         ActivateOptionalExtension(activeExtensions_, supportedExtensions_, extension.c_str());
+}
+
+bool OpenXR::InitializeTweaks(RenderBackend backend)
+{
+#if VULKAN_SUPPORTED
+    if (backend == RenderBackend::Vulkan)
+    {
+        tweaks_.vulkanInstanceExtensions_ = GetVulkanInstanceExtensionsXR(instance_.get(), system_);
+        tweaks_.vulkanDeviceExtensions_ = GetVulkanDeviceExtensionsXR(instance_.get(), system_);
+
+        const auto instanceExtensionsCStr = ToCStringVector(tweaks_.vulkanInstanceExtensions_);
+        const auto deviceExtensionsCStr = ToCStringVector(tweaks_.vulkanDeviceExtensions_);
+
+        // Create temporary Vulkan device to determine required physical device
+        const auto factory = Diligent::GetEngineFactoryVk();
+
+        Diligent::Uint32 numAdapters = 0;
+        factory->EnumerateAdapters(Diligent::Version{}, numAdapters, nullptr);
+        ea::vector<Diligent::GraphicsAdapterInfo> adapters(numAdapters);
+        factory->EnumerateAdapters(Diligent::Version{}, numAdapters, adapters.data());
+
+        Diligent::EngineVkCreateInfo createInfo;
+
+        createInfo.Features = Diligent::DeviceFeatures{Diligent::DEVICE_FEATURE_STATE_OPTIONAL};
+        createInfo.InstanceExtensionCount = instanceExtensionsCStr.size();
+        createInfo.ppInstanceExtensionNames = instanceExtensionsCStr.data();
+        createInfo.DeviceExtensionCount = deviceExtensionsCStr.size();
+        createInfo.ppDeviceExtensionNames = deviceExtensionsCStr.data();
+
+        Diligent::RefCntAutoPtr<Diligent::IRenderDevice> renderDevice;
+        Diligent::RefCntAutoPtr<Diligent::IDeviceContext> deviceContext;
+        factory->CreateDeviceAndContextsVk(createInfo, &renderDevice, &deviceContext);
+        if (!renderDevice)
+            return false;
+
+        const auto renderDeviceVk = static_cast<Diligent::IRenderDeviceVk*>(renderDevice.RawPtr());
+        VkPhysicalDevice physicalDevice{};
+        if (!URHO3D_CHECK_OPENXR(xrGetVulkanGraphicsDeviceKHR(
+                instance_.get(), system_, renderDeviceVk->GetVkInstance(), &physicalDevice)))
+            return false;
+
+        VkPhysicalDeviceProperties properties{};
+        vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+        const auto isSameDevice = [&](const Diligent::GraphicsAdapterInfo& info)
+        { return info.VendorId == properties.vendorID && info.DeviceId == properties.deviceID; };
+
+        const auto adapterIter = ea::find_if(adapters.begin(), adapters.end(), isSameDevice);
+        if (adapterIter == adapters.end())
+            return false;
+
+        tweaks_.adapterId_ = static_cast<unsigned>(adapterIter - adapters.begin());
+
+        return true;
+    }
+#endif
+    return true;
 }
 
 bool OpenXR::InitializeSession(const VRSessionParameters& params)

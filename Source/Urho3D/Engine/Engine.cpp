@@ -371,6 +371,19 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         graphicsSettings.validateShaders_ = GetParameter(EP_VALIDATE_SHADERS).GetBool();
         graphicsSettings.discardShaderCache_ = GetParameter(EP_DISCARD_SHADER_CACHE).GetBool();
         graphicsSettings.cacheShaders_ = GetParameter(EP_SAVE_SHADER_CACHE).GetBool();
+
+#ifdef URHO3D_XR
+        if (needXR)
+        {
+            auto* xr = context_->GetSubsystem<OpenXR>();
+            const OpenXRTweaks& tweaks = xr->GetTweaks();
+
+            graphicsSettings.vulkan_.instanceExtensions_ = tweaks.vulkanInstanceExtensions_;
+            graphicsSettings.vulkan_.deviceExtensions_ = tweaks.vulkanDeviceExtensions_;
+            graphicsSettings.adapterId_ = tweaks.adapterId_;
+        }
+#endif
+
         graphics->Configure(graphicsSettings);
 
         graphics->SetWindowTitle(GetParameter(EP_WINDOW_TITLE).GetString());
@@ -407,6 +420,14 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         windowSettings.monitor_ = GetParameter(EP_MONITOR).GetInt();
         windowSettings.refreshRate_ = GetParameter(EP_REFRESH_RATE).GetInt();
         windowSettings.orientations_ = GetParameter(EP_ORIENTATIONS).GetString().split(' ');
+
+#ifdef URHO3D_XR
+        if (needXR)
+        {
+            windowSettings.vSync_ = false;
+            maxInactiveFps_ = maxFps_ = 0;
+        }
+#endif
 
         if (!graphics->SetDefaultWindowModes(windowSettings))
             return false;

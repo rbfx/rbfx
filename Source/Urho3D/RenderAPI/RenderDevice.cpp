@@ -958,6 +958,13 @@ void RenderDevice::InitializeDevice()
         Diligent::EngineVkCreateInfo createInfo;
         CopyBackendDeviceSettings(createInfo, deviceSettings_.vulkan_);
 
+        const auto instanceExtensionsCStr = ToCStringVector(deviceSettings_.vulkan_.instanceExtensions_);
+        const auto deviceExtensionsCStr = ToCStringVector(deviceSettings_.vulkan_.deviceExtensions_);
+        createInfo.InstanceExtensionCount = instanceExtensionsCStr.size();
+        createInfo.ppInstanceExtensionNames = instanceExtensionsCStr.data();
+        createInfo.DeviceExtensionCount = deviceExtensionsCStr.size();
+        createInfo.ppDeviceExtensionNames = deviceExtensionsCStr.data();
+
         const char* const ppIgnoreDebugMessages[] = {
             // Validation Performance Warning: [ UNASSIGNED-CoreValidation-Shader-OutputNotConsumed ]
             // vertex shader writes to output location 1.0 which is not consumed by fragment shader
