@@ -58,16 +58,16 @@ void main()
 {
 #if URHO3D_TEXTURE_ALBEDO
     vec4 albedoInput = texture(sAlbedo, vTexCoord);
-    vec4 albedo = GammaToLinearSpaceAlpha(cMatDiffColor)
-        * CONCATENATE(Texture_ToLinearAlpha_, URHO3D_TEXTURE_ALBEDO)(albedoInput);
+    vec4 albedo = TO_COLORSPACE(URHO3D_TEXTURE_ALBEDO, Texture_ToLinearAlpha_1, Texture_ToLinearAlpha_2, albedoInput)
+        * GammaToLinearSpaceAlpha(cMatDiffColor);
 #else
     vec4 albedo = GammaToLinearSpaceAlpha(cMatDiffColor);
 #endif
 
 #if URHO3D_TEXTURE_EMISSION
     vec4 emissiveInput = texture(sEmission, vTexCoord);
-    vec3 emissive = GammaToLinearSpace(cMatEmissiveColor)
-        * CONCATENATE(Texture_ToLinear_, URHO3D_TEXTURE_EMISSION)(emissiveInput.rgb);
+    vec3 emissive = TO_COLORSPACE(URHO3D_TEXTURE_EMISSION, Texture_ToLinear_1, Texture_ToLinear_2, emissiveInput.rgb)
+        * GammaToLinearSpace(cMatEmissiveColor);
 #else
     vec3 emissive = GammaToLinearSpace(cMatEmissiveColor);
 #endif

@@ -345,7 +345,8 @@
     { \
         half4 albedoInput = texture(albedoMap, albedoTexCoord); \
         CutoutByAlpha(albedoInput.a, alphaCutoff); \
-        surfaceData.albedo = GammaToLightSpaceAlpha(albedoColor) * Texture_ToLightAlpha_##colorSpace(albedoInput); \
+        surfaceData.albedo = TO_COLORSPACE(colorSpace, Texture_ToLightAlpha_1, Texture_ToLightAlpha_2, albedoInput) \
+            * GammaToLightSpaceAlpha(albedoColor); \
         ModulateAlbedoByVertexColor(surfaceData.albedo, vertexColor); \
     }
 #else
@@ -413,7 +414,11 @@
     #ifndef URHO3D_HAS_LIGHTMAP
         #if URHO3D_MATERIAL_EMISSION && !defined(AO)
             #define _Surface_SetEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
-                surfaceData.emission = GammaToLightSpace(emissiveColor) * Texture_ToLight_##colorSpace(texture(emissiveMap, texCoord).rgb)
+            { \
+                half3 emissionInput = texture(emissiveMap, texCoord).rgb;
+                surfaceData.emission = TO_COLORSPACE(colorSpace, Texture_ToLight_1, Texture_ToLight_2, emissionInput) \
+                    * GammaToLightSpace(emissiveColor); \
+            }
         #else
             #define _Surface_SetEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
                 surfaceData.emission = GammaToLightSpace(emissiveColor)
