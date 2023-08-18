@@ -135,8 +135,9 @@ half RoughnessToSpecularPower(half roughness) { return (1.0 - roughness) * 255.0
 
 /// =================================== Utility macros ===================================
 
-#define _CONCATENATE_IMPL(a, b) a##b
-#define CONCATENATE(a, b) _CONCATENATE_IMPL(a, b)
+/// GLSL ES doens't support concatenation, so we use this workaround.
+/// Parameter is referenced twice!
+#define TO_COLORSPACE(cond, a, b, param) ((cond == 1) ? a(param) : b(param))
 
 
 /// =================================== Stage inputs and outputs ===================================
@@ -244,6 +245,23 @@ half RoughnessToSpecularPower(half roughness) { return (1.0 - roughness) * 255.0
     #endif
     #define SELECT_FRONT_BACK_FACE(frontValue, backValue) ((IS_FRONT_FACE) ? (frontValue) : (backValue))
 #endif // URHO3D_PIXEL_SHADER
+
+
+/// =================================== Syntax sugar ===================================
+
+// Help standard shaders to work properly if standard texture macros are not defined
+#ifndef URHO3D_TEXTURE_ALBEDO
+    #define URHO3D_TEXTURE_ALBEDO 0
+#endif
+#ifndef URHO3D_TEXTURE_NORMAL
+    #define URHO3D_TEXTURE_NORMAL 0
+#endif
+#ifndef URHO3D_TEXTURE_PROPERTIES
+    #define URHO3D_TEXTURE_PROPERTIES 0
+#endif
+#ifndef URHO3D_TEXTURE_EMISSION
+    #define URHO3D_TEXTURE_EMISSION 0
+#endif
 
 
 /// =================================== Deprecated ===================================
