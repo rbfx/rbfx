@@ -8,9 +8,20 @@ namespace Urho3DNet
 {
     public class ScriptRuntimeApiImpl : ScriptRuntimeApi
     {
-        private static readonly string ProgramFile = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath;
-        private static readonly string ProgramDirectory = Path.GetDirectoryName(ProgramFile);
+        private static readonly string ProgramFile;
+        private static readonly string ProgramDirectory;
         private GCHandle _selfReference;
+
+        static ScriptRuntimeApiImpl()
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            if (assembly?.CodeBase != null)
+            {
+                ProgramFile = new Uri(assembly.CodeBase).LocalPath;
+                ProgramDirectory = Path.GetDirectoryName(ProgramFile);
+            }
+        }
+
 
         public ScriptRuntimeApiImpl()
         {
