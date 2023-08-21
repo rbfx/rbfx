@@ -555,6 +555,7 @@ bool RawTexture::CreateFromVulkanImage(uint64_t vkImage, const RawTextureParams&
     if (renderDevice_ && renderDevice_->GetBackend() == RenderBackend::Vulkan)
     {
         Diligent::TextureDesc textureDesc;
+        textureDesc.Name = "Texture from external resource";
         textureDesc.Type = textureTypeToDimensions[params.type_];
         textureDesc.Usage = Diligent::USAGE_DEFAULT;
         textureDesc.Format = params.format_;
@@ -600,6 +601,7 @@ bool RawTexture::CreateFromGLTexture(
     if (renderDevice_ && renderDevice_->GetBackend() == RenderBackend::OpenGL)
     {
         Diligent::TextureDesc textureDesc;
+        textureDesc.Name = "Texture from external resource";
         textureDesc.Type = textureTypeToDimensions[type];
         textureDesc.Usage = Diligent::USAGE_DEFAULT;
         textureDesc.Format = format;

@@ -128,11 +128,11 @@ void DebugMessageCallback(
 {
     ea::string message = Format("[diligent] {}", ea::string(msg == nullptr ? "" : msg));
     if (func)
-        message += Format("function: {}", func);
+        message += Format(" function: {}", func);
     if (file)
-        message += Format("file:     {}", file);
+        message += Format(" file: {}", file);
     if (line)
-        message += Format("line:     {}", line);
+        message += Format(" line: {}", line);
 
     switch (severity)
     {

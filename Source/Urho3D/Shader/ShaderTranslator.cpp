@@ -261,6 +261,13 @@ void ConvertToHLSL5(TargetShader& output, const SpirVShader& shader)
     output.sourceCode_ = src.c_str();
 }
 
+void RemoveClipDistance(ea::string& shaderCode)
+{
+    const unsigned index = shaderCode.find("out float gl_ClipDistance");
+    if (index != ea::string::npos)
+        shaderCode.insert(index, "// Workaround for GLSL ES:\n// ");
+}
+
 void ConvertToGLSL(TargetShader& output, const SpirVShader& shader, int version, bool es)
 {
     output.sourceCode_.clear();
@@ -281,6 +288,9 @@ void ConvertToGLSL(TargetShader& output, const SpirVShader& shader, int version,
     }
 
     output.sourceCode_ = src.c_str();
+
+    if (es)
+        RemoveClipDistance(output.sourceCode_);
 }
 
 }

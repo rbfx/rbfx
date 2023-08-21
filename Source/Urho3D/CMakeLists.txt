@@ -106,6 +106,9 @@ if (URHO3D_XR)
     if (PLATFORM_LINUX)
         add_definitions(-DXR_OS_LINUX -DXR_USE_PLATFORM_LINUX)
     endif ()
+    if (PLATFORM_ANDROID)
+        add_definitions(-DXR_OS_ANDROID -DXR_USE_PLATFORM_ANDROID)
+    endif ()
     if (D3D11_SUPPORTED)
         add_definitions(-DXR_USE_GRAPHICS_API_D3D11)
     endif ()
@@ -227,9 +230,9 @@ set (PRIVATE_THIRD_PARTY_DEPENDENCIES
     SPIRV-Reflect
 )
 
-if (URHO3D_XR)
+if (URHO3D_XR AND DESKTOP)
     if (URHO3D_MERGE_STATIC_LIBS)
-        list (APPEND THIRD_PARTY_DEPENDENCIES openxr_loader)
+        list (APPEND PUBLIC_THIRD_PARTY_DEPENDENCIES openxr_loader)
     else () # shouldn't need to wrorry about WEB right now
         target_link_libraries(Urho3D PUBLIC openxr_loader)
     endif ()

@@ -7,13 +7,33 @@
 #include "Urho3D/Urho3D.h"
 #include "Urho3D/RenderAPI/GAPIIncludes.h"
 
+#ifdef XR_USE_GRAPHICS_API_OPENGL_ES
+    #include <EGL/egl.h>
+#endif
+
+#ifdef XR_USE_PLATFORM_ANDROID
+    #include <jni.h>
+#endif
+
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr.h>
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform.h>
 
 namespace Urho3D
 {
 
+#define URHO3D_ENUMERATE_OPENXR_API_LOADER(X) \
+    X(xrEnumerateInstanceExtensionProperties) \
+    X(xrEnumerateApiLayerProperties) \
+    X(xrCreateInstance) \
+    X(xrInitializeLoaderKHR)
+
 #define URHO3D_ENUMERATE_OPENXR_API_CORE(X) \
+    X(xrDestroyInstance) \
+    X(xrGetInstanceProperties) \
+    X(xrEnumerateEnvironmentBlendModes) \
+    X(xrEnumerateSwapchainFormats) \
+    X(xrEnumerateBoundSourcesForAction) \
+    X(xrGetActionStatePose) \
     X(xrPollEvent) \
     X(xrResultToString) \
     X(xrGetSystem) \
@@ -115,6 +135,7 @@ namespace Urho3D
 
 #define URHO3D_DECLARE_OPENXR_API(fn) extern PFN_##fn fn;
 
+URHO3D_ENUMERATE_OPENXR_API_LOADER(URHO3D_DECLARE_OPENXR_API)
 URHO3D_ENUMERATE_OPENXR_API(URHO3D_DECLARE_OPENXR_API)
 
 const char* xrGetErrorStr(XrResult result);
@@ -122,6 +143,8 @@ bool xrCheckResult(XrResult result, const char* expr, const char* file, int line
 
 #define URHO3D_CHECK_OPENXR(expr) xrCheckResult(expr, #expr, __FILE__, __LINE__, __FUNCTION__)
 
+/// Initialize OpenXR Loader API.
+void InitializeOpenXRLoader();
 /// Initialize OpenXR API functions from given instance.
 void LoadOpenXRAPI(XrInstance instance);
 /// Reset OpenXR API functions.
