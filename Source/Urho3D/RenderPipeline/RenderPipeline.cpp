@@ -41,6 +41,7 @@ static const ea::vector<ea::string> colorSpaceNames =
     "LDR Gamma",
     "LDR Linear",
     "HDR Linear",
+    "Optimized"
 };
 
 static const ea::vector<ea::string> materialQualityNames =

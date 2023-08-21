@@ -118,6 +118,7 @@ bool IsShadowCasterVisible(const BoundingBox& lightSpaceBoundingBox, Camera* sha
 DrawableProcessorPass::DrawableProcessorPass(RenderPipelineInterface* renderPipeline, DrawableProcessorPassFlags flags,
     unsigned deferredPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex)
     : Object(renderPipeline->GetContext())
+    , renderPipeline_(renderPipeline)
     , flags_(flags)
     , useBatchCallback_(IsFlagSet(DrawableProcessorPassFlag::BatchCallback))
     , deferredPassIndex_(deferredPassIndex)
@@ -154,6 +155,7 @@ DrawableProcessorPass::AddBatchResult DrawableProcessorPass::AddBatch(unsigned t
 void DrawableProcessorPass::OnUpdateBegin(const CommonFrameInfo& frameInfo)
 {
     geometryBatches_.Clear();
+    linearColorSpace_ = renderPipeline_->IsLinearColorSpace();
 }
 
 DrawableProcessor::DrawableProcessor(RenderPipelineInterface* renderPipeline)

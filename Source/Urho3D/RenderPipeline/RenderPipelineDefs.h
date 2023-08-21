@@ -109,6 +109,7 @@ enum class BatchRenderFlag
     EnableInstancingForStaticGeometry = 1 << 3,
     DisableColorOutput = 1 << 4,
     LightMaskToStencil = 1 << 5,
+    LinearColorSpace = 1 << 6,
 
     EnableAmbientAndVertexLighting = EnableAmbientLighting | EnableVertexLights,
 };
@@ -154,7 +155,9 @@ enum class RenderPipelineColorSpace
     /// Low dynamic range lighting in Linear space, trimmed to [0, 1].
     LinearLDR,
     /// High dynamic range lighting in Linear space. Should be tone mapped before frame end.
-    LinearHDR
+    LinearHDR,
+    /// Use the color space that matches output render texture.
+    Optimized,
 };
 
 /// Rarely-changing settings of render buffer manager.
@@ -270,6 +273,7 @@ public:
     virtual ~RenderPipelineInterface();
     virtual Context* GetContext() const = 0;
     virtual RenderPipelineDebugger* GetDebugger() = 0;
+    virtual bool IsLinearColorSpace() const = 0;
 
     /// Callbacks
     /// @{
@@ -422,7 +426,6 @@ enum class DrawableAmbientMode
 
 struct BatchRendererSettings
 {
-    bool linearSpaceLighting_{};
     bool cubemapBoxProjection_{};
     DrawableAmbientMode ambientMode_{ DrawableAmbientMode::Directional };
     Vector2 varianceShadowMapParams_{ 0.0000001f, 0.9f };
@@ -432,7 +435,6 @@ struct BatchRendererSettings
     unsigned CalculatePipelineStateHash() const
     {
         unsigned hash = 0;
-        CombineHash(hash, linearSpaceLighting_);
         CombineHash(hash, cubemapBoxProjection_);
         CombineHash(hash, MakeHash(ambientMode_));
         return hash;
@@ -444,8 +446,7 @@ struct BatchRendererSettings
 
     bool operator==(const BatchRendererSettings& rhs) const
     {
-        return linearSpaceLighting_ == rhs.linearSpaceLighting_
-            && cubemapBoxProjection_ == rhs.cubemapBoxProjection_
+        return cubemapBoxProjection_ == rhs.cubemapBoxProjection_
             && ambientMode_ == rhs.ambientMode_
             && varianceShadowMapParams_ == rhs.varianceShadowMapParams_;
     }

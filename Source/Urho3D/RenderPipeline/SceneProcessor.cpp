@@ -484,7 +484,7 @@ void SceneProcessor::OnUpdateBegin(const CommonFrameInfo& frameInfo)
 
     cameraProcessor_->OnUpdateBegin(frameInfo_);
     drawableProcessor_->OnUpdateBegin(frameInfo_);
-    pipelineStateBuilder_->UpdateFrameSettings();
+    pipelineStateBuilder_->UpdateFrameSettings(renderPipeline_->IsLinearColorSpace());
 }
 
 void SceneProcessor::OnRenderBegin(const CommonFrameInfo& frameInfo)

@@ -159,7 +159,10 @@ protected:
     virtual void OnUpdateBegin(const CommonFrameInfo& frameInfo);
     /// @}
 
+    RenderPipelineInterface* const renderPipeline_{};
     WorkQueueVector<GeometryBatch> geometryBatches_;
+
+    bool linearColorSpace_{};
 };
 
 /// Utility used to update and process visible or shadow caster Drawables.

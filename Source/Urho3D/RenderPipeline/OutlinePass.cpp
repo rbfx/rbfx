@@ -155,6 +155,8 @@ void OutlineScenePass::OnBatchesReady()
 
     batchGroup_ = {sortedBatches_};
     batchGroup_.flags_ = BatchRenderFlag::EnableInstancingForStaticGeometry;
+    if (linearColorSpace_)
+        batchGroup_.flags_ |= BatchRenderFlag::LinearColorSpace;
 }
 
 void OutlineScenePass::PrepareInstancingBuffer(BatchRenderer* batchRenderer)
@@ -197,7 +199,7 @@ void OutlinePass::Execute(Camera* camera)
     if (!enabled_)
         return;
 
-    const bool inLinearSpace = renderBufferManager_->GetSettings().colorSpace_ != RenderPipelineColorSpace::GammaLDR;
+    const bool inLinearSpace = renderBufferManager_->IsLinearColorSpace();
     const StaticPipelineStateId pipelineState = inLinearSpace ? pipelineStateLinear_ : pipelineStateGamma_;
 
     auto texture = outlineBuffer_->GetTexture();

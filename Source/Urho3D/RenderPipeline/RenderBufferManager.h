@@ -163,6 +163,7 @@ public:
     Vector4 GetDefaultClipToUVSpaceOffsetAndScale() const;
     TextureFormat GetOutputColorFormat() const;
     TextureFormat GetOutputDepthStencilFormat() const;
+    bool IsLinearColorSpace() const { return linearColorSpace_; }
     unsigned GetOutputMultiSample() const { return colorOutputParams_.multiSampleLevel_; }
     const RenderBufferManagerSettings& GetSettings() const { return settings_; }
 
@@ -210,6 +211,7 @@ private:
 
     RenderBufferParams colorOutputParams_;
     RenderBufferParams depthStencilOutputParams_;
+    bool linearColorSpace_{};
     /// @}
 
     /// State of current frame

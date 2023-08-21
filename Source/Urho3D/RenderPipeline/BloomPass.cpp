@@ -155,8 +155,8 @@ void BloomPass::Execute(Camera* camera)
     if (!pipelineStates_)
         InitializeStates();
 
-    luminanceWeights_ = renderBufferManager_->GetSettings().colorSpace_ == RenderPipelineColorSpace::GammaLDR
-        ? Color::LUMINOSITY_GAMMA.ToVector3() : Color::LUMINOSITY_LINEAR.ToVector3();
+    luminanceWeights_ = renderBufferManager_->IsLinearColorSpace()
+        ? Color::LUMINOSITY_LINEAR.ToVector3() : Color::LUMINOSITY_GAMMA.ToVector3();
 
     renderBufferManager_->SwapColorBuffers(false);
 

@@ -108,15 +108,6 @@ Vector4 GetFogParameter(const Camera& camera)
     };
 }
 
-Vector4 GetAmbientLighting(const BatchRendererSettings& settings, const LightAccumulator& lightAccumulator)
-{
-    const Vector3 ambient = lightAccumulator.sphericalHarmonics_.EvaluateAverage();
-    if (settings.linearSpaceLighting_)
-        return Vector4(ambient, 1.0f);
-    else
-        return Color(ambient).LinearToGamma().ToVector4();
-}
-
 Vector4 GetClipPlane(const Camera& camera)
 {
     if (!camera.GetUseClipping())
@@ -133,7 +124,7 @@ public:
         : instancingEnabled_(flags.Test(BatchRenderFlag::EnableInstancingForStaticGeometry))
         , ambientEnabled_(flags.Test(BatchRenderFlag::EnableAmbientLighting))
         , ambientMode_(settings.ambientMode_)
-        , linearSpaceLighting_(settings.linearSpaceLighting_)
+        , linearColorSpace_(flags.Test(BatchRenderFlag::LinearColorSpace))
     {
     }
 
@@ -153,7 +144,7 @@ public:
         if (ambientMode_ == DrawableAmbientMode::Flat)
         {
             const Vector3 ambient = lightAccumulator.sphericalHarmonics_.EvaluateAverage();
-            if (linearSpaceLighting_)
+            if (linearColorSpace_)
                 ambientValueFlat_ = Vector4(ambient, 1.0f);
             else
                 ambientValueFlat_ = Color(ambient).LinearToGamma().ToVector4();
@@ -235,7 +226,7 @@ private:
     const bool instancingEnabled_;
     const bool ambientEnabled_;
     const DrawableAmbientMode ambientMode_;
-    const bool linearSpaceLighting_;
+    const bool linearColorSpace_;
 
     Vector4 ambientValueFlat_;
     const SphericalHarmonicsDot9* ambientValueSH_{};
@@ -370,7 +361,7 @@ private:
         {
             const CookedLightParams& params = current_.vertexLights_[i] != M_MAX_UNSIGNED
                 ? lights_[current_.vertexLights_[i]]->GetParams() : nullVertexLight;
-            const Vector3& color = params.GetColor(settings_.linearSpaceLighting_);
+            const Vector3& color = params.GetColor(enabled_.linearColorSpace_);
 
             current_.vertexLightsData_[i * VertexLightStride] = {color, params.inverseRange_};
             current_.vertexLightsData_[i * VertexLightStride + 1] = {params.direction_, params.spotCutoff_};
@@ -605,7 +596,7 @@ private:
             };
             const Color ambientColorGammaCombined = ambientColorGammas[0].Lerp(ambientColorGammas[1], 0.5f);
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_AmbientColor,
-                settings_.linearSpaceLighting_ ? ambientColorGammaCombined.GammaToLinear() : ambientColorGammaCombined);
+                enabled_.linearColorSpace_ ? ambientColorGammaCombined.GammaToLinear() : ambientColorGammaCombined);
 
             const Color fogColors[2] = CAM_FLD(cameras, ->GetEffectiveFogColor()); // TODO(xr): Fix linear color space
             const Vector4 fogParams[2] = CAM_FUNC(cameras, GetFogParameter);
@@ -652,9 +643,9 @@ private:
             const Color ambientColorGamma = camera_.GetEffectiveAmbientColor() * camera_.GetEffectiveAmbientBrightness();
             const Color& fogColorGamma = camera_.GetEffectiveFogColor();
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_AmbientColor,
-                settings_.linearSpaceLighting_ ? ambientColorGamma.GammaToLinear() : ambientColorGamma);
+                enabled_.linearColorSpace_ ? ambientColorGamma.GammaToLinear() : ambientColorGamma);
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogColor,
-                settings_.linearSpaceLighting_ ? fogColorGamma.GammaToLinear() : fogColorGamma);
+                enabled_.linearColorSpace_ ? fogColorGamma.GammaToLinear() : fogColorGamma);
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogParams, GetFogParameter(camera_));
         }
     }
@@ -709,7 +700,7 @@ private:
             return;
 
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightColor,
-            Vector4{params.GetColor(settings_.linearSpaceLighting_), params.effectiveSpecularIntensity_});
+            Vector4{params.GetColor(enabled_.linearColorSpace_), params.effectiveSpecularIntensity_});
 
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightRad, params.volumetricRadius_);
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightLength, params.volumetricLength_);
@@ -870,6 +861,7 @@ private:
             , anyLighting_(ambientLighting_ || vertexLighting_ || pixelLighting_)
             , colorOutput_(!flags.Test(BatchRenderFlag::DisableColorOutput))
             , lightMaskToStencil_(flags.Test(BatchRenderFlag::LightMaskToStencil))
+            , linearColorSpace_(flags.Test(BatchRenderFlag::LinearColorSpace))
         {
         }
 
@@ -879,6 +871,7 @@ private:
         bool anyLighting_;
         bool colorOutput_;
         bool lightMaskToStencil_;
+        bool linearColorSpace_;
     } const enabled_;
 
     struct DirtyStateFlags

@@ -91,7 +91,7 @@ class URHO3D_API ShaderProgramCompositor : public Object
 public:
     explicit ShaderProgramCompositor(Context* context);
     void SetSettings(const ShaderProgramCompositorSettings& settings);
-    void SetFrameSettings(const CameraProcessor* cameraProcessor);
+    void SetFrameSettings(const CameraProcessor* cameraProcessor, bool linearColorSpace);
 
     /// Process batches
     /// @{
@@ -141,6 +141,7 @@ private:
     bool isCameraOrthographic_{};
     bool isCameraClipped_{};
     bool isCameraReversed_{};
+    bool linearColorSpace_{};
     /// @}
 };
 

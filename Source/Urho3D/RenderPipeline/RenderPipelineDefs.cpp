@@ -157,10 +157,7 @@ void RenderPipelineSettings::PropagateImpliedSettings()
         }
     }
 
-    // Synchronize misc settings
-    sceneProcessor_.linearSpaceLighting_ =
-        renderBufferManager_.colorSpace_ != RenderPipelineColorSpace::GammaLDR;
-
+    // TODO(xr): Revisit this place
     bloom_.hdr_ = renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR;
 
     if (ssao_.enabled_)

@@ -79,9 +79,9 @@ void PipelineStateBuilder::SetSettings(const ShaderProgramCompositorSettings& se
     compositor_->SetSettings(settings);
 }
 
-void PipelineStateBuilder::UpdateFrameSettings()
+void PipelineStateBuilder::UpdateFrameSettings(bool linearColorSpace)
 {
-    compositor_->SetFrameSettings(cameraProcessor_);
+    compositor_->SetFrameSettings(cameraProcessor_, linearColorSpace);
 }
 
 SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(

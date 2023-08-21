@@ -47,7 +47,7 @@ public:
     PipelineStateBuilder(Context* context, const SceneProcessor* sceneProcessor, const CameraProcessor* cameraProcessor,
         const ShadowMapAllocator* shadowMapAllocator, const InstancingBuffer* instancingBuffer);
     void SetSettings(const ShaderProgramCompositorSettings& settings);
-    void UpdateFrameSettings();
+    void UpdateFrameSettings(bool linearColorSpace);
 
     /// Implement BatchStateCacheCallback
     /// @{

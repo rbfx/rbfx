@@ -332,6 +332,8 @@ StereoRenderPipelineView::~StereoRenderPipelineView()
 void StereoRenderPipelineView::SetSettings(const RenderPipelineSettings& settings)
 {
     settings_ = settings;
+    settings_.renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::Optimized;
+
     settings_.Validate();
     settings_.AdjustToSupported(context_);
     settings_.PropagateImpliedSettings();
@@ -439,6 +441,7 @@ bool StereoRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vie
     }
 
     renderBufferManager_->OnViewportDefined(frameInfo_.renderTarget_, frameInfo_.viewportRect_);
+    linearColorSpace_ = renderBufferManager_->IsLinearColorSpace();
 
     const unsigned outputMultiSample = renderBufferManager_->GetOutputMultiSample();
     const TextureFormat outputColorFormat = renderBufferManager_->GetOutputColorFormat();
@@ -532,9 +535,7 @@ void StereoRenderPipelineView::Render()
 
     Camera* camera = sceneProcessor_->GetFrameInfo().camera_;
     const Color fogColorInGammaSpace = sceneProcessor_->GetFrameInfo().camera_->GetEffectiveFogColor();
-    const Color effectiveFogColor = settings_.sceneProcessor_.linearSpaceLighting_
-        ? fogColorInGammaSpace.GammaToLinear()
-        : fogColorInGammaSpace;
+    const Color effectiveFogColor = linearColorSpace_ ? fogColorInGammaSpace.GammaToLinear() : fogColorInGammaSpace;
 
     renderBufferManager_->ClearOutput(effectiveFogColor, 1.0f, 0);
 
