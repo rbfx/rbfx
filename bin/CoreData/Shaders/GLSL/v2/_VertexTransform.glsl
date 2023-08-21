@@ -28,8 +28,8 @@ vec4 WorldToClipSpace(vec3 worldPos)
 {
     #ifdef URHO3D_XR
         vec4 clipped = vec4(worldPos, 1.0) * cViewProj[gl_InstanceID & 1];
-        float eyeOffsetScale[2] = { -0.5f, 0.5f };
-        vec4 eyeClipEdge[2] = { vec4(-1.0f, 0.0f, 0.0f, 1.0f), vec4(1.0f, 0.0f, 0.0f, 1.0f) };
+        const float eyeOffsetScale[2] = float[2](-0.5f, 0.5f);
+        const vec4 eyeClipEdge[2] = vec4[2](vec4(-1.0f, 0.0f, 0.0f, 1.0f), vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
         gl_ClipDistance[0] = dot(clipped, eyeClipEdge[gl_InstanceID & 1]);
 

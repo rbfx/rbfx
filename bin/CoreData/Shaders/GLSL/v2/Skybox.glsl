@@ -42,7 +42,7 @@ void main()
 void main()
 {
     half4 textureInput = texture(sAlbedo, vTexCoord);
-    half4 textureColor = TO_COLORSPACE(URHO3D_TEXTURE_ALBEDO, Texture_ToLightAlpha_1, Texture_ToLightAlpha_2, textureInput);
+    half4 textureColor = (URHO3D_TEXTURE_ALBEDO == 1 ? Texture_ToLightAlpha_1(textureInput) : Texture_ToLightAlpha_2(textureInput));
     gl_FragColor = GammaToLightSpaceAlpha(cMatDiffColor) * textureColor;
 }
 #endif

@@ -358,7 +358,7 @@
     { \
         half4 albedoInput = texture(albedoMap, albedoTexCoord); \
         CutoutByAlpha(albedoInput.a, alphaCutoff); \
-        surfaceData.albedo = TO_COLORSPACE(colorSpace, Texture_ToLightAlpha_1, Texture_ToLightAlpha_2, albedoInput) \
+        surfaceData.albedo = (colorSpace == 1 ? Texture_ToLightAlpha_1(albedoInput) : Texture_ToLightAlpha_2(albedoInput)) \
             * GammaToLightSpaceAlpha(albedoColor); \
         ModulateAlbedoByVertexColor(surfaceData.albedo, vertexColor); \
     }
@@ -429,7 +429,7 @@
             #define _Surface_SetEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
             { \
                 half3 emissionInput = texture(emissiveMap, texCoord).rgb;
-                surfaceData.emission = TO_COLORSPACE(colorSpace, Texture_ToLight_1, Texture_ToLight_2, emissionInput) \
+                surfaceData.emission = (colorSpace == 1 ? Texture_ToLight_1(emissionInput) : Texture_ToLight_2(emissionInput)) \
                     * GammaToLightSpace(emissiveColor); \
             }
         #else

@@ -9,7 +9,7 @@
 
 // JS: this has to be before samplers so we can see it for depth reconstruction
 #ifdef URHO3D_XR
-    VERTEX_OUTPUT(flat int vInstID)
+    VERTEX_OUTPUT_QUAL(flat, int vInstID)
 #endif
 
 #include "_Uniforms.glsl"
