@@ -45,17 +45,17 @@ void Vertex_SetTransform(VertexTransform vertexTransform)
 #endif
 
 #ifdef URHO3D_VARIANCE_SHADOW_MAP
-    #define Vertex_SetDepth() \
+    #define Vertex_SetDepth(void) \
         vDepth = gl_Position.zw;
 #else
-    #define Vertex_SetDepth()
+    #define Vertex_SetDepth(void)
 #endif
 
 #define Vertex_SetAll(vertexTransform, normalScale, uOffset, vOffset, lightMapScaleOffset) \
 { \
     Vertex_SetTransform(vertexTransform); \
     Vertex_SetTexCoord(uOffset, vOffset); \
-    Vertex_SetDepth(); \
+    Vertex_SetDepth(void); \
 }
 
 #endif // URHO3D_VERTEX_SHADER
@@ -63,17 +63,17 @@ void Vertex_SetTransform(VertexTransform vertexTransform)
 #ifdef URHO3D_PIXEL_SHADER
 
 #ifdef URHO3D_VARIANCE_SHADOW_MAP
-    void _CopyDepthToColor()
+    void _CopyDepthToColor(vec2 depthW)
     {
-        float depth = vDepth.x / vDepth.y;
-        #ifndef URHO3D_OPENGL
+        float depth = depthW.x / depthW.y;
+        #ifdef URHO3D_OPENGL
             // Remap from [-1, 1] to [0, 1] for OpenGL
             depth = depth * 0.5 + 0.5;
         #endif
         gl_FragColor = vec4(depth, depth * depth, 1.0, 1.0);
     }
 #else
-    #define _CopyDepthToColor()
+    #define _CopyDepthToColor(depthW)
 #endif
 
 #ifdef ALPHAMASK
@@ -83,12 +83,12 @@ void Vertex_SetTransform(VertexTransform vertexTransform)
         if (alpha < 0.5)
             discard;
 
-        _CopyDepthToColor();
+        _CopyDepthToColor(vDepth);
     }
 
     #define Pixel_DepthOnly(albedoMap, texcoord) _Pixel_DepthOnly(albedoMap, (texcoord).xy)
 #else
-    #define Pixel_DepthOnly(albedoMap, texcoord) _CopyDepthToColor()
+    #define Pixel_DepthOnly(albedoMap, texcoord) _CopyDepthToColor(vDepth)
 #endif
 
 #endif // URHO3D_PIXEL_SHADER

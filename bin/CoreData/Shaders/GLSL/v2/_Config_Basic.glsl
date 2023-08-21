@@ -133,20 +133,15 @@ half SpecularPowerToRoughness(half specularPower) { return 1.0 - specularPower /
 half RoughnessToSpecularPower(half roughness) { return (1.0 - roughness) * 255.0; }
 
 
-/// =================================== Utility macros ===================================
-
-/// GLSL ES doens't support concatenation, so we use this workaround.
-/// Parameter is referenced twice!
-#define TO_COLORSPACE(cond, a, b, param) ((cond == 1) ? a(param) : b(param))
-
-
 /// =================================== Stage inputs and outputs ===================================
 
 #if defined(URHO3D_VERTEX_SHADER)
     #define VERTEX_INPUT(decl) in decl;
     #define VERTEX_OUTPUT(decl) out decl;
+    #define VERTEX_OUTPUT_QUAL(qual, decl) qual out decl;
 #elif defined(URHO3D_PIXEL_SHADER)
     #define VERTEX_OUTPUT(decl) in decl;
+    #define VERTEX_OUTPUT_QUAL(qual, decl) qual in decl;
 #endif
 
 #define VERTEX_OUTPUT_HIGHP(decl) VERTEX_OUTPUT(highp decl)

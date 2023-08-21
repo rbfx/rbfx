@@ -62,10 +62,10 @@ void Vertex_SetTransform(VertexTransform vertexTransform, half normalScale)
 #endif
 
 #ifdef URHO3D_PIXEL_NEED_VERTEX_COLOR
-    #define Vertex_SetColor() \
+    #define Vertex_SetColor(void) \
         vColor = iColor;
 #else
-    #define Vertex_SetColor()
+    #define Vertex_SetColor(void)
 #endif
 
 /// Fill lighting attributes:
@@ -129,7 +129,7 @@ void Vertex_SetLight(VertexTransform vertexTransform)
     Vertex_SetTransform(vertexTransform, normalScale); \
     Vertex_SetTexCoord(uOffset, vOffset); \
     Vertex_SetLightMapTexCoord(lightMapScaleOffset); \
-    Vertex_SetColor(); \
+    Vertex_SetColor(void); \
     Vertex_SetLight(vertexTransform); \
     Vertex_SetScreenPos(gl_Position); \
     Vertex_SetEyeVector(vertexTransform.position.xyz); \
