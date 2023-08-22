@@ -1037,7 +1037,8 @@ void RenderDevice::InitializeCaps()
 
     caps_.computeShaders_ = adapterInfo.Features.ComputeShaders == Diligent::DEVICE_FEATURE_STATE_ENABLED;
     caps_.drawBaseVertex_ = (adapterInfo.DrawCommand.CapFlags & Diligent::DRAW_COMMAND_CAP_FLAG_BASE_VERTEX) != 0;
-    caps_.drawBaseInstance_ = !IsOpenGLESBackend(deviceSettings_.backend_);
+    // OpenGL ES and some MacOS versions don't have base instance draw.
+    caps_.drawBaseInstance_ = !IsOpenGLESBackend(deviceSettings_.backend_) && GetPlatform() != PlatformId::MacOS;
 
     // OpenGL does not have clear specification when it is allowed
     // to bind read-only depth texture both as depth-stencil view and as shader resource.
