@@ -424,8 +424,14 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
 #ifdef URHO3D_XR
         if (needXR)
         {
+            auto* xr = context_->GetSubsystem<OpenXR>();
+            const OpenXRTweaks& tweaks = xr->GetTweaks();
+
             windowSettings.vSync_ = false;
             maxInactiveFps_ = maxFps_ = 0;
+
+            if (tweaks.orientation_)
+                windowSettings.orientations_ = {*tweaks.orientation_};
         }
 #endif
 

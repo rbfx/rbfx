@@ -56,6 +56,7 @@ struct OpenXRTweaks
     StringVector vulkanInstanceExtensions_;
     StringVector vulkanDeviceExtensions_;
     unsigned adapterId_{};
+    ea::optional<ea::string> orientation_;
 };
 
 /// Interface that wraps OpenXR swap chain and integrates it with the engine rendering API.

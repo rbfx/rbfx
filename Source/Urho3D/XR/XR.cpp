@@ -72,6 +72,15 @@ namespace Urho3D
 namespace
 {
 
+bool IsNativeOculusQuest2()
+{
+#ifdef URHO3D_OCULUS_QUEST
+    return true;
+#else
+    return false;
+#endif
+}
+
 StringVector EnumerateExtensionsXR()
 {
     uint32_t count = 0;
@@ -325,11 +334,11 @@ ea::pair<TextureFormat, int64_t> SelectColorFormat(RenderBackend backend, const 
         for (const auto internalFormat : formats)
         {
             const TextureFormat textureFormat = GetTextureFormatFromInternal(backend, internalFormat);
-            // TODO(xr): Oculus Quest 2 does not support sRGB framebuffers natively.
-#if URHO3D_PLATFORM_ANDROID
-            if (IsTextureFormatSRGB(textureFormat))
+
+            // Oculus Quest 2 does not support sRGB framebuffers natively.
+            if (IsNativeOculusQuest2() && IsTextureFormatSRGB(textureFormat))
                 continue;
-#endif
+
             if (IsColorTextureFormat(textureFormat) && IsFallbackColorFormat(textureFormat) == fallback)
                 return {textureFormat, internalFormat};
         }
@@ -339,18 +348,19 @@ ea::pair<TextureFormat, int64_t> SelectColorFormat(RenderBackend backend, const 
 
 ea::pair<TextureFormat, int64_t> SelectDepthFormat(RenderBackend backend, const ea::vector<int64_t>& formats)
 {
-    // TODO(xr): Oculus Quest 2 returns non-framebuffer-compatible depth formats.
-#if !URHO3D_PLATFORM_ANDROID
-    for (bool fallback : {false, true})
+    // Oculus Quest 2 returns non-framebuffer-compatible depth formats.
+    if (!IsNativeOculusQuest2())
     {
-        for (const auto internalFormat : formats)
+        for (bool fallback : {false, true})
         {
-            const TextureFormat textureFormat = GetTextureFormatFromInternal(backend, internalFormat);
-            if (IsDepthTextureFormat(textureFormat) && IsFallbackDepthFormat(textureFormat) == fallback)
-                return {textureFormat, internalFormat};
+            for (const auto internalFormat : formats)
+            {
+                const TextureFormat textureFormat = GetTextureFormatFromInternal(backend, internalFormat);
+                if (IsDepthTextureFormat(textureFormat) && IsFallbackDepthFormat(textureFormat) == fallback)
+                    return {textureFormat, internalFormat};
+            }
         }
     }
-#endif
     return {TextureFormat::TEX_FORMAT_UNKNOWN, 0};
 }
 
@@ -636,10 +646,10 @@ public:
 
             textures_[i] = MakeShared<Texture2D>(context);
             textures_[i]->CreateFromVulkanImage((uint64_t)images_[i].image, params);
-    #if URHO3D_PLATFORM_ANDROID
+
             // Oculus Quest 2 always expects texture data in linear space.
-            textures_[i]->SetLinear(true);
-    #endif
+            if (IsNativeOculusQuest2())
+                textures_[i]->SetLinear(true);
         }
     }
 };
@@ -957,6 +967,9 @@ void OpenXR::InitializeActiveExtensions(RenderBackend backend)
 
 bool OpenXR::InitializeTweaks(RenderBackend backend)
 {
+    if (IsNativeOculusQuest2())
+        tweaks_.orientation_ = ea::string{"LandscapeRight"};
+
 #if VULKAN_SUPPORTED
     if (backend == RenderBackend::Vulkan)
     {
