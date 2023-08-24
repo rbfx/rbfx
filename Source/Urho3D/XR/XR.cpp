@@ -1552,7 +1552,10 @@ void OpenXR::BindActions(SharedPtr<XMLFile> doc)
 
         for (auto child = set.GetChild("profile"); child.NotNull(); child = child.GetNext("profile"))
         {
-            ea::string device = child.GetAttribute("device");
+            const ea::string device = child.GetAttribute("device");
+            const ea::string extension = child.GetAttribute("extension");
+            if (!extension.empty() && !IsExtensionSupported(activeExtensions_, extension.c_str()))
+                continue;
 
             XrPath devicePath;
             xrStringToPath(instance_.get(), device.c_str(), &devicePath);

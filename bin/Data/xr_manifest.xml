@@ -108,10 +108,10 @@
             <bind action="stickdown" path="/user/hand/left/input/thumbstick/click" />
             <bind action="stickdown" path="/user/hand/right/input/thumbstick/click" />
 
-            <bind action="a" path="/user/hand/right/a/click" />
-            <bind action="b" path="/user/hand/right/b/click" />
-            <bind action="x" path="/user/hand/left/x/click" />
-            <bind action="y" path="/user/hand/left/y/click" />
+            <bind action="a" path="/user/hand/right/input/a/click" />
+            <bind action="b" path="/user/hand/right/input/b/click" />
+            <bind action="x" path="/user/hand/left/input/x/click" />
+            <bind action="y" path="/user/hand/left/input/y/click" />
 
             <bind action="vibrate" path="/user/hand/left/output/haptic" />
             <bind action="vibrate" path="/user/hand/right/output/haptic" />
@@ -125,8 +125,8 @@
             <bind action="aimpose" path="/user/hand/left/input/aim/pose" />
             <bind action="aimpose" path="/user/hand/right/input/aim/pose" />
 
-            <bind action="grab" path="user/hand/left/input/squeeze/click" />
-            <bind action="grab" path="user/hand/right/input/squeeze/click" />
+            <bind action="grab" path="/user/hand/left/input/squeeze/click" />
+            <bind action="grab" path="/user/hand/right/input/squeeze/click" />
 
             <bind action="trigger" path="/user/hand/left/input/trigger/value" />
             <bind action="trigger" path="/user/hand/right/input/trigger/value" />
@@ -147,7 +147,7 @@
         </profile>
 
         <!-- Vive Cosmos -->
-        <profile device="/interaction_profiles/htc/vive_cosmos_controller">
+        <profile device="/interaction_profiles/htc/vive_cosmos_controller" extension="XR_HTC_vive_cosmos_controller_interaction">
             <bind action="handpose" path="/user/hand/left/input/grip/pose" />
             <bind action="handpose" path="/user/hand/right/input/grip/pose" />
 
@@ -181,7 +181,7 @@
         </profile>
 
         <!-- Vive Focus 3 -->
-        <profile device="/interaction_profiles/htc/vive_focus3_controller">
+        <profile device="/interaction_profiles/htc/vive_focus3_controller" extension="XR_HTC_vive_focus3_controller_interaction">
             <bind action="handpose" path="/user/hand/left/input/grip/pose" />
             <bind action="handpose" path="/user/hand/right/input/grip/pose" />
 
@@ -212,7 +212,7 @@
         </profile>
 
         <!-- Valve Index, treating left-hand A/B as Oculus X/Y -->
-        <profile device="interaction_profiles/valve/index_controller">
+        <profile device="/interaction_profiles/valve/index_controller">
             <bind action="handpose" path="/user/hand/left/input/grip/pose" />
             <bind action="handpose" path="/user/hand/right/input/grip/pose" />
 
@@ -236,17 +236,17 @@
             <bind action="touchpad_click" path="/user/hand/right/input/trackpad/force" />
             <bind action="touchpad_touch" path="/user/hand/right/input/trackpad/touch" />
 
-            <bind action="a" path="/user/hand/right/a/click" />
-            <bind action="b" path="/user/hand/right/b/click" />
-            <bind action="x" path="/user/hand/left/a/click" />
-            <bind action="y" path="/user/hand/left/b/click" />
+            <bind action="a" path="/user/hand/right/input/a/click" />
+            <bind action="b" path="/user/hand/right/input/b/click" />
+            <bind action="x" path="/user/hand/left/input/a/click" />
+            <bind action="y" path="/user/hand/left/input/b/click" />
 
             <bind action="vibrate" path="/user/hand/left/output/haptic" />
             <bind action="vibrate" path="/user/hand/right/output/haptic" />
         </profile>
 
         <!-- Reverb G2 -->
-        <profile device="interaction_profiles/hp/mixed_reality_controller">
+        <profile device="/interaction_profiles/hp/mixed_reality_controller" extension="XR_EXT_hp_mixed_reality_controller">
             <bind action="handpose" path="/user/hand/left/input/grip/pose" />
             <bind action="handpose" path="/user/hand/right/input/grip/pose" />
 
@@ -268,10 +268,10 @@
             <bind action="menu" path="/user/hand/left/input/menu/click" />
             <bind action="menu" path="/user/hand/right/input/menu/click" />
 
-            <bind action="a" path="/user/hand/right/a/click" />
-            <bind action="b" path="/user/hand/right/b/click" />
-            <bind action="x" path="/user/hand/left/x/click" />
-            <bind action="y" path="/user/hand/left/y/click" />
+            <bind action="a" path="/user/hand/right/input/a/click" />
+            <bind action="b" path="/user/hand/right/input/b/click" />
+            <bind action="x" path="/user/hand/left/input/x/click" />
+            <bind action="y" path="/user/hand/left/input/y/click" />
 
             <bind action="vibrate" path="/user/hand/left/output/haptic" />
             <bind action="vibrate" path="/user/hand/right/output/haptic" />
