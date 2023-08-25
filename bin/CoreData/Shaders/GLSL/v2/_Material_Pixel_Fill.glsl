@@ -428,7 +428,7 @@
         #if URHO3D_MATERIAL_EMISSION && !defined(AO)
             #define _Surface_SetEmission(surfaceData, emissiveColor, emissiveMap, texCoord, colorSpace) \
             { \
-                half3 emissionInput = texture(emissiveMap, texCoord).rgb;
+                half3 emissionInput = texture(emissiveMap, texCoord).rgb; \
                 surfaceData.emission = (colorSpace == 1 ? Texture_ToLight_1(emissionInput) : Texture_ToLight_2(emissionInput)) \
                     * GammaToLightSpace(emissiveColor); \
             }

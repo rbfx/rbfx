@@ -182,7 +182,11 @@ bool ShaderVariation::CompileFromSource()
 
     CreateFromBinary(bytecode);
     if (!GetHandle())
+    {
+        if (renderBackend == RenderBackend::OpenGL)
+            URHO3D_LOGINFO("Shader files:\n{}", Shader::GetShaderFileList());
         return false;
+    }
 
     return true;
 }
