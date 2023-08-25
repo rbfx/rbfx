@@ -505,6 +505,43 @@ XrSessionPtr CreateSessionXR(RenderDevice* renderDevice, XrInstance instance, Xr
     return wrappedSession;
 }
 
+ea::pair<XrSpacePtr, bool> CreateHeadSpaceXR(XrSession session)
+{
+    XrReferenceSpaceCreateInfo createInfo = {XR_TYPE_REFERENCE_SPACE_CREATE_INFO};
+    createInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_STAGE;
+    createInfo.poseInReferenceSpace.orientation = {0.0f, 0.0f, 0.0f, 1.0f};
+    createInfo.poseInReferenceSpace.position = {0.0f, 0.0f, 0.0f};
+
+    bool isRoomScale = true;
+    XrSpace space;
+    if (!URHO3D_CHECK_OPENXR(xrCreateReferenceSpace(session, &createInfo, &space)))
+    {
+        isRoomScale = false;
+
+        createInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
+        if (!URHO3D_CHECK_OPENXR(xrCreateReferenceSpace(session, &createInfo, &space)))
+            return {};
+    }
+
+    const auto wrappedSpace = XrSpacePtr(space, [](XrSpace space) { xrDestroySpace(space); });
+    return {wrappedSpace, isRoomScale};
+}
+
+XrSpacePtr CreateViewSpaceXR(XrSession session)
+{
+    XrReferenceSpaceCreateInfo createInfo = {XR_TYPE_REFERENCE_SPACE_CREATE_INFO};
+    createInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_VIEW;
+    createInfo.poseInReferenceSpace.orientation = {0.0f, 0.0f, 0.0f, 1.0f};
+    createInfo.poseInReferenceSpace.position = {0.0f, 0.0f, 0.0f};
+
+    XrSpace space;
+    if (!URHO3D_CHECK_OPENXR(xrCreateReferenceSpace(session, &createInfo, &space)))
+        return nullptr;
+
+    const auto wrappedSpace = XrSpacePtr(space, [](XrSpace space) { xrDestroySpace(space); });
+    return wrappedSpace;
+}
+
 template <class T, XrStructureType ImageStructureType> class OpenXRSwapChainBase : public OpenXRSwapChain
 {
 public:
@@ -537,7 +574,7 @@ public:
         swapChain_ = XrSwapchainPtr(swapChain, [](XrSwapchain swapChain) { xrDestroySwapchain(swapChain); });
 
         uint32_t numImages = 0;
-        if (!URHO3D_CHECK_OPENXR(xrEnumerateSwapchainImages(swapChain_.get(), 0, &numImages, nullptr)))
+        if (!URHO3D_CHECK_OPENXR(xrEnumerateSwapchainImages(swapChain_.Raw(), 0, &numImages, nullptr)))
             return;
 
         ea::vector<T> images(numImages);
@@ -548,7 +585,7 @@ public:
         }
 
         const auto imagesPtr = reinterpret_cast<XrSwapchainImageBaseHeader*>(images.data());
-        if (!URHO3D_CHECK_OPENXR(xrEnumerateSwapchainImages(swapChain_.get(), numImages, &numImages, imagesPtr)))
+        if (!URHO3D_CHECK_OPENXR(xrEnumerateSwapchainImages(swapChain_.Raw(), numImages, &numImages, imagesPtr)))
             return;
 
         images_ = ea::move(images);
@@ -896,33 +933,33 @@ bool OpenXR::InitializeSystem(RenderBackend backend)
     instance_ = CreateInstanceXR(activeExtensions_, engineName, applicationName);
 
     XrInstanceProperties instProps = {XR_TYPE_INSTANCE_PROPERTIES};
-    if (xrGetInstanceProperties(instance_.get(), &instProps) == XR_SUCCESS)
+    if (xrGetInstanceProperties(instance_.Raw(), &instProps) == XR_SUCCESS)
         URHO3D_LOGINFO("OpenXR Runtime is: {} version 0x{:x}", instProps.runtimeName, instProps.runtimeVersion);
 
     if (features_.debugOutput_)
-        debugMessenger_ = CreateDebugMessengerXR(instance_.get());
+        debugMessenger_ = CreateDebugMessengerXR(instance_.Raw());
 
-    const auto systemId = GetSystemXR(instance_.get());
+    const auto systemId = GetSystemXR(instance_.Raw());
     if (!systemId)
         return false;
 
     system_ = *systemId;
-    systemName_ = GetSystemNameXR(instance_.get(), system_);
+    systemName_ = GetSystemNameXR(instance_.Raw(), system_);
 
-    const auto blendModes = GetBlendModesXR(instance_.get(), system_);
+    const auto blendModes = GetBlendModesXR(instance_.Raw(), system_);
     if (blendModes.empty())
         return false;
 
     blendMode_ = blendModes[0];
 
-    const auto viewConfigurations = GetViewConfigurationsXR(instance_.get(), system_);
+    const auto viewConfigurations = GetViewConfigurationsXR(instance_.Raw(), system_);
     if (!viewConfigurations.contains(XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO))
     {
         URHO3D_LOGERROR("Stereo rendering not supported on this device");
         return false;
     }
 
-    const auto views = GetViewConfigurationViewsXR(instance_.get(), system_);
+    const auto views = GetViewConfigurationViewsXR(instance_.Raw(), system_);
     if (views.empty())
         return false;
 
@@ -973,56 +1010,11 @@ bool OpenXR::InitializeTweaks(RenderBackend backend)
 #if VULKAN_SUPPORTED
     if (backend == RenderBackend::Vulkan)
     {
-        tweaks_.vulkanInstanceExtensions_ = GetVulkanInstanceExtensionsXR(instance_.get(), system_);
-        tweaks_.vulkanDeviceExtensions_ = GetVulkanDeviceExtensionsXR(instance_.get(), system_);
+        tweaks_.vulkanInstanceExtensions_ = GetVulkanInstanceExtensionsXR(instance_.Raw(), system_);
+        tweaks_.vulkanDeviceExtensions_ = GetVulkanDeviceExtensionsXR(instance_.Raw(), system_);
 
-        // TODO(xr): If we want to know required physical device ahead of time,
+        // TODO: If we want to know required physical device ahead of time,
         // we should create dedicated OpenXR instance and system for this check.
-    #if 0
-        const auto instanceExtensionsCStr = ToCStringVector(tweaks_.vulkanInstanceExtensions_);
-        const auto deviceExtensionsCStr = ToCStringVector(tweaks_.vulkanDeviceExtensions_);
-
-        // Create temporary Vulkan device to determine required physical device
-        const auto factory = Diligent::GetEngineFactoryVk();
-
-        Diligent::Uint32 numAdapters = 0;
-        factory->EnumerateAdapters(Diligent::Version{}, numAdapters, nullptr);
-        ea::vector<Diligent::GraphicsAdapterInfo> adapters(numAdapters);
-        factory->EnumerateAdapters(Diligent::Version{}, numAdapters, adapters.data());
-
-        Diligent::EngineVkCreateInfo createInfo;
-
-        createInfo.Features = Diligent::DeviceFeatures{Diligent::DEVICE_FEATURE_STATE_OPTIONAL};
-        createInfo.InstanceExtensionCount = instanceExtensionsCStr.size();
-        createInfo.ppInstanceExtensionNames = instanceExtensionsCStr.data();
-        createInfo.DeviceExtensionCount = deviceExtensionsCStr.size();
-        createInfo.ppDeviceExtensionNames = deviceExtensionsCStr.data();
-
-        Diligent::RefCntAutoPtr<Diligent::IRenderDevice> renderDevice;
-        Diligent::RefCntAutoPtr<Diligent::IDeviceContext> deviceContext;
-        factory->CreateDeviceAndContextsVk(createInfo, &renderDevice, &deviceContext);
-        if (!renderDevice)
-            return false;
-
-        const auto renderDeviceVk = static_cast<Diligent::IRenderDeviceVk*>(renderDevice.RawPtr());
-        VkPhysicalDevice physicalDevice{};
-        if (!URHO3D_CHECK_OPENXR(xrGetVulkanGraphicsDeviceKHR(
-                instance_.get(), system_, renderDeviceVk->GetVkInstance(), &physicalDevice)))
-            return false;
-
-        VkPhysicalDeviceProperties properties{};
-        vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-
-        const auto isSameDevice = [&](const Diligent::GraphicsAdapterInfo& info)
-        { return info.VendorId == properties.vendorID && info.DeviceId == properties.deviceID; };
-
-        const auto adapterIter = ea::find_if(adapters.begin(), adapters.end(), isSameDevice);
-        if (adapterIter == adapters.end())
-            return false;
-
-        tweaks_.adapterId_ = static_cast<unsigned>(adapterIter - adapters.begin());
-    #endif
-
         return true;
     }
 #endif
@@ -1032,10 +1024,6 @@ bool OpenXR::InitializeTweaks(RenderBackend backend)
 bool OpenXR::InitializeSession(const VRSessionParameters& params)
 {
     auto cache = GetSubsystem<ResourceCache>();
-    auto engine = GetSubsystem<Engine>();
-
-    // TODO(xr): This is a hack, revisit
-    engine->SetMaxInactiveFps(engine->GetMaxFps());
 
     manifest_ = cache->GetResource<XMLFile>(params.manifestPath_);
     if (!manifest_)
@@ -1058,11 +1046,6 @@ bool OpenXR::InitializeSession(const VRSessionParameters& params)
     return true;
 }
 
-#define XR_COMMON_ER(TERM) if (errCode != XrResult::XR_SUCCESS) { \
-URHO3D_LOGERRORF("Unable to produce OpenXR " TERM " ID: %s", xrGetErrorStr(errCode)); \
-ShutdownSession(); \
-return false; }
-
 void OpenXR::ShutdownSession()
 {
     for (int i = 0; i < 2; ++i)
@@ -1081,51 +1064,26 @@ void OpenXR::ShutdownSession()
     swapChain_ = nullptr;
     depthChain_ = nullptr;
 
-#define DTOR_XR(N, S) if (S) xrDestroy ## N(S)
-
-    DTOR_XR(Space, headSpace_);
-    DTOR_XR(Space, viewSpace_);
-
-#undef DTOR_SPACE
-
+    headSpace_ = nullptr;
+    viewSpace_ = nullptr;
     session_ = nullptr;
-
-    headSpace_ = { };
-    viewSpace_ = { };
 }
 
 bool OpenXR::OpenSession()
 {
     auto renderDevice = GetSubsystem<RenderDevice>();
 
-    session_ = CreateSessionXR(renderDevice, instance_.get(), system_);
+    session_ = CreateSessionXR(renderDevice, instance_.Raw(), system_);
     if (!session_)
         return false;
 
-    // attempt stage-space first
-    XrReferenceSpaceCreateInfo refSpaceInfo = { XR_TYPE_REFERENCE_SPACE_CREATE_INFO };
-    refSpaceInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_STAGE;
-    refSpaceInfo.poseInReferenceSpace.orientation = { 0.0f, 0.0f, 0.0f, 1.0f };
-    refSpaceInfo.poseInReferenceSpace.position = { 0.0f, 0.0f, 0.0f };
+    const auto [headSpace, isRoomScale] = CreateHeadSpaceXR(session_.Raw());
+    headSpace_ = headSpace;
+    isRoomScale_ = isRoomScale;
+    viewSpace_ = CreateViewSpaceXR(session_.Raw());
 
-    auto errCode = xrCreateReferenceSpace(session_.get(), &refSpaceInfo, &headSpace_);
-    // Failed? Then do local space, but can this even fail?
-    if (errCode != XR_SUCCESS)
-    {
-        refSpaceInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
-        errCode = xrCreateReferenceSpace(session_.get(), &refSpaceInfo, &headSpace_);
-        XR_COMMON_ER("reference space");
-        isRoomScale_ = false;
-    }
-    else
-        isRoomScale_ = true;
-
-    XrReferenceSpaceCreateInfo viewSpaceInfo = { XR_TYPE_REFERENCE_SPACE_CREATE_INFO };
-    viewSpaceInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_VIEW;
-    viewSpaceInfo.poseInReferenceSpace.orientation = { 0.0f, 0.0f, 0.0f, 1.0f };
-    viewSpaceInfo.poseInReferenceSpace.position = { 0.0f, 0.0f, 0.0f };
-    errCode = xrCreateReferenceSpace(session_.get(), &viewSpaceInfo, &viewSpace_);
-    XR_COMMON_ER("view reference space");
+    if (!headSpace_ || !viewSpace_)
+        return false;
 
     if (manifest_)
         BindActions(manifest_);
@@ -1134,19 +1092,19 @@ bool OpenXR::OpenSession()
     VRInterface::SetCurrentActionSet("default");
 
     // Create swap chains
-    const auto internalFormats = GetSwapChainFormats(session_.get());
+    const auto internalFormats = GetSwapChainFormats(session_.Raw());
     const auto [colorFormat, colorFormatInternal] = SelectColorFormat(renderDevice->GetBackend(), internalFormats);
     const auto [depthFormat, depthFormatInternal] = SelectDepthFormat(renderDevice->GetBackend(), internalFormats);
 
     swapChain_ = CreateSwapChainXR(
-        GetContext(), session_.get(), colorFormat, colorFormatInternal, eyeTextureSize_, multiSample_);
+        GetContext(), session_.Raw(), colorFormat, colorFormatInternal, eyeTextureSize_, multiSample_);
     if (!swapChain_)
         return false;
 
     if (features_.depthLayer_ && depthFormatInternal)
     {
         depthChain_ = CreateSwapChainXR(
-            GetContext(), session_.get(), depthFormat, depthFormatInternal, eyeTextureSize_, multiSample_);
+            GetContext(), session_.Raw(), depthFormat, depthFormatInternal, eyeTextureSize_, multiSample_);
     }
 
     return true;
@@ -1159,7 +1117,7 @@ void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
         return;
 
     XrEventDataBuffer eventBuffer = { XR_TYPE_EVENT_DATA_BUFFER };
-    while (xrPollEvent(instance_.get(), &eventBuffer) == XR_SUCCESS)
+    while (xrPollEvent(instance_.Raw(), &eventBuffer) == XR_SUCCESS)
     {
         switch (eventBuffer.type)
         {
@@ -1182,7 +1140,7 @@ void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
             case XR_SESSION_STATE_READY: {
                 XrSessionBeginInfo beginInfo = { XR_TYPE_SESSION_BEGIN_INFO };
                 beginInfo.primaryViewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
-                auto res = xrBeginSession(session_.get(), &beginInfo);
+                auto res = xrBeginSession(session_.Raw(), &beginInfo);
                 if (res != XR_SUCCESS)
                 {
                     URHO3D_LOGERRORF("Failed to begin XR session: %s", xrGetErrorStr(res));
@@ -1201,7 +1159,7 @@ void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
                 SendEvent(E_VRRESUME);
                 break;
             case XR_SESSION_STATE_STOPPING:
-                xrEndSession(session_.get());
+                xrEndSession(session_.Raw());
                 sessionLive_ = false;
                 break;
             case XR_SESSION_STATE_EXITING:
@@ -1220,14 +1178,14 @@ void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
         return;
 
     XrFrameState frameState = { XR_TYPE_FRAME_STATE };
-    xrWaitFrame(session_.get(), nullptr, &frameState);
+    xrWaitFrame(session_.Raw(), nullptr, &frameState);
     predictedTime_ = frameState.predictedDisplayTime;
 
     XrFrameBeginInfo begInfo = { XR_TYPE_FRAME_BEGIN_INFO };
-    xrBeginFrame(session_.get(), &begInfo);
+    xrBeginFrame(session_.Raw(), &begInfo);
 // head stuff
     headLoc_.next = &headVel_;
-    xrLocateSpace(viewSpace_, headSpace_, frameState.predictedDisplayTime, &headLoc_);
+    xrLocateSpace(viewSpace_.Raw(), headSpace_.Raw(), frameState.predictedDisplayTime, &headLoc_);
 
     HandlePreRender();
 
@@ -1237,25 +1195,25 @@ void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
         {
             // ensure velocity is linked
             handAims_[i]->location_.next = &handAims_[i]->velocity_;
-            xrLocateSpace(handAims_[i]->actionSpace_, headSpace_, frameState.predictedDisplayTime, &handAims_[i]->location_);
+            xrLocateSpace(handAims_[i]->actionSpace_, headSpace_.Raw(), frameState.predictedDisplayTime, &handAims_[i]->location_);
         }
 
         if (handGrips_[i])
         {
             handGrips_[i]->location_.next = &handGrips_[i]->velocity_;
-            xrLocateSpace(handGrips_[i]->actionSpace_, headSpace_, frameState.predictedDisplayTime, &handGrips_[i]->location_);
+            xrLocateSpace(handGrips_[i]->actionSpace_, headSpace_.Raw(), frameState.predictedDisplayTime, &handGrips_[i]->location_);
         }
     }
 
 // eyes
     XrViewLocateInfo viewInfo = { XR_TYPE_VIEW_LOCATE_INFO };
     viewInfo.viewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
-    viewInfo.space = headSpace_;
+    viewInfo.space = headSpace_.Raw();
     viewInfo.displayTime = frameState.predictedDisplayTime;
 
     XrViewState viewState = { XR_TYPE_VIEW_STATE };
     unsigned viewCt = 0;
-    xrLocateViews(session_.get(), &viewInfo, &viewState, 2, &viewCt, views_);
+    xrLocateViews(session_.Raw(), &viewInfo, &viewState, 2, &viewCt, views_);
 
 // handle actions
     if (activeActionSet_)
@@ -1268,7 +1226,7 @@ void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
         XrActionsSyncInfo sync = { XR_TYPE_ACTIONS_SYNC_INFO };
         sync.activeActionSets = &activeSet;
         sync.countActiveActionSets = 1;
-        xrSyncActions(session_.get(), &sync);
+        xrSyncActions(session_.Raw(), &sync);
 
         using namespace BeginFrame;
         UpdateBindings(data[P_TIMESTEP].GetFloat());
@@ -1385,7 +1343,7 @@ void OpenXR::HandlePostRender(StringHash, VariantMap&)
         XrCompositionLayerProjection proj = { XR_TYPE_COMPOSITION_LAYER_PROJECTION };
         proj.viewCount = 2;
         proj.views = eyes;
-        proj.space = headSpace_;
+        proj.space = headSpace_.Raw();
 
         XrCompositionLayerBaseHeader* header = (XrCompositionLayerBaseHeader*)&proj;
 
@@ -1395,7 +1353,7 @@ void OpenXR::HandlePostRender(StringHash, VariantMap&)
         endInfo.environmentBlendMode = blendMode_;
         endInfo.displayTime = predictedTime_;
 
-        xrEndFrame(session_.get(), &endInfo);
+        xrEndFrame(session_.Raw(), &endInfo);
     }
 }
 
@@ -1406,8 +1364,8 @@ void OpenXR::BindActions(SharedPtr<XMLFile> doc)
     auto sets = root.GetChild("actionsets");
 
     XrPath handPaths[2];
-    xrStringToPath(instance_.get(), "/user/hand/left", &handPaths[VR_HAND_LEFT]);
-    xrStringToPath(instance_.get(), "/user/hand/right", &handPaths[VR_HAND_RIGHT]);
+    xrStringToPath(instance_.Raw(), "/user/hand/left", &handPaths[VR_HAND_LEFT]);
+    xrStringToPath(instance_.Raw(), "/user/hand/right", &handPaths[VR_HAND_RIGHT]);
 
     for (auto set = root.GetChild("actionset"); set.NotNull(); set = set.GetNext("actionset"))
     {
@@ -1418,7 +1376,7 @@ void OpenXR::BindActions(SharedPtr<XMLFile> doc)
         strncpy(setCreateInfo.localizedActionSetName, setLocalName.c_str(), XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE);
 
         XrActionSet createSet = { };
-        auto errCode = xrCreateActionSet(instance_.get(), &setCreateInfo, &createSet);
+        auto errCode = xrCreateActionSet(instance_.Raw(), &setCreateInfo, &createSet);
         if (errCode != XR_SUCCESS)
         {
             URHO3D_LOGERRORF("Failed to create ActionSet: %s, error: %s", setName.c_str(), xrGetErrorStr(errCode));
@@ -1518,9 +1476,9 @@ void OpenXR::BindActions(SharedPtr<XMLFile> doc)
                 if (handed)
                 {
                     spaceInfo.subactionPath = handPaths[0];
-                    xrCreateActionSpace(session_.get(), &spaceInfo, &binding->actionSpace_);
+                    xrCreateActionSpace(session_.Raw(), &spaceInfo, &binding->actionSpace_);
                     spaceInfo.subactionPath = handPaths[1];
-                    xrCreateActionSpace(session_.get(), &spaceInfo, &otherHand->actionSpace_);
+                    xrCreateActionSpace(session_.Raw(), &spaceInfo, &otherHand->actionSpace_);
 
                     if (child.GetBool("grip"))
                     {
@@ -1534,7 +1492,7 @@ void OpenXR::BindActions(SharedPtr<XMLFile> doc)
                     }
                 }
                 else
-                    xrCreateActionSpace(session_.get(), &spaceInfo, &binding->actionSpace_);
+                    xrCreateActionSpace(session_.Raw(), &spaceInfo, &binding->actionSpace_);
             }
 
             DUPLEX(set_, createSet);
@@ -1558,7 +1516,7 @@ void OpenXR::BindActions(SharedPtr<XMLFile> doc)
                 continue;
 
             XrPath devicePath;
-            xrStringToPath(instance_.get(), device.c_str(), &devicePath);
+            xrStringToPath(instance_.Raw(), device.c_str(), &devicePath);
 
             XrInteractionProfileSuggestedBinding suggest = { XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING };
             suggest.interactionProfile = devicePath;
@@ -1570,7 +1528,7 @@ void OpenXR::BindActions(SharedPtr<XMLFile> doc)
                 ea::string bindStr = bind.GetAttribute("path");
 
                 XrPath bindPath;
-                xrStringToPath(instance_.get(), bindStr.c_str(), &bindPath);
+                xrStringToPath(instance_.Raw(), bindStr.c_str(), &bindPath);
 
                 XrActionSuggestedBinding b = { };
 
@@ -1591,7 +1549,7 @@ void OpenXR::BindActions(SharedPtr<XMLFile> doc)
                 suggest.countSuggestedBindings = bindings.size();
                 suggest.suggestedBindings = bindings.data();
 
-                auto res = xrSuggestInteractionProfileBindings(instance_.get(), &suggest);
+                auto res = xrSuggestInteractionProfileBindings(instance_.Raw(), &suggest);
                 if (res != XR_SUCCESS)
                     URHO3D_LOGERRORF("Failed to suggest bindings: %s", xrGetErrorStr(res));
             }
@@ -1613,7 +1571,7 @@ void OpenXR::SetCurrentActionSet(SharedPtr<XRActionGroup> set)
             XrSessionActionSetsAttachInfo attachInfo = { XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO };
             attachInfo.actionSets = &xrSet->actionSet_;
             attachInfo.countActionSets = 1;
-            xrAttachSessionActionSets(session_.get(), &attachInfo);
+            xrAttachSessionActionSets(session_.Raw(), &attachInfo);
 
             UpdateBindingBound();
         }
@@ -1651,7 +1609,7 @@ void OpenXR::UpdateBindings(float t)
             {
             case VAR_BOOL: {
                 XrActionStateBoolean boolC = { XR_TYPE_ACTION_STATE_BOOLEAN };
-                if (xrGetActionStateBoolean(session_.get(), &getInfo, &boolC) == XR_SUCCESS)
+                if (xrGetActionStateBoolean(session_.Raw(), &getInfo, &boolC) == XR_SUCCESS)
                 {
                     bind->active_ = boolC.isActive;
                     if (boolC.changedSinceLastSync)
@@ -1667,7 +1625,7 @@ void OpenXR::UpdateBindings(float t)
                 break;
             case VAR_FLOAT: {
                 XrActionStateFloat floatC = { XR_TYPE_ACTION_STATE_FLOAT };
-                if (xrGetActionStateFloat(session_.get(), &getInfo, &floatC) == XR_SUCCESS)
+                if (xrGetActionStateFloat(session_.Raw(), &getInfo, &floatC) == XR_SUCCESS)
                 {
                     bind->active_ = floatC.isActive;
                     if (floatC.changedSinceLastSync || !Equals(floatC.currentState, bind->GetFloat()))
@@ -1683,7 +1641,7 @@ void OpenXR::UpdateBindings(float t)
                 break;
             case VAR_VECTOR2: {
                 XrActionStateVector2f vec = { XR_TYPE_ACTION_STATE_VECTOR2F };
-                if (xrGetActionStateVector2f(session_.get(), &getInfo, &vec) == XR_SUCCESS)
+                if (xrGetActionStateVector2f(session_.Raw(), &getInfo, &vec) == XR_SUCCESS)
                 {
                     bind->active_ = vec.isActive;
                     Vector2 v(vec.currentState.x, vec.currentState.y);
@@ -1700,7 +1658,7 @@ void OpenXR::UpdateBindings(float t)
                 break;
             case VAR_VECTOR3: {
                 XrActionStatePose pose = { XR_TYPE_ACTION_STATE_POSE };
-                if (xrGetActionStatePose(session_.get(), &getInfo, &pose) == XR_SUCCESS)
+                if (xrGetActionStatePose(session_.Raw(), &getInfo, &pose) == XR_SUCCESS)
                 {
                     // Should we be sending events for these? As it's tracking sensor stuff I think not? It's effectively always changing and we know that's the case.
                     bind->active_ = pose.isActive;
@@ -1712,7 +1670,7 @@ void OpenXR::UpdateBindings(float t)
             } break;
             case VAR_MATRIX3X4: {
                 XrActionStatePose pose = { XR_TYPE_ACTION_STATE_POSE };
-                if (xrGetActionStatePose(session_.get(), &getInfo, &pose) == XR_SUCCESS)
+                if (xrGetActionStatePose(session_.Raw(), &getInfo, &pose) == XR_SUCCESS)
                 {
                     // Should we be sending events for these? As it's tracking sensor stuff I think not? It's effectively always changing and we know that's the case.
                     bind->active_ = pose.isActive;
@@ -1742,7 +1700,7 @@ void OpenXR::GetHiddenAreaMask()
     // hidden
         {
 
-            xrGetVisibilityMaskKHR(session_.get(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR, &mask);
+            xrGetVisibilityMaskKHR(session_.Raw(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR, &mask);
 
             ea::vector<XrVector2f> verts;
             verts.resize(mask.vertexCountOutput);
@@ -1755,7 +1713,7 @@ void OpenXR::GetHiddenAreaMask()
             mask.vertices = verts.data();
             mask.indices = indices.data();
 
-            xrGetVisibilityMaskKHR(session_.get(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR, &mask);
+            xrGetVisibilityMaskKHR(session_.Raw(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR, &mask);
 
             ea::vector<Vector3> vtxData;
             vtxData.resize(verts.size());
@@ -1785,7 +1743,7 @@ void OpenXR::GetHiddenAreaMask()
             mask.indexCountOutput = 0;
             mask.vertexCountOutput = 0;
 
-            xrGetVisibilityMaskKHR(session_.get(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_VISIBLE_TRIANGLE_MESH_KHR, &mask);
+            xrGetVisibilityMaskKHR(session_.Raw(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_VISIBLE_TRIANGLE_MESH_KHR, &mask);
 
             ea::vector<XrVector2f> verts;
             verts.resize(mask.vertexCountOutput);
@@ -1798,7 +1756,7 @@ void OpenXR::GetHiddenAreaMask()
             mask.vertices = verts.data();
             mask.indices = indices.data();
 
-            xrGetVisibilityMaskKHR(session_.get(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_VISIBLE_TRIANGLE_MESH_KHR, &mask);
+            xrGetVisibilityMaskKHR(session_.Raw(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_VISIBLE_TRIANGLE_MESH_KHR, &mask);
 
             ea::vector<Vector3> vtxData;
             vtxData.resize(verts.size());
@@ -1834,7 +1792,7 @@ void OpenXR::GetHiddenAreaMask()
             mask.indexCountOutput = 0;
             mask.vertexCountOutput = 0;
 
-            xrGetVisibilityMaskKHR(session_.get(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_LINE_LOOP_KHR, &mask);
+            xrGetVisibilityMaskKHR(session_.Raw(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_LINE_LOOP_KHR, &mask);
 
             ea::vector<XrVector2f> verts;
             verts.resize(mask.vertexCountOutput);
@@ -1847,7 +1805,7 @@ void OpenXR::GetHiddenAreaMask()
             mask.vertices = verts.data();
             mask.indices = indices.data();
 
-            xrGetVisibilityMaskKHR(session_.get(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_LINE_LOOP_KHR, &mask);
+            xrGetVisibilityMaskKHR(session_.Raw(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_LINE_LOOP_KHR, &mask);
 
             struct V {
                 Vector3 pos;
@@ -1906,13 +1864,13 @@ void OpenXR::LoadControllerModels()
         return;
 
     XrPath handPaths[2];
-    xrStringToPath(instance_.get(), "/user/hand/left", &handPaths[0]);
-    xrStringToPath(instance_.get(), "/user/hand/right", &handPaths[1]);
+    xrStringToPath(instance_.Raw(), "/user/hand/left", &handPaths[0]);
+    xrStringToPath(instance_.Raw(), "/user/hand/right", &handPaths[1]);
 
     XrControllerModelKeyStateMSFT states[2] = { { XR_TYPE_CONTROLLER_MODEL_KEY_STATE_MSFT }, { XR_TYPE_CONTROLLER_MODEL_KEY_STATE_MSFT } };
     XrResult errCodes[2];
-    errCodes[0] = xrGetControllerModelKeyMSFT(session_.get(), handPaths[0], &states[0]);
-    errCodes[1] = xrGetControllerModelKeyMSFT(session_.get(), handPaths[1], &states[1]);
+    errCodes[0] = xrGetControllerModelKeyMSFT(session_.Raw(), handPaths[0], &states[0]);
+    errCodes[1] = xrGetControllerModelKeyMSFT(session_.Raw(), handPaths[1], &states[1]);
 
     for (int i = 0; i < 2; ++i)
     {
@@ -1925,14 +1883,14 @@ void OpenXR::LoadControllerModels()
         if (errCodes[i] == XR_SUCCESS)
         {
             unsigned dataSize = 0;
-            auto loadErr = xrLoadControllerModelMSFT(session_.get(), states[i].modelKey, 0, &dataSize, nullptr);
+            auto loadErr = xrLoadControllerModelMSFT(session_.Raw(), states[i].modelKey, 0, &dataSize, nullptr);
             if (loadErr == XR_SUCCESS)
             {
                 std::vector<unsigned char> data;
                 data.resize(dataSize);
 
                 // Can we actually fail in this case if the above was successful? Assuming that data/data-size are correct I would expect not?
-                if (xrLoadControllerModelMSFT(session_.get(), states[i].modelKey, data.size(), &dataSize, data.data()) == XR_SUCCESS)
+                if (xrLoadControllerModelMSFT(session_.Raw(), states[i].modelKey, data.size(), &dataSize, data.data()) == XR_SUCCESS)
                 {
                     tinygltf::Model model;
                     tinygltf::TinyGLTF ctx;
@@ -1952,7 +1910,7 @@ void OpenXR::LoadControllerModels()
                     props.nodeCapacityInput = 256;
                     props.nodeCountOutput = 0;
                     props.nodeProperties = wandModels_[i].properties_;
-                    if (xrGetControllerModelPropertiesMSFT(session_.get(), states[i].modelKey, &props) == XR_SUCCESS)
+                    if (xrGetControllerModelPropertiesMSFT(session_.Raw(), states[i].modelKey, &props) == XR_SUCCESS)
                     {
                         wandModels_[i].numProperties_ = props.nodeCountOutput;
                     }
@@ -1999,7 +1957,7 @@ void OpenXR::UpdateControllerModel(VRHand hand, SharedPtr<Node> model)
     state.nodeCapacityInput = 256;
     state.nodeStates = nodeStates;
 
-    auto errCode = xrGetControllerModelStateMSFT(session_.get(), wandModels_[hand].modelKey_, &state);
+    auto errCode = xrGetControllerModelStateMSFT(session_.Raw(), wandModels_[hand].modelKey_, &state);
     if (errCode == XR_SUCCESS)
     {
         auto node = model;
@@ -2198,7 +2156,7 @@ void OpenXR::XRActionBinding::Vibrate(float duration, float freq, float amplitud
     vib.amplitude = amplitude;
     vib.frequency = freq;
     vib.duration = duration * 1000.0f;
-    xrApplyHapticFeedback(xr_->session_.get(), &info, (XrHapticBaseHeader*)&vib);
+    xrApplyHapticFeedback(xr_->session_.Raw(), &info, (XrHapticBaseHeader*)&vib);
 }
 
 void OpenXR::UpdateBindingBound()
@@ -2214,7 +2172,7 @@ void OpenXR::UpdateBindingBound()
             XrBoundSourcesForActionEnumerateInfo info = { XR_TYPE_BOUND_SOURCES_FOR_ACTION_ENUMERATE_INFO };
             info.action = bind->action_;
             unsigned binds = 0;
-            xrEnumerateBoundSourcesForAction(session_.get(), &info, 0, &binds, nullptr);
+            xrEnumerateBoundSourcesForAction(session_.Raw(), &info, 0, &binds, nullptr);
             b->isBound_ = binds > 0;
 
             if (b->isAimPose_)

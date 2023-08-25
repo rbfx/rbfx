@@ -20,13 +20,13 @@ class AnimatedModel;
 class Texture2D;
 class XMLFile;
 
-template <class T> class XrObjectPtr
+template <class T> class XrObjectSharedPtr
 {
 public:
-    XrObjectPtr() = default;
-    XrObjectPtr(std::nullptr_t) {}
+    XrObjectSharedPtr() = default;
+    XrObjectSharedPtr(std::nullptr_t) {}
 
-    template <class U> XrObjectPtr(T object, U deleter)
+    template <class U> XrObjectSharedPtr(T object, U deleter)
     {
         const auto wrappedDeleter = [deleter](T* ptr)
         {
@@ -37,7 +37,7 @@ public:
         ptr_ = ea::shared_ptr<T>{new T{object}, wrappedDeleter};
     }
 
-    T get() const { return ptr_ ? *ptr_ : T{}; }
+    T Raw() const { return ptr_ ? *ptr_ : T{}; }
 
     operator bool() const { return ptr_ && *ptr_; }
 
@@ -45,10 +45,11 @@ private:
     ea::shared_ptr<T> ptr_;
 };
 
-using XrInstancePtr = XrObjectPtr<XrInstance>;
-using XrDebugUtilsMessengerEXTPtr = XrObjectPtr<XrDebugUtilsMessengerEXT>;
-using XrSessionPtr = XrObjectPtr<XrSession>;
-using XrSwapchainPtr = XrObjectPtr<XrSwapchain>;
+using XrInstancePtr = XrObjectSharedPtr<XrInstance>;
+using XrDebugUtilsMessengerEXTPtr = XrObjectSharedPtr<XrDebugUtilsMessengerEXT>;
+using XrSessionPtr = XrObjectSharedPtr<XrSession>;
+using XrSwapchainPtr = XrObjectSharedPtr<XrSwapchain>;
+using XrSpacePtr = XrObjectSharedPtr<XrSpace>;
 
 /// Tweaks that should be applied before graphics initialization.
 struct OpenXRTweaks
@@ -68,7 +69,7 @@ public:
     Texture2D* GetTexture(unsigned index) const { return textures_[index]; }
     unsigned GetNumTextures() const { return textures_.size(); }
     TextureFormat GetFormat() const { return format_; }
-    XrSwapchain GetHandle() const { return swapChain_.get(); }
+    XrSwapchain GetHandle() const { return swapChain_.Raw(); }
 
 protected:
     OpenXRSwapChain() = default;
@@ -195,13 +196,14 @@ protected:
     OpenXRTweaks tweaks_;
 
     XrSessionPtr session_;
+    XrSpacePtr headSpace_;
+    XrSpacePtr viewSpace_;
+
     OpenXRSwapChainPtr swapChain_;
     OpenXRSwapChainPtr depthChain_;
     XrView views_[2] = {{XR_TYPE_VIEW}, {XR_TYPE_VIEW}};
 
     // Pointless head-space.
-    XrSpace headSpace_ = {};
-    XrSpace viewSpace_ = {};
     /// Location tracking of the head.
     XrSpaceLocation headLoc_ = {XR_TYPE_SPACE_LOCATION};
     /// Velocity tracking information of the head.
