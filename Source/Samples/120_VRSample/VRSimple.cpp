@@ -290,8 +290,8 @@ void VRSimple::Update(StringHash eventID, VariantMap& eventData)
 
                 if (auto rightTrigger = xr->GetInputBinding("trigger", VR_HAND_RIGHT))
                 {
-                    if (rightTrigger->IsChanged()) // would work that anyways because of power * rightHandTrigger
-                        xr->SetVignette(rightTrigger->GetFloat() > 0.5f, Color(25.0f, 0.0f, 0.0f, 0.0f), Color(0.25f, 0.0f, 0.0f, 1.0f), rightTrigger->GetFloat());
+                    if (rightTrigger->IsChanged())
+                        xr->TriggerHaptic(VR_HAND_RIGHT, 1.0f, 0.0f, 0.5f);
                 }
             }
         }

@@ -28,10 +28,10 @@ namespace Urho3D
 {
 
     /// Calculates a motion vector based on the head. Optionally locked to XZ plane or normalized (which means no diagonal turbo speed).
-    URHO3D_API Vector3 SmoothLocomotionHead(Node* rigNode, SharedPtr<XRBinding> joystickBinding, float deadZone, bool xzPlanar = true, bool normalized = true);
+    URHO3D_API Vector3 SmoothLocomotionHead(Node* rigNode, XRBinding* joystickBinding, float deadZone, bool xzPlanar = true, bool normalized = true);
 
     /// Calculates a motion vector based on a controller aim direction. Optionally locked to XZ plane or normalized (which means no diagonal turbo speed).
-    URHO3D_API Vector3 SmoothLocomotionAim(Node* rigNode, SharedPtr<XRBinding> joystickBinding, VRHand whichHand, float deadZone, bool xzPlanar = true, bool normalized = false);
+    URHO3D_API Vector3 SmoothLocomotionAim(Node* rigNode, XRBinding* joystickBinding, VRHand whichHand, float deadZone, bool xzPlanar = true, bool normalized = false);
 
     /// Compares old and new positions of the given node to calculate a motion vector, nothing fancy, zero out Y or XZ as required for walk/climb/etc.
     URHO3D_API Vector3 GrabLocomotion(Node* handNode);
@@ -39,14 +39,14 @@ namespace Urho3D
     /// Wraps treating the trackpad as a 4 button d-pad with an optional center if centerRadius > 0. Buttons are labeled clockwise from the top starting at 1 and center at 5.
     /// Will work fine with joysticks if a click input is provided, ie. to do chorded input checks or stick press.
     /// Optional output for whether the trackpad is down or not.
-    URHO3D_API int TrackpadAsDPad(SharedPtr<XRBinding> trackpadPosition, SharedPtr<XRBinding> trackpadClick, float centerRadius, bool* trackpadDown = nullptr);
+    URHO3D_API int TrackpadAsDPad(XRBinding* trackpadPosition, XRBinding* trackpadClick, float centerRadius, bool* trackpadDown = nullptr);
 
     /// Wraps treating the joystick as a D-PAD, ie. such as to do snap turning or constant rate turning.
     /// Same return value conventions as TrackpadAsDPad without a Center.
-    URHO3D_API int JoystickAsDPad(SharedPtr<XRBinding> joystickPosition, float centerDeadzone);
+    URHO3D_API int JoystickAsDPad(XRBinding* joystickPosition, float centerDeadzone);
 
     /// Wraps treating the trackpad as 2 buttons, Up and Inside are used unless upDownMode in which case Up and Down are used. Much the same as DPAD but eliminates checking for left vs right.
-    URHO3D_API int TrackpadAsTwoButton(SharedPtr<XRBinding> trackpadPosition, SharedPtr<XRBinding> trackpadClick, float centerDeadZoneRadius, VRHand hand, bool upDownMode = false, bool* trackPadDown = nullptr);
+    URHO3D_API int TrackpadAsTwoButton(XRBinding* trackpadPosition, XRBinding* trackpadClick, float centerDeadZoneRadius, VRHand hand, bool upDownMode = false, bool* trackPadDown = nullptr);
 
     /// Returns true when current code transitions into a no-code (0 / released), rolling over to a new non-zero code means a "shift" like you've rocked your thumb from X to Y to correct a mistake.
     URHO3D_API bool ButtonClicked(int targetCode, int* currentCode, int nextCode);

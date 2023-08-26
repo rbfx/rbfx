@@ -42,14 +42,34 @@ namespace Urho3D
 static ea::string VRLastTransform = "LastTransform";
 static ea::string VRLastTransformWS = "LastTransformWS";
 
-XRBinding::XRBinding(Context* ctx) : BaseClassName(ctx)
+XRBinding::XRBinding(Context* context, const ea::string& name, const ea::string& localizedName, VRHand hand,
+    VariantType dataType, bool isPose, bool isAimPose)
+    : BaseClassName(context)
+    , name_(name)
+    , localizedName_(localizedName)
+    , hand_(hand)
+    , dataType_(dataType)
+    , haptic_(dataType_ == VAR_NONE)
+    , isPose_(isPose)
+    , isAimPose_(isAimPose)
 {
-
 }
 
-XRBinding::~XRBinding()
+XRActionGroup::XRActionGroup(Context* context, const ea::string& name, const ea::string& localizedName)
+    : BaseClassName(context)
+    , name_(name)
+    , localizedName_(localizedName)
 {
+}
 
+XRBinding* XRActionGroup::FindBinding(const ea::string& name, VRHand hand) const
+{
+    for (XRBinding* binding : bindings_)
+    {
+        if (binding->GetName().comparei(name) == 0 && (hand == VR_HAND_NONE || hand == binding->Hand()))
+            return binding;
+    }
+    return nullptr;
 }
 
 VRInterface::VRInterface(Context* ctx) : BaseClassName(ctx)
@@ -235,24 +255,22 @@ void VRInterface::UpdateRig(Scene* scene, Node* head, Node* leftEye, Node* right
     }
 }
 
-SharedPtr<XRBinding> VRInterface::GetInputBinding(const ea::string& path)
+XRBinding* VRInterface::GetInputBinding(const ea::string& path) const
 {
     if (activeActionSet_)
     {
-        for (auto b : activeActionSet_->bindings_)
-            if (b->path_.comparei(path) == 0)
-                return b;
+        if (XRBinding* binding = activeActionSet_->FindBinding(path, VR_HAND_NONE))
+            return binding;
     }
     return nullptr;
 }
 
-SharedPtr<XRBinding> VRInterface::GetInputBinding(const ea::string& path, VRHand hand)
+XRBinding* VRInterface::GetInputBinding(const ea::string& path, VRHand hand) const
 {
     if (activeActionSet_)
     {
-        for (auto b : activeActionSet_->bindings_)
-            if (hand == b->hand_ && b->path_.comparei(path) == 0)
-                return b;
+        if (XRBinding* binding = activeActionSet_->FindBinding(path, hand))
+            return binding;
     }
     return nullptr;
 }

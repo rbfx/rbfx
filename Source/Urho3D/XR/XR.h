@@ -50,6 +50,8 @@ using XrDebugUtilsMessengerEXTPtr = XrObjectSharedPtr<XrDebugUtilsMessengerEXT>;
 using XrSessionPtr = XrObjectSharedPtr<XrSession>;
 using XrSwapchainPtr = XrObjectSharedPtr<XrSwapchain>;
 using XrSpacePtr = XrObjectSharedPtr<XrSpace>;
+using XrActionSetPtr = XrObjectSharedPtr<XrActionSet>;
+using XrActionPtr = XrObjectSharedPtr<XrAction>;
 
 /// Tweaks that should be applied before graphics initialization.
 struct OpenXRTweaks
@@ -81,6 +83,65 @@ protected:
 };
 
 using OpenXRSwapChainPtr = ea::shared_ptr<OpenXRSwapChain>;
+
+/// Implementation of XRBinding for OpenXR.
+class OpenXRBinding : public XRBinding
+{
+    URHO3D_OBJECT(OpenXRBinding, XRBinding);
+
+public:
+    OpenXRBinding(Context* context, const ea::string& name, const ea::string& localizedName, VRHand hand,
+        VariantType dataType, bool isPose, bool isAimPose, XrActionSet set, XrActionPtr action, XrPath subPath,
+        XrSpacePtr actionSpace)
+        : XRBinding(context, name, localizedName, hand, dataType, isPose, isAimPose)
+        , action_(action)
+        , set_(set)
+        , subPath_(subPath)
+        , actionSpace_(actionSpace)
+    {
+    }
+
+public:
+    /// Owning ActionSet that contains this action.
+    const XrActionSet set_{};
+    /// Action itself, possibly shared in the case of sub-path handed actions.
+    const XrActionPtr action_;
+    /// Indicates handed-ness for the OXR query.
+    const XrPath subPath_{};
+    /// If we're a space action we'll have an action space.
+    const XrSpacePtr actionSpace_;
+
+    /// Position and orientation from space location.
+    XrSpaceLocation location_{XR_TYPE_SPACE_LOCATION};
+    /// Linear and Angular velocity from space location.
+    XrSpaceVelocity velocity_{XR_TYPE_SPACE_VELOCITY};
+};
+
+/// Implementation of XRActionGroup for OpenXR.
+class OpenXRActionGroup : public XRActionGroup
+{
+    URHO3D_OBJECT(OpenXRActionGroup, XRActionGroup)
+
+public:
+    OpenXRActionGroup(Context* context, const ea::string& name, const ea::string& localizedName, XrActionSetPtr set)
+        : XRActionGroup(context, name, localizedName)
+        , actionSet_(set)
+    {
+    }
+
+    void AddBinding(OpenXRBinding* binding)
+    {
+        bindings_.emplace_back(binding);
+    }
+
+    OpenXRBinding* FindBindingImpl(const ea::string& name)
+    {
+        return static_cast<OpenXRBinding*>(XRActionGroup::FindBinding(name, VR_HAND_NONE));
+    }
+
+public:
+    const XrActionSetPtr actionSet_;
+};
 
 /**
 
@@ -153,7 +214,7 @@ public:
     void HandlePreRender();
     void HandlePostRender(StringHash, VariantMap&);
 
-    virtual void BindActions(SharedPtr<XMLFile>);
+    void BindActions(XMLFile* xmlFile);
     /// Sets the current action set.
     virtual void SetCurrentActionSet(SharedPtr<XRActionGroup>) override;
 
@@ -228,59 +289,12 @@ protected:
     /// Loaded wand model mesh and texture data.
     ControllerModel wandModels_[2];
 
-    class XRActionBinding : public XRBinding
-    {
-        URHO3D_OBJECT(XRActionBinding, XRBinding);
-
-    public:
-        XRActionBinding(Context* ctx, OpenXR* xr)
-            : XRBinding(ctx)
-            , xr_(xr)
-        {
-        }
-        virtual ~XRActionBinding();
-
-        /// If haptic this will trigger a vibration.
-        virtual void Vibrate(float duration, float freq, float amplitude) override;
-
-        /// Reference to owning OpenXR instance.
-        OpenXR* xr_;
-        /// Action itself, possibly shared in the case of sub-path handed actions.
-        XrAction action_ = {};
-        /// Owning actionset that contains this action.
-        XrActionSet set_ = {};
-        /// Indicates handed-ness for the OXR query.
-        XrPath subPath_ = XR_NULL_PATH;
-        /// If we're a space action we'll have an action space.
-        XrSpace actionSpace_ = {};
-
-        /// Position and orientation from space location.
-        XrSpaceLocation location_ = {XR_TYPE_SPACE_LOCATION};
-        /// Linear and Angular velocity from space location.
-        XrSpaceVelocity velocity_ = {XR_TYPE_SPACE_VELOCITY};
-        /// only 1 of the subpath handlers will do deletion, this indicates who will do it.
-        bool responsibleForDelete_ = true;
-    };
-
-    class XRActionSet : public XRActionGroup
-    {
-        URHO3D_OBJECT(XRActionSet, XRActionGroup)
-    public:
-        XRActionSet(Context* ctx)
-            : XRActionGroup(ctx)
-        {
-        }
-        virtual ~XRActionSet();
-
-        XrActionSet actionSet_ = {};
-    };
-
     /// Cached grip pose bindings to avoid constant queries.
-    SharedPtr<XRActionBinding> handGrips_[2];
+    SharedPtr<OpenXRBinding> handGrips_[2];
     /// Cached aim pose bindings to avoid constant queries.
-    SharedPtr<XRActionBinding> handAims_[2];
+    SharedPtr<OpenXRBinding> handAims_[2];
     /// Cached haptic outputs to avoid constant queries.
-    SharedPtr<XRActionBinding> handHaptics_[2];
+    SharedPtr<OpenXRBinding> handHaptics_[2];
 };
 
 } // namespace Urho3D

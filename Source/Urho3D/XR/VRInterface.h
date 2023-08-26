@@ -79,17 +79,17 @@ namespace Urho3D
     /// Wraps an input binding. Subclassed as required by interface implementations.
     class URHO3D_API XRBinding : public Object
     {
-        friend class SteamVR;
+        URHO3D_OBJECT(XRBinding, Object);
+
+    public:
         friend class OpenXR;
         friend class VRInterface;
 
-        URHO3D_OBJECT(XRBinding, Object);
-    public:
-        XRBinding(Context*);
-        virtual ~XRBinding();
+        XRBinding(Context* context, const ea::string& name, const ea::string& localizedName, VRHand hand,
+            VariantType dataType, bool isPose, bool isAimPose);
 
-        ea::string GetLocalizedName() const { return localizedName_; }
-        void SetLocalizedName(const ea::string& name) { localizedName_ = name; }
+        const ea::string& GetName() const { return name_; }
+        const ea::string& GetLocalizedName() const { return localizedName_; }
 
         /// Returns true if this action has changed state since the last update.
         bool IsChanged() const { return changed_; }
@@ -113,14 +113,9 @@ namespace Urho3D
         Variant GetData() const { return storedData_; }
         /// Retrieve the delta variant stored.
         Variant GetDelta() const { return delta_; }
-        /// Retrieve secondary extra delta value.
-        Variant GetExtraDelta() const { return extraDelta_; }
 
         /// Returns true if this action is bound as a live input possibility.
         bool IsBound() const { return isBound_; }
-
-        /// If an output haptic action, induce vibration with the provided parameters.
-        virtual void Vibrate(float duration, float frequency, float amplitude) { }
 
         /// Returns true if this is an input method action.
         bool IsInput() const { return haptic_ == false; }
@@ -128,67 +123,62 @@ namespace Urho3D
         bool IsHaptic() const { return haptic_; }
 
     protected:
+        /// Internal name for the action.
+        const ea::string name_;
         /// Localized "friendly" name for the action, ie. "Trigger"
-        ea::string localizedName_;
-        /// Action binding path.
-        ea::string path_;
+        const ea::string localizedName_;
         /// Hand this action is attached to if a hand relevant action.
-        VRHand hand_ = VR_HAND_NONE;
+        const VRHand hand_;
         /// Data-type that the stored data can be expected to be.
-        VariantType dataType_;
+        const VariantType dataType_;
+        /// Indicates this is a haptic output action.
+        const bool haptic_;
+        /// Indicates this action pulls the base pose information for the given hand.
+        const bool isPose_;
+        /// Indicates this action pulls the aim pose information for the given hand.
+        const bool isAimPose_;
+
         /// The input has changed since the last update.
         bool changed_ = false;
         /// The input is in an active state of being used, ie. a button being held.
         bool active_ = false;
-        /// Indicates this is a haptic output action.
-        bool haptic_ = false;
         /// Indicates whether the action is properly bound to be used.
         bool isBound_ = false;
-        /// Indicates this action pulls the base pose information for the given hand.
-        bool isPose_ = false;
-        /// Indicates this action pulls the aim pose information for the given hand.
-        bool isAimPose_ = false;
         /// Stored data retrieved from input updates.
         Variant storedData_;
         /// Optional additional data such as velocities for a pose.
         Variant extraData_[2];
         /// Difference between the current and previous values.
         Variant delta_;
-        /// Additional deltas for the extraData members.
-        Variant extraDelta_[2];
     };
 
     /// Represents a logical action set in the underlying APIs.
     class URHO3D_API XRActionGroup : public Object
     {
-        friend class SteamVR;
-        friend class OpenXR;
-        friend class VRInterface;
-
         URHO3D_OBJECT(XRActionGroup, Object);
+
     public:
-        XRActionGroup(Context* ctx) : Object(ctx) { }
-        virtual ~XRActionGroup() { }
+        XRActionGroup(Context* context, const ea::string& name, const ea::string& localizedName);
 
-        /// Return action name.
-        const ea::string& GetName() const { return name_; }
-        /// Return localized action name.
-        const ea::string& GetLocalizedName() const { return localizedName_; }
-
-        /// Return the list of contained bindings, modifiable.
-        ea::vector<SharedPtr<XRBinding>>& GetBindings() { return bindings_; }
-        /// Return the list of contained bindings, non-modifiable.
+        /// Find binding by name, case insensitive.
+        XRBinding* FindBinding(const ea::string& name, VRHand hand) const;
+        /// Return all bindings.
         const ea::vector<SharedPtr<XRBinding>>& GetBindings() const { return bindings_; }
+
+        /// Return immutable properties.
+        /// @{
+        const ea::string& GetName() const { return name_; }
+        const ea::string& GetLocalizedName() const { return localizedName_; }
+        /// @}
 
     protected:
         /// Identifier of this action set.
-        ea::string name_;
+        const ea::string name_;
         /// Localized identifier.
-        ea::string localizedName_;
+        const ea::string localizedName_;
+
         /// Contained action bindings.
         ea::vector<SharedPtr<XRBinding>> bindings_;
-        /// Are we the default action-set?
-        bool isDefault_;
     };
 
     /** %VRInterface component
@@ -288,11 +278,12 @@ namespace Urho3D
         virtual bool IsLive() const = 0;
 
         /// Attempts to retrieve an input binding.
-        SharedPtr<XRBinding> GetInputBinding(const ea::string& path);
+        XRBinding* GetInputBinding(const ea::string& path) const;
         /// Attempts to retrieve a hand specific input binding.
-        SharedPtr<XRBinding> GetInputBinding(const ea::string& path, VRHand forHand);
+        XRBinding* GetInputBinding(const ea::string& path, VRHand hand) const;
         /// Returns the currently bound action set, null if no action set.
-        SharedPtr<XRActionGroup> GetCurrentActionSet() const { return activeActionSet_; }
+        XRActionGroup* GetCurrentActionSet() const { return activeActionSet_; }
+
         /// Sets the current action set by name.
         virtual void SetCurrentActionSet(const ea::string& setName);
         /// INTERFACE: Sets the current action set.

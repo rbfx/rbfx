@@ -150,4 +150,6 @@ void LoadOpenXRAPI(XrInstance instance);
 /// Reset OpenXR API functions.
 void UnloadOpenXRAPI();
 
+static const XrPosef xrPoseIdentity = {{0, 0, 0, 1}, {0, 0, 0}};
+
 } // namespace Urho3D

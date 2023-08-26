@@ -787,11 +787,224 @@ OpenXRSwapChainPtr CreateSwapChainXR(Context* context, XrSession session, Textur
     return result && result->GetNumTextures() != 0 ? result : nullptr;
 }
 
+ea::optional<VariantType> ParseBindingType(ea::string_view type)
+{
+    if (type == "boolean")
+        return VAR_BOOL;
+    else if (type == "vector1" || type == "single")
+        return VAR_FLOAT;
+    else if (type == "vector2")
+        return VAR_VECTOR2;
+    else if (type == "vector3")
+        return VAR_VECTOR3;
+    else if (type == "pose")
+        return VAR_MATRIX3X4;
+    else if (type == "haptic")
+        return VAR_NONE;
+    else
+        return ea::nullopt;
+}
+
+XrActionType ToActionType(VariantType type)
+{
+    switch (type)
+    {
+    case VAR_BOOL: return XR_ACTION_TYPE_BOOLEAN_INPUT;
+    case VAR_FLOAT: return XR_ACTION_TYPE_FLOAT_INPUT;
+    case VAR_VECTOR2: return XR_ACTION_TYPE_VECTOR2F_INPUT;
+    case VAR_VECTOR3: return XR_ACTION_TYPE_POSE_INPUT;
+    case VAR_MATRIX3X4: return XR_ACTION_TYPE_POSE_INPUT;
+    case VAR_NONE: return XR_ACTION_TYPE_VIBRATION_OUTPUT;
+    default: URHO3D_ASSERT(false); return XR_ACTION_TYPE_BOOLEAN_INPUT;
+    }
+}
+
+ea::array<XrPath, 2> GetHandPaths(XrInstance instance)
+{
+    ea::array<XrPath, 2> handPaths{};
+    xrStringToPath(instance, "/user/hand/left", &handPaths[VR_HAND_LEFT]);
+    xrStringToPath(instance, "/user/hand/right", &handPaths[VR_HAND_RIGHT]);
+    return handPaths;
+}
+
+ea::pair<XrSpacePtr, XrSpacePtr> CreateActionSpaces(
+    XrInstance instance, XrSession session, XrAction action, bool isHanded)
+{
+    XrActionSpaceCreateInfo spaceInfo = {XR_TYPE_ACTION_SPACE_CREATE_INFO};
+    spaceInfo.action = action;
+    spaceInfo.poseInActionSpace = xrPoseIdentity;
+
+    if (!isHanded)
+    {
+        XrSpace space{};
+        if (!URHO3D_CHECK_OPENXR(xrCreateActionSpace(session, &spaceInfo, &space)))
+            return {};
+
+        const auto wrappedSpace = XrSpacePtr(space, [](XrSpace space) { xrDestroySpace(space); });
+        return {wrappedSpace, wrappedSpace};
+    }
+
+    const auto handPaths = GetHandPaths(instance);
+
+    XrSpace spaceLeft{};
+    spaceInfo.subactionPath = handPaths[VR_HAND_LEFT];
+    if (!URHO3D_CHECK_OPENXR(xrCreateActionSpace(session, &spaceInfo, &spaceLeft)))
+        return {};
+    const auto wrappedSpaceLeft = XrSpacePtr(spaceLeft, [](XrSpace space) { xrDestroySpace(space); });
+
+    XrSpace spaceRight{};
+    spaceInfo.subactionPath = handPaths[VR_HAND_RIGHT];
+    if (!URHO3D_CHECK_OPENXR(xrCreateActionSpace(session, &spaceInfo, &spaceRight)))
+        return {};
+    const auto wrappedSpaceRight = XrSpacePtr(spaceRight, [](XrSpace space) { xrDestroySpace(space); });
+
+    return {wrappedSpaceLeft, wrappedSpaceRight};
+}
+
+ea::pair<SharedPtr<OpenXRBinding>, SharedPtr<OpenXRBinding>> CreateBinding(
+    XrInstance instance, XrSession session, XrActionSet actionSet, XMLElement element)
+{
+    Context* context = Context::GetInstance();
+    auto localization = context->GetSubsystem<Localization>();
+
+    const auto handPaths = GetHandPaths(instance);
+
+    const ea::string name = element.GetAttribute("name");
+    const ea::string typeName = element.GetAttribute("type");
+    const bool handed = element.GetBool("handed");
+
+    // Create action
+    XrActionCreateInfo createInfo = {XR_TYPE_ACTION_CREATE_INFO};
+    if (handed)
+    {
+        createInfo.countSubactionPaths = 2;
+        createInfo.subactionPaths = handPaths.data();
+    }
+
+    const ea::string localizedName = localization->Get(name);
+    strcpy_s(createInfo.actionName, 64, name.c_str());
+    strcpy_s(createInfo.localizedActionName, 128, localizedName.c_str());
+
+    const auto type = ParseBindingType(typeName);
+    if (!type)
+    {
+        URHO3D_LOGERROR("Unknown XR action type '{}' for action '{}'", typeName, name);
+        return {};
+    }
+    createInfo.actionType = ToActionType(*type);
+
+    XrAction action{};
+    if (!URHO3D_CHECK_OPENXR(xrCreateAction(actionSet, &createInfo, &action)))
+        return {};
+    const auto wrappedAction = XrActionPtr(action, [](XrAction action) { xrDestroyAction(action); });
+
+    const bool needActionSpace = createInfo.actionType == XR_ACTION_TYPE_POSE_INPUT;
+    const auto actionSpaces =
+        needActionSpace ? CreateActionSpaces(instance, session, action, handed) : ea::pair<XrSpacePtr, XrSpacePtr>{};
+
+    if (handed)
+    {
+        const bool isPose = element.GetBool("grip");
+        const bool isAimPose = element.GetBool("aim");
+
+        const auto bindingLeft = MakeShared<OpenXRBinding>(context, name, localizedName, //
+            VR_HAND_LEFT, *type, isPose, isAimPose, actionSet, wrappedAction, handPaths[VR_HAND_LEFT], actionSpaces.first);
+        const auto bindingRight = MakeShared<OpenXRBinding>(context, name, localizedName, //
+            VR_HAND_RIGHT, *type, isPose, isAimPose, actionSet, wrappedAction, handPaths[VR_HAND_RIGHT], actionSpaces.second);
+
+        return {bindingLeft, bindingRight};
+    }
+    else
+    {
+        const auto binding = MakeShared<OpenXRBinding>(context, name, localizedName, //
+            VR_HAND_NONE, *type, false, false, actionSet, wrappedAction, XrPath{}, actionSpaces.first);
+        return {binding, binding};
+    }
+}
+
+void SuggestInteractionProfile(XrInstance instance, XMLElement element, OpenXRActionGroup* actionGroup)
+{
+    const ea::string device = element.GetAttribute("device");
+    XrPath devicePath{};
+    xrStringToPath(instance, device.c_str(), &devicePath);
+
+    XrInteractionProfileSuggestedBinding suggest = {XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING};
+    suggest.interactionProfile = devicePath;
+
+    ea::vector<XrActionSuggestedBinding> bindings;
+    for (auto child = element.GetChild("bind"); child.NotNull(); child = child.GetNext("bind"))
+    {
+        ea::string action = child.GetAttribute("action");
+        ea::string bindPathString = child.GetAttribute("path");
+
+        XrPath bindPath;
+        xrStringToPath(instance, bindPathString.c_str(), &bindPath);
+
+        if (OpenXRBinding* binding = actionGroup->FindBindingImpl(action))
+        {
+            XrActionSuggestedBinding suggestedBinding{};
+            suggestedBinding.action = binding->action_.Raw();
+            suggestedBinding.binding = bindPath;
+            bindings.push_back(suggestedBinding);
+        }
+    }
+
+    if (!bindings.empty())
+    {
+        suggest.countSuggestedBindings = bindings.size();
+        suggest.suggestedBindings = bindings.data();
+
+        URHO3D_CHECK_OPENXR(xrSuggestInteractionProfileBindings(instance, &suggest));
+    }
+}
+
+SharedPtr<OpenXRActionGroup> CreateActionGroup(
+    XrInstance instance, XrSession session, XMLElement element, const StringVector& activeExtensions)
+{
+    Context* context = Context::GetInstance();
+    auto localization = context->GetSubsystem<Localization>();
+
+    const ea::string name = element.GetAttribute("name");
+    const ea::string localizedName = localization->Get(name);
+
+    XrActionSetCreateInfo createInfo = {XR_TYPE_ACTION_SET_CREATE_INFO};
+    strncpy(createInfo.actionSetName, name.c_str(), XR_MAX_ACTION_SET_NAME_SIZE);
+    strncpy(createInfo.localizedActionSetName, localizedName.c_str(), XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE);
+
+    XrActionSet actionSet{};
+    if (!URHO3D_CHECK_OPENXR(xrCreateActionSet(instance, &createInfo, &actionSet)))
+        return nullptr;
+
+    const auto wrappedActionSet = XrActionSetPtr(actionSet, [](XrActionSet set) { xrDestroyActionSet(set); });
+    auto actionGroup = MakeShared<OpenXRActionGroup>(context, name, localizedName, wrappedActionSet);
+
+    auto actionsElement = element.GetChild("actions");
+    for (auto child = actionsElement.GetChild("action"); child.NotNull(); child = child.GetNext("action"))
+    {
+        const auto [bindingLeft, bindingRight] = CreateBinding(instance, session, actionSet, child);
+        if (!bindingLeft || !bindingRight)
+            return nullptr;
+
+        actionGroup->AddBinding(bindingLeft);
+        if (bindingLeft != bindingRight)
+            actionGroup->AddBinding(bindingRight);
+    }
+
+    for (auto child = element.GetChild("profile"); child.NotNull(); child = child.GetNext("profile"))
+    {
+        const ea::string extension = child.GetAttribute("extension");
+        if (!extension.empty() && !IsExtensionSupported(activeExtensions, extension.c_str()))
+            continue;
+
+        SuggestInteractionProfile(instance, child, actionGroup);
+    }
+
+    return actionGroup;
+}
+
 } // namespace
 
 SharedPtr<Node> LoadGLTFModel(Context* ctx, tinygltf::Model& model);
-
-const XrPosef xrPoseIdentity = { {0,0,0,1}, {0,0,0} };
 
 #define XR_INIT_TYPE(D, T) for (auto& a : D) a.type = T
 
@@ -931,6 +1144,8 @@ bool OpenXR::InitializeSystem(RenderBackend backend)
     const ea::string& engineName = "Rebel Fork of Urho3D";
     const ea::string& applicationName = engine->GetParameter(EP_APPLICATION_NAME).GetString();
     instance_ = CreateInstanceXR(activeExtensions_, engineName, applicationName);
+    if (!instance_)
+        return false;
 
     XrInstanceProperties instProps = {XR_TYPE_INSTANCE_PROPERTIES};
     if (xrGetInstanceProperties(instance_.Raw(), &instProps) == XR_SUCCESS)
@@ -1195,13 +1410,13 @@ void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
         {
             // ensure velocity is linked
             handAims_[i]->location_.next = &handAims_[i]->velocity_;
-            xrLocateSpace(handAims_[i]->actionSpace_, headSpace_.Raw(), frameState.predictedDisplayTime, &handAims_[i]->location_);
+            xrLocateSpace(handAims_[i]->actionSpace_.Raw(), headSpace_.Raw(), frameState.predictedDisplayTime, &handAims_[i]->location_);
         }
 
         if (handGrips_[i])
         {
             handGrips_[i]->location_.next = &handGrips_[i]->velocity_;
-            xrLocateSpace(handGrips_[i]->actionSpace_, headSpace_.Raw(), frameState.predictedDisplayTime, &handGrips_[i]->location_);
+            xrLocateSpace(handGrips_[i]->actionSpace_.Raw(), headSpace_.Raw(), frameState.predictedDisplayTime, &handGrips_[i]->location_);
         }
     }
 
@@ -1218,10 +1433,10 @@ void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
 // handle actions
     if (activeActionSet_)
     {
-        auto set = activeActionSet_->Cast<XRActionSet>();
+        auto set = activeActionSet_->Cast<OpenXRActionGroup>();
 
         XrActiveActionSet activeSet = { };
-        activeSet.actionSet = set->actionSet_;
+        activeSet.actionSet = set->actionSet_.Raw();
 
         XrActionsSyncInfo sync = { XR_TYPE_ACTIONS_SYNC_INFO };
         sync.activeActionSets = &activeSet;
@@ -1357,203 +1572,13 @@ void OpenXR::HandlePostRender(StringHash, VariantMap&)
     }
 }
 
-void OpenXR::BindActions(SharedPtr<XMLFile> doc)
+void OpenXR::BindActions(XMLFile* xmlFile)
 {
-    auto root = doc->GetRoot();
-
-    auto sets = root.GetChild("actionsets");
-
-    XrPath handPaths[2];
-    xrStringToPath(instance_.Raw(), "/user/hand/left", &handPaths[VR_HAND_LEFT]);
-    xrStringToPath(instance_.Raw(), "/user/hand/right", &handPaths[VR_HAND_RIGHT]);
-
-    for (auto set = root.GetChild("actionset"); set.NotNull(); set = set.GetNext("actionset"))
+    auto rootElement = xmlFile->GetRoot();
+    for (auto child = rootElement.GetChild("actionset"); child.NotNull(); child = child.GetNext("actionset"))
     {
-        XrActionSetCreateInfo setCreateInfo = { XR_TYPE_ACTION_SET_CREATE_INFO };
-        ea::string setName = set.GetAttribute("name");
-        ea::string setLocalName = GetSubsystem<Localization>()->Get(setName);
-        strncpy(setCreateInfo.actionSetName, setName.c_str(), XR_MAX_ACTION_SET_NAME_SIZE);
-        strncpy(setCreateInfo.localizedActionSetName, setLocalName.c_str(), XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE);
-
-        XrActionSet createSet = { };
-        auto errCode = xrCreateActionSet(instance_.Raw(), &setCreateInfo, &createSet);
-        if (errCode != XR_SUCCESS)
-        {
-            URHO3D_LOGERRORF("Failed to create ActionSet: %s, error: %s", setName.c_str(), xrGetErrorStr(errCode));
-            continue;
-        }
-
-        // create our wrapper
-        SharedPtr<XRActionSet> actionSet(new XRActionSet(GetContext()));
-        actionSet->actionSet_ = createSet;
-        actionSets_.insert({ setName, actionSet });
-
-        auto bindings = set.GetChild("actions");
-        for (auto child = bindings.GetChild("action"); child.NotNull(); child = child.GetNext("action"))
-        {
-            ea::string name = child.GetAttribute("name");
-            ea::string type = child.GetAttribute("type");
-            bool handed = child.GetBool("handed");
-
-            SharedPtr<XRActionBinding> binding(new XRActionBinding(GetContext(), this));
-            SharedPtr<XRActionBinding> otherHand = binding; // if identical it won't be pushed
-
-            XrActionCreateInfo createInfo = { XR_TYPE_ACTION_CREATE_INFO };
-            if (handed)
-            {
-                otherHand = new XRActionBinding(GetContext(), this);
-                binding->hand_ = VR_HAND_LEFT;
-                binding->subPath_ = handPaths[VR_HAND_LEFT];
-                otherHand->hand_ = VR_HAND_RIGHT;
-                otherHand->subPath_ = handPaths[VR_HAND_RIGHT];
-
-                createInfo.countSubactionPaths = 2;
-                createInfo.subactionPaths = handPaths;
-                binding->hand_ = VR_HAND_LEFT;
-                otherHand->hand_ = VR_HAND_RIGHT;
-            }
-            else
-                binding->hand_ = VR_HAND_NONE;
-
-            ea::string localizedName = GetSubsystem<Localization>()->Get(name);
-            strcpy_s(createInfo.actionName, 64, name.c_str());
-            strcpy_s(createInfo.localizedActionName, 128, localizedName.c_str());
-
-#define DUPLEX(F, V) binding->F = V; otherHand->F = V
-
-            DUPLEX(path_, name);
-            DUPLEX(localizedName_, localizedName);
-
-            if (type == "boolean")
-            {
-                DUPLEX(dataType_, VAR_BOOL);
-                createInfo.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
-            }
-            else if (type == "vector1" || type == "single")
-            {
-                DUPLEX(dataType_, VAR_FLOAT);
-                createInfo.actionType = XR_ACTION_TYPE_FLOAT_INPUT;
-            }
-            else if (type == "vector2")
-            {
-                DUPLEX(dataType_, VAR_VECTOR2);
-                createInfo.actionType = XR_ACTION_TYPE_VECTOR2F_INPUT;
-            }
-            else if (type == "vector3")
-            {
-                DUPLEX(dataType_, VAR_VECTOR3);
-                createInfo.actionType = XR_ACTION_TYPE_POSE_INPUT;
-            }
-            else if (type == "pose")
-            {
-                DUPLEX(dataType_, VAR_MATRIX3X4);
-                createInfo.actionType = XR_ACTION_TYPE_POSE_INPUT;
-            }
-            else if (type == "haptic")
-            {
-                DUPLEX(dataType_, VAR_NONE);
-                DUPLEX(haptic_, true);
-                createInfo.actionType = XR_ACTION_TYPE_VIBRATION_OUTPUT;
-            }
-            else
-            {
-                URHO3D_LOGERRORF("Unknown XR action type: %s", type.c_str());
-                continue;
-            }
-
-            auto result = xrCreateAction(createSet, &createInfo, &binding->action_);
-            if (result != XR_SUCCESS)
-            {
-                URHO3D_LOGERRORF("Failed to create action %s because %s", name.c_str(), xrGetErrorStr(result));
-                continue;
-            }
-
-            if (binding->dataType_ == VAR_MATRIX3X4 || binding->dataType_ == VAR_VECTOR3)
-            {
-                XrActionSpaceCreateInfo spaceInfo = { XR_TYPE_ACTION_SPACE_CREATE_INFO };
-                spaceInfo.action = binding->action_;
-                spaceInfo.poseInActionSpace = xrPoseIdentity;
-                if (handed)
-                {
-                    spaceInfo.subactionPath = handPaths[0];
-                    xrCreateActionSpace(session_.Raw(), &spaceInfo, &binding->actionSpace_);
-                    spaceInfo.subactionPath = handPaths[1];
-                    xrCreateActionSpace(session_.Raw(), &spaceInfo, &otherHand->actionSpace_);
-
-                    if (child.GetBool("grip"))
-                    {
-                        binding->isPose_ = true;
-                        otherHand->isPose_ = true;
-                    }
-                    else if (child.GetBool("aim"))
-                    {
-                        binding->isAimPose_ = true;
-                        otherHand->isAimPose_ = true;
-                    }
-                }
-                else
-                    xrCreateActionSpace(session_.Raw(), &spaceInfo, &binding->actionSpace_);
-            }
-
-            DUPLEX(set_, createSet);
-            otherHand->action_ = binding->action_;
-
-            actionSet->bindings_.push_back(binding);
-            if (otherHand != binding)
-            {
-                otherHand->responsibleForDelete_ = false;
-                actionSet->bindings_.push_back(otherHand);
-            }
-        }
-
-#undef DUPLEX
-
-        for (auto child = set.GetChild("profile"); child.NotNull(); child = child.GetNext("profile"))
-        {
-            const ea::string device = child.GetAttribute("device");
-            const ea::string extension = child.GetAttribute("extension");
-            if (!extension.empty() && !IsExtensionSupported(activeExtensions_, extension.c_str()))
-                continue;
-
-            XrPath devicePath;
-            xrStringToPath(instance_.Raw(), device.c_str(), &devicePath);
-
-            XrInteractionProfileSuggestedBinding suggest = { XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING };
-            suggest.interactionProfile = devicePath;
-            ea::vector<XrActionSuggestedBinding> bindings;
-
-            for (auto bind = child.GetChild("bind"); bind.NotNull(); bind = bind.GetNext("bind"))
-            {
-                ea::string action = bind.GetAttribute("action");
-                ea::string bindStr = bind.GetAttribute("path");
-
-                XrPath bindPath;
-                xrStringToPath(instance_.Raw(), bindStr.c_str(), &bindPath);
-
-                XrActionSuggestedBinding b = { };
-
-                for (auto found : actionSet->bindings_)
-                {
-                    if (found->path_.comparei(action) == 0)
-                    {
-                        b.action = found->Cast<XRActionBinding>()->action_;
-                        b.binding = bindPath;
-                        bindings.push_back(b);
-                        break;
-                    }
-                }
-            }
-
-            if (!bindings.empty())
-            {
-                suggest.countSuggestedBindings = bindings.size();
-                suggest.suggestedBindings = bindings.data();
-
-                auto res = xrSuggestInteractionProfileBindings(instance_.Raw(), &suggest);
-                if (res != XR_SUCCESS)
-                    URHO3D_LOGERRORF("Failed to suggest bindings: %s", xrGetErrorStr(res));
-            }
-        }
+        auto actionGroup = CreateActionGroup(instance_.Raw(), session_.Raw(), child, activeExtensions_);
+        actionSets_.insert({actionGroup->GetName(), actionGroup});
     }
 
     UpdateBindingBound();
@@ -1563,13 +1588,15 @@ void OpenXR::SetCurrentActionSet(SharedPtr<XRActionGroup> set)
 {
     if (session_ && set != nullptr)
     {
-        auto xrSet = set->Cast<XRActionSet>();
+        auto xrSet = set->Cast<OpenXRActionGroup>();
         if (xrSet->actionSet_)
         {
             activeActionSet_ = set;
 
+            XrActionSet actionSets[] = {xrSet->actionSet_.Raw()};
+
             XrSessionActionSetsAttachInfo attachInfo = { XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO };
-            attachInfo.actionSets = &xrSet->actionSet_;
+            attachInfo.actionSets = actionSets;
             attachInfo.countActionSets = 1;
             xrAttachSessionActionSets(session_.Raw(), &attachInfo);
 
@@ -1591,18 +1618,18 @@ void OpenXR::UpdateBindings(float t)
 
     eventData[VRBindingChange::P_ACTIVE] = true;
 
-    for (auto b : activeActionSet_->bindings_)
+    for (auto b : activeActionSet_->GetBindings())
     {
-        auto bind = b->Cast<XRActionBinding>();
+        auto bind = b->Cast<OpenXRBinding>();
         if (bind->action_)
         {
             eventData[P_NAME] = bind->localizedName_;
             eventData[P_BINDING] = bind;
 
-#define SEND_EVENT eventData[P_DATA] = bind->storedData_; eventData[P_DELTA] = bind->delta_; eventData[P_EXTRADELTA] = bind->extraDelta_[0]
+#define SEND_EVENT eventData[P_DATA] = bind->storedData_; eventData[P_DELTA] = bind->delta_;
 
             XrActionStateGetInfo getInfo = { XR_TYPE_ACTION_STATE_GET_INFO };
-            getInfo.action = bind->action_;
+            getInfo.action = bind->action_.Raw();
             getInfo.subactionPath = bind->subPath_;
 
             switch (bind->dataType_)
@@ -1991,14 +2018,26 @@ void OpenXR::UpdateControllerModel(VRHand hand, SharedPtr<Node> model)
 
 void OpenXR::TriggerHaptic(VRHand hand, float durationSeconds, float cyclesPerSec, float amplitude)
 {
-    if (activeActionSet_)
+    if (!activeActionSet_ || !IsLive())
+        return;
+
+    for (XRBinding* binding : activeActionSet_->GetBindings())
     {
-        // Consider memoizing? We're realistically only going to have like 15 or so actions in a set.
-        for (auto b : activeActionSet_->bindings_)
-        {
-            if (b->IsHaptic() && b->Hand() == hand)
-                b->Vibrate(durationSeconds, cyclesPerSec, amplitude);
-        }
+        if (!binding->IsHaptic() || binding->Hand() != hand)
+            continue;
+
+        const auto bindingImpl = static_cast<OpenXRBinding*>(binding);
+
+        XrHapticActionInfo info = {XR_TYPE_HAPTIC_ACTION_INFO};
+        info.action = bindingImpl->action_.Raw();
+        info.subactionPath = bindingImpl->subPath_;
+
+        XrHapticVibration vibration = {XR_TYPE_HAPTIC_VIBRATION};
+        vibration.amplitude = amplitude;
+        vibration.frequency = cyclesPerSec;
+        vibration.duration = durationSeconds * 1000.0f;
+
+        xrApplyHapticFeedback(session_.Raw(), &info, reinterpret_cast<XrHapticBaseHeader*>(&vibration));
     }
 }
 
@@ -2126,39 +2165,6 @@ Matrix3x4 OpenXR::GetHeadTransform() const
     return uxrGetTransform(headLoc_.pose, scaleCorrection_);
 }
 
-OpenXR::XRActionBinding::~XRActionBinding()
-{
-    if (responsibleForDelete_ && action_)
-        xrDestroyAction(action_);
-    if (actionSpace_)
-        xrDestroySpace(actionSpace_);
-    action_ = 0;
-}
-
-OpenXR::XRActionSet::~XRActionSet()
-{
-    bindings_.clear();
-    if (actionSet_)
-        xrDestroyActionSet(actionSet_);
-    actionSet_ = 0;
-}
-
-void OpenXR::XRActionBinding::Vibrate(float duration, float freq, float amplitude)
-{
-    if (!xr_->IsLive())
-        return;
-
-    XrHapticActionInfo info = { XR_TYPE_HAPTIC_ACTION_INFO };
-    info.action = action_;
-    info.subactionPath = subPath_;
-
-    XrHapticVibration vib = { XR_TYPE_HAPTIC_VIBRATION };
-    vib.amplitude = amplitude;
-    vib.frequency = freq;
-    vib.duration = duration * 1000.0f;
-    xrApplyHapticFeedback(xr_->session_.Raw(), &info, (XrHapticBaseHeader*)&vib);
-}
-
 void OpenXR::UpdateBindingBound()
 {
     if (session_ == 0)
@@ -2166,19 +2172,19 @@ void OpenXR::UpdateBindingBound()
 
     if (activeActionSet_)
     {
-        for (auto b : activeActionSet_->bindings_)
+        for (auto b : activeActionSet_->GetBindings())
         {
-            auto bind = b->Cast<XRActionBinding>();
+            auto bind = b->Cast<OpenXRBinding>();
             XrBoundSourcesForActionEnumerateInfo info = { XR_TYPE_BOUND_SOURCES_FOR_ACTION_ENUMERATE_INFO };
-            info.action = bind->action_;
+            info.action = bind->action_.Raw();
             unsigned binds = 0;
             xrEnumerateBoundSourcesForAction(session_.Raw(), &info, 0, &binds, nullptr);
             b->isBound_ = binds > 0;
 
             if (b->isAimPose_)
-                handAims_[b->Hand()] = b->Cast<XRActionBinding>();
+                handAims_[b->Hand()] = b->Cast<OpenXRBinding>();
             if (b->isPose_)
-                handGrips_[b->Hand()] = b->Cast<XRActionBinding>();
+                handGrips_[b->Hand()] = b->Cast<OpenXRBinding>();
         }
     }
 }

@@ -31,7 +31,7 @@
 namespace Urho3D
 {
 
-Vector3 SmoothLocomotionHead(Node* rigNode, SharedPtr<XRBinding> joystickBinding, float deadZone, bool xzPlanar, bool normalized)
+Vector3 SmoothLocomotionHead(Node* rigNode, XRBinding* joystickBinding, float deadZone, bool xzPlanar, bool normalized)
 {
     if (rigNode == nullptr || joystickBinding == nullptr)
         return Vector3::ZERO;
@@ -67,7 +67,7 @@ Vector3 SmoothLocomotionHead(Node* rigNode, SharedPtr<XRBinding> joystickBinding
     return normalized ? vec.Normalized() : vec;
 }
 
-Vector3 SmoothLocomotionAim(Node* rigNode, SharedPtr<XRBinding> joystickBinding, VRHand whichHand, float deadZone, bool xzPlanar, bool normalized)
+Vector3 SmoothLocomotionAim(Node* rigNode, XRBinding* joystickBinding, VRHand whichHand, float deadZone, bool xzPlanar, bool normalized)
 {
     if (rigNode == nullptr || joystickBinding == nullptr)
         return Vector3::ZERO;
@@ -116,7 +116,7 @@ Vector3 GrabLocomotion(Node* handNode)
     return Vector3::ZERO;
 }
 
-int TrackpadAsDPad(SharedPtr<XRBinding> trackpadPosition, SharedPtr<XRBinding> trackpadClick, float centerRadius, bool* trackpadDown)
+int TrackpadAsDPad(XRBinding* trackpadPosition, XRBinding* trackpadClick, float centerRadius, bool* trackpadDown)
 {
     if (!trackpadClick->IsActive() || !trackpadClick->IsBound())
         return 0;
@@ -149,7 +149,7 @@ int TrackpadAsDPad(SharedPtr<XRBinding> trackpadPosition, SharedPtr<XRBinding> t
     return 0;
 }
 
-int JoystickAsDPad(SharedPtr<XRBinding> joystickPosition, float centerDeadzone)
+int JoystickAsDPad(XRBinding* joystickPosition, float centerDeadzone)
 {
     if (!joystickPosition->IsActive())
         return 0;
@@ -186,7 +186,7 @@ bool ButtonClicked(int targetCode, int* currentCode, int nextCode)
 }
 
 
-int TrackpadAsTwoButton(SharedPtr<XRBinding> trackpadPosition, SharedPtr<XRBinding> trackpadClick, float centerDeadzone, VRHand hand, bool upDownMode, bool* trackpadDown)
+int TrackpadAsTwoButton(XRBinding* trackpadPosition, XRBinding* trackpadClick, float centerDeadzone, VRHand hand, bool upDownMode, bool* trackpadDown)
 {
     if (!trackpadClick->IsActive() || !trackpadClick->IsBound())
         return 0;

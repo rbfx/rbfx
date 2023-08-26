@@ -25,8 +25,8 @@
             <action name="grab" type="single" handed="true" />
             <action name="trigger" type="single" handed="true" />
             <action name="touchpad" type="vector2" handed="true" /> <!-- compound action, documentation on these is junk, WMR / Vive Wand / Index -->
-            <action name="touchpad_click" type="bool" handed="true" />
-            <action name="touchpad_touch" type="bool" handed="true" />
+            <action name="touchpad_click" type="boolean" handed="true" />
+            <action name="touchpad_touch" type="boolean" handed="true" />
             <action name="stick" type="vector2" handed="true" /> <!-- basically everyone has a joystick except a few Gyro based cases that aren't super real -->
             <action name="stickdown" type="boolean" handed="true" /> <!-- note: stick down may not function correctly, such as activating SteamVR menus -->
             <action name="menu" type="boolean" handed="true" /> <!-- note: some systems only have a single hand menu on the left-hand, right-hand menu will be unbound -->
