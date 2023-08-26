@@ -4,7 +4,10 @@
 
 #pragma once
 
-#include "Urho3D/Urho3D.h"
+#include "Urho3D/Math/Matrix3x4.h"
+#include "Urho3D/Math/Matrix4.h"
+#include "Urho3D/Math/Quaternion.h"
+#include "Urho3D/Math/Vector3.h"
 #include "Urho3D/RenderAPI/GAPIIncludes.h"
 
 #ifdef XR_USE_GRAPHICS_API_OPENGL_ES
@@ -151,5 +154,34 @@ void LoadOpenXRAPI(XrInstance instance);
 void UnloadOpenXRAPI();
 
 static const XrPosef xrPoseIdentity = {{0, 0, 0, 1}, {0, 0, 0}};
+
+/// Cast from OpenXR vector to engine format.
+inline Vector3 ToVector3(XrVector3f v)
+{
+    return Vector3(v.x, v.y, -v.z);
+}
+
+/// Cast from OpenXR quaternion to engine format.
+inline Quaternion ToQuaternion(XrQuaternionf q)
+{
+    Quaternion out;
+    out.x_ = -q.x;
+    out.y_ = -q.y;
+    out.z_ = q.z;
+    out.w_ = q.w;
+    return out;
+}
+
+/// Cast from OpenXR pose to engine format.
+inline Matrix3x4 ToMatrix3x4(XrPosef pose, float scale)
+{
+    return Matrix3x4(ToVector3(pose.position), ToQuaternion(pose.orientation), scale);
+}
+
+/// Calculate projection matrix from angles.
+/// TODO: Move to Math
+Matrix4 ToProjectionMatrix(
+    float nearZ, float farZ, float angleLeft, float angleTop, float angleRight, float angleBottom);
+Matrix4 ToProjectionMatrix(float nearZ, float farZ, XrFovf fov);
 
 } // namespace Urho3D

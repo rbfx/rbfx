@@ -212,8 +212,7 @@ XrDebugUtilsMessengerEXTPtr CreateDebugMessengerXR(XrInstance instance)
     if (!messenger)
         return nullptr;
 
-    const auto deleter = [](XrDebugUtilsMessengerEXT messenger) { xrDestroyDebugUtilsMessengerEXT(messenger); };
-    return XrDebugUtilsMessengerEXTPtr(messenger, deleter);
+    return XrDebugUtilsMessengerEXTPtr(messenger, xrDestroyDebugUtilsMessengerEXT);
 }
 
 ea::optional<XrSystemId> GetSystemXR(XrInstance instance)
@@ -501,8 +500,7 @@ XrSessionPtr CreateSessionXR(RenderDevice* renderDevice, XrInstance instance, Xr
     default: URHO3D_ASSERTLOG(false, "OpenXR is not implemented for this backend"); return nullptr;
     }
 
-    const auto wrappedSession = XrSessionPtr(session, [](XrSession session) { xrDestroySession(session); });
-    return wrappedSession;
+    return XrSessionPtr(session, xrDestroySession);
 }
 
 ea::pair<XrSpacePtr, bool> CreateHeadSpaceXR(XrSession session)
@@ -523,7 +521,7 @@ ea::pair<XrSpacePtr, bool> CreateHeadSpaceXR(XrSession session)
             return {};
     }
 
-    const auto wrappedSpace = XrSpacePtr(space, [](XrSpace space) { xrDestroySpace(space); });
+    const auto wrappedSpace = XrSpacePtr(space, xrDestroySpace);
     return {wrappedSpace, isRoomScale};
 }
 
@@ -538,8 +536,7 @@ XrSpacePtr CreateViewSpaceXR(XrSession session)
     if (!URHO3D_CHECK_OPENXR(xrCreateReferenceSpace(session, &createInfo, &space)))
         return nullptr;
 
-    const auto wrappedSpace = XrSpacePtr(space, [](XrSpace space) { xrDestroySpace(space); });
-    return wrappedSpace;
+    return XrSpacePtr(space, xrDestroySpace);
 }
 
 template <class T, XrStructureType ImageStructureType> class OpenXRSwapChainBase : public OpenXRSwapChain
@@ -571,7 +568,7 @@ public:
         if (!URHO3D_CHECK_OPENXR(xrCreateSwapchain(session, &swapInfo, &swapChain)))
             return;
 
-        swapChain_ = XrSwapchainPtr(swapChain, [](XrSwapchain swapChain) { xrDestroySwapchain(swapChain); });
+        swapChain_ = XrSwapchainPtr(swapChain, xrDestroySwapchain);
 
         uint32_t numImages = 0;
         if (!URHO3D_CHECK_OPENXR(xrEnumerateSwapchainImages(swapChain_.Raw(), 0, &numImages, nullptr)))
@@ -840,7 +837,7 @@ ea::pair<XrSpacePtr, XrSpacePtr> CreateActionSpaces(
         if (!URHO3D_CHECK_OPENXR(xrCreateActionSpace(session, &spaceInfo, &space)))
             return {};
 
-        const auto wrappedSpace = XrSpacePtr(space, [](XrSpace space) { xrDestroySpace(space); });
+        const auto wrappedSpace = XrSpacePtr(space, xrDestroySpace);
         return {wrappedSpace, wrappedSpace};
     }
 
@@ -850,13 +847,13 @@ ea::pair<XrSpacePtr, XrSpacePtr> CreateActionSpaces(
     spaceInfo.subactionPath = handPaths[VR_HAND_LEFT];
     if (!URHO3D_CHECK_OPENXR(xrCreateActionSpace(session, &spaceInfo, &spaceLeft)))
         return {};
-    const auto wrappedSpaceLeft = XrSpacePtr(spaceLeft, [](XrSpace space) { xrDestroySpace(space); });
+    const auto wrappedSpaceLeft = XrSpacePtr(spaceLeft, xrDestroySpace);
 
     XrSpace spaceRight{};
     spaceInfo.subactionPath = handPaths[VR_HAND_RIGHT];
     if (!URHO3D_CHECK_OPENXR(xrCreateActionSpace(session, &spaceInfo, &spaceRight)))
         return {};
-    const auto wrappedSpaceRight = XrSpacePtr(spaceRight, [](XrSpace space) { xrDestroySpace(space); });
+    const auto wrappedSpaceRight = XrSpacePtr(spaceRight, xrDestroySpace);
 
     return {wrappedSpaceLeft, wrappedSpaceRight};
 }
@@ -896,7 +893,7 @@ ea::pair<SharedPtr<OpenXRBinding>, SharedPtr<OpenXRBinding>> CreateBinding(
     XrAction action{};
     if (!URHO3D_CHECK_OPENXR(xrCreateAction(actionSet, &createInfo, &action)))
         return {};
-    const auto wrappedAction = XrActionPtr(action, [](XrAction action) { xrDestroyAction(action); });
+    const auto wrappedAction = XrActionPtr(action, xrDestroyAction);
 
     const bool needActionSpace = createInfo.actionType == XR_ACTION_TYPE_POSE_INPUT;
     const auto actionSpaces =
@@ -975,7 +972,7 @@ SharedPtr<OpenXRActionGroup> CreateActionGroup(
     if (!URHO3D_CHECK_OPENXR(xrCreateActionSet(instance, &createInfo, &actionSet)))
         return nullptr;
 
-    const auto wrappedActionSet = XrActionSetPtr(actionSet, [](XrActionSet set) { xrDestroyActionSet(set); });
+    const auto wrappedActionSet = XrActionSetPtr(actionSet, xrDestroyActionSet);
     auto actionGroup = MakeShared<OpenXRActionGroup>(context, name, localizedName, wrappedActionSet);
 
     auto actionsElement = element.GetChild("actions");
@@ -1008,104 +1005,53 @@ SharedPtr<Node> LoadGLTFModel(Context* ctx, tinygltf::Model& model);
 
 #define XR_INIT_TYPE(D, T) for (auto& a : D) a.type = T
 
-Vector3 uxrGetVec(XrVector3f v)
+OpenXRBinding::OpenXRBinding(Context* context, const ea::string& name, const ea::string& localizedName, VRHand hand,
+    VariantType dataType, bool isPose, bool isAimPose, XrActionSet set, XrActionPtr action, XrPath subPath,
+    XrSpacePtr actionSpace)
+    : XRBinding(context, name, localizedName, hand, dataType, isPose, isAimPose)
+    , action_(action)
+    , set_(set)
+    , subPath_(subPath)
+    , actionSpace_(actionSpace)
 {
-    return Vector3(v.x, v.y, -v.z);
 }
 
-Urho3D::Quaternion uxrGetQuat(XrQuaternionf q)
+OpenXRActionGroup::OpenXRActionGroup(
+    Context* context, const ea::string& name, const ea::string& localizedName, XrActionSetPtr set)
+    : XRActionGroup(context, name, localizedName)
+    , actionSet_(set)
 {
-    Quaternion out;
-    out.x_ = -q.x;
-    out.y_ = -q.y;
-    out.z_ = q.z;
-    out.w_ = q.w;
-    return out;
 }
 
-Urho3D::Matrix3x4 uxrGetTransform(XrPosef pose, float scale)
+void OpenXRActionGroup::AddBinding(OpenXRBinding* binding)
 {
-    return Matrix3x4(uxrGetVec(pose.position), uxrGetQuat(pose.orientation), scale);
+    bindings_.emplace_back(binding);
 }
 
-Urho3D::Matrix4 uxrGetProjection(float nearZ, float farZ, float angleLeft, float angleTop, float angleRight, float angleBottom)
+OpenXRBinding* OpenXRActionGroup::FindBindingImpl(const ea::string& name)
 {
-    const float tanLeft = tanf(angleLeft);
-    const float tanRight = tanf(angleRight);
-    const float tanDown = tanf(angleBottom);
-    const float tanUp = tanf(angleTop);
-    const float tanAngleWidth = tanRight - tanLeft;
-    const float tanAngleHeight = tanUp - tanDown;
-    const float q = farZ / (farZ - nearZ);
-    const float r = -q * nearZ;
-
-    Matrix4 projection = Matrix4::ZERO;
-    projection.m00_ = 2 / tanAngleWidth;
-    projection.m11_ = 2 / tanAngleHeight;
-
-    projection.m02_ = -(tanRight + tanLeft) / tanAngleWidth;
-    projection.m12_ = -(tanUp + tanDown) / tanAngleHeight;
-
-    projection.m22_ = q;
-    projection.m23_ = r;
-    projection.m32_ = 1.0f;
-    return projection;
+    return static_cast<OpenXRBinding*>(XRActionGroup::FindBinding(name, VR_HAND_NONE));
 }
 
-ea::pair<Vector3, Urho3D::Matrix4> uxrGetSharedProjection(float nearZ, float farZ, XrFovf left, XrFovf right, Vector3 eyeLeftLocal, Vector3 eyeRightLocal)
+void OpenXRActionGroup::AttachToSession(XrSession session)
 {
-    // Check if we're reasonably possible to do, if not return Matrix4::ZERO so we know this isn't viable.
-    if (Abs(M_RADTODEG * left.angleLeft) + Abs(M_RADTODEG * right.angleRight) > 160.0f)
-        return { Vector3::ZERO, Matrix4::ZERO };
+    XrActionSet actionSets[] = {actionSet_.Raw()};
 
-    // just bottom out the vertical angles, have one for each eye so take the most extreme
-    const float trueDown = Min(left.angleDown, right.angleDown);
-    const float trueUp = Max(left.angleUp, right.angleUp);
+    XrSessionActionSetsAttachInfo attachInfo = {XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO};
+    attachInfo.actionSets = actionSets;
+    attachInfo.countActionSets = 1;
+    xrAttachSessionActionSets(session, &attachInfo);
+}
 
-    if (Abs(M_RADTODEG * trueDown) + Abs(M_RADTODEG * trueUp) > 160.0f)
-        return { Vector3::ZERO, Matrix4::ZERO };
+void OpenXRActionGroup::Synchronize(XrSession session)
+{
+    XrActiveActionSet activeSet = {};
+    activeSet.actionSet = actionSet_.Raw();
 
-    // Reference:
-    // https://computergraphics.stackexchange.com/questions/1736/vr-and-frustum-culling
-    // using generalized, note that the above assumes POSITIVE angles, hence -angleLeft here and there below
-    const float ipd = Abs(eyeRightLocal.x_ - eyeLeftLocal.x_);
-
-    /// how deeply it needs move back
-    float recess = ipd / (tanf(-left.angleLeft) + tanf(right.angleRight));
-    const float upDownRecess = Abs(eyeRightLocal.y_ - eyeLeftLocal.y_) / (tanf(-trueDown) + tanf(trueUp));
-
-    // how far along we need to center the moved back point
-    const float leftDist = tanf(-left.angleLeft) * recess;
-    const float downDist = tanf(-trueDown) * upDownRecess;
-
-    // we may have to go back even further because of up/down instead of left/right being the big issue
-    recess = Max(recess, upDownRecess);
-
-    Vector3 outLocalPos = Vector3(eyeLeftLocal.x_ + leftDist, eyeLeftLocal.y_ + downDist, eyeLeftLocal.z_ - recess);
-
-    nearZ += recess;
-
-    const float tanLeft = tanf(left.angleLeft);
-    const float tanRight = tanf(right.angleRight);
-    const float tanDown = tanf(trueDown);
-    const float tanUp = tanf(trueUp);
-    const float tanAngleWidth = tanRight - tanLeft;
-    const float tanAngleHeight = tanUp - tanDown;
-    const float q = farZ / (farZ - nearZ);
-    const float r = -q * nearZ;
-
-    Matrix4 projection = Matrix4::ZERO;
-    projection.m00_ = 2 / tanAngleWidth;
-    projection.m11_ = 2 / tanAngleHeight;
-
-    projection.m02_ = -(tanRight + tanLeft) / tanAngleWidth;
-    projection.m12_ = -(tanUp + tanDown) / tanAngleHeight;
-
-    projection.m22_ = q;
-    projection.m23_ = r;
-    projection.m32_ = 1.0f;
-
-    return { outLocalPos, projection };
+    XrActionsSyncInfo sync = {XR_TYPE_ACTIONS_SYNC_INFO};
+    sync.activeActionSets = &activeSet;
+    sync.countActiveActionSets = 1;
+    xrSyncActions(session, &sync);
 }
 
 OpenXR::OpenXR(Context* ctx)
@@ -1433,15 +1379,8 @@ void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
 // handle actions
     if (activeActionSet_)
     {
-        auto set = activeActionSet_->Cast<OpenXRActionGroup>();
-
-        XrActiveActionSet activeSet = { };
-        activeSet.actionSet = set->actionSet_.Raw();
-
-        XrActionsSyncInfo sync = { XR_TYPE_ACTIONS_SYNC_INFO };
-        sync.activeActionSets = &activeSet;
-        sync.countActiveActionSets = 1;
-        xrSyncActions(session_.Raw(), &sync);
+        auto setImpl = static_cast<OpenXRActionGroup*>(activeActionSet_.Get());
+        setImpl->Synchronize(session_.Raw());
 
         using namespace BeginFrame;
         UpdateBindings(data[P_TIMESTEP].GetFloat());
@@ -1588,20 +1527,11 @@ void OpenXR::SetCurrentActionSet(SharedPtr<XRActionGroup> set)
 {
     if (session_ && set != nullptr)
     {
-        auto xrSet = set->Cast<OpenXRActionGroup>();
-        if (xrSet->actionSet_)
-        {
-            activeActionSet_ = set;
+        activeActionSet_ = set;
 
-            XrActionSet actionSets[] = {xrSet->actionSet_.Raw()};
-
-            XrSessionActionSetsAttachInfo attachInfo = { XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO };
-            attachInfo.actionSets = actionSets;
-            attachInfo.countActionSets = 1;
-            xrAttachSessionActionSets(session_.Raw(), &attachInfo);
-
-            UpdateBindingBound();
-        }
+        const auto setImpl = static_cast<OpenXRActionGroup*>(set.Get());
+        setImpl->AttachToSession(session_.Raw());
+        UpdateBindingBound();
     }
 }
 
@@ -1689,10 +1619,10 @@ void OpenXR::UpdateBindings(float t)
                 {
                     // Should we be sending events for these? As it's tracking sensor stuff I think not? It's effectively always changing and we know that's the case.
                     bind->active_ = pose.isActive;
-                    Vector3 v = uxrGetVec(bind->location_.pose.position) * scaleCorrection_;
+                    Vector3 v = ToVector3(bind->location_.pose.position) * scaleCorrection_;
                     bind->storedData_ = v;
                     bind->changed_ = true;
-                    bind->extraData_[0] = uxrGetVec(bind->velocity_.linearVelocity) * scaleCorrection_;
+                    bind->extraData_[0] = ToVector3(bind->velocity_.linearVelocity) * scaleCorrection_;
                 }
             } break;
             case VAR_MATRIX3X4: {
@@ -1701,11 +1631,11 @@ void OpenXR::UpdateBindings(float t)
                 {
                     // Should we be sending events for these? As it's tracking sensor stuff I think not? It's effectively always changing and we know that's the case.
                     bind->active_ = pose.isActive;
-                    Matrix3x4 m = uxrGetTransform(bind->location_.pose, scaleCorrection_);
+                    Matrix3x4 m = ToMatrix3x4(bind->location_.pose, scaleCorrection_);
                     bind->storedData_ = m;
                     bind->changed_ = true;
-                    bind->extraData_[0] = uxrGetVec(bind->velocity_.linearVelocity) * scaleCorrection_;
-                    bind->extraData_[1] = uxrGetVec(bind->velocity_.angularVelocity) * scaleCorrection_;
+                    bind->extraData_[0] = ToVector3(bind->velocity_.linearVelocity) * scaleCorrection_;
+                    bind->extraData_[1] = ToVector3(bind->velocity_.angularVelocity) * scaleCorrection_;
                 }
             } break;
             }
@@ -2049,8 +1979,8 @@ Matrix3x4 OpenXR::GetHandTransform(VRHand hand) const
     if (!handGrips_[hand])
         return Matrix3x4();
 
-    auto q = uxrGetQuat(handGrips_[hand]->location_.pose.orientation);
-    auto v = uxrGetVec(handGrips_[hand]->location_.pose.position);
+    auto q = ToQuaternion(handGrips_[hand]->location_.pose.orientation);
+    auto v = ToVector3(handGrips_[hand]->location_.pose.position);
 
     // bring it into head space instead of stage space
     auto headInv = GetHeadTransform().Inverse();
@@ -2066,8 +1996,8 @@ Matrix3x4 OpenXR::GetHandAimTransform(VRHand hand) const
         return Matrix3x4();
 
     // leave this in stage space, that's what we want
-    auto q = uxrGetQuat(handAims_[hand]->location_.pose.orientation);
-    auto v = uxrGetVec(handAims_[hand]->location_.pose.position);
+    auto q = ToQuaternion(handAims_[hand]->location_.pose.orientation);
+    auto v = ToVector3(handAims_[hand]->location_.pose.position);
     return Matrix3x4(v, q, 1.0f);
 }
 
@@ -2080,8 +2010,8 @@ Ray OpenXR::GetHandAimRay(VRHand hand) const
         return Ray();
 
     // leave this one is stage space, that's what we want
-    auto q = uxrGetQuat(handAims_[hand]->location_.pose.orientation);
-    auto v = uxrGetVec(handAims_[hand]->location_.pose.position);
+    auto q = ToQuaternion(handAims_[hand]->location_.pose.orientation);
+    auto v = ToVector3(handAims_[hand]->location_.pose.position);
     return Ray(v, (q * Vector3(0, 0, 1)).Normalized());
 }
 
@@ -2094,9 +2024,9 @@ void OpenXR::GetHandVelocity(VRHand hand, Vector3* linear, Vector3* angular) con
         return;
 
     if (linear && handGrips_[hand]->velocity_.velocityFlags & XR_SPACE_VELOCITY_LINEAR_VALID_BIT)
-        *linear = uxrGetVec(handGrips_[hand]->velocity_.linearVelocity);
+        *linear = ToVector3(handGrips_[hand]->velocity_.linearVelocity);
     if (angular && handGrips_[hand]->velocity_.velocityFlags & XR_SPACE_VELOCITY_ANGULAR_VALID_BIT)
-        *angular = uxrGetVec(handGrips_[hand]->velocity_.angularVelocity);
+        *angular = ToVector3(handGrips_[hand]->velocity_.angularVelocity);
 }
 
 void OpenXR::UpdateHands(Scene* scene, Node* rigRoot, Node* leftHand, Node* rightHand)
@@ -2121,8 +2051,8 @@ void OpenXR::UpdateHands(Scene* scene, Node* rigRoot, Node* leftHand, Node* righ
         // when tracking kicks back in again later. If velocity integration is valid there should be no issue - neither a pop,
         // it'll already pop in a normal position tracking lost recovery situation anyways.
 
-        auto lq = uxrGetQuat(handGrips_[VR_HAND_LEFT]->location_.pose.orientation);
-        auto lp = uxrGetVec(handGrips_[VR_HAND_LEFT]->location_.pose.position);
+        auto lq = ToQuaternion(handGrips_[VR_HAND_LEFT]->location_.pose.orientation);
+        auto lp = ToVector3(handGrips_[VR_HAND_LEFT]->location_.pose.position);
 
         // these fields are super important to rationalize what's happpened between sample points
         // sensor reads are effectively Planck timing it between quantum space-time
@@ -2136,8 +2066,8 @@ void OpenXR::UpdateHands(Scene* scene, Node* rigRoot, Node* leftHand, Node* righ
         if (handGrips_[VR_HAND_LEFT]->location_.locationFlags & (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT))
             leftHand->SetRotation(lq);
 
-        auto rq = uxrGetQuat(handGrips_[VR_HAND_RIGHT]->location_.pose.orientation);
-        auto rp = uxrGetVec(handGrips_[VR_HAND_RIGHT]->location_.pose.position);
+        auto rq = ToQuaternion(handGrips_[VR_HAND_RIGHT]->location_.pose.orientation);
+        auto rp = ToVector3(handGrips_[VR_HAND_RIGHT]->location_.pose.position);
 
         rightHand->SetVar(lastTrans, leftHand->GetTransformMatrix());
         rightHand->SetVar(lastTransWS, leftHand->GetWorldTransform());
@@ -2152,17 +2082,17 @@ Matrix3x4 OpenXR::GetEyeLocalTransform(VREye eye) const
 {
     // TODO: fixme, why is view space not correct xrLocateViews( view-space )
     // one would expect them to be in head relative local space already ... but they're ... not?
-    return GetHeadTransform().Inverse() * uxrGetTransform(views_[eye].pose, scaleCorrection_);
+    return GetHeadTransform().Inverse() * ToMatrix3x4(views_[eye].pose, scaleCorrection_);
 }
 
 Matrix4 OpenXR::GetProjection(VREye eye, float nearDist, float farDist) const
 {
-    return uxrGetProjection(nearDist, farDist, views_[eye].fov.angleLeft, views_[eye].fov.angleUp, views_[eye].fov.angleRight, views_[eye].fov.angleDown);
+    return ToProjectionMatrix(nearDist, farDist, views_[eye].fov);
 }
 
 Matrix3x4 OpenXR::GetHeadTransform() const
 {
-    return uxrGetTransform(headLoc_.pose, scaleCorrection_);
+    return ToMatrix3x4(headLoc_.pose, scaleCorrection_);
 }
 
 void OpenXR::UpdateBindingBound()

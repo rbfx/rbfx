@@ -161,7 +161,37 @@ void LoadOpenXRAPI(XrInstance instance)
 
 void UnloadOpenXRAPI()
 {
-    URHO3D_ENUMERATE_OPENXR_API(URHO3D_UNLOAD_OPENXR_API)
+    URHO3D_ENUMERATE_OPENXR_API(URHO3D_UNLOAD_OPENXR_API);
+}
+
+Matrix4 ToProjectionMatrix(
+    float nearZ, float farZ, float angleLeft, float angleTop, float angleRight, float angleBottom)
+{
+    const float tanLeft = tanf(angleLeft);
+    const float tanRight = tanf(angleRight);
+    const float tanDown = tanf(angleBottom);
+    const float tanUp = tanf(angleTop);
+    const float tanAngleWidth = tanRight - tanLeft;
+    const float tanAngleHeight = tanUp - tanDown;
+    const float q = farZ / (farZ - nearZ);
+    const float r = -q * nearZ;
+
+    Matrix4 projection = Matrix4::ZERO;
+    projection.m00_ = 2 / tanAngleWidth;
+    projection.m11_ = 2 / tanAngleHeight;
+
+    projection.m02_ = -(tanRight + tanLeft) / tanAngleWidth;
+    projection.m12_ = -(tanUp + tanDown) / tanAngleHeight;
+
+    projection.m22_ = q;
+    projection.m23_ = r;
+    projection.m32_ = 1.0f;
+    return projection;
+}
+
+Matrix4 ToProjectionMatrix(float nearZ, float farZ, XrFovf fov)
+{
+    return ToProjectionMatrix(nearZ, farZ, fov.angleLeft, fov.angleUp, fov.angleRight, fov.angleDown);
 }
 
 } // namespace Urho3D

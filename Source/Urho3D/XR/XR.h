@@ -20,6 +20,7 @@ class AnimatedModel;
 class Texture2D;
 class XMLFile;
 
+/// Wrapper that automatically deletes OpenXR object when all references are lost.
 template <class T> class XrObjectSharedPtr
 {
 public:
@@ -45,6 +46,8 @@ private:
     ea::shared_ptr<T> ptr_;
 };
 
+/// OpenXR object wrappers.
+/// @{
 using XrInstancePtr = XrObjectSharedPtr<XrInstance>;
 using XrDebugUtilsMessengerEXTPtr = XrObjectSharedPtr<XrDebugUtilsMessengerEXT>;
 using XrSessionPtr = XrObjectSharedPtr<XrSession>;
@@ -52,6 +55,7 @@ using XrSwapchainPtr = XrObjectSharedPtr<XrSwapchain>;
 using XrSpacePtr = XrObjectSharedPtr<XrSpace>;
 using XrActionSetPtr = XrObjectSharedPtr<XrActionSet>;
 using XrActionPtr = XrObjectSharedPtr<XrAction>;
+/// @}
 
 /// Tweaks that should be applied before graphics initialization.
 struct OpenXRTweaks
@@ -92,14 +96,7 @@ class OpenXRBinding : public XRBinding
 public:
     OpenXRBinding(Context* context, const ea::string& name, const ea::string& localizedName, VRHand hand,
         VariantType dataType, bool isPose, bool isAimPose, XrActionSet set, XrActionPtr action, XrPath subPath,
-        XrSpacePtr actionSpace)
-        : XRBinding(context, name, localizedName, hand, dataType, isPose, isAimPose)
-        , action_(action)
-        , set_(set)
-        , subPath_(subPath)
-        , actionSpace_(actionSpace)
-    {
-    }
+        XrSpacePtr actionSpace);
 
 public:
     /// Owning ActionSet that contains this action.
@@ -123,23 +120,14 @@ class OpenXRActionGroup : public XRActionGroup
     URHO3D_OBJECT(OpenXRActionGroup, XRActionGroup)
 
 public:
-    OpenXRActionGroup(Context* context, const ea::string& name, const ea::string& localizedName, XrActionSetPtr set)
-        : XRActionGroup(context, name, localizedName)
-        , actionSet_(set)
-    {
-    }
+    OpenXRActionGroup(Context* context, const ea::string& name, const ea::string& localizedName, XrActionSetPtr set);
 
-    void AddBinding(OpenXRBinding* binding)
-    {
-        bindings_.emplace_back(binding);
-    }
+    void AddBinding(OpenXRBinding* binding);
+    OpenXRBinding* FindBindingImpl(const ea::string& name);
+    void AttachToSession(XrSession session);
+    void Synchronize(XrSession session);
 
-    OpenXRBinding* FindBindingImpl(const ea::string& name)
-    {
-        return static_cast<OpenXRBinding*>(XRActionGroup::FindBinding(name, VR_HAND_NONE));
-    }
-
-public:
+private:
     const XrActionSetPtr actionSet_;
 };
 

@@ -83,7 +83,6 @@ namespace Urho3D
 
     public:
         friend class OpenXR;
-        friend class VRInterface;
 
         XRBinding(Context* context, const ea::string& name, const ea::string& localizedName, VRHand hand,
             VariantType dataType, bool isPose, bool isAimPose);
