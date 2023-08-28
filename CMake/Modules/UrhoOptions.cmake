@@ -194,7 +194,7 @@ option                (URHO3D_SHADER_TRANSLATOR  "Enable shader translation from
 option                (URHO3D_SHADER_OPTIMIZER   "Enable shader optimization via SPIRV-Tools"            ON)
 
 # Features
-cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "BUILD_SHARED_LIBS;NOT MINGW"   OFF)
+cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "NOT MINGW"   OFF)
 # Valid values at https://docs.microsoft.com/en-us/dotnet/standard/frameworks
 # At the moment only netstandard2.1 supported
 set(URHO3D_NETFX netstandard2.1 CACHE STRING "TargetFramework value for .NET libraries")
@@ -269,10 +269,6 @@ if (URHO3D_D3D11)
 endif ()
 
 if (EMSCRIPTEN)
-    if (URHO3D_CSHARP)
-        message(WARNING "C# is not supported in this configuration.")
-        set (URHO3D_CSHARP OFF)
-    endif ()
     if (BUILD_SHARED_LIBS)
         set (BUILD_SHARED_LIBS OFF)
         message(WARNING "Shared builds unsupported when compiling with emscripten")     # For now.

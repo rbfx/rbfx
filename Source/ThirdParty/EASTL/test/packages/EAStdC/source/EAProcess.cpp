@@ -850,14 +850,16 @@ EASTDC_API int ExecuteShellCommand(const char16_t* pCommand)
 
 int ExecuteShellCommand(const char* pCommand)
 {
-	#if defined(EA_PLATFORM_WINDOWS) && EA_WINAPI_FAMILY_PARTITION(EA_WINAPI_PARTITION_DESKTOP)
+	#if defined(__EMSCRIPTEN__)
+		return 0;
+	#elif defined(EA_PLATFORM_WINDOWS) && EA_WINAPI_FAMILY_PARTITION(EA_WINAPI_PARTITION_DESKTOP)
 		// Todo: verify that newlines work here and support them if not.
 		return system(pCommand); // We could do this via the shell api as well.
 	#elif defined(EA_PLATFORM_UNIX)
 		return system(pCommand);
 	#else
 		EA_UNUSED(pCommand);
-		return false;
+		return 0;
 	#endif
 }
 

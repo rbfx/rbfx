@@ -14,6 +14,15 @@
 #endif
 %}
 
+%pragma(csharp) imclasscode=%{
+  /// For Mono AOT platforms compatibility
+  /// This attribute can be defined in any assembly for Mono AOT to use it.
+  public class MonoPInvokeCallbackAttribute : global::System.Attribute {
+    public MonoPInvokeCallbackAttribute(global::System.Type t) {
+    }
+  }
+%}
+
 #if !defined(SWIG_CSHARP_NO_EXCEPTION_HELPER)
 %insert(runtime) %{
 /* Support for throwing C# exceptions from C/C++. There are two types: 
@@ -142,11 +151,11 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
 #if __IOS__
     [global::ObjCRuntime.MonoNativeFunctionWrapper]
 #endif
-    public delegate void ExceptionDelegate(string message);
+    public delegate void ExceptionDelegate(IntPtr message);
 #if __IOS__
     [global::ObjCRuntime.MonoNativeFunctionWrapper]
 #endif
-    public delegate void ExceptionArgumentDelegate(string message, string paramName);
+    public delegate void ExceptionArgumentDelegate(IntPtr message, IntPtr paramName);
 
     static ExceptionDelegate applicationDelegate = new ExceptionDelegate(SetPendingApplicationException);
     static ExceptionDelegate arithmeticDelegate = new ExceptionDelegate(SetPendingArithmeticException);
@@ -184,91 +193,94 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
                                 ExceptionArgumentDelegate argumentNullDelegate,
                                 ExceptionArgumentDelegate argumentOutOfRangeDelegate);
 
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
-#endif
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly]
     static void SetPendingApplicationException(string message) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.ApplicationException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
-#endif
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly]
     static void SetPendingArithmeticException(string message) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.ArithmeticException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
-#endif
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly]
     static void SetPendingDivideByZeroException(string message) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.DivideByZeroException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
-#endif
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly]
     static void SetPendingIndexOutOfRangeException(string message) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.IndexOutOfRangeException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
-#endif
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly]
     static void SetPendingInvalidCastException(string message) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.InvalidCastException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
-#endif
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly]
     static void SetPendingInvalidOperationException(string message) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.InvalidOperationException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
-#endif
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly]
     static void SetPendingIOException(string message) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.IO.IOException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
-#endif
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly]
     static void SetPendingNullReferenceException(string message) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.NullReferenceException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
-#endif
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly]
     static void SetPendingOutOfMemoryException(string message) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.OutOfMemoryException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
-#endif
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly]
     static void SetPendingOverflowException(string message) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.OverflowException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
-#endif
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly]
     static void SetPendingSystemException(string message) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.SystemException(message, SWIGPendingException.Retrieve()));
     }
 
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionArgumentDelegate))]
-#endif
-    static void SetPendingArgumentException(string message, string paramName) {
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionArgumentDelegate))]
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly]
+    static void SetPendingArgumentException(string message, string pParamName) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
+      string paramName = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pParamName);
       SWIGPendingException.Set(new global::System.ArgumentException(message, paramName, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionArgumentDelegate))]
-#endif
-    static void SetPendingArgumentNullException(string message, string paramName) {
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionArgumentDelegate))]
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly]
+    static void SetPendingArgumentNullException(string message, string pParamName) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
+      string paramName = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pParamName);
       global::System.Exception e = SWIGPendingException.Retrieve();
       if (e != null) message = message + " Inner Exception: " + e.Message;
       SWIGPendingException.Set(new global::System.ArgumentNullException(paramName, message));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionArgumentDelegate))]
-#endif
-    static void SetPendingArgumentOutOfRangeException(string message, string paramName) {
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionArgumentDelegate))]
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly]
+    static void SetPendingArgumentOutOfRangeException(string message, string pParamName) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
+      string paramName = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pParamName);
       global::System.Exception e = SWIGPendingException.Retrieve();
       if (e != null) message = message + " Inner Exception: " + e.Message;
       SWIGPendingException.Set(new global::System.ArgumentOutOfRangeException(paramName, message));
@@ -356,17 +368,15 @@ static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback = NULL;
 #if __IOS__
     [global::ObjCRuntime.MonoNativeFunctionWrapper]
 #endif
-    public delegate string SWIGStringDelegate(string message);
+    public delegate string SWIGStringDelegate(IntPtr message);
     static SWIGStringDelegate stringDelegate = new SWIGStringDelegate(CreateString);
 
     [global::System.Runtime.InteropServices.DllImport($dllimport, EntryPoint="SWIGRegisterStringCallback_$module")]
     public static extern void SWIGRegisterStringCallback_$module(SWIGStringDelegate stringDelegate);
 
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(SWIGStringDelegate))]
-#endif
-    static string CreateString(string cString) {
-      return cString;
+    [$imclassname.MonoPInvokeCallback(typeof(SWIGStringDelegate))]
+    static string CreateString(IntPtr cString) {
+      return global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(cString);
     }
 
     static SWIGStringHelper() {
