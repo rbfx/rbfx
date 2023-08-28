@@ -105,7 +105,7 @@
 			<attribute name="Variables" />
 			<component type="StaticModel" id="5">
 				<attribute name="Model" value="Model;Models/Box.mdl" />
-				<attribute name="Material" value="Material;Materials/Constant/InvalidShader.xml" />
+				<attribute name="Material" value="Material;Materials/Showcase/InvalidShader.xml" />
 				<attribute name="Cast Shadows" value="true" />
 				<attribute name="Global Illumination" value="Use LightMap" />
 				<attribute name="Bake Lightmap" value="true" />
