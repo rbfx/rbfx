@@ -93,6 +93,8 @@ protected:
     bool readOnly_{};
     /// Launch command and command line parameters.
     ea::string command_;
+    /// Implicit plugin dynamic library name.
+    ea::string implicitPlugin_;
     /// Whether to exit the editor after executing the command.
     bool exitAfterCommand_{};
 

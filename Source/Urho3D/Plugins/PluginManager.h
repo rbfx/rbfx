@@ -107,6 +107,10 @@ public:
 
     /// Set loaded plugins. Order is preserved.
     void SetPluginsLoaded(const StringVector& plugins);
+    /// Set implicit plugin name.
+    void SetImplicitPlugin(const ea::string& implicitPlugin);
+    /// Get implicit plugin name.
+    const ea::string& GetImplicitPlugin() const { return implicitPlugin_; };
     /// Return whether the plugin is loaded.
     bool IsPluginLoaded(const ea::string& name);
     /// Return loaded plugins.
@@ -165,6 +169,7 @@ private:
     bool stopPending_{};
     bool stackReloadPending_{};
     StringVector loadedPlugins_;
+    ea::string implicitPlugin_;
     unsigned revision_{};
     SharedPtr<PluginStack> pluginStack_;
 

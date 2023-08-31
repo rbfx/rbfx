@@ -363,7 +363,7 @@ ModuleType DynamicModule::ReadModuleInformation(Context* context, const ea::stri
             return MODULE_INVALID;
 
         auto* nt = reinterpret_cast<PIMAGE_NT_HEADERS>(data.data() + dos->e_lfanew);
-        if (!IsValidPtr(data, dos) || nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC)
+        if (!IsValidPtr(data, dos))// || nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC)
             return MODULE_INVALID;
 
         const auto& eatDir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
