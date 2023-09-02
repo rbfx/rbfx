@@ -45,6 +45,17 @@ if (URHO3D_EDITOR)
     add_subdirectory (Editor)
 endif ()
 
+if (URHO3D_CSHARP)
+    # Use C# executable to run samples.
+    add_target_csharp(
+        TARGET SamplesNet
+        EXE
+        PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/SamplesNet/Samples.Net.csproj
+        OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.Net.dll
+        DEPENDS Urho3DNet)
+    install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.Net.dll" DESTINATION ${DEST_BIN_DIR_CONFIG})
+endif ()
+
 # Generate a helper script for consuming built tools during crosscompiling.
 set(SWIG_EXECUTABLE OFF)
 set(PACKAGE_TOOL OFF)
