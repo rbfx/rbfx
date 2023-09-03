@@ -31,9 +31,9 @@ namespace Urho3DNet
         {
             using (SharedPtr<Context> context = new Context())
             {
-                using (SharedPtr<Application> application = new UrhoApplication(context))
+                using (SharedPtr<Application> application = new SampleManager(context))
                 {
-                    return application.Run();
+                    return application.Ptr.Run();
                 }
             }
         }
