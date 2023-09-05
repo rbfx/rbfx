@@ -62,7 +62,7 @@ VRSimple::VRSimple(Context* context) :
 
 void VRSimple::Start()
 {
-    auto xr = GetSubsystem<OpenXR>();
+    auto xr = GetSubsystem<VRInterface>();
     if (!xr)
     {
         CloseSample();
@@ -95,7 +95,7 @@ void VRSimple::Start()
 
 void VRSimple::Stop()
 {
-    if (auto xr = GetSubsystem<OpenXR>())
+    if (auto xr = GetSubsystem<VRInterface>())
         xr->ShutdownSession();
 
     Sample::Stop();
@@ -198,7 +198,7 @@ void VRSimple::SetupViewport()
 
 void VRSimple::SetupXRScene()
 {
-    auto xr = GetSubsystem<OpenXR>();
+    auto xr = GetSubsystem<VRInterface>();
 
     auto rig = scene_->GetChild("VRRig");
     if (rig == nullptr)
@@ -227,7 +227,7 @@ void VRSimple::Update(StringHash eventID, VariantMap& eventData)
         file.SaveFile(AddTrailingSlash(fs->GetProgramDir()) + "vrsimple_scene.xml");
     }
 
-    if (auto xr = GetSubsystem<OpenXR>())
+    if (auto xr = GetSubsystem<VRInterface>())
     {
         if (auto elem = GetUIRoot()->GetChild(TextBoxName, false))
         {
@@ -308,7 +308,7 @@ void VRSimple::HandleControllerChange(StringHash eventType, VariantMap& eventDat
     if (child)
     {
         child->RemoveAllChildren();
-        if (auto handModel = GetSubsystem<OpenXR>()->GetControllerModel(hand == 0 ? VR_HAND_LEFT : VR_HAND_RIGHT))
+        if (auto handModel = GetSubsystem<VRInterface>()->GetControllerModel(hand == 0 ? VR_HAND_LEFT : VR_HAND_RIGHT))
             child->AddChild(handModel);
     }
 }

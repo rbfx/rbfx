@@ -189,6 +189,7 @@ namespace Urho3D
     class URHO3D_API VRInterface : public Object
     {
         URHO3D_OBJECT(VRInterface, Object);
+
     public:
         /// Construct.
         VRInterface(Context*);
@@ -302,6 +303,9 @@ namespace Urho3D
         Color GetVignetteOutsideColor() const { return vignetteOutsideColor_; }
         float GetVignettePower() const { return vignettePower_; }
         bool IsVignetteEnabled() const { return vignetteEnabled_; }
+
+        virtual SharedPtr<Node> GetControllerModel(VRHand hand) = 0;
+        virtual void UpdateControllerModel(VRHand hand, SharedPtr<Node>) = 0;
 
     protected:
         /// Name of the system being run, ie. Windows Mixed Reality

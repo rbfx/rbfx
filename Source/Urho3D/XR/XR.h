@@ -206,8 +206,8 @@ public:
     /// Sets the current action set.
     virtual void SetCurrentActionSet(SharedPtr<XRActionGroup>) override;
 
-    SharedPtr<Node> GetControllerModel(VRHand hand);
-    void UpdateControllerModel(VRHand hand, SharedPtr<Node>);
+    SharedPtr<Node> GetControllerModel(VRHand hand) override;
+    void UpdateControllerModel(VRHand hand, SharedPtr<Node>) override;
 
     const OpenXRTweaks& GetTweaks() const { return tweaks_; }
     const StringVector GetExtensions() const { return supportedExtensions_; }

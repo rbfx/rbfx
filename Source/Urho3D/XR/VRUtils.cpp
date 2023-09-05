@@ -72,7 +72,7 @@ Vector3 SmoothLocomotionAim(Node* rigNode, XRBinding* joystickBinding, VRHand wh
     if (rigNode == nullptr || joystickBinding == nullptr)
         return Vector3::ZERO;
 
-    auto vr = rigNode->GetSubsystem<OpenXR>();
+    auto vr = rigNode->GetSubsystem<VRInterface>();
 
     Vector3 fore = Vector3::ZERO;
     Vector3 right = Vector3::ZERO;

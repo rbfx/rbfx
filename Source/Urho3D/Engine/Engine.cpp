@@ -341,7 +341,7 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         if (needXR)
         {
 #ifdef URHO3D_XR
-            auto* xr = context_->RegisterSubsystem<OpenXR>();
+            auto* xr = context_->RegisterSubsystem<OpenXR, VRInterface>();
             if (!xr->InitializeSystem(backend))
             {
                 URHO3D_LOGERROR("Failed to initialize OpenXR subsystem");
@@ -372,15 +372,39 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         graphicsSettings.discardShaderCache_ = GetParameter(EP_DISCARD_SHADER_CACHE).GetBool();
         graphicsSettings.cacheShaders_ = GetParameter(EP_SAVE_SHADER_CACHE).GetBool();
 
+        WindowSettings windowSettings;
+        const int width = GetParameter(EP_WINDOW_WIDTH).GetInt();
+        const int height = GetParameter(EP_WINDOW_HEIGHT).GetInt();
+        if (width && height)
+            windowSettings.size_ = {width, height};
+        if (GetParameter(EP_FULL_SCREEN).GetBool())
+            windowSettings.mode_ = WindowMode::Fullscreen;
+        else if (GetParameter(EP_BORDERLESS).GetBool())
+            windowSettings.mode_ = WindowMode::Borderless;
+        windowSettings.resizable_ = GetParameter(EP_WINDOW_RESIZABLE).GetBool();
+        windowSettings.vSync_ = GetParameter(EP_VSYNC).GetBool();
+        windowSettings.multiSample_ = GetParameter(EP_MULTI_SAMPLE).GetInt();
+        windowSettings.monitor_ = GetParameter(EP_MONITOR).GetInt();
+        windowSettings.refreshRate_ = GetParameter(EP_REFRESH_RATE).GetInt();
+        windowSettings.orientations_ = GetParameter(EP_ORIENTATIONS).GetString().split(' ');
+
 #ifdef URHO3D_XR
-        if (needXR)
+        auto virtualReality = GetSubsystem<VRInterface>();
+        if (needXR && virtualReality && virtualReality->IsInstanceOf<OpenXR>())
         {
-            auto* xr = context_->GetSubsystem<OpenXR>();
+            auto* xr = static_cast<OpenXR*>(virtualReality);
             const OpenXRTweaks& tweaks = xr->GetTweaks();
+
+            // Arbitrary value high enough that XR swap chain is never throttled
+            maxInactiveFps_ = maxFps_ = 500;
 
             graphicsSettings.vulkan_.instanceExtensions_ = tweaks.vulkanInstanceExtensions_;
             graphicsSettings.vulkan_.deviceExtensions_ = tweaks.vulkanDeviceExtensions_;
             graphicsSettings.adapterId_ = tweaks.adapterId_;
+
+            windowSettings.vSync_ = false;
+            if (tweaks.orientation_)
+                windowSettings.orientations_ = {*tweaks.orientation_};
         }
 #endif
 
@@ -403,37 +427,6 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
             SetParameter(EP_BORDERLESS, isBorderless);
             SetParameter(EP_MONITOR, eventData[P_MONITOR].GetInt());
         });
-
-        WindowSettings windowSettings;
-
-        const int width = GetParameter(EP_WINDOW_WIDTH).GetInt();
-        const int height = GetParameter(EP_WINDOW_HEIGHT).GetInt();
-        if (width && height)
-            windowSettings.size_ = {width, height};
-        if (GetParameter(EP_FULL_SCREEN).GetBool())
-            windowSettings.mode_ = WindowMode::Fullscreen;
-        else if (GetParameter(EP_BORDERLESS).GetBool())
-            windowSettings.mode_ = WindowMode::Borderless;
-        windowSettings.resizable_ = GetParameter(EP_WINDOW_RESIZABLE).GetBool();
-        windowSettings.vSync_ = GetParameter(EP_VSYNC).GetBool();
-        windowSettings.multiSample_ = GetParameter(EP_MULTI_SAMPLE).GetInt();
-        windowSettings.monitor_ = GetParameter(EP_MONITOR).GetInt();
-        windowSettings.refreshRate_ = GetParameter(EP_REFRESH_RATE).GetInt();
-        windowSettings.orientations_ = GetParameter(EP_ORIENTATIONS).GetString().split(' ');
-
-#ifdef URHO3D_XR
-        if (needXR)
-        {
-            auto* xr = context_->GetSubsystem<OpenXR>();
-            const OpenXRTweaks& tweaks = xr->GetTweaks();
-
-            windowSettings.vSync_ = false;
-            maxInactiveFps_ = maxFps_ = 0;
-
-            if (tweaks.orientation_)
-                windowSettings.orientations_ = {*tweaks.orientation_};
-        }
-#endif
 
         if (!graphics->SetDefaultWindowModes(windowSettings))
             return false;
