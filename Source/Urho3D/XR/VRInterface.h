@@ -22,26 +22,42 @@
 
 #pragma once
 
-#include <Urho3D/Math/BoundingBox.h>
-#include <Urho3D/Graphics/Geometry.h>
-#include <Urho3D/Core/Object.h>
-#include <Urho3D/Math/Ray.h>
-#include <Urho3D/Graphics/Texture2D.h>
-#include "../Math/Vector3.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Geometry.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/Ray.h"
+#include "Urho3D/Math/Vector3.h"
+#include "Urho3D/RenderPipeline/StereoRenderPipeline.h"
+#include "Urho3D/Scene/Scene.h"
 
 namespace Urho3D
 {
 
-    class Node;
     class PipelineState;
-    class Scene;
-    class StereoRenderPipeline;
+    class VRRig;
 
     struct VRSessionParameters
     {
         ea::string manifestPath_;
         int multiSample_{};
         float resolutionScale_{1.0f};
+    };
+
+    struct URHO3D_API VRRigDesc
+    {
+        SharedPtr<Viewport> viewport_;
+        SharedPtr<StereoRenderPipeline> pipeline_;
+        WeakPtr<Scene> scene_;
+        WeakPtr<Node> head_;
+        WeakPtr<Camera> leftEye_;
+        WeakPtr<Camera> rightEye_;
+        WeakPtr<Node> leftHand_;
+        WeakPtr<Node> rightHand_;
+        float nearDistance_{};
+        float farDistance_{};
+
+        bool IsValid() const;
     };
 
     /// Identifier of backing runtime for VRInterface. Currently only OpenXR is implmented.
@@ -191,10 +207,15 @@ namespace Urho3D
         URHO3D_OBJECT(VRInterface, Object);
 
     public:
-        /// Construct.
-        VRInterface(Context*);
-        /// Destruct.
+        explicit VRInterface(Context* context);
         virtual ~VRInterface();
+
+        /// Initializes the VR session.
+        virtual bool InitializeSession(const VRSessionParameters& params) = 0;
+        /// Shuts down the VR session.
+        virtual void ShutdownSession() = 0;
+        /// Connects session to the rig.
+        virtual void ConnectToRig(const VRRigDesc& rig);
 
         /// Returns true if this VR configuration is running at room scale.
         bool IsRoomScale() const { return isRoomScale_; }
@@ -233,21 +254,6 @@ namespace Urho3D
         virtual VRRuntime GetRuntime() const = 0;
         /// Return a string name for the runtime, spaces are not allowed as this will be passed along to shaders.
         virtual const char* GetRuntimeName() const = 0;
-
-        /// Constructs the head, eye, and hand nodes for a rig at a given node. The rig is effectively the worldspace locator. This rig is considered standard.
-        void PrepareRig(Node* vrRig);
-        /// Updates the rig calling the overloaded version by using the standardized rig constructed by PrepareRig.
-        void UpdateRig(Node* vrRig, float nearDist, float farDist, bool forSinglePass);
-        /// Detailed rig update with explicit parameters for non-standardized rig setup.
-        void UpdateRig(Scene* scene, Node* head, Node* leftEye, Node* rightEye, float nearDist, float farDist, bool forSinglePass);
-
-        /// Called by ConfigureRig to setup hands. Responsible for models and transforms
-        virtual void UpdateHands(Scene* scene, Node* rigRoot, Node* leftHand, Node* rightHand) = 0;
-
-        /// Initializes the VR session.
-        virtual bool InitializeSession(const VRSessionParameters& params) = 0;
-        /// Shuts down the VR session.
-        virtual void ShutdownSession() = 0;
 
         /// Activates a haptic for a given hand.
         virtual void TriggerHaptic(VRHand hand, float durationSeconds, float cyclesPerSec, float amplitude) = 0;
@@ -292,11 +298,6 @@ namespace Urho3D
         /// Returns the system name, ie. Windows Mixed Reality.
         ea::string GetSystemName() const { return systemName_; }
 
-        /// Returns the assigned viewport.
-        SharedPtr<Viewport> GetViewport() const { return viewport_; }
-        /// Sets the viewport that should be used for rendering, will warn and construct a default if never specified.
-        void SetViewport(SharedPtr<Viewport> vp) { viewport_ = vp; }
-
         void SetVignette(bool enabled, Color insideColor, Color outsideColor, float power);
 
         Color GetVignetteInsideColor() const { return vignetteInsideColor_; }
@@ -308,6 +309,10 @@ namespace Urho3D
         virtual void UpdateControllerModel(VRHand hand, SharedPtr<Node>) = 0;
 
     protected:
+        void CreateDefaultRig();
+        void ValidateCurrentRig();
+        void UpdateCurrentRig();
+
         /// Name of the system being run, ie. Windows Mixed Reality
         ea::string systemName_;
         /// MSAA level recommended by API.
@@ -331,13 +336,18 @@ namespace Urho3D
         /// Indicates we have room scale tracking.
         bool isRoomScale_ = false;
 
-        /// Due to swap chain texture counts it's necessary to manage the viewport ourself to change the textures.
-        SharedPtr<Viewport> viewport_;
-        /// Only exists if it was necessary to create a pipeline ourselves for the viewport as a default.
-        SharedPtr<StereoRenderPipeline> pipeline_;
+        /// Default scene for rendering.
+        SharedPtr<Scene> defaultScene_;
+        /// Default rig to use.
+        SharedPtr<VRRig> defaultRig_;
+
+        /// Link to currently used rig.
+        VRRigDesc rig_;
+
         /// Back buffer textures active in current frame.
         SharedPtr<Texture2D> currentBackBufferColor_;
         SharedPtr<Texture2D> currentBackBufferDepth_;
+
         /// Hidden area mesh.
         SharedPtr<Geometry> hiddenAreaMesh_[2];
         /// Visible area mesh.
@@ -365,10 +375,7 @@ namespace Urho3D
         Color vignetteOutsideColor_;
         float vignettePower_{ 1.0f };
         bool vignetteEnabled_{ false };
-
-        float lastNearDist_;
-        float lastFarDist_;
     };
 
-    void RegisterVR(Context*);
+    void RegisterVRLibrary(Context*);
 }

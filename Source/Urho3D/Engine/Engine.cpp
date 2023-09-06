@@ -96,6 +96,7 @@
 #include "../Actions/ActionManager.h"
 #endif
 #ifdef URHO3D_XR
+    #include "Urho3D/XR/VRRig.h"
     #include "Urho3D/XR/XR.h"
 #endif
 
@@ -222,6 +223,10 @@ Engine::Engine(Context* context) :
 
 #ifdef URHO3D_ACTIONS
     context_->RegisterSubsystem<ActionManager>();
+#endif
+
+#ifdef URHO3D_XR
+    RegisterVRLibrary(context_);
 #endif
 
     SceneViewerApplication::RegisterObject();

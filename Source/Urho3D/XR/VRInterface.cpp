@@ -24,7 +24,11 @@
 
 #include "Urho3D/Graphics/Camera.h"
 #include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/Graphics/Octree.h"
 #include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Graphics/Skybox.h"
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/RenderAPI/PipelineState.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
@@ -33,14 +37,17 @@
 #include "Urho3D/Resource/XMLFile.h"
 #include "Urho3D/Scene/Node.h"
 #include "Urho3D/Scene/Scene.h"
+#include "Urho3D/XR/VRRig.h"
 
 #include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
 
-static ea::string VRLastTransform = "LastTransform";
-static ea::string VRLastTransformWS = "LastTransformWS";
+bool VRRigDesc::IsValid() const
+{
+    return scene_ && head_ && leftEye_ && rightEye_ && leftHand_ && rightHand_;
+}
 
 XRBinding::XRBinding(Context* context, const ea::string& name, const ea::string& localizedName, VRHand hand,
     VariantType dataType, bool isPose, bool isAimPose)
@@ -74,185 +81,99 @@ XRBinding* XRActionGroup::FindBinding(const ea::string& name, VRHand hand) const
 
 VRInterface::VRInterface(Context* ctx) : BaseClassName(ctx)
 {
-
 }
 
 VRInterface::~VRInterface()
 {
-    viewport_.Reset();
 }
 
-void VRInterface::PrepareRig(Node* headRoot)
+void VRInterface::ConnectToRig(const VRRigDesc& rig)
 {
-    auto renderDevice = headRoot->GetContext()->GetSubsystem<RenderDevice>();
-
-    headRoot->SetWorldPosition(Vector3(0, 0, 0));
-    headRoot->SetWorldRotation(Quaternion::IDENTITY);
-    auto head = headRoot->CreateChild("Head");
-
-    auto leftEye = head->CreateChild("Left_Eye");
-    auto rightEye = head->CreateChild("Right_Eye");
-
-    auto leftCam = leftEye->GetOrCreateComponent<Camera>();
-    auto rightCam = rightEye->GetOrCreateComponent<Camera>();
-
-    if (renderDevice->GetBackend() == RenderBackend::OpenGL)
+    if (!rig.IsValid())
     {
-        leftCam->SetFlipVertical(true);
-        rightCam->SetFlipVertical(true);
+        URHO3D_LOGERROR("Invalid VR rig description");
+        return;
     }
 
-    auto leftHand = headRoot->CreateChild("Left_Hand");
-    auto rightHand = headRoot->CreateChild("Right_Hand");
+    rig_ = rig;
+
+    if (!rig_.pipeline_)
+        rig_.pipeline_ = MakeShared<StereoRenderPipeline>(context_);
+    if (!rig_.viewport_)
+        rig_.viewport_ = new Viewport(context_, rig_.scene_, rig_.leftEye_, nullptr, rig_.pipeline_);
+
+    rig_.viewport_->SetEye(rig_.leftEye_, 0);
+    rig_.viewport_->SetEye(rig_.rightEye_, 1);
 }
 
-void VRInterface::UpdateRig(Node* vrRig, float nearDist, float farDist, bool forSinglePass)
+void VRInterface::CreateDefaultRig()
 {
-    auto head = vrRig->GetChild("Head");
-    auto leftEye = head->GetChild("Left_Eye");
-    auto rightEye = head->GetChild("Right_Eye");
+    auto cache = GetSubsystem<ResourceCache>();
 
-    UpdateRig(head->GetScene(), head, leftEye, rightEye, nearDist, farDist, forSinglePass);
+    defaultScene_ = MakeShared<Scene>(context_);
+    defaultScene_->CreateComponent<Octree>();
 
-    // Is below what we really want to do? Or do we have some sort of mode?
-    //      ie. HeadTracking_Free, HeadTracking_LockedXY, HeadTracking_LockedY
-    //      leave on caller to integrate velocity as required?
-    //// track the stage directly under the head, we'll never change our Y
-    //auto headPos = head->GetWorldPosition();
-    //auto headLocal = head->GetPosition();
-    //auto selfTrans = head->GetWorldPosition();
-    //
-    //// track head in the XZ plane
-    //vrRig->SetWorldPosition(Vector3(headPos.x_, selfTrans.y_, headPos.z_));
-    //
-    //// neutralize the head position locally, keeping vertical, because the rig moved to track the OldTransformWS is still valid
-    //head->SetPosition(Vector3(0, headLocal.y_, 0));
+    Node* skyboxNode = defaultScene_->CreateChild("Skybox");
+    auto skybox = skyboxNode->CreateComponent<Skybox>();
+    skybox->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+    skybox->SetMaterial(cache->GetResource<Material>("Materials/DefaultSkybox.xml"));
+
+    Node* rigNode = defaultScene_->CreateChild("VRRig");
+    defaultRig_ = rigNode->CreateComponent<VRRig>();
 }
 
-void VRInterface::UpdateRig(Scene* scene, Node* head, Node* leftEye, Node* rightEye, float nearDist, float farDist, bool forSinglePass)
+void VRInterface::ValidateCurrentRig()
 {
-    // always update these, they get used going into depth layers for time-warp, best assume that ever feeding bad values means bad things to eyeballs.
-    lastNearDist_ = nearDist;
-    lastFarDist_ = farDist;
+    if (!rig_.IsValid())
+        defaultRig_->Activate();
+}
 
-    if (!IsLive())
+void VRInterface::UpdateCurrentRig()
+{
+    URHO3D_ASSERT(GetRuntime() == VRRuntime::OPENXR, "Only OpenXR is supported at this time");
+
+    // Skip update if we are not ready
+    RenderSurface* currentSurface = currentBackBufferColor_ ? currentBackBufferColor_->GetRenderSurface() : nullptr;
+    if (!rig_.IsValid() || !currentSurface)
         return;
 
-    if (head == nullptr)
-    {
-        auto headRoot = scene->CreateChild("VRRig");
-        head = headRoot->CreateChild("Head");
-    }
-
-    head->SetVar(VRLastTransform, head->GetTransformMatrix());
-    head->SetVar(VRLastTransformWS, head->GetWorldTransform());
+    // Update transforms and cameras
+    Node* head = rig_.head_;
+    head->SetVar("PreviousTransformLocal", head->GetTransformMatrix());
+    head->SetVar("PreviousTransformWorld", head->GetWorldTransform());
     head->SetTransformMatrix(GetHeadTransform());
 
-    if (leftEye == nullptr)
-        leftEye = head->CreateChild("Left_Eye");
-    if (rightEye == nullptr)
-        rightEye = head->CreateChild("Right_Eye");
+    Node* leftEyeNode = rig_.leftEye_->GetNode();
+    Node* rightEyeNode = rig_.rightEye_->GetNode();
 
-    auto leftCam = leftEye->GetOrCreateComponent<Camera>();
-    auto rightCam = rightEye->GetOrCreateComponent<Camera>();
+    Camera* leftEyeCamera = rig_.leftEye_;
+    Camera* rightEyeCamera = rig_.rightEye_;
 
-    leftCam->SetUseClipping(true); // need to set this so shader-construction grabs a version with clipping planes
-    leftCam->SetFov(100.0f);  // junk mostly, the eye matrices will be overriden
-    leftCam->SetNearClip(nearDist);
-    leftCam->SetFarClip(farDist);
-
-    rightCam->SetUseClipping(true);
-    rightCam->SetFov(100.0f); // junk mostly, the eye matrices will be overriden
-    rightCam->SetNearClip(nearDist);
-    rightCam->SetFarClip(farDist);
-
-    leftCam->SetProjection(GetProjection(VR_EYE_LEFT, nearDist, farDist));
-    rightCam->SetProjection(GetProjection(VR_EYE_RIGHT, nearDist, farDist));
-
-    if (GetRuntime() == VRRuntime::OPENVR)
+    for (Camera* camera : {leftEyeCamera, rightEyeCamera})
     {
-        leftEye->SetTransformMatrix(GetEyeLocalTransform(VR_EYE_LEFT));
-        rightEye->SetTransformMatrix(GetEyeLocalTransform(VR_EYE_RIGHT));
-
-        // uhhh ... what, and it's only the eyes, everyone else's transforms are good
-        // buddha ... I hope this isn't backend specific
-        leftEye->Rotate(Quaternion(0, 0, 180), TS_LOCAL);
-        rightEye->Rotate(Quaternion(0, 0, 180), TS_LOCAL);
+        // TODO(xr): Revisit how clipping is handled
+        camera->SetUseClipping(true); // need to set this so shader-construction grabs a version with clipping planes
+        camera->SetFov(100.0f); // junk mostly, the eye matrices will be overriden
+        camera->SetNearClip(rig_.nearDistance_);
+        camera->SetFarClip(rig_.farDistance_);
     }
-    else if (GetRuntime() == VRRuntime::OPENXR)
-    {
-        leftEye->SetTransformMatrix(GetEyeLocalTransform(VR_EYE_LEFT));
-        rightEye->SetTransformMatrix(GetEyeLocalTransform(VR_EYE_RIGHT));
-    }
-    else
-        URHO3D_LOGERROR("Unknown VR runtime specified");
 
-    float ipdAdjust = ipdCorrection_ * 0.5f * 0.001f;
-    leftEye->Translate({ ipdAdjust, 0, 0 }, TS_LOCAL);
-    rightEye->Translate({ -ipdAdjust, 0, 0 }, TS_LOCAL);
+    leftEyeCamera->SetProjection(GetProjection(VR_EYE_LEFT, rig_.nearDistance_, rig_.farDistance_));
+    rightEyeCamera->SetProjection(GetProjection(VR_EYE_RIGHT, rig_.nearDistance_, rig_.farDistance_));
 
-    if (viewport_ == nullptr)
-        URHO3D_LOGWARNING("VRInterface requires a Viewport to be specified, not specifying one will cause a default to be constructed");
+    leftEyeNode->SetTransformMatrix(GetEyeLocalTransform(VR_EYE_LEFT));
+    rightEyeNode->SetTransformMatrix(GetEyeLocalTransform(VR_EYE_RIGHT));
 
-    if (currentBackBufferColor_ && forSinglePass)
-    {
-        auto surface = currentBackBufferColor_->GetRenderSurface();
-        if (surface == nullptr) // no surface then we're not actually read
-            return;
+    const float ipdAdjust = ipdCorrection_ * 0.5f * 0.001f;
+    leftEyeNode->Translate({ipdAdjust, 0, 0}, TS_LOCAL);
+    rightEyeNode->Translate({-ipdAdjust, 0, 0}, TS_LOCAL);
 
-        if (surface->GetViewport(0) == nullptr)
-        {
-            // Cover the case someone's messed up
-            if (viewport_ == nullptr)
-                viewport_ = new Viewport(GetContext(), scene, leftCam, nullptr, pipeline_ = MakeShared<StereoRenderPipeline>(GetContext()));
+    // Connect to the current surface in the swap chain
+    if (currentSurface->GetViewport(0) != rig_.viewport_)
+        currentSurface->SetViewport(0, rig_.viewport_);
 
-            viewport_->SetEye(leftCam, 0);
-            viewport_->SetEye(rightCam, 1);
-            viewport_->SetRect({ 0, 0, currentBackBufferColor_->GetWidth(), currentBackBufferColor_->GetHeight() });
-            surface->SetViewport(0, viewport_);
-        }
-        else
-        {
-            auto view = surface->GetViewport(0);
-            view->SetScene(scene);
-            view->SetEye(leftCam, 0);
-            view->SetEye(rightCam, 1);
-        }
-
-        // we need to queue the update ourselves so things can get properly shutdown
-        surface->QueueUpdate();
-    }
-    else
-    {
-        // TODO: why is this still here?
-        auto leftSurface = currentBackBufferColor_->GetRenderSurface();
-        auto rightSurface = currentBackBufferColor_->GetRenderSurface();
-
-        if (leftSurface->GetViewport(0) == nullptr)
-        {
-            SharedPtr<Viewport> leftView(new Viewport(GetContext(), scene, leftCam));
-            SharedPtr<Viewport> rightView(new Viewport(GetContext(), scene, rightCam));
-
-            leftView->SetRect(GetLeftEyeRect());
-            rightView->SetRect(GetRightEyeRect());
-
-            leftSurface->SetViewport(0, leftView);
-            rightSurface->SetViewport(1, rightView);
-        }
-        else
-        {
-            auto leftView = leftSurface->GetViewport(0);
-            leftView->SetScene(scene);
-            leftView->SetCamera(leftCam);
-
-            auto rightView = rightSurface->GetViewport(1);
-            rightView->SetScene(scene);
-            rightView->SetCamera(rightCam);
-        }
-
-        leftSurface->SetUpdateMode(SURFACE_UPDATEALWAYS);
-        rightSurface->SetUpdateMode(SURFACE_UPDATEALWAYS);
-    }
+    rig_.viewport_->SetRect({0, 0, currentBackBufferColor_->GetWidth(), currentBackBufferColor_->GetHeight()});
+    currentSurface->QueueUpdate();
 }
 
 XRBinding* VRInterface::GetInputBinding(const ea::string& path) const
@@ -420,11 +341,9 @@ void VRInterface::SetVignette(bool enabled, Color insideColor, Color outsideColo
     vignettePower_ = power;
 }
 
-void RegisterVR(Context* context)
+void RegisterVRLibrary(Context* context)
 {
-#if 0
-    VRRigWalker::Register(context);
-#endif
+    VRRig::RegisterObject(context);
 }
 
 }

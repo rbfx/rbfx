@@ -1204,6 +1204,7 @@ bool OpenXR::InitializeSession(const VRSessionParameters& params)
 
     GetHiddenAreaMask();
 
+    CreateDefaultRig();
     return true;
 }
 
@@ -1385,6 +1386,10 @@ void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
         using namespace BeginFrame;
         UpdateBindings(data[P_TIMESTEP].GetFloat());
     }
+
+    ValidateCurrentRig();
+    UpdateCurrentRig();
+    UpdateHands();
 }
 
 void OpenXR::HandlePreRender()
@@ -1476,16 +1481,16 @@ void OpenXR::HandlePostRender(StringHash, VariantMap&)
             depth[VR_EYE_LEFT].subImage.imageRect = { { 0, 0 }, { eyeTextureSize_.x_, eyeTextureSize_.y_} };
             depth[VR_EYE_LEFT].minDepth = 0.0f; // spec says range of 0-1, so doesn't respect GL -1 to 1?
             depth[VR_EYE_LEFT].maxDepth = 1.0f;
-            depth[VR_EYE_LEFT].nearZ = lastNearDist_;
-            depth[VR_EYE_LEFT].farZ = lastFarDist_;
+            depth[VR_EYE_LEFT].nearZ = rig_.nearDistance_;
+            depth[VR_EYE_LEFT].farZ = rig_.farDistance_;
 
             depth[VR_EYE_RIGHT].subImage.imageArrayIndex = 0;
             depth[VR_EYE_RIGHT].subImage.swapchain = depthChain_->GetHandle();
             depth[VR_EYE_RIGHT].subImage.imageRect = { { eyeTextureSize_.x_, 0 }, { eyeTextureSize_.x_, eyeTextureSize_.y_} };
             depth[VR_EYE_RIGHT].minDepth = 0.0f;
             depth[VR_EYE_RIGHT].maxDepth = 1.0f;
-            depth[VR_EYE_RIGHT].nearZ = lastNearDist_;
-            depth[VR_EYE_RIGHT].farZ = lastFarDist_;
+            depth[VR_EYE_RIGHT].nearZ = rig_.nearDistance_;
+            depth[VR_EYE_RIGHT].farZ = rig_.farDistance_;
 
             // These are chained to the relevant eye, not passed in through another mechanism.
 
@@ -2029,18 +2034,16 @@ void OpenXR::GetHandVelocity(VRHand hand, Vector3* linear, Vector3* angular) con
         *angular = ToVector3(handGrips_[hand]->velocity_.angularVelocity);
 }
 
-void OpenXR::UpdateHands(Scene* scene, Node* rigRoot, Node* leftHand, Node* rightHand)
+void OpenXR::UpdateHands()
 {
-    if (!IsLive())
+    if (!IsLive() || !rig_.IsValid())
         return;
 
     // Check for changes in controller model state, if so, do reload as required.
     LoadControllerModels();
 
-    if (leftHand == nullptr)
-        leftHand = rigRoot->CreateChild("Left_Hand");
-    if (rightHand == nullptr)
-        rightHand = rigRoot->CreateChild("Right_Hand");
+    Node* leftHand = rig_.leftHand_;
+    Node* rightHand = rig_.rightHand_;
 
     // we need valid handles for these guys
     if (handGrips_[0] && handGrips_[1])
@@ -2051,30 +2054,27 @@ void OpenXR::UpdateHands(Scene* scene, Node* rigRoot, Node* leftHand, Node* righ
         // when tracking kicks back in again later. If velocity integration is valid there should be no issue - neither a pop,
         // it'll already pop in a normal position tracking lost recovery situation anyways.
 
-        auto lq = ToQuaternion(handGrips_[VR_HAND_LEFT]->location_.pose.orientation);
-        auto lp = ToVector3(handGrips_[VR_HAND_LEFT]->location_.pose.position);
+        const Quaternion leftRotation = ToQuaternion(handGrips_[VR_HAND_LEFT]->location_.pose.orientation);
+        const Vector3 leftPosition = ToVector3(handGrips_[VR_HAND_LEFT]->location_.pose.position);
 
-        // these fields are super important to rationalize what's happpened between sample points
+        // these fields are super important to rationalize what's happened between sample points
         // sensor reads are effectively Planck timing it between quantum space-time
-        static const ea::string lastTrans = "LastTransform";
-        static const ea::string lastTransWS = "LastTransformWS";
-
-        leftHand->SetVar(lastTrans, leftHand->GetTransformMatrix());
-        leftHand->SetVar(lastTransWS, leftHand->GetWorldTransform());
+        leftHand->SetVar("PreviousTransformLocal", leftHand->GetTransformMatrix());
+        leftHand->SetVar("PreviousTransformWorld", leftHand->GetWorldTransform());
         leftHand->SetEnabled(handGrips_[VR_HAND_LEFT]->location_.locationFlags & (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT));
-        leftHand->SetPosition(lp);
+        leftHand->SetPosition(leftPosition);
         if (handGrips_[VR_HAND_LEFT]->location_.locationFlags & (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT))
-            leftHand->SetRotation(lq);
+            leftHand->SetRotation(leftRotation);
 
-        auto rq = ToQuaternion(handGrips_[VR_HAND_RIGHT]->location_.pose.orientation);
-        auto rp = ToVector3(handGrips_[VR_HAND_RIGHT]->location_.pose.position);
+        const Quaternion rightRotation = ToQuaternion(handGrips_[VR_HAND_RIGHT]->location_.pose.orientation);
+        const Vector3 rightPosition = ToVector3(handGrips_[VR_HAND_RIGHT]->location_.pose.position);
 
-        rightHand->SetVar(lastTrans, leftHand->GetTransformMatrix());
-        rightHand->SetVar(lastTransWS, leftHand->GetWorldTransform());
+        rightHand->SetVar("PreviousTransformLocal", leftHand->GetTransformMatrix());
+        rightHand->SetVar("PreviousTransformWorld", leftHand->GetWorldTransform());
         rightHand->SetEnabled(handGrips_[VR_HAND_RIGHT]->location_.locationFlags & (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT));
-        rightHand->SetPosition(rp);
+        rightHand->SetPosition(rightPosition);
         if (handGrips_[VR_HAND_RIGHT]->location_.locationFlags & (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT))
-            rightHand->SetRotation(rq);
+            rightHand->SetRotation(rightRotation);
     }
 }
 

@@ -174,8 +174,11 @@ public:
     virtual VRRuntime GetRuntime() const override { return VRRuntime::OPENXR; }
     virtual const char* GetRuntimeName() const override { return "OPEN_XR"; }
 
-    virtual bool InitializeSession(const VRSessionParameters& params) override;
-    virtual void ShutdownSession() override;
+    /// Implement VRInterface.
+    /// @{
+    bool InitializeSession(const VRSessionParameters& params) override;
+    void ShutdownSession() override;
+    /// @}
 
     // XR is currently single-texture only.
     virtual void SetSingleTexture(bool state) override {}
@@ -196,8 +199,6 @@ public:
     virtual Matrix4 GetProjection(VREye eye, float nearDist, float farDist) const override;
     virtual Matrix3x4 GetHeadTransform() const override;
 
-    virtual void UpdateHands(Scene* scene, Node* rigRoot, Node* leftHand, Node* rightHand) override;
-
     void HandlePreUpdate(StringHash, VariantMap&);
     void HandlePreRender();
     void HandlePostRender(StringHash, VariantMap&);
@@ -216,6 +217,7 @@ public:
 protected:
     void InitializeActiveExtensions(RenderBackend backend);
     bool InitializeTweaks(RenderBackend backend);
+    void UpdateHands();
 
     bool OpenSession();
     void UpdateBindings(float time);

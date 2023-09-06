@@ -40,6 +40,7 @@
 
 #include <Urho3D/XR/XR.h>
 #include <Urho3D/XR/VREvents.h>
+#include <Urho3D/XR/VRRig.h>
 #include <Urho3D/XR/VRUtils.h>
 
 #include "VRSimple.h"
@@ -200,16 +201,9 @@ void VRSimple::SetupXRScene()
 {
     auto xr = GetSubsystem<VRInterface>();
 
-    auto rig = scene_->GetChild("VRRig");
-    if (rig == nullptr)
-    {
-        rig = scene_->CreateChild("VRRig");
-        xr->PrepareRig(rig);
-        rig->SetWorldPosition(Vector3(0, 0, 0));
-    }
-
-    xr->UpdateRig(rig, 0.01f, 150.0f, true);
-    xr->UpdateHands(scene_, rig, rig->GetChild("Left_Hand"), rig->GetChild("Right_Hand"));
+    Node* rigNode = scene_->CreateChild("VRRig");
+    VRRig* rig = rigNode->CreateComponent<VRRig>();
+    rig->Activate();
 }
 
 void VRSimple::Update(StringHash eventID, VariantMap& eventData)
@@ -243,9 +237,6 @@ void VRSimple::Update(StringHash eventID, VariantMap& eventData)
             if (auto rig = scene_->GetChild("VRRig"))
             {
                 auto head = rig->GetChild("Head");
-                xr->UpdateRig(rig, 0.001f, 150.0f, true);
-                xr->UpdateHands(scene_, rig, rig->GetChild("Left_Hand"), rig->GetChild("Right_Hand"));
-
                 auto dbg = scene_->GetOrCreateComponent<DebugRenderer>();
 
                 // this should show where the tracking volume centroid is
