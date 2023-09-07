@@ -24,6 +24,7 @@
 
 #include "Urho3D/Graphics/Camera.h"
 #include "Urho3D/Graphics/Geometry.h"
+#include "Urho3D/Graphics/Material.h"
 #include "Urho3D/Graphics/Texture2D.h"
 #include "Urho3D/Math/BoundingBox.h"
 #include "Urho3D/Math/Ray.h"
@@ -37,11 +38,20 @@ namespace Urho3D
     class PipelineState;
     class VRRig;
 
+    struct VRFlatScreenParameters
+    {
+        bool enable_{};
+        IntVector2 size_{1920, 1080};
+        float distance_{2.0f};
+        float height_{4.0f};
+    };
+
     struct VRSessionParameters
     {
         ea::string manifestPath_;
         int multiSample_{};
         float resolutionScale_{1.0f};
+        VRFlatScreenParameters flatScreen_;
     };
 
     struct URHO3D_API VRRigDesc
@@ -213,7 +223,7 @@ namespace Urho3D
         /// Initializes the VR session.
         virtual bool InitializeSession(const VRSessionParameters& params) = 0;
         /// Shuts down the VR session.
-        virtual void ShutdownSession() = 0;
+        virtual void ShutdownSession();
         /// Connects session to the rig.
         virtual void ConnectToRig(const VRRigDesc& rig);
 
@@ -309,7 +319,7 @@ namespace Urho3D
         virtual void UpdateControllerModel(VRHand hand, SharedPtr<Node>) = 0;
 
     protected:
-        void CreateDefaultRig();
+        void CreateDefaultRig(const VRFlatScreenParameters& params);
         void ValidateCurrentRig();
         void UpdateCurrentRig();
 
@@ -340,6 +350,10 @@ namespace Urho3D
         SharedPtr<Scene> defaultScene_;
         /// Default rig to use.
         SharedPtr<VRRig> defaultRig_;
+        /// Flat screen texture, if used.
+        SharedPtr<Texture2D> flatScreenTexture_;
+        /// Material that can be used to display the flat screen texture.
+        SharedPtr<Material> flatScreenMaterial_;
 
         /// Link to currently used rig.
         VRRigDesc rig_;

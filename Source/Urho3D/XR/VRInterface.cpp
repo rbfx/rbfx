@@ -29,15 +29,23 @@
 #include "Urho3D/Graphics/Octree.h"
 #include "Urho3D/Graphics/Renderer.h"
 #include "Urho3D/Graphics/Skybox.h"
+#include "Urho3D/Graphics/StaticModel.h"
+#include "Urho3D/Graphics/Technique.h"
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/RenderAPI/PipelineState.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
 #include "Urho3D/RenderPipeline/StereoRenderPipeline.h"
 #include "Urho3D/Resource/ResourceCache.h"
 #include "Urho3D/Resource/XMLFile.h"
 #include "Urho3D/Scene/Node.h"
 #include "Urho3D/Scene/Scene.h"
+#include "Urho3D/UI/UI.h"
 #include "Urho3D/XR/VRRig.h"
+
+#if URHO3D_RMLUI
+    #include "Urho3D/RmlUI/RmlUI.h"
+#endif
 
 #include "Urho3D/DebugNew.h"
 
@@ -87,6 +95,31 @@ VRInterface::~VRInterface()
 {
 }
 
+void VRInterface::ShutdownSession()
+{
+    if (flatScreenTexture_)
+    {
+        auto cache = GetSubsystem<ResourceCache>();
+        auto renderer = GetSubsystem<Renderer>();
+        auto legacyUI = GetSubsystem<UI>();
+#if URHO3D_RMLUI
+        auto rmlUI = GetSubsystem<RmlUI>();
+#endif
+
+        cache->ReleaseResource(flatScreenTexture_->GetName(), true);
+        cache->ReleaseResource(flatScreenMaterial_->GetName(), true);
+
+        flatScreenTexture_ = nullptr;
+        flatScreenMaterial_ = nullptr;
+
+        renderer->SetBackbufferRenderSurface(nullptr);
+        legacyUI->SetRenderTarget(nullptr);
+#if URHO3D_RMLUI
+        rmlUI->SetRenderTarget(nullptr);
+#endif
+    }
+}
+
 void VRInterface::ConnectToRig(const VRRigDesc& rig)
 {
     if (!rig.IsValid())
@@ -106,9 +139,14 @@ void VRInterface::ConnectToRig(const VRRigDesc& rig)
     rig_.viewport_->SetEye(rig_.rightEye_, 1);
 }
 
-void VRInterface::CreateDefaultRig()
+void VRInterface::CreateDefaultRig(const VRFlatScreenParameters& params)
 {
     auto cache = GetSubsystem<ResourceCache>();
+    auto renderer = GetSubsystem<Renderer>();
+    auto legacyUI = GetSubsystem<UI>();
+#if URHO3D_RMLUI
+    auto rmlUI = GetSubsystem<RmlUI>();
+#endif
 
     defaultScene_ = MakeShared<Scene>(context_);
     defaultScene_->CreateComponent<Octree>();
@@ -120,6 +158,38 @@ void VRInterface::CreateDefaultRig()
 
     Node* rigNode = defaultScene_->CreateChild("VRRig");
     defaultRig_ = rigNode->CreateComponent<VRRig>();
+
+    if (params.enable_)
+    {
+        flatScreenTexture_ = MakeShared<Texture2D>(context_);
+        flatScreenTexture_->SetName("manual://Textures/FlatScreen.raw");
+        flatScreenTexture_->SetSize(
+            params.size_.x_, params.size_.y_, TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFlag::BindRenderTarget);
+        cache->AddManualResource(flatScreenTexture_);
+
+        flatScreenMaterial_ = MakeShared<Material>(context_);
+        flatScreenMaterial_->SetName("manual://Materials/FlatScreen.material");
+        flatScreenMaterial_->SetTexture(ShaderResources::Albedo, flatScreenTexture_);
+        flatScreenMaterial_->SetCullMode(CULL_NONE);
+        auto technique = cache->GetResource<Technique>("Techniques/UnlitTransparent.xml");
+        flatScreenMaterial_->SetTechnique(0, technique);
+
+        Node* flatScreenNode = defaultScene_->CreateChild("FlatScreen");
+        flatScreenNode->SetPosition({0, 2.0, params.distance_});
+        flatScreenNode->SetRotation({-90.0f, Vector3::RIGHT});
+        const float aspectRatio = static_cast<float>(params.size_.x_) / params.size_.y_;
+        flatScreenNode->SetScale(Vector3{aspectRatio, 1.0f, 1.0f} * params.height_);
+
+        auto flatScreenModel = flatScreenNode->CreateComponent<StaticModel>();
+        flatScreenModel->SetModel(cache->GetResource<Model>("Models/Plane.mdl"));
+        flatScreenModel->SetMaterial(0, flatScreenMaterial_);
+
+        renderer->SetBackbufferRenderSurface(flatScreenTexture_->GetRenderSurface());
+        legacyUI->SetRenderTarget(flatScreenTexture_);
+#if URHO3D_RMLUI
+        rmlUI->SetRenderTarget(flatScreenTexture_);
+#endif
+    }
 }
 
 void VRInterface::ValidateCurrentRig()

@@ -39,6 +39,9 @@
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
 #include <Urho3D/UI/UIEvents.h>
+#if URHO3D_XR
+#include <Urho3D/XR/VRInterface.h>
+#endif
 
 #include "01_HelloWorld/HelloWorld.h"
 #include "02_HelloGUI/HelloGUI.h"
@@ -420,9 +423,19 @@ void SamplesManager::Start()
     RegisterSample<PointerAdapterSample>();
 #endif
     RegisterSample<CameraShake>();
-
 #if URHO3D_XR
     RegisterSample<VRSimple>();
+#endif
+
+#if URHO3D_XR
+    auto virtualReality = context_->GetSubsystem<VRInterface>();
+    if (virtualReality)
+    {
+        VRSessionParameters params;
+        params.manifestPath_ = "xr_manifest.xml";
+        params.flatScreen_.enable_ = true;
+        virtualReality->InitializeSession(params);
+    }
 #endif
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);

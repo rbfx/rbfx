@@ -1204,12 +1204,14 @@ bool OpenXR::InitializeSession(const VRSessionParameters& params)
 
     GetHiddenAreaMask();
 
-    CreateDefaultRig();
+    CreateDefaultRig(params.flatScreen_);
     return true;
 }
 
 void OpenXR::ShutdownSession()
 {
+    BaseClassName::ShutdownSession();
+
     for (int i = 0; i < 2; ++i)
     {
         wandModels_[i] = { };
