@@ -271,7 +271,7 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
     {
         VRSessionParameters sessionParams;
         // TODO(xr): Configure this
-        sessionParams.manifestPath_ = "xr_manifest.xml";
+        sessionParams.manifestPath_ = "XR/DefaultManifest.xml";
         virtualReality->InitializeSession(sessionParams);
     }
 #endif

@@ -89,7 +89,7 @@ void VRSimple::Start()
     SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(VRSimple, Update));
     SubscribeToEvent(E_VRCONTROLLERCHANGE, URHO3D_HANDLER(VRSimple, HandleControllerChange));
 
-    xr->InitializeSession(VRSessionParameters{"xr_manifest.xml"});
+    xr->InitializeSession(VRSessionParameters{"XR/DefaultManifest.xml"});
 
     SetupXRScene();
 }

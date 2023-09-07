@@ -420,12 +420,16 @@ void SamplesManager::Start()
     RegisterSample<PointerAdapterSample>();
 #endif
     RegisterSample<CameraShake>();
-
 #if URHO3D_XR
     RegisterSample<VRSimple>();
 #endif
+
+#if URHO3D_OCULUS_QUEST
+    StartSample(VRSimple::GetTypeStatic());
+#else
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);
+#endif
 }
 
 void SamplesManager::Stop()
