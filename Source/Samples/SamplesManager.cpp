@@ -152,8 +152,8 @@
 #include "116_VirtualFileSystem/VFSSample.h"
 #if URHO3D_PHYSICS
 #include "117_PointerAdapter/PointerAdapterSample.h"
-#include "118_CameraShake/CameraShake.h"
 #endif
+#include "118_CameraShake/CameraShake.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
