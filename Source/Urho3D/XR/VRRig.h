@@ -22,6 +22,15 @@ public:
 
     void Activate();
 
+    /// Return internal nodes.
+    /// @{
+    Node* GetHead() const { return headNode_; }
+    Node* GetLeftEye() const { return leftEyeNode_; }
+    Node* GetRightEye() const { return rightEyeNode_; }
+    Node* GetLeftHand() const { return leftHandNode_; }
+    Node* GetRightHand() const { return rightHandNode_; }
+    /// @}
+
 private:
     /// Implement Component.
     /// @{

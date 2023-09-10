@@ -1119,6 +1119,12 @@ void Engine::SaveConfigFile()
 
 void Engine::PopulateDefaultParameters()
 {
+#if URHO3D_OCULUS_QUEST
+    const bool defaultXR = true;
+#else
+    const bool defaultXR = false;
+#endif
+
     RenderDeviceSettingsVulkan vulkanTweaks;
     vulkanTweaks.dynamicHeapSize_ = 32 * 1024 * 1024;
 
@@ -1185,7 +1191,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_WORKER_THREADS, true);
     engineParameters_->DefineVariable(EP_PSO_CACHE, "conf://psocache.bin");
     engineParameters_->DefineVariable(EP_RENDER_BACKEND).SetOptional<int>();
-    engineParameters_->DefineVariable(EP_XR, false);
+    engineParameters_->DefineVariable(EP_XR, defaultXR);
 }
 
 void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)

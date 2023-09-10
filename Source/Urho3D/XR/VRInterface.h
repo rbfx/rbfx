@@ -219,6 +219,8 @@ namespace Urho3D
 
         /// Returns true if this VR configuration is running at room scale.
         bool IsRoomScale() const { return isRoomScale_; }
+        /// Returns currently connected rig.
+        const VRRigDesc& GetRig() const { return rig_; }
 
         /// IPD correction factor in millimeters.
         float GetIPDCorrection() const { return ipdCorrection_; }

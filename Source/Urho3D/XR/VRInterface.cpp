@@ -98,7 +98,12 @@ void VRInterface::ConnectToRig(const VRRigDesc& rig)
     rig_ = rig;
 
     if (!rig_.pipeline_)
+    {
         rig_.pipeline_ = MakeShared<StereoRenderPipeline>(context_);
+
+        if (auto sourcePipeline = rig_.scene_->GetComponent<RenderPipeline>())
+            rig_.pipeline_->SetSettings(sourcePipeline->GetSettings());
+    }
     if (!rig_.viewport_)
         rig_.viewport_ = new Viewport(context_, rig_.scene_, rig_.leftEye_, nullptr, rig_.pipeline_);
 

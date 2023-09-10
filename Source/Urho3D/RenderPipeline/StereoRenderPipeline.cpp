@@ -402,7 +402,7 @@ bool StereoRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vie
 {
     URHO3D_PROFILE("SetupRenderPipeline");
 
-    if (!viewport->GetScene())
+    if (!viewport->GetScene() || !viewport->IsStereo())
         return false;
 
     if (!sceneProcessor_)
@@ -626,8 +626,8 @@ void StereoRenderPipelineView::Render()
     //if (xr->IsVignetteEnabled())
     //    xr->DrawRadialMask(BlendMode::BLEND_ALPHA, xr->GetVignetteInsideColor(), xr->GetVignetteOutsideColor(), xr->GetVignettePower());
 
-    SendViewEvent(E_ENDVIEWRENDER);
     OnRenderEnd(this, frameInfo_);
+    SendViewEvent(E_ENDVIEWRENDER);
 
     // Update statistics
     stats_ = {};
@@ -641,8 +641,6 @@ void StereoRenderPipelineView::Render()
         const DebugFrameSnapshot& snapshot = debugger_.GetSnapshot();
         URHO3D_LOGINFO("RenderPipeline snapshot:\n\n{}\n", snapshot.ToString());
     }
-
-    graphics_->ResetRenderTargets();
 }
 
 const FrameInfo& StereoRenderPipelineView::GetFrameInfo() const

@@ -59,9 +59,9 @@ Vector3 SmoothLocomotionHead(Node* rigNode, XRBinding* joystickBinding, float de
 
     auto stickMotion = joystickBinding->GetVec2();
     const auto signX = Sign(stickMotion.x_);
-    const auto signY = Sign(stickMotion.x_);
-    stickMotion.x_ = Abs(stickMotion.x_) < deadZone ? 0.0f : signX * DENORMALIZE(Abs(stickMotion.x_), deadZone, 1.0f);
-    stickMotion.y_ = Abs(stickMotion.y_) < deadZone ? 0.0f : signY * DENORMALIZE(Abs(stickMotion.y_), deadZone, 1.0f);
+    const auto signY = Sign(stickMotion.y_);
+    stickMotion.x_ = Abs(stickMotion.x_) < deadZone ? 0.0f : signX * InverseLerp(deadZone, 1.0f, Abs(stickMotion.x_));
+    stickMotion.y_ = Abs(stickMotion.y_) < deadZone ? 0.0f : signY * InverseLerp(deadZone, 1.0f, Abs(stickMotion.y_));
 
     auto vec = fore * stickMotion.y_ + right * stickMotion.x_;
     return normalized ? vec.Normalized() : vec;

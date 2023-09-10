@@ -24,6 +24,8 @@
 
 #include "Sample.h"
 
+#include <Urho3D/XR/VRInterface.h>
+
 namespace Urho3D
 {
 
@@ -62,4 +64,11 @@ private:
     void CreateInstructions();
     /// Set up a viewport for displaying the scene.
     void SetupViewport();
+    /// Grab dynamic object with hand.
+    void GrabDynamicObject(Node* handNode, VRHand hand);
+    /// Release dynamic object from hand.
+    void ReleaseDynamicObject(Node* handNode);
+
+    /// Container of all interactive dynamic objects
+    SharedPtr<Node> dynamicObjects_;
 };
