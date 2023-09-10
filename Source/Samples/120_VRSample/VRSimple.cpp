@@ -161,14 +161,42 @@ void VRSimple::SetupXRScene()
     rig->Activate();
 
     // Create kinematic bodies for hands
-    for (Node* handNode : {rig->GetLeftHand(), rig->GetRightHand()})
-    {
-        const auto shape = handNode->CreateComponent<CollisionShape>();
-        shape->SetSphere(0.08f);
+    SetupHandComponents(rig->GetLeftHandPose(), rig->GetLeftHandAim());
+    SetupHandComponents(rig->GetRightHandPose(), rig->GetRightHandAim());
+}
 
-        const auto body = handNode->CreateComponent<RigidBody>();
-        body->SetKinematic(true);
-    }
+void VRSimple::SetupHandComponents(Node* handPoseNode, Node* handAimNode)
+{
+    const float handSize = 0.08f;
+    const float aimSize = 0.02f;
+    const float aimLength = 0.08f;
+
+    auto cache = GetSubsystem<ResourceCache>();
+
+    // Create visible shape for hands
+    Node* displayNode = handPoseNode->CreateChild("Display");
+    displayNode->SetScale(handSize);
+
+    auto handModel = displayNode->CreateComponent<StaticModel>();
+    handModel->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+    handModel->SetMaterial(cache->GetResource<Material>("Materials/Constant/MattTransparent.xml"));
+
+    // Create kinematic body for hand
+    const auto shape = handPoseNode->CreateComponent<CollisionShape>();
+    shape->SetBox(handSize * Vector3::ONE);
+
+    const auto body = handPoseNode->CreateComponent<RigidBody>();
+    body->SetKinematic(true);
+
+    // Create aim node
+    Node* aimNode = handAimNode->CreateChild("Aim");
+    aimNode->SetScale({aimSize, aimSize, aimLength});
+    aimNode->SetPosition({0.0f, 0.0f, aimLength / 2});
+
+    auto aimModel = aimNode->CreateComponent<StaticModel>();
+    aimModel->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+    aimModel->SetMaterial(cache->GetResource<Material>("Materials/Constant/MattTransparent.xml"));
+
 }
 
 void VRSimple::GrabDynamicObject(Node* handNode, VRHand hand)
@@ -232,85 +260,72 @@ void VRSimple::Update(StringHash eventID, VariantMap& eventData)
             textElement->SetText(MSG_XR_SLEEPING);
     }
 
+    // Get and check the rig
     const VRRigDesc& rigDesc = virtualReality->GetRig();
     auto rigNode = scene_->GetChild("VRRig");
-    if (!virtualReality->IsLive() || !rigNode)
+    if (!virtualReality->IsLive() || !rigNode || !rigDesc.IsValid())
         return;
 
     // Use left and right grab buttons to grab and release objects
     XRBinding* rightGrab = virtualReality->GetInputBinding("grab", VR_HAND_RIGHT);
-    if (rightGrab && rigDesc.rightHand_)
+    if (rightGrab && rigDesc.rightHandPose_)
     {
         const bool isPressed = rightGrab->GetFloat() == 1.0f;
         if (rightGrab->IsChanged())
         {
             if (isPressed)
-                GrabDynamicObject(rigDesc.rightHand_, VR_HAND_RIGHT);
+                GrabDynamicObject(rigDesc.rightHandPose_, VR_HAND_RIGHT);
             else
-                ReleaseDynamicObject(rigDesc.rightHand_);
+                ReleaseDynamicObject(rigDesc.rightHandPose_);
         }
     }
 
     XRBinding* leftGrab = virtualReality->GetInputBinding("grab", VR_HAND_LEFT);
-    if (leftGrab && rigDesc.leftHand_)
+    if (leftGrab && rigDesc.leftHandPose_)
     {
         const bool isPressed = leftGrab->GetFloat() == 1.0f;
         if (leftGrab->IsChanged())
         {
             if (isPressed)
-                GrabDynamicObject(rigDesc.leftHand_, VR_HAND_LEFT);
+                GrabDynamicObject(rigDesc.leftHandPose_, VR_HAND_LEFT);
             else
-                ReleaseDynamicObject(rigDesc.leftHand_);
+                ReleaseDynamicObject(rigDesc.leftHandPose_);
         }
     }
 
-    auto head = rigNode->GetChild("Head");
-    auto dbg = scene_->GetOrCreateComponent<DebugRenderer>();
-
-    // this should show where the tracking volume centroid is
-    dbg->AddNode(rigNode, 1.0f, false);
-
-    if (auto child = rigNode->GetChild("Left_Hand", true))
+    // Use left stick to move based on where the user is looking
+    if (XRBinding* leftStick = virtualReality->GetInputBinding("stick", VR_HAND_LEFT))
     {
-        virtualReality->UpdateControllerModel(VR_HAND_LEFT, SharedPtr<Node>(child->GetChild(0u)));
-        // draw hand axis so we can see it even if we have no model
-        dbg->AddNode(child, 0.15f, false);
-    }
-    if (auto child = rigNode->GetChild("Right_Hand", true))
-    {
-        virtualReality->UpdateControllerModel(VR_HAND_RIGHT, SharedPtr<Node>(child->GetChild(0u)));
-        // draw hand axis so we can see it even if we have no model
-        dbg->AddNode(child, 0.15f, false);
-
-        // draw a white line going off 2 meters along the aim axis.
-        auto aimMatrix = rigNode->GetWorldTransform() * virtualReality->GetHandAimTransform(VR_HAND_RIGHT);
-        dbg->AddLine(aimMatrix * Vector3(0, 0, 0), aimMatrix * Vector3(0, 0, 2), Color::WHITE, false);
-    }
-
-    // use left stick to move based on where the user is looking
-    if (auto leftStick = virtualReality->GetInputBinding("stick", VR_HAND_LEFT))
-    {
-        auto delta = SmoothLocomotionHead(rigNode, leftStick, 0.3f);
+        const Vector3 delta = SmoothLocomotionHead(rigNode, leftStick, 0.3f);
         rigNode->Translate(delta * 0.025f, TS_WORLD);
     }
 
-    // use right stick for left/right snap turning
-    if (auto rightStick = virtualReality->GetInputBinding("stick", VR_HAND_RIGHT))
+    // Use right stick for left/right snap turning
+    if (XRBinding* rightStick = virtualReality->GetInputBinding("stick", VR_HAND_RIGHT))
     {
-        auto cmd = JoystickAsDPad(rightStick, 0.3f);
+        const auto cmd = JoystickAsDPad(rightStick, 0.3f);
 
-        auto curHeadPos = head->GetWorldPosition();
-        auto rigPos = rigNode->GetWorldPosition();
+        const Vector3 curHeadPos = rigDesc.head_->GetWorldPosition();
+        const Vector3 rigPos = rigNode->GetWorldPosition();
         if (turnLeft.CheckStrict(cmd))
             rigNode->RotateAround(Vector3(curHeadPos.x_, rigPos.y_, curHeadPos.z_), Quaternion(-45, Vector3::UP), TS_WORLD);
         if (turnRight.CheckStrict(cmd))
             rigNode->RotateAround(Vector3(curHeadPos.x_, rigPos.y_, curHeadPos.z_), Quaternion(45, Vector3::UP), TS_WORLD);
     }
 
-    if (auto rightTrigger = virtualReality->GetInputBinding("trigger", VR_HAND_RIGHT))
+    // Draw debug geometry
+    auto debug = scene_->GetOrCreateComponent<DebugRenderer>();
+
+    debug->AddNode(rigNode, 1.0f, false);
+
+    for (Node* handPose : {rigDesc.leftHandPose_, rigDesc.rightHandPose_})
+        debug->AddNode(handPose, 0.15f, false);
+
+    for (Node* handAim : {rigDesc.leftHandAim_, rigDesc.rightHandAim_})
     {
-        if (rightTrigger->IsChanged())
-            virtualReality->TriggerHaptic(VR_HAND_RIGHT, 1.0f, 0.0f, 0.5f);
+        const Vector3 position = handAim->GetWorldPosition();
+        const Vector3 direction = handAim->GetWorldDirection();
+        debug->AddLine(position, position + direction * 2, Color::WHITE, false);
     }
 }
 

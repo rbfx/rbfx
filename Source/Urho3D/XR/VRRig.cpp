@@ -38,8 +38,10 @@ void VRRig::Activate()
         desc.head_ = headNode_;
         desc.leftEye_ = leftEyeCamera_;
         desc.rightEye_ = rightEyeCamera_;
-        desc.leftHand_ = leftHandNode_;
-        desc.rightHand_ = rightHandNode_;
+        desc.leftHandPose_ = leftHandPoseNode_;
+        desc.rightHandPose_ = rightHandPoseNode_;
+        desc.leftHandAim_ = leftHandAimNode_;
+        desc.rightHandAim_ = rightHandAimNode_;
         desc.nearDistance_ = 0.01f;
         desc.farDistance_ = 150.0f;
         virtualReality->ConnectToRig(desc);
@@ -56,8 +58,10 @@ void VRRig::OnNodeSet(Node* previousNode, Node* currentNode)
     static const ea::string headName = "Head";
     static const ea::string leftEyeName = "Left_Eye";
     static const ea::string rightEyeName = "Right_Eye";
-    static const ea::string leftHandName = "Left_Hand";
-    static const ea::string rightHandName = "Right_Hand";
+    static const ea::string leftHandPoseName = "Left_Hand";
+    static const ea::string rightHandPoseName = "Right_Hand";
+    static const ea::string leftHandAimName = "Left_Aim";
+    static const ea::string rightHandAimName = "Right_Aim";
 
     headNode_ = node_->GetChild(headName);
     if (!headNode_)
@@ -71,13 +75,21 @@ void VRRig::OnNodeSet(Node* previousNode, Node* currentNode)
     if (!rightEyeNode_)
         rightEyeNode_ = headNode_->CreateTemporaryChild(rightEyeName);
 
-    leftHandNode_ = node_->GetChild(leftHandName);
-    if (!leftHandNode_)
-        leftHandNode_ = node_->CreateTemporaryChild(leftHandName);
+    leftHandPoseNode_ = node_->GetChild(leftHandPoseName);
+    if (!leftHandPoseNode_)
+        leftHandPoseNode_ = node_->CreateTemporaryChild(leftHandPoseName);
 
-    rightHandNode_ = node_->GetChild(rightHandName);
-    if (!rightHandNode_)
-        rightHandNode_ = node_->CreateTemporaryChild(rightHandName);
+    rightHandPoseNode_ = node_->GetChild(rightHandPoseName);
+    if (!rightHandPoseNode_)
+        rightHandPoseNode_ = node_->CreateTemporaryChild(rightHandPoseName);
+
+    leftHandAimNode_ = node_->GetChild(leftHandAimName);
+    if (!leftHandAimNode_)
+        leftHandAimNode_ = node_->CreateTemporaryChild(leftHandAimName);
+
+    rightHandAimNode_ = node_->GetChild(rightHandAimName);
+    if (!rightHandAimNode_)
+        rightHandAimNode_ = node_->CreateTemporaryChild(rightHandAimName);
 
     leftEyeCamera_ = leftEyeNode_->GetOrCreateComponent<Camera>();
     rightEyeCamera_ = rightEyeNode_->GetOrCreateComponent<Camera>();

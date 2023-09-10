@@ -27,8 +27,10 @@ public:
     Node* GetHead() const { return headNode_; }
     Node* GetLeftEye() const { return leftEyeNode_; }
     Node* GetRightEye() const { return rightEyeNode_; }
-    Node* GetLeftHand() const { return leftHandNode_; }
-    Node* GetRightHand() const { return rightHandNode_; }
+    Node* GetLeftHandPose() const { return leftHandPoseNode_; }
+    Node* GetRightHandPose() const { return rightHandPoseNode_; }
+    Node* GetLeftHandAim() const { return leftHandAimNode_; }
+    Node* GetRightHandAim() const { return rightHandAimNode_; }
     /// @}
 
 private:
@@ -42,8 +44,10 @@ private:
     WeakPtr<Node> rightEyeNode_;
     WeakPtr<Camera> leftEyeCamera_;
     WeakPtr<Camera> rightEyeCamera_;
-    WeakPtr<Node> leftHandNode_;
-    WeakPtr<Node> rightHandNode_;
+    WeakPtr<Node> leftHandPoseNode_;
+    WeakPtr<Node> rightHandPoseNode_;
+    WeakPtr<Node> leftHandAimNode_;
+    WeakPtr<Node> rightHandAimNode_;
 };
 
 } // namespace Urho3D

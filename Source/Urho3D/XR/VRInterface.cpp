@@ -46,7 +46,7 @@ namespace Urho3D
 
 bool VRRigDesc::IsValid() const
 {
-    return scene_ && head_ && leftEye_ && rightEye_ && leftHand_ && rightHand_;
+    return scene_ && head_ && leftEye_ && rightEye_ && leftHandPose_ && rightHandPose_ && leftHandAim_ && rightHandAim_;
 }
 
 XRBinding::XRBinding(Context* context, const ea::string& name, const ea::string& localizedName, VRHand hand,

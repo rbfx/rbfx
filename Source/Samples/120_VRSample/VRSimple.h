@@ -64,6 +64,8 @@ private:
     void CreateInstructions();
     /// Set up a viewport for displaying the scene.
     void SetupViewport();
+    /// Update hand components.
+    void SetupHandComponents(Node* handPoseNode, Node* handAimNode);
     /// Grab dynamic object with hand.
     void GrabDynamicObject(Node* handNode, VRHand hand);
     /// Release dynamic object from hand.

@@ -2042,8 +2042,10 @@ void OpenXR::UpdateHands()
     // Check for changes in controller model state, if so, do reload as required.
     LoadControllerModels();
 
-    Node* leftHand = rig_.leftHand_;
-    Node* rightHand = rig_.rightHand_;
+    Node* leftHand = rig_.leftHandPose_;
+    Node* rightHand = rig_.rightHandPose_;
+    Node* leftAim = rig_.leftHandAim_;
+    Node* rightAim = rig_.rightHandAim_;
 
     // we need valid handles for these guys
     if (handGrips_[0] && handGrips_[1])
@@ -2075,6 +2077,10 @@ void OpenXR::UpdateHands()
         rightHand->SetPosition(rightPosition);
         if (handGrips_[VR_HAND_RIGHT]->location_.locationFlags & (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT))
             rightHand->SetRotation(rightRotation);
+
+        // Setup aim nodes too
+        leftAim->SetTransformMatrix(GetHandAimTransform(VR_HAND_LEFT));
+        rightAim->SetTransformMatrix(GetHandAimTransform(VR_HAND_RIGHT));
     }
 }
 

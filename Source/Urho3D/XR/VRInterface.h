@@ -52,8 +52,10 @@ namespace Urho3D
         WeakPtr<Node> head_;
         WeakPtr<Camera> leftEye_;
         WeakPtr<Camera> rightEye_;
-        WeakPtr<Node> leftHand_;
-        WeakPtr<Node> rightHand_;
+        WeakPtr<Node> leftHandPose_;
+        WeakPtr<Node> rightHandPose_;
+        WeakPtr<Node> leftHandAim_;
+        WeakPtr<Node> rightHandAim_;
         float nearDistance_{};
         float farDistance_{};
 

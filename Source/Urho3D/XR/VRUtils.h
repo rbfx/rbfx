@@ -26,6 +26,7 @@
 
 namespace Urho3D
 {
+    /// TODO: Revisit these helpers, they may duplicate Input classes like DirectionalPadAdapter.
 
     /// Calculates a motion vector based on the head. Optionally locked to XZ plane or normalized (which means no diagonal turbo speed).
     URHO3D_API Vector3 SmoothLocomotionHead(Node* rigNode, XRBinding* joystickBinding, float deadZone, bool xzPlanar = true, bool normalized = true);
