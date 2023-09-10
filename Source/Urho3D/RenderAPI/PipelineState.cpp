@@ -673,6 +673,18 @@ void PipelineState::CreateGPU(const GraphicsPipelineStateDesc& desc)
     {
         const auto handleGl = static_cast<Diligent::IPipelineStateGL*>(handle_.RawPtr());
         const GLuint programObject = handleGl->GetGLProgramHandle(Diligent::SHADER_TYPE_VERTEX);
+
+        // TODO: Diligent should return null handle but it does not
+        int isLinked = GL_FALSE;
+        glGetProgramiv(programObject, GL_LINK_STATUS, &isLinked);
+        if (!isLinked)
+        {
+            DestroyGPU();
+
+            URHO3D_LOGERROR("Failed to create PipelineState '{}' due to OpenGL program linking error", GetDebugName());
+            return;
+        }
+
         for (unsigned i = 0; i < vertexAttributes.size(); ++i)
             glBindAttribLocation(programObject, vertexAttributes[i].inputIndex_, vertexAttributeNames[i].c_str());
     }
