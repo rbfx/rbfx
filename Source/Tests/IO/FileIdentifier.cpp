@@ -105,3 +105,30 @@ TEST_CASE("String is appended to FileIdentifier")
     CHECK(FileIdentifier{"", "path"} + "/to/file/" == FileIdentifier{"", "path/to/file/"});
     CHECK(FileIdentifier{"", "path/"} + "/to/file/" == FileIdentifier{"", "path/to/file/"});
 }
+
+TEST_CASE("SanitizeFileName handles ..")
+{
+    // Keep old behaviour for ../ at root position
+    CHECK(FileIdentifier{"../bla"} == FileIdentifier{"", "bla"});
+
+    // Eliminate parent path if it is root
+    CHECK(FileIdentifier{"root/../bla"} == FileIdentifier{"", "bla"});
+
+    // Eliminate parent path
+    CHECK(FileIdentifier{"root/sub/../bla"} == FileIdentifier{"", "root/bla"});
+
+    // Eliminate parent paths when consecutive ..
+    CHECK(FileIdentifier{"root/sub/sub2/../../bla"} == FileIdentifier{"", "root/bla"});
+
+    // Eliminate parent paths when consecutive ..
+    CHECK(FileIdentifier{"root/sub/../../bla"} == FileIdentifier{"", "bla"});
+}
+
+TEST_CASE("SanitizeFileName handles .")
+{
+    // Keep old behaviour for ../ at root position
+    CHECK(FileIdentifier{"./bla"} == FileIdentifier{"", "bla"});
+
+    // Eliminate parent path if it is root
+    CHECK(FileIdentifier{"root/./bla"} == FileIdentifier{"", "root/bla"});
+}
