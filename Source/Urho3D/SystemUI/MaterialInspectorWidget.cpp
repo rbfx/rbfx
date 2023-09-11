@@ -85,22 +85,25 @@ const ea::vector<MaterialInspectorWidget::TextureUnitDesc> MaterialInspectorWidg
     {ShaderResources::Reflection0,  "Reflection map override."},
 };
 
-const ea::vector<MaterialInspectorWidget::PropertyDesc> MaterialInspectorWidget::properties{
-    {
-        "Vertex Defines",
-        Variant{EMPTY_STRING},
-        [](const Material* material) { return Variant{material->GetVertexShaderDefines()}; },
-        [](Material* material, const Variant& value) { material->SetVertexShaderDefines(value.GetString()); },
-        "Additional shader defines applied to vertex shader. Should be space-separated list of DEFINES. Example: VOLUMETRIC SOFTPARTICLES",
-    },
-    {
-        "Pixel Defines",
-        Variant{EMPTY_STRING},
-        [](const Material* material) { return Variant{material->GetPixelShaderDefines()}; },
-        [](Material* material, const Variant& value) { material->SetPixelShaderDefines(value.GetString()); },
-        "Additional shader defines applied to pixel shader. Should be space-separated list of DEFINES. Example: VOLUMETRIC SOFTPARTICLES",
-    },
+const MaterialInspectorWidget::PropertyDesc MaterialInspectorWidget::vertexDefinesProperty{
+    "Vertex Defines",
+    Variant{EMPTY_STRING},
+    [](const Material* material) { return Variant{material->GetVertexShaderDefines()}; },
+    [](Material* material, const Variant& value) { material->SetVertexShaderDefines(value.GetString()); },
+    "Additional shader defines applied to vertex shader. Should be space-separated list of DEFINES. "
+    "Example: VOLUMETRIC SOFTPARTICLES",
+};
 
+const MaterialInspectorWidget::PropertyDesc MaterialInspectorWidget::pixelDefinesProperty{
+    "Pixel Defines",
+    Variant{EMPTY_STRING},
+    [](const Material* material) { return Variant{material->GetPixelShaderDefines()}; },
+    [](Material* material, const Variant& value) { material->SetPixelShaderDefines(value.GetString()); },
+    "Additional shader defines applied to pixel shader. Should be space-separated list of DEFINES. "
+    "Example: VOLUMETRIC SOFTPARTICLES",
+};
+
+const ea::vector<MaterialInspectorWidget::PropertyDesc> MaterialInspectorWidget::properties{
     {
         "Cull Mode",
         Variant{CULL_CCW},
@@ -509,10 +512,77 @@ void MaterialInspectorWidget::RenderProperties()
     if (!ui::CollapsingHeader("Properties", ImGuiTreeNodeFlags_DefaultOpen))
         return;
 
+    RenderShaderDefines();
     for (const PropertyDesc& property : properties)
         RenderProperty(property);
 
     ui::Separator();
+}
+
+void MaterialInspectorWidget::RenderShaderDefines()
+{
+    Variant vertexDefines = materials_[0]->GetVertexShaderDefines();
+    const bool vertexDefinesUndefined = ea::any_of(materials_.begin() + 1, materials_.end(),
+        [&](const Material* material) { return vertexDefines != material->GetVertexShaderDefines(); });
+
+    Variant pixelDefines = materials_[0]->GetPixelShaderDefines();
+    const bool pixelDefinesUndefined = ea::any_of(materials_.begin() + 1, materials_.end(),
+        [&](const Material* material) { return pixelDefines != material->GetPixelShaderDefines(); });
+
+    if (!separateShaderDefines_.has_value())
+        separateShaderDefines_ = vertexDefinesUndefined || pixelDefinesUndefined || vertexDefines != pixelDefines;
+    if (!*separateShaderDefines_ && vertexDefines != pixelDefines)
+        separateShaderDefines_ = false;
+
+    // Render widget for vertex defines
+    {
+        const IdScopeGuard guard("Vertex Defines");
+
+        Widgets::ItemLabel(vertexDefinesProperty.name_,
+            Widgets::GetItemLabelColor(vertexDefinesUndefined, vertexDefines.GetString().empty()));
+        if (ui::IsItemHovered())
+            ui::SetTooltip("%s", vertexDefinesProperty.hint_.c_str());
+
+        const ColorScopeGuard guardBackgroundColor{
+            ImGuiCol_FrameBg, Widgets::GetItemBackgroundColor(vertexDefinesUndefined), vertexDefinesUndefined};
+
+        if (Widgets::EditVariant(vertexDefines, vertexDefinesProperty.options_))
+        {
+            pendingSetProperties_.emplace_back(&vertexDefinesProperty, vertexDefines);
+            if (!*separateShaderDefines_)
+                pendingSetProperties_.emplace_back(&pixelDefinesProperty, vertexDefines);
+        }
+    }
+
+    // Update whether the defines are synchronized
+    const bool pixelDefinesModeChanged = ui::Checkbox("##SeparateShaderDefines", &*separateShaderDefines_);
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Enable separate editing for vertex and pixel defines");
+    ui::SameLine();
+
+    // Render widget for pixel defines
+    {
+        const IdScopeGuard guard("Pixel Defines");
+
+        ui::BeginDisabled(!*separateShaderDefines_);
+
+        Widgets::ItemLabel(pixelDefinesProperty.name_,
+            Widgets::GetItemLabelColor(pixelDefinesUndefined, pixelDefines.GetString().empty()));
+        if (ui::IsItemHovered())
+            ui::SetTooltip("%s", pixelDefinesProperty.hint_.c_str());
+
+        const ColorScopeGuard guardBackgroundColor{
+            ImGuiCol_FrameBg, Widgets::GetItemBackgroundColor(pixelDefinesUndefined), pixelDefinesUndefined};
+
+        if (Widgets::EditVariant(pixelDefines, pixelDefinesProperty.options_))
+            pendingSetProperties_.emplace_back(&pixelDefinesProperty, pixelDefines);
+
+        ui::EndDisabled();
+    }
+
+    // Update pixel defines when separate defines are disabled
+    if (pixelDefinesModeChanged && !*separateShaderDefines_)
+        pendingSetProperties_.emplace_back(&pixelDefinesProperty, vertexDefines);
 }
 
 void MaterialInspectorWidget::RenderProperty(const PropertyDesc& desc)

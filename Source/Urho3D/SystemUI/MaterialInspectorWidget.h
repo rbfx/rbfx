@@ -74,6 +74,8 @@ private:
         Widgets::EditVariantOptions options_;
     };
     static const ea::vector<PropertyDesc> properties;
+    static const PropertyDesc vertexDefinesProperty;
+    static const PropertyDesc pixelDefinesProperty;
 
     struct TextureUnitDesc
     {
@@ -96,6 +98,7 @@ private:
     bool EditQualityInEntry(TechniqueEntry& entry);
 
     void RenderProperty(const PropertyDesc& desc);
+    void RenderShaderDefines();
 
     void RenderTextureUnit(const TextureUnitDesc& desc);
 
@@ -127,6 +130,7 @@ private:
 
     ea::string newParameterName_;
     unsigned newParameterType_{};
+    ea::optional<bool> separateShaderDefines_;
 };
 
 }
