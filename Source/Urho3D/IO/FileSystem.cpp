@@ -88,6 +88,84 @@ namespace Urho3D
 namespace
 {
 
+struct DotDotHelper
+{
+ea::string sanitizedName;
+size_t segmentStartIndex{0};
+
+bool ProcessSegment()
+{
+    if (sanitizedName.size() - segmentStartIndex <= 2)
+    {
+        const auto segment = sanitizedName.substr(segmentStartIndex);
+        if (segment.empty())
+        {
+            // Keep leading /, otherwise skip empty segment.
+            return segmentStartIndex == 0;
+        }
+        if (segment == ".")
+        {
+            sanitizedName.resize(segmentStartIndex);
+            return false;
+        }
+        if (segment == "..")
+        {
+            // If there is a possibility of parent path
+            if (segmentStartIndex > 1)
+            {
+                // Find where parent path starts
+                segmentStartIndex = sanitizedName.find_last_of('/', segmentStartIndex - 2);
+                // Find where parent path starts and set segment start right after / symbol.
+                segmentStartIndex = (segmentStartIndex == ea::string::npos) ? 0 : segmentStartIndex + 1;
+            }
+            else
+            {
+                // If there is no way the parent path has parent of it's own then reset full path to empty.
+                segmentStartIndex = 0;
+            }
+            // Reset sanitized name to position right after last known / or at the start.
+            sanitizedName.resize(segmentStartIndex);
+            return false;
+        }
+    }
+    return true;
+}
+
+ea::string& Parse(ea::string_view filePath)
+{
+    sanitizedName.reserve(filePath.length());
+
+    for (auto c : filePath)
+    {
+        if (c == '\\' || c == '/')
+        {
+            if (ProcessSegment())
+            {
+                sanitizedName.push_back('/');
+                segmentStartIndex = sanitizedName.size();
+            }
+        }
+        else
+        {
+            sanitizedName.push_back(c);
+        }
+    }
+    ProcessSegment();
+    // Remove trailing / if it isn't the only one
+    if (sanitizedName.size() > 1)
+    {
+        const auto lastCharIndex = sanitizedName.size() - 1;
+        if (sanitizedName.at(lastCharIndex) == '/')
+        {
+            sanitizedName.resize(lastCharIndex);
+        }
+    }
+    sanitizedName.trim();
+    return sanitizedName;
+}
+
+};
+
 bool StartsWith(ea::string_view str, ea::string_view prefix, bool caseSensitive = true)
 {
     if (!caseSensitive)
@@ -1597,6 +1675,11 @@ ea::string FileSystem::FindResourcePrefixPath() const
     }
 
     return EMPTY_STRING;
+}
+
+ea::string ResolvePath(ea::string_view path)
+{
+    return DotDotHelper().Parse(path);
 }
 
 ea::string GetAbsolutePath(const ea::string& path)

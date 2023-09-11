@@ -22,6 +22,7 @@
 
 #include "Urho3D/IO/FileIdentifier.h"
 
+#include "FileSystem.h"
 #include "Urho3D/Container/Str.h"
 
 namespace Urho3D
@@ -116,52 +117,7 @@ void FileIdentifier::AppendPath(ea::string_view path)
 
 ea::string FileIdentifier::SanitizeFileName(ea::string_view fileName)
 {
-    ea::string sanitizedName;
-    sanitizedName.reserve(fileName.length());
-
-    size_t segmentStartIndex = 0;
-    for (auto c: fileName)
-    {
-        if (c == '\\' || c == '/')
-        {
-            if (sanitizedName.size() - segmentStartIndex <= 2)
-            {
-                auto segment = sanitizedName.substr(segmentStartIndex);
-                if (segment == ".")
-                {
-                    sanitizedName.resize(segmentStartIndex);
-                    continue;
-                }
-                if (segment == "..")
-                {
-                    // If there is a posibility of parent path...
-                    if (segmentStartIndex > 1)
-                    {
-                        // Find where parent path starts...
-                        segmentStartIndex = sanitizedName.find_last_of('/', segmentStartIndex - 2);
-                        // Find where parent path starts and set segment start right after / symbol.
-                        segmentStartIndex = (segmentStartIndex == ea::string::npos) ? 0 : segmentStartIndex + 1;
-                    }
-                    else
-                    {
-                        // If there is no way the parent path has parent of it's own then reset full path to empty.
-                        segmentStartIndex = 0;
-                    }
-                    // Reset sanitized name to position right after last known / or at the start.
-                    sanitizedName.resize(segmentStartIndex);
-                    continue;
-                }
-            }
-            sanitizedName.push_back('/');
-            segmentStartIndex = sanitizedName.size();
-        }
-        else
-        {
-            sanitizedName.push_back(c);
-        }
-    }
-    sanitizedName.trim();
-    return sanitizedName;
+    return ResolvePath(fileName);
 }
 
 } // namespace Urho3D
