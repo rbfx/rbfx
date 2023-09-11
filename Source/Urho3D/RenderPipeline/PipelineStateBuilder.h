@@ -91,6 +91,7 @@ private:
     /// @}
 
     Graphics* graphics_{};
+    RenderDevice* renderDevice_{};
     PipelineStateCache* pipelineStateCache_{};
 
     SharedPtr<ShaderProgramCompositor> compositor_;

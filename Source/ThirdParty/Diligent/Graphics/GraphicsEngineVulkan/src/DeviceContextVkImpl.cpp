@@ -696,6 +696,8 @@ void DeviceContextVkImpl::DvpLogRenderPass_PSOMismatch()
         VERIFY_EXPR(SampleCount == 0 || SampleCount == m_pBoundDepthStencil->GetTexture()->GetDesc().SampleCount);
         SampleCount = m_pBoundDepthStencil->GetTexture()->GetDesc().SampleCount;
         ss << GetTextureFormatAttribs(m_pBoundDepthStencil->GetDesc().Format).Name;
+        if (m_pBoundDepthStencil->GetDesc().ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL)
+            ss << " (read-only)";
     }
     else
         ss << "<Not set>";
@@ -708,6 +710,8 @@ void DeviceContextVkImpl::DvpLogRenderPass_PSOMismatch()
     for (Uint32 rt = 0; rt < GrPipeline.NumRenderTargets; ++rt)
         ss << ' ' << GetTextureFormatAttribs(GrPipeline.RTVFormats[rt]).Name;
     ss << "; DSV: " << GetTextureFormatAttribs(GrPipeline.DSVFormat).Name;
+    if (GrPipeline.ReadOnlyDSV)
+        ss << " (read-only)";
     ss << "; Sample count: " << Uint32{GrPipeline.SmplDesc.Count};
 
     if (GrPipeline.ShadingRateFlags & PIPELINE_SHADING_RATE_FLAG_TEXTURE_BASED)

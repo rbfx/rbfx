@@ -26,6 +26,7 @@
 #include "../Graphics/GraphicsUtils.h"
 #include "../IO/Log.h"
 #include "../RenderAPI/PipelineState.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/CameraProcessor.h"
 #include "../RenderPipeline/ShaderConsts.h"
 #include "../RenderPipeline/InstancingBuffer.h"
@@ -69,6 +70,7 @@ PipelineStateBuilder::PipelineStateBuilder(Context* context,
     , shadowMapAllocator_(shadowMapAllocator)
     , instancingBuffer_(instancingBuffer)
     , graphics_(GetSubsystem<Graphics>())
+    , renderDevice_(GetSubsystem<RenderDevice>())
     , pipelineStateCache_(GetSubsystem<PipelineStateCache>())
     , compositor_(MakeShared<ShaderProgramCompositor>(context_))
 {
@@ -87,6 +89,8 @@ void PipelineStateBuilder::UpdateFrameSettings()
 SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
     const BatchStateCreateKey& key, const BatchStateCreateContext& ctx, const PipelineStateOutputDesc& outputDesc)
 {
+    const RenderDeviceCaps& caps = renderDevice_->GetCaps();
+
     Light* light = key.pixelLight_ ? key.pixelLight_->GetLight() : nullptr;
     const bool hasShadow = key.pixelLight_ && key.pixelLight_->HasShadow();
 
@@ -127,14 +131,15 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
     }
     else if (batchCompositorPass)
     {
+        const DrawableProcessorPassFlags flags = batchCompositorPass->GetFlags();
         const auto subpass = static_cast<BatchCompositorSubpass>(ctx.subpassIndex_);
         const bool lightMaskToStencil = subpass == BatchCompositorSubpass::Deferred
-            && batchCompositorPass->GetFlags().Test(DrawableProcessorPassFlag::DeferredLightMaskToStencil);
-        const bool hasAmbient = batchCompositorPass->GetFlags().Test(DrawableProcessorPassFlag::HasAmbientLighting);
+            && flags.Test(DrawableProcessorPassFlag::DeferredLightMaskToStencil);
+        const bool hasAmbient = flags.Test(DrawableProcessorPassFlag::HasAmbientLighting);
         const bool hasLightmap = key.drawable_->GetGlobalIlluminationType() == GlobalIlluminationType::UseLightMap;
 
-        compositor_->ProcessUserBatch(shaderProgramDesc_, batchCompositorPass->GetFlags(),
-            key.drawable_, key.geometry_, key.geometryType_, key.material_, key.pass_, light, hasShadow, subpass);
+        compositor_->ProcessUserBatch(shaderProgramDesc_, flags, key.drawable_, key.geometry_, key.geometryType_,
+            key.material_, key.pass_, light, hasShadow, subpass);
         SetupUserPassState(key.drawable_, key.material_, key.pass_, lightMaskToStencil);
 
         // Support negative lights
@@ -146,6 +151,10 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
             else if (pipelineStateDesc_.blendMode_ == BLEND_ADDALPHA)
                 pipelineStateDesc_.blendMode_ = BLEND_SUBTRACTALPHA;
         }
+
+        // Mark depth as read-only if requested and supported
+        if (caps.readOnlyDepth_ && flags.Test(DrawableProcessorPassFlag::ReadOnlyDepth))
+            pipelineStateDesc_.readOnlyDepth_ = true;
 
         SetupLightSamplers(key.pixelLight_);
         SetupSamplersForUserOrShadowPass(key.material_, hasLightmap, hasAmbient, isRefractionPass);
