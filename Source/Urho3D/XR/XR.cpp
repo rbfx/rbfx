@@ -432,7 +432,7 @@ XrSessionPtr CreateSessionXR(RenderDevice* renderDevice, XrInstance instance, Xr
         binding.physicalDevice = renderDeviceVk->GetVkPhysicalDevice();
         binding.device = renderDeviceVk->GetVkDevice();
         binding.queueFamilyIndex = commandQueueVk->GetQueueFamilyIndex();
-        binding.queueIndex = 0; // TODO(xr): Revisit this place
+        binding.queueIndex = 0; // TODO: This would be incorrect if we use multiple immediate queues.
         sessionCreateInfo.next = &binding;
 
         // We cannot do anything if the device does not match, in current architecture of Diligent.
@@ -1202,8 +1202,6 @@ bool OpenXR::InitializeSession(const VRSessionParameters& params)
         return false;
     }
 
-    GetHiddenAreaMask();
-
     CreateDefaultRig();
     return true;
 }
@@ -1284,7 +1282,7 @@ void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
         switch (eventBuffer.type)
         {
         case XR_TYPE_EVENT_DATA_VISIBILITY_MASK_CHANGED_KHR:
-            GetHiddenAreaMask();
+            // TODO: Implement visibility mask
             break;
         case XR_TYPE_EVENT_DATA_INSTANCE_LOSS_PENDING:
             sessionLive_ = false;
@@ -1493,10 +1491,8 @@ void OpenXR::HandlePostRender(StringHash, VariantMap&)
             depth[VR_EYE_RIGHT].farZ = rig_.farDistance_;
 
             // These are chained to the relevant eye, not passed in through another mechanism.
-
-            /* not attached at present as it's messed up, probably as referenced above in depth-info ext detection that it's probably a RenderBuffermanager copy issue */
-            //eyes[VR_EYE_LEFT].next = &depth[VR_EYE_LEFT];
-            //eyes[VR_EYE_RIGHT].next = &depth[VR_EYE_RIGHT];
+            eyes[VR_EYE_LEFT].next = &depth[VR_EYE_LEFT];
+            eyes[VR_EYE_RIGHT].next = &depth[VR_EYE_RIGHT];
         }
 
         XrCompositionLayerProjection proj = { XR_TYPE_COMPOSITION_LAYER_PROJECTION };
@@ -1648,176 +1644,6 @@ void OpenXR::UpdateBindings(float t)
     }
 
 #undef SEND_EVENT
-}
-
-void OpenXR::GetHiddenAreaMask()
-{
-    // extension wasn't supported
-    if (!features_.visibilityMask_)
-        return;
-
-    for (int eye = 0; eye < 2; ++eye)
-    {
-        XrVisibilityMaskKHR mask = { XR_TYPE_VISIBILITY_MASK_KHR };
-    // hidden
-        {
-
-            xrGetVisibilityMaskKHR(session_.Raw(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR, &mask);
-
-            ea::vector<XrVector2f> verts;
-            verts.resize(mask.vertexCountOutput);
-            ea::vector<unsigned> indices;
-            indices.resize(mask.indexCountOutput);
-
-            mask.vertexCapacityInput = verts.size();
-            mask.indexCapacityInput = indices.size();
-
-            mask.vertices = verts.data();
-            mask.indices = indices.data();
-
-            xrGetVisibilityMaskKHR(session_.Raw(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_HIDDEN_TRIANGLE_MESH_KHR, &mask);
-
-            ea::vector<Vector3> vtxData;
-            vtxData.resize(verts.size());
-            for (unsigned i = 0; i < verts.size(); ++i)
-                vtxData[i] = Vector3(verts[i].x, verts[i].y, 0.0f);
-
-            VertexBuffer* vtx = new VertexBuffer(GetContext());
-            vtx->SetSize(vtxData.size(), { VertexElement(TYPE_VECTOR3, SEM_POSITION) });
-            vtx->Update(vtxData.data());
-
-            IndexBuffer* idx = new IndexBuffer(GetContext());
-            idx->SetSize(indices.size(), true);
-            idx->Update(indices.data());
-
-            hiddenAreaMesh_[eye] = new Geometry(GetContext());
-            hiddenAreaMesh_[eye]->SetVertexBuffer(0, vtx);
-            hiddenAreaMesh_[eye]->SetIndexBuffer(idx);
-            hiddenAreaMesh_[eye]->SetDrawRange(TRIANGLE_LIST, 0, indices.size());
-        }
-
-    // visible
-        {
-            mask.indexCapacityInput = 0;
-            mask.vertexCapacityInput = 0;
-            mask.indices = nullptr;
-            mask.vertices = nullptr;
-            mask.indexCountOutput = 0;
-            mask.vertexCountOutput = 0;
-
-            xrGetVisibilityMaskKHR(session_.Raw(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_VISIBLE_TRIANGLE_MESH_KHR, &mask);
-
-            ea::vector<XrVector2f> verts;
-            verts.resize(mask.vertexCountOutput);
-            ea::vector<unsigned> indices;
-            indices.resize(mask.indexCountOutput);
-
-            mask.vertexCapacityInput = verts.size();
-            mask.indexCapacityInput = indices.size();
-
-            mask.vertices = verts.data();
-            mask.indices = indices.data();
-
-            xrGetVisibilityMaskKHR(session_.Raw(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_VISIBLE_TRIANGLE_MESH_KHR, &mask);
-
-            ea::vector<Vector3> vtxData;
-            vtxData.resize(verts.size());
-            for (unsigned i = 0; i < verts.size(); ++i)
-                vtxData[i] = Vector3(verts[i].x, verts[i].y, 0.0f);
-
-            VertexBuffer* vtx = new VertexBuffer(GetContext());
-            vtx->SetSize(vtxData.size(), { VertexElement(TYPE_VECTOR3, SEM_POSITION) });
-            vtx->Update(vtxData.data());
-
-            IndexBuffer* idx = new IndexBuffer(GetContext());
-            idx->SetSize(indices.size(), true);
-            idx->Update(indices.data());
-
-            visibleAreaMesh_[eye] = new Geometry(GetContext());
-            visibleAreaMesh_[eye]->SetVertexBuffer(0, vtx);
-            visibleAreaMesh_[eye]->SetIndexBuffer(idx);
-            visibleAreaMesh_[eye]->SetDrawRange(TRIANGLE_LIST, 0, indices.size());
-        }
-
-    // build radial from line loop, a centroid is calculated and the triangles are laid out in a fan
-        {
-            // Maybe do this several times for a couple of different sizes, to do strips that ring
-            // the perimiter at different %s to save on overdraw. ie. ring 25%, ring 50%, center 25% and center 50%?
-            // Then vignettes only need to do their work where actually required. A 25% distance outer ring is
-            // in projected space massively smaller than 25% of FOV, likewise with a 50% outer ring, though less so.
-            // Question is whether to ring in reference to centroid or to the line geometry as mitred?
-
-            mask.indexCapacityInput = 0;
-            mask.vertexCapacityInput = 0;
-            mask.indices = nullptr;
-            mask.vertices = nullptr;
-            mask.indexCountOutput = 0;
-            mask.vertexCountOutput = 0;
-
-            xrGetVisibilityMaskKHR(session_.Raw(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_LINE_LOOP_KHR, &mask);
-
-            ea::vector<XrVector2f> verts;
-            verts.resize(mask.vertexCountOutput);
-            ea::vector<unsigned> indices;
-            indices.resize(mask.indexCountOutput);
-
-            mask.vertexCapacityInput = verts.size();
-            mask.indexCapacityInput = indices.size();
-
-            mask.vertices = verts.data();
-            mask.indices = indices.data();
-
-            xrGetVisibilityMaskKHR(session_.Raw(), XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, eye, XR_VISIBILITY_MASK_TYPE_LINE_LOOP_KHR, &mask);
-
-            struct V {
-                Vector3 pos;
-                unsigned color;
-            };
-
-            ea::vector<V> vtxData;
-            vtxData.resize(verts.size());
-            Vector3 centroid = Vector3::ZERO;
-            Vector3 minVec = Vector3(10000, 10000, 10000);
-            Vector3 maxVec = Vector3(-10000, -10000, -10000);
-
-            const unsigned whiteColor = Color::WHITE.ToUInt();
-            const unsigned transWhiteColor = Color(1.0f, 1.0f, 1.0f, 0.0f).ToUInt();
-
-            for (unsigned i = 0; i < verts.size(); ++i)
-            {
-                vtxData[i] = { Vector3(verts[i].x, verts[i].y, 0.0f), whiteColor };
-                centroid += vtxData[i].pos;
-            }
-            centroid /= verts.size();
-
-            ea::vector<unsigned short> newIndices;
-            vtxData.push_back({ { centroid.x_, centroid.y_, 0.0f }, transWhiteColor });
-
-            // turn the line loop into a fan
-            for (unsigned i = 0; i < indices.size(); ++i)
-            {
-                unsigned me = indices[i];
-                unsigned next = indices[(i + 1) % indices.size()];
-
-                newIndices.push_back(vtxData.size() - 1); // center is at the end
-                newIndices.push_back(me);
-                newIndices.push_back(next);
-            }
-
-            VertexBuffer* vtx = new VertexBuffer(GetContext());
-            vtx->SetSize(vtxData.size(), { VertexElement(TYPE_VECTOR3, SEM_POSITION), VertexElement(TYPE_UBYTE4_NORM, SEM_COLOR) });
-            vtx->Update(vtxData.data());
-
-            IndexBuffer* idx = new IndexBuffer(GetContext());
-            idx->SetSize(newIndices.size(), false);
-            idx->Update(newIndices.data());
-
-            radialAreaMesh_[eye] = new Geometry(GetContext());
-            radialAreaMesh_[eye]->SetVertexBuffer(0, vtx);
-            radialAreaMesh_[eye]->SetIndexBuffer(idx);
-            radialAreaMesh_[eye]->SetDrawRange(TRIANGLE_LIST, 0, newIndices.size());
-        }
-    }
 }
 
 void OpenXR::LoadControllerModels()

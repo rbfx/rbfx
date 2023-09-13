@@ -94,9 +94,6 @@ public:
     /// Set data in the buffer from unpacked data.
     void SetUnpackedData(const Vector4 data[], unsigned start = 0, unsigned count = M_MAX_UNSIGNED);
 
-    /// Changes the instancing step-rate for each element and then recalculates the hash. Does not mutate anything else.
-    void ChangeElementStepRate(unsigned stepRate);
-
     /// Return element with specified type and semantic from a vertex element list, or null if does not exist.
     static const VertexElement* GetElement(const ea::vector<VertexElement>& elements, VertexElementType type, VertexElementSemantic semantic, unsigned char index = 0);
 

@@ -46,9 +46,6 @@
 #include "../RenderPipeline/BloomPass.h"
 #include "../RenderPipeline/ToneMappingPass.h"
 
-// TODO(xr): Revisit
-//#include "../XR/XR.h"
-
 #include "../DebugNew.h"
 
 namespace Urho3D
@@ -525,29 +522,13 @@ void StereoRenderPipelineView::Render()
 
     sceneProcessor_->PrepareDrawablesBeforeRendering();
     sceneProcessor_->PrepareInstancingBuffer();
-
-    // shadowmaps, make sure we're single step instancing
-    instancingBuffer_->GetVertexBuffer()->ChangeElementStepRate(1u);
     sceneProcessor_->RenderShadowMaps();
-
-    // going into pass drawing, make sure we're two step instancing
-    instancingBuffer_->GetVertexBuffer()->ChangeElementStepRate(2u);
 
     Camera* camera = sceneProcessor_->GetFrameInfo().camera_;
     const Color fogColorInGammaSpace = sceneProcessor_->GetFrameInfo().camera_->GetEffectiveFogColor();
     const Color effectiveFogColor = linearColorSpace_ ? fogColorInGammaSpace.GammaToLinear() : fogColorInGammaSpace;
 
     renderBufferManager_->ClearOutput(effectiveFogColor, 1.0f, 0);
-
-    // JS: doesn't work because it's explicitly setting the output target because it's not what it expected
-    // which mangled rendering and then RenderBufferManager copied over ontop of us in OnRenderEnd.
-    // Trivial fix, but need to address that just copying > 8 million pixels is not a good thing.
-    // Need to at least squeeze an uber post-processing into that to justify it.
-    // Samsung Odyssey+ OXR reported recommended resolution is 3864 x 2420 which is just plain massive 9.3 million
-    // compared to 1080p's 2 million.
-    // TODO(xr): Revisit
-    //auto xr = GetSubsystem<OpenXR>();
-    //xr->DrawEyeMask();
 
     const ShaderParameterDesc cameraParameters[] = {
         {VSP_GBUFFEROFFSETS, renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale()},
@@ -595,9 +576,6 @@ void StereoRenderPipelineView::Render()
         sceneProcessor_->RenderSceneBatches("Outline", camera, batches, {}, cameraParameters);
     }
 
-    // going into post-process, switch back to single step instancing
-    instancingBuffer_->GetVertexBuffer()->ChangeElementStepRate(1u);
-
     // Not going to work, something will need to be done
     const auto outSize = renderBufferManager_->GetOutputSize(); // used for debug view
 
@@ -621,10 +599,6 @@ void StereoRenderPipelineView::Render()
             debug->Render();
         }
     }
-
-    // TODO(xr): Revisit
-    //if (xr->IsVignetteEnabled())
-    //    xr->DrawRadialMask(BlendMode::BLEND_ALPHA, xr->GetVignetteInsideColor(), xr->GetVignetteOutsideColor(), xr->GetVignettePower());
 
     OnRenderEnd(this, frameInfo_);
     SendViewEvent(E_ENDVIEWRENDER);

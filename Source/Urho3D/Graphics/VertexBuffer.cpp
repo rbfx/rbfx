@@ -320,24 +320,6 @@ void VertexBuffer::SetUnpackedData(const Vector4 data[], unsigned start, unsigne
     UpdateRange(buffer.data(), start * vertexSize_, count * vertexSize_);
 }
 
-void VertexBuffer::ChangeElementStepRate(unsigned stepRate)
-{
-    // TODO(xr): This method should not be needed
-    /*
-    bool anyChanged = false;
-    for (auto& element : elements_)
-    {
-        if (element.stepRate_ != stepRate)
-        {
-            element.stepRate_ = stepRate;
-            anyChanged = true;
-        }
-    }
-
-    UpdateOffsets();
-    */
-}
-
 void VertexBuffer::UnpackVertexData(const void* source, unsigned sourceStride,
     const VertexElement& element, unsigned start, unsigned count, Vector4 dest[], unsigned destStride)
 {

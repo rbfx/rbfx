@@ -157,7 +157,7 @@ void RenderPipelineSettings::PropagateImpliedSettings()
         }
     }
 
-    // TODO(xr): Revisit this place
+    // TODO: Revisit this place, it may be incorrect for Optimized color space used in VR
     bloom_.hdr_ = renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR;
 
     if (ssao_.enabled_)

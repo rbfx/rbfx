@@ -481,7 +481,7 @@ bool RawTexture::CreateFromHandle(Diligent::ITexture* texture, TextureFormat for
 
     params_.format_ = format != TextureFormat::TEX_FORMAT_UNKNOWN ? format : textureDesc.Format;
 
-    // TODO(xr): Revisit this flag
+    // TODO: Revisit this flag
     params_.flags_ |= TextureFlag::NoMultiSampledAutoResolve;
     if (textureDesc.BindFlags & Diligent::BIND_RENDER_TARGET)
         params_.flags_ |= TextureFlag::BindRenderTarget;

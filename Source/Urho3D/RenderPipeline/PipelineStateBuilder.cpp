@@ -279,13 +279,18 @@ void PipelineStateBuilder::SetupInputLayoutAndPrimitiveType(GraphicsPipelineStat
 {
     if (shaderProgramDesc.isInstancingUsed_)
     {
-        // TODO(xr): This is a hack
         InitializeInputLayoutAndPrimitiveType(pipelineStateDesc, geometry, instancingBuffer_->GetVertexBuffer());
-        for (unsigned i = 0; i < pipelineStateDesc.inputLayout_.size_; ++i)
+
+        if (isStereoPass)
         {
-            InputLayoutElementDesc& elementDesc = pipelineStateDesc.inputLayout_.elements_[i];
-            if (elementDesc.instanceStepRate_ != 0)
-                elementDesc.instanceStepRate_ = isStereoPass ? 2 : 1;
+            // Patch step rates for stereo rendering.
+            // TODO: Do we want to have something nicer?
+            for (unsigned i = 0; i < pipelineStateDesc.inputLayout_.size_; ++i)
+            {
+                InputLayoutElementDesc& elementDesc = pipelineStateDesc.inputLayout_.elements_[i];
+                if (elementDesc.instanceStepRate_ != 0)
+                    elementDesc.instanceStepRate_ = 2;
+            }
         }
     }
     else

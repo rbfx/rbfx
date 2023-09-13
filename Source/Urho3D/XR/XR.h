@@ -222,7 +222,6 @@ protected:
     bool OpenSession();
     void UpdateBindings(float time);
     void UpdateBindingBound();
-    void GetHiddenAreaMask();
     /// Attempts to load controller models, note that this can only be done if there are grip actions bound for some
     /// reason.
     void LoadControllerModels();

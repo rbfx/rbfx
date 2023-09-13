@@ -269,8 +269,8 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
     auto virtualReality = GetSubsystem<VRInterface>();
     if (virtualReality && isXR_)
     {
+        // TODO: Configure this
         VRSessionParameters sessionParams;
-        // TODO(xr): Configure this
         sessionParams.manifestPath_ = "XR/DefaultManifest.xml";
         virtualReality->InitializeSession(sessionParams);
     }

@@ -244,11 +244,6 @@ namespace Urho3D
         /// Set to use a single texture.
         virtual void SetSingleTexture(bool state) { useSingleTexture_ = state; }
 
-        /// Renders the eye-masks to depth 0 (-1 in GL) so depth-test discards pixels. Also clears the render-targets in question. So the renderpath must not clear.
-        bool IsAutoDrawEyeMasks() const { return autoClearMasks_; }
-        /// Set whether to render depth-0 (-1 in GL) masks so depth-test discards pixels. if true the renderpath must not clear.
-        void SetAutoDrawEyeMasks(bool state) { autoClearMasks_ = state; }
-
         /// Viewport rectangle for left eye, required for multipass single-RT.
         IntRect GetLeftEyeRect() const { return {IntVector2::ZERO, eyeTextureSize_}; }
         /// Viewport rectangle for right eye, required for multipass single-RT.
@@ -277,11 +272,6 @@ namespace Urho3D
         /// Return the projection matrix for an eye.
         virtual Matrix4 GetProjection(VREye eye, float nearDist, float farDist) const = 0;
 
-        /// Draws the hidden area mask.
-        virtual void DrawEyeMask();
-        /// Draws an inner radial mask suitable for simple vignette effects, lerps the two colors as lerp(inside, outside, pow(vertex_alpha, power)).
-        virtual void DrawRadialMask(BlendMode blendMode, Color inside, Color outside, float power);
-
         /// Returns true if our VR system is alive, but may not necessarilly actively rendering.
         virtual bool IsConnected() const = 0;
         /// Returns true if our VR system is alive, and actively rendering.
@@ -301,13 +291,6 @@ namespace Urho3D
 
         /// Returns the system name, ie. Windows Mixed Reality.
         ea::string GetSystemName() const { return systemName_; }
-
-        void SetVignette(bool enabled, Color insideColor, Color outsideColor, float power);
-
-        Color GetVignetteInsideColor() const { return vignetteInsideColor_; }
-        Color GetVignetteOutsideColor() const { return vignetteOutsideColor_; }
-        float GetVignettePower() const { return vignettePower_; }
-        bool IsVignetteEnabled() const { return vignetteEnabled_; }
 
         virtual SharedPtr<Node> GetControllerModel(VRHand hand) = 0;
         virtual void UpdateControllerModel(VRHand hand, SharedPtr<Node>) = 0;
@@ -352,34 +335,11 @@ namespace Urho3D
         SharedPtr<Texture2D> currentBackBufferColor_;
         SharedPtr<Texture2D> currentBackBufferDepth_;
 
-        /// Hidden area mesh.
-        SharedPtr<Geometry> hiddenAreaMesh_[2];
-        /// Visible area mesh.
-        SharedPtr<Geometry> visibleAreaMesh_[2];
-        /// Radial area mesh. Setup with 1.0 alpha at the edges, and 0.0 at the center can be used for edge darkening / glows / etc.
-        SharedPtr<Geometry> radialAreaMesh_[2];
         /// Currently bound action-set.
         SharedPtr<XRActionGroup> activeActionSet_;
         /// Table of action sets registered.
         ea::map<ea::string, SharedPtr<XRActionGroup> > actionSets_;
-
-        struct ControlMesh
-        {
-            SharedPtr<Geometry> geometry_;
-            SharedPtr<Texture2D> colorTex_;
-            Urho3D::BoundingBox bounds_;
-        };
-
-        /// Pipeline state for the hidden area eye mask.
-        SharedPtr<PipelineState> eyeMaskPipelineState_;
-        /// Pipeline state for the trivial vignette drawing.
-        SharedPtr<PipelineState> simpleVignettePipelineState_[MAX_BLENDMODES];
-
-        Color vignetteInsideColor_;
-        Color vignetteOutsideColor_;
-        float vignettePower_{ 1.0f };
-        bool vignetteEnabled_{ false };
     };
 
-    void RegisterVRLibrary(Context*);
+    void RegisterVRLibrary(Context* context);
 }
