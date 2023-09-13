@@ -26,20 +26,19 @@ vec2 GetTransformedTexCoord(vec4 uOffset, vec4 vOffset)
 /// Return position in clip space from position in world space.
 vec4 WorldToClipSpace(vec3 worldPos)
 {
+    vec4 clipPos = vec4(worldPos, 1.0) * STEREO_VAR(cViewProj);
+
     #ifdef URHO3D_XR
-        vec4 clipped = vec4(worldPos, 1.0) * cViewProj[gl_InstanceID & 1];
         const float eyeOffsetScale[2] = float[2](-0.5f, 0.5f);
         const vec4 eyeClipEdge[2] = vec4[2](vec4(-1.0f, 0.0f, 0.0f, 1.0f), vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
-        gl_ClipDistance[0] = dot(clipped, eyeClipEdge[gl_InstanceID & 1]);
+        gl_ClipDistance[0] = dot(clipPos, eyeClipEdge[gl_InstanceID & 1]);
 
-        clipped.x *= 0.5f;
-        clipped.x += eyeOffsetScale[gl_InstanceID & 1] * clipped.w;
-
-        return clipped;
-    #else
-        return vec4(worldPos, 1.0) * cViewProj;
+        clipPos.x *= 0.5f;
+        clipPos.x += eyeOffsetScale[gl_InstanceID & 1] * clipPos.w;
     #endif
+
+    return clipPos;
 }
 
 /// Clip vertex if needed.

@@ -147,29 +147,33 @@ void RenderContext::ClearRenderTarget(unsigned index, const Color& color)
         currentRenderTargets_[index], color.Data(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
-void RenderContext::SetClipPlaneEnabled(bool enable)
+void RenderContext::SetClipPlaneMask(unsigned mask)
 {
-    if (cachedContextState_.clipPlaneEnabled_ == enable)
+    if (cachedContextState_.clipPlaneMask_ == mask)
         return;
 
     if (!renderDevice_->GetCaps().clipDistance_)
         return;
 
-    cachedContextState_.clipPlaneEnabled_ = enable;
+    cachedContextState_.clipPlaneMask_ = mask;
+#if GL_SUPPORTED || GLES_SUPPORTED
     if (renderDevice_->GetBackend() == RenderBackend::OpenGL)
     {
-#if GL_SUPPORTED
-        if (enable)
-            glEnable(GL_CLIP_DISTANCE0);
-        else
-            glDisable(GL_CLIP_DISTANCE0);
-#elif GLES_SUPPORTED
-        if (enable)
-            glEnable(GL_CLIP_DISTANCE0_EXT);
-        else
-            glDisable(GL_CLIP_DISTANCE0_EXT);
-#endif
+        for (unsigned i = 0; i < 8; ++i)
+        {
+    #if GL_SUPPORTED
+            const auto baseSlot = GL_CLIP_DISTANCE0;
+    #else
+            const auto baseSlot = GL_CLIP_DISTANCE0_EXT;
+    #endif
+            const bool enable = (mask & (1u << i)) != 0;
+            if (enable)
+                glEnable(baseSlot + i);
+            else
+                glDisable(baseSlot + i);
+        }
     }
+#endif
 }
 
 void RenderContext::Execute(DrawCommandQueue* drawQueue)

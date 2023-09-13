@@ -156,8 +156,6 @@ void VRInterface::UpdateCurrentRig()
 
     for (Camera* camera : {leftEyeCamera, rightEyeCamera})
     {
-        // TODO(xr): Revisit how clipping is handled
-        camera->SetUseClipping(true); // need to set this so shader-construction grabs a version with clipping planes
         camera->SetFov(100.0f); // junk mostly, the eye matrices will be overriden
         camera->SetNearClip(rig_.nearDistance_);
         camera->SetFarClip(rig_.farDistance_);

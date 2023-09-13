@@ -37,7 +37,7 @@ void main()
     #ifdef URHO3D_VERTEX_HAS_COLOR
         vColor = iColor;
     #endif
-    
+
     #ifdef URHO3D_XR
         vInstID = gl_InstanceID;
     #endif
