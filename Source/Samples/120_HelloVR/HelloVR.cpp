@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "VRSimple.h"
+#include "HelloVR.h"
 
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Graphics/Camera.h>
@@ -42,10 +42,10 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/XR/VirtualReality.h>
 #include <Urho3D/XR/VREvents.h>
 #include <Urho3D/XR/VRRig.h>
 #include <Urho3D/XR/VRUtils.h>
-#include <Urho3D/XR/XR.h>
 
 #include <Urho3D/DebugNew.h>
 
@@ -58,15 +58,15 @@ static const auto MSG_XR_SLEEPING = "XR is running but not updating";
 ButtonCommand turnLeft = { 4 };
 ButtonCommand turnRight = { 2 };
 
-VRSimple::VRSimple(Context* context) :
+HelloVR::HelloVR(Context* context) :
     Sample(context)
 {
 }
 
-void VRSimple::Start()
+void HelloVR::Start()
 {
-    auto xr = GetSubsystem<VRInterface>();
-    if (!xr)
+    auto virtualReality = GetSubsystem<VirtualReality>();
+    if (!virtualReality)
     {
         CloseSample();
         return;
@@ -88,23 +88,23 @@ void VRSimple::Start()
     SetMouseMode(MM_RELATIVE);
     SetMouseVisible(false);
 
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(VRSimple, Update));
-    SubscribeToEvent(E_VRCONTROLLERCHANGE, URHO3D_HANDLER(VRSimple, HandleControllerChange));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(HelloVR, Update));
+    SubscribeToEvent(E_VRCONTROLLERCHANGE, URHO3D_HANDLER(HelloVR, HandleControllerChange));
 
-    xr->InitializeSession(VRSessionParameters{"XR/DefaultManifest.xml"});
+    virtualReality->InitializeSession(VRSessionParameters{"XR/DefaultManifest.xml"});
 
     SetupXRScene();
 }
 
-void VRSimple::Stop()
+void HelloVR::Stop()
 {
-    if (auto xr = GetSubsystem<VRInterface>())
-        xr->ShutdownSession();
+    if (auto virtualReality = GetSubsystem<VirtualReality>())
+        virtualReality->ShutdownSession();
 
     Sample::Stop();
 }
 
-void VRSimple::CreateScene()
+void HelloVR::CreateScene()
 {
     auto* cache = GetSubsystem<ResourceCache>();
 
@@ -127,7 +127,7 @@ void VRSimple::CreateScene()
     cameraNode_->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
 }
 
-void VRSimple::CreateInstructions()
+void HelloVR::CreateInstructions()
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* ui = GetSubsystem<UI>();
@@ -143,7 +143,7 @@ void VRSimple::CreateInstructions()
     instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
-void VRSimple::SetupViewport()
+void HelloVR::SetupViewport()
 {
     auto* renderer = GetSubsystem<Renderer>();
 
@@ -154,7 +154,7 @@ void VRSimple::SetupViewport()
     SetViewport(0, viewport);
 }
 
-void VRSimple::SetupXRScene()
+void HelloVR::SetupXRScene()
 {
     Node* rigNode = scene_->GetChild("VRRig");
     VRRig* rig = rigNode->GetComponent<VRRig>();
@@ -165,7 +165,7 @@ void VRSimple::SetupXRScene()
     SetupHandComponents(rig->GetRightHandPose(), rig->GetRightHandAim());
 }
 
-void VRSimple::SetupHandComponents(Node* handPoseNode, Node* handAimNode)
+void HelloVR::SetupHandComponents(Node* handPoseNode, Node* handAimNode)
 {
     const float handSize = 0.08f;
     const float aimSize = 0.02f;
@@ -199,7 +199,7 @@ void VRSimple::SetupHandComponents(Node* handPoseNode, Node* handAimNode)
 
 }
 
-void VRSimple::GrabDynamicObject(Node* handNode, VRHand hand)
+void HelloVR::GrabDynamicObject(Node* handNode, VRHand hand)
 {
     // Find closest dynamic object
     Node* closestObject = nullptr;
@@ -227,11 +227,11 @@ void VRSimple::GrabDynamicObject(Node* handNode, VRHand hand)
     constraint->SetEnabled(true);
 
     // Trigger feedback
-    auto virtualReality = GetSubsystem<VRInterface>();
+    auto virtualReality = GetSubsystem<VirtualReality>();
     virtualReality->TriggerHaptic(hand, 0.1f, 0.0f, 0.5f);
 }
 
-void VRSimple::ReleaseDynamicObject(Node* handNode)
+void HelloVR::ReleaseDynamicObject(Node* handNode)
 {
     // Deactivate constraint
     for (Node* object : dynamicObjects_->GetChildren())
@@ -245,9 +245,9 @@ void VRSimple::ReleaseDynamicObject(Node* handNode)
     }
 }
 
-void VRSimple::Update(StringHash eventID, VariantMap& eventData)
+void HelloVR::Update(StringHash eventID, VariantMap& eventData)
 {
-    auto virtualReality = GetSubsystem<VRInterface>();
+    auto virtualReality = GetSubsystem<VirtualReality>();
     if (!virtualReality)
         return;
 
@@ -329,7 +329,7 @@ void VRSimple::Update(StringHash eventID, VariantMap& eventData)
     }
 }
 
-void VRSimple::HandleControllerChange(StringHash eventType, VariantMap& eventData)
+void HelloVR::HandleControllerChange(StringHash eventType, VariantMap& eventData)
 {
     // User could turn on/off their controller while we're responding to.
     int hand = eventData[VRControllerChange::P_HAND].GetInt();
@@ -339,7 +339,7 @@ void VRSimple::HandleControllerChange(StringHash eventType, VariantMap& eventDat
     if (child)
     {
         child->RemoveAllChildren();
-        if (auto handModel = GetSubsystem<VRInterface>()->GetControllerModel(hand == 0 ? VR_HAND_LEFT : VR_HAND_RIGHT))
+        if (auto handModel = GetSubsystem<VirtualReality>()->GetControllerModel(hand == 0 ? VR_HAND_LEFT : VR_HAND_RIGHT))
             child->AddChild(handModel);
     }
 }

@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../XR/VRInterface.h"
+#include "../XR/VirtualReality.h"
 
 namespace Urho3D
 {

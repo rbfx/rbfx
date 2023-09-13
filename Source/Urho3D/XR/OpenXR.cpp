@@ -2,7 +2,7 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "Urho3D/XR/XR.h"
+#include "Urho3D/XR/OpenXR.h"
 
 #include "Urho3D/Core/CoreEvents.h"
 #include "Urho3D/Engine/Engine.h"
@@ -1249,7 +1249,7 @@ bool OpenXR::OpenSession()
         BindActions(manifest_);
 
     // if there's a default action set, then use it.
-    VRInterface::SetCurrentActionSet("default");
+    VirtualReality::SetCurrentActionSet("default");
 
     // Create swap chains
     const auto internalFormats = GetSwapChainFormats(session_.Raw());

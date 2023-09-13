@@ -24,7 +24,7 @@
 
 #include "Sample.h"
 
-#include <Urho3D/XR/VRInterface.h>
+#include <Urho3D/XR/VirtualReality.h>
 
 namespace Urho3D
 {
@@ -39,13 +39,13 @@ class Scene;
 ///     - Initializing XR
 ///     - Displaying XR with a StereoRenderPipeline
 ///     - Simple teleportation locomotion
-class VRSimple : public Sample
+class HelloVR : public Sample
 {
-    URHO3D_OBJECT(VRSimple, Sample);
+    URHO3D_OBJECT(HelloVR, Sample);
 
 public:
     /// Construct.
-    explicit VRSimple(Context* context);
+    explicit HelloVR(Context* context);
 
     /// Setup after engine initialization and before running the main loop.
     void Start() override;

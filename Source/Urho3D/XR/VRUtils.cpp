@@ -23,7 +23,7 @@
 #include "../XR/VRUtils.h"
 
 #include "../Scene/Node.h"
-#include "../XR/XR.h"
+#include "../XR/VirtualReality.h"
 
 #define NORMALIZE(v, a, b) ((v - a) / (b - a))
 #define DENORMALIZE(v, a, b) (v * (b-a) + a)
@@ -72,7 +72,7 @@ Vector3 SmoothLocomotionAim(Node* rigNode, XRBinding* joystickBinding, VRHand wh
     if (rigNode == nullptr || joystickBinding == nullptr)
         return Vector3::ZERO;
 
-    auto vr = rigNode->GetSubsystem<VRInterface>();
+    auto vr = rigNode->GetSubsystem<VirtualReality>();
 
     Vector3 fore = Vector3::ZERO;
     Vector3 right = Vector3::ZERO;

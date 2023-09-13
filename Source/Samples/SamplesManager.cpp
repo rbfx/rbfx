@@ -155,7 +155,7 @@
 #include "118_CameraShake/CameraShake.h"
 #endif
 #if URHO3D_XR
-#include "120_VRSample/VRSimple.h"
+#include "120_HelloVR/HelloVR.h"
 #endif
 
 #include "Rotator.h"
@@ -421,11 +421,11 @@ void SamplesManager::Start()
 #endif
     RegisterSample<CameraShake>();
 #if URHO3D_XR
-    RegisterSample<VRSimple>();
+    RegisterSample<HelloVR>();
 #endif
 
 #if URHO3D_OCULUS_QUEST
-    StartSample(VRSimple::GetTypeStatic());
+    StartSample(HelloVR::GetTypeStatic());
 #else
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);

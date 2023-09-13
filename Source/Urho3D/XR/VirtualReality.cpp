@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "Urho3D/XR/VRInterface.h"
+#include "Urho3D/XR/VirtualReality.h"
 
 #include "Urho3D/Graphics/Camera.h"
 #include "Urho3D/Graphics/Graphics.h"
@@ -79,15 +79,15 @@ XRBinding* XRActionGroup::FindBinding(const ea::string& name, VRHand hand) const
     return nullptr;
 }
 
-VRInterface::VRInterface(Context* ctx) : BaseClassName(ctx)
+VirtualReality::VirtualReality(Context* ctx) : BaseClassName(ctx)
 {
 }
 
-VRInterface::~VRInterface()
+VirtualReality::~VirtualReality()
 {
 }
 
-void VRInterface::ConnectToRig(const VRRigDesc& rig)
+void VirtualReality::ConnectToRig(const VRRigDesc& rig)
 {
     if (!rig.IsValid())
     {
@@ -111,7 +111,7 @@ void VRInterface::ConnectToRig(const VRRigDesc& rig)
     rig_.viewport_->SetEye(rig_.rightEye_, 1);
 }
 
-void VRInterface::CreateDefaultRig()
+void VirtualReality::CreateDefaultRig()
 {
     auto cache = GetSubsystem<ResourceCache>();
 
@@ -127,13 +127,13 @@ void VRInterface::CreateDefaultRig()
     defaultRig_ = rigNode->CreateComponent<VRRig>();
 }
 
-void VRInterface::ValidateCurrentRig()
+void VirtualReality::ValidateCurrentRig()
 {
     if (!rig_.IsValid())
         defaultRig_->Activate();
 }
 
-void VRInterface::UpdateCurrentRig()
+void VirtualReality::UpdateCurrentRig()
 {
     URHO3D_ASSERT(GetRuntime() == VRRuntime::OPENXR, "Only OpenXR is supported at this time");
 
@@ -179,7 +179,7 @@ void VRInterface::UpdateCurrentRig()
     currentSurface->QueueUpdate();
 }
 
-XRBinding* VRInterface::GetInputBinding(const ea::string& path) const
+XRBinding* VirtualReality::GetInputBinding(const ea::string& path) const
 {
     if (activeActionSet_)
     {
@@ -189,7 +189,7 @@ XRBinding* VRInterface::GetInputBinding(const ea::string& path) const
     return nullptr;
 }
 
-XRBinding* VRInterface::GetInputBinding(const ea::string& path, VRHand hand) const
+XRBinding* VirtualReality::GetInputBinding(const ea::string& path, VRHand hand) const
 {
     if (activeActionSet_)
     {
@@ -199,7 +199,7 @@ XRBinding* VRInterface::GetInputBinding(const ea::string& path, VRHand hand) con
     return nullptr;
 }
 
-void VRInterface::SetCurrentActionSet(const ea::string& setName)
+void VirtualReality::SetCurrentActionSet(const ea::string& setName)
 {
     auto found = actionSets_.find(setName);
     if (found != actionSets_.end())

@@ -97,7 +97,7 @@
 #endif
 #ifdef URHO3D_XR
     #include "Urho3D/XR/VRRig.h"
-    #include "Urho3D/XR/XR.h"
+    #include "Urho3D/XR/OpenXR.h"
 #endif
 
 #ifdef URHO3D_PLATFORM_WEB
@@ -346,7 +346,7 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         if (needXR)
         {
 #ifdef URHO3D_XR
-            auto* xr = context_->RegisterSubsystem<OpenXR, VRInterface>();
+            auto* xr = context_->RegisterSubsystem<OpenXR, VirtualReality>();
             if (!xr->InitializeSystem(backend))
             {
                 URHO3D_LOGERROR("Failed to initialize OpenXR subsystem");
@@ -394,7 +394,7 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         windowSettings.orientations_ = GetParameter(EP_ORIENTATIONS).GetString().split(' ');
 
 #ifdef URHO3D_XR
-        auto virtualReality = GetSubsystem<VRInterface>();
+        auto virtualReality = GetSubsystem<VirtualReality>();
         if (needXR && virtualReality && virtualReality->IsInstanceOf<OpenXR>())
         {
             auto* xr = static_cast<OpenXR*>(virtualReality);

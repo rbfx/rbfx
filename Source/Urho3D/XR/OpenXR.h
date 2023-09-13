@@ -7,7 +7,7 @@
 #include "Urho3D/Core/Variant.h"
 #include "Urho3D/Graphics/Model.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
-#include "Urho3D/XR/VRInterface.h"
+#include "Urho3D/XR/VirtualReality.h"
 
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr.h>
 
@@ -160,9 +160,9 @@ To-Do:
 - Hand Skeleton
 
 */
-class URHO3D_API OpenXR : public VRInterface
+class URHO3D_API OpenXR : public VirtualReality
 {
-    URHO3D_OBJECT(OpenXR, VRInterface);
+    URHO3D_OBJECT(OpenXR, VirtualReality);
 
 public:
     OpenXR(Context*);
@@ -174,7 +174,7 @@ public:
     virtual VRRuntime GetRuntime() const override { return VRRuntime::OPENXR; }
     virtual const char* GetRuntimeName() const override { return "OPEN_XR"; }
 
-    /// Implement VRInterface.
+    /// Implement VirtualReality.
     /// @{
     bool InitializeSession(const VRSessionParameters& params) override;
     void ShutdownSession() override;

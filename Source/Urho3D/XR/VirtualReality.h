@@ -62,7 +62,7 @@ namespace Urho3D
         bool IsValid() const;
     };
 
-    /// Identifier of backing runtime for VRInterface. Currently only OpenXR is implmented.
+    /// Identifier of backing runtime for VirtualReality. Currently only OpenXR is implmented.
     enum class VRRuntime
     {
         OPENVR,       // SteamVR/OpenVR runtime, not yet ported to RBFX - only in order to have a fallback should open-xr runtime be temporarilly broken for a PC reason (ie. Windows Update broke it).
@@ -198,19 +198,19 @@ namespace Urho3D
         ea::vector<SharedPtr<XRBinding>> bindings_;
     };
 
-    /** %VRInterface component
+    /** %VirtualReality component
     *   Base interface for a VR related subsystem. This is not expected to be utilized for mobile AR, it would be best to implement something else for that purpose.
     *
     *   TODO:
     *       Rig handling, should it anchor to the head in XZ each update?
     */
-    class URHO3D_API VRInterface : public Object
+    class URHO3D_API VirtualReality : public Object
     {
-        URHO3D_OBJECT(VRInterface, Object);
+        URHO3D_OBJECT(VirtualReality, Object);
 
     public:
-        explicit VRInterface(Context* context);
-        virtual ~VRInterface();
+        explicit VirtualReality(Context* context);
+        virtual ~VirtualReality();
 
         /// Initializes the VR session.
         virtual bool InitializeSession(const VRSessionParameters& params) = 0;

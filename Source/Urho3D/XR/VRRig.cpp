@@ -8,7 +8,7 @@
 #include "Urho3D/Graphics/Camera.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/Scene/Node.h"
-#include "Urho3D/XR/VRInterface.h"
+#include "Urho3D/XR/VirtualReality.h"
 
 namespace Urho3D
 {
@@ -31,7 +31,7 @@ void VRRig::RegisterObject(Context* context)
 
 void VRRig::Activate()
 {
-    if (auto virtualReality = GetSubsystem<VRInterface>())
+    if (auto virtualReality = GetSubsystem<VirtualReality>())
     {
         VRRigDesc desc;
         desc.scene_ = GetScene();

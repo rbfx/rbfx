@@ -47,7 +47,7 @@
 #include <Urho3D/Utility/SceneViewerApplication.h>
 
 #ifdef URHO3D_XR
-    #include <Urho3D/XR/XR.h>
+    #include <Urho3D/XR/VirtualReality.h>
 #endif
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
@@ -266,7 +266,7 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
         InitializeDefaultProject();
 
 #ifdef URHO3D_XR
-    auto virtualReality = GetSubsystem<VRInterface>();
+    auto virtualReality = GetSubsystem<VirtualReality>();
     if (virtualReality && isXR_)
     {
         // TODO: Configure this
@@ -357,7 +357,7 @@ void Project::Destroy()
 Project::~Project()
 {
 #ifdef URHO3D_XR
-    auto virtualReality = GetSubsystem<VRInterface>();
+    auto virtualReality = GetSubsystem<VirtualReality>();
     if (virtualReality && isXR_)
         virtualReality->ShutdownSession();
 #endif
