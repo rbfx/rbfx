@@ -449,7 +449,13 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
     const RenderScope renderScope(renderContext_, debugName);
 
     drawQueue_->Reset();
-    drawQueue_->SetClipPlaneEnabled(camera->GetUseClipping() || frameInfo_.additionalCameras_[1] != nullptr);
+
+    unsigned clipPlaneMask = 0;
+    if (camera->GetUseClipping())
+        clipPlaneMask |= 1u << 0;
+    if (frameInfo_.additionalCameras_[1] != nullptr)
+        clipPlaneMask |= 1u << 1;
+    drawQueue_->SetClipPlaneMask(clipPlaneMask);
 
     BatchRenderingContext ctx{ *drawQueue_, *camera };
     ctx.instanceMultiplier_ = instanceMultiplier;

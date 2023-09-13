@@ -30,7 +30,7 @@ UNIFORM_BUFFER_BEGIN(1, Camera)
     /// World to clip space matrix.
     UNIFORM_HIGHP(mat4 cViewProj VIEW_XR)
     /// Clip plane in clip space.
-    UNIFORM_HIGHP(vec4 cClipPlane)
+    UNIFORM_HIGHP(vec4 cClipPlane VIEW_XR)
     /// Camera position in world space.
     UNIFORM_HIGHP(vec4 cCameraPos VIEW_XR)
     /// Distance to near clip plane in units.

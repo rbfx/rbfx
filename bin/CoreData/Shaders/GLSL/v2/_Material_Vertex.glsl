@@ -133,5 +133,4 @@ void Vertex_SetLight(VertexTransform vertexTransform)
     Vertex_SetLight(vertexTransform); \
     Vertex_SetScreenPos(gl_Position); \
     Vertex_SetEyeVector(vertexTransform.position.xyz); \
-    Vertex_SetReflectionVector(vertexTransform.position.xyz); \
-    ApplyClipPlane(gl_Position)
+    Vertex_SetReflectionVector(vertexTransform.position.xyz);

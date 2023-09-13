@@ -108,12 +108,12 @@ Vector4 GetFogParameter(const Camera& camera)
     };
 }
 
-Vector4 GetClipPlane(const Camera& camera)
+Vector4 GetClipPlane(const Camera& clipCamera, const Camera& viewCamera)
 {
-    if (!camera.GetUseClipping())
+    if (!clipCamera.GetUseClipping())
         return { 0, 0, 0, 1 };
-    const Matrix4 viewProj = camera.GetGPUProjection() * camera.GetView();
-    return camera.GetClipPlane().Transformed(viewProj).ToVector4();
+    const Matrix4 viewProj = viewCamera.GetGPUProjection() * viewCamera.GetView();
+    return clipCamera.GetClipPlane().Transformed(viewProj).ToVector4();
 }
 
 /// Helper class to process per-object parameters.
@@ -255,7 +255,7 @@ public:
         , lights_(drawableProcessor_.GetLightProcessors())
         , cameraNode_(*camera_.GetNode())
         , depthRange_(camera_.GetFarClip())
-        , clipPlane_(GetClipPlane(camera_))
+        , clipPlane_(GetClipPlane(camera_, camera_))
         , enabled_(flags, instancingBuffer)
         , objectParameterBuilder_(settings_, flags)
         , instanceIndex_(startInstance)
@@ -584,7 +584,8 @@ private:
 
             MatrixDual viewProj = CAM_FLD(cameras, ->GetEffectiveGPUViewProjection(constantDepthBias));
             drawQueue_.AddShaderParameter(ShaderConsts::Camera_ViewProj, viewProj);
-            drawQueue_.AddShaderParameter(ShaderConsts::Camera_ClipPlane, clipPlane_);
+            Vec4Dual clipPlanes = {GetClipPlane(camera_, *cameras[0]), GetClipPlane(camera_, *cameras[1])};
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_ClipPlane, clipPlanes);
 
             if (!enabled_.colorOutput_)
                 return;

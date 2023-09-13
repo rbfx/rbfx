@@ -7,6 +7,19 @@
 
 #ifdef URHO3D_VERTEX_SHADER
 
+/// Helpers to count clip planes
+#if defined(URHO3D_CLIP_PLANE) && defined(URHO3D_FEATURE_CLIP_DISTANCE)
+    #define URHO3D_HAS_USER_CLIP_PLANE 1
+#else
+    #define URHO3D_HAS_USER_CLIP_PLANE 0
+#endif
+#ifdef URHO3D_XR
+    #define URHO3D_HAS_XR_CLIP_PLANE 1
+#else
+    #define URHO3D_HAS_XR_CLIP_PLANE 0
+#endif
+
+
 /// Return normal matrix from model matrix.
 mediump mat3 GetNormalMatrix(mat4 modelMatrix)
 {
@@ -26,29 +39,24 @@ vec2 GetTransformedTexCoord(vec4 uOffset, vec4 vOffset)
 /// Return position in clip space from position in world space.
 vec4 WorldToClipSpace(vec3 worldPos)
 {
+    vec4 clipPos = vec4(worldPos, 1.0) * STEREO_VAR(cViewProj);
+
+    #if URHO3D_HAS_USER_CLIP_PLANE
+        gl_ClipDistance[0] = dot(STEREO_VAR(cClipPlane), clipPos);
+    #endif
+
     #ifdef URHO3D_XR
-        vec4 clipped = vec4(worldPos, 1.0) * cViewProj[gl_InstanceID & 1];
         const float eyeOffsetScale[2] = float[2](-0.5f, 0.5f);
         const vec4 eyeClipEdge[2] = vec4[2](vec4(-1.0f, 0.0f, 0.0f, 1.0f), vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
-        gl_ClipDistance[0] = dot(clipped, eyeClipEdge[gl_InstanceID & 1]);
+        gl_ClipDistance[URHO3D_HAS_USER_CLIP_PLANE] = dot(clipPos, eyeClipEdge[gl_InstanceID & 1]);
 
-        clipped.x *= 0.5f;
-        clipped.x += eyeOffsetScale[gl_InstanceID & 1] * clipped.w;
-
-        return clipped;
-    #else
-        return vec4(worldPos, 1.0) * cViewProj;
+        clipPos.x *= 0.5f;
+        clipPos.x += eyeOffsetScale[gl_InstanceID & 1] * clipPos.w;
     #endif
-}
 
-/// Clip vertex if needed.
-#if defined(URHO3D_CLIP_PLANE) && defined(URHO3D_FEATURE_CLIP_DISTANCE) && !defined(URHO3D_XR)
-    #define ApplyClipPlane(clipPos) \
-        gl_ClipDistance[0] = dot(cClipPlane, clipPos)
-#else
-    #define ApplyClipPlane(clipPos)
-#endif
+    return clipPos;
+}
 
 /// Return depth from position in clip space.
 float GetDepth(vec4 clipPos)

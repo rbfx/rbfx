@@ -26,7 +26,6 @@ void main()
 {
     VertexTransform vertexTransform = GetVertexTransform();
     gl_Position = WorldToClipSpace(vertexTransform.position.xyz);
-    ApplyClipPlane(gl_Position);
 
     #ifdef URHO3D_VERTEX_HAS_TEXCOORD0
         vTexCoord = iTexCoord;
@@ -37,7 +36,7 @@ void main()
     #ifdef URHO3D_VERTEX_HAS_COLOR
         vColor = iColor;
     #endif
-    
+
     #ifdef URHO3D_XR
         vInstID = gl_InstanceID;
     #endif

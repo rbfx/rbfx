@@ -59,7 +59,7 @@ public:
     void Reset();
 
     /// Set clip plane enabled for all draw commands in the queue.
-    void SetClipPlaneEnabled(bool enable) { clipPlaneEnabled_ = enable; }
+    void SetClipPlaneMask(unsigned mask) { clipPlaneMask_ = mask; }
 
     /// Set pipeline state. Must be called first.
     void SetPipelineState(PipelineState* pipelineState)
@@ -343,7 +343,7 @@ private:
     };
 
     /// Whether to enable clip plane.
-    bool clipPlaneEnabled_{};
+    unsigned clipPlaneMask_{};
 
     /// Shader resources.
     ea::vector<ShaderResourceData> shaderResources_;

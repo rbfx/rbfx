@@ -34,7 +34,6 @@ VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
 void Vertex_SetTransform(VertexTransform vertexTransform)
 {
     gl_Position = WorldToClipSpace(vertexTransform.position.xyz);
-    ApplyClipPlane(gl_Position);
 }
 
 #ifdef URHO3D_PIXEL_NEED_TEXCOORD

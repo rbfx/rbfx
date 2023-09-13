@@ -22,8 +22,6 @@ void main()
 {
     VertexTransform vertexTransform = GetVertexTransform();
     gl_Position = WorldToClipSpace(vertexTransform.position.xyz);
-    ApplyClipPlane(gl_Position);
-
     vWorldPos = vertexTransform.position.xyz;
 }
 #endif
