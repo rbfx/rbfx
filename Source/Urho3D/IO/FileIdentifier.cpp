@@ -117,7 +117,8 @@ void FileIdentifier::AppendPath(ea::string_view path)
 
 ea::string FileIdentifier::SanitizeFileName(ea::string_view fileName)
 {
-    return ResolvePath(fileName);
+    // Resolve path and prevent references outside of data folder, except absolute path which is treated differently.
+    return ResolvePath(fileName, true);
 }
 
 } // namespace Urho3D
