@@ -179,6 +179,8 @@ endif ()
 add_subdirectory (tracy)
 
 # When crosscompiling, swig will be built as part of native tools build. See Source/CMakeLists.txt.
-add_subdirectory(swig)
+if (URHO3D_CSHARP)
+    add_subdirectory(swig)
+endif ()
 
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} ThirdParty)
