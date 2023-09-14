@@ -124,6 +124,8 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
         SetupGeometryBufferSamplers();
         SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_);
         SetupShaders(pipelineStateDesc_, shaderProgramDesc_);
+
+        pipelineStateDesc_.readOnlyDepth_ = true;
     }
     else if (batchCompositorPass && batchCompositorPass->IsFlagSet(DrawableProcessorPassFlag::PipelineStateCallback))
     {
