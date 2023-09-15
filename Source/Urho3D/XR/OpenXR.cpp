@@ -28,7 +28,10 @@
 #include "Urho3D/Resource/XMLElement.h"
 #include "Urho3D/Resource/XMLFile.h"
 #include "Urho3D/Scene/Node.h"
+#include "Urho3D/Scene/PrefabReference.h"
+#include "Urho3D/Scene/PrefabResource.h"
 #include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Utility/GLTFImporter.h"
 #include "Urho3D/XR/OpenXRAPI.h"
 #include "Urho3D/XR/VREvents.h"
 
@@ -45,11 +48,6 @@
     #include <Diligent/Graphics/GraphicsEngineVulkan/interface/EngineFactoryVk.h>
     #include <Diligent/Graphics/GraphicsEngineVulkan/interface/RenderDeviceVk.h>
 #endif
-
-// need this for loading the GLBs
-#include <ThirdParty/tinygltf/tiny_gltf.h>
-
-#include <iostream>
 
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform_defines.h>
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform.h>
@@ -1001,10 +999,6 @@ SharedPtr<OpenXRActionGroup> CreateActionGroup(
 
 } // namespace
 
-SharedPtr<Node> LoadGLTFModel(Context* ctx, tinygltf::Model& model);
-
-#define XR_INIT_TYPE(D, T) for (auto& a : D) a.type = T
-
 OpenXRBinding::OpenXRBinding(Context* context, const ea::string& name, const ea::string& localizedName, VRHand hand,
     VariantType dataType, bool isPose, bool isAimPose, XrActionSet set, XrActionPtr action, XrPath subPath,
     XrSpacePtr actionSpace)
@@ -1052,6 +1046,145 @@ void OpenXRActionGroup::Synchronize(XrSession session)
     sync.activeActionSets = &activeSet;
     sync.countActiveActionSets = 1;
     xrSyncActions(session, &sync);
+}
+
+OpenXRControllerModel::OpenXRControllerModel(Context* context, VRHand hand, XrInstance instance)
+    : Object(context)
+    , hand_(hand)
+    , handPath_(GetHandPaths(instance)[hand])
+{
+}
+
+void OpenXRControllerModel::UpdateModel(XrSession session)
+{
+    XrControllerModelKeyStateMSFT currentState{XR_TYPE_CONTROLLER_MODEL_KEY_STATE_MSFT};
+    if (!URHO3D_CHECK_OPENXR(xrGetControllerModelKeyMSFT(session, handPath_, &currentState)))
+        return;
+
+    if (modelKey_ == currentState.modelKey)
+        return;
+
+    modelKey_ = currentState.modelKey;
+    if (!modelKey_)
+    {
+        importer_ = nullptr;
+        prefab_ = nullptr;
+        return;
+    }
+
+    uint32_t dataSize = 0;
+    if (!URHO3D_CHECK_OPENXR(xrLoadControllerModelMSFT(session, modelKey_, 0, &dataSize, nullptr)))
+        return;
+
+    ByteVector data;
+    data.resize(dataSize);
+    if (!URHO3D_CHECK_OPENXR(xrLoadControllerModelMSFT(session, modelKey_, dataSize, &dataSize, data.data())))
+        return;
+
+    XrControllerModelPropertiesMSFT properties{XR_TYPE_CONTROLLER_MODEL_PROPERTIES_MSFT};
+    if (!URHO3D_CHECK_OPENXR(xrGetControllerModelPropertiesMSFT(session, modelKey_, &properties)))
+        return;
+
+    properties_.resize(
+        properties.nodeCountOutput, XrControllerModelNodePropertiesMSFT{XR_TYPE_CONTROLLER_MODEL_NODE_PROPERTIES_MSFT});
+
+    properties.nodeCapacityInput = properties_.size();
+    properties.nodeProperties = properties_.data();
+    if (!URHO3D_CHECK_OPENXR(xrGetControllerModelPropertiesMSFT(session, modelKey_, &properties)))
+        return;
+
+    GLTFImporterSettings settings;
+    settings.gpuResources_ = true;
+    settings.cleanupRootNodes_ = false;
+    const auto importer = MakeShared<GLTFImporter>(context_, settings);
+    if (!importer->LoadFileBinary(data))
+        return;
+
+    const ea::string folder = Format("manual://OpenXR/ControllerModel/{}/", hand_ == VR_HAND_LEFT ? "Left" : "Right");
+    if (!importer->Process("", folder))
+        return;
+
+    const auto cache = GetSubsystem<ResourceCache>();
+    const auto prefab = cache->GetResource<PrefabResource>(folder + "Prefab.prefab");
+    if (!prefab)
+        return;
+
+    importer_ = importer;
+    prefab_ = prefab;
+    cachedControllerNode_ = nullptr;
+}
+
+void OpenXRControllerModel::UpdateTransforms(XrSession session, Node* controllerNode)
+{
+    if (properties_.empty() || !prefab_)
+        return;
+
+    nodeStates_.resize(properties_.size(), XrControllerModelNodeStateMSFT{XR_TYPE_CONTROLLER_MODEL_NODE_STATE_MSFT});
+
+    XrControllerModelStateMSFT state = {XR_TYPE_CONTROLLER_MODEL_STATE_MSFT};
+    state.nodeCapacityInput = nodeStates_.size();
+    state.nodeStates = nodeStates_.data();
+
+    if (!URHO3D_CHECK_OPENXR(xrGetControllerModelStateMSFT(session, modelKey_, &state)))
+        return;
+
+    UpdateCachedNodes(controllerNode);
+    for (unsigned i = 0; i < state.nodeCountOutput; ++i)
+    {
+        Node* node = cachedPropertyNodes_[i];
+        if (!node)
+            continue;
+
+        const XrPosef& pose = nodeStates_[i].nodePose;
+        const Vector3 sourcePosition{pose.position.x, pose.position.y, pose.position.z};
+        const Quaternion sourceRotation{pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z};
+
+        const Transform transform = importer_->ConvertTransform(Transform{sourcePosition, sourceRotation});
+        node->SetTransform(transform);
+    }
+}
+
+void OpenXRControllerModel::UpdateCachedNodes(Node* controllerNode)
+{
+    if (cachedControllerNode_ == controllerNode)
+        return;
+
+    cachedControllerNode_ = controllerNode;
+
+    NodeCache cache;
+    CacheNodeAndChildren(cache, controllerNode, controllerNode);
+
+    const unsigned numProperties = properties_.size();
+    cachedPropertyNodes_.resize(numProperties);
+    for (unsigned i = 0; i < numProperties; ++i)
+    {
+        const XrControllerModelNodePropertiesMSFT& property = properties_[i];
+        const auto key = ea::make_pair(StringHash{property.nodeName}, StringHash{property.parentNodeName});
+        const auto it = cache.find(key);
+        if (it != cache.end())
+            cachedPropertyNodes_[i] = it->second;
+    }
+}
+
+void OpenXRControllerModel::CacheNodeAndChildren(NodeCache& cache, Node* node, Node* rootNode) const
+{
+    const WeakPtr<Node> weakNode{node};
+    const ea::string nodeName = node->GetName();
+    const ea::string parentName = node != rootNode ? node->GetParent()->GetName() : "";
+
+    const auto fullKey = ea::make_pair(StringHash{nodeName}, StringHash{parentName});
+    const auto partialKey = ea::make_pair(StringHash{nodeName}, StringHash{""});
+
+    cache.emplace(fullKey, weakNode);
+    if (fullKey != partialKey)
+        cache.emplace(partialKey, weakNode);
+
+    for (Node* child : node->GetChildren())
+        CacheNodeAndChildren(cache, child, rootNode);
+}
+
+OpenXRControllerModel::~OpenXRControllerModel()
+{
 }
 
 OpenXR::OpenXR(Context* ctx)
@@ -1133,6 +1266,12 @@ bool OpenXR::InitializeSystem(RenderBackend backend)
     if (!InitializeTweaks(backend))
         return false;
 
+    if (features_.controllerModel_)
+    {
+        for (const VRHand hand : {VR_HAND_LEFT, VR_HAND_RIGHT})
+            controllerModels_[hand] = MakeShared<OpenXRControllerModel>(context_, hand, instance_.Raw());
+    }
+
     return true;
 }
 
@@ -1210,15 +1349,15 @@ void OpenXR::ShutdownSession()
 {
     for (int i = 0; i < 2; ++i)
     {
-        wandModels_[i] = { };
-        handGrips_[i].Reset();
-        handAims_[i].Reset();
-        handHaptics_[i].Reset();
-        views_[i] = { XR_TYPE_VIEW };
+        controllerModels_[i] = nullptr;
+        handGrips_[i] = nullptr;
+        handAims_[i] = nullptr;
+        handHaptics_[i] = nullptr;
+        views_[i] = {XR_TYPE_VIEW};
     }
-    manifest_.Reset();
+    manifest_ = nullptr;
     actionSets_.clear();
-    activeActionSet_.Reset();
+    activeActionSet_ = nullptr;
     sessionLive_ = false;
 
     swapChain_ = nullptr;
@@ -1646,137 +1785,6 @@ void OpenXR::UpdateBindings(float t)
 #undef SEND_EVENT
 }
 
-void OpenXR::LoadControllerModels()
-{
-    if (!features_.controllerModel_ || !IsLive())
-        return;
-
-    XrPath handPaths[2];
-    xrStringToPath(instance_.Raw(), "/user/hand/left", &handPaths[0]);
-    xrStringToPath(instance_.Raw(), "/user/hand/right", &handPaths[1]);
-
-    XrControllerModelKeyStateMSFT states[2] = { { XR_TYPE_CONTROLLER_MODEL_KEY_STATE_MSFT }, { XR_TYPE_CONTROLLER_MODEL_KEY_STATE_MSFT } };
-    XrResult errCodes[2];
-    errCodes[0] = xrGetControllerModelKeyMSFT(session_.Raw(), handPaths[0], &states[0]);
-    errCodes[1] = xrGetControllerModelKeyMSFT(session_.Raw(), handPaths[1], &states[1]);
-
-    for (int i = 0; i < 2; ++i)
-    {
-        // skip if we're the same, we could change
-        if (states[i].modelKey == wandModels_[i].modelKey_)
-            continue;
-
-        wandModels_[i].modelKey_ = states[i].modelKey;
-
-        if (errCodes[i] == XR_SUCCESS)
-        {
-            unsigned dataSize = 0;
-            auto loadErr = xrLoadControllerModelMSFT(session_.Raw(), states[i].modelKey, 0, &dataSize, nullptr);
-            if (loadErr == XR_SUCCESS)
-            {
-                std::vector<unsigned char> data;
-                data.resize(dataSize);
-
-                // Can we actually fail in this case if the above was successful? Assuming that data/data-size are correct I would expect not?
-                if (xrLoadControllerModelMSFT(session_.Raw(), states[i].modelKey, data.size(), &dataSize, data.data()) == XR_SUCCESS)
-                {
-                    tinygltf::Model model;
-                    tinygltf::TinyGLTF ctx;
-                    tinygltf::Scene scene;
-
-                    std::string err, warn;
-                    if (ctx.LoadBinaryFromMemory(&model, &err, &warn, data.data(), data.size()))
-                    {
-                        wandModels_[i].model_ = LoadGLTFModel(GetContext(), model);
-                    }
-                    else
-                        wandModels_[i].model_.Reset();
-
-                    XR_INIT_TYPE(wandModels_[i].properties_, XR_TYPE_CONTROLLER_MODEL_NODE_PROPERTIES_MSFT);
-
-                    XrControllerModelPropertiesMSFT props = { XR_TYPE_CONTROLLER_MODEL_PROPERTIES_MSFT };
-                    props.nodeCapacityInput = 256;
-                    props.nodeCountOutput = 0;
-                    props.nodeProperties = wandModels_[i].properties_;
-                    if (xrGetControllerModelPropertiesMSFT(session_.Raw(), states[i].modelKey, &props) == XR_SUCCESS)
-                    {
-                        wandModels_[i].numProperties_ = props.nodeCountOutput;
-                    }
-                    else
-                        wandModels_[i].numProperties_ = 0;
-
-                    auto& data = GetEventDataMap();
-                    data[VRControllerChange::P_HAND] = i;
-                    SendEvent(E_VRCONTROLLERCHANGE, data);
-                }
-            }
-            else
-                URHO3D_LOGERRORF("xrLoadControllerModelMSFT failure: %s", xrGetErrorStr(errCodes[i]));
-        }
-        else
-            URHO3D_LOGERRORF("xrGetControllerModelKeyMSFT failure: %s", xrGetErrorStr(errCodes[i]));
-    }
-}
-
-SharedPtr<Node> OpenXR::GetControllerModel(VRHand hand)
-{
-    return wandModels_[hand].model_ != nullptr ? wandModels_[hand].model_ : nullptr;
-}
-
-void OpenXR::UpdateControllerModel(VRHand hand, SharedPtr<Node> model)
-{
-    if (!features_.controllerModel_)
-        return;
-
-    if (model == nullptr)
-        return;
-
-    if (wandModels_[hand].modelKey_ == 0)
-        return;
-
-    // nothing to animate
-    if (wandModels_[hand].numProperties_ == 0)
-        return;
-
-    XrControllerModelNodeStateMSFT nodeStates[256];
-    XR_INIT_TYPE(nodeStates, XR_TYPE_CONTROLLER_MODEL_NODE_STATE_MSFT);
-
-    XrControllerModelStateMSFT state = { XR_TYPE_CONTROLLER_MODEL_STATE_MSFT };
-    state.nodeCapacityInput = 256;
-    state.nodeStates = nodeStates;
-
-    auto errCode = xrGetControllerModelStateMSFT(session_.Raw(), wandModels_[hand].modelKey_, &state);
-    if (errCode == XR_SUCCESS)
-    {
-        auto node = model;
-        for (unsigned i = 0; i < state.nodeCountOutput; ++i)
-        {
-            SharedPtr<Node> bone;
-
-            // If we've got a parent name, first seek that out. OXR allows name collisions, parent-name disambiguates.
-            if (strlen(wandModels_[hand].properties_[i].parentNodeName))
-            {
-                if (auto parent = node->GetChild(wandModels_[hand].properties_[i].parentNodeName, true))
-                    bone = parent->GetChild(wandModels_[hand].properties_[i].nodeName);
-            }
-            else
-                bone = node->GetChild(wandModels_[hand].properties_[i].nodeName, true);
-
-            if (bone != nullptr)
-            {
-                // we have a 1,1,-1 scale at the root to flip gltf coordinate system to ours,
-                // because of that this transform needs to be direct and not converted, or it'll get unconverted
-                // TODO: figure out how to properly fully flip the gltf nodes and vertices
-                Vector3 t = Vector3(nodeStates[i].nodePose.position.x, nodeStates[i].nodePose.position.y, nodeStates[i].nodePose.position.z);
-                auto& q = nodeStates[i].nodePose.orientation;
-                Quaternion outQ = Quaternion(q.w, q.x, q.y, q.z);
-
-                bone->SetTransformMatrix(Matrix3x4(t, outQ, Vector3(1,1,1)));
-            }
-        }
-    }
-}
-
 void OpenXR::TriggerHaptic(VRHand hand, float durationSeconds, float cyclesPerSec, float amplitude)
 {
     if (!activeActionSet_ || !IsLive())
@@ -1866,7 +1874,7 @@ void OpenXR::UpdateHands()
         return;
 
     // Check for changes in controller model state, if so, do reload as required.
-    LoadControllerModels();
+    UpdateControllerModels();
 
     Node* leftHand = rig_.leftHandPose_;
     Node* rightHand = rig_.rightHandPose_;
@@ -1910,6 +1918,39 @@ void OpenXR::UpdateHands()
     }
 }
 
+void OpenXR::UpdateControllerModels()
+{
+    if (!features_.controllerModel_ || !IsLive())
+        return;
+
+    for (const VRHand hand : {VR_HAND_LEFT, VR_HAND_RIGHT})
+        controllerModels_[hand]->UpdateModel(session_.Raw());
+
+    if (rig_.leftController_)
+        UpdateControllerModel(VR_HAND_LEFT, rig_.leftController_);
+
+    if (rig_.rightController_)
+        UpdateControllerModel(VR_HAND_RIGHT, rig_.rightController_);
+}
+
+void OpenXR::UpdateControllerModel(VRHand hand, Node* instanceNode)
+{
+    OpenXRControllerModel* model = controllerModels_[hand];
+    auto prefabReference = instanceNode->GetOrCreateComponent<PrefabReference>();
+
+    if (prefabReference->GetPrefab() != model->GetPrefab())
+    {
+        prefabReference->SetPrefab(model->GetPrefab());
+
+        VariantMap& eventData = GetEventDataMap();
+        eventData[VRControllerChange::P_HAND] = hand;
+        SendEvent(E_VRCONTROLLERCHANGE, eventData);
+    }
+
+    instanceNode->SetRotation(Quaternion{180.0f, Vector3::UP});
+    model->UpdateTransforms(session_.Raw(), instanceNode);
+}
+
 Matrix3x4 OpenXR::GetEyeLocalTransform(VREye eye) const
 {
     // TODO: fixme, why is view space not correct xrLocateViews( view-space )
@@ -1949,219 +1990,6 @@ void OpenXR::UpdateBindingBound()
                 handGrips_[b->Hand()] = b->Cast<OpenXRBinding>();
         }
     }
-}
-
-void GLTFRecurseModel(Context* ctx, tinygltf::Model& gltf, Node* parent, int nodeIndex, int parentIndex, Material* mat, Matrix3x4 matStack)
-{
-    auto& n = gltf.nodes[nodeIndex];
-
-    auto node = parent->CreateChild(n.name.c_str());
-
-    // root node will deal with the 1,1,-1 - so just accept the transforms we get
-    // same with vertex data later
-    if (n.translation.size())
-    {
-        Vector3 translation = Vector3(n.translation[0], n.translation[1], n.translation[2]);
-        Quaternion rotation = Quaternion(n.rotation[3], n.rotation[0], n.rotation[1], n.rotation[2]);
-        Vector3 scale = Vector3(n.scale[0], n.scale[1], n.scale[2]);
-        node->SetPosition(translation);
-        node->SetRotation(rotation);
-        node->SetScale(scale);
-    }
-    else if (n.matrix.size())
-    {
-        Matrix3x4 mat = Matrix3x4(
-            n.matrix[0], n.matrix[4], n.matrix[8], n.matrix[12],
-            n.matrix[1], n.matrix[5], n.matrix[9], n.matrix[13],
-            n.matrix[2], n.matrix[6], n.matrix[10], n.matrix[14]
-        );
-        node->SetTransformMatrix(mat);
-    }
-    else
-        node->SetTransformMatrix(Matrix3x4::IDENTITY);
-
-    if (n.mesh != -1)
-    {
-        auto& mesh = gltf.meshes[n.mesh];
-        BoundingBox bounds;
-        bounds.Clear();
-        for (auto& prim : mesh.primitives)
-        {
-            SharedPtr<Geometry> geom(new Geometry(ctx));
-
-            if (prim.mode == TINYGLTF_MODE_TRIANGLES)
-            {
-                SharedPtr<IndexBuffer> idxBuffer(new IndexBuffer(ctx));
-                ea::vector< SharedPtr<VertexBuffer> > vertexBuffers;
-
-                struct Vertex {
-                    Vector3 pos;
-                    Vector3 norm;
-                    Vector2 tex;
-                };
-
-                ea::vector<Vertex> verts;
-                verts.resize(gltf.accessors[prim.attributes.begin()->second].count);
-
-                for (auto c : prim.attributes)
-                {
-                    // only known case at the present
-                    if (gltf.accessors[c.second].componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
-                    {
-                        auto& access = gltf.accessors[c.second];
-                        auto& view = gltf.bufferViews[access.bufferView];
-                        auto& buffer = gltf.buffers[view.buffer];
-
-                        LegacyVertexElement element;
-
-                        ea::string str(access.name.c_str());
-                        if (str.contains("position", false))
-                            element = ELEMENT_POSITION;
-                        else if (str.contains("texcoord", false))
-                            element = ELEMENT_TEXCOORD1;
-                        else if (str.contains("normal", false))
-                            element = ELEMENT_NORMAL;
-
-                        SharedPtr<VertexBuffer> vtx(new VertexBuffer(ctx));
-
-                        size_t sizeElem = access.type == TINYGLTF_TYPE_VEC2 ? sizeof(Vector2) : sizeof(Vector3);
-                        if (access.type == TINYGLTF_TYPE_VEC3)
-                        {
-                            const float* d = (const float*)&buffer.data[view.byteOffset + access.byteOffset];
-                            if (element == ELEMENT_NORMAL)
-                            {
-                                for (unsigned i = 0; i < access.count; ++i)
-                                    verts[i].norm = Vector3(d[i * 3 + 0], d[i * 3 + 1], d[i * 3 + 2]);
-                            }
-                            else if (element == ELEMENT_POSITION)
-                            {
-                                for (unsigned i = 0; i < access.count; ++i)
-                                    bounds.Merge(verts[i].pos = Vector3(d[i * 3 + 0], d[i * 3 + 1], d[i * 3 + 2]));
-                            }
-                        }
-                        else
-                        {
-                            const float* d = (const float*)&buffer.data[view.byteOffset + access.byteOffset];
-                            for (unsigned i = 0; i < access.count; ++i)
-                                verts[i].tex = Vector2(d[i * 2 + 0], d[i * 2 + 1]);
-                        }
-                    }
-                    else
-                        URHO3D_LOGERRORF("Found unsupported GLTF component type for vertex data: %u", gltf.accessors[prim.indices].componentType);
-                }
-
-                VertexBuffer* buff = new VertexBuffer(ctx);
-                buff->SetSize(verts.size(), { VertexElement(TYPE_VECTOR3, SEM_POSITION, 0, 0), VertexElement(TYPE_VECTOR3, SEM_NORMAL, 0, 0), VertexElement(TYPE_VECTOR2, SEM_TEXCOORD, 0, 0) });
-                buff->Update(verts.data());
-                vertexBuffers.push_back(SharedPtr<VertexBuffer>(buff));
-
-                if (prim.indices != -1)
-                {
-                    auto& access = gltf.accessors[prim.indices];
-                    auto& view = gltf.bufferViews[access.bufferView];
-                    auto& buffer = gltf.buffers[view.buffer];
-
-                    if (gltf.accessors[prim.indices].componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
-                    {
-                        ea::vector<unsigned> indexData;
-                        indexData.resize(access.count);
-
-                        const unsigned* indices = (const unsigned*)&buffer.data[view.byteOffset + access.byteOffset];
-                        for (int i = 0; i < access.count; ++i)
-                            indexData[i] = indices[i];
-
-                        idxBuffer->SetSize(access.count, true, false);
-                        idxBuffer->Update(indexData.data());
-                    }
-                    else if (gltf.accessors[prim.indices].componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
-                    {
-                        ea::vector<unsigned short> indexData;
-                        indexData.resize(access.count);
-
-                        const unsigned short* indices = (const unsigned short*)&buffer.data[view.byteOffset + access.byteOffset];
-                        for (int i = 0; i < access.count; ++i)
-                            indexData[i] = indices[i];
-                        for (int i = 0; i < indexData.size(); i += 3)
-                        {
-                            ea::swap(indexData[i], indexData[i + 2]);
-                        }
-
-                        idxBuffer->SetSize(access.count, false, false);
-                        idxBuffer->Update(indexData.data());
-                    }
-                    else
-                    {
-                        URHO3D_LOGERRORF("Found unsupported GLTF component type for index data: %u", gltf.accessors[prim.indices].componentType);
-                        continue;
-                    }
-                }
-
-                SharedPtr<Geometry> geom(new Geometry(ctx));
-                geom->SetIndexBuffer(idxBuffer);
-                geom->SetNumVertexBuffers(vertexBuffers.size());
-                for (unsigned i = 0; i < vertexBuffers.size(); ++i)
-                    geom->SetVertexBuffer(i, vertexBuffers[0]);
-                geom->SetDrawRange(TRIANGLE_LIST, 0, idxBuffer->GetIndexCount(), false);
-
-                SharedPtr<Model> m(new Model(ctx));
-                m->SetNumGeometries(1);
-                m->SetGeometry(0, 0, geom);
-                m->SetName(mesh.name.c_str());
-                m->SetBoundingBox(bounds);
-
-                auto sm = node->CreateComponent<StaticModel>();
-                sm->SetModel(m);
-                sm->SetMaterial(mat);
-            }
-        }
-    }
-
-    for (auto child : n.children)
-        GLTFRecurseModel(ctx, gltf, node, child, nodeIndex, mat, node->GetWorldTransform());
-}
-
-SharedPtr<Texture2D> LoadGLTFTexture(Context* ctx, tinygltf::Model& gltf, int index)
-{
-    auto img = gltf.images[index];
-    SharedPtr<Texture2D> tex(new Texture2D(ctx));
-    tex->SetSize(img.width, img.height, TextureFormat::TEX_FORMAT_RGBA8_UNORM);
-
-    auto view = gltf.bufferViews[img.bufferView];
-
-    MemoryBuffer buff(gltf.buffers[view.buffer].data.data() + view.byteOffset, view.byteLength);
-
-    Image image(ctx);
-    if (image.Load(buff))
-    {
-        tex->SetData(&image);
-        return tex;
-    }
-
-    return nullptr;
-}
-
-SharedPtr<Node> LoadGLTFModel(Context* ctx, tinygltf::Model& gltf)
-{
-    if (gltf.scenes.empty())
-        return SharedPtr<Node>();
-
-    // cloning because controllers could change or possibly even not be the same on each hand
-    SharedPtr<Material> material = ctx->GetSubsystem<ResourceCache>()->GetResource<Material>("Materials/XRController.xml")->Clone();
-    if (!gltf.materials.empty() && !gltf.textures.empty())
-    {
-        material->SetTexture(ShaderResources::Albedo, LoadGLTFTexture(ctx, gltf, 0));
-        if (gltf.materials[0].normalTexture.index)
-            material->SetTexture(ShaderResources::Normal, LoadGLTFTexture(ctx, gltf, gltf.materials[0].normalTexture.index));
-    }
-
-    auto scene = gltf.scenes[gltf.defaultScene];
-    SharedPtr<Node> root(new Node(ctx));
-    root->SetScale(Vector3(1, 1, -1));
-    //root->Rotate(Quaternion(45, Vector3::UP));
-    for (auto n : scene.nodes)
-        GLTFRecurseModel(ctx, gltf, root, n, -1, material, Matrix3x4::IDENTITY);
-
-    return root;
 }
 
 }

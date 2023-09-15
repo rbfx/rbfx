@@ -56,6 +56,8 @@ namespace Urho3D
         WeakPtr<Node> rightHandPose_;
         WeakPtr<Node> leftHandAim_;
         WeakPtr<Node> rightHandAim_;
+        WeakPtr<Node> leftController_;
+        WeakPtr<Node> rightController_;
         float nearDistance_{};
         float farDistance_{};
 
@@ -291,9 +293,6 @@ namespace Urho3D
 
         /// Returns the system name, ie. Windows Mixed Reality.
         ea::string GetSystemName() const { return systemName_; }
-
-        virtual SharedPtr<Node> GetControllerModel(VRHand hand) = 0;
-        virtual void UpdateControllerModel(VRHand hand, SharedPtr<Node>) = 0;
 
     protected:
         void CreateDefaultRig();

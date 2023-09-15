@@ -56,7 +56,6 @@ private:
     void SetupXRScene();
 
     void Update(StringHash eventID, VariantMap& eventData);
-    void HandleControllerChange(StringHash eventID, VariantMap& eventData);
 
     /// Construct the scene content.
     void CreateScene();

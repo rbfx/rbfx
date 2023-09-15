@@ -89,7 +89,6 @@ void HelloVR::Start()
     SetMouseVisible(false);
 
     SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(HelloVR, Update));
-    SubscribeToEvent(E_VRCONTROLLERCHANGE, URHO3D_HANDLER(HelloVR, HandleControllerChange));
 
     virtualReality->InitializeSession(VRSessionParameters{"XR/DefaultManifest.xml"});
 
@@ -328,21 +327,3 @@ void HelloVR::Update(StringHash eventID, VariantMap& eventData)
         debug->AddLine(position, position + direction * 2, Color::WHITE, false);
     }
 }
-
-void HelloVR::HandleControllerChange(StringHash eventType, VariantMap& eventData)
-{
-    // User could turn on/off their controller while we're responding to.
-    int hand = eventData[VRControllerChange::P_HAND].GetInt();
-    auto rig = scene_->GetChild("VRRig");
-    auto child = rig->GetChild(hand == 0 ? "Left_Hand" : "Right_Hand", true);
-
-    if (child)
-    {
-        child->RemoveAllChildren();
-        if (auto handModel = GetSubsystem<VirtualReality>()->GetControllerModel(hand == 0 ? VR_HAND_LEFT : VR_HAND_RIGHT))
-            child->AddChild(handModel);
-    }
-}
-
-
-

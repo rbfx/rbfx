@@ -17,6 +17,8 @@ namespace Urho3D
 {
 
 class AnimatedModel;
+class GLTFImporter;
+class PrefabResource;
 class Texture2D;
 class XMLFile;
 
@@ -131,6 +133,42 @@ private:
     const XrActionSetPtr actionSet_;
 };
 
+/// Wrapper to load and manage wand models.
+class OpenXRControllerModel : public Object
+{
+    URHO3D_OBJECT(OpenXRControllerModel, Object)
+
+public:
+    OpenXRControllerModel(Context* context, VRHand hand, XrInstance instance);
+    ~OpenXRControllerModel() override;
+
+    /// Keep the prefab up to date with the latest model data.
+    void UpdateModel(XrSession session);
+    /// Update transforms in loaded model.
+    void UpdateTransforms(XrSession session, Node* controllerNode);
+
+    PrefabResource* GetPrefab() const { return prefab_; }
+
+private:
+    using NodeCache = ea::unordered_map<ea::pair<StringHash, StringHash>, WeakPtr<Node>>;
+
+    void UpdateCachedNodes(Node* controllerNode);
+    void CacheNodeAndChildren(NodeCache& cache, Node* node, Node* rootNode) const;
+
+    const VRHand hand_{};
+    const XrPath handPath_{};
+
+    XrControllerModelKeyMSFT modelKey_{};
+    ea::vector<XrControllerModelNodePropertiesMSFT> properties_;
+    SharedPtr<GLTFImporter> importer_;
+    SharedPtr<PrefabResource> prefab_;
+
+    ea::vector<XrControllerModelNodeStateMSFT> nodeStates_;
+
+    WeakPtr<Node> cachedControllerNode_;
+    ea::vector<WeakPtr<Node>> cachedPropertyNodes_;
+};
+
 /**
 
 Register as a subsystem, Initialize sometime after GFX has been initialized but before Audio is initialized ...
@@ -207,9 +245,6 @@ public:
     /// Sets the current action set.
     virtual void SetCurrentActionSet(SharedPtr<XRActionGroup>) override;
 
-    SharedPtr<Node> GetControllerModel(VRHand hand) override;
-    void UpdateControllerModel(VRHand hand, SharedPtr<Node>) override;
-
     const OpenXRTweaks& GetTweaks() const { return tweaks_; }
     const StringVector GetExtensions() const { return supportedExtensions_; }
     void SetUserExtensions(const StringVector& ext) { userExtensions_ = ext; }
@@ -218,13 +253,12 @@ protected:
     void InitializeActiveExtensions(RenderBackend backend);
     bool InitializeTweaks(RenderBackend backend);
     void UpdateHands();
+    void UpdateControllerModels();
+    void UpdateControllerModel(VRHand hand, Node* instanceNode);
 
     bool OpenSession();
     void UpdateBindings(float time);
     void UpdateBindingBound();
-    /// Attempts to load controller models, note that this can only be done if there are grip actions bound for some
-    /// reason.
-    void LoadControllerModels();
 
     StringVector supportedExtensions_;
     StringVector userExtensions_;
@@ -252,6 +286,7 @@ protected:
     OpenXRSwapChainPtr swapChain_;
     OpenXRSwapChainPtr depthChain_;
     XrView views_[2] = {{XR_TYPE_VIEW}, {XR_TYPE_VIEW}};
+    ea::array<SharedPtr<OpenXRControllerModel>, 2> controllerModels_;
 
     // Pointless head-space.
     /// Location tracking of the head.
@@ -266,17 +301,6 @@ protected:
     XrTime predictedTime_ = {};
     /// Whether the session is currently active or not.
     bool sessionLive_ = false;
-
-    struct ControllerModel
-    {
-        XrControllerModelKeyMSFT modelKey_ = 0;
-        SharedPtr<Node> model_;
-        XrControllerModelNodePropertiesMSFT properties_[256];
-        unsigned numProperties_ = 0;
-    };
-
-    /// Loaded wand model mesh and texture data.
-    ControllerModel wandModels_[2];
 
     /// Cached grip pose bindings to avoid constant queries.
     SharedPtr<OpenXRBinding> handGrips_[2];

@@ -31,6 +31,8 @@ public:
     Node* GetRightHandPose() const { return rightHandPoseNode_; }
     Node* GetLeftHandAim() const { return leftHandAimNode_; }
     Node* GetRightHandAim() const { return rightHandAimNode_; }
+    Node* GetLeftHandController() const { return leftHandControllerNode_; }
+    Node* GetRightHandController() const { return rightHandControllerNode_; }
     /// @}
 
 private:
@@ -48,6 +50,8 @@ private:
     WeakPtr<Node> rightHandPoseNode_;
     WeakPtr<Node> leftHandAimNode_;
     WeakPtr<Node> rightHandAimNode_;
+    WeakPtr<Node> leftHandControllerNode_;
+    WeakPtr<Node> rightHandControllerNode_;
 };
 
 } // namespace Urho3D
