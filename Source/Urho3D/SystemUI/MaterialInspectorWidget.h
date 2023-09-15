@@ -102,6 +102,11 @@ private:
 
     void RenderTextureUnit(const TextureUnitDesc& desc);
 
+    bool IsDefaultTextureUnit(const ea::string& unit) const;
+    ea::set<ea::string> GetCustomTextureUnits() const;
+    void RenderCustomTextureUnit(const ea::string& unit);
+    void RenderAddCustomTextureUnit(const ea::set<ea::string>& customTextureUnits);
+
     ea::string GetTechniqueDisplayName(const ea::string& resourceName) const;
     bool IsTechniqueDeprecated(const ea::string& resourceName) const;
 
