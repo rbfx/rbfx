@@ -1190,13 +1190,13 @@ OpenXRControllerModel::~OpenXRControllerModel()
 OpenXR::OpenXR(Context* ctx)
     : BaseClassName(ctx)
 {
-    SubscribeToEvent(E_BEGINFRAME, &OpenXR::HandlePreUpdate);
-    SubscribeToEvent(E_ENDRENDERING, &OpenXR::HandlePostRender);
+    SubscribeToEvent(E_BEGINFRAME, &OpenXR::HandleBeginFrame);
+    SubscribeToEvent(E_ENDRENDERING, &OpenXR::HandleEndRendering);
 }
 
 OpenXR::~OpenXR()
 {
-    // TODO(xr): We shouldn't need this call
+    // Do it manually so the VirtualReality and OpenXR members are destroyed in the right order.
     ShutdownSession();
 }
 
@@ -1409,13 +1409,9 @@ bool OpenXR::OpenSession()
     return true;
 }
 
-void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
+void OpenXR::PollEvents()
 {
-    // Check if we need to do anything at all.
-    if (instance_ == 0 || session_ == 0)
-        return;
-
-    XrEventDataBuffer eventBuffer = { XR_TYPE_EVENT_DATA_BUFFER };
+    XrEventDataBuffer eventBuffer = {XR_TYPE_EVENT_DATA_BUFFER};
     while (xrPollEvent(instance_.Raw(), &eventBuffer) == XR_SUCCESS)
     {
         switch (eventBuffer.type)
@@ -1423,21 +1419,25 @@ void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
         case XR_TYPE_EVENT_DATA_VISIBILITY_MASK_CHANGED_KHR:
             // TODO: Implement visibility mask
             break;
+
         case XR_TYPE_EVENT_DATA_INSTANCE_LOSS_PENDING:
             sessionLive_ = false;
             SendEvent(E_VREXIT); //?? does something need to be communicated beyond this?
             break;
+
         case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED:
             UpdateBindingBound();
             SendEvent(E_VRINTERACTIONPROFILECHANGED);
             break;
+
         case XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED:
             XrEventDataSessionStateChanged* changed = (XrEventDataSessionStateChanged*)&eventBuffer;
             auto state = changed->state;
             switch (state)
             {
-            case XR_SESSION_STATE_READY: {
-                XrSessionBeginInfo beginInfo = { XR_TYPE_SESSION_BEGIN_INFO };
+            case XR_SESSION_STATE_READY:
+            {
+                XrSessionBeginInfo beginInfo = {XR_TYPE_SESSION_BEGIN_INFO};
                 beginInfo.primaryViewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
                 auto res = xrBeginSession(session_.Raw(), &beginInfo);
                 if (res != XR_SUCCESS)
@@ -1448,80 +1448,104 @@ void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
                 }
                 else
                     sessionLive_ = true; // uhhh what
-            } break;
+                break;
+            }
+
             case XR_SESSION_STATE_IDLE:
                 SendEvent(E_VRPAUSE);
                 sessionLive_ = false;
                 break;
+
             case XR_SESSION_STATE_FOCUSED: // we're hooked up
                 sessionLive_ = true;
                 SendEvent(E_VRRESUME);
                 break;
+
             case XR_SESSION_STATE_STOPPING:
                 xrEndSession(session_.Raw());
                 sessionLive_ = false;
                 break;
+
             case XR_SESSION_STATE_EXITING:
             case XR_SESSION_STATE_LOSS_PENDING:
                 sessionLive_ = false;
                 SendEvent(E_VREXIT);
                 break;
             }
-
         }
 
-        eventBuffer = { XR_TYPE_EVENT_DATA_BUFFER };
+        eventBuffer = {XR_TYPE_EVENT_DATA_BUFFER};
     }
+}
 
-    if (!IsLive())
-        return;
-
-    XrFrameState frameState = { XR_TYPE_FRAME_STATE };
+void OpenXR::BeginFrame()
+{
+    XrFrameState frameState = {XR_TYPE_FRAME_STATE};
     xrWaitFrame(session_.Raw(), nullptr, &frameState);
+
+    XrFrameBeginInfo beginInfo = {XR_TYPE_FRAME_BEGIN_INFO};
+    xrBeginFrame(session_.Raw(), &beginInfo);
+
     predictedTime_ = frameState.predictedDisplayTime;
+}
 
-    XrFrameBeginInfo begInfo = { XR_TYPE_FRAME_BEGIN_INFO };
-    xrBeginFrame(session_.Raw(), &begInfo);
-// head stuff
-    headLoc_.next = &headVel_;
-    xrLocateSpace(viewSpace_.Raw(), headSpace_.Raw(), frameState.predictedDisplayTime, &headLoc_);
+void OpenXR::LocateViewsAndSpaces()
+{
+    // Head
+    headLocation_.next = &headVelocity_;
+    xrLocateSpace(viewSpace_.Raw(), headSpace_.Raw(), predictedTime_, &headLocation_);
 
-    HandlePreRender();
-
+    // Hands
     for (int i = 0; i < 2; ++i)
     {
         if (handAims_[i])
         {
             // ensure velocity is linked
             handAims_[i]->location_.next = &handAims_[i]->velocity_;
-            xrLocateSpace(handAims_[i]->actionSpace_.Raw(), headSpace_.Raw(), frameState.predictedDisplayTime, &handAims_[i]->location_);
+            xrLocateSpace(handAims_[i]->actionSpace_.Raw(), headSpace_.Raw(), predictedTime_, &handAims_[i]->location_);
         }
 
         if (handGrips_[i])
         {
             handGrips_[i]->location_.next = &handGrips_[i]->velocity_;
-            xrLocateSpace(handGrips_[i]->actionSpace_.Raw(), headSpace_.Raw(), frameState.predictedDisplayTime, &handGrips_[i]->location_);
+            xrLocateSpace(
+                handGrips_[i]->actionSpace_.Raw(), headSpace_.Raw(), predictedTime_, &handGrips_[i]->location_);
         }
     }
 
-// eyes
-    XrViewLocateInfo viewInfo = { XR_TYPE_VIEW_LOCATE_INFO };
+    // Eyes
+    XrViewLocateInfo viewInfo = {XR_TYPE_VIEW_LOCATE_INFO};
     viewInfo.viewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
     viewInfo.space = headSpace_.Raw();
-    viewInfo.displayTime = frameState.predictedDisplayTime;
+    viewInfo.displayTime = predictedTime_;
 
-    XrViewState viewState = { XR_TYPE_VIEW_STATE };
-    unsigned viewCt = 0;
-    xrLocateViews(session_.Raw(), &viewInfo, &viewState, 2, &viewCt, views_);
+    XrViewState viewState = {XR_TYPE_VIEW_STATE};
+    unsigned numViews = 0;
+    xrLocateViews(session_.Raw(), &viewInfo, &viewState, 2, &numViews, views_);
+}
 
-// handle actions
+void OpenXR::HandleBeginFrame(VariantMap& eventData)
+{
+    // Check if we need to do anything at all.
+    if (!IsConnected())
+        return;
+
+    PollEvents();
+
+    if (!IsLive())
+        return;
+
+    BeginFrame();
+    AcquireSwapChainImages();
+    LocateViewsAndSpaces();
+
     if (activeActionSet_)
     {
         auto setImpl = static_cast<OpenXRActionGroup*>(activeActionSet_.Get());
         setImpl->Synchronize(session_.Raw());
 
-        using namespace BeginFrame;
-        UpdateBindings(data[P_TIMESTEP].GetFloat());
+        const float timeStep = eventData[BeginFrame::P_TIMESTEP].GetFloat();
+        UpdateBindings(timeStep);
     }
 
     ValidateCurrentRig();
@@ -1529,7 +1553,7 @@ void OpenXR::HandlePreUpdate(StringHash, VariantMap& data)
     UpdateHands();
 }
 
-void OpenXR::HandlePreRender()
+void OpenXR::AcquireSwapChainImages()
 {
     if (IsLive())
     {
@@ -1571,7 +1595,7 @@ void OpenXR::HandlePreRender()
     }
 }
 
-void OpenXR::HandlePostRender(StringHash, VariantMap&)
+void OpenXR::HandleEndRendering()
 {
     if (IsLive())
     {
@@ -1965,7 +1989,7 @@ Matrix4 OpenXR::GetProjection(VREye eye, float nearDist, float farDist) const
 
 Matrix3x4 OpenXR::GetHeadTransform() const
 {
-    return ToMatrix3x4(headLoc_.pose, scaleCorrection_);
+    return ToMatrix3x4(headLocation_.pose, scaleCorrection_);
 }
 
 void OpenXR::UpdateBindingBound()

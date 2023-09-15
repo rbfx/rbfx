@@ -1,24 +1,6 @@
-//
-// Copyright (c) 2022 the RBFX project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2022-2023 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
@@ -37,6 +19,7 @@ namespace Urho3D
     class PipelineState;
     class VRRig;
 
+    /// Parameters for initializing a VR session.
     struct VRSessionParameters
     {
         ea::string manifestPath_;
@@ -44,6 +27,7 @@ namespace Urho3D
         float resolutionScale_{1.0f};
     };
 
+    /// Description of VR rig that links VR subsystem to the scene.
     struct URHO3D_API VRRigDesc
     {
         SharedPtr<Viewport> viewport_;
@@ -64,13 +48,10 @@ namespace Urho3D
         bool IsValid() const;
     };
 
-    /// Identifier of backing runtime for VirtualReality. Currently only OpenXR is implmented.
+    /// Backend implementation of VirtualReality interface.
     enum class VRRuntime
     {
-        OPENVR,       // SteamVR/OpenVR runtime, not yet ported to RBFX - only in order to have a fallback should open-xr runtime be temporarilly broken for a PC reason (ie. Windows Update broke it).
-        OPENXR,       // System OpenXR runtime
-        OCULUS,       // RESERVED, not implemented OVR PC SDK
-        OCULUS_MOBILE // RESERVED, not implemented OVR Mobile SDK
+        OpenXR,
     };
 
     /// Hand identification ID, not classed as it's frequently used as an index.
@@ -87,13 +68,6 @@ namespace Urho3D
         VR_EYE_NONE = -1,
         VR_EYE_LEFT = 0,
         VR_EYE_RIGHT = 1
-    };
-
-    // Single-pass stereo rendering mode setting.
-    enum class VRRenderMode
-    {
-        SINGLE_TEXTURE,  // 1 double size texture containing both eyes
-        LAYERED          // render-target array, RESERVED, not implemented
     };
 
     /// Wraps an input binding. Subclassed as required by interface implementations.
@@ -200,12 +174,8 @@ namespace Urho3D
         ea::vector<SharedPtr<XRBinding>> bindings_;
     };
 
-    /** %VirtualReality component
-    *   Base interface for a VR related subsystem. This is not expected to be utilized for mobile AR, it would be best to implement something else for that purpose.
-    *
-    *   TODO:
-    *       Rig handling, should it anchor to the head in XZ each update?
-    */
+    /// Base interface for a VR related subsystem. This is not expected to be utilized for mobile AR, it would be best
+    /// to implement something else for that purpose.
     class URHO3D_API VirtualReality : public Object
     {
         URHO3D_OBJECT(VirtualReality, Object);
@@ -241,15 +211,10 @@ namespace Urho3D
         /// Returns the currently chosen MSAA level.
         int GetMultiSample() const { return multiSample_; }
 
-        /// Returns whether we're rendering to 1 double-wide texture or 2 independent eye textures.
-        bool IsSingleTexture() const { return useSingleTexture_; }
-        /// Set to use a single texture.
-        virtual void SetSingleTexture(bool state) { useSingleTexture_ = state; }
-
         /// Viewport rectangle for left eye, required for multipass single-RT.
         IntRect GetLeftEyeRect() const { return {IntVector2::ZERO, eyeTextureSize_}; }
         /// Viewport rectangle for right eye, required for multipass single-RT.
-        IntRect GetRightEyeRect() const { return useSingleTexture_ ? IntRect(eyeTextureSize_.x_, 0, eyeTextureSize_.x_ * 2, eyeTextureSize_.y_) : GetLeftEyeRect(); }
+        IntRect GetRightEyeRect() const { return {eyeTextureSize_.x_, 0, eyeTextureSize_.x_ * 2, eyeTextureSize_.y_}; }
 
         /// Return the classification of VR runtime being used,
         virtual VRRuntime GetRuntime() const = 0;
@@ -260,11 +225,11 @@ namespace Urho3D
         virtual void TriggerHaptic(VRHand hand, float durationSeconds, float cyclesPerSec, float amplitude) = 0;
 
         /// Returns the transform for a given hand in head relative space.
-        virtual Matrix3x4 GetHandTransform(VRHand) const = 0;
+        virtual Matrix3x4 GetHandTransform(VRHand hand) const = 0;
         /// Transform matrix of the hand aim base position.
-        virtual Matrix3x4 GetHandAimTransform(VRHand) const = 0;
+        virtual Matrix3x4 GetHandAimTransform(VRHand hand) const = 0;
         /// Returns the aiming ray for a given hand.
-        virtual Ray GetHandAimRay(VRHand) const = 0;
+        virtual Ray GetHandAimRay(VRHand hand) const = 0;
         /// Return linear and/or angular velocity of a hand.
         virtual void GetHandVelocity(VRHand hand, Vector3* linear, Vector3* angular) const = 0;
         /// Return the head transform in stage space (or local if no stage).
@@ -288,8 +253,7 @@ namespace Urho3D
 
         /// Sets the current action set by name.
         virtual void SetCurrentActionSet(const ea::string& setName);
-        /// INTERFACE: Sets the current action set.
-        virtual void SetCurrentActionSet(SharedPtr<XRActionGroup>) = 0;
+        virtual void SetCurrentActionSet(SharedPtr<XRActionGroup> set) = 0;
 
         /// Returns the system name, ie. Windows Mixed Reality.
         ea::string GetSystemName() const { return systemName_; }
@@ -317,8 +281,6 @@ namespace Urho3D
         float scaleCorrection_ = 1.0f;
         /// Whether to automatically invoke the hidden area masks, if on then renderpath must not clear (or not clear depth at least)
         bool autoClearMasks_ = true;
-        /// Indicates if using a single double-wide texture via instanced-stereo instead of separate images.
-        bool useSingleTexture_ = true;
         /// Indicates we have room scale tracking.
         bool isRoomScale_ = false;
 

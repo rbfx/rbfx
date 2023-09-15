@@ -206,59 +206,58 @@ public:
     OpenXR(Context*);
     virtual ~OpenXR();
 
+    /// Configure the user extensions. Should be called before InitializeSystem.
+    void SetUserExtensions(const StringVector& extensions) { userExtensions_ = extensions; }
     /// Initialize the OpenXR subsystem. Renderer backend is not yet initialized at this point.
     bool InitializeSystem(RenderBackend backend);
 
-    virtual VRRuntime GetRuntime() const override { return VRRuntime::OPENXR; }
-    virtual const char* GetRuntimeName() const override { return "OPEN_XR"; }
+    virtual VRRuntime GetRuntime() const override { return VRRuntime::OpenXR; }
+    virtual const char* GetRuntimeName() const override { return "OpenXR"; }
 
     /// Implement VirtualReality.
     /// @{
     bool InitializeSession(const VRSessionParameters& params) override;
     void ShutdownSession() override;
+
+    bool IsConnected() const override { return instance_ && session_; }
+    bool IsLive() const override { return session_ && sessionLive_; }
+
+    void TriggerHaptic(VRHand hand, float durationSeconds, float cyclesPerSec, float amplitude) override;
+
+    Matrix3x4 GetHandTransform(VRHand hand) const override;
+    Matrix3x4 GetHandAimTransform(VRHand hand) const override;
+    Ray GetHandAimRay(VRHand hand) const override;
+    void GetHandVelocity(VRHand hand, Vector3* linear, Vector3* angular) const override;
+    Matrix3x4 GetEyeLocalTransform(VREye eye) const override;
+    Matrix4 GetProjection(VREye eye, float nearDist, float farDist) const override;
+    Matrix3x4 GetHeadTransform() const override;
+
+    void SetCurrentActionSet(SharedPtr<XRActionGroup> set) override;
     /// @}
-
-    // XR is currently single-texture only.
-    virtual void SetSingleTexture(bool state) override {}
-
-    /// XR is successfully initialized. Session may not be live though.
-    virtual bool IsConnected() const override { return instance_ && session_; }
-    /// XR is successfully initialized and our session is active.
-    virtual bool IsLive() const override { return session_ && sessionLive_; }
-
-    /// Attempt a haptic vibration targeting a hand, just hides action query for convenience.
-    virtual void TriggerHaptic(VRHand hand, float durationSeconds, float cyclesPerSec, float amplitude) override;
-
-    virtual Matrix3x4 GetHandTransform(VRHand) const override;
-    virtual Matrix3x4 GetHandAimTransform(VRHand hand) const override;
-    virtual Ray GetHandAimRay(VRHand) const override;
-    virtual void GetHandVelocity(VRHand hand, Vector3* linear, Vector3* angular) const override;
-    virtual Matrix3x4 GetEyeLocalTransform(VREye eye) const override;
-    virtual Matrix4 GetProjection(VREye eye, float nearDist, float farDist) const override;
-    virtual Matrix3x4 GetHeadTransform() const override;
-
-    void HandlePreUpdate(StringHash, VariantMap&);
-    void HandlePreRender();
-    void HandlePostRender(StringHash, VariantMap&);
-
-    void BindActions(XMLFile* xmlFile);
-    /// Sets the current action set.
-    virtual void SetCurrentActionSet(SharedPtr<XRActionGroup>) override;
 
     const OpenXRTweaks& GetTweaks() const { return tweaks_; }
     const StringVector GetExtensions() const { return supportedExtensions_; }
-    void SetUserExtensions(const StringVector& ext) { userExtensions_ = ext; }
 
 protected:
     void InitializeActiveExtensions(RenderBackend backend);
     bool InitializeTweaks(RenderBackend backend);
+
     void UpdateHands();
     void UpdateControllerModels();
     void UpdateControllerModel(VRHand hand, Node* instanceNode);
 
     bool OpenSession();
+    void BindActions(XMLFile* xmlFile);
     void UpdateBindings(float time);
     void UpdateBindingBound();
+
+    void PollEvents();
+    void BeginFrame();
+    void AcquireSwapChainImages();
+    void LocateViewsAndSpaces();
+
+    void HandleBeginFrame(VariantMap& eventData);
+    void HandleEndRendering();
 
     StringVector supportedExtensions_;
     StringVector userExtensions_;
@@ -290,9 +289,9 @@ protected:
 
     // Pointless head-space.
     /// Location tracking of the head.
-    XrSpaceLocation headLoc_ = {XR_TYPE_SPACE_LOCATION};
+    XrSpaceLocation headLocation_ = {XR_TYPE_SPACE_LOCATION};
     /// Velocity tracking information of the head.
-    XrSpaceVelocity headVel_ = {XR_TYPE_SPACE_VELOCITY};
+    XrSpaceVelocity headVelocity_ = {XR_TYPE_SPACE_VELOCITY};
 
     /// Blending mode the compositor will be told to use. Assumed that when not opaque the correct mode will be be
     /// received from querying.
