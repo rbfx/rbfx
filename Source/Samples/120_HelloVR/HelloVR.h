@@ -33,7 +33,7 @@ namespace Urho3D
 class Node;
 class Scene;
 
-}
+} // namespace Urho3D
 
 /// Simple VR
 /// This sample demonstrates:

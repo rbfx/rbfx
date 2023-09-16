@@ -46,11 +46,11 @@
 
 #include <Urho3D/DebugNew.h>
 
-ButtonCommand turnLeft = { 4 };
-ButtonCommand turnRight = { 2 };
+ButtonCommand turnLeft = {4};
+ButtonCommand turnRight = {2};
 
-HelloVR::HelloVR(Context* context) :
-    Sample(context)
+HelloVR::HelloVR(Context* context)
+    : Sample(context)
 {
 }
 
@@ -143,9 +143,10 @@ void HelloVR::SetupViewport()
 {
     auto* renderer = GetSubsystem<Renderer>();
 
-    // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen. We need to define the scene and the camera
-    // at minimum. Additionally we could configure the viewport screen size and the rendering path (eg. forward / deferred) to
-    // use, but now we just use full screen and default render path configured in the engine command line options
+    // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen. We need to define the scene and the
+    // camera at minimum. Additionally we could configure the viewport screen size and the rendering path (eg. forward /
+    // deferred) to use, but now we just use full screen and default render path configured in the engine command line
+    // options
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     SetViewport(0, viewport);
 }
@@ -181,7 +182,6 @@ void HelloVR::SetupHandComponents(Node* handPoseNode, Node* handAimNode)
     auto aimModel = aimNode->CreateComponent<StaticModel>();
     aimModel->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
     aimModel->SetMaterial(cache->GetResource<Material>("Materials/Constant/MattTransparent.xml"));
-
 }
 
 void HelloVR::GrabDynamicObject(Node* handNode, VRHand hand)
@@ -286,9 +286,15 @@ void HelloVR::Update()
         const Vector3 curHeadPos = rigDesc.head_->GetWorldPosition();
         const Vector3 rigPos = rigNode->GetWorldPosition();
         if (turnLeft.CheckStrict(cmd))
-            rigNode->RotateAround(Vector3(curHeadPos.x_, rigPos.y_, curHeadPos.z_), Quaternion(-45, Vector3::UP), TS_WORLD);
+        {
+            rigNode->RotateAround(
+                Vector3(curHeadPos.x_, rigPos.y_, curHeadPos.z_), Quaternion(-45, Vector3::UP), TS_WORLD);
+        }
         if (turnRight.CheckStrict(cmd))
-            rigNode->RotateAround(Vector3(curHeadPos.x_, rigPos.y_, curHeadPos.z_), Quaternion(45, Vector3::UP), TS_WORLD);
+        {
+            rigNode->RotateAround(
+                Vector3(curHeadPos.x_, rigPos.y_, curHeadPos.z_), Quaternion(45, Vector3::UP), TS_WORLD);
+        }
     }
 
     // Draw debug geometry

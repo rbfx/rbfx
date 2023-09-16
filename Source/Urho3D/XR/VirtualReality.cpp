@@ -12,11 +12,8 @@
 #include "Urho3D/Graphics/Renderer.h"
 #include "Urho3D/Graphics/Skybox.h"
 #include "Urho3D/IO/Log.h"
-#include "Urho3D/RenderAPI/PipelineState.h"
-#include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/RenderPipeline/StereoRenderPipeline.h"
 #include "Urho3D/Resource/ResourceCache.h"
-#include "Urho3D/Resource/XMLFile.h"
 #include "Urho3D/Scene/Node.h"
 #include "Urho3D/Scene/Scene.h"
 #include "Urho3D/XR/VRRig.h"
@@ -61,7 +58,8 @@ XRBinding* XRActionGroup::FindBinding(const ea::string& name, VRHand hand) const
     return nullptr;
 }
 
-VirtualReality::VirtualReality(Context* ctx) : BaseClassName(ctx)
+VirtualReality::VirtualReality(Context* ctx)
+    : BaseClassName(ctx)
 {
 }
 
@@ -193,4 +191,4 @@ void RegisterVRLibrary(Context* context)
     VRRig::RegisterObject(context);
 }
 
-}
+} // namespace Urho3D

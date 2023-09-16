@@ -7,19 +7,10 @@
 #include "Urho3D/Core/CoreEvents.h"
 #include "Urho3D/Engine/Engine.h"
 #include "Urho3D/Engine/EngineDefs.h"
-#include "Urho3D/Graphics/AnimatedModel.h"
-#include "Urho3D/Graphics/Geometry.h"
 #include "Urho3D/Graphics/Graphics.h"
 #include "Urho3D/Graphics/GraphicsEvents.h"
-#include "Urho3D/Graphics/IndexBuffer.h"
-#include "Urho3D/Graphics/Material.h"
-#include "Urho3D/Graphics/StaticModel.h"
-#include "Urho3D/Graphics/Texture2D.h"
-#include "Urho3D/Graphics/VertexBuffer.h"
-#include "Urho3D/Input/InputEvents.h"
-#include "Urho3D/IO/File.h"
 #include "Urho3D/IO/Log.h"
-#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/Input/InputEvents.h"
 #include "Urho3D/RenderAPI/GAPIIncludes.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
@@ -41,8 +32,8 @@
     #include <Diligent/Graphics/GraphicsEngineD3D11/interface/RenderDeviceD3D11.h>
 #endif
 #if D3D12_SUPPORTED
-    #include <Diligent/Graphics/GraphicsEngineD3D12/interface/RenderDeviceD3D12.h>
     #include <Diligent/Graphics/GraphicsEngineD3D12/interface/CommandQueueD3D12.h>
+    #include <Diligent/Graphics/GraphicsEngineD3D12/interface/RenderDeviceD3D12.h>
 #endif
 #if VULKAN_SUPPORTED
     #include <Diligent/Graphics/GraphicsEngineVulkan/interface/CommandQueueVk.h>
@@ -50,8 +41,8 @@
     #include <Diligent/Graphics/GraphicsEngineVulkan/interface/RenderDeviceVk.h>
 #endif
 
-#include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform_defines.h>
 #include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform.h>
+#include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform_defines.h>
 
 #include <EASTL/optional.h>
 
@@ -715,7 +706,8 @@ public:
 #endif
 
 #if GLES_SUPPORTED
-class OpenXRSwapChainGLES : public OpenXRSwapChainBase<XrSwapchainImageOpenGLESKHR, XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_ES_KHR>
+class OpenXRSwapChainGLES
+    : public OpenXRSwapChainBase<XrSwapchainImageOpenGLESKHR, XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_ES_KHR>
 {
 public:
     using BaseClass = OpenXRSwapChainBase<XrSwapchainImageOpenGLESKHR, XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_ES_KHR>;
@@ -903,9 +895,11 @@ ea::pair<SharedPtr<OpenXRBinding>, SharedPtr<OpenXRBinding>> CreateBinding(
         const bool isAimPose = element.GetBool("aim");
 
         const auto bindingLeft = MakeShared<OpenXRBinding>(context, name, localizedName, //
-            VRHand::Left, *type, isPose, isAimPose, actionSet, wrappedAction, handPaths[VRHand::Left], actionSpaces.first);
+            VRHand::Left, *type, isPose, isAimPose, actionSet, wrappedAction, handPaths[VRHand::Left],
+            actionSpaces.first);
         const auto bindingRight = MakeShared<OpenXRBinding>(context, name, localizedName, //
-            VRHand::Right, *type, isPose, isAimPose, actionSet, wrappedAction, handPaths[VRHand::Right], actionSpaces.second);
+            VRHand::Right, *type, isPose, isAimPose, actionSet, wrappedAction, handPaths[VRHand::Right],
+            actionSpaces.second);
 
         return {bindingLeft, bindingRight};
     }
@@ -1713,7 +1707,8 @@ void OpenXR::LinkImagesToFrameInfo(XrFrameEndInfo& endInfo)
 
         temp_.depth_[VREye::Right].subImage.imageArrayIndex = 0;
         temp_.depth_[VREye::Right].subImage.swapchain = depthChain_->GetHandle();
-        temp_.depth_[VREye::Right].subImage.imageRect = {{eyeTextureSize_.x_, 0}, {eyeTextureSize_.x_, eyeTextureSize_.y_}};
+        temp_.depth_[VREye::Right].subImage.imageRect = {
+            {eyeTextureSize_.x_, 0}, {eyeTextureSize_.x_, eyeTextureSize_.y_}};
         temp_.depth_[VREye::Right].minDepth = 0.0f;
         temp_.depth_[VREye::Right].maxDepth = 1.0f;
         temp_.depth_[VREye::Right].nearZ = rig_.nearDistance_;
@@ -1992,11 +1987,12 @@ void OpenXR::UpdateHands()
     // we need valid handles for these guys
     if (handGrips_[VRHand::Left] && handGrips_[VRHand::Right])
     {
-        // TODO: can we do any tracking of our own such as using QEF for tracking recent velocity integration into position confidence
-        // over the past interval of time to decide how much we trust integrating velocity when position has no-confidence / untracked.
-        // May be able to fall-off a confidence factor provided the incoming velocity is still there, problem is how to rectify
-        // when tracking kicks back in again later. If velocity integration is valid there should be no issue - neither a pop,
-        // it'll already pop in a normal position tracking lost recovery situation anyways.
+        // TODO: can we do any tracking of our own such as using QEF for tracking recent velocity integration into
+        // position confidence over the past interval of time to decide how much we trust integrating velocity when
+        // position has no-confidence / untracked. May be able to fall-off a confidence factor provided the incoming
+        // velocity is still there, problem is how to rectify when tracking kicks back in again later. If velocity
+        // integration is valid there should be no issue - neither a pop, it'll already pop in a normal position
+        // tracking lost recovery situation anyways.
 
         const Quaternion leftRotation = ToQuaternion(handGrips_[VRHand::Left]->location_.pose.orientation);
         const Vector3 leftPosition = ToVector3(handGrips_[VRHand::Left]->location_.pose.position);
@@ -2005,20 +2001,28 @@ void OpenXR::UpdateHands()
         // sensor reads are effectively Planck timing it between quantum space-time
         leftHand->SetVar("PreviousTransformLocal", leftHand->GetTransformMatrix());
         leftHand->SetVar("PreviousTransformWorld", leftHand->GetWorldTransform());
-        leftHand->SetEnabled(handGrips_[VRHand::Left]->location_.locationFlags & (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT));
+        leftHand->SetEnabled(handGrips_[VRHand::Left]->location_.locationFlags
+            & (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT));
         leftHand->SetPosition(leftPosition);
-        if (handGrips_[VRHand::Left]->location_.locationFlags & (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT))
+        if (handGrips_[VRHand::Left]->location_.locationFlags
+            & (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT))
+        {
             leftHand->SetRotation(leftRotation);
+        }
 
         const Quaternion rightRotation = ToQuaternion(handGrips_[VRHand::Right]->location_.pose.orientation);
         const Vector3 rightPosition = ToVector3(handGrips_[VRHand::Right]->location_.pose.position);
 
         rightHand->SetVar("PreviousTransformLocal", leftHand->GetTransformMatrix());
         rightHand->SetVar("PreviousTransformWorld", leftHand->GetWorldTransform());
-        rightHand->SetEnabled(handGrips_[VRHand::Right]->location_.locationFlags & (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT));
+        rightHand->SetEnabled(handGrips_[VRHand::Right]->location_.locationFlags
+            & (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT));
         rightHand->SetPosition(rightPosition);
-        if (handGrips_[VRHand::Right]->location_.locationFlags & (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT))
+        if (handGrips_[VRHand::Right]->location_.locationFlags
+            & (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT))
+        {
             rightHand->SetRotation(rightRotation);
+        }
 
         // Setup aim nodes too
         leftAim->SetTransformMatrix(GetHandAimTransform(VRHand::Left));
@@ -2100,4 +2104,4 @@ void OpenXR::UpdateBindingBound()
     }
 }
 
-}
+} // namespace Urho3D
