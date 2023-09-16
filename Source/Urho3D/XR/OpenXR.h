@@ -74,6 +74,9 @@ class OpenXRSwapChain
 public:
     virtual ~OpenXRSwapChain() = default;
 
+    Texture2D* AcquireImage();
+    void ReleaseImage();
+
     Texture2D* GetTexture(unsigned index) const { return textures_[index]; }
     unsigned GetNumTextures() const { return textures_.size(); }
     TextureFormat GetFormat() const { return format_; }
@@ -211,16 +214,18 @@ public:
     /// Initialize the OpenXR subsystem. Renderer backend is not yet initialized at this point.
     bool InitializeSystem(RenderBackend backend);
 
-    virtual VRRuntime GetRuntime() const override { return VRRuntime::OpenXR; }
-    virtual const char* GetRuntimeName() const override { return "OpenXR"; }
-
     /// Implement VirtualReality.
     /// @{
     bool InitializeSession(const VRSessionParameters& params) override;
     void ShutdownSession() override;
 
-    bool IsConnected() const override { return instance_ && session_; }
-    bool IsLive() const override { return session_ && sessionLive_; }
+    bool IsConnected() const override;
+    bool IsRunning() const override;
+    bool IsVisible() const override;
+    bool IsFocused() const override;
+
+    VRRuntime GetRuntime() const override { return VRRuntime::OpenXR; }
+    const char* GetRuntimeName() const override { return "OpenXR"; }
 
     void TriggerHaptic(VRHand hand, float durationSeconds, float cyclesPerSec, float amplitude) override;
 
@@ -248,15 +253,21 @@ protected:
 
     bool OpenSession();
     void BindActions(XMLFile* xmlFile);
-    void UpdateBindings(float time);
+    void UpdateBindings();
     void UpdateBindingBound();
 
     void PollEvents();
+    bool UpdateSessionState(XrSessionState state);
     void BeginFrame();
     void AcquireSwapChainImages();
     void LocateViewsAndSpaces();
+    void SynchronizeActions();
 
-    void HandleBeginFrame(VariantMap& eventData);
+    void ReleaseSwapChainImages();
+    void LinkImagesToFrameInfo(XrFrameEndInfo& endInfo);
+    void EndFrame(XrFrameEndInfo& endInfo);
+
+    void HandleBeginFrame();
     void HandleEndRendering();
 
     StringVector supportedExtensions_;
@@ -284,22 +295,22 @@ protected:
 
     OpenXRSwapChainPtr swapChain_;
     OpenXRSwapChainPtr depthChain_;
-    XrView views_[2] = {{XR_TYPE_VIEW}, {XR_TYPE_VIEW}};
+    XrView views_[2]{{XR_TYPE_VIEW}, {XR_TYPE_VIEW}};
     ea::array<SharedPtr<OpenXRControllerModel>, 2> controllerModels_;
 
     // Pointless head-space.
     /// Location tracking of the head.
-    XrSpaceLocation headLocation_ = {XR_TYPE_SPACE_LOCATION};
+    XrSpaceLocation headLocation_{XR_TYPE_SPACE_LOCATION};
     /// Velocity tracking information of the head.
-    XrSpaceVelocity headVelocity_ = {XR_TYPE_SPACE_VELOCITY};
+    XrSpaceVelocity headVelocity_{XR_TYPE_SPACE_VELOCITY};
 
     /// Blending mode the compositor will be told to use. Assumed that when not opaque the correct mode will be be
     /// received from querying.
-    XrEnvironmentBlendMode blendMode_ = {XR_ENVIRONMENT_BLEND_MODE_OPAQUE};
+    XrEnvironmentBlendMode blendMode_{XR_ENVIRONMENT_BLEND_MODE_OPAQUE};
     /// Predicted time for display of the next frame.
-    XrTime predictedTime_ = {};
-    /// Whether the session is currently active or not.
-    bool sessionLive_ = false;
+    XrTime predictedTime_{};
+    /// Current session state.
+    XrSessionState sessionState_{};
 
     /// Cached grip pose bindings to avoid constant queries.
     SharedPtr<OpenXRBinding> handGrips_[2];
@@ -307,6 +318,17 @@ protected:
     SharedPtr<OpenXRBinding> handAims_[2];
     /// Cached haptic outputs to avoid constant queries.
     SharedPtr<OpenXRBinding> handHaptics_[2];
+
+    /// Temporary storage for internal structures.
+    struct TemporaryStorage
+    {
+        XrCompositionLayerProjectionView eyes_[2]{
+            {XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW}, {XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW}};
+        XrCompositionLayerDepthInfoKHR depth_[2]{
+            {XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR}, {XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR}};
+        XrCompositionLayerProjection projectionLayer_{XR_TYPE_COMPOSITION_LAYER_PROJECTION};
+        XrCompositionLayerBaseHeader* layers_[1];
+    } temp_;
 };
 
 } // namespace Urho3D

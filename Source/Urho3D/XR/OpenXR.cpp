@@ -16,6 +16,7 @@
 #include "Urho3D/Graphics/StaticModel.h"
 #include "Urho3D/Graphics/Texture2D.h"
 #include "Urho3D/Graphics/VertexBuffer.h"
+#include "Urho3D/Input/InputEvents.h"
 #include "Urho3D/IO/File.h"
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/IO/MemoryBuffer.h"
@@ -999,6 +1000,27 @@ SharedPtr<OpenXRActionGroup> CreateActionGroup(
 
 } // namespace
 
+Texture2D* OpenXRSwapChain::AcquireImage()
+{
+    XrSwapchainImageAcquireInfo acquireInfo = {XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO};
+    unsigned textureIndex{};
+    if (!URHO3D_CHECK_OPENXR(xrAcquireSwapchainImage(swapChain_.Raw(), &acquireInfo, &textureIndex)))
+        return nullptr;
+
+    XrSwapchainImageWaitInfo waitInfo = {XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO};
+    waitInfo.timeout = XR_INFINITE_DURATION;
+    if (!URHO3D_CHECK_OPENXR(xrWaitSwapchainImage(swapChain_.Raw(), &waitInfo)))
+        return nullptr;
+
+    return GetTexture(textureIndex);
+}
+
+void OpenXRSwapChain::ReleaseImage()
+{
+    XrSwapchainImageReleaseInfo releaseInfo = {XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO};
+    URHO3D_CHECK_OPENXR(xrReleaseSwapchainImage(swapChain_.Raw(), &releaseInfo));
+}
+
 OpenXRBinding::OpenXRBinding(Context* context, const ea::string& name, const ea::string& localizedName, VRHand hand,
     VariantType dataType, bool isPose, bool isAimPose, XrActionSet set, XrActionPtr action, XrPath subPath,
     XrSpacePtr actionSpace)
@@ -1358,7 +1380,7 @@ void OpenXR::ShutdownSession()
     manifest_ = nullptr;
     actionSets_.clear();
     activeActionSet_ = nullptr;
-    sessionLive_ = false;
+    sessionState_ = {};
 
     swapChain_ = nullptr;
     depthChain_ = nullptr;
@@ -1366,6 +1388,54 @@ void OpenXR::ShutdownSession()
     headSpace_ = nullptr;
     viewSpace_ = nullptr;
     session_ = nullptr;
+}
+
+bool OpenXR::IsConnected() const
+{
+    return instance_ && session_;
+}
+
+bool OpenXR::IsRunning() const
+{
+    if (!IsConnected())
+        return false;
+
+    switch (sessionState_)
+    {
+    case XR_SESSION_STATE_READY:
+    case XR_SESSION_STATE_SYNCHRONIZED:
+    case XR_SESSION_STATE_VISIBLE:
+    case XR_SESSION_STATE_FOCUSED: return true;
+
+    default: return false;
+    }
+}
+
+bool OpenXR::IsVisible() const
+{
+    if (!IsConnected())
+        return false;
+
+    switch (sessionState_)
+    {
+    case XR_SESSION_STATE_VISIBLE:
+    case XR_SESSION_STATE_FOCUSED: return true;
+
+    default: return false;
+    }
+}
+
+bool OpenXR::IsFocused() const
+{
+    if (!IsConnected())
+        return false;
+
+    switch (sessionState_)
+    {
+    case XR_SESSION_STATE_FOCUSED: return true;
+
+    default: return false;
+    }
 }
 
 bool OpenXR::OpenSession()
@@ -1417,65 +1487,85 @@ void OpenXR::PollEvents()
         switch (eventBuffer.type)
         {
         case XR_TYPE_EVENT_DATA_VISIBILITY_MASK_CHANGED_KHR:
+        {
             // TODO: Implement visibility mask
             break;
-
+        }
         case XR_TYPE_EVENT_DATA_INSTANCE_LOSS_PENDING:
-            sessionLive_ = false;
-            SendEvent(E_VREXIT); //?? does something need to be communicated beyond this?
+        {
+            // This state is not recoverable, so we need to exit.
+            SendEvent(E_VREXIT);
+            SendEvent(E_EXITREQUESTED);
+            ShutdownSession();
             break;
-
+        }
         case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED:
+        {
             UpdateBindingBound();
             SendEvent(E_VRINTERACTIONPROFILECHANGED);
             break;
-
+        }
         case XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED:
-            XrEventDataSessionStateChanged* changed = (XrEventDataSessionStateChanged*)&eventBuffer;
-            auto state = changed->state;
-            switch (state)
-            {
-            case XR_SESSION_STATE_READY:
-            {
-                XrSessionBeginInfo beginInfo = {XR_TYPE_SESSION_BEGIN_INFO};
-                beginInfo.primaryViewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
-                auto res = xrBeginSession(session_.Raw(), &beginInfo);
-                if (res != XR_SUCCESS)
-                {
-                    URHO3D_LOGERRORF("Failed to begin XR session: %s", xrGetErrorStr(res));
-                    sessionLive_ = false;
-                    SendEvent(E_VRSESSIONSTART);
-                }
-                else
-                    sessionLive_ = true; // uhhh what
-                break;
-            }
-
-            case XR_SESSION_STATE_IDLE:
-                SendEvent(E_VRPAUSE);
-                sessionLive_ = false;
-                break;
-
-            case XR_SESSION_STATE_FOCUSED: // we're hooked up
-                sessionLive_ = true;
-                SendEvent(E_VRRESUME);
-                break;
-
-            case XR_SESSION_STATE_STOPPING:
-                xrEndSession(session_.Raw());
-                sessionLive_ = false;
-                break;
-
-            case XR_SESSION_STATE_EXITING:
-            case XR_SESSION_STATE_LOSS_PENDING:
-                sessionLive_ = false;
-                SendEvent(E_VREXIT);
-                break;
-            }
+        {
+            const auto& event = *reinterpret_cast<XrEventDataSessionStateChanged*>(&eventBuffer);
+            if (!UpdateSessionState(event.state))
+                ShutdownSession();
+            break;
+        }
+        default: break;
         }
 
         eventBuffer = {XR_TYPE_EVENT_DATA_BUFFER};
     }
+}
+
+bool OpenXR::UpdateSessionState(XrSessionState state)
+{
+    sessionState_ = state;
+
+    switch (sessionState_)
+    {
+    case XR_SESSION_STATE_IDLE:
+    {
+        break;
+    }
+    case XR_SESSION_STATE_READY:
+    {
+        XrSessionBeginInfo beginInfo = {XR_TYPE_SESSION_BEGIN_INFO};
+        beginInfo.primaryViewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
+        if (!URHO3D_CHECK_OPENXR(xrBeginSession(session_.Raw(), &beginInfo)))
+            return false;
+        break;
+    }
+    case XR_SESSION_STATE_SYNCHRONIZED:
+    {
+        break;
+    }
+    case XR_SESSION_STATE_VISIBLE:
+    {
+        break;
+    }
+    case XR_SESSION_STATE_FOCUSED:
+    {
+        SendEvent(E_VRRESUME);
+        break;
+    }
+    case XR_SESSION_STATE_STOPPING:
+    {
+        SendEvent(E_VRPAUSE);
+        if (!URHO3D_CHECK_OPENXR(xrEndSession(session_.Raw())))
+            return false;
+        break;
+    }
+    case XR_SESSION_STATE_EXITING:
+    case XR_SESSION_STATE_LOSS_PENDING:
+    {
+        SendEvent(E_VREXIT);
+        break;
+    }
+    }
+
+    return true;
 }
 
 void OpenXR::BeginFrame()
@@ -1524,154 +1614,156 @@ void OpenXR::LocateViewsAndSpaces()
     xrLocateViews(session_.Raw(), &viewInfo, &viewState, 2, &numViews, views_);
 }
 
-void OpenXR::HandleBeginFrame(VariantMap& eventData)
+void OpenXR::SynchronizeActions()
 {
-    // Check if we need to do anything at all.
+    if (!activeActionSet_)
+        return;
+
+    auto setImpl = static_cast<OpenXRActionGroup*>(activeActionSet_.Get());
+    setImpl->Synchronize(session_.Raw());
+
+    UpdateBindings();
+}
+
+void OpenXR::HandleBeginFrame()
+{
     if (!IsConnected())
         return;
 
     PollEvents();
 
-    if (!IsLive())
-        return;
-
-    BeginFrame();
-    AcquireSwapChainImages();
-    LocateViewsAndSpaces();
-
-    if (activeActionSet_)
+    if (IsRunning())
     {
-        auto setImpl = static_cast<OpenXRActionGroup*>(activeActionSet_.Get());
-        setImpl->Synchronize(session_.Raw());
+        BeginFrame();
 
-        const float timeStep = eventData[BeginFrame::P_TIMESTEP].GetFloat();
-        UpdateBindings(timeStep);
+        if (IsVisible())
+        {
+            AcquireSwapChainImages();
+            LocateViewsAndSpaces();
+            SynchronizeActions();
+
+            ValidateCurrentRig();
+            UpdateCurrentRig();
+            UpdateHands();
+        }
     }
-
-    ValidateCurrentRig();
-    UpdateCurrentRig();
-    UpdateHands();
 }
 
 void OpenXR::AcquireSwapChainImages()
 {
-    if (IsLive())
+    Texture2D* colorTexture = swapChain_->AcquireImage();
+    if (colorTexture)
     {
-        XrSwapchainImageAcquireInfo acquireInfo = { XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
-        unsigned imgID;
-        auto res = xrAcquireSwapchainImage(swapChain_->GetHandle(), &acquireInfo, &imgID);
-        if (res != XR_SUCCESS)
-        {
-            URHO3D_LOGERRORF("Failed to acquire swapchain: %s", xrGetErrorStr(res));
-            return;
-        }
+        currentBackBufferColor_ = colorTexture;
 
-        XrSwapchainImageWaitInfo waitInfo = { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
-        waitInfo.timeout = XR_INFINITE_DURATION;
-        res = xrWaitSwapchainImage(swapChain_->GetHandle(), &waitInfo);
-        if (res != XR_SUCCESS)
-            URHO3D_LOGERRORF("Failed to wait on swapchain: %s", xrGetErrorStr(res));
-
-        // update which shared-texture we're using so UpdateRig will do things correctly.
-        currentBackBufferColor_ = swapChain_->GetTexture(imgID);
-
-        // If we've got depth then do the same and setup the linked depth stencil for the above shared texture.
         if (depthChain_)
         {
-            // still remaking the objects here, assuming that at any time these may one day do something
-            // in such a fashion that reuse is not a good thing.
-            unsigned depthID;
-            XrSwapchainImageAcquireInfo acquireInfo = { XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO };
-            auto res = xrAcquireSwapchainImage(depthChain_->GetHandle(), &acquireInfo, &depthID);
-            if (res == XR_SUCCESS)
+            Texture2D* depthTexture = depthChain_->AcquireImage();
+            if (depthTexture)
             {
-                XrSwapchainImageWaitInfo waitInfo = { XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO };
-                waitInfo.timeout = XR_INFINITE_DURATION;
-                res = xrWaitSwapchainImage(depthChain_->GetHandle(), &waitInfo);
-                currentBackBufferDepth_ = depthChain_->GetTexture(depthID);
-                currentBackBufferColor_->GetRenderSurface()->SetLinkedDepthStencil(currentBackBufferDepth_->GetRenderSurface());
+                currentBackBufferDepth_ = depthTexture;
+
+                currentBackBufferColor_->GetRenderSurface()->SetLinkedDepthStencil(
+                    currentBackBufferDepth_->GetRenderSurface());
             }
         }
     }
 }
 
+void OpenXR::ReleaseSwapChainImages()
+{
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    renderDevice->GetImmediateContext()->Flush();
+
+    swapChain_->ReleaseImage();
+    if (depthChain_)
+        depthChain_->ReleaseImage();
+}
+
+void OpenXR::LinkImagesToFrameInfo(XrFrameEndInfo& endInfo)
+{
+    // It's harmless but checking this will prevent early bad draws with null FOV.
+    // XR eats the error, but handle it anyways to keep a clean output log.
+    for (VREye eye : {VR_EYE_LEFT, VR_EYE_RIGHT})
+    {
+        const XrFovf& fov = views_[eye].fov;
+        if (fov.angleLeft == 0 || fov.angleRight == 0 || fov.angleUp == 0 || fov.angleDown == 0)
+            return;
+    }
+
+    temp_.eyes_[VR_EYE_LEFT].subImage.imageArrayIndex = 0;
+    temp_.eyes_[VR_EYE_LEFT].subImage.swapchain = swapChain_->GetHandle();
+    temp_.eyes_[VR_EYE_LEFT].subImage.imageRect = {{0, 0}, {eyeTextureSize_.x_, eyeTextureSize_.y_}};
+    temp_.eyes_[VR_EYE_LEFT].fov = views_[VR_EYE_LEFT].fov;
+    temp_.eyes_[VR_EYE_LEFT].pose = views_[VR_EYE_LEFT].pose;
+
+    temp_.eyes_[VR_EYE_RIGHT].subImage.imageArrayIndex = 0;
+    temp_.eyes_[VR_EYE_RIGHT].subImage.swapchain = swapChain_->GetHandle();
+    temp_.eyes_[VR_EYE_RIGHT].subImage.imageRect = {{eyeTextureSize_.x_, 0}, {eyeTextureSize_.x_, eyeTextureSize_.y_}};
+    temp_.eyes_[VR_EYE_RIGHT].fov = views_[VR_EYE_RIGHT].fov;
+    temp_.eyes_[VR_EYE_RIGHT].pose = views_[VR_EYE_RIGHT].pose;
+
+    if (depthChain_)
+    {
+        temp_.depth_[VR_EYE_LEFT].subImage.imageArrayIndex = 0;
+        temp_.depth_[VR_EYE_LEFT].subImage.swapchain = depthChain_->GetHandle();
+        temp_.depth_[VR_EYE_LEFT].subImage.imageRect = {{0, 0}, {eyeTextureSize_.x_, eyeTextureSize_.y_}};
+        temp_.depth_[VR_EYE_LEFT].minDepth = 0.0f; // spec says range of 0-1, so doesn't respect GL -1 to 1?
+        temp_.depth_[VR_EYE_LEFT].maxDepth = 1.0f;
+        temp_.depth_[VR_EYE_LEFT].nearZ = rig_.nearDistance_;
+        temp_.depth_[VR_EYE_LEFT].farZ = rig_.farDistance_;
+
+        temp_.depth_[VR_EYE_RIGHT].subImage.imageArrayIndex = 0;
+        temp_.depth_[VR_EYE_RIGHT].subImage.swapchain = depthChain_->GetHandle();
+        temp_.depth_[VR_EYE_RIGHT].subImage.imageRect = {{eyeTextureSize_.x_, 0}, {eyeTextureSize_.x_, eyeTextureSize_.y_}};
+        temp_.depth_[VR_EYE_RIGHT].minDepth = 0.0f;
+        temp_.depth_[VR_EYE_RIGHT].maxDepth = 1.0f;
+        temp_.depth_[VR_EYE_RIGHT].nearZ = rig_.nearDistance_;
+        temp_.depth_[VR_EYE_RIGHT].farZ = rig_.farDistance_;
+
+        // These are chained to the relevant eye, not passed in through another mechanism.
+        temp_.eyes_[VR_EYE_LEFT].next = &temp_.depth_[VR_EYE_LEFT];
+        temp_.eyes_[VR_EYE_RIGHT].next = &temp_.depth_[VR_EYE_RIGHT];
+    }
+    else
+    {
+        temp_.eyes_[VR_EYE_LEFT].next = nullptr;
+        temp_.eyes_[VR_EYE_RIGHT].next = nullptr;
+    }
+
+    temp_.projectionLayer_.viewCount = 2;
+    temp_.projectionLayer_.views = temp_.eyes_;
+    temp_.projectionLayer_.space = headSpace_.Raw();
+
+    temp_.layers_[0] = reinterpret_cast<XrCompositionLayerBaseHeader*>(&temp_.projectionLayer_);
+
+    endInfo.layerCount = 1;
+    endInfo.layers = temp_.layers_;
+}
+
+void OpenXR::EndFrame(XrFrameEndInfo& endInfo)
+{
+    endInfo.environmentBlendMode = blendMode_;
+    endInfo.displayTime = predictedTime_;
+
+    URHO3D_CHECK_OPENXR(xrEndFrame(session_.Raw(), &endInfo));
+}
+
 void OpenXR::HandleEndRendering()
 {
-    if (IsLive())
+    if (!IsConnected())
+        return;
+
+    if (IsRunning())
     {
-#define CHECKVIEW(EYE) (views_[EYE].fov.angleLeft == 0 || views_[EYE].fov.angleRight == 0 || views_[EYE].fov.angleUp == 0 || views_[EYE].fov.angleDown == 0)
-
-        auto renderDevice = GetSubsystem<RenderDevice>();
-        renderDevice->GetImmediateContext()->Flush();
-
-        XrSwapchainImageReleaseInfo releaseInfo = { XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
-        xrReleaseSwapchainImage(swapChain_->GetHandle(), &releaseInfo);
-        if (depthChain_)
+        XrFrameEndInfo endInfo{XR_TYPE_FRAME_END_INFO};
+        if (IsVisible())
         {
-            XrSwapchainImageReleaseInfo releaseInfo = { XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO };
-            xrReleaseSwapchainImage(depthChain_->GetHandle(), &releaseInfo);
+            ReleaseSwapChainImages();
+            LinkImagesToFrameInfo(endInfo);
         }
 
-        // it's harmless but checking this will prevent early bad draws with null FOV
-        // XR eats the error, but handle it anyways to keep a clean output log
-        if (CHECKVIEW(VR_EYE_LEFT) || CHECKVIEW(VR_EYE_RIGHT))
-            return;
-
-        XrCompositionLayerProjectionView eyes[2] = { { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW }, { XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW } };
-        eyes[VR_EYE_LEFT].subImage.imageArrayIndex = 0;
-        eyes[VR_EYE_LEFT].subImage.swapchain = swapChain_->GetHandle();
-        eyes[VR_EYE_LEFT].subImage.imageRect = { { 0, 0 }, { eyeTextureSize_.x_, eyeTextureSize_.y_} };
-        eyes[VR_EYE_LEFT].fov = views_[VR_EYE_LEFT].fov;
-        eyes[VR_EYE_LEFT].pose = views_[VR_EYE_LEFT].pose;
-
-        eyes[VR_EYE_RIGHT].subImage.imageArrayIndex = 0;
-        eyes[VR_EYE_RIGHT].subImage.swapchain = swapChain_->GetHandle();
-        eyes[VR_EYE_RIGHT].subImage.imageRect = { { eyeTextureSize_.x_, 0 }, { eyeTextureSize_.x_, eyeTextureSize_.y_} };
-        eyes[VR_EYE_RIGHT].fov = views_[VR_EYE_RIGHT].fov;
-        eyes[VR_EYE_RIGHT].pose = views_[VR_EYE_RIGHT].pose;
-
-        static XrCompositionLayerDepthInfoKHR depth[2] = {
-                { XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR }, { XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR }
-        };
-
-        if (depthChain_)
-        {
-            // depth
-            depth[VR_EYE_LEFT].subImage.imageArrayIndex = 0;
-            depth[VR_EYE_LEFT].subImage.swapchain = depthChain_->GetHandle();
-            depth[VR_EYE_LEFT].subImage.imageRect = { { 0, 0 }, { eyeTextureSize_.x_, eyeTextureSize_.y_} };
-            depth[VR_EYE_LEFT].minDepth = 0.0f; // spec says range of 0-1, so doesn't respect GL -1 to 1?
-            depth[VR_EYE_LEFT].maxDepth = 1.0f;
-            depth[VR_EYE_LEFT].nearZ = rig_.nearDistance_;
-            depth[VR_EYE_LEFT].farZ = rig_.farDistance_;
-
-            depth[VR_EYE_RIGHT].subImage.imageArrayIndex = 0;
-            depth[VR_EYE_RIGHT].subImage.swapchain = depthChain_->GetHandle();
-            depth[VR_EYE_RIGHT].subImage.imageRect = { { eyeTextureSize_.x_, 0 }, { eyeTextureSize_.x_, eyeTextureSize_.y_} };
-            depth[VR_EYE_RIGHT].minDepth = 0.0f;
-            depth[VR_EYE_RIGHT].maxDepth = 1.0f;
-            depth[VR_EYE_RIGHT].nearZ = rig_.nearDistance_;
-            depth[VR_EYE_RIGHT].farZ = rig_.farDistance_;
-
-            // These are chained to the relevant eye, not passed in through another mechanism.
-            eyes[VR_EYE_LEFT].next = &depth[VR_EYE_LEFT];
-            eyes[VR_EYE_RIGHT].next = &depth[VR_EYE_RIGHT];
-        }
-
-        XrCompositionLayerProjection proj = { XR_TYPE_COMPOSITION_LAYER_PROJECTION };
-        proj.viewCount = 2;
-        proj.views = eyes;
-        proj.space = headSpace_.Raw();
-
-        XrCompositionLayerBaseHeader* header = (XrCompositionLayerBaseHeader*)&proj;
-
-        XrFrameEndInfo endInfo = { XR_TYPE_FRAME_END_INFO };
-        endInfo.layerCount = 1;
-        endInfo.layers = &header;
-        endInfo.environmentBlendMode = blendMode_;
-        endInfo.displayTime = predictedTime_;
-
-        xrEndFrame(session_.Raw(), &endInfo);
+        EndFrame(endInfo);
     }
 }
 
@@ -1699,14 +1791,8 @@ void OpenXR::SetCurrentActionSet(SharedPtr<XRActionGroup> set)
     }
 }
 
-void OpenXR::UpdateBindings(float t)
+void OpenXR::UpdateBindings()
 {
-    if (instance_ == 0)
-        return;
-
-    if (!IsLive())
-        return;
-
     auto& eventData = GetEventDataMap();
     using namespace VRBindingChange;
 
@@ -1811,7 +1897,7 @@ void OpenXR::UpdateBindings(float t)
 
 void OpenXR::TriggerHaptic(VRHand hand, float durationSeconds, float cyclesPerSec, float amplitude)
 {
-    if (!activeActionSet_ || !IsLive())
+    if (!activeActionSet_ || !IsFocused())
         return;
 
     for (XRBinding* binding : activeActionSet_->GetBindings())
@@ -1894,7 +1980,7 @@ void OpenXR::GetHandVelocity(VRHand hand, Vector3* linear, Vector3* angular) con
 
 void OpenXR::UpdateHands()
 {
-    if (!IsLive() || !rig_.IsValid())
+    if (!rig_.IsValid())
         return;
 
     // Check for changes in controller model state, if so, do reload as required.
@@ -1944,7 +2030,7 @@ void OpenXR::UpdateHands()
 
 void OpenXR::UpdateControllerModels()
 {
-    if (!features_.controllerModel_ || !IsLive())
+    if (!features_.controllerModel_)
         return;
 
     for (const VRHand hand : {VR_HAND_LEFT, VR_HAND_RIGHT})

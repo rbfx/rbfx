@@ -24,6 +24,7 @@
 
 #include "Sample.h"
 
+#include <Urho3D/UI/Text.h>
 #include <Urho3D/XR/VirtualReality.h>
 
 namespace Urho3D
@@ -53,9 +54,10 @@ public:
     void Stop() override;
 
 private:
-    void SetupXRScene();
-
-    void Update(StringHash eventID, VariantMap& eventData);
+    /// Periodically update the scene.
+    void Update();
+    /// Return VR status string.
+    ea::string GetStatus() const;
 
     /// Construct the scene content.
     void CreateScene();
@@ -72,4 +74,6 @@ private:
 
     /// Container of all interactive dynamic objects
     SharedPtr<Node> dynamicObjects_;
+    /// Text element displayed on the flat screen.
+    SharedPtr<Text> statusText_;
 };

@@ -28,10 +28,8 @@
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Model.h>
-#include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/StaticModel.h>
-#include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/FreeFlyController.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Physics/CollisionShape.h>
@@ -40,20 +38,13 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Font.h>
-#include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
-#include <Urho3D/XR/VirtualReality.h>
 #include <Urho3D/XR/VREvents.h>
 #include <Urho3D/XR/VRRig.h>
 #include <Urho3D/XR/VRUtils.h>
+#include <Urho3D/XR/VirtualReality.h>
 
 #include <Urho3D/DebugNew.h>
-
-static const auto TextBoxName = "XR_INFO";
-static const auto MSG_XR_INITIALIZING = "XR is initializing";
-static const auto MSG_XR_FAILED = "XR failed to initialize";
-static const auto MSG_XR_RUNNING = "XR is running, put on your headset";
-static const auto MSG_XR_SLEEPING = "XR is running but not updating";
 
 ButtonCommand turnLeft = { 4 };
 ButtonCommand turnRight = { 2 };
@@ -75,6 +66,9 @@ void HelloVR::Start()
     // Execute base class startup
     Sample::Start();
 
+    // Initialize VR session
+    virtualReality->InitializeSession(VRSessionParameters{"XR/DefaultManifest.xml"});
+
     // Create the scene content
     CreateScene();
 
@@ -88,11 +82,8 @@ void HelloVR::Start()
     SetMouseMode(MM_RELATIVE);
     SetMouseVisible(false);
 
-    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(HelloVR, Update));
-
-    virtualReality->InitializeSession(VRSessionParameters{"XR/DefaultManifest.xml"});
-
-    SetupXRScene();
+    // Subscribe to necessary events
+    SubscribeToEvent(E_UPDATE, &HelloVR::Update);
 }
 
 void HelloVR::Stop()
@@ -119,11 +110,18 @@ void HelloVR::CreateScene()
     // Create a scene node for the camera, which we will move around
     // The camera will use default settings (1000 far clip distance, 45 degrees FOV, set aspect ratio automatically)
     cameraNode_ = scene_->CreateChild("Camera");
+    cameraNode_->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
     cameraNode_->CreateComponent<Camera>();
     cameraNode_->CreateComponent<FreeFlyController>();
 
-    // Set an initial position for the camera scene node above the plane
-    cameraNode_->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
+    // Load the rig from the scene
+    Node* rigNode = scene_->GetChild("VRRig");
+    VRRig* rig = rigNode->GetComponent<VRRig>();
+    rig->Activate();
+
+    // Create kinematic bodies for hands
+    SetupHandComponents(rig->GetLeftHandPose(), rig->GetLeftHandAim());
+    SetupHandComponents(rig->GetRightHandPose(), rig->GetRightHandAim());
 }
 
 void HelloVR::CreateInstructions()
@@ -132,14 +130,13 @@ void HelloVR::CreateInstructions()
     auto* ui = GetSubsystem<UI>();
 
     // Construct new Text object, set string to display and font to use
-    auto* instructionText = GetUIRoot()->CreateChild<Text>(TextBoxName);
-    instructionText->SetText(MSG_XR_INITIALIZING);
-    instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
+    statusText_ = GetUIRoot()->CreateChild<Text>("VR Status");
+    statusText_->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
 
     // Position the text relative to the screen center
-    instructionText->SetHorizontalAlignment(HA_CENTER);
-    instructionText->SetVerticalAlignment(VA_CENTER);
-    instructionText->SetPosition(0, GetUIRoot()->GetHeight() / 4);
+    statusText_->SetHorizontalAlignment(HA_CENTER);
+    statusText_->SetVerticalAlignment(VA_CENTER);
+    statusText_->SetPosition(0, GetUIRoot()->GetHeight() / 4);
 }
 
 void HelloVR::SetupViewport()
@@ -151,17 +148,6 @@ void HelloVR::SetupViewport()
     // use, but now we just use full screen and default render path configured in the engine command line options
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     SetViewport(0, viewport);
-}
-
-void HelloVR::SetupXRScene()
-{
-    Node* rigNode = scene_->GetChild("VRRig");
-    VRRig* rig = rigNode->GetComponent<VRRig>();
-    rig->Activate();
-
-    // Create kinematic bodies for hands
-    SetupHandComponents(rig->GetLeftHandPose(), rig->GetLeftHandAim());
-    SetupHandComponents(rig->GetRightHandPose(), rig->GetRightHandAim());
 }
 
 void HelloVR::SetupHandComponents(Node* handPoseNode, Node* handAimNode)
@@ -244,25 +230,18 @@ void HelloVR::ReleaseDynamicObject(Node* handNode)
     }
 }
 
-void HelloVR::Update(StringHash eventID, VariantMap& eventData)
+void HelloVR::Update()
 {
+    statusText_->SetText(GetStatus());
+
     auto virtualReality = GetSubsystem<VirtualReality>();
     if (!virtualReality)
         return;
 
-    // Update prompt on the flat screen
-    if (auto textElement = dynamic_cast<Text*>(GetUIRoot()->GetChild(TextBoxName, false)))
-    {
-        if (virtualReality->IsLive())
-            textElement->SetText(MSG_XR_RUNNING);
-        else
-            textElement->SetText(MSG_XR_SLEEPING);
-    }
-
     // Get and check the rig
     const VRRigDesc& rigDesc = virtualReality->GetRig();
     auto rigNode = scene_->GetChild("VRRig");
-    if (!virtualReality->IsLive() || !rigNode || !rigDesc.IsValid())
+    if (!virtualReality->IsVisible() || !rigNode || !rigDesc.IsValid())
         return;
 
     // Use left and right grab buttons to grab and release objects
@@ -326,4 +305,19 @@ void HelloVR::Update(StringHash eventID, VariantMap& eventData)
         const Vector3 direction = handAim->GetWorldDirection();
         debug->AddLine(position, position + direction * 2, Color::WHITE, false);
     }
+}
+
+ea::string HelloVR::GetStatus() const
+{
+    auto virtualReality = GetSubsystem<VirtualReality>();
+    if (!virtualReality || !virtualReality->IsConnected())
+        return "VR is not initialized";
+    else if (virtualReality->IsFocused())
+        return "VR is visible and receives input";
+    else if (virtualReality->IsVisible())
+        return "VR is visible but the input is disabled";
+    else if (virtualReality->IsRunning())
+        return "VR is running but is not rendered";
+    else
+        return "VR is idle";
 }

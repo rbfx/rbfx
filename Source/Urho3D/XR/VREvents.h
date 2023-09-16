@@ -9,11 +9,6 @@
 namespace Urho3D
 {
 
-/// VR session has started.
-URHO3D_EVENT(E_VRSESSIONSTART, VRSessionStart)
-{
-}
-
 /// Paused VR session is being resumed, such as headset put back on.
 URHO3D_EVENT(E_VRRESUME, VRResume)
 {

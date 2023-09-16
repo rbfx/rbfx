@@ -239,10 +239,14 @@ namespace Urho3D
         /// Return the projection matrix for an eye.
         virtual Matrix4 GetProjection(VREye eye, float nearDist, float farDist) const = 0;
 
-        /// Returns true if our VR system is alive, but may not necessarilly actively rendering.
+        /// Returns whether the engine is connected to VR session.
         virtual bool IsConnected() const = 0;
-        /// Returns true if our VR system is alive, and actively rendering.
-        virtual bool IsLive() const = 0;
+        /// Returns whether the VR frame loop is running.
+        virtual bool IsRunning() const = 0;
+        /// Returns whether the VR session is presented to the user.
+        virtual bool IsVisible() const = 0;
+        /// Return whether the VR session accepts user input.
+        virtual bool IsFocused() const = 0;
 
         /// Attempts to retrieve an input binding.
         XRBinding* GetInputBinding(const ea::string& path) const;
