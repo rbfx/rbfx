@@ -263,11 +263,10 @@ ea::vector<XrViewConfigurationType> GetViewConfigurationsXR(XrInstance instance,
     return result;
 }
 
-ea::vector<XrViewConfigurationView> GetViewConfigurationViewsXR(XrInstance instance, XrSystemId system)
+ea::optional<EnumArray<XrViewConfigurationView, VREye>> GetViewConfigurationViewsXR(
+    XrInstance instance, XrSystemId system)
 {
-    ea::vector<XrViewConfigurationView> result;
-    result.push_back(XrViewConfigurationView{XR_TYPE_VIEW_CONFIGURATION_VIEW});
-    result.push_back(XrViewConfigurationView{XR_TYPE_VIEW_CONFIGURATION_VIEW});
+    EnumArray<XrViewConfigurationView, VREye> result{{XR_TYPE_VIEW_CONFIGURATION_VIEW}};
 
     unsigned count = 0;
     if (URHO3D_CHECK_OPENXR(xrEnumerateViewConfigurationViews(
@@ -276,7 +275,7 @@ ea::vector<XrViewConfigurationView> GetViewConfigurationViewsXR(XrInstance insta
         return result;
     }
 
-    return {};
+    return ea::nullopt;
 }
 
 #if VULKAN_SUPPORTED
@@ -815,11 +814,11 @@ XrActionType ToActionType(VariantType type)
     }
 }
 
-ea::array<XrPath, 2> GetHandPaths(XrInstance instance)
+EnumArray<XrPath, VRHand> GetHandPaths(XrInstance instance)
 {
-    ea::array<XrPath, 2> handPaths{};
-    xrStringToPath(instance, "/user/hand/left", &handPaths[VR_HAND_LEFT]);
-    xrStringToPath(instance, "/user/hand/right", &handPaths[VR_HAND_RIGHT]);
+    EnumArray<XrPath, VRHand> handPaths{};
+    xrStringToPath(instance, "/user/hand/left", &handPaths[VRHand::Left]);
+    xrStringToPath(instance, "/user/hand/right", &handPaths[VRHand::Right]);
     return handPaths;
 }
 
@@ -843,13 +842,13 @@ ea::pair<XrSpacePtr, XrSpacePtr> CreateActionSpaces(
     const auto handPaths = GetHandPaths(instance);
 
     XrSpace spaceLeft{};
-    spaceInfo.subactionPath = handPaths[VR_HAND_LEFT];
+    spaceInfo.subactionPath = handPaths[VRHand::Left];
     if (!URHO3D_CHECK_OPENXR(xrCreateActionSpace(session, &spaceInfo, &spaceLeft)))
         return {};
     const auto wrappedSpaceLeft = XrSpacePtr(spaceLeft, xrDestroySpace);
 
     XrSpace spaceRight{};
-    spaceInfo.subactionPath = handPaths[VR_HAND_RIGHT];
+    spaceInfo.subactionPath = handPaths[VRHand::Right];
     if (!URHO3D_CHECK_OPENXR(xrCreateActionSpace(session, &spaceInfo, &spaceRight)))
         return {};
     const auto wrappedSpaceRight = XrSpacePtr(spaceRight, xrDestroySpace);
@@ -904,16 +903,16 @@ ea::pair<SharedPtr<OpenXRBinding>, SharedPtr<OpenXRBinding>> CreateBinding(
         const bool isAimPose = element.GetBool("aim");
 
         const auto bindingLeft = MakeShared<OpenXRBinding>(context, name, localizedName, //
-            VR_HAND_LEFT, *type, isPose, isAimPose, actionSet, wrappedAction, handPaths[VR_HAND_LEFT], actionSpaces.first);
+            VRHand::Left, *type, isPose, isAimPose, actionSet, wrappedAction, handPaths[VRHand::Left], actionSpaces.first);
         const auto bindingRight = MakeShared<OpenXRBinding>(context, name, localizedName, //
-            VR_HAND_RIGHT, *type, isPose, isAimPose, actionSet, wrappedAction, handPaths[VR_HAND_RIGHT], actionSpaces.second);
+            VRHand::Right, *type, isPose, isAimPose, actionSet, wrappedAction, handPaths[VRHand::Right], actionSpaces.second);
 
         return {bindingLeft, bindingRight};
     }
     else
     {
         const auto binding = MakeShared<OpenXRBinding>(context, name, localizedName, //
-            VR_HAND_NONE, *type, false, false, actionSet, wrappedAction, XrPath{}, actionSpaces.first);
+            VRHand::None, *type, false, false, actionSet, wrappedAction, XrPath{}, actionSpaces.first);
         return {binding, binding};
     }
 }
@@ -1046,7 +1045,7 @@ void OpenXRActionGroup::AddBinding(OpenXRBinding* binding)
 
 OpenXRBinding* OpenXRActionGroup::FindBindingImpl(const ea::string& name)
 {
-    return static_cast<OpenXRBinding*>(XRActionGroup::FindBinding(name, VR_HAND_NONE));
+    return static_cast<OpenXRBinding*>(XRActionGroup::FindBinding(name, VRHand::None));
 }
 
 void OpenXRActionGroup::AttachToSession(XrSession session)
@@ -1122,7 +1121,7 @@ void OpenXRControllerModel::UpdateModel(XrSession session)
     if (!importer->LoadFileBinary(data))
         return;
 
-    const ea::string folder = Format("manual://OpenXR/ControllerModel/{}/", hand_ == VR_HAND_LEFT ? "Left" : "Right");
+    const ea::string folder = Format("manual://OpenXR/ControllerModel/{}/", hand_ == VRHand::Left ? "Left" : "Right");
     if (!importer->Process("", folder))
         return;
 
@@ -1276,21 +1275,21 @@ bool OpenXR::InitializeSystem(RenderBackend backend)
     }
 
     const auto views = GetViewConfigurationViewsXR(instance_.Raw(), system_);
-    if (views.empty())
+    if (!views)
         return false;
 
-    recommendedMultiSample_ = views[VR_EYE_LEFT].recommendedSwapchainSampleCount;
+    recommendedMultiSample_ = (*views)[VREye::Left].recommendedSwapchainSampleCount;
     recommendedEyeTextureSize_.x_ =
-        ea::min(views[VR_EYE_LEFT].recommendedImageRectWidth, views[VR_EYE_RIGHT].recommendedImageRectWidth);
+        ea::min((*views)[VREye::Left].recommendedImageRectWidth, (*views)[VREye::Right].recommendedImageRectWidth);
     recommendedEyeTextureSize_.y_ =
-        ea::min(views[VR_EYE_LEFT].recommendedImageRectHeight, views[VR_EYE_RIGHT].recommendedImageRectHeight);
+        ea::min((*views)[VREye::Left].recommendedImageRectHeight, (*views)[VREye::Right].recommendedImageRectHeight);
 
     if (!InitializeTweaks(backend))
         return false;
 
     if (features_.controllerModel_)
     {
-        for (const VRHand hand : {VR_HAND_LEFT, VR_HAND_RIGHT})
+        for (const VRHand hand : {VRHand::Left, VRHand::Right})
             controllerModels_[hand] = MakeShared<OpenXRControllerModel>(context_, hand, instance_.Raw());
     }
 
@@ -1369,14 +1368,12 @@ bool OpenXR::InitializeSession(const VRSessionParameters& params)
 
 void OpenXR::ShutdownSession()
 {
-    for (int i = 0; i < 2; ++i)
-    {
-        controllerModels_[i] = nullptr;
-        handGrips_[i] = nullptr;
-        handAims_[i] = nullptr;
-        handHaptics_[i] = nullptr;
-        views_[i] = {XR_TYPE_VIEW};
-    }
+    controllerModels_ = {};
+    handGrips_ = {};
+    handAims_ = {};
+    handHaptics_ = {};
+    views_ = {{XR_TYPE_VIEW}};
+
     manifest_ = nullptr;
     actionSets_.clear();
     activeActionSet_ = nullptr;
@@ -1586,20 +1583,21 @@ void OpenXR::LocateViewsAndSpaces()
     xrLocateSpace(viewSpace_.Raw(), headSpace_.Raw(), predictedTime_, &headLocation_);
 
     // Hands
-    for (int i = 0; i < 2; ++i)
+    for (VRHand hand : {VRHand::Left, VRHand::Right})
     {
-        if (handAims_[i])
+        if (handAims_[hand])
         {
             // ensure velocity is linked
-            handAims_[i]->location_.next = &handAims_[i]->velocity_;
-            xrLocateSpace(handAims_[i]->actionSpace_.Raw(), headSpace_.Raw(), predictedTime_, &handAims_[i]->location_);
+            handAims_[hand]->location_.next = &handAims_[hand]->velocity_;
+            xrLocateSpace(
+                handAims_[hand]->actionSpace_.Raw(), headSpace_.Raw(), predictedTime_, &handAims_[hand]->location_);
         }
 
-        if (handGrips_[i])
+        if (handGrips_[hand])
         {
-            handGrips_[i]->location_.next = &handGrips_[i]->velocity_;
+            handGrips_[hand]->location_.next = &handGrips_[hand]->velocity_;
             xrLocateSpace(
-                handGrips_[i]->actionSpace_.Raw(), headSpace_.Raw(), predictedTime_, &handGrips_[i]->location_);
+                handGrips_[hand]->actionSpace_.Raw(), headSpace_.Raw(), predictedTime_, &handGrips_[hand]->location_);
         }
     }
 
@@ -1611,7 +1609,7 @@ void OpenXR::LocateViewsAndSpaces()
 
     XrViewState viewState = {XR_TYPE_VIEW_STATE};
     unsigned numViews = 0;
-    xrLocateViews(session_.Raw(), &viewInfo, &viewState, 2, &numViews, views_);
+    xrLocateViews(session_.Raw(), &viewInfo, &viewState, 2, &numViews, views_.data());
 }
 
 void OpenXR::SynchronizeActions()
@@ -1684,55 +1682,55 @@ void OpenXR::LinkImagesToFrameInfo(XrFrameEndInfo& endInfo)
 {
     // It's harmless but checking this will prevent early bad draws with null FOV.
     // XR eats the error, but handle it anyways to keep a clean output log.
-    for (VREye eye : {VR_EYE_LEFT, VR_EYE_RIGHT})
+    for (VREye eye : {VREye::Left, VREye::Right})
     {
         const XrFovf& fov = views_[eye].fov;
         if (fov.angleLeft == 0 || fov.angleRight == 0 || fov.angleUp == 0 || fov.angleDown == 0)
             return;
     }
 
-    temp_.eyes_[VR_EYE_LEFT].subImage.imageArrayIndex = 0;
-    temp_.eyes_[VR_EYE_LEFT].subImage.swapchain = swapChain_->GetHandle();
-    temp_.eyes_[VR_EYE_LEFT].subImage.imageRect = {{0, 0}, {eyeTextureSize_.x_, eyeTextureSize_.y_}};
-    temp_.eyes_[VR_EYE_LEFT].fov = views_[VR_EYE_LEFT].fov;
-    temp_.eyes_[VR_EYE_LEFT].pose = views_[VR_EYE_LEFT].pose;
+    temp_.eyes_[VREye::Left].subImage.imageArrayIndex = 0;
+    temp_.eyes_[VREye::Left].subImage.swapchain = swapChain_->GetHandle();
+    temp_.eyes_[VREye::Left].subImage.imageRect = {{0, 0}, {eyeTextureSize_.x_, eyeTextureSize_.y_}};
+    temp_.eyes_[VREye::Left].fov = views_[VREye::Left].fov;
+    temp_.eyes_[VREye::Left].pose = views_[VREye::Left].pose;
 
-    temp_.eyes_[VR_EYE_RIGHT].subImage.imageArrayIndex = 0;
-    temp_.eyes_[VR_EYE_RIGHT].subImage.swapchain = swapChain_->GetHandle();
-    temp_.eyes_[VR_EYE_RIGHT].subImage.imageRect = {{eyeTextureSize_.x_, 0}, {eyeTextureSize_.x_, eyeTextureSize_.y_}};
-    temp_.eyes_[VR_EYE_RIGHT].fov = views_[VR_EYE_RIGHT].fov;
-    temp_.eyes_[VR_EYE_RIGHT].pose = views_[VR_EYE_RIGHT].pose;
+    temp_.eyes_[VREye::Right].subImage.imageArrayIndex = 0;
+    temp_.eyes_[VREye::Right].subImage.swapchain = swapChain_->GetHandle();
+    temp_.eyes_[VREye::Right].subImage.imageRect = {{eyeTextureSize_.x_, 0}, {eyeTextureSize_.x_, eyeTextureSize_.y_}};
+    temp_.eyes_[VREye::Right].fov = views_[VREye::Right].fov;
+    temp_.eyes_[VREye::Right].pose = views_[VREye::Right].pose;
 
     if (depthChain_)
     {
-        temp_.depth_[VR_EYE_LEFT].subImage.imageArrayIndex = 0;
-        temp_.depth_[VR_EYE_LEFT].subImage.swapchain = depthChain_->GetHandle();
-        temp_.depth_[VR_EYE_LEFT].subImage.imageRect = {{0, 0}, {eyeTextureSize_.x_, eyeTextureSize_.y_}};
-        temp_.depth_[VR_EYE_LEFT].minDepth = 0.0f; // spec says range of 0-1, so doesn't respect GL -1 to 1?
-        temp_.depth_[VR_EYE_LEFT].maxDepth = 1.0f;
-        temp_.depth_[VR_EYE_LEFT].nearZ = rig_.nearDistance_;
-        temp_.depth_[VR_EYE_LEFT].farZ = rig_.farDistance_;
+        temp_.depth_[VREye::Left].subImage.imageArrayIndex = 0;
+        temp_.depth_[VREye::Left].subImage.swapchain = depthChain_->GetHandle();
+        temp_.depth_[VREye::Left].subImage.imageRect = {{0, 0}, {eyeTextureSize_.x_, eyeTextureSize_.y_}};
+        temp_.depth_[VREye::Left].minDepth = 0.0f; // spec says range of 0-1, so doesn't respect GL -1 to 1?
+        temp_.depth_[VREye::Left].maxDepth = 1.0f;
+        temp_.depth_[VREye::Left].nearZ = rig_.nearDistance_;
+        temp_.depth_[VREye::Left].farZ = rig_.farDistance_;
 
-        temp_.depth_[VR_EYE_RIGHT].subImage.imageArrayIndex = 0;
-        temp_.depth_[VR_EYE_RIGHT].subImage.swapchain = depthChain_->GetHandle();
-        temp_.depth_[VR_EYE_RIGHT].subImage.imageRect = {{eyeTextureSize_.x_, 0}, {eyeTextureSize_.x_, eyeTextureSize_.y_}};
-        temp_.depth_[VR_EYE_RIGHT].minDepth = 0.0f;
-        temp_.depth_[VR_EYE_RIGHT].maxDepth = 1.0f;
-        temp_.depth_[VR_EYE_RIGHT].nearZ = rig_.nearDistance_;
-        temp_.depth_[VR_EYE_RIGHT].farZ = rig_.farDistance_;
+        temp_.depth_[VREye::Right].subImage.imageArrayIndex = 0;
+        temp_.depth_[VREye::Right].subImage.swapchain = depthChain_->GetHandle();
+        temp_.depth_[VREye::Right].subImage.imageRect = {{eyeTextureSize_.x_, 0}, {eyeTextureSize_.x_, eyeTextureSize_.y_}};
+        temp_.depth_[VREye::Right].minDepth = 0.0f;
+        temp_.depth_[VREye::Right].maxDepth = 1.0f;
+        temp_.depth_[VREye::Right].nearZ = rig_.nearDistance_;
+        temp_.depth_[VREye::Right].farZ = rig_.farDistance_;
 
         // These are chained to the relevant eye, not passed in through another mechanism.
-        temp_.eyes_[VR_EYE_LEFT].next = &temp_.depth_[VR_EYE_LEFT];
-        temp_.eyes_[VR_EYE_RIGHT].next = &temp_.depth_[VR_EYE_RIGHT];
+        temp_.eyes_[VREye::Left].next = &temp_.depth_[VREye::Left];
+        temp_.eyes_[VREye::Right].next = &temp_.depth_[VREye::Right];
     }
     else
     {
-        temp_.eyes_[VR_EYE_LEFT].next = nullptr;
-        temp_.eyes_[VR_EYE_RIGHT].next = nullptr;
+        temp_.eyes_[VREye::Left].next = nullptr;
+        temp_.eyes_[VREye::Right].next = nullptr;
     }
 
     temp_.projectionLayer_.viewCount = 2;
-    temp_.projectionLayer_.views = temp_.eyes_;
+    temp_.projectionLayer_.views = temp_.eyes_.data();
     temp_.projectionLayer_.space = headSpace_.Raw();
 
     temp_.layers_[0] = reinterpret_cast<XrCompositionLayerBaseHeader*>(&temp_.projectionLayer_);
@@ -1922,7 +1920,7 @@ void OpenXR::TriggerHaptic(VRHand hand, float durationSeconds, float cyclesPerSe
 
 Matrix3x4 OpenXR::GetHandTransform(VRHand hand) const
 {
-    if (hand == VR_HAND_NONE)
+    if (hand == VRHand::None)
         return Matrix3x4();
 
     if (!handGrips_[hand])
@@ -1938,7 +1936,7 @@ Matrix3x4 OpenXR::GetHandTransform(VRHand hand) const
 
 Matrix3x4 OpenXR::GetHandAimTransform(VRHand hand) const
 {
-    if (hand == VR_HAND_NONE)
+    if (hand == VRHand::None)
         return Matrix3x4();
 
     if (!handAims_[hand])
@@ -1952,7 +1950,7 @@ Matrix3x4 OpenXR::GetHandAimTransform(VRHand hand) const
 
 Ray OpenXR::GetHandAimRay(VRHand hand) const
 {
-    if (hand == VR_HAND_NONE)
+    if (hand == VRHand::None)
         return Ray();
 
     if (!handAims_[hand])
@@ -1966,7 +1964,7 @@ Ray OpenXR::GetHandAimRay(VRHand hand) const
 
 void OpenXR::GetHandVelocity(VRHand hand, Vector3* linear, Vector3* angular) const
 {
-    if (hand == VR_HAND_NONE)
+    if (hand == VRHand::None)
         return;
 
     if (!handGrips_[hand])
@@ -1992,7 +1990,7 @@ void OpenXR::UpdateHands()
     Node* rightAim = rig_.rightHandAim_;
 
     // we need valid handles for these guys
-    if (handGrips_[0] && handGrips_[1])
+    if (handGrips_[VRHand::Left] && handGrips_[VRHand::Right])
     {
         // TODO: can we do any tracking of our own such as using QEF for tracking recent velocity integration into position confidence
         // over the past interval of time to decide how much we trust integrating velocity when position has no-confidence / untracked.
@@ -2000,31 +1998,31 @@ void OpenXR::UpdateHands()
         // when tracking kicks back in again later. If velocity integration is valid there should be no issue - neither a pop,
         // it'll already pop in a normal position tracking lost recovery situation anyways.
 
-        const Quaternion leftRotation = ToQuaternion(handGrips_[VR_HAND_LEFT]->location_.pose.orientation);
-        const Vector3 leftPosition = ToVector3(handGrips_[VR_HAND_LEFT]->location_.pose.position);
+        const Quaternion leftRotation = ToQuaternion(handGrips_[VRHand::Left]->location_.pose.orientation);
+        const Vector3 leftPosition = ToVector3(handGrips_[VRHand::Left]->location_.pose.position);
 
         // these fields are super important to rationalize what's happened between sample points
         // sensor reads are effectively Planck timing it between quantum space-time
         leftHand->SetVar("PreviousTransformLocal", leftHand->GetTransformMatrix());
         leftHand->SetVar("PreviousTransformWorld", leftHand->GetWorldTransform());
-        leftHand->SetEnabled(handGrips_[VR_HAND_LEFT]->location_.locationFlags & (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT));
+        leftHand->SetEnabled(handGrips_[VRHand::Left]->location_.locationFlags & (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT));
         leftHand->SetPosition(leftPosition);
-        if (handGrips_[VR_HAND_LEFT]->location_.locationFlags & (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT))
+        if (handGrips_[VRHand::Left]->location_.locationFlags & (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT))
             leftHand->SetRotation(leftRotation);
 
-        const Quaternion rightRotation = ToQuaternion(handGrips_[VR_HAND_RIGHT]->location_.pose.orientation);
-        const Vector3 rightPosition = ToVector3(handGrips_[VR_HAND_RIGHT]->location_.pose.position);
+        const Quaternion rightRotation = ToQuaternion(handGrips_[VRHand::Right]->location_.pose.orientation);
+        const Vector3 rightPosition = ToVector3(handGrips_[VRHand::Right]->location_.pose.position);
 
         rightHand->SetVar("PreviousTransformLocal", leftHand->GetTransformMatrix());
         rightHand->SetVar("PreviousTransformWorld", leftHand->GetWorldTransform());
-        rightHand->SetEnabled(handGrips_[VR_HAND_RIGHT]->location_.locationFlags & (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT));
+        rightHand->SetEnabled(handGrips_[VRHand::Right]->location_.locationFlags & (XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_POSITION_TRACKED_BIT));
         rightHand->SetPosition(rightPosition);
-        if (handGrips_[VR_HAND_RIGHT]->location_.locationFlags & (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT))
+        if (handGrips_[VRHand::Right]->location_.locationFlags & (XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT))
             rightHand->SetRotation(rightRotation);
 
         // Setup aim nodes too
-        leftAim->SetTransformMatrix(GetHandAimTransform(VR_HAND_LEFT));
-        rightAim->SetTransformMatrix(GetHandAimTransform(VR_HAND_RIGHT));
+        leftAim->SetTransformMatrix(GetHandAimTransform(VRHand::Left));
+        rightAim->SetTransformMatrix(GetHandAimTransform(VRHand::Right));
     }
 }
 
@@ -2033,14 +2031,14 @@ void OpenXR::UpdateControllerModels()
     if (!features_.controllerModel_)
         return;
 
-    for (const VRHand hand : {VR_HAND_LEFT, VR_HAND_RIGHT})
+    for (const VRHand hand : {VRHand::Left, VRHand::Right})
         controllerModels_[hand]->UpdateModel(session_.Raw());
 
     if (rig_.leftController_)
-        UpdateControllerModel(VR_HAND_LEFT, rig_.leftController_);
+        UpdateControllerModel(VRHand::Left, rig_.leftController_);
 
     if (rig_.rightController_)
-        UpdateControllerModel(VR_HAND_RIGHT, rig_.rightController_);
+        UpdateControllerModel(VRHand::Right, rig_.rightController_);
 }
 
 void OpenXR::UpdateControllerModel(VRHand hand, Node* instanceNode)
@@ -2053,7 +2051,7 @@ void OpenXR::UpdateControllerModel(VRHand hand, Node* instanceNode)
         prefabReference->SetPrefab(model->GetPrefab());
 
         VariantMap& eventData = GetEventDataMap();
-        eventData[VRControllerChange::P_HAND] = hand;
+        eventData[VRControllerChange::P_HAND] = static_cast<int>(hand);
         SendEvent(E_VRCONTROLLERCHANGE, eventData);
     }
 

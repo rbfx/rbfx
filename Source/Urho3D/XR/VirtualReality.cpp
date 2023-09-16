@@ -55,7 +55,7 @@ XRBinding* XRActionGroup::FindBinding(const ea::string& name, VRHand hand) const
 {
     for (XRBinding* binding : bindings_)
     {
-        if (binding->GetName().comparei(name) == 0 && (hand == VR_HAND_NONE || hand == binding->Hand()))
+        if (binding->GetName().comparei(name) == 0 && (hand == VRHand::None || hand == binding->Hand()))
             return binding;
     }
     return nullptr;
@@ -143,11 +143,11 @@ void VirtualReality::UpdateCurrentRig()
         camera->SetFarClip(rig_.farDistance_);
     }
 
-    leftEyeCamera->SetProjection(GetProjection(VR_EYE_LEFT, rig_.nearDistance_, rig_.farDistance_));
-    rightEyeCamera->SetProjection(GetProjection(VR_EYE_RIGHT, rig_.nearDistance_, rig_.farDistance_));
+    leftEyeCamera->SetProjection(GetProjection(VREye::Left, rig_.nearDistance_, rig_.farDistance_));
+    rightEyeCamera->SetProjection(GetProjection(VREye::Right, rig_.nearDistance_, rig_.farDistance_));
 
-    leftEyeNode->SetTransformMatrix(GetEyeLocalTransform(VR_EYE_LEFT));
-    rightEyeNode->SetTransformMatrix(GetEyeLocalTransform(VR_EYE_RIGHT));
+    leftEyeNode->SetTransformMatrix(GetEyeLocalTransform(VREye::Left));
+    rightEyeNode->SetTransformMatrix(GetEyeLocalTransform(VREye::Right));
 
     const float ipdAdjust = ipdCorrection_ * 0.5f * 0.001f;
     leftEyeNode->Translate({ipdAdjust, 0, 0}, TS_LOCAL);
@@ -165,7 +165,7 @@ XRBinding* VirtualReality::GetInputBinding(const ea::string& path) const
 {
     if (activeActionSet_)
     {
-        if (XRBinding* binding = activeActionSet_->FindBinding(path, VR_HAND_NONE))
+        if (XRBinding* binding = activeActionSet_->FindBinding(path, VRHand::None))
             return binding;
     }
     return nullptr;

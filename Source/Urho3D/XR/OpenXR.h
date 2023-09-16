@@ -295,8 +295,8 @@ protected:
 
     OpenXRSwapChainPtr swapChain_;
     OpenXRSwapChainPtr depthChain_;
-    XrView views_[2]{{XR_TYPE_VIEW}, {XR_TYPE_VIEW}};
-    ea::array<SharedPtr<OpenXRControllerModel>, 2> controllerModels_;
+    EnumArray<XrView, VREye> views_{{XR_TYPE_VIEW}};
+    EnumArray<SharedPtr<OpenXRControllerModel>, VRHand> controllerModels_;
 
     // Pointless head-space.
     /// Location tracking of the head.
@@ -313,19 +313,17 @@ protected:
     XrSessionState sessionState_{};
 
     /// Cached grip pose bindings to avoid constant queries.
-    SharedPtr<OpenXRBinding> handGrips_[2];
+    EnumArray<SharedPtr<OpenXRBinding>, VRHand> handGrips_;
     /// Cached aim pose bindings to avoid constant queries.
-    SharedPtr<OpenXRBinding> handAims_[2];
+    EnumArray<SharedPtr<OpenXRBinding>, VRHand> handAims_;
     /// Cached haptic outputs to avoid constant queries.
-    SharedPtr<OpenXRBinding> handHaptics_[2];
+    EnumArray<SharedPtr<OpenXRBinding>, VRHand> handHaptics_;
 
     /// Temporary storage for internal structures.
     struct TemporaryStorage
     {
-        XrCompositionLayerProjectionView eyes_[2]{
-            {XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW}, {XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW}};
-        XrCompositionLayerDepthInfoKHR depth_[2]{
-            {XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR}, {XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR}};
+        EnumArray<XrCompositionLayerProjectionView, VREye> eyes_{{XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW}};
+        EnumArray<XrCompositionLayerDepthInfoKHR, VREye> depth_{{XR_TYPE_COMPOSITION_LAYER_DEPTH_INFO_KHR}};
         XrCompositionLayerProjection projectionLayer_{XR_TYPE_COMPOSITION_LAYER_PROJECTION};
         XrCompositionLayerBaseHeader* layers_[1];
     } temp_;

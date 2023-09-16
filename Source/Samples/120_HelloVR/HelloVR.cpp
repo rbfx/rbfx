@@ -245,41 +245,41 @@ void HelloVR::Update()
         return;
 
     // Use left and right grab buttons to grab and release objects
-    XRBinding* rightGrab = virtualReality->GetInputBinding("grab", VR_HAND_RIGHT);
+    XRBinding* rightGrab = virtualReality->GetInputBinding("grab", VRHand::Right);
     if (rightGrab && rigDesc.rightHandPose_)
     {
         const bool isPressed = rightGrab->GetFloat() == 1.0f;
         if (rightGrab->IsChanged())
         {
             if (isPressed)
-                GrabDynamicObject(rigDesc.rightHandPose_, VR_HAND_RIGHT);
+                GrabDynamicObject(rigDesc.rightHandPose_, VRHand::Right);
             else
                 ReleaseDynamicObject(rigDesc.rightHandPose_);
         }
     }
 
-    XRBinding* leftGrab = virtualReality->GetInputBinding("grab", VR_HAND_LEFT);
+    XRBinding* leftGrab = virtualReality->GetInputBinding("grab", VRHand::Left);
     if (leftGrab && rigDesc.leftHandPose_)
     {
         const bool isPressed = leftGrab->GetFloat() == 1.0f;
         if (leftGrab->IsChanged())
         {
             if (isPressed)
-                GrabDynamicObject(rigDesc.leftHandPose_, VR_HAND_LEFT);
+                GrabDynamicObject(rigDesc.leftHandPose_, VRHand::Left);
             else
                 ReleaseDynamicObject(rigDesc.leftHandPose_);
         }
     }
 
     // Use left stick to move based on where the user is looking
-    if (XRBinding* leftStick = virtualReality->GetInputBinding("stick", VR_HAND_LEFT))
+    if (XRBinding* leftStick = virtualReality->GetInputBinding("stick", VRHand::Left))
     {
         const Vector3 delta = SmoothLocomotionHead(rigNode, leftStick, 0.3f);
         rigNode->Translate(delta * 0.025f, TS_WORLD);
     }
 
     // Use right stick for left/right snap turning
-    if (XRBinding* rightStick = virtualReality->GetInputBinding("stick", VR_HAND_RIGHT))
+    if (XRBinding* rightStick = virtualReality->GetInputBinding("stick", VRHand::Right))
     {
         const auto cmd = JoystickAsDPad(rightStick, 0.3f);
 

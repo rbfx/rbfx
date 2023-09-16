@@ -198,9 +198,9 @@ int TrackpadAsTwoButton(XRBinding* trackpadPosition, XRBinding* trackpadClick, f
                 return 1; // up up and away
             else
             {
-                if (hand == VR_HAND_LEFT && pos.x_ > 0)
+                if (hand == VRHand::Left && pos.x_ > 0)
                     return 2; // inside toward body median plane
-                else if (hand == VR_HAND_RIGHT && pos.x_ < 0)
+                else if (hand == VRHand::Right && pos.x_ < 0)
                     return 2; // inside toward body median plane
             }
 

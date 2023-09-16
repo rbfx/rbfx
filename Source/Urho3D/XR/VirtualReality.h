@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "Urho3D/Container/FlagSet.h"
 #include "Urho3D/Graphics/Camera.h"
 #include "Urho3D/Graphics/Geometry.h"
 #include "Urho3D/Graphics/Texture2D.h"
@@ -54,20 +55,22 @@ namespace Urho3D
         OpenXR,
     };
 
-    /// Hand identification ID, not classed as it's frequently used as an index.
-    enum VRHand
+    /// Hand ID.
+    enum class VRHand
     {
-        VR_HAND_NONE = -1,
-        VR_HAND_LEFT = 0,
-        VR_HAND_RIGHT = 1
+        None = -1,
+        Left = 0,
+        Right = 1,
+        Count
     };
 
-    /// Eye identification ID, not classed as it's frequently used as an index.
-    enum VREye
+    /// Eye ID.
+    enum class VREye
     {
-        VR_EYE_NONE = -1,
-        VR_EYE_LEFT = 0,
-        VR_EYE_RIGHT = 1
+        None = -1,
+        Left = 0,
+        Right = 1,
+        Count
     };
 
     /// Wraps an input binding. Subclassed as required by interface implementations.
@@ -89,7 +92,7 @@ namespace Urho3D
         /// Returns true if this action is actively being used.
         bool IsActive() const { return active_; }
         /// Returns true if this action is bound to a hand.
-        bool IsHanded() const { return hand_ != VR_HAND_NONE; }
+        bool IsHanded() const { return hand_ != VRHand::None; }
         /// Returns the hand this action is bound to.
         VRHand Hand() const { return hand_; }
 
