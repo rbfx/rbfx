@@ -39,7 +39,7 @@ Vector3 SmoothLocomotionHead(Node* rigNode, XRBinding* joystickBinding, float de
     fore.Normalize();
     right.Normalize();
 
-    auto stickMotion = joystickBinding->GetVec2();
+    auto stickMotion = joystickBinding->GetVector2();
     const auto signX = Sign(stickMotion.x_);
     const auto signY = Sign(stickMotion.y_);
     stickMotion.x_ = Abs(stickMotion.x_) < deadZone ? 0.0f : signX * InverseLerp(deadZone, 1.0f, Abs(stickMotion.x_));
@@ -72,7 +72,7 @@ Vector3 SmoothLocomotionAim(Node* rigNode, XRBinding* joystickBinding, VRHand wh
     fore.Normalize();
     right.Normalize();
 
-    auto stickMotion = joystickBinding->GetVec2();
+    auto stickMotion = joystickBinding->GetVector2();
     const auto signX = Sign(stickMotion.x_);
     const auto signY = Sign(stickMotion.x_);
     stickMotion.x_ = Abs(stickMotion.x_) < deadZone ? 0.0f : signX * DENORMALIZE(Abs(stickMotion.x_), deadZone, 1.0f);
@@ -111,7 +111,7 @@ int TrackpadAsDPad(XRBinding* trackpadPosition, XRBinding* trackpadClick, float 
 
     if (trackpadClick->GetBool())
     {
-        auto pos = trackpadPosition->GetVec2();
+        auto pos = trackpadPosition->GetVector2();
         if (pos.x_ < centerRadius && pos.x_ > -centerRadius && pos.y_ < centerRadius && pos.y_ > -centerRadius)
             return 5; // center
 
@@ -136,7 +136,7 @@ int JoystickAsDPad(XRBinding* joystickPosition, float centerDeadzone)
     if (!joystickPosition->IsActive())
         return 0;
 
-    auto pos = joystickPosition->GetVec2();
+    auto pos = joystickPosition->GetVector2();
     if (Abs(pos.x_) < centerDeadzone && Abs(pos.y_) < centerDeadzone)
         return 0; // inside deadzone
 
@@ -179,7 +179,7 @@ int TrackpadAsTwoButton(XRBinding* trackpadPosition, XRBinding* trackpadClick, f
     if (trackpadDown)
         *trackpadDown = trackpadClick->GetBool();
 
-    auto pos = trackpadPosition->GetVec2();
+    auto pos = trackpadPosition->GetVector2();
 
     if (Abs(pos.x_) < centerDeadzone && Abs(pos.y_) < centerDeadzone)
         return 0;

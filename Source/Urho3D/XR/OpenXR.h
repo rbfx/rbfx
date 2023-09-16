@@ -103,6 +103,9 @@ public:
         VariantType dataType, bool isPose, bool isAimPose, XrActionSet set, XrActionPtr action, XrPath subPath,
         XrSpacePtr actionSpace);
 
+    void Update(XrSession session, float scaleCorrection);
+    void UpdateBoundState(XrSession session);
+
 public:
     /// Owning ActionSet that contains this action.
     const XrActionSet set_{};
@@ -253,7 +256,6 @@ protected:
 
     bool OpenSession();
     void BindActions(XMLFile* xmlFile);
-    void UpdateBindings();
     void UpdateBindingBound();
 
     void PollEvents();

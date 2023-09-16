@@ -77,8 +77,6 @@ class URHO3D_API XRBinding : public Object
     URHO3D_OBJECT(XRBinding, Object);
 
 public:
-    friend class OpenXR;
-
     XRBinding(Context* context, const ea::string& name, const ea::string& localizedName, VRHand hand,
         VariantType dataType, bool isPose, bool isAimPose);
 
@@ -92,29 +90,38 @@ public:
     /// Returns true if this action is bound to a hand.
     bool IsHanded() const { return hand_ != VRHand::None; }
     /// Returns the hand this action is bound to.
-    VRHand Hand() const { return hand_; }
+    VRHand GetHand() const { return hand_; }
 
+    /// Variant accessors.
+    /// @{
     bool GetBool(float pressThreshold) const { return storedData_.GetFloat() > pressThreshold; }
     bool GetBool() const { return storedData_.GetBool(); }
     float GetFloat() const { return storedData_.GetFloat(); }
-    Vector2 GetVec2() const { return storedData_.GetVector2(); }
-    Vector3 GetVec3() const { return storedData_.GetVector3(); }
-    Vector3 GetPos() const { return storedData_.GetMatrix3x4().Translation(); }
-    Quaternion GetRot() const { return storedData_.GetMatrix3x4().Rotation(); }
-    Matrix3x4 GetTransform() const { return storedData_.GetMatrix3x4(); }
+    Vector2 GetVector2() const { return storedData_.GetVector2(); }
+    Vector3 GetVector3() const { return storedData_.GetVector3(); }
+    Vector3 GetPosition() const { return storedData_.GetMatrix3x4().Translation(); }
+    Quaternion GetRotation() const { return storedData_.GetMatrix3x4().Rotation(); }
+    const Matrix3x4& GetTransformMatrix() const { return storedData_.GetMatrix3x4(); }
+    /// @}
 
-    /// Retrieve direct variant value stored.
-    Variant GetData() const { return storedData_; }
-    /// Retrieve the delta variant stored.
-    Variant GetDelta() const { return delta_; }
+    /// Returns stored variant value.
+    const Variant& GetData() const { return storedData_; }
+    /// Returns linear velocity of the pose.
+    const Vector3& GetLinearVelocity() const { return linearVelocity_; }
+    /// Returns angular velocity of the pose.
+    const Vector3& GetAngularVelocity() const { return angularVelocity_; }
 
     /// Returns true if this action is bound as a live input possibility.
     bool IsBound() const { return isBound_; }
 
     /// Returns true if this is an input method action.
-    bool IsInput() const { return haptic_ == false; }
+    bool IsInput() const { return !haptic_; }
     /// Returns true if this is an output haptic action.
     bool IsHaptic() const { return haptic_; }
+    /// Return true if this action is hand grip pose.
+    bool IsGripPose() const { return isPose_; }
+    /// Return true if this action is hand aim pose.
+    bool IsAimPose() const { return isAimPose_; }
 
 protected:
     /// Internal name for the action.
@@ -140,10 +147,11 @@ protected:
     bool isBound_ = false;
     /// Stored data retrieved from input updates.
     Variant storedData_;
-    /// Optional additional data such as velocities for a pose.
-    Variant extraData_[2];
-    /// Difference between the current and previous values.
-    Variant delta_;
+
+    /// Optional: linear velocity of the pose.
+    Vector3 linearVelocity_;
+    /// Optional: angular velocity of the pose.
+    Vector3 angularVelocity_;
 };
 
 /// Represents a logical action set in the underlying APIs.

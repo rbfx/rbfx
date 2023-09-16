@@ -1025,6 +1025,98 @@ OpenXRBinding::OpenXRBinding(Context* context, const ea::string& name, const ea:
 {
 }
 
+void OpenXRBinding::Update(XrSession session, float scaleCorrection)
+{
+    if (!action_ || haptic_)
+        return;
+
+    XrActionStateGetInfo getInfo = {XR_TYPE_ACTION_STATE_GET_INFO};
+    getInfo.action = action_.Raw();
+    getInfo.subactionPath = subPath_;
+
+    switch (dataType_)
+    {
+    case VAR_BOOL:
+    {
+        XrActionStateBoolean boolState = {XR_TYPE_ACTION_STATE_BOOLEAN};
+        if (URHO3D_CHECK_OPENXR(xrGetActionStateBoolean(session, &getInfo, &boolState)))
+        {
+            changed_ = boolState.changedSinceLastSync != XR_FALSE;
+            active_ = boolState.isActive;
+            storedData_ = boolState.currentState;
+        }
+        break;
+    }
+    case VAR_FLOAT:
+    {
+        XrActionStateFloat floatState = {XR_TYPE_ACTION_STATE_FLOAT};
+        if (URHO3D_CHECK_OPENXR(xrGetActionStateFloat(session, &getInfo, &floatState)))
+        {
+            changed_ = floatState.changedSinceLastSync || !Equals(floatState.currentState, GetFloat());
+            active_ = floatState.isActive;
+            storedData_ = floatState.currentState;
+        }
+        break;
+    }
+    case VAR_VECTOR2:
+    {
+        XrActionStateVector2f vectorState = {XR_TYPE_ACTION_STATE_VECTOR2F};
+        if (URHO3D_CHECK_OPENXR(xrGetActionStateVector2f(session, &getInfo, &vectorState)))
+        {
+            changed_ = vectorState.changedSinceLastSync;
+            active_ = vectorState.isActive;
+            storedData_ = Vector2{vectorState.currentState.x, vectorState.currentState.y};
+        }
+        break;
+    }
+    case VAR_VECTOR3:
+    {
+        XrActionStatePose poseState = {XR_TYPE_ACTION_STATE_POSE};
+        if (URHO3D_CHECK_OPENXR(xrGetActionStatePose(session, &getInfo, &poseState)))
+        {
+            changed_ = true;
+            active_ = poseState.isActive;
+            storedData_ = ToVector3(location_.pose.position) * scaleCorrection;
+            linearVelocity_ = ToVector3(velocity_.linearVelocity) * scaleCorrection;
+        }
+        break;
+    }
+    case VAR_MATRIX3X4:
+    {
+        XrActionStatePose poseState = {XR_TYPE_ACTION_STATE_POSE};
+        if (URHO3D_CHECK_OPENXR(xrGetActionStatePose(session, &getInfo, &poseState)))
+        {
+            changed_ = true;
+            active_ = poseState.isActive;
+            storedData_ = ToMatrix3x4(location_.pose, scaleCorrection);
+            linearVelocity_ = ToVector3(velocity_.linearVelocity) * scaleCorrection;
+            angularVelocity_ = ToVector3(velocity_.angularVelocity) * scaleCorrection;
+        }
+        break;
+    }
+    default: URHO3D_ASSERT(false); break;
+    }
+
+    // Send events for changed bindings, except spatial bindings which effectively always change
+    if (changed_ && dataType_ != VAR_VECTOR3 && dataType_ != VAR_MATRIX3X4)
+    {
+        VariantMap& eventData = GetEventDataMap();
+        eventData[VRBindingChange::P_BINDING] = this;
+        SendEvent(E_VRBINDINGCHANGED, eventData);
+    }
+}
+
+void OpenXRBinding::UpdateBoundState(XrSession session)
+{
+    XrBoundSourcesForActionEnumerateInfo info = {XR_TYPE_BOUND_SOURCES_FOR_ACTION_ENUMERATE_INFO};
+    info.action = action_.Raw();
+
+    unsigned numSources = 0;
+    xrEnumerateBoundSourcesForAction(session, &info, 0, &numSources, nullptr);
+
+    isBound_ = numSources > 0;
+}
+
 OpenXRActionGroup::OpenXRActionGroup(
     Context* context, const ea::string& name, const ea::string& localizedName, XrActionSetPtr set)
     : XRActionGroup(context, name, localizedName)
@@ -1614,7 +1706,11 @@ void OpenXR::SynchronizeActions()
     auto setImpl = static_cast<OpenXRActionGroup*>(activeActionSet_.Get());
     setImpl->Synchronize(session_.Raw());
 
-    UpdateBindings();
+    for (XRBinding* binding : activeActionSet_->GetBindings())
+    {
+        const auto bindingImpl = static_cast<OpenXRBinding*>(binding);
+        bindingImpl->Update(session_.Raw(), scaleCorrection_);
+    }
 }
 
 void OpenXR::HandleBeginFrame()
@@ -1784,110 +1880,6 @@ void OpenXR::SetCurrentActionSet(SharedPtr<XRActionGroup> set)
     }
 }
 
-void OpenXR::UpdateBindings()
-{
-    auto& eventData = GetEventDataMap();
-    using namespace VRBindingChange;
-
-    eventData[VRBindingChange::P_ACTIVE] = true;
-
-    for (auto b : activeActionSet_->GetBindings())
-    {
-        auto bind = b->Cast<OpenXRBinding>();
-        if (bind->action_)
-        {
-            eventData[P_NAME] = bind->localizedName_;
-            eventData[P_BINDING] = bind;
-
-#define SEND_EVENT eventData[P_DATA] = bind->storedData_; eventData[P_DELTA] = bind->delta_;
-
-            XrActionStateGetInfo getInfo = { XR_TYPE_ACTION_STATE_GET_INFO };
-            getInfo.action = bind->action_.Raw();
-            getInfo.subactionPath = bind->subPath_;
-
-            switch (bind->dataType_)
-            {
-            case VAR_BOOL: {
-                XrActionStateBoolean boolC = { XR_TYPE_ACTION_STATE_BOOLEAN };
-                if (xrGetActionStateBoolean(session_.Raw(), &getInfo, &boolC) == XR_SUCCESS)
-                {
-                    bind->active_ = boolC.isActive;
-                    if (boolC.changedSinceLastSync)
-                    {
-                        bind->storedData_ = boolC.currentState;
-                        bind->changed_ = true;
-                        SEND_EVENT;
-                    }
-                    else
-                        bind->changed_ = false;
-                }
-            }
-                break;
-            case VAR_FLOAT: {
-                XrActionStateFloat floatC = { XR_TYPE_ACTION_STATE_FLOAT };
-                if (xrGetActionStateFloat(session_.Raw(), &getInfo, &floatC) == XR_SUCCESS)
-                {
-                    bind->active_ = floatC.isActive;
-                    if (floatC.changedSinceLastSync || !Equals(floatC.currentState, bind->GetFloat()))
-                    {
-                        bind->storedData_ = floatC.currentState;
-                        bind->changed_ = true;
-                        SEND_EVENT;
-                    }
-                    else
-                        bind->changed_ = false;
-                }
-            }
-                break;
-            case VAR_VECTOR2: {
-                XrActionStateVector2f vec = { XR_TYPE_ACTION_STATE_VECTOR2F };
-                if (xrGetActionStateVector2f(session_.Raw(), &getInfo, &vec) == XR_SUCCESS)
-                {
-                    bind->active_ = vec.isActive;
-                    Vector2 v(vec.currentState.x, vec.currentState.y);
-                    if (vec.changedSinceLastSync)
-                    {
-                        bind->storedData_ = v;
-                        bind->changed_ = true;
-                        SEND_EVENT;
-                    }
-                    else
-                        bind->changed_ = false;
-                }
-            }
-                break;
-            case VAR_VECTOR3: {
-                XrActionStatePose pose = { XR_TYPE_ACTION_STATE_POSE };
-                if (xrGetActionStatePose(session_.Raw(), &getInfo, &pose) == XR_SUCCESS)
-                {
-                    // Should we be sending events for these? As it's tracking sensor stuff I think not? It's effectively always changing and we know that's the case.
-                    bind->active_ = pose.isActive;
-                    Vector3 v = ToVector3(bind->location_.pose.position) * scaleCorrection_;
-                    bind->storedData_ = v;
-                    bind->changed_ = true;
-                    bind->extraData_[0] = ToVector3(bind->velocity_.linearVelocity) * scaleCorrection_;
-                }
-            } break;
-            case VAR_MATRIX3X4: {
-                XrActionStatePose pose = { XR_TYPE_ACTION_STATE_POSE };
-                if (xrGetActionStatePose(session_.Raw(), &getInfo, &pose) == XR_SUCCESS)
-                {
-                    // Should we be sending events for these? As it's tracking sensor stuff I think not? It's effectively always changing and we know that's the case.
-                    bind->active_ = pose.isActive;
-                    Matrix3x4 m = ToMatrix3x4(bind->location_.pose, scaleCorrection_);
-                    bind->storedData_ = m;
-                    bind->changed_ = true;
-                    bind->extraData_[0] = ToVector3(bind->velocity_.linearVelocity) * scaleCorrection_;
-                    bind->extraData_[1] = ToVector3(bind->velocity_.angularVelocity) * scaleCorrection_;
-                }
-            } break;
-            }
-        }
-    }
-
-#undef SEND_EVENT
-}
-
 void OpenXR::TriggerHaptic(VRHand hand, float durationSeconds, float cyclesPerSec, float amplitude)
 {
     if (!activeActionSet_ || !IsFocused())
@@ -1895,7 +1887,7 @@ void OpenXR::TriggerHaptic(VRHand hand, float durationSeconds, float cyclesPerSe
 
     for (XRBinding* binding : activeActionSet_->GetBindings())
     {
-        if (!binding->IsHaptic() || binding->Hand() != hand)
+        if (!binding->IsHaptic() || binding->GetHand() != hand)
             continue;
 
         const auto bindingImpl = static_cast<OpenXRBinding*>(binding);
@@ -2082,24 +2074,20 @@ Matrix3x4 OpenXR::GetHeadTransform() const
 
 void OpenXR::UpdateBindingBound()
 {
-    if (session_ == 0)
+    if (!session_)
         return;
 
     if (activeActionSet_)
     {
-        for (auto b : activeActionSet_->GetBindings())
+        for (XRBinding* binding : activeActionSet_->GetBindings())
         {
-            auto bind = b->Cast<OpenXRBinding>();
-            XrBoundSourcesForActionEnumerateInfo info = { XR_TYPE_BOUND_SOURCES_FOR_ACTION_ENUMERATE_INFO };
-            info.action = bind->action_.Raw();
-            unsigned binds = 0;
-            xrEnumerateBoundSourcesForAction(session_.Raw(), &info, 0, &binds, nullptr);
-            b->isBound_ = binds > 0;
+            const auto bindingImpl = static_cast<OpenXRBinding*>(binding);
+            bindingImpl->UpdateBoundState(session_.Raw());
 
-            if (b->isAimPose_)
-                handAims_[b->Hand()] = b->Cast<OpenXRBinding>();
-            if (b->isPose_)
-                handGrips_[b->Hand()] = b->Cast<OpenXRBinding>();
+            if (binding->IsGripPose())
+                handGrips_[binding->GetHand()] = bindingImpl;
+            if (binding->IsAimPose())
+                handAims_[binding->GetHand()] = bindingImpl;
         }
     }
 }

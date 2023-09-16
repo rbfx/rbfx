@@ -52,7 +52,7 @@ XRBinding* XRActionGroup::FindBinding(const ea::string& name, VRHand hand) const
 {
     for (XRBinding* binding : bindings_)
     {
-        if (binding->GetName().comparei(name) == 0 && (hand == VRHand::None || hand == binding->Hand()))
+        if (binding->GetName().comparei(name) == 0 && (hand == VRHand::None || hand == binding->GetHand()))
             return binding;
     }
     return nullptr;

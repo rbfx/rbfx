@@ -30,14 +30,9 @@ URHO3D_EVENT(E_VRINTERACTIONPROFILECHANGED, VRInteractionProfileChanged)
 }
 
 /// An input binding has been changed.
-URHO3D_EVENT(E_BINDINGCHANGED, VRBindingChange)
+URHO3D_EVENT(E_VRBINDINGCHANGED, VRBindingChange)
 {
-    URHO3D_PARAM(P_NAME, Name);     // String
-    URHO3D_PARAM(P_DATA, Data);     // Variant
-    URHO3D_PARAM(P_DELTA, Delta);  // Variant
-    URHO3D_PARAM(P_EXTRADELTA, ExtraDelta); // Variant
-    URHO3D_PARAM(P_ACTIVE, Active);     // bool
-    URHO3D_PARAM(P_BINDING, Binding);   // Binding pointer
+    URHO3D_PARAM(P_BINDING, Binding);       // Binding pointer
 }
 
 /// Controller model has been changed.
