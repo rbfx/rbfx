@@ -30,6 +30,7 @@
 #include "../Graphics/ReflectionProbe.h"
 #include "../Graphics/TextureCube.h"
 #include "../IO/FileSystem.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLElement.h"
@@ -48,6 +49,12 @@ static const ea::vector<ea::string> reflectionProbeTypeNames = {
     "Dynamic",
     "Custom Texture",
 };
+
+bool SupportFiltering(RenderDevice* device)
+{
+    return device && device->GetCaps().computeShaders_
+        && device->IsUnorderedAccessFormatSupported(TextureFormat::TEX_FORMAT_RGBA8_UNORM);
+}
 
 void AppendReference(ea::span<ReflectionProbeReference, 2> result, const ReflectionProbeReference& newReference)
 {
@@ -326,11 +333,8 @@ void ReflectionProbeManager::FillUpdateQueue()
 
 void ReflectionProbeManager::ConsumeUpdateQueue()
 {
-#if !defined(URHO3D_COMPUTE)
-    const bool filterCubemapsEffective = false;
-#else
-    const bool filterCubemapsEffective = filterCubemaps_;
-#endif
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    const bool filterCubemapsEffective = filterCubemaps_ && SupportFiltering(renderDevice);
 
     unsigned numStaticProbesRendered = 0;
     unsigned numRenderedFaces = 0;
@@ -377,11 +381,11 @@ void ReflectionProbeManager::ConsumeUpdateQueue()
         if (TextureCube* probeTexture = probe->GetMixedProbeTexture())
         {
             // TODO: Create correct texture from the start
-            if (probeTexture->GetUnorderedAccess() != filterCubemapsEffective)
+            const TextureFlags probeFlags = probeTexture->GetParams().flags_;
+            if (filterCubemapsEffective && !probeFlags.Test(TextureFlag::BindUnorderedAccess))
             {
-                probeTexture->SetUnorderedAccess(filterCubemapsEffective);
                 probeTexture->SetSize(probeTexture->GetWidth(), probeTexture->GetFormat(),
-                    probeTexture->GetUsage());
+                    probeFlags | TextureFlag::BindUnorderedAccess);
             }
 
             CubemapUpdateParameters params;

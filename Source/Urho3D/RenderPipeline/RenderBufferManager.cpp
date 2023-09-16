@@ -22,7 +22,9 @@
 
 #include "../Precompiled.h"
 
+#include "../Graphics/Geometry.h"
 #include "../Graphics/Graphics.h"
+#include "../Graphics/GraphicsUtils.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture2D.h"
@@ -30,6 +32,11 @@
 #include "../RenderPipeline/RenderPipelineDebugger.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
 #include "../RenderPipeline/ShaderConsts.h"
+#include "../RenderAPI/DrawCommandQueue.h"
+#include "../RenderAPI/RenderContext.h"
+#include "../RenderAPI/RenderDevice.h"
+#include "../RenderAPI/RenderAPIUtils.h"
+#include "../RenderAPI/RenderScope.h"
 
 #include <EASTL/optional.h>
 
@@ -52,11 +59,6 @@ Texture2D* GetParentTexture2D(RenderSurface* renderSurface)
     return renderSurface && renderSurface->GetParentTexture() ? renderSurface->GetParentTexture()->Cast<Texture2D>() : nullptr;
 }
 
-Texture2D* GetParentTexture2D(RenderBuffer* renderBuffer)
-{
-    return renderBuffer && renderBuffer->GetTexture() ? renderBuffer->GetTexture()->Cast<Texture2D>() : nullptr;
-}
-
 ea::optional<RenderSurface*> GetLinkedDepthStencil(RenderSurface* renderSurface)
 {
     if (!renderSurface)
@@ -72,9 +74,8 @@ bool HasStencilBuffer(RenderSurface* renderSurface)
     if (!renderSurface)
         return true;
 
-    const unsigned format = renderSurface->GetParentTexture()->GetFormat();
-    return format == Graphics::GetDepthStencilFormat()
-        || format == Graphics::GetReadableDepthStencilFormat();
+    const TextureFormat format = renderSurface->GetParentTexture()->GetFormat();
+    return IsStencilTextureFormat(format);
 }
 
 bool HasReadableDepth(RenderSurface* renderSurface)
@@ -83,127 +84,47 @@ bool HasReadableDepth(RenderSurface* renderSurface)
     if (!renderSurface)
         return false;
 
-    const unsigned format = renderSurface->GetParentTexture()->GetFormat();
-    return format == Graphics::GetReadableDepthFormat()
-        || format == Graphics::GetReadableDepthStencilFormat();
-}
-
-bool IsColorFormatMatching(unsigned outputFormat, unsigned requestedFormat)
-{
-    if (outputFormat == Graphics::GetRGBAFormat())
-    {
-        return requestedFormat == Graphics::GetRGBAFormat()
-            || requestedFormat == Graphics::GetRGBFormat();
-    }
-    return outputFormat == requestedFormat;
-}
-
-bool AreRenderBuffersCompatible(RenderBuffer* firstBuffer, RenderBuffer* secondBuffer, bool ignoreRect)
-{
-    Graphics* graphics = firstBuffer->GetSubsystem<Graphics>();
-    RenderSurface* firstSurface = firstBuffer->GetRenderSurface();
-    RenderSurface* secondSurface = secondBuffer->GetRenderSurface();
-
-#ifdef URHO3D_OPENGL
-    // Due to FBO limitations, in OpenGL default color and depth surfaces cannot be mixed with custom ones
-    if (!!firstSurface != !!secondSurface)
-        return false;
-#endif
-
-    if (RenderSurface::GetMultiSample(graphics, firstSurface) != RenderSurface::GetMultiSample(graphics, secondSurface))
-        return false;
-
-    if (!ignoreRect && firstBuffer->GetViewportRect() != secondBuffer->GetViewportRect())
-        return false;
-
     return true;
 }
 
-struct RenderSurfaceArray
+TextureFormat GetColorTextureFormat(bool needHDR, bool needSRGB)
 {
-    IntRect viewportRect_{};
-    RenderSurface* depthStencil_{};
-    RenderSurface* renderTargets_[MAX_RENDERTARGETS]{};
-};
-
-ea::optional<RenderSurfaceArray> PrepareRenderSurfaces(bool ignoreRect,
-    RenderBuffer* depthStencilBuffer, ea::span<RenderBuffer* const> colorBuffers, CubeMapFace face)
-{
-    if (!depthStencilBuffer && colorBuffers.empty())
-    {
-        URHO3D_LOGERROR("Depth-stencil and color buffers are null");
-        return ea::nullopt;
-    }
-
-    auto nullColorBuffer = ea::find(colorBuffers.begin(), colorBuffers.end(), nullptr);
-    if (nullColorBuffer != colorBuffers.end())
-    {
-        URHO3D_LOGERROR("Color buffer {} is null", nullColorBuffer - colorBuffers.begin());
-        return ea::nullopt;
-    }
-
-    if (colorBuffers.size() > MAX_RENDERTARGETS)
-    {
-        URHO3D_LOGERROR("Cannot set more than {} color render buffers", MAX_RENDERTARGETS);
-        return ea::nullopt;
-    }
-
-    RenderBuffer* referenceBuffer = depthStencilBuffer ? depthStencilBuffer : colorBuffers[0];
-    for (unsigned i = 0; i < colorBuffers.size(); ++i)
-    {
-        if (!AreRenderBuffersCompatible(referenceBuffer, colorBuffers[i], ignoreRect))
-        {
-            URHO3D_LOGERROR("Color render buffer #{} is incompatible with other buffers", i);
-            return ea::nullopt;
-        }
-    }
-
-    RenderSurfaceArray result;
-
-    if (depthStencilBuffer)
-    {
-        result.depthStencil_ = depthStencilBuffer->GetRenderSurface(face);
-        result.viewportRect_ = depthStencilBuffer->GetViewportRect();
-    }
+    if (needHDR)
+        return TextureFormat::TEX_FORMAT_RGBA16_FLOAT;
+    else if (needSRGB)
+        return TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB;
     else
-    {
-        // Use temporary dirty depth buffer
-        RenderBuffer* colorBuffer = colorBuffers[0];
-        auto renderer = colorBuffer->GetSubsystem<Renderer>();
-        result.depthStencil_ = renderer->GetDepthStencil(colorBuffer->GetRenderSurface(face));
-        result.viewportRect_ = colorBuffer->GetViewportRect();
-    }
-
-    for (unsigned i = 0; i < colorBuffers.size(); ++i)
-    {
-        result.renderTargets_[i] = colorBuffers[i]->GetRenderSurface(face);
-        if (!result.renderTargets_[i] && i != 0)
-        {
-            URHO3D_LOGERROR("Default color texture can be bound only to slot #0");
-            return ea::nullopt;
-        }
-    }
-
-    return result;
+        return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
 }
 
-void SetRenderSurfaces(Graphics* graphics, const RenderSurfaceArray& renderSurfaces)
-{
-    for (unsigned i = 0; i < MAX_RENDERTARGETS; ++i)
-        graphics->SetRenderTarget(i, renderSurfaces.renderTargets_[i]);
-    graphics->SetDepthStencil(renderSurfaces.depthStencil_);
-}
-
-Vector4 CalculateViewportOffsetAndScale(const IntVector2& textureSize, const IntRect& viewportRect)
+Vector4 CalculateViewportOffsetAndScale(
+    RenderDevice* renderDevice, const IntVector2& textureSize, const IntRect& viewportRect)
 {
     const Vector2 halfViewportScale = 0.5f * viewportRect.Size().ToVector2() / textureSize.ToVector2();
     const float xOffset = static_cast<float>(viewportRect.left_) / textureSize.x_ + halfViewportScale.x_;
     const float yOffset = static_cast<float>(viewportRect.top_) / textureSize.y_ + halfViewportScale.y_;
-#ifdef URHO3D_OPENGL
-    return { xOffset, 1.0f - yOffset, halfViewportScale.x_, halfViewportScale.y_ };
-#else
+    // TODO: Do we want to flip this in OpenGL? It would make sense but it doesn't work.
+    // const bool isOpenGL = renderDevice->GetBackend() == RenderBackend::OpenGL;
+    // return { xOffset, 1.0f - yOffset, halfViewportScale.x_, halfViewportScale.y_ };
     return { xOffset, yOffset, halfViewportScale.x_, halfViewportScale.y_ };
-#endif
+}
+
+GraphicsPipelineStateDesc GetClearPipelineStateDesc(Graphics* graphics, ClearTargetFlags flags)
+{
+    const ea::string shaderName = "v2/X_ClearFramebuffer";
+
+    GraphicsPipelineStateDesc desc;
+    desc.debugName_ = shaderName;
+    desc.vertexShader_ = graphics->GetShader(VS, shaderName, "");
+    desc.pixelShader_ = graphics->GetShader(PS, shaderName, "");
+
+    desc.colorWriteEnabled_ = flags.Test(CLEAR_COLOR);
+    desc.blendMode_ = BLEND_REPLACE;
+    desc.depthWriteEnabled_ = flags.Test(CLEAR_DEPTH);
+    desc.stencilWriteMask_ = flags.Test(CLEAR_STENCIL) ? 0xff : 0x00;
+    desc.stencilOperationOnPassed_ = OP_REF;
+
+    return desc;
 }
 
 }
@@ -213,8 +134,11 @@ RenderBufferManager::RenderBufferManager(RenderPipelineInterface* renderPipeline
     , renderPipeline_(renderPipeline)
     , graphics_(GetSubsystem<Graphics>())
     , renderer_(GetSubsystem<Renderer>())
+    , renderDevice_(GetSubsystem<RenderDevice>())
+    , renderContext_(renderDevice_->GetRenderContext())
     , debugger_(renderPipeline_->GetDebugger())
-    , drawQueue_(renderer_->GetDefaultDrawQueue())
+    , drawQueue_(renderDevice_->GetDefaultQueue())
+    , pipelineStates_(context_)
 {
     // Order is important. RenderBufferManager should receive callbacks before any of render buffers
     renderPipeline_->OnPipelineStatesInvalidated.Subscribe(this, &RenderBufferManager::OnPipelineStatesInvalidated);
@@ -223,6 +147,12 @@ RenderBufferManager::RenderBufferManager(RenderPipelineInterface* renderPipeline
 
     viewportColorBuffer_ = MakeShared<ViewportColorRenderBuffer>(renderPipeline_);
     viewportDepthBuffer_ = MakeShared<ViewportDepthStencilRenderBuffer>(renderPipeline_);
+
+    InitializePipelineStates();
+}
+
+RenderBufferManager::~RenderBufferManager()
+{
 }
 
 void RenderBufferManager::SetSettings(const RenderBufferManagerSettings& settings)
@@ -237,6 +167,16 @@ void RenderBufferManager::SetFrameSettings(const RenderBufferManagerFrameSetting
         frameSettings_.readableColor_ = true;
 }
 
+TextureFormat RenderBufferManager::GetOutputColorFormat() const
+{
+    return colorOutputParams_.textureFormat_;
+}
+
+TextureFormat RenderBufferManager::GetOutputDepthStencilFormat() const
+{
+    return static_cast<TextureFormat>(depthStencilOutputParams_.textureFormat_);
+}
+
 SharedPtr<RenderBuffer> RenderBufferManager::CreateColorBuffer(const RenderBufferParams& params, const Vector2& size)
 {
     return MakeShared<TextureRenderBuffer>(renderPipeline_, params, size);
@@ -246,113 +186,125 @@ void RenderBufferManager::SwapColorBuffers(bool synchronizeContents)
 {
     if (!frameSettings_.supportColorReadWrite_)
     {
-        URHO3D_LOGERROR("Cannot call SwapColorBuffers if 'supportColorReadWrite' flag is not set");
+        URHO3D_ASSERTLOG("Cannot call SwapColorBuffers if 'supportColorReadWrite' flag is not set");
         assert(0);
         return;
     }
 
-    assert(readableColorBuffer_ && writeableColorBuffer_);
+    URHO3D_ASSERT(readableColorBuffer_ && writeableColorBuffer_);
     ea::swap(writeableColorBuffer_, readableColorBuffer_);
 
     if (synchronizeContents)
     {
         SetRenderTargets(depthStencilBuffer_, { writeableColorBuffer_ });
-        DrawTexture("Synchronize readable and writeable color buffers", readableColorBuffer_->GetTexture2D());
+        DrawTexture("Synchronize readable and writeable color buffers", readableColorBuffer_->GetTexture());
     }
 }
 
 void RenderBufferManager::SetRenderTargetsRect(const IntRect& viewportRect,
-    RenderBuffer* depthStencilBuffer, ea::span<RenderBuffer* const> colorBuffers, CubeMapFace face)
+    RenderBuffer* depthStencilBuffer, ea::span<RenderBuffer* const> colorBuffers, bool readOnlyDepth, CubeMapFace face)
 {
-    const bool ignoreRect = viewportRect != IntRect::ZERO;
-    const ea::optional<RenderSurfaceArray> renderSurfaces = PrepareRenderSurfaces(
-        ignoreRect, depthStencilBuffer, colorBuffers, face);
-
-    if (renderSurfaces)
+    ea::optional<IntRect> defaultViewportRect;
+    OptionalRawTextureRTV depthStencilRef;
+    if (depthStencilBuffer)
     {
-        SetRenderSurfaces(graphics_, *renderSurfaces);
-
-        if (viewportRect == IntRect::ZERO)
-            graphics_->SetViewport(renderSurfaces->viewportRect_);
-        else
-            graphics_->SetViewport(viewportRect);
+        depthStencilRef =
+            readOnlyDepth ? depthStencilBuffer->GetReadOnlyDepthView(face) : depthStencilBuffer->GetView(face);
+        defaultViewportRect = depthStencilBuffer->GetViewportRect();
     }
+
+    ea::fixed_vector<RenderTargetView, MaxRenderTargets> colorRefs;
+    for (RenderBuffer* colorBuffer : colorBuffers)
+    {
+        colorRefs.push_back(colorBuffer->GetView(face));
+        if (!defaultViewportRect)
+            defaultViewportRect = colorBuffer->GetViewportRect();
+    }
+
+    if (!defaultViewportRect || *defaultViewportRect == IntRect::ZERO)
+    {
+        URHO3D_LOGERROR("Cannot set null render targets");
+        return;
+    }
+
+    renderContext_->SetRenderTargets(depthStencilRef, colorRefs);
+
+    if (viewportRect == IntRect::ZERO)
+        renderContext_->SetViewport(*defaultViewportRect);
+    else
+        renderContext_->SetViewport(viewportRect);
 }
 
 void RenderBufferManager::SetRenderTargets(RenderBuffer* depthStencilBuffer,
-    ea::span<RenderBuffer* const> colorBuffers, CubeMapFace face)
+    ea::span<RenderBuffer* const> colorBuffers, bool readOnlyDepth, CubeMapFace face)
 {
-    SetRenderTargetsRect(IntRect::ZERO, depthStencilBuffer, colorBuffers, face);
+    SetRenderTargetsRect(IntRect::ZERO, depthStencilBuffer, colorBuffers, readOnlyDepth, face);
 }
 
 void RenderBufferManager::SetRenderTargetsRect(const IntRect& viewportRect, RenderBuffer* depthStencilBuffer,
-    std::initializer_list<RenderBuffer*> colorBuffers, CubeMapFace face)
+    std::initializer_list<RenderBuffer*> colorBuffers, bool readOnlyDepth, CubeMapFace face)
 {
-    SetRenderTargetsRect(viewportRect, depthStencilBuffer, ToSpan(colorBuffers), face);
+    SetRenderTargetsRect(viewportRect, depthStencilBuffer, ToSpan(colorBuffers), readOnlyDepth, face);
 }
 
 void RenderBufferManager::SetRenderTargets(RenderBuffer* depthStencilBuffer,
-    std::initializer_list<RenderBuffer*> colorBuffers, CubeMapFace face)
+    std::initializer_list<RenderBuffer*> colorBuffers, bool readOnlyDepth, CubeMapFace face)
 {
-    SetRenderTargetsRect(IntRect::ZERO, depthStencilBuffer, ToSpan(colorBuffers), face);
+    SetRenderTargetsRect(IntRect::ZERO, depthStencilBuffer, ToSpan(colorBuffers), readOnlyDepth, face);
 }
 
-void RenderBufferManager::SetOutputRenderTargetsRect(const IntRect& viewportRect)
+void RenderBufferManager::SetOutputRenderTargetsRect(const IntRect& viewportRect, bool readOnlyDepth)
 {
-    SetRenderTargetsRect(viewportRect, GetDepthStencilOutput(), { GetColorOutput() });
+    SetRenderTargetsRect(viewportRect, GetDepthStencilOutput(), { GetColorOutput() }, readOnlyDepth);
 }
 
-void RenderBufferManager::SetOutputRenderTargets()
+void RenderBufferManager::SetOutputRenderTargets(bool readOnlyDepth)
 {
-    SetRenderTargetsRect(IntRect::ZERO, GetDepthStencilOutput(), { GetColorOutput() });
-}
-
-void RenderBufferManager::ClearDepthStencilRect(const IntRect& viewportRect, RenderBuffer* depthStencilBuffer,
-    ClearTargetFlags flags, float depth, unsigned stencil, CubeMapFace face)
-{
-    RenderSurfaceArray renderSurfaces;
-    renderSurfaces.depthStencil_ = depthStencilBuffer->GetRenderSurface(face);
-    SetRenderSurfaces(graphics_, renderSurfaces);
-
-    if (viewportRect == IntRect::ZERO)
-        graphics_->SetViewport(depthStencilBuffer->GetViewportRect());
-    else
-        graphics_->SetViewport(viewportRect);
-    graphics_->Clear(CLEAR_DEPTH | CLEAR_STENCIL, Color::TRANSPARENT_BLACK, depth, stencil);
-}
-
-void RenderBufferManager::ClearColorRect(const IntRect& viewportRect, RenderBuffer* colorBuffer,
-    const Color& color, CubeMapFace face)
-{
-    RenderSurfaceArray renderSurfaces;
-    renderSurfaces.renderTargets_[0] = colorBuffer->GetRenderSurface(face);
-    renderSurfaces.depthStencil_ = renderer_->GetDepthStencil(renderSurfaces.renderTargets_[0]);
-    SetRenderSurfaces(graphics_, renderSurfaces);
-
-    if (viewportRect == IntRect::ZERO)
-        graphics_->SetViewport(colorBuffer->GetViewportRect());
-    else
-        graphics_->SetViewport(viewportRect);
-    graphics_->Clear(CLEAR_COLOR, color);
+    SetRenderTargetsRect(IntRect::ZERO, GetDepthStencilOutput(), { GetColorOutput() }, readOnlyDepth);
 }
 
 void RenderBufferManager::ClearDepthStencil(RenderBuffer* depthStencilBuffer,
     ClearTargetFlags flags, float depth, unsigned stencil, CubeMapFace face)
 {
-    ClearDepthStencilRect(IntRect::ZERO, depthStencilBuffer, flags, depth, stencil, face);
+    const RenderTargetView depthStencil = depthStencilBuffer->GetView(face);
+    renderContext_->SetRenderTargets(depthStencil, {});
+    renderContext_->SetFullViewport();
+    renderContext_->ClearDepthStencil(CLEAR_DEPTH | CLEAR_STENCIL, depth, stencil);
 }
 
 void RenderBufferManager::ClearColor(RenderBuffer* colorBuffer,
     const Color& color, CubeMapFace face)
 {
-    ClearColorRect(IntRect::ZERO, colorBuffer, color, face);
+    const RenderTargetView renderTargets[] = {colorBuffer->GetView(face)};
+    renderContext_->SetRenderTargets(ea::nullopt, renderTargets);
+    renderContext_->SetFullViewport();
+    renderContext_->ClearRenderTarget(0, color);
 }
 
 void RenderBufferManager::ClearOutputRect(const IntRect& viewportRect, ClearTargetFlags flags,
     const Color& color, float depth, unsigned stencil)
 {
+    // Do it just in case because we cannot handle any noise below
+    flags &= CLEAR_COLOR | CLEAR_DEPTH | CLEAR_STENCIL;
+
     SetRenderTargetsRect(viewportRect, GetDepthStencilOutput(), { GetColorOutput() });
-    graphics_->Clear(flags, color, depth, stencil);
+    const IntRect fullViewportRect{IntVector2::ZERO, renderContext_->GetCurrentRenderTargetSize()};
+    if (renderContext_->GetCurrentViewport() == fullViewportRect)
+    {
+        if (flags.Test(CLEAR_COLOR))
+            renderContext_->ClearRenderTarget(0, color);
+        if (flags.Test(CLEAR_DEPTH) || flags.Test(CLEAR_STENCIL))
+            renderContext_->ClearDepthStencil(flags, depth, stencil);
+    }
+    else
+    {
+        const bool isOpenGL = renderContext_->GetRenderDevice()->GetBackend() == RenderBackend::OpenGL;
+        const ShaderParameterDesc params[] = {
+            {"Color", color},
+            {"Depth", isOpenGL ? (depth * 2.0 - 1.0) : depth},
+        };
+        DrawViewportQuad("Clear output subregion", clearPipelineState_[flags.AsInteger()], {}, params);
+    }
 }
 
 void RenderBufferManager::ClearOutput(ClearTargetFlags flags, const Color& color, float depth, unsigned stencil)
@@ -368,53 +320,63 @@ void RenderBufferManager::ClearOutput(const Color& color, float depth, unsigned 
 Vector4 RenderBufferManager::GetDefaultClipToUVSpaceOffsetAndScale() const
 {
     const IntVector2 size = GetOutputSize();
-    return CalculateViewportOffsetAndScale(size, IntRect{ IntVector2::ZERO, size });
+    return CalculateViewportOffsetAndScale(renderDevice_, size, IntRect{ IntVector2::ZERO, size });
 }
 
-SharedPtr<PipelineState> RenderBufferManager::CreateQuadPipelineState(PipelineStateDesc desc)
+StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(GraphicsPipelineStateDesc desc)
 {
     Geometry* quadGeometry = renderer_->GetQuadGeometry();
 
-    desc.InitializeInputLayoutAndPrimitiveType(quadGeometry);
+    InitializeInputLayoutAndPrimitiveType(desc, quadGeometry);
     desc.colorWriteEnabled_ = true;
 
-    return renderer_->GetOrCreatePipelineState(desc);
+    return pipelineStates_.CreateState(desc);
 }
 
-SharedPtr<PipelineState> RenderBufferManager::CreateQuadPipelineState(BlendMode blendMode,
-    const ea::string& shaderName, const ea::string& shaderDefines)
+StaticPipelineStateId RenderBufferManager::CreateQuadPipelineState(BlendMode blendMode,
+    const ea::string& shaderName, const ea::string& shaderDefines, ea::span<const NamedSamplerStateDesc> samplers)
 {
     ea::string defines = shaderDefines;
     defines += " URHO3D_GEOMETRY_STATIC";
-    if (graphics_->GetCaps().constantBuffersSupported_)
-        defines += " URHO3D_USE_CBUFFERS";
 
-    PipelineStateDesc desc;
+    GraphicsPipelineStateDesc desc;
+    desc.debugName_ = Format("Quad with {}({})", shaderName, defines);
     desc.blendMode_ = blendMode;
     desc.vertexShader_ = graphics_->GetShader(VS, shaderName, defines);
     desc.pixelShader_ = graphics_->GetShader(PS, shaderName, defines);
 
+    for (const auto& [name, samplerStateDesc] : samplers)
+        desc.samplers_.Add(StringHash{name}, samplerStateDesc);
+
     return CreateQuadPipelineState(desc);
+}
+
+PipelineState* RenderBufferManager::GetQuadPipelineState(StaticPipelineStateId id)
+{
+    return pipelineStates_.GetState(id, renderContext_->GetCurrentRenderTargetsDesc());
 }
 
 void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadParams& params, bool flipVertical)
 {
-    if (!params.pipelineState_ || !params.pipelineState_->IsValid())
+    PipelineState* pipelineState =
+        params.pipelineState_ ? params.pipelineState_ : GetQuadPipelineState(params.pipelineStateId_);
+    if (!pipelineState || !pipelineState->IsValid())
         return;
+
+    const RenderScope renderScope(renderContext_, debugComment);
 
     Geometry* quadGeometry = renderer_->GetQuadGeometry();
     Matrix3x4 modelMatrix = Matrix3x4::IDENTITY;
     Matrix4 projection = Matrix4::IDENTITY;
     if (flipVertical)
         projection.m11_ = -1.0f;
-#ifdef URHO3D_OPENGL
-    modelMatrix.m23_ = 0.0f;
-#else
-    modelMatrix.m23_ = 0.5f;
-#endif
+
+    // OpenGL z range is [-1, 1] instead of [0, 1], draw quad at z = 0.5 for consistency
+    const bool isOpenGL = renderDevice_->GetBackend() == RenderBackend::OpenGL;
+    modelMatrix.m23_ = isOpenGL ? 0.0f : 0.5f;
 
     drawQueue_->Reset();
-    drawQueue_->SetPipelineState(params.pipelineState_);
+    drawQueue_->SetPipelineState(pipelineState);
 
     if (drawQueue_->BeginShaderParameterGroup(SP_FRAME))
     {
@@ -445,33 +407,34 @@ void RenderBufferManager::DrawQuad(ea::string_view debugComment, const DrawQuadP
 
     if (params.bindSecondaryColorToDiffuse_)
     {
-        if (Texture2D* secondaryColor = GetSecondaryColorTexture())
-            drawQueue_->AddShaderResource(TU_DIFFUSE, secondaryColor);
+        if (RawTexture* secondaryColor = GetSecondaryColorTexture())
+            drawQueue_->AddShaderResource(ShaderResources::Albedo, secondaryColor);
     }
     for (const ShaderResourceDesc& shaderResource : params.resources_)
     {
-        if (!params.bindSecondaryColorToDiffuse_ || shaderResource.unit_ != TU_DIFFUSE)
-            drawQueue_->AddShaderResource(shaderResource.unit_, shaderResource.texture_);
+        const bool canBind = !params.bindSecondaryColorToDiffuse_ || shaderResource.name_ != ShaderResources::Albedo;
+        if (canBind && shaderResource.texture_)
+            drawQueue_->AddShaderResource(shaderResource.name_, shaderResource.texture_);
     }
     drawQueue_->CommitShaderResources();
 
-    drawQueue_->SetBuffers(GeometryBufferArray{ quadGeometry });
+    SetBuffersFromGeometry(*drawQueue_, quadGeometry);
     drawQueue_->DrawIndexed(quadGeometry->GetIndexStart(), quadGeometry->GetIndexCount());
 
-    drawQueue_->Execute();
+    renderContext_->Execute(drawQueue_);
 
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
     {
-        debugger_->ReportQuad(debugComment, graphics_->GetViewport().Size());
+        debugger_->ReportQuad(debugComment, renderContext_->GetCurrentViewport().Size());
     }
 }
 
 void RenderBufferManager::DrawViewportQuad(ea::string_view debugComment,
-    PipelineState* pipelineState, ea::span<const ShaderResourceDesc> resources,
+    StaticPipelineStateId pipelineStateId, ea::span<const ShaderResourceDesc> resources,
     ea::span<const ShaderParameterDesc> parameters, bool flipVertical)
 {
     DrawQuadParams params;
-    params.pipelineState_ = pipelineState;
+    params.pipelineStateId_ = pipelineStateId;
     params.clipToUVOffsetAndScale_ = GetDefaultClipToUVSpaceOffsetAndScale();
     params.invInputSize_ = GetInvOutputSize();
     params.resources_ = resources;
@@ -480,11 +443,11 @@ void RenderBufferManager::DrawViewportQuad(ea::string_view debugComment,
 }
 
 void RenderBufferManager::DrawFeedbackViewportQuad(ea::string_view debugComment,
-    PipelineState* pipelineState, ea::span<const ShaderResourceDesc> resources,
+    StaticPipelineStateId pipelineStateId, ea::span<const ShaderResourceDesc> resources,
     ea::span<const ShaderParameterDesc> parameters, bool flipVertical)
 {
     DrawQuadParams params;
-    params.pipelineState_ = pipelineState;
+    params.pipelineStateId_ = pipelineStateId;
     params.clipToUVOffsetAndScale_ = GetDefaultClipToUVSpaceOffsetAndScale();
     params.invInputSize_ = GetInvOutputSize();
     params.bindSecondaryColorToDiffuse_ = true;
@@ -495,7 +458,35 @@ void RenderBufferManager::DrawFeedbackViewportQuad(ea::string_view debugComment,
 
 void RenderBufferManager::OnPipelineStatesInvalidated()
 {
-    copyTexturePipelineState_ = nullptr;
+    pipelineStates_.Invalidate();
+}
+
+void RenderBufferManager::OnViewportDefined(RenderSurface* renderTarget, const IntRect& viewportRect)
+{
+    Texture2D* outputTexture = GetParentTexture2D(renderTarget);
+    const bool isBilinearFilteredOutput = outputTexture && outputTexture->GetFilterMode() != FILTER_NEAREST;
+    const int outputMultiSample = RenderSurface::GetMultiSample(graphics_, renderTarget);
+
+    // Determine output format
+    const bool needHDR = settings_.colorSpace_ == RenderPipelineColorSpace::LinearHDR;
+    const bool needSRGB = settings_.colorSpace_ == RenderPipelineColorSpace::LinearLDR;
+
+    RenderBufferParams colorParams;
+    colorParams.multiSampleLevel_ = settings_.inheritMultiSampleLevel_
+        ? outputMultiSample : settings_.multiSampleLevel_;
+    colorParams.textureFormat_ = GetColorTextureFormat(needHDR, needSRGB);
+    colorParams.flags_.Set(RenderBufferFlag::BilinearFiltering, settings_.filteredColor_ || isBilinearFilteredOutput);
+
+    RenderBufferParams depthParams = colorParams;
+    depthParams.flags_ |= RenderBufferFlag::Persistent;
+    depthParams.textureFormat_ = renderDevice_->GetDefaultDepthStencilFormat();
+
+    if (colorOutputParams_ != colorParams || depthStencilOutputParams_ != depthParams)
+    {
+        colorOutputParams_ = colorParams;
+        depthStencilOutputParams_ = depthParams;
+        ResetCachedRenderBuffers();
+    }
 }
 
 void RenderBufferManager::OnRenderBegin(const CommonFrameInfo& frameInfo)
@@ -505,7 +496,6 @@ void RenderBufferManager::OnRenderBegin(const CommonFrameInfo& frameInfo)
 
     // Get parameters of output render surface
     const unsigned outputFormat = RenderSurface::GetFormat(graphics_, frameInfo.renderTarget_);
-    const bool isOutputSRGB = RenderSurface::GetSRGB(graphics_, frameInfo.renderTarget_);
     const int outputMultiSample = RenderSurface::GetMultiSample(graphics_, frameInfo.renderTarget_);
 
     const ea::optional<RenderSurface*> outputDepthStencil = GetLinkedDepthStencil(frameInfo.renderTarget_);
@@ -513,70 +503,41 @@ void RenderBufferManager::OnRenderBegin(const CommonFrameInfo& frameInfo)
     const bool outputHasReadableDepth = outputDepthStencil && HasReadableDepth(*outputDepthStencil);
 
     Texture2D* outputTexture = GetParentTexture2D(frameInfo.renderTarget_);
-    const bool isFullRectOutput = frameInfo.viewportRect_ == IntRect::ZERO
-        || frameInfo.viewportRect_ == RenderSurface::GetRect(graphics_, frameInfo.renderTarget_);
+    const bool isFullRectOutput =
+        viewportRect_ == IntRect::ZERO || viewportRect_ == RenderSurface::GetRect(graphics_, frameInfo.renderTarget_);
     const bool isSimpleTextureOutput = outputTexture != nullptr && isFullRectOutput;
     const bool isBilinearFilteredOutput = outputTexture && outputTexture->GetFilterMode() != FILTER_NEAREST;
-
-    // Determine output format
-    const bool needHDR = settings_.colorSpace_ == RenderPipelineColorSpace::LinearHDR;
-    const bool needSRGB = settings_.colorSpace_ == RenderPipelineColorSpace::LinearLDR;
-
-    RenderBufferParams viewportParams;
-    viewportParams.multiSampleLevel_ = settings_.inheritMultiSampleLevel_
-        ? outputMultiSample : settings_.multiSampleLevel_;
-    viewportParams.textureFormat_ = needHDR ? Graphics::GetRGBAFloat16Format() : Graphics::GetRGBFormat();
-    viewportParams.flags_.Set(RenderBufferFlag::sRGB, needSRGB);
-    viewportParams.flags_.Set(RenderBufferFlag::BilinearFiltering, settings_.filteredColor_ || isBilinearFilteredOutput);
-
-    if (previousViewportParams_ != viewportParams)
-    {
-        previousViewportParams_ = viewportParams;
-        ResetCachedRenderBuffers();
-    }
 
     // Check if need to allocate secondary color buffer, substitute primary color buffer or substitute depth buffer
     const bool needSimpleTexture = frameSettings_.readableColor_ || settings_.readableDepth_
         || settings_.colorUsableWithMultipleRenderTargets_;
 
-    const bool isColorFormatMatching = IsColorFormatMatching(outputFormat, viewportParams.textureFormat_);
-    const bool isColorSRGBMatching = isOutputSRGB == viewportParams.flags_.Test(RenderBufferFlag::sRGB);
-    const bool isMultiSampleMatching = outputMultiSample == viewportParams.multiSampleLevel_;
-    const bool isFilterMatching = isBilinearFilteredOutput == viewportParams.flags_.Test(RenderBufferFlag::BilinearFiltering);
+    const bool isColorFormatMatching = outputFormat == colorOutputParams_.textureFormat_;
+    const bool isMultiSampleMatching = outputMultiSample == colorOutputParams_.multiSampleLevel_;
+    const bool isFilterMatching = isBilinearFilteredOutput == colorOutputParams_.flags_.Test(RenderBufferFlag::BilinearFiltering);
     const bool isColorUsageMatching = isSimpleTextureOutput || !needSimpleTexture;
+    const bool isOutputMatching =
+        isColorFormatMatching && isMultiSampleMatching && isFilterMatching && isColorUsageMatching;
 
     const bool needSecondaryBuffer = frameSettings_.supportColorReadWrite_;
-    const bool needSubstitutePrimaryBuffer = !isColorFormatMatching
-        || !isColorSRGBMatching || !isMultiSampleMatching || !isFilterMatching || !isColorUsageMatching;
     const bool needSubstituteDepthBuffer = !isMultiSampleMatching || !outputDepthStencil.has_value()
-        || ((needSecondaryBuffer || needSubstitutePrimaryBuffer) && outputDepthStencil.value() == nullptr)
+        || ((needSecondaryBuffer || !isOutputMatching) && outputDepthStencil.value() == nullptr)
         || (settings_.readableDepth_ && (!outputHasReadableDepth || !isSimpleTextureOutput))
         || (settings_.stencilBuffer_ && !outputHasStencil);
+    const bool needSubstitutePrimaryBuffer = !isOutputMatching || needSubstituteDepthBuffer;
 
     // Allocate substitute buffers if necessary
     if (needSubstitutePrimaryBuffer && !substituteRenderBuffers_[0])
     {
-        substituteRenderBuffers_[0] = MakeShared<TextureRenderBuffer>(renderPipeline_, viewportParams);
+        substituteRenderBuffers_[0] = MakeShared<TextureRenderBuffer>(renderPipeline_, colorOutputParams_);
     }
     if (needSecondaryBuffer && !substituteRenderBuffers_[1])
     {
-        substituteRenderBuffers_[1] = MakeShared<TextureRenderBuffer>(renderPipeline_, viewportParams);
+        substituteRenderBuffers_[1] = MakeShared<TextureRenderBuffer>(renderPipeline_, colorOutputParams_);
     }
     if (needSubstituteDepthBuffer && !substituteDepthBuffer_)
     {
-        RenderBufferParams depthBufferParams = viewportParams;
-        depthBufferParams.flags_ |= RenderBufferFlag::Persistent;
-        if (settings_.readableDepth_)
-        {
-            depthBufferParams.textureFormat_ = settings_.stencilBuffer_
-                ? Graphics::GetReadableDepthStencilFormat()
-                : Graphics::GetReadableDepthFormat();
-        }
-        else
-        {
-            depthBufferParams.textureFormat_ = Graphics::GetDepthStencilFormat();
-        }
-        substituteDepthBuffer_ = MakeShared<TextureRenderBuffer>(renderPipeline_, depthBufferParams);
+        substituteDepthBuffer_ = MakeShared<TextureRenderBuffer>(renderPipeline_, depthStencilOutputParams_);
     }
 
     depthStencilBuffer_ = needSubstituteDepthBuffer ? substituteDepthBuffer_.Get() : viewportDepthBuffer_.Get();
@@ -591,9 +552,9 @@ void RenderBufferManager::OnRenderEnd(const CommonFrameInfo& frameInfo)
 {
     if (writeableColorBuffer_ != viewportColorBuffer_.Get())
     {
-        Texture* colorTexture = writeableColorBuffer_->GetTexture();
+        RawTexture* colorTexture = writeableColorBuffer_->GetTexture();
         CopyTextureRegion("Copy final color to output RenderSurface", colorTexture,
-            colorTexture->GetRect(), viewportColorBuffer_->GetRenderSurface(),
+            IntRect{IntVector2::ZERO, colorTexture->GetParams().size_.ToIntVector2()}, viewportColorBuffer_->GetView(),
             viewportColorBuffer_->GetViewportRect(), ColorSpaceTransition::Automatic, false);
 
         // If viewport is reused for ping-ponging, optimize away final copy
@@ -608,61 +569,67 @@ void RenderBufferManager::ResetCachedRenderBuffers()
     substituteDepthBuffer_ = nullptr;
 }
 
-void RenderBufferManager::InitializeCopyTexturePipelineState()
+void RenderBufferManager::InitializePipelineStates()
 {
-    static const char* shaderName = "v2/CopyFramebuffer";
-    copyTexturePipelineState_ = CreateQuadPipelineState(BLEND_REPLACE, shaderName, "");
-    copyGammaToLinearTexturePipelineState_ = CreateQuadPipelineState(BLEND_REPLACE, shaderName, "URHO3D_GAMMA_TO_LINEAR");
-    copyLinearToGammaTexturePipelineState_ = CreateQuadPipelineState(BLEND_REPLACE, shaderName, "URHO3D_LINEAR_TO_GAMMA");
+    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::Albedo, SamplerStateDesc::Bilinear()}};
+
+    copyTexturePipelineState_ = CreateQuadPipelineState(BLEND_REPLACE, "v2/X_CopyFramebuffer", "", samplers);
+    copyGammaToLinearTexturePipelineState_ =
+        CreateQuadPipelineState(BLEND_REPLACE, "v2/X_CopyFramebuffer", "URHO3D_GAMMA_TO_LINEAR", samplers);
+    copyLinearToGammaTexturePipelineState_ =
+        CreateQuadPipelineState(BLEND_REPLACE, "v2/X_CopyFramebuffer", "URHO3D_LINEAR_TO_GAMMA", samplers);
+
+    for (unsigned i = 0; i < MaxClearVariants; ++i)
+    {
+        const ClearTargetFlags flags{i};
+        clearPipelineState_[i] = CreateQuadPipelineState(GetClearPipelineStateDesc(graphics_, flags));
+    }
 }
 
 void RenderBufferManager::CopyTextureRegion(ea::string_view debugComment,
-    Texture* sourceTexture, const IntRect& sourceRect,
-    RenderSurface* destinationSurface, const IntRect& destinationRect, ColorSpaceTransition mode, bool flipVertical)
+    RawTexture* sourceTexture, const IntRect& sourceRect,
+    RenderTargetView destinationSurface, const IntRect& destinationRect, ColorSpaceTransition mode, bool flipVertical)
 {
-    graphics_->SetRenderTarget(0, destinationSurface);
-    for (unsigned i = 1; i < MAX_RENDERTARGETS; ++i)
-        graphics_->ResetRenderTarget(i);
-    graphics_->SetDepthStencil(renderer_->GetDepthStencil(destinationSurface));
-    graphics_->SetViewport(destinationRect);
+    renderContext_->SetRenderTargets(ea::nullopt, {&destinationSurface, 1});
+    renderContext_->SetViewport(destinationRect);
     DrawTextureRegion(debugComment, sourceTexture, sourceRect, mode, flipVertical);
 }
 
-void RenderBufferManager::DrawTextureRegion(ea::string_view debugComment, Texture* sourceTexture,
+void RenderBufferManager::DrawTextureRegion(ea::string_view debugComment, RawTexture* sourceTexture,
     const IntRect& sourceRect, ColorSpaceTransition mode, bool flipVertical)
 {
-    if (!sourceTexture->IsInstanceOf<Texture2D>())
+    if (sourceTexture->GetParams().type_ != TextureType::Texture2D)
     {
         URHO3D_LOGERROR("Draw texture is supported only for Texture2D");
         return;
     }
 
-    if (!copyTexturePipelineState_ || !copyGammaToLinearTexturePipelineState_ || !copyLinearToGammaTexturePipelineState_)
-        InitializeCopyTexturePipelineState();
-
-    const bool isSRGBSource = sourceTexture->GetSRGB();
-    const bool isSRGBDestination = RenderSurface::GetSRGB(graphics_, graphics_->GetRenderTarget(0));
+    const TextureFormat destinationFormat = renderContext_->GetCurrentRenderTargetsDesc().renderTargetFormats_[0];
+    const bool isSRGBSource = IsTextureFormatSRGB(sourceTexture->GetParams().format_);
+    const bool isSRGBDestination = IsTextureFormatSRGB(destinationFormat);
 
     DrawQuadParams callParams;
+
     if (mode == ColorSpaceTransition::None || isSRGBSource == isSRGBDestination)
-        callParams.pipelineState_ = copyTexturePipelineState_;
+        callParams.pipelineStateId_ = copyTexturePipelineState_;
     else if (isSRGBDestination)
-        callParams.pipelineState_ = copyGammaToLinearTexturePipelineState_;
+        callParams.pipelineStateId_ = copyGammaToLinearTexturePipelineState_;
     else
-        callParams.pipelineState_ = copyLinearToGammaTexturePipelineState_;
+        callParams.pipelineStateId_ = copyLinearToGammaTexturePipelineState_;
 
-    callParams.invInputSize_ = Vector2::ONE / sourceTexture->GetSize().ToVector2();
+    const IntVector2 size = sourceTexture->GetParams().size_.ToIntVector2();
+    callParams.invInputSize_ = Vector2::ONE / size.ToVector2();
 
-    const IntRect effectiveSourceRect = sourceRect != IntRect::ZERO ? sourceRect : sourceTexture->GetRect();
-    callParams.clipToUVOffsetAndScale_ = CalculateViewportOffsetAndScale(sourceTexture->GetSize(), effectiveSourceRect);
+    const IntRect effectiveSourceRect = sourceRect != IntRect::ZERO ? sourceRect : IntRect{IntVector2::ZERO, size};
+    callParams.clipToUVOffsetAndScale_ = CalculateViewportOffsetAndScale(renderDevice_, size, effectiveSourceRect);
 
-    const ShaderResourceDesc shaderResources[] = { { TU_DIFFUSE, sourceTexture } };
+    const ShaderResourceDesc shaderResources[] = { { ShaderResources::Albedo, sourceTexture } };
     callParams.resources_ = shaderResources;
 
     DrawQuad(debugComment, callParams, flipVertical);
 }
 
-void RenderBufferManager::DrawTexture(ea::string_view debugComment, Texture* sourceTexture,
+void RenderBufferManager::DrawTexture(ea::string_view debugComment, RawTexture* sourceTexture,
     ColorSpaceTransition mode, bool flipVertical)
 {
     DrawTextureRegion(debugComment, sourceTexture, IntRect::ZERO, mode, flipVertical);

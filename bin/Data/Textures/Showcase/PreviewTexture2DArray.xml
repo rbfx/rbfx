@@ -1,0 +1,8 @@
+<texturearray>
+    <layer name="Textures/PBR/Check/Albedo.jpg" />
+    <layer name="Textures/PBR/DiamonPlate/Albedo.jpg" />
+    <layer name="Textures/PBR/Lead/Albedo.jpg" />
+    <layer name="Textures/PBR/Leather/Albedo.jpg" />
+    <layer name="Textures/PBR/Mud/Albedo.jpg" />
+    <layer name="Textures/PBR/Sand/Albedo.jpg" />
+</texturearray>

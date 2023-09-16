@@ -284,12 +284,11 @@ LightmapSeamVector CollectModelSeams(Model* model, unsigned uvChannel)
 }
 
 /// Read RGBA32 float texture to vector.
-void ReadTextureRGBA32Float(Texture* texture, ea::vector<Vector4>& dest)
+void ReadTextureRGBA32Float(RawTexture* texture, ea::vector<Vector4>& dest)
 {
-    auto texture2D = dynamic_cast<Texture2D*>(texture);
-    const unsigned numElements = texture->GetDataSize(texture->GetWidth(), texture->GetHeight()) / sizeof(Vector4);
-    dest.resize(numElements);
-    texture2D->GetData(0, dest.data());
+    const IntVector2 size = texture->GetParams().size_.ToIntVector2();
+    dest.resize(size.x_ * size.y_);
+    texture->Read(0, 0, dest.data(), dest.size() * sizeof(Vector4));
 }
 
 /// Extract Vector3 from Vector4.

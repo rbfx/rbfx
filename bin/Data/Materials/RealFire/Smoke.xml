@@ -3,7 +3,7 @@
 	<shader vsdefines="SOFTPARTICLES" psdefines="SOFTPARTICLES" />
 	<cull value="ccw" />
 	<shadowcull value="ccw" />
-	<texture unit="diffuse" name="Textures/RealFire/Smoke.png" />
+	<texture slot="Albedo" name="Textures/RealFire/Smoke.png" />
 	<parameter name="MatDiffColor" value="1 1 1 1" />
 	<parameter name="FadeOffsetScale" value="0 2" />
 </material>

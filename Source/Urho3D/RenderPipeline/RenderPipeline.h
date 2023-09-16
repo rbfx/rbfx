@@ -57,6 +57,10 @@ public:
     virtual const FrameInfo& GetFrameInfo() const = 0;
     /// Return render pipeline statistics for profiling.
     virtual const RenderPipelineStats& GetStats() const = 0;
+    /// Draw debug geometries, if applicable.
+    virtual void DrawDebugGeometries(bool depthTest) = 0;
+    /// Draw debug lights, if applicable.
+    virtual void DrawDebugLights(bool depthTest) = 0;
 
     /// Implement RenderPipelineInterface
     /// @{

@@ -293,7 +293,6 @@ void Billboards::AnimateScene(float timeStep)
 
 void Billboards::Update(float timeStep)
 {
-	
     // Move the camera and animate the scene, scale movement with time step
     AnimateScene(timeStep);
 }

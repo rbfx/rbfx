@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Graphics/PipelineState.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../RenderPipeline/PostProcessPass.h"
 #include "../RenderPipeline/RenderBuffer.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
@@ -72,22 +72,12 @@ protected:
 
     struct CachedStates
     {
-        SharedPtr<PipelineState> lum64_;
-        SharedPtr<PipelineState> lum16_;
-        SharedPtr<PipelineState> lum4_;
-        SharedPtr<PipelineState> lum1_;
-        SharedPtr<PipelineState> adaptedLum_;
-        SharedPtr<PipelineState> autoExposure_;
-
-        bool IsValid()
-        {
-            return lum64_->IsValid()
-                && lum16_->IsValid()
-                && lum4_->IsValid()
-                && lum1_->IsValid()
-                && adaptedLum_->IsValid()
-                && autoExposure_->IsValid();
-        }
+        StaticPipelineStateId lum64_{};
+        StaticPipelineStateId lum16_{};
+        StaticPipelineStateId lum4_{};
+        StaticPipelineStateId lum1_{};
+        StaticPipelineStateId adaptedLum_{};
+        StaticPipelineStateId autoExposure_{};
     };
     ea::optional<CachedStates> pipelineStates_;
 };

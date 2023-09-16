@@ -24,9 +24,10 @@
 
 #pragma once
 
-#include <EASTL/shared_array.h>
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
+#include "Urho3D/Resource/Resource.h"
 
-#include "../Resource/Resource.h"
+#include <EASTL/shared_array.h>
 
 struct SDL_Surface;
 
@@ -159,6 +160,9 @@ public:
     Color GetPixelBilinear(float x, float y) const;
     /// Return a trilinearly sampled 3D pixel color. X, Y and Z have the range 0-1.
     Color GetPixelTrilinear(float x, float y, float z) const;
+
+    /// Return internal GPU format corresponding to the Image format. Return unknown if there is no such format.
+    TextureFormat GetGPUFormat() const;
 
     /// Return width.
     /// @property

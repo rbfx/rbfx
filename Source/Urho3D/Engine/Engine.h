@@ -51,11 +51,13 @@ public:
     ~Engine() override;
 
     /// Initialize engine using parameters given and show the application window. Return true if successful.
-    bool Initialize(const StringVariantMap& parameters);
+    bool Initialize(const StringVariantMap& applicationParameters, const StringVariantMap& commandLineParameters);
     /// Initialize virtual filesystem. Implicitly called by Initialize.
     void InitializeVirtualFileSystem();
     /// Run one frame.
     void RunFrame();
+    /// Web only. Process canvas resize event.
+    void OnCanvasResize(int width, int height, bool isFullScreen, float dpiScale);
     /// Create the console and return it. May return null if engine configuration does not allow creation (headless mode).
     Console* CreateConsole();
     /// Create the debug hud.

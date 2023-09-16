@@ -23,13 +23,13 @@
 #pragma once
 
 #include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/IO/FileIdentifier.h"
 
 #include <EASTL/string.h>
 
 namespace Urho3D
 {
 
-URHO3D_API void LogShaderSource(const ea::string& fileName, ShaderType type, ea::string_view defines,
-    ea::string_view source, ea::string_view extension);
+URHO3D_API void LogShaderSource(const FileIdentifier& fileName, ea::string_view defines, ea::string_view source);
 
-}
+} // namespace Urho3D

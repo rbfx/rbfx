@@ -179,7 +179,7 @@ private:
     void EnsureInitialized();
     Vector3 GetTargetPosition() const;
     ea::pair<Vector3, Vector3> CalculateBendDirections(
-        const Transform& frameOfReference, const Vector3& toeTargetPosition) const;
+        const Transform& frameOfReference, const Vector3& targetPosition) const;
 
     ea::string firstBoneName_;
     ea::string secondBoneName_;
@@ -201,7 +201,8 @@ private:
 
     struct LocalCache
     {
-        Vector3 defaultDirection_;
+        Vector3 bendDirection_;
+        Vector3 targetDirection_;
     } local_;
 
     Vector3 latestTargetPosition_;
@@ -331,7 +332,8 @@ private:
         float defaultThighToToeDistance_{};
         float tiptoeTweakOffset_{};
 
-        Vector3 defaultDirection_;
+        Vector3 bendDirection_;
+        Vector3 targetDirection_;
         Quaternion defaultFootRotation_;
         Vector3 defaultToeOffset_;
         Quaternion defaultToeRotation_;
@@ -477,7 +479,7 @@ private:
     void RotateShoulder(const Quaternion& rotation);
 
     ea::pair<Vector3, Vector3> CalculateBendDirections(
-        const Transform& frameOfReference, const Vector3& toeTargetPosition) const;
+        const Transform& frameOfReference, const Vector3& handTargetPosition) const;
     Quaternion CalculateMaxShoulderRotation(const Vector3& handTargetPosition) const;
 
     /// Attributes.
@@ -510,8 +512,9 @@ private:
 
     struct LocalCache
     {
-        Vector3 defaultDirection_;
+        Vector3 bendDirection_;
         Vector3 up_;
+        Vector3 targetDirection_;
 
         Quaternion shoulderRotation_;
         Vector3 armOffset_;

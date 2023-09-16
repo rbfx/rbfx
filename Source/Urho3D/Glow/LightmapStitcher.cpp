@@ -64,16 +64,16 @@ const Vector3 seamsMultitap[numMultiTapSamples] =
 };
 
 /// Return texture format for given amount of channels.
-unsigned GetStitchTextureFormat(unsigned numChannels)
+TextureFormat GetStitchTextureFormat(unsigned numChannels)
 {
     switch (numChannels)
     {
-    case 1: return Graphics::GetFloat32Format();
-    case 2: return Graphics::GetRGFloat32Format();
-    case 4: return Graphics::GetRGBAFloat32Format();
+    case 1: return TextureFormat::TEX_FORMAT_R32_FLOAT;
+    case 2: return TextureFormat::TEX_FORMAT_RG32_FLOAT;
+    case 4: return TextureFormat::TEX_FORMAT_RGBA32_FLOAT;
     default:
         assert(0);
-        return 0;
+        return TextureFormat::TEX_FORMAT_UNKNOWN;
     }
 }
 
@@ -103,7 +103,7 @@ SharedPtr<Scene> CreateStitchingScene(Context* context,
         auto material = MakeShared<Material>(context);
         auto technique = cache->GetResource<Technique>(settings.stitchBackgroundTechniqueName_);
         material->SetTechnique(0, technique);
-        material->SetTexture(TU_DIFFUSE, inputTexture);
+        material->SetTexture(ShaderResources::Albedo, inputTexture);
         material->SetRenderOrder(0);
 
         auto staticModel = backgroundNode->CreateComponent<StaticModel>();
@@ -124,7 +124,7 @@ SharedPtr<Scene> CreateStitchingScene(Context* context,
             auto material = MakeShared<Material>(context);
             auto technique = cache->GetResource<Technique>(settings.stitchSeamsTechniqueName_);
             material->SetTechnique(0, technique);
-            material->SetTexture(TU_DIFFUSE, inputTexture);
+            material->SetTexture(ShaderResources::Albedo, inputTexture);
             material->SetShaderParameter("MatDiffColor", Color(1.0f, 1.0f, 1.0f, alpha));
             material->SetRenderOrder(1 + i);
 
@@ -185,7 +185,7 @@ SharedPtr<VertexBuffer> CreateSeamsVertexBuffer(Context* context, const Lightmap
     auto vertexBuffer = MakeShared<VertexBuffer>(context);
     vertexBuffer->SetShadowed(true);
     vertexBuffer->SetSize(seams.size() * 2, vertexElements);
-    vertexBuffer->SetData(vertexData.data());
+    vertexBuffer->Update(vertexData.data());
     return vertexBuffer;
 }
 
@@ -239,7 +239,7 @@ LightmapStitchingContext InitializeStitchingContext(Context* context, unsigned l
     result.context_ = context;
     result.lightmapSize_ = lightmapSize;
 
-    const unsigned textureFormat = GetStitchTextureFormat(numChannels);
+    const TextureFormat textureFormat = GetStitchTextureFormat(numChannels);
     result.pingTexture_ = MakeShared<Texture2D>(context);
     result.pongTexture_ = MakeShared<Texture2D>(context);
 
@@ -247,7 +247,7 @@ LightmapStitchingContext InitializeStitchingContext(Context* context, unsigned l
     {
         const int size = static_cast<int>(lightmapSize);
         texture->SetNumLevels(1);
-        texture->SetSize(size, size, textureFormat, TEXTURE_RENDERTARGET);
+        texture->SetSize(size, size, textureFormat, TextureFlag::BindRenderTarget);
     }
 
     return result;

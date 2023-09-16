@@ -3,6 +3,82 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## 12.2.0 2023-05-17
+
+### Other changes
+* Support GLSL_EXT_shader_tile_image
+* Support GL_EXT_ray_tracing_position_fetch
+* Support custom include callbacks via the C API
+* Add preamble-text command-line option
+* Accept variables as parameters of spirv_decorate_id
+* Fix generation of conditionals with a struct result
+* Fix double expansion of macros
+* Fix DebugCompilationUnit scope
+* Improve line information
+
+## 12.1.0 2023-03-21
+
+### Other changes
+* Reject non-float inputs/outputs for version less than 120
+* Fix invalid BufferBlock decoration for SPIR-V 1.3 and above
+* Add HLSL relaxed-precision float/int matrix expansions
+* Block decorate Vulkan structs with RuntimeArrays
+* Support InterlockedAdd on float types
+
+## 12.0.0 2023-01-18
+
+### Breaking changes
+* An ABI was accidentally broken in #3014. Consequently, we have incremented the major revision number.
+
+### Other changes
+* Add support for ARB_bindless_texture.
+* Add support for GL_NV_shader_invocation_reorder.
+* Fix const parameter debug types when using NonSemantic.Shader.DebugInfo.100.
+* Fix NonSemantic.Shader.DebugInfo.100 disassembly.
+* Fix MaxDualSourceDrawBuffersEXT usage.
+* Fix structure member reference crash.
+
+## 11.13.0 2022-12-06
+
+### Other changes
+* Make HelperInvocation accesses volatile for SPIR-V 1.6.
+* Improve forward compatibility of ResourceLimits interface 
+* Remove GLSLANG_ANGLE
+
+## 11.12.0 2022-10-12
+
+### Other changes
+* Update generator version
+* Add support for GL_EXT_mesh_shader
+* Add support for NonSemantic.Shader.DebugInfo.100
+* Make OpEmitMeshTasksEXT a terminal instruction
+* Make gl_SubGroupARB a flat in int in Vulkan
+* Add support for GL_EXT_opacity_micromap
+* Add preamble support to C interface
+
+## 11.11.0 2022-08-11
+
+### Other changes
+* Add OpSource support to C interface
+* Deprecate samplerBuffer for spirv1.6 and later
+* Add support for SPV_AMD_shader_early_and_late_fragment_tests
+
+## 11.10.0 2022-06-02
+
+### Other changes
+* Generate OpLine before OpFunction
+* Add support for VK_EXT_fragment_shader_barycentric
+* Add whitelist filtering for debug comments in SPIRV-Remap
+* Add support for GL_EXT_ray_cull_mask
+
+## 11.9.0 2022-04-06
+
+### Other changes
+* Add GLSL version override functionality
+* Add eliminate-dead-input-components to -Os
+* Add enhanced-msgs option
+* Explicitly use Python 3 for builds
+
 ## 11.8.0 2022-01-27
 
 ### Other changes

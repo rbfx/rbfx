@@ -30,6 +30,7 @@
 #include "../Graphics/Technique.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../IO/Log.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Node.h"
 #include "../UI/Font.h"
@@ -60,6 +61,8 @@ Text3D::Text3D(Context* context) :
     usingSDFShader_(false),
     fontDataLost_(false)
 {
+    vertexBuffer_->SetDebugName("Text3D Geometry");
+
     text_.SetEffectDepthBias(DEFAULT_EFFECT_DEPTH_BIAS);
 }
 
@@ -163,7 +166,7 @@ void Text3D::UpdateBatchesDelayed(const FrameInfo& frame)
         unsigned vertexCount = uiVertexData_.size() / UI_VERTEX_SIZE;
         if (vertexBuffer_->GetVertexCount() != vertexCount)
             vertexBuffer_->SetSize(vertexCount, MASK_POSITION | MASK_COLOR | MASK_TEXCOORD1);
-        vertexBuffer_->SetData(&uiVertexData_[0]);
+        vertexBuffer_->Update(&uiVertexData_[0]);
     }
 
     geometryDirty_ = false;
@@ -690,7 +693,7 @@ void Text3D::UpdateTextMaterials(bool forceUpdate)
 
         Material* material = batches_[i].material_;
         Texture* texture = uiBatches_[i].texture_;
-        material->SetTexture(TU_DIFFUSE, texture);
+        material->SetTexture(ShaderResources::Albedo, texture);
 
         if (isSDFFont)
         {
@@ -747,7 +750,7 @@ void Text3D::UpdateTextMaterials(bool forceUpdate)
                 Pass* pass = tech ? tech->GetPass("alpha") : nullptr;
                 if (pass)
                 {
-                    if (texture && texture->GetFormat() == Graphics::GetAlphaFormat())
+                    if (texture && texture->GetFormat() == TextureFormat::TEX_FORMAT_R8_UNORM)
                         pass->SetPixelShaderDefines("ALPHAMAP");
                     else
                         pass->SetPixelShaderDefines("");

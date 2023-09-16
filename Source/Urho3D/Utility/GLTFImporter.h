@@ -37,6 +37,8 @@ class Model;
 namespace Urho3D
 {
 
+class ModelView;
+
 struct GLTFImporterSettings
 {
     ea::string assetName_{"Asset"};
@@ -76,6 +78,12 @@ struct GLTFImporterSettings
     } preview_;
 };
 
+class URHO3D_API GLTFImporterCallback
+{
+public:
+    virtual void OnModelLoaded(ModelView& modelView) {};
+};
+
 URHO3D_API void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value);
 
 /// Utility class to load GLTF file and save it as Urho resources.
@@ -98,7 +106,7 @@ public:
     bool MergeFile(const ea::string& fileName, const ea::string& assetName);
 
     /// Process loaded GLTF files and import resources. Injects resources into resource cache!
-    bool Process(const ea::string& outputPath, const ea::string& resourceNamePrefix);
+    bool Process(const ea::string& outputPath, const ea::string& resourceNamePrefix, GLTFImporterCallback* callback);
 
     /// Save generated resources.
     bool SaveResources();
@@ -111,6 +119,8 @@ private:
 
     ea::unique_ptr<tinygltf::Model> model_;
     ea::unique_ptr<Impl> impl_;
+
+    GLTFImporterCallback defaultCallback_;
 };
 
 } // namespace Urho3D

@@ -49,10 +49,10 @@ struct SpirVShader
 /// List of supported target shader languages.
 enum class TargetShaderLanguage
 {
-    GLSL_3_2,
     GLSL_4_1,
     GLSL_ES_3_0,
     HLSL_5_0,
+    VULKAN_1_0,
 };
 
 /// Array of shader defines: pairs of name and value.

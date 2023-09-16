@@ -381,9 +381,18 @@ public:
     }
 
     /// Construct from a raw pointer.
-    explicit WeakPtr(InterfaceType* ptr) noexcept
+    template <class U, ea::enable_if_t<ea::is_base_of_v<InterfaceType, U>, int> = 0>
+    explicit WeakPtr(U* ptr) noexcept
         : ptr_(ptr)
         , refCount_(ptr ? ptr->RefCountPtr() : nullptr)
+    {
+        AddRef();
+    }
+
+    /// Construct from separate pointers.
+    WeakPtr(InterfaceType* ptr, RefCounted* refCounted) noexcept
+        : ptr_(ptr)
+        , refCount_(refCounted->RefCountPtr())
     {
         AddRef();
     }

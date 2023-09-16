@@ -24,7 +24,6 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/Geometry.h"
-#include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/VertexBuffer.h"
@@ -194,21 +193,6 @@ void Geometry::SetRawIndexData(const ea::shared_array<unsigned char>& data, unsi
     rawIndexSize_ = indexSize;
 }
 
-void Geometry::Draw(Graphics* graphics)
-{
-    if (indexBuffer_ && indexCount_ > 0)
-    {
-        graphics->SetIndexBuffer(indexBuffer_);
-        graphics->SetVertexBuffers(vertexBuffers_);
-        graphics->Draw(primitiveType_, indexStart_, indexCount_, vertexStart_, vertexCount_);
-    }
-    else if (vertexCount_ > 0)
-    {
-        graphics->SetVertexBuffers(vertexBuffers_);
-        graphics->Draw(primitiveType_, vertexStart_, vertexCount_);
-    }
-}
-
 VertexBuffer* Geometry::GetVertexBuffer(unsigned index) const
 {
     return index < vertexBuffers_.size() ? vertexBuffers_[index] : nullptr;
@@ -233,22 +217,6 @@ unsigned Geometry::GetPrimitiveCount() const
     default:
         return 0;
     }
-}
-
-unsigned short Geometry::GetBufferHash() const
-{
-    unsigned short hash = 0;
-
-    for (unsigned i = 0; i < vertexBuffers_.size(); ++i)
-    {
-        VertexBuffer* vBuf = vertexBuffers_[i];
-        hash += *((unsigned short*)&vBuf);
-    }
-
-    IndexBuffer* iBuf = indexBuffer_;
-    hash += *((unsigned short*)&iBuf);
-
-    return hash;
 }
 
 void Geometry::GetRawData(const unsigned char*& vertexData, unsigned& vertexSize, const unsigned char*& indexData,

@@ -27,7 +27,7 @@
 #include "../Graphics/Geometry.h"
 #include "../Graphics/Light.h"
 #include "../Graphics/Material.h"
-#include "../Graphics/PipelineState.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../Graphics/ShaderVariation.h"
 #include "../RenderPipeline/BatchCompositor.h"
 #include "../RenderPipeline/RenderPipelineDebugger.h"
@@ -42,10 +42,15 @@ namespace Urho3D
 namespace
 {
 
-ea::tuple<ea::string, ea::string> MakeSortKey(const PipelineState& pipelineState)
+ea::string MakeSortKey(const PipelineState& pipelineState)
 {
-    const PipelineStateDesc& desc = pipelineState.GetDesc();
-    return { desc.vertexShader_->GetName(), desc.pixelShader_->GetName() };
+    if (const GraphicsPipelineStateDesc* graphicsDesc = pipelineState.GetDesc().AsGraphics())
+        return ea::string::joined(
+            {graphicsDesc->vertexShader_->GetDebugName(), graphicsDesc->pixelShader_->GetDebugName()}, " ");
+    else if (const ComputePipelineStateDesc* computeDesc = pipelineState.GetDesc().AsCompute())
+        return computeDesc->computeShader_->GetDebugName();
+    else
+        return "";
 }
 
 ea::tuple<ea::string> MakeSortKey(const Material& material)
@@ -53,9 +58,9 @@ ea::tuple<ea::string> MakeSortKey(const Material& material)
     return { material.GetName() };
 }
 
-ea::tuple<ShaderType, ea::string, ea::string> MakeSortKey(const ShaderVariation& shader)
+ea::tuple<ShaderType, ea::string> MakeSortKey(const RawShader& shader)
 {
-    return { shader.GetShaderType(), shader.GetName(), shader.GetDefines() };
+    return { shader.GetShaderType(), shader.GetDebugName() };
 }
 
 template <class T>
@@ -154,8 +159,21 @@ ea::string DebugFrameSnapshot::ScenePipelineStatesToString() const
     for (PipelineState* pipelineState : GetSortedObjects(scenePipelineStates_))
     {
         const PipelineStateDesc& desc = pipelineState->GetDesc();
-        result += Format("- {}: VS={} PS={}\n", static_cast<void*>(pipelineState),
-            static_cast<void*>(desc.vertexShader_), static_cast<void*>(desc.pixelShader_));
+
+        if (const GraphicsPipelineStateDesc* graphicsDesc = desc.AsGraphics())
+        {
+            result += Format("- {}: VS={} PS={} GS={} HS={} DS={}\n", static_cast<void*>(pipelineState),
+                static_cast<void*>(graphicsDesc->vertexShader_), static_cast<void*>(graphicsDesc->pixelShader_),
+                static_cast<void*>(graphicsDesc->geometryShader_), static_cast<void*>(graphicsDesc->hullShader_),
+                static_cast<void*>(graphicsDesc->domainShader_));
+        }
+
+        if (const ComputePipelineStateDesc* computeDesc = desc.AsCompute())
+        {
+            result += Format(
+                "- {}: CS={}\n", static_cast<void*>(pipelineState), static_cast<void*>(computeDesc->computeShader_));
+        }
+
     }
     return result;
 }
@@ -176,11 +194,11 @@ ea::string DebugFrameSnapshot::SceneShadersToString() const
     static const ea::string shaderTypes[] = { "VS", "PS" };
 
     ea::string result;
-    for (ShaderVariation* shader : GetSortedObjects(sceneShaders_))
+    for (RawShader* shader : GetSortedObjects(sceneShaders_))
     {
         const ea::string& shaderType = shaderTypes[shader->GetShaderType()];
-        result += Format("- {}: [{}]{}: {}\n",
-            static_cast<void*>(shader), shaderType, shader->GetName(), shader->GetDefines());
+        result += Format("- {}: [{}]{}\n",
+            static_cast<void*>(shader), shaderType, shader->GetDebugName());
     }
     return result;
 }
@@ -213,8 +231,23 @@ void RenderPipelineDebugger::ReportSceneBatch(const DebugFrameSnapshotBatch& sce
     snapshot_.sceneMaterials_.insert(sceneBatch.material_);
 
     const PipelineStateDesc& pipelineStateDesc = sceneBatch.pipelineState_->GetDesc();
-    snapshot_.sceneShaders_.insert(pipelineStateDesc.vertexShader_);
-    snapshot_.sceneShaders_.insert(pipelineStateDesc.pixelShader_);
+
+    if (const GraphicsPipelineStateDesc* graphicsDesc = pipelineStateDesc.AsGraphics())
+    {
+        snapshot_.sceneShaders_.insert(graphicsDesc->vertexShader_);
+        snapshot_.sceneShaders_.insert(graphicsDesc->pixelShader_);
+        if (graphicsDesc->geometryShader_)
+            snapshot_.sceneShaders_.insert(graphicsDesc->geometryShader_);
+        if (graphicsDesc->hullShader_)
+            snapshot_.sceneShaders_.insert(graphicsDesc->hullShader_);
+        if (graphicsDesc->domainShader_)
+            snapshot_.sceneShaders_.insert(graphicsDesc->domainShader_);
+    }
+
+    if (const ComputePipelineStateDesc* computeDesc = pipelineStateDesc.AsCompute())
+    {
+        snapshot_.sceneShaders_.insert(computeDesc->computeShader_);
+    }
 }
 
 void RenderPipelineDebugger::ReportQuad(ea::string_view debugComment, const IntVector2& size)

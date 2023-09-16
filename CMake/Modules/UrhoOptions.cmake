@@ -123,7 +123,6 @@ endif ()
 
 if (UWP)
     set (URHO3D_SSE OFF)
-    set (URHO3D_GRAPHICS_API D3D11)
 else ()
     set (URHO3D_SSE           SSE2 CACHE STRING "Enable SSE instructions")
 endif ()
@@ -188,10 +187,9 @@ option                (URHO3D_URHO2D             "2D subsystem enabled"         
 option                (URHO3D_PHYSICS2D          "2D physics subsystem enabled"                          ${URHO3D_ENABLE_ALL})
 option                (URHO3D_RMLUI              "HTML subset UIs via RmlUI middleware"                  ${URHO3D_ENABLE_ALL})
 option                (URHO3D_PARTICLE_GRAPH     "Particle Graph Effects"                                ${URHO3D_ENABLE_ALL})
-cmake_dependent_option(URHO3D_COMPUTE            "Enable Compute shaders"                                ${URHO3D_ENABLE_ALL} "NOT EMSCRIPTEN;NOT MOBILE;NOT URHO3D_GLES2" OFF)
 option                (URHO3D_ACTIONS            "Tweening actions"                                      ${URHO3D_ENABLE_ALL})
-option                (URHO3D_SHADER_TRANSLATOR  "Enable shader translation from universal GLSL shaders to other GAPI via glslang and SPIRV-Cross" ON)
-option                (URHO3D_SHADER_OPTIMIZER   "Enable shader optimization via SPIRV-Tools"            ON)
+option                (URHO3D_SHADER_TRANSLATOR  "Enable shader translation from universal GLSL shaders to other GAPI via glslang and SPIRV-Cross" ${URHO3D_ENABLE_ALL})
+option                (URHO3D_SHADER_OPTIMIZER   "Enable shader optimization via SPIRV-Tools"            ${URHO3D_ENABLE_ALL})
 
 # Features
 cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "BUILD_SHARED_LIBS;NOT MINGW"   OFF)
@@ -202,7 +200,6 @@ set_property(CACHE URHO3D_NETFX PROPERTY STRINGS netstandard2.1)
 set(URHO3D_NETFX_RUNTIME_VERSION OFF CACHE STRING "Version of runtime to use.")
 option                (URHO3D_DEBUG_ASSERT       "Enable Urho3D assert macros"                           ${URHO3D_ENABLE_ALL}                                    )
 cmake_dependent_option(URHO3D_FILEWATCHER        "Watch filesystem for resource changes"                 ${URHO3D_ENABLE_ALL} "URHO3D_THREADING;NOT UWP"      OFF)
-option                (URHO3D_SPHERICAL_HARMONICS "Use spherical harmonics for ambient lighting"         ON)
 option                (URHO3D_HASH_DEBUG         "Enable StringHash name debugging"                      ${URHO3D_ENABLE_ALL}                                    )
 option                (URHO3D_MONOLITHIC_HEADER  "Create Urho3DAll.h which includes all engine headers." OFF                                                     )
 cmake_dependent_option(URHO3D_MINIDUMPS          "Enable writing minidumps on crash"                     ${URHO3D_ENABLE_ALL} "MSVC;NOT UWP"                  OFF)
@@ -214,6 +211,13 @@ option                (URHO3D_PACKAGING          "Enable *.pak file creation"   
 # Web
 cmake_dependent_option(EMSCRIPTEN_WASM           "Use wasm instead of asm.js"                            ON                   "EMSCRIPTEN"                           OFF)
 set(EMSCRIPTEN_TOTAL_MEMORY 128 CACHE STRING  "Memory limit in megabytes. Set to 0 for dynamic growth. Must be multiple of 64KB.")
+
+# Graphics configuration
+option                (URHO3D_DEBUG_GRAPHICS     "Enable debug checks in renderer"                       OFF)
+option                (URHO3D_GRAPHICS_NO_GL     "Disable OpenGL backend in renderer"                    OFF)
+cmake_dependent_option(URHO3D_GRAPHICS_NO_D3D11  "Disable Direct3D11 backend in renderer"                OFF "URHO3D_SHADER_TRANSLATOR" ON)
+cmake_dependent_option(URHO3D_GRAPHICS_NO_D3D12  "Disable Direct3D12 backend in renderer"                OFF "URHO3D_SHADER_TRANSLATOR" ON)
+cmake_dependent_option(URHO3D_GRAPHICS_NO_VULKAN "Disable Vulkan backend in renderer"                    OFF "URHO3D_SHADER_TRANSLATOR" ON)
 
 # Misc
 rbfx_dependent_option(URHO3D_PLUGIN_LIST "List of plugins to be statically linked with Editor and Player executables" "103_GamePlugin;113_InputLogger" URHO3D_SAMPLES "")
@@ -229,23 +233,8 @@ option(URHO3D_NO_EDITOR_PLAYER_EXE              "Do not build editor or player e
 option(URHO3D_SSL                               "Enable OpenSSL support"                                OFF)
 
 if (WIN32)
-    set(URHO3D_GRAPHICS_API D3D11 CACHE STRING "Graphics API")
-    set_property(CACHE URHO3D_GRAPHICS_API PROPERTY STRINGS D3D11 OpenGL)
     option(URHO3D_WIN32_CONSOLE "Show log messages in win32 console"                     OFF)
-elseif (IOS OR ANDROID)
-    set(URHO3D_GRAPHICS_API GLES2 CACHE STRING "Graphics API")
-    set_property(CACHE URHO3D_GRAPHICS_API PROPERTY STRINGS GLES2 GLES3)
-else ()
-    set(URHO3D_GRAPHICS_API OpenGL)
 endif ()
-string(TOUPPER "${URHO3D_GRAPHICS_API}" URHO3D_GRAPHICS_API)
-set (URHO3D_${URHO3D_GRAPHICS_API} ON)
-if (URHO3D_GLES2 OR URHO3D_GLES3)
-    set (URHO3D_OPENGL ON)
-endif ()
-
-# Whether to use legacy renderer. Only OpenGL support legacy renderer.
-cmake_dependent_option(URHO3D_LEGACY_RENDERER "Use legacy renderer by default" OFF "URHO3D_OPENGL" OFF)
 
 if (URHO3D_CSHARP)
     set (URHO3D_MONOLITHIC_HEADER ON)   # Used by wrapper code
@@ -254,18 +243,11 @@ endif ()
 # Implicit configuration
 if (ANDROID OR EMSCRIPTEN OR IOS)
     set (URHO3D_SSE OFF)
-    if (NOT URHO3D_GLES3)
-        set (URHO3D_SYSTEMUI OFF)
-    endif ()
-elseif ((URHO3D_TOOLS OR URHO3D_EDITOR))
+elseif (URHO3D_TOOLS OR URHO3D_EDITOR)
     set (URHO3D_SYSTEMUI ON)
     set (URHO3D_FILEWATCHER ON)
     set (URHO3D_LOGGING ON)
     set (URHO3D_HASH_DEBUG ON)
-endif ()
-
-if (URHO3D_D3D11)
-    set (URHO3D_SHADER_TRANSLATOR ON)
 endif ()
 
 if (EMSCRIPTEN)

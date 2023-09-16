@@ -231,6 +231,7 @@ void DrawableProcessor::OnCollectStatistics(RenderPipelineStats& stats)
 {
     stats.numOccluders_ += sortedOccluders_.size();
     stats.numLights_ += lights_.size();
+    stats.numGeometries_ += geometries_.Size();
     stats.numShadowedLights_ += numShadowedLights_;
 }
 
@@ -405,8 +406,8 @@ void DrawableProcessor::CheckMaterialForAuxiliaryRenderSurfaces(Material* materi
     for (const auto& item : material->GetTextures())
     {
         // Skip if not render targets
-        Texture* texture = item.second;
-        if (!texture || texture->GetUsage() != TEXTURE_RENDERTARGET)
+        Texture* texture = item.second.value_;
+        if (!texture || !texture->IsRenderTarget())
             continue;
 
         // Have to check cube & 2D textures separately
@@ -480,7 +481,7 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
         for (unsigned sourceBatchIndex = 0; sourceBatchIndex < sourceBatches.size(); ++sourceBatchIndex)
         {
             const SourceBatch& sourceBatch = sourceBatches[sourceBatchIndex];
-            if (!sourceBatch.geometry_ || sourceBatch.numWorldTransforms_ == 0)
+            if (!sourceBatch.geometry_ || sourceBatch.geometry_->IsEmpty() || sourceBatch.numWorldTransforms_ == 0)
                 continue;
 
             // Find current technique
@@ -543,7 +544,6 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
                 {
                     lightAccumulator.reflectionProbes_[0] = probe0.data_;
 
-#ifdef DESKTOP_GRAPHICS
                     if (reflectionMode >= ReflectionMode::BlendProbes && probe1.data_)
                     {
                         lightAccumulator.reflectionProbes_[1] = probe1.data_;
@@ -555,7 +555,6 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
                     {
                         lightAccumulator.reflectionProbesBlendFactor_ = 1.0f - probe0.volume_;
                     }
-#endif
                 }
 
             }

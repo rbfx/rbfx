@@ -26,6 +26,7 @@
 #include "../Graphics/Texture2D.h"
 #include "../RenderPipeline/RenderBufferManager.h"
 #include "../RenderPipeline/BloomPass.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
 
 #include <EASTL/numeric.h>
 
@@ -60,7 +61,8 @@ void BloomPass::InitializeTextures()
 
     for (unsigned i = 0; i < settings_.numIterations_; ++i)
     {
-        const unsigned format = settings_.hdr_ ? Graphics::GetRGBAFloat16Format() : Graphics::GetRGBFormat();
+        const TextureFormat format =
+            settings_.hdr_ ? TextureFormat::TEX_FORMAT_RGBA16_FLOAT : TextureFormat::TEX_FORMAT_RGBA8_UNORM;
         const RenderBufferParams params{ format, 1, RenderBufferFlag::BilinearFiltering };
         // Start scale is 1
         // It's okay to do it unchecked because render buffers are never smaller than 1x1
@@ -72,28 +74,34 @@ void BloomPass::InitializeTextures()
 
 void BloomPass::InitializeStates()
 {
+    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::Albedo, SamplerStateDesc::Bilinear()}};
+
     pipelineStates_ = CachedStates{};
-    pipelineStates_->bright_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BRIGHT");
-    pipelineStates_->blurH_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BLURH");
-    pipelineStates_->blurV_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BLURV");
-    pipelineStates_->bloom_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ADD, "v2/P_Bloom", "COMBINE");
+    pipelineStates_->bright_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BRIGHT", samplers);
+    pipelineStates_->blurH_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BLURH", samplers);
+    pipelineStates_->blurV_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_Bloom", "BLURV", samplers);
+    pipelineStates_->bloom_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_ADD, "v2/P_Bloom", "COMBINE", samplers);
 }
 
 unsigned BloomPass::GatherBrightRegions(RenderBuffer* destination)
 {
-    Texture2D* viewportTexture = renderBufferManager_->GetSecondaryColorTexture();
-    const IntVector2 inputSize = viewportTexture->GetSize();
+    RawTexture* viewportTexture = renderBufferManager_->GetSecondaryColorTexture();
+    const IntVector2 inputSize = viewportTexture->GetParams().size_.ToIntVector2();
     const Vector2 inputInvSize = Vector2::ONE / inputSize.ToVector2();
 
-    const ShaderResourceDesc shaderResources[] = { { TU_DIFFUSE, viewportTexture } };
+    const ShaderResourceDesc shaderResources[] = { { ShaderResources::Albedo, viewportTexture } };
     const auto shaderParameters = GetShaderParameters(inputInvSize);
 
     DrawQuadParams drawParams;
     drawParams.resources_ = shaderResources;
     drawParams.parameters_ = shaderParameters;
     drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
+    drawParams.pipelineStateId_ = pipelineStates_->bright_;
 
-    drawParams.pipelineState_ = pipelineStates_->bright_;
     renderBufferManager_->SetRenderTargets(nullptr, { destination });
     renderBufferManager_->DrawQuad("Gather bright regions", drawParams);
 
@@ -103,9 +111,9 @@ unsigned BloomPass::GatherBrightRegions(RenderBuffer* destination)
 void BloomPass::BlurTexture(RenderBuffer* final, RenderBuffer* temporary)
 {
     ShaderResourceDesc shaderResources[1];
-    shaderResources[0].unit_ = TU_DIFFUSE;
+    shaderResources[0].name_ = ShaderResources::Albedo;
 
-    const Vector2 inputInvSize = Vector2::ONE / final->GetTexture2D()->GetSize().ToVector2();
+    const Vector2 inputInvSize = Vector2::ONE / final->GetTexture()->GetParams().size_.ToVector2();
     const auto shaderParameters = GetShaderParameters(inputInvSize);
 
     DrawQuadParams drawParams;
@@ -113,13 +121,13 @@ void BloomPass::BlurTexture(RenderBuffer* final, RenderBuffer* temporary)
     drawParams.parameters_ = shaderParameters;
     drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
 
-    shaderResources[0].texture_ = final->GetTexture2D();
-    drawParams.pipelineState_ = pipelineStates_->blurH_;
+    shaderResources[0].texture_ = final->GetTexture();
+    drawParams.pipelineStateId_ = pipelineStates_->blurH_;
     renderBufferManager_->SetRenderTargets(nullptr, { temporary });
     renderBufferManager_->DrawQuad("Blur vertically", drawParams);
 
-    shaderResources[0].texture_ = temporary->GetTexture2D();
-    drawParams.pipelineState_ = pipelineStates_->blurV_;
+    shaderResources[0].texture_ = temporary->GetTexture();
+    drawParams.pipelineStateId_ = pipelineStates_->blurV_;
     renderBufferManager_->SetRenderTargets(nullptr, { final });
     renderBufferManager_->DrawQuad("Blur horizontally", drawParams);
 }
@@ -127,7 +135,7 @@ void BloomPass::BlurTexture(RenderBuffer* final, RenderBuffer* temporary)
 void BloomPass::ApplyBloom(RenderBuffer* bloom, float intensity)
 {
     const ShaderResourceDesc shaderResources[] = {
-        { TU_DIFFUSE, bloom->GetTexture2D() }
+        { ShaderResources::Albedo, bloom->GetTexture() }
     };
     const ShaderParameterDesc shaderParameters[] = {
         { Bloom_LuminanceWeights, luminanceWeights_ },
@@ -139,16 +147,13 @@ void BloomPass::ApplyBloom(RenderBuffer* bloom, float intensity)
 void BloomPass::CopyTexture(RenderBuffer* source, RenderBuffer* destination)
 {
     renderBufferManager_->SetRenderTargets(nullptr, { destination });
-    renderBufferManager_->DrawTexture("Downscale bloom", source->GetTexture2D());
+    renderBufferManager_->DrawTexture("Downscale bloom", source->GetTexture());
 }
 
 void BloomPass::Execute(Camera* camera)
 {
     if (!pipelineStates_)
         InitializeStates();
-
-    if (!pipelineStates_->IsValid())
-        return;
 
     luminanceWeights_ = renderBufferManager_->GetSettings().colorSpace_ == RenderPipelineColorSpace::GammaLDR
         ? Color::LUMINOSITY_GAMMA.ToVector3() : Color::LUMINOSITY_LINEAR.ToVector3();

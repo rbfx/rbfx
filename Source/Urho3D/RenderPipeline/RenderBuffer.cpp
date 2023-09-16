@@ -25,9 +25,10 @@
 #include "../Core/Context.h"
 #include "../Core/Mutex.h"
 #include "../Graphics/Drawable.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/PipelineState.h"
-#include "../Graphics/Renderer.h"
+#include "../RenderAPI/PipelineState.h"
+#include "../RenderAPI/RenderAPIUtils.h"
+#include "../RenderAPI/RenderDevice.h"
+#include "../RenderAPI/RenderPool.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/TextureCube.h"
@@ -70,15 +71,9 @@ RenderSurface* GetRenderSurfaceFromTexture(Texture* texture, CubeMapFace face = 
 
 }
 
-Texture2D* RenderBuffer::GetTexture2D() const
-{
-    Texture* texture = GetTexture();
-    return texture ? texture->Cast<Texture2D>() : nullptr;
-}
-
 RenderBuffer::RenderBuffer(RenderPipelineInterface* renderPipeline)
     : Object(renderPipeline->GetContext())
-    , renderer_(GetSubsystem<Renderer>())
+    , renderDevice_(GetSubsystem<RenderDevice>())
 {
     renderPipeline->OnRenderBegin.Subscribe(this, &RenderBuffer::OnRenderBegin);
     renderPipeline->OnRenderEnd.Subscribe(this, &RenderBuffer::OnRenderEnd);
@@ -108,17 +103,6 @@ TextureRenderBuffer::TextureRenderBuffer(RenderPipelineInterface* renderPipeline
         fixedSize_ = VectorRoundToInt(size);
     else
         sizeMultiplier_ = size;
-
-    const bool isPersistent = params.flags_.Test(RenderBufferFlag::Persistent);
-    auto graphics = GetSubsystem<Graphics>();
-    const bool isDepthStencil = params_.textureFormat_ == graphics->GetDepthStencilFormat()
-        || params_.textureFormat_ == graphics->GetReadableDepthFormat()
-        || params_.textureFormat_ == graphics->GetReadableDepthStencilFormat()
-        || params_.textureFormat_ == graphics->GetShadowMapFormat()
-        || params_.textureFormat_ == graphics->GetHiresShadowMapFormat();
-
-    if (isPersistent || isDepthStencil)
-        persistenceKey_ = GetObjectID();
 }
 
 TextureRenderBuffer::~TextureRenderBuffer()
@@ -127,15 +111,30 @@ TextureRenderBuffer::~TextureRenderBuffer()
 
 void TextureRenderBuffer::OnRenderBegin(const CommonFrameInfo& frameInfo)
 {
+    RenderPool* renderPool = renderDevice_->GetRenderPool();
+
     currentSize_ = CalculateRenderTargetSize(frameInfo.viewportRect_, sizeMultiplier_, fixedSize_);
-    const bool autoResolve = !params_.flags_.Test(RenderBufferFlag::NoMultiSampledAutoResolve);
+
+    const bool noAutoResolve = params_.flags_.Test(RenderBufferFlag::NoMultiSampledAutoResolve);
     const bool isCubemap = params_.flags_.Test(RenderBufferFlag::CubeMap);
     const bool isFiltered = params_.flags_.Test(RenderBufferFlag::BilinearFiltering);
-    const bool isSRGB = params_.flags_.Test(RenderBufferFlag::sRGB);
+    const bool isPersistent = params_.flags_.Test(RenderBufferFlag::Persistent);
+    const bool isDepthStencil = IsDepthTextureFormat(params_.textureFormat_);
 
-    currentTexture_ = renderer_->GetScreenBuffer(currentSize_.x_, currentSize_.y_,
-        params_.textureFormat_, params_.multiSampleLevel_, autoResolve,
-        isCubemap, isFiltered, isSRGB, persistenceKey_);
+    RawTextureParams params;
+    params.type_ = isCubemap ? TextureType::TextureCube : TextureType::Texture2D;
+    params.format_ = params_.textureFormat_;
+    params.flags_.Set(isDepthStencil ? TextureFlag::BindDepthStencil : TextureFlag::BindRenderTarget);
+    if (noAutoResolve)
+        params.flags_.Set(TextureFlag::NoMultiSampledAutoResolve);
+
+    params.size_ = currentSize_.ToIntVector3();
+    params.numLevels_ = 1;
+    params.multiSample_ = params_.multiSampleLevel_;
+
+    currentTexture_ = renderPool->GetTexture(params, isPersistent ? this : nullptr);
+    currentTexture_->SetSamplerStateDesc(isFiltered ? SamplerStateDesc::Bilinear() : SamplerStateDesc::Nearest());
+
     bufferIsReady_ = true;
 }
 
@@ -145,19 +144,28 @@ void TextureRenderBuffer::OnRenderEnd(const CommonFrameInfo& frameInfo)
     bufferIsReady_ = false;
 }
 
-Texture* TextureRenderBuffer::GetTexture() const
+RawTexture* TextureRenderBuffer::GetTexture() const
 {
-    return CheckIfBufferIsReady() ? currentTexture_ : nullptr;
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return currentTexture_;
 }
 
-RenderSurface* TextureRenderBuffer::GetRenderSurface(CubeMapFace face) const
+RenderTargetView TextureRenderBuffer::GetView(unsigned slice) const
 {
-    return CheckIfBufferIsReady() ? GetRenderSurfaceFromTexture(currentTexture_, face) : nullptr;
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return RenderTargetView::TextureSlice(currentTexture_, slice);
+}
+
+RenderTargetView TextureRenderBuffer::GetReadOnlyDepthView(unsigned slice) const
+{
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return RenderTargetView::ReadOnlyDepthSlice(currentTexture_, slice);
 }
 
 IntRect TextureRenderBuffer::GetViewportRect() const
 {
-    return CheckIfBufferIsReady() ? IntRect{ IntVector2::ZERO, currentSize_ } : IntRect::ZERO;
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return {IntVector2::ZERO, currentSize_};
 }
 
 ViewportColorRenderBuffer::ViewportColorRenderBuffer(RenderPipelineInterface* renderPipeline)
@@ -165,14 +173,22 @@ ViewportColorRenderBuffer::ViewportColorRenderBuffer(RenderPipelineInterface* re
 {
 }
 
-Texture* ViewportColorRenderBuffer::GetTexture() const
+RawTexture* ViewportColorRenderBuffer::GetTexture() const
 {
-    return CheckIfBufferIsReady() ? renderTarget_->GetParentTexture() : nullptr;
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return renderTarget_ ? renderTarget_->GetParentTexture() : nullptr;
 }
 
-RenderSurface* ViewportColorRenderBuffer::GetRenderSurface(CubeMapFace face) const
+RenderTargetView ViewportColorRenderBuffer::GetView(unsigned slice) const
 {
-    return CheckIfBufferIsReady() ? renderTarget_ : nullptr;
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return renderTarget_ ? renderTarget_->GetView() : RenderTargetView::SwapChainColor(renderDevice_);
+}
+
+RenderTargetView ViewportColorRenderBuffer::GetReadOnlyDepthView(unsigned slice) const
+{
+    URHO3D_ASSERT(false);
+    return GetView(slice);
 }
 
 void ViewportColorRenderBuffer::OnRenderBegin(const CommonFrameInfo& frameInfo)
@@ -192,14 +208,24 @@ ViewportDepthStencilRenderBuffer::ViewportDepthStencilRenderBuffer(RenderPipelin
 {
 }
 
-Texture* ViewportDepthStencilRenderBuffer::GetTexture() const
+RawTexture* ViewportDepthStencilRenderBuffer::GetTexture() const
 {
-    return CheckIfBufferIsReady() && depthStencil_ ? depthStencil_->GetParentTexture() : nullptr;
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return depthStencil_ ? depthStencil_->GetParentTexture() : nullptr;
 }
 
-RenderSurface* ViewportDepthStencilRenderBuffer::GetRenderSurface(CubeMapFace face) const
+RenderTargetView ViewportDepthStencilRenderBuffer::GetView(unsigned slice) const
 {
-    return CheckIfBufferIsReady() ? depthStencil_ : nullptr;
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return depthStencil_ ? depthStencil_->GetView() : RenderTargetView::SwapChainDepthStencil(renderDevice_);
+}
+
+RenderTargetView ViewportDepthStencilRenderBuffer::GetReadOnlyDepthView(unsigned slice) const
+{
+    URHO3D_ASSERT(CheckIfBufferIsReady());
+    return depthStencil_ //
+        ? depthStencil_->GetReadOnlyDepthView()
+        : RenderTargetView::SwapChainDepthStencil(renderDevice_);
 }
 
 void ViewportDepthStencilRenderBuffer::OnRenderBegin(const CommonFrameInfo& frameInfo)

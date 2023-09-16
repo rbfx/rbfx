@@ -100,16 +100,16 @@ SharedPtr<Texture2D> FontFace::CreateFaceTexture()
     auto texture = MakeShared<Texture2D>(font_->GetContext());
     texture->SetMipsToSkip(QUALITY_LOW, 0); // No quality reduction
     texture->SetNumLevels(1); // No mipmaps
-    texture->SetAddressMode(COORD_U, ADDRESS_BORDER);
-    texture->SetAddressMode(COORD_V, ADDRESS_BORDER);
-    texture->SetBorderColor(Color(0.0f, 0.0f, 0.0f, 0.0f));
+    texture->SetAddressMode(TextureCoordinate::U, ADDRESS_CLAMP);
+    texture->SetAddressMode(TextureCoordinate::V, ADDRESS_CLAMP);
     return texture;
 }
 
 SharedPtr<Texture2D> FontFace::LoadFaceTexture(const SharedPtr<Image>& image)
 {
     SharedPtr<Texture2D> texture = CreateFaceTexture();
-    if (!texture->SetData(image, true))
+    texture->SetName(Format("{}:{}", image->GetName(), pointSize_));
+    if (!texture->SetData(image))
     {
         URHO3D_LOGERROR("Could not load texture from image resource");
         return SharedPtr<Texture2D>();

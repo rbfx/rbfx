@@ -11,7 +11,7 @@
 VERTEX_INPUT(vec4 iPos)
 #ifdef URHO3D_VERTEX_HAS_BONE_WEIGHTS_AND_INDICES
     VERTEX_INPUT(vec4 iBlendWeights)
-    VERTEX_INPUT(ivec4_attrib iBlendIndices)
+    VERTEX_INPUT(uvec4 iBlendIndices)
 #endif
 
 // Optional parameters

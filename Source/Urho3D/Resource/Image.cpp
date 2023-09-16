@@ -1653,6 +1653,31 @@ Color Image::GetPixelTrilinear(float x, float y, float z) const
     return colorNear.Lerp(colorFar, zF);
 }
 
+TextureFormat Image::GetGPUFormat() const
+{
+    if (!IsCompressed())
+    {
+        switch (GetComponents())
+        {
+        case 1: return Diligent::TEX_FORMAT_R8_UNORM;
+        case 2: return Diligent::TEX_FORMAT_RG8_UNORM;
+        case 4: return Diligent::TEX_FORMAT_RGBA8_UNORM;
+        default: return Diligent::TEX_FORMAT_UNKNOWN;
+        }
+    }
+    else
+    {
+        switch (GetCompressedFormat())
+        {
+        case CF_RGBA: return Diligent::TEX_FORMAT_RGBA8_UNORM;
+        case CF_DXT1: return Diligent::TEX_FORMAT_BC1_UNORM;
+        case CF_DXT3: return Diligent::TEX_FORMAT_BC2_UNORM;
+        case CF_DXT5: return Diligent::TEX_FORMAT_BC3_UNORM;
+        default: return Diligent::TEX_FORMAT_UNKNOWN;
+        }
+    }
+}
+
 SharedPtr<Image> Image::GetNextLevel() const
 {
     if (IsCompressed())
@@ -1976,10 +2001,6 @@ SharedPtr<Image> Image::ConvertToRGBA() const
         return SharedPtr<Image>();
     }
 
-    // Already RGBA?
-    if (components_ == 4)
-        return SharedPtr<Image>(const_cast<Image*>(this));
-
     SharedPtr<Image> ret(MakeShared<Image>(context_));
     ret->SetSize(width_, height_, depth_, 4);
 
@@ -2018,6 +2039,10 @@ SharedPtr<Image> Image::ConvertToRGBA() const
             *dest++ = *src++;
             *dest++ = 255;
         }
+        break;
+
+    case 4:
+        memcpy(dest, src, width_ * height_ * depth_ * 4);
         break;
 
     default:

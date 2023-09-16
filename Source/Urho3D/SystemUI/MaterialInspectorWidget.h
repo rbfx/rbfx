@@ -74,11 +74,11 @@ private:
         Widgets::EditVariantOptions options_;
     };
     static const ea::vector<PropertyDesc> properties;
+    static const PropertyDesc vertexDefinesProperty;
+    static const PropertyDesc pixelDefinesProperty;
 
     struct TextureUnitDesc
     {
-        bool desktop_{};
-        TextureUnit unit_;
         ea::string name_;
         ea::string hint_;
     };
@@ -98,8 +98,14 @@ private:
     bool EditQualityInEntry(TechniqueEntry& entry);
 
     void RenderProperty(const PropertyDesc& desc);
+    void RenderShaderDefines();
 
     void RenderTextureUnit(const TextureUnitDesc& desc);
+
+    bool IsDefaultTextureUnit(const ea::string& unit) const;
+    ea::set<ea::string> GetCustomTextureUnits() const;
+    void RenderCustomTextureUnit(const ea::string& unit);
+    void RenderAddCustomTextureUnit(const ea::set<ea::string>& customTextureUnits);
 
     ea::string GetTechniqueDisplayName(const ea::string& resourceName) const;
     bool IsTechniqueDeprecated(const ea::string& resourceName) const;
@@ -122,13 +128,14 @@ private:
 
     ea::vector<ea::pair<const PropertyDesc*, Variant>> pendingSetProperties_;
 
-    ea::vector<ea::pair<TextureUnit, Texture*>> pendingSetTextures_;
+    ea::vector<ea::pair<ea::string, Texture*>> pendingSetTextures_;
 
     ShaderParameterNames shaderParameterNames_;
     ea::vector<ea::pair<ea::string, Variant>> pendingSetShaderParameters_;
 
     ea::string newParameterName_;
     unsigned newParameterType_{};
+    ea::optional<bool> separateShaderDefines_;
 };
 
 }

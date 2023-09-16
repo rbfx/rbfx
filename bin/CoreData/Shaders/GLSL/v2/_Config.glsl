@@ -38,16 +38,14 @@
 /// Configures what data pixel shader needs to prepare for user shader:
 // #define URHO3D_SURFACE_NEED_AMBIENT
 // #define URHO3D_SURFACE_NEED_NORMAL
-// #define URHO3D_SURFACE_NEED_NORMAL_IN_TANGENT_SPACE
 // #define URHO3D_SURFACE_NEED_BACKGROUND_DEPTH
 // #define URHO3D_SURFACE_NEED_BACKGROUND_COLOR
 
-/// Configures whether to disable automatic sampling of built-in inputs.
-// #define URHO3D_DISABLE_DIFFUSE_SAMPLING
-// #define URHO3D_DISABLE_NORMAL_SAMPLING
-// #define URHO3D_DISABLE_SPECULAR_SAMPLING
-// #define URHO3D_DISABLE_EMISSIVE_SAMPLING
-
+/// Configures whether Surface_Set* functions will sample corresponding textures.
+// #define URHO3D_MATERIAL_ALBEDO
+// #define URHO3D_MATERIAL_NORMAL
+// #define URHO3D_MATERIAL_PROPERTIES
+// #define URHO3D_MATERIAL_EMISSION
 
 /// =================================== Material defines ===================================
 
@@ -88,6 +86,9 @@
 
 /// Indicates that the alpha will be discarded, so any kind of attenuation should be performed by modulating the output color itself.
 // #define ADDITIVE
+
+/// Indicates that reflection map should be 2D texture and reflection should be planar
+// #define PLANEREFLECTION
 
 
 /// =================================== Deprecated material defines ===================================

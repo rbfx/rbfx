@@ -25,7 +25,6 @@
 
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
-#include "../Graphics/Batch.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/CustomGeometry.h"
 #include "../Graphics/Geometry.h"
@@ -51,6 +50,7 @@ CustomGeometry::CustomGeometry(Context* context)
     , materialsAttr_(Material::GetTypeStatic())
     , dynamic_(false)
 {
+    vertexBuffer_->SetDebugName("CustomGeometry Geometry");
     vertexBuffer_->SetShadowed(true);
     SetNumGeometries(1);
 }
@@ -348,7 +348,7 @@ void CustomGeometry::Commit()
 
     if (totalVertices)
     {
-        auto* dest = (unsigned char*)vertexBuffer_->Lock(0, totalVertices, true);
+        auto* dest = (unsigned char*)vertexBuffer_->Map();
         if (dest)
         {
             unsigned vertexStart = 0;
@@ -391,7 +391,7 @@ void CustomGeometry::Commit()
                 vertexStart += vertexCount;
             }
 
-            vertexBuffer_->Unlock();
+            vertexBuffer_->Unmap();
         }
         else
             URHO3D_LOGERROR("Failed to lock custom geometry vertex buffer");

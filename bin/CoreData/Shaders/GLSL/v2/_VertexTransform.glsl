@@ -14,22 +14,14 @@ mediump mat3 GetNormalMatrix(mat4 modelMatrix)
 }
 
 /// Return transformed primary UV coordinate.
-vec2 GetTransformedTexCoord()
+vec2 GetTransformedTexCoord(vec4 uOffset, vec4 vOffset)
 {
     #ifdef URHO3D_VERTEX_HAS_TEXCOORD0
-        return vec2(dot(iTexCoord, cUOffset.xy) + cUOffset.w, dot(iTexCoord, cVOffset.xy) + cVOffset.w);
+        return vec2(dot(iTexCoord, uOffset.xy) + uOffset.w, dot(iTexCoord, vOffset.xy) + vOffset.w);
     #else
         return vec2(0.0, 0.0);
     #endif
 }
-
-#ifdef URHO3D_HAS_LIGHTMAP
-    /// Return transformed secondary UV coordinate for ligthmap.
-    vec2 GetLightMapTexCoord()
-    {
-        return iTexCoord1 * cLMOffset.xy + cLMOffset.zw;
-    }
-#endif
 
 /// Return position in clip space from position in world space.
 vec4 WorldToClipSpace(vec3 worldPos)
@@ -38,14 +30,9 @@ vec4 WorldToClipSpace(vec3 worldPos)
 }
 
 /// Clip vertex if needed.
-#if defined(URHO3D_CLIP_PLANE) && !defined(GL_ES)
-    #ifdef GL3
-        #define ApplyClipPlane(clipPos) \
-            gl_ClipDistance[0] = dot(cClipPlane, clipPos)
-    #else
-        #define ApplyClipPlane(clipPos) \
-            gl_ClipVertex = clipPos
-    #endif
+#if defined(URHO3D_CLIP_PLANE) && defined(URHO3D_FEATURE_CLIP_DISTANCE)
+    #define ApplyClipPlane(clipPos) \
+        gl_ClipDistance[0] = dot(cClipPlane, clipPos)
 #else
     #define ApplyClipPlane(clipPos)
 #endif
@@ -94,7 +81,7 @@ mat4 GetModelMatrix()
 
 /// Apply normal offset to position in world space.
 #ifdef URHO3D_SHADOW_NORMAL_OFFSET
-    void ApplyShadowNormalOffset(inout vec4 position, const half3 normal)
+    void ApplyShadowNormalOffset(inout vec4 position, half3 normal)
     {
         #ifdef URHO3D_LIGHT_DIRECTIONAL
             half3 lightDir = cLightDir;

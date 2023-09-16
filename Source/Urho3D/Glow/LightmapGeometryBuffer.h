@@ -25,7 +25,6 @@
 #pragma once
 
 #include "../Graphics/LightBakingSettings.h"
-#include "../Graphics/RenderPath.h"
 #include "../Scene/Scene.h"
 
 namespace Urho3D

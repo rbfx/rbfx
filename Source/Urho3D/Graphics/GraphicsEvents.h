@@ -35,7 +35,6 @@ URHO3D_EVENT(E_SCREENMODE, ScreenMode)
     URHO3D_PARAM(P_FULLSCREEN, Fullscreen);        // bool
     URHO3D_PARAM(P_BORDERLESS, Borderless);        // bool
     URHO3D_PARAM(P_RESIZABLE, Resizable);          // bool
-    URHO3D_PARAM(P_HIGHDPI, HighDPI);              // bool
     URHO3D_PARAM(P_MONITOR, Monitor);              // int
     URHO3D_PARAM(P_REFRESHRATE, RefreshRate);      // int
 }
@@ -65,7 +64,6 @@ URHO3D_EVENT(E_ENDRENDERING, EndRendering)
 /// Update of a view started.
 URHO3D_EVENT(E_BEGINVIEWUPDATE, BeginViewUpdate)
 {
-    URHO3D_PARAM(P_VIEW, View);                    // View pointer
     URHO3D_PARAM(P_RENDERPIPELINEVIEW, RenderPipelineView); // RenderPipelineView pointer
     URHO3D_PARAM(P_TEXTURE, Texture);              // Texture pointer
     URHO3D_PARAM(P_SURFACE, Surface);              // RenderSurface pointer
@@ -76,7 +74,6 @@ URHO3D_EVENT(E_BEGINVIEWUPDATE, BeginViewUpdate)
 /// Update of a view ended.
 URHO3D_EVENT(E_ENDVIEWUPDATE, EndViewUpdate)
 {
-    URHO3D_PARAM(P_VIEW, View);                    // View pointer
     URHO3D_PARAM(P_RENDERPIPELINEVIEW, RenderPipelineView); // RenderPipelineView pointer
     URHO3D_PARAM(P_TEXTURE, Texture);              // Texture pointer
     URHO3D_PARAM(P_SURFACE, Surface);              // RenderSurface pointer
@@ -87,7 +84,6 @@ URHO3D_EVENT(E_ENDVIEWUPDATE, EndViewUpdate)
 /// Render of a view started.
 URHO3D_EVENT(E_BEGINVIEWRENDER, BeginViewRender)
 {
-    URHO3D_PARAM(P_VIEW, View);                    // View pointer
     URHO3D_PARAM(P_RENDERPIPELINEVIEW, RenderPipelineView); // RenderPipelineView pointer
     URHO3D_PARAM(P_TEXTURE, Texture);              // Texture pointer
     URHO3D_PARAM(P_SURFACE, Surface);              // RenderSurface pointer
@@ -98,7 +94,6 @@ URHO3D_EVENT(E_BEGINVIEWRENDER, BeginViewRender)
 /// A view has allocated its screen buffers for rendering. They can be accessed now with View::FindNamedTexture().
 URHO3D_EVENT(E_VIEWBUFFERSREADY, ViewBuffersReady)
 {
-    URHO3D_PARAM(P_VIEW, View);                    // View pointer
     URHO3D_PARAM(P_RENDERPIPELINEVIEW, RenderPipelineView); // RenderPipelineView pointer
     URHO3D_PARAM(P_TEXTURE, Texture);              // Texture pointer
     URHO3D_PARAM(P_SURFACE, Surface);              // RenderSurface pointer
@@ -109,7 +104,6 @@ URHO3D_EVENT(E_VIEWBUFFERSREADY, ViewBuffersReady)
 /// A view has set global shader parameters for a new combination of vertex/pixel shaders. Custom global parameters can now be set.
 URHO3D_EVENT(E_VIEWGLOBALSHADERPARAMETERS, ViewGlobalShaderParameters)
 {
-    URHO3D_PARAM(P_VIEW, View);                    // View pointer
     URHO3D_PARAM(P_RENDERPIPELINEVIEW, RenderPipelineView); // RenderPipelineView pointer
     URHO3D_PARAM(P_TEXTURE, Texture);              // Texture pointer
     URHO3D_PARAM(P_SURFACE, Surface);              // RenderSurface pointer
@@ -120,7 +114,6 @@ URHO3D_EVENT(E_VIEWGLOBALSHADERPARAMETERS, ViewGlobalShaderParameters)
 /// Render of a view ended. Its screen buffers are still accessible if needed.
 URHO3D_EVENT(E_ENDVIEWRENDER, EndViewRender)
 {
-    URHO3D_PARAM(P_VIEW, View);                    // View pointer
     URHO3D_PARAM(P_RENDERPIPELINEVIEW, RenderPipelineView); // RenderPipelineView pointer
     URHO3D_PARAM(P_TEXTURE, Texture);              // Texture pointer
     URHO3D_PARAM(P_SURFACE, Surface);              // RenderSurface pointer

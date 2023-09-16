@@ -26,12 +26,12 @@
 
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
-#include "../Graphics/Batch.h"
 #include "../Graphics/BillboardSet.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/IndexBuffer.h"
+#include "../Graphics/Material.h"
 #include "../Graphics/OctreeQuery.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../IO/MemoryBuffer.h"
@@ -99,6 +99,9 @@ BillboardSet::BillboardSet(Context* context) :
 {
     geometry_->SetVertexBuffer(0, vertexBuffer_);
     geometry_->SetIndexBuffer(indexBuffer_);
+
+    vertexBuffer_->SetDebugName("BillboardSet Geometry");
+    indexBuffer_->SetDebugName("BillboardSet Geometry");
 
     batches_.resize(1);
     batches_[0].geometry_ = geometry_;
@@ -487,7 +490,7 @@ void BillboardSet::UpdateBufferSize()
 {
     unsigned numBillboards = billboards_.size();
 
-    if (vertexBuffer_->GetVertexCount() != numBillboards * 4 || geometryTypeUpdate_
+    if (vertexBuffer_->GetVertexCount() < numBillboards * 4 || geometryTypeUpdate_
         || vertexBuffer_->GetElementMask() == MASK_NONE)
     {
         vertexBuffer_->SetSize(numBillboards * 4, GetVertexBufferFormat(), true);
@@ -495,9 +498,10 @@ void BillboardSet::UpdateBufferSize()
         geometryTypeUpdate_ = false;
     }
 
-    bool largeIndices = (numBillboards * 4) >= 65536;
+    const bool wasLargeIndices = indexBuffer_->GetIndexSize() == 4;
+    const bool largeIndices = wasLargeIndices || (numBillboards * 4 >= 65536);
 
-    if (indexBuffer_->GetIndexCount() != numBillboards * 6)
+    if (indexBuffer_->GetIndexCount() < numBillboards * 6 || wasLargeIndices != largeIndices)
         indexBuffer_->SetSize(numBillboards * 6, largeIndices);
 
     bufferSizeDirty_ = false;
@@ -508,7 +512,7 @@ void BillboardSet::UpdateBufferSize()
         return;
 
     // Indices do not change for a given billboard capacity
-    void* destPtr = indexBuffer_->Lock(0, numBillboards * 6, true);
+    void* destPtr = indexBuffer_->Map();
     if (!destPtr)
         return;
 
@@ -547,7 +551,7 @@ void BillboardSet::UpdateBufferSize()
         }
     }
 
-    indexBuffer_->Unlock();
+    indexBuffer_->Unmap();
     indexBuffer_->ClearDataLost();
 }
 
@@ -805,7 +809,7 @@ void BillboardSet::UpdateVertexBuffer(const FrameInfo& frame)
         previousOffset_ = (worldPos - frame.camera_->GetNode()->GetWorldPosition());
     }
 
-    auto* dest = (float*)vertexBuffer_->Lock(0, enabledBillboards * 4, true);
+    auto* dest = (float*)vertexBuffer_->Map();
     if (!dest)
         return;
 
@@ -822,7 +826,7 @@ void BillboardSet::UpdateVertexBuffer(const FrameInfo& frame)
         BuildDefaultVertexBuffer(enabledBillboards, dest, billboardScale);
     }
 
-    vertexBuffer_->Unlock();
+    vertexBuffer_->Unmap();
     vertexBuffer_->ClearDataLost();
 }
 

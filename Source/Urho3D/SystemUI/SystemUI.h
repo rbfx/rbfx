@@ -23,9 +23,7 @@
 #pragma once
 
 #include "../Core/Object.h"
-#include "../Graphics/IndexBuffer.h"
 #include "../Graphics/Texture2D.h"
-#include "../Graphics/VertexBuffer.h"
 #include "../Input/InputEvents.h"
 #include "../Math/Matrix4.h"
 #include "../Math/StringHash.h"
@@ -33,11 +31,15 @@
 #include "../Math/Vector4.h"
 #include "../SystemUI/ImGui.h"
 #include "../SystemUI/SystemUIEvents.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
+#include <EASTL/unique_ptr.h>
 #include <EASTL/unordered_map.h>
 
 namespace Urho3D
 {
+
+class ImGuiDiligentRendererEx;
 
 const float SYSTEMUI_DEFAULT_FONT_SIZE = 14;
 
@@ -81,11 +83,9 @@ public:
     bool GetPassThroughEvents() const { return passThroughEvents_; }
 
 protected:
-    VertexBuffer vertexBuffer_;
-    IndexBuffer indexBuffer_;
     ea::vector<SharedPtr<Texture2D>> fontTextures_;
     ea::vector<float> fontSizes_;
-    ImGuiContext* imContext_;
+    ImGuiContext* imContext_{};
     ea::vector<SharedPtr<Texture2D>> referencedTextures_;
     /// When set to true, SystemUI will not consume SDL events and they will be passed to to Input and other subsystems.
     bool passThroughEvents_ = false;
@@ -94,7 +94,7 @@ protected:
     void PlatformShutdown();
     void ReallocateFontTexture();
     void ClearPerScreenFonts();
-    ImTextureID AllocateFontTexture(ImFontAtlas* atlas);
+    SharedPtr<Texture2D> AllocateFontTexture(ImFontAtlas* atlas) const;
     void OnRawEvent(VariantMap& args);
     void OnScreenMode(VariantMap& args);
     void OnInputBegin();
@@ -106,6 +106,8 @@ protected:
     Vector2 relativeMouseMove_;
     bool revertMousePositionOnDisable_{};
     ImVec2 revertMousePosition_;
+
+    ea::unique_ptr<ImGuiDiligentRendererEx> impl_;
 };
 
 }

@@ -87,16 +87,32 @@ if (URHO3D_GLOW AND DESKTOP)
 endif ()
 
 if (URHO3D_SHADER_TRANSLATOR)
+    set (ENABLE_SPVREMAPPER OFF CACHE BOOL "" FORCE)
+    set (ENABLE_GLSLANG_INSTALL OFF CACHE BOOL "" FORCE)
     set (ENABLE_PCH OFF CACHE BOOL "" FORCE)
     set (ENABLE_HLSL OFF CACHE BOOL "" FORCE)
     set (ENABLE_CTEST OFF CACHE BOOL "" FORCE)
     set (ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
+    set (ENABLE_OPT OFF CACHE BOOL "" FORCE)
     set (BUILD_EXTERNAL OFF CACHE BOOL "" FORCE)
     set (SKIP_GLSLANG_INSTALL ON CACHE BOOL "" FORCE)
     set (BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    unset (LLVM_USE_CRT_DEBUG CACHE)
+    unset (LLVM_USE_CRT_RELEASE CACHE)
+    unset (LLVM_USE_CRT_RELWITHDEBINFO CACHE)
     add_subdirectory(glslang)
-    install_third_party_libs (glslang OGLCompiler OSDependent MachineIndependent GenericCodeGen)
+    install_third_party_libs (glslang OGLCompiler OSDependent MachineIndependent GenericCodeGen glslang-default-resource-limits)
 
+    set (SPIRV_CROSS_CLI OFF CACHE BOOL "" FORCE)
+    set (SPIRV_CROSS_ENABLE_MSL ON CACHE BOOL "" FORCE)
+    set (SPIRV_CROSS_ENABLE_GLSL ON CACHE BOOL "" FORCE)
+    set (SPIRV_CROSS_ENABLE_HLSL ON CACHE BOOL "" FORCE)
+    set (SPIRV_CROSS_ENABLE_CPP OFF CACHE BOOL "" FORCE)
+    set (SPIRV_CROSS_ENABLE_REFLECT OFF CACHE BOOL "" FORCE)
+    set (SPIRV_CROSS_ENABLE_C_API OFF CACHE BOOL "" FORCE)
+    set (SPIRV_CROSS_ENABLE_UTIL OFF CACHE BOOL "" FORCE)
+    set (SPIRV_CROSS_FORCE_PIC ON CACHE BOOL "" FORCE)
+    set (SPIRV_CROSS_NAMESPACE_OVERRIDE OFF CACHE BOOL "" FORCE)
     set (SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
     set (SPIRV_CROSS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
     add_subdirectory(SPIRV-Cross)
@@ -114,7 +130,6 @@ if (URHO3D_SHADER_TRANSLATOR)
         set (SPIRV_WERROR OFF CACHE BOOL "" FORCE)
         set (SPIRV_GENERATOR_CACHE "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Tools-artifacts" CACHE STRING "" FORCE)
         add_subdirectory(SPIRV-Tools)
-        #set_target_properties(SPIRV-Tools-shared PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
         install_third_party_libs (SPIRV-Tools-static SPIRV-Tools-opt)
     endif ()
 endif ()
@@ -152,16 +167,12 @@ if (URHO3D_TOOLS OR URHO3D_EDITOR)
     add_subdirectory(nativefiledialog)
 endif ()
 
-if (NOT ANDROID AND NOT ARM AND NOT WEB)
-    if (URHO3D_OPENGL)
-        add_subdirectory (GLEW)
-    endif ()
+if (NOT UWP)
+    add_subdirectory (GLEW)
+    add_library (GLEW::glew ALIAS GLEW)
 endif ()
 
 if (URHO3D_PROFILING)
-    if (NOT TARGET GLEW AND URHO3D_TOOLS)
-        add_subdirectory (GLEW)
-    endif ()
     set (CAPSTONE_BUILD_STATIC_RUNTIME ${URHO3D_STATIC_RUNTIME})
     set (CAPSTONE_BUILD_STATIC ON)
     set (CAPSTONE_BUILD_SHARED OFF)
@@ -177,6 +188,66 @@ endif ()
 
 # Tracy's headers are included even in non-profiled builds in order to provide stub profiler macros.
 add_subdirectory (tracy)
+
+set (DILIGENT_INSTALL_CORE OFF CACHE BOOL "" FORCE)
+set (DILIGENT_NO_GLSLANG ON CACHE BOOL "" FORCE)
+set (DILIGENT_NO_HLSL ON CACHE BOOL "" FORCE)
+assign_bool (DILIGENT_NO_OPENGL URHO3D_GRAPHICS_NO_GL)
+assign_bool (DILIGENT_NO_DIRECT3D11 URHO3D_GRAPHICS_NO_D3D11)
+assign_bool (DILIGENT_NO_DIRECT3D12 URHO3D_GRAPHICS_NO_D3D12)
+assign_bool (DILIGENT_NO_VULKAN URHO3D_GRAPHICS_NO_VULKAN)
+if (NOT URHO3D_DEBUG_GRAPHICS)
+    set (DILIGENT_MSVC_DEBUG_COMPILE_OPTIONS "/wd4189" CACHE STRING "" FORCE)
+else ()
+    set (DILIGENT_MSVC_DEBUG_COMPILE_OPTIONS "" CACHE STRING "" FORCE)
+endif ()
+add_subdirectory (Diligent)
+install_third_party_libs (
+    Diligent-AndroidPlatform
+    Diligent-ApplePlatform
+    Diligent-Archiver-static
+    Diligent-ArchiverInterface
+    Diligent-BasicPlatform
+    Diligent-BuildSettings
+    Diligent-Common
+    Diligent-EmscriptenPlatform
+    Diligent-GraphicsAccessories
+    Diligent-GraphicsEngine
+    Diligent-GraphicsEngineD3D11-shared
+    Diligent-GraphicsEngineD3D11-static
+    Diligent-GraphicsEngineD3D11Interface
+    Diligent-GraphicsEngineD3D12-shared
+    Diligent-GraphicsEngineD3D12-static
+    Diligent-GraphicsEngineD3D12Interface
+    Diligent-GraphicsEngineD3DBase
+    Diligent-GraphicsEngineD3DBaseInterface
+    Diligent-GraphicsEngineInterface
+    Diligent-GraphicsEngineNextGenBase
+    Diligent-GraphicsEngineOpenGL-static
+    Diligent-GraphicsEngineOpenGLInterface
+    Diligent-GraphicsEngineVk-static
+    Diligent-GraphicsEngineVkInterface
+    Diligent-HLSL2GLSLConverterLib
+    Diligent-LinuxPlatform
+    Diligent-PlatformInterface
+    Diligent-Primitives
+    Diligent-PublicBuildSettings
+    Diligent-ShaderTools
+    Diligent-UniversalWindowsPlatform
+    Diligent-Win32Platform
+    volk_headers
+    Vulkan-Headers
+)
+if (NOT URHO3D_DEBUG_GRAPHICS)
+    get_target_property(DILIGENT_COMPILE_DEFS Diligent-PublicBuildSettings INTERFACE_COMPILE_DEFINITIONS)
+    string(REPLACE "$<$<CONFIG:DEBUG>:DILIGENT_DEVELOPMENT;DILIGENT_DEBUG>" "" DILIGENT_COMPILE_DEFS "${DILIGENT_COMPILE_DEFS}")
+    set_property(TARGET Diligent-PublicBuildSettings PROPERTY INTERFACE_COMPILE_DEFINITIONS ${DILIGENT_COMPILE_DEFS})
+endif ()
+file(GLOB_RECURSE DILIGENT_INCLUDE_DIRS LIST_DIRECTORIES true RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/Diligent "Diligent/**")
+list(FILTER DILIGENT_INCLUDE_DIRS INCLUDE REGEX ".+/interface$")
+foreach(DIR ${DILIGENT_INCLUDE_DIRS})
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Diligent/${DIR} DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/Diligent/${DIR}/..)
+endforeach()
 
 # When crosscompiling, swig will be built as part of native tools build. See Source/CMakeLists.txt.
 add_subdirectory(swig)
