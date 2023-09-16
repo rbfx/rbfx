@@ -77,11 +77,11 @@ enum class DrawableProcessorPassFlag
     NeedReadableDepth = 1 << 3,
     RefractionPass = 1 << 4,
     DepthOnlyPass = 1 << 5,
+    ReadOnlyDepth = 1 << 6,
+    StereoInstancing = 1 << 7,
 
-    BatchCallback = 1 << 6,
-    PipelineStateCallback = 1 << 7,
-
-    StereoInstancing = 1 << 8,
+    BatchCallback = 1 << 8,
+    PipelineStateCallback = 1 << 9,
 };
 
 URHO3D_FLAGSET(DrawableProcessorPassFlag, DrawableProcessorPassFlags);

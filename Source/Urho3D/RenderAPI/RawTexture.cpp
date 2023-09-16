@@ -871,8 +871,8 @@ void RawTexture::Resolve()
     resolveDirty_ = false;
 }
 
-void RawTexture::Update(
-    unsigned level, const IntVector3& offset, const IntVector3& size, unsigned arraySlice, const void* data)
+void RawTexture::Update(unsigned level, const IntVector3& offset, const IntVector3& size, unsigned arraySlice,
+    const void* data, unsigned rowStride, unsigned sliceStride)
 {
     URHO3D_PROFILE("RawTexture::Update");
 
@@ -912,8 +912,8 @@ void RawTexture::Update(
 
     Diligent::TextureSubResData resourceData;
     resourceData.pData = data;
-    resourceData.Stride = widthInBlocks * formatInfo.GetElementSize();
-    resourceData.DepthStride = heightInBlocks * widthInBlocks * formatInfo.GetElementSize();
+    resourceData.Stride = rowStride ? rowStride : widthInBlocks * formatInfo.GetElementSize();
+    resourceData.DepthStride = sliceStride ? sliceStride : heightInBlocks * widthInBlocks * formatInfo.GetElementSize();
 
     Diligent::IDeviceContext* immediateContext = renderDevice_->GetImmediateContext();
     immediateContext->UpdateTexture(handles_.texture_, level, arraySlice, destBox, resourceData,

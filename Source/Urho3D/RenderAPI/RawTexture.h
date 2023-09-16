@@ -151,9 +151,9 @@ public:
     void GenerateLevels();
     /// Resolve multi-sampled texture to the simple resolved texture.
     void Resolve();
-    /// Update texture data.
-    void Update(
-        unsigned level, const IntVector3& offset, const IntVector3& size, unsigned arraySlice, const void* data);
+    /// Update texture data. If strides are not specified, they are deduced automatically from `size`.
+    void Update(unsigned level, const IntVector3& offset, const IntVector3& size, unsigned arraySlice, const void* data,
+        unsigned rowStride = 0, unsigned sliceStride = 0);
     /// Read texture data from GPU. This operation is very slow and shouldn't be used in real time.
     bool Read(unsigned slice, unsigned level, void* buffer, unsigned bufferSize);
     /// For render target and depth-stencil textures, mark shader resource view dirty.

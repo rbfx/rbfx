@@ -243,10 +243,12 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
         deferredDecalPass_ = sceneProcessor_->CreatePass<UnorderedScenePass>(
             DrawableProcessorPassFlag::HasAmbientLighting | DrawableProcessorPassFlag::NeedReadableDepth,
             "deferred_decal", "", "", "");
-        alphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>(
+        alphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>( //
             DrawableProcessorPassFlag::HasAmbientLighting | DrawableProcessorPassFlag::NeedReadableDepth
-            | DrawableProcessorPassFlag::RefractionPass, "", "alpha", "alpha", "litalpha");
-        postAlphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>(DrawableProcessorPassFlag::None, "postalpha");
+                | DrawableProcessorPassFlag::RefractionPass | DrawableProcessorPassFlag::ReadOnlyDepth,
+            "", "alpha", "alpha", "litalpha");
+        postAlphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>(
+            DrawableProcessorPassFlag::ReadOnlyDepth, "postalpha");
     }
 
     frameInfo_.viewport_ = viewport;

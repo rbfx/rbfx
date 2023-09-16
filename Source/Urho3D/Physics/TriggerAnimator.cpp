@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Graphics/Animation.h"
 #include "Urho3D/Physics/PhysicsEvents.h"

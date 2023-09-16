@@ -565,6 +565,7 @@ public:
 
 // --------------------------------------- Actions ---------------------------------------
 
+#if defined(URHO3D_ACTIONS)
 %include "Urho3D/Actions/BaseAction.h"
 %include "Urho3D/Actions/ActionSet.h"
 %include "Urho3D/Actions/ActionBuilder.h"
@@ -585,6 +586,7 @@ public:
 %include "Urho3D/Actions/Misc.h"
 %include "Urho3D/Actions/Repeat.h"
 %include "Urho3D/Actions/ShaderParameter.h"
+#endif
 
 // --------------------------------------- IK ---------------------------------------
 #if defined(URHO3D_IK)
@@ -735,12 +737,14 @@ public:
 %include "Urho3D/Graphics/Graphics.h"
 %include "Urho3D/Graphics/OutlineGroup.h"
 
+#if defined(URHO3D_PARTICLE_GRAPH)
 %include "Urho3D/Particles/ParticleGraphPin.h"
 %include "Urho3D/Particles/ParticleGraphNode.h"
 %include "Urho3D/Particles/ParticleGraphSystem.h"
 %include "Urho3D/Particles/ParticleGraphLayer.h"
 %include "Urho3D/Particles/ParticleGraphEffect.h"
 %include "Urho3D/Particles/ParticleGraphEmitter.h"
+#endif
 
 // ------------------------------------- RenderPipeline -------------------------------------
 %include "generated/Urho3D/_pre_renderpipeline.i"

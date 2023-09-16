@@ -178,8 +178,6 @@ void ImGuiDiligentRendererEx::RenderDrawData(ImDrawData* drawData)
 
 void ImGuiDiligentRendererEx::RenderSecondaryWindows()
 {
-    const RenderScope renderScope(renderDevice_->GetRenderContext(), "ImGUI: Render secondary viewport");
-
     const bool isOpenGL = renderDevice_->GetBackend() == RenderBackend::OpenGL;
     isCachedStateInvalid_ = false;
 
@@ -268,6 +266,8 @@ void ImGuiDiligentRendererEx::SetWindowSize(ImGuiViewport* viewport, ImVec2 size
 
 void ImGuiDiligentRendererEx::RenderWindow(ImGuiViewport* viewport, void* renderArg)
 {
+    const RenderScope renderScope(renderDevice_->GetRenderContext(), "ImGUI: Render secondary viewport");
+
     auto userData = GetViewportData(viewport);
     Diligent::IDeviceContext* deviceContext = renderDevice_->GetImmediateContext();
 

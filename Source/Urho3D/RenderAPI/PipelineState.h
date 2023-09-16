@@ -71,6 +71,8 @@ struct URHO3D_API GraphicsPipelineStateDesc
     PipelineStateOutputDesc output_;
     /// Immutable Samplers.
     ImmutableSamplersDesc samplers_;
+    /// Whether to use depth-stencil in read-only mode.
+    bool readOnlyDepth_{};
 
     /// Shaders
     /// @{
@@ -108,6 +110,7 @@ struct URHO3D_API GraphicsPipelineStateDesc
             primitiveType_, //
             output_, //
             samplers_, //
+            readOnlyDepth_, //
             vertexShader_, //
             pixelShader_, //
             domainShader_, //

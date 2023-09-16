@@ -1208,7 +1208,7 @@ void OpenXRControllerModel::UpdateModel(XrSession session)
         return;
 
     const ea::string folder = Format("manual://OpenXR/ControllerModel/{}/", hand_ == VRHand::Left ? "Left" : "Right");
-    if (!importer->Process("", folder))
+    if (!importer->Process("", folder, nullptr))
         return;
 
     const auto cache = GetSubsystem<ResourceCache>();

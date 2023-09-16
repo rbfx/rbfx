@@ -725,7 +725,7 @@ void Material::SetTextureInternal(ea::string_view name, Texture* texture)
         else
             textures_.erase(iter);
     }
-    else
+    else if (texture)
     {
         textures_.emplace(StringHash{name}, MaterialTexture{ea::string{name}, SharedPtr<Texture>{texture}});
     }

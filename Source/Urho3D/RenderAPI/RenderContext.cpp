@@ -126,7 +126,7 @@ void RenderContext::ClearDepthStencil(ClearTargetFlags flags, float depth, unsig
         return;
     }
 
-    Diligent::CLEAR_DEPTH_STENCIL_FLAGS internalFlags;
+    Diligent::CLEAR_DEPTH_STENCIL_FLAGS internalFlags{};
     if (flags.Test(CLEAR_DEPTH))
         internalFlags |= Diligent::CLEAR_DEPTH_FLAG;
     if (flags.Test(CLEAR_STENCIL) && IsDepthStencilTextureFormat(currentDepthStencil_->GetTexture()->GetDesc().Format))

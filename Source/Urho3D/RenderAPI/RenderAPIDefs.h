@@ -456,6 +456,12 @@ struct URHO3D_API SamplerStateDesc
 
     /// Constructors.
     /// @{
+    static SamplerStateDesc Default(TextureAddressMode addressMode = ADDRESS_CLAMP)
+    {
+        SamplerStateDesc desc;
+        desc.addressMode_.fill(addressMode);
+        return desc;
+    }
     static SamplerStateDesc Nearest(TextureAddressMode addressMode = ADDRESS_CLAMP)
     {
         SamplerStateDesc desc;
