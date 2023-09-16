@@ -1,4 +1,4 @@
-# Copyright (c) 2017-2022, The Khronos Group Inc.
+# Copyright (c) 2017-2023, The Khronos Group Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -33,6 +33,8 @@ set(LOADER_FOLDER "Loader")
 set(HELPER_FOLDER "Helpers")
 set(CODEGEN_FOLDER "Generated")
 set(TESTS_FOLDER "Tests")
+set(CONFORMANCE_TESTS_FOLDER "Conformance Test Suite")
+set(LOADER_TESTS_FOLDER "Loader Tests")
 set(API_LAYERS_FOLDER "Layers")
 set(SAMPLES_FOLDER "Samples")
 
@@ -78,7 +80,7 @@ elseif(ANDROID AND INSTALL_TO_ARCHITECTURE_PREFIXES)
     set(PREFAB_MODULE_INSTALL_DIR ${PREFAB_INSTALL_DIR}/modules/openxr_loader)
     set(CMAKE_INSTALL_LIBDIR ${PREFAB_MODULE_INSTALL_DIR}/libs/android.${ANDROID_ABI} CACHE STRING "Where to install libraries")
     set(CMAKE_INSTALL_BINDIR ${CMAKE_INSTALL_LIBDIR})
-    set(CMAKE_INSTALL_INCDIR ${PREFAB_MODULE_INSTALL_DIR}/include)
+    set(CMAKE_INSTALL_INCLUDEDIR ${PREFAB_MODULE_INSTALL_DIR}/include)
 
     unset(NDK_MAJOR_VERSION)
     if(CMAKE_ANDROID_NDK)

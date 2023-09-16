@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022, The Khronos Group Inc.
+// Copyright (c) 2017-2023, The Khronos Group Inc.
 // Copyright (c) 2017-2019 Valve Corporation
 // Copyright (c) 2017-2019 LunarG, Inc.
 //
@@ -19,7 +19,7 @@
 #include "loader_logger.hpp"
 #include "loader_platform.hpp"
 #include "runtime_interface.hpp"
-#include "xr_generated_dispatch_table.h"
+#include "xr_generated_dispatch_table_core.h"
 #include "xr_generated_loader.hpp"
 
 #include <openxr/openxr.h>
@@ -35,7 +35,7 @@
 // Global loader lock to:
 //   1. Ensure ActiveLoaderInstance get and set operations are done atomically.
 //   2. Ensure RuntimeInterface isn't used to unload the runtime while the runtime is in use.
-std::mutex &GetGlobalLoaderMutex() {
+static std::mutex &GetGlobalLoaderMutex() {
     static std::mutex loader_mutex;
     return loader_mutex;
 }
@@ -58,6 +58,8 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermDestroyDebugUtilsMessengerEXT(
 static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermSubmitDebugUtilsMessageEXT(
     XrInstance instance, XrDebugUtilsMessageSeverityFlagsEXT messageSeverity, XrDebugUtilsMessageTypeFlagsEXT messageTypes,
     const XrDebugUtilsMessengerCallbackDataEXT *callbackData);
+static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrGetInstanceProcAddr(XrInstance instance, const char *name,
+                                                                  PFN_xrVoidFunction *function);
 
 // Utility template function meant to validate if a fixed size string contains
 // a null-terminator.
