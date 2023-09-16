@@ -1,52 +1,34 @@
-//
-// Copyright (c) 2022 the RBFX project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2022-2023 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../RenderPipeline/StereoRenderPipeline.h"
+#include "Urho3D/RenderPipeline/StereoRenderPipeline.h"
 
-#include "../RenderPipeline/BatchRenderer.h"
-#include "../Graphics/Drawable.h"
-#include "../RenderPipeline/DrawableProcessor.h"
-#include "../Graphics/GraphicsEvents.h"
-#include "../Input/Input.h"
-#include "../Graphics/OcclusionBuffer.h"
-#include "../Graphics/Octree.h"
-#include "../Graphics/OctreeQuery.h"
-#include "../Graphics/Renderer.h"
-#include "../Scene/Scene.h"
-#include "../RenderAPI/RenderContext.h"
-#include "../RenderAPI/RenderDevice.h"
-#include "../RenderPipeline/ShaderConsts.h"
-#include "../RenderPipeline/ShadowMapAllocator.h"
+#include "Urho3D/Graphics/DebugRenderer.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/Graphics/GraphicsEvents.h"
+#include "Urho3D/Graphics/OcclusionBuffer.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Graphics/OctreeQuery.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Graphics/Viewport.h"
+#include "Urho3D/Input/Input.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderPipeline/AutoExposurePass.h"
+#include "Urho3D/RenderPipeline/BatchRenderer.h"
+#include "Urho3D/RenderPipeline/BloomPass.h"
+#include "Urho3D/RenderPipeline/DrawableProcessor.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
+#include "Urho3D/RenderPipeline/ShadowMapAllocator.h"
+#include "Urho3D/RenderPipeline/ToneMappingPass.h"
+#include "Urho3D/Scene/Scene.h"
+
 #if URHO3D_SYSTEMUI
-    #include "../SystemUI/SystemUI.h"
+    #include "Urho3D/SystemUI/SystemUI.h"
 #endif
-#include "../Graphics/Viewport.h"
-#include "../Graphics/DebugRenderer.h"
 
-#include "../RenderPipeline/AutoExposurePass.h"
-#include "../RenderPipeline/BloomPass.h"
-#include "../RenderPipeline/ToneMappingPass.h"
-
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -54,8 +36,9 @@ namespace Urho3D
 class StereoFrustumOctreeQuery : public OctreeQuery
 {
 public:
-    StereoFrustumOctreeQuery(ea::vector<Drawable*>& result, ea::array<Frustum, 2> frustums, DrawableFlags drawableFlags, unsigned viewMask) :
-        OctreeQuery(result, drawableFlags, viewMask)
+    StereoFrustumOctreeQuery(
+        ea::vector<Drawable*>& result, ea::array<Frustum, 2> frustums, DrawableFlags drawableFlags, unsigned viewMask)
+        : OctreeQuery(result, drawableFlags, viewMask)
     {
         frustums_[0] = frustums[0];
         frustums_[1] = frustums[1];
@@ -92,8 +75,9 @@ class StereoOccluderOctreeQuery : public StereoFrustumOctreeQuery
 {
 public:
     /// Construct with frustum and query parameters.
-    StereoOccluderOctreeQuery(ea::vector<Drawable*>& result, ea::array<Frustum,2> frustums, unsigned viewMask = DEFAULT_VIEWMASK) :
-        StereoFrustumOctreeQuery(result, frustums, DRAWABLE_GEOMETRY, viewMask)
+    StereoOccluderOctreeQuery(
+        ea::vector<Drawable*>& result, ea::array<Frustum, 2> frustums, unsigned viewMask = DEFAULT_VIEWMASK)
+        : StereoFrustumOctreeQuery(result, frustums, DRAWABLE_GEOMETRY, viewMask)
     {
     }
 
@@ -119,9 +103,10 @@ class StereoOccludedFrustumOctreeQuery : public StereoFrustumOctreeQuery
 {
 public:
     /// Construct with frustum, occlusion buffer and query parameters.
-    StereoOccludedFrustumOctreeQuery(ea::vector<Drawable*>& result, ea::array<Frustum,2> frustums, ea::array<OcclusionBuffer*, 2> buffers,
-        DrawableFlags drawableFlags = DRAWABLE_ANY, unsigned viewMask = DEFAULT_VIEWMASK) :
-        StereoFrustumOctreeQuery(result, frustums, drawableFlags, viewMask)
+    StereoOccludedFrustumOctreeQuery(ea::vector<Drawable*>& result, ea::array<Frustum, 2> frustums,
+        ea::array<OcclusionBuffer*, 2> buffers, DrawableFlags drawableFlags = DRAWABLE_ANY,
+        unsigned viewMask = DEFAULT_VIEWMASK)
+        : StereoFrustumOctreeQuery(result, frustums, drawableFlags, viewMask)
     {
         buffers_[0] = buffers[0];
         buffers_[1] = buffers[1];
@@ -162,34 +147,30 @@ public:
     OcclusionBuffer* buffers_[2];
 };
 
-
-
 class StereoSceneProcessor : public SceneProcessor
 {
     URHO3D_OBJECT(StereoSceneProcessor, SceneProcessor)
 public:
-    StereoSceneProcessor(RenderPipelineInterface* renderPipeInterface, ShadowMapAllocator* shadowAlloc, InstancingBuffer* instBuffer) :
-        SceneProcessor(renderPipeInterface, "shadow", shadowAlloc, instBuffer)
+    StereoSceneProcessor(
+        RenderPipelineInterface* renderPipeInterface, ShadowMapAllocator* shadowAlloc, InstancingBuffer* instBuffer)
+        : SceneProcessor(renderPipeInterface, "shadow", shadowAlloc, instBuffer)
     {
-
     }
 
-    virtual ~StereoSceneProcessor()
-    {
-
-    }
+    virtual ~StereoSceneProcessor() {}
 
     virtual void Update() override
     {
         // Collect occluders
         currentOcclusionBuffer_ = nullptr;
-        currentOcclusionBuffers_ = { nullptr, nullptr };
+        currentOcclusionBuffers_ = {nullptr, nullptr};
 
         assert(frameInfo_.additionalCameras_[0] != nullptr);
 
         // get our frustums
-        ea::array<Frustum, 2> frustums = { frameInfo_.camera_->GetFrustum(), frameInfo_.additionalCameras_[1]->GetFrustum() };
-        Camera* cameras[2] = { frameInfo_.camera_, frameInfo_.additionalCameras_[1] };
+        ea::array<Frustum, 2> frustums = {
+            frameInfo_.camera_->GetFrustum(), frameInfo_.additionalCameras_[1]->GetFrustum()};
+        Camera* cameras[2] = {frameInfo_.camera_, frameInfo_.additionalCameras_[1]};
 
         if (settings_.maxOccluderTriangles_ > 0)
         {
@@ -205,27 +186,28 @@ public:
                 {
                     occlusionBuffer_ = MakeShared<OcclusionBuffer>(context_);
                     secondaryOcclusion_ = MakeShared<OcclusionBuffer>(context_);
-                    eyeOcclusion_ = { occlusionBuffer_, secondaryOcclusion_ };
+                    eyeOcclusion_ = {occlusionBuffer_, secondaryOcclusion_};
                 }
 
-                static auto CalculateOcclusionBufferSize = [](unsigned size, Camera * cullCamera) -> IntVector2
+                static auto CalculateOcclusionBufferSize = [](unsigned size, Camera* cullCamera) -> IntVector2
                 {
                     const auto width = static_cast<int>(size);
                     const int height = RoundToInt(size / cullCamera->GetAspectRatio());
-                    return { width, height };
+                    return {width, height};
                 };
 
                 for (unsigned i = 0; i < 2; ++i)
                 {
                     auto buff = eyeOcclusion_[i];
-                    const IntVector2 bufferSize = CalculateOcclusionBufferSize(settings_.occlusionBufferSize_, cameras[i]);
+                    const IntVector2 bufferSize =
+                        CalculateOcclusionBufferSize(settings_.occlusionBufferSize_, cameras[i]);
                     buff->SetSize(bufferSize.x_, bufferSize.y_, settings_.threadedOcclusion_);
                     buff->SetView(frameInfo_.camera_);
                 }
 
                 DrawOccluders();
                 if (eyeOcclusion_[0]->GetNumTriangles() > 0 || eyeOcclusion_[1]->GetNumTriangles() > 0)
-                    currentOcclusionBuffers_ = { eyeOcclusion_[0], eyeOcclusion_[1] };
+                    currentOcclusionBuffers_ = {eyeOcclusion_[0], eyeOcclusion_[1]};
             }
         }
 
@@ -233,20 +215,21 @@ public:
         if (currentOcclusionBuffers_[0])
         {
             URHO3D_PROFILE("QueryVisibleDrawables");
-            StereoOccludedFrustumOctreeQuery query(drawables_, frustums,
-                currentOcclusionBuffers_, DRAWABLE_GEOMETRY | DRAWABLE_LIGHT, frameInfo_.camera_->GetViewMask());
+            StereoOccludedFrustumOctreeQuery query(drawables_, frustums, currentOcclusionBuffers_,
+                DRAWABLE_GEOMETRY | DRAWABLE_LIGHT, frameInfo_.camera_->GetViewMask());
             frameInfo_.octree_->GetDrawables(query);
         }
         else
         {
             URHO3D_PROFILE("QueryVisibleDrawables");
-            StereoFrustumOctreeQuery drawableQuery(drawables_, frustums,
-                DRAWABLE_GEOMETRY | DRAWABLE_LIGHT, frameInfo_.camera_->GetViewMask());
+            StereoFrustumOctreeQuery drawableQuery(
+                drawables_, frustums, DRAWABLE_GEOMETRY | DRAWABLE_LIGHT, frameInfo_.camera_->GetViewMask());
             frameInfo_.octree_->GetDrawables(drawableQuery);
         }
 
         // Process drawables
-        drawableProcessor_->ProcessVisibleDrawables(drawables_, currentOcclusionBuffer_ ? ea::span(&currentOcclusionBuffer_, 1u) : ea::span<OcclusionBuffer*>());
+        drawableProcessor_->ProcessVisibleDrawables(drawables_,
+            currentOcclusionBuffer_ ? ea::span(&currentOcclusionBuffer_, 1u) : ea::span<OcclusionBuffer*>());
         drawableProcessor_->ProcessLights(this);
         drawableProcessor_->ProcessForwardLighting();
 
@@ -270,13 +253,15 @@ protected:
 
             if (!occlusionBuffer->IsThreaded())
             {
-                // If not threaded, draw occluders one by one and test the next occluder against already rasterized depth
+                // If not threaded, draw occluders one by one and test the next occluder against already rasterized
+                // depth
                 for (unsigned i = 0; i < activeOccluders.size(); ++i)
                 {
                     Drawable* occluder = activeOccluders[i].drawable_;
                     if (i > 0)
                     {
-                        // For subsequent occluders, do a test against the pixel-level occlusion buffer to see if rendering is necessary
+                        // For subsequent occluders, do a test against the pixel-level occlusion buffer to see if
+                        // rendering is necessary
                         if (!occlusionBuffer->IsVisible(occluder->GetWorldBoundingBox()))
                             continue;
                     }
@@ -312,8 +297,8 @@ protected:
     ea::array<OcclusionBuffer*, 2> currentOcclusionBuffers_{};
 };
 
-StereoRenderPipelineView::StereoRenderPipelineView(RenderPipeline* pipeline) :
-    RenderPipelineView(pipeline)
+StereoRenderPipelineView::StereoRenderPipelineView(RenderPipeline* pipeline)
+    : RenderPipelineView(pipeline)
 {
     auto settings = renderPipeline_->GetSettings();
     settings.sceneProcessor_.lightingMode_ = DirectLightingMode::Forward;
@@ -355,9 +340,11 @@ void StereoRenderPipelineView::ApplySettings()
         depthPrePass_ = nullptr;
     }
 
-    outlineScenePass_ = sceneProcessor_->CreatePass<OutlineScenePass>(StringVector{ "base", "alpha" }, DrawableProcessorPassFlag::StereoInstancing);
+    outlineScenePass_ = sceneProcessor_->CreatePass<OutlineScenePass>(
+        StringVector{"base", "alpha"}, DrawableProcessorPassFlag::StereoInstancing);
 
-    sceneProcessor_->SetPasses({ depthPrePass_, opaquePass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlineScenePass_ });
+    sceneProcessor_->SetPasses(
+        {depthPrePass_, opaquePass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlineScenePass_});
 
     postProcessPasses_.clear();
 
@@ -409,13 +396,17 @@ bool StereoRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vie
         instancingBuffer_ = MakeShared<InstancingBuffer>(context_);
         sceneProcessor_ = MakeShared<StereoSceneProcessor>(this, shadowMapAllocator_, instancingBuffer_);
 
-        opaquePass_ = sceneProcessor_->CreatePass<UnorderedScenePass>(DrawableProcessorPassFlag::StereoInstancing | DrawableProcessorPassFlag::HasAmbientLighting, "", "base", "litbase", "light");
+        opaquePass_ = sceneProcessor_->CreatePass<UnorderedScenePass>(
+            DrawableProcessorPassFlag::StereoInstancing | DrawableProcessorPassFlag::HasAmbientLighting, "", "base",
+            "litbase", "light");
 
-        postOpaquePass_ = sceneProcessor_->CreatePass<UnorderedScenePass>(DrawableProcessorPassFlag::StereoInstancing, "postopaque");
-        alphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>(
-            DrawableProcessorPassFlag::NeedReadableDepth
-            | DrawableProcessorPassFlag::RefractionPass | DrawableProcessorPassFlag::StereoInstancing, "", "alpha", "alpha", "litalpha");
-        postAlphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>(DrawableProcessorPassFlag::StereoInstancing, "postalpha");
+        postOpaquePass_ =
+            sceneProcessor_->CreatePass<UnorderedScenePass>(DrawableProcessorPassFlag::StereoInstancing, "postopaque");
+        alphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>(DrawableProcessorPassFlag::NeedReadableDepth
+                | DrawableProcessorPassFlag::RefractionPass | DrawableProcessorPassFlag::StereoInstancing,
+            "", "alpha", "alpha", "litalpha");
+        postAlphaPass_ =
+            sceneProcessor_->CreatePass<BackToFrontScenePass>(DrawableProcessorPassFlag::StereoInstancing, "postalpha");
     }
 
     frameInfo_.viewport_ = viewport;
@@ -423,7 +414,7 @@ bool StereoRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vie
     frameInfo_.viewportRect_ = viewport->GetEffectiveRect(renderTarget);
     frameInfo_.viewportSize_ = frameInfo_.viewportRect_.Size();
 
-    ea::array<Camera*, 2> cameras = { viewport->GetEye(0), viewport->GetEye(1) };
+    ea::array<Camera*, 2> cameras = {viewport->GetEye(0), viewport->GetEye(1)};
     frameInfo_.cameras_ = cameras;
 
     if (!sceneProcessor_->Define(frameInfo_))
@@ -536,22 +527,24 @@ void StereoRenderPipelineView::Render()
     };
 
     if (depthPrePass_)
-        sceneProcessor_->RenderSceneBatches("DepthPrePass", camera, depthPrePass_->GetBaseBatches(), {}, cameraParameters, 2);
+        sceneProcessor_->RenderSceneBatches(
+            "DepthPrePass", camera, depthPrePass_->GetBaseBatches(), {}, cameraParameters, 2);
 
     sceneProcessor_->RenderSceneBatches("OpaqueBase", camera, opaquePass_->GetBaseBatches(), {}, cameraParameters, 2);
     sceneProcessor_->RenderSceneBatches("OpaqueLight", camera, opaquePass_->GetLightBatches(), {}, cameraParameters, 2);
-    sceneProcessor_->RenderSceneBatches("PostOpaque", camera, postOpaquePass_->GetBaseBatches(), {}, cameraParameters, 2);
+    sceneProcessor_->RenderSceneBatches(
+        "PostOpaque", camera, postOpaquePass_->GetBaseBatches(), {}, cameraParameters, 2);
 
     if (hasRefraction)
         renderBufferManager_->SwapColorBuffers(true);
 
     ShaderResourceDesc depthAndColorTextures[] = {
-        { ShaderResources::DepthBuffer, renderBufferManager_->GetDepthStencilTexture() },
-        { ShaderResources::Emission, renderBufferManager_->GetSecondaryColorTexture() },
+        {ShaderResources::DepthBuffer, renderBufferManager_->GetDepthStencilTexture()},
+        {ShaderResources::Emission, renderBufferManager_->GetSecondaryColorTexture()},
     };
 
-    sceneProcessor_->RenderSceneBatches("Alpha", camera, alphaPass_->GetBatches(),
-        depthAndColorTextures, cameraParameters, 2);
+    sceneProcessor_->RenderSceneBatches(
+        "Alpha", camera, alphaPass_->GetBatches(), depthAndColorTextures, cameraParameters, 2);
     sceneProcessor_->RenderSceneBatches("PostAlpha", camera, postAlphaPass_->GetBatches(), {}, {}, 2);
 
     if (outlinePostProcessPass_->IsEnabled())
@@ -559,7 +552,7 @@ void StereoRenderPipelineView::Render()
         // TODO: Do we want it dynamic?
         const unsigned outlinePadding = 2;
 
-        RenderBuffer* const renderTargets[] = { outlinePostProcessPass_->GetColorOutput() };
+        RenderBuffer* const renderTargets[] = {outlinePostProcessPass_->GetColorOutput()};
         auto batches = outlineScenePass_->GetBatches();
 
         batches.scissorRect_ = renderTargets[0]->GetViewportRect();
@@ -654,15 +647,13 @@ void StereoRenderPipelineView::SendViewEvent(StringHash eventType)
     sender->SendEvent(eventType, eventData);
 }
 
-StereoRenderPipeline::StereoRenderPipeline(Context* context) :
-    BaseClassName(context)
+StereoRenderPipeline::StereoRenderPipeline(Context* context)
+    : BaseClassName(context)
 {
-
 }
 
 StereoRenderPipeline::~StereoRenderPipeline()
 {
-
 }
 
 void StereoRenderPipeline::RegisterObject(Context* context)
@@ -671,10 +662,9 @@ void StereoRenderPipeline::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(RenderPipeline);
 }
 
-
 SharedPtr<RenderPipelineView> StereoRenderPipeline::Instantiate()
 {
     return MakeShared<StereoRenderPipelineView>(this);
 }
 
-}
+} // namespace Urho3D
