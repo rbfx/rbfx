@@ -71,9 +71,9 @@ Network::Network(Context* context)
 
 Network::~Network()
 {
-    assert(clientConnections_.empty());
-    assert(!IsServerRunning());
-    assert(!connectionToServer_);
+    URHO3D_ASSERT(clientConnections_.empty());
+    URHO3D_ASSERT(!IsServerRunning());
+    URHO3D_ASSERT(!connectionToServer_);
 }
 
 void Network::OnClientConnected(Connection* connection)
@@ -195,7 +195,7 @@ void Network::OnConnectedToServer(Connection* connection)
 void Network::OnDisconnectedFromServer(Connection* connection)
 {
     // Differentiate between failed connection, and disconnection
-    assert(connectionToServer_ == connection);
+    URHO3D_ASSERT(connectionToServer_ == connection);
     bool failedConnect = connectionToServer_ && connectionToServer_->IsConnectPending();
     connectionToServer_.Reset();
 
@@ -220,19 +220,19 @@ bool Network::StartServer(const URL& url, unsigned int maxConnections)
 
     WorkQueue* queue = GetSubsystem<WorkQueue>();
     transportServer_ = MakeShared<DataChannelServer>(context_);
-    transportServer_->onConnected_ = [this, queue](NetworkConnection* wtConnection)
+    transportServer_->onConnected_ = [this, queue](NetworkConnection* connection)
     {
         // Hold on to DataChannelConnection reference until callback executes.
-        SharedPtr<NetworkConnection> conn(wtConnection);
+        SharedPtr<NetworkConnection> conn(connection);
         queue->CallFromMainThread([this, conn](int)
         {
             OnClientConnected(new Connection(context_, conn));
         });
     };
-    transportServer_->onDisconnected_ = [this, queue](NetworkConnection* wtConnection)
+    transportServer_->onDisconnected_ = [this, queue](NetworkConnection* connection)
     {
         // Similarly, ensure that dataChannel reference is kept until callback finishes executing.
-        SharedPtr<NetworkConnection> conn(wtConnection);
+        SharedPtr<NetworkConnection> conn(connection);
         queue->CallFromMainThread([this, conn](int)
         {
             auto it = clientConnections_.find(WeakPtr(conn.Get()));
@@ -505,7 +505,7 @@ void Network::PostUpdate(float timeStep)
     SendNetworkUpdateEvent(E_NETWORKUPDATESENT, false);
 }
 
-void Network::HandleApplicationExit(StringHash eventType, VariantMap& eventData)
+void Network::HandleApplicationExit()
 {
     if (connectionToServer_)
         connectionToServer_->Disconnect();
@@ -523,14 +523,14 @@ void Network::HandleApplicationExit(StringHash eventType, VariantMap& eventData)
     }
 }
 
-void Network::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
+void Network::HandleBeginFrame(VariantMap& eventData)
 {
     using namespace BeginFrame;
 
     Update(eventData[P_TIMESTEP].GetFloat());
 }
 
-void Network::HandleRenderUpdate(StringHash eventType, VariantMap& eventData)
+void Network::HandleRenderUpdate(VariantMap& eventData)
 {
     using namespace RenderUpdate;
 

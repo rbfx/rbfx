@@ -32,7 +32,6 @@ namespace Urho3D
 
 class URHO3D_API NetworkServer : public Object
 {
-    friend class NetworkConnection;
     URHO3D_OBJECT(NetworkServer, Object);
 public:
     explicit NetworkServer(Context* context) : Object(context) { }

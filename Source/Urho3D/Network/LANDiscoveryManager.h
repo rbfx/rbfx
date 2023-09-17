@@ -30,7 +30,7 @@
 namespace Urho3D
 {
 
-enum LANDiscoveryMode
+enum class LANDiscoveryMode
 {
     /// Discovery beacons are broadcast to localhost.
     Local = 1,

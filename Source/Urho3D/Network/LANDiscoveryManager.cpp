@@ -117,7 +117,7 @@ bool LANDiscoveryManager::Start(unsigned short port, LANDiscoveryModeFlags mode)
         }
 
         buffer_.Resize(0xFFFF);
-        SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&)
+        SubscribeToEvent(E_UPDATE, [this]()
         {
             if (timer_.GetMSec(false) < broadcastTimeMs_)
                 return;
@@ -168,7 +168,7 @@ bool LANDiscoveryManager::Start(unsigned short port, LANDiscoveryModeFlags mode)
     }
     else
     {
-        SubscribeToEvent(E_UPDATE, [this, port, mode](StringHash, VariantMap&)
+        SubscribeToEvent(E_UPDATE, [this, port, mode]()
         {
             if (timer_.GetMSec(false) < broadcastTimeMs_)
                 return;

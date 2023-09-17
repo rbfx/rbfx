@@ -39,7 +39,7 @@ DataChannelConnection::DataChannelConnection(Context* context)
 
 DataChannelConnection::~DataChannelConnection()
 {
-    assert(state_ == NetworkConnection::State::Disconnected);
+    URHO3D_ASSERT(state_ == NetworkConnection::State::Disconnected);
 }
 
 void DataChannelConnection::RegisterObject(Context* context)

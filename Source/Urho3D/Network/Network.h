@@ -41,9 +41,6 @@ class NetworkServer;
 class URHO3D_API Network : public Object
 {
     URHO3D_OBJECT(Network, Object);
-    friend class Connection;
-    friend class DataChannelServer;
-    friend class DataChannelConnection;
 
 public:
     /// Construct.
@@ -143,9 +140,9 @@ public:
 private:
     /// Event handlers.
     /// @{
-    void HandleApplicationExit(StringHash eventType, VariantMap& eventData);
-    void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
-    void HandleRenderUpdate(StringHash eventType, VariantMap& eventData);
+    void HandleApplicationExit();
+    void HandleBeginFrame(VariantMap& eventData);
+    void HandleRenderUpdate(VariantMap& eventData);
     /// @}
 
     ///

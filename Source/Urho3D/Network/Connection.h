@@ -102,7 +102,7 @@ public:
     using AbstractConnection::SendMessage;
 
     /// Construct with context, RakNet connection address and Raknet peer pointer.
-    Connection(Context* context, NetworkConnection* wtConnection = nullptr);
+    Connection(Context* context, NetworkConnection* connection = nullptr);
     /// Destruct.
     ~Connection() override;
     /// Initialize object state. Should be called immediately after constructor.
@@ -221,7 +221,7 @@ public:
 
 private:
     /// Handle scene loaded event.
-    void HandleAsyncLoadFinished(StringHash eventType, VariantMap& eventData);
+    void HandleAsyncLoadFinished();
     /// Process a LoadScene message from the server. Called by Network.
     void ProcessLoadScene(int msgID, MemoryBuffer& msg);
     /// Process a SceneChecksumError message from the server. Called by Network.

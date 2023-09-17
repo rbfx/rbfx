@@ -69,13 +69,13 @@ PackageUpload::PackageUpload() :
 {
 }
 
-Connection::Connection(Context* context, NetworkConnection* wtConnection)
+Connection::Connection(Context* context, NetworkConnection* connection)
     : AbstractConnection(context)
-    , transportConnection_(wtConnection)
+    , transportConnection_(connection)
 {
-    if (wtConnection)
+    if (connection)
     {
-        wtConnection->onMessage_ = [this](ea::string_view msg)
+        connection->onMessage_ = [this](ea::string_view msg)
         {
             MutexLock lock(packetQueueLock_);
             incomingPackets_.emplace_back(VectorBuffer(msg.data(), msg.size()));
@@ -104,9 +104,9 @@ void Connection::RegisterObject(Context* context)
 
 void Connection::SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType)
 {
-    assert(messageId <= MSG_MAX);
-    assert(numBytes <= packedMessageLimit_);
-    assert((data == nullptr && numBytes == 0) || (data != nullptr && numBytes > 0));
+    URHO3D_ASSERT(messageId <= MSG_MAX);
+    URHO3D_ASSERT(numBytes <= packedMessageLimit_);
+    URHO3D_ASSERT((data == nullptr && numBytes == 0) || (data != nullptr && numBytes > 0));
 
     VectorBuffer& buffer = outgoingBuffer_[packetType];
 
@@ -774,7 +774,7 @@ void Connection::SetPacketSizeLimit(int limit)
     packedMessageLimit_ = limit;
 }
 
-void Connection::HandleAsyncLoadFinished(StringHash eventType, VariantMap& eventData)
+void Connection::HandleAsyncLoadFinished()
 {
     replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>();
     replicationManager_->StartClient(this);
