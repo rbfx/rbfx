@@ -202,9 +202,6 @@ URHO3D_API ea::string GetSanitizedName(const ea::string& name);
 /// Given two absolute directory paths, get the relative path from one to the other
 /// Returns false if either path isn't absolute, or if they are unrelated
 URHO3D_API bool GetRelativePath(const ea::string& fromPath, const ea::string& toPath, ea::string& output);
-/// Convert relative path to full path.
-/// TODO: This function is weird.
-URHO3D_API ea::string GetAbsolutePath(const ea::string& path);
 /// Eliminate special dot and double dot path segments, replace directory separators with /.
 /// One dot (.) always refers to the current folder.
 /// Two dots(..) refers to the folder that is one level higher than the current folder.

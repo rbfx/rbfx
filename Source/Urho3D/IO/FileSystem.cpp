@@ -1685,16 +1685,6 @@ ea::string ResolvePath(ea::string_view filePath, bool eliminateLeadingDotDots)
     return context.sanitizedName;
 }
 
-ea::string GetAbsolutePath(const ea::string& path)
-{
-    ea::vector<ea::string> parts;
-#if !_WIN32
-    return "/" + ResolveDotDotsInPath(path);
-#endif
-
-    return ResolvePath(path);
-}
-
 ea::string GetAbsolutePath(const ea::string& path, const ea::string& currentPath, bool addTrailingSlash)
 {
     const ea::string absolutePath = IsAbsolutePath(path) ? path : currentPath + path;
