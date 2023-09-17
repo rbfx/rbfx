@@ -322,7 +322,9 @@ void SamplesManager::Start()
 #endif
 #if URHO3D_NETWORK
     RegisterSample<Chat>();
+#if URHO3D_PHYSICS
     RegisterSample<SceneReplication>();
+#endif
 #endif
 #if URHO3D_PHYSICS
     RegisterSample<CharacterDemo>();
