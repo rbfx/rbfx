@@ -30,7 +30,8 @@ namespace Urho3DNet
                     else
                     {
                         string path = Context.Instance.ResourceCache.GetResourceFileName(fileName);
-                        path = Urho3D.GetAbsolutePath(path);
+                        if (!Urho3D.IsAbsolutePath(path))
+                            path = Context.Instance.VirtualFileSystem.GetAbsoluteNameFromIdentifier(new FileIdentifier("", path));
                         path = Urho3D.GetNativePath(path);
                         sourceFiles.Add(path);
                     }
