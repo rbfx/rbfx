@@ -45,11 +45,11 @@ OutlineGroup::MaterialKey::MaterialKey(const Material& material)
         }
     }
 
-    for (const auto& [unit, value] : material.GetTextures())
+    for (const auto& [nameHash, texture] : material.GetTextures())
     {
         unsigned hash = 0;
-        CombineHash(hash, unit);
-        CombineHash(hash, MakeHash(value.Get()));
+        CombineHash(hash, nameHash.Value());
+        CombineHash(hash, MakeHash(texture.value_.Get()));
         resourcesHash_ += hash;
     }
 }
@@ -174,8 +174,8 @@ Material* OutlineGroup::GetOutlineMaterial(Material* referenceMaterial)
     auto material = MakeShared<Material>(context_);
     for (const auto& [_, nameValue] : referenceMaterial->GetShaderParameters())
         material->SetShaderParameter(nameValue.name_, nameValue.value_);
-    for (const auto& [unit, value] : referenceMaterial->GetTextures())
-        material->SetTexture(unit, value);
+    for (const auto& [_, texture] : referenceMaterial->GetTextures())
+        material->SetTexture(texture.name_, texture.value_);
 
     material->SetShaderParameter(ShaderConsts::Custom_OutlineColor, color_.ToVector4(), true);
     material->SetRenderOrder(renderOrder_);

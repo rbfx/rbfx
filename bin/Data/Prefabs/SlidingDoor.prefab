@@ -1,0 +1,269 @@
+{
+	"components": [
+		{
+			"_typeName": "Octree"
+		},
+		{
+			"_typeName": "RenderPipeline",
+			"attributes": [
+				{
+					"name": "Color Space",
+					"type": "String",
+					"value": "HDR Linear"
+				},
+				{
+					"name": "PCF Kernel Size",
+					"type": "Int",
+					"value": 5
+				},
+				{
+					"name": "Post Process Antialiasing",
+					"type": "String",
+					"value": "FXAA3"
+				}
+			]
+		},
+		{
+			"_typeName": "ReflectionProbeManager"
+		},
+		{
+			"_typeName": "PhysicsWorld"
+		}
+	],
+	"nodes": [
+		{
+			"attributes": [
+				{
+					"name": "Name",
+					"type": "String",
+					"value": "[Prefab Node]"
+				}
+			],
+			"components": [
+				{
+					"_typeName": "CollisionShape",
+					"attributes": [
+						{
+							"name": "Size",
+							"type": "Vector3",
+							"value": "2 2 1"
+						},
+						{
+							"name": "Offset Position",
+							"type": "Vector3",
+							"value": "0 1 0"
+						}
+					]
+				},
+				{
+					"_typeName": "RigidBody",
+					"attributes": [
+						{
+							"name": "Collision Event Mode",
+							"type": "String",
+							"value": "Always"
+						},
+						{
+							"name": "Use Gravity",
+							"type": "Bool",
+							"value": false
+						},
+						{
+							"name": "Is Kinematic",
+							"type": "Bool",
+							"value": true
+						},
+						{
+							"name": "Is Trigger",
+							"type": "Bool",
+							"value": true
+						}
+					]
+				},
+				{
+					"_typeName": "AnimationController",
+					"attributes": [
+						{
+							"name": "Animations",
+							"type": "VariantVector",
+							"value": [
+								{
+									"type": "Int",
+									"value": 0
+								}
+							]
+						}
+					]
+				},
+				{
+					"_typeName": "TriggerAnimator",
+					"attributes": [
+						{
+							"name": "Enter Animation",
+							"type": "ResourceRef",
+							"value": "Animation;Animations/SlidingDoor/Open.xml"
+						},
+						{
+							"name": "Exit Animation",
+							"type": "ResourceRef",
+							"value": "Animation;Animations/SlidingDoor/Close.xml"
+						}
+					]
+				}
+			],
+			"nodes": [
+				{
+					"attributes": [
+						{
+							"name": "Name",
+							"type": "String",
+							"value": "Left"
+						},
+						{
+							"name": "Position",
+							"type": "Vector3",
+							"value": "-0.5 1 0"
+						},
+						{
+							"name": "Scale",
+							"type": "Vector3",
+							"value": "1 2 0.1"
+						}
+					],
+					"components": [
+						{
+							"_typeName": "StaticModel",
+							"attributes": [
+								{
+									"name": "Model",
+									"type": "ResourceRef",
+									"value": "Model;Models/Box.mdl"
+								},
+								{
+									"name": "Material",
+									"type": "ResourceRefList",
+									"value": "Material;Materials/DefaultWhite.xml"
+								}
+							]
+						},
+						{
+							"_typeName": "CollisionShape"
+						},
+						{
+							"_typeName": "RigidBody"
+						}
+					]
+				},
+				{
+					"attributes": [
+						{
+							"name": "Name",
+							"type": "String",
+							"value": "Right"
+						},
+						{
+							"name": "Position",
+							"type": "Vector3",
+							"value": "0.5 1 0"
+						},
+						{
+							"name": "Scale",
+							"type": "Vector3",
+							"value": "1 2 0.1"
+						}
+					],
+					"components": [
+						{
+							"_typeName": "StaticModel",
+							"attributes": [
+								{
+									"name": "Model",
+									"type": "ResourceRef",
+									"value": "Model;Models/Box.mdl"
+								},
+								{
+									"name": "Material",
+									"type": "ResourceRefList",
+									"value": "Material;Materials/DefaultWhite.xml"
+								}
+							]
+						},
+						{
+							"_typeName": "CollisionShape"
+						},
+						{
+							"_typeName": "RigidBody"
+						}
+					]
+				}
+			]
+		},
+		{
+			"attributes": [
+				{
+					"name": "Name",
+					"type": "String",
+					"value": "Skybox"
+				}
+			],
+			"components": [
+				{
+					"_typeName": "Skybox",
+					"attributes": [
+						{
+							"name": "Model",
+							"type": "ResourceRef",
+							"value": "Model;Models/Box.mdl"
+						},
+						{
+							"name": "Material",
+							"type": "ResourceRefList",
+							"value": "Material;Materials/DefaultSkybox.xml"
+						}
+					]
+				}
+			]
+		},
+		{
+			"attributes": [
+				{
+					"name": "Name",
+					"type": "String",
+					"value": "Global Zone"
+				}
+			],
+			"components": [
+				{
+					"_typeName": "Zone",
+					"attributes": [
+						{
+							"name": "Bounding Box Min",
+							"type": "Vector3",
+							"value": "-1000 -1000 -1000"
+						},
+						{
+							"name": "Bounding Box Max",
+							"type": "Vector3",
+							"value": "1000 1000 1000"
+						},
+						{
+							"name": "Ambient Color",
+							"type": "Color",
+							"value": "0 0 0 1"
+						},
+						{
+							"name": "Background Brightness",
+							"type": "Float",
+							"value": 1.0
+						},
+						{
+							"name": "Zone Texture",
+							"type": "ResourceRef",
+							"value": "TextureCube;Textures/DefaultSkybox.xml"
+						}
+					]
+				}
+			]
+		}
+	]
+}

@@ -69,6 +69,9 @@ enum SourceLanguage {
     SourceLanguageHLSL = 5,
     SourceLanguageCPP_for_OpenCL = 6,
     SourceLanguageSYCL = 7,
+    SourceLanguageHERO_C = 8,
+    SourceLanguageNZSL = 9,
+    SourceLanguageWGSL = 10,
     SourceLanguageMax = 0x7fffffff,
 };
 
@@ -356,6 +359,8 @@ enum ImageChannelDataType {
     ImageChannelDataTypeFloat = 14,
     ImageChannelDataTypeUnormInt24 = 15,
     ImageChannelDataTypeUnormInt101010_2 = 16,
+    ImageChannelDataTypeUnsignedIntRaw10EXT = 19,
+    ImageChannelDataTypeUnsignedIntRaw12EXT = 20,
     ImageChannelDataTypeMax = 0x7fffffff,
 };
 
@@ -722,6 +727,7 @@ enum BuiltIn {
     BuiltInHitKindKHR = 5333,
     BuiltInHitKindNV = 5333,
     BuiltInCurrentRayTimeNV = 5334,
+    BuiltInHitTriangleVertexPositionsKHR = 5335,
     BuiltInIncomingRayFlagsKHR = 5351,
     BuiltInIncomingRayFlagsNV = 5351,
     BuiltInRayGeometryIndexKHR = 5352,
@@ -1078,6 +1084,7 @@ enum Capability {
     CapabilityUniformTexelBufferArrayNonUniformIndexingEXT = 5311,
     CapabilityStorageTexelBufferArrayNonUniformIndexing = 5312,
     CapabilityStorageTexelBufferArrayNonUniformIndexingEXT = 5312,
+    CapabilityRayTracingPositionFetchKHR = 5336,
     CapabilityRayTracingNV = 5340,
     CapabilityRayTracingMotionBlurNV = 5341,
     CapabilityVulkanMemoryModel = 5345,
@@ -1098,6 +1105,7 @@ enum Capability {
     CapabilityRayTracingOpacityMicromapEXT = 5381,
     CapabilityShaderInvocationReorderNV = 5383,
     CapabilityBindlessTextureNV = 5390,
+    CapabilityRayQueryPositionFetchKHR = 5391,
     CapabilitySubgroupShuffleINTEL = 5568,
     CapabilitySubgroupBufferBlockIOINTEL = 5569,
     CapabilitySubgroupImageBlockIOINTEL = 5570,
@@ -1149,6 +1157,7 @@ enum Capability {
     CapabilityDotProduct = 6019,
     CapabilityDotProductKHR = 6019,
     CapabilityRayCullMaskKHR = 6020,
+    CapabilityCooperativeMatrixKHR = 6022,
     CapabilityBitInstructions = 6025,
     CapabilityGroupNonUniformRotateKHR = 6026,
     CapabilityAtomicFloat32AddEXT = 6033,
@@ -1267,6 +1276,37 @@ enum PackedVectorFormat {
     PackedVectorFormatPackedVectorFormat4x8Bit = 0,
     PackedVectorFormatPackedVectorFormat4x8BitKHR = 0,
     PackedVectorFormatMax = 0x7fffffff,
+};
+
+enum CooperativeMatrixOperandsShift {
+    CooperativeMatrixOperandsMatrixASignedComponentsShift = 0,
+    CooperativeMatrixOperandsMatrixBSignedComponentsShift = 1,
+    CooperativeMatrixOperandsMatrixCSignedComponentsShift = 2,
+    CooperativeMatrixOperandsMatrixResultSignedComponentsShift = 3,
+    CooperativeMatrixOperandsSaturatingAccumulationShift = 4,
+    CooperativeMatrixOperandsMax = 0x7fffffff,
+};
+
+enum CooperativeMatrixOperandsMask {
+    CooperativeMatrixOperandsMaskNone = 0,
+    CooperativeMatrixOperandsMatrixASignedComponentsMask = 0x00000001,
+    CooperativeMatrixOperandsMatrixBSignedComponentsMask = 0x00000002,
+    CooperativeMatrixOperandsMatrixCSignedComponentsMask = 0x00000004,
+    CooperativeMatrixOperandsMatrixResultSignedComponentsMask = 0x00000008,
+    CooperativeMatrixOperandsSaturatingAccumulationMask = 0x00000010,
+};
+
+enum CooperativeMatrixLayout {
+    CooperativeMatrixLayoutRowMajorKHR = 0,
+    CooperativeMatrixLayoutColumnMajorKHR = 1,
+    CooperativeMatrixLayoutMax = 0x7fffffff,
+};
+
+enum CooperativeMatrixUse {
+    CooperativeMatrixUseMatrixAKHR = 0,
+    CooperativeMatrixUseMatrixBKHR = 1,
+    CooperativeMatrixUseMatrixAccumulatorKHR = 2,
+    CooperativeMatrixUseMax = 0x7fffffff,
 };
 
 enum Op {
@@ -1642,6 +1682,11 @@ enum Op {
     OpUDotAccSatKHR = 4454,
     OpSUDotAccSat = 4455,
     OpSUDotAccSatKHR = 4455,
+    OpTypeCooperativeMatrixKHR = 4456,
+    OpCooperativeMatrixLoadKHR = 4457,
+    OpCooperativeMatrixStoreKHR = 4458,
+    OpCooperativeMatrixMulAddKHR = 4459,
+    OpCooperativeMatrixLengthKHR = 4460,
     OpTypeRayQueryKHR = 4472,
     OpRayQueryInitializeKHR = 4473,
     OpRayQueryTerminateKHR = 4474,
@@ -1709,6 +1754,7 @@ enum Op {
     OpTraceNV = 5337,
     OpTraceMotionNV = 5338,
     OpTraceRayMotionNV = 5339,
+    OpRayQueryGetIntersectionTriangleVertexPositionsKHR = 5340,
     OpTypeAccelerationStructureKHR = 5341,
     OpTypeAccelerationStructureNV = 5341,
     OpExecuteCallableNV = 5344,
@@ -2359,6 +2405,11 @@ inline void HasResultAndType(Op opcode, bool *hasResult, bool *hasResultType) {
     case OpSDotAccSat: *hasResult = true; *hasResultType = true; break;
     case OpUDotAccSat: *hasResult = true; *hasResultType = true; break;
     case OpSUDotAccSat: *hasResult = true; *hasResultType = true; break;
+    case OpTypeCooperativeMatrixKHR: *hasResult = true; *hasResultType = false; break;
+    case OpCooperativeMatrixLoadKHR: *hasResult = true; *hasResultType = true; break;
+    case OpCooperativeMatrixStoreKHR: *hasResult = false; *hasResultType = false; break;
+    case OpCooperativeMatrixMulAddKHR: *hasResult = true; *hasResultType = true; break;
+    case OpCooperativeMatrixLengthKHR: *hasResult = true; *hasResultType = true; break;
     case OpTypeRayQueryKHR: *hasResult = true; *hasResultType = false; break;
     case OpRayQueryInitializeKHR: *hasResult = false; *hasResultType = false; break;
     case OpRayQueryTerminateKHR: *hasResult = false; *hasResultType = false; break;
@@ -2425,6 +2476,7 @@ inline void HasResultAndType(Op opcode, bool *hasResult, bool *hasResultType) {
     case OpTraceNV: *hasResult = false; *hasResultType = false; break;
     case OpTraceMotionNV: *hasResult = false; *hasResultType = false; break;
     case OpTraceRayMotionNV: *hasResult = false; *hasResultType = false; break;
+    case OpRayQueryGetIntersectionTriangleVertexPositionsKHR: *hasResult = true; *hasResultType = true; break;
     case OpTypeAccelerationStructureNV: *hasResult = true; *hasResultType = false; break;
     case OpExecuteCallableNV: *hasResult = false; *hasResultType = false; break;
     case OpTypeCooperativeMatrixNV: *hasResult = true; *hasResultType = false; break;
@@ -2740,6 +2792,10 @@ inline FragmentShadingRateMask operator|(FragmentShadingRateMask a, FragmentShad
 inline FragmentShadingRateMask operator&(FragmentShadingRateMask a, FragmentShadingRateMask b) { return FragmentShadingRateMask(unsigned(a) & unsigned(b)); }
 inline FragmentShadingRateMask operator^(FragmentShadingRateMask a, FragmentShadingRateMask b) { return FragmentShadingRateMask(unsigned(a) ^ unsigned(b)); }
 inline FragmentShadingRateMask operator~(FragmentShadingRateMask a) { return FragmentShadingRateMask(~unsigned(a)); }
+inline CooperativeMatrixOperandsMask operator|(CooperativeMatrixOperandsMask a, CooperativeMatrixOperandsMask b) { return CooperativeMatrixOperandsMask(unsigned(a) | unsigned(b)); }
+inline CooperativeMatrixOperandsMask operator&(CooperativeMatrixOperandsMask a, CooperativeMatrixOperandsMask b) { return CooperativeMatrixOperandsMask(unsigned(a) & unsigned(b)); }
+inline CooperativeMatrixOperandsMask operator^(CooperativeMatrixOperandsMask a, CooperativeMatrixOperandsMask b) { return CooperativeMatrixOperandsMask(unsigned(a) ^ unsigned(b)); }
+inline CooperativeMatrixOperandsMask operator~(CooperativeMatrixOperandsMask a) { return CooperativeMatrixOperandsMask(~unsigned(a)); }
 
 }  // end namespace spv
 

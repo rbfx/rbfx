@@ -40,11 +40,15 @@ class Texture2D;
 class Viewport;
 struct BatchStateCreateKey;
 struct BatchStateCreateContext;
+struct PipelineStateOutputDesc;
 struct UIBatchStateKey;
 struct UIBatchStateCreateContext;
 
 /// Macro to define shader constant name. Group name doesn't serve any functional purpose.
 #define URHO3D_SHADER_CONST(group, name) URHO3D_GLOBAL_CONSTANT(ConstString group##_##name{#name})
+
+/// Macro to define shader resource name.
+#define URHO3D_SHADER_RESOURCE(name) URHO3D_GLOBAL_CONSTANT(ConstString name{#name})
 
 /// Common parameters of rendered frame.
 struct CommonFrameInfo
@@ -70,9 +74,10 @@ enum class DrawableProcessorPassFlag
     NeedReadableDepth = 1 << 3,
     RefractionPass = 1 << 4,
     DepthOnlyPass = 1 << 5,
+    ReadOnlyDepth = 1 << 6,
 
-    BatchCallback = 1 << 6,
-    PipelineStateCallback = 1 << 7,
+    BatchCallback = 1 << 7,
+    PipelineStateCallback = 1 << 8,
 };
 
 URHO3D_FLAGSET(DrawableProcessorPassFlag, DrawableProcessorPassFlags);
@@ -99,6 +104,7 @@ enum class BatchRenderFlag
     EnablePixelLights = 1 << 2,
     EnableInstancingForStaticGeometry = 1 << 3,
     DisableColorOutput = 1 << 4,
+    LightMaskToStencil = 1 << 5,
 
     EnableAmbientAndVertexLighting = EnableAmbientLighting | EnableVertexLights,
 };
@@ -111,10 +117,9 @@ enum class RenderBufferFlag
     /// Texture content is preserved between frames.
     Persistent = 1 << 0,
     FixedTextureSize = 1 << 1,
-    sRGB = 1 << 2,
-    BilinearFiltering = 1 << 3,
-    CubeMap = 1 << 4,
-    NoMultiSampledAutoResolve = 1 << 5
+    BilinearFiltering = 1 << 2,
+    CubeMap = 1 << 3,
+    NoMultiSampledAutoResolve = 1 << 4
 };
 
 URHO3D_FLAGSET(RenderBufferFlag, RenderBufferFlags);
@@ -122,7 +127,7 @@ URHO3D_FLAGSET(RenderBufferFlag, RenderBufferFlags);
 /// Render buffer parameters. Actual render buffer size is controlled externally.
 struct RenderBufferParams
 {
-    unsigned textureFormat_{};
+    TextureFormat textureFormat_{};
     int multiSampleLevel_{ 1 };
     RenderBufferFlags flags_;
 
@@ -222,9 +227,12 @@ public:
     /// Destruct.
     virtual ~BatchStateCacheCallback();
     /// Create pipeline state for given context and key.
-    /// Only attributes that constribute to pipeline state hashes are safe to use.
-    virtual SharedPtr<PipelineState> CreateBatchPipelineState(
-        const BatchStateCreateKey& key, const BatchStateCreateContext& ctx) = 0;
+    /// Only attributes that contribute to pipeline state hashes are safe to use.
+    virtual SharedPtr<PipelineState> CreateBatchPipelineState(const BatchStateCreateKey& key,
+        const BatchStateCreateContext& ctx, const PipelineStateOutputDesc& outputDesc) = 0;
+    /// Create placeholder pipeline state when actual pipeline state creation fails.
+    virtual SharedPtr<PipelineState> CreateBatchPipelineStatePlaceholder(
+        unsigned vertexStride, const PipelineStateOutputDesc& outputDesc) = 0;
 };
 
 /// Pipeline state cache callback used to create actual pipeline state for UI batches.
@@ -245,6 +253,8 @@ struct RenderPipelineStats
     unsigned numLights_{};
     /// Total number of lights with shadows processed.
     unsigned numShadowedLights_{};
+    /// Total number of geometries in the frame (excluding shadow casters).
+    unsigned numGeometries_{};
     /// Number of occluders rendered.
     unsigned numOccluders_{};
 };
@@ -324,6 +334,7 @@ struct DrawableProcessorSettings
     unsigned maxVertexLights_{ 4 };
     unsigned maxPixelLights_{ 4 };
     unsigned pcfKernelSize_{ 1 };
+    float normalOffsetScale_{1.0f};
     LightProcessorCacheSettings lightProcessorCache_;
 
     /// Utility operators
@@ -333,6 +344,7 @@ struct DrawableProcessorSettings
         unsigned hash = 0;
         CombineHash(hash, maxVertexLights_);
         CombineHash(hash, pcfKernelSize_);
+        CombineHash(hash, MakeHash(normalOffsetScale_));
         return hash;
     }
 
@@ -341,6 +353,7 @@ struct DrawableProcessorSettings
         maxVertexLights_ = Clamp(maxVertexLights_, 0u, 4u);
         maxPixelLights_ = Clamp(maxPixelLights_, 0u, 256u);
         pcfKernelSize_ = Clamp(pcfKernelSize_, 1u, 5u);
+        normalOffsetScale_ = ea::max(0.0f, normalOffsetScale_);
 
         // Kernel size of 4 is not supported
         if (pcfKernelSize_ == 4)
@@ -353,7 +366,8 @@ struct DrawableProcessorSettings
             && maxVertexLights_ == rhs.maxVertexLights_
             && maxPixelLights_ == rhs.maxPixelLights_
             && pcfKernelSize_ == rhs.pcfKernelSize_
-            && lightProcessorCache_ == rhs.lightProcessorCache_;
+            && lightProcessorCache_ == rhs.lightProcessorCache_
+            && normalOffsetScale_ == rhs.normalOffsetScale_;
     }
 
     bool operator!=(const DrawableProcessorSettings& rhs) const { return !(*this == rhs); }
@@ -440,6 +454,9 @@ struct ShadowMapAllocatorSettings
     bool use16bitShadowMaps_{};
     unsigned shadowAtlasPageSize_{ 2048 };
 
+    float depthBiasScale_{1.0f};
+    float depthBiasOffset_{0.0f};
+
     /// Utility operators
     /// @{
     unsigned CalculatePipelineStateHash() const
@@ -447,6 +464,8 @@ struct ShadowMapAllocatorSettings
         unsigned hash = 0;
         CombineHash(hash, enableVarianceShadowMaps_);
         CombineHash(hash, use16bitShadowMaps_);
+        CombineHash(hash, MakeHash(depthBiasScale_));
+        CombineHash(hash, MakeHash(depthBiasOffset_));
         return hash;
     }
 
@@ -454,6 +473,7 @@ struct ShadowMapAllocatorSettings
     {
         varianceShadowMapMultiSample_ = Clamp(ClosestPowerOfTwo(varianceShadowMapMultiSample_), 1u, 16u);
         shadowAtlasPageSize_ = Clamp(ClosestPowerOfTwo(shadowAtlasPageSize_), 128u, 16 * 1024u);
+        depthBiasScale_ = ea::max(0.0f, depthBiasScale_);
     }
 
     bool operator==(const ShadowMapAllocatorSettings& rhs) const
@@ -461,7 +481,9 @@ struct ShadowMapAllocatorSettings
         return enableVarianceShadowMaps_ == rhs.enableVarianceShadowMaps_
             && varianceShadowMapMultiSample_ == rhs.varianceShadowMapMultiSample_
             && use16bitShadowMaps_ == rhs.use16bitShadowMaps_
-            && shadowAtlasPageSize_ == rhs.shadowAtlasPageSize_;
+            && shadowAtlasPageSize_ == rhs.shadowAtlasPageSize_
+            && depthBiasScale_ == rhs.depthBiasScale_
+            && depthBiasOffset_ == rhs.depthBiasOffset_;
     }
 
     bool operator!=(const ShadowMapAllocatorSettings& rhs) const { return !(*this == rhs); }
@@ -822,6 +844,31 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     void PropagateImpliedSettings();
     void AdjustForPostProcessing(PostProcessPassFlags flags);
     /// @}
+};
+
+/// ID of static pipeline state.
+enum class StaticPipelineStateId : unsigned
+{
+    Invalid,
+};
+
+/// Helper for pipeline state creation.
+/// Keep entire string because it should be used only on startup.
+using NamedSamplerStateDesc = ea::pair<ea::string, SamplerStateDesc>;
+
+/// Reference to input shader resource. Only textures are supported now.
+struct ShaderResourceDesc
+{
+    StringHash name_{};
+    RawTexture* texture_{};
+};
+
+/// Generic description of shader parameter.
+/// Beware of Variant allocations for types larger than Vector4!
+struct ShaderParameterDesc
+{
+    StringHash name_;
+    Variant value_;
 };
 
 }

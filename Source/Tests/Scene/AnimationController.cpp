@@ -632,20 +632,20 @@ TEST_CASE("AnimationController merges animations from external state")
 
     REQUIRE(animations_0_75.size() == 4);
 
-    REQUIRE(animations_0_75[0].animation_ == animationRotate);
-    REQUIRE(animations_0_75[0].time_.Value() == 0.75f);
+    REQUIRE(animations_0_75[0].GetAnimation() == animationRotate);
+    REQUIRE(animations_0_75[0].GetTime() == 0.75f);
     REQUIRE(animations_0_75[0].weight_ == 1.0f);
 
-    REQUIRE(animations_0_75[1].animation_ == animationTranslateX);
-    REQUIRE(animations_0_75[1].time_.Value() == 1.5f);
+    REQUIRE(animations_0_75[1].GetAnimation() == animationTranslateX);
+    REQUIRE(animations_0_75[1].GetTime() == 1.5f);
     REQUIRE(animations_0_75[1].weight_ == 1.0f);
 
-    REQUIRE(animations_0_75[2].animation_ == animationTranslateX);
-    REQUIRE(animations_0_75[2].time_.Value() == 2.0f);
+    REQUIRE(animations_0_75[2].GetAnimation() == animationTranslateX);
+    REQUIRE(animations_0_75[2].GetTime() == 2.0f);
     REQUIRE(animations_0_75[2].weight_ == 0.5f);
 
-    REQUIRE(animations_0_75[3].animation_ == animationTranslateZ);
-    REQUIRE(animations_0_75[3].time_.Value() == 0.75f);
+    REQUIRE(animations_0_75[3].GetAnimation() == animationTranslateZ);
+    REQUIRE(animations_0_75[3].GetTime() == 0.75f);
     REQUIRE(animations_0_75[3].weight_ == 0.75f);
 
     // Merge state from 0.25 with 0.5 delay, except to remain unchanged
@@ -662,16 +662,16 @@ TEST_CASE("AnimationController merges animations from external state")
 
     REQUIRE(animations_1_25.size() == 3);
 
-    REQUIRE(animations_1_25[0].animation_ == animationRotate);
-    REQUIRE(animations_1_25[0].time_.Value() == 1.25f);
+    REQUIRE(animations_1_25[0].GetAnimation() == animationRotate);
+    REQUIRE(animations_1_25[0].GetTime() == 1.25f);
     REQUIRE(animations_1_25[0].weight_ == 1.0f);
 
-    REQUIRE(animations_1_25[1].animation_ == animationTranslateX);
-    REQUIRE(animations_1_25[1].time_.Value() == 0.5f);
+    REQUIRE(animations_1_25[1].GetAnimation() == animationTranslateX);
+    REQUIRE(animations_1_25[1].GetTime() == 0.5f);
     REQUIRE(animations_1_25[1].weight_ == 1.0f);
 
-    REQUIRE(animations_1_25[2].animation_ == animationTranslateZ);
-    REQUIRE(animations_1_25[2].time_.Value() == 1.25f);
+    REQUIRE(animations_1_25[2].GetAnimation() == animationTranslateZ);
+    REQUIRE(animations_1_25[2].GetTime() == 1.25f);
     REQUIRE(animations_1_25[2].weight_ == 0.75f);
 
     // Merge state from 0.25 with 1.0 delay, except to remain unchanged
@@ -691,20 +691,20 @@ TEST_CASE("AnimationController merges animations from external state")
 
     REQUIRE(animations_1_5.size() == 4);
 
-    REQUIRE(animations_1_5[0].animation_ == animationRotate);
-    REQUIRE(animations_1_5[0].time_.Value() == 1.5f);
+    REQUIRE(animations_1_5[0].GetAnimation() == animationRotate);
+    REQUIRE(animations_1_5[0].GetTime() == 1.5f);
     REQUIRE(animations_1_5[0].weight_ == 1.0f);
 
-    REQUIRE(animations_1_5[1].animation_ == animationTranslateX);
-    REQUIRE(animations_1_5[1].time_.Value() == 1.0f);
+    REQUIRE(animations_1_5[1].GetAnimation() == animationTranslateX);
+    REQUIRE(animations_1_5[1].GetTime() == 1.0f);
     REQUIRE(animations_1_5[1].weight_ == 1.0f);
 
-    REQUIRE(animations_1_5[2].animation_ == animationTranslateZ);
-    REQUIRE(animations_1_5[2].time_.Value() == 1.5f);
+    REQUIRE(animations_1_5[2].GetAnimation() == animationTranslateZ);
+    REQUIRE(animations_1_5[2].GetTime() == 1.5f);
     REQUIRE(animations_1_5[2].weight_ == 0.75f);
 
-    REQUIRE(animations_1_5[3].animation_ == animationTranslateZ);
-    REQUIRE(animations_1_5[3].time_.Value() == 0.25f);
+    REQUIRE(animations_1_5[3].GetAnimation() == animationTranslateZ);
+    REQUIRE(animations_1_5[3].GetTime() == 0.25f);
     REQUIRE(animations_1_5[3].weight_ == 0.5f);
 
     // Merge state from 0.25 with 0.0 delay, except to fade out newly added animation and fade in already removed animation
@@ -714,30 +714,30 @@ TEST_CASE("AnimationController merges animations from external state")
     const auto animations_0_25_B = animationController->GetAnimationParameters();
     REQUIRE(animations_0_25_B.size() == 5);
 
-    REQUIRE(animations_0_25_B[0].animation_ == animationTranslateZ); // removed on merge
-    REQUIRE(animations_0_25_B[0].time_.Value() == 0.25f);
+    REQUIRE(animations_0_25_B[0].GetAnimation() == animationTranslateZ); // removed on merge
+    REQUIRE(animations_0_25_B[0].GetTime() == 0.25f);
     REQUIRE(animations_0_25_B[0].weight_ == 0.5f);
     REQUIRE(animations_0_25_B[0].targetWeight_ == 0.0f);
     REQUIRE(animations_0_25_B[0].targetWeightDelay_ == 0.5f);
 
-    REQUIRE(animations_0_25_B[1].animation_ == animationRotate); // merged
-    REQUIRE(animations_0_25_B[1].time_.Value() == 0.25f);
+    REQUIRE(animations_0_25_B[1].GetAnimation() == animationRotate); // merged
+    REQUIRE(animations_0_25_B[1].GetTime() == 0.25f);
     REQUIRE(animations_0_25_B[1].weight_ == 1.0f);
     REQUIRE(animations_0_25_B[1].targetWeight_ == 1.0f);
 
-    REQUIRE(animations_0_25_B[2].animation_ == animationTranslateX); // merged
-    REQUIRE(animations_0_25_B[2].time_.Value() == 0.5f);
+    REQUIRE(animations_0_25_B[2].GetAnimation() == animationTranslateX); // merged
+    REQUIRE(animations_0_25_B[2].GetTime() == 0.5f);
     REQUIRE(animations_0_25_B[2].weight_ == 1.0f);
     REQUIRE(animations_0_25_B[2].targetWeight_ == 1.0f);
 
-    REQUIRE(animations_0_25_B[3].animation_ == animationTranslateX); // added
-    REQUIRE(animations_0_25_B[3].time_.Value() == 1.0f);
+    REQUIRE(animations_0_25_B[3].GetAnimation() == animationTranslateX); // added
+    REQUIRE(animations_0_25_B[3].GetTime() == 1.0f);
     REQUIRE(animations_0_25_B[3].weight_ == 0.0f);
     REQUIRE(animations_0_25_B[3].targetWeight_ == 1.0f);
     REQUIRE(animations_0_25_B[3].targetWeightDelay_ == 0.5f);
 
-    REQUIRE(animations_0_25_B[4].animation_ == animationTranslateZ); // merged
-    REQUIRE(animations_0_25_B[4].time_.Value() == 0.25f);
+    REQUIRE(animations_0_25_B[4].GetAnimation() == animationTranslateZ); // merged
+    REQUIRE(animations_0_25_B[4].GetTime() == 0.25f);
     REQUIRE(animations_0_25_B[4].weight_ == 0.75f);
     REQUIRE(animations_0_25_B[4].targetWeight_ == 0.75f);
 
@@ -745,14 +745,14 @@ TEST_CASE("AnimationController merges animations from external state")
     animationController->Update(0.25f);
     const auto animations_0_5_B = animationController->GetAnimationParameters();
 
-    REQUIRE(animations_0_5_B[0].animation_ == animationTranslateZ); // removed on merge
-    REQUIRE(animations_0_5_B[0].time_.Value() == 0.5f);
+    REQUIRE(animations_0_5_B[0].GetAnimation() == animationTranslateZ); // removed on merge
+    REQUIRE(animations_0_5_B[0].GetTime() == 0.5f);
     REQUIRE(animations_0_5_B[0].weight_ == 0.25f);
     REQUIRE(animations_0_5_B[0].targetWeight_ == 0.0f);
     REQUIRE(animations_0_5_B[0].targetWeightDelay_ == 0.25f);
 
-    REQUIRE(animations_0_5_B[3].animation_ == animationTranslateX); // added
-    REQUIRE(animations_0_5_B[3].time_.Value() == 2.0f);
+    REQUIRE(animations_0_5_B[3].GetAnimation() == animationTranslateX); // added
+    REQUIRE(animations_0_5_B[3].GetTime() == 2.0f);
     REQUIRE(animations_0_5_B[3].weight_ == 0.5f);
     REQUIRE(animations_0_5_B[3].targetWeight_ == 0.0f);
     REQUIRE(animations_0_5_B[3].targetWeightDelay_ == 0.5f);
@@ -766,8 +766,8 @@ TEST_CASE("AnimationController merges animations from external state")
     animationController->Update(0.25f);
     const auto animations_0_75_B = animationController->GetAnimationParameters();
 
-    REQUIRE(animations_0_75_B[2].animation_ == animationTranslateX); // added
-    REQUIRE(animations_0_75_B[2].time_.Value() == 2.0f);
+    REQUIRE(animations_0_75_B[2].GetAnimation() == animationTranslateX); // added
+    REQUIRE(animations_0_75_B[2].GetTime() == 2.0f);
     REQUIRE(animations_0_75_B[2].weight_ == 0.25f);
     REQUIRE(animations_0_75_B[2].targetWeight_ == 0.0f);
     REQUIRE(animations_0_75_B[2].targetWeightDelay_ == 0.25f);

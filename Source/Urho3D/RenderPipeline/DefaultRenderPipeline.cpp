@@ -33,6 +33,7 @@
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Viewport.h"
 #include "../Input/Input.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/AutoExposurePass.h"
 #include "../RenderPipeline/BatchRenderer.h"
 #include "../RenderPipeline/BloomPass.h"
@@ -124,9 +125,9 @@ void DefaultRenderPipelineView::ApplySettings()
                 "deferred", "base", "litbase", "light");
 
             deferred_ = DeferredLightingData{};
-            deferred_->albedoBuffer_ = renderBufferManager_->CreateColorBuffer({ Graphics::GetRGBAFormat() });
-            deferred_->specularBuffer_ = renderBufferManager_->CreateColorBuffer({ Graphics::GetRGBAFormat() });
-            deferred_->normalBuffer_ = renderBufferManager_->CreateColorBuffer({ Graphics::GetRGBAFormat() });
+            deferred_->albedoBuffer_ = renderBufferManager_->CreateColorBuffer({TextureFormat::TEX_FORMAT_RGBA8_UNORM});
+            deferred_->specularBuffer_ = renderBufferManager_->CreateColorBuffer({TextureFormat::TEX_FORMAT_RGBA8_UNORM});
+            deferred_->normalBuffer_ = renderBufferManager_->CreateColorBuffer({TextureFormat::TEX_FORMAT_RGBA8_UNORM});
         }
         else
         {
@@ -151,14 +152,12 @@ void DefaultRenderPipelineView::ApplySettings()
         postProcessPasses_.push_back(pass);
     }
 
-#ifdef DESKTOP_GRAPHICS
     if (settings_.ssao_.enabled_ && settings_.renderBufferManager_.readableDepth_)
     {
         ssaoPass_ = MakeShared<AmbientOcclusionPass>(this, renderBufferManager_);
         ssaoPass_->SetSettings(settings_.ssao_);
         postProcessPasses_.push_back(ssaoPass_);
     }
-#endif
 
     if (settings_.bloom_.enabled_)
     {
@@ -244,10 +243,12 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
         deferredDecalPass_ = sceneProcessor_->CreatePass<UnorderedScenePass>(
             DrawableProcessorPassFlag::HasAmbientLighting | DrawableProcessorPassFlag::NeedReadableDepth,
             "deferred_decal", "", "", "");
-        alphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>(
+        alphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>( //
             DrawableProcessorPassFlag::HasAmbientLighting | DrawableProcessorPassFlag::NeedReadableDepth
-            | DrawableProcessorPassFlag::RefractionPass, "", "alpha", "alpha", "litalpha");
-        postAlphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>(DrawableProcessorPassFlag::None, "postalpha");
+                | DrawableProcessorPassFlag::RefractionPass | DrawableProcessorPassFlag::ReadOnlyDepth,
+            "", "alpha", "alpha", "litalpha");
+        postAlphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>(
+            DrawableProcessorPassFlag::ReadOnlyDepth, "postalpha");
     }
 
     frameInfo_.viewport_ = viewport;
@@ -265,6 +266,30 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
         settingsDirty_ = false;
         ApplySettings();
     }
+
+    renderBufferManager_->OnViewportDefined(frameInfo_.renderTarget_, frameInfo_.viewportRect_);
+
+    const unsigned outputMultiSample = renderBufferManager_->GetOutputMultiSample();
+    const TextureFormat outputColorFormat = renderBufferManager_->GetOutputColorFormat();
+    const TextureFormat outputDepthFormat = renderBufferManager_->GetOutputDepthStencilFormat();
+
+    const PipelineStateOutputDesc standardOutputDesc{outputDepthFormat, 1, {outputColorFormat}, outputMultiSample};
+    const PipelineStateOutputDesc deferredOutputDesc{
+        outputDepthFormat, 4, {outputColorFormat, albedoFormat_, specularFormat_, normalFormat_}};
+
+    opaquePass_->SetDeferredOutputDesc(deferredOutputDesc);
+    deferredDecalPass_->SetDeferredOutputDesc(deferredOutputDesc);
+
+    opaquePass_->SetForwardOutputDesc(standardOutputDesc);
+    if (depthPrePass_)
+        depthPrePass_->SetForwardOutputDesc(standardOutputDesc);
+    postOpaquePass_->SetForwardOutputDesc(standardOutputDesc);
+    alphaPass_->SetForwardOutputDesc(standardOutputDesc);
+    postAlphaPass_->SetForwardOutputDesc(standardOutputDesc);
+
+    auto batchCompositor = sceneProcessor_->GetBatchCompositor();
+    batchCompositor->SetLightVolumesOutputDesc(standardOutputDesc);
+    batchCompositor->SetShadowOutputDesc(shadowMapAllocator_->GetShadowOutputDesc());
 
     return true;
 }
@@ -317,6 +342,7 @@ void DefaultRenderPipelineView::Render()
 {
     URHO3D_PROFILE("ExecuteRenderPipeline");
 
+    const RenderDeviceCaps& caps = GetSubsystem<RenderDevice>()->GetCaps();
     const FrameInfo& fullFrameInfo = sceneProcessor_->GetFrameInfo();
 
     const bool hasRefraction = alphaPass_->HasRefractionBatches();
@@ -330,9 +356,6 @@ void DefaultRenderPipelineView::Render()
     SendViewEvent(E_BEGINVIEWRENDER);
     SendViewEvent(E_VIEWBUFFERSREADY);
 
-    // HACK: Graphics may keep expired vertex buffers for some reason, reset it just in case
-    graphics_->SetVertexBuffer(nullptr);
-
     sceneProcessor_->PrepareDrawablesBeforeRendering();
     sceneProcessor_->PrepareInstancingBuffer();
     sceneProcessor_->RenderShadowMaps();
@@ -343,7 +366,6 @@ void DefaultRenderPipelineView::Render()
         ? fogColorInGammaSpace.GammaToLinear()
         : fogColorInGammaSpace;
 
-#ifdef DESKTOP_GRAPHICS
     if (settings_.sceneProcessor_.IsDeferredLighting())
     {
         // Draw deferred GBuffer
@@ -369,7 +391,7 @@ void DefaultRenderPipelineView::Render()
             renderBufferManager_->SetRenderTargets(renderBufferManager_->GetDepthStencilOutput(), gBuffer);
 
             ShaderResourceDesc depthAndColorTextures[] = {
-                {TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture()},
+                {ShaderResources::DepthBuffer, renderBufferManager_->GetDepthStencilTexture()},
             };
 
             sceneProcessor_->RenderSceneBatches("DeferredDecals", camera, deferredDecalPass_->GetDeferredBatches(), depthAndColorTextures);
@@ -377,21 +399,21 @@ void DefaultRenderPipelineView::Render()
 
         // Draw deferred lights
         const ShaderResourceDesc geometryBuffer[] = {
-            { TU_DIFFUSE, deferred_->albedoBuffer_->GetTexture() },
-            { TU_SPECULAR, deferred_->specularBuffer_->GetTexture() },
-            { TU_NORMAL, deferred_->normalBuffer_->GetTexture() },
-            { TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture() }
+            { ShaderResources::Albedo, deferred_->albedoBuffer_->GetTexture() },
+            { ShaderResources::Properties, deferred_->specularBuffer_->GetTexture() },
+            { ShaderResources::Normal, deferred_->normalBuffer_->GetTexture() },
+            { ShaderResources::DepthBuffer, renderBufferManager_->GetDepthStencilTexture() }
         };
         const ShaderParameterDesc cameraParameters[] = {
             {ShaderConsts::Camera_GBufferOffsets, renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale()},
             {ShaderConsts::Camera_GBufferInvSize, renderBufferManager_->GetInvOutputSize()},
         };
 
-        renderBufferManager_->SetOutputRenderTargets();
+        renderBufferManager_->SetOutputRenderTargets(true);
         sceneProcessor_->RenderLightVolumeBatches("LightVolumes", camera, geometryBuffer, cameraParameters);
+        renderBufferManager_->SetOutputRenderTargets();
     }
     else
-#endif
     {
         renderBufferManager_->ClearOutput(effectiveFogColor, 1.0f, 0);
         renderBufferManager_->SetOutputRenderTargets();
@@ -412,16 +434,14 @@ void DefaultRenderPipelineView::Render()
     if (hasRefraction)
         renderBufferManager_->SwapColorBuffers(true);
 
-#ifdef DESKTOP_GRAPHICS
+    const bool supportReadOnlyDepth = caps.readOnlyDepth_;
     ShaderResourceDesc depthAndColorTextures[] = {
-        { TU_DEPTHBUFFER, renderBufferManager_->GetDepthStencilTexture() },
-        { TU_EMISSIVE, renderBufferManager_->GetSecondaryColorTexture() },
+        {ShaderResources::DepthBuffer, supportReadOnlyDepth ? renderBufferManager_->GetDepthStencilTexture() : nullptr},
+        {ShaderResources::Emission, renderBufferManager_->GetSecondaryColorTexture()},
     };
-#else
-    ShaderResourceDesc depthAndColorTextures[] = {
-        { TU_EMISSIVE, renderBufferManager_->GetSecondaryColorTexture() },
-    };
-#endif
+
+    if (supportReadOnlyDepth)
+        renderBufferManager_->SetOutputRenderTargets(true);
 
     sceneProcessor_->RenderSceneBatches("Alpha", camera, alphaPass_->GetBatches(),
         depthAndColorTextures, cameraParameters);
@@ -449,12 +469,10 @@ void DefaultRenderPipelineView::Render()
         sceneProcessor_->RenderSceneBatches("Outline", camera, batches, {}, cameraParameters);
     }
 
-#ifdef DESKTOP_GRAPHICS
     if (ssaoPass_ && deferred_)
     {
         ssaoPass_->SetNormalBuffer(deferred_->normalBuffer_);
     }
-#endif
 
     for (PostProcessPass* postProcessPass : postProcessPasses_)
         postProcessPass->Execute(camera);
@@ -470,7 +488,6 @@ void DefaultRenderPipelineView::Render()
 
     OnRenderEnd(this, frameInfo_);
     SendViewEvent(E_ENDVIEWRENDER);
-    graphics_->SetColorWrite(true);
 
     // Update statistics
     stats_ = {};
@@ -484,6 +501,26 @@ void DefaultRenderPipelineView::Render()
         const DebugFrameSnapshot& snapshot = debugger_.GetSnapshot();
         URHO3D_LOGINFO("RenderPipeline snapshot:\n\n{}\n", snapshot.ToString());
     }
+}
+
+void DefaultRenderPipelineView::DrawDebugGeometries(bool depthTest)
+{
+    const FrameInfo& fullFrameInfo = sceneProcessor_->GetFrameInfo();
+    auto debug = fullFrameInfo.scene_->GetComponent<DebugRenderer>();
+
+    const auto& geometries = sceneProcessor_->GetDrawableProcessor()->GetGeometries();
+    for (Drawable* geometry : geometries)
+        geometry->DrawDebugGeometry(debug, depthTest);
+}
+
+void DefaultRenderPipelineView::DrawDebugLights(bool depthTest)
+{
+    const FrameInfo& fullFrameInfo = sceneProcessor_->GetFrameInfo();
+    auto debug = fullFrameInfo.scene_->GetComponent<DebugRenderer>();
+
+    const auto& lights = sceneProcessor_->GetDrawableProcessor()->GetLights();
+    for (Drawable* light : lights)
+        light->DrawDebugGeometry(debug, depthTest);
 }
 
 unsigned DefaultRenderPipelineView::RecalculatePipelineStateHash() const

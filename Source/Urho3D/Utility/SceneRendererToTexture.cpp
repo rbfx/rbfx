@@ -29,29 +29,10 @@
 #include "../Scene/Scene.h"
 #include "../Utility/SceneRendererToTexture.h"
 
-#ifdef URHO3D_D3D11
-#include <dxgi1_2.h>
-#endif
-
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
-
-namespace
-{
-
-unsigned GetViewportTextureFormat()
-{
-#ifdef URHO3D_D3D11
-    // DX11 doesn't have RGB texture format and we don't want ImGUI to use alpha
-    return DXGI_FORMAT_B8G8R8X8_UNORM;
-#else
-    return Graphics::GetRGBFormat();
-#endif
-}
-
-}
 
 CustomBackbufferTexture::CustomBackbufferTexture(Context* context)
     : Object(context)
@@ -84,7 +65,8 @@ void CustomBackbufferTexture::Update()
     if (textureDirty_)
     {
         textureDirty_ = false;
-        texture_->SetSize(textureSize_.x_, textureSize_.y_, GetViewportTextureFormat(), TEXTURE_RENDERTARGET);
+        texture_->SetSize(
+            textureSize_.x_, textureSize_.y_, TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFlag::BindRenderTarget);
         RenderSurface* renderSurface = texture_->GetRenderSurface();
         if (renderSurface)
         {

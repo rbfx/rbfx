@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Core/Object.h"
-#include "../Graphics/PipelineState.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
 #include "../RenderPipeline/ShaderProgramCompositor.h"
 
@@ -51,14 +51,16 @@ public:
 
     /// Implement BatchStateCacheCallback
     /// @{
-    SharedPtr<PipelineState> CreateBatchPipelineState(
-        const BatchStateCreateKey& key, const BatchStateCreateContext& ctx) override;
+    SharedPtr<PipelineState> CreateBatchPipelineState(const BatchStateCreateKey& key,
+        const BatchStateCreateContext& ctx, const PipelineStateOutputDesc& outputDesc) override;
+    SharedPtr<PipelineState> CreateBatchPipelineStatePlaceholder(
+        unsigned vertexStride, const PipelineStateOutputDesc& outputDesc) override;
     /// @}
 
     /// Helpers for passes that override pipeline state creation.
     /// @{
-    void SetupInputLayoutAndPrimitiveType(PipelineStateDesc& pipelineStateDesc, const ShaderProgramDesc& shaderProgramDesc, const Geometry* geometry) const;
-    void SetupShaders(PipelineStateDesc& pipelineStateDesc, ShaderProgramDesc& shaderProgramDesc) const;
+    void SetupInputLayoutAndPrimitiveType(GraphicsPipelineStateDesc& pipelineStateDesc, const ShaderProgramDesc& shaderProgramDesc, const Geometry* geometry) const;
+    void SetupShaders(GraphicsPipelineStateDesc& pipelineStateDesc, ShaderProgramDesc& shaderProgramDesc) const;
     /// @}
 
     ShaderProgramCompositor* GetShaderProgramCompositor() const { return compositor_; }
@@ -73,6 +75,10 @@ private:
     void SetupLightVolumePassState(const LightProcessor* lightProcessor);
     void SetupShadowPassState(unsigned splitIndex, const LightProcessor* lightProcessor,
         const Material* material, const Pass* pass);
+    void SetupLightSamplers(const LightProcessor* lightProcessor);
+    void SetupSamplersForUserOrShadowPass(
+        const Material* material, bool hasLightmap, bool hasAmbient, bool isRefractionPass);
+    void SetupGeometryBufferSamplers();
     /// @}
 
     /// Objects whose settings contribute to pipeline states.
@@ -85,13 +91,14 @@ private:
     /// @}
 
     Graphics* graphics_{};
-    Renderer* renderer_{};
+    RenderDevice* renderDevice_{};
+    PipelineStateCache* pipelineStateCache_{};
 
     SharedPtr<ShaderProgramCompositor> compositor_;
 
     /// Re-used objects
     /// @{
-    PipelineStateDesc pipelineStateDesc_;
+    GraphicsPipelineStateDesc pipelineStateDesc_;
     ShaderProgramDesc shaderProgramDesc_;
     /// @}
 };

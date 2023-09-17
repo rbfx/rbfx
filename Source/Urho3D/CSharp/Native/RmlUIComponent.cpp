@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#if URHO3D_RMLUI
 #include "Urho3D/RmlUI/RmlUI.h"
 
 #include <Urho3D/RmlUI/RmlUIComponent.h>
@@ -105,3 +106,4 @@ extern "C"
 }
 
 } // namespace Urho3D
+#endif  // URHO3D_RMLUI

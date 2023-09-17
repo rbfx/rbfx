@@ -73,6 +73,24 @@ double PerlinNoise::GetDouble(double x, double y, double z, int repeat) const
     return (res + 1.0) / 2.0;
 }
 
+double PerlinNoise::GetDouble(double x, int repeat) const
+{
+    repeat = Clamp(repeat, 0, static_cast<int>(NumPer));
+
+    const int hX = AbsMod(static_cast<int>(floor(x)), repeat);
+
+    x -= floor(x);
+
+    const double u = Fade(x);
+
+    const double aa = Grad(p_[hX], x);
+    const double bb = Grad(p_[Inc(hX, repeat)], x-1);
+
+    const double res = Lerp(aa, bb, u);
+
+    return res + 0.5;
+}
+
 double PerlinNoise::Fade(double t)
 {
     return t * t * t * (t * (t * 6 - 15) + 10);
@@ -85,6 +103,12 @@ double PerlinNoise::Grad(int hash, double x, double y, double z) const
     const double u = h < 8 ? x : y;
     const double v = h < 4 ? y : (h == 12 || h == 14 ? x : z);
     return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
+}
+
+double PerlinNoise::Grad(int hash, double x) const
+{
+    // Convert lower bit of hash into gradient direction
+    return ((hash & 1) == 0 ? x : -x);
 }
 
 }

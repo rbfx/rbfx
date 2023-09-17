@@ -108,7 +108,7 @@ void DynamicGeometry::CreateScene()
     }
     // Get the vertex buffer from the first geometry's first LOD level
     VertexBuffer* buffer = originalModel->GetGeometry(0, 0)->GetVertexBuffer(0);
-    const auto* vertexData = (const unsigned char*)buffer->Lock(0, buffer->GetVertexCount());
+    const auto* vertexData = buffer->GetShadowData();
     if (vertexData)
     {
         unsigned numVertices = buffer->GetVertexCount();
@@ -119,7 +119,6 @@ void DynamicGeometry::CreateScene()
             const Vector3& src = *reinterpret_cast<const Vector3*>(vertexData + i * vertexSize);
             originalVertices_.push_back(src);
         }
-        buffer->Unlock();
 
         // Detect duplicate vertices to allow seamless animation
         vertexDuplicates_.resize(originalVertices_.size());
@@ -219,6 +218,10 @@ void DynamicGeometry::CreateScene()
         SharedPtr<IndexBuffer> ib(new IndexBuffer(context_));
         SharedPtr<Geometry> geom(new Geometry(context_));
 
+        // Always name your GPU objects, its usefully when things goes wrong
+        vb->SetDebugName("DynamicGeometry");
+        ib->SetDebugName("DynamicGeometry");
+
         // Shadowed buffer needed for raycasts to work, and so that data can be automatically restored on device loss
         vb->SetShadowed(true);
         // We could use the "legacy" element bitmask to define elements for more compact code, but let's demonstrate
@@ -227,11 +230,11 @@ void DynamicGeometry::CreateScene()
         elements.push_back(VertexElement(TYPE_VECTOR3, SEM_POSITION));
         elements.push_back(VertexElement(TYPE_VECTOR3, SEM_NORMAL));
         vb->SetSize(numVertices, elements);
-        vb->SetData(vertexData);
+        vb->Update(vertexData);
 
         ib->SetShadowed(true);
         ib->SetSize(numVertices, false);
-        ib->SetData(indexData);
+        ib->Update(indexData);
 
         geom->SetVertexBuffer(0, vb);
         geom->SetIndexBuffer(ib);
@@ -313,7 +316,7 @@ void DynamicGeometry::AnimateObjects(float timeStep)
 
         // Lock the vertex buffer for update and rewrite positions with sine wave modulated ones
         // Cannot use discard lock as there is other data (normals, UVs) that we are not overwriting
-        auto* vertexData = (unsigned char*)buffer->Lock(0, buffer->GetVertexCount());
+        auto* vertexData = (unsigned char*)buffer->Map();
         if (vertexData)
         {
             unsigned vertexSize = buffer->GetVertexSize();
@@ -329,7 +332,7 @@ void DynamicGeometry::AnimateObjects(float timeStep)
                 dest.z_ = src.z_ * (1.0f + 0.1f * Sin(phase + 120.0f));
             }
 
-            buffer->Unlock();
+            buffer->Unmap();
         }
     }
 }

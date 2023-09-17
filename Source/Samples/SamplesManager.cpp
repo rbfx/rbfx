@@ -152,6 +152,7 @@
 #if URHO3D_PHYSICS
 #include "117_PointerAdapter/PointerAdapterSample.h"
 #endif
+#include "118_CameraShake/CameraShake.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -173,18 +174,14 @@ void SamplesManager::Setup()
     engineParameters_[EP_WINDOW_TITLE] = "Samples";
     engineParameters_[EP_APPLICATION_NAME] = "Built-in Samples";
     engineParameters_[EP_LOG_NAME]     = "conf://Samples.log";
-    engineParameters_[EP_FULL_SCREEN]  = false;
+    engineParameters_[EP_BORDERLESS]   = false;
     engineParameters_[EP_HEADLESS]     = false;
     engineParameters_[EP_SOUND]        = true;
-    engineParameters_[EP_HIGH_DPI]     = true;
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;Data";
-    engineParameters_[EP_BORDERLESS]   = false;
-#if MOBILE
-    engineParameters_[EP_ORIENTATIONS] = "Portrait";
-#endif
+    engineParameters_[EP_ORIENTATIONS] = "LandscapeLeft LandscapeRight Portrait";
+    engineParameters_[EP_WINDOW_RESIZABLE] = true;
     if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS))
     {
-        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
         if (GetPlatform() == PlatformId::MacOS ||
             GetPlatform() == PlatformId::iOS)
             engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";../Resources;../..";
@@ -324,7 +321,9 @@ void SamplesManager::Start()
 #endif
 #if URHO3D_NETWORK
     RegisterSample<Chat>();
+#if URHO3D_PHYSICS
     RegisterSample<SceneReplication>();
+#endif
 #endif
 #if URHO3D_PHYSICS
     RegisterSample<CharacterDemo>();
@@ -416,6 +415,7 @@ void SamplesManager::Start()
 #if URHO3D_PHYSICS
     RegisterSample<PointerAdapterSample>();
 #endif
+    RegisterSample<CameraShake>();
 
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);
@@ -442,12 +442,6 @@ void SamplesManager::StartSample(StringHash sampleType)
     UI* ui = context_->GetSubsystem<UI>();
     ui->SetFocusElement(nullptr);
 
-#if MOBILE
-    Graphics* graphics = context_->GetSubsystem<Graphics>();
-    graphics->SetOrientations("LandscapeLeft LandscapeRight");
-    IntVector2 screenSize = graphics->GetSize();
-    graphics->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
-#endif
     StringVariantMap args;
     args["Args"] = GetArgs();
     context_->GetSubsystem<StateManager>()->EnqueueState(sampleType, args);
@@ -619,12 +613,6 @@ void SamplesManager::OnFrameStart()
             Input* input = context_->GetSubsystem<Input>();
             UI* ui = context_->GetSubsystem<UI>();
             stateManager->EnqueueState(sampleSelectionScreen_);
-#if MOBILE
-            Graphics* graphics = context_->GetSubsystem<Graphics>();
-            graphics->SetOrientations("Portrait");
-            IntVector2 screenSize = graphics->GetSize();
-            graphics->SetMode(Min(screenSize.x_, screenSize.y_), Max(screenSize.x_, screenSize.y_));
-#endif
         }
         else
         {

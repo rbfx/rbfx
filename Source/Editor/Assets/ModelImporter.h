@@ -32,8 +32,10 @@ namespace Urho3D
 
 void Assets_ModelImporter(Context* context, Project* project);
 
+class ModelView;
+
 /// Asset transformer that imports GLTF models.
-class ModelImporter : public AssetTransformer
+class ModelImporter : public AssetTransformer, private GLTFImporterCallback
 {
     URHO3D_OBJECT(ModelImporter, AssetTransformer);
 
@@ -45,6 +47,12 @@ public:
     bool IsApplicable(const AssetTransformerInput& input) override;
     bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output,
         const AssetTransformerVector& transformers) override;
+
+protected:
+    /// Implement GLTFImporterCallback.
+    /// @{
+    void OnModelLoaded(ModelView& modelView) override;
+    /// @}
 
 private:
     struct ModelMetadata
@@ -79,6 +87,9 @@ private:
 
     GLTFImporterSettings settings_;
     bool blenderApplyModifiers_{true};
+    bool lightmapUVGenerate_{};
+    float lightmapUVTexelsPerUnit_{10.0f};
+    unsigned lightmapUVChannel_{1};
 };
 
 } // namespace Urho3D

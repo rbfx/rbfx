@@ -25,7 +25,7 @@
 #include "../Core/Context.h"
 #include "../IO/Log.h"
 #include "../Graphics/Graphics.h"
-#include "../Graphics/GraphicsImpl.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
 
 #include "../DebugNew.h"
@@ -36,11 +36,19 @@ namespace Urho3D
 namespace
 {
 
-int GetClosestMutliSampleLevel(Graphics* graphics, int level)
+TextureFormat GetTextureFormat(RenderPipelineColorSpace colorSpace)
 {
-    const auto& supportedLevels = graphics->GetMultiSampleLevels();
-    const auto iter = ea::upper_bound(supportedLevels.begin(), supportedLevels.end(), level);
-    return iter != supportedLevels.begin() ? *ea::prev(iter) : 1;
+    switch (colorSpace)
+    {
+    case RenderPipelineColorSpace::GammaLDR:
+        return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
+    case RenderPipelineColorSpace::LinearLDR:
+        return TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB;
+    case RenderPipelineColorSpace::LinearHDR:
+        return TextureFormat::TEX_FORMAT_RGBA16_FLOAT;
+    default:
+        return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
+    }
 }
 
 }
@@ -63,84 +71,61 @@ LightProcessorCallback::~LightProcessorCallback()
 
 void RenderPipelineSettings::AdjustToSupported(Context* context)
 {
-    auto graphics = context->GetSubsystem<Graphics>();
-    if (!graphics)
+    auto renderDevice = context->GetSubsystem<RenderDevice>();
+    if (!renderDevice)
         return;
 
-    const GraphicsCaps& caps = Graphics::GetCaps();
+    const RenderDeviceCaps& caps = renderDevice->GetCaps();
 
     // RenderBufferManagerSettings
-    renderBufferManager_.multiSampleLevel_ = GetClosestMutliSampleLevel(graphics, renderBufferManager_.multiSampleLevel_);
-
-    if (renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR
-        && graphics->GetRGBAFloat16Format() == graphics->GetRGBAFormat())
+    if (renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR && !caps.hdrOutput_)
     {
         URHO3D_LOGWARNING("HDR rendering is not supported, falling back to LDR");
         renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::LinearLDR;
     }
 
-    if (renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearLDR
-        && !graphics->GetSRGBWriteSupport())
+    if (renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearLDR && !caps.srgbOutput_)
     {
         URHO3D_LOGWARNING("sRGB render targets are not supported, falling back to gamma color space");
         renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::GammaLDR;
     }
 
-#ifdef GL_ES_VERSION_2_0
-    renderBufferManager_.readableDepth_ = false;
-#endif
+    const int multiSample = renderDevice->GetSupportedMultiSample(
+        GetTextureFormat(renderBufferManager_.colorSpace_), renderBufferManager_.multiSampleLevel_);
+    if (multiSample != renderBufferManager_.multiSampleLevel_)
+    {
+        URHO3D_LOGWARNING("MSAA level {} is not supported, falling back to {}",
+            renderBufferManager_.multiSampleLevel_, multiSample);
+        renderBufferManager_.multiSampleLevel_ = multiSample;
+    }
 
     // OcclusionBufferSettings
 
     // BatchRendererSettings
 
     // SceneProcessorSettings
-    if (!graphics->GetShadowMapFormat() && !graphics->GetHiresShadowMapFormat())
-        sceneProcessor_.enableShadows_ = false;
-
-#ifdef GL_ES_VERSION_2_0
-    const bool deferredSupported = false;
-#else
-    const bool deferredSupported = caps.maxNumRenderTargets_ >= 4 && Graphics::GetReadableDepthStencilFormat();
-#endif
+    const bool deferredSupported = caps.readOnlyDepth_;
     if (sceneProcessor_.IsDeferredLighting() && !deferredSupported)
         sceneProcessor_.lightingMode_ = DirectLightingMode::Forward;
 
     // ShadowMapAllocatorSettings
-    if (!graphics->GetRGFloat32Format())
+    if (!renderDevice->IsRenderTargetFormatSupported(TextureFormat::TEX_FORMAT_RG32_FLOAT))
         shadowMapAllocator_.enableVarianceShadowMaps_ = false;
 
-    shadowMapAllocator_.varianceShadowMapMultiSample_ = GetClosestMutliSampleLevel(
-        graphics, shadowMapAllocator_.varianceShadowMapMultiSample_);
-
-    if (!graphics->GetHiresShadowMapFormat())
-        shadowMapAllocator_.use16bitShadowMaps_ = true;
+    shadowMapAllocator_.varianceShadowMapMultiSample_ = renderDevice->GetSupportedMultiSample(
+        TextureFormat::TEX_FORMAT_RG32_FLOAT, shadowMapAllocator_.varianceShadowMapMultiSample_);
 
     shadowMapAllocator_.shadowAtlasPageSize_ = ea::min(
         shadowMapAllocator_.shadowAtlasPageSize_, caps.maxRenderTargetSize_);
 
-    // InstancingBufferSettings
-    if (!graphics->GetInstancingSupport())
-        instancingBuffer_.enableInstancing_ = false;
-
     // TODO: Check if instancing is actually supported, i.e. if there's enough vertex attributes
 
     // RenderPipelineSettings
-#ifdef GL_ES_VERSION_2_0
-    if (antialiasing_ == PostProcessAntialiasing::FXAA3)
+    if (renderBufferManager_.multiSampleLevel_ != 1)
     {
-        URHO3D_LOGWARNING("FXAA3 is not supported, falling back to FXAA2");
-        antialiasing_ = PostProcessAntialiasing::FXAA2;
+        URHO3D_LOGWARNING("SSAO is not supported for multi-sampled render targets, disabling");
+        ssao_.enabled_ = false;
     }
-#endif
-
-#ifdef DESKTOP_GRAPHICS
-    const bool ssaoSupported = Graphics::GetReadableDepthStencilFormat() != 0;
-#else
-    const bool ssaoSupported = false;
-#endif
-
-    ssao_.enabled_ = ssaoSupported && ssao_.enabled_;
 }
 
 void RenderPipelineSettings::PropagateImpliedSettings()

@@ -88,6 +88,9 @@ EnumValues RayQueryCommittedIntersectionTypeParams;
 EnumValues RayQueryCandidateIntersectionTypeParams;
 EnumValues FragmentShadingRateParams;
 EnumValues PackedVectorFormatParams;
+EnumValues CooperativeMatrixOperandsParams;
+EnumValues CooperativeMatrixLayoutParams;
+EnumValues CooperativeMatrixUseParams;
 
 std::pair<bool, std::string> ReadFile(const std::string& path)
 {
@@ -234,6 +237,12 @@ ClassOptionality ToOperandClassAndOptionality(const std::string& operandKind, co
             type = OperandFragmentShadingRate;
         } else if (operandKind == "PackedVectorFormat") {
             type = OperandPackedVectorFormat;
+        } else if (operandKind == "CooperativeMatrixOperands") {
+            type = OperandCooperativeMatrixOperands;
+        } else if (operandKind == "CooperativeMatrixLayout") {
+            type = OperandCooperativeMatrixLayout;
+        } else if (operandKind == "CooperativeMatrixUse") {
+            type = OperandCooperativeMatrixUse;
         }
 
         if (type == OperandNone) {
@@ -544,6 +553,12 @@ void jsonToSpirv(const std::string& jsonPath, bool buildingHeaders)
             establishOperandClass(enumName, OperandFragmentShadingRate, &FragmentShadingRateParams, operandEnum, category);
         } else if (enumName == "PackedVectorFormat") {
             establishOperandClass(enumName, OperandPackedVectorFormat, &PackedVectorFormatParams, operandEnum, category);
+        } else if (enumName == "CooperativeMatrixOperands") {
+            establishOperandClass(enumName, OperandCooperativeMatrixOperands, &CooperativeMatrixOperandsParams, operandEnum, category);
+        } else if (enumName == "CooperativeMatrixLayout") {
+            establishOperandClass(enumName, OperandCooperativeMatrixLayout, &CooperativeMatrixLayoutParams, operandEnum, category);
+        } else if (enumName == "CooperativeMatrixUse") {
+            establishOperandClass(enumName, OperandCooperativeMatrixUse, &CooperativeMatrixUseParams, operandEnum, category);
         }
     }
 }

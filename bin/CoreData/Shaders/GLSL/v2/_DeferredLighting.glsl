@@ -26,9 +26,9 @@
 #ifdef URHO3D_LIGHT_PASS
     /// Sample geometry buffer at position.
     #ifdef URHO3D_LIGHT_DIRECTIONAL
-        #define SampleGeometryBuffer(texture, screenPos) texture2D(texture, screenPos.xy)
+        #define SampleGeometryBuffer(bufferTexture, screenPos) texture(bufferTexture, screenPos.xy)
     #else
-        #define SampleGeometryBuffer(texture, screenPos) texture2DProj(texture, screenPos)
+        #define SampleGeometryBuffer(bufferTexture, screenPos) textureProj(bufferTexture, screenPos)
     #endif
 
     /// Return world position from depth.
@@ -44,7 +44,7 @@
     #endif
 
     /// Return pixel lighting data for deferred rendering.
-    DirectLightData GetDeferredDirectLightData(const vec4 worldPos, const float depth)
+    DirectLightData GetDeferredDirectLightData(vec4 worldPos, float depth)
     {
         DirectLightData result;
         result.lightVec = NormalizeLightVector(GetLightVector(worldPos.xyz));

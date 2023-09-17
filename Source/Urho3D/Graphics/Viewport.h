@@ -32,10 +32,8 @@ namespace Urho3D
 {
 
 class Camera;
-class RenderPath;
 class Scene;
 class XMLFile;
-class View;
 class RenderPipelineView;
 class RenderSurface;
 class RenderPipeline;
@@ -49,9 +47,9 @@ public:
     /// Construct with defaults.
     explicit Viewport(Context* context);
     /// Construct with a full rectangle.
-    Viewport(Context* context, Scene* scene, Camera* camera, RenderPath* renderPath = nullptr);
+    Viewport(Context* context, Scene* scene, Camera* camera);
     /// Construct with a specified rectangle.
-    Viewport(Context* context, Scene* scene, Camera* camera, const IntRect& rect, RenderPath* renderPath = nullptr);
+    Viewport(Context* context, Scene* scene, Camera* camera, const IntRect& rect);
     /// Construct with a specified rectangle and render pipeline.
     Viewport(Context* context, Scene* scene, Camera* camera, const IntRect& rect, RenderPipeline* renderPipeline);
     /// Destruct.
@@ -69,11 +67,6 @@ public:
     /// Set view rectangle. A zero rectangle (0 0 0 0) means to use the rendertarget's full dimensions.
     /// @property
     void SetRect(const IntRect& rect);
-    /// Set rendering path.
-    /// @property
-    void SetRenderPath(RenderPath* renderPath);
-    /// Set rendering path from an XML file.
-    bool SetRenderPath(XMLFile* file);
     /// Set whether to render debug geometry. Default true.
     /// @property
     void SetDrawDebug(bool enable);
@@ -87,8 +80,6 @@ public:
     /// Return viewport camera.
     /// @property
     Camera* GetCamera() const;
-    /// Return the internal rendering structure. May be null if the viewport has not been rendered yet.
-    View* GetView() const;
     /// Return render pipeline.
     RenderPipelineView* GetRenderPipelineView() const;
 
@@ -99,10 +90,6 @@ public:
     /// Return effective view rectangle.
     /// By default, this function compensates for render target flip on OpenGL. It may be disabled.
     IntRect GetEffectiveRect(RenderSurface* renderTarget, bool compensateRenderTargetFlip = true) const;
-
-    /// Return rendering path.
-    /// @property
-    RenderPath* GetRenderPath() const;
 
     /// Return whether to draw debug geometry.
     /// @property
@@ -131,10 +118,6 @@ private:
     WeakPtr<Camera> cullCamera_;
     /// Viewport rectangle.
     IntRect rect_;
-    /// Rendering path.
-    SharedPtr<RenderPath> renderPath_;
-    /// Internal rendering structure.
-    SharedPtr<View> view_;
     /// Debug draw flag.
     bool drawDebug_;
 

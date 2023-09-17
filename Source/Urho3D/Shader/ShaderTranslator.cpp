@@ -26,13 +26,15 @@
 
 #include "Urho3D/Graphics/ShaderVariation.h"
 #include "Urho3D/IO/Log.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
 
 #ifdef URHO3D_SHADER_TRANSLATOR
     #include <SPIRV/GlslangToSpv.h>
-    #include <StandAlone/ResourceLimits.h>
+    #include <glslang/Public/ResourceLimits.h>
     #include <glslang/Public/ShaderLang.h>
 
     #include <spirv_hlsl.hpp>
+    #include <spirv_parser.hpp>
 #endif
 
 #include "Urho3D/DebugNew.h"
@@ -65,9 +67,6 @@ struct GlslangGuardian
 };
 static const GlslangGuardian glslangGuardian;
 
-/// Vertex element semantics and index.
-using VertexElementSemanticIndex = ea::pair<VertexElementSemantic, unsigned>;
-
 EShLanguage ConvertShaderType(ShaderType shaderType)
 {
     switch (shaderType)
@@ -80,29 +79,6 @@ EShLanguage ConvertShaderType(ShaderType shaderType)
     case DS: return EShLangTessEvaluation;
     case CS: return EShLangCompute;
     }
-}
-
-/// Return vertex element semantics.
-VertexElementSemanticIndex ParseVertexElement(ea::string_view name)
-{
-    const auto firstDigit = ea::find_if(name.begin(), name.end(), [](char ch) { return isdigit(ch); });
-    const unsigned index = firstDigit != name.end() ? ToUInt(ea::string{ firstDigit, name.end() }) : 0;
-    static const ea::unordered_map<ea::string, VertexElementSemantic> semanticsMapping = {
-        { "iPos", SEM_POSITION },
-        { "iNormal", SEM_NORMAL },
-        { "iColor", SEM_COLOR },
-        { "iTexCoord", SEM_TEXCOORD },
-        { "iTangent", SEM_TANGENT },
-        { "iBlendWeights", SEM_BLENDWEIGHTS },
-        { "iBlendIndices", SEM_BLENDINDICES },
-        { "iObjectIndex", SEM_OBJECTINDEX }
-    };
-    const ea::string_view sematicName = firstDigit != name.end() ? name.substr(0, firstDigit - name.begin()) : name;
-    const auto semanticIter = semanticsMapping.find_as(sematicName);
-    const VertexElementSemantic semantic = semanticIter != semanticsMapping.end()
-        ? semanticIter->second
-        : MAX_VERTEX_ELEMENT_SEMANTICS;
-    return { semantic , index };
 }
 
 void AppendWithoutVersion(ea::string& dest, ea::string_view source)
@@ -121,8 +97,8 @@ void AppendWithoutVersion(ea::string& dest, ea::string_view source)
 }
 
 /// Compile SpirV shader.
-void CompileSpirV(
-    SpirVShader& outputShader, EShLanguage stage, ea::string_view sourceCode, const ShaderDefineArray& shaderDefines)
+void CompileSpirV(SpirVShader& outputShader, EShLanguage stage, ea::string_view sourceCode,
+    const ShaderDefineArray& shaderDefines, TargetShaderLanguage targetLanguage)
 {
     outputShader.bytecode_.clear();
     outputShader.compilerOutput_.clear();
@@ -139,15 +115,17 @@ void CompileSpirV(
     const int inputLengths[] = { static_cast<int>(shaderCode.length()) };
 
     // Setup glslang shader
+    const auto envClient =
+        targetLanguage == TargetShaderLanguage::VULKAN_1_0 ? glslang::EShClientVulkan : glslang::EShClientOpenGL;
     glslang::TShader shader(stage);
     shader.setStringsWithLengths(inputStrings, inputLengths, 1);
-    shader.setEnvInput(glslang::EShSourceGlsl, stage, glslang::EShClientOpenGL, 100);
-    shader.setEnvClient(glslang::EShClientOpenGL, glslang::EShTargetOpenGL_450);
+    shader.setEnvInput(glslang::EShSourceGlsl, stage, envClient, 100);
+    shader.setEnvClient(envClient, glslang::EShTargetOpenGL_450);
     shader.setEnvTarget(glslang::EshTargetSpv, glslang::EShTargetSpv_1_0);
     shader.setAutoMapLocations(true);
 
     // Parse input shader
-    if (!shader.parse(&glslang::DefaultTBuiltInResource, 100, false, EShMsgDefault))
+    if (!shader.parse(GetDefaultResources(), 100, false, EShMsgDefault))
     {
         outputShader.compilerOutput_ = shader.getInfoLog();
         return;
@@ -166,20 +144,6 @@ void CompileSpirV(
         outputShader.compilerOutput_ = program.getInfoLog();
         return;
     }
-
-    // Parse input layout
-    /*program.buildReflection(EShReflectionAllBlockVariables);
-    for (int i = 0; i < program.getNumLiveAttributes(); ++i)
-    {
-        const char* name = program.getAttributeName(i);
-        const auto element = ParseVertexElement(name);
-        if (element.first == MAX_VERTEX_ELEMENT_SEMANTICS)
-        {
-            errorMessage = Format("Unknown vertex element '{}'", name);
-            return false;
-        }
-        outputShader.inputLayout_.push_back(element);
-    }*/
 
     // Convert intermediate representation to SPIRV
     const glslang::TIntermediate* im = program.getIntermediate(stage);
@@ -202,15 +166,23 @@ void CompileSpirV(
 class RemappingCompilerHLSL : public spirv_cross::CompilerHLSL
 {
 public:
-    RemappingCompilerHLSL(std::vector<unsigned> spirv) : spirv_cross::CompilerHLSL(spirv)
+    RemappingCompilerHLSL(std::vector<unsigned> spirv)
+        : spirv_cross::CompilerHLSL(ea::move(spirv))
     {
+        RemapInputLayout();
+        CollectSamplers();
     }
 
-    bool RemapInputLayout(ea::string& errorMessage)
+    std::string compile() override
     {
-        unsigned location = 0;
-        unsigned numErrors = 0;
+        std::string result = spirv_cross::CompilerHLSL::compile();
+        ReplaceSamplers(result);
+        return result;
+    }
 
+private:
+    void RemapInputLayout()
+    {
         const auto& execution = get_entry_point();
         if (execution.model == spv::ExecutionModelVertex)
         {
@@ -221,26 +193,47 @@ public:
                 auto& m = ir.meta[var.self].decoration;
                 if (type.storage == spv::StorageClassInput && !is_builtin_variable(var))
                 {
-                    m.decoration_flags.set(spv::DecorationLocation);
-                    m.location = location++;
-                    const VertexElementSemanticIndex vertexElement = ParseVertexElement(m.alias.c_str());
-                    if (vertexElement.first == MAX_VERTEX_ELEMENT_SEMANTICS)
-                    {
-                        ++numErrors;
-                        errorMessage += Format("Unknown input vertex element: '{}'\n", m.alias.c_str());
-                        return;
-                    }
+                    URHO3D_ASSERT(m.decoration_flags.get(spv::DecorationLocation));
 
-                    const VertexElementSemantic semantic = vertexElement.first;
-                    const unsigned index = vertexElement.second;
-                    const ea::string name = Format("{}{}", ShaderVariation::elementSemanticNames[semantic], index);
+                    const ea::string name = Format("ATTRIB{}", m.location);
                     add_vertex_attribute_remap({ m.location, name.c_str() });
                 }
             });
         }
-
-        return numErrors == 0;
     }
+
+    void CollectSamplers()
+    {
+        ir.for_each_typed_id<spirv_cross::SPIRVariable>([&](uint32_t, spirv_cross::SPIRVariable &var)
+        {
+            auto& type = this->get<spirv_cross::SPIRType>(var.basetype);
+            auto& m = ir.meta[var.self].decoration;
+            if (type.basetype == spirv_cross::SPIRType::SampledImage && type.image.dim != spv::DimBuffer)
+            {
+                const std::string samplerName = "_" + m.alias + "_sampler";
+                samplers_.emplace_back(samplerName);
+            }
+        });
+    }
+
+    void ReplaceSamplers(std::string& hlsl)
+    {
+        // Use arbitrary non-text symbol to replace leading underscore in sampler name.
+        // Then remove it from the string.
+        const char placeholder = '\1';
+
+        // TODO: Optimize it?
+        for (const std::string& name : samplers_)
+        {
+            for (size_t pos = hlsl.find(name, 0); pos != std::string::npos; pos = hlsl.find(name, pos))
+                hlsl[pos] = placeholder;
+        }
+
+        const auto isPlaceholder = [placeholder](char c) { return c == placeholder; };
+        hlsl.erase(ea::remove_if(hlsl.begin(), hlsl.end(), isPlaceholder), hlsl.end());
+    }
+
+    ea::vector<std::string> samplers_;
 };
 
 /// Convert SpirV to HLSL5
@@ -250,8 +243,6 @@ void ConvertToHLSL5(TargetShader& output, const SpirVShader& shader)
     output.compilerOutput_.clear();
 
     RemappingCompilerHLSL compiler(shader.bytecode_);
-    if (!compiler.RemapInputLayout(output.compilerOutput_))
-        return;
 
     spirv_cross::CompilerGLSL::Options commonOptions;
     commonOptions.emit_line_directives = true;
@@ -295,11 +286,11 @@ void ConvertToGLSL(TargetShader& output, const SpirVShader& shader, int version,
 }
 #endif
 
-void ParseUniversalShader(
-    SpirVShader& output, ShaderType shaderType, const ea::string& sourceCode, const ShaderDefineArray& shaderDefines)
+void ParseUniversalShader(SpirVShader& output, ShaderType shaderType, ea::string_view sourceCode,
+    const ShaderDefineArray& shaderDefines, TargetShaderLanguage targetLanguage)
 {
 #ifdef URHO3D_SHADER_TRANSLATOR
-    CompileSpirV(output, ConvertShaderType(shaderType), sourceCode, shaderDefines);
+    CompileSpirV(output, ConvertShaderType(shaderType), sourceCode, shaderDefines, targetLanguage);
 #else
     URHO3D_ASSERTLOG(0, "URHO3D_SHADER_TRANSLATOR should be enabled to use ParseUniversalShader");
 
@@ -315,10 +306,6 @@ void TranslateSpirVShader(TargetShader& output, const SpirVShader& shader, Targe
     {
     case TargetShaderLanguage::HLSL_5_0:
         ConvertToHLSL5(output, shader);
-        break;
-
-    case TargetShaderLanguage::GLSL_3_2:
-        ConvertToGLSL(output, shader, 150, false);
         break;
 
     case TargetShaderLanguage::GLSL_4_1:
@@ -339,118 +326,34 @@ void TranslateSpirVShader(TargetShader& output, const SpirVShader& shader, Targe
 #endif
 }
 
-}
-
-#ifdef URHO3D_SHADER_TRANSLATOR
-namespace glslang
+VertexShaderAttributeVector GetVertexAttributesFromSpirV(const SpirVShader& shader)
 {
+#ifdef URHO3D_SHADER_TRANSLATOR
+    VertexShaderAttributeVector result;
 
-const TBuiltInResource DefaultTBuiltInResource = {
-    /* .MaxLights = */ 32,
-    /* .MaxClipPlanes = */ 6,
-    /* .MaxTextureUnits = */ 32,
-    /* .MaxTextureCoords = */ 32,
-    /* .MaxVertexAttribs = */ 64,
-    /* .MaxVertexUniformComponents = */ 4096,
-    /* .MaxVaryingFloats = */ 64,
-    /* .MaxVertexTextureImageUnits = */ 32,
-    /* .MaxCombinedTextureImageUnits = */ 80,
-    /* .MaxTextureImageUnits = */ 32,
-    /* .MaxFragmentUniformComponents = */ 4096,
-    /* .MaxDrawBuffers = */ 32,
-    /* .MaxVertexUniformVectors = */ 128,
-    /* .MaxVaryingVectors = */ 8,
-    /* .MaxFragmentUniformVectors = */ 16,
-    /* .MaxVertexOutputVectors = */ 16,
-    /* .MaxFragmentInputVectors = */ 15,
-    /* .MinProgramTexelOffset = */ -8,
-    /* .MaxProgramTexelOffset = */ 7,
-    /* .MaxClipDistances = */ 8,
-    /* .MaxComputeWorkGroupCountX = */ 65535,
-    /* .MaxComputeWorkGroupCountY = */ 65535,
-    /* .MaxComputeWorkGroupCountZ = */ 65535,
-    /* .MaxComputeWorkGroupSizeX = */ 1024,
-    /* .MaxComputeWorkGroupSizeY = */ 1024,
-    /* .MaxComputeWorkGroupSizeZ = */ 64,
-    /* .MaxComputeUniformComponents = */ 1024,
-    /* .MaxComputeTextureImageUnits = */ 16,
-    /* .MaxComputeImageUniforms = */ 8,
-    /* .MaxComputeAtomicCounters = */ 8,
-    /* .MaxComputeAtomicCounterBuffers = */ 1,
-    /* .MaxVaryingComponents = */ 60,
-    /* .MaxVertexOutputComponents = */ 64,
-    /* .MaxGeometryInputComponents = */ 64,
-    /* .MaxGeometryOutputComponents = */ 128,
-    /* .MaxFragmentInputComponents = */ 128,
-    /* .MaxImageUnits = */ 8,
-    /* .MaxCombinedImageUnitsAndFragmentOutputs = */ 8,
-    /* .MaxCombinedShaderOutputResources = */ 8,
-    /* .MaxImageSamples = */ 0,
-    /* .MaxVertexImageUniforms = */ 0,
-    /* .MaxTessControlImageUniforms = */ 0,
-    /* .MaxTessEvaluationImageUniforms = */ 0,
-    /* .MaxGeometryImageUniforms = */ 0,
-    /* .MaxFragmentImageUniforms = */ 8,
-    /* .MaxCombinedImageUniforms = */ 8,
-    /* .MaxGeometryTextureImageUnits = */ 16,
-    /* .MaxGeometryOutputVertices = */ 256,
-    /* .MaxGeometryTotalOutputComponents = */ 1024,
-    /* .MaxGeometryUniformComponents = */ 1024,
-    /* .MaxGeometryVaryingComponents = */ 64,
-    /* .MaxTessControlInputComponents = */ 128,
-    /* .MaxTessControlOutputComponents = */ 128,
-    /* .MaxTessControlTextureImageUnits = */ 16,
-    /* .MaxTessControlUniformComponents = */ 1024,
-    /* .MaxTessControlTotalOutputComponents = */ 4096,
-    /* .MaxTessEvaluationInputComponents = */ 128,
-    /* .MaxTessEvaluationOutputComponents = */ 128,
-    /* .MaxTessEvaluationTextureImageUnits = */ 16,
-    /* .MaxTessEvaluationUniformComponents = */ 1024,
-    /* .MaxTessPatchComponents = */ 120,
-    /* .MaxPatchVertices = */ 32,
-    /* .MaxTessGenLevel = */ 64,
-    /* .MaxViewports = */ 16,
-    /* .MaxVertexAtomicCounters = */ 0,
-    /* .MaxTessControlAtomicCounters = */ 0,
-    /* .MaxTessEvaluationAtomicCounters = */ 0,
-    /* .MaxGeometryAtomicCounters = */ 0,
-    /* .MaxFragmentAtomicCounters = */ 8,
-    /* .MaxCombinedAtomicCounters = */ 8,
-    /* .MaxAtomicCounterBindings = */ 1,
-    /* .MaxVertexAtomicCounterBuffers = */ 0,
-    /* .MaxTessControlAtomicCounterBuffers = */ 0,
-    /* .MaxTessEvaluationAtomicCounterBuffers = */ 0,
-    /* .MaxGeometryAtomicCounterBuffers = */ 0,
-    /* .MaxFragmentAtomicCounterBuffers = */ 1,
-    /* .MaxCombinedAtomicCounterBuffers = */ 1,
-    /* .MaxAtomicCounterBufferSize = */ 16384,
-    /* .MaxTransformFeedbackBuffers = */ 4,
-    /* .MaxTransformFeedbackInterleavedComponents = */ 64,
-    /* .MaxCullDistances = */ 8,
-    /* .MaxCombinedClipAndCullDistances = */ 8,
-    /* .MaxSamples = */ 4,
-    /* .maxMeshOutputVerticesNV = */ 256,
-    /* .maxMeshOutputPrimitivesNV = */ 512,
-    /* .maxMeshWorkGroupSizeX_NV = */ 32,
-    /* .maxMeshWorkGroupSizeY_NV = */ 1,
-    /* .maxMeshWorkGroupSizeZ_NV = */ 1,
-    /* .maxTaskWorkGroupSizeX_NV = */ 32,
-    /* .maxTaskWorkGroupSizeY_NV = */ 1,
-    /* .maxTaskWorkGroupSizeZ_NV = */ 1,
-    /* .maxMeshViewCountNV = */ 4,
-    /* .maxDualSourceDrawBuffersEXT = */ 1,
+    // https://github.com/KhronosGroup/SPIRV-Cross/wiki/Reflection-API-user-guide
+    spirv_cross::Parser parser{shader.bytecode_};
+    parser.parse();
+    spirv_cross::Compiler compiler{ea::move(parser.get_parsed_ir())};
 
-    /* .limits = */ {
-        /* .nonInductiveForLoops = */ 1,
-        /* .whileLoops = */ 1,
-        /* .doWhileLoops = */ 1,
-        /* .generalUniformIndexing = */ 1,
-        /* .generalAttributeMatrixVectorIndexing = */ 1,
-        /* .generalVaryingIndexing = */ 1,
-        /* .generalSamplerIndexing = */ 1,
-        /* .generalVariableIndexing = */ 1,
-        /* .generalConstantMatrixVectorIndexing = */ 1,
-    }};
+    spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+    for (const auto& input : resources.stage_inputs)
+    {
+        if (compiler.has_decoration(input.id, spv::DecorationLocation))
+        {
+            const auto location = compiler.get_decoration(input.id, spv::DecorationLocation);
+            if (const auto vertexInput = ParseVertexAttribute(input.name.c_str()))
+            {
+                result.push_back(*vertexInput);
+                result.back().inputIndex_ = location;
+            }
+        }
+    }
+    return result;
+#else
+    URHO3D_ASSERTLOG(0, "URHO3D_SHADER_TRANSLATOR should be enabled to use GetVertexAttributesFromSpirV");
+    return {};
+#endif
+}
 
 }
-#endif

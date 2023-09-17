@@ -23,7 +23,6 @@
 #pragma once
 
 #include "../Core/Object.h"
-#include "../Graphics/DrawCommandQueue.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
 #include "../RenderPipeline/PipelineBatchSortKey.h"
@@ -35,6 +34,7 @@ namespace Urho3D
 
 class Camera;
 class DrawableProcessor;
+class DrawCommandQueue;
 class InstancingBuffer;
 class ShadowSplitProcessor;
 

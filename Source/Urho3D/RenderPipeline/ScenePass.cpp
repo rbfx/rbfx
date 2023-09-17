@@ -92,6 +92,11 @@ void UnorderedScenePass::OnBatchesReady()
         deferredBatchGroup_.flags_ |= BatchRenderFlag::DisableColorOutput;
         baseBatchGroup_.flags_ |= BatchRenderFlag::DisableColorOutput;
     }
+
+    if (GetFlags().Test(DrawableProcessorPassFlag::DeferredLightMaskToStencil))
+    {
+        deferredBatchGroup_.flags_ |= BatchRenderFlag::LightMaskToStencil;
+    }
 }
 
 void UnorderedScenePass::PrepareInstancingBuffer(BatchRenderer* batchRenderer)
@@ -145,7 +150,7 @@ void BackToFrontScenePass::OnBatchesReady()
         for (const PipelineBatchBackToFront& sortedBatch : sortedBatches_)
         {
             // Assume refraction if blending is disabled
-            if (sortedBatch.pipelineBatch_->pipelineState_->GetDesc().blendMode_ == BLEND_REPLACE)
+            if (sortedBatch.pipelineBatch_->pipelineState_->GetDesc().AsGraphics()->blendMode_ == BLEND_REPLACE)
             {
                 hasRefractionBatches_ = true;
                 break;

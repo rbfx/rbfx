@@ -21,6 +21,7 @@
 #include "source/opcode.h"
 #include "source/spirv_constant.h"
 #include "source/spirv_target_env.h"
+#include "source/util/make_unique.h"
 #include "source/val/basic_block.h"
 #include "source/val/construct.h"
 #include "source/val/function.h"
@@ -359,9 +360,9 @@ void ValidationState_t::RegisterCapability(spv::Capability cap) {
   // Avoid redundant work.  Otherwise the recursion could induce work
   // quadrdatic in the capability dependency depth. (Ok, not much, but
   // it's something.)
-  if (module_capabilities_.Contains(cap)) return;
+  if (module_capabilities_.contains(cap)) return;
 
-  module_capabilities_.Add(cap);
+  module_capabilities_.insert(cap);
   spv_operand_desc desc;
   if (SPV_SUCCESS == grammar_.lookupOperand(SPV_OPERAND_TYPE_CAPABILITY,
                                             uint32_t(cap), &desc)) {
@@ -418,9 +419,9 @@ void ValidationState_t::RegisterCapability(spv::Capability cap) {
 }
 
 void ValidationState_t::RegisterExtension(Extension ext) {
-  if (module_extensions_.Contains(ext)) return;
+  if (module_extensions_.contains(ext)) return;
 
-  module_extensions_.Add(ext);
+  module_extensions_.insert(ext);
 
   switch (ext) {
     case kSPV_AMD_gpu_shader_half_float:
@@ -859,6 +860,7 @@ uint32_t ValidationState_t::GetComponentType(uint32_t id) const {
       return GetComponentType(inst->word(2));
 
     case spv::Op::OpTypeCooperativeMatrixNV:
+    case spv::Op::OpTypeCooperativeMatrixKHR:
       return inst->word(2);
 
     default:
@@ -886,6 +888,7 @@ uint32_t ValidationState_t::GetDimension(uint32_t id) const {
       return inst->word(3);
 
     case spv::Op::OpTypeCooperativeMatrixNV:
+    case spv::Op::OpTypeCooperativeMatrixKHR:
       // Actual dimension isn't known, return 0
       return 0;
 
@@ -998,6 +1001,23 @@ bool ValidationState_t::IsUnsignedIntVectorType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
   if (!inst) {
     return false;
+  }
+
+  if (inst->opcode() == spv::Op::OpTypeVector) {
+    return IsUnsignedIntScalarType(GetComponentType(id));
+  }
+
+  return false;
+}
+
+bool ValidationState_t::IsUnsignedIntScalarOrVectorType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  if (!inst) {
+    return false;
+  }
+
+  if (inst->opcode() == spv::Op::OpTypeInt) {
+    return inst->GetOperandAs<uint32_t>(2) == 0;
   }
 
   if (inst->opcode() == spv::Op::OpTypeVector) {
@@ -1143,21 +1163,67 @@ bool ValidationState_t::IsAccelerationStructureType(uint32_t id) const {
 
 bool ValidationState_t::IsCooperativeMatrixType(uint32_t id) const {
   const Instruction* inst = FindDef(id);
+  return inst && (inst->opcode() == spv::Op::OpTypeCooperativeMatrixNV ||
+                  inst->opcode() == spv::Op::OpTypeCooperativeMatrixKHR);
+}
+
+bool ValidationState_t::IsCooperativeMatrixNVType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
   return inst && inst->opcode() == spv::Op::OpTypeCooperativeMatrixNV;
 }
 
+bool ValidationState_t::IsCooperativeMatrixKHRType(uint32_t id) const {
+  const Instruction* inst = FindDef(id);
+  return inst && inst->opcode() == spv::Op::OpTypeCooperativeMatrixKHR;
+}
+
+bool ValidationState_t::IsCooperativeMatrixAType(uint32_t id) const {
+  if (!IsCooperativeMatrixKHRType(id)) return false;
+  const Instruction* inst = FindDef(id);
+  uint64_t matrixUse = 0;
+  if (GetConstantValUint64(inst->word(6), &matrixUse)) {
+    return matrixUse ==
+           static_cast<uint64_t>(spv::CooperativeMatrixUse::MatrixAKHR);
+  }
+  return false;
+}
+
+bool ValidationState_t::IsCooperativeMatrixBType(uint32_t id) const {
+  if (!IsCooperativeMatrixKHRType(id)) return false;
+  const Instruction* inst = FindDef(id);
+  uint64_t matrixUse = 0;
+  if (GetConstantValUint64(inst->word(6), &matrixUse)) {
+    return matrixUse ==
+           static_cast<uint64_t>(spv::CooperativeMatrixUse::MatrixBKHR);
+  }
+  return false;
+}
+bool ValidationState_t::IsCooperativeMatrixAccType(uint32_t id) const {
+  if (!IsCooperativeMatrixKHRType(id)) return false;
+  const Instruction* inst = FindDef(id);
+  uint64_t matrixUse = 0;
+  if (GetConstantValUint64(inst->word(6), &matrixUse)) {
+    return matrixUse == static_cast<uint64_t>(
+                            spv::CooperativeMatrixUse::MatrixAccumulatorKHR);
+  }
+  return false;
+}
+
 bool ValidationState_t::IsFloatCooperativeMatrixType(uint32_t id) const {
-  if (!IsCooperativeMatrixType(id)) return false;
+  if (!IsCooperativeMatrixNVType(id) && !IsCooperativeMatrixKHRType(id))
+    return false;
   return IsFloatScalarType(FindDef(id)->word(2));
 }
 
 bool ValidationState_t::IsIntCooperativeMatrixType(uint32_t id) const {
-  if (!IsCooperativeMatrixType(id)) return false;
+  if (!IsCooperativeMatrixNVType(id) && !IsCooperativeMatrixKHRType(id))
+    return false;
   return IsIntScalarType(FindDef(id)->word(2));
 }
 
 bool ValidationState_t::IsUnsignedIntCooperativeMatrixType(uint32_t id) const {
-  if (!IsCooperativeMatrixType(id)) return false;
+  if (!IsCooperativeMatrixNVType(id) && !IsCooperativeMatrixKHRType(id))
+    return false;
   return IsUnsignedIntScalarType(FindDef(id)->word(2));
 }
 
@@ -1173,8 +1239,7 @@ spv_result_t ValidationState_t::CooperativeMatrixShapesMatch(
   const auto m1_type = FindDef(m1);
   const auto m2_type = FindDef(m2);
 
-  if (m1_type->opcode() != spv::Op::OpTypeCooperativeMatrixNV ||
-      m2_type->opcode() != spv::Op::OpTypeCooperativeMatrixNV) {
+  if (m1_type->opcode() != m2_type->opcode()) {
     return diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected cooperative matrix types";
   }
@@ -1222,6 +1287,21 @@ spv_result_t ValidationState_t::CooperativeMatrixShapesMatch(
     return diag(SPV_ERROR_INVALID_DATA, inst)
            << "Expected columns of Matrix type and Result Type to be "
            << "identical";
+  }
+
+  if (m1_type->opcode() == spv::Op::OpTypeCooperativeMatrixKHR) {
+    uint32_t m1_use_id = m1_type->GetOperandAs<uint32_t>(5);
+    uint32_t m2_use_id = m2_type->GetOperandAs<uint32_t>(5);
+    std::tie(m1_is_int32, m1_is_const_int32, m1_value) =
+        EvalInt32IfConst(m1_use_id);
+    std::tie(m2_is_int32, m2_is_const_int32, m2_value) =
+        EvalInt32IfConst(m2_use_id);
+
+    if (m1_is_const_int32 && m2_is_const_int32 && m1_value != m2_value) {
+      return diag(SPV_ERROR_INVALID_DATA, inst)
+             << "Expected Use of Matrix type and Result Type to be "
+             << "identical";
+    }
   }
 
   return SPV_SUCCESS;
@@ -1489,6 +1569,7 @@ bool ValidationState_t::ContainsType(
     case spv::Op::OpTypeImage:
     case spv::Op::OpTypeSampledImage:
     case spv::Op::OpTypeCooperativeMatrixNV:
+    case spv::Op::OpTypeCooperativeMatrixKHR:
       return ContainsType(inst->GetOperandAs<uint32_t>(1u), f,
                           traverse_all_types);
     case spv::Op::OpTypePointer:
@@ -1572,6 +1653,7 @@ bool ValidationState_t::IsValidStorageClass(
       case spv::StorageClass::ShaderRecordBufferKHR:
       case spv::StorageClass::TaskPayloadWorkgroupEXT:
       case spv::StorageClass::HitObjectAttributeNV:
+      case spv::StorageClass::TileImageEXT:
         return true;
       default:
         return false;
@@ -2047,8 +2129,6 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-OpImageTexelPointer-04658);
     case 4659:
       return VUID_WRAP(VUID-StandaloneSpirv-OpImageQuerySizeLod-04659);
-    case 4662:
-      return VUID_WRAP(VUID-StandaloneSpirv-Offset-04662);
     case 4663:
       return VUID_WRAP(VUID-StandaloneSpirv-Offset-04663);
     case 4664:
@@ -2163,8 +2243,6 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-PushConstant-06808);
     case 6925:
       return VUID_WRAP(VUID-StandaloneSpirv-Uniform-06925);
-    case 6997:
-      return VUID_WRAP(VUID-StandaloneSpirv-SubgroupVoteKHR-06997);
     case 7102:
       return VUID_WRAP(VUID-StandaloneSpirv-MeshEXT-07102);
     case 7320:
@@ -2179,6 +2257,14 @@ std::string ValidationState_t::VkErrorID(uint32_t id,
       return VUID_WRAP(VUID-StandaloneSpirv-Base-07652);
     case 7703:
       return VUID_WRAP(VUID-StandaloneSpirv-Component-07703);
+    case 7951:
+      return VUID_WRAP(VUID-StandaloneSpirv-SubgroupVoteKHR-07951);
+    case 8721:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpEntryPoint-08721);
+    case 8722:
+      return VUID_WRAP(VUID-StandaloneSpirv-OpEntryPoint-08722);
+    case 8973:
+      return VUID_WRAP(VUID-StandaloneSpirv-Pointer-08973);
     default:
       return "";  // unknown id
   }

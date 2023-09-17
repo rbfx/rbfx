@@ -53,6 +53,9 @@
 %inheritable(Urho3D, PluginApplication);
 %inheritable(Urho3D, Drawable);
 %inheritable(Urho3D, MoveAndOrbitComponent);
+#if URHO3D_PHYSICS
+%inheritable(Urho3D, TriggerAnimator);
+#endif
 #if URHO3D_URHO2D
 %inheritable(Urho3D, Drawable2D);
 #endif

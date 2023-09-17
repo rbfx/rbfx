@@ -234,7 +234,10 @@ jobs:
         ci_compiler:
           - msvc
           - mingw
-
+        # MinGW debug builds require too much memory
+        exclude:
+          - ci_compiler: mingw
+            ci_build_type: dbg
     env:
       ci_platform: windows
       ci_arch: ${{ matrix.ci_arch }}
@@ -813,6 +816,17 @@ jobs:
           personal_token: ${{ secrets.RBFX_DOCS_DEPLOY_TOKEN }}
           external_repository: rbfx/rbfx.github.io
           destination_dir: samples
+          cname: rebelfork.io
+          publish_dir: ${{ env.ci_sdk_dir }}/deploy
+          publish_branch: master
+
+      - name: Deploy [diligent]
+        if: github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/diligent' && matrix.ci_build_type =='rel'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.RBFX_DOCS_DEPLOY_TOKEN }}
+          external_repository: rbfx/rbfx.github.io
+          destination_dir: samples-diligent
           cname: rebelfork.io
           publish_dir: ${{ env.ci_sdk_dir }}/deploy
           publish_branch: master

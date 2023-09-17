@@ -3,7 +3,8 @@
 #include "_VertexLayout.glsl"
 #include "_VertexTransform.glsl"
 #include "_VertexScreenPos.glsl"
-#include "_Samplers.glsl"
+#include "_DefaultSamplers.glsl"
+#include "_SamplerUtils.glsl"
 #include "_GammaCorrection.glsl"
 
 /// Enables better normal reconstruction.
@@ -46,35 +47,35 @@ UNIFORM_BUFFER_BEGIN(6, Custom)
 UNIFORM_BUFFER_END(6, Custom)
 
 /// Sample view-space position from depth texture.
-vec3 SamplePosition(const vec2 texCoord)
+vec3 SamplePosition(vec2 texCoord)
 {
-    float depth = texture2D(sDepthBuffer, texCoord).r;
+    float depth = texture(sDepthBuffer, texCoord).r;
     vec4 position = vec4(texCoord, depth, 1.0) * cTextureToView;
     return position.xyz / position.w;
 }
 
 /// Sample view-space normal from normal texture.
 #ifdef DEFERRED
-half3 SampleNormal(const vec2 texCoord)
+half3 SampleNormal(vec2 texCoord)
 {
-    half3 worldNormal = DecodeNormal(texture2D(sNormalMap, texCoord));
+    half3 worldNormal = DecodeNormal(texture(sNormal, texCoord));
     half3 normal = (vec4(worldNormal, 0.0) * cWorldToView).xyz;
     return normal;
 }
 #endif
 
 /// Sample world-space normal from normal texture.
-half3 SampleWorldNormal(const vec2 texCoord)
+half3 SampleWorldNormal(vec2 texCoord)
 {
 #ifdef DEFERRED
-    return DecodeNormal(texture2D(sNormalMap, texCoord));
+    return DecodeNormal(texture(sNormal, texCoord));
 #else
     return vec3(0.0, 0.0, 0.0);
 #endif
 }
 
 /// Reconstruct view-space normal from depth buffer.
-half3 ReconstructNormal(const vec3 centerPos, const vec2 texCoord)
+half3 ReconstructNormal(vec3 centerPos, vec2 texCoord)
 {
     vec2 offsetY = vec2(0.0, cInputInvSize.y);
     vec2 offsetX = vec2(cInputInvSize.x, 0.0);
@@ -100,7 +101,7 @@ half3 ReconstructNormal(const vec3 centerPos, const vec2 texCoord)
 }
 
 /// Get view-space normal via preferred method.
-vec3 SampleOrReconstructNormal(const vec3 centerPos, const vec2 texCoord)
+vec3 SampleOrReconstructNormal(vec3 centerPos, vec2 texCoord)
 {
 #ifdef DEFERRED
     return SampleNormal(texCoord);
@@ -110,7 +111,7 @@ vec3 SampleOrReconstructNormal(const vec3 centerPos, const vec2 texCoord)
 }
 
 /// Project vector to hemisphere.
-half3 ToHemisphere(const half3 direction, const half3 normal)
+half3 ToHemisphere(half3 direction, half3 normal)
 {
     half proj = dot(direction, normal);
     half factor = proj > 0.0 ? 1.0 : -1.0;
@@ -155,9 +156,9 @@ half GetSampleWeight(float baseZ, float sampleZ, half3 baseNormal, half3 sampleN
 
 /// Calculate blurred SSAO color from neighbour sample.
 void CalculateBlur(inout half4 finalColor, inout half finalWeight,
-    const vec2 texCoord, const vec3 basePosition, const half3 baseNormal, const half weightFactor)
+    vec2 texCoord, vec3 basePosition, half3 baseNormal, half weightFactor)
 {
-    half4 color = texture2D(sDiffMap, texCoord);
+    half4 color = texture(sAlbedo, texCoord);
 
     vec3 position = SamplePosition(texCoord);
     half3 normal = SampleWorldNormal(texCoord);
@@ -182,7 +183,7 @@ void main()
 void main()
 {
 #ifdef EVALUATE_OCCLUSION
-    const half3 sampleOffsets[NUM_OCCLUSION_SAMPLES] = half3[NUM_OCCLUSION_SAMPLES] (
+    const half3 sampleOffsets[NUM_OCCLUSION_SAMPLES] = vec3[NUM_OCCLUSION_SAMPLES] (
         vec3(-0.3991061,  -0.2619659,   0.7481203),  // Length: 0.887466
         vec3( 0.5641699,  -0.1403742,  -0.5268592),  // Length: 0.7845847
         vec3(-0.4665807,   0.3778321,  -0.06707126), // Length: 0.6041135
@@ -204,7 +205,7 @@ void main()
     // Sample textures at the position
     vec3 position = SamplePosition(vTexCoord);
     half3 normal = SampleOrReconstructNormal(position, vTexCoord);
-    half3 noise = DecodeNormal(texture2D(sDiffMap, vTexCoord / cInputInvSize / 4.0));
+    half3 noise = DecodeNormal(texture(sAlbedo, vTexCoord / cInputInvSize / 4.0));
 
     // Sample points around position
     half weightSum = 0.00001;
@@ -226,7 +227,7 @@ void main()
 #endif
 
 #ifdef BLUR
-    const half sampleWeights[NUM_BLUR_SAMPLES + 1] = half[NUM_BLUR_SAMPLES + 1] (
+    const half sampleWeights[NUM_BLUR_SAMPLES + 1] = float[NUM_BLUR_SAMPLES + 1] (
         1.0,
         0.9071823,
         0.683296,
@@ -238,25 +239,25 @@ void main()
     vec3 basePosition = SamplePosition(baseTexCoord);
     half3 baseNormal = SampleWorldNormal(baseTexCoord);
 
-    half4 occlusion = sampleWeights[0] * texture2D(sDiffMap, baseTexCoord);
+    half4 occlusion = sampleWeights[0] * texture(sAlbedo, baseTexCoord);
     half weightSum = sampleWeights[0];
 
     for (int i = 1; i <= NUM_BLUR_SAMPLES; ++i)
     {
-        CalculateBlur(occlusion, weightSum, Saturate(vTexCoord + cBlurStep * i), basePosition, baseNormal, sampleWeights[i]);
-        CalculateBlur(occlusion, weightSum, Saturate(vTexCoord - cBlurStep * i), basePosition, baseNormal, sampleWeights[i]);
+        CalculateBlur(occlusion, weightSum, Saturate(vTexCoord + cBlurStep * float(i)), basePosition, baseNormal, sampleWeights[i]);
+        CalculateBlur(occlusion, weightSum, Saturate(vTexCoord - cBlurStep * float(i)), basePosition, baseNormal, sampleWeights[i]);
     }
 
     gl_FragColor = occlusion / weightSum;
 #endif
 
 #ifdef PREVIEW
-    half4 ao = texture2D(sDiffMap, vTexCoord);
+    half4 ao = texture(sAlbedo, vTexCoord);
     gl_FragColor = vec4(ao.a, ao.a, ao.a, 1.0);
 #endif
 
 #ifdef COMBINE
-    half4 ao = texture2D(sDiffMap, vTexCoord);
+    half4 ao = texture(sAlbedo, vTexCoord);
     gl_FragColor = vec4(ao.xyz, 1.0 - ao.a);
 #endif
 }

@@ -30,7 +30,6 @@
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/Renderer.h>
-#include <Urho3D/Graphics/RenderPath.h>
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
@@ -195,20 +194,6 @@ void MultipleViewports::SetupViewports()
     SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     SetViewport(0, viewport);
 
-    // Clone the default render path so that we do not interfere with the other viewport, then add
-    // bloom and FXAA post process effects to the front viewport. Render path commands can be tagged
-    // for example with the effect name to allow easy toggling on and off. We start with the effects
-    // disabled.
-    auto* cache = GetSubsystem<ResourceCache>();
-    SharedPtr<RenderPath> effectRenderPath = viewport->GetRenderPath()->Clone();
-    effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/Bloom.xml"));
-    effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/FXAA2.xml"));
-    // Make the bloom mixing parameter more pronounced
-    effectRenderPath->SetShaderParameter("BloomMix", Vector2(0.9f, 0.6f));
-    effectRenderPath->SetEnabled("Bloom", false);
-    effectRenderPath->SetEnabled("FXAA2", false);
-    viewport->SetRenderPath(effectRenderPath);
-
     // Set up the rear camera viewport on top of the front view ("rear view mirror")
     // The viewport index must be greater in that case, otherwise the view would be left behind
     SharedPtr<Viewport> rearViewport(new Viewport(context_, scene_, rearCameraNode_->GetComponent<Camera>(),
@@ -230,13 +215,6 @@ void MultipleViewports::MoveCamera(float timeStep)
         return;
 
     auto* input = GetSubsystem<Input>();
-
-    // Toggle post processing effects on the front viewport. Note that the rear viewport is unaffected
-    RenderPath* effectRenderPath = GetSubsystem<Renderer>()->GetViewport(0)->GetRenderPath();
-    if (input->GetKeyPress(KEY_B))
-        effectRenderPath->ToggleEnabled("Bloom");
-    if (input->GetKeyPress(KEY_F))
-        effectRenderPath->ToggleEnabled("FXAA2");
 
     // Toggle debug geometry with space
     if (input->GetKeyPress(KEY_SPACE))

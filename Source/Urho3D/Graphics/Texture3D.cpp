@@ -26,32 +26,26 @@
 #include "../Core/Profiler.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Texture3D.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
 
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
 
-Texture3D::Texture3D(Context* context) :
-    Texture(context)
+Texture3D::Texture3D(Context* context)
+    : Texture(context)
 {
-#ifdef URHO3D_OPENGL
-#ifndef GL_ES_VERSION_2_0
-    target_ = GL_TEXTURE_3D;
-#endif
-#endif
 }
 
 Texture3D::~Texture3D()
 {
-    Release();
 }
 
 void Texture3D::RegisterObject(Context* context)
@@ -61,19 +55,12 @@ void Texture3D::RegisterObject(Context* context)
 
 bool Texture3D::BeginLoad(Deserializer& source)
 {
+    auto graphics = GetSubsystem<Graphics>();
     auto* cache = GetSubsystem<ResourceCache>();
 
     // In headless mode, do not actually load the texture, just return success
-    if (!graphics_)
+    if (!graphics)
         return true;
-
-    // If device is lost, retry later
-    if (graphics_->IsDeviceLost())
-    {
-        URHO3D_LOGWARNING("Texture load while device is lost");
-        dataPending_ = true;
-        return true;
-    }
 
     ea::string texPath, texName, texExt;
     SplitPath(GetName(), texPath, texName, texExt);
@@ -141,7 +128,7 @@ bool Texture3D::BeginLoad(Deserializer& source)
 bool Texture3D::EndLoad()
 {
     // In headless mode, do not actually load the texture, just return success
-    if (!graphics_ || graphics_->IsDeviceLost())
+    if (!renderDevice_)
         return true;
 
     // If over the texture budget, see if materials can be freed to allow textures to be freed
@@ -156,27 +143,39 @@ bool Texture3D::EndLoad()
     return success;
 }
 
-bool Texture3D::SetSize(int width, int height, int depth, unsigned format, TextureUsage usage)
+bool Texture3D::SetSize(int width, int height, int depth, TextureFormat format, TextureFlags flags)
 {
-    if (width <= 0 || height <= 0 || depth <= 0)
-    {
-        URHO3D_LOGERROR("Zero or negative 3D texture dimensions");
+    RawTextureParams params;
+    params.type_ = TextureType::Texture3D;
+    params.format_ = format;
+    params.size_ = {width, height, depth};
+    params.numLevels_ = requestedLevels_;
+    if (requestedSRGB_)
+        params.format_ = SetTextureFormatSRGB(params.format_);
+
+    return Create(params);
+}
+
+bool Texture3D::SetData(unsigned level, int x, int y, int z, int width, int height, int depth, const void* data)
+{
+    Update(level, {x, y, z}, {width, height, depth}, 0, data);
+    return true;
+}
+
+bool Texture3D::SetData(Image* image)
+{
+    RawTextureParams params;
+    params.type_ = TextureType::Texture3D;
+    params.numLevels_ = requestedLevels_;
+    if (!CreateForImage(params, image))
         return false;
-    }
-    if (usage >= TEXTURE_RENDERTARGET)
-    {
-        URHO3D_LOGERROR("Rendertarget or depth-stencil usage not supported for 3D textures");
-        return false;
-    }
 
-    usage_ = usage;
+    return UpdateFromImage(0, image);
+}
 
-    width_ = width;
-    height_ = height;
-    depth_ = depth;
-    format_ = format;
-
-    return Create();
+bool Texture3D::GetData(unsigned level, void* dest)
+{
+    return Read(0, level, dest, M_MAX_UNSIGNED);
 }
 
 }

@@ -312,12 +312,13 @@ class GLTFImporterBase : public NonCopyable
 {
 public:
     GLTFImporterBase(Context* context, const GLTFImporterSettings& settings, tg::Model model,
-        const ea::string& outputPath, const ea::string& resourceNamePrefix)
+        const ea::string& outputPath, const ea::string& resourceNamePrefix, GLTFImporterCallback* callback)
         : context_(context)
         , settings_(settings)
         , model_(ea::move(model))
         , outputPath_(outputPath)
         , resourceNamePrefix_(resourceNamePrefix)
+        , callback_(callback)
     {
     }
 
@@ -389,6 +390,7 @@ public:
     Context* GetContext() const { return context_; }
     const GLTFImporterSettings& GetSettings() const { return settings_; }
     const GLTFImporter::ResourceToFileNameMap& GetResourceNames() const { return resourceNameToAbsoluteFileName_; }
+    GLTFImporterCallback* GetCallback() const { return callback_; }
 
     void CheckAnimation(int index) const { CheckT(index, model_.animations, "Invalid animation #{} referenced"); }
     void CheckAccessor(int index) const { CheckT(index, model_.accessors, "Invalid accessor #{} referenced"); }
@@ -414,6 +416,7 @@ private:
     const tg::Model model_;
     const ea::string outputPath_;
     const ea::string resourceNamePrefix_;
+    GLTFImporterCallback* const callback_{};
 
     ea::unordered_set<ea::string> localResourceNames_;
     GLTFImporter::ResourceToFileNameMap resourceNameToAbsoluteFileName_;
@@ -2195,7 +2198,7 @@ private:
             "wrap",
             "mirror",
             "clamp",
-            "border"
+            "", // border is not supported
         };
 
         static const ea::string filterModeNames[] =
@@ -2508,7 +2511,7 @@ private:
             }
 
             const SharedPtr<Texture2D> diffuseTexture = textureImporter_.ReferenceTextureAsIs(pbr.baseColorTexture.index);
-            material.SetTexture(TU_DIFFUSE, diffuseTexture);
+            material.SetTexture(ShaderResources::Albedo, diffuseTexture);
         }
     }
 
@@ -2559,7 +2562,7 @@ private:
 
             const SharedPtr<Texture2D> metallicRoughnessTexture = textureImporter_.ReferenceRoughnessMetallicOcclusionTexture(
                 metallicRoughnessTextureIndex, occlusionTextureIndex);
-            material.SetTexture(TU_SPECULAR, metallicRoughnessTexture);
+            material.SetTexture(ShaderResources::Properties, metallicRoughnessTexture);
         }
     }
 
@@ -2579,7 +2582,7 @@ private:
 
             const SharedPtr<Texture2D> normalTexture = textureImporter_.ReferenceTextureAsIs(
                 normalTextureIndex);
-            material.SetTexture(TU_NORMAL, normalTexture);
+            material.SetTexture(ShaderResources::Normal, normalTexture);
         }
     }
 
@@ -2599,7 +2602,7 @@ private:
             }
 
             const SharedPtr<Texture2D> emissiveTexture = textureImporter_.ReferenceTextureAsIs(emissiveTextureIndex);
-            material.SetTexture(TU_EMISSIVE, emissiveTexture);
+            material.SetTexture(ShaderResources::Emission, emissiveTexture);
         }
     }
 
@@ -2771,6 +2774,8 @@ private:
                 const ea::string modelName =
                     base_.GetResourceName(importedModel.baseMeshName_, "Models/", "Model", ".mdl");
                 importedModel.modelView_->SetName(modelName);
+
+                base_.GetCallback()->OnModelLoaded(*importedModel.modelView_);
 
                 model = importedModel.modelView_->ExportModel();
                 base_.AddToResourceCache(model);
@@ -3731,8 +3736,8 @@ class GLTFImporter::Impl
 {
 public:
     explicit Impl(Context* context, const GLTFImporterSettings& settings, tg::Model sourceModel,
-        const ea::string& outputPath, const ea::string& resourceNamePrefix)
-        : importerContext_(context, settings, ea::move(sourceModel), outputPath, resourceNamePrefix)
+        const ea::string& outputPath, const ea::string& resourceNamePrefix, GLTFImporterCallback* callback)
+        : importerContext_(context, settings, ea::move(sourceModel), outputPath, resourceNamePrefix, callback)
         , bufferReader_(importerContext_)
         , hierarchyAnalyzer_(importerContext_, bufferReader_)
         , textureImporter_(importerContext_)
@@ -3850,7 +3855,8 @@ bool GLTFImporter::MergeFile(const ea::string& fileName, const ea::string& asset
     }
 }
 
-bool GLTFImporter::Process(const ea::string& outputPath, const ea::string& resourceNamePrefix)
+bool GLTFImporter::Process(
+    const ea::string& outputPath, const ea::string& resourceNamePrefix, GLTFImporterCallback* callback)
 {
     try
     {
@@ -3860,7 +3866,8 @@ bool GLTFImporter::Process(const ea::string& outputPath, const ea::string& resou
         if (impl_)
             throw RuntimeException("Source GLTF model is already processed");
 
-        impl_ = ea::make_unique<Impl>(context_, settings_, ea::move(*model_), outputPath, resourceNamePrefix);
+        impl_ = ea::make_unique<Impl>(context_, settings_, ea::move(*model_), outputPath, resourceNamePrefix,
+            callback ? callback : &defaultCallback_);
         model_ = nullptr;
         return true;
     }

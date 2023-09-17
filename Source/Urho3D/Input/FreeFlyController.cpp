@@ -26,6 +26,7 @@
 
 #include "../Core/CoreEvents.h"
 #include "../Graphics/Camera.h"
+#include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
@@ -385,7 +386,9 @@ void FreeFlyController::HandleKeyboardMouseAndJoysticks(float timeStep)
     for (unsigned joystickIndex = 0; joystickIndex < numJoysticks; ++joystickIndex)
     {
         const auto state = input->GetJoystickByIndex(joystickIndex);
-        if (state)
+        const bool isAccelerometer =
+            state->GetNumAxes() == 3 && state->GetNumButtons() == 0 && state->GetNumHats() == 0;
+        if (state && !isAccelerometer)
         {
             if (state->joystickID_ == ignoreJoystickId_)
                 continue;

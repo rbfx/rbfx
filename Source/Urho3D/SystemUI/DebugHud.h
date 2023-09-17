@@ -58,8 +58,6 @@ public:
     void SetMode(DebugHudModeFlags mode);
     /// Cycle through elements
     void CycleMode();
-    /// Set whether to show 3D geometry primitive/batch count only. Default false.
-    void SetUseRendererStats(bool enable);
     /// Toggle elements.
     /// \param mode is a combination of DEBUGHUD_SHOW_* flags.
     void Toggle(DebugHudModeFlags mode);
@@ -68,8 +66,6 @@ public:
     /// Return currently shown elements.
     /// \return a combination of DEBUGHUD_SHOW_* flags.
     DebugHudModeFlags GetMode() const { return mode_; }
-    /// Return whether showing 3D geometry primitive/batch count only.
-    bool GetUseRendererStats() const { return useRendererStats_; }
     /// Set application-specific stats.
     /// \param label a title of stat to be displayed.
     /// \param stats a variant value to be displayed next to the specified label.
@@ -92,8 +88,6 @@ private:
 
     /// Hashmap containing application specific stats.
     ea::map<ea::string, ea::string> appStats_{};
-    /// Show 3D geometry primitive/batch count flag.
-    bool useRendererStats_ = true;
     /// Current shown-element mode.
     DebugHudModeFlags mode_{DEBUGHUD_SHOW_NONE};
     /// FPS timer.

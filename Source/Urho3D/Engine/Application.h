@@ -69,8 +69,10 @@ protected:
 #endif
     /// Urho3D engine.
     SharedPtr<Engine> engine_;
-    /// Engine parameters map.
+    /// Engine parameters defined from the code.
     StringVariantMap engineParameters_;
+    /// Engine parameters defined from the command line.
+    StringVariantMap commandLineParameters_;
     /// Collected startup error log messages.
     ea::string startupErrors_;
     /// Application exit code.

@@ -24,14 +24,16 @@
 
 #include "../Container/FlagSet.h"
 #include "../Core/Object.h"
-#include "../Graphics/DrawCommandQueue.h"
 #include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/PipelineState.h"
+#include "../RenderAPI/PipelineState.h"
+#include "../RenderAPI/RenderContext.h"
 #include "../RenderPipeline/RenderBuffer.h"
+#include "Urho3D/RenderPipeline/StaticPipelineStateCache.h"
 
 namespace Urho3D
 {
 
+class DrawCommandQueue;
 class RenderPipelineInterface;
 struct FrameInfo;
 
@@ -39,6 +41,7 @@ struct FrameInfo;
 /// clipToUVOffsetAndScale_ and invInputSize_ are filled automatically for viewport quad.
 struct DrawQuadParams
 {
+    StaticPipelineStateId pipelineStateId_{};
     PipelineState* pipelineState_{};
     Vector4 clipToUVOffsetAndScale_;
     Vector2 invInputSize_;
@@ -64,8 +67,12 @@ class URHO3D_API RenderBufferManager : public Object
 
 public:
     explicit RenderBufferManager(RenderPipelineInterface* renderPipeline);
+    ~RenderBufferManager() override;
+
     void SetSettings(const RenderBufferManagerSettings& settings);
     void SetFrameSettings(const RenderBufferManagerFrameSettings& frameSettings);
+
+    void OnViewportDefined(RenderSurface* renderTarget, const IntRect& viewportRect);
 
     SharedPtr<RenderBuffer> CreateColorBuffer(const RenderBufferParams& params, const Vector2& size = Vector2::ONE);
 
@@ -78,30 +85,26 @@ public:
     /// If rectangle is not specified, all render buffers should have same size and viewport rectanges.
     /// @{
     void SetRenderTargetsRect(const IntRect& viewportRect, RenderBuffer* depthStencilBuffer,
-        ea::span<RenderBuffer* const> colorBuffers, CubeMapFace face = FACE_POSITIVE_X);
+        ea::span<RenderBuffer* const> colorBuffers, bool readOnlyDepth = false, CubeMapFace face = FACE_POSITIVE_X);
     void SetRenderTargets(RenderBuffer* depthStencilBuffer,
-        ea::span<RenderBuffer* const> colorBuffers, CubeMapFace face = FACE_POSITIVE_X);
+        ea::span<RenderBuffer* const> colorBuffers, bool readOnlyDepth = false, CubeMapFace face = FACE_POSITIVE_X);
 
     void SetRenderTargetsRect(const IntRect& viewportRect, RenderBuffer* depthStencilBuffer,
-        std::initializer_list<RenderBuffer*> colorBuffers, CubeMapFace face = FACE_POSITIVE_X);
-    void SetRenderTargets(RenderBuffer* depthStencilBuffer,
-        std::initializer_list<RenderBuffer*> colorBuffers, CubeMapFace face = FACE_POSITIVE_X);
+        std::initializer_list<RenderBuffer*> colorBuffers, bool readOnlyDepth = false,
+        CubeMapFace face = FACE_POSITIVE_X);
+    void SetRenderTargets(RenderBuffer* depthStencilBuffer, std::initializer_list<RenderBuffer*> colorBuffers,
+        bool readOnlyDepth = false, CubeMapFace face = FACE_POSITIVE_X);
 
-    void SetOutputRenderTargetsRect(const IntRect& viewportRect);
-    void SetOutputRenderTargets();
+    void SetOutputRenderTargetsRect(const IntRect& viewportRect, bool readOnlyDepth = false);
+    void SetOutputRenderTargets(bool readOnlyDepth = false);
     /// @}
 
     /// Clear color, depth and/or stencil render target(s).
     /// If rectangle is specified, only part of render target is cleared.
     /// Changes currently bound depth-stencil and render targets.
     /// @{
-    void ClearDepthStencilRect(const IntRect& viewportRect, RenderBuffer* depthStencilBuffer,
-        ClearTargetFlags flags, float depth, unsigned stencil, CubeMapFace face = FACE_POSITIVE_X);
     void ClearDepthStencil(RenderBuffer* depthStencilBuffer,
         ClearTargetFlags flags, float depth, unsigned stencil, CubeMapFace face = FACE_POSITIVE_X);
-
-    void ClearColorRect(const IntRect& viewportRect, RenderBuffer* colorBuffer,
-        const Color& color, CubeMapFace face = FACE_POSITIVE_X);
     void ClearColor(RenderBuffer* colorBuffer,
         const Color& color, CubeMapFace face = FACE_POSITIVE_X);
 
@@ -114,27 +117,30 @@ public:
 
     /// Create pipeline states for fullscreen quad rendering
     /// @{
-    SharedPtr<PipelineState> CreateQuadPipelineState(PipelineStateDesc desc);
-    SharedPtr<PipelineState> CreateQuadPipelineState(BlendMode blendMode,
-        const ea::string& shaderName, const ea::string& shaderDefines);
+    StaticPipelineStateId CreateQuadPipelineState(GraphicsPipelineStateDesc desc);
+    StaticPipelineStateId CreateQuadPipelineState(BlendMode blendMode, const ea::string& shaderName,
+        const ea::string& shaderDefines, ea::span<const NamedSamplerStateDesc> samplers);
     /// @}
+
+    /// Return pipeline state for fullscreen quad rendering for current output.
+    PipelineState* GetQuadPipelineState(StaticPipelineStateId id);
 
     /// Render fullscreen quad with custom parameters into currently bound render buffer.
     void DrawQuad(ea::string_view debugComment, const DrawQuadParams& params, bool flipVertical = false);
     /// Render fullscreen quad into currently bound viewport-sized render buffer.
     void DrawViewportQuad(ea::string_view debugComment,
-        PipelineState* pipelineState, ea::span<const ShaderResourceDesc> resources,
+        StaticPipelineStateId pipelineStateId, ea::span<const ShaderResourceDesc> resources,
         ea::span<const ShaderParameterDesc> parameters, bool flipVertical = false);
     /// Render fullscreen quad into currently bound viewport-sized render buffer.
     /// Current secondary color render buffer is passed as diffuse texture input.
     void DrawFeedbackViewportQuad(ea::string_view debugComment,
-        PipelineState* pipelineState, ea::span<const ShaderResourceDesc> resources,
+        StaticPipelineStateId pipelineStateId, ea::span<const ShaderResourceDesc> resources,
         ea::span<const ShaderParameterDesc> parameters, bool flipVertical = false);
     /// Draw region of input texture into into currently bound render buffer. sRGB is taken into account.
-    void DrawTextureRegion(ea::string_view debugComment, Texture* sourceTexture, const IntRect& sourceRect,
+    void DrawTextureRegion(ea::string_view debugComment, RawTexture* sourceTexture, const IntRect& sourceRect,
         ColorSpaceTransition mode = ColorSpaceTransition::None, bool flipVertical = false);
     /// Draw input texture into into currently bound render buffer. sRGB is taken into account.
-    void DrawTexture(ea::string_view debugComment, Texture* sourceTexture,
+    void DrawTexture(ea::string_view debugComment, RawTexture* sourceTexture,
         ColorSpaceTransition mode = ColorSpaceTransition::None, bool flipVertical = false);
 
     /// Return depth-stencil buffer. Stays the same during the frame.
@@ -144,20 +150,25 @@ public:
 
     /// Return readable depth texture.
     /// It's not allowed to write depth and read it from shader input simultaneously for same depth-stencil buffer.
-    Texture2D* GetDepthStencilTexture() const { return depthStencilBuffer_->GetTexture2D(); };
+    RawTexture* GetDepthStencilTexture() const { return depthStencilBuffer_->GetTexture(); };
     /// Return secondary color render buffer texture that can be used while writing to color render buffer.
     /// Texture content is defined at the moment of previous SwapColorBuffers.
     /// Content is undefined if SwapColorBuffers was not called during current frame.
-    Texture2D* GetSecondaryColorTexture() const { return readableColorBuffer_ ? readableColorBuffer_->GetTexture2D() : nullptr; }
+    RawTexture* GetSecondaryColorTexture() const { return readableColorBuffer_ ? readableColorBuffer_->GetTexture() : nullptr; }
 
     /// Return size of output region (not size of output texture itself).
     IntVector2 GetOutputSize() const { return viewportRect_.Size(); }
     Vector2 GetInvOutputSize() const { return Vector2::ONE / GetOutputSize().ToVector2(); }
     /// Return identity offset and scale used to convert clip space to UV space.
     Vector4 GetDefaultClipToUVSpaceOffsetAndScale() const;
+    TextureFormat GetOutputColorFormat() const;
+    TextureFormat GetOutputDepthStencilFormat() const;
+    unsigned GetOutputMultiSample() const { return colorOutputParams_.multiSampleLevel_; }
     const RenderBufferManagerSettings& GetSettings() const { return settings_; }
 
 private:
+    static constexpr unsigned MaxClearVariants = (CLEAR_COLOR | CLEAR_DEPTH | CLEAR_STENCIL).AsInteger() + 1;
+
     /// RenderPipeline callbacks
     /// @{
     void OnPipelineStatesInvalidated();
@@ -165,16 +176,18 @@ private:
     void OnRenderEnd(const CommonFrameInfo& frameInfo);
     /// @}
 
-    void InitializeCopyTexturePipelineState();
+    void InitializePipelineStates();
     void ResetCachedRenderBuffers();
-    void CopyTextureRegion(ea::string_view debugComment, Texture* sourceTexture, const IntRect& sourceRect,
-        RenderSurface* destinationSurface, const IntRect& destinationRect, ColorSpaceTransition mode, bool flipVertical);
+    void CopyTextureRegion(ea::string_view debugComment, RawTexture* sourceTexture, const IntRect& sourceRect,
+        RenderTargetView destinationSurface, const IntRect& destinationRect, ColorSpaceTransition mode, bool flipVertical);
 
-    /// Extrenal dependencies
+    /// External dependencies
     /// @{
     RenderPipelineInterface* renderPipeline_{};
     Graphics* graphics_{};
     Renderer* renderer_{};
+    RenderDevice* renderDevice_{};
+    RenderContext* renderContext_{};
     RenderPipelineDebugger* debugger_{};
     SharedPtr<DrawCommandQueue> drawQueue_;
     /// @}
@@ -182,18 +195,21 @@ private:
     /// Cached between frames
     /// @{
     RenderBufferManagerSettings settings_;
+    StaticPipelineStateCache pipelineStates_;
 
     SharedPtr<RenderBuffer> viewportColorBuffer_;
     SharedPtr<RenderBuffer> viewportDepthBuffer_;
 
-    SharedPtr<PipelineState> copyTexturePipelineState_;
-    SharedPtr<PipelineState> copyGammaToLinearTexturePipelineState_;
-    SharedPtr<PipelineState> copyLinearToGammaTexturePipelineState_;
+    StaticPipelineStateId copyTexturePipelineState_{};
+    StaticPipelineStateId copyGammaToLinearTexturePipelineState_{};
+    StaticPipelineStateId copyLinearToGammaTexturePipelineState_{};
+    StaticPipelineStateId clearPipelineState_[MaxClearVariants]{};
 
     SharedPtr<RenderBuffer> substituteRenderBuffers_[2];
     SharedPtr<RenderBuffer> substituteDepthBuffer_;
 
-    RenderBufferParams previousViewportParams_;
+    RenderBufferParams colorOutputParams_;
+    RenderBufferParams depthStencilOutputParams_;
     /// @}
 
     /// State of current frame

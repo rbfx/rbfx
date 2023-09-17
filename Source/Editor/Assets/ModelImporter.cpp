@@ -26,6 +26,9 @@
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/JSONFile.h>
+#if URHO3D_GLOW
+    #include <Urho3D/Glow/LightmapUVGenerator.h>
+#endif
 
 namespace Urho3D
 {
@@ -94,6 +97,9 @@ void ModelImporter::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Keep Names On Merge", bool, settings_.keepNamesOnMerge_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Add Empty Nodes To Skeleton", bool, settings_.addEmptyNodesToSkeleton_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Blender: Apply Modifiers", bool, blenderApplyModifiers_, true, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("LightMap UV: Generate", bool, lightmapUVGenerate_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("LightMap UV: Texels per Unit", float, lightmapUVTexelsPerUnit_, 10.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("LightMap UV: Channel", unsigned, lightmapUVChannel_, 1, AM_DEFAULT);
 }
 
 ToolManager* ModelImporter::GetToolManager() const
@@ -190,7 +196,7 @@ bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& m
         }
     }
 
-    if (!importer->Process(outputPath, resourceNamePrefix))
+    if (!importer->Process(outputPath, resourceNamePrefix, this))
     {
         URHO3D_LOGERROR("Failed to process asset {}", input.resourceName_);
         return false;
@@ -223,6 +229,22 @@ bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& m
             nestedOutput.appliedTransformers_.begin(), nestedOutput.appliedTransformers_.end());
     }
     return true;
+}
+
+void ModelImporter::OnModelLoaded(ModelView& modelView)
+{
+    if (lightmapUVGenerate_)
+    {
+#if URHO3D_GLOW
+        LightmapUVGenerationSettings settings;
+        settings.texelPerUnit_ = lightmapUVTexelsPerUnit_;
+        settings.uvChannel_ = lightmapUVChannel_;
+        if (!GenerateLightmapUV(modelView, settings))
+            throw RuntimeException("Failed to generate lightmap UVs");
+#else
+        throw RuntimeException("Glow must be enabled to generate lightmap UVs");
+#endif
+    }
 }
 
 ModelImporter::ModelMetadata ModelImporter::LoadMetadata(const ea::string& fileName) const

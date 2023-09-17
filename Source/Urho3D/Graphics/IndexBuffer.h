@@ -25,9 +25,9 @@
 #include <EASTL/shared_array.h>
 
 #include "../Core/Object.h"
-#include "../Graphics/GPUObject.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/PipelineStateTracker.h"
+#include "Urho3D/RenderAPI/RawBuffer.h"
 
 namespace Urho3D
 {
@@ -41,52 +41,22 @@ enum IndexBufferType
 };
 
 /// Hardware index buffer.
-class URHO3D_API IndexBuffer : public Object, public GPUObject, public PipelineStateTracker
+class URHO3D_API IndexBuffer : public RawBuffer, public PipelineStateTracker
 {
-    URHO3D_OBJECT(IndexBuffer, Object);
-
-    using GPUObject::GetGraphics;
+    URHO3D_OBJECT(IndexBuffer, RawBuffer);
 
 public:
-    /// Construct. Optionally force headless (no GPU-side buffer) operation.
-    explicit IndexBuffer(Context* context, bool forceHeadless = false);
-    /// Destruct.
-    ~IndexBuffer() override;
-
-    /// Register object with the engine.
-    static void RegisterObject(Context* context);
-
-    /// Mark the buffer destroyed on graphics context destruction. May be a no-op depending on the API.
-    void OnDeviceLost() override;
-    /// Recreate the buffer and restore data if applicable. May be a no-op depending on the API.
-    void OnDeviceReset() override;
-    /// Release buffer.
-    void Release() override;
+    explicit IndexBuffer(Context* context);
 
     /// Enable shadowing in CPU memory. Shadowing is forced on if the graphics subsystem does not exist.
     /// @property
     void SetShadowed(bool enable);
     /// Set size and vertex elements and dynamic mode. Previous data will be lost.
     bool SetSize(unsigned indexCount, bool largeIndices, bool dynamic = false);
-    /// Set all data in the buffer.
-    bool SetData(const void* data);
-    /// Set a data range in the buffer. Optionally discard data outside the range.
-    bool SetDataRange(const void* data, unsigned start, unsigned count, bool discard = false);
-    /// Lock the buffer for write-only editing. Return data pointer if successful. Optionally discard data outside the range.
-    void* Lock(unsigned start, unsigned count, bool discard = false);
-    /// Unlock the buffer and apply changes to the GPU buffer.
-    void Unlock();
-
-    /// Return whether CPU memory shadowing is enabled.
-    /// @property
-    bool IsShadowed() const { return shadowed_; }
 
     /// Return whether is dynamic.
     /// @property
-    bool IsDynamic() const { return dynamic_; }
-
-    /// Return whether is currently locked.
-    bool IsLocked() const { return lockState_ != LOCK_NONE; }
+    bool IsDynamic() const { return GetFlags().Test(BufferFlag::Dynamic); }
 
     /// Return number of indices.
     /// @property
@@ -98,12 +68,6 @@ public:
 
     /// Return used vertex range from index range.
     bool GetUsedVertexRange(unsigned start, unsigned count, unsigned& minVertex, unsigned& vertexCount);
-
-    /// Return CPU memory shadow data.
-    unsigned char* GetShadowData() const { return shadowData_.get(); }
-
-    /// Return shared array pointer to the CPU memory shadow data.
-    ea::shared_array<unsigned char> GetShadowDataShared() const { return shadowData_; }
 
     /// Return unpacked buffer data as plain array of indices.
     ea::vector<unsigned> GetUnpackedData(unsigned start = 0, unsigned count = M_MAX_UNSIGNED) const;
@@ -127,38 +91,15 @@ public:
     }
 
 private:
-    /// Create buffer.
-    bool Create();
-    /// Update the shadow data to the GPU buffer.
-    bool UpdateToGPU();
-    /// Map the GPU buffer into CPU memory. Not used on OpenGL.
-    void* MapBuffer(unsigned start, unsigned count, bool discard);
-    /// Unmap the GPU buffer. Not used on OpenGL.
-    void UnmapBuffer();
-
     /// Recalculate hash (must not be non zero). Shall be save to call from multiple threads as long as the object is not changing.
     unsigned RecalculatePipelineStateHash() const override;
 
-    /// Shadow data.
-    ea::shared_array<unsigned char> shadowData_;
     /// Number of indices.
-    unsigned indexCount_;
+    unsigned indexCount_{};
     /// Index size.
-    unsigned indexSize_;
-    /// Buffer locking state.
-    LockState lockState_;
-    /// Lock start vertex.
-    unsigned lockStart_;
-    /// Lock number of vertices.
-    unsigned lockCount_;
-    /// Scratch buffer for fallback locking.
-    void* lockScratchData_;
-    /// Dynamic flag.
-    bool dynamic_;
+    unsigned indexSize_{};
     /// Shadowed flag.
-    bool shadowed_;
-    /// Discard lock flag. Used by OpenGL only.
-    bool discardLock_;
+    bool shadowedPending_{};
 };
 
 /// Index Buffer of dynamic size. Resize policy is similar to standard vector.
@@ -169,7 +110,7 @@ class URHO3D_API DynamicIndexBuffer : public Object
 public:
     DynamicIndexBuffer(Context* context);
     bool Initialize(unsigned indexCount, bool largeIndices);
-
+    void SetDebugName(const ea::string& debugName) { indexBuffer_->SetDebugName(debugName); }
     /// Discard existing content of the buffer.
     void Discard();
     /// Commit all added data to GPU.
