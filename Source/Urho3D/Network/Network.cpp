@@ -81,7 +81,7 @@ void Network::OnClientConnected(Connection* connection)
     connection->Initialize();
     connection->SetIsClient(true);
     connection->SetConnectPending(true);
-    clientConnections_.insert({connection->transportConnection_, SharedPtr(connection)});
+    clientConnections_.emplace(connection->transportConnection_, SharedPtr<Connection>(connection));
     URHO3D_LOGINFO("Client {} connected", connection->ToString());
 
     using namespace ClientConnected;

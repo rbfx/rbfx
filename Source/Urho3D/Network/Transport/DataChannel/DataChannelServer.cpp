@@ -84,7 +84,7 @@ void DataChannelServer::OnDisconnected(DataChannelConnection* connection)
 {
 #ifndef URHO3D_PLATFORM_WEB
     onDisconnected_(connection);
-    connections_.erase_first(SharedPtr(connection));
+    connections_.erase_first(SharedPtr<DataChannelConnection>(connection));
 #endif
 }
 

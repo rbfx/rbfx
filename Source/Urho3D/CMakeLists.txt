@@ -179,11 +179,13 @@ set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     enkiTS
     Diligent-Common
     Diligent-GraphicsEngineOpenGL-static
+    Diligent-GraphicsEngineVk-static
     Diligent-GraphicsEngineD3D11-static
     Diligent-GraphicsEngineD3D12-static
     Diligent-GraphicsEngineMetal-static
     Diligent-HLSL2GLSLConverterLib
     Vulkan-Headers
+    datachannel-static
 )
 
 # Private dependencies that are hidden from the user and are not exposed in the public API or headers
