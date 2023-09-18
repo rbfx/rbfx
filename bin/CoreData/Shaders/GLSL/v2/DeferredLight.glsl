@@ -44,7 +44,7 @@ void main()
 
     vec4 worldPos = GetDeferredWorldPos(vScreenPos, depth);
     half3 eyeVec = normalize(-worldPos.xyz);
-    worldPos.xyz += cCameraPos;
+    worldPos.xyz += STEREO_VAR(cCameraPos);
 
     half3 normal = DecodeNormal(normalInput);
     #ifdef URHO3D_PHYSICAL_MATERIAL

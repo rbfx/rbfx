@@ -128,11 +128,11 @@ void DebugMessageCallback(
 {
     ea::string message = Format("[diligent] {}", ea::string(msg == nullptr ? "" : msg));
     if (func)
-        message += Format("function: {}", func);
+        message += Format(" function: {}", func);
     if (file)
-        message += Format("file:     {}", file);
+        message += Format(" file: {}", file);
     if (line)
-        message += Format("line:     {}", line);
+        message += Format(" line: {}", line);
 
     switch (severity)
     {
@@ -957,6 +957,13 @@ void RenderDevice::InitializeDevice()
     {
         Diligent::EngineVkCreateInfo createInfo;
         CopyBackendDeviceSettings(createInfo, deviceSettings_.vulkan_);
+
+        const auto instanceExtensionsCStr = ToCStringVector(deviceSettings_.vulkan_.instanceExtensions_);
+        const auto deviceExtensionsCStr = ToCStringVector(deviceSettings_.vulkan_.deviceExtensions_);
+        createInfo.InstanceExtensionCount = instanceExtensionsCStr.size();
+        createInfo.ppInstanceExtensionNames = instanceExtensionsCStr.data();
+        createInfo.DeviceExtensionCount = deviceExtensionsCStr.size();
+        createInfo.ppDeviceExtensionNames = deviceExtensionsCStr.data();
 
         const char* const ppIgnoreDebugMessages[] = {
             // Validation Performance Warning: [ UNASSIGNED-CoreValidation-Shader-OutputNotConsumed ]

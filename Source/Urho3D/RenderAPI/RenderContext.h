@@ -51,7 +51,7 @@ public:
     void ClearRenderTarget(unsigned index, const Color& color);
 
     /// Set whether the clip plane is enabled. Only used for OpenGL.
-    void SetClipPlaneEnabled(bool enable);
+    void SetClipPlaneMask(unsigned mask);
     /// Execute draw commands from queue.
     void Execute(DrawCommandQueue* drawQueue);
 
@@ -93,7 +93,7 @@ private:
 
     struct CachedContextState
     {
-        bool clipPlaneEnabled_{};
+        unsigned clipPlaneMask_{};
     } cachedContextState_;
 };
 

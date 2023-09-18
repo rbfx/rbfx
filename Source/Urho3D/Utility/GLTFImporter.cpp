@@ -1943,6 +1943,15 @@ public:
             texture.repackedImage_ = ImportRMOTexture(metallicRoughnessTextureIndex, occlusionTextureIndex,
                 texture.fakeTexture_->GetName());
         }
+
+        if (base_.GetSettings().gpuResources_)
+        {
+            for (const ImportedTexture& texture : texturesAsIs_)
+                LoadGPUTexture(texture.fakeTexture_, texture.image_);
+
+            for (const auto& [_, texture] : texturesMRO_)
+                LoadGPUTexture(texture.fakeTexture_, texture.repackedImage_);
+        }
     }
 
     void SaveResources()
@@ -2153,6 +2162,19 @@ private:
         ea::copy(sourceImage.image.begin(), sourceImage.image.end(), imageBytes.begin());
         image->SetData(imageBytes);
         return image;
+    }
+
+    void LoadGPUTexture(Texture2D* texture, BinaryFile* image)
+    {
+        image->GetMutableBuffer().SetName(texture->GetName());
+        Deserializer& deserializer = image->AsDeserializer();
+        deserializer.Seek(0);
+        texture->Load(deserializer);
+    }
+
+    void LoadGPUTexture(Texture2D* texture, Image* image)
+    {
+        texture->SetData(image);
     }
 
     SharedPtr<Image> DecodeImage(BinaryFile* imageAsIs) const
@@ -3730,6 +3752,20 @@ tg::Model LoadGLTF(const ea::string& fileName)
     return model;
 }
 
+tg::Model LoadGLTFBinary(ByteSpan data)
+{
+    tg::TinyGLTF loader;
+    loader.SetImageLoader(&GLTFTextureImporter::LoadImageData, nullptr);
+
+    std::string errorMessage;
+    tg::Model model;
+    if (!loader.LoadBinaryFromMemory(&model, &errorMessage, nullptr, data.data(), data.size()))
+        throw RuntimeException("Failed to import binary GLTF file from memory due to error: {}", errorMessage.c_str());
+
+    ValidateExtensions(model);
+    return model;
+}
+
 }
 
 class GLTFImporter::Impl
@@ -3755,6 +3791,14 @@ public:
         modelImporter_.SaveResources();
         animationImporter_.SaveResources();
         sceneImporter_.SaveResources();
+    }
+
+    Transform ConvertTransform(const Transform& sourceTransform) const
+    {
+        const InlineTransform& inlineTransform = hierarchyAnalyzer_.GetInlineTransform();
+        const Vector3 position_ = inlineTransform.ApplyToPosition(sourceTransform.position_);
+        const Quaternion rotation_ = inlineTransform.ApplyToRotation(sourceTransform.rotation_);
+        return {position_, rotation_, sourceTransform.scale_};
     }
 
     const ResourceToFileNameMap& GetResourceNames() const { return importerContext_.GetResourceNames(); }
@@ -3792,6 +3836,8 @@ void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& va
     SerializeValue(archive, "keyFrameTimeError", value.keyFrameTimeError_);
     SerializeValue(archive, "nodeRenames", value.nodeRenames_);
 
+    SerializeValue(archive, "gpuResources", value.gpuResources_);
+
     SerializeValue(archive, "addLights", value.preview_.addLights_);
     SerializeValue(archive, "addSkybox", value.preview_.addSkybox_);
     SerializeValue(archive, "skyboxMaterial", value.preview_.skyboxMaterial_);
@@ -3812,12 +3858,22 @@ GLTFImporter::~GLTFImporter()
 
 bool GLTFImporter::LoadFile(const ea::string& fileName)
 {
+    return LoadFileInternal([&]() { return LoadGLTF(fileName); });
+}
+
+bool GLTFImporter::LoadFileBinary(ByteSpan data)
+{
+    return LoadFileInternal([&]() { return LoadGLTFBinary(data); });
+}
+
+bool GLTFImporter::LoadFileInternal(const ea::function<tinygltf::Model()> getModel)
+{
     try
     {
         if (model_ || impl_)
             throw RuntimeException("Primary source model is already loaded");
 
-        model_ = ea::make_unique<tg::Model>(LoadGLTF(fileName));
+        model_ = ea::make_unique<tg::Model>(getModel());
         RenameNodes(*model_, settings_.nodeRenames_);
         return true;
     }
@@ -3905,6 +3961,17 @@ const GLTFImporter::ResourceToFileNameMap& GLTFImporter::GetSavedResources() con
     }
 
     return impl_->GetResourceNames();
+}
+
+Transform GLTFImporter::ConvertTransform(const Transform& sourceTransform) const
+{
+    if (!impl_)
+    {
+        URHO3D_LOGERROR("Imported asserts weren't cooked");
+        return sourceTransform;
+    }
+
+    return impl_->ConvertTransform(sourceTransform);
 }
 
 } // namespace Urho3D

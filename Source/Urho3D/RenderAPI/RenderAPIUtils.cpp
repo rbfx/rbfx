@@ -10,6 +10,7 @@
 #include "Urho3D/Core/ProcessUtils.h"
 #include "Urho3D/Core/StringUtils.h"
 #include "Urho3D/IO/ArchiveSerialization.h"
+#include "Urho3D/RenderAPI/GAPIIncludes.h"
 
 #include <Diligent/Graphics/GraphicsAccessories/interface/GraphicsAccessories.hpp>
 
@@ -193,9 +194,15 @@ bool IsDepthTextureFormat(TextureFormat format)
     return componentType == Diligent::COMPONENT_TYPE_DEPTH || componentType == Diligent::COMPONENT_TYPE_DEPTH_STENCIL;
 }
 
-bool IsStencilTextureFormat(TextureFormat format)
+bool IsDepthStencilTextureFormat(TextureFormat format)
 {
     return Diligent::GetTextureFormatAttribs(format).ComponentType == Diligent::COMPONENT_TYPE_DEPTH_STENCIL;
+}
+
+bool IsColorTextureFormat(TextureFormat format)
+{
+    return Diligent::GetTextureFormatAttribs(format).ComponentType != Diligent::COMPONENT_TYPE_UNDEFINED
+        && !IsDepthTextureFormat(format);
 }
 
 RenderBackend SelectRenderBackend(ea::optional<RenderBackend> requestedBackend)
@@ -316,6 +323,61 @@ void SerializeValue(Archive& archive, const char* name, RenderDeviceSettingsD3D1
     SerializeStrictlyOptionalValue(archive, "numDynamicHeapPagesToReserve", value.numDynamicHeapPagesToReserve_, ea::nullopt, OptionalSerializer{});
     SerializeQueryTypes(archive, value.queryPoolSizes_);
     // clang-format on
+}
+
+TextureFormat GetTextureFormatFromInternal(RenderBackend backend, unsigned internalFormat)
+{
+    switch (backend)
+    {
+#if D3D11_SUPPORTED || D3D12_SUPPORTED
+    case RenderBackend::D3D11:
+    case RenderBackend::D3D12:
+        switch (internalFormat)
+        {
+        case DXGI_FORMAT_R8G8B8A8_UNORM: return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
+        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB: return TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB;
+        case DXGI_FORMAT_D16_UNORM: return TextureFormat::TEX_FORMAT_D16_UNORM;
+        case DXGI_FORMAT_D24_UNORM_S8_UINT: return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
+        case DXGI_FORMAT_D32_FLOAT: return TextureFormat::TEX_FORMAT_D32_FLOAT;
+        case DXGI_FORMAT_D32_FLOAT_S8X24_UINT: return TextureFormat::TEX_FORMAT_D32_FLOAT_S8X24_UINT;
+        default: return TextureFormat::TEX_FORMAT_UNKNOWN;
+        }
+#endif
+#if VULKAN_SUPPORTED
+    case RenderBackend::Vulkan:
+    {
+        switch (internalFormat)
+        {
+        case VK_FORMAT_R8G8B8A8_UNORM: return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
+        case VK_FORMAT_R8G8B8A8_SRGB: return TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB;
+        case VK_FORMAT_D16_UNORM: return TextureFormat::TEX_FORMAT_D16_UNORM;
+        case VK_FORMAT_D24_UNORM_S8_UINT: return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
+        case VK_FORMAT_D32_SFLOAT: return TextureFormat::TEX_FORMAT_D32_FLOAT;
+        case VK_FORMAT_D32_SFLOAT_S8_UINT: return TextureFormat::TEX_FORMAT_D32_FLOAT_S8X24_UINT;
+        default: return TextureFormat::TEX_FORMAT_UNKNOWN;
+        }
+    }
+#endif
+#if GL_SUPPORTED || GLES_SUPPORTED
+    case RenderBackend::OpenGL:
+    {
+        switch (internalFormat)
+        {
+        case GL_RGB8:
+        case GL_RGBA8: return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
+        case GL_SRGB8:
+        case GL_SRGB8_ALPHA8: return TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB;
+        case GL_DEPTH_COMPONENT16: return TextureFormat::TEX_FORMAT_D16_UNORM;
+        case GL_DEPTH_COMPONENT24: return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
+        case GL_DEPTH_COMPONENT32F: return TextureFormat::TEX_FORMAT_D32_FLOAT;
+        case GL_DEPTH24_STENCIL8: return TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
+        case GL_DEPTH32F_STENCIL8: return TextureFormat::TEX_FORMAT_D32_FLOAT_S8X24_UINT;
+        default: return TextureFormat::TEX_FORMAT_UNKNOWN;
+        }
+    }
+#endif
+    default: return TextureFormat::TEX_FORMAT_UNKNOWN;
+    }
 }
 
 } // namespace Urho3D

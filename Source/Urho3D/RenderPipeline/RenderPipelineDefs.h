@@ -32,6 +32,7 @@
 namespace Urho3D
 {
 
+class Camera;
 class Light;
 class PipelineState;
 class RenderPipelineDebugger;
@@ -61,6 +62,8 @@ struct CommonFrameInfo
 
     Viewport* viewport_{};
     RenderSurface* renderTarget_{};
+
+    ea::array<Camera*, 2> cameras_{};
 };
 
 /// Traits of scene pass.
@@ -75,9 +78,10 @@ enum class DrawableProcessorPassFlag
     RefractionPass = 1 << 4,
     DepthOnlyPass = 1 << 5,
     ReadOnlyDepth = 1 << 6,
+    StereoInstancing = 1 << 7,
 
-    BatchCallback = 1 << 7,
-    PipelineStateCallback = 1 << 8,
+    BatchCallback = 1 << 8,
+    PipelineStateCallback = 1 << 9,
 };
 
 URHO3D_FLAGSET(DrawableProcessorPassFlag, DrawableProcessorPassFlags);
@@ -105,6 +109,7 @@ enum class BatchRenderFlag
     EnableInstancingForStaticGeometry = 1 << 3,
     DisableColorOutput = 1 << 4,
     LightMaskToStencil = 1 << 5,
+    LinearColorSpace = 1 << 6,
 
     EnableAmbientAndVertexLighting = EnableAmbientLighting | EnableVertexLights,
 };
@@ -150,7 +155,9 @@ enum class RenderPipelineColorSpace
     /// Low dynamic range lighting in Linear space, trimmed to [0, 1].
     LinearLDR,
     /// High dynamic range lighting in Linear space. Should be tone mapped before frame end.
-    LinearHDR
+    LinearHDR,
+    /// Use the color space that matches output render texture.
+    Optimized,
 };
 
 /// Rarely-changing settings of render buffer manager.
@@ -266,6 +273,7 @@ public:
     virtual ~RenderPipelineInterface();
     virtual Context* GetContext() const = 0;
     virtual RenderPipelineDebugger* GetDebugger() = 0;
+    virtual bool IsLinearColorSpace() const = 0;
 
     /// Callbacks
     /// @{
@@ -379,6 +387,7 @@ struct InstancingBufferSettings
     bool enableInstancing_{};
     unsigned firstInstancingTexCoord_{};
     unsigned numInstancingTexCoords_{};
+    unsigned stepRate_{ 1 };
 
     /// Utility operators
     /// @{
@@ -388,6 +397,7 @@ struct InstancingBufferSettings
         CombineHash(hash, enableInstancing_);
         CombineHash(hash, firstInstancingTexCoord_);
         CombineHash(hash, numInstancingTexCoords_);
+        CombineHash(hash, stepRate_);
         return hash;
     }
 
@@ -399,7 +409,8 @@ struct InstancingBufferSettings
     {
         return enableInstancing_ == rhs.enableInstancing_
             && firstInstancingTexCoord_ == rhs.firstInstancingTexCoord_
-            && numInstancingTexCoords_ == rhs.numInstancingTexCoords_;
+            && numInstancingTexCoords_ == rhs.numInstancingTexCoords_
+            && stepRate_ == rhs.stepRate_;
     }
 
     bool operator!=(const InstancingBufferSettings& rhs) const { return !(*this == rhs); }
@@ -415,7 +426,6 @@ enum class DrawableAmbientMode
 
 struct BatchRendererSettings
 {
-    bool linearSpaceLighting_{};
     bool cubemapBoxProjection_{};
     DrawableAmbientMode ambientMode_{ DrawableAmbientMode::Directional };
     Vector2 varianceShadowMapParams_{ 0.0000001f, 0.9f };
@@ -425,7 +435,6 @@ struct BatchRendererSettings
     unsigned CalculatePipelineStateHash() const
     {
         unsigned hash = 0;
-        CombineHash(hash, linearSpaceLighting_);
         CombineHash(hash, cubemapBoxProjection_);
         CombineHash(hash, MakeHash(ambientMode_));
         return hash;
@@ -437,8 +446,7 @@ struct BatchRendererSettings
 
     bool operator==(const BatchRendererSettings& rhs) const
     {
-        return linearSpaceLighting_ == rhs.linearSpaceLighting_
-            && cubemapBoxProjection_ == rhs.cubemapBoxProjection_
+        return cubemapBoxProjection_ == rhs.cubemapBoxProjection_
             && ambientMode_ == rhs.ambientMode_
             && varianceShadowMapParams_ == rhs.varianceShadowMapParams_;
     }

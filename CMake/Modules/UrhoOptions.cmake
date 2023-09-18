@@ -191,6 +191,12 @@ option                (URHO3D_ACTIONS            "Tweening actions"             
 option                (URHO3D_SHADER_TRANSLATOR  "Enable shader translation from universal GLSL shaders to other GAPI via glslang and SPIRV-Cross" ${URHO3D_ENABLE_ALL})
 option                (URHO3D_SHADER_OPTIMIZER   "Enable shader optimization via SPIRV-Tools"            ${URHO3D_ENABLE_ALL})
 
+# User should extend AndroidManifest.xml and attach libopenxr_loader.so to the application.
+# See https://developer.oculus.com/documentation/native/android/mobile-openxr/ for details.
+cmake_dependent_option(URHO3D_OCULUS_QUEST       "Enable experimental native build for Oculus Quest. See notes in UrhoOptions.cmake!" OFF "ANDROID" OFF)
+# TODO: Extend platform support.
+cmake_dependent_option(URHO3D_XR                 "Enable OpenXR support"                                 ${URHO3D_ENABLE_ALL} "WIN32 OR URHO3D_OCULUS_QUEST;NOT MINGW;NOT UWP" OFF)
+
 # Features
 cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "BUILD_SHARED_LIBS;NOT MINGW"   OFF)
 # Valid values at https://docs.microsoft.com/en-us/dotnet/standard/frameworks

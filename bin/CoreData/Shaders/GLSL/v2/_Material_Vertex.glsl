@@ -105,7 +105,7 @@ void Vertex_SetLight(VertexTransform vertexTransform)
 /// - vEyeVec
 #ifdef URHO3D_PIXEL_NEED_EYE_VECTOR
     #define Vertex_SetEyeVector(worldPos) \
-        vEyeVec = cCameraPos - worldPos
+        vEyeVec = STEREO_VAR(cCameraPos).xyz - worldPos
 #else
     #define Vertex_SetEyeVector(worldPos)
 #endif
@@ -118,7 +118,7 @@ void Vertex_SetLight(VertexTransform vertexTransform)
             vReflectionVec = reflect(-vEyeVec, vNormal)
     #else
         #define Vertex_SetReflectionVector(worldPos) \
-            vReflectionVec = reflect(worldPos - cCameraPos, vNormal)
+            vReflectionVec = reflect(worldPos - STEREO_VAR(cCameraPos).xyz, vNormal)
     #endif
 #else
     #define Vertex_SetReflectionVector(worldPos)

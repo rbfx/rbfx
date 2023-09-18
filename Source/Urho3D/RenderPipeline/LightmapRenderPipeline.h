@@ -57,6 +57,7 @@ public:
     /// @{
     Context* GetContext() const override { return BaseClassName::GetContext(); }
     RenderPipelineDebugger* GetDebugger() override { return nullptr; }
+    bool IsLinearColorSpace() const override { return true; }
     /// @}
 
 private:

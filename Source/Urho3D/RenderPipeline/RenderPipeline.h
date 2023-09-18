@@ -66,12 +66,15 @@ public:
     /// @{
     Context* GetContext() const override { return BaseClassName::GetContext(); }
     RenderPipelineDebugger* GetDebugger() override { return nullptr; }
+    bool IsLinearColorSpace() const override { return linearColorSpace_; }
     /// @}
 
 protected:
     RenderPipeline* const renderPipeline_{};
     Graphics* const graphics_{};
     Renderer* const renderer_{};
+
+    bool linearColorSpace_{};
 };
 
 /// Scene component that spawns render pipeline instances.

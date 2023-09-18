@@ -26,11 +26,23 @@ vec2 GetTransformedTexCoord(vec4 uOffset, vec4 vOffset)
 /// Return position in clip space from position in world space.
 vec4 WorldToClipSpace(vec3 worldPos)
 {
-    return vec4(worldPos, 1.0) * cViewProj;
+    vec4 clipPos = vec4(worldPos, 1.0) * STEREO_VAR(cViewProj);
+
+    #ifdef URHO3D_XR
+        const float eyeOffsetScale[2] = float[2](-0.5f, 0.5f);
+        const vec4 eyeClipEdge[2] = vec4[2](vec4(-1.0f, 0.0f, 0.0f, 1.0f), vec4(1.0f, 0.0f, 0.0f, 1.0f));
+
+        gl_ClipDistance[0] = dot(clipPos, eyeClipEdge[gl_InstanceID & 1]);
+
+        clipPos.x *= 0.5f;
+        clipPos.x += eyeOffsetScale[gl_InstanceID & 1] * clipPos.w;
+    #endif
+
+    return clipPos;
 }
 
 /// Clip vertex if needed.
-#if defined(URHO3D_CLIP_PLANE) && defined(URHO3D_FEATURE_CLIP_DISTANCE)
+#if defined(URHO3D_CLIP_PLANE) && defined(URHO3D_FEATURE_CLIP_DISTANCE) && !defined(URHO3D_XR)
     #define ApplyClipPlane(clipPos) \
         gl_ClipDistance[0] = dot(cClipPlane, clipPos)
 #else
@@ -40,7 +52,11 @@ vec4 WorldToClipSpace(vec3 worldPos)
 /// Return depth from position in clip space.
 float GetDepth(vec4 clipPos)
 {
+#ifdef URHO3D_XR
+    return dot(clipPos.zw, cDepthMode[gl_InstanceID & 1].zw);
+#else
     return dot(clipPos.zw, cDepthMode.zw);
+#endif
 }
 
 /// Vertex data in world space
@@ -167,7 +183,11 @@ mat4 GetModelMatrix()
 #elif defined(URHO3D_GEOMETRY_DIRBILLBOARD)
     mediump mat3 GetFaceCameraRotation(vec3 position, half3 direction)
     {
-        half3 cameraDir = normalize(position - cCameraPos);
+    #ifdef URHO3D_XR
+        half3 cameraDir = normalize(position - cCameraPos.xyz);
+    #else
+        half3 cameraDir = normalize(position - cCameraPos[gl_InstanceID & 1].xyz);
+    #endif
         half3 front = normalize(direction);
         half3 right = normalize(cross(front, cameraDir));
         half3 up = normalize(cross(front, right));
@@ -204,7 +224,11 @@ mat4 GetModelMatrix()
     VertexTransform GetVertexTransform()
     {
         mat4 modelMatrix = GetModelMatrix();
-        half3 up = normalize(cCameraPos - iPos.xyz);
+        #if URHO3D_XR
+            half3 up = normalize(cCameraPos[gl_InstanceID & 1] - iPos.xyz);
+        #else
+            half3 up = normalize(cCameraPos - iPos.xyz);
+        #endif
         half3 right = normalize(cross(iTangent.xyz, up));
 
         VertexTransform result;

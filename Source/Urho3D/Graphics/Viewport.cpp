@@ -75,6 +75,18 @@ Viewport::Viewport(Context* context, Scene* scene, Camera* camera, const IntRect
 {
 }
 
+Viewport::Viewport(Context* context, Scene* scene, Camera* leftEye, Camera* rightEye, RenderPipeline* renderPipeline) :
+    Object(context),
+    scene_(scene),
+    camera_(leftEye),
+    rightEye_(rightEye),
+    drawDebug_(true),
+    autoRenderPipeline_(false),
+    renderPipeline_(renderPipeline)
+{
+
+}
+
 Viewport::~Viewport() = default;
 
 void Viewport::RegisterObject(Context* context)
@@ -266,6 +278,26 @@ void Viewport::AllocateView()
     // Expire view on pipeline mismatch
     if (renderPipeline_ && (!renderPipelineView_ || renderPipelineView_->GetRenderPipeline() != renderPipeline_))
         renderPipelineView_ = renderPipeline_->Instantiate();
+}
+
+Camera* Viewport::GetEye(int idx) const
+{
+    assert(IsStereo());
+    return idx == 0 ? camera_.Lock() : rightEye_.Lock();
+}
+
+void Viewport::SetEye(Camera* camera, int eyeIdx)
+{
+    assert(eyeIdx >= 0 && eyeIdx <= 1);
+    if (eyeIdx == 0)
+        camera_ = camera;
+    else
+        rightEye_ = camera;
+}
+
+bool Viewport::IsStereo() const
+{
+    return rightEye_ != nullptr;
 }
 
 }

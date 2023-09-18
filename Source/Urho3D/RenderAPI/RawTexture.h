@@ -128,6 +128,18 @@ public:
     RawTexture(Context* context, const RawTextureParams& params);
     ~RawTexture() override;
 
+    /// Create from texture handle.
+    bool CreateFromHandle(Diligent::ITexture* texture, TextureFormat format, int msaaLevel);
+    /// Create texture from raw ID3D11Texture2D pointer.
+    bool CreateFromD3D11Texture2D(void* d3d11Texture2D, TextureFormat format, int msaaLevel);
+    /// Create texture from raw ID3D12Resource pointer.
+    bool CreateFromD3D12Resource(void* d3d12Resource, TextureFormat format, int msaaLevel);
+    /// Create texture from VkImage handle.
+    bool CreateFromVulkanImage(uint64_t vkImage, const RawTextureParams& params);
+    /// Create texture from raw OpenGL handle.
+    bool CreateFromGLTexture(
+        unsigned handle, TextureType type, TextureFlags flags, TextureFormat format, unsigned arraySize, int msaaLevel);
+
     /// Set default sampler to be used for this texture.
     void SetSamplerStateDesc(const SamplerStateDesc& desc) { samplerDesc_ = desc; }
 
@@ -177,13 +189,19 @@ protected:
     bool Create(const RawTextureParams& params);
 
     /// Create GPU texture from current parameters.
-    virtual bool CreateGPU();
+    bool CreateGPU();
     /// Destroy all GPU resources.
-    virtual void DestroyGPU();
+    void DestroyGPU();
+
+    /// Called when GPU handles are created.
+    virtual void OnCreateGPU() {}
+    /// Called when GPU handles are destroyed.
+    virtual void OnDestroyGPU() {}
     /// Try to recover texture data after device loss.
     virtual bool TryRestore() { return false; }
 
 private:
+    bool InitializeDefaultViews(Diligent::BIND_FLAGS bindFlags);
     bool CreateRenderSurfaces(Diligent::ITextureView* defaultView, Diligent::TEXTURE_VIEW_TYPE viewType,
         ea::vector<Diligent::RefCntAutoPtr<Diligent::ITextureView>>& renderSurfaces);
 

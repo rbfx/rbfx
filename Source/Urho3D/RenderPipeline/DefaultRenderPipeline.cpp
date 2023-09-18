@@ -268,6 +268,7 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
     }
 
     renderBufferManager_->OnViewportDefined(frameInfo_.renderTarget_, frameInfo_.viewportRect_);
+    linearColorSpace_ = renderBufferManager_->IsLinearColorSpace();
 
     const unsigned outputMultiSample = renderBufferManager_->GetOutputMultiSample();
     const TextureFormat outputColorFormat = renderBufferManager_->GetOutputColorFormat();
@@ -362,9 +363,7 @@ void DefaultRenderPipelineView::Render()
 
     Camera* camera = fullFrameInfo.camera_;
     const Color fogColorInGammaSpace = camera->GetEffectiveFogColor();
-    const Color effectiveFogColor = settings_.sceneProcessor_.linearSpaceLighting_
-        ? fogColorInGammaSpace.GammaToLinear()
-        : fogColorInGammaSpace;
+    const Color effectiveFogColor = linearColorSpace_ ? fogColorInGammaSpace.GammaToLinear() : fogColorInGammaSpace;
 
     if (settings_.sceneProcessor_.IsDeferredLighting())
     {

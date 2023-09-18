@@ -71,11 +71,12 @@ void ShaderProgramCompositor::SetSettings(const ShaderProgramCompositorSettings&
     settings_ = settings;
 }
 
-void ShaderProgramCompositor::SetFrameSettings(const CameraProcessor* cameraProcessor)
+void ShaderProgramCompositor::SetFrameSettings(const CameraProcessor* cameraProcessor, bool linearColorSpace)
 {
     isCameraOrthographic_ = cameraProcessor->IsCameraOrthographic();
     isCameraClipped_ = cameraProcessor->IsCameraClipped();
     isCameraReversed_ = cameraProcessor->IsCameraReversed();
+    linearColorSpace_ = linearColorSpace;
 }
 
 void ShaderProgramCompositor::ProcessUserBatch(ShaderProgramDesc& result, DrawableProcessorPassFlags flags,
@@ -148,7 +149,7 @@ void ShaderProgramCompositor::ApplyCommonDefines(ShaderProgramDesc& result,
         if (settings_.sceneProcessor_.cubemapBoxProjection_)
             result.AddCommonShaderDefines("URHO3D_BOX_PROJECTION");
 
-        if (settings_.sceneProcessor_.linearSpaceLighting_)
+        if (linearColorSpace_)
             result.AddCommonShaderDefines("URHO3D_GAMMA_CORRECTION");
 
         switch (settings_.sceneProcessor_.specularQuality_)
@@ -173,6 +174,8 @@ void ShaderProgramCompositor::ApplyCommonDefines(ShaderProgramDesc& result,
         if (isCameraOrthographic_)
             result.AddCommonShaderDefines("URHO3D_ORTHOGRAPHIC_DEPTH");
     }
+    if (flags.Test(DrawableProcessorPassFlag::StereoInstancing))
+        result.AddCommonShaderDefines("URHO3D_XR");
 
     result.AddShaderDefines(VS, pass->GetEffectiveVertexShaderDefines());
     result.AddShaderDefines(PS, pass->GetEffectivePixelShaderDefines());

@@ -14,17 +14,25 @@ UNIFORM_BUFFER_BEGIN(0, Frame)
     UNIFORM_HIGHP(float cElapsedTime)
 UNIFORM_BUFFER_END(0, Frame)
 
+#ifdef URHO3D_XR
+    #define VIEW_XR [2]
+    #define STEREO_VAR(name) name[gl_InstanceID & 1]
+#else
+    #define VIEW_XR
+    #define STEREO_VAR(name) name
+#endif
+
 UNIFORM_BUFFER_BEGIN(1, Camera)
     /// World to view space matrix.
-    UNIFORM_HIGHP(mat4 cView)
+    UNIFORM_HIGHP(mat4 cView VIEW_XR)
     /// Inversed world to view space matrix.
-    UNIFORM_HIGHP(mat4 cViewInv)
+    UNIFORM_HIGHP(mat4 cViewInv VIEW_XR)
     /// World to clip space matrix.
-    UNIFORM_HIGHP(mat4 cViewProj)
+    UNIFORM_HIGHP(mat4 cViewProj VIEW_XR)
     /// Clip plane in clip space.
     UNIFORM_HIGHP(vec4 cClipPlane)
     /// Camera position in world space.
-    UNIFORM_HIGHP(vec3 cCameraPos)
+    UNIFORM_HIGHP(vec4 cCameraPos VIEW_XR)
     /// Distance to near clip plane in units.
     UNIFORM_HIGHP(float cNearClip)
     /// Distance to far clip plane in units.
@@ -35,11 +43,11 @@ UNIFORM_BUFFER_BEGIN(1, Camera)
     ///     For orthographic projection depth=0 is near plane.
     ///     For perspective projection depth=0 is focus point.
     /// TODO(legacy): Don't need xy, can use cDepthReconstruct instead.
-    UNIFORM_HIGHP(vec4 cDepthMode)
+    UNIFORM_HIGHP(vec4 cDepthMode VIEW_XR)
     /// xy: Linear dimensions of far clip plane in units.
     /// z: Distance to far clip plane.
     /// TODO(legacy): Probably don't need z component, should be identical to cFarClip.
-    UNIFORM_HIGHP(vec3 cFrustumSize)
+    UNIFORM_HIGHP(vec4 cFrustumSize VIEW_XR)
     /// Transform that is applied to clip position xy to get underlying texture uv.
     /// Basically describes current viewport.
     /// xy: Translation part.
@@ -48,7 +56,7 @@ UNIFORM_BUFFER_BEGIN(1, Camera)
     /// xy: Factors used to convert value from depth buffer to linear depth for perspective projection.
     /// z: 1 for orthographic projection, 0 for perspective projection.
     /// w: 0 for orthographic projection, 1 for perspective projection.
-    UNIFORM_HIGHP(vec4 cDepthReconstruct)
+    UNIFORM_HIGHP(vec4 cDepthReconstruct VIEW_XR)
     /// (1, 1) divided by viewport size.
     UNIFORM_HIGHP(vec2 cGBufferInvSize)
     /// xyz: Constant ambient color in current color space.

@@ -43,7 +43,7 @@ class URHO3D_API OutlineScenePass : public ScenePass
 
 public:
     OutlineScenePass(RenderPipelineInterface* renderPipeline, DrawableProcessor* drawableProcessor,
-        BatchStateCacheCallback* callback, const StringVector& outlinedPasses);
+        BatchStateCacheCallback* callback, const StringVector& outlinedPasses, DrawableProcessorPassFlags flags = DrawableProcessorPassFlag::None);
 
     /// Initialize outline groups from scene. Should be called every frame.
     void SetOutlineGroups(Scene* scene, bool drawDebugOutlines);

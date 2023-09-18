@@ -75,7 +75,7 @@ bool HasStencilBuffer(RenderSurface* renderSurface)
         return true;
 
     const TextureFormat format = renderSurface->GetParentTexture()->GetFormat();
-    return IsStencilTextureFormat(format);
+    return IsDepthStencilTextureFormat(format);
 }
 
 bool HasReadableDepth(RenderSurface* renderSurface)
@@ -87,14 +87,16 @@ bool HasReadableDepth(RenderSurface* renderSurface)
     return true;
 }
 
-TextureFormat GetColorTextureFormat(bool needHDR, bool needSRGB)
+TextureFormat GetColorTextureFormat(RenderPipelineColorSpace colorSpace, TextureFormat textureFormat)
 {
-    if (needHDR)
-        return TextureFormat::TEX_FORMAT_RGBA16_FLOAT;
-    else if (needSRGB)
-        return TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB;
-    else
-        return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
+    switch (colorSpace)
+    {
+    case RenderPipelineColorSpace::GammaLDR: return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
+    case RenderPipelineColorSpace::LinearLDR: return TextureFormat::TEX_FORMAT_RGBA8_UNORM_SRGB;
+    case RenderPipelineColorSpace::LinearHDR: return TextureFormat::TEX_FORMAT_RGBA16_FLOAT;
+    case RenderPipelineColorSpace::Optimized:
+    default: return textureFormat;
+    }
 }
 
 Vector4 CalculateViewportOffsetAndScale(
@@ -464,22 +466,22 @@ void RenderBufferManager::OnPipelineStatesInvalidated()
 void RenderBufferManager::OnViewportDefined(RenderSurface* renderTarget, const IntRect& viewportRect)
 {
     Texture2D* outputTexture = GetParentTexture2D(renderTarget);
+    const ea::optional<RenderSurface*> outputDepthStencil = GetLinkedDepthStencil(renderTarget);
+
     const bool isBilinearFilteredOutput = outputTexture && outputTexture->GetFilterMode() != FILTER_NEAREST;
     const int outputMultiSample = RenderSurface::GetMultiSample(graphics_, renderTarget);
+    const TextureFormat outputColorFormat = RenderSurface::GetColorFormat(graphics_, renderTarget);
 
     // Determine output format
-    const bool needHDR = settings_.colorSpace_ == RenderPipelineColorSpace::LinearHDR;
-    const bool needSRGB = settings_.colorSpace_ == RenderPipelineColorSpace::LinearLDR;
-
     RenderBufferParams colorParams;
     colorParams.multiSampleLevel_ = settings_.inheritMultiSampleLevel_
         ? outputMultiSample : settings_.multiSampleLevel_;
-    colorParams.textureFormat_ = GetColorTextureFormat(needHDR, needSRGB);
+    colorParams.textureFormat_ = GetColorTextureFormat(settings_.colorSpace_, outputColorFormat);
     colorParams.flags_.Set(RenderBufferFlag::BilinearFiltering, settings_.filteredColor_ || isBilinearFilteredOutput);
 
     RenderBufferParams depthParams = colorParams;
     depthParams.flags_ |= RenderBufferFlag::Persistent;
-    depthParams.textureFormat_ = renderDevice_->GetDefaultDepthStencilFormat();
+    depthParams.textureFormat_ = RenderSurface::GetDepthFormat(graphics_, outputDepthStencil.value_or(nullptr));
 
     if (colorOutputParams_ != colorParams || depthStencilOutputParams_ != depthParams)
     {
@@ -487,6 +489,13 @@ void RenderBufferManager::OnViewportDefined(RenderSurface* renderTarget, const I
         depthStencilOutputParams_ = depthParams;
         ResetCachedRenderBuffers();
     }
+
+    // Only non-linear texture formats are ones that are explicitly non-sRGB,
+    // or when it is explicitly specified for the texture.
+    const bool isLinearTextureFormat =
+        SetTextureFormatSRGB(colorOutputParams_.textureFormat_, true) == colorOutputParams_.textureFormat_;
+    const bool isLinearTextureMetadata = outputTexture && outputTexture->GetLinear();
+    linearColorSpace_ = isLinearTextureFormat || isLinearTextureMetadata;
 }
 
 void RenderBufferManager::OnRenderBegin(const CommonFrameInfo& frameInfo)
@@ -495,7 +504,7 @@ void RenderBufferManager::OnRenderBegin(const CommonFrameInfo& frameInfo)
     viewportRect_ = frameInfo.viewportRect_;
 
     // Get parameters of output render surface
-    const unsigned outputFormat = RenderSurface::GetFormat(graphics_, frameInfo.renderTarget_);
+    const TextureFormat outputFormat = RenderSurface::GetColorFormat(graphics_, frameInfo.renderTarget_);
     const int outputMultiSample = RenderSurface::GetMultiSample(graphics_, frameInfo.renderTarget_);
 
     const ea::optional<RenderSurface*> outputDepthStencil = GetLinkedDepthStencil(frameInfo.renderTarget_);

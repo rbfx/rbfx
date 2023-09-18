@@ -97,6 +97,13 @@ void UnorderedScenePass::OnBatchesReady()
     {
         deferredBatchGroup_.flags_ |= BatchRenderFlag::LightMaskToStencil;
     }
+
+    if (linearColorSpace_)
+    {
+        deferredBatchGroup_.flags_ |= BatchRenderFlag::LinearColorSpace;
+        baseBatchGroup_.flags_ |= BatchRenderFlag::LinearColorSpace;
+        lightBatchGroup_.flags_ |= BatchRenderFlag::LinearColorSpace;
+    }
 }
 
 void UnorderedScenePass::PrepareInstancingBuffer(BatchRenderer* batchRenderer)
@@ -165,6 +172,8 @@ void BackToFrontScenePass::OnBatchesReady()
         batchGroup_.flags_ |= BatchRenderFlag::EnablePixelLights;
     if (!GetFlags().Test(DrawableProcessorPassFlag::DisableInstancing))
         batchGroup_.flags_ |= BatchRenderFlag::EnableInstancingForStaticGeometry;
+    if (linearColorSpace_)
+        batchGroup_.flags_ |= BatchRenderFlag::LinearColorSpace;
 }
 
 void BackToFrontScenePass::PrepareInstancingBuffer(BatchRenderer* batchRenderer)

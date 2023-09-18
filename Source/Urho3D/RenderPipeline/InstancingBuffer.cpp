@@ -66,7 +66,7 @@ void InstancingBuffer::Initialize()
         for (unsigned i = 0; i < settings_.numInstancingTexCoords_; ++i)
         {
             const unsigned index = settings_.firstInstancingTexCoord_ + i;
-            vertexElements.push_back(VertexElement(TYPE_VECTOR4, SEM_TEXCOORD, index, true));
+            vertexElements.push_back(VertexElement(TYPE_VECTOR4, SEM_TEXCOORD, index, settings_.stepRate_));
         }
 
         vertexBuffer_ = MakeShared<DynamicVertexBuffer>(context_);

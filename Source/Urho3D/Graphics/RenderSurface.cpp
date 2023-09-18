@@ -126,10 +126,17 @@ IntRect RenderSurface::GetRect(Graphics* graphics, const RenderSurface* renderSu
     return { IntVector2::ZERO, GetSize(graphics, renderSurface) };
 }
 
-unsigned RenderSurface::GetFormat(Graphics* graphics, const RenderSurface* renderSurface)
+TextureFormat RenderSurface::GetColorFormat(Graphics* graphics, const RenderSurface* renderSurface)
 {
     auto renderDevice = graphics->GetSubsystem<RenderDevice>();
     const auto rtv = renderSurface ? renderSurface->GetView() : RenderTargetView::SwapChainColor(renderDevice);
+    return rtv.GetFormat();
+}
+
+TextureFormat RenderSurface::GetDepthFormat(Graphics* graphics, const RenderSurface* renderSurface)
+{
+    auto renderDevice = graphics->GetSubsystem<RenderDevice>();
+    const auto rtv = renderSurface ? renderSurface->GetView() : RenderTargetView::SwapChainDepthStencil(renderDevice);
     return rtv.GetFormat();
 }
 

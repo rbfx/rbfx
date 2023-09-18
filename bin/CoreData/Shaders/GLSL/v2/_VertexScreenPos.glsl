@@ -5,9 +5,16 @@
 
 mediump mat3 GetCameraRot()
 {
+#ifdef URHO3D_XR
+    mat4 viewInv = cViewInv[gl_InstanceID & 1];
+    return mat3(viewInv[0][0], viewInv[0][1], viewInv[0][2],
+        viewInv[1][0], viewInv[1][1], viewInv[1][2],
+        viewInv[2][0], viewInv[2][1], viewInv[2][2]);
+#else
     return mat3(cViewInv[0][0], cViewInv[0][1], cViewInv[0][2],
         cViewInv[1][0], cViewInv[1][1], cViewInv[1][2],
         cViewInv[2][0], cViewInv[2][1], cViewInv[2][2]);
+#endif
 }
 
 vec4 GetScreenPos(vec4 clipPos)
@@ -54,22 +61,24 @@ vec2 GetQuadTexCoordNoFlip(vec3 worldPos)
 
 vec3 GetFarRay(vec4 clipPos)
 {
+    vec3 frustumSize = STEREO_VAR(cFrustumSize).xyz;
     vec3 viewRay = vec3(
-        clipPos.x / clipPos.w * cFrustumSize.x,
-        clipPos.y / clipPos.w * cFrustumSize.y,
-        cFrustumSize.z);
+        clipPos.x / clipPos.w * frustumSize.x,
+        clipPos.y / clipPos.w * frustumSize.y,
+        frustumSize.z);
 
     return viewRay * GetCameraRot();
 }
 
 vec3 GetNearRay(vec4 clipPos)
 {
+    vec3 frustumSize = STEREO_VAR(cFrustumSize).xyz;
     vec3 viewRay = vec3(
-        clipPos.x / clipPos.w * cFrustumSize.x,
-        clipPos.y / clipPos.w * cFrustumSize.y,
+        clipPos.x / clipPos.w * frustumSize.x,
+        clipPos.y / clipPos.w * frustumSize.y,
         0.0);
 
-    return (viewRay * GetCameraRot()) * cDepthMode.x;
+    return (viewRay * GetCameraRot()) * STEREO_VAR(cDepthMode).x;
 }
 
 #endif // URHO3D_VERTEX_SHADER

@@ -32,7 +32,8 @@ URHO3D_API bool IsTextureFormatSRGB(TextureFormat format);
 URHO3D_API TextureFormat SetTextureFormatSRGB(TextureFormat format, bool sRGB = true);
 
 URHO3D_API bool IsDepthTextureFormat(TextureFormat format);
-URHO3D_API bool IsStencilTextureFormat(TextureFormat format);
+URHO3D_API bool IsDepthStencilTextureFormat(TextureFormat format);
+URHO3D_API bool IsColorTextureFormat(TextureFormat format);
 
 URHO3D_API RenderBackend SelectRenderBackend(ea::optional<RenderBackend> requestedBackend);
 URHO3D_API ShaderTranslationPolicy SelectShaderTranslationPolicy(
@@ -40,5 +41,9 @@ URHO3D_API ShaderTranslationPolicy SelectShaderTranslationPolicy(
 
 URHO3D_API void SerializeValue(Archive& archive, const char* name, RenderDeviceSettingsVulkan& value);
 URHO3D_API void SerializeValue(Archive& archive, const char* name, RenderDeviceSettingsD3D12& value);
+
+/// Try to find a suitable texture format for given internal GAPI format.
+/// Only a subset of formats is supported.
+URHO3D_API TextureFormat GetTextureFormatFromInternal(RenderBackend backend, unsigned internalFormat);
 
 } // namespace Urho3D

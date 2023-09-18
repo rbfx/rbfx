@@ -46,6 +46,10 @@
 #include <Urho3D/SystemUI/Widgets.h>
 #include <Urho3D/Utility/SceneViewerApplication.h>
 
+#ifdef URHO3D_XR
+    #include <Urho3D/XR/VirtualReality.h>
+#endif
+
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
 #include <string>
@@ -198,6 +202,7 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
     : Object(context)
     , isHeadless_(context->GetSubsystem<Engine>()->IsHeadless())
     , isReadOnly_(isReadOnly)
+    , isXR_(context->GetSubsystem<Engine>()->GetParameter(EP_XR).GetBool())
     , projectPath_(GetSanitizedPath(projectPath + "/"))
     , coreDataPath_(projectPath_ + "CoreData/")
     , cachePath_(projectPath_ + "Cache/")
@@ -259,6 +264,17 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
 
     if (firstInitialization_)
         InitializeDefaultProject();
+
+#ifdef URHO3D_XR
+    auto virtualReality = GetSubsystem<VirtualReality>();
+    if (virtualReality && isXR_)
+    {
+        // TODO: Configure this
+        VRSessionParameters sessionParams;
+        sessionParams.manifestPath_ = "XR/DefaultManifest.xml";
+        virtualReality->InitializeSession(sessionParams);
+    }
+#endif
 }
 
 void Project::SerializeInBlock(Archive& archive)
@@ -340,6 +356,12 @@ void Project::Destroy()
 
 Project::~Project()
 {
+#ifdef URHO3D_XR
+    auto virtualReality = GetSubsystem<VirtualReality>();
+    if (virtualReality && isXR_)
+        virtualReality->ShutdownSession();
+#endif
+
     auto cache = GetSubsystem<ResourceCache>();
     cache->ReleaseAllResources(true);
 

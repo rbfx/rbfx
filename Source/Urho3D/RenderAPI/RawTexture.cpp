@@ -7,12 +7,26 @@
 #include "Urho3D/RenderAPI/RawTexture.h"
 
 #include "Urho3D/IO/Log.h"
+#include "Urho3D/RenderAPI/GAPIIncludes.h"
 #include "Urho3D/RenderAPI/RenderAPIUtils.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 
 #include <Diligent/Graphics/GraphicsAccessories/interface/GraphicsAccessories.hpp>
 #include <Diligent/Graphics/GraphicsEngine/interface/DeviceContext.h>
 #include <Diligent/Graphics/GraphicsEngine/interface/RenderDevice.h>
+
+#if D3D11_SUPPORTED
+    #include <Diligent/Graphics/GraphicsEngineD3D11/interface/RenderDeviceD3D11.h>
+#endif
+#if D3D12_SUPPORTED
+    #include <Diligent/Graphics/GraphicsEngineD3D12/interface/RenderDeviceD3D12.h>
+#endif
+#if VULKAN_SUPPORTED
+    #include <Diligent/Graphics/GraphicsEngineVulkan/interface/RenderDeviceVk.h>
+#endif
+#if GL_SUPPORTED || GLES_SUPPORTED
+    #include <Diligent/Graphics/GraphicsEngineOpenGL/interface/RenderDeviceGL.h>
+#endif
 
 namespace Urho3D
 {
@@ -275,6 +289,37 @@ unsigned long long GetMipLevelSizeInBytes(const IntVector3& size, unsigned level
     return sizeInBlocks.x_ * sizeInBlocks.y_ * sizeInBlocks.z_ * GetBlockSize(format);
 }
 
+Diligent::RefCntAutoPtr<Diligent::ITextureView> GetDefaultView(
+    Diligent::ITexture* texture, Diligent::TEXTURE_VIEW_TYPE viewType, TextureFormat format)
+{
+    Diligent::RefCntAutoPtr<Diligent::ITextureView> view;
+    view = texture->GetDefaultView(viewType);
+
+    if (!view)
+    {
+        Diligent::TextureViewDesc viewDesc;
+        viewDesc.ViewType = viewType;
+        viewDesc.Format = format;
+        switch (viewType)
+        {
+        case Diligent::TEXTURE_VIEW_SHADER_RESOURCE:
+            if ((texture->GetDesc().MiscFlags & Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS) != 0)
+                viewDesc.Flags |= Diligent::TEXTURE_VIEW_FLAG_ALLOW_MIP_MAP_GENERATION;
+            break;
+
+        case Diligent::TEXTURE_VIEW_UNORDERED_ACCESS:
+            viewDesc.AccessFlags |= Diligent::UAV_ACCESS_FLAG_READ_WRITE;
+            break;
+
+        default: break;
+        }
+
+        texture->CreateView(viewDesc, &view);
+    }
+
+    return view;
+}
+
 } // namespace
 
 RawTexture::RawTexture(Context* context)
@@ -417,6 +462,177 @@ bool RawTexture::Create(const RawTextureParams& params)
     return true;
 }
 
+bool RawTexture::CreateFromHandle(Diligent::ITexture* texture, TextureFormat format, int msaaLevel)
+{
+    DestroyGPU();
+
+    const Diligent::TextureDesc& textureDesc = texture->GetDesc();
+
+    switch (textureDesc.Type)
+    {
+    case Diligent::RESOURCE_DIM_TEX_2D: params_.type_ = TextureType::Texture2D; break;
+    case Diligent::RESOURCE_DIM_TEX_CUBE: params_.type_ = TextureType::TextureCube; break;
+    case Diligent::RESOURCE_DIM_TEX_2D_ARRAY: params_.type_ = TextureType::Texture2DArray; break;
+    case Diligent::RESOURCE_DIM_TEX_3D: params_.type_ = TextureType::Texture3D; break;
+    default:
+        URHO3D_LOGERROR("Unsupported texture type '{}'", Diligent::GetResourceDimString(textureDesc.Type));
+        return false;
+    }
+
+    params_.format_ = format != TextureFormat::TEX_FORMAT_UNKNOWN ? format : textureDesc.Format;
+
+    // TODO: Revisit this flag
+    params_.flags_ |= TextureFlag::NoMultiSampledAutoResolve;
+    if (textureDesc.BindFlags & Diligent::BIND_RENDER_TARGET)
+        params_.flags_ |= TextureFlag::BindRenderTarget;
+    if (textureDesc.BindFlags & Diligent::BIND_DEPTH_STENCIL)
+        params_.flags_ |= TextureFlag::BindDepthStencil;
+    if (textureDesc.BindFlags & Diligent::BIND_UNORDERED_ACCESS)
+        params_.flags_ |= TextureFlag::BindUnorderedAccess;
+
+    params_.size_.x_ = static_cast<int>(textureDesc.GetWidth());
+    params_.size_.y_ = static_cast<int>(textureDesc.GetHeight());
+    params_.size_.z_ = static_cast<int>(textureDesc.GetDepth());
+    params_.arraySize_ = textureDesc.GetArraySize();
+    params_.numLevels_ = textureDesc.MipLevels;
+    params_.multiSample_ = ea::max<unsigned>(textureDesc.SampleCount, msaaLevel);
+    params_.numLevelsRTV_ = textureDesc.MipLevels;
+
+    handles_.texture_ = texture;
+
+    return InitializeDefaultViews(textureDesc.BindFlags);
+}
+
+bool RawTexture::CreateFromD3D11Texture2D(void* d3d11Texture2D, TextureFormat format, int msaaLevel)
+{
+#if D3D11_SUPPORTED
+    if (renderDevice_ && renderDevice_->GetBackend() == RenderBackend::D3D11)
+    {
+        auto deviceD3D11 = static_cast<Diligent::IRenderDeviceD3D11*>(renderDevice_->GetRenderDevice());
+        Diligent::RefCntAutoPtr<Diligent::ITexture> texture;
+        deviceD3D11->CreateTexture2DFromD3DResource(
+            reinterpret_cast<ID3D11Texture2D*>(d3d11Texture2D), Diligent::RESOURCE_STATE_UNKNOWN, &texture);
+        if (!texture)
+        {
+            URHO3D_LOGERROR("Failed to create texture from existing ID3D11Texture2D pointer");
+            return false;
+        }
+
+        return CreateFromHandle(texture, format, msaaLevel);
+    }
+#endif
+
+    URHO3D_ASSERT(false, "RawTexture::CreateFromD3D11Texture2D is not supported on this platform");
+    return false;
+}
+
+bool RawTexture::CreateFromD3D12Resource(void* d3d12Resource, TextureFormat format, int msaaLevel)
+{
+#if D3D12_SUPPORTED
+    if (renderDevice_ && renderDevice_->GetBackend() == RenderBackend::D3D12)
+    {
+        auto deviceD3D12 = static_cast<Diligent::IRenderDeviceD3D12*>(renderDevice_->GetRenderDevice());
+        Diligent::RefCntAutoPtr<Diligent::ITexture> texture;
+        deviceD3D12->CreateTextureFromD3DResource(
+            reinterpret_cast<ID3D12Resource*>(d3d12Resource), Diligent::RESOURCE_STATE_UNKNOWN, &texture);
+        if (!texture)
+        {
+            URHO3D_LOGERROR("Failed to create texture from existing ID3D12Resource pointer");
+            return false;
+        }
+
+        return CreateFromHandle(texture, format, msaaLevel);
+    }
+#endif
+
+    URHO3D_ASSERT(false, "RawTexture::CreateFromD3D12Resource is not supported on this platform");
+    return false;
+}
+
+bool RawTexture::CreateFromVulkanImage(uint64_t vkImage, const RawTextureParams& params)
+{
+#if VULKAN_SUPPORTED
+    if (renderDevice_ && renderDevice_->GetBackend() == RenderBackend::Vulkan)
+    {
+        Diligent::TextureDesc textureDesc;
+        textureDesc.Name = "Texture from external resource";
+        textureDesc.Type = textureTypeToDimensions[params.type_];
+        textureDesc.Usage = Diligent::USAGE_DEFAULT;
+        textureDesc.Format = params.format_;
+        textureDesc.Width = params.size_.x_;
+        textureDesc.Height = params.size_.y_;
+        if (params.type_ == TextureType::Texture3D)
+            textureDesc.Depth = params.size_.z_;
+        else
+            textureDesc.ArraySize = params.arraySize_;
+
+        if (params.flags_.Test(TextureFlag::BindRenderTarget))
+            textureDesc.BindFlags |= Diligent::BIND_RENDER_TARGET;
+        if (params.flags_.Test(TextureFlag::BindDepthStencil))
+            textureDesc.BindFlags |= Diligent::BIND_DEPTH_STENCIL;
+        if (params.flags_.Test(TextureFlag::BindUnorderedAccess))
+            textureDesc.BindFlags |= Diligent::BIND_UNORDERED_ACCESS;
+
+        textureDesc.MipLevels = params.numLevels_;
+        textureDesc.SampleCount = params.multiSample_;
+
+        auto deviceVk = static_cast<Diligent::IRenderDeviceVk*>(renderDevice_->GetRenderDevice());
+        Diligent::RefCntAutoPtr<Diligent::ITexture> texture;
+        deviceVk->CreateTextureFromVulkanImage(
+            (VkImage)vkImage, textureDesc, Diligent::RESOURCE_STATE_UNKNOWN, &texture);
+        if (!texture)
+        {
+            URHO3D_LOGERROR("Failed to create texture from existing VkImage pointer");
+            return false;
+        }
+
+        return CreateFromHandle(texture, params.format_, params.multiSample_);
+    }
+#endif
+
+    URHO3D_ASSERT(false, "RawTexture::CreateFromVulkanImage is not supported on this platform");
+    return false;
+}
+
+bool RawTexture::CreateFromGLTexture(
+    unsigned handle, TextureType type, TextureFlags flags, TextureFormat format, unsigned arraySize, int msaaLevel)
+{
+#if GL_SUPPORTED || GLES_SUPPORTED
+    if (renderDevice_ && renderDevice_->GetBackend() == RenderBackend::OpenGL)
+    {
+        Diligent::TextureDesc textureDesc;
+        textureDesc.Name = "Texture from external resource";
+        textureDesc.Type = textureTypeToDimensions[type];
+        textureDesc.Usage = Diligent::USAGE_DEFAULT;
+        textureDesc.Format = format;
+        if (type == TextureType::Texture2DArray)
+            textureDesc.ArraySize = arraySize;
+
+        if (flags.Test(TextureFlag::BindRenderTarget))
+            textureDesc.BindFlags |= Diligent::BIND_RENDER_TARGET;
+        if (flags.Test(TextureFlag::BindDepthStencil))
+            textureDesc.BindFlags |= Diligent::BIND_DEPTH_STENCIL;
+        if (flags.Test(TextureFlag::BindUnorderedAccess))
+            textureDesc.BindFlags |= Diligent::BIND_UNORDERED_ACCESS;
+
+        auto deviceGL = static_cast<Diligent::IRenderDeviceGL*>(renderDevice_->GetRenderDevice());
+        Diligent::RefCntAutoPtr<Diligent::ITexture> texture;
+        deviceGL->CreateTextureFromGLHandle(
+            handle, 0, textureDesc, Diligent::RESOURCE_STATE_UNKNOWN, &texture);
+        if (!texture)
+        {
+            URHO3D_LOGERROR("Failed to create texture from existing GL texture handle");
+            return false;
+        }
+
+        return CreateFromHandle(texture, format, msaaLevel);
+    }
+#endif
+
+    URHO3D_ASSERT(false, "RawTexture::CreateFromGLTexture is not supported on this platform");
+    return false;
+}
+
 bool RawTexture::CreateGPU()
 {
     const bool isSRV = true; // flags_.Test(TextureFlag::BindShaderResource);
@@ -494,10 +710,15 @@ bool RawTexture::CreateGPU()
         }
     }
 
-    if (isSRV)
+    return InitializeDefaultViews(textureDesc.BindFlags);
+}
+
+bool RawTexture::InitializeDefaultViews(Diligent::BIND_FLAGS bindFlags)
+{
+    if (bindFlags & Diligent::BIND_SHADER_RESOURCE)
     {
         Diligent::ITexture* texture = handles_.resolvedTexture_ ? handles_.resolvedTexture_ : handles_.texture_;
-        handles_.srv_ = texture->GetDefaultView(Diligent::TEXTURE_VIEW_SHADER_RESOURCE);
+        handles_.srv_ = GetDefaultView(texture, Diligent::TEXTURE_VIEW_SHADER_RESOURCE, params_.format_);
 
         if (!handles_.srv_)
         {
@@ -506,9 +727,9 @@ bool RawTexture::CreateGPU()
         }
     }
 
-    if (isRTV)
+    if (bindFlags & Diligent::BIND_RENDER_TARGET)
     {
-        handles_.rtv_ = handles_.texture_->GetDefaultView(Diligent::TEXTURE_VIEW_RENDER_TARGET);
+        handles_.rtv_ = GetDefaultView(handles_.texture_, Diligent::TEXTURE_VIEW_RENDER_TARGET, params_.format_);
 
         if (!handles_.rtv_)
         {
@@ -523,9 +744,9 @@ bool RawTexture::CreateGPU()
         }
     }
 
-    if (isDSV)
+    if (bindFlags & Diligent::BIND_DEPTH_STENCIL)
     {
-        handles_.dsv_ = handles_.texture_->GetDefaultView(Diligent::TEXTURE_VIEW_DEPTH_STENCIL);
+        handles_.dsv_ = GetDefaultView(handles_.texture_, Diligent::TEXTURE_VIEW_DEPTH_STENCIL, params_.format_);
 
         if (!handles_.dsv_)
         {
@@ -557,9 +778,9 @@ bool RawTexture::CreateGPU()
         }
     }
 
-    if (isUAV)
+    if (bindFlags & Diligent::BIND_UNORDERED_ACCESS)
     {
-        handles_.uav_ = handles_.texture_->GetDefaultView(Diligent::TEXTURE_VIEW_UNORDERED_ACCESS);
+        handles_.uav_ = GetDefaultView(handles_.texture_, Diligent::TEXTURE_VIEW_UNORDERED_ACCESS, params_.format_);
 
         if (!handles_.uav_)
         {
@@ -570,11 +791,13 @@ bool RawTexture::CreateGPU()
         handles_.uavs_[RawTextureUAVKey{}] = handles_.uav_;
     }
 
+    OnCreateGPU();
     return true;
 }
 
 void RawTexture::DestroyGPU()
 {
+    OnDestroyGPU();
     handles_ = {};
 }
 

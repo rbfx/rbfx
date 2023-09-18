@@ -1672,6 +1672,16 @@ template <typename T> Variant MakeCustomValue(T&& value)
 /// Return variant size in bytes from type. This is not the same as size of Variant class instance, this is a size of corresponding type.
 unsigned GetVariantTypeSize(VariantType type);
 
+/// Cast StringVector to C string vector.
+inline ea::vector<const char*> ToCStringVector(const StringVector& strings)
+{
+    ea::vector<const char*> result;
+    result.reserve(strings.size());
+    for (const ea::string& string : strings)
+        result.push_back(string.c_str());
+    return result;
+}
+
 /// Return variant type from type.
 template <typename T> VariantType GetVariantType();
 

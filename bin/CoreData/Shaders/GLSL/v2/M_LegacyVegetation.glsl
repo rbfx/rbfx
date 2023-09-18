@@ -44,6 +44,10 @@ void main()
     vertexTransform.position.xyz = worldPos;
 
     Vertex_SetAll(vertexTransform, cNormalScale, cUOffset, cVOffset, cLMOffset);
+    
+    #ifdef URHO3D_XR
+        vInstID = gl_InstanceID;
+    #endif
 }
 #endif
 

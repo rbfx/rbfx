@@ -129,7 +129,7 @@ void RenderContext::ClearDepthStencil(ClearTargetFlags flags, float depth, unsig
     Diligent::CLEAR_DEPTH_STENCIL_FLAGS internalFlags{};
     if (flags.Test(CLEAR_DEPTH))
         internalFlags |= Diligent::CLEAR_DEPTH_FLAG;
-    if (flags.Test(CLEAR_STENCIL) && IsStencilTextureFormat(currentDepthStencil_->GetTexture()->GetDesc().Format))
+    if (flags.Test(CLEAR_STENCIL) && IsDepthStencilTextureFormat(currentDepthStencil_->GetTexture()->GetDesc().Format))
         internalFlags |= Diligent::CLEAR_STENCIL_FLAG;
     handle_->ClearDepthStencil(
         currentDepthStencil_, internalFlags, depth, stencil, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
@@ -147,29 +147,33 @@ void RenderContext::ClearRenderTarget(unsigned index, const Color& color)
         currentRenderTargets_[index], color.Data(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
-void RenderContext::SetClipPlaneEnabled(bool enable)
+void RenderContext::SetClipPlaneMask(unsigned mask)
 {
-    if (cachedContextState_.clipPlaneEnabled_ == enable)
+    if (cachedContextState_.clipPlaneMask_ == mask)
         return;
 
     if (!renderDevice_->GetCaps().clipDistance_)
         return;
 
-    cachedContextState_.clipPlaneEnabled_ = enable;
+    cachedContextState_.clipPlaneMask_ = mask;
+#if GL_SUPPORTED || GLES_SUPPORTED
     if (renderDevice_->GetBackend() == RenderBackend::OpenGL)
     {
-#if GL_SUPPORTED
-        if (enable)
-            glEnable(GL_CLIP_DISTANCE0);
-        else
-            glDisable(GL_CLIP_DISTANCE0);
-#elif GLES_SUPPORTED
-        if (enable)
-            glEnable(GL_CLIP_DISTANCE0_EXT);
-        else
-            glDisable(GL_CLIP_DISTANCE0_EXT);
-#endif
+        for (unsigned i = 0; i < 8; ++i)
+        {
+    #if GL_SUPPORTED
+            const auto baseSlot = GL_CLIP_DISTANCE0;
+    #else
+            const auto baseSlot = GL_CLIP_DISTANCE0_EXT;
+    #endif
+            const bool enable = (mask & (1u << i)) != 0;
+            if (enable)
+                glEnable(baseSlot + i);
+            else
+                glDisable(baseSlot + i);
+        }
     }
+#endif
 }
 
 void RenderContext::Execute(DrawCommandQueue* drawQueue)
@@ -180,10 +184,10 @@ void RenderContext::Execute(DrawCommandQueue* drawQueue)
 void RenderContext::UpdateCurrentRenderTargetInfo()
 {
     currentOutputDesc_.depthStencilFormat_ =
-        currentDepthStencil_ ? currentDepthStencil_->GetTexture()->GetDesc().Format : Diligent::TEX_FORMAT_UNKNOWN;
+        currentDepthStencil_ ? currentDepthStencil_->GetDesc().Format : Diligent::TEX_FORMAT_UNKNOWN;
     currentOutputDesc_.numRenderTargets_ = currentRenderTargets_.size();
     for (unsigned i = 0; i < currentRenderTargets_.size(); ++i)
-        currentOutputDesc_.renderTargetFormats_[i] = currentRenderTargets_[i]->GetTexture()->GetDesc().Format;
+        currentOutputDesc_.renderTargetFormats_[i] = currentRenderTargets_[i]->GetDesc().Format;
 
     Diligent::ITextureView* view = !currentRenderTargets_.empty() ? currentRenderTargets_[0] : currentDepthStencil_;
     currentDimensions_ = view ? GetTextureDimensions(view->GetTexture()) : IntVector2::ZERO;

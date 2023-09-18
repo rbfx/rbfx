@@ -260,6 +260,23 @@ foreach(DIR ${DILIGENT_INCLUDE_DIRS})
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Diligent/${DIR} DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/Diligent/${DIR}/..)
 endforeach()
 
+# Setup OpenXR after Diligent to use platform defines
+if (URHO3D_XR)
+    add_definitions(-DDISABLE_STD_FILESYSTEM=1)
+
+    if (UWP)
+        set (DYNAMIC_LOADER ON CACHE BOOL "")
+        add_definitions(-DDYNAMIC_LOADER=1)
+    endif ()
+    if (ANDROID)
+        set (BUILD_LOADER OFF CACHE BOOL "" FORCE)
+    else ()
+        set (BUILD_LOADER ON CACHE BOOL "" FORCE)
+    endif ()
+
+    add_subdirectory(OpenXRSDK)
+endif ()
+
 # When crosscompiling, swig will be built as part of native tools build. See Source/CMakeLists.txt.
 add_subdirectory(swig)
 

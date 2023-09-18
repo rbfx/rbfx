@@ -59,7 +59,7 @@ public:
     void Reset();
 
     /// Set clip plane enabled for all draw commands in the queue.
-    void SetClipPlaneEnabled(bool enable) { clipPlaneEnabled_ = enable; }
+    void SetClipPlaneMask(unsigned mask) { clipPlaneMask_ = mask; }
 
     /// Set pipeline state. Must be called first.
     void SetPipelineState(PipelineState* pipelineState)
@@ -252,6 +252,21 @@ public:
         drawCommands_.push_back(currentDrawCommand_);
     }
 
+    /// Enqueue draw instanced geometry.
+    void DrawInstanced(unsigned vertexStart, unsigned vertexCount, unsigned instanceStart, unsigned instanceCount)
+    {
+        URHO3D_ASSERT(currentDrawCommand_.pipelineState_->GetPipelineType() == PipelineStateType::Graphics);
+        URHO3D_ASSERT(!currentDrawCommand_.indexBuffer_);
+        URHO3D_ASSERT(vertexCount > 0);
+
+        currentDrawCommand_.indexStart_ = vertexStart;
+        currentDrawCommand_.indexCount_ = vertexCount;
+        currentDrawCommand_.baseVertexIndex_ = 0;
+        currentDrawCommand_.instanceStart_ = instanceStart;
+        currentDrawCommand_.instanceCount_ = instanceCount;
+        drawCommands_.push_back(currentDrawCommand_);
+    }
+
     /// Enqueue draw indexed, instanced geometry.
     void DrawIndexedInstanced(unsigned indexStart, unsigned indexCount, unsigned instanceStart, unsigned instanceCount)
     {
@@ -328,7 +343,7 @@ private:
     };
 
     /// Whether to enable clip plane.
-    bool clipPlaneEnabled_{};
+    unsigned clipPlaneMask_{};
 
     /// Shader resources.
     ea::vector<ShaderResourceData> shaderResources_;

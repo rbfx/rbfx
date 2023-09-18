@@ -81,9 +81,9 @@ void PipelineStateBuilder::SetSettings(const ShaderProgramCompositorSettings& se
     compositor_->SetSettings(settings);
 }
 
-void PipelineStateBuilder::UpdateFrameSettings()
+void PipelineStateBuilder::UpdateFrameSettings(bool linearColorSpace)
 {
-    compositor_->SetFrameSettings(cameraProcessor_);
+    compositor_->SetFrameSettings(cameraProcessor_, linearColorSpace);
 }
 
 SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
@@ -99,6 +99,8 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
     const bool isLightVolumePass = batchCompositorPass == nullptr && ctx.subpassIndex_ == BatchCompositor::LitVolumeSubpass;
     const bool isRefractionPass =
         batchCompositorPass && batchCompositorPass->GetFlags().Test(DrawableProcessorPassFlag::RefractionPass);
+    const bool isStereoPass =
+        batchCompositorPass && batchCompositorPass->GetFlags().Test(DrawableProcessorPassFlag::StereoInstancing);
 
     ClearState();
 
@@ -111,7 +113,7 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
         SetupShadowPassState(ctx.shadowSplitIndex_, key.pixelLight_, key.material_, key.pass_);
 
         SetupSamplersForUserOrShadowPass(key.material_, false, false, false);
-        SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_);
+        SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_, false);
         SetupShaders(pipelineStateDesc_, shaderProgramDesc_);
     }
     else if (isLightVolumePass)
@@ -122,7 +124,7 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
 
         SetupLightSamplers(key.pixelLight_);
         SetupGeometryBufferSamplers();
-        SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_);
+        SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_, false);
         SetupShaders(pipelineStateDesc_, shaderProgramDesc_);
 
         pipelineStateDesc_.readOnlyDepth_ = true;
@@ -160,7 +162,7 @@ SharedPtr<PipelineState> PipelineStateBuilder::CreateBatchPipelineState(
 
         SetupLightSamplers(key.pixelLight_);
         SetupSamplersForUserOrShadowPass(key.material_, hasLightmap, hasAmbient, isRefractionPass);
-        SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_);
+        SetupInputLayoutAndPrimitiveType(pipelineStateDesc_, shaderProgramDesc_, key.geometry_, isStereoPass);
         SetupShaders(pipelineStateDesc_, shaderProgramDesc_);
     }
 
@@ -283,13 +285,29 @@ void PipelineStateBuilder::SetupUserPassState(const Drawable* drawable,
     }
 }
 
-void PipelineStateBuilder::SetupInputLayoutAndPrimitiveType(
-    GraphicsPipelineStateDesc& pipelineStateDesc, const ShaderProgramDesc& shaderProgramDesc, const Geometry* geometry) const
+void PipelineStateBuilder::SetupInputLayoutAndPrimitiveType(GraphicsPipelineStateDesc& pipelineStateDesc,
+    const ShaderProgramDesc& shaderProgramDesc, const Geometry* geometry, bool isStereoPass) const
 {
     if (shaderProgramDesc.isInstancingUsed_)
+    {
         InitializeInputLayoutAndPrimitiveType(pipelineStateDesc, geometry, instancingBuffer_->GetVertexBuffer());
+
+        if (isStereoPass)
+        {
+            // Patch step rates for stereo rendering.
+            // TODO: Do we want to have something nicer?
+            for (unsigned i = 0; i < pipelineStateDesc.inputLayout_.size_; ++i)
+            {
+                InputLayoutElementDesc& elementDesc = pipelineStateDesc.inputLayout_.elements_[i];
+                if (elementDesc.instanceStepRate_ != 0)
+                    elementDesc.instanceStepRate_ = 2;
+            }
+        }
+    }
     else
+    {
         InitializeInputLayoutAndPrimitiveType(pipelineStateDesc, geometry);
+    }
 }
 
 void PipelineStateBuilder::SetupShaders(GraphicsPipelineStateDesc& pipelineStateDesc, ShaderProgramDesc& shaderProgramDesc) const

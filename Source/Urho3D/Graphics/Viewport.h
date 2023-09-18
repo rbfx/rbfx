@@ -52,6 +52,8 @@ public:
     Viewport(Context* context, Scene* scene, Camera* camera, const IntRect& rect);
     /// Construct with a specified rectangle and render pipeline.
     Viewport(Context* context, Scene* scene, Camera* camera, const IntRect& rect, RenderPipeline* renderPipeline);
+    /// Construct for stereo with a render pipeline.
+    Viewport(Context* context, Scene* scene, Camera* leftEye, Camera* rightEye, RenderPipeline* renderPipeline);
     /// Destruct.
     ~Viewport() override;
 
@@ -109,11 +111,20 @@ public:
     /// Allocate the view structure. Called by Renderer.
     void AllocateView();
 
+    /// Get the given eye by index, starting from the left.
+    Camera* GetEye(int) const;
+    /// Set a camera based on eye-index, starting from the left.
+    void SetEye(Camera* camera, int eyeIdx);
+    /// Returns true if this viewport has "eyes" for stereo.
+    bool IsStereo() const;
+
 private:
     /// Scene pointer.
     WeakPtr<Scene> scene_;
     /// Camera pointer.
     WeakPtr<Camera> camera_;
+    /// Right eye camera pointer.
+    WeakPtr<Camera> rightEye_;
     /// Culling camera pointer.
     WeakPtr<Camera> cullCamera_;
     /// Viewport rectangle.

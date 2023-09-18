@@ -270,3 +270,8 @@ half RoughnessToSpecularPower(half roughness) { return (1.0 - roughness) * 255.0
 #define textureCubeLod textureLod
 #define texture2DLod textureLod
 #define texture2DLodOffset textureLodOffset
+
+// TODO: This is not entirely correct, but it will work for XR
+#ifdef URHO3D_VULKAN
+    #define gl_InstanceID gl_InstanceIndex
+#endif

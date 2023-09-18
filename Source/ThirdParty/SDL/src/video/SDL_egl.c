@@ -1291,6 +1291,13 @@ SDL_EGL_DestroySurface(_THIS, EGLSurface egl_surface)
     }
 }
 
+EGLConfig
+SDL_EGL_GetConfig()
+{
+    SDL_VideoDevice* _this = SDL_GetVideoDevice();
+    return _this->egl_data ? _this->egl_data->egl_config : NULL;
+}
+
 #endif /* SDL_VIDEO_OPENGL_EGL */
 
 /* vi: set ts=4 sw=4 expandtab: */

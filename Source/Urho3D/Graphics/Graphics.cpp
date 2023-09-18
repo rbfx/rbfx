@@ -348,6 +348,9 @@ void Graphics::SavePipelineStateCache(const FileIdentifier& fileName)
         return;
 
     auto psoCache = GetSubsystem<PipelineStateCache>();
+    if (!psoCache)
+        return;
+
     const auto cachedData = psoCache->GetCachedData();
 
     auto vfs = GetSubsystem<VirtualFileSystem>();

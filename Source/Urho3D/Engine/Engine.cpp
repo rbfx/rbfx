@@ -95,6 +95,10 @@
 #ifdef URHO3D_ACTIONS
 #include "../Actions/ActionManager.h"
 #endif
+#ifdef URHO3D_XR
+    #include "Urho3D/XR/VRRig.h"
+    #include "Urho3D/XR/OpenXR.h"
+#endif
 
 #ifdef URHO3D_PLATFORM_WEB
 #include <emscripten/emscripten.h>
@@ -221,6 +225,10 @@ Engine::Engine(Context* context) :
     context_->RegisterSubsystem<ActionManager>();
 #endif
 
+#ifdef URHO3D_XR
+    RegisterVRLibrary(context_);
+#endif
+
     SceneViewerApplication::RegisterObject();
     context_->AddFactoryReflection<AssetPipeline>();
     context_->AddFactoryReflection<AssetTransformer>();
@@ -332,8 +340,26 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         auto* graphics = GetSubsystem<Graphics>();
         auto* renderer = GetSubsystem<Renderer>();
 
+        const RenderBackend backend = SelectRenderBackend(GetParameter(EP_RENDER_BACKEND).GetOptional<RenderBackend>());
+        const bool needXR = GetParameter(EP_XR).GetBool();
+
+        if (needXR)
+        {
+#ifdef URHO3D_XR
+            auto* xr = context_->RegisterSubsystem<OpenXR, VirtualReality>();
+            if (!xr->InitializeSystem(backend))
+            {
+                URHO3D_LOGERROR("Failed to initialize OpenXR subsystem");
+                return false;
+            }
+#else
+            URHO3D_LOGERROR("OpenXR subsystem is not available in this build configuration");
+            return false;
+#endif
+        }
+
         GraphicsSettings graphicsSettings;
-        graphicsSettings.backend_ = SelectRenderBackend(GetParameter(EP_RENDER_BACKEND).GetOptional<RenderBackend>());
+        graphicsSettings.backend_ = backend;
         graphicsSettings.externalWindowHandle_ = GetParameter(EP_EXTERNAL_WINDOW).GetVoidPtr();
         graphicsSettings.gpuDebug_ = GetParameter(EP_GPU_DEBUG).GetBool();
         graphicsSettings.adapterId_ = GetParameter(EP_RENDER_ADAPTER_ID).GetOptional<unsigned>();
@@ -350,6 +376,43 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         graphicsSettings.validateShaders_ = GetParameter(EP_VALIDATE_SHADERS).GetBool();
         graphicsSettings.discardShaderCache_ = GetParameter(EP_DISCARD_SHADER_CACHE).GetBool();
         graphicsSettings.cacheShaders_ = GetParameter(EP_SAVE_SHADER_CACHE).GetBool();
+
+        WindowSettings windowSettings;
+        const int width = GetParameter(EP_WINDOW_WIDTH).GetInt();
+        const int height = GetParameter(EP_WINDOW_HEIGHT).GetInt();
+        if (width && height)
+            windowSettings.size_ = {width, height};
+        if (GetParameter(EP_FULL_SCREEN).GetBool())
+            windowSettings.mode_ = WindowMode::Fullscreen;
+        else if (GetParameter(EP_BORDERLESS).GetBool())
+            windowSettings.mode_ = WindowMode::Borderless;
+        windowSettings.resizable_ = GetParameter(EP_WINDOW_RESIZABLE).GetBool();
+        windowSettings.vSync_ = GetParameter(EP_VSYNC).GetBool();
+        windowSettings.multiSample_ = GetParameter(EP_MULTI_SAMPLE).GetInt();
+        windowSettings.monitor_ = GetParameter(EP_MONITOR).GetInt();
+        windowSettings.refreshRate_ = GetParameter(EP_REFRESH_RATE).GetInt();
+        windowSettings.orientations_ = GetParameter(EP_ORIENTATIONS).GetString().split(' ');
+
+#ifdef URHO3D_XR
+        auto virtualReality = GetSubsystem<VirtualReality>();
+        if (needXR && virtualReality && virtualReality->IsInstanceOf<OpenXR>())
+        {
+            auto* xr = static_cast<OpenXR*>(virtualReality);
+            const OpenXRTweaks& tweaks = xr->GetTweaks();
+
+            // Arbitrary value high enough that XR swap chain is never throttled
+            maxInactiveFps_ = maxFps_ = 500;
+
+            graphicsSettings.vulkan_.instanceExtensions_ = tweaks.vulkanInstanceExtensions_;
+            graphicsSettings.vulkan_.deviceExtensions_ = tweaks.vulkanDeviceExtensions_;
+            graphicsSettings.adapterId_ = tweaks.adapterId_;
+
+            windowSettings.vSync_ = false;
+            if (tweaks.orientation_)
+                windowSettings.orientations_ = {*tweaks.orientation_};
+        }
+#endif
+
         graphics->Configure(graphicsSettings);
 
         graphics->SetWindowTitle(GetParameter(EP_WINDOW_TITLE).GetString());
@@ -369,23 +432,6 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
             SetParameter(EP_BORDERLESS, isBorderless);
             SetParameter(EP_MONITOR, eventData[P_MONITOR].GetInt());
         });
-
-        WindowSettings windowSettings;
-
-        const int width = GetParameter(EP_WINDOW_WIDTH).GetInt();
-        const int height = GetParameter(EP_WINDOW_HEIGHT).GetInt();
-        if (width && height)
-            windowSettings.size_ = {width, height};
-        if (GetParameter(EP_FULL_SCREEN).GetBool())
-            windowSettings.mode_ = WindowMode::Fullscreen;
-        else if (GetParameter(EP_BORDERLESS).GetBool())
-            windowSettings.mode_ = WindowMode::Borderless;
-        windowSettings.resizable_ = GetParameter(EP_WINDOW_RESIZABLE).GetBool();
-        windowSettings.vSync_ = GetParameter(EP_VSYNC).GetBool();
-        windowSettings.multiSample_ = GetParameter(EP_MULTI_SAMPLE).GetInt();
-        windowSettings.monitor_ = GetParameter(EP_MONITOR).GetInt();
-        windowSettings.refreshRate_ = GetParameter(EP_REFRESH_RATE).GetInt();
-        windowSettings.orientations_ = GetParameter(EP_ORIENTATIONS).GetString().split(' ');
 
         if (!graphics->SetDefaultWindowModes(windowSettings))
             return false;
@@ -1038,6 +1084,7 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addFlag("--log-shader-sources", EP_SHADER_LOG_SOURCES, true, "Log shader sources into shader cache directory");
     addFlag("--discard-shader-cache", EP_DISCARD_SHADER_CACHE, true, "Discard all cached shader bytecode and logged shader sources");
     addFlag("--no-save-shader-cache", EP_SAVE_SHADER_CACHE, false, "Disable saving shader bytecode to cache directory");
+    addFlag("--xr", EP_XR, true, "Launch the engine in XR mode");
 
     addFlag("--d3d11", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::D3D11), "Use Direct3D11 rendering backend");
     addFlag("--d3d12", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::D3D12), "Use Direct3D12 rendering backend");
@@ -1072,6 +1119,12 @@ void Engine::SaveConfigFile()
 
 void Engine::PopulateDefaultParameters()
 {
+#if URHO3D_OCULUS_QUEST
+    const bool defaultXR = true;
+#else
+    const bool defaultXR = false;
+#endif
+
     RenderDeviceSettingsVulkan vulkanTweaks;
     vulkanTweaks.dynamicHeapSize_ = 32 * 1024 * 1024;
 
@@ -1138,6 +1191,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_WORKER_THREADS, true);
     engineParameters_->DefineVariable(EP_PSO_CACHE, "conf://psocache.bin");
     engineParameters_->DefineVariable(EP_RENDER_BACKEND).SetOptional<int>();
+    engineParameters_->DefineVariable(EP_XR, defaultXR);
 }
 
 void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)

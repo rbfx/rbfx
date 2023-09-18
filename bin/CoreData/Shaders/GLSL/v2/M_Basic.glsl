@@ -4,6 +4,11 @@
 #include "_GammaCorrection.glsl"
 #include "_BRDF.glsl"
 
+// JS: this has to be before samplers so we can see it for depth reconstruction
+#ifdef URHO3D_XR
+    VERTEX_OUTPUT(int vInstID)
+#endif
+
 #include "_Uniforms.glsl"
 #include "_DefaultSamplers.glsl"
 #include "_SamplerUtils.glsl"
@@ -31,6 +36,10 @@ void main()
 
     #ifdef URHO3D_VERTEX_HAS_COLOR
         vColor = iColor;
+    #endif
+
+    #ifdef URHO3D_XR
+        vInstID = gl_InstanceID;
     #endif
 }
 #endif

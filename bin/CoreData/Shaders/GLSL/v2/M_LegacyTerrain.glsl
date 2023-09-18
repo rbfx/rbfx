@@ -20,6 +20,10 @@ void main()
     VertexTransform vertexTransform = GetVertexTransform();
     Vertex_SetAll(vertexTransform, cNormalScale, cUOffset, cVOffset, cLMOffset);
     vDetailTexCoord = vTexCoord * cDetailTiling;
+    
+    #ifdef URHO3D_XR
+        vInstID = gl_InstanceID;
+    #endif
 }
 #endif
 

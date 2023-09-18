@@ -47,7 +47,7 @@ public:
     PipelineStateBuilder(Context* context, const SceneProcessor* sceneProcessor, const CameraProcessor* cameraProcessor,
         const ShadowMapAllocator* shadowMapAllocator, const InstancingBuffer* instancingBuffer);
     void SetSettings(const ShaderProgramCompositorSettings& settings);
-    void UpdateFrameSettings();
+    void UpdateFrameSettings(bool linearColorSpace);
 
     /// Implement BatchStateCacheCallback
     /// @{
@@ -59,7 +59,8 @@ public:
 
     /// Helpers for passes that override pipeline state creation.
     /// @{
-    void SetupInputLayoutAndPrimitiveType(GraphicsPipelineStateDesc& pipelineStateDesc, const ShaderProgramDesc& shaderProgramDesc, const Geometry* geometry) const;
+    void SetupInputLayoutAndPrimitiveType(GraphicsPipelineStateDesc& pipelineStateDesc,
+        const ShaderProgramDesc& shaderProgramDesc, const Geometry* geometry, bool isStereoPass) const;
     void SetupShaders(GraphicsPipelineStateDesc& pipelineStateDesc, ShaderProgramDesc& shaderProgramDesc) const;
     /// @}
 

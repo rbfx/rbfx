@@ -201,8 +201,8 @@ public:
 private:
     /// Implement RawTexture.
     /// @{
-    bool CreateGPU() override;
-    void DestroyGPU() override;
+    void OnCreateGPU() override;
+    void OnDestroyGPU() override;
     bool TryRestore() override;
     /// @}
 

@@ -51,9 +51,9 @@ const TextureFormat outlineTextureFormat = TextureFormat::TEX_FORMAT_RGBA8_UNORM
 
 OutlineScenePass::OutlineScenePass(RenderPipelineInterface* renderPipeline,
     DrawableProcessor* drawableProcessor, BatchStateCacheCallback* callback,
-    const StringVector& outlinedPasses)
+    const StringVector& outlinedPasses, DrawableProcessorPassFlags flags)
     : ScenePass(renderPipeline, drawableProcessor, callback,
-        DrawableProcessorPassFlag::BatchCallback | DrawableProcessorPassFlag::PipelineStateCallback,
+        DrawableProcessorPassFlag::BatchCallback | DrawableProcessorPassFlag::PipelineStateCallback | flags,
         "base") // Pass here doesn't matter
 {
     ea::transform(outlinedPasses.begin(), outlinedPasses.end(), std::back_inserter(outlinedPasses_),
@@ -135,7 +135,8 @@ bool OutlineScenePass::CreatePipelineState(GraphicsPipelineStateDesc& desc, Pipe
         desc.samplers_.Add(ShaderResources::Albedo, diffMap->GetSamplerStateDesc());
     }
 
-    builder->SetupInputLayoutAndPrimitiveType(desc, shaderProgramDesc_, key.geometry_);
+    const bool isStereo = GetFlags().Test(DrawableProcessorPassFlag::StereoInstancing);
+    builder->SetupInputLayoutAndPrimitiveType(desc, shaderProgramDesc_, key.geometry_, isStereo);
     builder->SetupShaders(desc, shaderProgramDesc_);
 
     return true;
@@ -154,6 +155,8 @@ void OutlineScenePass::OnBatchesReady()
 
     batchGroup_ = {sortedBatches_};
     batchGroup_.flags_ = BatchRenderFlag::EnableInstancingForStaticGeometry;
+    if (linearColorSpace_)
+        batchGroup_.flags_ |= BatchRenderFlag::LinearColorSpace;
 }
 
 void OutlineScenePass::PrepareInstancingBuffer(BatchRenderer* batchRenderer)
@@ -196,7 +199,7 @@ void OutlinePass::Execute(Camera* camera)
     if (!enabled_)
         return;
 
-    const bool inLinearSpace = renderBufferManager_->GetSettings().colorSpace_ != RenderPipelineColorSpace::GammaLDR;
+    const bool inLinearSpace = renderBufferManager_->IsLinearColorSpace();
     const StaticPipelineStateId pipelineState = inLinearSpace ? pipelineStateLinear_ : pipelineStateGamma_;
 
     auto texture = outlineBuffer_->GetTexture();

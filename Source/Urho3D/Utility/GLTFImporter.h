@@ -24,8 +24,9 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../IO/Archive.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/IO/Archive.h"
+#include "Urho3D/Math/Transform.h"
 
 #include <EASTL/unique_ptr.h>
 
@@ -59,6 +60,8 @@ struct GLTFImporterSettings
     float keyFrameTimeError_{M_EPSILON};
 
     ea::unordered_map<ea::string, ea::string> nodeRenames_;
+
+    bool gpuResources_{false};
 
     /// Settings that affect only preview scene.
     struct PreviewSettings
@@ -101,6 +104,7 @@ public:
 
     /// Load primary GLTF file into memory without any processing.
     bool LoadFile(const ea::string& fileName);
+    bool LoadFileBinary(ByteSpan data);
     /// Load and merge secondary GLTF file.
     /// Merge functionality is limited, unsupported content of secondary file is ignored.
     bool MergeFile(const ea::string& fileName, const ea::string& assetName);
@@ -112,8 +116,12 @@ public:
     bool SaveResources();
     /// Return saved resources and their absolute names.
     const ResourceToFileNameMap& GetSavedResources() const;
+    /// Convert GLTF transform to the engine format.
+    Transform ConvertTransform(const Transform& sourceTransform) const;
 
 private:
+    bool LoadFileInternal(const ea::function<tinygltf::Model()> getModel);
+
     class Impl;
     const GLTFImporterSettings settings_;
 

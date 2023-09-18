@@ -157,7 +157,7 @@ bool VertexBuffer::SetSize(unsigned vertexCount, const ea::vector<VertexElement>
         params.flags_ |= BufferFlag::Shadowed;
     if (dynamic)
         params.flags_ |= BufferFlag::Dynamic;
-    if (!elements_.empty() && elements_[0].perInstance_)
+    if (!elements_.empty() && elements_[0].stepRate_ != 0)
         params.flags_ |= BufferFlag::PerInstanceData;
 
     return Create(params, nullptr);
@@ -169,12 +169,16 @@ void VertexBuffer::UpdateOffsets()
     elementHash_ = 0;
     elementMask_ = MASK_NONE;
 
+    unsigned lowerHash = 0;
+    unsigned upperHash = 0;
     for (auto i = elements_.begin(); i != elements_.end(); ++i)
     {
         i->offset_ = elementOffset;
         elementOffset += ELEMENT_TYPESIZES[i->type_];
-        elementHash_ <<= 6;
-        elementHash_ += (((int)i->type_ + 1) * ((int)i->semantic_ + 1) + i->index_);
+        CombineHash(upperHash, MakeHash(i->type_ + 1));
+        CombineHash(upperHash, MakeHash(i->semantic_ + 1));
+        CombineHash(lowerHash, MakeHash(i->index_));
+        CombineHash(lowerHash, MakeHash(i->stepRate_));
 
         for (unsigned j = 0; j < MAX_LEGACY_VERTEX_ELEMENTS; ++j)
         {
@@ -184,6 +188,7 @@ void VertexBuffer::UpdateOffsets()
         }
     }
 
+    elementHash_ = (((unsigned long long)upperHash) << 32ull) | lowerHash;
     vertexSize_ = elementOffset;
 }
 

@@ -151,8 +151,12 @@
 #include "116_VirtualFileSystem/VFSSample.h"
 #if URHO3D_PHYSICS
 #include "117_PointerAdapter/PointerAdapterSample.h"
-#endif
 #include "118_CameraShake/CameraShake.h"
+#endif
+#if URHO3D_XR
+#include "120_HelloVR/HelloVR.h"
+#endif
+
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -416,9 +420,16 @@ void SamplesManager::Start()
     RegisterSample<PointerAdapterSample>();
 #endif
     RegisterSample<CameraShake>();
+#if URHO3D_XR
+    RegisterSample<HelloVR>();
+#endif
 
+#if URHO3D_OCULUS_QUEST
+    StartSample(HelloVR::GetTypeStatic());
+#else
     if (!commandLineArgs_.empty())
         StartSample(commandLineArgs_[0]);
+#endif
 }
 
 void SamplesManager::Stop()

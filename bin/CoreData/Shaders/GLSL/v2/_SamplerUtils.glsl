@@ -25,9 +25,15 @@ half3 DecodeNormal(half4 normalInput)
 /// For perspective cameras, 0 is focus point and is never actually returned.
 float ReconstructDepth(float hwDepth)
 {
+#ifdef URHO3D_XR
+    int eyeIdx = vInstID;
+    float depth = cDepthReconstruct[eyeIdx].y / (hwDepth - cDepthReconstruct[eyeIdx].x);
+    return cDepthReconstruct[eyeIdx].z != 0.0 ? hwDepth : depth;
+#else
     // May be undefined for orthographic projection
     float depth = cDepthReconstruct.y / (hwDepth - cDepthReconstruct.x);
     return cDepthReconstruct.z != 0.0 ? hwDepth : depth;
+#endif
 }
 
 #endif // URHO3D_PIXEL_SHADER

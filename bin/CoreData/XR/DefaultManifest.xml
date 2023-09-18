@@ -1,0 +1,280 @@
+<xr_manifest>
+    <actionset name="default"> <!-- in OpenXR land this is an XrActionSet -->
+    <!--
+        <action
+            name="LOWER_CASE_NAME_OF_ACTION"
+            type=boolean|single|vector2|vector3|pose
+            handed=false|true       sub-action paths will be setup so this is one action, but can now be tagged to which hand it came from
+            grip=false|true         signals this is to be tracked as a grip pose, required so internals can figure things out should non-standard names ever appear
+            aim=false|true          signals this is to be tracked as an aim-pose, as above
+        />
+
+        action-type names match OpenVR for minimal mental overhead when bouncing between actionset manifests. vector3 is internally a pose, 1 that only returns position and velocity
+
+        <profile device="Interaction Profile as found in OpenXR Spec 6.4 Interaction Profile Paths" ie. /interaction_profiles/khr/simple_controller
+        />
+
+        <bind action="name of action from above" path="action path as per OpenXR Spec 6.4 Interaction Profile Paths" />
+    -->
+
+        <!-- This is a "universal" binding by binding inputs to nearly verbatim titles. You have to ask bindings if they're bound. -->
+        <!-- In OpenXR land these are XrActions -->
+        <actions>
+            <action name="handpose" type="pose" handed="true" grip="true" />
+            <action name="aimpose" type="pose" handed="true" aim="true"/>
+            <action name="grab" type="single" handed="true" />
+            <action name="trigger" type="single" handed="true" />
+            <action name="touchpad" type="vector2" handed="true" /> <!-- compound action, documentation on these is junk, WMR / Vive Wand / Index -->
+            <action name="touchpad_click" type="boolean" handed="true" />
+            <action name="touchpad_touch" type="boolean" handed="true" />
+            <action name="stick" type="vector2" handed="true" /> <!-- basically everyone has a joystick except a few Gyro based cases that aren't super real -->
+            <action name="stickdown" type="boolean" handed="true" /> <!-- note: stick down may not function correctly, such as activating SteamVR menus -->
+            <action name="menu" type="boolean" handed="true" /> <!-- note: some systems only have a single hand menu on the left-hand, right-hand menu will be unbound -->
+
+            <action name="shoulder" type="boolean" handed="true" /> <!-- only applies to Cosmos -->
+            <action name="thumbrest" type="boolean" handed="true" /> <!-- Oculus Touch 1 & 2b / Vive Focus 3 -->
+
+            <!-- Oculus / Cosmos / Vive Focus 3 / Reverb G2 / Index -->
+            <action name="a" type="boolean" />
+            <action name="b" type="boolean" />
+            <action name="x" type="boolean" /> <!-- left A on index -->
+            <action name="y" type="boolean" /> <!-- left B on index -->
+            <!-- TODO: add touch inputs, a_touch, b_touch, stick_touch, trigger_touch etc that Oculus and Index have for capacitive contacts
+            Vive Focus 3 has touch on stick, squeeze, and trigger
+            Cosmos has touch on stick only
+            -->
+
+            <action name="vibrate" type="haptic" handed="true"/>
+        </actions>
+
+        <!-- Porifles are xrSuggestInteractionProfileBindings -->
+
+        <!-- Windows Mixed Reality -->
+        <profile device="/interaction_profiles/microsoft/motion_controller">
+            <bind action="handpose" path="/user/hand/left/input/grip/pose" />
+            <bind action="handpose" path="/user/hand/right/input/grip/pose" />
+
+            <bind action="aimpose" path="/user/hand/left/input/aim/pose" />
+            <bind action="aimpose" path="/user/hand/right/input/aim/pose" />
+
+            <bind action="grab" path="/user/hand/left/input/squeeze/click" />
+            <bind action="grab" path="/user/hand/right/input/squeeze/click" />
+
+            <bind action="trigger" path="/user/hand/left/input/trigger/value" />
+            <bind action="trigger" path="/user/hand/right/input/trigger/value" />
+
+            <bind action="stick" path="/user/hand/left/input/thumbstick" />
+            <bind action="stick" path="/user/hand/right/input/thumbstick" />
+
+            <bind action="stickdown" path="/user/hand/left/input/thumbstick/click" />
+            <bind action="stickdown" path="/user/hand/right/input/thumbstick/click" />
+
+            <bind action="touchpad" path="/user/hand/left/input/trackpad" />
+            <bind action="touchpad" path="/user/hand/right/input/trackpad" />
+            <bind action="touchpad_click" path="/user/hand/left/input/trackpad/click" />
+            <bind action="touchpad_touch" path="/user/hand/left/input/trackpad/touch" />
+            <bind action="touchpad_click" path="/user/hand/right/input/trackpad/click" />
+            <bind action="touchpad_touch" path="/user/hand/right/input/trackpad/touch" />
+
+            <bind action="menu" path="/user/hand/left/input/menu/click" />
+            <bind action="menu" path="/user/hand/right/input/menu/click" />
+
+            <bind action="vibrate" path="/user/hand/left/output/haptic" />
+            <bind action="vibrate" path="/user/hand/right/output/haptic" />
+        </profile>
+
+        <!-- Oculus Touch -->
+        <profile device="/interaction_profiles/oculus/touch_controller">
+            <bind action="handpose" path="/user/hand/left/input/grip/pose" />
+            <bind action="handpose" path="/user/hand/right/input/grip/pose" />
+
+            <bind action="aimpose" path="/user/hand/left/input/aim/pose" />
+            <bind action="aimpose" path="/user/hand/right/input/aim/pose" />
+
+            <bind action="grab" path="/user/hand/left/input/squeeze/value" />
+            <bind action="grab" path="/user/hand/right/input/squeeze/value" />
+
+            <bind action="trigger" path="/user/hand/left/input/trigger/value" />
+            <bind action="trigger" path="/user/hand/right/input/trigger/value" />
+
+            <bind action="stick" path="/user/hand/left/input/thumbstick" />
+            <bind action="stick" path="/user/hand/right/input/thumbstick" />
+
+            <bind action="menu" path="/user/hand/left/input/menu/click" />
+
+            <bind action="thumbrest" path="/user/hand/left/input/thumbrest/touch" />
+            <bind action="thumbrest" path="/user/hand/right/input/thumbrest/touch" />
+
+            <bind action="stickdown" path="/user/hand/left/input/thumbstick/click" />
+            <bind action="stickdown" path="/user/hand/right/input/thumbstick/click" />
+
+            <bind action="a" path="/user/hand/right/input/a/click" />
+            <bind action="b" path="/user/hand/right/input/b/click" />
+            <bind action="x" path="/user/hand/left/input/x/click" />
+            <bind action="y" path="/user/hand/left/input/y/click" />
+
+            <bind action="vibrate" path="/user/hand/left/output/haptic" />
+            <bind action="vibrate" path="/user/hand/right/output/haptic" />
+        </profile>
+
+        <!-- Vive Wand -->
+        <profile device="/interaction_profiles/htc/vive_controller" >
+            <bind action="handpose" path="/user/hand/left/input/grip/pose" />
+            <bind action="handpose" path="/user/hand/right/input/grip/pose" />
+
+            <bind action="aimpose" path="/user/hand/left/input/aim/pose" />
+            <bind action="aimpose" path="/user/hand/right/input/aim/pose" />
+
+            <bind action="grab" path="/user/hand/left/input/squeeze/click" />
+            <bind action="grab" path="/user/hand/right/input/squeeze/click" />
+
+            <bind action="trigger" path="/user/hand/left/input/trigger/value" />
+            <bind action="trigger" path="/user/hand/right/input/trigger/value" />
+
+            <bind action="touchpad" path="/user/hand/left/input/trackpad" />
+            <bind action="touchpad" path="/user/hand/right/input/trackpad" />
+
+            <bind action="menu" path="/user/hand/left/input/menu/click" />
+            <bind action="menu" path="/user/hand/right/input/menu/click" />
+
+            <bind action="touchpad_click" path="/user/hand/left/input/trackpad/click" />
+            <bind action="touchpad_click" path="/user/hand/right/input/trackpad/click" />
+            <bind action="touchpad_touch" path="/user/hand/left/input/trackpad/touch" />
+            <bind action="touchpad_touch" path="/user/hand/right/input/trackpad/touch" />
+
+            <bind action="vibrate" path="/user/hand/left/output/haptic" />
+            <bind action="vibrate" path="/user/hand/right/output/haptic" />
+        </profile>
+
+        <!-- Vive Cosmos -->
+        <profile device="/interaction_profiles/htc/vive_cosmos_controller" extension="XR_HTC_vive_cosmos_controller_interaction">
+            <bind action="handpose" path="/user/hand/left/input/grip/pose" />
+            <bind action="handpose" path="/user/hand/right/input/grip/pose" />
+
+            <bind action="aimpose" path="/user/hand/left/input/aim/pose" />
+            <bind action="aimpose" path="/user/hand/right/input/aim/pose" />
+
+            <bind action="grab" path="/user/hand/left/input/squeeze/click" />
+            <bind action="grab" path="/user/hand/right/input/squeeze/click" />
+
+            <bind action="trigger" path="/user/hand/left/input/trigger/value" />
+            <bind action="trigger" path="/user/hand/right/input/trigger/value" />
+
+            <bind action="stick" path="/user/hand/left/input/thumbstick" />
+            <bind action="stick" path="/user/hand/right/input/thumbstick" />
+
+            <bind action="stickdown" path="/user/hand/left/input/thumbstick/click" />
+            <bind action="stickdown" path="/user/hand/right/input/thumbstick/click" />
+
+            <bind action="menu" path="/user/hand/left/input/menu/click" />
+
+            <bind action="a" path="/user/hand/right/a/click" />
+            <bind action="b" path="/user/hand/right/b/click" />
+            <bind action="x" path="/user/hand/left/x/click" />
+            <bind action="y" path="/user/hand/left/y/click" />
+
+            <bind action="shoulder" path="/user/hand/left/input/shoulder/click" />
+            <bind action="shoulder" path="/user/hand/right/input/shoulder/click" />
+
+            <bind action="vibrate" path="/user/hand/left/output/haptic" />
+            <bind action="vibrate" path="/user/hand/right/output/haptic" />
+        </profile>
+
+        <!-- Vive Focus 3 -->
+        <profile device="/interaction_profiles/htc/vive_focus3_controller" extension="XR_HTC_vive_focus3_controller_interaction">
+            <bind action="handpose" path="/user/hand/left/input/grip/pose" />
+            <bind action="handpose" path="/user/hand/right/input/grip/pose" />
+
+            <bind action="aimpose" path="/user/hand/left/input/aim/pose" />
+            <bind action="aimpose" path="/user/hand/right/input/aim/pose" />
+
+            <bind action="grab" path="/user/hand/left/input/squeeze/value" />
+            <bind action="grab" path="/user/hand/right/input/squeeze/value" />
+
+            <bind action="trigger" path="/user/hand/left/input/trigger/value" />
+            <bind action="trigger" path="/user/hand/right/input/trigger/value" />
+
+            <bind action="menu" path="/user/hand/left/input/menu/click" />
+
+            <bind action="thumbrest" path="/user/hand/left/input/thumbrest/touch" />
+            <bind action="thumbrest" path="/user/hand/right/input/thumbrest/touch" />
+
+            <bind action="stick" path="/user/hand/left/input/thumbstick" />
+            <bind action="stick" path="/user/hand/right/input/thumbstick" />
+
+            <bind action="stickdown" path="/user/hand/left/input/thumbstick/click" />
+            <bind action="stickdown" path="/user/hand/right/input/thumbstick/click" />
+
+            <bind action="a" path="/user/hand/right/a/click" />
+            <bind action="b" path="/user/hand/right/b/click" />
+            <bind action="x" path="/user/hand/left/x/click" />
+            <bind action="y" path="/user/hand/left/y/click" />
+        </profile>
+
+        <!-- Valve Index, treating left-hand A/B as Oculus X/Y -->
+        <profile device="/interaction_profiles/valve/index_controller">
+            <bind action="handpose" path="/user/hand/left/input/grip/pose" />
+            <bind action="handpose" path="/user/hand/right/input/grip/pose" />
+
+            <bind action="aimpose" path="/user/hand/left/input/aim/pose" />
+            <bind action="aimpose" path="/user/hand/right/input/aim/pose" />
+
+            <bind action="grab" path="/user/hand/left/input/squeeze/value" />
+            <bind action="grab" path="/user/hand/right/input/squeeze/value" />
+
+            <bind action="stick" path="/user/hand/left/input/thumbstick" />
+            <bind action="stick" path="/user/hand/right/input/thumbstick" />
+
+            <bind action="trigger" path="/user/hand/left/input/trigger/value" />
+            <bind action="trigger" path="/user/hand/right/input/trigger/value" />
+
+            <bind action="stickdown" path="/user/hand/left/input/thumbstick/click" />
+            <bind action="stickdown" path="/user/hand/right/input/thumbstick/click" />
+
+            <bind action="touchpad_click" path="/user/hand/left/input/trackpad/force" />
+            <bind action="touchpad_touch" path="/user/hand/left/input/trackpad/touch" />
+            <bind action="touchpad_click" path="/user/hand/right/input/trackpad/force" />
+            <bind action="touchpad_touch" path="/user/hand/right/input/trackpad/touch" />
+
+            <bind action="a" path="/user/hand/right/input/a/click" />
+            <bind action="b" path="/user/hand/right/input/b/click" />
+            <bind action="x" path="/user/hand/left/input/a/click" />
+            <bind action="y" path="/user/hand/left/input/b/click" />
+
+            <bind action="vibrate" path="/user/hand/left/output/haptic" />
+            <bind action="vibrate" path="/user/hand/right/output/haptic" />
+        </profile>
+
+        <!-- Reverb G2 -->
+        <profile device="/interaction_profiles/hp/mixed_reality_controller" extension="XR_EXT_hp_mixed_reality_controller">
+            <bind action="handpose" path="/user/hand/left/input/grip/pose" />
+            <bind action="handpose" path="/user/hand/right/input/grip/pose" />
+
+            <bind action="aimpose" path="/user/hand/left/input/aim/pose" />
+            <bind action="aimpose" path="/user/hand/right/input/aim/pose" />
+
+            <bind action="grab" path="/user/hand/left/input/squeeze/value" />
+            <bind action="grab" path="/user/hand/right/input/squeeze/value" />
+
+            <bind action="stick" path="/user/hand/left/input/thumbstick" />
+            <bind action="stick" path="/user/hand/right/input/thumbstick" />
+
+            <bind action="stickdown" path="/user/hand/left/input/thumbstick/click" />
+            <bind action="stickdown" path="/user/hand/right/input/thumbstick/click" />
+
+            <bind action="trigger" path="/user/hand/left/input/trigger/value" />
+            <bind action="trigger" path="/user/hand/right/input/trigger/value" />
+
+            <bind action="menu" path="/user/hand/left/input/menu/click" />
+            <bind action="menu" path="/user/hand/right/input/menu/click" />
+
+            <bind action="a" path="/user/hand/right/input/a/click" />
+            <bind action="b" path="/user/hand/right/input/b/click" />
+            <bind action="x" path="/user/hand/left/input/x/click" />
+            <bind action="y" path="/user/hand/left/input/y/click" />
+
+            <bind action="vibrate" path="/user/hand/left/output/haptic" />
+            <bind action="vibrate" path="/user/hand/right/output/haptic" />
+        </profile>
+    </actionset>
+</xr_manifest>
