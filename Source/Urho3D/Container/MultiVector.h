@@ -195,6 +195,9 @@ public:
         return size;
     }
 
+    /// Resize outer vector.
+    void Resize(int outerSize) { outer_.resize(outerSize); }
+
     /// Copy content to vector.
     void CopyTo(InnerCollection& dest) const
     {

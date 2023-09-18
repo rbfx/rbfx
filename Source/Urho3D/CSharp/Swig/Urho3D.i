@@ -417,6 +417,8 @@ public:
 
 %include "generated/Urho3D/_pre_io.i"
 %interface_custom("%s", "I%s", Urho3D::Serializer);
+%ignore Urho3D::Serializer::WriteString(ea::string_view value);
+%ignore Urho3D::WriteString(std::string_view value);
 %include "Urho3D/IO/Serializer.h"
 %interface_custom("%s", "I%s", Urho3D::Deserializer);
 %include "Urho3D/IO/Deserializer.h"
@@ -788,18 +790,6 @@ public:
 %ignore Urho3D::Network::MakeHttpRequest;
 %ignore Urho3D::PackageDownload;
 %ignore Urho3D::PackageUpload;
-
-// These methods use forward-declared types from SLikeNet.
-%ignore Urho3D::Connection::Connection;
-%ignore Urho3D::Connection::Initialize;
-%ignore Urho3D::Connection::GetAddressOrGUID;
-%ignore Urho3D::Connection::SetAddressOrGUID;
-%ignore Urho3D::Network::HandleMessage;
-%ignore Urho3D::Network::NewConnectionEstablished;
-%ignore Urho3D::Network::ClientDisconnected;
-%ignore Urho3D::Network::GetConnection;
-%ignore Urho3D::Network::OnServerConnect;
-%ignore Urho3D::Network::HandleIncomingPacket;
 
 %include "generated/Urho3D/_pre_network.i"
 %include "Urho3D/Network/AbstractConnection.h"

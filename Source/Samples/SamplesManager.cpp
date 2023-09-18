@@ -114,7 +114,6 @@
 #include "50_Urho2DPlatformer/Urho2DPlatformer.h"
 #endif
 #if URHO3D_NETWORK
-#include "52_NATPunchtrough/NATPunchtrough.h"
 #include "53_LANDiscovery/LANDiscovery.h"
 #endif
 #include "54_WindowSettingsDemo/WindowSettingsDemo.h"
@@ -378,7 +377,6 @@ void SamplesManager::Start()
     RegisterSample<Urho2DPlatformer>();
 #endif
 #if URHO3D_NETWORK
-    RegisterSample<NATPunchtrough>();
     RegisterSample<LANDiscovery>();
 #endif
     RegisterSample<WindowSettingsDemo>();
@@ -426,6 +424,7 @@ void SamplesManager::Start()
 void SamplesManager::Stop()
 {
     engine_->DumpResources(true);
+    GetSubsystem<StateManager>()->Reset();
 }
 
 void SamplesManager::OnClickSample(VariantMap& args)

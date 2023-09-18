@@ -26,10 +26,12 @@
 
 #include <EASTL/shared_array.h>
 
-#include "../Core/Mutex.h"
-#include "../Container/RefCounted.h"
-#include "../Core/Thread.h"
-#include "../IO/Deserializer.h"
+#include <Urho3D/Core/Mutex.h>
+#include <Urho3D/Container/RefCounted.h>
+#include <Urho3D/Core/Thread.h>
+#include <Urho3D/IO/Deserializer.h>
+#include <Urho3D/IO/VectorBuffer.h>
+#include <Urho3D/Network/URL.h>
 
 namespace Urho3D
 {
@@ -55,7 +57,8 @@ public:
     /// Process the connection in the worker thread until closed.
     void ThreadFunction() override;
 
-    /// Read response data from the HTTP connection and return number of bytes actually read. While the connection is open, will block while trying to read the specified size. To avoid blocking, only read up to as many bytes as GetAvailableSize() returns.
+    /// Read response data from the HTTP connection and return number of bytes actually read. Does not block, may return a partial response.
+    /// Read data only when GetState() returns HTTP_CLOSED to receive a well-formed response.
     unsigned Read(void* dest, unsigned size) override;
     /// Set position from the beginning of the stream. Not supported.
     unsigned Seek(unsigned position) override;
@@ -64,7 +67,7 @@ public:
 
     /// Return URL used in the request.
     /// @property{get_url}
-    const ea::string& GetURL() const { return url_; }
+    ea::string GetURL() const { return url_.ToString(); }
 
     /// Return verb used in the request. Default GET if empty verb specified on construction.
     /// @property
@@ -85,11 +88,8 @@ public:
     bool IsOpen() const { return GetState() == HTTP_OPEN; }
 
 private:
-    /// Check for available read data in buffer and whether end has been reached. Must only be called when the mutex is held by the main thread.
-    ea::pair<unsigned, bool> CheckAvailableSizeAndEof() const;
-
     /// URL.
-    ea::string url_;
+    URL url_;
     /// Verb.
     ea::string verb_;
     /// Error string. Empty if no error.
@@ -99,17 +99,17 @@ private:
     /// POST data.
     ea::string postData_;
     /// Connection state.
-    HttpRequestState state_;
+    HttpRequestState state_ = HTTP_INITIALIZING;
     /// Mutex for synchronizing the worker and the main thread.
     mutable Mutex mutex_;
-    /// Read buffer for the worker thread.
-    ea::shared_array<unsigned char> httpReadBuffer_;
     /// Read buffer for the main thread.
-    ea::shared_array<unsigned char> readBuffer_;
+    VectorBuffer readBuffer_;
     /// Read buffer read cursor.
-    unsigned readPosition_;
-    /// Read buffer write cursor.
-    unsigned writePosition_;
+    unsigned readPosition_ = 0;
+#ifdef URHO3D_PLATFORM_WEB
+    /// HTTP request handle.
+    int requestHandle_ = 0;
+#endif
 };
 
 }

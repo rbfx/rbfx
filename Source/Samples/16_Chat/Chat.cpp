@@ -207,7 +207,7 @@ void Chat::HandleSend(StringHash /*eventType*/, VariantMap& eventData)
         VectorBuffer msg;
         msg.WriteString(text);
         // Send the chat message as in-order and reliable
-        serverConnection->SendMessage(MSG_CHAT, true, true, msg);
+        serverConnection->SendMessage(MSG_CHAT, msg);
         // Empty the text edit after sending
         textEdit_->SetText(EMPTY_STRING);
     }
@@ -226,7 +226,7 @@ void Chat::HandleConnect(StringHash /*eventType*/, VariantMap& eventData)
     // Connect to server, do not specify a client scene as we are not using scene replication, just messages.
     // At connect time we could also send identity parameters (such as username) in a VariantMap, but in this
     // case we skip it for simplicity
-    network->Connect(address, CHAT_SERVER_PORT, nullptr);
+    network->Connect(URL(Format("{}:{}", address, CHAT_SERVER_PORT)), nullptr);
 
     UpdateButtons();
 }
@@ -278,7 +278,7 @@ void Chat::HandleNetworkMessage(StringHash /*eventType*/, VariantMap& eventData)
             VectorBuffer sendMsg;
             sendMsg.WriteString(text);
             // Broadcast as in-order and reliable
-            network->BroadcastMessage(MSG_CHAT, true, true, sendMsg);
+            network->BroadcastMessage(MSG_CHAT, sendMsg);
         }
 
         ShowChatText(text);

@@ -43,6 +43,10 @@ public:
     explicit MemoryBuffer(ByteVector& data);
     /// Construct from a read-only vector, which must not go out of scope before MemoryBuffer.
     explicit MemoryBuffer(const ByteVector& data);
+    /// Construct from a vector buffer, which must not go out of scope before MemoryBuffer.
+    explicit MemoryBuffer(VectorBuffer& data);
+    /// Construct from a read-only vector buffer, which must not go out of scope before MemoryBuffer.
+    explicit MemoryBuffer(const VectorBuffer& data);
 
     /// Read bytes from the memory area. Return number of bytes actually read.
     unsigned Read(void* dest, unsigned size) override;

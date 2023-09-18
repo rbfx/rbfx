@@ -158,7 +158,6 @@ set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     STB
     IconFontCppHeaders
     Civetweb
-    SLikeNet
     Detour
     DetourCrowd
     DetourTileCache
@@ -186,6 +185,7 @@ set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     Diligent-GraphicsEngineMetal-static
     Diligent-HLSL2GLSLConverterLib
     Vulkan-Headers
+    datachannel-static
 )
 
 # Private dependencies that are hidden from the user and are not exposed in the public API or headers
@@ -201,6 +201,9 @@ set (PRIVATE_THIRD_PARTY_DEPENDENCIES
     SPIRV-Tools-opt
     SPIRV-Reflect
 )
+if (TARGET datachannel-wasm)
+    target_link_libraries(Urho3D PUBLIC datachannel-wasm)
+endif ()
 
 if (URHO3D_MERGE_STATIC_LIBS)
     list (APPEND PUBLIC_THIRD_PARTY_DEPENDENCIES Bullet)

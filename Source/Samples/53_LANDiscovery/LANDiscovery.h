@@ -31,6 +31,7 @@ class Button;
 class LineEdit;
 class Text;
 class UIElement;
+class LANDiscoveryManager;
 
 }
 
@@ -63,6 +64,15 @@ protected:
     }
 
 private:
+    struct ServerListEntry
+    {
+        ea::string name_;
+        int players_;
+        ea::string address_;
+        unsigned short port_;
+        unsigned lastSeen_;
+    };
+
     /// Create the UI.
     void CreateUI();
     /// Subscribe to log message, UI and network events.
@@ -71,6 +81,8 @@ private:
     Button* CreateButton(const ea::string& text, int width, IntVector2 position);
     /// Create label
     Text* CreateLabel(const ea::string& text, IntVector2 pos);
+    /// Update server list UI.
+    void FormatServerListUI();
 
     /// Handle found LAN server
     void HandleNetworkHostDiscovered(StringHash eventType, VariantMap& eventData);
@@ -80,6 +92,8 @@ private:
     void HandleStopServer(StringHash eventType, VariantMap& eventData);
     /// Start network discovery
     void HandleDoNetworkDiscovery(StringHash eventType, VariantMap& eventData);
+    /// Expire servers that did not reannouce themselves
+    void HandleExpireServers(StringHash eventType, VariantMap& eventData);
     /// Start server
     SharedPtr<Button> startServer_;
     /// Stop server
@@ -88,4 +102,8 @@ private:
     SharedPtr<Button> refreshServerList_;
     /// Found server list
     SharedPtr<Text> serverList_;
+    /// List of currently active servers
+    ea::map<ea::string, ServerListEntry> serverListItems_;
+    /// LAN discovery manager
+    SharedPtr<LANDiscoveryManager> lanDiscovery_;
 };

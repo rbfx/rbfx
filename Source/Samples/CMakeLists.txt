@@ -59,6 +59,7 @@ if (URHO3D_PACKAGING)
     create_pak("${rbfx_SOURCE_DIR}/bin/Data"               "${CMAKE_BINARY_DIR}/bin/Data.pak")
     create_pak("${rbfx_SOURCE_DIR}/bin/CoreData"           "${CMAKE_BINARY_DIR}/bin/CoreData.pak")
     set (URHO3D_DATA_PAKS "${CMAKE_BINARY_DIR}/bin/Data.pak" "${CMAKE_BINARY_DIR}/bin/CoreData.pak")
+    target_sources(Samples PRIVATE ${URHO3D_DATA_PAKS})
 endif ()
 
 if (WEB)
@@ -93,7 +94,6 @@ if (XCODE)
     # Add other resources to the bundle
     if (URHO3D_PACKAGING)
         set_source_files_properties (${URHO3D_DATA_PAKS} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-        target_sources(Samples PRIVATE ${URHO3D_DATA_PAKS})
     else ()
         set_source_files_properties (
             "${rbfx_SOURCE_DIR}/bin/Data" "${rbfx_SOURCE_DIR}/bin/CoreData"

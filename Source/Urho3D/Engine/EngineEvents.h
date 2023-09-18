@@ -46,8 +46,13 @@ URHO3D_EVENT(E_ENGINEINITIALIZED, EngineInitialized)
 {
 }
 
-/// Application started, but first frame was not executed yet.
+/// Application started, but first frame was not rendered yet.
 URHO3D_EVENT(E_APPLICATIONSTARTED, ApplicationStarted)
+{
+}
+
+/// Application stopped and no frames will be rendered any more.
+URHO3D_EVENT(E_APPLICATIONSTOPPED, ApplicationStopped)
 {
 }
 

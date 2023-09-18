@@ -46,7 +46,7 @@ void AdvancedNetworkingUI::ConnectToServer(const ea::string& address)
     Stop();
 
     Network* network = GetSubsystem<Network>();
-    network->Connect(address, serverPort_, GetScene());
+    network->Connect(URL(Format("{}:{}", address, serverPort_)), GetScene());
 }
 
 void AdvancedNetworkingUI::Stop()

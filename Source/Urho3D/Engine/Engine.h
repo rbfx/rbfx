@@ -22,9 +22,9 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Core/Timer.h"
-#include "../Engine/ConfigFile.h"
+#include <Urho3D/Core/Object.h>
+#include <Urho3D/Core/Timer.h>
+#include <Urho3D/Engine/ConfigFile.h>
 
 namespace CLI
 {

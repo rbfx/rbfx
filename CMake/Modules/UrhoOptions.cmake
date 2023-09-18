@@ -177,7 +177,7 @@ cmake_dependent_option(URHO3D_GLOW               "Lightmapping subsystem enabled
 option                (URHO3D_IK                 "Inverse kinematics subsystem enabled"                  ${URHO3D_ENABLE_ALL})
 option                (URHO3D_LOGGING            "Enable logging subsystem"                              ${URHO3D_ENABLE_ALL})
 option                (URHO3D_NAVIGATION         "Navigation subsystem enabled"                          ${URHO3D_ENABLE_ALL})
-cmake_dependent_option(URHO3D_NETWORK            "Networking subsystem enabled"                          ${URHO3D_ENABLE_ALL} "NOT EMSCRIPTEN"                       OFF)
+option                (URHO3D_NETWORK            "Networking subsystem enabled"                          ${URHO3D_ENABLE_ALL})
 option                (URHO3D_PHYSICS            "Physics subsystem enabled"                             ${URHO3D_ENABLE_ALL})
 cmake_dependent_option(URHO3D_PROFILING          "Profiler support enabled"                              ${URHO3D_ENABLE_ALL} "NOT EMSCRIPTEN;NOT MINGW;NOT UWP"     OFF)
 cmake_dependent_option(URHO3D_PROFILING_FALLBACK "Profiler uses low-precision timer"                     OFF                  "URHO3D_PROFILING"              OFF)
@@ -230,7 +230,6 @@ cmake_dependent_option(URHO3D_TOOLS             "Tools enabled. Bool or a list o
 option(URHO3D_SAMPLES                           "Build samples"                                         OFF)
 cmake_dependent_option(URHO3D_MERGE_STATIC_LIBS "Merge third party dependency libs to Urho3D.a"         OFF "NOT BUILD_SHARED_LIBS"                          OFF)
 option(URHO3D_NO_EDITOR_PLAYER_EXE              "Do not build editor or player executables."            OFF)
-option(URHO3D_SSL                               "Enable OpenSSL support"                                OFF)
 
 if (WIN32)
     option(URHO3D_WIN32_CONSOLE "Show log messages in win32 console"                     OFF)
