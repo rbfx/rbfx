@@ -23,12 +23,15 @@
 #include "../Assets/ModelImporter.h"
 
 #include <Urho3D/Core/ProcessUtils.h>
+#include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/JSONFile.h>
 #if URHO3D_GLOW
     #include <Urho3D/Glow/LightmapUVGenerator.h>
 #endif
+
+#include <EASTL/finally.h>
 
 namespace Urho3D
 {
@@ -62,6 +65,59 @@ bool IsFileNameBlend(const ea::string& fileName, bool strict = true)
     return fileName.ends_with(".blend", false);
 }
 
+bool IsAnimationLooped(const Animation& animation)
+{
+    for (const auto& [_, track] : animation.GetTracks())
+    {
+        if (!track.IsLooped())
+            return false;
+    }
+    for (const auto& [_, track] : animation.GetVariantTracks())
+    {
+        if (!track.IsLooped())
+            return false;
+    }
+    return true;
+}
+
+template <class T> ea::optional<float> GetTrackStep(const T& track)
+{
+    const unsigned numFrames = track.keyFrames_.size();
+    if (numFrames <= 1)
+        return ea::nullopt;
+    return track.keyFrames_[numFrames - 1].time_ - track.keyFrames_[numFrames - 2].time_;
+}
+
+ea::optional<float> GetFrameStep(const Animation& animation)
+{
+    ea::optional<float> frameStep;
+    for (const auto& [_, track] : animation.GetTracks())
+    {
+        if (const auto trackStep = GetTrackStep(track))
+            frameStep = ea::min(frameStep.value_or(M_LARGE_VALUE), *trackStep);
+    }
+    for (const auto& [_, track] : animation.GetVariantTracks())
+    {
+        if (const auto trackStep = GetTrackStep(track))
+            frameStep = ea::min(frameStep.value_or(M_LARGE_VALUE), *trackStep);
+    }
+    return frameStep;
+}
+
+AnimationTrack* GetRootAnimationTrack(Animation& animation)
+{
+    const StringVariantMap& parentTracks = animation.GetMetadata(AnimationMetadata::ParentTracks).GetStringVariantMap();
+
+    StringVector rootTracks;
+    for (const auto& [name, parent] : parentTracks)
+    {
+        if (parent.GetString().empty())
+            rootTracks.push_back(name);
+    }
+
+    return rootTracks.size() == 1 ? animation.GetTrack(rootTracks.front()) : nullptr;
+}
+
 } // namespace
 
 void Assets_ModelImporter(Context* context, Project* project)
@@ -70,10 +126,23 @@ void Assets_ModelImporter(Context* context, Project* project)
         ModelImporter::RegisterObject(context);
 }
 
+void ModelImporter::ResetRootMotionInfo::SerializeInBlock(Archive& archive)
+{
+    SerializeOptionalValue(archive, "factor", factor_);
+}
+
 void ModelImporter::ModelMetadata::SerializeInBlock(Archive& archive)
 {
-    SerializeValue(archive, "appendFiles", appendFiles_);
-    SerializeValue(archive, "nodeRenames", nodeRenames_);
+    SerializeOptionalValue(archive, "appendFiles", appendFiles_);
+    SerializeOptionalValue(archive, "nodeRenames", nodeRenames_);
+
+    int placeholder{};
+    SerializeOptionalValue(archive, "animation", placeholder, EmptyObject{},
+        [&](Archive& archive, const char* name, int&) //
+        {
+            const auto block = archive.OpenUnorderedBlock(name);
+            SerializeOptionalValue(archive, "resetRootMotion", resetRootMotion_);
+        });
 }
 
 ModelImporter::ModelImporter(Context* context)
@@ -92,10 +161,10 @@ void ModelImporter::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Cleanup Bone Names", bool, settings_.cleanupBoneNames_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Cleanup Root Nodes", bool, settings_.cleanupRootNodes_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Combine LODs", bool, settings_.combineLODs_, true, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Repair Looping", bool, settings_.repairLooping_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Skip Tag", ea::string, settings_.skipTag_, DefaultSkipTag, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Keep Names On Merge", bool, settings_.keepNamesOnMerge_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Add Empty Nodes To Skeleton", bool, settings_.addEmptyNodesToSkeleton_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Repair Looping", bool, repairLooping_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Blender: Apply Modifiers", bool, blenderApplyModifiers_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("LightMap UV: Generate", bool, lightmapUVGenerate_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("LightMap UV: Texels per Unit", float, lightmapUVTexelsPerUnit_, 10.0f, AM_DEFAULT);
@@ -161,6 +230,9 @@ bool ModelImporter::Execute(
 bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& metadata,
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
+    currentMetadata_ = &metadata;
+    const auto metadataGuard = ea::make_finally([&] { currentMetadata_ = nullptr; });
+
     if (!metadata.metadataFileName_.empty())
         AddDependency(input, output, metadata.metadataFileName_);
 
@@ -245,6 +317,71 @@ void ModelImporter::OnModelLoaded(ModelView& modelView)
         throw RuntimeException("Glow must be enabled to generate lightmap UVs");
 #endif
     }
+}
+
+void ModelImporter::OnAnimationLoaded(Animation& animation)
+{
+    const auto resetRootMotionIter = currentMetadata_->resetRootMotion_.find(animation.GetAnimationName());
+    if (resetRootMotionIter != currentMetadata_->resetRootMotion_.end())
+        ResetRootMotion(animation, resetRootMotionIter->second);
+
+    const bool isAnimationLooped = IsAnimationLooped(animation);
+    const auto frameStep = GetFrameStep(animation);
+
+    // TODO: It would be better to add a keyframe at the end of the animation
+    if (!isAnimationLooped && repairLooping_ && frameStep)
+    {
+        animation.SetLength(animation.GetLength() + *frameStep);
+        animation.AddMetadata(AnimationMetadata::Looped, true);
+    }
+    else
+    {
+        animation.AddMetadata(AnimationMetadata::Looped, isAnimationLooped);
+    }
+
+    if (frameStep)
+    {
+        const int frameRate = RoundToInt(1.0f / *frameStep);
+        const float frameRateError = Abs(frameRate - 1.0f / *frameStep);
+
+        animation.AddMetadata(AnimationMetadata::FrameStep, *frameStep);
+        if (frameRateError < 0.01f)
+            animation.AddMetadata(AnimationMetadata::FrameRate, frameRate);
+    }
+}
+
+void ModelImporter::ResetRootMotion(Animation& animation, const ResetRootMotionInfo& info)
+{
+    AnimationTrack* rootTrack = GetRootAnimationTrack(animation);
+    if (!rootTrack)
+        return;
+
+    const AnimationKeyFrame& firstFrame = rootTrack->keyFrames_.front();
+    const AnimationKeyFrame& lastFrame = rootTrack->keyFrames_.back();
+    if (firstFrame.time_ == lastFrame.time_)
+        return;
+
+    // Calculate approximate velocity
+    const Vector3 positionDelta = lastFrame.position_ - firstFrame.position_;
+    const Quaternion rotationDelta = lastFrame.rotation_ * firstFrame.rotation_.Inverse();
+    const Vector3 scaleDelta = lastFrame.scale_ - firstFrame.scale_;
+
+    const Vector3 linearVelocity = positionDelta / (lastFrame.time_ - firstFrame.time_);
+    const Vector3 angularVelocity = rotationDelta.AngularVelocity() / (lastFrame.time_ - firstFrame.time_);
+    const Vector3 scaleVelocity = scaleDelta / (lastFrame.time_ - firstFrame.time_);
+
+    animation.AddMetadata(AnimationMetadata::RootLinearVelocity, linearVelocity);
+    animation.AddMetadata(AnimationMetadata::RootAngularVelocity, angularVelocity);
+    animation.AddMetadata(AnimationMetadata::RootScaleVelocity, scaleVelocity);
+
+    // Reset root animation frames
+    const float sampleTime = Lerp(firstFrame.time_, lastFrame.time_, info.factor_);
+    unsigned frameIndex{};
+    Transform resetTransform;
+    rootTrack->Sample(sampleTime, lastFrame.time_, false, frameIndex, resetTransform);
+
+    for (AnimationKeyFrame& frame : rootTrack->keyFrames_)
+        static_cast<Transform&>(frame) = resetTransform;
 }
 
 ModelImporter::ModelMetadata ModelImporter::LoadMetadata(const ea::string& fileName) const

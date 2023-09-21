@@ -833,6 +833,99 @@ public:
         return animations_[animationIndex];
     }
 
+public:
+    static bool IsChildOf(const GLTFNode& child, const GLTFNode& parent)
+    {
+        return child.parent_ == &parent || (child.parent_ && IsChildOf(*child.parent_, parent));
+    }
+
+    static ea::vector<const GLTFNode*> GetPathIncludingSelf(const GLTFNode& node)
+    {
+        ea::vector<const GLTFNode*> path;
+        path.push_back(&node);
+
+        const GLTFNode* currentParent = node.parent_;
+        while (currentParent)
+        {
+            path.push_back(currentParent);
+            currentParent = currentParent->parent_;
+        }
+
+        ea::reverse(path.begin(), path.end());
+        return path;
+    }
+
+    static const GLTFNode* GetCommonParent(const GLTFNode& lhs, const GLTFNode& rhs)
+    {
+        if (lhs.root_ != rhs.root_)
+            return nullptr;
+
+        const auto lhsPath = GetPathIncludingSelf(lhs);
+        const auto rhsPath = GetPathIncludingSelf(rhs);
+
+        const unsigned numCommonParents = ea::min(lhsPath.size(), rhsPath.size());
+        for (int i = numCommonParents - 1; i >= 0; --i)
+        {
+            if (lhsPath[i] == rhsPath[i])
+                return lhsPath[i];
+        }
+
+        assert(0);
+        return nullptr;
+    }
+
+    template <class T>
+    static void ForEachInPathExceptParent(GLTFNode& child, GLTFNode& parent, const T& callback)
+    {
+        if (&child == &parent)
+            return;
+        if (!IsChildOf(child, parent))
+            throw RuntimeException("Invalid ForEachInPath call");
+
+        GLTFNode* node = &child;
+        while (node != &parent)
+        {
+            callback(*node);
+            node = node->parent_;
+        }
+    }
+
+    template <class T>
+    static void ForEachChild(GLTFNode& parent, const T& callback)
+    {
+        for (const GLTFNodePtr& child : parent.children_)
+        {
+            callback(*child);
+            ForEachChild(*child, callback);
+        }
+    }
+
+    template <class T>
+    static void ForEach(ea::span<const GLTFNodePtr> nodes, const T& callback)
+    {
+        for (const GLTFNodePtr& node : nodes)
+        {
+            callback(*node);
+            ForEachChild(*node, callback);
+        }
+    }
+
+    template <class T>
+    static void ForEachSkeletonNode(GLTFNode& skeletonRoot, unsigned skeletonIndex, const T& callback)
+    {
+        if (skeletonRoot.skeletonIndex_ != skeletonIndex)
+            throw RuntimeException("Invalid call to ForEachSkeletonNode");
+
+        callback(skeletonRoot);
+        for (const GLTFNodePtr& child : skeletonRoot.children_)
+        {
+            if (child->skeletonIndex_ != skeletonIndex)
+                continue;
+
+            ForEachSkeletonNode(*child, skeletonIndex, callback);
+        }
+    }
+
 private:
     void ProcessMeshMorphs()
     {
@@ -1700,102 +1793,10 @@ private:
     }
 
 private:
-    static bool IsChildOf(const GLTFNode& child, const GLTFNode& parent)
-    {
-        return child.parent_ == &parent || (child.parent_ && IsChildOf(*child.parent_, parent));
-    }
-
-    static ea::vector<const GLTFNode*> GetPathIncludingSelf(const GLTFNode& node)
-    {
-        ea::vector<const GLTFNode*> path;
-        path.push_back(&node);
-
-        const GLTFNode* currentParent = node.parent_;
-        while (currentParent)
-        {
-            path.push_back(currentParent);
-            currentParent = currentParent->parent_;
-        }
-
-        ea::reverse(path.begin(), path.end());
-        return path;
-    }
-
-    static const GLTFNode* GetCommonParent(const GLTFNode& lhs, const GLTFNode& rhs)
-    {
-        if (lhs.root_ != rhs.root_)
-            return nullptr;
-
-        const auto lhsPath = GetPathIncludingSelf(lhs);
-        const auto rhsPath = GetPathIncludingSelf(rhs);
-
-        const unsigned numCommonParents = ea::min(lhsPath.size(), rhsPath.size());
-        for (int i = numCommonParents - 1; i >= 0; --i)
-        {
-            if (lhsPath[i] == rhsPath[i])
-                return lhsPath[i];
-        }
-
-        assert(0);
-        return nullptr;
-    }
-
     static void MarkInSkin(GLTFNode& node, unsigned skin)
     {
         if (!node.containedInSkins_.contains(skin))
             node.containedInSkins_.push_back(skin);
-    }
-
-    template <class T>
-    static void ForEachInPathExceptParent(GLTFNode& child, GLTFNode& parent, const T& callback)
-    {
-        if (&child == &parent)
-            return;
-        if (!IsChildOf(child, parent))
-            throw RuntimeException("Invalid ForEachInPath call");
-
-        GLTFNode* node = &child;
-        while (node != &parent)
-        {
-            callback(*node);
-            node = node->parent_;
-        }
-    }
-
-    template <class T>
-    static void ForEachChild(GLTFNode& parent, const T& callback)
-    {
-        for (const GLTFNodePtr& child : parent.children_)
-        {
-            callback(*child);
-            ForEachChild(*child, callback);
-        }
-    }
-
-    template <class T>
-    static void ForEach(ea::span<const GLTFNodePtr> nodes, const T& callback)
-    {
-        for (const GLTFNodePtr& node : nodes)
-        {
-            callback(*node);
-            ForEachChild(*node, callback);
-        }
-    }
-
-    template <class T>
-    static void ForEachSkeletonNode(GLTFNode& skeletonRoot, unsigned skeletonIndex, const T& callback)
-    {
-        if (skeletonRoot.skeletonIndex_ != skeletonIndex)
-            throw RuntimeException("Invalid call to ForEachSkeletonNode");
-
-        callback(skeletonRoot);
-        for (const GLTFNodePtr& child : skeletonRoot.children_)
-        {
-            if (child->skeletonIndex_ != skeletonIndex)
-                continue;
-
-            ForEachSkeletonNode(*child, skeletonIndex, callback);
-        }
     }
 
     static Matrix3x4 ReadMatrix3x4(const std::vector<double>& src)
@@ -3151,7 +3152,7 @@ private:
                 const ea::string animationNameHint = GetAnimationGroupName(sourceAnimation, groupIndex);
                 const ea::string animationName = base_.GetResourceName(animationNameHint, "Animations/", "Animation", ".ani");
 
-                auto animation = ImportAnimation(animationName, group);
+                auto animation = ImportAnimation(animationName, groupIndex, group);
 
                 if (groupIndex)
                 {
@@ -3160,7 +3161,7 @@ private:
                     {
                         const GLTFNode& skinnedMeshNode = hierarchyAnalyzer_.GetNode(skeleton.rootNode_->skinnedMeshNodes_[0]);
                         if (Model* model = modelImporter_.GetModel(*skinnedMeshNode.mesh_, *skinnedMeshNode.skin_))
-                            animation->AddMetadata("Model", model->GetName());
+                            animation->AddMetadata(AnimationMetadata::Model, model->GetName());
                     }
                 }
 
@@ -3172,7 +3173,8 @@ private:
         }
     }
 
-    SharedPtr<Animation> ImportAnimation(const ea::string animationName, const GLTFAnimationTrackGroup& sourceGroup) const
+    SharedPtr<Animation> ImportAnimation(const ea::string& animationName, const ea::optional<unsigned>& groupIndex,
+        const GLTFAnimationTrackGroup& sourceGroup) const
     {
         auto animation = MakeShared<Animation>(base_.GetContext());
         animation->SetName(animationName);
@@ -3228,34 +3230,92 @@ private:
             }
         }
 
-        const bool ensureLooped = base_.GetSettings().repairLooping_;
-        const bool isAnimationLooped = IsAnimationLooped(*animation);
-        const auto frameStep = GetFrameStep(*animation);
+        if (groupIndex)
+        {
+            const GLTFSkeleton& skeleton = hierarchyAnalyzer_.GetSkeleton(*groupIndex);
+            FillAnimationTrackParents(*animation, skeleton);
+        }
+
         const float animationLength = GetAnimationLength(*animation);
+        animation->SetLength(animationLength);
+        animation->SetAnimationName(GetFileName(animationName));
 
-        // TODO: It would be better to add a keyframe at the end of the animation
-        if (!isAnimationLooped && ensureLooped && frameStep)
-        {
-            animation->SetLength(animationLength + *frameStep);
-            animation->AddMetadata("Looped", true);
-        }
-        else
-        {
-            animation->SetLength(animationLength);
-            animation->AddMetadata("Looped", isAnimationLooped);
-        }
-
-        if (frameStep)
-        {
-            const int frameRate = RoundToInt(1.0f / *frameStep);
-            const float frameRateError = Abs(frameRate - 1.0f / *frameStep);
-
-            animation->AddMetadata("FrameStep", *frameStep);
-            if (frameRateError < 0.01f)
-                animation->AddMetadata("FrameRate", frameRate);
-        }
-
+        base_.GetCallback()->OnAnimationLoaded(*animation);
         return animation;
+    }
+
+    using GLTFNodeAndParentVector = ea::vector<ea::pair<GLTFNode*, GLTFNode*>>;
+
+    void FillAnimationTrackParents(Animation& animation, const GLTFSkeleton& skeleton) const
+    {
+        GLTFNodeAndParentVector animatedNodes;
+        EnumerateNodesAndParents(animatedNodes, skeleton);
+        if (animatedNodes.empty())
+            return;
+
+        const auto animationTrackNames = GetAnimationTrackNames(animation);
+        StripUnreferencedNodes(animatedNodes, animationTrackNames, *skeleton.rootNode_->skeletonIndex_);
+
+        StringVariantMap nodeToParentNames;
+        for (const auto& [node, parentNode] : animatedNodes)
+        {
+            if (parentNode)
+                nodeToParentNames[*node->uniqueBoneName_] = *parentNode->uniqueBoneName_;
+            else
+                nodeToParentNames[*node->uniqueBoneName_] = "";
+        }
+        animation.AddMetadata(AnimationMetadata::ParentTracks, nodeToParentNames);
+    }
+
+    static void EnumerateNodesAndParents(GLTFNodeAndParentVector& result, const GLTFSkeleton& skeleton)
+    {
+        if (!skeleton.rootNode_->skeletonIndex_)
+            return;
+
+        const unsigned skeletonIndex = *skeleton.rootNode_->skeletonIndex_;
+        GLTFHierarchyAnalyzer::ForEachSkeletonNode(*skeleton.rootNode_, skeletonIndex,
+            [&](GLTFNode& node)
+        {
+            if (node.parent_ && node.parent_->skeletonIndex_ == skeletonIndex)
+                result.emplace_back(&node, node.parent_);
+            else
+                result.emplace_back(&node, nullptr);
+        });
+    }
+
+    static ea::unordered_set<ea::string> GetAnimationTrackNames(const Animation& animation)
+    {
+        ea::unordered_set<ea::string> result;
+        for (const auto& [_, track] : animation.GetTracks())
+            result.emplace(track.name_);
+        return result;
+    }
+
+    static bool IsNodeBoneTracked(const GLTFNode& node, const ea::unordered_set<ea::string>& trackNames)
+    {
+        return node.uniqueBoneName_ && trackNames.contains(*node.uniqueBoneName_);
+    }
+
+    static void StripUnreferencedNodes(
+        GLTFNodeAndParentVector& result, const ea::unordered_set<ea::string>& trackNames, unsigned skeletonIndex)
+    {
+        for (auto& [node, parentNode] : result)
+        {
+            if (!IsNodeBoneTracked(*node, trackNames))
+            {
+                node = nullptr;
+                continue;
+            }
+
+            while (parentNode && !IsNodeBoneTracked(*parentNode, trackNames))
+            {
+                parentNode = parentNode->parent_;
+                if (parentNode && parentNode->skeletonIndex_ != skeletonIndex)
+                    parentNode = nullptr;
+            }
+        }
+
+        ea::erase_if(result, [](const ea::pair<GLTFNode*, GLTFNode*>& pair) { return !pair.first; });
     }
 
     static ea::string GetAnimationGroupName(const GLTFAnimation& animation, ea::optional<unsigned> groupIndex)
@@ -3323,46 +3383,6 @@ private:
         if (track.keyFrames_.empty())
             return ea::nullopt;
         return track.keyFrames_.back().time_;
-    }
-
-    template <class T>
-    static ea::optional<float> GetTrackStep(const T& track)
-    {
-        const unsigned numFrames = track.keyFrames_.size();
-        if (numFrames <= 1)
-            return ea::nullopt;
-        return track.keyFrames_[numFrames - 1].time_ - track.keyFrames_[numFrames - 2].time_;
-    }
-
-    static bool IsAnimationLooped(const Animation& animation)
-    {
-        for (const auto& [_, track] : animation.GetTracks())
-        {
-            if (!track.IsLooped())
-                return false;
-        }
-        for (const auto& [_, track] : animation.GetVariantTracks())
-        {
-            if (!track.IsLooped())
-                return false;
-        }
-        return true;
-    }
-
-    static ea::optional<float> GetFrameStep(const Animation& animation)
-    {
-        ea::optional<float> frameStep;
-        for (const auto& [_, track] : animation.GetTracks())
-        {
-            if (const auto trackStep = GetTrackStep(track))
-                frameStep = ea::min(frameStep.value_or(M_LARGE_VALUE), *trackStep);
-        }
-        for (const auto& [_, track] : animation.GetVariantTracks())
-        {
-            if (const auto trackStep = GetTrackStep(track))
-                frameStep = ea::min(frameStep.value_or(M_LARGE_VALUE), *trackStep);
-        }
-        return frameStep;
     }
 
     static float GetAnimationLength(const Animation& animation)
@@ -3827,7 +3847,6 @@ void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& va
     SerializeValue(archive, "cleanupBoneNames", value.cleanupBoneNames_);
     SerializeValue(archive, "cleanupRootNodes", value.cleanupRootNodes_);
     SerializeValue(archive, "combineLODs", value.combineLODs_);
-    SerializeValue(archive, "repairLooping", value.repairLooping_);
     SerializeValue(archive, "skipTag", value.skipTag_);
     SerializeValue(archive, "keepNamesOnMerge", value.keepNamesOnMerge_);
     SerializeValue(archive, "addEmptyNodesToSkeleton", value.addEmptyNodesToSkeleton_);

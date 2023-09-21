@@ -27,6 +27,7 @@
 #include "Urho3D/Core/Object.h"
 #include "Urho3D/IO/Archive.h"
 #include "Urho3D/Math/Transform.h"
+#include "Urho3D/Utility/AnimationMetadata.h"
 
 #include <EASTL/unique_ptr.h>
 
@@ -38,6 +39,7 @@ class Model;
 namespace Urho3D
 {
 
+class Animation;
 class ModelView;
 
 struct GLTFImporterSettings
@@ -51,7 +53,6 @@ struct GLTFImporterSettings
     bool cleanupBoneNames_{true};
     bool cleanupRootNodes_{true};
     bool combineLODs_{true};
-    bool repairLooping_{false};
     ea::string skipTag_;
     bool keepNamesOnMerge_{false};
     bool addEmptyNodesToSkeleton_{false};
@@ -85,6 +86,7 @@ class URHO3D_API GLTFImporterCallback
 {
 public:
     virtual void OnModelLoaded(ModelView& modelView) {};
+    virtual void OnAnimationLoaded(Animation& animation) {};
 };
 
 URHO3D_API void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value);
