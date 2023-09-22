@@ -151,8 +151,8 @@
 #include "116_VirtualFileSystem/VFSSample.h"
 #if URHO3D_PHYSICS
 #include "117_PointerAdapter/PointerAdapterSample.h"
-#include "118_CameraShake/CameraShake.h"
 #endif
+#include "118_CameraShake/CameraShake.h"
 #if URHO3D_XR
 #include "120_HelloVR/HelloVR.h"
 #endif
