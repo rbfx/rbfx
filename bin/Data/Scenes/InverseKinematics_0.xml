@@ -4,7 +4,7 @@
 	<attribute name="Time Scale" value="1.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
 	<attribute name="Next Node ID" value="1274" />
-	<attribute name="Next Component ID" value="256" />
+	<attribute name="Next Component ID" value="259" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D" />
@@ -66,9 +66,9 @@
 			<attribute name="Is Enabled" value="true" />
 			<attribute name="Name" value="Sample Plane" />
 			<attribute name="Tags" />
-			<attribute name="Position" value="1 -0.01 6" />
+			<attribute name="Position" value="2 -0.01 6" />
 			<attribute name="Rotation" value="1 0 0 0" />
-			<attribute name="Scale" value="21 9 21" />
+			<attribute name="Scale" value="22 9 21" />
 			<attribute name="Variables" />
 			<component type="StaticModel" id="6">
 				<attribute name="Model" value="Model;Models/Plane.mdl" />
@@ -6100,7 +6100,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.0800121 0.0240123 -0.639484 0.764253" />
+					<attribute name="Rotation" value="0.0803988 0.00948446 -0.638778 0.765121" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16777336">
@@ -6108,7 +6108,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.800707 0.598759 0.0170207 0.00812925" />
+						<attribute name="Rotation" value="0.800716 0.59877 0.0164201 0.00768727" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16777335">
@@ -6861,7 +6861,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.1822 -0.0467084 -0.470935 0.861882" />
+					<attribute name="Rotation" value="0.173409 -0.0740714 -0.466181 0.864359" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16778359">
@@ -6869,7 +6869,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.716576 0.697247 0.0165371 0.00960673" />
+						<attribute name="Rotation" value="0.716586 0.697262 0.0158455 0.00894439" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16778360">
@@ -6877,7 +6877,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.867692 -0.496429 -0.0206205 -0.0156247" />
+							<attribute name="Rotation" value="0.867692 -0.496429 -0.0206206 -0.0156248" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16778361">
@@ -6906,7 +6906,7 @@
 					<attribute name="Name" value="RightUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.114644 -0.0469431 -0.413566 0.902006" />
+					<attribute name="Rotation" value="0.11016 -0.0564768 -0.412337 0.902581" />
 					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
 					<attribute name="Variables" />
 					<node id="16778364">
@@ -6914,7 +6914,7 @@
 						<attribute name="Name" value="RightLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
-						<attribute name="Rotation" value="0.676334 0.736343 -0.0163549 -0.0101911" />
+						<attribute name="Rotation" value="0.676344 0.73636 -0.015623 -0.00940701" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16778365">
@@ -7624,7 +7624,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.125235 -0.0194912 -0.540225 0.831921" />
+					<attribute name="Rotation" value="0.118273 -0.0490838 -0.537 0.833806" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16779127">
@@ -7632,7 +7632,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.718578 0.695183 0.016551 0.00957595" />
+						<attribute name="Rotation" value="0.718588 0.695198 0.015861 0.00891887" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779128">
@@ -7640,7 +7640,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.867692 -0.496429 -0.0206206 -0.0156247" />
+							<attribute name="Rotation" value="0.867692 -0.496429 -0.0206205 -0.0156248" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779129">
@@ -7669,7 +7669,7 @@
 					<attribute name="Name" value="RightUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.0568649 -0.0230876 -0.494732 0.866875" />
+					<attribute name="Rotation" value="0.0542119 -0.0300878 -0.494287 0.867085" />
 					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
 					<attribute name="Variables" />
 					<node id="16779132">
@@ -7677,7 +7677,7 @@
 						<attribute name="Name" value="RightLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
-						<attribute name="Rotation" value="0.668282 0.743659 -0.0162901 -0.0103008" />
+						<attribute name="Rotation" value="0.668293 0.743675 -0.0155517 -0.00949229" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779133">
@@ -7685,7 +7685,7 @@
 							<attribute name="Name" value="RightFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="0.00438883 0.504792 -0.00405537" />
-							<attribute name="Rotation" value="0.867615 -0.496563 0.0206908 0.015494" />
+							<attribute name="Rotation" value="0.867616 -0.496563 0.0206908 0.015494" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779134">
@@ -8385,7 +8385,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.125234 -0.0194913 -0.540226 0.831921" />
+					<attribute name="Rotation" value="0.118273 -0.0490838 -0.537 0.833806" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16780663">
@@ -8393,7 +8393,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.718579 0.695183 0.0165509 0.00957577" />
+						<attribute name="Rotation" value="0.718588 0.695198 0.0158609 0.00891893" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780664">
@@ -8430,7 +8430,7 @@
 					<attribute name="Name" value="RightUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.0568651 -0.0230875 -0.494732 0.866876" />
+					<attribute name="Rotation" value="0.054212 -0.030088 -0.494287 0.867085" />
 					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
 					<attribute name="Variables" />
 					<node id="16780668">
@@ -8438,7 +8438,7 @@
 						<attribute name="Name" value="RightLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
-						<attribute name="Rotation" value="0.668282 0.743658 -0.01629 -0.0103008" />
+						<attribute name="Rotation" value="0.668293 0.743676 -0.015552 -0.00949222" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780669">
@@ -9146,7 +9146,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.125235 -0.0194913 -0.540225 0.831921" />
+					<attribute name="Rotation" value="0.118273 -0.0490839 -0.537 0.833806" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16779191">
@@ -9154,7 +9154,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.718579 0.695183 0.0165509 0.00957602" />
+						<attribute name="Rotation" value="0.718588 0.695198 0.0158611 0.00891887" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779192">
@@ -9191,7 +9191,7 @@
 					<attribute name="Name" value="RightUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.0568651 -0.0230875 -0.494732 0.866876" />
+					<attribute name="Rotation" value="0.0542121 -0.0300878 -0.494287 0.867085" />
 					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
 					<attribute name="Variables" />
 					<node id="16779196">
@@ -9199,7 +9199,7 @@
 						<attribute name="Name" value="RightLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
-						<attribute name="Rotation" value="0.668282 0.743658 -0.01629 -0.0103007" />
+						<attribute name="Rotation" value="0.668293 0.743675 -0.0155517 -0.00949219" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779197">
@@ -9207,7 +9207,7 @@
 							<attribute name="Name" value="RightFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="0.00438883 0.504792 -0.00405537" />
-							<attribute name="Rotation" value="0.867616 -0.496563 0.0206908 0.015494" />
+							<attribute name="Rotation" value="0.867615 -0.496563 0.0206908 0.015494" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779198">
@@ -9922,7 +9922,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.104198 -0.107388 -0.529149 0.835231" />
+					<attribute name="Rotation" value="0.0954036 -0.142851 -0.523393 0.834596" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16779255">
@@ -9930,7 +9930,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.718578 0.695183 0.016551 0.00957553" />
+						<attribute name="Rotation" value="0.718588 0.695198 0.0158608 0.00891912" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779256">
@@ -9938,7 +9938,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.867692 -0.496429 -0.0206206 -0.0156248" />
+							<attribute name="Rotation" value="0.867692 -0.496429 -0.0206206 -0.0156247" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779257">
@@ -9967,7 +9967,7 @@
 					<attribute name="Name" value="RightUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.00124279 -0.167848 -0.479792 0.861176" />
+					<attribute name="Rotation" value="-0.000486822 -0.172284 -0.47914 0.860664" />
 					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
 					<attribute name="Variables" />
 					<node id="16779260">
@@ -9975,7 +9975,7 @@
 						<attribute name="Name" value="RightLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
-						<attribute name="Rotation" value="0.668282 0.743659 -0.01629 -0.0103011" />
+						<attribute name="Rotation" value="0.668293 0.743676 -0.0155519 -0.00949234" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779261">
@@ -9983,7 +9983,7 @@
 							<attribute name="Name" value="RightFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="0.00438883 0.504792 -0.00405537" />
-							<attribute name="Rotation" value="0.867615 -0.496563 0.0206908 0.015494" />
+							<attribute name="Rotation" value="0.867616 -0.496563 0.0206907 0.015494" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779262">
@@ -10700,7 +10700,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.177848 0.223975 -0.547281 0.786567" />
+					<attribute name="Rotation" value="0.176706 0.218237 -0.547526 0.788266" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16779319">
@@ -10708,7 +10708,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.718579 0.695183 0.016551 0.00957563" />
+						<attribute name="Rotation" value="0.718588 0.695198 0.0158613 0.00891886" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779320">
@@ -10745,7 +10745,7 @@
 					<attribute name="Name" value="RightUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.125427 0.161345 -0.496346 0.843727" />
+					<attribute name="Rotation" value="0.124844 0.159748 -0.496417 0.844076" />
 					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
 					<attribute name="Variables" />
 					<node id="16779324">
@@ -10753,7 +10753,7 @@
 						<attribute name="Name" value="RightLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
-						<attribute name="Rotation" value="0.668282 0.743658 -0.0162902 -0.0103007" />
+						<attribute name="Rotation" value="0.668293 0.743676 -0.0155519 -0.00949253" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779325">
@@ -11435,7 +11435,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.0501778 0.0354989 -0.617142 0.784447" />
+					<attribute name="Rotation" value="0.0486846 0.0397665 -0.617283 0.784226" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16777463">
@@ -11443,7 +11443,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.92638 0.376169 0.0171328 0.00478264" />
+						<attribute name="Rotation" value="0.926386 0.376174 0.0167497 0.00463096" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16777464">
@@ -11451,7 +11451,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.851408 -0.523894 -0.0198 -0.0157314" />
+							<attribute name="Rotation" value="0.851408 -0.523961 -0.0190324 -0.0143913" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16777465">
@@ -11459,7 +11459,7 @@
 								<attribute name="Name" value="LeftToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.00234e-08 0.176985 -1.19966e-07" />
-								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579037" />
+								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579039" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16777466">
@@ -12176,7 +12176,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.176194 -0.0170628 -0.722152 0.6687" />
+					<attribute name="Rotation" value="0.186677 -0.038576 -0.717794 0.669652" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16778487">
@@ -12184,7 +12184,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.888044 0.459395 0.0172225 0.00603488" />
+						<attribute name="Rotation" value="0.888051 0.459402 0.0167566 0.00579864" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16778488">
@@ -12192,7 +12192,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.862336 -0.505542 -0.0217693 -0.0181425" />
+							<attribute name="Rotation" value="0.862316 -0.50579 -0.019557 -0.0142834" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16778489">
@@ -12200,7 +12200,7 @@
 								<attribute name="Name" value="LeftToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.00234e-08 0.176985 -1.19966e-07" />
-								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579042" />
+								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579043" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16778490">
@@ -12221,7 +12221,7 @@
 					<attribute name="Name" value="RightUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.549356 -0.182711 -0.301984 0.757383" />
+					<attribute name="Rotation" value="0.53845 -0.217789 -0.277015 0.765442" />
 					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
 					<attribute name="Variables" />
 					<node id="16778492">
@@ -12229,7 +12229,7 @@
 						<attribute name="Name" value="RightLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
-						<attribute name="Rotation" value="0.71011 0.703828 -0.0166113 -0.00970435" />
+						<attribute name="Rotation" value="0.71012 0.703844 -0.0159084 -0.0090188" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16778493">
@@ -12237,7 +12237,7 @@
 							<attribute name="Name" value="RightFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="0.00438883 0.504792 -0.00405537" />
-							<attribute name="Rotation" value="0.830698 -0.556583 0.0119489 0.00362174" />
+							<attribute name="Rotation" value="0.830777 -0.556079 0.0186887 0.0153883" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16778494">
@@ -12245,7 +12245,7 @@
 								<attribute name="Name" value="RightToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="5.63159e-09 0.177041 -6.1118e-10" />
-								<attribute name="Rotation" value="0.954019 -0.299064 -0.0192245 -0.00628672" />
+								<attribute name="Rotation" value="0.954018 -0.299064 -0.0192244 -0.00628674" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16778495">
@@ -12941,7 +12941,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.212236 -0.016669 -0.590801 0.778224" />
+					<attribute name="Rotation" value="0.212825 -0.0766578 -0.578247 0.783874" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16778423">
@@ -12949,7 +12949,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.730093 0.68308 0.0166282 0.00939462" />
+						<attribute name="Rotation" value="0.730103 0.683095 0.0159491 0.00876926" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16778424">
@@ -12957,7 +12957,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.80642 -0.589978 -0.026032 -0.0305764" />
+							<attribute name="Rotation" value="0.806095 -0.591253 -0.0183238 -0.0171539" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16778425">
@@ -12965,7 +12965,7 @@
 								<attribute name="Name" value="LeftToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.00234e-08 0.176985 -1.19966e-07" />
-								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.0057904" />
+								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579044" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16778426">
@@ -12986,7 +12986,7 @@
 					<attribute name="Name" value="RightUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.174132 -0.0476291 -0.602802 0.7772" />
+					<attribute name="Rotation" value="0.169731 -0.0825435 -0.596827 0.779856" />
 					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
 					<attribute name="Variables" />
 					<node id="16778428">
@@ -12994,7 +12994,7 @@
 						<attribute name="Name" value="RightLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
-						<attribute name="Rotation" value="0.621461 0.783208 -0.0158898 -0.0108922" />
+						<attribute name="Rotation" value="0.621472 0.783228 -0.0151179 -0.00993536" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16778429">
@@ -13002,7 +13002,7 @@
 							<attribute name="Name" value="RightFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="0.00438883 0.504792 -0.00405537" />
-							<attribute name="Rotation" value="0.795382 -0.605884 0.0135289 0.00939682" />
+							<attribute name="Rotation" value="0.795513 -0.605416 0.0181209 0.0174064" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16778430">
@@ -13010,7 +13010,7 @@
 								<attribute name="Name" value="RightToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="5.63159e-09 0.177041 -6.1118e-10" />
-								<attribute name="Rotation" value="0.954019 -0.299065 -0.0192245 -0.00628682" />
+								<attribute name="Rotation" value="0.954019 -0.299064 -0.0192245 -0.00628683" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16778431">
@@ -13706,7 +13706,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.212236 -0.0166689 -0.590801 0.778224" />
+					<attribute name="Rotation" value="0.212825 -0.0766576 -0.578247 0.783874" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16779383">
@@ -13714,7 +13714,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.730093 0.68308 0.0166283 0.00939447" />
+						<attribute name="Rotation" value="0.730103 0.683095 0.015949 0.00876912" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779384">
@@ -13722,7 +13722,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.80642 -0.589978 -0.0260321 -0.0305763" />
+							<attribute name="Rotation" value="0.806095 -0.591253 -0.0183237 -0.0171537" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779385">
@@ -13730,7 +13730,7 @@
 								<attribute name="Name" value="LeftToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.00234e-08 0.176985 -1.19966e-07" />
-								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.0057904" />
+								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579041" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779386">
@@ -13751,7 +13751,7 @@
 					<attribute name="Name" value="RightUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.174132 -0.0476289 -0.602802 0.7772" />
+					<attribute name="Rotation" value="0.169731 -0.0825433 -0.596827 0.779856" />
 					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
 					<attribute name="Variables" />
 					<node id="16779388">
@@ -13759,7 +13759,7 @@
 						<attribute name="Name" value="RightLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
-						<attribute name="Rotation" value="0.621462 0.783208 -0.0158899 -0.0108923" />
+						<attribute name="Rotation" value="0.621472 0.783228 -0.0151181 -0.00993544" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779389">
@@ -13767,7 +13767,7 @@
 							<attribute name="Name" value="RightFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="0.00438883 0.504792 -0.00405537" />
-							<attribute name="Rotation" value="0.795382 -0.605884 0.0135288 0.00939687" />
+							<attribute name="Rotation" value="0.795513 -0.605415 0.0181208 0.0174065" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779390">
@@ -13775,7 +13775,7 @@
 								<attribute name="Name" value="RightToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="5.63159e-09 0.177041 -6.1118e-10" />
-								<attribute name="Rotation" value="0.954019 -0.299064 -0.0192244 -0.0062868" />
+								<attribute name="Rotation" value="0.954019 -0.299065 -0.0192244 -0.00628676" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779391">
@@ -14471,7 +14471,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.212236 -0.0166691 -0.590801 0.778224" />
+					<attribute name="Rotation" value="0.212825 -0.0766576 -0.578247 0.783874" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16780727">
@@ -14479,7 +14479,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.730093 0.683081 0.0166283 0.00939445" />
+						<attribute name="Rotation" value="0.730103 0.683095 0.0159492 0.0087692" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780728">
@@ -14487,7 +14487,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.80642 -0.589978 -0.0260321 -0.0305763" />
+							<attribute name="Rotation" value="0.806095 -0.591253 -0.0183239 -0.0171542" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780729">
@@ -14516,7 +14516,7 @@
 					<attribute name="Name" value="RightUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.174132 -0.0476287 -0.602802 0.7772" />
+					<attribute name="Rotation" value="0.169731 -0.0825432 -0.596827 0.779856" />
 					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
 					<attribute name="Variables" />
 					<node id="16780732">
@@ -14524,7 +14524,7 @@
 						<attribute name="Name" value="RightLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
-						<attribute name="Rotation" value="0.621461 0.783208 -0.0158896 -0.0108923" />
+						<attribute name="Rotation" value="0.621472 0.783228 -0.0151181 -0.00993547" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780733">
@@ -14532,7 +14532,7 @@
 							<attribute name="Name" value="RightFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="0.00438883 0.504792 -0.00405537" />
-							<attribute name="Rotation" value="0.795382 -0.605884 0.0135289 0.00939687" />
+							<attribute name="Rotation" value="0.795513 -0.605415 0.018121 0.0174066" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780734">
@@ -14540,7 +14540,7 @@
 								<attribute name="Name" value="RightToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="5.63159e-09 0.177041 -6.1118e-10" />
-								<attribute name="Rotation" value="0.954019 -0.299064 -0.0192245 -0.0062868" />
+								<attribute name="Rotation" value="0.954019 -0.299064 -0.0192244 -0.00628674" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780735">
@@ -15236,7 +15236,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.212236 -0.016669 -0.590801 0.778224" />
+					<attribute name="Rotation" value="0.212825 -0.0766578 -0.578247 0.783874" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16779447">
@@ -15244,7 +15244,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.730093 0.68308 0.016628 0.0093946" />
+						<attribute name="Rotation" value="0.730103 0.683095 0.0159492 0.00876921" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779448">
@@ -15252,7 +15252,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.80642 -0.589978 -0.0260321 -0.0305763" />
+							<attribute name="Rotation" value="0.806095 -0.591253 -0.0183238 -0.0171539" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779449">
@@ -15260,7 +15260,7 @@
 								<attribute name="Name" value="LeftToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.00234e-08 0.176985 -1.19966e-07" />
-								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579037" />
+								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579041" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779450">
@@ -15281,7 +15281,7 @@
 					<attribute name="Name" value="RightUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.174132 -0.0476287 -0.602801 0.7772" />
+					<attribute name="Rotation" value="0.169731 -0.0825432 -0.596827 0.779856" />
 					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
 					<attribute name="Variables" />
 					<node id="16779452">
@@ -15289,7 +15289,7 @@
 						<attribute name="Name" value="RightLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
-						<attribute name="Rotation" value="0.621462 0.783208 -0.0158898 -0.0108922" />
+						<attribute name="Rotation" value="0.621472 0.783228 -0.0151181 -0.00993542" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779453">
@@ -15297,7 +15297,7 @@
 							<attribute name="Name" value="RightFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="0.00438883 0.504792 -0.00405537" />
-							<attribute name="Rotation" value="0.795382 -0.605884 0.0135288 0.00939653" />
+							<attribute name="Rotation" value="0.795513 -0.605416 0.0181207 0.0174061" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779454">
@@ -15305,7 +15305,7 @@
 								<attribute name="Name" value="RightToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="5.63159e-09 0.177041 -6.1118e-10" />
-								<attribute name="Rotation" value="0.954019 -0.299064 -0.0192245 -0.00628685" />
+								<attribute name="Rotation" value="0.954018 -0.299064 -0.0192244 -0.00628671" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779455">
@@ -16003,7 +16003,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.206997 -0.129727 -0.565956 0.787411" />
+					<attribute name="Rotation" value="0.202964 -0.233381 -0.535984 0.785531" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16779511">
@@ -16011,7 +16011,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.730093 0.68308 0.0166281 0.00939453" />
+						<attribute name="Rotation" value="0.730103 0.683094 0.0159492 0.00876914" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779512">
@@ -16019,7 +16019,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.806454 -0.589859 -0.0265607 -0.0314951" />
+							<attribute name="Rotation" value="0.80609 -0.591278 -0.0181134 -0.0167867" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779513">
@@ -16027,7 +16027,7 @@
 								<attribute name="Name" value="LeftToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.00234e-08 0.176985 -1.19966e-07" />
-								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579037" />
+								<attribute name="Rotation" value="0.953952 -0.29918 0.0208136 0.00579041" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779514">
@@ -16048,7 +16048,7 @@
 					<attribute name="Name" value="RightUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.139291 -0.216913 -0.566427 0.782756" />
+					<attribute name="Rotation" value="0.127297 -0.277363 -0.549022 0.778099" />
 					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
 					<attribute name="Variables" />
 					<node id="16779516">
@@ -16056,7 +16056,7 @@
 						<attribute name="Name" value="RightLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
-						<attribute name="Rotation" value="0.621461 0.783208 -0.0158898 -0.0108924" />
+						<attribute name="Rotation" value="0.621471 0.783228 -0.0151174 -0.00993526" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779517">
@@ -16064,7 +16064,7 @@
 							<attribute name="Name" value="RightFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="0.00438883 0.504792 -0.00405537" />
-							<attribute name="Rotation" value="0.795387 -0.605847 0.0141281 0.0104434" />
+							<attribute name="Rotation" value="0.795509 -0.60543 0.0180111 0.0172151" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779518">
@@ -16072,7 +16072,7 @@
 								<attribute name="Name" value="RightToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="5.63159e-09 0.177041 -6.1118e-10" />
-								<attribute name="Rotation" value="0.954018 -0.299064 -0.0192244 -0.00628673" />
+								<attribute name="Rotation" value="0.954019 -0.299064 -0.0192245 -0.00628674" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779519">
@@ -16783,7 +16783,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.21391 0.307294 -0.615493 0.693527" />
+					<attribute name="Rotation" value="0.212367 0.327477 -0.614982 0.685168" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16779575">
@@ -16791,7 +16791,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.730094 0.68308 0.0166281 0.00939439" />
+						<attribute name="Rotation" value="0.730103 0.683095 0.0159496 0.00876955" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779576">
@@ -16799,7 +16799,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.806048 -0.59143 -0.0168607 -0.014603" />
+							<attribute name="Rotation" value="0.806086 -0.591297 -0.0179463 -0.0164957" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779577">
@@ -16807,7 +16807,7 @@
 								<attribute name="Name" value="LeftToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.00234e-08 0.176985 -1.19966e-07" />
-								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579038" />
+								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579039" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779578">
@@ -16828,7 +16828,7 @@
 					<attribute name="Name" value="RightUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.216628 0.196788 -0.621454 0.726733" />
+					<attribute name="Rotation" value="0.215453 0.185894 -0.621372 0.730013" />
 					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
 					<attribute name="Variables" />
 					<node id="16779580">
@@ -16836,7 +16836,7 @@
 						<attribute name="Name" value="RightLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
-						<attribute name="Rotation" value="0.621461 0.783208 -0.0158899 -0.0108919" />
+						<attribute name="Rotation" value="0.621471 0.783228 -0.0151179 -0.00993525" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779581">
@@ -16844,7 +16844,7 @@
 							<attribute name="Name" value="RightFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="0.00438883 0.504792 -0.00405537" />
-							<attribute name="Rotation" value="0.795464 -0.605518 0.0176313 0.0165559" />
+							<attribute name="Rotation" value="0.795503 -0.605448 0.0178815 0.0169896" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779582">
@@ -16852,7 +16852,7 @@
 								<attribute name="Name" value="RightToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="5.63159e-09 0.177041 -6.1118e-10" />
-								<attribute name="Rotation" value="0.954019 -0.299064 -0.0192245 -0.00628677" />
+								<attribute name="Rotation" value="0.954019 -0.299064 -0.0192244 -0.00628676" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779583">
@@ -17561,7 +17561,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.212236 -0.0166678 -0.590801 0.778224" />
+					<attribute name="Rotation" value="0.212826 -0.0766565 -0.578247 0.783874" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16779639">
@@ -17569,7 +17569,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.730093 0.68308 0.0166286 0.00939499" />
+						<attribute name="Rotation" value="0.730103 0.683095 0.0159476 0.00876953" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779640">
@@ -17577,7 +17577,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.806421 -0.589977 -0.026033 -0.0305772" />
+							<attribute name="Rotation" value="0.806096 -0.591252 -0.0183245 -0.0171542" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779641">
@@ -17585,7 +17585,7 @@
 								<attribute name="Name" value="LeftToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.00234e-08 0.176985 -1.19966e-07" />
-								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579046" />
+								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579035" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779642">
@@ -17606,7 +17606,7 @@
 					<attribute name="Name" value="RightUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.174132 -0.0476291 -0.602801 0.7772" />
+					<attribute name="Rotation" value="0.16973 -0.0825435 -0.596827 0.779856" />
 					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
 					<attribute name="Variables" />
 					<node id="16779644">
@@ -17614,7 +17614,7 @@
 						<attribute name="Name" value="RightLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
-						<attribute name="Rotation" value="0.621461 0.783208 -0.0158899 -0.0108918" />
+						<attribute name="Rotation" value="0.621472 0.783228 -0.015118 -0.00993583" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779645">
@@ -17622,7 +17622,7 @@
 							<attribute name="Name" value="RightFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="0.00438883 0.504792 -0.00405537" />
-							<attribute name="Rotation" value="0.795383 -0.605884 0.0135289 0.00939678" />
+							<attribute name="Rotation" value="0.795513 -0.605416 0.018121 0.0174068" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779646">
@@ -17630,7 +17630,7 @@
 								<attribute name="Name" value="RightToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="5.63159e-09 0.177041 -6.1118e-10" />
-								<attribute name="Rotation" value="0.954018 -0.299065 -0.0192244 -0.00628681" />
+								<attribute name="Rotation" value="0.954019 -0.299064 -0.0192244 -0.00628674" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779647">
@@ -18330,7 +18330,7 @@
 					<attribute name="Name" value="LeftUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.21629 -0.0195306 -0.558006 0.800915" />
+					<attribute name="Rotation" value="0.219888 -0.0661929 -0.538483 0.810742" />
 					<attribute name="Scale" value="0.999985 1 0.999797" />
 					<attribute name="Variables" />
 					<node id="16779703">
@@ -18338,7 +18338,7 @@
 						<attribute name="Name" value="LeftLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
-						<attribute name="Rotation" value="0.753407 0.657279 0.0167741 0.00900707" />
+						<attribute name="Rotation" value="0.761402 0.648025 0.0161744 0.00832683" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779704">
@@ -18346,7 +18346,7 @@
 							<attribute name="Name" value="LeftFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
-							<attribute name="Rotation" value="0.739282 -0.672936 -0.0162396 -0.0188568" />
+							<attribute name="Rotation" value="0.719716 -0.694196 -0.00806154 -0.00604165" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779705">
@@ -18354,7 +18354,7 @@
 								<attribute name="Name" value="LeftToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.00234e-08 0.176985 -1.19966e-07" />
-								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579041" />
+								<attribute name="Rotation" value="0.953952 -0.29918 0.0208135 0.00579038" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779706">
@@ -18375,7 +18375,7 @@
 					<attribute name="Name" value="RightUpLeg" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
-					<attribute name="Rotation" value="0.170677 -0.0498659 -0.549308 0.816482" />
+					<attribute name="Rotation" value="0.174703 -0.0710732 -0.545166 0.816836" />
 					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
 					<attribute name="Variables" />
 					<node id="16779708">
@@ -18383,7 +18383,7 @@
 						<attribute name="Name" value="RightLeg" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
-						<attribute name="Rotation" value="0.659318 0.751617 -0.0162161 -0.0104189" />
+						<attribute name="Rotation" value="0.659327 0.751636 -0.0154712 -0.00958346" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16779709">
@@ -18391,7 +18391,7 @@
 							<attribute name="Name" value="RightFoot" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="0.00438883 0.504792 -0.00405537" />
-							<attribute name="Rotation" value="0.670565 -0.741846 0.00157191 -0.00206011" />
+							<attribute name="Rotation" value="0.670521 -0.741315 0.0165259 0.024072" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16779710">
@@ -18399,7 +18399,7 @@
 								<attribute name="Name" value="RightToeBase" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="5.63159e-09 0.177041 -6.1118e-10" />
-								<attribute name="Rotation" value="0.954018 -0.299064 -0.0192245 -0.00628676" />
+								<attribute name="Rotation" value="0.954019 -0.299064 -0.0192244 -0.00628677" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779711">
@@ -18453,6 +18453,775 @@
 						<attribute name="Rotation" value="-0.947662 0.302598 -0.0422993 0.0926402" />
 						<attribute name="Scale" value="0.1 0.1 0.1" />
 						<attribute name="Variables" />
+					</node>
+				</node>
+			</node>
+		</node>
+		<node id="1274">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Leg Solver [Foot Rotation Weight]" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="20 0 0" />
+			<attribute name="Rotation" value="-4.37114e-08 0 1 0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="AnimatedModel" id="259">
+				<attribute name="Model" value="Model;Models/Kachujin/Kachujin.mdl" />
+				<attribute name="Material" value="Material;Models/Kachujin/Materials/Kachujin.xml" />
+				<attribute name="Cast Shadows" value="true" />
+				<attribute name="Bone Animation Enabled">
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+				</attribute>
+			</component>
+			<component type="AnimationController" id="260">
+				<attribute name="Reset Skeleton" value="true" />
+				<attribute name="Animations">
+					<variant type="Int" value="1" />
+					<variant type="ResourceRef" value="Animation;Animations/InverseKinematics/LegSolver_FootRotationWeight.xml" />
+					<variant type="Bool" value="true" />
+					<variant type="Bool" value="true" />
+					<variant type="Int" value="0" />
+					<variant type="Int" value="0" />
+					<variant type="String" value="" />
+					<variant type="Float" value="0.000000" />
+					<variant type="Float" value="0.000000" />
+					<variant type="Float" value="0.000000" />
+					<variant type="Float" value="2.000000" />
+					<variant type="Float" value="1.000000" />
+					<variant type="Bool" value="false" />
+					<variant type="Float" value="1.000000" />
+					<variant type="Float" value="1.000000" />
+					<variant type="Float" value="0.000000" />
+				</attribute>
+			</component>
+			<component type="IKSolver" id="261">
+				<attribute name="Solve when Paused" value="true" />
+			</component>
+			<component type="IKIdentitySolver" id="262">
+				<attribute name="Bone Name" value="Hips" />
+				<attribute name="Target Name" value="Hips_Target" />
+				<attribute name="Rotation Offset" value="4.37114e-08 -2.59399e-15 -1 -1.2206e-07" />
+			</component>
+			<component type="IKLegSolver" id="263">
+				<attribute name="Thigh Bone Name" value="LeftUpLeg" />
+				<attribute name="Calf Bone Name" value="LeftLeg" />
+				<attribute name="Heel Bone Name" value="LeftFoot" />
+				<attribute name="Toe Bone Name" value="LeftToeBase" />
+				<attribute name="Target Name" value="LeftFoot_Target" />
+				<attribute name="Rotation Weight" value="1.000000" />
+				<attribute name="Foot Rotation Weight" value="1.000000" />
+				<attribute name="Heel Ground Offset" value="0.171315" />
+			</component>
+			<component type="IKLegSolver" id="264">
+				<attribute name="Thigh Bone Name" value="RightUpLeg" />
+				<attribute name="Calf Bone Name" value="RightLeg" />
+				<attribute name="Heel Bone Name" value="RightFoot" />
+				<attribute name="Toe Bone Name" value="RightToeBase" />
+				<attribute name="Target Name" value="RightFoot_Target" />
+				<attribute name="Rotation Weight" value="1.000000" />
+				<attribute name="Foot Rotation Weight" value="1.000000" />
+				<attribute name="Heel Ground Offset" value="0.171315" />
+			</component>
+			<node id="1275">
+				<attribute name="Is Enabled" value="true" />
+				<attribute name="Name" value="Label" />
+				<attribute name="Tags" />
+				<attribute name="Position" value="-1.00882e-07 0.136001 1.06501" />
+				<attribute name="Rotation" value="-4.26141e-08 2.91985e-08 0.974896 -0.222661" />
+				<attribute name="Scale" value="0.245001 0.245 0.244999" />
+				<attribute name="Variables" />
+				<component type="Text3D" id="265">
+					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Text" value="[Foot Rotation Weight]" />
+					<attribute name="Width" value="792" />
+					<attribute name="Horiz Alignment" value="Center" />
+					<attribute name="Vert Alignment" value="Center" />
+				</component>
+			</node>
+			<node id="1276">
+				<attribute name="Is Enabled" value="true" />
+				<attribute name="Name" value="Hips_Target" />
+				<attribute name="Tags" />
+				<attribute name="Position" value="0 1.20123 3.49691e-07" />
+				<attribute name="Rotation" value="0.939693 0 -0.34202 0" />
+				<attribute name="Scale" value="0.6 0.6 0.6" />
+				<attribute name="Variables" />
+				<component type="StaticModel" id="266">
+					<attribute name="Model" value="Model;Models/Torus.mdl" />
+					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
+				</component>
+			</node>
+			<node id="1277">
+				<attribute name="Is Enabled" value="true" />
+				<attribute name="Name" value="Targets" />
+				<attribute name="Tags" />
+				<attribute name="Position" value="0 0 0" />
+				<attribute name="Rotation" value="1 0 0 0" />
+				<attribute name="Scale" value="1 1 1" />
+				<attribute name="Variables" />
+				<node id="1278">
+					<attribute name="Is Enabled" value="true" />
+					<attribute name="Name" value="RightFoot_Target" />
+					<attribute name="Tags" />
+					<attribute name="Position" value="0.1 0.5 0.5" />
+					<attribute name="Rotation" value="1 0 1.21172e-06 0" />
+					<attribute name="Scale" value="0.1 0.1 0.1" />
+					<attribute name="Variables" />
+					<component type="StaticModel" id="267">
+						<attribute name="Model" value="Model;Models/Box.mdl" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
+					</component>
+				</node>
+				<node id="1279">
+					<attribute name="Is Enabled" value="true" />
+					<attribute name="Name" value="LeftFoot_Target" />
+					<attribute name="Tags" />
+					<attribute name="Position" value="-0.0999999 0.5 0.5" />
+					<attribute name="Rotation" value="1 0 1.21172e-06 0" />
+					<attribute name="Scale" value="0.1 0.1 0.1" />
+					<attribute name="Variables" />
+					<component type="StaticModel" id="268">
+						<attribute name="Model" value="Model;Models/Box.mdl" />
+						<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
+					</component>
+				</node>
+			</node>
+			<node id="1280">
+				<attribute name="Is Enabled" value="true" />
+				<attribute name="Name" value="Hips" />
+				<attribute name="Tags" />
+				<attribute name="Position" value="0 1.20123 2.38419e-07" />
+				<attribute name="Rotation" value="-0.34202 4.1747e-08 -0.939693 -1.14699e-07" />
+				<attribute name="Scale" value="1 1 1" />
+				<attribute name="Variables" />
+				<node id="1281">
+					<attribute name="Is Enabled" value="true" />
+					<attribute name="Name" value="Spine" />
+					<attribute name="Tags" />
+					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
+					<attribute name="Rotation" value="0.998295 0.0583761 1.51879e-05 0.000259729" />
+					<attribute name="Scale" value="1 1 1" />
+					<attribute name="Variables" />
+					<node id="1282">
+						<attribute name="Is Enabled" value="true" />
+						<attribute name="Name" value="Spine1" />
+						<attribute name="Tags" />
+						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
+						<attribute name="Rotation" value="1 2.79397e-08 -6.55958e-11 1.22192e-10" />
+						<attribute name="Scale" value="1 1 1" />
+						<attribute name="Variables" />
+						<node id="1283">
+							<attribute name="Is Enabled" value="true" />
+							<attribute name="Name" value="Spine2" />
+							<attribute name="Tags" />
+							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
+							<attribute name="Rotation" value="1 -3.53903e-08 -5.19039e-11 -2.44707e-10" />
+							<attribute name="Scale" value="1 1 1" />
+							<attribute name="Variables" />
+							<node id="1284">
+								<attribute name="Is Enabled" value="true" />
+								<attribute name="Name" value="Neck" />
+								<attribute name="Tags" />
+								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
+								<attribute name="Rotation" value="0.998295 -0.058376 -1.51879e-05 -0.000259729" />
+								<attribute name="Scale" value="1 1 1" />
+								<attribute name="Variables" />
+								<node id="1285">
+									<attribute name="Is Enabled" value="true" />
+									<attribute name="Name" value="Head" />
+									<attribute name="Tags" />
+									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
+									<attribute name="Rotation" value="1 -4.24838e-08 4.16674e-11 -8.0086e-11" />
+									<attribute name="Scale" value="1 1 1" />
+									<attribute name="Variables" />
+								</node>
+							</node>
+							<node id="1286">
+								<attribute name="Is Enabled" value="true" />
+								<attribute name="Name" value="LeftShoulder" />
+								<attribute name="Tags" />
+								<attribute name="Position" value="0.0555773 0.139031 0.00308173" />
+								<attribute name="Rotation" value="0.426403 -0.548619 -0.436902 -0.571239" />
+								<attribute name="Scale" value="1 1 1" />
+								<attribute name="Variables" />
+								<node id="1287">
+									<attribute name="Is Enabled" value="true" />
+									<attribute name="Name" value="LeftArm" />
+									<attribute name="Tags" />
+									<attribute name="Position" value="-8.64267e-07 0.122476 -1.20327e-06" />
+									<attribute name="Rotation" value="0.983252 0.122243 -0.130405 -0.0355834" />
+									<attribute name="Scale" value="1 1 1" />
+									<attribute name="Variables" />
+									<node id="1288">
+										<attribute name="Is Enabled" value="true" />
+										<attribute name="Name" value="LeftForeArm" />
+										<attribute name="Tags" />
+										<attribute name="Position" value="0.00122089 0.29224 0.00969981" />
+										<attribute name="Rotation" value="0.999819 0.010345 0.0132007 0.00903062" />
+										<attribute name="Scale" value="1 1 1" />
+										<attribute name="Variables" />
+										<node id="1289">
+											<attribute name="Is Enabled" value="true" />
+											<attribute name="Name" value="LeftHand" />
+											<attribute name="Tags" />
+											<attribute name="Position" value="-0.0151224 0.296263 0.000278866" />
+											<attribute name="Rotation" value="0.995476 0.00452314 -0.0925619 0.020956" />
+											<attribute name="Scale" value="1 1 1" />
+											<attribute name="Variables" />
+											<node id="1290">
+												<attribute name="Is Enabled" value="true" />
+												<attribute name="Name" value="LeftHandThumb1" />
+												<attribute name="Tags" />
+												<attribute name="Position" value="-0.0405438 0.0608802 -0.0299956" />
+												<attribute name="Rotation" value="0.160822 0.947605 0.263637 -0.0817083" />
+												<attribute name="Scale" value="0.999999 1 1" />
+												<attribute name="Variables" />
+												<node id="1291">
+													<attribute name="Is Enabled" value="true" />
+													<attribute name="Name" value="LeftHandThumb2" />
+													<attribute name="Tags" />
+													<attribute name="Position" value="-0.0010846 -0.0233406 0.00112591" />
+													<attribute name="Rotation" value="0.99874 -0.0191889 0.00778405 -0.0457216" />
+													<attribute name="Scale" value="1 1 1" />
+													<attribute name="Variables" />
+													<node id="1292">
+														<attribute name="Is Enabled" value="true" />
+														<attribute name="Name" value="LeftHandThumb3" />
+														<attribute name="Tags" />
+														<attribute name="Position" value="0.000710751 -0.0159287 0.000154209" />
+														<attribute name="Rotation" value="0.999407 -0.0164973 8.14472e-05 0.0302183" />
+														<attribute name="Scale" value="1 1 1" />
+														<attribute name="Variables" />
+														<node id="1293">
+															<attribute name="Is Enabled" value="true" />
+															<attribute name="Name" value="LeftHandThumb4" />
+															<attribute name="Tags" />
+															<attribute name="Position" value="-0.000403935 -0.0254641 -0.000590149" />
+															<attribute name="Rotation" value="0.78194 -0.0963176 0.592099 0.169446" />
+															<attribute name="Scale" value="1 1 1" />
+															<attribute name="Variables" />
+														</node>
+													</node>
+												</node>
+											</node>
+											<node id="1294">
+												<attribute name="Is Enabled" value="true" />
+												<attribute name="Name" value="LeftHandIndex1" />
+												<attribute name="Tags" />
+												<attribute name="Position" value="-0.0293823 0.13218 0.00524321" />
+												<attribute name="Rotation" value="0.00275595 -0.984848 0.00752986 -0.173236" />
+												<attribute name="Scale" value="1.00013 1 1.00004" />
+												<attribute name="Variables" />
+												<node id="1295">
+													<attribute name="Is Enabled" value="true" />
+													<attribute name="Name" value="LeftHandIndex2" />
+													<attribute name="Tags" />
+													<attribute name="Position" value="-0.000551088 -0.0219676 4.60034e-05" />
+													<attribute name="Rotation" value="0.999459 0.012595 -0.0270058 0.0139139" />
+													<attribute name="Scale" value="1 1 1" />
+													<attribute name="Variables" />
+													<node id="1296">
+														<attribute name="Is Enabled" value="true" />
+														<attribute name="Name" value="LeftHandIndex3" />
+														<attribute name="Tags" />
+														<attribute name="Position" value="-0.00078775 -0.0150675 0.00044287" />
+														<attribute name="Rotation" value="0.999658 0.00526986 0.00326187 -0.0254015" />
+														<attribute name="Scale" value="1 1 1" />
+														<attribute name="Variables" />
+														<node id="1297">
+															<attribute name="Is Enabled" value="true" />
+															<attribute name="Name" value="LeftHandIndex4" />
+															<attribute name="Tags" />
+															<attribute name="Position" value="0.000927343 -0.0163039 0.000188213" />
+															<attribute name="Rotation" value="0.0384492 0.983746 0.148098 0.0939786" />
+															<attribute name="Scale" value="0.999998 1 1" />
+															<attribute name="Variables" />
+														</node>
+													</node>
+												</node>
+											</node>
+											<node id="1298">
+												<attribute name="Is Enabled" value="true" />
+												<attribute name="Name" value="LeftHandMiddle1" />
+												<attribute name="Tags" />
+												<attribute name="Position" value="-0.00118465 0.130973 -0.000334646" />
+												<attribute name="Rotation" value="0.000430934 -0.999495 -0.0117066 -0.0295297" />
+												<attribute name="Scale" value="1.0001 1 1" />
+												<attribute name="Variables" />
+												<node id="1299">
+													<attribute name="Is Enabled" value="true" />
+													<attribute name="Name" value="LeftHandMiddle2" />
+													<attribute name="Tags" />
+													<attribute name="Position" value="0.000322114 -0.0228411 8.17657e-05" />
+													<attribute name="Rotation" value="0.999134 -0.000941985 -0.033283 0.024961" />
+													<attribute name="Scale" value="1 1 1" />
+													<attribute name="Variables" />
+													<node id="1300">
+														<attribute name="Is Enabled" value="true" />
+														<attribute name="Name" value="LeftHandMiddle3" />
+														<attribute name="Tags" />
+														<attribute name="Position" value="-0.000846595 -0.0238672 5.79341e-05" />
+														<attribute name="Rotation" value="0.999865 0.016044 -0.00125547 -0.00320939" />
+														<attribute name="Scale" value="1 1 1" />
+														<attribute name="Variables" />
+														<node id="1301">
+															<attribute name="Is Enabled" value="true" />
+															<attribute name="Name" value="LeftHandMiddle4" />
+															<attribute name="Tags" />
+															<attribute name="Position" value="-0.000510097 -0.0174912 0.000603927" />
+															<attribute name="Rotation" value="0.723506 -0.00853996 0.688348 0.0514052" />
+															<attribute name="Scale" value="1 1 1" />
+															<attribute name="Variables" />
+														</node>
+													</node>
+												</node>
+											</node>
+											<node id="1302">
+												<attribute name="Is Enabled" value="true" />
+												<attribute name="Name" value="LeftHandRing1" />
+												<attribute name="Tags" />
+												<attribute name="Position" value="0.024993 0.122373 -0.00907305" />
+												<attribute name="Rotation" value="0.00335855 -0.993403 0.00167436 0.114616" />
+												<attribute name="Scale" value="1.00081 1 1.00191" />
+												<attribute name="Variables" />
+												<node id="1303">
+													<attribute name="Is Enabled" value="true" />
+													<attribute name="Name" value="LeftHandRing2" />
+													<attribute name="Tags" />
+													<attribute name="Position" value="-0.000234274 -0.0216607 0.000249914" />
+													<attribute name="Rotation" value="0.999823 -0.00345594 -0.0144998 -0.0115086" />
+													<attribute name="Scale" value="1 1 1" />
+													<attribute name="Variables" />
+													<node id="1304">
+														<attribute name="Is Enabled" value="true" />
+														<attribute name="Name" value="LeftHandRing3" />
+														<attribute name="Tags" />
+														<attribute name="Position" value="0.00023382 -0.0187601 8.89888e-05" />
+														<attribute name="Rotation" value="0.999807 -0.00450562 0.0181668 0.00588155" />
+														<attribute name="Scale" value="1 1 1" />
+														<attribute name="Variables" />
+														<node id="1305">
+															<attribute name="Is Enabled" value="true" />
+															<attribute name="Name" value="LeftHandRing4" />
+															<attribute name="Tags" />
+															<attribute name="Position" value="0.00027313 -0.0223924 -0.00047555" />
+															<attribute name="Rotation" value="0.624993 -0.00921091 0.780513 0.00988652" />
+															<attribute name="Scale" value="1 1 1" />
+															<attribute name="Variables" />
+														</node>
+													</node>
+												</node>
+											</node>
+											<node id="1306">
+												<attribute name="Is Enabled" value="true" />
+												<attribute name="Name" value="LeftHandPinky1" />
+												<attribute name="Tags" />
+												<attribute name="Position" value="0.0462673 0.1095 -0.0178707" />
+												<attribute name="Rotation" value="0.0179804 0.972664 0.00903289 -0.231345" />
+												<attribute name="Scale" value="1.00005 1 1.00011" />
+												<attribute name="Variables" />
+												<node id="1307">
+													<attribute name="Is Enabled" value="true" />
+													<attribute name="Name" value="LeftHandPinky2" />
+													<attribute name="Tags" />
+													<attribute name="Position" value="-2.23641e-05 -0.0156256 -0.000528291" />
+													<attribute name="Rotation" value="0.996306 0.0187085 0.0836618 0.00495813" />
+													<attribute name="Scale" value="1 1 1" />
+													<attribute name="Variables" />
+													<node id="1308">
+														<attribute name="Is Enabled" value="true" />
+														<attribute name="Name" value="LeftHandPinky3" />
+														<attribute name="Tags" />
+														<attribute name="Position" value="-0.000112683 -0.0127843 3.92322e-05" />
+														<attribute name="Rotation" value="0.997565 -0.0131536 -0.0684898 0.000107818" />
+														<attribute name="Scale" value="1 1 1" />
+														<attribute name="Variables" />
+														<node id="1309">
+															<attribute name="Is Enabled" value="true" />
+															<attribute name="Name" value="LeftHandPinky4" />
+															<attribute name="Tags" />
+															<attribute name="Position" value="-0.000636925 -0.0173494 -0.000248341" />
+															<attribute name="Rotation" value="0.51801 0.11823 0.847141 0.00620189" />
+															<attribute name="Scale" value="1 1 1" />
+															<attribute name="Variables" />
+														</node>
+													</node>
+												</node>
+											</node>
+										</node>
+									</node>
+								</node>
+							</node>
+							<node id="1310">
+								<attribute name="Is Enabled" value="true" />
+								<attribute name="Name" value="RightShoulder" />
+								<attribute name="Tags" />
+								<attribute name="Position" value="-0.0564987 0.139089 0.00307592" />
+								<attribute name="Rotation" value="0.426403 -0.54862 0.436902 0.571239" />
+								<attribute name="Scale" value="1 1 1" />
+								<attribute name="Variables" />
+								<node id="1311">
+									<attribute name="Is Enabled" value="true" />
+									<attribute name="Name" value="RightArm" />
+									<attribute name="Tags" />
+									<attribute name="Position" value="1.70693e-05 0.122474 0.000126622" />
+									<attribute name="Rotation" value="0.983253 0.122242 0.130404 0.0355837" />
+									<attribute name="Scale" value="1 1 1" />
+									<attribute name="Variables" />
+									<node id="1312">
+										<attribute name="Is Enabled" value="true" />
+										<attribute name="Name" value="RightForeArm" />
+										<attribute name="Tags" />
+										<attribute name="Position" value="-0.00126498 0.29223 0.01" />
+										<attribute name="Rotation" value="0.999817 0.0103569 -0.0133433 -0.00903222" />
+										<attribute name="Scale" value="1 1 1" />
+										<attribute name="Variables" />
+										<node id="1313">
+											<attribute name="Is Enabled" value="true" />
+											<attribute name="Name" value="RightHand" />
+											<attribute name="Tags" />
+											<attribute name="Position" value="0.0150867 0.296264 0.000574746" />
+											<attribute name="Rotation" value="0.995476 0.00450799 0.0926054 -0.0207885" />
+											<attribute name="Scale" value="1 1 1" />
+											<attribute name="Variables" />
+											<node id="1314">
+												<attribute name="Is Enabled" value="true" />
+												<attribute name="Name" value="RightHandIndex1" />
+												<attribute name="Tags" />
+												<attribute name="Position" value="0.0293867 0.132174 0.00537533" />
+												<attribute name="Rotation" value="0.0422467 -0.976996 -0.116594 0.173494" />
+												<attribute name="Scale" value="1.00111 1 1.00038" />
+												<attribute name="Variables" />
+												<node id="1315">
+													<attribute name="Is Enabled" value="true" />
+													<attribute name="Name" value="RightHandIndex2" />
+													<attribute name="Tags" />
+													<attribute name="Position" value="0.00054539 -0.0219671 2.81943e-05" />
+													<attribute name="Rotation" value="0.999459 0.0126325 0.0269957 -0.0139007" />
+													<attribute name="Scale" value="1 1 1" />
+													<attribute name="Variables" />
+													<node id="1316">
+														<attribute name="Is Enabled" value="true" />
+														<attribute name="Name" value="RightHandIndex3" />
+														<attribute name="Tags" />
+														<attribute name="Position" value="0.000780396 -0.0150684 0.000430467" />
+														<attribute name="Rotation" value="0.999659 0.0052378 -0.00328156 0.0253773" />
+														<attribute name="Scale" value="1 1 1" />
+														<attribute name="Variables" />
+														<node id="1317">
+															<attribute name="Is Enabled" value="true" />
+															<attribute name="Name" value="RightHandIndex4" />
+															<attribute name="Tags" />
+															<attribute name="Position" value="-0.000931574 -0.0163027 0.000171719" />
+															<attribute name="Rotation" value="0.0383579 0.983808 -0.147947 -0.0936058" />
+															<attribute name="Scale" value="1 1 1" />
+															<attribute name="Variables" />
+														</node>
+													</node>
+												</node>
+											</node>
+											<node id="1318">
+												<attribute name="Is Enabled" value="true" />
+												<attribute name="Name" value="RightHandThumb1" />
+												<attribute name="Tags" />
+												<attribute name="Position" value="0.0405409 0.0609102 -0.0299396" />
+												<attribute name="Rotation" value="0.160762 0.947573 -0.26376 0.0818074" />
+												<attribute name="Scale" value="1 1 1" />
+												<attribute name="Variables" />
+												<node id="1319">
+													<attribute name="Is Enabled" value="true" />
+													<attribute name="Name" value="RightHandThumb2" />
+													<attribute name="Tags" />
+													<attribute name="Position" value="0.00107788 -0.0233424 0.00111213" />
+													<attribute name="Rotation" value="0.998737 -0.0192749 -0.00788076 0.0457328" />
+													<attribute name="Scale" value="1 1 1" />
+													<attribute name="Variables" />
+													<node id="1320">
+														<attribute name="Is Enabled" value="true" />
+														<attribute name="Name" value="RightHandThumb3" />
+														<attribute name="Tags" />
+														<attribute name="Position" value="-0.000716027 -0.015928 0.000143176" />
+														<attribute name="Rotation" value="0.999405 -0.0165618 -0.000202926 -0.0302472" />
+														<attribute name="Scale" value="1 1 1" />
+														<attribute name="Variables" />
+														<node id="1321">
+															<attribute name="Is Enabled" value="true" />
+															<attribute name="Name" value="RightHandThumb4" />
+															<attribute name="Tags" />
+															<attribute name="Position" value="0.000397371 -0.0254643 -0.0006144" />
+															<attribute name="Rotation" value="0.781942 -0.0963156 -0.592096 -0.169448" />
+															<attribute name="Scale" value="1 1 1" />
+															<attribute name="Variables" />
+														</node>
+													</node>
+												</node>
+											</node>
+											<node id="1322">
+												<attribute name="Is Enabled" value="true" />
+												<attribute name="Name" value="RightHandMiddle1" />
+												<attribute name="Tags" />
+												<attribute name="Position" value="0.00118766 0.130973 -0.000199538" />
+												<attribute name="Rotation" value="0.000445773 -0.999494 0.0117303 0.029562" />
+												<attribute name="Scale" value="1.0004 1 1" />
+												<attribute name="Variables" />
+												<node id="1323">
+													<attribute name="Is Enabled" value="true" />
+													<attribute name="Name" value="RightHandMiddle2" />
+													<attribute name="Tags" />
+													<attribute name="Position" value="-0.000323261 -0.0228416 5.81276e-05" />
+													<attribute name="Rotation" value="0.999135 -0.000951614 0.0332883 -0.024923" />
+													<attribute name="Scale" value="1 1 1" />
+													<attribute name="Variables" />
+													<node id="1324">
+														<attribute name="Is Enabled" value="true" />
+														<attribute name="Name" value="RightHandMiddle3" />
+														<attribute name="Tags" />
+														<attribute name="Position" value="0.000846382 -0.0238667 3.42542e-05" />
+														<attribute name="Rotation" value="0.994643 0.103262 0.00434683 0.00171799" />
+														<attribute name="Scale" value="1 1 1" />
+														<attribute name="Variables" />
+														<node id="1325">
+															<attribute name="Is Enabled" value="true" />
+															<attribute name="Name" value="RightHandMiddle4" />
+															<attribute name="Tags" />
+															<attribute name="Position" value="0.000737423 -0.0231127 0.00489116" />
+															<attribute name="Rotation" value="0.723503 -0.00853499 -0.688353 -0.0513895" />
+															<attribute name="Scale" value="1 1 1" />
+															<attribute name="Variables" />
+														</node>
+													</node>
+												</node>
+											</node>
+											<node id="1326">
+												<attribute name="Is Enabled" value="true" />
+												<attribute name="Name" value="RightHandRing1" />
+												<attribute name="Tags" />
+												<attribute name="Position" value="-0.0249907 0.122383 -0.00894191" />
+												<attribute name="Rotation" value="0.0639855 -0.956732 0.262187 -0.108757" />
+												<attribute name="Scale" value="0.998782 1 0.997114" />
+												<attribute name="Variables" />
+												<node id="1327">
+													<attribute name="Is Enabled" value="true" />
+													<attribute name="Name" value="RightHandRing2" />
+													<attribute name="Tags" />
+													<attribute name="Position" value="0.000239647 -0.0216605 0.00022958" />
+													<attribute name="Rotation" value="0.999822 -0.0033897 0.0145476 0.011529" />
+													<attribute name="Scale" value="1 1 1" />
+													<attribute name="Variables" />
+													<node id="1328">
+														<attribute name="Is Enabled" value="true" />
+														<attribute name="Name" value="RightHandRing3" />
+														<attribute name="Tags" />
+														<attribute name="Position" value="-0.000229361 -0.0187606 6.93207e-05" />
+														<attribute name="Rotation" value="0.994684 0.0971585 -0.0187463 0.0284891" />
+														<attribute name="Scale" value="1 1 1" />
+														<attribute name="Variables" />
+														<node id="1329">
+															<attribute name="Is Enabled" value="true" />
+															<attribute name="Name" value="RightHandRing4" />
+															<attribute name="Tags" />
+															<attribute name="Position" value="-0.0013594 -0.0204498 0.00415109" />
+															<attribute name="Rotation" value="0.625015 -0.00927721 -0.780496 -0.00984162" />
+															<attribute name="Scale" value="1 1 1" />
+															<attribute name="Variables" />
+														</node>
+													</node>
+												</node>
+											</node>
+											<node id="1330">
+												<attribute name="Is Enabled" value="true" />
+												<attribute name="Name" value="RightHandPinky1" />
+												<attribute name="Tags" />
+												<attribute name="Position" value="-0.0462684 0.109519 -0.0177503" />
+												<attribute name="Rotation" value="0.0184568 0.972708 -0.00804832 0.231159" />
+												<attribute name="Scale" value="1.00002 1 1.00005" />
+												<attribute name="Variables" />
+												<node id="1331">
+													<attribute name="Is Enabled" value="true" />
+													<attribute name="Name" value="RightHandPinky2" />
+													<attribute name="Tags" />
+													<attribute name="Position" value="3.13871e-05 -0.0156254 -0.000540938" />
+													<attribute name="Rotation" value="0.99631 0.0186533 -0.0836277 -0.00496686" />
+													<attribute name="Scale" value="1 1 1" />
+													<attribute name="Variables" />
+													<node id="1332">
+														<attribute name="Is Enabled" value="true" />
+														<attribute name="Name" value="RightHandPinky3" />
+														<attribute name="Tags" />
+														<attribute name="Position" value="0.000117308 -0.0127852 2.70723e-05" />
+														<attribute name="Rotation" value="0.992699 0.0932631 0.0687794 0.0334818" />
+														<attribute name="Scale" value="1 1 1" />
+														<attribute name="Variables" />
+														<node id="1333">
+															<attribute name="Is Enabled" value="true" />
+															<attribute name="Name" value="RightHandPinky4" />
+															<attribute name="Tags" />
+															<attribute name="Position" value="-0.00123876 -0.0172496 0.00322936" />
+															<attribute name="Rotation" value="0.518008 0.118244 -0.847141 -0.00621604" />
+															<attribute name="Scale" value="1 1 1" />
+															<attribute name="Variables" />
+														</node>
+													</node>
+												</node>
+											</node>
+										</node>
+									</node>
+								</node>
+							</node>
+						</node>
+					</node>
+				</node>
+				<node id="1334">
+					<attribute name="Is Enabled" value="true" />
+					<attribute name="Name" value="LeftUpLeg" />
+					<attribute name="Tags" />
+					<attribute name="Position" value="0.121043 -0.0605316 0.0123324" />
+					<attribute name="Rotation" value="0.178532 -0.0774418 -0.586268 0.786395" />
+					<attribute name="Scale" value="0.999985 1 0.999797" />
+					<attribute name="Variables" />
+					<node id="1335">
+						<attribute name="Is Enabled" value="true" />
+						<attribute name="Name" value="LeftLeg" />
+						<attribute name="Tags" />
+						<attribute name="Position" value="-0.00333451 0.46605 0.00188092" />
+						<attribute name="Rotation" value="0.733272 0.679692 0.0159728 0.00872636" />
+						<attribute name="Scale" value="1 1 1" />
+						<attribute name="Variables" />
+						<node id="1336">
+							<attribute name="Is Enabled" value="true" />
+							<attribute name="Name" value="LeftFoot" />
+							<attribute name="Tags" />
+							<attribute name="Position" value="-0.0043887 0.504789 -0.00405223" />
+							<attribute name="Rotation" value="0.775408 -0.564636 -0.279218 -0.0443459" />
+							<attribute name="Scale" value="1 1 1" />
+							<attribute name="Variables" />
+							<node id="1337">
+								<attribute name="Is Enabled" value="true" />
+								<attribute name="Name" value="LeftToeBase" />
+								<attribute name="Tags" />
+								<attribute name="Position" value="2.00234e-08 0.176985 -1.19966e-07" />
+								<attribute name="Rotation" value="0.98245 -0.170661 -0.0708142 -0.0255503" />
+								<attribute name="Scale" value="1 1 1" />
+								<attribute name="Variables" />
+								<node id="1338">
+									<attribute name="Is Enabled" value="true" />
+									<attribute name="Name" value="LeftToe_End" />
+									<attribute name="Tags" />
+									<attribute name="Position" value="-1.88593e-08 0.0693708 9.0804e-09" />
+									<attribute name="Rotation" value="1 -3.84171e-08 -0.000794763 -5.57484e-08" />
+									<attribute name="Scale" value="1 1 1" />
+									<attribute name="Variables" />
+								</node>
+							</node>
+						</node>
+					</node>
+				</node>
+				<node id="1339">
+					<attribute name="Is Enabled" value="true" />
+					<attribute name="Name" value="RightUpLeg" />
+					<attribute name="Tags" />
+					<attribute name="Position" value="-0.122503 -0.0605316 0.0123324" />
+					<attribute name="Rotation" value="0.130079 -0.0769515 -0.604481 0.782151" />
+					<attribute name="Scale" value="0.999942 0.999999 0.999287" />
+					<attribute name="Variables" />
+					<node id="1340">
+						<attribute name="Is Enabled" value="true" />
+						<attribute name="Name" value="RightLeg" />
+						<attribute name="Tags" />
+						<attribute name="Position" value="0.00333401 0.46605 0.00188207" />
+						<attribute name="Rotation" value="0.624915 0.780483 -0.0151507 -0.00990602" />
+						<attribute name="Scale" value="1 1 1" />
+						<attribute name="Variables" />
+						<node id="1341">
+							<attribute name="Is Enabled" value="true" />
+							<attribute name="Name" value="RightFoot" />
+							<attribute name="Tags" />
+							<attribute name="Position" value="0.00438883 0.504792 -0.00405537" />
+							<attribute name="Rotation" value="0.770364 -0.586516 -0.249984 -0.00682729" />
+							<attribute name="Scale" value="1 1 1" />
+							<attribute name="Variables" />
+							<node id="1342">
+								<attribute name="Is Enabled" value="true" />
+								<attribute name="Name" value="RightToeBase" />
+								<attribute name="Tags" />
+								<attribute name="Position" value="5.63159e-09 0.177041 -6.1118e-10" />
+								<attribute name="Rotation" value="0.949003 -0.285721 -0.131658 -0.0205691" />
+								<attribute name="Scale" value="1 1 1" />
+								<attribute name="Variables" />
+								<node id="1343">
+									<attribute name="Is Enabled" value="true" />
+									<attribute name="Name" value="RightToe_End" />
+									<attribute name="Tags" />
+									<attribute name="Position" value="-3.40515e-09 0.0694061 -3.49246e-10" />
+									<attribute name="Rotation" value="0.999997 1.87648e-08 -0.00241393 -3.77674e-07" />
+									<attribute name="Scale" value="1 1 1" />
+									<attribute name="Variables" />
+								</node>
+							</node>
+						</node>
 					</node>
 				</node>
 			</node>
@@ -18863,7 +19632,7 @@
 								<attribute name="Name" value="RightShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="-0.0564987 0.139089 0.00307592" />
-								<attribute name="Rotation" value="0.46975 -0.673409 0.299707 0.485831" />
+								<attribute name="Rotation" value="0.442078 -0.604242 0.382412 0.541497" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16778015">
@@ -18871,7 +19640,7 @@
 									<attribute name="Name" value="RightArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="1.70693e-05 0.122474 0.000126622" />
-									<attribute name="Rotation" value="0.959471 -0.174088 0.19574 0.103894" />
+									<attribute name="Rotation" value="0.951975 -0.192688 0.23009 -0.0606048" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16778016">
@@ -18879,7 +19648,7 @@
 										<attribute name="Name" value="RightForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="-0.00126498 0.29223 0.01" />
-										<attribute name="Rotation" value="0.708347 0.103064 0.0011165 -0.698299" />
+										<attribute name="Rotation" value="0.743137 0.0927794 -0.00650256 -0.662644" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16778017">
@@ -18887,7 +19656,7 @@
 											<attribute name="Name" value="RightHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="0.0150867 0.296264 0.000574746" />
-											<attribute name="Rotation" value="0.995476 0.00450794 0.0926054 -0.0207886" />
+											<attribute name="Rotation" value="0.995476 0.00450803 0.0926054 -0.0207887" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16778018">
@@ -19390,7 +20159,7 @@
 								<attribute name="Name" value="LeftShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="0.0555773 0.139031 0.00308173" />
-								<attribute name="Rotation" value="0.538025 -0.648017 -0.324412 -0.430535" />
+								<attribute name="Rotation" value="0.498771 -0.574971 -0.394981 -0.514418" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16778503">
@@ -19398,7 +20167,7 @@
 									<attribute name="Name" value="LeftArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-8.64267e-07 0.122476 -1.20327e-06" />
-									<attribute name="Rotation" value="0.923828 0.240507 0.286709 0.0806464" />
+									<attribute name="Rotation" value="0.850349 0.524978 0.0297154 0.0207144" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16778504">
@@ -19406,7 +20175,7 @@
 										<attribute name="Name" value="LeftForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="0.00122089 0.29224 0.00969981" />
-										<attribute name="Rotation" value="0.672806 0.106532 -0.0014762 0.732107" />
+										<attribute name="Rotation" value="0.702023 0.0960634 0.0062352 0.705618" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16778505">
@@ -19414,7 +20183,7 @@
 											<attribute name="Name" value="LeftHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="-0.0151224 0.296263 0.000278866" />
-											<attribute name="Rotation" value="0.995476 0.00452315 -0.0925618 0.0209561" />
+											<attribute name="Rotation" value="0.995476 0.00452311 -0.0925619 0.0209562" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16778506">
@@ -19606,7 +20375,7 @@
 								<attribute name="Name" value="RightShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="-0.0564987 0.139089 0.00307592" />
-								<attribute name="Rotation" value="0.54879 -0.666393 0.297915 0.407427" />
+								<attribute name="Rotation" value="0.504275 -0.583655 0.382507 0.508667" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16778527">
@@ -19614,7 +20383,7 @@
 									<attribute name="Name" value="RightArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="1.70693e-05 0.122474 0.000126622" />
-									<attribute name="Rotation" value="0.916674 0.298629 -0.195776 -0.179466" />
+									<attribute name="Rotation" value="0.826017 0.529415 0.0684265 -0.180941" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16778528">
@@ -19622,7 +20391,7 @@
 										<attribute name="Name" value="RightForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="-0.00126498 0.29223 0.01" />
-										<attribute name="Rotation" value="0.835732 0.0862262 -0.00306756 -0.542317" />
+										<attribute name="Rotation" value="0.873665 0.0760359 -0.00953999 -0.480457" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16778529">
@@ -19630,7 +20399,7 @@
 											<attribute name="Name" value="RightHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="0.0150867 0.296264 0.000574746" />
-											<attribute name="Rotation" value="0.995476 0.00450803 0.0926054 -0.0207887" />
+											<attribute name="Rotation" value="0.995476 0.00450796 0.0926053 -0.0207887" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16778530">
@@ -20139,7 +20908,7 @@
 								<attribute name="Name" value="LeftShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="0.0555773 0.139031 0.00308173" />
-								<attribute name="Rotation" value="0.45229 -0.621104 -0.366349 -0.524835" />
+								<attribute name="Rotation" value="0.428971 -0.583339 -0.402095 -0.560374" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779719">
@@ -20147,7 +20916,7 @@
 									<attribute name="Name" value="LeftArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-8.64267e-07 0.122476 -1.20327e-06" />
-									<attribute name="Rotation" value="0.848528 -0.268123 -0.261462 -0.373829" />
+									<attribute name="Rotation" value="0.878366 -0.255929 -0.285135 -0.285785" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16779720">
@@ -20155,7 +20924,7 @@
 										<attribute name="Name" value="LeftForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="0.00122089 0.29224 0.00969981" />
-										<attribute name="Rotation" value="0.384538 0.122191 -0.0080872 0.91495" />
+										<attribute name="Rotation" value="0.396789 0.100569 0.000159621 0.912384" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16779721">
@@ -20163,7 +20932,7 @@
 											<attribute name="Name" value="LeftHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="-0.0151224 0.296263 0.000278866" />
-											<attribute name="Rotation" value="0.995476 0.00452302 -0.0925618 0.0209561" />
+											<attribute name="Rotation" value="0.995476 0.00452313 -0.0925619 0.0209561" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16779722">
@@ -20355,7 +21124,7 @@
 								<attribute name="Name" value="RightShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="-0.0564987 0.139089 0.00307592" />
-								<attribute name="Rotation" value="0.455432 -0.653531 0.332834 0.504678" />
+								<attribute name="Rotation" value="0.422947 -0.602085 0.386133 0.556337" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779743">
@@ -20363,7 +21132,7 @@
 									<attribute name="Name" value="RightArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="1.70693e-05 0.122474 0.000126622" />
-									<attribute name="Rotation" value="0.881008 -0.40572 0.217635 0.108869" />
+									<attribute name="Rotation" value="0.881669 -0.388757 0.267444 -0.00131381" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16779744">
@@ -20371,7 +21140,7 @@
 										<attribute name="Name" value="RightForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="-0.00126498 0.29223 0.01" />
-										<attribute name="Rotation" value="0.754244 0.0979416 -0.000280619 -0.649248" />
+										<attribute name="Rotation" value="0.77303 0.0899216 -0.00716487 -0.627924" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16779745">
@@ -20379,7 +21148,7 @@
 											<attribute name="Name" value="RightHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="0.0150867 0.296264 0.000574746" />
-											<attribute name="Rotation" value="0.995476 0.00450794 0.0926055 -0.0207886" />
+											<attribute name="Rotation" value="0.995476 0.0045081 0.0926053 -0.0207887" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16779746">
@@ -20888,7 +21657,7 @@
 								<attribute name="Name" value="LeftShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="0.0555773 0.139031 0.00308173" />
-								<attribute name="Rotation" value="0.45229 -0.621104 -0.366349 -0.524834" />
+								<attribute name="Rotation" value="0.428971 -0.583339 -0.402095 -0.560374" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779783">
@@ -20896,7 +21665,7 @@
 									<attribute name="Name" value="LeftArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-8.64267e-07 0.122476 -1.20327e-06" />
-									<attribute name="Rotation" value="0.848528 -0.268123 -0.261462 -0.373829" />
+									<attribute name="Rotation" value="0.878365 -0.255929 -0.285135 -0.285785" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16779784">
@@ -20904,7 +21673,7 @@
 										<attribute name="Name" value="LeftForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="0.00122089 0.29224 0.00969981" />
-										<attribute name="Rotation" value="0.384538 0.122191 -0.00808725 0.91495" />
+										<attribute name="Rotation" value="0.396789 0.10057 0.000159979 0.912383" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16779785">
@@ -20912,7 +21681,7 @@
 											<attribute name="Name" value="LeftHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="-0.0151224 0.296263 0.000278866" />
-											<attribute name="Rotation" value="0.995476 0.00452311 -0.0925618 0.0209561" />
+											<attribute name="Rotation" value="0.995476 0.00452315 -0.0925618 0.0209561" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16779786">
@@ -21104,7 +21873,7 @@
 								<attribute name="Name" value="RightShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="-0.0564987 0.139089 0.00307592" />
-								<attribute name="Rotation" value="0.455432 -0.653531 0.332834 0.504678" />
+								<attribute name="Rotation" value="0.422947 -0.602085 0.386133 0.556337" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779807">
@@ -21112,7 +21881,7 @@
 									<attribute name="Name" value="RightArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="1.70693e-05 0.122474 0.000126622" />
-									<attribute name="Rotation" value="0.881007 -0.40572 0.217635 0.108867" />
+									<attribute name="Rotation" value="0.881669 -0.388757 0.267444 -0.00131428" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16779808">
@@ -21120,7 +21889,7 @@
 										<attribute name="Name" value="RightForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="-0.00126498 0.29223 0.01" />
-										<attribute name="Rotation" value="0.754246 0.097942 -0.000280917 -0.649246" />
+										<attribute name="Rotation" value="0.773031 0.0899208 -0.007166 -0.627922" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16779809">
@@ -21128,7 +21897,7 @@
 											<attribute name="Name" value="RightHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="0.0150867 0.296264 0.000574746" />
-											<attribute name="Rotation" value="0.995476 0.00450802 0.0926054 -0.0207886" />
+											<attribute name="Rotation" value="0.995476 0.00450791 0.0926055 -0.0207885" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16779810">
@@ -21637,7 +22406,7 @@
 								<attribute name="Name" value="LeftShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="0.0555773 0.139031 0.00308173" />
-								<attribute name="Rotation" value="0.45229 -0.621104 -0.366349 -0.524834" />
+								<attribute name="Rotation" value="0.428971 -0.583339 -0.402095 -0.560374" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780743">
@@ -21645,7 +22414,7 @@
 									<attribute name="Name" value="LeftArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-8.64267e-07 0.122476 -1.20327e-06" />
-									<attribute name="Rotation" value="0.848528 -0.268123 -0.261462 -0.373829" />
+									<attribute name="Rotation" value="0.878366 -0.255929 -0.285135 -0.285785" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16780744">
@@ -21653,7 +22422,7 @@
 										<attribute name="Name" value="LeftForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="0.00122089 0.29224 0.00969981" />
-										<attribute name="Rotation" value="0.384538 0.122191 -0.00808723 0.914951" />
+										<attribute name="Rotation" value="0.396789 0.10057 0.000159517 0.912384" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16780745">
@@ -21661,7 +22430,7 @@
 											<attribute name="Name" value="LeftHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="-0.0151224 0.296263 0.000278866" />
-											<attribute name="Rotation" value="0.995476 0.00452312 -0.0925619 0.020956" />
+											<attribute name="Rotation" value="0.995476 0.00452309 -0.0925619 0.020956" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16780746">
@@ -21853,7 +22622,7 @@
 								<attribute name="Name" value="RightShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="-0.0564987 0.139089 0.00307592" />
-								<attribute name="Rotation" value="0.455432 -0.653531 0.332835 0.504678" />
+								<attribute name="Rotation" value="0.422947 -0.602085 0.386133 0.556337" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780767">
@@ -21861,7 +22630,7 @@
 									<attribute name="Name" value="RightArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="1.70693e-05 0.122474 0.000126622" />
-									<attribute name="Rotation" value="0.881008 -0.40572 0.217635 0.108867" />
+									<attribute name="Rotation" value="0.881669 -0.388756 0.267444 -0.00131452" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16780768">
@@ -21869,7 +22638,7 @@
 										<attribute name="Name" value="RightForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="-0.00126498 0.29223 0.01" />
-										<attribute name="Rotation" value="0.754245 0.0979419 -0.000280887 -0.649247" />
+										<attribute name="Rotation" value="0.77303 0.0899211 -0.00716585 -0.627923" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16780769">
@@ -21877,7 +22646,7 @@
 											<attribute name="Name" value="RightHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="0.0150867 0.296264 0.000574746" />
-											<attribute name="Rotation" value="0.995476 0.004508 0.0926054 -0.0207886" />
+											<attribute name="Rotation" value="0.995476 0.00450794 0.0926053 -0.0207886" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16780770">
@@ -22386,7 +23155,7 @@
 								<attribute name="Name" value="LeftShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="0.0555773 0.139031 0.00308173" />
-								<attribute name="Rotation" value="0.45229 -0.621104 -0.366349 -0.524835" />
+								<attribute name="Rotation" value="0.428971 -0.583339 -0.402095 -0.560374" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779847">
@@ -22394,7 +23163,7 @@
 									<attribute name="Name" value="LeftArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-8.64267e-07 0.122476 -1.20327e-06" />
-									<attribute name="Rotation" value="0.848528 -0.268123 -0.261462 -0.373829" />
+									<attribute name="Rotation" value="0.878366 -0.255928 -0.285135 -0.285785" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16779848">
@@ -22402,7 +23171,7 @@
 										<attribute name="Name" value="LeftForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="0.00122089 0.29224 0.00969981" />
-										<attribute name="Rotation" value="0.384536 0.122191 -0.00808746 0.914951" />
+										<attribute name="Rotation" value="0.396789 0.100571 0.000158757 0.912384" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16779849">
@@ -22410,7 +23179,7 @@
 											<attribute name="Name" value="LeftHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="-0.0151224 0.296263 0.000278866" />
-											<attribute name="Rotation" value="0.995476 0.00452319 -0.0925619 0.0209561" />
+											<attribute name="Rotation" value="0.995476 0.00452312 -0.0925618 0.020956" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16779850">
@@ -22602,7 +23371,7 @@
 								<attribute name="Name" value="RightShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="-0.0564987 0.139089 0.00307592" />
-								<attribute name="Rotation" value="0.455432 -0.65353 0.332835 0.504679" />
+								<attribute name="Rotation" value="0.422947 -0.602085 0.386133 0.556337" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779871">
@@ -22610,7 +23379,7 @@
 									<attribute name="Name" value="RightArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="1.70693e-05 0.122474 0.000126622" />
-									<attribute name="Rotation" value="0.881007 -0.405721 0.217635 0.108867" />
+									<attribute name="Rotation" value="0.881669 -0.388756 0.267445 -0.00131381" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16779872">
@@ -22618,7 +23387,7 @@
 										<attribute name="Name" value="RightForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="-0.00126498 0.29223 0.01" />
-										<attribute name="Rotation" value="0.754245 0.0979422 -0.000280917 -0.649247" />
+										<attribute name="Rotation" value="0.77303 0.0899209 -0.00716537 -0.627924" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16779873">
@@ -22626,7 +23395,7 @@
 											<attribute name="Name" value="RightHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="0.0150867 0.296264 0.000574746" />
-											<attribute name="Rotation" value="0.995476 0.00450787 0.0926055 -0.0207886" />
+											<attribute name="Rotation" value="0.995476 0.00450794 0.0926053 -0.0207886" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16779874">
@@ -23137,7 +23906,7 @@
 								<attribute name="Name" value="LeftShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="0.0555773 0.139031 0.00308173" />
-								<attribute name="Rotation" value="0.45229 -0.621104 -0.366349 -0.524835" />
+								<attribute name="Rotation" value="0.428971 -0.583339 -0.402095 -0.560374" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779911">
@@ -23145,7 +23914,7 @@
 									<attribute name="Name" value="LeftArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-8.64267e-07 0.122476 -1.20327e-06" />
-									<attribute name="Rotation" value="0.806194 -0.410652 -0.111107 -0.411185" />
+									<attribute name="Rotation" value="0.781142 -0.514964 -0.0384612 -0.350929" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16779912">
@@ -23153,7 +23922,7 @@
 										<attribute name="Name" value="LeftForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="0.00122089 0.29224 0.00969981" />
-										<attribute name="Rotation" value="0.384538 0.122191 -0.00808743 0.91495" />
+										<attribute name="Rotation" value="0.396789 0.100572 0.00015834 0.912384" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16779913">
@@ -23161,7 +23930,7 @@
 											<attribute name="Name" value="LeftHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="-0.0151224 0.296263 0.000278866" />
-											<attribute name="Rotation" value="0.995476 0.00452311 -0.0925618 0.0209561" />
+											<attribute name="Rotation" value="0.995476 0.00452317 -0.0925618 0.0209561" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16779914">
@@ -23353,7 +24122,7 @@
 								<attribute name="Name" value="RightShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="-0.0564987 0.139089 0.00307592" />
-								<attribute name="Rotation" value="0.455432 -0.65353 0.332835 0.504679" />
+								<attribute name="Rotation" value="0.422947 -0.602085 0.386133 0.556337" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779935">
@@ -23361,7 +24130,7 @@
 									<attribute name="Name" value="RightArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="1.70693e-05 0.122474 0.000126622" />
-									<attribute name="Rotation" value="0.865143 -0.461296 0.133578 0.144536" />
+									<attribute name="Rotation" value="0.80806 -0.575645 0.00267735 0.12516" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16779936">
@@ -23369,7 +24138,7 @@
 										<attribute name="Name" value="RightForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="-0.00126498 0.29223 0.01" />
-										<attribute name="Rotation" value="0.754246 0.0979415 -0.000280827 -0.649246" />
+										<attribute name="Rotation" value="0.77303 0.089921 -0.00716591 -0.627923" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16779937">
@@ -23377,7 +24146,7 @@
 											<attribute name="Name" value="RightHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="0.0150867 0.296264 0.000574746" />
-											<attribute name="Rotation" value="0.995476 0.00450788 0.0926056 -0.0207886" />
+											<attribute name="Rotation" value="0.995476 0.00450787 0.0926053 -0.0207885" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16779938">
@@ -23901,7 +24670,7 @@
 								<attribute name="Name" value="LeftShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="0.0555773 0.139031 0.00308173" />
-								<attribute name="Rotation" value="0.45229 -0.621104 -0.366349 -0.524835" />
+								<attribute name="Rotation" value="0.428971 -0.583339 -0.402095 -0.560374" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779975">
@@ -23909,7 +24678,7 @@
 									<attribute name="Name" value="LeftArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-8.64267e-07 0.122476 -1.20327e-06" />
-									<attribute name="Rotation" value="0.717287 -0.544823 0.0591971 -0.430307" />
+									<attribute name="Rotation" value="0.603166 -0.683599 0.184368 -0.367277" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16779976">
@@ -23917,7 +24686,7 @@
 										<attribute name="Name" value="LeftForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="0.00122089 0.29224 0.00969981" />
-										<attribute name="Rotation" value="0.384538 0.122192 -0.00808674 0.91495" />
+										<attribute name="Rotation" value="0.396789 0.10057 0.000159219 0.912383" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16779977">
@@ -23925,7 +24694,7 @@
 											<attribute name="Name" value="LeftHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="-0.0151224 0.296263 0.000278866" />
-											<attribute name="Rotation" value="0.995476 0.00452295 -0.0925619 0.020956" />
+											<attribute name="Rotation" value="0.995476 0.00452307 -0.0925619 0.0209561" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16779978">
@@ -24117,7 +24886,7 @@
 								<attribute name="Name" value="RightShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="-0.0564987 0.139089 0.00307592" />
-								<attribute name="Rotation" value="0.455432 -0.653531 0.332835 0.504678" />
+								<attribute name="Rotation" value="0.422947 -0.602085 0.386133 0.556337" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16779999">
@@ -24125,7 +24894,7 @@
 									<attribute name="Name" value="RightArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="1.70693e-05 0.122474 0.000126622" />
-									<attribute name="Rotation" value="0.874358 -0.242397 0.420232 0.0121409" />
+									<attribute name="Rotation" value="0.883119 -0.348239 0.313375 -0.0250272" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16780000">
@@ -24133,7 +24902,7 @@
 										<attribute name="Name" value="RightForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="-0.00126498 0.29223 0.01" />
-										<attribute name="Rotation" value="0.754246 0.0979419 -0.000280969 -0.649247" />
+										<attribute name="Rotation" value="0.77303 0.0899218 -0.00716561 -0.627923" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16780001">
@@ -24141,7 +24910,7 @@
 											<attribute name="Name" value="RightHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="0.0150867 0.296264 0.000574746" />
-											<attribute name="Rotation" value="0.995476 0.00450799 0.0926054 -0.0207886" />
+											<attribute name="Rotation" value="0.995476 0.00450793 0.0926054 -0.0207886" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16780002">
@@ -24663,7 +25432,7 @@
 								<attribute name="Name" value="LeftShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="0.0555773 0.139031 0.00308173" />
-								<attribute name="Rotation" value="0.45229 -0.621104 -0.366349 -0.524834" />
+								<attribute name="Rotation" value="0.428971 -0.583339 -0.402095 -0.560374" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780039">
@@ -24671,7 +25440,7 @@
 									<attribute name="Name" value="LeftArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-8.64267e-07 0.122476 -1.20327e-06" />
-									<attribute name="Rotation" value="0.848528 -0.268125 -0.261463 -0.373828" />
+									<attribute name="Rotation" value="0.878365 -0.25593 -0.285136 -0.285784" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16780040">
@@ -24679,7 +25448,7 @@
 										<attribute name="Name" value="LeftForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="0.00122089 0.29224 0.00969981" />
-										<attribute name="Rotation" value="0.384536 0.122191 -0.00808778 0.914951" />
+										<attribute name="Rotation" value="0.396789 0.100572 0.000159532 0.912383" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16780041">
@@ -24687,7 +25456,7 @@
 											<attribute name="Name" value="LeftHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="-0.0151224 0.296263 0.000278866" />
-											<attribute name="Rotation" value="0.995476 0.00452304 -0.0925618 0.0209561" />
+											<attribute name="Rotation" value="0.995476 0.00452317 -0.0925619 0.0209561" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16780042">
@@ -24879,7 +25648,7 @@
 								<attribute name="Name" value="RightShoulder" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="-0.0564987 0.139089 0.00307592" />
-								<attribute name="Rotation" value="0.455432 -0.653531 0.332835 0.504679" />
+								<attribute name="Rotation" value="0.422947 -0.602085 0.386133 0.556337" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780063">
@@ -24887,7 +25656,7 @@
 									<attribute name="Name" value="RightArm" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="1.70693e-05 0.122474 0.000126622" />
-									<attribute name="Rotation" value="0.881007 -0.40572 0.217635 0.108867" />
+									<attribute name="Rotation" value="0.881669 -0.388757 0.267444 -0.00131455" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 									<node id="16780064">
@@ -24895,7 +25664,7 @@
 										<attribute name="Name" value="RightForeArm" />
 										<attribute name="Tags" />
 										<attribute name="Position" value="-0.00126498 0.29223 0.01" />
-										<attribute name="Rotation" value="0.754245 0.0979421 -0.000280619 -0.649247" />
+										<attribute name="Rotation" value="0.773031 0.0899215 -0.00716618 -0.627922" />
 										<attribute name="Scale" value="1 1 1" />
 										<attribute name="Variables" />
 										<node id="16780065">
@@ -24903,7 +25672,7 @@
 											<attribute name="Name" value="RightHand" />
 											<attribute name="Tags" />
 											<attribute name="Position" value="0.0150867 0.296264 0.000574746" />
-											<attribute name="Rotation" value="0.995476 0.00450791 0.0926055 -0.0207885" />
+											<attribute name="Rotation" value="0.995476 0.00450803 0.0926055 -0.0207886" />
 											<attribute name="Scale" value="1 1 1" />
 											<attribute name="Variables" />
 											<node id="16780066">
@@ -25349,7 +26118,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.990201 -0.0933912 0.103391 -0.0094755" />
+					<attribute name="Rotation" value="0.990894 -0.0934546 0.0965312 -0.00882853" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16778178">
@@ -25357,7 +26126,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.97791 -0.164135 0.116852 -0.0556559" />
+						<attribute name="Rotation" value="0.978804 -0.165307 0.109109 -0.0520708" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16778179">
@@ -25365,7 +26134,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.972093 -0.16291 0.130844 -0.106652" />
+							<attribute name="Rotation" value="0.97322 -0.166902 0.122184 -0.100289" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16778180">
@@ -25373,7 +26142,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.058376 -1.51806e-05 -0.000259697" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.52104e-05 -0.000259697" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16778181">
@@ -26086,7 +26855,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.978687 0.138137 -0.143974 -0.0485872" />
+					<attribute name="Rotation" value="0.989202 0.143905 0.00600422 -0.0270915" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16778562">
@@ -26094,7 +26863,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.980523 0.0732875 -0.167163 -0.0725183" />
+						<attribute name="Rotation" value="0.994658 0.0984356 0.00497673 -0.0306632" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16778563">
@@ -26102,7 +26871,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.975388 0.0485253 -0.187553 -0.105295" />
+							<attribute name="Rotation" value="0.993241 0.111051 0.00559051 -0.0333037" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16778564">
@@ -26110,7 +26879,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.058376 -1.52234e-05 -0.000259787" />
+								<attribute name="Rotation" value="0.998295 -0.058376 -1.51442e-05 -0.00025975" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16778565">
@@ -26807,7 +27576,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.994705 -0.0788749 0.00999817 -0.065122" />
+					<attribute name="Rotation" value="0.994749 -0.0792981 0.00350862 -0.064606" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16777730">
@@ -26815,7 +27584,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984841 -0.155141 0.00704321 -0.0772592" />
+						<attribute name="Rotation" value="0.984866 -0.156692 -0.000299815 -0.0740622" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16777731">
@@ -26823,7 +27592,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.980828 -0.172959 0.0078917 -0.0894381" />
+							<attribute name="Rotation" value="0.98086 -0.176094 -0.000335544 -0.0830939" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16777732">
@@ -26831,7 +27600,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51768e-05 -0.000259773" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.52066e-05 -0.000259744" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16777733">
@@ -27541,7 +28310,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.994705 -0.078875 0.00999802 -0.0651215" />
+					<attribute name="Rotation" value="0.994749 -0.0792981 0.00350847 -0.0646055" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780098">
@@ -27549,7 +28318,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984841 -0.155141 0.00704347 -0.0772595" />
+						<attribute name="Rotation" value="0.984866 -0.156692 -0.000299552 -0.0740625" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780099">
@@ -27557,7 +28326,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.980828 -0.172959 0.00789193 -0.0894378" />
+							<attribute name="Rotation" value="0.98086 -0.176094 -0.000335302 -0.0830936" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780100">
@@ -27565,7 +28334,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51768e-05 -0.000259771" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.52141e-05 -0.000259724" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780101">
@@ -28275,7 +29044,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.994705 -0.078875 0.00999804 -0.0651216" />
+					<attribute name="Rotation" value="0.994749 -0.0792981 0.00350849 -0.0646057" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780802">
@@ -28283,7 +29052,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984841 -0.155141 0.00704338 -0.0772593" />
+						<attribute name="Rotation" value="0.984866 -0.156692 -0.00029965 -0.0740623" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780803">
@@ -28291,7 +29060,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.980828 -0.172959 0.007892 -0.0894382" />
+							<attribute name="Rotation" value="0.98086 -0.176095 -0.000335254 -0.083094" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780804">
@@ -28299,7 +29068,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51768e-05 -0.000259784" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.52066e-05 -0.000259727" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780805">
@@ -29009,7 +29778,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.994705 -0.0788749 0.00999817 -0.065122" />
+					<attribute name="Rotation" value="0.994749 -0.0792981 0.00350862 -0.064606" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780162">
@@ -29017,7 +29786,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984841 -0.155141 0.00704321 -0.0772592" />
+						<attribute name="Rotation" value="0.984866 -0.156692 -0.000299815 -0.0740622" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780163">
@@ -29025,7 +29794,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.980828 -0.172959 0.0078917 -0.0894381" />
+							<attribute name="Rotation" value="0.98086 -0.176094 -0.000335544 -0.0830939" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780164">
@@ -29033,7 +29802,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51768e-05 -0.000259773" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.52066e-05 -0.000259744" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780165">
@@ -29743,7 +30512,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.994705 -0.078875 0.00999786 -0.065121" />
+					<attribute name="Rotation" value="0.994749 -0.0792981 0.00350831 -0.0646051" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780226">
@@ -29751,7 +30520,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984841 -0.155141 0.00704348 -0.0772615" />
+						<attribute name="Rotation" value="0.984866 -0.156692 -0.000299547 -0.0740645" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780227">
@@ -29759,7 +30528,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.980828 -0.172959 0.00789168 -0.0894352" />
+							<attribute name="Rotation" value="0.98086 -0.176095 -0.000335574 -0.0830909" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780228">
@@ -29767,7 +30536,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.0583762 -1.51917e-05 -0.000259777" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.52066e-05 -0.000259714" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780229">
@@ -30477,7 +31246,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.988602 -0.0718899 0.110474 -0.0727591" />
+					<attribute name="Rotation" value="0.989835 -0.0727426 0.0988133 -0.0719066" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780290">
@@ -30485,7 +31254,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.977444 -0.123185 0.120686 -0.121916" />
+						<attribute name="Rotation" value="0.978981 -0.127616 0.107508 -0.117269" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780291">
@@ -30493,7 +31262,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.971508 -0.0983598 0.13513 -0.168044" />
+							<attribute name="Rotation" value="0.973444 -0.109176 0.120391 -0.161226" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780292">
@@ -30501,7 +31270,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51843e-05 -0.00025975" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.52513e-05 -0.000259675" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780293">
@@ -31211,7 +31980,7 @@
 					<attribute name="Name" value="Spine" />
 					<attribute name="Tags" />
 					<attribute name="Position" value="-5.66981e-05 0.108958 0.0127862" />
-					<attribute name="Rotation" value="0.994705 -0.0788749 0.00999848 -0.0651229" />
+					<attribute name="Rotation" value="0.994749 -0.079298 0.00350893 -0.0646069" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />
 					<node id="16780994">
@@ -31219,7 +31988,7 @@
 						<attribute name="Name" value="Spine1" />
 						<attribute name="Tags" />
 						<attribute name="Position" value="2.12311e-11 0.12799 -4.33839e-08" />
-						<attribute name="Rotation" value="0.984842 -0.155141 0.00704318 -0.0772585" />
+						<attribute name="Rotation" value="0.984866 -0.156692 -0.000299846 -0.0740615" />
 						<attribute name="Scale" value="1 1 1" />
 						<attribute name="Variables" />
 						<node id="16780995">
@@ -31227,7 +31996,7 @@
 							<attribute name="Name" value="Spine2" />
 							<attribute name="Tags" />
 							<attribute name="Position" value="2.2287e-11 0.146274 -2.00289e-08" />
-							<attribute name="Rotation" value="0.980828 -0.172959 0.00789143 -0.0894367" />
+							<attribute name="Rotation" value="0.98086 -0.176094 -0.000335809 -0.0830925" />
 							<attribute name="Scale" value="1 1 1" />
 							<attribute name="Variables" />
 							<node id="16780996">
@@ -31235,7 +32004,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51694e-05 -0.000259799" />
+								<attribute name="Rotation" value="0.998295 -0.0583761 -1.51992e-05 -0.000259725" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780997">
@@ -32700,7 +33469,7 @@
 									<attribute name="Name" value="Head" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
-									<attribute name="Rotation" value="0.626839 0.542878 -0.558889 -4.10713e-06" />
+									<attribute name="Rotation" value="0.626839 0.542878 -0.558889 -4.1388e-06" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 								</node>
@@ -33422,7 +34191,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.98414 -0.176947 0.000177614 0.000250134" />
+								<attribute name="Rotation" value="0.984185 -0.176938 0.000177581 0.000250057" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780421">
@@ -33430,7 +34199,7 @@
 									<attribute name="Name" value="Head" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
-									<attribute name="Rotation" value="0.992959 0.119215 -0.000193678 -2.4097e-06" />
+									<attribute name="Rotation" value="0.992916 0.119193 -0.000193616 -2.42268e-06" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 								</node>
@@ -34152,7 +34921,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.949829 -0.161908 -0.0807265 -0.254821" />
+								<attribute name="Rotation" value="0.949883 -0.161898 -0.0807212 -0.254813" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780869">
@@ -34160,7 +34929,7 @@
 									<attribute name="Name" value="Head" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
-									<attribute name="Rotation" value="0.992265 0.0854758 0.0910649 0.00134197" />
+									<attribute name="Rotation" value="0.992213 0.0854576 0.0910455 0.00134412" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 								</node>
@@ -34882,7 +35651,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.984141 -0.176957 0.000177163 0.00024893" />
+								<attribute name="Rotation" value="0.984183 -0.176948 0.000177167 0.000248919" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780485">
@@ -34890,7 +35659,7 @@
 									<attribute name="Name" value="Head" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
-									<attribute name="Rotation" value="1.00009 5.59539e-06 -7.27596e-11 3.73984e-09" />
+									<attribute name="Rotation" value="1.00005 3.36766e-06 9.96806e-10 -4.06726e-09" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 								</node>
@@ -35612,7 +36381,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.984141 -0.176957 0.000177087 0.000248761" />
+								<attribute name="Rotation" value="0.984183 -0.176948 0.000176968 0.000248482" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780933">
@@ -35620,7 +36389,7 @@
 									<attribute name="Name" value="Head" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
-									<attribute name="Rotation" value="1.00008 4.90993e-06 2.83762e-10 8.31096e-09" />
+									<attribute name="Rotation" value="1.00004 3.54648e-06 1.45519e-11 8.69477e-10" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 								</node>

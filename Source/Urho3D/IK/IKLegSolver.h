@@ -47,6 +47,8 @@ public:
     float GetRotationWeight() const { return rotationWeight_; }
     void SetBendWeight(float weight) { bendWeight_ = weight; }
     float GetBendWeight() const { return bendWeight_; }
+    void SetFootRotationWeight(float weight) { footRotationWeight_ = weight; }
+    float GetFootRotationWeight() const { return footRotationWeight_; }
     void SetMinAngle(float angle) { minKneeAngle_ = angle; }
     float GetMinAngle() const { return minKneeAngle_; }
     void SetMaxAngle(float angle) { maxKneeAngle_ = angle; }
@@ -74,7 +76,7 @@ private:
     void EnsureInitialized();
     void UpdateHeelGroundOffset();
 
-    void RotateFoot(const Vector3& toeToHeel);
+    void RotateFoot(const Vector3& toeToHeel, const Quaternion& footRotation);
 
     Vector3 GetTargetPosition() const;
     Plane GetGroundPlane() const;
@@ -91,9 +93,10 @@ private:
     Vector2 CalculateLegOffset(
         const Transform& frameOfReference, const Vector3& toeTargetPosition, const Vector3& bendDirection);
     float CalculateTiptoeFactor(const Vector3& toeTargetPosition) const;
+    Quaternion CalculateFootRotation(const Transform& frameOfReference, const Vector3& toeTargetPosition) const;
 
     Vector3 CalculateToeToHeel(const Transform& frameOfReference, float tiptoeFactor, const Vector3& toeTargetPosition,
-        const Vector3& originalDirection, const Vector3& currentDirection) const;
+        const Vector3& originalDirection, const Vector3& currentDirection, const Quaternion& footRotation) const;
     Vector3 CalculateToeToHeelBent(const Vector3& toeTargetPosition, const Vector3& approximateBendDirection) const;
 
     /// Attributes.
@@ -110,6 +113,7 @@ private:
     float positionWeight_{1.0f};
     float rotationWeight_{0.0f};
     float bendWeight_{1.0f};
+    float footRotationWeight_{0.0f};
     float minKneeAngle_{0.0f};
     float maxKneeAngle_{180.0f};
     Vector2 baseTiptoe_{0.5f, 0.0f};
@@ -139,6 +143,8 @@ private:
         Quaternion defaultFootRotation_;
         Vector3 defaultToeOffset_;
         Quaternion defaultToeRotation_;
+
+        Quaternion toeRotation_;
     } local_;
 
     Vector3 latestTargetPosition_;
