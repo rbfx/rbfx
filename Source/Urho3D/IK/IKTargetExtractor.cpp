@@ -20,13 +20,15 @@
 // THE SOFTWARE.
 //
 
-#include "../IK/IKTargetExtractor.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Graphics/AnimatedModel.h"
-#include "../Graphics/AnimationController.h"
-#include "../Graphics/Octree.h"
-#include "../Resource/ResourceCache.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/IK/IKTargetExtractor.h"
+
+#include "Urho3D/Graphics/AnimatedModel.h"
+#include "Urho3D/Graphics/AnimationController.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Scene/Scene.h"
 
 namespace Urho3D
 {
@@ -84,7 +86,7 @@ ea::vector<ExtractedTrack> GetTracks(AnimatedModel* animatedModel, Animation* de
     return tracks;
 }
 
-}
+} // namespace
 
 const ea::string IKTargetExtractor::DefaultNewFileName = "*_Targets.ani";
 
@@ -114,7 +116,8 @@ bool IKTargetExtractor::IsApplicable(const AssetTransformerInput& input)
     return input.inputFileName_.ends_with(".ani", false);
 }
 
-bool IKTargetExtractor::Execute(const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
+bool IKTargetExtractor::Execute(
+    const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
     auto cache = GetSubsystem<ResourceCache>();
     SharedPtr<Animation> sourceAnimation{cache->GetResource<Animation>(input.resourceName_)};
@@ -226,4 +229,4 @@ void IKTargetExtractor::ExtractAnimation(Animation* sourceAnimation, Animation* 
     }
 }
 
-}
+} // namespace Urho3D
