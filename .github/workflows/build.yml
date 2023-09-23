@@ -233,7 +233,8 @@ jobs:
           - rel
         ci_compiler:
           - msvc
-          - mingw
+          # TODO: Enable MinGW when the issue with crnlib is fixed
+          # - mingw
         # MinGW debug builds require too much memory
         exclude:
           - ci_compiler: mingw
