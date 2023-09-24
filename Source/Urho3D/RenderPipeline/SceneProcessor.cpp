@@ -230,7 +230,7 @@ bool SceneProcessor::Define(const CommonFrameInfo& frameInfo)
     frameInfo_.camera_ = frameInfo_.viewport_->GetCullCamera()
         ? frameInfo_.viewport_->GetCullCamera()
         : frameInfo_.viewport_->GetCamera();
-    frameInfo_.viewReferenceNode_ = frameInfo_.camera_->GetNode();
+    frameInfo_.viewReferenceNode_ = frameInfo_.camera_ ? frameInfo_.camera_->GetNode() : nullptr;
 
     frameInfo_.octree_ = frameInfo_.scene_
         ? frameInfo_.scene_->GetComponent<Octree>() : nullptr;
