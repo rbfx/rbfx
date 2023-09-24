@@ -29,6 +29,7 @@
 #include "Urho3D/Graphics/Octree.h"
 #include "Urho3D/Resource/ResourceCache.h"
 #include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Utility/AnimationMetadata.h"
 
 namespace Urho3D
 {
@@ -38,7 +39,6 @@ namespace
 
 struct ExtractedTrack
 {
-    ea::string name_;
     WeakPtr<Node> node_;
     AnimationTrack* track_{};
     Quaternion rotationOffset_;
@@ -238,6 +238,14 @@ void IKTargetExtractor::ExtractAnimation(Animation* sourceAnimation, Animation* 
 
     ea::vector<ExtractedTrack> tracks = GetTracks(animatedModel, destAnimation, extractRotations_);
     tracks.append(GetBendTracks(animatedModel, destAnimation, bendTargets_));
+
+    const Variant& whitelistTracksVar = sourceAnimation->GetMetadata(AnimationMetadata::IKTargetTracks);
+    if (!whitelistTracksVar.IsEmpty())
+    {
+        const StringVector& whitelistTracks = whitelistTracksVar.GetStringVector();
+        ea::erase_if(
+            tracks, [&](const ExtractedTrack& track) { return !whitelistTracks.contains(track.track_->name_); });
+    }
 
     auto animationController = node->CreateComponent<AnimationController>();
     animationController->Update(0.0f);
