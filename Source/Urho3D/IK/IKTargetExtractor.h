@@ -57,6 +57,7 @@ private:
     bool extractToNewFile_{true};
     ea::string newFileName_{DefaultNewFileName};
     ResourceRef skeletonModel_{Model::GetTypeStatic()};
+    StringVariantMap bendTargets_;
 };
 
 } // namespace Urho3D
