@@ -28,8 +28,6 @@
 
 #include <EASTL/optional.h>
 
-using namespace Urho3D;
-
 namespace Urho3D
 {
 

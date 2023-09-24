@@ -23,6 +23,10 @@ URHO3D_GLOBAL_CONSTANT(ConstString FrameRate{"FrameRate"});
 /// Map of parent animation tracks for each animation track. Variant tracks are ignored.
 URHO3D_GLOBAL_CONSTANT(ConstString ParentTracks{"ParentTracks"});
 
+/// Root motion track name.
+URHO3D_GLOBAL_CONSTANT(ConstString RootTrack{"RootTrack"});
+/// Original root motion backup track name.
+URHO3D_GLOBAL_CONSTANT(ConstString OriginalRootTrack{"OriginalRootTrack"});
 /// Linear velocity of root motion that was undone.
 URHO3D_GLOBAL_CONSTANT(ConstString RootLinearVelocity{"RootLinearVelocity"});
 /// Angular velocity of root motion that was undone.

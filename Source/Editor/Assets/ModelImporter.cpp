@@ -129,6 +129,10 @@ void Assets_ModelImporter(Context* context, Project* project)
 void ModelImporter::ResetRootMotionInfo::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "factor", factor_);
+    SerializeOptionalValue(archive, "positionWeight", positionWeight_);
+    SerializeOptionalValue(archive, "rotationSwingWeight", rotationSwingWeight_);
+    SerializeOptionalValue(archive, "rotationTwistWeight", rotationTwistWeight_);
+    SerializeOptionalValue(archive, "scaleWeight", scaleWeight_);
 }
 
 void ModelImporter::ModelMetadata::SerializeInBlock(Archive& archive)
@@ -143,6 +147,8 @@ void ModelImporter::ModelMetadata::SerializeInBlock(Archive& archive)
             const auto block = archive.OpenUnorderedBlock(name);
             SerializeOptionalValue(archive, "resetRootMotion", resetRootMotion_);
         });
+
+    SerializeOptionalValue(archive, "resourceMetadata", resourceMetadata_);
 }
 
 ModelImporter::ModelImporter(Context* context)
@@ -321,6 +327,8 @@ void ModelImporter::OnModelLoaded(ModelView& modelView)
 
 void ModelImporter::OnAnimationLoaded(Animation& animation)
 {
+    AppendResourceMetadata(animation);
+
     const auto resetRootMotionIter = currentMetadata_->resetRootMotion_.find(animation.GetAnimationName());
     if (resetRootMotionIter != currentMetadata_->resetRootMotion_.end())
         ResetRootMotion(animation, resetRootMotionIter->second);
@@ -361,6 +369,21 @@ void ModelImporter::ResetRootMotion(Animation& animation, const ResetRootMotionI
     if (firstFrame.time_ == lastFrame.time_)
         return;
 
+    // Copy the track
+    const ea::string originalTrackName = rootTrack->name_ + "_Original";
+    if (animation.GetTrack(originalTrackName))
+    {
+        URHO3D_LOGWARNING("Cannot create backup track '{}' for root motion, skipping", originalTrackName);
+        return;
+    }
+
+    animation.AddMetadata(AnimationMetadata::RootTrack, rootTrack->name_);
+    animation.AddMetadata(AnimationMetadata::OriginalRootTrack, originalTrackName);
+
+    AnimationTrack* originalRootTrack = animation.CreateTrack(originalTrackName);
+    originalRootTrack->channelMask_ = rootTrack->channelMask_;
+    originalRootTrack->keyFrames_ = rootTrack->keyFrames_;
+
     // Calculate approximate velocity
     const Vector3 positionDelta = lastFrame.position_ - firstFrame.position_;
     const Quaternion rotationDelta = lastFrame.rotation_ * firstFrame.rotation_.Inverse();
@@ -374,14 +397,35 @@ void ModelImporter::ResetRootMotion(Animation& animation, const ResetRootMotionI
     animation.AddMetadata(AnimationMetadata::RootAngularVelocity, angularVelocity);
     animation.AddMetadata(AnimationMetadata::RootScaleVelocity, scaleVelocity);
 
-    // Reset root animation frames
-    const float sampleTime = Lerp(firstFrame.time_, lastFrame.time_, info.factor_);
+    // Calculate the reset transform
+    const float resetTime = Lerp(firstFrame.time_, lastFrame.time_, info.factor_);
     unsigned frameIndex{};
     Transform resetTransform;
-    rootTrack->Sample(sampleTime, lastFrame.time_, false, frameIndex, resetTransform);
+    rootTrack->Sample(resetTime, lastFrame.time_, false, frameIndex, resetTransform);
 
     for (AnimationKeyFrame& frame : rootTrack->keyFrames_)
-        static_cast<Transform&>(frame) = resetTransform;
+    {
+        const Transform interpolatedTransform = firstFrame.Lerp(lastFrame, frame.time_);
+        const Transform deltaTransform = frame * interpolatedTransform.Inverse();
+        const Transform filteredTransform = deltaTransform * resetTransform;
+
+        const auto [deltaSwing, deltaTwist] = filteredTransform.rotation_.ToSwingTwist(rotationDelta.Axis());
+
+        frame.position_ = VectorLerp(resetTransform.position_, filteredTransform.position_, info.positionWeight_);
+        frame.rotation_ = Quaternion::IDENTITY.Slerp(deltaSwing, info.rotationSwingWeight_)
+            * Quaternion::IDENTITY.Slerp(deltaTwist, info.rotationTwistWeight_) * resetTransform.rotation_;
+        frame.scale_ = Lerp(resetTransform.scale_, filteredTransform.scale_, info.scaleWeight_);
+    }
+}
+
+void ModelImporter::AppendResourceMetadata(ResourceWithMetadata& resource) const
+{
+    const auto metadataIter = currentMetadata_->resourceMetadata_.find(GetFileName(resource.GetName()));
+    if (metadataIter == currentMetadata_->resourceMetadata_.end())
+        return;
+
+    for (const auto& [name, value] : metadataIter->second)
+        resource.AddMetadata(name, value);
 }
 
 ModelImporter::ModelMetadata ModelImporter::LoadMetadata(const ea::string& fileName) const
