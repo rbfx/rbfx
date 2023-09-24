@@ -130,9 +130,9 @@ typedef struct _CrtMemBlockHeader
 #ifdef URHO3D_PLATFORM_WEB
 static void OnCanvasResize(int width, int height, bool isFullScreen, float dpiScale)
 {
-    if (auto context = Context::GetInstance())
+    if (auto context = Urho3D::Context::GetInstance())
     {
-        if (auto engine = context->GetSubsystem<Engine>())
+        if (auto engine = context->GetSubsystem<Urho3D::Engine>())
             engine->OnCanvasResize(width, height, isFullScreen, dpiScale);
     }
 }
