@@ -20,14 +20,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Renderer.h"
-#include "../RenderPipeline/ShadowMapAllocator.h"
+#include "Urho3D/RenderPipeline/ShadowMapAllocator.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -48,8 +49,8 @@ ShadowMapRegion ShadowMapRegion::GetSplit(unsigned split, const IntVector2& numS
 
 ShadowMapAllocator::ShadowMapAllocator(Context* context)
     : Object(context)
-    , graphics_(context_->GetSubsystem<Graphics>())
-    , renderer_(context_->GetSubsystem<Renderer>())
+    , renderDevice_(context_->GetSubsystem<RenderDevice>())
+    , renderContext_(renderDevice_->GetRenderContext())
 {
     CacheSettings();
 }
@@ -61,23 +62,41 @@ void ShadowMapAllocator::SetSettings(const ShadowMapAllocatorSettings& settings)
         settings_ = settings;
         CacheSettings();
 
-        dummyColorTexture_ = nullptr;
         pages_.clear();
     }
 }
 
 void ShadowMapAllocator::CacheSettings()
 {
+    auto renderDevice = GetSubsystem<RenderDevice>();
+
+    shadowOutputDesc_ = {};
     if (settings_.enableVarianceShadowMaps_)
-        shadowMapFormat_ = graphics_->GetRGFloat32Format();
+    {
+        shadowMapFormat_ = TextureFormat::TEX_FORMAT_RG32_FLOAT;
+
+        shadowOutputDesc_.depthStencilFormat_ = renderDevice->GetDefaultDepthFormat();
+        shadowOutputDesc_.numRenderTargets_ = 1;
+        shadowOutputDesc_.renderTargetFormats_[0] = shadowMapFormat_;
+        shadowOutputDesc_.multiSample_ = settings_.varianceShadowMapMultiSample_;
+    }
     else
     {
-        shadowMapFormat_ = settings_.use16bitShadowMaps_
-            ? graphics_->GetShadowMapFormat()
-            : graphics_->GetHiresShadowMapFormat();
+        shadowMapFormat_ = settings_.use16bitShadowMaps_ //
+            ? TextureFormat::TEX_FORMAT_D16_UNORM //
+            : renderDevice->GetDefaultDepthFormat();
+
+        shadowOutputDesc_.depthStencilFormat_ = shadowMapFormat_;
+        shadowOutputDesc_.numRenderTargets_ = 0;
+        shadowOutputDesc_.multiSample_ = 1;
     }
 
     shadowAtlasPageSize_ = static_cast<int>(settings_.shadowAtlasPageSize_) * IntVector2::ONE;
+
+    const bool isDepthTexture = !settings_.enableVarianceShadowMaps_;
+    samplerStateDesc_ = {};
+    samplerStateDesc_.shadowCompare_ = isDepthTexture;
+    samplerStateDesc_.filterMode_ = FILTER_BILINEAR;
 }
 
 void ShadowMapAllocator::ResetAllShadowMaps()
@@ -112,42 +131,31 @@ bool ShadowMapAllocator::BeginShadowMapRendering(const ShadowMapRegion& shadowMa
     if (!shadowMap || shadowMap.pageIndex_ >= pages_.size())
         return false;
 
-    graphics_->SetTexture(TU_SHADOWMAP, nullptr);
-
     Texture2D* shadowMapTexture = shadowMap.texture_;
     AtlasPage& poolElement = pages_[shadowMap.pageIndex_];
 
-    if (shadowMapTexture->GetUsage() == TEXTURE_DEPTHSTENCIL)
+    if (shadowMapTexture->IsDepthStencil())
     {
         // The shadow map is a depth stencil texture
-        graphics_->SetDepthStencil(shadowMapTexture);
-        graphics_->SetRenderTarget(0, shadowMapTexture->GetRenderSurface()->GetLinkedRenderTarget());
+        renderContext_->SetRenderTargets(RenderTargetView::Texture(shadowMapTexture), {});
     }
     else
     {
-        // The shadow map is a color rendertarget
-        graphics_->SetDepthStencil(renderer_->GetDepthStencil(shadowMapTexture->GetWidth(), shadowMapTexture->GetHeight(),
-            shadowMapTexture->GetMultiSample(), shadowMapTexture->GetAutoResolve()));
-        graphics_->SetRenderTarget(0, shadowMapTexture);
+        const RenderTargetView renderTargets[] = {RenderTargetView::Texture(shadowMapTexture)};
+        renderContext_->SetRenderTargets(RenderTargetView::Texture(vsmDepthTexture_), renderTargets);
     }
-
-    // Disable other render targets
-    for (unsigned i = 1; i < MAX_RENDERTARGETS; ++i)
-        graphics_->SetRenderTarget(i, (RenderSurface*) nullptr);
 
     // Clear whole texture if needed
     if (poolElement.clearBeforeRendering_)
     {
         poolElement.clearBeforeRendering_ = false;
 
-        graphics_->SetViewport(shadowMapTexture->GetRect());
-        ClearTargetFlags clearFlags = CLEAR_DEPTH;
-        if (settings_.enableVarianceShadowMaps_ || dummyColorTexture_)
-            clearFlags |= CLEAR_COLOR;
-        graphics_->Clear(clearFlags, Color::WHITE);
+        renderContext_->ClearDepthStencil(CLEAR_DEPTH);
+        if (settings_.enableVarianceShadowMaps_)
+            renderContext_->ClearRenderTarget(0, Color::WHITE);
     }
 
-    graphics_->SetViewport(shadowMap.rect_);
+    renderContext_->SetViewport(shadowMap.rect_);
 
     return true;
 }
@@ -173,42 +181,33 @@ ShadowMapRegion ShadowMapAllocator::AtlasPage::AllocateRegion(const IntVector2& 
 void ShadowMapAllocator::AllocatePage()
 {
     const bool isDepthTexture = !settings_.enableVarianceShadowMaps_;
-    const TextureUsage textureUsage = isDepthTexture ? TEXTURE_DEPTHSTENCIL : TEXTURE_RENDERTARGET;
+    const TextureFlags textureFlags = isDepthTexture ? TextureFlag::BindDepthStencil : TextureFlag::BindRenderTarget;
     const int multiSample = isDepthTexture ? 1 : settings_.varianceShadowMapMultiSample_;
 
     auto newShadowMap = MakeShared<Texture2D>(context_);
-    const unsigned dummyColorFormat = graphics_->GetDummyColorFormat();
+
+    newShadowMap->SetName(Format("Dynamic ShadowMap #{}", pages_.size()));
 
     // Disable mipmaps from the shadow map
     newShadowMap->SetNumLevels(1);
-    newShadowMap->SetSize(shadowAtlasPageSize_.x_, shadowAtlasPageSize_.y_, shadowMapFormat_, textureUsage, multiSample);
-
-#ifndef GL_ES_VERSION_2_0
-    // OpenGL (desktop) and D3D11: shadow compare mode needs to be specifically enabled for the shadow map
     newShadowMap->SetFilterMode(FILTER_BILINEAR);
     newShadowMap->SetShadowCompare(isDepthTexture);
-#endif
-    // Create dummy color texture for the shadow map if necessary: on OpenGL when working around an OS X +
-    // Intel driver bug
-    if (isDepthTexture && dummyColorFormat)
-    {
-        // If no dummy color rendertarget for this size exists yet, create one now
-        if (!dummyColorTexture_)
-        {
-            dummyColorTexture_ = MakeShared<Texture2D>(context_);
-            dummyColorTexture_->SetNumLevels(1);
-            dummyColorTexture_->SetSize(shadowAtlasPageSize_.x_, shadowAtlasPageSize_.y_,
-                dummyColorFormat, TEXTURE_RENDERTARGET);
-        }
-        // Link the color rendertarget to the shadow map
-        newShadowMap->GetRenderSurface()->SetLinkedRenderTarget(dummyColorTexture_->GetRenderSurface());
-    }
+    newShadowMap->SetSize(shadowAtlasPageSize_.x_, shadowAtlasPageSize_.y_, shadowMapFormat_, textureFlags, multiSample);
 
     // Store allocate shadow map
     AtlasPage& element = pages_.emplace_back();
     element.index_ = pages_.size() - 1;
     element.texture_ = newShadowMap;
     element.areaAllocator_.Reset(shadowAtlasPageSize_.x_, shadowAtlasPageSize_.y_, shadowAtlasPageSize_.x_, shadowAtlasPageSize_.y_);
+
+    if (!settings_.enableVarianceShadowMaps_)
+        vsmDepthTexture_ = nullptr;
+    else if (!vsmDepthTexture_ || vsmDepthTexture_->GetSize() != shadowAtlasPageSize_)
+    {
+        vsmDepthTexture_ = MakeShared<Texture2D>(context_);
+        vsmDepthTexture_->SetSize(shadowAtlasPageSize_.x_, shadowAtlasPageSize_.y_,
+            shadowOutputDesc_.depthStencilFormat_, TextureFlag::BindDepthStencil, multiSample);
+    }
 }
 
 }

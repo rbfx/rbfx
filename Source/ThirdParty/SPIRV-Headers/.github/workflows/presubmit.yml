@@ -1,6 +1,9 @@
 name: Presubmit
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build ${{ matrix.os }}

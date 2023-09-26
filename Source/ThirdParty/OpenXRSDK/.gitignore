@@ -1,0 +1,9 @@
+/.appveyor.yml
+/.git-blame-ignore-revs
+/.gitattributes
+/CHANGELOG.SDK.md
+
+/.azure-pipelines/
+/.github/
+/.reuse/
+/src/external/jsoncpp/test/

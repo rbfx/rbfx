@@ -4,7 +4,7 @@
 	<renderorder value="129" />
 	<cull value="none" />
 	<shadowcull value="none" />
-	<texture unit="diffuse" name="Textures/RealFire/Fire.png" />
+	<texture slot="Albedo" name="Textures/RealFire/Fire.png" />
 	<parameter name="MatDiffColor" value="3.441591 3.441591 3.441591 1" />
 	<parameter name="FadeOffsetScale" value="0 0.5" />
 </material>

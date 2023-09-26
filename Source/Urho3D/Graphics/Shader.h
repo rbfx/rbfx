@@ -37,6 +37,9 @@ class URHO3D_API Shader : public Resource
     URHO3D_OBJECT(Shader, Resource);
 
 public:
+    /// Signals that shader source code was reloaded.
+    Signal<void()> OnReloaded;
+
     /// Construct.
     explicit Shader(Context* context);
     /// Destruct.
@@ -51,16 +54,12 @@ public:
     bool EndLoad() override;
 
     /// Return a variation with defines. Separate multiple defines with spaces.
-    ShaderVariation* GetVariation(ShaderType type, const ea::string& defines);
-    /// Return a variation with defines. Separate multiple defines with spaces.
-    ShaderVariation* GetVariation(ShaderType type, const char* defines);
+    ShaderVariation* GetVariation(ShaderType type, ea::string_view defines);
 
+    /// Return shader name.
+    ea::string GetShaderName() const;
     /// Return either vertex or pixel shader source code.
-    const ea::string& GetSourceCode(ShaderType type) const { return type == VS ? vsSourceCode_ : type == PS ? psSourceCode_ : csSourceCode_; }
-
-    /// Return whether the shader is GLSL shader. Used for universal shader support by DX11.
-    bool IsGLSL() const { return GetName().ends_with(".glsl"); }
-
+    const ea::string& GetSourceCode() const { return sourceCode_; }
     /// Return the latest timestamp of the shader code and its includes.
     FileTime GetTimeStamp() const { return timeStamp_; }
 
@@ -68,31 +67,21 @@ public:
     static ea::string GetShaderFileList();
 
 private:
-    /// Return hash for given shader defines and current global shader defines.
-    unsigned GetShaderDefinesHash(const char* defines) const;
+    using ShaderVariationKey = ea::pair<ShaderType, StringHash>;
+
     /// Process source code and include files. Return true if successful.
-    void ProcessSource(ea::string& code, Deserializer& source);
-    /// Sort the defines and strip extra spaces to prevent creation of unnecessary duplicate shader variations.
-    ea::string NormalizeDefines(const ea::string& defines);
+    void ProcessSource(ea::string& code, FileTime& timeStamp, Deserializer& source);
     /// Recalculate the memory used by the shader.
     void RefreshMemoryUse();
 
-    /// Source code adapted for vertex shader.
-    ea::string vsSourceCode_;
-    /// Source code adapted for pixel shader.
-    ea::string psSourceCode_;
-    /// Source code adapted for compute shader.
-    ea::string csSourceCode_;
-    /// Vertex shader variations.
-    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> > vsVariations_;
-    /// Pixel shader variations.
-    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> > psVariations_;
-    /// Compute shader variations.
-    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> > csVariations_;
-    /// Source code timestamp.
-    FileTime timeStamp_;
+    /// Shader source code.
+    ea::string sourceCode_;
+    /// Timestamp of source code file(s).
+    FileTime timeStamp_{};
+    /// Shader variations.
+    ea::unordered_map<ShaderVariationKey, SharedPtr<ShaderVariation>> variations_;
     /// Number of unique variations so far.
-    unsigned numVariations_;
+    unsigned numVariations_{};
     /// Mapping of shader files for error reporting.
     static ea::unordered_map<ea::string, unsigned> fileToIndexMapping;
 };

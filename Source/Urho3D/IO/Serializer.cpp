@@ -186,12 +186,22 @@ bool Serializer::WriteBoundingBox(const BoundingBox& value)
     return success;
 }
 
-bool Serializer::WriteString(const ea::string& value)
+bool Serializer::WriteString(ea::string_view value)
 {
-    const char* chars = value.c_str();
+    const char* chars = value.data();
     // Count length to the first zero, because ReadString() does the same
     unsigned length = CStringLength(chars);
     return Write(chars, length + 1) == length + 1;
+}
+
+bool Serializer::WriteString(const char* value)
+{
+    return WriteString(ea::string_view(value));
+}
+
+bool Serializer::WriteString(std::string_view value)
+{
+    return WriteString(ea::string_view{value.data(), value.size()});
 }
 
 bool Serializer::WriteFileID(const ea::string& value)

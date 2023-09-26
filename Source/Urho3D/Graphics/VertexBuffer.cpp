@@ -30,6 +30,7 @@
 #include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../Math/MathDefs.h"
+#include "../Graphics/GraphicsUtils.h"
 
 #include <EASTL/array.h>
 #include <EASTL/numeric.h>
@@ -125,42 +126,15 @@ Ubyte4 Vector4ToUbyte4Norm(const Vector4& value) { return Vector4ToUbyte4(value 
 
 }
 
-VertexBuffer::VertexBuffer(Context* context, bool forceHeadless) :
-    Object(context),
-    GPUObject(forceHeadless ? nullptr : GetSubsystem<Graphics>())
+VertexBuffer::VertexBuffer(Context* context)
+    : RawBuffer(context)
 {
     UpdateOffsets();
-
-    // Force shadowing mode if graphics subsystem does not exist
-    if (!graphics_)
-        shadowed_ = true;
-}
-
-VertexBuffer::~VertexBuffer()
-{
-    Release();
-}
-
-void VertexBuffer::RegisterObject(Context* context)
-{
-    context->AddFactoryReflection<VertexBuffer>();
 }
 
 void VertexBuffer::SetShadowed(bool enable)
 {
-    // If no graphics subsystem, can not disable shadowing
-    if (!graphics_)
-        enable = true;
-
-    if (enable != shadowed_)
-    {
-        if (enable && vertexSize_ && vertexCount_)
-            shadowData_ = new unsigned char[vertexCount_ * vertexSize_];
-        else
-            shadowData_.reset();
-
-        shadowed_ = enable;
-    }
+    shadowedPending_ = enable;
 }
 
 bool VertexBuffer::SetSize(unsigned vertexCount, unsigned elementMask, bool dynamic)
@@ -170,21 +144,23 @@ bool VertexBuffer::SetSize(unsigned vertexCount, unsigned elementMask, bool dyna
 
 bool VertexBuffer::SetSize(unsigned vertexCount, const ea::vector<VertexElement>& elements, bool dynamic)
 {
-    Unlock();
-
     vertexCount_ = vertexCount;
     elements_ = elements;
-    dynamic_ = dynamic;
-
     UpdateOffsets();
     MarkPipelineStateHashDirty();
 
-    if (shadowed_ && vertexCount_ && vertexSize_)
-        shadowData_ = new unsigned char[vertexCount_ * vertexSize_];
-    else
-        shadowData_.reset();
+    RawBufferParams params;
+    params.type_ = BufferType::Vertex;
+    params.size_ = vertexCount_ * vertexSize_;
+    params.stride_ = vertexSize_;
+    if (shadowedPending_)
+        params.flags_ |= BufferFlag::Shadowed;
+    if (dynamic)
+        params.flags_ |= BufferFlag::Dynamic;
+    if (!elements_.empty() && elements_[0].stepRate_ != 0)
+        params.flags_ |= BufferFlag::PerInstanceData;
 
-    return Create();
+    return Create(params, nullptr);
 }
 
 void VertexBuffer::UpdateOffsets()
@@ -193,12 +169,16 @@ void VertexBuffer::UpdateOffsets()
     elementHash_ = 0;
     elementMask_ = MASK_NONE;
 
+    unsigned lowerHash = 0;
+    unsigned upperHash = 0;
     for (auto i = elements_.begin(); i != elements_.end(); ++i)
     {
         i->offset_ = elementOffset;
         elementOffset += ELEMENT_TYPESIZES[i->type_];
-        elementHash_ <<= 6;
-        elementHash_ += (((int)i->type_ + 1) * ((int)i->semantic_ + 1) + i->index_);
+        CombineHash(upperHash, MakeHash(i->type_ + 1));
+        CombineHash(upperHash, MakeHash(i->semantic_ + 1));
+        CombineHash(lowerHash, MakeHash(i->index_));
+        CombineHash(lowerHash, MakeHash(i->stepRate_));
 
         for (unsigned j = 0; j < MAX_LEGACY_VERTEX_ELEMENTS; ++j)
         {
@@ -208,6 +188,7 @@ void VertexBuffer::UpdateOffsets()
         }
     }
 
+    elementHash_ = (((unsigned long long)upperHash) << 32ull) | lowerHash;
     vertexSize_ = elementOffset;
 }
 
@@ -336,7 +317,7 @@ void VertexBuffer::SetUnpackedData(const Vector4 data[], unsigned start, unsigne
     for (unsigned i = 0; i < elementCount; ++i)
         PackVertexData(data + i, sourceStride, buffer.data(), vertexSize_, elements_[i], 0, count);
 
-    SetDataRange(buffer.data(), start, count);
+    UpdateRange(buffer.data(), start * vertexSize_, count * vertexSize_);
 }
 
 void VertexBuffer::UnpackVertexData(const void* source, unsigned sourceStride,
@@ -504,7 +485,7 @@ void DynamicVertexBuffer::Commit()
     }
 
     //vertexBuffer_->SetData(shadowData_.data());
-    vertexBuffer_->SetDataRange(shadowData_.data(), 0, numVertices_, true);
+    vertexBuffer_->UpdateRange(shadowData_.data(), 0, numVertices_ * vertexSize_);
 }
 
 void DynamicVertexBuffer::GrowBuffer(unsigned newMaxNumVertices)

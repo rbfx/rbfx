@@ -1,0 +1,12 @@
+<animation length="4.0">
+    <variant name="@IKLegSolver#0/Foot Rotation Weight" type="Float" interpolation="spline" tension="0.7">
+        <keyframe time="0.0" value="0.0"/>
+        <keyframe time="1.0" value="1.0"/>
+        <keyframe time="2.0" value="0.0"/>
+    </variant>
+    <variant name="@IKLegSolver#1/Foot Rotation Weight" type="Float" interpolation="spline" tension="0.7">
+        <keyframe time="0.0" value="0.0"/>
+        <keyframe time="1.0" value="1.0"/>
+        <keyframe time="2.0" value="0.0"/>
+    </variant>
+</animation>

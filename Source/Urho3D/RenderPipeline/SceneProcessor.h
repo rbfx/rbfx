@@ -75,18 +75,18 @@ public:
     void SetRenderCamera(Camera* camera);
     void SetRenderCameras(ea::span<Camera* const> cameras);
 
-    void Update();
+    virtual void Update();
     void PrepareInstancingBuffer();
     void PrepareDrawablesBeforeRendering();
     void RenderShadowMaps();
     void RenderSceneBatches(ea::string_view debugName, Camera* camera,
         const PipelineBatchGroup<PipelineBatchByState>& batchGroup,
-        ea::span<const ShaderResourceDesc> globalResources = {}, ea::span<const ShaderParameterDesc> cameraParameters = {});
+        ea::span<const ShaderResourceDesc> globalResources = {}, ea::span<const ShaderParameterDesc> cameraParameters = {}, unsigned instanceMultiplier = 1u);
     void RenderSceneBatches(ea::string_view debugName, Camera* camera,
         const PipelineBatchGroup<PipelineBatchBackToFront>& batchGroup,
-        ea::span<const ShaderResourceDesc> globalResources = {}, ea::span<const ShaderParameterDesc> cameraParameters = {});
+        ea::span<const ShaderResourceDesc> globalResources = {}, ea::span<const ShaderParameterDesc> cameraParameters = {}, unsigned instanceMultipler = 1u);
     void RenderLightVolumeBatches(ea::string_view debugName, Camera* camera,
-        ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters);
+        ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier = 1u);
     /// @}
 
     /// Getters
@@ -105,6 +105,9 @@ public:
     BatchRenderer* GetBatchRenderer() const { return batchRenderer_; }
     /// @}
 
+protected:
+    virtual void DrawOccluders();
+
 private:
     /// Callbacks from RenderPipeline
     /// @{
@@ -120,12 +123,14 @@ private:
     ShadowMapRegion AllocateTransientShadowMap(const IntVector2& size) override;
     /// @}
 
-    void DrawOccluders();
     template <class T>
     void RenderBatchesInternal(ea::string_view debugName, Camera* camera, const PipelineBatchGroup<T>& batchGroup,
-        ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters);
+        ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier = 1u);
 
+protected:
     Graphics* graphics_{};
+    RenderDevice* renderDevice_{};
+    RenderContext* renderContext_{};
     RenderPipelineInterface* renderPipeline_{};
     RenderPipelineDebugger* debugger_{};
 

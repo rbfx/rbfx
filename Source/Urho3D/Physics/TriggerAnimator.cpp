@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Graphics/Animation.h"
 #include "Urho3D/Physics/PhysicsEvents.h"
@@ -65,6 +63,11 @@ ResourceRef TriggerAnimator::GetEnterAnimationAttr() const
     return GetResourceRef(enterAnimation_, Animation::GetTypeStatic());
 }
 
+void TriggerAnimator::SetEnterAnimation(Animation* value)
+{
+    enterAnimation_ = value;
+}
+
 void TriggerAnimator::SetExitAnimationAttr(const ResourceRef& value)
 {
     auto* cache = GetSubsystem<ResourceCache>();
@@ -76,12 +79,22 @@ ResourceRef TriggerAnimator::GetExitAnimationAttr() const
     return GetResourceRef(exitAnimation_, Animation::GetTypeStatic());
 }
 
+void TriggerAnimator::SetExitAnimation(Animation* value)
+{
+    exitAnimation_ = value;
+}
+
 void TriggerAnimator::OnEnter()
 {
 }
 
 void TriggerAnimator::OnExit()
 {
+}
+
+bool TriggerAnimator::Filter(Node* node)
+{
+    return true;
 }
 
 void TriggerAnimator::OnNodeSet(Node* previousNode, Node* currentNode)
@@ -100,6 +113,10 @@ void TriggerAnimator::RegisterEnter(Node* node)
 {
     if (!node)
         return;
+
+    if (!Filter(node))
+        return;
+
     if (activeCollisions_.empty())
     {
         if (!isEntered_)
@@ -180,12 +197,12 @@ void TriggerAnimator::StartAnimation(Animation* animation)
 
     if (animationController->GetNumAnimations() > 0)
     {
-        auto otherAnimation = (animation == enterAnimation_) ? exitAnimation_ : enterAnimation_;
-        auto existingAnimationIndex = animationController->FindLastAnimation(otherAnimation);
+        const auto otherAnimation = (animation == enterAnimation_) ? exitAnimation_ : enterAnimation_;
+        const auto existingAnimationIndex = animationController->FindLastAnimation(otherAnimation);
         if (existingAnimationIndex != M_MAX_UNSIGNED)
         {
-            auto state = animationController->GetAnimationParameters(existingAnimationIndex);
-            auto time = state.time_.Value() / (state.animation_->GetLength()+ea::numeric_limits<float>::epsilon());
+            const auto state = animationController->GetAnimationParameters(existingAnimationIndex);
+            const auto time = state.GetTime() / (state.GetAnimation()->GetLength() + ea::numeric_limits<float>::epsilon());
 
             animationParameters.Time((1.0f - time) * animation->GetLength());
         }

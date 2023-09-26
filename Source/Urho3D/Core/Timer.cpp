@@ -245,4 +245,43 @@ void HiresTimer::Reset()
     startTime_ = HiresTick();
 }
 
+TimedCounter::TimedCounter(int intervalCount, unsigned intervalLengthMs)
+    : intervalLength_(intervalLengthMs)
+    , intervalCurrent_(intervalCount - 1)
+{
+    data_.resize(intervalCount);
+}
+
+void TimedCounter::AddSample(float value)
+{
+    RotateIfNeeded();
+    accumulator_ += value;
+}
+
+float TimedCounter::GetAverage()
+{
+    RotateIfNeeded();
+    float sum = 0.0f;
+    for (float value : data_)
+        sum += value;
+    return sum / data_.size();
+}
+
+float TimedCounter::GetLast()
+{
+    RotateIfNeeded();
+    return data_[intervalCurrent_];
+}
+
+void TimedCounter::RotateIfNeeded()
+{
+    if (timer_.GetMSec(false) >= intervalLength_)
+    {
+        timer_.Reset();
+        intervalCurrent_ = (intervalCurrent_ + 1) % data_.size();
+        data_[intervalCurrent_] = accumulator_;
+        accumulator_ = 0.0f;
+    }
+}
+
 }

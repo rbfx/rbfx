@@ -7,7 +7,8 @@
 
 #include "_Config.glsl"
 #include "_Uniforms.glsl"
-#include "_Samplers.glsl"
+#include "_DefaultSamplers.glsl"
+#include "_SamplerUtils.glsl"
 #include "_Material_Common.glsl"
 
 UNIFORM_BUFFER_BEGIN(6, Custom)
@@ -22,7 +23,7 @@ UNIFORM_BUFFER_END(6, Custom)
 void main()
 {
 #ifdef ALPHAMASK
-    half alpha = texture2D(sDiffMap, vTexCoord).a;
+    half alpha = texture(sAlbedo, vTexCoord).a;
     if (alpha < 0.5)
         discard;
 #endif

@@ -52,6 +52,8 @@
 #include "../RmlUI/RmlNavigable.h"
 #include "../RmlUI/RmlSerializableInspector.h"
 #include "../RmlUI/RmlUIComponent.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
 
 #include <atomic>
 #include <EASTL/fixed_vector.h>
@@ -655,24 +657,25 @@ bool RmlUI::IsInputCapturedInternal() const
 
 void RmlUI::Render()
 {
-    Graphics* graphics = GetSubsystem<Graphics>();
-    Renderer* renderer = GetSubsystem<Renderer>();
-    if (!graphics || !graphics->IsInitialized())
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    if (!renderDevice)
         return;
 
     URHO3D_PROFILE("RenderUI");
-    graphics->ResetRenderTargets();
-    if (renderSurface_)
-    {
-        graphics->SetDepthStencil(renderer->GetDepthStencil(renderSurface_));
-        graphics->SetRenderTarget(0, renderSurface_);
-        graphics->SetViewport(IntRect(0, 0, renderSurface_->GetWidth(), renderSurface_->GetHeight()));
 
-        if (clearColor_.a_ > 0)
-            graphics->Clear(CLEAR_COLOR, clearColor_);
+    RenderContext* renderContext = renderDevice->GetRenderContext();
+    if (!renderSurface_)
+    {
+        renderContext->SetSwapChainRenderTargets();
     }
     else
-        graphics->SetRenderTarget(0, (RenderSurface*)nullptr);
+    {
+        const RenderTargetView renderTargets[] = {renderSurface_->GetView()};
+        renderContext->SetRenderTargets(ea::nullopt, renderTargets);
+        if (clearColor_.a_ > 0)
+            renderContext->ClearRenderTarget(0, clearColor_);
+    }
+    renderContext->SetFullViewport();
 
     if (auto rmlRenderer = dynamic_cast<Detail::RmlRenderer*>(Rml::GetRenderInterface()))
     {

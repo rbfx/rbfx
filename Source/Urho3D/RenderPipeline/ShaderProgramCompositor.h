@@ -91,7 +91,7 @@ class URHO3D_API ShaderProgramCompositor : public Object
 public:
     explicit ShaderProgramCompositor(Context* context);
     void SetSettings(const ShaderProgramCompositorSettings& settings);
-    void SetFrameSettings(const CameraProcessor* cameraProcessor);
+    void SetFrameSettings(const CameraProcessor* cameraProcessor, bool linearColorSpace);
 
     /// Process batches
     /// @{
@@ -123,7 +123,7 @@ private:
     /// Apply user pass defines
     /// @{
     void ApplyLayoutVertexAndCommonDefinesForUserPass(ShaderProgramDesc& result, VertexBuffer* vertexBuffer) const;
-    void ApplyMaterialPixelDefinesForUserPass(ShaderProgramDesc& result, Material* material) const;
+    void ApplyMaterialPixelDefinesForUserPass(ShaderProgramDesc& result, Material* material, Pass* pass) const;
     void ApplyAmbientLightingVertexAndCommonDefinesForUserPass(ShaderProgramDesc& result,
         Drawable* drawable, bool isGeometryBufferPass) const;
     /// @}
@@ -137,11 +137,11 @@ private:
 
     /// External configuration
     /// @{
-    bool constantBuffersSupported_{};
     ShaderProgramCompositorSettings settings_;
     bool isCameraOrthographic_{};
     bool isCameraClipped_{};
     bool isCameraReversed_{};
+    bool linearColorSpace_{};
     /// @}
 };
 

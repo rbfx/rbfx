@@ -113,6 +113,8 @@ void LightBaker::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Chunk Indirect Padding", float, settings_.incremental_.indirectPadding_, defaultSettings.incremental_.indirectPadding_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Chunk Shadow Distance", float, settings_.incremental_.directionalLightShadowDistance_, defaultSettings.incremental_.directionalLightShadowDistance_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Stitch Iterations", unsigned, settings_.stitching_.numIterations_, defaultSettings.stitching_.numIterations_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Constant Normal Offset", float, settings_.geometryBufferBaking_.constantPositionBias_, defaultSettings.geometryBufferBaking_.constantPositionBias_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Position Scaled Normal Offset", float, settings_.geometryBufferBaking_.scaledPositionBias_, defaultSettings.geometryBufferBaking_.scaledPositionBias_, AM_DEFAULT);
 }
 
 void LightBaker::SetQuality(LightBakingQuality quality)

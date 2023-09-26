@@ -109,7 +109,9 @@ public:
     /// Write a bounding box.
     bool WriteBoundingBox(const BoundingBox& value);
     /// Write a null-terminated string.
-    bool WriteString(const ea::string& value);
+    bool WriteString(ea::string_view value);
+    bool WriteString(std::string_view value);
+    bool WriteString(const char* value);
     /// Write a four-letter file ID. If the string is not long enough, spaces will be appended.
     bool WriteFileID(const ea::string& value);
     /// Write a 32-bit StringHash.

@@ -39,6 +39,7 @@
 #include <Urho3D/Navigation/NavigationEvents.h>
 #include <Urho3D/Navigation/Obstacle.h>
 #include <Urho3D/Navigation/OffMeshConnection.h>
+#include <Urho3D/RenderPipeline/ShaderConsts.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Font.h>
@@ -258,7 +259,6 @@ void CrowdNavigation::SpawnJack(const Vector3& pos, Node* jackGroup)
     jackNode->SetPosition(pos);
     auto* modelObject = jackNode->CreateComponent<AnimatedModel>();
     modelObject->SetModel(cache->GetResource<Model>("Models/Jack.mdl"));
-    modelObject->SetMaterial(cache->GetResource<Material>("Materials/Jack.xml"));
     modelObject->SetCastShadows(true);
     jackNode->CreateComponent<AnimationController>();
 
@@ -317,7 +317,7 @@ void CrowdNavigation::CreateMovingBarrels(DynamicNavigationMesh* navMesh)
     model->SetModel(cache->GetResource<Model>("Models/Cylinder.mdl"));
     auto* material = cache->GetResource<Material>("Materials/StoneTiled.xml");
     model->SetMaterial(material);
-    material->SetTexture(TU_DIFFUSE, cache->GetResource<Texture2D>("Textures/TerrainDetail2.dds"));
+    material->SetTexture(ShaderResources::Albedo, cache->GetResource<Texture2D>("Textures/TerrainDetail2.dds"));
     model->SetCastShadows(true);
     for (unsigned i = 0;  i < 20; ++i)
     {

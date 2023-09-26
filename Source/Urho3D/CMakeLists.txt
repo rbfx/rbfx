@@ -34,8 +34,9 @@ macro (define_engine_source_files)
             Urho3D.h
             Graphics/Direct3D11/D3D11GraphicsImpl.cpp
             Graphics/Direct3D11/D3D11GraphicsImpl.h
-            Graphics/GraphicsImpl.h
             Graphics/OpenGL/OGLGraphicsImpl.h
+            Graphics/Diligent/DiligentGraphicsImpl.cpp
+            Graphics/Diligent/DiligentGraphicsImpl.h
             IK/IKConverters.h
         )
         list (APPEND HEADER_FILES ${_files})
@@ -49,14 +50,8 @@ endmacro()
 
 define_engine_source_files (Container Core IO Math)
 
-define_engine_source_files (Audio Engine Input Plugins RenderPipeline Resource Scene Script Shader UI Utility)
-define_engine_source_files (NORECURSE . Graphics)
+define_engine_source_files (Audio Engine Graphics Input Plugins RenderAPI RenderPipeline Resource Scene Script Shader UI Utility)
 list (REMOVE_ITEM SOURCE_FILES BindAll.cpp)     # Utility file for BindTool.
-if (URHO3D_OPENGL)
-    define_engine_source_files (Graphics/OpenGL)
-elseif (URHO3D_D3D11)
-    define_engine_source_files (Graphics/Direct3D11)
-endif ()
 
 if (URHO3D_PARTICLE_GRAPH)
     define_engine_source_files (Particles)
@@ -103,20 +98,34 @@ if (URHO3D_ACTIONS)
     define_engine_source_files (Actions)
 endif ()
 
-# Remove compute source files as needed
-if (NOT URHO3D_COMPUTE)
-    list(REMOVE_ITEM SOURCE_FILES
-        Graphics/Direct3D11/D3D11ComputeBuffer.cpp
-        Graphics/Direct3D11/D3D11ComputeDevice.cpp
-        Graphics/OpenGL/OGLComputeBuffer.cpp
-        Graphics/OpenGL/OGLComputeDevice.cpp
-        Graphics/ComputeBuffer.cpp
-        Graphics/ComputeBuffer.h
-        Graphics/ComputeDevice.cpp
-        Graphics/ComputeDevice.h
-    )
+if (URHO3D_XR)
+    add_definitions(-DXR_USE_TIMESPEC)
+    if (PLATFORM_WIN32 OR PLATFORM_UNIVERSAL_WINDOWS)
+        add_definitions(-DXR_OS_WINDOWS -DXR_USE_PLATFORM_WIN32)
+    endif ()
+    if (PLATFORM_LINUX)
+        add_definitions(-DXR_OS_LINUX -DXR_USE_PLATFORM_LINUX)
+    endif ()
+    if (PLATFORM_ANDROID)
+        add_definitions(-DXR_OS_ANDROID -DXR_USE_PLATFORM_ANDROID)
+    endif ()
+    if (D3D11_SUPPORTED)
+        add_definitions(-DXR_USE_GRAPHICS_API_D3D11)
+    endif ()
+    if (D3D12_SUPPORTED)
+        add_definitions(-DXR_USE_GRAPHICS_API_D3D12)
+    endif ()
+    if (VULKAN_SUPPORTED)
+        add_definitions(-DXR_USE_GRAPHICS_API_VULKAN)
+    endif ()
+    if (GL_SUPPORTED)
+        add_definitions(-DXR_USE_GRAPHICS_API_OPENGL)
+    endif ()
+    if (GLES_SUPPORTED)
+        add_definitions(-DXR_USE_GRAPHICS_API_OPENGL_ES)
+    endif ()
+    define_engine_source_files (XR)
 endif ()
-
 # Group source code in VS solution
 group_sources()
 
@@ -177,7 +186,6 @@ set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     STB
     IconFontCppHeaders
     Civetweb
-    SLikeNet
     Detour
     DetourCrowd
     DetourTileCache
@@ -197,11 +205,21 @@ set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     RmlUi
     tinygltf
     enkiTS
+    Diligent-Common
+    Diligent-GraphicsEngineOpenGL-static
+    Diligent-GraphicsEngineVk-static
+    Diligent-GraphicsEngineD3D11-static
+    Diligent-GraphicsEngineD3D12-static
+    Diligent-GraphicsEngineMetal-static
+    Diligent-HLSL2GLSLConverterLib
+    Vulkan-Headers
+    datachannel-static
 )
 
 # Private dependencies that are hidden from the user and are not exposed in the public API or headers
 set (PRIVATE_THIRD_PARTY_DEPENDENCIES
     glslang
+    glslang-default-resource-limits
     SPIRV
     spirv-cross-core
     spirv-cross-glsl
@@ -209,7 +227,19 @@ set (PRIVATE_THIRD_PARTY_DEPENDENCIES
     spirv-cross-hlsl
     SPIRV-Tools
     SPIRV-Tools-opt
+    SPIRV-Reflect
 )
+if (TARGET datachannel-wasm)
+    target_link_libraries(Urho3D PUBLIC datachannel-wasm)
+endif ()
+
+if (URHO3D_XR AND DESKTOP)
+    if (URHO3D_MERGE_STATIC_LIBS)
+        list (APPEND PUBLIC_THIRD_PARTY_DEPENDENCIES openxr_loader)
+    else () # shouldn't need to wrorry about WEB right now
+        target_link_libraries(Urho3D PUBLIC openxr_loader)
+    endif ()
+endif ()
 
 if (URHO3D_MERGE_STATIC_LIBS)
     list (APPEND PUBLIC_THIRD_PARTY_DEPENDENCIES Bullet)
@@ -332,26 +362,6 @@ if (URHO3D_PROFILING)
     target_link_libraries(Urho3D PUBLIC Tracy)
 endif ()
 
-# Graphics
-if (URHO3D_OPENGL)
-    if (APPLE)
-        # Do nothing
-    elseif (WIN32)
-        target_link_libraries (Urho3D PUBLIC opengl32)
-    elseif (ANDROID OR ARM)
-        if (URHO3D_GLES2)
-            target_link_libraries (Urho3D PUBLIC GLESv1_CM GLESv2)
-        elseif (URHO3D_GLES3)
-            target_link_libraries (Urho3D PUBLIC GLESv3)
-        endif ()
-    else ()
-        target_link_libraries (Urho3D PUBLIC GL)
-    endif ()
-else ()
-    find_package(DirectX REQUIRED D3D11)
-    target_link_libraries (Urho3D PUBLIC ${DIRECT3D_LIBRARIES})
-endif ()
-
 if (WEB)
     target_link_libraries(Urho3D PUBLIC "-s WASM=$<BOOL:EMSCRIPTEN_WASM>")
     if (URHO3D_THREADING)
@@ -361,13 +371,16 @@ if (WEB)
     set_target_properties(Urho3D PROPERTIES LINK_FLAGS_RELEASE -sAGGRESSIVE_VARIABLE_ELIMINATION=1)
     target_compile_options(Urho3D PUBLIC $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:${EMCC_WITH_SOURCE_MAPS_FLAG}>)
     target_link_libraries(Urho3D PUBLIC -sDISABLE_EXCEPTION_CATCHING=1 -sFORCE_FILESYSTEM=1 -sDISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 -lidbfs.js)
-    target_link_libraries(Urho3D PUBLIC "-s ${EXTRA_}EXPORTED_RUNTIME_METHODS=['Pointer_stringify']" --bind)
+    target_link_libraries(Urho3D PUBLIC --bind)
     if (NOT EMSCRIPTEN_TOTAL_MEMORY OR "${EMSCRIPTEN_TOTAL_MEMORY}" STREQUAL "0")
         target_link_libraries(Urho3D PUBLIC "-s ALLOW_MEMORY_GROWTH=1" --no-heap-copy)
     else ()
         math(EXPR EMSCRIPTEN_TOTAL_MEMORY_BYTES "${EMSCRIPTEN_TOTAL_MEMORY} * 1024 * 1024")
         target_link_libraries(Urho3D PUBLIC "-s INITIAL_MEMORY=${EMSCRIPTEN_TOTAL_MEMORY_BYTES}")
     endif ()
+    target_link_libraries(Urho3D PUBLIC "-s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2")
+    # TODO: Try to remove FULL_ES3. We only need it for glMapBufferRange and glUnmapBuffer.
+    target_link_libraries(Urho3D PUBLIC "-s FULL_ES3=1")
 endif ()
 
 if (BUILD_SHARED_LIBS)
@@ -543,3 +556,6 @@ foreach (config Debug RelWithDebInfo Release MinSizeRel)
 endforeach ()
 file (GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h CONTENT ${URHO3D_H_DATA})
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h DESTINATION ${DEST_INCLUDE_DIR})
+file(GLOB ROOT_HEADERS *.h)
+list(REMOVE_ITEM ROOT_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h)
+install (FILES ${ROOT_HEADERS} DESTINATION ${DEST_INCLUDE_DIR})

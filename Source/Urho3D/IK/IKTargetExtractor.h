@@ -22,11 +22,9 @@
 
 #pragma once
 
-#include "../Graphics/Animation.h"
-#include "../Graphics/Model.h"
-#include "../Utility/AssetTransformer.h"
-
-using namespace Urho3D;
+#include "Urho3D/Graphics/Animation.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/Utility/AssetTransformer.h"
 
 namespace Urho3D
 {
@@ -44,7 +42,8 @@ public:
     static void RegisterObject(Context* context);
 
     bool IsApplicable(const AssetTransformerInput& input) override;
-    bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers) override;
+    bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output,
+        const AssetTransformerVector& transformers) override;
     bool IsExecutedOnOutput() override { return true; }
 
 private:
@@ -58,6 +57,7 @@ private:
     bool extractToNewFile_{true};
     ea::string newFileName_{DefaultNewFileName};
     ResourceRef skeletonModel_{Model::GetTypeStatic()};
+    StringVariantMap bendTargets_;
 };
 
-}
+} // namespace Urho3D

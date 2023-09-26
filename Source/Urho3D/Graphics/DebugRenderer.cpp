@@ -34,9 +34,13 @@
 #include "../Graphics/VertexBuffer.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/Geometry.h"
+#include "../Graphics/GraphicsUtils.h"
 #include "../Graphics/Renderer.h"
 #include "../Math/Polyhedron.h"
 #include "../Resource/ResourceCache.h"
+#include "../RenderAPI/RenderContext.h"
+#include "../RenderAPI/RenderDevice.h"
+#include "../RenderAPI/RenderScope.h"
 
 #include "../DebugNew.h"
 
@@ -48,11 +52,13 @@ static const unsigned MAX_LINES = 1000000;
 // Cap the amount of triangles to prevent crash.
 static const unsigned MAX_TRIANGLES = 100000;
 
-DebugRenderer::DebugRenderer(Context* context) :
-    Component(context),
-    lineAntiAlias_(false)
+DebugRenderer::DebugRenderer(Context* context)
+    : Component(context)
+    , lineAntiAlias_(false)
+    , pipelineStates_(context)
 {
     vertexBuffer_ = MakeShared<VertexBuffer>(context_);
+    vertexBuffer_->SetDebugName("DebugRenderer");
 
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(DebugRenderer, HandleEndFrame));
 }
@@ -539,10 +545,10 @@ void DebugRenderer::Render()
     if (!HasContent())
         return;
 
-    auto* renderer = GetSubsystem<Renderer>();
-    auto* graphics = GetSubsystem<Graphics>();
-    // Engine does not render when window is closed or device is lost
-    assert(graphics && graphics->IsInitialized() && !graphics->IsDeviceLost());
+    auto* renderDevice = GetSubsystem<RenderDevice>();
+    auto* renderContext = renderDevice->GetRenderContext();
+
+    const RenderScope renderScope(renderContext, "DebugRenderer::Render");
 
     URHO3D_PROFILE("RenderDebugGeometry");
 
@@ -551,7 +557,7 @@ void DebugRenderer::Render()
     if (vertexBuffer_->GetVertexCount() < numVertices || vertexBuffer_->GetVertexCount() > numVertices * 2)
         vertexBuffer_->SetSize(numVertices, MASK_POSITION | MASK_COLOR, true);
 
-    auto* dest = (float*)vertexBuffer_->Lock(0, numVertices, true);
+    auto* dest = (float*)vertexBuffer_->Map();
     if (!dest)
         return;
 
@@ -631,12 +637,12 @@ void DebugRenderer::Render()
         dest += 12;
     }
 
-    vertexBuffer_->Unlock();
+    vertexBuffer_->Unmap();
 
     if (!pipelineStatesInitialized_)
         InitializePipelineStates();
 
-    DrawCommandQueue* drawQueue = renderer->GetDefaultDrawQueue();
+    DrawCommandQueue* drawQueue = renderDevice->GetDefaultQueue();
     drawQueue->Reset();
 
     const auto setDefaultConstants = [&]()
@@ -662,14 +668,16 @@ void DebugRenderer::Render()
         }
     };
 
-    drawQueue->SetBuffers({ { vertexBuffer_ }, nullptr, nullptr });
+    drawQueue->SetVertexBuffers({vertexBuffer_});
+
+    const PipelineStateOutputDesc& outputDesc = renderContext->GetCurrentRenderTargetsDesc();
 
     unsigned start = 0;
     unsigned count = 0;
     if (lines_.size())
     {
         count = lines_.size() * 2;
-        drawQueue->SetPipelineState(depthLinesPipelineState_[lineAntiAlias_]);
+        drawQueue->SetPipelineState(pipelineStates_.GetState(depthLinesPipelineState_[lineAntiAlias_], outputDesc));
         setDefaultConstants();
         drawQueue->Draw(start, count);
         start += count;
@@ -677,7 +685,7 @@ void DebugRenderer::Render()
     if (noDepthLines_.size())
     {
         count = noDepthLines_.size() * 2;
-        drawQueue->SetPipelineState(noDepthLinesPipelineState_[lineAntiAlias_]);
+        drawQueue->SetPipelineState(pipelineStates_.GetState(noDepthLinesPipelineState_[lineAntiAlias_], outputDesc));
         setDefaultConstants();
         drawQueue->Draw(start, count);
         start += count;
@@ -686,7 +694,7 @@ void DebugRenderer::Render()
     if (triangles_.size())
     {
         count = triangles_.size() * 3;
-        drawQueue->SetPipelineState(depthTrianglesPipelineState_);
+        drawQueue->SetPipelineState(pipelineStates_.GetState(depthTrianglesPipelineState_, outputDesc));
         setDefaultConstants();
         drawQueue->Draw(start, count);
         start += count;
@@ -694,12 +702,12 @@ void DebugRenderer::Render()
     if (noDepthTriangles_.size())
     {
         count = noDepthTriangles_.size() * 3;
-        drawQueue->SetPipelineState(noDepthTrianglesPipelineState_);
+        drawQueue->SetPipelineState(pipelineStates_.GetState(noDepthTrianglesPipelineState_, outputDesc));
         setDefaultConstants();
         drawQueue->Draw(start, count);
     }
 
-    drawQueue->Execute();
+    renderContext->Execute(drawQueue);
 }
 
 bool DebugRenderer::IsInside(const BoundingBox& box) const
@@ -743,16 +751,13 @@ void DebugRenderer::InitializePipelineStates()
     auto* graphics = GetSubsystem<Graphics>();
 
     auto createPipelineState = [&](PrimitiveType primitiveType, BlendMode blendMode, CompareMode depthCompare,
-        bool depthWriteEnabled, bool lineAntiAlias)
+        bool depthWriteEnabled, bool lineAntiAlias, ea::string_view debugName)
     {
-        PipelineStateDesc desc;
-        desc.InitializeInputLayout(GeometryBufferArray{ { vertexBuffer_ }, nullptr, nullptr });
+        GraphicsPipelineStateDesc desc;
+        InitializeInputLayout(desc.inputLayout_, {vertexBuffer_});
         desc.colorWriteEnabled_ = true;
 
-        ea::string shaderDefines = "VERTEXCOLOR ";
-        if (graphics->GetCaps().constantBuffersSupported_)
-            shaderDefines += "URHO3D_USE_CBUFFERS ";
-
+        const ea::string shaderDefines = "VERTEXCOLOR ";
         desc.vertexShader_ = graphics->GetShader(VS, "v2/X_Basic", shaderDefines);
         desc.pixelShader_ = graphics->GetShader(PS, "v2/X_Basic", shaderDefines);
 
@@ -762,18 +767,20 @@ void DebugRenderer::InitializePipelineStates()
         desc.blendMode_ = blendMode;
         desc.lineAntiAlias_ = lineAntiAlias;
 
-        return renderer->GetOrCreatePipelineState(desc);
+        desc.debugName_ = Format("DebugRenderer for {}", debugName);
+
+        return pipelineStates_.CreateState(desc);
     };
 
     for (bool lineAntiAlias : { false, true })
     {
         const BlendMode blendMode = lineAntiAlias_ ? BLEND_ALPHA : BLEND_REPLACE;
-        depthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, blendMode, CMP_LESSEQUAL, true, lineAntiAlias);
-        noDepthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, blendMode, CMP_ALWAYS, false, lineAntiAlias);
+        depthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, blendMode, CMP_LESSEQUAL, true, lineAntiAlias, "Lines with Depth Test");
+        noDepthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, blendMode, CMP_ALWAYS, false, lineAntiAlias, "Lines without Depth Test");
     }
 
-    depthTrianglesPipelineState_ = createPipelineState(TRIANGLE_LIST, BLEND_ALPHA, CMP_LESSEQUAL, false, false);
-    noDepthTrianglesPipelineState_ = createPipelineState(TRIANGLE_LIST, BLEND_ALPHA, CMP_ALWAYS, false, false);
+    depthTrianglesPipelineState_ = createPipelineState(TRIANGLE_LIST, BLEND_ALPHA, CMP_LESSEQUAL, false, false, "Triangles with Depth Test");
+    noDepthTrianglesPipelineState_ = createPipelineState(TRIANGLE_LIST, BLEND_ALPHA, CMP_ALWAYS, false, false, "Triangles without Depth Test");
 }
 
 }

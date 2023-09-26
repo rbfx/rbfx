@@ -74,6 +74,11 @@ public class UrhoActivity extends SDLActivity {
                 // Static builds would not contain this library.
                 libraryNames.add(0, libraryNames.remove(index));
             }
+            index = libraryNames.indexOf("openxr_loader");
+            if (index >= 0) {
+                // Non-XR builds would not contain this library.
+                libraryNames.add(0, libraryNames.remove(index));
+            }
             return libraryNames;
         }
     }

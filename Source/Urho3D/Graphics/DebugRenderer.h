@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Graphics/PipelineState.h"
+#include "../RenderPipeline/StaticPipelineStateCache.h"
 #include "../Math/Color.h"
 #include "../Math/Frustum.h"
 #include "../Scene/Component.h"
@@ -211,11 +211,12 @@ private:
 
     /// @name Pipeline states
     /// @{
+    StaticPipelineStateCache pipelineStates_;
     bool pipelineStatesInitialized_{};
-    SharedPtr<PipelineState> depthLinesPipelineState_[2];
-    SharedPtr<PipelineState> noDepthLinesPipelineState_[2];
-    SharedPtr<PipelineState> depthTrianglesPipelineState_;
-    SharedPtr<PipelineState> noDepthTrianglesPipelineState_;
+    StaticPipelineStateId depthLinesPipelineState_[2]{};
+    StaticPipelineStateId noDepthLinesPipelineState_[2]{};
+    StaticPipelineStateId depthTrianglesPipelineState_{};
+    StaticPipelineStateId noDepthTrianglesPipelineState_{};
     /// @}
 };
 

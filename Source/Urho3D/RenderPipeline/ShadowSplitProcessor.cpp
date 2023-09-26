@@ -24,6 +24,7 @@
 
 #include "../Graphics/Camera.h"
 #include "../Graphics/Drawable.h"
+#include "../Graphics/Graphics.h"
 #include "../Graphics/Light.h"
 #include "../Graphics/Octree.h"
 #include "../Math/Polyhedron.h"
@@ -74,6 +75,7 @@ ShadowSplitProcessor::ShadowSplitProcessor(LightProcessor* owner, unsigned split
     : lightProcessor_(owner)
     , light_(lightProcessor_->GetLight())
     , splitIndex_(splitIndex)
+    , renderBackend_(light_->GetSubsystem<Graphics>()->GetRenderBackend())
     , shadowCameraNode_(MakeShared<Node>(light_->GetContext()))
     , shadowCamera_(shadowCameraNode_->CreateComponent<Camera>())
 {
@@ -339,13 +341,16 @@ Matrix4 ShadowSplitProcessor::GetWorldToShadowSpaceMatrix(float subPixelOffset) 
     offset.y_ += scale.y_;
 
     // Apply GAPI-specific transforms
-#ifdef URHO3D_OPENGL
-    offset.z_ = 0.5f;
-    scale.z_ = 0.5f;
-    offset.y_ = 1.0f - offset.y_;
-#else
-    scale.y_ = -scale.y_;
-#endif
+    if (renderBackend_ == RenderBackend::OpenGL)
+    {
+        offset.z_ = 0.5f;
+        scale.z_ = 0.5f;
+        offset.y_ = 1.0f - offset.y_;
+    }
+    else
+    {
+        scale.y_ = -scale.y_;
+    }
 
     // Apply sub-pixel offset if necessary
     offset.x_ -= subPixelOffset / textureSize.x_;

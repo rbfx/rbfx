@@ -48,7 +48,7 @@ public:
 
 private:
     /// Convert graphics format to number of components.
-    unsigned ConvertFormatToNumComponents(unsigned format);
+    unsigned ConvertFormatToNumComponents(TextureFormat format);
     /// Save font face texture as image resource.
     SharedPtr<Image> SaveFaceTexture(Texture2D* texture);
     /// Save font face texture as image file.

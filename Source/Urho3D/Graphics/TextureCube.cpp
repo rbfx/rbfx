@@ -26,13 +26,13 @@
 #include "../Core/Profiler.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/TextureCube.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
 
 #include "../DebugNew.h"
 
@@ -58,22 +58,14 @@ static SharedPtr<Image> GetTileImage(Image* src, int tileX, int tileY, int tileW
         src->GetSubimage(IntRect(tileX * tileWidth, tileY * tileHeight, (tileX + 1) * tileWidth, (tileY + 1) * tileHeight)));
 }
 
-TextureCube::TextureCube(Context* context) :
-    Texture(context)
+TextureCube::TextureCube(Context* context)
+    : Texture(context)
 {
-#ifdef URHO3D_OPENGL
-    target_ = GL_TEXTURE_CUBE_MAP;
-#endif
-
-    // Default to clamp mode addressing
-    addressModes_[COORD_U] = ADDRESS_CLAMP;
-    addressModes_[COORD_V] = ADDRESS_CLAMP;
-    addressModes_[COORD_W] = ADDRESS_CLAMP;
+    SetSamplerStateDesc(SamplerStateDesc::Bilinear(ADDRESS_CLAMP));
 }
 
 TextureCube::~TextureCube()
 {
-    Release();
 }
 
 void TextureCube::RegisterObject(Context* context)
@@ -84,18 +76,11 @@ void TextureCube::RegisterObject(Context* context)
 bool TextureCube::BeginLoad(Deserializer& source)
 {
     auto* cache = GetSubsystem<ResourceCache>();
+    auto graphics = GetSubsystem<Graphics>();
 
     // In headless mode, do not actually load the texture, just return success
-    if (!graphics_)
+    if (!graphics)
         return true;
-
-    // If device is lost, retry later
-    if (graphics_->IsDeviceLost())
-    {
-        URHO3D_LOGWARNING("Texture load while device is lost");
-        dataPending_ = true;
-        return true;
-    }
 
     cache->ResetDependencies(this);
 
@@ -117,7 +102,7 @@ bool TextureCube::BeginLoad(Deserializer& source)
 bool TextureCube::EndLoad()
 {
     // In headless mode, do not actually load the texture, just return success
-    if (!graphics_ || graphics_->IsDeviceLost())
+    if (!renderDevice_)
         return true;
 
     // If over the texture budget, see if materials can be freed to allow textures to be freed
@@ -134,97 +119,61 @@ bool TextureCube::EndLoad()
     return true;
 }
 
-bool TextureCube::SetSize(int size, unsigned format, TextureUsage usage, int multiSample)
+bool TextureCube::SetSize(int size, TextureFormat format, TextureFlags flags, int multiSample)
 {
-    if (size <= 0)
-    {
-        URHO3D_LOGERROR("Zero or negative cube texture size");
-        return false;
-    }
-    if (usage == TEXTURE_DEPTHSTENCIL)
-    {
-        URHO3D_LOGERROR("Depth-stencil usage not supported for cube textures");
-        return false;
-    }
+    RawTextureParams params;
+    params.type_ = TextureType::TextureCube;
+    params.format_ = format;
+    params.size_ = {size, size, 1};
+    params.numLevels_ = requestedLevels_;
+    params.flags_ = flags;
+    params.multiSample_ = multiSample;
+    if (requestedSRGB_)
+        params.format_ = SetTextureFormatSRGB(params.format_);
 
-    multiSample = Clamp(multiSample, 1, 16);
-    if (multiSample > 1 && usage < TEXTURE_RENDERTARGET)
-    {
-        URHO3D_LOGERROR("Multisampling is only supported for rendertarget cube textures");
-        return false;
-    }
-
-    // Delete the old rendersurfaces if any
-    for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
-    {
-        renderSurfaces_[i].Reset();
-        faceMemoryUse_[i] = 0;
-    }
-
-    usage_ = usage;
-
-    if (usage == TEXTURE_RENDERTARGET)
-    {
-        for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
-        {
-            renderSurfaces_[i] = new RenderSurface(this);
-#ifdef URHO3D_OPENGL
-            renderSurfaces_[i]->target_ = GL_TEXTURE_CUBE_MAP_POSITIVE_X + i;
-#endif
-        }
-
-        // Nearest filtering by default
-        filterMode_ = FILTER_NEAREST;
-    }
-
-    if (usage == TEXTURE_RENDERTARGET)
-        SubscribeToEvent(E_RENDERSURFACEUPDATE, URHO3D_HANDLER(TextureCube, HandleRenderSurfaceUpdate));
-    else
-        UnsubscribeFromEvent(E_RENDERSURFACEUPDATE);
-
-    width_ = size;
-    height_ = size;
-    depth_ = 1;
-    format_ = format;
-    multiSample_ = multiSample;
-    autoResolve_ = multiSample > 1;
-
-    return Create();
+    return Create(params);
 }
 
-SharedPtr<Image> TextureCube::GetImage(CubeMapFace face) const
+bool TextureCube::SetData(CubeMapFace face, unsigned level, int x, int y, int width, int height, const void* data)
 {
-    if (format_ != Graphics::GetRGBAFormat() && format_ != Graphics::GetRGBFormat())
-    {
-        URHO3D_LOGERROR("Unsupported texture format, can not convert to Image");
-        return SharedPtr<Image>();
-    }
-
-    auto rawImage = MakeShared<Image>(context_);
-    if (format_ == Graphics::GetRGBAFormat())
-        rawImage->SetSize(width_, height_, 4);
-    else if (format_ == Graphics::GetRGBFormat())
-        rawImage->SetSize(width_, height_, 3);
-    else
-        assert(false);
-
-    GetData(face, 0, rawImage->GetData());
-    return SharedPtr<Image>(rawImage);
+    Update(level, {x, y, 0}, {width, height, 1}, face, data);
+    return true;
 }
 
-void TextureCube::HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData)
+bool TextureCube::SetData(CubeMapFace face, Deserializer& source)
 {
-    auto* renderer = GetSubsystem<Renderer>();
+    SharedPtr<Image> image(MakeShared<Image>(context_));
+    if (!image->Load(source))
+        return false;
 
-    for (auto& renderSurface : renderSurfaces_)
+    return SetData(face, image);
+}
+
+bool TextureCube::SetData(CubeMapFace face, Image* image)
+{
+    if (!face)
     {
-        if (renderSurface && (renderSurface->GetUpdateMode() == SURFACE_UPDATEALWAYS || renderSurface->IsUpdateQueued()))
-        {
-            if (renderer)
-                renderer->QueueRenderSurface(renderSurface);
-            renderSurface->ResetUpdateQueued();
-        }
+        RawTextureParams params;
+        params.type_ = TextureType::TextureCube;
+        params.numLevels_ = requestedLevels_;
+        if (!CreateForImage(params, image))
+            return false;
     }
+
+    return UpdateFromImage(face, image);
+}
+
+bool TextureCube::GetData(CubeMapFace face, unsigned level, void* dest)
+{
+    return Read(face, level, dest, M_MAX_UNSIGNED);
+}
+
+SharedPtr<Image> TextureCube::GetImage(CubeMapFace face)
+{
+    auto image = MakeShared<Image>(context_);
+    if (ReadToImage(face, 0, image))
+        return image;
+    return nullptr;
 }
 
 }

@@ -76,4 +76,4 @@ private:
     IKNodeCache solverNodes_;
 };
 
-}
+} // namespace Urho3D

@@ -306,7 +306,6 @@ using DragAndDropModeFlags = Urho3D::DragAndDropMode;
 %csattribute(Urho3D::UIComponent, %arg(Urho3D::UIElement *), Root, GetRoot);
 %csattribute(Urho3D::UIComponent, %arg(Urho3D::Material *), Material, GetMaterial);
 %csattribute(Urho3D::UIComponent, %arg(Urho3D::Texture2D *), Texture, GetTexture);
-%csattribute(Urho3D::View3D, %arg(unsigned int), Format, GetFormat, SetFormat);
 %csattribute(Urho3D::View3D, %arg(bool), AutoUpdate, GetAutoUpdate, SetAutoUpdate);
 %csattribute(Urho3D::View3D, %arg(Urho3D::Scene *), Scene, GetScene);
 %csattribute(Urho3D::View3D, %arg(Urho3D::Node *), CameraNode, GetCameraNode);

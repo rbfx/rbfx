@@ -195,6 +195,31 @@ AbstractFilePtr VirtualFileSystem::OpenFile(const FileIdentifier& fileName, File
     return nullptr;
 }
 
+ea::string VirtualFileSystem::ReadAllText(const FileIdentifier& fileName) const
+{
+    AbstractFilePtr file = OpenFile(fileName, FILE_READ);
+    if (!file)
+        return EMPTY_STRING;
+
+    const unsigned dataSize = file->GetSize();
+
+    ea::string buffer;
+    buffer.resize(dataSize);
+    if (file->Read(buffer.data(), dataSize) != dataSize)
+        return buffer.substr(0, dataSize);
+
+    return buffer;
+}
+
+bool VirtualFileSystem::WriteAllText(const FileIdentifier& fileName, const ea::string& text) const
+{
+    AbstractFilePtr file = OpenFile(fileName, FILE_WRITE);
+    if (!file)
+        return false;
+
+    return file->Write(text.data(), text.length()) == text.length();
+}
+
 FileTime VirtualFileSystem::GetLastModifiedTime(const FileIdentifier& fileName, bool creationIsModification) const
 {
     MutexLock lock(mountMutex_);

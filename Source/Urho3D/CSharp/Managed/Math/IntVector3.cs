@@ -64,9 +64,9 @@ namespace Urho3DNet
 
         /// Add a vector.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntVector3 operator +(in IntVector3 rhs)
+        public static IntVector3 operator +(in IntVector3 lhs, in IntVector3 rhs)
         {
-            return new IntVector3(rhs.X + rhs.X, rhs.Y + rhs.Y, rhs.Z + rhs.Z);
+            return new IntVector3(lhs.X + rhs.X, lhs.Y + rhs.Y, lhs.Z + rhs.Z);
         }
 
         /// Return negation.

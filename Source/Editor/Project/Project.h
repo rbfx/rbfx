@@ -263,6 +263,7 @@ private:
     /// @{
     const bool isHeadless_{};
     const bool isReadOnly_{};
+    const bool isXR_{};
     const unsigned saveDelayMs_{3000};
 
     const ea::string projectPath_;

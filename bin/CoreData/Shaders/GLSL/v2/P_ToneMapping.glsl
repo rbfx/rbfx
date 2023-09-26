@@ -3,7 +3,8 @@
 #include "_VertexLayout.glsl"
 #include "_VertexTransform.glsl"
 #include "_VertexScreenPos.glsl"
-#include "_Samplers.glsl"
+#include "_DefaultSamplers.glsl"
+#include "_SamplerUtils.glsl"
 #include "_GammaCorrection.glsl"
 
 VERTEX_OUTPUT_HIGHP(vec2 vTexCoord)
@@ -50,7 +51,7 @@ void main()
 #ifdef URHO3D_PIXEL_SHADER
 void main()
 {
-    vec3 finalColor = texture2D(sDiffMap, vScreenPos).rgb;
+    vec3 finalColor = texture(sAlbedo, vScreenPos).rgb;
 
 #ifdef REINHARD
     finalColor = Reinhard(finalColor);

@@ -41,3 +41,16 @@ TEST_CASE("VirtualFileSystem has mount points")
         CHECK(mountPoint);
     }
 }
+
+TEST_CASE("VirtualFileSystem can read and write text")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    auto vfs = context->GetSubsystem<VirtualFileSystem>();
+
+    FileIdentifier fileId{"conf", "test_file.txt"};
+    ea::string testString{"BlaBla\xE2\x82\xAC"};
+    REQUIRE(vfs->WriteAllText(fileId, testString));
+
+    auto restoredText = vfs->ReadAllText(fileId);
+    REQUIRE(testString == restoredText);
+}

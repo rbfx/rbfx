@@ -97,34 +97,30 @@ void HttpRequestDemo::Update(float timeStep)
         else if (httpRequest_->GetState() == HTTP_ERROR)
         {
             text_->SetText("An error has occurred: " + httpRequest_->GetError());
-            UnsubscribeFromEvent("Update");
+            UnsubscribeFromEvent(E_UPDATE);
             URHO3D_LOGERRORF("HttpRequest error: %s", httpRequest_->GetError().c_str());
         }
-        // Get message data
-        else
+        else if (httpRequest_->GetState() == Urho3D::HTTP_OPEN)
+            text_->SetText("Processing...");
+        else if (httpRequest_->GetState() == Urho3D::HTTP_CLOSED)
         {
-            if (httpRequest_->GetAvailableSize() > 0)
-                message_ += httpRequest_->ReadLine();
-            else
-            {
-                text_->SetText("Processing...");
+            message_ = httpRequest_->ReadString();
 
-                SharedPtr<JSONFile> json(new JSONFile(context_));
-                json->FromString(message_);
+            SharedPtr<JSONFile> json(new JSONFile(context_));
+            json->FromString(message_);
 
 #ifdef URHO3D_SSL
-                JSONValue val = json->GetRoot().Get("ip");
+            JSONValue val = json->GetRoot().Get("ip");
 #else
-                JSONValue val = json->GetRoot().Get("origin");
+            JSONValue val = json->GetRoot().Get("origin");
 #endif
 
-                if (val.IsNull())
-                    text_->SetText("Invalid JSON response retrieved!");
-                else
-                    text_->SetText("Your IP is: " + val.GetString());
+            if (val.IsNull())
+                text_->SetText("Invalid JSON response retrieved!");
+            else
+                text_->SetText("Your IP is: " + val.GetString());
 
-                UnsubscribeFromEvent("Update");
-            }
+            UnsubscribeFromEvent(E_UPDATE);
         }
     }
 }

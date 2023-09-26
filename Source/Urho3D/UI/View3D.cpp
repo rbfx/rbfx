@@ -40,7 +40,7 @@ namespace Urho3D
 View3D::View3D(Context* context) :
     Window(context),
     ownScene_(true),
-    rttFormat_(Graphics::GetRGBFormat()),
+    rttFormat_(TextureFormat::TEX_FORMAT_RGBA8_UNORM),
     autoUpdate_(true)
 {
     renderTexture_ = MakeShared<Texture2D>(context_);
@@ -77,8 +77,8 @@ void View3D::OnResize(const IntVector2& newSize, const IntVector2& delta)
 
     if (width > 0 && height > 0)
     {
-        renderTexture_->SetSize(width, height, rttFormat_, TEXTURE_RENDERTARGET);
-        depthTexture_->SetSize(width, height, Graphics::GetDepthStencilFormat(), TEXTURE_DEPTHSTENCIL);
+        renderTexture_->SetSize(width, height, rttFormat_, TextureFlag::BindRenderTarget);
+        depthTexture_->SetSize(width, height, TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT, TextureFlag::BindDepthStencil);
         RenderSurface* surface = renderTexture_->GetRenderSurface();
         surface->SetViewport(0, viewport_);
         surface->SetUpdateMode(SURFACE_MANUALUPDATE);
@@ -105,7 +105,7 @@ void View3D::SetView(Scene* scene, Camera* camera, bool ownScene)
     QueueUpdate();
 }
 
-void View3D::SetFormat(unsigned format)
+void View3D::SetFormat(TextureFormat format)
 {
     if (format != rttFormat_)
     {

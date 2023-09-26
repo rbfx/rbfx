@@ -22,6 +22,7 @@
 
 #include <Urho3D/Audio/Audio.h>
 #include <Urho3D/Audio/Sound.h>
+#include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/Zone.h>
@@ -32,6 +33,7 @@
 #include <Urho3D/IO/VectorBuffer.h>
 #include <Urho3D/Network/Network.h>
 #include <Urho3D/Network/NetworkEvents.h>
+#include <Urho3D/Network/LANDiscoveryManager.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Button.h>
@@ -52,8 +54,9 @@
 
 static const int SERVER_PORT = 54654;
 
-LANDiscovery::LANDiscovery(Context* context) :
-    Sample(context)
+LANDiscovery::LANDiscovery(Context* context)
+    : Sample(context)
+    , lanDiscovery_(MakeShared<LANDiscoveryManager>(context))
 {
 }
 
@@ -109,6 +112,7 @@ void LANDiscovery::CreateUI()
 void LANDiscovery::SubscribeToEvents()
 {
     SubscribeToEvent(E_NETWORKHOSTDISCOVERED, URHO3D_HANDLER(LANDiscovery, HandleNetworkHostDiscovered));
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(LANDiscovery, HandleExpireServers));
 
     SubscribeToEvent(startServer_, "Released", URHO3D_HANDLER(LANDiscovery, HandleStartServer));
     SubscribeToEvent(stopServer_, "Released", URHO3D_HANDLER(LANDiscovery, HandleStopServer));
@@ -150,21 +154,40 @@ Text* LANDiscovery::CreateLabel(const ea::string& text, IntVector2 pos)
 void LANDiscovery::HandleNetworkHostDiscovered(StringHash eventType, VariantMap& eventData)
 {
     using namespace NetworkHostDiscovered;
-    URHO3D_LOGINFO("Server discovered!");
-	ea::string text = serverList_->GetText();
+
     VariantMap data = eventData[P_BEACON].GetVariantMap();
-	text += "\n" + data["Name"].GetString() + "(" + ea::to_string(data["Players"].GetInt()) + ")" + eventData[P_ADDRESS].GetString() + ":" + ea::to_string(eventData[P_PORT].GetInt());
-    serverList_->SetText(text);
+    ea::string name = data["Name"].GetString();
+
+    // Refresh server that reannounced itself
+    {
+        auto it = serverListItems_.find(name);
+        if (it != serverListItems_.end())
+        {
+            URHO3D_LOGINFO("Server {} reannounced itself!", name);
+            it->second.lastSeen_ = Time::GetTimeSinceEpoch();
+        }
+        else
+        {
+            URHO3D_LOGINFO("Server {} discovered!", name);
+            serverListItems_[name] = {
+                name, data["Players"].GetInt(), eventData[P_ADDRESS].GetString(), (unsigned short)eventData[P_PORT].GetUInt(),
+                Time::GetTimeSinceEpoch()};
+        }
+    }
+
+    FormatServerListUI();
 }
 
 void LANDiscovery::HandleStartServer(StringHash eventType, VariantMap& eventData)
 {
-    if (GetSubsystem<Network>()->StartServer(SERVER_PORT)) {
-        VariantMap data;
-        data["Name"] = "Test server";
-        data["Players"] = 100;
-        /// Set data which will be sent to all who requests LAN network discovery
-        GetSubsystem<Network>()->SetDiscoveryBeacon(data);
+    VariantMap data;
+    data["Name"] = "Test server";
+    data["Players"] = 100;
+
+    // Set data which will be sent to all who requests LAN network discovery
+    lanDiscovery_->SetBroadcastData(data);
+    if (lanDiscovery_->Start(SERVER_PORT))
+    {
         startServer_->SetVisible(false);
         stopServer_->SetVisible(true);
     }
@@ -172,7 +195,7 @@ void LANDiscovery::HandleStartServer(StringHash eventType, VariantMap& eventData
 
 void LANDiscovery::HandleStopServer(StringHash eventType, VariantMap& eventData)
 {
-    GetSubsystem<Network>()->StopServer();
+    lanDiscovery_->Stop();
     startServer_->SetVisible(true);
     stopServer_->SetVisible(false);
 }
@@ -180,6 +203,32 @@ void LANDiscovery::HandleStopServer(StringHash eventType, VariantMap& eventData)
 void LANDiscovery::HandleDoNetworkDiscovery(StringHash eventType, VariantMap& eventData)
 {
     /// Pass in the port that should be checked
-    GetSubsystem<Network>()->DiscoverHosts(SERVER_PORT);
+    lanDiscovery_->Start(SERVER_PORT);
     serverList_->SetText("");
+}
+
+void LANDiscovery::HandleExpireServers(StringHash eventType, VariantMap& eventData)
+{
+    // Delete expired servers after 10s of not seeing an announcement
+    for (auto it = serverListItems_.begin(); it != serverListItems_.end();)
+    {
+        if (Time::GetTimeSinceEpoch() - it->second.lastSeen_ > 10)
+        {
+            URHO3D_LOGINFO("Server {} expired!", it->second.name_);
+            it = serverListItems_.erase(it);
+            FormatServerListUI();
+        }
+        else
+            ++it;
+    }
+}
+
+void LANDiscovery::FormatServerListUI()
+{
+    ea::string text;
+    for (auto&[name, item] : serverListItems_)
+    {
+        text += Format("\n{} ({}) {}:{}", item.name_, item.players_, item.address_, item.port_);
+    }
+    serverList_->SetText(text);
 }

@@ -22,21 +22,28 @@
 
 #pragma once
 
-#include "../Graphics/GPUObject.h"
 #include "../Graphics/GraphicsDefs.h"
+#include "../Graphics/RenderSurface.h"
 #include "../Math/Color.h"
 #include "../Resource/Resource.h"
+#include "Urho3D/RenderAPI/RawTexture.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
+
+#include <Diligent/Graphics/GraphicsEngine/interface/Sampler.h>
+#include <Diligent/Graphics/GraphicsEngine/interface/Texture.h>
+#include <Diligent/Graphics/GraphicsEngine/interface/TextureView.h>
 
 namespace Urho3D
 {
 
 static const int MAX_TEXTURE_QUALITY_LEVELS = 3;
 
+class Image;
 class XMLElement;
 class XMLFile;
 
 /// Base class for texture resources.
-class URHO3D_API Texture : public ResourceWithMetadata, public GPUObject
+class URHO3D_API Texture : public ResourceWithMetadata, public RawTexture
 {
     URHO3D_OBJECT(Texture, ResourceWithMetadata);
 
@@ -46,12 +53,10 @@ public:
     /// Destruct.
     ~Texture() override;
 
-    /// Set number of requested mip levels. Needs to be called before setting size.
-    /** The default value (0) allocates as many mip levels as necessary to reach 1x1 size. Set value 1 to disable mipmapping.
-        Note that rendertargets need to regenerate mips dynamically after rendering, which may cost performance. Screen buffers
-        and shadow maps allocated by Renderer will have mipmaps disabled.
-     */
-    void SetNumLevels(unsigned levels);
+    /// Set default texture sampler.
+    /// If this is called for already used texture, send ReloadFinished event from this texture.
+    /// @{
+
     /// Set filtering mode.
     /// @property
     void SetFilterMode(TextureFilterMode mode);
@@ -63,9 +68,19 @@ public:
     void SetAnisotropy(unsigned level);
     /// Set shadow compare mode.
     void SetShadowCompare(bool enable);
-    /// Set border color for border addressing mode.
-    /// @property
-    void SetBorderColor(const Color& color);
+
+    /// @}
+
+    /// Set texture properties.
+    /// Texture should be reloaded after calling this.
+    /// @{
+
+    /// Set number of requested mip levels. Needs to be called before setting size.
+    /** The default value (0) allocates as many mip levels as necessary to reach 1x1 size. Set value 1 to disable mipmapping.
+        Note that rendertargets need to regenerate mips dynamically after rendering, which may cost performance. Screen buffers
+        and shadow maps allocated by Renderer will have mipmaps disabled.
+     */
+    void SetNumLevels(unsigned levels);
     /// Set whether the texture data is in linear color space (instead of gamma space).
     void SetLinear(bool linear);
     /// Set sRGB sampling and writing mode.
@@ -77,12 +92,12 @@ public:
     /// Set mip levels to skip on a quality setting when loading. Ensures higher quality levels do not skip more.
     /// @property
     void SetMipsToSkip(MaterialQuality quality, int toSkip);
-    /// Set whether to support unordered access.
-    void SetUnorderedAccess(bool enabled) { unorderedAccess_ = enabled; }
+
+    /// @}
 
     /// Return API-specific texture format.
     /// @property
-    unsigned GetFormat() const { return format_; }
+    TextureFormat GetFormat() const { return GetParams().format_; }
 
     /// Return whether the texture format is compressed.
     /// @property
@@ -90,73 +105,64 @@ public:
 
     /// Return number of mip levels.
     /// @property
-    unsigned GetLevels() const { return levels_; }
+    unsigned GetLevels() const { return GetParams().numLevels_; }
 
     /// Return width.
     /// @property
-    int GetWidth() const { return width_; }
+    int GetWidth() const { return GetParams().size_.x_; }
 
     /// Return height.
     /// @property
-    int GetHeight() const { return height_; }
+    int GetHeight() const { return GetParams().size_.y_; }
 
     /// Return size.
-    IntVector2 GetSize() const { return IntVector2(width_, height_); }
+    IntVector2 GetSize() const { return GetParams().size_.ToIntVector2(); }
 
     /// Return viewport rectange.
-    IntRect GetRect() const { return { 0, 0, width_, height_ }; }
+    IntRect GetRect() const { return { 0, 0, GetWidth(), GetHeight() }; }
 
     /// Return depth.
-    int GetDepth() const { return depth_; }
+    int GetDepth() const { return GetParams().size_.z_; }
 
     /// Return filtering mode.
     /// @property
-    TextureFilterMode GetFilterMode() const { return filterMode_; }
+    TextureFilterMode GetFilterMode() const { return GetSamplerStateDesc().filterMode_; }
 
     /// Return addressing mode by texture coordinate.
     /// @property
-    TextureAddressMode GetAddressMode(TextureCoordinate coord) const { return addressModes_[coord]; }
+    TextureAddressMode GetAddressMode(TextureCoordinate coord) const { return GetSamplerStateDesc().addressMode_[coord]; }
 
     /// Return texture max. anisotropy level. Value 0 means to use the default value from Renderer.
     /// @property
-    unsigned GetAnisotropy() const { return anisotropy_; }
+    unsigned GetAnisotropy() const { return GetSamplerStateDesc().anisotropy_; }
 
     /// Return whether shadow compare is enabled.
-    bool GetShadowCompare() const { return shadowCompare_; }
-
-    /// Return border color.
-    /// @property
-    const Color& GetBorderColor() const { return borderColor_; }
+    bool GetShadowCompare() const { return GetSamplerStateDesc().shadowCompare_; }
 
     /// Return whether the texture data are in linear space (instead of gamma space).
     bool GetLinear() const { return linear_; }
 
     /// Return whether is using sRGB sampling and writing.
     /// @property
-    bool GetSRGB() const { return sRGB_; }
-
-    /// Return whether to support unordered access.
-    bool GetUnorderedAccess() const { return unorderedAccess_; }
+    bool GetSRGB() const;
 
     /// Return texture multisampling level (1 = no multisampling).
     /// @property
-    int GetMultiSample() const { return multiSample_; }
+    int GetMultiSample() const { return GetParams().multiSample_; }
 
     /// Return texture multisampling autoresolve mode. When true, the texture is resolved before being sampled on SetTexture(). When false, the texture will not be resolved and must be read as individual samples in the shader.
     /// @property
-    bool GetAutoResolve() const { return autoResolve_; }
-
-    /// Return whether multisampled texture needs resolve.
-    /// @property
-    bool IsResolveDirty() const { return resolveDirty_; }
-
-    /// Return whether rendertarget mipmap levels need regenration.
-    /// @property
-    bool GetLevelsDirty() const { return levelsDirty_; }
+    bool GetAutoResolve() const { return !GetParams().flags_.Test(TextureFlag::NoMultiSampledAutoResolve); }
 
     /// Return backup texture.
     /// @property
     Texture* GetBackupTexture() const { return backupTexture_; }
+
+    /// Return render surface for given index.
+    RenderSurface* GetRenderSurface(unsigned index = 0) const
+    {
+        return index < renderSurfaces_.size() ? renderSurfaces_[index] : nullptr;
+    }
 
     /// Return mip levels to skip on a quality setting when loading.
     /// @property
@@ -170,10 +176,6 @@ public:
     /// Return mip level depth, or 0 if level does not exist.
     int GetLevelDepth(unsigned level) const;
 
-    /// Return texture usage type.
-    /// @property
-    TextureUsage GetUsage() const { return usage_; }
-
     /// Return data size in bytes for a rectangular region.
     unsigned GetDataSize(int width, int height) const;
     /// Return data size in bytes for a volume region.
@@ -184,125 +186,59 @@ public:
     /// @property
     unsigned GetComponents() const;
 
-    /// Return whether the parameters are dirty.
-    bool GetParametersDirty() const;
-
     /// Set additional parameters from an XML file.
     void SetParameters(XMLFile* file);
     /// Set additional parameters from an XML element.
     void SetParameters(const XMLElement& element);
-    /// Mark parameters dirty. Called by Graphics.
-    void SetParametersDirty();
-    /// Update dirty parameters to the texture object. Called by Graphics when assigning the texture.
-    void UpdateParameters();
 
-    /// Return shader resource view. Only used on Direct3D11.
-    void* GetShaderResourceView() const { return shaderResourceView_; }
+    /// Getters.
+    /// @{
+    bool IsRenderTarget() const { return GetParams().flags_.Test(TextureFlag::BindRenderTarget); }
+    bool IsDepthStencil() const { return GetParams().flags_.Test(TextureFlag::BindDepthStencil); }
+    bool IsUnorderedAccess() const { return GetParams().flags_.Test(TextureFlag::BindUnorderedAccess); }
+    /// @}
 
-    /// Return sampler state object. Only used on Direct3D11.
-    void* GetSampler() const { return sampler_; }
+private:
+    /// Implement RawTexture.
+    /// @{
+    void OnCreateGPU() override;
+    void OnDestroyGPU() override;
+    bool TryRestore() override;
+    /// @}
 
-    /// Return resolve texture. Only used on Direct3D11.
-    void* GetResolveTexture() const { return resolveTexture_; }
+    /// Handle render surface update event.
+    void HandleRenderSurfaceUpdate();
 
-    /// Return texture's target. Only used on OpenGL.
-    unsigned GetTarget() const { return target_; }
-
-    /// Convert format to sRGB.
-    /// @nobind
-    unsigned GetSRGBFormat(unsigned format);
-
-    /// Set or clear the need resolve flag. Called internally by Graphics.
-    void SetResolveDirty(bool enable) { resolveDirty_ = enable; }
-
-    /// Return whether the texture can be used as unordered access resource.
-    bool IsUnorderedAccessSupported() const { return unorderedAccess_ && IsComputeWriteable(format_); }
-
-    /// Set the mipmap levels dirty flag. Called internally by Graphics.
-    void SetLevelsDirty();
-    /// Regenerate mipmap levels for a rendertarget after rendering and before sampling. Called internally by Graphics. On OpenGL the texture must have been bound to work properly.
-    void RegenerateLevels();
-
-    /// Check maximum allowed mip levels for a specific texture size.
-    static unsigned CheckMaxLevels(int width, int height, unsigned requestedLevels);
-    /// Check maximum allowed mip levels for a specific 3D texture size.
-    static unsigned CheckMaxLevels(int width, int height, int depth, unsigned requestedLevels);
-    /// Return the shader resource view format corresponding to a texture format. Handles conversion of typeless depth texture formats. Only used on Direct3D11.
-    /// @nobind
-    static unsigned GetSRVFormat(unsigned format);
-    /// Return the depth-stencil view format corresponding to a texture format. Handles conversion of typeless depth texture formats. Only used on Direct3D11.
-    /// @nobind
-    static unsigned GetDSVFormat(unsigned format);
-    /// Return the non-internal texture format corresponding to an OpenGL internal format.
-    /// @nobind
-    static unsigned GetExternalFormat(unsigned format);
-    /// Return the data type corresponding to an OpenGL internal format.
-    /// @nobind
-    static unsigned GetDataType(unsigned format);
-    /// Returns true if the given texture format is viable as a compute shader write-target (ie. it's a plain RGBA nature).
-    static bool IsComputeWriteable(unsigned format);
-
-    using GPUObject::GetGraphics;
 protected:
     /// Check whether texture memory budget has been exceeded. Free unused materials in that case to release the texture references.
     void CheckTextureBudget(StringHash type);
-    /// Create the GPU texture. Implemented in subclasses.
-    virtual bool Create() { return true; }
 
-    /// OpenGL target.
-    unsigned target_{};
+    /// Create texture so it can fit the image.
+    /// Size and format are deduced from the image. Number of mips is adjusted according to the image.
+    bool CreateForImage(const RawTextureParams& baseParams, Image* image);
+    /// Set texture data from image.
+    bool UpdateFromImage(unsigned arraySlice, Image* image);
+    /// Read texture data to image.
+    bool ReadToImage(unsigned arraySlice, unsigned level, Image* image);
 
-    /// Direct3D11 shader resource view.
-    void* shaderResourceView_{};
-    /// Direct3D11 sampler state object.
-    void* sampler_{};
-    /// Direct3D11 resolve texture object when multisample with autoresolve is used.
-    void* resolveTexture_{};
-
-    /// Texture format.
-    unsigned format_{};
-    /// Texture usage type.
-    TextureUsage usage_{TEXTURE_STATIC};
-    /// Current mip levels.
-    unsigned levels_{};
     /// Requested mip levels.
     unsigned requestedLevels_{};
-    /// Texture width.
-    int width_{};
-    /// Texture height.
-    int height_{};
-    /// Texture depth.
-    int depth_{};
-    /// Shadow compare mode.
-    bool shadowCompare_{};
-    /// Whether to use this texture as UAV resource in shader.
-    bool unorderedAccess_{};
-    /// Filtering mode.
-    TextureFilterMode filterMode_{FILTER_DEFAULT};
-    /// Addressing mode.
-    TextureAddressMode addressModes_[MAX_COORDS]{ADDRESS_WRAP, ADDRESS_WRAP, ADDRESS_WRAP};
-    /// Texture anisotropy level.
-    unsigned anisotropy_{};
+    /// Whether sRGB sampling and writing is requested.
+    bool requestedSRGB_{};
     /// Mip levels to skip when loading per texture quality setting.
     unsigned mipsToSkip_[MAX_TEXTURE_QUALITY_LEVELS]{2, 1, 0};
-    /// Border color.
-    Color borderColor_;
-    /// Multisampling level.
-    int multiSample_{1};
-    /// sRGB sampling and writing mode flag.
-    bool sRGB_{};
     /// Whether the texture data is in linear color space (instead of gamma space).
     bool linear_{};
-    /// Parameters dirty flag.
-    bool parametersDirty_{true};
-    /// Multisampling autoresolve flag.
-    bool autoResolve_{};
     /// Multisampling resolve needed -flag.
     bool resolveDirty_{};
     /// Mipmap levels regeneration needed -flag.
     bool levelsDirty_{};
     /// Backup texture.
     SharedPtr<Texture> backupTexture_;
+    /// Render surface(s).
+    ea::vector<SharedPtr<RenderSurface>> renderSurfaces_;
+    /// Most detailed mip level currently used.
+    unsigned mostDetailedLevel_{};
 };
 
 }

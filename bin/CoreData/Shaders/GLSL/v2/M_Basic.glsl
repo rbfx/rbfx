@@ -4,8 +4,14 @@
 #include "_GammaCorrection.glsl"
 #include "_BRDF.glsl"
 
+// JS: this has to be before samplers so we can see it for depth reconstruction
+#ifdef URHO3D_XR
+    VERTEX_OUTPUT(int vInstID)
+#endif
+
 #include "_Uniforms.glsl"
-#include "_Samplers.glsl"
+#include "_DefaultSamplers.glsl"
+#include "_SamplerUtils.glsl"
 #include "_VertexLayout.glsl"
 
 #include "_VertexTransform.glsl"
@@ -31,6 +37,10 @@ void main()
     #ifdef URHO3D_VERTEX_HAS_COLOR
         vColor = iColor;
     #endif
+
+    #ifdef URHO3D_XR
+        vInstID = gl_InstanceID;
+    #endif
 }
 #endif
 
@@ -43,12 +53,12 @@ void main()
         diffColor *= vColor;
     #endif
 
-    #ifdef URHO3D_MATERIAL_HAS_DIFFUSE
+    #if URHO3D_TEXTURE_ALBEDO
         #ifdef ALPHAMAP
-            half alphaInput = DecodeAlphaMap(texture2D(sDiffMap, vTexCoord));
+            half alphaInput = texture(sAlbedo, vTexCoord).r;
             diffColor.a *= alphaInput;
         #else
-            half4 diffInput = texture2D(sDiffMap, vTexCoord);
+            half4 diffInput = texture(sAlbedo, vTexCoord);
             #ifdef ALPHAMASK
                 if (diffInput.a < 0.5)
                     discard;

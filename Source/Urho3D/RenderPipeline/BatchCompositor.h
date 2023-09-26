@@ -146,8 +146,11 @@ public:
         unsigned deferredPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex);
 
     /// Callback for pipeline state initialization.
-    virtual bool CreatePipelineState(PipelineStateDesc& desc, PipelineStateBuilder* builder,
+    virtual bool CreatePipelineState(GraphicsPipelineStateDesc& desc, PipelineStateBuilder* builder,
         const BatchStateCreateKey& key, const BatchStateCreateContext& ctx) { return false; }
+
+    void SetForwardOutputDesc(const PipelineStateOutputDesc& desc);
+    void SetDeferredOutputDesc(const PipelineStateOutputDesc& desc);
 
     void ComposeBatches();
 
@@ -187,6 +190,9 @@ private:
     void ProcessGeometryBatch(const GeometryBatch& geometryBatch);
     void ResolveDelayedBatches(BatchCompositorSubpass subpass, const WorkQueueVector<PipelineBatchDesc>& delayedBatches,
         BatchStateCache& cache, WorkQueueVector<PipelineBatch>& batches);
+    void AddPipelineBatch(const PipelineBatchDesc& desc, BatchStateCache& cache,
+        WorkQueueVector<PipelineBatch>& batches, WorkQueueVector<PipelineBatchDesc>& delayedBatches);
+    PipelineState* GetPlaceholderPipelineState(BatchStateCache& cache, PipelineState* original);
 
     /// Pipeline state caches
     /// @{
@@ -224,6 +230,9 @@ public:
     ~BatchCompositor() override;
     void SetPasses(ea::vector<SharedPtr<BatchCompositorPass>> passes);
     void SetShadowMaterialQuality(MaterialQuality materialQuality) { shadowMaterialQuality_ = materialQuality; }
+
+    void SetShadowOutputDesc(const PipelineStateOutputDesc& desc);
+    void SetLightVolumesOutputDesc(const PipelineStateOutputDesc& desc);
 
     /// Compose batches
     /// @{

@@ -50,44 +50,25 @@ public:
     bool BeginLoad(Deserializer& source) override;
     /// Finish resource loading. Always called from the main thread. Return true if successful.
     bool EndLoad() override;
-    /// Mark the GPU resource destroyed on context destruction.
-    void OnDeviceLost() override;
-    /// Recreate the GPU resource and restore data if applicable.
-    void OnDeviceReset() override;
-    /// Release the texture.
-    void Release() override;
 
     /// Set size, format, usage and multisampling parameters for rendertargets. Zero size will follow application window size. Return true if successful.
     /** Autoresolve true means the multisampled texture will be automatically resolved to 1-sample after being rendered to and before being sampled as a texture.
         Autoresolve false means the multisampled texture will be read as individual samples in the shader.
         */
-    bool SetSize(int width, int height, unsigned format, TextureUsage usage = TEXTURE_STATIC, int multiSample = 1, bool autoResolve = true);
+    bool SetSize(int width, int height, TextureFormat format, TextureFlags flags = TextureFlag::None, int multiSample = 1);
     /// Set data either partially or fully on a mip level. Return true if successful.
     bool SetData(unsigned level, int x, int y, int width, int height, const void* data);
     /// Set data from an image. Return true if successful. Optionally make a single channel image alpha-only.
-    bool SetData(Image* image, bool useAlpha = false);
+    bool SetData(Image* image);
 
     /// Get data from a mip level. The destination buffer must be big enough. Return true if successful.
-    bool GetData(unsigned level, void* dest) const;
+    bool GetData(unsigned level, void* dest);
     /// Get image data from zero mip level. Only RGB and RGBA textures are supported.
-    bool GetImage(Image& image) const;
+    bool GetImage(Image& image);
     /// Get image data from zero mip level. Only RGB and RGBA textures are supported.
-    SharedPtr<Image> GetImage() const;
-
-    /// Return render surface.
-    /// @property
-    RenderSurface* GetRenderSurface() const { return renderSurface_; }
-
-protected:
-    /// Create the GPU texture.
-    bool Create() override;
+    SharedPtr<Image> GetImage();
 
 private:
-    /// Handle render surface update event.
-    void HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData);
-
-    /// Render surface.
-    SharedPtr<RenderSurface> renderSurface_;
     /// Image file acquired during BeginLoad.
     SharedPtr<Image> loadImage_;
     /// Parameter file acquired during BeginLoad.

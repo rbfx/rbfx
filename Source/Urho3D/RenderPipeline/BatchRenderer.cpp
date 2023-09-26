@@ -24,14 +24,17 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/Camera.h"
-#include "../Graphics/DrawCommandQueue.h"
+#include "../RenderAPI/DrawCommandQueue.h"
+#include "../Graphics/Drawable.h"
 #include "../Graphics/Graphics.h"
+#include "../Graphics/GraphicsUtils.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/TextureCube.h"
 #include "../Graphics/Zone.h"
 #include "../IO/Log.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/BatchRenderer.h"
 #include "../RenderPipeline/DrawableProcessor.h"
 #include "../RenderPipeline/InstancingBuffer.h"
@@ -51,21 +54,27 @@ namespace
 {
 
 /// Return shader parameter for camera depth mode.
-Vector4 GetCameraDepthModeParameter(const Camera& camera)
+Vector4 GetCameraDepthModeParameter(const Camera& camera, RenderBackend backend)
 {
     Vector4 depthMode = Vector4::ZERO;
     if (camera.IsOrthographic())
     {
         depthMode.x_ = 1.0f;
-#ifdef URHO3D_OPENGL
-        depthMode.z_ = 0.5f;
-        depthMode.w_ = 0.5f;
-#else
-        depthMode.z_ = 1.0f;
-#endif
+        if (backend == RenderBackend::OpenGL)
+        {
+            depthMode.z_ = 0.5f;
+            depthMode.w_ = 0.5f;
+        }
+        else
+        {
+            depthMode.z_ = 1.0f;
+            depthMode.w_ = 0.0f;
+        }
     }
     else
+    {
         depthMode.w_ = 1.0f / camera.GetFarClip();
+    }
     return depthMode;
 }
 
@@ -99,15 +108,6 @@ Vector4 GetFogParameter(const Camera& camera)
     };
 }
 
-Vector4 GetAmbientLighting(const BatchRendererSettings& settings, const LightAccumulator& lightAccumulator)
-{
-    const Vector3 ambient = lightAccumulator.sphericalHarmonics_.EvaluateAverage();
-    if (settings.linearSpaceLighting_)
-        return Vector4(ambient, 1.0f);
-    else
-        return Color(ambient).LinearToGamma().ToVector4();
-}
-
 Vector4 GetClipPlane(const Camera& camera)
 {
     if (!camera.GetUseClipping())
@@ -124,7 +124,7 @@ public:
         : instancingEnabled_(flags.Test(BatchRenderFlag::EnableInstancingForStaticGeometry))
         , ambientEnabled_(flags.Test(BatchRenderFlag::EnableAmbientLighting))
         , ambientMode_(settings.ambientMode_)
-        , linearSpaceLighting_(settings.linearSpaceLighting_)
+        , linearColorSpace_(flags.Test(BatchRenderFlag::LinearColorSpace))
     {
     }
 
@@ -144,7 +144,7 @@ public:
         if (ambientMode_ == DrawableAmbientMode::Flat)
         {
             const Vector3 ambient = lightAccumulator.sphericalHarmonics_.EvaluateAverage();
-            if (linearSpaceLighting_)
+            if (linearColorSpace_)
                 ambientValueFlat_ = Vector4(ambient, 1.0f);
             else
                 ambientValueFlat_ = Color(ambient).LinearToGamma().ToVector4();
@@ -226,7 +226,7 @@ private:
     const bool instancingEnabled_;
     const bool ambientEnabled_;
     const DrawableAmbientMode ambientMode_;
-    const bool linearSpaceLighting_;
+    const bool linearColorSpace_;
 
     Vector4 ambientValueFlat_;
     const SphericalHarmonicsDot9* ambientValueSH_{};
@@ -245,6 +245,7 @@ public:
         BatchRenderFlags flags, unsigned startInstance)
         : BatchRenderingContext(ctx)
         , settings_(settings)
+        , backend_(ctx.camera_.GetSubsystem<RenderDevice>()->GetBackend())
         , numVertexLights_(drawableProcessor.GetSettings().maxVertexLights_)
         , debugger_(debugger)
         , drawableProcessor_(drawableProcessor)
@@ -298,7 +299,7 @@ private:
         dirty_.pipelineState_ = current_.pipelineState_ != pipelineBatch.pipelineState_;
         current_.pipelineState_ = pipelineBatch.pipelineState_;
 
-        const float constantDepthBias = current_.pipelineState_->GetDesc().constantDepthBias_;
+        const float constantDepthBias = current_.pipelineState_->GetDesc().AsGraphics()->constantDepthBias_;
         dirty_.cameraConstants_ = current_.constantDepthBias_ != constantDepthBias;
         current_.constantDepthBias_ = constantDepthBias;
 
@@ -307,6 +308,8 @@ private:
 
         dirty_.geometry_ = current_.geometry_ != pipelineBatch.geometry_;
         current_.geometry_ = pipelineBatch.geometry_;
+
+        current_.drawable_ = pipelineBatch.drawable_;
     }
 
     void CheckDirtyReflectionProbe(const LightAccumulator& lightAccumulator)
@@ -358,7 +361,7 @@ private:
         {
             const CookedLightParams& params = current_.vertexLights_[i] != M_MAX_UNSIGNED
                 ? lights_[current_.vertexLights_[i]]->GetParams() : nullVertexLight;
-            const Vector3& color = params.GetColor(settings_.linearSpaceLighting_);
+            const Vector3& color = params.GetColor(enabled_.linearColorSpace_);
 
             current_.vertexLightsData_[i * VertexLightStride] = {color, params.inverseRange_};
             current_.vertexLightsData_[i * VertexLightStride + 1] = {params.direction_, params.spotCutoff_};
@@ -476,38 +479,43 @@ private:
 
     void UpdateDirtyResources()
     {
-        const bool resourcesDirty = dirty_.material_ || dirty_.reflectionProbe_ || dirty_.IsResourcesDirty();
+        const bool resourcesDirty =
+            dirty_.pipelineState_ || dirty_.material_ || dirty_.reflectionProbe_ || dirty_.IsResourcesDirty();
         if (resourcesDirty)
         {
             for (const ShaderResourceDesc& desc : globalResources_)
-                drawQueue_.AddShaderResource(desc.unit_, desc.texture_);
+            {
+                if (desc.texture_)
+                    drawQueue_.AddShaderResource(desc.name_, desc.texture_);
+            }
 
             const auto& materialTextures = current_.material_->GetTextures();
             bool materialHasEnvironmentMap = false;
-            for (const auto& texture : materialTextures)
+            for (const auto& [nameHash, texture] : materialTextures)
             {
-                if (texture.first == TU_ENVIRONMENT)
+                if (nameHash == ShaderResources::Reflection0)
                     materialHasEnvironmentMap = true;
                 // Emissive texture is used for lightmaps and refraction background, skip if necessary
-                if (texture.first == TU_EMISSIVE && current_.lightmapTexture_)
+                if (nameHash == ShaderResources::Emission && current_.lightmapTexture_)
                     continue;
-                drawQueue_.AddShaderResource(texture.first, texture.second);
+
+                AddShaderResource(drawQueue_, nameHash, texture.value_);
             }
 
             if (current_.lightmapTexture_)
-                drawQueue_.AddShaderResource(TU_EMISSIVE, current_.lightmapTexture_);
+                AddShaderResource(drawQueue_, ShaderResources::Emission, current_.lightmapTexture_);
             if (current_.pixelLightRamp_)
-                drawQueue_.AddShaderResource(TU_LIGHTRAMP, current_.pixelLightRamp_);
+                AddShaderResource(drawQueue_, ShaderResources::LightRamp, current_.pixelLightRamp_);
             if (current_.pixelLightShape_)
-                drawQueue_.AddShaderResource(TU_LIGHTSHAPE, current_.pixelLightShape_);
+                AddShaderResource(drawQueue_, ShaderResources::LightShape, current_.pixelLightShape_);
             if (current_.pixelLightShadowMap_)
-                drawQueue_.AddShaderResource(TU_SHADOWMAP, current_.pixelLightShadowMap_);
+                AddShaderResource(drawQueue_, ShaderResources::ShadowMap, current_.pixelLightShadowMap_);
             if (enabled_.ambientLighting_ && !materialHasEnvironmentMap)
             {
-                drawQueue_.AddShaderResource(TU_ENVIRONMENT, current_.reflectionProbeTextures_[0]);
-#ifdef DESKTOP_GRAPHICS
-                drawQueue_.AddShaderResource(TU_ZONE, current_.reflectionProbeTextures_[1]);
-#endif
+                AddNullableShaderResource(drawQueue_, ShaderResources::Reflection0, TextureType::TextureCube,
+                    current_.reflectionProbeTextures_[0]);
+                AddNullableShaderResource(drawQueue_, ShaderResources::Reflection1, TextureType::TextureCube,
+                    current_.reflectionProbeTextures_[1]);
             }
 
             drawQueue_.CommitShaderResources();
@@ -531,16 +539,67 @@ private:
         for (const ShaderParameterDesc& shaderParameter : cameraParameters_)
             drawQueue_.AddShaderParameter(shaderParameter.name_, shaderParameter.value_);
 
-        const Matrix3x4 cameraEffectiveTransform = camera_.GetEffectiveWorldTransform();
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_CameraPos, cameraEffectiveTransform.Translation());
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_ViewInv, cameraEffectiveTransform);
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_View, camera_.GetView());
+        // XR: we can tell we're not in a shadowmap pass by the instanceMultiplier_ at present and
+        // for good measure check the camera matches the first camera of additionalCameras_
+        // would need to change if shadows ever used multiplexed instancing to write
+        // to layers / viewports / or manually-clip
+        if (instanceMultiplier_ > 1 && frameInfo_.additionalCameras_[0] == &camera_)
+        {
+            // stereoscopic, pull parameters for both eyes
+            // Assumption: quad-views eye-focus targets would be best done as a second stereo target pass
+            // because of the difference in frustum sizes (large for far field, narrow for focus)
 
-        const float nearClip = camera_.GetNearClip();
-        const float farClip = camera_.GetFarClip();
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_NearClip, nearClip);
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_FarClip, farClip);
+            const Camera* cameras[2] = {frameInfo_.additionalCameras_[0], frameInfo_.additionalCameras_[1]};
 
+            // clang-format off
+            const Matrix4 cameraTransform[2] = {cameras[0]->GetEffectiveWorldTransform().ToMatrix4(), cameras[1]->GetEffectiveWorldTransform().ToMatrix4()};
+            const Vector4 cameraPosition[2] = {{cameraTransform[0].Translation(), 0.0f}, {cameraTransform[1].Translation(), 0.0f}};
+            const Matrix4 cameraView[2] = {cameras[0]->GetView().ToMatrix4(), cameras[1]->GetView().ToMatrix4()};
+            const Matrix4 cameraViewProj[2] = {cameras[0]->GetEffectiveGPUViewProjection(constantDepthBias), cameras[1]->GetEffectiveGPUViewProjection(constantDepthBias)};
+            const Vector4 depthModes[2] = {GetCameraDepthModeParameter(*cameras[0], backend_), GetCameraDepthModeParameter(*cameras[1], backend_)};
+            const Vector4 depthReconstructions[2] = {GetCameraDepthReconstructParameter(*cameras[0]), GetCameraDepthReconstructParameter(*cameras[1])};
+            // clang-format on
+
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_CameraPos, cameraPosition);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_ViewInv, cameraTransform);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_View, cameraView);
+
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthMode, depthModes);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthReconstruct, depthReconstructions);
+
+            Vector3 nearVector[2]{};
+            Vector3 farVector[2]{};
+            cameras[0]->GetFrustumSize(nearVector[0], farVector[0]);
+            cameras[1]->GetFrustumSize(nearVector[1], farVector[1]);
+            const Vector4 farVectors[2] = {{farVector[0], 0.0f}, {farVector[1], 0.0f}};
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_FrustumSize, farVectors);
+
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_ViewProj, cameraViewProj);
+        }
+        else
+        {
+            // Not stereoscopic rendering, single eye
+            const Matrix3x4 cameraTransform = camera_.GetEffectiveWorldTransform();
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_CameraPos, Vector4(cameraTransform.Translation(), 0.0f));
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_ViewInv, cameraTransform);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_View, camera_.GetView());
+
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthMode, GetCameraDepthModeParameter(camera_, backend_));
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthReconstruct, GetCameraDepthReconstructParameter(camera_));
+
+            Vector3 nearVector, farVector;
+            camera_.GetFrustumSize(nearVector, farVector);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_FrustumSize, Vector4(farVector, 0.0f));
+
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_ViewProj, camera_.GetEffectiveGPUViewProjection(constantDepthBias));
+        }
+
+        // Fill non-stereo parameters
+        drawQueue_.AddShaderParameter(ShaderConsts::Camera_ClipPlane, clipPlane_);
+        drawQueue_.AddShaderParameter(ShaderConsts::Camera_NearClip, camera_.GetNearClip());
+        drawQueue_.AddShaderParameter(ShaderConsts::Camera_FarClip, camera_.GetFarClip());
+
+        // Fill shadow split only parameters
         if (outputShadowSplit_)
         {
             const CookedLightParams& lightParams = outputShadowSplit_->GetLightProcessor()->GetParams();
@@ -548,26 +607,17 @@ private:
                 lightParams.shadowNormalBias_[outputShadowSplit_->GetSplitIndex()]);
         }
 
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthMode, GetCameraDepthModeParameter(camera_));
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_DepthReconstruct, GetCameraDepthReconstructParameter(camera_));
-
-        Vector3 nearVector, farVector;
-        camera_.GetFrustumSize(nearVector, farVector);
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_FrustumSize, farVector);
-
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_ViewProj, camera_.GetEffectiveGPUViewProjection(constantDepthBias));
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_ClipPlane, clipPlane_);
-
-        if (!enabled_.colorOutput_)
-            return;
-
-        const Color ambientColorGamma = camera_.GetEffectiveAmbientColor() * camera_.GetEffectiveAmbientBrightness();
-        const Color& fogColorGamma = camera_.GetEffectiveFogColor();
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_AmbientColor,
-            settings_.linearSpaceLighting_ ? ambientColorGamma.GammaToLinear() : ambientColorGamma);
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogColor,
-            settings_.linearSpaceLighting_ ? fogColorGamma.GammaToLinear() : fogColorGamma);
-        drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogParams, GetFogParameter(camera_));
+        // Fill color output only parameters
+        if (enabled_.colorOutput_)
+        {
+            const Color ambientColorGamma = camera_.GetEffectiveAmbientColor() * camera_.GetEffectiveAmbientBrightness();
+            const Color& fogColorGamma = camera_.GetEffectiveFogColor();
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_AmbientColor,
+                enabled_.linearColorSpace_ ? ambientColorGamma.GammaToLinear() : ambientColorGamma);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogColor,
+                enabled_.linearColorSpace_ ? fogColorGamma.GammaToLinear() : fogColorGamma);
+            drawQueue_.AddShaderParameter(ShaderConsts::Camera_FogParams, GetFogParameter(camera_));
+        }
     }
 
     void AddReflectionProbeConstants()
@@ -588,7 +638,6 @@ private:
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_RoughnessToLODFactor0,
             current_.reflectionProbes_[0]->roughnessToLODFactor_);
 
-#ifdef DESKTOP_GRAPHICS
         if (settings_.cubemapBoxProjection_)
         {
             drawQueue_.AddShaderParameter(ShaderConsts::Zone_CubemapCenter1,
@@ -603,7 +652,6 @@ private:
             current_.reflectionProbes_[1]->roughnessToLODFactor_);
         drawQueue_.AddShaderParameter(ShaderConsts::Zone_ReflectionBlendFactor,
             current_.reflectionProbesBlendFactor_);
-#endif
     }
 
     void AddVertexLightConstants()
@@ -622,7 +670,7 @@ private:
             return;
 
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightColor,
-            Vector4{params.GetColor(settings_.linearSpaceLighting_), params.effectiveSpecularIntensity_});
+            Vector4{params.GetColor(enabled_.linearColorSpace_), params.effectiveSpecularIntensity_});
 
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightRad, params.volumetricRadius_);
         drawQueue_.AddShaderParameter(ShaderConsts::Light_LightLength, params.volumetricLength_);
@@ -654,19 +702,32 @@ private:
     /// @{
     void CommitDrawCalls(unsigned numInstances, const SourceBatch& sourceBatch)
     {
-        IndexBuffer* indexBuffer = current_.geometry_->GetIndexBuffer();
+        const bool hasIndexBuffer = current_.geometry_->GetIndexBuffer() != nullptr;
 
         if (dirty_.geometry_)
-            drawQueue_.SetBuffers({ current_.geometry_->GetVertexBuffers(), indexBuffer, nullptr });
+            SetBuffersFromGeometry(drawQueue_, current_.geometry_);
 
         for (unsigned i = 0; i < numInstances; ++i)
         {
-            objectParameterBuilder_.AddBatchUniformsToDrawQueue(drawQueue_, cameraNode_, sourceBatch, i);
-
-            if (indexBuffer != nullptr)
-                drawQueue_.DrawIndexed(current_.geometry_->GetIndexStart(), current_.geometry_->GetIndexCount());
+            if (frameInfo_.viewReferenceNode_)
+                objectParameterBuilder_.AddBatchUniformsToDrawQueue(drawQueue_, *frameInfo_.viewReferenceNode_, sourceBatch, i);
             else
-                drawQueue_.Draw(current_.geometry_->GetVertexStart(), current_.geometry_->GetVertexCount());
+                objectParameterBuilder_.AddBatchUniformsToDrawQueue(drawQueue_, cameraNode_, sourceBatch, i);
+
+            if (instanceMultiplier_ == 1)
+            {
+                if (hasIndexBuffer)
+                    drawQueue_.DrawIndexed(current_.geometry_->GetIndexStart(), current_.geometry_->GetIndexCount());
+                else
+                    drawQueue_.Draw(current_.geometry_->GetVertexStart(), current_.geometry_->GetVertexCount());
+            }
+            else // if multiply instance counts for a purpose such as stereo then it's necessary to replace uninstanced draws with instanced draws.
+            {
+                if (hasIndexBuffer)
+                    drawQueue_.DrawIndexedInstanced(current_.geometry_->GetIndexStart(), current_.geometry_->GetIndexCount(), 0, instanceMultiplier_);
+                else
+                    drawQueue_.DrawInstanced(current_.geometry_->GetVertexStart(), current_.geometry_->GetVertexCount(), 0, instanceMultiplier_);
+            }
         }
     }
 
@@ -674,10 +735,9 @@ private:
     {
         assert(instancingGroup_.count_ > 0);
         Geometry* geometry = instancingGroup_.geometry_;
-        drawQueue_.SetBuffers({ geometry->GetVertexBuffers(), geometry->GetIndexBuffer(),
-            instancingBuffer_.GetVertexBuffer() });
+        SetBuffersFromGeometry(drawQueue_, geometry, instancingBuffer_.GetVertexBuffer());
         drawQueue_.DrawIndexedInstanced(geometry->GetIndexStart(), geometry->GetIndexCount(),
-            instancingGroup_.start_, instancingGroup_.count_);
+            instancingGroup_.start_, instancingGroup_.count_ * instanceMultiplier_ /*multiply for stereo*/);
         instancingGroup_.count_ = 0;
     }
     /// @}
@@ -704,8 +764,13 @@ private:
             ? sourceBatch.numWorldTransforms_ : 1u;
 
         const bool resetInstancingGroup = instancingGroup_.count_ == 0 || dirty_.IsAnythingDirty();
+
         if constexpr (DebuggerEnabled)
             debugger_->ReportSceneBatch(DebugFrameSnapshotBatch{ drawableProcessor_, pipelineBatch, resetInstancingGroup });
+
+        if (current_.geometry_->GetEffectiveIndexCount() == 0)
+            return;
+
         if (resetInstancingGroup)
         {
             if (instancingGroup_.count_ > 0)
@@ -713,6 +778,9 @@ private:
 
             if (dirty_.pipelineState_)
                 drawQueue_.SetPipelineState(current_.pipelineState_);
+
+            if (enabled_.lightMaskToStencil_)
+                drawQueue_.SetStencilRef(current_.drawable_->GetLightMaskInZone() & PORTABLE_LIGHTMASK);
 
             UpdateDirtyConstants();
             UpdateDirtyResources();
@@ -741,6 +809,7 @@ private:
     /// External state (required)
     /// @{
     const BatchRendererSettings& settings_;
+    const RenderBackend backend_{};
     const unsigned numVertexLights_{};
     RenderPipelineDebugger* debugger_{};
     const DrawableProcessor& drawableProcessor_;
@@ -761,6 +830,8 @@ private:
             , pixelLighting_(flags.Test(BatchRenderFlag::EnablePixelLights))
             , anyLighting_(ambientLighting_ || vertexLighting_ || pixelLighting_)
             , colorOutput_(!flags.Test(BatchRenderFlag::DisableColorOutput))
+            , lightMaskToStencil_(flags.Test(BatchRenderFlag::LightMaskToStencil))
+            , linearColorSpace_(flags.Test(BatchRenderFlag::LinearColorSpace))
         {
         }
 
@@ -769,6 +840,8 @@ private:
         bool pixelLighting_;
         bool anyLighting_;
         bool colorOutput_;
+        bool lightMaskToStencil_;
+        bool linearColorSpace_;
     } const enabled_;
 
     struct DirtyStateFlags
@@ -840,6 +913,7 @@ private:
 
         Material* material_{};
         Geometry* geometry_{};
+        Drawable* drawable_{};
     } current_;
 
     struct InstancingGroupState

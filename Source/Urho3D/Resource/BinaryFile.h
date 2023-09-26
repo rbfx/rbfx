@@ -73,6 +73,8 @@ public:
     /// Return data as text lines.
     StringVector ReadLines() const;
 
+    /// Return mutable internal buffer.
+    VectorBuffer& GetMutableBuffer() { return buffer_; }
     /// Cast to Serializer.
     Serializer& AsSerializer() { return buffer_; }
     /// Cast to Deserializer.

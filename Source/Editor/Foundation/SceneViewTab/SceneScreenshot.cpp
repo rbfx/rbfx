@@ -78,7 +78,8 @@ ScreenshotRenderer::ScreenshotRenderer(Scene* scene, Camera* camera, const IntVe
     camera_->SetDrawDebugGeometry(false);
     camera_->SetAspectRatio(resolution.x_ / (float)resolution.y_);
 
-    texture_->SetSize(resolution.x_, resolution.y_, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET, 1, true);
+    texture_->SetSize(
+        resolution.x_, resolution.y_, TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFlag::BindRenderTarget);
     SubscribeToEvent(texture_, E_ENDVIEWRENDER, &ScreenshotRenderer::OnEndViewRender);
 
     viewport_ = MakeShared<Viewport>(context_, scene, camera);

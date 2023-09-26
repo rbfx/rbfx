@@ -29,6 +29,7 @@
 #include "../Graphics/Texture3D.h"
 #include "../Graphics/TextureCube.h"
 #include "../IO/FileSystem.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../Resource/ResourceCache.h"
 #include "../SystemUI/SystemUI.h"
 
@@ -41,6 +42,13 @@ namespace Urho3D
 
 namespace
 {
+
+static const StringVector allowedTextureTypes{
+    Texture2D::GetTypeNameStatic(),
+    Texture2DArray::GetTypeNameStatic(),
+    TextureCube::GetTypeNameStatic(),
+    Texture3D::GetTypeNameStatic(),
+};
 
 const ea::unordered_map<ea::string, Variant>& GetDefaultShaderParameterValues(Context* context)
 {
@@ -76,34 +84,32 @@ const StringVector fillModes{"Solid", "Wireframe", "Points"};
 }
 
 const ea::vector<MaterialInspectorWidget::TextureUnitDesc> MaterialInspectorWidget::textureUnits{
-    {false, TU_DIFFUSE,     "Albedo",       "TU_DIFFUSE: Albedo map or Diffuse texture with optional alpha channel"},
-    {false, TU_NORMAL,      "Normal",       "TU_NORMAL: Normal map"},
-    {false, TU_SPECULAR,    "Specular",     "TU_SPECULAR: Metallic-Roughness-Occlusion map or Specular texture"},
-    {false, TU_EMISSIVE,    "Emissive",     "TU_EMISSIVE: Emissive map or light map"},
-    {false, TU_ENVIRONMENT, "Environment",  "TU_ENVIRONMENT: Texture with environment reflection"},
-#ifdef DESKTOP_GRAPHICS
-    {true,  TU_VOLUMEMAP,   "* Volume",     "TU_VOLUMEMAP: Desktop only, custom unit"},
-    {true,  TU_CUSTOM1,     "* Custom 1",   "TU_CUSTOM1: Desktop only, custom unit"},
-    {true,  TU_CUSTOM2,     "* Custom 2",   "TU_CUSTOM2: Desktop only, custom unit"},
-#endif
+    {ShaderResources::Albedo,       "Albedo map or Diffuse texture with optional alpha channel."},
+    {ShaderResources::Normal,       "Normal map, ignored unless normal mapping is enabled."},
+    {ShaderResources::Properties,   "Roughness-Metalness-Occlusion map or Specular map."},
+    {ShaderResources::Emission,     "Emission map. May also be used as AO map for legacy materials."},
+    {ShaderResources::Reflection0,  "Reflection map override."},
+};
+
+const MaterialInspectorWidget::PropertyDesc MaterialInspectorWidget::vertexDefinesProperty{
+    "Vertex Defines",
+    Variant{EMPTY_STRING},
+    [](const Material* material) { return Variant{material->GetVertexShaderDefines()}; },
+    [](Material* material, const Variant& value) { material->SetVertexShaderDefines(value.GetString()); },
+    "Additional shader defines applied to vertex shader. Should be space-separated list of DEFINES. "
+    "Example: VOLUMETRIC SOFTPARTICLES",
+};
+
+const MaterialInspectorWidget::PropertyDesc MaterialInspectorWidget::pixelDefinesProperty{
+    "Pixel Defines",
+    Variant{EMPTY_STRING},
+    [](const Material* material) { return Variant{material->GetPixelShaderDefines()}; },
+    [](Material* material, const Variant& value) { material->SetPixelShaderDefines(value.GetString()); },
+    "Additional shader defines applied to pixel shader. Should be space-separated list of DEFINES. "
+    "Example: VOLUMETRIC SOFTPARTICLES",
 };
 
 const ea::vector<MaterialInspectorWidget::PropertyDesc> MaterialInspectorWidget::properties{
-    {
-        "Vertex Defines",
-        Variant{EMPTY_STRING},
-        [](const Material* material) { return Variant{material->GetVertexShaderDefines()}; },
-        [](Material* material, const Variant& value) { material->SetVertexShaderDefines(value.GetString()); },
-        "Additional shader defines applied to vertex shader. Should be space-separated list of DEFINES. Example: VOLUMETRIC SOFTPARTICLES",
-    },
-    {
-        "Pixel Defines",
-        Variant{EMPTY_STRING},
-        [](const Material* material) { return Variant{material->GetPixelShaderDefines()}; },
-        [](Material* material, const Variant& value) { material->SetPixelShaderDefines(value.GetString()); },
-        "Additional shader defines applied to pixel shader. Should be space-separated list of DEFINES. Example: VOLUMETRIC SOFTPARTICLES",
-    },
-
     {
         "Cull Mode",
         Variant{CULL_CCW},
@@ -255,6 +261,11 @@ void MaterialInspectorWidget::RenderContent()
     RenderTextures();
     RenderShaderParameters();
 
+    ui::Separator();
+    const bool forceSave = ui::Button(ICON_FA_FLOPPY_DISK " Force Save");
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Materials are always saved on edit. You can force save even if there are no changes.");
+
     if (pendingSetTechniques_)
     {
         OnEditBegin(this);
@@ -268,8 +279,8 @@ void MaterialInspectorWidget::RenderContent()
         OnEditBegin(this);
         for (Material* material : materials_)
         {
-            for (const auto& [unit, texture] : pendingSetTextures_)
-                material->SetTexture(unit, texture);
+            for (const auto& [name, texture] : pendingSetTextures_)
+                material->SetTexture(name, texture);
         }
         OnEditEnd(this);
     }
@@ -298,6 +309,12 @@ void MaterialInspectorWidget::RenderContent()
             for (const auto& [desc, value] : pendingSetProperties_)
                 desc->setter_(material, value);
         }
+        OnEditEnd(this);
+    }
+
+    if (forceSave)
+    {
+        OnEditBegin(this);
         OnEditEnd(this);
     }
 }
@@ -501,10 +518,77 @@ void MaterialInspectorWidget::RenderProperties()
     if (!ui::CollapsingHeader("Properties", ImGuiTreeNodeFlags_DefaultOpen))
         return;
 
+    RenderShaderDefines();
     for (const PropertyDesc& property : properties)
         RenderProperty(property);
 
     ui::Separator();
+}
+
+void MaterialInspectorWidget::RenderShaderDefines()
+{
+    Variant vertexDefines = materials_[0]->GetVertexShaderDefines();
+    const bool vertexDefinesUndefined = ea::any_of(materials_.begin() + 1, materials_.end(),
+        [&](const Material* material) { return vertexDefines != material->GetVertexShaderDefines(); });
+
+    Variant pixelDefines = materials_[0]->GetPixelShaderDefines();
+    const bool pixelDefinesUndefined = ea::any_of(materials_.begin() + 1, materials_.end(),
+        [&](const Material* material) { return pixelDefines != material->GetPixelShaderDefines(); });
+
+    if (!separateShaderDefines_.has_value())
+        separateShaderDefines_ = vertexDefinesUndefined || pixelDefinesUndefined || vertexDefines != pixelDefines;
+    if (!*separateShaderDefines_ && vertexDefines != pixelDefines)
+        separateShaderDefines_ = false;
+
+    // Render widget for vertex defines
+    {
+        const IdScopeGuard guard("Vertex Defines");
+
+        Widgets::ItemLabel(vertexDefinesProperty.name_,
+            Widgets::GetItemLabelColor(vertexDefinesUndefined, vertexDefines.GetString().empty()));
+        if (ui::IsItemHovered())
+            ui::SetTooltip("%s", vertexDefinesProperty.hint_.c_str());
+
+        const ColorScopeGuard guardBackgroundColor{
+            ImGuiCol_FrameBg, Widgets::GetItemBackgroundColor(vertexDefinesUndefined), vertexDefinesUndefined};
+
+        if (Widgets::EditVariant(vertexDefines, vertexDefinesProperty.options_))
+        {
+            pendingSetProperties_.emplace_back(&vertexDefinesProperty, vertexDefines);
+            if (!*separateShaderDefines_)
+                pendingSetProperties_.emplace_back(&pixelDefinesProperty, vertexDefines);
+        }
+    }
+
+    // Update whether the defines are synchronized
+    const bool pixelDefinesModeChanged = ui::Checkbox("##SeparateShaderDefines", &*separateShaderDefines_);
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Enable separate editing for vertex and pixel defines");
+    ui::SameLine();
+
+    // Render widget for pixel defines
+    {
+        const IdScopeGuard guard("Pixel Defines");
+
+        ui::BeginDisabled(!*separateShaderDefines_);
+
+        Widgets::ItemLabel(pixelDefinesProperty.name_,
+            Widgets::GetItemLabelColor(pixelDefinesUndefined, pixelDefines.GetString().empty()));
+        if (ui::IsItemHovered())
+            ui::SetTooltip("%s", pixelDefinesProperty.hint_.c_str());
+
+        const ColorScopeGuard guardBackgroundColor{
+            ImGuiCol_FrameBg, Widgets::GetItemBackgroundColor(pixelDefinesUndefined), pixelDefinesUndefined};
+
+        if (Widgets::EditVariant(pixelDefines, pixelDefinesProperty.options_))
+            pendingSetProperties_.emplace_back(&pixelDefinesProperty, pixelDefines);
+
+        ui::EndDisabled();
+    }
+
+    // Update pixel defines when separate defines are disabled
+    if (pixelDefinesModeChanged && !*separateShaderDefines_)
+        pendingSetProperties_.emplace_back(&pixelDefinesProperty, vertexDefines);
 }
 
 void MaterialInspectorWidget::RenderProperty(const PropertyDesc& desc)
@@ -536,46 +620,129 @@ void MaterialInspectorWidget::RenderTextures()
         RenderTextureUnit(desc);
 
     ui::Separator();
+
+    const auto customTextureUnits = GetCustomTextureUnits();
+    for (const ea::string& unit : customTextureUnits)
+        RenderCustomTextureUnit(unit);
+    RenderAddCustomTextureUnit(customTextureUnits);
 }
 
 void MaterialInspectorWidget::RenderTextureUnit(const TextureUnitDesc& desc)
 {
-    const IdScopeGuard guard(desc.unit_);
+    const IdScopeGuard guard(desc.name_.c_str());
 
     auto cache = GetSubsystem<ResourceCache>();
 
-    Texture* texture = materials_[0]->GetTexture(desc.unit_);
+    Texture* texture = materials_[0]->GetTexture(desc.name_);
     const bool isUndefined = ea::any_of(materials_.begin() + 1, materials_.end(),
-        [&](const Material* material) { return material->GetTexture(desc.unit_) != texture; });
+        [&](const Material* material) { return material->GetTexture(desc.name_) != texture; });
 
     Widgets::ItemLabel(desc.name_, Widgets::GetItemLabelColor(isUndefined, texture == nullptr));
     if (ui::IsItemHovered())
         ui::SetTooltip("%s", desc.hint_.c_str());
 
     if (ui::Button(ICON_FA_TRASH_CAN))
-        pendingSetTextures_.emplace_back(desc.unit_, nullptr);
+        pendingSetTextures_.emplace_back(desc.name_, nullptr);
     if (ui::IsItemHovered())
         ui::SetTooltip("Remove texture from this unit");
     ui::SameLine();
 
     const ColorScopeGuard guardBackgroundColor{ImGuiCol_FrameBg, Widgets::GetItemBackgroundColor(isUndefined), isUndefined};
 
-    static const StringVector allowedTextureTypes{
-        Texture2D::GetTypeNameStatic(),
-        Texture2DArray::GetTypeNameStatic(),
-        TextureCube::GetTypeNameStatic(),
-        Texture3D::GetTypeNameStatic(),
-    };
+    StringHash textureType = texture ? texture->GetType() : Texture2D::GetTypeStatic();
+    ea::string textureName = texture ? texture->GetName() : "";
+    if (Widgets::EditResourceRef(textureType, textureName, &allowedTextureTypes))
+    {
+        if (const auto texture = dynamic_cast<Texture*>(cache->GetResource(textureType, textureName)))
+            pendingSetTextures_.emplace_back(desc.name_, texture);
+        else
+            pendingSetTextures_.emplace_back(desc.name_, nullptr);
+    }
+}
+
+bool MaterialInspectorWidget::IsDefaultTextureUnit(const ea::string& unit) const
+{
+    const auto isSame = [&](const TextureUnitDesc& desc) { return desc.name_ == unit; };
+    return ea::any_of(textureUnits.begin(), textureUnits.end(), isSame);
+}
+
+ea::set<ea::string> MaterialInspectorWidget::GetCustomTextureUnits() const
+{
+    ea::set<ea::string> result;
+
+    for (Material* material : materials_)
+    {
+        for (const auto& [_, info] : material->GetTextures())
+            result.emplace(info.name_);
+    }
+
+    for (const TextureUnitDesc& desc : textureUnits)
+        result.erase(desc.name_);
+
+    return result;
+}
+
+void MaterialInspectorWidget::RenderCustomTextureUnit(const ea::string& unit)
+{
+    const IdScopeGuard guardKey{unit.c_str()};
+
+    auto cache = GetSubsystem<ResourceCache>();
+
+    Texture* texture = materials_[0]->GetTexture(unit);
+    const bool isUndefined = ea::any_of(materials_.begin() + 1, materials_.end(),
+        [&](const Material* material) { return material->GetTexture(unit) != texture; });
+
+    Widgets::ItemLabel(unit, Widgets::GetItemLabelColor(isUndefined, texture == nullptr));
+    if (ui::IsItemHovered())
+        ui::SetTooltip("%s", "Custom texture unit");
+
+    if (ui::Button(ICON_FA_TRASH_CAN))
+        pendingSetTextures_.emplace_back(unit, nullptr);
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Remove texture and unit");
+    ui::SameLine();
+
+    const ColorScopeGuard guardBackgroundColor{
+        ImGuiCol_FrameBg, Widgets::GetItemBackgroundColor(isUndefined), isUndefined};
 
     StringHash textureType = texture ? texture->GetType() : Texture2D::GetTypeStatic();
     ea::string textureName = texture ? texture->GetName() : "";
     if (Widgets::EditResourceRef(textureType, textureName, &allowedTextureTypes))
     {
         if (const auto texture = dynamic_cast<Texture*>(cache->GetResource(textureType, textureName)))
-            pendingSetTextures_.emplace_back(desc.unit_, texture);
+            pendingSetTextures_.emplace_back(unit, texture);
         else
-            pendingSetTextures_.emplace_back(desc.unit_, nullptr);
+            pendingSetTextures_.emplace_back(unit, nullptr);
     }
+}
+
+void MaterialInspectorWidget::RenderAddCustomTextureUnit(const ea::set<ea::string>& customTextureUnits)
+{
+    const IdScopeGuard guardAddElement{"##AddElement"};
+
+    auto cache = GetSubsystem<ResourceCache>();
+    auto defaultTexture = cache->GetResource<Texture2D>("Textures/Black.png");
+
+    const bool isButtonClicked = ui::Button(ICON_FA_SQUARE_PLUS " Add new texture");
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Add new item to the map");
+    ui::SameLine();
+
+    // TODO(editor): this "static" is bad in theory
+    static ea::string newUnit;
+
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    const bool isTextClicked = ui::InputText("", &newUnit, ImGuiInputTextFlags_EnterReturnsTrue);
+    const bool isNameAvailable = !customTextureUnits.contains(newUnit) && !IsDefaultTextureUnit(newUnit);
+
+    if ((isButtonClicked || isTextClicked) && !newUnit.empty() && isNameAvailable)
+        pendingSetTextures_.emplace_back(newUnit, defaultTexture);
+
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Item name");
+
+    if (!isNameAvailable)
+        ui::Text("%s", ICON_FA_TRIANGLE_EXCLAMATION " This texture unit name is already used");
 }
 
 void MaterialInspectorWidget::RenderShaderParameters()

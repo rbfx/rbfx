@@ -4,13 +4,10 @@ COMMON_COPTS = [
     "-DSPIRV_CHECK_CONTEXT",
     "-DSPIRV_COLOR_TERMINAL",
 ] + select({
-    # On Windows, assume MSVC.
-    # C++14 is the default in VisualStudio 2017.
     "@platforms//os:windows": [],
     "//conditions:default": [
         "-DSPIRV_LINUX",
         "-DSPIRV_TIMER_ENABLED",
-        "-std=c++11",
         "-fvisibility=hidden",
         "-fno-exceptions",
         "-fno-rtti",
@@ -91,7 +88,7 @@ def generate_core_tables(version):
         outs = outs.values(),
         cmd = cmd,
         cmd_bat = cmd,
-        exec_tools = [":generate_grammar_tables"],
+        tools = [":generate_grammar_tables"],
         visibility = ["//visibility:private"],
     )
 
@@ -126,7 +123,7 @@ def generate_enum_string_mapping(version):
         outs = outs.values(),
         cmd = cmd,
         cmd_bat = cmd,
-        exec_tools = [":generate_grammar_tables"],
+        tools = [":generate_grammar_tables"],
         visibility = ["//visibility:private"],
     )
 
@@ -154,7 +151,7 @@ def generate_opencl_tables(version):
         outs = outs.values(),
         cmd = cmd,
         cmd_bat = cmd,
-        exec_tools = [":generate_grammar_tables"],
+        tools = [":generate_grammar_tables"],
         visibility = ["//visibility:private"],
     )
 
@@ -182,7 +179,7 @@ def generate_glsl_tables(version):
         outs = outs.values(),
         cmd = cmd,
         cmd_bat = cmd,
-        exec_tools = [":generate_grammar_tables"],
+        tools = [":generate_grammar_tables"],
         visibility = ["//visibility:private"],
     )
 
@@ -210,7 +207,7 @@ def generate_vendor_tables(extension, operand_kind_prefix = ""):
         outs = outs.values(),
         cmd = cmd,
         cmd_bat = cmd,
-        exec_tools = [":generate_grammar_tables"],
+        tools = [":generate_grammar_tables"],
         visibility = ["//visibility:private"],
     )
 
@@ -232,6 +229,6 @@ def generate_extinst_lang_headers(name, grammar = None):
         outs = outs.values(),
         cmd = cmd,
         cmd_bat = cmd,
-        exec_tools = [":generate_language_headers"],
+        tools = [":generate_language_headers"],
         visibility = ["//visibility:private"],
     )

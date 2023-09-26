@@ -25,7 +25,7 @@
 #include "../Core/Context.h"
 #include "../Core/IteratorRange.h"
 #include "../Graphics/Drawable.h"
-#include "../Graphics/DrawCommandQueue.h"
+#include "../RenderAPI/DrawCommandQueue.h"
 #include "../Graphics/OcclusionBuffer.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/OctreeQuery.h"
@@ -48,6 +48,9 @@
 #include "../RenderPipeline/SceneProcessor.h"
 #include "../Graphics/OutlineGroup.h"
 #include "../RenderPipeline/ShadowMapAllocator.h"
+#include "../RenderAPI/RenderContext.h"
+#include "../RenderAPI/RenderDevice.h"
+#include "../RenderAPI/RenderScope.h"
 #include "../Scene/Scene.h"
 
 #include "../DebugNew.h"
@@ -187,11 +190,13 @@ SceneProcessor::SceneProcessor(RenderPipelineInterface* renderPipeline, const ea
     ShadowMapAllocator* shadowMapAllocator, InstancingBuffer* instancingBuffer)
     : Object(renderPipeline->GetContext())
     , graphics_(GetSubsystem<Graphics>())
+    , renderDevice_(GetSubsystem<RenderDevice>())
+    , renderContext_(renderDevice_->GetRenderContext())
     , renderPipeline_(renderPipeline)
     , debugger_(renderPipeline_->GetDebugger())
     , shadowMapAllocator_(shadowMapAllocator)
     , instancingBuffer_(instancingBuffer)
-    , drawQueue_(GetSubsystem<Renderer>()->GetDefaultDrawQueue())
+    , drawQueue_(renderDevice_->GetDefaultQueue())
     , cameraProcessor_(MakeShared<CameraProcessor>(context_))
     , pipelineStateBuilder_(MakeShared<PipelineStateBuilder>(context_,
         this, cameraProcessor_, shadowMapAllocator_, instancingBuffer_))
@@ -225,11 +230,14 @@ bool SceneProcessor::Define(const CommonFrameInfo& frameInfo)
     frameInfo_.camera_ = frameInfo_.viewport_->GetCullCamera()
         ? frameInfo_.viewport_->GetCullCamera()
         : frameInfo_.viewport_->GetCamera();
+    frameInfo_.viewReferenceNode_ = frameInfo_.camera_ ? frameInfo_.camera_->GetNode() : nullptr;
 
     frameInfo_.octree_ = frameInfo_.scene_
         ? frameInfo_.scene_->GetComponent<Octree>() : nullptr;
     frameInfo_.reflectionProbeManager_ = frameInfo_.octree_
         ? frameInfo_.scene_->GetOrCreateComponent<ReflectionProbeManager>() : nullptr;
+
+    frameInfo_.additionalCameras_ = frameInfo.cameras_;
 
     return frameInfo_.octree_ && frameInfo_.camera_;
 }
@@ -313,7 +321,7 @@ void SceneProcessor::Update()
     }
 
     // Process drawables
-    drawableProcessor_->ProcessVisibleDrawables(drawables_, currentOcclusionBuffer_);
+    drawableProcessor_->ProcessVisibleDrawables(drawables_, currentOcclusionBuffer_ ? ea::span(&currentOcclusionBuffer_, 1u) : ea::span<OcclusionBuffer*>() );
     drawableProcessor_->ProcessLights(this);
     drawableProcessor_->ProcessForwardLighting();
 
@@ -362,11 +370,18 @@ void SceneProcessor::RenderShadowMaps()
 
     URHO3D_PROFILE("RenderShadowMaps");
 
+    const RenderScope renderScope(renderContext_, "SceneProcessor::RenderShadowMaps");
+
     const auto& lightsByShadowMap = drawableProcessor_->GetLightProcessorsByShadowMap();
     for (LightProcessor* sceneLight : lightsByShadowMap)
     {
+        const RenderScope renderScopeLight(renderContext_, "Light 0x{} '{}'",
+            static_cast<void*>(sceneLight->GetLight()), sceneLight->GetLight()->GetNode()->GetName());
+
         for (const ShadowSplitProcessor& split : sceneLight->GetSplits())
         {
+            const RenderScope renderScopeSplit(renderContext_, "Split #{}", split.GetSplitIndex());
+
             if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
             {
                 const ea::string passName = Format("ShadowMap.[{}].{}",
@@ -377,7 +392,7 @@ void SceneProcessor::RenderShadowMaps()
             drawQueue_->Reset();
             batchRenderer_->RenderBatches({ *drawQueue_, split }, split.GetShadowBatches());
             shadowMapAllocator_->BeginShadowMapRendering(split.GetShadowMap());
-            drawQueue_->Execute();
+            renderContext_->Execute(drawQueue_);
 
             if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
             {
@@ -389,34 +404,36 @@ void SceneProcessor::RenderShadowMaps()
 
 void SceneProcessor::RenderSceneBatches(ea::string_view debugName, Camera* camera,
     const PipelineBatchGroup<PipelineBatchByState>& batchGroup,
-    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters)
+    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier)
 {
-    RenderBatchesInternal(debugName, camera, batchGroup, globalResources, cameraParameters);
+    RenderBatchesInternal(debugName, camera, batchGroup, globalResources, cameraParameters, instanceMultiplier);
 }
 
 void SceneProcessor::RenderSceneBatches(ea::string_view debugName, Camera* camera,
     const PipelineBatchGroup<PipelineBatchBackToFront>& batchGroup,
-    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters)
+    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier)
 {
-    RenderBatchesInternal(debugName, camera, batchGroup, globalResources, cameraParameters);
+    RenderBatchesInternal(debugName, camera, batchGroup, globalResources, cameraParameters, instanceMultiplier);
 }
 
 void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera* camera,
-    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters)
+    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier)
 {
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->BeginPass(debugName);
 
+    const RenderScope renderScope(renderContext_, debugName);
+
     drawQueue_->Reset();
 
     BatchRenderingContext ctx{ *drawQueue_, *camera };
+    ctx.instanceMultiplier_ = instanceMultiplier;
     ctx.globalResources_ = globalResources;
     ctx.cameraParameters_ = cameraParameters;
 
     batchRenderer_->RenderLightVolumeBatches(ctx, GetLightVolumeBatches());
 
-    graphics_->SetClipPlane(false);
-    drawQueue_->Execute();
+    renderContext_->Execute(drawQueue_);
 
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->EndPass();
@@ -424,14 +441,20 @@ void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera*
 
 template <class T>
 void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* camera, const PipelineBatchGroup<T>& batchGroup,
-    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters)
+    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier)
 {
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->BeginPass(debugName);
 
+    const RenderScope renderScope(renderContext_, debugName);
+
     drawQueue_->Reset();
 
+    const bool needClipping = camera->GetUseClipping() || frameInfo_.additionalCameras_[1] != nullptr;
+    drawQueue_->SetClipPlaneMask(needClipping ? (1 << 0) : 0);
+
     BatchRenderingContext ctx{ *drawQueue_, *camera };
+    ctx.instanceMultiplier_ = instanceMultiplier;
     ctx.globalResources_ = globalResources;
     ctx.cameraParameters_ = cameraParameters;
 
@@ -439,9 +462,7 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
         drawQueue_->SetScissorRect(batchGroup.scissorRect_);
     batchRenderer_->RenderBatches(ctx, batchGroup);
 
-    graphics_->SetClipPlane(camera->GetUseClipping(),
-        camera->GetClipPlane(), camera->GetView(), camera->GetGPUProjection());
-    drawQueue_->Execute();
+    renderContext_->Execute(drawQueue_);
 
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->EndPass();
@@ -465,7 +486,7 @@ void SceneProcessor::OnUpdateBegin(const CommonFrameInfo& frameInfo)
 
     cameraProcessor_->OnUpdateBegin(frameInfo_);
     drawableProcessor_->OnUpdateBegin(frameInfo_);
-    pipelineStateBuilder_->UpdateFrameSettings();
+    pipelineStateBuilder_->UpdateFrameSettings(renderPipeline_->IsLinearColorSpace());
 }
 
 void SceneProcessor::OnRenderBegin(const CommonFrameInfo& frameInfo)

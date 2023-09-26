@@ -317,7 +317,7 @@ class ValidationState_t {
 
   /// Returns true if the capability is enabled in the module.
   bool HasCapability(spv::Capability cap) const {
-    return module_capabilities_.Contains(cap);
+    return module_capabilities_.contains(cap);
   }
 
   /// Returns a reference to the set of capabilities in the module.
@@ -328,7 +328,7 @@ class ValidationState_t {
 
   /// Returns true if the extension is enabled in the module.
   bool HasExtension(Extension ext) const {
-    return module_extensions_.Contains(ext);
+    return module_extensions_.contains(ext);
   }
 
   /// Returns true if any of the capabilities is enabled, or if |capabilities|
@@ -602,6 +602,7 @@ class ValidationState_t {
   bool IsIntScalarOrVectorType(uint32_t id) const;
   bool IsUnsignedIntScalarType(uint32_t id) const;
   bool IsUnsignedIntVectorType(uint32_t id) const;
+  bool IsUnsignedIntScalarOrVectorType(uint32_t id) const;
   bool IsSignedIntScalarType(uint32_t id) const;
   bool IsSignedIntVectorType(uint32_t id) const;
   bool IsBoolScalarType(uint32_t id) const;
@@ -610,6 +611,11 @@ class ValidationState_t {
   bool IsPointerType(uint32_t id) const;
   bool IsAccelerationStructureType(uint32_t id) const;
   bool IsCooperativeMatrixType(uint32_t id) const;
+  bool IsCooperativeMatrixNVType(uint32_t id) const;
+  bool IsCooperativeMatrixKHRType(uint32_t id) const;
+  bool IsCooperativeMatrixAType(uint32_t id) const;
+  bool IsCooperativeMatrixBType(uint32_t id) const;
+  bool IsCooperativeMatrixAccType(uint32_t id) const;
   bool IsFloatCooperativeMatrixType(uint32_t id) const;
   bool IsIntCooperativeMatrixType(uint32_t id) const;
   bool IsUnsignedIntCooperativeMatrixType(uint32_t id) const;

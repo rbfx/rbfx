@@ -235,8 +235,7 @@ void AssetPipelineInspector::RenderContent()
 
 void AssetPipelineInspector::RenderInspector(SerializableInspectorWidget* inspector)
 {
-    const auto typeInfo = inspector->GetObjects().front()->GetTypeInfo();
-    const IdScopeGuard guard{typeInfo->GetTypeName().c_str()};
+    const IdScopeGuard guard{inspector};
 
     if (ui::Button(ICON_FA_TRASH_CAN "##RemoveTransformer"))
     {

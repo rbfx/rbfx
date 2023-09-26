@@ -1,8 +1,14 @@
 #define URHO3D_PIXEL_NEED_TEXCOORD
 #define URHO3D_CUSTOM_MATERIAL_UNIFORMS
 
+#define URHO3D_MATERIAL_ALBEDO URHO3D_TEXTURE_ALBEDO
+#define URHO3D_MATERIAL_NORMAL URHO3D_TEXTURE_NORMAL
+#define URHO3D_MATERIAL_PROPERTIES URHO3D_TEXTURE_PROPERTIES
+#define URHO3D_MATERIAL_EMISSION URHO3D_TEXTURE_EMISSION
+
 #include "_Config.glsl"
 #include "_Uniforms.glsl"
+#include "_DefaultSamplers.glsl"
 
 UNIFORM_BUFFER_BEGIN(4, Material)
     DEFAULT_MATERIAL_UNIFORMS
@@ -15,7 +21,7 @@ UNIFORM_BUFFER_END(4, Material)
 void main()
 {
     VertexTransform vertexTransform = GetVertexTransform();
-    FillVertexOutputs(vertexTransform);
+    Vertex_SetAll(vertexTransform, cNormalScale, cUOffset, cVOffset, cLMOffset);
 }
 #endif
 
@@ -25,28 +31,30 @@ void main()
 // Under MIT License
 float AntiAliasedStep(float threshold, float value)
 {
-#ifdef URHO3D_FEATURE_DERIVATIVES
-    float afwidth = length(vec2(dFdx(value), dFdy(value))) * 0.70710678118654757;
-    return smoothstep(threshold-afwidth, threshold+afwidth, value);
-#else
-    return step(threshold, value);
-#endif
+    float afwidth = length(vec2(dFdx(value), dFdy(value))) * 0.7071068;
+    return smoothstep(threshold - afwidth, threshold + afwidth, value);
 }
 
 void main()
 {
 #ifdef URHO3D_DEPTH_ONLY_PASS
-    DefaultPixelShader();
+    Pixel_DepthOnly(sAlbedo, vTexCoord);
 #else
     SurfaceData surfaceData;
 
-    FillSurfaceCommon(surfaceData);
-    FillSurfaceNormal(surfaceData);
-    FillSurfaceMetallicRoughnessOcclusion(surfaceData);
-    FillSurfaceReflectionColor(surfaceData);
-    FillSurfaceBackground(surfaceData);
-    FillSurfaceAlbedoSpecular(surfaceData);
-    FillSurfaceEmission(surfaceData);
+    Surface_SetCommon(surfaceData);
+    Surface_SetAmbient(surfaceData, sEmission, vTexCoord2);
+    Surface_SetNormal(surfaceData, vNormal, sNormal, vTexCoord, vTangent, vBitangentXY);
+    Surface_SetPhysicalProperties(surfaceData, cRoughness, cMetallic, cDielectricReflectance, sProperties, vTexCoord);
+    Surface_SetLegacyProperties(surfaceData, cMatSpecColor.a, sEmission, vTexCoord);
+    Surface_SetCubeReflection(surfaceData, sReflection0, sReflection1, vReflectionVec, vWorldPos);
+    Surface_SetPlanarReflection(surfaceData, sReflection0, cReflectionPlaneX, cReflectionPlaneY);
+    Surface_SetBackground(surfaceData, sEmission, sDepthBuffer);
+    Surface_SetBaseAlbedo(surfaceData, cMatDiffColor, cAlphaCutoff, vColor, sAlbedo, vTexCoord, URHO3D_MATERIAL_ALBEDO);
+    Surface_SetBaseSpecular(surfaceData, cMatSpecColor, cMatEnvMapColor, sProperties, vTexCoord);
+    Surface_SetAlbedoSpecular(surfaceData);
+    Surface_SetEmission(surfaceData, cMatEmissiveColor, sEmission, vTexCoord, URHO3D_MATERIAL_EMISSION);
+    Surface_ApplySoftFadeOut(surfaceData, vWorldDepth, cFadeOffsetScale);
 
 #ifdef URHO3D_AMBIENT_PASS
     half3 surfaceColor = CalculateAmbientLighting(surfaceData);
@@ -55,14 +63,8 @@ void main()
 #endif
 
 #ifdef URHO3D_GBUFFER_PASS
-    #ifdef URHO3D_PHYSICAL_MATERIAL
-        half roughness = surfaceData.roughness;
-    #else
-        half roughness = 1.0 - cMatSpecColor.a / 255.0;
-    #endif
-
     gl_FragData[1] = vec4(surfaceData.fogFactor * surfaceData.albedo.rgb, 0.0);
-    gl_FragData[2] = vec4(surfaceData.fogFactor * surfaceData.specular, roughness);
+    gl_FragData[2] = vec4(surfaceData.fogFactor * surfaceData.specular, surfaceData.roughness);
     gl_FragData[3] = vec4(surfaceData.normal * 0.5 + 0.5, 0.0);
 #elif defined(URHO3D_LIGHT_PASS)
     DirectLightData lightData = GetForwardDirectLightData();
@@ -81,8 +83,7 @@ void main()
 
 #endif
 
-    half surfaceAlpha = GetSurfaceAlpha(surfaceData);
-    gl_FragColor = GetFragmentColorAlpha(surfaceColor, surfaceAlpha, surfaceData.fogFactor);
+    gl_FragColor = GetFragmentColorAlpha(surfaceColor, surfaceData.albedo.a, surfaceData.fogFactor);
 #endif
 
 }

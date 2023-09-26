@@ -43,7 +43,7 @@ class URHO3D_API OutlineScenePass : public ScenePass
 
 public:
     OutlineScenePass(RenderPipelineInterface* renderPipeline, DrawableProcessor* drawableProcessor,
-        BatchStateCacheCallback* callback, const StringVector& outlinedPasses);
+        BatchStateCacheCallback* callback, const StringVector& outlinedPasses, DrawableProcessorPassFlags flags = DrawableProcessorPassFlag::None);
 
     /// Initialize outline groups from scene. Should be called every frame.
     void SetOutlineGroups(Scene* scene, bool drawDebugOutlines);
@@ -52,7 +52,7 @@ public:
     /// @{
     AddBatchResult AddCustomBatch(
         unsigned threadIndex, Drawable* drawable, unsigned sourceBatchIndex, Technique* technique) override;
-    bool CreatePipelineState(PipelineStateDesc& desc, PipelineStateBuilder* builder,
+    bool CreatePipelineState(GraphicsPipelineStateDesc& desc, PipelineStateBuilder* builder,
         const BatchStateCreateKey& key, const BatchStateCreateContext& ctx) override;
     /// @}
 
@@ -99,8 +99,8 @@ private:
 
     bool enabled_{};
 
-    SharedPtr<PipelineState> pipelineStateGamma_;
-    SharedPtr<PipelineState> pipelineStateLinear_;
+    StaticPipelineStateId pipelineStateGamma_{};
+    StaticPipelineStateId pipelineStateLinear_{};
     SharedPtr<RenderBuffer> outlineBuffer_;
 };
 

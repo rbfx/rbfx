@@ -28,8 +28,7 @@
 
 #include "../../SDL_internal.h"
 
-// Urho3D - iOS/tvOS simulator does not have Metal support
-#if SDL_VIDEO_DRIVER_UIKIT && (SDL_VIDEO_VULKAN || SDL_VIDEO_METAL) && !defined(TARGET_IPHONE_SIMULATOR)
+#if SDL_VIDEO_DRIVER_UIKIT && (SDL_VIDEO_VULKAN || SDL_VIDEO_METAL)
 
 #include "SDL_syswm.h"
 #include "../SDL_sysvideo.h"

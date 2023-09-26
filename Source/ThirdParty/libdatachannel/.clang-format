@@ -1,0 +1,16 @@
+---
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: ForIndentation
+---
+Language: Cpp
+Standard: Cpp11
+AccessModifierOffset: -4
+ColumnLimit: 100
+---
+Language: JavaScript
+IndentWidth: 2
+UseTab: Never
+ColumnLimit: 100
+...

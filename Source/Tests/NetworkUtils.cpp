@@ -57,10 +57,12 @@ void ManualConnection::IncrementTime(unsigned delta)
     SendUnorderedMessages(messages_[true][false]);
 }
 
-void ManualConnection::SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes)
+void ManualConnection::SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType)
 {
     const double currentDropRatio = droppedMessages_ / ea::max(1.0, static_cast<double>(totalUnreliableMessages_));
     const double currentShuffleRatio = shuffledMessages_ / ea::max(1.0, static_cast<double>(totalUnorderedMessages_));
+    const bool reliable = packetType & PacketType::Reliable;
+    const bool inOrder = packetType & PacketType::Ordered;
 
     ++totalMessages_;
     if (!reliable)
@@ -141,16 +143,12 @@ NetworkSimulator::NetworkSimulator(Scene* serverScene, unsigned seed)
     , random_(seed)
     , serverScene_(serverScene)
 {
-    network_->SetSimulateServerEvents(true);
-    network_->SetSimulateClientEvents(true);
     serverReplicationManager_ = serverScene_->GetOrCreateComponent<ReplicationManager>();
     serverReplicationManager_->StartServer();
 }
 
 NetworkSimulator::~NetworkSimulator()
 {
-    network_->SetSimulateServerEvents(false);
-    network_->SetSimulateClientEvents(false);
 }
 
 void NetworkSimulator::AddClient(Scene* clientScene, const ConnectionQuality& quality)

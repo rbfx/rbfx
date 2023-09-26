@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2016 The Khronos Group Inc.
+# Copyright (c) 2015-2023 The Khronos Group Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,6 +57,8 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "iOS")
   add_definitions(-DSPIRV_IOS)
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "tvOS")
   add_definitions(-DSPIRV_TVOS)
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "visionOS")
+  add_definitions(-DSPIRV_VISIONOS)
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
   add_definitions(-DSPIRV_ANDROID)
   set(SPIRV_TIMER_ENABLED ${SPIRV_ALLOW_TIMERS})
@@ -68,6 +70,8 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Fuchsia")
   add_definitions(-DSPIRV_FUCHSIA)
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "GNU")
   add_definitions(-DSPIRV_GNU)
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "QNX")
+  add_definitions(-DSPIRV_QNX)
 else()
   message(FATAL_ERROR "Your platform '${CMAKE_SYSTEM_NAME}' is not supported!")
 endif()
@@ -253,9 +257,9 @@ endif()
 
 # Tests require Python3
 if("${SPIRV_SKIP_TESTS}" AND NOT "${SPIRV_GENERATOR_CACHE} " STREQUAL " ")
-  find_host_package(PythonInterp 3)
+  find_host_package(Python3)
 else()
-  find_host_package(PythonInterp 3 REQUIRED)
+  find_host_package(Python3 REQUIRED)
 endif()
 
 # Check for symbol exports on Linux.
@@ -265,7 +269,7 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   macro(spvtools_check_symbol_exports TARGET)
     if (NOT "${SPIRV_SKIP_TESTS}")
       add_test(NAME spirv-tools-symbol-exports-${TARGET}
-               COMMAND ${PYTHON_EXECUTABLE}
+               COMMAND Python3::Interpreter
                ${spirv-tools_SOURCE_DIR}/utils/check_symbol_exports.py "$<TARGET_FILE:${TARGET}>")
     endif()
   endmacro()
@@ -278,7 +282,7 @@ else()
 endif()
 
 if(ENABLE_SPIRV_TOOLS_INSTALL)
-  if(WIN32)
+  if(WIN32 AND NOT MINGW)
     macro(spvtools_config_package_dir TARGET PATH)
       set(${PATH} ${TARGET}/cmake)
     endmacro()
@@ -364,7 +368,7 @@ endif(ENABLE_SPIRV_TOOLS_INSTALL)
 
 if (NOT "${SPIRV_SKIP_TESTS}")
   add_test(NAME spirv-tools-copyrights
-           COMMAND ${PYTHON_EXECUTABLE} utils/check_copyright.py
+           COMMAND Python3::Interpreter utils/check_copyright.py
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
