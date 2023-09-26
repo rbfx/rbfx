@@ -1,8 +1,0 @@
-<material>
-    <technique name="Techniques/Refraction.xml" />
-    <texture unit="normal" name="Textures/WaterNoise.dds" />
-    <parameter name="MatDiffColor" value="1 1 1 1" />
-    <parameter name="NoiseStrength" value="0.02" />
-    <!-- Only static geometry could be refracted with no side effects at the moment -->
-    <renderorder value="0"/>
-</material>

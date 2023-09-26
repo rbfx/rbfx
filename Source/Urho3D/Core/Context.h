@@ -102,7 +102,7 @@ public:
     /// Deprecated. Use AddFactoryReflection, AddAbstractReflection or AddReflection instead.
     template <class T> void RegisterFactory(ea::string_view category = {}) { AddFactoryReflection<T>(category); }
     /// Template version of registering subsystem.
-    template <class T> T* RegisterSubsystem();
+    template <class T, class U = T> T* RegisterSubsystem();
     /// Template version of removing a subsystem.
     template <class T> void RemoveSubsystem();
 
@@ -202,10 +202,10 @@ private:
     bool isUnitTest_{false};
 };
 
-template <class T> T* Context::RegisterSubsystem()
+template <class T, class U> T* Context::RegisterSubsystem()
 {
     auto* subsystem = new T(this);
-    RegisterSubsystem(subsystem);
+    RegisterSubsystem(subsystem, U::GetTypeStatic());
     return subsystem;
 }
 

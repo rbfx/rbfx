@@ -23,9 +23,15 @@
 #include "../Assets/ModelImporter.h"
 
 #include <Urho3D/Core/ProcessUtils.h>
+#include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/JSONFile.h>
+#if URHO3D_GLOW
+    #include <Urho3D/Glow/LightmapUVGenerator.h>
+#endif
+
+#include <EASTL/finally.h>
 
 namespace Urho3D
 {
@@ -59,6 +65,59 @@ bool IsFileNameBlend(const ea::string& fileName, bool strict = true)
     return fileName.ends_with(".blend", false);
 }
 
+bool IsAnimationLooped(const Animation& animation)
+{
+    for (const auto& [_, track] : animation.GetTracks())
+    {
+        if (!track.IsLooped())
+            return false;
+    }
+    for (const auto& [_, track] : animation.GetVariantTracks())
+    {
+        if (!track.IsLooped())
+            return false;
+    }
+    return true;
+}
+
+template <class T> ea::optional<float> GetTrackStep(const T& track)
+{
+    const unsigned numFrames = track.keyFrames_.size();
+    if (numFrames <= 1)
+        return ea::nullopt;
+    return track.keyFrames_[numFrames - 1].time_ - track.keyFrames_[numFrames - 2].time_;
+}
+
+ea::optional<float> GetFrameStep(const Animation& animation)
+{
+    ea::optional<float> frameStep;
+    for (const auto& [_, track] : animation.GetTracks())
+    {
+        if (const auto trackStep = GetTrackStep(track))
+            frameStep = ea::min(frameStep.value_or(M_LARGE_VALUE), *trackStep);
+    }
+    for (const auto& [_, track] : animation.GetVariantTracks())
+    {
+        if (const auto trackStep = GetTrackStep(track))
+            frameStep = ea::min(frameStep.value_or(M_LARGE_VALUE), *trackStep);
+    }
+    return frameStep;
+}
+
+AnimationTrack* GetRootAnimationTrack(Animation& animation)
+{
+    const StringVariantMap& parentTracks = animation.GetMetadata(AnimationMetadata::ParentTracks).GetStringVariantMap();
+
+    StringVector rootTracks;
+    for (const auto& [name, parent] : parentTracks)
+    {
+        if (parent.GetString().empty())
+            rootTracks.push_back(name);
+    }
+
+    return rootTracks.size() == 1 ? animation.GetTrack(rootTracks.front()) : nullptr;
+}
+
 } // namespace
 
 void Assets_ModelImporter(Context* context, Project* project)
@@ -67,10 +126,29 @@ void Assets_ModelImporter(Context* context, Project* project)
         ModelImporter::RegisterObject(context);
 }
 
+void ModelImporter::ResetRootMotionInfo::SerializeInBlock(Archive& archive)
+{
+    SerializeOptionalValue(archive, "factor", factor_);
+    SerializeOptionalValue(archive, "positionWeight", positionWeight_);
+    SerializeOptionalValue(archive, "rotationSwingWeight", rotationSwingWeight_);
+    SerializeOptionalValue(archive, "rotationTwistWeight", rotationTwistWeight_);
+    SerializeOptionalValue(archive, "scaleWeight", scaleWeight_);
+}
+
 void ModelImporter::ModelMetadata::SerializeInBlock(Archive& archive)
 {
-    SerializeValue(archive, "appendFiles", appendFiles_);
-    SerializeValue(archive, "nodeRenames", nodeRenames_);
+    SerializeOptionalValue(archive, "appendFiles", appendFiles_);
+    SerializeOptionalValue(archive, "nodeRenames", nodeRenames_);
+
+    int placeholder{};
+    SerializeOptionalValue(archive, "animation", placeholder, EmptyObject{},
+        [&](Archive& archive, const char* name, int&) //
+        {
+            const auto block = archive.OpenUnorderedBlock(name);
+            SerializeOptionalValue(archive, "resetRootMotion", resetRootMotion_);
+        });
+
+    SerializeOptionalValue(archive, "resourceMetadata", resourceMetadata_);
 }
 
 ModelImporter::ModelImporter(Context* context)
@@ -89,11 +167,14 @@ void ModelImporter::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Cleanup Bone Names", bool, settings_.cleanupBoneNames_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Cleanup Root Nodes", bool, settings_.cleanupRootNodes_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Combine LODs", bool, settings_.combineLODs_, true, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Repair Looping", bool, settings_.repairLooping_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Skip Tag", ea::string, settings_.skipTag_, DefaultSkipTag, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Keep Names On Merge", bool, settings_.keepNamesOnMerge_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Add Empty Nodes To Skeleton", bool, settings_.addEmptyNodesToSkeleton_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Repair Looping", bool, repairLooping_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Blender: Apply Modifiers", bool, blenderApplyModifiers_, true, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("LightMap UV: Generate", bool, lightmapUVGenerate_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("LightMap UV: Texels per Unit", float, lightmapUVTexelsPerUnit_, 10.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("LightMap UV: Channel", unsigned, lightmapUVChannel_, 1, AM_DEFAULT);
 }
 
 ToolManager* ModelImporter::GetToolManager() const
@@ -155,6 +236,9 @@ bool ModelImporter::Execute(
 bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& metadata,
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
+    currentMetadata_ = &metadata;
+    const auto metadataGuard = ea::make_finally([&] { currentMetadata_ = nullptr; });
+
     if (!metadata.metadataFileName_.empty())
         AddDependency(input, output, metadata.metadataFileName_);
 
@@ -190,7 +274,7 @@ bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& m
         }
     }
 
-    if (!importer->Process(outputPath, resourceNamePrefix))
+    if (!importer->Process(outputPath, resourceNamePrefix, this))
     {
         URHO3D_LOGERROR("Failed to process asset {}", input.resourceName_);
         return false;
@@ -223,6 +307,125 @@ bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& m
             nestedOutput.appliedTransformers_.begin(), nestedOutput.appliedTransformers_.end());
     }
     return true;
+}
+
+void ModelImporter::OnModelLoaded(ModelView& modelView)
+{
+    if (lightmapUVGenerate_)
+    {
+#if URHO3D_GLOW
+        LightmapUVGenerationSettings settings;
+        settings.texelPerUnit_ = lightmapUVTexelsPerUnit_;
+        settings.uvChannel_ = lightmapUVChannel_;
+        if (!GenerateLightmapUV(modelView, settings))
+            throw RuntimeException("Failed to generate lightmap UVs");
+#else
+        throw RuntimeException("Glow must be enabled to generate lightmap UVs");
+#endif
+    }
+}
+
+void ModelImporter::OnAnimationLoaded(Animation& animation)
+{
+    AppendResourceMetadata(animation);
+
+    const auto resetRootMotionIter = currentMetadata_->resetRootMotion_.find(animation.GetAnimationName());
+    if (resetRootMotionIter != currentMetadata_->resetRootMotion_.end())
+        ResetRootMotion(animation, resetRootMotionIter->second);
+
+    const bool isAnimationLooped = IsAnimationLooped(animation);
+    const auto frameStep = GetFrameStep(animation);
+
+    // TODO: It would be better to add a keyframe at the end of the animation
+    if (!isAnimationLooped && repairLooping_ && frameStep)
+    {
+        animation.SetLength(animation.GetLength() + *frameStep);
+        animation.AddMetadata(AnimationMetadata::Looped, true);
+    }
+    else
+    {
+        animation.AddMetadata(AnimationMetadata::Looped, isAnimationLooped);
+    }
+
+    if (frameStep)
+    {
+        const int frameRate = RoundToInt(1.0f / *frameStep);
+        const float frameRateError = Abs(frameRate - 1.0f / *frameStep);
+
+        animation.AddMetadata(AnimationMetadata::FrameStep, *frameStep);
+        if (frameRateError < 0.01f)
+            animation.AddMetadata(AnimationMetadata::FrameRate, frameRate);
+    }
+}
+
+void ModelImporter::ResetRootMotion(Animation& animation, const ResetRootMotionInfo& info)
+{
+    AnimationTrack* rootTrack = GetRootAnimationTrack(animation);
+    if (!rootTrack)
+        return;
+
+    const AnimationKeyFrame& firstFrame = rootTrack->keyFrames_.front();
+    const AnimationKeyFrame& lastFrame = rootTrack->keyFrames_.back();
+    if (firstFrame.time_ == lastFrame.time_)
+        return;
+
+    // Copy the track
+    const ea::string originalTrackName = rootTrack->name_ + "_Original";
+    if (animation.GetTrack(originalTrackName))
+    {
+        URHO3D_LOGWARNING("Cannot create backup track '{}' for root motion, skipping", originalTrackName);
+        return;
+    }
+
+    animation.AddMetadata(AnimationMetadata::RootTrack, rootTrack->name_);
+    animation.AddMetadata(AnimationMetadata::OriginalRootTrack, originalTrackName);
+
+    AnimationTrack* originalRootTrack = animation.CreateTrack(originalTrackName);
+    originalRootTrack->channelMask_ = rootTrack->channelMask_;
+    originalRootTrack->keyFrames_ = rootTrack->keyFrames_;
+
+    // Calculate approximate velocity
+    const Vector3 positionDelta = lastFrame.position_ - firstFrame.position_;
+    const Quaternion rotationDelta = lastFrame.rotation_ * firstFrame.rotation_.Inverse();
+    const Vector3 scaleDelta = lastFrame.scale_ - firstFrame.scale_;
+
+    const Vector3 linearVelocity = positionDelta / (lastFrame.time_ - firstFrame.time_);
+    const Vector3 angularVelocity = rotationDelta.AngularVelocity() / (lastFrame.time_ - firstFrame.time_);
+    const Vector3 scaleVelocity = scaleDelta / (lastFrame.time_ - firstFrame.time_);
+
+    animation.AddMetadata(AnimationMetadata::RootLinearVelocity, linearVelocity);
+    animation.AddMetadata(AnimationMetadata::RootAngularVelocity, angularVelocity);
+    animation.AddMetadata(AnimationMetadata::RootScaleVelocity, scaleVelocity);
+
+    // Calculate the reset transform
+    const float resetTime = Lerp(firstFrame.time_, lastFrame.time_, info.factor_);
+    unsigned frameIndex{};
+    Transform resetTransform;
+    rootTrack->Sample(resetTime, lastFrame.time_, false, frameIndex, resetTransform);
+
+    for (AnimationKeyFrame& frame : rootTrack->keyFrames_)
+    {
+        const Transform interpolatedTransform = firstFrame.Lerp(lastFrame, frame.time_);
+        const Transform deltaTransform = frame * interpolatedTransform.Inverse();
+        const Transform filteredTransform = deltaTransform * resetTransform;
+
+        const auto [deltaSwing, deltaTwist] = filteredTransform.rotation_.ToSwingTwist(rotationDelta.Axis());
+
+        frame.position_ = VectorLerp(resetTransform.position_, filteredTransform.position_, info.positionWeight_);
+        frame.rotation_ = Quaternion::IDENTITY.Slerp(deltaSwing, info.rotationSwingWeight_)
+            * Quaternion::IDENTITY.Slerp(deltaTwist, info.rotationTwistWeight_) * resetTransform.rotation_;
+        frame.scale_ = Lerp(resetTransform.scale_, filteredTransform.scale_, info.scaleWeight_);
+    }
+}
+
+void ModelImporter::AppendResourceMetadata(ResourceWithMetadata& resource) const
+{
+    const auto metadataIter = currentMetadata_->resourceMetadata_.find(GetFileName(resource.GetName()));
+    if (metadataIter == currentMetadata_->resourceMetadata_.end())
+        return;
+
+    for (const auto& [name, value] : metadataIter->second)
+        resource.AddMetadata(name, value);
 }
 
 ModelImporter::ModelMetadata ModelImporter::LoadMetadata(const ea::string& fileName) const

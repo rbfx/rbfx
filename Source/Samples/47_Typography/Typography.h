@@ -57,7 +57,6 @@ private:
     template <class T> SharedPtr<DropDownList> CreateMenu(const ea::string& label, const char** items, T handler);
 
     void HandleWhiteBackground(StringHash eventType, VariantMap& eventData);
-    void HandleSRGB(StringHash eventType, VariantMap& eventData);
     void HandleForceAutoHint(StringHash eventType, VariantMap& eventData);
     void HandleFontHintLevel(StringHash eventType, VariantMap& eventData);
     void HandleFontSubpixel(StringHash eventType, VariantMap& eventData);

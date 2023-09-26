@@ -29,6 +29,7 @@
 #include "../Graphics/TextureCube.h"
 #include "../Graphics/Model.h"
 #include "../Graphics/Material.h"
+#include "../RenderPipeline/ShaderConsts.h"
 #include "../Resource/ResourceCache.h"
 #include "Urho3D/Graphics/Camera.h"
 #include "Urho3D/Graphics/Light.h"
@@ -50,7 +51,7 @@ void SceneWidget::RenderContent()
         return;
 
     auto* renderer = GetRenderer();
-    
+
     if (!scene_->HasComponent<DebugRenderer>())
     {
         DebugRenderer* debug = scene_->GetOrCreateComponent<DebugRenderer>();
@@ -137,7 +138,7 @@ void SceneWidget::SetSkyboxTexture(Texture* texture)
         auto material = MakeShared<Material>(context_);
         auto* cache = context_->GetSubsystem<ResourceCache>();
         material->SetTechnique(0, cache->GetResource<Technique>("Techniques/DiffSkybox.xml"));
-        material->SetTexture(TU_DIFFUSE, texture);
+        material->SetTexture(ShaderResources::Albedo, texture);
         material->SetCullMode(CULL_NONE);
         skybox->SetMaterial(material);
     }

@@ -1,4 +1,6 @@
 name: Build and Test with Bazel
+permissions:
+  contents: read
 
 on:
   push:
@@ -11,7 +13,7 @@ jobs:
     timeout-minutes: 120
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-2019]
 
     runs-on: ${{matrix.os}}
 

@@ -760,7 +760,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
         SharedPtr<Texture2D> texture(MakeShared<Texture2D>(context_));
         texture->SetMipsToSkip(QUALITY_LOW, 0);
         texture->SetNumLevels(1);
-        texture->SetSize(allocator.GetWidth(), allocator.GetHeight(), Graphics::GetRGBAFormat());
+        texture->SetSize(allocator.GetWidth(), allocator.GetHeight(), TextureFormat::TEX_FORMAT_RGBA8_UNORM);
 
         auto textureDataSize = (unsigned)allocator.GetWidth() * allocator.GetHeight() * 4;
         ea::shared_array<unsigned char> textureData(new unsigned char[textureDataSize]);

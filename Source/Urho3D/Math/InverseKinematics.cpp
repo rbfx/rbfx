@@ -194,10 +194,16 @@ Quaternion IKTrigonometricChain::CalculateRotation(
     const Vector3& originalPos0, const Vector3& originalPos2, const Vector3& originalDirection,
     const Vector3& currentPos0, const Vector3& currentPos2, const Vector3& currentDirection)
 {
-    const Vector3 originalAxis = (originalPos2 - originalPos0).Normalized();
-    const Vector3 twistAxis = (currentPos2 - currentPos0).Normalized();
-    const auto [_, twist] = Quaternion{originalDirection, currentDirection}.ToSwingTwist(twistAxis);
-    const Quaternion swing = Quaternion{originalAxis, twistAxis};
+    // Calculate swing
+    const Vector3 originalTargetDirection = (originalPos2 - originalPos0).Normalized();
+    const Vector3 currentTargetDirection = (currentPos2 - currentPos0).Normalized();
+    const Quaternion swing{originalTargetDirection, currentTargetDirection};
+
+    // Calculate twist
+    const Vector3 originalBendDirection = (swing * originalDirection).Orthogonalize(currentTargetDirection);
+    const Vector3 currentBendDirection = currentDirection.Orthogonalize(currentTargetDirection);
+    const Quaternion bendDirectionDelta{originalBendDirection, currentBendDirection};
+    const auto [_, twist] = bendDirectionDelta.ToSwingTwist(currentTargetDirection);
 
     return twist * swing;
 }
@@ -224,56 +230,47 @@ ea::pair<Vector3, Vector3> IKTrigonometricChain::Solve(const Vector3& pos0, floa
 void IKTrigonometricChain::Solve(const Vector3& target, const Vector3& originalDirection,
     const Vector3& currentDirection, float minAngle, float maxAngle)
 {
+    ResetChainToOriginal();
+
+    // Solve chain positions
     const Vector3 pos0 = segments_[0].beginNode_->position_;
-    currentChainRotation_ = CalculateRotation(
-        segments_[0].beginNode_->originalPosition_, segments_[1].endNode_->originalPosition_, originalDirection,
-        pos0, target, currentDirection);
-
-    RotateChain(currentChainRotation_);
-
     const float len01 = segments_[0].length_;
     const float len12 = segments_[1].length_;
+    const auto [newPos1, newPos2] = Solve(pos0, len01, len12, target, currentDirection, minAngle, maxAngle);
 
-    const auto [newPos1, newPos2] = Solve(
-        pos0, len01, len12, target, currentChainRotation_ * originalDirection, minAngle, maxAngle);
-    RotateSegmentsToTarget(newPos1, newPos2);
+    // Calculate base chain rotation
+    currentChainRotation_ = CalculateRotation(
+        pos0, segments_[1].endNode_->position_, originalDirection, pos0, target, currentDirection);
+
+    segments_[0].beginNode_->RotateAround(pos0, currentChainRotation_);
+    segments_[1].beginNode_->RotateAround(pos0, currentChainRotation_);
+    segments_[1].endNode_->RotateAround(pos0, currentChainRotation_);
+
+    // Rotate segments in the chain
+    const Quaternion firstSegmentRotation{segments_[0].CalculateDirection(), newPos1 - pos0};
+    segments_[0].beginNode_->RotateAround(pos0, firstSegmentRotation);
+    segments_[1].beginNode_->RotateAround(pos0, firstSegmentRotation);
+    segments_[1].endNode_->RotateAround(pos0, firstSegmentRotation);
+
+    const Quaternion secondSegmentRotation{segments_[1].CalculateDirection(), newPos2 - newPos1};
+    segments_[1].beginNode_->RotateAround(newPos1, secondSegmentRotation);
+    segments_[1].endNode_->RotateAround(newPos1, secondSegmentRotation);
+
+    segments_[1].beginNode_->position_ = newPos1;
+    segments_[1].endNode_->position_ = newPos2;
 }
 
-void IKTrigonometricChain::RotateChain(const Quaternion& chainRotation)
+void IKTrigonometricChain::ResetChainToOriginal()
 {
-    const Vector3 pos0 = segments_[0].beginNode_->position_;
-    const Vector3 chainOffset = segments_[0].beginNode_->position_ - segments_[0].beginNode_->originalPosition_;
+    const Vector3 initialOffset = segments_[0].beginNode_->position_ - segments_[0].beginNode_->originalPosition_;
 
     segments_[0].beginNode_->ResetOriginalTransform();
     segments_[1].beginNode_->ResetOriginalTransform();
     segments_[1].endNode_->ResetOriginalTransform();
 
-    segments_[0].beginNode_->position_ += chainOffset;
-    segments_[1].beginNode_->position_ += chainOffset;
-    segments_[1].endNode_->position_ += chainOffset;
-
-    segments_[0].beginNode_->RotateAround(pos0, chainRotation);
-    segments_[1].beginNode_->RotateAround(pos0, chainRotation);
-    segments_[1].endNode_->RotateAround(pos0, chainRotation);
-}
-
-void IKTrigonometricChain::RotateSegmentsToTarget(const Vector3& newPos1, const Vector3& newPos2)
-{
-    segments_[0].beginNode_->previousPosition_ = segments_[0].beginNode_->position_;
-    segments_[0].beginNode_->previousRotation_ = segments_[0].beginNode_->rotation_;
-
-    segments_[1].beginNode_->previousPosition_ = segments_[1].beginNode_->position_;
-    segments_[1].beginNode_->previousRotation_ = segments_[1].beginNode_->rotation_;
-
-    segments_[1].endNode_->previousPosition_ = segments_[1].endNode_->position_;
-    segments_[1].endNode_->previousRotation_ = segments_[1].endNode_->rotation_;
-
-    segments_[1].beginNode_->position_ = newPos1;
-    segments_[1].endNode_->position_ = newPos2;
-
-    const bool fromPrevious = true;
-    segments_[0].UpdateRotationInNodes(fromPrevious, false);
-    segments_[1].UpdateRotationInNodes(fromPrevious, true);
+    segments_[0].beginNode_->position_ += initialOffset;
+    segments_[1].beginNode_->position_ += initialOffset;
+    segments_[1].endNode_->position_ += initialOffset;
 }
 
 void IKEyeChain::Initialize(IKNode* rootNode)

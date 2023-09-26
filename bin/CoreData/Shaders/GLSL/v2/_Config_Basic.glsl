@@ -16,26 +16,11 @@
 // #define fixed3
 // #define fixed4
 
-/// Compatible ivec4 vertex attribite. Cast to ivec4 before use.
-// #define ivec4_attrib
-
 /// =================================== Flow control defines ===================================
 
 /// Defined for corresponding shader stage.
 // #define URHO3D_VERTEX_SHADER
 // #define URHO3D_PIXEL_SHADER
-
-/// Whether high precision is supported for all shader stages.
-// #define URHO3D_FEATURE_HIGHP
-
-/// Whether high precision is supported for current shader stage.
-// #define URHO3D_FEATURE_HIGHP_IN_STAGE
-
-/// Whether standard derivatives are supported.
-// #define URHO3D_FEATURE_DERIVATIVES
-
-/// Whether textureCubeLod is supported.
-// #define URHO3D_FEATURE_CUBEMAP_LOD
 
 /// Whether Y axis of clip space is the opposite of Y axis of render target texture.
 // #define URHO3D_FEATURE_FRAMEBUFFER_Y_INVERTED
@@ -81,14 +66,17 @@
 /// [Pixel shader only] Select value for front and back faces separately.
 // #define SELECT_FRONT_BACK_FACE(frontValue, backValue)
 
+
 /// =================================== Extensions ===================================
+
 #extension GL_ARB_shading_language_420pack: enable
-#extension GL_EXT_shader_texture_lod: enable
+#extension GL_EXT_clip_cull_distance: enable
 #extension GL_OES_standard_derivatives : enable
+
 
 /// =================================== Types and constants ===================================
 
-#define M_PI 3.14159265358979323846
+#define M_PI 3.1415927
 #define M_MEDIUMP_FLT_MAX 65504.0
 
 /// Disable precision modifiers if not GL ES.
@@ -118,79 +106,57 @@
     #define URHO3D_PIXEL_SHADER
 #endif
 
-#if !defined(GL_ES) || defined(GL_FRAGMENT_PRECISION_HIGH)
-    #define URHO3D_FEATURE_HIGHP
-#endif
-
 #if !defined(GL_ES) || defined(GL_FRAGMENT_PRECISION_HIGH) || defined(URHO3D_VERTEX_SHADER)
     #define URHO3D_FEATURE_HIGHP_IN_STAGE
 #endif
 
-#if !defined(GL_ES) || defined(GL_OES_standard_derivatives)
-    #define URHO3D_FEATURE_DERIVATIVES
+#if !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
+    #define URHO3D_FEATURE_CLIP_DISTANCE
 #endif
 
-#if !defined(GL_ES) || defined(GL_EXT_shader_texture_lod)
-    #define URHO3D_FEATURE_CUBEMAP_LOD
-#endif
-
-#ifdef D3D11
+#ifndef URHO3D_OPENGL
     #define URHO3D_FEATURE_FRAMEBUFFER_Y_INVERTED
 #endif
 
+/// =================================== Precision ===================================
+
+#ifdef GL_ES
+    precision highp float;
+#endif
 
 /// =================================== Global functions ===================================
 
 #define SaturateMediump(x) min(x, M_MEDIUMP_FLT_MAX)
 #define Saturate(x) clamp(x, 0.0, 1.0)
 
+half SpecularPowerToRoughness(half specularPower) { return 1.0 - specularPower / 255.0; }
+half RoughnessToSpecularPower(half roughness) { return (1.0 - roughness) * 255.0; }
+
+
 /// =================================== Stage inputs and outputs ===================================
 
-#ifdef D3D11
-    #define ivec4_attrib ivec4
-#else
-    #define ivec4_attrib vec4
-#endif
-
 #if defined(URHO3D_VERTEX_SHADER)
-    #ifdef GL3
-        #define VERTEX_INPUT(decl) in decl;
-        #define VERTEX_OUTPUT(decl) out decl;
-    #else
-        #define VERTEX_INPUT(decl) attribute decl;
-        #define VERTEX_OUTPUT(decl) varying decl;
-    #endif
+    #define VERTEX_INPUT(decl) in decl;
+    #define VERTEX_OUTPUT(decl) out decl;
+    #define VERTEX_OUTPUT_QUAL(qual, decl) qual out decl;
 #elif defined(URHO3D_PIXEL_SHADER)
-    #ifdef GL3
-        #define VERTEX_OUTPUT(decl) in decl;
-    #else
-        #define VERTEX_OUTPUT(decl) varying decl;
-    #endif
+    #define VERTEX_OUTPUT(decl) in decl;
+    #define VERTEX_OUTPUT_QUAL(qual, decl) qual in decl;
 #endif
 
-#ifdef URHO3D_FEATURE_HIGHP
-    #define VERTEX_OUTPUT_HIGHP(decl) VERTEX_OUTPUT(highp decl)
-#else
-    #define VERTEX_OUTPUT_HIGHP(decl) VERTEX_OUTPUT(mediump decl)
-#endif
+#define VERTEX_OUTPUT_HIGHP(decl) VERTEX_OUTPUT(highp decl)
 
 /// Default to 1 render target if not defined.
 #ifndef URHO3D_NUM_RENDER_TARGETS
     #define URHO3D_NUM_RENDER_TARGETS 1
 #endif
 
-/// gl_FragData and gl_FragColor: color outputs of pixel shader.
+/// Define gl_FragColor and gl_FragData for convenience.
 #if defined(URHO3D_PIXEL_SHADER) && URHO3D_NUM_RENDER_TARGETS > 0
-    #ifdef GL3
-        out vec4 _fragData[URHO3D_NUM_RENDER_TARGETS];
+    out vec4 _fragData[URHO3D_NUM_RENDER_TARGETS];
 
-        #define gl_FragColor _fragData[0]
-        #define gl_FragData _fragData
-    #else
-        #if URHO3D_NUM_RENDER_TARGETS > 1
-            #define gl_FragColor gl_FragData[0]
-        #endif
-    #endif
+    #define gl_FragColor _fragData[0]
+    #define gl_FragData _fragData
 #endif
 
 /// Don't take chances: vertex position must be the same.
@@ -201,52 +167,19 @@
 
 /// =================================== Uniforms ===================================
 
-#ifdef URHO3D_USE_CBUFFERS
-    #ifdef GL_ARB_shading_language_420pack
-        #define _URHO3D_LAYOUT(index) layout(binding=index)
-    #else
-        #define _URHO3D_LAYOUT(index)
-    #endif
-
-    #define UNIFORM_BUFFER_BEGIN(index, name) _URHO3D_LAYOUT(index) uniform name {
-    #define UNIFORM(decl) decl;
-    #define UNIFORM_BUFFER_END(index, name) };
-    #define SAMPLER(index, decl) _URHO3D_LAYOUT(index) uniform decl;
+#ifdef GL_ARB_shading_language_420pack
+    #define _URHO3D_LAYOUT(index) layout(binding=index)
 #else
-    #define UNIFORM_BUFFER_BEGIN(index, name)
-    #define UNIFORM(decl) uniform decl;
-    #define UNIFORM_BUFFER_END(index, name)
-    #define SAMPLER(index, decl) uniform decl;
+    #define _URHO3D_LAYOUT(index)
 #endif
 
-#ifndef GL_ES
-    #define UNIFORM_HIGHP(decl) UNIFORM(decl)
-    #define SAMPLER_HIGHP(index, decl) SAMPLER(index, decl)
-#else
-    /// Use max available precision by default
-    #ifdef URHO3D_FEATURE_HIGHP_IN_STAGE
-        precision highp float;
-        #define UNIFORM_HIGHP(decl) UNIFORM(decl)
-        #define SAMPLER_HIGHP(index, decl) SAMPLER(index, highp decl)
-    #else
-        precision mediump float;
-        #define UNIFORM_HIGHP(decl)
-        #define SAMPLER_HIGHP(index, decl) SAMPLER(index, mediump decl)
-    #endif
-#endif
+#define UNIFORM_BUFFER_BEGIN(index, name) _URHO3D_LAYOUT(index) uniform name {
+#define UNIFORM(decl) decl;
+#define UNIFORM_BUFFER_END(index, name) };
+#define SAMPLER(index, decl) _URHO3D_LAYOUT(index) uniform decl;
 
-/// Compatible texture samplers for GL3
-#ifdef GL3
-    #define texture2D texture
-    #define texture2DProj textureProj
-    #define texture3D texture
-    #define textureCube texture
-    #define textureCubeLod textureLod
-    #define texture2DLod textureLod
-    #define texture2DLodOffset textureLodOffset
-#elif defined(GL_ES) && defined(GL_EXT_shader_texture_lod)
-    #define textureCubeLod textureCubeLodEXT
-#endif
+#define UNIFORM_HIGHP(decl) UNIFORM(highp decl)
+#define SAMPLER_HIGHP(index, decl) SAMPLER(index, highp decl)
 
 
 /// =================================== Consolidate ShaderProgramCompositor defines ===================================
@@ -259,7 +192,7 @@
     #define URHO3D_MAX_SHADOW_CASCADES 1
 #endif
 
-#if defined(URHO3D_SHADOW_PASS)
+#if defined(URHO3D_SHADOW_PASS) || URHO3D_NUM_RENDER_TARGETS == 0
     #define URHO3D_DEPTH_ONLY_PASS
 #endif
 
@@ -300,11 +233,45 @@
 #endif // URHO3D_VERTEX_SHADER
 
 #ifdef URHO3D_PIXEL_SHADER
-    #if defined(D3D11) || defined(URHO3D_CAMERA_REVERSED)
-        #define IS_FRONT_FACE gl_FrontFacing
-        #define SELECT_FRONT_BACK_FACE(frontValue, backValue) (gl_FrontFacing ? (frontValue) : (backValue))
-    #else
+    #if defined(URHO3D_CAMERA_REVERSED)
         #define IS_FRONT_FACE (!gl_FrontFacing)
-        #define SELECT_FRONT_BACK_FACE(frontValue, backValue) (gl_FrontFacing ? (backValue) : (frontValue))
+    #else
+        #define IS_FRONT_FACE (gl_FrontFacing)
     #endif
+    #define SELECT_FRONT_BACK_FACE(frontValue, backValue) ((IS_FRONT_FACE) ? (frontValue) : (backValue))
 #endif // URHO3D_PIXEL_SHADER
+
+
+/// =================================== Syntax sugar ===================================
+
+// Help standard shaders to work properly if standard texture macros are not defined
+#ifndef URHO3D_TEXTURE_ALBEDO
+    #define URHO3D_TEXTURE_ALBEDO 0
+#endif
+#ifndef URHO3D_TEXTURE_NORMAL
+    #define URHO3D_TEXTURE_NORMAL 0
+#endif
+#ifndef URHO3D_TEXTURE_PROPERTIES
+    #define URHO3D_TEXTURE_PROPERTIES 0
+#endif
+#ifndef URHO3D_TEXTURE_EMISSION
+    #define URHO3D_TEXTURE_EMISSION 0
+#endif
+
+
+/// =================================== Deprecated ===================================
+
+// Aliases for easier migration.
+// TODO: Remove those later
+#define texture2D texture
+#define texture2DProj textureProj
+#define texture3D texture
+#define textureCube texture
+#define textureCubeLod textureLod
+#define texture2DLod textureLod
+#define texture2DLodOffset textureLodOffset
+
+// TODO: This is not entirely correct, but it will work for XR
+#ifdef URHO3D_VULKAN
+    #define gl_InstanceID gl_InstanceIndex
+#endif

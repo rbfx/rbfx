@@ -40,11 +40,14 @@ struct AnimationTriggerPoint;
 struct Bone;
 
 /// State and parameters of playing Animation.
-struct URHO3D_API AnimationParameters
+class URHO3D_API AnimationParameters
 {
+public:
     AnimationParameters() = default;
     explicit AnimationParameters(Animation* animation);
+    AnimationParameters(Animation* animation, float minTime, float maxTime);
     AnimationParameters(Context* context, const ea::string& animationName);
+    AnimationParameters(Context* context, const ea::string& animationName, float minTime, float maxTime);
 
     /// Helper utility to fade animation out and remove it later.
     bool RemoveDelayed(float fadeTime);
@@ -63,10 +66,22 @@ struct URHO3D_API AnimationParameters
     AnimationParameters& KeepOnZeroWeight();
     /// @}
 
-    /// Animation to be played.
-    /// Animation can be replicated over network only if is exists as named Resource on all machines.
-    Animation* animation_{};
-    StringHash animationName_;
+    /// Getters for read-only properties.
+    /// Use constructor to set Animation to the parameters.
+    /// @{
+    Animation* GetAnimation() const { return animation_; }
+    StringHash GetAnimationName() const { return animationName_; }
+    const WrappedScalar<float>& GetAnimationTime() const { return time_; }
+    /// @}
+
+
+    /// Time operations.
+    /// @{
+    float GetTime() const { return time_.Value(); }
+    void SetTime(float time) { time_.Set(time); }
+    WrappedScalarRange<float> Update(float scaledTimeStep);
+    /// @}
+
     unsigned instanceIndex_{};
 
     /// Static animation parameters that change rarely.
@@ -81,7 +96,6 @@ struct URHO3D_API AnimationParameters
 
     /// Dynamic animation parameters that change often.
     /// @{
-    WrappedScalar<float> time_{0.0f, 0.0f, M_LARGE_VALUE};
     float speed_{1.0f};
 
     bool removeOnZeroWeight_{};
@@ -111,6 +125,13 @@ struct URHO3D_API AnimationParameters
 
     /// Empty AnimationParameters.
     static const AnimationParameters EMPTY;
+
+private:
+    /// Animation to be played.
+    /// Animation can be replicated over network only if is exists as named Resource on all machines.
+    Animation* animation_{};
+    StringHash animationName_;
+    WrappedScalar<float> time_{0.0f, 0.0f, M_LARGE_VALUE};
 };
 
 /// %Component that drives an AnimatedModel's animations.
@@ -148,7 +169,7 @@ public:
     void GetAnimationParameters(ea::vector<AnimationParameters>& result) const;
     ea::vector<AnimationParameters> GetAnimationParameters() const;
     unsigned GetNumAnimations() const { return animations_.size(); }
-    unsigned GetAnimationLayer(unsigned index) const { return animations_[index].params_.layer_; }
+    unsigned GetAnimationLayer(unsigned index) const { return (index < animations_.size()) ? animations_[index].params_.layer_ : 0u; }
     const AnimationParameters& GetAnimationParameters(unsigned index) const;
     unsigned GetRevision() const { return revision_; }
     void UpdatePose();

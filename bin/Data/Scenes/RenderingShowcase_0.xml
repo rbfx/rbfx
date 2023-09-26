@@ -1245,7 +1245,7 @@
 			<attribute name="Variables" />
 			<component type="StaticModel" id="174">
 				<attribute name="Model" value="Model;Models/TeaPot.mdl" />
-				<attribute name="Material" value="Material;Materials/Constant/Mirror.xml;Materials/Constant/Mirror.xml" />
+				<attribute name="Material" value="Material;Materials/Constant/LegacyMirror.xml;Materials/Constant/LegacyMirror.xml" />
 			</component>
 		</node>
 		<node id="452">
@@ -1340,7 +1340,7 @@
 			<attribute name="Variables" />
 			<component type="StaticModel" id="13">
 				<attribute name="Model" value="Model;Models/Sphere.mdl" />
-				<attribute name="Material" value="Material;Materials/CelOpaque.xml" />
+				<attribute name="Material" value="Material;Materials/Showcase/CelOpaque.xml" />
 			</component>
 		</node>
 	</node>
@@ -1621,7 +1621,7 @@
 			<attribute name="Variables" />
 			<component type="Terrain" id="1070">
 				<attribute name="Height Map" value="Image;Scenes/RenderingShowcase_0/Heightmap.tga" />
-				<attribute name="Material" value="Material;Materials/PBRTerrain.xml" />
+				<attribute name="Material" value="Material;Materials/Showcase/PBRTerrain.xml" />
 				<attribute name="Vertex Spacing" value="0.2 0.00574484 0.2" />
 				<attribute name="Patch Size" value="4" />
 				<attribute name="Cast Shadows" value="true" />
@@ -1661,7 +1661,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="1196">
 					<attribute name="Model" value="Model;Models/Mushroom.mdl" />
-					<attribute name="Material" value="Material;Materials/PBRMushroomWind.xml" />
+					<attribute name="Material" value="Material;Materials/Showcase/PBRMushroomWind.xml" />
 				</component>
 			</node>
 			<node id="1222">
@@ -1674,7 +1674,7 @@
 				<attribute name="Variables" />
 				<component type="StaticModel" id="1197">
 					<attribute name="Model" value="Model;Models/Mushroom.mdl" />
-					<attribute name="Material" value="Material;Materials/MushroomWind.xml" />
+					<attribute name="Material" value="Material;Materials/Showcase/MushroomWind.xml" />
 				</component>
 			</node>
 		</node>
@@ -1689,7 +1689,7 @@
 		<attribute name="Variables" />
 		<component type="StaticModel" id="1255">
 			<attribute name="Model" value="Model;Models/Box.mdl" />
-			<attribute name="Material" value="Material;Materials/Refraction.xml" />
+			<attribute name="Material" value="Material;Materials/Showcase/Refraction.xml" />
 		</component>
 	</node>
 	<node id="1310">

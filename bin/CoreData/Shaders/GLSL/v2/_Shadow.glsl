@@ -5,8 +5,8 @@
     #error Include _Config.glsl before _Shadow.glsl
 #endif
 
-#ifndef _SAMPLERS_GLSL_
-    #error Include _Samplers.glsl before _Shadow.glsl
+#ifndef _INTERNAL_SAMPLERS_GLSL_
+    #error Include _InternalSamplers.glsl before _Shadow.glsl
 #endif
 
 #ifdef URHO3D_HAS_SHADOW
@@ -14,7 +14,7 @@
 #ifdef URHO3D_VERTEX_SHADER
 
 // Convert vector from world to shadow space, for each cascade if applicable
-void WorldSpaceToShadowCoord(out vec4 shadowPos[URHO3D_MAX_SHADOW_CASCADES], const vec4 worldPos)
+void WorldSpaceToShadowCoord(out vec4 shadowPos[URHO3D_MAX_SHADOW_CASCADES], vec4 worldPos)
 {
     #if defined(URHO3D_LIGHT_DIRECTIONAL)
         #if URHO3D_MAX_SHADOW_CASCADES >= 4
@@ -39,7 +39,7 @@ void WorldSpaceToShadowCoord(out vec4 shadowPos[URHO3D_MAX_SHADOW_CASCADES], con
 #ifdef URHO3D_PIXEL_SHADER
 
 /// Convert 3D direction to UV coordinate of unwrapped 3x2 cubemap.
-vec3 DirectionToUV(const vec3 vec, const vec2 bias)
+vec3 DirectionToUV(vec3 vec, vec2 bias)
 {
     vec3 vecAbs = abs(vec);
     float invDominantAxis;
@@ -69,7 +69,7 @@ vec3 DirectionToUV(const vec3 vec, const vec2 bias)
 
 #ifdef URHO3D_VARIANCE_SHADOW_MAP
     /// Calculate shadow value from sampled VSM texture and fragment depth
-    half EvaluateVarianceShadow(const vec2 moments, const float depth)
+    half EvaluateVarianceShadow(vec2 moments, float depth)
     {
         float p = float(depth <= moments.x);
         float variance = moments.y - (moments.x * moments.x);
@@ -83,68 +83,46 @@ vec3 DirectionToUV(const vec3 vec, const vec2 bias)
     }
 #else
     /// Sample shadow map texture at given 4-coordinate
-    half SampleShadow(const vec4 shadowPos)
+    half SampleShadow(vec4 shadowPos)
     {
-        #if defined(GL_ES)
-            return texture2DProj(sShadowMap, shadowPos).r * shadowPos.w > shadowPos.z ? 1.0 : 0.0;
-        #elif defined(GL3)
-            return textureProj(sShadowMap, shadowPos);
-        #else
-            return shadow2DProj(sShadowMap, shadowPos).r;
-        #endif
+        return textureProj(sShadowMap, shadowPos);
     }
 
     /// Sample shadow map texture with given offset
-    #if defined(GL3) && !defined(GL_ES)
-        #define SampleShadowOffset(shadowPos, identity, dx, dy) \
-            textureProjOffset(sShadowMap, (shadowPos), ivec2(dx, dy))
-    #else
-        #define SampleShadowOffset(shadowPos, identity, dx, dy) \
-            SampleShadow((shadowPos) + vec4(identity.x * float(dx), identity.y * float(dy), 0.0, 0.0))
-    #endif
-
-    /// Return UV coordinate offset corresponding to one texel
-    #ifndef URHO3D_LIGHT_POINT
-        #define GetShadowTexelOffset(shadowPos_w) (cShadowMapInvSize * shadowPos_w)
-    #else
-        #define GetShadowTexelOffset(shadowPos_w) cShadowMapInvSize
-    #endif
+    #define SampleShadowOffset(shadowPos, dx, dy) \
+        textureProjOffset(sShadowMap, (shadowPos), ivec2(dx, dy))
 #endif
 
 /// Sample shadow map texture with predefined filtering at given 4-coordinate
-half SampleShadowFiltered(const vec4 shadowPos)
+half SampleShadowFiltered(vec4 shadowPos)
 {
     #if defined(URHO3D_VARIANCE_SHADOW_MAP)
-        vec2 moments = texture2D(sShadowMap, shadowPos.xy / shadowPos.w).rg;
+        vec2 moments = texture(sShadowMap, shadowPos.xy / shadowPos.w).rg;
         return cShadowIntensity.y + cShadowIntensity.x * EvaluateVarianceShadow(moments, shadowPos.z / shadowPos.w);
 
     #elif URHO3D_SHADOW_PCF_SIZE == 2
-        vec2 offsets = GetShadowTexelOffset(shadowPos.w);
-
         half4 shadowSamples;
-        shadowSamples.x = SampleShadow(shadowPos);
-        shadowSamples.y = SampleShadow(shadowPos + vec4(offsets.x, 0.0, 0.0, 0.0));
-        shadowSamples.z = SampleShadow(shadowPos + vec4(0.0, offsets.y, 0.0, 0.0));
-        shadowSamples.w = SampleShadow(shadowPos + vec4(offsets.xy, 0.0, 0.0));
+        shadowSamples.x = SampleShadowOffset(shadowPos, 0, 0);
+        shadowSamples.y = SampleShadowOffset(shadowPos, 1, 0);
+        shadowSamples.z = SampleShadowOffset(shadowPos, 0, 1);
+        shadowSamples.w = SampleShadowOffset(shadowPos, 1, 1);
 
         return cShadowIntensity.y + dot(cShadowIntensity.xxxx, shadowSamples);
 
     #elif URHO3D_SHADOW_PCF_SIZE == 3
-        vec2 offsets = GetShadowTexelOffset(shadowPos.w);
-
         half sample4 = SampleShadow(shadowPos);
 
         half4 sample2;
-        sample2.x = SampleShadowOffset(shadowPos, offsets, -1,  0);
-        sample2.y = SampleShadowOffset(shadowPos, offsets,  1,  0);
-        sample2.z = SampleShadowOffset(shadowPos, offsets,  0, -1);
-        sample2.w = SampleShadowOffset(shadowPos, offsets,  0,  1);
+        sample2.x = SampleShadowOffset(shadowPos, -1,  0);
+        sample2.y = SampleShadowOffset(shadowPos,  1,  0);
+        sample2.z = SampleShadowOffset(shadowPos,  0, -1);
+        sample2.w = SampleShadowOffset(shadowPos,  0,  1);
 
         half4 sample1;
-        sample1.x = SampleShadowOffset(shadowPos, offsets, -1, -1);
-        sample1.y = SampleShadowOffset(shadowPos, offsets,  1, -1);
-        sample1.z = SampleShadowOffset(shadowPos, offsets, -1,  1);
-        sample1.w = SampleShadowOffset(shadowPos, offsets,  1,  1);
+        sample1.x = SampleShadowOffset(shadowPos, -1, -1);
+        sample1.y = SampleShadowOffset(shadowPos,  1, -1);
+        sample1.z = SampleShadowOffset(shadowPos, -1,  1);
+        sample1.w = SampleShadowOffset(shadowPos,  1,  1);
 
         const half3 factors = vec3(4.0 / 16.0, 2.0 / 16.0, 1.0 / 16.0);
         half average = sample4 * factors.x
@@ -154,39 +132,37 @@ half SampleShadowFiltered(const vec4 shadowPos)
         return cShadowIntensity.y + cShadowIntensity.x * average;
 
     #elif URHO3D_SHADOW_PCF_SIZE == 5
-        vec2 offsets = GetShadowTexelOffset(shadowPos.w);
-
         half sample41 = SampleShadow(shadowPos);
 
         half4 sample26;
-        sample26.x = SampleShadowOffset(shadowPos, offsets, -1,  0);
-        sample26.y = SampleShadowOffset(shadowPos, offsets,  1,  0);
-        sample26.z = SampleShadowOffset(shadowPos, offsets,  0, -1);
-        sample26.w = SampleShadowOffset(shadowPos, offsets,  0,  1);
+        sample26.x = SampleShadowOffset(shadowPos, -1,  0);
+        sample26.y = SampleShadowOffset(shadowPos,  1,  0);
+        sample26.z = SampleShadowOffset(shadowPos,  0, -1);
+        sample26.w = SampleShadowOffset(shadowPos,  0,  1);
 
         half4 sample16;
-        sample16.x = SampleShadowOffset(shadowPos, offsets, -1, -1);
-        sample16.y = SampleShadowOffset(shadowPos, offsets,  1, -1);
-        sample16.z = SampleShadowOffset(shadowPos, offsets, -1,  1);
-        sample16.w = SampleShadowOffset(shadowPos, offsets,  1,  1);
+        sample16.x = SampleShadowOffset(shadowPos, -1, -1);
+        sample16.y = SampleShadowOffset(shadowPos,  1, -1);
+        sample16.z = SampleShadowOffset(shadowPos, -1,  1);
+        sample16.w = SampleShadowOffset(shadowPos,  1,  1);
 
         half4 sample7;
-        sample7.x = SampleShadowOffset(shadowPos, offsets, -2,  0);
-        sample7.y = SampleShadowOffset(shadowPos, offsets,  2,  0);
-        sample7.z = SampleShadowOffset(shadowPos, offsets,  0, -2);
-        sample7.w = SampleShadowOffset(shadowPos, offsets,  0,  2);
+        sample7.x = SampleShadowOffset(shadowPos, -2,  0);
+        sample7.y = SampleShadowOffset(shadowPos,  2,  0);
+        sample7.z = SampleShadowOffset(shadowPos,  0, -2);
+        sample7.w = SampleShadowOffset(shadowPos,  0,  2);
 
         half4 sample4_1;
-        sample4_1.x = SampleShadowOffset(shadowPos, offsets, -2, -1);
-        sample4_1.y = SampleShadowOffset(shadowPos, offsets, -1, -2);
-        sample4_1.z = SampleShadowOffset(shadowPos, offsets,  2, -1);
-        sample4_1.w = SampleShadowOffset(shadowPos, offsets,  1, -2);
+        sample4_1.x = SampleShadowOffset(shadowPos, -2, -1);
+        sample4_1.y = SampleShadowOffset(shadowPos, -1, -2);
+        sample4_1.z = SampleShadowOffset(shadowPos,  2, -1);
+        sample4_1.w = SampleShadowOffset(shadowPos,  1, -2);
 
         half4 sample4_2;
-        sample4_2.x = SampleShadowOffset(shadowPos, offsets, -2, 1);
-        sample4_2.y = SampleShadowOffset(shadowPos, offsets, -1, 2);
-        sample4_2.z = SampleShadowOffset(shadowPos, offsets,  2, 1);
-        sample4_2.w = SampleShadowOffset(shadowPos, offsets,  1, 2);
+        sample4_2.x = SampleShadowOffset(shadowPos, -2, 1);
+        sample4_2.y = SampleShadowOffset(shadowPos, -1, 2);
+        sample4_2.z = SampleShadowOffset(shadowPos,  2, 1);
+        sample4_2.w = SampleShadowOffset(shadowPos,  1, 2);
 
         const half4 factors = vec4(26.0 / 273.0, 16.0 / 273.0, 7.0 / 273.0, 4.0 / 273.0);
         half average = sample41 * (41.0 / 273.0)
@@ -205,7 +181,7 @@ half SampleShadowFiltered(const vec4 shadowPos)
 
 /// Convert 4D-coordinate in shadow space to 4-UV used to sample shadow map
 #if URHO3D_MAX_SHADOW_CASCADES == 4
-    vec4 ShadowCoordToUV(const vec4 shadowPos[URHO3D_MAX_SHADOW_CASCADES], const float depth)
+    vec4 ShadowCoordToUV(vec4 shadowPos[URHO3D_MAX_SHADOW_CASCADES], float depth)
     {
         // If split contains depth, all further splits contain it too
         fixed4 splitSelector = vec4(lessThan(vec4(depth), cShadowSplits));
@@ -215,7 +191,7 @@ half SampleShadowFiltered(const vec4 shadowPos)
              + shadowPos[2] * splitSelector.z + shadowPos[3] * splitSelector.w;
     }
 #elif defined(URHO3D_LIGHT_POINT)
-    vec4 PointShadowCoordToUV(const vec3 shadowPos)
+    vec4 PointShadowCoordToUV(vec3 shadowPos)
     {
         vec3 uvDepth = DirectionToUV(shadowPos, cShadowCubeUVBias.xy);
         uvDepth.xy = uvDepth.xy * cShadowCubeAdjust.xy + cShadowCubeAdjust.zw;
@@ -229,7 +205,7 @@ half SampleShadowFiltered(const vec4 shadowPos)
 
 /// Convert position in world space to shadow UV
 #if defined(URHO3D_LIGHT_DIRECTIONAL) && URHO3D_MAX_SHADOW_CASCADES == 4
-    vec4 WorldSpaceToShadowUV(const vec4 worldPos, const float depth)
+    vec4 WorldSpaceToShadowUV(vec4 worldPos, float depth)
     {
         if (depth < cShadowSplits.x)
             return worldPos * cLightMatrices[0];

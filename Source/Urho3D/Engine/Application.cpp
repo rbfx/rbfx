@@ -86,7 +86,7 @@ int Application::Run()
         if (engineParameters_[EP_ENGINE_CLI_PARAMETERS].GetBool())
         {
             // Register engine command line arguments
-            Engine::DefineParameters(commandLine_, engineParameters_);
+            Engine::DefineParameters(commandLine_, commandLineParameters_);
         }
 #endif
 
@@ -103,29 +103,34 @@ int Application::Run()
             for (auto i = static_cast<int>(rawArguments.size() - 1); i >= 0; i--)
                 cliArgs.emplace_back(rawArguments[static_cast<unsigned>(i)].c_str());
 
-            try {
+            try
+            {
                 commandLine_.parse(cliArgs);
-            } catch(const CLI::ParseError &e) {
+            }
+            catch(const CLI::ParseError &e)
+            {
                 exitCode_ = commandLine_.exit(e);
                 return exitCode_;
             }
         }
 #endif
 
-        if (!engine_->Initialize(engineParameters_))
+        if (!engine_->Initialize(engineParameters_, commandLineParameters_))
         {
             ErrorExit();
+            SendEvent(E_APPLICATIONSTOPPED);
             return exitCode_;
         }
 
         Start();
+        SendEvent(E_APPLICATIONSTARTED);
+
         if (exitCode_ || engine_->IsExiting())
         {
             Stop();
+            SendEvent(E_APPLICATIONSTOPPED);
             return exitCode_;
         }
-
-        SendEvent(E_APPLICATIONSTARTED);
 
         // Platforms other than iOS/tvOS and Emscripten run a blocking main loop
 #if !defined(IOS) && !defined(TVOS) && !defined(__EMSCRIPTEN__)
@@ -133,6 +138,7 @@ int Application::Run()
             engine_->RunFrame();
 
         Stop();
+        SendEvent(E_APPLICATIONSTOPPED);
 
         // iOS/tvOS will setup a timer for running animation frames so eg. Game Center can run. In this case we do not
         // support calling the Stop() function, as the application will never stop manually

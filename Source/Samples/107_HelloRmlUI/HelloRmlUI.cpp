@@ -29,6 +29,7 @@
 #include <Urho3D/Graphics/Technique.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Input/Input.h>
+#include <Urho3D/RenderPipeline/ShaderConsts.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/RmlUI/RmlUI.h>
 #include <Urho3D/RmlUI/RmlCanvasComponent.h>
@@ -133,7 +134,7 @@ void HelloRmlUI::InitWindow()
     // Create a material that will display UI texture on a cube.
     material_ = MakeShared<Material>(context_);
     material_->SetTechnique(0, GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/DiffUnlit.xml"));
-    material_->SetTexture(TU_DIFFUSE, texture_);
+    material_->SetTexture(ShaderResources::Albedo, texture_);
 
     // Create a component that sets up UI rendering.
     auto* renderer = boxNode->CreateComponent<RmlCanvasComponent>();

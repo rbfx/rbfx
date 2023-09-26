@@ -26,30 +26,26 @@
 #include "../Core/Profiler.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Texture2D.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
 
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
 
-Texture2D::Texture2D(Context* context) :
-    Texture(context)
+Texture2D::Texture2D(Context* context)
+    : Texture(context)
 {
-#ifdef URHO3D_OPENGL
-    target_ = GL_TEXTURE_2D;
-#endif
 }
 
 Texture2D::~Texture2D()
 {
-    Release();
 }
 
 void Texture2D::RegisterObject(Context* context)
@@ -59,17 +55,11 @@ void Texture2D::RegisterObject(Context* context)
 
 bool Texture2D::BeginLoad(Deserializer& source)
 {
-    // In headless mode, do not actually load the texture, just return success
-    if (!graphics_)
-        return true;
+    auto graphics = GetSubsystem<Graphics>();
 
-    // If device is lost, retry later
-    if (graphics_->IsDeviceLost())
-    {
-        URHO3D_LOGWARNING("Texture load while device is lost");
-        dataPending_ = true;
+    // In headless mode, do not actually load the texture, just return success
+    if (!graphics)
         return true;
-    }
 
     // Load the image data for EndLoad()
     loadImage_ = MakeShared<Image>(context_);
@@ -94,7 +84,7 @@ bool Texture2D::BeginLoad(Deserializer& source)
 bool Texture2D::EndLoad()
 {
     // In headless mode, do not actually load the texture, just return success
-    if (!graphics_ || graphics_->IsDeviceLost())
+    if (!renderDevice_)
         return true;
 
     // If over the texture budget, see if materials can be freed to allow textures to be freed
@@ -109,104 +99,54 @@ bool Texture2D::EndLoad()
     return success;
 }
 
-bool Texture2D::SetSize(int width, int height, unsigned format, TextureUsage usage, int multiSample, bool autoResolve)
+bool Texture2D::SetSize(int width, int height, TextureFormat format, TextureFlags flags, int multiSample)
 {
-    if (width <= 0 || height <= 0)
-    {
-        URHO3D_LOGERROR("Zero or negative texture dimensions");
-        return false;
-    }
+    RawTextureParams params;
+    params.type_ = TextureType::Texture2D;
+    params.format_ = format;
+    params.size_ = {width, height, 1};
+    params.numLevels_ = requestedLevels_;
+    params.flags_ = flags;
+    params.multiSample_ = multiSample;
+    if (requestedSRGB_)
+        params.format_ = SetTextureFormatSRGB(params.format_);
 
-    multiSample = Clamp(multiSample, 1, 16);
-    if (multiSample == 1)
-        autoResolve = false;
-    else if (multiSample > 1 && usage < TEXTURE_RENDERTARGET)
-    {
-        URHO3D_LOGERROR("Multisampling is only supported for rendertarget or depth-stencil textures");
-        return false;
-    }
-
-    // Disable mipmaps if multisample & custom resolve
-    if (multiSample > 1 && autoResolve == false)
-        requestedLevels_ = 1;
-
-    // Delete the old rendersurface if any
-    renderSurface_.Reset();
-
-    usage_ = usage;
-
-    if (usage >= TEXTURE_RENDERTARGET)
-    {
-        renderSurface_ = new RenderSurface(this);
-
-        // Clamp mode addressing by default and nearest filtering
-        addressModes_[COORD_U] = ADDRESS_CLAMP;
-        addressModes_[COORD_V] = ADDRESS_CLAMP;
-        filterMode_ = FILTER_NEAREST;
-    }
-
-    if (usage == TEXTURE_RENDERTARGET)
-        SubscribeToEvent(E_RENDERSURFACEUPDATE, URHO3D_HANDLER(Texture2D, HandleRenderSurfaceUpdate));
-    else
-        UnsubscribeFromEvent(E_RENDERSURFACEUPDATE);
-
-    width_ = width;
-    height_ = height;
-    format_ = format;
-    depth_ = 1;
-    multiSample_ = multiSample;
-    autoResolve_ = autoResolve;
-
-    return Create();
+    return Create(params);
 }
 
-bool Texture2D::GetImage(Image& image) const
+bool Texture2D::SetData(unsigned level, int x, int y, int width, int height, const void* data)
 {
-#ifdef URHO3D_D3D11
-    if (format_ == DXGI_FORMAT_B8G8R8X8_UNORM)
-    {
-        image.SetSize(width_, height_, 4);
-        unsigned char* imageData = image.GetData();
-        GetData(0, imageData);
-        const unsigned numPixels = width_ * height_;
-        for (unsigned i = 0; i < numPixels; ++i)
-        {
-            ea::swap(imageData[i * 4], imageData[i * 4 + 2]);
-            imageData[i * 4 + 3] = 255;
-        }
-        return true;
-    }
-#endif
-
-    if (format_ != Graphics::GetRGBAFormat() && format_ != Graphics::GetRGBFormat())
-    {
-        URHO3D_LOGERROR("Unsupported texture format, can not convert to Image");
-        return false;
-    }
-
-    image.SetSize(width_, height_, GetComponents());
-    if (!GetData(0, image.GetData()))
-        return false;
+    Update(level, {x, y, 0}, {width, height, 1}, 0, data);
     return true;
 }
 
-SharedPtr<Image> Texture2D::GetImage() const
+bool Texture2D::SetData(Image* image)
+{
+    RawTextureParams params;
+    params.type_ = TextureType::Texture2D;
+    params.numLevels_ = requestedLevels_;
+    if (!CreateForImage(params, image))
+        return false;
+
+    return UpdateFromImage(0, image);
+}
+
+bool Texture2D::GetData(unsigned level, void* dest)
+{
+    return Read(0, level, dest, M_MAX_UNSIGNED);
+}
+
+bool Texture2D::GetImage(Image& image)
+{
+    return ReadToImage(0, 0, &image);
+}
+
+SharedPtr<Image> Texture2D::GetImage()
 {
     auto rawImage = MakeShared<Image>(context_);
     if (!GetImage(*rawImage))
         return nullptr;
     return rawImage;
-}
-
-void Texture2D::HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData)
-{
-    if (renderSurface_ && (renderSurface_->GetUpdateMode() == SURFACE_UPDATEALWAYS || renderSurface_->IsUpdateQueued()))
-    {
-        auto* renderer = GetSubsystem<Renderer>();
-        if (renderer)
-            renderer->QueueRenderSurface(renderSurface_);
-        renderSurface_->ResetUpdateQueued();
-    }
 }
 
 }

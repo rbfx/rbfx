@@ -104,7 +104,7 @@ struct ResourceRefStringCaster
 
     ResourceRef FromArchive(Archive& archive, const char* name, const ea::string& value) const
     {
-        const ea::vector<ea::string> chunks = value.split(';');
+        const ea::vector<ea::string> chunks = value.split(';', true);
         if (chunks.size() != 2)
             throw ArchiveException("Unexpected format of ResourceRef '{}/{}'", archive.GetCurrentBlockPath(), name);
 

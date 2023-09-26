@@ -72,6 +72,10 @@ public:
     bool Exists(const FileIdentifier& fileName) const;
     /// Open file in the virtual file system. Returns null if file not found.
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) const;
+    /// Read text file from the virtual file system. Returns empty string if file not found.
+    ea::string ReadAllText(const FileIdentifier& fileName) const;
+    /// Write text file to the virtual file system. Returns true if file is written successfully.
+    bool WriteAllText(const FileIdentifier& fileName, const ea::string& text) const;
     /// Return modification time. Return 0 if not supported or file doesn't exist.
     FileTime GetLastModifiedTime(const FileIdentifier& fileName, bool creationIsModification) const;
     /// Return absolute file name for *existing* identifier in this mount point, if supported.

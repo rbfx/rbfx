@@ -33,6 +33,7 @@
 #include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/Renderer.h"
 #include "../IO/Log.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../SystemUI/SystemUI.h"
 #include "../UI/UI.h"
 
@@ -50,14 +51,11 @@ static const char* qualityTexts[] =
     "High"
 };
 
-static const char* shadowQualityTexts[] =
-{
-    "16bit Low",
-    "24bit Low",
-    "16bit High",
-    "24bit High",
-    "VSM",
-    "Blur VSM"
+static const char* filterModeTexts[] = {
+    "Nearest",
+    "Bilinear",
+    "Trilinear",
+    "Anisotropic",
 };
 
 static const unsigned FPS_UPDATE_INTERVAL_MS = 500;
@@ -98,11 +96,6 @@ void DebugHud::CycleMode()
     }
 }
 
-void DebugHud::SetUseRendererStats(bool enable)
-{
-    useRendererStats_ = enable;
-}
-
 void DebugHud::Toggle(DebugHudModeFlags mode)
 {
     SetMode(GetMode() ^ mode);
@@ -138,8 +131,10 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
     if (mode == DEBUGHUD_SHOW_NONE)
         return;
 
-    Renderer* renderer = GetSubsystem<Renderer>();
-    Graphics* graphics = GetSubsystem<Graphics>();
+    auto renderer = GetSubsystem<Renderer>();
+    auto graphics = GetSubsystem<Graphics>();
+    auto renderDevice = GetSubsystem<RenderDevice>();
+
     if (mode & DEBUGHUD_SHOW_STATS)
     {
         const FrameStatistics& stats = renderer->GetFrameStats();
@@ -152,35 +147,25 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
             fpsTimer_.Reset();
         }
 
-        unsigned primitives, batches;
-        if (!useRendererStats_)
-        {
-            primitives = graphics->GetNumPrimitives();
-            batches = graphics->GetNumBatches();
-        }
-        else
-        {
-            primitives = context_->GetSubsystem<Renderer>()->GetNumPrimitives();
-            batches = context_->GetSubsystem<Renderer>()->GetNumBatches();
-        }
-
         numChangedAnimations_[1] += stats.changedAnimations_;
 
         float left_offset = ui::GetCursorPos().x;
 
         ui::Text("FPS %d", fps_);
         ui::SetCursorPosX(left_offset);
-        ui::Text("Triangles %u", primitives);
+        ui::Text("Triangles %u", renderDevice->GetMaxStats().numPrimitives_);
         ui::SetCursorPosX(left_offset);
-        ui::Text("Batches %u", batches);
+        ui::Text("Draws %u", renderDevice->GetMaxStats().numDraws_);
+        ui::SetCursorPosX(left_offset);
+        ui::Text("Dispatches %u", renderDevice->GetMaxStats().numDispatches_);
         ui::SetCursorPosX(left_offset);
         ui::Text("Views %u", renderer->GetNumViews());
         ui::SetCursorPosX(left_offset);
-        ui::Text("Lights %u", renderer->GetNumLights(true));
+        ui::Text("Lights %u", renderer->GetNumLights());
         ui::SetCursorPosX(left_offset);
-        ui::Text("Shadowmaps %u", renderer->GetNumShadowMaps(true));
+        ui::Text("Shadowmaps %u", renderer->GetNumShadowMaps());
         ui::SetCursorPosX(left_offset);
-        ui::Text("Occluders %u", renderer->GetNumOccluders(true));
+        ui::Text("Occluders %u", renderer->GetNumOccluders());
         ui::SetCursorPosX(left_offset);
         ui::Text("Animations %u(%u)", stats.animations_, numChangedAnimations_[0]);
         ui::SetCursorPosX(left_offset);
@@ -194,19 +179,14 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
 
     if (mode & DEBUGHUD_SHOW_MODE)
     {
+        // TODO: Add more stats?
         const ImGuiStyle& style = ui::GetStyle();
         const ImGuiContext& g = *ui::GetCurrentContext();
         ui::SetCursorPos({style.WindowPadding.x, ui::GetWindowSize().y - ui::GetStyle().WindowPadding.y - g.Font->FontSize});
-        ui::Text("API:%s | Tex:%s | Mat:%s | Spec:%s | Shadows:%s | Size:%i | Quality:%s | Occlusion:%s | Instancing:%s",
+        ui::Text("API:%s | Tex:%s | Filter:%s",
             graphics->GetApiName().c_str(),
             qualityTexts[renderer->GetTextureQuality()],
-            qualityTexts[renderer->GetMaterialQuality()],
-            renderer->GetSpecularLighting() ? "On" : "Off",
-            renderer->GetDrawShadows() ? "On" : "Off",
-            renderer->GetShadowMapSize(),
-            shadowQualityTexts[renderer->GetShadowQuality()],
-            renderer->GetMaxOccluderTriangles() > 0 ? "On" : "Off",
-            renderer->GetDynamicInstancing() ? "On" : "Off");
+            filterModeTexts[renderer->GetTextureFilterMode()]);
     }
 }
 

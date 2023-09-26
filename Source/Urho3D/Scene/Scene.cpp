@@ -125,8 +125,10 @@ void Scene::SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSa
 {
     Node::SerializeInBlock(archive, serializeTemporary, saveFlags);
 
-    fileName_ = archive.GetName();
-    checksum_ = archive.GetChecksum();
+    if (!archive.GetName().empty())
+        fileName_ = archive.GetName();
+    if (archive.GetChecksum() != 0)
+        checksum_ = archive.GetChecksum();
 }
 
 void Scene::SerializeInBlock(Archive& archive)

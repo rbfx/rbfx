@@ -118,6 +118,7 @@ bool IsShadowCasterVisible(const BoundingBox& lightSpaceBoundingBox, Camera* sha
 DrawableProcessorPass::DrawableProcessorPass(RenderPipelineInterface* renderPipeline, DrawableProcessorPassFlags flags,
     unsigned deferredPassIndex, unsigned unlitBasePassIndex, unsigned litBasePassIndex, unsigned lightPassIndex)
     : Object(renderPipeline->GetContext())
+    , renderPipeline_(renderPipeline)
     , flags_(flags)
     , useBatchCallback_(IsFlagSet(DrawableProcessorPassFlag::BatchCallback))
     , deferredPassIndex_(deferredPassIndex)
@@ -154,6 +155,7 @@ DrawableProcessorPass::AddBatchResult DrawableProcessorPass::AddBatch(unsigned t
 void DrawableProcessorPass::OnUpdateBegin(const CommonFrameInfo& frameInfo)
 {
     geometryBatches_.Clear();
+    linearColorSpace_ = renderPipeline_->IsLinearColorSpace();
 }
 
 DrawableProcessor::DrawableProcessor(RenderPipelineInterface* renderPipeline)
@@ -231,6 +233,7 @@ void DrawableProcessor::OnCollectStatistics(RenderPipelineStats& stats)
 {
     stats.numOccluders_ += sortedOccluders_.size();
     stats.numLights_ += lights_.size();
+    stats.numGeometries_ += geometries_.Size();
     stats.numShadowedLights_ += numShadowedLights_;
 }
 
@@ -279,15 +282,25 @@ void DrawableProcessor::ProcessOccluders(const ea::vector<Drawable*>& occluders,
     ea::sort(sortedOccluders_.begin(), sortedOccluders_.end());
 }
 
-void DrawableProcessor::ProcessVisibleDrawables(const ea::vector<Drawable*>& drawables, OcclusionBuffer* occlusionBuffer)
+void DrawableProcessor::ProcessVisibleDrawables(const ea::vector<Drawable*>& drawables, ea::span<OcclusionBuffer*> occlusionBuffers)
 {
     URHO3D_PROFILE("ProcessVisibleDrawables");
 
     ForEachParallel(workQueue_, drawables,
         [&](unsigned /*index*/, Drawable* drawable)
     {
-        if (occlusionBuffer && drawable->IsOccludee() && !occlusionBuffer->IsVisible(drawable->GetWorldBoundingBox()))
-            return;
+        // do occlusion test for occludees if possible
+        if (!occlusionBuffers.empty() && drawable->IsOccludee())
+        {
+            // check for visible
+            bool anyPass = false;
+            // may have multiple buffers in stereo and possibly for other cases such as lightspace shadowcaster occlusion, likely not applicable here
+            for (auto o : occlusionBuffers)
+                anyPass |= o->IsVisible(drawable->GetWorldBoundingBox());
+
+            if (!anyPass)
+                return;
+        }
 
         ProcessVisibleDrawable(drawable);
     });
@@ -405,8 +418,8 @@ void DrawableProcessor::CheckMaterialForAuxiliaryRenderSurfaces(Material* materi
     for (const auto& item : material->GetTextures())
     {
         // Skip if not render targets
-        Texture* texture = item.second;
-        if (!texture || texture->GetUsage() != TEXTURE_RENDERTARGET)
+        Texture* texture = item.second.value_;
+        if (!texture || !texture->IsRenderTarget())
             continue;
 
         // Have to check cube & 2D textures separately
@@ -480,7 +493,7 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
         for (unsigned sourceBatchIndex = 0; sourceBatchIndex < sourceBatches.size(); ++sourceBatchIndex)
         {
             const SourceBatch& sourceBatch = sourceBatches[sourceBatchIndex];
-            if (!sourceBatch.geometry_ || sourceBatch.numWorldTransforms_ == 0)
+            if (!sourceBatch.geometry_ || sourceBatch.geometry_->IsEmpty() || sourceBatch.numWorldTransforms_ == 0)
                 continue;
 
             // Find current technique
@@ -543,7 +556,6 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
                 {
                     lightAccumulator.reflectionProbes_[0] = probe0.data_;
 
-#ifdef DESKTOP_GRAPHICS
                     if (reflectionMode >= ReflectionMode::BlendProbes && probe1.data_)
                     {
                         lightAccumulator.reflectionProbes_[1] = probe1.data_;
@@ -555,7 +567,6 @@ void DrawableProcessor::ProcessVisibleDrawable(Drawable* drawable)
                     {
                         lightAccumulator.reflectionProbesBlendFactor_ = 1.0f - probe0.volume_;
                     }
-#endif
                 }
 
             }

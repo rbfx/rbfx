@@ -154,11 +154,12 @@ const SpecConstantOpcodeEntry kOpSpecConstantOpcodes[] = {
     CASE(InBoundsAccessChain),
     CASE(PtrAccessChain),
     CASE(InBoundsPtrAccessChain),
-    CASE(CooperativeMatrixLengthNV)
+    CASE(CooperativeMatrixLengthNV),
+    CASE(CooperativeMatrixLengthKHR)
 };
 
 // The 60 is determined by counting the opcodes listed in the spec.
-static_assert(60 == sizeof(kOpSpecConstantOpcodes)/sizeof(kOpSpecConstantOpcodes[0]),
+static_assert(61 == sizeof(kOpSpecConstantOpcodes)/sizeof(kOpSpecConstantOpcodes[0]),
               "OpSpecConstantOp opcode table is incomplete");
 #undef CASE
 // clang-format on
@@ -183,7 +184,7 @@ CapabilitySet AssemblyGrammar::filterCapsAgainstTargetEnv(
       // spvOperandTableValueLookup() filters capabilities internally
       // according to the current target environment by itself. So we
       // should be safe to add this capability if the lookup succeeds.
-      cap_set.Add(cap_array[i]);
+      cap_set.insert(cap_array[i]);
     }
   }
   return cap_set;

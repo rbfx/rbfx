@@ -26,6 +26,7 @@
 #include "../Audio/SoundSource.h"
 #include "../Audio/Sound.h"
 #include "../UI/Sprite.h"
+#include "../Scene/Scene.h"
 
 namespace Urho3D
 {

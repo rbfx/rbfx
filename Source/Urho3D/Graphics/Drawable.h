@@ -116,7 +116,11 @@ struct FrameInfo
     /// Scene and pre-fetched Scene components.
     /// @{
     Scene* scene_{};
+    /// Node to be used as a point-of-view reference, typically the camera's node.
+    Node* viewReferenceNode_{};
     Camera* camera_{};
+    /// Optional list of additional cameras that may be attached, such as eyes, etc.
+    ea::array<Camera*, 2> additionalCameras_{};
     Octree* octree_{};
     ReflectionProbeManager* reflectionProbeManager_{};
     /// @}

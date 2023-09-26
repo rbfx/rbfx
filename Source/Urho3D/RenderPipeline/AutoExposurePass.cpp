@@ -26,6 +26,8 @@
 #include "../Graphics/Texture2D.h"
 #include "../RenderPipeline/RenderBufferManager.h"
 #include "../RenderPipeline/AutoExposurePass.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
 
 #include "../DebugNew.h"
 
@@ -37,6 +39,9 @@ AutoExposurePass::AutoExposurePass(
     : PostProcessPass(renderPipeline, renderBufferManager)
 {
     InitializeTextures();
+
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    renderDevice->OnDeviceRestored.Subscribe(this, [&] { isAdaptedLuminanceInitialized_ = false; });
 }
 
 void AutoExposurePass::SetSettings(const AutoExposurePassSettings& settings)
@@ -64,8 +69,8 @@ void AutoExposurePass::InitializeTextures()
     const RenderBufferFlags flagFixedBilinear = RenderBufferFlag::BilinearFiltering | RenderBufferFlag::FixedTextureSize;
     const RenderBufferFlags flagFixedNearest = RenderBufferFlag::FixedTextureSize;
     const RenderBufferFlags flagFixedNearestPersistent = RenderBufferFlag::FixedTextureSize | RenderBufferFlag::Persistent;
-    const auto rgbaFormat = Graphics::GetRGBAFloat16Format();
-    const auto rgFormat = Graphics::GetRGFloat16Format();
+    const auto rgbaFormat = TextureFormat::TEX_FORMAT_RGBA16_FLOAT;
+    const auto rgFormat = TextureFormat::TEX_FORMAT_RG16_FLOAT;
 
     textures_.color128_ = renderBufferManager_->CreateColorBuffer({ rgbaFormat, 1, flagFixedBilinear }, { 128, 128 });
     textures_.lum64_ = renderBufferManager_->CreateColorBuffer({ rgFormat, 1, flagFixedBilinear }, { 64, 64 });
@@ -78,24 +83,39 @@ void AutoExposurePass::InitializeTextures()
 
 void AutoExposurePass::InitializeStates()
 {
+    static const NamedSamplerStateDesc lumSamplers[] = {{ShaderResources::Albedo, SamplerStateDesc::Bilinear()}};
+    static const NamedSamplerStateDesc adaptedLumSamplers[] = {
+        {ShaderResources::Albedo, SamplerStateDesc::Bilinear()},
+        {ShaderResources::Normal, SamplerStateDesc::Bilinear()},
+    };
+    static const NamedSamplerStateDesc applySamplers[] = {
+        {ShaderResources::Albedo, SamplerStateDesc::Bilinear()},
+        {ShaderResources::Normal, SamplerStateDesc::Bilinear()},
+    };
+
     pipelineStates_ = CachedStates{};
-    pipelineStates_->lum64_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE64");
-    pipelineStates_->lum16_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE16");
-    pipelineStates_->lum4_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE4");
-    pipelineStates_->lum1_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE1");
-    pipelineStates_->adaptedLum_ = renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "ADAPTLUMINANCE");
+    pipelineStates_->lum64_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE64", lumSamplers);
+    pipelineStates_->lum16_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE16", lumSamplers);
+    pipelineStates_->lum4_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE4", lumSamplers);
+    pipelineStates_->lum1_ =
+        renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_AutoExposure", "LUMINANCE1", lumSamplers);
+    pipelineStates_->adaptedLum_ = renderBufferManager_->CreateQuadPipelineState(
+        BLEND_REPLACE, "v2/P_AutoExposure", "ADAPTLUMINANCE", adaptedLumSamplers);
 
     ea::string exposureDefines = "EXPOSURE ";
     if (settings_.autoExposure_)
         exposureDefines += "AUTOEXPOSURE ";
 
     pipelineStates_->autoExposure_  = renderBufferManager_->CreateQuadPipelineState(
-        BLEND_REPLACE, "v2/P_AutoExposure", exposureDefines);
+        BLEND_REPLACE, "v2/P_AutoExposure", exposureDefines, applySamplers);
 }
 
 void AutoExposurePass::EvaluateDownsampledColorBuffer()
 {
-    Texture2D* viewportTexture = renderBufferManager_->GetSecondaryColorTexture();
+    RawTexture* viewportTexture = renderBufferManager_->GetSecondaryColorTexture();
 
     renderBufferManager_->SetRenderTargets(nullptr, { textures_.color128_ });
     renderBufferManager_->DrawTexture("Downsample color buffer", viewportTexture);
@@ -104,7 +124,7 @@ void AutoExposurePass::EvaluateDownsampledColorBuffer()
 void AutoExposurePass::EvaluateLuminance()
 {
     ShaderResourceDesc shaderResources[1];
-    shaderResources[0].unit_ = TU_DIFFUSE;
+    shaderResources[0].name_ = ShaderResources::Albedo;
     ShaderParameterDesc shaderParameters[1];
     shaderParameters[0].name_ = "InputInvSize";
 
@@ -113,27 +133,27 @@ void AutoExposurePass::EvaluateLuminance()
     drawParams.parameters_ = shaderParameters;
     drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
 
-    shaderResources[0].texture_ = textures_.color128_->GetTexture2D();
+    shaderResources[0].texture_ = textures_.color128_->GetTexture();
     shaderParameters[0].value_ = Vector2::ONE / 128.0f;
-    drawParams.pipelineState_ = pipelineStates_->lum64_;
+    drawParams.pipelineStateId_ = pipelineStates_->lum64_;
     renderBufferManager_->SetRenderTargets(nullptr, { textures_.lum64_ });
     renderBufferManager_->DrawQuad("Downsample luminosity buffer", drawParams);
 
-    shaderResources[0].texture_ = textures_.lum64_->GetTexture2D();
+    shaderResources[0].texture_ = textures_.lum64_->GetTexture();
     shaderParameters[0].value_ = Vector2::ONE / 64.0f;
-    drawParams.pipelineState_ = pipelineStates_->lum16_;
+    drawParams.pipelineStateId_ = pipelineStates_->lum16_;
     renderBufferManager_->SetRenderTargets(nullptr, { textures_.lum16_ });
     renderBufferManager_->DrawQuad("Downsample luminosity buffer", drawParams);
 
-    shaderResources[0].texture_ = textures_.lum16_->GetTexture2D();
+    shaderResources[0].texture_ = textures_.lum16_->GetTexture();
     shaderParameters[0].value_ = Vector2::ONE / 16.0f;
-    drawParams.pipelineState_ = pipelineStates_->lum4_;
+    drawParams.pipelineStateId_ = pipelineStates_->lum4_;
     renderBufferManager_->SetRenderTargets(nullptr, { textures_.lum4_ });
     renderBufferManager_->DrawQuad("Downsample luminosity buffer", drawParams);
 
-    shaderResources[0].texture_ = textures_.lum4_->GetTexture2D();
+    shaderResources[0].texture_ = textures_.lum4_->GetTexture();
     shaderParameters[0].value_ = Vector2::ONE / 4.0f;
-    drawParams.pipelineState_ = pipelineStates_->lum1_;
+    drawParams.pipelineStateId_ = pipelineStates_->lum1_;
     renderBufferManager_->SetRenderTargets(nullptr, { textures_.lum1_ });
     renderBufferManager_->DrawQuad("Downsample luminosity buffer", drawParams);
 }
@@ -142,11 +162,11 @@ void AutoExposurePass::EvaluateAdaptedLuminance()
 {
     renderBufferManager_->SetRenderTargets(nullptr, { textures_.prevAdaptedLum_ });
     RenderBuffer* sourceBuffer = isAdaptedLuminanceInitialized_ ? textures_.adaptedLum_ : textures_.lum1_;
-    renderBufferManager_->DrawTexture("Store previous luminance", sourceBuffer->GetTexture2D());
+    renderBufferManager_->DrawTexture("Store previous luminance", sourceBuffer->GetTexture());
 
     const ShaderResourceDesc shaderResources[] = {
-        { TU_DIFFUSE, textures_.prevAdaptedLum_->GetTexture2D() },
-        { TU_NORMAL, textures_.lum1_->GetTexture2D() }
+        { ShaderResources::Albedo, textures_.prevAdaptedLum_->GetTexture() },
+        { ShaderResources::Normal, textures_.lum1_->GetTexture() }
     };
     const ShaderParameterDesc shaderParameters[] = {
         { "AdaptRate", settings_.adaptRate_ },
@@ -155,7 +175,7 @@ void AutoExposurePass::EvaluateAdaptedLuminance()
     DrawQuadParams drawParams;
     drawParams.resources_ = shaderResources;
     drawParams.parameters_ = shaderParameters;
-    drawParams.pipelineState_ = pipelineStates_->adaptedLum_;
+    drawParams.pipelineStateId_ = pipelineStates_->adaptedLum_;
     drawParams.clipToUVOffsetAndScale_ = renderBufferManager_->GetDefaultClipToUVSpaceOffsetAndScale();
     renderBufferManager_->SetRenderTargets(nullptr, { textures_.adaptedLum_ });
     renderBufferManager_->DrawQuad("Adapt luminosity", drawParams);
@@ -168,9 +188,6 @@ void AutoExposurePass::Execute(Camera* camera)
     if (!pipelineStates_)
         InitializeStates();
 
-    if (!pipelineStates_->IsValid())
-        return;
-
     renderBufferManager_->SwapColorBuffers(false);
 
     if (settings_.autoExposure_)
@@ -181,7 +198,7 @@ void AutoExposurePass::Execute(Camera* camera)
     }
 
     const ShaderResourceDesc shaderResources[] = {
-        { TU_NORMAL, settings_.autoExposure_ ? textures_.adaptedLum_->GetTexture2D() : nullptr }
+        { ShaderResources::Normal, settings_.autoExposure_ ? textures_.adaptedLum_->GetTexture() : nullptr }
     };
     const ShaderParameterDesc shaderParameters[] = {
         { "MinMaxExposure", Vector2(settings_.minExposure_, settings_.maxExposure_) },

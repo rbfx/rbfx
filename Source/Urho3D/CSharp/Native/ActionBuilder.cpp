@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
+#if URHO3D_ACTIONS
 #include <Urho3D/Script/Script.h>
 #include <Urho3D/Actions/ActionBuilder.h>
 
@@ -115,3 +115,4 @@ extern "C"
 }
 
 } // namespace Urho3D
+#endif  // URHO3D_ACTIONS

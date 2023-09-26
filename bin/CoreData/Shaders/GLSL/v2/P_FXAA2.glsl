@@ -11,7 +11,8 @@
 #include "_VertexLayout.glsl"
 #include "_VertexTransform.glsl"
 #include "_VertexScreenPos.glsl"
-#include "_Samplers.glsl"
+#include "_DefaultSamplers.glsl"
+#include "_SamplerUtils.glsl"
 
 #ifdef URHO3D_PIXEL_SHADER
     UNIFORM_BUFFER_BEGIN(6, Custom)
@@ -40,11 +41,11 @@ void main()
 
     vec2 posOffset = cGBufferInvSize.xy * cFXAAParams.x;
 
-    vec3 rgbNW = texture2D(sDiffMap, vScreenPos + vec2(-posOffset.x, -posOffset.y)).rgb;
-    vec3 rgbNE = texture2D(sDiffMap, vScreenPos + vec2(posOffset.x, -posOffset.y)).rgb;
-    vec3 rgbSW = texture2D(sDiffMap, vScreenPos + vec2(-posOffset.x, posOffset.y)).rgb;
-    vec3 rgbSE = texture2D(sDiffMap, vScreenPos + vec2(posOffset.x, posOffset.y)).rgb;
-    vec3 rgbM  = texture2D(sDiffMap, vScreenPos).rgb;
+    vec3 rgbNW = texture(sAlbedo, vScreenPos + vec2(-posOffset.x, -posOffset.y)).rgb;
+    vec3 rgbNE = texture(sAlbedo, vScreenPos + vec2(posOffset.x, -posOffset.y)).rgb;
+    vec3 rgbSW = texture(sAlbedo, vScreenPos + vec2(-posOffset.x, posOffset.y)).rgb;
+    vec3 rgbSE = texture(sAlbedo, vScreenPos + vec2(posOffset.x, posOffset.y)).rgb;
+    vec3 rgbM  = texture(sAlbedo, vScreenPos).rgb;
 
     vec3 luma = vec3(0.299, 0.587, 0.114);
     float lumaNW = dot(rgbNW, luma);
@@ -73,11 +74,11 @@ void main()
         dir *= cFXAAParams.z;
 
         vec3 rgbA = (1.0/2.0) * (
-            texture2D(sDiffMap, vScreenPos + dir * (1.0/3.0 - 0.5)).xyz +
-            texture2D(sDiffMap, vScreenPos + dir * (2.0/3.0 - 0.5)).xyz);
+            texture(sAlbedo, vScreenPos + dir * (1.0/3.0 - 0.5)).xyz +
+            texture(sAlbedo, vScreenPos + dir * (2.0/3.0 - 0.5)).xyz);
         vec3 rgbB = rgbA * (1.0/2.0) + (1.0/4.0) * (
-            texture2D(sDiffMap, vScreenPos + dir * (0.0/3.0 - 0.5)).xyz +
-            texture2D(sDiffMap, vScreenPos + dir * (3.0/3.0 - 0.5)).xyz);
+            texture(sAlbedo, vScreenPos + dir * (0.0/3.0 - 0.5)).xyz +
+            texture(sAlbedo, vScreenPos + dir * (3.0/3.0 - 0.5)).xyz);
         float lumaB = dot(rgbB, luma);
 
         vec3 rgbOut;

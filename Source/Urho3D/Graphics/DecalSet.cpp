@@ -25,7 +25,6 @@
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../Graphics/AnimatedModel.h"
-#include "../Graphics/Batch.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/DecalSet.h"
 #include "../Graphics/Geometry.h"
@@ -206,6 +205,9 @@ DecalSet::DecalSet(Context* context) :
     batches_.resize(1);
     batches_[0].geometry_ = geometry_;
     batches_[0].geometryType_ = GEOM_STATIC_NOINSTANCING;
+
+    vertexBuffer_->SetDebugName("DecalSet Geometry");
+    indexBuffer_->SetDebugName("DecalSet Geometry");
 }
 
 DecalSet::~DecalSet() = default;
@@ -1072,8 +1074,8 @@ void DecalSet::UpdateBuffers()
     geometry_->SetVertexBuffer(0, vertexBuffer_);
     geometry_->SetDrawRange(TRIANGLE_LIST, 0, numIndices_, 0, numVertices_);
 
-    float* vertices = numVertices_ ? (float*)vertexBuffer_->Lock(0, numVertices_) : nullptr;
-    unsigned short* indices = numIndices_ ? (unsigned short*)indexBuffer_->Lock(0, numIndices_) : nullptr;
+    float* vertices = numVertices_ ? (float*)vertexBuffer_->Map() : nullptr;
+    unsigned short* indices = numIndices_ ? (unsigned short*)indexBuffer_->Map() : nullptr;
 
     if (vertices && indices)
     {
@@ -1113,9 +1115,9 @@ void DecalSet::UpdateBuffers()
         }
     }
 
-    vertexBuffer_->Unlock();
+    vertexBuffer_->Unmap();
     vertexBuffer_->ClearDataLost();
-    indexBuffer_->Unlock();
+    indexBuffer_->Unmap();
     indexBuffer_->ClearDataLost();
     bufferDirty_ = false;
 }

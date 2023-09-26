@@ -86,7 +86,7 @@ SharedPtr<Context> CreateCompleteContext()
     parameters[EP_LOG_QUIET] = true;
     parameters[EP_RESOURCE_PATHS] = "CoreData;Data";
     parameters[EP_RESOURCE_PREFIX_PATHS] = Format("{};{}", exeDir, GetParentPath(exeDir));
-    const bool engineInitialized = engine->Initialize(parameters);
+    const bool engineInitialized = engine->Initialize(parameters, {});
 
     engine->SubscribeToEvent(E_LOGMESSAGE, PrintError);
     REQUIRE(engineInitialized);

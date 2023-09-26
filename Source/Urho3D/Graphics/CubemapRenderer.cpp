@@ -24,13 +24,16 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/Camera.h"
-#include "../Graphics/ComputeDevice.h"
 #include "../Graphics/CubemapRenderer.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/TextureCube.h"
 #include "../RenderPipeline/RenderPipeline.h"
+#include "../RenderAPI/DrawCommandQueue.h"
+#include "../RenderAPI/RenderContext.h"
+#include "../RenderAPI/RenderDevice.h"
+#include "../RenderAPI/RenderScope.h"
 #include "../Scene/Node.h"
 
 #include <EASTL/fixed_vector.h>
@@ -49,6 +52,19 @@ Quaternion faceRotations[MAX_CUBEMAP_FACES] = {
     Quaternion(0, 0, 0),
     Quaternion(0, 180, 0),
 };
+
+ea::span<const unsigned> GetRayCounts(unsigned numLevels)
+{
+    static const unsigned rayCounts[]{1, 8, 16};
+    static const unsigned rayCounts128[]{1, 8, 16, 16, 16, 16, 32, 32};
+    static const unsigned rayCounts256[]{1, 8, 16, 16, 16, 16, 16, 32, 32};
+    if (numLevels == 7)
+        return rayCounts128;
+    else if (numLevels == 8)
+        return rayCounts256;
+    else
+        return rayCounts;
+}
 
 }
 
@@ -112,9 +128,10 @@ void CubemapRenderer::DisconnectViewportsFromTexture(TextureCube* texture) const
     }
 }
 
-void CubemapRenderer::DefineTexture(TextureCube* texture, const CubemapRenderingSettings& settings)
+void CubemapRenderer::DefineTexture(TextureCube* texture, const CubemapRenderingSettings& settings, TextureFlags flags)
 {
-    texture->SetSize(settings.textureSize_, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET);
+    texture->SetSize(
+        settings.textureSize_, TextureFormat::TEX_FORMAT_RGBA8_UNORM, flags | TextureFlag::BindRenderTarget);
     texture->SetFilterMode(FILTER_TRILINEAR);
 }
 
@@ -163,14 +180,13 @@ void CubemapRenderer::PrepareForUpdate(const CubemapUpdateParameters& params)
     // Initialize contents
     if (currentViewportTexture_ == viewportTexture_ && !IsTextureMatching(viewportTexture_, params.settings_))
     {
-        DefineTexture(viewportTexture_, params.settings_);
+        DefineTexture(viewportTexture_, params.settings_, TextureFlag::None);
         ConnectViewportsToTexture(viewportTexture_);
         viewportsConnectedToSelf_ = true;
     }
     if (currentFilteredTexture_ == filteredTexture_ && !IsTextureMatching(filteredTexture_, params.settings_))
     {
-        filteredTexture_->SetUnorderedAccess(true);
-        DefineTexture(filteredTexture_, params.settings_);
+        DefineTexture(filteredTexture_, params.settings_, TextureFlag::BindUnorderedAccess);
     }
 
     if (currentViewportTexture_ != viewportTexture_)
@@ -283,53 +299,84 @@ void CubemapRenderer::QueueFaceUpdate(CubeMapFace face)
     renderer->QueueRenderSurface(surface);
 }
 
-void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* destTexture, ea::span<const unsigned> rayCounts)
-{
-#if !defined(URHO3D_COMPUTE)
-    URHO3D_LOGERROR("CubemapRenderer::FilterCubemap cannot be executed without URHO3D_COMPUTE enabled");
-#else
-    auto graphics = GetSubsystem<Graphics>();
-    auto computeDevice = GetSubsystem<ComputeDevice>();
-
-    const unsigned numLevels = destTexture->GetLevels();
-    const float roughStep = 1.0f / (float)(numLevels - 1);
-
-    ea::fixed_vector<ShaderVariation*, 64> shaders;
-    for (unsigned i = 0; i < numLevels; ++i)
-    {
-        const unsigned levelWidth = destTexture->GetLevelWidth(i);
-        const unsigned rayCount = rayCounts[Clamp<unsigned>(i, 0, rayCounts.size() - 1)];
-
-        const ea::string shaderParams = Format("RAY_COUNT={} FILTER_RES={} FILTER_INV_RES={} ROUGHNESS={}",
-            rayCount, levelWidth, 1.0f / levelWidth, roughStep * i);
-        shaders.push_back(graphics->GetShader(CS, "v2/C_FilterCubemap", shaderParams));
-    }
-
-    // go through them cubemap -> level
-    computeDevice->SetReadTexture(sourceTexture, 0);
-    for (unsigned i = 0; i < numLevels; ++i)
-    {
-        computeDevice->SetWriteTexture(destTexture, 1, UINT_MAX, i);
-        computeDevice->SetProgram(shaders[i]);
-        computeDevice->Dispatch(destTexture->GetLevelWidth(i), destTexture->GetLevelHeight(i), 6);
-    }
-    computeDevice->SetWriteTexture(nullptr, 1, 0, 0);
-    computeDevice->ApplyBindings();
-#endif
-}
-
 void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* destTexture)
 {
-    const unsigned rayCounts[]{1, 8, 16};
-    const unsigned rayCounts128[]{1, 8, 16, 16, 16, 16, 32, 32};
-    const unsigned rayCounts256[]{1, 8, 16, 16, 16, 16, 16, 32, 32};
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    if (!renderDevice->GetCaps().computeShaders_)
+    {
+        URHO3D_LOGERROR("CubemapRenderer::FilterCubemap cannot be executed without compute shader support");
+        return;
+    }
 
-    if (destTexture->GetWidth() == 128)
-        FilterCubemap(sourceTexture, destTexture, rayCounts128);
-    else if (destTexture->GetWidth() == 256)
-        FilterCubemap(sourceTexture, destTexture, rayCounts256);
-    else
-        FilterCubemap(sourceTexture, destTexture, rayCounts);
+    const unsigned numLevels = destTexture->GetLevels();
+    EnsurePipelineStates(numLevels);
+    if (!cachedPipelineStates_)
+        return;
+
+    RenderContext* renderContext = renderDevice->GetRenderContext();
+    DrawCommandQueue* drawQueue = renderDevice->GetDefaultQueue();
+
+    const RenderScope renderScope(renderContext, "CubemapRenderer::FilterCubemap");
+
+    for (unsigned i = 0; i < numLevels; ++i)
+        destTexture->CreateUAV(RawTextureUAVKey{}.FromLevel(i));
+
+    drawQueue->Reset();
+
+    for (unsigned i = 0; i < numLevels; ++i)
+    {
+        drawQueue->SetPipelineState(cachedPipelineStates_->pipelineStates_[i]);
+
+        drawQueue->AddShaderResource("SourceTexture", sourceTexture);
+        drawQueue->CommitShaderResources();
+
+        drawQueue->AddUnorderedAccessView("OutputTexture", destTexture, RawTextureUAVKey{}.FromLevel(i));
+        drawQueue->CommitUnorderedAccessViews();
+
+        drawQueue->Dispatch({destTexture->GetLevelWidth(i), destTexture->GetLevelHeight(i), 6});
+    }
+
+    renderContext->ResetRenderTargets();
+    renderContext->Execute(drawQueue);
+}
+
+void CubemapRenderer::EnsurePipelineStates(unsigned numLevels)
+{
+    if (cachedPipelineStates_ && cachedPipelineStates_->numLevels_ == numLevels)
+        return;
+
+    auto graphics = GetSubsystem<Graphics>();
+    auto pipelineStateCache = GetSubsystem<PipelineStateCache>();
+
+    CachedPipelineStates cache;
+    cache.numLevels_ = numLevels;
+
+    const auto rayCounts = GetRayCounts(numLevels);
+    const float roughStep = 1.0f / static_cast<float>(numLevels - 1);
+    for (unsigned i = 0; i < numLevels; ++i)
+    {
+        const auto levelWidth = static_cast<float>(1 << (numLevels - 1 - i));
+        const unsigned rayCount = rayCounts[ea::max<unsigned>(i, rayCounts.size() - 1)];
+
+        const ea::string shaderParams = Format("RAY_COUNT={}u FILTER_RES={}u FILTER_INV_RES={:.7f} ROUGHNESS={:.7f}",
+            rayCount, levelWidth, 1.0f / levelWidth, roughStep * i);
+
+        ComputePipelineStateDesc desc;
+        desc.debugName_ = Format("C_FilterCubemap: {} of {}", i, numLevels);
+        desc.computeShader_ = graphics->GetShader(CS, "v2/C_FilterCubemap", shaderParams);
+        desc.samplers_.Add("SourceTexture", SamplerStateDesc::Bilinear());
+
+        auto pipelineState = pipelineStateCache->GetComputePipelineState(desc);
+        if (!pipelineState->IsValid())
+        {
+            URHO3D_LOGERROR("CubemapRenderer::FilterCubemap failed to create pipeline state");
+            return;
+        }
+
+        cache.pipelineStates_.push_back(pipelineState);
+    }
+
+    cachedPipelineStates_ = cache;
 }
 
 }

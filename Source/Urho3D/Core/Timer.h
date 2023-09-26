@@ -135,4 +135,33 @@ private:
     unsigned timerPeriod_;
 };
 
+/// Accumulates statistics for specified number of intervals.
+class URHO3D_API TimedCounter
+{
+public:
+    explicit TimedCounter(int intervalCount, unsigned intervalLengthMs);
+    /// Return current interval index. GetData()[GetCurrent()] returns a value of last accumulated interval.
+    int GetCurrent() const { return intervalCurrent_; }
+    /// Return all recorded samples. Use GetCurrent() to determine oldest/newest sample index.
+    const ea::vector<float>& GetData() const { return data_; }
+    /// Accumulate a new datapoint.
+    void AddSample(float value);
+    /// Return average of all fully accumulated samples.
+    float GetAverage();
+    /// Return last fully accumulated sample.
+    float GetLast();
+
+private:
+    void RotateIfNeeded();
+
+    Timer timer_;
+    int intervalLength_ = 0;
+    /// Index in data_ pointing to last complete interval.
+    int intervalCurrent_ = 0;
+    /// Samples of current incomplete interval.
+    float accumulator_ = 0.0f;
+    /// All complete accumulated samples.
+    ea::vector<float> data_;
+};
+
 }

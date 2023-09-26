@@ -46,15 +46,25 @@ public:
     void SetEnterAnimationAttr(const ResourceRef& value);
     /// Return enter animation attribute.
     ResourceRef GetEnterAnimationAttr() const;
+    /// Set enter animation.
+    void SetEnterAnimation(Animation* value);
+    /// Return enter animation.
+    Animation* GetEnterAnimation() const { return enterAnimation_; }
     /// Set exit animation attribute.
     void SetExitAnimationAttr(const ResourceRef& value);
     /// Return exit animation attribute.
     ResourceRef GetExitAnimationAttr() const;
+    /// Set exit animation.
+    void SetExitAnimation(Animation* value);
+    /// Return exit animation.
+    Animation* GetExitAnimation() const { return exitAnimation_; }
 
     /// Executed when first compatible body enters the trigger.
     virtual void OnEnter();
     /// Executed when last compatible body leaves the trigger.
     virtual void OnExit();
+    /// Filter entering node. Returns true if the trigger should react on the object.
+    virtual bool Filter(Node* node);
 
 protected:
     /// Handle scene node being assigned at creation.

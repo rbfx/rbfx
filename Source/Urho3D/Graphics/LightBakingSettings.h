@@ -61,7 +61,7 @@ struct LightmapGeometryBakingSettings
     /// Position bias in geometry buffer in direction of face normal. Scaled with position itself.
     float scaledPositionBias_{ 0.00002f };
     /// Constant position bias.
-    float constantPositionBias_{};
+    float constantPositionBias_{ 0.0001f };
 };
 
 /// Settings for geometry buffer preprocessing.

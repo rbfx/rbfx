@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Graphics/PipelineState.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../RenderPipeline/PostProcessPass.h"
 #include "../RenderPipeline/RenderBuffer.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
@@ -84,18 +84,10 @@ protected:
 
     struct CachedStates
     {
-        SharedPtr<PipelineState> bright_;
-        SharedPtr<PipelineState> blurV_;
-        SharedPtr<PipelineState> blurH_;
-        SharedPtr<PipelineState> bloom_;
-
-        bool IsValid()
-        {
-            return bright_->IsValid()
-                && blurV_->IsValid()
-                && blurH_->IsValid()
-                && bloom_->IsValid();
-        }
+        StaticPipelineStateId bright_{};
+        StaticPipelineStateId blurV_{};
+        StaticPipelineStateId blurH_{};
+        StaticPipelineStateId bloom_{};
     };
     ea::optional<CachedStates> pipelineStates_;
 

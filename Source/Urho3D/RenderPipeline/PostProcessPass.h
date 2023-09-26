@@ -24,7 +24,6 @@
 
 #include "../Container/FlagSet.h"
 #include "../Core/Object.h"
-#include "../Graphics/DrawCommandQueue.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
 
 #include <EASTL/vector.h>
@@ -61,11 +60,11 @@ class URHO3D_API SimplePostProcessPass
 
 public:
     SimplePostProcessPass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager,
-        PostProcessPassFlags flags, BlendMode blendMode,
-        const ea::string& shaderName, const ea::string& shaderDefines);
+        PostProcessPassFlags flags, BlendMode blendMode, const ea::string& shaderName, const ea::string& shaderDefines,
+        ea::span<const NamedSamplerStateDesc> samplers = {});
 
     void AddShaderParameter(StringHash name, const Variant& value);
-    void AddShaderResource(TextureUnit unit, Texture* texture);
+    void AddShaderResource(StringHash name, Texture* texture);
 
     PostProcessPassFlags GetExecutionFlags() const override { return flags_; }
     void Execute(Camera* camera) override;
@@ -73,7 +72,7 @@ public:
 protected:
     const PostProcessPassFlags flags_;
     const ea::string debugComment_;
-    SharedPtr<PipelineState> pipelineState_;
+    StaticPipelineStateId pipelineState_{};
 
     ea::vector<ShaderParameterDesc> shaderParameters_;
     ea::vector<ShaderResourceDesc> shaderResources_;

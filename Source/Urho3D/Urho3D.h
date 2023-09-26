@@ -131,3 +131,38 @@
 #else
     #error Unsupported platform
 #endif
+
+// Diligent platform defines.
+// This is needed so the user can include Diligent-using headers without linking to Diligent-PublicBuildSettings.
+// TODO: Can we resolve this at CMake level?
+#if URHO3D_PLATFORM_WINDOWS
+    #define PLATFORM_WIN32 1
+#endif
+#if URHO3D_PLATFORM_UNIVERSAL_WINDOWS
+    #define PLATFORM_UNIVERSAL_WINDOWS 1
+#endif
+
+#if URHO3D_PLATFORM_LINUX
+    #define PLATFORM_LINUX 1
+#endif
+#if URHO3D_PLATFORM_ANDROID
+    #define PLATFORM_ANDROID 1
+#endif
+#if URHO3D_PLATFORM_RASPBERRY_PI
+    // As workaround, we use PLATFORM_LINUX for raspberry pi
+    #define PLATFORM_LINUX 1
+#endif
+
+#if URHO3D_PLATFORM_MACOS
+    #define PLATFORM_MACOS 1
+#endif
+#if URHO3D_PLATFORM_IOS
+    #define PLATFORM_IOS 1
+#endif
+#if URHO3D_PLATFORM_TVOS
+    #define PLATFORM_TVOS 1
+#endif
+
+#if URHO3D_PLATFORM_WEB
+    #define PLATFORM_EMSCRIPTEN 1
+#endif

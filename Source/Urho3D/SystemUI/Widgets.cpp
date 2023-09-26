@@ -980,12 +980,8 @@ void Image(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, const ImVe
     auto systemUI = context->GetSubsystem<SystemUI>();
 
     systemUI->ReferenceTexture(texture);
-#if URHO3D_D3D11
-    void* textureId = texture->GetShaderResourceView();
-#else
-    void* textureId = texture->GetGPUObject();
-#endif
-    ui::Image(textureId, size, uv0, uv1, tintCol, borderCol);
+
+    ui::Image(ToImTextureID(texture), size, uv0, uv1, tintCol, borderCol);
 }
 
 void ImageItem(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tintCol, const ImVec4& borderCol)
@@ -1003,12 +999,17 @@ bool ImageButton(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, cons
     auto systemUI = context->GetSubsystem<SystemUI>();
 
     systemUI->ReferenceTexture(texture);
-#if URHO3D_D3D11
-    void* textureId = texture->GetShaderResourceView();
-#else
-    void* textureId = texture->GetGPUObject();
-#endif
-    return ui::ImageButton(textureId, size, uv0, uv1, framePadding, bgCol, tintCol);
+
+    ImGuiWindow* window = ui::GetCurrentWindow();
+    const ImGuiStyle& style = ui::GetStyle();
+
+    ui::PushID(texture);
+    const ImGuiID id = window->GetID("#image");
+    ui::PopID();
+
+    const auto framePaddingFloat = static_cast<float>(framePadding);
+    const ImVec2 padding = (framePadding >= 0) ? ImVec2(framePaddingFloat, framePaddingFloat) : style.FramePadding;
+    return ui::ImageButtonEx(id, ToImTextureID(texture), size, uv0, uv1, padding, bgCol, tintCol);
 }
 
 }

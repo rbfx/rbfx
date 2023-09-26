@@ -134,6 +134,6 @@ private:
     } client_;
 };
 
-#endif
-
 }
+
+#endif

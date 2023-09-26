@@ -412,7 +412,7 @@ void ClientReplica::OnNetworkUpdate()
 
 void ClientReplica::SendObjectsFeedbackUnreliable(NetworkFrame feedbackFrame)
 {
-    connection_->SendGeneratedMessage(MSG_OBJECTS_FEEDBACK_UNRELIABLE, PT_UNRELIABLE_UNORDERED,
+    connection_->SendGeneratedMessage(MSG_OBJECTS_FEEDBACK_UNRELIABLE, PacketType::UnreliableUnordered,
         [&](VectorBuffer& msg, ea::string* debugInfo)
     {
         msg.WriteInt64(static_cast<long long>(feedbackFrame));
