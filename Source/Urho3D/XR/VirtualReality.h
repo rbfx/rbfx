@@ -102,6 +102,7 @@ public:
     Vector3 GetPosition() const { return storedData_.GetMatrix3x4().Translation(); }
     Quaternion GetRotation() const { return storedData_.GetMatrix3x4().Rotation(); }
     const Matrix3x4& GetTransformMatrix() const { return storedData_.GetMatrix3x4(); }
+    VariantType GetExpectedType() const { return dataType_; }
     /// @}
 
     /// Returns stored variant value.
