@@ -1668,22 +1668,20 @@ void OpenXR::LocateViewsAndSpaces()
     headLocation_.next = &headVelocity_;
     xrLocateSpace(viewSpace_.Raw(), headSpace_.Raw(), predictedTime_, &headLocation_);
 
-    // Hands
-    for (VRHand hand : {VRHand::Left, VRHand::Right})
+    // All pose related actions will now need their locations updated.
+    if (activeActionSet_)
     {
-        if (handAims_[hand])
+        for (auto binding : activeActionSet_->GetBindings())
         {
-            // ensure velocity is linked
-            handAims_[hand]->location_.next = &handAims_[hand]->velocity_;
-            xrLocateSpace(
-                handAims_[hand]->actionSpace_.Raw(), headSpace_.Raw(), predictedTime_, &handAims_[hand]->location_);
-        }
+            OpenXRBinding* xrBind = binding->Cast<OpenXRBinding>();
+            if (xrBind)
+            {
+                auto expected = xrBind->GetExpectedType();
 
-        if (handGrips_[hand])
-        {
-            handGrips_[hand]->location_.next = &handGrips_[hand]->velocity_;
-            xrLocateSpace(
-                handGrips_[hand]->actionSpace_.Raw(), headSpace_.Raw(), predictedTime_, &handGrips_[hand]->location_);
+                // Check if we're bound and we're presumed to be a pose type
+                if (xrBind->IsBound() && (expected == VAR_MATRIX3X4 || expected == VAR_VECTOR3))
+                    xrLocateSpace(xrBind->actionSpace_.Raw(), headSpace_.Raw(), predictedTime_, &xrBind->location_);
+            }
         }
     }
 
