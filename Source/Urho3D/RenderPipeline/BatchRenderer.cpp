@@ -744,6 +744,9 @@ private:
 
     void ProcessBatch(const PipelineBatch& pipelineBatch, const SourceBatch& sourceBatch)
     {
+        if (pipelineBatch.geometry_->GetEffectiveIndexCount() == 0)
+            return;
+
         const LightAccumulator* lightAccumulator = enabled_.ambientLighting_ || enabled_.vertexLighting_
             ? &drawableProcessor_.GetGeometryLighting(pipelineBatch.drawableIndex_)
             : nullptr;
@@ -767,9 +770,6 @@ private:
 
         if constexpr (DebuggerEnabled)
             debugger_->ReportSceneBatch(DebugFrameSnapshotBatch{ drawableProcessor_, pipelineBatch, resetInstancingGroup });
-
-        if (current_.geometry_->GetEffectiveIndexCount() == 0)
-            return;
 
         if (resetInstancingGroup)
         {
