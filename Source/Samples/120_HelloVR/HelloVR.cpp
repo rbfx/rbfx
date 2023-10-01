@@ -122,6 +122,16 @@ void HelloVR::CreateScene()
     // Create kinematic bodies for hands
     SetupHandComponents(rig->GetLeftHandPose(), rig->GetLeftHandAim());
     SetupHandComponents(rig->GetRightHandPose(), rig->GetRightHandAim());
+
+    auto leftFoot = rigNode->CreateChild("left_foot");
+    auto foot_model = leftFoot->CreateComponent<StaticModel>();
+    foot_model->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+    foot_model->SetMaterial(cache->GetResource<Material>("Materials/Constant/MattTransparent.xml"));
+
+    auto rightFoot = rigNode->CreateChild("right_foot");
+    foot_model = rightFoot->CreateComponent<StaticModel>();
+    foot_model->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+    foot_model->SetMaterial(cache->GetResource<Material>("Materials/Constant/MattTransparent.xml"));
 }
 
 void HelloVR::CreateInstructions()
@@ -268,6 +278,36 @@ void HelloVR::Update()
                 GrabDynamicObject(rigDesc.leftHandPose_, VRHand::Left);
             else
                 ReleaseDynamicObject(rigDesc.leftHandPose_);
+        }
+    }
+
+    if (XRBinding* leftFoot = virtualReality->GetInputBinding("left_foot"))
+    {
+        if (auto foot = rigNode->GetChild("left_foot"))
+        {
+            if (leftFoot->IsBound())
+            {
+                foot->SetEnabled(true);
+                foot->SetTransformMatrix(leftFoot->GetTransformMatrix());
+                foot->SetScale(0.2f); // so we're not comically large boxes
+            }
+            else
+                foot->SetEnabled(false);
+        }
+    }
+
+    if (XRBinding* leftFoot = virtualReality->GetInputBinding("right_foot"))
+    {
+        if (auto foot = rigNode->GetChild("right_foot"))
+        {
+            if (leftFoot->IsBound())
+            {
+                foot->SetEnabled(true);
+                foot->SetTransformMatrix(leftFoot->GetTransformMatrix());
+                foot->SetScale(0.2f); // so we're not comically large boxes
+            }
+            else
+                foot->SetEnabled(false);
         }
     }
 
