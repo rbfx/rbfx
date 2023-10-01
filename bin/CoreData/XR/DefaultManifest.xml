@@ -45,6 +45,11 @@
             -->
 
             <action name="vibrate" type="haptic" handed="true"/>
+            
+            <!-- Most common Vive Tracker arrangement -->
+            <action name="left_foot" type="pose" />
+            <action name="right_foot" type="pose" />
+            <action name="waist" type="pose" />
         </actions>
 
         <!-- Porifles are xrSuggestInteractionProfileBindings -->
@@ -168,10 +173,10 @@
 
             <bind action="menu" path="/user/hand/left/input/menu/click" />
 
-            <bind action="a" path="/user/hand/right/a/click" />
-            <bind action="b" path="/user/hand/right/b/click" />
-            <bind action="x" path="/user/hand/left/x/click" />
-            <bind action="y" path="/user/hand/left/y/click" />
+            <bind action="a" path="/user/hand/right/input/a/click" />
+            <bind action="b" path="/user/hand/right/input/b/click" />
+            <bind action="x" path="/user/hand/left/input/x/click" />
+            <bind action="y" path="/user/hand/left/input/y/click" />
 
             <bind action="shoulder" path="/user/hand/left/input/shoulder/click" />
             <bind action="shoulder" path="/user/hand/right/input/shoulder/click" />
@@ -205,10 +210,13 @@
             <bind action="stickdown" path="/user/hand/left/input/thumbstick/click" />
             <bind action="stickdown" path="/user/hand/right/input/thumbstick/click" />
 
-            <bind action="a" path="/user/hand/right/a/click" />
-            <bind action="b" path="/user/hand/right/b/click" />
-            <bind action="x" path="/user/hand/left/x/click" />
-            <bind action="y" path="/user/hand/left/y/click" />
+            <bind action="a" path="/user/hand/right/input/a/click" />
+            <bind action="b" path="/user/hand/right/input/b/click" />
+            <bind action="x" path="/user/hand/left/input/x/click" />
+            <bind action="y" path="/user/hand/left/input/y/click" />
+            
+            <bind action="vibrate" path="/user/hand/left/output/haptic" />
+            <bind action="vibrate" path="/user/hand/right/output/haptic" />
         </profile>
 
         <!-- Valve Index, treating left-hand A/B as Oculus X/Y -->
@@ -275,6 +283,13 @@
 
             <bind action="vibrate" path="/user/hand/left/output/haptic" />
             <bind action="vibrate" path="/user/hand/right/output/haptic" />
+        </profile>
+        
+        <!-- HTC Vive Trackers, use fully specified paths -->
+        <profile device="/interaction_profiles/htc/vive_tracker_htcx" extension="XR_HTCX_vive_tracker_interaction">
+            <bind action="left_foot" path="/user/vive_tracker_htcx/role/left_foot/input/grip/pose" />
+            <bind action="right_foot" path="/user/vive_tracker_htcx/role/right_foot/input/grip/pose" />
+            <bind action="waist" path="/user/vive_tracker_htcx/role/waist/input/grip/pose" />
         </profile>
     </actionset>
 </xr_manifest>
