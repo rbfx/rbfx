@@ -296,14 +296,14 @@ void HelloVR::Update()
         }
     }
 
-    if (XRBinding* leftFoot = virtualReality->GetInputBinding("right_foot"))
+    if (XRBinding* rightFoot = virtualReality->GetInputBinding("right_foot"))
     {
         if (auto foot = rigNode->GetChild("right_foot"))
         {
-            if (leftFoot->IsBound())
+            if (rightFoot->IsBound())
             {
                 foot->SetEnabled(true);
-                foot->SetTransformMatrix(leftFoot->GetTransformMatrix());
+                foot->SetTransformMatrix(rightFoot->GetTransformMatrix());
                 foot->SetScale(0.2f); // so we're not comically large boxes
             }
             else
