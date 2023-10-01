@@ -114,7 +114,6 @@ void CrowdManager::ApplyAttributes()
     maxAgents_ = Max(1U, maxAgents_);
     maxAgentRadius_ = Max(0.f, maxAgentRadius_);
 
-    bool navMeshChange = false;
     Scene* scene = GetScene();
     if (scene && navigationMeshId_)
     {
@@ -129,7 +128,7 @@ void CrowdManager::ApplyAttributes()
     navigationMeshId_ = navigationMesh_ ? navigationMesh_->GetID() : 0;
 
     // If the Detour crowd initialization parameters have changed then recreate it
-    if (crowd_ && (navMeshChange || crowd_->getAgentCount() != maxAgents_ || crowd_->getMaxAgentRadius() != maxAgentRadius_))
+    if (!crowd_ || crowd_->getAgentCount() != maxAgents_ || crowd_->getMaxAgentRadius() != maxAgentRadius_)
         CreateCrowd();
 }
 
