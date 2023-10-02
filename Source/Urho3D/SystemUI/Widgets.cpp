@@ -681,6 +681,18 @@ bool EditVariantVector2(Variant& var, const EditVariantOptions& options)
     return false;
 }
 
+bool EditVariantIntVector2(Variant& var, const EditVariantOptions& options)
+{
+    IntVector2 value = var.GetIntVector2();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::DragInt2("", &value.x_, options.step_, static_cast<int>(options.min_), static_cast<int>(options.max_)))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
 bool EditVariantVector3(Variant& var, const EditVariantOptions& options)
 {
     Vector3 value = var.GetVector3();
@@ -932,7 +944,10 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
 
     // case VAR_VARIANTMAP:
     // case VAR_INTRECT:
-    // case VAR_INTVECTOR2:
+
+    case VAR_INTVECTOR2:
+        return EditVariantIntVector2(var, options);
+
     // case VAR_MATRIX3:
     // case VAR_MATRIX3X4:
     // case VAR_MATRIX4:
