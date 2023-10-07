@@ -682,6 +682,7 @@ public:
 %ignore Urho3D::Animation::GetVariantTracks;
 %ignore Urho3D::RenderSurface::GetView;
 %ignore Urho3D::RenderSurface::GetReadOnlyDepthView;
+%ignore Urho3D::Material::GetTextures;
 %rename(DrawableFlags) Urho3D::DrawableFlag;
 
 %apply void* VOID_INT_PTR {
