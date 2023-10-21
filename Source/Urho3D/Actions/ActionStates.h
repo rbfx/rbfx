@@ -27,6 +27,7 @@
 #include "Urho3D/Graphics/AnimatedModel.h"
 #include "Urho3D/Graphics/Material.h"
 #include "Urho3D/Graphics/StaticModel.h"
+#include "Urho3D/Math/PerlinNoise.h"
 
 #include <EASTL/variant.h>
 
@@ -41,6 +42,69 @@ struct NopAttributeActionState
 {
     void Init(const AttributeActionState* state) {}
     void Update(float time, Variant& value) {}
+};
+
+class ShakeByState : public AttributeActionState
+{
+    struct CommonState
+    {
+        float noiseSpeed_;
+        float noiseOffset_;
+    };
+
+    struct Vec3State : CommonState
+    {
+        Vector3 positionDelta_;
+        Vector3 startPosition_;
+        Vector3 previousPosition_;
+        void Init(const ShakeByState* state);
+        void Update(float time, Variant& value);
+    };
+
+    struct IntVec3State : CommonState
+    {
+        Vector3 positionDelta_;
+        IntVector3 startPosition_;
+        IntVector3 previousPosition_;
+        void Init(const ShakeByState* state);
+        void Update(float time, Variant& value);
+    };
+
+    struct Vec2State : CommonState
+    {
+        Vector2 positionDelta_;
+        Vector2 startPosition_;
+        Vector2 previousPosition_;
+        void Init(const ShakeByState* state);
+        void Update(float time, Variant& value);
+    };
+
+    struct IntVec2State : CommonState
+    {
+        Vector2 positionDelta_;
+        IntVector2 startPosition_;
+        IntVector2 previousPosition_;
+        void Init(const ShakeByState* state);
+        void Update(float time, Variant& value);
+    };
+
+    struct QuaternionState : CommonState
+    {
+        Vector3 rotationDelta_;
+        Quaternion startRotation_;
+        Quaternion previousRotation_;
+        void Init(const ShakeByState* state);
+        void Update(float time, Variant& value);
+    };
+
+public:
+    ShakeByState(ShakeBy* action, Object* target);
+    const Vector3& GetDelta() const { return static_cast<ShakeBy*>(GetAction())->GetDelta(); }
+    float GetNoiseSpeed() const { return static_cast<ShakeBy*>(GetAction())->GetNoiseSpeed(); }
+    void Update(float dt, Variant& value) override;
+
+private:
+    ea::variant<NopAttributeActionState, IntVec2State, IntVec3State, Vec2State, Vec3State, QuaternionState> state_;
 };
 
 class MoveByState : public AttributeActionState

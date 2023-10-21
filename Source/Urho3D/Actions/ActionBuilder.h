@@ -47,6 +47,10 @@ public:
     /// Run action in parallel to current one.
     ActionBuilder& Also(const SharedPtr<Actions::FiniteTimeAction>& parallelAction);
 
+    /// Continue with ShakeBy action.
+    ActionBuilder& ShakeBy(
+        float duration, const Vector3& offset, float noiseSpeed = 10.0f, ea::string_view attributeName = Actions::POSITION_ATTRIBUTE);
+
     /// Continue with MoveBy action.
     ActionBuilder& MoveBy(float duration, const Vector3& offset, ea::string_view attributeName = Actions::POSITION_ATTRIBUTE);
 

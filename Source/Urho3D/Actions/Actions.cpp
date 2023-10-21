@@ -73,6 +73,7 @@ void RegisterActions(ActionManager* manager)
     manager->AddFactoryReflection<ShaderParameterAction>();
     manager->AddFactoryReflection<ShaderParameterFromTo>();
     manager->AddFactoryReflection<ShaderParameterTo>();
+    manager->AddFactoryReflection<ShakeBy>();
     manager->AddFactoryReflection<Show>();
 }
 
@@ -1197,6 +1198,66 @@ void ShaderParameterTo::FromGraphNode(GraphNode* node)
     if (const auto to = node->GetInput("to"))
     {
         to_ = to.GetPin()->GetValue();
+    }
+}
+
+
+/// Construct.
+ShakeBy::ShakeBy(Context* context)
+    : BaseClassName(context)
+{
+    SetAttributeName("Position");
+}
+
+/// Create new action state from the action.
+SharedPtr<ActionState> ShakeBy::StartAction(Object* target) { return MakeShared<Detail::ShakeByState>(this, target); }
+
+
+/// Create reversed action.
+SharedPtr<FiniteTimeAction> ShakeBy::Reverse() const
+{
+    auto action = MakeShared<ShakeBy>(context_);
+    ReverseImpl(action);
+    return action;
+}
+
+/// Set delta.
+void ShakeBy::SetDelta(const Vector3& delta)
+{
+    delta_ = delta;
+}
+
+
+/// Set noiseSpeed.
+void ShakeBy::SetNoiseSpeed(float noiseSpeed)
+{
+    noiseSpeed_ = noiseSpeed;
+}
+
+
+/// Serialize content from/to archive. May throw ArchiveException.
+void ShakeBy::SerializeInBlock(Archive& archive)
+{
+    BaseClassName::SerializeInBlock(archive);
+    SerializeOptionalValue(archive, "delta", delta_, Vector3{});
+    SerializeOptionalValue(archive, "noiseSpeed", noiseSpeed_, float{10.0});
+}
+
+GraphNode* ShakeBy::ToGraphNode(Graph* graph) const
+{
+    return BaseClassName::ToGraphNode(graph)->WithInput("delta", delta_)->WithInput("noiseSpeed", noiseSpeed_);
+}
+
+void ShakeBy::FromGraphNode(GraphNode* node)
+{
+    BaseClassName::FromGraphNode(node);
+    if (const auto delta = node->GetInput("delta"))
+    {
+        delta_ = delta.GetPin()->GetValue().Get<Vector3>();
+    }
+    if (const auto noiseSpeed = node->GetInput("noiseSpeed"))
+    {
+        noiseSpeed_ = noiseSpeed.GetPin()->GetValue().Get<float>();
     }
 }
 

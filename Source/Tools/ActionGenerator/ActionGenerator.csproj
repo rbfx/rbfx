@@ -9,15 +9,24 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="*.cs" />
+    <!--<Compile Include="*.cs" />-->
   </ItemGroup>
 
     <ItemGroup>
-        <Compile Include="Model/*.cs" />
+        <!--<Compile Include="Model/*.cs" />-->
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Include="Templates\CppTemplate.cs">
+      <Compile Remove="bin\**" />
+      <Compile Remove="obj\**" />
+      <EmbeddedResource Remove="bin\**" />
+      <EmbeddedResource Remove="obj\**" />
+      <None Remove="bin\**" />
+      <None Remove="obj\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!--<Compile Include="Templates\CppTemplate.cs">
         <DesignTime>True</DesignTime>
         <AutoGen>True</AutoGen>
         <DependentUpon>CppTemplate.tt</DependentUpon>
@@ -27,7 +36,7 @@
         <DesignTime>True</DesignTime>
         <AutoGen>True</AutoGen>
         <DependentUpon>HeaderTemplate.tt</DependentUpon>
-      </Compile>
+      </Compile>-->
     </ItemGroup>
 
     <ItemGroup>

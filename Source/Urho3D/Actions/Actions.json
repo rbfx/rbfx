@@ -1,5 +1,26 @@
 {
     "actions": {
+        "ShakeBy": {
+            "parent": "AttributeAction",
+            "comment": "Shake by 3D or 2D offset action. Target should have attribute \"Position\" of type Vector3, Vector2, IntVector2, IntVector3 or Quaternion In case of Quaternion the delta defines Euler angles.\"",
+            "parameters": [
+                {
+                    "name": "delta",
+                    "type": "vector3"
+                },
+                {
+                    "name": "noiseSpeed",
+                    "type": "float",
+                    "default": "10.0"
+                },
+                {
+                    "name": "attribute name",
+                    "type": "string",
+                    "default": "Position",
+                    "Inherited": true
+                }
+            ]
+        },
         "MoveBy": {
             "parent": "AttributeAction",
             "comment": "Move by 3D or 2D offset action. Target should have attribute \"Position\" of type Vector3, Vector2, IntVector2 or IntVector3.\"",

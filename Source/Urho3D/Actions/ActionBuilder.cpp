@@ -84,6 +84,18 @@ ActionBuilder& ActionBuilder::Also(const SharedPtr<Actions::FiniteTimeAction>& p
     return *this;
 }
 
+/// Build ShakeBy action.
+ActionBuilder& ActionBuilder::ShakeBy(
+    float duration, const Vector3& offset, float noiseSpeed, ea::string_view attributeName)
+{
+    const auto action = MakeShared<Actions::ShakeBy>(context_);
+    action->SetAttributeName(attributeName);
+    action->SetDuration(duration);
+    action->SetDelta(offset);
+    action->SetNoiseSpeed(noiseSpeed);
+    return Then(action);
+}
+
 /// Build MoveBy action.
 ActionBuilder& ActionBuilder::MoveBy(float duration, const Vector3& offset, ea::string_view attributeName)
 {

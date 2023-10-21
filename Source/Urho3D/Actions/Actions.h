@@ -30,6 +30,49 @@ namespace Urho3D
 {
 namespace Actions
 {
+/// Shake by 3D or 2D offset action. Target should have attribute "Position" of type Vector3, Vector2, IntVector2, IntVector3 or Quaternion In case of Quaternion the delta defines Euler angles."
+class URHO3D_API ShakeBy : public  AttributeAction
+{
+    URHO3D_OBJECT(ShakeBy, AttributeAction)
+public:
+    /// Construct.
+    explicit ShakeBy(Context* context);
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+
+    /// Set delta.
+    void SetDelta(const Vector3& delta);
+
+    /// Get delta.
+    const Vector3& GetDelta() const { return delta_; }
+
+    /// Set noiseSpeed.
+    void SetNoiseSpeed(float noiseSpeed);
+
+    /// Get noiseSpeed.
+    float GetNoiseSpeed() const { return noiseSpeed_; }
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Create GraphNode from the action. Required for action editor.
+    GraphNode* ToGraphNode(Graph* graph) const override;
+
+    /// Initialize action from GraphNode. Required for action editor.
+    void FromGraphNode(GraphNode* node) override;
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
+
+    /// Populate fields in reversed action.
+    void ReverseImpl(FiniteTimeAction*) const override;
+
+private:
+    Vector3 delta_{};
+    float noiseSpeed_{10.0};
+};
+
 /// Move by 3D or 2D offset action. Target should have attribute "Position" of type Vector3, Vector2, IntVector2 or IntVector3."
 class URHO3D_API MoveBy : public  AttributeAction
 {

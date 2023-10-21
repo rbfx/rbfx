@@ -30,6 +30,12 @@ namespace Urho3D
 {
 namespace Actions
 {
+void ShakeBy::ReverseImpl(FiniteTimeAction* action) const
+{
+    BaseClassName::ReverseImpl(action);
+    static_cast<ShakeBy*>(action)->SetDelta(delta_);
+    static_cast<ShakeBy*>(action)->SetNoiseSpeed(noiseSpeed_);
+}
 
 void MoveBy::ReverseImpl(FiniteTimeAction* action) const
 {
