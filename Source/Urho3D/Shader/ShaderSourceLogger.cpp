@@ -30,29 +30,15 @@
 namespace Urho3D
 {
 
-namespace
-{
-
-const ea::string shaderTypeName[] = {"vs", "ps", "gs", "hs", "ds", "cs"};
-
-}
-
-void LogShaderSource(const ea::string& fileName, ShaderType type, ea::string_view defines, ea::string_view source,
-    ea::string_view extension)
+void LogShaderSource(const FileIdentifier& fileName, ea::string_view defines, ea::string_view source)
 {
     auto context = Context::GetInstance();
     auto graphics = context->GetSubsystem<Graphics>();
-    if (!graphics->GetLogShaderSources())
+    if (!graphics->GetSettings().logShaderSources_)
         return;
 
     auto vfs = context->GetSubsystem<VirtualFileSystem>();
-
-    const FileIdentifier& cacheDir = graphics->GetShaderCacheDir();
-    const ea::string sourceName =
-        Format("{}_{}_{}.{}", GetFileName(fileName), StringHash(defines).ToString(), shaderTypeName[type], extension);
-
-    const FileIdentifier sourceFileName = cacheDir + sourceName;
-    if (auto sourceFile = vfs->OpenFile(sourceFileName, FILE_WRITE))
+    if (auto sourceFile = vfs->OpenFile(fileName, FILE_WRITE))
     {
         const ea::string header = Format("// {}\n", defines);
         sourceFile->Write(header.data(), header.size());

@@ -26,6 +26,12 @@ List of third party code licenses:
 * IconFontCppHeaders/licence.txt
 * ik/LICENSE
 * imgui/LICENSE
+* libdatachannel-wasm/LICENSE
+* libdatachannel/LICENSE
+  * deps/libjuice/LICENSE
+  * deps/libsrtp/LICENSE
+  * deps/plog/LICENSE
+  * deps/usrsctp/LICENSE.md
 * LZ4/LICENSE
 * nativefiledialog/LICENSE
 * PugiXml/readme.txt
@@ -33,7 +39,6 @@ List of third party code licenses:
 * Recast/License.txt
 * RmlUi/LICENSE.txt
 * SDL/LICENSE.txt
-* SLikeNet/license.txt
 * spdlog/LICENSE
 * SPIRV-Cross/LICENSE
 * StanHull/readme.txt

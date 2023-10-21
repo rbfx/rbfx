@@ -1097,6 +1097,7 @@ void ModelView::ExportModel(Model* model) const
             URHO3D_LOGERROR("No vertex elements in vertex buffer");
 
         auto vertexBuffer = MakeShared<VertexBuffer>(context_);
+        vertexBuffer->SetDebugName(Format("Model '{}' Vertex Buffer", name_));
         vertexBuffer->SetShadowed(true);
         vertexBuffer->SetSize(vertexBufferData.vertices_.size(), vertexElements);
         SetVertexBufferData(vertexBuffer, vertexBufferData.vertices_);
@@ -1161,6 +1162,7 @@ void ModelView::ExportModel(Model* model) const
     // Create index buffer
     const bool largeIndices = HasLargeIndices(indexBufferData);
     auto indexBuffer = MakeShared<IndexBuffer>(context_);
+    indexBuffer->SetDebugName(Format("Model '{}' Index Buffer", name_));
     indexBuffer->SetShadowed(true);
     indexBuffer->SetSize(indexBufferData.size(), largeIndices);
     indexBuffer->SetUnpackedData(indexBufferData.data());

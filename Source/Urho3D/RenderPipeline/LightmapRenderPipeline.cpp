@@ -22,10 +22,13 @@
 
 #include "../Precompiled.h"
 
-#include "../Graphics/Renderer.h"
+#include "../RenderPipeline/LightmapRenderPipeline.h"
+
+#include "../RenderAPI/DrawCommandQueue.h"
+#include "../RenderAPI/RenderDevice.h"
+#include "../RenderAPI/RenderScope.h"
 #include "../RenderPipeline/BatchRenderer.h"
 #include "../RenderPipeline/InstancingBuffer.h"
-#include "../RenderPipeline/LightmapRenderPipeline.h"
 #include "../RenderPipeline/RenderBufferManager.h"
 #include "../RenderPipeline/ScenePass.h"
 #include "../RenderPipeline/SceneProcessor.h"
@@ -47,7 +50,6 @@ LightmapRenderPipelineView::~LightmapRenderPipelineView()
 
 void LightmapRenderPipelineView::RenderGeometryBuffer(Viewport* viewport, int textureSize)
 {
-#ifdef DESKTOP_GRAPHICS
     auto renderBufferManager = MakeShared<RenderBufferManager>(this);
     auto shadowMapAllocator = MakeShared<ShadowMapAllocator>(context_);
     auto instancingBuffer = MakeShared<InstancingBuffer>(context_);
@@ -57,14 +59,22 @@ void LightmapRenderPipelineView::RenderGeometryBuffer(Viewport* viewport, int te
 
     const Vector2 size = Vector2::ONE * textureSize;
     const RenderBufferFlags flags = RenderBufferFlag::FixedTextureSize | RenderBufferFlag::Persistent;
-    const unsigned colorFormat = Graphics::GetRGBAFloat32Format();
-    depthBuffer_ = renderBufferManager->CreateColorBuffer({ Graphics::GetReadableDepthFormat(), 1, flags }, size);
+    const TextureFormat depthFormat = TextureFormat::TEX_FORMAT_D24_UNORM_S8_UINT;
+    const TextureFormat colorFormat = TextureFormat::TEX_FORMAT_RGBA32_FLOAT;
+    depthBuffer_ = renderBufferManager->CreateColorBuffer({ depthFormat, 1, flags }, size);
     positionBuffer_ = renderBufferManager->CreateColorBuffer({ colorFormat, 1, flags }, size);
     smoothPositionBuffer_ = renderBufferManager->CreateColorBuffer({ colorFormat, 1, flags }, size);
     faceNormalBuffer_ = renderBufferManager->CreateColorBuffer({ colorFormat, 1, flags }, size);
     smoothNormalBuffer_ = renderBufferManager->CreateColorBuffer({ colorFormat, 1, flags }, size);
     albedoBuffer_ = renderBufferManager->CreateColorBuffer({ colorFormat, 1, flags }, size);
     emissionBuffer_ = renderBufferManager->CreateColorBuffer({ colorFormat, 1, flags }, size);
+
+    PipelineStateOutputDesc outputDesc;
+    outputDesc.depthStencilFormat_ = depthFormat;
+    outputDesc.numRenderTargets_ = 6;
+    for (unsigned i = 0; i < outputDesc.numRenderTargets_; ++i)
+        outputDesc.renderTargetFormats_[i] = colorFormat;
+    pass->SetDeferredOutputDesc(outputDesc);
 
     // Use main viewport as render target because it's not used anyway
     CommonFrameInfo frameInfo;
@@ -92,9 +102,13 @@ void LightmapRenderPipelineView::RenderGeometryBuffer(Viewport* viewport, int te
     renderBufferManager->ClearColor(albedoBuffer_, Color::TRANSPARENT_BLACK);
     renderBufferManager->ClearColor(emissionBuffer_, Color::TRANSPARENT_BLACK);
 
-    auto renderer = GetSubsystem<Renderer>();
-    DrawCommandQueue* drawQueue = renderer->GetDefaultDrawQueue();
+    auto renderDevice = GetSubsystem<RenderDevice>();
+
+    RenderContext* renderContext = renderDevice->GetRenderContext();
+    DrawCommandQueue* drawQueue = renderDevice->GetDefaultQueue();
     BatchRenderer* batchRenderer = sceneProcessor->GetBatchRenderer();
+
+    const RenderScope renderScope(renderContext, "LightmapRenderPipelineView::RenderGeometryBuffer");
 
     RenderBuffer* const gBuffer[] = {
         positionBuffer_,
@@ -112,11 +126,10 @@ void LightmapRenderPipelineView::RenderGeometryBuffer(Viewport* viewport, int te
     batchRenderer->RenderBatches({ *drawQueue, *viewport->GetCamera() }, pass->GetDeferredBatches());
     instancingBuffer->End();
 
-    drawQueue->Execute();
+    renderContext->Execute(drawQueue);
 
     // Do not end the renderer so textures are available outside
     //OnRenderEnd(this, frameInfo);
-#endif
 }
 
 }

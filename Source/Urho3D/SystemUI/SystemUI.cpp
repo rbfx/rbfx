@@ -30,36 +30,31 @@
 #include "../Core/Macros.h"
 #include "../Core/Profiler.h"
 #include "../Engine/EngineEvents.h"
-#include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
 #include "../Resource/ResourceCache.h"
 #include "../SystemUI/Console.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/SystemUI/ImGuiDiligentRendererEx.h"
 
 #include <ImGui/imgui_freetype.h>
 #include <ImGui/imgui_internal.h>
 #include <ImGuizmo/ImGuizmo.h>
+
 #include <SDL.h>
 
 #define IMGUI_IMPL_API IMGUI_API
 #include <imgui_impl_sdl.h>
-#if defined(URHO3D_OPENGL)
-#include <imgui_impl_opengl3.h>
-#elif defined(URHO3D_D3D11)
-#include <imgui_impl_dx11.h>
-#endif
 
 namespace Urho3D
 {
 
 SystemUI::SystemUI(Urho3D::Context* context, ImGuiConfigFlags flags)
     : Object(context)
-    , vertexBuffer_(context)
-    , indexBuffer_(context)
 {
     imContext_ = ui::CreateContext();
 
@@ -91,28 +86,44 @@ SystemUI::~SystemUI()
 
 void SystemUI::PlatformInitialize()
 {
-    Graphics* graphics = GetSubsystem<Graphics>();
+    static const unsigned defaultNumVertices = 16 * 1024;
+    static const unsigned defaultNumIndices = 32 * 1024;
+
+    auto renderDevice = GetSubsystem<RenderDevice>();
+
     ImGuiIO& io = ui::GetIO();
-    io.DisplaySize = { static_cast<float>(graphics->GetWidth()), static_cast<float>(graphics->GetHeight()) };
-#if URHO3D_OPENGL
-    ImGui_ImplSDL2_InitForOpenGL(static_cast<SDL_Window*>(graphics->GetSDLWindow()), graphics->GetImpl()->GetGLContext());
-#else
-    ImGui_ImplSDL2_InitForD3D(static_cast<SDL_Window*>(graphics->GetSDLWindow()));
-#endif
-#if URHO3D_OPENGL
-#if __APPLE__
-#if URHO3D_GLES3
-    const char* glslVersion = "#version 300 es";
-#else
-    const char* glslVersion = "#version 150";
-#endif
-#else
-    const char* glslVersion = nullptr;
-#endif
-    ImGui_ImplOpenGL3_Init(glslVersion);
-#elif URHO3D_D3D11
-    ImGui_ImplDX11_Init(graphics->GetImpl()->GetDevice(), graphics->GetImpl()->GetDeviceContext());
-#endif
+    io.DisplaySize = ToImGui(renderDevice->GetSwapChainSize());
+
+    switch (renderDevice->GetBackend())
+    {
+    case RenderBackend::OpenGL:
+    {
+        ImGui_ImplSDL2_InitForOpenGL(renderDevice->GetSDLWindow(), SDL_GL_GetCurrentContext());
+        break;
+    }
+    case RenderBackend::Vulkan:
+    {
+        // Diligent manages Vulkan on its own.
+        ImGui_ImplSDL2_InitForSDLRenderer(renderDevice->GetSDLWindow());
+        break;
+    }
+    case RenderBackend::D3D11:
+    case RenderBackend::D3D12:
+    {
+        ImGui_ImplSDL2_InitForD3D(renderDevice->GetSDLWindow());
+        break;
+    }
+    default:
+    {
+        URHO3D_ASSERT(false, "Not implemented");
+        break;
+    }
+    }
+
+    impl_ = ea::make_unique<ImGuiDiligentRendererEx>(renderDevice);
+
+    // Ensure that swap chain is initialized
+    impl_->NewFrame();
 }
 
 void SystemUI::PlatformShutdown()
@@ -120,11 +131,8 @@ void SystemUI::PlatformShutdown()
     ImGuiIO& io = ui::GetIO();
     referencedTextures_.clear();
     ClearPerScreenFonts();
-#if URHO3D_OPENGL
-    ImGui_ImplOpenGL3_Shutdown();
-#elif URHO3D_D3D11
-    ImGui_ImplDX11_Shutdown();
-#endif
+
+    impl_ = nullptr;
     ImGui_ImplSDL2_Shutdown();
 }
 
@@ -216,18 +224,23 @@ void SystemUI::OnInputEnd()
         ui::UpdatePlatformWindows();
     }
 
+    auto input = GetSubsystem<Input>();
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    if (!renderDevice)
+        return;
+
+    if (fontTextures_.empty())
+       ReallocateFontTexture();
+
+    // ImTextureID may be transient, make sure to tag all used textures every frame
     ImGuiIO& io = ui::GetIO();
-    Graphics* graphics = GetSubsystem<Graphics>();
-    Input* input = GetSubsystem<Input>();
-    if (graphics && graphics->IsInitialized())
-    {
-#if URHO3D_OPENGL
-        ImGui_ImplOpenGL3_NewFrame();
-#elif URHO3D_D3D11
-        ImGui_ImplDX11_NewFrame();
-#endif
-        ImGui_ImplSDL2_NewFrame();
-    }
+    URHO3D_ASSERT(fontTextures_.size() >= io.AllFonts.size());
+    io.Fonts->TexID = ToImTextureID(fontTextures_[0]);
+    for (int i = 1; i < io.AllFonts.size(); ++i)
+        io.AllFonts[i]->TexID = ToImTextureID(fontTextures_[i]);
+
+    impl_->NewFrame();
+    ImGui_ImplSDL2_NewFrame();
 
     ui::NewFrame();
 
@@ -290,33 +303,13 @@ void SystemUI::OnRenderEnd()
         io.WantSetMousePos = true;
     }
 
-#if URHO3D_OPENGL
-    ImGui_ImplOpenGL3_RenderDrawData(ui::GetDrawData());
-#elif URHO3D_D3D11
-    // Resetting render target view required because if last view we rendered into was a texture
-    // ImGui would try to render into that texture and we would see no UI on screen.
-    auto* graphics = GetSubsystem<Graphics>();
-    auto* graphicsImpl = graphics->GetImpl();
-    ID3D11RenderTargetView* defaultRenderTargetView = graphicsImpl->GetDefaultRenderTargetView();
-    graphicsImpl->GetDeviceContext()->OMSetRenderTargets(1, &defaultRenderTargetView, nullptr);
-    graphicsImpl->MarkRenderTargetsDirty();
-    ImGui_ImplDX11_RenderDrawData(ui::GetDrawData());
-#endif
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
-#if URHO3D_OPENGL
-        SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
-        SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
-#endif
-        ui::UpdatePlatformWindows();
-        ui::RenderPlatformWindowsDefault();
-#if URHO3D_OPENGL
-        SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
-#elif URHO3D_D3D11
-        graphicsImpl->GetDeviceContext()->OMSetRenderTargets(1, &defaultRenderTargetView, nullptr);
-        graphicsImpl->MarkRenderTargetsDirty();
-#endif
-    }
+    auto renderDevice = GetSubsystem<RenderDevice>();
+    RenderContext* renderContext = renderDevice->GetRenderContext();
+    renderContext->SetSwapChainRenderTargets();
+    renderContext->SetFullViewport();
+
+    impl_->RenderDrawData(ui::GetDrawData());
+    impl_->RenderSecondaryWindows();
 }
 
 void SystemUI::OnMouseVisibilityChanged(StringHash, VariantMap& args)
@@ -388,17 +381,18 @@ void SystemUI::ReallocateFontTexture()
     ClearPerScreenFonts();
 
     // Store main atlas, imgui expects it.
-    io.Fonts->TexID = AllocateFontTexture(io.Fonts);
-
+    fontTextures_.push_back(AllocateFontTexture(io.Fonts));
     io.AllFonts.push_back(io.Fonts);
+
     for (ImGuiPlatformMonitor& monitor : platform_io.Monitors)
     {
         if (monitor.DpiScale == 1.0f)
             continue; // io.Fonts has default scale.
         ImFontAtlas* atlas = new ImFontAtlas();
         io.Fonts->CloneInto(atlas, monitor.DpiScale);
+
+        fontTextures_.push_back(AllocateFontTexture(atlas));
         io.AllFonts.push_back(atlas);
-        atlas->TexID = AllocateFontTexture(atlas);
     }
 }
 
@@ -411,31 +405,29 @@ void SystemUI::ClearPerScreenFonts()
     io.AllFonts.clear();
 }
 
-ImTextureID SystemUI::AllocateFontTexture(ImFontAtlas* atlas)
+SharedPtr<Texture2D> SystemUI::AllocateFontTexture(ImFontAtlas* atlas) const
 {
     // Create font texture.
     unsigned char* pixels;
     int width, height;
-    atlas->ClearTexData();
 
-    const ImFontBuilderIO* fontBuilder = ImGuiFreeType::GetBuilderForFreeType();
-    atlas->FontBuilderFlags = ImGuiFreeTypeBuilderFlags_ForceAutoHint;
-    fontBuilder->FontBuilder_Build(atlas);
+    if (atlas->ConfigData.Size > 0)
+    {
+        atlas->ClearTexData();
+
+        const ImFontBuilderIO* fontBuilder = ImGuiFreeType::GetBuilderForFreeType();
+        atlas->FontBuilderFlags = ImGuiFreeTypeBuilderFlags_ForceAutoHint;
+        fontBuilder->FontBuilder_Build(atlas);
+    }
     atlas->GetTexDataAsRGBA32(&pixels, &width, &height);
 
     SharedPtr<Texture2D> fontTexture = MakeShared<Texture2D>(context_);
     fontTexture->SetNumLevels(1);
     fontTexture->SetFilterMode(FILTER_BILINEAR);
-    fontTexture->SetSize(width, height, Graphics::GetRGBAFormat());
+    fontTexture->SetSize(width, height, TextureFormat::TEX_FORMAT_RGBA8_UNORM);
     fontTexture->SetData(0, 0, 0, width, height, pixels);
-    fontTextures_.push_back(fontTexture);
 
-    // Store return texture identifier
-#if URHO3D_D3D11
-    return fontTexture->GetShaderResourceView();
-#else
-    return fontTexture->GetGPUObject();
-#endif
+    return fontTexture;
 }
 
 void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)

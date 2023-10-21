@@ -7,8 +7,14 @@
 #include "_GammaCorrection.glsl"
 #include "_BRDF.glsl"
 
+// JS: this has to be before samplers so we can see it for depth reconstruction
+#ifdef URHO3D_XR
+    VERTEX_OUTPUT_QUAL(flat, int vInstID)
+#endif
+
 #include "_Uniforms.glsl"
-#include "_Samplers.glsl"
+#include "_InternalSamplers.glsl"
+#include "_SamplerUtils.glsl"
 #include "_VertexLayout.glsl"
 
 #include "_VertexTransform.glsl"

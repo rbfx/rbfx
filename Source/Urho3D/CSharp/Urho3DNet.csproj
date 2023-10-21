@@ -18,7 +18,7 @@
       <Output TaskParameter="Include" ItemName="Compile" />
     </CreateItem>
   </Target>
-  <Target Name="GatherBuildFilesImGui" BeforeTargets="BeforeCompile">
+  <Target Name="GatherBuildFilesImGui" BeforeTargets="BeforeCompile" Condition="Exists('$(GeneratedCodePath)ImGuiCSharp')">
     <CreateItem Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)ImGuiCSharp&quot;, &quot;*.cs&quot;))">
       <Output TaskParameter="Include" ItemName="Compile" />
     </CreateItem>

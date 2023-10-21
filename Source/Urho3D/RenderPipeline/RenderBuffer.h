@@ -23,39 +23,36 @@
 #pragma once
 
 #include "../Container/FlagSet.h"
-#include "../Container/IndexAllocator.h"
 #include "../Core/Object.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/RenderAPI/RenderTargetView.h"
 
 #include <EASTL/optional.h>
 
 namespace Urho3D
 {
 
+class RawTexture;
 class RenderSurface;
 class RenderPipelineInterface;
-class Texture;
-class Texture2D;
 struct CommonFrameInfo;
 struct FrameInfo;
 
 /// Base class fro writable texture or texture region. Readability is not guaranteed.
-class URHO3D_API RenderBuffer : public Object, public IDFamily<RenderBuffer>
+class URHO3D_API RenderBuffer : public Object
 {
     URHO3D_OBJECT(RenderBuffer, Object);
 
 public:
     /// Return readable texture. May return null if not supported.
-    virtual Texture* GetTexture() const = 0;
+    virtual RawTexture* GetTexture() const = 0;
     /// Return render surface. Face could be specified for cubemap texture.
-    virtual RenderSurface* GetRenderSurface(CubeMapFace face = FACE_POSITIVE_X) const = 0;
+    virtual RenderTargetView GetView(unsigned slice = 0) const = 0;
+    virtual RenderTargetView GetReadOnlyDepthView(unsigned slice = 0) const = 0;
     /// Return effective viewport rectangle.
     /// Always equal to whole texture for TextureRenderBuffer, not so for viewport buffers.
     virtual IntRect GetViewportRect() const = 0;
-
-    /// Return readable Texture2D or null if not supported or use different texture type.
-    Texture2D* GetTexture2D() const;
 
 protected:
     RenderBuffer(RenderPipelineInterface* renderPipeline);
@@ -68,7 +65,7 @@ protected:
     virtual void OnRenderEnd(const CommonFrameInfo& frameInfo) = 0;
     /// @}
 
-    Renderer* renderer_{};
+    RenderDevice* renderDevice_{};
     bool bufferIsReady_{};
 };
 
@@ -84,8 +81,9 @@ public:
 
     /// RenderBuffer implementation
     /// @{
-    Texture* GetTexture() const override;
-    RenderSurface* GetRenderSurface(CubeMapFace face = FACE_POSITIVE_X) const override;
+    RawTexture* GetTexture() const override;
+    RenderTargetView GetView(unsigned slice) const override;
+    RenderTargetView GetReadOnlyDepthView(unsigned slice) const override;
     IntRect GetViewportRect() const override;
     /// @}
 
@@ -98,14 +96,12 @@ private:
     RenderBufferParams params_;
     Vector2 sizeMultiplier_ = Vector2::ONE;
     IntVector2 fixedSize_;
-    /// If not zero, texture will keep content between frames.
-    unsigned persistenceKey_{};
     /// @}
 
     /// Current frame info
     /// @{
     IntVector2 currentSize_;
-    Texture* currentTexture_{};
+    RawTexture* currentTexture_{};
     /// @}
 };
 
@@ -120,8 +116,9 @@ public:
 
     /// RenderBuffer implementation
     /// @{
-    Texture* GetTexture() const override;
-    RenderSurface* GetRenderSurface(CubeMapFace face = FACE_POSITIVE_X) const override;
+    RawTexture* GetTexture() const override;
+    RenderTargetView GetView(unsigned slice) const override;
+    RenderTargetView GetReadOnlyDepthView(unsigned slice) const override;
     IntRect GetViewportRect() const override { return CheckIfBufferIsReady() ? viewportRect_ : IntRect::ZERO; }
     /// @}
 
@@ -145,8 +142,9 @@ public:
 
     /// RenderBuffer implementation
     /// @{
-    Texture* GetTexture() const override;
-    RenderSurface* GetRenderSurface(CubeMapFace face = FACE_POSITIVE_X) const override;
+    RawTexture* GetTexture() const override;
+    RenderTargetView GetView(unsigned slice) const override;
+    RenderTargetView GetReadOnlyDepthView(unsigned slice) const override;
     IntRect GetViewportRect() const override { return CheckIfBufferIsReady() ? viewportRect_ : IntRect::ZERO; }
     /// @}
 

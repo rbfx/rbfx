@@ -22,7 +22,8 @@ UNIFORM_BUFFER_BEGIN(4, Material)
 UNIFORM_BUFFER_END(4, Material)
 
 #include "_Uniforms.glsl"
-#include "_Samplers.glsl"
+#include "_DefaultSamplers.glsl"
+#include "_SamplerUtils.glsl"
 #include "_VertexLayout.glsl"
 
 #include "_VertexTransform.glsl"
@@ -48,23 +49,25 @@ void main()
     vNormal = vertexTransform.normal;
     vWorldPos = vertexTransform.position.xyz;
     vMetadata = vec4(cLightmapGeometry, cLightmapPositionBias.x, cLightmapPositionBias.y, 0.0);
-    vTexCoord = GetTransformedTexCoord();
+    vTexCoord = GetTransformedTexCoord(cUOffset, cVOffset);
 }
 #endif
 
 #ifdef URHO3D_PIXEL_SHADER
 void main()
 {
-#ifdef URHO3D_MATERIAL_HAS_DIFFUSE
-    vec4 albedoInput = texture2D(sDiffMap, vTexCoord);
-    vec4 albedo = GammaToLinearSpaceAlpha(cMatDiffColor) * DiffMap_ToLinear(albedoInput);
+#if URHO3D_TEXTURE_ALBEDO
+    vec4 albedoInput = texture(sAlbedo, vTexCoord);
+    vec4 albedo = (URHO3D_TEXTURE_ALBEDO == 1 ? Texture_ToLinearAlpha_1(albedoInput) : Texture_ToLinearAlpha_2(albedoInput))
+        * GammaToLinearSpaceAlpha(cMatDiffColor);
 #else
     vec4 albedo = GammaToLinearSpaceAlpha(cMatDiffColor);
 #endif
 
-#ifdef URHO3D_MATERIAL_HAS_EMISSIVE
-    vec4 emissiveInput = texture2D(sEmissiveMap, vTexCoord);
-    vec3 emissive = GammaToLinearSpace(cMatEmissiveColor) * EmissiveMap_ToLinear(emissiveInput.rgb);
+#if URHO3D_TEXTURE_EMISSION
+    vec4 emissiveInput = texture(sEmission, vTexCoord);
+    vec3 emissive = (URHO3D_TEXTURE_EMISSION == 1 ? Texture_ToLinear_1(emissiveInput) : Texture_ToLinear_2(emissiveInput))
+        * GammaToLinearSpace(cMatEmissiveColor);
 #else
     vec3 emissive = GammaToLinearSpace(cMatEmissiveColor);
 #endif

@@ -97,22 +97,25 @@ IncludeCategories:
     Priority: -1
   - Regex: '<Urho3D\/Precompiled\..*>'
     Priority: -1
-  # 6. DebugNew goes last
+  # 3. <Urho3D/Urho3D.h> before anything else.
+  - Regex: '<Urho3D\/Urho3D\.h>'
+    Priority: 10
+  # 7. DebugNew goes last
   - Regex: '.*\/DebugNew\.h.*'
     Priority: 10000
-  # 4. Includes for our libraries
+  # 5. Includes for our libraries
   - Regex: '<Urho3D\/.*>'
     Priority: 100
-  # 5. Includes for 3rd-party libraries
+  # 6. Includes for 3rd-party libraries
   - Regex: '<EASTL\/.*>'
     Priority: 301
   - Regex: '<.*\/.*>'
     Priority: 299
   - Regex: '<.*>'
     Priority: 302
-  # 3. Includes for this target
+  # 4. Includes for this target
   - Regex: '".*"'
-    Priority: 1
+    Priority: 11
 IncludeIsMainRegex: '$'
 IncludeIsMainSourceRegex: ''
 IndentCaseLabels: false

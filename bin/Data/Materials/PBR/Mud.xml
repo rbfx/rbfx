@@ -2,9 +2,9 @@
 <material>
 	<technique name="Techniques/LitOpaque.xml" />
 	<shader vsdefines="PBR NORMALMAP" psdefines="PBR NORMALMAP" />
-	<texture unit="diffuse" name="Textures/PBR/Mud/Albedo.jpg" />
-	<texture unit="normal" name="Textures/PBR/Mud/Normal.jpg" />
-	<texture unit="specular" name="Textures/PBR/Mud/Properties.jpg" />
+	<texture slot="Albedo" name="Textures/PBR/Mud/Albedo.jpg" />
+	<texture slot="Normal" name="Textures/PBR/Mud/Normal.jpg" />
+	<texture slot="Properties" name="Textures/PBR/Mud/Properties.jpg" />
 	<parameter name="UOffset" value="1 0 0 0" />
 	<parameter name="VOffset" value="0 1 0 0" />
 	<parameter name="MatDiffColor" value="1 1 1 1" />

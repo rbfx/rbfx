@@ -1,0 +1,3 @@
+<material>
+    <technique name="Techniques/InvalidShader.xml" />
+</material>

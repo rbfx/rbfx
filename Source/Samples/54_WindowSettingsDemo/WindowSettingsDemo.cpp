@@ -28,10 +28,12 @@
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
+#include <Urho3D/RenderAPI/RenderDevice.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/UI/Button.h>
 #include <Urho3D/UI/CheckBox.h>
 #include <Urho3D/UI/DropDownList.h>
+#include <Urho3D/UI/ListView.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/ToolTip.h>
 #include <Urho3D/UI/UIEvents.h>
@@ -144,8 +146,12 @@ void WindowSettingsDemo::InitSettings()
     }
 
     // Create resolution selector
-    resolutionControl_ = window_->CreateChild<DropDownList>("Resolution");
-    resolutionControl_->SetMinHeight(24);
+    resolutionLabel_ = window_->CreateChild<Text>("Resolution Label");
+    resolutionLabel_->SetText("???");
+    resolutionLabel_->SetStyleAuto();
+
+    resolutionControl_ = window_->CreateChild<ListView>("Resolution");
+    resolutionControl_->SetMinHeight(256);
     resolutionControl_->SetStyleAuto();
 
     auto resolutionPlaceholder = MakeShared<Text>(context_);
@@ -236,69 +242,79 @@ void WindowSettingsDemo::InitSettings()
     SubscribeToEvent(applyButton, E_RELEASED,
         [this, graphics]
     {
+        auto* renderDevice = GetSubsystem<RenderDevice>();
+
         const unsigned monitor = monitorControl_->GetSelection();
         if (monitor == M_MAX_UNSIGNED)
             return;
 
-        const auto& resolutions = graphics->GetResolutions(monitor);
-        const unsigned selectedResolution = resolutionControl_->GetSelection();
-        if (selectedResolution >= resolutions.size())
+        const auto& fullscreenModes = RenderDevice::GetFullscreenModes(monitor);
+        const unsigned selectedMode = resolutionControl_->GetSelection();
+        if (selectedMode >= fullscreenModes.size())
             return;
 
-        const bool fullscreen = fullscreenControl_->IsChecked();
-        const bool borderless = borderlessControl_->IsChecked();
-        const bool resizable = resizableControl_->IsChecked();
-        const bool vsync = vsyncControl_->IsChecked();
+        WindowSettings windowSettings;
+
+        if (fullscreenControl_->IsChecked())
+            windowSettings.mode_ = WindowMode::Fullscreen;
+        else if (borderlessControl_->IsChecked())
+            windowSettings.mode_ = WindowMode::Borderless;
+        windowSettings.resizable_ = resizableControl_->IsChecked();
+        windowSettings.vSync_ = vsyncControl_->IsChecked();
 
         const unsigned multiSampleSelection = multiSampleControl_->GetSelection();
-        const int multiSample = multiSampleSelection == M_MAX_UNSIGNED ? 1 : static_cast<int>(1 << multiSampleSelection);
+        windowSettings.multiSample_ =
+            multiSampleSelection == M_MAX_UNSIGNED ? 1 : static_cast<int>(1 << multiSampleSelection);
 
-        // TODO: Expose these options too?
-        const bool highDPI = graphics->GetHighDPI();
-        const bool tripleBuffer = graphics->GetTripleBuffer();
+        const float dpiScale = windowSettings.mode_ == WindowMode::Fullscreen ? 1.0 : renderDevice->GetDpiScale();
+        const int width = RoundToInt(fullscreenModes[selectedMode].size_.x_ / dpiScale);
+        const int height = RoundToInt(fullscreenModes[selectedMode].size_.y_ / dpiScale);
+        windowSettings.size_ = {width, height};
 
-        const int width = resolutions[selectedResolution].x_;
-        const int height = resolutions[selectedResolution].y_;
-        const int refreshRate = resolutions[selectedResolution].z_;
-        graphics->SetMode(width, height, fullscreen, borderless, resizable, highDPI, vsync, tripleBuffer, multiSample, monitor, refreshRate, false);
+        windowSettings.refreshRate_ = fullscreenModes[selectedMode].refreshRate_;
+
+        graphics->SetDefaultWindowModes(windowSettings);
     });
 }
 
 void WindowSettingsDemo::SynchronizeSettings()
 {
-    auto* graphics = GetSubsystem<Graphics>();
+    auto* renderDevice = GetSubsystem<RenderDevice>();
+    const WindowSettings& windowSettings = renderDevice->GetWindowSettings();
 
     // Synchronize monitor
-    const unsigned currentMonitor = graphics->GetMonitor();
-    monitorControl_->SetSelection(currentMonitor);
+    monitorControl_->SetSelection(windowSettings.monitor_);
 
     // Synchronize resolution list
     resolutionControl_->RemoveAllItems();
-    const auto& resolutions = graphics->GetResolutions(currentMonitor);
-    for (const IntVector3& resolution : resolutions)
+    const auto& fullscreenModes = RenderDevice::GetFullscreenModes(windowSettings.monitor_);
+    for (const FullscreenMode& mode : fullscreenModes)
     {
         auto resolutionEntry = MakeShared<Text>(context_);
-        resolutionEntry->SetText(ToString("%dx%d, %d Hz", resolution.x_, resolution.y_, resolution.z_));
+        resolutionEntry->SetText(ToString("%dx%d, %d Hz", mode.size_.x_, mode.size_.y_, mode.refreshRate_));
         resolutionEntry->SetMinWidth(CeilToInt(resolutionEntry->GetRowWidth(0) + 10));
         resolutionControl_->AddItem(resolutionEntry);
-        resolutionEntry->SetStyleAuto();
+        resolutionEntry->SetStyle("FileSelectorListText");
     }
 
     // Synchronize selected resolution
-    const unsigned currentResolution = graphics->FindBestResolutionIndex(currentMonitor,
-        graphics->GetWidth(), graphics->GetHeight(), graphics->GetRefreshRate());
-    resolutionControl_->SetSelection(currentResolution);
+    const IntVector2 currentSwapChainSize = renderDevice->GetSwapChainSize();
+    const FullscreenMode currentMode{currentSwapChainSize, windowSettings.refreshRate_};
+    const unsigned currentModeIndex = RenderDevice::GetClosestFullscreenModeIndex(fullscreenModes, currentMode);
+    resolutionControl_->SetSelection(currentModeIndex);
+    resolutionLabel_->SetText(
+        Format("Current: {}x{}, {} Hz", currentMode.size_.x_, currentMode.size_.y_, currentMode.refreshRate_));
 
     // Synchronize fullscreen and borderless flags
-    fullscreenControl_->SetChecked(graphics->GetFullscreen());
-    borderlessControl_->SetChecked(graphics->GetBorderless());
-    resizableControl_->SetChecked(graphics->GetResizable());
-    vsyncControl_->SetChecked(graphics->GetVSync());
+    fullscreenControl_->SetChecked(windowSettings.mode_ == WindowMode::Fullscreen);
+    borderlessControl_->SetChecked(windowSettings.mode_ == WindowMode::Borderless);
+    resizableControl_->SetChecked(windowSettings.resizable_);
+    vsyncControl_->SetChecked(windowSettings.vSync_);
 
     // Synchronize MSAA
     for (unsigned i = 0; i <= 4; ++i)
     {
-        if (graphics->GetMultiSample() == static_cast<int>(1 << i))
+        if (windowSettings.multiSample_ == static_cast<int>(1 << i))
             multiSampleControl_->SetSelection(i);
     }
 }

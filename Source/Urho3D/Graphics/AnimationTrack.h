@@ -59,6 +59,8 @@ struct URHO3D_API AnimationTrack : public KeyFrameSet<AnimationKeyFrame>
     StringHash nameHash_;
     /// Bitmask of included data (position, rotation, scale).
     AnimationChannelFlags channelMask_{};
+    /// Weight of the track.
+    float weight_{1.0f};
 
     /// Sample value at given time.
     void Sample(float time, float duration, bool isLooped, unsigned& frameIndex, Transform& transform) const;
@@ -72,6 +74,9 @@ using VariantAnimationKeyFrame = VariantCurvePoint;
 /// Generic animation track, stores keyframes of single animatable entity.
 struct URHO3D_API VariantAnimationTrack : public VariantCurve
 {
+    /// Weight of the track.
+    float weight_{1.0f};
+
     /// Return whether the track is looped, i.e. the first and the last keyframes have the same value.
     bool IsLooped() const;
 };

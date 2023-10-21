@@ -22,150 +22,59 @@
 
 #pragma once
 
+#include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/RenderAPI/RawShader.h"
+
 #include <EASTL/unordered_map.h>
 
-#include "../Container/Ptr.h"
-#include "../Graphics/GPUObject.h"
-#include "../Graphics/GraphicsDefs.h"
-#include "../IO/FileIdentifier.h"
+namespace Diligent
+{
+struct IShader;
+}
 
 namespace Urho3D
 {
 
-class ConstantBuffer;
 class Shader;
-
-/// %Shader parameter definition.
-struct URHO3D_API ShaderParameter
-{
-    /// Construct with defaults.
-    ShaderParameter() = default;
-    /// Construct with name, glType and location, leaving the remaining attributes zero-initialized (used only in OpenGL).
-    ShaderParameter(const ea::string& name, unsigned glType, int location);
-    /// Construct with type, name, offset, size, and buffer, leaving the remaining attributes zero-initialized (used only in Direct3D11).
-    ShaderParameter(ShaderType type, const ea::string& name, unsigned offset, unsigned size, unsigned buffer);
-
-    /// %Shader type.
-    ShaderType type_{};
-    /// Name of the parameter.
-    ea::string name_{};
-
-    union
-    {
-        /// Offset in constant buffer.
-        unsigned offset_;
-        /// OpenGL uniform location.
-        int location_;
-    };
-
-    union
-    {
-        /// Parameter size. Used only on Direct3D11 to calculate constant buffer size.
-        unsigned size_;
-        /// Parameter OpenGL type.
-        unsigned glType_;
-    };
-
-    /// Constant buffer index. Only used on Direct3D11.
-    unsigned buffer_{};
-    /// Constant buffer pointer. Defined only in shader programs.
-    ConstantBuffer* bufferPtr_{};
-};
+struct FileIdentifier;
+struct SpirVShader;
 
 /// Vertex or pixel shader on the GPU.
-class URHO3D_API ShaderVariation : public RefCounted, public GPUObject
+class URHO3D_API ShaderVariation
+    : public RawShader
 {
 public:
-    using ConstantBufferSizes = ea::array<unsigned, MAX_SHADER_PARAMETER_GROUPS>;
+    ShaderVariation(Shader* owner, ShaderType type, const ea::string& defines);
 
-    /// Construct.
-    ShaderVariation(Shader* owner, ShaderType type);
-    /// Destruct.
-    ~ShaderVariation() override;
-
-    /// Mark the GPU resource destroyed on graphics context destruction.
-    void OnDeviceLost() override;
-    /// Release the shader.
-    void Release() override;
-
-    /// Compile the shader. Return true if successful.
-    bool Create();
-    /// Set name.
-    void SetName(const ea::string& name);
-    /// Set defines.
-    void SetDefines(const ea::string& defines);
-
-    /// Return the owner resource.
-    Shader* GetOwner() const;
-
-    /// Return shader type.
-    ShaderType GetShaderType() const { return type_; }
-
-    /// Return shader name.
-    const ea::string& GetName() const { return name_; }
-
-    /// Return full shader name.
-    ea::string GetFullName() const { return name_ + "(" + defines_ + ")"; }
-
-    /// Return whether uses a parameter. Not applicable on OpenGL, where this information is contained in ShaderProgram instead.
-    bool HasParameter(StringHash param) const { return parameters_.contains(param); }
-
-    /// Return whether uses a texture unit (only for pixel shaders). Not applicable on OpenGL, where this information is contained in ShaderProgram instead.
-    bool HasTextureUnit(TextureUnit unit) const { return useTextureUnits_[unit]; }
-
-    /// Return all parameter definitions. Not applicable on OpenGL, where this information is contained in ShaderProgram instead.
-    const ea::unordered_map<StringHash, ShaderParameter>& GetParameters() const { return parameters_; }
-
-    /// Return vertex element hash.
-    unsigned long long GetElementHash() const { return elementHash_; }
-
-    /// Return shader bytecode. Stored persistently on Direct3D11 only.
-    const ea::vector<unsigned char>& GetByteCode() const { return byteCode_; }
-
-    /// Return defines.
+    /// Return shader name (as used in resources).
+    ea::string GetShaderName() const;
+    /// Return full shader variation name with defines.
+    ea::string GetShaderVariationName() const;
+    /// Return defines used to create the shader.
     const ea::string& GetDefines() const { return defines_; }
 
-    /// Return compile error/warning string.
-    const ea::string& GetCompilerOutput() const { return compilerOutput_; }
-
-    /// Return constant buffer data sizes.
-    const ConstantBufferSizes& GetConstantBufferSizes() const { return constantBufferSizes_; }
-
-    /// D3D11 vertex semantic names. Used internally.
-    static const char* elementSemanticNames[];
-
 private:
-    /// Load bytecode from a file. Return true if successful.
-    bool LoadByteCode(const FileIdentifier& binaryShaderName);
-    /// Compile from source. Return true if successful.
-    bool Compile();
-    /// Inspect the constant parameters and input layout (if applicable) from the shader bytecode.
-    void ParseParameters(unsigned char* bufData, unsigned bufSize);
-    /// Save bytecode to a file.
-    void SaveByteCode(const FileIdentifier& binaryShaderName);
-    /// Calculate constant buffer sizes from parameters.
-    void CalculateConstantBufferSizes();
+    ea::string GetCachedVariationName(ea::string_view extension) const;
+    bool NeedShaderTranslation() const;
+    bool NeedShaderOptimization() const;
 
-    /// Shader this variation belongs to.
+    ea::string PrepareGLSLShaderCode(const ea::string& originalShaderCode) const;
+    bool ProcessShaderSource(ea::string_view& translatedSource, const SpirVShader*& translatedSpirv,
+        ConstByteSpan& translatedBytecode, ea::string_view originalShaderCode);
+
+    void OnReloaded();
+    bool Create();
+    bool CompileFromSource();
+    bool LoadByteCode(const FileIdentifier& binaryShaderName);
+    void SaveByteCode(const FileIdentifier& binaryShaderName);
+
+    /// Cached pointer to Graphics subsystem.
+    WeakPtr<Graphics> graphics_;
+    /// Source shader.
     WeakPtr<Shader> owner_;
-    /// Shader type.
-    ShaderType type_;
-    /// Vertex element hash for vertex shaders. Zero for pixel shaders. Note that hashing is different than vertex buffers.
-    unsigned long long elementHash_{};
-    /// Shader parameters.
-    ea::unordered_map<StringHash, ShaderParameter> parameters_;
-    /// Texture unit use flags.
-    bool useTextureUnits_[MAX_TEXTURE_UNITS]{};
-    /// Constant buffer sizes. 0 if a constant buffer slot is not in use.
-    ConstantBufferSizes constantBufferSizes_{};
-    /// Shader bytecode. Needed for inspecting the input signature and parameters. Not used on OpenGL.
-    ea::vector<unsigned char> byteCode_;
-    /// Shader name.
-    ea::string name_;
-    /// Defines to use in compiling.
+    /// Defines to use when compiling the shader.
     ea::string defines_;
-    /// Shader compile error string.
-    ea::string compilerOutput_;
 };
 
-}
+} // namespace Urho3D

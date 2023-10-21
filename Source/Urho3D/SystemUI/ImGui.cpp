@@ -25,6 +25,8 @@
 
 #include "../SystemUI/ImGui.h"
 
+#include "Urho3D/Graphics/Texture2D.h"
+
 #include <SDL.h>
 
 namespace Urho3D
@@ -61,6 +63,11 @@ int ToImGui(MouseButton button)
     default:
         return -1;
     }
+}
+
+ImTextureID ToImTextureID(Texture2D* texture)
+{
+    return texture->GetHandles().srv_;
 }
 
 }

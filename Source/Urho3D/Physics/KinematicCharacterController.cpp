@@ -55,7 +55,7 @@ KinematicCharacterController::KinematicCharacterController(Context* context)
     : Component(context)
 {
     pairCachingGhostObject_ = ea::make_unique<btPairCachingGhostObject>();
-    pairCachingGhostObject_->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
+    SetTrigger(true);
 
     physicsCollisionData_[PhysicsCollision::P_TRIGGER] = true;
     physicsCollisionData_[PhysicsCollision::P_CONTACTS] = VariantVector{};
@@ -86,6 +86,7 @@ void KinematicCharacterController::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Fall Speed", GetFallSpeed, SetFallSpeed, float, 55.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Jump Speed", GetJumpSpeed, SetJumpSpeed, float, 9.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Max Slope", GetMaxSlope, SetMaxSlope, float, 45.0f, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Is Trigger", IsTrigger, SetTrigger, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Activate Triggers", bool, activateTriggers_, true, AM_DEFAULT);
 }
 
@@ -382,6 +383,22 @@ void KinematicCharacterController::SetCollisionLayerAndMask(unsigned layer, unsi
             phyicsWorld->addCollisionObject(pairCachingGhostObject_.get(), static_cast<int>(colLayer_), static_cast<int>(colMask_));
         }
     }
+}
+
+void KinematicCharacterController::SetTrigger(bool enable)
+{
+    auto flags = pairCachingGhostObject_->getCollisionFlags();
+    if (enable)
+        flags |= btCollisionObject::CF_NO_CONTACT_RESPONSE;
+    else
+        flags &= ~btCollisionObject::CF_NO_CONTACT_RESPONSE;
+    pairCachingGhostObject_->setCollisionFlags(flags);
+}
+
+bool KinematicCharacterController::IsTrigger() const
+{
+    auto flags = pairCachingGhostObject_->getCollisionFlags();
+    return flags & btCollisionObject::CF_NO_CONTACT_RESPONSE;
 }
 
 Vector3 KinematicCharacterController::GetRawPosition() const

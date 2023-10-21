@@ -217,7 +217,7 @@ void SceneHierarchyWidget::RenderNode(SceneSelection& selection, Node* node)
     if (pathToActiveObject_.contains(node))
         ui::SetNextItemOpen(true);
 
-    const IdScopeGuard guard(static_cast<void*>(node));
+    const IdScopeGuard guard(node->GetID());
     ui::PushStyleColor(ImGuiCol_Text, GetItemColor(itemFlags));
     const bool opened = ui::TreeNodeEx(GetNodeTitle(node).c_str(), flags);
     ui::PopStyleColor();
@@ -272,6 +272,7 @@ void SceneHierarchyWidget::RenderNode(SceneSelection& selection, Node* node)
     {
         if (settings_.showComponents_)
         {
+            const IdScopeGuard guard("Components");
             for (Component* component : node->GetComponents())
                 RenderComponent(selection, component);
         }
@@ -303,7 +304,7 @@ void SceneHierarchyWidget::RenderComponent(SceneSelection& selection, Component*
     if (component->IsEnabledEffective())
         itemFlags |= HierarchyItemFlag::Enabled;
 
-    const IdScopeGuard guard(static_cast<void*>(component));
+    const IdScopeGuard guard(component->GetID());
     ui::PushStyleColor(ImGuiCol_Text, GetItemColor(itemFlags));
     const bool opened = ui::TreeNodeEx(component->GetTypeName().c_str(), flags);
     ui::PopStyleColor();

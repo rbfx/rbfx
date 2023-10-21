@@ -209,13 +209,16 @@ void Editor::Setup()
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = resourcePrefixPath_;
     engineParameters_[EP_WINDOW_MAXIMIZE] = true;
     engineParameters_[EP_ENGINE_AUTO_LOAD_SCRIPTS] = false;
-    engineParameters_[EP_SYSTEMUI_FLAGS] = ImGuiConfigFlags_DpiEnableScaleFonts;
+
+    // TODO: Consider scaling fonts based on DPI. ImGuiConfigFlags_DpiEnableScaleFonts seems to create issues on Retina.
+    unsigned imguiFlags = 0;
+    if (GetPlatform() == PlatformId::Windows)
+        imguiFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
 #if URHO3D_SYSTEMUI_VIEWPORTS
-    engineParameters_[EP_HIGH_DPI] = true;
-    engineParameters_[EP_SYSTEMUI_FLAGS] = engineParameters_[EP_SYSTEMUI_FLAGS].GetUInt() | ImGuiConfigFlags_ViewportsEnable /*| ImGuiConfigFlags_DpiEnableScaleViewports*/;
-#else
-    engineParameters_[EP_HIGH_DPI] = true;
+    imguiFlags |= ImGuiConfigFlags_ViewportsEnable;
 #endif
+
+    engineParameters_[EP_SYSTEMUI_FLAGS] = imguiFlags;
 
     PluginApplication::RegisterStaticPlugins();
 }
@@ -706,9 +709,13 @@ void Editor::InitializeSystemUI()
 
     auto systemUI = GetSubsystem<SystemUI>();
     systemUI->ApplyStyleDefault(true, 1.0f);
-    systemUI->AddFont("Fonts/NotoSans-Regular.ttf", notoSansRanges, 16.f);
+
+    ImFont* defaultFont = systemUI->AddFont("Fonts/NotoSans-Regular.ttf", notoSansRanges, 16.f);
     systemUI->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 14.f, true);
     systemUI->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 12.f, true);
+
+    ImGuiIO& io = ui::GetIO();
+    io.FontDefault = defaultFont;
 
     ImFont* monoFont = systemUI->AddFont("Fonts/NotoMono-Regular.ttf", notoMonoRanges, 14.f);
     Project::SetMonoFont(monoFont);

@@ -42,23 +42,20 @@ struct PipelineBatchByState
     static constexpr unsigned long long PixelLightBits      = 8;
     static constexpr unsigned long long LightmapBits        = 8;
     static constexpr unsigned long long MaterialBits        = 16;
-    static constexpr unsigned long long PipelineStateBits   = 8;
-    static constexpr unsigned long long ShaderProgramBits   = 16;
+    static constexpr unsigned long long PipelineStateBits   = 24;
     static constexpr unsigned long long RenderOrderBits     = 8;
 
     static constexpr unsigned long long PixelLightMask      = (1ull << PixelLightBits) - 1;
     static constexpr unsigned long long LightmapMask        = (1ull << LightmapBits) - 1;
     static constexpr unsigned long long MaterialMask        = (1ull << MaterialBits) - 1;
     static constexpr unsigned long long PipelineStateMask   = (1ull << PipelineStateBits) - 1;
-    static constexpr unsigned long long ShaderProgramMask   = (1ull << ShaderProgramBits) - 1;
     static constexpr unsigned long long RenderOrderMask     = (1ull << RenderOrderBits) - 1;
 
     static constexpr unsigned long long PixelLightOffset    = 0;
     static constexpr unsigned long long LightmapOffset      = PixelLightOffset    + PixelLightBits;
     static constexpr unsigned long long MaterialOffset      = LightmapOffset      + LightmapBits;
     static constexpr unsigned long long PipelineStateOffset = MaterialOffset      + MaterialBits;
-    static constexpr unsigned long long ShaderProgramOffset = PipelineStateOffset + PipelineStateBits;
-    static constexpr unsigned long long RenderOrderOffset   = ShaderProgramOffset + ShaderProgramBits;
+    static constexpr unsigned long long RenderOrderOffset   = PipelineStateOffset + PipelineStateBits;
 
     static_assert(RenderOrderOffset + RenderOrderBits == 64, "Unexpected mask layout");
     static_assert((
@@ -66,7 +63,6 @@ struct PipelineBatchByState
         | (LightmapMask << LightmapOffset)
         | (MaterialMask << MaterialOffset)
         | (PipelineStateMask << PipelineStateOffset)
-        | (ShaderProgramMask << ShaderProgramOffset)
         | (RenderOrderMask << RenderOrderOffset)
         ) == 0xffffffffffffffffull, "Unexpected mask layout");
     /// @}
@@ -109,7 +105,6 @@ struct PipelineBatchByState
     {
         // Calculate primary key
         primaryKey_ |= (batch->material_->GetRenderOrder() & RenderOrderMask) << RenderOrderOffset;
-        primaryKey_ |= (batch->pipelineState_->GetShaderID() & ShaderProgramMask) << ShaderProgramOffset;
         primaryKey_ |= (batch->pipelineState_->GetObjectID() & PipelineStateMask) << PipelineStateOffset;
         primaryKey_ |= (batch->material_->GetObjectID() & MaterialMask) << MaterialOffset;
         primaryKey_ |= (batch->lightmapIndex_ & LightmapMask) << LightmapOffset;

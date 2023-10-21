@@ -1,4 +1,4 @@
-# Copyright (C) 2020 The Khronos Group Inc.
+# Copyright (C) 2020-2023 The Khronos Group Inc.
 #
 # All rights reserved.
 #
@@ -82,7 +82,7 @@ COMMON_COPTS = select({
         "-Wunused-value",
         "-Wunused-variable",
         "-Wno-reorder",
-        "-std=c++11",
+        "-std=c++17",
         "-fvisibility=hidden",
         "-fvisibility-inlines-hidden",
         "-fno-exceptions",
@@ -125,10 +125,8 @@ cc_library(
     ],
     copts = COMMON_COPTS,
     defines = [
-        "AMD_EXTENSIONS",
         "ENABLE_HLSL=0",
         "ENABLE_OPT=0",
-        "NV_EXTENSIONS",
     ],
     linkopts = select({
         "@bazel_tools//src/conditions:windows": [""],
@@ -144,8 +142,10 @@ genrule(
         "SPIRV/GLSL.ext.EXT.h",
         "SPIRV/GLSL.ext.KHR.h",
         "SPIRV/GLSL.ext.NV.h",
+        "SPIRV/GLSL.ext.ARM.h",
         "SPIRV/GLSL.std.450.h",
         "SPIRV/NonSemanticDebugPrintf.h",
+        "SPIRV/NonSemanticShaderDebugInfo100.h",
         "SPIRV/spirv.hpp",
     ],
     outs = [
@@ -153,8 +153,10 @@ genrule(
         "include/SPIRV/GLSL.ext.EXT.h",
         "include/SPIRV/GLSL.ext.KHR.h",
         "include/SPIRV/GLSL.ext.NV.h",
+        "include/SPIRV/GLSL.ext.ARM.h",
         "include/SPIRV/GLSL.std.450.h",
         "include/SPIRV/NonSemanticDebugPrintf.h",
+        "include/SPIRV/NonSemanticShaderDebugInfo100.h",
         "include/SPIRV/spirv.hpp",
     ],
     cmd_bash = "mkdir -p $(@D)/include/SPIRV && cp $(SRCS) $(@D)/include/SPIRV/",
@@ -207,8 +209,8 @@ cc_library(
 
 cc_library(
     name = "glslang-default-resource-limits",
-    srcs = ["StandAlone/ResourceLimits.cpp"],
-    hdrs = ["StandAlone/ResourceLimits.h"],
+    srcs = ["glslang/ResourceLimits/ResourceLimits.cpp"],
+    hdrs = ["glslang/Public/ResourceLimits.h"],
     copts = COMMON_COPTS,
     linkstatic = 1,
     deps = [":glslang"],

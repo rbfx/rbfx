@@ -24,8 +24,10 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../IO/Archive.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/IO/Archive.h"
+#include "Urho3D/Math/Transform.h"
+#include "Urho3D/Utility/AnimationMetadata.h"
 
 #include <EASTL/unique_ptr.h>
 
@@ -36,6 +38,9 @@ class Model;
 
 namespace Urho3D
 {
+
+class Animation;
+class ModelView;
 
 struct GLTFImporterSettings
 {
@@ -48,7 +53,6 @@ struct GLTFImporterSettings
     bool cleanupBoneNames_{true};
     bool cleanupRootNodes_{true};
     bool combineLODs_{true};
-    bool repairLooping_{false};
     ea::string skipTag_;
     bool keepNamesOnMerge_{false};
     bool addEmptyNodesToSkeleton_{false};
@@ -57,6 +61,8 @@ struct GLTFImporterSettings
     float keyFrameTimeError_{M_EPSILON};
 
     ea::unordered_map<ea::string, ea::string> nodeRenames_;
+
+    bool gpuResources_{false};
 
     /// Settings that affect only preview scene.
     struct PreviewSettings
@@ -76,6 +82,13 @@ struct GLTFImporterSettings
     } preview_;
 };
 
+class URHO3D_API GLTFImporterCallback
+{
+public:
+    virtual void OnModelLoaded(ModelView& modelView) {};
+    virtual void OnAnimationLoaded(Animation& animation) {};
+};
+
 URHO3D_API void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value);
 
 /// Utility class to load GLTF file and save it as Urho resources.
@@ -93,24 +106,31 @@ public:
 
     /// Load primary GLTF file into memory without any processing.
     bool LoadFile(const ea::string& fileName);
+    bool LoadFileBinary(ByteSpan data);
     /// Load and merge secondary GLTF file.
     /// Merge functionality is limited, unsupported content of secondary file is ignored.
     bool MergeFile(const ea::string& fileName, const ea::string& assetName);
 
     /// Process loaded GLTF files and import resources. Injects resources into resource cache!
-    bool Process(const ea::string& outputPath, const ea::string& resourceNamePrefix);
+    bool Process(const ea::string& outputPath, const ea::string& resourceNamePrefix, GLTFImporterCallback* callback);
 
     /// Save generated resources.
     bool SaveResources();
     /// Return saved resources and their absolute names.
     const ResourceToFileNameMap& GetSavedResources() const;
+    /// Convert GLTF transform to the engine format.
+    Transform ConvertTransform(const Transform& sourceTransform) const;
 
 private:
+    bool LoadFileInternal(const ea::function<tinygltf::Model()> getModel);
+
     class Impl;
     const GLTFImporterSettings settings_;
 
     ea::unique_ptr<tinygltf::Model> model_;
     ea::unique_ptr<Impl> impl_;
+
+    GLTFImporterCallback defaultCallback_;
 };
 
 } // namespace Urho3D

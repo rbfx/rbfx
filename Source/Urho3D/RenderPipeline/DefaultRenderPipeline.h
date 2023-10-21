@@ -64,6 +64,8 @@ public:
     void Render() override;
     const FrameInfo& GetFrameInfo() const override;
     const RenderPipelineStats& GetStats() const override { return stats_; }
+    void DrawDebugGeometries(bool depthTest) override;
+    void DrawDebugLights(bool depthTest) override;
     /// @}
 
 protected:
@@ -75,6 +77,10 @@ private:
     RenderPipelineSettings settings_;
     unsigned settingsPipelineStateHash_{};
     bool settingsDirty_{};
+
+    TextureFormat albedoFormat_{TextureFormat::TEX_FORMAT_RGBA8_UNORM};
+    TextureFormat normalFormat_{TextureFormat::TEX_FORMAT_RGBA8_UNORM};
+    TextureFormat specularFormat_{TextureFormat::TEX_FORMAT_RGBA8_UNORM};
 
     /// Previous pipeline state hash.
     unsigned oldPipelineStateHash_{};

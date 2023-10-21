@@ -1,7 +1,7 @@
 #include "_Config.glsl"
 
 // Samplers
-SAMPLER(0, sampler2D sDiffMap)
+SAMPLER(0, sampler2D sAlbedo)
 
 // Uniforms
 UNIFORM_BUFFER_BEGIN(1, Camera)
@@ -55,7 +55,7 @@ void main()
     #endif
 
     #ifdef DIFFMAP
-        vec4 diffInput = texture2D(sDiffMap, vTexCoord);
+        vec4 diffInput = texture(sAlbedo, vTexCoord);
         #ifdef ALPHAMASK
             if (diffInput.a < 0.5)
                 discard;
@@ -63,11 +63,7 @@ void main()
         diffColor *= diffInput;
     #endif
     #ifdef ALPHAMAP
-        #if defined(GL3) && !defined(D3D11)
-            float alphaInput = texture2D(sDiffMap, vTexCoord).r;
-        #else
-            float alphaInput = texture2D(sDiffMap, vTexCoord).a;
-        #endif
+        float alphaInput = texture(sAlbedo, vTexCoord).r;
         diffColor.a *= alphaInput;
     #endif
 

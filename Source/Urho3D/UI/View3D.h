@@ -54,7 +54,7 @@ public:
     void SetView(Scene* scene, Camera* camera, bool ownScene = true);
     /// Set render texture pixel format. Default is RGB.
     /// @property
-    void SetFormat(unsigned format);
+    void SetFormat(TextureFormat format);
     /// Set render target auto update mode. Default is true.
     /// @property
     void SetAutoUpdate(bool enable);
@@ -104,7 +104,7 @@ private:
     /// Own scene.
     bool ownScene_;
     /// Render texture format.
-    unsigned rttFormat_;
+    TextureFormat rttFormat_{};
     /// Render texture auto update mode.
     bool autoUpdate_;
 };

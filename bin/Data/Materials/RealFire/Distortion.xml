@@ -1,6 +1,6 @@
 <material>
 	<technique name="Techniques/Refraction.xml" />
 	<renderorder value="0" />
-	<texture unit="normal" name="Textures/RealFire/Distort.png" />
+	<texture slot="Normal" name="Textures/RealFire/Distort.png" />
 	<parameter name="NoiseStrength" value="0.01" />
 </material>

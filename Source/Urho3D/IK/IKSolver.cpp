@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include "Urho3D/Precompiled.h"
+
 #include "Urho3D/IK/IKSolver.h"
 
 #include "Urho3D/Core/Context.h"
@@ -123,8 +125,8 @@ bool IKSolver::IsChainTreeExpired() const
     if (!solvers_.empty() && solverNodes_.empty())
         return true;
 
-    return ea::any_of(solverNodes_.begin(), solverNodes_.end(),
-        [](const IKNodeCache::value_type& entry) { return !entry.first; });
+    return ea::any_of(
+        solverNodes_.begin(), solverNodes_.end(), [](const IKNodeCache::value_type& entry) { return !entry.first; });
 }
 
 void IKSolver::RebuildSolvers()
@@ -176,4 +178,4 @@ const IKNode* IKSolver::GetNodeData(Node* node) const
     return iter != solverNodes_.end() ? &iter->second : nullptr;
 }
 
-}
+} // namespace Urho3D

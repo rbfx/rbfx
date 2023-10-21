@@ -412,7 +412,7 @@ bool ReplicationManager::ProcessMessageOnUninitializedClient(
             MakeShared<ClientReplica>(GetScene(), connection, *client_->initialClock_, *client_->serverSettings_);
 
         connection->SendSerializedMessage(
-            MSG_SYNCHRONIZED, MsgSynchronized{*client_->ackMagic_}, PT_RELIABLE_UNORDERED);
+            MSG_SYNCHRONIZED, MsgSynchronized{*client_->ackMagic_}, PacketType::ReliableUnordered);
     }
 
     return true;

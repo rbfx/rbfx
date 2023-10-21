@@ -25,6 +25,7 @@
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
+#include "../Core/WorkQueue.h"
 #include "../Engine/EngineEvents.h"
 #include "../IO/FileSystem.h"
 #include "../IO/IOEvents.h"
@@ -35,6 +36,8 @@
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
 #include "../Network/Protocol.h"
+#include "../Network/Transport/DataChannel/DataChannelConnection.h"
+#include "../Network/Transport/DataChannel/DataChannelServer.h"
 #include "../Replica/BehaviorNetworkObject.h"
 #include "../Replica/FilteredByDistance.h"
 #include "../Replica/NetworkObject.h"
@@ -46,11 +49,6 @@
 #include "../Replica/TrackedAnimatedModel.h"
 #include "../Scene/Scene.h"
 
-#include <slikenet/MessageIdentifiers.h>
-#include <slikenet/NatPunchthroughClient.h>
-#include <slikenet/peerinterface.h>
-#include <slikenet/statistics.h>
-
 #ifdef SendMessage
 #undef SendMessage
 #endif
@@ -60,314 +58,111 @@
 namespace Urho3D
 {
 
-static const char* RAKNET_MESSAGEID_STRINGS[] = {
-    "ID_CONNECTED_PING",
-    "ID_UNCONNECTED_PING",
-    "ID_UNCONNECTED_PING_OPEN_CONNECTIONS",
-    "ID_CONNECTED_PONG",
-    "ID_DETECT_LOST_CONNECTIONS",
-    "ID_OPEN_CONNECTION_REQUEST_1",
-    "ID_OPEN_CONNECTION_REPLY_1",
-    "ID_OPEN_CONNECTION_REQUEST_2",
-    "ID_OPEN_CONNECTION_REPLY_2",
-    "ID_CONNECTION_REQUEST",
-    "ID_REMOTE_SYSTEM_REQUIRES_PUBLIC_KEY",
-    "ID_OUR_SYSTEM_REQUIRES_SECURITY",
-    "ID_PUBLIC_KEY_MISMATCH",
-    "ID_OUT_OF_BAND_INTERNAL",
-    "ID_SND_RECEIPT_ACKED",
-    "ID_SND_RECEIPT_LOSS",
-    "ID_CONNECTION_REQUEST_ACCEPTED",
-    "ID_CONNECTION_ATTEMPT_FAILED",
-    "ID_ALREADY_CONNECTED",
-    "ID_NEW_INCOMING_CONNECTION",
-    "ID_NO_FREE_INCOMING_CONNECTIONS",
-    "ID_DISCONNECTION_NOTIFICATION",
-    "ID_CONNECTION_LOST",
-    "ID_CONNECTION_BANNED",
-    "ID_INVALID_PASSWORD",
-    "ID_INCOMPATIBLE_PROTOCOL_VERSION",
-    "ID_IP_RECENTLY_CONNECTED",
-    "ID_TIMESTAMP",
-    "ID_UNCONNECTED_PONG",
-    "ID_ADVERTISE_SYSTEM",
-    "ID_DOWNLOAD_PROGRESS",
-    "ID_REMOTE_DISCONNECTION_NOTIFICATION",
-    "ID_REMOTE_CONNECTION_LOST",
-    "ID_REMOTE_NEW_INCOMING_CONNECTION",
-    "ID_FILE_LIST_TRANSFER_HEADER",
-    "ID_FILE_LIST_TRANSFER_FILE",
-    "ID_FILE_LIST_REFERENCE_PUSH_ACK",
-    "ID_DDT_DOWNLOAD_REQUEST",
-    "ID_TRANSPORT_STRING",
-    "ID_REPLICA_MANAGER_CONSTRUCTION",
-    "ID_REPLICA_MANAGER_SCOPE_CHANGE",
-    "ID_REPLICA_MANAGER_SERIALIZE",
-    "ID_REPLICA_MANAGER_DOWNLOAD_STARTED",
-    "ID_REPLICA_MANAGER_DOWNLOAD_COMPLETE",
-    "ID_RAKVOICE_OPEN_CHANNEL_REQUEST",
-    "ID_RAKVOICE_OPEN_CHANNEL_REPLY",
-    "ID_RAKVOICE_CLOSE_CHANNEL",
-    "ID_RAKVOICE_DATA",
-    "ID_AUTOPATCHER_GET_CHANGELIST_SINCE_DATE",
-    "ID_AUTOPATCHER_CREATION_LIST",
-    "ID_AUTOPATCHER_DELETION_LIST",
-    "ID_AUTOPATCHER_GET_PATCH",
-    "ID_AUTOPATCHER_PATCH_LIST",
-    "ID_AUTOPATCHER_REPOSITORY_FATAL_ERROR",
-    "ID_AUTOPATCHER_CANNOT_DOWNLOAD_ORIGINAL_UNMODIFIED_FILES",
-    "ID_AUTOPATCHER_FINISHED_INTERNAL",
-    "ID_AUTOPATCHER_FINISHED",
-    "ID_AUTOPATCHER_RESTART_APPLICATION",
-    "ID_NAT_PUNCHTHROUGH_REQUEST",
-    "ID_NAT_CONNECT_AT_TIME",
-    "ID_NAT_GET_MOST_RECENT_PORT",
-    "ID_NAT_CLIENT_READY",
-    "ID_NAT_TARGET_NOT_CONNECTED",
-    "ID_NAT_TARGET_UNRESPONSIVE",
-    "ID_NAT_CONNECTION_TO_TARGET_LOST",
-    "ID_NAT_ALREADY_IN_PROGRESS",
-    "ID_NAT_PUNCHTHROUGH_FAILED",
-    "ID_NAT_PUNCHTHROUGH_SUCCEEDED",
-    "ID_READY_EVENT_SET",
-    "ID_READY_EVENT_UNSET",
-    "ID_READY_EVENT_ALL_SET",
-    "ID_READY_EVENT_QUERY",
-    "ID_LOBBY_GENERAL",
-    "ID_RPC_REMOTE_ERROR",
-    "ID_RPC_PLUGIN",
-    "ID_FILE_LIST_REFERENCE_PUSH",
-    "ID_READY_EVENT_FORCE_ALL_SET",
-    "ID_ROOMS_EXECUTE_FUNC",
-    "ID_ROOMS_LOGON_STATUS",
-    "ID_ROOMS_HANDLE_CHANGE",
-    "ID_LOBBY2_SEND_MESSAGE",
-    "ID_LOBBY2_SERVER_ERROR",
-    "ID_FCM2_NEW_HOST",
-    "ID_FCM2_REQUEST_FCMGUID",
-    "ID_FCM2_RESPOND_CONNECTION_COUNT",
-    "ID_FCM2_INFORM_FCMGUID",
-    "ID_FCM2_UPDATE_MIN_TOTAL_CONNECTION_COUNT",
-    "ID_FCM2_VERIFIED_JOIN_START",
-    "ID_FCM2_VERIFIED_JOIN_CAPABLE",
-    "ID_FCM2_VERIFIED_JOIN_FAILED",
-    "ID_FCM2_VERIFIED_JOIN_ACCEPTED",
-    "ID_FCM2_VERIFIED_JOIN_REJECTED",
-    "ID_UDP_PROXY_GENERAL",
-    "ID_SQLite3_EXEC",
-    "ID_SQLite3_UNKNOWN_DB",
-    "ID_SQLLITE_LOGGER",
-    "ID_NAT_TYPE_DETECTION_REQUEST",
-    "ID_NAT_TYPE_DETECTION_RESULT",
-    "ID_ROUTER_2_INTERNAL",
-    "ID_ROUTER_2_FORWARDING_NO_PATH",
-    "ID_ROUTER_2_FORWARDING_ESTABLISHED",
-    "ID_ROUTER_2_REROUTED",
-    "ID_TEAM_BALANCER_INTERNAL",
-    "ID_TEAM_BALANCER_REQUESTED_TEAM_FULL",
-    "ID_TEAM_BALANCER_REQUESTED_TEAM_LOCKED",
-    "ID_TEAM_BALANCER_TEAM_REQUESTED_CANCELLED",
-    "ID_TEAM_BALANCER_TEAM_ASSIGNED",
-    "ID_LIGHTSPEED_INTEGRATION",
-    "ID_XBOX_LOBBY",
-    "ID_TWO_WAY_AUTHENTICATION_INCOMING_CHALLENGE_SUCCESS",
-    "ID_TWO_WAY_AUTHENTICATION_OUTGOING_CHALLENGE_SUCCESS",
-    "ID_TWO_WAY_AUTHENTICATION_INCOMING_CHALLENGE_FAILURE",
-    "ID_TWO_WAY_AUTHENTICATION_OUTGOING_CHALLENGE_FAILURE",
-    "ID_TWO_WAY_AUTHENTICATION_OUTGOING_CHALLENGE_TIMEOUT",
-    "ID_TWO_WAY_AUTHENTICATION_NEGOTIATION",
-    "ID_CLOUD_POST_REQUEST",
-    "ID_CLOUD_RELEASE_REQUEST",
-    "ID_CLOUD_GET_REQUEST",
-    "ID_CLOUD_GET_RESPONSE",
-    "ID_CLOUD_UNSUBSCRIBE_REQUEST",
-    "ID_CLOUD_SERVER_TO_SERVER_COMMAND",
-    "ID_CLOUD_SUBSCRIPTION_NOTIFICATION",
-    "ID_LIB_VOICE",
-    "ID_RELAY_PLUGIN",
-    "ID_NAT_REQUEST_BOUND_ADDRESSES",
-    "ID_NAT_RESPOND_BOUND_ADDRESSES",
-    "ID_FCM2_UPDATE_USER_CONTEXT",
-    "ID_RESERVED_3",
-    "ID_RESERVED_4",
-    "ID_RESERVED_5",
-    "ID_RESERVED_6",
-    "ID_RESERVED_7",
-    "ID_RESERVED_8",
-    "ID_RESERVED_9",
-    "ID_USER_PACKET_ENUM"
-};
-
-static const int SERVER_TIMEOUT_TIME = 10000;
-
-Network::Network(Context* context) :
-    Object(context),
-    simulatedLatency_(0),
-    simulatedPacketLoss_(0.0f),
-    updateInterval_(1.0f / updateFps_),
-    updateAcc_(0.0f),
-    isServer_(false),
-    scene_(nullptr),
-    natPunchServerAddress_(nullptr),
-    remoteGUID_(nullptr)
+Network::Network(Context* context)
+    : Object(context)
 {
-    rakPeer_ = SLNet::RakPeerInterface::GetInstance();
-    rakPeerClient_ = SLNet::RakPeerInterface::GetInstance();
-    rakPeer_->SetTimeoutTime(SERVER_TIMEOUT_TIME, SLNet::UNASSIGNED_SYSTEM_ADDRESS);
-    SetPassword("");
-    SetDiscoveryBeacon(VariantMap());
-
-    natPunchthroughClient_ = new SLNet::NatPunchthroughClient;
-    natPunchthroughServerClient_ = new SLNet::NatPunchthroughClient;
-
-    SetNATServerInfo("127.0.0.1", 61111);
-
     // Register Network library object factories
     RegisterNetworkLibrary(context_);
 
     SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(Network, HandleBeginFrame));
     SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(Network, HandleRenderUpdate));
+    SubscribeToEvent(E_APPLICATIONSTOPPED, URHO3D_HANDLER(Network, HandleApplicationExit));
 }
 
 Network::~Network()
 {
-    rakPeer_->DetachPlugin(natPunchthroughServerClient_);
-    rakPeerClient_->DetachPlugin(natPunchthroughClient_);
-    // If server connection exists, disconnect, but do not send an event because we are shutting down
-    Disconnect(100);
-    serverConnection_.Reset();
-
-    clientConnections_.clear();
-
-    delete natPunchthroughServerClient_;
-    natPunchthroughServerClient_ = nullptr;
-    delete natPunchthroughClient_;
-    natPunchthroughClient_ = nullptr;
-    delete remoteGUID_;
-    remoteGUID_ = nullptr;
-    delete natPunchServerAddress_;
-    natPunchServerAddress_ = nullptr;
-
-    SLNet::RakPeerInterface::DestroyInstance(rakPeer_);
-    SLNet::RakPeerInterface::DestroyInstance(rakPeerClient_);
-    rakPeer_ = nullptr;
-    rakPeerClient_ = nullptr;
+    URHO3D_ASSERT(clientConnections_.empty());
+    URHO3D_ASSERT(!IsServerRunning());
+    URHO3D_ASSERT(!connectionToServer_);
 }
 
-void Network::HandleMessage(const SLNet::AddressOrGUID& source, int packetID, int msgID, const char* data, size_t numBytes)
+void Network::OnClientConnected(Connection* connection)
 {
-    // Only process messages from known sources
-    Connection* connection = GetConnection(source);
-    if (connection)
-    {
-        MemoryBuffer msg(data, (unsigned)numBytes);
-        if (connection->ProcessMessage((int)msgID, msg))
-            return;
-    }
-    else
-        URHO3D_LOGWARNING("Discarding message from unknown MessageConnection " + ea::string(source.ToString()));
-}
-
-void Network::NewConnectionEstablished(const SLNet::AddressOrGUID& connection)
-{
-    // Create a new client connection corresponding to this MessageConnection
-    SharedPtr<Connection> newConnection(MakeShared<Connection>(context_));
-    newConnection->Initialize(true, connection, rakPeer_);
-    newConnection->ConfigureNetworkSimulator(simulatedLatency_, simulatedPacketLoss_);
-    clientConnections_[GetEndpointHash(connection)] = newConnection;
-    URHO3D_LOGINFO("Client " + newConnection->ToString() + " connected");
+    connection->Initialize();
+    connection->SetIsClient(true);
+    connection->SetConnectPending(true);
+    clientConnections_.emplace(connection->transportConnection_, SharedPtr<Connection>(connection));
+    URHO3D_LOGINFO("Client {} connected", connection->ToString());
 
     using namespace ClientConnected;
 
     VariantMap& eventData = GetEventDataMap();
-    eventData[P_CONNECTION] = newConnection;
-    newConnection->SendEvent(E_CLIENTCONNECTED, eventData);
+    eventData[P_CONNECTION] = connection;
+    connection->SendEvent(E_CLIENTCONNECTED, eventData);
+
+    if (serverMaxConnections_ <= clientConnections_.size())
+    {
+        connection->SendMessage(MSG_CONNECTION_LIMIT_EXCEEDED);
+        connection->Disconnect();
+    }
 }
 
-void Network::ClientDisconnected(const SLNet::AddressOrGUID& connection)
+void Network::OnClientDisconnected(Connection* connection)
 {
     // Remove the client connection that corresponds to this MessageConnection
-    auto i = clientConnections_.find(GetEndpointHash(connection));
-    if (i != clientConnections_.end())
-    {
-        Connection* connection = i->second;
-        URHO3D_LOGINFO("Client " + connection->ToString() + " disconnected");
+    URHO3D_LOGINFO("Client {} disconnected", connection->ToString());
 
-        using namespace ClientDisconnected;
+    using namespace ClientDisconnected;
 
-        VariantMap& eventData = GetEventDataMap();
-        eventData[P_CONNECTION] = connection;
-        connection->SendEvent(E_CLIENTDISCONNECTED, eventData);
+    VariantMap& eventData = GetEventDataMap();
+    eventData[P_CONNECTION] = connection;
+    connection->SendEvent(E_CLIENTDISCONNECTED, eventData);
 
-        clientConnections_.erase(i);
-    }
+    clientConnections_.erase(connection->transportConnection_);
 }
 
-void Network::SetDiscoveryBeacon(const VariantMap& data)
-{
-    VectorBuffer buffer;
-    buffer.WriteVariantMap(data);
-    if (buffer.GetSize() > 400)
-        URHO3D_LOGERROR("Discovery beacon of size: " + ea::to_string(buffer.GetSize()) + " bytes is too large, modify MAX_OFFLINE_DATA_LENGTH in RakNet or reduce size");
-    rakPeer_->SetOfflinePingResponse((const char*)buffer.GetData(), buffer.GetSize());
-}
-
-void Network::DiscoverHosts(unsigned port)
-{
-    // JSandusky: Contrary to the manual, we actually do have to perform Startup first before we can Ping
-    if (!rakPeerClient_->IsActive())
-    {
-        SLNet::SocketDescriptor socket;
-        // Startup local connection with max 1 incoming connection(first param) and 1 socket description (third param)
-        rakPeerClient_->Startup(1, &socket, 1);
-    }
-    rakPeerClient_->Ping("255.255.255.255", port, false);
-}
-
-void Network::SetPassword(const ea::string& password)
-{
-    rakPeer_->SetIncomingPassword(password.c_str(), password.length());
-    password_ = password;
-}
-
-bool Network::Connect(const ea::string& address, unsigned short port, Scene* scene, const VariantMap& identity)
+bool Network::Connect(const URL& url, Scene* scene, const VariantMap& identity)
 {
     URHO3D_PROFILE("Connect");
 
-    if (!rakPeerClient_->IsActive())
+    if (!connectionToServer_)
     {
-        URHO3D_LOGINFO("Initializing client connection...");
-        SLNet::SocketDescriptor socket;
-        // Startup local connection with max 2 incoming connections(first param) and 1 socket description (third param)
-        rakPeerClient_->Startup(2, &socket, 1);
-    }
+        URHO3D_LOGINFO("Connecting to server {}", url.ToString());
+        DataChannelConnection* transportConnection = new DataChannelConnection(context_);
+        connectionToServer_ = new Connection(context_, transportConnection);
+        connectionToServer_->SetScene(scene);
+        connectionToServer_->SetIdentity(identity);
+        connectionToServer_->SetConnectPending(true);
+        connectionToServer_->SetIsClient(false);
 
-    SLNet::ConnectionAttemptResult connectResult = rakPeerClient_->Connect(address.c_str(), port, password_.c_str(), password_.length());
-    if (connectResult == SLNet::CONNECTION_ATTEMPT_STARTED)
-    {
-        serverConnection_ = new Connection(context_);
-        serverConnection_->Initialize(false, rakPeerClient_->GetMyBoundAddress(), rakPeerClient_);
-        serverConnection_->SetScene(scene);
-        serverConnection_->SetIdentity(identity);
-        serverConnection_->SetConnectPending(true);
-        serverConnection_->ConfigureNetworkSimulator(simulatedLatency_, simulatedPacketLoss_);
+        WeakPtr<WorkQueue> queue(GetSubsystem<WorkQueue>());
+        transportConnection->onConnected_ = [this, queue]()
+        {
+            if (!queue)
+                return;
+            queue->CallFromMainThread([this](int)
+            {
+                OnConnectedToServer(connectionToServer_);
+            });
+        };
+        transportConnection->onDisconnected_ = transportConnection->onError_ = [this, queue]()
+        {
+            if (!queue)
+                return;
+            queue->CallFromMainThread([this](int)
+            {
+                OnDisconnectedFromServer(connectionToServer_);
+            });
+        };
 
-        URHO3D_LOGINFO("Connecting to server " + address + ":" + ea::to_string(port) + ", Client: " + serverConnection_->ToString());
+        transportConnection->Connect(url);
         return true;
     }
-    else if (connectResult == SLNet::ALREADY_CONNECTED_TO_ENDPOINT) {
+    else if (connectionToServer_->IsConnected())
+    {
         URHO3D_LOGWARNING("Already connected to server!");
-        SendEvent(E_CONNECTIONINPROGRESS);
+        SendEvent(E_CONNECTIONINPROGRESS);  // TODO: This is not used by the engine/samples and naming is weird. Torch it?
         return false;
     }
-    else if (connectResult == SLNet::CONNECTION_ATTEMPT_ALREADY_IN_PROGRESS) {
+    else if (connectionToServer_->IsConnectPending())
+    {
         URHO3D_LOGWARNING("Connection attempt already in progress!");
         SendEvent(E_CONNECTIONINPROGRESS);
         return false;
     }
     else
     {
-        URHO3D_LOGERROR("Failed to connect to server " + address + ":" + ea::to_string(port) + ", error code: " + ea::to_string((int)connectResult));
+        URHO3D_LOGERROR("Failed to connect to server {}.", url.ToString());
         SendEvent(E_CONNECTFAILED);
         return false;
     }
@@ -375,141 +170,127 @@ bool Network::Connect(const ea::string& address, unsigned short port, Scene* sce
 
 void Network::Disconnect(int waitMSec)
 {
-    if (!serverConnection_)
+    if (!connectionToServer_)
         return;
 
     URHO3D_PROFILE("Disconnect");
-    serverConnection_->Disconnect(waitMSec);
+    connectionToServer_->Disconnect();
 }
 
-bool Network::StartServer(unsigned short port, unsigned int maxConnections)
+void Network::OnConnectedToServer(Connection* connection)
+{
+    connection->Initialize();
+    connection->SetConnectPending(false);
+
+    URHO3D_LOGINFO("Connected to server!");
+
+    // Send the identity map now
+    VectorBuffer msg;
+    msg.WriteVariantMap(connection->GetIdentity());
+    connection->SendMessage(MSG_IDENTITY, msg);
+
+    SendEvent(E_SERVERCONNECTED);
+}
+
+void Network::OnDisconnectedFromServer(Connection* connection)
+{
+    // Differentiate between failed connection, and disconnection
+    URHO3D_ASSERT(connectionToServer_ == connection);
+    bool failedConnect = connectionToServer_ && connectionToServer_->IsConnectPending();
+    connectionToServer_.Reset();
+
+    if (!failedConnect)
+    {
+        URHO3D_LOGINFO("Disconnected from server");
+        SendEvent(E_SERVERDISCONNECTED);
+    }
+    else
+    {
+        URHO3D_LOGERROR("Failed to connect to server");
+        SendEvent(E_CONNECTFAILED);
+    }
+}
+
+bool Network::StartServer(const URL& url, unsigned int maxConnections)
 {
     if (IsServerRunning())
         return true;
 
     URHO3D_PROFILE("StartServer");
 
-    SLNet::SocketDescriptor socket;//(port, AF_INET);
-    socket.port = port;
-    socket.socketFamily = AF_INET;
-    // Startup local connection with max 128 incoming connection(first param) and 1 socket description (third param)
-    SLNet::StartupResult startResult = rakPeer_->Startup(maxConnections, &socket, 1);
-    if (startResult == SLNet::RAKNET_STARTED)
+    WorkQueue* queue = GetSubsystem<WorkQueue>();
+    transportServer_ = MakeShared<DataChannelServer>(context_);
+    transportServer_->onConnected_ = [this, queue](NetworkConnection* connection)
     {
-        URHO3D_LOGINFO("Started server on port " + ea::to_string(port));
-        rakPeer_->SetMaximumIncomingConnections(maxConnections);
-        isServer_ = true;
-        rakPeer_->SetOccasionalPing(true);
-        rakPeer_->SetUnreliableTimeout(1000);
-        //rakPeer_->SetIncomingPassword("Parole", (int)strlen("Parole"));
-        return true;
-    }
-    else
+        // Hold on to DataChannelConnection reference until callback executes.
+        SharedPtr<NetworkConnection> conn(connection);
+        queue->CallFromMainThread([this, conn](int)
+        {
+            OnClientConnected(new Connection(context_, conn));
+        });
+    };
+    transportServer_->onDisconnected_ = [this, queue](NetworkConnection* connection)
     {
-        URHO3D_LOGINFO("Failed to start server on port " + ea::to_string(port) + ", error code: " + ea::to_string((int)startResult));
-        return false;
-    }
+        // Similarly, ensure that dataChannel reference is kept until callback finishes executing.
+        SharedPtr<NetworkConnection> conn(connection);
+        queue->CallFromMainThread([this, conn](int)
+        {
+            auto it = clientConnections_.find(WeakPtr(conn.Get()));
+            if (it != clientConnections_.end())
+                OnClientDisconnected(it->second);
+        });
+    };
+    transportServer_->Listen(url);
+    URHO3D_LOGINFO("Server is listening on {}.", url.ToString());
+    serverMaxConnections_ = maxConnections;
+    return true;
 }
 
 void Network::StopServer()
 {
+    for (auto& pair : clientConnections_)
+        pair.second->Disconnect();
     clientConnections_.clear();
-
-    if (!rakPeer_)
-        return;
 
     if (!IsServerRunning())
         return;
 
-    isServer_ = false;
-    // Provide 300 ms to notify
-    rakPeer_->Shutdown(300);
-
     URHO3D_PROFILE("StopServer");
+    transportServer_->Stop();
+    transportServer_ = nullptr;
 
     URHO3D_LOGINFO("Stopped server");
 }
 
-void Network::SetNATServerInfo(const ea::string& address, unsigned short port)
+void Network::BroadcastMessage(NetworkMessageId msgID, const VectorBuffer& msg, PacketTypeFlags packetType)
 {
-    if (!natPunchServerAddress_)
-        natPunchServerAddress_ = new SLNet::SystemAddress;
-
-    natPunchServerAddress_->FromStringExplicitPort(address.c_str(), port);
+    BroadcastMessage(msgID, msg.GetData(), msg.GetSize(), packetType);
 }
 
-void Network::StartNATClient()
+void Network::BroadcastMessage(NetworkMessageId msgID, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType)
 {
-    if (!rakPeer_) {
-        URHO3D_LOGERROR("Unable to start NAT client, client not initialized!");
-        return;
-    }
-    if (natPunchServerAddress_->GetPort() == 0) {
-        URHO3D_LOGERROR("NAT master server address incorrect!");
-        return;
-    }
-
-    rakPeer_->AttachPlugin(natPunchthroughServerClient_);
-    guid_ = ea::string(rakPeer_->GetGuidFromSystemAddress(SLNet::UNASSIGNED_SYSTEM_ADDRESS).ToString());
-    URHO3D_LOGINFO("GUID: " + guid_);
-    rakPeer_->Connect(natPunchServerAddress_->ToString(false), natPunchServerAddress_->GetPort(), nullptr, 0);
-}
-
-void Network::AttemptNATPunchtrough(const ea::string& guid, Scene* scene, const VariantMap& identity)
-{
-    scene_ = scene;
-    identity_ = identity;
-    if (!remoteGUID_)
-        remoteGUID_ = new SLNet::RakNetGUID;
-
-    remoteGUID_->FromString(guid.c_str());
-    rakPeerClient_->AttachPlugin(natPunchthroughClient_);
-    if (rakPeerClient_->IsActive()) {
-        natPunchthroughClient_->OpenNAT(*remoteGUID_, *natPunchServerAddress_);
-    }
-    else {
-        SLNet::SocketDescriptor socket;
-        // Startup local connection with max 2 incoming connections(first param) and 1 socket description (third param)
-        rakPeerClient_->Startup(2, &socket, 1);
-    }
-
-    rakPeerClient_->Connect(natPunchServerAddress_->ToString(false), natPunchServerAddress_->GetPort(), nullptr, 0);
-}
-
-void Network::BroadcastMessage(int msgID, bool reliable, bool inOrder, const VectorBuffer& msg, unsigned contentID)
-{
-    BroadcastMessage(msgID, reliable, inOrder, msg.GetData(), msg.GetSize(), contentID);
-}
-
-void Network::BroadcastMessage(int msgID, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes,
-    unsigned contentID)
-{
-    if (!rakPeer_)
-        return;
-
-    VectorBuffer msgData;
-    msgData.WriteUByte((unsigned char)ID_USER_PACKET_ENUM);
-    msgData.WriteUInt((unsigned int)msgID);
-    msgData.Write(data, numBytes);
-
-    if (isServer_)
-        rakPeer_->Send((const char*)msgData.GetData(), (int)msgData.GetSize(), HIGH_PRIORITY, RELIABLE, (char)0, SLNet::UNASSIGNED_RAKNET_GUID, true);
-    else
+    if (!IsServerRunning())
+    {
         URHO3D_LOGERROR("Server not running, can not broadcast messages");
+        return;
+    }
+
+    for (auto& pair : clientConnections_)
+        pair.second->SendMessage(msgID, data, numBytes, packetType);
 }
 
 void Network::BroadcastRemoteEvent(StringHash eventType, bool inOrder, const VariantMap& eventData)
 {
-    for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
-        i->second->SendRemoteEvent(eventType, inOrder, eventData);
+    for (auto& connection : clientConnections_)
+        connection.second->SendRemoteEvent(eventType, inOrder, eventData);
 }
 
 void Network::BroadcastRemoteEvent(Scene* scene, StringHash eventType, bool inOrder, const VariantMap& eventData)
 {
-    for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
+    for (auto& pair : clientConnections_)
     {
-        if (i->second->GetScene() == scene)
-            i->second->SendRemoteEvent(eventType, inOrder, eventData);
+        if (pair.second->GetScene() == scene)
+            pair.second->SendRemoteEvent(eventType, inOrder, eventData);
     }
 }
 
@@ -558,18 +339,6 @@ void Network::SetPingBufferSize(unsigned size)
     pingBufferSize_ = size;
 }
 
-void Network::SetSimulatedLatency(int ms)
-{
-    simulatedLatency_ = Max(ms, 0);
-    ConfigureNetworkSimulator();
-}
-
-void Network::SetSimulatedPacketLoss(float probability)
-{
-    simulatedPacketLoss_ = Clamp(probability, 0.0f, 1.0f);
-    ConfigureNetworkSimulator();
-}
-
 void Network::RegisterRemoteEvent(StringHash eventType)
 {
     allowedRemoteEvents_.insert(eventType);
@@ -603,10 +372,10 @@ void Network::SendPackageToClients(Scene* scene, PackageFile* package)
         return;
     }
 
-    for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
+    for (auto& pair : clientConnections_)
     {
-        if (i->second->GetScene() == scene)
-            i->second->SendPackageToClient(package);
+        if (pair.second->GetScene() == scene)
+            pair.second->SendPackageToClient(package);
     }
 }
 
@@ -620,44 +389,22 @@ SharedPtr<HttpRequest> Network::MakeHttpRequest(const ea::string& url, const ea:
     return request;
 }
 
-void Network::BanAddress(const ea::string& address)
-{
-    rakPeer_->AddToBanList(address.c_str(), 0);
-}
-
-Connection* Network::GetConnection(const SLNet::AddressOrGUID& connection) const
-{
-    if (serverConnection_ && serverConnection_->GetAddressOrGUID() == connection)
-        return serverConnection_;
-    else
-    {
-        auto i = clientConnections_.find(GetEndpointHash(connection));
-        if (i != clientConnections_.end())
-            return i->second;
-        else
-            return nullptr;
-    }
-}
-
 Connection* Network::GetServerConnection() const
 {
-    return serverConnection_;
+    return connectionToServer_;
 }
 
-ea::vector<SharedPtr<Connection> > Network::GetClientConnections() const
+ea::vector<SharedPtr<Connection>> Network::GetClientConnections() const
 {
-    ea::vector<SharedPtr<Connection> > ret;
-    for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
-        ret.push_back(i->second);
-
-    return ret;
+    ea::vector<SharedPtr<Connection>> connections;
+    for (auto&[dataChannel, connection] : clientConnections_)
+        connections.push_back(connection);
+    return connections;
 }
 
 bool Network::IsServerRunning() const
 {
-    if (!rakPeer_)
-        return false;
-    return rakPeer_->IsActive() && isServer_;
+    return transportServer_ != nullptr;
 }
 
 bool Network::CheckRemoteEvent(StringHash eventType) const
@@ -709,200 +456,6 @@ ea::string Network::GetDebugInfo() const
     return result;
 }
 
-void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
-{
-    unsigned char packetID = packet->data[0];
-    bool packetHandled = false;
-
-    // Deal with timestamped backents
-    unsigned dataStart = sizeof(char);
-    if (packetID == ID_TIMESTAMP)
-    {
-        dataStart += sizeof(SLNet::Time);
-        packetID = packet->data[dataStart];
-        dataStart += sizeof(char);
-    }
-
-    if (packetID == ID_NEW_INCOMING_CONNECTION)
-    {
-        if (isServer)
-        {
-            NewConnectionEstablished(packet->systemAddress);
-            packetHandled = true;
-        }
-    }
-    else if (packetID == ID_ALREADY_CONNECTED)
-    {
-        if (natPunchServerAddress_ && packet->systemAddress == *natPunchServerAddress_) {
-            URHO3D_LOGINFO("Already connected to NAT server! ");
-            if (!isServer)
-            {
-                natPunchthroughClient_->OpenNAT(*remoteGUID_, *natPunchServerAddress_);
-            }
-        }
-        packetHandled = true;
-    }
-    else if (packetID == ID_CONNECTION_REQUEST_ACCEPTED) // We're a client, our connection as been accepted
-    {
-        if(natPunchServerAddress_ && packet->systemAddress == *natPunchServerAddress_) {
-            URHO3D_LOGINFO("Succesfully connected to NAT punchtrough server! ");
-            SendEvent(E_NATMASTERCONNECTIONSUCCEEDED);
-            if (!isServer)
-            {
-                natPunchthroughClient_->OpenNAT(*remoteGUID_, *natPunchServerAddress_);
-            }
-        } else {
-            if (!isServer)
-            {
-                OnServerConnected(packet->systemAddress);
-            }
-        }
-        packetHandled = true;
-    }
-    else if (packetID == ID_NAT_TARGET_NOT_CONNECTED)
-    {
-        URHO3D_LOGERROR("Target server not connected to NAT master server!");
-        packetHandled = true;
-    }
-    else if (packetID == ID_CONNECTION_LOST) // We've lost connectivity with the packet source
-    {
-        if (isServer)
-        {
-            ClientDisconnected(packet->systemAddress);
-        }
-        else
-        {
-            OnServerDisconnected(packet->systemAddress);
-        }
-        packetHandled = true;
-    }
-    else if (packetID == ID_DISCONNECTION_NOTIFICATION) // We've lost connection with the other side
-    {
-        if (isServer)
-        {
-            ClientDisconnected(packet->systemAddress);
-        }
-        else
-        {
-            OnServerDisconnected(packet->systemAddress);
-        }
-        packetHandled = true;
-    }
-    else if (packetID == ID_CONNECTION_ATTEMPT_FAILED) // We've failed to connect to the server/peer
-    {
-        if (natPunchServerAddress_ && packet->systemAddress == *natPunchServerAddress_) {
-            URHO3D_LOGERROR("Connection to NAT punchtrough server failed!");
-            SendEvent(E_NATMASTERCONNECTIONFAILED);
-
-        } else {
-
-            if (!isServer)
-            {
-                OnServerDisconnected(packet->systemAddress);
-            }
-        }
-        packetHandled = true;
-    }
-    else if (packetID == ID_NAT_PUNCHTHROUGH_SUCCEEDED)
-    {
-        SLNet::SystemAddress remotePeer = packet->systemAddress;
-        URHO3D_LOGINFO("NAT punchtrough succeeded! Remote peer: " + ea::string(remotePeer.ToString()));
-        if (!isServer)
-        {
-            using namespace NetworkNatPunchtroughSucceeded;
-            VariantMap eventMap;
-            eventMap[P_ADDRESS] = remotePeer.ToString(false);
-            eventMap[P_PORT] = remotePeer.GetPort();
-            SendEvent(E_NETWORKNATPUNCHTROUGHSUCCEEDED, eventMap);
-            URHO3D_LOGINFO("Connecting to server behind NAT: " + ea::string(remotePeer.ToString()));
-            Connect(ea::string(remotePeer.ToString(false)), remotePeer.GetPort(), scene_, identity_);
-        }
-        packetHandled = true;
-    }
-    else if (packetID == ID_NAT_PUNCHTHROUGH_FAILED)
-    {
-        URHO3D_LOGERROR("NAT punchtrough failed!");
-        SLNet::SystemAddress remotePeer = packet->systemAddress;
-        using namespace NetworkNatPunchtroughFailed;
-        VariantMap eventMap;
-        eventMap[P_ADDRESS] = remotePeer.ToString(false);
-        eventMap[P_PORT] = remotePeer.GetPort();
-        SendEvent(E_NETWORKNATPUNCHTROUGHFAILED, eventMap);
-        packetHandled = true;
-    }
-    else if (packetID == ID_CONNECTION_BANNED) // We're a client and we're on the ban list
-    {
-        URHO3D_LOGERROR("Connection failed, you're banned!");
-        SendEvent(E_NETWORKBANNED);
-        packetHandled = true;
-    }
-    else if (packetID == ID_INVALID_PASSWORD) // We're a client, and we gave an invalid password
-    {
-        URHO3D_LOGERROR("Invalid password provided for connection!");
-        SendEvent(E_NETWORKINVALIDPASSWORD);
-        packetHandled = true;
-    }
-    else if (packetID == ID_DOWNLOAD_PROGRESS) // Part of a file transfer
-    {
-        //URHO3D_LOGINFO("101010");
-    }
-    else if (packetID == ID_UNCONNECTED_PING)
-    {
-        packetHandled = true;
-    }
-    else if (packetID == ID_UNCONNECTED_PONG) // Host discovery response
-    {
-        if (!isServer)
-        {
-            using namespace NetworkHostDiscovered;
-
-            dataStart += sizeof(SLNet::TimeMS);
-            VariantMap& eventMap = context_->GetEventDataMap();
-            if (packet->length > packet->length - dataStart) {
-                VectorBuffer buffer(packet->data + dataStart, packet->length - dataStart);
-                VariantMap srcData = buffer.ReadVariantMap();
-                eventMap[P_BEACON] = srcData;
-            }
-            else {
-                eventMap[P_BEACON] = VariantMap();
-            }
-
-            eventMap[P_ADDRESS] = ea::string(packet->systemAddress.ToString(false));
-            eventMap[P_PORT] = (int)packet->systemAddress.GetPort();
-            SendEvent(E_NETWORKHOSTDISCOVERED, eventMap);
-        }
-        packetHandled = true;
-    }
-
-    // Urho3D messages
-    if (packetID >= ID_USER_PACKET_ENUM)
-    {
-        unsigned int messageID = *(unsigned int*)(packet->data + dataStart);
-        dataStart += sizeof(unsigned int);
-
-        if (isServer)
-        {
-            HandleMessage(packet->systemAddress, 0, messageID, (const char*)(packet->data + dataStart), packet->length - dataStart);
-        }
-        else
-        {
-            MemoryBuffer buffer(packet->data + dataStart, packet->length - dataStart);
-            bool processed = serverConnection_ && serverConnection_->ProcessMessage(messageID, buffer);
-            if (!processed)
-            {
-                HandleMessage(packet->systemAddress, 0, messageID, (const char*)(packet->data + dataStart), packet->length - dataStart);
-            }
-        }
-        packetHandled = true;
-    }
-
-    if (!packetHandled && packetID < ea::size(RAKNET_MESSAGEID_STRINGS))
-        URHO3D_LOGERROR("Unhandled network packet: " + ea::string(RAKNET_MESSAGEID_STRINGS[packetID]));
-    else if (!packetHandled)
-        URHO3D_LOGERRORF("Unhandled network packet: %i", packetID);
-
-}
-
 void Network::Update(float timeStep)
 {
     URHO3D_PROFILE("UpdateNetwork");
@@ -912,26 +465,6 @@ void Network::Update(float timeStep)
     updateNow_ = updateAcc_ >= updateInterval_;
     if (updateNow_)
         updateAcc_ = fmodf(updateAcc_, updateInterval_);
-
-    // Process all incoming messages for the server
-    if (rakPeer_->IsActive())
-    {
-        while (SLNet::Packet* packet = rakPeer_->Receive())
-        {
-            HandleIncomingPacket(packet, true);
-            rakPeer_->DeallocatePacket(packet);
-        }
-    }
-
-    // Process all incoming messages for the client
-    if (rakPeerClient_->IsActive())
-    {
-        while (SLNet::Packet* packet = rakPeerClient_->Receive())
-        {
-            HandleIncomingPacket(packet, false);
-            rakPeerClient_->DeallocatePacket(packet);
-        }
-    }
 
     {
         using namespace NetworkInputProcessed;
@@ -946,104 +479,62 @@ void Network::PostUpdate(float timeStep)
     URHO3D_PROFILE("PostUpdateNetwork");
 
     // Update periodically on the server
-    if (updateNow_ && (IsServerRunning() || simulateServerEvents_))
+    if (updateNow_)
     {
         SendNetworkUpdateEvent(E_NETWORKUPDATE, true);
-
-        if (IsServerRunning())
+        URHO3D_PROFILE("SendServerUpdate");
+        // Then send server updates for each client connection
+        for (auto& pair : clientConnections_)
         {
-            URHO3D_PROFILE("SendServerUpdate");
-
-            // Then send server updates for each client connection
-            for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
-            {
-                i->second->SendRemoteEvents();
-                i->second->SendPackages();
-                i->second->SendAllBuffers();
-            }
+            pair.second->SendRemoteEvents();
+            pair.second->SendPackages();
+            pair.second->SendAllBuffers();
+            pair.second->ProcessPackets();
         }
-
         SendNetworkUpdateEvent(E_NETWORKUPDATESENT, true);
     }
 
     // Always update on the client
-    if (serverConnection_ || simulateClientEvents_)
+    SendNetworkUpdateEvent(E_NETWORKUPDATE, false);
+    if (connectionToServer_)
     {
-        SendNetworkUpdateEvent(E_NETWORKUPDATE, false);
+        connectionToServer_->SendRemoteEvents();
+        connectionToServer_->SendAllBuffers();
+        connectionToServer_->ProcessPackets();
+    }
+    SendNetworkUpdateEvent(E_NETWORKUPDATESENT, false);
+}
 
-        if (serverConnection_)
-        {
-            serverConnection_->SendRemoteEvents();
-            serverConnection_->SendAllBuffers();
-        }
+void Network::HandleApplicationExit()
+{
+    if (connectionToServer_)
+        connectionToServer_->Disconnect();
+    StopServer();
 
-        SendNetworkUpdateEvent(E_NETWORKUPDATESENT, false);
+    // Connection shutdown is triggered. Wait until MsQuic callbacks receive shutdown events and deinitialize all streams and connections.
+    // This will result in eventual deletion of Connection objects.
+    auto queue = GetSubsystem<WorkQueue>();
+    while (connectionToServer_ || !clientConnections_.empty())
+    {
+        // Since we block main thread until all connections close, we must manually invoke queued callbacks, because MsQuic connection and
+        // stream callbacks depend on WorkQueue::CallFromMainThread to do object deinitialization (which also sends events) in main thread.
+        queue->CompleteAll();
+        std::this_thread::yield();
     }
 }
 
-void Network::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
+void Network::HandleBeginFrame(VariantMap& eventData)
 {
     using namespace BeginFrame;
 
     Update(eventData[P_TIMESTEP].GetFloat());
 }
 
-void Network::HandleRenderUpdate(StringHash eventType, VariantMap& eventData)
+void Network::HandleRenderUpdate(VariantMap& eventData)
 {
     using namespace RenderUpdate;
 
     PostUpdate(eventData[P_TIMESTEP].GetFloat());
-}
-
-void Network::OnServerConnected(const SLNet::AddressOrGUID& address)
-{
-    serverConnection_->SetConnectPending(false);
-    serverConnection_->SetAddressOrGUID(address);
-    URHO3D_LOGINFO("Connected to server!");
-
-    // Send the identity map now
-    VectorBuffer msg;
-    msg.WriteVariantMap(serverConnection_->GetIdentity());
-    serverConnection_->SendMessage(MSG_IDENTITY, true, true, msg);
-
-    SendEvent(E_SERVERCONNECTED);
-}
-
-void Network::OnServerDisconnected(const SLNet::AddressOrGUID& address)
-{
-    if (natPunchServerAddress_ && *natPunchServerAddress_ == address.systemAddress) {
-        SendEvent(E_NATMASTERDISCONNECTED);
-        return;
-    }
-
-    // Differentiate between failed connection, and disconnection
-    bool failedConnect = serverConnection_ && serverConnection_->IsConnectPending();
-    serverConnection_.Reset();
-
-    if (!failedConnect)
-    {
-        URHO3D_LOGINFO("Disconnected from server");
-        SendEvent(E_SERVERDISCONNECTED);
-    }
-    else
-    {
-        URHO3D_LOGERROR("Failed to connect to server");
-        SendEvent(E_CONNECTFAILED);
-    }
-}
-
-void Network::ConfigureNetworkSimulator()
-{
-    if (serverConnection_)
-        serverConnection_->ConfigureNetworkSimulator(simulatedLatency_, simulatedPacketLoss_);
-
-    for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
-        i->second->ConfigureNetworkSimulator(simulatedLatency_, simulatedPacketLoss_);
-}
-
-unsigned long Network::GetEndpointHash(const SLNet::AddressOrGUID& endpoint)
-{
-    return SLNet::AddressOrGUID::ToInteger(endpoint);
 }
 
 void Network::SendNetworkUpdateEvent(StringHash eventType, bool isServer)
@@ -1073,6 +564,8 @@ void RegisterNetworkLibrary(Context* context)
 #endif
 
     Connection::RegisterObject(context);
+    DataChannelConnection::RegisterObject(context);
+    DataChannelServer::RegisterObject(context);
 }
 
 }

@@ -40,8 +40,12 @@ TEST_CASE("Empty geometry skipped in batch")
     auto geometry = MakeShared<Geometry>(context);
     auto model = MakeShared<Model>(context);
     auto vb = MakeShared<VertexBuffer>(context);
+    vb->SetShadowed(true);
+    vb->SetSize(0, 0);
     model->SetVertexBuffers({vb}, {}, {});
     auto ib = MakeShared<IndexBuffer>(context);
+    ib->SetShadowed(true);
+    ib->SetSize(0, false);
     REQUIRE(model->SetIndexBuffers({ib}));
     REQUIRE(geometry->SetVertexBuffer(0, vb));
     geometry->SetIndexBuffer(ib);
@@ -69,8 +73,11 @@ TEST_CASE("Non-empty geometry is present at batch")
     auto geometry = MakeShared<Geometry>(context);
     auto model = MakeShared<Model>(context);
     auto vb = MakeShared<VertexBuffer>(context);
+    vb->SetShadowed(true);
+    vb->SetSize(0, 0);
     model->SetVertexBuffers({vb}, {}, {});
     auto ib = MakeShared<IndexBuffer>(context);
+    ib->SetShadowed(true);
     ib->SetSize(2, false);
     REQUIRE(model->SetIndexBuffers({ib}));
     REQUIRE(geometry->SetVertexBuffer(0, vb));

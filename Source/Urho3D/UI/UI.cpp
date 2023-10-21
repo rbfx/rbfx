@@ -63,6 +63,12 @@
 #include "../UI/Window.h"
 #include "../UI/View3D.h"
 #include "../UI/UIComponent.h"
+#include "Urho3D/RenderAPI/DrawCommandQueue.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
+#include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/RenderAPI/RenderScope.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
 
 #include <cassert>
 #include <SDL.h>
@@ -465,6 +471,9 @@ void UI::Render()
 {
     URHO3D_PROFILE("RenderUI");
 
+    RenderDevice* renderDevice = GetSubsystem<RenderDevice>();
+    const RenderScope renderScope(renderDevice->GetRenderContext(), "UI::Render");
+
     // If the OS cursor is visible, apply its shape now if changed
     bool osCursorVisible = GetSubsystem<Input>()->IsMouseVisible();
     if (cursor_ && osCursorVisible)
@@ -863,6 +872,9 @@ void UI::Initialize()
     vertexBuffer_ = MakeShared<VertexBuffer>(context_);
     debugVertexBuffer_ = MakeShared<VertexBuffer>(context_);
 
+    vertexBuffer_->SetDebugName("UI Batches");
+    debugVertexBuffer_->SetDebugName("UI Debug Info");
+
     batchStateCache_ = MakeShared<DefaultUIBatchStateCache>(context_);
 
     const ea::string baseDefines = "VERTEXCOLOR ";
@@ -908,7 +920,7 @@ void UI::SetVertexData(VertexBuffer* dest, const ea::vector<float>& vertexData)
     if (dest->GetVertexCount() < numVertices || dest->GetVertexCount() > numVertices * 2)
         dest->SetSize(numVertices, MASK_POSITION | MASK_COLOR | MASK_TEXCOORD1, true);
 
-    dest->SetData(&vertexData[0]);
+    dest->Update(&vertexData[0]);
 }
 
 Material* UI::GetBatchMaterial(const UIBatch& batch) const
@@ -918,7 +930,7 @@ Material* UI::GetBatchMaterial(const UIBatch& batch) const
 
     if (!batch.texture_)
         return noTextureMaterial_;
-    else if (batch.texture_->GetFormat() == Graphics::GetAlphaFormat())
+    else if (batch.texture_->GetFormat() == TextureFormat::TEX_FORMAT_R8_UNORM)
         return alphaMapMaterial_;
     else if (batch.blendMode_ != BLEND_ALPHA && batch.blendMode_ != BLEND_ADDALPHA && batch.blendMode_ != BLEND_PREMULALPHA)
         return diffMapAlphaMaskMaterial_;
@@ -928,30 +940,30 @@ Material* UI::GetBatchMaterial(const UIBatch& batch) const
 
 void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsigned batchStart, unsigned batchEnd)
 {
-    // Engine does not render when window is closed or device is lost
-    assert(graphics_ && graphics_->IsInitialized() && !graphics_->IsDeviceLost());
-
     if (batches.empty())
         return;
 
-    DrawCommandQueue* drawQueue = renderer_->GetDefaultDrawQueue();
+    RenderDevice* renderDevice = GetSubsystem<RenderDevice>();
+    RenderContext* renderContext = renderDevice->GetRenderContext();
+    DrawCommandQueue* drawQueue = renderDevice->GetDefaultQueue();
 
-    unsigned alphaFormat = Graphics::GetAlphaFormat();
-    RenderSurface* surface = graphics_->GetRenderTarget(0);
-    const bool isSurfaceSRGB = RenderSurface::GetSRGB(graphics_, surface);
-    IntVector2 viewSize = graphics_->GetViewport().Size();
-    Vector2 invScreenSize(1.0f / (float)viewSize.x_, 1.0f / (float)viewSize.y_);
+    const RenderBackend backend = renderDevice->GetBackend();
+    const PipelineStateOutputDesc& outputDesc = renderContext->GetCurrentRenderTargetsDesc();
+    const bool isSwapChain = renderContext->IsSwapChainRenderTarget();
+    const bool isSurfaceSRGB = IsTextureFormatSRGB(outputDesc.renderTargetFormats_[0]);
+    const bool flipRect = !isSwapChain && backend == RenderBackend::OpenGL;
+
+    const IntVector2 viewSize = renderContext->GetCurrentViewport().Size();
+    const Vector2 invScreenSize(1.0f / (float)viewSize.x_, 1.0f / (float)viewSize.y_);
     Vector2 scale(2.0f * invScreenSize.x_, -2.0f * invScreenSize.y_);
     Vector2 offset(-1.0f, 1.0f);
 
-    if (surface)
+    if (flipRect)
     {
-#ifdef URHO3D_OPENGL
         // On OpenGL, flip the projection if rendering to a texture so that the texture can be addressed in the
         // same way as a render texture produced on Direct3D.
         offset.y_ = -offset.y_;
         scale.y_ = -scale.y_;
-#endif
     }
 
     Matrix4 projection(Matrix4::IDENTITY);
@@ -975,7 +987,12 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
             continue;
 
         Material* material = GetBatchMaterial(batch);
-        const UIBatchStateKey key{ isSurfaceSRGB, material, material->GetDefaultPass(), batch.blendMode_ };
+        Pass* pass = material->GetDefaultPass();
+
+        const unsigned samplerStateHash = batch.texture_ ? batch.texture_->GetSamplerStateDesc().ToHash() : 0;
+        batchStateCreateContext.defaultSampler_ = batch.texture_ ? &batch.texture_->GetSamplerStateDesc() : nullptr;
+
+        const UIBatchStateKey key{isSurfaceSRGB, outputDesc, material, pass, batch.blendMode_, samplerStateHash};
         PipelineState* pipelineState = batchStateCache_->GetOrCreatePipelineState(key, batchStateCreateContext);
         if (!pipelineState || !pipelineState->IsValid())
             continue;
@@ -1015,7 +1032,7 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
             drawQueue->CommitShaderParameterGroup(SP_MATERIAL);
         }
 
-        drawQueue->SetBuffers({ { vertexBuffer_ }, nullptr, nullptr });
+        drawQueue->SetVertexBuffers({vertexBuffer_});
 
         IntRect scissor = batch.scissor_;
         scissor.left_ = (int)(scissor.left_ * uiScale_);
@@ -1024,23 +1041,23 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
         scissor.bottom_ = (int)(scissor.bottom_ * uiScale_);
 
         // Flip scissor vertically if using OpenGL texture rendering
-#ifdef URHO3D_OPENGL
-        if (surface)
+        if (flipRect)
         {
             int top = scissor.top_;
             int bottom = scissor.bottom_;
             scissor.top_ = viewSize.y_ - bottom;
             scissor.bottom_ = viewSize.y_ - top;
         }
-#endif
         drawQueue->SetScissorRect(scissor);
 
-        if (!batch.customMaterial_)
-            drawQueue->AddShaderResource(TU_DIFFUSE, batch.texture_);
-        else
+        if (batch.customMaterial_)
         {
             for (const auto& texture : batch.customMaterial_->GetTextures())
-                drawQueue->AddShaderResource(texture.first, texture.second);
+                drawQueue->AddShaderResource(texture.first, texture.second.value_);
+        }
+        else if (batch.texture_)
+        {
+            drawQueue->AddShaderResource(ShaderResources::Albedo, batch.texture_);
         }
         drawQueue->CommitShaderResources();
 
@@ -1049,7 +1066,7 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
         lastCustomMaterial = batch.customMaterial_;
     }
 
-    drawQueue->Execute();
+    renderContext->Execute(drawQueue);
 }
 
 void UI::GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, UIElement* element, IntRect currentScissor)
@@ -1996,12 +2013,14 @@ void UI::HandleEndAllViewsRender(StringHash eventType, VariantMap& eventData)
     {
         if (RenderSurface* surface = texture_->GetRenderSurface())
         {
-            graphics_->ResetRenderTargets();
-            graphics_->SetDepthStencil(surface->GetLinkedDepthStencil());
-            graphics_->SetRenderTarget(0, surface);
-            graphics_->SetViewport(IntRect(0, 0, surface->GetWidth(), surface->GetHeight()));
+            auto renderDevice = GetSubsystem<RenderDevice>();
+            RenderContext* renderContext = renderDevice->GetRenderContext();
+
+            const RenderTargetView renderTargets[] = {surface->GetView()};
+            renderContext->SetRenderTargets(ea::nullopt, renderTargets);
+            renderContext->SetFullViewport();
             if (clearColor_.a_ > 0)
-                graphics_->Clear(CLEAR_COLOR, clearColor_);
+                renderContext->ClearRenderTarget(0, clearColor_);
             Render();
         }
     }
@@ -2091,11 +2110,11 @@ void UI::ResizeRootElement()
     {
         if (texture_->GetWidth() != effectiveSize.x_ || texture_->GetHeight() != effectiveSize.y_)
         {
-            unsigned format = texture_->GetFormat();
-            if (format == 0)
-                format = Graphics::GetRGBAFormat();
-            if (texture_->SetSize(effectiveSize.x_, effectiveSize.y_, format, TEXTURE_RENDERTARGET,
-                                  texture_->GetMultiSample(), texture_->GetAutoResolve()))
+            TextureFormat format = texture_->GetFormat();
+            if (!format)
+                format = TextureFormat::TEX_FORMAT_RGBA8_UNORM;
+            const auto flags = texture_->GetParams().flags_ | TextureFlag::BindRenderTarget;
+            if (texture_->SetSize(effectiveSize.x_, effectiveSize.y_, format, flags, texture_->GetMultiSample()))
                 texture_->GetRenderSurface()->SetUpdateMode(SURFACE_MANUALUPDATE);
             else
                 URHO3D_LOGERROR("Resizing of UI render target texture failed.");

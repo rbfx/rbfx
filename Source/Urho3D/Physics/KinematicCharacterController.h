@@ -67,6 +67,11 @@ public:
     /// Set collision group and mask.
     void SetCollisionLayerAndMask(unsigned layer, unsigned mask);
 
+    /// Set rigid body trigger mode. In trigger mode kinematic characters don't affect rigid bodies and don't collide with each other.
+    void SetTrigger(bool enable);
+    /// Return whether this RigidBody is acting as a trigger.
+    bool IsTrigger() const;
+
     /// Set gravity.
     void SetGravity(const Vector3 &gravity);
     /// Get gravity.

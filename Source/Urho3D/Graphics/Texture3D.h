@@ -48,26 +48,16 @@ public:
     bool BeginLoad(Deserializer& source) override;
     /// Finish resource loading. Always called from the main thread. Return true if successful.
     bool EndLoad() override;
-    /// Mark the GPU resource destroyed on context destruction.
-    void OnDeviceLost() override;
-    /// Recreate the GPU resource and restore data if applicable.
-    void OnDeviceReset() override;
-    /// Release the texture.
-    void Release() override;
 
     /// Set size, format and usage. Zero size will follow application window size. Return true if successful.
-    bool SetSize(int width, int height, int depth, unsigned format, TextureUsage usage = TEXTURE_STATIC);
+    bool SetSize(int width, int height, int depth, TextureFormat format, TextureFlags flags = TextureFlag::None);
     /// Set data either partially or fully on a mip level. Return true if successful.
     bool SetData(unsigned level, int x, int y, int z, int width, int height, int depth, const void* data);
     /// Set data from an image. Return true if successful. Optionally make a single channel image alpha-only.
-    bool SetData(Image* image, bool useAlpha = false);
+    bool SetData(Image* image);
 
     /// Get data from a mip level. The destination buffer must be big enough. Return true if successful.
-    bool GetData(unsigned level, void* dest) const;
-
-protected:
-    /// Create the GPU texture.
-    bool Create() override;
+    bool GetData(unsigned level, void* dest);
 
 private:
     /// Image file acquired during BeginLoad.

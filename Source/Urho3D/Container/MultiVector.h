@@ -179,6 +179,13 @@ public:
         return { outerIndex, innerIndex };
     }
 
+    /// Pop element from back of specified outer vector.
+    void PopBack(unsigned outerIndex)
+    {
+        auto& inner = outer_[outerIndex];
+        inner.pop_back();
+    }
+
     /// Return size.
     unsigned Size() const
     {
@@ -187,6 +194,9 @@ public:
             size += inner.size();
         return size;
     }
+
+    /// Resize outer vector.
+    void Resize(int outerSize) { outer_.resize(outerSize); }
 
     /// Copy content to vector.
     void CopyTo(InnerCollection& dest) const

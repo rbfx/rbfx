@@ -681,6 +681,18 @@ bool EditVariantVector2(Variant& var, const EditVariantOptions& options)
     return false;
 }
 
+bool EditVariantIntVector2(Variant& var, const EditVariantOptions& options)
+{
+    IntVector2 value = var.GetIntVector2();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::DragInt2("", &value.x_, options.step_, static_cast<int>(options.min_), static_cast<int>(options.max_)))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
 bool EditVariantVector3(Variant& var, const EditVariantOptions& options)
 {
     Vector3 value = var.GetVector3();
@@ -932,7 +944,10 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
 
     // case VAR_VARIANTMAP:
     // case VAR_INTRECT:
-    // case VAR_INTVECTOR2:
+
+    case VAR_INTVECTOR2:
+        return EditVariantIntVector2(var, options);
+
     // case VAR_MATRIX3:
     // case VAR_MATRIX3X4:
     // case VAR_MATRIX4:
@@ -980,12 +995,8 @@ void Image(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, const ImVe
     auto systemUI = context->GetSubsystem<SystemUI>();
 
     systemUI->ReferenceTexture(texture);
-#if URHO3D_D3D11
-    void* textureId = texture->GetShaderResourceView();
-#else
-    void* textureId = texture->GetGPUObject();
-#endif
-    ui::Image(textureId, size, uv0, uv1, tintCol, borderCol);
+
+    ui::Image(ToImTextureID(texture), size, uv0, uv1, tintCol, borderCol);
 }
 
 void ImageItem(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tintCol, const ImVec4& borderCol)
@@ -1003,12 +1014,17 @@ bool ImageButton(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, cons
     auto systemUI = context->GetSubsystem<SystemUI>();
 
     systemUI->ReferenceTexture(texture);
-#if URHO3D_D3D11
-    void* textureId = texture->GetShaderResourceView();
-#else
-    void* textureId = texture->GetGPUObject();
-#endif
-    return ui::ImageButton(textureId, size, uv0, uv1, framePadding, bgCol, tintCol);
+
+    ImGuiWindow* window = ui::GetCurrentWindow();
+    const ImGuiStyle& style = ui::GetStyle();
+
+    ui::PushID(texture);
+    const ImGuiID id = window->GetID("#image");
+    ui::PopID();
+
+    const auto framePaddingFloat = static_cast<float>(framePadding);
+    const ImVec2 padding = (framePadding >= 0) ? ImVec2(framePaddingFloat, framePaddingFloat) : style.FramePadding;
+    return ui::ImageButtonEx(id, ToImTextureID(texture), size, uv0, uv1, padding, bgCol, tintCol);
 }
 
 }
