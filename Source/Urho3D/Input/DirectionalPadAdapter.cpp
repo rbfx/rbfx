@@ -98,13 +98,16 @@ DirectionalPadAdapter::DirectionalPadAdapter(Context* context)
     , left_(SCANCODE_LEFT)
     , right_(SCANCODE_RIGHT)
 {
-    const unsigned numJoysticks = input_->GetNumJoysticks();
-    for (unsigned i = 0; i < numJoysticks; ++i)
+    if (input_)
     {
-        auto* joystick = input_->GetJoystickByIndex(i);
-        if (joystick->GetNumAxes() == 3 && joystick->GetNumButtons() == 0 && joystick->GetNumHats() == 0)
+        const unsigned numJoysticks = input_->GetNumJoysticks();
+        for (unsigned i = 0; i < numJoysticks; ++i)
         {
-            ignoreJoystickId_ = joystick->joystickID_;
+            auto* joystick = input_->GetJoystickByIndex(i);
+            if (joystick->GetNumAxes() == 3 && joystick->GetNumButtons() == 0 && joystick->GetNumHats() == 0)
+            {
+                ignoreJoystickId_ = joystick->joystickID_;
+            }
         }
     }
 }
