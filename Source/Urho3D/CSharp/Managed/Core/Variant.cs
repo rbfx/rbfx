@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2017-2020 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -178,7 +178,7 @@ namespace Urho3DNet
 
         public static VariantType GetVariantType(Type type)
         {
-            if (type == typeof(sbyte) || type == typeof(short) || type == typeof(int))
+            if (type == typeof(sbyte) || type == typeof(ushort) || type == typeof(short) || type == typeof(int) || type == typeof(uint))
                 return VariantType.VarInt;
             if (type == typeof(bool))
                 return VariantType.VarBool;
