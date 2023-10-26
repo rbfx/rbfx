@@ -1,28 +1,11 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2023 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
+
+#include "../../Foundation/SceneViewTab/TransformManipulator.h"
 
 #include "../../Core/CommonEditorActions.h"
 #include "../../Core/IniHelpers.h"
-#include "../../Foundation/SceneViewTab/TransformManipulator.h"
 
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Octree.h>
@@ -45,7 +28,7 @@ const auto Hotkey_Translate = EditorHotkey{"TransformGizmo.Translate"}.Press(KEY
 const auto Hotkey_Rotate = EditorHotkey{"TransformGizmo.Rotate"}.Press(KEY_E);
 const auto Hotkey_Scale = EditorHotkey{"TransformGizmo.Scale"}.Press(KEY_R);
 
-}
+} // namespace
 
 void Foundation_TransformManipulator(Context* context, SceneViewTab* sceneViewTab)
 {
@@ -63,6 +46,7 @@ void TransformManipulator::Settings::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "SnapPosition", snapPosition_, Settings{}.snapPosition_);
     SerializeOptionalValue(archive, "SnapRotation", snapRotation_, Settings{}.snapRotation_);
     SerializeOptionalValue(archive, "SnapScale", snapScale_, Settings{}.snapScale_);
+    SerializeOptionalValue(archive, "ScreenRotation", screenRotation_, Settings{}.screenRotation_);
 }
 
 void TransformManipulator::Settings::RenderSettings()
@@ -80,21 +64,19 @@ void TransformManipulator::Settings::RenderSettings()
 
     ui::DragFloat("Snap Rotation", &snapRotation_, 5.0f, 5.0f, 180.0f, "%.1f");
     ui::DragFloat("Snap Scale", &snapScale_, 0.1f, 0.1f, 1.0f, "%.2f");
+
+    ui::Checkbox("Screen Space Rotation in 3D View", &screenRotation_);
 }
 
 Vector3 TransformManipulator::Settings::GetSnapValue(TransformGizmoOperation op) const
 {
     switch (op)
     {
-    case TransformGizmoOperation::Translate:
-        return snapPosition_;
-    case TransformGizmoOperation::Rotate:
-        return Vector3::ONE * snapRotation_;
-    case TransformGizmoOperation::Scale:
-        return Vector3::ONE * snapScale_;
+    case TransformGizmoOperation::Translate: return snapPosition_;
+    case TransformGizmoOperation::Rotate: return Vector3::ONE * snapRotation_;
+    case TransformGizmoOperation::Scale: return Vector3::ONE * snapScale_;
     case TransformGizmoOperation::None:
-    default:
-        return Vector3::ZERO;
+    default: return Vector3::ZERO;
     }
 }
 
@@ -130,9 +112,18 @@ void TransformManipulator::ProcessInput(SceneViewPage& scenePage, bool& mouseCon
 
         const bool needSnap = ui::IsKeyDown(KEY_CTRL);
         const Vector3 snapValue = needSnap ? cfg.GetSnapValue(operation_) : Vector3::ZERO;
-        if (transformNodesGizmo_->Manipulate(gizmo, operation_, isLocal_, isPivoted_, snapValue))
+        if (transformNodesGizmo_->Manipulate(gizmo, operation_, GetCurrentAxes(), isLocal_, isPivoted_, snapValue))
             mouseConsumed = true;
     }
+}
+
+TransformGizmoAxes TransformManipulator::GetCurrentAxes() const
+{
+    static const auto xyz = TransformGizmoAxis::X | TransformGizmoAxis::Y | TransformGizmoAxis::Z;
+    if (operation_ == TransformGizmoOperation::Rotate && settings_->GetValues().screenRotation_)
+        return xyz | TransformGizmoAxis::Screen;
+    else
+        return xyz;
 }
 
 void TransformManipulator::EnsureGizmoInitialized(SceneViewPage& scenePage)
@@ -182,13 +173,13 @@ bool TransformManipulator::RenderTabContextMenu()
 
     ui::Separator();
 
-    if (ui::MenuItem("Select", hotkeyManager->GetHotkeyLabel(Hotkey_Select).c_str(), operation_ == TransformGizmoOperation::None))
+    if (ui::MenuItem("Select", hotkeyManager->GetHotkeyLabel(Hotkey_Select).c_str(), IsSelect()))
         operation_ = TransformGizmoOperation::None;
-    if (ui::MenuItem("Translate", hotkeyManager->GetHotkeyLabel(Hotkey_Translate).c_str(), operation_ == TransformGizmoOperation::Translate))
+    if (ui::MenuItem("Translate", hotkeyManager->GetHotkeyLabel(Hotkey_Translate).c_str(), IsTranslate()))
         operation_ = TransformGizmoOperation::Translate;
-    if (ui::MenuItem("Rotate", hotkeyManager->GetHotkeyLabel(Hotkey_Rotate).c_str(), operation_ == TransformGizmoOperation::Rotate))
+    if (ui::MenuItem("Rotate", hotkeyManager->GetHotkeyLabel(Hotkey_Rotate).c_str(), IsRotate()))
         operation_ = TransformGizmoOperation::Rotate;
-    if (ui::MenuItem("Scale", hotkeyManager->GetHotkeyLabel(Hotkey_Scale).c_str(), operation_ == TransformGizmoOperation::Scale))
+    if (ui::MenuItem("Scale", hotkeyManager->GetHotkeyLabel(Hotkey_Scale).c_str(), IsScale()))
         operation_ = TransformGizmoOperation::Scale;
 
     ui::EndMenu();
@@ -197,13 +188,13 @@ bool TransformManipulator::RenderTabContextMenu()
 
 bool TransformManipulator::RenderToolbar()
 {
-    if (Widgets::ToolbarButton(ICON_FA_ARROW_POINTER, "Select Objects", operation_ == TransformGizmoOperation::None))
+    if (Widgets::ToolbarButton(ICON_FA_ARROW_POINTER, "Select Objects", IsSelect()))
         operation_ = TransformGizmoOperation::None;
-    if (Widgets::ToolbarButton(ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT, "Move Objects", operation_ == TransformGizmoOperation::Translate))
+    if (Widgets::ToolbarButton(ICON_FA_ARROWS_UP_DOWN_LEFT_RIGHT, "Move Objects", IsTranslate()))
         operation_ = TransformGizmoOperation::Translate;
-    if (Widgets::ToolbarButton(ICON_FA_ARROWS_ROTATE, "Rotate Objects", operation_ == TransformGizmoOperation::Rotate))
+    if (Widgets::ToolbarButton(ICON_FA_ARROWS_ROTATE, "Rotate Objects", IsRotate()))
         operation_ = TransformGizmoOperation::Rotate;
-    if (Widgets::ToolbarButton(ICON_FA_ARROWS_LEFT_RIGHT_TO_LINE, "Scale Objects", operation_ == TransformGizmoOperation::Scale))
+    if (Widgets::ToolbarButton(ICON_FA_ARROWS_LEFT_RIGHT_TO_LINE, "Scale Objects", IsScale()))
         operation_ = TransformGizmoOperation::Scale;
 
     Widgets::ToolbarSeparator();
@@ -212,7 +203,8 @@ bool TransformManipulator::RenderToolbar()
     if (Widgets::ToolbarButton(ICON_FA_CUBE, localTitle, isLocal_))
         isLocal_ = !isLocal_;
 
-    const char* pivotedTitle = isPivoted_ ? "Transform around individual objects' pivots" : "Transform around the center of selection";\
+    const char* pivotedTitle =
+        isPivoted_ ? "Transform around individual objects' pivots" : "Transform around the center of selection";
     if (Widgets::ToolbarButton(ICON_FA_ARROWS_TO_DOT, pivotedTitle, isPivoted_))
         isPivoted_ = !isPivoted_;
 
@@ -236,9 +228,9 @@ void TransformManipulator::ReadIniSettings(const char* line)
         isPivoted_ = *value != 0;
     if (const auto value = ReadIntFromIni(line, "TransformGizmo.Operation"))
     {
-        operation_ = Clamp(static_cast<TransformGizmoOperation>(*value),
-            TransformGizmoOperation::None, TransformGizmoOperation::Scale);
+        operation_ = Clamp(static_cast<TransformGizmoOperation>(*value), TransformGizmoOperation::None,
+            TransformGizmoOperation::Scale);
     }
 }
 
-}
+} // namespace Urho3D
