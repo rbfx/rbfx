@@ -217,6 +217,7 @@ public:
     void MoveSelectionPositionToLatest(SceneSelection& selection);
     void MoveSelectionRotationToLatest(SceneSelection& selection);
     void MoveSelectionScaleToLatest(SceneSelection& selection);
+    void MakePersistent(SceneSelection& selection);
 
     void CutSelection();
     void CopySelection();
@@ -231,6 +232,7 @@ public:
     void MoveSelectionPositionToLatest();
     void MoveSelectionRotationToLatest();
     void MoveSelectionScaleToLatest();
+    void MakePersistent();
     /// @}
 
     /// ResourceEditorTab implementation

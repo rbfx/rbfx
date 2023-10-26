@@ -67,6 +67,7 @@ const auto Hotkey_MoveToLatest = EditorHotkey{"SceneViewTab.MoveToLatest"};
 const auto Hotkey_MovePositionToLatest = EditorHotkey{"SceneViewTab.MovePositionToLatest"};
 const auto Hotkey_MoveRotationToLatest = EditorHotkey{"SceneViewTab.MoveRotationToLatest"};
 const auto Hotkey_MoveScaleToLatest = EditorHotkey{"SceneViewTab.MoveScaleToLatest"};
+const auto Hotkey_MakePersistent = EditorHotkey{"SceneViewTab.MakePersistent"};
 
 const auto Hotkey_CreateSiblingNode = EditorHotkey{"SceneViewTab.CreateSiblingNode"}.Ctrl().Press(KEY_N);
 const auto Hotkey_CreateChildNode = EditorHotkey{"SceneViewTab.CreateChildNode"}.Ctrl().Shift().Press(KEY_N);
@@ -214,6 +215,7 @@ SceneViewTab::SceneViewTab(Context* context)
     BindHotkey(Hotkey_MovePositionToLatest, &SceneViewTab::MoveSelectionPositionToLatest);
     BindHotkey(Hotkey_MoveRotationToLatest, &SceneViewTab::MoveSelectionRotationToLatest);
     BindHotkey(Hotkey_MoveScaleToLatest, &SceneViewTab::MoveSelectionScaleToLatest);
+    BindHotkey(Hotkey_MakePersistent, &SceneViewTab::MakePersistent);
     BindHotkey(Hotkey_CreateSiblingNode, &SceneViewTab::CreateNodeNextToSelection);
     BindHotkey(Hotkey_CreateChildNode, &SceneViewTab::CreateNodeInSelection);
 
@@ -254,7 +256,8 @@ void SceneViewTab::SetupPluginContext()
 
 void SceneViewTab::RenderEditMenu(Scene* scene, SceneSelection& selection)
 {
-    const bool hasSelection = !selection.GetNodes().empty() || !selection.GetComponents().empty();
+    const bool hasNodeSelection = !selection.GetNodes().empty();
+    const bool hasSelection = hasNodeSelection || !selection.GetComponents().empty();
     const bool hasClipboard = clipboard_.HasNodesOrComponents();
 
     if (ui::MenuItem("Cut", GetHotkeyLabel(Hotkey_Cut).c_str(), false, hasSelection))
@@ -275,18 +278,24 @@ void SceneViewTab::RenderEditMenu(Scene* scene, SceneSelection& selection)
     if (ui::MenuItem("Focus", GetHotkeyLabel(Hotkey_Focus).c_str(), false, hasSelection))
         FocusSelection(selection);
 
-    if (ui::MenuItem("Move to Latest", GetHotkeyLabel(Hotkey_MoveToLatest).c_str(), false, hasSelection))
-        MoveSelectionToLatest(selection);
-    if (ui::BeginMenu("Move Attribute to Latest...", hasSelection))
+    if (hasNodeSelection)
     {
-        if (ui::MenuItem("Position", GetHotkeyLabel(Hotkey_MovePositionToLatest).c_str(), false, hasSelection))
-            MoveSelectionPositionToLatest(selection);
-        if (ui::MenuItem("Rotation", GetHotkeyLabel(Hotkey_MoveRotationToLatest).c_str(), false, hasSelection))
-            MoveSelectionRotationToLatest(selection);
-        if (ui::MenuItem("Scale", GetHotkeyLabel(Hotkey_MoveScaleToLatest).c_str(), false, hasSelection))
-            MoveSelectionScaleToLatest(selection);
-        ui::EndMenu();
+        if (ui::MenuItem("Move to Latest", GetHotkeyLabel(Hotkey_MoveToLatest).c_str(), false))
+            MoveSelectionToLatest(selection);
+        if (ui::BeginMenu("Move Attribute to Latest..."))
+        {
+            if (ui::MenuItem("Position", GetHotkeyLabel(Hotkey_MovePositionToLatest).c_str(), false))
+                MoveSelectionPositionToLatest(selection);
+            if (ui::MenuItem("Rotation", GetHotkeyLabel(Hotkey_MoveRotationToLatest).c_str(), false))
+                MoveSelectionRotationToLatest(selection);
+            if (ui::MenuItem("Scale", GetHotkeyLabel(Hotkey_MoveScaleToLatest).c_str(), false))
+                MoveSelectionScaleToLatest(selection);
+            ui::EndMenu();
+        }
     }
+
+    if (ui::MenuItem("Make Persistent", GetHotkeyLabel(Hotkey_MakePersistent).c_str(), false, hasSelection))
+        MakePersistent(selection);
 
     if (SceneViewPage* activePage = GetActivePage())
     {
@@ -635,6 +644,21 @@ void SceneViewTab::MoveSelectionScaleToLatest(SceneSelection& selection)
     }
 }
 
+void SceneViewTab::MakePersistent(SceneSelection& selection)
+{
+    for (Node* node : selection.GetNodes())
+    {
+        if (node)
+            node->SetTemporary(false);
+    }
+
+    for (Component* component : selection.GetComponents())
+    {
+        if (component)
+            component->SetTemporary(false);
+    }
+}
+
 void SceneViewTab::CutSelection()
 {
     if (SceneViewPage* activePage = GetActivePage())
@@ -711,6 +735,12 @@ void SceneViewTab::MoveSelectionScaleToLatest()
 {
     if (SceneViewPage* activePage = GetActivePage())
         MoveSelectionScaleToLatest(activePage->selection_);
+}
+
+void SceneViewTab::MakePersistent()
+{
+    if (SceneViewPage* activePage = GetActivePage())
+        MakePersistent(activePage->selection_);
 }
 
 void SceneViewTab::RenderMenu()
