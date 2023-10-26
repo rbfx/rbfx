@@ -187,7 +187,8 @@ static const StringVector wheelElementNames =
 
 void RaycastVehicle::RegisterObject(Context* context)
 {
-    context->AddFactoryReflection<RaycastVehicle>();
+    context->AddFactoryReflection<RaycastVehicle>(Category_Physics);
+
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Wheel data", GetWheelDataAttr, SetWheelDataAttr, VariantVector, Variant::emptyVariantVector, AM_DEFAULT)
         .SetMetadata(AttributeMetadata::VectorStructElements, wheelElementNames);
     URHO3D_ATTRIBUTE("Maximum side slip threshold", float, maxSideSlipSpeed_, 4.0f, AM_DEFAULT);
