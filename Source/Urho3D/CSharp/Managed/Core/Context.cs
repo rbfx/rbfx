@@ -57,20 +57,23 @@ namespace Urho3DNet
         internal void OnSetupInstance()
         {
             using (var script = new Script(this))
+            {
                 RegisterSubsystem(script);
+                script.SubscribeToEvent(E.EngineInitialized, (StringHash e, VariantMap args) => {
+                    // Register factories marked with attributes
+                    foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        // Exclude system libraries and UWP HiddenScope assembly.
+                        var assemblyName = assembly.GetName().Name;
+                        if (!assemblyName.StartsWith("System.") && assemblyName != "HiddenScope")
+                        {
+                            RegisterFactories(assembly);
+                        }
+                    }
+                });
+            }
 
             Urho3DRegisterDirectorFactories(swigCPtr);
-
-            // Register factories marked with attributes
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                // Exclude system libraries and UWP HiddenScope assembly.
-                var assemblyName = assembly.GetName().Name;
-                if (!assemblyName.StartsWith("System.") && assemblyName != "HiddenScope")
-                {
-                    RegisterFactories(assembly);
-                }
-            }
 
             Instance = this;
         }
