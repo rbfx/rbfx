@@ -74,8 +74,8 @@ public:
     PrefabResource* GetPrefab() const { return prefab_; }
     void SetPath(ea::string_view path);
     const ea::string& GetPath() const { return path_; }
-    void SetPrefabAttr(ResourceRef prefab);
-    ResourceRef GetPrefabAttr() const { return prefabRef_; }
+    void SetPrefabAttr(const ResourceRef& prefab);
+    const ResourceRef& GetPrefabAttr() const { return prefabRef_; }
     /// @}
 
     /// Make all prefab nodes not temporary and remove component.
