@@ -51,7 +51,7 @@ public:
 
     static void RegisterObject(Context* context)
     {
-        context->AddFactoryReflection<RotateObject>("Component/User Components");
+        context->AddFactoryReflection<RotateObject>(Category_User);
         URHO3D_ATTRIBUTE("Animate", bool, animate_, true, AM_EDIT);
     }
 

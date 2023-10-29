@@ -22,8 +22,9 @@
 
 #pragma once
 
-#include "../Core/Context.h"
-#include "../Core/Object.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Macros.h"
+#include "Urho3D/Core/Object.h"
 
 namespace Urho3D
 {
@@ -179,7 +180,7 @@ void PluginApplication::RegisterPluginApplication()
             Urho3D::PluginApplication::RegisterPluginApplication<type>(TO_STRING(URHO3D_CURRENT_PLUGIN_NAME)); \
         }
 #else
-     /// Defines a main entry point of native plugin. Use this macro in a global scope.
+    /// Defines a main entry point of native plugin. Use this macro in a global scope.
     #define URHO3D_DEFINE_PLUGIN_MAIN(type) \
         extern "C" URHO3D_EXPORT_API Urho3D::PluginApplication* PluginApplicationMain(Urho3D::Context* context) \
         { \
