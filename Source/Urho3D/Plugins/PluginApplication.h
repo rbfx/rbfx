@@ -172,7 +172,7 @@ void PluginApplication::RegisterPluginApplication()
     static const ea::string& GetStaticPluginName() { static const ea::string name{pluginName}; return name; } \
     static void RegisterObject() { PluginApplication::RegisterPluginApplication<ClassName>(); } \
 
-/// Macro for defining entry point of editor plugin.
+/// Macro for defining entry point of dynamically linked plugin.
 #if !defined(URHO3D_PLUGINS) || defined(URHO3D_STATIC)
     #define URHO3D_DEFINE_PLUGIN_MAIN(type) \
         extern "C" void CONCATENATE(RegisterPlugin_, URHO3D_CURRENT_PLUGIN_NAME_SANITATED)() \
@@ -189,3 +189,20 @@ void PluginApplication::RegisterPluginApplication()
             return application; \
         }
 #endif
+
+/// Macro for defining entry point of simple plugin.
+/// Simple plugin contains only Load function that should register all necessary objects.
+#define URHO3D_DEFINE_SIMPLE_PLUGIN_MAIN(onLoad) \
+    namespace \
+    { \
+    class PluginApplicationWrapper : public Urho3D::PluginApplication \
+    { \
+    public: \
+        using PluginApplication::PluginApplication; \
+        void Load() override \
+        { \
+            onLoad(*this); \
+        } \
+    }; \
+    } \
+    URHO3D_DEFINE_PLUGIN_MAIN(PluginApplicationWrapper)
