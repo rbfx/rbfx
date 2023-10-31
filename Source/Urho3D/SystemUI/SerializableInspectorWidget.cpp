@@ -76,6 +76,13 @@ const ObjectHookFunction& SerializableInspectorWidget::GetObjectHook(const Objec
     return iter != objectHooks.end() ? iter->second : empty;
 }
 
+void SerializableInspectorWidget::CopyObjectHook(const ObjectHookKey& from, const ObjectHookKey& to)
+{
+    const ObjectHookFunction& hook = GetObjectHook(from);
+    if (hook)
+        RegisterObjectHook(to, hook);
+}
+
 SerializableInspectorWidget::SerializableInspectorWidget(Context* context, const WeakSerializableVector& objects)
     : Object(context)
     , objects_(objects)

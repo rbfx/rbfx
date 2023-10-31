@@ -70,6 +70,14 @@ public:
     static void RegisterObjectHook(const ObjectHookKey& key, const ObjectHookFunction& function);
     static void UnregisterObjectHook(const ObjectHookKey& key);
     static const ObjectHookFunction& GetObjectHook(const ObjectHookKey& key);
+    static void CopyObjectHook(const ObjectHookKey& from, const ObjectHookKey& to);
+    /// @}
+
+    /// Template syntax sugar for hooks.
+    /// @{
+    template <class T> static void RegisterObjectHook(ObjectHookType type, const ObjectHookFunction& function);
+    template <class T> static void UnregisterObjectHook();
+    template <class T, class U> static void CopyObjectHook();
     /// @}
 
     Signal<void(const WeakSerializableVector& objects, const AttributeInfo* attribute)> OnEditAttributeBegin;
@@ -97,4 +105,22 @@ private:
     ea::vector<const AttributeInfo*> pendingActions_;
 };
 
+template <class T>
+void SerializableInspectorWidget::RegisterObjectHook(ObjectHookType type, const ObjectHookFunction& function)
+{
+    SerializableInspectorWidget::RegisterObjectHook({T::GetTypeNameStatic(), type}, function);
 }
+
+template <class T> void SerializableInspectorWidget::UnregisterObjectHook()
+{
+    for (const auto type : {ObjectHookType::Prepend, ObjectHookType::Append, ObjectHookType::Replace})
+        SerializableInspectorWidget::UnregisterObjectHook({T::GetTypeNameStatic(), type});
+}
+
+template <class T, class U> void SerializableInspectorWidget::CopyObjectHook()
+{
+    for (const auto type : {ObjectHookType::Prepend, ObjectHookType::Append, ObjectHookType::Replace})
+        SerializableInspectorWidget::CopyObjectHook({T::GetTypeNameStatic(), type}, {U::GetTypeNameStatic(), type});
+}
+
+} // namespace Urho3D
