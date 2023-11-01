@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2021 the rbfx project.
+// Copyright (c) 2017-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -59,5 +59,6 @@ SharedPtr<Animation> CreateCombinedAnimation(Context* context,
 /// |-1: First 1x1 quad at Y=0.5;
 ///   |-2: Second 1x1 quad at Y=1.5.
 SharedPtr<ModelView> CreateSkinnedQuad_Model(Context* context);
+
 
 }

@@ -31,6 +31,7 @@
 #include "../Graphics/Geometry.h"
 #include "../Graphics/CustomGeometry.h"
 #include "../Graphics/DebugRenderer.h"
+#include "../Graphics/DecalProjection.h"
 #include "../Graphics/DecalSet.h"
 #include "../Graphics/GlobalIllumination.h"
 #include "../Graphics/Graphics.h"
@@ -719,6 +720,7 @@ void RegisterGraphicsLibrary(Context* context)
     ParticleEmitter::RegisterObject(context);
     RibbonTrail::RegisterObject(context);
     CustomGeometry::RegisterObject(context);
+    DecalProjection::RegisterObject(context);
     DecalSet::RegisterObject(context);
     Terrain::RegisterObject(context);
     TerrainPatch::RegisterObject(context);

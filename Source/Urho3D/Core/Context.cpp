@@ -263,6 +263,16 @@ void Context::ReleaseSDL()
         URHO3D_LOGERROR("Too many calls to Context::ReleaseSDL()!");
 }
 
+void Context::SetUnitTest(bool isUnitTest)
+{
+    isUnitTest_ = isUnitTest;
+}
+
+bool Context::IsUnitTest() const
+{
+    return isUnitTest_;
+}
+
 Object* Context::GetSubsystem(StringHash type) const
 {
     return subsystems_.Get(type);

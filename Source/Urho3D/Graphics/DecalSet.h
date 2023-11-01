@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -48,16 +49,10 @@ struct URHO3D_API DecalVertex
     }
 
     /// Construct with position, normal and skinning information.
-    DecalVertex(const Vector3& position, const Vector3& normal, const float blendWeights[], const unsigned char blendIndices[]) :
-        position_(position),
-        normal_(normal)
-    {
-        for (unsigned i = 0; i < 4; ++i)
-        {
-            blendWeights_[i] = blendWeights[i];
-            blendIndices_[i] = blendIndices[i];
-        }
-    }
+    DecalVertex(const Vector3& position, const Vector3& normal, const float blendWeights[], const unsigned char blendIndices[]);
+
+    /// Construct with position, normal and skinning information.
+    DecalVertex(const Vector3& position, const Vector3& normal, const Vector2& texCoord, const Vector4& tangent);
 
     /// Position.
     Vector3 position_;
@@ -71,6 +66,9 @@ struct URHO3D_API DecalVertex
     float blendWeights_[4]{};
     /// Blend indices.
     unsigned char blendIndices_[4]{};
+
+    /// Test for equality with another vertex with epsilon.
+    bool Equals(const DecalVertex& rhs, float eps = M_EPSILON) const;
 };
 
 /// One decal in a decal set.
@@ -145,6 +143,10 @@ public:
     bool AddDecal(Drawable* target, const Vector3& worldPosition, const Quaternion& worldRotation, float size, float aspectRatio,
         float depth, const Vector2& topLeftUV, const Vector2& bottomRightUV, float timeToLive = 0.0f, float normalCutoff = 0.1f,
         unsigned subGeometry = M_MAX_UNSIGNED);
+    /// Add a decal from view-projection matrix, using a target drawable's geometry for reference. If the decal needs to move
+    /// with the target, the decal component should be created to the target's node. Return true if successful.
+    bool AddDecal(Drawable* target, const Matrix4& viewProj, const Vector2& topLeftUV, const Vector2& bottomRightUV,
+        float timeToLive = 0.0f, float normalCutoff = 0.1f, unsigned subGeometry = M_MAX_UNSIGNED);
     /// Remove n oldest decals.
     void RemoveDecals(unsigned num);
     /// Remove all decals.
@@ -158,7 +160,10 @@ public:
     /// @property
     unsigned GetNumDecals() const { return decals_.size(); }
 
-    /// Retur number of vertices in the decals.
+    /// Return decal by index. This operation has linear complexity and should be only used by unit tests.
+    const Decal* GetDecal(unsigned index) const;
+
+    /// Return number of vertices in the decals.
     /// @property
     unsigned GetNumVertices() const { return numVertices_; }
 
@@ -207,8 +212,7 @@ private:
     bool GetBones(Drawable* target, unsigned batchIndex, const float* blendWeights, const unsigned char* blendIndices,
         unsigned char* newBlendIndices);
     /// Calculate UV coordinates for the decal.
-    void CalculateUVs
-        (Decal& decal, const Matrix3x4& view, const Matrix4& projection, const Vector2& topLeftUV, const Vector2& bottomRightUV);
+    void CalculateUVs(Decal& decal, const Matrix4& viewProj, const Vector2& topLeftUV, const Vector2& bottomRightUV);
     /// Transform decal's vertices from the target geometry to the decal set local space.
     void TransformVertices(Decal& decal, const Matrix3x4& transform);
     /// Remove a decal by iterator and return iterator to the next decal.

@@ -516,6 +516,13 @@ public:
         m22_ = scale;
     }
 
+    
+    /// Set perspective projection.
+    void SetPerspective(float fov, float zoom, float aspectRatio, float nearClip, float farClip, const Vector2& projectionOffset);
+
+    /// Set perspective projection.
+    void SetOrthographic(float orthoSize, float zoom, float aspectRatio, float nearClip, float farClip, const Vector2& projectionOffset);
+
     /// Return the combined rotation and scaling matrix.
     Matrix3 ToMatrix3() const
     {

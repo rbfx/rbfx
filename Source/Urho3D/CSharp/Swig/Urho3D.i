@@ -720,6 +720,7 @@ public:
 %include "Urho3D/Graphics/DecalSet.h"
 %include "Urho3D/Graphics/Light.h"
 %include "Urho3D/Graphics/ShaderVariation.h"
+%include "Urho3D/Graphics/DecalProjection.h"
 %include "Urho3D/Graphics/Tangent.h"
 //%include "Urho3D/Graphics/VertexDeclaration.h"
 %include "Urho3D/Graphics/Camera.h"

@@ -227,7 +227,7 @@ bool Material::BeginLoad(Deserializer& source)
 {
     // In headless mode, do not actually load the material, just return success
     auto* graphics = GetSubsystem<Graphics>();
-    if (!graphics)
+    if (!context_->IsUnitTest() && !graphics)
         return true;
 
     const InternalResourceFormat format = PeekResourceFormat(source);
@@ -248,7 +248,7 @@ bool Material::EndLoad()
 {
     // In headless mode, do not actually load the material, just return success
     auto* graphics = GetSubsystem<Graphics>();
-    if (!graphics)
+    if (!context_->IsUnitTest() && !graphics)
         return true;
 
     bool success = false;

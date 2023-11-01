@@ -42,6 +42,10 @@
 
 #include "Decals.h"
 
+#include <Urho3D/Graphics/AnimatedModel.h>
+#include <Urho3D/Graphics/AnimationController.h>
+#include <Urho3D/Graphics/Animation.h>
+
 #include <Urho3D/DebugNew.h>
 
 
@@ -139,6 +143,24 @@ void Decals::CreateScene()
         boxObject->SetCastShadows(true);
         if (size >= 3.0f)
             boxObject->SetOccluder(true);
+    }
+
+    // Create randomly placed jacks
+    const unsigned NUM_JACKS = 10;
+    for (unsigned i = 0; i < NUM_JACKS; ++i)
+    {
+        Node* modelNode = scene_->CreateChild("Jack");
+        modelNode->SetPosition(Vector3(Random(90.0f) - 45.0f, 0.0f, Random(90.0f) - 45.0f));
+        modelNode->SetRotation(Quaternion(0.0f, 180.0f, 0.0f));
+        auto* modelObject = modelNode->CreateComponent<AnimatedModel>();
+        modelObject->SetModel(cache->GetResource<Model>("Models/NinjaSnowWar/Ninja.mdl"));
+        modelObject->SetMaterial(cache->GetResource<Material>("Materials/NinjaSnowWar/Ninja.xml"));
+        modelObject->SetCastShadows(true);
+        auto* controller = modelNode->CreateComponent<AnimationController>();
+        AnimationParameters params{cache->GetResource<Animation>("Models/NinjaSnowWar/Ninja_Walk.ani")};
+        params.Speed(0.1f);
+        params.Looped();
+        controller->PlayNew(params);
     }
 
     // Create the camera. Limit far clip distance to match the fog

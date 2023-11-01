@@ -3,8 +3,8 @@
 	<attribute name="Name" value="" />
 	<attribute name="Time Scale" value="1.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Node ID" value="13" />
-	<attribute name="Next Component ID" value="14" />
+	<attribute name="Next Node ID" value="63" />
+	<attribute name="Next Component ID" value="489" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D" />
@@ -15,9 +15,9 @@
 		<attribute name="Color" value="1 0.32549 1 0.882353" />
 		<attribute name="Render Order" value="129" />
 		<attribute name="Drawables">
-			<variant type="Int" value="1461" />
-			<variant type="Int" value="1373" />
 			<variant type="Int" value="1518" />
+			<variant type="Int" value="1373" />
+			<variant type="Int" value="1461" />
 		</attribute>
 	</component>
 	<component type="OutlineGroup" id="1375">
@@ -1801,6 +1801,86 @@
 			<component type="StaticModel" id="1518">
 				<attribute name="Model" value="Model;Models/Box.mdl" />
 				<attribute name="Material" value="Material;Materials/Showcase/LitWater.xml" />
+			</component>
+		</node>
+	</node>
+	<node id="15">
+		<attribute name="Is Enabled" value="true" />
+		<attribute name="Name" value="Decal" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-5.03918 0 10.0242" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="1 1 1" />
+		<attribute name="Variables" />
+		<node id="16">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Plane" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0 0 0" />
+			<attribute name="Rotation" value="1 0 0 0" />
+			<attribute name="Scale" value="4.9 1 4.9" />
+			<attribute name="Variables" />
+			<component type="StaticModel" id="21">
+				<attribute name="Model" value="Model;Models/PlaneTess.mdl" />
+				<attribute name="Material" value="Material;Materials/Constant/MattWhite.xml" />
+			</component>
+		</node>
+		<node id="18">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Box 1" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-0.841259 0.477441 -0.249145" />
+			<attribute name="Rotation" value="0.961313 0 0.275453 -0" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="StaticModel" id="23">
+				<attribute name="Model" value="Model;Models/Box.mdl" />
+				<attribute name="Material" value="Material;Materials/Constant/MattWhite.xml" />
+				<attribute name="Cast Shadows" value="true" />
+			</component>
+		</node>
+		<node id="20">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="Box 2" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0.583072 0.478771 -0.929741" />
+			<attribute name="Rotation" value="-0.923081 0 0.384603 -0" />
+			<attribute name="Scale" value="1.35 1.35 1.35" />
+			<attribute name="Variables" />
+			<component type="StaticModel" id="27">
+				<attribute name="Model" value="Model;Models/Box.mdl" />
+				<attribute name="Material" value="Material;Materials/Constant/MattWhite.xml" />
+				<attribute name="Cast Shadows" value="true" />
+			</component>
+		</node>
+		<node id="31">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="DecalProjection" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="-0.27508 2.20813 -1.94685" />
+			<attribute name="Rotation" value="0.810556 0.561016 0.0956693 -0.138224" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="DecalProjection" id="42">
+				<attribute name="Material" value="Material;Materials/UrhoDecal.xml" />
+				<attribute name="Near Clip" value="0.010000" />
+				<attribute name="Far Clip" value="3.000000" />
+				<attribute name="FOV" value="20.000000" />
+				<attribute name="Aspect Ratio" value="2.000000" />
+				<attribute name="Orthographic" value="false" />
+			</component>
+		</node>
+		<node id="40">
+			<attribute name="Is Enabled" value="true" />
+			<attribute name="Name" value="DecalProjection" />
+			<attribute name="Tags" />
+			<attribute name="Position" value="0.0440093 0.710985 0.314655" />
+			<attribute name="Rotation" value="0.0196474 -0.0576886 0.815938 -0.5749" />
+			<attribute name="Scale" value="1 1 1" />
+			<attribute name="Variables" />
+			<component type="DecalProjection" id="195">
+				<attribute name="Material" value="Material;Materials/UrhoDecal.xml" />
+				<attribute name="Aspect Ratio" value="2.000000" />
 			</component>
 		</node>
 	</node>
