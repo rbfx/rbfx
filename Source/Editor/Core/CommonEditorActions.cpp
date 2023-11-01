@@ -512,7 +512,7 @@ ChangeSceneAction::ChangeSceneAction(Scene* scene, const PackedSceneData& oldDat
     : scene_(scene)
     , oldData_(oldData)
 {
-    newData_.FromScene(scene);
+    newData_ = PackedSceneData::FromScene(scene);
 }
 
 ChangeSceneAction::ChangeSceneAction(Scene* scene, const PackedSceneData& oldData, const PackedSceneData& newData)
