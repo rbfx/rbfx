@@ -59,6 +59,13 @@ const AttributeHookFunction& SerializableInspectorWidget::GetAttributeHook(const
     return iter != attributeHooks.end() ? iter->second : empty;
 }
 
+void SerializableInspectorWidget::CopyAttributeHook(const AttributeHookKey& from, const AttributeHookKey& to)
+{
+    const AttributeHookFunction& hook = GetAttributeHook(from);
+    if (hook)
+        RegisterAttributeHook(to, hook);
+}
+
 void SerializableInspectorWidget::RegisterObjectHook(const ObjectHookKey& key, const ObjectHookFunction& function)
 {
     objectHooks[key] = function;
