@@ -102,6 +102,9 @@ struct ChangeAttributeBuffer
     VariantVector oldValues_;
     VariantVector newValues_;
 
+    ea::vector<PackedComponentData> oldComponents_;
+    ea::vector<PackedComponentData> newComponents_;
+
     ea::vector<PackedNodeData> oldNodes_;
     ea::vector<PackedNodeData> newNodes_;
 

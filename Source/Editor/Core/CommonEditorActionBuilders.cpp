@@ -334,6 +334,13 @@ ChangeComponentAttributesActionBuilder::ChangeComponentAttributesActionBuilder(
     }
 
     case AttributeScopeHint::Serializable:
+    {
+        buffer_.oldComponents_.clear();
+        for (Component* component : components)
+            buffer_.oldComponents_.emplace_back(component);
+        break;
+    }
+
     case AttributeScopeHint::Node:
     {
         buffer_.oldNodes_.clear();
@@ -367,6 +374,20 @@ SharedPtr<EditorAction> ChangeComponentAttributesActionBuilder::Build() const
     }
 
     case AttributeScopeHint::Serializable:
+    {
+        buffer_.newComponents_.clear();
+        for (Component* component : components_)
+            buffer_.newComponents_.emplace_back(component);
+
+        auto compositeAction = MakeShared<CompositeEditorAction>();
+        for (unsigned index = 0; index < components_.size(); ++index)
+        {
+            compositeAction->EmplaceAction<ChangeComponentAction>(
+                scene_, buffer_.oldComponents_[index], buffer_.newComponents_[index]);
+        }
+        return compositeAction;
+    }
+
     case AttributeScopeHint::Node:
     {
         buffer_.newNodes_.clear();

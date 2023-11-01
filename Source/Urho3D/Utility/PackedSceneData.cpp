@@ -153,6 +153,18 @@ Component* PackedComponentData::SpawnCopy(Node* node) const
     return component;
 }
 
+void PackedComponentData::Update(Component* component) const
+{
+    ConsumeArchiveException([&]
+    {
+        MemoryBuffer view{data_.GetBuffer()};
+        BinaryInputArchive archive{component->GetContext(), view};
+
+        ArchiveBlock block = archive.OpenUnorderedBlock("component");
+        component->SerializeInBlock(archive, true /* serialize temporary */);
+    });
+}
+
 void PackedSceneData::ToScene(Scene* scene) const
 {
     ConsumeArchiveException([&]
