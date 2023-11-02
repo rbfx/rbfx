@@ -55,10 +55,22 @@ void main()
     Surface_SetPlanarReflection(surfaceData, sReflection0, cReflectionPlaneX, cReflectionPlaneY);
 
     // Apply noise to screen position used for background sampling
-    surfaceData.screenPos += surfaceData.normalInTangentSpace.xy * cNoiseStrength;
+    half2 refractionDisplacement = surfaceData.normalInTangentSpace.xy * cNoiseStrength;
+    surfaceData.screenPos += refractionDisplacement;
 
 #ifndef URHO3D_ADDITIVE_BLENDING
+#ifdef URHO3D_HAS_READABLE_DEPTH
+    Surface_SetBackgroundDepth(surfaceData, sDepthBuffer);
+    // Roll back to original screen position if refracted object is above surface.
+    if (surfaceData.backgroundDepth < vWorldDepth)
+    {
+        surfaceData.screenPos -= refractionDisplacement;
+        Surface_SetBackgroundDepth(surfaceData, sDepthBuffer);
+    }
+    Surface_SetBackgroundColor(surfaceData, sEmission);
+#else
     Surface_SetBackground(surfaceData, sEmission, sDepthBuffer);
+#endif
 #endif
 
     // Water doesn't accept diffuse lighting, set albedo to zero

@@ -54,9 +54,16 @@ void main()
 
     // Apply noise to screen position used for background sampling
     half2 distortionDistance = surfaceData.normalInTangentSpace.xy * (cNoiseStrength * surfaceData.albedo.a);
+#ifdef URHO3D_HAS_READABLE_DEPTH
     surfaceData.screenPos += distortionDistance;
-
-    Surface_SetBackground(surfaceData, sEmission, sDepthBuffer);
+    Surface_SetBackgroundDepth(surfaceData, sDepthBuffer);
+    // Roll back to original screen position if refracted object is above surface.
+    surfaceData.screenPos -= distortionDistance * step(surfaceData.backgroundDepth, vWorldDepth);
+    Surface_SetBackgroundColor(surfaceData, sEmission);
+#else
+    surfaceData.screenPos += distortionDistance;
+    Surface_SetBackgroundColor(surfaceData, sEmission);
+#endif
 
     gl_FragColor = vec4(surfaceData.backgroundColor,1);
 }
