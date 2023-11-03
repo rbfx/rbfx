@@ -182,7 +182,8 @@ static const StringVector wheelElementNames =
     "   Friction slip",
     "   Roll influence",
     "   Engine force",
-    "   Brake"
+    "   Brake",
+    "   Skid info"
 };
 
 void RaycastVehicle::RegisterObject(Context* context)
@@ -209,74 +210,74 @@ void RaycastVehicle::ApplyAttributes()
     Scene* scene = GetScene();
     vehicleData_->Init(scene, hullBody_, IsEnabledEffective(), coordinateSystem_);
     VariantVector& value = loadedWheelData_;
-    int numObjects = value[index++].GetInt();
-    int wheelIndex = 0;
-    origRotation_.clear();
-    skidInfoCumulative_.clear();
-    wheelSideSlipSpeed_.clear();
-
-    for (int i = 0; i < numObjects; i++)
+    if (!loadedWheelData_.empty())
     {
-        int node_id = value[index++].GetInt();
-        Vector3 direction = value[index++].GetVector3();
-        Vector3 axle = value[index++].GetVector3();
-        float restLength = value[index++].GetFloat();
-        float radius = value[index++].GetFloat();
-        bool isFrontWheel = value[index++].GetBool();
-        float steering = value[index++].GetFloat();
-        Vector3 connectionPoint = value[index++].GetVector3();
-        Quaternion origRotation = value[index++].GetQuaternion();
-        float skidInfoC = value[index++].GetFloat();
-        float sideSlipSpeed = value[index++].GetFloat();
+        int numObjects = value[index++].GetInt();
+        int wheelIndex = 0;
+        origRotation_.clear();
+        skidInfoCumulative_.clear();
+        wheelSideSlipSpeed_.clear();
 
-        bool isContact = value[index++].GetBool();
-        Vector3 contactPosition = value[index++].GetVector3();
-        Vector3 contactNormal = value[index++].GetVector3();
-        float suspensionStiffness = value[index++].GetFloat();
-        float maxSuspensionForce = value[index++].GetFloat();
-        float dampingRelaxation = value[index++].GetFloat();
-        float dampingCompression = value[index++].GetFloat();
-        float frictionSlip = value[index++].GetFloat();
-        float rollInfluence = value[index++].GetFloat();
-        float engineForce = value[index++].GetFloat();
-        float brake = value[index++].GetFloat();
-        float skidInfo = value[index++].GetFloat();
-        Node* wheelNode = GetScene()->GetNode(node_id);
-        if (!wheelNode)
+        for (int i = 0; i < numObjects; i++)
         {
-            URHO3D_LOGERROR("RaycastVehicle: Incorrect node id = " + ea::to_string(node_id) + " index: " + ea::to_string(index));
-            continue;
+            int node_id = value[index++].GetInt();
+            Vector3 direction = value[index++].GetVector3();
+            Vector3 axle = value[index++].GetVector3();
+            float restLength = value[index++].GetFloat();
+            float radius = value[index++].GetFloat();
+            bool isFrontWheel = value[index++].GetBool();
+            float steering = value[index++].GetFloat();
+            Vector3 connectionPoint = value[index++].GetVector3();
+            Quaternion origRotation = value[index++].GetQuaternion();
+            float skidInfoC = value[index++].GetFloat();
+            float sideSlipSpeed = value[index++].GetFloat();
+
+            bool isContact = value[index++].GetBool();
+            Vector3 contactPosition = value[index++].GetVector3();
+            Vector3 contactNormal = value[index++].GetVector3();
+            float suspensionStiffness = value[index++].GetFloat();
+            float maxSuspensionForce = value[index++].GetFloat();
+            float dampingRelaxation = value[index++].GetFloat();
+            float dampingCompression = value[index++].GetFloat();
+            float frictionSlip = value[index++].GetFloat();
+            float rollInfluence = value[index++].GetFloat();
+            float engineForce = value[index++].GetFloat();
+            float brake = value[index++].GetFloat();
+            float skidInfo = value[index++].GetFloat();
+            Node* wheelNode = GetScene()->GetNode(node_id);
+            if (!wheelNode)
+            {
+                URHO3D_LOGERROR("RaycastVehicle: Incorrect node id = " + ea::to_string(node_id)
+                    + " index: " + ea::to_string(index));
+                continue;
+            }
+            btRaycastVehicle* vehicle = vehicleData_->Get();
+            int id = GetNumWheels();
+            btVector3 connectionPointCS0(connectionPoint.x_, connectionPoint.y_, connectionPoint.z_);
+            btVector3 wheelDirectionCS0(direction.x_, direction.y_, direction.z_);
+            btVector3 wheelAxleCS(axle.x_, axle.y_, axle.z_);
+            btWheelInfo& wheel = vehicle->addWheel(connectionPointCS0, wheelDirectionCS0, wheelAxleCS, restLength,
+                radius, vehicleData_->tuning_, isFrontWheel);
+            wheelNodes_.push_back(wheelNode);
+            origRotation_.push_back(origRotation);
+            skidInfoCumulative_.push_back(skidInfoC);
+            wheelSideSlipSpeed_.push_back(sideSlipSpeed);
+            SetSteeringValue(wheelIndex, steering);
+            wheel.m_raycastInfo.m_isInContact = isContact;
+            wheel.m_raycastInfo.m_contactNormalWS = btVector3(contactNormal.x_, contactNormal.y_, contactNormal.z_);
+            wheel.m_raycastInfo.m_contactPointWS =
+                btVector3(contactPosition.x_, contactPosition.y_, contactPosition.z_);
+            wheel.m_suspensionStiffness = suspensionStiffness;
+            wheel.m_maxSuspensionForce = maxSuspensionForce;
+            wheel.m_wheelsDampingRelaxation = dampingRelaxation;
+            wheel.m_wheelsDampingCompression = dampingCompression;
+            wheel.m_frictionSlip = frictionSlip;
+            wheel.m_rollInfluence = rollInfluence;
+            wheel.m_engineForce = engineForce;
+            wheel.m_brake = brake;
+            wheel.m_skidInfo = skidInfo;
+            wheelIndex++;
         }
-        btRaycastVehicle* vehicle = vehicleData_->Get();
-        int id = GetNumWheels();
-        btVector3 connectionPointCS0(connectionPoint.x_, connectionPoint.y_, connectionPoint.z_);
-        btVector3 wheelDirectionCS0(direction.x_, direction.y_, direction.z_);
-        btVector3 wheelAxleCS(axle.x_, axle.y_, axle.z_);
-        btWheelInfo& wheel = vehicle->addWheel(connectionPointCS0,
-                                wheelDirectionCS0,
-                                wheelAxleCS,
-                                restLength,
-                                radius,
-                                vehicleData_->tuning_,
-                                isFrontWheel);
-        wheelNodes_.push_back(wheelNode);
-        origRotation_.push_back(origRotation);
-        skidInfoCumulative_.push_back(skidInfoC);
-        wheelSideSlipSpeed_.push_back(sideSlipSpeed);
-        SetSteeringValue(wheelIndex, steering);
-        wheel.m_raycastInfo.m_isInContact = isContact;
-        wheel.m_raycastInfo.m_contactNormalWS = btVector3(contactNormal.x_, contactNormal.y_, contactNormal.z_);
-        wheel.m_raycastInfo.m_contactPointWS = btVector3(contactPosition.x_, contactPosition.y_, contactPosition.z_);
-        wheel.m_suspensionStiffness = suspensionStiffness;
-        wheel.m_maxSuspensionForce = maxSuspensionForce;
-        wheel.m_wheelsDampingRelaxation = dampingRelaxation;
-        wheel.m_wheelsDampingCompression = dampingCompression;
-        wheel.m_frictionSlip = frictionSlip;
-        wheel.m_rollInfluence = rollInfluence;
-        wheel.m_engineForce = engineForce;
-        wheel.m_brake = brake;
-        wheel.m_skidInfo = skidInfo;
-        wheelIndex++;
     }
     URHO3D_LOGDEBUG("maxSideSlipSpeed_ value: " + ea::to_string(maxSideSlipSpeed_));
     URHO3D_LOGDEBUG("loaded items: " + ea::to_string(index));
@@ -599,7 +600,7 @@ float RaycastVehicle::GetBrake(int wheel) const
 int RaycastVehicle::GetNumWheels() const
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
-    return vehicle->getNumWheels();
+    return vehicle ? vehicle->getNumWheels() : 0;
 }
 
 Node* RaycastVehicle::GetWheelNode(int wheel) const

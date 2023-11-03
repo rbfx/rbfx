@@ -209,7 +209,7 @@ void RaycastVehicleDemo::Update(float timeStep)
                 scene_->LoadXML(loadFile);
                 // After loading we have to reacquire the weak pointer to the Vehicle component, as it has been recreated
                 // Simply find the vehicle's scene node by name as there's only one of them
-                Node* vehicleNode = scene_->GetChild("Vehicle2", true);
+                Node* vehicleNode = scene_->GetChild("Vehicle", true);
                 if (vehicleNode)
                 {
                     vehicle_ = vehicleNode->GetComponent<Vehicle2>();
