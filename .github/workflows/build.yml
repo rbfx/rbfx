@@ -255,12 +255,18 @@ jobs:
                         (matrix.ci_lib_type == 'dll')                 &&
                         (matrix.ci_compiler == 'msvc')
                     }}
+      ci_itch: ${{ (matrix.ci_build_type == 'rel') && (github.ref == 'refs/heads/master') }}
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
 
     steps:
       - uses: actions/checkout@v3
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
+
+      - name: Set up butler
+        if: ${{ env.BUTLER_API_KEY != '' && env.ci_itch == 'true' }}
+        uses: jdno/setup-butler@v1
 
       - name: Build Cache
         uses: actions/cache@v3
@@ -314,6 +320,10 @@ jobs:
         with:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
+
+      - name: Publish to itch.io
+        if: ${{ env.BUTLER_API_KEY != '' && env.ci_itch == 'true' }}
+        run: butler push ${{ env.ci_build_dir }}/bin rebelfork/rebelfork:win-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}
 
   UWP:
     if: github.event.pull_request.draft == false
@@ -443,12 +453,18 @@ jobs:
                         (matrix.ci_lib_type == 'dll')                 &&
                         (matrix.ci_compiler == 'gcc')
                     }}
+      ci_itch: ${{ (matrix.ci_build_type == 'rel') && (github.ref == 'refs/heads/master') }}
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
 
     steps:
       - uses: actions/checkout@v3
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
+
+      - name: Set up butler
+        if: ${{ env.BUTLER_API_KEY != '' && env.ci_itch == 'true' }}
+        uses: jdno/setup-butler@v1
 
       - name: Build Cache
         uses: actions/cache@v3
@@ -495,6 +511,11 @@ jobs:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
+      - name: Publish to itch.io
+        if: ${{ env.BUTLER_API_KEY != '' && env.ci_itch == 'true' }}
+        shell: bash
+        run: butler push ${{ env.ci_build_dir }}/bin rebelfork/rebelfork:linux-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}
+
   MacOS:
     if: github.event.pull_request.draft == false
     runs-on: macos-11
@@ -531,12 +552,18 @@ jobs:
                         (matrix.ci_lib_type == 'dll')                 &&
                         (matrix.ci_compiler == 'clang')
                     }}
+      ci_itch: ${{ (matrix.ci_build_type == 'rel') && (github.ref == 'refs/heads/master') }}
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
 
     steps:
       - uses: actions/checkout@v3
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
+
+      - name: Set up butler
+        if: ${{ env.BUTLER_API_KEY != '' && env.ci_itch == 'true' }}
+        uses: jdno/setup-butler@v1
 
       - name: Build Cache
         uses: actions/cache@v3
@@ -582,6 +609,11 @@ jobs:
         with:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
+
+      - name: Publish to itch.io
+        if: ${{ env.BUTLER_API_KEY != '' && env.ci_itch == 'true' }}
+        shell: bash
+        run: butler push ${{ env.ci_build_dir }}/bin rebelfork/rebelfork:mac-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}
 
   Android:
     if: github.event.pull_request.draft == false

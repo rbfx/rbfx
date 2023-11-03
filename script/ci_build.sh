@@ -227,6 +227,13 @@ function action-generate() {
         )
     fi
 
+    if [[ -n "${BUTLER_API_KEY}" ]]; then
+        echo "BUTLER_API_KEY detected. Enabling URHO3D_COPY_DATA_DIRS option."
+        ci_cmake_params+=(
+            "-DURHO3D_COPY_DATA_DIRS=ON"
+        )
+    fi
+
     ci_cmake_params+=(${ci_cmake_params_user[@]})
     ci_cmake_params+=(-B $ci_build_dir -S "$ci_source_dir")
 

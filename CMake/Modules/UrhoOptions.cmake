@@ -236,6 +236,7 @@ cmake_dependent_option(URHO3D_TOOLS             "Tools enabled. Bool or a list o
 option(URHO3D_SAMPLES                           "Build samples"                                         OFF)
 cmake_dependent_option(URHO3D_MERGE_STATIC_LIBS "Merge third party dependency libs to Urho3D.a"         OFF "NOT BUILD_SHARED_LIBS"                          OFF)
 option(URHO3D_NO_EDITOR_PLAYER_EXE              "Do not build editor or player executables."            OFF)
+option(URHO3D_COPY_DATA_DIRS                    "Copy data dirs instead of sym link."                   OFF)
 
 if (WIN32)
     option(URHO3D_WIN32_CONSOLE "Show log messages in win32 console"                     OFF)
