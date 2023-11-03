@@ -112,6 +112,9 @@ void Node::SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSav
     }
     else
     {
+        if (serializeTemporary)
+            saveFlags |= PrefabSaveFlag::SaveTemporary;
+
         PrefabWriterToArchive writer{archive, nullptr, saveFlags, archiveFlags};
         if (!Save(writer))
             throw ArchiveException("Failed to save node hierarchy to archive");

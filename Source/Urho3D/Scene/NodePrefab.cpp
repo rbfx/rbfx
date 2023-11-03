@@ -176,7 +176,11 @@ void SerializablePrefab::Import(const Serializable* serializable, PrefabSaveFlag
     for (unsigned attributeIndex = 0; attributeIndex < numObjectAttributes; ++attributeIndex)
     {
         const AttributeInfo& attr = objectAttributes[attributeIndex];
-        if (!attr.ShouldSave())
+
+        // If temporary attribute saving is enabled, it overrides other flags.
+        const bool shouldSave =
+            attr.ShouldSave() || (flags.Test(PrefabSaveFlag::SaveTemporary) && !!(attr.mode_ & AM_TEMPORARY));
+        if (!shouldSave)
             continue;
 
         if (!(attr.mode_ & AM_PREFAB) && flags.Test(PrefabSaveFlag::Prefab))
@@ -237,7 +241,11 @@ void SerializablePrefab::Export(Serializable* serializable, PrefabLoadFlags flag
             continue;
 
         const AttributeInfo& attr = objectAttributes[attributeIndex];
-        if (!attr.ShouldLoad())
+
+        // If temporary attribute was saved, we load it unconditionally.
+        // TODO: Maybe have a flag to control this behavior?
+        const bool shouldLoad = attr.ShouldLoad() || !!(attr.mode_ & AM_TEMPORARY);
+        if (!shouldLoad)
             continue;
 
         const Variant& value = attributePrefab.GetValue();
