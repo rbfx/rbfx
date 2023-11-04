@@ -304,5 +304,14 @@ function action-cstest() {
     fi
 }
 
+function action-publish-to-itch() {
+    if [[ -z "${BUTLER_API_KEY}" ]]; then
+        echo "No BUTLER_API_KEY detected. Can't publish to itch.io."
+        return 0
+    fi
+
+    butler push "$ci_build_dir/bin" "rebelfork/rebelfork:$ci_platform-$ci_arch-$ci_lib_type-$ci_compiler"
+}
+
 # Invoke requested action.
 action-$ci_action

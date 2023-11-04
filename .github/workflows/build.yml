@@ -265,7 +265,7 @@ jobs:
           fetch-depth: 1
 
       - name: Set up butler
-        if: ${{ env.BUTLER_API_KEY != '' && env.ci_itch == 'true' }}
+        if: ${{ env.ci_itch == 'true' }}
         uses: jdno/setup-butler@v1
 
       - name: Build Cache
@@ -322,9 +322,10 @@ jobs:
           path: ${{ env.ci_sdk_dir }}
 
       - name: Publish to itch.io
-        if: ${{ env.BUTLER_API_KEY != '' && env.ci_itch == 'true' }}
-        run: butler push ${{ env.ci_build_dir }}/bin rebelfork/rebelfork:win-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}
-
+        if: ${{ env.ci_itch == 'true' }}
+        shell: bash
+        run: ${{ env.ci_build_script }} publish-to-itch
+        
   UWP:
     if: github.event.pull_request.draft == false
     runs-on: windows-2022
@@ -463,7 +464,7 @@ jobs:
           fetch-depth: 1
 
       - name: Set up butler
-        if: ${{ env.BUTLER_API_KEY != '' && env.ci_itch == 'true' }}
+        if: ${{ env.ci_itch == 'true' }}
         uses: jdno/setup-butler@v1
 
       - name: Build Cache
@@ -512,9 +513,9 @@ jobs:
           path: ${{ env.ci_sdk_dir }}
 
       - name: Publish to itch.io
-        if: ${{ env.BUTLER_API_KEY != '' && env.ci_itch == 'true' }}
+        if: ${{ env.ci_itch == 'true' }}
         shell: bash
-        run: butler push ${{ env.ci_build_dir }}/bin rebelfork/rebelfork:linux-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}
+        run: ${{ env.ci_build_script }} publish-to-itch
 
   MacOS:
     if: github.event.pull_request.draft == false
@@ -562,7 +563,7 @@ jobs:
           fetch-depth: 1
 
       - name: Set up butler
-        if: ${{ env.BUTLER_API_KEY != '' && env.ci_itch == 'true' }}
+        if: ${{ env.ci_itch == 'true' }}
         uses: jdno/setup-butler@v1
 
       - name: Build Cache
@@ -611,9 +612,9 @@ jobs:
           path: ${{ env.ci_sdk_dir }}
 
       - name: Publish to itch.io
-        if: ${{ env.BUTLER_API_KEY != '' && env.ci_itch == 'true' }}
+        if: ${{ env.ci_itch == 'true' }}
         shell: bash
-        run: butler push ${{ env.ci_build_dir }}/bin rebelfork/rebelfork:mac-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}
+        run: ${{ env.ci_build_script }} publish-to-itch
 
   Android:
     if: github.event.pull_request.draft == false
