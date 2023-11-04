@@ -338,7 +338,8 @@ if(MSVC)
 
     if("${TARGET_CPU}" STREQUAL "x86_64")
         # Enable AVX2
-        set(DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS "/arch:AVX2")
+        # rbfx: Don't do any extra options. This should be controlled by Urho3D CMake scripts.
+        # set(DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS "/arch:AVX2")
     endif()
     set(DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS ${DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS} CACHE STRING "Additional MSVC compile options for release configurations")
 
