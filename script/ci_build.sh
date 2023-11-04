@@ -227,6 +227,13 @@ function action-generate() {
         )
     fi
 
+    if [[ -n "${BUTLER_API_KEY}" ]]; then
+        echo "BUTLER_API_KEY detected. Enabling URHO3D_COPY_DATA_DIRS option."
+        ci_cmake_params+=(
+            "-DURHO3D_COPY_DATA_DIRS=ON"
+        )
+    fi
+
     ci_cmake_params+=(${ci_cmake_params_user[@]})
     ci_cmake_params+=(-B $ci_build_dir -S "$ci_source_dir")
 
@@ -295,6 +302,15 @@ function action-cstest() {
     if test -f "$test_file"; then
         dotnet test $test_file
     fi
+}
+
+function action-publish-to-itch() {
+    if [[ -z "${BUTLER_API_KEY}" ]]; then
+        echo "No BUTLER_API_KEY detected. Can't publish to itch.io."
+        return 0
+    fi
+
+    butler push "$ci_build_dir/bin" "rebelfork/rebelfork:$ci_platform-$ci_arch-$ci_lib_type-$ci_compiler"
 }
 
 # Invoke requested action.
