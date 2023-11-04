@@ -43,7 +43,8 @@ public:
     static void RegisterObject(Context* context);
 
     /// Instantiate prefab into a scene or node as PrefabReference.
-    Node* InstantiateReference(Node* parentNode);
+    /// If inplace, the prefab will be instantiated into the parent node directly, otherwise a new node will be created.
+    Node* InstantiateReference(Node* parentNode, bool inplace = false);
 
     void NormalizeIds();
 

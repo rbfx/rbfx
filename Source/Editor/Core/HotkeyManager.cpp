@@ -33,6 +33,28 @@ namespace Urho3D
 namespace
 {
 
+bool IsPrintableKey(Key key)
+{
+    return (key >= static_cast<Key>(' ') && key < static_cast<Key>(127)) || key == KEY_TAB || key == KEY_RETURN;
+}
+
+bool IsTextEditKey(Key key)
+{
+    return key == KEY_BACKSPACE || key == KEY_DELETE || key == KEY_LEFT || key == KEY_RIGHT || key == KEY_HOME
+        || key == KEY_END || key == KEY_UP || key == KEY_DOWN || key == KEY_PAGEUP || key == KEY_PAGEDOWN;
+}
+
+bool IsInputUnavailable(Key key)
+{
+    return IsPrintableKey(key) || IsTextEditKey(key);
+}
+
+bool IsInputUnavailable(Scancode scancode)
+{
+    const Key key = Input::GetKeyFromScancode(scancode);
+    return IsPrintableKey(key) || IsTextEditKey(key);
+}
+
 }
 
 bool EditorHotkey::IsValid() const
@@ -44,6 +66,47 @@ bool EditorHotkey::IsValid() const
         || keyDown_ != KEY_UNKNOWN
         || scancodePressed_ != SCANCODE_UNKNOWN
         || scancodeDown_ != SCANCODE_UNKNOWN;
+}
+
+bool EditorHotkey::IsTextInputFriendly() const
+{
+    // Ctrl and Alt hotkeys are always text-friendly, unless it is one of fixed text editor hotkeys.
+    if (qualifiersDown_.Test(QUAL_CTRL) || qualifiersDown_.Test(QUAL_ALT))
+    {
+        static const ea::vector<EditorHotkey> textHotkeys = {
+            EditorHotkey{}.Press(SCANCODE_X).Ctrl(),
+            EditorHotkey{}.Press(SCANCODE_C).Ctrl(),
+            EditorHotkey{}.Press(SCANCODE_V).Ctrl(),
+            EditorHotkey{}.Press(SCANCODE_A).Ctrl(),
+            EditorHotkey{}.Press(SCANCODE_Z).Ctrl(),
+            EditorHotkey{}.Press(SCANCODE_Y).Ctrl(),
+        };
+        for (const EditorHotkey& hotkey : textHotkeys)
+        {
+            const bool sameQualifiers = hotkey.qualifiersDown_ == qualifiersDown_;
+            const bool sameScancodePressed = hotkey.scancodePressed_ == scancodePressed_;
+            const bool sameScancodeDown = hotkey.scancodePressed_ == scancodeDown_;
+            const bool sameKeyPressed = hotkey.scancodePressed_ == Input::GetScancodeFromKey(keyPressed_);
+            const bool sameKeyDown = hotkey.scancodePressed_ == Input::GetScancodeFromKey(keyDown_);
+
+            if (sameQualifiers && (sameScancodePressed || sameScancodeDown || sameKeyPressed || sameKeyDown))
+                return false;
+        }
+        return true;
+    }
+
+    // All printable characters and some special keys are not text-friendly.
+    if (scancodePressed_ != SCANCODE_UNKNOWN && IsInputUnavailable(scancodePressed_))
+        return false;
+    if (scancodeDown_ != SCANCODE_UNKNOWN && IsInputUnavailable(scancodeDown_))
+        return false;
+    if (keyPressed_ != KEY_UNKNOWN && IsInputUnavailable(keyPressed_))
+        return false;
+    if (keyDown_ != KEY_UNKNOWN && IsInputUnavailable(keyDown_))
+        return false;
+
+    // All other special keys are text-friendly.
+    return true;
 }
 
 bool EditorHotkey::CheckKeyboardQualifiers() const
@@ -191,12 +254,14 @@ HotkeyManager::HotkeyBinding::HotkeyBinding(Object* owner, const EditorHotkey& h
     : owner_{owner}
     , hotkey_{hotkey}
     , callback_{callback}
+    , isTextInputFriendly_{hotkey.IsTextInputFriendly()}
 {
 }
 
 HotkeyManager::HotkeyBinding::HotkeyBinding(const EditorHotkey& hotkey)
     : hotkey_{hotkey}
     , isPassive_{true}
+    , isTextInputFriendly_{hotkey.IsTextInputFriendly()}
 {
 }
 
@@ -276,6 +341,8 @@ void HotkeyManager::Update()
     }
 
     invokedCommands_.clear();
+
+    isTextInputConsumed_ = ui::GetIO().WantTextInput;
 }
 
 void HotkeyManager::InvokeFor(Object* owner)
@@ -287,6 +354,9 @@ void HotkeyManager::InvokeFor(Object* owner)
 
     for (const HotkeyBindingPtr& bindingPtr : iter->second)
     {
+        if (isTextInputConsumed_ && !bindingPtr->hotkey_.IsTextInputFriendly())
+            continue;
+
         const ea::string& command = bindingPtr->hotkey_.command_;
         if (!invokedCommands_.contains(command) && bindingPtr->hotkey_.Check())
         {

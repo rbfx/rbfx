@@ -47,11 +47,12 @@ void PrefabResource::RegisterObject(Context* context)
     context->AddFactoryReflection<PrefabResource>();
 }
 
-Node* PrefabResource::InstantiateReference(Node* parentNode)
+Node* PrefabResource::InstantiateReference(Node* parentNode, bool inplace)
 {
-    Node* instanceNode = parentNode->CreateChild(GetFileName(GetName()));
+    Node* instanceNode = inplace ? parentNode : parentNode->CreateChild();
+    instanceNode->SetName(GetFileName(GetName()));
 
-    auto prefabReference = instanceNode->CreateComponent<PrefabReference>();
+    auto prefabReference = instanceNode->GetOrCreateComponent<PrefabReference>();
     prefabReference->SetPrefab(this);
 
     const NodePrefab& nodePrefab = GetNodePrefab();
