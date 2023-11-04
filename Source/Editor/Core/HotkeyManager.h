@@ -45,6 +45,7 @@ public:
     /// Check hotkey state
     /// @{
     bool IsValid() const;
+    bool IsTextInputFriendly() const;
 
     bool CheckKeyboardQualifiers() const;
     bool CheckMouseQualifiers() const;
@@ -116,6 +117,7 @@ public:
         EditorHotkey hotkey_;
         HotkeyCallback callback_;
         bool isPassive_{};
+        bool isTextInputFriendly_{};
     };
     using HotkeyBindingPtr = ea::shared_ptr<HotkeyBinding>;
     using HotkeyBindingMap = ea::map<ea::string, ea::vector<HotkeyBindingPtr>>;
@@ -157,6 +159,7 @@ private:
     HotkeyBindingMap hotkeyByCommand_;
 
     ea::unordered_set<ea::string> invokedCommands_;
+    bool isTextInputConsumed_{};
 };
 
 

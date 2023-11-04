@@ -282,7 +282,7 @@ bool EditResourceRef(StringHash& type, ea::string& name, const StringVector* all
     }
 
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::InputText("##Name", &name, ImGuiInputTextFlags_EnterReturnsTrue))
+    if (ui::InputText("##Name", &name, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo))
         modified = true;
 
     if (allowedTypes != nullptr)
@@ -521,7 +521,7 @@ bool EditStringVector(StringVector& value, bool resizable)
         }
 
         ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-        if (ui::InputText("", &element, ImGuiInputTextFlags_EnterReturnsTrue))
+        if (ui::InputText("", &element, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo))
             return true;
 
         ++index;
@@ -545,7 +545,8 @@ bool EditStringVector(StringVector& value, bool resizable)
 
         ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
 
-        const bool isTextClicked = ui::InputText("", &newElement, ImGuiInputTextFlags_EnterReturnsTrue);
+        const bool isTextClicked =
+            ui::InputText("", &newElement, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo);
 
         if (isButtonClicked || isTextClicked)
         {
@@ -778,7 +779,7 @@ bool EditVariantString(Variant& var, const EditVariantOptions& options)
 {
     ea::string value = var.GetString();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::InputText("", &value, ImGuiInputTextFlags_EnterReturnsTrue))
+    if (ui::InputText("", &value, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo))
     {
         var = value;
         return true;
