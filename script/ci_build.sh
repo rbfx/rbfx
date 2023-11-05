@@ -39,7 +39,7 @@ echo "ci_sdk_dir=$ci_sdk_dir"
 
 declare -A types=(
     [dbg]='Debug'
-    [rel]='Release'
+    [rel]='RelWithDebInfo'
 )
 
 declare -A android_types=(
@@ -122,6 +122,32 @@ then
     MSBUILD=$(echo $MSBUILD | sed "s/://" 2>/dev/null)    # Remove :
     MSBUILD="/$MSBUILD/MSBuild/Current/Bin/MSBuild.exe"
 fi
+
+copy-runtime-libraries-for-executables() {
+    local dir=$1
+    local executable_files=($(find "$dir" -type f -executable))
+    for file in "${executable_files[@]}"; do
+        echo "Copying dependencies for $file"
+        copy-runtime-libraries-for-file "$file"
+    done
+}
+
+copy-runtime-libraries-for-file() {
+    local file=$1
+    local dependencies=($(ldd "$file" | awk '{print $3}'))
+    local dir=$(dirname "$file")
+    local filename=$(basename "$file")
+    shopt -s nocasematch
+    for dep in "${dependencies[@]}"; do
+        if [[ "$dep" =~ (vcruntime.+dll)|(msvcp.+dll)|(D3DCOMPILER.*dll) ]]; then
+            local depName=$(basename "$dep")
+            if [ "$dep" != "$dir/$depName" ]  && [[ ! -f "$dir/$depName" ]]; then
+                echo "Depends on $dep, making a copy to $dir"
+                cp "$dep" "$dir"
+            fi
+        fi
+    done
+}
 
 function action-dependencies() {
     # Make tools executable. 
@@ -310,7 +336,11 @@ function action-publish-to-itch() {
         return 0
     fi
 
-    butler push "$ci_build_dir/bin" "rebelfork/rebelfork:$ci_platform-$ci_arch-$ci_lib_type-$ci_compiler"
+    if [[ "$ci_platform" == "windows" ]]; then
+        copy-runtime-libraries-for-executables "$ci_build_dir/bin"
+    fi
+
+    butler push "$ci_build_dir/bin" "rebelfork/rebelfork:$ci_platform-$ci_arch-$ci_lib_type-$ci_compiler-$ci_build_type"
 }
 
 # Invoke requested action.
