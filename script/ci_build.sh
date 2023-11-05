@@ -123,16 +123,16 @@ then
     MSBUILD="/$MSBUILD/MSBuild/Current/Bin/MSBuild.exe"
 fi
 
-find_executables() {
+copy-runtime-libraries-for-executables() {
     local dir=$1
     local executable_files=($(find "$dir" -type f -executable))
     for file in "${executable_files[@]}"; do
         echo "Copying dependencies for $file"
-        copy_dependencies "$file"
+        copy-runtime-libraries-for-file "$file"
     done
 }
 
-copy_dependencies() {
+copy-runtime-libraries-for-file() {
     local file=$1
     local dependencies=($(ldd "$file" | awk '{print $3}'))
     local dir=$(dirname "$file")
@@ -337,7 +337,7 @@ function action-publish-to-itch() {
     fi
 
     if [[ "$ci_platform" == "windows" ]]; then
-        find_executables "$ci_build_dir/bin"
+        copy-runtime-libraries-for-executables "$ci_build_dir/bin"
     fi
 
     butler push "$ci_build_dir/bin" "rebelfork/rebelfork:$ci_platform-$ci_arch-$ci_lib_type-$ci_compiler-$ci_build_type"
