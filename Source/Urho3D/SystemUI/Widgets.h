@@ -116,6 +116,16 @@ URHO3D_API bool EditStringVariantMap(StringVariantMap& value, bool resizable, bo
 /// Render arbitrary variant value editor.
 URHO3D_API bool EditVariant(Variant& var, const EditVariantOptions& options = {});
 
+/// Render ItemLabel with scope guard of the same name.
+struct ItemLabelScopeGuard : public IdScopeGuard
+{
+    ItemLabelScopeGuard(const char* title, const ea::optional<Color>& color = ea::nullopt, bool isLeft = true)
+        : IdScopeGuard(title)
+    {
+        ItemLabel(title, color, isLeft);
+    }
+};
+
 }
 
 }
