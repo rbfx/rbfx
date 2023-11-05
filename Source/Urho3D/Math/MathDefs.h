@@ -155,8 +155,11 @@ inline T SmoothStep(T lhs, T rhs, T t)
     return t * t * (3.0 - 2.0 * t);
 }
 
-/// Return constant for exponential smoothing.
-template <class T> inline T ExpSmoothing(T constant, T timeStep) { return constant ? T(1) - Clamp(pow(T(2), -timeStep * constant), T(0), T(1)) : T(1); }
+/// Return constant for exponential smoothing. The input constant is the rate of smoothing, in seconds^-1.
+template <class T> inline T ExpSmoothingInv(T constant, T timeStep) { return constant ? T(1) - Clamp(pow(T(2), -timeStep * constant), T(0), T(1)) : T(1); }
+
+/// Return constant for exponential smoothing. The input constant is the half-duration of blending, in seconds.
+template <class T> inline T ExpSmoothing(T constant, T timeStep) { return constant ? ExpSmoothingInv(1 / constant, timeStep) : T(1); }
 
 /// Return sine of an angle in degrees.
 /// @specialization{float}
