@@ -382,6 +382,7 @@ function (define_static_plugin TARGET PLUGIN_NAME)
     target_compile_definitions (${TARGET} PRIVATE
         URHO3D_CURRENT_PLUGIN_NAME=${PLUGIN_NAME}
         URHO3D_CURRENT_PLUGIN_NAME_SANITATED=${PLUGIN_NAME_SANITATED}
+        ${PLUGIN_NAME_SANITATED}_EXPORT=1
     )
 endfunction ()
 
