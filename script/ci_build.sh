@@ -42,6 +42,9 @@ declare -A types=(
     [rel]='RelWithDebInfo'
 )
 
+# Web builds cannot handle RelWithDebInfo configuration.
+if [[ "$ci_platform" == "web" ]]; then types[rel]='Release'; fi
+
 declare -A android_types=(
     [dbg]='assembleDebug'
     [rel]='assembleRelease'
@@ -150,7 +153,7 @@ copy-runtime-libraries-for-file() {
 }
 
 function action-dependencies() {
-    # Make tools executable. 
+    # Make tools executable.
     # TODO: This should not be necessary, but for some reason installed tools lose executable flag.
     if [[ -e $ci_workspace_dir/host-sdk ]];
     then
