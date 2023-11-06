@@ -1090,6 +1090,13 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addFlag("--d3d12", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::D3D12), "Use Direct3D12 rendering backend");
     addFlag("--opengl", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::OpenGL), "Use OpenGL rendering backend");
     addFlag("--vulkan", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::Vulkan), "Use Vulkan rendering backend");
+
+    // Define --win32-console command line argument.
+    // Actual argument handling is done at ParseArguments function from ProcessUtils.cpp.
+#if defined(_WIN32) && !defined(UWP)
+    CLI::callback_t showConsole = [](CLI::results_t res) { return true; };
+    addFlagInternal("--win32-console", "Show console", showConsole);
+#endif
 }
 #endif
 
