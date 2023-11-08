@@ -389,6 +389,16 @@ void SerializeOptionalValue(Archive& archive, const char* name, T& value, const 
     }
 }
 
+/// Serialize pair type.
+template <class T, class U, class TSerializer = Detail::DefaultSerializer>
+void SerializeValue(
+    Archive& archive, const char* name, ea::pair<T, U>& value, const TSerializer& serializeValue = TSerializer{})
+{
+    const ArchiveBlock block = archive.OpenUnorderedBlock(name);
+    serializeValue(archive, "first", value.first);
+    serializeValue(archive, "second", value.second);
+}
+
 /// Wrapper that consumes ArchiveException and converts it to boolean status.
 template <class T>
 bool ConsumeArchiveException(const T& lambda, bool errorOnException = true)
