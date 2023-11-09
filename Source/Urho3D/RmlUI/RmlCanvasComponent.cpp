@@ -91,7 +91,7 @@ void RmlCanvasComponent::SetUISize(IntVector2 size)
 {
     assert(texture_ != nullptr);
     if (size.x_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.x_ > UICOMPONENT_MAX_TEXTURE_SIZE ||
-        size.y_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.y_ > UICOMPONENT_MAX_TEXTURE_SIZE || size.x_ != size.y_)
+        size.y_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.y_ > UICOMPONENT_MAX_TEXTURE_SIZE)
     {
         URHO3D_LOGERROR("RmlCanvasComponent: Invalid texture size {}x{}", size.x_, size.y_);
         return;
