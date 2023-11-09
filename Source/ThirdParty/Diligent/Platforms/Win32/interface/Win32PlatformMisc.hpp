@@ -117,10 +117,15 @@ struct WindowsMisc : public BasicPlatformMisc
         const uint8x8_t Vsum = vcnt_u8(vcreate_u8(static_cast<uint64_t>(Val)));
         // Pairwise sums: 8x8 -> 16x4 -> 32x2
         auto Bits = static_cast<Uint32>(vget_lane_u32(vpaddl_u16(vpaddl_u8(Vsum)), 0));
-#else
-        auto Bits = __popcnt(Val);
-#endif
         VERIFY_EXPR(Bits == BasicPlatformMisc::CountOneBits(Val));
+#elif defined __AVX__ || defined __SSE4_1__
+        //rbfx: __popcnt only available on SSE4 systems. MSVC does not define __SSE4_1__ so we have to rely on __AVX__.
+        //      __SSE4_1__ check added in case it is defined from cmake.
+        auto Bits = __popcnt(Val);
+        VERIFY_EXPR(Bits == BasicPlatformMisc::CountOneBits(Val));
+#else
+        auto Bits = BasicPlatformMisc::CountOneBits(Val);
+#endif
         return Bits;
     }
 
@@ -131,7 +136,9 @@ struct WindowsMisc : public BasicPlatformMisc
         const uint8x8_t Vsum = vcnt_u8(vcreate_u8(Val));
         // Pairwise sums: 8x8 -> 16x4 -> 32x2 -> 64x1
         auto Bits = static_cast<Uint32>(vget_lane_u64(vpaddl_u32(vpaddl_u16(vpaddl_u8(Vsum))), 0));
-#elif _WIN64
+#elif _WIN64 && (defined __AVX__ || defined __SSE4_1__)
+        //rbfx: __popcnt only available on SSE4 systems. MSVC does not define __SSE4_1__ so we have to rely on __AVX__.
+        //      __SSE4_1__ check added in case it is defined from cmake.
         auto Bits = __popcnt64(Val);
 #else
         auto Bits =
