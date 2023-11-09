@@ -249,9 +249,10 @@ Vector3 Quaternion::AngularVelocity() const
     if (axisScaleInv < M_EPSILON)
         return Vector3::ZERO;
 
+    const float sign = w_ >= 0.0f ? 1.0f : -1.0f;
     const Vector3 axis = Vector3(x_, y_, z_) / axisScaleInv;
-    const float angleRad = 2 * acos(w_);
-    return axis * angleRad;
+    const float angleRad = 2 * acos(sign * w_);
+    return sign * axis * angleRad;
 }
 
 Matrix3 Quaternion::RotationMatrix() const
