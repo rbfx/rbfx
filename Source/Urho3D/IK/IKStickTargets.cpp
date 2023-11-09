@@ -32,6 +32,7 @@ void IKStickTargets::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX(
         "Target Names", StringVector, targetNames_, OnTreeDirty, Variant::emptyStringVector, AM_DEFAULT);
 
+    URHO3D_ATTRIBUTE("Is Active", bool, isActive_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Is Position Sticky", bool, isPositionSticky_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Is Rotation Sticky", bool, isRotationSticky_, true, AM_DEFAULT);
 
@@ -119,8 +120,7 @@ void IKStickTargets::ApplyDeactivation()
 {
     for (TargetInfo& info : targets_)
     {
-        const bool shouldBeActive = IsActive();
-        if (shouldBeActive)
+        if (isActive_)
             continue;
 
         if (info.state_ != TargetState::Inactive)
@@ -135,8 +135,7 @@ void IKStickTargets::ApplyActivation()
 {
     for (TargetInfo& info : targets_)
     {
-        const bool shouldBeActive = IsActive();
-        if (!shouldBeActive)
+        if (!isActive_)
             continue;
 
         if (info.state_ == TargetState::Inactive)

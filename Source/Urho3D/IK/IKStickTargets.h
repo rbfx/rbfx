@@ -30,6 +30,8 @@ public:
     // clang-format off
     void SetTargetNames(const StringVector& names) { targetNames_ = names; OnTreeDirty(); }
     const StringVector& GetTargetNames() const { return targetNames_; }
+    void SetActive(bool value) { isActive_ = value; }
+    bool IsActive() const { return isActive_; }
     void SetPositionSticky(bool value) { isPositionSticky_ = value; }
     bool IsPositionSticky() const { return isPositionSticky_; }
     void SetRotationSticky(bool value) { isRotationSticky_ = value; }
@@ -136,10 +138,10 @@ private:
     void UpdateRecovery();
     void CommitWorldTransforms();
 
-    bool IsActive() const { return isPositionSticky_ || isRotationSticky_; }
     float GetDistanceToNearestStuckTarget(const Vector3& worldPosition) const;
 
     StringVector targetNames_;
+    bool isActive_{true};
     bool isPositionSticky_{true};
     bool isRotationSticky_{true};
     float positionThreshold_{DefaultPositionThreshold};
