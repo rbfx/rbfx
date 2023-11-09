@@ -96,7 +96,8 @@ struct EditVariantOptions
 URHO3D_API bool EditResourceRef(StringHash& type, ea::string& name, const StringVector* allowedTypes);
 
 /// Render vector of resource references with optional type constraints. If allowed types are not specified, only current type is allowed.
-URHO3D_API bool EditResourceRefList(StringHash& type, StringVector& names, const StringVector* allowedTypes, bool resizable);
+URHO3D_API bool EditResourceRefList(StringHash& type, StringVector& names, const StringVector* allowedTypes,
+    bool resizable, const StringVector* elementNames = nullptr);
 
 /// Render variant type selector.
 URHO3D_API bool EditVariantType(VariantType& value, const char* button = nullptr);

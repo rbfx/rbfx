@@ -274,8 +274,13 @@ void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
         options = options.AllowResize().AllowTypeChange();
     else if (!info.enumNames_.empty())
         options = options.Enum(info.enumNames_);
-    else if (info.type_ == VAR_RESOURCEREFLIST && info.GetMetadata(AttributeMetadata::AllowResize).GetBool())
-        options = options.AllowResize();
+    else if (info.type_ == VAR_RESOURCEREFLIST)
+    {
+        if (const StringVector& structElements = info.GetMetadata(AttributeMetadata::VectorStructElements).GetStringVector(); !structElements.empty())
+            options = options.SizedStructVector(structElements);
+        else if (info.GetMetadata(AttributeMetadata::AllowResize).GetBool())
+            options = options.AllowResize();
+    }
 
     if (Widgets::EditVariant(value, options))
         pendingSetAttributes_.emplace_back(&info, value);
