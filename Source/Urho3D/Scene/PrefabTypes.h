@@ -99,6 +99,8 @@ enum class PrefabLoadFlag
     IgnoreRootAttributes = 1 << 5,
     /// Keep "temporary" state as is.
     KeepTemporaryState = 1 << 6,
+    /// Skip "ApplyAttributes" callback.
+    SkipApplyAttributes = 1 << 7,
 };
 URHO3D_FLAGSET(PrefabLoadFlag, PrefabLoadFlags);
 

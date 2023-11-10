@@ -75,6 +75,13 @@ public:
     /// Visualize the component as debug geometry.
     virtual void DrawDebugGeometry(DebugRenderer* debug, bool depthTest);
 
+    /// Return whether the component provides auxiliary data.
+    /// Only components directly attached to the Scene can have auxiliary data.
+    /// Auxiliary data is not supported in prefabs.
+    virtual bool HasAuxiliaryData() const { return false; }
+    /// Serialize auxiliary data from/to the current block of the archive. May throw ArchiveException.
+    virtual void SerializeAuxiliaryData(Archive& archive) {}
+
     /// Set enabled/disabled state.
     /// @property
     void SetEnabled(bool enable);
