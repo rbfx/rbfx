@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,19 +22,19 @@
 
 #pragma once
 
-#include "BaseAction.h"
+#include "Urho3D/Actions/BaseAction.h"
 #include "../Resource/Resource.h"
 #include "../IO/Archive.h"
 
 namespace Urho3D
 {
 
-class XMLFile;
+class Graph;
 
 /// Action as resource
-class URHO3D_API ActionSet : public Resource
+class URHO3D_API ActionSet : public SimpleResource
 {
-    URHO3D_OBJECT(ActionSet, Resource)
+    URHO3D_OBJECT(ActionSet, SimpleResource)
 
 public:
     /// Construct.
@@ -42,22 +42,26 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
-    /// Load resource from stream. May be called from a worker thread. Return true if successful.
-    bool BeginLoad(Deserializer& source) override;
-
-    /// Save resource. Return true if successful.
-    bool Save(Serializer& dest) const override;
     /// Serialize from/to archive. Return true if successful.
     void SerializeInBlock(Archive& archive) override;
 
     /// Get action
-    Actions::BaseAction* GetDefaultAction() const { return defaultAction_; }
+    Actions::BaseAction* GetAction() const { return action_; }
     /// Set action
-    void SetDefaultAction(Actions::BaseAction* action);
+    void SetAction(Actions::BaseAction* action);
+
+    /// Create GraphNode from the action. Required for action editor.
+    SharedPtr<Graph> ToGraph() const;
+    /// Initialize action from GraphNode. Required for action editor.
+    bool FromGraph(const Graph* graph);
+
+protected:
+    /// Root block name. Used for XML serialization only.
+    const char* GetRootBlockName() const override { return "actionset"; }
 
 private:
     /// Root action.
-    SharedPtr<Actions::BaseAction> defaultAction_;
+    SharedPtr<Actions::BaseAction> action_;
 };
 
 } // namespace Urho3D

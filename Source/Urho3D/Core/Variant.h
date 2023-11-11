@@ -1744,6 +1744,8 @@ template <> inline VariantType GetVariantType<VariantCurve>() { return VAR_VARIA
 
 template <> inline VariantType GetVariantType<StringVariantMap>() { return VAR_STRINGVARIANTMAP; }
 
+template <> inline VariantType GetVariantType<RefCounted*>() { return VAR_PTR; }
+
 // Specializations of Variant::Get<T>
 template <> URHO3D_API int Variant::Get<int>(int) const;
 

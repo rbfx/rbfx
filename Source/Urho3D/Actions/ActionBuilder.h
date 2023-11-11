@@ -47,6 +47,10 @@ public:
     /// Run action in parallel to current one.
     ActionBuilder& Also(const SharedPtr<Actions::FiniteTimeAction>& parallelAction);
 
+    /// Continue with ShakeBy action.
+    ActionBuilder& ShakeBy(
+        float duration, const Vector3& offset, float noiseSpeed = 10.0f, ea::string_view attributeName = Actions::POSITION_ATTRIBUTE);
+
     /// Continue with MoveBy action.
     ActionBuilder& MoveBy(float duration, const Vector3& offset, ea::string_view attributeName = Actions::POSITION_ATTRIBUTE);
 
@@ -105,11 +109,11 @@ public:
         float duration, ea::string_view attributeName, const Variant& from, const Variant& to);
 
     /// Continue with ShaderParameterTo action.
-    ActionBuilder& ShaderParameterTo(float duration, ea::string_view parameter, const Variant& to);
+    ActionBuilder& ShaderParameterTo(float duration, const ea::string& parameter, const Variant& to);
 
     /// Continue with ShaderParameterFromTo action.
     ActionBuilder& ShaderParameterFromTo(
-        float duration, ea::string_view parameter, const Variant& from, const Variant& to);
+        float duration, const ea::string& parameter, const Variant& from, const Variant& to);
 
     /// Continue with SendEvent action.
     ActionBuilder& SendEvent(ea::string_view eventType, const StringVariantMap& data);
@@ -169,6 +173,9 @@ public:
 
     /// Combine with ElasticInOut action.
     ActionBuilder& ElasticInOut(float period = 0.3f);
+
+    /// Combine with CloneMaterials action.
+    ActionBuilder& CloneMaterials();
 
     /// Combine with RemoveSelf action.
     ActionBuilder& RemoveSelf();

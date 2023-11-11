@@ -24,8 +24,10 @@
 #include "Sequence.h"
 
 #include "ActionBuilder.h"
+#include "ActionManager.h"
 #include "Repeat.h"
 #include "FiniteTimeActionState.h"
+#include "Urho3D/Resource/GraphNode.h"
 
 namespace Urho3D
 {
@@ -179,6 +181,39 @@ void Sequence::SerializeInBlock(Archive& archive)
     BaseClassName::SerializeInBlock(archive);
     SerializeValue(archive, "first", actions_[0]);
     SerializeValue(archive, "second", actions_[1]);
+}
+
+GraphNode* Sequence::ToGraphNode(Graph* graph) const
+{
+    const auto node = BaseClassName::ToGraphNode(graph);
+    const auto first = node->GetOrAddExit("first");
+    if (actions_[0])
+    {
+        auto* target = actions_[0]->ToGraphNode(graph);
+        first.GetPin()->ConnectTo(target->GetEnter(0));
+    }
+    const auto second = node->GetOrAddExit("second");
+    if (actions_[1])
+    {
+        auto* target = actions_[1]->ToGraphNode(graph);
+        second.GetPin()->ConnectTo(target->GetEnter(0));
+    }
+    return node;
+}
+
+void Sequence::FromGraphNode(GraphNode* node)
+{
+    DynamicAction::FromGraphNode(node);
+    if (const auto first = node->GetExit("first"))
+    {
+        const auto internalAction = MakeActionFromGraphNode(first.GetConnectedPin<GraphEnterPin>().GetNode());
+        SetFirstAction(dynamic_cast<FiniteTimeAction*>(internalAction.Get()));
+    }
+    if (const auto second = node->GetExit("second"))
+    {
+        const auto internalAction = MakeActionFromGraphNode(second.GetConnectedPin<GraphEnterPin>().GetNode());
+        SetSecondAction(dynamic_cast<FiniteTimeAction*>(internalAction.Get()));
+    }
 }
 
 /// Create new action state from the action.

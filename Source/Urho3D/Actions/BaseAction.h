@@ -26,6 +26,8 @@
 
 namespace Urho3D
 {
+class GraphNode;
+class Graph;
 class ActionManager;
 
 namespace Actions
@@ -50,7 +52,15 @@ public:
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
 
+    /// Create GraphNode from the action. Required for action editor.
+    virtual GraphNode* ToGraphNode(Graph* graph) const;
+    /// Initialize action from GraphNode. Required for action editor.
+    virtual void FromGraphNode(GraphNode* node);
+
+    static SharedPtr<BaseAction> MakeActionFromGraphNode(GraphNode* graphNode);
+
 protected:
+
     /// Create new action state from the action.
     virtual SharedPtr<ActionState> StartAction(Object* target);
 

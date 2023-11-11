@@ -133,7 +133,11 @@ void ActionDemo::CreateUI()
             .DelayTime(2.0f)
             .JumpBy(-offset)
             .Build());
-    AddElement(pos, ActionBuilder(context_).RemoveSelf().DelayTime(1.0f).Build());
+    pos += step;
+    AddElement(pos, ActionBuilder(context_).RemoveSelf().Build());
+    pos += step;
+    AddElement(
+        pos, ActionBuilder(context_).ShakeBy(1.0f, Vector3(10,10,0)).Build());
 }
 
 void ActionDemo::SubscribeToEvents()

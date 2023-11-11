@@ -23,6 +23,7 @@
 #include "Editor.h"
 
 #include "Assets/ModelImporter.h"
+#include "Foundation/ActionViewTab.h"
 #include "Foundation/AnimationViewTab.h"
 #include "Foundation/ConsoleTab.h"
 #include "Foundation/ConcurrentAssetProcessing.h"
@@ -107,6 +108,7 @@ Editor::Editor(Context* context)
     editorPluginManager_->AddPlugin("Foundation.Texture2DView", &Foundation_Texture2DViewTab);
     editorPluginManager_->AddPlugin("Foundation.TextureCubeView", &Foundation_TextureCubeViewTab);
     editorPluginManager_->AddPlugin("Foundation.ModelView", &Foundation_ModelViewTab);
+    editorPluginManager_->AddPlugin("Foundation.ActionView", &Foundation_ActionViewTab);
     editorPluginManager_->AddPlugin("Foundation.AnimationView", &Foundation_AnimationViewTab);
     editorPluginManager_->AddPlugin("Foundation.Console", &Foundation_ConsoleTab);
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowser", &Foundation_ResourceBrowserTab);

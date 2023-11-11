@@ -26,6 +26,7 @@
 #include "ActionManager.h"
 #include "../Core/Context.h"
 #include "../IO/ArchiveSerializationBasic.h"
+#include "Urho3D/Resource/GraphNode.h"
 
 namespace Urho3D
 {
@@ -85,7 +86,51 @@ void FiniteTimeAction::SetDuration(float duration)
 /// Create reversed action.
 SharedPtr<FiniteTimeAction> FiniteTimeAction::Reverse() const
 {
-    return MakeShared<NoAction>(context_, const_cast<FiniteTimeAction*>(this));
+    auto action = MakeShared<NoAction>(context_, const_cast<FiniteTimeAction*>(this));
+    ReverseImpl(action);
+    return action;
+}
+
+/// Populate fields in reversed action.
+void FiniteTimeAction::ReverseImpl(FiniteTimeAction* action) const
+{
+    action->SetDuration(GetDuration());
+}
+
+GraphNode* FiniteTimeAction::ToGraphNode(Graph* graph) const
+{
+    return BaseAction::ToGraphNode(graph)->WithInput("duration", duration_);
+}
+
+void FiniteTimeAction::FromGraphNode(GraphNode* node)
+{
+    BaseAction::FromGraphNode(node);
+    if (auto duration = node->GetInput("duration"))
+    {
+        duration_ = duration.GetPin()->GetValue().Get<float>();
+    }
+}
+
+/// Construct.
+DynamicAction::DynamicAction(Context* context)
+    : BaseClassName(context)
+{
+}
+
+void DynamicAction::SerializeInBlock(Archive& archive)
+{
+    // Skip FiniteTimeAction::SerializeInBlock intentionally.
+    BaseAction::SerializeInBlock(archive);
+}
+
+GraphNode* DynamicAction::ToGraphNode(Graph* graph) const
+{
+    return BaseAction::ToGraphNode(graph);
+}
+
+void DynamicAction::FromGraphNode(GraphNode* node)
+{
+    BaseAction::FromGraphNode(node);
 }
 
 /// Construct.

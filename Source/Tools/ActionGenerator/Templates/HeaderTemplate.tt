@@ -1,0 +1,123 @@
+<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="ActionGenerator.Model" #>
+//
+// Copyright (c) 2015 Xamarin Inc.
+// Copyright (c) 2022-2023 the rbfx project.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR rhs
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR rhsWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR rhs DEALINGS IN
+// THE SOFTWARE.
+//
+
+#pragma once
+
+#include "Urho3D/Actions/FiniteTimeAction.h"
+#include "Urho3D/Actions/AttributeAction.h"
+
+namespace Urho3D
+{
+namespace Actions
+{
+<# foreach (var actionKeyValue in _definition.Actions)
+{
+    var action = actionKeyValue.Value;
+    var className = actionKeyValue.Key;
+#>
+/// <#=action.Comment#>
+class URHO3D_API <#=className#> : public  <#=action.Parent#>
+{
+    URHO3D_OBJECT(<#=className#>, <#=action.Parent#>)
+public:
+    /// Construct.
+    explicit <#=className#>(Context* context);
+
+    /// Create reversed action.
+    SharedPtr<FiniteTimeAction> Reverse() const override;
+<#
+if (action.ThisParameters.Count > 0)
+{
+
+if (action.ThisParameters.Any(_=>_.Type == ParameterType.FiniteTimeAction))
+{
+#>
+
+    /// Get action duration.
+    float GetDuration() const override;
+<#
+}
+
+foreach (var parameter in action.ThisParameters)
+{
+#>
+
+    /// Set <#=parameter.Name#>.
+    void Set<#=Util.Camel(parameter.Name)#>(<#=Util.CppTypeRef(parameter.Type)#> <#=Util.ArgName(parameter.Name)#>);
+
+    /// Get <#=parameter.Name#>.
+    <#=Util.CppTypeRef(parameter.Type)#> Get<#=Util.Camel(parameter.Name)#>() const { return <#=Util.ArgName(parameter.Name)#>_; }
+<#
+}
+#>
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Create GraphNode from the action. Required for action editor.
+    GraphNode* ToGraphNode(Graph* graph) const override;
+
+    /// Initialize action from GraphNode. Required for action editor.
+    void FromGraphNode(GraphNode* node) override;
+<#
+}
+#>
+protected:
+    /// Create new action state from the action.
+    SharedPtr<ActionState> StartAction(Object* target) override;
+<#
+if (action.ThisParameters.Count > 0 && !action.CustomReverse)
+{
+#>
+
+    /// Populate fields in reversed action.
+    void ReverseImpl(FiniteTimeAction*) const override;
+<#
+}
+#>
+
+private:
+<#
+foreach (var parameter in action.ThisParameters)
+{
+#>
+    <#=Util.CppType(parameter.Type)#> <#=Util.ArgName(parameter.Name)#>_{<#=parameter.DefaultValue#>};
+<#
+}
+#>
+};
+
+<#
+}
+#>
+
+void RegisterActions(ActionManager* manager);
+
+} // namespace Actions
+} // namespace Urho3D

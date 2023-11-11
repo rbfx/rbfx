@@ -159,6 +159,15 @@ GraphNode* GraphNode::WithInput(const ea::string_view name, const Variant& value
     return this;
 }
 
+GraphNode* GraphNode::WithAnyInput(const ea::string_view name, const Variant& value)
+{
+    auto pin = GetOrAddInput(name);
+    pin.GetPin()->SetName(name);
+    pin.GetPin()->type_ = VAR_NONE;
+    pin.GetPin()->SetValue(value);
+    return this;
+}
+
 GraphNode* GraphNode::WithInput(const ea::string_view name, GraphPinRef<GraphOutPin> outputPin, VariantType type)
 {
     auto pin = GetOrAddInput(name);
@@ -214,9 +223,32 @@ GraphPinRef<GraphExitPin> GraphNode::GetOrAddExit(const ea::string_view name)
     return GraphPinRef(this, &MakeMapHelper(exitPins_).GetOrAdd(name));
 }
 
+GraphNode* GraphNode::WithExit(const ea::string_view name)
+{
+    GetOrAddExit(name);
+    return this;
+}
+
+GraphNode* GraphNode::WithExit(const ea::string_view name, GraphPinRef<GraphEnterPin> enterPin)
+{
+    auto pin = GetOrAddExit(name);
+    pin.GetPin()->SetName(name);
+    if (enterPin)
+    {
+        pin.GetPin()->ConnectTo(enterPin);
+    }
+    return this;
+}
+
 GraphPinRef<GraphEnterPin> GraphNode::GetOrAddEnter(const ea::string_view name)
 {
     return GraphPinRef(this, &MakeMapHelper(enterPins_).GetOrAdd(name));
+}
+
+GraphNode* GraphNode::WithEnter(const ea::string_view name)
+{
+    GetOrAddEnter(name);
+    return this;
 }
 
 GraphPinRef<GraphEnterPin> GraphNode::GetEnter(const ea::string_view name)
@@ -241,6 +273,11 @@ void GraphNode::SetName(const ea::string& name)
     }
 }
 
+void GraphNode::SetPositionHint(const Vector2& position)
+{
+    positionHint_ = position;
+}
+
 void GraphNode::SerializeInBlock(Archive& archive)
 {
     SerializeValue(archive, "name", name_);
@@ -263,6 +300,7 @@ void GraphNode::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "in", inputPins_, EmptyObject{}, serializePinVector);
     SerializeOptionalValue(archive, "exit", exitPins_, EmptyObject{}, serializePinVector);
     SerializeOptionalValue(archive, "out", outputPins_, EmptyObject{}, serializePinVector);
+    SerializeOptionalValue(archive, "pos", positionHint_, Vector2::ZERO);
 }
 
 void GraphNode::SetGraph(Graph* scene, unsigned id)

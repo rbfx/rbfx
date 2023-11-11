@@ -99,6 +99,7 @@ Repeat::Repeat(Context* context)
 {
     innerAction_ = GetOrDefault(nullptr);
 }
+
 /// Get action duration.
 float Repeat::GetDuration() const { return innerAction_->GetDuration() * times_; }
 
@@ -128,8 +129,7 @@ SharedPtr<FiniteTimeAction> Repeat::Reverse() const
 /// Serialize content from/to archive. May throw ArchiveException.
 void Repeat::SerializeInBlock(Archive& archive)
 {
-    // Skipping FiniteTimeAction::SerializeInBlock on purpose to skip duration serialization
-    BaseAction::SerializeInBlock(archive);
+    BaseClassName::SerializeInBlock(archive);
     SerializeValue(archive, "innerAction", innerAction_);
 }
 
@@ -198,8 +198,7 @@ SharedPtr<FiniteTimeAction> RepeatForever::Reverse() const
 /// Serialize content from/to archive. May throw ArchiveException.
 void RepeatForever::SerializeInBlock(Archive& archive)
 {
-    // Skipping FiniteTimeAction::SerializeInBlock on purpose to skip duration serialization
-    BaseAction::SerializeInBlock(archive);
+    BaseClassName::SerializeInBlock(archive);
     SerializeValue(archive, "innerAction", innerAction_);
 }
 

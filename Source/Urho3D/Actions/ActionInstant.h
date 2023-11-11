@@ -30,9 +30,9 @@ namespace Urho3D
 namespace Actions
 {
 /// Finite time action.
-class URHO3D_API ActionInstant : public FiniteTimeAction
+class URHO3D_API ActionInstant : public DynamicAction
 {
-    URHO3D_OBJECT(ActionInstant, FiniteTimeAction)
+    URHO3D_OBJECT(ActionInstant, DynamicAction)
 
 public:
     /// Construct.

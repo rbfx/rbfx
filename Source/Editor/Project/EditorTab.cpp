@@ -114,38 +114,38 @@ void EditorTab::RenderWindow()
     if (focusPending_)
         ui::SetNextWindowFocus();
 
-    ui::Begin(uniqueId_.c_str(), &open_, windowFlags_);
-
-    if (noContentPadding)
-        ui::PopStyleVar();
-
-    if (ui::BeginPopupContextItem("EditorTab_ContextMenu"))
+    if (ui::Begin(uniqueId_.c_str(), &open_, windowFlags_))
     {
-        RenderContextMenu();
-        ui::EndPopup();
-    }
+        if (noContentPadding)
+            ui::PopStyleVar();
 
-    if (ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
-    {
-        auto project = GetProject();
-        project->SetFocusedTab(this);
-    }
-    else
-    {
-        // TODO(editor): Why do we need this?
-        auto input = GetSubsystem<Input>();
-        if (input->IsMouseVisible() && ui::IsAnyMouseDown())
+        if (ui::BeginPopupContextItem("EditorTab_ContextMenu"))
         {
-            if (ui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
-                ui::SetWindowFocus();
+            RenderContextMenu();
+            ui::EndPopup();
         }
+
+        if (ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
+        {
+            auto project = GetProject();
+            project->SetFocusedTab(this);
+        }
+        else
+        {
+            // TODO(editor): Why do we need this?
+            auto input = GetSubsystem<Input>();
+            if (input->IsMouseVisible() && ui::IsAnyMouseDown())
+            {
+                if (ui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
+                    ui::SetWindowFocus();
+            }
+        }
+
+        RenderContent();
+
+        if (noContentPadding)
+            ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
     }
-
-    RenderContent();
-
-    if (noContentPadding)
-        ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
-
     ui::End();
 
     if (noContentPadding)

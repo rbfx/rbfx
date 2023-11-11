@@ -27,6 +27,7 @@
 #include "ActionManager.h"
 #include "FiniteTimeActionState.h"
 #include "Urho3D/IO/ArchiveSerializationContainer.h"
+#include "Urho3D/Resource/GraphNode.h"
 
 #include <numeric>
 
@@ -146,6 +147,39 @@ SharedPtr<FiniteTimeAction> Parallel::Reverse() const
         result->actions_.push_back(action->Reverse());
     }
     return result;
+}
+
+
+GraphNode* Parallel::ToGraphNode(Graph* graph) const
+{
+    const auto node = BaseClassName::ToGraphNode(graph);
+    for (unsigned i = 0; i < actions_.size(); ++i)
+    {
+        const auto pin = node->GetOrAddExit(Urho3D::Format("{}", i));
+        if (actions_[i])
+        {
+            auto* target = actions_[i]->ToGraphNode(graph);
+            pin.GetPin()->ConnectTo(target->GetEnter(0));
+        }
+    }
+    node->GetOrAddExit(Urho3D::Format("{}", actions_.size()));
+    return node;
+}
+
+void Parallel::FromGraphNode(GraphNode* node)
+{
+    DynamicAction::FromGraphNode(node);
+    actions_.clear();
+    for (unsigned i=0; i<node->GetNumExits(); ++i)
+    {
+        auto exit = node->GetExit(i);
+        SharedPtr<FiniteTimeAction> internalAction;
+        internalAction.DynamicCast(MakeActionFromGraphNode(exit.GetConnectedPin<GraphEnterPin>().GetNode()));
+        if (internalAction)
+        {
+            actions_.push_back(internalAction);
+        }
+    }
 }
 
 /// Serialize content from/to archive. May throw ArchiveException.

@@ -25,16 +25,13 @@
 
 #include "../Core/CoreEvents.h"
 #include "../IO/Log.h"
+#include "Actions.h"
 #include "ActionSet.h"
 #include "ActionState.h"
-#include "Attribute.h"
-#include "Ease.h"
 #include "FiniteTimeActionState.h"
-#include "Move.h"
 #include "Parallel.h"
 #include "Repeat.h"
 #include "Sequence.h"
-#include "ShaderParameter.h"
 
 namespace Urho3D
 {
@@ -56,13 +53,13 @@ struct EmptyState : public FiniteTimeActionState
     void Step(float dt) override {}
 };
 
-class EmptyAction : public FiniteTimeAction
+class EmptyAction : public DynamicAction
 {
-    URHO3D_OBJECT(EmptyAction, FiniteTimeAction)
+    URHO3D_OBJECT(EmptyAction, DynamicAction)
 
 public:
     EmptyAction(Context* context)
-        : FiniteTimeAction(context)
+        : BaseClassName(context)
     {
         state_ = MakeShared<EmptyState>(this, nullptr);
     }
@@ -111,37 +108,14 @@ void RegisterActionLibrary(Context* context, ActionManager* manager)
         ActionSet::RegisterObject(context);
     }
 
+    manager->AddAbstractReflection<BaseAction>();
     manager->AddFactoryReflection<EmptyAction>();
-    manager->AddFactoryReflection<BaseAction>();
-    manager->AddFactoryReflection<FiniteTimeAction>();
-    manager->AddFactoryReflection<MoveBy>();
-    manager->AddFactoryReflection<MoveByQuadratic>();
-    manager->AddFactoryReflection<JumpBy>();
-    manager->AddFactoryReflection<RotateBy>();
-    manager->AddFactoryReflection<RotateAround>();
-    manager->AddFactoryReflection<AttributeFromTo>();
-    manager->AddFactoryReflection<AttributeTo>();
-    manager->AddFactoryReflection<AttributeBlink>();
-    manager->AddFactoryReflection<ShaderParameterFromTo>();
-    manager->AddFactoryReflection<EaseBackIn>();
-    manager->AddFactoryReflection<EaseBackInOut>();
-    manager->AddFactoryReflection<EaseBackOut>();
-    manager->AddFactoryReflection<EaseElasticIn>();
-    manager->AddFactoryReflection<EaseElasticInOut>();
-    manager->AddFactoryReflection<EaseElasticOut>();
-    manager->AddFactoryReflection<EaseBounceIn>();
-    manager->AddFactoryReflection<EaseBounceInOut>();
-    manager->AddFactoryReflection<EaseBounceOut>();
-    manager->AddFactoryReflection<EaseSineIn>();
-    manager->AddFactoryReflection<EaseSineInOut>();
-    manager->AddFactoryReflection<EaseSineOut>();
-    manager->AddFactoryReflection<EaseExponentialIn>();
-    manager->AddFactoryReflection<EaseExponentialInOut>();
-    manager->AddFactoryReflection<EaseExponentialOut>();
-    manager->AddFactoryReflection<Sequence>();
+    manager->AddAbstractReflection<FiniteTimeAction>();
     manager->AddFactoryReflection<Parallel>();
     manager->AddFactoryReflection<Repeat>();
     manager->AddFactoryReflection<RepeatForever>();
+    manager->AddFactoryReflection<Sequence>();
+    Actions::RegisterActions(manager);
 }
 
 void ActionManager::HandleUpdate(StringHash eventType, VariantMap& eventData)

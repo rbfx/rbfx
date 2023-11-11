@@ -23,7 +23,8 @@
 
 #pragma once
 
-#include "FiniteTimeAction.h"
+#include "Urho3D/Actions/ActionInstant.h"
+#include "Urho3D/Actions/FiniteTimeAction.h"
 
 namespace Urho3D
 {
@@ -35,7 +36,7 @@ const ea::string_view SCALE_ATTRIBUTE{"Scale"};
 const ea::string_view ISVISIBLE_ATTRIBUTE{"Is Visible"};
 const ea::string_view ISENABLED_ATTRIBUTE{"Is Enabled"};
 
-/// Finite time action.
+/// Action on object's attribute.
 class URHO3D_API AttributeAction : public FiniteTimeAction
 {
     URHO3D_OBJECT(AttributeAction, FiniteTimeAction)
@@ -52,8 +53,34 @@ public:
     void SetAttributeName(ea::string_view animatedAttribute);
     /// Get action duration.
     virtual const ea::string& GetAttributeName() const;
-protected:
-    AttributeInfo* GetAttribute(Object* target);
+
+    /// Get attribute info from target.
+    AttributeInfo* GetAttribute(Object* target) const;
+
+private:
+    ea::string animatedAttribute_{};
+};
+
+/// Finite time action.
+class URHO3D_API AttributeActionInstant : public ActionInstant
+{
+    URHO3D_OBJECT(AttributeAction, ActionInstant)
+public:
+    /// Construct.
+    AttributeActionInstant(Context* context);
+    /// Construct.
+    AttributeActionInstant(Context* context, ea::string_view animatedAttribute);
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Set action duration.
+    void SetAttributeName(ea::string_view animatedAttribute);
+    /// Get action duration.
+    virtual const ea::string& GetAttributeName() const;
+
+    /// Get attribute info from target.
+    AttributeInfo* GetAttribute(Object* target) const;
 
 private:
     ea::string animatedAttribute_{};

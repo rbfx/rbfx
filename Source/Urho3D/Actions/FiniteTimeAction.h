@@ -52,8 +52,38 @@ public:
     /// Create reversed action.
     virtual SharedPtr<FiniteTimeAction> Reverse() const;
 
+    /// Create GraphNode from the action. Required for action editor.
+    GraphNode* ToGraphNode(Graph* graph) const override;
+    /// Initialize action from GraphNode. Required for action editor.
+    void FromGraphNode(GraphNode* node) override;
+
+protected:
+    /// Populate fields in reversed action.
+    virtual void ReverseImpl(FiniteTimeAction*) const;
+
 private:
     float duration_{ea::numeric_limits<float>::epsilon()};
+};
+
+/// Finite time action where duration depends on other actions.
+class URHO3D_API DynamicAction : public FiniteTimeAction
+{
+    URHO3D_OBJECT(DynamicAction, FiniteTimeAction)
+
+public:
+    /// Construct.
+    DynamicAction(Context* context);
+
+    /// Get action duration override that asserts.
+    float GetDuration() const override = 0;
+
+    /// Serialize content from/to archive. May throw ArchiveException.
+    void SerializeInBlock(Archive& archive) override;
+
+    /// Create GraphNode from the action. Required for action editor.
+    GraphNode* ToGraphNode(Graph* graph) const override;
+    /// Initialize action from GraphNode. Required for action editor.
+    void FromGraphNode(GraphNode* node) override;
 };
 
 } // namespace Actions

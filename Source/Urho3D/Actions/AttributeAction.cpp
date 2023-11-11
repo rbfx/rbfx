@@ -21,11 +21,10 @@
 // THE SOFTWARE.
 //
 
-#include "../Core/Context.h"
-#include "../IO/Log.h"
-#include "ActionManager.h"
-#include "AttributeAction.h"
-#include "../IO/ArchiveSerializationBasic.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Actions/AttributeAction.h"
+#include "Urho3D/IO/ArchiveSerializationBasic.h"
 
 namespace Urho3D
 {
@@ -62,7 +61,7 @@ void AttributeAction::SetAttributeName(ea::string_view animatedAttribute)
     animatedAttribute_ = animatedAttribute;
 }
 
-AttributeInfo* AttributeAction::GetAttribute(Object* target)
+AttributeInfo* AttributeAction::GetAttribute(Object* target) const
 {
     const auto serializable = target->Cast<Serializable>();
     if (!serializable)
@@ -79,6 +78,53 @@ AttributeInfo* AttributeAction::GetAttribute(Object* target)
     return attribute;
 }
 
+/// Construct.
+AttributeActionInstant::AttributeActionInstant(Context* context)
+    : BaseClassName(context)
+{
+}
+
+/// Construct.
+AttributeActionInstant::AttributeActionInstant(Context* context, ea::string_view animatedAttribute)
+    : BaseClassName(context)
+    , animatedAttribute_(animatedAttribute)
+{
+}
+
+/// Serialize content from/to archive. May throw ArchiveException.
+void AttributeActionInstant::SerializeInBlock(Archive& archive)
+{
+    BaseClassName::SerializeInBlock(archive);
+    SerializeOptionalValue(archive, "attribute", animatedAttribute_, EMPTY_STRING);
+}
+
+const ea::string& AttributeActionInstant::GetAttributeName() const
+{
+    return animatedAttribute_;
+}
+
+void AttributeActionInstant::SetAttributeName(ea::string_view animatedAttribute)
+{
+    animatedAttribute_ = animatedAttribute;
+}
+
+AttributeInfo* AttributeActionInstant::GetAttribute(Object* target) const
+{
+    const auto serializable = target->Cast<Serializable>();
+    if (!serializable)
+    {
+        URHO3D_LOGERROR(
+            Format("Can animate only serializable class but {} is not serializable.", target->GetTypeName()));
+        return nullptr;
+    }
+
+    const auto attribute = target->GetContext()->GetReflection(target->GetType())->GetAttribute(animatedAttribute_);
+    if (!attribute)
+    {
+        URHO3D_LOGERROR(Format("Attribute {} not found in {}.", animatedAttribute_, target->GetTypeName()));
+    }
+    return attribute;
+}
 
 } // namespace Actions
 } // namespace Urho3D

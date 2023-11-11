@@ -23,14 +23,10 @@
 #include "ActionBuilder.h"
 
 #include "ActionManager.h"
-#include "Attribute.h"
-#include "Ease.h"
-#include "Misc.h"
-#include "Move.h"
+#include "Actions.h"
 #include "Parallel.h"
 #include "Repeat.h"
 #include "Sequence.h"
-#include "ShaderParameter.h"
 #include "Urho3D/Core/Context.h"
 
 namespace Urho3D
@@ -88,13 +84,25 @@ ActionBuilder& ActionBuilder::Also(const SharedPtr<Actions::FiniteTimeAction>& p
     return *this;
 }
 
+/// Build ShakeBy action.
+ActionBuilder& ActionBuilder::ShakeBy(
+    float duration, const Vector3& offset, float noiseSpeed, ea::string_view attributeName)
+{
+    const auto action = MakeShared<Actions::ShakeBy>(context_);
+    action->SetAttributeName(attributeName);
+    action->SetDuration(duration);
+    action->SetDelta(offset);
+    action->SetNoiseSpeed(noiseSpeed);
+    return Then(action);
+}
+
 /// Build MoveBy action.
 ActionBuilder& ActionBuilder::MoveBy(float duration, const Vector3& offset, ea::string_view attributeName)
 {
     const auto action = MakeShared<Actions::MoveBy>(context_);
     action->SetAttributeName(attributeName);
     action->SetDuration(duration);
-    action->SetPositionDelta(offset);
+    action->SetDelta(offset);
     return Then(action);
 }
 
@@ -103,7 +111,7 @@ ActionBuilder& ActionBuilder::MoveBy(float duration, const Vector2& offset, ea::
     const auto action = MakeShared<Actions::MoveBy>(context_);
     action->SetAttributeName(attributeName);
     action->SetDuration(duration);
-    action->SetPositionDelta(offset.ToVector3());
+    action->SetDelta(offset.ToVector3());
     return Then(action);
 }
 
@@ -114,8 +122,8 @@ ActionBuilder& ActionBuilder::MoveByQuadratic(
     const auto action = MakeShared<Actions::MoveByQuadratic>(context_);
     action->SetAttributeName(attributeName);
     action->SetDuration(duration);
-    action->SetControlDelta(controlOffset);
-    action->SetPositionDelta(targetOffset);
+    action->SetControl(controlOffset);
+    action->SetDelta(targetOffset);
     return Then(action);
 }
 
@@ -125,17 +133,16 @@ ActionBuilder& ActionBuilder::MoveByQuadratic(
     const auto action = MakeShared<Actions::MoveByQuadratic>(context_);
     action->SetAttributeName(attributeName);
     action->SetDuration(duration);
-    action->SetControlDelta(controlOffset.ToVector3());
-    action->SetPositionDelta(targetOffset.ToVector3());
+    action->SetControl(controlOffset.ToVector3());
+    action->SetDelta(targetOffset.ToVector3());
     return Then(action);
 }
-
 
 ActionBuilder& ActionBuilder::JumpBy(const Vector3& offset, ea::string_view attributeName)
 {
     const auto action = MakeShared<Actions::JumpBy>(context_);
     action->SetAttributeName(attributeName);
-    action->SetPositionDelta(offset);
+    action->SetDelta(offset);
     return Then(action);
 }
 
@@ -143,7 +150,7 @@ ActionBuilder& ActionBuilder::JumpBy(const Vector2& offset, ea::string_view attr
 {
     const auto action = MakeShared<Actions::JumpBy>(context_);
     action->SetAttributeName(attributeName);
-    action->SetPositionDelta(offset.ToVector3());
+    action->SetDelta(offset.ToVector3());
     return Then(action);
 }
 
@@ -153,7 +160,7 @@ ActionBuilder& ActionBuilder::ScaleBy(float duration, const Vector3& delta, ea::
     const auto action = MakeShared<Actions::ScaleBy>(context_);
     action->SetAttributeName(attributeName);
     action->SetDuration(duration);
-    action->SetScaleDelta(delta);
+    action->SetDelta(delta);
     return Then(action);
 }
 
@@ -169,7 +176,7 @@ ActionBuilder& ActionBuilder::RotateBy(float duration, const Quaternion& delta, 
     const auto action = MakeShared<Actions::RotateBy>(context_);
     action->SetAttributeName(attributeName);
     action->SetDuration(duration);
-    action->SetRotationDelta(delta);
+    action->SetDelta(delta);
     return Then(action);
 }
 
@@ -178,7 +185,7 @@ ActionBuilder& ActionBuilder::RotateAround(float duration, const Vector3& pivot,
 {
     const auto action = MakeShared<Actions::RotateAround>(context_);
     action->SetDuration(duration);
-    action->SetRotationDelta(delta);
+    action->SetDelta(delta);
     action->SetPivot(pivot);
     return Then(action);
 }
@@ -243,7 +250,7 @@ ActionBuilder& ActionBuilder::AttributeFromTo(
 }
 
 /// Continue with ShaderParameterTo action.
-ActionBuilder& ActionBuilder::ShaderParameterTo(float duration, ea::string_view parameter, const Variant& to)
+ActionBuilder& ActionBuilder::ShaderParameterTo(float duration, const ea::string& parameter, const Variant& to)
 {
     const auto action = MakeShared<Actions::ShaderParameterTo>(context_);
     action->SetDuration(duration);
@@ -254,7 +261,7 @@ ActionBuilder& ActionBuilder::ShaderParameterTo(float duration, ea::string_view 
 
 /// Continue with ShaderParameterFromTo action.
 ActionBuilder& ActionBuilder::ShaderParameterFromTo(
-    float duration, ea::string_view parameter, const Variant& from, const Variant& to)
+    float duration, const ea::string& parameter, const Variant& from, const Variant& to)
 {
     const auto action = MakeShared<Actions::ShaderParameterFromTo>(context_);
     action->SetDuration(duration);
@@ -421,6 +428,9 @@ ActionBuilder& ActionBuilder::ElasticInOut(float period)
 
 /// Combine with RemoveSelf action.
 ActionBuilder& ActionBuilder::RemoveSelf() { return Then(MakeShared<Actions::RemoveSelf>(context_)); }
+
+/// Combine with CloneMaterials action.
+ActionBuilder& ActionBuilder::CloneMaterials() { return Then(MakeShared<Actions::CloneMaterials>(context_)); }
 
 /// Combine with DelayTime action.
 ActionBuilder& ActionBuilder::DelayTime(float duration)

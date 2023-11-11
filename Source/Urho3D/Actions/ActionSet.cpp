@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 the rbfx project.
+// Copyright (c) 2021-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,57 +20,103 @@
 // THE SOFTWARE.
 //
 
-#include "ActionSet.h"
+#include "Urho3D/Actions/ActionSet.h"
 
-#include "ActionManager.h"
-#include "../Core/Context.h"
-#include "../Resource/XMLFile.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Deserializer.h"
+#include "Urho3D/Actions/Parallel.h"
+#include "Urho3D/Actions/ActionManager.h"
+#include "Urho3D/Actions/FiniteTimeAction.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Resource/Graph.h"
+#include "Urho3D/Resource/GraphNode.h"
+
+#include <EASTL/unordered_set.h>
 
 namespace Urho3D
 {
 using namespace Actions;
 
 ActionSet::ActionSet(Context* context)
-    : Resource(context)
+    : BaseClassName(context)
 {
-    SetDefaultAction(nullptr);
+    SetAction(nullptr);
 }
 
 void ActionSet::RegisterObject(Context* context) { context->RegisterFactory<ActionSet>(); }
 
-bool ActionSet::BeginLoad(Deserializer& source)
-{
-    ea::string extension = GetExtension(source.GetName());
-
-    defaultAction_.Reset();
-
-    const auto xmlFile = MakeShared<XMLFile>(context_);
-    if (!xmlFile->Load(source))
-        return false;
-
-    return xmlFile->LoadObject("actions", *this);
-}
-
 /// Set action
-void ActionSet::SetDefaultAction(BaseAction* action)
+void ActionSet::SetAction(BaseAction* action)
 {
-    defaultAction_ = (action) ? action : (BaseAction*)context_->GetSubsystem<Urho3D::ActionManager>()->GetEmptyAction();
+    action_ = (action) ? action : static_cast<BaseAction*>(context_->GetSubsystem<Urho3D::ActionManager>()->GetEmptyAction());
 }
 
-
-bool ActionSet::Save(Serializer& dest) const
+SharedPtr<Graph> ActionSet::ToGraph() const
 {
-    const auto xmlFile = MakeShared<XMLFile>(context_);
-    xmlFile->SaveObject("actions", *this);
-    xmlFile->Save(dest);
-    return true;
+    auto graph = MakeShared<Graph>(context_);
+    if (action_)
+    {
+        action_->ToGraphNode(graph);
+    }
+    return graph;
+}
+
+bool ActionSet::FromGraph(const Graph* graph)
+{
+    const unsigned numNodes = graph ? graph->GetNumNodes() : 0;
+    if (!numNodes)
+    {
+        action_ = nullptr;
+        return true;
+    }
+
+    ea::vector<unsigned> nodeIds;
+    graph->GetNodeIds(nodeIds);
+
+    ea::unordered_set<unsigned> rootNodes;
+    rootNodes.insert(nodeIds.begin(), nodeIds.end());
+    for (unsigned i : nodeIds)
+    {
+        auto node = graph->GetNode(i);
+        for (unsigned pinIndex = 0; pinIndex < node->GetNumExits(); ++pinIndex)
+        {
+            auto pin = node->GetExit(pinIndex);
+            auto connectedPin = pin.GetConnectedPin<GraphEnterPin>();
+            if (connectedPin.GetNode())
+            {
+                rootNodes.erase(connectedPin.GetNode()->GetID());
+            }
+        }
+    }
+
+    if (rootNodes.empty())
+    {
+        URHO3D_LOGERROR("No enter node found.");
+        return false;
+    }
+    if (rootNodes.size() > 1)
+    {
+        const auto parallelAction = MakeShared<Parallel>(context_);
+        for (auto& rootNode: rootNodes)
+        {
+            SharedPtr<FiniteTimeAction> action;
+            action.DynamicCast(BaseAction::MakeActionFromGraphNode(graph->GetNode(*rootNodes.begin())));
+            if (action)
+            {
+                parallelAction->AddAction(action);
+            }
+        }
+        action_ = parallelAction;
+    }
+    else
+    {
+        action_ = BaseAction::MakeActionFromGraphNode(graph->GetNode(*rootNodes.begin()));
+    }
+    return rootNodes.size() == 1;
 }
 
 void ActionSet::SerializeInBlock(Archive& archive)
 {
-    SerializeValue(archive, "default", defaultAction_);
+    const SharedPtr<Actions::BaseAction> defaultValue{context_->GetSubsystem<Urho3D::ActionManager>()->GetEmptyAction()};
+    SerializeOptionalValue(archive, "action", action_, defaultValue);
 }
 
 } // namespace Urho3D
