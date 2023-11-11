@@ -455,7 +455,11 @@ void PhysicsWorld::Raycast(ea::vector<PhysicsRaycastResult>& result, const Ray& 
     for (int i = 0; i < rayCallback.m_collisionObjects.size(); ++i)
     {
         PhysicsRaycastResult newResult;
-        newResult.body_ = static_cast<RigidBody*>(rayCallback.m_collisionObjects[i]->getUserPointer());
+        Component *component = static_cast<Component *>(rayCallback.m_collisionObjects[i]->getUserPointer());
+        newResult.body_ = dynamic_cast<RigidBody*>(component);
+        if (newResult.body_ == nullptr) {
+            newResult.kinematicCharacter_ = dynamic_cast<KinematicCharacterController*>(component);
+        }
         newResult.position_ = ToVector3(rayCallback.m_hitPointWorld[i]);
         newResult.normal_ = ToVector3(rayCallback.m_hitNormalWorld[i]);
         newResult.distance_ = (newResult.position_ - ray.origin_).Length();

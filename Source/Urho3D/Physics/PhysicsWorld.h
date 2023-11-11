@@ -63,6 +63,7 @@ class Model;
 class Node;
 class Ray;
 class RigidBody;
+class KinematicCharacterController;
 class Scene;
 class Serializer;
 class XMLElement;
@@ -94,6 +95,8 @@ struct URHO3D_API PhysicsRaycastResult
     float hitFraction_{};
     /// Rigid body that was hit.
     RigidBody* body_{};
+    /// Kinematic character controller that was hit.
+    KinematicCharacterController* kinematicCharacter_{};
 };
 
 /// Delayed world transform assignment for parented rigidbodies.

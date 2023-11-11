@@ -297,7 +297,7 @@ void KinematicCharacterController::AddKinematicToWorld()
         {
             btCapsuleShape* btColShape = GetOrCreateShape();
             pairCachingGhostObject_->setCollisionShape(btColShape);
-
+            pairCachingGhostObject_.get()->setUserPointer(this);
             kinematicController_ = ea::make_unique<btKinematicCharacterController>(pairCachingGhostObject_.get(),
                                                        btColShape,
                                                        stepHeight_, ToBtVector3(Vector3::UP));
