@@ -103,6 +103,14 @@ ea::string ModulePlugin::NameToPath(const ea::string& name) const
     FileSystem* fs = context_->GetSubsystem<FileSystem>();
     ea::string result;
 
+    if (IsAbsolutePath(name))
+    {
+        if (fs->FileExists(name))
+            return name;
+
+        return EMPTY_STRING;
+    }
+
 #if __linux__ || __APPLE__
     result = Format("{}lib{}{}", fs->GetProgramDir(), name, DYN_LIB_SUFFIX);
     if (fs->FileExists(result))

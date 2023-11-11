@@ -1,8 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>Editor</AssemblyName>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <LangVersion>9.0</LangVersion>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>rbfx</ToolCommandName>
+    <PackageID>rbfx.Urho3DNet.Editor</PackageID>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <TargetFramework>$(URHO3D_NETFX_RUNTIME)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>

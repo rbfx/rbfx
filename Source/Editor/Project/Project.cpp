@@ -198,7 +198,7 @@ ImFont* Project::GetMonoFont()
     return monoFont;
 }
 
-Project::Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath, bool isReadOnly)
+Project::Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath, const ea::string&implicitPlugin, bool isReadOnly)
     : Object(context)
     , isHeadless_(context->GetSubsystem<Engine>()->IsHeadless())
     , isReadOnly_(isReadOnly)
@@ -256,6 +256,8 @@ Project::Project(Context* context, const ea::string& projectPath, const ea::stri
 
     settingsManager_->LoadFile(settingsJsonPath_);
     assetManager_->LoadFile(cacheJsonPath_);
+
+    pluginManager_->SetImplicitPlugin(implicitPlugin);
 
     JSONFile projectJsonFile(context_);
     projectJsonFile.LoadFile(projectJsonPath_);

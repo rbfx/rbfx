@@ -111,7 +111,8 @@ public:
     Signal<void(ProjectRequest*)> OnRequest;
     Signal<void(const ea::string& command, const ea::string& args, bool& processed)> OnCommand;
 
-    Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath, bool isReadOnly);
+    Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath,
+        const ea::string& implicitPlugin, bool isReadOnly);
     ~Project() override;
     void SerializeInBlock(Archive& archive) override;
 

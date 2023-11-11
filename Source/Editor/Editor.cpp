@@ -192,6 +192,7 @@ void Editor::Setup()
     auto& cmd = GetCommandLineParser();
     cmd.add_flag("--read-only", readOnly_, "Prevents Editor from modifying any project files, unless it is explicitly done via executed command.");
     cmd.add_option("--command", command_, "Command to execute on startup.")->type_name("command");
+    cmd.add_option("--plugin", implicitPlugin_, "Path to plugin file.");
     cmd.add_flag("--exit", exitAfterCommand_, "Forces Editor to exit after command execution.");
     cmd.add_option("project", pendingOpenProject_, "Project to open or create on startup.")->type_name("dir");
 
@@ -589,7 +590,7 @@ void Editor::RenderAboutDialog()
 
     ui::BeginDisabled();
     ui::Text("Copyright © 2008-2022 the Urho3D project.");
-    ui::Text("Copyright © 2017-2022 the rbfx project.");
+    ui::Text("Copyright © 2017-2023 the rbfx project.");
     ui::EndDisabled();
 
     ui::End();
@@ -635,7 +636,7 @@ void Editor::UpdateProjectStatus()
         if (!isHeadless)
             InitializeUI();
 
-        project_ = MakeShared<Project>(context_, pendingOpenProject_, settingsJsonPath_, readOnly_);
+        project_ = MakeShared<Project>(context_, pendingOpenProject_, settingsJsonPath_, implicitPlugin_, readOnly_);
         project_->OnShallowSaved.Subscribe(this, &Editor::SaveTempJson);
 
         recentProjects_.erase_first(pendingOpenProject_);
