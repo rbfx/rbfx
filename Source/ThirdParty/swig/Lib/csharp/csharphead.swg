@@ -14,6 +14,15 @@
 #endif
 %}
 
+%pragma(csharp) imclasscode=%{
+  /// For Mono AOT platforms compatibility
+  /// This attribute can be defined in any assembly for Mono AOT to use it.
+  public class MonoPInvokeCallbackAttribute : global::System.Attribute {
+    public MonoPInvokeCallbackAttribute(global::System.Type t) {
+    }
+  }
+%}
+
 #if !defined(SWIG_CSHARP_NO_EXCEPTION_HELPER)
 %insert(runtime) %{
 /* Support for throwing C# exceptions from C/C++. There are two types: 
@@ -142,133 +151,164 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
 #if __IOS__
     [global::ObjCRuntime.MonoNativeFunctionWrapper]
 #endif
-    public delegate void ExceptionDelegate(string message);
+    public delegate void ExceptionDelegate(System.IntPtr message);
 #if __IOS__
     [global::ObjCRuntime.MonoNativeFunctionWrapper]
 #endif
-    public delegate void ExceptionArgumentDelegate(string message, string paramName);
+    public delegate void ExceptionArgumentDelegate(System.IntPtr message, System.IntPtr paramName);
 
-    static ExceptionDelegate applicationDelegate = new ExceptionDelegate(SetPendingApplicationException);
-    static ExceptionDelegate arithmeticDelegate = new ExceptionDelegate(SetPendingArithmeticException);
-    static ExceptionDelegate divideByZeroDelegate = new ExceptionDelegate(SetPendingDivideByZeroException);
-    static ExceptionDelegate indexOutOfRangeDelegate = new ExceptionDelegate(SetPendingIndexOutOfRangeException);
-    static ExceptionDelegate invalidCastDelegate = new ExceptionDelegate(SetPendingInvalidCastException);
-    static ExceptionDelegate invalidOperationDelegate = new ExceptionDelegate(SetPendingInvalidOperationException);
-    static ExceptionDelegate ioDelegate = new ExceptionDelegate(SetPendingIOException);
-    static ExceptionDelegate nullReferenceDelegate = new ExceptionDelegate(SetPendingNullReferenceException);
-    static ExceptionDelegate outOfMemoryDelegate = new ExceptionDelegate(SetPendingOutOfMemoryException);
-    static ExceptionDelegate overflowDelegate = new ExceptionDelegate(SetPendingOverflowException);
-    static ExceptionDelegate systemDelegate = new ExceptionDelegate(SetPendingSystemException);
+    static delegate* unmanaged[Cdecl]<System.IntPtr, void> applicationDelegate = &SetPendingApplicationException;
+    static delegate* unmanaged[Cdecl]<System.IntPtr, void> arithmeticDelegate = &SetPendingArithmeticException;
+    static delegate* unmanaged[Cdecl]<System.IntPtr, void> divideByZeroDelegate = &SetPendingDivideByZeroException;
+    static delegate* unmanaged[Cdecl]<System.IntPtr, void> indexOutOfRangeDelegate = &SetPendingIndexOutOfRangeException;
+    static delegate* unmanaged[Cdecl]<System.IntPtr, void> invalidCastDelegate = &SetPendingInvalidCastException;
+    static delegate* unmanaged[Cdecl]<System.IntPtr, void> invalidOperationDelegate = &SetPendingInvalidOperationException;
+    static delegate* unmanaged[Cdecl]<System.IntPtr, void> ioDelegate = &SetPendingIOException;
+    static delegate* unmanaged[Cdecl]<System.IntPtr, void> nullReferenceDelegate = &SetPendingNullReferenceException;
+    static delegate* unmanaged[Cdecl]<System.IntPtr, void> outOfMemoryDelegate = &SetPendingOutOfMemoryException;
+    static delegate* unmanaged[Cdecl]<System.IntPtr, void> overflowDelegate = &SetPendingOverflowException;
+    static delegate* unmanaged[Cdecl]<System.IntPtr, void> systemDelegate = &SetPendingSystemException;
 
-    static ExceptionArgumentDelegate argumentDelegate = new ExceptionArgumentDelegate(SetPendingArgumentException);
-    static ExceptionArgumentDelegate argumentNullDelegate = new ExceptionArgumentDelegate(SetPendingArgumentNullException);
-    static ExceptionArgumentDelegate argumentOutOfRangeDelegate = new ExceptionArgumentDelegate(SetPendingArgumentOutOfRangeException);
+    static delegate* unmanaged[Cdecl]<System.IntPtr, System.IntPtr, void> argumentDelegate = &SetPendingArgumentException;
+    static delegate* unmanaged[Cdecl]<System.IntPtr, System.IntPtr, void> argumentNullDelegate = &SetPendingArgumentNullException;
+    static delegate* unmanaged[Cdecl]<System.IntPtr, System.IntPtr, void> argumentOutOfRangeDelegate = &SetPendingArgumentOutOfRangeException;
 
     [global::System.Runtime.InteropServices.DllImport($dllimport, EntryPoint="SWIGRegisterExceptionCallbacks_$module")]
     public static extern void SWIGRegisterExceptionCallbacks_$module(
-                                ExceptionDelegate applicationDelegate,
-                                ExceptionDelegate arithmeticDelegate,
-                                ExceptionDelegate divideByZeroDelegate, 
-                                ExceptionDelegate indexOutOfRangeDelegate, 
-                                ExceptionDelegate invalidCastDelegate,
-                                ExceptionDelegate invalidOperationDelegate,
-                                ExceptionDelegate ioDelegate,
-                                ExceptionDelegate nullReferenceDelegate,
-                                ExceptionDelegate outOfMemoryDelegate, 
-                                ExceptionDelegate overflowDelegate, 
-                                ExceptionDelegate systemExceptionDelegate);
+                                delegate* unmanaged[Cdecl]<System.IntPtr, void> applicationDelegate,
+                                delegate* unmanaged[Cdecl]<System.IntPtr, void> arithmeticDelegate,
+                                delegate* unmanaged[Cdecl]<System.IntPtr, void> divideByZeroDelegate,
+                                delegate* unmanaged[Cdecl]<System.IntPtr, void> indexOutOfRangeDelegate,
+                                delegate* unmanaged[Cdecl]<System.IntPtr, void> invalidCastDelegate,
+                                delegate* unmanaged[Cdecl]<System.IntPtr, void> invalidOperationDelegate,
+                                delegate* unmanaged[Cdecl]<System.IntPtr, void> ioDelegate,
+                                delegate* unmanaged[Cdecl]<System.IntPtr, void> nullReferenceDelegate,
+                                delegate* unmanaged[Cdecl]<System.IntPtr, void> outOfMemoryDelegate,
+                                delegate* unmanaged[Cdecl]<System.IntPtr, void> overflowDelegate,
+                                delegate* unmanaged[Cdecl]<System.IntPtr, void> systemExceptionDelegate);
 
     [global::System.Runtime.InteropServices.DllImport($dllimport, EntryPoint="SWIGRegisterExceptionArgumentCallbacks_$module")]
     public static extern void SWIGRegisterExceptionCallbacksArgument_$module(
-                                ExceptionArgumentDelegate argumentDelegate,
-                                ExceptionArgumentDelegate argumentNullDelegate,
-                                ExceptionArgumentDelegate argumentOutOfRangeDelegate);
+                                delegate* unmanaged[Cdecl]<System.IntPtr, System.IntPtr, void> argumentDelegate,
+                                delegate* unmanaged[Cdecl]<System.IntPtr, System.IntPtr, void> argumentNullDelegate,
+                                delegate* unmanaged[Cdecl]<System.IntPtr, System.IntPtr, void> argumentOutOfRangeDelegate);
 
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+#if NET6_0_OR_GREATER
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 #endif
-    static void SetPendingApplicationException(string message) {
+    static void SetPendingApplicationException(System.IntPtr pMessage) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.ApplicationException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+#if NET6_0_OR_GREATER
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 #endif
-    static void SetPendingArithmeticException(string message) {
+    static void SetPendingArithmeticException(System.IntPtr pMessage) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.ArithmeticException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+#if NET6_0_OR_GREATER
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 #endif
-    static void SetPendingDivideByZeroException(string message) {
+    static void SetPendingDivideByZeroException(System.IntPtr pMessage) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.DivideByZeroException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+#if NET6_0_OR_GREATER
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 #endif
-    static void SetPendingIndexOutOfRangeException(string message) {
+    static void SetPendingIndexOutOfRangeException(System.IntPtr pMessage) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.IndexOutOfRangeException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+#if NET6_0_OR_GREATER
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 #endif
-    static void SetPendingInvalidCastException(string message) {
+    static void SetPendingInvalidCastException(System.IntPtr pMessage) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.InvalidCastException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+#if NET6_0_OR_GREATER
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 #endif
-    static void SetPendingInvalidOperationException(string message) {
+    static void SetPendingInvalidOperationException(System.IntPtr pMessage) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.InvalidOperationException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+#if NET6_0_OR_GREATER
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 #endif
-    static void SetPendingIOException(string message) {
+    static void SetPendingIOException(System.IntPtr pMessage) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.IO.IOException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+#if NET6_0_OR_GREATER
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 #endif
-    static void SetPendingNullReferenceException(string message) {
+    static void SetPendingNullReferenceException(System.IntPtr pMessage) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.NullReferenceException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+#if NET6_0_OR_GREATER
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 #endif
-    static void SetPendingOutOfMemoryException(string message) {
+    static void SetPendingOutOfMemoryException(System.IntPtr pMessage) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.OutOfMemoryException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+#if NET6_0_OR_GREATER
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 #endif
-    static void SetPendingOverflowException(string message) {
+    static void SetPendingOverflowException(System.IntPtr pMessage) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.OverflowException(message, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionDelegate))]
+#if NET6_0_OR_GREATER
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 #endif
-    static void SetPendingSystemException(string message) {
+    static void SetPendingSystemException(System.IntPtr pMessage) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
       SWIGPendingException.Set(new global::System.SystemException(message, SWIGPendingException.Retrieve()));
     }
 
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionArgumentDelegate))]
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionArgumentDelegate))]
+#if NET6_0_OR_GREATER
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 #endif
-    static void SetPendingArgumentException(string message, string paramName) {
+    static void SetPendingArgumentException(System.IntPtr pMessage, System.IntPtr pParamName) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
+      string paramName = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pParamName);
       SWIGPendingException.Set(new global::System.ArgumentException(message, paramName, SWIGPendingException.Retrieve()));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionArgumentDelegate))]
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionArgumentDelegate))]
+#if NET6_0_OR_GREATER
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 #endif
-    static void SetPendingArgumentNullException(string message, string paramName) {
+    static void SetPendingArgumentNullException(System.IntPtr pMessage, System.IntPtr pParamName) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
+      string paramName = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pParamName);
       global::System.Exception e = SWIGPendingException.Retrieve();
       if (e != null) message = message + " Inner Exception: " + e.Message;
       SWIGPendingException.Set(new global::System.ArgumentNullException(paramName, message));
     }
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(ExceptionArgumentDelegate))]
+    [$imclassname.MonoPInvokeCallback(typeof(ExceptionArgumentDelegate))]
+#if NET6_0_OR_GREATER
+    [global::System.Runtime.InteropServices.UnmanagedCallersOnly(CallConvs = new[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
 #endif
-    static void SetPendingArgumentOutOfRangeException(string message, string paramName) {
+      static void SetPendingArgumentOutOfRangeException(System.IntPtr pMessage, System.IntPtr pParamName) {
+      string message = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pMessage);
+      string paramName = global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(pParamName);
       global::System.Exception e = SWIGPendingException.Retrieve();
       if (e != null) message = message + " Inner Exception: " + e.Message;
       SWIGPendingException.Set(new global::System.ArgumentOutOfRangeException(paramName, message));
@@ -356,17 +396,15 @@ static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback = NULL;
 #if __IOS__
     [global::ObjCRuntime.MonoNativeFunctionWrapper]
 #endif
-    public delegate string SWIGStringDelegate(string message);
+    public delegate string SWIGStringDelegate(System.IntPtr message);
     static SWIGStringDelegate stringDelegate = new SWIGStringDelegate(CreateString);
 
     [global::System.Runtime.InteropServices.DllImport($dllimport, EntryPoint="SWIGRegisterStringCallback_$module")]
     public static extern void SWIGRegisterStringCallback_$module(SWIGStringDelegate stringDelegate);
 
-#if __IOS__
-    [global::ObjCRuntime.MonoPInvokeCallback(typeof(SWIGStringDelegate))]
-#endif
-    static string CreateString(string cString) {
-      return cString;
+    [$imclassname.MonoPInvokeCallback(typeof(SWIGStringDelegate))]
+    static string CreateString(System.IntPtr cString) {
+      return global::System.Runtime.InteropServices.Marshal.PtrToStringAnsi(cString);
     }
 
     static SWIGStringHelper() {

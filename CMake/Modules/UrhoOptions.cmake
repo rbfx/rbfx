@@ -198,7 +198,7 @@ cmake_dependent_option(URHO3D_OCULUS_QUEST       "Enable experimental native bui
 cmake_dependent_option(URHO3D_XR                 "Enable OpenXR support"                                 ${URHO3D_ENABLE_ALL} "WIN32 OR URHO3D_OCULUS_QUEST;NOT MINGW;NOT UWP" OFF)
 
 # Features
-cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "BUILD_SHARED_LIBS;NOT MINGW"   OFF)
+cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "NOT MINGW"   OFF)
 # Valid values at https://docs.microsoft.com/en-us/dotnet/standard/frameworks
 # At the moment only netstandard2.1 supported
 set(URHO3D_NETFX netstandard2.1 CACHE STRING "TargetFramework value for .NET libraries")
@@ -257,10 +257,6 @@ elseif (URHO3D_TOOLS OR URHO3D_EDITOR)
 endif ()
 
 if (EMSCRIPTEN)
-    if (URHO3D_CSHARP)
-        message(WARNING "C# is not supported in this configuration.")
-        set (URHO3D_CSHARP OFF)
-    endif ()
     if (BUILD_SHARED_LIBS)
         set (BUILD_SHARED_LIBS OFF)
         message(WARNING "Shared builds unsupported when compiling with emscripten")     # For now.

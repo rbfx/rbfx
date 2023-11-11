@@ -109,15 +109,12 @@ bool EndsWith(ea::string_view str, ea::string_view suffix, bool caseSensitive = 
 
 int DoSystemCommand(const ea::string& commandLine, bool redirectToLog, Context* context)
 {
-#if defined(TVOS) || defined(IOS) || defined(UWP)
+#if defined(TVOS) || defined(IOS) || defined(UWP) || defined(__EMSCRIPTEN__)
     return -1;
 #else
-#if !defined(__EMSCRIPTEN__)
     if (!redirectToLog)
-#endif
         return system(commandLine.c_str());
 
-#if !defined(__EMSCRIPTEN__)
     // Get a platform-agnostic temporary file name for stderr redirection
     ea::string stderrFilename;
     ea::string adjustedCommandLine(commandLine);
@@ -167,7 +164,6 @@ int DoSystemCommand(const ea::string& commandLine, bool redirectToLog, Context* 
 
     return exitCode;
 #endif
-#endif
 }
 
 enum SystemRunFlag : unsigned
@@ -180,7 +176,7 @@ URHO3D_FLAGSET(SystemRunFlag, SystemRunFlags);
 
 int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& arguments, SystemRunFlags flags, ea::string& output)
 {
-#if defined(TVOS) || defined(IOS) || (defined(__ANDROID__) && __ANDROID_API__ < 28) || defined(UWP)
+#if defined(TVOS) || defined(IOS) || (defined(__ANDROID__) && __ANDROID_API__ < 28) || defined(UWP) || defined(__EMSCRIPTEN__)
     return -1;
 #else
     ea::string fixedFileName = GetNativePath(fileName);
