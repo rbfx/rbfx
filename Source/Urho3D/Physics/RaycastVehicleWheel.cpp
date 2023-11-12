@@ -51,7 +51,7 @@ void RaycastVehicleWheel::RegisterObject(Context* context)
         "Connection Point", GetConnectionPoint, SetConnectionPoint, Vector3, DefaultWheelDirection, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Offset", GetOffset, SetOffset, Vector3, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_DEFAULT);
-    URHO3D_ACTION_STATIC_LABEL("Set Connection", EvaluateConnection, "Update connection point and rotation");
+    URHO3D_ACTION_STATIC_LABEL("Set Connection", ConnectionPointFromTransform, "Update connection point and rotation");
     URHO3D_ACCESSOR_ATTRIBUTE("Direction", GetDirection, SetDirection, Vector3, Vector3::DOWN, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Axle", GetAxle, SetAxle, Vector3, DefaultWheelAxle, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE(
@@ -127,7 +127,7 @@ void RaycastVehicleWheel::UpdateWheelAtVehicle()
     }
 }
 
-void RaycastVehicleWheel::EvaluateConnection()
+void RaycastVehicleWheel::ConnectionPointFromTransform()
 {
     if (!node_  || !vehicle_ || !vehicle_->GetNode())
         return;
@@ -135,7 +135,7 @@ void RaycastVehicleWheel::EvaluateConnection()
     const auto* vehicleNode = vehicle_->GetNode();
     const auto wheelToVehicle = vehicleNode->GetWorldTransform().Inverse() * node_->GetWorldTransform();
 
-    SetConnectionPoint((wheelToVehicle)*offset_ + (direction_ * ( - radius_)));
+    SetConnectionPoint((wheelToVehicle)*offset_ + (direction_ * ( - suspensionRestLength_)));
     SetRotation((wheelToVehicle).Rotation());
 }
 

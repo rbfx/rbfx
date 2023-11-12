@@ -56,7 +56,7 @@ struct btWheelInfo
 	btVector3 m_chassisConnectionPointCS;  //const
 	btVector3 m_wheelDirectionCS;          //const
 	btVector3 m_wheelAxleCS;               // const or modified by steering
-	btScalar m_suspensionRestLength1;      //const
+	btScalar m_suspensionRestLength;      //const
 	btScalar m_maxSuspensionTravel;
 	btScalar getSuspensionRestLength() const;
 	btScalar m_wheelsRadius;              //const
@@ -92,7 +92,7 @@ struct btWheelInfo
 
     void update(const btWheelInfoConstructionInfo& ci)
 	{
-        m_suspensionRestLength1 = ci.m_suspensionRestLength;
+        m_suspensionRestLength = ci.m_suspensionRestLength;
         m_maxSuspensionTravel = ci.m_maxSuspensionTravel;
 
         m_wheelsRadius = ci.m_wheelRadius;

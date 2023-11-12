@@ -275,11 +275,15 @@ void RaycastVehicle::RegisterObject(Context* context)
 
 void RaycastVehicle::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
+    depthTest = false;
+
     if (debug && vehicleData_ && vehicleData_->vehicle_)
     {
         for (int v = 0; v < vehicleData_->vehicle_->getNumWheels(); v++)
         {
+            vehicleData_->UpdateWheel(v);
             auto& wheelInfo = vehicleData_->vehicle_->getWheelInfo(v);
+            
             Color wheelColor(0, 1, 1);
             if (wheelInfo.m_raycastInfo.m_isInContact)
             {
@@ -302,7 +306,7 @@ void RaycastVehicle::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
             debug->AddCircle(wheelPosWS, axle, wheelInfo.m_wheelsRadius, wheelColor, 64, depthTest);
             //debug->AddCircle(wheelPosWS + axle * wheelInfo.wh, axle, wheelInfo.m_wheelsRadius, wheelColor, 64, depthTest);
 
-            debug->AddLine(wheelPosWS, wheelPosWS + axle, wheelColor, false);
+            debug->AddLine(wheelPosWS, wheelPosWS + axle, wheelColor, depthTest);
             // debug->AddLine(wheelPosWS, ToVector3(wheelInfo.m_raycastInfo.m_contactPointWS), wheelColor, false);
             debug->AddCircle(ToVector3(wheelInfo.m_raycastInfo.m_contactPointWS),
                 ToVector3(wheelInfo.m_raycastInfo.m_contactNormalWS), 0.2f, wheelColor, 64, depthTest);
@@ -424,7 +428,7 @@ void RaycastVehicle::FixedPostUpdate(float timeStep)
             skidInfoCumulative = wheel->GetSlidingFactor();
         }
 
-        float wheelSideSlipSpeed = Abs(ToVector3(whInfo.m_raycastInfo.m_wheelAxleWS).DotProduct(velocity));
+        const float wheelSideSlipSpeed = Abs(ToVector3(whInfo.m_raycastInfo.m_wheelAxleWS).DotProduct(velocity));
         if (wheelSideSlipSpeed > maxSideSlipSpeed_)
         {
             skidInfoCumulative = Clamp(skidInfoCumulative, 0.0f, 0.89f);

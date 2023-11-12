@@ -13,7 +13,7 @@
 
 btScalar btWheelInfo::getSuspensionRestLength() const
 {
-	return m_suspensionRestLength1;
+	return m_suspensionRestLength;
 }
 
 void btWheelInfo::updateWheel(const btRigidBody& chassis, RaycastInfo& raycastInfo)

@@ -196,7 +196,7 @@ public:
     void SetInContact(bool isInContact);
 
     /// Update connection point and rotation.
-    void EvaluateConnection();
+    void ConnectionPointFromTransform();
 
 protected:
     /// Handle node being assigned.
