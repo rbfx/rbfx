@@ -123,7 +123,34 @@ const SceneComponentIndex& Scene::GetComponentIndex(StringHash componentType)
 
 void Scene::SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags)
 {
-    Node::SerializeInBlock(archive, serializeTemporary, saveFlags);
+    Node::SerializeInBlock(archive, serializeTemporary, saveFlags, PrefabLoadFlag::SkipApplyAttributes);
+
+    int placeholder{};
+    SerializeOptionalValue(archive, "auxiliary", placeholder, AlwaysSerialize{},
+        [&](Archive& archive, const char* name, int&)
+    {
+        ea::unordered_map<ea::string, Component*> components;
+        for (Component* component : GetComponents())
+        {
+            if (component->HasAuxiliaryData())
+                components[component->GetTypeName()] = component;
+        }
+
+        SerializeMap(archive, name, components, "component",
+            [](Archive& archive, const char* name, auto& value)
+        {
+            if constexpr (ea::is_same_v<ea::remove_reference_t<decltype(value)>, ea::string>)
+                SerializeValue(archive, name, value);
+            else if (value)
+            {
+                auto block = archive.OpenSafeUnorderedBlock(name);
+                ConsumeArchiveException([&] { value->SerializeAuxiliaryData(archive); });
+            }
+        }, false);
+    });
+
+    if (archive.IsInput())
+        ApplyAttributes();
 
     if (!archive.GetName().empty())
         fileName_ = archive.GetName();

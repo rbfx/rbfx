@@ -204,7 +204,7 @@ void SerializeCustomVector(Archive& archive, const char* name, unsigned sizeToWr
 /// Serialize map or hash map with with standard interface.
 template <class T, class TSerializer = Detail::DefaultSerializer>
 void SerializeMap(Archive& archive, const char* name, T& map, const char* element = "element",
-    const TSerializer& serializeValue = TSerializer{})
+    const TSerializer& serializeValue = TSerializer{}, bool clear = true)
 {
     using KeyType = typename T::key_type;
     using ValueType = typename T::mapped_type;
@@ -214,7 +214,8 @@ void SerializeMap(Archive& archive, const char* name, T& map, const char* elemen
         auto block = archive.OpenArrayBlock(name, map.size());
         if (archive.IsInput())
         {
-            map.clear();
+            if (clear)
+                map.clear();
             for (unsigned i = 0; i < block.GetSizeHint(); ++i)
             {
                 auto elementBlock = archive.OpenUnorderedBlock(element);
@@ -238,7 +239,8 @@ void SerializeMap(Archive& archive, const char* name, T& map, const char* elemen
         auto block = archive.OpenArrayBlock(name, map.size());
         if (archive.IsInput())
         {
-            map.clear();
+            if (clear)
+                map.clear();
             for (unsigned i = 0; i < block.GetSizeHint(); ++i)
             {
                 auto elementBlock = archive.OpenUnorderedBlock(element);
