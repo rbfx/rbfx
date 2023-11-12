@@ -45,9 +45,11 @@
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
+#include <Urho3D/Graphics/DebugRenderer.h>
 
 #include "RaycastVehicleDemo.h"
 #include "Vehicle.h"
+#include "Urho3D/Physics/RaycastVehicle.h"
 
 #include <Urho3D/DebugNew.h>
 
@@ -178,11 +180,15 @@ void RaycastVehicleDemo::CreateInstructions()
 void RaycastVehicleDemo::SubscribeToEvents()
 {
     // Subscribe to PostUpdate event for updating the camera position after physics simulation
-    SubscribeToEvent(E_POSTUPDATE,
-                     URHO3D_HANDLER(RaycastVehicleDemo,
-                                    HandlePostUpdate));
+    SubscribeToEvent(E_POSTUPDATE, &RaycastVehicleDemo::HandlePostUpdate);
     // Unsubscribe the SceneUpdate event from base class as the camera node is being controlled in HandlePostUpdate() in this sample
     UnsubscribeFromEvent(E_SCENEUPDATE);
+
+    // Subscribe HandlePostRenderUpdate() function for processing the post-render update event, sent after Renderer
+    // subsystem is
+    // done with defining the draw calls for the viewports (but before actually executing them.) We will request debug
+    // geometry rendering during that event
+    SubscribeToEvent(E_POSTRENDERUPDATE, &RaycastVehicleDemo::HandlePostRenderUpdate);
 }
 
 void RaycastVehicleDemo::Update(float timeStep)
@@ -215,6 +221,10 @@ void RaycastVehicleDemo::Update(float timeStep)
                     vehicle_ = vehicleNode->GetComponent<Vehicle2>();
                 }
             }
+
+            // Toggle debug geometry with space
+            if (input->GetKeyPress(KEY_SPACE))
+                drawDebug_ = !drawDebug_;
         }
     }
 }
@@ -245,4 +255,16 @@ void RaycastVehicleDemo::HandlePostUpdate(StringHash eventType, VariantMap& even
     }
     cameraNode_->SetPosition(cameraTargetPos);
     cameraNode_->SetRotation(dir);
+}
+
+void RaycastVehicleDemo::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)
+{
+    // If draw debug mode is enabled, draw viewport debug geometry, which will show eg. drawable bounding boxes and
+    // skeleton bones. Note that debug geometry has to be separately requested each frame. Disable depth test so that we
+    // can see the bones properly
+    if (drawDebug_ && vehicle_)
+    {
+        auto* debug = scene_->GetOrCreateComponent<DebugRenderer>();
+        vehicle_->GetComponent<RaycastVehicle>()->DrawDebugGeometry(debug, false);
+    }
 }

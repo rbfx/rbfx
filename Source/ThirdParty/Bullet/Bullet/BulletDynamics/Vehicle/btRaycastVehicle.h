@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2005 Erwin Coumans http://continuousphysics.com/Bullet/
+ * Copyright (c) 2023-2023 the rbfx project.
  *
  * Permission to use, copy, modify, distribute and sell this software
  * and its documentation for any purpose is hereby granted without fee,
@@ -66,11 +67,11 @@ private:
 	int m_indexUpAxis;
 	int m_indexForwardAxis;
 
-	void defaultInit(const btVehicleTuning& tuning);
+	void defaultInit();
 
 public:
 	//constructor to create a car from an existing rigidbody
-	btRaycastVehicle(const btVehicleTuning& tuning, btRigidBody* chassis, btVehicleRaycaster* raycaster);
+	btRaycastVehicle(btRigidBody* chassis, btVehicleRaycaster* raycaster);
 
 	virtual ~btRaycastVehicle();
 
@@ -104,7 +105,11 @@ public:
 
 	//	void	setRaycastWheelInfo( int wheelIndex , bool isInContact, const btVector3& hitPoint, const btVector3& hitNormal,btScalar depth);
 
-	btWheelInfo& addWheel(const btVector3& connectionPointCS0, const btVector3& wheelDirectionCS0, const btVector3& wheelAxleCS, btScalar suspensionRestLength, btScalar wheelRadius, const btVehicleTuning& tuning, bool isFrontWheel);
+	int addWheel(const btWheelInfoConstructionInfo& info);
+
+    void updateWheel(int wheelIndex, const btWheelInfoConstructionInfo& info);
+
+    void removeWheel(int index);
 
 	inline int getNumWheels() const
 	{

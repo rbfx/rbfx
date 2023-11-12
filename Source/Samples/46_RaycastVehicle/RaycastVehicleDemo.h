@@ -68,7 +68,12 @@ private:
 
     /// Handle application post-update. Update camera position after vehicle has moved.
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
+    /// Handle application post-render-update. Renders debug geometry.
+    void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
 
     /// The controllable vehicle component.
     WeakPtr<Vehicle2> vehicle_;
+
+    /// Draw debug geometry.
+    bool drawDebug_{};
 };

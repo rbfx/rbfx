@@ -31,7 +31,7 @@ btRigidBody& btActionInterface::getFixedBody()
 	return s_fixed;
 }
 
-btRaycastVehicle::btRaycastVehicle(const btVehicleTuning& tuning, btRigidBody* chassis, btVehicleRaycaster* raycaster)
+btRaycastVehicle::btRaycastVehicle(btRigidBody* chassis, btVehicleRaycaster* raycaster)
 	: m_vehicleRaycaster(raycaster),
 	  m_pitchControl(btScalar(0.))
 {
@@ -39,12 +39,11 @@ btRaycastVehicle::btRaycastVehicle(const btVehicleTuning& tuning, btRigidBody* c
 	m_indexRightAxis = 0;
 	m_indexUpAxis = 2;
 	m_indexForwardAxis = 1;
-	defaultInit(tuning);
+	defaultInit();
 }
 
-void btRaycastVehicle::defaultInit(const btVehicleTuning& tuning)
+void btRaycastVehicle::defaultInit()
 {
-	(void)tuning;
 	m_currentVehicleSpeedKmHour = btScalar(0.);
 	m_steeringValue = btScalar(0.);
 }
@@ -56,30 +55,27 @@ btRaycastVehicle::~btRaycastVehicle()
 //
 // basically most of the code is general for 2 or 4 wheel vehicles, but some of it needs to be reviewed
 //
-btWheelInfo& btRaycastVehicle::addWheel(const btVector3& connectionPointCS, const btVector3& wheelDirectionCS0, const btVector3& wheelAxleCS, btScalar suspensionRestLength, btScalar wheelRadius, const btVehicleTuning& tuning, bool isFrontWheel)
+int btRaycastVehicle::addWheel(const btWheelInfoConstructionInfo& ci)
 {
-	btWheelInfoConstructionInfo ci;
-
-	ci.m_chassisConnectionCS = connectionPointCS;
-	ci.m_wheelDirectionCS = wheelDirectionCS0;
-	ci.m_wheelAxleCS = wheelAxleCS;
-	ci.m_suspensionRestLength = suspensionRestLength;
-	ci.m_wheelRadius = wheelRadius;
-	ci.m_suspensionStiffness = tuning.m_suspensionStiffness;
-	ci.m_wheelsDampingCompression = tuning.m_suspensionCompression;
-	ci.m_wheelsDampingRelaxation = tuning.m_suspensionDamping;
-	ci.m_frictionSlip = tuning.m_frictionSlip;
-	ci.m_bIsFrontWheel = isFrontWheel;
-	ci.m_maxSuspensionTravelCm = tuning.m_maxSuspensionTravelCm;
-	ci.m_maxSuspensionForce = tuning.m_maxSuspensionForce;
-
+    const int index = getNumWheels();
 	m_wheelInfo.push_back(btWheelInfo(ci));
 
-	btWheelInfo& wheel = m_wheelInfo[getNumWheels() - 1];
+	btWheelInfo& wheel = m_wheelInfo[index];
 
 	updateWheelTransformsWS(wheel, false);
-	updateWheelTransform(getNumWheels() - 1, false);
-	return wheel;
+    updateWheelTransform(index, false);
+
+    return index;
+}
+
+void btRaycastVehicle::updateWheel(int wheelIndex, const btWheelInfoConstructionInfo& info)
+{
+    m_wheelInfo[wheelIndex] = info;
+}
+
+void btRaycastVehicle::removeWheel(int index)
+{
+    m_wheelInfo.removeAtIndex(index);
 }
 
 const btTransform& btRaycastVehicle::getWheelTransformWS(int wheelIndex) const
@@ -194,8 +190,8 @@ btScalar btRaycastVehicle::rayCast(btWheelInfo& wheel)
 		wheel.m_raycastInfo.m_suspensionLength = hitDistance - wheel.m_wheelsRadius;
 		//clamp on max suspension travel
 
-		btScalar minSuspensionLength = wheel.getSuspensionRestLength() - wheel.m_maxSuspensionTravelCm * btScalar(0.01);
-		btScalar maxSuspensionLength = wheel.getSuspensionRestLength() + wheel.m_maxSuspensionTravelCm * btScalar(0.01);
+		btScalar minSuspensionLength = wheel.getSuspensionRestLength() - wheel.m_maxSuspensionTravel;
+		btScalar maxSuspensionLength = wheel.getSuspensionRestLength() + wheel.m_maxSuspensionTravel;
 		if (wheel.m_raycastInfo.m_suspensionLength < minSuspensionLength)
 		{
 			wheel.m_raycastInfo.m_suspensionLength = minSuspensionLength;

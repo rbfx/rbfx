@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,9 +23,10 @@
 
 #pragma once
 
-#include "../Scene/LogicComponent.h"
-#include "../Physics/PhysicsUtils.h"
-#include "../Physics/RigidBody.h"
+#include "Urho3D/Scene/LogicComponent.h"
+#include "Urho3D/Physics/PhysicsUtils.h"
+#include "Urho3D/Physics/RigidBody.h"
+#include "Urho3D/Physics/RaycastVehicleWheel.h"
 
 namespace Urho3D
 {
@@ -43,6 +45,8 @@ public:
     /// Register object factory and attributes.
     /// @nobind
     static void RegisterObject(Context* context);
+    /// Visualize the component as debug geometry.
+    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
@@ -50,50 +54,63 @@ public:
     /// Perform post-load after deserialization. Acquire the components from the scene nodes.
     void ApplyAttributes() override;
 
-    /// Add a wheel. All parameters are relative to RigidBody / node.
-    void AddWheel(Node* wheelNode, Vector3 wheelDirection, Vector3 wheelAxle, float restLength, float wheelRadius, bool frontWheel);
+    /// Add a wheel.
+    void AddWheel(RaycastVehicleWheel* wheel);
+    /// Remove a wheel.
+    void RemoveWheel(RaycastVehicleWheel* wheel);
+    /// Get wheel.
+    RaycastVehicleWheel* GetWheel(unsigned index) const;
+
     /// Reset all suspension.
     void ResetSuspension();
-    /// Update transform for particular wheel.
-    void UpdateWheelTransform(int wheel, bool interpolated);
-    /// Set steering value of particular wheel.
-    void SetSteeringValue(int wheel, float steeringValue);
-    /// Set suspension stiffness for particular wheel.
-    void SetWheelSuspensionStiffness(int wheel, float stiffness);
-    /// Set wheel max suspension force. Good results are often obtained by a value that is about 3x to 4x the vehicle weight.
-    void SetWheelMaxSuspensionForce(int wheel, float force);
-    /// Set wheel damping relaxation.
-    void SetWheelDampingRelaxation(int wheel, float damping);
-    /// Set wheel damping compression.
-    void SetWheelDampingCompression(int wheel, float compression);
-    /// Set wheel friction slip.
-    void SetWheelFrictionSlip(int wheel, float slip);
-    /// Set wheel roll influence.
-    void SetWheelRollInfluence(int wheel, float rollInfluence);
-    /// Set engine force for the wheel.
-    void SetEngineForce(int wheel, float force);
-    /// Set hand brake (wheel rotation blocking force).
-    void SetBrake(int wheel, float force);
-    /// Set wheel radius.
-    void SetWheelRadius(int wheel, float wheelRadius);
     /// Sets node initial positions.
     void ResetWheels();
-    /// Set sliding factor 0 <= x <= 1. The less the value, more sliding.
-    void SetWheelSkidInfo(int wheel, float factor);
-    /// True if wheel touches ground (raycast hits something).
-    bool WheelIsGrounded(int wheel) const;
-    /// Set maximum suspension travel value.
-    void SetMaxSuspensionTravel(int wheel, float maxSuspensionTravel);
-    /// Set wheel direction vector.
-    void SetWheelDirection(int wheel, Vector3 direction);
-    /// Set wheel axle vector.
-    void SetWheelAxle(int wheel, Vector3 axle);
+
+    /// Mark wheel static data as dirty and update it before simulation.
+    void InvalidateStaticWheelParameters(unsigned wheelIndex);
+    /// Mark wheel dynamic data as dirty and update it before simulation.
+    void InvalidateDynamicWheelParameters(unsigned wheelIndex);
+    
+
+    /// Update transform for particular wheel.
+    void UpdateWheelTransform(int wheel, bool interpolated);
+    ///// Set steering value of particular wheel.
+    //void SetSteeringValue(int wheel, float steeringValue);
+    ///// Set suspension stiffness for particular wheel.
+    //void SetWheelSuspensionStiffness(int wheel, float stiffness);
+    ///// Set wheel max suspension force. Good results are often obtained by a value that is about 3x to 4x the vehicle weight.
+    //void SetWheelMaxSuspensionForce(int wheel, float force);
+    ///// Set wheel damping relaxation.
+    //void SetWheelDampingRelaxation(int wheel, float damping);
+    ///// Set wheel damping compression.
+    //void SetWheelDampingCompression(int wheel, float compression);
+    ///// Set wheel friction slip.
+    //void SetWheelFrictionSlip(int wheel, float slip);
+    ///// Set wheel roll influence.
+    //void SetWheelRollInfluence(int wheel, float rollInfluence);
+    ///// Set engine force for the wheel.
+    //void SetEngineForce(int wheel, float force);
+    ///// Set hand brake (wheel rotation blocking force).
+    //void SetBrake(int wheel, float force);
+    ///// Set wheel radius.
+    //void SetWheelRadius(int wheel, float wheelRadius);
+    ///// Set sliding factor 0 <= x <= 1. The less the value, more sliding.
+    //void SetWheelSkidInfo(int wheel, float factor);
+    ///// True if wheel touches ground (raycast hits something).
+    //bool WheelIsGrounded(int wheel) const;
+    ///// Set maximum suspension travel value.
+    //void SetMaxSuspensionTravel(int wheel, float maxSuspensionTravel);
+    ///// Set wheel direction vector.
+    //void SetWheelDirection(int wheel, Vector3 direction);
+    ///// Set wheel axle vector.
+    //void SetWheelAxle(int wheel, Vector3 axle);
+    ///// Set cumulative skid info.
+    //void SetWheelSkidInfoCumulative(int wheel, float skid);
     /// Set side speed which is considered sliding.
     /// @property
     void SetMaxSideSlipSpeed(float speed);
-    /// Set cumulative skid info.
-    void SetWheelSkidInfoCumulative(int wheel, float skid);
-    /// Set revolution per minute value for when wheel doesn't touch ground. If set to 0 (or not set), calculated from engine force (probably not what you want).
+    /// Set revolution per minute value for when wheel doesn't touch ground. If set to 0 (or not set), calculated from
+    /// engine force (probably not what you want).
     /// @property
     void SetInAirRPM(float rpm);
     /// Set the coordinate system. The default is (0, 1, 2).
@@ -117,64 +134,53 @@ public:
     /// Get number of attached wheels.
     /// @property
     int GetNumWheels() const;
-    /// Get node of the wheel.
-    Node* GetWheelNode(int wheel) const;
-    /// Get steering value of particular wheel.
-    float GetSteeringValue(int wheel) const;
-    /// Get suspension stiffness for particular wheel.
-    float GetWheelSuspensionStiffness(int wheel) const;
-    /// Get wheel max suspension force.
-    float GetWheelMaxSuspensionForce(int wheel) const;
-    /// Get wheel damping relaxation.
-    float GetWheelDampingRelaxation(int wheel) const;
-    /// Get wheel damping compression.
-    float GetWheelDampingCompression(int wheel) const;
-    /// Get wheel friction slip.
-    float GetWheelFrictionSlip(int wheel) const;
-    /// Get wheel roll influence.
-    float GetWheelRollInfluence(int wheel) const;
-    /// Get engine force for the wheel.
-    float GetEngineForce(int wheel) const;
-    /// Get hand brake value.
-    float GetBrake(int wheel) const;
-    /// Get wheel radius.
-    float GetWheelRadius(int wheel) const;
-    /// Get wheel rest length.
-    void SetWheelRestLength(int wheel, float length);
-    /// Get wheel rest length.
-    float GetWheelRestLength(int wheel) const;
-    /// Get maximum suspension travel value.
-    float GetMaxSuspensionTravel(int wheel);
-    /// Get wheel axle vector.
-    Vector3 GetWheelAxle(int wheel) const;
-    /// Get wheel slide speed.
-    float GetWheelSideSlipSpeed(int wheel) const;
+    ///// Get steering value of particular wheel.
+    //float GetSteeringValue(int wheel) const;
+    ///// Get suspension stiffness for particular wheel.
+    //float GetWheelSuspensionStiffness(int wheel) const;
+    ///// Get wheel max suspension force.
+    //float GetWheelMaxSuspensionForce(int wheel) const;
+    ///// Get wheel damping relaxation.
+    //float GetWheelDampingRelaxation(int wheel) const;
+    ///// Get wheel damping compression.
+    //float GetWheelDampingCompression(int wheel) const;
+    ///// Get wheel friction slip.
+    //float GetWheelFrictionSlip(int wheel) const;
+    ///// Get wheel roll influence.
+    //float GetWheelRollInfluence(int wheel) const;
+    ///// Get engine force for the wheel.
+    //float GetEngineForce(int wheel) const;
+    ///// Get hand brake value.
+    //float GetBrake(int wheel) const;
+    ///// Get wheel radius.
+    //float GetWheelRadius(int wheel) const;
+    ///// Get wheel rest length.
+    //void SetWheelRestLength(int wheel, float length);
+    ///// Get wheel rest length.
+    //float GetWheelRestLength(int wheel) const;
+    ///// Get maximum suspension travel value.
+    //float GetMaxSuspensionTravel(int wheel);
+    ///// Get wheel axle vector.
+    //Vector3 GetWheelAxle(int wheel) const;
+    ///// Sliding factor 0 <= x <= 1.
+    //float GetWheelSkidInfo(int wheel) const;
+    ///// Get wheel direction vector.
+    //Vector3 GetWheelDirection(int wheel) const;
+    ///// True if front wheel, otherwise false.
+    //bool IsFrontWheel(int wheel) const;
+    ///// Get wheel contact position.
+    //Vector3 GetContactPosition(int wheel) const;
+    ///// Get contact normal.
+    //Vector3 GetContactNormal(int wheel) const;
     /// Get side speed which is considered sliding.
     /// @property
     float GetMaxSideSlipSpeed() const;
-    /// Sliding factor 0 <= x <= 1.
-    float GetWheelSkidInfo(int wheel) const;
-    /// Get wheel direction vector.
-    Vector3 GetWheelDirection(int wheel) const;
-    /// Get cumulative skid info.
-    float GetWheelSkidInfoCumulative(int wheel) const;
-    /// True if front wheel, otherwise false.
-    bool IsFrontWheel(int wheel) const;
-    /// Get wheel contact position.
-    Vector3 GetContactPosition(int wheel) const;
-    /// Get contact normal.
-    Vector3 GetContactNormal(int wheel) const;
     /// Get revolution per minute value for when wheel doesn't touch ground.
     /// @property
     float GetInAirRPM() const;
     /// Get the coordinate system.
     /// @property
     IntVector3 GetCoordinateSystem() const { return coordinateSystem_; }
-
-    /// Get wheel data attribute for serialization.
-    VariantVector GetWheelDataAttr() const;
-    /// Set wheel data attribute during loading.
-    void SetWheelDataAttr(const VariantVector& value);
 
     /// (0, 1, 2) coordinate system (default).
     static const IntVector3 RIGHT_UP_FORWARD;
@@ -199,19 +205,11 @@ private:
     /// Coordinate system.
     IntVector3 coordinateSystem_;
     /// Nodes of all wheels.
-    ea::vector<Node*> wheelNodes_;
-    /// All wheels original rotations. These are applied in addition to wheel rotations by btRaycastVehicle.
-    ea::vector<Quaternion> origRotation_;
+    ea::vector<RaycastVehicleWheel*> wheelComponents_;
     /// Revolutions per minute value for in-air motor wheels. FIXME: set this one per wheel.
     float inAirRPM_;
-    /// Per-wheel extra settings.
-    ea::vector<float> skidInfoCumulative_;
-    /// Wheel side movement speed.
-    ea::vector<float> wheelSideSlipSpeed_;
     /// Side slip speed threshold.
     float maxSideSlipSpeed_;
-    /// Loaded data temporarily wait here for ApplyAttributes to come pick them up.
-    VariantVector loadedWheelData_;
 };
 
 }
