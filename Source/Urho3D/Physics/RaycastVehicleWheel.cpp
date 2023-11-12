@@ -129,13 +129,13 @@ void RaycastVehicleWheel::UpdateWheelAtVehicle()
 
 void RaycastVehicleWheel::EvaluateConnection()
 {
-    if (!node_  || !vehicle_ || vehicle_->GetNode())
+    if (!node_  || !vehicle_ || !vehicle_->GetNode())
         return;
 
     const auto* vehicleNode = vehicle_->GetNode();
     const auto wheelToVehicle = vehicleNode->GetWorldTransform().Inverse() * node_->GetWorldTransform();
 
-    SetConnectionPoint((wheelToVehicle)*offset_);
+    SetConnectionPoint((wheelToVehicle)*offset_ + (direction_ * ( - radius_)));
     SetRotation((wheelToVehicle).Rotation());
 }
 
