@@ -99,14 +99,6 @@ private:
 
     /// Current left/right steering amount (-1 to 1.)
     float steering_;
-    /// Tmp storage for steering
-    float vehicleSteering_;
-    /// Linear momentum supplied by engine to RigidBody
-    float engineForce_;
-    /// Rotational momentum preventing (dampening) wheels rotation
-    float brakingForce_;
-    /// Maximum linear momentum supplied by engine to RigidBody
-    float maxEngineForce_;
     /// Stored wheel radius
     float wheelRadius_;
     /// Suspension rest length (in meters)

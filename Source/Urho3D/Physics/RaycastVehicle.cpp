@@ -248,6 +248,9 @@ void RaycastVehicle::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<RaycastVehicle>(Category_Physics);
 
+    URHO3D_ACCESSOR_ATTRIBUTE(
+        "Engine Force", GetEngineForce, SetEngineForce, float, DefaultEngineForce, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Braking Force", GetBrakingForce, SetBrakingForce, float, DefaultBrakingForce, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Maximum side slip threshold", float, maxSideSlipSpeed_, 4.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("RPM for wheel motors in air (0=calculate)", float, inAirRPM_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Coordinate system", IntVector3, coordinateSystem_, RIGHT_UP_FORWARD, AM_DEFAULT);
@@ -382,13 +385,13 @@ void RaycastVehicle::PostUpdate(float timeStep)
 void RaycastVehicle::FixedPostUpdate(float timeStep)
 {
     btRaycastVehicle* vehicle = vehicleData_->Get();
-    Vector3 velocity = hullBody_->GetLinearVelocity();
+    const Vector3 velocity = hullBody_->GetLinearVelocity();
     for (int i = 0; i < GetNumWheels(); i++)
     {
         RaycastVehicleWheel* wheel = GetWheel(static_cast<unsigned>(i));
         float skidInfoCumulative = wheel->GetSkidInfoCumulative();
         btWheelInfo& whInfo = vehicle->getWheelInfo(i);
-        bool isInContact = whInfo.m_raycastInfo.m_isInContact;
+        const bool isInContact = whInfo.m_raycastInfo.m_isInContact;
         wheel->SetInContact(isInContact);
         if (!isInContact && wheel->GetEngineForce() != 0.0f)
         {
@@ -436,6 +439,17 @@ void RaycastVehicle::SetMaxSideSlipSpeed(float speed)
 float RaycastVehicle::GetMaxSideSlipSpeed() const
 {
     return maxSideSlipSpeed_;
+}
+
+void RaycastVehicle::UpdateInput(float steering, float engineForceFactor, float brakingForceFactor)
+{
+    for (unsigned wheelIndex=0; wheelIndex<GetNumWheels(); ++wheelIndex)
+    {
+        auto* wheel = GetWheel(wheelIndex);
+        wheel->SetSteeringValue(wheel->GetSteeringFactor() * steering);
+        wheel->SetEngineForce(wheel->GetEngineFactor() * engineForceFactor * engineForce_);
+        wheel->SetBrakeValue(wheel->GetBrakeFactor() * brakingForceFactor * brakingForce_);
+    }
 }
 
 void RaycastVehicle::ResetSuspension()

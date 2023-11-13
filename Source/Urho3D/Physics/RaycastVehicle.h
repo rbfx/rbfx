@@ -37,6 +37,9 @@ class URHO3D_API RaycastVehicle : public LogicComponent
     URHO3D_OBJECT(RaycastVehicle, LogicComponent);
 
 public:
+    constexpr static float DefaultBrakingForce = 50.0f;
+    constexpr static float DefaultEngineForce = 2500.0f;
+
     /// Construct.
     explicit RaycastVehicle(Urho3D::Context* context);
     /// Destruct.
@@ -54,7 +57,7 @@ public:
 
     /// Perform post-load after deserialization. Acquire the components from the scene nodes.
     void ApplyAttributes() override;
-    /// Immidiatly apply wheel attributes to physics.
+    /// Immediately apply wheel attributes to physics.
     void ApplyWheelAttributes(unsigned index);
 
     /// Add a wheel.
@@ -63,6 +66,19 @@ public:
     void RemoveWheel(RaycastVehicleWheel* wheel);
     /// Get wheel.
     RaycastVehicleWheel* GetWheel(unsigned index) const;
+
+    /// Get maximum linear momentum supplied by engine to RigidBody.
+    float GetEngineForce() const { return engineForce_; }
+    /// Set maximum linear momentum supplied by engine to RigidBody.
+    void SetEngineForce(float engineForce) { engineForce_ = engineForce; }
+
+    /// Get rotational momentum preventing (dampening) wheels rotation.
+    float GetBrakingForce() const { return brakingForce_; }
+    /// Set rotational momentum preventing (dampening) wheels rotation.
+    void SetBrakingForce(float brakingForce) { brakingForce_ = brakingForce; }
+
+    /// Update input values for wheels.
+    void UpdateInput(float steering, float engineForceFactor, float brakingForceFactor);
 
     /// Reset all suspension.
     void ResetSuspension();
@@ -145,6 +161,10 @@ private:
     float inAirRPM_;
     /// Side slip speed threshold.
     float maxSideSlipSpeed_;
+    /// Rotational momentum preventing (dampening) wheels rotation
+    float brakingForce_{DefaultBrakingForce};
+    /// Maximum linear momentum supplied by engine to RigidBody
+    float engineForce_{DefaultEngineForce};
 };
 
 }

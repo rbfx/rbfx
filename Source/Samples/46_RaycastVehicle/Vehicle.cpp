@@ -56,10 +56,6 @@ Vehicle2::Vehicle2(Urho3D::Context* context)
     , steering_(0.0f)
 {
     SetUpdateEventMask(USE_FIXEDUPDATE | USE_POSTUPDATE);
-    engineForce_ = 0.0f;
-    brakingForce_ = 50.0f;
-    vehicleSteering_ = 0.0f;
-    maxEngineForce_ = 2500.0f;
     wheelRadius_ = 0.5f;
     suspensionRestLength_ = 0.6f;
     wheelWidth_ = 0.4f;
@@ -199,7 +195,7 @@ void Vehicle2::ApplyAttributes()
 void Vehicle2::FixedUpdate(float timeStep)
 {
     float brakingForce = 0.0f;
-    const auto* vehicle = node_->GetComponent<RaycastVehicle>();
+    auto* vehicle = node_->GetComponent<RaycastVehicle>();
     // Read controls
     const auto vel = GetVelocity();
     const float newSteering = vel.x_;
@@ -209,7 +205,7 @@ void Vehicle2::FixedUpdate(float timeStep)
 
     if (inputMap_->Evaluate("Brake"))
     {
-        brakingForce = brakingForce_;
+        brakingForce = 1.0f;
     }
     // When steering, wake up the wheel rigidbodies so that their orientation is updated
     if (newSteering != 0.0f)
@@ -220,18 +216,9 @@ void Vehicle2::FixedUpdate(float timeStep)
     {
         SetSteering(GetSteering() * 0.8f + newSteering * 0.2f);
     }
-    // Set front wheel angles
-    vehicleSteering_ = steering_;
     // apply forces
-    engineForce_ = maxEngineForce_ * accelerator;
 
-    for (int wheelIndex = 0; wheelIndex < vehicle->GetNumWheels(); ++wheelIndex)
-    {
-        auto* wheel = vehicle->GetWheel(wheelIndex);
-        wheel->SetSteeringValue(vehicleSteering_ * wheel->GetSteeringFactor());
-        wheel->SetEngineForce(engineForce_ * wheel->GetEngineFactor());
-        wheel->SetBrakeValue(brakingForce * wheel->GetBrakeFactor());
-    }
+    vehicle->UpdateInput(steering_, accelerator, brakingForce);
 }
 
 void Vehicle2::PostUpdate(float timeStep)
