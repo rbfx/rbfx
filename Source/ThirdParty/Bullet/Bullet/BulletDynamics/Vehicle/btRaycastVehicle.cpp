@@ -72,6 +72,8 @@ int btRaycastVehicle::addWheel(const btWheelInfoConstructionInfo& ci)
 void btRaycastVehicle::updateWheel(int wheelIndex, const btWheelInfoConstructionInfo& info)
 {
     m_wheelInfo[wheelIndex].update(info);
+    updateWheelTransformsWS(m_wheelInfo[wheelIndex]);
+    updateWheelTransform(wheelIndex);
 }
 
 void btRaycastVehicle::removeWheel(int index)
@@ -326,7 +328,7 @@ void btRaycastVehicle::updateVehicle(btScalar step)
 
 			btScalar proj2 = fwd.dot(vel);
 
-			wheel.m_deltaRotation = (proj2 * step) / (wheel.m_wheelsRadius);
+			wheel.m_deltaRotation = (proj2 * step) / wheel.m_wheelsRadius;
 			wheel.m_rotation += wheel.m_deltaRotation;
 		}
 		else

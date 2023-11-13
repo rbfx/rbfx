@@ -6,4 +6,6 @@
     <texture slot="Emission" name="Textures/TerrainDetail3.dds" />
     <parameter name="MatSpecColor" value="0.5 0.5 0.5 16" />
     <parameter name="DetailTiling" value="32 32" />
+    <parameter name="UOffset" value="8 0 0 0" />
+    <parameter name="VOffset" value="0 8 0 0" />
 </material>

@@ -30,7 +30,6 @@ struct btWheelInfoConstructionInfo
 	btScalar m_wheelsDampingRelaxation;
 	btScalar m_frictionSlip;
 	btScalar m_maxSuspensionForce;
-	bool m_bIsFrontWheel;
 };
 
 /// btWheelInfo contains information per wheel about friction and suspension.

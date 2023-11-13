@@ -45,14 +45,17 @@ public:
     /// Register object factory and attributes.
     /// @nobind
     static void RegisterObject(Context* context);
-    /// Visualize the component as debug geometry.
-    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
+    /// Visualize wheel as debug geometry.
+    void DrawWheelDebugGeometry(unsigned index, DebugRenderer* debug, bool depthTest) const;
 
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
 
     /// Perform post-load after deserialization. Acquire the components from the scene nodes.
     void ApplyAttributes() override;
+    /// Immidiatly apply wheel attributes to physics.
+    void ApplyWheelAttributes(unsigned index);
 
     /// Add a wheel.
     void AddWheel(RaycastVehicleWheel* wheel);
@@ -95,9 +98,9 @@ public:
     void PostUpdate(float timeStep) override;
 
     /// Get wheel position relative to RigidBody.
-    Vector3 GetWheelPosition(int wheel);
+    Vector3 GetWheelPosition(int wheel) const;
     /// Get wheel rotation relative to RigidBody.
-    Quaternion GetWheelRotation(int wheel);
+    Quaternion GetWheelRotation(int wheel) const;
     /// Get wheel connection point relative to RigidBody.
     Vector3 GetWheelConnectionPoint(int wheel) const;
     /// Get number of attached wheels.

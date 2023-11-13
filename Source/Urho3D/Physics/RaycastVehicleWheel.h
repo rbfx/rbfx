@@ -38,7 +38,7 @@ public:
     static constexpr float DefaultWheelRadius = 1.0f;
     static const Vector3 DefaultWheelDirection;
     static const Vector3 DefaultWheelAxle;
-    static constexpr float DefaultSuspensionRestLength = 0.f;
+    static constexpr float DefaultSuspensionRestLength = 0.2f;
     static constexpr float DefaultMaxSuspensionTravel = 0.5f;
     static constexpr float DefaultSuspensionStiffness = 5.88f;
     static constexpr float DefaultSuspensionCompression = 0.83f;
@@ -62,8 +62,13 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// Visualize the component as debug geometry.
+    void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
+
     /// Set wheel index. Executed by vehicle.
     void SetWheelIndex(unsigned index);
+    /// Get wheel index in the vehicle. Returns UINT_MAX if not added to a vehicle.
+    unsigned GetWheelIndex() const { return wheelIndex_; }
 
     /// Get wheel connection point in vehicle space.
     Vector3 GetConnectionPoint() const;
@@ -256,7 +261,7 @@ private:
     float sideSlipSpeed_{DefaultSideSlipSpeed};
     bool isInContact{};
 
-    unsigned wheelIndex_{};
+    unsigned wheelIndex_{UINT_MAX};
     WeakPtr<RaycastVehicle> vehicle_{};
 };
 
