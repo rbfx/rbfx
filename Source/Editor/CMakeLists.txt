@@ -25,50 +25,62 @@ if (NOT URHO3D_SYSTEMUI OR NOT DESKTOP)
 endif ()
 
 file (GLOB_RECURSE SOURCE_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.h *.hpp)
+list (REMOVE_ITEM SOURCE_FILES Editor.cpp EditorWrapper.cpp)
 
-if (URHO3D_NO_EDITOR_PLAYER_EXE)
-    # User is going to build their own editor executable
-    add_library (libEditor STATIC ${SOURCE_FILES})
-    set (EDITOR_TARGET libEditor)
-else ()
+# Always export Editor without entry point as EditorLibrary.
+# TODO: Support SHARED EditorLibrary for external Editor plugins.
+add_library (EditorLibrary STATIC ${SOURCE_FILES})
+
+target_include_directories(EditorLibrary PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries (EditorLibrary PUBLIC Urho3D)
+if (TARGET TracyEmbedded)
+    target_link_libraries (EditorLibrary PUBLIC TracyEmbedded)
+endif ()
+
+# Unless forbidden by the user, add Editor executable(s).
+set (EDITOR_TARGETS "")
+if (NOT URHO3D_NO_EDITOR_PLAYER_EXE)
+    # Always add native application
+    if (NOT URHO3D_WIN32_CONSOLE)
+        set (TARGET_TYPE WIN32)
+    endif ()
+
+    add_executable (Editor ${TARGET_TYPE} Editor.cpp)
+    target_link_libraries (Editor PUBLIC EditorLibrary)
+    list (APPEND EDITOR_TARGETS Editor)
+
     if (URHO3D_CSHARP)
-        # Use C# executable to host .net runtime and load editor. Editor is built as a dynamic library.
+        # Add native application as shared library to be loaded by C# executable.
+        add_library (libEditorWrapper SHARED EditorWrapper.cpp)
+        set_target_properties(libEditorWrapper PROPERTIES PREFIX "")
+        target_link_libraries (libEditorWrapper PUBLIC EditorLibrary)
+        list (APPEND EDITOR_TARGETS libEditorWrapper)
+
+        # Add C# executable to host .net runtime and load editor.
         add_target_csharp(
-            TARGET Editor
+            TARGET EditorManaged
             EXE
-            PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/ManagedHost/Editor.csproj
-            OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Editor${CMAKE_EXECUTABLE_SUFFIX}
+            PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/EditorManaged/EditorManaged.csproj
+            OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/EditorManaged${CMAKE_EXECUTABLE_SUFFIX}
             DEPENDS Urho3DNet)
-        add_library (libEditor SHARED ${SOURCE_FILES} EditorHost.cpp)
-        set (EDITOR_TARGET libEditor)
-        if (TARGET Editor)
-            add_dependencies(Editor libEditor Urho3DNet)
+
+        if (TARGET EditorManaged)
+            add_dependencies(EditorManaged libEditorWrapper Urho3DNet)
+            install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/EditorManaged${CMAKE_EXECUTABLE_SUFFIX}"
+                DESTINATION ${DEST_BIN_DIR_CONFIG}
+            )
         endif ()
-        install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Editor${CMAKE_EXECUTABLE_SUFFIX}" DESTINATION ${DEST_BIN_DIR_CONFIG})
     else ()
         # No C# or pugins support, editor can be a true native executable.
-        if (NOT URHO3D_WIN32_CONSOLE)
-            set (TARGET_TYPE WIN32)
-        endif ()
-        add_executable (Editor ${TARGET_TYPE} ${SOURCE_FILES} EditorHost.cpp)
-        set (EDITOR_TARGET Editor)
     endif ()
 endif ()
 
-if (TARGET libEditor)
-    set_target_properties(libEditor PROPERTIES PREFIX "")
-endif ()
+foreach (EDITOR_TARGET ${EDITOR_TARGETS})
+    link_static_plugins (${EDITOR_TARGET} "${URHO3D_PLUGIN_LIST}")
 
-target_include_directories(${EDITOR_TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries (${EDITOR_TARGET} PUBLIC Urho3D)
-if (TARGET TracyEmbedded)
-    target_link_libraries (${EDITOR_TARGET} PUBLIC TracyEmbedded)
-endif ()
-
-link_static_plugins (${EDITOR_TARGET} "${URHO3D_PLUGIN_LIST}")
-
-install(TARGETS ${EDITOR_TARGET}
-    RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
-    LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
-    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
-)
+    install(TARGETS ${EDITOR_TARGET}
+        RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
+        LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
+        ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
+    )
+endforeach ()

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>Editor</AssemblyName>
+    <AssemblyName>EditorManaged</AssemblyName>
     <OutputType>WinExe</OutputType>
     <LangVersion>9.0</LangVersion>
     <TargetFramework>$(URHO3D_NETFX_RUNTIME)</TargetFramework>

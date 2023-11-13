@@ -4,4 +4,4 @@
 
 #include "EditorApplication.h"
 
-URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::EditorApplication);
+URHO3D_DEFINE_APPLICATION_MAIN_CSHARP(Urho3D::EditorApplication);
