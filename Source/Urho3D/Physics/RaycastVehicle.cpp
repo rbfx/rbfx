@@ -293,6 +293,29 @@ void RaycastVehicle::DrawWheelDebugGeometry(unsigned wheelIndex, DebugRenderer* 
     }
 }
 
+void RaycastVehicle::OnNodeSet(Node* previousNode, Node* currentNode)
+{
+    if (node_)
+        node_->AddListener(this);
+}
+
+void RaycastVehicle::OnMarkedDirty(Node* node)
+{
+    // If node transform changes in editor update wheels.
+    if (!hasSimulated_ && vehicleData_ && vehicleData_->vehicle_)
+    {
+        const auto physicsWorld = GetScene()->GetComponent<PhysicsWorld>();
+
+        if (physicsWorld && !physicsWorld->IsApplyingTransforms())
+        {
+            for (int i = 0; i < GetNumWheels(); i++)
+            {
+                vehicleData_->vehicle_->updateWheelTransform(i, false);
+            }
+        }
+    }
+}
+
 void RaycastVehicle::OnSetEnabled()
 {
     if (vehicleData_)
@@ -348,6 +371,7 @@ void RaycastVehicle::Init()
 
 void RaycastVehicle::FixedUpdate(float timeStep)
 {
+    hasSimulated_ = true;
     btRaycastVehicle* vehicle = vehicleData_->Get();
     for (int i = 0; i < GetNumWheels(); i++)
     {

@@ -146,6 +146,12 @@ public:
     /// (2, 1, 0) coordinate system.
     static const IntVector3 FORWARD_UP_RIGHT;
 
+protected:
+    /// Handle node being assigned.
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
+    /// Handle node transform being dirtied.
+    void OnMarkedDirty(Node* node) override;
+
 private:
     /// If the RigidBody should be activated.
     bool activate_;
@@ -165,6 +171,9 @@ private:
     float brakingForce_{DefaultBrakingForce};
     /// Maximum linear momentum supplied by engine to RigidBody
     float engineForce_{DefaultEngineForce};
+
+    /// Internal flag whether has simulated at least once.
+    mutable bool hasSimulated_{};
 };
 
 }
