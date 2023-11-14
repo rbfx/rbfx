@@ -303,6 +303,7 @@ URHO3D_REFCOUNTED(Urho3D::CollisionShape);
 URHO3D_REFCOUNTED(Urho3D::Constraint);
 URHO3D_REFCOUNTED(Urho3D::RigidBody);
 URHO3D_REFCOUNTED(Urho3D::KinematicCharacterController);
+URHO3D_REFCOUNTED(Urho3D::RaycastVehicleWheel);
 URHO3D_REFCOUNTED(Urho3D::RaycastVehicle);
 URHO3D_REFCOUNTED(Urho3D::TriggerAnimator);
 URHO3D_REFCOUNTED(Urho3D::Drawable2D);

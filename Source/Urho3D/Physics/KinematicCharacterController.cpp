@@ -364,7 +364,7 @@ void KinematicCharacterController::ApplySettings(bool readdToWorld)
 
 void KinematicCharacterController::RemoveKinematicFromWorld()
 {
-    if (kinematicController_ && physicsWorld_ && pairCachingGhostObject_->getWorldArrayIndex() >= 0)
+    if (IsAddedToWorld())
     {
         btDiscreteDynamicsWorld *phyicsWorld = physicsWorld_->GetWorld();
         phyicsWorld->removeCollisionObject(pairCachingGhostObject_.get());
