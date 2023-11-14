@@ -50,7 +50,7 @@ struct RaycastWheelData
 {
     SharedPtr<RaycastVehicleWheel> wheel_;
     bool isStaticDirty_{};
-    bool isDynamicDirty_{};
+    bool isDynamicDirty_{true};
 };
 
 struct RaycastVehicleData
@@ -119,6 +119,7 @@ struct RaycastVehicleData
             btWheelInfoConstructionInfo ci;
             FillWheelInfoConstructionInfo(wheel.wheel_, ci);
             vehicle_->addWheel(ci);
+            wheel.isDynamicDirty_ = true;
         }
     }
 
@@ -150,9 +151,9 @@ struct RaycastVehicleData
 
     void FillWheelInfoConstructionInfo(RaycastVehicleWheel* wheel, btWheelInfoConstructionInfo& ci)
     {
-        Vector3 connectionPoint = wheel->GetConnectionPoint();
-        Vector3 wheelDirection = wheel->GetDirection();
-        Vector3 wheelAxle = wheel->GetAxle();
+        const Vector3 connectionPoint = wheel->GetConnectionPoint();
+        const Vector3 wheelDirection = wheel->GetDirection();
+        const Vector3 wheelAxle = wheel->GetAxle();
 
         ci.m_chassisConnectionCS = ToBtVector3(connectionPoint);
         ci.m_wheelDirectionCS = ToBtVector3(wheelDirection);
@@ -282,7 +283,7 @@ void RaycastVehicle::DrawWheelDebugGeometry(unsigned wheelIndex, DebugRenderer* 
 
     axle.Normalize();
 
-    auto wheelPosWS = GetWheelPosition(wheelIndex);
+    const auto wheelPosWS = GetWheelPosition(wheelIndex);
 
     debug->AddCircle(wheelPosWS, axle, wheelInfo.m_wheelsRadius, wheelColor, 64, depthTest);
     debug->AddLine(wheelPosWS, wheelPosWS + axle, wheelColor, depthTest);
@@ -297,6 +298,8 @@ void RaycastVehicle::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     if (node_)
         node_->AddListener(this);
+
+    OnSetEnabled();
 }
 
 void RaycastVehicle::OnMarkedDirty(Node* node)
@@ -395,7 +398,7 @@ void RaycastVehicle::PostUpdate(float timeStep)
         btTransform transform = vehicle->getWheelTransformWS(i);
         Vector3 origin = ToVector3(transform.getOrigin());
         Quaternion qRot = ToQuaternion(transform.getRotation());
-        RaycastVehicleWheel* wheel = vehicleData_->wheels_[i].wheel_;
+        const RaycastVehicleWheel* wheel = vehicleData_->wheels_[i].wheel_;
         Node* pWheel = wheel->GetNode();
         auto worldRot = node_->GetWorldRotation();
         if (pWheel)

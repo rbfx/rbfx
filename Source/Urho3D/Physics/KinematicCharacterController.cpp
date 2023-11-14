@@ -99,12 +99,17 @@ void KinematicCharacterController::OnSetAttribute(const AttributeInfo& attr, con
 
 void KinematicCharacterController::ApplyAttributes()
 {
-    AddKinematicToWorld();
+    ActivateIfEnabled();
     if (readdToWorld_)
     {
         ApplySettings(true);
         readdToWorld_ = false;
     }
+}
+
+void KinematicCharacterController::OnSetEnabled()
+{
+    ActivateIfEnabled();
 }
 
 void KinematicCharacterController::ReleaseKinematic()
@@ -135,7 +140,7 @@ void KinematicCharacterController::OnSceneSet(Scene* scene)
 
         if (physicsWorld_)
         {
-            AddKinematicToWorld();
+            ActivateIfEnabled();
         }
         SubscribeToEvent(physicsWorld_, E_PHYSICSPREUPDATE, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPreUpdate));
         SubscribeToEvent(physicsWorld_, E_PHYSICSPOSTSTEP, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPostStep));
@@ -152,6 +157,9 @@ void KinematicCharacterController::OnSceneSet(Scene* scene)
 
 void KinematicCharacterController::HandlePhysicsPreUpdate(StringHash eventType, VariantMap& eventData)
 {
+    if (!IsEnabledEffective())
+        return;
+
     const Vector3 position = node_->GetWorldPosition();
     if (!position.Equals(latestPosition_, M_LARGE_EPSILON))
     {
@@ -161,12 +169,18 @@ void KinematicCharacterController::HandlePhysicsPreUpdate(StringHash eventType, 
 
 void KinematicCharacterController::HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData)
 {
+    if (!IsEnabledEffective())
+        return;
+
     previousPosition_ = nextPosition_;
     nextPosition_ = GetRawPosition();
 }
 
 void KinematicCharacterController::HandlePhysicsPostUpdate(StringHash eventType, VariantMap& eventData)
 {
+    if (!IsEnabledEffective())
+        return;
+
     ActivateTriggers();
 
     if (physicsWorld_ && physicsWorld_->GetInterpolation())
@@ -289,6 +303,19 @@ void KinematicCharacterController::ResetShape()
     }
 }
 
+void KinematicCharacterController::ActivateIfEnabled()
+{
+    const bool isEnabled = IsEnabledEffective();
+    const bool isAdded = IsAddedToWorld();
+    if (isEnabled != isAdded)
+    {
+        if (isEnabled)
+            AddKinematicToWorld();
+        else
+            RemoveKinematicFromWorld();
+    }
+}
+
 void KinematicCharacterController::AddKinematicToWorld()
 {
     if (physicsWorld_)
@@ -298,9 +325,12 @@ void KinematicCharacterController::AddKinematicToWorld()
             btCapsuleShape* btColShape = GetOrCreateShape();
             pairCachingGhostObject_->setCollisionShape(btColShape);
 
-            kinematicController_ = ea::make_unique<btKinematicCharacterController>(pairCachingGhostObject_.get(),
-                                                       btColShape,
-                                                       stepHeight_, ToBtVector3(Vector3::UP));
+            kinematicController_ = ea::make_unique<btKinematicCharacterController>(
+                pairCachingGhostObject_.get(), btColShape, stepHeight_, ToBtVector3(Vector3::UP));
+        }
+
+        if (pairCachingGhostObject_->getWorldArrayIndex() < 0)
+        {
             // apply default settings
             ApplySettings(false);
 
@@ -334,12 +364,17 @@ void KinematicCharacterController::ApplySettings(bool readdToWorld)
 
 void KinematicCharacterController::RemoveKinematicFromWorld()
 {
-    if (kinematicController_ && physicsWorld_)
+    if (kinematicController_ && physicsWorld_ && pairCachingGhostObject_->getWorldArrayIndex() >= 0)
     {
         btDiscreteDynamicsWorld *phyicsWorld = physicsWorld_->GetWorld();
         phyicsWorld->removeCollisionObject(pairCachingGhostObject_.get());
         phyicsWorld->removeAction(kinematicController_.get());
     }
+}
+
+bool KinematicCharacterController::IsAddedToWorld() const
+{
+    return kinematicController_ && pairCachingGhostObject_ && pairCachingGhostObject_->getWorldArrayIndex() >= 0;
 }
 
 void KinematicCharacterController::SetCollisionLayer(unsigned layer)
