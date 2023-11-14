@@ -366,9 +366,13 @@ void KinematicCharacterController::RemoveKinematicFromWorld()
 {
     if (IsAddedToWorld())
     {
-        btDiscreteDynamicsWorld *phyicsWorld = physicsWorld_->GetWorld();
-        phyicsWorld->removeCollisionObject(pairCachingGhostObject_.get());
-        phyicsWorld->removeAction(kinematicController_.get());
+        // When RemoveKinematicFromWorld executed from engine destruction the physicsWorld_ may be already gone.
+        if (physicsWorld_)
+        {
+            btDiscreteDynamicsWorld* phyicsWorld = physicsWorld_->GetWorld();
+            phyicsWorld->removeCollisionObject(pairCachingGhostObject_.get());
+            phyicsWorld->removeAction(kinematicController_.get());
+        }
     }
 }
 
