@@ -915,6 +915,38 @@ void RawTexture::Update(unsigned level, const IntVector3& offset, const IntVecto
     resourceData.Stride = rowStride ? rowStride : widthInBlocks * formatInfo.GetElementSize();
     resourceData.DepthStride = sliceStride ? sliceStride : heightInBlocks * widthInBlocks * formatInfo.GetElementSize();
 
+    static constexpr unsigned alignment = 4;
+    const bool isAligned = (resourceData.Stride % alignment == 0) && (resourceData.DepthStride % alignment == 0);
+    if (!isAligned)
+    {
+        URHO3D_LOGWARNING(
+            "RawTexture::Update is called with unaligned data with stride {} and depth stride {}."
+            "The data is being repacked. Consider aligning the data rows to {} bytes.",
+            resourceData.Stride, resourceData.DepthStride, alignment);
+
+        const auto newStride = (resourceData.Stride + alignment - 1) / alignment * alignment;
+        const auto newDepthStride = heightInBlocks * newStride;
+
+        static thread_local ByteVector dataCopy;
+        dataCopy.resize(newDepthStride * size.z_);
+
+        auto dest = dataCopy.data();
+        auto src = static_cast<const unsigned char*>(data);
+        for (unsigned z = 0; z < size.z_; ++z)
+        {
+            for (unsigned y = 0; y < heightInBlocks; ++y)
+            {
+                memcpy(dest, src, resourceData.Stride);
+                dest += newStride;
+                src += resourceData.Stride;
+            }
+        }
+
+        resourceData.pData = dataCopy.data();
+        resourceData.Stride = newStride;
+        resourceData.DepthStride = newDepthStride;
+    }
+
     Diligent::IDeviceContext* immediateContext = renderDevice_->GetImmediateContext();
     immediateContext->UpdateTexture(handles_.texture_, level, arraySlice, destBox, resourceData,
         Diligent::RESOURCE_STATE_TRANSITION_MODE_NONE, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);

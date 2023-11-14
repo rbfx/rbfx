@@ -50,6 +50,14 @@ Pass::Pass(const ea::string& name) :
 {
     name_ = name.to_lower();
     index_ = Technique::GetPassIndex(name_);
+
+    static const StringVector defaultTextures = {
+        ShaderResources::Albedo, //
+        ShaderResources::Normal, //
+        ShaderResources::Properties, //
+        ShaderResources::Emission,
+    };
+    SetPixelTextureDefines(defaultTextures);
 }
 
 Pass::~Pass() = default;
