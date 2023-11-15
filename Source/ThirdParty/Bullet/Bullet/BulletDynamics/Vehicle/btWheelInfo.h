@@ -22,7 +22,7 @@ struct btWheelInfoConstructionInfo
 	btVector3 m_wheelDirectionCS;
 	btVector3 m_wheelAxleCS;
 	btScalar m_suspensionRestLength;
-	btScalar m_maxSuspensionTravelCm;
+	btScalar m_maxSuspensionTravel;
 	btScalar m_wheelRadius;
 
 	btScalar m_suspensionStiffness;
@@ -30,7 +30,6 @@ struct btWheelInfoConstructionInfo
 	btScalar m_wheelsDampingRelaxation;
 	btScalar m_frictionSlip;
 	btScalar m_maxSuspensionForce;
-	bool m_bIsFrontWheel;
 };
 
 /// btWheelInfo contains information per wheel about friction and suspension.
@@ -56,8 +55,8 @@ struct btWheelInfo
 	btVector3 m_chassisConnectionPointCS;  //const
 	btVector3 m_wheelDirectionCS;          //const
 	btVector3 m_wheelAxleCS;               // const or modified by steering
-	btScalar m_suspensionRestLength1;      //const
-	btScalar m_maxSuspensionTravelCm;
+	btScalar m_suspensionRestLength;      //const
+	btScalar m_maxSuspensionTravel;
 	btScalar getSuspensionRestLength() const;
 	btScalar m_wheelsRadius;              //const
 	btScalar m_suspensionStiffness;       //const
@@ -74,34 +73,36 @@ struct btWheelInfo
 
 	btScalar m_brake;
 
-	bool m_bIsFrontWheel;
-
-	void* m_clientInfo;  //can be used to store pointer to sync transforms...
+    void* m_clientInfo;  //can be used to store pointer to sync transforms...
 
 	btWheelInfo() {}
 
-	btWheelInfo(btWheelInfoConstructionInfo& ci)
-
+	btWheelInfo(const btWheelInfoConstructionInfo& ci)
 	{
-		m_suspensionRestLength1 = ci.m_suspensionRestLength;
-		m_maxSuspensionTravelCm = ci.m_maxSuspensionTravelCm;
-
-		m_wheelsRadius = ci.m_wheelRadius;
-		m_suspensionStiffness = ci.m_suspensionStiffness;
-		m_wheelsDampingCompression = ci.m_wheelsDampingCompression;
-		m_wheelsDampingRelaxation = ci.m_wheelsDampingRelaxation;
-		m_chassisConnectionPointCS = ci.m_chassisConnectionCS;
-		m_wheelDirectionCS = ci.m_wheelDirectionCS;
-		m_wheelAxleCS = ci.m_wheelAxleCS;
-		m_frictionSlip = ci.m_frictionSlip;
+        update(ci);
 		m_steering = btScalar(0.);
 		m_engineForce = btScalar(0.);
 		m_rotation = btScalar(0.);
 		m_deltaRotation = btScalar(0.);
 		m_brake = btScalar(0.);
 		m_rollInfluence = btScalar(0.1);
-		m_bIsFrontWheel = ci.m_bIsFrontWheel;
-		m_maxSuspensionForce = ci.m_maxSuspensionForce;
+        m_skidInfo = btScalar(1.0);
+	}
+
+    void update(const btWheelInfoConstructionInfo& ci)
+	{
+        m_suspensionRestLength = ci.m_suspensionRestLength;
+        m_maxSuspensionTravel = ci.m_maxSuspensionTravel;
+
+        m_wheelsRadius = ci.m_wheelRadius;
+        m_suspensionStiffness = ci.m_suspensionStiffness;
+        m_wheelsDampingCompression = ci.m_wheelsDampingCompression;
+        m_wheelsDampingRelaxation = ci.m_wheelsDampingRelaxation;
+        m_chassisConnectionPointCS = ci.m_chassisConnectionCS;
+        m_wheelDirectionCS = ci.m_wheelDirectionCS;
+        m_wheelAxleCS = ci.m_wheelAxleCS;
+        m_frictionSlip = ci.m_frictionSlip;
+        m_maxSuspensionForce = ci.m_maxSuspensionForce;
 	}
 
 	void updateWheel(const btRigidBody& chassis, RaycastInfo& raycastInfo);

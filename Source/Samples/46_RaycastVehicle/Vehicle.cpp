@@ -56,10 +56,6 @@ Vehicle2::Vehicle2(Urho3D::Context* context)
     , steering_(0.0f)
 {
     SetUpdateEventMask(USE_FIXEDUPDATE | USE_POSTUPDATE);
-    engineForce_ = 0.0f;
-    brakingForce_ = 50.0f;
-    vehicleSteering_ = 0.0f;
-    maxEngineForce_ = 2500.0f;
     wheelRadius_ = 0.5f;
     suspensionRestLength_ = 0.6f;
     wheelWidth_ = 0.4f;
@@ -84,12 +80,13 @@ void Vehicle2::Init()
     hullBody->SetCollisionLayer(1);
     // This function is called only from the main program when initially creating the vehicle, not on scene load
     auto* cache = GetSubsystem<ResourceCache>();
-    auto* hullObject = node_->CreateComponent<StaticModel>();
     // Setting-up collision shape
     auto* hullColShape = node_->CreateComponent<CollisionShape>();
-    Vector3 v3BoxExtents = Vector3::ONE;
+    Vector3 v3BoxExtents = Vector3(2.3f, 1.0f, 4.0f);
     hullColShape->SetBox(v3BoxExtents);
-    node_->SetScale(Vector3(2.3f, 1.0f, 4.0f));
+    auto* box = node_->CreateChild();
+    auto* hullObject = box->CreateComponent<StaticModel>();
+    box->SetScale(v3BoxExtents);
     hullObject->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
     hullObject->SetMaterial(cache->GetResource<Material>("Materials/Stone.xml"));
     hullObject->SetCastShadows(true);
@@ -112,20 +109,37 @@ void Vehicle2::Init()
     const Color LtBrown(0.972f, 0.780f, 0.412f);
     for (int id = 0; id < sizeof(connectionPoints_) / sizeof(connectionPoints_[0]); id++)
     {
-        Node* wheelNode = GetScene()->CreateChild();
+        Node* wheelNode = node_->CreateChild();
         Vector3 connectionPoint = connectionPoints_[id];
         // Front wheels are at front (z > 0)
         // back wheels are at z < 0
         // Setting rotation according to wheel position
         bool isFrontWheel = connectionPoints_[id].z_ > 0.0f;
-        wheelNode->SetRotation(connectionPoint.x_ >= 0.0 ? Quaternion(0.0f, 0.0f, -90.0f) : Quaternion(0.0f, 0.0f, 90.0f));
+        auto rot = connectionPoint.x_ >= 0.0 ? Quaternion(0.0f, 0.0f, -90.0f) : Quaternion(0.0f, 0.0f, 90.0f);
+        wheelNode->SetRotation(rot);
         wheelNode->SetWorldPosition(node_->GetWorldPosition() + node_->GetWorldRotation() * connectionPoints_[id]);
-        vehicle->AddWheel(wheelNode, wheelDirection, wheelAxle, suspensionRestLength_, wheelRadius_, isFrontWheel);
-        vehicle->SetWheelSuspensionStiffness(id, suspensionStiffness_);
-        vehicle->SetWheelDampingRelaxation(id, suspensionDamping_);
-        vehicle->SetWheelDampingCompression(id, suspensionCompression_);
-        vehicle->SetWheelFrictionSlip(id, wheelFriction_);
-        vehicle->SetWheelRollInfluence(id, rollInfluence_);
+        auto* wheel = wheelNode->GetOrCreateComponent<RaycastVehicleWheel>();
+        wheel->SetConnectionPoint(connectionPoints_[id]);
+        wheel->SetDirection(wheelDirection);
+        wheel->SetRotation(rot);
+        wheel->SetAxle(wheelAxle);
+        wheel->SetSuspensionRestLength(suspensionRestLength_);
+        wheel->SetRadius(wheelRadius_);
+        if (isFrontWheel)
+        {
+            wheel->SetSteeringFactor(1.0f);
+            wheel->SetEngineFactor(0.0f);
+        }
+        else
+        {
+            wheel->SetSteeringFactor(0.0f);
+            wheel->SetEngineFactor(1.0f);
+        }
+        wheel->SetSuspensionStiffness(suspensionStiffness_);
+        wheel->SetDampingRelaxation(suspensionDamping_);
+        wheel->SetDampingCompression(suspensionCompression_);
+        wheel->SetFrictionSlip(wheelFriction_);
+        wheel->SetRollInfluence(rollInfluence_);
         wheelNode->SetScale(Vector3(1.0f, 0.65f, 1.0f));
         auto* pWheel = wheelNode->CreateComponent<StaticModel>();
         pWheel->SetModel(cache->GetResource<Model>("Models/Cylinder.mdl"));
@@ -180,7 +194,7 @@ void Vehicle2::ApplyAttributes()
 
 void Vehicle2::FixedUpdate(float timeStep)
 {
-    bool brake = false;
+    float brakingForce = 0.0f;
     auto* vehicle = node_->GetComponent<RaycastVehicle>();
     // Read controls
     const auto vel = GetVelocity();
@@ -191,7 +205,7 @@ void Vehicle2::FixedUpdate(float timeStep)
 
     if (inputMap_->Evaluate("Brake"))
     {
-        brake = true;
+        brakingForce = 1.0f;
     }
     // When steering, wake up the wheel rigidbodies so that their orientation is updated
     if (newSteering != 0.0f)
@@ -202,28 +216,9 @@ void Vehicle2::FixedUpdate(float timeStep)
     {
         SetSteering(GetSteering() * 0.8f + newSteering * 0.2f);
     }
-    // Set front wheel angles
-    vehicleSteering_ = steering_;
-    int wheelIndex = 0;
-    vehicle->SetSteeringValue(wheelIndex, vehicleSteering_);
-    wheelIndex = 1;
-    vehicle->SetSteeringValue(wheelIndex, vehicleSteering_);
     // apply forces
-    engineForce_ = maxEngineForce_ * accelerator;
-    // 2x wheel drive
-    vehicle->SetEngineForce(2, engineForce_);
-    vehicle->SetEngineForce(3, engineForce_);
-    for (int i = 0; i < vehicle->GetNumWheels(); i++)
-    {
-        if (brake)
-        {
-            vehicle->SetBrake(i, brakingForce_);
-        }
-        else
-        {
-            vehicle->SetBrake(i, 0.0f);
-        }
-    }
+
+    vehicle->UpdateInput(steering_, accelerator, brakingForce);
 }
 
 void Vehicle2::PostUpdate(float timeStep)
@@ -236,18 +231,19 @@ void Vehicle2::PostUpdate(float timeStep)
     for (int i = 0; i < vehicle->GetNumWheels(); i++)
     {
         Node* emitter = particleEmitterNodeList_[i];
+        auto* wheel = vehicle->GetWheel(i);
         auto* particleEmitter = emitter->GetComponent<ParticleEmitter>();
-        if (vehicle->WheelIsGrounded(i) && (vehicle->GetWheelSkidInfoCumulative(i) < 0.9f || vehicle->GetBrake(i) > 2.0f ||
+        if (wheel->IsInContact()
+            && (wheel->GetSkidInfoCumulative() < 0.9f || wheel->GetBrakeValue() > 2.0f ||
             planeAccel > 15.0f))
         {
-            particleEmitterNodeList_[i]->SetWorldPosition(vehicle->GetContactPosition(i));
+            particleEmitterNodeList_[i]->SetWorldPosition(wheel->GetContactPosition());
             if (!particleEmitter->IsEmitting())
             {
                 particleEmitter->SetEmitting(true);
             }
-            URHO3D_LOGDEBUG("GetWheelSkidInfoCumulative() = " +
-                            ea::to_string(vehicle->GetWheelSkidInfoCumulative(i)) + " " +
-                            ea::to_string(vehicle->GetMaxSideSlipSpeed()));
+            URHO3D_LOGDEBUG("GetWheelSkidInfoCumulative() = " + ea::to_string(wheel->GetSkidInfoCumulative()) + " "
+                + ea::to_string(vehicle->GetMaxSideSlipSpeed()));
             /* TODO: Add skid marks here */
         }
         else if (particleEmitter->IsEmitting())
