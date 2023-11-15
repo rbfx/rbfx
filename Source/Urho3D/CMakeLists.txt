@@ -456,7 +456,7 @@ if (URHO3D_CSHARP)
     add_target_csharp(
         TARGET Urho3DNet.Scripts
         PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.Scripts.csproj
-        OUTPUT ${NET_OUTPUT_DIRECTORY}/Urho3DNet.Scripts.dll
+        OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Urho3DNet.Scripts
         DEPENDS Urho3DNet
     )
 

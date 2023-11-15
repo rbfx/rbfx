@@ -61,7 +61,7 @@ if (NOT URHO3D_NO_EDITOR_PLAYER_EXE)
             TARGET EditorManaged
             EXE
             PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/EditorManaged/EditorManaged.csproj
-            OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/EditorManaged${CMAKE_EXECUTABLE_SUFFIX}
+            OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/EditorManaged
             DEPENDS Urho3DNet)
 
         if (TARGET EditorManaged)

@@ -163,9 +163,7 @@ function (add_target_csharp)
         list(APPEND RBFX_CSPROJ_LIST ${CS_PROJECT})
         set(RBFX_CSPROJ_LIST "${RBFX_CSPROJ_LIST}" CACHE STRING "A list of C# projects." FORCE)
     endif ()
-    if (EXISTS "${CS_OUTPUT}.runtimeconfig.json")
-        install (FILES "${CS_OUTPUT}.runtimeconfig.json" DESTINATION "${DEST_BIN_DIR_CONFIG}")
-    endif ()
+    install (FILES "${CS_OUTPUT}.runtimeconfig.json" DESTINATION "${DEST_BIN_DIR_CONFIG}" OPTIONAL)
 endfunction ()
 
 function (csharp_bind_target)
@@ -275,7 +273,7 @@ function (csharp_bind_target)
         add_target_csharp(
             TARGET ${BIND_MANAGED_TARGET}
             PROJECT ${BIND_CSPROJ}
-            OUTPUT ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll)
+            OUTPUT ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET})
         if (TARGET ${BIND_MANAGED_TARGET})
             # Real C# target
             add_dependencies(${BIND_MANAGED_TARGET} ${BIND_TARGET})

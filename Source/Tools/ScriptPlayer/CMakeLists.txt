@@ -30,7 +30,7 @@ add_target_csharp(
     TARGET ScriptPlayer
     EXE
     PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/ScriptPlayer.csproj
-    OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/ScriptPlayer${CMAKE_EXECUTABLE_SUFFIX}
+    OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/ScriptPlayer
     DEPENDS Urho3DNet)
 if (TARGET ScriptPlayer)
     add_dependencies(ScriptPlayer Urho3DNet)
