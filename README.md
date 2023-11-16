@@ -41,10 +41,14 @@ Chech documentation for more information.
 
 | Graphics API/Platform | Windows | UWP | Linux | MacOS | iOS | Android | Web |
 | --------------------- |:-------:|:---:|:-----:|:-----:|:---:|:-------:|:---:|
-| D3D11                 | ✔       | ✔   |       |       |     |         |     |
-| OpenGL 2 / 3.1        | ✔       |     | ✔     | ✔     |     |         |     |
-| OpenGL ES 2 / 3       |         |     |       |       | ✔   | ✔       |     |
-| WebGL                 |         |     |       |       |     |         | ✔   |
+| Direct3D 11.1         | ✔       | ✔   |       |       |     |         |     |
+| Direct3D 12           | ✔       | ✔   |       |       |     |         |     |
+| Vulkan 1.0            | ✔       |     | ✔     | ✔*    | ✔*  | ✔       |     |
+| OpenGL 4.1            | ✔       |     | ✔     | ✔     |     |         |     |
+| OpenGL ES 3.0         |         |     |       |       | ✔   | ✔       |     |
+| WebGL 2.0             |         |     |       |       |     |         | ✔   |
+
+(*) `Vulkan` is supported on MacOS and iOS via `MoltenVK`. Additional setup is required.
 
 
 ## Links
