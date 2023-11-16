@@ -164,6 +164,7 @@ function (add_target_csharp)
         set(RBFX_CSPROJ_LIST "${RBFX_CSPROJ_LIST}" CACHE STRING "A list of C# projects." FORCE)
     endif ()
     install (FILES "${CS_OUTPUT}.runtimeconfig.json" DESTINATION "${DEST_BIN_DIR_CONFIG}" OPTIONAL)
+    install (FILES "${CS_OUTPUT}.dll" DESTINATION "${DEST_BIN_DIR_CONFIG}" OPTIONAL)
 endfunction ()
 
 function (csharp_bind_target)

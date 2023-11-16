@@ -305,6 +305,11 @@ function action-build() {
 function action-install() {
     cmake --install $ci_build_dir --config "${types[$ci_build_type]}"
 
+    # Copy .NET runtime libraries for executables on windows.
+    if [[ "$ci_platform" == "windows" ]]; then
+        copy-runtime-libraries-for-executables "$ci_sdk_dir/bin"
+    fi
+
     # Create deploy directory on Web.
     if [[ "$ci_platform" == "web" ]];
     then
