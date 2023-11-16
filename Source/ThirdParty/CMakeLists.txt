@@ -275,6 +275,7 @@ if (URHO3D_XR)
     endif ()
 
     add_subdirectory(OpenXRSDK)
+    install_third_party_libs(openxr_loader)
 endif ()
 
 # When crosscompiling, swig will be built as part of native tools build. See Source/CMakeLists.txt.
