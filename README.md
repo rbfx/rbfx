@@ -49,6 +49,8 @@ Chech documentation for more information.
 
 ## Links
 
+* [Latest Binaries for Desktop Platforms](https://github.com/rbfx/rbfx/releases/tag/latest)
+
 * [Documentation](https://rbfx.github.io/index.html)
 
 * [Project Repository on GitHub](https://github.com/rbfx/rbfx)
