@@ -507,14 +507,14 @@ ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromBlend(
     if (!fs->FileExists(fileName))
         return nullptr;
 
-    const ea::string tempGltfFile = tempPath + "model.gltf";
+    const ea::string tempGltfFile = tempPath + "model.glb";
 
     // This script is passed as command line argument, so it must be a single line and use single quotes
     const ea::string script = Format(
         "import bpy;"
         "bpy.ops.export_scene.gltf("
         "  filepath='{}', "
-        "  export_format='GLTF_EMBEDDED', "
+        "  export_format='GLB', "
         "  export_apply={}"
         ");",
         tempGltfFile, blenderApplyModifiers_ ? "True" : "False");
