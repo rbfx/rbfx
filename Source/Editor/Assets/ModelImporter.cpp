@@ -488,6 +488,7 @@ ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromFBX(
         URHO3D_LOGERROR("{}", commandOutput);
         return nullptr;
     }
+    URHO3D_LOGDEBUG("FBX2glTF output:\n{}", commandOutput);
 
     const auto deleter = [fs](GLTFFileInfo* handle)
     {
@@ -526,6 +527,7 @@ ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromBlend(
         URHO3D_LOGERROR("{}", commandOutput);
         return nullptr;
     }
+    URHO3D_LOGDEBUG("Blender output:\n{}", commandOutput);
 
     const auto deleter = [fs](GLTFFileInfo* handle)
     {
