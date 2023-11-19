@@ -264,8 +264,7 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
     auto* log = GetSubsystem<Log>();
     if (log)
     {
-        if (HasParameter(EP_LOG_LEVEL))
-            log->SetLevel(static_cast<LogLevel>(GetParameter(EP_LOG_LEVEL).GetInt()));
+        log->SetLevel(static_cast<LogLevel>(GetParameter(EP_LOG_LEVEL).GetInt()));
         log->SetQuiet(GetParameter(EP_LOG_QUIET).GetBool());
         const ea::string logFileName = GetLogFileName(GetParameter(EP_LOG_NAME).GetString());
         if (!logFileName.empty())
