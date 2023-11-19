@@ -74,6 +74,8 @@ protected:
 
     /// Whether the editor is launched in read-only mode.
     bool readOnly_{};
+    /// Whether the editor is launched in single process mode.
+    bool singleProcess_{};
     /// Launch command and command line parameters.
     ea::string command_;
     /// Whether to exit the editor after executing the command.
