@@ -27,6 +27,32 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+ea::string ResolveRelativePath(const ea::string& path)
+{
+    const auto components = path.split('/');
+    ea::vector<ea::string> newComponents;
+    for (const ea::string& component : components)
+    {
+        if (component == "..")
+        {
+            if (newComponents.empty())
+                newComponents.push_back("..");
+            else
+                newComponents.pop_back();
+        }
+        else
+        {
+            newComponents.push_back(component);
+        }
+    }
+    return ea::string::joined(newComponents, "/");
+}
+
+}
+
 const FileIdentifier FileIdentifier::Empty{};
 
 FileIdentifier::FileIdentifier(ea::string_view scheme, ea::string_view fileName)
@@ -118,7 +144,10 @@ ea::string FileIdentifier::SanitizeFileName(ea::string_view fileName)
 {
     ea::string sanitizedName{fileName};
     sanitizedName.replace('\\', '/');
-    sanitizedName.replace("../", "");
+
+    if (sanitizedName.contains("../"))
+        sanitizedName = ResolveRelativePath(sanitizedName);
+
     sanitizedName.replace("./", "");
     sanitizedName.trim();
     return sanitizedName;
