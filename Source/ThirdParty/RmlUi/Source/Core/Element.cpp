@@ -153,7 +153,7 @@ Element::~Element()
 
 void Element::Update(float dp_ratio, Vector2f vp_dimensions)
 {
-#ifdef RMLUI_ENABLE_PROFILING
+#ifdef RMLUI_TRACY_PROFILING
 	auto name = GetAddress(false, false);
 	RMLUI_ZoneScoped;
 	RMLUI_ZoneText(name.c_str(), name.size());
@@ -213,7 +213,7 @@ void Element::UpdateProperties(const float dp_ratio, const Vector2f vp_dimension
 
 void Element::Render()
 {
-#ifdef RMLUI_ENABLE_PROFILING
+#ifdef RMLUI_TRACY_PROFILING
 	auto name = GetAddress(false, false);
 	RMLUI_ZoneScoped;
 	RMLUI_ZoneText(name.c_str(), name.size());
@@ -1094,7 +1094,7 @@ void Element::SetInnerRML(const String& rml)
 		Factory::InstanceElementText(this, rml);
 }
 
-bool Element::Focus()
+bool Element::Focus(bool focus_visible)
 {
 	// Are we allowed focus?
 	Style::Focus focus_property = meta->computed_values.focus();
@@ -1106,7 +1106,7 @@ bool Element::Focus()
 	if (context == nullptr)
 		return false;
 
-	if (!context->OnFocusChange(this))
+	if (!context->OnFocusChange(this, focus_visible))
 		return false;
 
 	// Set this as the end of the focus chain.
@@ -1888,8 +1888,15 @@ void Element::ProcessDefaultAction(Event& event)
 		{
 		case EventId::Mouseover: SetPseudoClass("hover", true); break;
 		case EventId::Mouseout: SetPseudoClass("hover", false); break;
-		case EventId::Focus: SetPseudoClass("focus", true); break;
-		case EventId::Blur: SetPseudoClass("focus", false); break;
+		case EventId::Focus:
+			SetPseudoClass("focus", true);
+			if (event.GetParameter("focus_visible", false))
+				SetPseudoClass("focus-visible", true);
+			break;
+		case EventId::Blur:
+			SetPseudoClass("focus", false);
+			SetPseudoClass("focus-visible", false);
+			break;
 		default: break;
 		}
 	}
