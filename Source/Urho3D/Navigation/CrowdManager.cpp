@@ -186,6 +186,15 @@ void CrowdManager::DrawDebugGeometry(bool depthTest)
     }
 }
 
+void CrowdManager::UpdateAgentVelocity(
+    CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed) const
+{
+    const CrowdAgentVelocityCallback& agentCallback = agent->GetVelocityCallback();
+    const CrowdAgentVelocityCallback& callback = agentCallback ? agentCallback : velocityCallback_;
+    if (callback)
+        callback(agent, timeStep, desiredVelocity, desiredSpeed);
+}
+
 void CrowdManager::SetCrowdTarget(const Vector3& position, Node* node)
 {
     if (!crowd_)

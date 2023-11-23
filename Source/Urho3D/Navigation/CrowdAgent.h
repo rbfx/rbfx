@@ -96,6 +96,11 @@ public:
     /// Draw debug feelers.
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
+    /// Set velocity callback.
+    void SetVelocityCallback(const CrowdAgentVelocityCallback& callback) { velocityCallback_ = callback; }
+    /// Return current velocity callback.
+    const CrowdAgentVelocityCallback& GetVelocityCallback() const { return velocityCallback_; }
+
     /// Submit a new target position request for this agent.
     /// @property
     void SetTargetPosition(const Vector3& position);
@@ -236,6 +241,8 @@ private:
     void RemoveAgentFromCrowd();
     /// Crowd manager.
     WeakPtr<CrowdManager> crowdManager_;
+    /// Velocity callback.
+    CrowdAgentVelocityCallback velocityCallback_;
     /// Crowd manager reference to this agent.
     int agentCrowdId_;
     /// Requested target position.
