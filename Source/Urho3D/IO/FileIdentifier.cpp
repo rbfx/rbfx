@@ -43,7 +43,7 @@ ea::string ResolveRelativePath(const ea::string& path)
             else
                 newComponents.pop_back();
         }
-        else
+        else if (component != ".")
         {
             newComponents.push_back(component);
         }
@@ -147,8 +147,9 @@ ea::string FileIdentifier::SanitizeFileName(ea::string_view fileName)
 
     if (sanitizedName.contains("../"))
         sanitizedName = ResolveRelativePath(sanitizedName);
+    else
+        sanitizedName.replace("./", "");
 
-    sanitizedName.replace("./", "");
     sanitizedName.trim();
     return sanitizedName;
 }
