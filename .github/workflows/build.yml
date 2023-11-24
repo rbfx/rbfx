@@ -403,7 +403,6 @@ jobs:
       matrix:
         ci_arch:
           - x64
-          - arm
           - arm64
         ci_lib_type:
           - dll
