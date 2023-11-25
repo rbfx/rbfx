@@ -73,6 +73,8 @@ public:
     Component* SpawnExact(Scene* scene) const;
     /// Spawn similar component at the node. May fail only if component type is unknown.
     Component* SpawnCopy(Node* node) const;
+    /// Update attributes of existing component.
+    void Update(Component* component) const;
 
     /// Return component ID.
     unsigned GetId() const { return id_; }

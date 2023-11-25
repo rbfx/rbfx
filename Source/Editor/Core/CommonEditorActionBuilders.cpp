@@ -84,7 +84,7 @@ CreateNodeActionBuilder::CreateNodeActionBuilder(Scene* scene, AttributeScopeHin
     }
     case AttributeScopeHint::Scene:
     {
-        oldSceneData_.FromScene(scene);
+        oldSceneData_ = PackedSceneData::FromScene(scene);
         break;
     }
     };
@@ -123,7 +123,7 @@ RemoveNodeActionBuilder::RemoveNodeActionBuilder(Node* node)
     }
     case AttributeScopeHint::Scene:
     {
-        oldSceneData_.FromScene(scene_);
+        oldSceneData_ = PackedSceneData::FromScene(scene_);
         break;
     }
     };
@@ -166,7 +166,7 @@ CreateComponentActionBuilder::CreateComponentActionBuilder(Node* node, StringHas
     }
     case AttributeScopeHint::Scene:
     {
-        oldSceneData_.FromScene(scene_);
+        oldSceneData_ = PackedSceneData::FromScene(scene_);
         break;
     }
     };
@@ -216,7 +216,7 @@ RemoveComponentActionBuilder::RemoveComponentActionBuilder(Component* component)
     }
     case AttributeScopeHint::Scene:
     {
-        oldSceneData_.FromScene(scene_);
+        oldSceneData_ = PackedSceneData::FromScene(scene_);
         break;
     }
     };
@@ -270,7 +270,7 @@ ChangeNodeAttributesActionBuilder::ChangeNodeAttributesActionBuilder(
     }
     case AttributeScopeHint::Scene:
     {
-        buffer_.oldScene_.FromScene(scene_);
+        buffer_.oldScene_ = PackedSceneData::FromScene(scene_);
         break;
     }
     default: break;
@@ -307,7 +307,7 @@ SharedPtr<EditorAction> ChangeNodeAttributesActionBuilder::Build() const
     }
     case AttributeScopeHint::Scene:
     {
-        buffer_.newScene_.FromScene(scene_);
+        buffer_.newScene_ = PackedSceneData::FromScene(scene_);
         return MakeShared<ChangeSceneAction>(scene_, buffer_.oldScene_, buffer_.newScene_);
     }
     default: return nullptr;
@@ -334,6 +334,13 @@ ChangeComponentAttributesActionBuilder::ChangeComponentAttributesActionBuilder(
     }
 
     case AttributeScopeHint::Serializable:
+    {
+        buffer_.oldComponents_.clear();
+        for (Component* component : components)
+            buffer_.oldComponents_.emplace_back(component);
+        break;
+    }
+
     case AttributeScopeHint::Node:
     {
         buffer_.oldNodes_.clear();
@@ -344,7 +351,7 @@ ChangeComponentAttributesActionBuilder::ChangeComponentAttributesActionBuilder(
 
     case AttributeScopeHint::Scene:
     {
-        buffer_.oldScene_.FromScene(scene_);
+        buffer_.oldScene_ = PackedSceneData::FromScene(scene_);
         break;
     }
 
@@ -367,6 +374,20 @@ SharedPtr<EditorAction> ChangeComponentAttributesActionBuilder::Build() const
     }
 
     case AttributeScopeHint::Serializable:
+    {
+        buffer_.newComponents_.clear();
+        for (Component* component : components_)
+            buffer_.newComponents_.emplace_back(component);
+
+        auto compositeAction = MakeShared<CompositeEditorAction>();
+        for (unsigned index = 0; index < components_.size(); ++index)
+        {
+            compositeAction->EmplaceAction<ChangeComponentAction>(
+                scene_, buffer_.oldComponents_[index], buffer_.newComponents_[index]);
+        }
+        return compositeAction;
+    }
+
     case AttributeScopeHint::Node:
     {
         buffer_.newNodes_.clear();
@@ -384,7 +405,7 @@ SharedPtr<EditorAction> ChangeComponentAttributesActionBuilder::Build() const
 
     case AttributeScopeHint::Scene:
     {
-        buffer_.newScene_.FromScene(scene_);
+        buffer_.newScene_ = PackedSceneData::FromScene(scene_);
 
         return MakeShared<ChangeSceneAction>(scene_, buffer_.oldScene_, buffer_.newScene_);
     }

@@ -454,6 +454,55 @@ bool ReparentNodeAction::MergeWith(const EditorAction& other)
     return true;
 }
 
+ChangeComponentAction::ChangeComponentAction(Scene* scene, const PackedComponentData& oldData, Component* newData)
+    : scene_(scene)
+    , oldData_(oldData)
+    , newData_(PackedComponentData{newData})
+{
+}
+
+ChangeComponentAction::ChangeComponentAction(
+    Scene* scene, const PackedComponentData& oldData, const PackedComponentData& newData)
+    : scene_(scene)
+    , oldData_(oldData)
+    , newData_(newData)
+{
+}
+
+bool ChangeComponentAction::CanUndoRedo() const
+{
+    return scene_ && scene_->GetComponent(oldData_.GetId());
+}
+
+void ChangeComponentAction::Redo() const
+{
+    UpdateComponent(oldData_.GetId(), newData_);
+}
+
+void ChangeComponentAction::Undo() const
+{
+    UpdateComponent(oldData_.GetId(), oldData_);
+}
+
+void ChangeComponentAction::UpdateComponent(unsigned componentId, const PackedComponentData& data) const
+{
+    Component* component = scene_->GetComponent(componentId);
+    data.Update(component);
+}
+
+bool ChangeComponentAction::MergeWith(const EditorAction& other)
+{
+    const auto otherAction = dynamic_cast<const ChangeComponentAction*>(&other);
+    if (!otherAction)
+        return false;
+
+    if (scene_ != otherAction->scene_)
+        return false;
+
+    newData_ = otherAction->newData_;
+    return true;
+}
+
 ChangeNodeSubtreeAction::ChangeNodeSubtreeAction(Scene* scene, const PackedNodeData& oldData, Node* newData)
     : scene_(scene)
     , oldData_(oldData)
@@ -512,7 +561,7 @@ ChangeSceneAction::ChangeSceneAction(Scene* scene, const PackedSceneData& oldDat
     : scene_(scene)
     , oldData_(oldData)
 {
-    newData_.FromScene(scene);
+    newData_ = PackedSceneData::FromScene(scene);
 }
 
 ChangeSceneAction::ChangeSceneAction(Scene* scene, const PackedSceneData& oldData, const PackedSceneData& newData)

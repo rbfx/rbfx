@@ -55,6 +55,17 @@ class HotkeyManager;
 class SettingsManager;
 class UndoManager;
 
+/// Project configuration flags.
+enum class ProjectFlag
+{
+    None = 0,
+    /// Project should not modify any files unless explicitly requested by the user.
+    ReadOnly = 1 << 0,
+    /// Project should not spawn any additional processes unless explicitly requested by the user.
+    SingleProcess = 1 << 1,
+};
+URHO3D_FLAGSET(ProjectFlag, ProjectFlags);
+
 /// Result of the graceful project close.
 enum class CloseProjectResult
 {
@@ -111,7 +122,7 @@ public:
     Signal<void(ProjectRequest*)> OnRequest;
     Signal<void(const ea::string& command, const ea::string& args, bool& processed)> OnCommand;
 
-    Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath, bool isReadOnly);
+    Project(Context* context, const ea::string& projectPath, const ea::string& settingsJsonPath, ProjectFlags flags);
     ~Project() override;
     void SerializeInBlock(Archive& archive) override;
 
@@ -191,6 +202,7 @@ public:
 
     /// Return global properties
     /// @{
+    ProjectFlags GetFlags() const { return flags_; }
     const ea::string& GetProjectPath() const { return projectPath_; }
     const ea::string& GetCoreDataPath() const { return coreDataPath_; }
     const ea::string& GetDataPath() const { return dataPath_; }
@@ -262,7 +274,8 @@ private:
     /// Project properties
     /// @{
     const bool isHeadless_{};
-    const bool isReadOnly_{};
+    const ProjectFlags flags_{};
+    const bool isXR_{};
     const unsigned saveDelayMs_{3000};
 
     const ea::string projectPath_;

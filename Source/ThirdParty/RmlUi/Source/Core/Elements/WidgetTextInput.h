@@ -95,6 +95,8 @@ public:
 protected:
 	enum class CursorMovement { Begin = -4, BeginLine = -3, PreviousWord = -2, Left = -1, Right = 1, NextWord = 2, EndLine = 3, End = 4 };
 
+	float GetAlignmentSpecificTextOffset(const char* p_begin, int line_index) const;
+
 	/// Processes the "keydown" and "textinput" event to write to the input field, and the "focus" and
 	/// "blur" to set the state of the cursor.
 	void ProcessEvent(Event& event) override;
@@ -132,13 +134,15 @@ private:
 	/// Moves the cursor along the current line.
 	/// @param[in] movement Cursor movement operation.
 	/// @param[in] select True if the movement will also move the selection cursor, false if not.
+	/// @param[out] out_of_bounds Set to true if the resulting line position is out of bounds, false if not.
 	/// @return True if selection was changed.
-	bool MoveCursorHorizontal(CursorMovement movement, bool select);
+	bool MoveCursorHorizontal(CursorMovement movement, bool select, bool& out_of_bounds);
 	/// Moves the cursor up and down the text field.
 	/// @param[in] x How far to move the cursor.
 	/// @param[in] select True if the movement will also move the selection cursor, false if not.
+	/// @param[out] out_of_bounds Set to true if the resulting line position is out of bounds, false if not.
 	/// @return True if selection was changed.
-	bool MoveCursorVertical(int distance, bool select);
+	bool MoveCursorVertical(int distance, bool select, bool& out_of_bounds);
 	// Move the cursor to utf-8 boundaries, in case it was moved into the middle of a multibyte character.
 	/// @param[in] forward True to seek forward, else back.
 	void MoveCursorToCharacterBoundaries(bool forward);

@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Graphics/PipelineState.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../RenderPipeline/PostProcessPass.h"
 #include "../RenderPipeline/RenderBuffer.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
@@ -41,7 +41,6 @@ class URHO3D_API AmbientOcclusionPass : public PostProcessPass
 {
     URHO3D_OBJECT(AmbientOcclusionPass, PostProcessPass)
 
-#ifdef DESKTOP_GRAPHICS
 public:
     AmbientOcclusionPass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager);
 
@@ -62,7 +61,7 @@ protected:
     void InitializeStates();
     void EvaluateAO(Camera* camera, const Matrix4& viewToTextureSpace, const Matrix4& textureToViewSpace);
     void BlurTexture(const Matrix4& textureToViewSpace);
-    void Blit(PipelineState* state);
+    void Blit(StaticPipelineStateId pipelineStateId);
 
     AmbientOcclusionPassSettings settings_;
 
@@ -78,22 +77,14 @@ protected:
 
     struct CachedStates
     {
-        SharedPtr<PipelineState> ssaoForward_;
-        SharedPtr<PipelineState> ssaoDeferred_;
-        SharedPtr<PipelineState> blurForward_;
-        SharedPtr<PipelineState> blurDeferred_;
-        SharedPtr<PipelineState> combine_;
-        SharedPtr<PipelineState> preview_;
-
-        bool IsValid()
-        {
-            return !!ssaoForward_ && ssaoForward_->IsValid() && blurForward_->IsValid() && ssaoDeferred_->IsValid()
-                && blurDeferred_->IsValid() && combine_->IsValid() && preview_->IsValid();
-        }
+        StaticPipelineStateId ssaoForward_{};
+        StaticPipelineStateId ssaoDeferred_{};
+        StaticPipelineStateId blurForward_{};
+        StaticPipelineStateId blurDeferred_{};
+        StaticPipelineStateId combine_{};
+        StaticPipelineStateId preview_{};
     };
     ea::optional<CachedStates> pipelineStates_;
-
-#endif
 };
 
 } // namespace Urho3D

@@ -91,13 +91,13 @@ void RmlCanvasComponent::SetUISize(IntVector2 size)
 {
     assert(texture_ != nullptr);
     if (size.x_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.x_ > UICOMPONENT_MAX_TEXTURE_SIZE ||
-        size.y_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.y_ > UICOMPONENT_MAX_TEXTURE_SIZE || size.x_ != size.y_)
+        size.y_ < UICOMPONENT_MIN_TEXTURE_SIZE || size.y_ > UICOMPONENT_MAX_TEXTURE_SIZE)
     {
         URHO3D_LOGERROR("RmlCanvasComponent: Invalid texture size {}x{}", size.x_, size.y_);
         return;
     }
 
-    if (texture_->SetSize(size.x_, size.y_, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET))
+    if (texture_->SetSize(size.x_, size.y_, TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFlag::BindRenderTarget))
     {
         RenderSurface* surface = texture_->GetRenderSurface();
         surface->SetUpdateMode(SURFACE_MANUALUPDATE);
@@ -147,7 +147,7 @@ void RmlCanvasComponent::ClearTexture()
     {
         clear.SetSize(w, h, 4);
         clear.Clear(Color::TRANSPARENT_BLACK);
-        texture_->SetData(&clear);
+        texture_->SetData(0, 0, 0, w, h, clear.GetData());
     }
 }
 
@@ -239,8 +239,8 @@ void RmlCanvasComponent::SetTexture(Texture2D* texture)
     if (texture)
     {
         texture_->SetFilterMode(FILTER_BILINEAR);
-        texture_->SetAddressMode(COORD_U, ADDRESS_CLAMP);
-        texture_->SetAddressMode(COORD_V, ADDRESS_CLAMP);
+        texture_->SetAddressMode(TextureCoordinate::U, ADDRESS_CLAMP);
+        texture_->SetAddressMode(TextureCoordinate::V, ADDRESS_CLAMP);
         texture_->SetNumLevels(1);  // No mipmaps
     }
     texture_ = texture;

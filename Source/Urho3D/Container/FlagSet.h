@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <EASTL/array.h>
+
 #include <type_traits>
 
 namespace Urho3D
@@ -234,6 +236,16 @@ public:
     {
         Set(static_cast<Integer>(value), enabled);
     }
+
+    constexpr void Unset(const Integer flags)
+    {
+        Set(flags, false);
+    }
+
+    constexpr void Unset(const Enum value)
+    {
+        Set(value, false);
+    }
     /// @}
 
     /// Return underlying integer (constant).
@@ -250,4 +262,70 @@ protected:
     Integer value_ = 0;
 };
 
-}
+/// Fixed-size array indexed by enum.
+template <class T, class E, size_t Size = static_cast<size_t>(E::Count)>
+class EnumArray : public ea::array<T, Size>
+{
+public:
+    /// Enum type.
+    using enum_type = E;
+    /// Integer type.
+    using underlying_integer_type = typename std::underlying_type<enum_type>::type;
+    /// Base array type.
+    using base_type = ea::array<T, Size>;
+
+    /// Inherit constructors and operators from base class.
+    /// @{
+    constexpr EnumArray(const EnumArray& other) = default;
+    constexpr EnumArray(EnumArray&& other) = default;
+    constexpr EnumArray& operator=(const EnumArray& other) = default;
+    constexpr EnumArray& operator=(EnumArray&& other) = default;
+
+    constexpr bool operator==(const EnumArray& rhs) const
+    {
+        return static_cast<const base_type&>(*this) == static_cast<const base_type&>(rhs);
+    }
+
+    constexpr bool operator!=(const EnumArray& rhs) const { return !(*this == rhs); }
+    /// @}
+
+    /// Construct.
+    /// @{
+    constexpr EnumArray()
+        : base_type{}
+    {
+    }
+    constexpr EnumArray(const T& value)
+        : base_type{}
+    {
+        this->fill(value);
+    }
+    template <size_t N>
+    constexpr EnumArray(const T (&values)[N])
+        : base_type{ea::to_array(values)}
+    {
+    }
+    /// @}
+
+    /// Access.
+    /// @{
+    constexpr typename base_type::reference operator[](enum_type i)
+    {
+        return base_type::operator[](static_cast<underlying_integer_type>(i));
+    }
+    constexpr typename base_type::const_reference operator[](enum_type i) const
+    {
+        return base_type::operator[](static_cast<underlying_integer_type>(i));
+    }
+    constexpr typename base_type::const_reference at(enum_type i) const
+    {
+        return base_type::at(static_cast<underlying_integer_type>(i));
+    }
+    constexpr typename base_type::reference at(enum_type i)
+    {
+        return base_type::at(static_cast<underlying_integer_type>(i));
+    }
+    /// @}
+};
+
+} // namespace Urho3D

@@ -1,0 +1,3 @@
+<technique vs="M_PreviewTexture" ps="M_PreviewTexture">
+    <pass name="base" />
+</technique>

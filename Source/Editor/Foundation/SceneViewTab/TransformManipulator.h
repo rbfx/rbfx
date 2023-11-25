@@ -1,24 +1,6 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2023 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
@@ -52,6 +34,7 @@ public:
         Vector3 snapPosition_{0.5f * Vector3::ONE};
         float snapRotation_{5.0f};
         float snapScale_{0.1f};
+        bool screenRotation_{};
     };
     using SettingsPage = SimpleSettingsPage<Settings>;
 
@@ -65,6 +48,16 @@ public:
     void SetTranslate() { operation_ = TransformGizmoOperation::Translate; }
     void SetRotate() { operation_ = TransformGizmoOperation::Rotate; }
     void SetScale() { operation_ = TransformGizmoOperation::Scale; }
+    /// @}
+
+    /// Getters
+    /// @{
+    bool IsLocal() const { return isLocal_; }
+    bool IsPivoted() const { return isPivoted_; }
+    bool IsSelect() const { return operation_ == TransformGizmoOperation::None; }
+    bool IsTranslate() const { return operation_ == TransformGizmoOperation::Translate; }
+    bool IsRotate() const { return operation_ == TransformGizmoOperation::Rotate; }
+    bool IsScale() const { return operation_ == TransformGizmoOperation::Scale; }
     /// @}
 
     /// Implement SceneViewAddon.
@@ -84,6 +77,7 @@ public:
 private:
     void EnsureGizmoInitialized(SceneViewPage& scenePage);
     void OnNodeTransformChanged(Node* node, const Transform& oldTransform);
+    TransformGizmoAxes GetCurrentAxes() const;
 
     const WeakPtr<SettingsPage> settings_;
 
@@ -96,4 +90,4 @@ private:
     TransformGizmoOperation operation_{TransformGizmoOperation::Translate};
 };
 
-}
+} // namespace Urho3D

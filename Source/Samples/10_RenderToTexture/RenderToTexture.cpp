@@ -32,6 +32,7 @@
 #include <Urho3D/Graphics/Texture2D.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
+#include <Urho3D/RenderPipeline/ShaderConsts.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Font.h>
@@ -95,7 +96,7 @@ void RenderToTexture::CreateScene()
         for (unsigned i = 0; i < NUM_OBJECTS; ++i)
         {
             Node* boxNode = rttScene_->CreateChild("Box");
-            boxNode->SetPosition(Vector3(Random(200.0f) - 100.0f, Random(200.0f) - 100.0f, Random(200.0f) - 100.0f));
+            boxNode->SetPosition(Vector3(Random(200.0f) - 100.0f, Random(100.0f), Random(200.0f) - 100.0f));
             // Orient using random pitch, yaw and roll Euler angles
             boxNode->SetRotation(Quaternion(Random(360.0f), Random(360.0f), Random(360.0f)));
             auto* boxObject = boxNode->CreateComponent<StaticModel>();
@@ -175,14 +176,14 @@ void RenderToTexture::CreateScene()
 
             // Create a renderable texture (1024x768, RGB format), enable bilinear filtering on it
             SharedPtr<Texture2D> renderTexture(new Texture2D(context_));
-            renderTexture->SetSize(1024, 768, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
+            renderTexture->SetSize(1024, 768, TextureFormat::TEX_FORMAT_RGBA8_UNORM, TextureFlag::BindRenderTarget, 4);
             renderTexture->SetFilterMode(FILTER_BILINEAR);
 
             // Create a new material from scratch, use the diffuse unlit technique, assign the render texture
             // as its diffuse texture, then assign the material to the screen plane object
             SharedPtr<Material> renderMaterial(new Material(context_));
             renderMaterial->SetTechnique(0, cache->GetResource<Technique>("Techniques/DiffUnlit.xml"));
-            renderMaterial->SetTexture(TU_DIFFUSE, renderTexture);
+            renderMaterial->SetTexture(ShaderResources::Albedo, renderTexture);
             // Since the screen material is on top of the box model and may Z-fight, use negative depth bias
             // to push it forward (particularly necessary on mobiles with possibly less Z resolution)
             renderMaterial->SetDepthBias(BiasParameters(-0.001f, 0.0f));

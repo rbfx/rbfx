@@ -24,6 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
+#include "../Core/WorkQueue.h"
 #include "../IO/File.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
@@ -35,14 +36,11 @@
 #include "../Network/Network.h"
 #include "../Network/NetworkEvents.h"
 #include "../Network/Protocol.h"
+#include "../Network/Transport/NetworkConnection.h"
 #include "../Replica/ReplicationManager.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
-
-#include <slikenet/MessageIdentifiers.h>
-#include <slikenet/peerinterface.h>
-#include <slikenet/statistics.h>
 
 #ifdef SendMessage
 #undef SendMessage
@@ -71,35 +69,29 @@ PackageUpload::PackageUpload() :
 {
 }
 
-Connection::Connection(Context* context) :
-    AbstractConnection(context),
-    peer_(nullptr),
-    isClient_(false),
-    connectPending_(false),
-    sceneLoaded_(false),
-    logStatistics_(false),
-    address_(nullptr),
-    packedMessageLimit_(1024)
+Connection::Connection(Context* context, NetworkConnection* connection)
+    : AbstractConnection(context)
+    , transportConnection_(connection)
 {
+    if (connection)
+    {
+        connection->onMessage_ = [this](ea::string_view msg)
+        {
+            MutexLock lock(packetQueueLock_);
+            incomingPackets_.emplace_back(VectorBuffer(msg.data(), msg.size()));
+        };
+    }
 }
 
 Connection::~Connection()
 {
     // Reset scene (remove possible owner references), as this connection is about to be destroyed
     SetScene(nullptr);
-
-    delete address_;
-    address_ = nullptr;
+    Disconnect();
 }
 
-void Connection::Initialize(bool isClient, const SLNet::AddressOrGUID& address, SLNet::RakPeerInterface* peer)
+void Connection::Initialize()
 {
-    assert(peer_ == nullptr);
-    peer_ = peer;
-    isClient_ = isClient;
-    port_ = address.systemAddress.GetPort();
-    SetAddressOrGUID(address);
-
     auto network = GetSubsystem<Network>();
     clock_ = ea::make_unique<ClockSynchronizer>(network->GetPingIntervalMs(), network->GetMaxPingIntervalMs(),
         network->GetClockBufferSize(), network->GetPingBufferSize());
@@ -110,43 +102,21 @@ void Connection::RegisterObject(Context* context)
     context->AddFactoryReflection<Connection>();
 }
 
-PacketType Connection::GetPacketType(bool reliable, bool inOrder)
+void Connection::SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType)
 {
-    if (reliable && inOrder)
-        return PT_RELIABLE_ORDERED;
+    URHO3D_ASSERT(messageId <= MSG_MAX);
+    URHO3D_ASSERT(numBytes <= packedMessageLimit_);
+    URHO3D_ASSERT((data == nullptr && numBytes == 0) || (data != nullptr && numBytes > 0));
 
-    if (reliable && !inOrder)
-        return PT_RELIABLE_UNORDERED;
-
-    if (!reliable && inOrder)
-        return PT_UNRELIABLE_ORDERED;
-
-    return PT_UNRELIABLE_UNORDERED;
-}
-
-void Connection::SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes)
-{
-    if (numBytes && !data)
-    {
-        URHO3D_LOGERROR("Null pointer supplied for network message data");
-        return;
-    }
-
-    PacketType type = GetPacketType(reliable, inOrder);
-    VectorBuffer& buffer = outgoingBuffer_[type];
+    VectorBuffer& buffer = outgoingBuffer_[packetType];
 
     if (buffer.GetSize() + numBytes >= packedMessageLimit_)
-        SendBuffer(type);
+        SendBuffer(packetType);
 
-    if (buffer.GetSize() == 0)
-    {
-        buffer.WriteUByte((unsigned char)DefaultMessageIDTypes::ID_USER_PACKET_ENUM);
-        buffer.WriteUInt((unsigned int)MSG_PACKED_MESSAGE);
-    }
-
-    buffer.WriteUInt((unsigned int)messageId);
-    buffer.WriteUInt(numBytes);
-    buffer.Write(data, numBytes);
+    buffer.WriteUShort(messageId);
+    buffer.WriteUShort(numBytes);
+    if (numBytes)
+        buffer.Write(data, numBytes);
 }
 
 void Connection::SendRemoteEvent(StringHash eventType, bool inOrder, const VariantMap& eventData)
@@ -163,7 +133,7 @@ void Connection::SetScene(Scene* newScene)
     if (scene_)
     {
         // Remove replication states and owner references from the previous scene
-        if (replicationManager_)
+        if (replicationManager_ && sceneLoaded_)
             replicationManager_->DropConnection(this);
         replicationManager_ = nullptr;
     }
@@ -194,7 +164,7 @@ void Connection::SetScene(Scene* newScene)
             msg_.WriteUInt(package->GetTotalSize());
             msg_.WriteUInt(package->GetChecksum());
         }
-        SendMessage(MSG_LOADSCENE, true, true, msg_);
+        SendMessage(MSG_LOADSCENE, msg_);
     }
     else
     {
@@ -219,9 +189,10 @@ void Connection::SetLogStatistics(bool enable)
     logStatistics_ = enable;
 }
 
-void Connection::Disconnect(int waitMSec)
+void Connection::Disconnect()
 {
-    peer_->CloseConnection(*address_, true);
+    if (transportConnection_)
+        transportConnection_->Disconnect();
 }
 
 void Connection::SendRemoteEvents()
@@ -231,7 +202,7 @@ void Connection::SendRemoteEvents()
     {
         statsTimer_.Reset();
         char statsBuffer[256];
-        sprintf(statsBuffer, "RTT %.3f ms Pkt in %i Pkt out %i Data in %.3f KB/s Data out %.3f KB/s", GetRoundTripTime(),
+        sprintf(statsBuffer, "PING %.3f ms Pkt in %i Pkt out %i Data in %.3f KB/s Data out %.3f KB/s", GetPing() / 1000.0f,
             GetPacketsInPerSec(),
             GetPacketsOutPerSec(),
             (float)GetBytesInPerSec(),
@@ -239,13 +210,6 @@ void Connection::SendRemoteEvents()
         URHO3D_LOGINFO(statsBuffer);
     }
 #endif
-
-    if (packetCounterTimer_.GetMSec(false) > 1000)
-    {
-        packetCounterTimer_.Reset();
-        packetCounter_ = tempPacketCounter_;
-        tempPacketCounter_ = IntVector2::ZERO;
-    }
 
     if (remoteEvents_.empty())
         return;
@@ -255,9 +219,12 @@ void Connection::SendRemoteEvents()
     for (auto i = remoteEvents_.begin(); i != remoteEvents_.end(); ++i)
     {
         msg_.Clear();
+        PacketTypeFlags packetType = PacketType::Reliable;
+        if (i->inOrder_)
+            packetType |= PacketType::Ordered;
         msg_.WriteStringHash(i->eventType_);
         msg_.WriteVariantMap(i->eventData_);
-        SendMessage(MSG_REMOTEEVENT, true, i->inOrder_, msg_);
+        SendMessage(MSG_REMOTEEVENT, msg_, packetType);
     }
 
     remoteEvents_.clear();
@@ -281,7 +248,7 @@ void Connection::SendPackages()
             msg_.WriteStringHash(current->first);
             msg_.WriteUInt(upload.fragment_++);
             msg_.Write(buffer, fragmentSize);
-            SendMessage(MSG_PACKAGEDATA, true, false, msg_);
+            SendMessage(MSG_PACKAGEDATA, msg_, PacketType::ReliableUnordered);
 
             // Check if upload finished
             if (upload.fragment_ == upload.totalFragments_)
@@ -290,29 +257,23 @@ void Connection::SendPackages()
     }
 }
 
-void Connection::SendBuffer(PacketType type)
+void Connection::SendBuffer(PacketTypeFlags type, VectorBuffer& buffer)
 {
-    VectorBuffer& buffer = outgoingBuffer_[type];
-    if (buffer.GetSize() == 0)
+    if (buffer.GetSize() < 1)
         return;
 
-    PacketReliability reliability = PacketReliability::UNRELIABLE;
-    if (type == PT_UNRELIABLE_ORDERED)
-        reliability = PacketReliability::UNRELIABLE_SEQUENCED;
-
-    if (type == PT_RELIABLE_ORDERED)
-        reliability = PacketReliability::RELIABLE_ORDERED;
-
-    if (type == PT_RELIABLE_UNORDERED)
-        reliability = PacketReliability::RELIABLE;
-
-    if (peer_) {
-        peer_->Send((const char *) buffer.GetData(), (int) buffer.GetSize(), HIGH_PRIORITY, reliability, (char) 0,
-                    *address_, false);
-        tempPacketCounter_.y_++;
+    if (transportConnection_)
+    {
+        packetCounterOutgoing_.AddSample(1);
+        bytesCounterOutgoing_.AddSample(buffer.GetSize());
+        transportConnection_->SendMessage({(const char*)buffer.GetData(), buffer.GetSize()}, type);
     }
-
     buffer.Clear();
+}
+
+void Connection::SendBuffer(PacketTypeFlags type)
+{
+    SendBuffer(type, outgoingBuffer_[type]);
 }
 
 void Connection::SendAllBuffers()
@@ -320,10 +281,10 @@ void Connection::SendAllBuffers()
     // Send clock messages at the last time to have better precision
     if (clock_)
     {
-        auto& buffer = outgoingBuffer_[PT_UNRELIABLE_UNORDERED];
+        auto& buffer = outgoingBuffer_[PacketType::UnreliableUnordered];
         while (const auto clockMessage = clock_->PollMessage())
         {
-            SendGeneratedMessage(MSG_CLOCK_SYNC, PT_UNRELIABLE_UNORDERED,
+            SendGeneratedMessage(MSG_CLOCK_SYNC, PacketType::UnreliableUnordered,
                 [&](VectorBuffer& msg, ea::string* debugInfo)
             {
                 clockMessage->Save(msg);
@@ -332,87 +293,85 @@ void Connection::SendAllBuffers()
         }
     }
 
-    SendBuffer(PT_RELIABLE_ORDERED);
-    SendBuffer(PT_RELIABLE_UNORDERED);
-    SendBuffer(PT_UNRELIABLE_ORDERED);
-    SendBuffer(PT_UNRELIABLE_UNORDERED);
+    SendBuffer(PacketType::ReliableOrdered);
+    SendBuffer(PacketType::ReliableUnordered);
+    SendBuffer(PacketType::UnreliableOrdered);
+    SendBuffer(PacketType::UnreliableUnordered);
 }
 
-bool Connection::ProcessMessage(int msgID, MemoryBuffer& buffer)
+bool Connection::ProcessMessage(MemoryBuffer& buffer)
 {
-    tempPacketCounter_.x_++;
-    if (buffer.GetSize() == 0)
-        return false;
+    int msgID;
+    packetCounterIncoming_.AddSample(1);
+    bytesCounterIncoming_.AddSample(buffer.GetSize());
 
-    if (msgID != MSG_PACKED_MESSAGE)
+    if (buffer.GetSize() < sizeof(msgID))
     {
-        ProcessUnknownMessage(msgID, buffer);
-        return true;
+        URHO3D_LOGERROR("Invalid network message size {}: too small.", buffer.GetSize());
+        return false;
     }
 
-    while (!buffer.IsEof()) {
-        msgID = buffer.ReadUInt();
-        unsigned int packetSize = buffer.ReadUInt();
+    while (!buffer.IsEof())
+    {
+        msgID = buffer.ReadUShort();
+        unsigned int packetSize = buffer.ReadUShort();
         MemoryBuffer msg(buffer.GetData() + buffer.GetPosition(), packetSize);
         buffer.Seek(buffer.GetPosition() + packetSize);
 
+        Log::GetLogger().Write(GetMessageLogLevel((NetworkMessageId)msgID), "{}: Message #{} ({} bytes) received",
+            ToString(),
+            static_cast<unsigned>(msgID),
+            packetSize);
+
         switch (msgID)
         {
-            case MSG_IDENTITY:
-                ProcessIdentity(msgID, msg);
+        case MSG_IDENTITY:
+            ProcessIdentity(msgID, msg);
+            break;
+
+        case MSG_SCENELOADED:
+            ProcessSceneLoaded(msgID, msg);
+            break;
+
+        case MSG_REQUESTPACKAGE:
+        case MSG_PACKAGEDATA:
+            ProcessPackageDownload(msgID, msg);
+            break;
+
+        case MSG_LOADSCENE:
+            ProcessLoadScene(msgID, msg);
+            break;
+
+        case MSG_SCENECHECKSUMERROR:
+            ProcessSceneChecksumError(msgID, msg);
+            break;
+
+        case MSG_REMOTEEVENT:
+            ProcessRemoteEvent(msgID, msg);
+            break;
+
+        case MSG_PACKAGEINFO:
+            ProcessPackageInfo(msgID, msg);
+            break;
+
+        case MSG_CLOCK_SYNC:
+            if (clock_)
+            {
+                ClockSynchronizerMessage clockMessage;
+                clockMessage.Load(msg);
+                clock_->ProcessMessage(clockMessage);
+            }
+            break;
+
+        default:
+            if (replicationManager_ && replicationManager_->ProcessMessage(this, static_cast<NetworkMessageId>(msgID), msg))
                 break;
 
-            case MSG_SCENELOADED:
-                ProcessSceneLoaded(msgID, msg);
-                break;
-
-            case MSG_REQUESTPACKAGE:
-            case MSG_PACKAGEDATA:
-                ProcessPackageDownload(msgID, msg);
-                break;
-
-            case MSG_LOADSCENE:
-                ProcessLoadScene(msgID, msg);
-                break;
-
-            case MSG_SCENECHECKSUMERROR:
-                ProcessSceneChecksumError(msgID, msg);
-                break;
-
-            case MSG_REMOTEEVENT:
-                ProcessRemoteEvent(msgID, msg);
-                break;
-
-            case MSG_PACKAGEINFO:
-                ProcessPackageInfo(msgID, msg);
-                break;
-
-            case MSG_CLOCK_SYNC:
-                if (clock_)
-                {
-                    ClockSynchronizerMessage clockMessage;
-                    clockMessage.Load(msg);
-                    clock_->ProcessMessage(clockMessage);
-                }
-                break;
-
-            default:
-                if (replicationManager_ && replicationManager_->ProcessMessage(this, static_cast<NetworkMessageId>(msgID), msg))
-                    break;
-
-                ProcessUnknownMessage(msgID, msg);
-                break;
+            ProcessUnknownMessage(msgID, msg);
+            break;
         }
     }
     return true;
-}
-
-void Connection::Ban()
-{
-    if (peer_)
-    {
-        peer_->AddToBanList(address_->ToString(false), 0);
-    }
 }
 
 void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
@@ -441,7 +400,7 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
     auto* vfs = GetSubsystem<VirtualFileSystem>();
     const ea::string& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
-    
+
     for (unsigned i = 0; i < vfs->NumMountPoints(); ++i)
     {
         const auto package = dynamic_cast<PackageFile*>(vfs->GetMountPoint(i));
@@ -451,10 +410,14 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
 
     // Now check which packages we have in the resource cache or in the download cache, and which we need to download
     unsigned numPackages = msg.ReadVLE();
-    if (!RequestNeededPackages(numPackages, msg))
+    if (numPackages)
     {
-        OnSceneLoadFailed();
-        return;
+        // Now check which packages we have in the resource cache or in the download cache, and which we need to download
+        if (!RequestNeededPackages(numPackages, msg))
+        {
+            OnSceneLoadFailed();
+            return;
+        }
     }
 
     // If no downloads were queued, can load the scene directly
@@ -604,7 +567,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
                     URHO3D_LOGINFO("Requesting package " + nextDownload.name_ + " from server");
                     msg_.Clear();
                     msg_.WriteString(nextDownload.name_);
-                    SendMessage(MSG_REQUESTPACKAGE, true, true, msg_);
+                    SendMessage(MSG_REQUESTPACKAGE, msg_);
                     nextDownload.initiated_ = true;
                 }
             }
@@ -657,7 +620,7 @@ void Connection::ProcessSceneLoaded(int msgID, MemoryBuffer& msg)
     {
         URHO3D_LOGINFO("Scene checksum error from client " + ToString());
         msg_.Clear();
-        SendMessage(MSG_SCENECHECKSUMERROR, true, true, msg_);
+        SendMessage(MSG_SCENECHECKSUMERROR, msg_);
         OnSceneLoadFailed();
     }
     else
@@ -696,50 +659,27 @@ Scene* Connection::GetScene() const
 
 bool Connection::IsConnected() const
 {
-    return peer_ && peer_->IsActive();
-}
-
-float Connection::GetRoundTripTime() const
-{
-    if (peer_)
-    {
-        SLNet::RakNetStatistics stats{};
-        if (peer_->GetStatistics(address_->systemAddress, &stats))
-            return (float)peer_->GetAveragePing(*address_);
-    }
-    return 0.0f;
+    return transportConnection_->GetState() == NetworkConnection::State::Connected;
 }
 
 unsigned long long Connection::GetBytesInPerSec() const
 {
-    if (peer_)
-    {
-        SLNet::RakNetStatistics stats{};
-        if (peer_->GetStatistics(address_->systemAddress, &stats))
-            return stats.valueOverLastSecond[SLNet::ACTUAL_BYTES_RECEIVED];
-    }
-    return 0;
+    return static_cast<int>(bytesCounterIncoming_.GetLast());
 }
 
 unsigned long long Connection::GetBytesOutPerSec() const
 {
-    if (peer_)
-    {
-        SLNet::RakNetStatistics stats{};
-        if (peer_->GetStatistics(address_->systemAddress, &stats))
-            return stats.valueOverLastSecond[SLNet::ACTUAL_BYTES_SENT];
-    }
-    return 0;
+    return static_cast<int>(bytesCounterOutgoing_.GetLast());
 }
 
 int Connection::GetPacketsInPerSec() const
 {
-    return packetCounter_.x_;
+    return static_cast<int>(packetCounterIncoming_.GetLast());
 }
 
 int Connection::GetPacketsOutPerSec() const
 {
-    return packetCounter_.y_;
+    return static_cast<int>(packetCounterOutgoing_.GetLast());
 }
 
 ea::string Connection::ToString() const
@@ -826,13 +766,7 @@ void Connection::SendPackageToClient(PackageFile* package)
     msg_.WriteString(filename);
     msg_.WriteUInt(package->GetTotalSize());
     msg_.WriteUInt(package->GetChecksum());
-    SendMessage(MSG_PACKAGEINFO, true, true, msg_);
-}
-
-void Connection::ConfigureNetworkSimulator(int latencyMs, float packetLoss)
-{
-    if (peer_)
-        peer_->ApplyNetworkSimulator(packetLoss, latencyMs, 0);
+    SendMessage(MSG_PACKAGEINFO, msg_);
 }
 
 void Connection::SetPacketSizeLimit(int limit)
@@ -840,7 +774,7 @@ void Connection::SetPacketSizeLimit(int limit)
     packedMessageLimit_ = limit;
 }
 
-void Connection::HandleAsyncLoadFinished(StringHash eventType, VariantMap& eventData)
+void Connection::HandleAsyncLoadFinished()
 {
     replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>();
     replicationManager_->StartClient(this);
@@ -848,7 +782,7 @@ void Connection::HandleAsyncLoadFinished(StringHash eventType, VariantMap& event
 
     msg_.Clear();
     msg_.WriteUInt(scene_->GetChecksum());
-    SendMessage(MSG_SCENELOADED, true, true, msg_);
+    SendMessage(MSG_SCENELOADED, msg_);
 }
 
 bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
@@ -945,7 +879,7 @@ void Connection::RequestPackage(const ea::string& name, unsigned fileSize, unsig
         URHO3D_LOGINFO("Requesting package " + name + " from server");
         msg_.Clear();
         msg_.WriteString(name);
-        SendMessage(MSG_REQUESTPACKAGE, true, true, msg_);
+        SendMessage(MSG_REQUESTPACKAGE, msg_);
         download.initiated_ = true;
     }
 }
@@ -954,7 +888,7 @@ void Connection::SendPackageError(const ea::string& name)
 {
     msg_.Clear();
     msg_.WriteStringHash(name);
-    SendMessage(MSG_PACKAGEDATA, true, false, msg_);
+    SendMessage(MSG_PACKAGEDATA, msg_, PacketType::ReliableUnordered);
 }
 
 void Connection::OnSceneLoadFailed()
@@ -994,7 +928,7 @@ void Connection::OnPackagesReady()
 
         msg_.Clear();
         msg_.WriteUInt(scene_->GetChecksum());
-        SendMessage(MSG_SCENELOADED, true, true, msg_);
+        SendMessage(MSG_SCENELOADED, msg_);
     }
     else
     {
@@ -1043,14 +977,31 @@ void Connection::ProcessUnknownMessage(int msgID, MemoryBuffer& msg)
 
 ea::string Connection::GetAddress() const
 {
-    return ea::string(address_->ToString(false /*write port*/));
+    if (transportConnection_)
+        return transportConnection_->GetAddress();
+    return "";
 }
 
-void Connection::SetAddressOrGUID(const SLNet::AddressOrGUID& addr)
+unsigned short Connection::GetPort() const
 {
-    delete address_;
-    address_ = nullptr;
-    address_ = new SLNet::AddressOrGUID(addr);
+    if (transportConnection_)
+        return transportConnection_->GetPort();
+    return 0;
+}
+
+void Connection::ProcessPackets()
+{
+    MutexLock lock(packetQueueLock_);
+    for (auto& packet : incomingPackets_)
+    {
+        MemoryBuffer msg(packet);
+        if (!ProcessMessage(msg))
+        {
+            Disconnect();
+            break;
+        }
+    }
+    incomingPackets_.clear();
 }
 
 }

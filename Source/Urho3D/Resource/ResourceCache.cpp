@@ -100,6 +100,9 @@ ResourceCache::ResourceCache(Context* context) :
 
     // Subscribe FileChanged for handling directory watchers
     SubscribeToEvent(E_FILECHANGED, URHO3D_HANDLER(ResourceCache, HandleFileChanged));
+
+    // Subscribe to reflection removal to purge unloaded resource types
+    context_->OnReflectionRemoved.Subscribe(this, &ResourceCache::HandleReflectionRemoved);
 }
 
 ResourceCache::~ResourceCache()
@@ -985,6 +988,11 @@ FileIdentifier ResourceCache::GetResolvedIdentifier(const FileIdentifier& name) 
     FileIdentifier result = name;
     RouteResourceName(result);
     return result;
+}
+
+void ResourceCache::HandleReflectionRemoved(ObjectReflection* reflection)
+{
+    ReleaseResources(reflection->GetTypeNameHash(), true);
 }
 
 }

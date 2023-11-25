@@ -217,9 +217,11 @@ public:
 
 private:
     /// Apply value of transformation track to the output.
-    void CalculateTransformTrack(NodeAnimationOutput& output, const AnimationTrack& track, unsigned& frame, float weight) const;
+    void CalculateTransformTrack(
+        NodeAnimationOutput& output, const AnimationTrack& track, unsigned& frame, float baseWeight) const;
     /// Apply single attribute track to target object. Key frame hint is updated on call.
-    void CalculateAttributeTrack(Variant& output, const VariantAnimationTrack& track, unsigned& frame, float weight) const;
+    void CalculateAttributeTrack(
+        Variant& output, const VariantAnimationTrack& track, unsigned& frame, float baseWeight) const;
 
     /// Owner controller.
     WeakPtr<AnimationController> controller_;

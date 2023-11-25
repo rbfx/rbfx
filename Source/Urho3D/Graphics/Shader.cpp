@@ -38,6 +38,9 @@
 namespace Urho3D
 {
 
+namespace
+{
+
 ea::array<bool, 128> GenerateAllowedCharacterMask()
 {
     ea::array<bool, 128> result;
@@ -96,17 +99,24 @@ void CommentOutFunction(ea::string& code, const ea::string& signature)
 ea::string FormatLineDirective(bool isGLSL, const ea::string& fileName, unsigned fileIndex, unsigned line)
 {
     if (isGLSL)
-        return Format("#line {} {}\n", line, fileIndex);
+        return Format("/// #include {}\n#line {} {}\n", fileName, line, fileIndex);
     else
         return Format("#line {} \"{}\"\n", line, fileName);
 }
 
+ea::string NormalizeDefines(ea::string_view defines)
+{
+    ea::vector<ea::string> definesVec = ea::string{defines}.to_upper().split(' ');
+    ea::quick_sort(definesVec.begin(), definesVec.end());
+    return ea::string::joined(definesVec, " ");
+}
+
+}
+
 ea::unordered_map<ea::string, unsigned> Shader::fileToIndexMapping;
 
-Shader::Shader(Context* context) :
-    Resource(context),
-    timeStamp_(0),
-    numVariations_(0)
+Shader::Shader(Context* context)
+    : Resource(context)
 {
     RefreshMemoryUse();
 }
@@ -133,12 +143,12 @@ bool Shader::BeginLoad(Deserializer& source)
         return false;
 
     // Load the shader source code and resolve any includes
-    timeStamp_ = 0;
     ea::string shaderCode;
-    ProcessSource(shaderCode, source);
+    FileTime timeStamp{};
+    ProcessSource(shaderCode, timeStamp, source);
 
     // Validate shader code
-    if (graphics->IsShaderValidationEnabled())
+    if (graphics->GetSettings().validateShaders_)
     {
         static const auto characterMask = GenerateAllowedCharacterMask();
         static const unsigned maxSnippetSize = 5;
@@ -156,31 +166,8 @@ bool Shader::BeginLoad(Deserializer& source)
         }
     }
 
-    // Comment out the unneeded shader function
-    vsSourceCode_ = shaderCode;
-    psSourceCode_ = shaderCode;
-    csSourceCode_ = shaderCode;
-
-    CommentOutFunction(vsSourceCode_, "void PS(");
-    CommentOutFunction(vsSourceCode_, "void CS(");
-
-    CommentOutFunction(psSourceCode_, "void VS(");
-    CommentOutFunction(psSourceCode_, "void CS(");
-
-    CommentOutFunction(csSourceCode_, "void VS(");
-    CommentOutFunction(csSourceCode_, "void PS(");
-
-    // OpenGL: rename either VS() or PS() to main()
-#ifdef URHO3D_OPENGL
-#define HANDLE_SHADER_STAGE(SHORTNAME, LCASESHORTNAME) \
-    LCASESHORTNAME ## SourceCode_.replace("void " #SHORTNAME "(", "void main(");
-
-    HANDLE_SHADER_STAGE(VS, vs);
-    HANDLE_SHADER_STAGE(PS, ps);
-    HANDLE_SHADER_STAGE(CS, cs);
-
-#undef HANDLE_SHADER_STAGE
-#endif
+    sourceCode_ = ea::move(shaderCode);
+    timeStamp_ = timeStamp;
 
     RefreshMemoryUse();
     return true;
@@ -188,93 +175,62 @@ bool Shader::BeginLoad(Deserializer& source)
 
 bool Shader::EndLoad()
 {
-#define FREE_VARIATIONS(STAGE) \
-    for (auto i = STAGE ## Variations_.begin(); i != STAGE ## Variations_.end(); ++i) i->second->Release();
-
-    // If variations had already been created, release them and require recompile
-    FREE_VARIATIONS(vs);
-    FREE_VARIATIONS(ps);
-    FREE_VARIATIONS(cs);
-
-#undef FREE_VARIATIONS
-
+    OnReloaded(this);
     return true;
 }
 
-ShaderVariation* Shader::GetVariation(ShaderType type, const ea::string& defines)
+ea::string Shader::GetShaderName() const
 {
-    return GetVariation(type, defines.c_str());
-}
-
-ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
-{
-    const unsigned definesHash = GetShaderDefinesHash(defines);
-
-    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> >* variations = nullptr;
-    switch (type)
+    // TODO: Revisit this in the future, we don't really need GLSL/v2 prefix anymore.
+    static const ea::string prefix = "Shaders/GLSL/v2";
+    const ea::string& name = GetName();
+    if (!name.starts_with(prefix))
     {
-    case VS:
-        variations = &vsVariations_;
-        break;
-    case PS:
-        variations = &psVariations_;
-        break;
-    case CS:
-        variations = &csVariations_;
-        break;
-    default:
-        URHO3D_ASSERT(false);
-        return nullptr;
+        URHO3D_LOGWARNING("Shader '{}' is stored in an unexpected location", name);
+        return name;
     }
 
-    if (variations == nullptr)
-        return nullptr;
+    return name.substr(prefix.length());
+}
 
-    auto i = variations->find(definesHash);
-    if (i == variations->end())
+ShaderVariation* Shader::GetVariation(ShaderType type, ea::string_view defines)
+{
+    const ShaderVariationKey key{type, StringHash{defines}};
+
+    const auto iter = variations_.find(key);
+    if (iter != variations_.end())
+        return iter->second;
+
+    // If shader not found, normalize the defines (to prevent duplicates) and check again. In that case make an alias
+    // so that further queries are faster
+    const ea::string definesNormalized = NormalizeDefines(defines);
+    const ShaderVariationKey keyNormalized{type, StringHash{definesNormalized}};
+
+    const auto iterNormalized = variations_.find(keyNormalized);
+    if (iterNormalized != variations_.end())
     {
-        // If shader not found, normalize the defines (to prevent duplicates) and check again. In that case make an alias
-        // so that further queries are faster
-        const ea::string normalizedDefines = NormalizeDefines(defines);
-        const unsigned normalizedHash = GetShaderDefinesHash(normalizedDefines.c_str());
-
-        i = variations->find(normalizedHash);
-        if (i != variations->end())
-            variations->insert(ea::make_pair(definesHash, i->second));
-        else
-        {
-            // No shader variation found. Create new
-            i = variations->insert(ea::make_pair(normalizedHash, SharedPtr<ShaderVariation>(new ShaderVariation(this, type)))).first;
-            if (definesHash != normalizedHash)
-                variations->insert(ea::make_pair(definesHash, i->second));
-
-            Graphics* graphics = context_->GetSubsystem<Graphics>();
-            i->second->SetName(GetFileName(GetName()));
-            i->second->SetDefines(graphics->GetGlobalShaderDefines() + " " + normalizedDefines);
-            ++numVariations_;
-            RefreshMemoryUse();
-        }
+        variations_.insert(ea::make_pair(key, iterNormalized->second));
+        return iterNormalized->second;
     }
 
-    return i->second;
+    // No shader variation found. Create new.
+    auto variation = MakeShared<ShaderVariation>(this, type, definesNormalized);
+    variations_.emplace(key, variation);
+    ++numVariations_;
+    RefreshMemoryUse();
+
+    return variation;
 }
 
-unsigned Shader::GetShaderDefinesHash(const char* defines) const
-{
-    Graphics* graphics = context_->GetSubsystem<Graphics>();
-    unsigned definesHash = StringHash(defines).Value();
-    CombineHash(definesHash, graphics->GetGlobalShaderDefinesHash().Value());
-    return definesHash;
-}
-
-void Shader::ProcessSource(ea::string& code, Deserializer& source)
+void Shader::ProcessSource(ea::string& code, FileTime& timeStamp, Deserializer& source)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* vfs = GetSubsystem<VirtualFileSystem>();
     auto* graphics = GetSubsystem<Graphics>();
 
     const ea::string& fileName = source.GetName();
-    const bool isGLSL = IsGLSL();
+    // TODO: Support HLSL and MSL shaders.
+    const bool isGLSL = true;
 
     // Add file to index
     unsigned& fileIndex = fileToIndexMapping[fileName];
@@ -283,7 +239,7 @@ void Shader::ProcessSource(ea::string& code, Deserializer& source)
 
     // If the source if a non-packaged file, store the timestamp
     const FileTime sourceTimeStamp = vfs->GetLastModifiedTime(FileIdentifier::FromUri(source.GetName()), false);
-    timeStamp_ = ea::max(timeStamp_, sourceTimeStamp);
+    timeStamp = ea::max(timeStamp, sourceTimeStamp);
 
     // Store resource dependencies for includes so that we know to reload if any of them changes
     if (source.GetName() != GetName())
@@ -303,7 +259,7 @@ void Shader::ProcessSource(ea::string& code, Deserializer& source)
             // Add included code or error directive
             AbstractFilePtr includeFile = cache->GetFile(includeFileName);
             if (includeFile)
-                ProcessSource(code, *includeFile);
+                ProcessSource(code, timeStamp, *includeFile);
             else
                 code += Format("#error Missing include file <{}>\n", includeFileName);
 
@@ -316,7 +272,7 @@ void Shader::ProcessSource(ea::string& code, Deserializer& source)
                 line.erase(line.end() - 1);
 
             // If shader validation is enabled, trim comments manually to avoid validating comment contents
-            if (!graphics->IsShaderValidationEnabled() || !line.trimmed().starts_with("//"))
+            if (!graphics->GetSettings().validateShaders_ || !line.trimmed().starts_with("//"))
                 code += line;
 
             ++numNewLines;
@@ -335,20 +291,11 @@ void Shader::ProcessSource(ea::string& code, Deserializer& source)
     code += "\n";
 }
 
-ea::string Shader::NormalizeDefines(const ea::string& defines)
-{
-    ea::vector<ea::string> definesVec = defines.to_upper().split(' ');
-    ea::quick_sort(definesVec.begin(), definesVec.end());
-    return ea::string::joined(definesVec, " ");
-}
-
 void Shader::RefreshMemoryUse()
 {
     SetMemoryUse(
         (unsigned)(sizeof(Shader) +
-            vsSourceCode_.length() +
-            psSourceCode_.length() +
-            csSourceCode_.length() +
+            sourceCode_.length() +
             numVariations_ * sizeof(ShaderVariation)));
 }
 

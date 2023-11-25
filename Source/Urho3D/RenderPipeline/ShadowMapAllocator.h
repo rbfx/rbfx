@@ -28,12 +28,15 @@
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/Light.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
 #include <EASTL/vector.h>
 
 namespace Urho3D
 {
 
+class RenderContext;
+class RenderDevice;
 class Renderer;
 
 /// Utility to allocate shadow maps in texture atlas.
@@ -53,6 +56,8 @@ public:
     bool BeginShadowMapRendering(const ShadowMapRegion& shadowMap);
 
     const ShadowMapAllocatorSettings& GetSettings() const { return settings_; }
+    const SamplerStateDesc& GetSamplerStateDesc() const { return samplerStateDesc_; }
+    const PipelineStateOutputDesc& GetShadowOutputDesc() const { return shadowOutputDesc_; }
 
 private:
     struct AtlasPage
@@ -71,20 +76,21 @@ private:
 
     /// External dependencies
     /// @{
-    Graphics* graphics_{};
-    Renderer* renderer_{};
+    RenderDevice* renderDevice_{};
+    RenderContext* renderContext_{};
     /// @}
 
     /// Settings
     /// @{
     ShadowMapAllocatorSettings settings_;
-    unsigned shadowMapFormat_{};
+    SamplerStateDesc samplerStateDesc_;
+    PipelineStateOutputDesc shadowOutputDesc_;
+    TextureFormat shadowMapFormat_{};
     IntVector2 shadowAtlasPageSize_;
     /// @}
 
-    /// Dummy color map for workaround, if needed.
-    SharedPtr<Texture2D> dummyColorTexture_;
     ea::vector<AtlasPage> pages_;
+    SharedPtr<Texture2D> vsmDepthTexture_;
 };
 
 }

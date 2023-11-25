@@ -114,7 +114,6 @@ void CrowdManager::ApplyAttributes()
     maxAgents_ = Max(1U, maxAgents_);
     maxAgentRadius_ = Max(0.f, maxAgentRadius_);
 
-    bool navMeshChange = false;
     Scene* scene = GetScene();
     if (scene && navigationMeshId_)
     {
@@ -129,7 +128,7 @@ void CrowdManager::ApplyAttributes()
     navigationMeshId_ = navigationMesh_ ? navigationMesh_->GetID() : 0;
 
     // If the Detour crowd initialization parameters have changed then recreate it
-    if (crowd_ && (navMeshChange || crowd_->getAgentCount() != maxAgents_ || crowd_->getMaxAgentRadius() != maxAgentRadius_))
+    if (!crowd_ || crowd_->getAgentCount() != maxAgents_ || crowd_->getMaxAgentRadius() != maxAgentRadius_)
         CreateCrowd();
 }
 
@@ -185,6 +184,15 @@ void CrowdManager::DrawDebugGeometry(bool depthTest)
         if (debug)
             DrawDebugGeometry(debug, depthTest);
     }
+}
+
+void CrowdManager::UpdateAgentVelocity(
+    CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed) const
+{
+    const CrowdAgentVelocityCallback& agentCallback = agent->GetVelocityCallback();
+    const CrowdAgentVelocityCallback& callback = agentCallback ? agentCallback : velocityCallback_;
+    if (callback)
+        callback(agent, timeStep, desiredVelocity, desiredSpeed);
 }
 
 void CrowdManager::SetCrowdTarget(const Vector3& position, Node* node)

@@ -96,6 +96,9 @@ enum OperandClass {
     OperandQuantizationModes,
     OperandOverflowModes,
     OperandPackedVectorFormat,
+    OperandCooperativeMatrixOperands,
+    OperandCooperativeMatrixLayout,
+    OperandCooperativeMatrixUse,
 
     OperandOpcode,
 

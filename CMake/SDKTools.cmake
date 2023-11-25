@@ -35,5 +35,5 @@ foreach (cfg MinSizeRel Release RelWithDebInfo Debug)
 endforeach ()
 
 if (NOT TOOL_ANY_EXIST)
-    message(WARNING "SDK tools were not found!")
+    message(WARNING "SDK tools were not found at ${URHO3D_SDK}!")
 endif ()

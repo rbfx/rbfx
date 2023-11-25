@@ -231,6 +231,8 @@ URHO3D_FLAGSET(SystemRunFlag, SystemRunFlags);
 
 int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& arguments, SystemRunFlags flags, ea::string& output)
 {
+    URHO3D_LOGDEBUG("Running system call:\n{} {}", fileName, ea::string::joined(arguments, " "));
+
 #if defined(TVOS) || defined(IOS) || (defined(__ANDROID__) && __ANDROID_API__ < 28) || defined(UWP)
     return -1;
 #else

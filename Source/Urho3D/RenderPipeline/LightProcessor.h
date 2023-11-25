@@ -146,6 +146,7 @@ private:
     Light* light_{};
     ea::vector<ShadowSplitProcessor> splits_;
     unsigned splitRemainingTimeToLive_{};
+    RenderBackend renderBackend_{};
 
     /// Parameters extracted from light settings
     /// @{

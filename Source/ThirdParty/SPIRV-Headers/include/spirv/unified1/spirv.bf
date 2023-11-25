@@ -66,6 +66,9 @@ namespace Spv
             HLSL = 5,
             CPP_for_OpenCL = 6,
             SYCL = 7,
+            HERO_C = 8,
+            NZSL = 9,
+            WGSL = 10,
         }
 
         [AllowDuplicates, CRepr] public enum ExecutionModel
@@ -153,6 +156,9 @@ namespace Spv
             SubgroupsPerWorkgroupId = 37,
             LocalSizeId = 38,
             LocalSizeHintId = 39,
+            NonCoherentColorAttachmentReadEXT = 4169,
+            NonCoherentDepthAttachmentReadEXT = 4170,
+            NonCoherentStencilAttachmentReadEXT = 4171,
             SubgroupUniformControlFlowKHR = 4421,
             PostDepthCoverage = 4446,
             DenormPreserve = 4459,
@@ -212,6 +218,7 @@ namespace Spv
             AtomicCounter = 10,
             Image = 11,
             StorageBuffer = 12,
+            TileImageEXT = 4172,
             CallableDataKHR = 5328,
             CallableDataNV = 5328,
             IncomingCallableDataKHR = 5329,
@@ -242,6 +249,7 @@ namespace Spv
             Rect = 4,
             Buffer = 5,
             SubpassData = 6,
+            TileImageDataEXT = 4173,
         }
 
         [AllowDuplicates, CRepr] public enum SamplerAddressingMode
@@ -348,6 +356,8 @@ namespace Spv
             Float = 14,
             UnormInt24 = 15,
             UnormInt101010_2 = 16,
+            UnsignedIntRaw10EXT = 19,
+            UnsignedIntRaw12EXT = 20,
         }
 
         [AllowDuplicates, CRepr] public enum ImageOperandsShift
@@ -716,6 +726,7 @@ namespace Spv
             HitKindKHR = 5333,
             HitKindNV = 5333,
             CurrentRayTimeNV = 5334,
+            HitTriangleVertexPositionsKHR = 5335,
             IncomingRayFlagsKHR = 5351,
             IncomingRayFlagsNV = 5351,
             RayGeometryIndexKHR = 5352,
@@ -993,6 +1004,9 @@ namespace Spv
             ShaderViewportIndex = 70,
             UniformDecoration = 71,
             CoreBuiltinsARM = 4165,
+            TileImageColorReadAccessEXT = 4166,
+            TileImageDepthReadAccessEXT = 4167,
+            TileImageStencilReadAccessEXT = 4168,
             FragmentShadingRateKHR = 4422,
             SubgroupBallotKHR = 4423,
             DrawParameters = 4427,
@@ -1075,6 +1089,7 @@ namespace Spv
             UniformTexelBufferArrayNonUniformIndexingEXT = 5311,
             StorageTexelBufferArrayNonUniformIndexing = 5312,
             StorageTexelBufferArrayNonUniformIndexingEXT = 5312,
+            RayTracingPositionFetchKHR = 5336,
             RayTracingNV = 5340,
             RayTracingMotionBlurNV = 5341,
             VulkanMemoryModel = 5345,
@@ -1095,6 +1110,7 @@ namespace Spv
             RayTracingOpacityMicromapEXT = 5381,
             ShaderInvocationReorderNV = 5383,
             BindlessTextureNV = 5390,
+            RayQueryPositionFetchKHR = 5391,
             SubgroupShuffleINTEL = 5568,
             SubgroupBufferBlockIOINTEL = 5569,
             SubgroupImageBlockIOINTEL = 5570,
@@ -1146,6 +1162,7 @@ namespace Spv
             DotProduct = 6019,
             DotProductKHR = 6019,
             RayCullMaskKHR = 6020,
+            CooperativeMatrixKHR = 6022,
             BitInstructions = 6025,
             GroupNonUniformRotateKHR = 6026,
             AtomicFloat32AddEXT = 6033,
@@ -1265,6 +1282,38 @@ namespace Spv
         {
             PackedVectorFormat4x8Bit = 0,
             PackedVectorFormat4x8BitKHR = 0,
+        }
+
+        [AllowDuplicates, CRepr] public enum CooperativeMatrixOperandsShift
+        {
+            MatrixASignedComponents = 0,
+            MatrixBSignedComponents = 1,
+            MatrixCSignedComponents = 2,
+            MatrixResultSignedComponents = 3,
+            SaturatingAccumulation = 4,
+        }
+
+        [AllowDuplicates, CRepr] public enum CooperativeMatrixOperandsMask
+        {
+            MaskNone = 0,
+            MatrixASignedComponents = 0x00000001,
+            MatrixBSignedComponents = 0x00000002,
+            MatrixCSignedComponents = 0x00000004,
+            MatrixResultSignedComponents = 0x00000008,
+            SaturatingAccumulation = 0x00000010,
+        }
+
+        [AllowDuplicates, CRepr] public enum CooperativeMatrixLayout
+        {
+            RowMajorKHR = 0,
+            ColumnMajorKHR = 1,
+        }
+
+        [AllowDuplicates, CRepr] public enum CooperativeMatrixUse
+        {
+            MatrixAKHR = 0,
+            MatrixBKHR = 1,
+            MatrixAccumulatorKHR = 2,
         }
 
         [AllowDuplicates, CRepr] public enum Op
@@ -1613,6 +1662,9 @@ namespace Spv
             OpPtrEqual = 401,
             OpPtrNotEqual = 402,
             OpPtrDiff = 403,
+            OpColorAttachmentReadEXT = 4160,
+            OpDepthAttachmentReadEXT = 4161,
+            OpStencilAttachmentReadEXT = 4162,
             OpTerminateInvocation = 4416,
             OpSubgroupBallotKHR = 4421,
             OpSubgroupFirstInvocationKHR = 4422,
@@ -1638,6 +1690,11 @@ namespace Spv
             OpUDotAccSatKHR = 4454,
             OpSUDotAccSat = 4455,
             OpSUDotAccSatKHR = 4455,
+            OpTypeCooperativeMatrixKHR = 4456,
+            OpCooperativeMatrixLoadKHR = 4457,
+            OpCooperativeMatrixStoreKHR = 4458,
+            OpCooperativeMatrixMulAddKHR = 4459,
+            OpCooperativeMatrixLengthKHR = 4460,
             OpTypeRayQueryKHR = 4472,
             OpRayQueryInitializeKHR = 4473,
             OpRayQueryTerminateKHR = 4474,
@@ -1705,6 +1762,7 @@ namespace Spv
             OpTraceNV = 5337,
             OpTraceMotionNV = 5338,
             OpTraceRayMotionNV = 5339,
+            OpRayQueryGetIntersectionTriangleVertexPositionsKHR = 5340,
             OpTypeAccelerationStructureKHR = 5341,
             OpTypeAccelerationStructureNV = 5341,
             OpExecuteCallableNV = 5344,

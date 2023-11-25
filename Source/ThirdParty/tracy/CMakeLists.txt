@@ -79,7 +79,7 @@ if (URHO3D_PROFILING)
             if (TRACY_NO_PARALLEL_ALGORITHMS)
                 target_compile_definitions(${TARGET} PUBLIC -DTRACY_NO_PARALLEL_ALGORITHMS=1)
             endif ()
-            target_link_libraries (${TARGET} PRIVATE capstone-static)
+            target_link_libraries (${TARGET} PRIVATE capstone-static nativefiledialog)
         endmacro ()
 
         file (GLOB_RECURSE TRACY_PROFILER_SOURCE_FILES profiler/src/*.cpp)
@@ -102,7 +102,13 @@ if (URHO3D_PROFILING)
             ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
         )
         # Lib for editor to easily consume profiler
-        add_library (TracyEmbedded STATIC ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES})
+        set (EMBEDDED_SOURCE_FILES ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES})
+        if (NOT BUILD_SHARED_LIBS)
+            # In static builds, TracyStackFrames.cpp is included both in TracyEmbedded and Profiler.cpp,
+            # so the Editor would complain about duplicate symbols.
+            list (FILTER EMBEDDED_SOURCE_FILES EXCLUDE REGEX "common/TracyStackFrames\.cpp")
+        endif ()
+        add_library (TracyEmbedded STATIC ${EMBEDDED_SOURCE_FILES})
         setup_tracy_profiler_target(TracyEmbedded)
         target_include_directories(TracyEmbedded SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
         target_compile_definitions(TracyEmbedded PRIVATE -DTRACY_NO_ROOT_WINDOW=1 -DTRACY_EMBED_WINDOW=1)

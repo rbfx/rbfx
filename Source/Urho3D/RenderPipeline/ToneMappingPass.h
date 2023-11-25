@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Graphics/PipelineState.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../RenderPipeline/PostProcessPass.h"
 #include "../RenderPipeline/RenderBuffer.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
@@ -53,7 +53,7 @@ protected:
 
     ToneMappingMode mode_;
 
-    SharedPtr<PipelineState> toneMappingState_;
+    StaticPipelineStateId toneMappingState_{};
 };
 
 }

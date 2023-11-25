@@ -96,7 +96,8 @@ struct EditVariantOptions
 URHO3D_API bool EditResourceRef(StringHash& type, ea::string& name, const StringVector* allowedTypes);
 
 /// Render vector of resource references with optional type constraints. If allowed types are not specified, only current type is allowed.
-URHO3D_API bool EditResourceRefList(StringHash& type, StringVector& names, const StringVector* allowedTypes, bool resizable);
+URHO3D_API bool EditResourceRefList(StringHash& type, StringVector& names, const StringVector* allowedTypes,
+    bool resizable, const StringVector* elementNames = nullptr);
 
 /// Render variant type selector.
 URHO3D_API bool EditVariantType(VariantType& value, const char* button = nullptr);
@@ -115,6 +116,16 @@ URHO3D_API bool EditStringVariantMap(StringVariantMap& value, bool resizable, bo
 
 /// Render arbitrary variant value editor.
 URHO3D_API bool EditVariant(Variant& var, const EditVariantOptions& options = {});
+
+/// Render ItemLabel with scope guard of the same name.
+struct ItemLabelScopeGuard : public IdScopeGuard
+{
+    ItemLabelScopeGuard(const char* title, const ea::optional<Color>& color = ea::nullopt, bool isLeft = true)
+        : IdScopeGuard(title)
+    {
+        ItemLabel(title, color, isLeft);
+    }
+};
 
 }
 

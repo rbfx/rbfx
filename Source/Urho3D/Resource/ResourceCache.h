@@ -232,6 +232,8 @@ private:
     void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
     /// Handle file changed to reload resource.
     void HandleFileChanged(StringHash eventType, VariantMap& eventData);
+    /// Handle object reflection removed.
+    void HandleReflectionRemoved(ObjectReflection* reflection);
 
     /// Mutex for thread-safe access to the resource directories, resource packages and resource dependencies.
     mutable Mutex resourceMutex_;

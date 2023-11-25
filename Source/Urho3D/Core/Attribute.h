@@ -51,6 +51,8 @@ enum AttributeMode
     AM_READONLY = 1 << 5,
     /// Attribute should be saved in prefab.
     AM_PREFAB = 1 << 6,
+    /// Attribute should be saved in temporary storages even when other serialization is disabled.
+    AM_TEMPORARY = 1 << 7,
 
     /// Default mode, same as AM_FILE and AM_PREFAB.
     AM_DEFAULT = 1 << 0 | 1 << 6,

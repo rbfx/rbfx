@@ -108,10 +108,10 @@ void Sprite2D::SetTexture(Texture2D* texture)
     // Could also choose border mode, but in that case a universally good border color (without alpha bugs)
     // would be hard to choose. Ideal is for the user to configure the texture parameters in its parameter
     // XML file.
-    if (texture_->GetAddressMode(COORD_U) == ADDRESS_WRAP)
+    if (texture_->GetAddressMode(TextureCoordinate::U) == ADDRESS_WRAP)
     {
-        texture_->SetAddressMode(COORD_U, ADDRESS_CLAMP);
-        texture_->SetAddressMode(COORD_V, ADDRESS_CLAMP);
+        texture_->SetAddressMode(TextureCoordinate::U, ADDRESS_CLAMP);
+        texture_->SetAddressMode(TextureCoordinate::V, ADDRESS_CLAMP);
     }
 }
 

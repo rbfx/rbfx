@@ -228,6 +228,8 @@ namespace AttributeMetadata
     URHO3D_GLOBAL_CONSTANT(ConstString VectorStructElements{"VectorStructElements"});
     /// Flag that indicates that attribute is an action.
     URHO3D_GLOBAL_CONSTANT(ConstString IsAction{"IsAction"});
+    /// Flag that indicates that the attribute should be resizable by user. Applies only to ResourceRefList.
+    URHO3D_GLOBAL_CONSTANT(ConstString AllowResize{"AllowResize"});
 }
 
 // The following macros need to be used within a class member function such as ClassName::RegisterObject().

@@ -282,7 +282,7 @@ bool EditResourceRef(StringHash& type, ea::string& name, const StringVector* all
     }
 
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::InputText("##Name", &name, ImGuiInputTextFlags_EnterReturnsTrue))
+    if (ui::InputText("##Name", &name, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo))
         modified = true;
 
     if (allowedTypes != nullptr)
@@ -329,7 +329,8 @@ bool EditResourceRef(StringHash& type, ea::string& name, const StringVector* all
     return modified;
 }
 
-bool EditResourceRefList(StringHash& type, StringVector& names, const StringVector* allowedTypes, bool resizable)
+bool EditResourceRefList(StringHash& type, StringVector& names, const StringVector* allowedTypes, bool resizable,
+    const StringVector* elementNames)
 {
     bool modified = false;
     ea::optional<unsigned> pendingRemove;
@@ -345,6 +346,13 @@ bool EditResourceRefList(StringHash& type, StringVector& names, const StringVect
             ui::SameLine();
             if (ui::IsItemHovered())
                 ui::SetTooltip("Remove item");
+        }
+        else if (elementNames && elementNames->size() > 0)
+        {
+            const unsigned wrappedIndex = index % elementNames->size();
+            if (wrappedIndex == 0)
+                ui::Separator();
+            Widgets::ItemLabel(StripSpaces((*elementNames)[wrappedIndex].c_str()));
         }
 
         if (EditResourceRef(type, name, allowedTypes))
@@ -521,7 +529,7 @@ bool EditStringVector(StringVector& value, bool resizable)
         }
 
         ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-        if (ui::InputText("", &element, ImGuiInputTextFlags_EnterReturnsTrue))
+        if (ui::InputText("", &element, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo))
             return true;
 
         ++index;
@@ -545,7 +553,8 @@ bool EditStringVector(StringVector& value, bool resizable)
 
         ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
 
-        const bool isTextClicked = ui::InputText("", &newElement, ImGuiInputTextFlags_EnterReturnsTrue);
+        const bool isTextClicked =
+            ui::InputText("", &newElement, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo);
 
         if (isButtonClicked || isTextClicked)
         {
@@ -681,11 +690,35 @@ bool EditVariantVector2(Variant& var, const EditVariantOptions& options)
     return false;
 }
 
+bool EditVariantIntVector2(Variant& var, const EditVariantOptions& options)
+{
+    IntVector2 value = var.GetIntVector2();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::DragInt2("", &value.x_, options.step_, static_cast<int>(options.min_), static_cast<int>(options.max_)))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
 bool EditVariantVector3(Variant& var, const EditVariantOptions& options)
 {
     Vector3 value = var.GetVector3();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
     if (ui::DragFloat3("", &value.x_, options.step_, options.min_, options.max_, GetFormatStringForStep(options.step_).c_str()))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariantIntVector3(Variant& var, const EditVariantOptions& options)
+{
+    IntVector3 value = var.GetIntVector3();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::DragInt3("", &value.x_, options.step_, static_cast<int>(options.min_), static_cast<int>(options.max_)))
     {
         var = value;
         return true;
@@ -754,7 +787,7 @@ bool EditVariantString(Variant& var, const EditVariantOptions& options)
 {
     ea::string value = var.GetString();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::InputText("", &value, ImGuiInputTextFlags_EnterReturnsTrue))
+    if (ui::InputText("", &value, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo))
     {
         var = value;
         return true;
@@ -808,12 +841,18 @@ bool EditVariantResourceRefList(Variant& var, const EditVariantOptions& options)
     ResourceRefList value = var.GetResourceRefList();
     const unsigned effectiveLines = value.names_.size() + (options.allowResize_ ? 1 : 0);
     if (effectiveLines > 1)
+    {
         ui::NewLine();
-    if (EditResourceRefList(value.type_, value.names_, options.resourceTypes_, options.allowResize_))
+        ui::Indent();
+    }
+    if (EditResourceRefList(value.type_, value.names_, options.resourceTypes_, options.allowResize_,
+            options.sizedStructVectorElements_))
     {
         var = value;
         return true;
     }
+    if (effectiveLines > 1)
+        ui::Unindent();
     return false;
 }
 
@@ -932,7 +971,12 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
 
     // case VAR_VARIANTMAP:
     // case VAR_INTRECT:
-    // case VAR_INTVECTOR2:
+
+    case VAR_INTVECTOR2:
+        return EditVariantIntVector2(var, options);
+    case VAR_INTVECTOR3:
+        return EditVariantIntVector3(var, options);
+
     // case VAR_MATRIX3:
     // case VAR_MATRIX3X4:
     // case VAR_MATRIX4:
@@ -980,12 +1024,8 @@ void Image(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, const ImVe
     auto systemUI = context->GetSubsystem<SystemUI>();
 
     systemUI->ReferenceTexture(texture);
-#if URHO3D_D3D11
-    void* textureId = texture->GetShaderResourceView();
-#else
-    void* textureId = texture->GetGPUObject();
-#endif
-    ui::Image(textureId, size, uv0, uv1, tintCol, borderCol);
+
+    ui::Image(ToImTextureID(texture), size, uv0, uv1, tintCol, borderCol);
 }
 
 void ImageItem(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tintCol, const ImVec4& borderCol)
@@ -1003,12 +1043,17 @@ bool ImageButton(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, cons
     auto systemUI = context->GetSubsystem<SystemUI>();
 
     systemUI->ReferenceTexture(texture);
-#if URHO3D_D3D11
-    void* textureId = texture->GetShaderResourceView();
-#else
-    void* textureId = texture->GetGPUObject();
-#endif
-    return ui::ImageButton(textureId, size, uv0, uv1, framePadding, bgCol, tintCol);
+
+    ImGuiWindow* window = ui::GetCurrentWindow();
+    const ImGuiStyle& style = ui::GetStyle();
+
+    ui::PushID(texture);
+    const ImGuiID id = window->GetID("#image");
+    ui::PopID();
+
+    const auto framePaddingFloat = static_cast<float>(framePadding);
+    const ImVec2 padding = (framePadding >= 0) ? ImVec2(framePaddingFloat, framePaddingFloat) : style.FramePadding;
+    return ui::ImageButtonEx(id, ToImTextureID(texture), size, uv0, uv1, padding, bgCol, tintCol);
 }
 
 }

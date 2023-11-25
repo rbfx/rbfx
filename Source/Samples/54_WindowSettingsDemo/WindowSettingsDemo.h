@@ -30,6 +30,8 @@ namespace Urho3D
 class Window;
 class DropDownList;
 class CheckBox;
+class ListView;
+class Text;
 
 }
 
@@ -68,20 +70,17 @@ private:
     /// The UI's root UIElement.
     UIElement* uiRoot_{};
 
-    /// Monitor control.
+    /// UI elements.
+    /// @{
     DropDownList* monitorControl_{};
-    /// Resolution control.
-    DropDownList* resolutionControl_{};
-    /// Fullscreen control.
+    Text* resolutionLabel_{};
+    ListView* resolutionControl_{};
     CheckBox* fullscreenControl_{};
-    /// Borderless flag control.
     CheckBox* borderlessControl_{};
-    /// Resizable flag control.
     CheckBox* resizableControl_{};
-    /// V-sync flag control.
     CheckBox* vsyncControl_{};
-    /// MSAA control.
     DropDownList* multiSampleControl_{};
+    /// @}
 };
 
 

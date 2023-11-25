@@ -25,9 +25,11 @@
 #include "../Graphics/Geometry.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Material.h"
-#include "../Graphics/Renderer.h"
+#include "../Graphics/GraphicsUtils.h"
 #include "../Graphics/Technique.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../RenderPipeline/BatchStateCache.h"
+#include "../RenderPipeline/ShaderConsts.h"
 
 #include "../DebugNew.h"
 
@@ -39,8 +41,19 @@ void BatchStateCache::Invalidate()
     cache_.clear();
 }
 
+void BatchStateCache::SetOutputDesc(const PipelineStateOutputDesc& outputDesc)
+{
+    if (outputDesc_ != outputDesc)
+    {
+        outputDesc_ = outputDesc;
+        Invalidate();
+    }
+}
+
 PipelineState* BatchStateCache::GetPipelineState(const BatchStateLookupKey& key) const
 {
+    URHO3D_ASSERT(outputDesc_);
+
     const auto iter = cache_.find(key);
     if (iter == cache_.end() || iter->second.invalidated_.load(std::memory_order_relaxed))
         return nullptr;
@@ -61,13 +74,15 @@ PipelineState* BatchStateCache::GetPipelineState(const BatchStateLookupKey& key)
 PipelineState* BatchStateCache::GetOrCreatePipelineState(const BatchStateCreateKey& key,
     const BatchStateCreateContext& ctx, BatchStateCacheCallback* callback)
 {
+    URHO3D_ASSERT(outputDesc_);
+
     CachedBatchState& entry = cache_[key];
     if (!entry.pipelineState_ || entry.invalidated_.load(std::memory_order_relaxed)
         || key.geometry_->GetPipelineStateHash() != entry.geometryHash_
         || key.material_->GetPipelineStateHash() != entry.materialHash_
         || key.pass_->GetPipelineStateHash() != entry.passHash_)
     {
-        entry.pipelineState_ = callback->CreateBatchPipelineState(key, ctx);
+        entry.pipelineState_ = callback->CreateBatchPipelineState(key, ctx, *outputDesc_);
         entry.geometryHash_ = key.geometry_->GetPipelineStateHash();
         entry.materialHash_ = key.material_->GetPipelineStateHash();
         entry.passHash_ = key.pass_->GetPipelineStateHash();
@@ -75,6 +90,15 @@ PipelineState* BatchStateCache::GetOrCreatePipelineState(const BatchStateCreateK
     }
 
     return entry.pipelineState_;
+}
+
+PipelineState* BatchStateCache::GetOrCreatePlaceholderPipelineState(
+    unsigned vertexStride, BatchStateCacheCallback* callback)
+{
+    SharedPtr<PipelineState>& entry = placeholderCache_[vertexStride];
+    if (!entry)
+        entry = callback->CreateBatchPipelineStatePlaceholder(vertexStride, *outputDesc_);
+    return entry && entry->IsValid() ? entry : nullptr;
 }
 
 void UIBatchStateCache::Invalidate()
@@ -126,12 +150,16 @@ PipelineState* DefaultUIBatchStateCache::GetOrCreatePipelineState(
 SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
     const UIBatchStateKey& key, const UIBatchStateCreateContext& ctx)
 {
-    Graphics* graphics = GetSubsystem<Graphics>();
-    Renderer* renderer = GetSubsystem<Renderer>();
+    auto graphics = GetSubsystem<Graphics>();
+    auto pipelineStateCache = GetSubsystem<PipelineStateCache>();
 
-    PipelineStateDesc desc;
-    desc.InitializeInputLayout(GeometryBufferArray{ { ctx.vertexBuffer_ }, ctx.indexBuffer_, nullptr });
+    GraphicsPipelineStateDesc desc;
+
+    desc.debugName_ = Format("UI Batch for '{}'", key.material_->GetName());
+
+    InitializeInputLayout(desc.inputLayout_, {ctx.vertexBuffer_});
     desc.primitiveType_ = TRIANGLE_LIST;
+    desc.output_ = key.outputDesc_;
     desc.colorWriteEnabled_ = true;
     desc.cullMode_ = CULL_NONE;
     desc.depthCompareFunction_ = CMP_ALWAYS;
@@ -140,6 +168,14 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
     desc.stencilTestEnabled_ = false;
     desc.blendMode_ = key.blendMode_;
     desc.scissorTestEnabled_ = true;
+
+    for (const auto& [nameHash, texture] : key.material_->GetTextures())
+    {
+        if (texture.value_)
+            desc.samplers_.Add(nameHash, texture.value_->GetSamplerStateDesc());
+    }
+    if (ctx.defaultSampler_)
+        desc.samplers_.Add(ShaderResources::Albedo, *ctx.defaultSampler_);
 
     vertexShaderDefines_ = key.pass_->GetEffectiveVertexShaderDefines();
     pixelShaderDefines_ = key.pass_->GetEffectivePixelShaderDefines();
@@ -150,16 +186,10 @@ SharedPtr<PipelineState> DefaultUIBatchStateCache::CreateUIBatchPipelineState(
         pixelShaderDefines_ += " URHO3D_LINEAR_OUTPUT";
     }
 
-    if (graphics->GetCaps().constantBuffersSupported_)
-    {
-        vertexShaderDefines_ += " URHO3D_USE_CBUFFERS";
-        pixelShaderDefines_ += " URHO3D_USE_CBUFFERS";
-    }
-
     desc.vertexShader_ = graphics->GetShader(VS, key.pass_->GetVertexShader(), vertexShaderDefines_);
     desc.pixelShader_ = graphics->GetShader(PS, key.pass_->GetPixelShader(), pixelShaderDefines_);
 
-    return renderer->GetOrCreatePipelineState(desc);
+    return pipelineStateCache->GetGraphicsPipelineState(desc);
 }
 
 }

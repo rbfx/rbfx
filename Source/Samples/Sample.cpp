@@ -261,55 +261,15 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
             renderer->SetTextureQuality((MaterialQuality)quality);
         }
 
-        // Material quality
+        // Default texture filter
         else if (key == '2')
         {
-            auto quality = (unsigned)renderer->GetMaterialQuality();
-            ++quality;
-            if (quality > QUALITY_HIGH)
-                quality = QUALITY_LOW;
-            renderer->SetMaterialQuality((MaterialQuality)quality);
+            auto filterMode = (unsigned)renderer->GetTextureFilterMode();
+            ++filterMode;
+            if (filterMode > FILTER_ANISOTROPIC)
+                filterMode = FILTER_NEAREST;
+            renderer->SetTextureFilterMode((TextureFilterMode)filterMode);
         }
-
-        // Specular lighting
-        else if (key == '3')
-            renderer->SetSpecularLighting(!renderer->GetSpecularLighting());
-
-        // Shadow rendering
-        else if (key == '4')
-            renderer->SetDrawShadows(!renderer->GetDrawShadows());
-
-        // Shadow map resolution
-        else if (key == '5')
-        {
-            int shadowMapSize = renderer->GetShadowMapSize();
-            shadowMapSize *= 2;
-            if (shadowMapSize > 2048)
-                shadowMapSize = 512;
-            renderer->SetShadowMapSize(shadowMapSize);
-        }
-
-        // Shadow depth and filtering quality
-        else if (key == '6')
-        {
-            ShadowQuality quality = renderer->GetShadowQuality();
-            quality = (ShadowQuality)(quality + 1);
-            if (quality > SHADOWQUALITY_BLUR_VSM)
-                quality = SHADOWQUALITY_SIMPLE_16BIT;
-            renderer->SetShadowQuality(quality);
-        }
-
-        // Occlusion culling
-        else if (key == '7')
-        {
-            bool occlusion = renderer->GetMaxOccluderTriangles() > 0;
-            occlusion = !occlusion;
-            renderer->SetMaxOccluderTriangles(occlusion ? 5000 : 0);
-        }
-
-        // Instancing
-        else if (key == '8')
-            renderer->SetDynamicInstancing(!renderer->GetDynamicInstancing());
 
         // Take screenshot
         else if (key == '9')
@@ -317,9 +277,14 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
             Graphics* graphics = GetSubsystem<Graphics>();
             Image screenshot(context_);
             graphics->TakeScreenShot(screenshot);
-            // Here we save in the Data folder with date and time appended
-            screenshot.SavePNG(GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Screenshot_" +
-                Time::GetTimeStamp().replaced(':', '_').replaced('.', '_').replaced(' ', '_') + ".png");
+
+            // Save into app directory
+            const ea::string screenshotPath = GetSubsystem<Engine>()->GetAppPreferencesDir() + "Screenshots/";
+            const ea::string screenshotName =
+                "Screenshot_" + Time::GetTimeStamp().replaced(':', '_').replaced('.', '_').replaced(' ', '_') + ".png";
+
+            GetSubsystem<FileSystem>()->CreateDirsRecursive(screenshotPath);
+            screenshot.SavePNG(screenshotPath + screenshotName);
         }
     }
 }

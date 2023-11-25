@@ -246,7 +246,7 @@ void MoveAndOrbitController::EvaluateTouchRects(IntRect& movementRect, IntRect& 
     {
         if (const auto graphics = GetSubsystem<Graphics>())
         {
-            screenRect = graphics->GetViewport();
+            screenRect = {IntVector2::ZERO, graphics->GetSwapChainSize()};
         }
     }
 

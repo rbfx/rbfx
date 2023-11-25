@@ -107,6 +107,7 @@ private:
     LightProcessor* lightProcessor_{};
     Light* light_{};
     unsigned splitIndex_{};
+    RenderBackend renderBackend_{};
     /// @}
 
     /// Internal cached objects

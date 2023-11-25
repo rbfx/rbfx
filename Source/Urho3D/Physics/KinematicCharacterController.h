@@ -50,6 +50,8 @@ public:
 
     /// Perform post-load after deserialization. Acquire the components from the scene nodes.
     void ApplyAttributes() override;
+    /// Handle enabled/disabled state change.
+    void OnSetEnabled() override;
 
     /// Return character position in world space without interpolation.
     Vector3 GetRawPosition() const;
@@ -148,8 +150,10 @@ protected:
     void ApplySettings(bool readdToWorld);
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
     void OnSceneSet(Scene* scene) override;
+    void ActivateIfEnabled();
     void AddKinematicToWorld();
     void RemoveKinematicFromWorld();
+    bool IsAddedToWorld() const;
 
     /// Instantly reset character position to new value.
     void WarpKinematic(const Vector3& position);

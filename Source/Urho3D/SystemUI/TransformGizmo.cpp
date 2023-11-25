@@ -1,32 +1,14 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2023 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../SystemUI/TransformGizmo.h"
+#include "Urho3D/SystemUI/TransformGizmo.h"
 
-#include <Urho3D/Graphics/Camera.h>
-#include <Urho3D/Graphics/Octree.h>
-#include <Urho3D/SystemUI/SystemUI.h>
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/SystemUI/SystemUI.h"
 
 #include <ImGuizmo/ImGuizmo.h>
 
@@ -49,23 +31,61 @@ Rect GetMainViewportRect()
     return Rect{ToVector2(pos), ToVector2(pos + size)};
 }
 
-ImGuizmo::OPERATION GetInternalOperation(TransformGizmoOperation op)
+ImGuizmo::OPERATION GetInternalOperation(TransformGizmoOperation op, TransformGizmoAxes axes)
 {
+    int result = 0;
     switch (op)
     {
     case TransformGizmoOperation::Translate:
-        return ImGuizmo::TRANSLATE;
+        if (axes & TransformGizmoAxis::X)
+            result |= ImGuizmo::TRANSLATE_X;
+        if (axes & TransformGizmoAxis::Y)
+            result |= ImGuizmo::TRANSLATE_Y;
+        if (axes & TransformGizmoAxis::Z)
+            result |= ImGuizmo::TRANSLATE_Z;
+        break;
+
     case TransformGizmoOperation::Rotate:
-        return ImGuizmo::ROTATE;
+        if (axes & TransformGizmoAxis::X)
+            result |= ImGuizmo::ROTATE_X;
+        if (axes & TransformGizmoAxis::Y)
+            result |= ImGuizmo::ROTATE_Y;
+        if (axes & TransformGizmoAxis::Z)
+            result |= ImGuizmo::ROTATE_Z;
+        if (axes & TransformGizmoAxis::Screen)
+            result |= ImGuizmo::ROTATE_SCREEN;
+        break;
+
     case TransformGizmoOperation::Scale:
-        return ImGuizmo::SCALE;
+        if (axes & TransformGizmoAxis::Universal)
+            result |= ImGuizmo::SCALE_XU | ImGuizmo::SCALE_YU | ImGuizmo::SCALE_ZU;
+        else
+        {
+            if (axes & TransformGizmoAxis::X)
+                result |= ImGuizmo::SCALE_X;
+            if (axes & TransformGizmoAxis::Y)
+                result |= ImGuizmo::SCALE_Y;
+            if (axes & TransformGizmoAxis::Z)
+                result |= ImGuizmo::SCALE_Z;
+        }
+        break;
+
     default:
         URHO3D_ASSERT(0);
-        return ImGuizmo::TRANSLATE;
+        result = ImGuizmo::TRANSLATE;
+        break;
     }
+
+    if (!result)
+    {
+        URHO3D_ASSERT(0);
+        result = ImGuizmo::TRANSLATE;
+    }
+
+    return static_cast<ImGuizmo::OPERATION>(result);
 }
 
-}
+} // namespace
 
 Matrix4 TransformGizmo::internalTransformMatrix;
 
@@ -86,11 +106,10 @@ TransformGizmo::TransformGizmo(Camera* camera, bool isMainViewport, const Rect& 
     , isMainViewport_(isMainViewport)
     , viewportRect_(viewportRect)
 {
-
 }
 
-ea::optional<Matrix4> TransformGizmo::ManipulateTransform(Matrix4& transform,
-    TransformGizmoOperation op, bool local, const Vector3& snap) const
+ea::optional<Matrix4> TransformGizmo::ManipulateTransform(
+    Matrix4& transform, TransformGizmoOperation op, TransformGizmoAxes axes, bool local, const Vector3& snap) const
 {
     if (op == TransformGizmoOperation::None)
         return ea::nullopt;
@@ -100,13 +119,13 @@ ea::optional<Matrix4> TransformGizmo::ManipulateTransform(Matrix4& transform,
     if (!ImGuizmo::IsUsing())
         internalTransformMatrix = transform.Transpose();
 
-    const ImGuizmo::OPERATION operation = GetInternalOperation(op);
+    const ImGuizmo::OPERATION operation = GetInternalOperation(op, axes);
     const ImGuizmo::MODE mode = local ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
     const Vector3 snapVector = snap * Vector3::ONE;
 
     Matrix4 delta;
-    ImGuizmo::Manipulate(internalViewMatrix_.Data(), internalProjMatrix_.Data(), operation,
-        mode, &internalTransformMatrix.m00_, &delta.m00_, snap != Vector3::ZERO ? snapVector.Data() : nullptr);
+    ImGuizmo::Manipulate(internalViewMatrix_.Data(), internalProjMatrix_.Data(), operation, mode,
+        &internalTransformMatrix.m00_, &delta.m00_, snap != Vector3::ZERO ? snapVector.Data() : nullptr);
     transform = internalTransformMatrix.Transpose();
 
     if (!ImGuizmo::IsUsing())
@@ -115,30 +134,35 @@ ea::optional<Matrix4> TransformGizmo::ManipulateTransform(Matrix4& transform,
     return delta.Transpose();
 }
 
-ea::optional<Vector3> TransformGizmo::ManipulatePosition(const Matrix4& transform, bool local, const Vector3& snap) const
+ea::optional<Vector3> TransformGizmo::ManipulatePosition(
+    const Matrix4& transform, TransformGizmoAxes axes, bool local, const Vector3& snap) const
 {
     Matrix4 transformCopy = transform;
-    const auto delta = ManipulateTransform(transformCopy, TransformGizmoOperation::Translate, local, snap);
+    const auto delta = ManipulateTransform(transformCopy, TransformGizmoOperation::Translate, axes, local, snap);
     if (!delta)
         return ea::nullopt;
 
     return Matrix3x4(*delta).Translation();
 }
 
-ea::optional<Quaternion> TransformGizmo::ManipulateRotation(const Matrix4& transform, bool local, float snap) const
+ea::optional<Quaternion> TransformGizmo::ManipulateRotation(
+    const Matrix4& transform, TransformGizmoAxes axes, bool local, float snap) const
 {
     Matrix4 transformCopy = transform;
-    const auto delta = ManipulateTransform(transformCopy, TransformGizmoOperation::Rotate, local, snap * Vector3::ONE);
+    const Vector3 snapVector = snap * Vector3::ONE;
+    const auto delta = ManipulateTransform(transformCopy, TransformGizmoOperation::Rotate, axes, local, snapVector);
     if (!delta)
         return ea::nullopt;
 
     return Matrix3x4(*delta).Rotation();
 }
 
-ea::optional<Vector3> TransformGizmo::ManipulateScale(const Matrix4& transform, bool local, float snap) const
+ea::optional<Vector3> TransformGizmo::ManipulateScale(
+    const Matrix4& transform, TransformGizmoAxes axes, bool local, float snap) const
 {
     Matrix4 transformCopy = transform;
-    const auto delta = ManipulateTransform(transformCopy, TransformGizmoOperation::Scale, local, snap * Vector3::ONE);
+    const Vector3 snapVector = snap * Vector3::ONE;
+    const auto delta = ManipulateTransform(transformCopy, TransformGizmoOperation::Scale, axes, local, snapVector);
     if (!delta)
         return ea::nullopt;
 
@@ -165,22 +189,18 @@ TransformNodesGizmo::TransformNodesGizmo(Node* activeNode)
 {
 }
 
-bool TransformNodesGizmo::Manipulate(const TransformGizmo& gizmo,
-    TransformGizmoOperation op, bool local, bool pivoted, const Vector3& snap)
+bool TransformNodesGizmo::Manipulate(const TransformGizmo& gizmo, TransformGizmoOperation op, TransformGizmoAxes axes,
+    bool local, bool pivoted, const Vector3& snap)
 {
     switch (op)
     {
-    case TransformGizmoOperation::Translate:
-        return ManipulatePosition(gizmo, local, pivoted, snap);
+    case TransformGizmoOperation::Translate: return ManipulatePosition(gizmo, axes, local, pivoted, snap);
 
-    case TransformGizmoOperation::Rotate:
-        return ManipulateRotation(gizmo, local, pivoted, snap);
+    case TransformGizmoOperation::Rotate: return ManipulateRotation(gizmo, axes, local, pivoted, snap);
 
-    case TransformGizmoOperation::Scale:
-        return ManipulateScale(gizmo, local, pivoted, snap);
+    case TransformGizmoOperation::Scale: return ManipulateScale(gizmo, axes, local, pivoted, snap);
 
-    default:
-        return false;
+    default: return false;
     }
 }
 
@@ -200,9 +220,10 @@ Matrix4 TransformNodesGizmo::GetGizmoTransform(bool pivoted) const
     }
 }
 
-bool TransformNodesGizmo::ManipulatePosition(const TransformGizmo& gizmo, bool local, bool pivoted, const Vector3& snap)
+bool TransformNodesGizmo::ManipulatePosition(
+    const TransformGizmo& gizmo, TransformGizmoAxes axes, bool local, bool pivoted, const Vector3& snap)
 {
-    const auto delta = gizmo.ManipulatePosition(GetGizmoTransform(pivoted), local, snap);
+    const auto delta = gizmo.ManipulatePosition(GetGizmoTransform(pivoted), axes, local, snap);
     if (!delta)
         return false;
 
@@ -222,10 +243,11 @@ bool TransformNodesGizmo::ManipulatePosition(const TransformGizmo& gizmo, bool l
     return true;
 }
 
-bool TransformNodesGizmo::ManipulateRotation(const TransformGizmo& gizmo, bool local, bool pivoted, const Vector3& snap)
+bool TransformNodesGizmo::ManipulateRotation(
+    const TransformGizmo& gizmo, TransformGizmoAxes axes, bool local, bool pivoted, const Vector3& snap)
 {
     const Matrix4 anchorTransform = GetGizmoTransform(pivoted);
-    const auto delta = gizmo.ManipulateRotation(anchorTransform, local, snap.x_);
+    const auto delta = gizmo.ManipulateRotation(anchorTransform, axes, local, snap.x_);
     if (!delta)
         return false;
 
@@ -248,10 +270,11 @@ bool TransformNodesGizmo::ManipulateRotation(const TransformGizmo& gizmo, bool l
     return true;
 }
 
-bool TransformNodesGizmo::ManipulateScale(const TransformGizmo& gizmo, bool local, bool pivoted, const Vector3& snap)
+bool TransformNodesGizmo::ManipulateScale(
+    const TransformGizmo& gizmo, TransformGizmoAxes axes, bool local, bool pivoted, const Vector3& snap)
 {
     const Matrix4 anchorTransform = GetGizmoTransform(pivoted);
-    const auto delta = gizmo.ManipulateScale(anchorTransform, local, snap.x_);
+    const auto delta = gizmo.ManipulateScale(anchorTransform, axes, local, snap.x_);
     if (!delta)
         return false;
 
@@ -272,7 +295,6 @@ bool TransformNodesGizmo::ManipulateScale(const TransformGizmo& gizmo, bool loca
     }
 
     return true;
-
 }
 
-}
+} // namespace Urho3D

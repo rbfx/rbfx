@@ -451,7 +451,7 @@ bool AnimationSet2D::EndLoadSpriter()
             SharedPtr<Texture2D> texture(MakeShared<Texture2D>(context_));
             texture->SetMipsToSkip(QUALITY_LOW, 0);
             texture->SetNumLevels(1);
-            texture->SetSize(allocator.GetWidth(), allocator.GetHeight(), Graphics::GetRGBAFormat());
+            texture->SetSize(allocator.GetWidth(), allocator.GetHeight(), TextureFormat::TEX_FORMAT_RGBA8_UNORM);
 
             auto textureDataSize = (unsigned)allocator.GetWidth() * allocator.GetHeight() * 4;
             ea::shared_array<unsigned char> textureData(new unsigned char[textureDataSize]);
@@ -489,7 +489,7 @@ bool AnimationSet2D::EndLoadSpriter()
             texture->SetNumLevels(1);
 
             SpriteInfo& info = spriteInfos[0];
-            texture->SetData(info.image_, true);
+            texture->SetData(info.image_);
 
             sprite_ = MakeShared<Sprite2D>(context_);
             sprite_->SetTexture(texture);

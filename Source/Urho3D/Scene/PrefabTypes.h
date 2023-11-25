@@ -74,7 +74,7 @@ enum class PrefabSaveFlag
     SaveDefaultValues = 1 << 2,
     /// Whether the prefab is saved. Attributes without AM_PREFAB flag will be ignored.
     Prefab = 1 << 3,
-    /// Whether to save temporary objects.
+    /// Whether to save temporary objects and attributes.
     SaveTemporary = 1 << 4,
 };
 URHO3D_FLAGSET(PrefabSaveFlag, PrefabSaveFlags);
@@ -99,6 +99,8 @@ enum class PrefabLoadFlag
     IgnoreRootAttributes = 1 << 5,
     /// Keep "temporary" state as is.
     KeepTemporaryState = 1 << 6,
+    /// Skip "ApplyAttributes" callback.
+    SkipApplyAttributes = 1 << 7,
 };
 URHO3D_FLAGSET(PrefabLoadFlag, PrefabLoadFlags);
 

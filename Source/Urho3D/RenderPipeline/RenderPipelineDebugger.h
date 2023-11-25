@@ -37,7 +37,7 @@ class Geometry;
 class Light;
 class Material;
 class PipelineState;
-class ShaderVariation;
+class RawShader;
 struct PipelineBatch;
 
 struct URHO3D_API DebugFrameSnapshotBatch
@@ -81,7 +81,7 @@ struct URHO3D_API DebugFrameSnapshot
     ea::vector<DebugFrameSnapshotPass> passes_;
     ea::unordered_set<PipelineState*> scenePipelineStates_{};
     ea::unordered_set<Material*> sceneMaterials_{};
-    ea::unordered_set<ShaderVariation*> sceneShaders_{};
+    ea::unordered_set<RawShader*> sceneShaders_{};
 
     ea::string ToString() const;
     ea::string ScenePipelineStatesToString() const;

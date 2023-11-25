@@ -550,7 +550,7 @@ void SceneReplication::HandleConnect(StringHash eventType, VariantMap& eventData
         address = "localhost"; // Use localhost to connect if nothing else specified
 
     // Connect to server, specify scene to use as a client for replication
-    network->Connect(address, SERVER_PORT, scene_);
+    network->Connect(URL(Format("{}:{}", address, SERVER_PORT)), scene_);
 
     UpdateButtons();
 }

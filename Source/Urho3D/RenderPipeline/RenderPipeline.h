@@ -57,17 +57,24 @@ public:
     virtual const FrameInfo& GetFrameInfo() const = 0;
     /// Return render pipeline statistics for profiling.
     virtual const RenderPipelineStats& GetStats() const = 0;
+    /// Draw debug geometries, if applicable.
+    virtual void DrawDebugGeometries(bool depthTest) = 0;
+    /// Draw debug lights, if applicable.
+    virtual void DrawDebugLights(bool depthTest) = 0;
 
     /// Implement RenderPipelineInterface
     /// @{
     Context* GetContext() const override { return BaseClassName::GetContext(); }
     RenderPipelineDebugger* GetDebugger() override { return nullptr; }
+    bool IsLinearColorSpace() const override { return linearColorSpace_; }
     /// @}
 
 protected:
     RenderPipeline* const renderPipeline_{};
     Graphics* const graphics_{};
     Renderer* const renderer_{};
+
+    bool linearColorSpace_{};
 };
 
 /// Scene component that spawns render pipeline instances.

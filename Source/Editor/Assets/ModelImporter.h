@@ -32,8 +32,10 @@ namespace Urho3D
 
 void Assets_ModelImporter(Context* context, Project* project);
 
+class ModelView;
+
 /// Asset transformer that imports GLTF models.
-class ModelImporter : public AssetTransformer
+class ModelImporter : public AssetTransformer, private GLTFImporterCallback
 {
     URHO3D_OBJECT(ModelImporter, AssetTransformer);
 
@@ -46,16 +48,42 @@ public:
     bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output,
         const AssetTransformerVector& transformers) override;
 
-private:
+protected:
+    struct ResetRootMotionInfo
+    {
+        float factor_{};
+        Vector3 positionWeight_{};
+        float rotationSwingWeight_{};
+        float rotationTwistWeight_{};
+        float scaleWeight_{};
+
+        void SerializeInBlock(Archive& archive);
+    };
+
     struct ModelMetadata
     {
         ea::string metadataFileName_;
         StringVector appendFiles_;
         ea::unordered_map<ea::string, ea::string> nodeRenames_;
+        ea::unordered_map<ea::string, ResetRootMotionInfo> resetRootMotion_;
+        ea::unordered_map<ea::string, StringVariantMap> resourceMetadata_;
 
         void SerializeInBlock(Archive& archive);
     };
 
+    /// Implement GLTFImporterCallback.
+    /// @{
+    void OnModelLoaded(ModelView& modelView) override;
+    void OnAnimationLoaded(Animation& animation) override;
+    /// @}
+
+    /// Tweaks.
+    /// @{
+    void ResetRootMotion(Animation& animation, const ResetRootMotionInfo& info);
+    void AppendResourceMetadata(ResourceWithMetadata& resource) const;
+    /// @}
+
+private:
     /// Information about GLTF file that can be imported directly.
     struct GLTFFileInfo
     {
@@ -78,7 +106,15 @@ private:
     ToolManager* GetToolManager() const;
 
     GLTFImporterSettings settings_;
+
+    bool repairLooping_{false};
+
     bool blenderApplyModifiers_{true};
+    bool lightmapUVGenerate_{};
+    float lightmapUVTexelsPerUnit_{10.0f};
+    unsigned lightmapUVChannel_{1};
+
+    const ModelMetadata* currentMetadata_{};
 };
 
 } // namespace Urho3D

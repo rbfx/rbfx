@@ -1182,6 +1182,7 @@ void RegisterPhysicsLibrary(Context* context)
     Constraint::RegisterObject(context);
     PhysicsWorld::RegisterObject(context);
     RaycastVehicle::RegisterObject(context);
+    RaycastVehicleWheel::RegisterObject(context);
     KinematicCharacterController::RegisterObject(context);
     TriggerAnimator::RegisterObject(context);
 }

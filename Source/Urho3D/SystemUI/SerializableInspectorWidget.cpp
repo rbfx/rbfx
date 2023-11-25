@@ -59,6 +59,13 @@ const AttributeHookFunction& SerializableInspectorWidget::GetAttributeHook(const
     return iter != attributeHooks.end() ? iter->second : empty;
 }
 
+void SerializableInspectorWidget::CopyAttributeHook(const AttributeHookKey& from, const AttributeHookKey& to)
+{
+    const AttributeHookFunction& hook = GetAttributeHook(from);
+    if (hook)
+        RegisterAttributeHook(to, hook);
+}
+
 void SerializableInspectorWidget::RegisterObjectHook(const ObjectHookKey& key, const ObjectHookFunction& function)
 {
     objectHooks[key] = function;
@@ -74,6 +81,13 @@ const ObjectHookFunction& SerializableInspectorWidget::GetObjectHook(const Objec
     static const ObjectHookFunction empty{};
     const auto iter = objectHooks.find(key);
     return iter != objectHooks.end() ? iter->second : empty;
+}
+
+void SerializableInspectorWidget::CopyObjectHook(const ObjectHookKey& from, const ObjectHookKey& to)
+{
+    const ObjectHookFunction& hook = GetObjectHook(from);
+    if (hook)
+        RegisterObjectHook(to, hook);
 }
 
 SerializableInspectorWidget::SerializableInspectorWidget(Context* context, const WeakSerializableVector& objects)
@@ -260,6 +274,13 @@ void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
         options = options.AllowResize().AllowTypeChange();
     else if (!info.enumNames_.empty())
         options = options.Enum(info.enumNames_);
+    else if (info.type_ == VAR_RESOURCEREFLIST)
+    {
+        if (const StringVector& structElements = info.GetMetadata(AttributeMetadata::VectorStructElements).GetStringVector(); !structElements.empty())
+            options = options.SizedStructVector(structElements);
+        else if (info.GetMetadata(AttributeMetadata::AllowResize).GetBool())
+            options = options.AllowResize();
+    }
 
     if (Widgets::EditVariant(value, options))
         pendingSetAttributes_.emplace_back(&info, value);

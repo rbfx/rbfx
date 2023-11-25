@@ -26,13 +26,13 @@
 #include "../Core/Profiler.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
-#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Texture2DArray.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
 
 #include "../DebugNew.h"
 
@@ -43,19 +43,13 @@
 namespace Urho3D
 {
 
-Texture2DArray::Texture2DArray(Context* context) :
-    Texture(context)
+Texture2DArray::Texture2DArray(Context* context)
+    : Texture(context)
 {
-#ifdef URHO3D_OPENGL
-#ifndef GL_ES_VERSION_2_0
-    target_ = GL_TEXTURE_2D_ARRAY;
-#endif
-#endif
 }
 
 Texture2DArray::~Texture2DArray()
 {
-    Release();
 }
 
 void Texture2DArray::RegisterObject(Context* context)
@@ -65,19 +59,12 @@ void Texture2DArray::RegisterObject(Context* context)
 
 bool Texture2DArray::BeginLoad(Deserializer& source)
 {
+    auto graphics = GetSubsystem<Graphics>();
     auto* cache = GetSubsystem<ResourceCache>();
 
     // In headless mode, do not actually load the texture, just return success
-    if (!graphics_)
+    if (!graphics)
         return true;
-
-    // If device is lost, retry later
-    if (graphics_->IsDeviceLost())
-    {
-        URHO3D_LOGWARNING("Texture load while device is lost");
-        dataPending_ = true;
-        return true;
-    }
 
     cache->ResetDependencies(this);
 
@@ -125,7 +112,7 @@ bool Texture2DArray::BeginLoad(Deserializer& source)
 bool Texture2DArray::EndLoad()
 {
     // In headless mode, do not actually load the texture, just return success
-    if (!graphics_ || graphics_->IsDeviceLost())
+    if (!renderDevice_)
         return true;
 
     // If over the texture budget, see if materials can be freed to allow textures to be freed
@@ -145,65 +132,59 @@ bool Texture2DArray::EndLoad()
 
 void Texture2DArray::SetLayers(unsigned layers)
 {
-    Release();
-
     layers_ = layers;
 }
 
-bool Texture2DArray::SetSize(unsigned layers, int width, int height, unsigned format, TextureUsage usage)
+bool Texture2DArray::SetSize(unsigned layers, int width, int height, TextureFormat format, TextureFlags flags)
 {
-    if (width <= 0 || height <= 0)
-    {
-        URHO3D_LOGERROR("Zero or negative texture array size");
-        return false;
-    }
-    if (usage == TEXTURE_DEPTHSTENCIL)
-    {
-        URHO3D_LOGERROR("Depth-stencil usage not supported for texture arrays");
-        return false;
-    }
+    layers_ = layers ? layers : layers_;
 
-    // Delete the old rendersurface if any
-    renderSurface_.Reset();
+    RawTextureParams params;
+    params.type_ = TextureType::Texture2DArray;
+    params.format_ = format;
+    params.size_ = {width, height, 1};
+    params.arraySize_ = layers_;
+    params.numLevels_ = requestedLevels_;
+    params.flags_ = flags;
+    if (requestedSRGB_)
+        params.format_ = SetTextureFormatSRGB(params.format_);
 
-    usage_ = usage;
-
-    if (usage == TEXTURE_RENDERTARGET)
-    {
-        renderSurface_ = new RenderSurface(this);
-
-        // Nearest filtering by default
-        filterMode_ = FILTER_NEAREST;
-    }
-
-    if (usage == TEXTURE_RENDERTARGET)
-        SubscribeToEvent(E_RENDERSURFACEUPDATE, URHO3D_HANDLER(Texture2DArray, HandleRenderSurfaceUpdate));
-    else
-        UnsubscribeFromEvent(E_RENDERSURFACEUPDATE);
-
-    width_ = width;
-    height_ = height;
-    format_ = format;
-    depth_ = 1;
-    if (layers)
-        layers_ = layers;
-
-    layerMemoryUse_.resize(layers_);
-    for (unsigned i = 0; i < layers_; ++i)
-        layerMemoryUse_[i] = 0;
-
-    return Create();
+    return Create(params);
 }
 
-void Texture2DArray::HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData)
+bool Texture2DArray::SetData(unsigned layer, unsigned level, int x, int y, int width, int height, const void* data)
 {
-    if (renderSurface_ && (renderSurface_->GetUpdateMode() == SURFACE_UPDATEALWAYS || renderSurface_->IsUpdateQueued()))
+    Update(level, {x, y, 0}, {width, height, 1}, layer, data);
+    return true;
+}
+
+bool Texture2DArray::SetData(unsigned layer, Deserializer& source)
+{
+    SharedPtr<Image> image(MakeShared<Image>(context_));
+    if (!image->Load(source))
+        return false;
+
+    return SetData(layer, image);
+}
+
+bool Texture2DArray::SetData(unsigned layer, Image* image)
+{
+    if (layer == 0)
     {
-        auto* renderer = GetSubsystem<Renderer>();
-        if (renderer)
-            renderer->QueueRenderSurface(renderSurface_);
-        renderSurface_->ResetUpdateQueued();
+        RawTextureParams params;
+        params.type_ = TextureType::Texture2DArray;
+        params.numLevels_ = requestedLevels_;
+        params.arraySize_ = layers_;
+        if (!CreateForImage(params, image))
+            return false;
     }
+
+    return UpdateFromImage(layer, image);
+}
+
+bool Texture2DArray::GetData(unsigned layer, unsigned level, void* dest)
+{
+    return Read(layer, level, dest, M_MAX_UNSIGNED);
 }
 
 }

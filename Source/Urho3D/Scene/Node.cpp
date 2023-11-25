@@ -96,13 +96,13 @@ void Node::SerializeInBlock(Archive& archive)
     SerializeInBlock(archive, false, saveFlags);
 }
 
-void Node::SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags)
+void Node::SerializeInBlock(
+    Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags, PrefabLoadFlags loadFlags)
 {
     const bool compactSave = !archive.IsHumanReadable();
     const PrefabArchiveFlags archiveFlags =
         (compactSave ? PrefabArchiveFlag::CompactTypeNames : PrefabArchiveFlag::None)
         | (serializeTemporary ? PrefabArchiveFlag::SerializeTemporary : PrefabArchiveFlag::None);
-    const PrefabLoadFlags loadFlags = PrefabLoadFlag::None;
 
     if (archive.IsInput())
     {
@@ -112,6 +112,9 @@ void Node::SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSav
     }
     else
     {
+        if (serializeTemporary)
+            saveFlags |= PrefabSaveFlag::SaveTemporary;
+
         PrefabWriterToArchive writer{archive, nullptr, saveFlags, archiveFlags};
         if (!Save(writer))
             throw ArchiveException("Failed to save node hierarchy to archive");
@@ -192,7 +195,9 @@ bool Node::Load(PrefabReader& reader, PrefabLoadFlags flags)
 
         // Resolve IDs and apply attributes
         resolver.Resolve();
-        ApplyAttributes();
+
+        if (!flags.Test(PrefabLoadFlag::SkipApplyAttributes))
+            ApplyAttributes();
 
         return true;
     }

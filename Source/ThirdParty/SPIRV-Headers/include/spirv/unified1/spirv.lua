@@ -60,6 +60,9 @@ spv = {
         HLSL = 5,
         CPP_for_OpenCL = 6,
         SYCL = 7,
+        HERO_C = 8,
+        NZSL = 9,
+        WGSL = 10,
     },
 
     ExecutionModel = {
@@ -336,6 +339,8 @@ spv = {
         Float = 14,
         UnormInt24 = 15,
         UnormInt101010_2 = 16,
+        UnsignedIntRaw10EXT = 19,
+        UnsignedIntRaw12EXT = 20,
     },
 
     ImageOperandsShift = {
@@ -694,6 +699,7 @@ spv = {
         HitKindKHR = 5333,
         HitKindNV = 5333,
         CurrentRayTimeNV = 5334,
+        HitTriangleVertexPositionsKHR = 5335,
         IncomingRayFlagsKHR = 5351,
         IncomingRayFlagsNV = 5351,
         RayGeometryIndexKHR = 5352,
@@ -1040,6 +1046,7 @@ spv = {
         UniformTexelBufferArrayNonUniformIndexingEXT = 5311,
         StorageTexelBufferArrayNonUniformIndexing = 5312,
         StorageTexelBufferArrayNonUniformIndexingEXT = 5312,
+        RayTracingPositionFetchKHR = 5336,
         RayTracingNV = 5340,
         RayTracingMotionBlurNV = 5341,
         VulkanMemoryModel = 5345,
@@ -1060,6 +1067,7 @@ spv = {
         RayTracingOpacityMicromapEXT = 5381,
         ShaderInvocationReorderNV = 5383,
         BindlessTextureNV = 5390,
+        RayQueryPositionFetchKHR = 5391,
         SubgroupShuffleINTEL = 5568,
         SubgroupBufferBlockIOINTEL = 5569,
         SubgroupImageBlockIOINTEL = 5570,
@@ -1111,6 +1119,7 @@ spv = {
         DotProduct = 6019,
         DotProductKHR = 6019,
         RayCullMaskKHR = 6020,
+        CooperativeMatrixKHR = 6022,
         BitInstructions = 6025,
         GroupNonUniformRotateKHR = 6026,
         AtomicFloat32AddEXT = 6033,
@@ -1218,6 +1227,34 @@ spv = {
     PackedVectorFormat = {
         PackedVectorFormat4x8Bit = 0,
         PackedVectorFormat4x8BitKHR = 0,
+    },
+
+    CooperativeMatrixOperandsShift = {
+        MatrixASignedComponents = 0,
+        MatrixBSignedComponents = 1,
+        MatrixCSignedComponents = 2,
+        MatrixResultSignedComponents = 3,
+        SaturatingAccumulation = 4,
+    },
+
+    CooperativeMatrixOperandsMask = {
+        MaskNone = 0,
+        MatrixASignedComponents = 0x00000001,
+        MatrixBSignedComponents = 0x00000002,
+        MatrixCSignedComponents = 0x00000004,
+        MatrixResultSignedComponents = 0x00000008,
+        SaturatingAccumulation = 0x00000010,
+    },
+
+    CooperativeMatrixLayout = {
+        RowMajorKHR = 0,
+        ColumnMajorKHR = 1,
+    },
+
+    CooperativeMatrixUse = {
+        MatrixAKHR = 0,
+        MatrixBKHR = 1,
+        MatrixAccumulatorKHR = 2,
     },
 
     Op = {
@@ -1593,6 +1630,11 @@ spv = {
         OpUDotAccSatKHR = 4454,
         OpSUDotAccSat = 4455,
         OpSUDotAccSatKHR = 4455,
+        OpTypeCooperativeMatrixKHR = 4456,
+        OpCooperativeMatrixLoadKHR = 4457,
+        OpCooperativeMatrixStoreKHR = 4458,
+        OpCooperativeMatrixMulAddKHR = 4459,
+        OpCooperativeMatrixLengthKHR = 4460,
         OpTypeRayQueryKHR = 4472,
         OpRayQueryInitializeKHR = 4473,
         OpRayQueryTerminateKHR = 4474,
@@ -1660,6 +1702,7 @@ spv = {
         OpTraceNV = 5337,
         OpTraceMotionNV = 5338,
         OpTraceRayMotionNV = 5339,
+        OpRayQueryGetIntersectionTriangleVertexPositionsKHR = 5340,
         OpTypeAccelerationStructureKHR = 5341,
         OpTypeAccelerationStructureNV = 5341,
         OpExecuteCallableNV = 5344,

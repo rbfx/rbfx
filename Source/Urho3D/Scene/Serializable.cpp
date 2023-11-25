@@ -410,7 +410,7 @@ void Serializable::SerializeInBlock(Archive& archive, bool serializeTemporary)
     SerializablePrefab prefab;
 
     if (!archive.IsInput())
-        prefab.Import(this);
+        prefab.Import(this, serializeTemporary ? PrefabSaveFlag::SaveTemporary : PrefabSaveFlag::None);
 
     prefab.SerializeInBlock(archive, flags, compactSave);
 

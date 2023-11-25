@@ -314,7 +314,7 @@ void PrefabReference::SetPrefab(PrefabResource* prefab, ea::string_view path, bo
         CreateInstance(false, instanceFlags);
 }
 
-void PrefabReference::SetPrefabAttr(ResourceRef prefab)
+void PrefabReference::SetPrefabAttr(const ResourceRef& prefab)
 {
     if (prefab.name_.empty())
     {

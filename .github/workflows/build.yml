@@ -31,6 +31,8 @@ env:
   ci_build_script: ./source-code/script/ci_build.sh
   ci_build_dir: ${{ github.workspace }}/cmake-build
   ci_sdk_dir: ${{ github.workspace }}/SDK
+  ci_latest_release_url: https://uploads.github.com/repos/rbfx/rbfx/releases/129063815/assets{?name,label}
+  ci_latest_release_id: 129063815
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -46,8 +48,8 @@ jobs:
     steps:
       - run: exit 0
 
-  notifications:
-    name: Discord Commits
+  WebHooks:
+    name: Web Hooks
     runs-on: ubuntu-20.04
     continue-on-error: true
     if: github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master'
@@ -59,6 +61,19 @@ jobs:
           github-token: ${{ github.token }}
           action-task: discord-commits
           discord-username: GitHub
+
+  Release-Latest:
+    name: Release 'latest'
+    runs-on: ubuntu-20.04
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Create and Push Tag
+        run: |
+          git tag -f latest
+          git push -f origin latest
 
   Windows-Tools:
     if: github.event.pull_request.draft == false
@@ -233,8 +248,12 @@ jobs:
           - rel
         ci_compiler:
           - msvc
-          - mingw
-
+          # TODO: Enable MinGW when the issue with crnlib is fixed
+          # - mingw
+        # MinGW debug builds require too much memory
+        exclude:
+          - ci_compiler: mingw
+            ci_build_type: dbg
     env:
       ci_platform: windows
       ci_arch: ${{ matrix.ci_arch }}
@@ -251,12 +270,31 @@ jobs:
                         (matrix.ci_lib_type == 'dll')                 &&
                         (matrix.ci_compiler == 'msvc')
                     }}
+      ci_release_sdk: ${{
+                        (matrix.ci_arch == 'x64')           &&
+                        (matrix.ci_lib_type == 'dll')       &&
+                        (github.repository == 'rbfx/rbfx')  &&
+                        (github.ref == 'refs/heads/master')
+                      }}
+      ci_release_bin: ${{
+                        (matrix.ci_arch == 'x64')           &&
+                        (matrix.ci_lib_type == 'dll')       &&
+                        (matrix.ci_build_type == 'rel')     &&
+                        (github.repository == 'rbfx/rbfx')  &&
+                        (github.ref == 'refs/heads/master')
+                      }}
+      ci_itch: ${{ (matrix.ci_build_type == 'rel') && (github.ref == 'refs/heads/master') }}
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
 
     steps:
       - uses: actions/checkout@v3
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
+
+      - name: Set up butler
+        if: ${{ env.ci_itch == 'true' }}
+        uses: jdno/setup-butler@v1
 
       - name: Build Cache
         uses: actions/cache@v3
@@ -311,6 +349,50 @@ jobs:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
+      - name: Zip SDK
+        if: ${{ env.ci_release_sdk == 'true' }}
+        uses: TheDoctor0/zip-release@0.7.6
+        with:
+          directory: ${{ github.workspace }}
+          filename: ${{ github.workspace }}/SDK.zip
+          path: 'SDK'
+          exclusions: 'SDK/cmake-build SDK/SDK'
+
+      - name: Release SDK
+        if: ${{ env.ci_release_sdk == 'true' }}
+        uses: WebFreak001/deploy-nightly@v3.0.0
+        with:
+          upload_url: ${{ env.ci_latest_release_url }}
+          release_id: ${{ env.ci_latest_release_id }}
+          asset_path: ${{ github.workspace }}/SDK.zip
+          asset_name: 'rebelfork-sdk-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip'
+          asset_content_type: application/zip
+          max_releases: 1
+
+      - name: Zip binaries
+        if: ${{ env.ci_release_bin == 'true' }}
+        uses: TheDoctor0/zip-release@0.7.6
+        with:
+          directory: ${{ github.workspace }}/SDK/bin/RelWithDebInfo/
+          filename: ${{ github.workspace }}/SDK-bin.zip
+          path: '.'
+
+      - name: Release binaries
+        if: ${{ env.ci_release_bin == 'true' }}
+        uses: WebFreak001/deploy-nightly@v3.0.0
+        with:
+          upload_url: ${{ env.ci_latest_release_url }}
+          release_id: ${{ env.ci_latest_release_id }}
+          asset_path: ${{ github.workspace }}/SDK-bin.zip
+          asset_name: 'rebelfork-bin-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip'
+          asset_content_type: application/zip
+          max_releases: 1
+
+      - name: Publish to itch.io
+        if: ${{ env.ci_itch == 'true' }}
+        shell: bash
+        run: ${{ env.ci_build_script }} publish-to-itch
+
   UWP:
     if: github.event.pull_request.draft == false
     runs-on: windows-2022
@@ -321,7 +403,6 @@ jobs:
       matrix:
         ci_arch:
           - x64
-          - arm
           - arm64
         ci_lib_type:
           - dll
@@ -439,12 +520,31 @@ jobs:
                         (matrix.ci_lib_type == 'dll')                 &&
                         (matrix.ci_compiler == 'gcc')
                     }}
+      ci_release_sdk: ${{
+                        (matrix.ci_arch == 'x64')           &&
+                        (matrix.ci_lib_type == 'dll')       &&
+                        (github.repository == 'rbfx/rbfx')  &&
+                        (github.ref == 'refs/heads/master')
+                      }}
+      ci_release_bin: ${{
+                        (matrix.ci_arch == 'x64')           &&
+                        (matrix.ci_lib_type == 'dll')       &&
+                        (matrix.ci_build_type == 'rel')     &&
+                        (github.repository == 'rbfx/rbfx')  &&
+                        (github.ref == 'refs/heads/master')
+                      }}
+      ci_itch: ${{ (matrix.ci_build_type == 'rel') && (github.ref == 'refs/heads/master') }}
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
 
     steps:
       - uses: actions/checkout@v3
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
+
+      - name: Set up butler
+        if: ${{ env.ci_itch == 'true' }}
+        uses: jdno/setup-butler@v1
 
       - name: Build Cache
         uses: actions/cache@v3
@@ -491,6 +591,51 @@ jobs:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
+      - name: Zip SDK
+        if: ${{ env.ci_release_sdk == 'true' }}
+        uses: TheDoctor0/zip-release@0.7.6
+        with:
+          directory: ${{ github.workspace }}
+          filename: ${{ github.workspace }}/SDK.zip
+          path: 'SDK'
+          exclusions: '/SDK/cmake-build/* /SDK/SDK/*'
+
+      - name: Release SDK
+        if: ${{ env.ci_release_sdk == 'true' }}
+        uses: WebFreak001/deploy-nightly@v3.0.0
+        with:
+          upload_url: ${{ env.ci_latest_release_url }}
+          release_id: ${{ env.ci_latest_release_id }}
+          asset_path: ${{ github.workspace }}/SDK.zip
+          asset_name: 'rebelfork-sdk-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip'
+          asset_content_type: application/zip
+          max_releases: 1
+
+      - name: Zip binaries
+        if: ${{ env.ci_release_bin == 'true' }}
+        uses: TheDoctor0/zip-release@0.7.6
+        with:
+          directory: ${{ github.workspace }}/SDK/bin/
+          filename: ${{ github.workspace }}/SDK-bin.zip
+          path: '.'
+          exclusions: '/Autoload/* /CoreData/* /Data/* /EditorData/* /shell.html'
+
+      - name: Release binaries
+        if: ${{ env.ci_release_bin == 'true' }}
+        uses: WebFreak001/deploy-nightly@v3.0.0
+        with:
+          upload_url: ${{ env.ci_latest_release_url }}
+          release_id: ${{ env.ci_latest_release_id }}
+          asset_path: ${{ env.ci_sdk_dir }}-bin.zip
+          asset_name: 'rebelfork-bin-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip'
+          asset_content_type: application/zip
+          max_releases: 1
+
+      - name: Publish to itch.io
+        if: ${{ env.ci_itch == 'true' }}
+        shell: bash
+        run: ${{ env.ci_build_script }} publish-to-itch
+
   MacOS:
     if: github.event.pull_request.draft == false
     runs-on: macos-11
@@ -527,12 +672,31 @@ jobs:
                         (matrix.ci_lib_type == 'dll')                 &&
                         (matrix.ci_compiler == 'clang')
                     }}
+      ci_release_sdk: ${{
+                        (matrix.ci_arch == 'x64')           &&
+                        (matrix.ci_lib_type == 'dll')       &&
+                        (github.repository == 'rbfx/rbfx')  &&
+                        (github.ref == 'refs/heads/master')
+                      }}
+      ci_release_bin: ${{
+                        (matrix.ci_arch == 'x64')           &&
+                        (matrix.ci_lib_type == 'dll')       &&
+                        (matrix.ci_build_type == 'rel')     &&
+                        (github.repository == 'rbfx/rbfx')  &&
+                        (github.ref == 'refs/heads/master')
+                      }}
+      ci_itch: ${{ (matrix.ci_build_type == 'rel') && (github.ref == 'refs/heads/master') }}
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
 
     steps:
       - uses: actions/checkout@v3
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
+
+      - name: Set up butler
+        if: ${{ env.ci_itch == 'true' }}
+        uses: jdno/setup-butler@v1
 
       - name: Build Cache
         uses: actions/cache@v3
@@ -578,6 +742,50 @@ jobs:
         with:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
+
+      - name: Zip SDK
+        if: ${{ env.ci_release_sdk == 'true' }}
+        uses: TheDoctor0/zip-release@0.7.6
+        with:
+          directory: ${{ github.workspace }}
+          filename: ${{ github.workspace }}/SDK.zip
+          path: 'SDK'
+          exclusions: '/SDK/cmake-build/* /SDK/obj/*'
+
+      - name: Release SDK
+        if: ${{ env.ci_release_sdk == 'true' }}
+        uses: WebFreak001/deploy-nightly@v3.0.0
+        with:
+          upload_url: ${{ env.ci_latest_release_url }}
+          release_id: ${{ env.ci_latest_release_id }}
+          asset_path: ${{ env.ci_sdk_dir }}.zip
+          asset_name: 'rebelfork-sdk-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip'
+          asset_content_type: application/zip
+          max_releases: 1
+
+      - name: Zip binaries
+        if: ${{ env.ci_release_bin == 'true' }}
+        uses: TheDoctor0/zip-release@0.7.6
+        with:
+          directory: ${{ github.workspace }}/SDK/bin/RelWithDebInfo/
+          filename: ${{ github.workspace }}/SDK-bin.zip
+          path: '.'
+
+      - name: Release binaries
+        if: ${{ env.ci_release_bin == 'true' }}
+        uses: WebFreak001/deploy-nightly@v3.0.0
+        with:
+          upload_url: ${{ env.ci_latest_release_url }}
+          release_id: ${{ env.ci_latest_release_id }}
+          asset_path: ${{ env.ci_sdk_dir }}-bin.zip
+          asset_name: 'rebelfork-bin-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip'
+          asset_content_type: application/zip
+          max_releases: 1
+
+      - name: Publish to itch.io
+        if: ${{ env.ci_itch == 'true' }}
+        shell: bash
+        run: ${{ env.ci_build_script }} publish-to-itch
 
   Android:
     if: github.event.pull_request.draft == false

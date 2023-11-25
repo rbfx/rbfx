@@ -282,11 +282,13 @@ void AnimationState::CalculateAttributeTracks(ea::unordered_map<AnimatedAttribut
     }
 }
 
-void AnimationState::CalculateTransformTrack(NodeAnimationOutput& output, const AnimationTrack& track, unsigned& frame, float weight) const
+void AnimationState::CalculateTransformTrack(
+    NodeAnimationOutput& output, const AnimationTrack& track, unsigned& frame, float baseWeight) const
 {
     if (track.keyFrames_.empty())
         return;
 
+    const float weight = baseWeight * track.weight_;
     const bool isFullWeight = Equals(weight, 1.0f);
     const AnimationKeyFrame& baseValue = track.keyFrames_.front();
 
@@ -355,11 +357,13 @@ void AnimationState::CalculateTransformTrack(NodeAnimationOutput& output, const 
     }
 }
 
-void AnimationState::CalculateAttributeTrack(Variant& output, const VariantAnimationTrack& track, unsigned& frame, float weight) const
+void AnimationState::CalculateAttributeTrack(
+    Variant& output, const VariantAnimationTrack& track, unsigned& frame, float baseWeight) const
 {
     if (track.keyFrames_.empty())
         return;
 
+    const float weight = baseWeight * track.weight_;
     const bool isFullWeight = Equals(weight, 1.0f);
     const Variant& baseValue = track.keyFrames_.front().value_;
 

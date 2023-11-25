@@ -31,20 +31,12 @@
 #include "../IO/MemoryBuffer.h"
 #include "../IO/VectorBuffer.h"
 #include "../Network/Protocol.h"
+#include "../Network/PacketTypeFlags.h"
 
 #include <EASTL/unordered_set.h>
 
 namespace Urho3D
 {
-
-/// Packet types for outgoing buffers. Outgoing messages are grouped by their type
-enum PacketType
-{
-    PT_UNRELIABLE_UNORDERED,
-    PT_UNRELIABLE_ORDERED,
-    PT_RELIABLE_UNORDERED,
-    PT_RELIABLE_ORDERED
-};
 
 /// Interface of connection to another host.
 /// Virtual for easier unit testing.
@@ -56,7 +48,7 @@ public:
     AbstractConnection(Context* context) : Object(context) {}
 
     /// Send message to the other end of the connection.
-    virtual void SendMessageInternal(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes) = 0;
+    virtual void SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType = PacketType::ReliableOrdered) = 0;
     /// Return debug connection string for logging.
     virtual ea::string ToString() const = 0;
     /// Return whether the clock is synchronized between client and server.
@@ -72,38 +64,35 @@ public:
     /// Return ping of the connection.
     virtual unsigned GetPing() const = 0;
 
-    /// Syntax sugar for SendMessage
+    /// Syntax sugar for SendBuffer
     /// @{
-    void SendLoggedMessage(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes, ea::string_view debugInfo = {})
+    void SendLoggedMessage(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType = PacketType::ReliableOrdered, ea::string_view debugInfo = {})
     {
-        SendMessageInternal(messageId, reliable, inOrder, data, numBytes);
+        SendMessageInternal(messageId, data, numBytes, packetType);
 
         Log::GetLogger().Write(GetMessageLogLevel(messageId), "{}: Message #{} ({} bytes) sent{}{}{}{}",
             ToString(),
             static_cast<unsigned>(messageId),
             numBytes,
-            reliable ? ", reliable" : "",
-            inOrder ? ", ordered" : "",
+            (packetType & PacketType::Reliable) ? ", reliable" : "",
+            (packetType & PacketType::Ordered) ? ", ordered" : "",
             debugInfo.empty() ? "" : ": ",
             debugInfo);
     }
 
-    void SendMessage(NetworkMessageId messageId, bool reliable, bool inOrder, const unsigned char* data, unsigned numBytes, ea::string_view debugInfo = {})
+    void SendMessage(NetworkMessageId messageId, const unsigned char* data = nullptr, unsigned numBytes = 0, PacketTypeFlags packetType = PacketType::ReliableOrdered, ea::string_view debugInfo = {})
     {
-        SendLoggedMessage(messageId, reliable, inOrder, data, numBytes);
+        SendLoggedMessage(messageId, data, numBytes, packetType);
     }
 
-    void SendMessage(NetworkMessageId messageId, bool reliable, bool inOrder, const VectorBuffer& msg, ea::string_view debugInfo = {})
+    void SendMessage(NetworkMessageId messageId, const VectorBuffer& msg, PacketTypeFlags packetType = PacketType::ReliableOrdered, ea::string_view debugInfo = {})
     {
-        SendLoggedMessage(messageId, reliable, inOrder, msg.GetData(), msg.GetSize());
+        SendLoggedMessage(messageId, msg.GetData(), msg.GetSize(), packetType);
     }
 
     template <class T>
-    void SendSerializedMessage(NetworkMessageId messageId, const T& message, PacketType messageType)
+    void SendSerializedMessage(NetworkMessageId messageId, const T& message, PacketTypeFlags messageType = PacketType::ReliableOrdered)
     {
-        const bool reliable = messageType == PT_RELIABLE_ORDERED || messageType == PT_RELIABLE_UNORDERED;
-        const bool inOrder = messageType == PT_RELIABLE_ORDERED || messageType == PT_UNRELIABLE_ORDERED;
-
     #ifdef URHO3D_LOGGING
         const ea::string debugInfo = message.ToString();
     #else
@@ -112,15 +101,12 @@ public:
 
         msg_.Clear();
         message.Save(msg_);
-        SendLoggedMessage(messageId, reliable, inOrder, msg_.GetData(), msg_.GetSize(), debugInfo);
+        SendLoggedMessage(messageId, msg_.GetData(), msg_.GetSize(), messageType, debugInfo);
     }
 
     template <class T>
-    void SendGeneratedMessage(NetworkMessageId messageId, PacketType messageType, T generator)
+    void SendGeneratedMessage(NetworkMessageId messageId, PacketTypeFlags messageType, T generator)
     {
-        const bool reliable = messageType == PT_RELIABLE_ORDERED || messageType == PT_RELIABLE_UNORDERED;
-        const bool inOrder = messageType == PT_RELIABLE_ORDERED || messageType == PT_UNRELIABLE_ORDERED;
-
     #ifdef URHO3D_LOGGING
         ea::string debugInfo;
         ea::string* debugInfoPtr = &debugInfo;
@@ -131,7 +117,7 @@ public:
 
         msg_.Clear();
         if (generator(msg_, debugInfoPtr))
-            SendLoggedMessage(messageId, reliable, inOrder, msg_.GetData(), msg_.GetSize(), debugInfo);
+            SendLoggedMessage(messageId, msg_.GetData(), msg_.GetSize(), messageType, debugInfo);
     }
 
     void OnMessageReceived(NetworkMessageId messageId, MemoryBuffer& messageData) const

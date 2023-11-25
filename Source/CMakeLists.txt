@@ -59,7 +59,7 @@ configure_file("${rbfx_SOURCE_DIR}/CMake/SDKTools.cmake.in" "${CMAKE_BINARY_DIR}
 file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/share/CMake/SDKTools-$<CONFIG>.cmake" INPUT "${CMAKE_BINARY_DIR}/share/CMake/SDKTools.cmake.in")
 file(COPY "${rbfx_SOURCE_DIR}/CMake/SDKTools.cmake" DESTINATION "${CMAKE_BINARY_DIR}/share/CMake/")
 foreach (config ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE})
-    install(FILES ${CMAKE_BINARY_DIR}/share/CMake/SDKTools-${config}.cmake DESTINATION ${DEST_SHARE_DIR}/CMake)
+    install(FILES ${CMAKE_BINARY_DIR}/share/CMake/SDKTools-${config}.cmake DESTINATION ${DEST_SHARE_DIR}/CMake OPTIONAL)
 endforeach ()
 install(FILES ${CMAKE_BINARY_DIR}/share/CMake/SDKTools.cmake DESTINATION ${DEST_SHARE_DIR}/CMake)
 unset(config)
@@ -81,7 +81,7 @@ if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
             -consoleLoggerParameters:ErrorsOnly -p:Platform=${URHO3D_PLATFORM} -p:Configuration=${URHO3D_CONFIG}
             ${DOTNET_LINUX_MSBUILD_WORKAROUND}
         DEPENDS Urho3D)
-    foreach (TARGET libEditor libPlayer)
+    foreach (TARGET libEditorWrapper libPlayer)
         if (TARGET ${TARGET})
             add_dependencies(BuildManagedTargets ${TARGET})
         endif ()
@@ -93,4 +93,5 @@ install(FILES
     DESTINATION ${DEST_SHARE_DIR})
 
 # This is a normal install that users are supposed to use.
-install(EXPORT Urho3D DESTINATION ${DEST_SHARE_DIR}/CMake)
+install (EXPORT Urho3D DESTINATION ${DEST_SHARE_DIR}/CMake FILE Urho3D_GeneratedConfig.cmake)
+install (FILES ${rbfx_SOURCE_DIR}/CMake/Urho3DConfig.cmake DESTINATION ${DEST_SHARE_DIR}/CMake)

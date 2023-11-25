@@ -38,6 +38,8 @@ namespace ui = ImGui;
 namespace Urho3D
 {
 
+class Texture2D;
+
 /// Convert math types from/to ImGUI
 /// @{
 inline ImVec2 ToImGui(const Vector2& value) { return {value.x_, value.y_}; };
@@ -133,6 +135,9 @@ private:
     const unsigned numColors_{};
 };
 /// @}
+
+/// Convert engine texture to ImTextureID.
+ImTextureID ToImTextureID(Texture2D* texture);
 
 }
 

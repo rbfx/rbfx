@@ -1,10 +1,12 @@
 #include "_Config.glsl"
 #include "_Uniforms.glsl"
+#include "_InternalSamplers.glsl"
 #include "_VertexLayout.glsl"
 #include "_VertexTransform.glsl"
 #include "_VertexScreenPos.glsl"
 #include "_GammaCorrection.glsl"
-#include "_Samplers.glsl"
+#include "_DefaultSamplers.glsl"
+#include "_SamplerUtils.glsl"
 #include "_DirectLighting.glsl"
 #include "_Shadow.glsl"
 #include "_Fog.glsl"
@@ -36,19 +38,19 @@ void main()
 void main()
 {
     float depth = ReconstructDepth(SampleGeometryBuffer(sDepthBuffer, vScreenPos).r);
-    half4 albedoInput = SampleGeometryBuffer(sDiffMap, vScreenPos);
-    half4 specularInput = SampleGeometryBuffer(sSpecMap, vScreenPos);
-    half4 normalInput = SampleGeometryBuffer(sNormalMap, vScreenPos);
+    half4 albedoInput = SampleGeometryBuffer(sAlbedo, vScreenPos);
+    half4 specularInput = SampleGeometryBuffer(sProperties, vScreenPos);
+    half4 normalInput = SampleGeometryBuffer(sNormal, vScreenPos);
 
     vec4 worldPos = GetDeferredWorldPos(vScreenPos, depth);
     half3 eyeVec = normalize(-worldPos.xyz);
-    worldPos.xyz += cCameraPos;
+    worldPos.xyz += STEREO_VAR(cCameraPos).xyz;
 
     half3 normal = DecodeNormal(normalInput);
     #ifdef URHO3D_PHYSICAL_MATERIAL
         half roughness = specularInput.a;
     #else
-        half specularPower = (1.0 - specularInput.a) * 255;
+        half specularPower = RoughnessToSpecularPower(specularInput.a);
     #endif
 
     DirectLightData lightData = GetDeferredDirectLightData(worldPos, depth);

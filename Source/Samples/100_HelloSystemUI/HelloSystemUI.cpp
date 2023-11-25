@@ -105,7 +105,8 @@ void HelloSystemUi::RenderUi(StringHash eventType, VariantMap& eventData)
 
         TransformGizmo gizmo{cameraNode_->GetComponent<Camera>()};
         TransformNodesGizmo nodeGizmo{boxNode_};
-        nodeGizmo.Manipulate(gizmo, TransformGizmoOperation::Translate, false, false, Vector3::ZERO);
+        const auto axes = TransformGizmoAxis::X | TransformGizmoAxis::Y | TransformGizmoAxis::Z;
+        nodeGizmo.Manipulate(gizmo, TransformGizmoOperation::Translate, axes, false, false, Vector3::ZERO);
     }
     ui::End();
     if (metricsOpen_)

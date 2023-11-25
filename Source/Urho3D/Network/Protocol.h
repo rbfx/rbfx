@@ -27,10 +27,12 @@
 namespace Urho3D
 {
 
-enum NetworkMessageId
+enum NetworkMessageId : uint16_t
 {
     /// Client->server: send VariantMap of identity and authentication data.
     MSG_IDENTITY = 0x87,
+    /// Server->client: notify that server can not accept any more connections. Proceeds to close connection immediately.
+    MSG_CONNECTION_LIMIT_EXCEEDED = 0x88,
     /// Client->server: scene has been loaded and client is ready to proceed.
     MSG_SCENELOADED = 0x89,
     /// Client->server: request a package file.
@@ -47,9 +49,6 @@ enum NetworkMessageId
     MSG_REMOTEEVENT = 0x96,
     /// Server->client: info about package.
     MSG_PACKAGEINFO = 0x98,
-
-    /// Packet that includes all other messages.
-    MSG_PACKED_MESSAGE = 0x99,
 
     /// Message used to synchronize clock between client and server.
     MSG_CLOCK_SYNC = 0x9A,
@@ -72,7 +71,10 @@ enum NetworkMessageId
     MSG_OBJECTS_FEEDBACK_UNRELIABLE,
 
     /// Message IDs starting from MSG_USER are reserved for the end user.
-    MSG_USER = 512
+    MSG_USER = 512,
+
+    /// Max message ID value.
+    MSG_MAX = 0xFFFF,
 };
 
 /// Package file fragment size.

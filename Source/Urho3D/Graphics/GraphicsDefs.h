@@ -27,30 +27,12 @@
 #include "../Container/FlagSet.h"
 #include "../Container/Hash.h"
 #include "../Math/StringHash.h"
+#include "../RenderAPI/RenderAPIDefs.h"
 
 namespace Urho3D
 {
 
-class ConstantBuffer;
 class Vector3;
-
-// Graphics capability support level. Web platform (Emscripten) also uses OpenGL ES, but is considered a desktop platform capability-wise
-#if defined(IOS) || defined(TVOS) || defined(__ANDROID__) || defined(__arm__) || defined(__aarch64__)
-#define MOBILE_GRAPHICS
-#else
-#define DESKTOP_GRAPHICS
-#endif
-
-/// Primitive type.
-enum PrimitiveType
-{
-    TRIANGLE_LIST = 0,
-    LINE_LIST,
-    POINT_LIST,
-    TRIANGLE_STRIP,
-    LINE_STRIP,
-    TRIANGLE_FAN
-};
 
 /// %Geometry type for vertex shader geometry variations.
 enum GeometryType
@@ -65,63 +47,6 @@ enum GeometryType
     MAX_GEOMETRYTYPES = 7,
     // This is not a real geometry type for VS, but used to mark objects that do not desire to be instanced
     GEOM_STATIC_NOINSTANCING = 7,
-};
-
-/// Blending mode.
-enum BlendMode
-{
-    BLEND_REPLACE = 0,
-    BLEND_ADD,
-    BLEND_MULTIPLY,
-    BLEND_ALPHA,
-    BLEND_ADDALPHA,
-    BLEND_PREMULALPHA,
-    BLEND_INVDESTALPHA,
-    BLEND_SUBTRACT,
-    BLEND_SUBTRACTALPHA,
-    BLEND_DEFERRED_DECAL,
-    MAX_BLENDMODES
-};
-
-/// Depth or stencil compare mode.
-enum CompareMode
-{
-    CMP_ALWAYS = 0,
-    CMP_EQUAL,
-    CMP_NOTEQUAL,
-    CMP_LESS,
-    CMP_LESSEQUAL,
-    CMP_GREATER,
-    CMP_GREATEREQUAL,
-    MAX_COMPAREMODES
-};
-
-/// Culling mode.
-enum CullMode
-{
-    CULL_NONE = 0,
-    CULL_CCW,
-    CULL_CW,
-    MAX_CULLMODES
-};
-
-/// Fill mode.
-enum FillMode
-{
-    FILL_SOLID = 0,
-    FILL_WIREFRAME,
-    FILL_POINT,
-    MAX_FILLMODES
-};
-
-/// Stencil operation.
-enum StencilOp
-{
-    OP_KEEP = 0,
-    OP_ZERO,
-    OP_REF,
-    OP_INCR,
-    OP_DECR
 };
 
 /// Vertex/index buffer lock state.
@@ -154,34 +79,6 @@ enum LegacyVertexElement
     MAX_LEGACY_VERTEX_ELEMENTS
 };
 
-/// Arbitrary vertex declaration element datatypes.
-enum VertexElementType : unsigned char
-{
-    TYPE_INT = 0,
-    TYPE_FLOAT,
-    TYPE_VECTOR2,
-    TYPE_VECTOR3,
-    TYPE_VECTOR4,
-    TYPE_UBYTE4,
-    TYPE_UBYTE4_NORM,
-    MAX_VERTEX_ELEMENT_TYPES
-};
-
-/// Arbitrary vertex declaration element semantics.
-enum VertexElementSemantic : unsigned char
-{
-    SEM_POSITION = 0,
-    SEM_NORMAL,
-    SEM_BINORMAL,
-    SEM_TANGENT,
-    SEM_TEXCOORD,
-    SEM_COLOR,
-    SEM_BLENDWEIGHTS,
-    SEM_BLENDINDICES,
-    SEM_OBJECTINDEX,
-    MAX_VERTEX_ELEMENT_SEMANTICS
-};
-
 /// Vertex element description for arbitrary vertex declarations.
 struct URHO3D_API VertexElement
 {
@@ -190,23 +87,23 @@ struct URHO3D_API VertexElement
         type_(TYPE_VECTOR3),
         semantic_(SEM_POSITION),
         index_(0),
-        perInstance_(false),
+        stepRate_(0),
         offset_(0)
     {
     }
 
     /// Construct with type, semantic, index and whether is per-instance data.
-    VertexElement(VertexElementType type, VertexElementSemantic semantic, unsigned char index = 0, bool perInstance = false) noexcept :
+    VertexElement(VertexElementType type, VertexElementSemantic semantic, unsigned char index = 0, unsigned stepRate = 0) noexcept :
         type_(type),
         semantic_(semantic),
         index_(index),
-        perInstance_(perInstance),
+        stepRate_(stepRate),
         offset_(0)
     {
     }
 
     /// Test for equality with another vertex element. Offset is intentionally not compared, as it's relevant only when an element exists within a vertex buffer.
-    bool operator ==(const VertexElement& rhs) const { return type_ == rhs.type_ && semantic_ == rhs.semantic_ && index_ == rhs.index_ && perInstance_ == rhs.perInstance_; }
+    bool operator ==(const VertexElement& rhs) const { return type_ == rhs.type_ && semantic_ == rhs.semantic_ && index_ == rhs.index_ && stepRate_ == rhs.stepRate_; }
 
     /// Test for inequality with another vertex element.
     bool operator !=(const VertexElement& rhs) const { return !(*this == rhs); }
@@ -218,7 +115,7 @@ struct URHO3D_API VertexElement
         CombineHash(hash, type_);
         CombineHash(hash, semantic_);
         CombineHash(hash, index_);
-        CombineHash(hash, perInstance_);
+        CombineHash(hash, stepRate_);
         CombineHash(hash, offset_);
         return hash;
     }
@@ -229,8 +126,8 @@ struct URHO3D_API VertexElement
     VertexElementSemantic semantic_;
     /// Semantic index of element, for example multi-texcoords.
     unsigned char index_;
-    /// Per-instance flag.
-    bool perInstance_;
+    /// Instancing data steprate.
+    unsigned stepRate_;
     /// Offset of element from vertex start. Filled by VertexBuffer once the vertex declaration is built.
     unsigned offset_;
 };
@@ -241,18 +138,6 @@ extern URHO3D_API const unsigned ELEMENT_TYPESIZES[];
 /// Vertex element definitions for the legacy elements.
 extern URHO3D_API const VertexElement LEGACY_VERTEXELEMENTS[];
 
-/// Texture filtering mode.
-enum TextureFilterMode
-{
-    FILTER_NEAREST = 0,
-    FILTER_BILINEAR,
-    FILTER_TRILINEAR,
-    FILTER_ANISOTROPIC,
-    FILTER_NEAREST_ANISOTROPIC,
-    FILTER_DEFAULT,
-    MAX_FILTERMODES
-};
-
 static const char* textureFilterModeNames[] = {
     "NEAREST",
     "BILINEAR",
@@ -261,34 +146,6 @@ static const char* textureFilterModeNames[] = {
     "NEAREST_ANISOTROPIC",
     "DEFAULT",
     nullptr,
-};
-
-/// Texture addressing mode.
-enum TextureAddressMode
-{
-    ADDRESS_WRAP = 0,
-    ADDRESS_MIRROR,
-    ADDRESS_CLAMP,
-    ADDRESS_BORDER,
-    MAX_ADDRESSMODES
-};
-
-/// Texture coordinates.
-enum TextureCoordinate
-{
-    COORD_U = 0,
-    COORD_V,
-    COORD_W,
-    MAX_COORDS
-};
-
-/// Texture usage types.
-enum TextureUsage
-{
-    TEXTURE_STATIC = 0,
-    TEXTURE_DYNAMIC,
-    TEXTURE_RENDERTARGET,
-    TEXTURE_DEPTHSTENCIL
 };
 
 /// Cube map faces.
@@ -321,65 +178,6 @@ enum RenderSurfaceUpdateMode
     SURFACE_UPDATEALWAYS
 };
 
-/// Shader types.
-enum ShaderType
-{
-    VS = 0,
-    PS,
-    GS,
-    HS,
-    DS,
-    CS,
-    MAX_SHADER_TYPES
-};
-
-/// Shader parameter groups for determining need to update. On APIs that support constant buffers, these correspond to different constant buffers.
-enum ShaderParameterGroup
-{
-    SP_FRAME = 0,
-    SP_CAMERA,
-    SP_ZONE,
-    SP_LIGHT,
-    SP_MATERIAL,
-    SP_OBJECT,
-    SP_CUSTOM,
-    MAX_SHADER_PARAMETER_GROUPS
-};
-
-/// Texture units.
-/// @manualbind
-enum TextureUnit
-{
-    TU_DIFFUSE = 0,
-    TU_ALBEDOBUFFER = 0,
-    TU_NORMAL = 1,
-    TU_NORMALBUFFER = 1,
-    TU_SPECULAR = 2,
-    TU_EMISSIVE = 3,
-    TU_ENVIRONMENT = 4,
-#ifdef DESKTOP_GRAPHICS
-    TU_VOLUMEMAP = 5,
-    TU_CUSTOM1 = 6,
-    TU_CUSTOM2 = 7,
-    TU_LIGHTRAMP = 8,
-    TU_LIGHTSHAPE = 9,
-    TU_SHADOWMAP = 10,
-    TU_FACESELECT = 11,
-    TU_INDIRECTION = 12,
-    TU_DEPTHBUFFER = 13,
-    TU_LIGHTBUFFER = 14,
-    TU_ZONE = 15,
-    MAX_MATERIAL_TEXTURE_UNITS = 8,
-    MAX_TEXTURE_UNITS = 16
-#else
-    TU_LIGHTRAMP = 5,
-    TU_LIGHTSHAPE = 6,
-    TU_SHADOWMAP = 7,
-    MAX_MATERIAL_TEXTURE_UNITS = 5,
-    MAX_TEXTURE_UNITS = 8
-#endif
-};
-
 /// Billboard camera facing modes.
 enum FaceCameraMode
 {
@@ -402,28 +200,6 @@ enum ShadowQuality
     SHADOWQUALITY_PCF_24BIT,
     SHADOWQUALITY_VSM,
     SHADOWQUALITY_BLUR_VSM
-};
-
-/// Range of constant buffer to bind.
-struct ConstantBufferRange
-{
-    /// Constant buffer.
-    ConstantBuffer* constantBuffer_{};
-    /// Offset in buffer. Shall be multiply of constant buffer offset alignment.
-    unsigned offset_{};
-    /// Size of region.
-    unsigned size_{};
-
-    /// Compare equal.
-    bool operator ==(const ConstantBufferRange& rhs) const
-    {
-        return constantBuffer_ == rhs.constantBuffer_
-            && offset_ == rhs.offset_
-            && size_ == rhs.size_;
-    }
-
-    /// Compare not equal.
-    bool operator !=(const ConstantBufferRange& rhs) const { return !(*this == rhs); }
 };
 
 // Inbuilt shader parameters.
@@ -505,15 +281,6 @@ enum MaterialQuality : unsigned
     QUALITY_MAX = 15,
 };
 
-enum ClearTarget : unsigned
-{
-    CLEAR_NONE = 0x0,
-    CLEAR_COLOR = 0x1,
-    CLEAR_DEPTH = 0x2,
-    CLEAR_STENCIL = 0x4,
-};
-URHO3D_FLAGSET(ClearTarget, ClearTargetFlags);
-
 // Legacy vertex element bitmasks.
 enum VertexMask : unsigned
 {
@@ -535,26 +302,7 @@ enum VertexMask : unsigned
 };
 URHO3D_FLAGSET(VertexMask, VertexMaskFlags);
 
-static const int MAX_RENDERTARGETS = 8;
-static const int MAX_VERTEX_STREAMS = 4;
-static const int MAX_CONSTANT_REGISTERS = 256;
-
-static const int BITS_PER_COMPONENT = 8;
-
-/// Shader translation policy.
-enum class ShaderTranslationPolicy
-{
-    /// Do not translate shaders, use universal GLSL shaders directly.
-    /// This mode is only supported for OpenGL and OpenGL ES backends (GLSL-based backends).
-    Verbatim,
-    /// Preprocess and translate shader to the target language through SPIR-V without any optimization.
-    /// This results in slower shader compilation, especially in Debug builds.
-    /// This mode may help to work around OpenGL driver bugs if used for GLSL-based backends.
-    Translate,
-    /// Fully process and optimize shader via SPIR-V Tools.
-    /// This results in even slower shader compilation, especially in Debug builds.
-    /// This mode may improve realtime performance of the shaders, especially on mobile platforms.
-    Optimize
-};
+static const int MAX_RENDERTARGETS = (int)MaxRenderTargets;
+static const int MAX_VERTEX_STREAMS = (int)MaxVertexStreams;
 
 }

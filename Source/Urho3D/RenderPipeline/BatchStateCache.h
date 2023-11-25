@@ -24,17 +24,21 @@
 
 #include "../Core/NonCopyable.h"
 #include "../Graphics/GraphicsDefs.h"
-#include "../Graphics/PipelineState.h"
+#include "../RenderAPI/PipelineState.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"
+
+#include <EASTL/optional.h>
 
 namespace Urho3D
 {
 
+class Drawable;
 class Geometry;
+class IndexBuffer;
+class LightProcessor;
 class Material;
 class Pass;
-class Drawable;
-class LightProcessor;
+class VertexBuffer;
 struct SourceBatch;
 
 /// Key used to lookup cached pipeline states for PipelineBatch.
@@ -119,6 +123,9 @@ class URHO3D_API BatchStateCache : public NonCopyable
 public:
     /// Invalidate cache.
     void Invalidate();
+    /// Set currently used output description. Invalidates cache if it has changed.
+    void SetOutputDesc(const PipelineStateOutputDesc& outputDesc);
+
     /// Return existing pipeline state or nullptr if not found. Thread-safe.
     /// Resulting state may be invalid.
     PipelineState* GetPipelineState(const BatchStateLookupKey& key) const;
@@ -126,10 +133,17 @@ public:
     /// Resulting state may be invalid.
     PipelineState* GetOrCreatePipelineState(const BatchStateCreateKey& key,
         const BatchStateCreateContext& ctx, BatchStateCacheCallback* callback);
+    /// Return existing or create new placeholder pipeline state. Not thread safe.
+    /// Resulting state may be invalid in case of emergencies.
+    PipelineState* GetOrCreatePlaceholderPipelineState(unsigned vertexStride, BatchStateCacheCallback* callback);
 
 private:
+    /// Current output description. Invalid on start.
+    ea::optional<PipelineStateOutputDesc> outputDesc_;
     /// Cached states, possibly invalid.
     ea::unordered_map<BatchStateLookupKey, CachedBatchState> cache_;
+    /// Cached placeholder states.
+    ea::unordered_map<unsigned, SharedPtr<PipelineState>> placeholderCache_;
 };
 
 /// Key used to lookup cached pipeline states for UI batches.
@@ -137,27 +151,38 @@ private:
 struct UIBatchStateKey
 {
     bool linearOutput_{};
+    PipelineStateOutputDesc outputDesc_{};
     Material* material_{};
     Pass* pass_{};
     BlendMode blendMode_{};
+    unsigned samplerStateHash_{};
 
-    bool operator ==(const UIBatchStateKey& rhs) const
+    /// Operators.
+    /// @{
+    bool operator==(const UIBatchStateKey& rhs) const
     {
-        return linearOutput_ == rhs.linearOutput_
-            && material_ == rhs.material_
-            && pass_ == rhs.pass_
-            && blendMode_ == rhs.blendMode_;
+        return linearOutput_ == rhs.linearOutput_ //
+            && outputDesc_ == rhs.outputDesc_ //
+            && material_ == rhs.material_ //
+            && pass_ == rhs.pass_ //
+            && blendMode_ == rhs.blendMode_
+            && samplerStateHash_ == rhs.samplerStateHash_;
     }
+
+    bool operator!=(const UIBatchStateKey& rhs) const { return !(*this == rhs); }
 
     unsigned ToHash() const
     {
         unsigned hash = 0;
         CombineHash(hash, MakeHash(linearOutput_));
+        CombineHash(hash, MakeHash(outputDesc_));
         CombineHash(hash, MakeHash(material_));
         CombineHash(hash, MakeHash(pass_));
         CombineHash(hash, MakeHash(blendMode_));
+        CombineHash(hash, samplerStateHash_);
         return hash;
     }
+    /// @}
 };
 
 /// Pipeline state UI batch cache entry. May be invalid.
@@ -179,6 +204,7 @@ struct UIBatchStateCreateContext
 {
     VertexBuffer* vertexBuffer_{};
     IndexBuffer* indexBuffer_{};
+    const SamplerStateDesc* defaultSampler_{};
 };
 
 /// Pipeline state cache for UI batches.

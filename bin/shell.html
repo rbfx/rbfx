@@ -87,8 +87,8 @@
 
         // Detect the visible width and height of the window
         function calculateCanvasSize() {
-            canvasWidth = parseInt(window.getComputedStyle(canvasElement).getPropertyValue('width')) * devicePixelRatio;
-            canvasHeight = parseInt(window.getComputedStyle(canvasElement).getPropertyValue('height')) * devicePixelRatio;
+            canvasWidth = Math.round(parseFloat(window.getComputedStyle(canvasElement).getPropertyValue('width')) * devicePixelRatio);
+            canvasHeight = Math.round(parseFloat(window.getComputedStyle(canvasElement).getPropertyValue('height')) * devicePixelRatio);
         }
         calculateCanvasSize();
 

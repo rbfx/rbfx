@@ -107,7 +107,8 @@ public:
 
     /// Serialize content from/to archive. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
-    void SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags);
+    void SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags,
+        PrefabLoadFlags loadFlags = PrefabLoadFlag::None);
 
     /// Load from prefab without resolving IDs and applying attributes. May throw ArchiveException.
     void LoadInternal(const SerializablePrefab& nodePrefab, PrefabReader& reader, SceneResolver& resolver,

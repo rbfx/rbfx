@@ -163,9 +163,8 @@ function (add_target_csharp)
         list(APPEND RBFX_CSPROJ_LIST ${CS_PROJECT})
         set(RBFX_CSPROJ_LIST "${RBFX_CSPROJ_LIST}" CACHE STRING "A list of C# projects." FORCE)
     endif ()
-    if (EXISTS "${CS_OUTPUT}.runtimeconfig.json")
-        install (FILES "${CS_OUTPUT}.runtimeconfig.json" DESTINATION "${DEST_BIN_DIR_CONFIG}")
-    endif ()
+    install (FILES "${CS_OUTPUT}.runtimeconfig.json" DESTINATION "${DEST_BIN_DIR_CONFIG}" OPTIONAL)
+    install (FILES "${CS_OUTPUT}.dll" DESTINATION "${DEST_BIN_DIR_CONFIG}" OPTIONAL)
 endfunction ()
 
 function (csharp_bind_target)
@@ -275,7 +274,7 @@ function (csharp_bind_target)
         add_target_csharp(
             TARGET ${BIND_MANAGED_TARGET}
             PROJECT ${BIND_CSPROJ}
-            OUTPUT ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll)
+            OUTPUT ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET})
         if (TARGET ${BIND_MANAGED_TARGET})
             # Real C# target
             add_dependencies(${BIND_MANAGED_TARGET} ${BIND_TARGET})
@@ -382,6 +381,7 @@ function (define_static_plugin TARGET PLUGIN_NAME)
     target_compile_definitions (${TARGET} PRIVATE
         URHO3D_CURRENT_PLUGIN_NAME=${PLUGIN_NAME}
         URHO3D_CURRENT_PLUGIN_NAME_SANITATED=${PLUGIN_NAME_SANITATED}
+        ${PLUGIN_NAME_SANITATED}_EXPORT=1
     )
 endfunction ()
 
@@ -409,7 +409,11 @@ endfunction()
 
 function (install_third_party_libs)
     if (NOT URHO3D_MERGE_STATIC_LIBS)
-        install(TARGETS ${ARGV} EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
+        foreach (TARGET ${ARGV})
+            if (TARGET ${TARGET})
+                install (TARGETS ${TARGET} EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
+            endif ()
+        endforeach ()
     endif ()
 endfunction ()
 
@@ -430,4 +434,12 @@ macro (return_if_not_tool ToolName)
         return ()
     endif ()
     unset(_URHO3D_TOOLS)
+endmacro ()
+
+macro (assign_bool VARIABLE)
+     if (${ARGN})
+         set(${VARIABLE} ON CACHE BOOL "" FORCE)
+     else ()
+         set(${VARIABLE} OFF CACHE BOOL "" FORCE)
+     endif ()
 endmacro ()

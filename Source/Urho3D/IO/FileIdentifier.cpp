@@ -22,7 +22,7 @@
 
 #include "Urho3D/IO/FileIdentifier.h"
 
-#include "FileSystem.h"
+#include "Urho3D/IO/FileSystem.h"
 #include "Urho3D/Container/Str.h"
 
 namespace Urho3D

@@ -33,6 +33,31 @@
 namespace Urho3D
 {
 
+ConfigVariableDefinition& ConfigVariableDefinition::SetDefault(const Variant& value)
+{
+    defaultValue_ = value;
+    type_ = value.GetType();
+    return *this;
+}
+
+ConfigVariableDefinition& ConfigVariableDefinition::SetOptional(VariantType type)
+{
+    type_ = type;
+    return *this;
+}
+
+ConfigVariableDefinition& ConfigVariableDefinition::Overridable()
+{
+    overridable_ = true;
+    return *this;
+}
+
+ConfigVariableDefinition& ConfigVariableDefinition::CommandLinePriority()
+{
+    commandLinePriority_ = true;
+    return *this;
+}
+
 void ConfigFile::ConfigFlavor::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "Flavor", flavor_.components_);
@@ -47,14 +72,27 @@ ConfigFile::ConfigFile(Context* context)
 ConfigVariableDefinition& ConfigFile::DefineVariable(const ea::string& name, const Variant& defaultValue)
 {
     ConfigVariableDefinition& desc = definitions_[name];
-    desc.defaultValue_ = defaultValue;
-    return desc;
+    return desc.SetDefault(defaultValue);
 }
 
 void ConfigFile::DefineVariables(const StringVariantMap& defaults)
 {
     for (const auto& [name, value] : defaults)
         DefineVariable(name, value);
+}
+
+void ConfigFile::UpdatePriorityVariables(const StringVariantMap& defaults)
+{
+    for (const auto& [name, value] : defaults)
+    {
+        const auto iter = definitions_.find(name);
+        if (iter == definitions_.end())
+            continue;
+
+        ConfigVariableDefinition& desc = iter->second;
+        if (desc.commandLinePriority_)
+            desc.SetDefault(value);
+    }
 }
 
 void ConfigFile::SetVariable(const ea::string& name, const Variant& value)
@@ -157,10 +195,10 @@ bool ConfigFile::LoadOverrides(const ea::string& fileName)
             URHO3D_LOGWARNING("Ignoring override for non-overridable variable '{}'", name);
             continue;
         }
-        if (defintion->defaultValue_.GetType() != value.GetType())
+        if (defintion->type_ != value.GetType())
         {
             URHO3D_LOGWARNING("Ignoring override for variable '{}' with invalid type {} ({} was expected)",
-                name, value.GetTypeName(), defintion->defaultValue_.GetTypeName());
+                name, Variant::GetTypeName(value.GetType()), Variant::GetTypeName(defintion->type_));
             continue;
         }
 

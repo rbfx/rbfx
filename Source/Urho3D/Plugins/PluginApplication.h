@@ -22,8 +22,9 @@
 
 #pragma once
 
-#include "../Core/Context.h"
-#include "../Core/Object.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Macros.h"
+#include "Urho3D/Core/Object.h"
 
 namespace Urho3D
 {
@@ -171,7 +172,7 @@ void PluginApplication::RegisterPluginApplication()
     static const ea::string& GetStaticPluginName() { static const ea::string name{pluginName}; return name; } \
     static void RegisterObject() { PluginApplication::RegisterPluginApplication<ClassName>(); } \
 
-/// Macro for defining entry point of editor plugin.
+/// Macro for defining entry point of dynamically linked plugin.
 #if !defined(URHO3D_PLUGINS) || defined(URHO3D_STATIC)
     #define URHO3D_DEFINE_PLUGIN_MAIN(type) \
         extern "C" void CONCATENATE(RegisterPlugin_, URHO3D_CURRENT_PLUGIN_NAME_SANITATED)() \
@@ -179,7 +180,7 @@ void PluginApplication::RegisterPluginApplication()
             Urho3D::PluginApplication::RegisterPluginApplication<type>(TO_STRING(URHO3D_CURRENT_PLUGIN_NAME)); \
         }
 #else
-     /// Defines a main entry point of native plugin. Use this macro in a global scope.
+    /// Defines a main entry point of native plugin. Use this macro in a global scope.
     #define URHO3D_DEFINE_PLUGIN_MAIN(type) \
         extern "C" URHO3D_EXPORT_API Urho3D::PluginApplication* PluginApplicationMain(Urho3D::Context* context) \
         { \
@@ -188,3 +189,24 @@ void PluginApplication::RegisterPluginApplication()
             return application; \
         }
 #endif
+
+/// Macro for defining entry point of simple plugin.
+/// Simple plugin contains only Load function that should register all necessary objects.
+#define URHO3D_DEFINE_PLUGIN_MAIN_SIMPLE(onLoad, onUnload) \
+    namespace \
+    { \
+    class PluginApplicationWrapper : public Urho3D::PluginApplication \
+    { \
+    public: \
+        using PluginApplication::PluginApplication; \
+        void Load() override \
+        { \
+            onLoad(*this); \
+        } \
+        void Unload() override \
+        { \
+            onUnload(*this); \
+        } \
+    }; \
+    } \
+    URHO3D_DEFINE_PLUGIN_MAIN(PluginApplicationWrapper)

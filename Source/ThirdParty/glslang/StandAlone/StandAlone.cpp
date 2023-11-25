@@ -41,7 +41,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include "ResourceLimits.h"
+#include "glslang/Public/ResourceLimits.h"
 #include "Worklist.h"
 #include "DirStackFileIncluder.h"
 #include "./../glslang/Include/ShHandle.h"
@@ -113,6 +113,8 @@ bool SpvToolsDisassembler = false;
 bool SpvToolsValidate = false;
 bool NaNClamp = false;
 bool stripDebugInfo = false;
+bool emitNonSemanticShaderDebugInfo = false;
+bool emitNonSemanticShaderDebugSource = false;
 bool beQuiet = false;
 bool VulkanRulesRelaxed = false;
 bool autoSampledTextures = false;
@@ -147,7 +149,6 @@ bool LinkFailed = false;
 // array of unique places to leave the shader names and infologs for the asynchronous compiles
 std::vector<std::unique_ptr<glslang::TWorkItem>> WorkItems;
 
-TBuiltInResource Resources;
 std::string ConfigFile;
 
 //
@@ -156,11 +157,11 @@ std::string ConfigFile;
 void ProcessConfigFile()
 {
     if (ConfigFile.size() == 0)
-        Resources = glslang::DefaultTBuiltInResource;
+        *GetResources() = *GetDefaultResources();
 #ifndef GLSLANG_WEB
     else {
         char* configString = ReadFileData(ConfigFile.c_str());
-        glslang::DecodeResourceLimits(&Resources,  configString);
+        DecodeResourceLimits(GetResources(),  configString);
         FreeFileData(configString);
     }
 #endif
@@ -257,6 +258,17 @@ public:
         text.append("\n");
     }
 
+    void addText(std::string preambleText)
+    {
+        fixLine(preambleText);
+
+        Processes.push_back("preamble-text");
+        Processes.back().append(preambleText);
+
+        text.append(preambleText);
+        text.append("\n");
+    }
+
 protected:
     void fixLine(std::string& line)
     {
@@ -293,8 +305,8 @@ const char* GetBinaryName(EShLanguage stage)
         case EShLangClosestHit:      name = "rchit.spv";   break;
         case EShLangMiss:            name = "rmiss.spv";   break;
         case EShLangCallable:        name = "rcall.spv";   break;
-        case EShLangMeshNV:          name = "mesh.spv";    break;
-        case EShLangTaskNV:          name = "task.spv";    break;
+        case EShLangMesh :           name = "mesh.spv";    break;
+        case EShLangTask :           name = "task.spv";    break;
         default:                     name = "unknown";     break;
         }
     } else
@@ -503,7 +515,7 @@ void ProcessGlobalBlockSettings(int& argc, char**& argv, std::string* name, unsi
 
     if (set) {
         errno = 0;
-        int setVal = ::strtol(argv[curArg], NULL, 10);
+        int setVal = ::strtol(argv[curArg], nullptr, 10);
         if (errno || setVal < 0) {
             printf("%s: invalid set\n", argv[curArg]);
             usage();
@@ -515,7 +527,7 @@ void ProcessGlobalBlockSettings(int& argc, char**& argv, std::string* name, unsi
 
     if (binding) {
         errno = 0;
-        int bindingVal = ::strtol(argv[curArg], NULL, 10);
+        int bindingVal = ::strtol(argv[curArg], nullptr, 10);
         if (errno || bindingVal < 0) {
             printf("%s: invalid binding\n", argv[curArg]);
             usage();
@@ -593,12 +605,12 @@ void ProcessArguments(std::vector<std::unique_ptr<glslang::TWorkItem>>& workItem
     const auto getUniformOverride = [getStringOperand]() {
         const char *arg = getStringOperand("-u<name>:<location>");
         const char *split = strchr(arg, ':');
-        if (split == NULL) {
+        if (split == nullptr) {
             printf("%s: missing location\n", arg);
             exit(EFailUsage);
         }
         errno = 0;
-        int location = ::strtol(split + 1, NULL, 10);
+        int location = ::strtol(split + 1, nullptr, 10);
         if (errno) {
             printf("%s: invalid location\n", arg);
             exit(EFailUsage);
@@ -625,7 +637,7 @@ void ProcessArguments(std::vector<std::unique_ptr<glslang::TWorkItem>>& workItem
                     } else if (lowerword == "uniform-base") {
                         if (argc <= 1)
                             Error("no <base> provided", lowerword.c_str());
-                        uniformBase = ::strtol(argv[1], NULL, 10);
+                        uniformBase = ::strtol(argv[1], nullptr, 10);
                         bumpArg();
                         break;
                     } else if (lowerword == "client") {
@@ -713,7 +725,7 @@ void ProcessArguments(std::vector<std::unique_ptr<glslang::TWorkItem>>& workItem
                         HlslDxPositionW = true;
                     } else if (lowerword == "enhanced-msgs") {
                         EnhancedMsgs = true;
-                    } else if (lowerword == "auto-sampled-textures") { 
+                    } else if (lowerword == "auto-sampled-textures") {
                         autoSampledTextures = true;
                     } else if (lowerword == "invert-y" ||  // synonyms
                                lowerword == "iy") {
@@ -726,6 +738,13 @@ void ProcessArguments(std::vector<std::unique_ptr<glslang::TWorkItem>>& workItem
                     } else if (lowerword == "no-storage-format" || // synonyms
                                lowerword == "nsf") {
                         Options |= EOptionNoStorageFormat;
+                    } else if (lowerword == "preamble-text" ||
+                               lowerword == "p") {
+                        if (argc > 1)
+                            UserPreamble.addText(argv[1]);
+                        else
+                            Error("expects <text>", argv[0]);
+                        bumpArg();
                     } else if (lowerword == "relaxed-errors") {
                         Options |= EOptionRelaxedErrors;
                     } else if (lowerword == "reflect-strict-array-suffix") {
@@ -925,6 +944,9 @@ void ProcessArguments(std::vector<std::unique_ptr<glslang::TWorkItem>>& workItem
                 else
                     Error("unknown -O option");
                 break;
+            case 'P':
+                UserPreamble.addText(getStringOperand("-P<text>"));
+                break;
             case 'R':
                 VulkanRulesRelaxed = true;
                 break;
@@ -969,11 +991,21 @@ void ProcessArguments(std::vector<std::unique_ptr<glslang::TWorkItem>>& workItem
             case 'g':
                 // Override previous -g or -g0 argument
                 stripDebugInfo = false;
+                emitNonSemanticShaderDebugInfo = false;
                 Options &= ~EOptionDebug;
                 if (argv[0][2] == '0')
                     stripDebugInfo = true;
-                else
+                else {
                     Options |= EOptionDebug;
+                    if (argv[0][2] == 'V') {
+                        emitNonSemanticShaderDebugInfo = true;
+                        if (argv[0][3] == 'S') {
+                            emitNonSemanticShaderDebugSource = true;
+                        } else {
+                            emitNonSemanticShaderDebugSource = false;
+                        }
+                    }
+                }
                 break;
             case 'h':
                 usage();
@@ -1150,7 +1182,7 @@ void CompileShaders(glslang::TWorklist& worklist)
     } else {
         while (worklist.remove(workItem)) {
             ShHandle compiler = ShConstructCompiler(FindLanguage(workItem->name), Options);
-            if (compiler == 0)
+            if (compiler == nullptr)
                 return;
 
             CompileFile(workItem->name.c_str(), compiler);
@@ -1286,7 +1318,7 @@ void CompileAndLinkShaderUnits(std::vector<ShaderCompUnit> compUnits)
             sources.push_back(compUnit.fileNameList[i]);
         }
         glslang::TShader* shader = new glslang::TShader(compUnit.stage);
-        shader->setStringsWithLengthsAndNames(compUnit.text, NULL, compUnit.fileNameList, compUnit.count);
+        shader->setStringsWithLengthsAndNames(compUnit.text, nullptr, compUnit.fileNameList, compUnit.count);
         if (entryPointName)
             shader->setEntryPoint(entryPointName);
         if (sourceEntryPointName) {
@@ -1379,6 +1411,9 @@ void CompileAndLinkShaderUnits(std::vector<ShaderCompUnit> compUnits)
         if (EnhancedMsgs)
             shader->setEnhancedMsgs();
 
+        if (emitNonSemanticShaderDebugInfo)
+            shader->setDebugInfo(true);
+
         // Set up the environment, some subsettings take precedence over earlier
         // ways of setting things.
         if (Options & EOptionSpv) {
@@ -1402,7 +1437,7 @@ void CompileAndLinkShaderUnits(std::vector<ShaderCompUnit> compUnits)
 #ifndef GLSLANG_WEB
         if (Options & EOptionOutputPreprocessed) {
             std::string str;
-            if (shader->preprocess(&Resources, defaultVersion, ENoProfile, false, false, messages, &str, includer)) {
+            if (shader->preprocess(GetResources(), defaultVersion, ENoProfile, false, false, messages, &str, includer)) {
                 PutsIfNonEmpty(str.c_str());
             } else {
                 CompileFailed = true;
@@ -1413,7 +1448,7 @@ void CompileAndLinkShaderUnits(std::vector<ShaderCompUnit> compUnits)
         }
 #endif
 
-        if (! shader->parse(&Resources, defaultVersion, false, messages, includer))
+        if (! shader->parse(GetResources(), defaultVersion, false, messages, includer))
             CompileFailed = true;
 
         program.addShader(shader);
@@ -1470,9 +1505,15 @@ void CompileAndLinkShaderUnits(std::vector<ShaderCompUnit> compUnits)
                     std::vector<unsigned int> spirv;
                     spv::SpvBuildLogger logger;
                     glslang::SpvOptions spvOptions;
-                    if (Options & EOptionDebug)
+                    if (Options & EOptionDebug) {
                         spvOptions.generateDebugInfo = true;
-                    else if (stripDebugInfo)
+                        if (emitNonSemanticShaderDebugInfo) {
+                            spvOptions.emitNonSemanticShaderDebugInfo = true;
+                            if (emitNonSemanticShaderDebugSource) {
+                                spvOptions.emitNonSemanticShaderDebugSource = true;
+                            }
+                        }
+                    } else if (stripDebugInfo)
                         spvOptions.stripDebugInfo = true;
                     spvOptions.disableOptimizer = (Options & EOptionOptimizeDisable) != 0;
                     spvOptions.optimizeSize = (Options & EOptionOptimizeSize) != 0;
@@ -1485,9 +1526,11 @@ void CompileAndLinkShaderUnits(std::vector<ShaderCompUnit> compUnits)
                     if (! (Options & EOptionMemoryLeakMode)) {
                         printf("%s", logger.getAllMessages().c_str());
                         if (Options & EOptionOutputHexadecimal) {
-                            glslang::OutputSpvHex(spirv, GetBinaryName((EShLanguage)stage), variableName);
+                            if (!glslang::OutputSpvHex(spirv, GetBinaryName((EShLanguage)stage), variableName))
+                              exit(EFailUsage);
                         } else {
-                            glslang::OutputSpvBin(spirv, GetBinaryName((EShLanguage)stage));
+                            if (!glslang::OutputSpvBin(spirv, GetBinaryName((EShLanguage)stage)))
+                              exit(EFailUsage);
                         }
 
                         outputFiles.push_back(GetBinaryName((EShLanguage)stage));
@@ -1591,7 +1634,7 @@ int singleMain()
 
 #ifndef GLSLANG_WEB
     if (Options & EOptionDumpConfig) {
-        printf("%s", glslang::GetDefaultTBuiltInResourceString().c_str());
+        printf("%s", GetDefaultTBuiltInResourceString().c_str());
         if (workList.empty())
             return ESuccess;
     }
@@ -1780,9 +1823,9 @@ EShLanguage FindLanguage(const std::string& name, bool parseStageName)
     else if (stageName == "rcall")
         return EShLangCallable;
     else if (stageName == "mesh")
-        return EShLangMeshNV;
+        return EShLangMesh;
     else if (stageName == "task")
-        return EShLangTaskNV;
+        return EShLangTask;
 
     usage();
     return EShLangVertex;
@@ -1812,12 +1855,12 @@ void CompileFile(const char* fileName, ShHandle compiler)
     SetMessageOptions(messages);
 
     if (UserPreamble.isSet())
-        Error("-D and -U options require -l (linking)\n");
+        Error("-D, -U and -P options require -l (linking)\n");
 
     for (int i = 0; i < ((Options & EOptionMemoryLeakMode) ? 100 : 1); ++i) {
         for (int j = 0; j < ((Options & EOptionMemoryLeakMode) ? 100 : 1); ++j) {
             // ret = ShCompile(compiler, shaderStrings, NumShaderStrings, lengths, EShOptNone, &Resources, Options, (Options & EOptionDefaultDesktop) ? 110 : 100, false, messages);
-            ret = ShCompile(compiler, &shaderString, 1, nullptr, EShOptNone, &Resources, Options, (Options & EOptionDefaultDesktop) ? 110 : 100, false, messages);
+            ret = ShCompile(compiler, &shaderString, 1, nullptr, EShOptNone, GetResources(), Options, (Options & EOptionDefaultDesktop) ? 110 : 100, false, messages);
             // const char* multi[12] = { "# ve", "rsion", " 300 e", "s", "\n#err",
             //                         "or should be l", "ine 1", "string 5\n", "float glo", "bal",
             //                         ";\n#error should be line 2\n void main() {", "global = 2.3;}" };
@@ -1882,6 +1925,9 @@ void usage()
            "              is searched first, followed by left-to-right order of -I\n"
            "  -Od         disables optimization; may cause illegal SPIR-V for HLSL\n"
            "  -Os         optimizes SPIR-V to minimize size\n"
+           "  -P<text> | --preamble-text <text> | --P <text>\n"
+           "              inject custom preamble text, which is treated as if it\n"
+           "              appeared immediately after the version declaration (if any).\n"
            "  -R          use relaxed verification rules for generating Vulkan SPIR-V,\n"
            "              allowing the use of default uniforms, atomic_uints, and\n"
            "              gl_VertexID and gl_InstanceID keywords.\n"
@@ -1906,6 +1952,8 @@ void usage()
            "              SPV_GOOGLE_hlsl_functionality1 extension\n"
            "  -g          generate debug information\n"
            "  -g0         strip debug information\n"
+           "  -gV         generate nonsemantic shader debug information\n"
+           "  -gVS        generate nonsemantic shader debug information with source\n"
            "  -h          print this usage message\n"
            "  -i          intermediate tree (glslang AST) is printed out\n"
            "  -l          link all input files together to form a single module\n"
@@ -1927,7 +1975,7 @@ void usage()
            "                                    without explicit bindings\n"
            "  --auto-map-locations | --aml      automatically locate input/output lacking\n"
            "                                    'location' (fragile, not cross stage)\n"
-           "  --auto-sampled-textures           Removes sampler variables and converts\n" 
+           "  --auto-sampled-textures           Removes sampler variables and converts\n"
            "                                    existing textures to sampled textures\n"
            "  --client {vulkan<ver>|opengl<ver>} see -V and -G\n"
            "  --depfile <file>                  writes depfile for build systems\n"

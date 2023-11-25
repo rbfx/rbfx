@@ -23,6 +23,7 @@
 #include "../Precompiled.h"
 
 #include "../IO/MemoryBuffer.h"
+#include "../IO/VectorBuffer.h"
 
 namespace Urho3D
 {
@@ -62,6 +63,20 @@ MemoryBuffer::MemoryBuffer(ByteVector& data) :
 MemoryBuffer::MemoryBuffer(const ByteVector& data) :
     AbstractFile(data.size()),
     buffer_(const_cast<unsigned char*>(data.data())),
+    readOnly_(true)
+{
+}
+
+MemoryBuffer::MemoryBuffer(VectorBuffer& data) :
+    AbstractFile(data.GetSize()),
+    buffer_(data.GetModifiableData()),
+    readOnly_(false)
+{
+}
+
+MemoryBuffer::MemoryBuffer(const VectorBuffer& data) :
+    AbstractFile(data.GetSize()),
+    buffer_(const_cast<unsigned char*>(data.GetData())),
     readOnly_(true)
 {
 }

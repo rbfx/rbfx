@@ -286,6 +286,29 @@ private:
     unsigned newParentId_{};
 };
 
+/// Change entire Component.
+class ChangeComponentAction : public EditorAction
+{
+public:
+    ChangeComponentAction(Scene* scene, const PackedComponentData& oldData, Component* newData);
+    ChangeComponentAction(Scene* scene, const PackedComponentData& oldData, const PackedComponentData& newData);
+
+    /// Implement EditorAction.
+    /// @{
+    bool CanUndoRedo() const override;
+    void Redo() const override;
+    void Undo() const override;
+    bool MergeWith(const EditorAction& other) override;
+    /// @}
+
+private:
+    void UpdateComponent(unsigned componentId, const PackedComponentData& data) const;
+
+    const WeakPtr<Scene> scene_;
+    const PackedComponentData oldData_;
+    PackedComponentData newData_;
+};
+
 /// Change subtree of nodes.
 class ChangeNodeSubtreeAction : public EditorAction
 {
