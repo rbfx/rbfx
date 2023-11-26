@@ -39,12 +39,7 @@ TEST_CASE("ResolvePath handles /")
 TEST_CASE("ResolvePath handles ..")
 {
     // Keep old behaviour for ../ at root position
-    CHECK(ResolvePath("../bla", true) == "bla");
-
-    // New behaviour for ../ at root position
-    CHECK(ResolvePath("../bla", false) == "../bla");
-    CHECK(ResolvePath("../../bla", false) == "../../bla");
-    CHECK(ResolvePath("../sub/../../bla", false) == "../../bla");
+    CHECK(ResolvePath("../bla") == "bla");
 
     // Eliminate parent path if it is root
     CHECK(ResolvePath("root/../bla") == "bla");

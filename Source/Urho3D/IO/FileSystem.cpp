@@ -87,52 +87,40 @@ namespace Urho3D
 
 namespace
 {
-struct ResolvePathContext
-{
-ea::string sanitizedName;
-ea::string::size_type firstCollapsibleSegment {0};
-ea::string::size_type segmentStartIndex{0};
-bool eliminateLeadingDotDots;
-};
 
-bool ResolvePathSegment(ResolvePathContext& context)
+bool ResolvePathSegment(ea::string& sanitizedName, ea::string::size_type& segmentStartIndex)
 {
-    if (context.sanitizedName.size() - context.segmentStartIndex <= 2)
+    if (sanitizedName.size() - segmentStartIndex <= 2)
     {
-        const auto segment = context.sanitizedName.substr(context.segmentStartIndex);
+        const auto segment = sanitizedName.substr(segmentStartIndex);
         if (segment.empty())
         {
             // Keep leading /, otherwise skip empty segment.
-            return context.segmentStartIndex == 0;
+            return segmentStartIndex == 0;
         }
         if (segment == ".")
         {
-            context.sanitizedName.resize(context.segmentStartIndex);
+            sanitizedName.resize(segmentStartIndex);
             return false;
         }
         if (segment == "..")
         {
-            if (!context.eliminateLeadingDotDots && context.segmentStartIndex == context.firstCollapsibleSegment)
-            {
-                context.firstCollapsibleSegment = context.sanitizedName.size() + 1;
-                return true;
-            }
             // If there is a possibility of parent path
-            if (context.segmentStartIndex > 1)
+            if (segmentStartIndex > 1)
             {
                 // Find where parent path starts
-                context.segmentStartIndex = context.sanitizedName.find_last_of('/', context.segmentStartIndex - 2);
+                segmentStartIndex = sanitizedName.find_last_of('/', segmentStartIndex - 2);
                 // Find where parent path starts and set segment start right after / symbol.
-                context.segmentStartIndex =
-                    (context.segmentStartIndex == ea::string::npos) ? 0 : context.segmentStartIndex + 1;
+                segmentStartIndex =
+                    (segmentStartIndex == ea::string::npos) ? 0 : segmentStartIndex + 1;
             }
             else
             {
                 // If there is no way the parent path has parent of it's own then reset full path to empty.
-                context.segmentStartIndex = 0;
+                segmentStartIndex = 0;
             }
             // Reset sanitized name to position right after last known / or at the start.
-            context.sanitizedName.resize(context.segmentStartIndex);
+            sanitizedName.resize(segmentStartIndex);
             return false;
         }
     }
@@ -1652,39 +1640,39 @@ ea::string FileSystem::FindResourcePrefixPath() const
     return EMPTY_STRING;
 }
 
-ea::string ResolvePath(ea::string_view filePath, bool eliminateLeadingDotDots)
+ea::string ResolvePath(ea::string_view filePath)
 {
-    ResolvePathContext context;
-    context.eliminateLeadingDotDots = eliminateLeadingDotDots;
-    context.sanitizedName.reserve(filePath.length());
+    ea::string sanitizedName;
+    ea::string::size_type segmentStartIndex{0};
+    sanitizedName.reserve(filePath.length());
 
     for (auto c : filePath)
     {
         if (c == '\\' || c == '/')
         {
-            if (ResolvePathSegment(context))
+            if (ResolvePathSegment(sanitizedName, segmentStartIndex))
             {
-                context.sanitizedName.push_back('/');
-                context.segmentStartIndex = context.sanitizedName.size();
+                sanitizedName.push_back('/');
+                segmentStartIndex = sanitizedName.size();
             }
         }
         else
         {
-            context.sanitizedName.push_back(c);
+            sanitizedName.push_back(c);
         }
     }
-    ResolvePathSegment(context);
+    ResolvePathSegment(sanitizedName, segmentStartIndex);
     // Remove trailing / if it isn't the only one
-    if (context.sanitizedName.size() > 1)
+    if (sanitizedName.size() > 1)
     {
-        const auto lastCharIndex = context.sanitizedName.size() - 1;
-        if (context.sanitizedName.at(lastCharIndex) == '/')
+        const auto lastCharIndex = sanitizedName.size() - 1;
+        if (sanitizedName.at(lastCharIndex) == '/')
         {
-            context.sanitizedName.resize(lastCharIndex);
+            sanitizedName.resize(lastCharIndex);
         }
     }
-    context.sanitizedName.trim();
-    return context.sanitizedName;
+    sanitizedName.trim();
+    return sanitizedName;
 }
 
 ea::string GetAbsolutePath(const ea::string& path, const ea::string& currentPath, bool addTrailingSlash)

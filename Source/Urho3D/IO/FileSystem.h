@@ -205,8 +205,8 @@ URHO3D_API bool GetRelativePath(const ea::string& fromPath, const ea::string& to
 /// Eliminate special dot and double dot path segments, replace directory separators with /.
 /// One dot (.) always refers to the current folder.
 /// Two dots(..) refers to the folder that is one level higher than the current folder.
-/// Set eliminateLeadingDotDots to true to drop leading ../ portions of the path and prevent reaching for the files outside work directory.
-URHO3D_API ea::string ResolvePath(ea::string_view path, bool eliminateLeadingDotDots = false);
+/// The leading ../ portions of the path will be removed to prevent reaching for the files outside work directory.
+URHO3D_API ea::string ResolvePath(ea::string_view path);
 /// Convert relative or absolute path to absolute path.
 URHO3D_API ea::string GetAbsolutePath(const ea::string& path, const ea::string& currentPath, bool addTrailingSlash = false);
 URHO3D_API StringVector GetAbsolutePaths(const StringVector& paths, const ea::string& currentPath, bool addTrailingSlash = false);
