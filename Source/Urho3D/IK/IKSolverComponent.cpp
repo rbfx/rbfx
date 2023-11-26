@@ -87,9 +87,9 @@ void IKSolverComponent::Solve(const IKSettings& settings, float timeStep)
 {
     for (const auto& [node, solverNode] : solverNodes_)
     {
+        solverNode->StorePreviousTransform();
         solverNode->position_ = node->GetWorldPosition();
         solverNode->rotation_ = node->GetWorldRotation();
-        solverNode->StorePreviousTransform();
     }
 
     const Transform frameOfReference = GetFrameOfReferenceTransform();
