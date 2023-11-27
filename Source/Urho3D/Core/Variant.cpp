@@ -616,6 +616,62 @@ void Variant::SetCustomVariantValue(CustomVariantValue&& value)
     value.RelocateTo(value_.storage_);
 }
 
+Variant Variant::Convert(VariantType targetType) const
+{
+    if (targetType == type_)
+        return *this;
+    if (targetType == VAR_NONE)
+        return Variant::EMPTY;
+    if (targetType == VAR_STRING)
+        return ToString();
+
+    if (type_ == VAR_STRING)
+    {
+        Variant res;
+        res.FromString(targetType, GetString());
+        return res;
+    }
+
+    //TODO: Add conversion methods when needed.
+    switch (targetType)
+    {
+    case VAR_NONE: break;
+    case VAR_INT: return GetInt();
+    case VAR_BOOL: return GetBool();
+    case VAR_FLOAT: return GetFloat();
+    case VAR_VECTOR2: break;
+    case VAR_VECTOR3: break;
+    case VAR_VECTOR4: break;
+    case VAR_QUATERNION: break;
+    case VAR_COLOR: break;
+    case VAR_STRING: break;
+    case VAR_BUFFER: break;
+    case VAR_VOIDPTR: break;;
+    case VAR_RESOURCEREF: break;
+    case VAR_RESOURCEREFLIST: break;
+    case VAR_VARIANTVECTOR: break;
+    case VAR_VARIANTMAP: break;
+    case VAR_INTRECT: break;
+    case VAR_INTVECTOR2: break;
+    case VAR_PTR: break;
+    case VAR_MATRIX3: break;
+    case VAR_MATRIX3X4: break;
+    case VAR_MATRIX4: break;
+    case VAR_DOUBLE: return GetDouble();
+    case VAR_STRINGVECTOR: break;
+    case VAR_RECT: break;
+    case VAR_INTVECTOR3: break;
+    case VAR_INT64: return GetInt64();
+    case VAR_CUSTOM: break;
+    case VAR_VARIANTCURVE: break;
+    case VAR_STRINGVARIANTMAP: break;
+    case MAX_VAR_TYPES: break;
+    case MAX_VAR_MASK: break;
+    default: break;
+    }
+    return EMPTY;
+}
+
 VectorBuffer Variant::GetVectorBuffer() const
 {
     return VectorBuffer(type_ == VAR_BUFFER ? value_.buffer_ : emptyBuffer);

@@ -1273,6 +1273,8 @@ public:
     void SetCustomVariantValue(const CustomVariantValue& value);
     /// Set custom value without copying.
     void SetCustomVariantValue(CustomVariantValue&& value);
+    /// Convert variant value. Returns variant of VAR_NONE type if conversion fails / not possible.
+    Variant Convert(VariantType targetType) const;
     /// Set custom value.
     template <class T> void SetCustom(T value)
     {
@@ -1298,6 +1300,8 @@ public:
     {
         if (type_ == VAR_INT)
             return value_.int_;
+        else if (type_ == VAR_INT64)
+            return static_cast<int>(value_.int64_);
         else if (type_ == VAR_FLOAT)
             return static_cast<int>(value_.float_);
         else if (type_ == VAR_DOUBLE)
@@ -1341,6 +1345,8 @@ public:
     {
         if (type_ == VAR_INT)
             return static_cast<unsigned>(value_.int_);
+        if (type_ == VAR_INT64)
+            return static_cast<unsigned>(value_.int64_);
         else if (type_ == VAR_FLOAT)
             return static_cast<unsigned>(value_.float_);
         else if (type_ == VAR_DOUBLE)
