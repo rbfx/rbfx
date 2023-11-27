@@ -154,7 +154,7 @@ void VirtualFileSystem::MountExistingPackages(
             {
                 MountPoint* mountPoint = MountPackageFile(packagePath);
                 if (mountPoint)
-                    MountAlias(Format("Resources/{}", relativePath), mountPoint);
+                    MountAlias(Format("res:{}", relativePath), mountPoint);
             }
         }
     }
@@ -175,13 +175,13 @@ void VirtualFileSystem::MountExistingDirectoriesOrPackages(
             {
                 MountPoint* mountPoint = MountPackageFile(packagePath);
                 if (mountPoint)
-                    MountAlias(Format("Resources/{}", relativePath), mountPoint);
+                    MountAlias(Format("res:{}", relativePath), mountPoint);
             }
             else if (fileSystem->DirExists(directoryPath))
             {
                 MountPoint* mountPoint = MountDir(directoryPath);
                 if (mountPoint)
-                    MountAlias(Format("Resources/{}", relativePath), mountPoint);
+                    MountAlias(Format("res:{}", relativePath), mountPoint);
             }
         }
     }
