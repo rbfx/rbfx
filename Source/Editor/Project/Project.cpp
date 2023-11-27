@@ -644,6 +644,7 @@ void Project::InitializeResourceCache()
 
     const auto vfs = GetSubsystem<VirtualFileSystem>();
     vfs->UnmountAll();
+    vfs->MountAliasRoot();
     vfs->MountRoot();
     vfs->MountDir(oldCacheState_.GetEditorData());
 

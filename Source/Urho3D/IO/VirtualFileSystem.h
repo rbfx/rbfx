@@ -24,6 +24,8 @@ public:
     /// Destruct.
     ~VirtualFileSystem() override;
 
+    /// Mount alias root as alias:// scheme. Alias root will be mounted automatically if alias is created.
+    MountPoint* MountAliasRoot();
     /// Mount file system root as file:// scheme.
     MountPoint* MountRoot();
     /// Mount real folder into virtual file system.
@@ -87,6 +89,9 @@ public:
         ScanFlags flags) const;
 
 private:
+    /// Return or create internal alias:// mount point.
+    MountedAliasRoot* GetOrCreateAliasRoot();
+
     /// Mutex for thread-safe access to the mount points.
     mutable Mutex mountMutex_;
     /// File system mount points. It is expected to have small number of mount points.

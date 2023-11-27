@@ -90,6 +90,20 @@ AbstractFilePtr MountedAliasRoot::OpenFile(const FileIdentifier& fileName, FileM
     return mountPoint->OpenFile(resolvedFileName, mode);
 }
 
+ea::optional<FileTime> MountedAliasRoot::GetLastModifiedTime(
+    const FileIdentifier& fileName, bool creationIsModification) const
+{
+    if (!AcceptsScheme(fileName.scheme_))
+        return ea::nullopt;
+
+    const auto [mountPoint, alias, scheme] = FindMountPoint(fileName.fileName_);
+    if (!mountPoint)
+        return ea::nullopt;
+
+    const FileIdentifier resolvedFileName = StripFileIdentifier(fileName, alias, scheme);
+    return mountPoint->GetLastModifiedTime(resolvedFileName, creationIsModification);
+}
+
 const ea::string& MountedAliasRoot::GetName() const
 {
     static const ea::string name = "alias://";

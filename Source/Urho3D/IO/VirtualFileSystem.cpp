@@ -28,6 +28,23 @@ VirtualFileSystem::VirtualFileSystem(Context* context)
 
 VirtualFileSystem::~VirtualFileSystem() = default;
 
+MountPoint* VirtualFileSystem::MountAliasRoot()
+{
+    MutexLock lock(mountMutex_);
+    return GetOrCreateAliasRoot();
+}
+
+MountedAliasRoot* VirtualFileSystem::GetOrCreateAliasRoot()
+{
+    if (!aliasMountPoint_)
+    {
+        aliasMountPoint_ = MakeShared<MountedAliasRoot>(context_);
+        mountPoints_.push_back(aliasMountPoint_);
+    }
+
+    return aliasMountPoint_;
+}
+
 MountPoint* VirtualFileSystem::MountRoot()
 {
     const auto mountPoint = MakeShared<MountedRoot>(context_);
@@ -109,20 +126,18 @@ void VirtualFileSystem::Mount(MountPoint* mountPoint)
     mountPoint->SetWatching(isWatching_);
 
     if (auto mountedAliasRoot = dynamic_cast<MountedAliasRoot*>(mountPoint))
+    {
+        if (aliasMountPoint_)
+            URHO3D_LOGWARNING("Mounted alias root when one already exists, overwriting.");
         aliasMountPoint_ = mountedAliasRoot;
+    }
 }
 
 void VirtualFileSystem::MountAlias(const ea::string& alias, MountPoint* mountPoint, const ea::string& scheme)
 {
     MutexLock lock(mountMutex_);
 
-    if (!aliasMountPoint_)
-    {
-        aliasMountPoint_ = MakeShared<MountedAliasRoot>(context_);
-        mountPoints_.push_back(aliasMountPoint_);
-    }
-
-    aliasMountPoint_->AddAlias(alias, scheme, mountPoint);
+    GetOrCreateAliasRoot()->AddAlias(alias, scheme, mountPoint);
 }
 
 void VirtualFileSystem::MountExistingPackages(

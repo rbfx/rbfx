@@ -510,6 +510,7 @@ void Engine::InitializeVirtualFileSystem()
         absolutePrefixPaths.push_back(programDir);
 
     vfs->UnmountAll();
+    vfs->MountAliasRoot();
     vfs->MountRoot();
     vfs->MountExistingDirectoriesOrPackages(absolutePrefixPaths, paths);
     vfs->MountExistingPackages(absolutePrefixPaths, packages);

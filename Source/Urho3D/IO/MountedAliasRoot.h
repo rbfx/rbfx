@@ -36,6 +36,9 @@ public:
 
     AbstractFilePtr OpenFile(const FileIdentifier& fileName, FileMode mode) override;
 
+    ea::optional<FileTime> GetLastModifiedTime(
+        const FileIdentifier& fileName, bool creationIsModification) const override;
+
     const ea::string& GetName() const override;
 
     ea::string GetAbsoluteNameFromIdentifier(const FileIdentifier& fileName) const override;
