@@ -3,5 +3,4 @@
 	<technique name="Techniques/DiffSkybox.xml" />
 	<cull value="none" />
 	<shadowcull value="ccw" />
-	<shader vsdefines="IGNORENODETRANSFORM" />
 </material>
