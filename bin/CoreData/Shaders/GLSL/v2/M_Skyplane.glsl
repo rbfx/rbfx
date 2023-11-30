@@ -56,7 +56,7 @@ void main()
     vec2 screenPos = vScreenPos.xy / vScreenPos.w;
     vec2 screenSizePx = vec2(1.0, 1.0) / cGBufferInvSize.xy;
     vec2 screenPosPx = screenPos * screenSizePx;
-    vec2 textureSizePx = textureSize(sAlbedo, 0);
+    vec2 textureSizePx = vec2(textureSize(sAlbedo, 0));
     vec2 scalePerDirection = screenSizePx / textureSizePx;
     float fillScale = max(scalePerDirection.x, scalePerDirection.y);
     vec2 targetTextureSizePx = textureSizePx * mix(fillScale, 1.0, cPixelPerfect);
