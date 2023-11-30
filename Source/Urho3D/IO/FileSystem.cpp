@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,17 +23,17 @@
 
 #include "../Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/Thread.h"
-#include "../Core/Profiler.h"
-#include "../Engine/EngineEvents.h"
-#include "../IO/File.h"
-#include "../IO/FileSystem.h"
-#include "../IO/IOEvents.h"
-#include "../IO/Log.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Engine/EngineEvents.h"
+#include "Urho3D/IO/File.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/IOEvents.h"
+#include "Urho3D/IO/Log.h"
 #if URHO3D_SYSTEMUI
-#   include "../SystemUI/Console.h"
+#include "Urho3D/SystemUI/Console.h"
 #endif
 
 #ifdef __ANDROID__
@@ -40,9 +41,11 @@
 #endif
 
 #include <SDL_filesystem.h>
+#include <SDL_misc.h>
 
 #include <sys/stat.h>
 #include <cstdio>
+#include <SDL_error.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -634,8 +637,18 @@ bool FileSystem::SystemOpen(const ea::string& fileName, const ea::string& mode)
 {
     if (allowedPaths_.empty())
     {
+        if (fileName.starts_with("http://") || fileName.starts_with("https://"))
+        {
+            const int error = SDL_OpenURL(fileName.c_str());
+            if (error != 0)
+            {
+                URHO3D_LOGERROR(SDL_GetError());
+            }
+            return !error;
+        }
+
         // allow opening of http and file urls
-        if (!fileName.starts_with("http://") && !fileName.starts_with("https://") && !fileName.starts_with("file://"))
+        if (!fileName.starts_with("file://"))
         {
             if (!FileExists(fileName) && !DirExists(fileName))
             {
