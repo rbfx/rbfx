@@ -32,6 +32,7 @@
 #include "Urho3D/IO/FileSystem.h"
 #include "Urho3D/IO/IOEvents.h"
 #include "Urho3D/IO/Log.h"
+#include "Urho3D/Core/ProcessUtils.h"
 #if URHO3D_SYSTEMUI
 #include "Urho3D/SystemUI/Console.h"
 #endif
@@ -41,7 +42,6 @@
 #endif
 
 #include <SDL_filesystem.h>
-#include <SDL_misc.h>
 
 #include <sys/stat.h>
 #include <cstdio>
@@ -639,12 +639,7 @@ bool FileSystem::SystemOpen(const ea::string& fileName, const ea::string& mode)
     {
         if (fileName.starts_with("http://") || fileName.starts_with("https://"))
         {
-            const int error = SDL_OpenURL(fileName.c_str());
-            if (error != 0)
-            {
-                URHO3D_LOGERROR(SDL_GetError());
-            }
-            return !error;
+            return OpenURL(fileName.c_str());
         }
 
         // allow opening of http and file urls
