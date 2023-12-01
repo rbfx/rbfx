@@ -47,6 +47,7 @@
 using AttributeModeFlags = Urho3D::AttributeMode;
 %typemap(ctype) AttributeModeFlags "size_t";
 %typemap(out) AttributeModeFlags "$result = (size_t)$1.AsInteger();"
+%csconstvalue("9") Urho3D::PlatformId::Unknown;
 %csattribute(Urho3D::RuntimeException, %arg(ea::string), Message, GetMessage);
 %csattribute(Urho3D::CustomVariantValue, %arg(std::type_info), TypeInfo, GetTypeInfo);
 %csattribute(Urho3D::Variant, %arg(int), Int, GetInt);
@@ -123,6 +124,10 @@ using AttributeModeFlags = Urho3D::AttributeMode;
 %csattribute(Urho3D::Time, %arg(unsigned int), TimerPeriod, GetTimerPeriod, SetTimerPeriod);
 %csattribute(Urho3D::Time, %arg(float), ElapsedTime, GetElapsedTime);
 %csattribute(Urho3D::Time, %arg(float), FramesPerSecond, GetFramesPerSecond);
+%csattribute(Urho3D::TimedCounter, %arg(int), Current, GetCurrent);
+%csattribute(Urho3D::TimedCounter, %arg(ea::vector<float>), Data, GetData);
+%csattribute(Urho3D::TimedCounter, %arg(float), Average, GetAverage);
+%csattribute(Urho3D::TimedCounter, %arg(float), Last, GetLast);
 %csattribute(Urho3D::WorkQueue, %arg(unsigned int), NumIncomplete, GetNumIncomplete);
 %csattribute(Urho3D::WorkQueue, %arg(bool), IsCompleted, IsCompleted);
 %csattribute(Urho3D::WorkQueue, %arg(int), NonThreadedWorkMs, GetNonThreadedWorkMs, SetNonThreadedWorkMs);
