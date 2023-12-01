@@ -346,6 +346,7 @@ namespace SDL
 %include "Urho3D/Core/Spline.h"
 %include "Urho3D/Core/Mutex.h"
 %include "Urho3D/Core/Thread.h"
+%include "Urho3D/Core/ProcessUtils.h"
 
 %ignore Urho3D::WorkQueue::PostTask;
 %ignore Urho3D::WorkQueue::PostTaskForThread;

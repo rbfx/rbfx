@@ -801,4 +801,14 @@ URHO3D_API unsigned GetCurrentProcessID()
 #endif
 }
 
+URHO3D_API bool OpenURL(const ea::string& url)
+{
+    const int error = SDL_OpenURL(url.c_str());
+    if (error != 0)
+    {
+        URHO3D_LOGERROR(SDL_GetError());
+    }
+    return !error;
+}
+
 }

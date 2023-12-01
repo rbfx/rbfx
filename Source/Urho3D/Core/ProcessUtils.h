@@ -112,5 +112,7 @@ URHO3D_API ea::string GetOSVersion();
 URHO3D_API ea::string GenerateUUID();
 /// Return current process ID.
 URHO3D_API unsigned GetCurrentProcessID();
+/// Open a URL/URI in the browser or other appropriate external application.
+URHO3D_API bool OpenURL(const ea::string& url);
 
 }
