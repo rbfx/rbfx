@@ -120,7 +120,8 @@ public:
 
     /// Serialize object. May throw ArchiveException.
     void SerializeInBlock(Archive& archive) override;
-    void SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags);
+    void SerializeInBlock(
+        Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags, PrefabLoadFlags loadFlags);
 
     /// Load from binary data. Removes all existing child nodes and components first. Return true if successful.
     bool Load(Deserializer& source) override;
@@ -245,6 +246,12 @@ public:
     /// Return required package files.
     /// @property
     const ea::vector<SharedPtr<PackageFile> >& GetRequiredPackageFiles() const { return requiredPackageFiles_; }
+
+    /// Return all nodes parented by this Scene.
+    const ea::unordered_map<unsigned, Node*>& GetAllNodes() const { return replicatedNodes_; }
+
+    /// Return all components parented by this Scene.
+    const ea::unordered_map<unsigned, Component*>& GetAllComponents() const { return replicatedComponents_; }
 
     /// Return a node user variable name, or empty if not registered.
     const ea::string& GetVarName(StringHash hash) const;

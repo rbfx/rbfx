@@ -141,7 +141,7 @@ public:
     PackedSceneData() = default;
 
     /// Load into scene.
-    void ToScene(Scene* scene) const;
+    void ToScene(Scene* scene, PrefabLoadFlags loadFlags = PrefabLoadFlag::None) const;
 
     /// Pack whole scene.
     static PackedSceneData FromScene(Scene* scene);

@@ -20,9 +20,10 @@
 // THE SOFTWARE.
 //
 
+#include "../Foundation/SceneViewTab.h"
+
 #include "../Core/CommonEditorActions.h"
 #include "../Core/IniHelpers.h"
-#include "../Foundation/SceneViewTab.h"
 #include "../Project/CreateComponentMenu.h"
 
 #include <Urho3D/Engine/Engine.h>
@@ -31,10 +32,10 @@
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/Graphics/Texture2D.h>
-#include <Urho3D/Input/Input.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/Input/Input.h>
 #include <Urho3D/Plugins/PluginManager.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -71,6 +72,36 @@ const auto Hotkey_MakePersistent = EditorHotkey{"SceneViewTab.MakePersistent"};
 
 const auto Hotkey_CreateSiblingNode = EditorHotkey{"SceneViewTab.CreateSiblingNode"}.Ctrl().Press(KEY_N);
 const auto Hotkey_CreateChildNode = EditorHotkey{"SceneViewTab.CreateChildNode"}.Ctrl().Shift().Press(KEY_N);
+
+void SetSceneNextIds(Scene* scene, unsigned nextNodeId, unsigned nextComponentId)
+{
+    scene->SetAttribute("Next Node ID", nextNodeId);
+    scene->SetAttribute("Next Component ID", nextComponentId);
+}
+
+void RecalculateSceneNextIds(Scene* scene)
+{
+    unsigned nextNodeId = 0;
+    unsigned nextComponentId = 0;
+
+    const auto nodeCallback = [&](Node* node)
+    {
+        if (node->IsTemporary())
+            return false;
+
+        nextNodeId = ea::max(nextNodeId, node->GetID() + 1);
+        return true;
+    };
+
+    const auto componentCallback = [&](Component* component)
+    {
+        if (!component->IsTemporary())
+            nextComponentId = ea::max(nextComponentId, component->GetID() + 1);
+    };
+
+    scene->TraverseDepthFirst(nodeCallback, componentCallback);
+    SetSceneNextIds(scene, nextNodeId, nextComponentId);
+}
 
 }
 
@@ -362,6 +393,28 @@ void SceneViewTab::RewindSimulation()
     // Simulation is stored as EditorAction, so we can just undo it
     UndoManager* undoManager = GetUndoManager();
     undoManager->Undo();
+}
+
+void SceneViewTab::CompactObjectIds()
+{
+    SceneViewPage* activePage = GetActivePage();
+    if (!activePage)
+        return;
+
+    // Preserve and clear selection
+    PackedSceneSelection oldSelectionData;
+    activePage->selection_.Save(oldSelectionData);
+    PushAction(MakeShared<ChangeSceneSelectionAction>(activePage, oldSelectionData, PackedSceneSelection{}));
+    activePage->selection_.Clear();
+
+    // Preserve and remap scene;
+    const PackedSceneData oldSceneData = PackedSceneData::FromScene(activePage->scene_);
+
+    SetSceneNextIds(activePage->scene_, 0, 0);
+    PackedSceneData sceneData = PackedSceneData::FromScene(activePage->scene_);
+    sceneData.ToScene(activePage->scene_, PrefabLoadFlag::DiscardIds);
+
+    PushAction(MakeShared<ChangeSceneAction>(activePage->scene_, oldSceneData));
 }
 
 void SceneViewTab::CutSelection(SceneSelection& selection)
@@ -854,6 +907,9 @@ void SceneViewTab::RenderContextMenuItems()
             : ICON_FA_CIRCLE_PAUSE " Pause Scene Simulation";
         if (ui::MenuItem(pauseTitle, GetHotkeyLabel(Hotkey_TogglePaused).c_str()))
             ToggleSimulationPaused();
+
+        if (ui::MenuItem("Compact object IDs"))
+            CompactObjectIds();
     }
 
     contextMenuSeparator_.Add();
@@ -937,6 +993,7 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
     const bool isLegacyScene = page.resource_->GetName().ends_with(".xml");
 
     page.scene_->SetUpdateEnabled(false);
+    RecalculateSceneNextIds(page.scene_);
 
     VectorBuffer buffer;
     if (isLegacyScene)

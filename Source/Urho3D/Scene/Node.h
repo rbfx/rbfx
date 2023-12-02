@@ -718,6 +718,20 @@ public:
     /// This function is optimized for the case when the component is expected to be found.
     template <class T> bool GetNthComponentLazy(WeakPtr<T>& childComponent, unsigned index = 0) const;
 
+    /// Traverse all components and child nodes recursively depth-first.
+    /// Return `false` from `nodeCallback` to prevent traversal of the node.
+    template <class T, class U> void TraverseDepthFirst(const T& nodeCallback, const U& componentCallback)
+    {
+        for (const auto& component : components_)
+            componentCallback(component);
+
+        for (const auto& child : children_)
+        {
+            if (nodeCallback(child))
+                child->TraverseDepthFirst(nodeCallback, componentCallback);
+        }
+    }
+
     /// Set ID. Called by Scene.
     /// @property{set_id}
     void SetID(unsigned id);

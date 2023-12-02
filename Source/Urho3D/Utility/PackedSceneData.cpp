@@ -165,7 +165,7 @@ void PackedComponentData::Update(Component* component) const
     });
 }
 
-void PackedSceneData::ToScene(Scene* scene) const
+void PackedSceneData::ToScene(Scene* scene, PrefabLoadFlags loadFlags) const
 {
     ConsumeArchiveException([&]
     {
@@ -173,7 +173,8 @@ void PackedSceneData::ToScene(Scene* scene) const
         BinaryInputArchive archive{scene->GetContext(), view};
 
         ArchiveBlock block = archive.OpenUnorderedBlock("scene");
-        scene->SerializeInBlock(archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames);
+        scene->SerializeInBlock(
+            archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames, loadFlags);
     });
 }
 
@@ -186,7 +187,8 @@ PackedSceneData PackedSceneData::FromScene(Scene* scene)
         BinaryOutputArchive archive{scene->GetContext(), result.sceneData_};
 
         ArchiveBlock block = archive.OpenUnorderedBlock("scene");
-        scene->SerializeInBlock(archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames);
+        scene->SerializeInBlock(
+            archive, true /* serialize temporary */, PrefabSaveFlag::CompactAttributeNames, PrefabLoadFlag::None);
     });
 
     return result;

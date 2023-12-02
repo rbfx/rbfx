@@ -121,9 +121,10 @@ const SceneComponentIndex& Scene::GetComponentIndex(StringHash componentType)
     return emptyIndex;
 }
 
-void Scene::SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags)
+void Scene::SerializeInBlock(
+    Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags, PrefabLoadFlags loadFlags)
 {
-    Node::SerializeInBlock(archive, serializeTemporary, saveFlags, PrefabLoadFlag::SkipApplyAttributes);
+    Node::SerializeInBlock(archive, serializeTemporary, saveFlags, loadFlags | PrefabLoadFlag::SkipApplyAttributes);
 
     int placeholder{};
     SerializeOptionalValue(archive, "auxiliary", placeholder, AlwaysSerialize{},
@@ -164,7 +165,7 @@ void Scene::SerializeInBlock(Archive& archive)
     const PrefabSaveFlags saveFlags =
         compactSave ? PrefabSaveFlag::CompactAttributeNames : PrefabSaveFlag::EnumsAsStrings;
 
-    SerializeInBlock(archive, false, saveFlags);
+    SerializeInBlock(archive, false, saveFlags, PrefabLoadFlag::None);
 }
 
 bool Scene::Load(Deserializer& source)
@@ -233,7 +234,7 @@ bool Scene::LoadXML(const XMLElement& source)
     {
         XMLInputArchive archive{context_, source, source.GetFile()};
         ArchiveBlock block = archive.OpenUnorderedBlock(SceneResource::GetXmlRootName());
-        SerializeInBlock(archive, false, PrefabSaveFlag::None);
+        SerializeInBlock(archive, false, PrefabSaveFlag::None, PrefabLoadFlag::None);
         return true;
     }
     else
