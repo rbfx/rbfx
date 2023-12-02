@@ -538,6 +538,7 @@ public:
 %include "Urho3D/Scene/SceneResolver.h"
 %include "Urho3D/Scene/UnknownComponent.h"
 %include "Urho3D/Scene/TrackedComponent.h"
+%include "Urho3D/Scene/PrefabTypes.h"
 %include "Urho3D/Scene/NodePrefab.h"
 %include "Urho3D/Scene/PrefabReference.h"
 %include "Urho3D/Scene/PrefabResource.h"
