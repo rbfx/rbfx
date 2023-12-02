@@ -250,12 +250,11 @@ bool Node::Save(PrefabWriter& writer) const
     }
 }
 
-Node* Node::InstantiatePrefab(const ea::string& prefabResourceName, const Vector3& position, const Quaternion& rotation)
+Node* Node::InstantiatePrefab(const PrefabResource* prefabResource, const Vector3& position, const Quaternion& rotation)
 {
-    auto* resource = context_->GetSubsystem<ResourceCache>()->GetResource<PrefabResource>(prefabResourceName);
-    if (resource)
-        return InstantiatePrefab(resource->GetNodePrefab(), position, rotation);
-    return nullptr;
+    if (!prefabResource)
+        return nullptr;
+    return InstantiatePrefab(prefabResource->GetNodePrefab(), position, rotation);
 }
 
 Node* Node::InstantiatePrefab(const NodePrefab& prefab, const Vector3& position, const Quaternion& rotation)
