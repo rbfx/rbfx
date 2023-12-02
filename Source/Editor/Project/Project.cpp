@@ -205,7 +205,6 @@ Project::Project(
     , flags_(flags)
     , isXR_(context->GetSubsystem<Engine>()->GetParameter(EP_XR).GetBool())
     , projectPath_(GetSanitizedPath(projectPath + "/"))
-    , coreDataPath_(projectPath_ + "CoreData/")
     , cachePath_(projectPath_ + "Cache/")
     , tempPath_(projectPath_ + "Temp/")
     , artifactsPath_(projectPath_ + "Artifacts/")
@@ -556,13 +555,6 @@ void Project::EnsureDirectoryInitialized()
         fs->CreateDirsRecursive(artifactsPath_);
     }
 
-    if (!fs->DirExists(coreDataPath_))
-    {
-        if (fs->FileExists(coreDataPath_))
-            fs->Delete(coreDataPath_);
-        fs->CopyDir(oldCacheState_.GetCoreData(), coreDataPath_);
-    }
-
     if (!fs->FileExists(settingsJsonPath_))
     {
         if (fs->DirExists(settingsJsonPath_))
@@ -648,7 +640,7 @@ void Project::InitializeResourceCache()
     vfs->MountRoot();
     vfs->MountDir(oldCacheState_.GetEditorData());
 
-    MountPoint* coreDataMountPoint = vfs->MountDir(coreDataPath_);
+    MountPoint* coreDataMountPoint = vfs->MountDir(oldCacheState_.GetCoreData());
     MountPoint* dataMountPoint = vfs->MountDir(dataPath_);
     MountPoint* cacheMountPoint = vfs->MountDir(cachePath_);
     vfs->MountAlias("res:CoreData", coreDataMountPoint);

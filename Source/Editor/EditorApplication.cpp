@@ -191,6 +191,7 @@ void EditorApplication::Setup()
     engineParameters_[EP_AUTOLOAD_PATHS] = "";
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;EditorData";
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = resourcePrefixPath_;
+    engineParameters_[EP_RESOURCE_ROOT_FILE] = "";
     engineParameters_[EP_WINDOW_MAXIMIZE] = true;
     engineParameters_[EP_ENGINE_AUTO_LOAD_SCRIPTS] = false;
 

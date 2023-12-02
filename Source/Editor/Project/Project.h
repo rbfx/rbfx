@@ -204,7 +204,7 @@ public:
     /// @{
     ProjectFlags GetFlags() const { return flags_; }
     const ea::string& GetProjectPath() const { return projectPath_; }
-    const ea::string& GetCoreDataPath() const { return coreDataPath_; }
+    const ea::string& GetCoreDataPath() const { return oldCacheState_.GetCoreData(); }
     const ea::string& GetDataPath() const { return dataPath_; }
     const ea::string& GetCachePath() const { return cachePath_; }
     const ea::string& GetArtifactsPath() const { return artifactsPath_; }
@@ -280,7 +280,6 @@ private:
 
     const ea::string projectPath_;
 
-    const ea::string coreDataPath_;
     const ea::string cachePath_;
     const ea::string tempPath_;
     const ea::string artifactsPath_;
