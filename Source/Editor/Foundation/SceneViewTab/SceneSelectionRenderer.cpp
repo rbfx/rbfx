@@ -128,6 +128,14 @@ bool SceneSelectionRenderer::PrepareInternalComponents(SceneViewPage& scenePage,
 
         state.currentRevision_ = 0;
 
+        // Remove all existing temporary debug outline groups
+        ea::vector<OutlineGroup*> outlineGroups;
+        scene->GetComponents(outlineGroups);
+        ea::erase_if(outlineGroups, [](OutlineGroup* group) { return !group->IsTemporary() || !group->IsDebug(); });
+        for (OutlineGroup* group : outlineGroups)
+            group->Remove();
+
+        // Create new outline groups
         state.directSelection_ = scene->CreateComponent<OutlineGroup>();
         state.directSelection_->SetRenderOrder(DirectSelectionRenderOrder);
         state.directSelection_->SetTemporary(true);
