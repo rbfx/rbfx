@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2022-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,21 +23,21 @@
 
 #include "../Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/Profiler.h"
-#include "../IO/Archive.h"
-#include "../IO/ArchiveSerialization.h"
-#include "../IO/Log.h"
-#include "../IO/MemoryBuffer.h"
-#include "../Resource/XMLFile.h"
-#include "../Resource/JSONFile.h"
-#include "../Scene/Component.h"
-#include "../Scene/ObjectAnimation.h"
-#include "../Scene/PrefabReader.h"
-#include "../Scene/PrefabWriter.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
-#include "../Scene/UnknownComponent.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/IO/Archive.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Resource/JSONFile.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/XMLFile.h"
+#include "Urho3D/Scene/Component.h"
+#include "Urho3D/Scene/PrefabReader.h"
+#include "Urho3D/Scene/PrefabResource.h"
+#include "Urho3D/Scene/PrefabWriter.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
+#include "Urho3D/Scene/UnknownComponent.h"
 
 #include "../DebugNew.h"
 
@@ -247,6 +248,13 @@ bool Node::Save(PrefabWriter& writer) const
         URHO3D_LOGERROR(e.what());
         return false;
     }
+}
+
+Node* Node::InstantiatePrefab(const PrefabResource* prefabResource, const Vector3& position, const Quaternion& rotation)
+{
+    if (!prefabResource)
+        return nullptr;
+    return InstantiatePrefab(prefabResource->GetNodePrefab(), position, rotation);
 }
 
 Node* Node::InstantiatePrefab(const NodePrefab& prefab, const Vector3& position, const Quaternion& rotation)
