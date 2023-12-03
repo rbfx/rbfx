@@ -69,19 +69,6 @@ void Player::Start()
 #endif
 
         // TODO(editor): Support resource routing
-
-#if URHO3D_RMLUI
-        auto* cache = GetSubsystem<ResourceCache>();
-        auto* ui = GetSubsystem<RmlUI>();
-        ea::vector<ea::string> fonts;
-        for (const char* pattern: {"*.ttf", "*.otf"})
-        {
-            ea::vector<ea::string> fonts;
-            cache->Scan(fonts, "Fonts/", pattern, SCAN_FILES | SCAN_RECURSIVE);
-            for (const ea::string& font : fonts)
-                ui->LoadFont(Format("Fonts/{}", font));
-        }
-#endif
     }
 
     const StringVector loadedPlugins = engine->GetParameter(EP_PLUGINS).GetString().split(';');

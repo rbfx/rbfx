@@ -523,6 +523,15 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
                 GetParameter(EP_SOUND_INTERPOLATION).GetBool()
             );
         }
+
+#ifdef URHO3D_RMLUI
+        const bool loadFonts = GetParameter(EP_LOAD_FONTS).GetBool();
+        if (loadFonts)
+        {
+            auto rmlUi = GetSubsystem<RmlUI>();
+            rmlUi->ReloadFonts();
+        }
+#endif
     }
 
     // Init FPU state of main thread
@@ -1249,6 +1258,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_FULL_SCREEN, false).Overridable();
     engineParameters_->DefineVariable(EP_GPU_DEBUG, false);
     engineParameters_->DefineVariable(EP_HEADLESS, false);
+    engineParameters_->DefineVariable(EP_LOAD_FONTS, true);
     engineParameters_->DefineVariable(EP_LOG_LEVEL, LOG_TRACE).CommandLinePriority();
     engineParameters_->DefineVariable(EP_LOG_NAME, "conf://Urho3D.log").CommandLinePriority();
     engineParameters_->DefineVariable(EP_LOG_QUIET, false).CommandLinePriority();

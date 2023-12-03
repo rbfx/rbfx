@@ -352,6 +352,18 @@ bool RmlUI::LoadFont(const ea::string& resourceName, bool fallback)
     return Rml::LoadFontFace(resourceName, fallback);
 }
 
+void RmlUI::ReloadFonts()
+{
+    auto cache = GetSubsystem<ResourceCache>();
+
+    ea::vector<ea::string> fonts;
+    for (const char* pattern : {"*.ttf", "*.otf"})
+        cache->Scan(fonts, "Fonts/", pattern, SCAN_FILES | SCAN_RECURSIVE | SCAN_APPEND);
+
+    for (const ea::string& font : fonts)
+        LoadFont(Format("Fonts/{}", font));
+}
+
 Rml::Context* RmlUI::GetRmlContext() const
 {
     return rmlContext_;
