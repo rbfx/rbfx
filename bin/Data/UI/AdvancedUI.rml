@@ -31,18 +31,6 @@
         height: 100%;
     }
 
-    /* Helper class with absolute position to enable overlap of the nested panels */
-    .panel-overlap-container {
-        position: absolute;
-        left: 0;
-        top: 0;
-
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-    }
-
     /* --------------------------------------------------------------
     ** Panels
     ** --------------------------------------------------------------
@@ -396,7 +384,6 @@
     </div>
 
     <div id="right-panel">
-    <div class="panel-overlap-container">
     <!-- "Load Game" window -->
     <div id="load-game-panel">
     <div class="window" id="load-game-window" data-class-hidden="navigable_group!='game_to_load_group'">
@@ -419,7 +406,6 @@
             <input type="button" class="native-button utility-button" disabled
                 onmouseover="sound:20% Sounds/UINavigated.wav" onclick="sound:Sounds/UIClicked.wav">Delete</input>
         </div>
-    </div>
     </div>
     </div>
     </div>
