@@ -183,10 +183,11 @@ ea::vector<ResourceRootEntry> ReadResourceRootFile(File* file)
 
     unsigned lineIndex = 0;
     ea::vector<ResourceRootEntry> result;
-    for (const ea::string& line : lines)
+    for (const ea::string& sourceLine : lines)
     {
         ++lineIndex;
-        if (line.starts_with("#") || line.starts_with(";"))
+        const ea::string line = sourceLine.trimmed();
+        if (line.empty() || line.starts_with("#") || line.starts_with(";"))
             continue;
 
         const auto parts = line.split('=');
@@ -1260,7 +1261,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_PLUGINS, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_REFRESH_RATE, 0).Overridable();
     engineParameters_->DefineVariable(EP_RESOURCE_PACKAGES, EMPTY_STRING).CommandLinePriority();
-    engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "Data;Cache;CoreData").CommandLinePriority();
+    engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "CoreData;Data;Cache").CommandLinePriority();
     engineParameters_->DefineVariable(EP_RESOURCE_PREFIX_PATHS, EMPTY_STRING).CommandLinePriority();
     engineParameters_->DefineVariable(EP_RESOURCE_ROOT_FILE, "ResourceRoot.ini");
     engineParameters_->DefineVariable(EP_SAVE_SHADER_CACHE, true);
