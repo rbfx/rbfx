@@ -1,44 +1,26 @@
-//
 // Copyright (c) 2008-2017 the Urho3D project.
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2023 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../SystemUI/SystemUI.h"
+#include "Urho3D/SystemUI/SystemUI.h"
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/Macros.h"
-#include "../Core/Profiler.h"
-#include "../Engine/EngineEvents.h"
-#include "../Graphics/GraphicsEvents.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
-#include "../Input/Input.h"
-#include "../Input/InputEvents.h"
-#include "../Resource/ResourceCache.h"
-#include "../SystemUI/Console.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Macros.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Engine/EngineEvents.h"
+#include "Urho3D/Graphics/GraphicsEvents.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Input/Input.h"
+#include "Urho3D/Input/InputEvents.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/SystemUI/Console.h"
 #include "Urho3D/SystemUI/ImGuiDiligentRendererEx.h"
 
 #include <ImGui/imgui_freetype.h>
@@ -440,6 +422,11 @@ void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
         ui::StyleColorsLight(&style);
     style.Alpha = 1.0f;
     style.FrameRounding = 3.0f;
+}
+
+void SystemUI::ReferenceTexture(Texture2D* texture)
+{
+    referencedTextures_.push_back(texture->GetHandles().srv_);
 }
 
 }
