@@ -240,12 +240,12 @@ void CrowdAgent::UpdateParameters(unsigned scope)
 
             case NAVIGATIONPUSHINESS_HIGH:
                 params.separationWeight = 0.5f;
-                params.collisionQueryRange = radius_ * 1.0f;
+                params.collisionQueryRange = radius_ * 2.0f;
                 break;
 
             case NAVIGATIONPUSHINESS_NONE:
                 params.separationWeight = 0.0f;
-                params.collisionQueryRange = radius_ * 1.0f;
+                params.collisionQueryRange = radius_ * 2.0f;
                 break;
             }
         }
