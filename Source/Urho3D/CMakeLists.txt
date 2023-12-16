@@ -378,7 +378,7 @@ if (WEB)
         math(EXPR EMSCRIPTEN_TOTAL_MEMORY_BYTES "${EMSCRIPTEN_TOTAL_MEMORY} * 1024 * 1024")
         target_link_libraries(Urho3D PUBLIC "-s INITIAL_MEMORY=${EMSCRIPTEN_TOTAL_MEMORY_BYTES}")
     endif ()
-    target_link_libraries(Urho3D PUBLIC "-s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2")
+    target_link_libraries(Urho3D PUBLIC "-s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2 -s GL_ENABLE_GET_PROC_ADDRESS")
     # TODO: Try to remove FULL_ES3. We only need it for glMapBufferRange and glUnmapBuffer.
     target_link_libraries(Urho3D PUBLIC "-s FULL_ES3=1")
 endif ()
