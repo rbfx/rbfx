@@ -193,7 +193,7 @@ public:
     /// @{
     void SaveShallowOnly();
     void SaveProjectOnly();
-    void SaveResourcesOnly();
+    void SaveResourcesOnly(bool forceSave = true);
     void Save();
     /// @}
 

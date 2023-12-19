@@ -1012,12 +1012,12 @@ void Project::SaveProjectOnly()
     hasUnsavedChanges_ = false;
 }
 
-void Project::SaveResourcesOnly()
+void Project::SaveResourcesOnly(bool forceSave)
 {
     for (EditorTab* tab : tabs_)
     {
         if (auto resourceTab = dynamic_cast<ResourceEditorTab*>(tab))
-            resourceTab->SaveAllResources(true);
+            resourceTab->SaveAllResources(forceSave);
     }
     ProcessDelayedSaves(true);
 }
