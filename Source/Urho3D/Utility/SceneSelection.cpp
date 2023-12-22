@@ -184,6 +184,9 @@ void SceneSelection::ClearInternal()
 
 void SceneSelection::ConvertToNodes()
 {
+    if (components_.empty())
+        return;
+
     for (Component* component : components_)
     {
         if (Node* node = component->GetNode())
