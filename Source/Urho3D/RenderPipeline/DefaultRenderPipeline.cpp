@@ -344,6 +344,8 @@ void DefaultRenderPipelineView::Render()
     URHO3D_PROFILE("ExecuteRenderPipeline");
 
     const RenderDeviceCaps& caps = GetSubsystem<RenderDevice>()->GetCaps();
+    const bool canReadDepth = settings_.renderBufferManager_.readableDepth_ && caps.readOnlyDepth_;
+
     const FrameInfo& fullFrameInfo = sceneProcessor_->GetFrameInfo();
 
     const bool hasRefraction = alphaPass_->HasRefractionBatches();
@@ -385,9 +387,9 @@ void DefaultRenderPipelineView::Render()
 
         renderBufferManager_->SetRenderTargets(renderBufferManager_->GetDepthStencilOutput(), gBuffer);
         sceneProcessor_->RenderSceneBatches("GeometryBuffer", camera, opaquePass_->GetDeferredBatches());
-        if (!deferredDecalPass_->GetDeferredBatches().batches_.empty() && settings_.renderBufferManager_.readableDepth_)
+        if (canReadDepth && !deferredDecalPass_->GetDeferredBatches().batches_.empty())
         {
-            renderBufferManager_->SetRenderTargets(renderBufferManager_->GetDepthStencilOutput(), gBuffer);
+            renderBufferManager_->SetRenderTargets(renderBufferManager_->GetDepthStencilOutput(), gBuffer, true);
 
             ShaderResourceDesc depthAndColorTextures[] = {
                 {ShaderResources::DepthBuffer, renderBufferManager_->GetDepthStencilTexture()},
@@ -433,13 +435,12 @@ void DefaultRenderPipelineView::Render()
     if (hasRefraction)
         renderBufferManager_->SwapColorBuffers(true);
 
-    const bool supportReadOnlyDepth = caps.readOnlyDepth_;
     ShaderResourceDesc depthAndColorTextures[] = {
-        {ShaderResources::DepthBuffer, supportReadOnlyDepth ? renderBufferManager_->GetDepthStencilTexture() : nullptr},
+        {ShaderResources::DepthBuffer, canReadDepth ? renderBufferManager_->GetDepthStencilTexture() : nullptr},
         {ShaderResources::Emission, renderBufferManager_->GetSecondaryColorTexture()},
     };
 
-    if (supportReadOnlyDepth)
+    if (canReadDepth)
         renderBufferManager_->SetOutputRenderTargets(true);
 
     sceneProcessor_->RenderSceneBatches("Alpha", camera, alphaPass_->GetBatches(),
