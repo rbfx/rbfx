@@ -73,7 +73,8 @@ static const ea::vector<ea::string> ambientModeNames =
 
 static const ea::vector<ea::string> ssaoModeNames = {
     "Combine",
-    "Preview",
+    "PreviewRaw",
+    "PreviewBlurred",
 };
 
 

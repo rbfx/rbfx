@@ -695,7 +695,8 @@ struct AutoExposurePassSettings
 enum class AmbientOcclusionMode
 {
     Combine,
-    Preview
+    PreviewRaw,
+    PreviewBlurred,
 };
 
 struct AmbientOcclusionPassSettings

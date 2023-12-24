@@ -69,12 +69,12 @@ void AmbientOcclusionPass::InitializeStates()
     static const NamedSamplerStateDesc ssaoSamplers[] = {
         {ShaderResources::Albedo, SamplerStateDesc::Bilinear()},
         {ShaderResources::Normal, SamplerStateDesc::Bilinear()},
-        {ShaderResources::DepthBuffer, SamplerStateDesc::Bilinear()},
+        {ShaderResources::DepthBuffer, SamplerStateDesc::Nearest()},
     };
     static const NamedSamplerStateDesc blurSamplers[] = {
         {ShaderResources::Albedo, SamplerStateDesc::Bilinear()},
         {ShaderResources::Normal, SamplerStateDesc::Bilinear()},
-        {ShaderResources::DepthBuffer, SamplerStateDesc::Bilinear()},
+        {ShaderResources::DepthBuffer, SamplerStateDesc::Nearest()},
     };
     static const NamedSamplerStateDesc applySamplers[] = {
         {ShaderResources::Albedo, SamplerStateDesc::Bilinear()},
@@ -245,12 +245,26 @@ void AmbientOcclusionPass::Execute(Camera* camera)
     const Matrix4 textureToViewSpace = viewToTextureSpace.Inverse();
 
     EvaluateAO(camera, viewToTextureSpace, textureToViewSpace);
-    BlurTexture(textureToViewSpace);
 
     switch (settings_.ambientOcclusionMode_)
     {
-    case AmbientOcclusionMode::Preview: Blit(pipelineStates_->preview_); break;
-    default: Blit(pipelineStates_->combine_); break;
+    case AmbientOcclusionMode::PreviewRaw:
+    {
+        Blit(pipelineStates_->preview_);
+        break;
+    }
+    case AmbientOcclusionMode::PreviewBlurred:
+    {
+        BlurTexture(textureToViewSpace);
+        Blit(pipelineStates_->preview_);
+        break;
+    }
+    default:
+    {
+        BlurTexture(textureToViewSpace);
+        Blit(pipelineStates_->combine_);
+        break;
+    }
     }
 }
 
