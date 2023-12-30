@@ -1,6 +1,20 @@
 %constant unsigned int PackageFragmentSize = Urho3D::PACKAGE_FRAGMENT_SIZE;
 %ignore Urho3D::PACKAGE_FRAGMENT_SIZE;
+%csconstvalue("1") Urho3D::Reliable;
+%csconstvalue("2") Urho3D::Ordered;
+%csconstvalue("0") Urho3D::UnreliableUnordered;
+%csconstvalue("2") Urho3D::UnreliableOrdered;
+%csconstvalue("1") Urho3D::ReliableUnordered;
+%csconstvalue("3") Urho3D::ReliableOrdered;
+%typemap(csattributes) PacketType "[global::System.Flags]";
+using PacketTypeFlags = PacketType;
+%typemap(ctype) PacketTypeFlags "size_t";
+%typemap(out) PacketTypeFlags "$result = (size_t)$1.AsInteger();"
 %csconstvalue("0") Urho3D::HTTP_INITIALIZING;
+%typemap(csattributes) LANDiscoveryMode "[global::System.Flags]";
+using LANDiscoveryModeFlags = LANDiscoveryMode;
+%typemap(ctype) LANDiscoveryModeFlags "size_t";
+%typemap(out) LANDiscoveryModeFlags "$result = (size_t)$1.AsInteger();"
 %csattribute(Urho3D::FilteredUint, %arg(unsigned int), MinValue, GetMinValue);
 %csattribute(Urho3D::FilteredUint, %arg(unsigned int), AverageValue, GetAverageValue);
 %csattribute(Urho3D::FilteredUint, %arg(unsigned int), MaxValue, GetMaxValue);
@@ -13,8 +27,7 @@
 %csattribute(Urho3D::Connection, %arg(unsigned int), LocalTime, GetLocalTime);
 %csattribute(Urho3D::Connection, %arg(unsigned int), LocalTimeOfLatestRoundtrip, GetLocalTimeOfLatestRoundtrip);
 %csattribute(Urho3D::Connection, %arg(unsigned int), Ping, GetPing);
-%csattribute(Urho3D::Connection, %arg(SLNet::AddressOrGUID), AddressOrGUID, GetAddressOrGUID, SetAddressOrGUID);
-%csattribute(Urho3D::Connection, %arg(Urho3D::Scene *), Scene, GetScene, SetScene);
+%csattribute(Urho3D::Connection, %arg(Scene *), Scene, GetScene, SetScene);
 %csattribute(Urho3D::Connection, %arg(bool), IsClient, IsClient);
 %csattribute(Urho3D::Connection, %arg(bool), IsConnected, IsConnected);
 %csattribute(Urho3D::Connection, %arg(bool), IsConnectPending, IsConnectPending, SetConnectPending);
@@ -22,7 +35,6 @@
 %csattribute(Urho3D::Connection, %arg(bool), LogStatistics, GetLogStatistics, SetLogStatistics);
 %csattribute(Urho3D::Connection, %arg(ea::string), Address, GetAddress);
 %csattribute(Urho3D::Connection, %arg(unsigned short), Port, GetPort);
-%csattribute(Urho3D::Connection, %arg(float), RoundTripTime, GetRoundTripTime);
 %csattribute(Urho3D::Connection, %arg(unsigned long long), BytesInPerSec, GetBytesInPerSec);
 %csattribute(Urho3D::Connection, %arg(unsigned long long), BytesOutPerSec, GetBytesOutPerSec);
 %csattribute(Urho3D::Connection, %arg(int), PacketsInPerSec, GetPacketsInPerSec);
@@ -33,24 +45,24 @@
 %csattribute(Urho3D::HttpRequest, %arg(ea::string), Url, GetURL);
 %csattribute(Urho3D::HttpRequest, %arg(ea::string), Verb, GetVerb);
 %csattribute(Urho3D::HttpRequest, %arg(ea::string), Error, GetError);
-%csattribute(Urho3D::HttpRequest, %arg(Urho3D::HttpRequestState), State, GetState);
+%csattribute(Urho3D::HttpRequest, %arg(HttpRequestState), State, GetState);
 %csattribute(Urho3D::HttpRequest, %arg(unsigned int), AvailableSize, GetAvailableSize);
 %csattribute(Urho3D::HttpRequest, %arg(bool), IsOpen, IsOpen);
-%csattribute(Urho3D::Network, %arg(ea::string), Guid, GetGUID);
+%csattribute(Urho3D::LANDiscoveryManager, %arg(unsigned int), BroadcastTimeMs, GetBroadcastTimeMs, SetBroadcastTimeMs);
 %csattribute(Urho3D::Network, %arg(unsigned int), UpdateFps, GetUpdateFps, SetUpdateFps);
 %csattribute(Urho3D::Network, %arg(unsigned int), PingIntervalMs, GetPingIntervalMs, SetPingIntervalMs);
 %csattribute(Urho3D::Network, %arg(unsigned int), MaxPingIntervalMs, GetMaxPingIntervalMs, SetMaxPingIntervalMs);
 %csattribute(Urho3D::Network, %arg(unsigned int), ClockBufferSize, GetClockBufferSize, SetClockBufferSize);
 %csattribute(Urho3D::Network, %arg(unsigned int), PingBufferSize, GetPingBufferSize, SetPingBufferSize);
-%csattribute(Urho3D::Network, %arg(int), SimulatedLatency, GetSimulatedLatency, SetSimulatedLatency);
-%csattribute(Urho3D::Network, %arg(float), SimulatedPacketLoss, GetSimulatedPacketLoss, SetSimulatedPacketLoss);
 %csattribute(Urho3D::Network, %arg(float), UpdateOvertime, GetUpdateOvertime);
 %csattribute(Urho3D::Network, %arg(bool), IsUpdateNow, IsUpdateNow);
-%csattribute(Urho3D::Network, %arg(Urho3D::Connection *), ServerConnection, GetServerConnection);
+%csattribute(Urho3D::Network, %arg(Connection *), ServerConnection, GetServerConnection);
 %csattribute(Urho3D::Network, %arg(ea::vector<SharedPtr<Connection>>), ClientConnections, GetClientConnections);
 %csattribute(Urho3D::Network, %arg(bool), IsServerRunning, IsServerRunning);
 %csattribute(Urho3D::Network, %arg(ea::string), DebugInfo, GetDebugInfo);
 %csattribute(Urho3D::Network, %arg(ea::string), PackageCacheDir, GetPackageCacheDir, SetPackageCacheDir);
+%csattribute(Urho3D::NetworkConnection, %arg(ea::string), Address, GetAddress);
+%csattribute(Urho3D::NetworkConnection, %arg(unsigned short), Port, GetPort);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {
@@ -179,12 +191,6 @@ public static partial class E
         public static implicit operator StringHash(RemoteEventDataEvent e) { return e._event; }
     }
     public static RemoteEventDataEvent RemoteEventData = new RemoteEventDataEvent();
-    public class NetworkBannedEvent {
-        private StringHash _event = new StringHash("NetworkBanned");
-        public NetworkBannedEvent() { }
-        public static implicit operator StringHash(NetworkBannedEvent e) { return e._event; }
-    }
-    public static NetworkBannedEvent NetworkBanned = new NetworkBannedEvent();
     public class NetworkInvalidPasswordEvent {
         private StringHash _event = new StringHash("NetworkInvalidPassword");
         public NetworkInvalidPasswordEvent() { }

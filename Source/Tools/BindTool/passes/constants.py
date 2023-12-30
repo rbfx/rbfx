@@ -41,7 +41,7 @@ class DefineConstantsPass(AstPass):
             self._writer.write_pre(subsystem_name, f'%{self._lang}const(1) {fqn};')
             self._writer.write_pre(subsystem_name, f'%constant {qual_type} {util.camel_case(node.name)} = {raw_value};')
         else:
-            if self._lang == 'cs' and qual_type == 'Urho3D::ConstString':
+            if self._lang == 'cs' and (qual_type == 'Urho3D::ConstString' or qual_type == 'ConstString'):
                 qual_type = 'const char*'
                 value = node._json_node['inner'][0]['inner'][0]['inner'][0]['inner'][0]['inner'][0]['value']
             else:

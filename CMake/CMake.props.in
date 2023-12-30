@@ -10,5 +10,8 @@
     <URHO3D_NETFX>@URHO3D_NETFX@</URHO3D_NETFX>
     <URHO3D_NETFX_RUNTIME_IDENTIFIER>@URHO3D_NETFX_RUNTIME_IDENTIFIER@</URHO3D_NETFX_RUNTIME_IDENTIFIER>
     <URHO3D_NETFX_RUNTIME>@URHO3D_NETFX_RUNTIME@</URHO3D_NETFX_RUNTIME>
+    <URHO3D_RMLUI Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('@URHO3D_RMLUI@'.ToUpper(), '^1|ON|TRUE$'))">true</URHO3D_RMLUI>
+    <URHO3D_ACTIONS Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('@URHO3D_ACTIONS@'.ToUpper(), '^1|ON|TRUE$'))">true</URHO3D_ACTIONS>
+    <URHO3D_NAVIGATION Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('@URHO3D_NAVIGATION@'.ToUpper(), '^1|ON|TRUE$'))">true</URHO3D_NAVIGATION>
   </PropertyGroup>
 </Project>

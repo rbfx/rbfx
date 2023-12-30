@@ -48,14 +48,13 @@ class ClangJsonAstParser(object):
         args.extend(self._compiler_parameters)
         args.append('-')
         ps = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-        ps.stdin.write(self._source_code)
-        ps.stdin.close()
+        output, error = ps.communicate(input=self._source_code)
         try:
-            self._json_ast = json.load(ps.stdout)
+            self._json_ast = json.loads(output.decode())
         finally:
-            for ln in ps.stderr.read().decode().split('\n'):
-                logging.error(ln)
-        ps.wait()
+            for ln in error.decode().split('\n'):
+                if ln:
+                    logging.error(ln)
         if ps.returncode != 0:
             sys.exit(ps.returncode)
 

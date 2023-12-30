@@ -431,6 +431,14 @@ URHO3D_REFCOUNTED(Urho3D::Actions::Sequence);
 URHO3D_REFCOUNTED(Urho3D::Actions::ShaderParameterAction);
 URHO3D_REFCOUNTED(Urho3D::Actions::ShaderParameterTo);
 URHO3D_REFCOUNTED(Urho3D::Actions::ShaderParameterFromTo);
+URHO3D_REFCOUNTED(Urho3D::XRBinding);
+URHO3D_REFCOUNTED(Urho3D::XRActionGroup);
+URHO3D_REFCOUNTED(Urho3D::VirtualReality);
+URHO3D_REFCOUNTED(Urho3D::OpenXRBinding);
+URHO3D_REFCOUNTED(Urho3D::OpenXRActionGroup);
+URHO3D_REFCOUNTED(Urho3D::OpenXRControllerModel);
+URHO3D_REFCOUNTED(Urho3D::OpenXR);
+URHO3D_REFCOUNTED(Urho3D::VRRig);
 
 // Manually added
 URHO3D_REFCOUNTED(Urho3D::NetworkObject);

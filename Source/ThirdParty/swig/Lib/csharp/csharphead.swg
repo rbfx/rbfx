@@ -385,6 +385,38 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_CSharpString
   SWIG_csharp_string_callback = callback;
 }
 %}
+#else
+
+%insert(runtime) %{
+static thread_local std::string gStdStringReturnValue;
+static thread_local std::wstring gStdWStringReturnValue;
+inline char* SWIG_csharp_string_callback(const char* value)
+{
+  gStdStringReturnValue = value;
+  return gStdStringReturnValue.data();
+}
+inline char* SWIG_csharp_string_callback(std::string&& value)
+{
+  std::swap(gStdStringReturnValue, value);
+  return gStdStringReturnValue.data();
+}
+inline char* SWIG_csharp_string_callback(const std::string& value)
+{
+  gStdStringReturnValue = value;
+  return gStdStringReturnValue.data();
+}
+inline wchar_t* SWIG_csharp_string_callback(std::wstring&& value)
+{
+  std::swap(gStdWStringReturnValue, value);
+  return gStdWStringReturnValue.data();
+}
+inline wchar_t* SWIG_csharp_string_callback(const std::wstring& value)
+{
+  gStdWStringReturnValue = value;
+  return gStdWStringReturnValue.data();
+}
+%}
+
 #endif // SWIG_CSHARP_NO_STRING_HELPER
 
 #if !defined(SWIG_CSHARP_NO_IMCLASS_STATIC_CONSTRUCTOR)

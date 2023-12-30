@@ -8,28 +8,28 @@
 %csconstvalue("4") Urho3D::SCAN_HIDDEN;
 %csconstvalue("8") Urho3D::SCAN_APPEND;
 %csconstvalue("16") Urho3D::SCAN_RECURSIVE;
-%typemap(csattributes) Urho3D::ScanFlag "[global::System.Flags]";
-using ScanFlags = Urho3D::ScanFlag;
+%typemap(csattributes) ScanFlag "[global::System.Flags]";
+using ScanFlags = ScanFlag;
 %typemap(ctype) ScanFlags "size_t";
 %typemap(out) ScanFlags "$result = (size_t)$1.AsInteger();"
 %csattribute(Urho3D::ArchiveBlock, %arg(unsigned int), SizeHint, GetSizeHint);
-%csattribute(Urho3D::ArchiveBase, %arg(Urho3D::Context *), Context, GetContext);
+%csattribute(Urho3D::ArchiveBase, %arg(Context *), Context, GetContext);
 %csattribute(Urho3D::ArchiveBase, %arg(ea::string_view), Name, GetName);
 %csattribute(Urho3D::ArchiveBase, %arg(unsigned int), Checksum, GetChecksum);
 %csattribute(Urho3D::ArchiveBase, %arg(bool), IsEOF, IsEOF);
 %csattribute(Urho3D::ArchiveBlockBase, %arg(ea::string_view), Name, GetName);
 %csattribute(Urho3D::ArchiveBlockBase, %arg(bool), IsUnorderedAccessSupported, IsUnorderedAccessSupported);
-%csattribute(Urho3D::Log, %arg(Urho3D::LogLevel), Level, GetLevel, SetLevel);
+%csattribute(Urho3D::Log, %arg(LogLevel), Level, GetLevel);
 %csattribute(Urho3D::Log, %arg(bool), IsQuiet, IsQuiet, SetQuiet);
 %csattribute(Urho3D::VectorBuffer, %arg(unsigned char *), Data, GetData);
 %csattribute(Urho3D::VectorBuffer, %arg(unsigned char *), ModifiableData, GetModifiableData);
-%csattribute(Urho3D::VectorBuffer, %arg(Urho3D::ByteVector), Buffer, GetBuffer);
-%csattribute(Urho3D::BinaryOutputArchiveBlock, %arg(Urho3D::Serializer *), Serializer, GetSerializer);
+%csattribute(Urho3D::VectorBuffer, %arg(ByteVector), Buffer, GetBuffer);
+%csattribute(Urho3D::BinaryOutputArchiveBlock, %arg(Serializer *), Serializer, GetSerializer);
 %csattribute(Urho3D::BinaryOutputArchiveBlock, %arg(bool), IsUnorderedAccessSupported, IsUnorderedAccessSupported);
 %csattribute(Urho3D::BinaryInputArchiveBlock, %arg(unsigned int), NextElementPosition, GetNextElementPosition);
 %csattribute(Urho3D::BinaryInputArchiveBlock, %arg(bool), IsUnorderedAccessSupported, IsUnorderedAccessSupported);
 %csattribute(Urho3D::Base64OutputArchive, %arg(ea::string), Base64, GetBase64);
-%csattribute(Urho3D::File, %arg(Urho3D::FileMode), Mode, GetMode);
+%csattribute(Urho3D::File, %arg(FileMode), Mode, GetMode);
 %csattribute(Urho3D::File, %arg(void *), Handle, GetHandle);
 %csattribute(Urho3D::File, %arg(bool), IsPackaged, IsPackaged);
 %csattribute(Urho3D::FileSystem, %arg(ea::string), CurrentDir, GetCurrentDir, SetCurrentDir);
@@ -52,7 +52,7 @@ using ScanFlags = Urho3D::ScanFlag;
 %csattribute(Urho3D::MultiFileWatcher, %arg(float), Delay, GetDelay, SetDelay);
 %csattribute(Urho3D::NamedPipe, %arg(bool), IsServer, IsServer);
 %csattribute(Urho3D::PackageFile, %arg(ea::unordered_map<ea::string, PackageEntry>), Entries, GetEntries);
-%csattribute(Urho3D::PackageFile, %arg(Urho3D::StringHash), NameHash, GetNameHash);
+%csattribute(Urho3D::PackageFile, %arg(StringHash), NameHash, GetNameHash);
 %csattribute(Urho3D::PackageFile, %arg(unsigned int), NumFiles, GetNumFiles);
 %csattribute(Urho3D::PackageFile, %arg(unsigned int), TotalSize, GetTotalSize);
 %csattribute(Urho3D::PackageFile, %arg(unsigned int), TotalDataSize, GetTotalDataSize);
@@ -61,7 +61,7 @@ using ScanFlags = Urho3D::ScanFlag;
 %csattribute(Urho3D::PackageFile, %arg(ea::vector<ea::string>), EntryNames, GetEntryNames);
 %csattribute(Urho3D::PackageFile, %arg(ea::string), Name, GetName);
 %csattribute(Urho3D::VirtualFileSystem, %arg(bool), IsWatching, IsWatching, SetWatching);
-%csattribute(Urho3D::MountPointGuard, %arg(Urho3D::MountPoint *), MountPoint, Get);
+//%csattribute(Urho3D::MountPointGuard, %arg(MountPoint *), , Get);
 %pragma(csharp) moduleimports=%{
 public static partial class E
 {

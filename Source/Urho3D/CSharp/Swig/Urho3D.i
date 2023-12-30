@@ -425,6 +425,7 @@ public:
 %include "Urho3D/IO/Deserializer.h"
 %interface_custom("%s", "I%s", Urho3D::AbstractFile);
 URHO3D_REFCOUNTED_INTERFACE(Urho3D::AbstractFile, Urho3D::RefCounted);
+%ignore Urho3D::MountPointGuard;
 %include "Urho3D/IO/AbstractFile.h"
 %include "Urho3D/IO/ScanFlags.h"
 %include "Urho3D/IO/Compression.h"
@@ -686,6 +687,10 @@ public:
 %ignore Urho3D::RenderSurface::GetView;
 %ignore Urho3D::RenderSurface::GetReadOnlyDepthView;
 %ignore Urho3D::Material::GetTextures;
+%ignore Urho3D::NormalizeModelVertexMorphVector;
+%ignore Urho3D::GeometryLODView::morphs_;
+%ignore Urho3D::MAX_RENDERTARGETS;
+%ignore Urho3D::MAX_VERTEX_STREAMS;
 %rename(DrawableFlags) Urho3D::DrawableFlag;
 
 %apply void* VOID_INT_PTR {

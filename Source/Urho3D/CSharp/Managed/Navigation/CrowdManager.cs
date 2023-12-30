@@ -25,6 +25,7 @@ using System.Runtime.InteropServices;
 
 namespace Urho3DNet
 {
+#if URHO3D_NAVIGATION
     public partial class CrowdManager
     {
         public delegate void CrowdAgentVelocityCallbackDelegate(CrowdAgent agent, float timeStep, ref Vector3 desiredVelocity, ref float desiredSpeed);
@@ -48,4 +49,5 @@ namespace Urho3DNet
             Urho3D_CrowdManager_SetVelocityCallback(swigCPtr, callback, handle);
         }
     }
+#endif
 }

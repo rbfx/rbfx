@@ -48,7 +48,7 @@ def camel_case(identifier):
 def get_subsystem_name(src_path):
     cwd = os.path.abspath('.')
     rel_path = os.path.relpath(src_path, cwd)
-    subsystem = rel_path[:rel_path.index('/')]
+    subsystem = rel_path[:rel_path.index(os.sep)]
     if subsystem == '..':
         subsystem = 'global'
     return subsystem

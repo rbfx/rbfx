@@ -24,6 +24,8 @@
 %ignore Urho3D::EP_GPU_DEBUG;
 %constant const char* EpHeadless = "Headless";
 %ignore Urho3D::EP_HEADLESS;
+%constant const char* EpLoadFonts = "LoadFonts";
+%ignore Urho3D::EP_LOAD_FONTS;
 %constant const char* EpLogLevel = "LogLevel";
 %ignore Urho3D::EP_LOG_LEVEL;
 %constant const char* EpLogName = "LogName";
@@ -52,6 +54,8 @@
 %ignore Urho3D::EP_RESOURCE_PATHS;
 %constant const char* EpResourcePrefixPaths = "ResourcePrefixPaths";
 %ignore Urho3D::EP_RESOURCE_PREFIX_PATHS;
+%constant const char* EpResourceRootFile = "ResourceRootFile";
+%ignore Urho3D::EP_RESOURCE_ROOT_FILE;
 %constant const char* EpSaveShaderCache = "SaveShaderCache";
 %ignore Urho3D::EP_SAVE_SHADER_CACHE;
 %constant const char* EpShaderCacheDir = "ShaderCacheDir";
@@ -122,9 +126,9 @@
 %ignore Urho3D::Param_ScenePosition;
 %constant const char* ParamScenerotation = "SceneRotation";
 %ignore Urho3D::Param_SceneRotation;
-%csattribute(Urho3D::ConfigFile, %arg(Urho3D::ConfigFile::ConfigFlavorVector), VariablesPerFlavor, GetVariablesPerFlavor);
-%csattribute(Urho3D::ConfigFile, %arg(Urho3D::ConfigFile::ConfigVariableDefinitionMap), VariableDefinitions, GetVariableDefinitions);
-%csattribute(Urho3D::ConfigFile, %arg(Urho3D::StringVariantMap), Variables, GetVariables);
+%csattribute(Urho3D::ConfigFile, %arg(ConfigFlavorVector), VariablesPerFlavor, GetVariablesPerFlavor);
+%csattribute(Urho3D::ConfigFile, %arg(ConfigVariableDefinitionMap), VariableDefinitions, GetVariableDefinitions);
+%csattribute(Urho3D::ConfigFile, %arg(StringVariantMap), Variables, GetVariables);
 %csattribute(Urho3D::Engine, %arg(ea::string), AppPreferencesDir, GetAppPreferencesDir);
 %csattribute(Urho3D::Engine, %arg(float), NextTimeStep, GetNextTimeStep, SetNextTimeStep);
 %csattribute(Urho3D::Engine, %arg(int), MinFps, GetMinFps, SetMinFps);
@@ -137,17 +141,17 @@
 %csattribute(Urho3D::Engine, %arg(bool), IsExiting, IsExiting);
 %csattribute(Urho3D::Engine, %arg(bool), IsHeadless, IsHeadless);
 %csattribute(Urho3D::ApplicationState, %arg(bool), IsActive, IsActive);
-%csattribute(Urho3D::ApplicationState, %arg(Urho3D::Cursor *), Cursor, GetCursor, SetCursor);
+%csattribute(Urho3D::ApplicationState, %arg(Cursor *), Cursor, GetCursor, SetCursor);
 %csattribute(Urho3D::ApplicationState, %arg(bool), IsMouseVisible, IsMouseVisible, SetMouseVisible);
 %csattribute(Urho3D::ApplicationState, %arg(bool), IsMouseGrabbed, IsMouseGrabbed, SetMouseGrabbed);
-%csattribute(Urho3D::ApplicationState, %arg(Urho3D::MouseMode), MouseMode, GetMouseMode, SetMouseMode);
-%csattribute(Urho3D::ApplicationState, %arg(Urho3D::UIElement *), UIRoot, GetUIRoot);
-%csattribute(Urho3D::ApplicationState, %arg(Urho3D::IntVector2), UICustomSize, GetUICustomSize, SetUICustomSize);
-%csattribute(Urho3D::ApplicationState, %arg(Urho3D::Color), DefaultFogColor, GetDefaultFogColor, SetDefaultFogColor);
-%csattribute(Urho3D::ApplicationState, %arg(Urho3D::ActionManager *), ActionManager, GetActionManager);
-%csattribute(Urho3D::StateManager, %arg(Urho3D::ApplicationState *), State, GetState);
-%csattribute(Urho3D::StateManager, %arg(Urho3D::StringHash), TargetState, GetTargetState);
-%csattribute(Urho3D::StateManager, %arg(Urho3D::Window *), FadeOverlay, GetFadeOverlay);
+%csattribute(Urho3D::ApplicationState, %arg(MouseMode), MouseMode, GetMouseMode);
+%csattribute(Urho3D::ApplicationState, %arg(UIElement *), UIRoot, GetUIRoot);
+%csattribute(Urho3D::ApplicationState, %arg(IntVector2), UICustomSize, GetUICustomSize, SetUICustomSize);
+%csattribute(Urho3D::ApplicationState, %arg(Color), DefaultFogColor, GetDefaultFogColor, SetDefaultFogColor);
+%csattribute(Urho3D::ApplicationState, %arg(ActionManager *), ActionManager, GetActionManager);
+%csattribute(Urho3D::StateManager, %arg(ApplicationState *), State, GetState);
+%csattribute(Urho3D::StateManager, %arg(StringHash), TargetState, GetTargetState);
+%csattribute(Urho3D::StateManager, %arg(Window *), FadeOverlay, GetFadeOverlay);
 %csattribute(Urho3D::StateManager, %arg(float), FadeInDuration, GetFadeInDuration, SetFadeInDuration);
 %csattribute(Urho3D::StateManager, %arg(float), FadeOutDuration, GetFadeOutDuration, SetFadeOutDuration);
 %pragma(csharp) moduleimports=%{

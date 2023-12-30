@@ -25,6 +25,7 @@ using System.Runtime.InteropServices;
 
 namespace Urho3DNet
 {
+#if URHO3D_ACTIONS
     public partial class ActionBuilder
     {
         [DllImport(global::Urho3DNet.Urho3DPINVOKE.DllImportModule, EntryPoint = "Urho3D_ActionBuilder_CallFunc")]
@@ -54,4 +55,5 @@ namespace Urho3DNet
             return ActionBuilder.wrap(Urho3D_ActionBuilder_CallFunc(swigCPtr, callback, handle), true);
         }
     }
+#endif
 }

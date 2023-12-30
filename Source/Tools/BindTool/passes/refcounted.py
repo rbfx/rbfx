@@ -1,3 +1,4 @@
+
 from clang_json.ast import AstPass
 import util
 

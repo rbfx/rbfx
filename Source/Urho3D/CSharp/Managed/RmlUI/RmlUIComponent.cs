@@ -25,6 +25,7 @@ using System.Runtime.InteropServices;
 
 namespace Urho3DNet
 {
+#if URHO3D_RMLUI
     public partial class RmlUIComponent
     {
         [DllImport(global::Urho3DNet.Urho3DPINVOKE.DllImportModule, EntryPoint = "Urho3D_RmlUIComponent_BindDataModelProperty")]
@@ -98,4 +99,5 @@ namespace Urho3DNet
             return Urho3D_RmlUIComponent_BindDataModelEvent(swigCPtr, name, callbackPtr, callbackHandle);
         }
     }
+#endif
 }

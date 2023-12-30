@@ -123,7 +123,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %typemap(cstype) void                                           "void"
 
 %typemap(ctype) char *, char *&, char[ANY], char[]   "char *"
-%typemap(imtype) char *, char *&, char[ANY], char[]   "string"
+%typemap(imtype) char *, char *&, char[ANY], char[]   "System.IntPtr"
 %typemap(cstype) char *, char *&, char[ANY], char[]   "string"
 
 /* Non primitive types */
@@ -149,7 +149,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 
 /* pointer to a class member */
 %typemap(ctype) SWIGTYPE (CLASS::*) "char *"
-%typemap(imtype) SWIGTYPE (CLASS::*) "string"
+%typemap(imtype) SWIGTYPE (CLASS::*) "System.IntPtr"
 %typemap(cstype) SWIGTYPE (CLASS::*) "$csclassname"
 
 /* The following are the in and out typemaps. These are the PInvoke code generating typemaps for converting from C# to C and visa versa. */
@@ -611,10 +611,13 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
                  float,              const float &,
                  double,             const double &
     "$csinput"
-%typemap(csin) char *, char *&, char[ANY], char[] "$csinput"
+%typemap(csin, pre="var p$csinput = System.Runtime.InteropServices.Marshal.StringToCoTaskMemUTF8($csinput);",
+               post="System.Runtime.InteropServices.Marshal.FreeCoTaskMem(p$csinput);") char *, char *&, char[ANY], char[] "p$csinput"
 %typemap(csin) SWIGTYPE "global::$nspace.$&csclassname.getCPtr($csinput)"
 %typemap(csin) SWIGTYPE *, SWIGTYPE &, SWIGTYPE &&, SWIGTYPE [] "global::$nspace.$csclassname.getCPtr($csinput)"
-%typemap(csin) SWIGTYPE (CLASS::*) "global::$nspace.$csclassname.getCMemberPtr($csinput)"
+
+%typemap(csin, pre="var p$csinput = System.Runtime.InteropServices.Marshal.StringToCoTaskMemUTF8($csinput);",
+               post="System.Runtime.InteropServices.Marshal.FreeCoTaskMem(p$csinput);") SWIGTYPE (CLASS::*) "global::$nspace.$csclassname.getCMemberPtr(p$csinput)"
 
 /* The csout typemap is used for converting function return types from the return type
  * used in the PInvoke class to the type returned by the proxy, module or type wrapper class.
@@ -682,7 +685,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
     return ret;
   }
 %typemap(csout, excode=SWIGEXCODE) char *, char *&, char[ANY], char[] {
-    string ret = $imcall;$excode
+    string ret = System.Runtime.InteropServices.Marshal.PtrToStringUTF8($imcall);$excode
     return ret;
   }
 %typemap(csout, excode=SWIGEXCODE) void {
@@ -720,7 +723,12 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 
 %typemap(csvarin, excode=SWIGEXCODE2) char *, char *&, char[ANY], char[] %{
     set {
-      $imcall;$excode
+      var p$csinput = System.Runtime.InteropServices.Marshal.StringToCoTaskMemUTF8($csinput);
+      try {
+        $imcall;$excode
+      } finally {
+        System.Runtime.InteropServices.Marshal.FreeCoTaskMem(p$csinput);
+      }
     } %}
 
 %typemap(csvarout, excode=SWIGEXCODE2) bool,               const bool &               %{
@@ -797,7 +805,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 
 %typemap(csvarout, excode=SWIGEXCODE2) char *, char *&, char[ANY], char[] %{
     get {
-      string ret = $imcall;$excode
+      string ret = System.Runtime.InteropServices.Marshal.PtrToStringUTF8($imcall);$excode
       return ret;
     } %}
 %typemap(csvarout, excode=SWIGEXCODE2) void %{

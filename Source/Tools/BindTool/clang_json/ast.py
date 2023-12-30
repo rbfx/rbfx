@@ -13,7 +13,8 @@ NAME_QUALIFYING_NODES = ['CXXRecordDecl', 'EnumDecl', 'NamespaceDecl']
 
 
 def _get_type(type_node):
-    return type_node['qualType']    # type_node.get('desugaredQualType', type_node['qualType'])
+    #return type_node['qualType']
+    return type_node.get('desugaredQualType', type_node['qualType'])
 
 
 class AstPass(object):

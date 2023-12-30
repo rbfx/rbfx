@@ -14,12 +14,12 @@
 %csattribute(Urho3D::Audio, %arg(int), MixRate, GetMixRate);
 %csattribute(Urho3D::Audio, %arg(unsigned int), BufferLengthMS, GetBufferLengthMS);
 %csattribute(Urho3D::Audio, %arg(bool), Interpolation, GetInterpolation);
-%csattribute(Urho3D::Audio, %arg(Urho3D::SpeakerMode), SpeakerMode, GetSpeakerMode);
+%csattribute(Urho3D::Audio, %arg(SpeakerMode), SpeakerMode, GetSpeakerMode);
 %csattribute(Urho3D::Audio, %arg(bool), IsPlaying, IsPlaying);
 %csattribute(Urho3D::Audio, %arg(bool), IsInitialized, IsInitialized);
-%csattribute(Urho3D::Audio, %arg(Urho3D::SoundListener *), Listener, GetListener, SetListener);
+%csattribute(Urho3D::Audio, %arg(SoundListener *), Listener, GetListener, SetListener);
 %csattribute(Urho3D::Audio, %arg(ea::vector<SoundSource *>), SoundSources, GetSoundSources);
-%csattribute(Urho3D::Audio, %arg(Urho3D::Mutex), Mutex, GetMutex);
+%csattribute(Urho3D::Audio, %arg(Mutex), Mutex, GetMutex);
 %csattribute(Urho3D::SoundStream, %arg(unsigned int), SampleSize, GetSampleSize);
 %csattribute(Urho3D::SoundStream, %arg(float), Frequency, GetFrequency);
 %csattribute(Urho3D::SoundStream, %arg(unsigned int), IntFrequency, GetIntFrequency);
@@ -34,8 +34,8 @@
 %csattribute(Urho3D::Microphone, %arg(bool), IsEnabled, IsEnabled, SetEnabled);
 %csattribute(Urho3D::Microphone, %arg(unsigned int), WakeThreshold, GetWakeThreshold, SetWakeThreshold);
 %csattribute(Urho3D::Microphone, %arg(bool), IsSleeping, IsSleeping);
-%csattribute(Urho3D::Microphone, %arg(SharedPtr<Urho3D::BufferedSoundStream>), Linked, GetLinked);
-%csattribute(Urho3D::Sound, %arg(SharedPtr<Urho3D::SoundStream>), DecoderStream, GetDecoderStream);
+%csattribute(Urho3D::Microphone, %arg(SharedPtr<BufferedSoundStream>), Linked, GetLinked);
+%csattribute(Urho3D::Sound, %arg(SharedPtr<SoundStream>), DecoderStream, GetDecoderStream);
 %csattribute(Urho3D::Sound, %arg(ea::shared_array<signed char>), Data, GetData);
 %csattribute(Urho3D::Sound, %arg(signed char *), Start, GetStart);
 %csattribute(Urho3D::Sound, %arg(signed char *), Repeat, GetRepeat);
@@ -49,7 +49,7 @@
 %csattribute(Urho3D::Sound, %arg(bool), IsSixteenBit, IsSixteenBit);
 %csattribute(Urho3D::Sound, %arg(bool), IsStereo, IsStereo);
 %csattribute(Urho3D::Sound, %arg(bool), IsCompressed, IsCompressed);
-%csattribute(Urho3D::SoundSource, %arg(Urho3D::Sound *), Sound, GetSound);
+%csattribute(Urho3D::SoundSource, %arg(Sound *), Sound, GetSound);
 %csattribute(Urho3D::SoundSource, %arg(volatile signed char *), PlayPosition, GetPlayPosition);
 %csattribute(Urho3D::SoundSource, %arg(ea::string), SoundType, GetSoundType, SetSoundType);
 %csattribute(Urho3D::SoundSource, %arg(float), TimePosition, GetTimePosition);
@@ -59,9 +59,9 @@
 %csattribute(Urho3D::SoundSource, %arg(float), Panning, GetPanning, SetPanning);
 %csattribute(Urho3D::SoundSource, %arg(float), Reach, GetReach, SetReach);
 %csattribute(Urho3D::SoundSource, %arg(bool), IsLowFrequency, IsLowFrequency, SetLowFrequency);
-%csattribute(Urho3D::SoundSource, %arg(Urho3D::AutoRemoveMode), AutoRemoveMode, GetAutoRemoveMode, SetAutoRemoveMode);
+%csattribute(Urho3D::SoundSource, %arg(AutoRemoveMode), AutoRemoveMode, GetAutoRemoveMode);
 %csattribute(Urho3D::SoundSource, %arg(bool), IsPlaying, IsPlaying);
-%csattribute(Urho3D::SoundSource, %arg(Urho3D::ResourceRef), SoundAttr, GetSoundAttr, SetSoundAttr);
+%csattribute(Urho3D::SoundSource, %arg(ResourceRef), SoundAttr, GetSoundAttr, SetSoundAttr);
 %csattribute(Urho3D::SoundSource, %arg(int), PositionAttr, GetPositionAttr, SetPositionAttr);
 %csattribute(Urho3D::SoundSource3D, %arg(float), NearDistance, GetNearDistance, SetNearDistance);
 %csattribute(Urho3D::SoundSource3D, %arg(float), FarDistance, GetFarDistance, SetFarDistance);

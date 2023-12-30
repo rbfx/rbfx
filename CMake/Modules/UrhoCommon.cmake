@@ -220,6 +220,7 @@ function (csharp_bind_target)
         -namespace ${BIND_NAMESPACE}
         -fastdispatch
         -I${CMAKE_CURRENT_BINARY_DIR}
+        -DSWIG_CSHARP_NO_STRING_HELPER=1
         ${GENERATOR_OPTIONS}
     )
 
