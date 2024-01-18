@@ -153,7 +153,7 @@ void Navigation::CreateScene()
     // Now build the navigation geometry. This will take some time. Note that the navigation mesh will prefer to use
     // physics geometry from the scene nodes, as it often is simpler, but if it can not find any (like in this example)
     // it will use renderable geometry instead
-    navMesh->Build();
+    navMesh->Rebuild();
 
     // Create the camera. Limit far clip distance to match the fog
     cameraNode_ = scene_->CreateChild("Camera");
@@ -320,7 +320,7 @@ void Navigation::AddOrRemoveObject()
 
         // Rebuild part of the navigation mesh, then recalculate path if applicable
         auto* navMesh = scene_->GetComponent<NavigationMesh>();
-        navMesh->Build(updateBox);
+        navMesh->BuildTilesInRegion(updateBox);
         if (currentPath_.size())
             navMesh->FindPath(currentPath_, jackNode_->GetPosition(), endPos_);
     }
@@ -398,12 +398,11 @@ void Navigation::ToggleStreaming(bool enabled)
     if (enabled)
     {
         int maxTiles = (2 * streamingDistance_ + 1) * (2 * streamingDistance_ + 1);
-        BoundingBox boundingBox = navMesh->GetBoundingBox();
         SaveNavigationData();
-        navMesh->Allocate(boundingBox, maxTiles);
+        navMesh->Allocate();
     }
     else
-        navMesh->Build();
+        navMesh->Rebuild();
 }
 
 void Navigation::UpdateStreaming()
@@ -411,9 +410,8 @@ void Navigation::UpdateStreaming()
     // Center the navigation mesh at the jack
     auto* navMesh = scene_->GetComponent<NavigationMesh>();
     const IntVector2 jackTile = navMesh->GetTileIndex(jackNode_->GetWorldPosition());
-    const IntVector2 numTiles = navMesh->GetNumTiles();
-    const IntVector2 beginTile = VectorMax(IntVector2::ZERO, jackTile - IntVector2::ONE * streamingDistance_);
-    const IntVector2 endTile = VectorMin(jackTile + IntVector2::ONE * streamingDistance_, numTiles - IntVector2::ONE);
+    const IntVector2 beginTile = jackTile - IntVector2::ONE * streamingDistance_;
+    const IntVector2 endTile = jackTile + IntVector2::ONE * streamingDistance_;
 
     // Remove tiles
     for (auto i = addedTiles_.begin(); i != addedTiles_.end();)
@@ -446,13 +444,8 @@ void Navigation::SaveNavigationData()
     auto* navMesh = scene_->GetComponent<NavigationMesh>();
     tileData_.clear();
     addedTiles_.clear();
-    const IntVector2 numTiles = navMesh->GetNumTiles();
-    for (int z = 0; z < numTiles.y_; ++z)
-        for (int x = 0; x <= numTiles.x_; ++x)
-        {
-            const IntVector2 tileIdx = IntVector2(x, z);
-            tileData_[tileIdx] = navMesh->GetTileData(tileIdx);
-        }
+    for (const IntVector2& tileIndex : navMesh->GetAllTileIndices())
+        tileData_[tileIndex] = navMesh->GetTileData(tileIndex);
 }
 
 void Navigation::Update(float timeStep)

@@ -151,7 +151,7 @@ void CrowdNavigation::CreateScene()
     // Now build the navigation geometry. This will take some time. Note that the navigation mesh will prefer to use
     // physics geometry from the scene nodes, as it often is simpler, but if it can not find any (like in this example)
     // it will use renderable geometry instead
-    navMesh->Build();
+    navMesh->Rebuild();
 
     // Create an off-mesh connection to each box to make them climbable (tiny boxes are skipped). A connection is built from 2 nodes.
     // Note that OffMeshConnections must be added before building the navMesh, but as we are adding Obstacles next, tiles will be automatically rebuilt.
@@ -476,13 +476,11 @@ void CrowdNavigation::ToggleStreaming(bool enabled)
     auto* navMesh = scene_->GetComponent<DynamicNavigationMesh>();
     if (enabled)
     {
-        int maxTiles = (2 * streamingDistance_ + 1) * (2 * streamingDistance_ + 1);
-        BoundingBox boundingBox = navMesh->GetBoundingBox();
         SaveNavigationData();
-        navMesh->Allocate(boundingBox, maxTiles);
+        navMesh->Allocate();
     }
     else
-        navMesh->Build();
+        navMesh->Rebuild();
 }
 
 void CrowdNavigation::UpdateStreaming()
@@ -500,9 +498,8 @@ void CrowdNavigation::UpdateStreaming()
     // Compute currently loaded area
     auto* navMesh = scene_->GetComponent<DynamicNavigationMesh>();
     const IntVector2 jackTile = navMesh->GetTileIndex(averageJackPosition);
-    const IntVector2 numTiles = navMesh->GetNumTiles();
-    const IntVector2 beginTile = VectorMax(IntVector2::ZERO, jackTile - IntVector2::ONE * streamingDistance_);
-    const IntVector2 endTile = VectorMin(jackTile + IntVector2::ONE * streamingDistance_, numTiles - IntVector2::ONE);
+    const IntVector2 beginTile = jackTile - IntVector2::ONE * streamingDistance_;
+    const IntVector2 endTile = jackTile + IntVector2::ONE * streamingDistance_;
 
     // Remove tiles
     for (auto i = addedTiles_.begin(); i != addedTiles_.end();)
@@ -535,13 +532,8 @@ void CrowdNavigation::SaveNavigationData()
     auto* navMesh = scene_->GetComponent<DynamicNavigationMesh>();
     tileData_.clear();
     addedTiles_.clear();
-    const IntVector2 numTiles = navMesh->GetNumTiles();
-    for (int z = 0; z < numTiles.y_; ++z)
-        for (int x = 0; x <= numTiles.x_; ++x)
-        {
-            const IntVector2 tileIdx = IntVector2(x, z);
-            tileData_[tileIdx] = navMesh->GetTileData(tileIdx);
-        }
+    for (const IntVector2& tileIndex : navMesh->GetAllTileIndices())
+        tileData_[tileIndex] = navMesh->GetTileData(tileIndex);
 }
 
 void CrowdNavigation::Update(float timeStep)

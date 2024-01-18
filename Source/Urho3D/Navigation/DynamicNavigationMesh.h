@@ -22,9 +22,9 @@
 
 #pragma once
 
-#include <EASTL/unique_ptr.h>
+#include "Urho3D/Navigation/NavigationMesh.h"
 
-#include "../Navigation/NavigationMesh.h"
+#include <EASTL/unique_ptr.h>
 
 class dtTileCache;
 struct dtTileCacheAlloc;
@@ -48,6 +48,9 @@ class URHO3D_API DynamicNavigationMesh : public NavigationMesh
     friend struct MeshProcess;
 
 public:
+    /// Version of compiled navigation data. Navigation data should be discarded and rebuilt on mismatch.
+    static constexpr int NavigationDataVersion = 1;
+
     /// Constructor.
     explicit DynamicNavigationMesh(Context* context);
     /// Destructor.
@@ -57,22 +60,14 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
-    /// Allocate the navigation mesh without building any tiles. Bounding box is not padded. Return true if successful.
-    bool Allocate(const BoundingBox& boundingBox, unsigned maxTiles) override;
-    /// Build/rebuild the entire navigation mesh.
-    bool Build() override;
-    /// Build/rebuild a portion of the navigation mesh.
-    bool Build(const BoundingBox& boundingBox) override;
-    /// Rebuild part of the navigation mesh in the rectangular area. Return true if successful.
-    bool Build(const IntVector2& from, const IntVector2& to) override;
     /// Return tile data.
-    ea::vector<unsigned char> GetTileData(const IntVector2& tile) const override;
+    ea::vector<unsigned char> GetTileData(const IntVector2& tileIndex) const override;
     /// Return whether the Obstacle is touching the given tile.
-    bool IsObstacleInTile(Obstacle* obstacle, const IntVector2& tile) const;
+    bool IsObstacleInTile(Obstacle* obstacle, const IntVector2& tileIndex) const;
     /// Add tile to navigation mesh.
     bool AddTile(const ea::vector<unsigned char>& tileData) override;
     /// Remove tile from navigation mesh.
-    void RemoveTile(const IntVector2& tile) override;
+    void RemoveTile(const IntVector2& tileIndex) override;
     /// Remove all tiles from navigation mesh.
     void RemoveAllTiles() override;
     /// Visualize the component as debug geometry.
@@ -110,6 +105,14 @@ public:
 protected:
     struct TileCacheData;
 
+    /// Override NavigationMesh.
+    /// @{
+    bool AllocateMesh(unsigned maxTiles) override;
+    bool RebuildMesh() override;
+    unsigned BuildTilesFromGeometry(
+        ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to) override;
+    /// @}
+
     /// Subscribe to events when assigned to a scene.
     void OnSceneSet(Scene* scene) override;
     /// Trigger the tile cache to make updates to the nav mesh if necessary.
@@ -124,8 +127,6 @@ protected:
 
     /// Build one tile of the navigation mesh. Return true if successful.
     int BuildTile(ea::vector<NavigationGeometryInfo>& geometryList, int x, int z, TileCacheData* tiles);
-    /// Build tiles in the rectangular area. Return number of built tiles.
-    unsigned BuildTiles(ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to);
     /// Off-mesh connections to be rebuilt in the mesh processor.
     ea::vector<OffMeshConnection*> CollectOffMeshConnections(const BoundingBox& bounds);
     /// Release the navigation mesh, query, and tile cache.
@@ -133,11 +134,14 @@ protected:
 
 private:
     /// Write tiles data.
-    void WriteTiles(Serializer& dest, int x, int z) const;
+    void WriteTile(Serializer& dest, int x, int z, int layer) const;
     /// Read tiles data to the navigation mesh.
     bool ReadTiles(Deserializer& source, bool silent);
     /// Free the tile cache.
     void ReleaseTileCache();
+    /// Ensure the tile cache is fully updated.
+    /// It is suboptimal when multiple obstacles added at once, but it is the most stable solution.
+    void UpdateTileCache();
 
     /// Detour tile cache instance that works with the nav mesh.
     dtTileCache* tileCache_{};
