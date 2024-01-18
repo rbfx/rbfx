@@ -82,7 +82,7 @@ void BakedLighting::CreateScene()
     GetSubsystem<Renderer>()->SetViewport(0, new Viewport(context_, scene_, camera));
 
     auto navMesh = scene_->GetComponent<NavigationMesh>(true);
-    navMesh->Build();
+    navMesh->Rebuild();
 
     agent_ = scene_->GetComponent<CrowdAgent>(true);
     agent_->SetUpdateNodePosition(false);
