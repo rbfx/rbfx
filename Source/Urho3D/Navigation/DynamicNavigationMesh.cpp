@@ -158,56 +158,60 @@ struct MeshProcess : public dtTileCacheMeshProcess
     }
 };
 
-
-// From the Detour/Recast Sample_TempObstacles.cpp
-struct LinearAllocator : public dtTileCacheAlloc
+class LinearAllocator : public dtTileCacheAlloc
 {
-    unsigned char* buffer;
-    int capacity;
-    int top;
-    int high;
+public:
+    explicit LinearAllocator(unsigned cap) { buffer_.resize(cap); }
+    ~LinearAllocator() override { FreeOverflow(); }
 
-    explicit LinearAllocator(const int cap) :
-        buffer(nullptr), capacity(0), top(0), high(0)
-    {
-        resize(cap);
-    }
-
-    ~LinearAllocator() override
-    {
-        dtFree(buffer);
-    }
-
-    void resize(const int cap)
-    {
-        if (buffer)
-            dtFree(buffer);
-        buffer = (unsigned char*)dtAlloc(cap, DT_ALLOC_PERM);
-        capacity = cap;
-    }
-
+    /// Implement dtTileCacheAlloc.
+    /// @{
     void reset() override
     {
-        high = Max(high, top);
-        top = 0;
+        maxAllocation_ = ea::max(maxAllocation_, currentAllocation_);
+        currentAllocation_ = 0;
+        currentOffset_ = 0;
+
+        if (!overflow_.empty())
+            buffer_.resize(NextPowerOfTwo(maxAllocation_ * 3 / 2));
+
+        FreeOverflow();
     }
 
     void* alloc(const size_t size) override
     {
-        if (!buffer)
-            return nullptr;
-        if (top + size > capacity)
-            return nullptr;
-        unsigned char* mem = &buffer[top];
-        top += size;
-        return mem;
+        currentAllocation_ += size;
+
+        if (currentOffset_ + size > buffer_.size())
+        {
+            void* ptr = dtAlloc(size, DT_ALLOC_TEMP);
+            overflow_.push_back(ptr);
+            return ptr;
+        }
+
+        void* ptr = &buffer_[currentOffset_];
+        currentOffset_ += size;
+        return ptr;
     }
 
-    void free(void*) override
+    void free(void* ptr) override {}
+    /// @}
+
+private:
+    void FreeOverflow()
     {
+        for (void* ptr : overflow_)
+            dtFree(ptr);
+        overflow_.clear();
     }
-};
 
+    ByteVector buffer_;
+    ea::vector<void*> overflow_;
+    unsigned currentOffset_{};
+
+    unsigned currentAllocation_{};
+    unsigned maxAllocation_{};
+};
 
 DynamicNavigationMesh::DynamicNavigationMesh(Context* context) :
     NavigationMesh(context),
@@ -216,7 +220,7 @@ DynamicNavigationMesh::DynamicNavigationMesh(Context* context) :
     // 64 is the largest tile-size that DetourTileCache will tolerate without silently failing
     tileSize_ = 64;
     partitionType_ = NAVMESH_PARTITION_MONOTONE;
-    allocator_ = ea::make_unique<LinearAllocator>(32000); //32kb to start
+    allocator_ = ea::make_unique<LinearAllocator>(32 * 1024);
     compressor_ = ea::make_unique<TileCompressor>();
     meshProcessor_ = ea::make_unique<MeshProcess>(this);
 }
