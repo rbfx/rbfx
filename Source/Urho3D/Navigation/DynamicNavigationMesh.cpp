@@ -217,8 +217,6 @@ DynamicNavigationMesh::DynamicNavigationMesh(Context* context) :
     NavigationMesh(context),
     maxLayers_(DEFAULT_MAX_LAYERS)
 {
-    // 64 is the largest tile-size that DetourTileCache will tolerate without silently failing
-    tileSize_ = 64;
     partitionType_ = NAVMESH_PARTITION_MONOTONE;
     allocator_ = ea::make_unique<LinearAllocator>(32 * 1024);
     compressor_ = ea::make_unique<TileCompressor>();

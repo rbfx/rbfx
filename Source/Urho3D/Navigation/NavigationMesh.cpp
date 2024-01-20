@@ -146,6 +146,7 @@ void NavigationMesh::RegisterObject(Context* context)
     context->AddFactoryReflection<NavigationMesh>(Category_Navigation);
 
     URHO3D_ACTION_STATIC_LABEL("Rebuild!", Rebuild, "Rebuilds navigation mesh and adjusts maximum number of tiles");
+    URHO3D_ACTION_STATIC_LABEL("Allocate!", Allocate, "Allocates empty navigation mesh with specified maximum number of tiles");
 
     URHO3D_ACCESSOR_ATTRIBUTE("Max Tiles", GetMaxTiles, SetMaxTiles, int, DefaultMaxTiles, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Tile Size", GetTileSize, SetTileSize, int, DEFAULT_TILE_SIZE, AM_DEFAULT);
