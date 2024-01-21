@@ -171,7 +171,7 @@ endif ()
 
 if (URHO3D_PHYSICS)
     add_subdirectory (Bullet)
-	add_subdirectory (JoltPhysics)
+	add_subdirectory (Jolt)
     add_subdirectory (StanHull)
 endif ()
 

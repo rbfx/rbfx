@@ -1,0 +1,11 @@
+# Define source files
+file (GLOB_RECURSE SOURCE_FILES *.h *.cpp)
+set (SOURCE_FILES ${SOURCE_FILES})
+add_library (Jolt STATIC ${SOURCE_FILES})
+target_precompile_headers(Jolt PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Jolt.h)
+target_include_directories(Jolt SYSTEM
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+           $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}>
+)
+
+install(DIRECTORY Jolt DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR} FILES_MATCHING PATTERN *.h)
