@@ -407,8 +407,9 @@ Vector3 CrowdManager::MoveAlongSurface(const Vector3& start, const Vector3& end,
 
 void CrowdManager::FindPath(ea::vector<Vector3>& dest, const Vector3& start, const Vector3& end, int queryFilterType)
 {
+    bool pathWasCut = false;
     if (crowd_ && navigationMesh_)
-        navigationMesh_->FindPath(dest, start, end, Vector3(crowd_->getQueryExtents()), crowd_->getFilter(queryFilterType));
+        navigationMesh_->FindPath(dest, pathWasCut, start, end, Vector3(crowd_->getQueryExtents()), crowd_->getFilter(queryFilterType));
 }
 
 Vector3 CrowdManager::GetRandomPoint(int queryFilterType, dtPolyRef* randomRef)
