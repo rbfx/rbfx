@@ -80,6 +80,7 @@ endif ()
 
 if (URHO3D_PHYSICS)
     define_engine_source_files (Physics)
+	define_engine_source_files (Physics/Jolt)
 endif ()
 
 if (URHO3D_URHO2D)
