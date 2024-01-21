@@ -33,6 +33,10 @@
 #include <tracy/client/TracyLock.hpp>
 #endif
 
+#if URHO3D_PHYSICS
+#include <Jolt/Jolt.h>
+#endif
+
 #include <EASTL/algorithm.h>
 #include <EASTL/any.h>
 #include <EASTL/array.h>
