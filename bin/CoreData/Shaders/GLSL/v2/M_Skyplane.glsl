@@ -43,6 +43,9 @@ void main()
     gl_Position.z = gl_Position.w;
 
     vScreenPos = GetScreenPos(gl_Position);
+    #ifndef URHO3D_FEATURE_FRAMEBUFFER_Y_INVERTED
+        vScreenPos.y = 1.0 - vScreenPos.y;
+    #endif
 
     #ifdef URHO3D_XR
         vInstID = gl_InstanceID;
