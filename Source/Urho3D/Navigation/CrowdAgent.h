@@ -100,6 +100,10 @@ public:
     void SetVelocityCallback(const CrowdAgentVelocityCallback& callback) { velocityCallback_ = callback; }
     /// Return current velocity callback.
     const CrowdAgentVelocityCallback& GetVelocityCallback() const { return velocityCallback_; }
+    /// Set height callback.
+    void SetHeightCallback(const CrowdAgentHeightCallback& callback) { heightCallback_ = callback; }
+    /// Return current height callback.
+    const CrowdAgentHeightCallback& GetHeightCallback() const { return heightCallback_; }
 
     /// Submit a new target position request for this agent.
     /// @property
@@ -243,6 +247,8 @@ private:
     WeakPtr<CrowdManager> crowdManager_;
     /// Velocity callback.
     CrowdAgentVelocityCallback velocityCallback_;
+    /// Height callback.
+    CrowdAgentHeightCallback heightCallback_;
     /// Crowd manager reference to this agent.
     int agentCrowdId_;
     /// Requested target position.
