@@ -590,7 +590,8 @@ int DynamicNavigationMesh::BuildTile(ea::vector<NavigationGeometryInfo>& geometr
     tileCache_->removeTile(navMesh_->getTileRefAt(x, z, 0), nullptr, nullptr);
 
     const BoundingBox tileColumn = GetTileBoundingBoxColumn(IntVector2{x, z});
-    const BoundingBox tileBoundingBox = CalculateTileBoundingBox(geometryList, tileColumn);
+    const BoundingBox tileBoundingBox =
+        IsHeightRangeValid() ? tileColumn : CalculateTileBoundingBox(geometryList, tileColumn);
 
     DynamicNavBuildData build(allocator_.get());
 
