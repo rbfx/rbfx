@@ -152,6 +152,7 @@ void NavigationMesh::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Tile Size", GetTileSize, SetTileSize, int, DEFAULT_TILE_SIZE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Cell Size", GetCellSize, SetCellSize, float, DEFAULT_CELL_SIZE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Cell Height", GetCellHeight, SetCellHeight, float, DEFAULT_CELL_HEIGHT, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Mesh Height Range", GetHeightRange, SetHeightRange, Vector2, Vector2{}, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Agent Height", GetAgentHeight, SetAgentHeight, float, DEFAULT_AGENT_HEIGHT, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Agent Radius", GetAgentRadius, SetAgentRadius, float, DEFAULT_AGENT_RADIUS, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Agent Max Climb", GetAgentMaxClimb, SetAgentMaxClimb, float, DEFAULT_AGENT_MAX_CLIMB, AM_DEFAULT);
@@ -488,9 +489,10 @@ bool NavigationMesh::HasTile(const IntVector2& tileIndex) const
 
 BoundingBox NavigationMesh::GetTileBoundingBoxColumn(const IntVector2& tileIndex) const
 {
+    const Vector2 heightRange = IsHeightRangeValid() ? heightRange_ : Vector2{-M_LARGE_VALUE, M_LARGE_VALUE};
     const float tileEdgeLength = tileSize_ * cellSize_;
-    const Vector3 minPosition{tileIndex.x_ * tileEdgeLength, -M_LARGE_VALUE, tileIndex.y_ * tileEdgeLength};
-    const Vector3 maxPosition{(tileIndex.x_ + 1) * tileEdgeLength, M_LARGE_VALUE, (tileIndex.y_ + 1) * tileEdgeLength};
+    const Vector3 minPosition{tileIndex.x_ * tileEdgeLength, heightRange.x_, tileIndex.y_ * tileEdgeLength};
+    const Vector3 maxPosition{(tileIndex.x_ + 1) * tileEdgeLength, heightRange.y_, (tileIndex.y_ + 1) * tileEdgeLength};
     return BoundingBox{minPosition, maxPosition};
 }
 
@@ -1236,7 +1238,8 @@ bool NavigationMesh::BuildTile(ea::vector<NavigationGeometryInfo>& geometryList,
     navMesh_->removeTile(navMesh_->getTileRefAt(x, z, 0), nullptr, nullptr);
 
     const BoundingBox tileColumn = GetTileBoundingBoxColumn(IntVector2{x, z});
-    const BoundingBox tileBoundingBox = CalculateTileBoundingBox(geometryList, tileColumn);
+    const BoundingBox tileBoundingBox =
+        IsHeightRangeValid() ? tileColumn : CalculateTileBoundingBox(geometryList, tileColumn);
 
     SimpleNavBuildData build;
 

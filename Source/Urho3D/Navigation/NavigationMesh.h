@@ -105,6 +105,8 @@ public:
     /// Set cell height.
     /// @property
     void SetCellHeight(float height);
+    /// Set min and max height of the navigation mesh, i.e. min and max Y value in world space.
+    void SetHeightRange(const Vector2& range) { heightRange_ = range; }
     /// Set navigation agent height.
     /// @property
     void SetAgentHeight(float height);
@@ -216,6 +218,12 @@ public:
     /// Return cell height.
     /// @property
     float GetCellHeight() const { return cellHeight_; }
+
+    /// Return min and max height of the navigation mesh, i.e. min and max Y value in world space.
+    const Vector2& GetHeightRange() const { return heightRange_; }
+
+    /// Return whether the height range is valid.
+    bool IsHeightRangeValid() const { return heightRange_.x_ < heightRange_.y_; }
 
     /// Return navigation agent height.
     /// @property
@@ -347,6 +355,8 @@ protected:
     float cellSize_;
     /// Cell height.
     float cellHeight_;
+    /// Total height range of the navigation mesh, in world space.
+    Vector2 heightRange_;
     /// Navigation agent height.
     float agentHeight_;
     /// Navigation agent radius.
