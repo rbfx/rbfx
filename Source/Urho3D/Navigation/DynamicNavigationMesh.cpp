@@ -52,8 +52,6 @@
 // DebugNew is deliberately not used because the macro 'free' conflicts with DetourTileCache's LinearAllocator interface
 //#include "../DebugNew.h"
 
-static const unsigned TILECACHE_MAXLAYERS = 255;
-
 namespace Urho3D
 {
 
@@ -297,7 +295,7 @@ bool DynamicNavigationMesh::RebuildMesh()
 
 ea::vector<unsigned char> DynamicNavigationMesh::GetTileData(const IntVector2& tileIndex) const
 {
-    dtCompressedTileRef tiles[TILECACHE_MAXLAYERS];
+    dtCompressedTileRef tiles[MaxLayers];
     const int numTiles = tileCache_->getTilesAt(tileIndex.x_, tileIndex.y_, tiles, maxLayers_);
 
     VectorBuffer ret;
@@ -327,7 +325,7 @@ void DynamicNavigationMesh::RemoveTile(const IntVector2& tileIndex)
     if (!navMesh_)
         return;
 
-    dtCompressedTileRef existing[TILECACHE_MAXLAYERS];
+    dtCompressedTileRef existing[MaxLayers];
     const int existingCt = tileCache_->getTilesAt(tileIndex.x_, tileIndex.y_, existing, maxLayers_);
     for (int i = 0; i < existingCt; ++i)
     {
@@ -526,7 +524,7 @@ void DynamicNavigationMesh::SetMaxLayers(unsigned maxLayers)
 {
     // Set 3 as a minimum due to the tendency of layers to be constructed inside the hollow space of stacked objects
     // That behavior is unlikely to be expected by the end user
-    maxLayers_ = Max(3U, Min(maxLayers, TILECACHE_MAXLAYERS));
+    maxLayers_ = Max(3U, Min(maxLayers, MaxLayers));
 }
 
 void DynamicNavigationMesh::WriteTile(Serializer& dest, int x, int z, int layer) const
@@ -587,7 +585,13 @@ int DynamicNavigationMesh::BuildTile(ea::vector<NavigationGeometryInfo>& geometr
 {
     URHO3D_PROFILE("BuildNavigationMeshTile");
 
-    tileCache_->removeTile(navMesh_->getTileRefAt(x, z, 0), nullptr, nullptr);
+    const dtMeshTile* tilesToRemove[MaxLayers];
+    const int numTilesToRemove = navMesh_->getTilesAt(x, z, tilesToRemove, MaxLayers);
+    for (int i = 0; i < numTilesToRemove; ++i)
+    {
+        const dtTileRef tileRef = navMesh_->getTileRefAt(x, z, tilesToRemove[i]->header->layer);
+        tileCache_->removeTile(tileRef, nullptr, nullptr);
+    }
 
     const BoundingBox tileColumn = GetTileBoundingBoxColumn(IntVector2{x, z});
     const BoundingBox tileBoundingBox =
@@ -775,7 +779,7 @@ unsigned DynamicNavigationMesh::BuildTilesFromGeometry(
     {
         for (int x = from.x_; x <= to.x_; ++x)
         {
-            dtCompressedTileRef existing[TILECACHE_MAXLAYERS];
+            dtCompressedTileRef existing[MaxLayers];
             const int existingCt = tileCache_->getTilesAt(x, z, existing, maxLayers_);
             for (int i = 0; i < existingCt; ++i)
             {
@@ -784,7 +788,7 @@ unsigned DynamicNavigationMesh::BuildTilesFromGeometry(
                     dtFree(data);
             }
 
-            TileCacheData tiles[TILECACHE_MAXLAYERS];
+            TileCacheData tiles[MaxLayers];
             int layerCt = BuildTile(geometryList, x, z, tiles);
             for (int i = 0; i < layerCt; ++i)
             {

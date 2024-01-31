@@ -82,6 +82,8 @@ public:
     static constexpr int NavigationDataVersion = 1;
     /// Default maximum number of tiles.
     static constexpr int DefaultMaxTiles = 256;
+    /// Maximum number of layers in the single tile.
+    static constexpr unsigned MaxLayers = 255;
 
     /// Construct.
     explicit NavigationMesh(Context* context);

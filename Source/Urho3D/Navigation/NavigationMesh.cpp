@@ -483,7 +483,7 @@ bool NavigationMesh::AddTile(const ea::vector<unsigned char>& tileData)
 bool NavigationMesh::HasTile(const IntVector2& tileIndex) const
 {
     if (navMesh_)
-        return !!navMesh_->getTileAt(tileIndex.x_, tileIndex.y_, 0);
+        return navMesh_->getTilesAt(tileIndex.x_, tileIndex.y_, static_cast<dtMeshTile const**>(nullptr), 0) > 0;
     return false;
 }
 
@@ -507,19 +507,24 @@ void NavigationMesh::RemoveTile(const IntVector2& tileIndex)
     if (!navMesh_)
         return;
 
-    const dtTileRef tileRef = navMesh_->getTileRefAt(tileIndex.x_, tileIndex.y_, 0);
-    if (!tileRef)
-        return;
-
-    navMesh_->removeTile(tileRef, nullptr, nullptr);
+    const dtMeshTile* tilesToRemove[MaxLayers];
+    const int numTilesToRemove = navMesh_->getTilesAt(tileIndex.x_, tileIndex.y_, tilesToRemove, MaxLayers);
+    for (int i = 0; i < numTilesToRemove; ++i)
+    {
+        const dtTileRef tileRef = navMesh_->getTileRefAt(tileIndex.x_, tileIndex.y_, tilesToRemove[i]->header->layer);
+        navMesh_->removeTile(tileRef, nullptr, nullptr);
+    }
 
     // Send event
-    using namespace NavigationTileRemoved;
-    VariantMap& eventData = GetContext()->GetEventDataMap();
-    eventData[P_NODE] = GetNode();
-    eventData[P_MESH] = this;
-    eventData[P_TILE] = tileIndex;
-    SendEvent(E_NAVIGATION_TILE_REMOVED, eventData);
+    if (numTilesToRemove > 0)
+    {
+        using namespace NavigationTileRemoved;
+        VariantMap& eventData = GetContext()->GetEventDataMap();
+        eventData[P_NODE] = GetNode();
+        eventData[P_MESH] = this;
+        eventData[P_TILE] = tileIndex;
+        SendEvent(E_NAVIGATION_TILE_REMOVED, eventData);
+    }
 }
 
 void NavigationMesh::RemoveAllTiles()
