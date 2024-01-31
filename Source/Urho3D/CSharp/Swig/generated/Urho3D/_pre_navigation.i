@@ -17,6 +17,7 @@
 %csattribute(Urho3D::CrowdManager, %arg(unsigned int), NumObstacleAvoidanceTypes, GetNumObstacleAvoidanceTypes);
 %csattribute(Urho3D::CrowdManager, %arg(Urho3D::VariantVector), ObstacleAvoidanceTypesAttr, GetObstacleAvoidanceTypesAttr, SetObstacleAvoidanceTypesAttr);
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::CrowdAgentVelocityCallback), VelocityCallback, GetVelocityCallback, SetVelocityCallback);
+%csattribute(Urho3D::CrowdAgent, %arg(Urho3D::CrowdAgentHeightCallback), HeightCallback, GetHeightCallback, SetHeightCallback);
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::Vector3), Position, GetPosition);
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::Vector3), DesiredVelocity, GetDesiredVelocity);
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::Vector3), ActualVelocity, GetActualVelocity);
@@ -36,10 +37,14 @@
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::NavigationQuality), NavigationQuality, GetNavigationQuality, SetNavigationQuality);
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::NavigationPushiness), NavigationPushiness, GetNavigationPushiness, SetNavigationPushiness);
 %csattribute(Urho3D::CrowdAgent, %arg(bool), IsInCrowd, IsInCrowd);
+%csattribute(Urho3D::NavigationMesh, %arg(ea::vector<IntVector2>), AllTileIndices, GetAllTileIndices);
 %csattribute(Urho3D::NavigationMesh, %arg(ea::string), MeshName, GetMeshName, SetMeshName);
+%csattribute(Urho3D::NavigationMesh, %arg(int), MaxTiles, GetMaxTiles, SetMaxTiles);
 %csattribute(Urho3D::NavigationMesh, %arg(int), TileSize, GetTileSize, SetTileSize);
 %csattribute(Urho3D::NavigationMesh, %arg(float), CellSize, GetCellSize, SetCellSize);
 %csattribute(Urho3D::NavigationMesh, %arg(float), CellHeight, GetCellHeight, SetCellHeight);
+%csattribute(Urho3D::NavigationMesh, %arg(Urho3D::Vector2), HeightRange, GetHeightRange, SetHeightRange);
+%csattribute(Urho3D::NavigationMesh, %arg(bool), IsHeightRangeValid, IsHeightRangeValid);
 %csattribute(Urho3D::NavigationMesh, %arg(float), AgentHeight, GetAgentHeight, SetAgentHeight);
 %csattribute(Urho3D::NavigationMesh, %arg(float), AgentRadius, GetAgentRadius, SetAgentRadius);
 %csattribute(Urho3D::NavigationMesh, %arg(float), AgentMaxClimb, GetAgentMaxClimb, SetAgentMaxClimb);
@@ -52,9 +57,6 @@
 %csattribute(Urho3D::NavigationMesh, %arg(float), DetailSampleMaxError, GetDetailSampleMaxError, SetDetailSampleMaxError);
 %csattribute(Urho3D::NavigationMesh, %arg(Urho3D::Vector3), Padding, GetPadding, SetPadding);
 %csattribute(Urho3D::NavigationMesh, %arg(bool), IsInitialized, IsInitialized);
-%csattribute(Urho3D::NavigationMesh, %arg(Urho3D::BoundingBox), BoundingBox, GetBoundingBox);
-%csattribute(Urho3D::NavigationMesh, %arg(Urho3D::BoundingBox), WorldBoundingBox, GetWorldBoundingBox);
-%csattribute(Urho3D::NavigationMesh, %arg(Urho3D::IntVector2), NumTiles, GetNumTiles);
 %csattribute(Urho3D::NavigationMesh, %arg(Urho3D::NavmeshPartitionType), PartitionType, GetPartitionType, SetPartitionType);
 %csattribute(Urho3D::NavigationMesh, %arg(bool), DrawOffMeshConnections, GetDrawOffMeshConnections, SetDrawOffMeshConnections);
 %csattribute(Urho3D::NavigationMesh, %arg(bool), DrawNavAreas, GetDrawNavAreas, SetDrawNavAreas);

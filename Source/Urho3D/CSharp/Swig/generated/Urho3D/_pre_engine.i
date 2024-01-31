@@ -24,6 +24,8 @@
 %ignore Urho3D::EP_GPU_DEBUG;
 %constant const char* EpHeadless = "Headless";
 %ignore Urho3D::EP_HEADLESS;
+%constant const char* EpLoadFonts = "LoadFonts";
+%ignore Urho3D::EP_LOAD_FONTS;
 %constant const char* EpLogLevel = "LogLevel";
 %ignore Urho3D::EP_LOG_LEVEL;
 %constant const char* EpLogName = "LogName";
@@ -52,6 +54,8 @@
 %ignore Urho3D::EP_RESOURCE_PATHS;
 %constant const char* EpResourcePrefixPaths = "ResourcePrefixPaths";
 %ignore Urho3D::EP_RESOURCE_PREFIX_PATHS;
+%constant const char* EpResourceRootFile = "ResourceRootFile";
+%ignore Urho3D::EP_RESOURCE_ROOT_FILE;
 %constant const char* EpSaveShaderCache = "SaveShaderCache";
 %ignore Urho3D::EP_SAVE_SHADER_CACHE;
 %constant const char* EpShaderCacheDir = "ShaderCacheDir";
