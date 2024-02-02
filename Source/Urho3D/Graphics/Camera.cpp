@@ -60,7 +60,8 @@ Camera::Camera(Context* context) :
     aspectRatio_(1.0f),
     zoom_(1.0f),
     lodBias_(1.0f),
-    viewMask_(DEFAULT_VIEWMASK),
+    primaryViewMask_(DEFAULT_VIEWMASK),
+    shadowViewMask_(DEFAULT_VIEWMASK),
     zoneMask_(DEFAULT_ZONEMASK),
     viewOverrideFlags_(VO_NONE),
     fillMode_(FILL_SOLID),
@@ -93,7 +94,9 @@ void Camera::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Orthographic Size", GetOrthoSize, SetOrthoSizeAttr, float, DEFAULT_ORTHOSIZE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Zoom", GetZoom, SetZoom, float, 1.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("LOD Bias", GetLodBias, SetLodBias, float, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("View Mask", int, viewMask_, DEFAULT_VIEWMASK, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("View Mask", GetViewMask, SetViewMask, int, DEFAULT_VIEWMASK, AM_DEFAULT | AM_READONLY);
+    URHO3D_ATTRIBUTE("Primary View Mask", int, primaryViewMask_, DEFAULT_VIEWMASK, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Shadow View Mask", int, shadowViewMask_, DEFAULT_VIEWMASK, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Zone Mask", int, zoneMask_, DEFAULT_ZONEMASK, AM_DEFAULT);
     URHO3D_ATTRIBUTE("View Override Flags", unsigned, viewOverrideFlags_.AsInteger(), VO_NONE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Projection Offset", GetProjectionOffset, SetProjectionOffset, Vector2, Vector2::ZERO, AM_DEFAULT);
@@ -178,7 +181,8 @@ void Camera::SetLodBias(float bias)
 
 void Camera::SetViewMask(unsigned mask)
 {
-    viewMask_ = mask;
+    primaryViewMask_ = mask;
+    shadowViewMask_ = mask;
 }
 
 void Camera::SetZoneMask(unsigned mask)

@@ -98,8 +98,11 @@ public:
     /// Set LOD bias.
     /// @property
     void SetLodBias(float bias);
-    /// Set view mask. Will be and'ed with object's view mask to see if the object should be rendered.
-    /// @property
+    /// Set view mask for primary rendering.
+    void SetPrimaryViewMask(unsigned mask) { primaryViewMask_ = mask; }
+    /// Set view mask for shadow casters.
+    void SetShadowViewMask(unsigned mask) { shadowViewMask_ = mask; }
+    /// Set view mask for everything.
     void SetViewMask(unsigned mask);
     /// Set zone mask.
     void SetZoneMask(unsigned mask);
@@ -168,7 +171,13 @@ public:
 
     /// Return view mask.
     /// @property
-    unsigned GetViewMask() const { return viewMask_; }
+    unsigned GetViewMask() const { return primaryViewMask_ | shadowViewMask_; }
+
+    /// Return view mask for primary rendering.
+    unsigned GetPrimaryViewMask() const { return primaryViewMask_; }
+
+    /// Return view mask for shadow casters.
+    unsigned GetShadowViewMask() const { return shadowViewMask_; }
 
     /// Return zone mask.
     unsigned GetZoneMask() const { return zoneMask_; }
@@ -362,8 +371,10 @@ private:
     float zoom_;
     /// LOD bias.
     float lodBias_;
-    /// View mask.
-    unsigned viewMask_;
+    /// View mask for primary rendering.
+    unsigned primaryViewMask_{};
+    /// View mask for shadow casters.
+    unsigned shadowViewMask_{};
     /// Zone mask.
     unsigned zoneMask_{};
     /// Current zone containing camera.

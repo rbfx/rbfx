@@ -176,7 +176,7 @@ public:
         {
             URHO3D_PROFILE("ProcessOccluders");
 
-            StereoOccluderOctreeQuery occluderQuery(occluders_, frustums, frameInfo_.camera_->GetViewMask());
+            StereoOccluderOctreeQuery occluderQuery(occluders_, frustums, frameInfo_.camera_->GetPrimaryViewMask());
             frameInfo_.octree_->GetDrawables(occluderQuery);
             drawableProcessor_->ProcessOccluders(occluders_, settings_.occluderSizeThreshold_);
 
@@ -216,14 +216,14 @@ public:
         {
             URHO3D_PROFILE("QueryVisibleDrawables");
             StereoOccludedFrustumOctreeQuery query(drawables_, frustums, currentOcclusionBuffers_,
-                DRAWABLE_GEOMETRY | DRAWABLE_LIGHT, frameInfo_.camera_->GetViewMask());
+                DRAWABLE_GEOMETRY | DRAWABLE_LIGHT, frameInfo_.camera_->GetPrimaryViewMask());
             frameInfo_.octree_->GetDrawables(query);
         }
         else
         {
             URHO3D_PROFILE("QueryVisibleDrawables");
             StereoFrustumOctreeQuery drawableQuery(
-                drawables_, frustums, DRAWABLE_GEOMETRY | DRAWABLE_LIGHT, frameInfo_.camera_->GetViewMask());
+                drawables_, frustums, DRAWABLE_GEOMETRY | DRAWABLE_LIGHT, frameInfo_.camera_->GetPrimaryViewMask());
             frameInfo_.octree_->GetDrawables(drawableQuery);
         }
 
