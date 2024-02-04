@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>Urho3DNet</AssemblyName>
     <OutputType>Library</OutputType>
@@ -13,6 +13,13 @@
     <Compile Include="Managed/**/*.cs" />
     <Compile Include="$(RBFX_BINARY_DIR)Source/Urho3D/Urho3DCSharp/Managed/*.cs" />
   </ItemGroup>
+  <Choose>
+    <When Condition="$(TargetFramework) == 'netstandard2.0'">
+      <ItemGroup>
+        <PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.1" />
+      </ItemGroup>
+    </When>
+  </Choose>
   <Target Name="GatherBuildFilesUrho3D" BeforeTargets="BeforeCompile">
     <CreateItem Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)Urho3DCSharp&quot;, &quot;*.cs&quot;))">
       <Output TaskParameter="Include" ItemName="Compile" />
