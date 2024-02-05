@@ -846,26 +846,8 @@ void Material::ReleaseShaders()
 SharedPtr<Material> Material::Clone(const ea::string& cloneName) const
 {
     SharedPtr<Material> ret(MakeShared<Material>(context_));
-
+    ret->CopyFrom(this);
     ret->SetName(cloneName);
-    ret->techniques_ = techniques_;
-    ret->vertexShaderDefines_ = vertexShaderDefines_;
-    ret->pixelShaderDefines_ = pixelShaderDefines_;
-    ret->shaderParameters_ = shaderParameters_;
-    ret->shaderParameterHash_ = shaderParameterHash_;
-    ret->textures_ = textures_;
-    ret->depthBias_ = depthBias_;
-    ret->alphaToCoverage_ = alphaToCoverage_;
-    ret->lineAntiAlias_ = lineAntiAlias_;
-    ret->occlusion_ = occlusion_;
-    ret->specular_ = specular_;
-    ret->cullMode_ = cullMode_;
-    ret->shadowCullMode_ = shadowCullMode_;
-    ret->fillMode_ = fillMode_;
-    ret->renderOrder_ = renderOrder_;
-    ret->RefreshMemoryUse();
-    ret->RefreshTextureEventSubscriptions();
-
     return ret;
 }
 
