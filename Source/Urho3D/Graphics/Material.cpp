@@ -869,6 +869,28 @@ SharedPtr<Material> Material::Clone(const ea::string& cloneName) const
     return ret;
 }
 
+void Material::CopyFrom(const Material* material)
+{
+    this->SetName(material->GetName());
+    techniques_ = material->techniques_;
+    vertexShaderDefines_ = material->vertexShaderDefines_;
+    pixelShaderDefines_ = material->pixelShaderDefines_;
+    shaderParameters_ = material->shaderParameters_;
+    shaderParameterHash_ = material->shaderParameterHash_;
+    textures_ = material->textures_;
+    depthBias_ = material->depthBias_;
+    alphaToCoverage_ = material->alphaToCoverage_;
+    lineAntiAlias_ = material->lineAntiAlias_;
+    occlusion_ = material->occlusion_;
+    specular_ = material->specular_;
+    cullMode_ = material->cullMode_;
+    shadowCullMode_ = material->shadowCullMode_;
+    fillMode_ = material->fillMode_;
+    renderOrder_ = material->renderOrder_;
+    RefreshMemoryUse();
+    RefreshTextureEventSubscriptions();
+}
+
 void Material::SortTechniques()
 {
     ea::sort(techniques_.begin(), techniques_.end());
