@@ -220,6 +220,8 @@ public:
     void ReleaseShaders();
     /// Clone the material.
     SharedPtr<Material> Clone(const ea::string& cloneName = EMPTY_STRING) const;
+    /// Copy another material. This is useful for a pool of Material objects.
+    void CopyFrom(const Material* material);
     /// Ensure that material techniques are listed in correct order.
     void SortTechniques();
     /// Mark material for auxiliary view rendering.
