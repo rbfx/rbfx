@@ -64,7 +64,7 @@ void MoveAndOrbitController::OnSetEnabled()
 
 void MoveAndOrbitController::LoadInputMap(const ea::string& name)
 {
-    SetInputMapAttr(ResourceRef(InputMap::GetTypeStatic(), "Input/MoveAndOrbit.inputmap"));
+    SetInputMapAttr(ResourceRef(InputMap::GetTypeStatic(), name));
 }
 
 void MoveAndOrbitController::SetInputMap(InputMap* inputMap)
