@@ -25,6 +25,7 @@
 
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/StopToken.h"
 #include "Urho3D/Core/Thread.h"
 #include "Urho3D/Core/Profiler.h"
 #include "Urho3D/Engine/EngineEvents.h"
@@ -36,6 +37,10 @@
 #if URHO3D_SYSTEMUI
 #include "Urho3D/SystemUI/Console.h"
 #endif
+
+#include <EASTL/finally.h>
+
+#include <future>
 
 #ifdef __ANDROID__
 #include <SDL_rwops.h>
@@ -147,6 +152,37 @@ bool EndsWith(ea::string_view str, ea::string_view suffix, bool caseSensitive = 
         && ea::CompareI(str.data() + str.size() - suffix.size(), suffix.data(), suffix.size()) == 0;
 }
 
+#ifdef _WIN32
+// TODO: Implement this for POSIX systems too
+std::future<ea::string> ReadFileAsync(HANDLE fileHandle, StopToken& stopToken)
+{
+    auto futureResult = std::async(std::launch::async,
+        [fileHandle, stopToken]
+    {
+        ea::string result;
+        char buf[1024];
+        while (true)
+        {
+            // Stop on error
+            DWORD bytesRead = 0;
+            if (!ReadFile(fileHandle, buf, sizeof(buf), &bytesRead, nullptr))
+            {
+                if (GetLastError() != ERROR_NO_DATA)
+                    break;
+            }
+
+            // Stop on EOF if stop was requested
+            if (bytesRead == 0 && stopToken.IsStopped())
+                break;
+
+            result.append(buf, bytesRead);
+        }
+        return result;
+    });
+    return futureResult;
+}
+#endif
+
 }
 
 int DoSystemCommand(const ea::string& commandLine, bool redirectToLog, Context* context)
@@ -248,7 +284,21 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
         // If we are waiting for process result we are likely reading stdout, in that case we probably do not want to see a console window.
         processFlags = CREATE_NO_WINDOW;
 
-    HANDLE pipeRead = 0, pipeWrite = 0;
+    std::future<ea::string> futureOutput;
+    StopToken outputStopToken;
+    auto stopGuard = ea::make_finally([&] { outputStopToken.Stop(); });
+
+    HANDLE pipeRead = 0;
+    HANDLE pipeWrite = 0;
+    const auto pipeGuard = ea::make_finally(
+        [&]
+    {
+        if (pipeRead)
+            CloseHandle(pipeRead);
+        if (pipeWrite)
+            CloseHandle(pipeWrite);
+    });
+
     if (flags & SR_READ_OUTPUT)
     {
         SECURITY_ATTRIBUTES attr;
@@ -271,6 +321,8 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
         startupInfo.hStdOutput = pipeWrite;
         startupInfo.hStdError = pipeWrite;
         startupInfo.dwFlags |= STARTF_USESTDHANDLES;
+
+        futureOutput = ReadFileAsync(pipeRead, outputStopToken);
     }
 
     if (!CreateProcessW(nullptr, (wchar_t*)commandLineW.c_str(), nullptr, nullptr, TRUE, processFlags, nullptr, nullptr, &startupInfo, &processInfo))
@@ -285,21 +337,8 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
 
     if (flags & SR_READ_OUTPUT)
     {
-        char buf[1024];
-        for (;;)
-        {
-            DWORD bytesRead = 0;
-            if (!ReadFile(pipeRead, buf, sizeof(buf), &bytesRead, nullptr) || !bytesRead)
-                break;
-            auto err = GetLastError();
-
-            unsigned start = output.length();
-            output.resize(start + bytesRead);
-            memcpy(&output[start], buf, bytesRead);
-        }
-
-        CloseHandle(pipeWrite);
-        CloseHandle(pipeRead);
+        stopGuard.execute();
+        output = futureOutput.get();
     }
 
     CloseHandle(processInfo.hProcess);
