@@ -172,6 +172,7 @@ void ModelImporter::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Add Empty Nodes To Skeleton", bool, settings_.addEmptyNodesToSkeleton_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Repair Looping", bool, repairLooping_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Blender: Apply Modifiers", bool, blenderApplyModifiers_, true, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Blender: Deforming Bones Only", bool, blenderDeformingBonesOnly_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("LightMap UV: Generate", bool, lightmapUVGenerate_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("LightMap UV: Texels per Unit", float, lightmapUVTexelsPerUnit_, 10.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("LightMap UV: Channel", unsigned, lightmapUVChannel_, 1, AM_DEFAULT);
@@ -515,9 +516,10 @@ ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromBlend(
         "bpy.ops.export_scene.gltf("
         "  filepath='{}', "
         "  export_format='GLB', "
-        "  export_apply={}"
+        "  export_apply={}, "
+        "  export_def_bones={}"
         ");",
-        tempGltfFile, blenderApplyModifiers_ ? "True" : "False");
+        tempGltfFile, blenderApplyModifiers_ ? "True" : "False", blenderDeformingBonesOnly_ ? "True" : "False");
 
     const StringVector arguments{"-b", fileName, "--python-expr", script};
 
