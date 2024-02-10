@@ -65,7 +65,7 @@ void main()
 #endif
 
 #if URHO3D_TEXTURE_EMISSION
-    vec4 emissiveInput = texture(sEmission, vTexCoord);
+    vec3 emissiveInput = texture(sEmission, vTexCoord).rgb;
     vec3 emissive = (URHO3D_TEXTURE_EMISSION == 1 ? Texture_ToLinear_1(emissiveInput) : Texture_ToLinear_2(emissiveInput))
         * GammaToLinearSpace(cMatEmissiveColor);
 #else
