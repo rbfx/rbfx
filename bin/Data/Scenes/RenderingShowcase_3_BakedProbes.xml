@@ -2,21 +2,13 @@
 <scene id="1">
 	<attribute name="Name" value="" />
 	<attribute name="Time Scale" value="1.000000" />
-	<attribute name="Smoothing Constant" value="50.000000" />
-	<attribute name="Snap Threshold" value="5.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Replicated Node ID" value="1684" />
-	<attribute name="Next Replicated Component ID" value="1657" />
-	<attribute name="Next Local Node ID" value="16777423" />
-	<attribute name="Next Local Component ID" value="16777514" />
+	<attribute name="Next Node ID" value="1661" />
+	<attribute name="Next Component ID" value="16777436" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D" />
 	<component type="Octree" id="1" />
-	<component type="EditorSceneSettings" id="16777216">
-		<attribute name="Camera Position" value="1 5.49999 -7" />
-		<attribute name="Camera Rotation" value="0.970674 0.240087 -0.0117838 0.00343316" />
-	</component>
 	<component type="RenderPipeline" id="315" />
 	<component type="ReflectionProbeManager" id="16777435" />
 	<node id="2">
@@ -85,7 +77,6 @@
 			<attribute name="Material" value="Material;Materials/Constant/MetallicR3.xml" />
 			<attribute name="Cast Shadows" value="true" />
 			<attribute name="View Mask" value="1" />
-			<attribute name="Reflection Mode" value="Blend Probes and Zone" />
 		</component>
 		<node id="1652">
 			<attribute name="Is Enabled" value="false" />
@@ -119,7 +110,7 @@
 			<component type="ReflectionProbe" id="1610">
 				<attribute name="Bounding Box Min" value="-2 -1.8 -2.3" />
 				<attribute name="Bounding Box Max" value="2.8 2.4 2.3" />
-				<attribute name="Texture" value="TextureCube;Scenes/RenderingShowcase_3_BakedProbes/Textures/ReflectionProbe-1610.xml" />
+				<attribute name="Texture" value="TextureCube;Scenes/RenderingShowcase_3_BakedProbes.xml.d/Textures/ReflectionProbe-1610.xml" />
 				<attribute name="Texture Size" value="128" />
 				<attribute name="View Mask" value="-2" />
 			</component>
@@ -135,7 +126,7 @@
 			<component type="ReflectionProbe" id="1611">
 				<attribute name="Bounding Box Min" value="-2.7 -1.8 -2.4" />
 				<attribute name="Bounding Box Max" value="2.6 2.3 2.2" />
-				<attribute name="Texture" value="TextureCube;Scenes/RenderingShowcase_3_BakedProbes/Textures/ReflectionProbe-1611.xml" />
+				<attribute name="Texture" value="TextureCube;Scenes/RenderingShowcase_3_BakedProbes.xml.d/Textures/ReflectionProbe-1611.xml" />
 				<attribute name="Texture Size" value="128" />
 				<attribute name="View Mask" value="-2" />
 			</component>
@@ -152,7 +143,7 @@
 				<attribute name="Bounding Box Min" value="-1 -0.5 -1" />
 				<attribute name="Bounding Box Max" value="1 1.1 1" />
 				<attribute name="Priority" value="1" />
-				<attribute name="Texture" value="TextureCube;Scenes/RenderingShowcase_3_BakedProbes/Textures/ReflectionProbe-1630.xml" />
+				<attribute name="Texture" value="TextureCube;Scenes/RenderingShowcase_3_BakedProbes.xml.d/Textures/ReflectionProbe-1630.xml" />
 				<attribute name="Texture Size" value="128" />
 				<attribute name="View Mask" value="-2" />
 			</component>
