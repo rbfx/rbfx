@@ -432,7 +432,7 @@ void ModelImporter::AppendResourceMetadata(ResourceWithMetadata& resource) const
 ModelImporter::ModelMetadata ModelImporter::LoadMetadata(const ea::string& fileName) const
 {
     ModelMetadata result;
-    result.metadataFileName_ = fileName + ".import";
+    result.metadataFileName_ = fileName + ".d/import.json";
 
     JSONFile file{context_};
     if (file.LoadFile(result.metadataFileName_))
