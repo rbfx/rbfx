@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>Urho3DNet</AssemblyName>
+      <TargetFrameworks>$(URHO3D_NETFX);$(URHO3D_NETFX_RUNTIME)-android</TargetFrameworks>
+      <AssemblyName>Urho3DNet</AssemblyName>
     <OutputType>Library</OutputType>
     <LangVersion>9.0</LangVersion>
   </PropertyGroup>
