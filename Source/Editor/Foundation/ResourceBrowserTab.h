@@ -120,8 +120,8 @@ private:
     void RenderDirectoryContent();
     void RenderDirectoryUp(const FileSystemEntry& entry);
     void RenderDirectoryContentEntry(const FileSystemEntry& entry);
-    void RenderCompositeFile(const FileSystemEntry& entry);
-    void RenderCompositeFileEntry(const FileSystemEntry& entry, const FileSystemEntry& ownerEntry);
+    void RenderCompositeFile(ea::span<const FileSystemEntry*> entries);
+    void RenderCompositeFileEntry(const FileSystemEntry& entry, const ea::string& localResourceName);
     void RenderCreateButton(const FileSystemEntry& entry);
     /// @}
 
@@ -151,7 +151,7 @@ private:
 
     /// Utility functions
     /// @{
-    ea::string GetEntryIcon(const FileSystemEntry& entry) const;
+    ea::string GetEntryIcon(const FileSystemEntry& entry, bool isCompositeFile) const;
     unsigned GetRootIndex(const FileSystemEntry& entry) const;
     const ResourceRoot& GetRoot(const FileSystemEntry& entry) const;
     bool IsEntryFromCache(const FileSystemEntry& entry) const;
@@ -164,6 +164,8 @@ private:
         const ea::string& oldName, const ea::string& newName) const;
     ea::vector<const FileSystemEntry*> GetEntries(const ea::vector<EntryReference>& refs) const;
     ea::optional<unsigned> GetRootIndex(const ea::string& fileName) const;
+    bool IsNormalDirectory(const FileSystemEntry& entry) const;
+    ea::pair<bool, const FileSystemEntry*> IsCompositeFile(const FileSystemEntry& entry) const;
     /// @}
 
     /// Manage selection
@@ -252,7 +254,12 @@ private:
     } create_;
     /// @}
 
-    ea::vector<const FileSystemEntry*> tempEntryList_;
+    struct TempEntry
+    {
+        const FileSystemEntry* entry_{};
+        ea::string localName_;
+    };
+    ea::vector<TempEntry> tempEntryList_;
     bool selectionDirty_{};
 };
 
