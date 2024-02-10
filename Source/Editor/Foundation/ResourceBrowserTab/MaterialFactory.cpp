@@ -62,16 +62,17 @@ void MaterialFactory::RenderAuxilary()
     if (ui::IsItemHovered())
         ui::SetTooltip("Enable lighting for this material.");
 
-    if (lit_)
-    {
-        ui::Checkbox("PBR", &pbr_);
-        if (ui::IsItemHovered())
-            ui::SetTooltip("Use physically based rendering for this material.");
+    ui::BeginDisabled(!lit_);
 
-        ui::Checkbox("Normal Mapping", &normal_);
-        if (ui::IsItemHovered())
-            ui::SetTooltip("Use normal mapping for this material, if normal texture is provided.");
-    }
+    ui::Checkbox("PBR", &pbr_);
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Use physically based rendering for this material.");
+
+    ui::Checkbox("Normal Mapping", &normal_);
+    if (ui::IsItemHovered())
+        ui::SetTooltip("Use normal mapping for this material, if normal texture is provided.");
+
+    ui::EndDisabled();
 
     ui::Separator();
 }
