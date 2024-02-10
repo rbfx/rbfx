@@ -62,13 +62,16 @@ void MaterialFactory::RenderAuxilary()
     if (ui::IsItemHovered())
         ui::SetTooltip("Enable lighting for this material.");
 
-    ui::Checkbox("PBR", &pbr_);
-    if (ui::IsItemHovered())
-        ui::SetTooltip("Use physically based rendering for this material.");
+    if (lit_)
+    {
+        ui::Checkbox("PBR", &pbr_);
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Use physically based rendering for this material.");
 
-    ui::Checkbox("Normal Mapping", &normal_);
-    if (ui::IsItemHovered())
-        ui::SetTooltip("Use normal mapping for this material, if normal texture is provided.");
+        ui::Checkbox("Normal Mapping", &normal_);
+        if (ui::IsItemHovered())
+            ui::SetTooltip("Use normal mapping for this material, if normal texture is provided.");
+    }
 
     ui::Separator();
 }
@@ -80,7 +83,7 @@ void MaterialFactory::CommitAndClose()
     const ea::string techniqueName = GetTechniqueName();
     ea::string vertexDefines;
     ea::string pixelDefines;
-    if (pbr_)
+    if (lit_ && pbr_)
     {
         vertexDefines += "PBR ";
         pixelDefines += "PBR ";
