@@ -248,7 +248,7 @@ bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& m
     auto importer = MakeShared<GLTFImporter>(context_, settings_);
 
     const ea::string outputPath = AddTrailingSlash(input.outputFileName_);
-    const ea::string resourceNamePrefix = AddTrailingSlash(input.resourceName_);
+    const ea::string resourceNamePrefix = AddTrailingSlash(input.outputResourceName_);
     if (!importer->LoadFile(fileHandle->fileName_))
     {
         URHO3D_LOGERROR("Failed to load asset {} as GLTF model", input.resourceName_);

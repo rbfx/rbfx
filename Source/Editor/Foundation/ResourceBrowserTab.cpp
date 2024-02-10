@@ -584,7 +584,8 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanFullWidth;
     if (isSelected)
         flags |= ImGuiTreeNodeFlags_Selected;
-    flags |= isCompositeFile ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_Leaf;
+    if (!isCompositeFile)
+        flags |= ImGuiTreeNodeFlags_Leaf;
 
     const ea::string name = Format("{} {}", GetEntryIcon(entry, isCompositeFile), entry.localName_);
     const bool isOpen = ui::TreeNodeEx(name.c_str(), flags);

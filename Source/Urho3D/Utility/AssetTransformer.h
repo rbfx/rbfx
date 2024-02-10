@@ -40,8 +40,8 @@ struct URHO3D_API AssetTransformerInput
     AssetTransformerInput() = default;
     AssetTransformerInput(const ApplicationFlavor& flavor, const ea::string& resourceName,
         const ea::string& inputFileName, FileTime inputFileTime);
-    AssetTransformerInput(
-        const AssetTransformerInput& other, const ea::string& tempPath, const ea::string& outputFileName);
+    AssetTransformerInput(const AssetTransformerInput& other, const ea::string& tempPath,
+        const ea::string& outputFileName, const ea::string& outputResourceName);
 
     void SerializeInBlock(Archive& archive);
     static AssetTransformerInput FromBase64(const ea::string& base64);
@@ -64,6 +64,8 @@ struct URHO3D_API AssetTransformerInput
     ea::string tempPath_;
     /// Absolute file name to the file counterpart in writeable directory.
     ea::string outputFileName_;
+    /// Resource name to the file counterpart in writeable directory.
+    ea::string outputResourceName_;
 };
 
 /// Transformer execution result (should be serializable on its own).

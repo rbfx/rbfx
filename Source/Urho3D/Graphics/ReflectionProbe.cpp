@@ -446,10 +446,7 @@ ea::string ReflectionProbeManager::GetBakedProbeFilePath() const
     {
         const ea::string sceneFileName = scene->GetFileName();
         if (!sceneFileName.empty())
-        {
-            const ea::string probePath = ReplaceExtension(sceneFileName, "");
-            return Format("{}/Textures", probePath);
-        }
+            return Format("{}.d/Textures", sceneFileName);
     }
     return ea::string();
 }
