@@ -43,16 +43,6 @@ const auto Hotkey_RevealInExplorer = EditorHotkey{"ResourceBrowserTab.RevealInEx
 const ea::string contextMenuId = "ResourceBrowserTab_PopupDirectory";
 const ea::string satelliteDirectoryExtension = ".d";
 
-bool IsLeafDirectory(const FileSystemEntry& entry)
-{
-    for (const FileSystemEntry& childEntry : entry.children_)
-    {
-        if (!childEntry.isFile_)
-            return false;
-    }
-    return true;
-}
-
 ea::optional<ea::string> TryAdjustPathOnRename(const ea::string& path, const ea::string& oldResourceName, const ea::string& newResourceName)
 {
     if (path.starts_with(oldResourceName))
@@ -942,7 +932,12 @@ SharedPtr<ResourceDragDropPayload> ResourceBrowserTab::CreatePayloadFromRightSel
     {
         const FileSystemEntry* entry = GetEntry({left_.selectedRoot_, resourcePath});
         if (entry)
+        {
             AddEntryToPayload(*payload, *entry);
+            const auto [_, satelliteDirectory] = IsCompositeFile(*entry);
+            if (satelliteDirectory && !IsEntryFromCache(*satelliteDirectory))
+                AddEntryToPayload(*payload, *satelliteDirectory);
+        }
     }
 
     // Last selected resource is the first in the payload
@@ -1210,6 +1205,16 @@ bool ResourceBrowserTab::IsNormalDirectory(const FileSystemEntry& entry) const
     return true;
 }
 
+bool ResourceBrowserTab::IsLeafDirectory(const FileSystemEntry& entry) const
+{
+    for (const FileSystemEntry& childEntry : entry.children_)
+    {
+        if (IsNormalDirectory(childEntry))
+            return false;
+    }
+    return true;
+}
+
 ea::pair<bool, const FileSystemEntry*> ResourceBrowserTab::IsCompositeFile(const FileSystemEntry& entry) const
 {
     const ResourceRoot& root = GetRoot(entry);
@@ -1284,7 +1289,7 @@ void ResourceBrowserTab::RenameEntry(const FileSystemEntry& entry, const ea::str
     RenameOrMove(entry.absolutePath_, newFileName, entry.resourceName_, newResourceName);
 
     const auto [_, satelliteDirectory] = IsCompositeFile(entry);
-    if (satelliteDirectory)
+    if (satelliteDirectory && !IsEntryFromCache(*satelliteDirectory))
         RenameEntry(*satelliteDirectory, newName + satelliteDirectoryExtension);
 }
 
@@ -1346,7 +1351,7 @@ void ResourceBrowserTab::DeleteEntry(const FileSystemEntry& entry)
     }
 
     const auto [_, satelliteDirectory] = IsCompositeFile(entry);
-    if (satelliteDirectory)
+    if (satelliteDirectory && !IsEntryFromCache(*satelliteDirectory))
         DeleteEntry(*satelliteDirectory);
 }
 

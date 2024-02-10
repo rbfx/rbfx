@@ -165,6 +165,7 @@ private:
     ea::vector<const FileSystemEntry*> GetEntries(const ea::vector<EntryReference>& refs) const;
     ea::optional<unsigned> GetRootIndex(const ea::string& fileName) const;
     bool IsNormalDirectory(const FileSystemEntry& entry) const;
+    bool IsLeafDirectory(const FileSystemEntry& entry) const;
     ea::pair<bool, const FileSystemEntry*> IsCompositeFile(const FileSystemEntry& entry) const;
     /// @}
 
