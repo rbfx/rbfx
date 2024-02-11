@@ -382,6 +382,85 @@ bool EditResourceRefList(StringHash& type, StringVector& names, const StringVect
     return modified;
 }
 
+bool EditBitmask(unsigned& value)
+{
+    bool modified = false;
+
+    static const unsigned groupWidth = 8;
+    static const unsigned groupHeight = 2;
+    static const unsigned numGroups = 2;
+
+    const ImGuiStyle& style = ui::GetStyle();
+    const ImVec2 buttonSize = [&]
+    {
+        const float availableWidth = ui::CalcItemWidth();
+        const float width = Round(availableWidth / ((groupWidth + 2) * numGroups));
+        const float height = Round(GImGui->FontSize * 0.5f + style.ItemSpacing.y);
+        return ImVec2{width, height};
+    }();
+
+    if (ui::Button(ICON_FA_ELLIPSIS_VERTICAL))
+        ui::OpenPopup("##Action");
+    ui::SameLine();
+
+    if (ui::BeginPopup("##Action"))
+    {
+        if (ui::Selectable("Reset all to 0"))
+        {
+            modified = value != 0;
+            value = 0;
+        }
+
+        if (ui::Selectable("Set all to 1"))
+        {
+            modified = value != 0xffffffffu;
+            value = 0xffffffffu;
+        }
+
+        if (ui::Selectable("Invert all"))
+        {
+            modified = true;
+            value = ~value;
+        }
+        ui::EndPopup();
+    }
+
+    const ImVec2 baseCursorPos = ui::GetCursorPos();
+    ui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+    for (unsigned row = 0; row < groupHeight; row++)
+    {
+        for (unsigned col = 0; col < groupWidth * numGroups; col++)
+        {
+            const unsigned groupIndex = col / groupWidth;
+            const unsigned columnInGroup = col % groupWidth;
+
+            const unsigned bitIndex = columnInGroup + groupWidth * (row + groupIndex * groupHeight);
+            const unsigned bitMask = 1u << bitIndex;
+            const bool selected = (value & bitMask) != 0;
+
+            const ImVec4 currentColor = selected ? style.Colors[ImGuiCol_ButtonActive] : style.Colors[ImGuiCol_Button];
+            const ColorScopeGuard guardColor{
+                {ea::make_pair(ImGuiCol_Button, currentColor), ea::make_pair(ImGuiCol_ButtonActive, currentColor)}};
+            const IdScopeGuard guardId{bitIndex};
+
+            if (ui::Button("", buttonSize))
+            {
+                modified = true;
+                value ^= bitMask;
+            }
+            if (ui::IsItemHovered())
+                ui::SetTooltip("Bit %d", bitIndex);
+            ui::SameLine(0, style.PointSize + (columnInGroup == groupWidth - 1 ? buttonSize.x : 0));
+        }
+        ui::NewLine();
+        if (row != groupHeight - 1)
+            ui::SetCursorPos({baseCursorPos.x, baseCursorPos.y + buttonSize.y + style.PointSize});
+    }
+    ui::PopStyleVar();
+
+    return modified;
+}
+
 bool EditVariantType(VariantType& value, const char* button)
 {
     static const ea::vector<VariantType> allowedTypes{
@@ -910,6 +989,17 @@ bool EditVariantStringVariantMap(Variant& var, const EditVariantOptions& options
     return modified;
 }
 
+bool EditVariantBitmask(Variant& var, const EditVariantOptions& options)
+{
+    unsigned value = var.GetUInt();
+    if (EditBitmask(value))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
 bool EditVariant(Variant& var, const EditVariantOptions& options)
 {
     // TODO(editor): Implement all types
@@ -923,7 +1013,9 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
         return false;
 
     case VAR_INT:
-        if (options.intToString_ && !options.intToString_->empty())
+        if (options.asBitmask_)
+            return EditVariantBitmask(var, options);
+        else if (options.intToString_ && !options.intToString_->empty())
             return EditVariantEnum(var, options);
         else
             return EditVariantInt(var, options);
