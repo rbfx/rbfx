@@ -153,8 +153,11 @@ bool EndsWith(ea::string_view str, ea::string_view suffix, bool caseSensitive = 
 }
 
 #ifdef _WIN32
-// TODO: Implement this for POSIX systems too
-std::future<ea::string> ReadFileAsync(HANDLE fileHandle, StopToken& stopToken)
+using FileDescriptor = HANDLE;
+#else
+using FileDescriptor = int;
+#endif
+std::future<ea::string> ReadFileAsync(FileDescriptor fileHandle, StopToken& stopToken)
 {
     auto futureResult = std::async(std::launch::async,
         [fileHandle, stopToken]
@@ -164,6 +167,7 @@ std::future<ea::string> ReadFileAsync(HANDLE fileHandle, StopToken& stopToken)
         while (true)
         {
             // Stop on error
+#ifdef _WIN32
             DWORD bytesRead = 0;
             if (!ReadFile(fileHandle, buf, sizeof(buf), &bytesRead, nullptr))
             {
@@ -174,14 +178,26 @@ std::future<ea::string> ReadFileAsync(HANDLE fileHandle, StopToken& stopToken)
             // Stop on EOF if stop was requested
             if (bytesRead == 0 && stopToken.IsStopped())
                 break;
+#else
+            int bytesRead = read(fileHandle, buf, sizeof(buf));
+            if (bytesRead < 0)
+            {
+                if (errno != EAGAIN)
+                    break;
+            }
 
-            result.append(buf, bytesRead);
+            // Stop on EOF if stop was requested
+            if (bytesRead <= 0 && stopToken.IsStopped())
+                break;
+#endif
+
+            if (bytesRead > 0)
+                result.append(buf, bytesRead);
         }
         return result;
     });
     return futureResult;
 }
-#endif
 
 }
 
@@ -264,6 +280,9 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
     return -1;
 #else
     ea::string fixedFileName = GetNativePath(fileName);
+    std::future<ea::string> futureOutput;
+    StopToken outputStopToken;
+    auto stopGuard = ea::make_finally([&] { outputStopToken.Stop(); });
 
 #ifdef _WIN32
     // Add .exe extension if no extension defined
@@ -283,10 +302,6 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
     if (flags & SR_WAIT_FOR_EXIT)
         // If we are waiting for process result we are likely reading stdout, in that case we probably do not want to see a console window.
         processFlags = CREATE_NO_WINDOW;
-
-    std::future<ea::string> futureOutput;
-    StopToken outputStopToken;
-    auto stopGuard = ea::make_finally([&] { outputStopToken.Stop(); });
 
     HANDLE pipeRead = 0;
     HANDLE pipeWrite = 0;
@@ -346,8 +361,7 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
 
     return exitCode;
 #else
-
-    int desc[2];
+    int desc[2] = {0, 0};
     if (flags & SR_READ_OUTPUT)
     {
         if (pipe(desc) == -1)
@@ -355,6 +369,15 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
         fcntl(desc[0], F_SETFL, O_NONBLOCK);
         fcntl(desc[1], F_SETFL, O_NONBLOCK);
     }
+
+    const auto pipeGuard = ea::make_finally(
+        [&]
+    {
+        if (desc[0])
+            close(desc[0]);
+        if (desc[1])
+            close(desc[1]);
+    });
 
     ea::vector<const char*> argPtrs;
     argPtrs.push_back(fixedFileName.c_str());
@@ -371,6 +394,8 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
         posix_spawn_file_actions_adddup2(&actions, desc[1], STDOUT_FILENO);
         posix_spawn_file_actions_addclose(&actions, STDERR_FILENO);
         posix_spawn_file_actions_adddup2(&actions, desc[1], STDERR_FILENO);
+
+        futureOutput = ReadFileAsync(desc[0], outputStopToken);
     }
     posix_spawnp(&pid, fixedFileName.c_str(), &actions, nullptr, (char**)&argPtrs[0], environ);
     posix_spawn_file_actions_destroy(&actions);
@@ -383,19 +408,8 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
 
         if (flags & SR_READ_OUTPUT)
         {
-            char buf[1024];
-            for (;;)
-            {
-                ssize_t bytesRead = read(desc[0], buf, sizeof(buf));
-                if (bytesRead <= 0)
-                    break;
-
-                unsigned start = output.length();
-                output.resize(start + bytesRead);
-                memcpy(&output[start], buf, bytesRead);
-            }
-            close(desc[0]);
-            close(desc[1]);
+            stopGuard.execute();
+            output = futureOutput.get();
         }
         return exitCode;
     }
