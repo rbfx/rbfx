@@ -75,6 +75,8 @@ struct EditVariantOptions
     bool allowResize_{};
     /// Whether to allow element type changes for containers.
     bool allowTypeChange_{};
+    /// Whether to treat integer as bitmask.
+    bool asBitmask_{};
     /// Enum values used to convert integer to string.
     const StringVector* intToString_{};
     /// Allowed resource types.
@@ -83,6 +85,7 @@ struct EditVariantOptions
     const StringVector* sizedStructVectorElements_{};
 
     EditVariantOptions& AsColor() { asColor_ = true; return *this; }
+    EditVariantOptions& AsBitmask() { asBitmask_ = true; return *this; }
     EditVariantOptions& Range(double min, double max) { min_ = min; max_ = max; return *this; }
     EditVariantOptions& Step(double step) { step_ = step; return *this; }
     EditVariantOptions& Enum(const StringVector& values) { intToString_ = &values; return *this; }
@@ -98,6 +101,9 @@ URHO3D_API bool EditResourceRef(StringHash& type, ea::string& name, const String
 /// Render vector of resource references with optional type constraints. If allowed types are not specified, only current type is allowed.
 URHO3D_API bool EditResourceRefList(StringHash& type, StringVector& names, const StringVector* allowedTypes,
     bool resizable, const StringVector* elementNames = nullptr);
+
+/// Render bitmask.
+URHO3D_API bool EditBitmask(unsigned& value);
 
 /// Render variant type selector.
 URHO3D_API bool EditVariantType(VariantType& value, const char* button = nullptr);

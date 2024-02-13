@@ -110,6 +110,7 @@ private:
     bool repairLooping_{false};
 
     bool blenderApplyModifiers_{true};
+    bool blenderDeformingBonesOnly_{true};
     bool lightmapUVGenerate_{};
     float lightmapUVTexelsPerUnit_{10.0f};
     unsigned lightmapUVChannel_{1};

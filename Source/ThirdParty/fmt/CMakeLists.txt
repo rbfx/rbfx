@@ -53,7 +53,7 @@ if (BUILD_SHARED_LIBS)
         target_compile_definitions(fmt ${FMT_PUBLIC} -DFMT_HEADER_ONLY)
     else ()
         target_compile_definitions(fmt ${FMT_PUBLIC} -DFMT_SHARED
-            PRIVATE -DFMT_EXPORT -DEASTL_EXPORTS=1 -DEASTDC_EXPORTS=1
+            PRIVATE -DFMT_LIB_EXPORT=1 -DEASTL_EXPORTS=1 -DEASTDC_EXPORTS=1
         )
     endif ()
 endif ()

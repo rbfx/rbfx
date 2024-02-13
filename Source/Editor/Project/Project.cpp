@@ -641,11 +641,11 @@ void Project::InitializeResourceCache()
     vfs->MountDir(oldCacheState_.GetEditorData());
 
     MountPoint* coreDataMountPoint = vfs->MountDir(oldCacheState_.GetCoreData());
-    MountPoint* dataMountPoint = vfs->MountDir(dataPath_);
     MountPoint* cacheMountPoint = vfs->MountDir(cachePath_);
+    MountPoint* dataMountPoint = vfs->MountDir(dataPath_);
     vfs->MountAlias("res:CoreData", coreDataMountPoint);
-    vfs->MountAlias("res:Data", dataMountPoint);
     vfs->MountAlias("res:Cache", cacheMountPoint);
+    vfs->MountAlias("res:Data", dataMountPoint);
 
     vfs->MountDir("conf" , engine->GetAppPreferencesDir());
 }

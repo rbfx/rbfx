@@ -172,6 +172,7 @@ void ModelImporter::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Add Empty Nodes To Skeleton", bool, settings_.addEmptyNodesToSkeleton_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Repair Looping", bool, repairLooping_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Blender: Apply Modifiers", bool, blenderApplyModifiers_, true, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Blender: Deforming Bones Only", bool, blenderDeformingBonesOnly_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("LightMap UV: Generate", bool, lightmapUVGenerate_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("LightMap UV: Texels per Unit", float, lightmapUVTexelsPerUnit_, 10.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("LightMap UV: Channel", unsigned, lightmapUVChannel_, 1, AM_DEFAULT);
@@ -247,7 +248,7 @@ bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& m
     auto importer = MakeShared<GLTFImporter>(context_, settings_);
 
     const ea::string outputPath = AddTrailingSlash(input.outputFileName_);
-    const ea::string resourceNamePrefix = AddTrailingSlash(input.resourceName_);
+    const ea::string resourceNamePrefix = AddTrailingSlash(input.outputResourceName_);
     if (!importer->LoadFile(fileHandle->fileName_))
     {
         URHO3D_LOGERROR("Failed to load asset {} as GLTF model", input.resourceName_);
@@ -431,7 +432,7 @@ void ModelImporter::AppendResourceMetadata(ResourceWithMetadata& resource) const
 ModelImporter::ModelMetadata ModelImporter::LoadMetadata(const ea::string& fileName) const
 {
     ModelMetadata result;
-    result.metadataFileName_ = fileName + ".import";
+    result.metadataFileName_ = fileName + ".d/import.json";
 
     JSONFile file{context_};
     if (file.LoadFile(result.metadataFileName_))
@@ -515,9 +516,10 @@ ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromBlend(
         "bpy.ops.export_scene.gltf("
         "  filepath='{}', "
         "  export_format='GLB', "
-        "  export_apply={}"
+        "  export_apply={}, "
+        "  export_def_bones={}"
         ");",
-        tempGltfFile, blenderApplyModifiers_ ? "True" : "False");
+        tempGltfFile, blenderApplyModifiers_ ? "True" : "False", blenderDeformingBonesOnly_ ? "True" : "False");
 
     const StringVector arguments{"-b", fileName, "--python-expr", script};
 

@@ -2,21 +2,13 @@
 <scene id="1">
 	<attribute name="Name" value="" />
 	<attribute name="Time Scale" value="1.000000" />
-	<attribute name="Smoothing Constant" value="50.000000" />
-	<attribute name="Snap Threshold" value="5.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Replicated Node ID" value="571" />
-	<attribute name="Next Replicated Component ID" value="555" />
-	<attribute name="Next Local Node ID" value="16777310" />
-	<attribute name="Next Local Component ID" value="16777360" />
+	<attribute name="Next Node ID" value="515" />
+	<attribute name="Next Component ID" value="499" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
-	<attribute name="Lightmaps" value="Texture2D;Scenes/RenderingShowcase_2_BakedDirectIndirect/Textures/Lightmap-0.png" />
+	<attribute name="Lightmaps" value="Texture2D;Scenes/RenderingShowcase_2_BakedDirectIndirect.xml.d/Textures/Lightmap-0.png" />
 	<component type="Octree" id="1" />
-	<component type="EditorSceneSettings" id="16777216">
-		<attribute name="Camera Position" value="2.9548 7.83234 -6.77544" />
-		<attribute name="Camera Rotation" value="0.913616 0.406019 -0.0196643 0.00821234" />
-	</component>
 	<component type="RenderPipeline" id="315">
 		<attribute name="Color Space" value="LDR Linear" />
 	</component>
@@ -29,8 +21,9 @@
 		<attribute name="Indirect Samples (Light Probes)" value="256" />
 	</component>
 	<component type="GlobalIllumination" id="441">
-		<attribute name="Data File" value="BinaryFile;Scenes/RenderingShowcase_2_BakedDirectIndirect/GI.bin" />
+		<attribute name="Data File" value="BinaryFile;Scenes/RenderingShowcase_2_BakedDirectIndirect.xml.d/GI.bin" />
 	</component>
+	<component type="ReflectionProbeManager" id="10" />
 	<node id="2">
 		<attribute name="Is Enabled" value="true" />
 		<attribute name="Name" value="Global" />
@@ -143,7 +136,7 @@
 				<attribute name="Cast Shadows" value="true" />
 				<attribute name="Global Illumination" value="Use LightMap" />
 				<attribute name="Bake Lightmap" value="true" />
-				<attribute name="Lightmap Scale &amp; Offset" value="0.304688 0.195313 0.00390625 0.707031" />
+				<attribute name="Lightmap Scale &amp; Offset" value="0.304688 0.195312 0.00390625 0.707031" />
 			</component>
 		</node>
 		<node id="8">
@@ -160,7 +153,7 @@
 				<attribute name="Cast Shadows" value="true" />
 				<attribute name="Global Illumination" value="Use LightMap" />
 				<attribute name="Bake Lightmap" value="true" />
-				<attribute name="Lightmap Scale &amp; Offset" value="0.414063 0.265625 0.00390625 0.433594" />
+				<attribute name="Lightmap Scale &amp; Offset" value="0.414062 0.265625 0.00390625 0.433594" />
 			</component>
 		</node>
 		<node id="9">
@@ -193,7 +186,7 @@
 				<attribute name="Local Bounding Box Min" value="-0.5 -0.5 -0.5" />
 				<attribute name="Local Bounding Box Max" value="0.5 0.5 0.5" />
 				<attribute name="Serialized Light Probes" value="AmAAAAC/AAAAvwAAAL8AAAA/AAAAvwAAAL8AAAC/AAAAPwAAAL8AAAA/AAAAPwAAAL8AAAC/AAAAvwAAAD8AAAA/AAAAvwAAAD8AAAC/AAAAPwAAAD8AAAA/AAAAPwAAAD8=" />
-				<attribute name="Baked Data File" value="BinaryFile;Scenes/RenderingShowcase_2_BakedDirectIndirect/Binary/LightProbeGroup-0-0-0-0.bin" />
+				<attribute name="Baked Data File" value="BinaryFile;Scenes/RenderingShowcase_2_BakedDirectIndirect.xml.d/Binary/LightProbeGroup-0-0-0-0.bin" />
 			</component>
 		</node>
 		<node id="487">
@@ -209,7 +202,7 @@
 				<attribute name="Local Bounding Box Min" value="-0.5 -0.5 -0.5" />
 				<attribute name="Local Bounding Box Max" value="0.5 0.5 0.5" />
 				<attribute name="Serialized Light Probes" value="AmAAAAC/AAAAvwAAAL8AAAA/AAAAvwAAAL8AAAC/AAAAPwAAAL8AAAA/AAAAPwAAAL8AAAC/AAAAvwAAAD8AAAA/AAAAvwAAAD8AAAC/AAAAPwAAAD8AAAA/AAAAPwAAAD8=" />
-				<attribute name="Baked Data File" value="BinaryFile;Scenes/RenderingShowcase_2_BakedDirectIndirect/Binary/LightProbeGroup-0-0-0-1.bin" />
+				<attribute name="Baked Data File" value="BinaryFile;Scenes/RenderingShowcase_2_BakedDirectIndirect.xml.d/Binary/LightProbeGroup-0-0-0-1.bin" />
 			</component>
 		</node>
 		<node id="488">
@@ -225,7 +218,7 @@
 				<attribute name="Local Bounding Box Min" value="-0.5 -0.5 -0.5" />
 				<attribute name="Local Bounding Box Max" value="0.5 0.5 0.5" />
 				<attribute name="Serialized Light Probes" value="AmAAAAC/AAAAvwAAAL8AAAA/AAAAvwAAAL8AAAC/AAAAPwAAAL8AAAA/AAAAPwAAAL8AAAC/AAAAvwAAAD8AAAA/AAAAvwAAAD8AAAC/AAAAPwAAAD8AAAA/AAAAPwAAAD8=" />
-				<attribute name="Baked Data File" value="BinaryFile;Scenes/RenderingShowcase_2_BakedDirectIndirect/Binary/LightProbeGroup-0-0-0-2.bin" />
+				<attribute name="Baked Data File" value="BinaryFile;Scenes/RenderingShowcase_2_BakedDirectIndirect.xml.d/Binary/LightProbeGroup-0-0-0-2.bin" />
 			</component>
 		</node>
 		<node id="509">
@@ -282,7 +275,6 @@
 				<attribute name="Light Mode" value="Baked" />
 				<attribute name="Color" value="1 0.999997 0.99999 1" />
 				<attribute name="Range" value="30.000000" />
-				<attribute name="Light Shape Texture" value="TextureCube;" />
 				<attribute name="Cast Shadows" value="true" />
 				<attribute name="CSM Splits" value="5 100 0 0" />
 				<attribute name="CSM Bias Auto Adjust" value="0.000000" />
@@ -324,7 +316,7 @@
 				<attribute name="Cast Shadows" value="true" />
 				<attribute name="Global Illumination" value="Use LightMap" />
 				<attribute name="Bake Lightmap" value="true" />
-				<attribute name="Lightmap Scale &amp; Offset" value="0.304688 0.195313 0.316406 0.707031" />
+				<attribute name="Lightmap Scale &amp; Offset" value="0.304688 0.195312 0.316406 0.707031" />
 			</component>
 		</node>
 		<node id="34">
@@ -341,7 +333,7 @@
 				<attribute name="Cast Shadows" value="true" />
 				<attribute name="Global Illumination" value="Use LightMap" />
 				<attribute name="Bake Lightmap" value="true" />
-				<attribute name="Lightmap Scale &amp; Offset" value="0.304688 0.195313 0.425781 0.433594" />
+				<attribute name="Lightmap Scale &amp; Offset" value="0.304688 0.195312 0.425781 0.433594" />
 			</component>
 		</node>
 		<node id="489">
@@ -357,7 +349,7 @@
 				<attribute name="Local Bounding Box Min" value="-0.5 -0.5 -0.5" />
 				<attribute name="Local Bounding Box Max" value="0.5 0.5 0.5" />
 				<attribute name="Serialized Light Probes" value="AtgBAAAAvwAAAL8AAAC/AAAAAAAAAL8AAAC/AAAAPwAAAL8AAAC/AAAAvwAAAD8AAAC/AAAAAAAAAD8AAAC/AAAAPwAAAD8AAAC/AAAAvwAAAL8AAAAAAAAAAAAAAL8AAAAAAAAAPwAAAL8AAAAAAAAAvwAAAD8AAAAAAAAAAAAAAD8AAAAAAAAAPwAAAD8AAAAAAAAAvwAAAL8AAAA/AAAAAAAAAL8AAAA/AAAAPwAAAL8AAAA/AAAAvwAAAD8AAAA/AAAAAAAAAD8AAAA/AAAAPwAAAD8AAAA/" />
-				<attribute name="Baked Data File" value="BinaryFile;Scenes/RenderingShowcase_2_BakedDirectIndirect/Binary/LightProbeGroup-0-0-0-3.bin" />
+				<attribute name="Baked Data File" value="BinaryFile;Scenes/RenderingShowcase_2_BakedDirectIndirect.xml.d/Binary/LightProbeGroup-0-0-0-3.bin" />
 			</component>
 		</node>
 		<node id="490">
@@ -373,7 +365,7 @@
 				<attribute name="Local Bounding Box Min" value="-0.5 -0.5 -0.5" />
 				<attribute name="Local Bounding Box Max" value="0.5 0.5 0.5" />
 				<attribute name="Serialized Light Probes" value="AmAAAAC/AAAAvwAAAL8AAAA/AAAAvwAAAL8AAAC/AAAAPwAAAL8AAAA/AAAAPwAAAL8AAAC/AAAAvwAAAD8AAAA/AAAAvwAAAD8AAAC/AAAAPwAAAD8AAAA/AAAAPwAAAD8=" />
-				<attribute name="Baked Data File" value="BinaryFile;Scenes/RenderingShowcase_2_BakedDirectIndirect/Binary/LightProbeGroup-0-0-0-4.bin" />
+				<attribute name="Baked Data File" value="BinaryFile;Scenes/RenderingShowcase_2_BakedDirectIndirect.xml.d/Binary/LightProbeGroup-0-0-0-4.bin" />
 			</component>
 		</node>
 		<node id="491">
@@ -389,7 +381,7 @@
 				<attribute name="Local Bounding Box Min" value="-0.5 -0.5 -0.5" />
 				<attribute name="Local Bounding Box Max" value="0.5 0.5 0.5" />
 				<attribute name="Serialized Light Probes" value="AmAAAAC/AAAAvwAAAL8AAAA/AAAAvwAAAL8AAAC/AAAAPwAAAL8AAAA/AAAAPwAAAL8AAAC/AAAAvwAAAD8AAAA/AAAAvwAAAD8AAAC/AAAAPwAAAD8AAAA/AAAAPwAAAD8=" />
-				<attribute name="Baked Data File" value="BinaryFile;Scenes/RenderingShowcase_2_BakedDirectIndirect/Binary/LightProbeGroup-0-0-0-5.bin" />
+				<attribute name="Baked Data File" value="BinaryFile;Scenes/RenderingShowcase_2_BakedDirectIndirect.xml.d/Binary/LightProbeGroup-0-0-0-5.bin" />
 			</component>
 		</node>
 		<node id="514">
@@ -406,7 +398,7 @@
 				<attribute name="Cast Shadows" value="true" />
 				<attribute name="Global Illumination" value="Blend Light Probes" />
 				<attribute name="Bake Lightmap" value="true" />
-				<attribute name="Lightmap Scale &amp; Offset" value="0.152344 0.0976563 0.628906 0.78125" />
+				<attribute name="Lightmap Scale &amp; Offset" value="0.152344 0.0976562 0.628906 0.78125" />
 			</component>
 		</node>
 	</node>

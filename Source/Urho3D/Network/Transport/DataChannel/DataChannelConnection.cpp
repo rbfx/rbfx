@@ -103,7 +103,7 @@ void DataChannelConnection::SendMessage(ea::string_view data, PacketTypeFlags ty
     }
     else
     {
-        URHO3D_LOGERROR("DataChannel {} is not connected!", type);
+        URHO3D_LOGERROR("DataChannel {} is not connected!", (int)type);
         Disconnect();
     }
 }

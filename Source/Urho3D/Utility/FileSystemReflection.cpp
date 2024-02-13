@@ -36,27 +36,36 @@ namespace Urho3D
 namespace
 {
 
-bool CompareEntries(const FileSystemEntry& lhs, const FileSystemEntry& rhs, bool filesFirst)
+bool CompareEntries(const ea::string& lhs, const ea::string& rhs, bool filesFirst)
 {
     const auto compare = [filesFirst](char lhs, char rhs)
     {
         return ea::make_tuple((lhs != '/') != filesFirst, lhs)
             < ea::make_tuple((rhs != '/') != filesFirst, rhs);
     };
-    return ea::lexicographical_compare(lhs.resourceName_.begin(), lhs.resourceName_.end(),
-        rhs.resourceName_.begin(), rhs.resourceName_.end(), compare);
+    return ea::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), compare);
 }
 
 }
 
-bool FileSystemEntry::CompareFilesFirst(const FileSystemEntry& lhs, const FileSystemEntry& rhs)
+bool FileSystemEntry::ComparePathFilesFirst(const ea::string& lhs, const ea::string& rhs)
 {
     return CompareEntries(lhs, rhs, true);
 }
 
-bool FileSystemEntry::CompareDirectoriesFirst(const FileSystemEntry& lhs, const FileSystemEntry& rhs)
+bool FileSystemEntry::ComparePathDirectoriesFirst(const ea::string& lhs, const ea::string& rhs)
 {
     return CompareEntries(lhs, rhs, false);
+}
+
+bool FileSystemEntry::CompareFilesFirst(const FileSystemEntry& lhs, const FileSystemEntry& rhs)
+{
+    return ComparePathFilesFirst(lhs.resourceName_, rhs.resourceName_);
+}
+
+bool FileSystemEntry::CompareDirectoriesFirst(const FileSystemEntry& lhs, const FileSystemEntry& rhs)
+{
+    return ComparePathDirectoriesFirst(lhs.resourceName_, rhs.resourceName_);
 }
 
 FileSystemReflection::FileSystemReflection(Context* context, const StringVector& directories)

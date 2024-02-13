@@ -131,7 +131,7 @@ TEST_CASE("Recast/Detour Crowdmanager test with DynamicNavigationMesh")
     // Now build the navigation geometry. This will take some time. Note that the navigation mesh will prefer to use
     // physics geometry from the scene nodes, as it often is simpler, but if it can not find any (like in this example)
     // it will use renderable geometry instead
-    navMesh->Build();
+    navMesh->Rebuild();
 
     // Create a CrowdManager component to the scene root
     auto* crowdManager = scene->CreateComponent<CrowdManager>();
@@ -169,7 +169,7 @@ TEST_CASE("Recast/Detour Crowdmanager test with DynamicNavigationMesh")
     for (unsigned i = 0; i < testAgents.size(); ++i)
     {
         Vector3 randomTargetPos = Vector3(Random(60.0f) - 30.0f, 0.0f, Random(60.0f) - 30.0f);
-        //find a new targetposition with range > boxNode size+      
+        //find a new targetposition with range > boxNode size+
         Vector3 pathPos = navMesh->FindNearestPoint(randomTargetPos, Vector3(15.0f, 1.0f, 15.0f));
         crowdManager->SetCrowdTarget(pathPos, testAgents[i].crowdAgentNode);
     }

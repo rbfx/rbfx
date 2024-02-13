@@ -157,7 +157,7 @@ void ShadowSplitProcessor::ProcessDirectionalShadowCasters(
     Octree* octree = frameInfo.octree_;
 
     DirectionalLightShadowCasterQuery query(
-        shadowCastersBuffer, shadowCamera_->GetFrustum(), DRAWABLE_GEOMETRY, light_, cullCamera->GetViewMask());
+        shadowCastersBuffer, shadowCamera_->GetFrustum(), DRAWABLE_GEOMETRY, light_, cullCamera->GetShadowViewMask());
     octree->GetDrawables(query);
 
     // Preprocess shadow casters

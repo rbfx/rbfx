@@ -526,6 +526,8 @@ void CrowdAgent::OnCrowdPositionUpdate(dtCrowdAgent* ag, float* /*pos*/, float d
         Vector3 newPos(ag->npos);
         Vector3 newVel(ag->vel);
 
+        crowdManager_->UpdateAgentPosition(this, dt, newPos);
+
         // Notify parent node of the reposition
         if (newPos != previousPosition_)
         {
@@ -657,9 +659,8 @@ void CrowdAgent::HandleNavigationTileAdded(StringHash eventType, VariantMap& eve
     if (crowdManager_->GetNavigationMesh() != mesh)
         return;
 
-    const IntVector2 tile = eventData[NavigationTileRemoved::P_TILE].GetIntVector2();
+    const IntVector2 tile = eventData[NavigationTileAdded::P_TILE].GetIntVector2();
     const IntVector2 agentTile = mesh->GetTileIndex(node_->GetWorldPosition());
-    const BoundingBox boundingBox = mesh->GetTileBoundingBox(agentTile);
     if (tile == agentTile && IsInCrowd())
     {
         RemoveAgentFromCrowd();

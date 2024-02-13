@@ -44,9 +44,8 @@ struct LightGeometryQueryResult
 class URHO3D_API PointLightGeometryQuery : public SphereOctreeQuery
 {
 public:
-    PointLightGeometryQuery(ea::vector<Drawable*>& result, bool& hasLitGeometries,
-        ea::vector<Drawable*>* shadowCasters,
-        const DrawableProcessor* drawableProcessor, Light* light, unsigned viewMask);
+    PointLightGeometryQuery(ea::vector<Drawable*>& result, bool& hasLitGeometries, ea::vector<Drawable*>* shadowCasters,
+        const DrawableProcessor* drawableProcessor, Light* light, unsigned primaryViewMask, unsigned shadowViewMask);
 
     void TestDrawables(Drawable** start, Drawable** end, bool inside) override;
 
@@ -57,6 +56,7 @@ private:
     /// @{
     const DrawableProcessor* drawableProcessor_{};
     const unsigned lightMask_{};
+    const unsigned shadowViewMask_{};
     /// @}
 
     bool& hasLitGeometries_;
@@ -68,9 +68,8 @@ private:
 class URHO3D_API SpotLightGeometryQuery : public FrustumOctreeQuery
 {
 public:
-    SpotLightGeometryQuery(ea::vector<Drawable*>& result, bool& hasLitGeometries,
-        ea::vector<Drawable*>* shadowCasters,
-        const DrawableProcessor* drawableProcessor, Light* light, unsigned viewMask);
+    SpotLightGeometryQuery(ea::vector<Drawable*>& result, bool& hasLitGeometries, ea::vector<Drawable*>* shadowCasters,
+        const DrawableProcessor* drawableProcessor, Light* light, unsigned primaryViewMask, unsigned shadowViewMask);
 
     void TestDrawables(Drawable** start, Drawable** end, bool inside) override;
 
@@ -81,6 +80,7 @@ private:
     /// @{
     const DrawableProcessor* drawableProcessor_{};
     const unsigned lightMask_{};
+    const unsigned shadowViewMask_{};
     /// @}
 
     bool& hasLitGeometries_;

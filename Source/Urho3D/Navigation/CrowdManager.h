@@ -43,6 +43,8 @@ class NavigationMesh;
 /// Callback used to adjust crowd agent velocity.
 using CrowdAgentVelocityCallback =
     ea::function<void(CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed)>;
+/// Callback used to evaluate crowd agent Y position.
+using CrowdAgentHeightCallback = ea::function<float(CrowdAgent* agent, float timeStep, const Vector3& position)>;
 
 /// Parameter structure for obstacle avoidance params (copied from DetourObstacleAvoidance.h in order to hide Detour header from Urho3D library users).
 /// @pod
@@ -85,8 +87,12 @@ public:
 
     /// Set velocity callback.
     void SetVelocityCallback(const CrowdAgentVelocityCallback& callback) { velocityCallback_ = callback; }
+    /// Set height callback.
+    void SetHeightCallback(const CrowdAgentHeightCallback& callback) { heightCallback_ = callback; }
     /// Update agent velocity using velocity callback.
     void UpdateAgentVelocity(CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed) const;
+    /// Update agent Y position using height callback.
+    void UpdateAgentPosition(CrowdAgent* agent, float timeStep, Vector3& position) const;
 
     /// Set the crowd target position. The target position is set to all crowd agents found in the specified node. Defaulted to scene node.
     void SetCrowdTarget(const Vector3& position, Node* node = nullptr);
@@ -203,6 +209,8 @@ private:
     dtCrowd* crowd_{};
     /// Velocity callback.
     CrowdAgentVelocityCallback velocityCallback_;
+    /// Height callback.
+    CrowdAgentHeightCallback heightCallback_;
     /// NavigationMesh for which the crowd was created.
     WeakPtr<NavigationMesh> navigationMesh_;
     /// The NavigationMesh component Id for pending crowd creation.

@@ -155,7 +155,7 @@ bool PixelArtGenerator::Execute(const AssetTransformerInput& input, AssetTransfo
         return false;
 
     const ea::string sceneFileName = input.outputFileName_ + "/PixelArt.xml";
-    const ea::string materialResourcePath = input.resourceName_ + "/Materials/";
+    const ea::string materialResourcePath = input.outputResourceName_ + "/Materials/";
 
     auto scene = MakeShared<Scene>(context_);
     scene->CreateComponent<Octree>();

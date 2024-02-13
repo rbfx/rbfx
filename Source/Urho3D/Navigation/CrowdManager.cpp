@@ -195,6 +195,14 @@ void CrowdManager::UpdateAgentVelocity(
         callback(agent, timeStep, desiredVelocity, desiredSpeed);
 }
 
+void CrowdManager::UpdateAgentPosition(CrowdAgent* agent, float timeStep, Vector3& position) const
+{
+    const CrowdAgentHeightCallback& agentCallback = agent->GetHeightCallback();
+    const CrowdAgentHeightCallback& callback = agentCallback ? agentCallback : heightCallback_;
+    if (callback)
+        position.y_ = callback(agent, timeStep, position);
+}
+
 void CrowdManager::SetCrowdTarget(const Vector3& position, Node* node)
 {
     if (!crowd_)
