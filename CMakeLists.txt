@@ -38,6 +38,15 @@ if (APPLE)
     enable_language(OBJCXX)
 endif ()
 
+set (DEST_BASE_INCLUDE_DIR include)
+set (DEST_INCLUDE_DIR ${DEST_BASE_INCLUDE_DIR}/Urho3D)
+set (DEST_BIN_DIR bin)
+set (DEST_SHARE_DIR share)
+set (DEST_RESOURCE_DIR ${DEST_BIN_DIR})
+set (DEST_BUNDLE_DIR ${DEST_SHARE_DIR}/Applications)
+set (DEST_ARCHIVE_DIR lib)
+set (DEST_THIRDPARTY_HEADERS_DIR ${DEST_INCLUDE_DIR}/ThirdParty)
+
 # Set CMake modules search path
 set (CMAKE_MODULE_PATH ${rbfx_SOURCE_DIR}/CMake/Modules)
 
@@ -82,15 +91,6 @@ if (ANDROID)
     # For Android platform, install to a path based on the chosen Android ABI, e.g. libs/armeabi-v7a
     set (LIB_SUFFIX s/${ANDROID_NDK_ABI_NAME})
 endif ()
-
-set (DEST_BASE_INCLUDE_DIR include)
-set (DEST_INCLUDE_DIR ${DEST_BASE_INCLUDE_DIR}/Urho3D)
-set (DEST_BIN_DIR bin)
-set (DEST_SHARE_DIR share)
-set (DEST_RESOURCE_DIR ${DEST_BIN_DIR})
-set (DEST_BUNDLE_DIR ${DEST_SHARE_DIR}/Applications)
-set (DEST_ARCHIVE_DIR lib)
-set (DEST_THIRDPARTY_HEADERS_DIR ${DEST_INCLUDE_DIR}/ThirdParty)
 
 if (ANDROID)
     set (DEST_LIBRARY_DIR ${DEST_ARCHIVE_DIR})
@@ -218,70 +218,6 @@ if (MINGW AND CROSS_TARGET)
     endforeach()
     include_directories(${CMAKE_BINARY_DIR}/MinGW-crosscompiler-includes)
 endif ()
-
-if (URHO3D_CSHARP)
-    find_program(DOTNET dotnet)
-    if (NOT DOTNET)
-        message(FATAL_ERROR "dotnet executable was not found.")
-    endif ()
-
-    # Detect runtime version
-    execute_process(COMMAND ${DOTNET} --list-sdks OUTPUT_VARIABLE DOTNET_SDKS OUTPUT_STRIP_TRAILING_WHITESPACE)
-    string(REGEX REPLACE "\\.[0-9]+ [^\r\n]+" "" DOTNET_SDKS "${DOTNET_SDKS}")      # Trim patch version and SDK paths
-    string(REGEX REPLACE "\r?\n" ";" DOTNET_SDKS "${DOTNET_SDKS}")                  # Turn lines into a list
-    list(REVERSE DOTNET_SDKS)                                                       # Highest version goes first
-    if (URHO3D_NETFX_RUNTIME_VERSION)
-        string (REPLACE "." "\\." URHO3D_NETFX_RUNTIME_VERSION "${URHO3D_NETFX_RUNTIME_VERSION}")
-        string (REPLACE "*" "." URHO3D_NETFX_RUNTIME_VERSION "${URHO3D_NETFX_RUNTIME_VERSION}")
-        set (URHO3D_NETFX_RUNTIME_VERSION_REGEX "${URHO3D_NETFX_RUNTIME_VERSION}")
-        unset (URHO3D_NETFX_RUNTIME_VERSION)
-        foreach (VERSION ${DOTNET_SDKS})
-            if ("${VERSION}" MATCHES "${URHO3D_NETFX_RUNTIME_VERSION_REGEX}")
-                set (URHO3D_NETFX_RUNTIME_VERSION "${VERSION}")
-                break ()
-            endif ()
-        endforeach ()
-    endif ()
-    if (NOT URHO3D_NETFX_RUNTIME_VERSION)
-        list (GET DOTNET_SDKS 0 URHO3D_NETFX_RUNTIME_VERSION)
-    endif ()
-
-    # Trim extra elements that may be preset in version string. Eg. "6.0.100-preview.6.21355.2" is converted to "6.0".
-    string(REGEX REPLACE "([0-9]+)\\.([0-9]+)(.+)?" "\\1.\\2" URHO3D_NETFX_RUNTIME_VERSION "${URHO3D_NETFX_RUNTIME_VERSION}")
-    if (URHO3D_NETFX_RUNTIME_VERSION VERSION_LESS "5.0")
-        set (NETCORE core)
-    endif ()
-    set (URHO3D_NETFX_RUNTIME "net${NETCORE}${URHO3D_NETFX_RUNTIME_VERSION}")
-
-    if (WIN32)
-        set (URHO3D_NETFX_RUNTIME_IDENTIFIER win-${URHO3D_PLATFORM})
-    elseif (MACOS)
-        set (URHO3D_NETFX_RUNTIME_IDENTIFIER osx-${URHO3D_PLATFORM})
-    else ()
-        set (URHO3D_NETFX_RUNTIME_IDENTIFIER linux-${URHO3D_PLATFORM})
-    endif ()
-
-    # For .csproj that gets built by cmake invoking msbuild
-    set (ENV{CMAKE_GENERATOR} "${CMAKE_GENERATOR}")
-    set (ENV{CMAKE_BINARY_DIR} "${CMAKE_BINARY_DIR}/")
-    set (ENV{RBFX_BINARY_DIR} "${rbfx_BINARY_DIR}/")
-    set (ENV{CMAKE_RUNTIME_OUTPUT_DIRECTORY} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
-
-    set (DOTNET_FRAMEWORK_TYPES net6 net7)
-    set (DOTNET_FRAMEWORK_VERSIONS v6.0 v7.0)
-    list (FIND DOTNET_FRAMEWORK_TYPES ${URHO3D_NETFX} DOTNET_FRAMEWORK_INDEX)
-    if (DOTNET_FRAMEWORK_INDEX GREATER -1)
-        list (GET DOTNET_FRAMEWORK_VERSIONS ${DOTNET_FRAMEWORK_INDEX} CMAKE_DOTNET_TARGET_FRAMEWORK_VERSION)
-    endif ()
-    unset (DOTNET_FRAMEWORK_INDEX)
-    # For .csproj embedded into visual studio solution
-    configure_file("${rbfx_SOURCE_DIR}/CMake/CMake.props.in" "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
-
-    if (NOT SWIG_LIB)
-        set (SWIG_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty/swig/Lib)
-    endif ()
-    include(UrhoSWIG)
-endif()
 
 # Workarounds. They are mirrored in Urho3D target build script so that projects linking to it would inherit settings.
 if (WEB OR ANDROID)

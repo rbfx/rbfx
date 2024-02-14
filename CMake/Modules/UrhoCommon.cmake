@@ -25,6 +25,14 @@ include(${CMAKE_CURRENT_LIST_DIR}/VSSolution.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CCache.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/UrhoOptions.cmake)
 
+if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../Urho3D_GeneratedConfig.cmake)
+    set (URHO3D_IS_SDK ON)
+    set (URHO3D_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../)
+    get_filename_component(URHO3D_SDK_PATH "${URHO3D_SDK_PATH}" REALPATH)
+else ()
+    set (URHO3D_IS_SDK OFF)
+endif ()
+
 set(PERMISSIONS_644 OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 set(PERMISSIONS_755 OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
 
@@ -61,6 +69,83 @@ if (NOT MULTI_CONFIG_PROJECT AND NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Specifies the build type." FORCE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
 endif ()
+
+if (URHO3D_CSHARP)
+    find_program(DOTNET dotnet)
+    if (NOT DOTNET)
+        message(FATAL_ERROR "dotnet executable was not found.")
+    endif ()
+
+    # Detect runtime version
+    execute_process(COMMAND ${DOTNET} --list-sdks OUTPUT_VARIABLE DOTNET_SDKS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(REGEX REPLACE "\\.[0-9]+ [^\r\n]+" "" DOTNET_SDKS "${DOTNET_SDKS}")      # Trim patch version and SDK paths
+    string(REGEX REPLACE "\r?\n" ";" DOTNET_SDKS "${DOTNET_SDKS}")                  # Turn lines into a list
+    list(REVERSE DOTNET_SDKS)                                                       # Highest version goes first
+    if (URHO3D_NETFX_RUNTIME_VERSION)
+        string (REPLACE "." "\\." URHO3D_NETFX_RUNTIME_VERSION "${URHO3D_NETFX_RUNTIME_VERSION}")
+        string (REPLACE "*" "." URHO3D_NETFX_RUNTIME_VERSION "${URHO3D_NETFX_RUNTIME_VERSION}")
+        set (URHO3D_NETFX_RUNTIME_VERSION_REGEX "${URHO3D_NETFX_RUNTIME_VERSION}")
+        unset (URHO3D_NETFX_RUNTIME_VERSION)
+        foreach (VERSION ${DOTNET_SDKS})
+            if ("${VERSION}" MATCHES "${URHO3D_NETFX_RUNTIME_VERSION_REGEX}")
+                set (URHO3D_NETFX_RUNTIME_VERSION "${VERSION}")
+                break ()
+            endif ()
+        endforeach ()
+    endif ()
+    if (NOT URHO3D_NETFX_RUNTIME_VERSION)
+        list (GET DOTNET_SDKS 0 URHO3D_NETFX_RUNTIME_VERSION)
+    endif ()
+
+    # Trim extra elements that may be preset in version string. Eg. "6.0.100-preview.6.21355.2" is converted to "6.0".
+    string(REGEX REPLACE "([0-9]+)\\.([0-9]+)(.+)?" "\\1.\\2" URHO3D_NETFX_RUNTIME_VERSION "${URHO3D_NETFX_RUNTIME_VERSION}")
+    if (URHO3D_NETFX_RUNTIME_VERSION VERSION_LESS "5.0")
+        set (NETCORE core)
+    endif ()
+    set (URHO3D_NETFX_RUNTIME "net${NETCORE}${URHO3D_NETFX_RUNTIME_VERSION}")
+
+    if (WIN32)
+        set (URHO3D_NETFX_RUNTIME_IDENTIFIER win-${URHO3D_PLATFORM})
+    elseif (MACOS)
+        set (URHO3D_NETFX_RUNTIME_IDENTIFIER osx-${URHO3D_PLATFORM})
+    else ()
+        set (URHO3D_NETFX_RUNTIME_IDENTIFIER linux-${URHO3D_PLATFORM})
+    endif ()
+
+    # For .csproj that gets built by cmake invoking msbuild
+    set (ENV{CMAKE_GENERATOR} "${CMAKE_GENERATOR}")
+    set (ENV{CMAKE_BINARY_DIR} "${CMAKE_BINARY_DIR}/")
+    set (ENV{RBFX_BINARY_DIR} "${rbfx_BINARY_DIR}/")
+    set (ENV{CMAKE_RUNTIME_OUTPUT_DIRECTORY} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
+
+    set (DOTNET_FRAMEWORK_TYPES net6 net7)
+    set (DOTNET_FRAMEWORK_VERSIONS v6.0 v7.0)
+    list (FIND DOTNET_FRAMEWORK_TYPES ${URHO3D_NETFX} DOTNET_FRAMEWORK_INDEX)
+    if (DOTNET_FRAMEWORK_INDEX GREATER -1)
+        list (GET DOTNET_FRAMEWORK_VERSIONS ${DOTNET_FRAMEWORK_INDEX} CMAKE_DOTNET_TARGET_FRAMEWORK_VERSION)
+    endif ()
+    unset (DOTNET_FRAMEWORK_INDEX)
+
+    # For .csproj embedded into visual studio solution
+    if (URHO3D_IS_SDK)
+        # SDK
+        configure_file(${URHO3D_SDK_PATH}/share/CMake/CMake.props.in "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
+
+        if (NOT SWIG_LIB)
+            set (SWIG_DIR ${URHO3D_SDK_PATH}/include/Urho3D/ThirdParty/swig/Lib)
+        endif ()
+    else ()
+        # Source build
+        configure_file("${rbfx_SOURCE_DIR}/CMake/CMake.props.in" "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
+
+        if (NOT SWIG_LIB)
+            set (SWIG_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty/swig/Lib)
+        endif ()
+
+        install (FILES ${rbfx_SOURCE_DIR}/CMake/CMake.props.in ${rbfx_SOURCE_DIR}/Directory.Build.props DESTINATION ${DEST_SHARE_DIR}/CMake/)
+    endif ()
+    include(${CMAKE_CURRENT_LIST_DIR}/UrhoSWIG.cmake)
+endif()
 
 # Macro for setting symbolic link on platform that supports it
 function (create_symlink SOURCE DESTINATION)
