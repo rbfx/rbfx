@@ -30,15 +30,7 @@ macro (define_engine_source_files)
     foreach (path ${DEFINE_SRC_FILES_UNPARSED_ARGUMENTS})
         # Get header files
         file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.h)
-        list (REMOVE_ITEM _files
-            Urho3D.h
-            Graphics/Direct3D11/D3D11GraphicsImpl.cpp
-            Graphics/Direct3D11/D3D11GraphicsImpl.h
-            Graphics/OpenGL/OGLGraphicsImpl.h
-            Graphics/Diligent/DiligentGraphicsImpl.cpp
-            Graphics/Diligent/DiligentGraphicsImpl.h
-            IK/IKConverters.h
-        )
+        list (REMOVE_ITEM _files Urho3D.h)
         list (APPEND HEADER_FILES ${_files})
         # Install them
         install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})

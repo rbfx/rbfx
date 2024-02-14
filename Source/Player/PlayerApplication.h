@@ -28,10 +28,10 @@ namespace Urho3D
 {
 
 /// Simple player application.
-class Player : public Application
+class PlayerApplication : public Application
 {
 public:
-    explicit Player(Context* context);
+    explicit PlayerApplication(Context* context);
 
     /// Implement Application.
     /// @{
