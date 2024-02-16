@@ -204,8 +204,6 @@ void EditorApplication::Setup()
 #endif
 
     engineParameters_[EP_SYSTEMUI_FLAGS] = imguiFlags;
-
-    PluginApplication::RegisterStaticPlugins();
 }
 
 void EditorApplication::Start()

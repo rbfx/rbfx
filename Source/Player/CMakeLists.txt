@@ -54,7 +54,7 @@ if (NOT URHO3D_NO_EDITOR_PLAYER_EXE)
     endif ()
 
     target_link_libraries(${PLAYER_TARGET} PUBLIC PlayerLibrary)
-    link_static_plugins (${PLAYER_TARGET} "${URHO3D_PLUGIN_LIST}")
+    target_link_plugins (${PLAYER_TARGET} "${URHO3D_PLUGIN_LIST}")
 endif ()
 
 # SDK installation

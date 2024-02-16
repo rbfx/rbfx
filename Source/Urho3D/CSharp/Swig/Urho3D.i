@@ -366,6 +366,8 @@ namespace SDL
 %ignore Urho3D::Application::GetCommandLineParser;
 %ignore Urho3D::PluginApplicationMain;
 %ignore Urho3D::PluginApplication::Dispose;
+%ignore Urho3D::LinkedPlugins::GetLinkedPlugins;
+%ignore Urho3D::LinkedPlugins::RegisterStaticPlugins;
 
 %include "generated/Urho3D/_pre_engine.i"
 %include "Urho3D/Engine/EngineDefs.h"

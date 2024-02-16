@@ -29,16 +29,19 @@ extern "C"
 
 namespace Urho3D
 {
+namespace LinkedPlugins
+{
 
-const StringVector& PluginApplication::GetStaticPlugins()
+const StringVector& GetLinkedPlugins()
 {
     static const StringVector result = ea::string("@PLUGIN_LIST@").split(';');
     return result;
 }
 
-void PluginApplication::RegisterStaticPlugins()
+void RegisterStaticPlugins()
 {
 @REGISTER_PLUGINS@
 }
 
+}
 }

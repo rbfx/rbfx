@@ -231,7 +231,7 @@ cmake_dependent_option(URHO3D_GRAPHICS_NO_D3D12  "Disable Direct3D12 backend in 
 cmake_dependent_option(URHO3D_GRAPHICS_NO_VULKAN "Disable Vulkan backend in renderer"                    OFF "URHO3D_SHADER_TRANSLATOR" ON)
 
 # Misc
-rbfx_dependent_option(URHO3D_PLUGIN_LIST "List of plugins to be statically linked with Editor and Player executables" "103_GamePlugin;113_InputLogger" URHO3D_SAMPLES "")
+rbfx_dependent_option(URHO3D_PLUGIN_LIST "List of plugins to be statically linked with Editor and Player executables" "Sample.103_GamePlugin;Sample.113_InputLogger" URHO3D_SAMPLES "")
 option               (URHO3D_PARALLEL_BUILD     "MSVC-only: enable parallel builds. A bool or a number of processors to use." ON)
 
 option(URHO3D_PLAYER                            "Build player application"                              ${URHO3D_ENABLE_ALL})

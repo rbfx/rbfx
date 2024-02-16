@@ -54,9 +54,6 @@ void PlayerApplication::Setup()
 #else
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = fs->GetProgramDir() + ";" + fs->GetCurrentDir();
 #endif
-    engineParameters_[EP_PLUGINS] = ea::string::joined(PluginApplication::GetStaticPlugins(), ";");
-
-    PluginApplication::RegisterStaticPlugins();
 }
 
 void PlayerApplication::Start()

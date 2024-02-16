@@ -79,7 +79,7 @@ if (NOT URHO3D_NO_EDITOR_PLAYER_EXE)
 endif ()
 
 foreach (EDITOR_TARGET ${EDITOR_TARGETS})
-    link_static_plugins (${EDITOR_TARGET} "${URHO3D_PLUGIN_LIST}")
+    target_link_plugins (${EDITOR_TARGET} "${URHO3D_PLUGIN_LIST}")
 endforeach ()
 
 # SDK installation

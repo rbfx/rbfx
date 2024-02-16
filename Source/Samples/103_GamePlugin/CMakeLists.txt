@@ -21,11 +21,9 @@
 #
 
 file (GLOB SOURCE_FILES *.cpp *.h)
-add_library (103_GamePlugin ${SOURCE_FILES})
-target_link_libraries (103_GamePlugin PUBLIC Urho3D)
-define_static_plugin (103_GamePlugin "Sample.103_GamePlugin")
+add_plugin (Sample.103_GamePlugin "${SOURCE_FILES}")
 
-install(TARGETS 103_GamePlugin
+install(TARGETS Sample.103_GamePlugin
     RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
     LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
     ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
