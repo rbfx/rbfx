@@ -105,6 +105,8 @@ public:
     /// Return whether the application is started now.
     bool IsStarted() const { return pluginStack_ && pluginStack_->IsStarted(); }
 
+    /// Return whether the plugins are renamed on load.
+    bool ArePluginsRenamed() const { return renamePluginBinaries_; }
     /// Set loaded plugins. Order is preserved.
     void SetPluginsLoaded(const StringVector& plugins);
     /// Return whether the plugin is loaded.
@@ -157,6 +159,7 @@ private:
 
     /// Parameters
     /// @{
+    const bool renamePluginBinaries_{};
     unsigned reloadIntervalMs_{1000};
     unsigned reloadTimeoutMs_{10000};
     /// @}

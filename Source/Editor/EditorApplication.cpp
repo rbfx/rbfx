@@ -194,6 +194,7 @@ void EditorApplication::Setup()
     engineParameters_[EP_RESOURCE_ROOT_FILE] = "";
     engineParameters_[EP_WINDOW_MAXIMIZE] = true;
     engineParameters_[EP_ENGINE_AUTO_LOAD_SCRIPTS] = false;
+    engineParameters_[EP_RENAME_PLUGINS] = true;
 
     // TODO: Consider scaling fonts based on DPI. ImGuiConfigFlags_DpiEnableScaleFonts seems to create issues on Retina.
     unsigned imguiFlags = 0;
