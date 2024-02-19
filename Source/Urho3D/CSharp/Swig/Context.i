@@ -71,6 +71,10 @@
 %wrapper %{  }  // end of RegisterDirectorFactories%}
 
 %csexposefunc(wrapper, CreateObject, void*, %arg(Urho3D::Context* context, unsigned type)) %{
+#if __IOS__
+    [global::ObjCRuntime.MonoNativeFunctionWrapper]
+#endif
+    [global::System.Runtime.InteropServices.UnmanagedFunctionPointer(global::System.Runtime.InteropServices.CallingConvention.Cdecl)]
     internal delegate System.IntPtr CreateObjectDelegate(System.IntPtr context, uint type);
     private static System.IntPtr CreateObject(System.IntPtr context, uint type)
     {
