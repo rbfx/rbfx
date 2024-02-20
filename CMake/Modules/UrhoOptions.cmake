@@ -216,7 +216,8 @@ option                (URHO3D_MONOLITHIC_HEADER  "Create Urho3DAll.h which inclu
 cmake_dependent_option(URHO3D_MINIDUMPS          "Enable writing minidumps on crash"                     ${URHO3D_ENABLE_ALL} "MSVC;NOT UWP"                  OFF)
 cmake_dependent_option(URHO3D_PLUGINS            "Enable plugins"                                        ${URHO3D_ENABLE_ALL} "NOT EMSCRIPTEN;NOT UWP"               OFF)
 cmake_dependent_option(URHO3D_THREADING          "Enable multithreading"                                 ${URHO3D_ENABLE_ALL} "NOT EMSCRIPTEN"                       OFF)
-option                (URHO3D_WEBP               "WebP support enabled"                                  ${URHO3D_ENABLE_ALL}                                    )
+option                (URHO3D_WEBP               "Enable WebP support"                                   ${URHO3D_ENABLE_ALL}                                    )
+option                (URHO3D_STEAM_AUDIO        "Enable Steam Audio"                                    ${URHO3D_ENABLE_ALL}                                    )
 cmake_dependent_option(URHO3D_TESTING            "Enable unit tests"                                     OFF                  "NOT EMSCRIPTEN;NOT MOBILE;NOT UWP"    OFF)
 option                (URHO3D_PACKAGING          "Enable *.pak file creation"                            OFF                                                     )
 # Web
