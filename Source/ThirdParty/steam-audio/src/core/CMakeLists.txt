@@ -163,7 +163,7 @@ if (IPL_OS_WINDOWS AND IPL_CPU_X64)
     )
 
     set_target_properties(hrtf2sh PROPERTIES EXCLUDE_FROM_ALL TRUE)
-    target_include_directories(hrtf2sh PRIVATE ${CMAKE_HOME_DIRECTORY}/include ${CMAKE_CURRENT_SOURCE_DIR})
+    target_include_directories(hrtf2sh PRIVATE ${CMAKE_HOME_DIRECTORY}/include)
     target_compile_definitions(hrtf2sh PRIVATE IPL_DISABLE_SOFA)
     target_link_libraries(hrtf2sh PRIVATE ${FFT_LIBRARY})
 endif()
@@ -174,7 +174,7 @@ endif()
 #
 
 add_library(hrtf OBJECT hrtf.cpp)
-target_include_directories(hrtf PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(hrtf PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 
 
 #
@@ -447,6 +447,7 @@ add_library(core OBJECT
     api_advanced_simulation.cpp
     api_validation_layer.cpp
 )
+target_include_directories(core PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
 if (NOT PROFILING_TOOL)
     target_sources(core PRIVATE
@@ -577,9 +578,6 @@ if (STEAMAUDIO_BUILD_CSHARP_BINDINGS)
     set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/phonon_csharp_wrap.cxx PROPERTIES GENERATED TRUE)
 endif()
 
-# This is needed so we can include generated headers
-target_include_directories(core PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-
 if (IPL_OS_WINDOWS)
     target_link_libraries(core PUBLIC delayimp)
 elseif (IPL_OS_LINUX)
@@ -649,6 +647,7 @@ else()
 endif()
 
 target_link_libraries(phonon PRIVATE core hrtf)
+target_include_directories(phonon SYSTEM PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/phonon>)
 
 if (IPL_OS_MACOS)
     add_library(phonon_bundle MODULE pch.cpp)
@@ -939,5 +938,16 @@ if (NOT UNREAL_PLUGIN_DIR STREQUAL "")
         )
     endif()
 endif()
+
+
+#
+# TARGET EXPORTS
+#
+
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+    install(TARGETS phonon core hrtf EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
+endif ()
+install(DIRECTORY phonon DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR} FILES_MATCHING PATTERN *.h)
+
 
 include(CMakeListsInternal.txt OPTIONAL)
