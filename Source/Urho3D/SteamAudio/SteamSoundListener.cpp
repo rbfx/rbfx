@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../SteamAudio/SteamAudio.h"
 #include "../SteamAudio/SteamSoundListener.h"
 #include "../Core/Context.h"
 
@@ -31,9 +32,16 @@ namespace Urho3D
 SteamSoundListener::SteamSoundListener(Context* context) :
     Component(context)
 {
+    audio_ = GetSubsystem<SteamAudio>();
+
+    if (audio_)
+        audio_->SetListener(this);
 }
 
-SteamSoundListener::~SteamSoundListener() = default;
+SteamSoundListener::~SteamSoundListener() {
+    if (audio_ && audio_->GetListener() == this)
+        audio_->SetListener(nullptr);
+}
 
 void SteamSoundListener::RegisterObject(Context* context)
 {

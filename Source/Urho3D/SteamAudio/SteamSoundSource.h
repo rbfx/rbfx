@@ -24,8 +24,14 @@
 
 #include "../Scene/Component.h"
 
+#include <phonon.h>
+
 namespace Urho3D
 {
+
+class SteamAudio;
+class Sound;
+class SoundStream;
 
 /// %Sound source component with stereo position. A sound source needs to be created to a node to be considered "enabled" and be able to play, however that node does not need to belong to a scene.
 class URHO3D_API SteamSoundSource : public Component
@@ -40,6 +46,36 @@ public:
     /// Register object factory.
     /// @nobind
     static void RegisterObject(Context* context);
+
+    /// Play a sound.
+    void Play(Sound *sound);
+
+    /// Return whether is playing.
+    /// @property
+    bool IsPlaying() const;
+
+    /// Set playing attribute.
+    void SetPlayingAttr(bool playing);
+
+    /// Set sound attribute.
+    void SetSoundAttr(const ResourceRef& value);
+    /// Return sound attribute.
+    ResourceRef GetSoundAttr() const;
+
+    /// Generate sound.
+    IPLAudioBuffer *GenerateAudioBuffer();
+
+private:
+    /// Steam audio subsystem.
+    WeakPtr<SteamAudio> audio_;
+    /// Currently playing sound.
+    SharedPtr<Sound> sound_;
+    /// Is playback paused?
+    bool paused_;
+    /// Playback position.
+    unsigned frame_;
+    // Different audio buffers for processing
+    IPLAudioBuffer stageABuffer_, stageBBuffer_, stageCBuffer_, outputBuffer_;
 };
 
 }
