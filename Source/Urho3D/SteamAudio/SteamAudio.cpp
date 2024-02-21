@@ -228,7 +228,9 @@ void SDLSteamAudioCallback(void* userdata, Uint8 *stream, int len)
 
 void RegisterSteamAudioLibrary(Context* context)
 {
-
+    //SteamSound::RegisterObject(context);
+    SteamSoundSource::RegisterObject(context);
+    SteamSoundListener::RegisterObject(context);
 }
 
 }
