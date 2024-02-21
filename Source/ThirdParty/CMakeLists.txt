@@ -182,7 +182,7 @@ if (URHO3D_STEAM_AUDIO)
     set (STEAMAUDIO_BUILD_BENCHMARKS OFF)
     set (STEAMAUDIO_BUILD_DOCS OFF)
     set (BUILD_SHARED_LIBS OFF)
-    set (FFT_LIBRARY pffft)
+    set (FFT_LIBRARY "PFFFT")
     add_subdirectory (steam-audio)
 endif ()
 
