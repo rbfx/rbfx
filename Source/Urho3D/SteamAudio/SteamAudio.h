@@ -63,6 +63,13 @@ public:
     /// @property
     void SetListener(SteamSoundListener* listener);
 
+    /// Return phonon context.
+    IPLContext GetPhononContext() const { return phononContext_; }
+    /// Return phonon audio settings.
+    const IPLAudioSettings& GetAudioSettings() const { return audioSettings_; }
+    /// Return channel count.
+    /// @property
+    unsigned GetChannelCount() const { return channelCount_; }
     /// Return byte size of one frame.
     /// @property
     unsigned GetFrameSize() const { return audioSettings_.frameSize; }
@@ -91,7 +98,7 @@ public:
     Mutex& GetMutex() { return audioMutex_; }
 
     /// Mix sound sources into the buffer.
-    void MixOutput(void* dest, unsigned frames);
+    void MixOutput(float* dest, unsigned frames);
 
 private:
     /// Handle render update event.

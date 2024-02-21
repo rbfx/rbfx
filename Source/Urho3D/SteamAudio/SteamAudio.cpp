@@ -25,6 +25,7 @@
 #include "../SteamAudio/SteamAudio.h"
 #include "../SteamAudio/SteamSoundSource.h"
 #include "../SteamAudio/SteamSoundListener.h"
+#include "../Audio/Sound.h"
 #include "../IO/Log.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
@@ -192,10 +193,34 @@ void SteamAudio::RemoveSoundSource(SteamSoundSource *soundSource)
     }
 }
 
-void SteamAudio::MixOutput(void *dest, unsigned int frames)
+void SteamAudio::MixOutput(float* dest, unsigned int frames)
 {
-    while (frames--) {
-        //
+    frames = 1;//DEBUG
+    for (unsigned frame = 0; frame != frames; frame++) {
+        // Clear frame buffer
+        for (unsigned channel = 0; channel != phononFrameBuffer_.numChannels; channel++)
+            for (unsigned sample = 0; sample != phononFrameBuffer_.numSamples; sample++)
+                phononFrameBuffer_.data[channel][sample] = 0.0f;
+
+        // Iterate over all sound sources
+        for (auto source : soundSources_) {
+            // Skip disabled ones
+            if (!source->IsEnabled())
+                continue;
+
+            // Generate audio buffer
+            auto audioBuffer = source->GenerateAudioBuffer();
+
+            // Skip if none generated
+            if (!audioBuffer)
+                continue;
+
+            // Mix into frame buffer
+            iplAudioBufferMix(phononContext_, audioBuffer, &phononFrameBuffer_);
+        }
+
+        // Interleave into our buffer
+        iplAudioBufferInterleave(phononContext_, &phononFrameBuffer_, dest + frame*audioSettings_.frameSize);
     }
 }
 
@@ -221,14 +246,14 @@ void SDLSteamAudioCallback(void* userdata, Uint8 *stream, int len)
     auto* audio = static_cast<SteamAudio*>(userdata);
     {
         MutexLock Lock(audio->GetMutex());
-        audio->MixOutput(stream, len / audio->GetFrameSize());
+        audio->MixOutput(reinterpret_cast<float*>(stream), len / audio->GetFrameSize());
     }
 }
 
 
 void RegisterSteamAudioLibrary(Context* context)
 {
-    //SteamSound::RegisterObject(context);
+    Sound::RegisterObject(context);
     SteamSoundSource::RegisterObject(context);
     SteamSoundListener::RegisterObject(context);
 }

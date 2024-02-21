@@ -27,6 +27,8 @@
 namespace Urho3D
 {
 
+class SteamAudio;
+
 /// %Sound listener component.
 class URHO3D_API SteamSoundListener : public Component
 {
@@ -40,6 +42,10 @@ public:
     /// Register object factory.
     /// @nobind
     static void RegisterObject(Context* context);
+
+private:
+    /// Steam audio subsystem.
+    SteamAudio *audio_;
 };
 
 }
