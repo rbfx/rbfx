@@ -352,6 +352,7 @@ void PrefabReference::Inline(PrefabInlineFlags flags)
     // Other temporary components and children may be spawned by the components in prefab.
     if (flags.Test(PrefabInlineFlag::KeepOtherTemporary))
     {
+        // TODO: This branch is incorrect when node has other persistent components.
         const auto& components = node->GetComponents();
         const auto& children = node->GetChildren();
 
