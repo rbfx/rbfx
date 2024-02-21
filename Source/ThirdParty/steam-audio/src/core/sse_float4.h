@@ -168,7 +168,7 @@ namespace float4
     // Aligned load.
     inline float4_t load(const float* p)
     {
-        return _mm_load_ps(p);
+        return _mm_loadu_ps(p);
     }
 
     // Unaligned load.
@@ -187,7 +187,7 @@ namespace float4
     inline void store(float* p,
                       float4_t x)
     {
-        _mm_store_ps(p, x);
+        _mm_storeu_ps(p, x);
     }
 
     // Unaligned store.
