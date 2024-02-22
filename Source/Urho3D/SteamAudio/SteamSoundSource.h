@@ -63,15 +63,19 @@ public:
     ResourceRef GetSoundAttr() const;
 
     /// Generate sound.
-    IPLAudioBuffer *GenerateAudioBuffer();
+    IPLAudioBuffer *GenerateAudioBuffer(float gain);
 
 private:
     /// Steam audio subsystem.
     WeakPtr<SteamAudio> audio_;
     /// Currently playing sound.
     SharedPtr<Sound> sound_;
+    /// Audio gain.
+    float gain_;
     /// Is playback paused?
     bool paused_;
+    /// Will playback loop?
+    bool loop_;
     /// Playback position.
     unsigned frame_;
     // Different audio buffers for processing

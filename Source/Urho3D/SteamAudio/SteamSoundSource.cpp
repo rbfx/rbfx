@@ -40,7 +40,7 @@ namespace Urho3D
 {
 
 SteamSoundSource::SteamSoundSource(Context* context) :
-    Component(context), paused_(false), sound_(nullptr)
+    Component(context), gain_(1.0f), paused_(false), loop_(false), sound_(nullptr)
 {
     audio_ = GetSubsystem<SteamAudio>();
 
@@ -81,6 +81,8 @@ void SteamSoundSource::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Playing", IsPlaying, SetPlayingAttr, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Sound", GetSoundAttr, SetSoundAttr, ResourceRef, ResourceRef(Sound::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Gain", float, gain_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Loop", bool, loop_, false, AM_DEFAULT);
 }
 
 void SteamSoundSource::Play(Sound *sound)
@@ -95,7 +97,7 @@ void SteamSoundSource::Play(Sound *sound)
 bool SteamSoundSource::IsPlaying() const
 {
     const auto& audioSettings = audio_->GetAudioSettings();
-    return sound_ && !paused_ && frame_ < sound_->GetDataSize()/audioSettings.frameSize;
+    return sound_ && !paused_;
 }
 
 void SteamSoundSource::SetPlayingAttr(bool playing)
@@ -114,7 +116,7 @@ ResourceRef SteamSoundSource::GetSoundAttr() const
     return GetResourceRef(sound_, Sound::GetTypeStatic());
 }
 
-IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer()
+IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
 {
     // Return nothing if not playing
     if (!IsPlaying())
@@ -124,10 +126,31 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer()
     const auto phononContext = audio_->GetPhononContext();
     const auto& audioSettings = audio_->GetAudioSettings();
 
+    // Calculate size of one full interleaved frame
+    const auto fullFrameSize = audioSettings.frameSize*(sound_->IsStereo()?2:1);
+
+    // Stop or reset if file ends before end of frame
+    if ((frame_ + 1)*fullFrameSize*(sound_->IsSixteenBit()?2:1) > sound_->GetDataSize()) {
+        if (loop_)
+            frame_ = 0;
+        else
+            return nullptr;
+    }
+
     // Convert sound data to interleaved float buffer
-    ea::vector<float> rawInputBuffer(audioSettings.frameSize*audio_->GetChannelCount());
-    for (unsigned sample = 0; sample != audioSettings.frameSize; sample++)
-        rawInputBuffer[sample] = float(sound_->GetData()[frame_*audioSettings.frameSize + sample])/(sound_->IsSixteenBit()?32767.0f:128.f);
+    ea::vector<float> rawInputBuffer(fullFrameSize);
+    for (unsigned sample = 0; sample != fullFrameSize; sample++) {
+        // Convert to float32
+        if (sound_->IsSixteenBit()) {
+            int16_t integerData = reinterpret_cast<const int16_t*>(sound_->GetData().get())[frame_*fullFrameSize + sample];
+            rawInputBuffer[sample] = float(integerData)/32767.0f;
+        } else {
+            int8_t integerData = sound_->GetData()[frame_*fullFrameSize + sample];
+            rawInputBuffer[sample] = float(integerData)/128.f;
+        }
+        // Apply gain
+        rawInputBuffer[sample] *= gain_*gain;
+    }
 
     // Deinterleave sound data into stage A buffer
     iplAudioBufferDeinterleave(phononContext, rawInputBuffer.data(), &stageABuffer_);

@@ -27,6 +27,7 @@
 #include "../SteamAudio/SteamSoundListener.h"
 #include "../Audio/Sound.h"
 #include "../IO/Log.h"
+#include "../Scene/Node.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 
@@ -35,7 +36,7 @@
 namespace Urho3D
 {
 
-void SDLSteamAudioCallback(void* userdata, Uint8* stream, int len);
+void SDLSteamAudioCallback(void* userdata, Uint8* stream, int);
 
 SteamAudio::SteamAudio(Context* context) :
     Object(context)
@@ -193,35 +194,32 @@ void SteamAudio::RemoveSoundSource(SteamSoundSource *soundSource)
     }
 }
 
-void SteamAudio::MixOutput(float* dest, unsigned int frames)
+void SteamAudio::MixOutput(float* dest)
 {
-    frames = 1;//DEBUG
-    for (unsigned frame = 0; frame != frames; frame++) {
-        // Clear frame buffer
-        for (unsigned channel = 0; channel != phononFrameBuffer_.numChannels; channel++)
-            for (unsigned sample = 0; sample != phononFrameBuffer_.numSamples; sample++)
-                phononFrameBuffer_.data[channel][sample] = 0.0f;
+    // Clear frame buffer
+    for (unsigned channel = 0; channel != phononFrameBuffer_.numChannels; channel++)
+        for (unsigned sample = 0; sample != phononFrameBuffer_.numSamples; sample++)
+            phononFrameBuffer_.data[channel][sample] = 0.0f;
 
-        // Iterate over all sound sources
-        for (auto source : soundSources_) {
-            // Skip disabled ones
-            if (!source->IsEnabled())
-                continue;
+    // Iterate over all sound sources
+    for (auto source : soundSources_) {
+        // Skip disabled ones
+        if (!(source->IsEnabled() && source->GetNode()->IsEnabled()))
+            continue;
 
-            // Generate audio buffer
-            auto audioBuffer = source->GenerateAudioBuffer();
+        // Generate audio buffer
+        auto audioBuffer = source->GenerateAudioBuffer(masterGain_);
 
-            // Skip if none generated
-            if (!audioBuffer)
-                continue;
+        // Skip if none generated
+        if (!audioBuffer)
+            continue;
 
-            // Mix into frame buffer
-            iplAudioBufferMix(phononContext_, audioBuffer, &phononFrameBuffer_);
-        }
-
-        // Interleave into our buffer
-        iplAudioBufferInterleave(phononContext_, &phononFrameBuffer_, dest + frame*audioSettings_.frameSize);
+        // Mix into frame buffer
+        iplAudioBufferMix(phononContext_, audioBuffer, &phononFrameBuffer_);
     }
+
+    // Interleave into our buffer
+    iplAudioBufferInterleave(phononContext_, &phononFrameBuffer_, dest);
 }
 
 void SteamAudio::HandleRenderUpdate(StringHash eventType, VariantMap &eventData)
@@ -241,12 +239,12 @@ void SteamAudio::Release()
     iplContextRelease(&phononContext_);
 }
 
-void SDLSteamAudioCallback(void* userdata, Uint8 *stream, int len)
+void SDLSteamAudioCallback(void* userdata, Uint8 *stream, int)
 {
     auto* audio = static_cast<SteamAudio*>(userdata);
     {
         MutexLock Lock(audio->GetMutex());
-        audio->MixOutput(reinterpret_cast<float*>(stream), len / audio->GetFrameSize());
+        audio->MixOutput(reinterpret_cast<float*>(stream));
     }
 }
 

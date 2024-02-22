@@ -98,7 +98,7 @@ public:
     Mutex& GetMutex() { return audioMutex_; }
 
     /// Mix sound sources into the buffer.
-    void MixOutput(float* dest, unsigned frames);
+    void MixOutput(float* dest);
 
 private:
     /// Handle render update event.
