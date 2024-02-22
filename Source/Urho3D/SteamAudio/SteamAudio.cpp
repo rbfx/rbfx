@@ -207,7 +207,7 @@ void SteamAudio::RemoveSoundSource(SteamSoundSource *soundSource)
 void SteamAudio::MixOutput(float* dest)
 {
     // Stop if no listener
-    if (!listener_)
+    if (!GetListener())
         return;
 
     // Clear frame buffer
