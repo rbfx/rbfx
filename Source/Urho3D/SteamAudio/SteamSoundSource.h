@@ -89,6 +89,8 @@ private:
     bool binaural_;
     /// Enable distance attenuation.
     bool distanceAttenuation_;
+    /// Enable air absorption.
+    bool airAbsorption_;
     /// Binaural spatial blend.
     float binauralSpatialBlend_;
     /// Playback position.
