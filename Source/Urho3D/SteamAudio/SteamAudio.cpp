@@ -104,6 +104,9 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
     phononFrameBuffer_ = IPLAudioBuffer {};
     iplAudioBufferAllocate(phononContext_, channelCount_, audioSettings_.frameSize, &phononFrameBuffer_);
 
+    // Create the buffer pool
+    audioBufferPool_ = new SteamAudioBufferPool(this);
+
     // Set up SDL
     SDL_AudioSpec spec {
         .freq = audioSettings_.samplingRate,
@@ -158,6 +161,7 @@ void SteamAudio::SetMasterGain(float gain)
 
 void SteamAudio::SetListener(SteamSoundListener *listener)
 {
+    MutexLock Lock(audioMutex_);
     listener_ = listener;
 }
 
@@ -196,6 +200,10 @@ void SteamAudio::RemoveSoundSource(SteamSoundSource *soundSource)
 
 void SteamAudio::MixOutput(float* dest)
 {
+    // Stop if no listener
+    if (!listener_)
+        return;
+
     // Clear frame buffer
     for (unsigned channel = 0; channel != phononFrameBuffer_.numChannels; channel++)
         for (unsigned sample = 0; sample != phononFrameBuffer_.numSamples; sample++)
@@ -234,6 +242,7 @@ void SteamAudio::Release()
     SDL_CloseAudio();
     MutexLock Lock(audioMutex_);
     iplAudioBufferFree(phononContext_, &phononFrameBuffer_);
+    delete audioBufferPool_;
     finalFrameBuffer_.clear();
     iplHRTFRelease(&hrtf_);
     iplContextRelease(&phononContext_);
@@ -246,6 +255,46 @@ void SDLSteamAudioCallback(void* userdata, Uint8 *stream, int)
         MutexLock Lock(audio->GetMutex());
         audio->MixOutput(reinterpret_cast<float*>(stream));
     }
+}
+
+
+SteamAudioBufferPool::SteamAudioBufferPool(SteamAudio *audio) : audio_(audio), bufferIdx_(0)
+{
+    const auto phononContext = audio_->GetPhononContext();
+    const auto& audioSettings = audio_->GetAudioSettings();
+    const auto channelCount = audio_->GetChannelCount();
+    for (auto& buffer : buffers_)
+        iplAudioBufferAllocate(phononContext, channelCount, audioSettings.frameSize, &buffer);
+}
+
+SteamAudioBufferPool::~SteamAudioBufferPool()
+{
+    const auto phononContext = audio_->GetPhononContext();
+    for (auto& buffer : buffers_)
+        iplAudioBufferFree(phononContext, &buffer);
+}
+
+IPLAudioBuffer *SteamAudioBufferPool::GetCurrentBuffer()
+{
+    return &buffers_[bufferIdx_];
+}
+
+IPLAudioBuffer *SteamAudioBufferPool::GetNextBuffer()
+{
+    return &buffers_[GetNextBufferIndex()];
+}
+
+void SteamAudioBufferPool::SwitchToNextBuffer()
+{
+    bufferIdx_ = GetNextBufferIndex();
+}
+
+unsigned int SteamAudioBufferPool::GetNextBufferIndex() const
+{
+    auto bufferIdx = bufferIdx_;
+    if (++bufferIdx == buffers_.size())
+        bufferIdx = 0;
+    return bufferIdx;
 }
 
 

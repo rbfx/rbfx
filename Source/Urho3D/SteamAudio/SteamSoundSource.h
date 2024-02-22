@@ -66,20 +66,35 @@ public:
     IPLAudioBuffer *GenerateAudioBuffer(float gain);
 
 private:
+    /// Recreate effects
+    void UpdateEffects();
+    /// Destroy effects
+    void DestroyEffects();
+
     /// Steam audio subsystem.
     WeakPtr<SteamAudio> audio_;
     /// Currently playing sound.
     SharedPtr<Sound> sound_;
+    /// Binaural effect.
+    IPLBinauralEffect binauralEffect_;
+    /// Direct effect.
+    IPLDirectEffect directEffect_;
     /// Audio gain.
     float gain_;
     /// Is playback paused?
     bool paused_;
     /// Will playback loop?
     bool loop_;
+    /// Enable binaural effect?
+    bool binaural_;
+    /// Enable distance attenuation.
+    bool distanceAttenuation_;
+    /// Binaural spatial blend.
+    float binauralSpatialBlend_;
     /// Playback position.
     unsigned frame_;
-    // Different audio buffers for processing
-    IPLAudioBuffer stageABuffer_, stageBBuffer_, stageCBuffer_, outputBuffer_;
+    // Are the effects loaded?
+    bool effectsLoaded_;
 };
 
 }

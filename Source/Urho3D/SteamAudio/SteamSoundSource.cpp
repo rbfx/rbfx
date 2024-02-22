@@ -24,6 +24,7 @@
 
 #include "../SteamAudio/SteamAudio.h"
 #include "../SteamAudio/SteamSoundSource.h"
+#include "../SteamAudio/SteamSoundListener.h"
 #include "../Audio/Sound.h"
 #include "../Audio/SoundStream.h"
 #include "../Audio/OggVorbisSoundStream.h"
@@ -40,38 +41,20 @@ namespace Urho3D
 {
 
 SteamSoundSource::SteamSoundSource(Context* context) :
-    Component(context), gain_(1.0f), paused_(false), loop_(false), sound_(nullptr)
+    Component(context), sound_(nullptr), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), binauralSpatialBlend_(1.0f), effectsLoaded_(false)
 {
     audio_ = GetSubsystem<SteamAudio>();
 
-    if (audio_) {
-        // Create buffers
-        const auto phononContext = audio_->GetPhononContext();
-        const auto& audioSettings = audio_->GetAudioSettings();
-        const auto channelCount = audio_->GetChannelCount();
-        iplAudioBufferAllocate(phononContext, channelCount, audioSettings.frameSize, &stageABuffer_);
-        iplAudioBufferAllocate(phononContext, channelCount, audioSettings.frameSize, &stageBBuffer_);
-        iplAudioBufferAllocate(phononContext, channelCount, audioSettings.frameSize, &stageCBuffer_);
-        iplAudioBufferAllocate(phononContext, channelCount, audioSettings.frameSize, &outputBuffer_);
-
+    if (audio_)
         // Add this sound source
         audio_->AddSoundSource(this);
-    }
 }
 
 SteamSoundSource::~SteamSoundSource()
 {
-    if (audio_) {
+    if (audio_)
         // Remove this sound source
         audio_->RemoveSoundSource(this);
-
-        // Delete buffers
-        const auto phononContext = audio_->GetPhononContext();
-        iplAudioBufferFree(phononContext, &stageABuffer_);
-        iplAudioBufferFree(phononContext, &stageBBuffer_);
-        iplAudioBufferFree(phononContext, &stageCBuffer_);
-        iplAudioBufferFree(phononContext, &outputBuffer_);
-    }
 }
 
 void SteamSoundSource::RegisterObject(Context* context)
@@ -83,6 +66,9 @@ void SteamSoundSource::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Sound", GetSoundAttr, SetSoundAttr, ResourceRef, ResourceRef(Sound::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ATTRIBUTE("Gain", float, gain_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Loop", bool, loop_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Binaural", bool, binaural_, UpdateEffects, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Binaural Spacial Blend", float, binauralSpatialBlend_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Distance Attenuation", bool, distanceAttenuation_, UpdateEffects, false, AM_DEFAULT);
 }
 
 void SteamSoundSource::Play(Sound *sound)
@@ -92,6 +78,9 @@ void SteamSoundSource::Play(Sound *sound)
 
     // Set sound
     sound_ = sound;
+
+    // Update effects
+    UpdateEffects();
 }
 
 bool SteamSoundSource::IsPlaying() const
@@ -124,7 +113,9 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
 
     // Get phonon context and audio settings
     const auto phononContext = audio_->GetPhononContext();
+    const auto hrtf = audio_->GetHRTF();
     const auto& audioSettings = audio_->GetAudioSettings();
+    auto& pool = audio_->GetAudioBufferPool();
 
     // Calculate size of one full interleaved frame
     const auto fullFrameSize = audioSettings.frameSize*(sound_->IsStereo()?2:1);
@@ -152,14 +143,92 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
         rawInputBuffer[sample] *= gain_*gain;
     }
 
-    // Deinterleave sound data into stage A buffer
-    iplAudioBufferDeinterleave(phononContext, rawInputBuffer.data(), &stageABuffer_);
+    // Get listener node
+    auto listener = audio_->GetListener()->GetNode();
+
+    // Get positions
+    const auto lPos = listener->GetWorldPosition();
+    const auto lDir = listener->GetWorldDirection();
+    const auto lUp = listener->GetWorldUp();
+    const auto sPos = GetNode()->GetWorldPosition();
+
+    // Deinterleave sound data into buffer
+    iplAudioBufferDeinterleave(phononContext, rawInputBuffer.data(), pool.GetCurrentBuffer());
+
+    // Apply binaural effect
+    if (binaural_) {
+        IPLBinauralEffectParams binauralEffectParams {
+            .interpolation = IPL_HRTFINTERPOLATION_BILINEAR,
+            .spatialBlend = binauralSpatialBlend_,
+            .hrtf = hrtf
+        };
+        binauralEffectParams.direction = iplCalculateRelativeDirection(phononContext, {sPos.x_, sPos.y_, sPos.z_}, {lPos.x_, lPos.y_, lPos.z_}, {lDir.x_, lDir.y_, lDir.z_}, {lUp.x_, lUp.y_, lUp.z_});
+        binauralEffectParams.direction.x = -binauralEffectParams.direction.x; // Why is this required?
+        iplBinauralEffectApply(binauralEffect_, &binauralEffectParams, pool.GetCurrentBuffer(), pool.GetNextBuffer());
+        pool.SwitchToNextBuffer();
+    }
+
+    // Create direct effect properties
+    IPLDirectEffectParams directEffectParams {};
+
+    // Apply distance attenuation
+    if (distanceAttenuation_) {
+        IPLDistanceAttenuationModel distanceAttenuationModel {
+            .type = IPL_DISTANCEATTENUATIONTYPE_DEFAULT
+        };
+
+        directEffectParams.flags = static_cast<IPLDirectEffectFlags>(directEffectParams.flags | IPL_DIRECTEFFECTFLAGS_APPLYDISTANCEATTENUATION);
+        directEffectParams.distanceAttenuation = iplDistanceAttenuationCalculate(phononContext, {sPos.x_, sPos.y_, sPos.z_}, {lPos.x_, lPos.y_, lPos.z_}, &distanceAttenuationModel);
+    }
+
+    // Apply direct effect
+    if (directEffectParams.flags) {
+        iplDirectEffectApply(directEffect_, &directEffectParams, pool.GetCurrentBuffer(), pool.GetNextBuffer());
+        pool.SwitchToNextBuffer();
+    }
 
     // Increment to next frame
     frame_++;
 
     // Don't process any further for now, just return that buffer as is...
-    return &stageABuffer_;
+    return pool.GetCurrentBuffer();
+}
+
+void SteamSoundSource::UpdateEffects()
+{
+    DestroyEffects();
+
+    if (!sound_)
+        return;
+
+    const auto phononContext = audio_->GetPhononContext();
+    const auto& audioSettings = audio_->GetAudioSettings();
+
+    if (binauralEffect_) {
+        // Create binaural effect
+        IPLBinauralEffectSettings binauralEffectSettings {
+            .hrtf = audio_->GetHRTF()
+        };
+        iplBinauralEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &binauralEffectSettings, &binauralEffect_);
+    }
+    if (distanceAttenuation_) {
+        // Create direct effect
+        IPLDirectEffectSettings directEffectSettings {
+            .numChannels = sound_->IsStereo()?2:1
+        };
+        iplDirectEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &directEffectSettings, &directEffect_);
+    }
+}
+
+void SteamSoundSource::DestroyEffects()
+{
+    if (!effectsLoaded_)
+        return;
+
+    if (binauralEffect_)
+        iplBinauralEffectRelease(&binauralEffect_);
+    if (directEffect_)
+        iplDirectEffectRelease(&directEffect_);
 }
 
 }
