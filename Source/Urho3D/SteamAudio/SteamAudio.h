@@ -30,8 +30,10 @@
 namespace Urho3D
 {
 
+class SteamAudioBufferPool;
 class SteamSoundListener;
 class SteamSoundSource;
+class SteamSoundBufferPool;
 
 /// %Audio subsystem.
 class URHO3D_API SteamAudio : public Object
@@ -65,8 +67,12 @@ public:
 
     /// Return phonon context.
     IPLContext GetPhononContext() const { return phononContext_; }
+    /// Return HRTF
+    IPLHRTF GetHRTF() const { return hrtf_; }
     /// Return phonon audio settings.
     const IPLAudioSettings& GetAudioSettings() const { return audioSettings_; }
+    /// Return audio buffer pool.
+    SteamAudioBufferPool& GetAudioBufferPool() { return *audioBufferPool_; }
     /// Return channel count.
     /// @property
     unsigned GetChannelCount() const { return channelCount_; }
@@ -126,6 +132,30 @@ private:
     ea::vector<SteamSoundSource*> soundSources_;
     /// Sound listener.
     WeakPtr<SteamSoundListener> listener_;
+    /// Audio buffer pool.
+    SteamAudioBufferPool *audioBufferPool_;
+};
+
+/// %Audio buffer pool.
+class SteamAudioBufferPool {
+    SteamAudio *audio_;
+
+public:
+    SteamAudioBufferPool(SteamAudio* audio);
+    ~SteamAudioBufferPool();
+
+    IPLAudioBuffer *GetCurrentBuffer();
+    IPLAudioBuffer *GetNextBuffer();
+    void SwitchToNextBuffer();
+
+private:
+    /// Returns next buffer index.
+    unsigned GetNextBufferIndex() const;
+
+    /// Current buffer index.
+    unsigned bufferIdx_;
+    /// Different audio buffers for processing.
+    ea::array<IPLAudioBuffer, 4> buffers_;
 };
 
 /// Register Audio library objects.

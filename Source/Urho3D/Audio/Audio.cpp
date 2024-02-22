@@ -570,6 +570,10 @@ SharedPtr<Microphone> Audio::CreateMicrophone(const ea::string& name, bool forSp
 
 void Audio::CloseMicrophoneForLoss(unsigned which)
 {
+#ifdef URHO3D_STEAM_AUDIO
+    return;
+#endif
+
     for (auto m : microphones_)
     {
         auto mic = m.Lock();
