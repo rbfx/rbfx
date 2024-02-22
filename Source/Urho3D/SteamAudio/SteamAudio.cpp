@@ -182,7 +182,7 @@ SpeakerMode SteamAudio::GetSpeakerMode() const
 }
 
 SteamSoundListener *SteamAudio::GetListener() const {
-    if (!listener_->IsEnabledEffective())
+    if (!(listener_ && listener_->IsEnabledEffective()))
         return nullptr;
     return listener_;
 }
