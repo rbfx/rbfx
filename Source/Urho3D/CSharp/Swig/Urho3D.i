@@ -672,13 +672,7 @@ public:
 %ignore Urho3D::Drawable::drawDistance_;
 %ignore Urho3D::Drawable::shadowDistance_;
 %ignore Urho3D::Drawable::sortValue_;
-%ignore Urho3D::Drawable::minZ_;
-%ignore Urho3D::Drawable::maxZ_;
 %ignore Urho3D::Drawable::lodBias_;
-%ignore Urho3D::Drawable::maxLights_;
-%ignore Urho3D::Drawable::firstLight_;
-%ignore Urho3D::Drawable::lights_;
-%ignore Urho3D::Drawable::vertexLights_;
 %ignore Urho3D::GlobalIllumination::SampleAmbientSH;
 %ignore Urho3D::AnimationState::CalculateModelTracks;
 %ignore Urho3D::AnimationState::CalculateNodeTracks;

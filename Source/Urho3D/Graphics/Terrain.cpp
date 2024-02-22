@@ -102,7 +102,6 @@ Terrain::Terrain(Context* context) :
     drawDistance_(0.0f),
     shadowDistance_(0.0f),
     lodBias_(1.0f),
-    maxLights_(0),
     northID_(0),
     southID_(0),
     westID_(0),
@@ -139,7 +138,6 @@ void Terrain::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Draw Distance", GetDrawDistance, SetDrawDistance, float, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Shadow Distance", GetShadowDistance, SetShadowDistance, float, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("LOD Bias", GetLodBias, SetLodBias, float, 1.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Max Lights", GetMaxLights, SetMaxLights, unsigned, 0, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("View Mask", GetViewMask, SetViewMask, unsigned, DEFAULT_VIEWMASK, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Light Mask", GetLightMask, SetLightMask, unsigned, DEFAULT_LIGHTMASK, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Shadow Mask", GetShadowMask, SetShadowMask, unsigned, DEFAULT_SHADOWMASK, AM_DEFAULT);
@@ -434,16 +432,6 @@ void Terrain::SetZoneMask(unsigned mask)
     {
         if (patches_[i])
             patches_[i]->SetZoneMask(mask);
-    }
-}
-
-void Terrain::SetMaxLights(unsigned num)
-{
-    maxLights_ = num;
-    for (unsigned i = 0; i < patches_.size(); ++i)
-    {
-        if (patches_[i])
-            patches_[i]->SetMaxLights(num);
     }
 }
 
@@ -1078,7 +1066,6 @@ void Terrain::CreateGeometry()
                         patch->SetLightMask(lightMask_);
                         patch->SetShadowMask(shadowMask_);
                         patch->SetZoneMask(zoneMask_);
-                        patch->SetMaxLights(maxLights_);
                         patch->SetCastShadows(castShadows_);
                         patch->SetOccluder(occluder_);
                         patch->SetOccludee(occludee_);

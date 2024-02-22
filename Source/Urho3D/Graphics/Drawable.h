@@ -266,9 +266,6 @@ public:
     /// Set zone mask. Is and'ed with zone's zone mask to see if the object should belong to the zone.
     /// @property
     void SetZoneMask(unsigned mask);
-    /// Set maximum number of per-pixel lights. Default 0 is unlimited.
-    /// @property
-    void SetMaxLights(unsigned num);
     /// Set shadowcaster flag.
     /// @property
     void SetCastShadows(bool enable);
@@ -324,10 +321,6 @@ public:
     /// @property
     unsigned GetZoneMask() const { return zoneMask_; }
 
-    /// Return maximum number of per-pixel lights.
-    /// @property
-    unsigned GetMaxLights() const { return maxLights_; }
-
     /// Return shadowcaster flag.
     /// @property
     bool GetCastShadows() const { return castShadows_; }
@@ -360,24 +353,10 @@ public:
     /// Set sorting value.
     void SetSortValue(float value);
 
-    /// Set view-space depth bounds.
-    void SetMinMaxZ(float minZ, float maxZ)
-    {
-        minZ_ = minZ;
-        maxZ_ = maxZ;
-    }
-
     /// Mark in view. Also clear the light list.
     void MarkInView(const FrameInfo& frame);
     /// Mark in view without specifying a camera. Used for shadow casters.
     void MarkInView(unsigned frameNumber);
-    /// Sort and limit per-pixel lights to maximum allowed. Convert extra lights into vertex lights.
-    void LimitLights();
-    /// Sort and limit per-vertex lights to maximum allowed.
-    void LimitVertexLights(bool removeConvertedLights);
-
-    /// Set base pass flag for a batch.
-    void SetBasePass(unsigned batchIndex) { basePassFlags_ |= (1u << batchIndex); }
 
     /// Return octree octant.
     Octant* GetOctant() const { return octant_; }
@@ -407,24 +386,6 @@ public:
     /// Return whether is in view on the current frame. Called by View.
     bool IsInView(const FrameInfo& frame, bool anyCamera = false) const;
 
-    /// Return whether has a base pass.
-    bool HasBasePass(unsigned batchIndex) const { return (basePassFlags_ & (1u << batchIndex)) != 0; }
-
-    /// Return per-pixel lights.
-    const ea::vector<Light*>& GetLights() const { return lights_; }
-
-    /// Return per-vertex lights.
-    const ea::vector<Light*>& GetVertexLights() const { return vertexLights_; }
-
-    /// Return the first added per-pixel light.
-    Light* GetFirstLight() const { return firstLight_; }
-
-    /// Return the minimum view-space depth.
-    float GetMinZ() const { return minZ_; }
-
-    /// Return the maximum view-space depth.
-    float GetMaxZ() const { return maxZ_; }
-
     /// Return mutable light probe tetrahedron hint.
     unsigned& GetMutableLightProbeTetrahedronHint() { return lightProbeTetrahedronHint_; }
 
@@ -439,24 +400,6 @@ public:
 
     /// Return combined shadow masks of Drawable and its currently cached Zone.
     unsigned GetShadowMaskInZone() const;
-
-    /// Add a per-pixel light affecting the object this frame.
-    void AddLight(Light* light)
-    {
-        if (!firstLight_)
-            firstLight_ = light;
-
-        // Need to store into the light list only if the per-pixel lights are being limited
-        // Otherwise recording the first light is enough
-        if (maxLights_)
-            lights_.push_back(light);
-    }
-
-    /// Add a per-vertex light affecting the object this frame.
-    void AddVertexLight(Light* light)
-    {
-        vertexLights_.push_back(light);
-    }
 
 protected:
     /// Recalculate hash. Shall be save to call from multiple threads as long as the object is not changing.
@@ -540,26 +483,12 @@ protected:
     float shadowDistance_;
     /// Current sort value.
     float sortValue_;
-    /// Current minimum view space depth.
-    float minZ_;
-    /// Current maximum view space depth.
-    float maxZ_;
     /// LOD bias.
     float lodBias_;
     /// Light probe tetrahedron hint.
     unsigned lightProbeTetrahedronHint_{ M_MAX_UNSIGNED };
-    /// Base pass flags, bit per batch.
-    unsigned basePassFlags_;
-    /// Maximum per-pixel lights.
-    unsigned maxLights_;
     /// List of cameras from which is seen on the current frame.
     ea::vector<Camera*> viewCameras_;
-    /// First per-pixel light added this frame.
-    Light* firstLight_;
-    /// Per-pixel lights affecting this drawable.
-    ea::vector<Light*> lights_;
-    /// Per-vertex lights affecting this drawable.
-    ea::vector<Light*> vertexLights_;
 };
 
 inline bool CompareDrawables(const Drawable* lhs, const Drawable* rhs)
