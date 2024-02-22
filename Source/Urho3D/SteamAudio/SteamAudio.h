@@ -90,7 +90,7 @@ public:
 
     /// Return active sound listener.
     /// @property
-    SteamSoundListener* GetListener() const { return listener_; }
+    SteamSoundListener* GetListener() const;
 
     /// Return all sound sources.
     const ea::vector<SteamSoundSource*>& GetSoundSources() const { return soundSources_; }
