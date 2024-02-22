@@ -41,7 +41,7 @@ namespace Urho3D
 {
 
 SteamSoundSource::SteamSoundSource(Context* context) :
-    Component(context), sound_(nullptr), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), binauralSpatialBlend_(1.0f), effectsLoaded_(false)
+    Component(context), sound_(nullptr), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), airAbsorption_(false), binauralSpatialBlend_(1.0f), effectsLoaded_(false)
 {
     audio_ = GetSubsystem<SteamAudio>();
 
@@ -69,6 +69,7 @@ void SteamSoundSource::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Binaural", bool, binaural_, UpdateEffects, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Binaural Spacial Blend", float, binauralSpatialBlend_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Distance Attenuation", bool, distanceAttenuation_, UpdateEffects, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Air absorption", bool, airAbsorption_, UpdateEffects, false, AM_DEFAULT);
 }
 
 void SteamSoundSource::Play(Sound *sound)
@@ -151,6 +152,8 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
     const auto lDir = listener->GetWorldDirection();
     const auto lUp = listener->GetWorldUp();
     const auto sPos = GetNode()->GetWorldPosition();
+    const IPLVector3 psPos {sPos.x_, sPos.y_, sPos.z_};
+    const IPLVector3 plPos {lPos.x_, lPos.y_, lPos.z_};
 
     // Deinterleave sound data into buffer
     iplAudioBufferDeinterleave(phononContext, rawInputBuffer.data(), pool.GetCurrentBuffer());
@@ -162,7 +165,7 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
             .spatialBlend = binauralSpatialBlend_,
             .hrtf = hrtf
         };
-        binauralEffectParams.direction = iplCalculateRelativeDirection(phononContext, {sPos.x_, sPos.y_, sPos.z_}, {lPos.x_, lPos.y_, lPos.z_}, {lDir.x_, lDir.y_, lDir.z_}, {lUp.x_, lUp.y_, lUp.z_});
+        binauralEffectParams.direction = iplCalculateRelativeDirection(phononContext, psPos, plPos, {lDir.x_, lDir.y_, lDir.z_}, {lUp.x_, lUp.y_, lUp.z_});
         binauralEffectParams.direction.x = -binauralEffectParams.direction.x; // Why is this required?
         iplBinauralEffectApply(binauralEffect_, &binauralEffectParams, pool.GetCurrentBuffer(), pool.GetNextBuffer());
         pool.SwitchToNextBuffer();
@@ -178,7 +181,17 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
         };
 
         directEffectParams.flags = static_cast<IPLDirectEffectFlags>(directEffectParams.flags | IPL_DIRECTEFFECTFLAGS_APPLYDISTANCEATTENUATION);
-        directEffectParams.distanceAttenuation = iplDistanceAttenuationCalculate(phononContext, {sPos.x_, sPos.y_, sPos.z_}, {lPos.x_, lPos.y_, lPos.z_}, &distanceAttenuationModel);
+        directEffectParams.distanceAttenuation = iplDistanceAttenuationCalculate(phononContext, psPos, plPos, &distanceAttenuationModel);
+    }
+
+    // Apply air absorption
+    if (airAbsorption_) {
+        IPLAirAbsorptionModel airAbsorptionModel {
+            .type = IPL_AIRABSORPTIONTYPE_DEFAULT
+        };
+
+        directEffectParams.flags = static_cast<IPLDirectEffectFlags>(directEffectParams.flags | IPL_DIRECTEFFECTFLAGS_APPLYAIRABSORPTION);
+        iplAirAbsorptionCalculate(phononContext, psPos, plPos, &airAbsorptionModel, directEffectParams.airAbsorption);
     }
 
     // Apply direct effect
@@ -211,7 +224,7 @@ void SteamSoundSource::UpdateEffects()
         };
         iplBinauralEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &binauralEffectSettings, &binauralEffect_);
     }
-    if (distanceAttenuation_) {
+    if (airAbsorption_ || distanceAttenuation_) {
         // Create direct effect
         IPLDirectEffectSettings directEffectSettings {
             .numChannels = sound_->IsStereo()?2:1
