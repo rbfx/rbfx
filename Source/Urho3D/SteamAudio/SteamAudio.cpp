@@ -39,7 +39,7 @@ namespace Urho3D
 void SDLSteamAudioCallback(void* userdata, Uint8* stream, int);
 
 SteamAudio::SteamAudio(Context* context) :
-    Object(context)
+    Object(context), audioBufferPool_(nullptr)
 {
     context_->RequireSDL(SDL_INIT_AUDIO);
 
@@ -181,6 +181,12 @@ SpeakerMode SteamAudio::GetSpeakerMode() const
     }
 }
 
+SteamSoundListener *SteamAudio::GetListener() const {
+    if (!listener_->IsEnabledEffective())
+        return nullptr;
+    return listener_;
+}
+
 void SteamAudio::AddSoundSource(SteamSoundSource *soundSource)
 {
     MutexLock Lock(audioMutex_);
@@ -212,7 +218,7 @@ void SteamAudio::MixOutput(float* dest)
     // Iterate over all sound sources
     for (auto source : soundSources_) {
         // Skip disabled ones
-        if (!(source->IsEnabled() && source->GetNode()->IsEnabled()))
+        if (!source->IsEnabledEffective())
             continue;
 
         // Generate audio buffer
@@ -242,7 +248,7 @@ void SteamAudio::Release()
     SDL_CloseAudio();
     MutexLock Lock(audioMutex_);
     iplAudioBufferFree(phononContext_, &phononFrameBuffer_);
-    delete audioBufferPool_;
+    delete ea::exchange(audioBufferPool_, nullptr);
     finalFrameBuffer_.clear();
     iplHRTFRelease(&hrtf_);
     iplContextRelease(&phononContext_);
