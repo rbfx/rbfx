@@ -41,7 +41,7 @@ namespace Urho3D
 {
 
 SteamSoundSource::SteamSoundSource(Context* context) :
-    Component(context), sound_(nullptr), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), airAbsorption_(false), binauralSpatialBlend_(1.0f), effectsLoaded_(false)
+    Component(context), sound_(nullptr), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), airAbsorption_(false), binauralSpatialBlend_(1.0f), binauralBilinearInterpolation_(false), effectsLoaded_(false)
 {
     audio_ = GetSubsystem<SteamAudio>();
 
@@ -67,6 +67,7 @@ void SteamSoundSource::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Gain", float, gain_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Loop", bool, loop_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Binaural", bool, binaural_, UpdateEffects, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Binaural Bilinear Interpolation", bool, binauralBilinearInterpolation_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Binaural Spacial Blend", float, binauralSpatialBlend_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Distance Attenuation", bool, distanceAttenuation_, UpdateEffects, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Air absorption", bool, airAbsorption_, UpdateEffects, false, AM_DEFAULT);
@@ -161,7 +162,7 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
     // Apply binaural effect
     if (binaural_) {
         IPLBinauralEffectParams binauralEffectParams {
-            .interpolation = IPL_HRTFINTERPOLATION_BILINEAR,
+            .interpolation = binauralBilinearInterpolation_?IPL_HRTFINTERPOLATION_BILINEAR:IPL_HRTFINTERPOLATION_NEAREST,
             .spatialBlend = binauralSpatialBlend_,
             .hrtf = hrtf
         };
