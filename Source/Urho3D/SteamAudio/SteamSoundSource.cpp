@@ -67,8 +67,8 @@ void SteamSoundSource::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Gain", float, gain_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Loop", bool, loop_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Binaural", bool, binaural_, UpdateEffects, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Binaural Bilinear Interpolation", bool, binauralBilinearInterpolation_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Binaural Spacial Blend", float, binauralSpatialBlend_, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Binaural Bilinear Interpolation", bool, binauralBilinearInterpolation_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Distance Attenuation", bool, distanceAttenuation_, UpdateEffects, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Air absorption", bool, airAbsorption_, UpdateEffects, false, AM_DEFAULT);
 }
