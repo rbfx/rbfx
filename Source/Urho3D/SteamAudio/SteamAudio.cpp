@@ -24,6 +24,7 @@
 
 #include "../SteamAudio/SteamAudio.h"
 #include "../SteamAudio/SteamSoundSource.h"
+#include "../SteamAudio/SteamSoundMesh.h"
 #include "../SteamAudio/SteamSoundListener.h"
 #include "../Audio/Sound.h"
 #include "../IO/Log.h"
@@ -204,6 +205,23 @@ void SteamAudio::RemoveSoundSource(SteamSoundSource *soundSource)
     }
 }
 
+void SteamAudio::AddSoundMesh(SteamSoundMesh *soundMesh)
+{
+    MutexLock Lock(audioMutex_);
+    soundMeshes_.push_back(soundMesh);
+}
+
+void SteamAudio::RemoveSoundMesh(SteamSoundMesh *soundMesh)
+{
+    MutexLock Lock(audioMutex_);
+    auto i = soundMeshes_.find(soundMesh);
+    if (i != soundMeshes_.end())
+    {
+        MutexLock lock(audioMutex_);
+        soundMeshes_.erase(i);
+    }
+}
+
 void SteamAudio::MixOutput(float* dest)
 {
     // Stop if no listener
@@ -309,8 +327,9 @@ unsigned int SteamAudioBufferPool::GetNextBufferIndex() const
 void RegisterSteamAudioLibrary(Context* context)
 {
     Sound::RegisterObject(context);
-    SteamSoundSource::RegisterObject(context);
     SteamSoundListener::RegisterObject(context);
+    SteamSoundSource::RegisterObject(context);
+    SteamSoundMesh::RegisterObject(context);
 }
 
 }
