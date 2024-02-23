@@ -207,8 +207,10 @@ void SteamAudio::RemoveSoundSource(SteamSoundSource *soundSource)
 void SteamAudio::MixOutput(float* dest)
 {
     // Stop if no listener
-    if (!GetListener())
+    if (!GetListener()) {
+        memset(dest, 0, audioSettings_.frameSize*channelCount_*sizeof(float));
         return;
+    }
 
     // Clear frame buffer
     for (unsigned channel = 0; channel != phononFrameBuffer_.numChannels; channel++)
