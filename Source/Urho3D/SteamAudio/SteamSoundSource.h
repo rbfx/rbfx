@@ -94,7 +94,7 @@ private:
     /// Binaural spatial blend.
     float binauralSpatialBlend_;
     /// Bilinear interpolation for binaural effect.
-    float binauralBilinearInterpolation_;
+    bool binauralBilinearInterpolation_;
     /// Playback position.
     unsigned frame_;
     // Are the effects loaded?

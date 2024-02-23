@@ -30,6 +30,7 @@ namespace Urho3D
 {
 
 class SteamAudio;
+class Model;
 
 /// %Sound mesh component. Needs to be placed next to a StaticMesh component.
 class URHO3D_API SteamSoundMesh : public Component
@@ -45,7 +46,15 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// Set model to use.
+    void SetModel(const ResourceRef& model);
+
+    /// Returns currently used model.
+    ResourceRef GetModel() const;
+
 private:
+    /// Currently used model.
+    SharedPtr<Model> model_;
     /// Steam audio subsystem.
     WeakPtr<SteamAudio> audio_;
 };

@@ -24,9 +24,12 @@
 
 #include "../SteamAudio/SteamSoundMesh.h"
 #include "../SteamAudio/SteamAudio.h"
-#include "../Core/Context.h"
-#include "../IO/Log.h"
+#include "../Graphics/Model.h"
+#include "../Graphics/Geometry.h"
+#include "../Graphics/VertexBuffer.h"
 #include "../Scene/Node.h"
+#include "../Resource/ResourceCache.h"
+#include "../Core/Context.h"
 
 #include <phonon.h>
 
@@ -55,6 +58,31 @@ void SteamSoundMesh::RegisterObject(Context* context)
     context->AddFactoryReflection<SteamSoundMesh>(Category_Audio);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModel, SetModel, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
+}
+
+void SteamSoundMesh::SetModel(const ResourceRef& model)
+{
+    auto* cache = GetSubsystem<ResourceCache>();
+    model_ = cache->GetResource<Model>(model.name_);
+
+    // Clear if no model set
+    if (!model_)
+        return;
+
+    // Extract mesh
+    for (const auto& geometry : model_->GetGeometries()) {
+        for (const auto& geometry : geometry) {
+            for (const auto& vertexBuffer : geometry->GetVertexBuffers()) {
+                //vertexBuffer->...?
+            }
+        }
+    }
+}
+
+ResourceRef SteamSoundMesh::GetModel() const
+{
+    return GetResourceRef(model_, Model::GetTypeStatic());
 }
 
 }
