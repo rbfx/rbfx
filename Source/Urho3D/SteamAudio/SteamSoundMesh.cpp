@@ -120,7 +120,7 @@ void SteamSoundMesh::SetModel(const ResourceRef& model)
     ea::vector<IPLint32> phononMaterialIndices(phononTriangles.size(), 0); // All triangles use the same material (for now)
 
     // Create settings
-    IPLStaticMeshSettings staticMeshSettings{};
+    IPLStaticMeshSettings staticMeshSettings {};
     staticMeshSettings.numVertices = phononVertices.size();
     staticMeshSettings.numTriangles = phononTriangles.size();
     staticMeshSettings.numMaterials = 1;
@@ -130,7 +130,10 @@ void SteamSoundMesh::SetModel(const ResourceRef& model)
     staticMeshSettings.materials = &material_;
 
     // Create static mesh
-    iplStaticMeshCreate(audio_->GetScene(), &staticMeshSettings, &mesh_);
+    iplStaticMeshCreate(subScene_, &staticMeshSettings, &mesh_);
+    iplStaticMeshAdd(mesh_, subScene_);
+    iplSceneCommit(subScene_);
+    iplSceneSaveOBJ(subScene_, ("scene-"+ea::to_string(GetNode()->GetID())+".obj").c_str());
 
     // Create instanced mesh
     IPLInstancedMeshSettings instancedMeshSettings {
@@ -138,6 +141,7 @@ void SteamSoundMesh::SetModel(const ResourceRef& model)
         .transform = GetPhononMatrix()
     };
     iplInstancedMeshCreate(audio_->GetScene(), &instancedMeshSettings, &instancedMesh_);
+    iplInstancedMeshAdd(instancedMesh_, audio_->GetScene());
 
     // Mark scene as dirty
     audio_->MarkSceneDirty();
@@ -153,6 +157,7 @@ void SteamSoundMesh::ResetModel()
     // Release ressources
     iplInstancedMeshRemove(instancedMesh_, audio_->GetScene());
     iplInstancedMeshRelease(&instancedMesh_);
+    iplStaticMeshRemove(mesh_, subScene_);
     iplStaticMeshRelease(&mesh_);
     mesh_ = nullptr;
 
@@ -168,7 +173,7 @@ IPLMatrix4x4 SteamSoundMesh::GetPhononMatrix() const
             {m.Element(0, 0), m.Element(0, 1), m.Element(0, 2), m.Element(0, 3)},
             {m.Element(1, 0), m.Element(1, 1), m.Element(1, 2), m.Element(1, 3)},
             {m.Element(2, 0), m.Element(2, 1), m.Element(2, 2), m.Element(2, 3)},
-            {0.0f,            0.0f,            0.0f,            0.0f           }
+            {0.0f,            0.0f,            0.0f,            1.0f           }
         }
     };
 }

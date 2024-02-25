@@ -150,6 +150,7 @@ void SteamAudio::Update(float timeStep)
 {
     if (sceneDirty_) {
         iplSceneCommit(scene_);
+        iplSceneSaveOBJ(scene_, "scene-base.obj");
         sceneDirty_ = false;
     }
 }
