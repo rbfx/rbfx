@@ -33,6 +33,12 @@ else ()
     set (URHO3D_IS_SDK OFF)
 endif ()
 
+if (URHO3D_IS_SDK)
+    set (URHO3D_THIRDPARTY_DIR ${URHO3D_SDK_PATH}/include/Urho3D/ThirdParty/)
+else ()
+    set (URHO3D_THIRDPARTY_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty/)
+endif ()
+
 set(PERMISSIONS_644 OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 set(PERMISSIONS_755 OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
 
@@ -69,6 +75,40 @@ if (NOT MULTI_CONFIG_PROJECT AND NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Specifies the build type." FORCE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
 endif ()
+
+function (rbfx_configure_cmake_props props_out)
+
+    file(WRITE "${props_out}" "<Project>\n")
+    file(APPEND "${props_out}" "  <PropertyGroup>\n")
+    file(APPEND "${props_out}" "    <CMakePropsIncluded>true</CMakePropsIncluded>\n")
+
+    # Variables of interest
+    foreach (var
+        CMAKE_GENERATOR
+        CMAKE_RUNTIME_OUTPUT_DIRECTORY
+        URHO3D_PLATFORM
+        URHO3D_IS_SDK
+        URHO3D_SDK_PATH
+        URHO3D_NETFX
+        URHO3D_NETFX_RUNTIME_IDENTIFIER
+        URHO3D_NETFX_RUNTIME)
+        file(APPEND "${props_out}" "    <${var}>${${var}}</${var}>\n")
+    endforeach ()
+
+    # Binary/sourece dirs
+    get_cmake_property(vars VARIABLES)
+    list (SORT vars)
+    foreach (var ${vars})
+        if ("${var}" MATCHES "_(BINARY|SOURCE)_DIR$")
+            if (NOT "${${var}}" MATCHES "^.+/ThirdParty/.+$")
+                string(REPLACE "." "_" var_name "${var}")
+                file(APPEND "${props_out}" "    <${var_name}>${${var}}</${var_name}>\n")
+            endif ()
+        endif ()
+    endforeach()
+    file(APPEND "${props_out}" "  </PropertyGroup>\n")
+    file(APPEND "${props_out}" "</Project>\n")
+endfunction ()
 
 if (URHO3D_CSHARP)
     find_program(DOTNET dotnet)
@@ -126,23 +166,15 @@ if (URHO3D_CSHARP)
     endif ()
     unset (DOTNET_FRAMEWORK_INDEX)
 
+    rbfx_configure_cmake_props("${CMAKE_BINARY_DIR}/CMake.props")
+
+    if (NOT SWIG_LIB)
+        set (SWIG_DIR ${URHO3D_THIRDPARTY_DIR}/swig/Lib)
+    endif ()
+
     # For .csproj embedded into visual studio solution
-    if (URHO3D_IS_SDK)
-        # SDK
-        configure_file(${URHO3D_SDK_PATH}/share/CMake/CMake.props.in "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
-
-        if (NOT SWIG_LIB)
-            set (SWIG_DIR ${URHO3D_SDK_PATH}/include/Urho3D/ThirdParty/swig/Lib)
-        endif ()
-    else ()
-        # Source build
-        configure_file("${rbfx_SOURCE_DIR}/CMake/CMake.props.in" "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
-
-        if (NOT SWIG_LIB)
-            set (SWIG_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty/swig/Lib)
-        endif ()
-
-        install (FILES ${rbfx_SOURCE_DIR}/CMake/CMake.props.in ${rbfx_SOURCE_DIR}/Directory.Build.props DESTINATION ${DEST_SHARE_DIR}/CMake/)
+    if (NOT URHO3D_IS_SDK)
+        install (FILES ${rbfx_SOURCE_DIR}/Directory.Build.props DESTINATION ${DEST_SHARE_DIR}/CMake/)
     endif ()
     include(${CMAKE_CURRENT_LIST_DIR}/UrhoSWIG.cmake)
 endif()

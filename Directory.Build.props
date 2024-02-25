@@ -30,8 +30,8 @@
     <BaseOutputPath>$(BaseOutputPath)$(Configuration)/</BaseOutputPath>
   </PropertyGroup>
   <PropertyGroup>
-    <BaseIntermediateOutputPath>$(CMAKE_BINARY_DIR)obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
-    <BaseOutputPath>$(CMAKE_BINARY_DIR)$(BaseOutputPath)</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(CMAKE_BINARY_DIR)/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(CMAKE_BINARY_DIR)/$(BaseOutputPath)</BaseOutputPath>
     <OutDir>$(BaseOutputPath)</OutDir>
     <OutputPath>$(BaseOutputPath)</OutputPath>
   </PropertyGroup>

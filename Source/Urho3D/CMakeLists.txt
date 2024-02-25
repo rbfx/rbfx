@@ -20,6 +20,8 @@
 # THE SOFTWARE.
 #
 
+project(Urho3D C CXX)
+
 macro (define_engine_source_files)
     cmake_parse_arguments(DEFINE_SRC_FILES "NORECURSE" "" "" ${ARGN} )
     if (DEFINE_SRC_FILES_NORECURSE)
