@@ -27,6 +27,7 @@
 #include "../Graphics/Model.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/VertexBuffer.h"
+#include "../Graphics/IndexBuffer.h"
 #include "../Scene/Node.h"
 #include "../Resource/ResourceCache.h"
 #include "../Core/Context.h"
@@ -68,16 +69,49 @@ void SteamSoundMesh::SetModel(const ResourceRef& model)
 
     // Clear if no model set
     if (!model_)
+        // TODO
         return;
 
-    // Extract mesh
+    // Extract points and indices
+    ea::vector<Vector3> allPoints;
+    ea::vector<unsigned> allIndices;
     for (const auto& geometry : model_->GetGeometries()) {
         for (const auto& geometry : geometry) {
             for (const auto& vertexBuffer : geometry->GetVertexBuffers()) {
-                //vertexBuffer->...?
+                ea::vector<Vector4> points(vertexBuffer->GetVertexCount());
+                vertexBuffer->UnpackVertexData(vertexBuffer->GetShadowData(), vertexBuffer->GetVertexSize(), *vertexBuffer->GetElement(SEM_POSITION), 0, vertexBuffer->GetVertexCount(), points.data(), sizeof(Vector4));
+                for (const auto& point : points)
+                    allPoints.push_back({point.x_, point.y_, point.z_});
             }
+            const auto& indexBuffer = geometry->GetIndexBuffer();
+            const auto indices = indexBuffer->GetUnpackedData();
+            allIndices.insert(allIndices.begin(), indices.begin(), indices.end());
         }
     }
+
+    // Convert to phonon points and indices
+    ea::vector<IPLVector3> phononVertices;
+    phononVertices.reserve(allPoints.size());
+    ea::vector<IPLTriangle> phononTriangles;
+    phononTriangles.reserve(allIndices.size()/3);
+    for (const auto& point : allPoints)
+        phononVertices.push_back({point.x_, point.y_, point.z_});
+    for (unsigned idx = 0; idx < allIndices.size(); idx += 3)
+        phononTriangles.push_back({int(allIndices[idx+2]), int(allIndices[idx+1]), int(allIndices[idx+0])});
+    ea::vector<IPLint32> phononMaterialIndices(phononTriangles.size(), 0); // All triangles use the same material (for now)
+
+    // Create settings
+    IPLStaticMeshSettings staticMeshSettings{};
+    staticMeshSettings.numVertices = phononVertices.size();
+    staticMeshSettings.numTriangles = phononTriangles.size();
+    staticMeshSettings.numMaterials = 1;
+    staticMeshSettings.vertices = phononVertices.data();
+    staticMeshSettings.triangles = phononTriangles.data();
+    staticMeshSettings.materialIndices = phononMaterialIndices.data();
+    staticMeshSettings.materials = &material_;
+
+    // Create static mesh
+    iplStaticMeshCreate(audio_->GetScene(), &staticMeshSettings, &mesh_);
 }
 
 ResourceRef SteamSoundMesh::GetModel() const

@@ -70,6 +70,8 @@ public:
     IPLContext GetPhononContext() const { return phononContext_; }
     /// Return HRTF
     IPLHRTF GetHRTF() const { return hrtf_; }
+    /// Return scene
+    IPLScene GetScene() const { return scene_; }
     /// Return phonon audio settings.
     const IPLAudioSettings& GetAudioSettings() const { return audioSettings_; }
     /// Return audio buffer pool.
@@ -127,6 +129,8 @@ private:
     IPLHRTF hrtf_{};
     /// Phonon final output frame buffer.
     IPLAudioBuffer phononFrameBuffer_{};
+    /// Phonon scene.
+    IPLScene scene_{};
     /// Interleaved output frame buffer for SDL.
     ea::vector<float> finalFrameBuffer_{};
     /// Audio thread mutex.
