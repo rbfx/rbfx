@@ -105,13 +105,6 @@ public:
     /// Remove a sound source. Called by SteamSoundSource.
     void RemoveSoundSource(SteamSoundSource* soundSource);
 
-    /// Return all sound meshes.
-    const ea::vector<SteamSoundMesh*>& GetSoundMeshes() const { return soundMeshes_; }
-    /// Add a sound mesh to keep track of. Called by SteamSoundMesh.
-    void AddSoundMesh(SteamSoundMesh* soundMesh);
-    /// Remove a sound mesh. Called by SteamSoundMesh.
-    void RemoveSoundMesh(SteamSoundMesh* soundMesh);
-
     /// Return audio thread mutex.
     Mutex& GetMutex() { return audioMutex_; }
 
@@ -126,6 +119,8 @@ private:
 
     /// Phonon context.
     IPLContext phononContext_{};
+    /// Phonon simulator.
+    IPLSimulator simulator_{};
     /// Phonon audio settings.
     IPLAudioSettings audioSettings_{};
     /// Phonon HRTF.
@@ -146,8 +141,6 @@ private:
     float masterGain_{};
     /// Sound sources.
     ea::vector<SteamSoundSource*> soundSources_;
-    /// Sound meshes.
-    ea::vector<SteamSoundMesh*> soundMeshes_;
     /// Sound listener.
     WeakPtr<SteamSoundListener> listener_;
     /// Audio buffer pool.

@@ -106,6 +106,13 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
     };
     iplSceneCreate(phononContext_, &sceneSettings, &scene_);
 
+    // Create the simulator
+    IPLSimulationSettings simulationSettings {
+        .flags = IPL_SIMULATIONFLAGS_DIRECT, // this enables occlusion/transmission simulation
+        .sceneType = IPL_SCENETYPE_DEFAULT
+    };
+    iplSimulatorCreate(phononContext_, &simulationSettings, &simulator_);
+
     // Allocate an output buffer
     // That buffer is "deinterleaved", which means that it's actually one buffer for each channel
     phononFrameBuffer_ = IPLAudioBuffer {};
@@ -215,23 +222,6 @@ void SteamAudio::RemoveSoundSource(SteamSoundSource *soundSource)
     }
 }
 
-void SteamAudio::AddSoundMesh(SteamSoundMesh *soundMesh)
-{
-    MutexLock Lock(audioMutex_);
-    soundMeshes_.push_back(soundMesh);
-}
-
-void SteamAudio::RemoveSoundMesh(SteamSoundMesh *soundMesh)
-{
-    MutexLock Lock(audioMutex_);
-    auto i = soundMeshes_.find(soundMesh);
-    if (i != soundMeshes_.end())
-    {
-        MutexLock lock(audioMutex_);
-        soundMeshes_.erase(i);
-    }
-}
-
 void SteamAudio::MixOutput(float* dest)
 {
     // Stop if no listener
@@ -277,6 +267,7 @@ void SteamAudio::Release()
 {
     SDL_CloseAudio();
     MutexLock Lock(audioMutex_);
+    iplSimulatorRelease(&simulator_);
     iplAudioBufferFree(phononContext_, &phononFrameBuffer_);
     delete ea::exchange(audioBufferPool_, nullptr);
     finalFrameBuffer_.clear();

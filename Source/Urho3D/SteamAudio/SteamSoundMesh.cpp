@@ -48,9 +48,6 @@ SteamSoundMesh::SteamSoundMesh(Context* context) :
             .type = IPL_SCENETYPE_DEFAULT
         };
         iplSceneCreate(audio_->GetPhononContext(), &sceneSettings, &subScene_);
-
-        // Add this sound mesh
-        audio_->AddSoundMesh(this);
     }
 }
 
@@ -60,9 +57,6 @@ SteamSoundMesh::~SteamSoundMesh()
         // Remove subscene and mesh
         iplSceneRelease(&subScene_);
         iplStaticMeshRelease(&mesh_);
-
-        // Remove this sound mesh
-        audio_->RemoveSoundMesh(this);
     }
 }
 
