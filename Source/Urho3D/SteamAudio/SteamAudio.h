@@ -95,6 +95,9 @@ public:
     /// @property
     SteamSoundListener* GetListener() const;
 
+    /// Mark scene dirty (after changes)
+    void MarkSceneDirty() { sceneDirty_ = true; }
+
     /// Return all sound sources.
     const ea::vector<SteamSoundSource*>& GetSoundSources() const { return soundSources_; }
     /// Add a sound source to keep track of. Called by SteamSoundSource.
@@ -131,6 +134,8 @@ private:
     IPLAudioBuffer phononFrameBuffer_{};
     /// Phonon scene.
     IPLScene scene_{};
+    /// Is phonon scene dirty?
+    bool sceneDirty_{};
     /// Interleaved output frame buffer for SDL.
     ea::vector<float> finalFrameBuffer_{};
     /// Audio thread mutex.

@@ -148,7 +148,10 @@ void SteamAudio::Close()
 
 void SteamAudio::Update(float timeStep)
 {
-
+    if (sceneDirty_) {
+        iplSceneCommit(scene_);
+        sceneDirty_ = false;
+    }
 }
 
 void SteamAudio::Play()

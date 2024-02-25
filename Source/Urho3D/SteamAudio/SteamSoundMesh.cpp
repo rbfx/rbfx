@@ -138,6 +138,9 @@ void SteamSoundMesh::SetModel(const ResourceRef& model)
         .transform = GetPhononMatrix()
     };
     iplInstancedMeshCreate(audio_->GetScene(), &instancedMeshSettings, &instancedMesh_);
+
+    // Mark scene as dirty
+    audio_->MarkSceneDirty();
 }
 
 ResourceRef SteamSoundMesh::GetModel() const
@@ -147,10 +150,14 @@ ResourceRef SteamSoundMesh::GetModel() const
 
 void SteamSoundMesh::ResetModel()
 {
+    // Release ressources
     iplInstancedMeshRemove(instancedMesh_, audio_->GetScene());
     iplInstancedMeshRelease(&instancedMesh_);
     iplStaticMeshRelease(&mesh_);
     mesh_ = nullptr;
+
+    // Mark scene as dirty
+    audio_->MarkSceneDirty();
 }
 
 IPLMatrix4x4 SteamSoundMesh::GetPhononMatrix() const
