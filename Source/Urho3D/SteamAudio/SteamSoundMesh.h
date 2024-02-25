@@ -53,12 +53,21 @@ public:
     ResourceRef GetModel() const;
 
 private:
+    /// Reset (clear) current model.
+    void ResetModel();
+    /// Return phonon matrix of node
+    IPLMatrix4x4 GetPhononMatrix() const;
+
     /// Currently used model.
     SharedPtr<Model> model_;
     /// Material.
-    IPLMaterial material_;
+    IPLMaterial material_ = {0.11f,0.07f,0.06f,0.05f,0.070f,0.014f,0.005f};
     /// Mesh.
     IPLStaticMesh mesh_;
+    /// Subscene loaded into main scene.
+    IPLScene subScene_;
+    /// Instanced mesh for sub scene
+    IPLInstancedMesh instancedMesh_;
     /// Steam audio subsystem.
     WeakPtr<SteamAudio> audio_;
 };

@@ -38,20 +38,32 @@ namespace Urho3D
 {
 
 SteamSoundMesh::SteamSoundMesh(Context* context) :
-    Component(context)
+    Component(context), mesh_(nullptr), subScene_(nullptr)
 {
     audio_ = GetSubsystem<SteamAudio>();
 
-    if (audio_)
+    if (audio_) {
+        // Create subscene
+        IPLSceneSettings sceneSettings {
+            .type = IPL_SCENETYPE_DEFAULT
+        };
+        iplSceneCreate(audio_->GetPhononContext(), &sceneSettings, &subScene_);
+
         // Add this sound mesh
         audio_->AddSoundMesh(this);
+    }
 }
 
 SteamSoundMesh::~SteamSoundMesh()
 {
-    if (audio_)
+    if (audio_) {
+        // Remove subscene and mesh
+        iplSceneRelease(&subScene_);
+        iplStaticMeshRelease(&mesh_);
+
         // Remove this sound mesh
         audio_->RemoveSoundMesh(this);
+    }
 }
 
 void SteamSoundMesh::RegisterObject(Context* context)
@@ -67,10 +79,17 @@ void SteamSoundMesh::SetModel(const ResourceRef& model)
     auto* cache = GetSubsystem<ResourceCache>();
     model_ = cache->GetResource<Model>(model.name_);
 
-    // Clear if no model set
-    if (!model_)
-        // TODO
+    // Do nothing if no audio subsystem
+    if (!audio_)
         return;
+
+    // Clear if no model set
+    if (!model_) {
+        ResetModel();
+        return;
+    } else if (mesh_) {
+        ResetModel();
+    }
 
     // Extract points and indices
     ea::vector<Vector3> allPoints;
@@ -112,11 +131,39 @@ void SteamSoundMesh::SetModel(const ResourceRef& model)
 
     // Create static mesh
     iplStaticMeshCreate(audio_->GetScene(), &staticMeshSettings, &mesh_);
+
+    // Create instanced mesh
+    IPLInstancedMeshSettings instancedMeshSettings {
+        .subScene = subScene_,
+        .transform = GetPhononMatrix()
+    };
+    iplInstancedMeshCreate(audio_->GetScene(), &instancedMeshSettings, &instancedMesh_);
 }
 
 ResourceRef SteamSoundMesh::GetModel() const
 {
     return GetResourceRef(model_, Model::GetTypeStatic());
+}
+
+void SteamSoundMesh::ResetModel()
+{
+    iplInstancedMeshRemove(instancedMesh_, audio_->GetScene());
+    iplInstancedMeshRelease(&instancedMesh_);
+    iplStaticMeshRelease(&mesh_);
+    mesh_ = nullptr;
+}
+
+IPLMatrix4x4 SteamSoundMesh::GetPhononMatrix() const
+{
+    const Matrix3x4 m = GetNode()->GetTransformMatrix();
+    return {
+        {
+            {m.Element(0, 0), m.Element(0, 1), m.Element(0, 2), m.Element(0, 3)},
+            {m.Element(1, 0), m.Element(1, 1), m.Element(1, 2), m.Element(1, 3)},
+            {m.Element(2, 0), m.Element(2, 1), m.Element(2, 2), m.Element(2, 3)},
+            {0.0f,            0.0f,            0.0f,            0.0f           }
+        }
+    };
 }
 
 }
