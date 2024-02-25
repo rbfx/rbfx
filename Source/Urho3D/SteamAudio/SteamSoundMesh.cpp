@@ -116,7 +116,7 @@ void SteamSoundMesh::SetModel(const ResourceRef& model)
     for (const auto& point : allPoints)
         phononVertices.push_back({point.x_, point.y_, point.z_});
     for (unsigned idx = 0; idx < allIndices.size(); idx += 3)
-        phononTriangles.push_back({int(allIndices[idx+2]), int(allIndices[idx+1]), int(allIndices[idx+0])});
+        phononTriangles.push_back({int(allIndices[idx+0]), int(allIndices[idx+1]), int(allIndices[idx+2])});
     ea::vector<IPLint32> phononMaterialIndices(phononTriangles.size(), 0); // All triangles use the same material (for now)
 
     // Create settings
