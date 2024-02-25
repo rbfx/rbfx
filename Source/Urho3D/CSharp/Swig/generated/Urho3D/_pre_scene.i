@@ -125,7 +125,6 @@ using PrefabInstanceFlags = Urho3D::PrefabInstanceFlag;
 %csattribute(Urho3D::Scene, %arg(bool), IsThreadedUpdate, IsThreadedUpdate);
 %csattribute(Urho3D::Scene, %arg(unsigned int), FreeNodeID, GetFreeNodeID);
 %csattribute(Urho3D::Scene, %arg(unsigned int), FreeComponentID, GetFreeComponentID);
-%csattribute(Urho3D::Scene, %arg(ea::string), VarNamesAttr, GetVarNamesAttr, SetVarNamesAttr);
 %csattribute(Urho3D::TrackedComponentBase, %arg(unsigned int), IndexInArray, GetIndexInArray, SetIndexInArray);
 %csattribute(Urho3D::TrackedComponentBase, %arg(bool), IsTrackedInRegistry, IsTrackedInRegistry);
 %csattribute(Urho3D::TrackedComponentRegistryBase, %arg(unsigned int), NumTrackedComponents, GetNumTrackedComponents);
