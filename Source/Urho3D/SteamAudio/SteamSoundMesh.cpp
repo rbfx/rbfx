@@ -155,7 +155,7 @@ void SteamSoundMesh::ResetModel()
 
 IPLMatrix4x4 SteamSoundMesh::GetPhononMatrix() const
 {
-    const Matrix3x4 m = GetNode()->GetTransformMatrix();
+    const Matrix3x4 m = GetNode()->GetWorldTransform();
     return {
         {
             {m.Element(0, 0), m.Element(0, 1), m.Element(0, 2), m.Element(0, 3)},
