@@ -55,6 +55,10 @@ public:
 private:
     /// Currently used model.
     SharedPtr<Model> model_;
+    /// Material.
+    IPLMaterial material_;
+    /// Mesh.
+    IPLStaticMesh mesh_;
     /// Steam audio subsystem.
     WeakPtr<SteamAudio> audio_;
 };

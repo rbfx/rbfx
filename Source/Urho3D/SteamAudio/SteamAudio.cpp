@@ -100,6 +100,12 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
     };
     iplHRTFCreate(phononContext_, &audioSettings_, &hrtfSettings, &hrtf_);
 
+    // Create the scene
+    IPLSceneSettings sceneSettings {
+        .type = IPL_SCENETYPE_DEFAULT
+    };
+    iplSceneCreate(phononContext_, &sceneSettings, &scene_);
+
     // Allocate an output buffer
     // That buffer is "deinterleaved", which means that it's actually one buffer for each channel
     phononFrameBuffer_ = IPLAudioBuffer {};
