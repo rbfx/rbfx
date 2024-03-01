@@ -286,7 +286,8 @@ void SteamSoundSource::UpdateSimulator(StringHash eventType, VariantMap &eventDa
             .ahead = {lDir.x_, lDir.y_, lDir.z_},
             .origin = {lPos.x_, lPos.y_, lPos.z_}
         },
-        .occlusionType = IPL_OCCLUSIONTYPE_RAYCAST
+        .occlusionType = IPL_OCCLUSIONTYPE_RAYCAST,
+        .numTransmissionRays = 16
     };
     iplSourceSetInputs(source_, IPL_SIMULATIONFLAGS_DIRECT, &inputs);
 }

@@ -112,6 +112,8 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
         .sceneType = IPL_SCENETYPE_DEFAULT
     };
     iplSimulatorCreate(phononContext_, &simulationSettings, &simulator_);
+    iplSimulatorSetScene(simulator_, scene_);
+    MarkSimulatorDirty();
 
     // Allocate an output buffer
     // That buffer is "deinterleaved", which means that it's actually one buffer for each channel
