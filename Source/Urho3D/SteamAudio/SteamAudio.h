@@ -79,7 +79,7 @@ public:
     /// Return simulator.
     IPLSimulator GetSimulator() { return simulator_; }
     /// Return simulator outputs.
-    IPLSimulationOutputs GetSimulatorOutputs(IPLSource source) const;
+    bool GetSimulatorOutputs(IPLSource source, IPLSimulationOutputs& ouputs) noexcept;
     /// Return channel count.
     /// @property
     unsigned GetChannelCount() const { return channelCount_; }
@@ -143,6 +143,8 @@ private:
     ea::vector<float> finalFrameBuffer_{};
     /// Audio thread mutex.
     Mutex audioMutex_;
+    /// Simulator mutex.
+    Mutex simulatorMutex_;
     /// Channel count
     unsigned channelCount_{};
     /// Master gain.

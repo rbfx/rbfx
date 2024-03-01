@@ -177,8 +177,10 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
     IPLDirectEffectParams directEffectParams {};
 
     // Apply simulation results
-    if (source_)
-        directEffectParams = audio_->GetSimulatorOutputs(source_).direct;
+    if (source_) {
+        audio_->GetSimulatorOutputs(source_, simulatorOutputs_);
+        directEffectParams = simulatorOutputs_.direct;
+    }
 
     // Apply distance attenuation
     if (distanceAttenuation_) {
@@ -213,6 +215,11 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
     return pool.GetCurrentBuffer();
 }
 
+void SteamSoundSource::OnMarkedDirty(Node *)
+{
+    UpdateSimulator();
+}
+
 void SteamSoundSource::UpdateEffects()
 {
     DestroyEffects();
@@ -237,8 +244,6 @@ void SteamSoundSource::UpdateEffects()
         iplSourceCreate(audio_->GetSimulator(), &sourceSettings, &source_);
         iplSourceAdd(source_, audio_->GetSimulator());
         audio_->MarkSimulatorDirty();
-
-        SubscribeToEvent(E_SCENEUPDATE, URHO3D_HANDLER(SteamSoundSource, UpdateSimulator));
     }
     if (airAbsorption_ || distanceAttenuation_ || source_) {
         // Create direct effect
@@ -246,6 +251,8 @@ void SteamSoundSource::UpdateEffects()
             .numChannels = sound_->IsStereo()?2:1
         };
         iplDirectEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &directEffectSettings, &directEffect_);
+        // Add as listener
+        GetNode()->AddListener(this);
     }
 }
 
@@ -263,15 +270,12 @@ void SteamSoundSource::DestroyEffects()
         audio_->MarkSimulatorDirty();
         iplSourceRelease(&source_);
 
-        UnsubscribeFromEvent(E_SCENEUPDATE);
+        GetNode()->RemoveListener(this);
     }
 }
 
-void SteamSoundSource::UpdateSimulator(StringHash eventType, VariantMap &eventData)
+void SteamSoundSource::UpdateSimulator()
 {
-    if (!source_)
-        return;
-
     const auto lUp = GetNode()->GetWorldUp();
     const auto lDir = GetNode()->GetWorldDirection();
     const auto lRight = GetNode()->GetWorldRight();

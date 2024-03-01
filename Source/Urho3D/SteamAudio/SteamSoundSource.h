@@ -66,12 +66,15 @@ public:
     IPLAudioBuffer *GenerateAudioBuffer(float gain);
 
 private:
+    /// Handle transform change.
+    void OnMarkedDirty(Node *) override;
+
     /// Recreate effects
     void UpdateEffects();
     /// Destroy effects
     void DestroyEffects();
     /// Update simulation inputs.
-    void UpdateSimulator(StringHash eventType, VariantMap &eventData);
+    void UpdateSimulator();
 
     /// Steam audio subsystem.
     WeakPtr<SteamAudio> audio_;
@@ -81,8 +84,10 @@ private:
     IPLBinauralEffect binauralEffect_;
     /// Direct effect.
     IPLDirectEffect directEffect_;
-    /// Sound source
+    /// Sound source.
     IPLSource source_;
+    /// Last simulator outputs.
+    IPLSimulationOutputs simulatorOutputs_;
     /// Audio gain.
     float gain_;
     /// Is playback paused?

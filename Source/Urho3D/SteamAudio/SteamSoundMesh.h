@@ -53,8 +53,15 @@ public:
     ResourceRef GetModel() const;
 
 private:
+    /// Handle node being assigned.
+    virtual void OnNodeSet(Node* previousNode, Node* currentNode) override;
+    /// Handle transform change.
+    void OnMarkedDirty(Node *) override;
+
     /// Reset (clear) current model.
     void ResetModel();
+    /// Update transform.
+    void UpdateTransform();
     /// Return phonon matrix of node
     IPLMatrix4x4 GetPhononMatrix() const;
 

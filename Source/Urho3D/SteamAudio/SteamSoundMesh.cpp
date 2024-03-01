@@ -146,6 +146,20 @@ ResourceRef SteamSoundMesh::GetModel() const
     return GetResourceRef(model_, Model::GetTypeStatic());
 }
 
+void SteamSoundMesh::OnNodeSet(Node *previousNode, Node *currentNode)
+{
+    if (previousNode)
+        previousNode->RemoveListener(this);
+    if (currentNode)
+        currentNode->AddListener(this);
+}
+
+void SteamSoundMesh::OnMarkedDirty(Node *)
+{
+    if (model_)
+        UpdateTransform();
+}
+
 void SteamSoundMesh::ResetModel()
 {
     // Release ressources
@@ -156,6 +170,12 @@ void SteamSoundMesh::ResetModel()
     mesh_ = nullptr;
 
     // Mark scene as dirty
+    audio_->MarkSceneDirty();
+}
+
+void SteamSoundMesh::UpdateTransform()
+{
+    iplInstancedMeshUpdateTransform(instancedMesh_, audio_->GetScene(), GetPhononMatrix());
     audio_->MarkSceneDirty();
 }
 
