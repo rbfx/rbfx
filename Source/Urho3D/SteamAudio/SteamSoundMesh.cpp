@@ -37,10 +37,39 @@
 namespace Urho3D
 {
 
+static IPLMaterial materials[11] = {
+    {0.10f,0.20f,0.30f,0.05f,0.100f,0.050f,0.030f},
+    {0.03f,0.04f,0.07f,0.05f,0.015f,0.015f,0.015f},
+    {0.05f,0.07f,0.08f,0.05f,0.015f,0.002f,0.001f},
+    {0.01f,0.02f,0.02f,0.05f,0.060f,0.044f,0.011f},
+    {0.60f,0.70f,0.80f,0.05f,0.031f,0.012f,0.008f},
+    {0.24f,0.69f,0.73f,0.05f,0.020f,0.005f,0.003f},
+    {0.06f,0.03f,0.02f,0.05f,0.060f,0.044f,0.011f},
+    {0.12f,0.06f,0.04f,0.05f,0.056f,0.056f,0.004f},
+    {0.11f,0.07f,0.06f,0.05f,0.070f,0.014f,0.005f},
+    {0.20f,0.07f,0.06f,0.05f,0.200f,0.025f,0.010f},
+    {0.13f,0.20f,0.24f,0.05f,0.015f,0.002f,0.001f}
+};
+
+static const ea::vector<ea::string> materialNames = {
+    "Generic",
+    "Brick",
+    "Concrete",
+    "Ceramic",
+    "Gravel",
+    "Carpet",
+    "Glass",
+    "Plaster",
+    "Wood",
+    "Metal",
+    "Rock"
+};
+
 SteamSoundMesh::SteamSoundMesh(Context* context) :
-    Component(context), mesh_(nullptr), subScene_(nullptr)
+    Component(context), mesh_(nullptr), subScene_(nullptr), materialIndex_(Material::generic)
 {
     audio_ = GetSubsystem<SteamAudio>();
+    material_ = &materials[static_cast<unsigned>(materialIndex_)];
 
     if (audio_) {
         // Create subscene
@@ -66,13 +95,43 @@ void SteamSoundMesh::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModel, SetModel, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Material", GetMaterial, SetMaterial, Material, materialNames, Material::generic, AM_DEFAULT);
 }
 
 void SteamSoundMesh::SetModel(const ResourceRef& model)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     model_ = cache->GetResource<Model>(model.name_);
+    ReloadModel();
+}
 
+void SteamSoundMesh::SetMaterial(Material material) {
+    materialIndex_ = material;
+    material_ = &materials[static_cast<unsigned>(materialIndex_)];
+    ReloadModel();
+}
+
+ResourceRef SteamSoundMesh::GetModel() const
+{
+    return GetResourceRef(model_, Model::GetTypeStatic());
+}
+
+void SteamSoundMesh::OnNodeSet(Node *previousNode, Node *currentNode)
+{
+    if (previousNode)
+        previousNode->RemoveListener(this);
+    if (currentNode)
+        currentNode->AddListener(this);
+}
+
+void SteamSoundMesh::OnMarkedDirty(Node *)
+{
+    if (model_)
+        UpdateTransform();
+}
+
+void SteamSoundMesh::ReloadModel()
+{
     // Do nothing if no audio subsystem
     if (!audio_)
         return;
@@ -121,7 +180,7 @@ void SteamSoundMesh::SetModel(const ResourceRef& model)
     staticMeshSettings.vertices = phononVertices.data();
     staticMeshSettings.triangles = phononTriangles.data();
     staticMeshSettings.materialIndices = phononMaterialIndices.data();
-    staticMeshSettings.materials = &material_;
+    staticMeshSettings.materials = material_;
 
     // Create static mesh
     iplStaticMeshCreate(subScene_, &staticMeshSettings, &mesh_);
@@ -139,25 +198,6 @@ void SteamSoundMesh::SetModel(const ResourceRef& model)
 
     // Mark scene as dirty
     audio_->MarkSceneDirty();
-}
-
-ResourceRef SteamSoundMesh::GetModel() const
-{
-    return GetResourceRef(model_, Model::GetTypeStatic());
-}
-
-void SteamSoundMesh::OnNodeSet(Node *previousNode, Node *currentNode)
-{
-    if (previousNode)
-        previousNode->RemoveListener(this);
-    if (currentNode)
-        currentNode->AddListener(this);
-}
-
-void SteamSoundMesh::OnMarkedDirty(Node *)
-{
-    if (model_)
-        UpdateTransform();
 }
 
 void SteamSoundMesh::ResetModel()
