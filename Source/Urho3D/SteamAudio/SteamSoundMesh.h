@@ -32,6 +32,20 @@ namespace Urho3D
 class SteamAudio;
 class Model;
 
+enum class Material {
+    generic,
+    brick,
+    concrete,
+    ceramic,
+    gravel,
+    carpet,
+    glass,
+    plaster,
+    wood,
+    metal,
+    rock
+};
+
 /// %Sound mesh component. Needs to be placed next to a StaticMesh component.
 class URHO3D_API SteamSoundMesh : public Component
 {
@@ -48,9 +62,13 @@ public:
 
     /// Set model to use.
     void SetModel(const ResourceRef& model);
+    /// Set material to use.
+    void SetMaterial(Material material);
 
     /// Returns currently used model.
     ResourceRef GetModel() const;
+    /// Returns currently used material.
+    Material GetMaterial() const { return materialIndex_; }
 
 private:
     /// Handle node being assigned.
@@ -58,6 +76,8 @@ private:
     /// Handle transform change.
     void OnMarkedDirty(Node *) override;
 
+    /// Reload current model.
+    void ReloadModel();
     /// Reset (clear) current model.
     void ResetModel();
     /// Update transform.
@@ -67,8 +87,10 @@ private:
 
     /// Currently used model.
     SharedPtr<Model> model_;
+    /// Material index.
+    Material materialIndex_;
     /// Material.
-    IPLMaterial material_ = {0.11f,0.07f,0.06f,0.05f,0.070f,0.014f,0.005f};
+    IPLMaterial *material_;
     /// Mesh.
     IPLStaticMesh mesh_;
     /// Subscene loaded into main scene.
