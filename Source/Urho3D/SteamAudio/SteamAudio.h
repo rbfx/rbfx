@@ -76,6 +76,10 @@ public:
     const IPLAudioSettings& GetAudioSettings() const { return audioSettings_; }
     /// Return audio buffer pool.
     SteamAudioBufferPool& GetAudioBufferPool() { return *audioBufferPool_; }
+    /// Return simulator.
+    IPLSimulator GetSimulator() { return simulator_; }
+    /// Return simulator outputs.
+    IPLSimulationOutputs GetSimulatorOutputs(IPLSource source) const;
     /// Return channel count.
     /// @property
     unsigned GetChannelCount() const { return channelCount_; }
@@ -97,6 +101,8 @@ public:
 
     /// Mark scene dirty (after changes)
     void MarkSceneDirty() { sceneDirty_ = true; }
+    /// Mark scene simulator (after changes)
+    void MarkSimulatorDirty() { simulatorDirty_ = true; }
 
     /// Return all sound sources.
     const ea::vector<SteamSoundSource*>& GetSoundSources() const { return soundSources_; }
@@ -131,6 +137,8 @@ private:
     IPLScene scene_{};
     /// Is phonon scene dirty?
     bool sceneDirty_{};
+    /// Is simulator dirty?
+    bool simulatorDirty_{};
     /// Interleaved output frame buffer for SDL.
     ea::vector<float> finalFrameBuffer_{};
     /// Audio thread mutex.

@@ -26,12 +26,11 @@
 #include "../SteamAudio/SteamSoundSource.h"
 #include "../SteamAudio/SteamSoundListener.h"
 #include "../Audio/Sound.h"
-#include "../Audio/SoundStream.h"
-#include "../Audio/OggVorbisSoundStream.h"
 #include "../Core/Context.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Node.h"
+#include "../Scene/SceneEvents.h"
 
 #include "../DebugNew.h"
 
@@ -41,7 +40,7 @@ namespace Urho3D
 {
 
 SteamSoundSource::SteamSoundSource(Context* context) :
-    Component(context), sound_(nullptr), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), airAbsorption_(false), binauralSpatialBlend_(1.0f), binauralBilinearInterpolation_(false), effectsLoaded_(false)
+    Component(context), sound_(nullptr), binauralEffect_(nullptr), directEffect_(nullptr), source_(nullptr), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), airAbsorption_(false), occlusion_(false), transmission_(false), binauralSpatialBlend_(1.0f), binauralBilinearInterpolation_(false), effectsLoaded_(false)
 {
     audio_ = GetSubsystem<SteamAudio>();
 
@@ -71,6 +70,8 @@ void SteamSoundSource::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Binaural Bilinear Interpolation", bool, binauralBilinearInterpolation_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Distance Attenuation", bool, distanceAttenuation_, UpdateEffects, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Air absorption", bool, airAbsorption_, UpdateEffects, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Occlusion", bool, occlusion_, UpdateEffects, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Transmission", bool, transmission_, UpdateEffects, false, AM_DEFAULT);
 }
 
 void SteamSoundSource::Play(Sound *sound)
@@ -175,6 +176,10 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
     // Create direct effect properties
     IPLDirectEffectParams directEffectParams {};
 
+    // Apply simulation results
+    if (source_)
+        directEffectParams = audio_->GetSimulatorOutputs(source_).direct;
+
     // Apply distance attenuation
     if (distanceAttenuation_) {
         IPLDistanceAttenuationModel distanceAttenuationModel {
@@ -218,14 +223,24 @@ void SteamSoundSource::UpdateEffects()
     const auto phononContext = audio_->GetPhononContext();
     const auto& audioSettings = audio_->GetAudioSettings();
 
-    if (binauralEffect_) {
+    if (binaural_) {
         // Create binaural effect
         IPLBinauralEffectSettings binauralEffectSettings {
             .hrtf = audio_->GetHRTF()
         };
         iplBinauralEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &binauralEffectSettings, &binauralEffect_);
     }
-    if (airAbsorption_ || distanceAttenuation_) {
+    if (occlusion_ || transmission_) {
+        IPLSourceSettings sourceSettings {
+            .flags = IPL_SIMULATIONFLAGS_DIRECT
+        };
+        iplSourceCreate(audio_->GetSimulator(), &sourceSettings, &source_);
+        iplSourceAdd(source_, audio_->GetSimulator());
+        audio_->MarkSimulatorDirty();
+
+        SubscribeToEvent(E_SCENEUPDATE, URHO3D_HANDLER(SteamSoundSource, UpdateSimulator));
+    }
+    if (airAbsorption_ || distanceAttenuation_ || source_) {
         // Create direct effect
         IPLDirectEffectSettings directEffectSettings {
             .numChannels = sound_->IsStereo()?2:1
@@ -243,6 +258,37 @@ void SteamSoundSource::DestroyEffects()
         iplBinauralEffectRelease(&binauralEffect_);
     if (directEffect_)
         iplDirectEffectRelease(&directEffect_);
+    if (source_) {
+        iplSourceRemove(source_, audio_->GetSimulator());
+        audio_->MarkSimulatorDirty();
+        iplSourceRelease(&source_);
+
+        UnsubscribeFromEvent(E_SCENEUPDATE);
+    }
+}
+
+void SteamSoundSource::UpdateSimulator(StringHash eventType, VariantMap &eventData)
+{
+    if (!source_)
+        return;
+
+    const auto lUp = GetNode()->GetWorldUp();
+    const auto lDir = GetNode()->GetWorldDirection();
+    const auto lRight = GetNode()->GetWorldRight();
+    const auto lPos = GetNode()->GetWorldPosition();
+
+    IPLSimulationInputs inputs {
+        .flags = IPL_SIMULATIONFLAGS_DIRECT,
+        .directFlags = static_cast<IPLDirectSimulationFlags>((occlusion_?IPL_DIRECTSIMULATIONFLAGS_OCCLUSION:0) | (transmission_?IPL_DIRECTSIMULATIONFLAGS_TRANSMISSION:0)),
+        .source = {
+            .right = {lRight.x_, lRight.y_, lRight.z_},
+            .up = {lUp.x_, lUp.y_, lUp.z_},
+            .ahead = {lDir.x_, lDir.y_, lDir.z_},
+            .origin = {lPos.x_, lPos.y_, lPos.z_}
+        },
+        .occlusionType = IPL_OCCLUSIONTYPE_RAYCAST
+    };
+    iplSourceSetInputs(source_, IPL_SIMULATIONFLAGS_DIRECT, &inputs);
 }
 
 }

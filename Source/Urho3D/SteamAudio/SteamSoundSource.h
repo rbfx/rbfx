@@ -70,6 +70,8 @@ private:
     void UpdateEffects();
     /// Destroy effects
     void DestroyEffects();
+    /// Update simulation inputs.
+    void UpdateSimulator(StringHash eventType, VariantMap &eventData);
 
     /// Steam audio subsystem.
     WeakPtr<SteamAudio> audio_;
@@ -79,6 +81,8 @@ private:
     IPLBinauralEffect binauralEffect_;
     /// Direct effect.
     IPLDirectEffect directEffect_;
+    /// Sound source
+    IPLSource source_;
     /// Audio gain.
     float gain_;
     /// Is playback paused?
@@ -91,6 +95,10 @@ private:
     bool distanceAttenuation_;
     /// Enable air absorption.
     bool airAbsorption_;
+    /// Enable occlusion.
+    bool occlusion_;
+    /// Enable transmission.
+    bool transmission_;
     /// Binaural spatial blend.
     float binauralSpatialBlend_;
     /// Bilinear interpolation for binaural effect.

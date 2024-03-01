@@ -160,6 +160,30 @@ void SteamAudio::Update(float timeStep)
         iplSceneSaveOBJ(scene_, "scene-base.obj");
         sceneDirty_ = false;
     }
+    if (simulatorDirty_) {
+        iplSimulatorCommit(simulator_);
+        simulatorDirty_ = false;
+    }
+
+    // Update listener coordinates in simulator
+    if (listener_) {
+        const auto lUp = listener_->GetNode()->GetWorldUp();
+        const auto lDir = listener_->GetNode()->GetWorldDirection();
+        const auto lRight = listener_->GetNode()->GetWorldRight();
+        const auto lPos = listener_->GetNode()->GetWorldPosition();
+        IPLSimulationSharedInputs sharedInputs {
+            .listener = {
+                .right = {lRight.x_, lRight.y_, lRight.z_},
+                .up = {lUp.x_, lUp.y_, lUp.z_},
+                .ahead = {lDir.x_, lDir.y_, lDir.z_},
+                .origin = {lPos.x_, lPos.y_, lPos.z_}
+            }
+        };
+        iplSimulatorSetSharedInputs(simulator_, IPL_SIMULATIONFLAGS_DIRECT, &sharedInputs);
+
+        // Run simulator
+        iplSimulatorRunDirect(simulator_);
+    }
 }
 
 void SteamAudio::Play()
@@ -181,6 +205,13 @@ void SteamAudio::SetListener(SteamSoundListener *listener)
 {
     MutexLock Lock(audioMutex_);
     listener_ = listener;
+}
+
+IPLSimulationOutputs SteamAudio::GetSimulatorOutputs(IPLSource source) const
+{
+    IPLSimulationOutputs fres;
+    iplSourceGetOutputs(source, IPL_SIMULATIONFLAGS_DIRECT, &fres);
+    return fres;
 }
 
 float SteamAudio::GetMasterGain() const
