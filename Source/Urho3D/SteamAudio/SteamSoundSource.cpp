@@ -243,6 +243,7 @@ void SteamSoundSource::UpdateEffects()
         };
         iplSourceCreate(audio_->GetSimulator(), &sourceSettings, &source_);
         iplSourceAdd(source_, audio_->GetSimulator());
+        UpdateSimulator();
         audio_->MarkSimulatorDirty();
     }
     if (airAbsorption_ || distanceAttenuation_ || source_) {
