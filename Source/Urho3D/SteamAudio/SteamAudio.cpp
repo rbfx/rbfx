@@ -184,6 +184,7 @@ void SteamAudio::Update(float timeStep)
         iplSimulatorSetSharedInputs(simulator_, IPL_SIMULATIONFLAGS_DIRECT, &sharedInputs);
 
         // Run simulator
+        MutexLock Lock(simulatorMutex_);
         iplSimulatorRunDirect(simulator_);
     }
 }
@@ -209,11 +210,13 @@ void SteamAudio::SetListener(SteamSoundListener *listener)
     listener_ = listener;
 }
 
-IPLSimulationOutputs SteamAudio::GetSimulatorOutputs(IPLSource source) const
+bool SteamAudio::GetSimulatorOutputs(IPLSource source, IPLSimulationOutputs& ouputs) noexcept
 {
-    IPLSimulationOutputs fres;
-    iplSourceGetOutputs(source, IPL_SIMULATIONFLAGS_DIRECT, &fres);
-    return fres;
+    if (!simulatorMutex_.TryAcquire())
+        return false;
+    iplSourceGetOutputs(source, IPL_SIMULATIONFLAGS_DIRECT, &ouputs);
+    simulatorMutex_.Release();
+    return true;
 }
 
 float SteamAudio::GetMasterGain() const
