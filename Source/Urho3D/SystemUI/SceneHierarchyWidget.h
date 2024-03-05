@@ -80,6 +80,8 @@ private:
         unsigned id_{};
         unsigned oldIndex_{};
         unsigned newIndex_{};
+        ea::optional<float> decrementMaxY_;
+        ea::optional<float> incrementMinY_;
     };
     using OptionalReorderInfo = ea::optional<ReorderInfo>;
 

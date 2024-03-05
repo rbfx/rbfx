@@ -27,12 +27,27 @@
 namespace Urho3D
 {
 
-/// Variable timestep scene update.
-URHO3D_EVENT(E_SCENEUPDATE, SceneUpdate)
-{
-    URHO3D_PARAM(P_SCENE, Scene);                  // Scene pointer
-    URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
-}
+/// Define scene update event. It always contains pointer to the scene and the timestep.
+#define URHO3D_SCENE_UPDATE_EVENT(eventID, eventName) \
+    URHO3D_EVENT(eventID, eventName) \
+    { \
+        URHO3D_PARAM(P_SCENE, Scene); \
+        URHO3D_PARAM(P_TIMESTEP, TimeStep); \
+    }
+
+/// Scene update events. They are all sent with the same parameters in the same order as listed.
+/// @{
+
+URHO3D_SCENE_UPDATE_EVENT(E_SCENEFORCEDUPDATE, SceneForcedUpdate); // Sent even for paused scenes!
+
+URHO3D_SCENE_UPDATE_EVENT(E_SCENEUPDATE, SceneUpdate);
+URHO3D_SCENE_UPDATE_EVENT(E_ATTRIBUTEANIMATIONUPDATE, AttributeAnimationUpdate);
+URHO3D_SCENE_UPDATE_EVENT(E_SCENESUBSYSTEMUPDATE, SceneSubsystemUpdate);
+URHO3D_SCENE_UPDATE_EVENT(E_SCENEPOSTUPDATE, ScenePostUpdate);
+
+URHO3D_SCENE_UPDATE_EVENT(E_SCENEFORCEDPOSTUPDATE, SceneForcedPostUpdate); // Sent even for paused scenes!
+
+/// @}
 
 /// Network-aware scene update.
 /// In standalone mode, SceneNetworkUpdate is equivalent to SceneUpdate.
@@ -46,22 +61,8 @@ URHO3D_EVENT(E_SCENENETWORKUPDATE, SceneNetworkUpdate)
     URHO3D_PARAM(P_TIMESTEP_INPUT, TimeStepInput);      // float
 }
 
-/// Scene subsystem update.
-URHO3D_EVENT(E_SCENESUBSYSTEMUPDATE, SceneSubsystemUpdate)
-{
-    URHO3D_PARAM(P_SCENE, Scene);                  // Scene pointer
-    URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
-}
-
 /// Scene drawable update finished. Custom animation (eg. IK) can be done at this point.
 URHO3D_EVENT(E_SCENEDRAWABLEUPDATEFINISHED, SceneDrawableUpdateFinished)
-{
-    URHO3D_PARAM(P_SCENE, Scene);                  // Scene pointer
-    URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
-}
-
-/// Scene attribute animation update.
-URHO3D_EVENT(E_ATTRIBUTEANIMATIONUPDATE, AttributeAnimationUpdate)
 {
     URHO3D_PARAM(P_SCENE, Scene);                  // Scene pointer
     URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
@@ -79,13 +80,6 @@ URHO3D_EVENT(E_ATTRIBUTEANIMATIONREMOVED, AttributeAnimationRemoved)
 {
     URHO3D_PARAM(P_OBJECTANIMATION, ObjectAnimation);               // Object animation pointer
     URHO3D_PARAM(P_ATTRIBUTEANIMATIONNAME, AttributeAnimationName); // String
-}
-
-/// Variable timestep scene post-update.
-URHO3D_EVENT(E_SCENEPOSTUPDATE, ScenePostUpdate)
-{
-    URHO3D_PARAM(P_SCENE, Scene);                  // Scene pointer
-    URHO3D_PARAM(P_TIMESTEP, TimeStep);            // float
 }
 
 /// Asynchronous scene loading progress.

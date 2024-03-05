@@ -195,6 +195,7 @@ if (URHO3D_PROFILING)
     set (CAPSTONE_ARM64_SUPPORT ON)
     set (CAPSTONE_X86_ATT_DISABLE ON)
     add_subdirectory (capstone)
+    install_third_party_libs (capstone-static capstone-shared)
 endif ()
 
 # Tracy's headers are included even in non-profiled builds in order to provide stub profiler macros.

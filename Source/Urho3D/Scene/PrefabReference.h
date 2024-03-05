@@ -80,8 +80,8 @@ public:
 
     /// Make all prefab nodes not temporary and remove component.
     void Inline(PrefabInlineFlags flags);
-    void InlineConservative() { Inline(PrefabInlineFlag::None); }
-    void InlineAggressive() { Inline(PrefabInlineFlag::KeepOtherTemporary); }
+    void InlineConservative() { Inline(PrefabInlineFlag::KeepOtherTemporary); }
+    void InlineAggressive() { Inline(PrefabInlineFlag::None); }
 
     /// Commit prefab changes to the resource.
     void CommitChanges();

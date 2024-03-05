@@ -968,6 +968,10 @@ jobs:
                         )                                             &&
                         (matrix.ci_build_type == 'rel')
                     }}
+      ci_release_sdk: ${{
+                        (github.repository == 'rbfx/rbfx')  &&
+                        (github.ref == 'refs/heads/master')
+                      }}
       URHO3D_SDK: ${{ github.workspace }}/host-sdk
 
     steps:
@@ -1030,6 +1034,26 @@ jobs:
         with:
           name: 'rbfx-${{ github.job }}-${{ env.ci_build_type }}-${{ env.ci_lib_type }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
+
+      - name: Zip SDK
+        if: ${{ env.ci_release_sdk == 'true' }}
+        uses: TheDoctor0/zip-release@0.7.6
+        with:
+          directory: ${{ github.workspace }}
+          filename: ${{ github.workspace }}/SDK.zip
+          path: 'SDK'
+          exclusions: 'SDK/cmake-build SDK/SDK'
+
+      - name: Release SDK
+        if: ${{ env.ci_release_sdk == 'true' }}
+        uses: WebFreak001/deploy-nightly@v3.0.0
+        with:
+          upload_url: ${{ env.ci_latest_release_url }}
+          release_id: ${{ env.ci_latest_release_id }}
+          asset_path: ${{ github.workspace }}/SDK.zip
+          asset_name: 'rebelfork-sdk-${{ github.job }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-latest.zip'
+          asset_content_type: application/zip
+          max_releases: 1
 
   NuGet:
     runs-on: ubuntu-20.04

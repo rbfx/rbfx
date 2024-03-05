@@ -8,7 +8,7 @@
       private bool _swigCMemOwn = false;
       [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
       private static System.Object _lock = new System.Object();
-      internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn) {
+      public static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn) {
         // This function gets called when we want to turn a native cPtr into managed instance. For example when some
         // method returns a pointer to a wrapped object.
         if (cPtr == global::System.IntPtr.Zero)
@@ -42,7 +42,7 @@
         }
       }
 
-      internal $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) {
+      public $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) {
         // Construct a wrapper object wrapping a native instance.
         // Only most downstream class gets cMemoryOwn=true. Base classes do not.
         _swigCMemOwn = cMemoryOwn;
@@ -55,7 +55,7 @@
         }
       }
 
-      internal static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
+      public static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
         return (obj == null) ? new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero) : obj.swigCPtr;
       }
     %}
@@ -67,7 +67,7 @@
       private bool _swigCMemOwn = false;
       [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
       private static System.Object _lock = new System.Object();
-      internal new static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn) {
+      public new static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn) {
         // This function gets called when we want to turn a native cPtr into managed instance. For example when some
         // method returns a pointer to a wrapped object.
         if (cPtr == global::System.IntPtr.Zero)
@@ -101,7 +101,7 @@
         }
       }
 
-      internal $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) : base($imclassname.$csclazznameSWIGUpcast(cPtr), false) {
+      public $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) : base($imclassname.$csclazznameSWIGUpcast(cPtr), false) {
         // Construct a wrapper object wrapping a native instance.
         // Only most downstream class gets cMemoryOwn=true. Base classes do not.
         _swigCMemOwn = cMemoryOwn;
@@ -114,7 +114,7 @@
         }
       }
 
-      internal static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
+      public static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
         return (obj == null) ? new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero) : obj.swigCPtr;
       }
     %}

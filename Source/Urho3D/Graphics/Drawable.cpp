@@ -91,12 +91,7 @@ Drawable::Drawable(Context* context, DrawableFlags drawableFlags) :
     drawDistance_(0.0f),
     shadowDistance_(0.0f),
     sortValue_(0.0f),
-    minZ_(0.0f),
-    maxZ_(0.0f),
-    lodBias_(1.0f),
-    basePassFlags_(0),
-    maxLights_(0),
-    firstLight_(nullptr)
+    lodBias_(1.0f)
 {
 }
 
@@ -107,7 +102,6 @@ Drawable::~Drawable()
 
 void Drawable::RegisterObject(Context* context)
 {
-    URHO3D_ATTRIBUTE("Max Lights", int, maxLights_, 0, AM_DEFAULT);
     URHO3D_ATTRIBUTE("View Mask", int, viewMask_, DEFAULT_VIEWMASK, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Light Mask", int, lightMask_, DEFAULT_LIGHTMASK, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Shadow Mask", int, shadowMask_, DEFAULT_SHADOWMASK, AM_DEFAULT);
@@ -224,11 +218,6 @@ void Drawable::SetZoneMask(unsigned mask)
     // Mark dirty to reset cached zone
     cachedZone_.cacheInvalidationDistanceSquared_ = -1.0f;
     OnMarkedDirty(node_);
-}
-
-void Drawable::SetMaxLights(unsigned num)
-{
-    maxLights_ = num;
 }
 
 void Drawable::SetCastShadows(bool enable)
@@ -352,11 +341,6 @@ void Drawable::MarkInView(const FrameInfo& frame)
     }
     else
         viewCameras_.push_back(frame.camera_);
-
-    basePassFlags_ = 0;
-    firstLight_ = nullptr;
-    lights_.clear();
-    vertexLights_.clear();
 }
 
 void Drawable::MarkInView(unsigned frameNumber)
@@ -366,44 +350,6 @@ void Drawable::MarkInView(unsigned frameNumber)
         viewFrameNumber_ = frameNumber;
         viewCameras_.clear();
     }
-}
-
-void Drawable::LimitLights()
-{
-    // Maximum lights value 0 means unlimited
-    if (!maxLights_ || lights_.size() <= maxLights_)
-        return;
-
-    // If more lights than allowed, move to vertex lights and cut the list
-    const BoundingBox& box = GetWorldBoundingBox();
-    for (unsigned i = 0; i < lights_.size(); ++i)
-        lights_[i]->SetIntensitySortValue(box);
-
-    ea::quick_sort(lights_.begin(), lights_.end(), CompareDrawables);
-    vertexLights_.insert(vertexLights_.end(), lights_.begin() + maxLights_, lights_.end());
-    lights_.resize(maxLights_);
-}
-
-void Drawable::LimitVertexLights(bool removeConvertedLights)
-{
-    if (removeConvertedLights)
-    {
-        for (unsigned i = vertexLights_.size() - 1; i < vertexLights_.size(); --i)
-        {
-            if (!vertexLights_[i]->GetPerVertex())
-                vertexLights_.erase_at(i);
-        }
-    }
-
-    if (vertexLights_.size() <= MAX_VERTEX_LIGHTS)
-        return;
-
-    const BoundingBox& box = GetWorldBoundingBox();
-    for (unsigned i = 0; i < vertexLights_.size(); ++i)
-        vertexLights_[i]->SetIntensitySortValue(box);
-
-    ea::quick_sort(vertexLights_.begin(), vertexLights_.end(), CompareDrawables);
-    vertexLights_.resize(MAX_VERTEX_LIGHTS);
 }
 
 void Drawable::OnNodeSet(Node* previousNode, Node* currentNode)

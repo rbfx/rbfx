@@ -352,14 +352,35 @@ void PrefabReference::Inline(PrefabInlineFlags flags)
     // Other temporary components and children may be spawned by the components in prefab.
     if (flags.Test(PrefabInlineFlag::KeepOtherTemporary))
     {
-        const auto& components = node->GetComponents();
-        const auto& children = node->GetChildren();
+        unsigned temporaryComponentIndex = 0;
+        for (const auto& component : node->GetComponents())
+        {
+            // Break when first N temporary components are converted
+            if (temporaryComponentIndex >= numInstanceComponents_)
+                break;
 
-        for (unsigned index = 0; index < ea::min<unsigned>(numInstanceComponents_, components.size()); ++index)
-            components[index]->SetTemporary(false);
+            // Skip persistent components
+            if (!component->IsTemporary())
+                continue;
 
-        for (unsigned index = 0; index < ea::min<unsigned>(numInstanceChildren_, children.size()); ++index)
-            children[index]->SetTemporary(false);
+            component->SetTemporary(false);
+            ++temporaryComponentIndex;
+        }
+
+        unsigned temporaryChildIndex = 0;
+        for (const auto& child : node->GetChildren())
+        {
+            // Break when first N temporary children are converted
+            if (temporaryChildIndex >= numInstanceChildren_)
+                break;
+
+            // Skip persistent children
+            if (!child->IsTemporary())
+                continue;
+
+            child->SetTemporary(false);
+            ++temporaryChildIndex;
+        }
     }
     else
     {

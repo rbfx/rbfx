@@ -95,6 +95,9 @@ class URHO3D_API Scene : public Node
     URHO3D_OBJECT(Scene, Node);
 
 public:
+    /// Default Scene update events.
+    static const StringVector DefaultUpdateEvents;
+
     using Node::GetComponent;
     using Node::Load;
     using Node::Save;
@@ -140,6 +143,11 @@ public:
     void AddLightmap(const ea::string& lightmapTextureName);
     /// Return lightmap texture.
     Texture2D* GetLightmapTexture(unsigned index) const;
+
+    /// Set update events.
+    void SetUpdateEvents(const StringVector& events);
+    /// Return update events.
+    const StringVector& GetUpdateEvents() const { return updateEvents_; }
 
     /// Load from an XML file. Return true if successful.
     bool LoadXML(Deserializer& source);
@@ -188,12 +196,6 @@ public:
     void AddRequiredPackageFile(PackageFile* package);
     /// Clear required package files.
     void ClearRequiredPackageFiles();
-    /// Register a node user variable hash reverse mapping (for editing).
-    void RegisterVar(const ea::string& name);
-    /// Unregister a node user variable hash reverse mapping.
-    void UnregisterVar(const ea::string& name);
-    /// Clear all registered node user variable hash reverse mappings.
-    void UnregisterAllVars();
 
     /// Set source file name.
     void SetFileName(const ea::string_view fileName) { fileName_ = fileName; }
@@ -253,9 +255,6 @@ public:
     /// Return all components parented by this Scene.
     const ea::unordered_map<unsigned, Component*>& GetAllComponents() const { return replicatedComponents_; }
 
-    /// Return a node user variable name, or empty if not registered.
-    const ea::string& GetVarName(StringHash hash) const;
-
     /// Update scene. Called by HandleUpdate.
     void Update(float timeStep);
     /// Begin a threaded update. During threaded update components can choose to delay dirty processing.
@@ -286,10 +285,6 @@ public:
     void ComponentAdded(Component* component);
     /// Component removed. Remove from ID map.
     void ComponentRemoved(Component* component);
-    /// Set node user variable reverse mappings.
-    void SetVarNamesAttr(const ea::string& value);
-    /// Return node user variable reverse mappings.
-    ea::string GetVarNamesAttr() const;
 
 private:
     /// Handle the logic update event to update the scene, if active.
@@ -334,8 +329,6 @@ private:
     mutable ea::string fileName_;
     /// Required package files for networking.
     ea::vector<SharedPtr<PackageFile> > requiredPackageFiles_;
-    /// Registered node user variable reverse mappings.
-    ea::unordered_map<StringHash, ea::string> varNames_;
     /// Delayed dirty notification queue for components.
     ea::vector<Component*> delayedDirtyComponents_;
     /// Mutex for the delayed dirty notification queue.
@@ -363,6 +356,10 @@ private:
     ResourceRefList lightmaps_;
     /// Loaded lightmap textures.
     ea::vector<SharedPtr<Texture2D>> lightmapTextures_;
+
+    /// Update events to be sent on every update.
+    StringVector updateEvents_;
+    ea::vector<ea::pair<StringHash, bool>> cookedUpdateEvents_;
 };
 
 /// Register Scene library objects.

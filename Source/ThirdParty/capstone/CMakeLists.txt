@@ -497,7 +497,7 @@ set(ALL_HEADERS
     ${HEADERS_MOS65XX}
     )
 
-include_directories("${PROJECT_SOURCE_DIR}/include")
+include_directories("$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>")
 
 ## properties
 # version info
@@ -594,7 +594,7 @@ source_group("Include\\EVM" FILES ${HEADERS_EVM})
 source_group("Include\\MOS65XX" FILES ${HEADERS_MOS65XX})
 
 # rbfx:
-target_include_directories(capstone-static PUBLIC include)
+target_include_directories(capstone-static PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
 return ()
 
 ### test library 64bit routine:

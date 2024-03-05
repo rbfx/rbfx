@@ -1269,6 +1269,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_ORIENTATIONS, "LandscapeLeft LandscapeRight");
     engineParameters_->DefineVariable(EP_PACKAGE_CACHE_DIR, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_PLUGINS, EMPTY_STRING);
+    engineParameters_->DefineVariable(EP_RENAME_PLUGINS, false);
     engineParameters_->DefineVariable(EP_REFRESH_RATE, 0).Overridable();
     engineParameters_->DefineVariable(EP_RESOURCE_PACKAGES, EMPTY_STRING).CommandLinePriority();
     engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "CoreData;Cache;Data").CommandLinePriority();

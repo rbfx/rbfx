@@ -20,6 +20,8 @@
 # THE SOFTWARE.
 #
 
+project(Urho3D C CXX)
+
 macro (define_engine_source_files)
     cmake_parse_arguments(DEFINE_SRC_FILES "NORECURSE" "" "" ${ARGN} )
     if (DEFINE_SRC_FILES_NORECURSE)
@@ -30,15 +32,7 @@ macro (define_engine_source_files)
     foreach (path ${DEFINE_SRC_FILES_UNPARSED_ARGUMENTS})
         # Get header files
         file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.h)
-        list (REMOVE_ITEM _files
-            Urho3D.h
-            Graphics/Direct3D11/D3D11GraphicsImpl.cpp
-            Graphics/Direct3D11/D3D11GraphicsImpl.h
-            Graphics/OpenGL/OGLGraphicsImpl.h
-            Graphics/Diligent/DiligentGraphicsImpl.cpp
-            Graphics/Diligent/DiligentGraphicsImpl.h
-            IK/IKConverters.h
-        )
+        list (REMOVE_ITEM _files Urho3D.h)
         list (APPEND HEADER_FILES ${_files})
         # Install them
         install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
@@ -460,16 +454,25 @@ if (URHO3D_CSHARP)
         DEPENDS Urho3DNet
     )
 
-    file (GLOB_RECURSE EXTRA_NATIVE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.h ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.cpp)
+    file (GLOB_RECURSE EXTRA_NATIVE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.h)
+    file (GLOB_RECURSE EXTRA_NATIVE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.cpp)
     file (GLOB_RECURSE WRAPPER_FILES)
 
-    target_sources(Urho3D PRIVATE ${EXTRA_NATIVE_FILES} ${CMAKE_CURRENT_BINARY_DIR}/Urho3DCSharp/Urho3DCSHARP_wrap.cxx)
+    target_sources(Urho3D PRIVATE
+        ${EXTRA_NATIVE_HEADERS}
+        ${EXTRA_NATIVE_SOURCES}
+        ${CMAKE_CURRENT_BINARY_DIR}/Urho3DCSharp/Urho3DCSHARP_wrap.cxx
+    )
+
     if (URHO3D_SYSTEMUI)
         target_sources(Urho3D PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ImGuiCSharp/ImGuiCSHARP_wrap.cxx)
     endif ()
     if (MSVC)
         target_compile_options(Urho3D PRIVATE /bigobj)
     endif ()
+
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig DESTINATION ${DEST_INCLUDE_DIR}/CSharp)
+    install (FILES ${EXTRA_NATIVE_HEADERS} DESTINATION ${DEST_INCLUDE_DIR}/CSharp/Native)
 endif ()
 
 # Install C# dependencies
@@ -558,4 +561,4 @@ file (GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h CONTENT ${U
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h DESTINATION ${DEST_INCLUDE_DIR})
 file(GLOB ROOT_HEADERS *.h)
 list(REMOVE_ITEM ROOT_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h)
-install (FILES ${ROOT_HEADERS} DESTINATION ${DEST_INCLUDE_DIR})
+install (FILES ${ROOT_HEADERS} "LinkedPlugins.cpp.in" DESTINATION ${DEST_INCLUDE_DIR})

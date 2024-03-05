@@ -25,6 +25,20 @@ include(${CMAKE_CURRENT_LIST_DIR}/VSSolution.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CCache.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/UrhoOptions.cmake)
 
+if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../Urho3D_GeneratedConfig.cmake)
+    set (URHO3D_IS_SDK ON)
+    set (URHO3D_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../)
+    get_filename_component(URHO3D_SDK_PATH "${URHO3D_SDK_PATH}" REALPATH)
+else ()
+    set (URHO3D_IS_SDK OFF)
+endif ()
+
+if (URHO3D_IS_SDK)
+    set (URHO3D_THIRDPARTY_DIR ${URHO3D_SDK_PATH}/include/Urho3D/ThirdParty/)
+else ()
+    set (URHO3D_THIRDPARTY_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty/)
+endif ()
+
 set(PERMISSIONS_644 OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 set(PERMISSIONS_755 OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
 
@@ -61,6 +75,113 @@ if (NOT MULTI_CONFIG_PROJECT AND NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Specifies the build type." FORCE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
 endif ()
+
+function (rbfx_configure_cmake_props props_out)
+
+    file(WRITE "${props_out}" "<Project>\n")
+    file(APPEND "${props_out}" "  <PropertyGroup>\n")
+    file(APPEND "${props_out}" "    <CMakePropsIncluded>true</CMakePropsIncluded>\n")
+
+    # Variables of interest
+    foreach (var
+        CMAKE_GENERATOR
+        CMAKE_RUNTIME_OUTPUT_DIRECTORY
+        URHO3D_PLATFORM
+        URHO3D_IS_SDK
+        URHO3D_SDK_PATH
+        URHO3D_NETFX
+        URHO3D_NETFX_RUNTIME_IDENTIFIER
+        URHO3D_NETFX_RUNTIME)
+        file(APPEND "${props_out}" "    <${var}>${${var}}</${var}>\n")
+    endforeach ()
+
+    # Binary/sourece dirs
+    get_cmake_property(vars VARIABLES)
+    list (SORT vars)
+    foreach (var ${vars})
+        if ("${var}" MATCHES "_(BINARY|SOURCE)_DIR$")
+            if (NOT "${${var}}" MATCHES "^.+/ThirdParty/.+$")
+                string(REPLACE "." "_" var_name "${var}")
+                set(var_value "${${var}}")
+                if (NOT "${var_value}" MATCHES "/$")
+                    set(var_value "${var_value}/")
+                endif ()
+                file(APPEND "${props_out}" "    <${var_name}>${var_value}</${var_name}>\n")
+            endif ()
+        endif ()
+    endforeach()
+    file(APPEND "${props_out}" "  </PropertyGroup>\n")
+    file(APPEND "${props_out}" "</Project>\n")
+endfunction ()
+
+if (URHO3D_CSHARP)
+    find_program(DOTNET dotnet)
+    if (NOT DOTNET)
+        message(FATAL_ERROR "dotnet executable was not found.")
+    endif ()
+
+    # Detect runtime version
+    execute_process(COMMAND ${DOTNET} --list-sdks OUTPUT_VARIABLE DOTNET_SDKS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(REGEX REPLACE "\\.[0-9]+ [^\r\n]+" "" DOTNET_SDKS "${DOTNET_SDKS}")      # Trim patch version and SDK paths
+    string(REGEX REPLACE "\r?\n" ";" DOTNET_SDKS "${DOTNET_SDKS}")                  # Turn lines into a list
+    list(REVERSE DOTNET_SDKS)                                                       # Highest version goes first
+    if (URHO3D_NETFX_RUNTIME_VERSION)
+        string (REPLACE "." "\\." URHO3D_NETFX_RUNTIME_VERSION "${URHO3D_NETFX_RUNTIME_VERSION}")
+        string (REPLACE "*" "." URHO3D_NETFX_RUNTIME_VERSION "${URHO3D_NETFX_RUNTIME_VERSION}")
+        set (URHO3D_NETFX_RUNTIME_VERSION_REGEX "${URHO3D_NETFX_RUNTIME_VERSION}")
+        unset (URHO3D_NETFX_RUNTIME_VERSION)
+        foreach (VERSION ${DOTNET_SDKS})
+            if ("${VERSION}" MATCHES "${URHO3D_NETFX_RUNTIME_VERSION_REGEX}")
+                set (URHO3D_NETFX_RUNTIME_VERSION "${VERSION}")
+                break ()
+            endif ()
+        endforeach ()
+    endif ()
+    if (NOT URHO3D_NETFX_RUNTIME_VERSION)
+        list (GET DOTNET_SDKS 0 URHO3D_NETFX_RUNTIME_VERSION)
+    endif ()
+
+    # Trim extra elements that may be preset in version string. Eg. "6.0.100-preview.6.21355.2" is converted to "6.0".
+    string(REGEX REPLACE "([0-9]+)\\.([0-9]+)(.+)?" "\\1.\\2" URHO3D_NETFX_RUNTIME_VERSION "${URHO3D_NETFX_RUNTIME_VERSION}")
+    if (URHO3D_NETFX_RUNTIME_VERSION VERSION_LESS "5.0")
+        set (NETCORE core)
+    endif ()
+    set (URHO3D_NETFX_RUNTIME "net${NETCORE}${URHO3D_NETFX_RUNTIME_VERSION}")
+
+    if (WIN32)
+        set (URHO3D_NETFX_RUNTIME_IDENTIFIER win-${URHO3D_PLATFORM})
+    elseif (MACOS)
+        set (URHO3D_NETFX_RUNTIME_IDENTIFIER osx-${URHO3D_PLATFORM})
+    else ()
+        set (URHO3D_NETFX_RUNTIME_IDENTIFIER linux-${URHO3D_PLATFORM})
+    endif ()
+
+    # For .csproj that gets built by cmake invoking msbuild
+    set (ENV{CMAKE_GENERATOR} "${CMAKE_GENERATOR}")
+    set (ENV{CMAKE_BINARY_DIR} "${CMAKE_BINARY_DIR}/")
+    set (ENV{RBFX_BINARY_DIR} "${rbfx_BINARY_DIR}/")
+    set (ENV{CMAKE_RUNTIME_OUTPUT_DIRECTORY} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
+
+    set (DOTNET_FRAMEWORK_TYPES net6 net7)
+    set (DOTNET_FRAMEWORK_VERSIONS v6.0 v7.0)
+    list (FIND DOTNET_FRAMEWORK_TYPES ${URHO3D_NETFX} DOTNET_FRAMEWORK_INDEX)
+    if (DOTNET_FRAMEWORK_INDEX GREATER -1)
+        list (GET DOTNET_FRAMEWORK_VERSIONS ${DOTNET_FRAMEWORK_INDEX} CMAKE_DOTNET_TARGET_FRAMEWORK_VERSION)
+    endif ()
+    unset (DOTNET_FRAMEWORK_INDEX)
+
+    rbfx_configure_cmake_props("${CMAKE_BINARY_DIR}/CMake.props")
+
+    if (NOT SWIG_LIB)
+        set (SWIG_DIR ${URHO3D_THIRDPARTY_DIR}/swig/Lib)
+    endif ()
+
+    # For .csproj embedded into visual studio solution
+    if (NOT URHO3D_IS_SDK)
+        install (FILES ${rbfx_SOURCE_DIR}/Directory.Build.props DESTINATION ${DEST_SHARE_DIR}/CMake/)
+    endif ()
+    include(${CMAKE_CURRENT_LIST_DIR}/UrhoSWIG.cmake)
+endif()
 
 # Macro for setting symbolic link on platform that supports it
 function (create_symlink SOURCE DESTINATION)
@@ -320,6 +441,17 @@ function (web_executable TARGET)
         if (BUILD_SHARED_LIBS)
             target_link_libraries(${TARGET} PRIVATE -sMAIN_MODULE=1)
         endif ()
+        if (TARGET datachannel-wasm)
+            if (URHO3D_IS_SDK)
+                set (LIBDATACHANNEL_WASM_DIR "${URHO3D_SDK_PATH}/include/Urho3D/ThirdParty/libdatachannel-wasm")
+            else ()
+                set (LIBDATACHANNEL_WASM_DIR "${rbfx_SOURCE_DIR}/Source/ThirdParty/libdatachannel-wasm")
+            endif ()
+            target_link_options(${TARGET} PRIVATE
+                "SHELL:--js-library ${LIBDATACHANNEL_WASM_DIR}/wasm/js/webrtc.js"
+                "SHELL:--js-library ${LIBDATACHANNEL_WASM_DIR}/wasm/js/websocket.js"
+            )
+        endif ()
     endif ()
 endfunction ()
 
@@ -374,7 +506,7 @@ function (web_link_resources TARGET RESOURCES)
     add_dependencies(${TARGET} ${RESOURCES})
 endfunction ()
 
-function (define_static_plugin TARGET PLUGIN_NAME)
+function (setup_plugin_target TARGET PLUGIN_NAME)
     string (REPLACE "." "_" PLUGIN_NAME_SANITATED ${PLUGIN_NAME})
 
     set_target_properties (${TARGET} PROPERTIES OUTPUT_NAME ${PLUGIN_NAME})
@@ -385,26 +517,38 @@ function (define_static_plugin TARGET PLUGIN_NAME)
     )
 endfunction ()
 
-function (link_static_plugins TARGET PLUGIN_LIBRARIES)
-    if (BUILD_SHARED_LIBS)
-        return ()
-    endif ()
+function (add_plugin TARGET SOURCE_FILES)
+    add_library (${TARGET} ${SOURCE_FILES})
+    target_link_libraries (${TARGET} PUBLIC Urho3D)
+    setup_plugin_target (${TARGET} "${TARGET}")
+endfunction ()
 
+function (target_link_plugins TARGET PLUGIN_LIBRARIES)
     set (DECLARE_FUNCTIONS "")
     set (REGISTER_PLUGINS "")
     set (PLUGIN_LIST "")
+    set (STATIC_PLUGIN_LIBRARIRES "")
     foreach (PLUGIN_LIBRARY ${PLUGIN_LIBRARIES})
         get_target_property (PLUGIN_NAME ${PLUGIN_LIBRARY} OUTPUT_NAME)
-        string (REPLACE "." "_" PLUGIN_NAME_SANITATED ${PLUGIN_NAME})
-        string (APPEND DECLARE_FUNCTIONS "    void RegisterPlugin_${PLUGIN_NAME_SANITATED}();\n")
-        string (APPEND REGISTER_PLUGINS "    RegisterPlugin_${PLUGIN_NAME_SANITATED}();\n")
+        get_target_property (TARGET_TYPE ${PLUGIN_LIBRARY} TYPE)
+        if (TARGET_TYPE STREQUAL STATIC_LIBRARY)
+            string (REPLACE "." "_" PLUGIN_NAME_SANITATED ${PLUGIN_NAME})
+            string (APPEND DECLARE_FUNCTIONS "    void RegisterPlugin_${PLUGIN_NAME_SANITATED}();\n")
+            string (APPEND REGISTER_PLUGINS "    RegisterPlugin_${PLUGIN_NAME_SANITATED}();\n")
+            string (APPEND STATIC_PLUGIN_LIBRARIRES "${PLUGIN_LIBRARY};")
+        endif ()
         string (APPEND PLUGIN_LIST "${PLUGIN_NAME};")
     endforeach ()
 
-    configure_file (${rbfx_SOURCE_DIR}/Source/Urho3D/RegisterStaticPlugins.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/RegisterStaticPlugins.cpp @ONLY)
-    add_library (${TARGET}_StaticPlugins ${CMAKE_CURRENT_BINARY_DIR}/RegisterStaticPlugins.cpp)
-    target_link_libraries (${TARGET}_StaticPlugins PRIVATE Urho3D ${PLUGIN_LIBRARIES})
-    target_link_libraries (${TARGET} PRIVATE ${TARGET}_StaticPlugins)
+    if (URHO3D_IS_SDK)
+        set (TEMPLATE_DIR ${URHO3D_SDK_PATH}/include/Urho3D)
+    else ()
+        set (TEMPLATE_DIR ${rbfx_SOURCE_DIR}/Source/Urho3D)
+    endif ()
+
+    configure_file (${TEMPLATE_DIR}/LinkedPlugins.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/LinkedPlugins.cpp @ONLY)
+    target_sources (${TARGET} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/LinkedPlugins.cpp)
+    target_link_libraries (${TARGET} PRIVATE ${STATIC_PLUGIN_LIBRARIRES})
 endfunction()
 
 function (install_third_party_libs)
