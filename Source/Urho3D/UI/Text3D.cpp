@@ -34,6 +34,7 @@
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Node.h"
 #include "../UI/Font.h"
+#include "../UI/FontFace.h"
 #include "../UI/Text.h"
 #include "../UI/Text3D.h"
 
@@ -636,11 +637,18 @@ void Text3D::UpdateTextBatches()
     {
         boundingBox_.Clear();
 
+        // SDF fonts may be scaled by font size
+        Font* font = GetFont();
+        const float fontSize = GetFontSize();
+        const bool isSDFFont = font ? font->IsSDFFont() : false;
+        const FontFace* currentFace = font ? font->GetFace(fontSize) : nullptr;
+        const float textScale = isSDFFont && currentFace ? fontSize / currentFace->GetPointSize() : 1.0f;
+
         for (unsigned i = 0; i < uiVertexData_.size(); i += UI_VERTEX_SIZE)
         {
             Vector3& position = *(reinterpret_cast<Vector3*>(&uiVertexData_[i]));
             position += offset;
-            position *= TEXT_SCALING;
+            position *= TEXT_SCALING * textScale;
             position.y_ = -position.y_;
             boundingBox_.Merge(position);
         }
