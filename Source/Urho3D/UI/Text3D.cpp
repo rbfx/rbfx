@@ -87,6 +87,7 @@ void Text3D::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Snap to Pixels", GetSnapToPixels, SetSnapToPixels, bool, false, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE("Face Camera Mode", faceCameraMode_, faceCameraModeNames, FC_NONE, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Min Angle", float, minAngle_, 0.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Depth Test", bool, depthTest_, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Draw Distance", GetDrawDistance, SetDrawDistance, float, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Width", GetWidth, SetWidth, int, 0, AM_DEFAULT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Horiz Alignment", GetHorizontalAlignment, SetHorizontalAlignment, HorizontalAlignment,
@@ -396,6 +397,16 @@ void Text3D::SetFaceCameraMode(FaceCameraMode mode)
 
         // Bounding box must be recalculated
         OnMarkedDirty(node_);
+    }
+}
+
+void Text3D::SetDepthTest(bool enable)
+{
+    if (enable != depthTest_)
+    {
+        depthTest_ = enable;
+
+        UpdateTextMaterials();
     }
 }
 
@@ -712,6 +723,7 @@ void Text3D::UpdateTextMaterials(bool forceUpdate)
                 Pass* pass = tech ? tech->GetPass("alpha") : nullptr;
                 if (pass)
                 {
+                    pass->SetDepthTestMode(depthTest_ ? CMP_LESSEQUAL : CMP_ALWAYS);
                     switch (GetTextEffect())
                     {
                     case TE_NONE:
@@ -758,6 +770,7 @@ void Text3D::UpdateTextMaterials(bool forceUpdate)
                 Pass* pass = tech ? tech->GetPass("alpha") : nullptr;
                 if (pass)
                 {
+                    pass->SetDepthTestMode(depthTest_ ? CMP_LESSEQUAL : CMP_ALWAYS);
                     if (texture && texture->GetFormat() == TextureFormat::TEX_FORMAT_R8_UNORM)
                         pass->SetPixelShaderDefines("ALPHAMAP");
                     else
