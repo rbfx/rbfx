@@ -34,9 +34,13 @@ else ()
 endif ()
 
 if (URHO3D_IS_SDK)
-    set (URHO3D_THIRDPARTY_DIR ${URHO3D_SDK_PATH}/include/Urho3D/ThirdParty/)
+    set (URHO3D_THIRDPARTY_DIR ${URHO3D_SDK_PATH}/include/Urho3D/ThirdParty)
+    set (URHO3D_CMAKE_DIR ${URHO3D_SDK_PATH}/share/CMake)
+    set (URHO3D_CSHARP_PROPS_FILE ${URHO3D_CMAKE_DIR}/Directory.Build.props)
 else ()
-    set (URHO3D_THIRDPARTY_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty/)
+    set (URHO3D_THIRDPARTY_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty)
+    set (URHO3D_CMAKE_DIR ${rbfx_SOURCE_DIR}/CMake)
+    set (URHO3D_CSHARP_PROPS_FILE ${rbfx_SOURCE_DIR}/Directory.Build.props)
 endif ()
 
 set(PERMISSIONS_644 OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
@@ -86,6 +90,8 @@ function (rbfx_configure_cmake_props props_out)
     foreach (var
         CMAKE_GENERATOR
         CMAKE_RUNTIME_OUTPUT_DIRECTORY
+        CMAKE_CONFIGURATION_TYPES
+        URHO3D_CSHARP_PROPS_FILE
         URHO3D_PLATFORM
         URHO3D_IS_SDK
         URHO3D_SDK_PATH
@@ -172,15 +178,10 @@ if (URHO3D_CSHARP)
 
     rbfx_configure_cmake_props("${CMAKE_BINARY_DIR}/CMake.props")
 
-    if (NOT SWIG_LIB)
-        set (SWIG_DIR ${URHO3D_THIRDPARTY_DIR}/swig/Lib)
-    endif ()
-
     # For .csproj embedded into visual studio solution
     if (NOT URHO3D_IS_SDK)
         install (FILES ${rbfx_SOURCE_DIR}/Directory.Build.props DESTINATION ${DEST_SHARE_DIR}/CMake/)
     endif ()
-    include(${CMAKE_CURRENT_LIST_DIR}/UrhoSWIG.cmake)
 endif()
 
 # Macro for setting symbolic link on platform that supports it
@@ -293,14 +294,45 @@ function (csharp_bind_target)
         return ()
     endif ()
 
-    cmake_parse_arguments(BIND "" "TARGET;CSPROJ;SWIG;NAMESPACE;NATIVE" "INCLUDE_DIRS" ${ARGN})
+    cmake_parse_arguments(BIND "" "TARGET;CSPROJ;SWIG;NAMESPACE;NATIVE" "" ${ARGN})
 
-    get_target_property(BIND_SOURCE_DIR ${BIND_TARGET} SOURCE_DIR)
+    # General SWIG parameters
+    set(BIND_OUT_DIR  ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_$<CONFIG>)
+    set(BIND_OUT_FILE ${BIND_OUT_DIR}/${BIND_TARGET}CSHARP_wrap.cxx)
+    set(GENERATOR_OPTIONS
+        -csharp
+        -namespace "${BIND_NAMESPACE}"
+        -fastdispatch
+        -c++
+        -outdir "${BIND_OUT_DIR}"
+        -o "${BIND_OUT_FILE}"
+        #-debug-tmsearch
+    )
+
+    # Native library name matches target name by default
+    if (BIND_NATIVE)
+        list (APPEND GENERATOR_OPTIONS -dllimport "${BIND_NATIVE}")
+    else ()
+        if (IOS OR WEB)
+            list (APPEND GENERATOR_OPTIONS -dllimport __Internal)
+        else ()
+            list (APPEND GENERATOR_OPTIONS -dllimport "${BIND_TARGET}")
+        endif ()
+    endif ()
+
+    if (IOS)
+        list (APPEND GENERATOR_OPTIONS -D__IOS__)
+    endif ()
 
     # Parse bindings using same compile definitions as built target
     __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${BIND_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
     __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${BIND_TARGET} INTERFACE_COMPILE_DEFINITIONS)
     __TARGET_GET_PROPERTIES_RECURSIVE(OPTIONS  ${BIND_TARGET} INTERFACE_COMPILE_OPTIONS)
+    if (TARGET "${BIND_NATIVE}")
+        __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${BIND_NATIVE} INTERFACE_INCLUDE_DIRECTORIES)
+        __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${BIND_NATIVE} INTERFACE_COMPILE_DEFINITIONS)
+        __TARGET_GET_PROPERTIES_RECURSIVE(OPTIONS  ${BIND_NATIVE} INTERFACE_COMPILE_OPTIONS)
+    endif ()
     if (INCLUDES)
         list (REMOVE_DUPLICATES INCLUDES)
     endif ()
@@ -311,16 +343,9 @@ function (csharp_bind_target)
         list (REMOVE_DUPLICATES OPTIONS)
     endif ()
     foreach(item ${INCLUDES})
-        if ("${item}" MATCHES "\\$<INSTALL_INTERFACE:.+")
-            continue()
-        endif ()
-        if ("${item}" MATCHES "\\$<BUILD_INTERFACE:.+")
-            string(LENGTH "${item}" len)
-            math(EXPR len "${len} - 19")
-            string(SUBSTRING "${item}" 18 ${len} item)
-        endif ()
         list(APPEND GENERATOR_OPTIONS -I${item})
     endforeach()
+    # Defines must have a value, otherwise SWIG gets confused
     foreach(item ${DEFINES})
         string(FIND "${item}" "=" EQUALITY_INDEX)
         if (EQUALITY_INDEX EQUAL -1)
@@ -328,60 +353,34 @@ function (csharp_bind_target)
         endif ()
         list(APPEND GENERATOR_OPTIONS "-D${item}")
     endforeach()
+    list(APPEND GENERATOR_OPTIONS ${OPTIONS})
 
-    if (NOT BIND_NATIVE)
-        set (BIND_NATIVE ${BIND_TARGET})
-    endif ()
-
-    # Swig
-    if (IOS)
-        list (APPEND GENERATOR_OPTIONS -D__IOS__)
-    endif ()
-    set(CMAKE_SWIG_FLAGS
-        -namespace ${BIND_NAMESPACE}
-        -fastdispatch
-        -I${CMAKE_CURRENT_BINARY_DIR}
-        ${GENERATOR_OPTIONS}
-    )
-
-    foreach(item ${OPTIONS})
-        list(APPEND GENERATOR_OPTIONS ${item})
-    endforeach()
+    # Main .i file
+    list(APPEND GENERATOR_OPTIONS ${BIND_SWIG})
 
     # Finalize option list
     string(REGEX REPLACE "[^;]+\\$<COMPILE_LANGUAGE:[^;]+;" "" GENERATOR_OPTIONS "${GENERATOR_OPTIONS}")    # COMPILE_LANGUAGE creates ambiguity, remove.
     string(REPLACE ";" "\n" GENERATOR_OPTIONS "${GENERATOR_OPTIONS}")
     file(GENERATE OUTPUT "GeneratorOptions_${BIND_TARGET}_$<CONFIG>.txt" CONTENT "${GENERATOR_OPTIONS}" CONDITION $<COMPILE_LANGUAGE:CXX>)
 
-    set (SWIG_SYSTEM_INCLUDE_DIRS "${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES};${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES};${CMAKE_SYSTEM_INCLUDE_PATH};${CMAKE_EXTRA_GENERATOR_CXX_SYSTEM_INCLUDE_DIRS}")
-    if (BIND_INCLUDE_DIRS)
-        list (APPEND SWIG_SYSTEM_INCLUDE_DIRS ${BIND_INCLUDE_DIRS})
-    endif ()
-    string (REPLACE ";" ";-I" SWIG_SYSTEM_INCLUDE_DIRS "${SWIG_SYSTEM_INCLUDE_DIRS}")
+    # Swig generator command
+    add_custom_command(OUTPUT ${BIND_OUT_FILE}
+        COMMAND ${CMAKE_COMMAND} -E remove_directory ${BIND_OUT_DIR}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${BIND_OUT_DIR}
+        COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${URHO3D_THIRDPARTY_DIR}/swig/Lib" "$<TARGET_FILE:swig>"
+        ARGS @"${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_$<CONFIG>.txt"
+        MAIN_DEPENDENCY ${BIND_SWIG}
+        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_$<CONFIG>.txt"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "SWIG: Generating C# bindings for ${BIND_TARGET}")
 
-    set_source_files_properties(${BIND_SWIG} PROPERTIES
-        CPLUSPLUS ON
-        SWIG_FLAGS "-I${SWIG_SYSTEM_INCLUDE_DIRS}"
-    )
-    if (NOT DEFINED SWIG_MODULE_${BIND_TARGET}_DLLIMPORT)
-        if (IOS)
-            set (SWIG_MODULE_${BIND_TARGET}_DLLIMPORT __Internal)
-        else ()
-            set (SWIG_MODULE_${BIND_TARGET}_DLLIMPORT ${BIND_NATIVE})
-        endif ()
+    if (BIND_NATIVE)
+        # Bindings are part of another target
+        target_sources(${BIND_NATIVE} PRIVATE ${BIND_OUT_FILE})
+    else ()
+        # Bindings are part of target bindings are generated for
+        target_sources(${BIND_TARGET} PRIVATE ${BIND_OUT_FILE})
     endif ()
-    set (SWIG_MODULE_${BIND_TARGET}_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp)
-    set (SWIG_MODULE_${BIND_TARGET}_NO_LIBRARY ON)
-
-    # CMakeCache.txt does not exist when cache directory is configured for the first time and when user changes any
-    # cmake parameters. We exploit this to delete bindings upon configuration change and force their regeneration.
-    if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
-        file(REMOVE_RECURSE ${SWIG_MODULE_${BIND_TARGET}_OUTDIR})
-        file(MAKE_DIRECTORY ${SWIG_MODULE_${BIND_TARGET}_OUTDIR})
-    endif ()
-
-    swig_add_module(${BIND_TARGET} csharp ${BIND_SWIG})
-    unset (CMAKE_SWIG_FLAGS)
 
     if (MULTI_CONFIG_PROJECT)
         set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>)

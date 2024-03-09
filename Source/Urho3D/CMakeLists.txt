@@ -430,9 +430,15 @@ source_group(Resources FILES ${RESOURCE_FILES})     # RESOURCE_PAKS could be emp
 target_sources(Urho3D PRIVATE ${RESOURCE_DIRS})
 
 if (URHO3D_CSHARP)
+    # Not necessary for build, but required so that users can import Urho3D.i in their bindings .i
+    target_include_directories(Urho3D PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig>
+        $<INSTALL_INTERFACE:${DEST_INCLUDE_DIR}/CSharp/Swig>
+    )
+
     csharp_bind_target(
         TARGET Urho3D
-        SWIG CSharp/Swig/Urho3D.i
+        SWIG ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig/Urho3D.i
         CSPROJ ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.csproj
         NAMESPACE Urho3DNet
     )
@@ -440,7 +446,7 @@ if (URHO3D_CSHARP)
         csharp_bind_target(
             TARGET ImGui
             NATIVE Urho3D
-            SWIG CSharp/Swig/ImGui.i
+            SWIG ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig/ImGui.i
             NAMESPACE ImGuiNet
             INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."
         )
@@ -461,12 +467,8 @@ if (URHO3D_CSHARP)
     target_sources(Urho3D PRIVATE
         ${EXTRA_NATIVE_HEADERS}
         ${EXTRA_NATIVE_SOURCES}
-        ${CMAKE_CURRENT_BINARY_DIR}/Urho3DCSharp/Urho3DCSHARP_wrap.cxx
     )
 
-    if (URHO3D_SYSTEMUI)
-        target_sources(Urho3D PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ImGuiCSharp/ImGuiCSHARP_wrap.cxx)
-    endif ()
     if (MSVC)
         target_compile_options(Urho3D PRIVATE /bigobj)
     endif ()

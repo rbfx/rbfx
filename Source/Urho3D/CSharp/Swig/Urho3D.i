@@ -325,6 +325,7 @@ namespace SDL
 %ignore Urho3D::Detail::CriticalSection;
 %ignore Urho3D::MutexLock;
 %ignore Urho3D::ObjectReflectionRegistry::GetReflection(StringHash typeNameHash) const;
+%ignore Urho3D::ObjectReflectionRegistry::GetObjectCategories;
 %ignore Urho3D::Object::IsInstanceOf(const TypeInfo* typeInfo);
 %ignore Urho3D::Object::SubscribeToEventManual;
 
