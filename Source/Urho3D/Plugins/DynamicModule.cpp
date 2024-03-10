@@ -431,8 +431,11 @@ ModuleType DynamicModule::ReadModuleInformation(Context* context, const ea::stri
         {
 #if URHO3D_CSHARP
             // Verify that plugin has a class that inherits from PluginApplication.
-            if (Script::GetRuntimeApi()->VerifyAssembly(path.data()))
-                return MODULE_MANAGED;
+            if (auto* scriptApi = Script::GetRuntimeApi())
+            {
+                if (scriptApi->VerifyAssembly(path.data()))
+                    return MODULE_MANAGED;
+            }
 #endif
         }
 #if _WIN32
