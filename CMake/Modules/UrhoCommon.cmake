@@ -66,6 +66,23 @@ if (DEFINED URHO3D_SDK)
     endif ()
 endif ()
 
+if (NOT DEFINED URHO3D_SDK)
+    set (PACKAGE_TOOL $<TARGET_FILE:PackageTool>)
+    set (SWIG_EXECUTABLE $<TARGET_FILE:swig>)
+endif ()
+
+# Xcode does not support per-config source files, therefore we must lock generated bindings to some config
+# and they wont switch when build config changes in Xcode.
+if (CMAKE_GENERATOR STREQUAL "Xcode")
+    if (CMAKE_BUILD_TYPE)
+        set (URHO3D_CSHARP_BIND_CONFIG "${CMAKE_BUILD_TYPE}")
+    else ()
+        set (URHO3D_CSHARP_BIND_CONFIG "Release")
+    endif ()
+else ()
+    set (URHO3D_CSHARP_BIND_CONFIG $<CONFIG>)
+endif ()
+
 if (EMSCRIPTEN)
     set (WEB ON)
     set (EMPACKAGER python ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py CACHE PATH "file_packager.py")
@@ -116,6 +133,11 @@ function (rbfx_configure_cmake_props props_out)
             endif ()
         endif ()
     endforeach()
+
+    # C# build config, translate CMake generator expression to MSBuild expression.
+    string(REPLACE "$<CONFIG>" "$(Configuration)" URHO3D_CSHARP_BIND_CONFIG_PROP "${URHO3D_CSHARP_BIND_CONFIG}")
+    file(APPEND "${props_out}" "    <URHO3D_CSHARP_BIND_CONFIG>${URHO3D_CSHARP_BIND_CONFIG_PROP}</URHO3D_CSHARP_BIND_CONFIG>\n")
+
     file(APPEND "${props_out}" "  </PropertyGroup>\n")
     file(APPEND "${props_out}" "</Project>\n")
 endfunction ()
@@ -297,7 +319,7 @@ function (csharp_bind_target)
     cmake_parse_arguments(BIND "" "TARGET;CSPROJ;SWIG;NAMESPACE;NATIVE" "" ${ARGN})
 
     # General SWIG parameters
-    set(BIND_OUT_DIR  ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_$<CONFIG>)
+    set(BIND_OUT_DIR  ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_${URHO3D_CSHARP_BIND_CONFIG})
     set(BIND_OUT_FILE ${BIND_OUT_DIR}/${BIND_TARGET}CSHARP_wrap.cxx)
     set(GENERATOR_OPTIONS
         -csharp
@@ -361,10 +383,10 @@ function (csharp_bind_target)
     add_custom_command(OUTPUT ${BIND_OUT_FILE}
         COMMAND ${CMAKE_COMMAND} -E remove_directory ${BIND_OUT_DIR}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${BIND_OUT_DIR}
-        COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${URHO3D_THIRDPARTY_DIR}/swig/Lib" "$<TARGET_FILE:swig>"
-        ARGS @"${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_$<CONFIG>.txt"
+        COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${URHO3D_THIRDPARTY_DIR}/swig/Lib" "${SWIG_EXECUTABLE}"
+        ARGS @"${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt"
         MAIN_DEPENDENCY ${BIND_SWIG}
-        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_$<CONFIG>.txt"
+        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "SWIG: Generating C# bindings for ${BIND_TARGET}")
 

@@ -8,8 +8,8 @@
     <GeneratedCodePath>$(RBFX_BINARY_DIR)/Source/Urho3D/</GeneratedCodePath>
   </PropertyGroup>
   <ItemGroup>
-    <BindingsSourceCodeUrho3D Include="$(GeneratedCodePath)Urho3DCSharp_$(Configuration)/*.cs" />
-    <BindingsSourceCodeImGui Include="$(GeneratedCodePath)ImGuiCSharp_$(Configuration)/*.cs" />
+    <BindingsSourceCodeUrho3D Include="$(GeneratedCodePath)Urho3DCSharp_$(URHO3D_CSHARP_BIND_CONFIG)/*.cs" />
+    <BindingsSourceCodeImGui Include="$(GeneratedCodePath)ImGuiCSharp_$(URHO3D_CSHARP_BIND_CONFIG)/*.cs" />
     <Compile Include="Managed/**/*.cs" />
   </ItemGroup>
   <Choose>
@@ -19,13 +19,13 @@
       </ItemGroup>
     </When>
   </Choose>
-  <Target Name="GatherBuildFilesUrho3D" BeforeTargets="BeforeCompile" Condition="Exists('$(GeneratedCodePath)Urho3DCSharp_$(Configuration)')">
-    <CreateItem Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)Urho3DCSharp_$(Configuration)&quot;, &quot;*.cs&quot;))">
+  <Target Name="GatherBuildFilesUrho3D" BeforeTargets="BeforeCompile" Condition="Exists('$(GeneratedCodePath)Urho3DCSharp_$(URHO3D_CSHARP_BIND_CONFIG)')">
+    <CreateItem Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)Urho3DCSharp_$(URHO3D_CSHARP_BIND_CONFIG)&quot;, &quot;*.cs&quot;))">
       <Output TaskParameter="Include" ItemName="Compile" />
     </CreateItem>
   </Target>
-  <Target Name="GatherBuildFilesImGui" BeforeTargets="BeforeCompile" Condition="Exists('$(GeneratedCodePath)ImGuiCSharp_$(Configuration)')">
-    <CreateItem Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)ImGuiCSharp_$(Configuration)&quot;, &quot;*.cs&quot;))">
+  <Target Name="GatherBuildFilesImGui" BeforeTargets="BeforeCompile" Condition="Exists('$(GeneratedCodePath)ImGuiCSharp_$(URHO3D_CSHARP_BIND_CONFIG)')">
+    <CreateItem Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)ImGuiCSharp_$(URHO3D_CSHARP_BIND_CONFIG)&quot;, &quot;*.cs&quot;))">
       <Output TaskParameter="Include" ItemName="Compile" />
     </CreateItem>
   </Target>
