@@ -145,6 +145,7 @@ void NavigationMesh::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<NavigationMesh>(Category_Navigation);
 
+    URHO3D_ACTION_STATIC_LABEL("Clear!", Clear, "Clears navigation mesh data");
     URHO3D_ACTION_STATIC_LABEL("Rebuild!", Rebuild, "Rebuilds navigation mesh and adjusts maximum number of tiles");
     URHO3D_ACTION_STATIC_LABEL("Allocate!", Allocate, "Allocates empty navigation mesh with specified maximum number of tiles");
 
@@ -344,6 +345,11 @@ bool NavigationMesh::AllocateMesh(unsigned maxTiles)
     }
 
     return true;
+}
+
+void NavigationMesh::Clear()
+{
+    ReleaseNavigationMesh();
 }
 
 bool NavigationMesh::Allocate()

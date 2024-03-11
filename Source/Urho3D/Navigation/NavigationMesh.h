@@ -145,6 +145,8 @@ public:
     /// Set the cost of an area.
     void SetAreaCost(unsigned areaID, float cost);
 
+    /// Clear navigation mesh data.
+    void Clear();
     /// Allocate the navigation mesh without building any tiles. Return true if successful.
     bool Allocate();
     /// Rebuild part of the navigation mesh contained by the world-space bounding box. Return true if successful.
