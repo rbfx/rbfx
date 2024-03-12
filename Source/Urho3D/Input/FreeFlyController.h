@@ -32,6 +32,13 @@ namespace Urho3D
 class URHO3D_API FreeFlyController : public Component
 {
     URHO3D_OBJECT(FreeFlyController, Component)
+
+    static inline constexpr float DEFAULT_MOUSE_SENSITIVITY{0.1f};
+    // 90' motion per inch
+    static inline constexpr float DEFAULT_TOUCH_ROTATION_SENSITIVITY{1.0f};
+    // Degrees per second
+    static inline constexpr float DEFAULT_AXIS_ROTATION_SENSITIVITY{100.0f};
+
 private:
     struct Movement
     {
@@ -67,6 +74,12 @@ public:
     void SetMinPitch(float value) { minPitch_ = value; }
     float GetMaxPitch() const { return maxPitch_; }
     void SetMaxPitch(float value) { maxPitch_ = value; }
+    float GetMouseSensitivity() const { return mouseSensitivity_; }
+    void SetMouseSensitivity(float value) { mouseSensitivity_ = value; }
+    float GetTouchSensitivity() const { return touchSensitivity_; }
+    void SetTouchSensitivity(float value) { touchSensitivity_ = value; }
+    float GetAxisSensitivity() const { return axisSensitivity_; }
+    void SetAxisSensitivity(float value) { axisSensitivity_ = value; }
     /// @}
 
 private:
@@ -109,11 +122,11 @@ private:
     /// Camera accelerated speed.
     float acceleratedSpeed_{100.0f};
     /// Mouse sensitivity
-    float mouseSensitivity_{0.1f};
+    float mouseSensitivity_{DEFAULT_MOUSE_SENSITIVITY};
     /// Touch sensitivity
-    float touchSensitivity_{1.0f};
+    float touchSensitivity_{DEFAULT_TOUCH_ROTATION_SENSITIVITY};
     /// Axis sensitivity
-    float axisSensitivity_{100.0f};
+    float axisSensitivity_{DEFAULT_AXIS_ROTATION_SENSITIVITY};
     /// Pitch range
     float minPitch_{-90.0f};
     float maxPitch_{90.0f};
