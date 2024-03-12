@@ -160,6 +160,7 @@ void TextRenderer3D::PostUpdate(float timeStep)
         text->SetVerticalAlignment(queuedText.params_.verticalAlignment_);
         text->SetTextAlignment(queuedText.params_.textAlignment_);
         text->SetDepthTest(queuedText.params_.depthTest_);
+        text->SetViewMask(queuedText.params_.viewMask_);
 
         CachedTextElement cachedText;
         cachedText.text_ = text;
