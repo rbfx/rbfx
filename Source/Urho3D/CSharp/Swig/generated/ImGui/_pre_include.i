@@ -55,6 +55,7 @@
 %csconstvalue("131072") ImGuiInputTextFlags_CharsScientific;
 %csconstvalue("262144") ImGuiInputTextFlags_CallbackResize;
 %csconstvalue("524288") ImGuiInputTextFlags_CallbackEdit;
+%csconstvalue("8192") ImGuiInputTextFlags_AlwaysInsertMode;
 %rename(ImGuiTreeNodeFlags) ImGuiTreeNodeFlags_;
 %typemap(csattributes) ImGuiTreeNodeFlags_ "[global::System.Flags]";
 %csconstvalue("0") ImGuiTreeNodeFlags_None;
@@ -329,6 +330,9 @@
 %csconstvalue("25165824") ImGuiColorEditFlags_DataTypeMask_;
 %csconstvalue("100663296") ImGuiColorEditFlags_PickerMask_;
 %csconstvalue("402653184") ImGuiColorEditFlags_InputMask_;
+%csconstvalue("1048576") ImGuiColorEditFlags_RGB;
+%csconstvalue("2097152") ImGuiColorEditFlags_HSV;
+%csconstvalue("4194304") ImGuiColorEditFlags_HEX;
 %rename(ImGuiSliderFlags) ImGuiSliderFlags_;
 %typemap(csattributes) ImGuiSliderFlags_ "[global::System.Flags]";
 %csconstvalue("0") ImGuiSliderFlags_None;
@@ -337,6 +341,7 @@
 %csconstvalue("64") ImGuiSliderFlags_NoRoundToFormat;
 %csconstvalue("128") ImGuiSliderFlags_NoInput;
 %csconstvalue("1879048207") ImGuiSliderFlags_InvalidMask_;
+%csconstvalue("16") ImGuiSliderFlags_ClampOnInput;
 %csconstvalue("0") ImGuiMouseButton_Left;
 %csconstvalue("1") ImGuiMouseButton_Right;
 %csconstvalue("2") ImGuiMouseButton_Middle;
@@ -393,6 +398,18 @@
 %csconstvalue("1024") ImGuiViewportFlags_Minimized;
 %csconstvalue("2048") ImGuiViewportFlags_NoAutoMerge;
 %csconstvalue("4096") ImGuiViewportFlags_CanHostOtherWindows;
+%rename(ImDrawCornerFlags) ImDrawCornerFlags_;
+%typemap(csattributes) ImDrawCornerFlags_ "[global::System.Flags]";
+%csconstvalue("256") ImDrawCornerFlags_None;
+%csconstvalue("16") ImDrawCornerFlags_TopLeft;
+%csconstvalue("32") ImDrawCornerFlags_TopRight;
+%csconstvalue("64") ImDrawCornerFlags_BotLeft;
+%csconstvalue("128") ImDrawCornerFlags_BotRight;
+%csconstvalue("240") ImDrawCornerFlags_All;
+%csconstvalue("48") ImDrawCornerFlags_Top;
+%csconstvalue("192") ImDrawCornerFlags_Bot;
+%csconstvalue("80") ImDrawCornerFlags_Left;
+%csconstvalue("160") ImDrawCornerFlags_Right;
 %csattribute(ImGuiTextFilter, %arg(bool), IsActive, IsActive);
 %csattribute(ImDrawCmd, %arg(ImTextureID), TexID, GetTexID);
 %csattribute(ImDrawList, %arg(ImVec2), ClipRectMin, GetClipRectMin);

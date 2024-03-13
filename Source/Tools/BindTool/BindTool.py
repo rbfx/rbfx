@@ -28,6 +28,7 @@ def main():
 
     with open(args.options) as fp:
         compiler_params = fp.read().split('\n')
+        compiler_params = [p for p in compiler_params if p.startswith('-I') or p.startswith('-D')]
     compiler_params.append('-std=c++17')
 
     parser = ClangJsonAstParser(args.all_file, compiler_params, args.clang)
