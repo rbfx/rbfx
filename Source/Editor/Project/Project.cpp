@@ -515,6 +515,17 @@ void Project::AddTab(SharedPtr<EditorTab> tab)
     sortedTabs_[tab->GetTitle()] = tab;
 }
 
+void Project::SetGlobalHotkeysEnabled(bool enabled)
+{
+    areGlobalHotkeysEnabled_ = enabled;
+
+    auto& io = ui::GetIO();
+    if (enabled)
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    else
+        io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableKeyboard;
+}
+
 ea::string Project::GetRandomTemporaryPath() const
 {
     return Format("{}{}/", tempPath_, GenerateUUID());
