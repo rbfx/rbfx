@@ -31,6 +31,7 @@
 #include "../Resource/ResourceCache.h"
 #include "../Scene/Node.h"
 #include "../Scene/SceneEvents.h"
+#include "../Core/CoreEvents.h"
 
 #include "../DebugNew.h"
 
@@ -40,13 +41,17 @@ namespace Urho3D
 {
 
 SteamSoundSource::SteamSoundSource(Context* context) :
-    Component(context), sound_(nullptr), binauralEffect_(nullptr), directEffect_(nullptr), source_(nullptr), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), airAbsorption_(false), occlusion_(false), transmission_(false), binauralSpatialBlend_(1.0f), binauralBilinearInterpolation_(false), effectsLoaded_(false)
+    Component(context), sound_(nullptr), binauralEffect_(nullptr), directEffect_(nullptr), source_(nullptr), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), airAbsorption_(false), occlusion_(false), transmission_(false), binauralSpatialBlend_(1.0f), binauralBilinearInterpolation_(false), effectsLoaded_(false), effectsDirty_(false)
 {
     audio_ = GetSubsystem<SteamAudio>();
 
-    if (audio_)
+    if (audio_) {
         // Add this sound source
         audio_->AddSoundSource(this);
+
+        // Subscribe to render updates
+        SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(SteamSoundSource, HandleRenderUpdate));
+    }
 }
 
 SteamSoundSource::~SteamSoundSource()
@@ -65,13 +70,13 @@ void SteamSoundSource::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Sound", GetSoundAttr, SetSoundAttr, ResourceRef, ResourceRef(Sound::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ATTRIBUTE("Gain", float, gain_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Loop", bool, loop_, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Binaural", bool, binaural_, UpdateEffects, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Binaural", bool, binaural_, MarkEffectsDirty, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Binaural Spacial Blend", float, binauralSpatialBlend_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Binaural Bilinear Interpolation", bool, binauralBilinearInterpolation_, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Distance Attenuation", bool, distanceAttenuation_, UpdateEffects, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Air absorption", bool, airAbsorption_, UpdateEffects, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Occlusion", bool, occlusion_, UpdateEffects, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Transmission", bool, transmission_, UpdateEffects, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Distance Attenuation", bool, distanceAttenuation_, MarkEffectsDirty, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Air absorption", bool, airAbsorption_, MarkEffectsDirty, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Occlusion", bool, occlusion_, MarkEffectsDirty, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Transmission", bool, transmission_, MarkEffectsDirty, false, AM_DEFAULT);
 }
 
 void SteamSoundSource::Play(Sound *sound)
@@ -83,7 +88,7 @@ void SteamSoundSource::Play(Sound *sound)
     sound_ = sound;
 
     // Update effects
-    UpdateEffects();
+    MarkEffectsDirty();
 }
 
 bool SteamSoundSource::IsPlaying() const
@@ -110,6 +115,8 @@ ResourceRef SteamSoundSource::GetSoundAttr() const
 
 IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
 {
+    MutexLock Lock(effectsMutex_);
+
     // Return nothing if not playing
     if (!IsPlaying())
         return nullptr;
@@ -215,6 +222,14 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
     return pool.GetCurrentBuffer();
 }
 
+void SteamSoundSource::HandleRenderUpdate(StringHash eventType, VariantMap &eventData)
+{
+    if (effectsDirty_) {
+        UpdateEffects();
+        effectsDirty_ = false;
+    }
+}
+
 void SteamSoundSource::OnMarkedDirty(Node *)
 {
     UpdateSimulator();
@@ -222,7 +237,9 @@ void SteamSoundSource::OnMarkedDirty(Node *)
 
 void SteamSoundSource::UpdateEffects()
 {
-    DestroyEffects();
+    MutexLock Lock(effectsMutex_);
+
+    UnlockedDestroyEffects();
 
     if (!sound_)
         return;
@@ -257,7 +274,7 @@ void SteamSoundSource::UpdateEffects()
     }
 }
 
-void SteamSoundSource::DestroyEffects()
+void SteamSoundSource::UnlockedDestroyEffects()
 {
     if (!effectsLoaded_)
         return;

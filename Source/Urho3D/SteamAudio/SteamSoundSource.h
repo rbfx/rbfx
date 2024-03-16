@@ -66,13 +66,18 @@ public:
     IPLAudioBuffer *GenerateAudioBuffer(float gain);
 
 private:
+    /// Handle render update event.
+    void HandleRenderUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle transform change.
     void OnMarkedDirty(Node *) override;
+
+    /// Mark effects dirty.
+    void MarkEffectsDirty() { effectsDirty_ = true; }
 
     /// Recreate effects
     void UpdateEffects();
     /// Destroy effects
-    void DestroyEffects();
+    void UnlockedDestroyEffects();
     /// Update simulation inputs.
     void UpdateSimulator();
 
@@ -88,6 +93,8 @@ private:
     IPLSource source_;
     /// Last simulator outputs.
     IPLSimulationOutputs simulatorOutputs_;
+    /// Mutex for effects.
+    Mutex effectsMutex_;
     /// Audio gain.
     float gain_;
     /// Is playback paused?
@@ -112,6 +119,8 @@ private:
     unsigned frame_;
     // Are the effects loaded?
     bool effectsLoaded_;
+    /// Are effects dirty?
+    bool effectsDirty_;
 };
 
 }
