@@ -108,7 +108,7 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
 
     // Create the simulator
     IPLSimulationSettings simulationSettings {
-        .flags = IPL_SIMULATIONFLAGS_DIRECT, // this enables occlusion/transmission simulation
+        .flags = IPL_SIMULATIONFLAGS_DIRECT,
         .sceneType = IPL_SCENETYPE_DEFAULT
     };
     iplSimulatorCreate(phononContext_, &simulationSettings, &simulator_);
