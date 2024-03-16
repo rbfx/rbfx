@@ -87,6 +87,8 @@ SteamSoundMesh::SteamSoundMesh(Context* context) :
 SteamSoundMesh::~SteamSoundMesh()
 {
     if (audio_) {
+        // Reset model
+        ResetModel();
         // Remove subscene and mesh
         iplSceneRelease(&subScene_);
         iplStaticMeshRelease(&mesh_);
