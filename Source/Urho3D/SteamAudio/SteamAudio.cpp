@@ -260,6 +260,8 @@ void SteamAudio::RemoveSoundSource(SteamSoundSource *soundSource)
 
 void SteamAudio::MixOutput(float* dest)
 {
+    MutexLock Lock(audioMutex_);
+
     // Stop if no listener
     if (!GetListener()) {
         memset(dest, 0, audioSettings_.frameSize*channelCount_*sizeof(float));
@@ -315,7 +317,6 @@ void SDLSteamAudioCallback(void* userdata, Uint8 *stream, int)
 {
     auto* audio = static_cast<SteamAudio*>(userdata);
     {
-        MutexLock Lock(audio->GetMutex());
         audio->MixOutput(reinterpret_cast<float*>(stream));
     }
 }
