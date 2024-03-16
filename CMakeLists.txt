@@ -271,6 +271,8 @@ endif ()
 
 add_subdirectory(Source)
 
+rbfx_configure_cmake_props()
+
 # Print current build configuration
 message(STATUS "Engine Features:")
 if (URHO3D_STATIC_RUNTIME)

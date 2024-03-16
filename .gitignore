@@ -80,7 +80,7 @@ gradle*
 .gradle
 
 # Visual Studio project settings
-/.vs/
+.vs
 /CMakeSettings.json
 /out/
 
