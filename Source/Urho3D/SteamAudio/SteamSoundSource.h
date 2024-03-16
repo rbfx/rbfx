@@ -79,7 +79,7 @@ private:
     /// Destroy effects
     void UnlockedDestroyEffects();
     /// Update simulation inputs.
-    void UpdateSimulator();
+    void UpdateSourcePosition();
 
     /// Steam audio subsystem.
     WeakPtr<SteamAudio> audio_;

@@ -41,7 +41,7 @@ namespace Urho3D
 {
 
 SteamSoundSource::SteamSoundSource(Context* context) :
-    Component(context), sound_(nullptr), binauralEffect_(nullptr), directEffect_(nullptr), source_(nullptr), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), airAbsorption_(false), occlusion_(false), transmission_(false), binauralSpatialBlend_(1.0f), binauralBilinearInterpolation_(false), effectsLoaded_(false), effectsDirty_(false)
+    Component(context), sound_(nullptr), binauralEffect_(nullptr), directEffect_(nullptr), source_(nullptr), simulatorOutputs_({}), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), airAbsorption_(false), occlusion_(false), transmission_(false), binauralSpatialBlend_(1.0f), binauralBilinearInterpolation_(false), effectsLoaded_(false), effectsDirty_(false)
 {
     audio_ = GetSubsystem<SteamAudio>();
 
@@ -232,7 +232,7 @@ void SteamSoundSource::HandleRenderUpdate(StringHash eventType, VariantMap &even
 
 void SteamSoundSource::OnMarkedDirty(Node *)
 {
-    UpdateSimulator();
+    UpdateSourcePosition();
 }
 
 void SteamSoundSource::UpdateEffects()
@@ -260,7 +260,7 @@ void SteamSoundSource::UpdateEffects()
         };
         iplSourceCreate(audio_->GetSimulator(), &sourceSettings, &source_);
         iplSourceAdd(source_, audio_->GetSimulator());
-        UpdateSimulator();
+        UpdateSourcePosition();
         audio_->MarkSimulatorDirty();
     }
     if (airAbsorption_ || distanceAttenuation_ || source_) {
@@ -292,7 +292,7 @@ void SteamSoundSource::UnlockedDestroyEffects()
     }
 }
 
-void SteamSoundSource::UpdateSimulator()
+void SteamSoundSource::UpdateSourcePosition()
 {
     const auto lUp = GetNode()->GetWorldUp();
     const auto lDir = GetNode()->GetWorldDirection();
