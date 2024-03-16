@@ -187,6 +187,10 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
     if (source_) {
         audio_->GetSimulatorOutputs(source_, simulatorOutputs_);
         directEffectParams = simulatorOutputs_.direct;
+        if (occlusion_)
+            directEffectParams.flags = static_cast<IPLDirectEffectFlags>(directEffectParams.flags | IPL_DIRECTEFFECTFLAGS_APPLYOCCLUSION);
+        if (transmission_)
+            directEffectParams.flags = static_cast<IPLDirectEffectFlags>(directEffectParams.flags | IPL_DIRECTEFFECTFLAGS_APPLYTRANSMISSION);
     }
 
     // Apply distance attenuation
