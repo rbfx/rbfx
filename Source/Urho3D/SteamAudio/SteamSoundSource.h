@@ -74,12 +74,15 @@ private:
     /// Mark effects dirty.
     void MarkEffectsDirty() { effectsDirty_ = true; }
 
+    /// Returns false if there is no direct effect in use.
+    bool UsingDirectEffect() const;
+
     /// Recreate effects
     void UpdateEffects();
     /// Destroy effects
     void UnlockedDestroyEffects();
     /// Update simulation inputs.
-    void UpdateSourcePosition();
+    void UpdateSimulationInputs();
 
     /// Steam audio subsystem.
     WeakPtr<SteamAudio> audio_;

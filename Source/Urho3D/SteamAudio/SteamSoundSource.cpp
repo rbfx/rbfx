@@ -180,43 +180,33 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
         pool.SwitchToNextBuffer();
     }
 
-    // Create direct effect properties
-    IPLDirectEffectParams directEffectParams {};
+    // Apply direct all effects
+    if (UsingDirectEffect()) {
+        // Create direct effect properties
+        IPLDirectEffectParams directEffectParams {};
 
-    // Apply simulation results
-    if (source_) {
-        audio_->GetSimulatorOutputs(source_, simulatorOutputs_);
-        directEffectParams = simulatorOutputs_.direct;
+        // Get direct effect flags
+        IPLDirectEffectFlags directEffectFlags{};
+        if (distanceAttenuation_)
+            directEffectFlags = static_cast<IPLDirectEffectFlags>(directEffectFlags | IPL_DIRECTEFFECTFLAGS_APPLYDISTANCEATTENUATION);
+        if (airAbsorption_)
+            directEffectFlags = static_cast<IPLDirectEffectFlags>(directEffectFlags | IPL_DIRECTEFFECTFLAGS_APPLYAIRABSORPTION);
         if (occlusion_)
-            directEffectParams.flags = static_cast<IPLDirectEffectFlags>(directEffectParams.flags | IPL_DIRECTEFFECTFLAGS_APPLYOCCLUSION);
+            directEffectFlags = static_cast<IPLDirectEffectFlags>(directEffectFlags | IPL_DIRECTEFFECTFLAGS_APPLYOCCLUSION);
         if (transmission_)
-            directEffectParams.flags = static_cast<IPLDirectEffectFlags>(directEffectParams.flags | IPL_DIRECTEFFECTFLAGS_APPLYTRANSMISSION);
-    }
+            directEffectFlags = static_cast<IPLDirectEffectFlags>(directEffectFlags | IPL_DIRECTEFFECTFLAGS_APPLYTRANSMISSION);
 
-    // Apply distance attenuation
-    if (distanceAttenuation_) {
-        IPLDistanceAttenuationModel distanceAttenuationModel {
-            .type = IPL_DISTANCEATTENUATIONTYPE_DEFAULT
-        };
+        // Apply direct effect
+        if (source_ && directEffectFlags) {
+            // Get parameters
+            audio_->GetSimulatorOutputs(source_, simulatorOutputs_);
+            directEffectParams = simulatorOutputs_.direct;
+            directEffectParams.flags = directEffectFlags;
 
-        directEffectParams.flags = static_cast<IPLDirectEffectFlags>(directEffectParams.flags | IPL_DIRECTEFFECTFLAGS_APPLYDISTANCEATTENUATION);
-        directEffectParams.distanceAttenuation = iplDistanceAttenuationCalculate(phononContext, psPos, plPos, &distanceAttenuationModel);
-    }
-
-    // Apply air absorption
-    if (airAbsorption_) {
-        IPLAirAbsorptionModel airAbsorptionModel {
-            .type = IPL_AIRABSORPTIONTYPE_DEFAULT
-        };
-
-        directEffectParams.flags = static_cast<IPLDirectEffectFlags>(directEffectParams.flags | IPL_DIRECTEFFECTFLAGS_APPLYAIRABSORPTION);
-        iplAirAbsorptionCalculate(phononContext, psPos, plPos, &airAbsorptionModel, directEffectParams.airAbsorption);
-    }
-
-    // Apply direct effect
-    if (directEffectParams.flags) {
-        iplDirectEffectApply(directEffect_, &directEffectParams, pool.GetCurrentBuffer(), pool.GetNextBuffer());
-        pool.SwitchToNextBuffer();
+            // Apply effect using them
+            iplDirectEffectApply(directEffect_, &directEffectParams, pool.GetCurrentBuffer(), pool.GetNextBuffer());
+            pool.SwitchToNextBuffer();
+        }
     }
 
     // Increment to next frame
@@ -236,7 +226,12 @@ void SteamSoundSource::HandleRenderUpdate(StringHash eventType, VariantMap &even
 
 void SteamSoundSource::OnMarkedDirty(Node *)
 {
-    UpdateSourcePosition();
+    UpdateSimulationInputs();
+}
+
+bool SteamSoundSource::UsingDirectEffect() const
+{
+    return distanceAttenuation_ || airAbsorption_ || occlusion_ || transmission_;
 }
 
 void SteamSoundSource::UpdateEffects()
@@ -258,24 +253,26 @@ void SteamSoundSource::UpdateEffects()
         };
         iplBinauralEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &binauralEffectSettings, &binauralEffect_);
     }
-    if (occlusion_ || transmission_) {
+
+    if (UsingDirectEffect()) {
+        // Create source
         IPLSourceSettings sourceSettings {
             .flags = IPL_SIMULATIONFLAGS_DIRECT
         };
         iplSourceCreate(audio_->GetSimulator(), &sourceSettings, &source_);
         iplSourceAdd(source_, audio_->GetSimulator());
-        UpdateSourcePosition();
+        UpdateSimulationInputs();
         audio_->MarkSimulatorDirty();
-    }
-    if (airAbsorption_ || distanceAttenuation_ || source_) {
+
         // Create direct effect
         IPLDirectEffectSettings directEffectSettings {
             .numChannels = sound_->IsStereo()?2:1
         };
         iplDirectEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &directEffectSettings, &directEffect_);
-        // Add as listener
-        GetNode()->AddListener(this);
     }
+
+    // Start listening
+    GetNode()->AddListener(this);
 }
 
 void SteamSoundSource::UnlockedDestroyEffects()
@@ -288,15 +285,17 @@ void SteamSoundSource::UnlockedDestroyEffects()
     if (directEffect_)
         iplDirectEffectRelease(&directEffect_);
     if (source_) {
+        // Delete source
         iplSourceRemove(source_, audio_->GetSimulator());
         audio_->MarkSimulatorDirty();
         iplSourceRelease(&source_);
 
+        // Stop listening
         GetNode()->RemoveListener(this);
     }
 }
 
-void SteamSoundSource::UpdateSourcePosition()
+void SteamSoundSource::UpdateSimulationInputs()
 {
     const auto lUp = GetNode()->GetWorldUp();
     const auto lDir = GetNode()->GetWorldDirection();
@@ -305,7 +304,11 @@ void SteamSoundSource::UpdateSourcePosition()
 
     IPLSimulationInputs inputs {
         .flags = IPL_SIMULATIONFLAGS_DIRECT,
-        .directFlags = static_cast<IPLDirectSimulationFlags>((occlusion_?IPL_DIRECTSIMULATIONFLAGS_OCCLUSION:0) | (transmission_?IPL_DIRECTSIMULATIONFLAGS_TRANSMISSION:0)),
+        .directFlags = static_cast<IPLDirectSimulationFlags>(
+            (distanceAttenuation_?IPL_DIRECTSIMULATIONFLAGS_DISTANCEATTENUATION:0) |
+            (airAbsorption_?IPL_DIRECTSIMULATIONFLAGS_AIRABSORPTION:0) |
+            (occlusion_?IPL_DIRECTSIMULATIONFLAGS_OCCLUSION:0) |
+            (transmission_?IPL_DIRECTSIMULATIONFLAGS_TRANSMISSION:0)),
         .source = {
             .right = {lRight.x_, lRight.y_, lRight.z_},
             .up = {lUp.x_, lUp.y_, lUp.z_},
