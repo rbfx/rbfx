@@ -71,10 +71,15 @@ public:
     Material GetMaterial() const { return materialIndex_; }
 
 private:
+    /// Handle render update event.
+    void HandleRenderUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle node being assigned.
     virtual void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// Handle transform change.
     void OnMarkedDirty(Node *) override;
+
+    /// Marks model as dirty.
+    void MarkModelDirty() { modelDirty_ = true; }
 
     /// Reload current model.
     void ReloadModel();
@@ -85,6 +90,8 @@ private:
     /// Return phonon matrix of node
     IPLMatrix4x4 GetPhononMatrix() const;
 
+    /// Is model dirty?
+    bool modelDirty_;
     /// Currently used model.
     SharedPtr<Model> model_;
     /// Material index.

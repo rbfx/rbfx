@@ -31,6 +31,7 @@
 #include "../Scene/Node.h"
 #include "../Resource/ResourceCache.h"
 #include "../Core/Context.h"
+#include "../Core/CoreEvents.h"
 
 #include <phonon.h>
 
@@ -66,7 +67,7 @@ static const ea::vector<ea::string> materialNames = {
 };
 
 SteamSoundMesh::SteamSoundMesh(Context* context) :
-    Component(context), mesh_(nullptr), subScene_(nullptr), materialIndex_(Material::generic)
+    Component(context), modelDirty_(false), mesh_(nullptr), subScene_(nullptr), materialIndex_(Material::generic)
 {
     audio_ = GetSubsystem<SteamAudio>();
     material_ = &materials[static_cast<unsigned>(materialIndex_)];
@@ -77,6 +78,9 @@ SteamSoundMesh::SteamSoundMesh(Context* context) :
             .type = IPL_SCENETYPE_DEFAULT
         };
         iplSceneCreate(audio_->GetPhononContext(), &sceneSettings, &subScene_);
+
+        // Subscribe to render updates
+        SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(SteamSoundMesh, HandleRenderUpdate));
     }
 }
 
@@ -102,18 +106,26 @@ void SteamSoundMesh::SetModel(const ResourceRef& model)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     model_ = cache->GetResource<Model>(model.name_);
-    ReloadModel();
+    MarkModelDirty();
 }
 
 void SteamSoundMesh::SetMaterial(Material material) {
     materialIndex_ = material;
     material_ = &materials[static_cast<unsigned>(materialIndex_)];
-    ReloadModel();
+    MarkModelDirty();
 }
 
 ResourceRef SteamSoundMesh::GetModel() const
 {
     return GetResourceRef(model_, Model::GetTypeStatic());
+}
+
+void SteamSoundMesh::HandleRenderUpdate(StringHash eventType, VariantMap &eventData)
+{
+    if (modelDirty_) {
+        ReloadModel();
+        modelDirty_ = false;
+    }
 }
 
 void SteamSoundMesh::OnNodeSet(Node *previousNode, Node *currentNode)
