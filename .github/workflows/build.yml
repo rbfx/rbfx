@@ -12,7 +12,7 @@ env:
   URHO3D_SAMPLES: ON
   URHO3D_TESTING: ON
   URHO3D_PROFILING_FALLBACK: ON
-  DOTNET_VERSION: '6.0'
+  DOTNET_VERSION: '8.0'
   CMAKE_VERSION: 3.21.x
   # ccache configuration
   ccache_prefix: ${{ secrets.CACHE_VERSION }}-master
@@ -68,7 +68,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Create and Push Tag
         run: |
@@ -90,20 +90,20 @@ jobs:
       URHO3D_TOOLS: "swig;PackageTool"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
       - name: Build Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ github.sha }}
           restore-keys: ${{ env.ccache_prefix }}-${{ github.job }}
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1
+        uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -119,7 +119,7 @@ jobs:
         shell: bash
         run: cmake --install '${{ env.ci_build_dir }}' --config Release
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: 'rbfx-${{ github.job }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
@@ -139,20 +139,20 @@ jobs:
       URHO3D_TOOLS: "swig;PackageTool"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
       - name: Build Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ github.sha }}
           restore-keys: ${{ env.ccache_prefix }}-${{ github.job }}
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1
+        uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -175,7 +175,7 @@ jobs:
         shell: bash
         run: cmake --install '${{ env.ci_build_dir }}' --config Release
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: 'rbfx-${{ github.job }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
@@ -195,20 +195,20 @@ jobs:
       URHO3D_TOOLS: "swig;PackageTool"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
       - name: Build Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ github.sha }}
           restore-keys: ${{ env.ccache_prefix }}-${{ github.job }}
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1
+        uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -224,7 +224,7 @@ jobs:
         shell: bash
         run: cmake --install '${{ env.ci_build_dir }}' --config Release
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: 'rbfx-${{ github.job }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
@@ -287,7 +287,7 @@ jobs:
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
@@ -297,7 +297,7 @@ jobs:
         uses: jdno/setup-butler@v1
 
       - name: Build Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
@@ -305,7 +305,7 @@ jobs:
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         if: matrix.ci_lib_type == 'dll'
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
@@ -313,7 +313,7 @@ jobs:
       - name: Setup cmake
         # FIXME: CMake installed by this action fails with MinGW because it can find 'C:/Program Files/Git/usr/bin/sh.exe' on PATH.
         if: matrix.ci_compiler != 'mingw'
-        uses: jwlawson/actions-setup-cmake@v1
+        uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -343,7 +343,7 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
@@ -432,13 +432,13 @@ jobs:
       URHO3D_SDK: ${{ github.workspace }}/host-sdk
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
       - name: Build Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
@@ -451,13 +451,13 @@ jobs:
           path: host-sdk/
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         if: matrix.ci_lib_type == 'dll'
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1
+        uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -477,7 +477,7 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
@@ -537,7 +537,7 @@ jobs:
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
@@ -547,7 +547,7 @@ jobs:
         uses: jdno/setup-butler@v1
 
       - name: Build Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
@@ -555,13 +555,13 @@ jobs:
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         if: matrix.ci_lib_type == 'dll'
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1
+        uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -585,7 +585,7 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
@@ -689,7 +689,7 @@ jobs:
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
@@ -699,7 +699,7 @@ jobs:
         uses: jdno/setup-butler@v1
 
       - name: Build Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
@@ -711,13 +711,13 @@ jobs:
         run: brew install bash
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         if: matrix.ci_lib_type == 'dll'
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1
+        uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -737,7 +737,7 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_build_type }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
@@ -812,13 +812,13 @@ jobs:
       URHO3D_SDK: ${{ github.workspace }}/host-sdk
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
       - name: Build Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_build_type }}-${{ github.sha }}
@@ -831,12 +831,12 @@ jobs:
           path: host-sdk/
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1
+        uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -853,7 +853,7 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} build
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_build_type }}-${{ github.sha }}'
@@ -888,13 +888,13 @@ jobs:
       URHO3D_SDK: ${{ github.workspace }}/host-sdk
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
       - name: Build Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
@@ -907,13 +907,13 @@ jobs:
           path: host-sdk/
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         if: matrix.ci_lib_type == 'dll'
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1
+        uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -933,7 +933,7 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} build
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ env.ci_build_type }}-${{ env.ci_lib_type }}-${{ github.sha }}'
@@ -979,13 +979,13 @@ jobs:
         with:
           version: ${{ matrix.ci_emsdk_version }}
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
       - name: Build Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_build_type }}-${{ github.sha }}
@@ -998,7 +998,7 @@ jobs:
           path: host-sdk/
 
       - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1
+        uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
@@ -1029,7 +1029,7 @@ jobs:
           publish_dir: ${{ env.ci_sdk_dir }}/deploy
           publish_branch: master
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ env.ci_build_type }}-${{ env.ci_lib_type }}-${{ github.sha }}'
@@ -1067,7 +1067,7 @@ jobs:
       - Web
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: source-code
           fetch-depth: 1

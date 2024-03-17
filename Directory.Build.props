@@ -16,7 +16,7 @@
     <Configurations>$(CMAKE_CONFIGURATION_TYPE)</Configurations>
     <HasDebugInfo Condition=" '$(Configuration)' == 'Debug' Or '$(Configuration)' == 'RelWithDebInfo'">true</HasDebugInfo>
     <PlatformTarget>$(URHO3D_PLATFORM)</PlatformTarget>
-	<Platforms>$(PlatformTarget)</Platforms>
+    <Platforms>$(PlatformTarget)</Platforms>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <GenerateProjectSpecificOutputFolder>false</GenerateProjectSpecificOutputFolder>                                    <!-- Fixes linker errors for UWP -->
     <TargetFramework>$(URHO3D_NETFX)</TargetFramework>

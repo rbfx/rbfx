@@ -280,5 +280,10 @@ if (ANDROID)
     set (SDL_CPUINFO ON)
 endif ()
 
+# UWP does not support other framework types.
+if (UWP)
+    set (URHO3D_NETFX netstandard2.0)
+endif ()
+
 # At the end because it depends on URHO3D_SYSTEMUI which is may be off, but implicitly enabled if URHO3D_TOOLS is enabled.
 cmake_dependent_option(URHO3D_SYSTEMUI_VIEWPORTS "Use native viewports in supported applications" ON "URHO3D_SYSTEMUI" OFF)
