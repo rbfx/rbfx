@@ -860,7 +860,12 @@ jobs:
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_build_type }}-${{ github.sha }}'
-          path: '**/*.apk'
+          path: |
+            ${{ github.workspace }}/source-code/android/**/*.apk
+            ${{ github.workspace }}/source-code/android/build/intermediates/cmake/release/obj/*/libUrho3D.so
+            ${{ github.workspace }}/source-code/android/.cxx/RelWithDebInfo/*/*/bin/*.dll
+            ${{ github.workspace }}/source-code/android/.cxx/RelWithDebInfo/*/*/bin/*.pdb
+            ${{ github.workspace }}/source-code/android/.cxx/RelWithDebInfo/*/*/bin/*.json
 
   iOS:
     if: github.event.pull_request.draft == false

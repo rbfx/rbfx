@@ -28,7 +28,7 @@ android {
         minSdkVersion 17
         targetSdkVersion 33
         ndk {
-            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
         }
         externalNativeBuild {
             cmake {
@@ -47,7 +47,6 @@ android {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt')
-
         }
     }
     sourceSets.main {
