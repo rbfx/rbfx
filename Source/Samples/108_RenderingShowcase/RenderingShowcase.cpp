@@ -48,6 +48,7 @@ RenderingShowcase::RenderingShowcase(Context* context)
     // Web doesn't like exceptions
     if (GetPlatform() != PlatformId::Web)
         sceneNames_.push_back({ "6_InvalidShader" });
+    sceneNames_.push_back({"5"});
     // Keep 1 last because it may crash mobile browsers
     sceneNames_.push_back({ "1" });
 }

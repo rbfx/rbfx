@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<texture>
+	<address coord="u" mode="wrap" />
+	<address coord="v" mode="wrap" />
+	<mipmap enable="false" />
+	<filter mode="linear" />
+	<metadata name="RowsPerFrame" type="Float" value="1" />
+	<metadata name="NumFrames" type="Float" value="32" />
+	<metadata name="AnimationLength" type="Float" value="1.08333" />
+	<metadata />
+</texture>

@@ -428,7 +428,11 @@ bool Material::Load(const XMLElement& source)
         }
 
         float speed = parameterAnimationElem.GetFloat("speed");
-        SetShaderParameterAnimation(name, animation, wrapMode, speed);
+        if (animation && !animation->GetKeyFrames().empty())
+        {
+            SetShaderParameter(name, animation->GetKeyFrames().front().value_);
+            SetShaderParameterAnimation(name, animation, wrapMode, speed);
+        }
 
         parameterAnimationElem = parameterAnimationElem.GetNext("parameteranimation");
     }
@@ -987,8 +991,16 @@ void Material::ResetToDefaults()
 
     SetNumTechniques(1);
     auto* renderer = GetSubsystem<Renderer>();
-    SetTechnique(0, renderer ? renderer->GetDefaultTechnique() :
-        GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/NoTexture.xml"));
+    auto* resourceCache = GetSubsystem<ResourceCache>();
+    Technique* technique;
+    if (renderer)
+        technique = renderer->GetDefaultTechnique();
+    else if (resourceCache)
+        technique = resourceCache->GetResource<Technique>("Techniques/NoTexture.xml");
+    else
+        technique = nullptr;
+        
+    SetTechnique(0, technique);
 
     textures_.clear();
     RefreshTextureEventSubscriptions();

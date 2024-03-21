@@ -20,15 +20,7 @@
 # THE SOFTWARE.
 #
 
-if (NOT DESKTOP)
-    # Tools are only useful on desktops. We will build win32 tools when targeting UWP.
-    return ()
-endif ()
-
-add_subdirectory(PackageTool)
-add_subdirectory(RampGenerator)
-add_subdirectory(SpritePacker)
-add_subdirectory(ScriptPlayer)
-add_subdirectory(BakeVertexAnimationTexture)
-
-vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} Tools)
+file (GLOB SOURCE_FILES *.cpp *.h)
+add_executable (BakeVertexAnimationTexture ${SOURCE_FILES})
+target_link_libraries (BakeVertexAnimationTexture Urho3D)
+install(TARGETS BakeVertexAnimationTexture RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG})
