@@ -174,6 +174,8 @@ void RenderPipeline::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Saturation", float, settings_.saturation_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Brightness", float, settings_.brightness_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Contrast", float, settings_.contrast_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Color Filter", Color, settings_.colorFilter_, MarkSettingsDirty, Color::WHITE, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Color Offset", Vector3, settings_.colorOffset_, MarkSettingsDirty, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Draw Debug Geometry", bool, settings_.drawDebugGeometry_, MarkSettingsDirty, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Depth Bias Scale", float, settings_.shadowMapAllocator_.depthBiasScale_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Depth Bias Offset", float, settings_.shadowMapAllocator_.depthBiasOffset_, MarkSettingsDirty, 0.0f, AM_DEFAULT);
