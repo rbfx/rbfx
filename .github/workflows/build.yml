@@ -1514,6 +1514,7 @@ jobs:
                         )
                     }}
       CMAKE_PREFIX_PATH: "${{ github.workspace }}/host-sdk"
+      URHO3D_CSHARP: ON   # Must be here so that we do not need to modify gradle build script.
 
     steps:
       - uses: actions/checkout@v5
