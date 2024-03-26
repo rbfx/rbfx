@@ -85,9 +85,6 @@ quirks_msvc=(
 quirks_ios=(
     '-DURHO3D_CSHARP=OFF'
 )
-quirks_android=(
-    '-DURHO3D_CSHARP=OFF'
-)
 quirks_web=(
     '-DURHO3D_PROFILING=OFF'
     '-DURHO3D_CSHARP=OFF'

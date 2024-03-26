@@ -813,6 +813,7 @@ jobs:
                         (matrix.ci_build_type == 'rel')
                     }}
       URHO3D_SDK: ${{ github.workspace }}/host-sdk
+      URHO3D_CSHARP: ON   # Must be here so that we do not need to modify gradle build script.
 
     steps:
       - uses: actions/checkout@v4
