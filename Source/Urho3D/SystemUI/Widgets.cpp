@@ -378,6 +378,8 @@ bool EditResourceRefList(StringHash& type, StringVector& names, const StringVect
         if (ui::IsItemHovered())
             ui::SetTooltip("Add item");
     }
+    else if (names.empty())
+        ui::NewLine();
 
     return modified;
 }
