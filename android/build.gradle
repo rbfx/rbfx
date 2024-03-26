@@ -6,6 +6,11 @@ def projectSourceDir = '..'
 def rbfxSourceDir = '..'
 // Minimum required CMake version. This is same as in ../CMakeLists.txt.
 def cmakeVersion = '3.25.0+'
+// Explicitly specify build targets, so that managed targets can be built on CI.
+def buildTargets = ['Samples']
+if ("$System.env.URHO3D_CSHARP" == 'ON') {
+    buildTargets += 'BuildManagedTargets'
+}
 
 buildscript {
     repositories {
@@ -54,6 +59,12 @@ android {
                 def cmakePrefixPath = System.getenv('CMAKE_PREFIX_PATH')
                 if (cmakePrefixPath) {
                     arguments "-DCMAKE_PREFIX_PATH=${cmakePrefixPath}"
+                }
+
+                if (System.getenv('URHO3D_CSHARP') == 'ON') {
+                    targets 'Samples', 'BuildManagedTargets'
+                } else {
+                    targets 'Samples'
                 }
             }
         }
