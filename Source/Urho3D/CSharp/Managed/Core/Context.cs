@@ -70,6 +70,9 @@ namespace Urho3DNet
                         if (!assemblyName.StartsWith("System.") && assemblyName != "HiddenScope")
                         {
                             RegisterFactories(assembly);
+
+                            foreach (var pair in assembly.GetMethodsWithAttribute<SDLMainAttribute>())
+                                SDLMainAttribute.SetMainFunction((MainFunctionCallbackDelegate)pair.Item1.CreateDelegate(typeof(MainFunctionCallbackDelegate)));
                         }
                     }
                 });
