@@ -261,7 +261,14 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         return getContext().getApplicationInfo().nativeLibraryDir + "/" + library;
         */
         // Urho3D - should not be called before the library is loaded.
-        return mMainSharedLib;
+        String result = mMainSharedLib;
+        try {
+            ApplicationInfo appInfo = getContext().getPackageManager().getApplicationInfo(
+                getContext().getPackageName(), PackageManager.GET_META_DATA);
+            result = appInfo.metaData.getString("mainLibrary");
+        } catch (PackageManager.NameNotFoundException ignored) {
+        }
+        return result;
     }
 
     /**
