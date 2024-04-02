@@ -3494,14 +3494,17 @@ private:
                 scene->CreateChild("Disabled Node Placeholder");
         }
 
-        if (!settings.skipTag_.empty())
+        if (!settings.skipTags_.empty())
         {
             const auto children = rootNode->GetChildren(true);
             const ea::vector<WeakPtr<Node>> weakChildren(children.begin(), children.end());
-            for (Node* child : weakChildren)
+            for (const auto& child : weakChildren)
             {
-                if (child && child->GetName().contains(settings.skipTag_))
-                    child->Remove();
+                for (const ea::string& skipTag : settings.skipTags_)
+                {
+                    if (child && child->GetName().contains(skipTag))
+                        child->Remove();
+                }
             }
         }
 
@@ -3838,7 +3841,7 @@ void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& va
     SerializeValue(archive, "cleanupBoneNames", value.cleanupBoneNames_);
     SerializeValue(archive, "cleanupRootNodes", value.cleanupRootNodes_);
     SerializeValue(archive, "combineLODs", value.combineLODs_);
-    SerializeValue(archive, "skipTag", value.skipTag_);
+    SerializeValue(archive, "skipTag", value.skipTags_);
     SerializeValue(archive, "keepNamesOnMerge", value.keepNamesOnMerge_);
     SerializeValue(archive, "addEmptyNodesToSkeleton", value.addEmptyNodesToSkeleton_);
 
