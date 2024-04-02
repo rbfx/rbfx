@@ -3707,21 +3707,12 @@ private:
 
     static Node* GetOrCreateNode(ImportedScene& importedScene, Node& parentNode, const GLTFNode& sourceNode)
     {
-        // If node is not in the skeleton, or it is skeleton root node, create as is.
-        // Otherwise, node should be already created by AnimatedModel, connect to it.
-        if (!sourceNode.skeletonIndex_ || !sourceNode.skinnedMeshNodes_.empty())
-        {
-            Node* node = parentNode.CreateChild(sourceNode.GetEffectiveName());
-            RegisterNode(importedScene, *node, sourceNode);
-            return node;
-        }
-        else
-        {
-            Node* node = importedScene.indexToNode_[sourceNode.index_];
-            if (!node)
-                throw RuntimeException("Cannot find bone node #{}", sourceNode.index_);
-            return node;
-        }
+        if (Node* existingNode = importedScene.indexToNode_[sourceNode.index_])
+            return existingNode;
+
+        Node* node = parentNode.CreateChild(sourceNode.GetEffectiveName());
+        RegisterNode(importedScene, *node, sourceNode);
+        return node;
     }
 
     GLTFImporterBase& base_;
