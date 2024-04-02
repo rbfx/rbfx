@@ -88,6 +88,12 @@ ea::array<T, N> ToArray(const U& vec)
     return result;
 }
 
+bool IsNameSkipped(const ea::string& name, const StringVector& skipTags)
+{
+    const auto isMatching = [&name](const ea::string& tag) { return name.find(tag) != ea::string::npos; };
+    return ea::any_of(skipTags.begin(), skipTags.end(), isMatching);
+}
+
 bool IsWordBorder(unsigned char first, unsigned char second)
 {
     // Blanks and punctuation is always considered to be a word border
@@ -3147,6 +3153,9 @@ private:
         for (unsigned animationIndex = 0; animationIndex < numAnimations; ++animationIndex)
         {
             const GLTFAnimation& sourceAnimation = hierarchyAnalyzer_.GetAnimation(animationIndex);
+            if (IsNameSkipped(sourceAnimation.name_, base_.GetSettings().skipTags_))
+                continue;
+
             for (const auto& [groupIndex, group] : sourceAnimation.animationGroups_)
             {
                 const ea::string animationNameHint = GetAnimationGroupName(sourceAnimation, groupIndex);
@@ -3500,11 +3509,8 @@ private:
             const ea::vector<WeakPtr<Node>> weakChildren(children.begin(), children.end());
             for (const auto& child : weakChildren)
             {
-                for (const ea::string& skipTag : settings.skipTags_)
-                {
-                    if (child && child->GetName().contains(skipTag))
-                        child->Remove();
-                }
+                if (child && IsNameSkipped(child->GetName(), settings.skipTags_))
+                    child->Remove();
             }
         }
 

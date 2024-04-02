@@ -220,7 +220,7 @@ ea::string IKTargetExtractor::GetNewFileName(const ea::string& fileName) const
 
 ea::string IKTargetExtractor::GetModelName(Animation* sourceAnimation) const
 {
-    const ea::string& modelName = sourceAnimation->GetMetadata("Model").GetString();
+    const ea::string& modelName = sourceAnimation->GetMetadata(AnimationMetadata::Model).GetString();
     if (!modelName.empty())
         return modelName;
     return skeletonModel_.name_;
