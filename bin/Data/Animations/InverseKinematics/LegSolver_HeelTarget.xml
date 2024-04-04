@@ -1,0 +1,9 @@
+<animation length="4.0">
+    <variant name="HeelTarget/@/Position" type="Vector3" interpolation="spline" tension="0.7">
+        <keyframe time="0.0" value="-0.5 1.0 -0.5"/>
+        <keyframe time="1.0" value=" 0.0 1.5 -0.5"/>
+        <keyframe time="2.0" value=" 0.5 1.0 -0.5"/>
+        <keyframe time="3.0" value=" 0.0 0.5 -0.5"/>
+        <keyframe time="4.0" value="-0.5 1.0 -0.5"/>
+    </variant>
+</animation>

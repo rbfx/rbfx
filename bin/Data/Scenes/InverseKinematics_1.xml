@@ -742,7 +742,6 @@
 					<attribute name="Heel Bone Name" value="b_LeftFoot01_017" />
 					<attribute name="Toe Bone Name" value="b_LeftFoot02_018" />
 					<attribute name="Target Name" value="b_LeftFoot02_018_Target" />
-					<attribute name="Base Tiptoe" value="0 0" />
 					<attribute name="Heel Ground Offset" value="0.000000" />
 				</component>
 				<component type="IKLegSolver" id="827">
@@ -751,7 +750,6 @@
 					<attribute name="Heel Bone Name" value="b_RightFoot01_021" />
 					<attribute name="Toe Bone Name" value="b_RightFoot02_022" />
 					<attribute name="Target Name" value="b_RightFoot02_022_Target" />
-					<attribute name="Base Tiptoe" value="0 0" />
 					<attribute name="Heel Ground Offset" value="0.000000" />
 				</component>
 				<component type="IKSpineSolver" id="828">
@@ -1206,7 +1204,6 @@
 				<attribute name="Heel Bone Name" value="b_LeftFoot01_017" />
 				<attribute name="Toe Bone Name" value="b_LeftFoot02_018" />
 				<attribute name="Target Name" value="b_LeftFoot02_018_Target" />
-				<attribute name="Base Tiptoe" value="0 0" />
 				<attribute name="Heel Ground Offset" value="0.000000" />
 			</component>
 			<component type="IKLegSolver" id="839">
@@ -1215,7 +1212,6 @@
 				<attribute name="Heel Bone Name" value="b_RightFoot01_021" />
 				<attribute name="Toe Bone Name" value="b_RightFoot02_022" />
 				<attribute name="Target Name" value="b_RightFoot02_022_Target" />
-				<attribute name="Base Tiptoe" value="0 0" />
 				<attribute name="Heel Ground Offset" value="0.000000" />
 			</component>
 			<component type="IKSpineSolver" id="840">
@@ -2257,7 +2253,6 @@
 					<attribute name="Heel Bone Name" value="b_LeftFoot01_017" />
 					<attribute name="Toe Bone Name" value="b_LeftFoot02_018" />
 					<attribute name="Target Name" value="b_LeftFoot02_018_Target" />
-					<attribute name="Base Tiptoe" value="0 0" />
 					<attribute name="Heel Ground Offset" value="0.000000" />
 				</component>
 				<component type="IKLegSolver" id="418">
@@ -2266,7 +2261,6 @@
 					<attribute name="Heel Bone Name" value="b_RightFoot01_021" />
 					<attribute name="Toe Bone Name" value="b_RightFoot02_022" />
 					<attribute name="Target Name" value="b_RightFoot02_022_Target" />
-					<attribute name="Base Tiptoe" value="0 0" />
 					<attribute name="Heel Ground Offset" value="0.000000" />
 				</component>
 				<component type="IKSpineSolver" id="413">
@@ -2721,7 +2715,6 @@
 				<attribute name="Heel Bone Name" value="b_LeftFoot01_017" />
 				<attribute name="Toe Bone Name" value="b_LeftFoot02_018" />
 				<attribute name="Target Name" value="b_LeftFoot02_018_Target" />
-				<attribute name="Base Tiptoe" value="0 0" />
 				<attribute name="Heel Ground Offset" value="0.000000" />
 			</component>
 			<component type="IKLegSolver" id="771">
@@ -2730,7 +2723,6 @@
 				<attribute name="Heel Bone Name" value="b_RightFoot01_021" />
 				<attribute name="Toe Bone Name" value="b_RightFoot02_022" />
 				<attribute name="Target Name" value="b_RightFoot02_022_Target" />
-				<attribute name="Base Tiptoe" value="0 0" />
 				<attribute name="Heel Ground Offset" value="0.000000" />
 			</component>
 			<component type="IKSpineSolver" id="772">
@@ -3772,7 +3764,6 @@
 					<attribute name="Heel Bone Name" value="b_LeftFoot01_017" />
 					<attribute name="Toe Bone Name" value="b_LeftFoot02_018" />
 					<attribute name="Target Name" value="b_LeftFoot02_018_Target" />
-					<attribute name="Base Tiptoe" value="0 0" />
 					<attribute name="Heel Ground Offset" value="0.000000" />
 				</component>
 				<component type="IKLegSolver" id="798">
@@ -3781,7 +3772,6 @@
 					<attribute name="Heel Bone Name" value="b_RightFoot01_021" />
 					<attribute name="Toe Bone Name" value="b_RightFoot02_022" />
 					<attribute name="Target Name" value="b_RightFoot02_022_Target" />
-					<attribute name="Base Tiptoe" value="0 0" />
 					<attribute name="Heel Ground Offset" value="0.000000" />
 				</component>
 				<component type="IKSpineSolver" id="799">
@@ -4236,7 +4226,6 @@
 				<attribute name="Heel Bone Name" value="b_LeftFoot01_017" />
 				<attribute name="Toe Bone Name" value="b_LeftFoot02_018" />
 				<attribute name="Target Name" value="b_LeftFoot02_018_Target" />
-				<attribute name="Base Tiptoe" value="0 0" />
 				<attribute name="Heel Ground Offset" value="0.000000" />
 			</component>
 			<component type="IKLegSolver" id="810">
@@ -4245,7 +4234,6 @@
 				<attribute name="Heel Bone Name" value="b_RightFoot01_021" />
 				<attribute name="Toe Bone Name" value="b_RightFoot02_022" />
 				<attribute name="Target Name" value="b_RightFoot02_022_Target" />
-				<attribute name="Base Tiptoe" value="0 0" />
 				<attribute name="Heel Ground Offset" value="0.000000" />
 			</component>
 			<component type="IKSpineSolver" id="811">
