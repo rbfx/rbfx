@@ -43,7 +43,6 @@ void IKLegSolver::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Rotation Weight", float, rotationWeight_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Heel Weight", float, heelWeight_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bend Weight", float, bendWeight_, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Foot Rotation Weight", float, footRotationWeight_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Min Angle", float, minKneeAngle_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Angle", float, maxKneeAngle_, 180.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Tiptoe Factor", float, tiptoeFactor_, 0.0f, AM_DEFAULT);
@@ -148,7 +147,6 @@ void IKLegSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 
     local_.toeToHeel_ = node_->GetWorldRotation().Inverse() * (heelBone.position_ - toeBone.position_);
     local_.defaultThighToToeDistance_ = (toeBone.position_ - thighBone.position_).Length();
-    local_.tiptoeTweakOffset_ = local_.defaultThighToToeDistance_ * 0.5f;
 
     local_.bendDirection_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * bendDirection_;
     local_.targetDirection_ = inverseFrameOfReference.rotation_
@@ -168,7 +166,6 @@ void IKLegSolver::EnsureInitialized()
     rotationWeight_ = Clamp(rotationWeight_, 0.0f, 1.0f);
     heelWeight_ = Clamp(heelWeight_, 0.0f, 1.0f);
     bendWeight_ = Clamp(bendWeight_, 0.0f, 1.0f);
-    footRotationWeight_ = Clamp(footRotationWeight_, 0.0f, 1.0f);
     minKneeAngle_ = Clamp(minKneeAngle_, 0.0f, 180.0f);
     maxKneeAngle_ = Clamp(maxKneeAngle_, 0.0f, 180.0f);
     tiptoeFactor_ = Clamp(tiptoeFactor_, 0.0f, 1.0f);
@@ -297,20 +294,6 @@ Vector3 IKLegSolver::CalculateToeToHeelBent(
     return (newPos1 - newPos2).Normalized() * footSegment_.length_;
 }
 
-Quaternion IKLegSolver::CalculateFootRotation(const Transform& frameOfReference, const Vector3& toeTargetPosition) const
-{
-    const IKNode& thighBone = *legChain_.GetBeginNode();
-    const IKNode& toeBone = *footSegment_.endNode_;
-
-    const Quaternion baseToeRotation = frameOfReference * local_.toeRotation_;
-    const Quaternion currentToeRotation = target_->GetWorldRotation() * toeBone.localOriginalRotation_;
-
-    const Quaternion delta = currentToeRotation * baseToeRotation.Inverse();
-    const auto [_, deltaTwist] = delta.ToSwingTwist(toeTargetPosition - thighBone.position_);
-    return Quaternion::IDENTITY.Slerp(deltaTwist, footRotationWeight_);
-    //return Quaternion::IDENTITY.Slerp(delta, footRotationWeight_);
-}
-
 Vector3 IKLegSolver::CalculateToeToHeel(const Transform& frameOfReference, float tiptoeFactor,
     const Vector3& toeTargetPosition, const Vector3& originalDirection, const Vector3& currentDirection,
     const Quaternion& footRotation) const
@@ -353,7 +336,7 @@ void IKLegSolver::SolveInternal(const Transform& frameOfReference, const IKSetti
     latestTargetPosition_ = GetTargetPosition();
 
     const auto [originalDirection, currentDirection] = CalculateBendDirections(frameOfReference, latestTargetPosition_);
-    const Quaternion footRotation = CalculateFootRotation(frameOfReference, latestTargetPosition_);
+    const Quaternion footRotation = Quaternion::IDENTITY;
     const Vector3 toeToHeel = CalculateToeToHeel(frameOfReference, tiptoeFactor_, latestTargetPosition_,
         originalDirection, currentDirection, footRotation);
     const Vector3 heelTargetPosition = latestTargetPosition_ + toeToHeel;

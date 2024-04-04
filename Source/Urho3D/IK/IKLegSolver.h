@@ -51,8 +51,6 @@ public:
     float GetHeelWeight() const { return heelWeight_; }
     void SetBendWeight(float weight) { bendWeight_ = weight; }
     float GetBendWeight() const { return bendWeight_; }
-    void SetFootRotationWeight(float weight) { footRotationWeight_ = weight; }
-    float GetFootRotationWeight() const { return footRotationWeight_; }
     void SetMinAngle(float angle) { minKneeAngle_ = angle; }
     float GetMinAngle() const { return minKneeAngle_; }
     void SetMaxAngle(float angle) { maxKneeAngle_ = angle; }
@@ -94,7 +92,6 @@ private:
         const Vector3& toeTargetPosition, const Vector3& originalDirection, const Vector3& currentDirection) const;
     Vector2 CalculateLegOffset(
         const Transform& frameOfReference, const Vector3& toeTargetPosition, const Vector3& bendDirection);
-    Quaternion CalculateFootRotation(const Transform& frameOfReference, const Vector3& toeTargetPosition) const;
 
     Vector3 CalculateToeToHeel(const Transform& frameOfReference, float tiptoeFactor, const Vector3& toeTargetPosition,
         const Vector3& originalDirection, const Vector3& currentDirection, const Quaternion& footRotation) const;
@@ -116,7 +113,6 @@ private:
     float rotationWeight_{0.0f};
     float heelWeight_{1.0f};
     float bendWeight_{1.0f};
-    float footRotationWeight_{0.0f};
     float minKneeAngle_{0.0f};
     float maxKneeAngle_{180.0f};
     float tiptoeFactor_{0.0f};
@@ -139,7 +135,6 @@ private:
     {
         Vector3 toeToHeel_;
         float defaultThighToToeDistance_{};
-        float tiptoeTweakOffset_{};
 
         Vector3 bendDirection_;
         Vector3 targetDirection_;
