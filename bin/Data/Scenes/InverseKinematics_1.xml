@@ -3,10 +3,17 @@
 	<attribute name="Name" value="" />
 	<attribute name="Time Scale" value="1.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Node ID" value="2" />
-	<attribute name="Next Component ID" value="34" />
+	<attribute name="Next Node ID" value="16779688" />
+	<attribute name="Next Component ID" value="16777217" />
 	<attribute name="Variables" />
-	<attribute name="Variable Names" value="" />
+	<attribute name="Update Events">
+		<string value="@SceneForcedUpdate" />
+		<string value="SceneUpdate" />
+		<string value="AttributeAnimationUpdate" />
+		<string value="SceneSubsystemUpdate" />
+		<string value="ScenePostUpdate" />
+		<string value="@SceneForcedPostUpdate" />
+	</attribute>
 	<attribute name="Lightmaps" value="Texture2D" />
 	<component type="Octree" id="1" />
 	<component type="RenderPipeline" id="10" />
@@ -364,12 +371,13 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="Label" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-1.14441e-05 13.6001 107" />
+				<attribute name="Position" value="0 0.136001 1.07" />
 				<attribute name="Rotation" value="-5.19951e-08 -5.08067e-08 -0.974896 0.222661" />
-				<attribute name="Scale" value="24.5001 24.5 24.4999" />
+				<attribute name="Scale" value="0.245001 0.245 0.244999" />
 				<attribute name="Variables" />
 				<component type="Text3D" id="819">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Classic]" />
 					<attribute name="Width" value="324" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -1118,6 +1126,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="833">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Comparison]" />
 					<attribute name="Width" value="432" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -1574,12 +1583,13 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="Label" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="7.62939e-06 13.6001 107" />
+				<attribute name="Position" value="0 0.136001 1.07" />
 				<attribute name="Rotation" value="-5.19951e-08 -5.08067e-08 -0.974896 0.222661" />
-				<attribute name="Scale" value="24.5001 24.5 24.4999" />
+				<attribute name="Scale" value="0.245001 0.245 0.244999" />
 				<attribute name="Variables" />
 				<component type="Text3D" id="845">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[IK]" />
 					<attribute name="Width" value="144" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -1876,12 +1886,13 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="Label" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-1.14441e-05 13.6001 107" />
+				<attribute name="Position" value="0 0.136001 1.07" />
 				<attribute name="Rotation" value="-5.19951e-08 -5.08067e-08 -0.974896 0.222661" />
-				<attribute name="Scale" value="24.5001 24.5 24.4999" />
+				<attribute name="Scale" value="0.245001 0.245 0.244999" />
 				<attribute name="Variables" />
 				<component type="Text3D" id="784">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Classic]" />
 					<attribute name="Width" value="324" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -2630,6 +2641,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="61">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Comparison]" />
 					<attribute name="Width" value="432" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -3086,12 +3098,13 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="Label" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="7.62939e-06 13.6001 107" />
+				<attribute name="Position" value="0 0.136001 1.07" />
 				<attribute name="Rotation" value="-5.19951e-08 -5.08067e-08 -0.974896 0.222661" />
-				<attribute name="Scale" value="24.5001 24.5 24.4999" />
+				<attribute name="Scale" value="0.245001 0.245 0.244999" />
 				<attribute name="Variables" />
 				<component type="Text3D" id="783">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[IK]" />
 					<attribute name="Width" value="144" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -3388,12 +3401,13 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="Label" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-1.14441e-05 13.6001 107" />
+				<attribute name="Position" value="0 0.136001 1.07" />
 				<attribute name="Rotation" value="-5.19951e-08 -5.08067e-08 -0.974896 0.222661" />
-				<attribute name="Scale" value="24.5001 24.5 24.4999" />
+				<attribute name="Scale" value="0.245001 0.245 0.244999" />
 				<attribute name="Variables" />
 				<component type="Text3D" id="790">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Classic]" />
 					<attribute name="Width" value="324" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -4142,6 +4156,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="804">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Comparison]" />
 					<attribute name="Width" value="432" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -4598,12 +4613,13 @@
 				<attribute name="Is Enabled" value="true" />
 				<attribute name="Name" value="Label" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="7.62939e-06 13.6001 107" />
+				<attribute name="Position" value="0 0.136001 1.07" />
 				<attribute name="Rotation" value="-5.19951e-08 -5.08067e-08 -0.974896 0.222661" />
-				<attribute name="Scale" value="24.5001 24.5 24.4999" />
+				<attribute name="Scale" value="0.245001 0.245 0.244999" />
 				<attribute name="Variables" />
 				<component type="Text3D" id="816">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[IK]" />
 					<attribute name="Width" value="144" />
 					<attribute name="Horiz Alignment" value="Center" />

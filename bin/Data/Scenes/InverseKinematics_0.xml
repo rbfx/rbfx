@@ -3,10 +3,17 @@
 	<attribute name="Name" value="" />
 	<attribute name="Time Scale" value="1.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Node ID" value="1274" />
-	<attribute name="Next Component ID" value="259" />
+	<attribute name="Next Node ID" value="16781056" />
+	<attribute name="Next Component ID" value="16777217" />
 	<attribute name="Variables" />
-	<attribute name="Variable Names" value="" />
+	<attribute name="Update Events">
+		<string value="@SceneForcedUpdate" />
+		<string value="SceneUpdate" />
+		<string value="AttributeAnimationUpdate" />
+		<string value="SceneSubsystemUpdate" />
+		<string value="ScenePostUpdate" />
+		<string value="@SceneForcedPostUpdate" />
+	</attribute>
 	<attribute name="Lightmaps" value="Texture2D" />
 	<component type="Octree" id="1" />
 	<component type="RenderPipeline" id="10" />
@@ -194,6 +201,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="61">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="Classic Animation" />
 					<attribute name="Width" value="612" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -2297,6 +2305,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="254">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Comparison]" />
 					<attribute name="Width" value="432" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -2472,6 +2481,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="73">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="IK Animation" />
 					<attribute name="Width" value="432" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -3352,6 +3362,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="493">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="Augmented Animation" />
 					<attribute name="Width" value="684" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -4169,6 +4180,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="454">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="Unconstrained FABRIK" />
 					<attribute name="Width" value="720" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -4877,6 +4889,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="99">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="Identity Solver" />
 					<attribute name="Width" value="540" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -5578,6 +5591,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="33">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="Limb Solver" />
 					<attribute name="Width" value="396" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -6317,6 +6331,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="305">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Target]" />
 					<attribute name="Width" value="288" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -7080,6 +7095,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="541">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Position Weight]" />
 					<attribute name="Width" value="612" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -7841,6 +7857,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="1037">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Rotation Weight]" />
 					<attribute name="Width" value="612" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -8602,6 +8619,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="560">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Max Angle]" />
 					<attribute name="Width" value="396" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -9365,6 +9383,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="577">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Bend Target]" />
 					<attribute name="Width" value="468" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -10143,6 +10162,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="603">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Bend Weight]" />
 					<attribute name="Width" value="468" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -10904,6 +10924,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="40">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="Leg Solver" />
 					<attribute name="Width" value="360" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -11641,6 +11662,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="333">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Complex Sample]" />
 					<attribute name="Width" value="576" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -12397,6 +12419,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="321">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Target]" />
 					<attribute name="Width" value="288" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -13162,6 +13185,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="669">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Position Weight]" />
 					<attribute name="Width" value="612" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -13927,6 +13951,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="1065">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Rotation Weight]" />
 					<attribute name="Width" value="612" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -14692,6 +14717,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="685">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Max Angle]" />
 					<attribute name="Width" value="396" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -15459,6 +15485,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="695">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Bend Target]" />
 					<attribute name="Width" value="468" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -16239,6 +16266,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="705">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Bend Weight]" />
 					<attribute name="Width" value="468" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -17017,6 +17045,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="741">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Tiptoe]" />
 					<attribute name="Width" value="288" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -17786,6 +17815,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="752">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Ground]" />
 					<attribute name="Width" value="288" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -18595,6 +18625,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="265">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Foot Rotation Weight]" />
 					<attribute name="Width" value="792" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -19342,6 +19373,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="219">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="Arm Solver" />
 					<attribute name="Width" value="360" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -20059,6 +20091,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="350">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Complex Sample]" />
 					<attribute name="Width" value="576" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -20812,6 +20845,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="797">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Target]" />
 					<attribute name="Width" value="288" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -21561,6 +21595,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="818">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Position Weight]" />
 					<attribute name="Width" value="612" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -22310,6 +22345,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="1086">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Rotation Weight]" />
 					<attribute name="Width" value="612" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -23059,6 +23095,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="835">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Max Angle]" />
 					<attribute name="Width" value="396" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -23810,6 +23847,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="846">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Bend Target]" />
 					<attribute name="Width" value="468" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -24574,6 +24612,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="879">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Bend Weight]" />
 					<attribute name="Width" value="468" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -25336,6 +25375,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="891">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Shoulder Weight]" />
 					<attribute name="Width" value="612" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -26073,6 +26113,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="285">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="Spine Solver" />
 					<attribute name="Width" value="432" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -26797,6 +26838,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="366">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Complex Sample]" />
 					<attribute name="Width" value="576" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -27544,6 +27586,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="130">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Target]" />
 					<attribute name="Width" value="288" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -28278,6 +28321,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="918">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Position Weight]" />
 					<attribute name="Width" value="612" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -29012,6 +29056,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="1102">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Rotation Weight]" />
 					<attribute name="Width" value="612" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -29746,6 +29791,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="928">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Max Angle]" />
 					<attribute name="Width" value="396" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -30480,6 +30526,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="938">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Twist Target]" />
 					<attribute name="Width" value="504" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -31214,6 +31261,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="951">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Twist Weight]" />
 					<attribute name="Width" value="504" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -31948,6 +31996,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="1177">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Bend Tweak]" />
 					<attribute name="Width" value="432" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -32672,6 +32721,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="380">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="Head Solver" />
 					<attribute name="Width" value="396" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -33392,6 +33442,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="438">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Complex Sample]" />
 					<attribute name="Width" value="576" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -34122,6 +34173,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="987">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Target]" />
 					<attribute name="Width" value="288" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -34191,7 +34243,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.984185 -0.176938 0.000177581 0.000250057" />
+								<attribute name="Rotation" value="0.983415 -0.177057 0.00017703 0.00024912" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780421">
@@ -34199,7 +34251,7 @@
 									<attribute name="Name" value="Head" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
-									<attribute name="Rotation" value="0.992916 0.119193 -0.000193616 -2.42268e-06" />
+									<attribute name="Rotation" value="0.99366 0.119538 -0.000193393 -2.19401e-06" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 								</node>
@@ -34852,6 +34904,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="1136">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Position Weight]" />
 					<attribute name="Width" value="612" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -34921,7 +34974,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.949883 -0.161898 -0.0807212 -0.254813" />
+								<attribute name="Rotation" value="0.949649 -0.16193 -0.0807381 -0.254852" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780869">
@@ -34929,7 +34982,7 @@
 									<attribute name="Name" value="Head" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
-									<attribute name="Rotation" value="0.992213 0.0854576 0.0910455 0.00134412" />
+									<attribute name="Rotation" value="0.992183 0.0854792 0.09112 0.00107239" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 								</node>
@@ -35582,6 +35635,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="997">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Rotation Weight]" />
 					<attribute name="Width" value="612" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -35651,7 +35705,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.984183 -0.176948 0.000177167 0.000248919" />
+								<attribute name="Rotation" value="0.983362 -0.17708 0.000177157 0.000249131" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780485">
@@ -35659,7 +35713,7 @@
 									<attribute name="Name" value="Head" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
-									<attribute name="Rotation" value="1.00005 3.36766e-06 9.96806e-10 -4.06726e-09" />
+									<attribute name="Rotation" value="1.00072 5.12377e-05 -5.43514e-09 6.57365e-08" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 								</node>
@@ -36312,6 +36366,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="1158">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Direction Weight]" />
 					<attribute name="Width" value="648" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -36381,7 +36436,7 @@
 								<attribute name="Name" value="Neck" />
 								<attribute name="Tags" />
 								<attribute name="Position" value="2.81599e-09 0.164557 5.26157e-07" />
-								<attribute name="Rotation" value="0.984183 -0.176948 0.000176968 0.000248482" />
+								<attribute name="Rotation" value="0.983362 -0.17708 0.000177344 0.000249523" />
 								<attribute name="Scale" value="1 1 1" />
 								<attribute name="Variables" />
 								<node id="16780933">
@@ -36389,7 +36444,7 @@
 									<attribute name="Name" value="Head" />
 									<attribute name="Tags" />
 									<attribute name="Position" value="-5.98457e-11 0.0747265 -0.0189769" />
-									<attribute name="Rotation" value="1.00004 3.54648e-06 1.45519e-11 8.69477e-10" />
+									<attribute name="Rotation" value="1.00071 5.17517e-05 -1.02154e-08 1.0596e-07" />
 									<attribute name="Scale" value="1 1 1" />
 									<attribute name="Variables" />
 								</node>
@@ -37042,6 +37097,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="406">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Look At Target]" />
 					<attribute name="Width" value="576" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -37772,6 +37828,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="974">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Look At Weight]" />
 					<attribute name="Width" value="576" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -38502,6 +38559,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="1007">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Neck Weight]" />
 					<attribute name="Width" value="468" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -39260,6 +39318,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="167">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="Stick Targets" />
 					<attribute name="Width" value="468" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -40032,6 +40091,7 @@
 				<attribute name="Variables" />
 				<component type="Text3D" id="210">
 					<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+					<attribute name="Font Size" value="64.000000" />
 					<attribute name="Text" value="[Base Velocity]" />
 					<attribute name="Width" value="540" />
 					<attribute name="Horiz Alignment" value="Center" />
@@ -40826,6 +40886,7 @@
 					<attribute name="Variables" />
 					<component type="Text3D" id="230">
 						<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+						<attribute name="Font Size" value="64.000000" />
 						<attribute name="Text" value="[Translate]" />
 						<attribute name="Width" value="396" />
 						<attribute name="Horiz Alignment" value="Center" />
@@ -41621,6 +41682,7 @@
 					<attribute name="Variables" />
 					<component type="Text3D" id="243">
 						<attribute name="Font" value="Font;Fonts/Anonymous Pro.sdf" />
+						<attribute name="Font Size" value="64.000000" />
 						<attribute name="Text" value="[Rotate]" />
 						<attribute name="Width" value="288" />
 						<attribute name="Horiz Alignment" value="Center" />
