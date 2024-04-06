@@ -148,7 +148,7 @@ AnimationParameters& AnimationParameters::Looped()
     return *this;
 }
 
-AnimationParameters& AnimationParameters::StartBone(const ea::string& startBone)
+AnimationParameters& AnimationParameters::StartBone(ea::string_view startBone)
 {
     startBone_ = startBone;
     return *this;
