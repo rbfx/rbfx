@@ -146,6 +146,8 @@ public:
     void SetTracks(const ea::vector<AnimationTrack>& tracks);
 
 private:
+    void LoadTracksFromXML(const XMLElement& source);
+    void LoadVariantTracksFromXML(const XMLElement& source);
     void LoadTriggersFromXML(const XMLElement& source);
 
     /// Class versions (used for serialization)

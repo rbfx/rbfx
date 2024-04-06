@@ -114,12 +114,22 @@ bool Animation::LoadXML(const XMLElement& source)
     animationName_ = source.GetAttribute("name");
     length_ = source.GetFloat("length");
 
+    LoadTracksFromXML(source);
+    LoadVariantTracksFromXML(source);
+    LoadTriggersFromXML(source);
+    LoadMetadataFromXML(source);
+
+    return true;
+}
+
+void Animation::LoadTracksFromXML(const XMLElement& source)
+{
     for (XMLElement trackElem = source.GetChild("transform"); trackElem; trackElem = trackElem.GetNext("transform"))
     {
         if (!trackElem.HasAttribute("name"))
         {
             URHO3D_LOGERROR("Animation track name is missing");
-            return false;
+            continue;
         }
 
         AnimationTrack* newTrack = CreateTrack(trackElem.GetAttribute("name"));
@@ -147,13 +157,16 @@ bool Animation::LoadXML(const XMLElement& source)
 
         newTrack->SortKeyFrames();
     }
+}
 
+void Animation::LoadVariantTracksFromXML(const XMLElement& source)
+{
     for (XMLElement trackElem = source.GetChild("variant"); trackElem; trackElem = trackElem.GetNext("variant"))
     {
         if (!trackElem.HasAttribute("name"))
         {
             URHO3D_LOGERROR("Animation track name is missing");
-            return false;
+            continue;
         }
 
         VariantAnimationTrack* newTrack = CreateVariantTrack(trackElem.GetAttribute("name"));
@@ -188,11 +201,6 @@ bool Animation::LoadXML(const XMLElement& source)
         newTrack->SortKeyFrames();
         newTrack->Commit();
     }
-
-    LoadTriggersFromXML(source);
-    LoadMetadataFromXML(source);
-
-    return true;
 }
 
 bool Animation::BeginLoad(Deserializer& source)
@@ -304,6 +312,8 @@ bool Animation::BeginLoad(Deserializer& source)
     if (file)
     {
         XMLElement rootElem = file->GetRoot();
+        LoadTracksFromXML(rootElem);
+        LoadVariantTracksFromXML(rootElem);
         LoadTriggersFromXML(rootElem);
         LoadMetadataFromXML(rootElem);
 
