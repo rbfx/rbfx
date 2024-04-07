@@ -155,8 +155,9 @@ private:
     static const unsigned legacyVersion = 1; // Fake version for legacy unversioned UANI file
     static const unsigned variantTrackVersion = 2; // VariantAnimationTrack support added here
     static const unsigned trackWeightVersion = 3; // Per-track weights added here
+    static const unsigned channelWeightVersion = 4; // Per-channel weights added here
 
-    static const unsigned currentVersion = trackWeightVersion;
+    static const unsigned currentVersion = channelWeightVersion;
     /// @}
 
     /// Animation name.

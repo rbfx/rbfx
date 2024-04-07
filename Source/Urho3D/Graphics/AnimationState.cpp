@@ -288,8 +288,14 @@ void AnimationState::CalculateTransformTrack(
     if (track.keyFrames_.empty())
         return;
 
-    const float weight = baseWeight * track.weight_;
-    const bool isFullWeight = Equals(weight, 1.0f);
+    const float positionWeight = baseWeight * track.positionWeight_;
+    const float rotationWeight = baseWeight * track.rotationWeight_;
+    const float scaleWeight = baseWeight * track.scaleWeight_;
+
+    const bool isFullPositionWeight = Equals(positionWeight, 1.0f);
+    const bool isFullRotationWeight = Equals(rotationWeight, 1.0f);
+    const bool isFullScaleWeight = Equals(scaleWeight, 1.0f);
+
     const AnimationKeyFrame& baseValue = track.keyFrames_.front();
 
     Transform sampledValue;
@@ -301,22 +307,25 @@ void AnimationState::CalculateTransformTrack(
         if ((track.channelMask_ & output.dirty_).Test(CHANNEL_POSITION))
         {
             const Vector3 delta = sampledValue.position_ - baseValue.position_;
-            output.localToParent_.position_ += delta * weight;
+            output.localToParent_.position_ += delta * positionWeight;
         }
 
         if ((track.channelMask_ & output.dirty_).Test(CHANNEL_ROTATION))
         {
             const Quaternion delta = sampledValue.rotation_ * baseValue.rotation_.Inverse();
-            if (isFullWeight)
+            if (isFullRotationWeight)
                 output.localToParent_.rotation_ = delta * output.localToParent_.rotation_;
             else
-                output.localToParent_.rotation_ = Quaternion::IDENTITY.Slerp(delta, weight) * output.localToParent_.rotation_;
+            {
+                output.localToParent_.rotation_ =
+                    Quaternion::IDENTITY.Slerp(delta, rotationWeight) * output.localToParent_.rotation_;
+            }
         }
 
         if ((track.channelMask_ & output.dirty_).Test(CHANNEL_SCALE))
         {
             const Vector3 delta = sampledValue.scale_ - baseValue.scale_;
-            output.localToParent_.scale_ += delta * weight;
+            output.localToParent_.scale_ += delta * scaleWeight;
         }
     }
     else
@@ -324,8 +333,11 @@ void AnimationState::CalculateTransformTrack(
         // In interpolation mode, disable interpolation if output is not initialzed yet
         if (track.channelMask_.Test(CHANNEL_POSITION))
         {
-            if (!isFullWeight && output.dirty_.Test(CHANNEL_POSITION))
-                output.localToParent_.position_ = output.localToParent_.position_.Lerp(sampledValue.position_, weight);
+            if (!isFullPositionWeight && output.dirty_.Test(CHANNEL_POSITION))
+            {
+                output.localToParent_.position_ =
+                    output.localToParent_.position_.Lerp(sampledValue.position_, positionWeight);
+            }
             else
             {
                 output.dirty_ |= CHANNEL_POSITION;
@@ -335,8 +347,11 @@ void AnimationState::CalculateTransformTrack(
 
         if (track.channelMask_.Test(CHANNEL_ROTATION))
         {
-            if (!isFullWeight && output.dirty_.Test(CHANNEL_ROTATION))
-                output.localToParent_.rotation_ = output.localToParent_.rotation_.Slerp(sampledValue.rotation_, weight);
+            if (!isFullRotationWeight && output.dirty_.Test(CHANNEL_ROTATION))
+            {
+                output.localToParent_.rotation_ =
+                    output.localToParent_.rotation_.Slerp(sampledValue.rotation_, rotationWeight);
+            }
             else
             {
                 output.dirty_ |= CHANNEL_ROTATION;
@@ -346,8 +361,8 @@ void AnimationState::CalculateTransformTrack(
 
         if (track.channelMask_.Test(CHANNEL_SCALE))
         {
-            if (!isFullWeight && output.dirty_.Test(CHANNEL_SCALE))
-                output.localToParent_.scale_ = output.localToParent_.scale_.Lerp(sampledValue.scale_, weight);
+            if (!isFullScaleWeight && output.dirty_.Test(CHANNEL_SCALE))
+                output.localToParent_.scale_ = output.localToParent_.scale_.Lerp(sampledValue.scale_, scaleWeight);
             else
             {
                 output.dirty_ |= CHANNEL_SCALE;

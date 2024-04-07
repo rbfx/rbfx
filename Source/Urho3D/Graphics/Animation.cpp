@@ -140,7 +140,18 @@ void Animation::LoadTracksFromXML(const XMLElement& source)
         if (trackElem.GetBool("scale"))
             newTrack->channelMask_ |= CHANNEL_SCALE;
         if (trackElem.HasAttribute("weight"))
-            newTrack->weight_ = trackElem.GetFloat("weight");
+        {
+            const float weight = trackElem.GetFloat("weight");
+            newTrack->positionWeight_ = weight;
+            newTrack->rotationWeight_ = weight;
+            newTrack->scaleWeight_ = weight;
+        }
+        if (trackElem.HasAttribute("positionweight"))
+            newTrack->positionWeight_ = trackElem.GetFloat("positionweight");
+        if (trackElem.HasAttribute("rotationweight"))
+            newTrack->rotationWeight_ = trackElem.GetFloat("rotationweight");
+        if (trackElem.HasAttribute("scaleweight"))
+            newTrack->scaleWeight_ = trackElem.GetFloat("scaleweight");
 
         for (XMLElement keyFrameElem = trackElem.GetChild("keyframe"); keyFrameElem; keyFrameElem = keyFrameElem.GetNext("keyframe"))
         {
@@ -244,8 +255,19 @@ bool Animation::BeginLoad(Deserializer& source)
         AnimationTrack* newTrack = CreateTrack(source.ReadString());
         newTrack->channelMask_ = AnimationChannelFlags(source.ReadUByte());
 
-        if (version >= trackWeightVersion)
-            newTrack->weight_ = source.ReadFloat();
+        if (version >= channelWeightVersion)
+        {
+            newTrack->positionWeight_ = source.ReadFloat();
+            newTrack->rotationWeight_ = source.ReadFloat();
+            newTrack->scaleWeight_ = source.ReadFloat();
+        }
+        else if (version >= trackWeightVersion)
+        {
+            const float weight = source.ReadFloat();
+            newTrack->positionWeight_ = weight;
+            newTrack->rotationWeight_ = weight;
+            newTrack->scaleWeight_ = weight;
+        }
 
         const unsigned keyFrames = source.ReadUInt();
         newTrack->keyFrames_.resize(keyFrames);
@@ -352,7 +374,9 @@ bool Animation::Save(Serializer& dest) const
         const AnimationTrack& track = item.second;
         dest.WriteString(track.name_);
         dest.WriteUByte(track.channelMask_);
-        dest.WriteFloat(track.weight_);
+        dest.WriteFloat(track.positionWeight_);
+        dest.WriteFloat(track.rotationWeight_);
+        dest.WriteFloat(track.scaleWeight_);
         dest.WriteUInt(track.keyFrames_.size());
 
         // Write keyframes of the track
