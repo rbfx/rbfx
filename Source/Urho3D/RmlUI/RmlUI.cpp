@@ -749,7 +749,9 @@ Rml::ElementDocument* RmlUI::ReloadDocument(Rml::ElementDocument* document)
     const bool oldVisible = document->IsVisible();
 
     const Rml::Element* oldFocusedElement = rmlContext_->GetFocusElement();
-    const Rml::FocusFlag focus = oldFocusedElement->GetOwnerDocument() == document ? Rml::FocusFlag::Document : Rml::FocusFlag::Auto;
+    const Rml::FocusFlag focus = oldFocusedElement && oldFocusedElement->GetOwnerDocument() == document
+        ? Rml::FocusFlag::Document
+        : Rml::FocusFlag::Auto;
 
     const Rml::Property* oldLeftProperty = document->GetProperty(Rml::PropertyId::Left);
     const Rml::Property* oldTopProperty = document->GetProperty(Rml::PropertyId::Top);
