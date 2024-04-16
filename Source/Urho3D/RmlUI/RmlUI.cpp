@@ -532,6 +532,11 @@ void RmlUI::SetScale(float scale)
     rmlContext_->SetDensityIndependentPixelRatio(scale);
 }
 
+float RmlUI::GetScale() const
+{
+    return rmlContext_->GetDensityIndependentPixelRatio();
+}
+
 void RmlUI::SetRenderTarget(RenderSurface* target, const Color& clearColor)
 {
     renderSurface_ = target;

@@ -82,6 +82,8 @@ public:
     Rml::Context* GetRmlContext() const;
     /// Set UI scale aka dp to px ratio. 1.0 is default (pixel perfect).
     void SetScale(float scale);
+    /// Return UI scale.
+    float GetScale() const;
     /// Set render target where this instance will render into.
     void SetRenderTarget(RenderSurface* target, const Color& clearColor=Color::TRANSPARENT_BLACK);
     /// Set render target where this instance will render into.

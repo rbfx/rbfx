@@ -42,6 +42,7 @@
 #include "../Graphics/GraphicsEvents.h"
 #include "../RenderAPI/PipelineState.h"
 #include "../RenderAPI/RenderAPIUtils.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../Resource/JSONArchive.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
@@ -525,12 +526,15 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         }
 
 #ifdef URHO3D_RMLUI
+        const auto rmlUi = GetSubsystem<RmlUI>();
+
         const bool loadFonts = GetParameter(EP_LOAD_FONTS).GetBool();
         if (loadFonts)
-        {
-            auto rmlUi = GetSubsystem<RmlUI>();
             rmlUi->ReloadFonts();
-        }
+
+        const auto renderDevice = GetSubsystem<RenderDevice>();
+        const float dpiScale = renderDevice->GetDpiScale();
+        rmlUi->SetScale(dpiScale);
 #endif
     }
 

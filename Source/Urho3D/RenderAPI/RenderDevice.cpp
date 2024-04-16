@@ -1659,9 +1659,17 @@ IntVector2 RenderDevice::GetWindowSize() const
 
 float RenderDevice::GetDpiScale() const
 {
+#if defined(URHO3D_PLATFORM_WINDOWS)
+    float logicalDpi{};
+    if (SDL_GetDisplayDPI(windowSettings_.monitor_, nullptr, &logicalDpi, nullptr) != 0)
+        return 1.0f;
+
+    return logicalDpi / 96.0f;
+#else
     const Vector2 ratio = GetSwapChainSize().ToVector2() / GetWindowSize().ToVector2();
     // This is just a hack to get rid of possible rounding errors
     return SnapRound((ratio.x_ + ratio.y_) / 2.0f, 0.05f);
+#endif
 }
 
 ea::vector<FullscreenMode> RenderDevice::GetFullscreenModes(int monitor)
