@@ -391,7 +391,7 @@ void AnimationState::CalculateAttributeTrack(
     }
     else
     {
-        if (!output.IsEmpty() && !isFullWeight)
+        if (!output.IsEmpty() && !isFullWeight && track.interpolation_ != KeyFrameInterpolation::None)
             output = output.Lerp(sampledValue, weight);
         else
             output = sampledValue;
