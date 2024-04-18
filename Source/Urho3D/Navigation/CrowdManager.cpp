@@ -695,6 +695,11 @@ const dtCrowdAgent* CrowdManager::GetDetourCrowdAgent(int agent) const
     return crowd_ ? crowd_->getAgent(agent) : nullptr;
 }
 
+dtCrowdAgent* CrowdManager::GetEditableDetourCrowdAgent(int agent)
+{
+    return crowd_ ? crowd_->getEditableAgent(agent) : nullptr;
+}
+
 const dtQueryFilter* CrowdManager::GetDetourQueryFilter(unsigned queryFilterType) const
 {
     return crowd_ ? crowd_->getFilter(queryFilterType) : nullptr;

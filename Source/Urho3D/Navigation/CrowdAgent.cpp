@@ -351,6 +351,12 @@ void CrowdAgent::SetTargetVelocity(const Vector3& velocity)
     }
 }
 
+void CrowdAgent::SetActualVelocity(const Vector3& velocity)
+{
+    if (auto agent = GetEditableDetourCrowdAgent())
+        dtVcopy(agent->vel, velocity.Data());
+}
+
 void CrowdAgent::ResetTarget()
 {
     if (CA_REQUESTEDTARGET_NONE != requestedTargetType_)
@@ -648,6 +654,11 @@ void CrowdAgent::OnMarkedDirty(Node* node)
 const dtCrowdAgent* CrowdAgent::GetDetourCrowdAgent() const
 {
     return IsInCrowd() ? crowdManager_->GetDetourCrowdAgent(agentCrowdId_) : nullptr;
+}
+
+dtCrowdAgent* CrowdAgent::GetEditableDetourCrowdAgent()
+{
+    return IsInCrowd() ? crowdManager_->GetEditableDetourCrowdAgent(agentCrowdId_) : nullptr;
 }
 
 void CrowdAgent::HandleNavigationTileAdded(StringHash eventType, VariantMap& eventData)

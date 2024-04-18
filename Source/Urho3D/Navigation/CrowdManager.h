@@ -191,6 +191,8 @@ protected:
     void Update(float delta);
     /// Get the detour crowd agent.
     const dtCrowdAgent* GetDetourCrowdAgent(int agent) const;
+    /// Get editable detour crowd agent.
+    dtCrowdAgent* GetEditableDetourCrowdAgent(int agent);
     /// Get the detour query filter.
     const dtQueryFilter* GetDetourQueryFilter(unsigned queryFilterType) const;
 
