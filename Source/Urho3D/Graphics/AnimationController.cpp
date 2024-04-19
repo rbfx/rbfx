@@ -453,6 +453,8 @@ void AnimationController::Update(float timeStep)
         UpdateInstance(params, timeStep, true);
         if (!params.removed_)
             UpdateState(state, params);
+        else
+            animationStatesDirty_ = true;
     }
     ea::erase_if(animations_, [](const AnimationInstance& value) { return value.params_.removed_; });
 
