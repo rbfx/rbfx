@@ -149,6 +149,7 @@ void SoundSource::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Panning", float, panning_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Reach", float, reach_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Low Frequency Effect", bool, lowFrequency_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Ignore Scene Pause", bool, ignoreScenePause_, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Playing", IsPlaying, SetPlayingAttr, bool, false, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE("Autoremove Mode", autoRemove_, autoRemoveModeNames, REMOVE_DISABLED, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Play Position", GetPositionAttr, SetPositionAttr, int, 0, AM_DEFAULT);
@@ -365,9 +366,11 @@ void SoundSource::Mix(int dest[], unsigned samples, int mixRate, SpeakerMode mod
 
      if (node_ != nullptr)
      {
+         if (!IsEnabledEffective())
+             return;
          const Scene* scene = node_->GetScene();
-         if (!IsEnabledEffective() || (scene != nullptr && !scene->IsUpdateEnabled()))
-            return;
+         if (!ignoreScenePause_ && scene != nullptr && !scene->GetEffectiveTimeScale() != 0.0f)
+             return;
      }
 
     int streamFilledSize, outBytes;

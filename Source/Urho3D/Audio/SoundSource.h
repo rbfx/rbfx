@@ -88,6 +88,8 @@ public:
     void SetAutoRemoveMode(AutoRemoveMode mode);
     /// Set new playback position.
     void SetPlayPosition(signed char* pos);
+    /// Set flag to allow sound source keep playing even if scene is paused.
+    void SetIgnoreScenePause(bool ignoreScenePause);
 
     /// Return sound.
     /// @property
@@ -131,6 +133,9 @@ public:
     /// Return automatic removal mode on sound playback completion.
     /// @property
     AutoRemoveMode GetAutoRemoveMode() const { return autoRemove_; }
+
+    /// Get "ignore scene pause" flag state.
+    bool GetIgnoreScenePause() const { return ignoreScenePause_; }
 
     /// Return whether is playing.
     /// @property
@@ -232,6 +237,8 @@ private:
     SharedPtr<Sound> streamBuffer_;
     /// Unused stream bytes from previous frame.
     int unusedStreamSize_;
+    /// Ignore scene pause and keep playing even if scene is paused.
+    bool ignoreScenePause_{false};
 };
 
 }
