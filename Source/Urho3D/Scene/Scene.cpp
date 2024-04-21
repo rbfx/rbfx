@@ -704,7 +704,20 @@ void Scene::Clear()
 
 void Scene::SetUpdateEnabled(bool enable)
 {
-    updateEnabled_ = enable;
+    if (updateEnabled_ != enable)
+    {
+        updateEnabled_ = enable;
+
+        
+        using namespace SceneUpdateChanged;
+
+        VariantMap& eventData = GetEventDataMap();
+        eventData[P_SCENE] = this;
+        eventData[P_UPDATEENABLED] = updateEnabled_;
+
+        // Notify subscribers about scene updates been enabled.
+        SendEvent(E_SCENEUPDATESCHANGED, eventData);
+    }
 }
 
 void Scene::SetTimeScale(float scale)

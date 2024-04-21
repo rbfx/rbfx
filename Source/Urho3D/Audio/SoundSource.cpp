@@ -20,19 +20,21 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include <Urho3D/Precompiled.h>
 
-#include "../Audio/Audio.h"
-#include "../Audio/AudioEvents.h"
-#include "../Audio/Sound.h"
-#include "../Audio/SoundSource.h"
-#include "../Audio/SoundStream.h"
-#include "../Core/Context.h"
-#include "../IO/Log.h"
-#include "../Resource/ResourceCache.h"
-#include "../Scene/Node.h"
+#include <Urho3D/Audio/Audio.h>
+#include <Urho3D/Audio/AudioEvents.h>
+#include <Urho3D/Audio/Sound.h>
+#include <Urho3D/Audio/SoundSource.h>
+#include <Urho3D/Audio/SoundStream.h>
+#include <Urho3D/Core/Context.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Scene/Node.h>
+#include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Scene/SceneEvents.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -358,14 +360,21 @@ void SoundSource::Update(float timeStep)
 
 void SoundSource::Mix(int dest[], unsigned samples, int mixRate, SpeakerMode mode, bool interpolation)
 {
-    if (!position_ || (!sound_ && !soundStream_) || (!IsEnabledEffective() && node_ != nullptr))
+    if (!position_ || (!sound_ && !soundStream_))
         return;
+
+     if (node_ != nullptr)
+     {
+         const Scene* scene = node_->GetScene();
+         if (!IsEnabledEffective() || (scene != nullptr && !scene->IsUpdateEnabled()))
+            return;
+     }
 
     int streamFilledSize, outBytes;
 
     if (soundStream_ && streamBuffer_)
     {
-        int streamBufferSize = streamBuffer_->GetDataSize();
+        const int streamBufferSize = streamBuffer_->GetDataSize();
         // Calculate how many bytes of stream sound data is needed
         auto neededSize = (int)((float)samples * frequency_ / (float)mixRate);
         // Add a little safety buffer. Subtract previous unused data

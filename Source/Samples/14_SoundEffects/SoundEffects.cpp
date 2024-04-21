@@ -110,10 +110,17 @@ void SoundEffects::CreateUI()
 
     // Create buttons for playing/stopping music
     Button* button = CreateButton(20, 80, 120, 40, "Play Music");
-    SubscribeToEvent(button, E_RELEASED, URHO3D_HANDLER(SoundEffects, HandlePlayMusic));
+    SubscribeToEvent(button, E_RELEASED, &SoundEffects::HandlePlayMusic);
 
     button = CreateButton(160, 80, 120, 40, "Stop Music");
-    SubscribeToEvent(button, E_RELEASED, URHO3D_HANDLER(SoundEffects, HandleStopMusic));
+    SubscribeToEvent(button, E_RELEASED, &SoundEffects::HandleStopMusic);
+
+    // Create buttons for playing/stopping music
+    button = CreateButton(300, 80, 120, 40, "Pause Scene");
+    SubscribeToEvent(button, E_RELEASED, &SoundEffects::HandlePauseScene);
+
+    button = CreateButton(440, 80, 120, 40, "Resume Scene");
+    SubscribeToEvent(button, E_RELEASED, &SoundEffects::HandleResumeScene);
 
     auto* audio = GetSubsystem<Audio>();
 
@@ -263,6 +270,16 @@ void SoundEffects::HandleStopMusic(StringHash eventType, VariantMap& eventData)
 {
     // Remove the music player node from the scene
     musicSource_->Stop();
+}
+
+void SoundEffects::HandlePauseScene(StringHash eventType, VariantMap& eventData)
+{
+    scene_->SetUpdateEnabled(false);
+}
+
+void SoundEffects::HandleResumeScene(StringHash eventType, VariantMap& eventData)
+{
+    scene_->SetUpdateEnabled(true);
 }
 
 void SoundEffects::HandleSoundVolume(StringHash eventType, VariantMap& eventData)
