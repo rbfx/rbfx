@@ -135,7 +135,7 @@ public:
     AutoRemoveMode GetAutoRemoveMode() const { return autoRemove_; }
 
     /// Get "ignore scene pause" flag state.
-    bool GetIgnoreScenePause() const { return ignoreScenePause_; }
+    bool GetIgnoreScenePause() const { return ignoreSceneTimeScale_; }
 
     /// Return whether is playing.
     /// @property
@@ -195,33 +195,41 @@ private:
     /// Set new playback position without locking the audio mutex. Called internally.
     void SetPlayPositionLockless(signed char* pos);
     /// Mix mono sample to mono buffer.
-    void MixMonoToMono(Sound* sound, int dest[], unsigned samples, int mixRate, int channel = 0, int channelCount = 1);
+    void MixMonoToMono(Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency,
+        int channel = 0, int channelCount = 1);
     /// Mix mono sample to stereo buffer.
-    void MixMonoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate);
+    void MixMonoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency);
     /// Mix mono sample to mono buffer interpolated.
-    void MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate, int channel = 0, int channelCount = 1);
+    void MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency,
+        int channel = 0, int channelCount = 1);
     /// Mix mono sample to stereo buffer interpolated.
-    void MixMonoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
+    void MixMonoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency);
     /// Mix stereo sample to mono buffer.
-    void MixStereoToMono(Sound* sound, int dest[], unsigned samples, int mixRate);
+    void MixStereoToMono(Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency);
     /// Mix stereo sample to stereo buffer.
-    void MixStereoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate);
+    void MixStereoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency);
     /// Mix stereo sample to mono buffer interpolated.
-    void MixStereoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
+    void MixStereoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency);
     /// Mix stereo sample to stereo buffer interpolated.
-    void MixStereoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
+    void MixStereoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency);
     /// Mix a mono track to surround buffer.
-    void MixMonoToSurround(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakers);
+    void MixMonoToSurround(
+        Sound* sound, int* dest, unsigned samples, int mixRate, float effectiveFrequency, SpeakerMode speakers);
     /// Mix a mono track into a surround buffer.
-    void MixMonoToSurroundIP(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakers);
+    void MixMonoToSurroundIP(
+        Sound* sound, int* dest, unsigned samples, int mixRate, float effectiveFrequency, SpeakerMode speakers);
     /// Mix stereo sample into multichannel. Front-center and LFE are ommitted.
-    void MixStereoToMulti(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakers);
+    void MixStereoToMulti(
+        Sound* sound, int* dest, unsigned samples, int mixRate, float effectiveFrequency, SpeakerMode speakers);
     /// Mix stereo sample into multichannel. Front-center and LFE are ommitted.
-    void MixStereoToMultiIP(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakers);
+    void MixStereoToMultiIP(
+        Sound* sound, int* dest, unsigned samples, int mixRate, float effectiveFrequency, SpeakerMode speakers);
     /// Advance playback pointer without producing audible output.
-    void MixZeroVolume(Sound* sound, unsigned samples, int mixRate);
+    void MixZeroVolume(Sound* sound, unsigned samples, int mixRate, float effectiveFrequency);
     /// Advance playback pointer to simulate audio playback in headless mode.
-    void MixNull(float timeStep);
+    void MixNull(float timeStep, float effectiveFrequency);
+    /// Get effective time scale or 0.0 if scene is not set or paused.
+    float GetEffectiveTimeScale() const;
 
     /// Sound that is being played.
     SharedPtr<Sound> sound_;
@@ -237,8 +245,8 @@ private:
     SharedPtr<Sound> streamBuffer_;
     /// Unused stream bytes from previous frame.
     int unusedStreamSize_;
-    /// Ignore scene pause and keep playing even if scene is paused.
-    bool ignoreScenePause_{false};
+    /// Ignore scene time scale and play sound even if scene is paused.
+    bool ignoreSceneTimeScale_{false};
 };
 
 }

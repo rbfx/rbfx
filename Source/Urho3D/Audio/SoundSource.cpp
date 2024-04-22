@@ -34,7 +34,7 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
 
-#include "Urho3D/DebugNew.h"
+#include <Urho3D/DebugNew.h>
 
 namespace Urho3D
 {
@@ -149,7 +149,7 @@ void SoundSource::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Panning", float, panning_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Reach", float, reach_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Low Frequency Effect", bool, lowFrequency_, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Ignore Scene Pause", bool, ignoreScenePause_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Ignore Scene Time Scale", bool, ignoreSceneTimeScale_, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Is Playing", IsPlaying, SetPlayingAttr, bool, false, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE("Autoremove Mode", autoRemove_, autoRemoveModeNames, REMOVE_DISABLED, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Play Position", GetPositionAttr, SetPositionAttr, int, 0, AM_DEFAULT);
@@ -324,12 +324,16 @@ void SoundSource::SetPlayPosition(signed char* pos)
 
 void SoundSource::Update(float timeStep)
 {
-    if (!audio_ || (!IsEnabledEffective() && node_ != nullptr))
+    if (!audio_)
+        return;
+
+    const float effectiveTimeScale = GetEffectiveTimeScale();
+    if (effectiveTimeScale == 0.0f)
         return;
 
     // If there is no actual audio output, perform fake mixing into a nonexistent buffer to check stopping/looping
     if (!audio_->IsInitialized())
-        MixNull(timeStep);
+        MixNull(timeStep, frequency_ * effectiveTimeScale);
 
     // Free the stream if playback has stopped
     if (soundStream_ && !position_)
@@ -364,14 +368,11 @@ void SoundSource::Mix(int dest[], unsigned samples, int mixRate, SpeakerMode mod
     if (!position_ || (!sound_ && !soundStream_))
         return;
 
-     if (node_ != nullptr)
-     {
-         if (!IsEnabledEffective())
-             return;
-         const Scene* scene = node_->GetScene();
-         if (!ignoreScenePause_ && scene != nullptr && !scene->GetEffectiveTimeScale() != 0.0f)
-             return;
-     }
+    const float effectiveTimeScale = GetEffectiveTimeScale();
+    if (effectiveTimeScale == 0.0f)
+        return;
+
+    const float effectiveFrequency = frequency_ * effectiveTimeScale;
 
     int streamFilledSize, outBytes;
 
@@ -379,7 +380,7 @@ void SoundSource::Mix(int dest[], unsigned samples, int mixRate, SpeakerMode mod
     {
         const int streamBufferSize = streamBuffer_->GetDataSize();
         // Calculate how many bytes of stream sound data is needed
-        auto neededSize = (int)((float)samples * frequency_ / (float)mixRate);
+        auto neededSize = (int)((float)samples * effectiveFrequency / (float)mixRate);
         // Add a little safety buffer. Subtract previous unused data
         neededSize += STREAM_SAFETY_SAMPLES;
         neededSize *= soundStream_->GetSampleSize();
@@ -417,19 +418,22 @@ void SoundSource::Mix(int dest[], unsigned samples, int mixRate, SpeakerMode mod
                 assert(!"SPK_AUTO");
                 break;
             case SPK_MONO:
-                if (!lowFrequency_) MixMonoToMonoIP(sound, dest, samples, mixRate);
+                if (!lowFrequency_)
+                    MixMonoToMonoIP(sound, dest, samples, mixRate, effectiveFrequency);
                 break;
             case SPK_STEREO:
-                if (!lowFrequency_) MixMonoToStereoIP(sound, dest, samples, mixRate);
+                if (!lowFrequency_)
+                    MixMonoToStereoIP(sound, dest, samples, mixRate, effectiveFrequency);
                 break;
             case SPK_QUADROPHONIC:
-                if (!lowFrequency_) MixMonoToSurroundIP(sound, dest, samples, mixRate, mode);
+                if (!lowFrequency_)
+                    MixMonoToSurroundIP(sound, dest, samples, mixRate, effectiveFrequency, mode);
                 break;
             case SPK_SURROUND_5_1:
                 if (lowFrequency_)
                     MixMonoToMonoIP(sound, dest, samples, mixRate, SOUND_SOURCE_LOW_FREQ_CHANNEL[mode], 6);
                 else
-                    MixMonoToSurroundIP(sound, dest, samples, mixRate, mode);
+                    MixMonoToSurroundIP(sound, dest, samples, mixRate, effectiveFrequency, mode);
                 break;
             }
         }
@@ -441,19 +445,23 @@ void SoundSource::Mix(int dest[], unsigned samples, int mixRate, SpeakerMode mod
                 assert(!"SPK_AUTO");
                 break;
             case SPK_MONO:
-                if (!lowFrequency_) MixMonoToStereo(sound, dest, samples, mixRate);
+                if (!lowFrequency_)
+                    MixMonoToStereo(sound, dest, samples, mixRate, effectiveFrequency);
                 break;
             case SPK_STEREO:
-                if (!lowFrequency_) MixMonoToMono(sound, dest, samples, mixRate);
+                if (!lowFrequency_)
+                    MixMonoToMono(sound, dest, samples, mixRate, effectiveFrequency);
                 break;
             case SPK_QUADROPHONIC:
-                if (!lowFrequency_) MixMonoToSurround(sound, dest, samples, mixRate, mode);
+                if (!lowFrequency_)
+                    MixMonoToSurround(sound, dest, samples, mixRate, effectiveFrequency, mode);
                 break;
             case SPK_SURROUND_5_1:
                 if (lowFrequency_)
-                    MixMonoToMono(sound, dest, samples, mixRate, SOUND_SOURCE_LOW_FREQ_CHANNEL[mode], 6);
+                    MixMonoToMono(
+                        sound, dest, samples, mixRate, effectiveFrequency, SOUND_SOURCE_LOW_FREQ_CHANNEL[mode], 6);
                 else
-                    MixMonoToSurround(sound, dest, samples, mixRate, mode);
+                    MixMonoToSurround(sound, dest, samples, mixRate, effectiveFrequency, mode);
                 break;
             }
         }
@@ -463,23 +471,23 @@ void SoundSource::Mix(int dest[], unsigned samples, int mixRate, SpeakerMode mod
         if (interpolation)
         {
             if (mode == SPK_MONO)
-                MixStereoToMonoIP(sound, dest, samples, mixRate);
+                MixStereoToMonoIP(sound, dest, samples, mixRate, effectiveFrequency);
             else
-                MixStereoToMultiIP(sound, dest, samples, mixRate, mode);
+                MixStereoToMultiIP(sound, dest, samples, mixRate, effectiveFrequency, mode);
         }
         else
         {
             if (mode == SPK_MONO)
-                MixStereoToMono(sound, dest, samples, mixRate);
+                MixStereoToMono(sound, dest, samples, mixRate, effectiveFrequency);
             else
-                MixStereoToMulti(sound, dest, samples, mixRate, mode);
+                MixStereoToMulti(sound, dest, samples, mixRate, effectiveFrequency, mode);
         }
     }
 
     // Update the time position. In stream mode, copy unused data back to the beginning of the stream buffer
     if (soundStream_)
     {
-        timePosition_ += ((float)samples / (float)mixRate) * frequency_ / soundStream_->GetFrequency();
+        timePosition_ += ((float)samples / (float)mixRate) * effectiveFrequency / soundStream_->GetFrequency();
 
         unusedStreamSize_ = Max(streamFilledSize - (int)(size_t)(position_ - streamBuffer_->GetStart()), 0);
         if (unusedStreamSize_)
@@ -641,17 +649,18 @@ void SoundSource::SetPlayPositionLockless(signed char* pos)
     timePosition_ = ((float)(int)(size_t)(pos - sound_->GetStart())) / (sound_->GetSampleSize() * sound_->GetFrequency());
 }
 
-void SoundSource::MixMonoToMono(Sound* sound, int dest[], unsigned samples, int mixRate, int channel, int channelCount)
+void SoundSource::MixMonoToMono(
+    Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency, int channel, int channelCount)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto vol = RoundToInt(256.0f * totalGain);
     if (!vol)
     {
-        MixZeroVolume(sound, samples, mixRate);
+        MixZeroVolume(sound, samples, mixRate, effectiveFrequency);
         return;
     }
 
-    float add = frequency_ / (float)mixRate;
+    float add = effectiveFrequency / (float)mixRate;
     auto intAdd = (int)add;
     auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
     int fractPos = fractPosition_;
@@ -717,18 +726,18 @@ void SoundSource::MixMonoToMono(Sound* sound, int dest[], unsigned samples, int 
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixMonoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate)
+void SoundSource::MixMonoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto leftVol = (int)((-panning_ + 1.0f) * (256.0f * totalGain + 0.5f));
     auto rightVol = (int)((panning_ + 1.0f) * (256.0f * totalGain + 0.5f));
     if (!leftVol && !rightVol)
     {
-        MixZeroVolume(sound, samples, mixRate);
+        MixZeroVolume(sound, samples, mixRate, effectiveFrequency);
         return;
     }
 
-    float add = frequency_ / (float)mixRate;
+    float add = effectiveFrequency / (float)mixRate;
     auto intAdd = (int)add;
     auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
     int fractPos = fractPosition_;
@@ -799,17 +808,17 @@ void SoundSource::MixMonoToStereo(Sound* sound, int dest[], unsigned samples, in
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate, int channel, int channelCount)
+void SoundSource::MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency, int channel, int channelCount)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto vol = RoundToInt(256.0f * totalGain);
     if (!vol)
     {
-        MixZeroVolume(sound, samples, mixRate);
+        MixZeroVolume(sound, samples, mixRate, effectiveFrequency);
         return;
     }
 
-    float add = frequency_ / (float)mixRate;
+    float add = effectiveFrequency / (float)mixRate;
     auto intAdd = (int)add;
     auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
     int fractPos = fractPosition_;
@@ -876,18 +885,18 @@ void SoundSource::MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, in
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixMonoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate)
+void SoundSource::MixMonoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto leftVol = (int)((-panning_ + 1.0f) * (256.0f * totalGain + 0.5f));
     auto rightVol = (int)((panning_ + 1.0f) * (256.0f * totalGain + 0.5f));
     if (!leftVol && !rightVol)
     {
-        MixZeroVolume(sound, samples, mixRate);
+        MixZeroVolume(sound, samples, mixRate, effectiveFrequency);
         return;
     }
 
-    float add = frequency_ / (float)mixRate;
+    float add = effectiveFrequency / (float)mixRate;
     auto intAdd = (int)add;
     auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
     int fractPos = fractPosition_;
@@ -962,17 +971,17 @@ void SoundSource::MixMonoToStereoIP(Sound* sound, int dest[], unsigned samples, 
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixStereoToMono(Sound* sound, int dest[], unsigned samples, int mixRate)
+void SoundSource::MixStereoToMono(Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto vol = RoundToInt(256.0f * totalGain);
     if (!vol)
     {
-        MixZeroVolume(sound, samples, mixRate);
+        MixZeroVolume(sound, samples, mixRate, effectiveFrequency);
         return;
     }
 
-    float add = frequency_ / (float)mixRate;
+    float add = effectiveFrequency / (float)mixRate;
     auto intAdd = (int)add;
     auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
     int fractPos = fractPosition_;
@@ -1039,17 +1048,17 @@ void SoundSource::MixStereoToMono(Sound* sound, int dest[], unsigned samples, in
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixStereoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate)
+void SoundSource::MixStereoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto vol = RoundToInt(256.0f * totalGain);
     if (!vol)
     {
-        MixZeroVolume(sound, samples, mixRate);
+        MixZeroVolume(sound, samples, mixRate, effectiveFrequency);
         return;
     }
 
-    float add = frequency_ / (float)mixRate;
+    float add = effectiveFrequency / (float)mixRate;
     auto intAdd = (int)add;
     auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
     int fractPos = fractPosition_;
@@ -1120,17 +1129,17 @@ void SoundSource::MixStereoToStereo(Sound* sound, int dest[], unsigned samples, 
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixStereoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate)
+void SoundSource::MixStereoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto vol = RoundToInt(256.0f * totalGain);
     if (!vol)
     {
-        MixZeroVolume(sound, samples, mixRate);
+        MixZeroVolume(sound, samples, mixRate, effectiveFrequency);
         return;
     }
 
-    float add = frequency_ / (float)mixRate;
+    float add = effectiveFrequency / (float)mixRate;
     auto intAdd = (int)add;
     auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
     int fractPos = fractPosition_;
@@ -1197,17 +1206,17 @@ void SoundSource::MixStereoToMonoIP(Sound* sound, int dest[], unsigned samples, 
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixStereoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate)
+void SoundSource::MixStereoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate, float effectiveFrequency)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto vol = RoundToInt(256.0f * totalGain);
     if (!vol)
     {
-        MixZeroVolume(sound, samples, mixRate);
+        MixZeroVolume(sound, samples, mixRate, effectiveFrequency);
         return;
     }
 
-    float add = frequency_ / (float)mixRate;
+    float add = effectiveFrequency / (float)mixRate;
     auto intAdd = (int)add;
     auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
     int fractPos = fractPosition_;
@@ -1278,7 +1287,8 @@ void SoundSource::MixStereoToStereoIP(Sound* sound, int dest[], unsigned samples
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixMonoToSurround(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakerMode)
+void SoundSource::MixMonoToSurround(
+    Sound* sound, int* dest, unsigned samples, int mixRate, float effectiveFrequency, SpeakerMode speakerMode)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     int frontLeftVol = (int)(((-panning_ + 1.0f) * (reach_ + 1.0f)) * (256.0f * totalGain + 0.5f));
@@ -1289,11 +1299,11 @@ void SoundSource::MixMonoToSurround(Sound* sound, int* dest, unsigned samples, i
 
     if (!frontLeftVol && !frontRightVol && !rearLeftVol && !rearRightVol)
     {
-        MixZeroVolume(sound, samples, mixRate);
+        MixZeroVolume(sound, samples, mixRate, effectiveFrequency);
         return;
     }
 
-    float add = frequency_ / (float)mixRate;
+    float add = effectiveFrequency / (float)mixRate;
     int intAdd = (int)add;
     int fractAdd = (int)((add - floorf(add)) * 65536.0f);
     int fractPos = fractPosition_;
@@ -1412,7 +1422,8 @@ void SoundSource::MixMonoToSurround(Sound* sound, int* dest, unsigned samples, i
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixMonoToSurroundIP(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakerMode)
+void SoundSource::MixMonoToSurroundIP(
+    Sound* sound, int* dest, unsigned samples, int mixRate, float effectiveFrequency, SpeakerMode speakerMode)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     int frontLeftVol = (int)(((-panning_ + 1.0f) * (reach_ + 1.0f)) * (256.0f * totalGain + 0.5f));
@@ -1423,11 +1434,11 @@ void SoundSource::MixMonoToSurroundIP(Sound* sound, int* dest, unsigned samples,
 
     if (!frontLeftVol && !frontRightVol && !rearLeftVol && !rearRightVol)
     {
-        MixZeroVolume(sound, samples, mixRate);
+        MixZeroVolume(sound, samples, mixRate, effectiveFrequency);
         return;
     }
 
-    float add = frequency_ / (float)mixRate;
+    float add = effectiveFrequency / (float)mixRate;
     int intAdd = (int)add;
     int fractAdd = (int)((add - floorf(add)) * 65536.0f);
     int fractPos = fractPosition_;
@@ -1550,17 +1561,18 @@ void SoundSource::MixMonoToSurroundIP(Sound* sound, int* dest, unsigned samples,
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixStereoToMulti(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakers)
+void SoundSource::MixStereoToMulti(
+    Sound* sound, int* dest, unsigned samples, int mixRate, float effectiveFrequency, SpeakerMode speakers)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     int vol = (int)(256.0f * totalGain + 0.5f);
     if (!vol)
     {
-        MixZeroVolume(sound, samples, mixRate);
+        MixZeroVolume(sound, samples, mixRate, effectiveFrequency);
         return;
     }
 
-    float add = frequency_ / (float)mixRate;
+    float add = effectiveFrequency / (float)mixRate;
     int intAdd = (int)add;
     int fractAdd = (int)((add - floorf(add)) * 65536.0f);
     int fractPos = fractPosition_;
@@ -1682,17 +1694,18 @@ void SoundSource::MixStereoToMulti(Sound* sound, int* dest, unsigned samples, in
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixStereoToMultiIP(Sound* sound, int* dest, unsigned samples, int mixRate, SpeakerMode speakers)
+void SoundSource::MixStereoToMultiIP(
+    Sound* sound, int* dest, unsigned samples, int mixRate, float effectiveFrequency, SpeakerMode speakers)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     int vol = (int)(256.0f * totalGain + 0.5f);
     if (!vol)
     {
-        MixZeroVolume(sound, samples, mixRate);
+        MixZeroVolume(sound, samples, mixRate, effectiveFrequency);
         return;
     }
 
-    float add = frequency_ / (float)mixRate;
+    float add = effectiveFrequency / (float)mixRate;
     int intAdd = (int)add;
     int fractAdd = (int)((add - floorf(add)) * 65536.0f);
     int fractPos = fractPosition_;
@@ -1817,9 +1830,9 @@ void SoundSource::MixStereoToMultiIP(Sound* sound, int* dest, unsigned samples, 
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixZeroVolume(Sound* sound, unsigned samples, int mixRate)
+void SoundSource::MixZeroVolume(Sound* sound, unsigned samples, int mixRate, float effectiveFrequency)
 {
-    float add = frequency_ * (float)samples / (float)mixRate;
+    float add = effectiveFrequency * (float)samples / (float)mixRate;
     auto intAdd = (int)add;
     auto fractAdd = (int)((add - floorf(add)) * 65536.0f);
     unsigned sampleSize = sound->GetSampleSize();
@@ -1846,13 +1859,13 @@ void SoundSource::MixZeroVolume(Sound* sound, unsigned samples, int mixRate)
     }
 }
 
-void SoundSource::MixNull(float timeStep)
+void SoundSource::MixNull(float timeStep, float effectiveFrequency)
 {
     if (!position_ || !sound_ || !IsEnabledEffective())
         return;
 
     // Advance only the time position
-    timePosition_ += timeStep * frequency_ / sound_->GetFrequency();
+    timePosition_ += timeStep * effectiveFrequency / sound_->GetFrequency();
 
     if (sound_->IsLooped())
     {
@@ -1868,6 +1881,20 @@ void SoundSource::MixNull(float timeStep)
             timePosition_ = 0.0f;
         }
     }
+}
+
+float SoundSource::GetEffectiveTimeScale() const
+{
+    if (!node_ || !node_->GetScene())
+        return 0.0f;
+
+    if (!IsEnabledEffective())
+        return 0.0f;
+
+    if (ignoreSceneTimeScale_)
+        return 1.0f;
+
+    return node_->GetScene()->GetEffectiveTimeScale();
 }
 
 }
