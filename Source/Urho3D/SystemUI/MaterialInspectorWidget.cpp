@@ -1,37 +1,29 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2023 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../SystemUI/MaterialInspectorWidget.h"
+#include "Urho3D/SystemUI/MaterialInspectorWidget.h"
 
-#include "../Graphics/Texture2D.h"
-#include "../Graphics/Texture2DArray.h"
-#include "../Graphics/Texture3D.h"
-#include "../Graphics/TextureCube.h"
-#include "../IO/FileSystem.h"
-#include "../RenderPipeline/ShaderConsts.h"
-#include "../Resource/ResourceCache.h"
-#include "../SystemUI/SystemUI.h"
+#include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/Graphics/Light.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Graphics/Skybox.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Graphics/Texture2DArray.h"
+#include "Urho3D/Graphics/Texture3D.h"
+#include "Urho3D/Graphics/TextureCube.h"
+#include "Urho3D/Graphics/Zone.h"
+#include "Urho3D/Input/MoveAndOrbitComponent.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/SystemUI/SystemUI.h"
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
@@ -42,6 +34,13 @@ namespace Urho3D
 
 namespace
 {
+
+// Keep those global so that they are not reset on material change.
+// TODO: Better solution?
+static thread_local bool previewSkyboxEnabled{true};
+static thread_local bool previewLightEnabled{true};
+
+static Vector3 defaultPreviewCameraPosition = Vector3::BACK * 2.0f;
 
 static const StringVector allowedTextureTypes{
     Texture2D::GetTypeNameStatic(),
@@ -197,12 +196,68 @@ bool MaterialInspectorWidget::TechniqueDesc::operator<(const TechniqueDesc& rhs)
 MaterialInspectorWidget::MaterialInspectorWidget(Context* context, const MaterialVector& materials)
     : Object(context)
     , materials_(materials)
+    , previewScene_(MakeShared<Scene>(context))
+    , previewWidget_(MakeShared<SceneRendererToTexture>(previewScene_))
 {
     URHO3D_ASSERT(!materials_.empty());
+    InitializePreviewScene();
+    ApplyPreviewSettings();
 }
 
 MaterialInspectorWidget::~MaterialInspectorWidget()
 {
+}
+
+void MaterialInspectorWidget::InitializePreviewScene()
+{
+    auto cache = GetSubsystem<ResourceCache>();
+
+    previewScene_->CreateComponent<Octree>();
+
+    auto skyboxNode = previewScene_->CreateChild("Skybox");
+    auto skybox = skyboxNode->CreateComponent<Skybox>();
+    skybox->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
+    skybox->SetMaterial(cache->GetResource<Material>("Materials/DefaultSkybox.xml")->Clone());
+
+    auto zoneNode = previewScene_->CreateChild("Global Zone");
+    auto zone = zoneNode->CreateComponent<Zone>();
+    zone->SetBoundingBox(BoundingBox{-1000.0f, 1000.0f});
+    zone->SetAmbientColor(Color::BLACK);
+    zone->SetBackgroundBrightness(1.0f);
+    zone->SetZoneTexture(cache->GetResource<TextureCube>("Textures/DefaultSkybox.xml"));
+
+    auto lightNode = previewScene_->CreateChild("Light");
+    lightNode->SetDirection({1.0f, -3.0f, 1.0f});
+    auto light = lightNode->CreateComponent<Light>();
+    light->SetLightType(LIGHT_DIRECTIONAL);
+
+    auto cameraNode = previewWidget_->GetCameraNode();
+    cameraNode->SetPosition(defaultPreviewCameraPosition);
+    cameraNode->CreateComponent<MoveAndOrbitComponent>();
+
+    auto modelNode = previewScene_->CreateChild("Model");
+    auto model = modelNode->CreateComponent<StaticModel>();
+    model->SetModel(cache->GetResource<Model>("Models/Sphere.mdl"));
+}
+
+void MaterialInspectorWidget::ApplyPreviewSettings()
+{
+    auto cache = GetSubsystem<ResourceCache>();
+    auto renderer = GetSubsystem<Renderer>();
+
+    auto skybox = previewScene_->GetComponent<Skybox>(true);
+    auto zone = previewScene_->GetComponent<Zone>(true);
+
+    Texture* defaultTexture = cache->GetResource<TextureCube>("Textures/DefaultSkybox.xml");
+    Texture* emptyTexture = renderer->GetBlackCubeMap();
+
+    Material* skyboxMaterial = skybox->GetMaterial();
+    skyboxMaterial->SetTexture(ShaderResources::Albedo, previewSkyboxEnabled ? defaultTexture : emptyTexture);
+    zone->SetZoneTexture(previewSkyboxEnabled ? defaultTexture : nullptr);
+
+    auto light = previewScene_->GetComponent<Light>(true);
+    light->SetBrightness(previewSkyboxEnabled ? 0.5f : 1.0f);
+    light->SetEnabled(previewLightEnabled);
 }
 
 void MaterialInspectorWidget::UpdateTechniques(const ea::string& path)
@@ -256,6 +311,14 @@ void MaterialInspectorWidget::RenderContent()
     pendingSetShaderParameters_.clear();
     pendingSetProperties_.clear();
 
+    const bool hasPreview = materials_.size() == 1;
+
+    if (hasPreview)
+    {
+        RenderPreview();
+        ui::BeginChild("Content");
+    }
+
     RenderTechniques();
     RenderProperties();
     RenderTextures();
@@ -265,6 +328,9 @@ void MaterialInspectorWidget::RenderContent()
     const bool forceSave = ui::Button(ICON_FA_FLOPPY_DISK " Force Save");
     if (ui::IsItemHovered())
         ui::SetTooltip("Materials are always saved on edit. You can force save even if there are no changes.");
+
+    if (hasPreview)
+        ui::EndChild();
 
     if (pendingSetTechniques_)
     {
@@ -317,6 +383,86 @@ void MaterialInspectorWidget::RenderContent()
         OnEditBegin(this);
         OnEditEnd(this);
     }
+}
+
+void MaterialInspectorWidget::RenderPreview()
+{
+    if (materials_.size() != 1)
+        return;
+
+    auto workQueue = GetSubsystem<WorkQueue>();
+
+    previewWidget_->SetActive(true);
+    workQueue->PostDelayedTaskForMainThread([widget = previewWidget_] { widget->SetActive(false); });
+
+    Camera* camera = previewWidget_->GetCamera();
+    Node* cameraNode = camera->GetNode();
+    auto moveAndOrbit = cameraNode->GetComponent<MoveAndOrbitComponent>();
+
+    const float availableWidth = ui::GetContentRegionAvail().x;
+    const float textureHeight = ea::min(ui::GetContentRegionAvail().x, 250.0f);
+    const auto textureSize = Vector2{availableWidth, textureHeight}.ToIntVector2();
+
+    previewWidget_->SetTextureSize(textureSize);
+    previewWidget_->Update();
+
+    Texture2D* sceneTexture = previewWidget_->GetTexture();
+    const auto imageBegin = ui::GetCursorPos();
+    Widgets::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
+    const auto imageEnd = ui::GetCursorPos();
+
+    float distance = cameraNode->GetPosition().Length();
+    if (ui::IsItemHovered())
+    {
+        if (ui::IsMouseDown(MOUSEB_RIGHT))
+        {
+            const Vector2 mouseDelta = ToVector2(ui::GetIO().MouseDelta);
+            moveAndOrbit->SetYaw(moveAndOrbit->GetYaw() + mouseDelta.x_ * 0.9f);
+            moveAndOrbit->SetPitch(moveAndOrbit->GetPitch() + mouseDelta.y_ * 0.9f);
+        }
+
+        if (Abs(ui::GetMouseWheel()) > 0.05f)
+        {
+            if (ui::GetMouseWheel() > 0.0f)
+                distance *= 0.8f;
+            else
+                distance *= 1.3f;
+        }
+    }
+    distance = Clamp(distance, 1.01f, 3.0f);
+
+    cameraNode->SetRotation(moveAndOrbit->GetYawPitchRotation());
+    cameraNode->SetPosition(distance * (cameraNode->GetRotation() * Vector3::BACK));
+
+    bool previewSettingsDirty = false;
+    ui::SetCursorPos(imageBegin + ui::GetStyle().FramePadding);
+
+    if (Widgets::ToolbarButton(ICON_FA_CLOUD, "Toggle Skybox", previewSkyboxEnabled))
+    {
+        previewSkyboxEnabled = !previewSkyboxEnabled;
+        previewSettingsDirty = true;
+    }
+
+    if (Widgets::ToolbarButton(ICON_FA_LIGHTBULB, "Toggle Light", previewLightEnabled))
+    {
+        previewLightEnabled = !previewLightEnabled;
+        previewSettingsDirty = true;
+    }
+
+    if (Widgets::ToolbarButton(ICON_FA_ARROWS_LEFT_RIGHT_TO_LINE, "Reset Camera"))
+    {
+        cameraNode->SetPosition(defaultPreviewCameraPosition);
+        moveAndOrbit->SetYaw(0.0f);
+        moveAndOrbit->SetPitch(0.0f);
+    }
+
+    ui::SetCursorPos(imageEnd);
+
+    auto model = previewScene_->GetComponent<StaticModel>(true);
+    model->SetMaterial(materials_[0]);
+
+    if (previewSettingsDirty)
+        ApplyPreviewSettings();
 }
 
 void MaterialInspectorWidget::RenderTechniques()
@@ -862,4 +1008,4 @@ void MaterialInspectorWidget::RenderNewShaderParameter()
         pendingSetShaderParameters_.emplace_back(newParameterName_, shaderParameterTypes[newParameterType_].second);
 }
 
-}
+} // namespace Urho3D

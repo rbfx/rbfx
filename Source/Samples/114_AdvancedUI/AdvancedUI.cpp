@@ -146,13 +146,6 @@ void AdvancedUI::InitWindow()
 {
     auto* ui = context_->GetSubsystem<RmlUI>();
 
-    // Initialize fonts in backbuffer UI.
-    // This code is moved to SamplesManager
-    // ui->LoadFont("Fonts/NotoSans-Condensed.ttf", false);
-    // ui->LoadFont("Fonts/NotoSans-CondensedBold.ttf", false);
-    // ui->LoadFont("Fonts/NotoSans-CondensedBoldItalic.ttf", false);
-    // ui->LoadFont("Fonts/NotoSans-CondensedItalic.ttf", false);
-
     // Create a window rendered into backbuffer.
     window_ = scene_->CreateComponent<AdvancedUIWindow>();
 

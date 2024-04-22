@@ -55,7 +55,7 @@ public:
     /// Factory helpers.
     /// @{
     AnimationParameters& Looped();
-    AnimationParameters& StartBone(const ea::string& startBone);
+    AnimationParameters& StartBone(ea::string_view startBone);
     AnimationParameters& Layer(unsigned layer);
     AnimationParameters& Time(float time);
     AnimationParameters& Additive();

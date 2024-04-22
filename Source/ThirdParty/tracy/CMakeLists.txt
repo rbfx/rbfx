@@ -110,8 +110,13 @@ if (URHO3D_PROFILING)
         endif ()
         add_library (TracyEmbedded STATIC ${EMBEDDED_SOURCE_FILES})
         setup_tracy_profiler_target(TracyEmbedded)
-        target_include_directories(TracyEmbedded SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+        target_include_directories(TracyEmbedded SYSTEM PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
         target_compile_definitions(TracyEmbedded PRIVATE -DTRACY_NO_ROOT_WINDOW=1 -DTRACY_EMBED_WINDOW=1)
+        install (TARGETS TracyEmbedded EXPORT Urho3D
+            LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
+            RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
+            ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
+        )
     endif ()
 
     install (TARGETS Tracy EXPORT Urho3D

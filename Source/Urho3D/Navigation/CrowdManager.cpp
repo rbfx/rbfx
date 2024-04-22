@@ -186,6 +186,23 @@ void CrowdManager::DrawDebugGeometry(bool depthTest)
     }
 }
 
+void CrowdManager::UpdateAgentVelocity(
+    CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed) const
+{
+    const CrowdAgentVelocityCallback& agentCallback = agent->GetVelocityCallback();
+    const CrowdAgentVelocityCallback& callback = agentCallback ? agentCallback : velocityCallback_;
+    if (callback)
+        callback(agent, timeStep, desiredVelocity, desiredSpeed);
+}
+
+void CrowdManager::UpdateAgentPosition(CrowdAgent* agent, float timeStep, Vector3& position) const
+{
+    const CrowdAgentHeightCallback& agentCallback = agent->GetHeightCallback();
+    const CrowdAgentHeightCallback& callback = agentCallback ? agentCallback : heightCallback_;
+    if (callback)
+        position.y_ = callback(agent, timeStep, position);
+}
+
 void CrowdManager::SetCrowdTarget(const Vector3& position, Node* node)
 {
     if (!crowd_)
@@ -676,6 +693,11 @@ void CrowdManager::Update(float delta)
 const dtCrowdAgent* CrowdManager::GetDetourCrowdAgent(int agent) const
 {
     return crowd_ ? crowd_->getAgent(agent) : nullptr;
+}
+
+dtCrowdAgent* CrowdManager::GetEditableDetourCrowdAgent(int agent)
+{
+    return crowd_ ? crowd_->getEditableAgent(agent) : nullptr;
 }
 
 const dtQueryFilter* CrowdManager::GetDetourQueryFilter(unsigned queryFilterType) const

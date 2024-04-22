@@ -184,9 +184,9 @@ mat4 GetModelMatrix()
     mediump mat3 GetFaceCameraRotation(vec3 position, half3 direction)
     {
     #ifdef URHO3D_XR
-        half3 cameraDir = normalize(position - cCameraPos.xyz);
-    #else
         half3 cameraDir = normalize(position - cCameraPos[gl_InstanceID & 1].xyz);
+    #else
+        half3 cameraDir = normalize(position - cCameraPos.xyz);
     #endif
         half3 front = normalize(direction);
         half3 right = normalize(cross(front, cameraDir));

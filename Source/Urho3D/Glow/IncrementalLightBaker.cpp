@@ -448,14 +448,7 @@ private:
             return FileIdentifier::Empty;
         }
 
-        const ea::string sceneDirectory = ReplaceExtension(sceneFileName, "");
-        if (sceneDirectory == sceneFileName)
-        {
-            URHO3D_LOGERROR("Cannot find output directory for lightmaps: scene file name has no extension");
-            return FileIdentifier::Empty;
-        }
-
-        return FileIdentifier::FromUri(sceneDirectory);
+        return FileIdentifier::FromUri(sceneFileName + ".d");
     }
 
     /// Return lightmap file name.

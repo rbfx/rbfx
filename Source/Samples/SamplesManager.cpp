@@ -261,14 +261,6 @@ void SamplesManager::Start()
     SubscribeToEvent(E_JOYSTICKBUTTONDOWN, &SamplesManager::OnButtonPress);
     SubscribeToEvent(E_BEGINFRAME, &SamplesManager::OnFrameStart);
 
-#if URHO3D_RMLUI
-    auto* rmlUi = context_->GetSubsystem<RmlUI>();
-    rmlUi->LoadFont("Fonts/NotoSans-Condensed.ttf", false);
-    rmlUi->LoadFont("Fonts/NotoSans-CondensedBold.ttf", false);
-    rmlUi->LoadFont("Fonts/NotoSans-CondensedBoldItalic.ttf", false);
-    rmlUi->LoadFont("Fonts/NotoSans-CondensedItalic.ttf", false);
-#endif
-
     sampleSelectionScreen_->GetUIRoot()->SetDefaultStyle(cache->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
     IntVector2 listSize = VectorMin(IntVector2(300, 600), ui->GetRoot()->GetSize());

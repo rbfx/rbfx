@@ -146,13 +146,6 @@ void Foundation_ConcurrentAssetProcessing(Context* context, Project* project)
 {
     auto assetManager = project->GetAssetManager();
 
-    const auto requestProcessAsset = [=](
-        const AssetTransformerInput& input, const AssetManager::OnProcessAssetCompleted& callback)
-    {
-        RequestProcessAsset(project, input, callback);
-    };
-
-    assetManager->SetProcessCallback(requestProcessAsset, GetNumLogicalCPUs());
     project->OnCommand.Subscribe(project,
         [=](const ea::string& command, const ea::string& args, bool& processed)
     {
@@ -166,6 +159,17 @@ void Foundation_ConcurrentAssetProcessing(Context* context, Project* project)
         if (ProcessAsset(project, inputName, outputName))
             processed = true;
     });
+
+    if (!project->GetFlags().Test(ProjectFlag::SingleProcess))
+    {
+        using CompletionCallback = AssetManager::OnProcessAssetCompleted;
+        const auto callback = [=](const AssetTransformerInput& input, const CompletionCallback& callback) //
+        { //
+            RequestProcessAsset(project, input, callback);
+        };
+
+        assetManager->SetProcessCallback(callback, GetNumLogicalCPUs());
+    }
 }
 
 }

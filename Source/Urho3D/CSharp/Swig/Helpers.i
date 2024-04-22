@@ -103,8 +103,8 @@ int strlen(const char* void_ptr_string);
 %pragma(csharp) imclasscode=%{
   private static Urho3D_CSharp##NAME##Helper.NAME##Delegate Urho3D_CSharp##NAME##DelegateInstance = Urho3D_CSharp##NAME##Helper.Register();
   internal partial struct Urho3D_CSharp##NAME##Helper {
-    [global::System.Runtime.InteropServices.DllImport($dllimport, EntryPoint="Urho3DRegister" + #NAME + "Callback")]
-    private static extern void Urho3DRegister##NAME##Callback(System.Delegate fn);
+    [global::System.Runtime.InteropServices.DllImport($dllimport, EntryPoint="Urho3DRegister" + #NAME + "Callback", CallingConvention = global::System.Runtime.InteropServices.CallingConvention.Cdecl)]
+    private static extern void Urho3DRegister##NAME##Callback(NAME##Delegate fn);
     internal static NAME##Delegate Register() {
         var NAME##DelegateInstance = new NAME##Delegate(NAME);
         Urho3DRegister##NAME##Callback(NAME##DelegateInstance);

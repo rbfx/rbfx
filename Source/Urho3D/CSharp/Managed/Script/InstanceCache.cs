@@ -27,7 +27,7 @@ using System.Runtime.InteropServices;
 
 namespace Urho3DNet
 {
-    internal class InstanceCache<T> : IDisposable where T : class
+    public class InstanceCache<T> : IDisposable where T : class
     {
         /// <summary>
         /// How long (ms) strong reference is kept in CacheEntry after last access.

@@ -461,6 +461,7 @@ void Zone::MarkCachedTextureDirty()
 {
     cachedTextureLighting_.Invalidate();
     reflectionProbeData_.Invalidate();
+    cachedAmbientAndBackgroundLighting_.Invalidate();
 }
 
 }

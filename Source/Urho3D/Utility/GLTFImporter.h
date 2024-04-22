@@ -53,7 +53,7 @@ struct GLTFImporterSettings
     bool cleanupBoneNames_{true};
     bool cleanupRootNodes_{true};
     bool combineLODs_{true};
-    ea::string skipTag_;
+    StringVector skipTags_;
     bool keepNamesOnMerge_{false};
     bool addEmptyNodesToSkeleton_{false};
 

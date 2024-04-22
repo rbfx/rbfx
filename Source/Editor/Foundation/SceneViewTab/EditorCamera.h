@@ -24,7 +24,7 @@
 
 #include "../../Core/SettingsManager.h"
 #include "../../Foundation/SceneViewTab.h"
-#include "Foundation/Shared/CameraController.h"
+#include "Editor/Foundation/Shared/CameraController.h"
 
 namespace Urho3D
 {

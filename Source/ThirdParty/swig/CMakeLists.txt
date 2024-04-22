@@ -67,6 +67,7 @@ target_link_libraries(swig PUBLIC pcre)
 target_include_directories(swig PRIVATE Source/CParse Source/DOH Source/Include Source/Modules Source/Preprocessor Source/Swig ${CMAKE_CURRENT_BINARY_DIR})
 
 install(TARGETS swig EXPORT Urho3D RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG} BUNDLE DESTINATION ${DEST_BIN_DIR_CONFIG} PERMISSIONS ${PERMISSIONS_755})
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Lib DESTINATION ${DEST_INCLUDE_DIR}/ThirdParty/swig)
 
 file(TIMESTAMP Lib/swigwarn.swg SWIGWARN_SWG_TIMESTAMP "%s")
 file(TIMESTAMP Source/Include/swigwarn.h SWIGWARN_H_TIMESTAMP "%s")

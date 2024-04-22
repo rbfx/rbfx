@@ -88,6 +88,12 @@ ea::array<T, N> ToArray(const U& vec)
     return result;
 }
 
+bool IsNameSkipped(const ea::string& name, const StringVector& skipTags)
+{
+    const auto isMatching = [&name](const ea::string& tag) { return name.find(tag) != ea::string::npos; };
+    return ea::any_of(skipTags.begin(), skipTags.end(), isMatching);
+}
+
 bool IsWordBorder(unsigned char first, unsigned char second)
 {
     // Blanks and punctuation is always considered to be a word border
@@ -3147,6 +3153,9 @@ private:
         for (unsigned animationIndex = 0; animationIndex < numAnimations; ++animationIndex)
         {
             const GLTFAnimation& sourceAnimation = hierarchyAnalyzer_.GetAnimation(animationIndex);
+            if (IsNameSkipped(sourceAnimation.name_, base_.GetSettings().skipTags_))
+                continue;
+
             for (const auto& [groupIndex, group] : sourceAnimation.animationGroups_)
             {
                 const ea::string animationNameHint = GetAnimationGroupName(sourceAnimation, groupIndex);
@@ -3494,13 +3503,13 @@ private:
                 scene->CreateChild("Disabled Node Placeholder");
         }
 
-        if (!settings.skipTag_.empty())
+        if (!settings.skipTags_.empty())
         {
             const auto children = rootNode->GetChildren(true);
             const ea::vector<WeakPtr<Node>> weakChildren(children.begin(), children.end());
-            for (Node* child : weakChildren)
+            for (const auto& child : weakChildren)
             {
-                if (child && child->GetName().contains(settings.skipTag_))
+                if (child && IsNameSkipped(child->GetName(), settings.skipTags_))
                     child->Remove();
             }
         }
@@ -3707,21 +3716,12 @@ private:
 
     static Node* GetOrCreateNode(ImportedScene& importedScene, Node& parentNode, const GLTFNode& sourceNode)
     {
-        // If node is not in the skeleton, or it is skeleton root node, create as is.
-        // Otherwise, node should be already created by AnimatedModel, connect to it.
-        if (!sourceNode.skeletonIndex_ || !sourceNode.skinnedMeshNodes_.empty())
-        {
-            Node* node = parentNode.CreateChild(sourceNode.GetEffectiveName());
-            RegisterNode(importedScene, *node, sourceNode);
-            return node;
-        }
-        else
-        {
-            Node* node = importedScene.indexToNode_[sourceNode.index_];
-            if (!node)
-                throw RuntimeException("Cannot find bone node #{}", sourceNode.index_);
-            return node;
-        }
+        if (Node* existingNode = importedScene.indexToNode_[sourceNode.index_])
+            return existingNode;
+
+        Node* node = parentNode.CreateChild(sourceNode.GetEffectiveName());
+        RegisterNode(importedScene, *node, sourceNode);
+        return node;
     }
 
     GLTFImporterBase& base_;
@@ -3847,7 +3847,7 @@ void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& va
     SerializeValue(archive, "cleanupBoneNames", value.cleanupBoneNames_);
     SerializeValue(archive, "cleanupRootNodes", value.cleanupRootNodes_);
     SerializeValue(archive, "combineLODs", value.combineLODs_);
-    SerializeValue(archive, "skipTag", value.skipTag_);
+    SerializeValue(archive, "skipTag", value.skipTags_);
     SerializeValue(archive, "keepNamesOnMerge", value.keepNamesOnMerge_);
     SerializeValue(archive, "addEmptyNodesToSkeleton", value.addEmptyNodesToSkeleton_);
 

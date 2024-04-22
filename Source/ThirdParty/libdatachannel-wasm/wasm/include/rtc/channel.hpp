@@ -25,6 +25,8 @@
 
 #include "common.hpp"
 
+#include <functional>
+
 namespace rtc {
 
 class Channel {

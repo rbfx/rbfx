@@ -1338,6 +1338,13 @@ bool Image::SavePNG(const ea::string& fileName) const
 {
     URHO3D_PROFILE("SaveImagePNG");
 
+    auto* fileSystem = GetSubsystem<FileSystem>();
+    if (!fileSystem->DirExists(GetPath(fileName)))
+    {
+        if (!fileSystem->CreateDir(GetPath(fileName)))
+            return false;
+    }
+
     File outFile(context_, fileName, FILE_WRITE);
     if (outFile.IsOpen())
         return Image::Save(outFile); // Save uses PNG format

@@ -51,6 +51,11 @@ endforeach()
 
 include(CMakeDependentOption)
 
+# Set MULTI_CONFIG_PROJECT if applicable
+if (MSVC OR "${CMAKE_GENERATOR}" STREQUAL "Xcode")
+    set (MULTI_CONFIG_PROJECT ON)
+endif ()
+
 # Set platform and compiler variables
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set (LINUX ON)
@@ -226,7 +231,7 @@ cmake_dependent_option(URHO3D_GRAPHICS_NO_D3D12  "Disable Direct3D12 backend in 
 cmake_dependent_option(URHO3D_GRAPHICS_NO_VULKAN "Disable Vulkan backend in renderer"                    OFF "URHO3D_SHADER_TRANSLATOR" ON)
 
 # Misc
-rbfx_dependent_option(URHO3D_PLUGIN_LIST "List of plugins to be statically linked with Editor and Player executables" "103_GamePlugin;113_InputLogger" URHO3D_SAMPLES "")
+rbfx_dependent_option(URHO3D_PLUGIN_LIST "List of plugins to be statically linked with Editor and Player executables" "Sample.103_GamePlugin;Sample.113_InputLogger" URHO3D_SAMPLES "")
 option               (URHO3D_PARALLEL_BUILD     "MSVC-only: enable parallel builds. A bool or a number of processors to use." ON)
 
 option(URHO3D_PLAYER                            "Build player application"                              ${URHO3D_ENABLE_ALL})
@@ -273,6 +278,11 @@ endif ()
 
 if (ANDROID)
     set (SDL_CPUINFO ON)
+endif ()
+
+# UWP does not support other framework types.
+if (UWP)
+    set (URHO3D_NETFX netstandard2.0)
 endif ()
 
 # At the end because it depends on URHO3D_SYSTEMUI which is may be off, but implicitly enabled if URHO3D_TOOLS is enabled.

@@ -369,10 +369,22 @@ SceneHierarchyWidget::OptionalReorderInfo SceneHierarchyWidget::RenderObjectReor
         const ImVec2 mousePos = ui::GetMousePos();
         unsigned newIndex = oldIndex;
 
-        if (mousePos.y < ui::GetItemRectMin().y && newIndex > 0)
+        // Prevent jitter by adding dead zone for reordering in the opposite direction.
+        const float decrementY = ea::min(ui::GetItemRectMin().y, info->decrementMaxY_.value_or(M_LARGE_VALUE));
+        const float incrementY = ea::max(ui::GetItemRectMax().y, info->incrementMinY_.value_or(-M_LARGE_VALUE));
+
+        if (mousePos.y < decrementY && newIndex > 0)
+        {
+            info->incrementMinY_ = decrementY;
+            info->decrementMaxY_ = ea::nullopt;
             --newIndex;
-        else if (mousePos.y > ui::GetItemRectMax().y)
+        }
+        else if (mousePos.y > incrementY)
+        {
+            info->incrementMinY_ = ea::nullopt;
+            info->decrementMaxY_ = incrementY;
             ++newIndex; // It's okay to overflow
+        }
 
         if (newIndex != oldIndex)
             return ReorderInfo{object->GetID(), oldIndex, newIndex};

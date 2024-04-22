@@ -3,10 +3,8 @@
 	<attribute name="Name" value="" />
 	<attribute name="Time Scale" value="1.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Replicated Node ID" value="1353" />
-	<attribute name="Next Replicated Component ID" value="1363" />
-	<attribute name="Next Local Node ID" value="16777357" />
-	<attribute name="Next Local Component ID" value="16777412" />
+	<attribute name="Next Node ID" value="4" />
+	<attribute name="Next Component ID" value="7" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D" />
@@ -53,10 +51,10 @@
 		</node>
 		<node id="51">
 			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Directional Light" />
+			<attribute name="Name" value="Sun" />
 			<attribute name="Tags" />
 			<attribute name="Position" value="0 0 0" />
-			<attribute name="Rotation" value="-0.501596 -0.15565 -0.812743 0.252205" />
+			<attribute name="Rotation" value="0.836867 0.323708 0.427817 -0.108802" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="Light" id="46">
@@ -67,18 +65,9 @@
 				<attribute name="CSM Splits" value="20 70 200 400" />
 				<attribute name="Light Mask" value="-8" />
 			</component>
-		</node>
-		<node id="192">
-			<attribute name="Is Enabled" value="true" />
-			<attribute name="Name" value="Skybox" />
-			<attribute name="Tags" />
-			<attribute name="Position" value="0 0 0" />
-			<attribute name="Rotation" value="1 0 0 0" />
-			<attribute name="Scale" value="1 1 1" />
-			<attribute name="Variables" />
 			<component type="Skybox" id="179">
-				<attribute name="Model" value="Model;Models/Box.mdl" />
-				<attribute name="Material" value="Material;Materials/Skybox.xml" />
+				<attribute name="Model" value="Model;Models/Sphere.mdl" />
+				<attribute name="Material" value="Material;Materials/SkyWithSun.xml" />
 			</component>
 		</node>
 	</node>
@@ -229,6 +218,7 @@
 			<component type="StaticModel" id="1318">
 				<attribute name="Model" value="Model;Models/Sphere.mdl" />
 				<attribute name="Material" value="Material;" />
+				<attribute name="Cast Shadows" value="true" />
 			</component>
 		</node>
 		<node id="1349">

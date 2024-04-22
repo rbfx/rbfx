@@ -20,25 +20,28 @@
 // THE SOFTWARE.
 //
 
-#pragma once
+#include <Urho3D/Plugins/PluginApplication.h>
 
-#include <Urho3D/Engine/Application.h>
+extern "C"
+{
+@DECLARE_FUNCTIONS@
+}
 
 namespace Urho3D
 {
-
-/// Simple player application.
-class Player : public Application
+namespace LinkedPlugins
 {
-public:
-    explicit Player(Context* context);
 
-    /// Implement Application.
-    /// @{
-    void Setup() override;
-    void Start() override;
-    void Stop() override;
-    /// @}
-};
+const StringVector& GetLinkedPlugins()
+{
+    static const StringVector result = ea::string("@PLUGIN_LIST@").split(';');
+    return result;
+}
 
+void RegisterStaticPlugins()
+{
+@REGISTER_PLUGINS@
+}
+
+}
 }

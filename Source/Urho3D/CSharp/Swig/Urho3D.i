@@ -89,7 +89,7 @@ using namespace Urho3D;
 %typecheck(SWIG_TYPECHECK_CHAR_PTR)           void*& ""
 
 // Speed boost
-%pragma(csharp) imclassclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\ninternal unsafe class"
+%pragma(csharp) imclassclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\npublic unsafe class"
 %pragma(csharp) moduleclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\npublic unsafe partial class"
 %typemap(csclassmodifiers) SWIGTYPE "[global::Urho3DNet.Preserve(AllMembers=true)]\npublic unsafe partial class"
 
@@ -325,6 +325,7 @@ namespace SDL
 %ignore Urho3D::Detail::CriticalSection;
 %ignore Urho3D::MutexLock;
 %ignore Urho3D::ObjectReflectionRegistry::GetReflection(StringHash typeNameHash) const;
+%ignore Urho3D::ObjectReflectionRegistry::GetObjectCategories;
 %ignore Urho3D::Object::IsInstanceOf(const TypeInfo* typeInfo);
 %ignore Urho3D::Object::SubscribeToEventManual;
 
@@ -346,6 +347,7 @@ namespace SDL
 %include "Urho3D/Core/Spline.h"
 %include "Urho3D/Core/Mutex.h"
 %include "Urho3D/Core/Thread.h"
+%include "Urho3D/Core/ProcessUtils.h"
 
 %ignore Urho3D::WorkQueue::PostTask;
 %ignore Urho3D::WorkQueue::PostTaskForThread;
@@ -365,6 +367,8 @@ namespace SDL
 %ignore Urho3D::Application::GetCommandLineParser;
 %ignore Urho3D::PluginApplicationMain;
 %ignore Urho3D::PluginApplication::Dispose;
+%ignore Urho3D::LinkedPlugins::GetLinkedPlugins;
+%ignore Urho3D::LinkedPlugins::RegisterStaticPlugins;
 
 %include "generated/Urho3D/_pre_engine.i"
 %include "Urho3D/Engine/EngineDefs.h"
@@ -537,6 +541,8 @@ public:
 %include "Urho3D/Scene/SceneResolver.h"
 %include "Urho3D/Scene/UnknownComponent.h"
 %include "Urho3D/Scene/TrackedComponent.h"
+%include "Urho3D/Scene/PrefabTypes.h"
+%include "Urho3D/Scene/NodePrefab.h"
 %include "Urho3D/Scene/PrefabReference.h"
 %include "Urho3D/Scene/PrefabResource.h"
 %include "Urho3D/Scene/ShakeComponent.h"
@@ -667,13 +673,7 @@ public:
 %ignore Urho3D::Drawable::drawDistance_;
 %ignore Urho3D::Drawable::shadowDistance_;
 %ignore Urho3D::Drawable::sortValue_;
-%ignore Urho3D::Drawable::minZ_;
-%ignore Urho3D::Drawable::maxZ_;
 %ignore Urho3D::Drawable::lodBias_;
-%ignore Urho3D::Drawable::maxLights_;
-%ignore Urho3D::Drawable::firstLight_;
-%ignore Urho3D::Drawable::lights_;
-%ignore Urho3D::Drawable::vertexLights_;
 %ignore Urho3D::GlobalIllumination::SampleAmbientSH;
 %ignore Urho3D::AnimationState::CalculateModelTracks;
 %ignore Urho3D::AnimationState::CalculateNodeTracks;
@@ -683,6 +683,7 @@ public:
 %ignore Urho3D::RenderSurface::GetView;
 %ignore Urho3D::RenderSurface::GetReadOnlyDepthView;
 %ignore Urho3D::Material::GetTextures;
+%ignore Urho3D::GeometryLODView::morphs_;
 %rename(DrawableFlags) Urho3D::DrawableFlag;
 
 %apply void* VOID_INT_PTR {
@@ -709,6 +710,7 @@ public:
 %include "Urho3D/Graphics/TextureCube.h"
 %include "Urho3D/Graphics/Skeleton.h"
 %include "Urho3D/Graphics/Model.h"
+%include "Urho3D/Graphics/ModelView.h"
 %include "Urho3D/Graphics/StaticModel.h"
 %include "Urho3D/Graphics/StaticModelGroup.h"
 %include "Urho3D/Graphics/Animation.h"
@@ -770,7 +772,7 @@ public:
 	rcPolyMesh*,
 	rcPolyMeshDetail*
 }
-%ignore Urho3D::CrowdManager::SetVelocityShader;
+%ignore Urho3D::CrowdManager::SetVelocityCallback;
 %ignore Urho3D::NavBuildData::navAreas_;
 %ignore Urho3D::NavigationMesh::FindPath;
 %include "generated/Urho3D/_pre_navigation.i"

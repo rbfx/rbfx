@@ -53,6 +53,15 @@
 namespace Urho3D
 {
 
+const StringVector Scene::DefaultUpdateEvents = {
+    "@SceneForcedUpdate", // E_SCENEFORCEDUPDATE
+    "SceneUpdate", // E_SCENEUPDATE
+    "AttributeAnimationUpdate", // E_ATTRIBUTEANIMATIONUPDATE
+    "SceneSubsystemUpdate", // E_SCENESUBSYSTEMUPDATE
+    "ScenePostUpdate", // E_SCENEPOSTUPDATE
+    "@SceneForcedPostUpdate", // E_SCENEFORCEDPOSTUPDATE
+};
+
 Scene::Scene(Context* context) :
     Node(context),
     replicatedNodeID_(FIRST_REPLICATED_ID),
@@ -66,6 +75,8 @@ Scene::Scene(Context* context) :
     threadedUpdate_(false),
     lightmaps_(Texture2D::GetTypeStatic())
 {
+    SetUpdateEvents(DefaultUpdateEvents);
+
     // Assign an ID to self so that nodes can refer to this node as a parent
     SetID(GetFreeNodeID());
     NodeAdded(this);
@@ -95,8 +106,8 @@ void Scene::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Elapsed Time", GetElapsedTime, SetElapsedTime, float, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Next Node ID", unsigned, replicatedNodeID_, FIRST_REPLICATED_ID, AM_DEFAULT | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Next Component ID", unsigned, replicatedComponentID_, FIRST_REPLICATED_ID, AM_DEFAULT | AM_NOEDIT);
-    URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_DEFAULT); // Network replication of vars uses custom data
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Variable Names", GetVarNamesAttr, SetVarNamesAttr, ea::string, EMPTY_STRING, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Update Events", GetUpdateEvents, SetUpdateEvents, StringVector, DefaultUpdateEvents, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Lightmaps", ResourceRefList, lightmaps_, ReloadLightmaps, ResourceRefList(Texture2D::GetTypeStatic()), AM_DEFAULT);
 }
 
@@ -121,9 +132,10 @@ const SceneComponentIndex& Scene::GetComponentIndex(StringHash componentType)
     return emptyIndex;
 }
 
-void Scene::SerializeInBlock(Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags)
+void Scene::SerializeInBlock(
+    Archive& archive, bool serializeTemporary, PrefabSaveFlags saveFlags, PrefabLoadFlags loadFlags)
 {
-    Node::SerializeInBlock(archive, serializeTemporary, saveFlags, PrefabLoadFlag::SkipApplyAttributes);
+    Node::SerializeInBlock(archive, serializeTemporary, saveFlags, loadFlags | PrefabLoadFlag::SkipApplyAttributes);
 
     int placeholder{};
     SerializeOptionalValue(archive, "auxiliary", placeholder, AlwaysSerialize{},
@@ -164,7 +176,7 @@ void Scene::SerializeInBlock(Archive& archive)
     const PrefabSaveFlags saveFlags =
         compactSave ? PrefabSaveFlag::CompactAttributeNames : PrefabSaveFlag::EnumsAsStrings;
 
-    SerializeInBlock(archive, false, saveFlags);
+    SerializeInBlock(archive, false, saveFlags, PrefabLoadFlag::None);
 }
 
 bool Scene::Load(Deserializer& source)
@@ -233,7 +245,7 @@ bool Scene::LoadXML(const XMLElement& source)
     {
         XMLInputArchive archive{context_, source, source.GetFile()};
         ArchiveBlock block = archive.OpenUnorderedBlock(SceneResource::GetXmlRootName());
-        SerializeInBlock(archive, false, PrefabSaveFlag::None);
+        SerializeInBlock(archive, false, PrefabSaveFlag::None, PrefabLoadFlag::None);
         return true;
     }
     else
@@ -291,6 +303,22 @@ void Scene::ReloadLightmaps()
 Texture2D* Scene::GetLightmapTexture(unsigned index) const
 {
     return index < lightmapTextures_.size() ? lightmapTextures_[index] : nullptr;
+}
+
+void Scene::SetUpdateEvents(const StringVector& events)
+{
+    updateEvents_ = events;
+
+    cookedUpdateEvents_.clear();
+    for (const ea::string& event : events)
+    {
+        if (event.empty())
+            continue;
+
+        const bool isForced = event[0] == '@';
+        const ea::string_view eventName = isForced ? ea::string_view{event}.substr(1) : event;
+        cookedUpdateEvents_.emplace_back(StringHash{eventName}, isForced);
+    }
 }
 
 bool Scene::LoadXML(Deserializer& source)
@@ -692,8 +720,8 @@ void Scene::Clear()
     RemoveChildren(true);
     RemoveComponents();
 
-    UnregisterAllVars();
     SetName(EMPTY_STRING);
+    SetUpdateEvents(DefaultUpdateEvents);
     fileName_.clear();
     checksum_ = 0;
 
@@ -749,21 +777,6 @@ void Scene::ClearRequiredPackageFiles()
     requiredPackageFiles_.clear();
 }
 
-void Scene::RegisterVar(const ea::string& name)
-{
-    varNames_[name] = name;
-}
-
-void Scene::UnregisterVar(const ea::string& name)
-{
-    varNames_.erase(name);
-}
-
-void Scene::UnregisterAllVars()
-{
-    varNames_.clear();
-}
-
 bool Scene::IsEmpty(bool ignoreComponents) const
 {
     const bool noNodesExceptSelf = replicatedNodes_.size() == 1;
@@ -803,15 +816,10 @@ float Scene::GetAsyncProgress() const
         (float)(asyncProgress_.totalNodes_ + asyncProgress_.totalResources_);
 }
 
-const ea::string& Scene::GetVarName(StringHash hash) const
-{
-    auto i = varNames_.find(hash);
-    return i != varNames_.end() ? i->second : EMPTY_STRING;
-}
-
 void Scene::Update(float timeStep)
 {
-    if (asyncLoading_)
+    // TODO: Revisit async loading. Do we want to load paused Scene?
+    if (updateEnabled_ && asyncLoading_)
     {
         UpdateAsyncLoading();
         // If only preloading resources, scene update can continue
@@ -823,28 +831,23 @@ void Scene::Update(float timeStep)
 
     timeStep *= timeScale_;
 
-    using namespace SceneUpdate;
-
     VariantMap& eventData = GetEventDataMap();
-    eventData[P_SCENE] = this;
-    eventData[P_TIMESTEP] = timeStep;
+    eventData[SceneUpdate::P_SCENE] = this;
+    eventData[SceneUpdate::P_TIMESTEP] = timeStep;
 
-    // Update variable timestep logic
-    SendEvent(E_SCENEUPDATE, eventData);
+    for (const auto& [eventId, isForced] : cookedUpdateEvents_)
+    {
+        if (updateEnabled_ || isForced)
+            SendEvent(eventId, eventData);
+    }
 
-    // Update scene attribute animation.
-    SendEvent(E_ATTRIBUTEANIMATIONUPDATE, eventData);
-
-    // Update scene subsystems. If a physics world is present, it will be updated, triggering fixed timestep logic updates
-    SendEvent(E_SCENESUBSYSTEMUPDATE, eventData);
-
-    // Post-update variable timestep logic
-    SendEvent(E_SCENEPOSTUPDATE, eventData);
-
-    // Note: using a float for elapsed time accumulation is inherently inaccurate. The purpose of this value is
-    // primarily to update material animation effects, as it is available to shaders. It can be reset by calling
-    // SetElapsedTime()
-    elapsedTime_ += timeStep;
+    if (updateEnabled_)
+    {
+        // Note: using a float for elapsed time accumulation is inherently inaccurate. The purpose of this value is
+        // primarily to update material animation effects, as it is available to shaders. It can be reset by calling
+        // SetElapsedTime()
+        elapsedTime_ += timeStep;
+    }
 }
 
 void Scene::BeginThreadedUpdate()
@@ -1036,35 +1039,8 @@ void Scene::ComponentRemoved(Component* component)
     component->OnSceneSet(nullptr);
 }
 
-void Scene::SetVarNamesAttr(const ea::string& value)
-{
-    ea::vector<ea::string> varNames = value.split(';');
-
-    varNames_.clear();
-    for (auto i = varNames.begin(); i != varNames.end(); ++i)
-        varNames_[*i] = *i;
-}
-
-ea::string Scene::GetVarNamesAttr() const
-{
-    ea::string ret;
-
-    if (!varNames_.empty())
-    {
-        for (auto i = varNames_.begin(); i != varNames_.end(); ++i)
-            ret += i->second + ";";
-
-        ret.resize(ret.length() - 1);
-    }
-
-    return ret;
-}
-
 void Scene::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
-    if (!updateEnabled_)
-        return;
-
     using namespace Update;
     Update(eventData[P_TIMESTEP].GetFloat());
 }

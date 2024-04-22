@@ -359,6 +359,13 @@ ea::pair<Quaternion, Quaternion> Quaternion::ToSwingTwist(const Vector3& twistAx
     return {swing, twist};
 }
 
+float Quaternion::TwistAngle(const Vector3& axis) const
+{
+    const auto [_, twist] = ToSwingTwist(axis);
+    const float axisSign = twist.Axis().DotProduct(axis) >= 0.0f ? 1.0f : -1.0f;
+    return twist.Angle() * axisSign;
+}
+
 ea::string Quaternion::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];

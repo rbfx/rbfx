@@ -92,7 +92,10 @@ void RegisterStandardSerializableHooks(Context* context)
 
         widget->GetCamera()->CopyAttributes(camera);
         widget->GetCamera()->SetDrawDebugGeometry(false);
-        widget->GetCameraNode()->CopyAttributes(camera->GetNode());
+        const auto reviewNode = widget->GetCameraNode();
+        const auto cameraNode = camera->GetNode();
+        reviewNode->CopyAttributes(cameraNode);
+        reviewNode->SetWorldTransform(cameraNode->GetWorldTransform());
 
         workQueue->PostDelayedTaskForMainThread([widget] { widget->SetActive(false); });
 

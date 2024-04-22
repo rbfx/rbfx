@@ -265,7 +265,7 @@ void GameViewTab::RenderContent()
     if (state_)
     {
         Texture2D* sceneTexture = backbuffer_->GetTexture();
-        Widgets::ImageButton(sceneTexture, ToImGui(sceneTexture->GetSize()), {0, 0}, {1, 1}, 0);
+        Widgets::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
 
 #if URHO3D_SYSTEMUI_VIEWPORTS
         const IntVector2 origin = IntVector2::ZERO;

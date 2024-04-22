@@ -25,6 +25,7 @@
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Renderer.h"
 #include "../IO/Log.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/CameraProcessor.h"
 #include "../RenderPipeline/InstancingBuffer.h"
 #include "../RenderPipeline/LightProcessor.h"
@@ -141,6 +142,9 @@ void ShaderProgramCompositor::SetupShaders(ShaderProgramDesc& result, Pass* pass
 void ShaderProgramCompositor::ApplyCommonDefines(ShaderProgramDesc& result,
     DrawableProcessorPassFlags flags, Pass* pass) const
 {
+    const RenderDeviceCaps& caps = GetSubsystem<RenderDevice>()->GetCaps();
+    const bool canReadDepth = settings_.renderBufferManager_.readableDepth_ && caps.readOnlyDepth_;
+
     if (isCameraReversed_)
         result.AddCommonShaderDefines("URHO3D_CAMERA_REVERSED");
 
@@ -168,7 +172,7 @@ void ShaderProgramCompositor::ApplyCommonDefines(ShaderProgramDesc& result,
             result.AddCommonShaderDefines("URHO3D_VERTEX_REFLECTION");
     }
 
-    if (flags.Test(DrawableProcessorPassFlag::NeedReadableDepth) && settings_.renderBufferManager_.readableDepth_)
+    if (flags.Test(DrawableProcessorPassFlag::NeedReadableDepth) && canReadDepth)
     {
         result.AddCommonShaderDefines("URHO3D_HAS_READABLE_DEPTH");
         if (isCameraOrthographic_)

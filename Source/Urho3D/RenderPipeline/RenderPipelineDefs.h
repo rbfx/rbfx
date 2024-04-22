@@ -695,7 +695,8 @@ struct AutoExposurePassSettings
 enum class AmbientOcclusionMode
 {
     Combine,
-    Preview
+    PreviewRaw,
+    PreviewBlurred,
 };
 
 struct AmbientOcclusionPassSettings
@@ -808,6 +809,8 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     float saturation_{1.0f};
     float brightness_{1.0f};
     float contrast_{1.0f};
+    Color colorFilter_{Color::WHITE};
+    Vector3 colorOffset_{Vector3::ZERO};
     /// @}
 
     /// Utility operators
@@ -838,7 +841,9 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
             && hueShift_ == rhs.hueShift_
             && saturation_ == rhs.saturation_
             && brightness_ == rhs.brightness_
-            && contrast_ == rhs.contrast_;
+            && contrast_ == rhs.contrast_
+            && colorFilter_ == rhs.colorFilter_
+            && colorOffset_ == rhs.colorOffset_;
     }
 
     bool operator!=(const RenderPipelineSettings& rhs) const { return !(*this == rhs); }

@@ -76,6 +76,9 @@ class URHO3D_API LogicComponent : public Component
     /// Called on physics post-update, fixed timestep.
     virtual void FixedPostUpdate(float timeStep);
 
+    /// Return update event type. Should stay the same for any given instance of the component.
+    /// DelayedStart is invoked before the first update event of this type.
+    virtual StringHash GetUpdateEvent() const;
     /// Return post update event type. Should stay the same for any given instance of the component.
     virtual StringHash GetPostUpdateEvent() const;
 

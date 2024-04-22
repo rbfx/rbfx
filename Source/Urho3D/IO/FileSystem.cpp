@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2023-2023 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,18 +23,24 @@
 
 #include "../Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/Thread.h"
-#include "../Core/Profiler.h"
-#include "../Engine/EngineEvents.h"
-#include "../IO/File.h"
-#include "../IO/FileSystem.h"
-#include "../IO/IOEvents.h"
-#include "../IO/Log.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/StopToken.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Engine/EngineEvents.h"
+#include "Urho3D/IO/File.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/IOEvents.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Core/ProcessUtils.h"
 #if URHO3D_SYSTEMUI
-#   include "../SystemUI/Console.h"
+#include "Urho3D/SystemUI/Console.h"
 #endif
+
+#include <EASTL/finally.h>
+
+#include <future>
 
 #ifdef __ANDROID__
 #include <SDL_rwops.h>
@@ -43,6 +50,7 @@
 
 #include <sys/stat.h>
 #include <cstdio>
+#include <SDL_error.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -88,6 +96,45 @@ namespace Urho3D
 namespace
 {
 
+bool ResolvePathSegment(ea::string& sanitizedName, ea::string::size_type& segmentStartIndex)
+{
+    if (sanitizedName.size() - segmentStartIndex <= 2)
+    {
+        const auto segment = sanitizedName.substr(segmentStartIndex);
+        if (segment.empty())
+        {
+            // Keep leading /, otherwise skip empty segment.
+            return segmentStartIndex == 0;
+        }
+        if (segment == ".")
+        {
+            sanitizedName.resize(segmentStartIndex);
+            return false;
+        }
+        if (segment == "..")
+        {
+            // If there is a possibility of parent path
+            if (segmentStartIndex > 1)
+            {
+                // Find where parent path starts
+                segmentStartIndex = sanitizedName.find_last_of('/', segmentStartIndex - 2);
+                // Find where parent path starts and set segment start right after / symbol.
+                segmentStartIndex =
+                    (segmentStartIndex == ea::string::npos) ? 0 : segmentStartIndex + 1;
+            }
+            else
+            {
+                // If there is no way the parent path has parent of it's own then reset full path to empty.
+                segmentStartIndex = 0;
+            }
+            // Reset sanitized name to position right after last known / or at the start.
+            sanitizedName.resize(segmentStartIndex);
+            return false;
+        }
+    }
+    return true;
+}
+
 bool StartsWith(ea::string_view str, ea::string_view prefix, bool caseSensitive = true)
 {
     if (!caseSensitive)
@@ -103,6 +150,53 @@ bool EndsWith(ea::string_view str, ea::string_view suffix, bool caseSensitive = 
 
     return str.size() >= suffix.size()
         && ea::CompareI(str.data() + str.size() - suffix.size(), suffix.data(), suffix.size()) == 0;
+}
+
+#ifdef _WIN32
+using FileDescriptor = HANDLE;
+#else
+using FileDescriptor = int;
+#endif
+std::future<ea::string> ReadFileAsync(FileDescriptor fileHandle, StopToken& stopToken)
+{
+    auto futureResult = std::async(std::launch::async,
+        [fileHandle, stopToken]
+    {
+        ea::string result;
+        char buf[1024];
+        while (true)
+        {
+            // Stop on error
+#ifdef _WIN32
+            DWORD bytesRead = 0;
+            if (!ReadFile(fileHandle, buf, sizeof(buf), &bytesRead, nullptr))
+            {
+                if (GetLastError() != ERROR_NO_DATA)
+                    break;
+            }
+
+            // Stop on EOF if stop was requested
+            if (bytesRead == 0 && stopToken.IsStopped())
+                break;
+#else
+            int bytesRead = read(fileHandle, buf, sizeof(buf));
+            if (bytesRead < 0)
+            {
+                if (errno != EAGAIN)
+                    break;
+            }
+
+            // Stop on EOF if stop was requested
+            if (bytesRead <= 0 && stopToken.IsStopped())
+                break;
+#endif
+
+            if (bytesRead > 0)
+                result.append(buf, bytesRead);
+        }
+        return result;
+    });
+    return futureResult;
 }
 
 }
@@ -180,10 +274,15 @@ URHO3D_FLAGSET(SystemRunFlag, SystemRunFlags);
 
 int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& arguments, SystemRunFlags flags, ea::string& output)
 {
+    URHO3D_LOGDEBUG("Running system call:\n{} {}", fileName, ea::string::joined(arguments, " "));
+
 #if defined(TVOS) || defined(IOS) || (defined(__ANDROID__) && __ANDROID_API__ < 28) || defined(UWP)
     return -1;
 #else
     ea::string fixedFileName = GetNativePath(fileName);
+    std::future<ea::string> futureOutput;
+    StopToken outputStopToken;
+    auto stopGuard = ea::make_finally([&] { outputStopToken.Stop(); });
 
 #ifdef _WIN32
     // Add .exe extension if no extension defined
@@ -204,7 +303,17 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
         // If we are waiting for process result we are likely reading stdout, in that case we probably do not want to see a console window.
         processFlags = CREATE_NO_WINDOW;
 
-    HANDLE pipeRead = 0, pipeWrite = 0;
+    HANDLE pipeRead = 0;
+    HANDLE pipeWrite = 0;
+    const auto pipeGuard = ea::make_finally(
+        [&]
+    {
+        if (pipeRead)
+            CloseHandle(pipeRead);
+        if (pipeWrite)
+            CloseHandle(pipeWrite);
+    });
+
     if (flags & SR_READ_OUTPUT)
     {
         SECURITY_ATTRIBUTES attr;
@@ -227,6 +336,8 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
         startupInfo.hStdOutput = pipeWrite;
         startupInfo.hStdError = pipeWrite;
         startupInfo.dwFlags |= STARTF_USESTDHANDLES;
+
+        futureOutput = ReadFileAsync(pipeRead, outputStopToken);
     }
 
     if (!CreateProcessW(nullptr, (wchar_t*)commandLineW.c_str(), nullptr, nullptr, TRUE, processFlags, nullptr, nullptr, &startupInfo, &processInfo))
@@ -241,21 +352,8 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
 
     if (flags & SR_READ_OUTPUT)
     {
-        char buf[1024];
-        for (;;)
-        {
-            DWORD bytesRead = 0;
-            if (!ReadFile(pipeRead, buf, sizeof(buf), &bytesRead, nullptr) || !bytesRead)
-                break;
-            auto err = GetLastError();
-
-            unsigned start = output.length();
-            output.resize(start + bytesRead);
-            memcpy(&output[start], buf, bytesRead);
-        }
-
-        CloseHandle(pipeWrite);
-        CloseHandle(pipeRead);
+        stopGuard.execute();
+        output = futureOutput.get();
     }
 
     CloseHandle(processInfo.hProcess);
@@ -263,8 +361,7 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
 
     return exitCode;
 #else
-
-    int desc[2];
+    int desc[2] = {0, 0};
     if (flags & SR_READ_OUTPUT)
     {
         if (pipe(desc) == -1)
@@ -272,6 +369,15 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
         fcntl(desc[0], F_SETFL, O_NONBLOCK);
         fcntl(desc[1], F_SETFL, O_NONBLOCK);
     }
+
+    const auto pipeGuard = ea::make_finally(
+        [&]
+    {
+        if (desc[0])
+            close(desc[0]);
+        if (desc[1])
+            close(desc[1]);
+    });
 
     ea::vector<const char*> argPtrs;
     argPtrs.push_back(fixedFileName.c_str());
@@ -288,6 +394,8 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
         posix_spawn_file_actions_adddup2(&actions, desc[1], STDOUT_FILENO);
         posix_spawn_file_actions_addclose(&actions, STDERR_FILENO);
         posix_spawn_file_actions_adddup2(&actions, desc[1], STDERR_FILENO);
+
+        futureOutput = ReadFileAsync(desc[0], outputStopToken);
     }
     posix_spawnp(&pid, fixedFileName.c_str(), &actions, nullptr, (char**)&argPtrs[0], environ);
     posix_spawn_file_actions_destroy(&actions);
@@ -300,19 +408,8 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
 
         if (flags & SR_READ_OUTPUT)
         {
-            char buf[1024];
-            for (;;)
-            {
-                ssize_t bytesRead = read(desc[0], buf, sizeof(buf));
-                if (bytesRead <= 0)
-                    break;
-
-                unsigned start = output.length();
-                output.resize(start + bytesRead);
-                memcpy(&output[start], buf, bytesRead);
-            }
-            close(desc[0]);
-            close(desc[1]);
+            stopGuard.execute();
+            output = futureOutput.get();
         }
         return exitCode;
     }
@@ -593,8 +690,13 @@ bool FileSystem::SystemOpen(const ea::string& fileName, const ea::string& mode)
 {
     if (allowedPaths_.empty())
     {
+        if (fileName.starts_with("http://") || fileName.starts_with("https://"))
+        {
+            return OpenURL(fileName.c_str());
+        }
+
         // allow opening of http and file urls
-        if (!fileName.starts_with("http://") && !fileName.starts_with("https://") && !fileName.starts_with("file://"))
+        if (!fileName.starts_with("file://"))
         {
             if (!FileExists(fileName) && !DirExists(fileName))
             {
@@ -1599,28 +1701,39 @@ ea::string FileSystem::FindResourcePrefixPath() const
     return EMPTY_STRING;
 }
 
-ea::string GetAbsolutePath(const ea::string& path)
+ea::string ResolvePath(ea::string_view filePath)
 {
-    ea::vector<ea::string> parts;
-#if !_WIN32
-    parts.push_back("");
-#endif
-    auto split = path.split('/');
-    parts.insert(parts.end(), split.begin(), split.end());
+    ea::string sanitizedName;
+    ea::string::size_type segmentStartIndex{0};
+    sanitizedName.reserve(filePath.length());
 
-    int index = 0;
-    while (index < parts.size() - 1)
+    for (auto c : filePath)
     {
-        if (parts[index] != ".." && parts[index + 1] == "..")
+        if (c == '\\' || c == '/')
         {
-            parts.erase_at(index, 2);
-            index = Max(0, --index);
+            if (ResolvePathSegment(sanitizedName, segmentStartIndex))
+            {
+                sanitizedName.push_back('/');
+                segmentStartIndex = sanitizedName.size();
+            }
         }
         else
-            ++index;
+        {
+            sanitizedName.push_back(c);
+        }
     }
-
-    return ea::string::joined(parts, "/");
+    ResolvePathSegment(sanitizedName, segmentStartIndex);
+    // Remove trailing / if it isn't the only one
+    if (sanitizedName.size() > 1)
+    {
+        const auto lastCharIndex = sanitizedName.size() - 1;
+        if (sanitizedName.at(lastCharIndex) == '/')
+        {
+            sanitizedName.resize(lastCharIndex);
+        }
+    }
+    sanitizedName.trim();
+    return sanitizedName;
 }
 
 ea::string GetAbsolutePath(const ea::string& path, const ea::string& currentPath, bool addTrailingSlash)

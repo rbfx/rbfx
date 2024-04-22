@@ -472,6 +472,8 @@ public:
     Quaternion Nlerp(const Quaternion& rhs, float t, bool shortestPath = false) const;
     /// Decompose quaternion to swing and twist components. swing * twist is the original quaternion.
     ea::pair<Quaternion, Quaternion> ToSwingTwist(const Vector3& twistAxis) const;
+    /// Return twist angle around given axis. Quaternion may or may not have additional rotation that will be ignored.
+    float TwistAngle(const Vector3& axis) const;
 
     /// Return float data.
     const float* Data() const { return &w_; }

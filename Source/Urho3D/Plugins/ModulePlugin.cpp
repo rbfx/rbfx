@@ -31,6 +31,7 @@
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/VectorBuffer.h"
+#include "../Plugins/PluginManager.h"
 #include "../Script/Script.h"
 
 namespace Urho3D
@@ -45,7 +46,9 @@ bool ModulePlugin::Load()
         return false;
     }
 
-    ea::string pluginPath = GetVersionModulePath(path);
+    auto pluginManager = GetSubsystem<PluginManager>();
+    const bool renamePluginBinaries = pluginManager->ArePluginsRenamed();
+    const ea::string pluginPath = renamePluginBinaries ? GetVersionModulePath(path) : path;
 
     if (pluginPath.empty())
         return false;

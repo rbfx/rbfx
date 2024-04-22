@@ -8,8 +8,8 @@
 %ignore Urho3D::EP_BORDERLESS;
 %constant const char* EpConfigName = "ConfigName";
 %ignore Urho3D::EP_CONFIG_NAME;
-%constant const char* EpDumpShaders = "DumpShaders";
-%ignore Urho3D::EP_DUMP_SHADERS;
+%constant const char* EpDiscardShaderCache = "DiscardShaderCache";
+%ignore Urho3D::EP_DISCARD_SHADER_CACHE;
 %constant const char* EpEngineAutoLoadScripts = "EngineAutoLoadScripts";
 %ignore Urho3D::EP_ENGINE_AUTO_LOAD_SCRIPTS;
 %constant const char* EpEngineCliParameters = "EngineCliParameters";
@@ -24,18 +24,16 @@
 %ignore Urho3D::EP_GPU_DEBUG;
 %constant const char* EpHeadless = "Headless";
 %ignore Urho3D::EP_HEADLESS;
+%constant const char* EpLoadFonts = "LoadFonts";
+%ignore Urho3D::EP_LOAD_FONTS;
 %constant const char* EpLogLevel = "LogLevel";
 %ignore Urho3D::EP_LOG_LEVEL;
 %constant const char* EpLogName = "LogName";
 %ignore Urho3D::EP_LOG_NAME;
 %constant const char* EpLogQuiet = "LogQuiet";
 %ignore Urho3D::EP_LOG_QUIET;
-%constant const char* EpLowQualityShadows = "LowQualityShadows";
-%ignore Urho3D::EP_LOW_QUALITY_SHADOWS;
 %constant const char* EpMainPlugin = "MainPlugin";
 %ignore Urho3D::EP_MAIN_PLUGIN;
-%constant const char* EpMaterialQuality = "MaterialQuality";
-%ignore Urho3D::EP_MATERIAL_QUALITY;
 %constant const char* EpMonitor = "Monitor";
 %ignore Urho3D::EP_MONITOR;
 %constant const char* EpMultiSample = "MultiSample";
@@ -56,16 +54,16 @@
 %ignore Urho3D::EP_RESOURCE_PATHS;
 %constant const char* EpResourcePrefixPaths = "ResourcePrefixPaths";
 %ignore Urho3D::EP_RESOURCE_PREFIX_PATHS;
+%constant const char* EpResourceRootFile = "ResourceRootFile";
+%ignore Urho3D::EP_RESOURCE_ROOT_FILE;
+%constant const char* EpSaveShaderCache = "SaveShaderCache";
+%ignore Urho3D::EP_SAVE_SHADER_CACHE;
 %constant const char* EpShaderCacheDir = "ShaderCacheDir";
 %ignore Urho3D::EP_SHADER_CACHE_DIR;
 %constant const char* EpShaderLogSources = "ShaderLogSource";
 %ignore Urho3D::EP_SHADER_LOG_SOURCES;
-%constant const char* EpShaderPolicyGlsl = "ShaderPolicyGLSL";
-%ignore Urho3D::EP_SHADER_POLICY_GLSL;
-%constant const char* EpShaderPolicyHlsl = "ShaderPolicyHLSL";
-%ignore Urho3D::EP_SHADER_POLICY_HLSL;
-%constant const char* EpShadows = "Shadows";
-%ignore Urho3D::EP_SHADOWS;
+%constant const char* EpShaderPolicy = "ShaderPolicy";
+%ignore Urho3D::EP_SHADER_POLICY;
 %constant const char* EpSoundBuffer = "SoundBuffer";
 %ignore Urho3D::EP_SOUND_BUFFER;
 %constant const char* EpSoundInterpolation = "SoundInterpolation";
@@ -88,6 +86,10 @@
 %ignore Urho3D::EP_TIME_OUT;
 %constant const char* EpTouchEmulation = "TouchEmulation";
 %ignore Urho3D::EP_TOUCH_EMULATION;
+%constant const char* EpTweakD3d12 = "TweakD3D12";
+%ignore Urho3D::EP_TWEAK_D3D12;
+%constant const char* EpTweakVulkan = "TweakVulkan";
+%ignore Urho3D::EP_TWEAK_VULKAN;
 %constant const char* EpValidateShaders = "ValidateShaders";
 %ignore Urho3D::EP_VALIDATE_SHADERS;
 %constant const char* EpVsync = "VSync";
@@ -110,6 +112,14 @@
 %ignore Urho3D::EP_WINDOW_WIDTH;
 %constant const char* EpWorkerThreads = "WorkerThreads";
 %ignore Urho3D::EP_WORKER_THREADS;
+%constant const char* EpPsoCache = "PsoCacheDir";
+%ignore Urho3D::EP_PSO_CACHE;
+%constant const char* EpRenderBackend = "RenderBackend";
+%ignore Urho3D::EP_RENDER_BACKEND;
+%constant const char* EpRenderAdapterId = "RenderAdapterId";
+%ignore Urho3D::EP_RENDER_ADAPTER_ID;
+%constant const char* EpXr = "XR";
+%ignore Urho3D::EP_XR;
 %constant const char* ParamScenename = "SceneName";
 %ignore Urho3D::Param_SceneName;
 %constant const char* ParamSceneposition = "ScenePosition";
@@ -175,6 +185,12 @@ public static partial class E
         public static implicit operator StringHash(ApplicationStartedEvent e) { return e._event; }
     }
     public static ApplicationStartedEvent ApplicationStarted = new ApplicationStartedEvent();
+    public class ApplicationStoppedEvent {
+        private StringHash _event = new StringHash("ApplicationStopped");
+        public ApplicationStoppedEvent() { }
+        public static implicit operator StringHash(ApplicationStoppedEvent e) { return e._event; }
+    }
+    public static ApplicationStoppedEvent ApplicationStopped = new ApplicationStoppedEvent();
     public class BeginPluginReloadEvent {
         private StringHash _event = new StringHash("BeginPluginReload");
         public BeginPluginReloadEvent() { }

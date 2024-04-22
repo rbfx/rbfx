@@ -13,11 +13,10 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <Configurations>Debug;Release;RelWithDebInfo;MinSizeRel</Configurations>
+    <Configurations>$(CMAKE_CONFIGURATION_TYPE)</Configurations>
     <HasDebugInfo Condition=" '$(Configuration)' == 'Debug' Or '$(Configuration)' == 'RelWithDebInfo'">true</HasDebugInfo>
-    <BaseOutputPath>bin/</BaseOutputPath>
     <PlatformTarget>$(URHO3D_PLATFORM)</PlatformTarget>
-	<Platforms>$(PlatformTarget)</Platforms>
+    <Platforms>$(PlatformTarget)</Platforms>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <GenerateProjectSpecificOutputFolder>false</GenerateProjectSpecificOutputFolder>                                    <!-- Fixes linker errors for UWP -->
     <TargetFramework>$(URHO3D_NETFX)</TargetFramework>
@@ -26,12 +25,17 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>                                                         <!-- Do not include a heap of language resource folders -->
     <RuntimeIdentifier>$(URHO3D_NETFX_RUNTIME_IDENTIFIER)</RuntimeIdentifier>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' Or '$(CMAKE_GENERATOR)' == 'Xcode' ">
+  <PropertyGroup>
+    <!-- Move C# bin and obj output to CMAKE_BINARY_DIR. -->
+    <BaseIntermediateOutputPath>$(CMAKE_BINARY_DIR)/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(CMAKE_BINARY_DIR)/bin/</BaseOutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" $(CMAKE_GENERATOR.Contains('Visual Studio')) Or '$(CMAKE_GENERATOR)' == 'Xcode' Or '$(CMAKE_GENERATOR)' == 'Ninja Multi-Config' ">
+    <!-- In case of multi-config generators move output to a configuration subdirectory. -->
     <BaseOutputPath>$(BaseOutputPath)$(Configuration)/</BaseOutputPath>
   </PropertyGroup>
   <PropertyGroup>
-    <BaseIntermediateOutputPath>$(CMAKE_BINARY_DIR)obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
-    <BaseOutputPath>$(CMAKE_BINARY_DIR)$(BaseOutputPath)</BaseOutputPath>
+    <!-- Remove framework subdirs from final output, all managed and native binaries are in same folder now. -->
     <OutDir>$(BaseOutputPath)</OutDir>
     <OutputPath>$(BaseOutputPath)</OutputPath>
   </PropertyGroup>

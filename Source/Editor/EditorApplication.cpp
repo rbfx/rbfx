@@ -172,7 +172,11 @@ void EditorApplication::Setup()
 
     // Define custom command line parameters here
     auto& cmd = GetCommandLineParser();
-    cmd.add_flag("--read-only", readOnly_, "Prevents Editor from modifying any project files, unless it is explicitly done via executed command.");
+
+    cmd.add_flag("--read-only", readOnly_,
+        "Prevents Editor from modifying any project files, unless it is explicitly requested via user command.");
+    cmd.add_flag("--single-process", singleProcess_,
+        "Prevents Editor from spawning additional processes, unless it is explicitly requested via user command.");
     cmd.add_option("--command", command_, "Command to execute on startup.")->type_name("command");
     cmd.add_flag("--exit", exitAfterCommand_, "Forces Editor to exit after command execution.");
     cmd.add_option("project", pendingOpenProject_, "Project to open or create on startup.")->type_name("dir");
@@ -187,8 +191,10 @@ void EditorApplication::Setup()
     engineParameters_[EP_AUTOLOAD_PATHS] = "";
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;EditorData";
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = resourcePrefixPath_;
+    engineParameters_[EP_RESOURCE_ROOT_FILE] = "";
     engineParameters_[EP_WINDOW_MAXIMIZE] = true;
     engineParameters_[EP_ENGINE_AUTO_LOAD_SCRIPTS] = false;
+    engineParameters_[EP_RENAME_PLUGINS] = true;
 
     // TODO: Consider scaling fonts based on DPI. ImGuiConfigFlags_DpiEnableScaleFonts seems to create issues on Retina.
     unsigned imguiFlags = 0;
@@ -199,8 +205,6 @@ void EditorApplication::Setup()
 #endif
 
     engineParameters_[EP_SYSTEMUI_FLAGS] = imguiFlags;
-
-    PluginApplication::RegisterStaticPlugins();
 }
 
 void EditorApplication::Start()
@@ -617,7 +621,13 @@ void EditorApplication::UpdateProjectStatus()
         if (!isHeadless)
             InitializeUI();
 
-        project_ = MakeShared<Project>(context_, pendingOpenProject_, settingsJsonPath_, readOnly_);
+        ProjectFlags projectFlags;
+        if (readOnly_)
+            projectFlags |= ProjectFlag::ReadOnly;
+        if (singleProcess_)
+            projectFlags |= ProjectFlag::SingleProcess;
+
+        project_ = MakeShared<Project>(context_, pendingOpenProject_, settingsJsonPath_, projectFlags);
         project_->OnShallowSaved.Subscribe(this, &EditorApplication::SaveTempJson);
 
         recentProjects_.erase_first(pendingOpenProject_);

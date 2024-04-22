@@ -1,37 +1,23 @@
-//
 // Copyright (c) 2008-2017 the Urho3D project.
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2023 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
+
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Graphics/Texture2D.h"
-#include "../Input/InputEvents.h"
-#include "../Math/Matrix4.h"
-#include "../Math/StringHash.h"
-#include "../Math/Vector2.h"
-#include "../Math/Vector4.h"
-#include "../SystemUI/ImGui.h"
-#include "../SystemUI/SystemUIEvents.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Input/InputEvents.h"
+#include "Urho3D/Math/Matrix4.h"
+#include "Urho3D/Math/StringHash.h"
+#include "Urho3D/Math/Vector2.h"
+#include "Urho3D/Math/Vector4.h"
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
+#include "Urho3D/SystemUI/ImGui.h"
+#include "Urho3D/SystemUI/SystemUIEvents.h"
+
+#include <Diligent/Common/interface/RefCntAutoPtr.hpp>
+#include <Diligent/Graphics/GraphicsEngine/interface/TextureView.h>
 
 #include <EASTL/unique_ptr.h>
 #include <EASTL/unordered_map.h>
@@ -75,7 +61,7 @@ public:
     /// \param alpha value between 0.0f - 1.0f
     void ApplyStyleDefault(bool darkStyle, float alpha);
     /// Hold a reference to this texture until end of frame.
-    void ReferenceTexture(Texture2D* texture) { referencedTextures_.push_back(SharedPtr(texture)); }
+    void ReferenceTexture(Texture2D* texture);
 
     /// When set to true, SystemUI will not consume SDL events and they will be passed to to Input and other subsystems.
     void SetPassThroughEvents(bool enabled) { passThroughEvents_ = enabled; }
@@ -86,7 +72,7 @@ protected:
     ea::vector<SharedPtr<Texture2D>> fontTextures_;
     ea::vector<float> fontSizes_;
     ImGuiContext* imContext_{};
-    ea::vector<SharedPtr<Texture2D>> referencedTextures_;
+    ea::vector<Diligent::RefCntAutoPtr<Diligent::ITextureView>> referencedTextures_;
     /// When set to true, SystemUI will not consume SDL events and they will be passed to to Input and other subsystems.
     bool passThroughEvents_ = false;
 

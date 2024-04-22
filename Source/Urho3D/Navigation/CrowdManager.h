@@ -40,6 +40,12 @@ namespace Urho3D
 class CrowdAgent;
 class NavigationMesh;
 
+/// Callback used to adjust crowd agent velocity.
+using CrowdAgentVelocityCallback =
+    ea::function<void(CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed)>;
+/// Callback used to evaluate crowd agent Y position.
+using CrowdAgentHeightCallback = ea::function<float(CrowdAgent* agent, float timeStep, const Vector3& position)>;
+
 /// Parameter structure for obstacle avoidance params (copied from DetourObstacleAvoidance.h in order to hide Detour header from Urho3D library users).
 /// @pod
 struct CrowdObstacleAvoidanceParams
@@ -55,9 +61,6 @@ struct CrowdObstacleAvoidanceParams
     unsigned char adaptiveRings;    ///< adaptive
     unsigned char adaptiveDepth;    ///< adaptive
 };
-
-/// Callback used to adjust crowd agent velocity.
-using CrowdAgentVelocityShader = ea::function<void(CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed)>;
 
 /// Crowd manager scene component. Should be added only to the root scene node.
 class URHO3D_API CrowdManager : public Component
@@ -82,10 +85,14 @@ public:
     /// Add debug geometry to the debug renderer.
     void DrawDebugGeometry(bool depthTest);
 
-    /// Set velocity shader.
-    void SetVelocityShader(const CrowdAgentVelocityShader& shader) { velocityShader_ = shader; }
-    /// Update agent velocity using velocity shader.
-    void UpdateAgentVelocity(CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed) const { if (velocityShader_) velocityShader_(agent, timeStep, desiredVelocity, desiredSpeed); }
+    /// Set velocity callback.
+    void SetVelocityCallback(const CrowdAgentVelocityCallback& callback) { velocityCallback_ = callback; }
+    /// Set height callback.
+    void SetHeightCallback(const CrowdAgentHeightCallback& callback) { heightCallback_ = callback; }
+    /// Update agent velocity using velocity callback.
+    void UpdateAgentVelocity(CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed) const;
+    /// Update agent Y position using height callback.
+    void UpdateAgentPosition(CrowdAgent* agent, float timeStep, Vector3& position) const;
 
     /// Set the crowd target position. The target position is set to all crowd agents found in the specified node. Defaulted to scene node.
     void SetCrowdTarget(const Vector3& position, Node* node = nullptr);
@@ -184,6 +191,8 @@ protected:
     void Update(float delta);
     /// Get the detour crowd agent.
     const dtCrowdAgent* GetDetourCrowdAgent(int agent) const;
+    /// Get editable detour crowd agent.
+    dtCrowdAgent* GetEditableDetourCrowdAgent(int agent);
     /// Get the detour query filter.
     const dtQueryFilter* GetDetourQueryFilter(unsigned queryFilterType) const;
 
@@ -200,8 +209,10 @@ private:
 
     /// Internal Detour crowd object.
     dtCrowd* crowd_{};
-    /// Velocity shader.
-    CrowdAgentVelocityShader velocityShader_;
+    /// Velocity callback.
+    CrowdAgentVelocityCallback velocityCallback_;
+    /// Height callback.
+    CrowdAgentHeightCallback heightCallback_;
     /// NavigationMesh for which the crowd was created.
     WeakPtr<NavigationMesh> navigationMesh_;
     /// The NavigationMesh component Id for pending crowd creation.

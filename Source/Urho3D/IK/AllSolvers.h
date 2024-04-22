@@ -10,5 +10,6 @@
 #include "Urho3D/IK/IKIdentitySolver.h"
 #include "Urho3D/IK/IKLegSolver.h"
 #include "Urho3D/IK/IKLimbSolver.h"
+#include "Urho3D/IK/IKRotateTo.h"
 #include "Urho3D/IK/IKSpineSolver.h"
 #include "Urho3D/IK/IKStickTargets.h"

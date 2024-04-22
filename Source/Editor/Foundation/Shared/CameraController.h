@@ -29,7 +29,7 @@ namespace Urho3D
 {
 
 /// Camera controller used by Scene View.
-class CameraController: public Object
+class CameraController : public Object
 {
     URHO3D_OBJECT(CameraController, Object)
 

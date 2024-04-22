@@ -51,6 +51,9 @@ public:
     /// Get pitch angle in degrees.
     float GetPitch() const { return pitch_; }
 
+    /// Get yaw and pitch rotation.
+    Quaternion GetYawPitchRotation() const { return Quaternion(pitch_, yaw_, 0.0f); }
+
 private:
     Vector3 velocity_{};
     float yaw_{};

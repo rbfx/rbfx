@@ -356,7 +356,7 @@ void CubemapRenderer::EnsurePipelineStates(unsigned numLevels)
     for (unsigned i = 0; i < numLevels; ++i)
     {
         const auto levelWidth = static_cast<float>(1 << (numLevels - 1 - i));
-        const unsigned rayCount = rayCounts[ea::max<unsigned>(i, rayCounts.size() - 1)];
+        const unsigned rayCount = rayCounts[ea::min<unsigned>(i, rayCounts.size() - 1)];
 
         const ea::string shaderParams = Format("RAY_COUNT={}u FILTER_RES={}u FILTER_INV_RES={:.7f} ROUGHNESS={:.7f}",
             rayCount, levelWidth, 1.0f / levelWidth, roughStep * i);

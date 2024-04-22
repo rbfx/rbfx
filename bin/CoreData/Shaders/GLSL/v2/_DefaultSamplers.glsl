@@ -16,7 +16,7 @@ SAMPLER(6, sampler2D sEmission)
 #else
     SAMPLER(8, samplerCube sReflection0)
 #endif
-SAMPLER(9, sampler2D sDepthBuffer)
+SAMPLER_HIGHP(9, sampler2D sDepthBuffer)
 SAMPLER(10, samplerCube sReflection1)
 
 #endif // URHO3D_PIXEL_SHADER

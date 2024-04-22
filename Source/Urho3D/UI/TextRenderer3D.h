@@ -54,6 +54,10 @@ struct TextParams3D
     VerticalAlignment verticalAlignment_{ VA_CENTER };
     /// Text alignment.
     HorizontalAlignment textAlignment_{ HA_CENTER };
+    /// Depth test mode.
+    bool depthTest_{true};
+    /// View mask.
+    unsigned viewMask_{DEFAULT_VIEWMASK};
 
     /// Precomputed parameter hash.
     unsigned hash_{};
@@ -71,6 +75,8 @@ struct TextParams3D
         CombineHash(hash_, horizontalAlignment_);
         CombineHash(hash_, verticalAlignment_);
         CombineHash(hash_, textAlignment_);
+        CombineHash(hash_, depthTest_);
+        CombineHash(hash_, viewMask_);
     }
 
     /// Return precomputed parameter hash.
@@ -87,7 +93,9 @@ struct TextParams3D
             && snapToPixels_ == rhs.snapToPixels_
             && horizontalAlignment_ == rhs.horizontalAlignment_
             && verticalAlignment_ == rhs.verticalAlignment_
-            && textAlignment_ == rhs.textAlignment_;
+            && textAlignment_ == rhs.textAlignment_
+            && depthTest_ == rhs.depthTest_
+            && viewMask_ == rhs.viewMask_;
     }
 };
 

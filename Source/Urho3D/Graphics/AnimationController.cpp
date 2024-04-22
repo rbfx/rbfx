@@ -148,7 +148,7 @@ AnimationParameters& AnimationParameters::Looped()
     return *this;
 }
 
-AnimationParameters& AnimationParameters::StartBone(const ea::string& startBone)
+AnimationParameters& AnimationParameters::StartBone(ea::string_view startBone)
 {
     startBone_ = startBone;
     return *this;
@@ -453,6 +453,8 @@ void AnimationController::Update(float timeStep)
         UpdateInstance(params, timeStep, true);
         if (!params.removed_)
             UpdateState(state, params);
+        else
+            animationStatesDirty_ = true;
     }
     ea::erase_if(animations_, [](const AnimationInstance& value) { return value.params_.removed_; });
 

@@ -20,6 +20,8 @@
 # THE SOFTWARE.
 #
 
+project(Urho3D C CXX)
+
 macro (define_engine_source_files)
     cmake_parse_arguments(DEFINE_SRC_FILES "NORECURSE" "" "" ${ARGN} )
     if (DEFINE_SRC_FILES_NORECURSE)
@@ -30,15 +32,7 @@ macro (define_engine_source_files)
     foreach (path ${DEFINE_SRC_FILES_UNPARSED_ARGUMENTS})
         # Get header files
         file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.h)
-        list (REMOVE_ITEM _files
-            Urho3D.h
-            Graphics/Direct3D11/D3D11GraphicsImpl.cpp
-            Graphics/Direct3D11/D3D11GraphicsImpl.h
-            Graphics/OpenGL/OGLGraphicsImpl.h
-            Graphics/Diligent/DiligentGraphicsImpl.cpp
-            Graphics/Diligent/DiligentGraphicsImpl.h
-            IK/IKConverters.h
-        )
+        list (REMOVE_ITEM _files Urho3D.h)
         list (APPEND HEADER_FILES ${_files})
         # Install them
         install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
@@ -378,7 +372,7 @@ if (WEB)
         math(EXPR EMSCRIPTEN_TOTAL_MEMORY_BYTES "${EMSCRIPTEN_TOTAL_MEMORY} * 1024 * 1024")
         target_link_libraries(Urho3D PUBLIC "-s INITIAL_MEMORY=${EMSCRIPTEN_TOTAL_MEMORY_BYTES}")
     endif ()
-    target_link_libraries(Urho3D PUBLIC "-s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2")
+    target_link_libraries(Urho3D PUBLIC "-s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2 -s GL_ENABLE_GET_PROC_ADDRESS")
     # TODO: Try to remove FULL_ES3. We only need it for glMapBufferRange and glUnmapBuffer.
     target_link_libraries(Urho3D PUBLIC "-s FULL_ES3=1")
 endif ()
@@ -386,7 +380,7 @@ endif ()
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(Urho3D
         PRIVATE -DURHO3D_EXPORTS=1 -DAL_EXPORTS=1 -DBOX2D_EXPORTS=1 -DCIVETWEB_DLL_EXPORTS=1 -DEASTL_EXPORTS=1
-            -DEASTDC_EXPORTS=1 -DURHO3D_EXPORTS=1 -DFMT_EXPORT=1 -DGLEW_BUILD=1 -DIMGUI_EXPORTS=1
+            -DEASTDC_EXPORTS=1 -DURHO3D_EXPORTS=1 -DFMT_LIB_EXPORT=1 -DGLEW_BUILD=1 -DIMGUI_EXPORTS=1
             -DLZ4_DLL_EXPORT=1 -DNFD_EXPORTS=1 -DPUGIXML_EXPORTS=1 -DSDL_EXPORTS=1 -DTRACY_EXPORTS=1 -DRmlCore_EXPORTS=1
             -DRmlDebugger_EXPORTS=1 -DGLSLANG_EXPORTING=1
     )
@@ -436,9 +430,15 @@ source_group(Resources FILES ${RESOURCE_FILES})     # RESOURCE_PAKS could be emp
 target_sources(Urho3D PRIVATE ${RESOURCE_DIRS})
 
 if (URHO3D_CSHARP)
+    # Not necessary for build, but required so that users can import Urho3D.i in their bindings .i
+    target_include_directories(Urho3D PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig>
+        $<INSTALL_INTERFACE:${DEST_INCLUDE_DIR}/CSharp/Swig>
+    )
+
     csharp_bind_target(
         TARGET Urho3D
-        SWIG CSharp/Swig/Urho3D.i
+        SWIG ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig/Urho3D.i
         CSPROJ ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.csproj
         NAMESPACE Urho3DNet
     )
@@ -446,7 +446,7 @@ if (URHO3D_CSHARP)
         csharp_bind_target(
             TARGET ImGui
             NATIVE Urho3D
-            SWIG CSharp/Swig/ImGui.i
+            SWIG ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig/ImGui.i
             NAMESPACE ImGuiNet
             INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."
         )
@@ -460,16 +460,21 @@ if (URHO3D_CSHARP)
         DEPENDS Urho3DNet
     )
 
-    file (GLOB_RECURSE EXTRA_NATIVE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.h ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.cpp)
+    file (GLOB_RECURSE EXTRA_NATIVE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.h)
+    file (GLOB_RECURSE EXTRA_NATIVE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.cpp)
     file (GLOB_RECURSE WRAPPER_FILES)
 
-    target_sources(Urho3D PRIVATE ${EXTRA_NATIVE_FILES} ${CMAKE_CURRENT_BINARY_DIR}/Urho3DCSharp/Urho3DCSHARP_wrap.cxx)
-    if (URHO3D_SYSTEMUI)
-        target_sources(Urho3D PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ImGuiCSharp/ImGuiCSHARP_wrap.cxx)
-    endif ()
+    target_sources(Urho3D PRIVATE
+        ${EXTRA_NATIVE_HEADERS}
+        ${EXTRA_NATIVE_SOURCES}
+    )
+
     if (MSVC)
         target_compile_options(Urho3D PRIVATE /bigobj)
     endif ()
+
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig DESTINATION ${DEST_INCLUDE_DIR}/CSharp)
+    install (FILES ${EXTRA_NATIVE_HEADERS} DESTINATION ${DEST_INCLUDE_DIR}/CSharp/Native)
 endif ()
 
 # Install C# dependencies
@@ -558,4 +563,4 @@ file (GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h CONTENT ${U
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h DESTINATION ${DEST_INCLUDE_DIR})
 file(GLOB ROOT_HEADERS *.h)
 list(REMOVE_ITEM ROOT_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h)
-install (FILES ${ROOT_HEADERS} DESTINATION ${DEST_INCLUDE_DIR})
+install (FILES ${ROOT_HEADERS} "LinkedPlugins.cpp.in" DESTINATION ${DEST_INCLUDE_DIR})

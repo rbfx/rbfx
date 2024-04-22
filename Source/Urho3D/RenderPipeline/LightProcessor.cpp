@@ -206,7 +206,7 @@ void LightProcessor::Update(DrawableProcessor* drawableProcessor, const LightPro
     {
         SpotLightGeometryQuery query(litGeometries_, hasLitGeometries_,
             isShadowRequested_ ? &shadowCasterCandidates_ : nullptr,
-            drawableProcessor, light_, cullCamera->GetViewMask());
+            drawableProcessor, light_, cullCamera->GetPrimaryViewMask(), cullCamera->GetShadowViewMask());
         octree->GetDrawables(query);
         hasForwardLitGeometries_ = !litGeometries_.empty();
         break;
@@ -215,7 +215,7 @@ void LightProcessor::Update(DrawableProcessor* drawableProcessor, const LightPro
     {
         PointLightGeometryQuery query(litGeometries_, hasLitGeometries_,
             isShadowRequested_ ? &shadowCasterCandidates_ : nullptr,
-            drawableProcessor, light_, cullCamera->GetViewMask());
+            drawableProcessor, light_, cullCamera->GetPrimaryViewMask(), cullCamera->GetShadowViewMask());
         octree->GetDrawables(query);
         hasForwardLitGeometries_ = !litGeometries_.empty();
         break;

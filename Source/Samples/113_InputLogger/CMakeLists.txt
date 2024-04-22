@@ -21,11 +21,9 @@
 #
 
 file (GLOB SOURCE_FILES *.cpp *.h)
-add_library (113_InputLogger ${SOURCE_FILES})
-target_link_libraries (113_InputLogger PUBLIC Urho3D)
-define_static_plugin (113_InputLogger "Sample.113_InputLogger")
+add_plugin (Sample.113_InputLogger "${SOURCE_FILES}")
 
-install(TARGETS 113_InputLogger
+install(TARGETS Sample.113_InputLogger
     RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
     LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
     ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}

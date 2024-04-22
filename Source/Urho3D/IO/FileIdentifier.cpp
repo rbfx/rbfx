@@ -22,6 +22,7 @@
 
 #include "Urho3D/IO/FileIdentifier.h"
 
+#include "Urho3D/IO/FileSystem.h"
 #include "Urho3D/Container/Str.h"
 
 namespace Urho3D
@@ -116,12 +117,8 @@ void FileIdentifier::AppendPath(ea::string_view path)
 
 ea::string FileIdentifier::SanitizeFileName(ea::string_view fileName)
 {
-    ea::string sanitizedName{fileName};
-    sanitizedName.replace('\\', '/');
-    sanitizedName.replace("../", "");
-    sanitizedName.replace("./", "");
-    sanitizedName.trim();
-    return sanitizedName;
+    // Resolve path and prevent references outside of data folder, except absolute path which is treated differently.
+    return ResolvePath(fileName);
 }
 
 } // namespace Urho3D

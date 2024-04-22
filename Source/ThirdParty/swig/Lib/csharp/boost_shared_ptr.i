@@ -1,7 +1,7 @@
 // Users can provide their own SWIG_SHARED_PTR_TYPEMAPS macro before including this file to change the
 // visibility of the constructor and getCPtr method if desired to public if using multiple modules.
 #ifndef SWIG_SHARED_PTR_TYPEMAPS
-#define SWIG_SHARED_PTR_TYPEMAPS(CONST, TYPE...) SWIG_SHARED_PTR_TYPEMAPS_IMPLEMENTATION(internal, internal, CONST, TYPE)
+#define SWIG_SHARED_PTR_TYPEMAPS(CONST, TYPE...) SWIG_SHARED_PTR_TYPEMAPS_IMPLEMENTATION(public, public, CONST, TYPE)
 #endif
 
 %include <shared_ptr.i>

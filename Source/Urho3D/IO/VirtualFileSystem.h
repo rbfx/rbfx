@@ -1,33 +1,18 @@
-//
 // Copyright (c) 2008-2022 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2023-2023 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../IO/AbstractFile.h"
-#include "../IO/MountPoint.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/IO/AbstractFile.h"
+#include "Urho3D/IO/MountPoint.h"
+#include "Urho3D/IO/MountedAliasRoot.h"
 
 namespace Urho3D
 {
+
 /// Subsystem for virtual file system.
 class URHO3D_API VirtualFileSystem : public Object
 {
@@ -39,20 +24,24 @@ public:
     /// Destruct.
     ~VirtualFileSystem() override;
 
+    /// Mount alias root as alias:// scheme. Alias root will be mounted automatically if alias is created.
+    MountPoint* MountAliasRoot();
     /// Mount file system root as file:// scheme.
-    void MountRoot();
+    MountPoint* MountRoot();
     /// Mount real folder into virtual file system.
-    void MountDir(const ea::string& path);
+    MountPoint* MountDir(const ea::string& path);
     /// Mount real folder into virtual file system under the scheme.
-    void MountDir(const ea::string& scheme, const ea::string& path);
+    MountPoint* MountDir(const ea::string& scheme, const ea::string& path);
     /// Mount subfolders and pak files from real folder into virtual file system.
     void AutomountDir(const ea::string& path);
-    ///Mount subfolders and pak files from real folder into virtual file system under the scheme.
+    /// Mount subfolders and pak files from real folder into virtual file system under the scheme.
     void AutomountDir(const ea::string& scheme, const ea::string& path);
     /// Mount package file into virtual file system.
-    void MountPackageFile(const ea::string& path);
+    MountPoint* MountPackageFile(const ea::string& path);
     /// Mount virtual or real folder into virtual file system.
     void Mount(MountPoint* mountPoint);
+    /// Mount alias to another mount point.
+    void MountAlias(const ea::string& alias, MountPoint* mountPoint, const ea::string& scheme = EMPTY_STRING);
     /// Remove mount point from the virtual file system.
     void Unmount(MountPoint* mountPoint);
     /// Remove all mount points.
@@ -100,10 +89,15 @@ public:
         ScanFlags flags) const;
 
 private:
+    /// Return or create internal alias:// mount point.
+    MountedAliasRoot* GetOrCreateAliasRoot();
+
     /// Mutex for thread-safe access to the mount points.
     mutable Mutex mountMutex_;
     /// File system mount points. It is expected to have small number of mount points.
     ea::vector<SharedPtr<MountPoint>> mountPoints_;
+    /// Alias mount point.
+    SharedPtr<MountedAliasRoot> aliasMountPoint_;
     /// Are file watchers enabled.
     bool isWatching_{};
 };
@@ -131,4 +125,4 @@ private:
     SharedPtr<MountPoint> mountPoint_;
 };
 
-}
+} // namespace Urho3D

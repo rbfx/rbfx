@@ -42,6 +42,7 @@
 #include "../Graphics/GraphicsEvents.h"
 #include "../RenderAPI/PipelineState.h"
 #include "../RenderAPI/RenderAPIUtils.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../Resource/JSONArchive.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
@@ -145,6 +146,67 @@ EMSCRIPTEN_BINDINGS(Module)
 
 namespace Urho3D
 {
+
+namespace
+{
+
+struct ResourceRootEntry
+{
+    ea::string fullName_;
+    ea::string shortName_;
+};
+
+SharedPtr<File> OpenResourceRootFile(FileSystem* fileSystem, const ea::string& fileName)
+{
+    if (fileName.empty())
+        return nullptr;
+
+    ea::string programDir = AddTrailingSlash(fileSystem->GetProgramDir());
+    while (!programDir.empty())
+    {
+        const ea::string fullFileName = programDir + fileName;
+        if (fileSystem->FileExists(fullFileName))
+            return MakeShared<File>(fileSystem->GetContext(), fullFileName, FILE_READ);
+        programDir = GetParentPath(programDir);
+    }
+
+    return nullptr;
+}
+
+ea::vector<ResourceRootEntry> ReadResourceRootFile(File* file)
+{
+    if (!file)
+        return {};
+
+    const ea::string path = GetPath(file->GetAbsoluteName());
+    const ea::string text = file->ReadText();
+    const StringVector lines = text.replaced("\r\n", "\n").split('\n');
+
+    unsigned lineIndex = 0;
+    ea::vector<ResourceRootEntry> result;
+    for (const ea::string& sourceLine : lines)
+    {
+        ++lineIndex;
+        const ea::string line = sourceLine.trimmed();
+        if (line.empty() || line.starts_with("#") || line.starts_with(";"))
+            continue;
+
+        const auto parts = line.split('=');
+        if (parts.size() != 2)
+        {
+            URHO3D_LOGERROR("Invalid line #{} in {}", lineIndex, file->GetAbsoluteName());
+            continue;
+        }
+
+        const ea::string shortName = parts[0].trimmed();
+        const ea::string fullDirectoryName = AddTrailingSlash(path + parts[1].trimmed());
+        result.push_back(ResourceRootEntry{fullDirectoryName, shortName});
+    }
+
+    return result;
+}
+
+} // namespace
 
 extern const char* logLevelNames[];
 
@@ -264,8 +326,7 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
     auto* log = GetSubsystem<Log>();
     if (log)
     {
-        if (HasParameter(EP_LOG_LEVEL))
-            log->SetLevel(static_cast<LogLevel>(GetParameter(EP_LOG_LEVEL).GetInt()));
+        log->SetLevel(static_cast<LogLevel>(GetParameter(EP_LOG_LEVEL).GetInt()));
         log->SetQuiet(GetParameter(EP_LOG_QUIET).GetBool());
         const ea::string logFileName = GetLogFileName(GetParameter(EP_LOG_NAME).GetString());
         if (!logFileName.empty())
@@ -276,7 +337,10 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
     if (!appPreferencesDir_.empty())
         fileSystem->CreateDir(appPreferencesDir_);
 
-    InitializeVirtualFileSystem();
+    // Initialize virtual file system
+    const bool prefixPathsInCommandLine = commandLineParameters.contains(EP_RESOURCE_PREFIX_PATHS);
+    const bool enableResourceRootFile = !prefixPathsInCommandLine;
+    InitializeVirtualFileSystem(enableResourceRootFile);
 
     // Read and merge configs
     LoadConfigFiles();
@@ -460,6 +524,18 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
                 GetParameter(EP_SOUND_INTERPOLATION).GetBool()
             );
         }
+
+#ifdef URHO3D_RMLUI
+        const auto rmlUi = GetSubsystem<RmlUI>();
+
+        const bool loadFonts = GetParameter(EP_LOAD_FONTS).GetBool();
+        if (loadFonts)
+            rmlUi->ReloadFonts();
+
+        const auto renderDevice = GetSubsystem<RenderDevice>();
+        const float dpiScale = renderDevice->GetDpiScale();
+        rmlUi->SetScale(dpiScale);
+#endif
     }
 
     // Init FPU state of main thread
@@ -495,38 +571,68 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
     return true;
 }
 
-void Engine::InitializeVirtualFileSystem()
+void Engine::InitializeVirtualFileSystem(bool enableResourceRootFile)
 {
     auto fileSystem = GetSubsystem<FileSystem>();
     auto vfs = GetSubsystem<VirtualFileSystem>();
 
+    const ea::string& resourceRootFileName = GetParameter(EP_RESOURCE_ROOT_FILE).GetString();
     const StringVector prefixPaths = GetParameter(EP_RESOURCE_PREFIX_PATHS).GetString().split(';');
     const StringVector paths = GetParameter(EP_RESOURCE_PATHS).GetString().split(';');
     const StringVector packages = GetParameter(EP_RESOURCE_PACKAGES).GetString().split(';');
     const StringVector autoLoadPaths = GetParameter(EP_AUTOLOAD_PATHS).GetString().split(';');
 
-    const ea::string& programDir = fileSystem->GetProgramDir();
-    StringVector absolutePrefixPaths = GetAbsolutePaths(prefixPaths, programDir, true);
-    if (!absolutePrefixPaths.contains(programDir))
-        absolutePrefixPaths.push_back(programDir);
+    const auto resourceRootFile = OpenResourceRootFile(fileSystem, resourceRootFileName);
+    const auto resourceRootEntries = ReadResourceRootFile(resourceRootFile);
 
+    if (resourceRootFileName.empty())
+        URHO3D_LOGINFO("Resource root file lookup is disabled by the application");
+    else if (resourceRootEntries.empty())
+        URHO3D_LOGINFO("Resource root file is not found or invalid");
+    else if (!enableResourceRootFile)
+        URHO3D_LOGINFO("Resource root file is found but ignored due to explicitly specified prefix paths");
+    else
+        URHO3D_LOGINFO("Resource root file is found and used: {}", resourceRootFile->GetAbsoluteName());
+
+    // Mount common points
     vfs->UnmountAll();
+    vfs->MountAliasRoot();
     vfs->MountRoot();
-    vfs->MountExistingDirectoriesOrPackages(absolutePrefixPaths, paths);
-    vfs->MountExistingPackages(absolutePrefixPaths, packages);
 
-    // Add auto load folders. Prioritize these (if exist) before the default folders
-    for (const ea::string& autoLoadPath : autoLoadPaths)
+    if (!resourceRootEntries.empty() && enableResourceRootFile)
     {
-        if (IsAbsolutePath(autoLoadPath))
+        for (const ResourceRootEntry& entry : resourceRootEntries)
         {
-            vfs->AutomountDir(autoLoadPath);
-        }
-        else
-        {
-            for (const ea::string& prefixPath : absolutePrefixPaths)
+            if (!fileSystem->DirExists(entry.fullName_))
             {
-                vfs->AutomountDir(AddTrailingSlash(prefixPath) + autoLoadPath);
+                URHO3D_LOGERROR("Resource directory is not found: {}", entry.fullName_);
+                continue;
+            }
+
+            MountPoint* mountPoint = vfs->MountDir(entry.fullName_);
+            if (mountPoint)
+                vfs->MountAlias(Format("res:{}", entry.shortName_), mountPoint);
+        }
+    }
+    else
+    {
+        const ea::string& programDir = fileSystem->GetProgramDir();
+        StringVector absolutePrefixPaths = GetAbsolutePaths(prefixPaths, programDir, true);
+        if (!absolutePrefixPaths.contains(programDir))
+            absolutePrefixPaths.push_back(programDir);
+
+        vfs->MountExistingDirectoriesOrPackages(absolutePrefixPaths, paths);
+        vfs->MountExistingPackages(absolutePrefixPaths, packages);
+
+        // Add auto load folders. Prioritize these (if exist) before the default folders
+        for (const ea::string& autoLoadPath : autoLoadPaths)
+        {
+            if (IsAbsolutePath(autoLoadPath))
+                vfs->AutomountDir(autoLoadPath);
+            else
+            {
+                for (const ea::string& prefixPath : absolutePrefixPaths)
+                    vfs->AutomountDir(AddTrailingSlash(prefixPath) + autoLoadPath);
             }
         }
     }
@@ -1156,6 +1262,7 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_FULL_SCREEN, false).Overridable();
     engineParameters_->DefineVariable(EP_GPU_DEBUG, false);
     engineParameters_->DefineVariable(EP_HEADLESS, false);
+    engineParameters_->DefineVariable(EP_LOAD_FONTS, true);
     engineParameters_->DefineVariable(EP_LOG_LEVEL, LOG_TRACE).CommandLinePriority();
     engineParameters_->DefineVariable(EP_LOG_NAME, "conf://Urho3D.log").CommandLinePriority();
     engineParameters_->DefineVariable(EP_LOG_QUIET, false).CommandLinePriority();
@@ -1166,10 +1273,12 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_ORIENTATIONS, "LandscapeLeft LandscapeRight");
     engineParameters_->DefineVariable(EP_PACKAGE_CACHE_DIR, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_PLUGINS, EMPTY_STRING);
+    engineParameters_->DefineVariable(EP_RENAME_PLUGINS, false);
     engineParameters_->DefineVariable(EP_REFRESH_RATE, 0).Overridable();
     engineParameters_->DefineVariable(EP_RESOURCE_PACKAGES, EMPTY_STRING).CommandLinePriority();
-    engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "Data;Cache;CoreData").CommandLinePriority();
+    engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "CoreData;Cache;Data").CommandLinePriority();
     engineParameters_->DefineVariable(EP_RESOURCE_PREFIX_PATHS, EMPTY_STRING).CommandLinePriority();
+    engineParameters_->DefineVariable(EP_RESOURCE_ROOT_FILE, "ResourceRoot.ini");
     engineParameters_->DefineVariable(EP_SAVE_SHADER_CACHE, true);
     engineParameters_->DefineVariable(EP_SHADER_CACHE_DIR, "conf://ShaderCache");
     engineParameters_->DefineVariable(EP_SHADER_POLICY).SetOptional<int>();
@@ -1265,4 +1374,4 @@ ea::string Engine::GetLogFileName(const ea::string& uri) const
     return "";
 }
 
-}
+} // namespace Urho3D

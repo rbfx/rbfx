@@ -25,6 +25,24 @@ include(${CMAKE_CURRENT_LIST_DIR}/VSSolution.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CCache.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/UrhoOptions.cmake)
 
+if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../Urho3D_GeneratedConfig.cmake)
+    set (URHO3D_IS_SDK ON)
+    set (URHO3D_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../)
+    get_filename_component(URHO3D_SDK_PATH "${URHO3D_SDK_PATH}" REALPATH)
+else ()
+    set (URHO3D_IS_SDK OFF)
+endif ()
+
+if (URHO3D_IS_SDK)
+    set (URHO3D_THIRDPARTY_DIR ${URHO3D_SDK_PATH}/include/Urho3D/ThirdParty)
+    set (URHO3D_CMAKE_DIR ${URHO3D_SDK_PATH}/share/CMake)
+    set (URHO3D_CSHARP_PROPS_FILE ${URHO3D_CMAKE_DIR}/Directory.Build.props)
+else ()
+    set (URHO3D_THIRDPARTY_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty)
+    set (URHO3D_CMAKE_DIR ${rbfx_SOURCE_DIR}/CMake)
+    set (URHO3D_CSHARP_PROPS_FILE ${rbfx_SOURCE_DIR}/Directory.Build.props)
+endif ()
+
 set(PERMISSIONS_644 OWNER_WRITE OWNER_READ GROUP_READ WORLD_READ)
 set(PERMISSIONS_755 OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ)
 
@@ -48,6 +66,27 @@ if (DEFINED URHO3D_SDK)
     endif ()
 endif ()
 
+if (NOT DEFINED URHO3D_SDK)
+    set (PACKAGE_TOOL $<TARGET_FILE:PackageTool>)
+    set (SWIG_EXECUTABLE $<TARGET_FILE:swig>)
+endif ()
+
+# Xcode does not support per-config source files, therefore we must lock generated bindings to some config
+# and they wont switch when build config changes in Xcode.
+if (CMAKE_GENERATOR STREQUAL "Xcode")
+    if (CMAKE_BUILD_TYPE)
+        set (URHO3D_CSHARP_BIND_CONFIG "${CMAKE_BUILD_TYPE}")
+    else ()
+        set (URHO3D_CSHARP_BIND_CONFIG "Release")
+    endif ()
+elseif (GENERATOR_IS_MULTI_CONFIG)
+    set (URHO3D_CSHARP_BIND_CONFIG $<CONFIG>)
+elseif (CMAKE_BUILD_TYPE)
+    set (URHO3D_CSHARP_BIND_CONFIG ${CMAKE_BUILD_TYPE})
+else ()
+    set (URHO3D_CSHARP_BIND_CONFIG Release)
+endif ()
+
 if (EMSCRIPTEN)
     set (WEB ON)
     set (EMPACKAGER python ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py CACHE PATH "file_packager.py")
@@ -61,6 +100,122 @@ if (NOT MULTI_CONFIG_PROJECT AND NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Specifies the build type." FORCE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
 endif ()
+
+# Generate CMake.props which will be included in .csproj files. This function should be called after all targets are
+# added to the project, because it depends on target properties.
+function (rbfx_configure_cmake_props)
+    if (NOT URHO3D_CSHARP)
+        return ()
+    endif ()
+
+    if (NOT PROJECT_IS_TOP_LEVEL)
+        return ()
+    endif ()
+
+    cmake_parse_arguments(PROPS "" "OUT" "" ${ARGN})
+
+    if (NOT DEFINED PROPS_OUT)
+        set(PROPS_OUT "${CMAKE_BINARY_DIR}/CMake.props")
+    endif ()
+
+    file(WRITE "${PROPS_OUT}" "<Project>\n")
+    file(APPEND "${PROPS_OUT}" "  <PropertyGroup>\n")
+    file(APPEND "${PROPS_OUT}" "    <CMakePropsIncluded>true</CMakePropsIncluded>\n")
+
+    # Variables of interest
+    foreach (var
+        CMAKE_GENERATOR
+        CMAKE_RUNTIME_OUTPUT_DIRECTORY
+        CMAKE_CONFIGURATION_TYPES
+        URHO3D_CSHARP_PROPS_FILE
+        URHO3D_PLATFORM
+        URHO3D_IS_SDK
+        URHO3D_SDK_PATH
+        URHO3D_NETFX
+        URHO3D_NETFX_RUNTIME_IDENTIFIER
+        URHO3D_NETFX_RUNTIME)
+        file(APPEND "${PROPS_OUT}" "    <${var}>${${var}}</${var}>\n")
+    endforeach ()
+
+    # Binary/sourece dirs
+    get_cmake_property(vars VARIABLES)
+    list (SORT vars)
+    foreach (var ${vars})
+        if ("${var}" MATCHES "_(BINARY|SOURCE)_DIR$")
+            if (NOT "${${var}}" MATCHES "^.+/ThirdParty/.+$")
+                string(REPLACE "." "_" var_name "${var}")
+                set(var_value "${${var}}")
+                if (NOT "${var_value}" MATCHES "/$")
+                    set(var_value "${var_value}/")
+                endif ()
+                file(APPEND "${PROPS_OUT}" "    <${var_name}>${var_value}</${var_name}>\n")
+            endif ()
+        endif ()
+    endforeach()
+
+    # C# build config, translate CMake generator expression to MSBuild expression.
+    string(REPLACE "$<CONFIG>" "$(Configuration)" URHO3D_CSHARP_BIND_CONFIG_PROP "${URHO3D_CSHARP_BIND_CONFIG}")
+    file(APPEND "${PROPS_OUT}" "    <URHO3D_CSHARP_BIND_CONFIG>${URHO3D_CSHARP_BIND_CONFIG_PROP}</URHO3D_CSHARP_BIND_CONFIG>\n")
+
+    file(APPEND "${PROPS_OUT}" "  </PropertyGroup>\n")
+    file(APPEND "${PROPS_OUT}" "</Project>\n")
+endfunction ()
+
+if (URHO3D_CSHARP)
+    find_program(DOTNET dotnet)
+    if (NOT DOTNET)
+        message(FATAL_ERROR "dotnet executable was not found.")
+    endif ()
+
+    # Detect runtime version
+    execute_process(COMMAND ${DOTNET} --list-sdks OUTPUT_VARIABLE DOTNET_SDKS OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(REGEX REPLACE "\\.[0-9]+ [^\r\n]+" "" DOTNET_SDKS "${DOTNET_SDKS}")      # Trim patch version and SDK paths
+    string(REGEX REPLACE "\r?\n" ";" DOTNET_SDKS "${DOTNET_SDKS}")                  # Turn lines into a list
+    list(REVERSE DOTNET_SDKS)                                                       # Highest version goes first
+    if (URHO3D_NETFX_RUNTIME_VERSION)
+        string (REPLACE "." "\\." URHO3D_NETFX_RUNTIME_VERSION "${URHO3D_NETFX_RUNTIME_VERSION}")
+        string (REPLACE "*" "." URHO3D_NETFX_RUNTIME_VERSION "${URHO3D_NETFX_RUNTIME_VERSION}")
+        set (URHO3D_NETFX_RUNTIME_VERSION_REGEX "${URHO3D_NETFX_RUNTIME_VERSION}")
+        unset (URHO3D_NETFX_RUNTIME_VERSION)
+        foreach (VERSION ${DOTNET_SDKS})
+            if ("${VERSION}" MATCHES "${URHO3D_NETFX_RUNTIME_VERSION_REGEX}")
+                set (URHO3D_NETFX_RUNTIME_VERSION "${VERSION}")
+                break ()
+            endif ()
+        endforeach ()
+    endif ()
+    if (NOT URHO3D_NETFX_RUNTIME_VERSION)
+        list (GET DOTNET_SDKS 0 URHO3D_NETFX_RUNTIME_VERSION)
+    endif ()
+
+    # Trim extra elements that may be preset in version string. Eg. "6.0.100-preview.6.21355.2" is converted to "6.0".
+    string(REGEX REPLACE "([0-9]+)\\.([0-9]+)(.+)?" "\\1.\\2" URHO3D_NETFX_RUNTIME_VERSION "${URHO3D_NETFX_RUNTIME_VERSION}")
+    if (URHO3D_NETFX_RUNTIME_VERSION VERSION_LESS "5.0")
+        set (NETCORE core)
+    endif ()
+    set (URHO3D_NETFX_RUNTIME "net${NETCORE}${URHO3D_NETFX_RUNTIME_VERSION}")
+
+    if (WIN32)
+        set (URHO3D_NETFX_RUNTIME_IDENTIFIER win-${URHO3D_PLATFORM})
+    elseif (MACOS)
+        set (URHO3D_NETFX_RUNTIME_IDENTIFIER osx-${URHO3D_PLATFORM})
+    else ()
+        set (URHO3D_NETFX_RUNTIME_IDENTIFIER linux-${URHO3D_PLATFORM})
+    endif ()
+
+    set (DOTNET_FRAMEWORK_TYPES net6 net7)
+    set (DOTNET_FRAMEWORK_VERSIONS v6.0 v7.0)
+    list (FIND DOTNET_FRAMEWORK_TYPES ${URHO3D_NETFX} DOTNET_FRAMEWORK_INDEX)
+    if (DOTNET_FRAMEWORK_INDEX GREATER -1)
+        list (GET DOTNET_FRAMEWORK_VERSIONS ${DOTNET_FRAMEWORK_INDEX} CMAKE_DOTNET_TARGET_FRAMEWORK_VERSION)
+    endif ()
+    unset (DOTNET_FRAMEWORK_INDEX)
+
+    # For .csproj embedded into visual studio solution
+    if (NOT URHO3D_IS_SDK)
+        install (FILES ${rbfx_SOURCE_DIR}/Directory.Build.props DESTINATION ${DEST_SHARE_DIR}/CMake/)
+    endif ()
+endif()
 
 # Macro for setting symbolic link on platform that supports it
 function (create_symlink SOURCE DESTINATION)
@@ -172,34 +327,53 @@ function (csharp_bind_target)
         return ()
     endif ()
 
-    cmake_parse_arguments(BIND "" "TARGET;CSPROJ;SWIG;NAMESPACE;NATIVE" "INCLUDE_DIRS" ${ARGN})
+    cmake_parse_arguments(BIND "" "TARGET;CSPROJ;SWIG;NAMESPACE;NATIVE" "" ${ARGN})
 
-    get_target_property(BIND_SOURCE_DIR ${BIND_TARGET} SOURCE_DIR)
+    # General SWIG parameters
+    set(BIND_OUT_DIR  ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_${URHO3D_CSHARP_BIND_CONFIG})
+    set(BIND_OUT_FILE ${BIND_OUT_DIR}/${BIND_TARGET}CSHARP_wrap.cxx)
+    set(GENERATOR_OPTIONS
+        -csharp
+        -namespace "${BIND_NAMESPACE}"
+        -fastdispatch
+        -c++
+        -outdir "${BIND_OUT_DIR}"
+        -o "${BIND_OUT_FILE}"
+        #-debug-tmsearch
+    )
+
+    # Native library name matches target name by default
+    if (BIND_NATIVE)
+        list (APPEND GENERATOR_OPTIONS -dllimport "${BIND_NATIVE}")
+    else ()
+        if (IOS OR WEB)
+            list (APPEND GENERATOR_OPTIONS -dllimport __Internal)
+        else ()
+            list (APPEND GENERATOR_OPTIONS -dllimport "${BIND_TARGET}")
+        endif ()
+    endif ()
+
+    if (IOS)
+        list (APPEND GENERATOR_OPTIONS -D__IOS__)
+    endif ()
 
     # Parse bindings using same compile definitions as built target
     __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${BIND_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
     __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${BIND_TARGET} INTERFACE_COMPILE_DEFINITIONS)
-    __TARGET_GET_PROPERTIES_RECURSIVE(OPTIONS  ${BIND_TARGET} INTERFACE_COMPILE_OPTIONS)
+    if (TARGET "${BIND_NATIVE}")
+        __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${BIND_NATIVE} INTERFACE_INCLUDE_DIRECTORIES)
+        __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${BIND_NATIVE} INTERFACE_COMPILE_DEFINITIONS)
+    endif ()
     if (INCLUDES)
         list (REMOVE_DUPLICATES INCLUDES)
     endif ()
     if (DEFINES)
         list (REMOVE_DUPLICATES DEFINES)
     endif ()
-    if (OPTIONS)
-        list (REMOVE_DUPLICATES OPTIONS)
-    endif ()
     foreach(item ${INCLUDES})
-        if ("${item}" MATCHES "\\$<INSTALL_INTERFACE:.+")
-            continue()
-        endif ()
-        if ("${item}" MATCHES "\\$<BUILD_INTERFACE:.+")
-            string(LENGTH "${item}" len)
-            math(EXPR len "${len} - 19")
-            string(SUBSTRING "${item}" 18 ${len} item)
-        endif ()
         list(APPEND GENERATOR_OPTIONS -I${item})
     endforeach()
+    # Defines must have a value, otherwise SWIG gets confused
     foreach(item ${DEFINES})
         string(FIND "${item}" "=" EQUALITY_INDEX)
         if (EQUALITY_INDEX EQUAL -1)
@@ -208,59 +382,32 @@ function (csharp_bind_target)
         list(APPEND GENERATOR_OPTIONS "-D${item}")
     endforeach()
 
-    if (NOT BIND_NATIVE)
-        set (BIND_NATIVE ${BIND_TARGET})
-    endif ()
-
-    # Swig
-    if (IOS)
-        list (APPEND GENERATOR_OPTIONS -D__IOS__)
-    endif ()
-    set(CMAKE_SWIG_FLAGS
-        -namespace ${BIND_NAMESPACE}
-        -fastdispatch
-        -I${CMAKE_CURRENT_BINARY_DIR}
-        ${GENERATOR_OPTIONS}
-    )
-
-    foreach(item ${OPTIONS})
-        list(APPEND GENERATOR_OPTIONS ${item})
-    endforeach()
+    # Main .i file
+    list(APPEND GENERATOR_OPTIONS ${BIND_SWIG})
 
     # Finalize option list
     string(REGEX REPLACE "[^;]+\\$<COMPILE_LANGUAGE:[^;]+;" "" GENERATOR_OPTIONS "${GENERATOR_OPTIONS}")    # COMPILE_LANGUAGE creates ambiguity, remove.
     string(REPLACE ";" "\n" GENERATOR_OPTIONS "${GENERATOR_OPTIONS}")
     file(GENERATE OUTPUT "GeneratorOptions_${BIND_TARGET}_$<CONFIG>.txt" CONTENT "${GENERATOR_OPTIONS}" CONDITION $<COMPILE_LANGUAGE:CXX>)
 
-    set (SWIG_SYSTEM_INCLUDE_DIRS "${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES};${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES};${CMAKE_SYSTEM_INCLUDE_PATH};${CMAKE_EXTRA_GENERATOR_CXX_SYSTEM_INCLUDE_DIRS}")
-    if (BIND_INCLUDE_DIRS)
-        list (APPEND SWIG_SYSTEM_INCLUDE_DIRS ${BIND_INCLUDE_DIRS})
-    endif ()
-    string (REPLACE ";" ";-I" SWIG_SYSTEM_INCLUDE_DIRS "${SWIG_SYSTEM_INCLUDE_DIRS}")
+    # Swig generator command
+    add_custom_command(OUTPUT ${BIND_OUT_FILE}
+        COMMAND ${CMAKE_COMMAND} -E remove_directory ${BIND_OUT_DIR}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${BIND_OUT_DIR}
+        COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${URHO3D_THIRDPARTY_DIR}/swig/Lib" "${SWIG_EXECUTABLE}"
+        ARGS @"${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt"
+        MAIN_DEPENDENCY ${BIND_SWIG}
+        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "SWIG: Generating C# bindings for ${BIND_TARGET}")
 
-    set_source_files_properties(${BIND_SWIG} PROPERTIES
-        CPLUSPLUS ON
-        SWIG_FLAGS "-I${SWIG_SYSTEM_INCLUDE_DIRS}"
-    )
-    if (NOT DEFINED SWIG_MODULE_${BIND_TARGET}_DLLIMPORT)
-        if (IOS)
-            set (SWIG_MODULE_${BIND_TARGET}_DLLIMPORT __Internal)
-        else ()
-            set (SWIG_MODULE_${BIND_TARGET}_DLLIMPORT ${BIND_NATIVE})
-        endif ()
+    if (BIND_NATIVE)
+        # Bindings are part of another target
+        target_sources(${BIND_NATIVE} PRIVATE ${BIND_OUT_FILE})
+    else ()
+        # Bindings are part of target bindings are generated for
+        target_sources(${BIND_TARGET} PRIVATE ${BIND_OUT_FILE})
     endif ()
-    set (SWIG_MODULE_${BIND_TARGET}_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp)
-    set (SWIG_MODULE_${BIND_TARGET}_NO_LIBRARY ON)
-
-    # CMakeCache.txt does not exist when cache directory is configured for the first time and when user changes any
-    # cmake parameters. We exploit this to delete bindings upon configuration change and force their regeneration.
-    if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
-        file(REMOVE_RECURSE ${SWIG_MODULE_${BIND_TARGET}_OUTDIR})
-        file(MAKE_DIRECTORY ${SWIG_MODULE_${BIND_TARGET}_OUTDIR})
-    endif ()
-
-    swig_add_module(${BIND_TARGET} csharp ${BIND_SWIG})
-    unset (CMAKE_SWIG_FLAGS)
 
     if (MULTI_CONFIG_PROJECT)
         set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>)
@@ -320,6 +467,17 @@ function (web_executable TARGET)
         if (BUILD_SHARED_LIBS)
             target_link_libraries(${TARGET} PRIVATE -sMAIN_MODULE=1)
         endif ()
+        if (TARGET datachannel-wasm)
+            if (URHO3D_IS_SDK)
+                set (LIBDATACHANNEL_WASM_DIR "${URHO3D_SDK_PATH}/include/Urho3D/ThirdParty/libdatachannel-wasm")
+            else ()
+                set (LIBDATACHANNEL_WASM_DIR "${rbfx_SOURCE_DIR}/Source/ThirdParty/libdatachannel-wasm")
+            endif ()
+            target_link_options(${TARGET} PRIVATE
+                "SHELL:--js-library ${LIBDATACHANNEL_WASM_DIR}/wasm/js/webrtc.js"
+                "SHELL:--js-library ${LIBDATACHANNEL_WASM_DIR}/wasm/js/websocket.js"
+            )
+        endif ()
     endif ()
 endfunction ()
 
@@ -374,7 +532,7 @@ function (web_link_resources TARGET RESOURCES)
     add_dependencies(${TARGET} ${RESOURCES})
 endfunction ()
 
-function (define_static_plugin TARGET PLUGIN_NAME)
+function (setup_plugin_target TARGET PLUGIN_NAME)
     string (REPLACE "." "_" PLUGIN_NAME_SANITATED ${PLUGIN_NAME})
 
     set_target_properties (${TARGET} PROPERTIES OUTPUT_NAME ${PLUGIN_NAME})
@@ -385,26 +543,38 @@ function (define_static_plugin TARGET PLUGIN_NAME)
     )
 endfunction ()
 
-function (link_static_plugins TARGET PLUGIN_LIBRARIES)
-    if (BUILD_SHARED_LIBS)
-        return ()
-    endif ()
+function (add_plugin TARGET SOURCE_FILES)
+    add_library (${TARGET} ${SOURCE_FILES})
+    target_link_libraries (${TARGET} PUBLIC Urho3D)
+    setup_plugin_target (${TARGET} "${TARGET}")
+endfunction ()
 
+function (target_link_plugins TARGET PLUGIN_LIBRARIES)
     set (DECLARE_FUNCTIONS "")
     set (REGISTER_PLUGINS "")
     set (PLUGIN_LIST "")
+    set (STATIC_PLUGIN_LIBRARIRES "")
     foreach (PLUGIN_LIBRARY ${PLUGIN_LIBRARIES})
         get_target_property (PLUGIN_NAME ${PLUGIN_LIBRARY} OUTPUT_NAME)
-        string (REPLACE "." "_" PLUGIN_NAME_SANITATED ${PLUGIN_NAME})
-        string (APPEND DECLARE_FUNCTIONS "    void RegisterPlugin_${PLUGIN_NAME_SANITATED}();\n")
-        string (APPEND REGISTER_PLUGINS "    RegisterPlugin_${PLUGIN_NAME_SANITATED}();\n")
+        get_target_property (TARGET_TYPE ${PLUGIN_LIBRARY} TYPE)
+        if (TARGET_TYPE STREQUAL STATIC_LIBRARY)
+            string (REPLACE "." "_" PLUGIN_NAME_SANITATED ${PLUGIN_NAME})
+            string (APPEND DECLARE_FUNCTIONS "    void RegisterPlugin_${PLUGIN_NAME_SANITATED}();\n")
+            string (APPEND REGISTER_PLUGINS "    RegisterPlugin_${PLUGIN_NAME_SANITATED}();\n")
+            string (APPEND STATIC_PLUGIN_LIBRARIRES "${PLUGIN_LIBRARY};")
+        endif ()
         string (APPEND PLUGIN_LIST "${PLUGIN_NAME};")
     endforeach ()
 
-    configure_file (${rbfx_SOURCE_DIR}/Source/Urho3D/RegisterStaticPlugins.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/RegisterStaticPlugins.cpp @ONLY)
-    add_library (${TARGET}_StaticPlugins ${CMAKE_CURRENT_BINARY_DIR}/RegisterStaticPlugins.cpp)
-    target_link_libraries (${TARGET}_StaticPlugins PRIVATE Urho3D ${PLUGIN_LIBRARIES})
-    target_link_libraries (${TARGET} PRIVATE ${TARGET}_StaticPlugins)
+    if (URHO3D_IS_SDK)
+        set (TEMPLATE_DIR ${URHO3D_SDK_PATH}/include/Urho3D)
+    else ()
+        set (TEMPLATE_DIR ${rbfx_SOURCE_DIR}/Source/Urho3D)
+    endif ()
+
+    configure_file (${TEMPLATE_DIR}/LinkedPlugins.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/LinkedPlugins.cpp @ONLY)
+    target_sources (${TARGET} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/LinkedPlugins.cpp)
+    target_link_libraries (${TARGET} PRIVATE ${STATIC_PLUGIN_LIBRARIRES})
 endfunction()
 
 function (install_third_party_libs)

@@ -36,6 +36,8 @@ public:
 
     void SetTargetName(const ea::string& name) { targetName_ = name; OnTreeDirty(); }
     const ea::string& GetTargetName() const { return targetName_; }
+    void SetHeelTargetName(const ea::string& name) { heelTargetName_ = name; OnTreeDirty(); }
+    const ea::string& GetHeelTargetName() const { return heelTargetName_; }
     void SetBendTargetName(const ea::string& name) { bendTargetName_ = name; OnTreeDirty(); }
     const ea::string& GetBendTargetName() const { return bendTargetName_; }
     void SetGroundTargetName(const ea::string& name) { groundTargetName_ = name; OnTreeDirty(); }
@@ -45,18 +47,16 @@ public:
     float GetPositionWeight() const { return positionWeight_; }
     void SetRotationWeight(float weight) { rotationWeight_ = weight; }
     float GetRotationWeight() const { return rotationWeight_; }
+    void SetHeelWeight(float weight) { heelWeight_ = weight; }
+    float GetHeelWeight() const { return heelWeight_; }
     void SetBendWeight(float weight) { bendWeight_ = weight; }
     float GetBendWeight() const { return bendWeight_; }
-    void SetFootRotationWeight(float weight) { footRotationWeight_ = weight; }
-    float GetFootRotationWeight() const { return footRotationWeight_; }
     void SetMinAngle(float angle) { minKneeAngle_ = angle; }
     float GetMinAngle() const { return minKneeAngle_; }
     void SetMaxAngle(float angle) { maxKneeAngle_ = angle; }
     float GetMaxAngle() const { return maxKneeAngle_; }
-    void SetBaseTiptoe(const Vector2& value) { baseTiptoe_ = value; }
-    const Vector2& GetBaseTiptoe() const { return baseTiptoe_; }
-    void SetGroundTiptoeTweaks(const Vector4& value) { groundTiptoeTweaks_ = value; }
-    const Vector4& GetGroundTiptoeTweaks() const { return groundTiptoeTweaks_; }
+    void SetTiptoeFactor(float factor) { tiptoeFactor_ = factor; }
+    float GetTiptoeFactor() const { return tiptoeFactor_; }
     void SetBendDirection(const Vector3& direction) { bendDirection_ = direction; }
     const Vector3& GetBendDirection() const { return bendDirection_; }
 
@@ -92,8 +92,6 @@ private:
         const Vector3& toeTargetPosition, const Vector3& originalDirection, const Vector3& currentDirection) const;
     Vector2 CalculateLegOffset(
         const Transform& frameOfReference, const Vector3& toeTargetPosition, const Vector3& bendDirection);
-    float CalculateTiptoeFactor(const Vector3& toeTargetPosition) const;
-    Quaternion CalculateFootRotation(const Transform& frameOfReference, const Vector3& toeTargetPosition) const;
 
     Vector3 CalculateToeToHeel(const Transform& frameOfReference, float tiptoeFactor, const Vector3& toeTargetPosition,
         const Vector3& originalDirection, const Vector3& currentDirection, const Quaternion& footRotation) const;
@@ -107,17 +105,17 @@ private:
     ea::string toeBoneName_;
 
     ea::string targetName_;
+    ea::string heelTargetName_;
     ea::string bendTargetName_;
     ea::string groundTargetName_;
 
     float positionWeight_{1.0f};
     float rotationWeight_{0.0f};
+    float heelWeight_{1.0f};
     float bendWeight_{1.0f};
-    float footRotationWeight_{0.0f};
     float minKneeAngle_{0.0f};
     float maxKneeAngle_{180.0f};
-    Vector2 baseTiptoe_{0.5f, 0.0f};
-    Vector4 groundTiptoeTweaks_{0.2f, 0.2f, 0.2f, 0.2f};
+    float tiptoeFactor_{0.0f};
     Vector3 bendDirection_{Vector3::FORWARD};
 
     float heelGroundOffset_{-1.0f};
@@ -128,6 +126,7 @@ private:
     IKTrigonometricChain legChain_;
     IKNodeSegment footSegment_;
     WeakPtr<Node> target_;
+    WeakPtr<Node> heelTarget_;
     WeakPtr<Node> bendTarget_;
     WeakPtr<Node> groundTarget_;
     /// @}
@@ -136,7 +135,6 @@ private:
     {
         Vector3 toeToHeel_;
         float defaultThighToToeDistance_{};
-        float tiptoeTweakOffset_{};
 
         Vector3 bendDirection_;
         Vector3 targetDirection_;
@@ -148,7 +146,6 @@ private:
     } local_;
 
     Vector3 latestTargetPosition_;
-    float latestTiptoeFactor_{};
 };
 
 } // namespace Urho3D

@@ -202,6 +202,7 @@ public:
     void PauseSimulation();
     void ToggleSimulationPaused();
     void RewindSimulation();
+    void CompactObjectIds();
 
     void CutSelection(SceneSelection& selection);
     void CopySelection(SceneSelection& selection);

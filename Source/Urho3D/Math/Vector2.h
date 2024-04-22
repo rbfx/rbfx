@@ -327,8 +327,14 @@ public:
     /// Project vector onto axis.
     float ProjectOntoAxis(const Vector2& axis) const { return DotProduct(axis.Normalized()); }
 
+    /// Return scalar cross product of 2D vectors.
+    float ScalarCrossProduct(const Vector2& rhs) const { return y_ * rhs.x_ - x_ * rhs.y_; }
+
     /// Returns the angle between this vector and another vector in degrees.
     float Angle(const Vector2& rhs) const { return Urho3D::Acos(DotProduct(rhs) / (Length() * rhs.Length())); }
+
+    /// Returns signed angle between this vector and another vector in degrees. Clockwise direction is positive.
+    float SignedAngle(const Vector2& rhs) const { return Angle(rhs) * (ScalarCrossProduct(rhs) >= 0 ? 1 : -1); }
 
     /// Return absolute vector.
     Vector2 Abs() const { return Vector2(Urho3D::Abs(x_), Urho3D::Abs(y_)); }

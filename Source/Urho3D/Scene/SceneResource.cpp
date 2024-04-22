@@ -73,7 +73,7 @@ bool SceneResource::Save(Serializer& dest, InternalResourceFormat format, bool a
             JSONOutputArchive archive{context_, jsonFile.GetRoot(), &jsonFile};
             {
                 ArchiveBlock block = archive.OpenUnorderedBlock(GetXmlRootName());
-                scene_->SerializeInBlock(archive, false, PrefabSaveFlag::EnumsAsStrings);
+                scene_->SerializeInBlock(archive, false, PrefabSaveFlag::EnumsAsStrings, PrefabLoadFlag::None);
             }
             return jsonFile.Save(dest);
         }
@@ -83,7 +83,7 @@ bool SceneResource::Save(Serializer& dest, InternalResourceFormat format, bool a
             XMLOutputArchive archive{context_, xmlFile.GetOrCreateRoot(GetXmlRootName()), &xmlFile};
             {
                 ArchiveBlock block = archive.OpenUnorderedBlock(GetXmlRootName());
-                scene_->SerializeInBlock(archive, false, PrefabSaveFlag::EnumsAsStrings);
+                scene_->SerializeInBlock(archive, false, PrefabSaveFlag::EnumsAsStrings, PrefabLoadFlag::None);
             }
             return xmlFile.Save(dest);
         }
@@ -94,7 +94,7 @@ bool SceneResource::Save(Serializer& dest, InternalResourceFormat format, bool a
             BinaryOutputArchive archive{context_, dest};
             {
                 ArchiveBlock block = archive.OpenUnorderedBlock(GetXmlRootName());
-                scene_->SerializeInBlock(archive, false, PrefabSaveFlag::CompactAttributeNames);
+                scene_->SerializeInBlock(archive, false, PrefabSaveFlag::CompactAttributeNames, PrefabLoadFlag::None);
             }
             return true;
         }
@@ -181,7 +181,7 @@ bool SceneResource::EndLoad()
             {
                 JSONInputArchive archive{context_, loadJsonFile_->GetRoot(), loadJsonFile_};
                 ArchiveBlock block = archive.OpenUnorderedBlock(GetXmlRootName());
-                scene_->SerializeInBlock(archive, false, PrefabSaveFlag::None);
+                scene_->SerializeInBlock(archive, false, PrefabSaveFlag::None, PrefabLoadFlag::None);
                 break;
             }
             case InternalResourceFormat::Xml:
@@ -191,7 +191,7 @@ bool SceneResource::EndLoad()
                 {
                     XMLInputArchive archive{context_, xmlRoot, loadXmlFile_};
                     ArchiveBlock block = archive.OpenUnorderedBlock(GetXmlRootName());
-                    scene_->SerializeInBlock(archive, false, PrefabSaveFlag::None);
+                    scene_->SerializeInBlock(archive, false, PrefabSaveFlag::None, PrefabLoadFlag::None);
                 }
                 else
                 {
@@ -207,7 +207,7 @@ bool SceneResource::EndLoad()
 
                 BinaryInputArchive archive{GetContext(), readBuffer};
                 ArchiveBlock block = archive.OpenUnorderedBlock(GetXmlRootName());
-                scene_->SerializeInBlock(archive, false, PrefabSaveFlag::None);
+                scene_->SerializeInBlock(archive, false, PrefabSaveFlag::None, PrefabLoadFlag::None);
 
                 break;
             }

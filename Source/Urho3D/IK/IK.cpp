@@ -19,6 +19,7 @@ void RegisterIKLibrary(Context* context)
     IKSolverComponent::RegisterObject(context);
 
     IKIdentitySolver::RegisterObject(context);
+    IKRotateTo::RegisterObject(context);
     IKLegSolver::RegisterObject(context);
     IKLimbSolver::RegisterObject(context);
     IKSpineSolver::RegisterObject(context);

@@ -7,7 +7,7 @@
   private bool swigCMemOwn;
   [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
   private static global::Urho3DNet.InstanceCache<$csclassname> _instanceCache = new global::Urho3DNet.InstanceCache<$csclassname>();
-  internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
+  public static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
   {
     if (cPtr == global::System.IntPtr.Zero)
       return null;
@@ -21,13 +21,13 @@
     });
   }
 
-  internal $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) {
+  public $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) {
     swigCMemOwn = cMemoryOwn;
     swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);
     _instanceCache.AddNew(swigCPtr);
   }
 
-  internal static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
+  public static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
     return (obj == null) ? new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero) : obj.swigCPtr;
   }
 %}
@@ -40,7 +40,7 @@
   private bool swigCMemOwn;
   [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
   private static global::Urho3DNet.InstanceCache<$csclassname> _instanceCache = new global::Urho3DNet.InstanceCache<$csclassname>();
-  internal new static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
+  public new static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
   {
     if (cPtr == global::System.IntPtr.Zero)
       return null;
@@ -54,13 +54,13 @@
     });
   }
 
-  internal $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) : base($imclassname.$csclazznameSWIGUpcast(cPtr), false) {
+  public $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) : base($imclassname.$csclazznameSWIGUpcast(cPtr), false) {
     swigCMemOwn = cMemoryOwn;
     swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);$directorsetup
     _instanceCache.AddNew(swigCPtr);
   }
 
-  internal static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
+  public static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
     return (obj == null) ? new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero) : obj.swigCPtr;
   }
 %}
@@ -68,7 +68,7 @@
 %typemap(csdisposing, methodname="Dispose", methodmodifiers="protected", parameters="bool disposing") SWIGTYPE {
     lock(this) {
       if (swigCPtr.Handle != global::System.IntPtr.Zero) {
-        _instanceCache.Remove(swigCPtr);
+        _instanceCache.Remove(swigCPtr.Handle);
         if (swigCMemOwn) {
           swigCMemOwn = false;
           $imcall;
@@ -81,7 +81,7 @@
 %typemap(csdisposing_derived, methodname="Dispose", methodmodifiers="protected", parameters="bool disposing") SWIGTYPE {
     lock(this) {
       if (swigCPtr.Handle != global::System.IntPtr.Zero) {
-        _instanceCache.Remove(swigCPtr);
+        _instanceCache.Remove(swigCPtr.Handle);
         if (swigCMemOwn) {
           swigCMemOwn = false;
           $imcall;
@@ -158,14 +158,14 @@
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
   [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
   private static global::Urho3DNet.InstanceCache<$csclassname> _instanceCache = new global::Urho3DNet.InstanceCache<$csclassname>();
-  internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
+  public static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
   {
     if (cPtr == global::System.IntPtr.Zero)
       return null;
     return _instanceCache.GetOrAdd(cPtr, () => new $csclassname(cPtr, cMemoryOwn));
   }
 
-  internal $csclassname(global::System.IntPtr cPtr, bool futureUse) {
+  public $csclassname(global::System.IntPtr cPtr, bool futureUse) {
     swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);
     _instanceCache.AddNew(swigCPtr);
   }
@@ -174,7 +174,7 @@
     swigCPtr = new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero);
   }
 
-  internal static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
+  public static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
     return (obj == null) ? new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero) : obj.swigCPtr;
   }
 %}

@@ -1,24 +1,7 @@
-//
 // Copyright (c) 2022-2022 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2023-2023 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #include "Urho3D/Precompiled.h"
 
@@ -45,19 +28,40 @@ VirtualFileSystem::VirtualFileSystem(Context* context)
 
 VirtualFileSystem::~VirtualFileSystem() = default;
 
-void VirtualFileSystem::MountRoot()
+MountPoint* VirtualFileSystem::MountAliasRoot()
 {
-    Mount(MakeShared<MountedRoot>(context_));
+    MutexLock lock(mountMutex_);
+    return GetOrCreateAliasRoot();
 }
 
-void VirtualFileSystem::MountDir(const ea::string& path)
+MountedAliasRoot* VirtualFileSystem::GetOrCreateAliasRoot()
 {
-    MountDir(EMPTY_STRING, path);
+    if (!aliasMountPoint_)
+    {
+        aliasMountPoint_ = MakeShared<MountedAliasRoot>(context_);
+        mountPoints_.push_back(aliasMountPoint_);
+    }
+
+    return aliasMountPoint_;
 }
 
-void VirtualFileSystem::MountDir(const ea::string& scheme, const ea::string& path)
+MountPoint* VirtualFileSystem::MountRoot()
 {
-    Mount(MakeShared<MountedDirectory>(context_, path, scheme));
+    const auto mountPoint = MakeShared<MountedRoot>(context_);
+    Mount(mountPoint);
+    return mountPoint;
+}
+
+MountPoint* VirtualFileSystem::MountDir(const ea::string& path)
+{
+    return MountDir(EMPTY_STRING, path);
+}
+
+MountPoint* VirtualFileSystem::MountDir(const ea::string& scheme, const ea::string& path)
+{
+    const auto mountPoint = MakeShared<MountedDirectory>(context_, path, scheme);
+    Mount(mountPoint);
+    return mountPoint;
 }
 
 void VirtualFileSystem::AutomountDir(const ea::string& path)
@@ -96,11 +100,16 @@ void VirtualFileSystem::AutomountDir(const ea::string& scheme, const ea::string&
     }
 }
 
-void VirtualFileSystem::MountPackageFile(const ea::string& path)
+MountPoint* VirtualFileSystem::MountPackageFile(const ea::string& path)
 {
     const auto packageFile = MakeShared<PackageFile>(context_);
     if (packageFile->Open(path, 0u))
+    {
         Mount(packageFile);
+        return packageFile;
+    }
+
+    return nullptr;
 }
 
 void VirtualFileSystem::Mount(MountPoint* mountPoint)
@@ -115,6 +124,20 @@ void VirtualFileSystem::Mount(MountPoint* mountPoint)
     mountPoints_.push_back(pointPtr);
 
     mountPoint->SetWatching(isWatching_);
+
+    if (auto mountedAliasRoot = dynamic_cast<MountedAliasRoot*>(mountPoint))
+    {
+        if (aliasMountPoint_)
+            URHO3D_LOGWARNING("Mounted alias root when one already exists, overwriting.");
+        aliasMountPoint_ = mountedAliasRoot;
+    }
+}
+
+void VirtualFileSystem::MountAlias(const ea::string& alias, MountPoint* mountPoint, const ea::string& scheme)
+{
+    MutexLock lock(mountMutex_);
+
+    GetOrCreateAliasRoot()->AddAlias(alias, scheme, mountPoint);
 }
 
 void VirtualFileSystem::MountExistingPackages(
@@ -128,7 +151,11 @@ void VirtualFileSystem::MountExistingPackages(
         {
             const ea::string packagePath = prefixPath + relativePath;
             if (fileSystem->FileExists(packagePath))
-                MountPackageFile(packagePath);
+            {
+                MountPoint* mountPoint = MountPackageFile(packagePath);
+                if (mountPoint)
+                    MountAlias(Format("res:{}", relativePath), mountPoint);
+            }
         }
     }
 }
@@ -145,9 +172,17 @@ void VirtualFileSystem::MountExistingDirectoriesOrPackages(
             const ea::string packagePath = prefixPath + relativePath + ".pak";
             const ea::string directoryPath = prefixPath + relativePath;
             if (fileSystem->FileExists(packagePath))
-                MountPackageFile(packagePath);
+            {
+                MountPoint* mountPoint = MountPackageFile(packagePath);
+                if (mountPoint)
+                    MountAlias(Format("res:{}", relativePath), mountPoint);
+            }
             else if (fileSystem->DirExists(directoryPath))
-                MountDir(directoryPath);
+            {
+                MountPoint* mountPoint = MountDir(directoryPath);
+                if (mountPoint)
+                    MountAlias(Format("res:{}", relativePath), mountPoint);
+            }
         }
     }
 }
@@ -155,6 +190,9 @@ void VirtualFileSystem::MountExistingDirectoriesOrPackages(
 void VirtualFileSystem::Unmount(MountPoint* mountPoint)
 {
     MutexLock lock(mountMutex_);
+
+    if (aliasMountPoint_)
+        aliasMountPoint_->RemoveAliases(mountPoint);
 
     const SharedPtr<MountPoint> pointPtr{mountPoint};
     const auto i = mountPoints_.find(pointPtr);
@@ -170,6 +208,7 @@ void VirtualFileSystem::UnmountAll()
     MutexLock lock(mountMutex_);
 
     mountPoints_.clear();
+    aliasMountPoint_ = nullptr;
 }
 
 MountPoint* VirtualFileSystem::GetMountPoint(unsigned index) const

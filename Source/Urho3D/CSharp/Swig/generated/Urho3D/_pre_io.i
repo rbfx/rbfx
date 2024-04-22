@@ -44,6 +44,7 @@ using ScanFlags = Urho3D::ScanFlag;
 %csattribute(Urho3D::MemoryBuffer, %arg(unsigned char *), Data, GetData);
 %csattribute(Urho3D::MemoryBuffer, %arg(bool), IsReadOnly, IsReadOnly);
 %csattribute(Urho3D::WatchableMountPoint, %arg(bool), IsWatching, IsWatching, SetWatching);
+%csattribute(Urho3D::MountedAliasRoot, %arg(ea::string), Name, GetName);
 %csattribute(Urho3D::MountedDirectory, %arg(ea::string), Name, GetName);
 %csattribute(Urho3D::MountedDirectory, %arg(ea::string), Directory, GetDirectory);
 %csattribute(Urho3D::MountedExternalMemory, %arg(ea::string), Name, GetName);

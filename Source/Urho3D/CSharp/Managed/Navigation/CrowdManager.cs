@@ -27,14 +27,14 @@ namespace Urho3DNet
 {
     public partial class CrowdManager
     {
-        public delegate void CrowdAgentVelocityShaderDelegate(CrowdAgent agent, float timeStep, ref Vector3 desiredVelocity, ref float desiredSpeed);
-        private delegate void CrowdAgentVelocityShaderFnDelegate(IntPtr agent, float timeStep, IntPtr desiredVelocity, IntPtr desiredSpeed);
-        [DllImport(global::Urho3DNet.Urho3DPINVOKE.DllImportModule, EntryPoint = "Urho3D_CrowdManager_SetVelocityShader")]
-        private static extern void Urho3D_CrowdManager_SetVelocityShader(HandleRef crowdManager, IntPtr callback, IntPtr callbackHandle);
+        public delegate void CrowdAgentVelocityCallbackDelegate(CrowdAgent agent, float timeStep, ref Vector3 desiredVelocity, ref float desiredSpeed);
+        private delegate void CrowdAgentVelocityCallbackFnDelegate(IntPtr agent, float timeStep, IntPtr desiredVelocity, IntPtr desiredSpeed);
+        [DllImport(global::Urho3DNet.Urho3DPINVOKE.DllImportModule, EntryPoint = "Urho3D_CrowdManager_SetVelocityCallback")]
+        private static extern void Urho3D_CrowdManager_SetVelocityCallback(HandleRef crowdManager, IntPtr callback, IntPtr callbackHandle);
 
-        public void SetVelocityShader(CrowdAgentVelocityShaderDelegate shader)
+        public void SetVelocityCallback(CrowdAgentVelocityCallbackDelegate shader)
         {
-            var eventCallback = new CrowdAgentVelocityShaderFnDelegate((agent, timeStep, desiredVelocity, desiredSpeed) =>
+            var eventCallback = new CrowdAgentVelocityCallbackFnDelegate((agent, timeStep, desiredVelocity, desiredSpeed) =>
             {
                 unsafe
                 {
@@ -45,7 +45,7 @@ namespace Urho3DNet
             });
             IntPtr handle = GCHandle.ToIntPtr(GCHandle.Alloc(eventCallback));
             IntPtr callback = Marshal.GetFunctionPointerForDelegate(eventCallback);
-            Urho3D_CrowdManager_SetVelocityShader(swigCPtr, callback, handle);
+            Urho3D_CrowdManager_SetVelocityCallback(swigCPtr, callback, handle);
         }
     }
 }

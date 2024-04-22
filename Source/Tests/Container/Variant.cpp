@@ -40,6 +40,23 @@ struct TestLargeObject
 
 } // namespace
 
+TEST_CASE("Variant string is convertable to into integer")
+{
+    Variant value;
+
+    value = ea::move(Variant{"-42"}.Convert(VAR_INT));
+    REQUIRE(value.GetType() == VAR_INT);
+    REQUIRE(value.GetInt() == -42);
+
+    value = ea::move(Variant{"-4294967300"}.Convert(VAR_INT64));
+    REQUIRE(value.GetType() == VAR_INT64);
+    REQUIRE(value.GetInt64() == -4294967300);
+
+    value = ea::move(Variant{"Model;MyModel.mdl"}.Convert(VAR_RESOURCEREF));
+    REQUIRE(value.GetType() == VAR_RESOURCEREF);
+    REQUIRE(value.GetResourceRef() == ResourceRef{"Model", "MyModel.mdl"});
+}
+
 TEST_CASE("Variant is move-assigned")
 {
     for (Variant value : {Variant{}, Variant{"12345678901234567890"}, Variant{VariantVector{Variant{10}}}})

@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../../Foundation/InspectorTab.h"
-#include "Project/ModifyResourceAction.h"
+#include "Editor/Project/ModifyResourceAction.h"
 
 #include <Urho3D/SystemUI/ResourceInspectorWidget.h>
 

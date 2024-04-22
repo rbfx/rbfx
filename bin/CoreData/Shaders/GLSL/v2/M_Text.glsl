@@ -77,7 +77,7 @@ void main()
         finalColor.rgb = mix(cShadowColor.rgb, finalColor.rgb, shadowWeight);
     #endif
 
-    finalColor.a = mainWeight;
+    finalColor.a *= mainWeight;
 #else
     #ifdef ALPHAMAP
         finalColor.a *= texture(sAlbedo, vTexCoord).r;

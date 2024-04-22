@@ -115,13 +115,6 @@ void HelloRmlUI::InitWindow()
 {
     auto* ui = context_->GetSubsystem<RmlUI>();
 
-    // Initialize fonts in backbuffer UI.
-    // This code is moved to SamplesManager
-    // ui->LoadFont("Fonts/NotoSans-Condensed.ttf", false);
-    // ui->LoadFont("Fonts/NotoSans-CondensedBold.ttf", false);
-    // ui->LoadFont("Fonts/NotoSans-CondensedBoldItalic.ttf", false);
-    // ui->LoadFont("Fonts/NotoSans-CondensedItalic.ttf", false);
-
     // Create a window rendered into backbuffer.
     window_ = scene_->CreateComponent<SimpleWindow>();
 
@@ -138,10 +131,6 @@ void HelloRmlUI::InitWindow()
 
     // Create a component that sets up UI rendering.
     auto* renderer = boxNode->CreateComponent<RmlCanvasComponent>();
-    renderer->GetUI()->LoadFont("Fonts/NotoSans-Condensed.ttf", false);
-    renderer->GetUI()->LoadFont("Fonts/NotoSans-CondensedBold.ttf", false);
-    renderer->GetUI()->LoadFont("Fonts/NotoSans-CondensedBoldItalic.ttf", false);
-    renderer->GetUI()->LoadFont("Fonts/NotoSans-CondensedItalic.ttf", false);
     renderer->SetTexture(texture_);
     renderer->SetUISize({512, 512});
     renderer->SetRemapMousePos(true);

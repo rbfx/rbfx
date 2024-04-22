@@ -59,8 +59,12 @@ struct URHO3D_API AnimationTrack : public KeyFrameSet<AnimationKeyFrame>
     StringHash nameHash_;
     /// Bitmask of included data (position, rotation, scale).
     AnimationChannelFlags channelMask_{};
-    /// Weight of the track.
-    float weight_{1.0f};
+    /// Weight of the position channel.
+    float positionWeight_{1.0f};
+    /// Weight of the rotation channel.
+    float rotationWeight_{1.0f};
+    /// Weight of the scale channel.
+    float scaleWeight_{1.0f};
 
     /// Sample value at given time.
     void Sample(float time, float duration, bool isLooped, unsigned& frameIndex, Transform& transform) const;

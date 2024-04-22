@@ -74,7 +74,11 @@ public:
 
             tabToFocusAfter_ = sceneViewTab_;
             sceneViewTab_->SetupPluginContext();
-            project_->Save();
+
+            // Save modified resources so the game can load them
+            const bool forceSaveResources = false;
+            project_->SaveResourcesOnly(forceSaveResources);
+
             gameViewTab_->Focus();
 
             if (config)

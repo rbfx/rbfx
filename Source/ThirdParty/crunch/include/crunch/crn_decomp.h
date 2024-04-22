@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <cstdint>
 #ifdef WIN32
 #include <memory.h>
 #elif __APPLE__

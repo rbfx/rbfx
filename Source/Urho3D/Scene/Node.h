@@ -46,6 +46,7 @@ class Scene;
 class NodePrefab;
 class SceneResolver;
 class SerializablePrefab;
+class PrefabResource;
 
 enum SceneLookupFlag
 {
@@ -119,6 +120,10 @@ public:
     void SaveInternal(PrefabWriter& writer) const;
     /// Write to prefab. Return true on success. Discard PrefabWriter after calling this.
     bool Save(PrefabWriter& writer) const;
+
+    /// Instantiate scene content from prefab. Return root node if successful.
+    Node* InstantiatePrefab(const PrefabResource* prefabResource, const Vector3& position = Vector3::ZERO,
+        const Quaternion& rotation = Quaternion::IDENTITY);
 
     /// Instantiate scene content from prefab. Return root node if successful.
     Node* InstantiatePrefab(const NodePrefab& prefab, const Vector3& position = Vector3::ZERO,
@@ -712,6 +717,20 @@ public:
     /// Return true if component is found or is already initialized.
     /// This function is optimized for the case when the component is expected to be found.
     template <class T> bool GetNthComponentLazy(WeakPtr<T>& childComponent, unsigned index = 0) const;
+
+    /// Traverse all components and child nodes recursively depth-first.
+    /// Return `false` from `nodeCallback` to prevent traversal of the node.
+    template <class T, class U> void TraverseDepthFirst(const T& nodeCallback, const U& componentCallback)
+    {
+        for (const auto& component : components_)
+            componentCallback(component);
+
+        for (const auto& child : children_)
+        {
+            if (nodeCallback(child))
+                child->TraverseDepthFirst(nodeCallback, componentCallback);
+        }
+    }
 
     /// Set ID. Called by Scene.
     /// @property{set_id}

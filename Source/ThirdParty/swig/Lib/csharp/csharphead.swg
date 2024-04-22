@@ -403,7 +403,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_CSharpString
 
 // rbfx
 %pragma(csharp) imclasscode=%{
-    internal class OverrideNativeAttribute : global::System.Attribute
+    public class OverrideNativeAttribute : global::System.Attribute
     {
     }
 
