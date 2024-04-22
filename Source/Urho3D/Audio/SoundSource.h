@@ -88,8 +88,8 @@ public:
     void SetAutoRemoveMode(AutoRemoveMode mode);
     /// Set new playback position.
     void SetPlayPosition(signed char* pos);
-    /// Set flag to allow sound source keep playing even if scene is paused.
-    void SetIgnoreScenePause(bool ignoreScenePause);
+    /// Enable or disable ignore scene time scale mode.
+    void SetIgnoreSceneTimeScale(bool ignoreSceneTimeScale);
 
     /// Return sound.
     /// @property
@@ -134,8 +134,8 @@ public:
     /// @property
     AutoRemoveMode GetAutoRemoveMode() const { return autoRemove_; }
 
-    /// Get "ignore scene pause" flag state.
-    bool GetIgnoreScenePause() const { return ignoreSceneTimeScale_; }
+    /// Return true if sound source ignores scene time scale.
+    bool GetIgnoreSceneTimeScale() const { return ignoreSceneTimeScale_; }
 
     /// Return whether is playing.
     /// @property

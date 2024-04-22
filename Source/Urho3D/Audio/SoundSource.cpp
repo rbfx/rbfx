@@ -322,6 +322,11 @@ void SoundSource::SetPlayPosition(signed char* pos)
     SetPlayPositionLockless(pos);
 }
 
+void SoundSource::SetIgnoreSceneTimeScale(bool ignoreSceneTimeScale)
+{
+    ignoreSceneTimeScale_ = ignoreSceneTimeScale;
+}
+
 void SoundSource::Update(float timeStep)
 {
     if (!audio_)
