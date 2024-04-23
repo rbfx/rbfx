@@ -99,50 +99,72 @@ void SoundEffects::CreateUI()
     // Set style to the UI root so that elements will inherit it
     root->SetDefaultStyle(uiStyle);
 
+    int y = 20;
+
     // Create buttons for playing back sounds
     for (unsigned i = 0; i < NUM_SOUNDS; ++i)
     {
-        Button* button = CreateButton(i * 140 + 20, 20, 120, 40, soundNames[i]);
+        Button* button = CreateButton(i * 140 + 20, y, 120, 40, soundNames[i]);
         // Store the sound effect resource name as a custom variable into the button
         button->SetVar(VAR_SOUNDRESOURCE, soundResourceNames[i]);
         SubscribeToEvent(button, E_PRESSED, URHO3D_HANDLER(SoundEffects, HandlePlaySound));
     }
 
+    y += 60;
     // Create buttons for playing/stopping music
-    Button* button = CreateButton(20, 80, 120, 40, "Play Music");
-    SubscribeToEvent(button, E_RELEASED, URHO3D_HANDLER(SoundEffects, HandlePlayMusic));
+    Button* button = CreateButton(20, y, 120, 40, "Play Music");
+    SubscribeToEvent(button, E_RELEASED, &SoundEffects::HandlePlayMusic);
 
-    button = CreateButton(160, 80, 120, 40, "Stop Music");
-    SubscribeToEvent(button, E_RELEASED, URHO3D_HANDLER(SoundEffects, HandleStopMusic));
+    button = CreateButton(160, y, 120, 40, "Stop Music");
+    SubscribeToEvent(button, E_RELEASED, &SoundEffects::HandleStopMusic);
+
+    y += 60;
+    // Create buttons and slider for scene time control
+    button = CreateButton(20, y, 120, 40, "Pause Scene");
+    SubscribeToEvent(button, E_RELEASED, &SoundEffects::HandlePauseScene);
+
+    button = CreateButton(160, y, 120, 40, "Resume Scene");
+    SubscribeToEvent(button, E_RELEASED, &SoundEffects::HandleResumeScene);
+
+    Slider* slider = CreateSlider(300, y, 200, 20, "Scene Time Scale");
+    slider->SetValue(scene_->GetTimeScale());
+    slider->SetRange(2.0f);
+    SubscribeToEvent(slider, E_SLIDERCHANGED, &SoundEffects::HandleSceneTimeScale);
 
     auto* audio = GetSubsystem<Audio>();
 
+    y += 60;
     // Create sliders for controlling sound and music master volume
-    Slider* slider = CreateSlider(20, 140, 200, 20, "Sound Volume");
+    slider = CreateSlider(20, y, 200, 20, "Sound Volume");
     slider->SetValue(audio->GetMasterGain(SOUND_EFFECT));
     SubscribeToEvent(slider, E_SLIDERCHANGED, URHO3D_HANDLER(SoundEffects, HandleSoundVolume));
 
-    slider = CreateSlider(20, 200, 200, 20, "Music Volume");
+    y += 60;
+    slider = CreateSlider(20, y, 200, 20, "Music Volume");
     slider->SetValue(audio->GetMasterGain(SOUND_MUSIC));
     SubscribeToEvent(slider, E_SLIDERCHANGED, URHO3D_HANDLER(SoundEffects, HandleMusicVolume));
 
-    slider = CreateSlider(20, 260, 200, 20, "Sound Panning");
+    y += 60;
+    slider = CreateSlider(20, y, 200, 20, "Sound Panning");
     slider->SetValue(0.5f);
     SubscribeToEvent(slider, E_SLIDERCHANGED, URHO3D_HANDLER(SoundEffects, HandleSoundPan));
 
-    slider = CreateSlider(20, 320, 200, 20, "Sound Reach");
+    y += 60;
+    slider = CreateSlider(20, y, 200, 20, "Sound Reach");
     slider->SetValue(0.5f);
     SubscribeToEvent(slider, E_SLIDERCHANGED, URHO3D_HANDLER(SoundEffects, HandleSoundReach));
 
-    auto checkbox = CreateCheckbox(20, 380, "Output to LFE");
+    y += 60;
+    auto checkbox = CreateCheckbox(20, y, "Output to LFE");
     checkbox->SetChecked(false);
     SubscribeToEvent(checkbox, E_TOGGLED, URHO3D_HANDLER(SoundEffects, HandleLFE));
 
+    y += 60;
     auto font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
     auto micPicker = root->CreateChild<DropDownList>();
     micPicker->SetName("MIC_PICKER");
     micPicker->SetStyleAuto();
-    micPicker->SetPosition(20, 440);
+    micPicker->SetPosition(20, y);
     micPicker->SetSize(300, 20);
 
     auto micList = audio->EnumerateMicrophones();
@@ -154,10 +176,11 @@ void SoundEffects::CreateUI()
         micPicker->AddItem(item);
     }
 
-    button = CreateButton(20, 500, 120, 40, "Start Record");
+    y += 60;
+    button = CreateButton(20, y, 120, 40, "Start Record");
     SubscribeToEvent(button, E_RELEASED, URHO3D_HANDLER(SoundEffects, HandleStartMicRecord));
 
-    button = CreateButton(160, 500, 120, 40, "Stop Record");
+    button = CreateButton(160, y, 120, 40, "Stop Record");
     SubscribeToEvent(button, E_RELEASED, URHO3D_HANDLER(SoundEffects, HandleStopMicRecord));
 }
 
@@ -265,6 +288,24 @@ void SoundEffects::HandleStopMusic(StringHash eventType, VariantMap& eventData)
     musicSource_->Stop();
 }
 
+void SoundEffects::HandlePauseScene(StringHash eventType, VariantMap& eventData)
+{
+    scene_->SetUpdateEnabled(false);
+}
+
+void SoundEffects::HandleResumeScene(StringHash eventType, VariantMap& eventData)
+{
+    scene_->SetUpdateEnabled(true);
+}
+
+void SoundEffects::HandleSceneTimeScale(StringHash eventType, VariantMap& eventData)
+{
+    using namespace SliderChanged;
+
+    float newScale = eventData[P_VALUE].GetFloat();
+
+    scene_->SetTimeScale(newScale);
+}
 void SoundEffects::HandleSoundVolume(StringHash eventType, VariantMap& eventData)
 {
     using namespace SliderChanged;

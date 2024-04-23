@@ -83,6 +83,12 @@ private:
     void HandlePlayMusic(StringHash eventType, VariantMap& eventData);
     /// Handle "stop music" button click.
     void HandleStopMusic(StringHash eventType, VariantMap& eventData);
+    /// Handle "pause scene" button click.
+    void HandlePauseScene(StringHash eventType, VariantMap& eventData);
+    /// Handle "resume scene" button click.
+    void HandleResumeScene(StringHash eventType, VariantMap& eventData);
+    /// Handle scene time scale slider change.
+    void HandleSceneTimeScale(StringHash eventType, VariantMap& eventData);
     /// Handle sound effects volume slider change.
     void HandleSoundVolume(StringHash eventType, VariantMap& eventData);
     /// Handle sound effect L/R pan slider change.

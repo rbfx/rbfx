@@ -237,6 +237,10 @@ public:
     /// @property
     float GetTimeScale() const { return timeScale_; }
 
+    /// Return update effective time scale. Returns 0 if scene update is disabled.
+    /// @property
+    float GetEffectiveTimeScale() const { return updateEnabled_ ? timeScale_ : 0.0f; }
+
     /// Return elapsed time in seconds.
     /// @property
     float GetElapsedTime() const { return elapsedTime_; }

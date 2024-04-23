@@ -27,6 +27,13 @@
 namespace Urho3D
 {
 
+/// Scene paused or resumed. Check current scene state via IsUpdateEnabled() method.
+URHO3D_EVENT(E_SCENEUPDATESCHANGED, SceneUpdateChanged)
+{
+    URHO3D_PARAM(P_SCENE, Scene); // Scene pointer
+    URHO3D_PARAM(P_UPDATEENABLED, UpdateEnabled); // boolean
+}
+
 /// Define scene update event. It always contains pointer to the scene and the timestep.
 #define URHO3D_SCENE_UPDATE_EVENT(eventID, eventName) \
     URHO3D_EVENT(eventID, eventName) \
