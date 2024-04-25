@@ -153,6 +153,7 @@
 #include "117_PointerAdapter/PointerAdapterSample.h"
 #endif
 #include "118_CameraShake/CameraShake.h"
+#include "119_CameraAssistant/CameraAssistantSample.h"
 #if URHO3D_XR
 #include "120_HelloVR/HelloVR.h"
 #endif
@@ -412,6 +413,7 @@ void SamplesManager::Start()
     RegisterSample<PointerAdapterSample>();
 #endif
     RegisterSample<CameraShake>();
+    RegisterSample<CameraAssistantSample>();
 #if URHO3D_XR
     RegisterSample<HelloVR>();
 #endif
