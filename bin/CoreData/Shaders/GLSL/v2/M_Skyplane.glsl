@@ -54,9 +54,9 @@ void main()
 void main()
 {
     vec2 screenPos = vScreenPos.xy / vScreenPos.w;
-    #if !defined(URHO3D_FEATURE_FRAMEBUFFER_Y_INVERTED) && !defined(URHO3D_CAMERA_REVERSED)
-        screenPos.y = 1.0-screenPos.y;
-    #endif
+#if !defined(URHO3D_FEATURE_FRAMEBUFFER_Y_INVERTED) && !defined(URHO3D_CAMERA_REVERSED)
+    screenPos.y = 1.0 - screenPos.y;
+#endif
     vec2 screenSizePx = vec2(1.0, 1.0) / cGBufferInvSize.xy;
     vec2 screenPosPx = screenPos * screenSizePx;
     vec2 textureSizePx = vec2(textureSize(sAlbedo, 0));
