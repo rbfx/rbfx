@@ -707,6 +707,72 @@ void Camera::OnMarkedDirty(Node* node)
     cachedViewProj_.Invalidate();
 }
 
+void Camera::FocusOn(const Vector3* begin, const Vector3* end)
+{
+    if (begin == end)
+    {
+        URHO3D_LOGERROR("Can't focus on empty array of vertices");
+        return;
+    }
+
+    if (!node_)
+    {
+        URHO3D_LOGERROR("No Node to move");
+        return;
+    }
+
+    const Frustum frustum = GetFrustum();
+    ea::array<Plane, 6> planes{frustum.planes_[0], frustum.planes_[1], frustum.planes_[2], frustum.planes_[3],
+        frustum.planes_[4], frustum.planes_[5]};
+
+    for (auto&plane: planes)
+    {
+        plane.d_ = -ea::numeric_limits<float>::max();
+        for (auto point = begin; point != end; ++point)
+        {
+            plane.d_ = ea::max(plane.d_, -plane.normal_.DotProduct(*point));
+        }
+    }
+
+    if (orthographic_)
+    {
+        // Evaluate new central point.
+        const auto left = node_->WorldToLocal(planes[PLANE_LEFT].GetPoint()).x_;
+        const auto right = node_->WorldToLocal(planes[PLANE_RIGHT].GetPoint()).x_;
+        const auto up = node_->WorldToLocal(planes[PLANE_UP].GetPoint()).y_;
+        const auto down = node_->WorldToLocal(planes[PLANE_DOWN].GetPoint()).y_;
+        auto offset = Vector3(left + right, up + down, 0.0f) * 0.5f;
+
+        // Move camera back if it is too close to the closest point.
+        const auto n = node_->WorldToLocal(planes[PLANE_NEAR].GetPoint()).z_;
+        if (n < 0.0f)
+            offset.z_ += n;
+
+        // Move camera node.
+        node_->SetWorldPosition(node_->LocalToWorld(offset));
+
+        // Adjust orthoSize_ to avoid any extra padding.
+        const float orthoSizeY = (up - down) * zoom_;
+        const float orthoSizeX = (right - left) * zoom_ / aspectRatio_;
+        orthoSize_ = Urho3D::Max(orthoSizeX, orthoSizeY);
+    }
+    else
+    {
+        // Evaluate focal point.
+        const auto ray0 = planes[PLANE_LEFT].Intersect(planes[PLANE_RIGHT]);
+        const auto ray1 = planes[PLANE_UP].Intersect(planes[PLANE_DOWN]);
+        const auto distance0 = frustum.planes_[PLANE_NEAR].Distance(ray0.origin_);
+        const auto distance1 = frustum.planes_[PLANE_NEAR].Distance(ray1.origin_);
+        Vector3 focalPoint = (distance0 < distance1) ? ray0.ClosestPoint(ray1) : ray1.ClosestPoint(ray0);
+
+        const auto n = planes[PLANE_NEAR].Distance(focalPoint) + nearClip_;
+        if (n > 0.0f)
+            focalPoint -= planes[PLANE_NEAR].normal_*n;
+        // Move camera node.
+        node_->SetWorldPosition(focalPoint);
+    }
+}
+
 void Camera::UpdateProjection() const
 {
     // Start from a zero matrix in case it was custom previously
@@ -784,4 +850,21 @@ float Camera::GetEffectiveFogEnd() const
 {
     return zone_ ? zone_->GetFogEnd() : M_LARGE_VALUE;
 }
+
+void Camera::FocusOn(const BoundingBox& boundingBox)
+{
+    ea::array<Vector3, 8> corners{
+        Vector3{boundingBox.min_.x_, boundingBox.min_.y_, boundingBox.min_.z_},
+        Vector3{boundingBox.max_.x_, boundingBox.min_.y_, boundingBox.min_.z_},
+        Vector3{boundingBox.min_.x_, boundingBox.max_.y_, boundingBox.min_.z_},
+        Vector3{boundingBox.max_.x_, boundingBox.max_.y_, boundingBox.min_.z_},
+        Vector3{boundingBox.min_.x_, boundingBox.min_.y_, boundingBox.max_.z_},
+        Vector3{boundingBox.max_.x_, boundingBox.min_.y_, boundingBox.max_.z_},
+        Vector3{boundingBox.min_.x_, boundingBox.max_.y_, boundingBox.max_.z_},
+        Vector3{boundingBox.max_.x_, boundingBox.max_.y_, boundingBox.max_.z_},
+    };
+    
+    FocusOn(corners.begin(), corners.end());
+}
+
 }

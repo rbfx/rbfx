@@ -24,6 +24,7 @@
 
 #include "../Core/IniHelpers.h"
 
+#include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Resource/ResourceCache.h>
 
 namespace Urho3D
@@ -68,7 +69,8 @@ void ModelViewTab::ResetCamera()
 {
     if (model_)
     {
-        state_.LookAt(model_->GetBoundingBox());
+        GetCamera()->FocusOn(model_->GetBoundingBox());
+        state_.lastCameraPosition_ = GetCamera()->GetNode()->GetPosition();
     }
 }
 

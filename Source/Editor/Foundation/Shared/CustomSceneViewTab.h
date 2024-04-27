@@ -51,6 +51,7 @@ public:
     virtual void ResetCamera();
 
     Scene* GetScene() const { return preview_ ? preview_->GetScene() : nullptr; }
+    Camera* GetCamera() const { return preview_ ? preview_->GetCamera() : nullptr; }
 
 protected:
     virtual void RenderTitle();

@@ -27,6 +27,8 @@
 namespace Urho3D
 {
 
+class Ray;
+
 /// Surface in three-dimensional space.
 /// @allfloats
 class URHO3D_API Plane
@@ -112,6 +114,13 @@ public:
     Plane Transformed(const Matrix3x4& transform) const;
     /// Return transformed by a 4x4 matrix.
     Plane Transformed(const Matrix4& transform) const;
+
+    /// Returns closest point to origin.
+    Vector3 GetPoint() const { return - normal_ * d_; }
+    /// Returns a line that defines an intersection of 2 planes.
+    Ray Intersect(const Plane& other) const;
+    /// Returns a point that defines an intersection of 3 planes.
+    Vector3 Intersect(const Plane& planeB, const Plane& planeC) const;
 
     /// Return as a vector.
     Vector4 ToVector4() const { return Vector4(normal_, d_); }

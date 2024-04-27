@@ -22,7 +22,9 @@
 
 #include "../Precompiled.h"
 
-#include "../Math/Plane.h"
+#include <Urho3D/Math/Plane.h>
+#include <Urho3D/Math/Ray.h>
+#include <Urho3D/IO/Log.h>
 
 #include "../DebugNew.h"
 
@@ -79,5 +81,55 @@ Plane Plane::Transformed(const Matrix4& transform) const
 {
     return Plane(transform.Inverse().Transpose() * ToVector4());
 }
+
+Ray Plane::Intersect(const Plane& other) const
+{
+    // Calculate the direction of the line
+    const Vector3 direction{normal_.CrossProduct(other.normal_)};
+
+    // If the direction is zero, then the planes are parallel and do not intersect
+    if (direction.Equals(Vector3::ZERO, 1e-6f))
+    {
+        return Ray{GetPoint(), Vector3::ZERO};
+    }
+
+     // Calculate the determinant of the matrix using cross product
+    const float det = normal_.DotProduct(other.normal_.CrossProduct(direction));
+
+    // If the determinant is zero, then the planes do not all intersect at one point
+    if (Urho3D::Abs(det) < 1e-6f)
+    {
+        return Ray{GetPoint(), direction};
+    }
+
+    const Vector3 point{
+        d_ * other.normal_.CrossProduct(direction)+
+        other.d_ * direction.CrossProduct(normal_)
+    };
+
+    return Ray{- point / det, direction};
+}
+
+Vector3 Plane::Intersect(const Plane& planeB, const Plane& planeC) const
+{
+    // Calculate the determinant of the matrix using cross product
+    const float det = normal_.DotProduct(planeB.normal_.CrossProduct(planeC.normal_));
+
+    // If the determinant is zero, then the planes do not all intersect at one point
+    if (Urho3D::Abs(det) < 1e-6f)
+    {
+        return GetPoint();
+    }
+
+    // Calculate the intersection point using Cramer's rule
+    const Vector3 result = (
+        - d_ * planeB.normal_.CrossProduct(planeC.normal_)
+        - planeB.d_ * planeC.normal_.CrossProduct(normal_)
+        - planeC.d_ * normal_.CrossProduct(planeB.normal_))
+        / det;
+
+    return result;
+}
+
 
 }
