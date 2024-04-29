@@ -44,13 +44,13 @@ void CameraOperator::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<CameraOperator>(Category_Scene);
 
-    URHO3D_COPY_BASE_ATTRIBUTES(Component);
+    URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Track Bounding Box", bool, boundingBoxEnabled_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bounding Box Min", Vector3, boundingBox_.min_, -Vector3::ONE, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bounding Box Max", Vector3, boundingBox_.max_, Vector3::ONE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Nodes To Track", GetNodeIDsAttr, SetNodeIDsAttr, VariantVector,
         Variant::emptyVariantVector, AM_DEFAULT | AM_NODEIDVECTOR);
-    URHO3D_ACTION_STATIC_LABEL("Update Camera!", MoveCamera, "Move camera to keep tracked nodes and/or bounding box in frustum");
+    URHO3D_ACTION_STATIC_LABEL("Update Camera", MoveCamera, "Move camera to keep tracked nodes and/or bounding box in frustum");
 }
 
 void CameraOperator::ApplyAttributes()
@@ -61,7 +61,7 @@ void CameraOperator::ApplyAttributes()
     // Remove all old instance nodes before searching for new
     trackedNodes_.clear();
 
-    Scene* scene = GetScene();
+    const Scene* scene = GetScene();
     if (scene)
     {
         // The first index stores the number of IDs redundantly. This is for editing
@@ -302,11 +302,23 @@ void CameraOperator::FocusOn(const Vector3* begin, const Vector3* end, Camera* c
         node_->SetWorldPosition(node_->LocalToWorld(offset));
 
         // Adjust orthoSize_ to avoid any extra padding.
+        const auto autoAspectRatio = camera->GetAutoAspectRatio();
         const auto zoom = camera->GetZoom();
         const auto aspectRatio = camera->GetAspectRatio();
         const float orthoSizeY = (up - down) * zoom;
-        const float orthoSizeX = (right - left) * zoom / aspectRatio;
-        camera->SetOrthoSize(Urho3D::Max(orthoSizeX, orthoSizeY));
+        const float orthoSizeX = (right - left) * zoom;
+        const auto verticalOrthoSize = Urho3D::Max(orthoSizeX / aspectRatio, orthoSizeY);
+
+        if (autoAspectRatio)
+        {
+            camera->SetOrthoSize(verticalOrthoSize);
+            camera->SetAspectRatio(aspectRatio);
+            camera->SetAutoAspectRatio(true);
+        }
+        else
+        {
+            camera->SetOrthoSize(Vector2(verticalOrthoSize*aspectRatio, verticalOrthoSize));
+        }
     }
     else
     {

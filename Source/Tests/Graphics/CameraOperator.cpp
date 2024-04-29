@@ -27,7 +27,39 @@
 #include <Urho3D/Graphics/CameraOperator.h>
 #include <Urho3D/Graphics/Camera.h>
 
-TEST_CASE("Camera FocusOn")
+TEST_CASE("CameraOperator orthographic test")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    const auto scene = MakeShared<Scene>(context);
+    const auto rootNode = scene->CreateChild();
+    const auto cameraOperator = rootNode->CreateComponent<CameraOperator>();
+    auto camera = rootNode->CreateComponent<Camera>();
+    camera->SetOrthographic(true);
+    cameraOperator->SetBoundingBox(BoundingBox(Vector3(-1, -1, -1), Vector3(1, 1, 1)));
+    cameraOperator->SetBoundingBoxTrackingEnabled(true);
+    camera->SetAspectRatio(0.5f);
+    cameraOperator->MoveCamera();
+    CHECK(camera->GetOrthoSize() == 4.0);
+    camera->SetAspectRatio(2.0f);
+    cameraOperator->MoveCamera();
+    CHECK(camera->GetOrthoSize() == 2.0);
+
+    camera->SetAspectRatio(0.5f);
+    camera->SetAutoAspectRatio(true);
+    cameraOperator->MoveCamera();
+    CHECK(camera->GetAutoAspectRatio());
+    CHECK(Equals(camera->GetAspectRatio(), 0.5f));
+    CHECK(Equals(camera->GetOrthoSize(), 4.0f));
+    camera->SetAspectRatio(2.0f);
+    camera->SetAutoAspectRatio(true);
+    cameraOperator->MoveCamera();
+    CHECK(camera->GetAutoAspectRatio());
+    CHECK(Equals(camera->GetAspectRatio(), 2.0f));
+    CHECK(Equals(camera->GetOrthoSize(), 2.0f));
+}
+
+TEST_CASE("CameraOperator focus on bounding box")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
