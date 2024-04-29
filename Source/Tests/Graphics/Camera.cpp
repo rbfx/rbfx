@@ -22,8 +22,9 @@
 
 #include "../CommonUtils.h"
 #include "../ModelUtils.h"
-#include "Urho3D/Scene/Scene.h"
 
+#include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Graphics/CameraOperator.h>
 #include <Urho3D/Graphics/Camera.h>
 
 TEST_CASE("Camera FocusOn")
@@ -31,52 +32,67 @@ TEST_CASE("Camera FocusOn")
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
     const auto scene = MakeShared<Scene>(context);
-    const auto node = scene->CreateChild();
-    node->SetRotation(Quaternion(Vector3(10,20,30)));
+    const auto rootNode = scene->CreateChild();
+    rootNode->SetRotation(Quaternion(Vector3(10, 20, 30)));
+    rootNode->SetPosition(Vector3(0.1f, 0.2f, 0.3f));
     {
-        auto camera = node->CreateComponent<Camera>();
+        auto childNode = rootNode->CreateChild();
+        childNode->SetRotation(Quaternion(Vector3(30, 20, 10)));
+        childNode->CreateComponent<CameraOperator>();
+        auto camera = childNode->CreateComponent<Camera>();
         camera->SetOrthographic(false);
         camera->SetAspectRatio(0.6f);
     }
     {
-        auto camera = node->CreateComponent<Camera>();
+        auto childNode = rootNode->CreateChild();
+        childNode->CreateComponent<CameraOperator>();
+        auto camera = childNode->CreateComponent<Camera>();
         camera->SetOrthographic(false);
         camera->SetFov(160);
         camera->SetNearClip(10);
     }
     {
-        auto camera = node->CreateComponent<Camera>();
+        auto childNode = rootNode->CreateChild();
+        childNode->CreateComponent<CameraOperator>();
+        auto camera = childNode->CreateComponent<Camera>();
         camera->SetOrthographic(false);
         camera->SetAspectRatio(1.6f);
         camera->SetZoom(2.0f);
     }
     {
-        const auto camera = node->CreateComponent<Camera>();
+        auto childNode = rootNode->CreateChild();
+        childNode->CreateComponent<CameraOperator>();
+        auto camera = childNode->CreateComponent<Camera>();
         camera->SetOrthographic(true);
         camera->SetAspectRatio(0.6f);
     }
     {
-        const auto camera = node->CreateComponent<Camera>();
+        auto childNode = rootNode->CreateChild();
+        childNode->CreateComponent<CameraOperator>();
+        auto camera = childNode->CreateComponent<Camera>();
         camera->SetOrthographic(true);
         camera->SetAspectRatio(1.6f);
         camera->SetZoom(2.0f);
     }
 
-    ea::vector<Camera*> cameras;
-    node->GetComponents<Camera>(cameras);
+    ea::vector<CameraOperator*> cameras;
+    rootNode->GetComponents<CameraOperator>(cameras, true);
 
     ea::array<BoundingBox, 2> boxes{
         BoundingBox(Vector3(-1, -2, -1), Vector3(1, 2, 1)),
         BoundingBox(Vector3(0, 0, 0), Vector3(1, 2, 1)),
     };
 
-    for (auto* camera : cameras)
+    for (auto* cameraOperator : cameras)
     {
         for (auto& box : boxes)
         {
-            camera->GetNode()->SetWorldPosition(Vector3(-1, -1, 2));
-            camera->FocusOn(box);
+            cameraOperator->GetNode()->SetWorldPosition(Vector3(-1, -1, 2));
+            cameraOperator->SetBoundingBox(box);
+            cameraOperator->SetBoundingBoxTrackingEnabled(true);
+            cameraOperator->MoveCamera();
 
+            auto* camera = cameraOperator->GetComponent<Camera>();
             const Frustum frustum = camera->GetFrustum();
             float minDistance = ea::numeric_limits<float>::max();
             for (int mask = 0; mask < 8; ++mask)
