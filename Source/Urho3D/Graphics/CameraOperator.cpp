@@ -49,6 +49,7 @@ void CameraOperator::RegisterObject(Context* context)
     context->AddFactoryReflection<CameraOperator>(Category_Scene);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Padding", GetPadding, SetPadding, Vector4, Vector4::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Track Bounding Box", bool, boundingBoxEnabled_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bounding Box Min", Vector3, boundingBox_.min_, -Vector3::ONE, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bounding Box Max", Vector3, boundingBox_.max_, Vector3::ONE, AM_DEFAULT);
@@ -235,6 +236,12 @@ void CameraOperator::UpdateNodeIDs() const
     nodeIDsDirty_ = false;
 }
 
+void CameraOperator::OnSetEnabled()
+{
+    if (IsEnabledEffective())
+        MoveCamera();
+}
+
 void CameraOperator::OnMarkedDirty(Node* node)
 {
     if (node == node_ && ignoreNodeUpdate_)
@@ -244,7 +251,6 @@ void CameraOperator::OnMarkedDirty(Node* node)
 
 void CameraOperator::MoveCamera()
 {
-
     if (!node_)
         return;
 

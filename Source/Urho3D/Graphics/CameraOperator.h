@@ -85,6 +85,8 @@ class URHO3D_API CameraOperator : public Component
 protected:
     /// Update node IDs attribute from the actual nodes.
     void UpdateNodeIDs() const;
+    /// Handle enabled/disabled state change.
+    void OnSetEnabled() override;
     /// Schedule camera update because one of the nodes moved.
     void OnMarkedDirty(Node* node) override;
 
