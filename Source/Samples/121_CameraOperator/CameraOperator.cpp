@@ -185,5 +185,4 @@ void CameraOperatorSample::OrthographicToggled(VariantMap& args)
     const auto state = args[P_STATE].GetBool();
 
     cameraOperator_->GetComponent<Camera>()->SetOrthographic(state);
-    cameraOperator_->MoveCamera();
 }

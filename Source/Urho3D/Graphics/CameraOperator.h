@@ -87,14 +87,13 @@ protected:
     void UpdateNodeIDs() const;
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
-    /// Schedule camera update because one of the nodes moved.
-    void OnMarkedDirty(Node* node) override;
+    /// Handle scene being assigned.
+    void OnSceneSet(Scene* scene) override;
 
 private:
     void HandleSceneDrawableUpdateFinished(StringHash eventType, VariantMap& eventData);
     void OnNodeSet(Node* previousNode, Node* currentNode);
     void FocusOn(const Vector3* begin, const Vector3* end, Camera* camera);
-    void SubscribeForScenePostUpdate();
 
     /// Instance nodes.
     ea::vector<WeakPtr<Node>> trackedNodes_;
@@ -108,10 +107,6 @@ private:
     bool boundingBoxEnabled_{};
     /// Bounding box to track.
     BoundingBox boundingBox_{};
-    /// Is subscribed for scene post update.
-    bool subscribedForScenePostUpdate_{};
-    /// Ignore node updates when updating node position.
-    bool ignoreNodeUpdate_{};
     /// Padding in units.
     Vector4 padding_{Vector4::ZERO};
 

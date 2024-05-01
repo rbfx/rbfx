@@ -92,8 +92,6 @@ void CameraOperator::ApplyAttributes()
     }
 
     nodesDirty_ = false;
-
-    OnMarkedDirty(GetNode());
 }
 
 void CameraOperator::SetNodeIDsAttr(const VariantVector& value)
@@ -140,21 +138,13 @@ const VariantVector& CameraOperator::GetNodeIDsAttr() const
 
 void CameraOperator::SetPadding(const Vector4& padding)
 {
-    if (padding_ != padding)
-    {
-        padding_ = padding;
-        OnMarkedDirty(node_);
-    }
+    padding_ = padding;
 }
 
 void CameraOperator::SetUniformPadding(float padding)
 {
     auto vec4 = Vector4{padding, padding, padding, padding};
-    if (padding_ != vec4)
-    {
-        padding_ = vec4;
-        OnMarkedDirty(node_);
-    }
+    padding_ = vec4;
 }
 
 void CameraOperator::SetBoundingBox(const BoundingBox& box)
@@ -180,8 +170,6 @@ void CameraOperator::TrackNode(Node* node)
     // enabled/disabled
     node->AddListener(this);
     trackedNodes_.push_back(instanceWeak);
-
-    SubscribeForScenePostUpdate();
 }
 
 void CameraOperator::RemoveTrackedNode(Node* node)
@@ -196,8 +184,6 @@ void CameraOperator::RemoveTrackedNode(Node* node)
 
     node->RemoveListener(this);
     trackedNodes_.erase(i);
-
-    SubscribeForScenePostUpdate();
 }
 
 void CameraOperator::RemoveAllTrackedNodes()
@@ -211,8 +197,6 @@ void CameraOperator::RemoveAllTrackedNodes()
 
     trackedNodes_.clear();
     nodeIDsDirty_ = true;
-
-    SubscribeForScenePostUpdate();
 }
 
 Node* CameraOperator::GetTrackedNode(unsigned index) const
@@ -242,11 +226,11 @@ void CameraOperator::OnSetEnabled()
         MoveCamera();
 }
 
-void CameraOperator::OnMarkedDirty(Node* node)
+void CameraOperator::OnSceneSet(Scene* scene)
 {
-    if (node == node_ && ignoreNodeUpdate_)
-        return;
-    SubscribeForScenePostUpdate();
+    UnsubscribeFromEvent(E_SCENEDRAWABLEUPDATEFINISHED);
+    if (scene)
+        SubscribeToEvent(scene, E_SCENEDRAWABLEUPDATEFINISHED, &CameraOperator::HandleSceneDrawableUpdateFinished);
 }
 
 void CameraOperator::MoveCamera()
@@ -292,9 +276,6 @@ void CameraOperator::MoveCamera()
 
 void CameraOperator::HandleSceneDrawableUpdateFinished(StringHash eventType, VariantMap& eventData)
 {
-    subscribedForScenePostUpdate_ = false;
-    UnsubscribeFromEvent(E_SCENEDRAWABLEUPDATEFINISHED);
-
     if (!IsEnabledEffective())
         return;
 
@@ -346,6 +327,8 @@ void CameraOperator::FocusOn(const Vector3* begin, const Vector3* end, Camera* c
     planes[PLANE_DOWN].d_ += padding_.z_;
     planes[PLANE_LEFT].d_ += padding_.w_;
 
+    const auto oldPosition = node_->GetWorldPosition();
+
     if (camera->IsOrthographic())
     {
         // Evaluate new central point.
@@ -361,9 +344,9 @@ void CameraOperator::FocusOn(const Vector3* begin, const Vector3* end, Camera* c
             offset.z_ += n;
 
         // Move camera node.
-        ignoreNodeUpdate_ = true;
-        node_->SetWorldPosition(node_->LocalToWorld(offset));
-        ignoreNodeUpdate_ = false;
+        const auto newPosition = node_->LocalToWorld(offset);
+        if (!oldPosition.Equals(newPosition))
+            node_->SetWorldPosition(newPosition);
 
         // Adjust orthoSize_ to avoid any extra padding.
         const auto autoAspectRatio = camera->GetAutoAspectRatio();
@@ -397,18 +380,8 @@ void CameraOperator::FocusOn(const Vector3* begin, const Vector3* end, Camera* c
         if (n > 0.0f)
             focalPoint -= planes[PLANE_NEAR].normal_ * n;
         // Move camera node.
-        ignoreNodeUpdate_ = true;
-        node_->SetWorldPosition(focalPoint);
-        ignoreNodeUpdate_ = false;
-    }
-}
-
-void CameraOperator::SubscribeForScenePostUpdate()
-{
-    if (!subscribedForScenePostUpdate_ && GetScene())
-    {
-        SubscribeToEvent(GetScene(), E_SCENEDRAWABLEUPDATEFINISHED, &CameraOperator::HandleSceneDrawableUpdateFinished);
-        subscribedForScenePostUpdate_ = true;
+        if (!oldPosition.Equals(focalPoint))
+            node_->SetWorldPosition(focalPoint);
     }
 }
 
