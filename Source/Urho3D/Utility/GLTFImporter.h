@@ -50,6 +50,8 @@ struct GLTFImporterSettings
     float scale_{1.0f};
     Quaternion rotation_;
 
+    bool fadeTransparency_{false};
+
     bool cleanupBoneNames_{true};
     bool cleanupRootNodes_{true};
     bool combineLODs_{true};

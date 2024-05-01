@@ -2400,8 +2400,17 @@ private:
         litOpaqueTechnique_ = LoadTechnique("Techniques/LitOpaque.xml");
         unlitOpaqueTechnique_ = LoadTechnique("Techniques/UnlitOpaque.xml");
 
-        litTransparentFadeNormalMapTechnique_ = LoadTechnique("Techniques/LitTransparentFadeNormalMap.xml");
-        litTransparentFadeTechnique_ = LoadTechnique("Techniques/LitTransparentFade.xml");
+        if (base_.GetSettings().fadeTransparency_)
+        {
+            litTransparentNormalMapTechnique_ = LoadTechnique("Techniques/LitTransparentFadeNormalMap.xml");
+            litTransparentTechnique_ = LoadTechnique("Techniques/LitTransparentFade.xml");
+        }
+        else
+        {
+            litTransparentNormalMapTechnique_ = LoadTechnique("Techniques/LitTransparentNormalMap.xml");
+            litTransparentTechnique_ = LoadTechnique("Techniques/LitTransparent.xml");
+        }
+
         unlitTransparentTechnique_ = LoadTechnique("Techniques/UnlitTransparent.xml");
     }
 
@@ -2483,8 +2492,8 @@ private:
         if (!isOpaque && !isAlphaMask && !isTransparent)
             throw RuntimeException("Unknown alpha mode '{}'", sourceMaterial.alphaMode.c_str());
 
-        Technique* litNormalMapTechnique = isOpaque || isAlphaMask ? litOpaqueNormalMapTechnique_ : litTransparentFadeNormalMapTechnique_;
-        Technique* litTechnique = isOpaque || isAlphaMask ? litOpaqueTechnique_ : litTransparentFadeTechnique_;
+        Technique* litNormalMapTechnique = isOpaque || isAlphaMask ? litOpaqueNormalMapTechnique_ : litTransparentNormalMapTechnique_;
+        Technique* litTechnique = isOpaque || isAlphaMask ? litOpaqueTechnique_ : litTransparentTechnique_;
         Technique* unlitTechnique = isOpaque || isAlphaMask ? unlitOpaqueTechnique_ : unlitTransparentTechnique_;
 
         ea::string shaderDefines;
@@ -2655,8 +2664,8 @@ private:
     Technique* litOpaqueTechnique_{};
     Technique* unlitOpaqueTechnique_{};
 
-    Technique* litTransparentFadeNormalMapTechnique_{};
-    Technique* litTransparentFadeTechnique_{};
+    Technique* litTransparentNormalMapTechnique_{};
+    Technique* litTransparentTechnique_{};
     Technique* unlitTransparentTechnique_{};
 
     struct ImportedMaterial
@@ -3843,6 +3852,8 @@ void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& va
     SerializeValue(archive, "mirrorX", value.mirrorX_);
     SerializeValue(archive, "scale", value.scale_);
     SerializeValue(archive, "rotation", value.rotation_);
+
+    SerializeValue(archive, "pbrTransparency", value.fadeTransparency_);
 
     SerializeValue(archive, "cleanupBoneNames", value.cleanupBoneNames_);
     SerializeValue(archive, "cleanupRootNodes", value.cleanupRootNodes_);
