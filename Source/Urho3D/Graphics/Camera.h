@@ -318,8 +318,6 @@ protected:
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// Handle node transform being dirtied.
     void OnMarkedDirty(Node* node) override;
-    /// Adjust camera's Node position and ortho size (if orthographic) to keep given set of world space points in view.
-    void FocusOn(const Vector3* begin, const Vector3* end);
 
 private:
     /// Recalculate projection matrix.

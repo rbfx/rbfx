@@ -49,6 +49,13 @@ class URHO3D_API CameraOperator : public Component
     /// Return node IDs attribute.
     const VariantVector& GetNodeIDsAttr() const;
 
+    /// Get padding in world space units in CSS order (x:top, y:right, z:bottom, w:left).
+    const Vector4& GetPadding() const { return padding_; }
+    /// Set padding in world space units in CSS order (x:top, y:right, z:bottom, w:left).
+    void SetPadding(const Vector4& padding);
+    /// Set uniform padding in every direction in world space units.
+    void SetUniformPadding(float padding);
+
     /// Get tracked bounding box.
     const BoundingBox& GetBoundingBox() const { return boundingBox_; }
     /// Set bounding box.
@@ -76,15 +83,16 @@ class URHO3D_API CameraOperator : public Component
     void MoveCamera();
 
 protected:
-    /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
     /// Update node IDs attribute from the actual nodes.
     void UpdateNodeIDs() const;
+    /// Schedule camera update because one of the nodes moved.
+    void OnMarkedDirty(Node* node) override;
 
 private:
     void HandleSceneDrawableUpdateFinished(StringHash eventType, VariantMap& eventData);
-
+    void OnNodeSet(Node* previousNode, Node* currentNode);
     void FocusOn(const Vector3* begin, const Vector3* end, Camera* camera);
+    void SubscribeForScenePostUpdate();
 
     /// Instance nodes.
     ea::vector<WeakPtr<Node>> trackedNodes_;
@@ -98,6 +106,13 @@ private:
     bool boundingBoxEnabled_{};
     /// Bounding box to track.
     BoundingBox boundingBox_{};
+    /// Is subscribed for scene post update.
+    bool subscribedForScenePostUpdate_{};
+    /// Ignore node updates when updating node position.
+    bool ignoreNodeUpdate_{};
+    /// Padding in units.
+    Vector4 padding_{Vector4::ZERO};
+
 
     /// Point cloud cache
     ea::vector<Vector3> points_;

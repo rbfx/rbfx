@@ -93,7 +93,7 @@ Ray Plane::Intersect(const Plane& other) const
         return Ray{GetPoint(), Vector3::ZERO};
     }
 
-     // Calculate the determinant of the matrix using cross product
+    // Calculate the determinant of the matrix using cross product
     const float det = normal_.DotProduct(other.normal_.CrossProduct(direction));
 
     // If the determinant is zero, then the planes do not all intersect at one point
@@ -102,12 +102,9 @@ Ray Plane::Intersect(const Plane& other) const
         return Ray{GetPoint(), direction};
     }
 
-    const Vector3 point{
-        d_ * other.normal_.CrossProduct(direction)+
-        other.d_ * direction.CrossProduct(normal_)
-    };
+    const Vector3 point{d_ * other.normal_.CrossProduct(direction) + other.d_ * direction.CrossProduct(normal_)};
 
-    return Ray{- point / det, direction};
+    return Ray{-point / det, direction};
 }
 
 Vector3 Plane::Intersect(const Plane& planeB, const Plane& planeC) const
@@ -122,14 +119,12 @@ Vector3 Plane::Intersect(const Plane& planeB, const Plane& planeC) const
     }
 
     // Calculate the intersection point using Cramer's rule
-    const Vector3 result = (
-        - d_ * planeB.normal_.CrossProduct(planeC.normal_)
-        - planeB.d_ * planeC.normal_.CrossProduct(normal_)
-        - planeC.d_ * normal_.CrossProduct(planeB.normal_))
+    const Vector3 result =
+        (-d_ * planeB.normal_.CrossProduct(planeC.normal_) - planeB.d_ * planeC.normal_.CrossProduct(normal_)
+            - planeC.d_ * normal_.CrossProduct(planeB.normal_))
         / det;
 
     return result;
 }
-
 
 }
