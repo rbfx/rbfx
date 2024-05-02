@@ -725,6 +725,7 @@ public:
 %include "Urho3D/Graphics/Tangent.h"
 //%include "Urho3D/Graphics/VertexDeclaration.h"
 %include "Urho3D/Graphics/Camera.h"
+%include "Urho3D/Graphics/CameraOperator.h"
 %include "Urho3D/Graphics/GlobalIllumination.h"
 %include "Urho3D/Graphics/Material.h"
 %include "Urho3D/Graphics/CustomGeometry.h"
