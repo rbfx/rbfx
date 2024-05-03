@@ -282,6 +282,8 @@ public:
     static const Rect ZERO;
 };
 
+static_assert(sizeof(Rect) == sizeof(float)*4, "Incorrect Rect size.");
+
 /// Two-dimensional bounding rectangle with integer values.
 class URHO3D_API IntRect
 {

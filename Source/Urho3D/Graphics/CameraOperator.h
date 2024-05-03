@@ -49,10 +49,10 @@ class URHO3D_API CameraOperator : public Component
     /// Return node IDs attribute.
     const VariantVector& GetNodeIDsAttr() const;
 
-    /// Get padding in world space units in CSS order (x:top, y:right, z:bottom, w:left).
-    const Vector4& GetPadding() const { return padding_; }
-    /// Set padding in world space units in CSS order (x:top, y:right, z:bottom, w:left).
-    void SetPadding(const Vector4& padding);
+    /// Get padding in world space units.
+    const Rect& GetPadding() const { return padding_; }
+    /// Set padding in world space units.
+    void SetPadding(const Rect& padding);
     /// Set uniform padding in every direction in world space units.
     void SetUniformPadding(float padding);
 
@@ -108,7 +108,7 @@ private:
     /// Bounding box to track.
     BoundingBox boundingBox_{};
     /// Padding in units.
-    Vector4 padding_{Vector4::ZERO};
+    Rect padding_{Rect::ZERO};
 
 
     /// Point cloud cache

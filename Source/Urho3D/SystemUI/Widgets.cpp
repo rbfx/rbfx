@@ -819,6 +819,19 @@ bool EditVariantVector4(Variant& var, const EditVariantOptions& options)
     return false;
 }
 
+bool EditVariantRect(Variant& var, const EditVariantOptions& options)
+{
+    Rect value = var.GetRect();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::DragFloat4("", &value.min_.x_, options.step_, options.min_, options.max_,
+            GetFormatStringForStep(options.step_).c_str()))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
 bool EditVariantQuaternion(Variant& var, const EditVariantOptions& options)
 {
     const ImGuiID id = ui::GetID("Quaternion");
@@ -1079,7 +1092,9 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
     case VAR_STRINGVECTOR:
         return EditVariantStringVector(var, options);
 
-    // case VAR_RECT:
+    case VAR_RECT:
+        return EditVariantRect(var, options);
+
     // case VAR_INTVECTOR3:
     // case VAR_INT64:
     // case VAR_VARIANTCURVE:

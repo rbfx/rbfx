@@ -49,7 +49,7 @@ void CameraOperator::RegisterObject(Context* context)
     context->AddFactoryReflection<CameraOperator>(Category_Scene);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Padding", GetPadding, SetPadding, Vector4, Vector4::ZERO, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Padding", GetPadding, SetPadding, Rect, Rect::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Track Bounding Box", bool, boundingBoxEnabled_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bounding Box Min", Vector3, boundingBox_.min_, -Vector3::ONE, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Bounding Box Max", Vector3, boundingBox_.max_, Vector3::ONE, AM_DEFAULT);
@@ -136,14 +136,14 @@ const VariantVector& CameraOperator::GetNodeIDsAttr() const
     return nodeIDsAttr_;
 }
 
-void CameraOperator::SetPadding(const Vector4& padding)
+void CameraOperator::SetPadding(const Rect& padding)
 {
     padding_ = padding;
 }
 
 void CameraOperator::SetUniformPadding(float padding)
 {
-    auto vec4 = Vector4{padding, padding, padding, padding};
+    auto vec4 = Rect{padding, padding, padding, padding};
     padding_ = vec4;
 }
 
@@ -322,10 +322,10 @@ void CameraOperator::FocusOn(const Vector3* begin, const Vector3* end, Camera* c
             plane.d_ = ea::max(plane.d_, -plane.normal_.DotProduct(*point));
         }
     }
-    planes[PLANE_UP].d_ += padding_.x_;
-    planes[PLANE_RIGHT].d_ += padding_.y_;
-    planes[PLANE_DOWN].d_ += padding_.z_;
-    planes[PLANE_LEFT].d_ += padding_.w_;
+    planes[PLANE_LEFT].d_ += padding_.Left();
+    planes[PLANE_UP].d_ += padding_.Top();
+    planes[PLANE_RIGHT].d_ += padding_.Right();
+    planes[PLANE_DOWN].d_ += padding_.Bottom();
 
     const auto oldPosition = node_->GetWorldPosition();
 
