@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Condition=" $(RuntimeIdentifier.StartsWith('win')) OR $(RuntimeIdentifier.StartsWith('linux')) OR $(RuntimeIdentifier.StartsWith('osx')) OR $(RuntimeIdentifier.StartsWith('android')) OR $(RuntimeIdentifier.StartsWith('ios')) ">
+    <PackageReference Include="rbfx.Urho3DNet.runtime.$(RuntimeIdentifier)" Version="$version$" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidJavaSource Include="$(MSBuildThisFileDirectory)/../content/java/**/*.java">
+      <Link>%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </AndroidJavaSource>
+  </ItemGroup>
+</Project>

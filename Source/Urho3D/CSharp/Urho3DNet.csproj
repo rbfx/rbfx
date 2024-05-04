@@ -7,6 +7,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <GeneratedCodePath>$(RBFX_BINARY_DIR)/Source/Urho3D/</GeneratedCodePath>
+    <PackageOutputPath>$(BaseOutputPath)</PackageOutputPath>
   </PropertyGroup>
   <ItemGroup>
     <BindingsSourceCodeUrho3D Include="$(GeneratedCodePath)Urho3DCSharp_$(URHO3D_CSHARP_BIND_CONFIG)/*.cs" />

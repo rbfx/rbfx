@@ -132,5 +132,5 @@ CMakeDoxygenDefaults.cmake
 # Packaging
 packaging/nuget/local-repository/
 packaging/nuget/out/
-packaging/nuget/SDK-*
+packaging/nuget/in/
 packaging/nuget/rbfx-*.zip

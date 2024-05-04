@@ -4,22 +4,47 @@
         <id>rbfx.Urho3DNet</id>
         <version>$version$</version>
         <title>rbfx.Urho3DNet</title>
-        <authors>Rokas Kupstys</authors>
+        <authors>rbfx contributors</authors>
         <copyright>© rbfx contributors. All rights reserved.</copyright>
         <license type="expression">MIT</license>
-        <projectUrl>https://github.com/rokups/rbfx/</projectUrl>
+        <projectUrl>https://github.com/rbfx/rbfx/</projectUrl>
         <description>rbfx game engine package for C#</description>
         <tags>rbfx Urho3D gamedev csharp dotnet gameengine</tags>
         <dependencies>
-            <group targetFramework="net6.0">
-                <dependency id="System.CodeDom" version="6.0.0-preview.6.21352.12" exclude="Build,Analyzers" />
+            <group targetFramework="net8.0">
+                <dependency id="System.CodeDom" version="8.0.0" exclude="Build,Analyzers" />
+            </group>
+            <group targetFramework="netstandard2.0">
+                <dependency id="System.CodeDom" version="8.0.0" exclude="Build,Analyzers" />
             </group>
         </dependencies>
     </metadata>
     <files>
-        <file src="SDK-Windows/bin/Release/Urho3DNet.dll" target="lib/net6.0/"/>
-        <file src="SDK-Windows/bin/Release/Urho3D.dll" target="runtimes/win-x64/native/"/>
-        <file src="SDK-Linux/bin/libUrho3D.so" target="runtimes/linux-x64/native/" />
-        <file src="SDK-MacOS/bin/Release/libUrho3D.dylib" target="runtimes/osx-x64/native/" />
+        <file src="java/**" target="content/"/>
+	
+        <file src="in/Windows/bin/RelWithDebInfo/Urho3DNet.dll" target="runtimes/win-x64/lib/net8.0/"/>
+        <!-- <file src="in/Windows/bin/RelWithDebInfo/Urho3DNet.pdb" target="runtimes/win-x64/lib/net8.0/"/> -->
+        <file src="in/Windows/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="runtimes/win-x64/lib/net8.0/"/>
+        <!-- <file src="in/Windows/bin/RelWithDebInfo/Urho3DNet.Scripts.pdb" target="runtimes/win-x64/lib/net8.0/"/> -->
+
+        <file src="in/Linux/bin/Urho3DNet.dll" target="runtimes/linux-x64/lib/net8.0/"/>
+        <!-- <file src="in/Linux/bin/Urho3DNet.pdb" target="runtimes/linux-x64/lib/net8.0/"/> -->
+        <file src="in/Linux/bin/Urho3DNet.Scripts.dll" target="runtimes/linux-x64/lib/net8.0/"/>
+        <!-- <file src="in/Linux/bin/Urho3DNet.Scripts.pdb" target="runtimes/linux-x64/lib/net8.0/"/> -->
+
+        <file src="in/MacOS/bin/RelWithDebInfo/Urho3DNet.dll" target="runtimes/osx-x64/lib/net8.0/"/>
+        <file src="in/MacOS/bin/RelWithDebInfo/Urho3DNet.pdb" target="runtimes/osx-x64/lib/net8.0/"/>
+        <file src="in/MacOS/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="runtimes/osx-x64/lib/net8.0/"/>
+        <file src="in/MacOS/bin/RelWithDebInfo/Urho3DNet.Scripts.pdb" target="runtimes/osx-x64/lib/net8.0/"/>
+
+        <file src="in/Android/.cxx/RelWithDebInfo/*/x86_64/Urho3DNet.dll" target="runtimes/android-x64/lib/netstandard2.1/"/>
+        <file src="in/Android/.cxx/RelWithDebInfo/*/x86_64/Urho3DNet.pdb" target="runtimes/android-x64/lib/netstandard2.1/"/>
+        <file src="in/Android/.cxx/RelWithDebInfo/*/x86_64/Urho3DNet.Scripts.dll" target="runtimes/android-x64/lib/netstandard2.1/"/>
+        <file src="in/Android/.cxx/RelWithDebInfo/*/x86_64/Urho3DNet.Scripts.pdb" target="runtimes/android-x64/lib/netstandard2.1/"/>
+
+        <file src="in/UWP/bin/RelWithDebInfo/Urho3DNet.dll" target="lib/netstandard2.0/"/>
+        <!-- <file src="in/UWP/bin/RelWithDebInfo/Urho3DNet.pdb" target="lib/netstandard2.0/"/> -->
+        <file src="in/UWP/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="lib/netstandard2.0/"/>
+        <!-- <file src="in/UWP/bin/RelWithDebInfo/Urho3DNet.Scripts.pdb" target="lib/netstandard2.0/"/> -->
     </files>
 </package>
