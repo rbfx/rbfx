@@ -23,6 +23,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -524,13 +525,22 @@ public struct Matrix4 : IEquatable<Matrix4>, IApproximateEquatable<Matrix4>
     /// Return matrix column.
     public Vector4 Column(int j) { return new Vector4(this[0, j], this[1, j], this[2, j], this[3, j]); }
 
-    /// Return as string.
+    /// <inheritdoc/>
     public override string ToString()
     {
-        return
-            $"{M00} {M10} {M20} {M30} {M01} {M11} {M21} {M31} {M02} {M12} {M22} {M32} {M03} {M13} {M23} {M33}"; }
+        return string.Format(CultureInfo.InvariantCulture, "{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11} {12} {13} {14} {15}", M00, M01, M02, M03, M10, M11, M12, M13, M20, M21, M22, M23, M30, M31, M32, M33);
+    }
 
-    public float M00;
+    /// <summary>
+    /// Converts the string representation of a Matrix4 into value.
+    /// </summary>
+    public static Matrix4 Parse(string value)
+    {
+        var parser = new SpaceSeparatedValueHelper(value);
+        return new Matrix4(parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat());
+    }
+
+        public float M00;
     public float M01;
     public float M02;
     public float M03;

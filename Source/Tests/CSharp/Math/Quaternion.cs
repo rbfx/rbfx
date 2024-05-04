@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023-2023 the rbfx project.
+// Copyright (c) 2023-2024 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -64,6 +64,16 @@ namespace Urho3DNet.Tests
                 Assert.Equal(expectedMatrix, actualMatrix, Matrix3.ApproximateEqualityComparer);
                 Assert.Equal(expected, actualAngles, Vector3.ApproximateEqualityComparer);
             }
+        }
+
+        [Fact]
+        public void ParseToString()
+        {
+            Quaternion value = new Quaternion(1.1f, 2.2f, 3.3f, 4.4f);
+
+            var res = Quaternion.Parse(value.ToString());
+
+            Assert.Equal(value, res);
         }
     }
 }

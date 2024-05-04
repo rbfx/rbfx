@@ -1,4 +1,5 @@
 using System;
+using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -8,9 +9,28 @@ namespace Urho3DNet
 {
     public class ScriptRuntimeApiImpl : ScriptRuntimeApi
     {
-        private static readonly string ProgramFile = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath;
-        private static readonly string ProgramDirectory = Path.GetDirectoryName(ProgramFile);
+        private static readonly string ProgramFile;
+        private static readonly string ProgramDirectory;
         private GCHandle _selfReference;
+
+        static ScriptRuntimeApiImpl()
+        {
+            try
+            {
+                var assembly = Assembly.GetExecutingAssembly();
+                if (assembly?.CodeBase != null)
+                {
+                    ProgramFile = new Uri(assembly.CodeBase).LocalPath;
+                    ProgramDirectory = Path.GetDirectoryName(ProgramFile);
+                }
+            }
+            // CodeBase is not available on UWP
+            catch (PlatformNotSupportedException)
+            {
+                ProgramDirectory = Directory.GetCurrentDirectory();
+            }
+        }
+
 
         public ScriptRuntimeApiImpl()
         {

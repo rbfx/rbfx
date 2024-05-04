@@ -23,6 +23,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace Urho3DNet
@@ -219,10 +220,19 @@ namespace Urho3DNet
             return HashCode.Combine(Min, Max);
         }
 
-        /// Return as string.
+        /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{Min.X} {Min.Y} {Max.X} {Max.Y}";
+            return string.Format(CultureInfo.InvariantCulture, "{0} {1} {2} {3}", Min.X, Min.Y, Max.X, Max.Y);
+        }
+
+        /// <summary>
+        /// Converts the string representation of a Rect into value.
+        /// </summary>
+        public static Rect Parse(string value)
+        {
+            var parser = new SpaceSeparatedValueHelper(value);
+            return new Rect(parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat());
         }
     }
 }

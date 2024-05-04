@@ -108,6 +108,8 @@ public:
     bool WriteColor(const Color& value);
     /// Write a bounding box.
     bool WriteBoundingBox(const BoundingBox& value);
+    /// Write a string data without zero termination.
+    bool WriteStringData(ea::string_view value);
     /// Write a null-terminated string.
     bool WriteString(ea::string_view value);
     bool WriteString(std::string_view value);

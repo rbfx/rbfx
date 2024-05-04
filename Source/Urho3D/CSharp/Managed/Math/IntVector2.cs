@@ -23,6 +23,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -158,10 +159,19 @@ namespace Urho3DNet
         /// Return integer data.
         public int[] Data => new int[] {X, Y};
 
-        /// Return as string.
+        /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{X} {Y}";
+            return string.Format(CultureInfo.InvariantCulture, "{0} {1}", X, Y);
+        }
+
+        /// <summary>
+        /// Converts the string representation of a IntRect into value.
+        /// </summary>
+        public static IntVector2 Parse(string value)
+        {
+            var parser = new SpaceSeparatedValueHelper(value);
+            return new IntVector2(parser.ReadInt(), parser.ReadInt());
         }
 
         /// <summary>Returns the hash code for this instance.</summary>

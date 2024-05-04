@@ -23,6 +23,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 
 namespace Urho3DNet
@@ -485,10 +486,19 @@ public struct Matrix3x4 : IEquatable<Matrix3x4>, IApproximateEquatable<Matrix3x4
     /// Return matrix column.
     public Vector3 Column(int j) { return new Vector3(this[0, j], this[1, j], this[2, j]); }
 
-    /// Return as string.
+    /// <inheritdoc/>
     public override string ToString()
     {
-        return $"{M00} {M01} {M02} {M03} {M10} {M11} {M12} {M13} {M20} {M21} {M22} {M23}";
+        return string.Format(CultureInfo.InvariantCulture, "{0} {1} {2} {3} {4} {5} {6} {7} {8} {9} {10} {11}", M00, M01, M02, M03, M10, M11, M12, M13, M20, M21, M22, M23);
+    }
+
+    /// <summary>
+    /// Converts the string representation of a Matrix3x4 into value.
+    /// </summary>
+    public static Matrix3x4 Parse(string value)
+    {
+        var parser = new SpaceSeparatedValueHelper(value);
+        return new Matrix3x4(parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat());
     }
 
     public float M00;

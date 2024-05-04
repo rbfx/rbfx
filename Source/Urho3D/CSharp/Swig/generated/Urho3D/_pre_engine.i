@@ -46,6 +46,8 @@
 %ignore Urho3D::EP_PACKAGE_CACHE_DIR;
 %constant const char* EpPlugins = "Plugins";
 %ignore Urho3D::EP_PLUGINS;
+%constant const char* EpRenamePlugins = "RenamePlugins";
+%ignore Urho3D::EP_RENAME_PLUGINS;
 %constant const char* EpRefreshRate = "RefreshRate";
 %ignore Urho3D::EP_REFRESH_RATE;
 %constant const char* EpResourcePackages = "ResourcePackages";

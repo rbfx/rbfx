@@ -186,6 +186,12 @@ bool Serializer::WriteBoundingBox(const BoundingBox& value)
     return success;
 }
 
+bool Serializer::WriteStringData(ea::string_view value)
+{
+    const char* chars = value.data();
+    return Write(chars,  static_cast<unsigned>(value.length())) == value.length();
+}
+
 bool Serializer::WriteString(ea::string_view value)
 {
     const char* chars = value.data();

@@ -56,6 +56,8 @@ namespace Urho3DNet
         // This method may be overriden in partial class in order to attach extra logic to object constructor
         internal void OnSetupInstance()
         {
+            Instance = this;
+
             using (var script = new Script(this))
             {
                 RegisterSubsystem(script);
@@ -74,8 +76,6 @@ namespace Urho3DNet
             }
 
             Urho3DRegisterDirectorFactories(swigCPtr);
-
-            Instance = this;
         }
 
         public void RegisterFactories(Assembly assembly)
@@ -157,6 +157,13 @@ namespace Urho3DNet
             var workQueue = GetSubsystem<WorkQueue>();
             workQueue.PostTaskForMainThread((threadId, queue) => tcs.TrySetResult(true));
             return tcs.Task.ConfigureAwait(false);
+        }
+
+        public string GetUrhoTypeName(StringHash stringHash)
+        {
+            var ret = Urho3DPINVOKE.Context_GetTypeName(swigCPtr, stringHash.Hash);
+            if (Urho3DPINVOKE.SWIGPendingException.Pending) throw Urho3DPINVOKE.SWIGPendingException.Retrieve();
+            return ret;
         }
 
         #region Interop

@@ -23,6 +23,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace Urho3DNet
@@ -498,10 +499,19 @@ namespace Urho3DNet
         /// Return float data.
         public float[] Data => new[] {W, X, Y, Z};
 
-        /// Return as string.
+        /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{W} {X} {Y} {Z}";
+            return string.Format(CultureInfo.InvariantCulture, "{0} {1} {2} {3}", W, X, Y, Z);
+        }
+
+        /// <summary>
+        /// Converts the string representation of a Quaternion into value.
+        /// </summary>
+        public static Quaternion Parse(string value)
+        {
+            var parser = new SpaceSeparatedValueHelper(value);
+            return new Quaternion(parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat());
         }
 
         public Vector3 Xyz => new Vector3(X, Y, Z);

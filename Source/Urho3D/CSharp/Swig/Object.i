@@ -13,7 +13,7 @@ IGNORE_SUBSYSTEM(Tasks)
     return ret;
 }
 
-%typemap(csout, excode=SWIGEXCODE) const eastl::string& GetTypeName {
+%typemap(csout, excode=SWIGEXCODE) const eastl::string& GetTypeName() {
     var ret = GetType().Name;$excode
     return ret;
 }

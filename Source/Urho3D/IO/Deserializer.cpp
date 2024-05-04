@@ -263,6 +263,18 @@ ea::string Deserializer::ReadString()
     return ret;
 }
 
+ea::string Deserializer::ReadStringData()
+{
+    ea::string ret;
+
+    while (!IsEof())
+    {
+        ret += ReadByte();
+    }
+
+    return ret;
+}
+
 ea::string Deserializer::ReadFileID()
 {
     ea::string ret;

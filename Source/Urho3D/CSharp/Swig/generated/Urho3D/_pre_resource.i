@@ -107,6 +107,7 @@
 %csattribute(Urho3D::ResourceCache, %arg(bool), ReturnFailedResources, GetReturnFailedResources, SetReturnFailedResources);
 %csattribute(Urho3D::ResourceCache, %arg(bool), SearchPackagesFirst, GetSearchPackagesFirst, SetSearchPackagesFirst);
 %csattribute(Urho3D::ResourceCache, %arg(int), FinishBackgroundResourcesMs, GetFinishBackgroundResourcesMs, SetFinishBackgroundResourcesMs);
+%csattribute(Urho3D::SerializableResource, %arg(Urho3D::Serializable *), Value, GetValue, SetValue);
 %csattribute(Urho3D::XMLAttributeReference, %arg(Urho3D::XMLElement), Element, GetElement);
 %csattribute(Urho3D::XMLAttributeReference, %arg(char *), AttributeName, GetAttributeName);
 %csattribute(Urho3D::XMLOutputArchiveBlock, %arg(bool), IsUnorderedAccessSupported, IsUnorderedAccessSupported);

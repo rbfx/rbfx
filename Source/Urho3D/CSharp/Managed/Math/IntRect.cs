@@ -22,6 +22,7 @@
 //
 
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace Urho3DNet
@@ -155,10 +156,19 @@ namespace Urho3DNet
             Left = Right = Top = Bottom = 0;
         }
 
-        /// Return as string.
+        /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{Left} {Top} {Right} {Bottom}";
+            return string.Format(CultureInfo.InvariantCulture, "{0} {1} {2} {3}", Left, Top, Right, Bottom);
+        }
+
+        /// <summary>
+        /// Converts the string representation of a IntRect into value.
+        /// </summary>
+        public static IntRect Parse(string value)
+        {
+            var parser = new SpaceSeparatedValueHelper(value);
+            return new IntRect(parser.ReadInt(), parser.ReadInt(), parser.ReadInt(), parser.ReadInt());
         }
 
         /// Return left-top corner position.

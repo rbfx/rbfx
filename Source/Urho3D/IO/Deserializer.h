@@ -124,6 +124,8 @@ public:
     BoundingBox ReadBoundingBox();
     /// Read a null-terminated string.
     ea::string ReadString();
+    /// Read the rest of content as a string.
+    ea::string ReadStringData();
     /// Read a four-letter file ID.
     ea::string ReadFileID();
     /// Read a 32-bit StringHash.

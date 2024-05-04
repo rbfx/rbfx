@@ -23,6 +23,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -259,10 +260,19 @@ namespace Urho3DNet
         /// Return float data.
         public float[] Data => new float[] {X, Y};
 
-        /// Return as string.
+        /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{X} {Y}";
+            return string.Format(CultureInfo.InvariantCulture, "{0} {1}", X, Y);
+        }
+
+        /// <summary>
+        /// Converts the string representation of a Vector2 into value.
+        /// </summary>
+        public static Vector2 Parse(string value)
+        {
+            var parser = new SpaceSeparatedValueHelper(value);
+            return new Vector2(parser.ReadFloat(), parser.ReadFloat());
         }
 
         /// <summary>Returns the hash code for this instance.</summary>
