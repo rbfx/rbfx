@@ -186,12 +186,6 @@ bool Serializer::WriteBoundingBox(const BoundingBox& value)
     return success;
 }
 
-bool Serializer::WriteStringData(ea::string_view value)
-{
-    const char* chars = value.data();
-    return Write(chars,  static_cast<unsigned>(value.length())) == value.length();
-}
-
 bool Serializer::WriteString(ea::string_view value)
 {
     const char* chars = value.data();
@@ -426,6 +420,14 @@ bool Serializer::WriteLine(const ea::string& value)
     success &= WriteUByte(13);
     success &= WriteUByte(10);
     return success;
+}
+
+bool WriteStringData(Serializer* serializer, const ea::string& value)
+{
+    if (!serializer)
+        return false;
+    const char* chars = value.data();
+    return serializer->Write(chars, static_cast<unsigned>(value.length())) == value.length();
 }
 
 }

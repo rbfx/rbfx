@@ -510,8 +510,7 @@ namespace Urho3DNet
         /// </summary>
         public static Quaternion Parse(string value)
         {
-            var parser = new SpaceSeparatedValueHelper(value);
-            return new Quaternion(parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat());
+            return string.IsNullOrWhiteSpace(value) ? default : Urho3D.ToQuaternion(value);
         }
 
         public Vector3 Xyz => new Vector3(X, Y, Z);

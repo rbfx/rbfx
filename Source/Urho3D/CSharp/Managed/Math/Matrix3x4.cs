@@ -497,11 +497,10 @@ public struct Matrix3x4 : IEquatable<Matrix3x4>, IApproximateEquatable<Matrix3x4
     /// </summary>
     public static Matrix3x4 Parse(string value)
     {
-        var parser = new SpaceSeparatedValueHelper(value);
-        return new Matrix3x4(parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat());
+        return string.IsNullOrWhiteSpace(value) ? default : Urho3D.ToMatrix3x4(value);
     }
 
-    public float M00;
+        public float M00;
     public float M01;
     public float M02;
     public float M03;

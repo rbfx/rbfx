@@ -271,8 +271,7 @@ namespace Urho3DNet
         /// </summary>
         public static Vector2 Parse(string value)
         {
-            var parser = new SpaceSeparatedValueHelper(value);
-            return new Vector2(parser.ReadFloat(), parser.ReadFloat());
+            return string.IsNullOrWhiteSpace(value) ? default : Urho3D.ToVector2(value);
         }
 
         /// <summary>Returns the hash code for this instance.</summary>

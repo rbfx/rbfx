@@ -210,8 +210,7 @@ namespace Urho3DNet
         /// </summary>
         public static Vector4 Parse(string value)
         {
-            var parser = new SpaceSeparatedValueHelper(value);
-            return new Vector4(parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat());
+            return string.IsNullOrWhiteSpace(value) ? default : Urho3D.ToVector4(value);
         }
 
         /// <summary>Returns the hash code for this instance.</summary>

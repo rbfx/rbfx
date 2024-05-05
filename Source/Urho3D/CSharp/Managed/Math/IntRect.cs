@@ -167,8 +167,7 @@ namespace Urho3DNet
         /// </summary>
         public static IntRect Parse(string value)
         {
-            var parser = new SpaceSeparatedValueHelper(value);
-            return new IntRect(parser.ReadInt(), parser.ReadInt(), parser.ReadInt(), parser.ReadInt());
+            return string.IsNullOrWhiteSpace(value) ? default : Urho3D.ToIntRect(value);
         }
 
         /// Return left-top corner position.

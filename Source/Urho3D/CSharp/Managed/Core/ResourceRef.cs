@@ -6,24 +6,9 @@ namespace Urho3DNet
 {
     public partial class ResourceRef
     {
-        public static ResourceRef Parse(string text)
+        public static ResourceRef Parse(string value)
         {
-            if (string.IsNullOrWhiteSpace(text))
-                return null;
-
-            int splitIndex = text.IndexOf(';');
-
-            if (splitIndex < 0)
-            {
-                return new ResourceRef(text);
-            }
-
-            return new ResourceRef(text.Substring(0, splitIndex), text.Substring(splitIndex + 1));
-        }
-
-        public string ToString(Context context)
-        {
-            return $"{context.GetUrhoTypeName(this.Type)};{this.Name}";
+            return string.IsNullOrWhiteSpace(value) ? default : Urho3D.ToResourceRef(value);
         }
     }
 }

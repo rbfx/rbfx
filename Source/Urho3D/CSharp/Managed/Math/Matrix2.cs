@@ -215,8 +215,7 @@ namespace Urho3DNet
         /// </summary>
         public static Matrix2 Parse(string value)
         {
-            var parser = new SpaceSeparatedValueHelper(value);
-            return new Matrix2(parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat());
+            return string.IsNullOrWhiteSpace(value) ? default : Urho3D.ToMatrix2(value);
         }
 
         public float M00;

@@ -130,8 +130,7 @@ namespace Urho3DNet
         /// </summary>
         public static IntVector3 Parse(string value)
         {
-            var parser = new SpaceSeparatedValueHelper(value);
-            return new IntVector3(parser.ReadInt(), parser.ReadInt(), parser.ReadInt());
+            return string.IsNullOrWhiteSpace(value) ? default : Urho3D.ToIntVector3(value);
         }
 
         /// <summary>Returns the hash code for this instance.</summary>

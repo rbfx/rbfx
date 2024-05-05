@@ -124,8 +124,6 @@ public:
     BoundingBox ReadBoundingBox();
     /// Read a null-terminated string.
     ea::string ReadString();
-    /// Read the rest of content as a string.
-    ea::string ReadStringData();
     /// Read a four-letter file ID.
     ea::string ReadFileID();
     /// Read a 32-bit StringHash.
@@ -161,5 +159,8 @@ protected:
     /// Stream size.
     unsigned size_;
 };
+
+/// Read the rest of Deserializer content as a string. This should be last or the only read operation on Deserializer.
+ea::string ReadStringData(Deserializer* deserializer);
 
 }

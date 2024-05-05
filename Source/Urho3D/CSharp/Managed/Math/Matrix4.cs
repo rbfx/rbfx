@@ -536,11 +536,10 @@ public struct Matrix4 : IEquatable<Matrix4>, IApproximateEquatable<Matrix4>
     /// </summary>
     public static Matrix4 Parse(string value)
     {
-        var parser = new SpaceSeparatedValueHelper(value);
-        return new Matrix4(parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat(), parser.ReadFloat());
+        return string.IsNullOrWhiteSpace(value) ? default : Urho3D.ToMatrix4(value);
     }
 
-        public float M00;
+    public float M00;
     public float M01;
     public float M02;
     public float M03;

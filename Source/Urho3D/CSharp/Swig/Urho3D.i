@@ -169,11 +169,14 @@ using namespace Urho3D;
 %ignore Urho3D::Rand;
 %ignore Urho3D::RandStandardNormal;
 %ignore Urho3D::RandomEngine::GetStandardNormalFloatPair;
+%ignore Urho3D::ToString(void* value);
+%ignore Urho3D::GetStringListIndex;
 
 %include "Urho3D/Math/MathDefs.h"
 %include "Urho3D/Math/Polyhedron.h"
 %include "Urho3D/Math/Frustum.h"
 %include "Urho3D/Math/RandomEngine.h"
+%include "Urho3D/Core/StringUtils.h"
 
 CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
 %apply Urho3D::Vector4 FIXED[] { Urho3D::Vector4[] };

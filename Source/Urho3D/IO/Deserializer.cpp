@@ -263,18 +263,6 @@ ea::string Deserializer::ReadString()
     return ret;
 }
 
-ea::string Deserializer::ReadStringData()
-{
-    ea::string ret;
-
-    while (!IsEof())
-    {
-        ret += ReadByte();
-    }
-
-    return ret;
-}
-
 ea::string Deserializer::ReadFileID()
 {
     ea::string ret;
@@ -526,6 +514,21 @@ ea::string Deserializer::ReadLine()
         }
 
         ret += c;
+    }
+
+    return ret;
+}
+
+ea::string ReadStringData(Deserializer* deserializer)
+{
+    if (!deserializer)
+        return {};
+
+    ea::string ret;
+    ret.reserve(deserializer->GetSize() - deserializer->GetPosition());
+    while (!deserializer->IsEof())
+    {
+        ret += deserializer->ReadByte();
     }
 
     return ret;

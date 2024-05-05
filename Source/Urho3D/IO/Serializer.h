@@ -108,8 +108,6 @@ public:
     bool WriteColor(const Color& value);
     /// Write a bounding box.
     bool WriteBoundingBox(const BoundingBox& value);
-    /// Write a string data without zero termination.
-    bool WriteStringData(ea::string_view value);
     /// Write a null-terminated string.
     bool WriteString(ea::string_view value);
     bool WriteString(std::string_view value);
@@ -142,4 +140,7 @@ public:
     bool WriteLine(const ea::string& value);
 };
 
-}
+/// Write a string data without zero termination. This should be last or the only write into serializer.
+bool WriteStringData(Serializer* serializer, const ea::string& value);
+
+} // namespace Urho3D

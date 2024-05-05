@@ -159,13 +159,6 @@ namespace Urho3DNet
             return tcs.Task.ConfigureAwait(false);
         }
 
-        public string GetUrhoTypeName(StringHash stringHash)
-        {
-            var ret = Urho3DPINVOKE.Context_GetTypeName(swigCPtr, stringHash.Hash);
-            if (Urho3DPINVOKE.SWIGPendingException.Pending) throw Urho3DPINVOKE.SWIGPendingException.Retrieve();
-            return ret;
-        }
-
         #region Interop
 
         [SuppressUnmanagedCodeSecurity]
