@@ -31,6 +31,11 @@ public:
 
     /// Set value of the resource.
     void SetValue(Serializable* serializable);
+protected:
+    /// Binary archive magic word. Should be 4 bytes.
+    BinaryMagic GetBinaryMagic() const override;
+    /// Root block name. Used for XML serialization only.
+    const char* GetRootBlockName() const override { return "serializable"; }
 
 private:
     SharedPtr<Serializable> value_;

@@ -6,6 +6,10 @@
 
 namespace Urho3D
 {
+namespace 
+{
+const BinaryMagic SerializableBinaryMagic{{'\0', 'S', 'R', 'L'}};
+}
 
 SerializableResource::SerializableResource(Context* context)
     : SimpleResource(context)
@@ -21,7 +25,6 @@ void SerializableResource::RegisterObject(Context* context)
 
 void SerializableResource::SerializeInBlock(Archive& archive)
 {
-    ArchiveBlock block = archive.OpenUnorderedBlock("resource");
     if (archive.IsInput())
     {
         ea::string typeName;
@@ -60,6 +63,11 @@ Serializable* SerializableResource::GetValue() const
 void SerializableResource::SetValue(Serializable* serializable)
 {
     value_ = serializable;
+}
+
+BinaryMagic SerializableResource::GetBinaryMagic() const
+{
+    return SerializableBinaryMagic;
 }
 
 } // namespace Urho3D

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -9,18 +10,25 @@ namespace Urho3DNet.Tests
         public async Task SaveSimpleResource()
         {
             await RbfxTestFramework.Context.ToMainThreadAsync();
-            var res = new SerializableResource(RbfxTestFramework.Context);
-            var rigidBody = new Urho3DNet.CollisionShape(RbfxTestFramework.Context);
-            res.Value = rigidBody;
-            var fileIdentifier = new FileIdentifier("conf", "SerializableResource.json");
-            res.SaveFile(fileIdentifier);
-            res.Value = null;
-            res.LoadFile(fileIdentifier);
-            var rb = res.Value as CollisionShape;
-            Assert.NotNull(rb);
 
-            var path = RbfxTestFramework.Context.VirtualFileSystem.GetAbsoluteNameFromIdentifier(fileIdentifier);
-            System.IO.File.Delete(path);
+            var path = Path.GetTempFileName();
+            try
+            {
+
+                var res = new SerializableResource(RbfxTestFramework.Context);
+                var collisionShape = new Urho3DNet.CollisionShape(RbfxTestFramework.Context);
+                res.Value = collisionShape;
+                var fileIdentifier = new FileIdentifier("file", path);
+                res.SaveFile(fileIdentifier);
+                res.Value = null;
+                res.LoadFile(fileIdentifier);
+                var rb = res.Value as CollisionShape;
+                Assert.NotNull(rb);
+            }
+            finally
+            {
+                System.IO.File.Delete(path);
+            }
         }
     }
 }
