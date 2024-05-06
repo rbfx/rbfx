@@ -42,6 +42,11 @@ private:
 
     void OnEditAttributeBegin(const WeakSerializableVector& objects, const AttributeInfo* attribute);
     void OnEditAttributeEnd(const WeakSerializableVector& objects, const AttributeInfo* attribute);
+    void OnActionBegin(const WeakSerializableVector& objects);
+    void OnActionEnd(const WeakSerializableVector& objects);
+
+    void CreateModifyResourceAction();
+    void SaveModifiedResources();
 
     WeakPtr<Project> project_;
 

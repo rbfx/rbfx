@@ -24,7 +24,7 @@ SerializableResourceInspector::SerializableResourceInspector(Project* project)
 
 void SerializableResourceInspector::OnProjectRequest(ProjectRequest* request)
 {
-    auto inspectResourceRequest = dynamic_cast<InspectResourceRequest*>(request);
+    const auto inspectResourceRequest = dynamic_cast<InspectResourceRequest*>(request);
     if (!inspectResourceRequest || inspectResourceRequest->GetResources().empty())
         return;
 
@@ -50,7 +50,7 @@ void SerializableResourceInspector::OnProjectRequest(ProjectRequest* request)
 
 void SerializableResourceInspector::InspectResources()
 {
-    auto cache = GetSubsystem<ResourceCache>();
+    const auto cache = GetSubsystem<ResourceCache>();
 
     WeakSerializableVector serializableResources;
     resources_.clear();
@@ -67,7 +67,7 @@ void SerializableResourceInspector::InspectResources()
     }
 
     resourceNames_.clear();
-    for (auto serializableResource : resources_)
+    for (const auto& serializableResource : resources_)
     {
         resourceNames_.emplace_back(serializableResource->GetName());
     }
@@ -81,18 +81,51 @@ void SerializableResourceInspector::InspectResources()
     widget_ = MakeShared<SerializableInspectorWidget>(context_, serializableResources);
     widget_->OnEditAttributeBegin.Subscribe(this, &SerializableResourceInspector::OnEditAttributeBegin);
     widget_->OnEditAttributeEnd.Subscribe(this, &SerializableResourceInspector::OnEditAttributeEnd);
+    widget_->OnActionBegin.Subscribe(this, &SerializableResourceInspector::OnActionBegin);
+    widget_->OnActionEnd.Subscribe(this, &SerializableResourceInspector::OnActionEnd);
 }
 
 void SerializableResourceInspector::OnEditAttributeBegin(
     const WeakSerializableVector& objects, const AttributeInfo* attribute)
 {
-
+    CreateModifyResourceAction();
 }
 
 void SerializableResourceInspector::OnEditAttributeEnd(
     const WeakSerializableVector& objects, const AttributeInfo* attribute)
 {
-   for (auto& serializableResource : resources_)
+    SaveModifiedResources();
+}
+
+void SerializableResourceInspector::OnActionBegin(const WeakSerializableVector& objects)
+{
+    CreateModifyResourceAction();
+}
+
+void SerializableResourceInspector::OnActionEnd(const WeakSerializableVector& objects)
+{
+    SaveModifiedResources();
+}
+
+void SerializableResourceInspector::CreateModifyResourceAction()
+{
+    // Incomplete action will include all the changes automatically
+    if (pendingAction_ && !pendingAction_->IsComplete())
+        return;
+
+    const auto undoManager = project_->GetUndoManager();
+
+    pendingAction_ = MakeShared<ModifyResourceAction>(project_);
+    for (auto& serializable : resources_)
+        pendingAction_->AddResource(serializable);
+
+    // Initialization of "redo" state is delayed so it's okay to push the action here
+    undoManager->PushAction(pendingAction_);
+}
+
+void SerializableResourceInspector::SaveModifiedResources()
+{
+    for (auto& serializableResource : resources_)
         project_->SaveFileDelayed(serializableResource);
 }
 
