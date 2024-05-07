@@ -500,7 +500,7 @@ public struct Matrix3x4 : IEquatable<Matrix3x4>, IApproximateEquatable<Matrix3x4
         return string.IsNullOrWhiteSpace(value) ? default : Urho3D.ToMatrix3x4(value);
     }
 
-        public float M00;
+    public float M00;
     public float M01;
     public float M02;
     public float M03;

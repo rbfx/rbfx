@@ -140,7 +140,4 @@ public:
     bool WriteLine(const ea::string& value);
 };
 
-/// Write a string data without zero termination. This should be last or the only write into serializer.
-bool WriteStringData(Serializer* serializer, const ea::string& value);
-
 } // namespace Urho3D

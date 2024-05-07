@@ -13,7 +13,8 @@ namespace Urho3DNet.Tests
         [Fact]
         public async Task ReadStringData()
         {
-            await RbfxTestFramework.Context.ToMainThreadAsync();
+            var context = RbfxTestFramework.Context;
+            await context.ToMainThreadAsync();
 
             var path = Path.GetTempFileName();
 
@@ -21,8 +22,12 @@ namespace Urho3DNet.Tests
             try
             {
                 var fileIdentifier = new FileIdentifier("file", path);
-                var file = RbfxTestFramework.Context.VirtualFileSystem.OpenFile(fileIdentifier, FileMode.FileRead);
-                var txt = Urho3D.ReadStringData(file);
+                var file = context.VirtualFileSystem.OpenFile(fileIdentifier, FileMode.FileRead);
+
+                using var binaryFile = new BinaryFile(context);
+                binaryFile.BeginLoad(file);
+                var txt = binaryFile.Text;
+
                 file.Close();
 
                 Assert.Equal("Bla", txt);

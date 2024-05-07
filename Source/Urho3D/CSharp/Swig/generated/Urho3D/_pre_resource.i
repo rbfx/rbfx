@@ -64,7 +64,7 @@
 %csattribute(Urho3D::XMLFile, %arg(pugi::xml_document *), Document, GetDocument);
 %csattribute(Urho3D::JSONFile, %arg(Urho3D::JSONValue), Root, GetRoot);
 %csattribute(Urho3D::BinaryFile, %arg(Urho3D::ByteVector), Data, GetData, SetData);
-%csattribute(Urho3D::BinaryFile, %arg(ea::string_view), Text, GetText);
+%csattribute(Urho3D::BinaryFile, %arg(ea::string_view), Text, GetText, SetText);
 %csattribute(Urho3D::BinaryFile, %arg(Urho3D::VectorBuffer), MutableBuffer, GetMutableBuffer);
 %csattribute(Urho3D::ImageCube, %arg(ea::vector<SharedPtr<Image>>), Images, GetImages);
 %csattribute(Urho3D::ImageCube, %arg(Urho3D::XMLFile *), ParametersXML, GetParametersXML);

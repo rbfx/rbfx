@@ -13,14 +13,18 @@ namespace Urho3DNet.Tests
         [Fact]
         public async Task WriteStringData()
         {
-            await RbfxTestFramework.Context.ToMainThreadAsync();
+            var context = RbfxTestFramework.Context;
+            await context.ToMainThreadAsync();
 
             var path = Path.GetTempFileName();
             try
             {
                 var fileIdentifier = new FileIdentifier("file", path);
-                var file = RbfxTestFramework.Context.VirtualFileSystem.OpenFile(fileIdentifier, FileMode.FileWrite);
-                Urho3D.WriteStringData(file, "Bla");
+                var file = context.VirtualFileSystem.OpenFile(fileIdentifier, FileMode.FileWrite);
+
+                using var binaryFile = new BinaryFile(context);
+                binaryFile.Text = "Bla";
+                binaryFile.Save(file);
                 file.Close();
 
                 var txt = System.IO.File.ReadAllText(path);

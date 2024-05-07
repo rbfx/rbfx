@@ -495,6 +495,7 @@ public:
 #endif
 %include "Urho3D/Resource/Image.h"
 %include "Urho3D/Resource/ImageCube.h"
+%include "Urho3D/Resource/BinaryFile.h"
 %include "Urho3D/Resource/JSONValue.h"
 %include "Urho3D/Resource/JSONFile.h"
 %include "Urho3D/Resource/Localization.h"

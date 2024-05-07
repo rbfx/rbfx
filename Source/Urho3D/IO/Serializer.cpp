@@ -422,12 +422,4 @@ bool Serializer::WriteLine(const ea::string& value)
     return success;
 }
 
-bool WriteStringData(Serializer* serializer, const ea::string& value)
-{
-    if (!serializer)
-        return false;
-    const char* chars = value.data();
-    return serializer->Write(chars, static_cast<unsigned>(value.length())) == value.length();
-}
-
 }
