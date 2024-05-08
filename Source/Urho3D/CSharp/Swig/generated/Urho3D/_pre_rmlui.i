@@ -23,6 +23,7 @@
 %csattribute(Urho3D::RmlUIComponent, %arg(Rml::ElementDocument *), Document, GetDocument);
 %csattribute(Urho3D::RmlUIComponent, %arg(Urho3D::RmlNavigationManager), NavigationManager, GetNavigationManager);
 %csattribute(Urho3D::RmlUI, %arg(Rml::Context *), RmlContext, GetRmlContext);
+%csattribute(Urho3D::RmlUI, %arg(float), Scale, GetScale, SetScale);
 %csattribute(Urho3D::RmlUI, %arg(bool), IsRendering, IsRendering, SetRendering);
 %csattribute(Urho3D::RmlUI, %arg(bool), IsInputCaptured, IsInputCaptured);
 %csattribute(Urho3D::RmlUI, %arg(bool), IsHovered, IsHovered);

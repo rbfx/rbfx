@@ -48,6 +48,7 @@ namespace Urho3D
 
 class Archive;
 class VariantCurve;
+class Context;
 
 /// Variant's supported types.
 enum VariantType : unsigned char
@@ -163,6 +164,9 @@ struct URHO3D_API ResourceRef
 
     /// Test for inequality with another reference.
     bool operator !=(const ResourceRef& rhs) const { return type_ != rhs.type_ || name_ != rhs.name_; }
+
+    /// Convert resource reference to string.
+    ea::string ToString(const Context* context) const;
 };
 
 /// %List of typed resource references.
@@ -204,6 +208,9 @@ struct URHO3D_API ResourceRefList
 
     /// Test for inequality with another reference list.
     bool operator !=(const ResourceRefList& rhs) const { return type_ != rhs.type_ || names_ != rhs.names_; }
+
+    /// Convert resource reference list to string.
+    ea::string ToString(const Context* context) const;
 };
 
 /// Custom variant value. This type is not abstract to store it in the VariantValue by value.

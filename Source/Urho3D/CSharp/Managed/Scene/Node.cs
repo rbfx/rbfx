@@ -41,6 +41,11 @@ namespace Urho3DNet
             return (T)GetOrCreateComponent(typeof(T).Name, id);
         }
 
+        public void RemoveComponent<T>() where T : Component
+        {
+            RemoveComponent(typeof(T).Name);
+        }
+
         /// <summary>
         /// Get first occurrence of a component type.
         /// </summary>

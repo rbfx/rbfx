@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2024-2024 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +28,7 @@
 
 namespace Urho3D
 {
+class Matrix2;
 
 /// Parse a bool from a string. Check for the first non-empty character (converted to lowercase) being either 't', 'y' or '1'.
 URHO3D_API bool ToBool(const ea::string& source);
@@ -96,6 +98,10 @@ URHO3D_API Vector4 ToVector4(const char* source, bool allowMissingCoords = false
 URHO3D_API Variant ToVectorVariant(const ea::string& source);
 /// Parse a float, Vector or Matrix variant from a C string. Return empty variant on illegal input.
 URHO3D_API Variant ToVectorVariant(const char* source);
+/// Parse a Matrix2 from a string.
+URHO3D_API Matrix2 ToMatrix2(const ea::string& source);
+/// Parse a Matrix2 from a C string.
+URHO3D_API Matrix2 ToMatrix2(const char* source);
 /// Parse a Matrix3 from a string.
 URHO3D_API Matrix3 ToMatrix3(const ea::string& source);
 /// Parse a Matrix3 from a C string.
@@ -108,6 +114,14 @@ URHO3D_API Matrix3x4 ToMatrix3x4(const char* source);
 URHO3D_API Matrix4 ToMatrix4(const ea::string& source);
 /// Parse a Matrix4 from a C string.
 URHO3D_API Matrix4 ToMatrix4(const char* source);
+/// Parse a ResourceRef from a string.
+URHO3D_API ResourceRef ToResourceRef(const ea::string& source);
+/// Parse a ResourceRef from a string.
+URHO3D_API ResourceRef ToResourceRef(const char* source);
+/// Parse a ResourceRefList from a string.
+URHO3D_API ResourceRefList ToResourceRefList(const ea::string& source);
+/// Parse a ResourceRefList from a C string.
+URHO3D_API ResourceRefList ToResourceRefList(const char* source);
 /// Convert a boolean to string (returns true or false).
 URHO3D_API ea::string ToStringBool(bool value);
 /// Convert a pointer to string (returns hexadecimal).
