@@ -94,3 +94,32 @@ TEST_CASE("ContainerComponent tracks ModuleComponent")
         CHECK(module == resolvedModule);
     }
 };
+
+TEST_CASE("ContainerComponent with multiple ModuleComponents")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+
+    // Create container first, then module
+    auto scene = MakeShared<Scene>(context);
+    auto child = scene->CreateChild("Child");
+    auto container = child->CreateComponent<ContainerComponent>();
+    CHECK(0 == container->GetNumModules<ModuleComponent>());
+    auto module1 = child->CreateComponent<ModuleComponent>();
+    CHECK(1 == container->GetNumModules<ModuleComponent>());
+    auto module2 = child->CreateComponent<ModuleComponent>();
+
+    {
+        const auto resolvedModule = container->GetAnyModule<ModuleComponent>();
+        const bool check = (module1 == resolvedModule) || (module2 == resolvedModule);
+        CHECK(check);
+    }
+    {
+        CHECK(2 == container->GetNumModules<ModuleComponent>());
+        auto resolvedModule1 = container->GetModuleAtIndex<ModuleComponent>(0);
+        const bool check1 = (module1 == resolvedModule1) || (module2 == resolvedModule1);
+        CHECK(check1);
+        auto resolvedModule2 = container->GetModuleAtIndex<ModuleComponent>(1);
+        const bool check2 = (module1 == resolvedModule1) || (module2 == resolvedModule1);
+        CHECK(check2);
+    }
+}

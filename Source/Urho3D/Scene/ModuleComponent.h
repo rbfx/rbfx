@@ -41,6 +41,18 @@ protected:
     /// Handle scene being assigned.
     void OnSceneSet(Scene* scene) override;
 
+    /// Does module need to track other modules being registered in container.
+    bool GetSubscribeToContainerEnabled() const { return subscribeToContainer_; }
+    /// Set module to track other modules being registered in container.
+    void SetSubscribeToContainerEnabled(bool enable);
+
+    /// Handle module being registered in container. Call SetSubscribeToContainerEnabled to enable subscription.
+    virtual void OnModuleRegistered(StringHash type, ModuleComponent* module);
+    /// Handle module being removed from container.  Call SetSubscribeToContainerEnabled to enable subscription.
+    virtual void OnModuleRemoved(StringHash type, ModuleComponent* module);
+    /// Handle module being registered in or removed from container.
+    virtual void OnContainerSet(ContainerComponent* container);
+
     /// Register current module as type in container.
     void RegisterAs(StringHash type);
 
@@ -54,20 +66,33 @@ protected:
     void RegisterModule();
 
     /// Unregister module from current container.
-    void UnregisterModule();
+    void RemoveModule();
 
     /// Register current module as type in container.
     template <typename T> void RegisterAs();
 
 private:
+    void UpdateContainerSubscription();
+    void HandleModuleRegistered(StringHash eventType, VariantMap& eventData);
+    void HandleModuleRemoved(StringHash eventType, VariantMap& eventData);
+
     void UpdateRegistrations();
 
+    /// Container reference.
     WeakPtr<ContainerComponent> container_;
+
     /// List of types registered at container.
     /// Small number of types is expected so there is no reason to use more complex container than simple preallocated vector.
     ea::fixed_vector<StringHash,4> registeredTypes_;
+
     /// Is registered at container.
     bool isRegistered_{};
+
+    /// Is subscribed to container.
+    bool isSubscribed_{};
+
+    /// Does module need to track modules in container.
+    bool subscribeToContainer_{};
 
     friend class ContainerComponent;
 };

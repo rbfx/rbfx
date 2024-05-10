@@ -4,6 +4,7 @@
 
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Scene/ContainerComponent.h>
+#include <Urho3D/Scene/ContainerComponentEvents.h>
 #include <Urho3D/Scene/ModuleComponent.h>
 #include <Urho3D/Scene/Node.h>
 
@@ -18,6 +19,7 @@ ModuleComponent::ModuleComponent(Context* context)
 
 ModuleComponent::~ModuleComponent()
 {
+    RemoveModule();
 }
 
 void ModuleComponent::RegisterObject(Context* context)
@@ -53,8 +55,30 @@ void ModuleComponent::OnSceneSet(Scene* scene)
     }
     else
     {
-        UnregisterModule();
+        RemoveModule();
     }
+}
+
+void ModuleComponent::SetSubscribeToContainerEnabled(bool enable)
+{
+    if (subscribeToContainer_ == enable)
+        return;
+
+    subscribeToContainer_ = enable;
+
+    UpdateContainerSubscription();
+}
+
+void ModuleComponent::OnModuleRegistered(StringHash type, ModuleComponent* module)
+{
+}
+
+void ModuleComponent::OnModuleRemoved(StringHash type, ModuleComponent* module)
+{
+}
+
+void ModuleComponent::OnContainerSet(ContainerComponent* container)
+{
 }
 
 void ModuleComponent::UpdateRegistrations()
@@ -66,7 +90,7 @@ void ModuleComponent::UpdateRegistrations()
     }
     else
     {
-        UnregisterModule();
+        RemoveModule();
     }
 }
 
@@ -98,7 +122,7 @@ void ModuleComponent::AutodetectContainer()
 
     if (container_ != newContainer)
     {
-        UnregisterModule();
+        RemoveModule();
 
         container_ = newContainer;
 
@@ -108,16 +132,30 @@ void ModuleComponent::AutodetectContainer()
 
 void ModuleComponent::SetContainer(ContainerComponent* container)
 {
-    UnregisterModule();
+    if (container_ == container)
+        return;
+
+    RemoveModule();
+
+    if (container_ && isSubscribed_)
+    {
+        isSubscribed_ = false;
+        UnsubscribeFromEvent(container_, E_MODULEREGISTERED);
+        UnsubscribeFromEvent(container_, E_MODULEREMOVED);
+    }
 
     container_ = container;
 
     RegisterModule();
+
+    UpdateContainerSubscription();
+
+    OnContainerSet(container);
 }
 
 void ModuleComponent::RegisterModule()
 {
-    if (isRegistered_ || !container_)
+    if (isRegistered_ || container_.Expired())
         return;
 
     isRegistered_ = true;
@@ -128,7 +166,7 @@ void ModuleComponent::RegisterModule()
     }
 }
 
-void ModuleComponent::UnregisterModule()
+void ModuleComponent::RemoveModule()
 {
     if (!isRegistered_)
         return;
@@ -142,6 +180,50 @@ void ModuleComponent::UnregisterModule()
             container_->RemoveModule(registeredType, this);
         }
     }
+}
+
+void ModuleComponent::UpdateContainerSubscription()
+{
+    if (container_.Expired())
+        return;
+
+    if (subscribeToContainer_ != isSubscribed_)
+    {
+        if (subscribeToContainer_)
+        {
+            isSubscribed_ = true;
+            SubscribeToEvent(container_, E_MODULEREGISTERED, &ModuleComponent::HandleModuleRegistered);
+            SubscribeToEvent(container_, E_MODULEREMOVED, &ModuleComponent::HandleModuleRemoved);
+        }
+        else
+        {
+            isSubscribed_ = false;
+            UnsubscribeFromEvent(container_, E_MODULEREGISTERED);
+            UnsubscribeFromEvent(container_, E_MODULEREMOVED);
+        }
+    }
+}
+
+void ModuleComponent::HandleModuleRegistered(StringHash eventType, VariantMap& eventData)
+{
+    using namespace  ModuleRegistered;
+
+    const auto module = dynamic_cast<ModuleComponent*>(eventData[P_MODULE].GetPtr());
+    const auto type = eventData[P_TYPE].GetStringHash();
+
+    if (module != this)
+        OnModuleRegistered(type, module);
+}
+
+void ModuleComponent::HandleModuleRemoved(StringHash eventType, VariantMap& eventData)
+{
+    using namespace ModuleRemoved;
+
+    const auto module = dynamic_cast<ModuleComponent*>(eventData[P_MODULE].GetPtr());
+    const auto type = eventData[P_TYPE].GetStringHash();
+
+    if (module != this)
+        OnModuleRegistered(type, module);
 }
 
 }

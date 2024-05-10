@@ -37,6 +37,16 @@ class URHO3D_API ContainerComponent : public Component
     /// Get number of modules registered as type.
     template <class T> unsigned GetNumModules() const;
 
+    /// Get n-th module registered as type.
+    ModuleComponent* GetModuleAtIndex(StringHash type, unsigned index) const;
+    /// Get n-th module registered as type.
+    template <class T> T* GetModuleAtIndex(unsigned index) const;
+
+    /// Return all modules registered by type.
+    void GetModulesComponents(ea::vector<ModuleComponent*>& dest, StringHash type) const;
+    /// Return all modules registered by type.
+    template <class T> void GetModulesComponents(ea::vector<T*>& dest) const;
+    
 
 protected:
     /// Handle scene node being assigned at creation.
@@ -48,6 +58,9 @@ protected:
     bool RemoveModule(StringHash type, ModuleComponent* module);
 
 private:
+    void RemoveAllModules();
+    void RegisterAllModules(Node* node);
+
     /// Is container initialized.
     bool containerInitialized_;
 
@@ -69,6 +82,25 @@ template <class T> T* ContainerComponent::GetSingleModule() const
 template <class T> unsigned ContainerComponent::GetNumModules() const
 {
     return GetNumModules(T::GetTypeStatic());
+}
+
+template <class T> T* ContainerComponent::GetModuleAtIndex(unsigned index) const
+{
+    return GetModuleAtIndex(T::GetTypeStatic(), index);
+}
+
+template <class T> void ContainerComponent::GetModulesComponents(ea::vector<T*>& dest) const
+{
+    dest.clear();
+    const auto range = moduleByType_.equal_range(T::GetTypeStatic());
+    for (auto iterator = range.first; iterator != range.second; ++iterator)
+    {
+        if (!iterator->second.Expired())
+        {
+            if (T* module = dynamic_cast<T*>(iterator->second))
+                dest.push_back(module);
+        }
+    }
 }
 
 } // namespace Urho3D

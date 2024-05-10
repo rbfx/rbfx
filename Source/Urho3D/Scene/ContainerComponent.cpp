@@ -19,6 +19,7 @@ ContainerComponent::ContainerComponent(Context* context)
 
 ContainerComponent::~ContainerComponent()
 {
+    RemoveAllModules();
 }
 
 void ContainerComponent::RegisterObject(Context* context)
@@ -57,28 +58,34 @@ unsigned ContainerComponent::GetNumModules(StringHash type) const
     return static_cast<unsigned>(ea::distance(range.first, range.second));
 }
 
+ModuleComponent* ContainerComponent::GetModuleAtIndex(StringHash type, unsigned index) const
+{
+    const auto range = moduleByType_.equal_range(type);
+    auto iterator = range.first;
+    ea::advance(iterator, index);
+    return iterator->second;
+}
+
+void ContainerComponent::GetModulesComponents(ea::vector<ModuleComponent*>& dest, StringHash type) const
+{
+    dest.clear();
+    const auto range = moduleByType_.equal_range(type);
+    for (auto iterator = range.first; iterator != range.second; ++iterator)
+    {
+        if (!iterator->second.Expired())
+            dest.push_back(iterator->second);
+    }
+}
+
 void ContainerComponent::OnNodeSet(Node* previousNode, Node* currentNode)
 {
     if (previousNode)
     {
-        while (moduleByType_.begin() != moduleByType_.end())
-        {
-            const auto module = moduleByType_.begin()->second;
-            module->SetContainer(nullptr);
-        }
+        RemoveAllModules();
     }
     if (currentNode)
     {
-        ea::vector<Component*> modules;
-        node_->GetDerivedComponents(modules, ModuleComponent::GetTypeStatic(), true);
-        for (const auto component : modules)
-        {
-            if (component->IsEnabledEffective())
-            {
-                auto* module = dynamic_cast<ModuleComponent*>(component);
-                module->SetContainer(this);
-            }
-        }
+        RegisterAllModules(currentNode);
     }
 }
 
@@ -128,6 +135,49 @@ bool ContainerComponent::RemoveModule(StringHash type, ModuleComponent* module)
         }
     }
     return false;
+}
+
+void ContainerComponent::RemoveAllModules()
+{
+    while (moduleByType_.begin() != moduleByType_.end())
+    {
+        const auto module = moduleByType_.begin()->second;
+        if (!module.Expired())
+            module->SetContainer(nullptr);
+    }
+}
+
+void ContainerComponent::RegisterAllModules(Node* node)
+{
+    // Check if node has it's own container. If it does - all modules in this part of tree belongs to that component.
+    for (const auto& component : node->GetComponents())
+    {
+        if (const auto derivedComponent = dynamic_cast<ContainerComponent*>(component.Get()))
+        {
+            if (derivedComponent != this)
+            {
+                return;
+            }
+        }
+    }
+
+    // Register all found modules.
+    for (const auto& component : node->GetComponents())
+    {
+        if (const auto derivedComponent = dynamic_cast<ModuleComponent*>(component.Get()))
+        {
+            if (derivedComponent->IsEnabledEffective())
+            {
+                derivedComponent->SetContainer(this);
+            }
+        }
+    }
+
+    // Register all modules in child nodes too.
+    for (const auto& child : node->GetChildren())
+    {
+        RegisterAllModules(child);
+    }
 }
 
 } // namespace Urho3D
