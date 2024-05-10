@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2017-2024 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,35 +21,37 @@
 // THE SOFTWARE.
 //
 
-#include "Urho3D/Precompiled.h"
+#include <Urho3D/Precompiled.h>
 
-#include "Urho3D/Scene/Scene.h"
+#include <Urho3D/Scene/Scene.h>
 
-#include "Urho3D/Core/Context.h"
-#include "Urho3D/Core/CoreEvents.h"
-#include "Urho3D/Core/Profiler.h"
-#include "Urho3D/Core/WorkQueue.h"
-#include "Urho3D/Graphics/Texture2D.h"
-#include "Urho3D/IO/Archive.h"
-#include "Urho3D/IO/Log.h"
-#include "Urho3D/IO/PackageFile.h"
-#include "Urho3D/Resource/JSONFile.h"
-#include "Urho3D/Resource/ResourceCache.h"
-#include "Urho3D/Resource/ResourceEvents.h"
-#include "Urho3D/Resource/XMLArchive.h"
-#include "Urho3D/Resource/XMLFile.h"
-#include "Urho3D/Scene/Component.h"
-#include "Urho3D/Scene/ObjectAnimation.h"
-#include "Urho3D/Scene/PrefabReference.h"
-#include "Urho3D/Scene/PrefabResource.h"
-#include "Urho3D/Scene/SceneEvents.h"
-#include "Urho3D/Scene/SceneResource.h"
-#include "Urho3D/Scene/ShakeComponent.h"
-#include "Urho3D/Scene/SplinePath.h"
-#include "Urho3D/Scene/UnknownComponent.h"
-#include "Urho3D/Scene/ValueAnimation.h"
+#include <Urho3D/Core/Context.h>
+#include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Core/Profiler.h>
+#include <Urho3D/Core/WorkQueue.h>
+#include <Urho3D/Graphics/Texture2D.h>
+#include <Urho3D/IO/Archive.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/IO/PackageFile.h>
+#include <Urho3D/Resource/JSONFile.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/ResourceEvents.h>
+#include <Urho3D/Resource/XMLArchive.h>
+#include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/Scene/Component.h>
+#include <Urho3D/Scene/ObjectAnimation.h>
+#include <Urho3D/Scene/PrefabReference.h>
+#include <Urho3D/Scene/PrefabResource.h>
+#include <Urho3D/Scene/SceneEvents.h>
+#include <Urho3D/Scene/SceneResource.h>
+#include <Urho3D/Scene/ShakeComponent.h>
+#include <Urho3D/Scene/ContainerComponent.h>
+#include <Urho3D/Scene/ModuleComponent.h>
+#include <Urho3D/Scene/SplinePath.h>
+#include <Urho3D/Scene/UnknownComponent.h>
+#include <Urho3D/Scene/ValueAnimation.h>
 
-#include "Urho3D/DebugNew.h"
+#include <Urho3D/DebugNew.h>
 
 namespace Urho3D
 {
@@ -1428,6 +1431,8 @@ void RegisterSceneLibrary(Context* context)
     PrefabReference::RegisterObject(context);
     PrefabResource::RegisterObject(context);
     ShakeComponent::RegisterObject(context);
+    ContainerComponent::RegisterObject(context);
+    ModuleComponent::RegisterObject(context);
 }
 
 }
