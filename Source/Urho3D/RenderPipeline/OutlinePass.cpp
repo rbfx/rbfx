@@ -128,7 +128,7 @@ bool OutlineScenePass::CreatePipelineState(GraphicsPipelineStateDesc& desc, Pipe
     shaderProgramDesc_.shaderDefines_[PS] = "";
 
     const Texture* diffMap = key.material_->GetTexture(ShaderResources::Albedo);
-    const bool needAlphaMask = key.pass_->IsAlphaMask() || (key.pass_->GetBlendMode() != BLEND_REPLACE && diffMap);
+    const bool needAlphaMask = (key.pass_->IsAlphaMask() || key.pass_->GetBlendMode() != BLEND_REPLACE) && diffMap;
     if (needAlphaMask)
     {
         shaderProgramDesc_.AddShaderDefines(PS, "ALPHAMASK");
