@@ -1,24 +1,7 @@
-//
 // Copyright (c) 2008-2022 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2024-2024 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
@@ -30,21 +13,62 @@
 namespace Urho3D
 {
 
+namespace Detail
+{
+
+/// Calculate hash in compile time.
+/// This function should be identical to eastl::hash<string_view> specialization from EASTL/string_view.h
+static constexpr size_t CalculateEastlHash(const ea::string_view& x)
+{
+    using namespace ea;
+    string_view::const_iterator p = x.cbegin();
+    string_view::const_iterator end = x.cend();
+    uint32_t result = 2166136261U; // We implement an FNV-like string hash.
+    while (p != end)
+        result = (result * 16777619) ^ (uint8_t)*p++;
+    return (size_t)result;
+}
+
+} // namespace Detail
+
 class StringHashRegister;
 
 /// 32-bit hash value for a string.
 class URHO3D_API StringHash
 {
 public:
+    /// Tag to disable population of hash reversal map.
+    struct NoReverse
+    {
+    };
+
     /// Construct with zero value.
-    StringHash() noexcept
-        : value_(Empty.value_)
+    constexpr StringHash() noexcept
+        : value_(EmptyValue)
     {
     }
 
     /// Construct with an initial value.
-    explicit StringHash(unsigned value) noexcept
+    constexpr explicit StringHash(unsigned value) noexcept
         : value_(value)
+    {
+    }
+
+    /// Construct from a C string (no side effects).
+    constexpr StringHash(const char* str, NoReverse) noexcept // NOLINT(google-explicit-constructor)
+        : StringHash(ea::string_view{str}, NoReverse{})
+    {
+    }
+
+    /// Construct from a string (no side effects).
+    StringHash(const ea::string& str, NoReverse) noexcept // NOLINT(google-explicit-constructor)
+        : StringHash(ea::string_view{str}, NoReverse{})
+    {
+    }
+
+    /// Construct from a string (no side effects).
+    constexpr StringHash(const ea::string_view& str, NoReverse) noexcept // NOLINT(google-explicit-constructor)
+        : value_(Calculate(str.data(), str.length()))
     {
     }
 
@@ -64,29 +88,29 @@ public:
     StringHash(const ea::string_view& str) noexcept; // NOLINT(google-explicit-constructor)
 
     /// Test for equality with another hash.
-    bool operator==(const StringHash& rhs) const { return value_ == rhs.value_; }
+    constexpr bool operator==(const StringHash& rhs) const { return value_ == rhs.value_; }
 
     /// Test for inequality with another hash.
-    bool operator!=(const StringHash& rhs) const { return value_ != rhs.value_; }
+    constexpr bool operator!=(const StringHash& rhs) const { return value_ != rhs.value_; }
 
     /// Test if less than another hash.
-    bool operator<(const StringHash& rhs) const { return value_ < rhs.value_; }
+    constexpr bool operator<(const StringHash& rhs) const { return value_ < rhs.value_; }
 
     /// Test if greater than another hash.
-    bool operator>(const StringHash& rhs) const { return value_ > rhs.value_; }
+    constexpr bool operator>(const StringHash& rhs) const { return value_ > rhs.value_; }
 
     /// Return true if nonempty hash value.
-    bool IsEmpty() const { return value_ == Empty.value_; }
+    constexpr bool IsEmpty() const { return value_ == EmptyValue; }
 
     /// Return true if nonempty hash value.
-    explicit operator bool() const { return !IsEmpty(); }
+    constexpr explicit operator bool() const { return !IsEmpty(); }
 
     /// Return hash value.
     /// @property
-    unsigned Value() const { return value_; }
+    constexpr unsigned Value() const { return value_; }
 
     /// Return mutable hash value. For internal use only.
-    unsigned& MutableValue() { return value_; }
+    constexpr unsigned& MutableValue() { return value_; }
 
     /// Return as string.
     ea::string ToString() const;
@@ -99,24 +123,42 @@ public:
     ea::string Reverse() const;
 
     /// Return hash value for HashSet & HashMap.
-    unsigned ToHash() const { return value_; }
+    constexpr unsigned ToHash() const { return value_; }
+
+    /// Calculate hash value for string_view.
+    static constexpr unsigned Calculate(const ea::string_view& view)
+    {
+        return static_cast<unsigned>(Detail::CalculateEastlHash(view));
+    }
 
     /// Calculate hash value from a C string.
-    static unsigned Calculate(const char* str);
+    static constexpr unsigned Calculate(const char* str)
+    { //
+        return Calculate(ea::string_view(str));
+    }
 
     /// Calculate hash value from binary data.
-    static unsigned Calculate(const void* data, unsigned length);
+    static constexpr unsigned Calculate(const char* data, unsigned length)
+    {
+        return Calculate(ea::string_view(data, length));
+    }
 
     /// Get global StringHashRegister. Use for debug purposes only. Return nullptr if URHO3D_HASH_DEBUG is off.
     static StringHashRegister* GetGlobalStringHashRegister();
 
     /// Hash of empty string. Is *not* zero!
+    static constexpr unsigned EmptyValue = Detail::CalculateEastlHash(ea::string_view{""});
     static const StringHash Empty;
 
 private:
     /// Hash value.
     unsigned value_;
 };
+
+inline constexpr StringHash operator"" _sh(const char* str, std::size_t len)
+{
+    return StringHash{ea::string_view{str, len}, StringHash::NoReverse{}};
+}
 
 static_assert(sizeof(StringHash) == sizeof(unsigned), "Unexpected StringHash size.");
 
