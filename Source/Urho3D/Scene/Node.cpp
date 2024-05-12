@@ -1028,10 +1028,11 @@ void Node::AddChild(Node* node, unsigned index)
 
     // Add to the child vector, then add to the scene if not added yet
     children_.insert_at(index, nodeShared);
+    node->parent_ = this;
+
     if (scene_ && node->GetScene() != scene_)
         scene_->NodeAdded(node);
 
-    node->parent_ = this;
     node->MarkDirty();
 
     // Send change event
