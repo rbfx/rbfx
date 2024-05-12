@@ -47,10 +47,11 @@ class EventHandler;
     public: \
         using ClassName = typeName; \
         using BaseClassName = baseTypeName; \
-        virtual Urho3D::StringHash GetType() const override { return GetTypeInfoStatic()->GetType(); } \
+        static inline constexpr StringHash TypeId{#typeName, Urho3D::StringHash::NoReverse{}}; \
+        virtual Urho3D::StringHash GetType() const override { return TypeId; } \
         virtual const ea::string& GetTypeName() const override { return GetTypeInfoStatic()->GetTypeName(); } \
         virtual const Urho3D::TypeInfo* GetTypeInfo() const override { return GetTypeInfoStatic(); } \
-        static Urho3D::StringHash GetTypeStatic() { return GetTypeInfoStatic()->GetType(); } \
+        static constexpr Urho3D::StringHash GetTypeStatic() { return TypeId; } \
         static const ea::string& GetTypeNameStatic() { return GetTypeInfoStatic()->GetTypeName(); } \
         static const Urho3D::TypeInfo* GetTypeInfoStatic() { static const Urho3D::TypeInfo typeInfoStatic(#typeName, BaseClassName::GetTypeInfoStatic()); return &typeInfoStatic; }
 
