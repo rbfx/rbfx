@@ -184,11 +184,7 @@ void Context::RegisterSubsystem(Object* object, StringHash type)
     if (!object)
         return;
 
-    bool isTypeValid = false;
-    for (const TypeInfo* typeInfo = object->GetTypeInfo(); typeInfo != nullptr && !isTypeValid; typeInfo = typeInfo->GetBaseTypeInfo())
-        isTypeValid = typeInfo->GetType() == type;
-
-    if (isTypeValid)
+    if (object->IsInstanceOf(type))
         subsystems_.Add(type, object);
     else
         URHO3D_LOGERROR("Type supplied to RegisterSubsystem() does not belong to object inheritance hierarchy.");

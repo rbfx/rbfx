@@ -32,28 +32,63 @@
 #include "../Core/TypeTrait.h"
 #include "../Core/Variant.h"
 
+#include <EASTL/algorithm.h>
+#include <EASTL/array.h>
 #include <EASTL/functional.h>
 #include <EASTL/intrusive_list.h>
+#include <EASTL/span.h>
 
 namespace Urho3D
 {
+
+namespace Detail
+{
+
+template <size_t N>
+constexpr ea::array<StringHash, N + 1> ArrayPushFront(const ea::array<StringHash, N>& source, StringHash value)
+{
+    ea::array<StringHash, N + 1> result;
+    result[0] = value;
+    for (size_t i = 0; i < N; ++i)
+        result[i + 1] = source[i];
+    return result;
+}
+
+}; // namespace Detail
 
 class Archive;
 class ArchiveBlock;
 class Context;
 class EventHandler;
 
-#define URHO3D_OBJECT(typeName, baseTypeName) \
-    public: \
-        using ClassName = typeName; \
-        using BaseClassName = baseTypeName; \
-        static inline constexpr StringHash TypeId{#typeName, Urho3D::StringHash::NoReverse{}}; \
-        virtual Urho3D::StringHash GetType() const override { return TypeId; } \
-        virtual const ea::string& GetTypeName() const override { return GetTypeInfoStatic()->GetTypeName(); } \
-        virtual const Urho3D::TypeInfo* GetTypeInfo() const override { return GetTypeInfoStatic(); } \
-        static constexpr Urho3D::StringHash GetTypeStatic() { return TypeId; } \
-        static const ea::string& GetTypeNameStatic() { return GetTypeInfoStatic()->GetTypeName(); } \
-        static const Urho3D::TypeInfo* GetTypeInfoStatic() { static const Urho3D::TypeInfo typeInfoStatic(#typeName, BaseClassName::GetTypeInfoStatic()); return &typeInfoStatic; }
+#ifndef SWIG
+    #define URHO3D_OBJECT(typeName, baseTypeName) \
+        public: \
+            using ClassName = typeName; \
+            using BaseClassName = baseTypeName; \
+            using BaseClassName::IsInstanceOf; \
+            static inline constexpr StringHash TypeId{#typeName, Urho3D::StringHash::NoReverse{}}; \
+            static inline constexpr auto TypeHierarchy = Urho3D::Detail::ArrayPushFront(BaseClassName::TypeHierarchy, TypeId); \
+            Urho3D::StringHash GetType() const override { return TypeId; } \
+            const ea::string& GetTypeName() const override { return GetTypeInfoStatic()->GetTypeName(); } \
+            const Urho3D::TypeInfo* GetTypeInfo() const override { return GetTypeInfoStatic(); } \
+            bool IsInstanceOf(StringHash type) const override { return ea::find(TypeHierarchy.begin(), TypeHierarchy.end(), type) != TypeHierarchy.end(); } \
+            static constexpr Urho3D::StringHash GetTypeStatic() { return TypeId; } \
+            static const ea::string& GetTypeNameStatic() { return GetTypeInfoStatic()->GetTypeName(); } \
+            static const Urho3D::TypeInfo* GetTypeInfoStatic() { static const Urho3D::TypeInfo typeInfoStatic(#typeName, BaseClassName::GetTypeInfoStatic()); return &typeInfoStatic; }
+#else
+    #define URHO3D_OBJECT(typeName, baseTypeName) \
+        public: \
+            using ClassName = typeName; \
+            using BaseClassName = baseTypeName; \
+            Urho3D::StringHash GetType() const override; \
+            const ea::string& GetTypeName() const override; \
+            const Urho3D::TypeInfo* GetTypeInfo() const override; \
+            bool IsInstanceOf(StringHash type) const override; \
+            static constexpr Urho3D::StringHash GetTypeStatic(); \
+            static const ea::string& GetTypeNameStatic(); \
+            static const Urho3D::TypeInfo* GetTypeInfoStatic();
+#endif
 
 /// Base class for objects with type identification, subsystem access and event sending/receiving capability.
 /// @templateversion
@@ -62,6 +97,10 @@ class URHO3D_API Object : public RefCounted
     friend class Context;
 
 public:
+    /// Array of types marked with URHO3D_OBJECT in the hierarchy of this class, from most- to least- derived.
+    /// Never includes `Object` class itself.
+    static inline constexpr ea::array<StringHash, 0> TypeHierarchy{};
+
     /// Construct.
     explicit Object(Context* context);
     /// Destruct. Clean up self from event sender & receiver structures.
@@ -75,6 +114,8 @@ public:
     virtual const ea::string& GetTypeName() const = 0;
     /// Return type info.
     virtual const TypeInfo* GetTypeInfo() const = 0;
+    /// Check whether current instance implements specified type.
+    virtual bool IsInstanceOf(StringHash type) const = 0;
     /// Handle event.
     virtual void OnEvent(Object* sender, StringHash eventType, VariantMap& eventData);
 
@@ -83,12 +124,8 @@ public:
 
     /// Return type info static.
     static const TypeInfo* GetTypeInfoStatic() { return nullptr; }
-    /// Check current instance is type of specified type.
-    bool IsInstanceOf(StringHash type) const;
-    /// Check current instance is type of specified type.
-    bool IsInstanceOf(const TypeInfo* typeInfo) const;
     /// Check current instance is type of specified class.
-    template<typename T> bool IsInstanceOf() const { return IsInstanceOf(T::GetTypeInfoStatic()); }
+    template<typename T> bool IsInstanceOf() const { return IsInstanceOf(T::TypeId); }
     /// Cast the object to specified most derived class.
     template<typename T> T* Cast() { return IsInstanceOf<T>() ? static_cast<T*>(this) : nullptr; }
     /// Cast the object to specified most derived class.
@@ -327,4 +364,4 @@ URHO3D_API StringHashRegister& GetEventParamRegister();
 /// Deprecated. Just use &className::function instead.
 #define URHO3D_HANDLER(className, function) (&className::function)
 
-}
+} // namespace Urho3D

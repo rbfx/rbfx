@@ -27,6 +27,7 @@ IGNORE_SUBSYSTEM(Tasks)
 // TODO: These can be implemented by having each class store a static instance of TypeInfo.
 %ignore GetTypeInfoStatic;
 %ignore GetTypeInfo;
+%ignore IsInstanceOf;
 %rename(GetTypeHash) GetType;
 
 %ignore Urho3D::EventHandler;

@@ -1656,7 +1656,7 @@ void Node::GetDerivedComponents(ea::vector<Component*>& dest, StringHash type, b
     {
         for (auto i = components_.begin(); i != components_.end(); ++i)
         {
-            if ((*i)->GetTypeInfo()->IsTypeOf(type))
+            if ((*i)->IsInstanceOf(type))
                 dest.push_back(i->Get());
         }
     }
@@ -1668,7 +1668,7 @@ Component* Node::GetDerivedComponent(StringHash type, bool recursive) const
 {
     for (auto i = components_.begin(); i != components_.end(); ++i)
     {
-        if ((*i)->GetTypeInfo()->IsTypeOf(type))
+        if ((*i)->IsInstanceOf(type))
             return *i;
     }
 
@@ -2195,7 +2195,7 @@ void Node::GetDerivedComponentsRecursive(ea::vector<Component*>& dest, StringHas
 {
     for (auto i = components_.begin(); i != components_.end(); ++i)
     {
-        if ((*i)->GetTypeInfo()->IsTypeOf(type))
+        if ((*i)->IsInstanceOf(type))
             dest.push_back(i->Get());
     }
     for (auto i = children_.begin(); i != children_.end(); ++i)

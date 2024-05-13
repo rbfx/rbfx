@@ -211,6 +211,8 @@ ObjectReflection* ObjectReflectionRegistry::AddReflectionInternal(ea::string_vie
     {
         ObjectReflection* reflection = Reflect<T>();
         constexpr bool isConstructible = ea::is_constructible_v<T, Context*>;
+        constexpr bool isAbstract = ea::is_abstract_v<T>;
+        static_assert(!isAbstract || !RequireFactory, "Object should not be abstract");
         static_assert(isConstructible || !RequireFactory, "Object should be constructible from Context*");
 
         if constexpr(EnableFactory && isConstructible)
