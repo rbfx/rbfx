@@ -897,41 +897,12 @@ template <class T> bool Node::HasComponent() const { return HasComponent(T::GetT
 
 template <class T> T* Node::GetDerivedComponent(bool recursive) const
 {
-    for (auto i = components_.begin(); i != components_.end(); ++i)
-    {
-        auto* component = dynamic_cast<T*>(i->Get());
-        if (component)
-            return component;
-    }
-
-    if (recursive)
-    {
-        for (auto i = children_.begin(); i != children_.end(); ++i)
-        {
-            T* component = (*i)->GetDerivedComponent<T>(true);
-            if (component)
-                return component;
-        }
-    }
-
-    return nullptr;
+    return static_cast<T*>(GetDerivedComponent(T::GetTypeStatic(), recursive));
 }
 
 template <class T> T* Node::GetParentDerivedComponent(bool fullTraversal) const
 {
-    Node* current = GetParent();
-    while (current)
-    {
-        T* soughtComponent = current->GetDerivedComponent<T>();
-        if (soughtComponent)
-            return soughtComponent;
-
-        if (fullTraversal)
-            current = current->GetParent();
-        else
-            break;
-    }
-    return 0;
+    return static_cast<T*>(GetParentDerivedComponent(T::GetTypeStatic(), fullTraversal));
 }
 
 template <class T, class U> void Node::GetDerivedComponents(U& destVector, bool recursive, bool clearVector) const
@@ -943,7 +914,7 @@ template <class T, class U> void Node::GetDerivedComponents(U& destVector, bool 
 
     for (const auto& component : components_)
     {
-        if (auto derivedComponent = dynamic_cast<T*>(component.Get()))
+        if (auto derivedComponent = component->Cast<T>())
             destVector.push_back(PointerType{derivedComponent});
     }
 
