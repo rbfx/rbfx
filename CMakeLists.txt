@@ -56,6 +56,7 @@ include(UrhoCommon)
 # Enable testing
 if (URHO3D_TESTING)
     include (CTest)
+    enable_testing ()
 endif ()
 
 # Set compiler variable
