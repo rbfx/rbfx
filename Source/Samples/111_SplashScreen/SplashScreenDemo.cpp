@@ -23,6 +23,8 @@
 #include "SplashScreenDemo.h"
 #include "SamplesManager.h"
 
+#include <Urho3D/Scene/PrefabResource.h>
+
 SplashScreenDemo::SplashScreenDemo(Context* context)
     : Sample(context)
 {
@@ -38,6 +40,7 @@ void SplashScreenDemo::Activate(StringVariantMap& bundle)
     auto splashScreen = MakeShared<SplashScreen>(context_);
 
     splashScreen->QueueSceneResourcesAsync("Scenes/RenderingShowcase_0.xml");
+    splashScreen->QueueResource<PrefabResource>("Prefabs/AdvancedNetworkingPlayer.prefab");
     splashScreen->SetBackgroundImage(
         context_->GetSubsystem<ResourceCache>()->GetResource<Texture2D>("Textures/StoneDiffuse.dds"));
     splashScreen->SetForegroundImage(

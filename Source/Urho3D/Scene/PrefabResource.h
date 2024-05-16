@@ -58,7 +58,14 @@ public:
 
     const NodePrefab& GetNodePrefabSlice(ea::string_view path) const;
 
+     /// Implement Resource.
+    /// @{
+    bool BeginLoad(Deserializer& source) override;
+    /// @}
+
 private:
+    void BackgroundLoadResources(const NodePrefab& prefab);
+
     bool LoadLegacyXML(const XMLElement& source) override;
 
     NodePrefab prefab_;
