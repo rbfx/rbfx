@@ -44,12 +44,12 @@ namespace Urho3D
 namespace Detail
 {
 
-template <unsigned N>
+template <size_t N>
 constexpr ea::array<StringHash, N + 1> ArrayPushFront(const ea::array<StringHash, N>& source, StringHash value)
 {
     ea::array<StringHash, N + 1> result;
     result[0] = value;
-    for (unsigned i = 0; i < N; ++i)
+    for (unsigned i = 0; i < static_cast<unsigned>(N); ++i)
         result[i + 1] = source[i];
     return result;
 }
