@@ -68,7 +68,7 @@ public:
 
     /// Construct from a string (no side effects).
     constexpr StringHash(const ea::string_view& str, NoReverse) noexcept // NOLINT(google-explicit-constructor)
-        : value_(Calculate(str.data(), str.length()))
+        : value_(Calculate(str.data(), static_cast<unsigned>(str.length())))
     {
     }
 
@@ -147,7 +147,7 @@ public:
     static StringHashRegister* GetGlobalStringHashRegister();
 
     /// Hash of empty string. Is *not* zero!
-    static constexpr unsigned EmptyValue = Detail::CalculateEastlHash(ea::string_view{""});
+    static constexpr auto EmptyValue = static_cast<unsigned>(Detail::CalculateEastlHash(ea::string_view{""}));
     static const StringHash Empty;
 
 private:
