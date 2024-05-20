@@ -15,541 +15,122 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/XMLFile.h>
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tinyobjloader/tiny_obj_loader.h>
+
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
 namespace 
 {
-// Namespace: Algorithm
-//
-// Description: The namespace that holds all of the
-// Algorithms needed for OBJL
-namespace algorithm
+class BinaryFileAdapter : public std::streambuf
 {
-// Vector3 Multiplication Opertor Overload
-//Vector3 operator*(const float& left, const Vector3& right)
-//{
-//    return right * left;
-//}
+    const unsigned BUFFER_SIZE = 1024;
 
-// A test to see if P1 is on the same side as P2 of a line segment ab
-bool SameSide(Vector3 p1, Vector3 p2, Vector3 a, Vector3 b)
-{
-    Vector3 cp1 = (b - a).CrossProduct(p1 - a);
-    Vector3 cp2 = (b - a).CrossProduct(p2 - a);
-
-    if (cp1.DotProduct(cp2) >= 0)
-        return true;
-    else
-        return false;
-}
-
-// Generate a cross produect normal for a triangle
-Vector3 GenTriNormal(Vector3 t1, Vector3 t2, Vector3 t3)
-{
-    Vector3 u = t2 - t1;
-    Vector3 v = t3 - t1;
-
-    Vector3 normal = u.CrossProduct(v);
-
-    return normal;
-}
-
-// Check to see if a Vector3 Point is within a 3 Vector3 Triangle
-bool inTriangle(Vector3 point, Vector3 tri1, Vector3 tri2, Vector3 tri3)
-{
-    // Test to see if it is within an infinite prism that the triangle outlines.
-    bool within_tri_prisim =
-        SameSide(point, tri1, tri2, tri3) && SameSide(point, tri2, tri1, tri3) && SameSide(point, tri3, tri1, tri2);
-
-    // If it isn't it will never be on the triangle
-    if (!within_tri_prisim)
-        return false;
-
-    // Calulate Triangle's Normal
-    Vector3 n = GenTriNormal(tri1, tri2, tri3).Normalized();
-
-    // Project the point onto this normal
-    Vector3 proj = n * point.DotProduct(n);
-
-    // If the distance from the triangle to the point is 0
-    //	it lies on the triangle
-    if (Equals(proj.Length(), 0.0f))
-        return true;
-    else
-        return false;
-}
-
-// Split a String into a string array at a given token
-inline void split(const ea::string& in, ea::vector<ea::string>& out, ea::string token)
-{
-    out.clear();
-
-    ea::string temp;
-
-    for (int i = 0; i < int(in.size()); i++)
+    Deserializer& source_;
+    ea::shared_array<char> buffer_;
+public:
+    BinaryFileAdapter(Deserializer& source)
+        : source_(source)
+        , buffer_(new char[BUFFER_SIZE])
     {
-        ea::string test = in.substr(i, token.size());
-
-        if (test == token)
-        {
-            if (!temp.empty())
-            {
-                out.push_back(temp);
-                temp.clear();
-                i += (int)token.size() - 1;
-            }
-            else
-            {
-                out.push_back("");
-            }
-        }
-        else if (i + token.size() >= in.size())
-        {
-            temp += in.substr(i, token.size());
-            out.push_back(temp);
-            break;
-        }
-        else
-        {
-            temp += in[i];
-        }
     }
-}
+    ~BinaryFileAdapter() { }
 
-// Get tail of string after first token and possibly following spaces
-inline ea::string tail(const ea::string& in)
-{
-    size_t token_start = in.find_first_not_of(" \t");
-    size_t space_start = in.find_first_of(" \t", token_start);
-    size_t tail_start = in.find_first_not_of(" \t", space_start);
-    size_t tail_end = in.find_last_not_of(" \t");
-    if (tail_start != ea::string::npos && tail_end != ea::string::npos)
+    int underflow()
     {
-        return in.substr(tail_start, tail_end - tail_start + 1);
-    }
-    else if (tail_start != ea::string::npos)
-    {
-        return in.substr(tail_start);
-    }
-    return "";
-}
-
-// Get first token of string
-inline ea::string firstToken(const ea::string& in)
-{
-    if (!in.empty())
-    {
-        size_t token_start = in.find_first_not_of(" \t");
-        size_t token_end = in.find_first_of(" \t", token_start);
-        if (token_start != ea::string::npos && token_end != ea::string::npos)
+        if (this->gptr() == this->egptr())
         {
-            return in.substr(token_start, token_end - token_start);
+            auto size = source_.Read(this->buffer_.get(), BUFFER_SIZE);
+            this->setg(this->buffer_.get(), this->buffer_.get(), this->buffer_.get() + size);
         }
-        else if (token_start != ea::string::npos)
-        {
-            return in.substr(token_start);
-        }
+        return this->gptr() == this->egptr() ? std::char_traits<char>::eof()
+                                             : std::char_traits<char>::to_int_type(*this->gptr());
     }
-    return "";
-}
-
-// Get element at given index position
-template <class T> inline const T& getElement(const ea::vector<T>& elements, ea::string& index)
-{
-    int idx = ToInt(index);
-    if (idx < 0)
-        idx = int(elements.size()) + idx;
-    else
-        idx--;
-    return elements[idx];
-}
-
-} // namespace algorithm
-
-// Structure: Vertex
-//
-// Description: Model Vertex object that holds
-//	a Position, Normal, and Texture Coordinate
-struct Vertex
-{
-    // Position Vector
-    Vector3 Position;
-
-    // Normal Vector
-    Vector3 Normal;
-
-    // Texture Coordinate Vector
-    Vector2 TextureCoordinate;
 };
 
-// Generate vertices from a list of positions,
-//	tcoords, normals and a face line
-void GenVerticesFromRawOBJ(ea::vector<Vertex>& oVerts, const ea::vector<Vector3>& iPositions,
-    const ea::vector<Vector2>& iTCoords, const ea::vector<Vector3>& iNormals, ea::string icurline)
+struct Vertex
 {
-    ea::vector<ea::string> sface, svert;
-    Vertex vVert;
-    algorithm::split(algorithm::tail(icurline), sface, " ");
-
-    bool noNormal = false;
-
-    // For every given vertex do this
-    for (int i = 0; i < int(sface.size()); i++)
-    {
-        // See What type the vertex is.
-        int vtype;
-
-        algorithm::split(sface[i], svert, "/");
-
-        // Check for just position - v1
-        if (svert.size() == 1)
-        {
-            // Only position
-            vtype = 1;
-        }
-
-        // Check for position & texture - v1/vt1
-        if (svert.size() == 2)
-        {
-            // Position & Texture
-            vtype = 2;
-        }
-
-        // Check for Position, Texture and Normal - v1/vt1/vn1
-        // or if Position and Normal - v1//vn1
-        if (svert.size() == 3)
-        {
-            if (!svert[1].empty())
-            {
-                // Position, Texture, and Normal
-                vtype = 4;
-            }
-            else
-            {
-                // Position & Normal
-                vtype = 3;
-            }
-        }
-
-        // Calculate and store the vertex
-        switch (vtype)
-        {
-        case 1: // P
-        {
-            vVert.Position = algorithm::getElement(iPositions, svert[0]);
-            vVert.TextureCoordinate = Vector2(0, 0);
-            noNormal = true;
-            oVerts.push_back(vVert);
-            break;
-        }
-        case 2: // P/T
-        {
-            vVert.Position = algorithm::getElement(iPositions, svert[0]);
-            vVert.TextureCoordinate = algorithm::getElement(iTCoords, svert[1]);
-            noNormal = true;
-            oVerts.push_back(vVert);
-            break;
-        }
-        case 3: // P//N
-        {
-            vVert.Position = algorithm::getElement(iPositions, svert[0]);
-            vVert.TextureCoordinate = Vector2(0, 0);
-            vVert.Normal = algorithm::getElement(iNormals, svert[2]);
-            oVerts.push_back(vVert);
-            break;
-        }
-        case 4: // P/T/N
-        {
-            vVert.Position = algorithm::getElement(iPositions, svert[0]);
-            vVert.TextureCoordinate = algorithm::getElement(iTCoords, svert[1]);
-            vVert.Normal = algorithm::getElement(iNormals, svert[2]);
-            oVerts.push_back(vVert);
-            break;
-        }
-        default:
-        {
-            break;
-        }
-        }
-    }
-
-    // take care of missing normals
-    // these may not be truly acurate but it is the
-    // best they get for not compiling a mesh with normals
-    if (noNormal)
-    {
-        Vector3 A = oVerts[0].Position - oVerts[1].Position;
-        Vector3 B = oVerts[2].Position - oVerts[1].Position;
-
-        Vector3 normal = A.CrossProduct(B);
-
-        for (int i = 0; i < int(oVerts.size()); i++)
-        {
-            oVerts[i].Normal = normal;
-        }
-    }
-}
-
-// Triangulate a list of vertices into a face by printing
-//	inducies corresponding with triangles within it
-void VertexTriangluation(ea::vector<unsigned int>& oIndices, const ea::vector<Vertex>& iVerts)
-{
-    // If there are 2 or less verts,
-    // no triangle can be created,
-    // so exit
-    if (iVerts.size() < 3)
-    {
-        return;
-    }
-    // If it is a triangle no need to calculate it
-    if (iVerts.size() == 3)
-    {
-        oIndices.push_back(0);
-        oIndices.push_back(1);
-        oIndices.push_back(2);
-        return;
-    }
-
-    // Create a list of vertices
-    ea::vector<Vertex> tVerts = iVerts;
-
-    while (true)
-    {
-        // For every vertex
-        for (int i = 0; i < int(tVerts.size()); i++)
-        {
-            // pPrev = the previous vertex in the list
-            Vertex pPrev;
-            if (i == 0)
-            {
-                pPrev = tVerts[tVerts.size() - 1];
-            }
-            else
-            {
-                pPrev = tVerts[i - 1];
-            }
-
-            // pCur = the current vertex;
-            Vertex pCur = tVerts[i];
-
-            // pNext = the next vertex in the list
-            Vertex pNext;
-            if (i == tVerts.size() - 1)
-            {
-                pNext = tVerts[0];
-            }
-            else
-            {
-                pNext = tVerts[i + 1];
-            }
-
-            // Check to see if there are only 3 verts left
-            // if so this is the last triangle
-            if (tVerts.size() == 3)
-            {
-                // Create a triangle from pCur, pPrev, pNext
-                for (int j = 0; j < int(tVerts.size()); j++)
-                {
-                    if (iVerts[j].Position == pCur.Position)
-                        oIndices.push_back(j);
-                    if (iVerts[j].Position == pPrev.Position)
-                        oIndices.push_back(j);
-                    if (iVerts[j].Position == pNext.Position)
-                        oIndices.push_back(j);
-                }
-
-                tVerts.clear();
-                break;
-            }
-            if (tVerts.size() == 4)
-            {
-                // Create a triangle from pCur, pPrev, pNext
-                for (int j = 0; j < int(iVerts.size()); j++)
-                {
-                    if (iVerts[j].Position == pCur.Position)
-                        oIndices.push_back(j);
-                    if (iVerts[j].Position == pPrev.Position)
-                        oIndices.push_back(j);
-                    if (iVerts[j].Position == pNext.Position)
-                        oIndices.push_back(j);
-                }
-
-                Vector3 tempVec;
-                for (int j = 0; j < int(tVerts.size()); j++)
-                {
-                    if (tVerts[j].Position != pCur.Position && tVerts[j].Position != pPrev.Position
-                        && tVerts[j].Position != pNext.Position)
-                    {
-                        tempVec = tVerts[j].Position;
-                        break;
-                    }
-                }
-
-                // Create a triangle from pCur, pPrev, pNext
-                for (int j = 0; j < int(iVerts.size()); j++)
-                {
-                    if (iVerts[j].Position == pPrev.Position)
-                        oIndices.push_back(j);
-                    if (iVerts[j].Position == pNext.Position)
-                        oIndices.push_back(j);
-                    if (iVerts[j].Position == tempVec)
-                        oIndices.push_back(j);
-                }
-
-                tVerts.clear();
-                break;
-            }
-
-            // If Vertex is not an interior vertex
-            float angle = (pPrev.Position - pCur.Position).Angle(pNext.Position - pCur.Position);
-            if (angle <= 0 && angle >= 180)
-                continue;
-
-            // If any vertices are within this triangle
-            bool inTri = false;
-            for (int j = 0; j < int(iVerts.size()); j++)
-            {
-                if (algorithm::inTriangle(iVerts[j].Position, pPrev.Position, pCur.Position, pNext.Position)
-                    && iVerts[j].Position != pPrev.Position && iVerts[j].Position != pCur.Position
-                    && iVerts[j].Position != pNext.Position)
-                {
-                    inTri = true;
-                    break;
-                }
-            }
-            if (inTri)
-                continue;
-
-            // Create a triangle from pCur, pPrev, pNext
-            for (int j = 0; j < int(iVerts.size()); j++)
-            {
-                if (iVerts[j].Position == pCur.Position)
-                    oIndices.push_back(j);
-                if (iVerts[j].Position == pPrev.Position)
-                    oIndices.push_back(j);
-                if (iVerts[j].Position == pNext.Position)
-                    oIndices.push_back(j);
-            }
-
-            // Delete pCur from the list
-            for (int j = 0; j < int(tVerts.size()); j++)
-            {
-                if (tVerts[j].Position == pCur.Position)
-                {
-                    tVerts.erase(tVerts.begin() + j);
-                    break;
-                }
-            }
-
-            // reset i to the start
-            // -1 since loop will add 1 to it
-            i = -1;
-        }
-
-        // if no triangles were created
-        if (oIndices.empty())
-            break;
-
-        // if no more vertices
-        if (tVerts.empty())
-            break;
-    }
-}
+    Vector3 Position;
+    Vector3 Normal;
+    Vector2 TexCoord;
+};
 }
 
 bool Model::LoadOBJ(Deserializer& source)
 {
-    ea::vector<Vector3> Positions;
-    ea::vector<Vector2> TCoords;
-    ea::vector<Vector3> Normals;
-    ea::vector<Vertex> Vertices;
-    ea::vector<unsigned> Indices;
-    bool listening = false;
-    ea::vector<Vertex> vVerts;
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string warn;
+    std::string err;
 
-    ea::vector<unsigned> geometryStart;
+    BinaryFileAdapter obj_buf(source);
+    std::stringbuf mtl_buf("");
 
-    geometryStart.push_back(0);
+    std::istream obj_ifs(&obj_buf);
+    std::istream mtl_ifs(&mtl_buf);
 
-    unsigned memoryUse = sizeof(Model);
-    boundingBox_ = BoundingBox{};
+    tinyobj::MaterialStreamReader mtl_ss(mtl_ifs);
 
-    ea::string curline;
+    auto valid = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, &obj_ifs, &mtl_ss, true, false);
 
-    while (!source.IsEof())
+    if (!valid)
     {
-        source.ReadLine(curline);
+        URHO3D_LOGERROR(err.c_str());
+        return false;
+    }
 
-        // Generate a Mesh Object or Prepare for an object to be created
-        if (algorithm::firstToken(curline) == "o" || algorithm::firstToken(curline) == "g" || curline[0] == 'g')
+    ea::unordered_map<IntVector3, unsigned> vertexMap;
+
+    ea::vector<Vertex> vertices;
+    vertices.reserve(attrib.vertices.size());
+
+    ea::vector<unsigned> indices;
+    unsigned totalNumberOfIndices{0};
+    for (auto&shape: shapes)
+    {
+        totalNumberOfIndices += shape.mesh.indices.size();
+    }
+    indices.reserve(totalNumberOfIndices);
+
+    boundingBox_ = BoundingBox{};
+    for (auto& shape : shapes)
+    {
+        // Because "triangulate" setting is on the .indices guaranteed to have triangles.
+        for (auto& index : shape.mesh.indices)
         {
-            // Ignore objects as they are useless - there is no information about pivot point and all vertices are in world space
-        }
-        // Generate a Vertex Position
-        if (algorithm::firstToken(curline) == "v")
-        {
-            Vector3 vpos = ToVector3(algorithm::tail(curline));
-            boundingBox_.Merge(vpos);
-            Positions.push_back(vpos);
-        }
-        // Generate a Vertex Texture Coordinate
-        if (algorithm::firstToken(curline) == "vt")
-        {
-            Vector2 vtex = ToVector2(algorithm::tail(curline));
-            TCoords.push_back(vtex);
-        }
-        // Generate a Vertex Normal;
-        if (algorithm::firstToken(curline) == "vn")
-        {
-            Vector3 vnor = ToVector3(algorithm::tail(curline));
-            Normals.push_back(vnor);
-        }
-        // Get Mesh Material Name
-        if (algorithm::firstToken(curline) == "usemtl")
-        {
-            if (geometryStart[geometryStart.size()-1] != Indices.size())
+            IntVector3 key{index.vertex_index, index.normal_index, index.texcoord_index};
+            unsigned vertexIndex{0};
+            auto it = vertexMap.find(key);
+            if (it == vertexMap.end())
             {
-                geometryStart.push_back(Indices.size());
+                // Element not present, add it to the map
+                vertexIndex = vertices.size();
+                vertexMap[key] = vertexIndex;
+                auto i = IntVector3(key.x_ * 3, key.y_ * 3, key.z_ * 2);
+                const Vector3 pos{key.x_ >= 0
+                        ? Vector3(attrib.vertices[i.x_ + 0], attrib.vertices[i.x_ + 1], attrib.vertices[i.x_ + 2])
+                        : Vector3::ZERO};
+                const Vector3 vn{key.y_ >= 0
+                        ? Vector3(attrib.normals[i.y_ + 0], attrib.normals[i.y_ + 1], attrib.normals[i.y_ + 2])
+                        : Vector3::UP};
+                const Vector2 uv{key.z_ >= 0 ? Vector2(attrib.texcoords[i.z_ + 0], attrib.texcoords[i.z_ + 1])
+                        : Vector2::ZERO};
+                vertices.push_back({pos, vn, uv});
+                boundingBox_.Merge(pos);
             }
-            // New geometry beyond this point
-        }
-        // Generate a Face (vertices & indices)
-        if (algorithm::firstToken(curline) == "f")
-        {
-            // Generate the vertices
-            vVerts.clear();
-            GenVerticesFromRawOBJ(vVerts, Positions, TCoords, Normals, curline);
-
-            // Add Vertices
-            for (int i = 0; i < int(vVerts.size()); i++)
+            else
             {
-                Vertices.push_back(vVerts[i]);
-
-                //LoadedVertices.push_back(vVerts[i]);
+                vertexIndex = it->second;
             }
-
-            ea::vector<unsigned int> iIndices;
-
-            VertexTriangluation(iIndices, vVerts);
-
-            // Add Indices
-            for (int i = 0; i < int(iIndices.size()); i++)
-            {
-                unsigned int indnum = (unsigned int)((Vertices.size()) - vVerts.size()) + iIndices[i];
-                Indices.push_back(indnum);
-
-            /*    indnum = (unsigned int)((LoadedVertices.size()) - vVerts.size()) + iIndices[i];
-                LoadedIndices.push_back(indnum);*/
-            }
-        }
-        // Load Materials
-        if (algorithm::firstToken(curline) == "mtllib")
-        {
-            // Ignore materials
+            indices.push_back(vertexIndex);
         }
     }
+
+    unsigned memoryUse = 0;
+    
     bool async = GetAsyncLoadState() == ASYNC_LOADING;
     {
         vertexBuffers_.reserve(1);
@@ -563,7 +144,7 @@ bool Model::LoadOBJ(Deserializer& source)
         desc.vertexElements_.push_back(
             VertexElement(VertexElementType::TYPE_VECTOR2, VertexElementSemantic::SEM_TEXCOORD, 0));
 
-        desc.vertexCount_ = Vertices.size();
+        desc.vertexCount_ = vertices.size();
 
         const SharedPtr<VertexBuffer> buffer(MakeShared<VertexBuffer>(context_));
         const unsigned vertexSize = VertexBuffer::GetVertexSize(desc.vertexElements_);
@@ -577,7 +158,7 @@ bool Model::LoadOBJ(Deserializer& source)
             desc.data_ = new unsigned char[desc.dataSize_];
             if (desc.vertexCount_ > 0)
             {
-                memcpy(&desc.data_[0], Vertices.data(), desc.dataSize_);
+                memcpy(&desc.data_[0], vertices.data(), desc.dataSize_);
             }
         }
         else
@@ -589,7 +170,7 @@ bool Model::LoadOBJ(Deserializer& source)
             if (desc.vertexCount_ > 0)
             {
                 void* dest = buffer->Map();
-                memcpy(dest, Vertices.data(), desc.dataSize_);
+                memcpy(dest, vertices.data(), desc.dataSize_);
                 buffer->Unmap();
             }
         }
@@ -608,27 +189,27 @@ bool Model::LoadOBJ(Deserializer& source)
         if (async)
         {
             IndexBufferDesc& ibData = loadIBData_[0];
-            ibData.indexCount_ = Indices.size();
+            ibData.indexCount_ = indices.size();
             ibData.indexSize_ = sizeof(unsigned);
             ibData.dataSize_ = ibData.indexCount_ * ibData.indexSize_;
             ibData.data_ = new unsigned char[ibData.dataSize_];
-            memcpy(ibData.data_.get(), Indices.data(), ibData.dataSize_);
+            memcpy(ibData.data_.get(), indices.data(), ibData.dataSize_);
         }
         else
         {
             // If not async loading, use locking to avoid extra allocation & copy
             buffer->SetShadowed(true);
-            buffer->SetSize(Indices.size(), true);
+            buffer->SetSize(indices.size(), true);
             void* dest = buffer->Map();
-            memcpy(dest, Indices.data(), Indices.size() * sizeof(unsigned));
+            memcpy(dest, indices.data(), indices.size() * sizeof(unsigned));
             buffer->Unmap();
         }
 
-        memoryUse += sizeof(IndexBuffer) + Indices.size() * sizeof(unsigned);
+        memoryUse += sizeof(IndexBuffer) + indices.size() * sizeof(unsigned);
         indexBuffers_.push_back(buffer);
     }
     {
-        auto numGeometries = geometryStart.size();
+        auto numGeometries = 1;
         geometries_.reserve(numGeometries);
         geometryBoneMappings_.resize(numGeometries);
         geometryCenters_.resize(numGeometries);
@@ -647,10 +228,8 @@ bool Model::LoadOBJ(Deserializer& source)
             loadGeometries_[geometryIndex][0].type_ = TRIANGLE_LIST;
             loadGeometries_[geometryIndex][0].vbRef_ = 0;
             loadGeometries_[geometryIndex][0].ibRef_ = 0;
-            loadGeometries_[geometryIndex][0].indexStart_ = geometryStart[geometryIndex];
-            loadGeometries_[geometryIndex][0].indexCount_ =
-                ((geometryIndex < numGeometries - 1) ? geometryStart[geometryIndex + 1] : Indices.size())
-                - geometryStart[geometryIndex];
+            loadGeometries_[geometryIndex][0].indexStart_ = 0;
+            loadGeometries_[geometryIndex][0].indexCount_ = indices.size();
 
             geometryCenters_[geometryIndex] = boundingBox_.Center();
 
