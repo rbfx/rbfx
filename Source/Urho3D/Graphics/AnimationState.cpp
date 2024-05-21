@@ -107,19 +107,17 @@ void AnimatedAttributeReference::SetValue(const Variant& value) const
     }
 }
 
-AnimationState::AnimationState(AnimationController* controller, AnimatedModel* model) :
-    controller_(controller),
-    model_(model)
-{
-}
-
-AnimationState::AnimationState(AnimationController* controller, Node* node) :
-    controller_(controller),
-    node_(node)
+AnimationState::AnimationState(AnimationController* controller)
+    : controller_(controller)
 {
 }
 
 AnimationState::~AnimationState() = default;
+
+void AnimationState::ConnectToAnimatedModel(AnimatedModel* model)
+{
+    model_ = model;
+}
 
 void AnimationState::Initialize(Animation* animation, const ea::string& startBone, AnimationBlendMode blendMode)
 {
@@ -222,10 +220,10 @@ AnimatedModel* AnimationState::GetModel() const
     return model_;
 }
 
-Node* AnimationState::GetNode() const
-{
-    return node_;
-}
+//Node* AnimationState::GetNode() const
+//{
+//    return node_;
+//}
 
 float AnimationState::GetLength() const
 {

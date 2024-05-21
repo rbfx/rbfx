@@ -583,6 +583,7 @@ void AnimatedModel::ResetMorphWeights()
 void AnimatedModel::ResetBones()
 {
     skeleton_.Reset();
+    MarkAnimationDirty();
 }
 
 const ea::vector<SharedPtr<VertexBuffer> >& AnimatedModel::GetMorphVertexBuffers() const
