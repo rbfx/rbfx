@@ -281,7 +281,7 @@ void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
         else if (info.GetMetadata(AttributeMetadata::AllowResize).GetBool())
             options = options.AllowResize();
     }
-    else if (info.type_ == VAR_INT && (info.name_.ends_with(" Mask") || info.name_ == "Collision Layer"))
+    else if (info.type_ == VAR_INT && (info.name_.ends_with(" Mask") || info.name_.ends_with("Collision Layer")))
         options = options.AsBitmask();
 
     if (Widgets::EditVariant(value, options))
