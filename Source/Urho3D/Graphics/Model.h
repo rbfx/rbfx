@@ -223,12 +223,6 @@ public:
     const ea::vector<unsigned>& GetMorphRangeCounts() const { return morphRangeCounts_; }
 
 private:
-    bool BeginLoadImpl(Deserializer& source);
-    /// Load model resource in .mdl format from stream. Return true if successful.
-    bool LoadMDL(Deserializer& source);
-    /// Load model resource in .obj format from stream. Return true if successful.
-    bool LoadOBJ(Deserializer& source);
-
     /// Class versions (used for serialization)
     /// @{
     static const unsigned legacyVersion = 1; // Fake version for legacy unversioned UMDL/UMD2 file
