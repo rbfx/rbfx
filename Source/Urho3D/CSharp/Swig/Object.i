@@ -8,27 +8,21 @@
 IGNORE_SUBSYSTEM(WorkQueue)
 IGNORE_SUBSYSTEM(Tasks)
 
-%typemap(csout, excode=SWIGEXCODE) Urho3D::StringHash GetType {
+%csattributes Urho3D::Object::GetType "[Urho3DPINVOKE.OverrideNative]";
+%typemap(csout, excode=SWIGEXCODE) Urho3D::StringHash Urho3D::Object::GetType {
     var ret = new $typemap(cstype, Urho3D::StringHash)(GetType().Name);$excode
     return ret;
 }
 
-%typemap(csout, excode=SWIGEXCODE) const eastl::string& GetTypeName {
+%csattributes Urho3D::Object::GetTypeName "[Urho3DPINVOKE.OverrideNative]";
+%typemap(csout, excode=SWIGEXCODE) const eastl::string& Urho3D::Object::GetTypeName {
     var ret = GetType().Name;$excode
     return ret;
 }
-%csattributes Urho3D::Object::GetTypeName "[Urho3DPINVOKE.OverrideNative]";
-%csattributes Urho3D::Object::GetType "[Urho3DPINVOKE.OverrideNative]";
 
-// Not all RefCounted are Object descendants, but most are.
-// To implement these functions we need access to enclosing class type so we can use it with typeof().
-%ignore GetTypeStatic;
-%ignore GetTypeNameStatic;
-// TODO: These can be implemented by having each class store a static instance of TypeInfo.
-%ignore GetTypeInfoStatic;
-%ignore GetTypeInfo;
-%ignore IsInstanceOf;
-%rename(GetTypeHash) GetType;
+%rename(GetTypeHash) Urho3D::Object::GetType;
+%ignore Urho3D::Object::GetTypeInfo;    // TODO: All C# classes should implement it for C++ side to see.
+%ignore Urho3D::Object::IsInstanceOf;   // TODO: All C# classes should implement it using metadata info (and possibly caching it).
 
 %ignore Urho3D::EventHandler;
 %ignore Urho3D::EventHandlerImpl;

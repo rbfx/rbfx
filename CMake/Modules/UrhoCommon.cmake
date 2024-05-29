@@ -339,8 +339,11 @@ function (csharp_bind_target)
         -c++
         -outdir "${BIND_OUT_DIR}"
         -o "${BIND_OUT_FILE}"
-        #-debug-tmsearch
     )
+
+    if (URHO3D_SWIG_DEBUG_TMSEARCH)
+        list(APPEND GENERATOR_OPTIONS -debug-tmsearch)
+    endif ()
 
     # Native library name matches target name by default
     if (BIND_NATIVE)
@@ -395,7 +398,8 @@ function (csharp_bind_target)
         COMMAND ${CMAKE_COMMAND} -E remove_directory ${BIND_OUT_DIR}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${BIND_OUT_DIR}
         COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${URHO3D_THIRDPARTY_DIR}/swig/Lib" "${SWIG_EXECUTABLE}"
-        ARGS @"${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt"
+        ARGS @"${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" > ${CMAKE_CURRENT_BINARY_DIR}/swig_${BIND_TARGET}.log
+
         MAIN_DEPENDENCY ${BIND_SWIG}
         DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
