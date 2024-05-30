@@ -20,15 +20,18 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../RenderPipeline/RenderPipeline.h"
-#include "../RenderPipeline/DefaultRenderPipeline.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Renderer.h"
+#include "Urho3D/RenderPipeline/RenderPipeline.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/RenderPipeline/DefaultRenderPipeline.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/ResourceEvents.h"
+
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -36,36 +39,28 @@ namespace Urho3D
 namespace
 {
 
-static const ea::vector<ea::string> colorSpaceNames =
-{
-    "LDR Gamma",
-    "LDR Linear",
-    "HDR Linear",
-    "Optimized"
-};
+static const ResourceRef defaultRenderPath{RenderPath::TypeId, "RenderPaths/Default.renderpath"};
 
-static const ea::vector<ea::string> materialQualityNames =
-{
+static const ea::vector<ea::string> colorSpaceNames = {"LDR Gamma", "LDR Linear", "HDR Linear", "Optimized"};
+
+static const ea::vector<ea::string> materialQualityNames = {
     "Low",
     "Medium",
     "High",
 };
 
-static const ea::vector<ea::string> specularQualityNames =
-{
+static const ea::vector<ea::string> specularQualityNames = {
     "Disabled",
     "Simple",
     "Antialiased",
 };
 
-static const ea::vector<ea::string> reflectionQualityNames =
-{
+static const ea::vector<ea::string> reflectionQualityNames = {
     "Vertex",
     "Pixel",
 };
 
-static const ea::vector<ea::string> ambientModeNames =
-{
+static const ea::vector<ea::string> ambientModeNames = {
     "Constant",
     "Flat",
     "Directional",
@@ -77,31 +72,22 @@ static const ea::vector<ea::string> ssaoModeNames = {
     "PreviewBlurred",
 };
 
-
-
-static const ea::vector<ea::string> directLightingModeNames =
-{
+static const ea::vector<ea::string> directLightingModeNames = {
     "Forward",
     "Deferred Blinn-Phong",
     "Deferred PBR",
 };
 
-static const ea::vector<ea::string> postProcessAntialiasingNames =
-{
-    "None",
-    "FXAA2",
-    "FXAA3"
-};
+static const ea::vector<ea::string> postProcessAntialiasingNames = {"None", "FXAA2", "FXAA3"};
 
-static const ea::vector<ea::string> toneMappingModeNames =
-{
+static const ea::vector<ea::string> toneMappingModeNames = {
     "None",
     "Reinhard",
     "ReinhardWhite",
     "Uncharted2",
 };
 
-}
+} // namespace
 
 RenderPipelineView::RenderPipelineView(RenderPipeline* renderPipeline)
     : Object(renderPipeline->GetContext())
@@ -127,6 +113,12 @@ RenderPipeline::~RenderPipeline()
 void RenderPipeline::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<RenderPipeline>();
+
+    // clang-format off
+    URHO3D_ACCESSOR_ATTRIBUTE("Render Path", GetRenderPathAttr, SetRenderPathAttr, ResourceRef, defaultRenderPath, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Render Passes", GetRenderPassesAttr, SetRenderPassesAttr, VariantVector, Variant::emptyVariantVector, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Render Path Parameters", GetRenderPathParameters, SetRenderPathParameters, StringVariantMap, Variant::emptyVariantMap, AM_DEFAULT);
+
     URHO3D_ENUM_ATTRIBUTE_EX("Color Space", settings_.renderBufferManager_.colorSpace_, MarkSettingsDirty, colorSpaceNames, RenderPipelineColorSpace::GammaLDR, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Material Quality", settings_.sceneProcessor_.materialQuality_, MarkSettingsDirty, materialQualityNames, SceneProcessorSettings{}.materialQuality_, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Specular Quality", settings_.sceneProcessor_.specularQuality_, MarkSettingsDirty, specularQualityNames, SceneProcessorSettings{}.specularQuality_, AM_DEFAULT);
@@ -180,6 +172,13 @@ void RenderPipeline::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Depth Bias Scale", float, settings_.shadowMapAllocator_.depthBiasScale_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Depth Bias Offset", float, settings_.shadowMapAllocator_.depthBiasOffset_, MarkSettingsDirty, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Normal Offset Scale", float, settings_.sceneProcessor_.normalOffsetScale_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
+    // clang-format on
+}
+
+void RenderPipeline::ApplyAttributes()
+{
+    if (loadDefaultRenderPath_)
+        SetRenderPathAttr(defaultRenderPath);
 }
 
 void RenderPipeline::SetSettings(const RenderPipelineSettings& settings)
@@ -188,6 +187,85 @@ void RenderPipeline::SetSettings(const RenderPipelineSettings& settings)
     settings_.Validate();
     settings_.AdjustToSupported(context_);
     MarkSettingsDirty();
+}
+
+ResourceRef RenderPipeline::GetRenderPathAttr() const
+{
+    return GetResourceRef(renderPath_, RenderPath::TypeId);
+}
+
+void RenderPipeline::SetRenderPathAttr(const ResourceRef& value)
+{
+    auto* cache = GetSubsystem<ResourceCache>();
+    SetRenderPath(cache->GetResource<RenderPath>(value.name_));
+}
+
+void RenderPipeline::SetRenderPath(RenderPath* renderPath)
+{
+    if (renderPath_)
+        UnsubscribeFromEvent(renderPath_, E_RELOADFINISHED);
+
+    loadDefaultRenderPath_ = false;
+    renderPath_ = renderPath;
+    OnRenderPathReloaded();
+
+    if (renderPath_)
+        SubscribeToEvent(renderPath_, E_RELOADFINISHED, &RenderPipeline::OnRenderPathReloaded);
+}
+
+void RenderPipeline::SetRenderPasses(const EnabledRenderPasses& renderPasses)
+{
+    renderPasses_ = renderPasses;
+    if (renderPath_)
+        renderPasses_ = renderPath_->RepairEnabledRenderPasses(renderPasses_);
+    OnParametersChanged(this);
+}
+
+const VariantVector& RenderPipeline::GetRenderPassesAttr() const
+{
+    static thread_local VariantVector result;
+    result.clear();
+    for (const auto& [name, enabled] : renderPasses_)
+    {
+        result.push_back(Variant{name});
+        result.push_back(Variant{enabled});
+    }
+    return result;
+}
+
+void RenderPipeline::SetRenderPassesAttr(const VariantVector& value)
+{
+    const unsigned numPasses = value.size() / 2;
+
+    EnabledRenderPasses renderPasses;
+    for (unsigned i = 0; i < numPasses; ++i)
+        renderPasses.emplace_back(value[i * 2].GetString(), value[i * 2 + 1].GetBool());
+    SetRenderPasses(renderPasses);
+}
+
+void RenderPipeline::SetRenderPathParameters(const StringVariantMap& params)
+{
+    renderPathParameters_ = params;
+    OnParametersChanged(this);
+}
+
+void RenderPipeline::UpdateRenderPathParameters(const VariantMap& params)
+{
+    bool modified = false;
+    for (const auto& [nameHash, newValue] : params)
+    {
+        const auto iter = renderPathParameters_.find_by_hash(nameHash.Value());
+        if (iter == renderPathParameters_.end())
+            continue;
+
+        if (iter->second != newValue)
+        {
+            iter->second = newValue;
+            modified = true;
+        }
+    }
+    if (modified)
+        OnParametersChanged(this);
 }
 
 SharedPtr<RenderPipelineView> RenderPipeline::Instantiate()
@@ -202,4 +280,15 @@ void RenderPipeline::MarkSettingsDirty()
     OnSettingsChanged(this, settings_);
 }
 
+void RenderPipeline::OnRenderPathReloaded()
+{
+    if (renderPath_)
+    {
+        renderPath_->CollectParameters(renderPathParameters_);
+        renderPasses_ = renderPath_->RepairEnabledRenderPasses(renderPasses_);
+    }
+
+    OnRenderPathChanged(this, renderPath_);
 }
+
+} // namespace Urho3D

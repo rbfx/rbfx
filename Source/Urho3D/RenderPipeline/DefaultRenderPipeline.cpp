@@ -59,7 +59,12 @@ DefaultRenderPipelineView::DefaultRenderPipelineView(RenderPipeline* renderPipel
     : RenderPipelineView(renderPipeline)
 {
     SetSettings(renderPipeline_->GetSettings());
+    SetRenderPath(renderPipeline_->GetRenderPath());
+    MarkParametersDirty();
+
     renderPipeline_->OnSettingsChanged.Subscribe(this, &DefaultRenderPipelineView::SetSettings);
+    renderPipeline_->OnRenderPathChanged.Subscribe(this, &DefaultRenderPipelineView::SetRenderPath);
+    renderPipeline_->OnParametersChanged.Subscribe(this, &DefaultRenderPipelineView::MarkParametersDirty);
 }
 
 DefaultRenderPipelineView::~DefaultRenderPipelineView()
@@ -80,6 +85,12 @@ void DefaultRenderPipelineView::SetSettings(const RenderPipelineSettings& settin
     settings_.PropagateImpliedSettings();
     settingsDirty_ = true;
     settingsPipelineStateHash_ = settings_.CalculatePipelineStateHash();
+}
+
+void DefaultRenderPipelineView::SetRenderPath(RenderPath* renderPath)
+{
+    originalRenderPath_ = renderPath;
+    renderPath_ = nullptr;
 }
 
 void DefaultRenderPipelineView::SendViewEvent(StringHash eventType)
@@ -201,6 +212,7 @@ void DefaultRenderPipelineView::ApplySettings()
         break;
     }
 
+#if 0
     const Vector4 hueSaturationValueContrast{
         settings_.hueShift_,
         settings_.saturation_,
@@ -218,10 +230,20 @@ void DefaultRenderPipelineView::ApplySettings()
         pass->AddShaderParameter("ColorOffset", settings_.colorOffset_.ToVector4(0.0f));
         postProcessPasses_.push_back(pass);
     }
+#endif
 
     postProcessFlags_ = {};
     for (PostProcessPass* postProcessPass : postProcessPasses_)
         postProcessFlags_ |= postProcessPass->GetExecutionFlags();
+
+    if (renderPath_)
+    {
+        const RenderPassTraits& aggregatedTraits = renderPath_->GetAggregatedPassTraits();
+        if (aggregatedTraits.needReadWriteColorBuffer_)
+            postProcessFlags_ |= PostProcessPassFlag::NeedColorOutputReadAndWrite;
+        if (aggregatedTraits.needBilinearColorSampler_)
+            postProcessFlags_ |= PostProcessPassFlag::NeedColorOutputBilinear;
+    }
 
     settings_.AdjustForPostProcessing(postProcessFlags_);
     renderBufferManager_->SetSettings(settings_.renderBufferManager_);
@@ -233,6 +255,14 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
 
     if (!viewport->GetScene())
         return false;
+
+    // Ensure that render path is ready
+    if (!renderPath_ && originalRenderPath_)
+    {
+        renderPath_ = originalRenderPath_->Clone();
+        renderPath_->InitializeView(this);
+        settingsDirty_ = true;
+    }
 
     // Lazy initialize heavy objects
     if (!sceneProcessor_)
@@ -263,6 +293,12 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
         return false;
 
     sceneProcessor_->SetRenderCamera(viewport->GetCamera());
+
+    if (parametersDirty_ && renderPath_)
+    {
+        parametersDirty_ = false;
+        renderPath_->UpdateParameters(renderPipeline_->GetRenderPasses(), renderPipeline_->GetRenderPathParameters());
+    }
 
     if (settingsDirty_)
     {
@@ -479,6 +515,14 @@ void DefaultRenderPipelineView::Render()
 
     for (PostProcessPass* postProcessPass : postProcessPasses_)
         postProcessPass->Execute(camera);
+
+    if (renderPath_)
+    {
+        RenderPassContext ctx;
+        ctx.renderPipelineInterface_ = this;
+        ctx.renderBufferManager_ = renderBufferManager_;
+        renderPath_->Execute(ctx);
+    }
 
     const bool drawDebugGeometry = settings_.drawDebugGeometry_ && camera->GetDrawDebugGeometry();
     auto debug = fullFrameInfo.scene_->GetComponent<DebugRenderer>();

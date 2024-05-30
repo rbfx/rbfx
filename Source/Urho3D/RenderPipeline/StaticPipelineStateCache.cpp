@@ -23,9 +23,14 @@ void StaticPipelineStateCache::Invalidate()
 
 StaticPipelineStateId StaticPipelineStateCache::CreateState(const GraphicsPipelineStateDesc& desc)
 {
-    const unsigned index = desc_.size();
+    const auto iter = descToIndex_.find(desc);
+    if (iter != descToIndex_.end())
+        return iter->second;
+
+    const auto index = static_cast<StaticPipelineStateId>(desc_.size() + 1);
     desc_.push_back(desc);
-    return static_cast<StaticPipelineStateId>(index + 1);
+    descToIndex_.emplace(desc, index);
+    return index;
 }
 
 PipelineState* StaticPipelineStateCache::GetState(StaticPipelineStateId id, const PipelineStateOutputDesc& outputDesc)
