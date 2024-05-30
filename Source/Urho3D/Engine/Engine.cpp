@@ -73,7 +73,10 @@
 #endif
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Localization.h"
+#include "../RenderPipeline/RenderPass.h"
+#include "../RenderPipeline/RenderPath.h"
 #include "../RenderPipeline/RenderPipeline.h"
+#include "../RenderPipeline/Passes/FullScreenShaderPass.h"
 #include "../Resource/JSONArchive.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
@@ -266,6 +269,9 @@ Engine::Engine(Context* context) :
     // Register render pipeline.
     // Extract this code into function if you are adding more.
     RenderPipeline::RegisterObject(context_);
+    RenderPath::RegisterObject(context_);
+    RenderPass::RegisterObject(context_);
+    FullScreenShaderPass::RegisterObject(context_);
 
 #ifdef URHO3D_IK
     RegisterIKLibrary(context_);

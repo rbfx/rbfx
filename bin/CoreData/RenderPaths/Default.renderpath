@@ -1,0 +1,62 @@
+{
+	"passes": [
+		{
+			"type": "FullScreenShaderPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Comment",
+						"type": "String",
+						"value": "Adjust output color RGB and HSV."
+					},
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: Adjust Color"
+					},
+					{
+						"name": "Shader Name",
+						"type": "String",
+						"value": "v2/P_HSV"
+					},
+					{
+						"name": "Read+Write Color Output",
+						"type": "Bool",
+						"value": true
+					},
+					{
+						"name": "Disable On Default Parameters",
+						"type": "Bool",
+						"value": true
+					},
+					{
+						"name": "Parameters Prefix",
+						"type": "String",
+						"value": "Adjust Color: "
+					},
+					{
+						"name": "Parameters",
+						"type": "StringVariantMap",
+						"value": [
+							{
+								"key": "ColorFilter",
+								"type": "Vector4",
+								"value": "1 1 1 1"
+							},
+							{
+								"key": "ColorOffset",
+								"type": "Vector4",
+								"value": "0 0 0 0"
+							},
+							{
+								"key": "HSVParams",
+								"type": "Vector4",
+								"value": "1 1 1 1"
+							}
+						]
+					}
+				]
+			}
+		}
+	]
+}

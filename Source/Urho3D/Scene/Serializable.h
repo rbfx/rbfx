@@ -124,6 +124,8 @@ public:
 
     /// Copy all attributes from another serializable.
     void CopyAttributes(const Serializable* source, bool resetToDefault = true);
+    /// Clone this serializable.
+    SharedPtr<Serializable> Clone(bool resetToDefault = true) const;
 
     /// Return whether is temporary.
     /// @property

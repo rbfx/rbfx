@@ -51,6 +51,8 @@ public:
 
     const RenderPipelineSettings& GetSettings() const { return settings_; }
     void SetSettings(const RenderPipelineSettings& settings);
+    void SetRenderPath(RenderPath* renderPath);
+    void MarkParametersDirty() { parametersDirty_ = true; }
 
     /// Implement RenderPipelineInterface
     /// @{
@@ -74,6 +76,10 @@ protected:
     void ApplySettings();
 
 private:
+    SharedPtr<RenderPath> originalRenderPath_;
+    SharedPtr<RenderPath> renderPath_;
+    bool parametersDirty_{};
+
     RenderPipelineSettings settings_;
     unsigned settingsPipelineStateHash_{};
     bool settingsDirty_{};
