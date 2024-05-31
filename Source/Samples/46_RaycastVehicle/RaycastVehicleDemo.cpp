@@ -167,7 +167,8 @@ void RaycastVehicleDemo::CreateInstructions()
     auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
         "Use WASD keys to drive, F to brake, mouse/touch to rotate camera\n"
-        "F5 to save scene, F7 to load");
+        "F5 to save scene, F7 to load\n"
+        "Space to toggle physics debug geometry");
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
     // The text has multiple rows. Center them in relation to each other
     instructionText->SetTextAlignment(HA_CENTER);
@@ -265,6 +266,15 @@ void RaycastVehicleDemo::HandlePostRenderUpdate(StringHash eventType, VariantMap
     if (drawDebug_ && vehicle_)
     {
         auto* debug = scene_->GetOrCreateComponent<DebugRenderer>();
-        vehicle_->GetComponent<RaycastVehicle>()->DrawDebugGeometry(debug, false);
+        auto* raycastVehicle = vehicle_->GetComponent<RaycastVehicle>();
+
+        const bool depthTest = false;
+        raycastVehicle->GetComponent<RigidBody>()->DrawDebugGeometry(debug, depthTest);
+
+        for (int i = 0; i < raycastVehicle->GetNumWheels(); i++)
+        {
+            auto* wheel = raycastVehicle->GetWheel(i);
+            wheel->DrawDebugGeometry(debug, depthTest);
+        }
     }
 }
