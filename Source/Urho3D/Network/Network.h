@@ -173,10 +173,6 @@ private:
     ea::string packageCacheDir_;
     /// Number of max allowed connections. Set by %Network::StartServer.
     int serverMaxConnections_ = 0;
-    /// Server/Client password used for connecting.
-    ea::string password_;
-    /// Scene which will be used for NAT punchtrough connections.
-    Scene* scene_ = nullptr;
     /// Actual server, which accepts connections.
     SharedPtr<NetworkServer> transportServer_;
 };
