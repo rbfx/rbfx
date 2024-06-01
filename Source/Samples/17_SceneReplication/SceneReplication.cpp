@@ -466,12 +466,12 @@ Text* SceneReplication::CreateOverlayText(int& y)
     return textElement;
 }
 
-void SetOverlayText(SharedPtr<Text>& textElement, const ea::string& title, int value)
+void SetOverlayText(SharedPtr<Text>& textElement, const ea::string& title, unsigned value)
 {
     textElement->SetText(Format("{}: {}", title, value));
 }
 
-void SceneReplication::UpdateOverlay(int packetsIn, int packetsOut, int bytesIn, int bytesOut, int connections)
+void SceneReplication::UpdateOverlay(unsigned packetsIn, unsigned packetsOut, unsigned bytesIn, unsigned bytesOut, unsigned connections)
 {
     SetOverlayText(packetsIn_, PACKETS_IN_TITLE, packetsIn);
     SetOverlayText(packetsOut_, PACKETS_OUT_TITLE, packetsOut);
@@ -482,7 +482,7 @@ void SceneReplication::UpdateOverlay(int packetsIn, int packetsOut, int bytesIn,
     serverRunning_->SetText(network->IsServerRunning() ? "Server on" : "");
 }
 
-void SampleConnection(const Connection* connection, int& packetsIn, int& packetsOut, int& bytesIn, int& bytesOut)
+void SampleConnection(const Connection* connection, unsigned& packetsIn, unsigned& packetsOut, unsigned& bytesIn, unsigned& bytesOut)
 {
     packetsIn += connection->GetPacketsInPerSec();
     packetsOut += connection->GetPacketsOutPerSec();
@@ -504,11 +504,11 @@ void SceneReplication::HandlePostUpdate(StringHash eventType, VariantMap& eventD
 
     const auto* network = GetSubsystem<Network>();
 
-    int packetsIn = 0;
-    int packetsOut = 0;
-    int bytesIn = 0;
-    int bytesOut = 0;
-    int connectionCount = 0;
+    unsigned packetsIn = 0;
+    unsigned packetsOut = 0;
+    unsigned bytesIn = 0;
+    unsigned bytesOut = 0;
+    unsigned connectionCount = 0;
 
     if (auto* connectionToServer = network->GetServerConnection())
     {
@@ -521,7 +521,7 @@ void SceneReplication::HandlePostUpdate(StringHash eventType, VariantMap& eventD
         if (!connectionsToClients.empty())
         {
             connectionCount = connectionsToClients.size();
-            for (int i = 0; i < connectionCount; ++i)
+            for (unsigned i = 0; i < connectionCount; ++i)
             {
                 SampleConnection(connectionsToClients[i], packetsIn, packetsOut, bytesIn, bytesOut);
             }

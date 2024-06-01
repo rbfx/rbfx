@@ -74,7 +74,7 @@ private:
     /// Create a text from the UI root.
     Text* CreateOverlayText(int& y);
     /// Update all the values on the info overlay.
-    void UpdateOverlay(int packetsIn, int packetsOut, int bytesIn, int bytesOut, int connections);
+    void UpdateOverlay(unsigned packetsIn, unsigned packetsOut, unsigned bytesIn, unsigned bytesOut, unsigned connections);
     /// Create a button to the button container.
     Button* CreateButton(const ea::string& text, int width);
     /// Update visibility of buttons according to connection and server status.
