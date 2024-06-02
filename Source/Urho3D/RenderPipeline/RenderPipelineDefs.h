@@ -805,12 +805,6 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     AmbientOcclusionPassSettings ssao_;
     ToneMappingMode toneMapping_{};
     PostProcessAntialiasing antialiasing_{};
-    float hueShift_{1.0f};
-    float saturation_{1.0f};
-    float brightness_{1.0f};
-    float contrast_{1.0f};
-    Color colorFilter_{Color::WHITE};
-    Vector3 colorOffset_{Vector3::ZERO};
     /// @}
 
     /// Utility operators
@@ -837,13 +831,7 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
             && autoExposure_ == rhs.autoExposure_
             && bloom_ == rhs.bloom_
             && toneMapping_ == rhs.toneMapping_
-            && antialiasing_ == rhs.antialiasing_
-            && hueShift_ == rhs.hueShift_
-            && saturation_ == rhs.saturation_
-            && brightness_ == rhs.brightness_
-            && contrast_ == rhs.contrast_
-            && colorFilter_ == rhs.colorFilter_
-            && colorOffset_ == rhs.colorOffset_;
+            && antialiasing_ == rhs.antialiasing_;
     }
 
     bool operator!=(const RenderPipelineSettings& rhs) const { return !(*this == rhs); }
