@@ -212,26 +212,6 @@ void DefaultRenderPipelineView::ApplySettings()
         break;
     }
 
-#if 0
-    const Vector4 hueSaturationValueContrast{
-        settings_.hueShift_,
-        settings_.saturation_,
-        settings_.brightness_,
-        settings_.contrast_,
-    };
-    if (!hueSaturationValueContrast.Equals(Vector4::ONE) || settings_.colorFilter_ != Color::WHITE
-        || settings_.colorOffset_ != Vector3::ZERO)
-    {
-        auto pass = MakeShared<SimplePostProcessPass>(this, renderBufferManager_,
-            PostProcessPassFlag::NeedColorOutputReadAndWrite,
-            BLEND_REPLACE, "v2/P_HSV", "");
-        pass->AddShaderParameter("HSVParams", hueSaturationValueContrast);
-        pass->AddShaderParameter("ColorFilter", settings_.colorFilter_.ToVector4());
-        pass->AddShaderParameter("ColorOffset", settings_.colorOffset_.ToVector4(0.0f));
-        postProcessPasses_.push_back(pass);
-    }
-#endif
-
     postProcessFlags_ = {};
     for (PostProcessPass* postProcessPass : postProcessPasses_)
         postProcessFlags_ |= postProcessPass->GetExecutionFlags();
