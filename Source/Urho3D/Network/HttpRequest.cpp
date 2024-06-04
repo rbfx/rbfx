@@ -167,7 +167,7 @@ HttpRequest::HttpRequest(
                 requestHeaders_.push_back(rh.c_str());
             }
             requestHeaders_.push_back(nullptr);
-            attr.requestHeaders_ = requestHeaders_.data();
+            attr.requestHeaders = requestHeaders_.data();
         }
     }
 
