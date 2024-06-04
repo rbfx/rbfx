@@ -517,14 +517,10 @@ void SceneReplication::HandlePostUpdate(StringHash eventType, VariantMap& eventD
     }
     else
     {
-        const auto connectionsToClients = network->GetClientConnections();
-        if (!connectionsToClients.empty())
+        for (const auto& connection : network->GetClientConnections())
         {
-            connectionCount = connectionsToClients.size();
-            for (unsigned i = 0; i < connectionCount; ++i)
-            {
-                SampleConnection(connectionsToClients[i], packetsIn, packetsOut, bytesIn, bytesOut);
-            }
+            ++connectionCount;
+            SampleConnection(connection, packetsIn, packetsOut, bytesIn, bytesOut);
         }
     }
 
