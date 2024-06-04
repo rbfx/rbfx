@@ -22,6 +22,8 @@
 
 #include "../../Foundation/InspectorTab/PlaceholderResourceInspector.h"
 
+#include <Urho3D/Core/ProcessUtils.h>
+
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
 namespace Urho3D
@@ -60,6 +62,13 @@ void PlaceholderResourceInspector::InspectResources(const ea::vector<ResourceFil
         const ea::string resourceType = !desc.isDirectory_ ? "File" : "Folder";
         singleResource_ = SingleResource{resourceType, desc.resourceName_};
         multipleResources_ = ea::nullopt;
+        if (!desc.isDirectory_)
+        {
+            if (ui::IsMouseDoubleClicked(MOUSEB_LEFT))
+            {
+                OpenURL(desc.fileName_);
+            }
+        }
     }
     else
     {
