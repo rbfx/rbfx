@@ -39,6 +39,7 @@ namespace
 const auto Hotkey_Delete = EditorHotkey{"ResourceBrowserTab.Delete"}.Press(KEY_DELETE);
 const auto Hotkey_Rename = EditorHotkey{"ResourceBrowserTab.Rename"}.Press(KEY_F2);
 const auto Hotkey_RevealInExplorer = EditorHotkey{"ResourceBrowserTab.RevealInExplorer"}.Alt().Shift().Press(KEY_R);
+const auto Hotkey_Open = EditorHotkey{"ResourceBrowserTab.Open"}.Alt().Shift().Press(KEY_T);
 
 const ea::string contextMenuId = "ResourceBrowserTab_PopupDirectory";
 const ea::string satelliteDirectoryExtension = ".d";
@@ -137,6 +138,7 @@ void ResourceBrowserTab::InitializeHotkeys()
     BindHotkey(Hotkey_Delete, &ResourceBrowserTab::DeleteSelected);
     BindHotkey(Hotkey_Rename, &ResourceBrowserTab::RenameSelected);
     BindHotkey(Hotkey_RevealInExplorer, &ResourceBrowserTab::RevealInExplorerSelected);
+    BindHotkey(Hotkey_Open, &ResourceBrowserTab::OpenSelected);
 }
 
 void ResourceBrowserTab::OnProjectRequest(RefCounted* sender, ProjectRequest* request)
@@ -221,6 +223,12 @@ void ResourceBrowserTab::RevealInExplorerSelected()
 {
     if (const FileSystemEntry* entry = GetSelectedEntryForCursor())
         RevealInExplorer(entry->absolutePath_);
+}
+
+void ResourceBrowserTab::OpenSelected()
+{
+    if (const FileSystemEntry* entry = GetSelectedEntryForCursor())
+        Open(entry->absolutePath_);
 }
 
 void ResourceBrowserTab::WriteIniSettings(ImGuiTextBuffer& output)
@@ -422,6 +430,14 @@ void ResourceBrowserTab::RenderEntryContextMenuItems(const FileSystemEntry& entr
     if (needSeparator)
         ui::Separator();
     needSeparator = false;
+
+    if (ui::MenuItem("Open", GetHotkeyLabel(Hotkey_Open).c_str()))
+    {
+        if (!entry.resourceName_.empty())
+        {
+            Open(entry.absolutePath_);
+        }
+    }
 
     if (ui::MenuItem("Reveal in Explorer", GetHotkeyLabel(Hotkey_RevealInExplorer).c_str()))
     {
@@ -1280,6 +1296,12 @@ void ResourceBrowserTab::RevealInExplorer(const ea::string& path)
 {
     auto fs = GetSubsystem<FileSystem>();
     fs->Reveal(path);
+}
+
+void ResourceBrowserTab::Open(const ea::string& path)
+{
+    auto fs = GetSubsystem<FileSystem>();
+    fs->SystemOpen(path);
 }
 
 void ResourceBrowserTab::RenameEntry(const FileSystemEntry& entry, const ea::string& newName)
