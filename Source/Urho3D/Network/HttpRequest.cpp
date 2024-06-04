@@ -127,8 +127,6 @@ HttpRequest::HttpRequest(
         LogFetch("HTTP OnFetchReadyStateChange", fetch);
     };
 
-    ea::vector<const char*> requestHeaders;
-    ea::vector<ea::string> requestHeadersStr;
     if (!headers_.empty())
     {
         for (const auto& header : headers_)
@@ -158,18 +156,18 @@ HttpRequest::HttpRequest(
                 continue;
             }
 
-            requestHeadersStr.push_back(key);
-            requestHeadersStr.push_back(value);
+            requestHeadersStr_.push_back(key);
+            requestHeadersStr_.push_back(value);
         }
 
-        if (!requestHeadersStr.empty())
+        if (!requestHeadersStr_.empty())
         {
-            for (const auto& rh : requestHeadersStr)
+            for (const auto& rh : requestHeadersStr_)
             {
-                requestHeaders.push_back(rh.c_str());
+                requestHeaders_.push_back(rh.c_str());
             }
-            requestHeaders.push_back(nullptr);
-            attr.requestHeaders = requestHeaders.data();
+            requestHeaders_.push_back(nullptr);
+            attr.requestHeaders_ = requestHeaders_.data();
         }
     }
 

@@ -109,6 +109,8 @@ private:
 #ifdef URHO3D_PLATFORM_WEB
     /// HTTP request handle.
     void* requestHandle_ = nullptr;
+    ea::vector<const char*> requestHeaders_;
+    ea::vector<ea::string> requestHeadersStr_;
 #endif
 };
 
