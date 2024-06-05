@@ -55,6 +55,12 @@ void ConsoleTab::RenderContextMenuItems()
     auto console = GetSubsystem<Console>();
 
     contextMenuSeparator_.Reset();
+
+    if (ui::MenuItem("Clear"))
+    {
+        console->Clear();
+    }
+
     if (ui::BeginMenu("Levels"))
     {
         for (const LogLevel level : {LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERROR})
