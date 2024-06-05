@@ -59,6 +59,13 @@ public:
     static constexpr ReplicatedRotationMode DefaultSynchronizeRotation = ReplicatedRotationMode::XYZ;
     static constexpr bool DefaultExtrapolatePosition = true;
     static constexpr bool DefaultExtrapolateRotation = false;
+    static constexpr bool DefaultPackRotation = false;
+    static constexpr bool DefaultPackPosition = false;
+    static constexpr bool DefaultPackAngularVelocity = false;
+    static constexpr bool DefaultPackVelocity = false;
+    static constexpr float DefaultPackVelocityMaxAbsValue = 100;
+    static constexpr float DefaultPackAngularVelocityMaxAbsValue = 100;
+    static constexpr float DefaultPackPositionMaxAbsValue = 1000;
 
     static constexpr NetworkCallbackFlags CallbackMask =
         NetworkCallbackMask::UpdateTransformOnServer | NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::InterpolateState;
@@ -136,6 +143,13 @@ private:
     ReplicatedRotationMode synchronizeRotation_{DefaultSynchronizeRotation};
     bool extrapolatePosition_{DefaultExtrapolatePosition};
     bool extrapolateRotation_{DefaultExtrapolateRotation};
+    bool packRotation_{DefaultPackRotation};
+    bool packPosition_{DefaultPackPosition};
+    bool packVelocity_{DefaultPackVelocity};
+    bool packAngularVelocity_{DefaultPackAngularVelocity};
+    float packPositionMaxAbsValue_{DefaultPackPositionMaxAbsValue};
+    float packVelocityMaxAbsValue_{DefaultPackVelocityMaxAbsValue};
+    float packAngularVelocityMaxAbsValue_{DefaultPackAngularVelocityMaxAbsValue};
     /// @}
 
     NetworkValue<PositionAndVelocity> positionTrace_;

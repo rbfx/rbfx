@@ -68,6 +68,14 @@ void ReplicatedTransform::RegisterObject(Context* context)
     URHO3D_ENUM_ATTRIBUTE("Synchronize Rotation", synchronizeRotation_, replicatedRotationModeNames, DefaultSynchronizeRotation, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Extrapolate Position", bool, extrapolatePosition_, DefaultExtrapolatePosition, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Extrapolate Rotation", bool, extrapolateRotation_, DefaultExtrapolateRotation, AM_DEFAULT);
+
+    URHO3D_ATTRIBUTE("Pack Position", bool, packPosition_, DefaultPackPosition, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Pack Rotation", bool, packRotation_, DefaultPackRotation, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Pack Velocity", bool, packVelocity_, DefaultPackVelocity, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Pack Angular Velocity", bool, packAngularVelocity_, DefaultPackAngularVelocity, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Pack Position Max Abs Value", float, packPositionMaxAbsValue_, DefaultPackPositionMaxAbsValue, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Pack Velocity Max Abs Value", float, packVelocityMaxAbsValue_, DefaultPackVelocityMaxAbsValue, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Pack Angular Velocity Max Abs Value", float, packAngularVelocityMaxAbsValue_, DefaultPackAngularVelocityMaxAbsValue, AM_DEFAULT);
 }
 
 void ReplicatedTransform::InitializeOnServer()
@@ -198,14 +206,44 @@ void ReplicatedTransform::WriteUnreliableDelta(NetworkFrame frame, Serializer& d
 {
     if (synchronizePosition_)
     {
-        dest.WriteVector3(server_.position_);
-        dest.WriteVector3(server_.velocity_);
+        if (packPosition_)
+        {
+            dest.WritePackedVector3(server_.position_, packPositionMaxAbsValue_);
+        }
+        else
+        {
+            dest.WriteVector3(server_.position_);
+        }
+
+        if (packVelocity_)
+        {
+            dest.WritePackedVector3(server_.velocity_, packVelocityMaxAbsValue_);
+        }
+        else
+        {
+            dest.WriteVector3(server_.velocity_);
+        }
     }
 
     if (synchronizeRotation_ == ReplicatedRotationMode::XYZ)
     {
-        dest.WriteQuaternion(server_.rotation_);
-        dest.WriteVector3(server_.angularVelocity_);
+        if (packRotation_)
+        {
+            dest.WritePackedQuaternion(server_.rotation_);
+        }
+        else
+        {
+            dest.WriteQuaternion(server_.rotation_);
+        }
+
+        if (packAngularVelocity_)
+        {
+            dest.WritePackedVector3(server_.angularVelocity_, packAngularVelocityMaxAbsValue_);
+        }
+        else
+        {
+            dest.WriteVector3(server_.angularVelocity_);
+        }
     }
 }
 
@@ -213,16 +251,16 @@ void ReplicatedTransform::ReadUnreliableDelta(NetworkFrame frame, Deserializer& 
 {
     if (synchronizePosition_)
     {
-        const Vector3 position = src.ReadVector3();
-        const Vector3 velocity = src.ReadVector3();
+        const Vector3 position = packPosition_ ? src.ReadPackedVector3(packPositionMaxAbsValue_) : src.ReadVector3();
+        const Vector3 velocity = packVelocity_ ? src.ReadPackedVector3(packVelocityMaxAbsValue_) : src.ReadVector3();
 
         positionTrace_.Set(frame, {position, velocity});
     }
 
     if (synchronizeRotation_ == ReplicatedRotationMode::XYZ)
     {
-        const Quaternion rotation = src.ReadQuaternion();
-        const Vector3 angularVelocity = src.ReadVector3();
+        const Quaternion rotation = packRotation_ ? src.ReadPackedQuaternion() : src.ReadQuaternion();
+        const Vector3 angularVelocity = packAngularVelocity_ ? src.ReadPackedVector3(packAngularVelocityMaxAbsValue_) : src.ReadVector3();
 
         rotationTrace_.Set(frame, {rotation, angularVelocity});
     }
