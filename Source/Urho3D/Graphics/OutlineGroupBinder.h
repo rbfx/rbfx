@@ -30,7 +30,7 @@ namespace Urho3D
 class Drawable;
 class OutlineGroup;
 
-/// Group of selected drawables.
+/// Add this to a node with a drawable to bind it to a non-debug OutlineGroup in the same scene.
 class URHO3D_API OutlineGroupBinder : public Component
 {
     URHO3D_OBJECT(OutlineGroupBinder, Component);
