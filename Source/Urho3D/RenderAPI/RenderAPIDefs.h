@@ -313,6 +313,19 @@ enum VertexElementSemantic : unsigned char
     MAX_VERTEX_ELEMENT_SEMANTICS
 };
 
+static const char* vertexElementSemanticNames[] = {
+    "POSITION",
+    "NORMAL",
+    "BINORMAL",
+    "TANGENT",
+    "TEXCOORD",
+    "COLOR",
+    "BLENDWEIGHTS",
+    "BLENDINDICES",
+    "OBJECTINDEX",
+    nullptr,
+};
+
 /// Arbitrary vertex declaration element datatypes.
 enum VertexElementType : unsigned char
 {
@@ -324,6 +337,17 @@ enum VertexElementType : unsigned char
     TYPE_UBYTE4,
     TYPE_UBYTE4_NORM,
     MAX_VERTEX_ELEMENT_TYPES
+};
+
+static const char* vertexElementTypeNames[] = {
+    "INT",
+    "FLOAT",
+    "VECTOR2",
+    "VECTOR3",
+    "VECTOR4",
+    "UBYTE4",
+    "UBYTE4_NORM",
+    nullptr,
 };
 
 /// Description of the single input required by the vertex shader.

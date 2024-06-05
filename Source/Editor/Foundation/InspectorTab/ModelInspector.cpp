@@ -26,6 +26,7 @@
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/SystemUI/ModelInspectorWidget.h>
 #include <Urho3D/SystemUI/SceneWidget.h>
+#include <Urho3D/Graphics/VertexBuffer.h>
 
 namespace Urho3D
 {
@@ -50,14 +51,70 @@ SharedPtr<ResourceInspectorWidget> ModelInspector::MakeInspectorWidget(const Res
     return MakeShared<ModelInspectorWidget>(context_, resources);
 }
 
+class ModelInspectorSceneWidget : public SceneWidget
+{
+public:
+    ModelInspectorSceneWidget::ModelInspectorSceneWidget(Context* context)
+        : SceneWidget(context)
+    {
+    }
+
+    ModelInspectorSceneWidget::~ModelInspectorSceneWidget() {}
+
+    void SetModel(Model* model)
+    {
+        model_ = model;
+    }
+
+    void RenderContent() override
+    {
+        if (model_)
+        {
+            auto& vertexBuffers = model_->GetVertexBuffers();
+            if (!vertexBuffers.empty())
+            {
+                ui::NewLine();
+            }
+
+            for (unsigned vertexBufferIndex = 0; vertexBufferIndex < vertexBuffers.size(); ++vertexBufferIndex)
+            {
+                const auto& vb = vertexBuffers[vertexBufferIndex];
+                const float kb = (vb->GetVertexCount() * vb->GetVertexSize()) / 1000.0f;
+                ui::Text("VertexBuffer[%u]: %u vertices (%.1f KB)", vertexBufferIndex, vb->GetVertexCount(), kb);
+
+                const float indent = 5;
+                ui::Indent(indent);
+
+                for (auto& ve : vb->GetElements())
+                {
+                    ui::Text("%s (%s)", vertexElementSemanticNames[ve.semantic_], vertexElementTypeNames[ve.type_]);
+                }
+
+                ui::Indent(-indent);
+            }
+
+            if (!vertexBuffers.empty())
+            {
+                ui::NewLine();
+            }
+        }
+
+        SceneWidget::RenderContent();
+    }
+
+private:
+    Model* model_ = nullptr;
+};
+
 SharedPtr<BaseWidget> ModelInspector::MakePreviewWidget(Resource* resource)
 {
-    auto sceneWidget = MakeShared<SceneWidget>(context_);
+    auto sceneWidget = MakeShared<ModelInspectorSceneWidget>(context_);
     auto scene = sceneWidget->CreateDefaultScene();
     auto modelNode = scene->CreateChild("Model");
     auto staticModel = modelNode->CreateComponent<StaticModel>();
     auto model = static_cast<Model*>(resource);
     staticModel->SetModel(model);
+    sceneWidget->SetModel(model);
     sceneWidget->LookAt(model->GetBoundingBox());
     return sceneWidget;
 }
