@@ -54,12 +54,12 @@ SharedPtr<ResourceInspectorWidget> ModelInspector::MakeInspectorWidget(const Res
 class ModelInspectorSceneWidget : public SceneWidget
 {
 public:
-    ModelInspectorSceneWidget::ModelInspectorSceneWidget(Context* context)
+    ModelInspectorSceneWidget(Context* context)
         : SceneWidget(context)
     {
     }
 
-    ModelInspectorSceneWidget::~ModelInspectorSceneWidget() {}
+    ~ModelInspectorSceneWidget() {}
 
     void SetModel(Model* model)
     {
