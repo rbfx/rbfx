@@ -53,11 +53,11 @@ void CreateDefaultScene(Context* context, const ea::string& fileName, const Defa
         auto renderPipeline = scene->CreateComponent<RenderPipeline>();
         RenderPipelineSettings settings = renderPipeline->GetSettings();
 
-        settings.antialiasing_ = PostProcessAntialiasing::FXAA3;
         settings.renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::LinearHDR;
         settings.sceneProcessor_.pcfKernelSize_ = 5;
 
         renderPipeline->SetSettings(settings);
+        renderPipeline->SetRenderPassEnabled("Postprocess: FXAA v3", true);
     }
 
     if (params.createObjects_)

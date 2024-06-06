@@ -57,6 +57,101 @@
 					}
 				]
 			}
+		},
+		{
+			"type": "FullScreenShaderPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Is Enabled By Default",
+						"type": "Bool",
+						"value": false
+					},
+					{
+						"name": "Comment",
+						"type": "String",
+						"value": "FXAA v2"
+					},
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: FXAA v2"
+					},
+					{
+						"name": "Shader Name",
+						"type": "String",
+						"value": "v2/P_FXAA2"
+					},
+					{
+						"name": "Read+Write Color Output",
+						"type": "Bool",
+						"value": true
+					},
+					{
+						"name": "Bilinear Color Sampler",
+						"type": "Bool",
+						"value": true
+					},
+					{
+						"name": "Parameters Prefix",
+						"type": "String",
+						"value": "FXAA: "
+					},
+					{
+						"name": "Parameters",
+						"type": "StringVariantMap",
+						"value": [
+							{
+								"key": "FXAAParams",
+								"type": "Vector3",
+								"value": "0.4 0.5 0.75"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"type": "FullScreenShaderPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Is Enabled By Default",
+						"type": "Bool",
+						"value": false
+					},
+					{
+						"name": "Comment",
+						"type": "String",
+						"value": "FXAA v3"
+					},
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: FXAA v3"
+					},
+					{
+						"name": "Shader Name",
+						"type": "String",
+						"value": "v2/P_FXAA3"
+					},
+					{
+						"name": "Shader Defines",
+						"type": "String",
+						"value": "FXAA_QUALITY_PRESET=12"
+					},
+					{
+						"name": "Read+Write Color Output",
+						"type": "Bool",
+						"value": true
+					},
+					{
+						"name": "Bilinear Color Sampler",
+						"type": "Bool",
+						"value": true
+					}
+				]
+			}
 		}
 	]
 }

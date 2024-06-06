@@ -782,14 +782,6 @@ struct BloomPassSettings
     /// @}
 };
 
-/// Post-processing antialiasing mode.
-enum class PostProcessAntialiasing
-{
-    None,
-    FXAA2,
-    FXAA3
-};
-
 /// Settings of default render pipeline.
 struct RenderPipelineSettings : public ShaderProgramCompositorSettings
 {
@@ -804,7 +796,6 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     BloomPassSettings bloom_;
     AmbientOcclusionPassSettings ssao_;
     ToneMappingMode toneMapping_{};
-    PostProcessAntialiasing antialiasing_{};
     /// @}
 
     /// Utility operators
@@ -830,8 +821,7 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
             && drawDebugGeometry_ == rhs.drawDebugGeometry_
             && autoExposure_ == rhs.autoExposure_
             && bloom_ == rhs.bloom_
-            && toneMapping_ == rhs.toneMapping_
-            && antialiasing_ == rhs.antialiasing_;
+            && toneMapping_ == rhs.toneMapping_;
     }
 
     bool operator!=(const RenderPipelineSettings& rhs) const { return !(*this == rhs); }

@@ -3493,8 +3493,8 @@ private:
             auto pipelineSettings = renderPipeline->GetSettings();
             pipelineSettings.renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::LinearLDR;
             pipelineSettings.sceneProcessor_.pcfKernelSize_ = 5;
-            pipelineSettings.antialiasing_ = PostProcessAntialiasing::FXAA3;
             renderPipeline->SetSettings(pipelineSettings);
+            renderPipeline->SetRenderPassEnabled("Postprocess: FXAA v3", true);
         }
 
         Node* rootNode = scene->CreateChild(settings.assetName_);
