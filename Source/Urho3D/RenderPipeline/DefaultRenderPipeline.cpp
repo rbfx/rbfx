@@ -194,7 +194,7 @@ void DefaultRenderPipelineView::ApplySettings()
     case PostProcessAntialiasing::FXAA2:
     {
         auto pass = MakeShared<SimplePostProcessPass>(this, renderBufferManager_,
-            PostProcessPassFlag::NeedColorOutputReadAndWrite | PostProcessPassFlag::NeedColorOutputBilinear,
+            RenderOutputFlag::NeedColorOutputReadAndWrite | RenderOutputFlag::NeedColorOutputBilinear,
             BLEND_REPLACE, "v2/P_FXAA2", "");
         pass->AddShaderParameter("FXAAParams", Vector3(0.4f, 0.5f, 0.75f));
         postProcessPasses_.push_back(pass);
@@ -203,7 +203,7 @@ void DefaultRenderPipelineView::ApplySettings()
     case PostProcessAntialiasing::FXAA3:
     {
         auto pass = MakeShared<SimplePostProcessPass>(this, renderBufferManager_,
-            PostProcessPassFlag::NeedColorOutputReadAndWrite | PostProcessPassFlag::NeedColorOutputBilinear,
+            RenderOutputFlag::NeedColorOutputReadAndWrite | RenderOutputFlag::NeedColorOutputBilinear,
             BLEND_REPLACE, "v2/P_FXAA3", "FXAA_QUALITY_PRESET=12");
         postProcessPasses_.push_back(pass);
         break;
@@ -211,21 +211,24 @@ void DefaultRenderPipelineView::ApplySettings()
     default:
         break;
     }
+}
 
-    postProcessFlags_ = {};
+void DefaultRenderPipelineView::UpdateRenderOutputFlags()
+{
+    renderOutputFlags_ = {};
     for (PostProcessPass* postProcessPass : postProcessPasses_)
-        postProcessFlags_ |= postProcessPass->GetExecutionFlags();
+        renderOutputFlags_ |= postProcessPass->GetExecutionFlags();
 
     if (renderPath_)
     {
         const RenderPassTraits& aggregatedTraits = renderPath_->GetAggregatedPassTraits();
         if (aggregatedTraits.needReadWriteColorBuffer_)
-            postProcessFlags_ |= PostProcessPassFlag::NeedColorOutputReadAndWrite;
+            renderOutputFlags_ |= RenderOutputFlag::NeedColorOutputReadAndWrite;
         if (aggregatedTraits.needBilinearColorSampler_)
-            postProcessFlags_ |= PostProcessPassFlag::NeedColorOutputBilinear;
+            renderOutputFlags_ |= RenderOutputFlag::NeedColorOutputBilinear;
     }
 
-    settings_.AdjustForPostProcessing(postProcessFlags_);
+    settings_.AdjustForPostProcessing(renderOutputFlags_);
     renderBufferManager_->SetSettings(settings_.renderBufferManager_);
 }
 
@@ -278,12 +281,14 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
     {
         parametersDirty_ = false;
         renderPath_->UpdateParameters(renderPipeline_->GetRenderPasses(), renderPipeline_->GetRenderPathParameters());
+        UpdateRenderOutputFlags();
     }
 
     if (settingsDirty_)
     {
         settingsDirty_ = false;
         ApplySettings();
+        UpdateRenderOutputFlags();
     }
 
     renderBufferManager_->OnViewportDefined(frameInfo_.renderTarget_, frameInfo_.viewportRect_);
@@ -369,7 +374,7 @@ void DefaultRenderPipelineView::Render()
 
     const bool hasRefraction = alphaPass_->HasRefractionBatches();
     RenderBufferManagerFrameSettings frameSettings;
-    frameSettings.supportColorReadWrite_ = postProcessFlags_.Test(PostProcessPassFlag::NeedColorOutputReadAndWrite);
+    frameSettings.supportColorReadWrite_ = renderOutputFlags_.Test(RenderOutputFlag::NeedColorOutputReadAndWrite);
     if (hasRefraction)
         frameSettings.supportColorReadWrite_ = true;
     renderBufferManager_->SetFrameSettings(frameSettings);

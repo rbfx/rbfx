@@ -74,6 +74,7 @@ protected:
     unsigned RecalculatePipelineStateHash() const;
     void SendViewEvent(StringHash eventType);
     void ApplySettings();
+    void UpdateRenderOutputFlags();
 
 private:
     SharedPtr<RenderPath> originalRenderPath_;
@@ -92,7 +93,7 @@ private:
     unsigned oldPipelineStateHash_{};
 
     CommonFrameInfo frameInfo_;
-    PostProcessPassFlags postProcessFlags_;
+    RenderOutputFlags renderOutputFlags_;
 
     RenderPipelineStats stats_;
     RenderPipelineDebugger debugger_;

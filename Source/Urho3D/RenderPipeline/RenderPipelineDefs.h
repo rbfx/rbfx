@@ -218,14 +218,14 @@ struct RenderBufferManagerFrameSettings
 };
 
 /// Traits of post-processing pass
-enum class PostProcessPassFlag
+enum class RenderOutputFlag
 {
     None = 0,
     NeedColorOutputReadAndWrite = 1 << 0,
     NeedColorOutputBilinear = 1 << 1,
 };
 
-URHO3D_FLAGSET(PostProcessPassFlag, PostProcessPassFlags);
+URHO3D_FLAGSET(RenderOutputFlag, RenderOutputFlags);
 
 /// Pipeline state cache callback used to create actual pipeline state.
 class BatchStateCacheCallback
@@ -843,7 +843,7 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     /// Don't modify settings inplace after these calls! Always restore settings from external source.
     /// @{
     void PropagateImpliedSettings();
-    void AdjustForPostProcessing(PostProcessPassFlags flags);
+    void AdjustForPostProcessing(RenderOutputFlags flags);
     /// @}
 };
 

@@ -45,7 +45,7 @@ public:
     ToneMappingPass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager);
     void SetMode(ToneMappingMode mode);
 
-    PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::NeedColorOutputReadAndWrite; }
+    RenderOutputFlags GetExecutionFlags() const override { return RenderOutputFlag::NeedColorOutputReadAndWrite; }
     void Execute(Camera* camera) override;
 
 protected:

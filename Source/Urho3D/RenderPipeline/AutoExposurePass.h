@@ -45,7 +45,7 @@ public:
     AutoExposurePass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager);
     void SetSettings(const AutoExposurePassSettings& settings);
 
-    PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::NeedColorOutputReadAndWrite; }
+    RenderOutputFlags GetExecutionFlags() const override { return RenderOutputFlag::NeedColorOutputReadAndWrite; }
     void Execute(Camera* camera) override;
 
 protected:

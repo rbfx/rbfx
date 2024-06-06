@@ -46,9 +46,9 @@ public:
 
     void SetSettings(const AmbientOcclusionPassSettings& settings);
 
-    PostProcessPassFlags GetExecutionFlags() const override
+    RenderOutputFlags GetExecutionFlags() const override
     {
-        return PostProcessPassFlag::NeedColorOutputBilinear;
+        return RenderOutputFlag::NeedColorOutputBilinear;
     }
 
     void SetNormalBuffer(RenderBuffer* normalBuffer);
