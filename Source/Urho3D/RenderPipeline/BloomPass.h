@@ -50,7 +50,7 @@ public:
     BloomPass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager);
     void SetSettings(const BloomPassSettings& settings);
 
-    PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::NeedColorOutputReadAndWrite | PostProcessPassFlag::NeedColorOutputBilinear; }
+    RenderOutputFlags GetExecutionFlags() const override { return RenderOutputFlag::NeedColorOutputReadAndWrite | RenderOutputFlag::NeedColorOutputBilinear; }
     void Execute(Camera* camera) override;
 
 protected:

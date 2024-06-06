@@ -45,7 +45,7 @@ public:
     PostProcessPass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager);
     ~PostProcessPass() override;
 
-    virtual PostProcessPassFlags GetExecutionFlags() const = 0;
+    virtual RenderOutputFlags GetExecutionFlags() const = 0;
     virtual void Execute(Camera* camera) = 0;
 
 protected:
@@ -60,17 +60,17 @@ class URHO3D_API SimplePostProcessPass
 
 public:
     SimplePostProcessPass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager,
-        PostProcessPassFlags flags, BlendMode blendMode, const ea::string& shaderName, const ea::string& shaderDefines,
+        RenderOutputFlags flags, BlendMode blendMode, const ea::string& shaderName, const ea::string& shaderDefines,
         ea::span<const NamedSamplerStateDesc> samplers = {});
 
     void AddShaderParameter(StringHash name, const Variant& value);
     void AddShaderResource(StringHash name, Texture* texture);
 
-    PostProcessPassFlags GetExecutionFlags() const override { return flags_; }
+    RenderOutputFlags GetExecutionFlags() const override { return flags_; }
     void Execute(Camera* camera) override;
 
 protected:
-    const PostProcessPassFlags flags_;
+    const RenderOutputFlags flags_;
     const ea::string debugComment_;
     StaticPipelineStateId pipelineState_{};
 

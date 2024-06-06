@@ -46,7 +46,7 @@ PostProcessPass::~PostProcessPass()
 }
 
 SimplePostProcessPass::SimplePostProcessPass(RenderPipelineInterface* renderPipeline,
-    RenderBufferManager* renderBufferManager, PostProcessPassFlags flags, BlendMode blendMode,
+    RenderBufferManager* renderBufferManager, RenderOutputFlags flags, BlendMode blendMode,
     const ea::string& shaderName, const ea::string& shaderDefines, ea::span<const NamedSamplerStateDesc> samplers)
     : PostProcessPass(renderPipeline, renderBufferManager)
     , flags_(flags)
@@ -54,7 +54,7 @@ SimplePostProcessPass::SimplePostProcessPass(RenderPipelineInterface* renderPipe
 {
     ea::vector<NamedSamplerStateDesc> samplersAdjusted{samplers.begin(), samplers.end()};
 
-    const bool colorReadAndWrite = flags_.Test(PostProcessPassFlag::NeedColorOutputReadAndWrite);
+    const bool colorReadAndWrite = flags_.Test(RenderOutputFlag::NeedColorOutputReadAndWrite);
     if (colorReadAndWrite)
         samplersAdjusted.emplace_back(ShaderResources::Albedo, SamplerStateDesc::Bilinear());
 
@@ -74,7 +74,7 @@ void SimplePostProcessPass::AddShaderResource(StringHash name, Texture* texture)
 
 void SimplePostProcessPass::Execute(Camera* camera)
 {
-    const bool colorReadAndWrite = flags_.Test(PostProcessPassFlag::NeedColorOutputReadAndWrite);
+    const bool colorReadAndWrite = flags_.Test(RenderOutputFlag::NeedColorOutputReadAndWrite);
 
     if (colorReadAndWrite)
         renderBufferManager_->SwapColorBuffers(false);

@@ -164,9 +164,9 @@ void RenderPipelineSettings::PropagateImpliedSettings()
         renderBufferManager_.readableDepth_ = true;
 }
 
-void RenderPipelineSettings::AdjustForPostProcessing(PostProcessPassFlags flags)
+void RenderPipelineSettings::AdjustForPostProcessing(RenderOutputFlags flags)
 {
-    renderBufferManager_.filteredColor_ = flags.Test(PostProcessPassFlag::NeedColorOutputBilinear);
+    renderBufferManager_.filteredColor_ = flags.Test(RenderOutputFlag::NeedColorOutputBilinear);
 }
 
 }

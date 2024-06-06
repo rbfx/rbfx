@@ -51,7 +51,7 @@ protected:
     RenderPipelineSettings settings_;
 
     CommonFrameInfo frameInfo_;
-    PostProcessPassFlags postProcessFlags_;
+    RenderOutputFlags renderOutputFlags_;
 
     RenderPipelineStats stats_;
     RenderPipelineDebugger debugger_;

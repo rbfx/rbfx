@@ -374,11 +374,11 @@ void StereoRenderPipelineView::ApplySettings()
         postProcessPasses_.push_back(pass);
     }
 
-    postProcessFlags_ = {};
+    renderOutputFlags_ = {};
     for (PostProcessPass* postProcessPass : postProcessPasses_)
-        postProcessFlags_ |= postProcessPass->GetExecutionFlags();
+        renderOutputFlags_ |= postProcessPass->GetExecutionFlags();
 
-    settings_.AdjustForPostProcessing(postProcessFlags_);
+    settings_.AdjustForPostProcessing(renderOutputFlags_);
     renderBufferManager_->SetSettings(settings_.renderBufferManager_);
 }
 
@@ -501,7 +501,7 @@ void StereoRenderPipelineView::Render()
 
     const bool hasRefraction = alphaPass_->HasRefractionBatches();
     RenderBufferManagerFrameSettings frameSettings;
-    frameSettings.supportColorReadWrite_ = postProcessFlags_.Test(PostProcessPassFlag::NeedColorOutputReadAndWrite);
+    frameSettings.supportColorReadWrite_ = renderOutputFlags_.Test(RenderOutputFlag::NeedColorOutputReadAndWrite);
     if (hasRefraction)
         frameSettings.supportColorReadWrite_ = true;
 
