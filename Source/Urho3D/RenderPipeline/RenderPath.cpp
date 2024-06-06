@@ -141,6 +141,7 @@ void RenderPath::ReorderPass(RenderPass* pass, unsigned index)
     const auto iter = ea::find(passes_.begin(), passes_.end(), pass);
     if (iter != passes_.end())
     {
+        SharedPtr<RenderPass> passHolder{pass};
         passes_.erase(iter);
         passes_.insert_at(index, SharedPtr<RenderPass>(pass));
     }
