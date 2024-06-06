@@ -188,29 +188,6 @@ void DefaultRenderPipelineView::ApplySettings()
         pass->SetMode(settings_.toneMapping_);
         postProcessPasses_.push_back(pass);
     }
-
-    switch (settings_.antialiasing_)
-    {
-    case PostProcessAntialiasing::FXAA2:
-    {
-        auto pass = MakeShared<SimplePostProcessPass>(this, renderBufferManager_,
-            RenderOutputFlag::NeedColorOutputReadAndWrite | RenderOutputFlag::NeedColorOutputBilinear,
-            BLEND_REPLACE, "v2/P_FXAA2", "");
-        pass->AddShaderParameter("FXAAParams", Vector3(0.4f, 0.5f, 0.75f));
-        postProcessPasses_.push_back(pass);
-        break;
-    }
-    case PostProcessAntialiasing::FXAA3:
-    {
-        auto pass = MakeShared<SimplePostProcessPass>(this, renderBufferManager_,
-            RenderOutputFlag::NeedColorOutputReadAndWrite | RenderOutputFlag::NeedColorOutputBilinear,
-            BLEND_REPLACE, "v2/P_FXAA3", "FXAA_QUALITY_PRESET=12");
-        postProcessPasses_.push_back(pass);
-        break;
-    }
-    default:
-        break;
-    }
 }
 
 void DefaultRenderPipelineView::UpdateRenderOutputFlags()

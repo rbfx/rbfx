@@ -78,8 +78,6 @@ static const ea::vector<ea::string> directLightingModeNames = {
     "Deferred PBR",
 };
 
-static const ea::vector<ea::string> postProcessAntialiasingNames = {"None", "FXAA2", "FXAA3"};
-
 static const ea::vector<ea::string> toneMappingModeNames = {
     "None",
     "Reinhard",
@@ -100,6 +98,8 @@ RenderPipelineView::RenderPipelineView(RenderPipeline* renderPipeline)
 RenderPipeline::RenderPipeline(Context* context)
     : Component(context)
 {
+    SetRenderPathAttr(defaultRenderPath);
+
     // Enable instancing by default for default render pipeline
     settings_.instancingBuffer_.enableInstancing_ = true;
     settings_.Validate();
@@ -161,18 +161,11 @@ void RenderPipeline::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Bloom Intensity", float, settings_.bloom_.intensity_, MarkSettingsDirty, BloomPassSettings{}.intensity_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Bloom Iteration Factor", float, settings_.bloom_.iterationFactor_, MarkSettingsDirty, BloomPassSettings{}.iterationFactor_, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Tone Mapping Mode", settings_.toneMapping_, MarkSettingsDirty, toneMappingModeNames, ToneMappingMode::None, AM_DEFAULT);
-    URHO3D_ENUM_ATTRIBUTE_EX("Post Process Antialiasing", settings_.antialiasing_, MarkSettingsDirty, postProcessAntialiasingNames, PostProcessAntialiasing::None, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Draw Debug Geometry", bool, settings_.drawDebugGeometry_, MarkSettingsDirty, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Depth Bias Scale", float, settings_.shadowMapAllocator_.depthBiasScale_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Depth Bias Offset", float, settings_.shadowMapAllocator_.depthBiasOffset_, MarkSettingsDirty, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Normal Offset Scale", float, settings_.sceneProcessor_.normalOffsetScale_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
     // clang-format on
-}
-
-void RenderPipeline::ApplyAttributes()
-{
-    if (loadDefaultRenderPath_)
-        SetRenderPathAttr(defaultRenderPath);
 }
 
 void RenderPipeline::SetSettings(const RenderPipelineSettings& settings)
@@ -190,8 +183,9 @@ ResourceRef RenderPipeline::GetRenderPathAttr() const
 
 void RenderPipeline::SetRenderPathAttr(const ResourceRef& value)
 {
-    auto* cache = GetSubsystem<ResourceCache>();
-    SetRenderPath(cache->GetResource<RenderPath>(value.name_));
+    // This function may be called from constructor, check for cache just in case.
+    if (auto* cache = GetSubsystem<ResourceCache>())
+        SetRenderPath(cache->GetResource<RenderPath>(value.name_));
 }
 
 void RenderPipeline::SetRenderPath(RenderPath* renderPath)
@@ -199,7 +193,6 @@ void RenderPipeline::SetRenderPath(RenderPath* renderPath)
     if (renderPath_)
         UnsubscribeFromEvent(renderPath_, E_RELOADFINISHED);
 
-    loadDefaultRenderPath_ = false;
     renderPath_ = renderPath;
     OnRenderPathReloaded();
 
@@ -259,6 +252,29 @@ void RenderPipeline::UpdateRenderPathParameters(const VariantMap& params)
         }
     }
     if (modified)
+        OnParametersChanged(this);
+}
+
+void RenderPipeline::SetRenderPassEnabled(const ea::string& passName, bool enabled)
+{
+    const auto isMatching = [&](const ea::pair<ea::string, bool>& item) { return item.first == passName; };
+    const auto iter = ea::find_if(renderPasses_.begin(), renderPasses_.end(), isMatching);
+
+    bool isUpdated = false;
+    if (iter == renderPasses_.end())
+    {
+        isUpdated = true;
+        renderPasses_.emplace_back(passName, enabled);
+        if (renderPath_)
+            renderPasses_ = renderPath_->RepairEnabledRenderPasses(renderPasses_);
+    }
+    else if (iter->second != enabled)
+    {
+        isUpdated = true;
+        iter->second = enabled;
+    }
+
+    if (isUpdated)
         OnParametersChanged(this);
 }
 

@@ -96,11 +96,6 @@ public:
 
     static void RegisterObject(Context* context);
 
-    /// Implement Component.
-    /// @{
-    void ApplyAttributes() override;
-    /// @}
-
     /// Properties.
     /// @{
     const RenderPipelineSettings& GetSettings() const { return settings_; }
@@ -124,6 +119,8 @@ public:
 
     /// Update existing render path parameters.
     void UpdateRenderPathParameters(const VariantMap& params);
+    /// Update render pass enabled state.
+    void SetRenderPassEnabled(const ea::string& passName, bool enabled);
 
     /// Create new instance of render pipeline.
     virtual SharedPtr<RenderPipelineView> Instantiate();
@@ -132,7 +129,6 @@ private:
     void MarkSettingsDirty();
     void OnRenderPathReloaded();
 
-    bool loadDefaultRenderPath_{true};
     SharedPtr<RenderPath> renderPath_;
 
     EnabledRenderPasses renderPasses_;
