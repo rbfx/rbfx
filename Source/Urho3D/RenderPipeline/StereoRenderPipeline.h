@@ -26,6 +26,8 @@ public:
 
     const RenderPipelineSettings& GetSettings() const { return settings_; }
     void SetSettings(const RenderPipelineSettings& settings);
+    void SetRenderPath(RenderPath* renderPath);
+    void MarkParametersDirty() { parametersDirty_ = true; }
 
     /// Implement RenderPipelineView
     /// @{
@@ -47,6 +49,12 @@ public:
 protected:
     void SendViewEvent(StringHash eventID);
     void ApplySettings();
+    void UpdateRenderOutputFlags();
+
+protected:
+    SharedPtr<RenderPath> originalRenderPath_;
+    SharedPtr<RenderPath> renderPath_;
+    bool parametersDirty_{};
 
     RenderPipelineSettings settings_;
 

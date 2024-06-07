@@ -304,7 +304,12 @@ StereoRenderPipelineView::StereoRenderPipelineView(RenderPipeline* pipeline)
     settings.sceneProcessor_.lightingMode_ = DirectLightingMode::Forward;
 
     SetSettings(settings);
+    SetRenderPath(renderPipeline_->GetRenderPath());
+    MarkParametersDirty();
+
     renderPipeline_->OnSettingsChanged.Subscribe(this, &StereoRenderPipelineView::SetSettings);
+    renderPipeline_->OnRenderPathChanged.Subscribe(this, &StereoRenderPipelineView::SetRenderPath);
+    renderPipeline_->OnParametersChanged.Subscribe(this, &StereoRenderPipelineView::MarkParametersDirty);
 }
 
 StereoRenderPipelineView::~StereoRenderPipelineView()
@@ -322,6 +327,12 @@ void StereoRenderPipelineView::SetSettings(const RenderPipelineSettings& setting
 
     settingsHash_ = settings_.CalculatePipelineStateHash();
     settingsDirty_ = true;
+}
+
+void StereoRenderPipelineView::SetRenderPath(RenderPath* renderPath)
+{
+    originalRenderPath_ = renderPath;
+    renderPath_ = nullptr;
 }
 
 void StereoRenderPipelineView::ApplySettings()
@@ -373,10 +384,22 @@ void StereoRenderPipelineView::ApplySettings()
         pass->SetMode(settings_.toneMapping_);
         postProcessPasses_.push_back(pass);
     }
+}
 
+void StereoRenderPipelineView::UpdateRenderOutputFlags()
+{
     renderOutputFlags_ = {};
     for (PostProcessPass* postProcessPass : postProcessPasses_)
         renderOutputFlags_ |= postProcessPass->GetExecutionFlags();
+
+    if (renderPath_)
+    {
+        const RenderPassTraits& aggregatedTraits = renderPath_->GetAggregatedPassTraits();
+        if (aggregatedTraits.needReadWriteColorBuffer_)
+            renderOutputFlags_ |= RenderOutputFlag::NeedColorOutputReadAndWrite;
+        if (aggregatedTraits.needBilinearColorSampler_)
+            renderOutputFlags_ |= RenderOutputFlag::NeedColorOutputBilinear;
+    }
 
     settings_.AdjustForPostProcessing(renderOutputFlags_);
     renderBufferManager_->SetSettings(settings_.renderBufferManager_);
@@ -388,6 +411,14 @@ bool StereoRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vie
 
     if (!viewport->GetScene() || !viewport->IsStereo())
         return false;
+
+    // Ensure that render path is ready
+    if (!renderPath_ && originalRenderPath_)
+    {
+        renderPath_ = originalRenderPath_->Clone();
+        renderPath_->InitializeView(this);
+        settingsDirty_ = true;
+    }
 
     if (!sceneProcessor_)
     {
@@ -422,10 +453,18 @@ bool StereoRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vie
 
     sceneProcessor_->SetRenderCameras(cameras);
 
+    if (parametersDirty_ && renderPath_)
+    {
+        parametersDirty_ = false;
+        renderPath_->UpdateParameters(renderPipeline_->GetRenderPasses(), renderPipeline_->GetRenderPathParameters());
+        UpdateRenderOutputFlags();
+    }
+
     if (settingsDirty_)
     {
         settingsDirty_ = false;
         ApplySettings();
+        UpdateRenderOutputFlags();
     }
 
     renderBufferManager_->OnViewportDefined(frameInfo_.renderTarget_, frameInfo_.viewportRect_);
@@ -575,6 +614,14 @@ void StereoRenderPipelineView::Render()
     // Post-process passes that do not use the camera will work ... those that do, go ... KABOOM!
     for (PostProcessPass* postProcessPass : postProcessPasses_)
         postProcessPass->Execute(nullptr);
+
+    if (renderPath_)
+    {
+        RenderPassContext ctx;
+        ctx.renderPipelineInterface_ = this;
+        ctx.renderBufferManager_ = renderBufferManager_;
+        renderPath_->Execute(ctx);
+    }
 
     // draw debug geometry into each half
     auto debug = sceneProcessor_->GetFrameInfo().scene_->GetComponent<DebugRenderer>();
