@@ -158,6 +158,7 @@ void RenderPathInspector::RenderContent()
 
     pendingRemoves_.clear();
     pendingAdds_.clear();
+    pendingReorders_.clear();
 
     for (unsigned index = 0; index < inspectorWidgets_.size(); ++index)
         RenderInspector(index, inspectorWidgets_[index]);

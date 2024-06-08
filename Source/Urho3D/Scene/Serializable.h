@@ -232,6 +232,9 @@ namespace AttributeMetadata
     URHO3D_GLOBAL_CONSTANT(ConstString IsAction{"IsAction"});
     /// Flag that indicates that the attribute should be resizable by user. Applies only to ResourceRefList.
     URHO3D_GLOBAL_CONSTANT(ConstString AllowResize{"AllowResize"});
+    /// Flag that indicates that the elements metadata should be extracted from the value itself.
+    /// Applies only to StringVariantMap.
+    URHO3D_GLOBAL_CONSTANT(ConstString DynamicMetadata{"DynamicMetadata"});
 }
 
 // The following macros need to be used within a class member function such as ClassName::RegisterObject().

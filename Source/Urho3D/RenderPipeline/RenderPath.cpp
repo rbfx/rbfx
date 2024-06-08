@@ -31,7 +31,8 @@ void RenderPath::InitializeView(RenderPipelineView* view)
         pass->InitializeView(view);
 }
 
-void RenderPath::UpdateParameters(const EnabledRenderPasses& enabledPasses, const StringVariantMap& params)
+void RenderPath::UpdateParameters(
+    const RenderPipelineSettings& settings, const EnabledRenderPasses& enabledPasses, const StringVariantMap& params)
 {
     const unsigned numPasses = passes_.size();
     if (enabledPasses.size() != numPasses)
@@ -46,7 +47,7 @@ void RenderPath::UpdateParameters(const EnabledRenderPasses& enabledPasses, cons
     {
         RenderPass* pass = passes_[i];
         pass->SetEnabled(enabledPasses[i].second);
-        pass->UpdateParameters(params);
+        pass->UpdateParameters(settings, params);
     }
 
     traits_ = {};

@@ -21,17 +21,12 @@ FullScreenShaderPass::FullScreenShaderPass(Context* context)
 {
 }
 
-FullScreenShaderPass::~FullScreenShaderPass()
-{
-}
-
 void FullScreenShaderPass::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<FullScreenShaderPass>(Category_RenderPass);
 
     // clang-format off
     URHO3D_COPY_BASE_ATTRIBUTES(RenderPass);
-    URHO3D_ATTRIBUTE("Pass Name", ea::string, attributes_.name_, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Shader Name", ea::string, attributes_.shaderName_, InvalidateCache, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Shader Defines", ea::string, attributes_.shaderDefines_, InvalidateCache, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Blend Mode", attributes_.blendMode_, InvalidateCache, blendModeNames, BLEND_REPLACE, AM_DEFAULT);
@@ -41,11 +36,6 @@ void FullScreenShaderPass::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Parameters Prefix", ea::string, attributes_.parametersPrefix_, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Parameters", StringVariantMap, attributes_.parameters_, Variant::emptyStringVariantMap, AM_DEFAULT);
     // clang-format on
-}
-
-const ea::string& FullScreenShaderPass::GetPassName() const
-{
-    return !attributes_.name_.empty() ? attributes_.name_ : RenderPass::GetPassName();
 }
 
 void FullScreenShaderPass::CollectParameters(StringVariantMap& params) const
@@ -75,7 +65,7 @@ void FullScreenShaderPass::InitializeView(RenderPipelineView* view)
     }
 }
 
-void FullScreenShaderPass::UpdateParameters(const StringVariantMap& params)
+void FullScreenShaderPass::UpdateParameters(const RenderPipelineSettings& settings, const StringVariantMap& params)
 {
     const unsigned numShaderParameters = shaderParameters_.size();
     bool shouldBeDisabled = attributes_.disableOnDefaultParameters_;

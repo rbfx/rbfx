@@ -26,8 +26,16 @@ void RenderPass::RegisterObject(Context* context)
 {
     context->AddAbstractReflection<RenderPass>();
 
-    URHO3D_ATTRIBUTE("Is Enabled By Default", bool, enabledByDefault_, true, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Comment", ea::string, comment_, EMPTY_STRING, AM_DEFAULT);
+    // clang-format off
+    URHO3D_ATTRIBUTE("Pass Name", ea::string, attributes_.passName_, Attributes{}.passName_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Is Enabled By Default", bool, attributes_.isEnabledByDefault_, Attributes{}.isEnabledByDefault_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Comment", ea::string, attributes_.comment_, Attributes{}.comment_, AM_DEFAULT);
+    // clang-format on
+}
+
+const ea::string& RenderPass::GetPassName() const
+{
+    return !attributes_.passName_.empty() ? attributes_.passName_ : GetTypeName();
 }
 
 } // namespace Urho3D

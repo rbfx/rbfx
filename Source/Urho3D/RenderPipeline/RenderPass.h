@@ -12,6 +12,7 @@ namespace Urho3D
 class RenderBufferManager;
 class RenderPipelineInterface;
 class RenderPipelineView;
+struct RenderPipelineSettings;
 
 /// Render pass traits that are important for render pipeline configuration.
 struct RenderPassTraits
@@ -41,14 +42,14 @@ public:
     static void RegisterObject(Context* context);
 
     /// Return unique pass name.
-    virtual const ea::string& GetPassName() const { return GetTypeName(); }
+    virtual const ea::string& GetPassName() const;
     /// Create missing parameters in the global map with default values.
     virtual void CollectParameters(StringVariantMap& params) const {}
     /// Initialize render pass before using it in view.
     virtual void InitializeView(RenderPipelineView* view) {}
     /// Update settings and parameters of the pass.
     /// This function is always called before any rendering updates or getters.
-    virtual void UpdateParameters(const StringVariantMap& params) {}
+    virtual void UpdateParameters(const RenderPipelineSettings& settings, const StringVariantMap& params) {}
     /// Execute render pass.
     virtual void Execute(const RenderPassContext& ctx) = 0;
 
@@ -58,18 +59,23 @@ public:
     bool IsEnabledEffectively() const { return isEnabledByUser_ && isEnabledInternally_; }
     const RenderPassTraits& GetTraits() const { return traits_; }
 
-    bool IsEnabledByDefault() const { return enabledByDefault_; }
-    void SetEnabledByDefault(bool enabled) { enabledByDefault_ = enabled; }
-    const ea::string& GetComment() const { return comment_; }
-    void SetComment(const ea::string& comment) { comment_ = comment; }
+    bool IsEnabledByDefault() const { return attributes_.isEnabledByDefault_; }
+    void SetEnabledByDefault(bool enabled) { attributes_.isEnabledByDefault_ = enabled; }
+    const ea::string& GetComment() const { return attributes_.comment_; }
+    void SetComment(const ea::string& comment) { attributes_.comment_ = comment; }
     /// @}
 
 protected:
+    struct Attributes
+    {
+        ea::string passName_;
+        bool isEnabledByDefault_{true};
+        ea::string comment_;
+    } attributes_;
+
     bool isEnabledByUser_{};
     bool isEnabledInternally_{};
     RenderPassTraits traits_;
-    bool enabledByDefault_{true};
-    ea::string comment_;
 };
 
 }

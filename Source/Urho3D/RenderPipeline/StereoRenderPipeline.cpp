@@ -21,7 +21,6 @@
 #include "Urho3D/RenderPipeline/DrawableProcessor.h"
 #include "Urho3D/RenderPipeline/ShaderConsts.h"
 #include "Urho3D/RenderPipeline/ShadowMapAllocator.h"
-#include "Urho3D/RenderPipeline/ToneMappingPass.h"
 #include "Urho3D/Scene/Scene.h"
 
 #if URHO3D_SYSTEMUI
@@ -377,13 +376,6 @@ void StereoRenderPipelineView::ApplySettings()
         outlinePostProcessPass_ = MakeShared<OutlinePass>(this, renderBufferManager_);
         postProcessPasses_.push_back(outlinePostProcessPass_);
     }
-
-    if (settings_.renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR)
-    {
-        auto pass = MakeShared<ToneMappingPass>(this, renderBufferManager_);
-        pass->SetMode(settings_.toneMapping_);
-        postProcessPasses_.push_back(pass);
-    }
 }
 
 void StereoRenderPipelineView::UpdateRenderOutputFlags()
@@ -453,17 +445,19 @@ bool StereoRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vie
 
     sceneProcessor_->SetRenderCameras(cameras);
 
-    if (parametersDirty_ && renderPath_)
-    {
-        parametersDirty_ = false;
-        renderPath_->UpdateParameters(renderPipeline_->GetRenderPasses(), renderPipeline_->GetRenderPathParameters());
-        UpdateRenderOutputFlags();
-    }
-
     if (settingsDirty_)
     {
         settingsDirty_ = false;
+        parametersDirty_ = true;
         ApplySettings();
+        UpdateRenderOutputFlags();
+    }
+
+    if (parametersDirty_ && renderPath_)
+    {
+        parametersDirty_ = false;
+        renderPath_->UpdateParameters(
+            settings_, renderPipeline_->GetRenderPasses(), renderPipeline_->GetRenderPathParameters());
         UpdateRenderOutputFlags();
     }
 
