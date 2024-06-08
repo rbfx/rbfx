@@ -327,7 +327,7 @@ function (csharp_bind_target)
         return ()
     endif ()
 
-    cmake_parse_arguments(BIND "" "TARGET;CSPROJ;SWIG;NAMESPACE;NATIVE" "" ${ARGN})
+    cmake_parse_arguments(BIND "" "TARGET;CSPROJ;SWIG;NAMESPACE;NATIVE;DEPENDS" "" ${ARGN})
 
     # General SWIG parameters
     set(BIND_OUT_DIR  ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_${URHO3D_CSHARP_BIND_CONFIG})
@@ -347,12 +347,12 @@ function (csharp_bind_target)
 
     # Native library name matches target name by default
     if (BIND_NATIVE)
-        list (APPEND GENERATOR_OPTIONS -dllimport "${BIND_NATIVE}")
+        list (APPEND GENERATOR_OPTIONS -dllimport $<TARGET_FILE_NAME:${BIND_NATIVE}>)
     else ()
         if (IOS OR WEB)
             list (APPEND GENERATOR_OPTIONS -dllimport __Internal)
         else ()
-            list (APPEND GENERATOR_OPTIONS -dllimport "${BIND_TARGET}")
+            list (APPEND GENERATOR_OPTIONS -dllimport $<TARGET_FILE_NAME:${BIND_TARGET}>)
         endif ()
     endif ()
 
@@ -367,6 +367,15 @@ function (csharp_bind_target)
         __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${BIND_NATIVE} INTERFACE_INCLUDE_DIRECTORIES)
         __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${BIND_NATIVE} INTERFACE_COMPILE_DEFINITIONS)
     endif ()
+
+    if (BIND_DEPENDS)
+        foreach(dep ${BIND_DEPENDS})
+            __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${dep} INTERFACE_INCLUDE_DIRECTORIES)
+            __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${dep} INTERFACE_COMPILE_DEFINITIONS)
+        endforeach()
+    endif ()
+
+
     if (INCLUDES)
         list (REMOVE_DUPLICATES INCLUDES)
     endif ()
@@ -390,6 +399,7 @@ function (csharp_bind_target)
 
     # Finalize option list
     string(REGEX REPLACE "[^;]+\\$<COMPILE_LANGUAGE:[^;]+;" "" GENERATOR_OPTIONS "${GENERATOR_OPTIONS}")    # COMPILE_LANGUAGE creates ambiguity, remove.
+    list(REMOVE_DUPLICATES GENERATOR_OPTIONS)
     string(REPLACE ";" "\n" GENERATOR_OPTIONS "${GENERATOR_OPTIONS}")
     file(GENERATE OUTPUT "GeneratorOptions_${BIND_TARGET}_$<CONFIG>.txt" CONTENT "${GENERATOR_OPTIONS}" CONDITION $<COMPILE_LANGUAGE:CXX>)
 
@@ -401,7 +411,7 @@ function (csharp_bind_target)
         ARGS @"${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" > ${CMAKE_CURRENT_BINARY_DIR}/swig_${BIND_TARGET}.log
 
         MAIN_DEPENDENCY ${BIND_SWIG}
-        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt"
+        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" ${BIND_DEPENDS}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "SWIG: Generating C# bindings for ${BIND_TARGET}")
 
