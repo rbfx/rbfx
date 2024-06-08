@@ -65,6 +65,7 @@ set (SOURCE_FILES
     src/winfonts/winfnt.c)
 
 add_library(FreeType STATIC ${SOURCE_FILES})
+set_target_properties(FreeType PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(FreeType SYSTEM PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 target_compile_definitions(FreeType PRIVATE -DFT2_BUILD_LIBRARY)
 # Rename z_verbose and z_error symbols to prevent Clang duplicate symbol linker error (clash with Assimp) on debug build

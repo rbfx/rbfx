@@ -21,6 +21,7 @@
 #
 
 add_library(catch2 STATIC catch2/catch_amalgamated.cpp)
+set_target_properties(catch2 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(catch2 PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>)
 target_compile_definitions(catch2 PRIVATE -DCATCH_AMALGAMATED_CUSTOM_MAIN=1)
 

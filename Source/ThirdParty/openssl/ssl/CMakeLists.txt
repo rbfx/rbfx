@@ -4,6 +4,7 @@ set(SSL_SOURCE_FILES
     statem/extensions.c statem/extensions_clnt.c statem/extensions_cust.c statem/extensions_srvr.c statem/statem.c statem/statem_clnt.c statem/statem_dtls.c statem/statem_lib.c statem/statem_quic.c statem/statem_srvr.c
 )
 add_library(ssl STATIC ${SSL_SOURCE_FILES})
+set_target_properties(ssl PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(ssl PUBLIC crypto)
 if (WIN32)
     target_compile_definitions(ssl PRIVATE WIN32_LEAN_AND_MEAN)

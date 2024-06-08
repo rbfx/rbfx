@@ -24,6 +24,7 @@ check_include_file("cpu-features.h" HAVE_CPU_FEATURES_H)
 
 file (GLOB_RECURSE SOURCE_FILES src/*.c src/*.h)
 add_library (WebP STATIC ${SOURCE_FILES})
+set_target_properties(WebP PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(WebP SYSTEM PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
 if (HAVE_CPU_FEATURES_H)
     target_compile_definitions(WebP PRIVATE -DHAVE_CPU_FEATURES_H=1)

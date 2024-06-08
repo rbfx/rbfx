@@ -22,6 +22,7 @@
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
 add_library (Detour STATIC ${SOURCE_FILES})
+set_target_properties(Detour PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(Detour SYSTEM
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include/Detour>

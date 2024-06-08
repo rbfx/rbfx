@@ -22,6 +22,7 @@
 
 file (GLOB_RECURSE SOURCE_FILES *.c)
 add_library (GLEW STATIC ${SOURCE_FILES})
+set_target_properties(GLEW PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_definitions(GLEW PUBLIC -DGLEW_NO_GLU)
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(GLEW PRIVATE -DGLEW_BUILD)

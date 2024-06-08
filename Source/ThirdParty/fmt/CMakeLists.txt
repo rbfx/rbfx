@@ -39,6 +39,7 @@ if (BUILD_SHARED_LIBS AND MINGW)
     set(FMT_PUBLIC INTERFACE)
 else ()
     add_library(fmt STATIC ${FMT_HEADERS} ${FMT_SOURCES})
+    set_target_properties(fmt PROPERTIES POSITION_INDEPENDENT_CODE ON)
     set(FMT_PUBLIC PUBLIC)
 endif ()
 

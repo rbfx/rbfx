@@ -22,6 +22,7 @@
 
 file (GLOB_RECURSE SOURCE_FILES *.h *.cpp)
 add_library(STB STATIC ${SOURCE_FILES})
+set_target_properties(STB PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_definitions(STB PUBLIC -DSTB_VORBIS_HEADER_ONLY=1)
 target_include_directories(STB SYSTEM
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

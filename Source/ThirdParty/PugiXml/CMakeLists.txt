@@ -22,6 +22,7 @@
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.hpp)
 add_library (PugiXml STATIC ${SOURCE_FILES})
+set_target_properties(PugiXml PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(PugiXml PRIVATE -DPUGIXML_EXPORTS PUBLIC -DPUGIXML_IMPORTS)
 endif ()
