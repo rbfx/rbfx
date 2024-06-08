@@ -650,7 +650,7 @@ bool EditStringVector(StringVector& value, bool resizable)
     return modified;
 }
 
-bool EditStringVariantMap(StringVariantMap& value, bool resizable, bool dynamicTypes)
+bool EditStringVariantMap(StringVariantMap& value, bool resizable, bool dynamicTypes, bool dynamicMetadata)
 {
     bool modified = false;
     ea::optional<ea::string> pendingRemove;
@@ -660,6 +660,9 @@ bool EditStringVariantMap(StringVariantMap& value, bool resizable, bool dynamicT
 
     for (const auto& key : sortedKeys)
     {
+        if (dynamicMetadata && key.ends_with("@"))
+            continue;
+
         const IdScopeGuard guardKey{key.c_str()};
 
         Widgets::ItemLabel(key.c_str());
@@ -682,6 +685,23 @@ bool EditStringVariantMap(StringVariantMap& value, bool resizable, bool dynamicT
                 modified = true;
             }
             ui::SameLine();
+        }
+
+        if (dynamicMetadata)
+        {
+            const ea::string metadataKey = key + "@";
+            const auto iter = value.find(metadataKey);
+            if (iter != value.end())
+            {
+                // Only enum names are currently supported.
+                if (elementType == VAR_INT && iter->second.GetType() == VAR_STRINGVECTOR)
+                {
+                    const auto options = EditVariantOptions{}.Enum(iter->second.GetStringVector());
+                    if (EditVariant(value[key], options))
+                        modified = true;
+                    continue;
+                }
+            }
         }
 
         if (EditVariantValue(value[key]))
@@ -996,7 +1016,7 @@ bool EditVariantStringVariantMap(Variant& var, const EditVariantOptions& options
 
     bool modified = false;
     ui::Indent();
-    if (EditStringVariantMap(*value, options.allowResize_, options.allowTypeChange_))
+    if (EditStringVariantMap(*value, options.allowResize_, options.allowTypeChange_, options.dynamicMetadata_))
     {
         modified = true;
     }

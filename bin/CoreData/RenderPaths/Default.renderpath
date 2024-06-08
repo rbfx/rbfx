@@ -1,18 +1,30 @@
 {
 	"passes": [
 		{
+			"type": "ToneMappingPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: Tone Mapping"
+					}
+				]
+			}
+		},
+		{
 			"type": "FullScreenShaderPass",
 			"value": {
 				"attributes": [
 					{
-						"name": "Comment",
-						"type": "String",
-						"value": "Adjust output color RGB and HSV."
-					},
-					{
 						"name": "Pass Name",
 						"type": "String",
 						"value": "Postprocess: Adjust Color"
+					},
+					{
+						"name": "Comment",
+						"type": "String",
+						"value": "Adjust output color RGB and HSV."
 					},
 					{
 						"name": "Shader Name",
@@ -63,6 +75,11 @@
 			"value": {
 				"attributes": [
 					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: FXAA v2"
+					},
+					{
 						"name": "Is Enabled By Default",
 						"type": "Bool",
 						"value": false
@@ -71,11 +88,6 @@
 						"name": "Comment",
 						"type": "String",
 						"value": "FXAA v2"
-					},
-					{
-						"name": "Pass Name",
-						"type": "String",
-						"value": "Postprocess: FXAA v2"
 					},
 					{
 						"name": "Shader Name",
@@ -116,6 +128,11 @@
 			"value": {
 				"attributes": [
 					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: FXAA v3"
+					},
+					{
 						"name": "Is Enabled By Default",
 						"type": "Bool",
 						"value": false
@@ -124,11 +141,6 @@
 						"name": "Comment",
 						"type": "String",
 						"value": "FXAA v3"
-					},
-					{
-						"name": "Pass Name",
-						"type": "String",
-						"value": "Postprocess: FXAA v3"
 					},
 					{
 						"name": "Shader Name",

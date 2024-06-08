@@ -43,7 +43,6 @@
 #include "../RenderPipeline/OutlinePass.h"
 #include "../RenderPipeline/ShaderConsts.h"
 #include "../RenderPipeline/ShadowMapAllocator.h"
-#include "../RenderPipeline/ToneMappingPass.h"
 #include "../Scene/Scene.h"
 #if URHO3D_SYSTEMUI
     #include "../SystemUI/SystemUI.h"
@@ -181,13 +180,6 @@ void DefaultRenderPipelineView::ApplySettings()
         outlinePostProcessPass_ = MakeShared<OutlinePass>(this, renderBufferManager_);
         postProcessPasses_.push_back(outlinePostProcessPass_);
     }
-
-    if (settings_.renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR)
-    {
-        auto pass = MakeShared<ToneMappingPass>(this, renderBufferManager_);
-        pass->SetMode(settings_.toneMapping_);
-        postProcessPasses_.push_back(pass);
-    }
 }
 
 void DefaultRenderPipelineView::UpdateRenderOutputFlags()
@@ -254,17 +246,19 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
 
     sceneProcessor_->SetRenderCamera(viewport->GetCamera());
 
-    if (parametersDirty_ && renderPath_)
-    {
-        parametersDirty_ = false;
-        renderPath_->UpdateParameters(renderPipeline_->GetRenderPasses(), renderPipeline_->GetRenderPathParameters());
-        UpdateRenderOutputFlags();
-    }
-
     if (settingsDirty_)
     {
         settingsDirty_ = false;
+        parametersDirty_ = true;
         ApplySettings();
+        UpdateRenderOutputFlags();
+    }
+
+    if (parametersDirty_ && renderPath_)
+    {
+        parametersDirty_ = false;
+        renderPath_->UpdateParameters(
+            settings_, renderPipeline_->GetRenderPasses(), renderPipeline_->GetRenderPathParameters());
         UpdateRenderOutputFlags();
     }
 

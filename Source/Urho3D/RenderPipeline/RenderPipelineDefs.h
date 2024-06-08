@@ -659,14 +659,6 @@ struct ShaderProgramCompositorSettings
     /// @}
 };
 
-enum class ToneMappingMode
-{
-    None,
-    Reinhard,
-    ReinhardWhite,
-    Uncharted2,
-};
-
 struct AutoExposurePassSettings
 {
     bool autoExposure_{};
@@ -795,7 +787,6 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     AutoExposurePassSettings autoExposure_;
     BloomPassSettings bloom_;
     AmbientOcclusionPassSettings ssao_;
-    ToneMappingMode toneMapping_{};
     /// @}
 
     /// Utility operators
@@ -820,8 +811,7 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
         return ShaderProgramCompositorSettings::operator==(rhs)
             && drawDebugGeometry_ == rhs.drawDebugGeometry_
             && autoExposure_ == rhs.autoExposure_
-            && bloom_ == rhs.bloom_
-            && toneMapping_ == rhs.toneMapping_;
+            && bloom_ == rhs.bloom_;
     }
 
     bool operator!=(const RenderPipelineSettings& rhs) const { return !(*this == rhs); }

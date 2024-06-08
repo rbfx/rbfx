@@ -78,13 +78,6 @@ static const ea::vector<ea::string> directLightingModeNames = {
     "Deferred PBR",
 };
 
-static const ea::vector<ea::string> toneMappingModeNames = {
-    "None",
-    "Reinhard",
-    "ReinhardWhite",
-    "Uncharted2",
-};
-
 } // namespace
 
 RenderPipelineView::RenderPipelineView(RenderPipeline* renderPipeline)
@@ -117,7 +110,8 @@ void RenderPipeline::RegisterObject(Context* context)
     // clang-format off
     URHO3D_ACCESSOR_ATTRIBUTE("Render Path", GetRenderPathAttr, SetRenderPathAttr, ResourceRef, defaultRenderPath, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Render Passes", GetRenderPassesAttr, SetRenderPassesAttr, VariantVector, Variant::emptyVariantVector, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Render Path Parameters", GetRenderPathParameters, SetRenderPathParameters, StringVariantMap, Variant::emptyVariantMap, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Render Path Parameters", GetRenderPathParameters, SetRenderPathParameters, StringVariantMap, Variant::emptyVariantMap, AM_DEFAULT)
+        .SetMetadata(AttributeMetadata::DynamicMetadata, true);
 
     URHO3D_ENUM_ATTRIBUTE_EX("Color Space", settings_.renderBufferManager_.colorSpace_, MarkSettingsDirty, colorSpaceNames, RenderPipelineColorSpace::GammaLDR, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Material Quality", settings_.sceneProcessor_.materialQuality_, MarkSettingsDirty, materialQualityNames, SceneProcessorSettings{}.materialQuality_, AM_DEFAULT);
@@ -160,7 +154,6 @@ void RenderPipeline::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Bloom Threshold Max", float, settings_.bloom_.thresholdMax_, MarkSettingsDirty, BloomPassSettings{}.thresholdMax_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Bloom Intensity", float, settings_.bloom_.intensity_, MarkSettingsDirty, BloomPassSettings{}.intensity_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Bloom Iteration Factor", float, settings_.bloom_.iterationFactor_, MarkSettingsDirty, BloomPassSettings{}.iterationFactor_, AM_DEFAULT);
-    URHO3D_ENUM_ATTRIBUTE_EX("Tone Mapping Mode", settings_.toneMapping_, MarkSettingsDirty, toneMappingModeNames, ToneMappingMode::None, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Draw Debug Geometry", bool, settings_.drawDebugGeometry_, MarkSettingsDirty, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Depth Bias Scale", float, settings_.shadowMapAllocator_.depthBiasScale_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Depth Bias Offset", float, settings_.shadowMapAllocator_.depthBiasOffset_, MarkSettingsDirty, 0.0f, AM_DEFAULT);

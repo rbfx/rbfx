@@ -18,16 +18,14 @@ class URHO3D_API FullScreenShaderPass : public RenderPass
 
 public:
     explicit FullScreenShaderPass(Context* context);
-    ~FullScreenShaderPass() override;
 
     static void RegisterObject(Context* context);
 
     /// Implement RenderPass.
     /// @{
-    const ea::string& GetPassName() const override;
     void CollectParameters(StringVariantMap& params) const override;
     void InitializeView(RenderPipelineView* view) override;
-    void UpdateParameters(const StringVariantMap& params) override;
+    void UpdateParameters(const RenderPipelineSettings& settings, const StringVariantMap& params) override;
     void Execute(const RenderPassContext& ctx) override;
     /// @}
 
@@ -37,7 +35,6 @@ private:
 
     struct Attributes
     {
-        ea::string name_;
         ea::string shaderName_;
         ea::string shaderDefines_;
         BlendMode blendMode_{BLEND_REPLACE};

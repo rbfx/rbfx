@@ -28,7 +28,8 @@ public:
     /// Initialize render path before using it in view.
     void InitializeView(RenderPipelineView* view);
     /// Update settings for all passes.
-    void UpdateParameters(const EnabledRenderPasses& enabledPasses, const StringVariantMap& params);
+    void UpdateParameters(const RenderPipelineSettings& settings, const EnabledRenderPasses& enabledPasses,
+        const StringVariantMap& params);
     /// Execute render path.
     void Execute(const RenderPassContext& ctx);
 
