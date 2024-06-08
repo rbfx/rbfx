@@ -133,9 +133,6 @@ copy-runtime-libraries-for-executables() {
         echo "Copying dependencies for $file"
         copy-runtime-libraries-for-file "$file"
     done
-
-    # Workaround for GitHub Actions issue: This DLL causes crashes both on the worker and locally.
-    rm -f "$dir/MSVCP140.dll"
 }
 
 copy-runtime-libraries-for-file() {
