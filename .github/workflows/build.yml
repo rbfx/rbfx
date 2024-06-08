@@ -330,14 +330,12 @@ jobs:
         run: ${{ env.ci_build_script }} build
 
       - name: Test (Native)
-        # Disable until test crashes are fixed
-        if: false && matrix.ci_compiler == 'msvc'
+        if: matrix.ci_compiler == 'msvc'
         shell: bash
         run: ${{ env.ci_build_script }} test
 
       - name: Test (Managed)
-        # Disable until test crashes are fixed
-        if: false && (matrix.ci_compiler == 'msvc') && (matrix.ci_lib_type == 'dll')
+        if: (matrix.ci_compiler == 'msvc') && (matrix.ci_lib_type == 'dll')
         shell: bash
         run: ${{ env.ci_build_script }} cstest
 
