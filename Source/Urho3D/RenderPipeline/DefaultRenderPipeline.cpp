@@ -40,9 +40,10 @@
 #include "../RenderPipeline/DrawableProcessor.h"
 #include "../RenderPipeline/InstancingBuffer.h"
 #include "../RenderPipeline/LightProcessor.h"
-#include "../RenderPipeline/OutlinePass.h"
+#include "../RenderPipeline/OutlineScenePass.h"
 #include "../RenderPipeline/ShaderConsts.h"
 #include "../RenderPipeline/ShadowMapAllocator.h"
+#include "../RenderPipeline/Passes/OutlineRenderPass.h"
 #include "../Scene/Scene.h"
 #if URHO3D_SYSTEMUI
     #include "../SystemUI/SystemUI.h"
@@ -175,11 +176,6 @@ void DefaultRenderPipelineView::ApplySettings()
         pass->SetSettings(settings_.bloom_);
         postProcessPasses_.push_back(pass);
     }
-
-    {
-        outlinePostProcessPass_ = MakeShared<OutlinePass>(this, renderBufferManager_);
-        postProcessPasses_.push_back(outlinePostProcessPass_);
-    }
 }
 
 void DefaultRenderPipelineView::UpdateRenderOutputFlags()
@@ -219,7 +215,10 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
     // Lazy initialize heavy objects
     if (!sceneProcessor_)
     {
-        renderBufferManager_ = MakeShared<RenderBufferManager>(this);
+        state_.renderPipelineInterface_ = this;
+        state_.renderBufferManager_ = MakeShared<RenderBufferManager>(this);
+
+        renderBufferManager_ = state_.renderBufferManager_;
         shadowMapAllocator_ = MakeShared<ShadowMapAllocator>(context_);
         instancingBuffer_ = MakeShared<InstancingBuffer>(context_);
         sceneProcessor_ = MakeShared<SceneProcessor>(this, "shadow", shadowMapAllocator_, instancingBuffer_);
@@ -234,6 +233,12 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
             "", "alpha", "alpha", "litalpha");
         postAlphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>(
             DrawableProcessorPassFlag::ReadOnlyDepth, "postalpha");
+
+        const RenderBufferParams params{TextureFormat::TEX_FORMAT_RGBA8_UNORM, 1, RenderBufferFlag::BilinearFiltering};
+        outlineBuffer_ = renderBufferManager_->CreateColorBuffer(params);
+        outlineBuffer_->SetEnabled(false);
+
+        state_.renderBuffers_[OutlineRenderPass::ColorBufferId] = outlineBuffer_;
     }
 
     frameInfo_.viewport_ = viewport;
@@ -328,7 +333,7 @@ void DefaultRenderPipelineView::Update(const FrameInfo& frameInfo)
 
     sceneProcessor_->Update();
 
-    outlinePostProcessPass_->SetEnabled(outlineScenePass_->IsEnabled() && outlineScenePass_->HasBatches());
+    outlineBuffer_->SetEnabled(outlineScenePass_->IsEnabled() && outlineScenePass_->HasBatches());
 
     SendViewEvent(E_ENDVIEWUPDATE);
     OnUpdateEnd(this, frameInfo_);
@@ -442,12 +447,12 @@ void DefaultRenderPipelineView::Render()
         depthAndColorTextures, cameraParameters);
     sceneProcessor_->RenderSceneBatches("PostAlpha", camera, postAlphaPass_->GetBatches());
 
-    if (outlinePostProcessPass_->IsEnabled())
+    if (outlineBuffer_->IsEnabled())
     {
         // TODO: Do we want it dynamic?
         const unsigned outlinePadding = 2;
 
-        RenderBuffer* const renderTargets[] = {outlinePostProcessPass_->GetColorOutput()};
+        RenderBuffer* const renderTargets[] = {outlineBuffer_};
         auto batches = outlineScenePass_->GetBatches();
 
         batches.scissorRect_ = renderTargets[0]->GetViewportRect();
@@ -473,12 +478,7 @@ void DefaultRenderPipelineView::Render()
         postProcessPass->Execute(camera);
 
     if (renderPath_)
-    {
-        RenderPassContext ctx;
-        ctx.renderPipelineInterface_ = this;
-        ctx.renderBufferManager_ = renderBufferManager_;
-        renderPath_->Execute(ctx);
-    }
+        renderPath_->Execute(state_);
 
     const bool drawDebugGeometry = settings_.drawDebugGeometry_ && camera->GetDrawDebugGeometry();
     auto debug = fullFrameInfo.scene_->GetComponent<DebugRenderer>();

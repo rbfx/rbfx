@@ -77,6 +77,7 @@
 #include "../RenderPipeline/RenderPath.h"
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../RenderPipeline/Passes/FullScreenShaderPass.h"
+#include "../RenderPipeline/Passes/OutlineRenderPass.h"
 #include "../RenderPipeline/Passes/ToneMappingPass.h"
 #include "../Resource/JSONArchive.h"
 #include "../Scene/Scene.h"
@@ -273,6 +274,7 @@ Engine::Engine(Context* context) :
     RenderPath::RegisterObject(context_);
     RenderPass::RegisterObject(context_);
     FullScreenShaderPass::RegisterObject(context_);
+    OutlineRenderPass::RegisterObject(context_);
     ToneMappingPass::RegisterObject(context_);
 
 #ifdef URHO3D_IK

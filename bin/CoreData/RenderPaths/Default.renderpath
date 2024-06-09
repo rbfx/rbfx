@@ -1,6 +1,18 @@
 {
 	"passes": [
 		{
+			"type": "OutlineRenderPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: Draw Outlines"
+					}
+				]
+			}
+		},
+		{
 			"type": "ToneMappingPass",
 			"value": {
 				"attributes": [

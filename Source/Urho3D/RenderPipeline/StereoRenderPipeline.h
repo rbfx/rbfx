@@ -5,13 +5,14 @@
 #pragma once
 
 #include "Urho3D/RenderPipeline/CameraProcessor.h"
-#include "Urho3D/RenderPipeline/OutlinePass.h"
+#include "Urho3D/RenderPipeline/OutlineScenePass.h"
 #include "Urho3D/RenderPipeline/PostProcessPass.h"
 #include "Urho3D/RenderPipeline/RenderBuffer.h"
 #include "Urho3D/RenderPipeline/RenderBufferManager.h"
 #include "Urho3D/RenderPipeline/RenderPipeline.h"
 #include "Urho3D/RenderPipeline/ScenePass.h"
 #include "Urho3D/RenderPipeline/SceneProcessor.h"
+#include "Urho3D/RenderPipeline/SharedRenderPassState.h"
 
 namespace Urho3D
 {
@@ -63,6 +64,7 @@ protected:
 
     RenderPipelineStats stats_;
     RenderPipelineDebugger debugger_;
+    SharedRenderPassState state_;
 
     SharedPtr<RenderBufferManager> renderBufferManager_;
     SharedPtr<ShadowMapAllocator> shadowMapAllocator_;
@@ -74,8 +76,9 @@ protected:
     SharedPtr<UnorderedScenePass> postOpaquePass_;
     SharedPtr<BackToFrontScenePass> alphaPass_;
     SharedPtr<BackToFrontScenePass> postAlphaPass_;
+
+    SharedPtr<RenderBuffer> outlineBuffer_;
     SharedPtr<OutlineScenePass> outlineScenePass_;
-    SharedPtr<OutlinePass> outlinePostProcessPass_;
 
     ea::vector<SharedPtr<PostProcessPass>> postProcessPasses_;
 

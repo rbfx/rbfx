@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "Urho3D/RenderPipeline/SharedRenderPassState.h"
 #include "Urho3D/Scene/Serializable.h"
 
 namespace Urho3D
@@ -21,13 +22,6 @@ struct RenderPassTraits
     bool needReadWriteColorBuffer_{};
     /// Whether it's required that color sampling is at least bilinear.
     bool needBilinearColorSampler_{};
-};
-
-/// Execution context of the render pass.
-struct RenderPassContext
-{
-    RenderPipelineInterface* renderPipelineInterface_{};
-    RenderBufferManager* renderBufferManager_{};
 };
 
 /// Render pass, component of render path.
@@ -51,7 +45,7 @@ public:
     /// This function is always called before any rendering updates or getters.
     virtual void UpdateParameters(const RenderPipelineSettings& settings, const StringVariantMap& params) {}
     /// Execute render pass.
-    virtual void Execute(const RenderPassContext& ctx) = 0;
+    virtual void Execute(const SharedRenderPassState& sharedState) = 0;
 
     /// Attributes.
     /// @{
@@ -66,6 +60,9 @@ public:
     /// @}
 
 protected:
+    void RequireRenderBuffer(
+        WeakPtr<RenderBuffer>& renderBuffer, StringHash name, const SharedRenderPassState& sharedState) const;
+
     struct Attributes
     {
         ea::string passName_;
