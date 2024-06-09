@@ -62,12 +62,12 @@ void RenderPath::UpdateParameters(
     }
 }
 
-void RenderPath::Execute(const RenderPassContext& ctx)
+void RenderPath::Execute(const SharedRenderPassState& sharedState)
 {
     for (RenderPass* pass : passes_)
     {
         if (pass->IsEnabledEffectively())
-            pass->Execute(ctx);
+            pass->Execute(sharedState);
     }
 }
 

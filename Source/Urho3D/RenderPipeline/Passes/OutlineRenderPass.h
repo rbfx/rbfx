@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2024 the rbfx project.
+// Copyright (c) 2022-2024 the rbfx project.
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
@@ -7,28 +7,18 @@
 #include "Urho3D/RenderPipeline/RenderPass.h"
 #include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
 
-#include <EASTL/optional.h>
-
 namespace Urho3D
 {
 
-/// Post-processing pass that converts HDR linear color input to LDR gamma color.
-class URHO3D_API ToneMappingPass : public RenderPass
+/// Post-processing pass that renders outline from color buffer.
+class URHO3D_API OutlineRenderPass : public RenderPass
 {
-    URHO3D_OBJECT(ToneMappingPass, RenderPass);
+    URHO3D_OBJECT(OutlineRenderPass, RenderPass);
 
 public:
-    enum class Mode
-    {
-        None,
-        Reinhard,
-        ReinhardWhite,
-        Uncharted2,
+    static constexpr StringHash ColorBufferId = "outline"_sh;
 
-        Count
-    };
-
-    explicit ToneMappingPass(Context* context);
+    explicit OutlineRenderPass(Context* context);
 
     static void RegisterObject(Context* context);
 
@@ -40,17 +30,18 @@ public:
     void Execute(const SharedRenderPassState& sharedState) override;
     /// @}
 
-protected:
+private:
     void InvalidateCache();
     void RestoreCache(const SharedRenderPassState& sharedState);
 
     struct Cache
     {
-        StaticPipelineStateId pipelineStateId_{};
+        StaticPipelineStateId pipelineStateGammaId_{};
+        StaticPipelineStateId pipelineStateLinearId_{};
     };
     ea::optional<Cache> cache_;
 
-    Mode mode_{};
+    WeakPtr<RenderBuffer> colorBuffer_;
 };
 
 } // namespace Urho3D

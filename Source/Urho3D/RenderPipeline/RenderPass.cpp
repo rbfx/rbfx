@@ -7,6 +7,8 @@
 #include "Urho3D/RenderPipeline/RenderPass.h"
 
 #include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/RenderPipeline/RenderBuffer.h"
 
 #include "Urho3D/DebugNew.h"
 
@@ -36,6 +38,23 @@ void RenderPass::RegisterObject(Context* context)
 const ea::string& RenderPass::GetPassName() const
 {
     return !attributes_.passName_.empty() ? attributes_.passName_ : GetTypeName();
+}
+
+void RenderPass::RequireRenderBuffer(
+    WeakPtr<RenderBuffer>& renderBuffer, StringHash name, const SharedRenderPassState& sharedState) const
+{
+    if (!renderBuffer)
+    {
+        const auto iter = sharedState.renderBuffers_.find(name);
+        if (iter == sharedState.renderBuffers_.end() || !iter->second)
+        {
+            URHO3D_LOGERROR(
+                "Render buffer {} required by render pass '{}' is not found", name.ToDebugString(), GetPassName());
+            return;
+        }
+
+        renderBuffer = iter->second;
+    }
 }
 
 } // namespace Urho3D

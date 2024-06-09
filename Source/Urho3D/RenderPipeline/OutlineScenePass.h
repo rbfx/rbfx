@@ -75,33 +75,4 @@ private:
     /// @}
 };
 
-/// Post-processing pass that renders outline around selected objects.
-class URHO3D_API OutlinePass : public PostProcessPass
-{
-    URHO3D_OBJECT(OutlinePass, PostProcessPass);
-
-public:
-    OutlinePass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager);
-
-    void SetEnabled(bool enabled) { enabled_ = enabled; }
-    bool IsEnabled() const { return enabled_; }
-
-    /// Implement PostProcessPass.
-    /// @{
-    RenderOutputFlags GetExecutionFlags() const override { return RenderOutputFlag::None; }
-    void Execute(Camera* camera) override;
-    /// @}
-
-    RenderBuffer* GetColorOutput() { return outlineBuffer_; }
-
-private:
-    void OnRenderBegin(const CommonFrameInfo& frameInfo);
-
-    bool enabled_{};
-
-    StaticPipelineStateId pipelineStateGamma_{};
-    StaticPipelineStateId pipelineStateLinear_{};
-    SharedPtr<RenderBuffer> outlineBuffer_;
-};
-
 } // namespace Urho3D

@@ -22,12 +22,13 @@
 
 #pragma once
 
-#include "OutlinePass.h"
+#include "OutlineScenePass.h"
 #include "../RenderPipeline/SceneProcessor.h"
 #include "../RenderPipeline/CameraProcessor.h"
 #include "../RenderPipeline/RenderBuffer.h"
 #include "../RenderPipeline/RenderBufferManager.h"
 #include "../RenderPipeline/RenderPipeline.h"
+#include "../RenderPipeline/SharedRenderPassState.h"
 #include "../RenderPipeline/PostProcessPass.h"
 #include "../RenderPipeline/ScenePass.h"
 #include "../RenderPipeline/AmbientOcclusionPass.h"
@@ -97,6 +98,7 @@ private:
 
     RenderPipelineStats stats_;
     RenderPipelineDebugger debugger_;
+    SharedRenderPassState state_;
 
     SharedPtr<RenderBufferManager> renderBufferManager_;
     SharedPtr<ShadowMapAllocator> shadowMapAllocator_;
@@ -109,9 +111,10 @@ private:
     SharedPtr<UnorderedScenePass> deferredDecalPass_;
     SharedPtr<BackToFrontScenePass> alphaPass_;
     SharedPtr<BackToFrontScenePass> postAlphaPass_;
-    SharedPtr<OutlineScenePass> outlineScenePass_;
-    SharedPtr<OutlinePass> outlinePostProcessPass_;
     SharedPtr<AmbientOcclusionPass> ssaoPass_;
+
+    SharedPtr<RenderBuffer> outlineBuffer_;
+    SharedPtr<OutlineScenePass> outlineScenePass_;
 
     struct DeferredLightingData
     {

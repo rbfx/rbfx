@@ -90,7 +90,7 @@ void FullScreenShaderPass::InvalidateCache()
     cache_ = ea::nullopt;
 }
 
-void FullScreenShaderPass::RestoreCache(const RenderPassContext& ctx)
+void FullScreenShaderPass::RestoreCache(const SharedRenderPassState& sharedState)
 {
     if (cache_)
         return;
@@ -103,26 +103,26 @@ void FullScreenShaderPass::RestoreCache(const RenderPassContext& ctx)
     if (attributes_.needReadWriteColorBuffer_)
         samplersAdjusted.emplace_back(ShaderResources::Albedo, SamplerStateDesc::Bilinear());
 
-    cache_->pipelineStateId_ = ctx.renderBufferManager_->CreateQuadPipelineState(
+    cache_->pipelineStateId_ = sharedState.renderBufferManager_->CreateQuadPipelineState(
         attributes_.blendMode_, attributes_.shaderName_, attributes_.shaderDefines_, samplersAdjusted);
 }
 
-void FullScreenShaderPass::Execute(const RenderPassContext& ctx)
+void FullScreenShaderPass::Execute(const SharedRenderPassState& sharedState)
 {
-    RestoreCache(ctx);
+    RestoreCache(sharedState);
 
     if (attributes_.needReadWriteColorBuffer_)
-        ctx.renderBufferManager_->SwapColorBuffers(false);
-    ctx.renderBufferManager_->SetOutputRenderTargets();
+        sharedState.renderBufferManager_->SwapColorBuffers(false);
+    sharedState.renderBufferManager_->SetOutputRenderTargets();
 
     if (attributes_.needReadWriteColorBuffer_)
     {
-        ctx.renderBufferManager_->DrawFeedbackViewportQuad(
+        sharedState.renderBufferManager_->DrawFeedbackViewportQuad(
             cache_->debugComment_, cache_->pipelineStateId_, shaderResources_, shaderParameters_);
     }
     else
     {
-        ctx.renderBufferManager_->DrawViewportQuad(
+        sharedState.renderBufferManager_->DrawViewportQuad(
             cache_->debugComment_, cache_->pipelineStateId_, shaderResources_, shaderParameters_);
     }
 }

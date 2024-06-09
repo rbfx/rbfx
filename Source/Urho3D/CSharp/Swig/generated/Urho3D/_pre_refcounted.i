@@ -163,7 +163,6 @@ URHO3D_REFCOUNTED(Urho3D::ScenePass);
 URHO3D_REFCOUNTED(Urho3D::UnorderedScenePass);
 URHO3D_REFCOUNTED(Urho3D::BackToFrontScenePass);
 URHO3D_REFCOUNTED(Urho3D::OutlineScenePass);
-URHO3D_REFCOUNTED(Urho3D::OutlinePass);
 URHO3D_REFCOUNTED(Urho3D::SceneProcessor);
 URHO3D_REFCOUNTED(Urho3D::RenderBufferManager);
 URHO3D_REFCOUNTED(Urho3D::DefaultRenderPipelineView);

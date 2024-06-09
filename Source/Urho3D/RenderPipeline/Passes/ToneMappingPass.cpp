@@ -91,7 +91,7 @@ void ToneMappingPass::InvalidateCache()
     cache_ = ea::nullopt;
 }
 
-void ToneMappingPass::RestoreCache(const RenderPassContext& ctx)
+void ToneMappingPass::RestoreCache(const SharedRenderPassState& sharedState)
 {
     if (cache_)
         return;
@@ -109,17 +109,17 @@ void ToneMappingPass::RestoreCache(const RenderPassContext& ctx)
 
     static const NamedSamplerStateDesc samplers[] = {{ShaderResources::Albedo, SamplerStateDesc::Bilinear()}};
     cache_->pipelineStateId_ =
-        ctx.renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_ToneMapping", defines, samplers);
+        sharedState.renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_ToneMapping", defines, samplers);
 }
 
-void ToneMappingPass::Execute(const RenderPassContext& ctx)
+void ToneMappingPass::Execute(const SharedRenderPassState& sharedState)
 {
-    RestoreCache(ctx);
+    RestoreCache(sharedState);
 
-    ctx.renderBufferManager_->SwapColorBuffers(false);
+    sharedState.renderBufferManager_->SwapColorBuffers(false);
 
-    ctx.renderBufferManager_->SetOutputRenderTargets();
-    ctx.renderBufferManager_->DrawFeedbackViewportQuad("Apply tone mapping", cache_->pipelineStateId_, {}, {});
+    sharedState.renderBufferManager_->SetOutputRenderTargets();
+    sharedState.renderBufferManager_->DrawFeedbackViewportQuad("Apply tone mapping", cache_->pipelineStateId_, {}, {});
 }
 
 } // namespace Urho3D

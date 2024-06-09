@@ -19,6 +19,7 @@
 #include "Urho3D/RenderPipeline/BatchRenderer.h"
 #include "Urho3D/RenderPipeline/BloomPass.h"
 #include "Urho3D/RenderPipeline/DrawableProcessor.h"
+#include "Urho3D/RenderPipeline/Passes/OutlineRenderPass.h"
 #include "Urho3D/RenderPipeline/ShaderConsts.h"
 #include "Urho3D/RenderPipeline/ShadowMapAllocator.h"
 #include "Urho3D/Scene/Scene.h"
@@ -371,11 +372,6 @@ void StereoRenderPipelineView::ApplySettings()
         pass->SetSettings(settings_.bloom_);
         postProcessPasses_.push_back(pass);
     }
-
-    {
-        outlinePostProcessPass_ = MakeShared<OutlinePass>(this, renderBufferManager_);
-        postProcessPasses_.push_back(outlinePostProcessPass_);
-    }
 }
 
 void StereoRenderPipelineView::UpdateRenderOutputFlags()
@@ -414,7 +410,10 @@ bool StereoRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vie
 
     if (!sceneProcessor_)
     {
-        renderBufferManager_ = MakeShared<RenderBufferManager>(this);
+        state_.renderPipelineInterface_ = this;
+        state_.renderBufferManager_ = MakeShared<RenderBufferManager>(this);
+
+        renderBufferManager_ = state_.renderBufferManager_;
         shadowMapAllocator_ = MakeShared<ShadowMapAllocator>(context_);
         instancingBuffer_ = MakeShared<InstancingBuffer>(context_);
         sceneProcessor_ = MakeShared<StereoSceneProcessor>(this, shadowMapAllocator_, instancingBuffer_);
@@ -430,6 +429,12 @@ bool StereoRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vie
             "", "alpha", "alpha", "litalpha");
         postAlphaPass_ =
             sceneProcessor_->CreatePass<BackToFrontScenePass>(DrawableProcessorPassFlag::StereoInstancing, "postalpha");
+
+        const RenderBufferParams params{TextureFormat::TEX_FORMAT_RGBA8_UNORM, 1, RenderBufferFlag::BilinearFiltering};
+        outlineBuffer_ = renderBufferManager_->CreateColorBuffer(params);
+        outlineBuffer_->SetEnabled(false);
+
+        state_.renderBuffers_[OutlineRenderPass::ColorBufferId] = outlineBuffer_;
     }
 
     frameInfo_.viewport_ = viewport;
@@ -519,7 +524,7 @@ void StereoRenderPipelineView::Update(const FrameInfo& frameInfo)
 
     sceneProcessor_->Update();
 
-    outlinePostProcessPass_->SetEnabled(outlineScenePass_->IsEnabled() && outlineScenePass_->HasBatches());
+    outlineBuffer_->SetEnabled(outlineScenePass_->IsEnabled() && outlineScenePass_->HasBatches());
 
     SendViewEvent(E_ENDVIEWUPDATE);
     OnUpdateEnd(this, frameInfo_);
@@ -580,12 +585,12 @@ void StereoRenderPipelineView::Render()
         "Alpha", camera, alphaPass_->GetBatches(), depthAndColorTextures, cameraParameters, 2);
     sceneProcessor_->RenderSceneBatches("PostAlpha", camera, postAlphaPass_->GetBatches(), {}, {}, 2);
 
-    if (outlinePostProcessPass_->IsEnabled())
+    if (outlineBuffer_->IsEnabled())
     {
         // TODO: Do we want it dynamic?
         const unsigned outlinePadding = 2;
 
-        RenderBuffer* const renderTargets[] = {outlinePostProcessPass_->GetColorOutput()};
+        RenderBuffer* const renderTargets[] = {outlineBuffer_};
         auto batches = outlineScenePass_->GetBatches();
 
         batches.scissorRect_ = renderTargets[0]->GetViewportRect();
@@ -610,12 +615,7 @@ void StereoRenderPipelineView::Render()
         postProcessPass->Execute(nullptr);
 
     if (renderPath_)
-    {
-        RenderPassContext ctx;
-        ctx.renderPipelineInterface_ = this;
-        ctx.renderBufferManager_ = renderBufferManager_;
-        renderPath_->Execute(ctx);
-    }
+        renderPath_->Execute(state_);
 
     // draw debug geometry into each half
     auto debug = sceneProcessor_->GetFrameInfo().scene_->GetComponent<DebugRenderer>();

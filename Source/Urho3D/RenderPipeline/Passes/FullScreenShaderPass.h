@@ -26,12 +26,12 @@ public:
     void CollectParameters(StringVariantMap& params) const override;
     void InitializeView(RenderPipelineView* view) override;
     void UpdateParameters(const RenderPipelineSettings& settings, const StringVariantMap& params) override;
-    void Execute(const RenderPassContext& ctx) override;
+    void Execute(const SharedRenderPassState& sharedState) override;
     /// @}
 
 private:
     void InvalidateCache();
-    void RestoreCache(const RenderPassContext& ctx);
+    void RestoreCache(const SharedRenderPassState& sharedState);
 
     struct Attributes
     {

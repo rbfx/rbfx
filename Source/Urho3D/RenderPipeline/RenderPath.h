@@ -31,7 +31,7 @@ public:
     void UpdateParameters(const RenderPipelineSettings& settings, const EnabledRenderPasses& enabledPasses,
         const StringVariantMap& params);
     /// Execute render path.
-    void Execute(const RenderPassContext& ctx);
+    void Execute(const SharedRenderPassState& sharedState);
 
     /// Make deep copy of RenderPath.
     SharedPtr<RenderPath> Clone() const;
