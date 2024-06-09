@@ -35,6 +35,7 @@ static const StringVector modeMetadata{
 ToneMappingPass::ToneMappingPass(Context* context)
     : RenderPass(context)
 {
+    traits_.needReadWriteColorBuffer_ = true;
     SetComment(comment);
 }
 
@@ -48,10 +49,8 @@ void ToneMappingPass::RegisterObject(Context* context)
 
 void ToneMappingPass::CollectParameters(StringVariantMap& params) const
 {
-    if (!params.contains(modeName))
-        params[modeName] = static_cast<int>(Mode::None);
-    if (!params.contains(modeMetadataName))
-        params[modeMetadataName] = modeMetadata;
+    DeclareParameter(modeName, static_cast<int>(Mode::None), params);
+    DeclareParameter(modeMetadataName, modeMetadata, params);
 }
 
 void ToneMappingPass::InitializeView(RenderPipelineView* view)
@@ -69,34 +68,28 @@ void ToneMappingPass::UpdateParameters(const RenderPipelineSettings& settings, c
 
     isEnabledInternally_ = true;
 
-    const auto iter = params.find(modeName);
-    if (iter != params.end())
+    if (const Variant& value = LoadParameter(modeName, params); value.GetType() == VAR_INT)
     {
-        const auto numModes = static_cast<int>(Mode::Count);
-        const int value = iter->second.GetInt();
-        if (value >= 0 && value < numModes)
+        const auto newMode = static_cast<Mode>(Clamp(value.GetInt(), 0, static_cast<int>(Mode::Count)));
+        if (mode_ != newMode)
         {
-            const auto newMode = static_cast<Mode>(value);
-            if (mode_ != newMode)
-            {
-                mode_ = newMode;
-                InvalidateCache();
-            }
+            mode_ = newMode;
+            InvalidateCache();
         }
     }
 }
 
 void ToneMappingPass::InvalidateCache()
 {
-    cache_ = ea::nullopt;
+    pipelineStates_ = ea::nullopt;
 }
 
 void ToneMappingPass::RestoreCache(const SharedRenderPassState& sharedState)
 {
-    if (cache_)
+    if (pipelineStates_)
         return;
 
-    cache_ = Cache{};
+    pipelineStates_ = PipelineStateCache{};
 
     ea::string defines;
     switch (mode_)
@@ -108,18 +101,18 @@ void ToneMappingPass::RestoreCache(const SharedRenderPassState& sharedState)
     }
 
     static const NamedSamplerStateDesc samplers[] = {{ShaderResources::Albedo, SamplerStateDesc::Bilinear()}};
-    cache_->pipelineStateId_ =
+    pipelineStates_->default_ =
         sharedState.renderBufferManager_->CreateQuadPipelineState(BLEND_REPLACE, "v2/P_ToneMapping", defines, samplers);
 }
 
-void ToneMappingPass::Execute(const SharedRenderPassState& sharedState)
+void ToneMappingPass::Render(const SharedRenderPassState& sharedState)
 {
     RestoreCache(sharedState);
 
     sharedState.renderBufferManager_->SwapColorBuffers(false);
 
     sharedState.renderBufferManager_->SetOutputRenderTargets();
-    sharedState.renderBufferManager_->DrawFeedbackViewportQuad("Apply tone mapping", cache_->pipelineStateId_, {}, {});
+    sharedState.renderBufferManager_->DrawFeedbackViewportQuad("Apply tone mapping", pipelineStates_->default_, {}, {});
 }
 
 } // namespace Urho3D

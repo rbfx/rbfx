@@ -45,10 +45,9 @@ void OutlineRenderPass::InitializeView(RenderPipelineView* view)
 
 void OutlineRenderPass::UpdateParameters(const RenderPipelineSettings& settings, const StringVariantMap& params)
 {
-    isEnabledInternally_ = true;
 }
 
-void OutlineRenderPass::Execute(const SharedRenderPassState& sharedState)
+void OutlineRenderPass::Render(const SharedRenderPassState& sharedState)
 {
     RequireRenderBuffer(colorBuffer_, ColorBufferId, sharedState);
 
@@ -58,8 +57,7 @@ void OutlineRenderPass::Execute(const SharedRenderPassState& sharedState)
     RestoreCache(sharedState);
 
     const bool inLinearSpace = sharedState.renderBufferManager_->IsLinearColorSpace();
-    const StaticPipelineStateId pipelineState =
-        inLinearSpace ? cache_->pipelineStateLinearId_ : cache_->pipelineStateGammaId_;
+    const StaticPipelineStateId pipelineState = inLinearSpace ? pipelineStates_->linear_ : pipelineStates_->gamma_;
 
     RawTexture* texture = colorBuffer_->GetTexture();
     const Vector2 inputInvSize = Vector2::ONE / texture->GetParams().size_.ToVector2();
@@ -73,21 +71,21 @@ void OutlineRenderPass::Execute(const SharedRenderPassState& sharedState)
 
 void OutlineRenderPass::InvalidateCache()
 {
-    cache_ = ea::nullopt;
+    pipelineStates_ = ea::nullopt;
 }
 
 void OutlineRenderPass::RestoreCache(const SharedRenderPassState& sharedState)
 {
-    if (cache_)
+    if (pipelineStates_)
         return;
 
-    cache_ = Cache{};
+    pipelineStates_ = PipelineStateCache{};
 
     static const NamedSamplerStateDesc samplers[] = {{ShaderResources::Albedo, SamplerStateDesc::Bilinear()}};
 
-    cache_->pipelineStateLinearId_ = sharedState.renderBufferManager_->CreateQuadPipelineState(
+    pipelineStates_->linear_ = sharedState.renderBufferManager_->CreateQuadPipelineState(
         BLEND_ALPHA, "v2/P_Outline", "URHO3D_GAMMA_CORRECTION", samplers);
-    cache_->pipelineStateGammaId_ =
+    pipelineStates_->gamma_ =
         sharedState.renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_Outline", "", samplers);
 }
 

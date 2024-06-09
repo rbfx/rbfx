@@ -36,7 +36,6 @@
 #include "../RenderAPI/RenderDevice.h"
 #include "../RenderPipeline/AutoExposurePass.h"
 #include "../RenderPipeline/BatchRenderer.h"
-#include "../RenderPipeline/BloomPass.h"
 #include "../RenderPipeline/DrawableProcessor.h"
 #include "../RenderPipeline/InstancingBuffer.h"
 #include "../RenderPipeline/LightProcessor.h"
@@ -168,13 +167,6 @@ void DefaultRenderPipelineView::ApplySettings()
         ssaoPass_ = MakeShared<AmbientOcclusionPass>(this, renderBufferManager_);
         ssaoPass_->SetSettings(settings_.ssao_);
         postProcessPasses_.push_back(ssaoPass_);
-    }
-
-    if (settings_.bloom_.enabled_)
-    {
-        auto pass = MakeShared<BloomPass>(this, renderBufferManager_);
-        pass->SetSettings(settings_.bloom_);
-        postProcessPasses_.push_back(pass);
     }
 }
 
@@ -335,6 +327,9 @@ void DefaultRenderPipelineView::Update(const FrameInfo& frameInfo)
 
     outlineBuffer_->SetEnabled(outlineScenePass_->IsEnabled() && outlineScenePass_->HasBatches());
 
+    if (renderPath_)
+        renderPath_->Update(state_);
+
     SendViewEvent(E_ENDVIEWUPDATE);
     OnUpdateEnd(this, frameInfo_);
 }
@@ -478,7 +473,7 @@ void DefaultRenderPipelineView::Render()
         postProcessPass->Execute(camera);
 
     if (renderPath_)
-        renderPath_->Execute(state_);
+        renderPath_->Render(state_);
 
     const bool drawDebugGeometry = settings_.drawDebugGeometry_ && camera->GetDrawDebugGeometry();
     auto debug = fullFrameInfo.scene_->GetComponent<DebugRenderer>();

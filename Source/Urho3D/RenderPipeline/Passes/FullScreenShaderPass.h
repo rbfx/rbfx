@@ -26,7 +26,7 @@ public:
     void CollectParameters(StringVariantMap& params) const override;
     void InitializeView(RenderPipelineView* view) override;
     void UpdateParameters(const RenderPipelineSettings& settings, const StringVariantMap& params) override;
-    void Execute(const SharedRenderPassState& sharedState) override;
+    void Render(const SharedRenderPassState& sharedState) override;
     /// @}
 
 private:

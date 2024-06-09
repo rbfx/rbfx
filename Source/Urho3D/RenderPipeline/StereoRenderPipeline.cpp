@@ -17,7 +17,6 @@
 #include "Urho3D/RenderAPI/RenderDevice.h"
 #include "Urho3D/RenderPipeline/AutoExposurePass.h"
 #include "Urho3D/RenderPipeline/BatchRenderer.h"
-#include "Urho3D/RenderPipeline/BloomPass.h"
 #include "Urho3D/RenderPipeline/DrawableProcessor.h"
 #include "Urho3D/RenderPipeline/Passes/OutlineRenderPass.h"
 #include "Urho3D/RenderPipeline/ShaderConsts.h"
@@ -365,13 +364,6 @@ void StereoRenderPipelineView::ApplySettings()
         pass->SetSettings(settings_.autoExposure_);
         postProcessPasses_.push_back(pass);
     }
-
-    if (settings_.bloom_.enabled_)
-    {
-        auto pass = MakeShared<BloomPass>(this, renderBufferManager_);
-        pass->SetSettings(settings_.bloom_);
-        postProcessPasses_.push_back(pass);
-    }
 }
 
 void StereoRenderPipelineView::UpdateRenderOutputFlags()
@@ -526,6 +518,9 @@ void StereoRenderPipelineView::Update(const FrameInfo& frameInfo)
 
     outlineBuffer_->SetEnabled(outlineScenePass_->IsEnabled() && outlineScenePass_->HasBatches());
 
+    if (renderPath_)
+        renderPath_->Update(state_);
+
     SendViewEvent(E_ENDVIEWUPDATE);
     OnUpdateEnd(this, frameInfo_);
 }
@@ -615,7 +610,7 @@ void StereoRenderPipelineView::Render()
         postProcessPass->Execute(nullptr);
 
     if (renderPath_)
-        renderPath_->Execute(state_);
+        renderPath_->Render(state_);
 
     // draw debug geometry into each half
     auto debug = sceneProcessor_->GetFrameInfo().scene_->GetComponent<DebugRenderer>();

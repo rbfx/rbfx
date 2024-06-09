@@ -30,8 +30,10 @@ public:
     /// Update settings for all passes.
     void UpdateParameters(const RenderPipelineSettings& settings, const EnabledRenderPasses& enabledPasses,
         const StringVariantMap& params);
-    /// Execute render path.
-    void Execute(const SharedRenderPassState& sharedState);
+    /// Perform update that does not invoke any rendering commands.
+    void Update(const SharedRenderPassState& sharedState);
+    /// Execute render commands.
+    void Render(const SharedRenderPassState& sharedState);
 
     /// Make deep copy of RenderPath.
     SharedPtr<RenderPath> Clone() const;
