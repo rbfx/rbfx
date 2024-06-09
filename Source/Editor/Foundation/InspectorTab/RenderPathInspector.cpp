@@ -251,7 +251,7 @@ void RenderPathInspector::RenderInspector(unsigned index, SerializableInspectorW
     ui::SameLine();
 
     const ea::string& title = inspector->GetObjects()[0]->Cast<RenderPass>()->GetPassName();
-    if (ui::CollapsingHeader(title.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+    if (ui::CollapsingHeader(title.c_str()))
     {
         inspector->RenderContent();
     }

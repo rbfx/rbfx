@@ -107,7 +107,7 @@ void FullScreenShaderPass::RestoreCache(const SharedRenderPassState& sharedState
         attributes_.blendMode_, attributes_.shaderName_, attributes_.shaderDefines_, samplersAdjusted);
 }
 
-void FullScreenShaderPass::Execute(const SharedRenderPassState& sharedState)
+void FullScreenShaderPass::Render(const SharedRenderPassState& sharedState)
 {
     RestoreCache(sharedState);
 

@@ -76,6 +76,7 @@
 #include "../RenderPipeline/RenderPass.h"
 #include "../RenderPipeline/RenderPath.h"
 #include "../RenderPipeline/RenderPipeline.h"
+#include "../RenderPipeline/Passes/BloomPass.h"
 #include "../RenderPipeline/Passes/FullScreenShaderPass.h"
 #include "../RenderPipeline/Passes/OutlineRenderPass.h"
 #include "../RenderPipeline/Passes/ToneMappingPass.h"
@@ -273,6 +274,7 @@ Engine::Engine(Context* context) :
     RenderPipeline::RegisterObject(context_);
     RenderPath::RegisterObject(context_);
     RenderPass::RegisterObject(context_);
+    BloomPass::RegisterObject(context_);
     FullScreenShaderPass::RegisterObject(context_);
     OutlineRenderPass::RegisterObject(context_);
     ToneMappingPass::RegisterObject(context_);

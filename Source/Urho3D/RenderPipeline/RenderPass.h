@@ -44,8 +44,10 @@ public:
     /// Update settings and parameters of the pass.
     /// This function is always called before any rendering updates or getters.
     virtual void UpdateParameters(const RenderPipelineSettings& settings, const StringVariantMap& params) {}
-    /// Execute render pass.
-    virtual void Execute(const SharedRenderPassState& sharedState) = 0;
+    /// Perform update that does not invoke any rendering commands.
+    virtual void Update(const SharedRenderPassState& sharedState) {}
+    /// Execute render commands.
+    virtual void Render(const SharedRenderPassState& sharedState) {}
 
     /// Attributes.
     /// @{
@@ -60,6 +62,8 @@ public:
     /// @}
 
 protected:
+    void DeclareParameter(const ea::string& name, const Variant& value, StringVariantMap& params) const;
+    const Variant& LoadParameter(const ea::string& name, const StringVariantMap& params) const;
     void RequireRenderBuffer(
         WeakPtr<RenderBuffer>& renderBuffer, StringHash name, const SharedRenderPassState& sharedState) const;
 
@@ -71,7 +75,7 @@ protected:
     } attributes_;
 
     bool isEnabledByUser_{};
-    bool isEnabledInternally_{};
+    bool isEnabledInternally_{true};
     RenderPassTraits traits_;
 };
 

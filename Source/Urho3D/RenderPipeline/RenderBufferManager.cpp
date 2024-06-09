@@ -38,6 +38,8 @@
 #include "../RenderAPI/RenderAPIUtils.h"
 #include "../RenderAPI/RenderScope.h"
 
+#include <Diligent/Graphics/GraphicsAccessories/interface/GraphicsAccessories.hpp>
+
 #include <EASTL/optional.h>
 
 #include "../DebugNew.h"
@@ -496,6 +498,10 @@ void RenderBufferManager::OnViewportDefined(RenderSurface* renderTarget, const I
         SetTextureFormatSRGB(colorOutputParams_.textureFormat_, true) == colorOutputParams_.textureFormat_;
     const bool isLinearTextureMetadata = outputTexture && outputTexture->GetLinear();
     linearColorSpace_ = isLinearTextureFormat || isLinearTextureMetadata;
+
+    const Diligent::COMPONENT_TYPE componentType =
+        Diligent::GetTextureFormatAttribs(colorOutputParams_.textureFormat_).ComponentType;
+    isHDR_ = componentType != Diligent::COMPONENT_TYPE_UNORM && componentType != Diligent::COMPONENT_TYPE_UNORM_SRGB;
 }
 
 void RenderBufferManager::OnRenderBegin(const CommonFrameInfo& frameInfo)

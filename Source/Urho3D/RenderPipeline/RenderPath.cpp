@@ -62,12 +62,21 @@ void RenderPath::UpdateParameters(
     }
 }
 
-void RenderPath::Execute(const SharedRenderPassState& sharedState)
+void RenderPath::Update(const SharedRenderPassState& sharedState)
 {
     for (RenderPass* pass : passes_)
     {
         if (pass->IsEnabledEffectively())
-            pass->Execute(sharedState);
+            pass->Update(sharedState);
+    }
+}
+
+void RenderPath::Render(const SharedRenderPassState& sharedState)
+{
+    for (RenderPass* pass : passes_)
+    {
+        if (pass->IsEnabledEffectively())
+            pass->Render(sharedState);
     }
 }
 

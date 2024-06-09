@@ -27,19 +27,19 @@ public:
     void CollectParameters(StringVariantMap& params) const override;
     void InitializeView(RenderPipelineView* view) override;
     void UpdateParameters(const RenderPipelineSettings& settings, const StringVariantMap& params) override;
-    void Execute(const SharedRenderPassState& sharedState) override;
+    void Render(const SharedRenderPassState& sharedState) override;
     /// @}
 
 private:
     void InvalidateCache();
     void RestoreCache(const SharedRenderPassState& sharedState);
 
-    struct Cache
+    struct PipelineStateCache
     {
-        StaticPipelineStateId pipelineStateGammaId_{};
-        StaticPipelineStateId pipelineStateLinearId_{};
+        StaticPipelineStateId gamma_{};
+        StaticPipelineStateId linear_{};
     };
-    ea::optional<Cache> cache_;
+    ea::optional<PipelineStateCache> pipelineStates_;
 
     WeakPtr<RenderBuffer> colorBuffer_;
 };

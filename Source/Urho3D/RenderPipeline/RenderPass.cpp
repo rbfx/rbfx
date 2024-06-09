@@ -40,6 +40,18 @@ const ea::string& RenderPass::GetPassName() const
     return !attributes_.passName_.empty() ? attributes_.passName_ : GetTypeName();
 }
 
+void RenderPass::DeclareParameter(const ea::string& name, const Variant& value, StringVariantMap& params) const
+{
+    if (!params.contains(name))
+        params[name] = value;
+}
+
+const Variant& RenderPass::LoadParameter(const ea::string& name, const StringVariantMap& params) const
+{
+    const auto iter = params.find(name);
+    return iter != params.end() ? iter->second : Variant::EMPTY;
+}
+
 void RenderPass::RequireRenderBuffer(
     WeakPtr<RenderBuffer>& renderBuffer, StringHash name, const SharedRenderPassState& sharedState) const
 {
