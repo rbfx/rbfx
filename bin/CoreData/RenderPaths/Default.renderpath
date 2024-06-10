@@ -1,6 +1,18 @@
 {
 	"passes": [
 		{
+			"type": "AutoExposurePass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: Exposure"
+					}
+				]
+			}
+		},
+		{
 			"type": "AmbientOcclusionPass",
 			"value": {
 				"attributes": [

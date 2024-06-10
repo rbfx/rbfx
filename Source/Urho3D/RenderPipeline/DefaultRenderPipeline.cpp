@@ -34,7 +34,6 @@
 #include "../Graphics/Viewport.h"
 #include "../Input/Input.h"
 #include "../RenderAPI/RenderDevice.h"
-#include "../RenderPipeline/AutoExposurePass.h"
 #include "../RenderPipeline/BatchRenderer.h"
 #include "../RenderPipeline/DrawableProcessor.h"
 #include "../RenderPipeline/InstancingBuffer.h"
@@ -161,13 +160,6 @@ void DefaultRenderPipelineView::ApplySettings()
     sceneProcessor_->SetPasses({depthPrePass_, opaquePass_, deferredDecalPass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlineScenePass_});
 
     postProcessPasses_.clear();
-
-    if (settings_.renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR)
-    {
-        auto pass = MakeShared<AutoExposurePass>(this, renderBufferManager_);
-        pass->SetSettings(settings_.autoExposure_);
-        postProcessPasses_.push_back(pass);
-    }
 }
 
 void DefaultRenderPipelineView::UpdateRenderOutputFlags()

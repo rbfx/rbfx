@@ -131,10 +131,6 @@ void RenderPipeline::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("VSM Shadow Settings", Vector2, settings_.sceneProcessor_.varianceShadowMapParams_, MarkSettingsDirty, BatchRendererSettings{}.varianceShadowMapParams_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("VSM Multi Sample", unsigned, settings_.shadowMapAllocator_.varianceShadowMapMultiSample_, MarkSettingsDirty, 1, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("16-bit Shadow Maps", bool, settings_.shadowMapAllocator_.use16bitShadowMaps_, MarkSettingsDirty, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Auto Exposure", bool, settings_.autoExposure_.autoExposure_, MarkSettingsDirty, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Min Exposure", float, settings_.autoExposure_.minExposure_, MarkSettingsDirty, AutoExposurePassSettings{}.minExposure_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Max Exposure", float, settings_.autoExposure_.maxExposure_, MarkSettingsDirty, AutoExposurePassSettings{}.maxExposure_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Adapt Rate", float, settings_.autoExposure_.adaptRate_, MarkSettingsDirty, AutoExposurePassSettings{}.adaptRate_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Draw Debug Geometry", bool, settings_.drawDebugGeometry_, MarkSettingsDirty, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Depth Bias Scale", float, settings_.shadowMapAllocator_.depthBiasScale_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Depth Bias Offset", float, settings_.shadowMapAllocator_.depthBiasOffset_, MarkSettingsDirty, 0.0f, AM_DEFAULT);

@@ -15,7 +15,6 @@
 #include "Urho3D/Input/Input.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
-#include "Urho3D/RenderPipeline/AutoExposurePass.h"
 #include "Urho3D/RenderPipeline/BatchRenderer.h"
 #include "Urho3D/RenderPipeline/DrawableProcessor.h"
 #include "Urho3D/RenderPipeline/Passes/OutlineRenderPass.h"
@@ -357,13 +356,6 @@ void StereoRenderPipelineView::ApplySettings()
         {depthPrePass_, opaquePass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlineScenePass_});
 
     postProcessPasses_.clear();
-
-    if (settings_.renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR)
-    {
-        auto pass = MakeShared<AutoExposurePass>(this, renderBufferManager_);
-        pass->SetSettings(settings_.autoExposure_);
-        postProcessPasses_.push_back(pass);
-    }
 }
 
 void StereoRenderPipelineView::UpdateRenderOutputFlags()
