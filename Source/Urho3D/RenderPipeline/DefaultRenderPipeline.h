@@ -31,7 +31,6 @@
 #include "../RenderPipeline/SharedRenderPassState.h"
 #include "../RenderPipeline/PostProcessPass.h"
 #include "../RenderPipeline/ScenePass.h"
-#include "../RenderPipeline/AmbientOcclusionPass.h"
 
 #include <EASTL/optional.h>
 
@@ -111,7 +110,6 @@ private:
     SharedPtr<UnorderedScenePass> deferredDecalPass_;
     SharedPtr<BackToFrontScenePass> alphaPass_;
     SharedPtr<BackToFrontScenePass> postAlphaPass_;
-    SharedPtr<AmbientOcclusionPass> ssaoPass_;
 
     SharedPtr<RenderBuffer> outlineBuffer_;
     SharedPtr<OutlineScenePass> outlineScenePass_;

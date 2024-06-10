@@ -48,7 +48,6 @@
     #include "../SystemUI/SystemUI.h"
 #endif
 
-#include "AmbientOcclusionPass.h"
 #include "../DebugNew.h"
 
 namespace Urho3D
@@ -138,6 +137,10 @@ void DefaultRenderPipelineView::ApplySettings()
             deferred_->albedoBuffer_ = renderBufferManager_->CreateColorBuffer({TextureFormat::TEX_FORMAT_RGBA8_UNORM});
             deferred_->specularBuffer_ = renderBufferManager_->CreateColorBuffer({TextureFormat::TEX_FORMAT_RGBA8_UNORM});
             deferred_->normalBuffer_ = renderBufferManager_->CreateColorBuffer({TextureFormat::TEX_FORMAT_RGBA8_UNORM});
+
+            state_.renderBuffers_[SharedRenderPassState::AlbedoBufferId] = deferred_->albedoBuffer_;
+            state_.renderBuffers_[SharedRenderPassState::SpecularBufferId] = deferred_->specularBuffer_;
+            state_.renderBuffers_[SharedRenderPassState::NormalBufferId] = deferred_->normalBuffer_;
         }
         else
         {
@@ -146,6 +149,10 @@ void DefaultRenderPipelineView::ApplySettings()
                 "", "base", "litbase", "light");
 
             deferred_ = ea::nullopt;
+
+            state_.renderBuffers_[SharedRenderPassState::AlbedoBufferId] = nullptr;
+            state_.renderBuffers_[SharedRenderPassState::SpecularBufferId] = nullptr;
+            state_.renderBuffers_[SharedRenderPassState::NormalBufferId] = nullptr;
         }
     }
 
@@ -160,13 +167,6 @@ void DefaultRenderPipelineView::ApplySettings()
         auto pass = MakeShared<AutoExposurePass>(this, renderBufferManager_);
         pass->SetSettings(settings_.autoExposure_);
         postProcessPasses_.push_back(pass);
-    }
-
-    if (settings_.ssao_.enabled_ && settings_.renderBufferManager_.readableDepth_)
-    {
-        ssaoPass_ = MakeShared<AmbientOcclusionPass>(this, renderBufferManager_);
-        ssaoPass_->SetSettings(settings_.ssao_);
-        postProcessPasses_.push_back(ssaoPass_);
     }
 }
 
@@ -185,7 +185,7 @@ void DefaultRenderPipelineView::UpdateRenderOutputFlags()
             renderOutputFlags_ |= RenderOutputFlag::NeedColorOutputBilinear;
     }
 
-    settings_.AdjustForPostProcessing(renderOutputFlags_);
+    settings_.AdjustForRenderPath(renderOutputFlags_);
     renderBufferManager_->SetSettings(settings_.renderBufferManager_);
 }
 
@@ -242,6 +242,7 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
         return false;
 
     sceneProcessor_->SetRenderCamera(viewport->GetCamera());
+    state_.renderCamera_ = viewport->GetCamera();
 
     if (settingsDirty_)
     {
@@ -462,11 +463,6 @@ void DefaultRenderPipelineView::Render()
         renderBufferManager_->SetRenderTargets(nullptr, renderTargets);
         renderBufferManager_->ClearColor(renderTargets[0], Color::TRANSPARENT_BLACK);
         sceneProcessor_->RenderSceneBatches("Outline", camera, batches, {}, cameraParameters);
-    }
-
-    if (ssaoPass_ && deferred_)
-    {
-        ssaoPass_->SetNormalBuffer(deferred_->normalBuffer_);
     }
 
     for (PostProcessPass* postProcessPass : postProcessPasses_)

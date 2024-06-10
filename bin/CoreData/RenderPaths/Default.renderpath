@@ -1,6 +1,23 @@
 {
 	"passes": [
 		{
+			"type": "AmbientOcclusionPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: SSAO"
+					},
+					{
+						"name": "Is Enabled By Default",
+						"type": "Bool",
+						"value": false
+					}
+				]
+			}
+		},
+		{
 			"type": "BloomPass",
 			"value": {
 				"attributes": [
@@ -8,6 +25,11 @@
 						"name": "Pass Name",
 						"type": "String",
 						"value": "Postprocess: Bloom"
+					},
+					{
+						"name": "Is Enabled By Default",
+						"type": "Bool",
+						"value": false
 					}
 				]
 			}

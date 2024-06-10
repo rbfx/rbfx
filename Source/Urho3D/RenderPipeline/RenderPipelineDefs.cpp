@@ -119,13 +119,6 @@ void RenderPipelineSettings::AdjustToSupported(Context* context)
         shadowMapAllocator_.shadowAtlasPageSize_, caps.maxRenderTargetSize_);
 
     // TODO: Check if instancing is actually supported, i.e. if there's enough vertex attributes
-
-    // RenderPipelineSettings
-    if (renderBufferManager_.multiSampleLevel_ != 1)
-    {
-        URHO3D_LOGWARNING("SSAO is not supported for multi-sampled render targets, disabling");
-        ssao_.enabled_ = false;
-    }
 }
 
 void RenderPipelineSettings::PropagateImpliedSettings()
@@ -156,12 +149,9 @@ void RenderPipelineSettings::PropagateImpliedSettings()
             break;
         }
     }
-
-    if (ssao_.enabled_)
-        renderBufferManager_.readableDepth_ = true;
 }
 
-void RenderPipelineSettings::AdjustForPostProcessing(RenderOutputFlags flags)
+void RenderPipelineSettings::AdjustForRenderPath(RenderOutputFlags flags)
 {
     renderBufferManager_.filteredColor_ = flags.Test(RenderOutputFlag::NeedColorOutputBilinear);
 }

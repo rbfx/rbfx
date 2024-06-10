@@ -691,57 +691,6 @@ enum class AmbientOcclusionMode
     PreviewBlurred,
 };
 
-struct AmbientOcclusionPassSettings
-{
-    bool enabled_{};
-
-    unsigned downscale_{0};
-    float strength_{0.7f};
-    float exponent_{1.5f};
-
-    float radiusNear_{0.05f};
-    float distanceNear_{1.0f};
-    float radiusFar_{1.0f};
-    float distanceFar_{100.0f};
-
-    float fadeDistanceBegin_{100.0f};
-    float fadeDistanceEnd_{200.0f};
-
-    float blurDepthThreshold_{0.1f};
-    float blurNormalThreshold_{0.2f};
-
-    AmbientOcclusionMode ambientOcclusionMode_{AmbientOcclusionMode::Combine};
-
-    /// Utility operators
-    /// @{
-    void Validate() { }
-
-    bool operator==(const AmbientOcclusionPassSettings& rhs) const
-    {
-        return enabled_ == rhs.enabled_
-
-            && downscale_ == rhs.downscale_
-            && strength_ == rhs.strength_
-            && exponent_ == rhs.exponent_
-
-            && radiusNear_ == rhs.radiusNear_
-            && distanceNear_ == rhs.distanceNear_
-            && radiusFar_ == rhs.radiusFar_
-            && distanceFar_ == rhs.distanceFar_
-
-            && fadeDistanceBegin_ == rhs.fadeDistanceBegin_
-            && fadeDistanceEnd_ == rhs.fadeDistanceEnd_
-
-            && blurDepthThreshold_ == rhs.blurDepthThreshold_
-            && blurNormalThreshold_ == rhs.blurNormalThreshold_
-
-            && ambientOcclusionMode_ == rhs.ambientOcclusionMode_;
-    }
-
-    bool operator!=(const AmbientOcclusionPassSettings& rhs) const { return !(*this == rhs); }
-    /// @}
-};
-
 /// Settings of default render pipeline.
 struct RenderPipelineSettings : public ShaderProgramCompositorSettings
 {
@@ -753,7 +702,6 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     /// Post-processing settings
     /// @{
     AutoExposurePassSettings autoExposure_;
-    AmbientOcclusionPassSettings ssao_;
     /// @}
 
     /// Utility operators
@@ -788,7 +736,7 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     /// Don't modify settings inplace after these calls! Always restore settings from external source.
     /// @{
     void PropagateImpliedSettings();
-    void AdjustForPostProcessing(RenderOutputFlags flags);
+    void AdjustForRenderPath(RenderOutputFlags flags);
     /// @}
 };
 

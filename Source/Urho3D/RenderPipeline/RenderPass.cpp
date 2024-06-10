@@ -52,16 +52,19 @@ const Variant& RenderPass::LoadParameter(const ea::string& name, const StringVar
     return iter != params.end() ? iter->second : Variant::EMPTY;
 }
 
-void RenderPass::RequireRenderBuffer(
-    WeakPtr<RenderBuffer>& renderBuffer, StringHash name, const SharedRenderPassState& sharedState) const
+void RenderPass::ConnectToRenderBuffer(
+    WeakPtr<RenderBuffer>& renderBuffer, StringHash name, const SharedRenderPassState& sharedState, bool required) const
 {
     if (!renderBuffer)
     {
         const auto iter = sharedState.renderBuffers_.find(name);
         if (iter == sharedState.renderBuffers_.end() || !iter->second)
         {
-            URHO3D_LOGERROR(
-                "Render buffer {} required by render pass '{}' is not found", name.ToDebugString(), GetPassName());
+            if (required)
+            {
+                URHO3D_LOGERROR(
+                    "Render buffer {} required by render pass '{}' is not found", name.ToDebugString(), GetPassName());
+            }
             return;
         }
 

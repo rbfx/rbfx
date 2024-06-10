@@ -6,6 +6,7 @@
 
 #include "Urho3D/RenderPipeline/SharedRenderPassState.h"
 
+#include "Urho3D/Graphics/Camera.h"
 #include "Urho3D/RenderPipeline/RenderBufferManager.h"
 
 #include "Urho3D/DebugNew.h"

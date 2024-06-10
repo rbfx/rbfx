@@ -12,6 +12,7 @@
 namespace Urho3D
 {
 
+class Camera;
 class RenderBuffer;
 class RenderBufferManager;
 class RenderPipelineInterface;
@@ -21,7 +22,12 @@ struct URHO3D_API SharedRenderPassState : public NonCopyable
 {
     static constexpr unsigned MaxRenderBuffers = 128;
 
+    static constexpr StringHash AlbedoBufferId = "GeometryBuffer.Albedo"_sh;
+    static constexpr StringHash SpecularBufferId = "GeometryBuffer.Specular"_sh;
+    static constexpr StringHash NormalBufferId = "GeometryBuffer.Normal"_sh;
+
     RenderPipelineInterface* renderPipelineInterface_{};
+    WeakPtr<Camera> renderCamera_;
     SharedPtr<RenderBufferManager> renderBufferManager_;
     ea::fixed_hash_map<StringHash, SharedPtr<RenderBuffer>, MaxRenderBuffers> renderBuffers_;
 

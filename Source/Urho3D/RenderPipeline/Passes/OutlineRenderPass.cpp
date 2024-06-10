@@ -49,7 +49,7 @@ void OutlineRenderPass::UpdateParameters(const RenderPipelineSettings& settings,
 
 void OutlineRenderPass::Render(const SharedRenderPassState& sharedState)
 {
-    RequireRenderBuffer(colorBuffer_, ColorBufferId, sharedState);
+    ConnectToRenderBuffer(colorBuffer_, ColorBufferId, sharedState);
 
     if (!colorBuffer_ || !colorBuffer_->IsEnabled())
         return;

@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "Urho3D/RenderPipeline/RenderBuffer.h"
 #include "Urho3D/RenderPipeline/RenderPass.h"
 #include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
 
