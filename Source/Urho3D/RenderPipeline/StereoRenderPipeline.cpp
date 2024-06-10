@@ -354,16 +354,11 @@ void StereoRenderPipelineView::ApplySettings()
 
     sceneProcessor_->SetPasses(
         {depthPrePass_, opaquePass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlineScenePass_});
-
-    postProcessPasses_.clear();
 }
 
 void StereoRenderPipelineView::UpdateRenderOutputFlags()
 {
     renderOutputFlags_ = {};
-    for (PostProcessPass* postProcessPass : postProcessPasses_)
-        renderOutputFlags_ |= postProcessPass->GetExecutionFlags();
-
     if (renderPath_)
     {
         const RenderPassTraits& aggregatedTraits = renderPath_->GetAggregatedPassTraits();
@@ -596,10 +591,6 @@ void StereoRenderPipelineView::Render()
 
     // Not going to work, something will need to be done
     const auto outSize = renderBufferManager_->GetOutputSize(); // used for debug view
-
-    // Post-process passes that do not use the camera will work ... those that do, go ... KABOOM!
-    for (PostProcessPass* postProcessPass : postProcessPasses_)
-        postProcessPass->Execute(nullptr);
 
     if (renderPath_)
         renderPath_->Render(state_);

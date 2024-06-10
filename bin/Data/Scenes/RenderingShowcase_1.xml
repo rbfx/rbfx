@@ -33,7 +33,7 @@
 			<variant type="String" value="Postprocess: FXAA v2" />
 			<variant type="Bool" value="false" />
 			<variant type="String" value="Postprocess: FXAA v3" />
-			<variant type="Bool" value="false" />
+			<variant type="Bool" value="true" />
 		</attribute>
 		<attribute name="Render Path Parameters">
 			<variant name="SSAO: Near Distance" type="Float" value="0.500000" />

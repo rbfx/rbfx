@@ -158,16 +158,11 @@ void DefaultRenderPipelineView::ApplySettings()
     outlineScenePass_ = sceneProcessor_->CreatePass<OutlineScenePass>(StringVector{"deferred", "deferred_decal", "base", "alpha"});
 
     sceneProcessor_->SetPasses({depthPrePass_, opaquePass_, deferredDecalPass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlineScenePass_});
-
-    postProcessPasses_.clear();
 }
 
 void DefaultRenderPipelineView::UpdateRenderOutputFlags()
 {
     renderOutputFlags_ = {};
-    for (PostProcessPass* postProcessPass : postProcessPasses_)
-        renderOutputFlags_ |= postProcessPass->GetExecutionFlags();
-
     if (renderPath_)
     {
         const RenderPassTraits& aggregatedTraits = renderPath_->GetAggregatedPassTraits();
@@ -456,9 +451,6 @@ void DefaultRenderPipelineView::Render()
         renderBufferManager_->ClearColor(renderTargets[0], Color::TRANSPARENT_BLACK);
         sceneProcessor_->RenderSceneBatches("Outline", camera, batches, {}, cameraParameters);
     }
-
-    for (PostProcessPass* postProcessPass : postProcessPasses_)
-        postProcessPass->Execute(camera);
 
     if (renderPath_)
         renderPath_->Render(state_);

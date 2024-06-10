@@ -25,7 +25,6 @@
 #include "../Graphics/OutlineGroup.h"
 #include "../RenderPipeline/DrawableProcessor.h"
 #include "../RenderPipeline/PipelineBatchSortKey.h"
-#include "../RenderPipeline/PostProcessPass.h"
 #include "../RenderPipeline/PipelineStateBuilder.h"
 #include "../RenderPipeline/RenderBuffer.h"
 #include "../RenderPipeline/RenderPipelineDefs.h"

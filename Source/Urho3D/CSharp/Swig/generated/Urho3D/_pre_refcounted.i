@@ -140,8 +140,6 @@ URHO3D_REFCOUNTED(Urho3D::ScriptBundlePlugin);
 URHO3D_REFCOUNTED(Urho3D::RenderContext);
 URHO3D_REFCOUNTED(Urho3D::RenderDevice);
 URHO3D_REFCOUNTED(Urho3D::RenderPool);
-URHO3D_REFCOUNTED(Urho3D::PostProcessPass);
-URHO3D_REFCOUNTED(Urho3D::SimplePostProcessPass);
 URHO3D_REFCOUNTED(Urho3D::RenderBuffer);
 URHO3D_REFCOUNTED(Urho3D::TextureRenderBuffer);
 URHO3D_REFCOUNTED(Urho3D::ViewportColorRenderBuffer);

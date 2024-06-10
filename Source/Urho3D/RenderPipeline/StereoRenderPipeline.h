@@ -6,7 +6,6 @@
 
 #include "Urho3D/RenderPipeline/CameraProcessor.h"
 #include "Urho3D/RenderPipeline/OutlineScenePass.h"
-#include "Urho3D/RenderPipeline/PostProcessPass.h"
 #include "Urho3D/RenderPipeline/RenderBuffer.h"
 #include "Urho3D/RenderPipeline/RenderBufferManager.h"
 #include "Urho3D/RenderPipeline/RenderPipeline.h"
@@ -79,8 +78,6 @@ protected:
 
     SharedPtr<RenderBuffer> outlineBuffer_;
     SharedPtr<OutlineScenePass> outlineScenePass_;
-
-    ea::vector<SharedPtr<PostProcessPass>> postProcessPasses_;
 
     unsigned settingsHash_{};
     unsigned oldPipelineStateHash_{};
