@@ -207,7 +207,6 @@ using RenderOutputFlags = Urho3D::RenderOutputFlag;
 %csattribute(Urho3D::RenderPipelineDebugger, %arg(Urho3D::DebugFrameSnapshot), Snapshot, GetSnapshot);
 %csattribute(Urho3D::RenderPipelineView, %arg(Urho3D::RenderPipeline *), RenderPipeline, GetRenderPipeline);
 %csattribute(Urho3D::RenderPipeline, %arg(Urho3D::RenderPipelineSettings), Settings, GetSettings, SetSettings);
-%csattribute(Urho3D::SimplePostProcessPass, %arg(Urho3D::RenderOutputFlags), ExecutionFlags, GetExecutionFlags);
 %csattribute(Urho3D::TextureRenderBuffer, %arg(Urho3D::RawTexture *), Texture, GetTexture);
 %csattribute(Urho3D::TextureRenderBuffer, %arg(Urho3D::IntRect), ViewportRect, GetViewportRect);
 %csattribute(Urho3D::ViewportColorRenderBuffer, %arg(Urho3D::RawTexture *), Texture, GetTexture);

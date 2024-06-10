@@ -29,7 +29,6 @@
 #include "../RenderPipeline/RenderBufferManager.h"
 #include "../RenderPipeline/RenderPipeline.h"
 #include "../RenderPipeline/SharedRenderPassState.h"
-#include "../RenderPipeline/PostProcessPass.h"
 #include "../RenderPipeline/ScenePass.h"
 
 #include <EASTL/optional.h>
@@ -121,8 +120,6 @@ private:
         SharedPtr<RenderBuffer> normalBuffer_;
     };
     ea::optional<DeferredLightingData> deferred_;
-
-    ea::vector<SharedPtr<PostProcessPass>> postProcessPasses_;
 };
 
 }
