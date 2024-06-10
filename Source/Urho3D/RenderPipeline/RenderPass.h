@@ -64,8 +64,8 @@ public:
 protected:
     void DeclareParameter(const ea::string& name, const Variant& value, StringVariantMap& params) const;
     const Variant& LoadParameter(const ea::string& name, const StringVariantMap& params) const;
-    void RequireRenderBuffer(
-        WeakPtr<RenderBuffer>& renderBuffer, StringHash name, const SharedRenderPassState& sharedState) const;
+    void ConnectToRenderBuffer(WeakPtr<RenderBuffer>& renderBuffer, StringHash name,
+        const SharedRenderPassState& sharedState, bool required = true) const;
 
     struct Attributes
     {

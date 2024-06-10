@@ -381,7 +381,7 @@ void StereoRenderPipelineView::UpdateRenderOutputFlags()
             renderOutputFlags_ |= RenderOutputFlag::NeedColorOutputBilinear;
     }
 
-    settings_.AdjustForPostProcessing(renderOutputFlags_);
+    settings_.AdjustForRenderPath(renderOutputFlags_);
     renderBufferManager_->SetSettings(settings_.renderBufferManager_);
 }
 
