@@ -115,7 +115,7 @@ void AmbientOcclusionPass::Update(const SharedRenderPassState& sharedState)
 
 void AmbientOcclusionPass::Render(const SharedRenderPassState& sharedState)
 {
-    ConnectToRenderBuffer(normalBuffer_, SharedRenderPassState::NormalBufferId, sharedState);
+    ConnectToRenderBuffer(normalBuffer_, SharedRenderPassState::NormalBufferId, sharedState, false);
 
     RestorePipelineStateCache(sharedState);
     if (parameters_.strength_ <= 0.0f)

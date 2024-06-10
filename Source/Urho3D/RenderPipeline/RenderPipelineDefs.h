@@ -659,38 +659,6 @@ struct ShaderProgramCompositorSettings
     /// @}
 };
 
-struct AutoExposurePassSettings
-{
-    bool autoExposure_{};
-    float minExposure_{ 1.0f };
-    float maxExposure_{ 3.0f };
-    float adaptRate_{ 0.6f };
-
-    /// Utility operators
-    /// @{
-    void Validate()
-    {
-    }
-
-    bool operator==(const AutoExposurePassSettings& rhs) const
-    {
-        return autoExposure_ == rhs.autoExposure_
-            && minExposure_ == rhs.minExposure_
-            && maxExposure_ == rhs.maxExposure_
-            && adaptRate_ == rhs.adaptRate_;
-    }
-
-    bool operator!=(const AutoExposurePassSettings& rhs) const { return !(*this == rhs); }
-    /// @}
-};
-
-enum class AmbientOcclusionMode
-{
-    Combine,
-    PreviewRaw,
-    PreviewBlurred,
-};
-
 /// Settings of default render pipeline.
 struct RenderPipelineSettings : public ShaderProgramCompositorSettings
 {
@@ -699,32 +667,12 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     bool drawDebugGeometry_{true};
     /// @}
 
-    /// Post-processing settings
-    /// @{
-    AutoExposurePassSettings autoExposure_;
-    /// @}
-
     /// Utility operators
     /// @{
-    unsigned CalculatePipelineStateHash() const
-    {
-        unsigned hash = 0;
-        CombineHash(hash, ShaderProgramCompositorSettings::CalculatePipelineStateHash());
-        return hash;
-    }
-
-    void Validate()
-    {
-        ShaderProgramCompositorSettings::Validate();
-
-        autoExposure_.Validate();
-    }
-
     bool operator==(const RenderPipelineSettings& rhs) const
     {
         return ShaderProgramCompositorSettings::operator==(rhs)
-            && drawDebugGeometry_ == rhs.drawDebugGeometry_
-            && autoExposure_ == rhs.autoExposure_;
+            && drawDebugGeometry_ == rhs.drawDebugGeometry_;
     }
 
     bool operator!=(const RenderPipelineSettings& rhs) const { return !(*this == rhs); }
