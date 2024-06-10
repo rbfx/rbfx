@@ -58,7 +58,6 @@ public:
 private:
     static const unsigned scanCooldownMs_ = 3000;
 
-    void ForceScan();
     void Update();
     void ScanBlender(bool force = false);
     void ScanFBX2glTF(bool force = false);
@@ -66,6 +65,7 @@ private:
 
     struct Blender
     {
+        bool firstScan_{true};
         bool found_{};
         ea::string path_;
 
@@ -75,6 +75,7 @@ private:
 
     struct FBX2glTF
     {
+        bool firstScan_{true};
         bool found_{};
         ea::string path_;
 
