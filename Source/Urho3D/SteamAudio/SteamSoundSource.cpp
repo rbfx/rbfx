@@ -118,6 +118,10 @@ ResourceRef SteamSoundSource::GetSoundAttr() const
 
 IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
 {
+    // Stop if effects are dirty
+    if (effectsDirty_)
+        return nullptr;
+
     // Return nothing if not playing
     if (!IsPlaying())
         return nullptr;
@@ -191,13 +195,22 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
         iplAudioBufferAllocate(phononContext, reflectionChannels_, audioSettings.frameSize, &ambiBuffer);
 
         // Actually apply effect
-        IPLReflectionEffectParams params = simulatorOutputs_.reflections;
-        params.irSize = audio_->ImpulseResponseDuration() * audioSettings.samplingRate;
-        params.numChannels = reflectionChannels_;
+        IPLReflectionEffectParams reflectionEffectParams = simulatorOutputs_.reflections;
+        reflectionEffectParams.irSize = audio_->ImpulseResponseDuration() * audioSettings.samplingRate;
+        reflectionEffectParams.numChannels = reflectionChannels_;
 
-        iplReflectionEffectApply(reflectionEffect_, &params, &monoBuffer, &ambiBuffer, nullptr);
+        iplReflectionEffectApply(reflectionEffect_, &reflectionEffectParams, &monoBuffer, &ambiBuffer, nullptr);
         if (!originalIsMono)
             iplAudioBufferFree(phononContext, &monoBuffer);
+
+        // Convert ambisonics back to target channel count
+        IPLAmbisonicsBinauralEffectParams ambisonicsBinauralEffectParams {
+            .hrtf = audio_->GetHRTF(),
+            .order = static_cast<IPLint32>(reflectionAmbisonicsOrder_)
+        };
+        iplAmbisonicsBinauralEffectApply(ambisonicsBinauralEffect_, &ambisonicsBinauralEffectParams, &ambiBuffer, pool.GetNextBuffer());
+        iplAudioBufferFree(phononContext, &ambiBuffer);
+        pool.SwitchToNextBuffer();
     }
 
     // Apply binaural effect
@@ -278,6 +291,12 @@ bool SteamSoundSource::UsingDirectEffect() const
 
 void SteamSoundSource::UpdateEffects()
 {
+    // Fix settings
+    if (reflection_) {
+        distanceAttenuation_ = false;
+        occlusion_ = false;
+    }
+
     // Make sure reflection simulation is enabled
     if (reflection_)
         audio_->SetReflectionSimulationActive(true); //TODO: Use some kind of user counter instead
@@ -320,12 +339,19 @@ void SteamSoundSource::UpdateEffects()
     }
 
     if (reflection_) {
-        IPLReflectionEffectSettings reflectionEffectSettings{};
+        IPLReflectionEffectSettings reflectionEffectSettings {};
         reflectionEffectSettings.type = IPL_REFLECTIONEFFECTTYPE_CONVOLUTION;
         reflectionEffectSettings.irSize = audio_->ImpulseResponseDuration() * audioSettings.samplingRate; // (IR duration) * (sampling rate)
         reflectionEffectSettings.numChannels = reflectionChannels_;
 
-        iplReflectionEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &reflectionEffectSettings, &reflectionEffect_);    }
+        iplReflectionEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &reflectionEffectSettings, &reflectionEffect_);
+
+        IPLAmbisonicsBinauralEffectSettings ambisonicsBinauralEffectSettings {
+            .hrtf = audio_->GetHRTF(),
+            .maxOrder = static_cast<IPLint32>(reflectionAmbisonicsOrder_)
+        };
+        iplAmbisonicsBinauralEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &ambisonicsBinauralEffectSettings, &ambisonicsBinauralEffect_);
+    }
 
     // Start listening
     GetNode()->AddListener(this);
