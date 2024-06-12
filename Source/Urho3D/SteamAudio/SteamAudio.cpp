@@ -293,14 +293,15 @@ void SteamAudio::RemoveSoundSource(SteamSoundSource *soundSource)
 
 void SteamAudio::MixOutput(float *dest) noexcept
 {
-    if (!audioMutex_.TryAcquire())
-        return;
-
     // Stop if no listener
     if (!GetListener()) {
         memset(dest, 0, audioSettings_.frameSize*channelCount_*sizeof(float));
         return;
     }
+
+    // Don't do anything if lock can't be acquired
+    if (!audioMutex_.TryAcquire())
+        return;
 
     // Clear frame buffer
     for (unsigned channel = 0; channel != phononFrameBuffer_.numChannels; channel++)

@@ -93,6 +93,8 @@ private:
     SharedPtr<Sound> sound_;
     /// Binaural effect.
     IPLBinauralEffect binauralEffect_;
+    /// Ambisonics binaural effect (for reflection).
+    IPLAmbisonicsBinauralEffect ambisonicsBinauralEffect_;
     /// Direct effect.
     IPLDirectEffect directEffect_;
     /// Reflection effect.
