@@ -71,7 +71,9 @@ void ToolManager::SerializeInBlock(Archive& archive)
             ScanFBX2glTF(true);
     }
 
+    SerializeOptionalValue(archive, "BlenderFound", blender_.found_);
     SerializeOptionalValue(archive, "BlenderPath", blender_.path_);
+    SerializeOptionalValue(archive, "FBX2glTFFound", fbx2gltf_.found_);
     SerializeOptionalValue(archive, "FBX2glTFPath", fbx2gltf_.path_);
 
     if (archive.IsInput())

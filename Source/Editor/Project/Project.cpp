@@ -778,6 +778,7 @@ void Project::Render()
     if (!assetManagerInitialized_ && !pluginManager_->IsReloadPending())
     {
         assetManagerInitialized_ = true;
+        toolManager_->Update();
         assetManager_->Initialize(flags_.Test(ProjectFlag::ReadOnly));
     }
 
