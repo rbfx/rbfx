@@ -108,7 +108,7 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
 
     // Create the simulator
     IPLSimulationSettings simulationSettings {
-        .flags = IPL_SIMULATIONFLAGS_DIRECT,
+        .flags = SimulationFlags(),
         .sceneType = IPL_SCENETYPE_DEFAULT
     };
     iplSimulatorCreate(phononContext_, &simulationSettings, &simulator_);
@@ -121,7 +121,7 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
     iplAudioBufferAllocate(phononContext_, channelCount_, audioSettings_.frameSize, &phononFrameBuffer_);
 
     // Create the buffer pool
-    audioBufferPool_ = new SteamAudioBufferPool(this);
+    audioBufferPool_ = ea::make_unique<SteamAudioBufferPool>(this);
 
     // Set up SDL
     SDL_AudioSpec spec {
@@ -173,19 +173,23 @@ void SteamAudio::Update(float timeStep)
         const auto lDir = listener_->GetNode()->GetWorldDirection();
         const auto lRight = listener_->GetNode()->GetWorldRight();
         const auto lPos = listener_->GetNode()->GetWorldPosition();
-        IPLSimulationSharedInputs sharedInputs {
-            .listener = {
-                .right = {lRight.x_, lRight.y_, lRight.z_},
-                .up = {lUp.x_, lUp.y_, lUp.z_},
-                .ahead = {lDir.x_, lDir.y_, lDir.z_},
-                .origin = {lPos.x_, lPos.y_, lPos.z_}
-            }
-        };
-        iplSimulatorSetSharedInputs(simulator_, IPL_SIMULATIONFLAGS_DIRECT, &sharedInputs);
+        sharedInputs_.listener = {
+            .right = {lRight.x_, lRight.y_, lRight.z_},
+            .up = {lUp.x_, lUp.y_, lUp.z_},
+            .ahead = {lDir.x_, lDir.y_, lDir.z_},
+            .origin = {lPos.x_, lPos.y_, lPos.z_}
+        },
+        iplSimulatorSetSharedInputs(simulator_, SimulationFlags(), &sharedInputs_);
 
-        // Run simulator
-        MutexLock Lock(simulatorMutex_);
-        iplSimulatorRunDirect(simulator_);
+        // Run simulators
+        {
+            MutexLock Lock(simulatorMutex_);
+            iplSimulatorRunDirect(simulator_);
+        }
+        if (simulateReflections_) {
+            MutexLock Lock(simulatorMutex_);
+            iplSimulatorRunReflections(simulator_);
+        }
     }
 }
 
@@ -210,11 +214,22 @@ void SteamAudio::SetListener(SteamSoundListener *listener)
     listener_ = listener;
 }
 
+void SteamAudio::SetReflectionSimulationActive(bool active)
+{
+    simulateReflections_ = active;
+    RefreshMode();
+}
+
+void SteamAudio::SetImpulseResponseDuration(float duration)
+{
+    sharedInputs_.duration = duration;
+}
+
 bool SteamAudio::GetSimulatorOutputs(IPLSource source, IPLSimulationOutputs& ouputs) noexcept
 {
     if (!simulatorMutex_.TryAcquire())
         return false;
-    iplSourceGetOutputs(source, IPL_SIMULATIONFLAGS_DIRECT, &ouputs);
+    iplSourceGetOutputs(source, SimulationFlags(), &ouputs);
     simulatorMutex_.Release();
     return true;
 }
@@ -294,6 +309,14 @@ void SteamAudio::MixOutput(float* dest)
     iplAudioBufferInterleave(phononContext_, &phononFrameBuffer_, dest);
 }
 
+IPLSimulationFlags SteamAudio::SimulationFlags() const
+{
+    int fres = IPL_SIMULATIONFLAGS_DIRECT;
+    if (simulateReflections_)
+        fres |= IPL_SIMULATIONFLAGS_REFLECTIONS;
+    return static_cast<IPLSimulationFlags>(fres);
+}
+
 void SteamAudio::HandleRenderUpdate(StringHash eventType, VariantMap &eventData)
 {
     using namespace RenderUpdate;
@@ -307,7 +330,7 @@ void SteamAudio::Release()
     MutexLock Lock(audioMutex_);
     iplSimulatorRelease(&simulator_);
     iplAudioBufferFree(phononContext_, &phononFrameBuffer_);
-    delete ea::exchange(audioBufferPool_, nullptr);
+    audioBufferPool_.reset();
     finalFrameBuffer_.clear();
     iplHRTFRelease(&hrtf_);
     iplContextRelease(&phononContext_);

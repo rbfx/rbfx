@@ -66,11 +66,20 @@ public:
     /// @property
     void SetListener(SteamSoundListener* listener);
 
+    /// Set reflection simulation active state.
+    void SetReflectionSimulationActive(bool active);
+    /// Returns reflection simulation active state.
+    bool ReflectionSimulationActive() const { return simulateReflections_; }
+    /// Set impulse response duration.
+    void SetImpulseResponseDuration(float duration = 2.0f);
+    /// Returns impulse response duration.
+    float ImpulseResponseDuration() const { return sharedInputs_.duration; }
+
     /// Return phonon context.
     IPLContext GetPhononContext() const { return phononContext_; }
-    /// Return HRTF
+    /// Return HRTF.
     IPLHRTF GetHRTF() const { return hrtf_; }
-    /// Return scene
+    /// Return scene.
     IPLScene GetScene() const { return scene_; }
     /// Return phonon audio settings.
     const IPLAudioSettings& GetAudioSettings() const { return audioSettings_; }
@@ -118,6 +127,9 @@ public:
     void MixOutput(float* dest);
 
 private:
+    /// Returns simulation flags.
+    IPLSimulationFlags SimulationFlags() const;
+
     /// Handle render update event.
     void HandleRenderUpdate(StringHash eventType, VariantMap& eventData);
     /// Stop sound output and release the sound buffer.
@@ -135,6 +147,10 @@ private:
     IPLAudioBuffer phononFrameBuffer_{};
     /// Phonon scene.
     IPLScene scene_{};
+    /// Simulation inputs.
+    IPLSimulationSharedInputs sharedInputs_{{}, 4096, 16, 2.0f, 1, 1.0f};
+    /// Is reflection simulation active?
+    bool simulateReflections_{};
     /// Is phonon scene dirty?
     bool sceneDirty_{};
     /// Is simulator dirty?
@@ -154,7 +170,7 @@ private:
     /// Sound listener.
     WeakPtr<SteamSoundListener> listener_;
     /// Audio buffer pool.
-    SteamAudioBufferPool *audioBufferPool_;
+    ea::unique_ptr<SteamAudioBufferPool> audioBufferPool_;
 };
 
 /// %Audio buffer pool.
