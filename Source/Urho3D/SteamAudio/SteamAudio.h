@@ -124,7 +124,7 @@ public:
     Mutex& GetMutex() { return audioMutex_; }
 
     /// Mix sound sources into the buffer.
-    void MixOutput(float* dest);
+    void MixOutput(float *dest) noexcept;
 
 private:
     /// Returns simulation flags.
