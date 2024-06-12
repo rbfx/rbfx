@@ -66,6 +66,9 @@ public:
     IPLAudioBuffer *GenerateAudioBuffer(float gain);
 
 private:
+    /// Returns simulation flags.
+    IPLSimulationFlags SimulationFlags() const;
+
     /// Handle render update event.
     void HandleRenderUpdate(StringHash eventType, VariantMap& eventData);
     /// Handle transform change.

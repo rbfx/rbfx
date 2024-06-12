@@ -88,7 +88,7 @@ public:
     /// Return simulator.
     IPLSimulator GetSimulator() { return simulator_; }
     /// Return simulator outputs.
-    bool GetSimulatorOutputs(IPLSource source, IPLSimulationOutputs& ouputs) noexcept;
+    bool GetSimulatorOutputs(IPLSource source, IPLSimulationOutputs& outputs) noexcept;
     /// Return channel count.
     /// @property
     unsigned GetChannelCount() const { return channelCount_; }

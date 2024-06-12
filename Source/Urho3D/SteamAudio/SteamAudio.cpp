@@ -79,7 +79,9 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
     // Create context
     IPLContextSettings contextSettings {
         .version = STEAMAUDIO_VERSION,
+        #ifndef NDEBUG
         .flags = IPL_CONTEXTFLAGS_VALIDATION
+        #endif
     };
     iplContextCreate(&contextSettings, &phononContext_);
 
@@ -115,7 +117,7 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
         .maxNumOcclusionSamples = 12,
         .maxNumRays = 16384,
         .numDiffuseSamples = 8, //TODO: No idea about this, find a good default value
-        .maxDuration = 8.0f,
+        .maxDuration = 4.0f,
         .maxOrder = 8,
         .maxNumSources = 16, //TODO: This should dynamically increase if limit is reached
         .numThreads = 3,
@@ -154,6 +156,9 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
     // Start playing audio
     audioMutex_.Release();
     Play();
+
+    // Update once
+    Update(0.0f);
 
     return true;
 }
@@ -194,7 +199,7 @@ void SteamAudio::Update(float timeStep)
         },
         iplSimulatorSetSharedInputs(simulator_, SimulationFlags(), &sharedInputs_);
 
-        // Run simulators
+        // Run simulations
         {
             MutexLock Lock(simulatorMutex_);
             iplSimulatorRunDirect(simulator_);
@@ -241,11 +246,12 @@ void SteamAudio::SetImpulseResponseDuration(float duration)
     sharedInputs_.duration = duration;
 }
 
-bool SteamAudio::GetSimulatorOutputs(IPLSource source, IPLSimulationOutputs& ouputs) noexcept
+bool SteamAudio::GetSimulatorOutputs(IPLSource source, IPLSimulationOutputs& outputs) noexcept
 {
     if (!simulatorMutex_.TryAcquire())
         return false;
-    iplSourceGetOutputs(source, SimulationFlags(), &ouputs);
+    outputs = IPLSimulationOutputs {};
+    iplSourceGetOutputs(source, SimulationFlags(), &outputs);
     simulatorMutex_.Release();
     return true;
 }

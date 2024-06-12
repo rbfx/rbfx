@@ -172,6 +172,27 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
     // Get simulator outputs
     audio_->GetSimulatorOutputs(source_, simulatorOutputs_);
 
+    // Apply reflection effect
+    if (reflection_) {
+        // Make sure input is mono
+        IPLAudioBuffer monoBuffer = *pool.GetCurrentBuffer();
+        const bool originalIsMono = monoBuffer.numChannels <= 1;
+        if (!originalIsMono) {
+            iplAudioBufferAllocate(phononContext, 1, audioSettings.frameSize, &monoBuffer);
+            iplAudioBufferDownmix(phononContext, pool.GetCurrentBuffer(), &monoBuffer);
+        }
+
+        // Actually apply effect
+        IPLReflectionEffectParams params = simulatorOutputs_.reflections;
+        params.irSize = audio_->ImpulseResponseDuration() * audioSettings.samplingRate;
+        params.numChannels = audio_->GetChannelCount();
+
+        iplReflectionEffectApply(reflectionEffect_, &params, &monoBuffer, pool.GetNextBuffer(), nullptr);
+        pool.SwitchToNextBuffer();
+        if (!originalIsMono)
+            iplAudioBufferFree(phononContext, &monoBuffer);
+    }
+
     // Apply binaural effect
     if (binaural_) {
         IPLBinauralEffectParams binauralEffectParams {
@@ -215,21 +236,19 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
         }
     }
 
-    // Apply reflection effect
-    if (reflection_) {
-        IPLReflectionEffectParams params = simulatorOutputs_.reflections;
-        params.irSize = audio_->ImpulseResponseDuration() * audioSettings.samplingRate;
-        params.numChannels = audio_->GetChannelCount();
-
-        iplReflectionEffectApply(reflectionEffect_, &params, pool.GetCurrentBuffer(), pool.GetNextBuffer(), nullptr);
-        pool.SwitchToNextBuffer();
-    }
-
     // Increment to next frame
     frame_++;
 
     // Don't process any further for now, just return that buffer as is...
     return pool.GetCurrentBuffer();
+}
+
+IPLSimulationFlags SteamSoundSource::SimulationFlags() const
+{
+    int fres = IPL_SIMULATIONFLAGS_DIRECT;
+    if (reflection_)
+        fres |= IPL_SIMULATIONFLAGS_REFLECTIONS;
+    return static_cast<IPLSimulationFlags>(fres);
 }
 
 void SteamSoundSource::HandleRenderUpdate(StringHash eventType, VariantMap &eventData)
@@ -252,12 +271,12 @@ bool SteamSoundSource::UsingDirectEffect() const
 
 void SteamSoundSource::UpdateEffects()
 {
-    const auto phononContext = audio_->GetPhononContext();
-    const auto& audioSettings = audio_->GetAudioSettings();
-
     // Make sure reflection simulation is enabled
     if (reflection_)
         audio_->SetReflectionSimulationActive(true);
+
+    const auto phononContext = audio_->GetPhononContext();
+    const auto& audioSettings = audio_->GetAudioSettings();
 
     // Destroy previous effects
     MutexLock Lock(effectsMutex_);
@@ -279,7 +298,7 @@ void SteamSoundSource::UpdateEffects()
     if (UsingDirectEffect()) {
         // Create source
         IPLSourceSettings sourceSettings {
-            .flags = IPL_SIMULATIONFLAGS_DIRECT
+            .flags = SimulationFlags()
         };
         iplSourceCreate(audio_->GetSimulator(), &sourceSettings, &source_);
         iplSourceAdd(source_, audio_->GetSimulator());
@@ -299,8 +318,7 @@ void SteamSoundSource::UpdateEffects()
         reflectionEffectSettings.irSize = audio_->ImpulseResponseDuration() * audioSettings.samplingRate; // (IR duration) * (sampling rate)
         reflectionEffectSettings.numChannels = audio_->GetChannelCount();
 
-        iplReflectionEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &reflectionEffectSettings, &reflectionEffect_);
-    }
+        iplReflectionEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &reflectionEffectSettings, &reflectionEffect_);    }
 
     // Start listening
     GetNode()->AddListener(this);
@@ -334,7 +352,7 @@ void SteamSoundSource::UpdateSimulationInputs()
     const auto lPos = GetNode()->GetWorldPosition();
 
     IPLSimulationInputs inputs {
-        .flags = IPL_SIMULATIONFLAGS_DIRECT,
+        .flags = SimulationFlags(),
         .directFlags = static_cast<IPLDirectSimulationFlags>(
             (distanceAttenuation_?IPL_DIRECTSIMULATIONFLAGS_DISTANCEATTENUATION:0) |
             (airAbsorption_?IPL_DIRECTSIMULATIONFLAGS_AIRABSORPTION:0) |
@@ -346,10 +364,18 @@ void SteamSoundSource::UpdateSimulationInputs()
             .ahead = {lDir.x_, lDir.y_, lDir.z_},
             .origin = {lPos.x_, lPos.y_, lPos.z_}
         },
+        .directivity = {
+            .dipoleWeight = 1.0f
+        },
         .occlusionType = IPL_OCCLUSIONTYPE_RAYCAST,
+        .occlusionRadius = 0.25f,
+        .numOcclusionSamples = 8,
+        .reverbScale = {1.0f, 1.0f, 1.0f},
+        .hybridReverbTransitionTime = 1.0f,
+        .hybridReverbOverlapPercent = 0.25f,
         .numTransmissionRays = 16
     };
-    iplSourceSetInputs(source_, IPL_SIMULATIONFLAGS_DIRECT, &inputs);
+    iplSourceSetInputs(source_, SimulationFlags(), &inputs);
 }
 
 }
