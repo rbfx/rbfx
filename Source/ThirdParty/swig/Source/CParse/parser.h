@@ -35,8 +35,8 @@
    especially those whose name start with YY_ or yy_.  They are
    private implementation details that can be changed or removed.  */
 
-#ifndef YY_YY_HOME_RK_SRC_GAMES_PROJECTS_RBFX_SOURCE_THIRDPARTY_SWIG_SOURCE_CPARSE_PARSER_H_INCLUDED
-# define YY_YY_HOME_RK_SRC_GAMES_PROJECTS_RBFX_SOURCE_THIRDPARTY_SWIG_SOURCE_CPARSE_PARSER_H_INCLUDED
+#ifndef YY_YY_HOME_NILS_PROJECTS_RBFX_SOURCE_THIRDPARTY_SWIG_SOURCE_CPARSE_PARSER_H_INCLUDED
+# define YY_YY_HOME_NILS_PROJECTS_RBFX_SOURCE_THIRDPARTY_SWIG_SOURCE_CPARSE_PARSER_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -347,7 +347,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 1542 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
+#line 1542 "/home/nils/projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.y"
 
   const char  *id;
   List  *bases;
@@ -395,7 +395,7 @@ union YYSTYPE
   int           intvalue;
   Node         *node;
 
-#line 399 "/home/rk/src/games/Projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.h"
+#line 399 "/home/nils/projects/rbfx/Source/ThirdParty/swig/Source/CParse/parser.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -410,4 +410,4 @@ extern YYSTYPE yylval;
 int yyparse (void);
 
 
-#endif /* !YY_YY_HOME_RK_SRC_GAMES_PROJECTS_RBFX_SOURCE_THIRDPARTY_SWIG_SOURCE_CPARSE_PARSER_H_INCLUDED  */
+#endif /* !YY_YY_HOME_NILS_PROJECTS_RBFX_SOURCE_THIRDPARTY_SWIG_SOURCE_CPARSE_PARSER_H_INCLUDED  */

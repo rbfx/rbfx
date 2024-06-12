@@ -92,6 +92,8 @@ private:
     IPLBinauralEffect binauralEffect_;
     /// Direct effect.
     IPLDirectEffect directEffect_;
+    /// Reflection effect.
+    IPLReflectionEffect reflectionEffect_;
     /// Sound source.
     IPLSource source_;
     /// Last simulator outputs.
@@ -114,6 +116,8 @@ private:
     bool occlusion_;
     /// Enable transmission.
     bool transmission_;
+    /// Enable reflection.
+    bool reflection_;
     /// Binaural spatial blend.
     float binauralSpatialBlend_;
     /// Bilinear interpolation for binaural effect.

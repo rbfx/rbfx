@@ -41,7 +41,7 @@ namespace Urho3D
 {
 
 SteamSoundSource::SteamSoundSource(Context* context) :
-    Component(context), sound_(nullptr), binauralEffect_(nullptr), directEffect_(nullptr), source_(nullptr), simulatorOutputs_({}), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), airAbsorption_(false), occlusion_(false), transmission_(false), binauralSpatialBlend_(1.0f), binauralBilinearInterpolation_(false), effectsLoaded_(false), effectsDirty_(false)
+    Component(context), sound_(nullptr), binauralEffect_(nullptr), directEffect_(nullptr), source_(nullptr), simulatorOutputs_({}), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), airAbsorption_(false), occlusion_(false), transmission_(false), reflection_(false), binauralSpatialBlend_(1.0f), binauralBilinearInterpolation_(false), effectsLoaded_(false), effectsDirty_(false)
 {
     audio_ = GetSubsystem<SteamAudio>();
 
@@ -77,6 +77,7 @@ void SteamSoundSource::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Air absorption", bool, airAbsorption_, MarkEffectsDirty, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Occlusion", bool, occlusion_, MarkEffectsDirty, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Transmission", bool, transmission_, MarkEffectsDirty, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Reflection", bool, reflection_, MarkEffectsDirty, false, AM_DEFAULT);
 }
 
 void SteamSoundSource::Play(Sound *sound)
@@ -115,8 +116,6 @@ ResourceRef SteamSoundSource::GetSoundAttr() const
 
 IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
 {
-    MutexLock Lock(effectsMutex_);
-
     // Return nothing if not playing
     if (!IsPlaying())
         return nullptr;
@@ -125,6 +124,9 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
     const auto phononContext = audio_->GetPhononContext();
     const auto hrtf = audio_->GetHRTF();
     const auto& audioSettings = audio_->GetAudioSettings();
+
+    // Get audio pool
+    MutexLock Lock(effectsMutex_);
     auto& pool = audio_->GetAudioBufferPool();
 
     // Calculate size of one full interleaved frame
@@ -167,6 +169,9 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
     // Deinterleave sound data into buffer
     iplAudioBufferDeinterleave(phononContext, rawInputBuffer.data(), pool.GetCurrentBuffer());
 
+    // Get simulator outputs
+    audio_->GetSimulatorOutputs(source_, simulatorOutputs_);
+
     // Apply binaural effect
     if (binaural_) {
         IPLBinauralEffectParams binauralEffectParams {
@@ -180,13 +185,13 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
         pool.SwitchToNextBuffer();
     }
 
-    // Apply direct all effects
+    // Apply all direct effects
     if (UsingDirectEffect()) {
         // Create direct effect properties
         IPLDirectEffectParams directEffectParams {};
 
         // Get direct effect flags
-        IPLDirectEffectFlags directEffectFlags{};
+        IPLDirectEffectFlags directEffectFlags {};
         if (distanceAttenuation_)
             directEffectFlags = static_cast<IPLDirectEffectFlags>(directEffectFlags | IPL_DIRECTEFFECTFLAGS_APPLYDISTANCEATTENUATION);
         if (airAbsorption_)
@@ -199,14 +204,25 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
         // Apply direct effect
         if (source_ && directEffectFlags) {
             // Get parameters
-            audio_->GetSimulatorOutputs(source_, simulatorOutputs_);
             directEffectParams = simulatorOutputs_.direct;
             directEffectParams.flags = directEffectFlags;
+            if (transmission_)
+                directEffectParams.transmissionType = IPL_TRANSMISSIONTYPE_FREQDEPENDENT;
 
             // Apply effect using them
             iplDirectEffectApply(directEffect_, &directEffectParams, pool.GetCurrentBuffer(), pool.GetNextBuffer());
             pool.SwitchToNextBuffer();
         }
+    }
+
+    // Apply reflection effect
+    if (reflection_) {
+        IPLReflectionEffectParams params = simulatorOutputs_.reflections;
+        params.irSize = audio_->ImpulseResponseDuration() * audioSettings.samplingRate;
+        params.numChannels = audio_->GetChannelCount();
+
+        iplReflectionEffectApply(reflectionEffect_, &params, pool.GetCurrentBuffer(), pool.GetNextBuffer(), nullptr);
+        pool.SwitchToNextBuffer();
     }
 
     // Increment to next frame
@@ -236,6 +252,14 @@ bool SteamSoundSource::UsingDirectEffect() const
 
 void SteamSoundSource::UpdateEffects()
 {
+    const auto phononContext = audio_->GetPhononContext();
+    const auto& audioSettings = audio_->GetAudioSettings();
+
+    // Make sure reflection simulation is enabled
+    if (reflection_)
+        audio_->SetReflectionSimulationActive(true);
+
+    // Destroy previous effects
     MutexLock Lock(effectsMutex_);
 
     UnlockedDestroyEffects();
@@ -243,9 +267,7 @@ void SteamSoundSource::UpdateEffects()
     if (!sound_)
         return;
 
-    const auto phononContext = audio_->GetPhononContext();
-    const auto& audioSettings = audio_->GetAudioSettings();
-
+    // Create new effects
     if (binaural_) {
         // Create binaural effect
         IPLBinauralEffectSettings binauralEffectSettings {
@@ -269,6 +291,15 @@ void SteamSoundSource::UpdateEffects()
             .numChannels = sound_->IsStereo()?2:1
         };
         iplDirectEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &directEffectSettings, &directEffect_);
+    }
+
+    if (reflection_) {
+        IPLReflectionEffectSettings reflectionEffectSettings{};
+        reflectionEffectSettings.type = IPL_REFLECTIONEFFECTTYPE_CONVOLUTION;
+        reflectionEffectSettings.irSize = audio_->ImpulseResponseDuration() * audioSettings.samplingRate; // (IR duration) * (sampling rate)
+        reflectionEffectSettings.numChannels = audio_->GetChannelCount();
+
+        iplReflectionEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &reflectionEffectSettings, &reflectionEffect_);
     }
 
     // Start listening

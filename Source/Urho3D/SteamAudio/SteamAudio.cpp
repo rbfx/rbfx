@@ -78,7 +78,8 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
 
     // Create context
     IPLContextSettings contextSettings {
-        .version = STEAMAUDIO_VERSION
+        .version = STEAMAUDIO_VERSION,
+        .flags = IPL_CONTEXTFLAGS_VALIDATION
     };
     iplContextCreate(&contextSettings, &phononContext_);
 
@@ -109,7 +110,18 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
     // Create the simulator
     IPLSimulationSettings simulationSettings {
         .flags = SimulationFlags(),
-        .sceneType = IPL_SCENETYPE_DEFAULT
+        .sceneType = IPL_SCENETYPE_DEFAULT,
+        .reflectionType = IPL_REFLECTIONEFFECTTYPE_CONVOLUTION,
+        .maxNumOcclusionSamples = 12,
+        .maxNumRays = 16384,
+        .numDiffuseSamples = 8, //TODO: No idea about this, find a good default value
+        .maxDuration = 8.0f,
+        .maxOrder = 8,
+        .maxNumSources = 16, //TODO: This should dynamically increase if limit is reached
+        .numThreads = 3,
+        .numVisSamples = 8, //TODO: No idea about this, find a good default value
+        .samplingRate = audioSettings_.samplingRate,
+        .frameSize = audioSettings_.frameSize
     };
     iplSimulatorCreate(phononContext_, &simulationSettings, &simulator_);
     iplSimulatorSetScene(simulator_, scene_);
@@ -140,6 +152,7 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
     }
 
     // Start playing audio
+    audioMutex_.Release();
     Play();
 
     return true;
@@ -216,6 +229,9 @@ void SteamAudio::SetListener(SteamSoundListener *listener)
 
 void SteamAudio::SetReflectionSimulationActive(bool active)
 {
+    if (simulateReflections_ == active)
+        return;
+
     simulateReflections_ = active;
     RefreshMode();
 }
@@ -273,7 +289,7 @@ void SteamAudio::RemoveSoundSource(SteamSoundSource *soundSource)
     }
 }
 
-void SteamAudio::MixOutput(float* dest)
+void SteamAudio::MixOutput(float *dest)
 {
     MutexLock Lock(audioMutex_);
 
@@ -326,14 +342,14 @@ void SteamAudio::HandleRenderUpdate(StringHash eventType, VariantMap &eventData)
 
 void SteamAudio::Release()
 {
-    SDL_CloseAudio();
-    MutexLock Lock(audioMutex_);
     iplSimulatorRelease(&simulator_);
     iplAudioBufferFree(phononContext_, &phononFrameBuffer_);
-    audioBufferPool_.reset();
-    finalFrameBuffer_.clear();
     iplHRTFRelease(&hrtf_);
     iplContextRelease(&phononContext_);
+    audioBufferPool_.reset();
+    finalFrameBuffer_.clear();
+    SDL_CloseAudio();
+    audioMutex_.Acquire();
 }
 
 void SDLSteamAudioCallback(void* userdata, Uint8 *stream, int)
