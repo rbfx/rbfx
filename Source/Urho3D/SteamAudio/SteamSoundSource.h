@@ -121,6 +121,10 @@ private:
     bool transmission_;
     /// Enable reflection.
     bool reflection_;
+    /// Ambisonics order for reflection.
+    unsigned reflectionAmbisonicsOrder_;
+    /// Channels for reflection
+    unsigned reflectionChannels_;
     /// Binaural spatial blend.
     float binauralSpatialBlend_;
     /// Bilinear interpolation for binaural effect.

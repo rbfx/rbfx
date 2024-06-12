@@ -111,7 +111,7 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
 
     // Create the simulator
     IPLSimulationSettings simulationSettings {
-        .flags = SimulationFlags(),
+        .flags = static_cast<IPLSimulationFlags>(IPL_SIMULATIONFLAGS_DIRECT | IPL_SIMULATIONFLAGS_REFLECTIONS),
         .sceneType = IPL_SCENETYPE_DEFAULT,
         .reflectionType = IPL_REFLECTIONEFFECTTYPE_CONVOLUTION,
         .maxNumOcclusionSamples = 12,
@@ -204,7 +204,7 @@ void SteamAudio::Update(float timeStep)
             MutexLock Lock(simulatorMutex_);
             iplSimulatorRunDirect(simulator_);
         }
-        if (simulateReflections_) {
+        {
             MutexLock Lock(simulatorMutex_);
             iplSimulatorRunReflections(simulator_);
         }
@@ -234,11 +234,7 @@ void SteamAudio::SetListener(SteamSoundListener *listener)
 
 void SteamAudio::SetReflectionSimulationActive(bool active)
 {
-    if (simulateReflections_ == active)
-        return;
-
     simulateReflections_ = active;
-    RefreshMode();
 }
 
 void SteamAudio::SetImpulseResponseDuration(float duration)
@@ -295,9 +291,10 @@ void SteamAudio::RemoveSoundSource(SteamSoundSource *soundSource)
     }
 }
 
-void SteamAudio::MixOutput(float *dest)
+void SteamAudio::MixOutput(float *dest) noexcept
 {
-    MutexLock Lock(audioMutex_);
+    if (!audioMutex_.TryAcquire())
+        return;
 
     // Stop if no listener
     if (!GetListener()) {
@@ -329,6 +326,8 @@ void SteamAudio::MixOutput(float *dest)
 
     // Interleave into our buffer
     iplAudioBufferInterleave(phononContext_, &phononFrameBuffer_, dest);
+
+    audioMutex_.Release();
 }
 
 IPLSimulationFlags SteamAudio::SimulationFlags() const

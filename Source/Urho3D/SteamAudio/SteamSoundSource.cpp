@@ -41,7 +41,7 @@ namespace Urho3D
 {
 
 SteamSoundSource::SteamSoundSource(Context* context) :
-    Component(context), sound_(nullptr), binauralEffect_(nullptr), directEffect_(nullptr), source_(nullptr), simulatorOutputs_({}), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), airAbsorption_(false), occlusion_(false), transmission_(false), reflection_(false), binauralSpatialBlend_(1.0f), binauralBilinearInterpolation_(false), effectsLoaded_(false), effectsDirty_(false)
+    Component(context), sound_(nullptr), binauralEffect_(nullptr), directEffect_(nullptr), source_(nullptr), simulatorOutputs_({}), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), airAbsorption_(false), occlusion_(false), transmission_(false), reflection_(false), reflectionAmbisonicsOrder_(1), reflectionChannels_(4), binauralSpatialBlend_(1.0f), binauralBilinearInterpolation_(false), effectsLoaded_(false), effectsDirty_(false)
 {
     audio_ = GetSubsystem<SteamAudio>();
 
@@ -78,6 +78,8 @@ void SteamSoundSource::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Occlusion", bool, occlusion_, MarkEffectsDirty, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Transmission", bool, transmission_, MarkEffectsDirty, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Reflection", bool, reflection_, MarkEffectsDirty, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Reflection Ambisonics Order", unsigned, reflectionAmbisonicsOrder_, MarkEffectsDirty, 1, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Reflection Channels (must match order)", unsigned, reflectionChannels_, MarkEffectsDirty, 4, AM_DEFAULT);
 }
 
 void SteamSoundSource::Play(Sound *sound)
@@ -175,20 +177,25 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
     // Apply reflection effect
     if (reflection_) {
         // Make sure input is mono
-        IPLAudioBuffer monoBuffer = *pool.GetCurrentBuffer();
-        const bool originalIsMono = monoBuffer.numChannels <= 1;
+        IPLAudioBuffer monoBuffer;
+        const bool originalIsMono = pool.GetCurrentBuffer()->numChannels <= 1;
         if (!originalIsMono) {
             iplAudioBufferAllocate(phononContext, 1, audioSettings.frameSize, &monoBuffer);
             iplAudioBufferDownmix(phononContext, pool.GetCurrentBuffer(), &monoBuffer);
+        } else {
+            monoBuffer = *pool.GetCurrentBuffer();
         }
+
+        // Make sure output is ambisonics
+        IPLAudioBuffer ambiBuffer;
+        iplAudioBufferAllocate(phononContext, reflectionChannels_, audioSettings.frameSize, &ambiBuffer);
 
         // Actually apply effect
         IPLReflectionEffectParams params = simulatorOutputs_.reflections;
         params.irSize = audio_->ImpulseResponseDuration() * audioSettings.samplingRate;
-        params.numChannels = audio_->GetChannelCount();
+        params.numChannels = reflectionChannels_;
 
-        iplReflectionEffectApply(reflectionEffect_, &params, &monoBuffer, pool.GetNextBuffer(), nullptr);
-        pool.SwitchToNextBuffer();
+        iplReflectionEffectApply(reflectionEffect_, &params, &monoBuffer, &ambiBuffer, nullptr);
         if (!originalIsMono)
             iplAudioBufferFree(phononContext, &monoBuffer);
     }
@@ -273,7 +280,7 @@ void SteamSoundSource::UpdateEffects()
 {
     // Make sure reflection simulation is enabled
     if (reflection_)
-        audio_->SetReflectionSimulationActive(true);
+        audio_->SetReflectionSimulationActive(true); //TODO: Use some kind of user counter instead
 
     const auto phononContext = audio_->GetPhononContext();
     const auto& audioSettings = audio_->GetAudioSettings();
@@ -316,7 +323,7 @@ void SteamSoundSource::UpdateEffects()
         IPLReflectionEffectSettings reflectionEffectSettings{};
         reflectionEffectSettings.type = IPL_REFLECTIONEFFECTTYPE_CONVOLUTION;
         reflectionEffectSettings.irSize = audio_->ImpulseResponseDuration() * audioSettings.samplingRate; // (IR duration) * (sampling rate)
-        reflectionEffectSettings.numChannels = audio_->GetChannelCount();
+        reflectionEffectSettings.numChannels = reflectionChannels_;
 
         iplReflectionEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &reflectionEffectSettings, &reflectionEffect_);    }
 
