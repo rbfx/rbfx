@@ -41,7 +41,7 @@ namespace Urho3D
 {
 
 SteamSoundSource::SteamSoundSource(Context* context) :
-    Component(context), sound_(nullptr), binauralEffect_(nullptr), directEffect_(nullptr), source_(nullptr), simulatorOutputs_({}), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), airAbsorption_(false), occlusion_(false), transmission_(false), reflection_(false), reflectionAmbisonicsOrder_(1), reflectionChannels_(4), binauralSpatialBlend_(1.0f), binauralBilinearInterpolation_(false), effectsLoaded_(false), effectsDirty_(false)
+    Component(context), sound_(nullptr), binauralEffect_(nullptr), directEffect_(nullptr), source_(nullptr), simulatorOutputs_({}), gain_(1.0f), paused_(false), loop_(false), binaural_(false), distanceAttenuation_(false), airAbsorption_(false), occlusion_(false), transmission_(false), reflection_(false), reflectionAmbisonicsOrder_(1), binauralSpatialBlend_(1.0f), binauralBilinearInterpolation_(false), effectsLoaded_(false), effectsDirty_(false)
 {
     audio_ = GetSubsystem<SteamAudio>();
 
@@ -79,7 +79,6 @@ void SteamSoundSource::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("Transmission", bool, transmission_, MarkEffectsDirty, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Reflection", bool, reflection_, MarkEffectsDirty, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Reflection Ambisonics Order", unsigned, reflectionAmbisonicsOrder_, MarkEffectsDirty, 1, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Reflection Channels (must match order)", unsigned, reflectionChannels_, MarkEffectsDirty, 4, AM_DEFAULT);
 }
 
 void SteamSoundSource::Play(Sound *sound)
@@ -180,6 +179,8 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
 
     // Apply reflection effect
     if (reflection_) {
+        const unsigned ambisonicsChannels = audio_->ChannelCount(reflectionAmbisonicsOrder_);
+
         // Make sure input is mono
         IPLAudioBuffer monoBuffer;
         const bool originalIsMono = pool.GetCurrentBuffer()->numChannels <= 1;
@@ -192,12 +193,12 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
 
         // Make sure output is ambisonics
         IPLAudioBuffer ambiBuffer;
-        iplAudioBufferAllocate(phononContext, reflectionChannels_, audioSettings.frameSize, &ambiBuffer);
+        iplAudioBufferAllocate(phononContext, ambisonicsChannels, audioSettings.frameSize, &ambiBuffer);
 
         // Actually apply effect
         IPLReflectionEffectParams reflectionEffectParams = simulatorOutputs_.reflections;
         reflectionEffectParams.irSize = audio_->ImpulseResponseDuration() * audioSettings.samplingRate;
-        reflectionEffectParams.numChannels = reflectionChannels_;
+        reflectionEffectParams.numChannels = ambisonicsChannels;
 
         iplReflectionEffectApply(reflectionEffect_, &reflectionEffectParams, &monoBuffer, &ambiBuffer, nullptr);
         if (!originalIsMono)
@@ -342,7 +343,7 @@ void SteamSoundSource::UpdateEffects()
         IPLReflectionEffectSettings reflectionEffectSettings {};
         reflectionEffectSettings.type = IPL_REFLECTIONEFFECTTYPE_CONVOLUTION;
         reflectionEffectSettings.irSize = audio_->ImpulseResponseDuration() * audioSettings.samplingRate; // (IR duration) * (sampling rate)
-        reflectionEffectSettings.numChannels = reflectionChannels_;
+        reflectionEffectSettings.numChannels = audio_->ChannelCount(reflectionAmbisonicsOrder_);
 
         iplReflectionEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &reflectionEffectSettings, &reflectionEffect_);
 

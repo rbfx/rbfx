@@ -126,6 +126,9 @@ public:
     /// Mix sound sources into the buffer.
     void MixOutput(float *dest) noexcept;
 
+    /// Returns channel count of ambisonics order up to 6
+    static unsigned ChannelCount(unsigned order);
+
 private:
     /// Returns simulation flags.
     IPLSimulationFlags SimulationFlags() const;
