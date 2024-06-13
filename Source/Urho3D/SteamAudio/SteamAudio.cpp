@@ -331,6 +331,19 @@ void SteamAudio::MixOutput(float *dest) noexcept
     audioMutex_.Release();
 }
 
+unsigned int SteamAudio::ChannelCount(unsigned int order)
+{
+    switch (order) {
+    case 1: return 4;
+    case 2: return 9;
+    case 3: return 16;
+    case 4: return 25;
+    case 5: return 36;
+    case 6: return 49;
+    default: return 0;
+    }
+}
+
 IPLSimulationFlags SteamAudio::SimulationFlags() const
 {
     int fres = IPL_SIMULATIONFLAGS_DIRECT;
