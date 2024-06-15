@@ -512,16 +512,14 @@ void SceneReplication::HandlePostUpdate(StringHash eventType, VariantMap& eventD
 
     if (auto* connectionToServer = network->GetServerConnection())
     {
-        SampleConnection(connectionToServer, packetsIn, packetsOut, bytesIn, bytesOut);
         connectionCount = 1;
+        SampleConnection(connectionToServer, packetsIn, packetsOut, bytesIn, bytesOut);
     }
     else
     {
+        connectionCount = network->GetClientConnections().size();
         for (const auto& connection : network->GetClientConnections())
-        {
-            ++connectionCount;
             SampleConnection(connection, packetsIn, packetsOut, bytesIn, bytesOut);
-        }
     }
 
     UpdateOverlay(packetsIn, packetsOut, bytesIn, bytesOut, connectionCount);
