@@ -1,0 +1,227 @@
+{
+	"passes": [
+		{
+			"type": "AutoExposurePass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: Exposure"
+					}
+				]
+			}
+		},
+		{
+			"type": "AmbientOcclusionPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: SSAO"
+					},
+					{
+						"name": "Is Enabled By Default",
+						"type": "Bool",
+						"value": false
+					}
+				]
+			}
+		},
+		{
+			"type": "BloomPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: Bloom"
+					},
+					{
+						"name": "Is Enabled By Default",
+						"type": "Bool",
+						"value": false
+					}
+				]
+			}
+		},
+		{
+			"type": "OutlineRenderPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: Draw Outlines"
+					}
+				]
+			}
+		},
+		{
+			"type": "ToneMappingPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: Tone Mapping"
+					}
+				]
+			}
+		},
+		{
+			"type": "FullScreenShaderPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: Adjust Color"
+					},
+					{
+						"name": "Comment",
+						"type": "String",
+						"value": "Adjust output color RGB and HSV."
+					},
+					{
+						"name": "Shader Name",
+						"type": "String",
+						"value": "v2/P_HSV"
+					},
+					{
+						"name": "Read+Write Color Output",
+						"type": "Bool",
+						"value": true
+					},
+					{
+						"name": "Disable On Default Parameters",
+						"type": "Bool",
+						"value": true
+					},
+					{
+						"name": "Parameters Prefix",
+						"type": "String",
+						"value": "Adjust Color: "
+					},
+					{
+						"name": "Parameters",
+						"type": "StringVariantMap",
+						"value": [
+							{
+								"key": "ColorFilter",
+								"type": "Vector4",
+								"value": "1 1 1 1"
+							},
+							{
+								"key": "ColorOffset",
+								"type": "Vector4",
+								"value": "0 0 0 0"
+							},
+							{
+								"key": "HSVParams",
+								"type": "Vector4",
+								"value": "1 1 1 1"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"type": "FullScreenShaderPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: FXAA v2"
+					},
+					{
+						"name": "Is Enabled By Default",
+						"type": "Bool",
+						"value": false
+					},
+					{
+						"name": "Comment",
+						"type": "String",
+						"value": "FXAA v2"
+					},
+					{
+						"name": "Shader Name",
+						"type": "String",
+						"value": "v2/P_FXAA2"
+					},
+					{
+						"name": "Read+Write Color Output",
+						"type": "Bool",
+						"value": true
+					},
+					{
+						"name": "Bilinear Color Sampler",
+						"type": "Bool",
+						"value": true
+					},
+					{
+						"name": "Parameters Prefix",
+						"type": "String",
+						"value": "FXAA: "
+					},
+					{
+						"name": "Parameters",
+						"type": "StringVariantMap",
+						"value": [
+							{
+								"key": "FXAAParams",
+								"type": "Vector3",
+								"value": "0.4 0.5 0.75"
+							}
+						]
+					}
+				]
+			}
+		},
+		{
+			"type": "FullScreenShaderPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: FXAA v3"
+					},
+					{
+						"name": "Is Enabled By Default",
+						"type": "Bool",
+						"value": false
+					},
+					{
+						"name": "Comment",
+						"type": "String",
+						"value": "FXAA v3"
+					},
+					{
+						"name": "Shader Name",
+						"type": "String",
+						"value": "v2/P_FXAA3"
+					},
+					{
+						"name": "Shader Defines",
+						"type": "String",
+						"value": "FXAA_QUALITY_PRESET=12"
+					},
+					{
+						"name": "Read+Write Color Output",
+						"type": "Bool",
+						"value": true
+					},
+					{
+						"name": "Bilinear Color Sampler",
+						"type": "Bool",
+						"value": true
+					}
+				]
+			}
+		}
+	]
+}

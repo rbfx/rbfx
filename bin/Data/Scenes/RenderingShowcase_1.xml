@@ -3,25 +3,75 @@
 	<attribute name="Name" value="" />
 	<attribute name="Time Scale" value="1.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Replicated Node ID" value="398" />
-	<attribute name="Next Replicated Component ID" value="380" />
-	<attribute name="Next Local Node ID" value="16777268" />
-	<attribute name="Next Local Component ID" value="16777298" />
+	<attribute name="Next Node ID" value="385" />
+	<attribute name="Next Component ID" value="16777295" />
 	<attribute name="Variables" />
-	<attribute name="Variable Names" value="" />
+	<attribute name="Update Events">
+		<string value="@SceneForcedUpdate" />
+		<string value="SceneUpdate" />
+		<string value="AttributeAnimationUpdate" />
+		<string value="SceneSubsystemUpdate" />
+		<string value="ScenePostUpdate" />
+		<string value="@SceneForcedPostUpdate" />
+	</attribute>
 	<attribute name="Lightmaps" value="Texture2D" />
 	<component type="Octree" id="1" />
 	<component type="RenderPipeline" id="372">
+		<attribute name="Render Passes">
+			<variant type="String" value="Postprocess: Exposure" />
+			<variant type="Bool" value="true" />
+			<variant type="String" value="Postprocess: SSAO" />
+			<variant type="Bool" value="true" />
+			<variant type="String" value="Postprocess: Bloom" />
+			<variant type="Bool" value="true" />
+			<variant type="String" value="Postprocess: Draw Outlines" />
+			<variant type="Bool" value="true" />
+			<variant type="String" value="Postprocess: Tone Mapping" />
+			<variant type="Bool" value="true" />
+			<variant type="String" value="Postprocess: Adjust Color" />
+			<variant type="Bool" value="true" />
+			<variant type="String" value="Postprocess: FXAA v2" />
+			<variant type="Bool" value="false" />
+			<variant type="String" value="Postprocess: FXAA v3" />
+			<variant type="Bool" value="true" />
+		</attribute>
+		<attribute name="Render Path Parameters">
+			<variant name="SSAO: Near Distance" type="Float" value="0.500000" />
+			<variant name="Exposure: Adapt Rate" type="Float" value="0.600000" />
+			<variant name="Exposure: Min" type="Float" value="1.000000" />
+			<variant name="Bloom: Max Brightness" type="Float" value="1.000000" />
+			<variant name="SSAO: Normal Threshold" type="Float" value="0.200000" />
+			<variant name="SSAO: Near Radius" type="Float" value="0.050000" />
+			<variant name="SSAO: Strength" type="Float" value="1.000000" />
+			<variant name="Adjust Color: HSVParams" type="Vector4" value="1 1 1 1" />
+			<variant name="SSAO: End Fade Distance" type="Float" value="200.000000" />
+			<variant name="Exposure: Automatic" type="Bool" value="false" />
+			<variant name="Tone Mapping: Mode@" type="StringVector">
+				<string value="None" />
+				<string value="Reinhard" />
+				<string value="ReinhardWhite" />
+				<string value="Uncharted2" />
+			</variant>
+			<variant name="SSAO: Begin Fade Distance" type="Float" value="100.000000" />
+			<variant name="Adjust Color: ColorOffset" type="Vector4" value="0 0 0 0" />
+			<variant name="Bloom: Base Intensity" type="Float" value="1.000000" />
+			<variant name="Bloom: Iteration Intensity Factor" type="Float" value="1.000000" />
+			<variant name="Bloom: Min Brightness" type="Float" value="0.800000" />
+			<variant name="SSAO: Depth Threshold" type="Float" value="0.100000" />
+			<variant name="SSAO: Far Distance" type="Float" value="100.000000" />
+			<variant name="SSAO: Downscale" type="Int" value="0" />
+			<variant name="Exposure: Max" type="Float" value="3.000000" />
+			<variant name="Adjust Color: ColorFilter" type="Vector4" value="1 1 1 1" />
+			<variant name="SSAO: Exponent" type="Float" value="1.500000" />
+			<variant name="FXAA: FXAAParams" type="Vector3" value="0.4 0.5 0.75" />
+			<variant name="SSAO: Far Radius" type="Float" value="2.000000" />
+			<variant name="Bloom: Num Iterations" type="Int" value="5" />
+			<variant name="Tone Mapping: Mode" type="Int" value="0" />
+		</attribute>
 		<attribute name="Color Space" value="HDR Linear" />
 		<attribute name="Specular Quality" value="Antialiased" />
 		<attribute name="Readable Depth" value="true" />
 		<attribute name="PCF Kernel Size" value="5" />
-		<attribute name="SSAO" value="true" />
-		<attribute name="SSAO Strength" value="1.000000" />
-		<attribute name="SSAO Near Distance" value="0.500000" />
-		<attribute name="SSAO Far Radius" value="2.000000" />
-		<attribute name="Bloom" value="true" />
-		<attribute name="Post Process Antialiasing" value="FXAA3" />
 	</component>
 	<component type="ReflectionProbeManager" id="16777294" />
 	<node id="2">

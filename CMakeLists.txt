@@ -261,6 +261,11 @@ elseif (MSVC)
     ucm_replace_flag("/W[0-3]" "/W1" REGEX)
 endif ()
 
+# Temporary: Workaround for MSVC crash.
+if (MSVC)
+    add_compile_definitions(_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+endif ()
+
 if (DESKTOP)
     # Mobile/web toolchains manage runtime libraries themselves, we should not interfere.
     if (URHO3D_STATIC_RUNTIME)

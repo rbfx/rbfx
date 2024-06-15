@@ -28,7 +28,7 @@
 #include <Urho3D/Network/HttpRequest.h>
 
 #ifdef URHO3D_PLATFORM_WEB
-#include <emscripten.h>
+#include <emscripten/fetch.h>
 #else
 #include <Civetweb/civetweb.h>
 #endif
@@ -41,41 +41,138 @@ namespace Urho3D
 static const unsigned ERROR_BUFFER_SIZE = 256;
 static const unsigned READ_BUFFER_SIZE = 1024;
 
-HttpRequest::HttpRequest(const ea::string& url, const ea::string& verb, const ea::vector<ea::string>& headers, const ea::string& postData) :
-    url_(url.trimmed()),
-    verb_(!verb.empty() ? verb : "GET"),
-    headers_(headers),
-    postData_(postData)
+#if defined(URHO3D_PLATFORM_WEB)
+void LogFetch(const ea::string& ctx, emscripten_fetch_t* fetch)
+{
+    URHO3D_LOGDEBUG(
+        "{} "
+        "readyState={} "
+        "status={} "
+        "statusText={} "
+        "totalBytes={} "
+        "dataOffset={} "
+        "numBytes={} "
+        "data={} "
+        "url={} "
+        "userData={} "
+        "id={}",
+        ctx,
+        fetch->readyState,
+        fetch->status,
+        &fetch->statusText[0],
+        fetch->totalBytes,
+        fetch->dataOffset,
+        fetch->numBytes,
+        fetch->data ? "true" : "false",
+        fetch->url ? fetch->url : "",
+        fetch->userData ? "true" : "false",
+        fetch->id);
+}
+#endif
+
+HttpRequest::HttpRequest(
+    const ea::string& url, const ea::string& verb, const ea::vector<ea::string>& headers, const ea::string& postData)
+    : url_(url.trimmed())
+    , verb_(!verb.empty() ? verb : "GET")
+    , headers_(headers)
+    , postData_(postData)
 {
     // Size of response is unknown, so just set maximum value. The position will also be changed
     // to maximum value once the request is done, signaling end for Deserializer::IsEof().
     size_ = M_MAX_UNSIGNED;
-    URHO3D_LOGDEBUG("HTTP {} request to URL {}", verb_, url_.ToString());
-
+    URHO3D_LOGDEBUG("HTTP {} request to URL {} {} {}", verb_, url_.ToString(), ea::string::joined(headers, ","), postData);
 #if defined(URHO3D_PLATFORM_WEB)
-    if (!headers.empty())
-        Log::GetLogger("HttpRequest").Warning("Custom headers in Web builds are not supported and were ignored!");
+    emscripten_fetch_attr_t attr;
+    emscripten_fetch_attr_init(&attr);
+    strcpy(attr.requestMethod, verb_.c_str());
+    attr.requestData = postData_.c_str();
+    attr.requestDataSize = postData_.size();
+    attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
+    attr.userData = this;
 
-    requestHandle_ = emscripten_async_wget2_data(url_.ToString().c_str(), verb_.c_str(), postData.c_str(), this, 1,
-        [](unsigned handle, void* arg, void* buf, unsigned len)         // onload
+    attr.onsuccess = [](emscripten_fetch_t * fetch)
+    {
+        LogFetch("HTTP OnFetchSucceeded", fetch);
+
+        HttpRequest* request = static_cast<HttpRequest*>(fetch->userData);
+        MutexLock lock(request->mutex_);
+        request->state_ = HTTP_CLOSED;
+        request->readBuffer_.Resize(fetch->numBytes - 1);
+        request->readBuffer_.SetData(fetch->data, fetch->numBytes - 1);
+        request->requestHandle_ = nullptr;
+
+        emscripten_fetch_close(fetch);
+    };
+
+    attr.onerror = [](emscripten_fetch_t* fetch)
+    {
+        LogFetch("HTTP OnFetchError", fetch);
+
+        HttpRequest* request = static_cast<HttpRequest*>(fetch->userData);
+        MutexLock lock(request->mutex_);
+        request->state_ = HTTP_ERROR;
+        request->error_ = fetch->statusText;
+        request->requestHandle_ = nullptr;
+
+        emscripten_fetch_close(fetch);
+    };
+
+    attr.onprogress = [](emscripten_fetch_t * fetch)
+    {
+        LogFetch("HTTP OnFetchProgress", fetch);
+    };
+
+    attr.onreadystatechange = [](emscripten_fetch_t * fetch)
+    {
+        LogFetch("HTTP OnFetchReadyStateChange", fetch);
+    };
+
+    if (!headers_.empty())
+    {
+        for (const auto& header : headers_)
         {
-            HttpRequest* request = static_cast<HttpRequest*>(arg);
-            MutexLock lock(request->mutex_);
-            request->state_ = HTTP_CLOSED;
-            request->readBuffer_.Resize(len);
-            request->readBuffer_.SetData(buf, len);
-            request->requestHandle_ = 0;
-        }, [](unsigned handle, void* arg, int code, const char* msg)    // onerror
+            const auto pair = header.trimmed().split(':');
+
+            const auto expectedSize = 2;
+            if (pair.size() != expectedSize)
+            {
+                URHO3D_LOGWARNING("HTTP ignoring header '{}' with unexpected format, expected format 'key: value'", header);
+                continue;
+            }
+
+            const auto keyIndex = 0;
+            const auto& key = pair[keyIndex].trimmed();
+            if (key.empty())
+            {
+                URHO3D_LOGWARNING("HTTP ignoring header '{}' with empty key", header);
+                continue;
+            }
+
+            const auto valueIndex = 1;
+            const auto& value = pair[valueIndex].trimmed();
+            if (value.empty())
+            {
+                URHO3D_LOGWARNING("HTTP ignoring header '{}' with empty value", header);
+                continue;
+            }
+
+            requestHeadersStr_.push_back(key);
+            requestHeadersStr_.push_back(value);
+        }
+
+        if (!requestHeadersStr_.empty())
         {
-            HttpRequest* request = static_cast<HttpRequest*>(arg);
-            MutexLock lock(request->mutex_);
-            request->state_ = HTTP_ERROR;
-            request->error_ = msg;
-            request->requestHandle_ = 0;
-        }, [](unsigned handle, void* arg, int loaded, int total)        // onprogress
-        {
-            //HttpRequest* request = static_cast<HttpRequest*>(arg);
-        });
+            for (const auto& rh : requestHeadersStr_)
+            {
+                requestHeaders_.push_back(rh.c_str());
+            }
+            requestHeaders_.push_back(nullptr);
+            attr.requestHeaders = requestHeaders_.data();
+        }
+    }
+
+    emscripten_fetch(&attr, url.c_str());
+
     if (requestHandle_)
         state_ = HTTP_OPEN;
 #elif defined(URHO3D_THREADING)
@@ -97,8 +194,8 @@ HttpRequest::~HttpRequest()
 #ifdef URHO3D_PLATFORM_WEB
     if (requestHandle_)
     {
-        emscripten_async_wget2_abort(requestHandle_);
-        requestHandle_ = 0;
+        emscripten_fetch_close((emscripten_fetch_t*)requestHandle_);
+        requestHandle_ = nullptr;
     }
 #endif
     Stop();
