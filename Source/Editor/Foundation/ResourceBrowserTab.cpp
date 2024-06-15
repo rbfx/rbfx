@@ -1370,6 +1370,15 @@ void ResourceBrowserTab::OpenEntryInEditor(const FileSystemEntry& entry)
     auto project = GetProject();
 
     const auto request = MakeShared<OpenResourceRequest>(context_, entry.resourceName_);
+    request->QueueProcessCallback([=]()
+    {
+        if (entry.isFile_)
+        {
+            auto fs = GetSubsystem<FileSystem>();
+            fs->SystemOpen(entry.absolutePath_);
+        }
+    }, M_MIN_INT);
+
     project->ProcessRequest(request, this);
 }
 
