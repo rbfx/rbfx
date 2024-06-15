@@ -192,7 +192,6 @@ private:
 
     void RefreshContents();
     void RevealInExplorer(const ea::string& path);
-    void Open(const ea::string& path);
     void RenameEntry(const FileSystemEntry& entry, const ea::string& newName);
     void DeleteEntry(const FileSystemEntry& entry);
     void CleanupResourceCache(const ea::string& resourceName);
