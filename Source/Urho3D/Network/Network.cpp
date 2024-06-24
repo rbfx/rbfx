@@ -67,6 +67,11 @@ Network::Network(Context* context)
     SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(Network, HandleBeginFrame));
     SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(Network, HandleRenderUpdate));
     SubscribeToEvent(E_APPLICATIONSTOPPED, URHO3D_HANDLER(Network, HandleApplicationExit));
+
+    transportDataChannelServerCreateFunc_ = [](Context* context) { return MakeShared<DataChannelServer>(context); };
+    transportDataChannelConnectionCreateFunc_ = [](Context* context) { return MakeShared<DataChannelConnection>(context); };
+
+    SetTransportDefault();
 }
 
 Network::~Network()
@@ -118,7 +123,7 @@ bool Network::Connect(const URL& url, Scene* scene, const VariantMap& identity)
     if (!connectionToServer_)
     {
         URHO3D_LOGINFO("Connecting to server {}", url.ToString());
-        DataChannelConnection* transportConnection = new DataChannelConnection(context_);
+        auto transportConnection = transportConnectionCreateFunc_(context_);
         connectionToServer_ = new Connection(context_, transportConnection);
         connectionToServer_->SetScene(scene);
         connectionToServer_->SetIdentity(identity);
@@ -219,7 +224,7 @@ bool Network::StartServer(const URL& url, unsigned int maxConnections)
     URHO3D_PROFILE("StartServer");
 
     WorkQueue* queue = GetSubsystem<WorkQueue>();
-    transportServer_ = MakeShared<DataChannelServer>(context_);
+    transportServer_ = transportServerCreateFunc_(context_);
     transportServer_->onConnected_ = [this, queue](NetworkConnection* connection)
     {
         // Hold on to DataChannelConnection reference until callback executes.
@@ -387,6 +392,27 @@ SharedPtr<HttpRequest> Network::MakeHttpRequest(const ea::string& url, const ea:
     // The initialization of the request will take time, can not know at this point if it has an error or not
     SharedPtr<HttpRequest> request(new HttpRequest(url, verb, headers, postData));
     return request;
+}
+
+void Network::SetTransportDefault()
+{
+    SetTransportWebRTC();
+}
+
+void Network::SetTransportWebRTC()
+{
+    transportServerCreateFunc_ = transportDataChannelServerCreateFunc_;
+    transportConnectionCreateFunc_ = transportDataChannelConnectionCreateFunc_;
+}
+
+void Network::SetTransportCustom(ea::function<SharedPtr<NetworkServer>(Context*)> createServerFunc,
+    ea::function<SharedPtr<NetworkConnection>(Context*)> createConnectionFunc)
+{
+    URHO3D_ASSERT(createServerFunc);
+    URHO3D_ASSERT(createConnectionFunc);
+
+    transportServerCreateFunc_ = createServerFunc;
+    transportConnectionCreateFunc_ = createConnectionFunc;
 }
 
 Connection* Network::GetServerConnection() const
