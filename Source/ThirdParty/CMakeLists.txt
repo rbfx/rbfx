@@ -48,6 +48,8 @@ if (NOT WEB)
 endif ()
 
 add_subdirectory(tinygltf)
+add_subdirectory(tinyobjloader)
+
 if (URHO3D_TESTING)
     add_subdirectory(catch2)
 endif ()
