@@ -50,6 +50,7 @@
 #include "Connection.h"
 
 #include <cstdio>
+#include <LZ4/lz4.h>
 
 namespace Urho3D
 {
@@ -73,6 +74,8 @@ Connection::Connection(Context* context, NetworkConnection* connection)
     : AbstractConnection(context)
     , transportConnection_(connection)
 {
+    SetPacketSizeLimit(packedMessageLimit_);
+
     if (connection)
     {
         connection->onMessage_ = [this](ea::string_view msg)
@@ -102,9 +105,24 @@ void Connection::RegisterObject(Context* context)
     context->AddFactoryReflection<Connection>();
 }
 
-void Connection::SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType)
+void Connection::SendMessageInternal(NetworkMessageId messageId, const unsigned char* dataOriginal, unsigned numBytesOriginal, PacketTypeFlags packetType)
 {
     URHO3D_ASSERT(messageId <= MSG_MAX);
+
+    const int numBytesCompressed = LZ4_compress_default(
+        (char*)dataOriginal, compressedPacketBuffer_.data(), numBytesOriginal, packedMessageLimit_);
+
+    char* data = (char*)dataOriginal;
+    unsigned numBytes = numBytesOriginal;
+
+    const bool compressed = numBytesCompressed > 0 && numBytesCompressed < numBytesOriginal;
+    if (compressed)
+    {
+        data = compressedPacketBuffer_.data();
+        numBytes = numBytesCompressed;
+        compressedBytesOut_ += numBytesOriginal - numBytesCompressed;
+    }
+
     URHO3D_ASSERT(numBytes <= packedMessageLimit_);
     URHO3D_ASSERT((data == nullptr && numBytes == 0) || (data != nullptr && numBytes > 0));
 
@@ -113,6 +131,8 @@ void Connection::SendMessageInternal(NetworkMessageId messageId, const unsigned 
     if (buffer.GetSize() + numBytes >= packedMessageLimit_)
         SendBuffer(packetType);
 
+    const unsigned compressedValue = compressed ? 1 : 0;
+    buffer.WriteVLE(compressedValue);
     buffer.WriteUShort(messageId);
     buffer.WriteUShort(numBytes);
     if (numBytes)
@@ -266,6 +286,8 @@ void Connection::SendBuffer(PacketTypeFlags type, VectorBuffer& buffer)
     {
         packetCounterOutgoing_.AddSample(1);
         bytesCounterOutgoing_.AddSample(buffer.GetSize());
+        bytesCounterOutgoingWithoutCompression_.AddSample(buffer.GetSize() + compressedBytesOut_);
+        compressedBytesOut_ = 0;
         transportConnection_->SendMessage({(const char*)buffer.GetData(), buffer.GetSize()}, type);
     }
     buffer.Clear();
@@ -311,12 +333,28 @@ bool Connection::ProcessMessage(MemoryBuffer& buffer)
         return false;
     }
 
+    unsigned compressedBytesIn = 0;
+
     while (!buffer.IsEof())
     {
+        const bool compressed = buffer.ReadVLE() > 0;
         msgID = buffer.ReadUShort();
-        unsigned int packetSize = buffer.ReadUShort();
-        MemoryBuffer msg(buffer.GetData() + buffer.GetPosition(), packetSize);
-        buffer.Seek(buffer.GetPosition() + packetSize);
+        const unsigned int packetSizeOriginal = buffer.ReadUShort();
+
+        unsigned int packetSize = packetSizeOriginal;
+        char* packetBuffer = (char*)buffer.GetData() + buffer.GetPosition();
+        if (compressed)
+        {
+            const int packetSizeDecompressed = LZ4_decompress_safe((const char*)buffer.GetData() + buffer.GetPosition(),
+                decompressedPacketBuffer_.data(), packetSizeOriginal, decompressedPacketBuffer_.size());
+
+            packetSize = packetSizeDecompressed;
+            packetBuffer = decompressedPacketBuffer_.data();
+            compressedBytesIn += packetSizeDecompressed - packetSizeOriginal;
+        }
+
+        MemoryBuffer msg(packetBuffer, packetSize);
+        buffer.Seek(buffer.GetPosition() + packetSizeOriginal);
 
         Log::GetLogger().Write(GetMessageLogLevel((NetworkMessageId)msgID), "{}: Message #{} ({} bytes) received",
             ToString(),
@@ -371,6 +409,9 @@ bool Connection::ProcessMessage(MemoryBuffer& buffer)
             break;
         }
     }
+
+    bytesCounterIncomingWithoutCompression_.AddSample(buffer.GetSize() + compressedBytesIn);
+
     return true;
 }
 
@@ -672,6 +713,16 @@ unsigned long long Connection::GetBytesOutPerSec() const
     return static_cast<int>(bytesCounterOutgoing_.GetLast());
 }
 
+unsigned long long Connection::GetBytesOutWithoutCompressionPerSec() const
+{
+    return static_cast<int>(bytesCounterOutgoingWithoutCompression_.GetLast());
+}
+
+unsigned long long Connection::GetBytesInWithoutCompressionPerSec() const
+{
+    return static_cast<int>(bytesCounterIncomingWithoutCompression_.GetLast());
+}
+
 int Connection::GetPacketsInPerSec() const
 {
     return static_cast<int>(packetCounterIncoming_.GetLast());
@@ -772,6 +823,8 @@ void Connection::SendPackageToClient(PackageFile* package)
 void Connection::SetPacketSizeLimit(int limit)
 {
     packedMessageLimit_ = limit;
+    compressedPacketBuffer_.resize(packedMessageLimit_);
+    decompressedPacketBuffer_.resize(packedMessageLimit_ * 10);
 }
 
 void Connection::HandleAsyncLoadFinished()
