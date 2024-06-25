@@ -23,6 +23,7 @@ file(GLOB_RECURSE EASTL_SOURCES
 )
 
 add_library(EASTL STATIC ${EASTL_SOURCES} doc/EASTL.natvis)
+set_target_properties(EASTL PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_definitions(EASTL
     PUBLIC  -DEASTL_OPENSOURCE=1
             -DEASTL_RTTI_ENABLED=0

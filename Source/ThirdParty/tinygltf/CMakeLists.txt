@@ -21,6 +21,7 @@
 #
 
 add_library (tinygltf STATIC tiny_gltf.cc)
+set_target_properties(tinygltf PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(tinygltf STB)
 
 if (NOT URHO3D_MERGE_STATIC_LIBS)

@@ -25,6 +25,7 @@ project(enkiTS)
 file(GLOB_RECURSE SOURCE_FILES src/TaskScheduler.h src/TaskScheduler.cpp src/LockLessMultiReadPipe.h)
 
 add_library(enkiTS STATIC ${SOURCE_FILES})
+set_target_properties(enkiTS PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_definitions(enkiTS PUBLIC "ENKITS_TASK_PRIORITIES_NUM=5")
 target_include_directories(enkiTS SYSTEM
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>

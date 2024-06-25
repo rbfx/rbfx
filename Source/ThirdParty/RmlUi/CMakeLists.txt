@@ -28,6 +28,7 @@ file(GLOB_RECURSE SOURCE_FILES Include/*.h Source/*.cpp)
 
 file (GLOB_RECURSE SOURCE_FILES *.h *.cpp)
 add_library(RmlUi STATIC ${SOURCE_FILES})
+set_target_properties(RmlUi PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_definitions(RmlUi
     PRIVATE RMLUI_VERSION="${RMLUI_VERSION_SHORT}"
     PUBLIC  RMLUI_NO_THIRDPARTY_CONTAINERS=1

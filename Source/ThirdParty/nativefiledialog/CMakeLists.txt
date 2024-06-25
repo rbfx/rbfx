@@ -13,6 +13,7 @@ elseif (WIN32)
     list (APPEND SOURCE_FILES src/nfd_win.cpp)
 endif ()
 add_library(nativefiledialog STATIC ${SOURCE_FILES})
+set_target_properties(nativefiledialog PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(nativefiledialog SYSTEM
     PRIVATE src/include/nativefiledialog
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>

@@ -27,6 +27,7 @@ file (GLOB SOURCE_FILES *.cpp *.h)
 list (APPEND SOURCE_FILES backends/imgui_impl_sdl.h backends/imgui_impl_sdl.cpp)
 
 add_library (ImGui STATIC ${SOURCE_FILES})
+set_target_properties(ImGui PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(ImGui PUBLIC SDL2-static STB FreeType EASTL)
 target_compile_definitions(ImGui PRIVATE -DSDL_EXPORTS) # A workaround for MinGW to not try to import SDL APIs from a static library that exports them.
 target_compile_definitions(ImGui PUBLIC -DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1

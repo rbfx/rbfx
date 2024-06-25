@@ -20,15 +20,15 @@
 // THE SOFTWARE.
 //
 
-#define CATCH_CONFIG_MAIN
-#include <catch2/catch_amalgamated.hpp>
-// Don't write tests here!
+#ifdef _MSC_VER
+#define URHO3D_TESTS_IMPORT __declspec(dllimport)
+#else
+#define URHO3D_TESTS_IMPORT
+#endif
 
-#include "CommonUtils.h"
+int URHO3D_TESTS_IMPORT RunMain(int argc, char* argv[]);
 
 int main(int argc, char* argv[])
 {
-    const int result = Catch::Session().run(argc, argv);
-    Tests::ResetContext();
-    return result;
+    return RunMain(argc, argv);
 }

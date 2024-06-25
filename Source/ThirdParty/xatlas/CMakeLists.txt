@@ -3,6 +3,7 @@ project(xatlas)
 
 # Urho3D: Removed all extra things
 add_library(xatlas STATIC xatlas.cpp)
+set_target_properties(xatlas PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 if (NOT URHO3D_MERGE_STATIC_LIBS)
     install(TARGETS xatlas EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})

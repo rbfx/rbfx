@@ -22,6 +22,7 @@
 
 file (GLOB_RECURSE SOURCE_FILES *.c *.h)
 add_library (LZ4 STATIC ${SOURCE_FILES})
+set_target_properties(LZ4 PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(LZ4 PRIVATE -DLZ4_DLL_EXPORT=1 PUBLIC -DLZ4_DLL_IMPORT=1)
 endif ()

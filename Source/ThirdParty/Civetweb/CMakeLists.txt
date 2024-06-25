@@ -22,6 +22,7 @@
 
 file (GLOB_RECURSE SOURCE_FILES *.c *.h *.inl)
 add_library (Civetweb STATIC ${SOURCE_FILES})
+set_target_properties(Civetweb PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(Civetweb
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/Civetweb>

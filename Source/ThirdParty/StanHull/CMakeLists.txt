@@ -22,6 +22,7 @@
 
 file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
 add_library (StanHull STATIC ${SOURCE_FILES})
+set_target_properties(StanHull PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(StanHull
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/StanHull>

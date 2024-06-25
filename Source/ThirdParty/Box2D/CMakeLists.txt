@@ -177,6 +177,7 @@ source_group(Include FILES ${BOX2D_General_HDRS})
 source_group(Rope FILES ${BOX2D_Rope_SRCS} ${BOX2D_Rope_HDRS})
 
 add_library (Box2D STATIC ${SOURCE_FILES})
+set_target_properties(Box2D PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(Box2D SYSTEM PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(Box2D PRIVATE -DBOX2D_EXPORTS PUBLIC -DBOX2D_IMPORTS)

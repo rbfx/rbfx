@@ -63,6 +63,7 @@ add_library(crypto STATIC
     x509/by_dir.c x509/by_file.c x509/t_crl.c x509/t_req.c x509/t_x509.c x509/x509_att.c x509/x509_cmp.c x509/x509_d2.c x509/x509_def.c x509/x509_err.c x509/x509_ext.c x509/x509_lu.c x509/x509_meth.c x509/x509_obj.c x509/x509_r2x.c x509/x509_req.c x509/x509_set.c x509/x509_trs.c x509/x509_txt.c x509/x509_v3.c x509/x509_vfy.c x509/x509_vpm.c x509/x509cset.c x509/x509name.c x509/x509rset.c x509/x509spki.c x509/x509type.c x509/x_all.c x509/x_attrib.c x509/x_crl.c x509/x_exten.c x509/x_name.c x509/x_pubkey.c x509/x_req.c x509/x_x509.c x509/x_x509a.c
     x509v3/pcy_cache.c x509v3/pcy_data.c x509v3/pcy_lib.c x509v3/pcy_map.c x509v3/pcy_node.c x509v3/pcy_tree.c x509v3/v3_addr.c x509v3/v3_admis.c x509v3/v3_akey.c x509v3/v3_akeya.c x509v3/v3_alt.c x509v3/v3_asid.c x509v3/v3_bcons.c x509v3/v3_bitst.c x509v3/v3_conf.c x509v3/v3_cpols.c x509v3/v3_crld.c x509v3/v3_enum.c x509v3/v3_extku.c x509v3/v3_genn.c x509v3/v3_ia5.c x509v3/v3_info.c x509v3/v3_int.c x509v3/v3_lib.c x509v3/v3_ncons.c x509v3/v3_pci.c x509v3/v3_pcia.c x509v3/v3_pcons.c x509v3/v3_pku.c x509v3/v3_pmaps.c x509v3/v3_prn.c x509v3/v3_purp.c x509v3/v3_skey.c x509v3/v3_sxnet.c x509v3/v3_tlsf.c x509v3/v3_utl.c x509v3/v3err.c
 )
+set_target_properties(crypto PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(crypto
     PRIVATE modes ec/curve448 ec/curve448/arch_32
