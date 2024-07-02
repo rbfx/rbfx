@@ -710,6 +710,7 @@ void EditorApplication::InitializeSystemUI()
 
     ImGuiIO& io = ui::GetIO();
     io.FontDefault = defaultFont;
+    io.ConfigWindowsMoveFromTitleBarOnly = true;
 
     ImFont* monoFont = systemUI->AddFont("Fonts/NotoMono-Regular.ttf", notoMonoRanges, 14.f);
     Project::SetMonoFont(monoFont);
