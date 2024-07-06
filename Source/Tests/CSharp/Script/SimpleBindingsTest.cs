@@ -10,7 +10,7 @@ namespace Urho3DNet.Tests
         [Fact]
         public async Task BasicBindings()
         {
-            Assert.Equal(TestBindings.testBindingsFunc(), 42);
+            Assert.Equal(TestBindings.TestBindingsFunc(), 42);
         }
     }
 }

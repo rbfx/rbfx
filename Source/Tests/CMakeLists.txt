@@ -45,11 +45,10 @@ catch_discover_tests(${TARGET_NAME})
 
 if (URHO3D_CSHARP)
     csharp_bind_target(
-        TARGET ${TARGET_NAME}
+        TARGET ${TARGET_NAME}Lib
         SWIG ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/TestBindings.i
         CSPROJ ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.Tests.csproj
-        NAMESPACE Urho3DNet.Tests
+        NAMESPACE Urho3DNet
         DEPENDS Urho3D
-        NATIVE ${TARGET_NAME}Lib
     )
 endif()

@@ -12,8 +12,8 @@
   <ItemGroup>
     <Compile Include="**/*.cs" />
   </ItemGroup>
-  <Target Name="GatherBuildFilesTests" BeforeTargets="BeforeCompile" Condition="Exists('$(GeneratedCodePath)TestsCSharp_$(URHO3D_CSHARP_BIND_CONFIG)')">
-    <CreateItem Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)TestsCSharp_$(URHO3D_CSHARP_BIND_CONFIG)&quot;, &quot;*.cs&quot;))">
+  <Target Name="GatherBuildFilesTests" BeforeTargets="BeforeCompile" Condition="Exists('$(GeneratedCodePath)TestsLibCSharp_$(URHO3D_CSHARP_BIND_CONFIG)')">
+    <CreateItem Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)TestsLibCSharp_$(URHO3D_CSHARP_BIND_CONFIG)&quot;, &quot;*.cs&quot;))">
       <Output TaskParameter="Include" ItemName="Compile" />
     </CreateItem>
   </Target>
@@ -28,5 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Urho3D\CSharp\Urho3DNet.csproj" />
+    <ProjectReference Include="$(GeneratedCodePath)TestsLib.vcxproj" Condition=" Exists('$(GeneratedCodePath)TestsLib.vcxproj') " />
+
   </ItemGroup>
 </Project>
