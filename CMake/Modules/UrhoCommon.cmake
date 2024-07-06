@@ -327,7 +327,7 @@ function (csharp_bind_target)
         return ()
     endif ()
 
-    cmake_parse_arguments(BIND "" "TARGET;CSPROJ;SWIG;NAMESPACE;NATIVE;DEPENDS" "" ${ARGN})
+    cmake_parse_arguments(BIND "" "TARGET;CSPROJ;SWIG;NAMESPACE;EMBED;DEPENDS" "" ${ARGN})
 
     # General SWIG parameters
     set(BIND_OUT_DIR  ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_${URHO3D_CSHARP_BIND_CONFIG})
@@ -346,8 +346,8 @@ function (csharp_bind_target)
     endif ()
 
     # Native library name matches target name by default
-    if (BIND_NATIVE)
-        list (APPEND GENERATOR_OPTIONS -dllimport $<TARGET_FILE_NAME:${BIND_NATIVE}>)
+    if (BIND_EMBED)
+        list (APPEND GENERATOR_OPTIONS -dllimport $<TARGET_FILE_NAME:${BIND_EMBED}>)
     else ()
         if (IOS OR WEB)
             list (APPEND GENERATOR_OPTIONS -dllimport __Internal)
@@ -363,9 +363,9 @@ function (csharp_bind_target)
     # Parse bindings using same compile definitions as built target
     __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${BIND_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
     __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${BIND_TARGET} INTERFACE_COMPILE_DEFINITIONS)
-    if (TARGET "${BIND_NATIVE}")
-        __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${BIND_NATIVE} INTERFACE_INCLUDE_DIRECTORIES)
-        __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${BIND_NATIVE} INTERFACE_COMPILE_DEFINITIONS)
+    if (TARGET "${BIND_EMBED}")
+        __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${BIND_EMBED} INTERFACE_INCLUDE_DIRECTORIES)
+        __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${BIND_EMBED} INTERFACE_COMPILE_DEFINITIONS)
     endif ()
 
     if (BIND_DEPENDS)
@@ -415,9 +415,9 @@ function (csharp_bind_target)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "SWIG: Generating C# bindings for ${BIND_TARGET}")
 
-    if (BIND_NATIVE)
+    if (BIND_EMBED)
         # Bindings are part of another target
-        target_sources(${BIND_NATIVE} PRIVATE ${BIND_OUT_FILE})
+        target_sources(${BIND_EMBED} PRIVATE ${BIND_OUT_FILE})
     else ()
         # Bindings are part of target bindings are generated for
         target_sources(${BIND_TARGET} PRIVATE ${BIND_OUT_FILE})
@@ -438,7 +438,7 @@ function (csharp_bind_target)
             OUTPUT ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET})
         if (TARGET ${BIND_MANAGED_TARGET})
             # Real C# target
-            add_dependencies(${BIND_MANAGED_TARGET} ${BIND_TARGET})
+            add_dependencies(${BIND_MANAGED_TARGET} ${BIND_TARGET} ${BIND_EMBED})
         endif ()
         install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll DESTINATION ${DEST_LIBRARY_DIR_CONFIG})
     endif ()

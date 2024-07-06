@@ -445,7 +445,7 @@ if (URHO3D_CSHARP)
     if (URHO3D_SYSTEMUI)
         csharp_bind_target(
             TARGET ImGui
-            NATIVE Urho3D
+            EMBED Urho3D
             SWIG ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig/ImGui.i
             NAMESPACE ImGuiNet
             INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."

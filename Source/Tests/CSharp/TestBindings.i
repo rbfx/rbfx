@@ -7,9 +7,9 @@ using namespace Urho3D;
 #define PLUGIN_CORE_SAMPLEPLUGIN_API
 %import "../../Urho3D/CSharp/Swig/Urho3D.i"
 
-%{
+%inline %{
 
-int testBindingsFunc()
+int TestBindingsFunc()
 {
     return 42;
 }
@@ -17,5 +17,3 @@ int testBindingsFunc()
 %}
 
 //%include "SampleComponent.h"
-
-int testBindingsFunc();
