@@ -223,6 +223,12 @@ void ResourceBrowserTab::RevealInExplorerSelected()
         RevealInExplorer(entry->absolutePath_);
 }
 
+void ResourceBrowserTab::OpenSelected()
+{
+    if (const FileSystemEntry* entry = GetSelectedEntryForCursor())
+        OpenEntryInEditor(*entry);
+}
+
 void ResourceBrowserTab::WriteIniSettings(ImGuiTextBuffer& output)
 {
     BaseClassName::WriteIniSettings(output);
@@ -422,6 +428,12 @@ void ResourceBrowserTab::RenderEntryContextMenuItems(const FileSystemEntry& entr
     if (needSeparator)
         ui::Separator();
     needSeparator = false;
+
+    if (ui::MenuItem("Open"))
+    {
+        if (!entry.resourceName_.empty())
+            OpenEntryInEditor(entry);
+    }
 
     if (ui::MenuItem("Reveal in Explorer", GetHotkeyLabel(Hotkey_RevealInExplorer).c_str()))
     {
@@ -1370,6 +1382,12 @@ void ResourceBrowserTab::OpenEntryInEditor(const FileSystemEntry& entry)
     auto project = GetProject();
 
     const auto request = MakeShared<OpenResourceRequest>(context_, entry.resourceName_);
+    request->QueueProcessCallback([=]()
+    {
+        auto fs = GetSubsystem<FileSystem>();
+        fs->SystemOpen(entry.absolutePath_);
+    }, M_MIN_INT);
+
     project->ProcessRequest(request, this);
 }
 

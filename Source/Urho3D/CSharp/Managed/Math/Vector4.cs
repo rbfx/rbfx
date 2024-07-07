@@ -23,6 +23,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -198,10 +199,18 @@ namespace Urho3DNet
         /// Return float data.
         float[] Data => new float[] {X, Y, Z, W};
 
-        /// Return as string.
+        /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{X} {Y} {Z} {W}";
+            return string.Format(CultureInfo.InvariantCulture, "{0} {1} {2} {3}", X, Y, Z, W);
+        }
+
+        /// <summary>
+        /// Converts the string representation of a IntVector3 into value.
+        /// </summary>
+        public static Vector4 Parse(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? default : Urho3D.ToVector4(value);
         }
 
         /// <summary>Returns the hash code for this instance.</summary>

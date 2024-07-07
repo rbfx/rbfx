@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2024-2024 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,24 +23,26 @@
 
 #include "../Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/Profiler.h"
-#include "../Core/WorkQueue.h"
-#include "../IO/Log.h"
-#include "../IO/PackageFile.h"
-#include "../IO/VirtualFileSystem.h"
-#include "../Resource/BackgroundLoader.h"
-#include "../Resource/BinaryFile.h"
-#include "../Resource/Graph.h"
-#include "../Resource/GraphNode.h"
-#include "../Resource/Image.h"
-#include "../Resource/ImageCube.h"
-#include "../Resource/JSONFile.h"
-#include "../Resource/PListFile.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/ResourceEvents.h"
-#include "../Resource/XMLFile.h"
+#include <Urho3D/Core/Context.h>
+#include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Core/Profiler.h>
+#include <Urho3D/Core/WorkQueue.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/IO/PackageFile.h>
+#include <Urho3D/IO/VirtualFileSystem.h>
+#include <Urho3D/Resource/BackgroundLoader.h>
+#include <Urho3D/Resource/BinaryFile.h>
+#include <Urho3D/Resource/Graph.h>
+#include <Urho3D/Resource/GraphNode.h>
+#include <Urho3D/Resource/Image.h>
+#include <Urho3D/Resource/ImageCube.h>
+#include <Urho3D/Resource/JSONFile.h>
+#include <Urho3D/Resource/PListFile.h>
+#include <Urho3D/Resource/ResourceCache.h>
+
+#include <Urho3D/Resource/SerializableResource.h>
+#include <Urho3D/Resource/ResourceEvents.h>
+#include <Urho3D/Resource/XMLFile.h>
 
 #include "../DebugNew.h"
 
@@ -892,6 +895,7 @@ void RegisterResourceLibrary(Context* context)
     XMLFile::RegisterObject(context);
     Graph::RegisterObject(context);
     GraphNode::RegisterObject(context);
+    SerializableResource::RegisterObject(context);
 }
 
 void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, ScanFlags flags) const

@@ -138,12 +138,13 @@ struct AttributeAnimationStateTrack
 class URHO3D_API AnimationState : public RefCounted
 {
 public:
-    /// Construct with animated model and animation pointers.
-    AnimationState(AnimationController* controller, AnimatedModel* model);
-    /// Construct with root scene node and animation pointers.
-    AnimationState(AnimationController* controller, Node* node);
+    /// Construct .
+    explicit AnimationState(AnimationController* controller);
     /// Destruct.
     ~AnimationState() override;
+
+    /// Connect to AnimatedModel.
+    void ConnectToAnimatedModel(AnimatedModel* model);
     /// Initialize static properties of the state and dirty tracks if changed.
     void Initialize(Animation* animation, const ea::string& startBone, AnimationBlendMode blendMode);
     /// Update dynamic properies of the state.
@@ -174,12 +175,8 @@ public:
     /// @property
     Animation* GetAnimation() const { return animation_; }
 
-    /// Return animated model this state belongs to (model mode).
-    /// @property
+    /// Return connected animated model.
     AnimatedModel* GetModel() const;
-    /// Return root scene node this state controls (node hierarchy mode).
-    /// @property
-    Node* GetNode() const;
 
     /// Return name of start bone.
     const ea::string& GetStartBone() const { return startBone_; }
@@ -225,10 +222,8 @@ private:
 
     /// Owner controller.
     WeakPtr<AnimationController> controller_;
-    /// Animated model (model mode).
+    /// Connected animated model.
     WeakPtr<AnimatedModel> model_;
-    /// Root scene node (node hierarchy mode).
-    WeakPtr<Node> node_;
     /// Animation.
     SharedPtr<Animation> animation_;
 

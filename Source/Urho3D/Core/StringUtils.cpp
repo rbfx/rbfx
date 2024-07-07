@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2022 the Urho3D project.
+// Copyright (c) 2024-2024 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +24,7 @@
 #include "../Precompiled.h"
 
 #include "../Core/StringUtils.h"
+#include "../Math/Matrix2.h"
 
 #include <cstdio>
 
@@ -472,6 +474,28 @@ Variant ToVectorVariant(const char* source)
     return ret;
 }
 
+Matrix2 ToMatrix2(const ea::string& source)
+{
+    return ToMatrix2(source.c_str());
+}
+
+Matrix2 ToMatrix2(const char* source)
+{
+    Matrix2 ret(Matrix2::ZERO);
+
+    unsigned elements = CountElements(source, ' ');
+    if (elements < 4)
+        return ret;
+
+    auto* ptr = (char*)source;
+    ret.m00_ = (float)strtod(ptr, &ptr);
+    ret.m01_ = (float)strtod(ptr, &ptr);
+    ret.m10_ = (float)strtod(ptr, &ptr);
+    ret.m11_ = (float)strtod(ptr, &ptr);
+
+    return ret;
+}
+
 Matrix3 ToMatrix3(const ea::string& source)
 {
     return ToMatrix3(source.c_str());
@@ -562,6 +586,51 @@ Matrix4 ToMatrix4(const char* source)
 
     return ret;
 }
+
+ResourceRef ToResourceRef(const ea::string& value)
+{
+    StringVector values = ea::string::split(value, ';');
+    if (values.size() >= 2)
+    {
+        return {values[0], values[1]};
+    }
+    if (!values.empty() && !values[0].empty())
+    {
+        return ResourceRef(values[0]);
+    }
+    return {};
+}
+
+ResourceRef ToResourceRef(const char* source)
+{
+    if (!source)
+        return {};
+    return ToResourceRef(ea::string(source));
+}
+
+ResourceRefList ToResourceRefList(const ea::string& value)
+{
+    StringVector values = ea::string::split(value, ';', true);
+    if (!values.empty())
+    {
+        ResourceRefList result;
+        result.type_ = values[0];
+        result.names_.resize(values.size() - 1);
+        for (unsigned i = 1; i < values.size(); ++i)
+            result.names_[i - 1] = values[i];
+        return result;
+    }
+
+    return {};
+}
+
+ResourceRefList ToResourceRefList(const char* source)
+{
+    if (!source)
+        return {};
+    return ToResourceRefList(ea::string(source));
+}
+
 
 ea::string ToStringBool(bool value)
 {

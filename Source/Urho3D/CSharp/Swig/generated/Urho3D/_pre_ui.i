@@ -268,6 +268,7 @@ using DragAndDropModeFlags = Urho3D::DragAndDropMode;
 %csattribute(Urho3D::Text3D, %arg(bool), IsFixedScreenSize, IsFixedScreenSize, SetFixedScreenSize);
 %csattribute(Urho3D::Text3D, %arg(bool), SnapToPixels, GetSnapToPixels, SetSnapToPixels);
 %csattribute(Urho3D::Text3D, %arg(Urho3D::FaceCameraMode), FaceCameraMode, GetFaceCameraMode, SetFaceCameraMode);
+%csattribute(Urho3D::Text3D, %arg(bool), DepthTest, GetDepthTest, SetDepthTest);
 %csattribute(Urho3D::Text3D, %arg(Urho3D::ResourceRef), FontAttr, GetFontAttr, SetFontAttr);
 %csattribute(Urho3D::Text3D, %arg(Urho3D::ResourceRef), MaterialAttr, GetMaterialAttr, SetMaterialAttr);
 %csattribute(Urho3D::Text3D, %arg(ea::string), TextAttr, GetTextAttr, SetTextAttr);

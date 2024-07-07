@@ -134,7 +134,7 @@ public:
             if (queryResult.drawable_ != model)
             {
                 // ignore billboard sets by default
-                if (queryResult.drawable_->GetTypeInfo()->IsTypeOf(BillboardSet::GetTypeStatic()))
+                if (queryResult.drawable_->IsInstanceOf<BillboardSet>())
                     continue;
                 return result;
             }

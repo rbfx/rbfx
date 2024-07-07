@@ -56,6 +56,8 @@ namespace Urho3DNet
         // This method may be overriden in partial class in order to attach extra logic to object constructor
         internal void OnSetupInstance()
         {
+            Instance = this;
+
             using (var script = new Script(this))
             {
                 RegisterSubsystem(script);
@@ -74,8 +76,6 @@ namespace Urho3DNet
             }
 
             Urho3DRegisterDirectorFactories(swigCPtr);
-
-            Instance = this;
         }
 
         public void RegisterFactories(Assembly assembly)

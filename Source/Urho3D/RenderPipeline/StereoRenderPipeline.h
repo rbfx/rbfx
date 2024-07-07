@@ -5,13 +5,13 @@
 #pragma once
 
 #include "Urho3D/RenderPipeline/CameraProcessor.h"
-#include "Urho3D/RenderPipeline/OutlinePass.h"
-#include "Urho3D/RenderPipeline/PostProcessPass.h"
+#include "Urho3D/RenderPipeline/OutlineScenePass.h"
 #include "Urho3D/RenderPipeline/RenderBuffer.h"
 #include "Urho3D/RenderPipeline/RenderBufferManager.h"
 #include "Urho3D/RenderPipeline/RenderPipeline.h"
 #include "Urho3D/RenderPipeline/ScenePass.h"
 #include "Urho3D/RenderPipeline/SceneProcessor.h"
+#include "Urho3D/RenderPipeline/SharedRenderPassState.h"
 
 namespace Urho3D
 {
@@ -26,6 +26,8 @@ public:
 
     const RenderPipelineSettings& GetSettings() const { return settings_; }
     void SetSettings(const RenderPipelineSettings& settings);
+    void SetRenderPath(RenderPath* renderPath);
+    void MarkParametersDirty() { parametersDirty_ = true; }
 
     /// Implement RenderPipelineView
     /// @{
@@ -47,14 +49,21 @@ public:
 protected:
     void SendViewEvent(StringHash eventID);
     void ApplySettings();
+    void UpdateRenderOutputFlags();
+
+protected:
+    SharedPtr<RenderPath> originalRenderPath_;
+    SharedPtr<RenderPath> renderPath_;
+    bool parametersDirty_{};
 
     RenderPipelineSettings settings_;
 
     CommonFrameInfo frameInfo_;
-    PostProcessPassFlags postProcessFlags_;
+    RenderOutputFlags renderOutputFlags_;
 
     RenderPipelineStats stats_;
     RenderPipelineDebugger debugger_;
+    SharedRenderPassState state_;
 
     SharedPtr<RenderBufferManager> renderBufferManager_;
     SharedPtr<ShadowMapAllocator> shadowMapAllocator_;
@@ -66,10 +75,9 @@ protected:
     SharedPtr<UnorderedScenePass> postOpaquePass_;
     SharedPtr<BackToFrontScenePass> alphaPass_;
     SharedPtr<BackToFrontScenePass> postAlphaPass_;
-    SharedPtr<OutlineScenePass> outlineScenePass_;
-    SharedPtr<OutlinePass> outlinePostProcessPass_;
 
-    ea::vector<SharedPtr<PostProcessPass>> postProcessPasses_;
+    SharedPtr<RenderBuffer> outlineBuffer_;
+    SharedPtr<OutlineScenePass> outlineScenePass_;
 
     unsigned settingsHash_{};
     unsigned oldPipelineStateHash_{};

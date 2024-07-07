@@ -69,6 +69,7 @@ public:
     void DeleteSelected();
     void RenameSelected();
     void RevealInExplorerSelected();
+    void OpenSelected();
     /// @}
 
     /// Implement EditorTab

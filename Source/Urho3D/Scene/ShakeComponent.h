@@ -102,6 +102,17 @@ private:
     Vector3 shiftRange_{Vector3::ZERO};
     /// Rotation range (Pitch, Yaw, Roll).
     Vector3 rotationRange_{Vector3::ZERO};
+
+    /// Flag indicating that original position and rotation are captured.
+    bool hasOriginalPosition_{};
+    /// Original position of the node.
+    Vector3 originalPosition_{Vector3::ZERO};
+    /// Original rotation of the node.
+    Quaternion originalRotation_{Quaternion::IDENTITY};
+    /// Last known position of the node.
+    Vector3 lastKnownPosition_{Vector3::ZERO};
+    /// Last known rotation of the node.
+    Quaternion lastKnownRotation_{Quaternion::IDENTITY};
 };
 
 } // namespace Urho3D

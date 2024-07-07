@@ -169,11 +169,14 @@ using namespace Urho3D;
 %ignore Urho3D::Rand;
 %ignore Urho3D::RandStandardNormal;
 %ignore Urho3D::RandomEngine::GetStandardNormalFloatPair;
+%ignore Urho3D::ToString(void* value);
+%ignore Urho3D::GetStringListIndex;
 
 %include "Urho3D/Math/MathDefs.h"
 %include "Urho3D/Math/Polyhedron.h"
 %include "Urho3D/Math/Frustum.h"
 %include "Urho3D/Math/RandomEngine.h"
+%include "Urho3D/Core/StringUtils.h"
 
 CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
 %apply Urho3D::Vector4 FIXED[] { Urho3D::Vector4[] };
@@ -486,11 +489,13 @@ public:
 
 %include "generated/Urho3D/_pre_resource.i"
 %include "Urho3D/Resource/Resource.h"
+%include "Urho3D/Resource/SerializableResource.h"
 #if defined(URHO3D_THREADING)
 %include "Urho3D/Resource/BackgroundLoader.h"
 #endif
 %include "Urho3D/Resource/Image.h"
 %include "Urho3D/Resource/ImageCube.h"
+%include "Urho3D/Resource/BinaryFile.h"
 %include "Urho3D/Resource/JSONValue.h"
 %include "Urho3D/Resource/JSONFile.h"
 %include "Urho3D/Resource/Localization.h"

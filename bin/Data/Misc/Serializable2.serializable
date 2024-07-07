@@ -1,0 +1,47 @@
+{
+	"type": "RigidBody",
+	"value": {
+		"attributes": [
+			{
+				"name": "Mass",
+				"type": "Float",
+				"value": 1.0
+			},
+			{
+				"name": "Friction",
+				"type": "Float",
+				"value": 0.0
+			},
+			{
+				"name": "Anisotropic Friction",
+				"type": "Vector3",
+				"value": "0 0 0"
+			},
+			{
+				"name": "Linear Factor",
+				"type": "Vector3",
+				"value": "0 0 0"
+			},
+			{
+				"name": "Angular Factor",
+				"type": "Vector3",
+				"value": "0 0 0"
+			},
+			{
+				"name": "Linear Rest Threshold",
+				"type": "Float",
+				"value": 0.0
+			},
+			{
+				"name": "Angular Rest Threshold",
+				"type": "Float",
+				"value": 0.0
+			},
+			{
+				"name": "Contact Threshold",
+				"type": "Float",
+				"value": 0.0
+			}
+		]
+	}
+}

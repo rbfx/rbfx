@@ -108,7 +108,9 @@ private:
     unsigned readPosition_ = 0;
 #ifdef URHO3D_PLATFORM_WEB
     /// HTTP request handle.
-    int requestHandle_ = 0;
+    void* requestHandle_ = nullptr;
+    ea::vector<const char*> requestHeaders_;
+    ea::vector<ea::string> requestHeadersStr_;
 #endif
 };
 

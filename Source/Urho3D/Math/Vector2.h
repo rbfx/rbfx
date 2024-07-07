@@ -25,6 +25,8 @@
 #include "../Container/Str.h"
 #include "../Math/MathDefs.h"
 
+#include <EASTL/tuple.h>
+
 namespace Urho3D
 {
 class Vector2;
@@ -75,6 +77,9 @@ public:
 
     /// Test for inequality with another vector.
     bool operator !=(const IntVector2& rhs) const { return x_ != rhs.x_ || y_ != rhs.y_; }
+
+    /// Lexicographic comparison for sorting.
+    bool operator<(const IntVector2& rhs) const { return ea::tie(x_, y_) < ea::tie(rhs.x_, rhs.y_); }
 
     /// Add a vector.
     IntVector2 operator +(const IntVector2& rhs) const { return IntVector2(x_ + rhs.x_, y_ + rhs.y_); }

@@ -54,6 +54,8 @@
 #include <Detour/DetourNavMeshQuery.h>
 #include <Recast/Recast.h>
 
+#include <EASTL/numeric.h>
+
 #include "../DebugNew.h"
 
 namespace Urho3D
@@ -105,6 +107,19 @@ void WriteTile(Serializer& dest, const dtMeshTile* tile)
     dest.WriteInt(tile->header->y);
     dest.WriteInt(tile->dataSize);
     dest.Write(tile->data, static_cast<unsigned>(tile->dataSize));
+}
+
+/// Return polygon vertices.
+ea::pair<ea::array<Vector3, DT_VERTS_PER_POLYGON>, Vector3> GetPolygonVerticesAndCenter(
+    const dtMeshTile& tile, const dtPoly& poly)
+{
+    ea::array<Vector3, DT_VERTS_PER_POLYGON> vertices;
+    for (unsigned i = 0; i < poly.vertCount; ++i)
+        memcpy(&vertices[i], &tile.verts[poly.verts[i] * 3], sizeof(Vector3));
+
+    const Vector3 center =
+        ea::accumulate(vertices.begin(), vertices.begin() + poly.vertCount, Vector3::ZERO) / poly.vertCount;
+    return {vertices, center};
 }
 
 } // namespace
@@ -175,36 +190,54 @@ void NavigationMesh::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Draw NavAreas", GetDrawNavAreas, SetDrawNavAreas, bool, false, AM_DEFAULT);
 }
 
+void NavigationMesh::DrawDebugTileGeometry(DebugRenderer* debug, bool depthTest, int tileIndex)
+{
+    static const Color polygonEdgeColor = 0x7fffff00_argb;
+    static const Color polygonLinkColor = 0x7f00ff00_argb;
+
+    if (tileIndex >= navMesh_->getMaxTiles())
+        return;
+
+    const dtNavMesh& navMesh = *navMesh_;
+    const dtMeshTile& tile = *navMesh.getTile(tileIndex);
+    if (!tile.header)
+        return;
+
+    const Matrix3x4& worldTransform = node_->GetWorldTransform();
+    for (int polyIndex = 0; polyIndex < tile.header->polyCount; ++polyIndex)
+    {
+        const dtPoly& poly = tile.polys[polyIndex];
+        const auto [polyVertices, polyCenter] = GetPolygonVerticesAndCenter(tile, poly);
+
+        for (unsigned i = 0; i < poly.vertCount; ++i)
+        {
+            const Vector3& firstVertex = polyVertices[i];
+            const Vector3& secondVertex = polyVertices[(i + 1) % poly.vertCount];
+            debug->AddLine(worldTransform * firstVertex, worldTransform * secondVertex, polygonEdgeColor, depthTest);
+        }
+
+        for (unsigned link = poly.firstLink; link != DT_NULL_LINK; link = tile.links[link].next)
+        {
+            const dtLink& linkData = tile.links[link];
+
+            const dtMeshTile* otherTile = nullptr;
+            const dtPoly* otherPoly = nullptr;
+            if (!dtStatusSucceed(navMesh.getTileAndPolyByRef(linkData.ref, &otherTile, &otherPoly)))
+                continue;
+
+            const auto [_, otherPolyCenter] = GetPolygonVerticesAndCenter(*otherTile, *otherPoly);
+            debug->AddLine(worldTransform * polyCenter, worldTransform * otherPolyCenter, polygonLinkColor, depthTest);
+        }
+    }
+}
+
 void NavigationMesh::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
     if (!debug || !navMesh_ || !node_)
         return;
 
-    const Matrix3x4& worldTransform = node_->GetWorldTransform();
-
-    const dtNavMesh* navMesh = navMesh_;
-
-    for (int j = 0; j < navMesh->getMaxTiles(); ++j)
-    {
-        const dtMeshTile* tile = navMesh->getTile(j);
-        assert(tile);
-        if (!tile->header)
-            continue;
-
-        for (int i = 0; i < tile->header->polyCount; ++i)
-        {
-            dtPoly* poly = tile->polys + i;
-            for (unsigned j = 0; j < poly->vertCount; ++j)
-            {
-                debug->AddLine(
-                    worldTransform * *reinterpret_cast<const Vector3*>(&tile->verts[poly->verts[j] * 3]),
-                    worldTransform * *reinterpret_cast<const Vector3*>(&tile->verts[poly->verts[(j + 1) % poly->vertCount] * 3]),
-                    Color::YELLOW,
-                    depthTest
-                );
-            }
-        }
-    }
+    for (int j = 0; j < navMesh_->getMaxTiles(); ++j)
+        DrawDebugTileGeometry(debug, depthTest, j);
 
     Scene* scene = GetScene();
     if (scene)

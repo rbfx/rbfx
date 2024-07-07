@@ -58,6 +58,7 @@ public:
     AnimationParameters& StartBone(ea::string_view startBone);
     AnimationParameters& Layer(unsigned layer);
     AnimationParameters& Time(float time);
+    AnimationParameters& TimeRange(float minTime, float maxTime);
     AnimationParameters& Additive();
     AnimationParameters& Weight(float weight);
     AnimationParameters& Speed(float speed);
@@ -74,11 +75,12 @@ public:
     const WrappedScalar<float>& GetAnimationTime() const { return time_; }
     /// @}
 
-
     /// Time operations.
     /// @{
     float GetTime() const { return time_.Value(); }
     void SetTime(float time) { time_.Set(time); }
+    void SetTimeRange(float minTime, float maxTime) { time_ = {time_.Value(), minTime, maxTime}; }
+    void SetDefaultTimeRange();
     WrappedScalarRange<float> Update(float scaledTimeStep);
     /// @}
 
@@ -179,6 +181,7 @@ public:
     /// @{
     unsigned FindLastAnimation(Animation* animation, unsigned layer = M_MAX_UNSIGNED) const;
     const AnimationParameters* GetLastAnimationParameters(Animation* animation, unsigned layer = M_MAX_UNSIGNED) const;
+    AnimationParameters* GetMutableLastAnimationParameters(Animation* animation, unsigned layer = M_MAX_UNSIGNED);
     bool IsPlaying(Animation* animation) const;
     unsigned PlayNew(const AnimationParameters& params, float fadeInTime = 0.0f);
     unsigned PlayNewExclusive(const AnimationParameters& params, float fadeInTime = 0.0f);
@@ -256,9 +259,6 @@ private:
 
     void CommitNodeAndAttributeAnimations();
     void SendTriggerEvents();
-
-    /// Whether to reset AnimatedModel skeleton to bind pose every frame.
-    bool resetSkeleton_{};
 
     /// Currently playing animations.
     struct AnimationInstance

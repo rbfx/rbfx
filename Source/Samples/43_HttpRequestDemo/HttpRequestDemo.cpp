@@ -83,11 +83,15 @@ void HttpRequestDemo::Update(float timeStep)
     auto* network = GetSubsystem<Network>();
 
     if (httpRequest_ == nullptr)
+    {
+        const ea::string verb = "GET";
+        const ea::vector<ea::string> headers = {"hello: world"};
 #ifdef URHO3D_SSL
-        httpRequest_ = network->MakeHttpRequest("https://api.ipify.org/?format=json");
+        httpRequest_ = network->MakeHttpRequest("https://api.ipify.org/?format=json", verb, headers);
 #else
-        httpRequest_ = network->MakeHttpRequest("http://httpbin.org/ip");
+        httpRequest_ = network->MakeHttpRequest("http://httpbin.org/ip", verb, headers);
 #endif
+    }
     else
     {
         // Initializing HTTP request

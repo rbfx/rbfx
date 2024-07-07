@@ -60,6 +60,7 @@
 %csattribute(Urho3D::SoundSource, %arg(float), Reach, GetReach, SetReach);
 %csattribute(Urho3D::SoundSource, %arg(bool), IsLowFrequency, IsLowFrequency, SetLowFrequency);
 %csattribute(Urho3D::SoundSource, %arg(Urho3D::AutoRemoveMode), AutoRemoveMode, GetAutoRemoveMode, SetAutoRemoveMode);
+%csattribute(Urho3D::SoundSource, %arg(bool), IgnoreSceneTimeScale, GetIgnoreSceneTimeScale, SetIgnoreSceneTimeScale);
 %csattribute(Urho3D::SoundSource, %arg(bool), IsPlaying, IsPlaying);
 %csattribute(Urho3D::SoundSource, %arg(Urho3D::ResourceRef), SoundAttr, GetSoundAttr, SetSoundAttr);
 %csattribute(Urho3D::SoundSource, %arg(int), PositionAttr, GetPositionAttr, SetPositionAttr);

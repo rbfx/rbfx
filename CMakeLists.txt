@@ -56,6 +56,7 @@ include(UrhoCommon)
 # Enable testing
 if (URHO3D_TESTING)
     include (CTest)
+    enable_testing ()
 endif ()
 
 # Set compiler variable
@@ -258,6 +259,11 @@ if (NOT "$ENV{CI}" STREQUAL "")
     endif ()
 elseif (MSVC)
     ucm_replace_flag("/W[0-3]" "/W1" REGEX)
+endif ()
+
+# Temporary: Workaround for MSVC crash.
+if (MSVC)
+    add_compile_definitions(_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 endif ()
 
 if (DESKTOP)

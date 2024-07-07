@@ -356,28 +356,8 @@ void DynamicNavigationMesh::DrawDebugGeometry(DebugRenderer* debug, bool depthTe
     if (!debug || !navMesh_ || !node_)
         return;
 
-    const Matrix3x4& worldTransform = node_->GetWorldTransform();
-
-    const dtNavMesh* navMesh = navMesh_;
-
-    for (int j = 0; j < navMesh->getMaxTiles(); ++j)
-    {
-        const dtMeshTile* tile = navMesh->getTile(j);
-        assert(tile);
-        if (!tile->header)
-            continue;
-
-        for (int i = 0; i < tile->header->polyCount; ++i)
-        {
-            dtPoly* poly = tile->polys + i;
-            for (unsigned j = 0; j < poly->vertCount; ++j)
-            {
-                debug->AddLine(worldTransform * *reinterpret_cast<const Vector3*>(&tile->verts[poly->verts[j] * 3]),
-                    worldTransform * *reinterpret_cast<const Vector3*>(&tile->verts[poly->verts[(j + 1) % poly->vertCount] * 3]),
-                    Color::YELLOW, depthTest);
-            }
-        }
-    }
+    for (int j = 0; j < navMesh_->getMaxTiles(); ++j)
+        DrawDebugTileGeometry(debug, depthTest, j);
 
     Scene* scene = GetScene();
     if (scene)

@@ -164,6 +164,7 @@ public:
     TextureFormat GetOutputColorFormat() const;
     TextureFormat GetOutputDepthStencilFormat() const;
     bool IsLinearColorSpace() const { return linearColorSpace_; }
+    bool IsHDR() const { return isHDR_; }
     unsigned GetOutputMultiSample() const { return colorOutputParams_.multiSampleLevel_; }
     const RenderBufferManagerSettings& GetSettings() const { return settings_; }
 
@@ -212,6 +213,7 @@ private:
     RenderBufferParams colorOutputParams_;
     RenderBufferParams depthStencilOutputParams_;
     bool linearColorSpace_{};
+    bool isHDR_{};
     /// @}
 
     /// State of current frame

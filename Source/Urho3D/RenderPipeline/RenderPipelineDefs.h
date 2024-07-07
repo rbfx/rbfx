@@ -218,14 +218,14 @@ struct RenderBufferManagerFrameSettings
 };
 
 /// Traits of post-processing pass
-enum class PostProcessPassFlag
+enum class RenderOutputFlag
 {
     None = 0,
     NeedColorOutputReadAndWrite = 1 << 0,
     NeedColorOutputBilinear = 1 << 1,
 };
 
-URHO3D_FLAGSET(PostProcessPassFlag, PostProcessPassFlags);
+URHO3D_FLAGSET(RenderOutputFlag, RenderOutputFlags);
 
 /// Pipeline state cache callback used to create actual pipeline state.
 class BatchStateCacheCallback
@@ -659,137 +659,6 @@ struct ShaderProgramCompositorSettings
     /// @}
 };
 
-enum class ToneMappingMode
-{
-    None,
-    Reinhard,
-    ReinhardWhite,
-    Uncharted2,
-};
-
-struct AutoExposurePassSettings
-{
-    bool autoExposure_{};
-    float minExposure_{ 1.0f };
-    float maxExposure_{ 3.0f };
-    float adaptRate_{ 0.6f };
-
-    /// Utility operators
-    /// @{
-    void Validate()
-    {
-    }
-
-    bool operator==(const AutoExposurePassSettings& rhs) const
-    {
-        return autoExposure_ == rhs.autoExposure_
-            && minExposure_ == rhs.minExposure_
-            && maxExposure_ == rhs.maxExposure_
-            && adaptRate_ == rhs.adaptRate_;
-    }
-
-    bool operator!=(const AutoExposurePassSettings& rhs) const { return !(*this == rhs); }
-    /// @}
-};
-
-enum class AmbientOcclusionMode
-{
-    Combine,
-    PreviewRaw,
-    PreviewBlurred,
-};
-
-struct AmbientOcclusionPassSettings
-{
-    bool enabled_{};
-
-    unsigned downscale_{0};
-    float strength_{0.7f};
-    float exponent_{1.5f};
-
-    float radiusNear_{0.05f};
-    float distanceNear_{1.0f};
-    float radiusFar_{1.0f};
-    float distanceFar_{100.0f};
-
-    float fadeDistanceBegin_{100.0f};
-    float fadeDistanceEnd_{200.0f};
-
-    float blurDepthThreshold_{0.1f};
-    float blurNormalThreshold_{0.2f};
-
-    AmbientOcclusionMode ambientOcclusionMode_{AmbientOcclusionMode::Combine};
-
-    /// Utility operators
-    /// @{
-    void Validate() { }
-
-    bool operator==(const AmbientOcclusionPassSettings& rhs) const
-    {
-        return enabled_ == rhs.enabled_
-
-            && downscale_ == rhs.downscale_
-            && strength_ == rhs.strength_
-            && exponent_ == rhs.exponent_
-
-            && radiusNear_ == rhs.radiusNear_
-            && distanceNear_ == rhs.distanceNear_
-            && radiusFar_ == rhs.radiusFar_
-            && distanceFar_ == rhs.distanceFar_
-
-            && fadeDistanceBegin_ == rhs.fadeDistanceBegin_
-            && fadeDistanceEnd_ == rhs.fadeDistanceEnd_
-
-            && blurDepthThreshold_ == rhs.blurDepthThreshold_
-            && blurNormalThreshold_ == rhs.blurNormalThreshold_
-
-            && ambientOcclusionMode_ == rhs.ambientOcclusionMode_;
-    }
-
-    bool operator!=(const AmbientOcclusionPassSettings& rhs) const { return !(*this == rhs); }
-    /// @}
-};
-
-struct BloomPassSettings
-{
-    bool enabled_{};
-    bool hdr_{};
-    unsigned numIterations_{ 5 };
-    float threshold_{ 0.8f };
-    float thresholdMax_{ 1.0f };
-    float intensity_{ 1.0f };
-    float iterationFactor_{ 1.0f };
-
-    /// Utility operators
-    /// @{
-    void Validate()
-    {
-        numIterations_ = Clamp(numIterations_, 1u, 16u);
-    }
-
-    bool operator==(const BloomPassSettings& rhs) const
-    {
-        return enabled_ == rhs.enabled_
-            && hdr_ == rhs.hdr_
-            && numIterations_ == rhs.numIterations_
-            && threshold_ == rhs.threshold_
-            && thresholdMax_ == rhs.thresholdMax_
-            && intensity_ == rhs.intensity_
-            && iterationFactor_ == rhs.iterationFactor_;
-    }
-
-    bool operator!=(const BloomPassSettings& rhs) const { return !(*this == rhs); }
-    /// @}
-};
-
-/// Post-processing antialiasing mode.
-enum class PostProcessAntialiasing
-{
-    None,
-    FXAA2,
-    FXAA3
-};
-
 /// Settings of default render pipeline.
 struct RenderPipelineSettings : public ShaderProgramCompositorSettings
 {
@@ -798,52 +667,12 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     bool drawDebugGeometry_{true};
     /// @}
 
-    /// Post-processing settings
-    /// @{
-    AutoExposurePassSettings autoExposure_;
-    BloomPassSettings bloom_;
-    AmbientOcclusionPassSettings ssao_;
-    ToneMappingMode toneMapping_{};
-    PostProcessAntialiasing antialiasing_{};
-    float hueShift_{1.0f};
-    float saturation_{1.0f};
-    float brightness_{1.0f};
-    float contrast_{1.0f};
-    Color colorFilter_{Color::WHITE};
-    Vector3 colorOffset_{Vector3::ZERO};
-    /// @}
-
     /// Utility operators
     /// @{
-    unsigned CalculatePipelineStateHash() const
-    {
-        unsigned hash = 0;
-        CombineHash(hash, ShaderProgramCompositorSettings::CalculatePipelineStateHash());
-        return hash;
-    }
-
-    void Validate()
-    {
-        ShaderProgramCompositorSettings::Validate();
-
-        autoExposure_.Validate();
-        bloom_.Validate();
-    }
-
     bool operator==(const RenderPipelineSettings& rhs) const
     {
         return ShaderProgramCompositorSettings::operator==(rhs)
-            && drawDebugGeometry_ == rhs.drawDebugGeometry_
-            && autoExposure_ == rhs.autoExposure_
-            && bloom_ == rhs.bloom_
-            && toneMapping_ == rhs.toneMapping_
-            && antialiasing_ == rhs.antialiasing_
-            && hueShift_ == rhs.hueShift_
-            && saturation_ == rhs.saturation_
-            && brightness_ == rhs.brightness_
-            && contrast_ == rhs.contrast_
-            && colorFilter_ == rhs.colorFilter_
-            && colorOffset_ == rhs.colorOffset_;
+            && drawDebugGeometry_ == rhs.drawDebugGeometry_;
     }
 
     bool operator!=(const RenderPipelineSettings& rhs) const { return !(*this == rhs); }
@@ -855,7 +684,7 @@ struct RenderPipelineSettings : public ShaderProgramCompositorSettings
     /// Don't modify settings inplace after these calls! Always restore settings from external source.
     /// @{
     void PropagateImpliedSettings();
-    void AdjustForPostProcessing(PostProcessPassFlags flags);
+    void AdjustForRenderPath(RenderOutputFlags flags);
     /// @}
 };
 

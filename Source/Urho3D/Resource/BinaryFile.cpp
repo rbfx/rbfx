@@ -111,6 +111,12 @@ void BinaryFile::SetData(const ByteVector& data)
     SetMemoryUse(buffer_.GetBuffer().capacity());
 }
 
+void BinaryFile::SetText(ea::string_view text)
+{
+    buffer_.SetData(text.data(), static_cast<unsigned>(text.length()));
+    SetMemoryUse(static_cast<unsigned>(buffer_.GetBuffer().capacity()));
+}
+
 const ByteVector& BinaryFile::GetData() const
 {
     return buffer_.GetBuffer();
