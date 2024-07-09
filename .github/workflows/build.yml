@@ -767,9 +767,10 @@ jobs:
         if: ${{ env.ci_release_bin == 'true' }}
         uses: TheDoctor0/zip-release@0.7.6
         with:
-          directory: ${{ github.workspace }}/SDK/bin/RelWithDebInfo/
+          directory: ${{ github.workspace }}/SDK/bin/
           filename: ${{ github.workspace }}/SDK-bin.zip
           path: '.'
+          exclusions: '/Autoload/* /CoreData/* /Data/* /EditorData/* /shell.html'
 
       - name: Release binaries
         if: ${{ env.ci_release_bin == 'true' }}
