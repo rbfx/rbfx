@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace Urho3DNet
 {
-    public class RuntimeCompiledScriptPluginApplication : PluginApplication
+    public partial class RuntimeCompiledScriptPluginApplication : PluginApplication
     {
         /// Assembly that is being managed by this plugin.
         private Assembly _slaveAssembly;
