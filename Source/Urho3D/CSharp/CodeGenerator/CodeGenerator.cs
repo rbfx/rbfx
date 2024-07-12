@@ -46,7 +46,7 @@ namespace Urho3DNet
                     var typeHierarchy = new List<ITypeSymbol>();
 
                     if (!CollectHierarchyUpTo(typeSymbolInfo, urho3dObject, typeHierarchy))
-                        break;
+                        continue;
 
                     if (typeHierarchy.Count > 1)
                     {
@@ -60,6 +60,21 @@ namespace Urho3DNet
                         if (typeSymbolInfo.ContainingNamespace != null)
                         {
                             sourceBuilder.AppendLine($"namespace {typeSymbolInfo.ContainingNamespace} {{");
+                        }
+
+                        var nestedInClasses = new List<INamedTypeSymbol>();
+                        var nestedIn = typeSymbolInfo.ContainingType;
+                        while (nestedIn != null)
+                        {
+                            nestedInClasses.Add(nestedIn);
+                            nestedIn = nestedIn.ContainingType;
+                        }
+
+                        nestedInClasses.Reverse();
+
+                        foreach (var namedTypeSymbol in nestedInClasses)
+                        {
+                            sourceBuilder.AppendLine($"partial class {namedTypeSymbol.Name} {{");
                         }
 
                         var newKeyword = (typeHierarchy.Count > 2) ? "new " : "";
@@ -105,6 +120,11 @@ namespace Urho3DNet
                         }
 
                         sourceBuilder.AppendLine("}");
+
+                        foreach (var namedTypeSymbol in nestedInClasses)
+                        {
+                            sourceBuilder.AppendLine("}");
+                        }
 
                         if (typeSymbolInfo.ContainingNamespace != null)
                         {

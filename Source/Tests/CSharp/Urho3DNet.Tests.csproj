@@ -5,6 +5,7 @@
     <LangVersion>9.0</LangVersion>
     <IsPackable>false</IsPackable>
     <TargetFramework>$(URHO3D_NETFX_RUNTIME)</TargetFramework>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
   <PropertyGroup>
     <GeneratedCodePath>$(RBFX_BINARY_DIR)Source/Urho3D/</GeneratedCodePath>
@@ -22,6 +23,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Urho3D\CSharp\Urho3DNet.csproj" />
+      <ProjectReference Include="..\..\Urho3D\CSharp\Urho3DNet.csproj" />
+      <ProjectReference Include="..\..\Urho3D\CSharp\Urho3DNet.CodeGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

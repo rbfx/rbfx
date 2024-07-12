@@ -26,7 +26,7 @@ using Xunit.Abstractions;
 
 namespace Urho3DNet.Tests
 {
-    public class RmlUIComponentTests
+    public partial class RmlUIComponentTests
     {
         private readonly ITestOutputHelper _output;
 
@@ -35,7 +35,7 @@ namespace Urho3DNet.Tests
             _output = output;
         }
 
-        public class CusomUIComponent : RmlUIComponent
+        public partial class CusomUIComponent : RmlUIComponent
         {
             public CusomUIComponent(Context context) : base(context)
             {
