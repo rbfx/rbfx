@@ -128,6 +128,7 @@ if (APPLE AND NOT IOS)
 endif ()
 
 add_library(Urho3D ${SOURCE_FILES} ${HEADER_FILES} $<$<CXX_COMPILER_ID:MSVC>:${rbfx_SOURCE_DIR}/script/rbfx.natvis>)
+set_target_properties(Urho3D PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(Urho3D PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>        # For parent projects to find auto-generated engine headers
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>           # Misc configured headers
@@ -445,7 +446,7 @@ if (URHO3D_CSHARP)
     if (URHO3D_SYSTEMUI)
         csharp_bind_target(
             TARGET ImGui
-            NATIVE Urho3D
+            EMBED Urho3D
             SWIG ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig/ImGui.i
             NAMESPACE ImGuiNet
             INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."

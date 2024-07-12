@@ -284,3 +284,5 @@ endif ()
 add_subdirectory(swig)
 
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} ThirdParty)
+
+set_property_recursive(. POSITION_INDEPENDENT_CODE ON)

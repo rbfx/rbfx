@@ -255,7 +255,7 @@ void SceneScreenshot::RenderPopup()
     if (hasInSceneCamera)
     {
         const ColorScopeGuard guard{ImGuiCol_Text, ImVec4(1.00f, 1.00f, 0.35f, 1.00f)};
-        ui::Text(sceneCamera_->GetFullNameDebug().c_str());
+        ui::Text("%s", sceneCamera_->GetFullNameDebug().c_str());
     }
     ui::EndDisabled();
 

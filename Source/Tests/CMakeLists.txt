@@ -27,21 +27,28 @@ endif ()
 include (../ThirdParty/catch2/Catch.cmake)
 
 file (GLOB_RECURSE TEST_SOURCE_CODE RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" *.cpp *.h)
+list (REMOVE_ITEM TEST_SOURCE_CODE MainDll.cpp MainExe.cpp)
 
 # Group source code in VS solution
 group_sources()
 
 set (TARGET_NAME Tests)
-add_executable(${TARGET_NAME} ${TEST_SOURCE_CODE})
 
-target_link_libraries(${TARGET_NAME} PRIVATE Urho3D catch2)
+# Target which contains test code. It includes generated bindings code as well.
+add_library(${TARGET_NAME}Lib SHARED MainDll.cpp ${TEST_SOURCE_CODE})
+target_link_libraries(${TARGET_NAME}Lib PRIVATE Urho3D catch2)
+
+# Executable test runner. Does not contain test code, only invokes actual main from the dll.
+add_executable(${TARGET_NAME} MainExe.cpp)
+target_link_libraries(${TARGET_NAME} PRIVATE ${TARGET_NAME}Lib)
 catch_discover_tests(${TARGET_NAME})
 
 if (URHO3D_CSHARP)
-    add_target_csharp(
-        TARGET Urho3DNet.Tests
-        PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.Tests.csproj
-        OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Urho3DNet.Tests
-        DEPENDS Urho3DNet
+    csharp_bind_target(
+        TARGET ${TARGET_NAME}Lib
+        SWIG ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/TestBindings.i
+        CSPROJ ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.Tests.csproj
+        NAMESPACE Urho3DNet
+        DEPENDS Urho3D
     )
 endif()
