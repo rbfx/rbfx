@@ -14,12 +14,12 @@ namespace Urho3DNet.Tests
             var component = new LogicComponent(RbfxTestFramework.Context);
 
             // From C#
-            Assert.Equal(component.GetTypeName(), "LogicComponent");
-            Assert.Equal(component.GetTypeHash(), new StringHash("LogicComponent"));
+            Assert.Equal(nameof(LogicComponent), component.GetTypeName());
+            Assert.Equal(new StringHash(nameof(LogicComponent)), component.GetTypeHash());
 
             // From C++
-            Assert.Equal(TestBindings.GetObjectTypeName(component), "LogicComponent");
-            Assert.Equal(TestBindings.GetObjectTypeHash(component), new StringHash("LogicComponent"));
+            Assert.Equal(nameof(LogicComponent), TestBindings.GetObjectTypeName(component));
+            Assert.Equal(new StringHash(nameof(LogicComponent)), TestBindings.GetObjectTypeHash(component));
         }
 
         partial class MyResource : Resource
@@ -35,12 +35,12 @@ namespace Urho3DNet.Tests
             var resource = new MyResource(RbfxTestFramework.Context);
 
             // From C#
-            Assert.Equal(resource.GetTypeName(), "MyResource");
-            Assert.Equal(resource.GetTypeHash(), new StringHash("MyResource").Hash);
+            Assert.Equal(nameof(MyResource), resource.GetTypeName());
+            Assert.Equal(new StringHash(nameof(MyResource)), resource.GetTypeHash());
 
             // From C++
-            Assert.Equal(TestBindings.GetObjectTypeName(resource), "MyResource");
-            Assert.Equal(TestBindings.GetObjectTypeHash(resource), new StringHash("MyResource"));
+            Assert.Equal(nameof(MyResource), TestBindings.GetObjectTypeName(resource));
+            Assert.Equal(new StringHash(nameof(MyResource)), TestBindings.GetObjectTypeHash(resource));
         }
     }
 }
