@@ -96,6 +96,14 @@ void ToolManager::RenderSettings()
     RenderStatus(fbx2gltf_.found_, fbx2gltf_.path_, fbx2gltfDownloadUrl);
     if (ui::InputText("##FBX2glTFPath", &fbx2gltf_.path_))
         ScanFBX2glTF();
+
+    ui::Separator();
+
+    if (ui::Button(ICON_FA_ARROWS_ROTATE " Refresh All"))
+    {
+        ScanBlender();
+        ScanFBX2glTF();
+    }
 }
 
 void ToolManager::RenderStatus(bool found, const ea::string& path, const ea::string& hint)

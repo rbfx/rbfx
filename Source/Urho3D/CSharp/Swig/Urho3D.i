@@ -345,6 +345,7 @@ namespace SDL
 %interface_custom("%s", "I%s", Urho3D::ObjectReflectionRegistry)
 %include "Urho3D/Core/ObjectReflection.h"
 %include "Urho3D/Core/Context.h"
+%include "Urho3D/Core/TypeInfo.h"
 %include "Urho3D/Core/Object.h"
 %include "Urho3D/Core/Timer.h"
 %include "Urho3D/Core/Spline.h"
