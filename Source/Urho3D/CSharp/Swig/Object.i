@@ -22,7 +22,6 @@ IGNORE_SUBSYSTEM(Tasks)
 
 %rename(GetTypeHash) Urho3D::Object::GetType;
 %ignore Urho3D::Object::GetTypeInfo;    // TODO: All C# classes should implement it for C++ side to see.
-%ignore Urho3D::Object::IsInstanceOf;   // TODO: All C# classes should implement it using metadata info (and possibly caching it).
 
 %ignore Urho3D::EventHandler;
 %ignore Urho3D::EventHandlerImpl;

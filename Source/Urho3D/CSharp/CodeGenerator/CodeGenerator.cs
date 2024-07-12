@@ -35,12 +35,12 @@ namespace Urho3DNet
                 {
                     var typeSymbolInfo = compilation.GetSemanticModel(classDeclaration.SyntaxTree).GetDeclaredSymbol(classDeclaration) as ITypeSymbol;
 
+                    if (typeSymbolInfo == null)
+                        continue;
+
                     var fullClassName = typeSymbolInfo.ToString();
 
                     if (!visitedClasses.Add(fullClassName))
-                        continue;
-
-                    if (typeSymbolInfo == null)
                         continue;
 
                     var typeHierarchy = new List<ITypeSymbol>();
@@ -62,21 +62,49 @@ namespace Urho3DNet
                             sourceBuilder.AppendLine($"namespace {typeSymbolInfo.ContainingNamespace} {{");
                         }
 
+                        var newKeyword = (typeHierarchy.Count > 2) ? "new " : "";
+
                         sourceBuilder.AppendLine($"partial class {className} {{");
 
-                        sourceBuilder.AppendLine($"    public static readonly string ClassName = nameof({className});");
+                        sourceBuilder.AppendLine($"    public static {newKeyword}readonly string ClassName = nameof({className});");
 
-                        sourceBuilder.AppendLine($"    public static readonly string BaseClassName = \"{typeHierarchy[1].Name}\"");
+                        sourceBuilder.AppendLine($"    public static {newKeyword}readonly string BaseClassName = \"{typeHierarchy[1].Name}\";");
 
-                        sourceBuilder.AppendLine($"    public static readonly StringHash TypeId = nameof({className});");
+                        sourceBuilder.AppendLine($"    public static {newKeyword}readonly StringHash TypeId = new StringHash(nameof({className}));");
 
-                        sourceBuilder.Append("    public static readonly string[] TypeHierarchy = new []{");
-                        sourceBuilder.Append(string.Join(", ", typeHierarchy.Select(_=>$"\"{_.Name}\"")));
+                        sourceBuilder.Append($"    public static new readonly StringHash[] TypeHierarchy = new []{{");
+                        sourceBuilder.Append(string.Join(", ", typeHierarchy.Select(_=>$"new StringHash(\"{_.Name}\")")));
                         sourceBuilder.AppendLine("};");
 
-                        sourceBuilder.AppendLine("    public override string GetTypeName() { return ClassName; }");
+                        bool hasGetTypeName = false;
+                        bool hasGetTypeHash = false;
+                        bool hasIsInstanceOf = false;
+                        foreach (var methodSymbol in typeSymbolInfo.GetMembers().OfType<IMethodSymbol>())
+                        {
+                            switch (methodSymbol.Name)
+                            {
+                                case "GetTypeName": hasGetTypeName = true; break;
+                                case "GetTypeHash": hasGetTypeHash = true; break;
+                                case "IsInstanceOf": hasIsInstanceOf = true; break;
+                            }
+                        }
 
-                        sourceBuilder.AppendLine("    public override StringHash GetTypeHash() { return TypeId; }");
+                        if (!hasGetTypeName)
+                            sourceBuilder.AppendLine("    public override string GetTypeName() { return ClassName; }");
+
+                        if (!hasGetTypeHash)
+                            sourceBuilder.AppendLine("    public override StringHash GetTypeHash() { return TypeId; }");
+
+                        if (!hasIsInstanceOf)
+                        {
+                            sourceBuilder.AppendLine("    public override bool IsInstanceOf(StringHash typeId) {");
+                            sourceBuilder.AppendLine(
+                                "        for (int i=0; i<TypeHierarchy.Length; ++i) if (TypeHierarchy[i] == typeId) return true;");
+                            sourceBuilder.AppendLine("        return false;");
+                            sourceBuilder.AppendLine("    }");
+                        }
+
+                        sourceBuilder.AppendLine("}");
 
                         if (typeSymbolInfo.ContainingNamespace != null)
                         {
