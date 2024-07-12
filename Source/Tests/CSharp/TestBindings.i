@@ -14,6 +14,16 @@ int TestBindingsFunc()
     return 42;
 }
 
+ea::string GetObjectTypeName(Urho3D::Object* obj)
+{
+    return obj->GetTypeName();
+}
+
+Urho3D::StringHash GetObjectTypeHash(Urho3D::Object* obj)
+{
+    return obj->GetType();
+}
+
 %}
 
 //%include "SampleComponent.h"
