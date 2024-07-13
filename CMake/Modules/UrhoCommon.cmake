@@ -431,7 +431,7 @@ function (csharp_bind_target)
         set (FACADES Facades/)
     endif ()
     if (BIND_CSPROJ)
-        get_filename_component(BIND_MANAGED_TARGET "${BIND_CSPROJ}" NAME_WE)
+        get_filename_component(BIND_MANAGED_TARGET "${BIND_CSPROJ}" NAME_WLE)
         add_target_csharp(
             TARGET ${BIND_MANAGED_TARGET}
             PROJECT ${BIND_CSPROJ}
