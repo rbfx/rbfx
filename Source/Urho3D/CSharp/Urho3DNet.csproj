@@ -3,6 +3,7 @@
     <AssemblyName>Urho3DNet</AssemblyName>
     <OutputType>Library</OutputType>
     <LangVersion>9.0</LangVersion>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
   <PropertyGroup>
     <GeneratedCodePath>$(RBFX_BINARY_DIR)/Source/Urho3D/</GeneratedCodePath>
@@ -11,6 +12,9 @@
     <BindingsSourceCodeUrho3D Include="$(GeneratedCodePath)Urho3DCSharp_$(URHO3D_CSHARP_BIND_CONFIG)/*.cs" />
     <BindingsSourceCodeImGui Include="$(GeneratedCodePath)ImGuiCSharp_$(URHO3D_CSHARP_BIND_CONFIG)/*.cs" />
     <Compile Include="Managed/**/*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="Urho3DNet.CodeGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <Choose>
     <When Condition="$(TargetFramework) == 'netstandard2.0'">
