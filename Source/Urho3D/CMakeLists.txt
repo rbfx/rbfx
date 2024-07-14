@@ -461,6 +461,12 @@ if (URHO3D_CSHARP)
         DEPENDS Urho3DNet
     )
 
+    add_target_csharp(
+        TARGET Urho3DNet.CodeGenerator
+        PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.CodeGenerator.csproj
+        OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Urho3DNet.CodeGenerator
+    )
+
     file (GLOB_RECURSE EXTRA_NATIVE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.h)
     file (GLOB_RECURSE EXTRA_NATIVE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.cpp)
     file (GLOB_RECURSE WRAPPER_FILES)
