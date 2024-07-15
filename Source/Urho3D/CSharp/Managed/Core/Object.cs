@@ -31,6 +31,8 @@ namespace Urho3DNet
 
         public static readonly StringHash TypeId = new StringHash(nameof(Object));
 
+        public static readonly string BaseClassName = null;
+
         public static string GetTypeNameStatic() { return ClassName; }
 
         public static StringHash GetTypeStatic() { return TypeId; }
