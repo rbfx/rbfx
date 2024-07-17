@@ -1,8 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -81,36 +79,71 @@ namespace Urho3DNet
 
                         var newKeyword = (typeHierarchy.Count > 2) ? "new " : "";
 
+                        var baseType = typeHierarchy[1];
+
+                        typeHierarchy.RemoveAt(typeHierarchy.Count-1);
+
+                        var hasClassName = HasStaticField(typeSymbolInfo, "ClassName");
+
                         sourceBuilder.AppendLine($"partial class {className} {{");
-
-                        sourceBuilder.AppendLine($"    public static {newKeyword}readonly string ClassName = \"{className}\";");
-
-                        sourceBuilder.AppendLine($"    public static {newKeyword}readonly string BaseClassName = \"{GetClassNameWithoutNamespace(typeHierarchy[1])}\";");
-
-                        sourceBuilder.AppendLine($"    public static {newKeyword}readonly StringHash TypeId = new StringHash(\"{className}\");");
-
-                        sourceBuilder.Append($"    public static new readonly StringHash[] TypeHierarchy = new []{{");
-                        sourceBuilder.Append(string.Join(", ", typeHierarchy.Select(_=>$"new StringHash(\"{GetClassNameWithoutNamespace(_)}\")")));
-                        sourceBuilder.AppendLine("};");
 
                         bool hasGetTypeName = false;
                         bool hasGetTypeHash = false;
                         bool hasIsInstanceOf = false;
+                        bool hasGetTypeNameStatic = false;
+                        bool hasGetTypeStatic = false;
                         foreach (var methodSymbol in typeSymbolInfo.GetMembers().OfType<IMethodSymbol>())
                         {
-                            switch (methodSymbol.Name)
+                            if (methodSymbol.IsStatic)
                             {
-                                case "GetTypeName": hasGetTypeName = true; break;
-                                case "GetTypeHash": hasGetTypeHash = true; break;
-                                case "IsInstanceOf": hasIsInstanceOf = true; break;
+                                switch (methodSymbol.Name)
+                                {
+                                    case "GetTypeNameStatic": hasGetTypeNameStatic = true; break;
+                                    case "GetTypeStatic": hasGetTypeStatic = true; break;
+                                }
+                            }
+                            else
+                            {
+                                switch (methodSymbol.Name)
+                                {
+                                    case "GetTypeName": hasGetTypeName = true; break;
+                                    case "GetTypeHash": hasGetTypeHash = true; break;
+                                    case "IsInstanceOf": hasIsInstanceOf = true; break;
+                                }
                             }
                         }
 
+                        if (!hasClassName)
+                        {
+                            if (hasGetTypeNameStatic)
+                                sourceBuilder.AppendLine($"    public static new readonly string ClassName = {fullClassName}.GetTypeNameStatic();");
+                            else
+                                sourceBuilder.AppendLine($"    public static new readonly string ClassName = typeof({fullClassName}).GetFormattedTypeName();");
+                        }
+
+                        sourceBuilder.AppendLine($"    public static {newKeyword}readonly string BaseClassName = {baseType}.ClassName;");
+
+                        if (hasGetTypeHash)
+                            sourceBuilder.AppendLine($"    public static new readonly StringHash TypeId = {fullClassName}.GetTypeStatic();");
+                        else
+                            sourceBuilder.AppendLine($"    public static new readonly StringHash TypeId = new StringHash(ClassName);");
+
+                        sourceBuilder.Append($"    public static new readonly StringHash[] TypeHierarchy = new []{{");
+                        sourceBuilder.Append(string.Join(", ", typeHierarchy.Select(_ => $"{_}.TypeId")));
+                        sourceBuilder.AppendLine("};");
+
+
                         if (!hasGetTypeName)
-                            sourceBuilder.AppendLine("    public override string GetTypeName() { return ClassName; }");
+                            sourceBuilder.AppendLine("    public override string GetTypeName() { return GetTypeNameStatic(); }");
+
+                        if (!hasGetTypeNameStatic)
+                            sourceBuilder.AppendLine("    public new static string GetTypeNameStatic() { return ClassName; }");
 
                         if (!hasGetTypeHash)
-                            sourceBuilder.AppendLine("    public override StringHash GetTypeHash() { return TypeId; }");
+                            sourceBuilder.AppendLine("    public override StringHash GetTypeHash() { return GetTypeStatic(); }");
+
+                        if (!hasGetTypeStatic)
+                            sourceBuilder.AppendLine("    public new static StringHash GetTypeStatic() { return TypeId; }");
 
                         if (!hasIsInstanceOf)
                         {
@@ -138,6 +171,19 @@ namespace Urho3DNet
                     }
                 }
             }
+        }
+
+        private bool HasStaticField(ITypeSymbol typeSymbolInfo, string classname)
+        {
+            foreach (var fieldSymbol in typeSymbolInfo.GetMembers().OfType<IFieldSymbol>())
+            {
+                if (fieldSymbol.IsStatic && fieldSymbol.Name == "ClassName")
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private string GetClassNameWithoutNamespace(ITypeSymbol typeSymbol)
