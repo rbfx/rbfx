@@ -1,25 +1,7 @@
-//
 // Copyright (c) 2008-2022 the Urho3D project.
-// Copyright (c) 2023-2023 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2023-2024 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
@@ -27,14 +9,15 @@
 #include "Urho3D/Physics/PhysicsUtils.h"
 #include "Urho3D/Physics/RigidBody.h"
 #include "Urho3D/Physics/RaycastVehicleWheel.h"
+#include "Urho3D/Scene/ModuleComponent.h"
 
 namespace Urho3D
 {
 struct RaycastVehicleData;
 
-class URHO3D_API RaycastVehicle : public LogicComponent
+class URHO3D_API RaycastVehicle : public ModuleComponent
 {
-    URHO3D_OBJECT(RaycastVehicle, LogicComponent);
+    URHO3D_OBJECT(RaycastVehicle, ModuleComponent);
 
 public:
     constexpr static float DefaultBrakingForce = 50.0f;
@@ -53,7 +36,7 @@ public:
     void DrawWheelDebugGeometry(unsigned index, DebugRenderer* debug, bool depthTest) const;
 
     /// Handle enabled/disabled state change.
-    void OnSetEnabled() override;
+    void OnEffectiveEnabled(bool enabled) override;
 
     /// Perform post-load after deserialization. Acquire the components from the scene nodes.
     void ApplyAttributes() override;
@@ -107,11 +90,11 @@ public:
     /// Init the vehicle component after creation.
     void Init();
     /// Perform fixed step pre-update.
-    void FixedUpdate(float timeStep) override;
+    void FixedUpdate(StringHash eventType, VariantMap& eventData);
     /// Perform fixed step post-update.
-    void FixedPostUpdate(float timeStep) override;
+    void FixedPostUpdate(StringHash eventType, VariantMap& eventData);
     /// Perform variable step post-update.
-    void PostUpdate(float timeStep) override;
+    void PostUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Get wheel position relative to RigidBody.
     Vector3 GetWheelPosition(int wheel) const;
