@@ -27,6 +27,16 @@ namespace Urho3DNet
 {
     public partial class Object
     {
+        public static readonly string ClassName = nameof(Object);
+
+        public static readonly StringHash TypeId = new StringHash(nameof(Object));
+
+        public static readonly string BaseClassName = null;
+
+        public static string GetTypeNameStatic() { return ClassName; }
+
+        public static StringHash GetTypeStatic() { return TypeId; }
+
         [DllImport(global::Urho3DNet.Urho3DPINVOKE.DllImportModule, EntryPoint = "Urho3D_Object_SubscribeToEvent")]
         private static extern void Urho3D_Object_SubscribeToEvent(HandleRef receiver, HandleRef sender, uint eventType,
             IntPtr callback, IntPtr callbackHandle);
