@@ -1,28 +1,10 @@
-//
-// Copyright (c) 2008-2022 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2023-2024 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
-#include "../Scene/Component.h"
+#include "Urho3D/Scene/ModuleComponent.h"
 
 namespace Urho3D
 {
@@ -30,9 +12,9 @@ struct RaycastVehicleData;
 
 class RaycastVehicle;
 
-class URHO3D_API RaycastVehicleWheel : public Component
+class URHO3D_API RaycastVehicleWheel : public ModuleComponent
 {
-    URHO3D_OBJECT(RaycastVehicleWheel, Component);
+    URHO3D_OBJECT(RaycastVehicleWheel, ModuleComponent);
 
 public:
     static constexpr float DefaultWheelRadius = 1.0f;
@@ -204,12 +186,10 @@ public:
     void ConnectionPointFromTransform();
 
 protected:
-    /// Handle node being assigned.
-    void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
     void ApplyAttributes() override;
 
-    void UpdateWheelAtVehicle();
+    void SetVehicle(RaycastVehicle* vehicle);
 
 private:
     /// Wheel connection point.
@@ -262,6 +242,7 @@ private:
     bool isInContact{};
 
     unsigned wheelIndex_{UINT_MAX};
+
     WeakPtr<RaycastVehicle> vehicle_{};
 };
 

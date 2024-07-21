@@ -2,6 +2,8 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
+#include "Urho3D/IO/Log.h"
+
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Scene/ContainerComponent.h>
 #include <Urho3D/Scene/ContainerComponentEvents.h>
@@ -29,7 +31,7 @@ void ModuleComponent::RegisterObject(Context* context)
 
 void ModuleComponent::OnSetEnabled()
 {
-    UpdateRegistrations();
+    UpdateEnabledEffective();
 }
 
 ContainerComponent* ModuleComponent::GetContainer() const
@@ -57,6 +59,7 @@ void ModuleComponent::OnSceneSet(Scene* scene)
     {
         RemoveModule();
     }
+    UpdateEnabledEffective();
 }
 
 void ModuleComponent::SetSubscribeToContainerEnabled(bool enable)
@@ -65,6 +68,16 @@ void ModuleComponent::SetSubscribeToContainerEnabled(bool enable)
         return;
 
     subscribeToContainer_ = enable;
+
+    if (!enable && !observers_.empty())
+    {
+        URHO3D_LOGERROR("Unexpected call SetSubscribeToContainerEnabled(false) when module observers are registered.");
+    }
+
+    if (enable && !container_.Expired())
+    {
+        URHO3D_LOGERROR("SetSubscribeToContainerEnabled called when the container is already discovered. Set the flag from class constructor instead.");
+    }
 
     UpdateContainerSubscription();
 }
@@ -81,16 +94,32 @@ void ModuleComponent::OnContainerSet(ContainerComponent* container)
 {
 }
 
+void ModuleComponent::OnEffectiveEnabled(bool enabled)
+{
+}
+
 void ModuleComponent::UpdateRegistrations()
 {
-
-    if (IsEnabledEffective() && !container_.Expired())
+    const bool isEnabledEffective = IsEnabledEffective();
+    if (isEnabledEffective && !container_.Expired())
     {
         RegisterModule();
     }
     else
     {
         RemoveModule();
+    }
+}
+
+void ModuleComponent::UpdateEnabledEffective()
+{
+    UpdateRegistrations();
+
+    const bool isEnabledEffective = IsEnabledEffective();
+    if (isEnabledEffective != effectiveEnabled_)
+    {
+        effectiveEnabled_ = isEnabledEffective;
+        OnEffectiveEnabled(isEnabledEffective);
     }
 }
 
@@ -122,11 +151,7 @@ void ModuleComponent::AutodetectContainer()
 
     if (container_ != newContainer)
     {
-        RemoveModule();
-
-        container_ = newContainer;
-
-        UpdateRegistrations();
+        SetContainer(newContainer);
     }
 }
 
@@ -146,9 +171,9 @@ void ModuleComponent::SetContainer(ContainerComponent* container)
 
     container_ = container;
 
-    RegisterModule();
-
     UpdateContainerSubscription();
+
+    RegisterModule();
 
     OnContainerSet(container);
 }
@@ -156,6 +181,9 @@ void ModuleComponent::SetContainer(ContainerComponent* container)
 void ModuleComponent::RegisterModule()
 {
     if (isRegistered_ || container_.Expired())
+        return;
+
+    if (!IsEnabledEffective())
         return;
 
     isRegistered_ = true;
@@ -179,6 +207,15 @@ void ModuleComponent::RemoveModule()
         {
             container_->RemoveModule(registeredType, this);
         }
+    }
+}
+
+void ModuleComponent::ObserveModule(ModuleObserver* observer)
+{
+    if (observer)
+    {
+        SetSubscribeToContainerEnabled(true);
+        observers_.emplace_back(observer);
     }
 }
 
@@ -212,7 +249,17 @@ void ModuleComponent::HandleModuleRegistered(StringHash eventType, VariantMap& e
     const auto type = eventData[P_TYPE].GetStringHash();
 
     if (module != this)
+    {
+        for (const auto& observerRef: observers_)
+        {
+            if (observerRef->GetModuleType() == type)
+            {
+                observerRef->Add(module);
+            }
+        }
+
         OnModuleRegistered(type, module);
+    }
 }
 
 void ModuleComponent::HandleModuleRemoved(StringHash eventType, VariantMap& eventData)
@@ -223,7 +270,17 @@ void ModuleComponent::HandleModuleRemoved(StringHash eventType, VariantMap& even
     const auto type = eventData[P_TYPE].GetStringHash();
 
     if (module != this)
-        OnModuleRegistered(type, module);
+    {
+        for (const auto& observerRef : observers_)
+        {
+            if (observerRef->GetModuleType() == type)
+            {
+                observerRef->Remove(module);
+            }
+        }
+
+        OnModuleRemoved(type, module);
+    }
 }
 
 }

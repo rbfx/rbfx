@@ -1,37 +1,22 @@
-//
 // Copyright (c) 2008-2022 the Urho3D project.
-// Copyright (c) 2023-2023 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2023-2024 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #include "../Precompiled.h"
 
 #include "Urho3D/Physics/RaycastVehicle.h"
 
+#include "PhysicsEvents.h"
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/Physics/PhysicsUtils.h"
 #include "Urho3D/Physics/PhysicsWorld.h"
 #include "Urho3D/Physics/RigidBody.h"
 #include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/ContainerComponent.h"
 #include "Urho3D/Graphics/DebugRenderer.h"
+#include "Urho3D/Scene/SceneEvents.h"
 
 #include <Bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
 #include <Bullet/BulletDynamics/Vehicle/btRaycastVehicle.h>
@@ -229,10 +214,12 @@ struct RaycastVehicleData
 };
 
 RaycastVehicle::RaycastVehicle(Context* context) :
-    LogicComponent(context)
+    BaseClassName(context)
 {
-    // fixed update() for inputs and post update() to sync wheels for rendering
-    SetUpdateEventMask(USE_FIXEDUPDATE | USE_FIXEDPOSTUPDATE | USE_POSTUPDATE);
+    RegisterAs<RaycastVehicle>();
+    URHO3D_OBSERVE_MODULES(RaycastVehicleWheel, AddWheel, RemoveWheel);
+    SetSubscribeToContainerEnabled(true);
+
     vehicleData_ = new RaycastVehicleData();
     coordinateSystem_ = RIGHT_UP_FORWARD;
     activate_ = false;
@@ -319,10 +306,31 @@ void RaycastVehicle::OnMarkedDirty(Node* node)
     }
 }
 
-void RaycastVehicle::OnSetEnabled()
+void RaycastVehicle::OnEffectiveEnabled(bool enabled)
 {
     if (vehicleData_)
-        vehicleData_->SetEnabled(IsEnabledEffective());
+        vehicleData_->SetEnabled(enabled);
+
+    Scene* scene = GetScene();
+    if (scene)
+    {
+        Component* world = scene->GetComponent<PhysicsWorld>();
+        if (scene)
+        {
+            if (enabled)
+            {
+                SubscribeToEvent(world, E_PHYSICSPRESTEP, &RaycastVehicle::FixedUpdate);
+                SubscribeToEvent(world, E_PHYSICSPOSTSTEP, &RaycastVehicle::FixedPostUpdate);
+                SubscribeToEvent(scene, E_SCENEPOSTUPDATE, &RaycastVehicle::PostUpdate);
+            }
+            else
+            {
+                UnsubscribeFromEvent(world, E_PHYSICSPRESTEP);
+                UnsubscribeFromEvent(world, E_PHYSICSPOSTSTEP);
+                UnsubscribeFromEvent(scene, E_SCENEPOSTUPDATE);
+            }
+        }
+    }
 }
 
 void RaycastVehicle::ApplyAttributes()
@@ -372,8 +380,11 @@ void RaycastVehicle::Init()
     vehicleData_->Init(scene, hullBody_, IsEnabledEffective(), coordinateSystem_);
 }
 
-void RaycastVehicle::FixedUpdate(float timeStep)
+void RaycastVehicle::FixedUpdate(StringHash eventType, VariantMap& eventData)
 {
+    using namespace PhysicsPreStep;
+    const float timeStep = eventData[P_TIMESTEP].GetFloat();
+
     hasSimulated_ = true;
     btRaycastVehicle* vehicle = vehicleData_->Get();
     for (int i = 0; i < GetNumWheels(); i++)
@@ -389,8 +400,11 @@ void RaycastVehicle::FixedUpdate(float timeStep)
     }
 }
 
-void RaycastVehicle::PostUpdate(float timeStep)
+void RaycastVehicle::PostUpdate(StringHash eventType, VariantMap& eventData)
 {
+    using namespace ScenePostUpdate;
+    const float timeStep = eventData[P_TIMESTEP].GetFloat();
+
     btRaycastVehicle* vehicle = vehicleData_->Get();
     for (int i = 0; i < GetNumWheels(); i++)
     {
@@ -409,8 +423,11 @@ void RaycastVehicle::PostUpdate(float timeStep)
     }
 }
 
-void RaycastVehicle::FixedPostUpdate(float timeStep)
+void RaycastVehicle::FixedPostUpdate(StringHash eventType, VariantMap& eventData)
 {
+    using namespace PhysicsPostUpdate;
+    const float timeStep = eventData[P_TIMESTEP].GetFloat();
+
     btRaycastVehicle* vehicle = vehicleData_->Get();
     const Vector3 velocity = hullBody_->GetLinearVelocity();
     for (int i = 0; i < GetNumWheels(); i++)

@@ -39,6 +39,7 @@
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Physics/RigidBody.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Scene/ContainerComponent.h>
 #include <Urho3D/Scene/PrefabReference.h>
 #include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
@@ -150,6 +151,7 @@ void RaycastVehicleDemo::CreateVehicle()
     Node* vehicleNode = scene_->CreateChild("Vehicle");
     vehicleNode->SetPosition(Vector3(0.0f, 25.0f, 0.0f));
     // Create the vehicle logic component
+    vehicleNode->CreateComponent<ContainerComponent>();
     vehicle_ = vehicleNode->CreateComponent<Vehicle2>();
     const auto moveAndOrbit = vehicleNode->CreateComponent<MoveAndOrbitController>();
     moveAndOrbit->LoadInputMap("Input/MoveAndOrbit.inputmap");
