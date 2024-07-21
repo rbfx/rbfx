@@ -100,7 +100,7 @@ void ModuleComponent::OnEffectiveEnabled(bool enabled)
 
 void ModuleComponent::UpdateRegistrations()
 {
-    const bool isEnabledEffective = IsEnabledEffective();
+    const bool isEnabledEffective = IsEnabledEffective() && GetScene();
     if (isEnabledEffective && !container_.Expired())
     {
         RegisterModule();
@@ -115,7 +115,7 @@ void ModuleComponent::UpdateEnabledEffective()
 {
     UpdateRegistrations();
 
-    const bool isEnabledEffective = IsEnabledEffective();
+    const bool isEnabledEffective = IsEnabledEffective() && GetScene();
     if (isEnabledEffective != effectiveEnabled_)
     {
         effectiveEnabled_ = isEnabledEffective;
@@ -133,7 +133,7 @@ void ModuleComponent::RegisterAs(StringHash type)
 
     registeredTypes_.push_back(type);
 
-    if (IsEnabledEffective() && !container_.Expired())
+    if (IsEnabledEffective() && GetScene() && !container_.Expired())
     {
         container_->RegisterModule(type, this);
     }
@@ -175,6 +175,11 @@ void ModuleComponent::SetContainer(ContainerComponent* container)
 
     RegisterModule();
 
+    for (auto& observer : observers_)
+    {
+        observer->SetContainer(container_);
+    }
+
     OnContainerSet(container);
 }
 
@@ -183,7 +188,7 @@ void ModuleComponent::RegisterModule()
     if (isRegistered_ || container_.Expired())
         return;
 
-    if (!IsEnabledEffective())
+    if (!(IsEnabledEffective() && GetScene()))
         return;
 
     isRegistered_ = true;
