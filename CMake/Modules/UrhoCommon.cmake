@@ -347,12 +347,12 @@ function (csharp_bind_target)
 
     # Native library name matches target name by default
     if (BIND_EMBED)
-        list (APPEND GENERATOR_OPTIONS -dllimport $<TARGET_FILE_NAME:${BIND_EMBED}>)
+        list (APPEND GENERATOR_OPTIONS -dllimport $<TARGET_NAME:${BIND_EMBED}>)
     else ()
         if (IOS OR WEB)
             list (APPEND GENERATOR_OPTIONS -dllimport __Internal)
         else ()
-            list (APPEND GENERATOR_OPTIONS -dllimport $<TARGET_FILE_NAME:${BIND_TARGET}>)
+            list (APPEND GENERATOR_OPTIONS -dllimport $<TARGET_NAME:${BIND_TARGET}>)
         endif ()
     endif ()
 

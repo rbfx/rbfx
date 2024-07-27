@@ -10,6 +10,8 @@ namespace Urho3DNet
     [Generator]
     public class Urho3DNetSourceGenerator : ISourceGenerator
     {
+        private static readonly HashSet<char> InvalidFileNameChars = new HashSet<char>(Path.GetInvalidFileNameChars().Concat(new[]{'<', '>'}));
+
         public void Execute(GeneratorExecutionContext context)
         {
             var compilation = context.Compilation;
@@ -166,11 +168,25 @@ namespace Urho3DNet
                             sourceBuilder.AppendLine("}");
                         }
 
-                        string sanitizedFileName = string.Join("_", fullClassName.Split(Path.GetInvalidFileNameChars()));
+                        string sanitizedFileName = SanitizeFileName(fullClassName);
                         context.AddSource($"{sanitizedFileName}.g.cs", sourceBuilder.ToString());
                     }
                 }
             }
+        }
+
+        private static string SanitizeFileName(string fullClassName)
+        {
+            var sb = new StringBuilder(fullClassName.Length);
+            foreach (var c in fullClassName)
+            {
+                if (InvalidFileNameChars.Contains(c))
+                    sb.Append('_');
+                else
+                    sb.Append(c);
+            }
+
+            return sb.ToString();
         }
 
         private bool HasStaticField(ITypeSymbol typeSymbolInfo, string classname)
