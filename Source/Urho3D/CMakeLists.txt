@@ -76,6 +76,10 @@ if (URHO3D_PHYSICS)
     define_engine_source_files (Physics)
 endif ()
 
+if (URHO3D_STEAM_AUDIO)
+    define_engine_source_files (SteamAudio)
+endif ()
+
 if (URHO3D_URHO2D)
     define_engine_source_files (Urho2D)
 endif ()
@@ -233,6 +237,14 @@ if (URHO3D_XR AND DESKTOP)
         list (APPEND PUBLIC_THIRD_PARTY_DEPENDENCIES openxr_loader)
     else () # shouldn't need to wrorry about WEB right now
         target_link_libraries(Urho3D PUBLIC openxr_loader)
+    endif ()
+endif ()
+
+if (URHO3D_STEAM_AUDIO)
+    if (URHO3D_MERGE_STATIC_LIBS)
+        list (APPEND PUBLIC_THIRD_PARTY_DEPENDENCIES phonon)
+    else ()
+        target_link_libraries(Urho3D PUBLIC phonon)
     endif ()
 endif ()
 
