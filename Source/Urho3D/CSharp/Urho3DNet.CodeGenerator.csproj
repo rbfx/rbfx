@@ -26,9 +26,9 @@
       <None Remove="Native\**" />
       <None Remove="Swig\**" />
     </ItemGroup>
-    
+
     <ItemGroup>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Version="4.10.0" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Version="4.9.0" />
         <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" Version="3.3.4" />
     </ItemGroup>
 
