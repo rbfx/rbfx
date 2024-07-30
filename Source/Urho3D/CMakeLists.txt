@@ -241,11 +241,16 @@ if (URHO3D_XR AND DESKTOP)
 endif ()
 
 if (URHO3D_STEAM_AUDIO)
-    if (URHO3D_MERGE_STATIC_LIBS)
-        list (APPEND PUBLIC_THIRD_PARTY_DEPENDENCIES phonon)
-    else ()
-        target_link_libraries(Urho3D PUBLIC phonon)
-    endif ()
+    find_package(SteamAudio REQUIRED)
+    target_include_directories(Urho3D PRIVATE ${STEAMAUDIO_INCLUDE_DIRS})
+    target_link_libraries(Urho3D PRIVATE ${STEAMAUDIO_LIBRARIES})
+    foreach(lib ${STEAMAUDIO_LIBRARIES})
+        # Copy .so and .dll files to the binary directory
+        string(REGEX REPLACE ".lib$" ".dll" lib "${lib}")
+        if ("${lib}" MATCHES ".*\\.(so|dll)" AND EXISTS "${lib}")
+            add_custom_command(TARGET Urho3D POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${lib} $<TARGET_FILE_DIR:Urho3D>)
+        endif ()
+    endforeach()
 endif ()
 
 if (URHO3D_MERGE_STATIC_LIBS)
@@ -547,7 +552,7 @@ install(TARGETS Urho3D
 
 if (URHO3D_MONOLITHIC_HEADER)
     # Generate include header with all engine headers
-    list (REMOVE_ITEM HEADER_FILES Urho3D.h DebugNew.h Precompiled.h WindowsSupport.h Core/Main.h Core/PE.h)
+    list (REMOVE_ITEM HEADER_FILES Urho3D.h DebugNew.h Precompiled.h WindowsSupport.h Core/Main.h Core/PE.h SteamAudio/SteamAudio.h SteamAudio/SteamSoundMesh.h SteamAudio/SteamSoundSource.h)
     string (REPLACE ";" ">\n#include <Urho3D/" HEADER_FILES "${HEADER_FILES}")
     set (HEADER_FILES "#include <Urho3D/${HEADER_FILES}>")
     configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3DAll.h.in ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h @ONLY)
