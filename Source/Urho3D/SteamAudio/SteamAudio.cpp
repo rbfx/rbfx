@@ -77,19 +77,17 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
     }
 
     // Create context
-    IPLContextSettings contextSettings {
-        .version = STEAMAUDIO_VERSION,
-        #ifndef NDEBUG
-        .flags = IPL_CONTEXTFLAGS_VALIDATION
-        #endif
-    };
+    IPLContextSettings contextSettings {};
+    contextSettings.version = STEAMAUDIO_VERSION;
+    #ifndef NDEBUG
+    contextSettings.flags = IPL_CONTEXTFLAGS_VALIDATION;
+    #endif
     iplContextCreate(&contextSettings, &phononContext_);
 
     // Typical audio settings...
-    audioSettings_ = IPLAudioSettings {
-        .samplingRate = mixRate,
-        .frameSize = 1024
-    };
+    audioSettings_ = IPLAudioSettings {};
+    audioSettings_.samplingRate = mixRate;
+    audioSettings_.frameSize = 1024;
 
     // Create single frame buffer
     // This buffer one individual audio frame per channel at a time.
@@ -97,34 +95,31 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
 
     // Create the HRTF
     // The HRTF basically describes the "set of filters that is applied to audio in order to spatialize it"
-    IPLHRTFSettings hrtfSettings {
-        .type = IPL_HRTFTYPE_DEFAULT,
-        .volume = 1.0f
-    };
+    IPLHRTFSettings hrtfSettings {};
+    hrtfSettings.type = IPL_HRTFTYPE_DEFAULT;
+    hrtfSettings.volume = 1.0f;
     iplHRTFCreate(phononContext_, &audioSettings_, &hrtfSettings, &hrtf_);
 
     // Create the scene
-    IPLSceneSettings sceneSettings {
-        .type = IPL_SCENETYPE_DEFAULT
-    };
+    IPLSceneSettings sceneSettings {};
+    sceneSettings.type = IPL_SCENETYPE_DEFAULT;
     iplSceneCreate(phononContext_, &sceneSettings, &scene_);
 
     // Create the simulator
-    IPLSimulationSettings simulationSettings {
-        .flags = static_cast<IPLSimulationFlags>(IPL_SIMULATIONFLAGS_DIRECT | IPL_SIMULATIONFLAGS_REFLECTIONS),
-        .sceneType = IPL_SCENETYPE_DEFAULT,
-        .reflectionType = IPL_REFLECTIONEFFECTTYPE_CONVOLUTION,
-        .maxNumOcclusionSamples = 12,
-        .maxNumRays = 16384,
-        .numDiffuseSamples = 8, //TODO: No idea about this, find a good default value
-        .maxDuration = 4.0f,
-        .maxOrder = 8,
-        .maxNumSources = 16, //TODO: This should dynamically increase if limit is reached
-        .numThreads = 3,
-        .numVisSamples = 8, //TODO: No idea about this, find a good default value
-        .samplingRate = audioSettings_.samplingRate,
-        .frameSize = audioSettings_.frameSize
-    };
+    IPLSimulationSettings simulationSettings {};
+    simulationSettings.flags = static_cast<IPLSimulationFlags>(IPL_SIMULATIONFLAGS_DIRECT | IPL_SIMULATIONFLAGS_REFLECTIONS);
+    simulationSettings.sceneType = IPL_SCENETYPE_DEFAULT;
+    simulationSettings.reflectionType = IPL_REFLECTIONEFFECTTYPE_CONVOLUTION;
+    simulationSettings.maxNumOcclusionSamples = 12;
+    simulationSettings.maxNumRays = 16384;
+    simulationSettings.numDiffuseSamples = 8; //TODO: No idea about this, find a good default value
+    simulationSettings.maxDuration = 4.0f;
+    simulationSettings.maxOrder = 8;
+    simulationSettings.maxNumSources = 16; //TODO: This should dynamically increase if limit is reached
+    simulationSettings.numThreads = 3;
+    simulationSettings.numVisSamples = 8; //TODO: No idea about this, find a good default value
+    simulationSettings.samplingRate = audioSettings_.samplingRate;
+    simulationSettings.frameSize = audioSettings_.frameSize;
     iplSimulatorCreate(phononContext_, &simulationSettings, &simulator_);
     iplSimulatorSetScene(simulator_, scene_);
     MarkSimulatorDirty();
@@ -138,14 +133,13 @@ bool SteamAudio::SetMode(int mixRate, SpeakerMode mode)
     audioBufferPool_ = ea::make_unique<SteamAudioBufferPool>(this);
 
     // Set up SDL
-    SDL_AudioSpec spec {
-        .freq = audioSettings_.samplingRate,
-        .format = AUDIO_F32,
-        .channels = 2,
-        .samples = static_cast<unsigned short>(audioSettings_.frameSize),
-        .callback = *SDLSteamAudioCallback,
-        .userdata = this
-    };
+    SDL_AudioSpec spec {};
+    spec.freq = audioSettings_.samplingRate;
+    spec.format = AUDIO_F32;
+    spec.channels = 2;
+    spec.samples = static_cast<unsigned short>(audioSettings_.frameSize);
+    spec.callback = *SDLSteamAudioCallback;
+    spec.userdata = this;
 
     // Open the audio channel
     if (SDL_OpenAudio(&spec, NULL) < 0) {
@@ -191,12 +185,10 @@ void SteamAudio::Update(float timeStep)
         const auto lDir = listener_->GetNode()->GetWorldDirection();
         const auto lRight = listener_->GetNode()->GetWorldRight();
         const auto lPos = listener_->GetNode()->GetWorldPosition();
-        sharedInputs_.listener = {
-            .right = {lRight.x_, lRight.y_, lRight.z_},
-            .up = {lUp.x_, lUp.y_, lUp.z_},
-            .ahead = {lDir.x_, lDir.y_, lDir.z_},
-            .origin = {lPos.x_, lPos.y_, lPos.z_}
-        },
+        sharedInputs_.listener.right = {lRight.x_, lRight.y_, lRight.z_};
+        sharedInputs_.listener.up = {lUp.x_, lUp.y_, lUp.z_};
+        sharedInputs_.listener.ahead = {lDir.x_, lDir.y_, lDir.z_};
+        sharedInputs_.listener.origin = {lPos.x_, lPos.y_, lPos.z_};
         iplSimulatorSetSharedInputs(simulator_, SimulationFlags(), &sharedInputs_);
 
         // Run simulations

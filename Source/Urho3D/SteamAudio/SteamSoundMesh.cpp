@@ -67,16 +67,15 @@ static const ea::vector<ea::string> materialNames = {
 };
 
 SteamSoundMesh::SteamSoundMesh(Context* context) :
-    Component(context), modelDirty_(false), mesh_(nullptr), subScene_(nullptr), materialIndex_(Material::generic)
+    Component(context), modelDirty_(false), mesh_(nullptr), subScene_(nullptr), materialIndex_(SteamSoundMaterial::generic)
 {
     audio_ = GetSubsystem<SteamAudio>();
     material_ = &materials[static_cast<unsigned>(materialIndex_)];
 
     if (audio_) {
         // Create subscene
-        IPLSceneSettings sceneSettings {
-            .type = IPL_SCENETYPE_DEFAULT
-        };
+        IPLSceneSettings sceneSettings {};
+        sceneSettings.type = IPL_SCENETYPE_DEFAULT;
         iplSceneCreate(audio_->GetPhononContext(), &sceneSettings, &subScene_);
 
         // Subscribe to render updates
@@ -101,7 +100,7 @@ void SteamSoundMesh::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Model", GetModel, SetModel, ResourceRef, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Material", GetMaterial, SetMaterial, Material, materialNames, Material::generic, AM_DEFAULT);
+    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Material", GetMaterial, SetMaterial, SteamSoundMaterial, materialNames, SteamSoundMaterial::generic, AM_DEFAULT);
 }
 
 void SteamSoundMesh::SetModel(const ResourceRef& model)
@@ -111,7 +110,7 @@ void SteamSoundMesh::SetModel(const ResourceRef& model)
     MarkModelDirty();
 }
 
-void SteamSoundMesh::SetMaterial(Material material) {
+void SteamSoundMesh::SetMaterial(SteamSoundMaterial material) {
     materialIndex_ = material;
     material_ = &materials[static_cast<unsigned>(materialIndex_)];
     MarkModelDirty();
@@ -203,10 +202,9 @@ void SteamSoundMesh::ReloadModel()
     iplSceneSaveOBJ(subScene_, ("scene-"+ea::to_string(GetNode()->GetID())+".obj").c_str());
 
     // Create instanced mesh
-    IPLInstancedMeshSettings instancedMeshSettings {
-        .subScene = subScene_,
-        .transform = GetPhononMatrix()
-    };
+    IPLInstancedMeshSettings instancedMeshSettings {};
+    instancedMeshSettings.subScene = subScene_;
+    instancedMeshSettings.transform = GetPhononMatrix();
     iplInstancedMeshCreate(audio_->GetScene(), &instancedMeshSettings, &instancedMesh_);
     iplInstancedMeshAdd(instancedMesh_, audio_->GetScene());
 

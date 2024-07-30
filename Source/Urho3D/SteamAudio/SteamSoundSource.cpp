@@ -205,10 +205,9 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
             iplAudioBufferFree(phononContext, &monoBuffer);
 
         // Convert ambisonics back to target channel count
-        IPLAmbisonicsBinauralEffectParams ambisonicsBinauralEffectParams {
-            .hrtf = audio_->GetHRTF(),
-            .order = static_cast<IPLint32>(reflectionAmbisonicsOrder_)
-        };
+        IPLAmbisonicsBinauralEffectParams ambisonicsBinauralEffectParams{};
+        ambisonicsBinauralEffectParams.hrtf = audio_->GetHRTF();
+        ambisonicsBinauralEffectParams.order = static_cast<IPLint32>(reflectionAmbisonicsOrder_);
         iplAmbisonicsBinauralEffectApply(ambisonicsBinauralEffect_, &ambisonicsBinauralEffectParams, &ambiBuffer, pool.GetNextBuffer());
         iplAudioBufferFree(phononContext, &ambiBuffer);
         pool.SwitchToNextBuffer();
@@ -216,11 +215,10 @@ IPLAudioBuffer *SteamSoundSource::GenerateAudioBuffer(float gain)
 
     // Apply binaural effect
     if (binaural_) {
-        IPLBinauralEffectParams binauralEffectParams {
-            .interpolation = binauralBilinearInterpolation_?IPL_HRTFINTERPOLATION_BILINEAR:IPL_HRTFINTERPOLATION_NEAREST,
-            .spatialBlend = binauralSpatialBlend_,
-            .hrtf = hrtf
-        };
+        IPLBinauralEffectParams binauralEffectParams {};
+        binauralEffectParams.interpolation = binauralBilinearInterpolation_?IPL_HRTFINTERPOLATION_BILINEAR:IPL_HRTFINTERPOLATION_NEAREST;
+        binauralEffectParams.spatialBlend = binauralSpatialBlend_;
+        binauralEffectParams.hrtf = hrtf;
         binauralEffectParams.direction = iplCalculateRelativeDirection(phononContext, psPos, plPos, {lDir.x_, lDir.y_, lDir.z_}, {lUp.x_, lUp.y_, lUp.z_});
         binauralEffectParams.direction.x = -binauralEffectParams.direction.x; // Why is this required?
         iplBinauralEffectApply(binauralEffect_, &binauralEffectParams, pool.GetCurrentBuffer(), pool.GetNextBuffer());
@@ -316,26 +314,23 @@ void SteamSoundSource::UpdateEffects()
     // Create new effects
     if (binaural_) {
         // Create binaural effect
-        IPLBinauralEffectSettings binauralEffectSettings {
-            .hrtf = audio_->GetHRTF()
-        };
+        IPLBinauralEffectSettings binauralEffectSettings {};
+        binauralEffectSettings.hrtf = audio_->GetHRTF();
         iplBinauralEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &binauralEffectSettings, &binauralEffect_);
     }
 
     if (UsingDirectEffect()) {
         // Create source
-        IPLSourceSettings sourceSettings {
-            .flags = SimulationFlags()
-        };
+        IPLSourceSettings sourceSettings{};
+        sourceSettings.flags = SimulationFlags();
         iplSourceCreate(audio_->GetSimulator(), &sourceSettings, &source_);
         iplSourceAdd(source_, audio_->GetSimulator());
         UpdateSimulationInputs();
         audio_->MarkSimulatorDirty();
 
         // Create direct effect
-        IPLDirectEffectSettings directEffectSettings {
-            .numChannels = sound_->IsStereo()?2:1
-        };
+        IPLDirectEffectSettings directEffectSettings {};
+        directEffectSettings.numChannels = sound_->IsStereo()?2:1;
         iplDirectEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &directEffectSettings, &directEffect_);
     }
 
@@ -347,10 +342,9 @@ void SteamSoundSource::UpdateEffects()
 
         iplReflectionEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &reflectionEffectSettings, &reflectionEffect_);
 
-        IPLAmbisonicsBinauralEffectSettings ambisonicsBinauralEffectSettings {
-            .hrtf = audio_->GetHRTF(),
-            .maxOrder = static_cast<IPLint32>(reflectionAmbisonicsOrder_)
-        };
+        IPLAmbisonicsBinauralEffectSettings ambisonicsBinauralEffectSettings{};
+        ambisonicsBinauralEffectSettings.hrtf = audio_->GetHRTF();
+        ambisonicsBinauralEffectSettings.maxOrder = static_cast<IPLint32>(reflectionAmbisonicsOrder_);
         iplAmbisonicsBinauralEffectCreate(phononContext, const_cast<IPLAudioSettings*>(&audioSettings), &ambisonicsBinauralEffectSettings, &ambisonicsBinauralEffect_);
     }
 
@@ -385,30 +379,27 @@ void SteamSoundSource::UpdateSimulationInputs()
     const auto lRight = GetNode()->GetWorldRight();
     const auto lPos = GetNode()->GetWorldPosition();
 
-    IPLSimulationInputs inputs {
-        .flags = SimulationFlags(),
-        .directFlags = static_cast<IPLDirectSimulationFlags>(
-            (distanceAttenuation_?IPL_DIRECTSIMULATIONFLAGS_DISTANCEATTENUATION:0) |
-            (airAbsorption_?IPL_DIRECTSIMULATIONFLAGS_AIRABSORPTION:0) |
-            (occlusion_?IPL_DIRECTSIMULATIONFLAGS_OCCLUSION:0) |
-            (transmission_?IPL_DIRECTSIMULATIONFLAGS_TRANSMISSION:0)),
-        .source = {
-            .right = {lRight.x_, lRight.y_, lRight.z_},
-            .up = {lUp.x_, lUp.y_, lUp.z_},
-            .ahead = {lDir.x_, lDir.y_, lDir.z_},
-            .origin = {lPos.x_, lPos.y_, lPos.z_}
-        },
-        .directivity = {
-            .dipoleWeight = 1.0f
-        },
-        .occlusionType = IPL_OCCLUSIONTYPE_RAYCAST,
-        .occlusionRadius = 0.25f,
-        .numOcclusionSamples = 8,
-        .reverbScale = {1.0f, 1.0f, 1.0f},
-        .hybridReverbTransitionTime = 1.0f,
-        .hybridReverbOverlapPercent = 0.25f,
-        .numTransmissionRays = 16
-    };
+    IPLSimulationInputs inputs {};
+    inputs.flags = SimulationFlags();
+    inputs.directFlags = static_cast<IPLDirectSimulationFlags>(
+        (distanceAttenuation_?IPL_DIRECTSIMULATIONFLAGS_DISTANCEATTENUATION:0) |
+        (airAbsorption_?IPL_DIRECTSIMULATIONFLAGS_AIRABSORPTION:0) |
+        (occlusion_?IPL_DIRECTSIMULATIONFLAGS_OCCLUSION:0) |
+        (transmission_?IPL_DIRECTSIMULATIONFLAGS_TRANSMISSION:0));
+    inputs.source.right = {lRight.x_, lRight.y_, lRight.z_};
+    inputs.source.up = {lUp.x_, lUp.y_, lUp.z_};
+    inputs.source.ahead = {lDir.x_, lDir.y_, lDir.z_};
+    inputs.source.origin = {lPos.x_, lPos.y_, lPos.z_};
+    inputs.directivity.dipoleWeight = 1.0f;
+    inputs.occlusionType = IPL_OCCLUSIONTYPE_RAYCAST;
+    inputs.occlusionRadius = 0.25f;
+    inputs.numOcclusionSamples = 8;
+    inputs.reverbScale[0] = 1.0f;
+    inputs.reverbScale[1] = 1.0f;
+    inputs.reverbScale[2] = 1.0f;
+    inputs.hybridReverbTransitionTime = 1.0f;
+    inputs.hybridReverbOverlapPercent = 0.25f;
+    inputs.numTransmissionRays = 16;
     iplSourceSetInputs(source_, SimulationFlags(), &inputs);
 }
 

@@ -32,7 +32,7 @@ namespace Urho3D
 class SteamAudio;
 class Model;
 
-enum class Material {
+enum class SteamSoundMaterial {
     generic,
     brick,
     concrete,
@@ -63,12 +63,12 @@ public:
     /// Set model to use.
     void SetModel(const ResourceRef& model);
     /// Set material to use.
-    void SetMaterial(Material material);
+    void SetMaterial(SteamSoundMaterial material);
 
     /// Returns currently used model.
     ResourceRef GetModel() const;
     /// Returns currently used material.
-    Material GetMaterial() const { return materialIndex_; }
+    SteamSoundMaterial GetMaterial() const { return materialIndex_; }
 
 private:
     /// Handle render update event.
@@ -95,7 +95,7 @@ private:
     /// Currently used model.
     SharedPtr<Model> model_;
     /// Material index.
-    Material materialIndex_;
+    SteamSoundMaterial materialIndex_;
     /// Material.
     IPLMaterial *material_;
     /// Mesh.
