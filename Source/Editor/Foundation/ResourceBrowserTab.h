@@ -152,7 +152,7 @@ private:
 
     /// Utility functions
     /// @{
-    ea::string GetEntryIcon(const FileSystemEntry& entry, bool isCompositeFile) const;
+    const char* GetEntryIcon(const FileSystemEntry& entry, bool isCompositeFile) const;
     unsigned GetRootIndex(const FileSystemEntry& entry) const;
     const ResourceRoot& GetRoot(const FileSystemEntry& entry) const;
     bool IsEntryFromCache(const FileSystemEntry& entry) const;

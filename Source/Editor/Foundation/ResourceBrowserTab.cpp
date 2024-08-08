@@ -589,8 +589,10 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     if (!isCompositeFile)
         flags |= ImGuiTreeNodeFlags_Leaf;
 
-    const ea::string name = Format("{} {}", GetEntryIcon(entry, isCompositeFile), entry.localName_);
-    const bool isOpen = ui::TreeNodeEx(name.c_str(), flags);
+    constexpr size_t nameBufferSize = FILENAME_MAX + 5; // Icon and space take 4 extra characters + one character for zero at the end of the string.
+    static char name[nameBufferSize];
+    snprintf(name, nameBufferSize, "%s %s", GetEntryIcon(entry, isCompositeFile), entry.localName_.c_str());
+    const bool isOpen = ui::TreeNodeEx(name, flags);
     const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
     const bool toggleSelection = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
 
@@ -708,9 +710,11 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     if (IsRightSelected(entry.resourceName_))
         flags |= ImGuiTreeNodeFlags_Selected;
 
-    const ea::string name = Format("{} {}", GetEntryIcon(entry, false), localResourceName);
+    constexpr size_t nameBufferSize = FILENAME_MAX + 5; // Icon and space take 4 extra characters + one character for zero at the end of the string.
+    static char name[nameBufferSize];
+    snprintf(name, nameBufferSize, "%s %s", GetEntryIcon(entry, false), localResourceName.c_str());
 
-    const bool isOpen = ui::TreeNodeEx(name.c_str(), flags);
+    const bool isOpen = ui::TreeNodeEx(name, flags);
     const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
     const bool toggleSelection = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
 
@@ -999,7 +1003,7 @@ void ResourceBrowserTab::DropPayloadToFolder(const FileSystemEntry& entry)
     }
 }
 
-ea::string ResourceBrowserTab::GetEntryIcon(const FileSystemEntry& entry, bool isCompositeFile) const
+const char* ResourceBrowserTab::GetEntryIcon(const FileSystemEntry& entry, bool isCompositeFile) const
 {
     if (isCompositeFile)
         return ICON_FA_FILE_ZIPPER;
