@@ -199,6 +199,7 @@ set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     embree
     RmlUi
     tinygltf
+    tinyobjloader
     enkiTS
     Diligent-Common
     Diligent-GraphicsEngineOpenGL-static
