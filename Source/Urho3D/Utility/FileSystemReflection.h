@@ -52,6 +52,11 @@ struct URHO3D_API FileSystemEntry
 
     ea::vector<FileSystemEntry> children_;
 
+    // Cached values for entry visualization in editor.
+    mutable ea::string displayName_;
+    mutable ea::optional<bool> isFileNameIgnored_{};
+
+
     static bool ComparePathFilesFirst(const ea::string& lhs, const ea::string& rhs);
     static bool ComparePathDirectoriesFirst(const ea::string& lhs, const ea::string& rhs);
 

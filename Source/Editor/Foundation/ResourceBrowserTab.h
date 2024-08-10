@@ -152,6 +152,8 @@ private:
 
     /// Utility functions
     /// @{
+    const char* GetDisplayName(const FileSystemEntry& entry, bool isCompositeFile) const;
+    bool IsFileNameIgnored(const FileSystemEntry& entry, const Project* project) const;
     const char* GetEntryIcon(const FileSystemEntry& entry, bool isCompositeFile) const;
     unsigned GetRootIndex(const FileSystemEntry& entry) const;
     const ResourceRoot& GetRoot(const FileSystemEntry& entry) const;

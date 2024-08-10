@@ -589,10 +589,7 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     if (!isCompositeFile)
         flags |= ImGuiTreeNodeFlags_Leaf;
 
-    constexpr size_t nameBufferSize = FILENAME_MAX + 5; // Icon and space take 4 extra characters + one character for zero at the end of the string.
-    static char name[nameBufferSize];
-    snprintf(name, nameBufferSize, "%s %s", GetEntryIcon(entry, isCompositeFile), entry.localName_.c_str());
-    const bool isOpen = ui::TreeNodeEx(name, flags);
+    const bool isOpen = ui::TreeNodeEx(GetDisplayName(entry, isCompositeFile), flags);
     const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
     const bool toggleSelection = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
 
@@ -699,7 +696,7 @@ void ResourceBrowserTab::RenderCompositeFile(ea::span<const FileSystemEntry*> en
 void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, const ea::string& localResourceName)
 {
     const auto project = GetProject();
-    if (project->IsFileNameIgnored(entry.localName_))
+    if (IsFileNameIgnored(entry, project))
         return;
 
     const IdScopeGuard guard(entry.resourceName_.c_str());
@@ -710,11 +707,7 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     if (IsRightSelected(entry.resourceName_))
         flags |= ImGuiTreeNodeFlags_Selected;
 
-    constexpr size_t nameBufferSize = FILENAME_MAX + 5; // Icon and space take 4 extra characters + one character for zero at the end of the string.
-    static char name[nameBufferSize];
-    snprintf(name, nameBufferSize, "%s %s", GetEntryIcon(entry, false), localResourceName.c_str());
-
-    const bool isOpen = ui::TreeNodeEx(name, flags);
+    const bool isOpen = ui::TreeNodeEx(GetDisplayName(entry, false), flags);
     const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
     const bool toggleSelection = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
 
@@ -1001,6 +994,24 @@ void ResourceBrowserTab::DropPayloadToFolder(const FileSystemEntry& entry)
             }
         }
     }
+}
+
+const char* ResourceBrowserTab::GetDisplayName(const FileSystemEntry& entry, bool isCompositeFile) const
+{
+    if (entry.displayName_.empty())
+    {
+        entry.displayName_ = Format("{} {}", GetEntryIcon(entry, isCompositeFile), entry.localName_);
+    }
+
+    return entry.displayName_.c_str();
+}
+
+bool ResourceBrowserTab::IsFileNameIgnored(const FileSystemEntry& entry, const Project* project) const
+{
+    if (!entry.isFileNameIgnored_.has_value())
+        entry.isFileNameIgnored_ = project->IsFileNameIgnored(entry.localName_);
+
+    return entry.isFileNameIgnored_.value();
 }
 
 const char* ResourceBrowserTab::GetEntryIcon(const FileSystemEntry& entry, bool isCompositeFile) const
