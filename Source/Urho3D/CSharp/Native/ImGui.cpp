@@ -23,14 +23,14 @@
 #include <ImGui/imgui.h>
 #include <Urho3D/Urho3D.h>
 
-///* calling conventions for Windows */
-//#ifndef SWIGSTDCALL
-//    #if defined(_WIN32) || defined(__WIN32__) || defined(__CYGWIN__)
-//        #define SWIGSTDCALL __stdcall
-//    #else
-//        #define SWIGSTDCALL
-//    #endif
-//#endif
+/* calling conventions for Windows */
+#ifndef SWIGSTDCALL
+    #if defined(_WIN32) || defined(__WIN32__) || defined(__CYGWIN__)
+        #define SWIGSTDCALL __stdcall
+    #else
+        #define SWIGSTDCALL
+    #endif
+#endif
 
 namespace Urho3D
 {
