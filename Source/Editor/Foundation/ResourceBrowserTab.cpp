@@ -340,7 +340,7 @@ void ResourceBrowserTab::RenderDialogs()
 void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const ea::string& displayedName)
 {
     const auto project = GetProject();
-    if (project->IsFileNameIgnored(displayedName))
+    if (IsFileNameIgnored(entry, project, displayedName))
         return;
 
     const IdScopeGuard guard(displayedName.c_str());
@@ -564,7 +564,7 @@ void ResourceBrowserTab::RenderDirectoryUp(const FileSystemEntry& entry)
 void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entry)
 {
     const auto project = GetProject();
-    if (project->IsFileNameIgnored(entry.localName_))
+    if (IsFileNameIgnored(entry, project, entry.localName_))
         return;
 
     const IdScopeGuard guard(entry.localName_.c_str());
@@ -696,7 +696,7 @@ void ResourceBrowserTab::RenderCompositeFile(ea::span<const FileSystemEntry*> en
 void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, const ea::string& localResourceName)
 {
     const auto project = GetProject();
-    if (IsFileNameIgnored(entry, project))
+    if (IsFileNameIgnored(entry, project, localResourceName))
         return;
 
     const IdScopeGuard guard(entry.resourceName_.c_str());
@@ -1006,10 +1006,10 @@ const char* ResourceBrowserTab::GetDisplayName(const FileSystemEntry& entry, boo
     return entry.displayName_.c_str();
 }
 
-bool ResourceBrowserTab::IsFileNameIgnored(const FileSystemEntry& entry, const Project* project) const
+bool ResourceBrowserTab::IsFileNameIgnored(const FileSystemEntry& entry, const Project* project, const ea::string& name) const
 {
     if (!entry.isFileNameIgnored_.has_value())
-        entry.isFileNameIgnored_ = project->IsFileNameIgnored(entry.localName_);
+        entry.isFileNameIgnored_ = project->IsFileNameIgnored(name);
 
     return entry.isFileNameIgnored_.value();
 }
