@@ -1048,6 +1048,12 @@ using ImGuiConfigFlags = unsigned;
 %template(RigitBody2DArray) eastl::vector<Urho3D::RigidBody2D*>;
 #endif
 
+// --------------------------------------- Utility ---------------------------------------
+
+%include "Urho3D/Utility/GLTFImporter.h"
+
+// --------------------------------------- Custom types ---------------------------------------
+
 %template(StringMap)                    eastl::unordered_map<Urho3D::StringHash, eastl::string>;
 %template(VariantMap)                   eastl::unordered_map<Urho3D::StringHash, Urho3D::Variant, eastl::hash<Urho3D::StringHash>, eastl::equal_to<Urho3D::StringHash>, eastl::allocator, false>;
 %template(StringVariantMap)             eastl::unordered_map<eastl::string, Urho3D::Variant, eastl::hash<eastl::string>, eastl::equal_to<eastl::string>, eastl::allocator, true>;
