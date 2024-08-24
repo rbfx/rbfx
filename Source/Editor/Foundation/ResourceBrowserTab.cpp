@@ -174,6 +174,19 @@ const FileSystemEntry* ResourceBrowserTab::FindLeftPanelEntry(const ea::string& 
     return entry;
 }
 
+ResourceBrowserTab::CachedEntryData& ResourceBrowserTab::GetCachedEntryData(const FileSystemEntry& entry) const
+{
+    const auto iter = cachedEntryData_.find(&entry);
+    if (iter != cachedEntryData_.end())
+        return iter->second;
+
+    CachedEntryData& result = cachedEntryData_[&entry];
+    result.simpleDisplayName_ = Format("{} {}", GetEntryIcon(entry, false), entry.localName_);
+    result.compositeDisplayName_ = Format("{} {}", GetEntryIcon(entry, true), entry.localName_);
+    result.isFileNameIgnored_ = GetProject()->IsFileNameIgnored(entry.localName_);
+    return result;
+}
+
 ResourceBrowserTab::~ResourceBrowserTab()
 {
 }
@@ -998,20 +1011,14 @@ void ResourceBrowserTab::DropPayloadToFolder(const FileSystemEntry& entry)
 
 const char* ResourceBrowserTab::GetDisplayName(const FileSystemEntry& entry, bool isCompositeFile) const
 {
-    if (entry.displayName_.empty())
-    {
-        entry.displayName_ = Format("{} {}", GetEntryIcon(entry, isCompositeFile), entry.localName_);
-    }
-
-    return entry.displayName_.c_str();
+    CachedEntryData& cachedData = GetCachedEntryData(entry);
+    return isCompositeFile ? cachedData.compositeDisplayName_.c_str() : cachedData.simpleDisplayName_.c_str();
 }
 
 bool ResourceBrowserTab::IsFileNameIgnored(const FileSystemEntry& entry, const Project* project, const ea::string& name) const
 {
-    if (!entry.isFileNameIgnored_.has_value())
-        entry.isFileNameIgnored_ = project->IsFileNameIgnored(name);
-
-    return entry.isFileNameIgnored_.value();
+    CachedEntryData& cachedData = GetCachedEntryData(entry);
+    return cachedData.isFileNameIgnored_;
 }
 
 const char* ResourceBrowserTab::GetEntryIcon(const FileSystemEntry& entry, bool isCompositeFile) const
@@ -1301,6 +1308,7 @@ void ResourceBrowserTab::RefreshContents()
 {
     ScrollToSelection();
     waitingForUpdate_ = false;
+    cachedEntryData_.clear();
 }
 
 void ResourceBrowserTab::RevealInExplorer(const ea::string& path)

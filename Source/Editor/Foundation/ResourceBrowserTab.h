@@ -104,12 +104,22 @@ private:
         SharedPtr<FileSystemReflection> reflection_;
     };
 
+    /// Per-entry cache for optimization.
+    struct CachedEntryData
+    {
+        ea::string simpleDisplayName_;
+        ea::string compositeDisplayName_;
+        bool isFileNameIgnored_{};
+    };
+
     void InitializeRoots();
     void InitializeDefaultFactories();
     void InitializeHotkeys();
 
     void OnProjectRequest(RefCounted* sender, ProjectRequest* request);
     const FileSystemEntry* FindLeftPanelEntry(const ea::string& resourceName) const;
+
+    CachedEntryData& GetCachedEntryData(const FileSystemEntry& entry) const;
 
     /// Render left panel
     /// @{
@@ -265,6 +275,8 @@ private:
     };
     ea::vector<TempEntry> tempEntryList_;
     bool selectionDirty_{};
+
+    mutable ea::unordered_map<const FileSystemEntry*, CachedEntryData> cachedEntryData_;
 };
 
 class ChangeResourceSelectionAction : public EditorAction
