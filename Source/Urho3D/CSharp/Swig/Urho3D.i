@@ -91,7 +91,7 @@ using namespace Urho3D;
 // Speed boost
 %pragma(csharp) imclassclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\npublic unsafe class"
 %pragma(csharp) moduleclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\npublic unsafe partial class"
-%typemap(csclassmodifiers) SWIGTYPE "[global::Urho3DNet.Preserve(AllMembers=true)]\npublic unsafe partial class"
+%typemap(csclassmodifiers) SWIGTYPE "public unsafe partial class"
 
 %{
 #if _WIN32

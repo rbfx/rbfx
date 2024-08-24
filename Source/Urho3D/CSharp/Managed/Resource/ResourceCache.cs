@@ -26,12 +26,12 @@ namespace Urho3DNet
     {
         public T GetResource<T>(string name, bool sendEventOnFailure = true) where T: Resource
         {
-            return (T) GetResource(typeof(T).Name, name, sendEventOnFailure);
+            return (T) GetResource(ObjectReflection<T>.TypeId, name, sendEventOnFailure);
         }
 
         public T GetTempResource<T>(string name, bool sendEventOnFailure = true) where T : Resource
         {
-            return (T)GetTempResource(typeof(T).Name, name, sendEventOnFailure);
+            return (T)GetTempResource(ObjectReflection<T>.TypeId, name, sendEventOnFailure);
         }
     }
 }
