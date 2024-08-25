@@ -42,6 +42,19 @@ namespace Urho3DNet.Tests
 
             Assert.Equal(component, (DerivedFromTestComponent)node.GetDerivedComponent<IDerivedFromTestComponent>());
         }
+
+        [Fact]
+        public async Task GetParentDerivedComponent_ByInterface()
+        {
+            await RbfxTestFramework.Context.ToMainThreadAsync();
+
+            var parent = RbfxTestFramework.Context.CreateObject<Node>();
+            var node = parent.CreateChild("");
+            var component = parent.CreateComponent<DerivedFromTestComponent>();
+
+            Assert.Equal(component, (DerivedFromTestComponent)node.GetParentDerivedComponent<IDerivedFromTestComponent>());
+            Assert.Null(parent.GetParentDerivedComponent<IDerivedFromTestComponent>());
+        }
     }
 
     [DerivedFrom]

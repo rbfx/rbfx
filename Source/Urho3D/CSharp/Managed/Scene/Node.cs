@@ -103,11 +103,11 @@ namespace Urho3DNet
         /// <summary>
         /// Return component in parent node that derives from type. If there are several, returns the first. May optional traverse up to the root node.
         /// </summary>
-        /// <typeparam name="T">Type of the component.</typeparam>
+        /// <typeparam name="T">Type inherited from <see cref="Urho3DNet.Component"/> or interface marked with <see cref="Urho3DNet.DerivedFromAttribute"/></typeparam>
         /// <returns>Found component or null.</returns>
-        public T GetParentDerivedComponent<T>(bool fullTraversal = false) where T : Component
+        public T GetParentDerivedComponent<T>(bool fullTraversal = false) where T : class
         {
-            return (T)GetParentDerivedComponent(ObjectReflection<T>.TypeId, fullTraversal);
+            return GetParentDerivedComponent(ObjectReflection<T>.TypeId, fullTraversal) as T;
         }
     }
 }
