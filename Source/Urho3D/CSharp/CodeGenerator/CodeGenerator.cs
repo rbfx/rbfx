@@ -23,6 +23,7 @@ namespace Urho3DNet
             }
 
             INamedTypeSymbol? derivedFromAttribute = compilation.GetTypeByMetadataName("Urho3DNet.DerivedFromAttribute");
+            INamedTypeSymbol? preserveAttribute = compilation.GetTypeByMetadataName("Urho3DNet.PreserveAttribute");
 
             var visitedClasses = new HashSet<string>();
 
@@ -90,7 +91,10 @@ namespace Urho3DNet
 
                         var hasClassName = HasStaticField(typeSymbolInfo, "ClassName");
 
-                        sourceBuilder.AppendLine("[global::Urho3DNet.Preserve(AllMembers=true)]");
+                        if (!typeSymbolInfo.GetAttributes().Any(attr=> SymbolEqualityComparer.Default.Equals(attr.AttributeClass, preserveAttribute)))
+                        {
+                            sourceBuilder.AppendLine("[global::Urho3DNet.Preserve(AllMembers=true)]");
+                        }
                         sourceBuilder.AppendLine($"partial class {className} {{");
 
                         bool hasGetTypeName = false;
