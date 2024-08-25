@@ -22,6 +22,8 @@ namespace Urho3DNet
                 return;
             }
 
+            INamedTypeSymbol? derivedFromAttribute = compilation.GetTypeByMetadataName("Urho3DNet.DerivedFromAttribute");
+
             var visitedClasses = new HashSet<string>();
 
             foreach (var syntaxTree in compilation.SyntaxTrees)
@@ -74,8 +76,9 @@ namespace Urho3DNet
 
                         nestedInClasses.Reverse();
 
-                        foreach (var namedTypeSymbol in nestedInClasses)
+                        for (var index = 0; index < nestedInClasses.Count; index++)
                         {
+                            var namedTypeSymbol = nestedInClasses[index];
                             sourceBuilder.AppendLine($"partial class {GetClassNameWithoutNamespace(namedTypeSymbol)} {{");
                         }
 
@@ -87,6 +90,7 @@ namespace Urho3DNet
 
                         var hasClassName = HasStaticField(typeSymbolInfo, "ClassName");
 
+                        sourceBuilder.AppendLine("[global::Urho3DNet.Preserve(AllMembers=true)]");
                         sourceBuilder.AppendLine($"partial class {className} {{");
 
                         bool hasGetTypeName = false;
@@ -131,7 +135,9 @@ namespace Urho3DNet
                             sourceBuilder.AppendLine($"    public static new readonly StringHash TypeId = new StringHash(ClassName);");
 
                         sourceBuilder.Append($"    public static new readonly StringHash[] TypeHierarchy = new []{{");
-                        sourceBuilder.Append(string.Join(", ", typeHierarchy.Select(_ => $"{_}.TypeId")));
+
+                        var typesAndInterfaces = typeHierarchy.Concat(CollectInterfaces(typeSymbolInfo, derivedFromAttribute)).Distinct(SymbolEqualityComparer.Default);
+                        sourceBuilder.Append(string.Join(", ", typesAndInterfaces.Select(_ => $"global::Urho3DNet.ObjectReflection<{_}>.TypeId")));
                         sourceBuilder.AppendLine("};");
 
 
@@ -226,6 +232,27 @@ namespace Urho3DNet
             }
 
             return  false;
+        }
+
+        private IEnumerable<ITypeSymbol> CollectInterfaces(ITypeSymbol? namedType, INamedTypeSymbol? interfaceAttribute)
+        {
+            if (namedType == null)
+                yield break;
+
+            if (interfaceAttribute == null)
+                yield break;
+
+            foreach (var implementedInterface in namedType.AllInterfaces)
+            {
+                foreach (var attr in implementedInterface.GetAttributes())
+                {
+                    if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, interfaceAttribute))
+                    {
+                        yield return implementedInterface;
+                        break;
+                    }
+                }
+            }
         }
 
         public static bool TryGetParentSyntax<T>(SyntaxNode? syntaxNode, out T? result) where T : SyntaxNode

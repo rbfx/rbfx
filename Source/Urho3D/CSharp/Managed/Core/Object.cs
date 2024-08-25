@@ -80,7 +80,7 @@ namespace Urho3DNet
 
         public T GetSubsystem<T>() where T : Object
         {
-            return (T)GetSubsystem(typeof(T).Name);
+            return (T)GetSubsystem(ObjectReflection<T>.TypeId);
         }
     }
 }

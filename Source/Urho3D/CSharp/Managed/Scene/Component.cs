@@ -26,7 +26,7 @@ namespace Urho3DNet
     {
         public T GetComponent<T>() where T : Component
         {
-            return (T)GetComponent(typeof(T).Name);
+            return (T)GetComponent(ObjectReflection<T>.TypeId);
         }
     }
 }
