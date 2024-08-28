@@ -85,7 +85,7 @@ namespace Urho3DNet
                     dest.Set((Color) _field.GetValue(ptr));
                     break;
                 case VariantType.VarString:
-                    dest.Set((string) _field.GetValue(ptr) ?? "");
+                    dest.Set((string) _field.GetValue(ptr) ?? string.Empty);
                     break;
                 case VariantType.VarBuffer:
                     dest.Set((ByteVector) _field.GetValue(ptr));
@@ -283,7 +283,7 @@ namespace Urho3DNet
                     dest.Set((Color) _field.GetValue(ptr));
                     break;
                 case VariantType.VarString:
-                    dest.Set((string) _field.GetValue(ptr));
+                    dest.Set((string) _field.GetValue(ptr) ?? string.Empty);
                     break;
                 case VariantType.VarBuffer:
                     dest.Set((ByteVector) _field.GetValue(ptr));
@@ -451,6 +451,15 @@ namespace Urho3DNet
                 return;
 
             ObjectReflection reflection = Context.GetReflection(GetTypeHash());
+            
+            var baseTypeInfo = reflection.TypeInfo.BaseTypeInfo;
+            while (baseTypeInfo != null && baseTypeInfo.TypeName.StartsWith("SwigDirector_"))
+            {
+                baseTypeInfo = baseTypeInfo.BaseTypeInfo;
+            }
+
+            if (baseTypeInfo != null)
+                reflection.CopyAttributesFrom(Context.GetReflection(baseTypeInfo.TypeName));
 
             // Register field attributes of this class
             foreach (FieldInfo field in type.GetFields(BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic))
