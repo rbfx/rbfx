@@ -1648,125 +1648,29 @@ const Variant& Node::GetVarByHash(StringHash key) const
     return i != vars_.end() ? i->second : Variant::EMPTY;
 }
 
-Component* Node::GetComponent(StringHash type, ComponentSearchFlags flags) const
+Component* Node::FindComponent(StringHash type, ComponentSearchFlags flags) const
 {
-    const bool includeDisabled = flags.Test(ComponentSearchFlag::Disabled);
-    const bool includeDerived = flags.Test(ComponentSearchFlag::Derived);
-
-    if (flags.Test(ComponentSearchFlag::Self))
+    Component* result = nullptr;
+    FindComponents(flags, type,
+        [&](Component* component)
     {
-        if (includeDisabled || this->IsEnabled())
-        {
-            for (auto i = components_.begin(); i != components_.end(); ++i)
-            {
-                if (includeDisabled || (*i)->IsEnabledEffective())
-                {
-                    if (includeDerived)
-                    {
-                        if ((*i)->IsInstanceOf(type))
-                            return *i;
-                    }
-                    else
-                    {
-                        if ((*i)->GetType() == type)
-                            return *i;
-                    }
-                }
-            }
-        }
-    }
-
-    if (flags.Test(ComponentSearchFlag::Parent))
-    {
-        auto recursionFlag = flags;
-        recursionFlag.Unset(ComponentSearchFlag::ChildrenRecursive);
-        recursionFlag.Set(ComponentSearchFlag::Self);
-        if (!recursionFlag.Test(ComponentSearchFlag::ParentRecursive))
-            recursionFlag.Unset(ComponentSearchFlag::ParentRecursive);
-
-        if (Node* parent = GetParent())
-        {
-            if (auto* component = parent->GetComponent(type, recursionFlag))
-                return component;
-        }
-    }
-
-    if (flags.Test(ComponentSearchFlag::Children))
-    {
-        auto recursionFlag = flags;
-        recursionFlag.Unset(ComponentSearchFlag::ParentRecursive);
-        recursionFlag.Set(ComponentSearchFlag::Self);
-        if (!recursionFlag.Test(ComponentSearchFlag::ChildrenRecursive))
-            recursionFlag.Unset(ComponentSearchFlag::ChildrenRecursive);
-
-        for (auto i = children_.begin(); i != children_.end(); ++i)
-        {
-            if (auto* component = (*i)->GetComponent(type, recursionFlag))
-                return component;
-        }
-    }
-
-    return nullptr;
+        result = component;
+        return false;
+    });
+    return result;
 }
 
-void Node::GetComponents(ea::vector<Component*>& dest, StringHash type, ComponentSearchFlags flags, bool clearVector) const
+void Node::FindComponents(ea::vector<Component*>& dest, StringHash type, ComponentSearchFlags flags, bool clearVector) const
 {
     if (clearVector)
         dest.clear();
 
-    const bool includeDisabled = flags.Test(ComponentSearchFlag::Disabled);
-    const bool includeDerived = flags.Test(ComponentSearchFlag::Derived);
-
-    if (flags.Test(ComponentSearchFlag::Self))
+    FindComponents(flags, type,
+        [&](Component* component)
     {
-        if (includeDisabled || this->IsEnabled())
-        {
-            for (auto i = components_.begin(); i != components_.end(); ++i)
-            {
-                if (includeDisabled || (*i)->IsEnabledEffective())
-                {
-                    if (includeDerived)
-                    {
-                        if ((*i)->IsInstanceOf(type))
-                            dest.push_back(*i);
-                    }
-                    else
-                    {
-                        if ((*i)->GetType() == type)
-                            dest.push_back(*i);
-                    }
-                }
-            }
-        }
-    }
-
-    if (flags.Test(ComponentSearchFlag::Parent))
-    {
-        if (Node* parent = GetParent())
-        {
-            auto recursionFlag = flags;
-            recursionFlag.Unset(ComponentSearchFlag::ChildrenRecursive);
-            recursionFlag.Set(ComponentSearchFlag::Self);
-            if (!recursionFlag.Test(ComponentSearchFlag::ParentRecursive))
-                recursionFlag.Unset(ComponentSearchFlag::ParentRecursive);
-
-            parent->GetComponents(dest, type, recursionFlag, false);
-        }
-    }
-
-    if (flags.Test(ComponentSearchFlag::Children))
-    {
-        auto recursionFlag = flags;
-        recursionFlag.Unset(ComponentSearchFlag::ParentRecursive);
-        recursionFlag.Set(ComponentSearchFlag::Self);
-        if (!recursionFlag.Test(ComponentSearchFlag::ChildrenRecursive))
-            recursionFlag.Unset(ComponentSearchFlag::ChildrenRecursive);
-
-        for (auto i = children_.begin(); i != children_.end(); ++i)
-        {
-            (*i)->GetComponents(dest, type, recursionFlag, false);
-        }
-    }
+        dest.push_back(component);
+        return true;
+    });
 }
 
 void Node::GetDerivedComponents(ea::vector<Component*>& dest, StringHash type, bool recursive) const

@@ -63,14 +63,14 @@ TEST_CASE("Test GetComponent")
     auto childComponent = child->CreateComponent<StaticModel>();
     auto grandChildComponent = grandChild->CreateComponent<AnimatedModel>();
 
-    CHECK(node->GetComponent<StaticModel>(ComponentSearchFlag::Self) == nodeComponent);
-    CHECK(node->GetComponent<Drawable>(ComponentSearchFlag::Self | ComponentSearchFlag::Derived) == nodeComponent);
-    CHECK(node->GetComponent<StaticModel>(ComponentSearchFlag::Parent) == parentComponent);
-    CHECK(node->GetComponent<Drawable>(ComponentSearchFlag::ParentRecursive | ComponentSearchFlag::Derived) == parentComponent);
-    CHECK(node->GetComponent<AnimatedModel>(ComponentSearchFlag::ParentRecursive) == rootComponent);
-    CHECK(node->GetComponent<StaticModel>(ComponentSearchFlag::Children) == childComponent);
-    CHECK(node->GetComponent<Drawable>(ComponentSearchFlag::Children | ComponentSearchFlag::Derived) == childComponent);
-    CHECK(node->GetComponent<AnimatedModel>(ComponentSearchFlag::ChildrenRecursive) == grandChildComponent);
+    CHECK(node->FindComponent<StaticModel>(ComponentSearchFlag::Self) == nodeComponent);
+    CHECK(node->FindComponent<Drawable>(ComponentSearchFlag::Self | ComponentSearchFlag::Derived) == nodeComponent);
+    CHECK(node->FindComponent<StaticModel>(ComponentSearchFlag::Parent) == parentComponent);
+    CHECK(node->FindComponent<Drawable>(ComponentSearchFlag::ParentRecursive | ComponentSearchFlag::Derived) == parentComponent);
+    CHECK(node->FindComponent<AnimatedModel>(ComponentSearchFlag::ParentRecursive) == rootComponent);
+    CHECK(node->FindComponent<StaticModel>(ComponentSearchFlag::Children) == childComponent);
+    CHECK(node->FindComponent<Drawable>(ComponentSearchFlag::Children | ComponentSearchFlag::Derived) == childComponent);
+    CHECK(node->FindComponent<AnimatedModel>(ComponentSearchFlag::ChildrenRecursive) == grandChildComponent);
 };
 
 TEST_CASE("Test GetComponents")
@@ -91,37 +91,37 @@ TEST_CASE("Test GetComponents")
     auto grandChildComponent = grandChild->CreateComponent<AnimatedModel>();
 
     ea::vector<Component*> dest;
-    node->GetComponents(dest, StaticModel::TypeId, ComponentSearchFlag::Self);
+    node->FindComponents(dest, StaticModel::TypeId, ComponentSearchFlag::Self);
     CHECK(dest == ea::vector<Component*>{nodeComponent});
 
-    node->GetComponents(dest, Drawable::TypeId, ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
+    node->FindComponents(dest, Drawable::TypeId, ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
     CHECK(dest == ea::vector<Component*>{nodeComponent});
 
-    node->GetComponents(dest, StaticModel::TypeId, ComponentSearchFlag::Parent);
+    node->FindComponents(dest, StaticModel::TypeId, ComponentSearchFlag::Parent);
     CHECK(dest == ea::vector<Component*>{parentComponent});
 
-    node->GetComponents(dest, StaticModel::TypeId, ComponentSearchFlag::ParentRecursive);
+    node->FindComponents(dest, StaticModel::TypeId, ComponentSearchFlag::ParentRecursive);
     CHECK(dest == ea::vector<Component*>{parentComponent});
 
-    node->GetComponents(dest, StaticModel::TypeId, ComponentSearchFlag::ParentRecursive | ComponentSearchFlag::Derived);
+    node->FindComponents(dest, StaticModel::TypeId, ComponentSearchFlag::ParentRecursive | ComponentSearchFlag::Derived);
     CHECK(dest == ea::vector<Component*>{parentComponent, rootComponent});
 
-    node->GetComponents(dest, StaticModel::TypeId, ComponentSearchFlag::Self | ComponentSearchFlag::ParentRecursive);
+    node->FindComponents(dest, StaticModel::TypeId, ComponentSearchFlag::Self | ComponentSearchFlag::ParentRecursive);
     CHECK(dest == ea::vector<Component*>{nodeComponent, parentComponent});
 
-    node->GetComponents(dest, Drawable::TypeId, ComponentSearchFlag::Self | ComponentSearchFlag::ParentRecursive | ComponentSearchFlag::Derived);
+    node->FindComponents(dest, Drawable::TypeId, ComponentSearchFlag::Self | ComponentSearchFlag::ParentRecursive | ComponentSearchFlag::Derived);
     CHECK(dest == ea::vector<Component*>{nodeComponent, parentComponent, rootComponent});
 
-    node->GetComponents(dest, StaticModel::TypeId, ComponentSearchFlag::Children);
+    node->FindComponents(dest, StaticModel::TypeId, ComponentSearchFlag::Children);
     CHECK(dest == ea::vector<Component*>{childComponent});
 
-    node->GetComponents(dest, StaticModel::TypeId, ComponentSearchFlag::ChildrenRecursive);
+    node->FindComponents(dest, StaticModel::TypeId, ComponentSearchFlag::ChildrenRecursive);
     CHECK(dest == ea::vector<Component*>{childComponent});
 
-    node->GetComponents(dest, StaticModel::TypeId, ComponentSearchFlag::ChildrenRecursive | ComponentSearchFlag::Derived);
+    node->FindComponents(dest, StaticModel::TypeId, ComponentSearchFlag::ChildrenRecursive | ComponentSearchFlag::Derived);
     CHECK(dest == ea::vector<Component*>{childComponent, grandChildComponent});
 
-    node->GetComponents(dest, StaticModel::TypeId,
+    node->FindComponents(dest, StaticModel::TypeId,
         ComponentSearchFlag::Self | ComponentSearchFlag::ChildrenRecursive | ComponentSearchFlag::Derived);
     CHECK(dest == ea::vector<Component*>{nodeComponent, childComponent, grandChildComponent});
 };
@@ -145,36 +145,36 @@ TEST_CASE("Test GetComponents<T>")
     auto grandChildComponent = grandChild->CreateComponent<AnimatedModel>();
 
     ea::vector<Component*> dest;
-    node->GetComponents<StaticModel>(dest, ComponentSearchFlag::Self);
+    node->FindComponents<StaticModel>(dest, ComponentSearchFlag::Self);
     CHECK(dest == ea::vector<Component*>{nodeComponent});
 
-    node->GetComponents<Drawable>(dest, ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
+    node->FindComponents<Drawable>(dest, ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
     CHECK(dest == ea::vector<Component*>{nodeComponent});
 
-    node->GetComponents<StaticModel>(dest, ComponentSearchFlag::Parent);
+    node->FindComponents<StaticModel>(dest, ComponentSearchFlag::Parent);
     CHECK(dest == ea::vector<Component*>{parentComponent});
 
-    node->GetComponents<StaticModel>(dest, ComponentSearchFlag::ParentRecursive);
+    node->FindComponents<StaticModel>(dest, ComponentSearchFlag::ParentRecursive);
     CHECK(dest == ea::vector<Component*>{parentComponent});
 
-    node->GetComponents<StaticModel>(dest, ComponentSearchFlag::ParentRecursive | ComponentSearchFlag::Derived);
+    node->FindComponents<StaticModel>(dest, ComponentSearchFlag::ParentRecursive | ComponentSearchFlag::Derived);
     CHECK(dest == ea::vector<Component*>{parentComponent, rootComponent});
 
-    node->GetComponents<StaticModel>(dest, ComponentSearchFlag::Self | ComponentSearchFlag::ParentRecursive);
+    node->FindComponents<StaticModel>(dest, ComponentSearchFlag::Self | ComponentSearchFlag::ParentRecursive);
     CHECK(dest == ea::vector<Component*>{nodeComponent, parentComponent});
 
-    node->GetComponents<Drawable>(dest, ComponentSearchFlag::Self | ComponentSearchFlag::ParentRecursive | ComponentSearchFlag::Derived);
+    node->FindComponents<Drawable>(dest, ComponentSearchFlag::Self | ComponentSearchFlag::ParentRecursive | ComponentSearchFlag::Derived);
     CHECK(dest == ea::vector<Component*>{nodeComponent, parentComponent, rootComponent});
 
-    node->GetComponents<StaticModel>(dest, ComponentSearchFlag::Children);
+    node->FindComponents<StaticModel>(dest, ComponentSearchFlag::Children);
     CHECK(dest == ea::vector<Component*>{childComponent});
 
-    node->GetComponents<StaticModel>(dest, ComponentSearchFlag::ChildrenRecursive);
+    node->FindComponents<StaticModel>(dest, ComponentSearchFlag::ChildrenRecursive);
     CHECK(dest == ea::vector<Component*>{childComponent});
 
-    node->GetComponents<StaticModel>(dest, ComponentSearchFlag::ChildrenRecursive | ComponentSearchFlag::Derived);
+    node->FindComponents<StaticModel>(dest, ComponentSearchFlag::ChildrenRecursive | ComponentSearchFlag::Derived);
     CHECK(dest == ea::vector<Component*>{childComponent, grandChildComponent});
 
-    node->GetComponents<StaticModel>(dest, ComponentSearchFlag::Self | ComponentSearchFlag::ChildrenRecursive | ComponentSearchFlag::Derived);
+    node->FindComponents<StaticModel>(dest, ComponentSearchFlag::Self | ComponentSearchFlag::ChildrenRecursive | ComponentSearchFlag::Derived);
     CHECK(dest == ea::vector<Component*>{nodeComponent, childComponent, grandChildComponent});
 };
