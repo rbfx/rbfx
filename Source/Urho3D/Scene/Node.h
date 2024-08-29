@@ -910,7 +910,7 @@ template <class T, class U> void Node::GetComponents(U& destVector, bool recursi
     if (recursive)
     {
         for (const auto& child : children_)
-            child-> GetComponents<T>(destVector, true, false);
+            child->GetComponents<T>(destVector, true, false);
     }
 }
 
