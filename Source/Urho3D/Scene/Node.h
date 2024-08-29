@@ -827,7 +827,7 @@ private:
     /// Find component by name. If name is empty, returns the owner node itself.
     Serializable* GetSerializableByName(ea::string_view name) const;
     /// Find components. Returns true to continue or false if search is over.
-    template <typename Callback> bool FindComponents(ComponentSearchFlags flags, StringHash typeId, Callback callback) const;
+    template <typename Callback> bool FindComponents(ComponentSearchFlags flags, StringHash typeId, const Callback& callback) const;
 
     /// World-space transform matrix.
     mutable Matrix3x4 worldTransform_;
@@ -925,7 +925,7 @@ template <class T> T* Node::FindComponent(ComponentSearchFlags flags) const
     return static_cast<T*>(FindComponent(T::GetTypeStatic(), flags));
 }
 
-template <typename Callback> bool Node::FindComponents(ComponentSearchFlags flags, StringHash typeId, Callback callback) const
+template <typename Callback> bool Node::FindComponents(ComponentSearchFlags flags, StringHash typeId, const Callback& callback) const
 {
     const bool includeDisabled = flags.Test(ComponentSearchFlag::Disabled);
     const bool includeDerived = flags.Test(ComponentSearchFlag::Derived);
@@ -1001,7 +1001,10 @@ template <class T, class U> void Node::FindComponents(U& destVector, ComponentSe
     FindComponents(flags, T::GetTypeStatic(),
         [&](Component* component)
     {
-        destVector.push_back(component);
+        if constexpr (ea::is_same_v<T, Component>)
+            destVector.push_back(PointerType{component});
+        else
+            destVector.push_back(PointerType{static_cast<T*>(component)});
         return true;
     });
 }

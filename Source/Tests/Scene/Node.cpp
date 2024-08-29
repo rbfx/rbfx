@@ -46,7 +46,7 @@ TEST_CASE("Load node from XML node file")
     CHECK(child->GetComponent<StaticModel>());
 };
 
-TEST_CASE("Test GetComponent")
+TEST_CASE("Test FindComponent")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto scene = MakeShared<Scene>(context);
@@ -73,7 +73,7 @@ TEST_CASE("Test GetComponent")
     CHECK(node->FindComponent<AnimatedModel>(ComponentSearchFlag::ChildrenRecursive) == grandChildComponent);
 };
 
-TEST_CASE("Test GetComponents")
+TEST_CASE("Test FindComponents")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto scene = MakeShared<Scene>(context);
@@ -127,7 +127,7 @@ TEST_CASE("Test GetComponents")
 };
 
 
-TEST_CASE("Test GetComponents<T>")
+TEST_CASE("Test FindComponents<T>")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
     auto scene = MakeShared<Scene>(context);
@@ -177,4 +177,25 @@ TEST_CASE("Test GetComponents<T>")
 
     node->FindComponents<StaticModel>(dest, ComponentSearchFlag::Self | ComponentSearchFlag::ChildrenRecursive | ComponentSearchFlag::Derived);
     CHECK(dest == ea::vector<Component*>{nodeComponent, childComponent, grandChildComponent});
+};
+
+TEST_CASE("Test FindComponents<WeakPtr<T>>")
+{
+    auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
+    auto scene = MakeShared<Scene>(context);
+
+    auto node = scene->CreateChild("Root");
+
+    auto nodeComponent = node->CreateComponent<StaticModel>();
+
+    {
+        ea::vector<WeakPtr<Component>> dest;
+        node->FindComponents<StaticModel>(dest, ComponentSearchFlag::Self);
+        CHECK(dest == ea::vector<WeakPtr<Component>>{WeakPtr<Component>(nodeComponent)});
+    }
+    {
+        ea::vector<WeakPtr<StaticModel>> dest;
+        node->FindComponents<StaticModel>(dest, ComponentSearchFlag::Self);
+        CHECK(dest == ea::vector<WeakPtr<StaticModel>>{WeakPtr<StaticModel>(nodeComponent)});
+    }
 };
