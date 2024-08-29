@@ -62,6 +62,19 @@ enum SceneLookupFlag
 };
 URHO3D_FLAGSET(SceneLookupFlag, SceneLookupFlags);
 
+enum class ComponentSearchFlag
+{
+    None = 0,
+    Self = 0x1,
+    Parent = 0x2,
+    ParentRecursive = 0x2 | 0x4,
+    Children = 0x8,
+    ChildrenRecursive = 0x8 | 0x10,
+    Derived = 0x100,
+    Disabled = 0x200
+};
+URHO3D_FLAGSET(ComponentSearchFlag, ComponentSearchFlags);
+
 /// Transform space for translations and rotations.
 enum TransformSpace
 {
@@ -708,6 +721,18 @@ public:
     /// Template version of checking whether has a specific component.
     template <class T> bool HasComponent() const;
 
+    /// Returns the first component of the specified type that meets the search criteria.
+    Component* FindComponent(StringHash type, ComponentSearchFlags flags) const;
+    /// Adds all components of the specified type that meet the search criteria to the container.
+    void FindComponents(ea::vector<Component*>& dest, StringHash type, ComponentSearchFlags flags, bool clearVector = true) const;
+    /// Returns the first component of the template argument type that meets the search criteria.
+    template <class T> T* FindComponent(ComponentSearchFlags flags) const;
+    /// Adds all components of the specified type that meet the search criteria to the container.
+    template <class T, class U> void FindComponents(U& destVector, ComponentSearchFlags flags, bool clearVector = true) const;
+    /// Adds all components of the specified type that meet the search criteria to the container.
+    template <class U> void FindComponents(U& destVector, ComponentSearchFlags flags, bool clearVector = true) const;
+
+
     /// Find and return child node inplace if pointer is null, do nothing if pointer is already initialized.
     /// Return true if child node is found or is already initialized.
     /// This function is optimized for the case when the child node is expected to be found.
@@ -801,6 +826,8 @@ private:
     Node* GetChildByNameOrIndex(ea::string_view name, bool recursive = false) const;
     /// Find component by name. If name is empty, returns the owner node itself.
     Serializable* GetSerializableByName(ea::string_view name) const;
+    /// Find components. Returns true to continue or false if search is over.
+    template <typename Callback> bool FindComponents(ComponentSearchFlags flags, StringHash typeId, const Callback& callback) const;
 
     /// World-space transform matrix.
     mutable Matrix3x4 worldTransform_;
@@ -891,6 +918,101 @@ template <class U> void Node::GetComponents(U& destVector, bool recursive, bool 
 {
     using ComponentType = ea::remove_reference_t<decltype(*destVector[0])>;
     GetComponents<ComponentType>(destVector, recursive, clearVector);
+}
+
+template <class T> T* Node::FindComponent(ComponentSearchFlags flags) const
+{
+    return static_cast<T*>(FindComponent(T::GetTypeStatic(), flags));
+}
+
+template <typename Callback> bool Node::FindComponents(ComponentSearchFlags flags, StringHash typeId, const Callback& callback) const
+{
+    const bool includeDisabled = flags.Test(ComponentSearchFlag::Disabled);
+    const bool includeDerived = flags.Test(ComponentSearchFlag::Derived);
+
+    if (flags.Test(ComponentSearchFlag::Self))
+    {
+        if (includeDisabled || this->IsEnabled())
+        {
+            for (auto& component: components_)
+            {
+                if (includeDisabled || component->IsEnabled())
+                {
+                    if (includeDerived)
+                    {
+                        if (component->IsInstanceOf(typeId))
+                            if (!callback(component.Get()))
+                                return false;
+                    }
+                    else
+                    {
+                        if (component->GetType() == typeId)
+                            if (!callback(component.Get()))
+                                return false;
+                    }
+                }
+            }
+        }
+    }
+
+    if (flags.Test(ComponentSearchFlag::Parent))
+    {
+        if (Node* parent = GetParent())
+        {
+            auto recursionFlag = flags;
+            recursionFlag.Unset(ComponentSearchFlag::ChildrenRecursive);
+            recursionFlag.Set(ComponentSearchFlag::Self);
+            if (!recursionFlag.Test(ComponentSearchFlag::ParentRecursive))
+                recursionFlag.Unset(ComponentSearchFlag::ParentRecursive);
+
+            if (!parent->FindComponents(recursionFlag, typeId, callback))
+                return false;
+        }
+    }
+
+    if (flags.Test(ComponentSearchFlag::Children))
+    {
+        auto recursionFlag = flags;
+        recursionFlag.Unset(ComponentSearchFlag::ParentRecursive);
+        recursionFlag.Set(ComponentSearchFlag::Self);
+        if (!recursionFlag.Test(ComponentSearchFlag::ChildrenRecursive))
+            recursionFlag.Unset(ComponentSearchFlag::ChildrenRecursive);
+
+        for (auto& child : children_)
+        {
+            if (!child->FindComponents(recursionFlag, typeId, callback))
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+
+template <class T, class U> void Node::FindComponents(U& destVector, ComponentSearchFlags flags, bool clearVector) const
+{
+    using PointerType = ea::remove_reference_t<decltype(destVector[0])>;
+
+    if (clearVector)
+        destVector.clear();
+
+    FindComponents(flags, T::GetTypeStatic(),
+        [&](Component* component)
+    {
+        if constexpr (ea::is_same_v<T, Component>)
+            destVector.push_back(PointerType{component});
+        else
+            destVector.push_back(PointerType{static_cast<T*>(component)});
+        return true;
+    });
+}
+
+template <class U> void Node::FindComponents(U& destVector, ComponentSearchFlags flags, bool clearVector) const
+{
+    using ComponentType = ea::remove_reference_t<decltype(*destVector[0])>;
+    FindComponents<ComponentType>(destVector, flags, clearVector);
 }
 
 template <class T> bool Node::HasComponent() const { return HasComponent(T::GetTypeStatic()); }

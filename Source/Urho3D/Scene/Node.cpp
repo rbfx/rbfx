@@ -1648,6 +1648,31 @@ const Variant& Node::GetVarByHash(StringHash key) const
     return i != vars_.end() ? i->second : Variant::EMPTY;
 }
 
+Component* Node::FindComponent(StringHash type, ComponentSearchFlags flags) const
+{
+    Component* result = nullptr;
+    FindComponents(flags, type,
+        [&](Component* component)
+    {
+        result = component;
+        return false;
+    });
+    return result;
+}
+
+void Node::FindComponents(ea::vector<Component*>& dest, StringHash type, ComponentSearchFlags flags, bool clearVector) const
+{
+    if (clearVector)
+        dest.clear();
+
+    FindComponents(flags, type,
+        [&](Component* component)
+    {
+        dest.push_back(component);
+        return true;
+    });
+}
+
 void Node::GetDerivedComponents(ea::vector<Component*>& dest, StringHash type, bool recursive) const
 {
     dest.clear();
