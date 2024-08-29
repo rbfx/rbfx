@@ -270,7 +270,7 @@ void Viewport::AllocateView()
 
     if (!renderPipeline_ && scene_)
     {
-        renderPipeline_ = scene_->GetDerivedComponent<RenderPipeline>();
+        renderPipeline_ = scene_->FindComponent<RenderPipeline>(ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
         if (!renderPipeline_)
             renderPipeline_ = scene_->CreateComponent<RenderPipeline>();
     }

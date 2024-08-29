@@ -78,7 +78,7 @@ void VirtualReality::ConnectToRig(const VRRigDesc& rig)
     rig_ = rig;
 
     if (!rig_.pipeline_)
-        rig_.pipeline_ = rig_.scene_->GetDerivedComponent<StereoRenderPipeline>();
+        rig_.pipeline_ = rig_.scene_->FindComponent<StereoRenderPipeline>(ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
 
     if (!rig_.pipeline_)
     {

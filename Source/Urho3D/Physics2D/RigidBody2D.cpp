@@ -521,7 +521,7 @@ void RigidBody2D::OnNodeSet(Node* previousNode, Node* currentNode)
         node_->AddListener(this);
 
         ea::vector<CollisionShape2D*> shapes;
-        node_->GetDerivedComponents<CollisionShape2D>(shapes);
+        node_->FindComponents<CollisionShape2D>(shapes, ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
 
         for (auto i = shapes.begin(); i != shapes.end(); ++i)
         {
@@ -535,7 +535,7 @@ void RigidBody2D::OnSceneSet(Scene* scene)
 {
     if (scene)
     {
-        physicsWorld_ = scene->GetDerivedComponent<PhysicsWorld2D>();
+        physicsWorld_ = scene->FindComponent<PhysicsWorld2D>(ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
         if (!physicsWorld_)
             physicsWorld_ = scene->CreateComponent<PhysicsWorld2D>();
 

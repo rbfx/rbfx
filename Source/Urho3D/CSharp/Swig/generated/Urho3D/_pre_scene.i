@@ -4,6 +4,8 @@
 %ignore Urho3D::AttributeMetadata::IsAction;
 %constant const char* AllowResize = "AllowResize";
 %ignore Urho3D::AttributeMetadata::AllowResize;
+%constant const char* DynamicMetadata = "DynamicMetadata";
+%ignore Urho3D::AttributeMetadata::DynamicMetadata;
 %constant unsigned int FirstReplicatedId = Urho3D::FIRST_REPLICATED_ID;
 %ignore Urho3D::FIRST_REPLICATED_ID;
 %ignore Urho3D::LAST_REPLICATED_ID;
@@ -30,6 +32,20 @@ using PrefabLoadFlags = Urho3D::PrefabLoadFlag;
 using SceneLookupFlags = Urho3D::SceneLookupFlag;
 %typemap(ctype) SceneLookupFlags "size_t";
 %typemap(out) SceneLookupFlags "$result = (size_t)$1.AsInteger();"
+%csconstvalue("0") Urho3D::ComponentSearchFlag::None;
+%csconstvalue("1") Urho3D::ComponentSearchFlag::Self;
+%csconstvalue("2") Urho3D::ComponentSearchFlag::Parent;
+%csconstvalue("6") Urho3D::ComponentSearchFlag::ParentRecursive;
+%csconstvalue("8") Urho3D::ComponentSearchFlag::Children;
+%csconstvalue("24") Urho3D::ComponentSearchFlag::ChildrenRecursive;
+%csconstvalue("256") Urho3D::ComponentSearchFlag::Derived;
+%csconstvalue("512") Urho3D::ComponentSearchFlag::Disabled;
+%csconstvalue("7") Urho3D::ComponentSearchFlag::SelfOrParentRecursive;
+%csconstvalue("25") Urho3D::ComponentSearchFlag::SelfOrChildrenRecursive;
+%typemap(csattributes) Urho3D::ComponentSearchFlag "[global::System.Flags]";
+using ComponentSearchFlags = Urho3D::ComponentSearchFlag;
+%typemap(ctype) ComponentSearchFlags "size_t";
+%typemap(out) ComponentSearchFlags "$result = (size_t)$1.AsInteger();"
 %csconstvalue("0") Urho3D::TS_LOCAL;
 %typemap(csattributes) Urho3D::UpdateEvent "[global::System.Flags]";
 using UpdateEventFlags = Urho3D::UpdateEvent;
