@@ -29,14 +29,13 @@
 #include "../Core/Signal.h"
 #include "../Graphics/Texture2D.h"
 #include "../Math/Vector2.h"
-#include "RmlUi/Core/DataTypeRegister.h"
 
 #include <EASTL/vector.h>
 #include <EASTL/string.h>
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/EventListener.h>
 #include <RmlUi/Core/Context.h>
-
+#include <RmlUi/Core/DataTypeRegister.h>
 
 namespace Urho3D
 {
