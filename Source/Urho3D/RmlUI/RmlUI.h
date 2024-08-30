@@ -29,6 +29,7 @@
 #include "../Core/Signal.h"
 #include "../Graphics/Texture2D.h"
 #include "../Math/Vector2.h"
+#include "RmlUi/Core/DataTypeRegister.h"
 
 #include <EASTL/vector.h>
 #include <EASTL/string.h>
@@ -217,6 +218,9 @@ private:
 };
 
 }
+
+/// Register Urho3D Variant* types in the RmlUI type registry
+void URHO3D_API RegisterVariantDefinition(Rml::DataTypeRegister* typeRegister);
 
 /// Register UI library objects.
 void URHO3D_API RegisterRmlUILibrary(Context* context);
