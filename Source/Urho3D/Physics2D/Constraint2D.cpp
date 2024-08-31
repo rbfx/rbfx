@@ -158,7 +158,7 @@ void Constraint2D::OnSceneSet(Scene* scene)
 {
     if (scene)
     {
-        physicsWorld_ = scene->FindComponent<PhysicsWorld2D>(ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
+        physicsWorld_ = scene->GetDerivedComponent<PhysicsWorld2D>();
         if (!physicsWorld_)
             physicsWorld_ = scene->CreateComponent<PhysicsWorld2D>();
     }

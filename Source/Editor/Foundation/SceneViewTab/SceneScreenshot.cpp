@@ -224,7 +224,7 @@ Camera* SceneScreenshot::FindCameraInSelection(const SceneSelection& selection) 
     {
         if (node)
         {
-            if (auto camera = node->FindComponent<Camera>(ComponentSearchFlag::SelfOrChildrenRecursive))
+            if (auto camera = node->FindComponent<Camera>())
                 return camera;
         }
     }

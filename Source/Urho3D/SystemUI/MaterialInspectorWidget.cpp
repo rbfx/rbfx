@@ -245,8 +245,8 @@ void MaterialInspectorWidget::ApplyPreviewSettings()
     auto cache = GetSubsystem<ResourceCache>();
     auto renderer = GetSubsystem<Renderer>();
 
-    auto skybox = previewScene_->FindComponent<Skybox>(ComponentSearchFlag::SelfOrChildrenRecursive);
-    auto zone = previewScene_->FindComponent<Zone>(ComponentSearchFlag::SelfOrChildrenRecursive);
+    auto skybox = previewScene_->FindComponent<Skybox>();
+    auto zone = previewScene_->FindComponent<Zone>();
 
     Texture* defaultTexture = cache->GetResource<TextureCube>("Textures/DefaultSkybox.xml");
     Texture* emptyTexture = renderer->GetBlackCubeMap();
@@ -255,7 +255,7 @@ void MaterialInspectorWidget::ApplyPreviewSettings()
     skyboxMaterial->SetTexture(ShaderResources::Albedo, previewSkyboxEnabled ? defaultTexture : emptyTexture);
     zone->SetZoneTexture(previewSkyboxEnabled ? defaultTexture : nullptr);
 
-    const auto light = previewScene_->FindComponent<Light>(ComponentSearchFlag::SelfOrChildrenRecursive);
+    const auto light = previewScene_->FindComponent<Light>();
     light->SetBrightness(previewSkyboxEnabled ? 0.5f : 1.0f);
     light->SetEnabled(previewLightEnabled);
 }
@@ -458,7 +458,7 @@ void MaterialInspectorWidget::RenderPreview()
 
     ui::SetCursorPos(imageEnd);
 
-    const auto model = previewScene_->FindComponent<StaticModel>(ComponentSearchFlag::SelfOrChildrenRecursive);
+    const auto model = previewScene_->FindComponent<StaticModel>();
     model->SetMaterial(materials_[0]);
 
     if (previewSettingsDirty)

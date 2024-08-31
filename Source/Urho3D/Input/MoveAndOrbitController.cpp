@@ -216,7 +216,7 @@ void MoveAndOrbitController::ConnectToComponent()
 {
     if (node_)
     {
-        component_ = node_->FindComponent<MoveAndOrbitComponent>(ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
+        component_ = node_->GetDerivedComponent<MoveAndOrbitComponent>();
         if (!component_)
         {
             URHO3D_LOGERROR("MoveAndOrbitComponent not found on the same node as MoveAndOrbitController");

@@ -1668,6 +1668,17 @@ void Node::FindComponents(ea::vector<Component*>& dest, StringHash type, Compone
     });
 }
 
+Component* Node::GetDerivedComponent(StringHash type) const
+{
+    for (auto i = components_.begin(); i != components_.end(); ++i)
+    {
+        if ((*i)->IsInstanceOf(type))
+            return *i;
+    }
+
+    return nullptr;
+}
+
 bool Node::GetChildLazy(WeakPtr<Node>& childNode, StringHash nameHash, SceneLookupFlags flags) const
 {
     // Try to use existing weak pointer. This should be the most common case.

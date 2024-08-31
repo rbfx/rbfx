@@ -186,7 +186,7 @@ public:
     void ReconnectToRegistry() override
     {
         Scene* scene = this->GetScene();
-        registry_ = scene ? scene->FindComponent<RegistryComponentType>(ComponentSearchFlag::Self | ComponentSearchFlag::Derived) : nullptr;
+        registry_ = scene ? scene->GetDerivedComponent<RegistryComponentType>() : nullptr;
     }
 
     void OnSetEnabled() override
@@ -208,7 +208,7 @@ public:
 protected:
     void OnSceneSet(Scene* scene) override
     {
-        auto newRegistry = scene ? scene->FindComponent<RegistryComponentType>(ComponentSearchFlag::Self | ComponentSearchFlag::Derived) : nullptr;
+        auto newRegistry = scene ? scene->GetDerivedComponent<RegistryComponentType>() : nullptr;
         if (newRegistry == registry_)
             return;
 

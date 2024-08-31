@@ -122,7 +122,7 @@ TEST_CASE("Test FindComponents")
     CHECK(dest == ea::vector<Component*>{childComponent, grandChildComponent});
 
     node->FindComponents(dest, StaticModel::TypeId,
-        ComponentSearchFlag::Self | ComponentSearchFlag::ChildrenRecursive | ComponentSearchFlag::Derived);
+        ComponentSearchFlag::SelfOrChildrenRecursive | ComponentSearchFlag::Derived);
     CHECK(dest == ea::vector<Component*>{nodeComponent, childComponent, grandChildComponent});
 };
 

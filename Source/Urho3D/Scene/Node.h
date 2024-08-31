@@ -48,7 +48,7 @@ class SceneResolver;
 class SerializablePrefab;
 class PrefabResource;
 
-enum SceneLookupFlag
+enum class SceneLookupFlag
 {
     None = 0x0,
     /// Whether to do recursive search in the scene subtree.
@@ -74,7 +74,10 @@ enum class ComponentSearchFlag
     Disabled = 0x200,
 
     SelfOrParentRecursive = Self | ParentRecursive,
-    SelfOrChildrenRecursive = Self | ChildrenRecursive
+    SelfOrChildrenRecursive = Self | ChildrenRecursive,
+
+    /// Default search option - to find components in the given node and all children recursively.
+    Default = SelfOrChildrenRecursive,
 };
 URHO3D_FLAGSET(ComponentSearchFlag, ComponentSearchFlags);
 
@@ -697,6 +700,11 @@ public:
     /// Return all user variables.
     const StringVariantMap& GetVars() const { return vars_; }
 
+    /// Return first component derived from class.
+    Component* GetDerivedComponent(StringHash type) const;
+    /// Return first component derived from class.
+    template <class T> T* GetDerivedComponent() const;
+
     /// Template version of returning child nodes with a specific component.
     template <class T> void GetChildrenWithComponent(ea::vector<Node*>& dest, bool recursive = false) const;
     /// Template version of returning a component by type.
@@ -712,15 +720,20 @@ public:
     template <class T> bool HasComponent() const;
 
     /// Returns the first component of the specified type that meets the search criteria.
-    Component* FindComponent(StringHash type, ComponentSearchFlags flags) const;
+    Component* FindComponent(StringHash type, ComponentSearchFlags flags = ComponentSearchFlag::Default) const;
     /// Adds all components of the specified type that meet the search criteria to the container.
-    void FindComponents(ea::vector<Component*>& dest, StringHash type, ComponentSearchFlags flags, bool clearVector = true) const;
+    void FindComponents(ea::vector<Component*>& dest, StringHash type,
+        ComponentSearchFlags flags = ComponentSearchFlag::Default, bool clearVector = true) const;
     /// Returns the first component of the template argument type that meets the search criteria.
-    template <class T> T* FindComponent(ComponentSearchFlags flags) const;
+    template <class T> T* FindComponent(ComponentSearchFlags flags = ComponentSearchFlag::Default) const;
     /// Adds all components of the specified type that meet the search criteria to the container.
-    template <class T, class U> void FindComponents(U& destVector, ComponentSearchFlags flags, bool clearVector = true) const;
+    template <class T, class U>
+    void FindComponents(
+        U& destVector, ComponentSearchFlags flags = ComponentSearchFlag::Default, bool clearVector = true) const;
     /// Adds all components of the specified type that meet the search criteria to the container.
-    template <class U> void FindComponents(U& destVector, ComponentSearchFlags flags, bool clearVector = true) const;
+    template <class U>
+    void FindComponents(
+        U& destVector, ComponentSearchFlags flags = ComponentSearchFlag::Default, bool clearVector = true) const;
 
 
     /// Find and return child node inplace if pointer is null, do nothing if pointer is already initialized.
@@ -996,6 +1009,11 @@ template <class U> void Node::FindComponents(U& destVector, ComponentSearchFlags
 }
 
 template <class T> bool Node::HasComponent() const { return HasComponent(T::GetTypeStatic()); }
+
+template <class T> T* Node::GetDerivedComponent() const
+{
+    return static_cast<T*>(GetDerivedComponent(T::GetTypeStatic()));
+}
 
 template <class T> bool Node::GetNthComponentLazy(WeakPtr<T>& childComponent, unsigned index) const
 {

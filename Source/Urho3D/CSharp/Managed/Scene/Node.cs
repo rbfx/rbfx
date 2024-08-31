@@ -71,6 +71,16 @@ namespace Urho3DNet
             return (T)GetParentComponent(ObjectReflection<T>.TypeId);
         }
 
+        /// <summary>
+        /// Get first occurrence of a component derived from the type.
+        /// </summary>
+        /// <typeparam name="T">Type inherited from <see cref="Urho3DNet.Component"/> or interface marked with <see cref="Urho3DNet.DerivedFromAttribute"/></typeparam>
+        /// <returns>Found component or null.</returns>
+        public T GetDerivedComponent<T>() where T : class
+        {
+            return GetDerivedComponent(ObjectReflection<T>.TypeId) as T;
+        }
+
         public T FindComponent<T>(ComponentSearchFlag flags) where T: class
         {
             return FindComponent(ObjectReflection<T>.TypeId, flags) as T;

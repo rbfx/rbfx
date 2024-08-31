@@ -77,17 +77,17 @@ void BakedLighting::CreateScene()
     const auto xmlFile = cache->GetResource<XMLFile>("Scenes/BakedLightingExample.xml");
     scene_->LoadXML(xmlFile->GetRoot());
 
-    auto camera = scene_->FindComponent<Camera>(ComponentSearchFlag::SelfOrChildrenRecursive);
+    auto camera = scene_->FindComponent<Camera>();
     cameraNode_ = camera->GetNode();
     GetSubsystem<Renderer>()->SetViewport(0, new Viewport(context_, scene_, camera));
 
-    auto navMesh = scene_->FindComponent<NavigationMesh>(ComponentSearchFlag::SelfOrChildrenRecursive);
+    auto navMesh = scene_->FindComponent<NavigationMesh>();
     navMesh->Rebuild();
 
-    agent_ = scene_->FindComponent<CrowdAgent>(ComponentSearchFlag::SelfOrChildrenRecursive);
+    agent_ = scene_->FindComponent<CrowdAgent>();
     agent_->SetUpdateNodePosition(false);
 
-    auto animController = agent_->GetNode()->FindComponent<AnimationController>(ComponentSearchFlag::SelfOrChildrenRecursive);
+    auto animController = agent_->GetNode()->FindComponent<AnimationController>();
     animController->PlayNewExclusive(AnimationParameters{context_, "Models/Mutant/Mutant_Idle0.ani"}.Looped());
 
     auto crowdManager = scene_->GetComponent<CrowdManager>();
@@ -167,7 +167,7 @@ void BakedLighting::Update(float timeStep)
     auto* runAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Run.ani");
     auto* idleAnimation = cache->GetResource<Animation>("Models/Mutant/Mutant_Idle0.ani");
 
-    auto animController = agent_->GetNode()->FindComponent<AnimationController>(ComponentSearchFlag::SelfOrChildrenRecursive);
+    auto animController = agent_->GetNode()->FindComponent<AnimationController>();
     auto rotationNode = animController->GetNode()->GetParent();
     const Vector3 actualVelocityFlat = (agent_->GetActualVelocity() * Vector3(1, 0, 1));
     if (actualVelocityFlat.Length() > M_LARGE_EPSILON)
