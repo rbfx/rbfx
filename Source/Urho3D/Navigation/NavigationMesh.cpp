@@ -1035,7 +1035,7 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
 #endif
     {
         ea::vector<Drawable*> drawables;
-        node->GetDerivedComponents<Drawable>(drawables);
+        node->FindComponents<Drawable>(drawables, ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
 
         for (unsigned i = 0; i < drawables.size(); ++i)
         {

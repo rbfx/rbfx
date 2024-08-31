@@ -92,7 +92,7 @@ void IKSolver::Solve(float timeStep)
     if (solversDirty_)
     {
         solversDirty_ = false;
-        node_->GetDerivedComponents(solvers_, true);
+        node_->FindComponents(solvers_);
         RebuildSolvers();
     }
 

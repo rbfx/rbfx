@@ -465,7 +465,7 @@ TEST_CASE("Ownership is consistent on server and on clients")
     {
         Node* node = Tests::SpawnOnServer<BehaviorNetworkObject>(serverScene, prefab, "Unowned Node");
 
-        auto object = node->GetDerivedComponent<NetworkObject>();
+        auto object = node->FindComponent<NetworkObject>(ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
         REQUIRE(object->GetNetworkMode() == NetworkObjectMode::Standalone);
     }
     {
@@ -494,7 +494,8 @@ TEST_CASE("Ownership is consistent on server and on clients")
     // Check ownership of objects
     const auto getObject = [](Scene* scene, const ea::string& name)
     {
-        return scene->GetChild(name, true)->GetDerivedComponent<NetworkObject>();
+        return scene->GetChild(name, true)
+            ->FindComponent<NetworkObject>(ComponentSearchFlag::Self | ComponentSearchFlag::Derived);
     };
 
     REQUIRE(getObject(serverScene, "Unowned Node")->GetNetworkMode() == NetworkObjectMode::Server);

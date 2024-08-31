@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-using System.ComponentModel;
-
 namespace Urho3DNet
 {
     public partial class Node
@@ -29,11 +27,6 @@ namespace Urho3DNet
         public T CreateComponent<T>(uint id = 0) where T: Component
         {
             return (T)CreateComponent(ObjectReflection<T>.TypeId, id);
-        }
-
-        public T GetComponent<T>(bool recursive) where T: Component
-        {
-            return (T)GetComponent(ObjectReflection<T>.TypeId, recursive);
         }
 
         public T GetOrCreateComponent<T>(uint id = 0) where T: Component
@@ -61,10 +54,10 @@ namespace Urho3DNet
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns>List of found components.</returns>
-        public ComponentList GetComponents<T>(bool recursive = false) where T: Component
+        public ComponentList GetComponents<T>() where T: Component
         {
             ComponentList componentList = new ComponentList();
-            GetComponents(componentList, ObjectReflection<T>.TypeId, recursive);
+            GetComponents(componentList, ObjectReflection<T>.TypeId);
             return componentList;
         }
 
@@ -73,9 +66,9 @@ namespace Urho3DNet
         /// </summary>
         /// <typeparam name="T">Type of the component.</typeparam>
         /// <returns>Found component or null.</returns>
-        public T GetParentComponent<T>(bool fullTraversal = false) where T : Component
+        public T GetParentComponent<T>() where T : Component
         {
-            return (T)GetParentComponent(ObjectReflection<T>.TypeId, fullTraversal);
+            return (T)GetParentComponent(ObjectReflection<T>.TypeId);
         }
 
         /// <summary>
@@ -83,31 +76,9 @@ namespace Urho3DNet
         /// </summary>
         /// <typeparam name="T">Type inherited from <see cref="Urho3DNet.Component"/> or interface marked with <see cref="Urho3DNet.DerivedFromAttribute"/></typeparam>
         /// <returns>Found component or null.</returns>
-        public T GetDerivedComponent<T>() where T: class
+        public T GetDerivedComponent<T>() where T : class
         {
             return GetDerivedComponent(ObjectReflection<T>.TypeId) as T;
-        }
-
-        /// <summary>
-        /// Get all components that derives from type.
-        /// </summary>
-        /// <typeparam name="T">Type inherited from <see cref="Urho3DNet.Component"/> or interface marked with <see cref="Urho3DNet.DerivedFromAttribute"/></typeparam>
-        /// <returns>List of found components.</returns>
-        public ComponentList GetDerivedComponents<T>(bool recursive = false)
-        {
-            ComponentList componentList = new ComponentList();
-            GetDerivedComponents(componentList, ObjectReflection<T>.TypeId, recursive);
-            return componentList;
-        }
-
-        /// <summary>
-        /// Return component in parent node that derives from type. If there are several, returns the first. May optional traverse up to the root node.
-        /// </summary>
-        /// <typeparam name="T">Type inherited from <see cref="Urho3DNet.Component"/> or interface marked with <see cref="Urho3DNet.DerivedFromAttribute"/></typeparam>
-        /// <returns>Found component or null.</returns>
-        public T GetParentDerivedComponent<T>(bool fullTraversal = false) where T : class
-        {
-            return GetParentDerivedComponent(ObjectReflection<T>.TypeId, fullTraversal) as T;
         }
 
         public T FindComponent<T>(ComponentSearchFlag flags) where T: class

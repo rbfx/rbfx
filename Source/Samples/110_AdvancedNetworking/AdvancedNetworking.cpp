@@ -347,7 +347,7 @@ void AdvancedNetworking::ProcessSingleRaycastOnServer(const ServerRaycastInfo& r
 
     // Get reliable origin from server data, not trusting client with this
     NetworkObject* clientObject = serverReplicator->GetNetworkObjectOwnedByConnection(raycastInfo.clientConnection_);
-    auto replicatedTransform = clientObject->GetNode()->GetComponent<ReplicatedTransform>(true);
+    auto replicatedTransform = clientObject->GetNode()->FindComponent<ReplicatedTransform>();
     const Vector3 origin = replicatedTransform->SampleTemporalPosition(raycastInfo.inputTime_).value_ + Vector3::UP * CAMERA_OFFSET;
 
     // Perform raycast using target position instead of ray direction
@@ -405,7 +405,7 @@ Node* AdvancedNetworking::CreateControllableObject(Connection* owner)
     networkObject->SetOwner(owner);
 
     // Change light color on the server only
-    Light* playerLight = playerNode->GetComponent<Light>(true);
+    Light* playerLight = playerNode->FindComponent<Light>();
     playerLight->SetColor(Color::GREEN);
 
     return playerNode;

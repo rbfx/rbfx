@@ -48,7 +48,7 @@ class SceneResolver;
 class SerializablePrefab;
 class PrefabResource;
 
-enum SceneLookupFlag
+enum class SceneLookupFlag
 {
     None = 0x0,
     /// Whether to do recursive search in the scene subtree.
@@ -71,7 +71,13 @@ enum class ComponentSearchFlag
     Children = 0x8,
     ChildrenRecursive = 0x8 | 0x10,
     Derived = 0x100,
-    Disabled = 0x200
+    Disabled = 0x200,
+
+    SelfOrParentRecursive = Self | ParentRecursive,
+    SelfOrChildrenRecursive = Self | ChildrenRecursive,
+
+    /// Default search option - to find components in the given node and all children recursively.
+    Default = SelfOrChildrenRecursive,
 };
 URHO3D_FLAGSET(ComponentSearchFlag, ComponentSearchFlags);
 
@@ -673,15 +679,15 @@ public:
     const ea::vector<SharedPtr<Component> >& GetComponents() const { return components_; }
 
     /// Return all components of type. Optionally recursive.
-    void GetComponents(ea::vector<Component*>& dest, StringHash type, bool recursive = false) const;
+    void GetComponents(ea::vector<Component*>& dest, StringHash type) const;
     /// Return index of owned component or M_MAX_UNSIGNED if not found.
     unsigned GetComponentIndex(const Component* component) const;
     /// Return component by type. If there are several, returns the first.
-    Component* GetComponent(StringHash type, bool recursive = false) const;
+    Component* GetComponent(StringHash type) const;
     /// Return N-th component of given type.
     Component* GetNthComponent(StringHash type, unsigned index) const;
-    /// Return component in parent node. If there are several, returns the first. May optional traverse up to the root node.
-    Component* GetParentComponent(StringHash type, bool fullTraversal = false) const;
+    /// Return component in parent node. If there are several, returns the first.
+    Component* GetParentComponent(StringHash type) const;
     /// Return whether has a specific component.
     bool HasComponent(StringHash type) const;
     /// Return listener components.
@@ -694,43 +700,40 @@ public:
     /// Return all user variables.
     const StringVariantMap& GetVars() const { return vars_; }
 
-    /// Return all components derived from class. Optionally recursive.
-    void GetDerivedComponents(ea::vector<Component*>& dest, StringHash type, bool recursive = false) const;
     /// Return first component derived from class.
-    Component* GetDerivedComponent(StringHash type, bool recursive = false) const;
+    Component* GetDerivedComponent(StringHash type) const;
     /// Return first component derived from class.
-    Component* GetParentDerivedComponent(StringHash type, bool fullTraversal = false) const;
-    /// Return first component derived from class.
-    template <class T> T* GetDerivedComponent(bool recursive = false) const;
-    /// Return first component derived from class in the parent node, or if fully traversing then the first node up the tree with one.
-    template <class T> T* GetParentDerivedComponent(bool fullTraversal = false) const;
-    /// Return components derived from class.
-    template <class T, class U> void GetDerivedComponents(U& destVector, bool recursive = false, bool clearVector = true) const;
-    template <class U> void GetDerivedComponents(U& destVector, bool recursive = false, bool clearVector = true) const;
+    template <class T> T* GetDerivedComponent() const;
+
     /// Template version of returning child nodes with a specific component.
     template <class T> void GetChildrenWithComponent(ea::vector<Node*>& dest, bool recursive = false) const;
     /// Template version of returning a component by type.
-    template <class T> T* GetComponent(bool recursive = false) const;
+    template <class T> T* GetComponent() const;
     /// Return N-th component of given type.
     template <class T> T* GetNthComponent(unsigned index) const;
     /// Template version of returning a parent's component by type.
-    template <class T> T* GetParentComponent(bool fullTraversal = false) const;
+    template <class T> T* GetParentComponent() const;
     /// Template version of returning all components of type.
-    template <class T, class U> void GetComponents(U& destVector, bool recursive = false, bool clearVector = true) const;
-    template <class U> void GetComponents(U& destVector, bool recursive = false, bool clearVector = true) const;
+    template <class T, class U> void GetComponents(U& destVector, bool clearVector = true) const;
+    template <class U> void GetComponents(U& destVector, bool clearVector = true) const;
     /// Template version of checking whether has a specific component.
     template <class T> bool HasComponent() const;
 
     /// Returns the first component of the specified type that meets the search criteria.
-    Component* FindComponent(StringHash type, ComponentSearchFlags flags) const;
+    Component* FindComponent(StringHash type, ComponentSearchFlags flags = ComponentSearchFlag::Default) const;
     /// Adds all components of the specified type that meet the search criteria to the container.
-    void FindComponents(ea::vector<Component*>& dest, StringHash type, ComponentSearchFlags flags, bool clearVector = true) const;
+    void FindComponents(ea::vector<Component*>& dest, StringHash type,
+        ComponentSearchFlags flags = ComponentSearchFlag::Default, bool clearVector = true) const;
     /// Returns the first component of the template argument type that meets the search criteria.
-    template <class T> T* FindComponent(ComponentSearchFlags flags) const;
+    template <class T> T* FindComponent(ComponentSearchFlags flags = ComponentSearchFlag::Default) const;
     /// Adds all components of the specified type that meet the search criteria to the container.
-    template <class T, class U> void FindComponents(U& destVector, ComponentSearchFlags flags, bool clearVector = true) const;
+    template <class T, class U>
+    void FindComponents(
+        U& destVector, ComponentSearchFlags flags = ComponentSearchFlag::Default, bool clearVector = true) const;
     /// Adds all components of the specified type that meet the search criteria to the container.
-    template <class U> void FindComponents(U& destVector, ComponentSearchFlags flags, bool clearVector = true) const;
+    template <class U>
+    void FindComponents(
+        U& destVector, ComponentSearchFlags flags = ComponentSearchFlag::Default, bool clearVector = true) const;
 
 
     /// Find and return child node inplace if pointer is null, do nothing if pointer is already initialized.
@@ -813,10 +816,6 @@ private:
     void GetChildrenWithComponentRecursive(ea::vector<Node*>& dest, StringHash type) const;
     /// Return child nodes with a specific tag recursively.
     void GetChildrenWithTagRecursive(ea::vector<Node*>& dest, const ea::string& tag) const;
-    /// Return specific components recursively.
-    void GetComponentsRecursive(ea::vector<Component*>& dest, StringHash type) const;
-    /// Return components derived from type recursively.
-    void GetDerivedComponentsRecursive(ea::vector<Component*>& dest, StringHash type) const;
     /// Clone node recursively.
     Node* CloneRecursive(Node* parent, SceneResolver& resolver);
     /// Remove a component from this node with the specified iterator.
@@ -886,13 +885,13 @@ template <class T> void Node::GetChildrenWithComponent(ea::vector<Node*>& dest, 
     GetChildrenWithComponent(dest, T::GetTypeStatic(), recursive);
 }
 
-template <class T> T* Node::GetComponent(bool recursive) const { return static_cast<T*>(GetComponent(T::GetTypeStatic(), recursive)); }
+template <class T> T* Node::GetComponent() const { return static_cast<T*>(GetComponent(T::GetTypeStatic())); }
 
 template <class T> T* Node::GetNthComponent(unsigned index) const { return static_cast<T*>(GetNthComponent(T::GetTypeStatic(), index)); }
 
-template <class T> T* Node::GetParentComponent(bool fullTraversal) const { return static_cast<T*>(GetParentComponent(T::GetTypeStatic(), fullTraversal)); }
+template <class T> T* Node::GetParentComponent() const { return static_cast<T*>(GetParentComponent(T::GetTypeStatic())); }
 
-template <class T, class U> void Node::GetComponents(U& destVector, bool recursive, bool clearVector) const
+template <class T, class U> void Node::GetComponents(U& destVector, bool clearVector) const
 {
     using PointerType = ea::remove_reference_t<decltype(destVector[0])>;
 
@@ -906,18 +905,12 @@ template <class T, class U> void Node::GetComponents(U& destVector, bool recursi
         else if (component->GetType() == T::GetTypeStatic())
             destVector.push_back(PointerType{static_cast<T*>(component.Get())});
     }
-
-    if (recursive)
-    {
-        for (const auto& child : children_)
-            child->GetComponents<T>(destVector, true, false);
-    }
 }
 
-template <class U> void Node::GetComponents(U& destVector, bool recursive, bool clearVector) const
+template <class U> void Node::GetComponents(U& destVector, bool clearVector) const
 {
     using ComponentType = ea::remove_reference_t<decltype(*destVector[0])>;
-    GetComponents<ComponentType>(destVector, recursive, clearVector);
+    GetComponents<ComponentType>(destVector, clearVector);
 }
 
 template <class T> T* Node::FindComponent(ComponentSearchFlags flags) const
@@ -1017,40 +1010,9 @@ template <class U> void Node::FindComponents(U& destVector, ComponentSearchFlags
 
 template <class T> bool Node::HasComponent() const { return HasComponent(T::GetTypeStatic()); }
 
-template <class T> T* Node::GetDerivedComponent(bool recursive) const
+template <class T> T* Node::GetDerivedComponent() const
 {
-    return static_cast<T*>(GetDerivedComponent(T::GetTypeStatic(), recursive));
-}
-
-template <class T> T* Node::GetParentDerivedComponent(bool fullTraversal) const
-{
-    return static_cast<T*>(GetParentDerivedComponent(T::GetTypeStatic(), fullTraversal));
-}
-
-template <class T, class U> void Node::GetDerivedComponents(U& destVector, bool recursive, bool clearVector) const
-{
-    using PointerType = ea::remove_reference_t<decltype(destVector[0])>;
-
-    if (clearVector)
-        destVector.clear();
-
-    for (const auto& component : components_)
-    {
-        if (auto derivedComponent = component->Cast<T>())
-            destVector.push_back(PointerType{derivedComponent});
-    }
-
-    if (recursive)
-    {
-        for (const auto& child : children_)
-            child->GetDerivedComponents<T>(destVector, true, false);
-    }
-}
-
-template <class U> void Node::GetDerivedComponents(U& destVector, bool recursive, bool clearVector) const
-{
-    using ComponentType = ea::remove_reference_t<decltype(*destVector[0])>;
-    GetDerivedComponents<ComponentType>(destVector, recursive, clearVector);
+    return static_cast<T*>(GetDerivedComponent(T::GetTypeStatic()));
 }
 
 template <class T> bool Node::GetNthComponentLazy(WeakPtr<T>& childComponent, unsigned index) const

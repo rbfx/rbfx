@@ -128,7 +128,7 @@ void RaycastVehicleWheel::UpdateWheelAtVehicle()
 {
     RaycastVehicle* vehicle = nullptr;
     if (node_)
-        vehicle = node_->GetParentComponent<RaycastVehicle>(true);
+        vehicle = node_->FindComponent<RaycastVehicle>(ComponentSearchFlag::ParentRecursive);
 
     if (vehicle != vehicle_)
     {

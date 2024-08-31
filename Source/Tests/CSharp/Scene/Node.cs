@@ -18,7 +18,7 @@ namespace Urho3DNet.Tests
             var node = RbfxTestFramework.Context.CreateObject<Node>();
             var component = node.CreateComponent<DerivedFromTestComponent>();
 
-            Assert.Equal(component, node.GetDerivedComponent<DerivedFromTestComponent>());
+            Assert.Equal(component, node.FindComponent<DerivedFromTestComponent>(ComponentSearchFlag.Self | ComponentSearchFlag.Derived));
         }
 
         [Fact]
@@ -29,7 +29,7 @@ namespace Urho3DNet.Tests
             var node = RbfxTestFramework.Context.CreateObject<Node>();
             var component = node.CreateComponent<DerivedFromTestComponent>();
 
-            Assert.Equal(component, node.GetDerivedComponent<Component>());
+            Assert.Equal(component, node.FindComponent<Component>(ComponentSearchFlag.Self | ComponentSearchFlag.Derived));
         }
 
         [Fact]
@@ -40,7 +40,7 @@ namespace Urho3DNet.Tests
             var node = RbfxTestFramework.Context.CreateObject<Node>();
             var component = node.CreateComponent<DerivedFromTestComponent>();
 
-            Assert.Equal(component, (DerivedFromTestComponent)node.GetDerivedComponent<IDerivedFromTestComponent>());
+            Assert.Equal(component, (DerivedFromTestComponent)node.FindComponent<IDerivedFromTestComponent>(ComponentSearchFlag.Self | ComponentSearchFlag.Derived));
         }
 
         [Fact]
@@ -52,8 +52,8 @@ namespace Urho3DNet.Tests
             var node = parent.CreateChild("");
             var component = parent.CreateComponent<DerivedFromTestComponent>();
 
-            Assert.Equal(component, (DerivedFromTestComponent)node.GetParentDerivedComponent<IDerivedFromTestComponent>());
-            Assert.Null(parent.GetParentDerivedComponent<IDerivedFromTestComponent>());
+            Assert.Equal(component, (DerivedFromTestComponent)node.FindComponent<IDerivedFromTestComponent>(ComponentSearchFlag.ParentRecursive | ComponentSearchFlag.Derived));
+            Assert.Null(parent.FindComponent<IDerivedFromTestComponent>(ComponentSearchFlag.ParentRecursive | ComponentSearchFlag.Derived));
         }
     }
 
