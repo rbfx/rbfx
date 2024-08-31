@@ -43,11 +43,11 @@ SimpleWindow::SimpleWindow(Context* context)
     : RmlUIComponent(context)
 {
     SetResource("UI/HelloRmlUI.rml");
-    variant_ = 42;
+    variant_ = ResourceRef("Model", "Models/Box.mdl");
     variantVector_.push_back(42);
-    variantVector_.push_back("text");
-    variantMap_["int"] = 42;
-    variantMap_["str"] = "text";
+    variantVector_.push_back("vector text");
+    variantMap_["int"] = 24;
+    variantMap_["str"] = "map text";
 }
 
 void SimpleWindow::OnDataModelInitialized()

@@ -209,6 +209,13 @@ public:
                 return (vector && ValidateIndex(index, vector->size())) ? Rml::DataVariable(this, &(*vector)[index])
                                                                         : Rml::DataVariable();
             }
+            case VAR_RESOURCEREFLIST:
+            {
+                auto& vector = value.GetResourceRefList();
+                return (ValidateIndex(index, vector.names_.size())) ? Rml::DataVariable(
+                           register_->GetDefinition<Rml::String>(), const_cast<Rml::String*>(&(vector.names_[index])))
+                                                                    : Rml::DataVariable();
+            }
             case VAR_STRINGVECTOR:
             {
                 auto* vector = value.GetStringVectorPtr();
@@ -720,9 +727,8 @@ bool FromRmlUi(const Rml::Variant& src, Variant& dst)
     case Rml::Variant::DECORATORSPTR: break;
     case Rml::Variant::FONTEFFECTSPTR: break;
     }
-    URHO3D_LOGERROR("This variant type conversion is not supported: {}", src.GetType());
-
-    return false;
+    dst = src.Get<ea::string>();
+    return true;
 }
 
 void RegisterVariantDefinition(Rml::DataTypeRegister* typeRegister)
@@ -774,8 +780,14 @@ bool ToRmlUi(const Variant& src, Rml::Variant& dst)
     case VAR_VARIANTCURVE: break;
     case VAR_STRINGVARIANTMAP: break;
     }
-    URHO3D_LOGERROR("This variant type conversion is not supported: {}", Variant::GetTypeNameList()[src.GetType()]);
-    return false;
+    auto string = src.ToString();
+    if (string.empty())
+    {
+        URHO3D_LOGERROR("This variant type conversion is not supported: {}", Variant::GetTypeNameList()[src.GetType()]);
+        return false;
+    }
+    dst = string;
+    return true;
 }
 
 IntVector2 RmlUI::GetDesiredCanvasSize() const
