@@ -292,7 +292,7 @@ namespace Urho3DNet
                     dest.Set((IntPtr) _field.GetValue(ptr));
                     break;
                 case VariantType.VarResourceRef:
-                    dest.Set((ResourceRef) _field.GetValue(ptr));
+                    dest.Set((ResourceRef) _field.GetValue(ptr) ?? ResourceRef.Empty);
                     break;
                 case VariantType.VarResourceRefList:
                     dest.Set((ResourceRefList) _field.GetValue(ptr));
