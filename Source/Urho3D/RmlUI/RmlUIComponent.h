@@ -92,6 +92,12 @@ public:
 
     // Bind data model property.
     bool BindDataModelProperty(const ea::string& name, GetterFunc getter, SetterFunc setter);
+    // Bind data model property or Urho3D::Variant type.
+    bool BindDataModelVariant(const ea::string& name, Variant* value);
+    // Bind data model property or Urho3D::VariantVector type.
+    bool BindDataModelVariantVector(const ea::string& name, VariantVector* value);
+    // Bind data model property or Urho3D::VariantMap type.
+    bool BindDataModelVariantMap(const ea::string& name, VariantMap* value);
     // Bind data model event.
     bool BindDataModelEvent(const ea::string& name, EventFunc eventCallback);
 
@@ -150,6 +156,8 @@ protected:
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// @}
 private:
+    /// Get data model constructor. Logs error if the constructor is not available.
+    Rml::DataModelConstructor* ExpectDataModelConstructor() const;
 
     /// Open a window document if it was not already open.
     void OpenInternal();

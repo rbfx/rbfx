@@ -43,6 +43,11 @@ SimpleWindow::SimpleWindow(Context* context)
     : RmlUIComponent(context)
 {
     SetResource("UI/HelloRmlUI.rml");
+    variant_ = 42;
+    variantVector_.push_back(42);
+    variantVector_.push_back("text");
+    variantMap_["int"] = 42;
+    variantMap_["str"] = "text";
 }
 
 void SimpleWindow::OnDataModelInitialized()
@@ -53,6 +58,10 @@ void SimpleWindow::OnDataModelInitialized()
     constructor->Bind("slider_value", &sliderValue_);
     constructor->Bind("counter", &counter_);
     constructor->Bind("progress", &progress_);
+    BindDataModelVariant("variant", &variant_);
+    BindDataModelVariantVector("variant_vector", &variantVector_);
+    BindDataModelVariantMap("variant_map", &variantMap_);
+
     constructor->BindEventCallback("count", &SimpleWindow::CountClicks, this);
 
     // Act on pressing window close button.

@@ -96,14 +96,11 @@ public:
         return Rml::ContextPtr(new Detail::RmlContext(name));
     }
     /// Free instance of RmlContext.
-    void ReleaseContext(Rml::Context* context) override
-    {
-        delete static_cast<Detail::RmlContext*>(context);
-    }
+    void ReleaseContext(Rml::Context* context) override { delete static_cast<Detail::RmlContext*>(context); }
 
 protected:
     /// RmlContextInstancer is static, nothing to release.
-    void Release() override { }
+    void Release() override {}
 };
 
 class RmlPlugin : public Rml::Plugin
@@ -120,7 +117,143 @@ public:
     }
 };
 
-}
+class VariantMapDefinition final : public Rml::VariableDefinition
+{
+public:
+    VariantMapDefinition(Rml::DataTypeRegister* typeRegister)
+        : Rml::VariableDefinition(Rml::DataVariableType::Struct)
+        , register_(typeRegister)
+    {
+    }
+
+    virtual Rml::DataVariable Child(void* ptr, const Rml::DataAddressEntry& address)
+    {
+        const auto& name = address.name;
+        if (name.empty())
+        {
+            Rml::Log::Message(Rml::Log::LT_WARNING, "Expected a struct member name but none given.");
+            return {};
+        }
+
+        auto& value = *static_cast<VariantMap*>(ptr);
+
+        auto it = value.find(name);
+        if (it == value.end())
+        {
+            Rml::Log::Message(Rml::Log::LT_WARNING, "Member %s not found in data struct.", name.c_str());
+            return {};
+        }
+
+        return {register_->GetDefinition<Variant>(), &it->second};
+    }
+
+private:
+    Rml::DataTypeRegister* register_;
+};
+
+class VariantDefinition final : public Rml::VariableDefinition
+{
+public:
+    VariantDefinition(Rml::DataTypeRegister* typeRegister)
+        : Rml::VariableDefinition(Rml::DataVariableType::Scalar)
+        , register_(typeRegister)
+    {
+    }
+
+    bool Get(void* ptr, Rml::Variant& variant) override
+    {
+        auto& value = *static_cast<const Variant*>(ptr);
+        return ToRmlUi(value, variant);
+    }
+
+    bool Set(void* ptr, const Rml::Variant& variant) override
+    {
+        auto& value = *static_cast<Variant*>(ptr);
+        return FromRmlUi(variant, value);
+    }
+
+    int Size(void* ptr) override
+    {
+        const auto& value = *static_cast<const Variant*>(ptr);
+        switch (value.GetType())
+        {
+        case VAR_RESOURCEREFLIST: return static_cast<int>(value.GetResourceRefList().names_.size());
+        case VAR_STRINGVECTOR: return static_cast<int>(value.GetStringVector().size());
+        case VAR_VARIANTVECTOR: return  static_cast<int>(value.GetVariantVector().size());
+        default: return 0;
+        }
+    }
+
+    static bool ValidateIndex(int index, size_t size)
+    {
+        if (index < 0 || static_cast<size_t>(index) >= size)
+        {
+            Rml::Log::Message(Rml::Log::LT_WARNING, "Data array index %d out of bounds.", index);
+            return false;
+        }
+        return true;
+    }
+
+    Rml::DataVariable Child(void* ptr, const Rml::DataAddressEntry& address) override
+    {
+        auto& value = *static_cast<Variant*>(ptr);
+
+        if (address.name.empty())
+        {
+            const int index = address.index;
+            switch (value.GetType())
+            {
+            case VAR_VARIANTVECTOR:
+            {
+                auto* vector = value.GetVariantVectorPtr();
+                return (vector && ValidateIndex(index, vector->size())) ? Rml::DataVariable(this, &(*vector)[index])
+                                                                        : Rml::DataVariable();
+            }
+            case VAR_STRINGVECTOR:
+            {
+                auto* vector = value.GetStringVectorPtr();
+                return (vector && ValidateIndex(index, vector->size()))
+                    ? Rml::DataVariable(register_->GetDefinition<eastl::string>(), &(*vector)[index])
+                    : Rml::DataVariable();
+            }
+            default:
+                Rml::Log::Message(
+                    Rml::Log::LT_WARNING, "Index operation is not valid on type %s.", value.GetTypeName().c_str());
+                return {};
+            }
+        }
+        else
+        {
+            const auto& name = address.name;
+            switch (value.GetType())
+            {
+            case VAR_VARIANTMAP:
+            {
+                auto* valuePtr = value.GetVariantMapPtr();
+                if (!valuePtr)
+                    return {};
+
+                auto it = valuePtr->find(name);
+                if (it == valuePtr->end())
+                {
+                    Rml::Log::Message(Rml::Log::LT_WARNING, "Member %s not found in VariantMap.", name.c_str());
+                    return {};
+                }
+
+                return {this, &it->second};
+            }
+            default:
+                Rml::Log::Message(Rml::Log::LT_WARNING, "Get property %s operation is not valid on type %s.",
+                    name.c_str(), value.GetTypeName().c_str());
+                return {};
+            }
+        }
+    }
+
+    Rml::DataTypeRegister* register_;
+};
+
+} // namespace Detail
 
 /// Number of instances of RmlUI. Used to initialize and release RmlUi library.
 static std::atomic<int> rmlInstanceCounter;
@@ -590,6 +723,19 @@ bool FromRmlUi(const Rml::Variant& src, Variant& dst)
     URHO3D_LOGERROR("This variant type conversion is not supported: {}", src.GetType());
 
     return false;
+}
+
+void RegisterVariantDefinition(Rml::DataTypeRegister* typeRegister)
+{
+    auto variantDef = Rml::MakeUnique<Detail::VariantDefinition>(typeRegister);
+    auto* variantPtr = variantDef.get();
+    typeRegister->RegisterDefinition(Rml::Family<Variant>::Id(), ea::move(variantDef));
+
+    typeRegister->RegisterDefinition(
+        Rml::Family<VariantVector>::Id(), ea::move(Rml::MakeUnique<Rml::ArrayDefinition<VariantVector>>(variantPtr)));
+
+    typeRegister->RegisterDefinition(
+        Rml::Family<VariantMap>::Id(), Rml::MakeUnique<Detail::VariantMapDefinition>(typeRegister));
 }
 
 /// Try to convert variant from Urho3D to RmlUI.
