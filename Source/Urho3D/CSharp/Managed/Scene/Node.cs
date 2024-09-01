@@ -81,7 +81,7 @@ namespace Urho3DNet
             return GetDerivedComponent(ObjectReflection<T>.TypeId) as T;
         }
 
-        public T FindComponent<T>(ComponentSearchFlag flags) where T: class
+        public T FindComponent<T>(ComponentSearchFlag flags = ComponentSearchFlag.Default) where T: class
         {
             return FindComponent(ObjectReflection<T>.TypeId, flags) as T;
         }
@@ -91,7 +91,7 @@ namespace Urho3DNet
         /// </summary>
         /// <typeparam name="T">Type inherited from <see cref="Urho3DNet.Component"/> or interface marked with <see cref="Urho3DNet.DerivedFromAttribute"/></typeparam>
         /// <returns>List of found components.</returns>
-        public ComponentList FindComponents<T>(ComponentSearchFlag flags)
+        public ComponentList FindComponents<T>(ComponentSearchFlag flags = ComponentSearchFlag.Default)
         {
             ComponentList componentList = new ComponentList();
             FindComponents(componentList, ObjectReflection<T>.TypeId, flags);
