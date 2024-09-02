@@ -609,6 +609,12 @@ public:
 %include "generated/Urho3D/_pre_ik.i"
 %include "Urho3D/IK/IKSolver.h"
 %include "Urho3D/IK/IKSolverComponent.h"
+
+%include "Urho3D/IK/IKArmSolver.h"
+%include "Urho3D/IK/IKLegSolver.h"
+%include "Urho3D/IK/IKLimbSolver.h"
+%include "Urho3D/IK/IKRotateTo.h"
+
 #endif
 
 // ------------------------------------- RenderAPI -------------------------------------
