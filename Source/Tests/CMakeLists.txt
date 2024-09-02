@@ -51,4 +51,5 @@ if (URHO3D_CSHARP)
         NAMESPACE Urho3DNet
         DEPENDS Urho3D
     )
+    target_include_directories(${TARGET_NAME}Lib PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()

@@ -339,6 +339,7 @@ function (csharp_bind_target)
         -c++
         -outdir "${BIND_OUT_DIR}"
         -o "${BIND_OUT_FILE}"
+        -DSWIG_CSHARP_NO_STRING_HELPER=1
     )
 
     if (URHO3D_SWIG_DEBUG_TMSEARCH)
@@ -356,9 +357,19 @@ function (csharp_bind_target)
         endif ()
     endif ()
 
-    if (IOS)
-        list (APPEND GENERATOR_OPTIONS -D__IOS__)
-    endif ()
+    # Platform defines with "__" prefix and suffix
+    foreach(def IOS WEB ANDROID APPLE)
+        if (${${def}})
+            list (APPEND GENERATOR_OPTIONS -D__${def}__=1)
+        endif ()
+    endforeach()
+
+    # Other platform defines
+    foreach(def WIN32 MSVC LINUX UNIX MACOS UWP)
+        if (${${def}})
+            list (APPEND GENERATOR_OPTIONS -D${def}=1)
+        endif ()
+    endforeach()
 
     # Parse bindings using same compile definitions as built target
     __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${BIND_TARGET} INTERFACE_INCLUDE_DIRECTORIES)

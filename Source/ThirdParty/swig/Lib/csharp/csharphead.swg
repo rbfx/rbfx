@@ -385,6 +385,63 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_CSharpString
   SWIG_csharp_string_callback = callback;
 }
 %}
+#else
+// rbfx: different string handling
+// Replace standard string helper with a custom one which uses malloc() and a custom string marshaller.
+%insert(runtime) %{
+
+static char* SWIGSTDCALL SWIG_csharp_string_callback(const char* str, int len=0)
+{
+  if (len == 0)
+    len = strlen(str);
+  char* mem = (char*)malloc(len + 1);
+  memcpy(mem, str, len);
+  mem[len] = 0;
+  return mem;
+}
+
+%}
+
+%pragma(csharp) imclasscode=%{
+
+  internal class SWIGUTF8StringMarshaller : System.Runtime.InteropServices.ICustomMarshaler
+  {
+    private static SWIGUTF8StringMarshaller staticInstance = new SWIGUTF8StringMarshaller();
+    public static System.Runtime.InteropServices.ICustomMarshaler GetInstance(string cookie) { return staticInstance; }
+
+    public void CleanUpManagedData(object ManagedObj)        { }
+    public void CleanUpNativeData(System.IntPtr pNativeData) { $module.free(pNativeData); }
+    public int  GetNativeDataSize()                          { return -1; }
+
+    public unsafe System.IntPtr MarshalManagedToNative(object obj)
+    {
+      if (null == obj)
+        return System.IntPtr.Zero;
+
+      string str = obj as string;
+      if (null == str)
+        throw new global::System.ArgumentException("string expected", "obj");
+
+      int len = global::System.Text.Encoding.UTF8.GetByteCount(str);
+      var mem = $module.malloc(len + 1);
+      fixed (char* src = str)
+      {
+        global::System.Text.Encoding.UTF8.GetBytes(src, str.Length, (byte*)mem, len);
+      }
+      ((byte*)mem)[len] = 0;
+      return mem;
+    }
+
+    public unsafe object MarshalNativeToManaged(System.IntPtr mem)
+    {
+      if (mem == System.IntPtr.Zero)
+        return null;
+      return global::System.Text.Encoding.UTF8.GetString((byte*)mem, $module.strlen(mem));
+    }
+  }
+%}
+
+// /rbfx
 #endif // SWIG_CSHARP_NO_STRING_HELPER
 
 #if !defined(SWIG_CSHARP_NO_IMCLASS_STATIC_CONSTRUCTOR)

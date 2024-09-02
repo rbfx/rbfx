@@ -11,7 +11,10 @@ using namespace Urho3D;
 #define EASTLAllocatorType eastl::allocator
 
 %include "Ignores.i"
-%include "stl.i"
+%include "std_common.i"
+%include "std_vector.i"
+%include "std_map.i"
+%include "std_pair.i"
 %include "stdint.i"
 %include "typemaps.i"
 %include "arrays_csharp.i"
@@ -19,6 +22,7 @@ using namespace Urho3D;
 %include "swiginterface.i"
 %include "attribute.i"
 
+%include "strings.i"
 %include "InstanceCache.i"
 
 %apply bool* INOUT                  { bool&, bool* };
@@ -132,7 +136,6 @@ using namespace Urho3D;
 }
 
 %include "StringHash.i"
-%include "eastl_string.i"
 
 %rename("%(camelcase)s", %$isenumitem) "";
 %rename("%(camelcase)s", %$isvariable, %$ispublic) "";
@@ -169,7 +172,7 @@ using namespace Urho3D;
 %ignore Urho3D::Rand;
 %ignore Urho3D::RandStandardNormal;
 %ignore Urho3D::RandomEngine::GetStandardNormalFloatPair;
-%ignore Urho3D::ToString(void* value);
+%ignore Urho3D::ToString;
 %ignore Urho3D::GetStringListIndex;
 
 %include "Urho3D/Math/MathDefs.h"
@@ -426,12 +429,13 @@ public:
 %include "generated/Urho3D/_pre_io.i"
 %interface_custom("%s", "I%s", Urho3D::Serializer);
 %ignore Urho3D::Serializer::WriteString(ea::string_view value);
-%ignore Urho3D::WriteString(std::string_view value);
+%ignore Urho3D::Serializer::WriteString(std::string_view value);
 %include "Urho3D/IO/Serializer.h"
 %interface_custom("%s", "I%s", Urho3D::Deserializer);
 %include "Urho3D/IO/Deserializer.h"
 %interface_custom("%s", "I%s", Urho3D::AbstractFile);
 URHO3D_REFCOUNTED_INTERFACE(Urho3D::AbstractFile, Urho3D::RefCounted);
+%ignore Urho3D::MountPointGuard;
 %include "Urho3D/IO/AbstractFile.h"
 %include "Urho3D/IO/ScanFlags.h"
 %include "Urho3D/IO/Compression.h"
@@ -530,6 +534,7 @@ public:
 %ignore Urho3D::Component::node_;
 %ignore Urho3D::Component::id_;
 %ignore Urho3D::Component::enabled_;
+%ignore Urho3D::ObjectAnimation::GetAttributeAnimationInfos;
 
 %include "generated/Urho3D/_pre_scene.i"
 %include "Urho3D/Scene/AnimationDefs.h"
@@ -689,8 +694,10 @@ public:
 %ignore Urho3D::RenderSurface::GetView;
 %ignore Urho3D::RenderSurface::GetReadOnlyDepthView;
 %ignore Urho3D::Material::GetTextures;
+%ignore Urho3D::NormalizeModelVertexMorphVector;
 %ignore Urho3D::GeometryLODView::morphs_;
 %rename(DrawableFlags) Urho3D::DrawableFlag;
+%ignore Urho3D::GetShader(ShaderType, const char*, const char*);
 
 %apply void* VOID_INT_PTR {
     int *data_,
@@ -979,6 +986,7 @@ using ImGuiConfigFlags = unsigned;
 %ignore Urho3D::TileMapLayer2D::GetTmxLayer;
 %ignore Urho3D::Drawable2D::sourceBatches_;
 %ignore Urho3D::TileMap2D::GetTmxFile;
+%ignore Urho3D::SpriteSheet2D::GetSpriteMapping;
 
 %include "generated/Urho3D/_pre_urho2d.i"
 %include "Urho3D/Urho2D/Drawable2D.h"

@@ -1,4 +1,4 @@
-%module(naturalvar=1) TestBindings
+%module(naturalvar=1, directors=1) TestBindings
 %{
 #include <Urho3D/Urho3DAll.h>
 using namespace Urho3D;
@@ -14,9 +14,9 @@ int TestBindingsFunc()
     return 42;
 }
 
-ea::string GetObjectTypeName(Urho3D::Object* obj)
+const char* GetObjectTypeName(Urho3D::Object* obj)
 {
-    return obj->GetTypeName();
+    return obj->GetTypeName().c_str();
 }
 
 Urho3D::StringHash GetObjectTypeHash(Urho3D::Object* obj)
@@ -25,5 +25,7 @@ Urho3D::StringHash GetObjectTypeHash(Urho3D::Object* obj)
 }
 
 %}
+
+%include "Script/StringsTest.i"
 
 //%include "SampleComponent.h"
