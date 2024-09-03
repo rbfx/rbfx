@@ -124,12 +124,17 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 
 %typemap(ctype) char *, char *&, char[ANY], char[]   "char *"
 // rbfx
+#if defined(UWP)
+// UWP does not support UnmanagedType.CustomMarshaler
+%typemap(imtype) char *, char *&, char[ANY], char[] "string"
+#else
 %typemap(imtype,
   inattributes="[global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]",
   outattributes="[return: global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]",
   directorinattributes="[global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]",
   directoroutattributes="[return: global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]"
 ) char *, char *&, char[ANY], char[] "string"
+#endif
 // /rbfx
 %typemap(cstype) char *, char *&, char[ANY], char[]   "string"
 

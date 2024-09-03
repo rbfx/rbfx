@@ -343,11 +343,12 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
 %}
 #endif // SWIG_CSHARP_NO_EXCEPTION_HELPER
 
+// rbfx: different string handling
 #if !defined(SWIG_CSHARP_NO_STRING_HELPER)
 %insert(runtime) %{
 /* Callback for returning strings to C# without leaking memory */
-typedef char * (SWIGSTDCALL* SWIG_CSharpStringHelperCallback)(const char *);
-static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback = NULL;
+typedef char * (SWIGSTDCALL* SWIG_CSharpStringHelperCallback)(void *, int);
+static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback_ptr = NULL;
 %}
 
 %pragma(csharp) imclasscode=%{
@@ -356,7 +357,7 @@ static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback = NULL;
 #if __IOS__
     [global::ObjCRuntime.MonoNativeFunctionWrapper]
 #endif
-    public delegate string SWIGStringDelegate(string message);
+    public delegate string SWIGStringDelegate(global::System.IntPtr message, int len);
     static SWIGStringDelegate stringDelegate = new SWIGStringDelegate(CreateString);
 
     [global::System.Runtime.InteropServices.DllImport($dllimport, EntryPoint="SWIGRegisterStringCallback_$module")]
@@ -365,8 +366,8 @@ static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback = NULL;
 #if __IOS__
     [global::ObjCRuntime.MonoPInvokeCallback(typeof(SWIGStringDelegate))]
 #endif
-    static string CreateString(string cString) {
-      return cString;
+    static unsafe string CreateString(global::System.IntPtr cString, int len) {
+      return System.Text.Encoding.ASCII.GetString((byte*)cString, len);
     }
 
     static SWIGStringHelper() {
@@ -382,11 +383,17 @@ static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback = NULL;
 extern "C" 
 #endif
 SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_CSharpStringHelperCallback callback) {
-  SWIG_csharp_string_callback = callback;
+  SWIG_csharp_string_callback_ptr = callback;
+}
+
+static char* SWIGSTDCALL SWIG_csharp_string_callback(const char* str, int len=0)
+{
+  if (len == 0)
+    len = strlen(str);
+  return SWIG_csharp_string_callback_ptr((void*)str, len);
 }
 %}
 #else
-// rbfx: different string handling
 // Replace standard string helper with a custom one which uses malloc() and a custom string marshaller.
 %insert(runtime) %{
 
@@ -441,8 +448,8 @@ static char* SWIGSTDCALL SWIG_csharp_string_callback(const char* str, int len=0)
   }
 %}
 
-// /rbfx
 #endif // SWIG_CSHARP_NO_STRING_HELPER
+// /rbfx
 
 #if !defined(SWIG_CSHARP_NO_IMCLASS_STATIC_CONSTRUCTOR)
 // Ensure the class is not marked beforefieldinit

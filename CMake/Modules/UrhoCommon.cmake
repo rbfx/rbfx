@@ -339,8 +339,12 @@ function (csharp_bind_target)
         -c++
         -outdir "${BIND_OUT_DIR}"
         -o "${BIND_OUT_FILE}"
-        -DSWIG_CSHARP_NO_STRING_HELPER=1
     )
+
+    if (NOT UWP)
+        # UWP does not support UnmanagedType.CustomMarshaler
+        list(APPEND GENERATOR_OPTIONS -DSWIG_CSHARP_NO_STRING_HELPER=1)
+    endif ()
 
     if (URHO3D_SWIG_DEBUG_TMSEARCH)
         list(APPEND GENERATOR_OPTIONS -debug-tmsearch)

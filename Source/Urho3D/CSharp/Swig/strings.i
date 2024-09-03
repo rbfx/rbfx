@@ -82,12 +82,17 @@ class string;
 
 // string
 %typemap(ctype) string "char *"
+#if defined(UWP)
+// UWP does not support UnmanagedType.CustomMarshaler
+%typemap(imtype) string "string"
+#else
 %typemap(imtype,
          inattributes="[global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]",
          outattributes="[return: global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]",
          directorinattributes="[global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]",
          directoroutattributes="[return: global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]"
                ) string "string"
+#endif
 %typemap(cstype) string "string"
 
 %typemap(typecheck, precedence=SWIG_TYPECHECK_POINTER, equivalent="const char*") string ""
@@ -126,10 +131,16 @@ class string;
 
 // const string &
 %typemap(ctype) const string & "char *"
+#if defined(UWP)
+%typemap(imtype) const string & "string"
+#else
 %typemap(imtype,
          inattributes="[global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]",
-         outattributes="[return: global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]"
+         outattributes="[return: global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]",
+         directorinattributes="[global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]",
+         directoroutattributes="[return: global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]"
                ) const string & "string"
+#endif
 %typemap(cstype) const string & "string"
 
 %typemap(csdirectorin) const string & "$iminput"
