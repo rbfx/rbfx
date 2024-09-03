@@ -165,7 +165,7 @@ using PrefabInstanceFlags = Urho3D::PrefabInstanceFlag;
 %csattribute(Urho3D::NodePrefab, %arg(ea::vector<NodePrefab>), Children, GetChildren);
 %csattribute(Urho3D::NodePrefab, %arg(ea::vector<NodePrefab>), MutableChildren, GetMutableChildren);
 %csattribute(Urho3D::NodePrefab, %arg(ea::string), NodeName, GetNodeName);
-%csattribute(Urho3D::ObjectAnimation, %arg(ea::unordered_map<ea::string, SharedPtr<ValueAnimationInfo>>), AttributeAnimationInfos, GetAttributeAnimationInfos);
+//%csattribute(Urho3D::ObjectAnimation, %arg(ea::unordered_map<ea::string, SharedPtr<ValueAnimationInfo>>), AttributeAnimationInfos, GetAttributeAnimationInfos);
 %csattribute(Urho3D::PrefabReaderFromMemory, %arg(bool), IsEOF, IsEOF);
 %csattribute(Urho3D::PrefabReaderFromArchive, %arg(bool), IsEOF, IsEOF);
 %csattribute(Urho3D::PrefabResource, %arg(Urho3D::NodePrefab), ScenePrefab, GetScenePrefab);
