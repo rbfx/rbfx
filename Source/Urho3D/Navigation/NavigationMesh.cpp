@@ -944,7 +944,7 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
     // Get Navigable components from child nodes, not from whole scene. This makes it possible to partition
     // the scene into several navigation meshes
     ea::vector<Navigable*> navigables;
-    node_->GetComponents<Navigable>(navigables, true);
+    node_->FindComponents<Navigable>(navigables);
 
     ea::hash_set<Node*> processedNodes;
     for (unsigned i = 0; i < navigables.size(); ++i)
@@ -956,7 +956,7 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
     // Get offmesh connections
     Matrix3x4 inverse = node_->GetWorldTransform().Inverse();
     ea::vector<OffMeshConnection*> connections;
-    node_->GetComponents<OffMeshConnection>(connections, true);
+    node_->FindComponents<OffMeshConnection>(connections);
 
     for (unsigned i = 0; i < connections.size(); ++i)
     {
@@ -975,7 +975,7 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
 
     // Get nav area volumes
     ea::vector<NavArea*> navAreas;
-    node_->GetComponents<NavArea>(navAreas, true);
+    node_->FindComponents<NavArea>(navAreas);
     areas_.clear();
     for (unsigned i = 0; i < navAreas.size(); ++i)
     {

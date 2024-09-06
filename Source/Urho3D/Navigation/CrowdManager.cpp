@@ -561,7 +561,7 @@ ea::vector<CrowdAgent*> CrowdManager::GetAgents(Node* node, bool inCrowdFilter) 
     if (!node)
         node = GetScene();
     ea::vector<CrowdAgent*> agents;
-    node->GetComponents<CrowdAgent>(agents, true);
+    node->FindComponents<CrowdAgent>(agents);
     if (inCrowdFilter)
     {
         auto i = agents.begin();

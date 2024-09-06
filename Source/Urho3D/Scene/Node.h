@@ -714,8 +714,8 @@ public:
     /// Template version of returning a parent's component by type.
     template <class T> T* GetParentComponent() const;
     /// Template version of returning all components of type.
-    template <class T, class U> void GetComponents(U& destVector, bool clearVector = true) const;
-    template <class U> void GetComponents(U& destVector, bool clearVector = true) const;
+    template <class T, class U> void GetComponents(U& destVector) const;
+    template <class U> void GetComponents(U& destVector) const;
     /// Template version of checking whether has a specific component.
     template <class T> bool HasComponent() const;
 
@@ -891,13 +891,11 @@ template <class T> T* Node::GetNthComponent(unsigned index) const { return stati
 
 template <class T> T* Node::GetParentComponent() const { return static_cast<T*>(GetParentComponent(T::GetTypeStatic())); }
 
-template <class T, class U> void Node::GetComponents(U& destVector, bool clearVector) const
+template <class T, class U> void Node::GetComponents(U& destVector) const
 {
     using PointerType = ea::remove_reference_t<decltype(destVector[0])>;
 
-    if (clearVector)
-        destVector.clear();
-
+    destVector.clear();
     for (const auto& component : components_)
     {
         if constexpr (ea::is_same_v<T, Component>)
@@ -907,10 +905,10 @@ template <class T, class U> void Node::GetComponents(U& destVector, bool clearVe
     }
 }
 
-template <class U> void Node::GetComponents(U& destVector, bool clearVector) const
+template <class U> void Node::GetComponents(U& destVector) const
 {
     using ComponentType = ea::remove_reference_t<decltype(*destVector[0])>;
-    GetComponents<ComponentType>(destVector, clearVector);
+    GetComponents<ComponentType>(destVector);
 }
 
 template <class T> T* Node::FindComponent(ComponentSearchFlags flags) const

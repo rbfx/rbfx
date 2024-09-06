@@ -527,7 +527,7 @@ Vector3 AdvancedNetworking::GetAimPosition(const Vector3& playerPosition, const 
     if (ui_->GetCheatAutoAimHand())
     {
         ea::vector<AnimatedModel*> models;
-        scene_->GetComponents(models, true);
+        scene_->FindComponents(models);
 
         AnimatedModel* closestModel{};
         float closestDistance{};

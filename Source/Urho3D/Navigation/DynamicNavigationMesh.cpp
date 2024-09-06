@@ -794,7 +794,7 @@ unsigned DynamicNavigationMesh::BuildTilesFromGeometry(
 ea::vector<OffMeshConnection*> DynamicNavigationMesh::CollectOffMeshConnections(const BoundingBox& bounds)
 {
     ea::vector<OffMeshConnection*> connections;
-    node_->GetComponents<OffMeshConnection>(connections, true);
+    node_->FindComponents<OffMeshConnection>(connections);
     for (unsigned i = 0; i < connections.size(); ++i)
     {
         OffMeshConnection* connection = connections[i];
