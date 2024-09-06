@@ -901,7 +901,10 @@ bool EditVariantString(Variant& var, const EditVariantOptions& options)
 {
     ea::string value = var.GetString();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::InputText("", &value, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo))
+    const bool isCommitted = ui::InputText("", &value,
+        ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo | ImGuiInputTextFlags_CallbackAlways);
+    const bool isDeactivated = ui::IsItemDeactivatedAfterEdit();
+    if (isCommitted || isDeactivated)
     {
         var = value;
         return true;
