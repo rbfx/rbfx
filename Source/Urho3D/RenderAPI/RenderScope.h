@@ -4,14 +4,14 @@
 
 #pragma once
 
-#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Format.h"
 #include "Urho3D/Core/NonCopyable.h"
-#include "Urho3D/RenderAPI/RenderContext.h"
-
-#include <Diligent/Graphics/GraphicsEngine/interface/DeviceContext.h>
+#include "Urho3D/Urho3D.h"
 
 namespace Urho3D
 {
+
+class RenderContext;
 
 /// Utility class to add debug scope markers.
 class URHO3D_API RenderScope : public NonCopyable
@@ -35,14 +35,12 @@ public:
     ~RenderScope()
     {
         if (renderContext_)
-            renderContext_->GetHandle()->EndDebugGroup();
+            EndGroup();
     }
 
 private:
-    void BeginGroup(ea::string_view name)
-    {
-        renderContext_->GetHandle()->BeginDebugGroup(name.data());
-    }
+    void BeginGroup(ea::string_view name);
+    void EndGroup();
 
     RenderContext* renderContext_{};
 };
