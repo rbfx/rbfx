@@ -39,7 +39,7 @@ using SceneLookupFlags = Urho3D::SceneLookupFlag;
 %csconstvalue("8") Urho3D::ComponentSearchFlag::Children;
 %csconstvalue("24") Urho3D::ComponentSearchFlag::ChildrenRecursive;
 %csconstvalue("256") Urho3D::ComponentSearchFlag::Derived;
-%csconstvalue("512") Urho3D::ComponentSearchFlag::Disabled;
+%csconstvalue("512") Urho3D::ComponentSearchFlag::EnabledOnly;
 %csconstvalue("7") Urho3D::ComponentSearchFlag::SelfOrParentRecursive;
 %csconstvalue("25") Urho3D::ComponentSearchFlag::SelfOrChildrenRecursive;
 %typemap(csattributes) Urho3D::ComponentSearchFlag "[global::System.Flags]";

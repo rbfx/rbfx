@@ -71,7 +71,7 @@ enum class ComponentSearchFlag
     Children = 0x8,
     ChildrenRecursive = 0x8 | 0x10,
     Derived = 0x100,
-    Disabled = 0x200,
+    EnabledOnly = 0x200,
 
     SelfOrParentRecursive = Self | ParentRecursive,
     SelfOrChildrenRecursive = Self | ChildrenRecursive,
@@ -918,7 +918,7 @@ template <class T> T* Node::FindComponent(ComponentSearchFlags flags) const
 
 template <typename Callback> bool Node::FindComponents(ComponentSearchFlags flags, StringHash typeId, const Callback& callback) const
 {
-    const bool includeDisabled = flags.Test(ComponentSearchFlag::Disabled);
+    const bool includeDisabled = !flags.Test(ComponentSearchFlag::EnabledOnly);
     const bool includeDerived = flags.Test(ComponentSearchFlag::Derived);
 
     if (flags.Test(ComponentSearchFlag::Self))
