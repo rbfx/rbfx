@@ -49,6 +49,7 @@ const Rml::String ComponentPtrAttribute = "__RmlUIComponentPtr__";
 RmlUIComponent::RmlUIComponent(Context* context)
     : LogicComponent(context)
     , navigationManager_(MakeShared<RmlNavigationManager>(this))
+    , resource_{BinaryFile::GetTypeStatic()}
 {
     SetUpdateEventMask(USE_UPDATE);
     navigationManager_->OnGroupChanged.Subscribe(this, &RmlUIComponent::OnNavigableGroupChanged);
