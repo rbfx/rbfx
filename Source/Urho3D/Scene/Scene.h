@@ -307,6 +307,12 @@ private:
     void PreloadResources(AbstractFilePtr file, bool isSceneFile);
     /// Preload resources from an XML scene or object prefab file.
     void PreloadResourcesXML(const XMLElement& element);
+    /// Preload resources from old XML scene starting from scene element or object prefab file.
+    void PreloadResourcesSceneXML(const XMLElement& element);
+    /// Preload resources from new XML scene starting from resource element or object prefab file.
+    void PreloadResourcesResourceXML(const XMLElement& element);
+    /// Preload resources from node prefab recursevly.
+    void PreloadResources(const NodePrefab& nodePrefab);
     /// Preload resources from a JSON scene or object prefab file.
     void PreloadResourcesJSON(const JSONValue& value);
     /// Return component index storage for given type.
