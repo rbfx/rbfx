@@ -53,7 +53,7 @@ foreach (ext *.h *.inl)
 endforeach ()
 
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(RmlUi PRIVATE -DRmlCore_EXPORTS=1 -DRmlDebugger_EXPORTS=1 -DEASTL_EXPORTS -DEASTDC_EXPORTS)
+    target_compile_definitions(RmlUi PRIVATE -DRMLUI_CORE_EXPORTS=1 -DRMLUI_DEBUGGER_EXPORTS=1 -DEASTL_EXPORTS -DEASTDC_EXPORTS)
 else ()
     target_compile_definitions(RmlUi PUBLIC -DRMLUI_STATIC_LIB=1)
 endif ()

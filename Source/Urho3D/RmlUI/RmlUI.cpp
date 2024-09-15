@@ -91,7 +91,8 @@ class RmlContextInstancer : public Rml::ContextInstancer
 {
 public:
     /// Create instance of RmlContext.
-    Rml::ContextPtr InstanceContext(const Rml::String& name) override
+    Rml::ContextPtr InstanceContext(
+        const Rml::String& name, Rml::RenderManager* render_manager, Rml::TextInputHandler* text_input_handler) override
     {
         return Rml::ContextPtr(new Detail::RmlContext(name));
     }
@@ -408,7 +409,8 @@ RmlUI::RmlUI(Context* context, const char* name)
     // Initializing first instance of RmlUI, initialize backend library as well.
     if (rmlInstanceCounter.fetch_add(1) == 0)
     {
-        Rml::SetRenderInterface(new Detail::RmlRenderer(context_));
+        legacyRenderer_ = ea::make_unique<Detail::RmlRenderer>(context_);
+        Rml::SetRenderInterface(legacyRenderer_->GetAdaptedInterface());
         Rml::SetSystemInterface(new Detail::RmlSystem(context_));
         Rml::SetFileInterface(new Detail::RmlFile(context_));
         Rml::Initialise();

@@ -31,14 +31,14 @@
 #include "../../Include/RmlUi/Core/ContextInstancer.h"
 #include "../../Include/RmlUi/Core/Core.h"
 #include "../../Include/RmlUi/Core/DataModelHandle.h"
+#include "../../Include/RmlUi/Core/Debug.h"
 #include "../../Include/RmlUi/Core/ElementDocument.h"
 #include "../../Include/RmlUi/Core/ElementUtilities.h"
 #include "../../Include/RmlUi/Core/Factory.h"
 #include "../../Include/RmlUi/Core/Profiling.h"
-#include "../../Include/RmlUi/Core/RenderInterface.h"
+#include "../../Include/RmlUi/Core/RenderManager.h"
 #include "../../Include/RmlUi/Core/StreamMemory.h"
 #include "../../Include/RmlUi/Core/SystemInterface.h"
-#include "../../Include/RmlUi/Core/Debug.h"
 #include "DataModel.h"
 #include "EventDispatcher.h"
 #include "PluginRegistry.h"
@@ -54,9 +54,8 @@ static constexpr float DOUBLE_CLICK_TIME = 0.5f;    // [s]
 static constexpr float DOUBLE_CLICK_MAX_DIST = 3.f; // [dp]
 static constexpr float UNIT_SCROLL_LENGTH = 80.f;   // [dp]
 
-Context::Context(const String& name) :
-	name(name), dimensions(0, 0), density_independent_pixel_ratio(1.0f), mouse_position(0, 0), clip_origin(-1, -1), clip_dimensions(-1, -1),
-	next_update_timeout(0)
+Context::Context(const String& name, RenderManager* render_manager, TextInputHandler* text_input_handler) :
+	name(name), render_manager(render_manager), text_input_handler(text_input_handler)
 {
 	instancer = nullptr;
 
@@ -126,6 +125,7 @@ void Context::SetDimensions(const Vector2i _dimensions)
 	if (dimensions != _dimensions)
 	{
 		dimensions = _dimensions;
+		render_manager->SetViewport(dimensions);
 		root->SetBox(Box(Vector2f(dimensions)));
 		root->DirtyLayout();
 
@@ -141,8 +141,6 @@ void Context::SetDimensions(const Vector2i _dimensions)
 				document->DispatchEvent(EventId::Resize, Dictionary());
 			}
 		}
-
-		clip_dimensions = dimensions;
 	}
 }
 
@@ -218,11 +216,9 @@ bool Context::Render()
 {
 	RMLUI_ZoneScoped;
 
-	ElementUtilities::ApplyActiveClipRegion(this);
+	render_manager->PrepareRender();
 
 	root->Render();
-
-	ElementUtilities::SetClippingRegion(nullptr, this);
 
 	// Render the cursor proxy so that any attached drag clone will be rendered below the cursor.
 	if (drag_clone)
@@ -232,6 +228,8 @@ bool Context::Render()
 			Vector2f((float)Math::Clamp(mouse_position.x, 0, dimensions.x), (float)Math::Clamp(mouse_position.y, 0, dimensions.y)), nullptr);
 		cursor_proxy->Render();
 	}
+
+	render_manager->ResetState();
 
 	return true;
 }
@@ -855,21 +853,14 @@ void Context::SetDefaultScrollBehavior(ScrollBehavior scroll_behavior, float spe
 	scroll_controller->SetDefaultScrollBehavior(scroll_behavior, speed_factor);
 }
 
-bool Context::GetActiveClipRegion(Vector2i& origin, Vector2i& dimensions) const
+RenderManager& Context::GetRenderManager()
 {
-	if (clip_dimensions.x < 0 || clip_dimensions.y < 0)
-		return false;
-
-	origin = clip_origin;
-	dimensions = clip_dimensions;
-
-	return true;
+	return *render_manager;
 }
 
-void Context::SetActiveClipRegion(const Vector2i origin, const Vector2i dimensions)
+TextInputHandler* Context::GetTextInputHandler() const
 {
-	clip_origin = origin;
-	clip_dimensions = dimensions;
+	return text_input_handler;
 }
 
 void Context::SetInstancer(ContextInstancer* _instancer)
@@ -998,8 +989,8 @@ bool Context::OnFocusChange(Element* new_focus, bool focus_visible)
 	ElementDocument* old_document = old_focus ? old_focus->GetOwnerDocument() : nullptr;
 	ElementDocument* new_document = new_focus->GetOwnerDocument();
 
-	// If the current focus is modal and the new focus is not modal, deny the request
-	if (old_document && old_document->IsModal() && (!new_document || !new_document->GetOwnerDocument()->IsModal()))
+	// If the current focus is modal and the new focus is cannot receive focus from modal, deny the request.
+	if (old_document && old_document->IsModal() && (!new_document || !(new_document->IsModal() || new_document->IsFocusableFromModal())))
 		return false;
 
 	// Build the old chains
@@ -1163,7 +1154,7 @@ void Context::UpdateHoverChain(Vector2i old_mouse_position, int key_modifier_sta
 
 Element* Context::GetElementAtPoint(Vector2f point, const Element* ignore_element, Element* element) const
 {
-	if (element == nullptr)
+	if (!element)
 	{
 		if (ignore_element == root.get())
 			return nullptr;
@@ -1171,17 +1162,15 @@ Element* Context::GetElementAtPoint(Vector2f point, const Element* ignore_elemen
 		element = root.get();
 	}
 
-	// Check if any documents have modal focus; if so, only check down than document.
-	if (element == root.get())
+	bool is_modal = false;
+	ElementDocument* focus_document = nullptr;
+
+	// If we have modal focus, only check down documents that can receive focus from modals.
+	if (element == root.get() && focus)
 	{
-		if (focus)
-		{
-			ElementDocument* focus_document = focus->GetOwnerDocument();
-			if (focus_document != nullptr && focus_document->IsModal())
-			{
-				element = focus_document;
-			}
-		}
+		focus_document = focus->GetOwnerDocument();
+		if (focus_document && focus_document->IsModal())
+			is_modal = true;
 	}
 
 	// Check any elements within our stacking context. We want to return the lowest-down element
@@ -1193,10 +1182,12 @@ Element* Context::GetElementAtPoint(Vector2f point, const Element* ignore_elemen
 
 		for (int i = (int)element->stacking_context.size() - 1; i >= 0; --i)
 		{
-			if (ignore_element != nullptr)
+			Element* stacking_child = element->stacking_context[i];
+			if (ignore_element)
 			{
-				Element* element_hierarchy = element->stacking_context[i];
-				while (element_hierarchy != nullptr)
+				// Check if the element is a descendant of the element we're ignoring.
+				Element* element_hierarchy = stacking_child;
+				while (element_hierarchy)
 				{
 					if (element_hierarchy == ignore_element)
 						break;
@@ -1204,12 +1195,19 @@ Element* Context::GetElementAtPoint(Vector2f point, const Element* ignore_elemen
 					element_hierarchy = element_hierarchy->GetParentNode();
 				}
 
-				if (element_hierarchy != nullptr)
+				if (element_hierarchy)
 					continue;
 			}
 
-			Element* child_element = GetElementAtPoint(point, ignore_element, element->stacking_context[i]);
-			if (child_element != nullptr)
+			if (is_modal)
+			{
+				ElementDocument* child_document = stacking_child->GetOwnerDocument();
+				if (!child_document || !(child_document == focus_document || child_document->IsFocusableFromModal()))
+					continue;
+			}
+
+			Element* child_element = GetElementAtPoint(point, ignore_element, stacking_child);
+			if (child_element)
 				return child_element;
 		}
 	}
@@ -1225,12 +1223,10 @@ Element* Context::GetElementAtPoint(Vector2f point, const Element* ignore_elemen
 	bool within_element = (projection_result && element->IsPointWithinElement(point));
 	if (within_element)
 	{
-		Vector2i clip_origin, clip_dimensions;
-		if (ElementUtilities::GetClippingRegion(clip_origin, clip_dimensions, element))
-		{
-			within_element = point.x >= clip_origin.x && point.y >= clip_origin.y && point.x <= (clip_origin.x + clip_dimensions.x) &&
-				point.y <= (clip_origin.y + clip_dimensions.y);
-		}
+		// The element may have been clipped out of view if it overflows an ancestor, so check its clipping region.
+		Rectanglei clip_region;
+		if (ElementUtilities::GetClippingRegion(element, clip_region))
+			within_element = clip_region.Contains(Vector2i(point));
 	}
 
 	if (within_element)

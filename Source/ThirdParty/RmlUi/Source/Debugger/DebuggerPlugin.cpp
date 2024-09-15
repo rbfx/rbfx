@@ -35,6 +35,7 @@
 #include "../../Include/RmlUi/Core/Types.h"
 #include "DebuggerSystemInterface.h"
 #include "ElementContextHook.h"
+#include "ElementDebugDocument.h"
 #include "ElementInfo.h"
 #include "ElementLog.h"
 #include "FontSource.h"
@@ -220,6 +221,15 @@ void DebuggerPlugin::OnContextDestroy(Context* context)
 
 void DebuggerPlugin::OnElementDestroy(Element* element)
 {
+	// Detect external destruction of any of the debugger documents. This can happen for example if the user calls
+	// `Context::UnloadAllDocuments()` on the host context.
+	if (element == menu_element || element == info_element || element == log_element)
+	{
+		Log::Message(Log::LT_ERROR,
+			"A document owned by the Debugger plugin was destroyed externally. This is not allowed. Consider shutting down the debugger instead.");
+		ReleaseElements();
+	}
+
 	if (info_element)
 		info_element->OnElementDestroy(element);
 }
@@ -258,15 +268,16 @@ bool DebuggerPlugin::LoadFont()
 {
 	const String font_family_name = "rmlui-debugger-font";
 
-	return (LoadFontFace(courier_prime_code, sizeof(courier_prime_code) / sizeof(courier_prime_code[0]), font_family_name, Style::FontStyle::Normal,
-				Style::FontWeight::Normal) &&
-		LoadFontFace(courier_prime_code_italic, sizeof(courier_prime_code_italic) / sizeof(courier_prime_code_italic[0]), font_family_name,
-			Style::FontStyle::Italic, Style::FontWeight::Normal));
+	return (LoadFontFace({courier_prime_code, sizeof(courier_prime_code)}, font_family_name, Style::FontStyle::Normal, Style::FontWeight::Normal) &&
+		LoadFontFace({courier_prime_code_italic, sizeof(courier_prime_code_italic)}, font_family_name, Style::FontStyle::Italic,
+			Style::FontWeight::Normal));
 }
 
 bool DebuggerPlugin::LoadMenuElement()
 {
-	menu_element = host_context->CreateDocument();
+	debug_document_instancer = MakeUnique<ElementInstancerGeneric<ElementDebugDocument>>();
+	Factory::RegisterElementInstancer("debug-document", debug_document_instancer.get());
+	menu_element = host_context->CreateDocument("debug-document");
 	if (!menu_element)
 		return false;
 
