@@ -222,6 +222,112 @@
 					}
 				]
 			}
+		},
+				{
+			"type": "FullScreenShaderPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: Chromatic Aberration"
+					},
+					{
+						"name": "Is Enabled By Default",
+						"type": "Bool",
+						"value": false
+					},
+					{
+						"name": "Comment",
+						"type": "String",
+						"value": "Simulates the optical effect known as chromatic aberration, which occurs when a lens fails to focus all colors to the same point."
+					},
+					{
+						"name": "Shader Name",
+						"type": "String",
+						"value": "v2/P_ChromaticAberration"
+					},
+					{
+						"name": "Read+Write Color Output",
+						"type": "Bool",
+						"value": true
+					},
+					{
+						"name": "Parameters Prefix",
+						"type": "String",
+						"value": "Chromatic Aberration: "
+					},
+					{
+						"name": "Parameters",
+						"type": "StringVariantMap",
+						"value": [
+							{
+								"key": "Amount",
+								"type": "Float",
+								"value": 0.4
+							}
+						]
+					}
+				]
+			}
+		},
+				{
+			"type": "FullScreenShaderPass",
+			"value": {
+				"attributes": [
+					{
+						"name": "Pass Name",
+						"type": "String",
+						"value": "Postprocess: Vignette"
+					},
+					{
+						"name": "Is Enabled By Default",
+						"type": "Bool",
+						"value": false
+					},
+					{
+						"name": "Comment",
+						"type": "String",
+						"value": "Creates a darkening effect around the edges of the screen."
+					},
+					{
+						"name": "Shader Name",
+						"type": "String",
+						"value": "v2/P_Vignette"
+					},
+					{
+						"name": "Read+Write Color Output",
+						"type": "Bool",
+						"value": true
+					},
+					{
+						"name": "Parameters Prefix",
+						"type": "String",
+						"value": "Vignette: "
+					},
+					{
+						"name": "Parameters",
+						"type": "StringVariantMap",
+						"value": [
+							{
+								"key": "Intensity",
+								"type": "Float",
+								"value": 0.4
+							},
+							{
+								"key": "Radius",
+								"type": "Float",
+								"value": 0.5
+							},
+							{
+								"key": "Color",
+								"type": "Color",
+								"value": "0 0 0 0.4"
+							}
+						]
+					}
+				]
+			}
 		}
 	]
 }
