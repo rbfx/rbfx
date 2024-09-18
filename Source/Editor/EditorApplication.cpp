@@ -27,7 +27,6 @@
 #include "Foundation/InspectorTab/Texture2DInspector.h"
 #include "Foundation/InspectorTab/TextureCubeInspector.h"
 #include "Foundation/ModelViewTab.h"
-#include "Foundation/ProfilerTab.h"
 #include "Foundation/ResourceBrowserTab.h"
 #include "Foundation/ResourceBrowserTab/AssetPipelineFactory.h"
 #include "Foundation/ResourceBrowserTab/MaterialFactory.h"
@@ -97,7 +96,6 @@ EditorApplication::EditorApplication(Context* context)
     editorPluginManager_->AddPlugin("Foundation.HierarchyBrowser", &Foundation_HierarchyBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.Settings", &Foundation_SettingsTab);
     editorPluginManager_->AddPlugin("Foundation.Inspector", &Foundation_InspectorTab);
-    editorPluginManager_->AddPlugin("Foundation.Profiler", &Foundation_ProfilerTab);
 
     editorPluginManager_->AddPlugin("Foundation.Settings.KeyBindings", &Foundation_KeyBindingsPage);
     editorPluginManager_->AddPlugin("Foundation.Settings.Launch", &Foundation_LaunchPage);
@@ -549,6 +547,15 @@ void EditorApplication::RenderMenuBar()
         if (project_)
             project_->RenderMainMenu();
 
+#if URHO3D_PROFILING
+        if (ui::BeginMenu("Tools"))
+        {
+            if (ui::MenuItem("Profiler"))
+                OpenProfilerApplication();
+            ui::EndMenu();
+        }
+#endif
+
         if (ui::BeginMenu("Help"))
         {
             if (ui::MenuItem("Open Application Preferences Folder"))
@@ -851,6 +858,21 @@ void EditorApplication::OnConsoleUriClick(VariantMap& args)
                 fileSystem->SystemOpen(address);
         }
     }
+}
+
+void EditorApplication::OpenProfilerApplication()
+{
+#if URHO3D_PROFILING
+    auto* engine = GetSubsystem<Engine>();
+    auto* fileSystem = GetSubsystem<FileSystem>();
+    ea::string profilerPath = fileSystem->GetProgramDir() + "/Profiler";
+#ifdef _WIN32
+    profilerPath += ".exe";
+#endif
+    fileSystem->SystemOpen(profilerPath);
+#else
+    URHO3D_LOGERROR("Profiling is not enabled in this build.");
+#endif
 }
 
 } // namespace Urho3D
