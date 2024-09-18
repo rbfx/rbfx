@@ -46,6 +46,12 @@ CustomBackbufferTexture::~CustomBackbufferTexture()
 
 void CustomBackbufferTexture::SetTextureSize(const IntVector2& size)
 {
+    if (size.x_ == 0 || size.y_ == 0)
+    {
+        URHO3D_LOGERROR("Invalid texture size.");
+        return;
+    }
+
     if (textureSize_ != size)
     {
         textureSize_ = size;

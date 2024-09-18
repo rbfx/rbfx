@@ -259,7 +259,11 @@ void GameViewTab::ReleaseInput()
 
 void GameViewTab::RenderContent()
 {
-    backbuffer_->SetTextureSize(GetContentSize());
+    const IntVector2 contentSize = GetContentSize();
+    if (contentSize.x_ == 0 || contentSize.y_ == 0)
+        return;
+
+    backbuffer_->SetTextureSize(contentSize);
     backbuffer_->Update();
 
     if (state_)
