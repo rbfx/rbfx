@@ -31,6 +31,8 @@ add_library(RmlUi STATIC ${SOURCE_FILES})
 target_compile_definitions(RmlUi
     PRIVATE RMLUI_VERSION="${RMLUI_VERSION_SHORT}"
     PUBLIC  RMLUI_NO_THIRDPARTY_CONTAINERS=1
+            RMLUI_FONT_ENGINE_FREETYPE=1
+            RMLUI_FONT_ENGINE="freetype"
             RMLUI_CUSTOM_CONFIGURATION_FILE="RmlUi/Config/RbfxConfig.h"
             RMLUI_DEBUG_BUILD=$<AND:$<CONFIG:Debug>,$<NOT:$<BOOL:${CI_WEB_BUILD}>>>
 )

@@ -212,7 +212,10 @@ class RmlContext : public Rml::Context
 {
 public:
     /// Construct.
-    explicit RmlContext(const ea::string& name) : Rml::Context(name, nullptr, nullptr) { }
+    explicit RmlContext(const ea::string& name, Rml::RenderManager* render_manager, Rml::TextInputHandler* text_input_handler)
+        : Rml::Context(name, render_manager, text_input_handler)
+    {
+    }
     /// Set owner subsystem pointer.
     void SetOwnerSubsystem(RmlUI* ui) { ownerSubsystem_ = ui; }
     /// Get owner subsystem pointer.

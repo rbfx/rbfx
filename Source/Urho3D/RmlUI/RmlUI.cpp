@@ -94,7 +94,7 @@ public:
     Rml::ContextPtr InstanceContext(
         const Rml::String& name, Rml::RenderManager* render_manager, Rml::TextInputHandler* text_input_handler) override
     {
-        return Rml::ContextPtr(new Detail::RmlContext(name));
+        return Rml::ContextPtr(new Detail::RmlContext(name, render_manager, text_input_handler));
     }
     /// Free instance of RmlContext.
     void ReleaseContext(Rml::Context* context) override { delete static_cast<Detail::RmlContext*>(context); }
