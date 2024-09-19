@@ -211,7 +211,7 @@ void RmlRenderer::RenderGeometry(Rml::Vertex* vertices, int num_vertices, int* i
         destVertices[i].position_.x_ = vertices[i].position.x + translation.x;
         destVertices[i].position_.y_ = vertices[i].position.y + translation.y;
         destVertices[i].position_.z_ = 0.0f;
-        const Rml::Colourb& color = vertices[i].colour;
+        const Rml::ColourbPremultiplied& color = vertices[i].colour;
         destVertices[i].color_ = (color.alpha << 24u) | (color.blue << 16u) | (color.green << 8u) | color.red;
         destVertices[i].texCoord_.x_ = vertices[i].tex_coord.x;
         destVertices[i].texCoord_.y_ = vertices[i].tex_coord.y;

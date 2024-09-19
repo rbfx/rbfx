@@ -31,6 +31,8 @@ add_library(RmlUi STATIC ${SOURCE_FILES})
 target_compile_definitions(RmlUi
     PRIVATE RMLUI_VERSION="${RMLUI_VERSION_SHORT}"
     PUBLIC  RMLUI_NO_THIRDPARTY_CONTAINERS=1
+            RMLUI_FONT_ENGINE_FREETYPE=1
+            RMLUI_FONT_ENGINE="freetype"
             RMLUI_CUSTOM_CONFIGURATION_FILE="RmlUi/Config/RbfxConfig.h"
             RMLUI_DEBUG_BUILD=$<AND:$<CONFIG:Debug>,$<NOT:$<BOOL:${CI_WEB_BUILD}>>>
 )
@@ -53,7 +55,7 @@ foreach (ext *.h *.inl)
 endforeach ()
 
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(RmlUi PRIVATE -DRmlCore_EXPORTS=1 -DRmlDebugger_EXPORTS=1 -DEASTL_EXPORTS -DEASTDC_EXPORTS)
+    target_compile_definitions(RmlUi PRIVATE -DRMLUI_CORE_EXPORTS=1 -DRMLUI_DEBUGGER_EXPORTS=1 -DEASTL_EXPORTS -DEASTDC_EXPORTS)
 else ()
     target_compile_definitions(RmlUi PUBLIC -DRMLUI_STATIC_LIB=1)
 endif ()

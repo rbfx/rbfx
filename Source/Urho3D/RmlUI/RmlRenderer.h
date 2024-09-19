@@ -25,8 +25,7 @@
 #include "../Container/Ptr.h"
 #include "../RenderPipeline/BatchStateCache.h"
 
-#include <RmlUi/Core/RenderInterface.h>
-
+#include <RmlUi/Core/RenderInterfaceCompatibility.h>
 
 namespace Urho3D
 {
@@ -40,7 +39,9 @@ class Texture2D;
 namespace Detail
 {
 
-class URHO3D_API RmlRenderer : public Object, public Rml::RenderInterface
+class URHO3D_API RmlRenderer
+    : public Object
+    , public Rml::RenderInterfaceCompatibility
 {
     URHO3D_OBJECT(RmlRenderer, Object);
 

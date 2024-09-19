@@ -4,7 +4,7 @@
  * For the latest information, see http://github.com/mikke89/RmlUi
  *
  * Copyright (c) 2008-2010 CodePoint Ltd, Shift Technology Ltd
- * Copyright (c) 2019 The RmlUi Team, and contributors
+ * Copyright (c) 2019-2023 The RmlUi Team, and contributors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,11 +29,19 @@
 #ifndef RMLUI_RBFX_CONFIG_H
 #define RMLUI_RBFX_CONFIG_H
 
+/*
+ * This file provides the means to configure various types used across RmlUi. It is possible to override container
+ * types with your own, provided they are compatible with STL, or customize STL containers, for example by setting
+ * custom allocators. This file may be edited directly, or can be copied to an alternate location, modified, and
+ * included by setting the CMake option CUSTOM_CONFIGURATION_FILE (RMLUI_CUSTOM_CONFIGURATION_FILE preprocessor
+ * define) to the path of that file.
+ */
 #include <Urho3D/Container/Hash.h>
 
 #include <EASTL/array.h>
 #include <EASTL/functional.h>
 #include <EASTL/list.h>
+#include <EASTL/map.h>
 #include <EASTL/queue.h>
 #include <EASTL/set.h>
 #include <EASTL/shared_ptr.h>
@@ -47,8 +55,7 @@
 
 #include <cmath>
 
-namespace Rml
-{
+namespace Rml {
 
 // Default matrix type to be used. This alias may be set to ColumnMajorMatrix4f or RowMajorMatrix4f. This alias can not
 // be set here because matrix types are defined after this include in Core/Types.h.
@@ -67,6 +74,8 @@ template<typename T>
 using Queue = eastl::queue<T>;
 template<typename T1, typename T2>
 using Pair = std::pair<T1, T2>;
+template <typename Key, typename Value>
+using StableMap = eastl::map<Key, Value>;
 template <typename Key, typename Value>
 using UnorderedMap = eastl::unordered_map< Key, Value >;
 template <typename Key, typename Value>
@@ -91,7 +100,6 @@ using Function = eastl::function<T>;
 // Strings
 using String = eastl::string;
 using StringList = Vector< String >;
-using U16String = eastl::u16string;
 
 // Smart pointer types
 template<typename T>
