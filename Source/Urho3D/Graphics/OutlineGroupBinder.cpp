@@ -40,19 +40,19 @@ OutlineGroupBinder::~OutlineGroupBinder()
 
 void OutlineGroupBinder::Unbind()
 {
-    if (!outlineGroups_.Expired())
+    if (!outlineGroup_.Expired())
     {
         for (auto& drawable : drawables_)
         {
             if (!drawable.Expired())
             {
-                outlineGroups_->RemoveDrawable(drawable);
+                outlineGroup_->RemoveDrawable(drawable);
             }
         }
     }
 
     drawables_.clear();
-    outlineGroups_.Reset();
+    outlineGroup_.Reset();
 }
 
 void OutlineGroupBinder::Bind(Scene* scene)
@@ -109,13 +109,13 @@ void OutlineGroupBinder::Bind(Scene* scene)
         return;
     }
 
-    outlineGroups_.Reset(*outlineGroupItr);
+    outlineGroup_.Reset(*outlineGroupItr);
 
     for (auto drawable : drawables_)
     {
-        if (!outlineGroups_->HasDrawable(drawable))
+        if (!outlineGroup_->HasDrawable(drawable))
         {
-            outlineGroups_->AddDrawable(drawable);
+            outlineGroup_->AddDrawable(drawable);
         }
     }
 }
