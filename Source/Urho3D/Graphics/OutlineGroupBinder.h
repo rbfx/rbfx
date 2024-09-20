@@ -30,7 +30,7 @@ namespace Urho3D
 class Drawable;
 class OutlineGroup;
 
-/// Add this to a node with a drawable to bind it to a non-debug OutlineGroup in the same scene.
+/// Add this to a node with a drawable to bind it to a OutlineGroup in the same scene with a matching binder tag.
 class URHO3D_API OutlineGroupBinder : public Component
 {
     URHO3D_OBJECT(OutlineGroupBinder, Component);
@@ -41,6 +41,11 @@ public:
 
     static void RegisterObject(Context* context);
 
+    void SetRecursive(bool recursive) { recursive_ = recursive; }
+    bool IsRecursive() const { return recursive_; }
+    void SetBinderTag(const ea::string& tag);
+    const ea::string& GetBinderTag() const { return binderTag_; }
+
 protected:
     void OnSetEnabled() override;
     void OnSceneSet(Scene* scene) override;
@@ -49,8 +54,10 @@ private:
     void Bind(Scene* scene);
     void Unbind();
 
-    WeakPtr<Drawable> drawable_;
+    bool recursive_{true};
+    ea::vector<WeakPtr<Drawable>> drawables_;
     WeakPtr<OutlineGroup> outlineGroup_;
+    ea::string binderTag_;
 };
 
 }
