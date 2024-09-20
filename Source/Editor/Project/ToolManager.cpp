@@ -44,8 +44,6 @@ static const ea::string fbx2gltfDownloadUrl = "https://github.com/godotengine/FB
 ToolManager::ToolManager(Context* context)
     : SettingsPage(context)
 {
-    ForceScan();
-
     SubscribeToEvent(E_UPDATE, &ToolManager::Update);
 }
 
@@ -65,11 +63,24 @@ ea::string ToolManager::GetFBX2glTF() const
 
 void ToolManager::SerializeInBlock(Archive& archive)
 {
+    if (!archive.IsInput())
+    {
+        if (blender_.firstScan_)
+            ScanBlender(true);
+        if (fbx2gltf_.firstScan_)
+            ScanFBX2glTF(true);
+    }
+
+    SerializeOptionalValue(archive, "BlenderFound", blender_.found_);
     SerializeOptionalValue(archive, "BlenderPath", blender_.path_);
+    SerializeOptionalValue(archive, "FBX2glTFFound", fbx2gltf_.found_);
     SerializeOptionalValue(archive, "FBX2glTFPath", fbx2gltf_.path_);
 
     if (archive.IsInput())
-        ForceScan();
+    {
+        blender_.firstScan_ = false;
+        fbx2gltf_.firstScan_ = false;
+    }
 }
 
 void ToolManager::RenderSettings()
@@ -85,6 +96,14 @@ void ToolManager::RenderSettings()
     RenderStatus(fbx2gltf_.found_, fbx2gltf_.path_, fbx2gltfDownloadUrl);
     if (ui::InputText("##FBX2glTFPath", &fbx2gltf_.path_))
         ScanFBX2glTF();
+
+    ui::Separator();
+
+    if (ui::Button(ICON_FA_ARROWS_ROTATE " Refresh All"))
+    {
+        ScanBlender();
+        ScanFBX2glTF();
+    }
 }
 
 void ToolManager::RenderStatus(bool found, const ea::string& path, const ea::string& hint)
@@ -108,18 +127,12 @@ void ToolManager::RenderStatus(bool found, const ea::string& path, const ea::str
     }
 }
 
-void ToolManager::ForceScan()
-{
-    ScanBlender(true);
-    ScanFBX2glTF(true);
-}
-
 void ToolManager::Update()
 {
-    if (blender_.scanPending_)
-        ScanBlender();
-    if (fbx2gltf_.scanPending_)
-        ScanFBX2glTF();
+    if (blender_.scanPending_ || blender_.firstScan_)
+        ScanBlender(blender_.firstScan_);
+    if (fbx2gltf_.scanPending_ || fbx2gltf_.firstScan_)
+        ScanFBX2glTF(fbx2gltf_.firstScan_);
 }
 
 void ToolManager::ScanBlender(bool force)
@@ -134,6 +147,7 @@ void ToolManager::ScanBlender(bool force)
 
     blender_.scanTimer_.Reset();
     blender_.scanPending_ = false;
+    blender_.firstScan_ = false;
 }
 
 void ToolManager::ScanFBX2glTF(bool force)
@@ -148,6 +162,7 @@ void ToolManager::ScanFBX2glTF(bool force)
 
     fbx2gltf_.scanTimer_.Reset();
     fbx2gltf_.scanPending_ = false;
+    fbx2gltf_.firstScan_ = false;
 }
 
 }

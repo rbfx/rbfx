@@ -41,6 +41,8 @@ public:
     explicit ToolManager(Context* context);
     ~ToolManager() override;
 
+    void Update();
+
     bool HasBlender() const { return blender_.found_; }
     ea::string GetBlender() const;
     bool HasFBX2glTF() const { return fbx2gltf_.found_; }
@@ -58,14 +60,13 @@ public:
 private:
     static const unsigned scanCooldownMs_ = 3000;
 
-    void ForceScan();
-    void Update();
     void ScanBlender(bool force = false);
     void ScanFBX2glTF(bool force = false);
     void RenderStatus(bool found, const ea::string& path, const ea::string& hint);
 
     struct Blender
     {
+        bool firstScan_{true};
         bool found_{};
         ea::string path_;
 
@@ -75,6 +76,7 @@ private:
 
     struct FBX2glTF
     {
+        bool firstScan_{true};
         bool found_{};
         ea::string path_;
 

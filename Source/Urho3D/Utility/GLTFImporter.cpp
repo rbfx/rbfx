@@ -3493,8 +3493,8 @@ private:
             auto pipelineSettings = renderPipeline->GetSettings();
             pipelineSettings.renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::LinearLDR;
             pipelineSettings.sceneProcessor_.pcfKernelSize_ = 5;
-            pipelineSettings.antialiasing_ = PostProcessAntialiasing::FXAA3;
             renderPipeline->SetSettings(pipelineSettings);
+            renderPipeline->SetRenderPassEnabled("Postprocess: FXAA v3", true);
         }
 
         Node* rootNode = scene->CreateChild(settings.assetName_);
@@ -3659,7 +3659,7 @@ private:
         auto scene = importedScene.scene_;
         const GLTFImporterSettings& settings = base_.GetSettings();
 
-        if (settings.preview_.addLights_ && !scene->GetComponent<Light>(true))
+        if (settings.preview_.addLights_ && !scene->FindComponent<Light>())
         {
             // Model forward is Z+, make default lighting from top right when looking at forward side of model.
             Node* node = scene->CreateChild("Default Light");
@@ -3670,7 +3670,7 @@ private:
             light->SetCastShadows(true);
         }
 
-        if (settings.preview_.addSkybox_ && !scene->GetComponent<Skybox>(true))
+        if (settings.preview_.addSkybox_ && !scene->FindComponent<Skybox>())
         {
             static const ea::string skyboxModelName = "Models/Box.mdl";
 
@@ -3691,7 +3691,7 @@ private:
             }
         }
 
-        if (settings.preview_.addReflectionProbe_ && !scene->GetComponent<Zone>(true))
+        if (settings.preview_.addReflectionProbe_ && !scene->FindComponent<Zone>())
         {
             auto skyboxTexture = cache->GetResource<TextureCube>(settings.preview_.reflectionProbeCubemap_);
             if (!skyboxTexture)

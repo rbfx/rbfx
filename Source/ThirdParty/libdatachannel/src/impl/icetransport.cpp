@@ -14,6 +14,7 @@
 
 #include <iostream>
 #include <random>
+#include <algorithm>
 #include <sstream>
 
 #ifdef _WIN32

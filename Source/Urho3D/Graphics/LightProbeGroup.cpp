@@ -149,7 +149,7 @@ void LightProbeGroup::CollectLightProbes(Scene* scene,
     LightProbeCollection& collection, LightProbeCollectionBakedData* bakedData, bool reload)
 {
     ea::vector<LightProbeGroup*> lightProbeGroups;
-    scene->GetComponents(lightProbeGroups, true);
+    scene->FindComponents(lightProbeGroups);
 
     const auto isNotEnabled = [](const LightProbeGroup* lightProbeGroup) { return !lightProbeGroup->IsEnabledEffective(); };
     ea::erase_if(lightProbeGroups, isNotEnabled);

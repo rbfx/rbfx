@@ -34,22 +34,19 @@
 #include "../Graphics/Viewport.h"
 #include "../Input/Input.h"
 #include "../RenderAPI/RenderDevice.h"
-#include "../RenderPipeline/AutoExposurePass.h"
 #include "../RenderPipeline/BatchRenderer.h"
-#include "../RenderPipeline/BloomPass.h"
 #include "../RenderPipeline/DrawableProcessor.h"
 #include "../RenderPipeline/InstancingBuffer.h"
 #include "../RenderPipeline/LightProcessor.h"
-#include "../RenderPipeline/OutlinePass.h"
+#include "../RenderPipeline/OutlineScenePass.h"
 #include "../RenderPipeline/ShaderConsts.h"
 #include "../RenderPipeline/ShadowMapAllocator.h"
-#include "../RenderPipeline/ToneMappingPass.h"
+#include "../RenderPipeline/Passes/OutlineRenderPass.h"
 #include "../Scene/Scene.h"
 #if URHO3D_SYSTEMUI
     #include "../SystemUI/SystemUI.h"
 #endif
 
-#include "AmbientOcclusionPass.h"
 #include "../DebugNew.h"
 
 namespace Urho3D
@@ -59,7 +56,12 @@ DefaultRenderPipelineView::DefaultRenderPipelineView(RenderPipeline* renderPipel
     : RenderPipelineView(renderPipeline)
 {
     SetSettings(renderPipeline_->GetSettings());
+    SetRenderPath(renderPipeline_->GetRenderPath());
+    MarkParametersDirty();
+
     renderPipeline_->OnSettingsChanged.Subscribe(this, &DefaultRenderPipelineView::SetSettings);
+    renderPipeline_->OnRenderPathChanged.Subscribe(this, &DefaultRenderPipelineView::SetRenderPath);
+    renderPipeline_->OnParametersChanged.Subscribe(this, &DefaultRenderPipelineView::MarkParametersDirty);
 }
 
 DefaultRenderPipelineView::~DefaultRenderPipelineView()
@@ -80,6 +82,12 @@ void DefaultRenderPipelineView::SetSettings(const RenderPipelineSettings& settin
     settings_.PropagateImpliedSettings();
     settingsDirty_ = true;
     settingsPipelineStateHash_ = settings_.CalculatePipelineStateHash();
+}
+
+void DefaultRenderPipelineView::SetRenderPath(RenderPath* renderPath)
+{
+    originalRenderPath_ = renderPath;
+    renderPath_ = nullptr;
 }
 
 void DefaultRenderPipelineView::SendViewEvent(StringHash eventType)
@@ -128,6 +136,10 @@ void DefaultRenderPipelineView::ApplySettings()
             deferred_->albedoBuffer_ = renderBufferManager_->CreateColorBuffer({TextureFormat::TEX_FORMAT_RGBA8_UNORM});
             deferred_->specularBuffer_ = renderBufferManager_->CreateColorBuffer({TextureFormat::TEX_FORMAT_RGBA8_UNORM});
             deferred_->normalBuffer_ = renderBufferManager_->CreateColorBuffer({TextureFormat::TEX_FORMAT_RGBA8_UNORM});
+
+            state_.renderBuffers_[SharedRenderPassState::AlbedoBufferId] = deferred_->albedoBuffer_;
+            state_.renderBuffers_[SharedRenderPassState::SpecularBufferId] = deferred_->specularBuffer_;
+            state_.renderBuffers_[SharedRenderPassState::NormalBufferId] = deferred_->normalBuffer_;
         }
         else
         {
@@ -136,94 +148,31 @@ void DefaultRenderPipelineView::ApplySettings()
                 "", "base", "litbase", "light");
 
             deferred_ = ea::nullopt;
+
+            state_.renderBuffers_[SharedRenderPassState::AlbedoBufferId] = nullptr;
+            state_.renderBuffers_[SharedRenderPassState::SpecularBufferId] = nullptr;
+            state_.renderBuffers_[SharedRenderPassState::NormalBufferId] = nullptr;
         }
     }
 
     outlineScenePass_ = sceneProcessor_->CreatePass<OutlineScenePass>(StringVector{"deferred", "deferred_decal", "base", "alpha"});
 
     sceneProcessor_->SetPasses({depthPrePass_, opaquePass_, deferredDecalPass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlineScenePass_});
+}
 
-    postProcessPasses_.clear();
-
-    if (settings_.renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR)
+void DefaultRenderPipelineView::UpdateRenderOutputFlags()
+{
+    renderOutputFlags_ = {};
+    if (renderPath_)
     {
-        auto pass = MakeShared<AutoExposurePass>(this, renderBufferManager_);
-        pass->SetSettings(settings_.autoExposure_);
-        postProcessPasses_.push_back(pass);
+        const RenderPassTraits& aggregatedTraits = renderPath_->GetAggregatedPassTraits();
+        if (aggregatedTraits.needReadWriteColorBuffer_)
+            renderOutputFlags_ |= RenderOutputFlag::NeedColorOutputReadAndWrite;
+        if (aggregatedTraits.needBilinearColorSampler_)
+            renderOutputFlags_ |= RenderOutputFlag::NeedColorOutputBilinear;
     }
 
-    if (settings_.ssao_.enabled_ && settings_.renderBufferManager_.readableDepth_)
-    {
-        ssaoPass_ = MakeShared<AmbientOcclusionPass>(this, renderBufferManager_);
-        ssaoPass_->SetSettings(settings_.ssao_);
-        postProcessPasses_.push_back(ssaoPass_);
-    }
-
-    if (settings_.bloom_.enabled_)
-    {
-        auto pass = MakeShared<BloomPass>(this, renderBufferManager_);
-        pass->SetSettings(settings_.bloom_);
-        postProcessPasses_.push_back(pass);
-    }
-
-    {
-        outlinePostProcessPass_ = MakeShared<OutlinePass>(this, renderBufferManager_);
-        postProcessPasses_.push_back(outlinePostProcessPass_);
-    }
-
-    if (settings_.renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR)
-    {
-        auto pass = MakeShared<ToneMappingPass>(this, renderBufferManager_);
-        pass->SetMode(settings_.toneMapping_);
-        postProcessPasses_.push_back(pass);
-    }
-
-    switch (settings_.antialiasing_)
-    {
-    case PostProcessAntialiasing::FXAA2:
-    {
-        auto pass = MakeShared<SimplePostProcessPass>(this, renderBufferManager_,
-            PostProcessPassFlag::NeedColorOutputReadAndWrite | PostProcessPassFlag::NeedColorOutputBilinear,
-            BLEND_REPLACE, "v2/P_FXAA2", "");
-        pass->AddShaderParameter("FXAAParams", Vector3(0.4f, 0.5f, 0.75f));
-        postProcessPasses_.push_back(pass);
-        break;
-    }
-    case PostProcessAntialiasing::FXAA3:
-    {
-        auto pass = MakeShared<SimplePostProcessPass>(this, renderBufferManager_,
-            PostProcessPassFlag::NeedColorOutputReadAndWrite | PostProcessPassFlag::NeedColorOutputBilinear,
-            BLEND_REPLACE, "v2/P_FXAA3", "FXAA_QUALITY_PRESET=12");
-        postProcessPasses_.push_back(pass);
-        break;
-    }
-    default:
-        break;
-    }
-
-    const Vector4 hueSaturationValueContrast{
-        settings_.hueShift_,
-        settings_.saturation_,
-        settings_.brightness_,
-        settings_.contrast_,
-    };
-    if (!hueSaturationValueContrast.Equals(Vector4::ONE) || settings_.colorFilter_ != Color::WHITE
-        || settings_.colorOffset_ != Vector3::ZERO)
-    {
-        auto pass = MakeShared<SimplePostProcessPass>(this, renderBufferManager_,
-            PostProcessPassFlag::NeedColorOutputReadAndWrite,
-            BLEND_REPLACE, "v2/P_HSV", "");
-        pass->AddShaderParameter("HSVParams", hueSaturationValueContrast);
-        pass->AddShaderParameter("ColorFilter", settings_.colorFilter_.ToVector4());
-        pass->AddShaderParameter("ColorOffset", settings_.colorOffset_.ToVector4(0.0f));
-        postProcessPasses_.push_back(pass);
-    }
-
-    postProcessFlags_ = {};
-    for (PostProcessPass* postProcessPass : postProcessPasses_)
-        postProcessFlags_ |= postProcessPass->GetExecutionFlags();
-
-    settings_.AdjustForPostProcessing(postProcessFlags_);
+    settings_.AdjustForRenderPath(renderOutputFlags_);
     renderBufferManager_->SetSettings(settings_.renderBufferManager_);
 }
 
@@ -234,10 +183,21 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
     if (!viewport->GetScene())
         return false;
 
+    // Ensure that render path is ready
+    if (!renderPath_ && originalRenderPath_)
+    {
+        renderPath_ = originalRenderPath_->Clone();
+        renderPath_->InitializeView(this);
+        settingsDirty_ = true;
+    }
+
     // Lazy initialize heavy objects
     if (!sceneProcessor_)
     {
-        renderBufferManager_ = MakeShared<RenderBufferManager>(this);
+        state_.renderPipelineInterface_ = this;
+        state_.renderBufferManager_ = MakeShared<RenderBufferManager>(this);
+
+        renderBufferManager_ = state_.renderBufferManager_;
         shadowMapAllocator_ = MakeShared<ShadowMapAllocator>(context_);
         instancingBuffer_ = MakeShared<InstancingBuffer>(context_);
         sceneProcessor_ = MakeShared<SceneProcessor>(this, "shadow", shadowMapAllocator_, instancingBuffer_);
@@ -252,6 +212,12 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
             "", "alpha", "alpha", "litalpha");
         postAlphaPass_ = sceneProcessor_->CreatePass<BackToFrontScenePass>(
             DrawableProcessorPassFlag::ReadOnlyDepth, "postalpha");
+
+        const RenderBufferParams params{TextureFormat::TEX_FORMAT_RGBA8_UNORM, 1, RenderBufferFlag::BilinearFiltering};
+        outlineBuffer_ = renderBufferManager_->CreateColorBuffer(params);
+        outlineBuffer_->SetEnabled(false);
+
+        state_.renderBuffers_[OutlineRenderPass::ColorBufferId] = outlineBuffer_;
     }
 
     frameInfo_.viewport_ = viewport;
@@ -263,11 +229,22 @@ bool DefaultRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vi
         return false;
 
     sceneProcessor_->SetRenderCamera(viewport->GetCamera());
+    state_.renderCamera_ = viewport->GetCamera();
 
     if (settingsDirty_)
     {
         settingsDirty_ = false;
+        parametersDirty_ = true;
         ApplySettings();
+        UpdateRenderOutputFlags();
+    }
+
+    if (parametersDirty_ && renderPath_)
+    {
+        parametersDirty_ = false;
+        renderPath_->UpdateParameters(
+            settings_, renderPipeline_->GetRenderPasses(), renderPipeline_->GetRenderPathParameters());
+        UpdateRenderOutputFlags();
     }
 
     renderBufferManager_->OnViewportDefined(frameInfo_.renderTarget_, frameInfo_.viewportRect_);
@@ -336,7 +313,10 @@ void DefaultRenderPipelineView::Update(const FrameInfo& frameInfo)
 
     sceneProcessor_->Update();
 
-    outlinePostProcessPass_->SetEnabled(outlineScenePass_->IsEnabled() && outlineScenePass_->HasBatches());
+    outlineBuffer_->SetEnabled(outlineScenePass_->IsEnabled() && outlineScenePass_->HasBatches());
+
+    if (renderPath_)
+        renderPath_->Update(state_);
 
     SendViewEvent(E_ENDVIEWUPDATE);
     OnUpdateEnd(this, frameInfo_);
@@ -353,7 +333,7 @@ void DefaultRenderPipelineView::Render()
 
     const bool hasRefraction = alphaPass_->HasRefractionBatches();
     RenderBufferManagerFrameSettings frameSettings;
-    frameSettings.supportColorReadWrite_ = postProcessFlags_.Test(PostProcessPassFlag::NeedColorOutputReadAndWrite);
+    frameSettings.supportColorReadWrite_ = renderOutputFlags_.Test(RenderOutputFlag::NeedColorOutputReadAndWrite);
     if (hasRefraction)
         frameSettings.supportColorReadWrite_ = true;
     renderBufferManager_->SetFrameSettings(frameSettings);
@@ -450,12 +430,12 @@ void DefaultRenderPipelineView::Render()
         depthAndColorTextures, cameraParameters);
     sceneProcessor_->RenderSceneBatches("PostAlpha", camera, postAlphaPass_->GetBatches());
 
-    if (outlinePostProcessPass_->IsEnabled())
+    if (outlineBuffer_->IsEnabled())
     {
         // TODO: Do we want it dynamic?
         const unsigned outlinePadding = 2;
 
-        RenderBuffer* const renderTargets[] = {outlinePostProcessPass_->GetColorOutput()};
+        RenderBuffer* const renderTargets[] = {outlineBuffer_};
         auto batches = outlineScenePass_->GetBatches();
 
         batches.scissorRect_ = renderTargets[0]->GetViewportRect();
@@ -472,13 +452,8 @@ void DefaultRenderPipelineView::Render()
         sceneProcessor_->RenderSceneBatches("Outline", camera, batches, {}, cameraParameters);
     }
 
-    if (ssaoPass_ && deferred_)
-    {
-        ssaoPass_->SetNormalBuffer(deferred_->normalBuffer_);
-    }
-
-    for (PostProcessPass* postProcessPass : postProcessPasses_)
-        postProcessPass->Execute(camera);
+    if (renderPath_)
+        renderPath_->Render(state_);
 
     const bool drawDebugGeometry = settings_.drawDebugGeometry_ && camera->GetDrawDebugGeometry();
     auto debug = fullFrameInfo.scene_->GetComponent<DebugRenderer>();

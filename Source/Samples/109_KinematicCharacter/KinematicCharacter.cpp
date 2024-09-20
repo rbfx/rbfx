@@ -68,9 +68,9 @@ void KinematicCharacter::RegisterObject(Context* context)
 
 void KinematicCharacter::DelayedStart()
 {
-    collisionShape_ = node_->GetComponent<CollisionShape>(true);
-    animController_ = node_->GetComponent<AnimationController>(true);
-    kinematicController_ = node_->GetComponent<KinematicCharacterController>(true);
+    collisionShape_ = node_->FindComponent<CollisionShape>();
+    animController_ = node_->FindComponent<AnimationController>();
+    kinematicController_ = node_->FindComponent<KinematicCharacterController>();
 }
 void KinematicCharacter::Start()
 {

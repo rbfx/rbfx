@@ -341,6 +341,9 @@ protected:
     /// Release the navigation mesh and the query.
     virtual void ReleaseNavigationMesh();
 
+    /// Draw debug geometry for single tile.
+    void DrawDebugTileGeometry(DebugRenderer* debug, bool depthTest, int tileIndex);
+
     /// Identifying name for this navigation mesh.
     ea::string meshName_;
     /// Detour navigation mesh.

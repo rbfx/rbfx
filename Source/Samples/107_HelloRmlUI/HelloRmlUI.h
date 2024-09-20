@@ -54,6 +54,12 @@ protected:
     int counter_ = 0;
     /// Value of progressbar progress.
     float progress_ = 0;
+    /// Value of Urho3D::Variant type.
+    Variant variant_;
+    /// Value of Urho3D::VariantVector type.
+    VariantVector variantVector_;
+    /// Value of Urho3D::VariantMap type.
+    VariantMap variantMap_;
 };
 
 

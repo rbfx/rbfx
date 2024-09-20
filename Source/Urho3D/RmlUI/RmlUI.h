@@ -35,7 +35,7 @@
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/EventListener.h>
 #include <RmlUi/Core/Context.h>
-
+#include <RmlUi/Core/DataTypeRegister.h>
 
 namespace Urho3D
 {
@@ -217,6 +217,9 @@ private:
 };
 
 }
+
+/// Register Urho3D Variant* types in the RmlUI type registry
+void URHO3D_API RegisterVariantDefinition(Rml::DataTypeRegister* typeRegister);
 
 /// Register UI library objects.
 void URHO3D_API RegisterRmlUILibrary(Context* context);
