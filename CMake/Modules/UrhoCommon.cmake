@@ -327,7 +327,7 @@ function (csharp_bind_target)
         return ()
     endif ()
 
-    cmake_parse_arguments(BIND "" "TARGET;CSPROJ;SWIG;NAMESPACE;NATIVE" "" ${ARGN})
+    cmake_parse_arguments(BIND "" "TARGET;CSPROJ;SWIG;NAMESPACE;EMBED;DEPENDS" "" ${ARGN})
 
     # General SWIG parameters
     set(BIND_OUT_DIR  ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp_${URHO3D_CSHARP_BIND_CONFIG})
@@ -341,32 +341,56 @@ function (csharp_bind_target)
         -o "${BIND_OUT_FILE}"
     )
 
+    if (NOT UWP)
+        # UWP does not support UnmanagedType.CustomMarshaler
+        list(APPEND GENERATOR_OPTIONS -DSWIG_CSHARP_NO_STRING_HELPER=1)
+    endif ()
+
     if (URHO3D_SWIG_DEBUG_TMSEARCH)
         list(APPEND GENERATOR_OPTIONS -debug-tmsearch)
     endif ()
 
     # Native library name matches target name by default
-    if (BIND_NATIVE)
-        list (APPEND GENERATOR_OPTIONS -dllimport "${BIND_NATIVE}")
+    if (BIND_EMBED)
+        list (APPEND GENERATOR_OPTIONS -dllimport $<TARGET_NAME:${BIND_EMBED}>)
     else ()
         if (IOS OR WEB)
             list (APPEND GENERATOR_OPTIONS -dllimport __Internal)
         else ()
-            list (APPEND GENERATOR_OPTIONS -dllimport "${BIND_TARGET}")
+            list (APPEND GENERATOR_OPTIONS -dllimport $<TARGET_NAME:${BIND_TARGET}>)
         endif ()
     endif ()
 
-    if (IOS)
-        list (APPEND GENERATOR_OPTIONS -D__IOS__)
-    endif ()
+    # Platform defines with "__" prefix and suffix
+    foreach(def IOS WEB ANDROID APPLE)
+        if (${${def}})
+            list (APPEND GENERATOR_OPTIONS -D__${def}__=1)
+        endif ()
+    endforeach()
+
+    # Other platform defines
+    foreach(def WIN32 MSVC LINUX UNIX MACOS UWP)
+        if (${${def}})
+            list (APPEND GENERATOR_OPTIONS -D${def}=1)
+        endif ()
+    endforeach()
 
     # Parse bindings using same compile definitions as built target
     __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${BIND_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
     __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${BIND_TARGET} INTERFACE_COMPILE_DEFINITIONS)
-    if (TARGET "${BIND_NATIVE}")
-        __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${BIND_NATIVE} INTERFACE_INCLUDE_DIRECTORIES)
-        __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${BIND_NATIVE} INTERFACE_COMPILE_DEFINITIONS)
+    if (TARGET "${BIND_EMBED}")
+        __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${BIND_EMBED} INTERFACE_INCLUDE_DIRECTORIES)
+        __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${BIND_EMBED} INTERFACE_COMPILE_DEFINITIONS)
     endif ()
+
+    if (BIND_DEPENDS)
+        foreach(dep ${BIND_DEPENDS})
+            __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${dep} INTERFACE_INCLUDE_DIRECTORIES)
+            __TARGET_GET_PROPERTIES_RECURSIVE(DEFINES  ${dep} INTERFACE_COMPILE_DEFINITIONS)
+        endforeach()
+    endif ()
+
+
     if (INCLUDES)
         list (REMOVE_DUPLICATES INCLUDES)
     endif ()
@@ -390,6 +414,7 @@ function (csharp_bind_target)
 
     # Finalize option list
     string(REGEX REPLACE "[^;]+\\$<COMPILE_LANGUAGE:[^;]+;" "" GENERATOR_OPTIONS "${GENERATOR_OPTIONS}")    # COMPILE_LANGUAGE creates ambiguity, remove.
+    list(REMOVE_DUPLICATES GENERATOR_OPTIONS)
     string(REPLACE ";" "\n" GENERATOR_OPTIONS "${GENERATOR_OPTIONS}")
     file(GENERATE OUTPUT "GeneratorOptions_${BIND_TARGET}_$<CONFIG>.txt" CONTENT "${GENERATOR_OPTIONS}" CONDITION $<COMPILE_LANGUAGE:CXX>)
 
@@ -401,13 +426,13 @@ function (csharp_bind_target)
         ARGS @"${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" > ${CMAKE_CURRENT_BINARY_DIR}/swig_${BIND_TARGET}.log
 
         MAIN_DEPENDENCY ${BIND_SWIG}
-        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt"
+        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" ${BIND_DEPENDS}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "SWIG: Generating C# bindings for ${BIND_TARGET}")
 
-    if (BIND_NATIVE)
+    if (BIND_EMBED)
         # Bindings are part of another target
-        target_sources(${BIND_NATIVE} PRIVATE ${BIND_OUT_FILE})
+        target_sources(${BIND_EMBED} PRIVATE ${BIND_OUT_FILE})
     else ()
         # Bindings are part of target bindings are generated for
         target_sources(${BIND_TARGET} PRIVATE ${BIND_OUT_FILE})
@@ -421,14 +446,14 @@ function (csharp_bind_target)
         set (FACADES Facades/)
     endif ()
     if (BIND_CSPROJ)
-        get_filename_component(BIND_MANAGED_TARGET "${BIND_CSPROJ}" NAME_WE)
+        get_filename_component(BIND_MANAGED_TARGET "${BIND_CSPROJ}" NAME_WLE)
         add_target_csharp(
             TARGET ${BIND_MANAGED_TARGET}
             PROJECT ${BIND_CSPROJ}
             OUTPUT ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET})
         if (TARGET ${BIND_MANAGED_TARGET})
             # Real C# target
-            add_dependencies(${BIND_MANAGED_TARGET} ${BIND_TARGET})
+            add_dependencies(${BIND_MANAGED_TARGET} ${BIND_TARGET} ${BIND_EMBED})
         endif ()
         install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll DESTINATION ${DEST_LIBRARY_DIR_CONFIG})
     endif ()
@@ -617,3 +642,15 @@ macro (assign_bool VARIABLE)
          set(${VARIABLE} OFF CACHE BOOL "" FORCE)
      endif ()
 endmacro ()
+
+function (set_property_recursive dir property value)
+    get_property(targets DIRECTORY "${dir}" PROPERTY BUILDSYSTEM_TARGETS)
+    foreach (target IN LISTS targets)
+        set_target_properties("${target}" PROPERTIES "${property}" "${value}")
+    endforeach ()
+
+    get_property(subdirectories DIRECTORY "${dir}" PROPERTY SUBDIRECTORIES)
+    foreach (subdir IN LISTS subdirectories)
+        set_property_recursive("${subdir}" "${property}" "${value}")
+    endforeach ()
+endfunction ()

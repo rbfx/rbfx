@@ -55,7 +55,7 @@ void NetworkObject::RegisterObject(Context* context)
 
 void NetworkObject::UpdateObjectHierarchy()
 {
-    NetworkObject* newParentNetworkObject = node_->GetParentDerivedComponent<NetworkObject>(true);
+    NetworkObject* newParentNetworkObject = node_->FindComponent<NetworkObject>(ComponentSearchFlag::ParentRecursive | ComponentSearchFlag::Derived);
     if (newParentNetworkObject != parentNetworkObject_)
     {
         if (parentNetworkObject_)

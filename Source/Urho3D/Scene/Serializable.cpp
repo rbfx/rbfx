@@ -642,6 +642,17 @@ void Serializable::CopyAttributes(const Serializable* source, bool resetToDefaul
     }
 }
 
+SharedPtr<Serializable> Serializable::Clone(bool resetToDefault) const
+{
+    const auto cloneObject = context_->CreateObject(GetType());
+    if (const auto cloneSerializable = cloneObject->Cast<Serializable>())
+    {
+        cloneSerializable->CopyAttributes(this, resetToDefault);
+        return SharedPtr<Serializable>{cloneSerializable};
+    }
+    return nullptr;
+}
+
 void Serializable::SetInstanceDefault(const ea::string& name, const Variant& defaultValue)
 {
     // Allocate the instance level default value

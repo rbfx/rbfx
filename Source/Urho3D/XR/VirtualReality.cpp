@@ -78,9 +78,14 @@ void VirtualReality::ConnectToRig(const VRRigDesc& rig)
     rig_ = rig;
 
     if (!rig_.pipeline_)
+        rig_.pipeline_ = rig_.scene_->GetDerivedComponent<StereoRenderPipeline>();
+
+    if (!rig_.pipeline_)
     {
         rig_.pipeline_ = MakeShared<StereoRenderPipeline>(context_);
 
+        // Note: Render paths are not generally compatible between standard and stereo rendering.
+        // Render path settings are not copied.
         if (auto sourcePipeline = rig_.scene_->GetComponent<RenderPipeline>())
             rig_.pipeline_->SetSettings(sourcePipeline->GetSettings());
     }

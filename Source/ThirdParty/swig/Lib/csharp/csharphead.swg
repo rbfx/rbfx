@@ -343,11 +343,12 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
 %}
 #endif // SWIG_CSHARP_NO_EXCEPTION_HELPER
 
+// rbfx: different string handling
 #if !defined(SWIG_CSHARP_NO_STRING_HELPER)
 %insert(runtime) %{
 /* Callback for returning strings to C# without leaking memory */
-typedef char * (SWIGSTDCALL* SWIG_CSharpStringHelperCallback)(const char *);
-static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback = NULL;
+typedef char * (SWIGSTDCALL* SWIG_CSharpStringHelperCallback)(void *, int);
+static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback_ptr = NULL;
 %}
 
 %pragma(csharp) imclasscode=%{
@@ -356,7 +357,7 @@ static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback = NULL;
 #if __IOS__
     [global::ObjCRuntime.MonoNativeFunctionWrapper]
 #endif
-    public delegate string SWIGStringDelegate(string message);
+    public delegate string SWIGStringDelegate(global::System.IntPtr message, int len);
     static SWIGStringDelegate stringDelegate = new SWIGStringDelegate(CreateString);
 
     [global::System.Runtime.InteropServices.DllImport($dllimport, EntryPoint="SWIGRegisterStringCallback_$module")]
@@ -365,8 +366,8 @@ static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback = NULL;
 #if __IOS__
     [global::ObjCRuntime.MonoPInvokeCallback(typeof(SWIGStringDelegate))]
 #endif
-    static string CreateString(string cString) {
-      return cString;
+    static unsafe string CreateString(global::System.IntPtr cString, int len) {
+      return System.Text.Encoding.ASCII.GetString((byte*)cString, len);
     }
 
     static SWIGStringHelper() {
@@ -382,10 +383,73 @@ static SWIG_CSharpStringHelperCallback SWIG_csharp_string_callback = NULL;
 extern "C" 
 #endif
 SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_CSharpStringHelperCallback callback) {
-  SWIG_csharp_string_callback = callback;
+  SWIG_csharp_string_callback_ptr = callback;
+}
+
+static char* SWIGSTDCALL SWIG_csharp_string_callback(const char* str, int len=0)
+{
+  if (len == 0)
+    len = strlen(str);
+  return SWIG_csharp_string_callback_ptr((void*)str, len);
 }
 %}
+#else
+// Replace standard string helper with a custom one which uses malloc() and a custom string marshaller.
+%insert(runtime) %{
+
+static char* SWIGSTDCALL SWIG_csharp_string_callback(const char* str, int len=0)
+{
+  if (len == 0)
+    len = strlen(str);
+  char* mem = (char*)malloc(len + 1);
+  memcpy(mem, str, len);
+  mem[len] = 0;
+  return mem;
+}
+
+%}
+
+%pragma(csharp) imclasscode=%{
+
+  internal class SWIGUTF8StringMarshaller : System.Runtime.InteropServices.ICustomMarshaler
+  {
+    private static SWIGUTF8StringMarshaller staticInstance = new SWIGUTF8StringMarshaller();
+    public static System.Runtime.InteropServices.ICustomMarshaler GetInstance(string cookie) { return staticInstance; }
+
+    public void CleanUpManagedData(object ManagedObj)        { }
+    public void CleanUpNativeData(System.IntPtr pNativeData) { $module.free(pNativeData); }
+    public int  GetNativeDataSize()                          { return -1; }
+
+    public unsafe System.IntPtr MarshalManagedToNative(object obj)
+    {
+      if (null == obj)
+        return System.IntPtr.Zero;
+
+      string str = obj as string;
+      if (null == str)
+        throw new global::System.ArgumentException("string expected", "obj");
+
+      int len = global::System.Text.Encoding.UTF8.GetByteCount(str);
+      var mem = $module.malloc(len + 1);
+      fixed (char* src = str)
+      {
+        global::System.Text.Encoding.UTF8.GetBytes(src, str.Length, (byte*)mem, len);
+      }
+      ((byte*)mem)[len] = 0;
+      return mem;
+    }
+
+    public unsafe object MarshalNativeToManaged(System.IntPtr mem)
+    {
+      if (mem == System.IntPtr.Zero)
+        return null;
+      return global::System.Text.Encoding.UTF8.GetString((byte*)mem, $module.strlen(mem));
+    }
+  }
+%}
+
 #endif // SWIG_CSHARP_NO_STRING_HELPER
+// /rbfx
 
 #if !defined(SWIG_CSHARP_NO_IMCLASS_STATIC_CONSTRUCTOR)
 // Ensure the class is not marked beforefieldinit

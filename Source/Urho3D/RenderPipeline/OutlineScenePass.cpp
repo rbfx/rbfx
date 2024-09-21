@@ -22,7 +22,7 @@
 
 #include "../Precompiled.h"
 
-#include "../RenderPipeline/OutlinePass.h"
+#include "../RenderPipeline/OutlineScenePass.h"
 
 #include "../RenderPipeline/BatchRenderer.h"
 #include "../RenderPipeline/RenderBufferManager.h"
@@ -162,54 +162,6 @@ void OutlineScenePass::OnBatchesReady()
 void OutlineScenePass::PrepareInstancingBuffer(BatchRenderer* batchRenderer)
 {
     batchRenderer->PrepareInstancingBuffer(batchGroup_);
-}
-
-OutlinePass::OutlinePass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager)
-    : BaseClassName(renderPipeline, renderBufferManager)
-{
-    renderPipeline->OnRenderBegin.Subscribe(this, &OutlinePass::OnRenderBegin);
-}
-
-void OutlinePass::OnRenderBegin(const CommonFrameInfo& frameInfo)
-{
-    if (!enabled_)
-        return;
-
-    if (!outlineBuffer_)
-    {
-        const RenderBufferParams params{outlineTextureFormat, 1, RenderBufferFlag::BilinearFiltering};
-        const Vector2 sizeMultiplier = Vector2::ONE; // / 2.0f;
-        outlineBuffer_ = renderBufferManager_->CreateColorBuffer(params, sizeMultiplier);
-    }
-
-    static const NamedSamplerStateDesc samplers[] = {{ShaderResources::Albedo, SamplerStateDesc::Bilinear()}};
-    if (pipelineStateLinear_ == StaticPipelineStateId::Invalid)
-    {
-        pipelineStateLinear_ = renderBufferManager_->CreateQuadPipelineState(
-            BLEND_ALPHA, "v2/P_Outline", "URHO3D_GAMMA_CORRECTION", samplers);
-    }
-    if (pipelineStateGamma_ == StaticPipelineStateId::Invalid)
-    {
-        pipelineStateGamma_ = renderBufferManager_->CreateQuadPipelineState(BLEND_ALPHA, "v2/P_Outline", "", samplers);
-    }
-}
-
-void OutlinePass::Execute(Camera* camera)
-{
-    if (!enabled_)
-        return;
-
-    const bool inLinearSpace = renderBufferManager_->IsLinearColorSpace();
-    const StaticPipelineStateId pipelineState = inLinearSpace ? pipelineStateLinear_ : pipelineStateGamma_;
-
-    auto texture = outlineBuffer_->GetTexture();
-    const Vector2 inputInvSize = Vector2::ONE / texture->GetParams().size_.ToVector2();
-
-    const ShaderParameterDesc result[] = {{"InputInvSize", inputInvSize}};
-    const ShaderResourceDesc shaderResources[] = {{ShaderResources::Albedo, texture}};
-
-    renderBufferManager_->SetOutputRenderTargets();
-    renderBufferManager_->DrawViewportQuad("Apply outline", pipelineState, shaderResources, result);
 }
 
 }

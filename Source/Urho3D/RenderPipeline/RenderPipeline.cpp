@@ -20,15 +20,18 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../RenderPipeline/RenderPipeline.h"
-#include "../RenderPipeline/DefaultRenderPipeline.h"
-#include "../Graphics/Graphics.h"
-#include "../Graphics/Renderer.h"
+#include "Urho3D/RenderPipeline/RenderPipeline.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/Graphics.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/RenderPipeline/DefaultRenderPipeline.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/ResourceEvents.h"
+
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -36,36 +39,28 @@ namespace Urho3D
 namespace
 {
 
-static const ea::vector<ea::string> colorSpaceNames =
-{
-    "LDR Gamma",
-    "LDR Linear",
-    "HDR Linear",
-    "Optimized"
-};
+static const ResourceRef defaultRenderPath{RenderPath::TypeId, "RenderPaths/Default.renderpath"};
 
-static const ea::vector<ea::string> materialQualityNames =
-{
+static const ea::vector<ea::string> colorSpaceNames = {"LDR Gamma", "LDR Linear", "HDR Linear", "Optimized"};
+
+static const ea::vector<ea::string> materialQualityNames = {
     "Low",
     "Medium",
     "High",
 };
 
-static const ea::vector<ea::string> specularQualityNames =
-{
+static const ea::vector<ea::string> specularQualityNames = {
     "Disabled",
     "Simple",
     "Antialiased",
 };
 
-static const ea::vector<ea::string> reflectionQualityNames =
-{
+static const ea::vector<ea::string> reflectionQualityNames = {
     "Vertex",
     "Pixel",
 };
 
-static const ea::vector<ea::string> ambientModeNames =
-{
+static const ea::vector<ea::string> ambientModeNames = {
     "Constant",
     "Flat",
     "Directional",
@@ -77,31 +72,13 @@ static const ea::vector<ea::string> ssaoModeNames = {
     "PreviewBlurred",
 };
 
-
-
-static const ea::vector<ea::string> directLightingModeNames =
-{
+static const ea::vector<ea::string> directLightingModeNames = {
     "Forward",
     "Deferred Blinn-Phong",
     "Deferred PBR",
 };
 
-static const ea::vector<ea::string> postProcessAntialiasingNames =
-{
-    "None",
-    "FXAA2",
-    "FXAA3"
-};
-
-static const ea::vector<ea::string> toneMappingModeNames =
-{
-    "None",
-    "Reinhard",
-    "ReinhardWhite",
-    "Uncharted2",
-};
-
-}
+} // namespace
 
 RenderPipelineView::RenderPipelineView(RenderPipeline* renderPipeline)
     : Object(renderPipeline->GetContext())
@@ -114,6 +91,8 @@ RenderPipelineView::RenderPipelineView(RenderPipeline* renderPipeline)
 RenderPipeline::RenderPipeline(Context* context)
     : Component(context)
 {
+    SetRenderPathAttr(defaultRenderPath);
+
     // Enable instancing by default for default render pipeline
     settings_.instancingBuffer_.enableInstancing_ = true;
     settings_.Validate();
@@ -127,6 +106,13 @@ RenderPipeline::~RenderPipeline()
 void RenderPipeline::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<RenderPipeline>();
+
+    // clang-format off
+    URHO3D_ACCESSOR_ATTRIBUTE("Render Path", GetRenderPathAttr, SetRenderPathAttr, ResourceRef, defaultRenderPath, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Render Passes", GetRenderPassesAttr, SetRenderPassesAttr, VariantVector, Variant::emptyVariantVector, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Render Path Parameters", GetRenderPathParameters, SetRenderPathParameters, StringVariantMap, Variant::emptyVariantMap, AM_DEFAULT)
+        .SetMetadata(AttributeMetadata::DynamicMetadata, true);
+
     URHO3D_ENUM_ATTRIBUTE_EX("Color Space", settings_.renderBufferManager_.colorSpace_, MarkSettingsDirty, colorSpaceNames, RenderPipelineColorSpace::GammaLDR, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Material Quality", settings_.sceneProcessor_.materialQuality_, MarkSettingsDirty, materialQualityNames, SceneProcessorSettings{}.materialQuality_, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Specular Quality", settings_.sceneProcessor_.specularQuality_, MarkSettingsDirty, specularQualityNames, SceneProcessorSettings{}.specularQuality_, AM_DEFAULT);
@@ -145,41 +131,11 @@ void RenderPipeline::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE_EX("VSM Shadow Settings", Vector2, settings_.sceneProcessor_.varianceShadowMapParams_, MarkSettingsDirty, BatchRendererSettings{}.varianceShadowMapParams_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("VSM Multi Sample", unsigned, settings_.shadowMapAllocator_.varianceShadowMapMultiSample_, MarkSettingsDirty, 1, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("16-bit Shadow Maps", bool, settings_.shadowMapAllocator_.use16bitShadowMaps_, MarkSettingsDirty, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Auto Exposure", bool, settings_.autoExposure_.autoExposure_, MarkSettingsDirty, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Min Exposure", float, settings_.autoExposure_.minExposure_, MarkSettingsDirty, AutoExposurePassSettings{}.minExposure_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Max Exposure", float, settings_.autoExposure_.maxExposure_, MarkSettingsDirty, AutoExposurePassSettings{}.maxExposure_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Adapt Rate", float, settings_.autoExposure_.adaptRate_, MarkSettingsDirty, AutoExposurePassSettings{}.adaptRate_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("SSAO", bool, settings_.ssao_.enabled_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.enabled_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("SSAO Downscale", unsigned, settings_.ssao_.downscale_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.downscale_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("SSAO Strength", float, settings_.ssao_.strength_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.strength_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("SSAO Exponent", float, settings_.ssao_.exponent_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.exponent_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("SSAO Near Radius", float, settings_.ssao_.radiusNear_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.radiusNear_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("SSAO Near Distance", float, settings_.ssao_.distanceNear_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.distanceNear_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("SSAO Far Radius", float, settings_.ssao_.radiusFar_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.radiusFar_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("SSAO Far Distance", float, settings_.ssao_.distanceFar_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.distanceFar_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("SSAO Begin Fade Distance", float, settings_.ssao_.fadeDistanceBegin_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.fadeDistanceBegin_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("SSAO End Fade Distance", float, settings_.ssao_.fadeDistanceEnd_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.fadeDistanceEnd_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("SSAO Depth Threshold", float, settings_.ssao_.blurDepthThreshold_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.blurDepthThreshold_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("SSAO Normal Threshold", float, settings_.ssao_.blurNormalThreshold_, MarkSettingsDirty, AmbientOcclusionPassSettings{}.blurNormalThreshold_, AM_DEFAULT);
-    URHO3D_ENUM_ATTRIBUTE_EX("SSAO Mode", settings_.ssao_.ambientOcclusionMode_, MarkSettingsDirty, ssaoModeNames, AmbientOcclusionMode::Combine, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Bloom", bool, settings_.bloom_.enabled_, MarkSettingsDirty, BloomPassSettings{}.enabled_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Bloom Iterations", unsigned, settings_.bloom_.numIterations_, MarkSettingsDirty, BloomPassSettings{}.numIterations_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Bloom Threshold", float, settings_.bloom_.threshold_, MarkSettingsDirty, BloomPassSettings{}.threshold_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Bloom Threshold Max", float, settings_.bloom_.thresholdMax_, MarkSettingsDirty, BloomPassSettings{}.thresholdMax_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Bloom Intensity", float, settings_.bloom_.intensity_, MarkSettingsDirty, BloomPassSettings{}.intensity_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Bloom Iteration Factor", float, settings_.bloom_.iterationFactor_, MarkSettingsDirty, BloomPassSettings{}.iterationFactor_, AM_DEFAULT);
-    URHO3D_ENUM_ATTRIBUTE_EX("Tone Mapping Mode", settings_.toneMapping_, MarkSettingsDirty, toneMappingModeNames, ToneMappingMode::None, AM_DEFAULT);
-    URHO3D_ENUM_ATTRIBUTE_EX("Post Process Antialiasing", settings_.antialiasing_, MarkSettingsDirty, postProcessAntialiasingNames, PostProcessAntialiasing::None, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Hue Shift", float, settings_.hueShift_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Saturation", float, settings_.saturation_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Brightness", float, settings_.brightness_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Contrast", float, settings_.contrast_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Color Filter", Color, settings_.colorFilter_, MarkSettingsDirty, Color::WHITE, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Color Offset", Vector3, settings_.colorOffset_, MarkSettingsDirty, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Draw Debug Geometry", bool, settings_.drawDebugGeometry_, MarkSettingsDirty, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Depth Bias Scale", float, settings_.shadowMapAllocator_.depthBiasScale_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Depth Bias Offset", float, settings_.shadowMapAllocator_.depthBiasOffset_, MarkSettingsDirty, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Normal Offset Scale", float, settings_.sceneProcessor_.normalOffsetScale_, MarkSettingsDirty, 1.0f, AM_DEFAULT);
+    // clang-format on
 }
 
 void RenderPipeline::SetSettings(const RenderPipelineSettings& settings)
@@ -188,6 +144,108 @@ void RenderPipeline::SetSettings(const RenderPipelineSettings& settings)
     settings_.Validate();
     settings_.AdjustToSupported(context_);
     MarkSettingsDirty();
+}
+
+ResourceRef RenderPipeline::GetRenderPathAttr() const
+{
+    return GetResourceRef(renderPath_, RenderPath::TypeId);
+}
+
+void RenderPipeline::SetRenderPathAttr(const ResourceRef& value)
+{
+    // This function may be called from constructor, check for cache just in case.
+    if (auto* cache = GetSubsystem<ResourceCache>())
+        SetRenderPath(cache->GetResource<RenderPath>(value.name_));
+}
+
+void RenderPipeline::SetRenderPath(RenderPath* renderPath)
+{
+    if (renderPath_)
+        UnsubscribeFromEvent(renderPath_, E_RELOADFINISHED);
+
+    renderPath_ = renderPath;
+    OnRenderPathReloaded();
+
+    if (renderPath_)
+        SubscribeToEvent(renderPath_, E_RELOADFINISHED, &RenderPipeline::OnRenderPathReloaded);
+}
+
+void RenderPipeline::SetRenderPasses(const EnabledRenderPasses& renderPasses)
+{
+    renderPasses_ = renderPasses;
+    if (renderPath_)
+        renderPasses_ = renderPath_->RepairEnabledRenderPasses(renderPasses_);
+    OnParametersChanged(this);
+}
+
+const VariantVector& RenderPipeline::GetRenderPassesAttr() const
+{
+    static thread_local VariantVector result;
+    result.clear();
+    for (const auto& [name, enabled] : renderPasses_)
+    {
+        result.push_back(Variant{name});
+        result.push_back(Variant{enabled});
+    }
+    return result;
+}
+
+void RenderPipeline::SetRenderPassesAttr(const VariantVector& value)
+{
+    const unsigned numPasses = value.size() / 2;
+
+    EnabledRenderPasses renderPasses;
+    for (unsigned i = 0; i < numPasses; ++i)
+        renderPasses.emplace_back(value[i * 2].GetString(), value[i * 2 + 1].GetBool());
+    SetRenderPasses(renderPasses);
+}
+
+void RenderPipeline::SetRenderPathParameters(const StringVariantMap& params)
+{
+    renderPathParameters_ = params;
+    OnParametersChanged(this);
+}
+
+void RenderPipeline::UpdateRenderPathParameters(const VariantMap& params)
+{
+    bool modified = false;
+    for (const auto& [nameHash, newValue] : params)
+    {
+        const auto iter = renderPathParameters_.find_by_hash(nameHash.Value());
+        if (iter == renderPathParameters_.end())
+            continue;
+
+        if (iter->second != newValue)
+        {
+            iter->second = newValue;
+            modified = true;
+        }
+    }
+    if (modified)
+        OnParametersChanged(this);
+}
+
+void RenderPipeline::SetRenderPassEnabled(const ea::string& passName, bool enabled)
+{
+    const auto isMatching = [&](const ea::pair<ea::string, bool>& item) { return item.first == passName; };
+    const auto iter = ea::find_if(renderPasses_.begin(), renderPasses_.end(), isMatching);
+
+    bool isUpdated = false;
+    if (iter == renderPasses_.end())
+    {
+        isUpdated = true;
+        renderPasses_.emplace_back(passName, enabled);
+        if (renderPath_)
+            renderPasses_ = renderPath_->RepairEnabledRenderPasses(renderPasses_);
+    }
+    else if (iter->second != enabled)
+    {
+        isUpdated = true;
+        iter->second = enabled;
+    }
+
+    if (isUpdated)
+        OnParametersChanged(this);
 }
 
 SharedPtr<RenderPipelineView> RenderPipeline::Instantiate()
@@ -202,4 +260,15 @@ void RenderPipeline::MarkSettingsDirty()
     OnSettingsChanged(this, settings_);
 }
 
+void RenderPipeline::OnRenderPathReloaded()
+{
+    if (renderPath_)
+    {
+        renderPath_->CollectParameters(renderPathParameters_);
+        renderPasses_ = renderPath_->RepairEnabledRenderPasses(renderPasses_);
+    }
+
+    OnRenderPathChanged(this, renderPath_);
 }
+
+} // namespace Urho3D

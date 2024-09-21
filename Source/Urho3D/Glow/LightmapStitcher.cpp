@@ -146,7 +146,7 @@ ea::pair<RenderPipelineView*, SharedPtr<Viewport>> CreateStitchingViewAndViewpor
 
     // Setup viewport
     auto viewport = MakeShared<Viewport>(context);
-    viewport->SetCamera(scene->GetComponent<Camera>(true));
+    viewport->SetCamera(scene->FindComponent<Camera>());
     viewport->SetRect(IntRect::ZERO);
     viewport->SetScene(scene);
     viewport->AllocateView();

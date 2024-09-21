@@ -89,6 +89,7 @@
 %ignore ImGui::GetMainViewport;
 %ignore ImGui::FindViewportByID;
 %ignore ImGui::FindViewportByPlatformHandle;
+%ignore ImGui::InputText;
 
 %ignore ImGui::PlotEx;
 %ignore ImGui::ImFontAtlasBuildMultiplyCalcLookupTable;
