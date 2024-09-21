@@ -68,38 +68,39 @@ public:
 
     void RenderContent() override
     {
+        SceneWidget::RenderContent();
+
         if (model_)
         {
             auto& vertexBuffers = model_->GetVertexBuffers();
-            if (!vertexBuffers.empty())
+
+            if (ui::TreeNode("Vertex Info"))
             {
-                ui::NewLine();
-            }
-
-            for (unsigned vertexBufferIndex = 0; vertexBufferIndex < vertexBuffers.size(); ++vertexBufferIndex)
-            {
-                const auto& vb = vertexBuffers[vertexBufferIndex];
-                const float kb = (vb->GetVertexCount() * vb->GetVertexSize()) / 1000.0f;
-                ui::Text("VertexBuffer[%u]: %u vertices (%.1f KB)", vertexBufferIndex, vb->GetVertexCount(), kb);
-
-                const float indent = 5;
-                ui::Indent(indent);
-
-                for (auto& ve : vb->GetElements())
+                for (unsigned vertexBufferIndex = 0; vertexBufferIndex < vertexBuffers.size(); ++vertexBufferIndex)
                 {
-                    ui::Text("%s (%s)", vertexElementSemanticNames[ve.semantic_], vertexElementTypeNames[ve.type_]);
+                    const auto& vb = vertexBuffers[vertexBufferIndex];
+                    const float kb = (vb->GetVertexCount() * vb->GetVertexSize()) / 1000.0f;
+                    ui::Text("VertexBuffer[%u]: %u vertices (%.1f KB)", vertexBufferIndex, vb->GetVertexCount(), kb);
+
+                    const float indent = 5;
+                    ui::Indent(indent);
+
+                    for (auto& ve : vb->GetElements())
+                    {
+                        ui::Text("%s (%s)", vertexElementSemanticNames[ve.semantic_], vertexElementTypeNames[ve.type_]);
+                    }
+
+                    ui::Indent(-indent);
                 }
 
-                ui::Indent(-indent);
-            }
+                if (!vertexBuffers.empty())
+                {
+                    ui::NewLine();
+                }
 
-            if (!vertexBuffers.empty())
-            {
-                ui::NewLine();
+                ui::TreePop();
             }
         }
-
-        SceneWidget::RenderContent();
     }
 
 private:
