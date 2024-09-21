@@ -275,7 +275,7 @@ private:
     /// Outgoing packet buffer which can contain multiple messages.
     ea::unordered_map<int, VectorBuffer> outgoingBuffer_;
     /// Outgoing packet size limit.
-    int packedMessageLimit_ = 1024;
+    int packetMessageLimit_ = 1024;
     /// Queued remote events.
     ea::vector<RemoteEvent> remoteEvents_;
     /// @}
