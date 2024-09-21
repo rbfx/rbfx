@@ -128,6 +128,7 @@ if (APPLE AND NOT IOS)
 endif ()
 
 add_library(Urho3D ${SOURCE_FILES} ${HEADER_FILES} $<$<CXX_COMPILER_ID:MSVC>:${rbfx_SOURCE_DIR}/script/rbfx.natvis>)
+set_target_properties(Urho3D PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(Urho3D PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>        # For parent projects to find auto-generated engine headers
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>           # Misc configured headers
@@ -364,7 +365,7 @@ if (WEB)
     set_target_properties(Urho3D PROPERTIES COMPILE_OPTIONS $<$<OR:$<CONFIG:Release>,$<CONFIG:MinSizeRel>>:-O3>)
     set_target_properties(Urho3D PROPERTIES LINK_FLAGS_RELEASE -sAGGRESSIVE_VARIABLE_ELIMINATION=1)
     target_compile_options(Urho3D PUBLIC $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:${EMCC_WITH_SOURCE_MAPS_FLAG}>)
-    target_link_libraries(Urho3D PUBLIC -sDISABLE_EXCEPTION_CATCHING=1 -sFORCE_FILESYSTEM=1 -sDISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 -lidbfs.js)
+    target_link_libraries(Urho3D PUBLIC -sFETCH -sDISABLE_EXCEPTION_CATCHING=1 -sFORCE_FILESYSTEM=1 -sDISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 -lidbfs.js)
     target_link_libraries(Urho3D PUBLIC --bind)
     if (NOT EMSCRIPTEN_TOTAL_MEMORY OR "${EMSCRIPTEN_TOTAL_MEMORY}" STREQUAL "0")
         target_link_libraries(Urho3D PUBLIC "-s ALLOW_MEMORY_GROWTH=1" --no-heap-copy)
@@ -445,7 +446,7 @@ if (URHO3D_CSHARP)
     if (URHO3D_SYSTEMUI)
         csharp_bind_target(
             TARGET ImGui
-            NATIVE Urho3D
+            EMBED Urho3D
             SWIG ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig/ImGui.i
             NAMESPACE ImGuiNet
             INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."
@@ -458,6 +459,12 @@ if (URHO3D_CSHARP)
         PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.Scripts.csproj
         OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Urho3DNet.Scripts
         DEPENDS Urho3DNet
+    )
+
+    add_target_csharp(
+        TARGET Urho3DNet.CodeGenerator
+        PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.CodeGenerator.csproj
+        OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Urho3DNet.CodeGenerator
     )
 
     file (GLOB_RECURSE EXTRA_NATIVE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.h)

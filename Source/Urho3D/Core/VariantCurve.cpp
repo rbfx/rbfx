@@ -210,6 +210,12 @@ Variant VariantCurve::Sample(float time, float duration, bool isLooped, unsigned
     return keyFrame.value_;
 }
 
+Variant VariantCurve::Sample(float time) const
+{
+    unsigned frameIndex{};
+    return Sample(time, 0.0f, false, frameIndex);
+}
+
 VariantType VariantCurve::GetType() const
 {
     return keyFrames_.empty() ? VAR_NONE : keyFrames_[0].value_.GetType();

@@ -81,14 +81,16 @@ class EventHandler;
     // essentially making C# wrapper use a virtual method from Object class. These functions are declare in
     // a private section because removing them breaks SWIG in strangest ways.
     #define URHO3D_OBJECT(typeName, baseTypeName) \
-        private: \
+        public: \
+            using ClassName = typeName; \
+            using BaseClassName = baseTypeName; \
             Urho3D::StringHash GetType() const override; \
             const ea::string& GetTypeName() const override; \
             const Urho3D::TypeInfo* GetTypeInfo() const override; \
             bool IsInstanceOf(Urho3D::StringHash type) const override; \
-        public: \
-            using ClassName = typeName; \
-            using BaseClassName = baseTypeName;
+            static Urho3D::StringHash GetTypeStatic(); \
+            static const ea::string& GetTypeNameStatic(); \
+            static const Urho3D::TypeInfo* GetTypeInfoStatic();
 #endif
 
 /// Base class for objects with type identification, subsystem access and event sending/receiving capability.

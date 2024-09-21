@@ -105,7 +105,7 @@ void CameraOperatorSample::CreateScene()
     scene_->LoadFile("Scenes/CameraOperatorScene.scene");
 
     cameraNode_ = scene_->GetChild("MainCamera");
-    cameraOperator_ = cameraNode_->GetComponent<CameraOperator>(true);
+    cameraOperator_ = cameraNode_->FindComponent<CameraOperator>();
 
     cameraNode_->CreateComponent<FreeFlyController>();
 
@@ -135,7 +135,7 @@ void CameraOperatorSample::SetupViewport()
     // camera at minimum. Additionally we could configure the viewport screen size and the rendering path (eg. forward /
     // deferred) to use, but now we just use full screen and default render path configured in the engine command line
     // options
-    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>(true)));
+    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->FindComponent<Camera>()));
     SetViewport(0, viewport);
 }
 

@@ -127,12 +127,12 @@ void SceneWidget::SetSkyboxTexture(Texture* texture)
     if (!scene)
         return;
 
-    auto* zone = scene->GetComponent<Zone>(true);
+    auto* zone = scene->FindComponent<Zone>();
     if (zone)
     {
         zone->SetZoneTexture(texture);
     }
-    auto* skybox = scene->GetComponent<Skybox>(true);
+    auto* skybox = scene->FindComponent<Skybox>();
     if (skybox)
     {
         auto material = MakeShared<Material>(context_);

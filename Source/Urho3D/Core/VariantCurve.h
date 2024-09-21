@@ -70,6 +70,8 @@ public:
     void Commit();
     /// Sample value at given time.
     Variant Sample(float time, float duration, bool isLooped, unsigned& frameIndex) const;
+    /// Sample value at given time without looping and keyframe hint.
+    Variant Sample(float time) const;
     /// Return type of animation track. Defined by the type of the first keyframe.
     VariantType GetType() const;
 

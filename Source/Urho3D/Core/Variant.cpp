@@ -736,7 +736,7 @@ ea::string Variant::ToString() const
     case VAR_VOIDPTR:
     case VAR_PTR:
         // Pointer serialization not supported (convert to null)
-        return ea::string();
+        return EMPTY_STRING;
 
     case VAR_INTRECT:
         return value_.intRect_.ToString();
@@ -765,8 +765,20 @@ ea::string Variant::ToString() const
     case VAR_CUSTOM:
         return GetCustomVariantValuePtr()->ToString();
 
+    case VAR_RESOURCEREF:
+    {
+        const Context* context = Context::GetInstance();
+        return context ? GetResourceRef().ToString(context) : EMPTY_STRING;
+    }
+
+    case VAR_RESOURCEREFLIST:
+    {
+        const Context* context = Context::GetInstance();
+        return context ? GetResourceRefList().ToString(context) : EMPTY_STRING;
+    }
+
     default:
-        // VAR_RESOURCEREF, VAR_RESOURCEREFLIST, VAR_VARIANTVECTOR, VAR_STRINGVECTOR, VAR_VARIANTMAP, VAR_VARIANTCURVE, VAR_STRINGVARIANTMAP
+        // VAR_VARIANTVECTOR, VAR_STRINGVECTOR, VAR_VARIANTMAP, VAR_VARIANTCURVE, VAR_STRINGVARIANTMAP
         // Reference string serialization requires typehash-to-name mapping from the context. Can not support here
         // Also variant map or vector string serialization is not supported. XML or binary save should be used instead
         return EMPTY_STRING;

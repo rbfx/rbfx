@@ -77,6 +77,8 @@ struct EditVariantOptions
     bool allowTypeChange_{};
     /// Whether to treat integer as bitmask.
     bool asBitmask_{};
+    /// Whether to extract elements metadata dynamically from the inspected StringVariantMap itself.
+    bool dynamicMetadata_{};
     /// Enum values used to convert integer to string.
     const StringVector* intToString_{};
     /// Allowed resource types.
@@ -93,6 +95,7 @@ struct EditVariantOptions
     EditVariantOptions& SizedStructVector(const StringVector& names) { sizedStructVectorElements_ = &names; return *this; }
     EditVariantOptions& AllowResize() { allowResize_ = true; return *this; }
     EditVariantOptions& AllowTypeChange() { allowTypeChange_ = true; return *this; }
+    EditVariantOptions& DynamicMetadata() { dynamicMetadata_ = true; return *this; }
 };
 
 /// Render reference to resource with optional type constraints. If allowed types are not specified, only current type is allowed.
@@ -118,7 +121,7 @@ URHO3D_API bool EditVariantVector(VariantVector& value, bool resizable, bool dyn
 URHO3D_API bool EditStringVector(StringVector& value, bool resizable);
 
 /// Render string variant map optional type and size constraints.
-URHO3D_API bool EditStringVariantMap(StringVariantMap& value, bool resizable, bool dynamicTypes);
+URHO3D_API bool EditStringVariantMap(StringVariantMap& value, bool resizable, bool dynamicTypes, bool dynamicMetadata);
 
 /// Render arbitrary variant value editor.
 URHO3D_API bool EditVariant(Variant& var, const EditVariantOptions& options = {});

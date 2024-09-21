@@ -54,6 +54,10 @@ public:
     /// Always equal to whole texture for TextureRenderBuffer, not so for viewport buffers.
     virtual IntRect GetViewportRect() const = 0;
 
+    /// Set whether the render buffer is enabled. Disabled buffers should not be accessed during the frame.
+    void SetEnabled(bool enabled) { isEnabled_ = enabled; }
+    bool IsEnabled() const { return isEnabled_; }
+
 protected:
     RenderBuffer(RenderPipelineInterface* renderPipeline);
     ~RenderBuffer() override;
@@ -67,6 +71,7 @@ protected:
 
     RenderDevice* renderDevice_{};
     bool bufferIsReady_{};
+    bool isEnabled_{true};
 };
 
 /// Writable and readable render buffer texture (2D or cubemap).

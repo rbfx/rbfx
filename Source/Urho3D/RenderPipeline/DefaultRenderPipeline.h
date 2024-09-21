@@ -22,15 +22,14 @@
 
 #pragma once
 
-#include "OutlinePass.h"
+#include "OutlineScenePass.h"
 #include "../RenderPipeline/SceneProcessor.h"
 #include "../RenderPipeline/CameraProcessor.h"
 #include "../RenderPipeline/RenderBuffer.h"
 #include "../RenderPipeline/RenderBufferManager.h"
 #include "../RenderPipeline/RenderPipeline.h"
-#include "../RenderPipeline/PostProcessPass.h"
+#include "../RenderPipeline/SharedRenderPassState.h"
 #include "../RenderPipeline/ScenePass.h"
-#include "../RenderPipeline/AmbientOcclusionPass.h"
 
 #include <EASTL/optional.h>
 
@@ -51,6 +50,8 @@ public:
 
     const RenderPipelineSettings& GetSettings() const { return settings_; }
     void SetSettings(const RenderPipelineSettings& settings);
+    void SetRenderPath(RenderPath* renderPath);
+    void MarkParametersDirty() { parametersDirty_ = true; }
 
     /// Implement RenderPipelineInterface
     /// @{
@@ -72,8 +73,13 @@ protected:
     unsigned RecalculatePipelineStateHash() const;
     void SendViewEvent(StringHash eventType);
     void ApplySettings();
+    void UpdateRenderOutputFlags();
 
 private:
+    SharedPtr<RenderPath> originalRenderPath_;
+    SharedPtr<RenderPath> renderPath_;
+    bool parametersDirty_{};
+
     RenderPipelineSettings settings_;
     unsigned settingsPipelineStateHash_{};
     bool settingsDirty_{};
@@ -86,10 +92,11 @@ private:
     unsigned oldPipelineStateHash_{};
 
     CommonFrameInfo frameInfo_;
-    PostProcessPassFlags postProcessFlags_;
+    RenderOutputFlags renderOutputFlags_;
 
     RenderPipelineStats stats_;
     RenderPipelineDebugger debugger_;
+    SharedRenderPassState state_;
 
     SharedPtr<RenderBufferManager> renderBufferManager_;
     SharedPtr<ShadowMapAllocator> shadowMapAllocator_;
@@ -102,9 +109,9 @@ private:
     SharedPtr<UnorderedScenePass> deferredDecalPass_;
     SharedPtr<BackToFrontScenePass> alphaPass_;
     SharedPtr<BackToFrontScenePass> postAlphaPass_;
+
+    SharedPtr<RenderBuffer> outlineBuffer_;
     SharedPtr<OutlineScenePass> outlineScenePass_;
-    SharedPtr<OutlinePass> outlinePostProcessPass_;
-    SharedPtr<AmbientOcclusionPass> ssaoPass_;
 
     struct DeferredLightingData
     {
@@ -113,8 +120,6 @@ private:
         SharedPtr<RenderBuffer> normalBuffer_;
     };
     ea::optional<DeferredLightingData> deferred_;
-
-    ea::vector<SharedPtr<PostProcessPass>> postProcessPasses_;
 };
 
 }

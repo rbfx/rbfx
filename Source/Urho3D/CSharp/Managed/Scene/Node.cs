@@ -20,30 +20,23 @@
 // THE SOFTWARE.
 //
 
-using System.ComponentModel;
-
 namespace Urho3DNet
 {
     public partial class Node
     {
         public T CreateComponent<T>(uint id = 0) where T: Component
         {
-            return (T)CreateComponent(typeof(T).Name, id);
-        }
-
-        public T GetComponent<T>(bool recursive) where T: Component
-        {
-            return (T)GetComponent(typeof(T).Name, recursive);
+            return (T)CreateComponent(ObjectReflection<T>.TypeId, id);
         }
 
         public T GetOrCreateComponent<T>(uint id = 0) where T: Component
         {
-            return (T)GetOrCreateComponent(typeof(T).Name, id);
+            return (T)GetOrCreateComponent(ObjectReflection<T>.TypeId, id);
         }
 
         public void RemoveComponent<T>() where T : Component
         {
-            RemoveComponent(typeof(T).Name);
+            RemoveComponent(ObjectReflection<T>.TypeId);
         }
 
         /// <summary>
@@ -53,7 +46,7 @@ namespace Urho3DNet
         /// <returns>Found component or null.</returns>
         public T GetComponent<T>() where T: Component
         {
-            return (T)GetComponent(typeof(T).Name);
+            return (T)GetComponent(ObjectReflection<T>.TypeId);
         }
 
         /// <summary>
@@ -61,10 +54,10 @@ namespace Urho3DNet
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns>List of found components.</returns>
-        public ComponentList GetComponents<T>(bool recursive = false) where T: Component
+        public ComponentList GetComponents<T>() where T: Component
         {
             ComponentList componentList = new ComponentList();
-            GetComponents(componentList, typeof(T).Name, recursive);
+            GetComponents(componentList, ObjectReflection<T>.TypeId);
             return componentList;
         }
 
@@ -73,41 +66,36 @@ namespace Urho3DNet
         /// </summary>
         /// <typeparam name="T">Type of the component.</typeparam>
         /// <returns>Found component or null.</returns>
-        public T GetParentComponent<T>(bool fullTraversal = false) where T : Component
+        public T GetParentComponent<T>() where T : Component
         {
-            return (T)GetParentComponent(typeof(T).Name, fullTraversal);
+            return (T)GetParentComponent(ObjectReflection<T>.TypeId);
         }
 
         /// <summary>
         /// Get first occurrence of a component derived from the type.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">Type inherited from <see cref="Urho3DNet.Component"/> or interface marked with <see cref="Urho3DNet.DerivedFromAttribute"/></typeparam>
         /// <returns>Found component or null.</returns>
-        public T GetDerivedComponent<T>() where T : Component
+        public T GetDerivedComponent<T>() where T : class
         {
-            return (T)GetDerivedComponent(typeof(T).Name);
+            return GetDerivedComponent(ObjectReflection<T>.TypeId) as T;
+        }
+
+        public T FindComponent<T>(ComponentSearchFlag flags = ComponentSearchFlag.Default) where T: class
+        {
+            return FindComponent(ObjectReflection<T>.TypeId, flags) as T;
         }
 
         /// <summary>
         /// Get all components that derives from type.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name="T">Type inherited from <see cref="Urho3DNet.Component"/> or interface marked with <see cref="Urho3DNet.DerivedFromAttribute"/></typeparam>
         /// <returns>List of found components.</returns>
-        public ComponentList GetDerivedComponents<T>(bool recursive = false) where T : Component
+        public ComponentList FindComponents<T>(ComponentSearchFlag flags = ComponentSearchFlag.Default)
         {
             ComponentList componentList = new ComponentList();
-            GetDerivedComponents(componentList, typeof(T).Name, recursive);
+            FindComponents(componentList, ObjectReflection<T>.TypeId, flags);
             return componentList;
-        }
-
-        /// <summary>
-        /// Return component in parent node that derives from type. If there are several, returns the first. May optional traverse up to the root node.
-        /// </summary>
-        /// <typeparam name="T">Type of the component.</typeparam>
-        /// <returns>Found component or null.</returns>
-        public T GetParentDerivedComponent<T>(bool fullTraversal = false) where T : Component
-        {
-            return (T)GetParentDerivedComponent(typeof(T).Name, fullTraversal);
         }
     }
 }

@@ -44,6 +44,9 @@ namespace Urho3D
 namespace
 {
 
+// Needs to match group size in C_FilterCubemap.glsl
+constexpr int cubeFilterDispatchSize_ = 16;
+
 Quaternion faceRotations[MAX_CUBEMAP_FACES] = {
     Quaternion(0, 90, 0),
     Quaternion(0, -90, 0),
@@ -333,7 +336,10 @@ void CubemapRenderer::FilterCubemap(TextureCube* sourceTexture, TextureCube* des
         drawQueue->AddUnorderedAccessView("OutputTexture", destTexture, RawTextureUAVKey{}.FromLevel(i));
         drawQueue->CommitUnorderedAccessViews();
 
-        drawQueue->Dispatch({destTexture->GetLevelWidth(i), destTexture->GetLevelHeight(i), 6});
+        // Calculate number of threadgroups to dispatch
+        const int dispatchW = (destTexture->GetLevelWidth(i) + cubeFilterDispatchSize_ - 1) / cubeFilterDispatchSize_;
+        const int dispatchH = (destTexture->GetLevelHeight(i) + cubeFilterDispatchSize_ - 1) / cubeFilterDispatchSize_;
+        drawQueue->Dispatch({dispatchW, dispatchH, 6});
     }
 
     renderContext->ResetRenderTargets();

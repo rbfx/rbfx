@@ -7,6 +7,12 @@
 
 #include "_Config.glsl"
 #include "_Uniforms.glsl"
+
+// JS: this has to be before samplers so we can see it for depth reconstruction
+#ifdef URHO3D_XR
+    VERTEX_OUTPUT_QUAL(flat, int vInstID)
+#endif
+
 #include "_DefaultSamplers.glsl"
 #include "_SamplerUtils.glsl"
 #include "_Material_Common.glsl"

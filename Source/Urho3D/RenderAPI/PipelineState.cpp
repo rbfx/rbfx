@@ -777,6 +777,11 @@ void PipelineStateCache::Initialize(const ByteVector& cachedData)
 {
     cachedData_ = cachedData;
 
+    const RenderBackend renderBackend = renderDevice_->GetBackend();
+    const bool isSupported = renderBackend == RenderBackend::D3D12 || renderBackend == RenderBackend::Vulkan;
+    if (!isSupported)
+        return;
+
     Diligent::PipelineStateCacheCreateInfo ci;
     ci.Desc.Name = "PipelineStateCache";
     ci.CacheDataSize = cachedData_.size();
