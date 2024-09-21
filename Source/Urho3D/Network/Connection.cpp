@@ -74,7 +74,7 @@ Connection::Connection(Context* context, NetworkConnection* connection)
     : AbstractConnection(context)
     , transportConnection_(connection)
 {
-    SetPacketSizeLimit(packedMessageLimit_);
+    SetPacketSizeLimit(packetMessageLimit_);
 
     if (connection)
     {
@@ -110,7 +110,7 @@ void Connection::SendMessageInternal(NetworkMessageId messageId, const unsigned 
     URHO3D_ASSERT(messageId <= MSG_MAX);
 
     const int numBytesCompressed = LZ4_compress_default(
-        (char*)dataOriginal, compressedPacketBuffer_.data(), numBytesOriginal, packedMessageLimit_);
+        (char*)dataOriginal, compressedPacketBuffer_.data(), numBytesOriginal, packetMessageLimit_);
 
     char* data = (char*)dataOriginal;
     unsigned numBytes = numBytesOriginal;
@@ -123,12 +123,12 @@ void Connection::SendMessageInternal(NetworkMessageId messageId, const unsigned 
         compressedBytesOut_ += numBytesOriginal - numBytesCompressed;
     }
 
-    URHO3D_ASSERT(numBytes <= packedMessageLimit_);
+    URHO3D_ASSERT(numBytes <= packetMessageLimit_);
     URHO3D_ASSERT((data == nullptr && numBytes == 0) || (data != nullptr && numBytes > 0));
 
     VectorBuffer& buffer = outgoingBuffer_[packetType];
 
-    if (buffer.GetSize() + numBytes >= packedMessageLimit_)
+    if (buffer.GetSize() + numBytes >= packetMessageLimit_)
         SendBuffer(packetType);
 
     const unsigned compressedValue = compressed ? 1 : 0;
@@ -822,9 +822,9 @@ void Connection::SendPackageToClient(PackageFile* package)
 
 void Connection::SetPacketSizeLimit(int limit)
 {
-    packedMessageLimit_ = limit;
-    compressedPacketBuffer_.resize(packedMessageLimit_);
-    decompressedPacketBuffer_.resize(packedMessageLimit_ * 10);
+    packetMessageLimit_ = limit;
+    compressedPacketBuffer_.resize(packetMessageLimit_);
+    decompressedPacketBuffer_.resize(packetMessageLimit_ * 10);
 }
 
 void Connection::HandleAsyncLoadFinished()
