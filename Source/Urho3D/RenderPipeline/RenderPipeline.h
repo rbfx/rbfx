@@ -22,12 +22,13 @@
 
 #pragma once
 
-#include "../Core/Object.h"
-#include "../Core/Signal.h"
-#include "../Graphics/Drawable.h"
-#include "../RenderPipeline/RenderPipelineDefs.h"
-#include "../RenderPipeline/RenderPipelineDebugger.h"
-#include "../Scene/Component.h"
+#include "Urho3D/Core/Object.h"
+#include "Urho3D/Core/Signal.h"
+#include "Urho3D/Graphics/Drawable.h"
+#include "Urho3D/RenderPipeline/RenderPath.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDebugger.h"
+#include "Urho3D/RenderPipeline/RenderPipelineDefs.h"
+#include "Urho3D/Scene/Component.h"
 
 namespace Urho3D
 {
@@ -78,33 +79,62 @@ protected:
 };
 
 /// Scene component that spawns render pipeline instances.
-class URHO3D_API RenderPipeline
-    : public Component
+class URHO3D_API RenderPipeline : public Component
 {
     URHO3D_OBJECT(RenderPipeline, Component);
 
 public:
+    /// Invoked when settings change.
+    Signal<void(const RenderPipelineSettings& settings)> OnSettingsChanged;
+    /// Invoked when render path changes.
+    Signal<void(RenderPath* renderPath)> OnRenderPathChanged;
+    /// Invoked when render path parameters change.
+    Signal<void()> OnParametersChanged;
+
     RenderPipeline(Context* context);
     ~RenderPipeline() override;
 
     static void RegisterObject(Context* context);
 
-    /// Properties
+    /// Properties.
     /// @{
     const RenderPipelineSettings& GetSettings() const { return settings_; }
     void SetSettings(const RenderPipelineSettings& settings);
+
+    ResourceRef GetRenderPathAttr() const;
+    void SetRenderPathAttr(const ResourceRef& value);
+
+    RenderPath* GetRenderPath() const { return renderPath_; }
+    void SetRenderPath(RenderPath* renderPath);
+
+    const EnabledRenderPasses& GetRenderPasses() const { return renderPasses_; }
+    void SetRenderPasses(const EnabledRenderPasses& renderPasses);
+
+    const VariantVector& GetRenderPassesAttr() const;
+    void SetRenderPassesAttr(const VariantVector& value);
+
+    const StringVariantMap& GetRenderPathParameters() const { return renderPathParameters_; }
+    void SetRenderPathParameters(const StringVariantMap& params);
     /// @}
+
+    /// Update existing render path parameters.
+    void UpdateRenderPathParameters(const VariantMap& params);
+    /// Update render pass enabled state.
+    void SetRenderPassEnabled(const ea::string& passName, bool enabled);
 
     /// Create new instance of render pipeline.
     virtual SharedPtr<RenderPipelineView> Instantiate();
 
-    /// Invoked when settings change.
-    Signal<void(const RenderPipelineSettings&)> OnSettingsChanged;
-
 private:
     void MarkSettingsDirty();
+    void OnRenderPathReloaded();
+
+    SharedPtr<RenderPath> renderPath_;
+
+    EnabledRenderPasses renderPasses_;
+    StringVariantMap renderPathParameters_;
 
     RenderPipelineSettings settings_;
 };
 
-}
+} // namespace Urho3D

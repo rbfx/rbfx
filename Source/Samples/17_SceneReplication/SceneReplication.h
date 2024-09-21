@@ -71,6 +71,10 @@ private:
     void SetupViewport();
     /// Subscribe to update, UI and network events.
     void SubscribeToEvents();
+    /// Create a text from the UI root.
+    Text* CreateOverlayText(int& y);
+    /// Update all the values on the info overlay.
+    void UpdateOverlay(unsigned packetsIn, unsigned packetsOut, unsigned bytesIn, unsigned bytesOut, unsigned connections);
     /// Create a button to the button container.
     Button* CreateButton(const ea::string& text, int width);
     /// Update visibility of buttons according to connection and server status.
@@ -118,6 +122,14 @@ private:
     SharedPtr<Text> packetsIn_;
     /// Packets out per second
     SharedPtr<Text> packetsOut_;
+    /// Bytes in per second
+    SharedPtr<Text> bytesIn_;
+    /// Bytes out per second
+    SharedPtr<Text> bytesOut_;
+    /// Number of connections
+    SharedPtr<Text> connections_;
+    /// IsServerRunning status
+    SharedPtr<Text> serverRunning_;
     /// Packet counter UI update timer
     Timer packetCounterTimer_;
 };

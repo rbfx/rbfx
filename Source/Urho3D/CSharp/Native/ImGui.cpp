@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2020 the rbfx project.
+// Copyright (c) 2024-2024 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,40 +20,34 @@
 // THE SOFTWARE.
 //
 
-#pragma once
+#include <ImGui/imgui.h>
+#include <Urho3D/Urho3D.h>
 
-#include "../RenderAPI/PipelineState.h"
-#include "../RenderPipeline/PostProcessPass.h"
-#include "../RenderPipeline/RenderBuffer.h"
-#include "../RenderPipeline/RenderPipelineDefs.h"
-
-#include <EASTL/optional.h>
+/* calling conventions for Windows */
+#ifndef SWIGSTDCALL
+    #if defined(_WIN32) || defined(__WIN32__) || defined(__CYGWIN__)
+        #define SWIGSTDCALL __stdcall
+    #else
+        #define SWIGSTDCALL
+    #endif
+#endif
 
 namespace Urho3D
 {
 
-class RenderBufferManager;
-class RenderPipelineInterface;
-
-/// Post-processing pass that converts HDR linear color input to LDR gamma color.
-class URHO3D_API ToneMappingPass
-    : public PostProcessPass
+extern "C"
 {
-    URHO3D_OBJECT(ToneMappingPass, PostProcessPass);
 
-public:
-    ToneMappingPass(RenderPipelineInterface* renderPipeline, RenderBufferManager* renderBufferManager);
-    void SetMode(ToneMappingMode mode);
+    URHO3D_EXPORT_API bool SWIGSTDCALL CSharp_ImGuiNet_InputText(char* jarg1, char* jarg2, unsigned long jarg3, int jarg4)
+    {
+        auto arg1 = (char*)jarg1;
+        auto arg2 = (char*)jarg2;
+        auto arg3 = (size_t)jarg3;
+        auto arg4 = (ImGuiInputTextFlags)jarg4; 
 
-    PostProcessPassFlags GetExecutionFlags() const override { return PostProcessPassFlag::NeedColorOutputReadAndWrite; }
-    void Execute(Camera* camera) override;
+        return (bool)ImGui::InputText(arg1, arg2, arg3, arg4);
+    }
 
-protected:
-    void InitializeStates();
+} // extern "C"
 
-    ToneMappingMode mode_;
-
-    StaticPipelineStateId toneMappingState_{};
-};
-
-}
+} // namespace Urho3D

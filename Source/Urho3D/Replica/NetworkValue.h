@@ -578,7 +578,7 @@ private:
         if (!previousValue_)
             return;
 
-        Traits::SmoothCorrection(valueCorrection_, ExpSmoothingInv(smoothingConstant_, timeStep));
+        Traits::SmoothCorrection(valueCorrection_, InverseExponentialDecay(smoothingConstant_ * timeStep));
 
         UpdateCache(value, previousValue_->time_.Frame());
         const ReturnType newPreviousValue = CalculateValueFromCache(value, previousValue_->time_);

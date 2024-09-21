@@ -251,7 +251,7 @@ void CameraController::UpdateState(const Settings& cfg, const Camera* camera, Pa
 
     if (state.pendingOffset_.Length() > 0.05f)
     {
-        const float factor = ExpSmoothingInv(cfg.focusSpeed_, time->GetTimeStep());
+        const float factor = InverseExponentialDecay(cfg.focusSpeed_ * time->GetTimeStep());
         node->Translate(state.pendingOffset_ * factor, TS_WORLD);
         state.pendingOffset_ *= 1.0f - factor;
     }

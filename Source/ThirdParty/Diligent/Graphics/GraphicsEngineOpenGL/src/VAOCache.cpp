@@ -66,13 +66,16 @@ void VAOCache::OnDestroyBuffer(const BufferGLImpl& Buffer)
 
     Threading::SpinLockGuard CacheGuard{m_CacheLock};
 
-    const auto range = m_BuffToKey.equal_range(Buffer.GetUniqueID());
-    for (auto it = range.first; it != range.second; ++it)
+    const auto it = m_BuffToKey.find(Buffer.GetUniqueID());
+    if (it != m_BuffToKey.end())
     {
-        StaleKeys.push_back(it->second);
-        m_Cache.erase(it->second);
+        for (const auto& Key : it->second)
+        {
+            StaleKeys.push_back(Key);
+            m_Cache.erase(Key);
+        }
+        m_BuffToKey.erase(it);
     }
-    m_BuffToKey.erase(range.first, range.second);
 
     // Clear stale entries in m_PSOToKey and m_BuffToKey that refer to dead VAOs
     // to avoid memory leaks.
@@ -86,13 +89,16 @@ void VAOCache::OnDestroyPSO(const PipelineStateGLImpl& PSO)
 
     Threading::SpinLockGuard CacheGuard{m_CacheLock};
 
-    const auto range = m_PSOToKey.equal_range(PSO.GetUniqueID());
-    for (auto it = range.first; it != range.second; ++it)
+    const auto it = m_PSOToKey.find(PSO.GetUniqueID());
+    if (it != m_PSOToKey.end())
     {
-        StaleKeys.push_back(it->second);
-        m_Cache.erase(it->second);
+        for (const auto& Key : it->second)
+        {
+            StaleKeys.push_back(Key);
+            m_Cache.erase(Key);
+        }
+        m_PSOToKey.erase(it);
     }
-    m_PSOToKey.erase(range.first, range.second);
 
     // Clear stale entries in m_PSOToKey and m_BuffToKey that refer to dead VAOs
     // to avoid memory leaks.
@@ -120,20 +126,33 @@ void VAOCache::ClearStaleKeys(const std::vector<VAOHashKey>& StaleKeys)
         }
     }
 
-    auto RemoveStaleEntries = [this](const std::unordered_set<UniqueIdentifier>&            CandidateIds,
-                                     std::unordered_multimap<UniqueIdentifier, VAOHashKey>& IdToKey) //
+    auto RemoveStaleEntries = [this](const std::unordered_set<UniqueIdentifier>&                    CandidateIds,
+                                     std::unordered_map<UniqueIdentifier, std::vector<VAOHashKey>>& IdToKey) //
     {
+        auto EraseFast = [](std::vector<VAOHashKey>& Keys, size_t Index)
+        {
+            if (Index != Keys.size() - 1)
+                std::swap(Keys[Index], Keys.back());
+            Keys.pop_back();
+        };
+
         // Delete stale entries that reference dead keys
         for (const auto Id : CandidateIds)
         {
-            const auto range = IdToKey.equal_range(Id);
-            for (auto it = range.first; it != range.second;)
+            const auto it = IdToKey.find(Id);
+            if (it != IdToKey.end())
             {
-                if (m_Cache.find(it->second) == m_Cache.end())
-                    it = IdToKey.erase(it); // There is no more VAO with this key
-                else
-                    ++it;
+                // This vector may shrink during iteration
+                auto& Keys = it->second;
+                for (size_t i = 0; i < Keys.size();)
+                {
+                    if (m_Cache.find(Keys[i]) == m_Cache.end())
+                        EraseFast(Keys, i); // There is no more VAO with this key
+                    else
+                        ++i;
+                }
             }
+
         }
     };
     RemoveStaleEntries(CandidatePSOs, m_PSOToKey);
@@ -309,12 +328,12 @@ const GLObjectWrappers::GLVertexArrayObj& VAOCache::GetVAO(const VAOAttribs& Att
         // New element must be actually inserted
         VERIFY(NewElems.second, "New element was not inserted into the cache");
         VERIFY_EXPR(Key.PsoUId == Attribs.PSO.GetUniqueID());
-        m_PSOToKey.emplace(Key.PsoUId, Key);
+        m_PSOToKey[Key.PsoUId].push_back(Key);
 
         if (Attribs.pIndexBuffer)
         {
             VERIFY_EXPR(Key.IndexBufferUId == Attribs.pIndexBuffer->GetUniqueID());
-            m_BuffToKey.emplace(Key.IndexBufferUId, Key);
+            m_BuffToKey[Key.IndexBufferUId].push_back(Key);
         }
 
         for (auto SlotMask = Key.UsedSlotsMask; SlotMask != 0;)
@@ -330,7 +349,7 @@ const GLObjectWrappers::GLVertexArrayObj& VAOCache::GetVAO(const VAOAttribs& Att
             }
 #endif
 
-            m_BuffToKey.emplace(Key.Streams[Slot].BufferUId, Key);
+            m_BuffToKey[Key.Streams[Slot].BufferUId].push_back(Key);
         }
         return NewElems.first->second;
     }

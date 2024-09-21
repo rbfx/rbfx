@@ -47,6 +47,10 @@ set (DEST_BUNDLE_DIR ${DEST_SHARE_DIR}/Applications)
 set (DEST_ARCHIVE_DIR lib)
 set (DEST_THIRDPARTY_HEADERS_DIR ${DEST_INCLUDE_DIR}/ThirdParty)
 
+if (BUILD_SHARED_LIBS OR WEB)
+    set (CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif ()
+
 # Set CMake modules search path
 set (CMAKE_MODULE_PATH ${rbfx_SOURCE_DIR}/CMake/Modules)
 
@@ -241,9 +245,6 @@ if (CLANG)
 endif ()
 
 set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
-if (BUILD_SHARED_LIBS OR WEB)
-    set (CMAKE_POSITION_INDEPENDENT_CODE ON)
-endif ()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 if (URHO3D_SSE AND NOT MSVC)
@@ -259,6 +260,11 @@ if (NOT "$ENV{CI}" STREQUAL "")
     endif ()
 elseif (MSVC)
     ucm_replace_flag("/W[0-3]" "/W1" REGEX)
+endif ()
+
+# Temporary: Workaround for MSVC crash.
+if (MSVC)
+    add_compile_definitions(_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 endif ()
 
 if (DESKTOP)

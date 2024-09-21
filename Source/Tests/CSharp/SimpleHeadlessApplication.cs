@@ -7,7 +7,7 @@ namespace Urho3DNet.Tests
     /// <summary>
     /// Test application.
     /// </summary>
-    public class SimpleHeadlessApplication : Application
+    public partial class SimpleHeadlessApplication : Application
     {
         public SimpleHeadlessApplication(Context context) : base(context)
         {

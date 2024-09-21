@@ -15,13 +15,11 @@
 #include "Urho3D/Input/Input.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
-#include "Urho3D/RenderPipeline/AutoExposurePass.h"
 #include "Urho3D/RenderPipeline/BatchRenderer.h"
-#include "Urho3D/RenderPipeline/BloomPass.h"
 #include "Urho3D/RenderPipeline/DrawableProcessor.h"
+#include "Urho3D/RenderPipeline/Passes/OutlineRenderPass.h"
 #include "Urho3D/RenderPipeline/ShaderConsts.h"
 #include "Urho3D/RenderPipeline/ShadowMapAllocator.h"
-#include "Urho3D/RenderPipeline/ToneMappingPass.h"
 #include "Urho3D/Scene/Scene.h"
 
 #if URHO3D_SYSTEMUI
@@ -304,7 +302,12 @@ StereoRenderPipelineView::StereoRenderPipelineView(RenderPipeline* pipeline)
     settings.sceneProcessor_.lightingMode_ = DirectLightingMode::Forward;
 
     SetSettings(settings);
+    SetRenderPath(renderPipeline_->GetRenderPath());
+    MarkParametersDirty();
+
     renderPipeline_->OnSettingsChanged.Subscribe(this, &StereoRenderPipelineView::SetSettings);
+    renderPipeline_->OnRenderPathChanged.Subscribe(this, &StereoRenderPipelineView::SetRenderPath);
+    renderPipeline_->OnParametersChanged.Subscribe(this, &StereoRenderPipelineView::MarkParametersDirty);
 }
 
 StereoRenderPipelineView::~StereoRenderPipelineView()
@@ -322,6 +325,12 @@ void StereoRenderPipelineView::SetSettings(const RenderPipelineSettings& setting
 
     settingsHash_ = settings_.CalculatePipelineStateHash();
     settingsDirty_ = true;
+}
+
+void StereoRenderPipelineView::SetRenderPath(RenderPath* renderPath)
+{
+    originalRenderPath_ = renderPath;
+    renderPath_ = nullptr;
 }
 
 void StereoRenderPipelineView::ApplySettings()
@@ -345,40 +354,21 @@ void StereoRenderPipelineView::ApplySettings()
 
     sceneProcessor_->SetPasses(
         {depthPrePass_, opaquePass_, postOpaquePass_, alphaPass_, postAlphaPass_, outlineScenePass_});
+}
 
-    postProcessPasses_.clear();
-
-    if (settings_.renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR)
+void StereoRenderPipelineView::UpdateRenderOutputFlags()
+{
+    renderOutputFlags_ = {};
+    if (renderPath_)
     {
-        auto pass = MakeShared<AutoExposurePass>(this, renderBufferManager_);
-        pass->SetSettings(settings_.autoExposure_);
-        postProcessPasses_.push_back(pass);
+        const RenderPassTraits& aggregatedTraits = renderPath_->GetAggregatedPassTraits();
+        if (aggregatedTraits.needReadWriteColorBuffer_)
+            renderOutputFlags_ |= RenderOutputFlag::NeedColorOutputReadAndWrite;
+        if (aggregatedTraits.needBilinearColorSampler_)
+            renderOutputFlags_ |= RenderOutputFlag::NeedColorOutputBilinear;
     }
 
-    if (settings_.bloom_.enabled_)
-    {
-        auto pass = MakeShared<BloomPass>(this, renderBufferManager_);
-        pass->SetSettings(settings_.bloom_);
-        postProcessPasses_.push_back(pass);
-    }
-
-    {
-        outlinePostProcessPass_ = MakeShared<OutlinePass>(this, renderBufferManager_);
-        postProcessPasses_.push_back(outlinePostProcessPass_);
-    }
-
-    if (settings_.renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR)
-    {
-        auto pass = MakeShared<ToneMappingPass>(this, renderBufferManager_);
-        pass->SetMode(settings_.toneMapping_);
-        postProcessPasses_.push_back(pass);
-    }
-
-    postProcessFlags_ = {};
-    for (PostProcessPass* postProcessPass : postProcessPasses_)
-        postProcessFlags_ |= postProcessPass->GetExecutionFlags();
-
-    settings_.AdjustForPostProcessing(postProcessFlags_);
+    settings_.AdjustForRenderPath(renderOutputFlags_);
     renderBufferManager_->SetSettings(settings_.renderBufferManager_);
 }
 
@@ -389,9 +379,20 @@ bool StereoRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vie
     if (!viewport->GetScene() || !viewport->IsStereo())
         return false;
 
+    // Ensure that render path is ready
+    if (!renderPath_ && originalRenderPath_)
+    {
+        renderPath_ = originalRenderPath_->Clone();
+        renderPath_->InitializeView(this);
+        settingsDirty_ = true;
+    }
+
     if (!sceneProcessor_)
     {
-        renderBufferManager_ = MakeShared<RenderBufferManager>(this);
+        state_.renderPipelineInterface_ = this;
+        state_.renderBufferManager_ = MakeShared<RenderBufferManager>(this);
+
+        renderBufferManager_ = state_.renderBufferManager_;
         shadowMapAllocator_ = MakeShared<ShadowMapAllocator>(context_);
         instancingBuffer_ = MakeShared<InstancingBuffer>(context_);
         sceneProcessor_ = MakeShared<StereoSceneProcessor>(this, shadowMapAllocator_, instancingBuffer_);
@@ -407,6 +408,12 @@ bool StereoRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vie
             "", "alpha", "alpha", "litalpha");
         postAlphaPass_ =
             sceneProcessor_->CreatePass<BackToFrontScenePass>(DrawableProcessorPassFlag::StereoInstancing, "postalpha");
+
+        const RenderBufferParams params{TextureFormat::TEX_FORMAT_RGBA8_UNORM, 1, RenderBufferFlag::BilinearFiltering};
+        outlineBuffer_ = renderBufferManager_->CreateColorBuffer(params);
+        outlineBuffer_->SetEnabled(false);
+
+        state_.renderBuffers_[OutlineRenderPass::ColorBufferId] = outlineBuffer_;
     }
 
     frameInfo_.viewport_ = viewport;
@@ -425,7 +432,17 @@ bool StereoRenderPipelineView::Define(RenderSurface* renderTarget, Viewport* vie
     if (settingsDirty_)
     {
         settingsDirty_ = false;
+        parametersDirty_ = true;
         ApplySettings();
+        UpdateRenderOutputFlags();
+    }
+
+    if (parametersDirty_ && renderPath_)
+    {
+        parametersDirty_ = false;
+        renderPath_->UpdateParameters(
+            settings_, renderPipeline_->GetRenderPasses(), renderPipeline_->GetRenderPathParameters());
+        UpdateRenderOutputFlags();
     }
 
     renderBufferManager_->OnViewportDefined(frameInfo_.renderTarget_, frameInfo_.viewportRect_);
@@ -486,7 +503,10 @@ void StereoRenderPipelineView::Update(const FrameInfo& frameInfo)
 
     sceneProcessor_->Update();
 
-    outlinePostProcessPass_->SetEnabled(outlineScenePass_->IsEnabled() && outlineScenePass_->HasBatches());
+    outlineBuffer_->SetEnabled(outlineScenePass_->IsEnabled() && outlineScenePass_->HasBatches());
+
+    if (renderPath_)
+        renderPath_->Update(state_);
 
     SendViewEvent(E_ENDVIEWUPDATE);
     OnUpdateEnd(this, frameInfo_);
@@ -501,7 +521,7 @@ void StereoRenderPipelineView::Render()
 
     const bool hasRefraction = alphaPass_->HasRefractionBatches();
     RenderBufferManagerFrameSettings frameSettings;
-    frameSettings.supportColorReadWrite_ = postProcessFlags_.Test(PostProcessPassFlag::NeedColorOutputReadAndWrite);
+    frameSettings.supportColorReadWrite_ = renderOutputFlags_.Test(RenderOutputFlag::NeedColorOutputReadAndWrite);
     if (hasRefraction)
         frameSettings.supportColorReadWrite_ = true;
 
@@ -547,12 +567,12 @@ void StereoRenderPipelineView::Render()
         "Alpha", camera, alphaPass_->GetBatches(), depthAndColorTextures, cameraParameters, 2);
     sceneProcessor_->RenderSceneBatches("PostAlpha", camera, postAlphaPass_->GetBatches(), {}, {}, 2);
 
-    if (outlinePostProcessPass_->IsEnabled())
+    if (outlineBuffer_->IsEnabled())
     {
         // TODO: Do we want it dynamic?
         const unsigned outlinePadding = 2;
 
-        RenderBuffer* const renderTargets[] = {outlinePostProcessPass_->GetColorOutput()};
+        RenderBuffer* const renderTargets[] = {outlineBuffer_};
         auto batches = outlineScenePass_->GetBatches();
 
         batches.scissorRect_ = renderTargets[0]->GetViewportRect();
@@ -572,9 +592,8 @@ void StereoRenderPipelineView::Render()
     // Not going to work, something will need to be done
     const auto outSize = renderBufferManager_->GetOutputSize(); // used for debug view
 
-    // Post-process passes that do not use the camera will work ... those that do, go ... KABOOM!
-    for (PostProcessPass* postProcessPass : postProcessPasses_)
-        postProcessPass->Execute(nullptr);
+    if (renderPath_)
+        renderPath_->Render(state_);
 
     // draw debug geometry into each half
     auto debug = sceneProcessor_->GetFrameInfo().scene_->GetComponent<DebugRenderer>();
