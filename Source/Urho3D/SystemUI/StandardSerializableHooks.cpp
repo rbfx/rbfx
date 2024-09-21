@@ -27,6 +27,7 @@
 #include "Urho3D/Core/WorkQueue.h"
 #include "Urho3D/Graphics/AnimatedModel.h"
 #include "Urho3D/Graphics/Camera.h"
+#include "Urho3D/RenderPipeline/RenderPipeline.h"
 #include "Urho3D/SystemUI/SerializableInspectorWidget.h"
 #include "Urho3D/SystemUI/SystemUI.h"
 #include "Urho3D/SystemUI/Widgets.h"
@@ -67,6 +68,40 @@ void RegisterStandardSerializableHooks(Context* context)
 
         return modified;
     });
+
+    SerializableInspectorWidget::RegisterAttributeHook({RenderPipeline::GetTypeNameStatic(), "Render Passes"},
+        [](const AttributeHookContext& ctx, Variant& boxedValue)
+    {
+        if (boxedValue.GetType() != VAR_VARIANTVECTOR)
+            return false;
+
+        VariantVector& value = *boxedValue.GetVariantVectorPtr();
+
+        Widgets::ItemLabel(ctx.info_->name_.c_str(), Widgets::GetItemLabelColor(ctx.isUndefined_, ctx.isDefaultValue_));
+        const IdScopeGuard idScope(VAR_BUFFER);
+
+        if (!value.empty())
+            ui::NewLine();
+
+        ui::Indent();
+        bool modified = false;
+        for (unsigned passIndex = 0; passIndex < value.size() / 2; ++passIndex)
+        {
+            const IdScopeGuard elementIdScope(passIndex);
+
+            const ea::string& name = value[passIndex * 2].GetString();
+            bool enabled = value[passIndex * 2 + 1].GetBool();
+            modified |= ui::Checkbox(name.c_str(), &enabled);
+            value[passIndex * 2 + 1] = enabled;
+        }
+        ui::Unindent();
+
+        if (value.empty())
+            ui::NewLine();
+
+        return modified;
+    });
+
 
     SerializableInspectorWidget::RegisterObjectHook({Camera::GetTypeNameStatic(), ObjectHookType::Append},
         [context, widget = WeakPtr<SceneRendererToTexture>()](const WeakSerializableVector& objects) mutable

@@ -1,33 +1,14 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
-
-/// \file
+// Copyright (c) 2017-2024 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
-#include "../Graphics/VertexBuffer.h"
-#include "../Graphics/Skeleton.h"
-#include "../Math/BoundingBox.h"
-#include "../Math/Color.h"
+#include "Urho3D/Container/FlagSet.h"
+#include "Urho3D/Graphics/Skeleton.h"
+#include "Urho3D/Graphics/VertexBuffer.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/Color.h"
 
 namespace Urho3D
 {
@@ -52,6 +33,8 @@ struct URHO3D_API ModelVertexFormat
     ea::array<VertexElementType, MaxColors> color_{ Undefined, Undefined, Undefined, Undefined };
     ea::array<VertexElementType, MaxUVs> uv_{ Undefined, Undefined, Undefined, Undefined };
     /// @}
+
+    ea::vector<VertexElement> ToVertexElements() const;
 
     void MergeFrom(const ModelVertexFormat& rhs);
     unsigned ToHash() const;
@@ -282,6 +265,17 @@ struct URHO3D_API ModelMorphView
     float initialWeight_{};
 };
 
+/// Flags that control how ModelView is exported as Model.
+enum class ModelViewExportFlag
+{
+    None = 0,
+
+    /// Export into pre-allocated GPU resources.
+    /// If there is not enough space, export is aborted before any changes are made to Model.
+    Inplace = 1 << 0,
+};
+URHO3D_FLAGSET(ModelViewExportFlag, ModelViewExportFlags);
+
 /// Represents Model in editable form.
 /// Some features are not supported for sake of API simplicity:
 /// - Multiple vertex and index buffers;
@@ -298,7 +292,7 @@ public:
     /// Import and export from/to native Model.
     /// @{
     bool ImportModel(const Model* model);
-    void ExportModel(Model* model) const;
+    void ExportModel(Model* model, ModelViewExportFlags flags = ModelViewExportFlag::None) const;
     SharedPtr<Model> ExportModel(const ea::string& name = EMPTY_STRING) const;
     ResourceRefList ExportMaterialList() const;
     /// @}

@@ -107,8 +107,8 @@ void DefaultBakedSceneCollector::LockScene(Scene* scene, const Vector3& chunkSiz
     const IntVector3 maxChunk = chunkGridDimension_ - IntVector3::ONE;
 
     // Collect light probe groups
-    scene_->GetComponents(lightProbeGroups_, true);
-    scene_->GetComponents(zones_, true);
+    scene_->FindComponents(lightProbeGroups_);
+    scene_->FindComponents(zones_);
 
     // Collect nodes
     ea::vector<StaticModel*> staticModels;

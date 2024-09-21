@@ -67,6 +67,12 @@ static const unsigned CTRL_BACK = 2;
 static const unsigned CTRL_LEFT = 4;
 static const unsigned CTRL_RIGHT = 8;
 
+static const ea::string PACKETS_IN_TITLE    = "Packets  in";
+static const ea::string PACKETS_OUT_TITLE   = "Packets out";
+static const ea::string BYTES_IN_TITLE      = "Bytes    in";
+static const ea::string BYTES_OUT_TITLE     = "Bytes   out";
+static const ea::string CONNECTIONS_TITLE   = "Connections";
+
 /// Controls data.
 struct PlayerControls
 {
@@ -270,19 +276,17 @@ void SceneReplication::CreateUI()
     // Hide until connected
     instructionsText_->SetVisible(false);
 
-    packetsIn_ = GetUIRoot()->CreateChild<Text>();
-    packetsIn_->SetText("Packets in : 0");
-    packetsIn_->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
-    packetsIn_->SetHorizontalAlignment(HA_LEFT);
-    packetsIn_->SetVerticalAlignment(VA_CENTER);
-    packetsIn_->SetPosition(10, -10);
+    int y = -10;
 
-    packetsOut_ = GetUIRoot()->CreateChild<Text>();
-    packetsOut_->SetText("Packets out: 0");
-    packetsOut_->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
-    packetsOut_->SetHorizontalAlignment(HA_LEFT);
-    packetsOut_->SetVerticalAlignment(VA_CENTER);
-    packetsOut_->SetPosition(10, 10);
+    packetsIn_ = CreateOverlayText(y);
+    packetsOut_ = CreateOverlayText(y);
+    bytesIn_ = CreateOverlayText(y);
+    bytesOut_ = CreateOverlayText(y);
+    connections_ = CreateOverlayText(y);
+    serverRunning_ = CreateOverlayText(y);
+
+    const int defaultValue = 0;
+    UpdateOverlay(defaultValue, defaultValue, defaultValue, defaultValue, defaultValue);
 
     buttonContainer_ = root->CreateChild<UIElement>();
     buttonContainer_->SetFixedSize(500, 20);
@@ -444,30 +448,81 @@ void SceneReplication::MoveCamera()
     instructionsText_->SetVisible(showInstructions);
 }
 
+Text* SceneReplication::CreateOverlayText(int& y)
+{
+    const int x = 10;
+    const int yOffset = 20;
+    const auto fontSize = 15;
+
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
+
+    auto textElement = GetUIRoot()->CreateChild<Text>();
+    textElement->SetFont(font, fontSize);
+    textElement->SetHorizontalAlignment(HA_LEFT);
+    textElement->SetVerticalAlignment(VA_CENTER);
+    textElement->SetPosition(x, y += yOffset);
+
+    return textElement;
+}
+
+void SetOverlayText(SharedPtr<Text>& textElement, const ea::string& title, unsigned value)
+{
+    textElement->SetText(Format("{}: {}", title, value));
+}
+
+void SceneReplication::UpdateOverlay(unsigned packetsIn, unsigned packetsOut, unsigned bytesIn, unsigned bytesOut, unsigned connections)
+{
+    SetOverlayText(packetsIn_, PACKETS_IN_TITLE, packetsIn);
+    SetOverlayText(packetsOut_, PACKETS_OUT_TITLE, packetsOut);
+    SetOverlayText(bytesIn_, BYTES_IN_TITLE, bytesIn);
+    SetOverlayText(bytesOut_, BYTES_OUT_TITLE, bytesOut);
+    SetOverlayText(connections_, CONNECTIONS_TITLE, connections);
+    const auto* network = GetSubsystem<Network>();
+    serverRunning_->SetText(network->IsServerRunning() ? "Server on" : "");
+}
+
+void SampleConnection(const Connection* connection, unsigned& packetsIn, unsigned& packetsOut, unsigned& bytesIn, unsigned& bytesOut)
+{
+    packetsIn += connection->GetPacketsInPerSec();
+    packetsOut += connection->GetPacketsOutPerSec();
+    bytesIn += connection->GetBytesInPerSec();
+    bytesOut += connection->GetBytesOutPerSec();
+}
+
 void SceneReplication::HandlePostUpdate(StringHash eventType, VariantMap& eventData)
 {
     // We only rotate the camera according to mouse movement since last frame, so do not need the time step
     MoveCamera();
 
-    if (packetCounterTimer_.GetMSec(false) > 1000 && GetSubsystem<Network>()->GetServerConnection())
+    if (packetCounterTimer_.GetMSec(false) < 1000)
     {
-        packetsIn_->SetText("Packets  in: " + ea::to_string(GetSubsystem<Network>()->GetServerConnection()->GetPacketsInPerSec()));
-        packetsOut_->SetText("Packets out: " + ea::to_string(GetSubsystem<Network>()->GetServerConnection()->GetPacketsOutPerSec()));
-        packetCounterTimer_.Reset();
+        return;
     }
-    if (packetCounterTimer_.GetMSec(false) > 1000 && GetSubsystem<Network>()->GetClientConnections().size())
+
+    packetCounterTimer_.Reset();
+
+    const auto* network = GetSubsystem<Network>();
+
+    unsigned packetsIn = 0;
+    unsigned packetsOut = 0;
+    unsigned bytesIn = 0;
+    unsigned bytesOut = 0;
+    unsigned connectionCount = 0;
+
+    if (auto* connectionToServer = network->GetServerConnection())
     {
-        int packetsIn = 0;
-        int packetsOut = 0;
-        auto connections = GetSubsystem<Network>()->GetClientConnections();
-        for (auto it = connections.begin(); it != connections.end(); ++it ) {
-            packetsIn += (*it)->GetPacketsInPerSec();
-            packetsOut += (*it)->GetPacketsOutPerSec();
-        }
-        packetsIn_->SetText("Packets  in: " + ea::to_string(packetsIn));
-        packetsOut_->SetText("Packets out: " + ea::to_string(packetsOut));
-        packetCounterTimer_.Reset();
+        connectionCount = 1;
+        SampleConnection(connectionToServer, packetsIn, packetsOut, bytesIn, bytesOut);
     }
+    else
+    {
+        connectionCount = network->GetClientConnections().size();
+        for (const auto& connection : network->GetClientConnections())
+            SampleConnection(connection, packetsIn, packetsOut, bytesIn, bytesOut);
+    }
+
+    UpdateOverlay(packetsIn, packetsOut, bytesIn, bytesOut, connectionCount);
 }
 
 void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& eventData)

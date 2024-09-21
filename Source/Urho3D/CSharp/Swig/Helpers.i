@@ -3,28 +3,6 @@
 
 #define %nocsattribute %feature("nocsattribute", "1")
 
-%typemap(ctype)  char* strdup "char*"
-%typemap(imtype) char* strdup "global::System.IntPtr"
-%typemap(cstype) char* strdup "global::System.IntPtr"
-%typemap(in)     char* strdup "$1 = $input;"
-%typemap(out)    char* strdup "$result = $1;"
-%typemap(csin)   char* strdup "$csinput"
-%typemap(csout, excode=SWIGEXCODE) char* strdup {
-    var ret = $imcall;$excode
-    return ret;
-  }
-%apply char* strdup { const char* void_ptr_string }
-
-%csmethodmodifiers free "internal";
-%csmethodmodifiers malloc "internal";
-%csmethodmodifiers strdup "internal";
-%csmethodmodifiers strlen "internal";
-
-void free(void* ptr);
-void* malloc(int size);
-char* strdup(const char* void_ptr_string);
-int strlen(const char* void_ptr_string);
-
 %typemap(ctype)  const char* const* "char**"
 %typemap(imtype) const char* const* "global::System.IntPtr"
 %typemap(cstype) const char* const* "string[]"

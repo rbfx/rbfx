@@ -155,11 +155,18 @@ inline T SmoothStep(T lhs, T rhs, T t)
     return t * t * (3.0 - 2.0 * t);
 }
 
-/// Return constant for exponential smoothing. The input constant is the rate of smoothing, in seconds^-1.
-template <class T> inline T ExpSmoothingInv(T constant, T timeStep) { return constant ? T(1) - Clamp(pow(T(2), -timeStep * constant), T(0), T(1)) : T(1); }
+/// Calculate exponential decay function.
+template <class T> inline T ExponentialDecay(T x) { return Clamp(pow(T(2), -x), T(0), T(1)); }
+template <class T> inline T InverseExponentialDecay(T x) { return T(1) - ExponentialDecay(x); }
 
-/// Return constant for exponential smoothing. The input constant is the half-duration of blending, in seconds.
-template <class T> inline T ExpSmoothing(T constant, T timeStep) { return constant ? ExpSmoothingInv(1 / constant, timeStep) : T(1); }
+/// Apply exponential smoothing to raw value. Typical usage:
+/// `smoothValue = Smooth(smoothValue, rawValue, timeStep / halfTimeOfSmoothing)`
+/// or
+/// `smoothValue = Smooth(smoothValue, rawValue, timeStep * smoothingRate)`
+template <class T, class U> T Smooth(const T& lhs, const T& rhs, U t) { return Lerp(lhs, rhs, InverseExponentialDecay(t)); }
+
+/// Same as `Smooth(lhs, rhs, timeStep / halfTime)`.
+template <class T, class U> T Smooth(const T& lhs, const T& rhs, U halfTime, U timeStep) { return halfTime ? Smooth(lhs, rhs, timeStep / halfTime) : rhs; }
 
 /// Return sine of an angle in degrees.
 /// @specialization{float}

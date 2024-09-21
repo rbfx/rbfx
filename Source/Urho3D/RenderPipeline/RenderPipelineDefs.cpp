@@ -119,13 +119,6 @@ void RenderPipelineSettings::AdjustToSupported(Context* context)
         shadowMapAllocator_.shadowAtlasPageSize_, caps.maxRenderTargetSize_);
 
     // TODO: Check if instancing is actually supported, i.e. if there's enough vertex attributes
-
-    // RenderPipelineSettings
-    if (renderBufferManager_.multiSampleLevel_ != 1)
-    {
-        URHO3D_LOGWARNING("SSAO is not supported for multi-sampled render targets, disabling");
-        ssao_.enabled_ = false;
-    }
 }
 
 void RenderPipelineSettings::PropagateImpliedSettings()
@@ -156,17 +149,11 @@ void RenderPipelineSettings::PropagateImpliedSettings()
             break;
         }
     }
-
-    // TODO: Revisit this place, it may be incorrect for Optimized color space used in VR
-    bloom_.hdr_ = renderBufferManager_.colorSpace_ == RenderPipelineColorSpace::LinearHDR;
-
-    if (ssao_.enabled_)
-        renderBufferManager_.readableDepth_ = true;
 }
 
-void RenderPipelineSettings::AdjustForPostProcessing(PostProcessPassFlags flags)
+void RenderPipelineSettings::AdjustForRenderPath(RenderOutputFlags flags)
 {
-    renderBufferManager_.filteredColor_ = flags.Test(PostProcessPassFlag::NeedColorOutputBilinear);
+    renderBufferManager_.filteredColor_ = flags.Test(RenderOutputFlag::NeedColorOutputBilinear);
 }
 
 }

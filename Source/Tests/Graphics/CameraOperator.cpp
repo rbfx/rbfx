@@ -108,7 +108,7 @@ TEST_CASE("CameraOperator focus on bounding box")
     }
 
     ea::vector<CameraOperator*> cameras;
-    rootNode->GetComponents<CameraOperator>(cameras, true);
+    rootNode->FindComponents<CameraOperator>(cameras);
 
     ea::array<BoundingBox, 2> boxes{
         BoundingBox(Vector3(-1, -2, -1), Vector3(1, 2, 1)),

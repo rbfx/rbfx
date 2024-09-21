@@ -182,7 +182,7 @@ jobs:
 
   MacOS-Tools:
     if: github.event.pull_request.draft == false
-    runs-on: macos-11
+    runs-on: macos-12
     needs: [CheckSkipCI]
     env:
       BUILD_SHARED_LIBS: ON
@@ -638,7 +638,7 @@ jobs:
 
   MacOS:
     if: github.event.pull_request.draft == false
-    runs-on: macos-11
+    runs-on: macos-12
     needs: [CheckSkipCI]
 
     strategy:
@@ -767,9 +767,10 @@ jobs:
         if: ${{ env.ci_release_bin == 'true' }}
         uses: TheDoctor0/zip-release@0.7.6
         with:
-          directory: ${{ github.workspace }}/SDK/bin/RelWithDebInfo/
+          directory: ${{ github.workspace }}/SDK/bin/
           filename: ${{ github.workspace }}/SDK-bin.zip
           path: '.'
+          exclusions: '/Autoload/* /CoreData/* /Data/* /EditorData/* /shell.html'
 
       - name: Release binaries
         if: ${{ env.ci_release_bin == 'true' }}
@@ -861,7 +862,7 @@ jobs:
 
   iOS:
     if: github.event.pull_request.draft == false
-    runs-on: macos-11
+    runs-on: macos-12
     needs: [CheckSkipCI, MacOS-Tools]
 
     strategy:

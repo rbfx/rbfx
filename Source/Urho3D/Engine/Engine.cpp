@@ -73,7 +73,15 @@
 #endif
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Localization.h"
+#include "../RenderPipeline/RenderPass.h"
+#include "../RenderPipeline/RenderPath.h"
 #include "../RenderPipeline/RenderPipeline.h"
+#include "../RenderPipeline/Passes/AmbientOcclusionPass.h"
+#include "../RenderPipeline/Passes/AutoExposurePass.h"
+#include "../RenderPipeline/Passes/BloomPass.h"
+#include "../RenderPipeline/Passes/FullScreenShaderPass.h"
+#include "../RenderPipeline/Passes/OutlineRenderPass.h"
+#include "../RenderPipeline/Passes/ToneMappingPass.h"
 #include "../Resource/JSONArchive.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
@@ -266,6 +274,14 @@ Engine::Engine(Context* context) :
     // Register render pipeline.
     // Extract this code into function if you are adding more.
     RenderPipeline::RegisterObject(context_);
+    RenderPath::RegisterObject(context_);
+    RenderPass::RegisterObject(context_);
+    AmbientOcclusionPass::RegisterObject(context_);
+    AutoExposurePass::RegisterObject(context_);
+    BloomPass::RegisterObject(context_);
+    FullScreenShaderPass::RegisterObject(context_);
+    OutlineRenderPass::RegisterObject(context_);
+    ToneMappingPass::RegisterObject(context_);
 
 #ifdef URHO3D_IK
     RegisterIKLibrary(context_);

@@ -271,7 +271,11 @@ void SerializableInspectorWidget::RenderAttribute(const AttributeInfo& info)
     else if (info.type_ == VAR_STRINGVECTOR)
         options = options.AllowResize();
     else if (info.type_ == VAR_STRINGVARIANTMAP)
+    {
         options = options.AllowResize().AllowTypeChange();
+        if (info.GetMetadata(AttributeMetadata::DynamicMetadata).GetBool())
+            options = options.DynamicMetadata();
+    }
     else if (!info.enumNames_.empty())
         options = options.Enum(info.enumNames_);
     else if (info.type_ == VAR_RESOURCEREFLIST)
