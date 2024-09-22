@@ -23,14 +23,16 @@
 #include "Urho3D/SystemUI/Console.h"
 #include "Urho3D/SystemUI/ImGuiDiligentRendererEx.h"
 
-#include <ImGui/imgui_freetype.h>
-#include <ImGui/imgui_internal.h>
-#include <ImGuizmo/ImGuizmo.h>
+#include <imgui_freetype.h>
+#include <imgui_internal.h>
+#include <ImGuizmo.h>
 
 #include <SDL.h>
 
 #define IMGUI_IMPL_API IMGUI_API
-#include <imgui_impl_sdl.h>
+#include <imgui_impl_sdl2.h>
+
+void ImGui_ImplSDL2_UpdateMonitors();
 
 namespace Urho3D
 {
@@ -86,7 +88,7 @@ void SystemUI::PlatformInitialize()
     case RenderBackend::Vulkan:
     {
         // Diligent manages Vulkan on its own.
-        ImGui_ImplSDL2_InitForSDLRenderer(renderDevice->GetSDLWindow());
+        ImGui_ImplSDL2_InitForOther(renderDevice->GetSDLWindow());
         break;
     }
     case RenderBackend::D3D11:
@@ -106,6 +108,8 @@ void SystemUI::PlatformInitialize()
 
     // Ensure that swap chain is initialized
     impl_->NewFrame();
+
+    ImGui_ImplSDL2_UpdateMonitors();
 }
 
 void SystemUI::PlatformShutdown()
@@ -126,34 +130,40 @@ void SystemUI::OnRawEvent(VariantMap& args)
     auto* evt = static_cast<SDL_Event*>(args[P_SDLEVENT].Get<void*>());
     ImGuiContext& g = *ui::GetCurrentContext();
     ImGuiIO& io = ui::GetIO();
+
     switch (evt->type)
     {
     case SDL_MOUSEMOTION:
-        if (!(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
-        {
-            // No viewports - mouse is relative to the window. When viewports are enabled we get global mouse position
-            // on every frame.
-            io.MousePos.x = evt->motion.x;
-            io.MousePos.y = evt->motion.y;
-        }
         relativeMouseMove_.x_ += evt->motion.xrel;
         relativeMouseMove_.y_ += evt->motion.yrel;
         break;
     case SDL_FINGERUP:
-        io.MouseDown[0] = false;
-        io.MousePos.x = -1;
-        io.MousePos.y = -1;
-        URHO3D_FALLTHROUGH;
-    case SDL_FINGERDOWN:
-        io.MouseDown[0] = true;
-    case SDL_FINGERMOTION:
-        io.MousePos.x = evt->tfinger.x;
-        io.MousePos.y = evt->tfinger.y;
+        io.AddMouseSourceEvent(ImGuiMouseSource_TouchScreen);
+        io.AddMousePosEvent(-1, -1);
+        io.AddMouseButtonEvent(0, false);
         break;
-    default:
-        ImGui_ImplSDL2_ProcessEvent(evt);
+    case SDL_FINGERDOWN:
+        io.AddMouseSourceEvent(ImGuiMouseSource_TouchScreen);
+        io.AddMouseButtonEvent(0, true);
+        break;
+    case SDL_FINGERMOTION:
+    {
+        ImVec2 mouse_pos((float)evt->tfinger.x, (float)evt->tfinger.y);
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            int window_x, window_y;
+            SDL_GetWindowPosition(SDL_GetWindowFromID(evt->tfinger.windowID), &window_x, &window_y);
+            mouse_pos.x += window_x;
+            mouse_pos.y += window_y;
+        }
+        io.AddMouseSourceEvent(ImGuiMouseSource_TouchScreen);
+        io.AddMousePosEvent(mouse_pos.x, mouse_pos.y);
         break;
     }
+    default:
+        break;
+    }
+    ImGui_ImplSDL2_ProcessEvent(evt);
 
     // Consume events handled by imgui, unless explicitly told not to.
     if (!passThroughEvents_)
@@ -211,11 +221,11 @@ void SystemUI::OnInputEnd()
     if (!renderDevice)
         return;
 
+    ImGuiIO& io = ui::GetIO();
     if (fontTextures_.empty())
        ReallocateFontTexture();
 
     // ImTextureID may be transient, make sure to tag all used textures every frame
-    ImGuiIO& io = ui::GetIO();
     URHO3D_ASSERT(fontTextures_.size() >= io.AllFonts.size());
     io.Fonts->TexID = ToImTextureID(fontTextures_[0]);
     for (int i = 1; i < io.AllFonts.size(); ++i)

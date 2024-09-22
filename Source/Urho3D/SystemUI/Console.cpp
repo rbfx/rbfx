@@ -159,7 +159,7 @@ void Console::RenderContent()
 {
     ImVec2 region = ui::GetContentRegionAvail();
     bool showCommandInput = !interpretersPointers_.empty();
-    bool copying = (ui::IsKeyDown(SDL_SCANCODE_LCTRL) || ui::IsKeyDown(SDL_SCANCODE_RCTRL)) && ui::IsKeyPressed(SDL_SCANCODE_C);
+    bool copying = (ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL)) && ui::IsKeyPressed(KEY_C);
     if (ui::BeginChild("ConsoleScrollArea", ImVec2(region.x, region.y - (showCommandInput ? 30 : 0)), false,
         ImGuiWindowFlags_HorizontalScrollbar))
     {

@@ -24,6 +24,7 @@
 
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+#include <Urho3D/SystemUI/ImGui.h>
 
 #include <EASTL/unordered_set.h>
 
@@ -148,11 +149,11 @@ bool EditorHotkey::CheckKeyboardPress() const
 {
     if (keyPressed_ != KEY_UNKNOWN && !ui::IsKeyPressed(keyPressed_))
         return false;
-    if (scancodePressed_ != SCANCODE_UNKNOWN && !ui::IsKeyPressed(static_cast<int>(scancodePressed_)))
+    if (scancodePressed_ != SCANCODE_UNKNOWN && !ui::IsKeyPressed(scancodePressed_))
         return false;
     if (keyDown_ != KEY_UNKNOWN && !ui::IsKeyDown(keyDown_))
         return false;
-    if (scancodeDown_ != SCANCODE_UNKNOWN && !ui::IsKeyDown(static_cast<int>(scancodeDown_)))
+    if (scancodeDown_ != SCANCODE_UNKNOWN && !ui::IsKeyDown(scancodeDown_))
         return false;
     return true;
 }

@@ -28,11 +28,6 @@
 
 #include <fmt/format.h>
 
-#include <tracy/Tracy.hpp>
-#if URHO3D_PROFILING
-#include <tracy/client/TracyLock.hpp>
-#endif
-
 #include <EASTL/algorithm.h>
 #include <EASTL/any.h>
 #include <EASTL/array.h>
@@ -98,6 +93,8 @@
 #include <thread>
 #include <tuple>
 #include <type_traits>
+
+#include <Urho3D/Core/Profiler.h>
 
 #endif
 

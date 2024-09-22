@@ -29,9 +29,9 @@
 #include "../Math/Vector2.h"
 #include "../Math/Vector4.h"
 
-#include <ImGui/imgui.h>
-#include <ImGui/imgui_internal.h>
-#include <ImGui/imgui_stdlib.h>
+#include <imgui.h>
+#include <imgui_internal.h>
+#include <imgui_stdlib.h>
 
 namespace ui = ImGui;
 
@@ -160,6 +160,10 @@ URHO3D_API bool IsKeyDown(Urho3D::Key key);
 URHO3D_API bool IsKeyPressed(Urho3D::Key key, bool repeat = true);
 URHO3D_API bool IsKeyReleased(Urho3D::Key key);
 URHO3D_API int GetKeyPressedAmount(Urho3D::Key key, float repeatDelay, float rate);
+URHO3D_API bool IsKeyDown(Urho3D::Scancode scancode);
+URHO3D_API bool IsKeyPressed(Urho3D::Scancode scancode, bool repeat = true);
+URHO3D_API bool IsKeyReleased(Urho3D::Scancode scancode);
+URHO3D_API int GetKeyPressedAmount(Urho3D::Scancode scancode, float repeatDelay, float rate);
 URHO3D_API float GetMouseWheel();
 /// @}
 
@@ -167,8 +171,6 @@ URHO3D_API float GetMouseWheel();
 
 /// ImGui math helpers.
 /// @{
-inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }
-inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs) { return !(lhs == rhs); }
 inline bool operator==(const ImRect& lhs, const ImRect& rhs) { return lhs.Min == rhs.Min && lhs.Max == rhs.Max; }
 inline bool operator!=(const ImRect& lhs, const ImRect& rhs) { return !(lhs == rhs); }
 

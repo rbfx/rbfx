@@ -756,9 +756,9 @@ void Project::Render()
     const ColorScopeGuard guardHighlightColors{{
         {ImGuiCol_Tab,                ImVec4(0.26f, 0.26f + tint, 0.26f, 0.40f)},
         {ImGuiCol_TabHovered,         ImVec4(0.31f, 0.31f + tint, 0.31f, 1.00f)},
-        {ImGuiCol_TabActive,          ImVec4(0.28f, 0.28f + tint, 0.28f, 1.00f)},
-        {ImGuiCol_TabUnfocused,       ImVec4(0.17f, 0.17f + tint, 0.17f, 1.00f)},
-        {ImGuiCol_TabUnfocusedActive, ImVec4(0.26f, 0.26f + tint, 0.26f, 1.00f)},
+        {ImGuiCol_TabSelected,        ImVec4(0.28f, 0.28f + tint, 0.28f, 1.00f)},
+        {ImGuiCol_TabDimmed,          ImVec4(0.17f, 0.17f + tint, 0.17f, 1.00f)},
+        {ImGuiCol_TabDimmedSelected,  ImVec4(0.26f, 0.26f + tint, 0.26f, 1.00f)},
     }, isHighlightEnabled_};
 
     if (!isHeadless_)

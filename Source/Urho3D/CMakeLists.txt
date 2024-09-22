@@ -188,8 +188,9 @@ set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     Box2D
     WebP
     ImGui
+    ImGuizmo
     GLEW
-    nativefiledialog
+    nfd
     CLI11
     fmt
     spdlog
@@ -353,8 +354,12 @@ if (GNU OR Clang)
     target_compile_options(Urho3D PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
 endif ()
 
+# Profiling
 if (URHO3D_PROFILING)
-    target_link_libraries(Urho3D PUBLIC Tracy)
+    target_link_libraries(Urho3D PUBLIC TracyClient)
+else ()
+    # Includes are needed even without profiling, because of profiler macros.
+    target_include_directories(Urho3D PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/tracy/public>)
 endif ()
 
 if (WEB)
@@ -382,8 +387,8 @@ if (BUILD_SHARED_LIBS)
     target_compile_definitions(Urho3D
         PRIVATE -DURHO3D_EXPORTS=1 -DAL_EXPORTS=1 -DBOX2D_EXPORTS=1 -DCIVETWEB_DLL_EXPORTS=1 -DEASTL_EXPORTS=1
             -DEASTDC_EXPORTS=1 -DURHO3D_EXPORTS=1 -DFMT_LIB_EXPORT=1 -DGLEW_BUILD=1 -DIMGUI_EXPORTS=1
-            -DLZ4_DLL_EXPORT=1 -DNFD_EXPORTS=1 -DPUGIXML_EXPORTS=1 -DSDL_EXPORTS=1 -DTRACY_EXPORTS=1 -DRmlCore_EXPORTS=1
-            -DRmlDebugger_EXPORTS=1 -DGLSLANG_EXPORTING=1
+            -DLZ4_DLL_EXPORT=1 -DNFD_EXPORTS=1 -DPUGIXML_EXPORTS=1 -DSDL_EXPORTS=1 -DRmlCore_EXPORTS=1
+            -DRmlDebugger_EXPORTS=1 -DGLSLANG_EXPORTING=1 -DTRACY_EXPORTS=1
     )
 else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)

@@ -50,7 +50,9 @@
 #endif
 
 // rbfx: Custom export logic to facilitate exporting lib API from main engine dll.
-#if _WIN32
+#if SDL_STATIC
+#		define DECLSPEC
+#elif _WIN32
 #   if defined(SDL_EXPORTS)
 #       define DECLSPEC __declspec(dllexport)
 #   elif defined(SDL_IMPORTS)

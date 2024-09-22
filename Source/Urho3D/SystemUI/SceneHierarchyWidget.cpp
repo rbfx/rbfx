@@ -199,7 +199,7 @@ void SceneHierarchyWidget::RenderNode(SceneSelection& selection, Node* node)
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
         | ImGuiTreeNodeFlags_OpenOnDoubleClick
         | ImGuiTreeNodeFlags_SpanAvailWidth
-        | ImGuiTreeNodeFlags_AllowItemOverlap;
+        | ImGuiTreeNodeFlags_AllowOverlap;
     if (node->GetParent() == nullptr)
         flags |= ImGuiTreeNodeFlags_DefaultOpen;
     if (selection.IsSelected(node))
@@ -294,7 +294,7 @@ void SceneHierarchyWidget::RenderComponent(SceneSelection& selection, Component*
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
         | ImGuiTreeNodeFlags_OpenOnDoubleClick
         | ImGuiTreeNodeFlags_SpanAvailWidth
-        | ImGuiTreeNodeFlags_AllowItemOverlap
+        | ImGuiTreeNodeFlags_AllowOverlap
         | ImGuiTreeNodeFlags_Leaf;
     if (selection.IsSelected(component))
         flags |= ImGuiTreeNodeFlags_Selected;
@@ -356,7 +356,8 @@ SceneHierarchyWidget::OptionalReorderInfo SceneHierarchyWidget::RenderObjectReor
     const float reorderButtonWidth = ui::CalcTextSize(ICON_FA_UP_DOWN).x;
 
     ui::SameLine();
-    ui::SetCursorPosX(ui::GetContentRegionMax().x - reorderButtonWidth * 2.0f);
+    float max_x = ui::GetContentRegionAvail().x + ui::GetCursorScreenPos().x - ui::GetWindowPos().x;
+    ui::SetCursorPosX(max_x - reorderButtonWidth * 2.0f);
     ui::SmallButton(ICON_FA_UP_DOWN);
 
     if (ui::IsItemActive())
