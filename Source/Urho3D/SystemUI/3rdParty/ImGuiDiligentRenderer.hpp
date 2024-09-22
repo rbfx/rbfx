@@ -31,7 +31,7 @@
 #include <Diligent/Common/interface/RefCntAutoPtr.hpp>
 #include <Diligent/Graphics/GraphicsEngine/interface/GraphicsTypes.h>
 #include <Diligent/Primitives/interface/BasicTypes.h>
-#include <ImGui/imgui.h>
+#include <imgui.h>
 
 #include <memory>
 

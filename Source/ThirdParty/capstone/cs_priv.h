@@ -1,9 +1,12 @@
 /* Capstone Disassembly Engine */
-/* By Nguyen Anh Quynh <aquynh@gmail.com>, 2013-2015 */
+/* By Nguyen Anh Quynh <aquynh@gmail.com>, 2013-2019 */
 
 #ifndef CS_PRIV_H
 #define CS_PRIV_H
 
+#ifdef CAPSTONE_DEBUG
+#include <assert.h>
+#endif
 #include <capstone/capstone.h>
 
 #include "MCInst.h"
@@ -65,6 +68,7 @@ struct cs_struct {
 	cs_opt_value detail, imm_unsigned;
 	int syntax;	// asm syntax for simple printer such as ARM, Mips & PPC
 	bool doing_mem;	// handling memory operand in InstPrinter code
+	bool doing_SME_Index; // handling a SME instruction that has index
 	unsigned short *insn_cache;	// index caching for mapping.c
 	GetRegisterName_t get_regname;
 	bool skipdata;	// set this to True if we skip data when disassembling
@@ -85,5 +89,13 @@ extern cs_calloc_t cs_mem_calloc;
 extern cs_realloc_t cs_mem_realloc;
 extern cs_free_t cs_mem_free;
 extern cs_vsnprintf_t cs_vsnprintf;
+
+// By defining CAPSTONE_DEBUG assertions can be used.
+// For any release build CAPSTONE_DEBUG has to be undefined.
+#ifdef CAPSTONE_DEBUG
+#define CS_ASSERT(expr) assert(expr)
+#else
+#define CS_ASSERT(expr)
+#endif
 
 #endif

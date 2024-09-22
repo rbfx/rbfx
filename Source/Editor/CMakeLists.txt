@@ -36,9 +36,6 @@ target_include_directories(EditorLibrary PUBLIC
     $<INSTALL_INTERFACE:${DEST_INCLUDE_DIR}/Tools>
 )
 target_link_libraries (EditorLibrary PUBLIC Urho3D)
-if (TARGET TracyEmbedded)
-    target_link_libraries (EditorLibrary PUBLIC TracyEmbedded)
-endif ()
 
 # Unless forbidden by the user, add Editor executable(s).
 set (EDITOR_TARGETS "")

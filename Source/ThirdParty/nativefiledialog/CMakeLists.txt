@@ -1,34 +1,54 @@
+cmake_minimum_required(VERSION 3.5)
+project(nativefiledialog-extended VERSION 1.2.1)
 
-list (APPEND SOURCE_FILES
-    src/include/nativefiledialog/nfd.h
-    src/common.h
-    src/nfd_common.c
-    src/nfd_common.h
-)
-if (APPLE)
-    list (APPEND SOURCE_FILES src/nfd_cocoa.m)
-elseif (UNIX)
-    list (APPEND SOURCE_FILES src/nfd_linux.cpp)
-elseif (WIN32)
-    list (APPEND SOURCE_FILES src/nfd_win.cpp)
-endif ()
-add_library(nativefiledialog STATIC ${SOURCE_FILES})
-target_include_directories(nativefiledialog SYSTEM
-    PRIVATE src/include/nativefiledialog
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
-           $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}>
-)
-if (BUILD_SHARED_LIBS)
-    target_compile_definitions(nativefiledialog PRIVATE -DNFD_EXPORTS=1 PUBLIC -DNFD_IMPORTS=1)
-endif ()
-if (WIN32)
-    target_link_libraries(nativefiledialog shell32)
-elseif (APPLE)
-    target_link_libraries(nativefiledialog "-framework Foundation" "-framework AppKit")
+set(nfd_ROOT_PROJECT OFF)
+if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+  set(nfd_ROOT_PROJECT ON)
 endif ()
 
-install (DIRECTORY src/include/nativefiledialog DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/nativefiledialog FILES_MATCHING PATTERN *.h)
+#option(BUILD_SHARED_LIBS "Build a shared library instead of static" OFF)
+option(NFD_BUILD_TESTS "Build tests for nfd" ${nfd_ROOT_PROJECT})
+option(NFD_BUILD_SDL2_TESTS "Build SDL2 tests for nfd" OFF)
+option(NFD_INSTALL "Generate install target for nfd" ${nfd_ROOT_PROJECT})
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS nativefiledialog EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-endif ()
+set(nfd_PLATFORM Undefined)
+if(WIN32)
+  set(nfd_PLATFORM PLATFORM_WIN32)
+elseif(APPLE)
+  set(nfd_PLATFORM PLATFORM_MACOS)
+elseif(UNIX AND NOT APPLE)
+  set(nfd_PLATFORM PLATFORM_LINUX)
+endif()
+
+message("nfd Platform: ${nfd_PLATFORM}")
+
+set(nfd_COMPILER Undefined)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
+  # This is clang-cl, which has different compiler options
+  set(nfd_COMPILER COMPILER_CLANGCL)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  set(nfd_COMPILER COMPILER_MSVC)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+  set(nfd_COMPILER COMPILER_GNU)
+endif()
+
+message("nfd Compiler: ${nfd_COMPILER}")
+
+# Use latest C++ by default (should be the best one), but let user override it
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+  if(CMAKE_VERSION VERSION_LESS "3.8")
+    set (CMAKE_CXX_STANDARD 14)
+  elseif(CMAKE_VERSION VERSION_LESS "3.12")
+    set (CMAKE_CXX_STANDARD 17)
+  elseif(CMAKE_VERSION VERSION_LESS "3.20")
+    set (CMAKE_CXX_STANDARD 20)
+  else()
+    set (CMAKE_CXX_STANDARD 23)
+  endif()
+endif()
+
+add_subdirectory(src)
+
+if(${NFD_BUILD_TESTS} OR ${NFD_BUILD_SDL2_TESTS})
+  add_subdirectory(test)
+endif()
