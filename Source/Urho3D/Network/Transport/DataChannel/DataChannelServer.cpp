@@ -65,7 +65,6 @@ bool DataChannelServer::Listen(const URL& url)
         SharedPtr<DataChannelConnection> connection = MakeShared<DataChannelConnection>(context_);
         connection->InitializeFromSocket(this, ws);
         connections_.push_back(connection);
-        onConnected_(connection);
     });
     return true;
 #else
