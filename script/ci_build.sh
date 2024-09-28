@@ -123,6 +123,7 @@ quirks_web=(
     '-DURHO3D_NO_EDITOR_PLAYER_EXE=ON'
 )
 quirks_dll=('-DURHO3D_CSHARP=ON')
+quirks_android=('-DURHO3D_CSHARP=ON')
 quirks_windows_msvc_x64=('-A' 'x64')
 quirks_windows_msvc_x86=('-A' 'Win32')
 quirks_uwp_msvc_arm=('-A' 'ARM')
