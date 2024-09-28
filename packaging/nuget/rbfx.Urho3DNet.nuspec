@@ -32,10 +32,10 @@
         <file src="in/Linux/bin/Urho3DNet.Scripts.dll" target="runtimes/linux-x64/lib/net8.0/"/>
         <!-- <file src="in/Linux/bin/Urho3DNet.Scripts.pdb" target="runtimes/linux-x64/lib/net8.0/"/> -->
 
-        <file src="in/MacOS/bin/RelWithDebInfo/Urho3DNet.dll" target="runtimes/osx-x64/lib/net8.0/"/>
-        <file src="in/MacOS/bin/RelWithDebInfo/Urho3DNet.pdb" target="runtimes/osx-x64/lib/net8.0/"/>
-        <file src="in/MacOS/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="runtimes/osx-x64/lib/net8.0/"/>
-        <file src="in/MacOS/bin/RelWithDebInfo/Urho3DNet.Scripts.pdb" target="runtimes/osx-x64/lib/net8.0/"/>
+        <file src="in/MacOS/bin/Urho3DNet.dll" target="runtimes/osx-x64/lib/net8.0/"/>
+        <!-- <file src="in/MacOS/bin/Urho3DNet.pdb" target="runtimes/osx-x64/lib/net8.0/"/> -->
+        <file src="in/MacOS/bin/Urho3DNet.Scripts.dll" target="runtimes/osx-x64/lib/net8.0/"/>
+        <!-- <file src="in/MacOS/bin/Urho3DNet.Scripts.pdb" target="runtimes/osx-x64/lib/net8.0/"/> -->
 
         <file src="in/Android/.cxx/RelWithDebInfo/*/x86_64/Urho3DNet.dll" target="runtimes/android-x64/lib/netstandard2.1/"/>
         <file src="in/Android/.cxx/RelWithDebInfo/*/x86_64/Urho3DNet.pdb" target="runtimes/android-x64/lib/netstandard2.1/"/>
