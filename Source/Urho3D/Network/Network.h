@@ -146,6 +146,8 @@ public:
     /// @}
 
 private:
+    void InitializeTransportCreateFuncs();
+
     /// Event handlers.
     /// @{
     void HandleApplicationExit();
