@@ -116,7 +116,7 @@ void Foundation_StandardFileTypes(Context* context, Project* project)
 
     project->AddAnalyzeFileCallback([](ResourceFileDescriptor& desc, const AnalyzeFileContext& ctx)
     {
-        if (desc.HasExtension({".mdl"}))
+        if (desc.HasExtension({".mdl" }))
         {
             desc.AddObjectType<Model>();
         }
