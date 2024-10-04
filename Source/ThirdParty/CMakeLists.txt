@@ -175,7 +175,7 @@ if (URHO3D_PHYSICS)
     add_subdirectory (StanHull)
 endif ()
 
-if (URHO3D_PROFILING OR URHO3D_TOOLS OR URHO3D_EDITOR)
+if (DESKTOP AND (URHO3D_PROFILING OR URHO3D_TOOLS OR URHO3D_EDITOR))
     set(NFD_PORTAL ON)
     add_subdirectory(nativefiledialog)
 endif ()
