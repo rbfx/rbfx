@@ -103,6 +103,14 @@ public:
     /// Return the amount of time that happened after fixed-time network update.
     float GetUpdateOvertime() const { return updateAcc_; }
 
+    /// Use the default transport (WebRTC)
+    void SetTransportDefault();
+    /// Use the WebRTC transport
+    void SetTransportWebRTC();
+    /// Use a user defined transport
+    void SetTransportCustom(ea::function<SharedPtr<NetworkServer>(Context*)> createServerFunc,
+        ea::function<SharedPtr<NetworkConnection>(Context*)> createConnectionFunc);
+
     /// Return whether the network is updated on this frame.
     bool IsUpdateNow() const { return updateNow_; }
 
@@ -138,6 +146,8 @@ public:
     /// @}
 
 private:
+    void InitializeTransportCreateFuncs();
+
     /// Event handlers.
     /// @{
     void HandleApplicationExit();
@@ -175,6 +185,12 @@ private:
     int serverMaxConnections_ = 0;
     /// Actual server, which accepts connections.
     SharedPtr<NetworkServer> transportServer_;
+
+    ea::function<SharedPtr<NetworkServer>(Context*)> transportServerCreateFunc_;
+    ea::function<SharedPtr<NetworkConnection>(Context*)> transportConnectionCreateFunc_;
+
+    ea::function<SharedPtr<NetworkServer>(Context*)> transportDataChannelServerCreateFunc_;
+    ea::function<SharedPtr<NetworkConnection>(Context*)> transportDataChannelConnectionCreateFunc_;
 };
 
 /// Register Network library objects.
