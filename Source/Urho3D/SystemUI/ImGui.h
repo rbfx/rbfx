@@ -128,7 +128,8 @@ public:
 
     ~ColorScopeGuard()
     {
-        ui::PopStyleColor(numColors_);
+        if (numColors_ > 0)
+            ui::PopStyleColor(numColors_);
     }
 
 private:
