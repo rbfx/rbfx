@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {4D7AF38E-4650-4A11-B33B-FFC70A8CD68B}
-static const INTERFACE_ID IID_ShaderResourceBindingMtl =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_ShaderResourceBindingMtl =
     {0x4d7af38e, 0x4650, 0x4a11, {0xb3, 0x3b, 0xff, 0xc7, 0xa, 0x8c, 0xd6, 0x8b}};
 
 #define DILIGENT_INTERFACE_NAME IShaderResourceBindingMtl

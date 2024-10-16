@@ -104,12 +104,8 @@ DWORD WINAPI Thread::ThreadFunctionStatic(void* data)
 void* Thread::ThreadFunctionStatic(void* data)
 {
     auto* thread = static_cast<Thread*>(data);
-#if defined(__ANDROID_API__)
-#if __ANDROID_API__ < 26
+#if defined(__ANDROID_API__) && __ANDROID_API__ < 26
     prctl(PR_SET_NAME, thread->name_.c_str(), 0, 0, 0);
-#else
-    pthread_setname_np(pthread_self(), thread->name_.c_str(), thread->name_.Length());
-#endif
 #elif defined(__linux__)
     pthread_setname_np(pthread_self(), thread->name_.c_str());
 #elif defined(__MACOSX__) || defined(__IPHONEOS__)

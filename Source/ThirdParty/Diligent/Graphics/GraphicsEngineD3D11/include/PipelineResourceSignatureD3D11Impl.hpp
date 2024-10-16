@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,28 +48,21 @@
 namespace Diligent
 {
 
-struct PipelineResourceImmutableSamplerAttribsD3D11
+struct ImmutableSamplerAttribsD3D11
 {
 public:
     Uint32                  ArraySize = 1;
     D3D11ResourceBindPoints BindPoints;
 
-    PipelineResourceImmutableSamplerAttribsD3D11() noexcept {}
+    ImmutableSamplerAttribsD3D11() noexcept {}
 
     bool IsAllocated() const { return !BindPoints.IsEmpty(); }
 };
-ASSERT_SIZEOF(PipelineResourceImmutableSamplerAttribsD3D11, 12, "The struct is used in serialization and must be tightly packed");
+ASSERT_SIZEOF(ImmutableSamplerAttribsD3D11, 12, "The struct is used in serialization and must be tightly packed");
 
 
-struct PipelineResourceSignatureInternalDataD3D11 : PipelineResourceSignatureInternalData
+struct PipelineResourceSignatureInternalDataD3D11 : PipelineResourceSignatureInternalData<PipelineResourceAttribsD3D11, ImmutableSamplerAttribsD3D11>
 {
-    const PipelineResourceAttribsD3D11*                 pResourceAttribs     = nullptr; // [NumResources]
-    Uint32                                              NumResources         = 0;
-    const PipelineResourceImmutableSamplerAttribsD3D11* pImmutableSamplers   = nullptr; // [NumImmutableSamplers]
-    Uint32                                              NumImmutableSamplers = 0;
-
-    std::unique_ptr<PipelineResourceImmutableSamplerAttribsD3D11[]> m_pImmutableSamplers;
-
     PipelineResourceSignatureInternalDataD3D11() noexcept
     {}
 
@@ -97,22 +90,6 @@ public:
                                        const PipelineResourceSignatureInternalDataD3D11& InternalData);
     ~PipelineResourceSignatureD3D11Impl();
 
-    // sizeof(ImmutableSamplerAttribs) == 24, x64
-    struct ImmutableSamplerAttribs : PipelineResourceImmutableSamplerAttribsD3D11
-    {
-        RefCntAutoPtr<SamplerD3D11Impl> pSampler;
-
-        ImmutableSamplerAttribs() noexcept {}
-        explicit ImmutableSamplerAttribs(const PipelineResourceImmutableSamplerAttribsD3D11& Attribs) noexcept :
-            PipelineResourceImmutableSamplerAttribsD3D11{Attribs} {}
-    };
-
-    const ImmutableSamplerAttribs& GetImmutableSamplerAttribs(Uint32 SampIndex) const
-    {
-        VERIFY_EXPR(SampIndex < m_Desc.NumImmutableSamplers);
-        return m_ImmutableSamplers[SampIndex];
-    }
-
     // Shifts resource bindings by the number of resources in each shader stage and resource range.
     __forceinline void ShiftBindings(D3D11ShaderResourceCounters& Bindings) const
     {
@@ -129,8 +106,6 @@ public:
     // Make the base class method visible
     using TPipelineResourceSignatureBase::CopyStaticResources;
 
-    PipelineResourceSignatureInternalDataD3D11 GetInternalData() const;
-
 #ifdef DILIGENT_DEVELOPMENT
     /// Verifies committed resource using the D3D resource attributes from the PSO.
     bool DvpValidateCommittedResource(const D3DShaderResourceAttribs& D3DAttribs,
@@ -145,8 +120,6 @@ public:
 private:
     void CreateLayout(bool IsSerialized);
 
-    void Destruct();
-
 private:
     D3D11ShaderResourceCounters m_ResourceCounters = {};
 
@@ -155,8 +128,6 @@ private:
     // Indicates which constant buffer slots are allowed to contain buffers with dynamic offsets.
     std::array<Uint16, NumShaderTypes> m_DynamicCBSlotsMask{};
     static_assert(sizeof(m_DynamicCBSlotsMask[0]) * 8 >= D3D11_COMMONSHADER_CONSTANT_BUFFER_API_SLOT_COUNT, "Not enough bits for all dynamic buffer slots");
-
-    ImmutableSamplerAttribs* m_ImmutableSamplers = nullptr; // [m_Desc.NumImmutableSamplers]
 };
 
 } // namespace Diligent

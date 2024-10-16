@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,6 +32,7 @@
 
 #include <vector>
 #include <memory>
+#include <atomic>
 
 #include "Shader.h"
 #include "DeviceObjectBase.hpp"
@@ -39,6 +40,8 @@
 #include "PlatformMisc.hpp"
 #include "EngineMemory.h"
 #include "Align.hpp"
+#include "RefCntAutoPtr.hpp"
+#include "AsyncInitializer.hpp"
 
 namespace Diligent
 {
@@ -145,10 +148,40 @@ public:
             LOG_ERROR_AND_THROW("Tile shaders are not supported by this device.");
     }
 
+    ~ShaderBase()
+    {
+        VERIFY(!GetCompileTask(), "Compile task is still running. This may result in a crash if the task accesses resources owned by the shader object.");
+    }
+
     IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_Shader, TDeviceObjectBase)
 
-private:
+    virtual SHADER_STATUS DILIGENT_CALL_TYPE GetStatus(bool WaitForCompletion) override
+    {
+        VERIFY_EXPR(m_Status.load() != SHADER_STATUS_UNINITIALIZED);
+        ASYNC_TASK_STATUS InitTaskStatus = AsyncInitializer::Update(m_AsyncInitializer, WaitForCompletion);
+        if (InitTaskStatus == ASYNC_TASK_STATUS_COMPLETE)
+        {
+            VERIFY(m_Status.load() > SHADER_STATUS_COMPILING, "Shader status must be atomically set by the compiling task before it finishes");
+        }
+        return m_Status.load();
+    }
+
+    bool IsCompiling() const
+    {
+        return m_Status.load() <= SHADER_STATUS_COMPILING;
+    }
+
+    RefCntAutoPtr<IAsyncTask> GetCompileTask() const
+    {
+        return AsyncInitializer::GetAsyncTask(m_AsyncInitializer);
+    }
+
+protected:
+    std::unique_ptr<AsyncInitializer> m_AsyncInitializer;
+
     const std::string m_CombinedSamplerSuffix;
+
+    std::atomic<SHADER_STATUS> m_Status{SHADER_STATUS_UNINITIALIZED};
 };
 
 } // namespace Diligent

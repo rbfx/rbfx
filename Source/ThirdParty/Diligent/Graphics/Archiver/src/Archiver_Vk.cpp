@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ struct CompiledShaderVk : SerializedShaderImpl::CompiledShader
 
         ShaderCI.Source       = nullptr;
         ShaderCI.FilePath     = nullptr;
-        ShaderCI.Macros       = nullptr;
+        ShaderCI.Macros       = {};
         ShaderCI.ByteCode     = SPIRV.data();
         ShaderCI.ByteCodeSize = SPIRV.size() * sizeof(SPIRV[0]);
         return SerializedShaderImpl::SerializeCreateInfo(ShaderCI);
@@ -66,6 +66,16 @@ struct CompiledShaderVk : SerializedShaderImpl::CompiledShader
     virtual IShader* GetDeviceShader() override final
     {
         return &ShaderVk;
+    }
+
+    virtual bool IsCompiling() const override final
+    {
+        return ShaderVk.IsCompiling();
+    }
+
+    virtual RefCntAutoPtr<IAsyncTask> GetCompileTask() const override final
+    {
+        return ShaderVk.GetCompileTask();
     }
 };
 
@@ -109,8 +119,9 @@ template <typename CreateInfoType>
 void SerializedPipelineStateImpl::PatchShadersVk(const CreateInfoType& CreateInfo) noexcept(false)
 {
     std::vector<ShaderStageInfoVk> ShaderStages;
-    SHADER_TYPE                    ActiveShaderStages = SHADER_TYPE_UNKNOWN;
-    PipelineStateVkImpl::ExtractShaders<SerializedShaderImpl>(CreateInfo, ShaderStages, ActiveShaderStages);
+    SHADER_TYPE                    ActiveShaderStages    = SHADER_TYPE_UNKNOWN;
+    constexpr bool                 WaitUntilShadersReady = true;
+    PipelineStateUtils::ExtractShaders<SerializedShaderImpl>(CreateInfo, ShaderStages, WaitUntilShadersReady, ActiveShaderStages);
 
     PipelineStateVkImpl::TShaderStages ShaderStagesVk{ShaderStages.size()};
     for (size_t i = 0; i < ShaderStagesVk.size(); ++i)
@@ -181,7 +192,7 @@ void SerializedPipelineStateImpl::PatchShadersVk(const CreateInfoType& CreateInf
             auto        ShaderCI  = ShaderStages[j].Serialized[i]->GetCreateInfo();
             ShaderCI.Source       = nullptr;
             ShaderCI.FilePath     = nullptr;
-            ShaderCI.Macros       = nullptr;
+            ShaderCI.Macros       = {};
             ShaderCI.ByteCode     = SPIRV.data();
             ShaderCI.ByteCodeSize = SPIRV.size() * sizeof(SPIRV[0]);
             SerializeShaderCreateInfo(DeviceType::Vulkan, ShaderCI);
@@ -192,7 +203,9 @@ void SerializedPipelineStateImpl::PatchShadersVk(const CreateInfoType& CreateInf
 INSTANTIATE_PATCH_SHADER_METHODS(PatchShadersVk)
 INSTANTIATE_DEVICE_SIGNATURE_METHODS(PipelineResourceSignatureVkImpl)
 
-void SerializedShaderImpl::CreateShaderVk(IReferenceCounters* pRefCounters, const ShaderCreateInfo& ShaderCI)
+void SerializedShaderImpl::CreateShaderVk(IReferenceCounters*     pRefCounters,
+                                          const ShaderCreateInfo& ShaderCI,
+                                          IDataBlob**             ppCompilerOutput)
 {
     const auto& VkProps         = m_pDevice->GetVkProperties();
     const auto& DeviceInfo      = m_pDevice->GetDeviceInfo();
@@ -204,7 +217,11 @@ void SerializedShaderImpl::CreateShaderVk(IReferenceCounters* pRefCounters, cons
         DeviceInfo,
         AdapterInfo,
         VkProps.VkVersion,
-        VkProps.SupportsSpirv14 //
+        VkProps.SupportsSpirv14,
+        // Do not overwrite compiler output from other APIs.
+        // TODO: collect all outputs.
+        ppCompilerOutput == nullptr || *ppCompilerOutput == nullptr ? ppCompilerOutput : nullptr,
+        m_pDevice->GetShaderCompilationThreadPool(),
     };
     CreateShader<CompiledShaderVk>(DeviceType::Vulkan, pRefCounters, ShaderCI, VkShaderCI, pRenderDeviceVk);
 }
@@ -249,8 +266,9 @@ void SerializationDeviceImpl::GetPipelineResourceBindingsVk(const PipelineResour
 void SerializedPipelineStateImpl::ExtractShadersVk(const RayTracingPipelineStateCreateInfo& CreateInfo, RayTracingShaderMapType& ShaderMap)
 {
     std::vector<ShaderStageInfoVk> ShaderStages;
-    SHADER_TYPE                    ActiveShaderStages = SHADER_TYPE_UNKNOWN;
-    PipelineStateVkImpl::ExtractShaders<SerializedShaderImpl>(CreateInfo, ShaderStages, ActiveShaderStages);
+    SHADER_TYPE                    ActiveShaderStages    = SHADER_TYPE_UNKNOWN;
+    constexpr bool                 WaitUntilShadersReady = true;
+    PipelineStateUtils::ExtractShaders<SerializedShaderImpl>(CreateInfo, ShaderStages, WaitUntilShadersReady, ActiveShaderStages);
 
     GetRayTracingShaderMap(ShaderStages, ShaderMap);
 }

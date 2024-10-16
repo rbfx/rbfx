@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +37,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {B818DEC7-174D-447A-A8E4-94D21C57B40A}
-static const struct INTERFACE_ID IID_RenderPass =
+static DILIGENT_CONSTEXPR struct INTERFACE_ID IID_RenderPass =
     { 0xb818dec7, 0x174d, 0x447a, { 0xa8, 0xe4, 0x94, 0xd2, 0x1c, 0x57, 0xb4, 0xa } };
 
 
@@ -152,7 +152,7 @@ typedef struct RenderPassAttachmentDesc RenderPassAttachmentDesc;
 /// Special constant indicating that the render pass attachment is not used.
 #define DILIGENT_ATTACHMENT_UNUSED 0xFFFFFFFFU
 
-static const Uint32 ATTACHMENT_UNUSED = DILIGENT_ATTACHMENT_UNUSED;
+static DILIGENT_CONSTEXPR Uint32 ATTACHMENT_UNUSED = DILIGENT_ATTACHMENT_UNUSED;
 
 /// Attachment reference description.
 struct AttachmentReference
@@ -358,7 +358,7 @@ typedef struct SubpassDesc SubpassDesc;
 /// Special subpass index value expanding synchronization scope outside a subpass.
 #define DILIGENT_SUBPASS_EXTERNAL 0xFFFFFFFFU
 
-static const Uint32 SUBPASS_EXTERNAL = DILIGENT_SUBPASS_EXTERNAL;
+static DILIGENT_CONSTEXPR Uint32 SUBPASS_EXTERNAL = DILIGENT_SUBPASS_EXTERNAL;
 
 /// Subpass dependency description
 struct SubpassDependencyDesc

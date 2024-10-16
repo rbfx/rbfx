@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -72,7 +72,7 @@ Texture2DArray_GL::Texture2DArray_GL(IReferenceCounters*        pRefCounters,
         // The last parameter specifies whether the image will use identical sample locations and the same number of
         // samples for all texels in the image, and the sample locations will not depend on the internal format or size
         // of the image.
-        CHECK_GL_ERROR_AND_THROW("Failed to allocate storage for the 2D multisample texture array");
+        DEV_CHECK_GL_ERROR_AND_THROW("Failed to allocate storage for the 2D multisample texture array");
         // * An INVALID_ENUM error is generated if sizedinternalformat is not colorrenderable,
         //   depth - renderable, or stencil - renderable
         // * An INVALID_OPERATION error is generated if samples is greater than the maximum number of samples
@@ -85,7 +85,7 @@ Texture2DArray_GL::Texture2DArray_GL(IReferenceCounters*        pRefCounters,
     {
         //                             levels             format          width         height          depth
         glTexStorage3D(m_BindTarget, m_Desc.MipLevels, m_GLTexFormat, m_Desc.Width, m_Desc.Height, m_Desc.ArraySize);
-        CHECK_GL_ERROR_AND_THROW("Failed to allocate storage for the 2D texture array");
+        DEV_CHECK_GL_ERROR_AND_THROW("Failed to allocate storage for the 2D texture array");
         // When target is GL_TEXTURE_2D_ARRAY, calling glTexStorage3D is equivalent to the following pseudo-code:
         //for (i = 0; i < levels; i++)
         //{
@@ -182,6 +182,8 @@ void Texture2DArray_GL::UpdateData(GLContextState&          ContextState,
     const auto& TransferAttribs = GetNativePixelTransferAttribs(m_Desc.Format);
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, PBOOffsetAlignment);
+    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 
     if (TransferAttribs.IsCompressed)
     {
@@ -199,7 +201,7 @@ void Texture2DArray_GL::UpdateData(GLContextState&          ContextState,
                    "Compressed data stride (", SubresData.Stride, " must match the size of a row of compressed blocks (", BlockBytesInRow, ")");
         }
 #endif
-        //glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0); // Must be 0 on WebGL
         //glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_WIDTH, 0);
         auto UpdateRegionWidth  = DstBox.Width();
         auto UpdateRegionHeight = DstBox.Height();
@@ -232,8 +234,6 @@ void Texture2DArray_GL::UpdateData(GLContextState&          ContextState,
         const auto PixelSize  = Uint32{TexFmtInfo.NumComponents} * Uint32{TexFmtInfo.ComponentSize};
         VERIFY((SubresData.Stride % PixelSize) == 0, "Data stride is not multiple of pixel size");
         glPixelStorei(GL_UNPACK_ROW_LENGTH, StaticCast<GLint>(SubresData.Stride / PixelSize));
-        glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-        glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 
         glTexSubImage3D(m_BindTarget, MipLevel,
                         DstBox.MinX,
@@ -248,7 +248,7 @@ void Texture2DArray_GL::UpdateData(GLContextState&          ContextState,
                         // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexSubImage3D.xhtml
                         SubresData.pSrcBuffer != nullptr ? reinterpret_cast<void*>(StaticCast<size_t>(SubresData.SrcOffset)) : SubresData.pData);
     }
-    CHECK_GL_ERROR("Failed to update subimage data");
+    DEV_CHECK_GL_ERROR("Failed to update subimage data");
 
     if (UnpackBuffer != 0)
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -256,28 +256,60 @@ void Texture2DArray_GL::UpdateData(GLContextState&          ContextState,
     ContextState.BindTexture(-1, m_BindTarget, GLObjectWrappers::GLTextureObj::Null());
 }
 
-void Texture2DArray_GL::AttachToFramebuffer(const TextureViewDesc& ViewDesc, GLenum AttachmentPoint)
+void Texture2DArray_GL::AttachToFramebuffer(const TextureViewDesc& ViewDesc, GLenum AttachmentPoint, FRAMEBUFFER_TARGET_FLAGS Targets)
 {
-    if (ViewDesc.NumArraySlices == m_Desc.ArraySize)
-    {
-        glFramebufferTexture(GL_DRAW_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip);
-        CHECK_GL_ERROR("Failed to attach texture 2D array to draw framebuffer");
-        glFramebufferTexture(GL_READ_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip);
-        CHECK_GL_ERROR("Failed to attach texture 2D array to read framebuffer");
-    }
-    else if (ViewDesc.NumArraySlices == 1)
+    if (ViewDesc.NumArraySlices == 1)
     {
         // Texture name must either be zero or the name of an existing 3D texture, 1D or 2D array texture,
         // cube map array texture, or multisample array texture.
-        glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip, ViewDesc.FirstArraySlice);
-        CHECK_GL_ERROR("Failed to attach texture 2D array to draw framebuffer");
-        glFramebufferTextureLayer(GL_READ_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip, ViewDesc.FirstArraySlice);
-        CHECK_GL_ERROR("Failed to attach texture 2D array to read framebuffer");
+        if (Targets & FRAMEBUFFER_TARGET_FLAG_DRAW)
+        {
+            VERIFY_EXPR(ViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET || ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL);
+            glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip, ViewDesc.FirstArraySlice);
+            DEV_CHECK_GL_ERROR("Failed to attach texture 2D array to draw framebuffer");
+        }
+        if (Targets & FRAMEBUFFER_TARGET_FLAG_READ)
+        {
+            glFramebufferTextureLayer(GL_READ_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip, ViewDesc.FirstArraySlice);
+            DEV_CHECK_GL_ERROR("Failed to attach texture 2D array to read framebuffer");
+        }
+    }
+    else if (ViewDesc.NumArraySlices == m_Desc.ArraySize)
+    {
+        // NOTE: there is no glFramebufferTexture in WebGL, so we must use glFramebufferTextureLayer for single-slice array textures.
+
+        if (Targets & FRAMEBUFFER_TARGET_FLAG_DRAW)
+        {
+            VERIFY_EXPR(ViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET || ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL);
+            glFramebufferTexture(GL_DRAW_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip);
+            DEV_CHECK_GL_ERROR("Failed to attach texture 2D array to draw framebuffer");
+        }
+        if (Targets & FRAMEBUFFER_TARGET_FLAG_READ)
+        {
+            glFramebufferTexture(GL_READ_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip);
+            DEV_CHECK_GL_ERROR("Failed to attach texture 2D array to read framebuffer");
+        }
     }
     else
     {
         UNEXPECTED("Only one slice or the entire texture array can be attached to a framebuffer");
     }
+}
+
+void Texture2DArray_GL::CopyTexSubimage(GLContextState& GLState, const CopyTexSubimageAttribs& Attribs)
+{
+    GLState.BindTexture(-1, GetBindTarget(), GetGLHandle());
+
+    glCopyTexSubImage3D(GetBindTarget(),
+                        Attribs.DstMip,
+                        Attribs.DstX,
+                        Attribs.DstY,
+                        Attribs.DstLayer,
+                        Attribs.SrcBox.MinX,
+                        Attribs.SrcBox.MinY,
+                        Attribs.SrcBox.Width(),
+                        Attribs.SrcBox.Height());
+    DEV_CHECK_GL_ERROR("Failed to copy subimage data to texture 2D array");
 }
 
 } // namespace Diligent

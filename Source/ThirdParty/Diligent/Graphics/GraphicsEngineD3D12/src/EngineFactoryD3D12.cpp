@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -53,6 +53,13 @@
 
 namespace Diligent
 {
+
+bool CheckAdapterD3D12Compatibility(IDXGIAdapter1*    pDXGIAdapter,
+                                    D3D_FEATURE_LEVEL FeatureLevel)
+{
+    auto hr = D3D12CreateDevice(pDXGIAdapter, FeatureLevel, _uuidof(ID3D12Device), nullptr);
+    return SUCCEEDED(hr);
+}
 
 /// Engine factory for D3D12 implementation
 class EngineFactoryD3D12Impl : public EngineFactoryD3DBase<IEngineFactoryD3D12, RENDER_DEVICE_TYPE_D3D12>
@@ -760,11 +767,14 @@ GraphicsAdapterInfo EngineFactoryD3D12Impl::GetGraphicsAdapterInfo(void*        
             Features.MeshShaders = DEVICE_FEATURE_STATE_ENABLED;
 
             auto& MeshProps{AdapterInfo.MeshShader};
-            MeshProps.MaxTaskCount = 64000; // from specs: https://microsoft.github.io/DirectX-Specs/d3d/MeshShader.html#dispatchmesh-api
-            ASSERT_SIZEOF(MeshProps, 4, "Did you add a new member to MeshShaderProperties? Please initialize it here.");
+            MeshProps.MaxThreadGroupCountX     = 65536; // from specs: https://microsoft.github.io/DirectX-Specs/d3d/MeshShader.html#dispatchmesh-api
+            MeshProps.MaxThreadGroupCountY     = 65536;
+            MeshProps.MaxThreadGroupCountZ     = 65536;
+            MeshProps.MaxThreadGroupTotalCount = 1u << 22u;
+            ASSERT_SIZEOF(MeshProps, 16, "Did you add a new member to MeshShaderProperties? Please initialize it here.");
         }
 
-        Features.ShaderResourceRuntimeArray = DEVICE_FEATURE_STATE_ENABLED;
+        Features.ShaderResourceRuntimeArrays = DEVICE_FEATURE_STATE_ENABLED;
 
         {
             D3D12_FEATURE_DATA_D3D12_OPTIONS d3d12Features = {};
@@ -1022,9 +1032,9 @@ GraphicsAdapterInfo EngineFactoryD3D12Impl::GetGraphicsAdapterInfo(void*        
     {
 
         auto& SamProps{AdapterInfo.Sampler};
-        SamProps.BorderSamplingModeSupported   = True;
-        SamProps.AnisotropicFilteringSupported = True;
-        SamProps.LODBiasSupported              = True;
+        SamProps.BorderSamplingModeSupported = True;
+        SamProps.MaxAnisotropy               = D3D12_DEFAULT_MAX_ANISOTROPY;
+        SamProps.LODBiasSupported            = True;
         ASSERT_SIZEOF(SamProps, 3, "Did you add a new member to SamplerProperites? Please initialize it here.");
     }
 
@@ -1057,7 +1067,7 @@ GraphicsAdapterInfo EngineFactoryD3D12Impl::GetGraphicsAdapterInfo(void*        
         ASSERT_SIZEOF(DrawCommandProps, 12, "Did you add a new member to DrawCommandProperties? Please initialize it here.");
     }
 
-    ASSERT_SIZEOF(DeviceFeatures, 41, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
+    ASSERT_SIZEOF(DeviceFeatures, 46, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
 
     return AdapterInfo;
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -89,9 +89,13 @@ void HandleHLSLCompilerResult(bool               CompilationSucceeded,
         }
 
         if (CompilationSucceeded)
+        {
             LOG_INFO_MESSAGE(ss.str());
+        }
         else
+        {
             LOG_ERROR_AND_THROW(ss.str());
+        }
     }
 }
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,19 +46,22 @@ namespace Diligent
 {
 
 /// Shader implementation in Direct3D11 backend.
-class ShaderD3D11Impl final : public ShaderBase<EngineD3D11ImplTraits>, public ShaderD3DBase
+class ShaderD3D11Impl final : public ShaderD3DBase<EngineD3D11ImplTraits, ShaderResourcesD3D11>
 {
 public:
-    using TShaderBase = ShaderBase<EngineD3D11ImplTraits>;
+    using TShaderBase = ShaderD3DBase<EngineD3D11ImplTraits, ShaderResourcesD3D11>;
 
     static constexpr INTERFACE_ID IID_InternalImpl =
         {0xc6e1e44d, 0xb9d7, 0x4793, {0xb3, 0x8f, 0x4c, 0x2e, 0xb3, 0x9f, 0x20, 0xb0}};
 
-    struct CreateInfo
+    struct CreateInfo : TShaderBase::CreateInfo
     {
-        const RenderDeviceInfo&    DeviceInfo;
-        const GraphicsAdapterInfo& AdapterInfo;
-        const D3D_FEATURE_LEVEL    FeatureLevel;
+        const D3D_FEATURE_LEVEL FeatureLevel;
+
+        CreateInfo(const TShaderBase::CreateInfo& _BaseCreateInfo, D3D_FEATURE_LEVEL _FeatureLevel) :
+            TShaderBase::CreateInfo{_BaseCreateInfo},
+            FeatureLevel{_FeatureLevel}
+        {}
     };
     ShaderD3D11Impl(IReferenceCounters*          pRefCounters,
                     class RenderDeviceD3D11Impl* pRenderDeviceD3D11,
@@ -69,59 +72,24 @@ public:
 
     virtual void DILIGENT_CALL_TYPE QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface) override final;
 
-    /// Implementation of IShader::GetResourceCount() in Direct3D11 backend.
-    virtual Uint32 DILIGENT_CALL_TYPE GetResourceCount() const override final
-    {
-        return m_pShaderResources ? m_pShaderResources->GetTotalResources() : 0;
-    }
-
-    /// Implementation of IShader::GetResource() in Direct3D11 backend.
-    virtual void DILIGENT_CALL_TYPE GetResourceDesc(Uint32 Index, ShaderResourceDesc& ResourceDesc) const override final
-    {
-        if (m_pShaderResources)
-            ResourceDesc = m_pShaderResources->GetHLSLShaderResourceDesc(Index);
-    }
-
-    /// Implementation of IShader::GetConstantBufferDesc() in Direct3D11 backend.
-    virtual const ShaderCodeBufferDesc* DILIGENT_CALL_TYPE GetConstantBufferDesc(Uint32 Index) const override final
-    {
-        return m_pShaderResources ?
-            // Constant buffers always go first in the list of resources
-            m_pShaderResources->GetConstantBufferDesc(Index) :
-            nullptr;
-    }
-
-    /// Implementation of IShaderD3D::GetHLSLResource() method.
-    virtual void DILIGENT_CALL_TYPE GetHLSLResource(Uint32 Index, HLSLShaderResourceDesc& ResourceDesc) const override final
-    {
-        if (m_pShaderResources)
-            ResourceDesc = m_pShaderResources->GetHLSLShaderResourceDesc(Index);
-    }
 
     /// Implementation of IShaderD3D11::GetD3D11Shader() method.
     virtual ID3D11DeviceChild* DILIGENT_CALL_TYPE GetD3D11Shader() override final
     {
+        DEV_CHECK_ERR(!IsCompiling(), "Shader bytecode is not available until compilation is complete. Use GetStatus() to check the shader status.");
         return GetD3D11Shader(m_pShaderByteCode);
     }
 
-    virtual void DILIGENT_CALL_TYPE GetBytecode(const void** ppBytecode,
-                                                Uint64&      Size) const override final
-    {
-        ShaderD3DBase::GetBytecode(ppBytecode, Size);
-    }
-
-    const std::shared_ptr<const ShaderResourcesD3D11>& GetShaderResources() const { return m_pShaderResources; }
-
-    ID3D11DeviceChild* GetD3D11Shader(ID3DBlob* pBlob) noexcept(false);
+    ID3D11DeviceChild* GetD3D11Shader(IDataBlob* pBytecode) noexcept(false);
 
 private:
     struct BlobHashKey
     {
-        const size_t      Hash;
-        CComPtr<ID3DBlob> pBlob;
+        const size_t             Hash;
+        RefCntAutoPtr<IDataBlob> pBlob;
 
-        explicit BlobHashKey(ID3DBlob* _pBlob) :
-            Hash{ComputeHash(_pBlob)},
+        explicit BlobHashKey(IDataBlob* _pBlob) :
+            Hash{ComputeHashRaw(_pBlob->GetConstDataPtr(), _pBlob->GetSize())},
             pBlob{_pBlob}
         {}
 
@@ -138,35 +106,17 @@ private:
             if (Hash != rhs.Hash)
                 return false;
 
-            const auto Size0 = pBlob->GetBufferSize();
-            const auto Size1 = rhs.pBlob->GetBufferSize();
+            const auto Size0 = pBlob->GetSize();
+            const auto Size1 = rhs.pBlob->GetSize();
             if (Size0 != Size1)
                 return false;
 
-            return memcmp(pBlob->GetBufferPointer(), rhs.pBlob->GetBufferPointer(), Size0) == 0;
-        }
-
-    private:
-        static size_t ComputeHash(ID3DBlob* pBlob)
-        {
-            const auto* pData = reinterpret_cast<const Uint32*>(pBlob->GetBufferPointer());
-            const auto  Size  = pBlob->GetBufferSize();
-            VERIFY(Size % 4 == 0, "Bytecode size is expected to be a multiple of 4");
-            size_t Hash = 0;
-            for (Uint32 i = 0; i < Size / 4; ++i)
-            {
-                HashCombine(Hash, pData[i]);
-            }
-            return Hash;
+            return memcmp(pBlob->GetConstDataPtr(), rhs.pBlob->GetConstDataPtr(), Size0) == 0;
         }
     };
 
     std::mutex                                                                       m_d3dShaderCacheMtx;
     std::unordered_map<BlobHashKey, CComPtr<ID3D11DeviceChild>, BlobHashKey::Hasher> m_d3dShaderCache;
-
-    // ShaderResources class instance must be referenced through the shared pointer, because
-    // it is referenced by ShaderResourceLayoutD3D11 class instances
-    std::shared_ptr<const ShaderResourcesD3D11> m_pShaderResources;
 };
 
 } // namespace Diligent

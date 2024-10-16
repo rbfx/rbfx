@@ -30,7 +30,7 @@
 #   | Item                      | Section in the right pane             |
 #   | ------------------------- | ------------------------------------- |
 #   | OS, VM                    | Set up job                            |
-#   | git repo, commit hash     | Run actions/checkout@v3               |
+#   | git repo, commit hash     | Run actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871               |
 #   | gcc, tools                | Environment info                      |
 #
 # - To fail earlier, order of tests in the same job are roughly sorted by
@@ -53,6 +53,13 @@ name: xxHash CI tests
 
 on: [push, pull_request]
 
+concurrency:
+  group: fast-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   xxhash-c-compilers:
     name: CC=${{ matrix.cc }}, ${{ matrix.os }}
@@ -65,35 +72,33 @@ jobs:
           #   pkgs    : apt-get package names.  It can include multiple package names which are delimited by space.
           #   cc      : C compiler executable.
           #   cxx     : C++ compiler executable for `make ctocpptest`.
-          #   avx512  : Set 'true' if compiler supports avx512.  Otherwise, set 'false'.
           #   os      : GitHub Actions YAML workflow label.  See https://github.com/actions/virtual-environments#available-environments
 
           # cc
-          { pkgs: '',                                  cc: cc,        cxx: c++,         avx512: 'true',  os: ubuntu-latest, },
+          { pkgs: '',                                  cc: cc,        cxx: c++,         os: ubuntu-latest, },
 
           # gcc
-          { pkgs: '',                                  cc: gcc,       cxx: g++,         avx512: 'true',  os: ubuntu-latest, },
-          { pkgs: 'gcc-11  g++-11  lib32gcc-11-dev',   cc: gcc-11,    cxx: g++-11,      avx512: 'true',  os: ubuntu-20.04,  },
-          { pkgs: 'gcc-10  g++-10  lib32gcc-10-dev',   cc: gcc-10,    cxx: g++-10,      avx512: 'true',  os: ubuntu-20.04,  },
-          { pkgs: 'gcc-9   g++-9   lib32gcc-9-dev',    cc: gcc-9,     cxx: g++-9,       avx512: 'true',  os: ubuntu-20.04,  },
-          { pkgs: 'gcc-8   g++-8   lib32gcc-8-dev',    cc: gcc-8,     cxx: g++-8,       avx512: 'true',  os: ubuntu-20.04,  },
-          { pkgs: 'gcc-7   g++-7   lib32gcc-7-dev',    cc: gcc-7,     cxx: g++-7,       avx512: 'true',  os: ubuntu-20.04,  },
-          { pkgs: 'gcc-6   g++-6   lib32gcc-6-dev',    cc: gcc-6,     cxx: g++-6,       avx512: 'true',  os: ubuntu-18.04,  },
-          { pkgs: 'gcc-5   g++-5   lib32gcc-5-dev',    cc: gcc-5,     cxx: g++-5,       avx512: 'true',  os: ubuntu-18.04,  },
-          { pkgs: 'gcc-4.8 g++-4.8 lib32gcc-4.8-dev ', cc: gcc-4.8,   cxx: g++-4.8,     avx512: 'false', os: ubuntu-18.04,  },
+          { pkgs: '',                                  cc: gcc,       cxx: g++,         os: ubuntu-latest, },
+          # { pkgs: 'gcc-13  g++-13  lib32gcc-13-dev',   cc: gcc-13,    cxx: g++-13,      os: ubuntu-22.04,  }, # currently failing
+          { pkgs: 'gcc-12  g++-12  lib32gcc-12-dev',   cc: gcc-12,    cxx: g++-12,      os: ubuntu-22.04,  },
+          { pkgs: 'gcc-11  g++-11  lib32gcc-11-dev',   cc: gcc-11,    cxx: g++-11,      os: ubuntu-22.04,  },
+          { pkgs: 'gcc-10  g++-10  lib32gcc-10-dev',   cc: gcc-10,    cxx: g++-10,      os: ubuntu-22.04,  },
+          { pkgs: 'gcc-9   g++-9   lib32gcc-9-dev',    cc: gcc-9,     cxx: g++-9,       os: ubuntu-22.04,  },
+          { pkgs: 'gcc-8   g++-8   lib32gcc-8-dev',    cc: gcc-8,     cxx: g++-8,       os: ubuntu-20.04,  },
+          { pkgs: 'gcc-7   g++-7   lib32gcc-7-dev',    cc: gcc-7,     cxx: g++-7,       os: ubuntu-20.04,  },
 
           # clang
-          { pkgs: '',                                  cc: clang,     cxx: clang++,     avx512: 'true',  os: ubuntu-latest, },
-          { pkgs: 'clang-12',                          cc: clang-12,  cxx: clang++-12,  avx512: 'true',  os: ubuntu-20.04,  },
-          { pkgs: 'clang-11',                          cc: clang-11,  cxx: clang++-11,  avx512: 'true',  os: ubuntu-20.04,  },
-          { pkgs: 'clang-10',                          cc: clang-10,  cxx: clang++-10,  avx512: 'true',  os: ubuntu-20.04,  },
-          { pkgs: 'clang-9',                           cc: clang-9,   cxx: clang++-9,   avx512: 'true',  os: ubuntu-20.04,  },
-          { pkgs: 'clang-8',                           cc: clang-8,   cxx: clang++-8,   avx512: 'true',  os: ubuntu-20.04,  },
-          { pkgs: 'clang-7',                           cc: clang-7,   cxx: clang++-7,   avx512: 'true',  os: ubuntu-20.04,  },
-          { pkgs: 'clang-6.0',                         cc: clang-6.0, cxx: clang++-6.0, avx512: 'true',  os: ubuntu-20.04,  },
-          { pkgs: 'clang-5.0',                         cc: clang-5.0, cxx: clang++-5.0, avx512: 'true',  os: ubuntu-18.04,  },
-          { pkgs: 'clang-4.0',                         cc: clang-4.0, cxx: clang++-4.0, avx512: 'true',  os: ubuntu-18.04,  },
-          { pkgs: 'clang-3.9',                         cc: clang-3.9, cxx: clang++-3.9, avx512: 'true',  os: ubuntu-18.04,  },
+          { pkgs: '',                                  cc: clang,     cxx: clang++,     os: ubuntu-latest, },
+          { pkgs: 'clang-15',                          cc: clang-15,  cxx: clang++-15,  os: ubuntu-22.04,  },
+          { pkgs: 'clang-14',                          cc: clang-14,  cxx: clang++-14,  os: ubuntu-22.04,  },
+          { pkgs: 'clang-13',                          cc: clang-13,  cxx: clang++-13,  os: ubuntu-22.04,  },
+          { pkgs: 'clang-12',                          cc: clang-12,  cxx: clang++-12,  os: ubuntu-22.04,  },
+          { pkgs: 'clang-11',                          cc: clang-11,  cxx: clang++-11,  os: ubuntu-22.04,  },
+          { pkgs: 'clang-10',                          cc: clang-10,  cxx: clang++-10,  os: ubuntu-20.04,  },
+          { pkgs: 'clang-9',                           cc: clang-9,   cxx: clang++-9,   os: ubuntu-20.04,  },
+          { pkgs: 'clang-8',                           cc: clang-8,   cxx: clang++-8,   os: ubuntu-20.04,  },
+          { pkgs: 'clang-7',                           cc: clang-7,   cxx: clang++-7,   os: ubuntu-20.04,  },
+          { pkgs: 'clang-6.0',                         cc: clang-6.0, cxx: clang++-6.0, os: ubuntu-20.04,  },
         ]
 
     runs-on: ${{ matrix.os }}
@@ -102,7 +107,7 @@ jobs:
       CC: ${{ matrix.cc }}
       CXX: ${{ matrix.cxx }}
     steps:
-    - uses: actions/checkout@v3 # https://github.com/actions/checkout
+    - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
 
     - name: apt-get install
       run: |
@@ -157,7 +162,6 @@ jobs:
         make clean noxxh3test
 
     - name: make avx512f
-      if: ${{ matrix.avx512 == 'true' }}
       run: |
         CFLAGS="-O1 -mavx512f -Werror" make clean default
 
@@ -171,7 +175,7 @@ jobs:
     name: Linux x64 check results consistency
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3 # https://github.com/actions/checkout
+    - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
 
     - name: Environment info
       run: |
@@ -206,11 +210,64 @@ jobs:
         make -C tests/bench
 
 
+  ubuntu-wasm:
+    name: Ubuntu Node ${{ matrix.node-version }} WebAssembly/asm.js tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16.x, 17.x, 18.x]
+
+    env:
+      EM_VERSION: 3.1.33 # TODO: more emsdk versions
+      EM_CACHE_FOLDER: emsdk-cache-${{ matrix.node-version }}
+      CC: emcc
+
+    steps:
+    - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+
+    - name: Setup cache
+      id: cache-system-libraries
+      uses: actions/cache@v4
+      with:
+        path: ${{env.EM_CACHE_FOLDER}}
+        key: em${{env.EM_VERSION}}-node${{ matrix.node-version }}-${{ runner.os }}
+
+    - name: Setup emsdk
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: ${{env.EM_VERSION}}
+        actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Environment info
+      run: |
+        echo && node -p '`node version: ${process.versions.node}, v8 version: ${process.versions.v8}`'
+        echo && emcc --version
+        echo && make -v
+        echo && cat /proc/cpuinfo || echo /proc/cpuinfo is not present
+
+    - name: Scalar code path
+      run: |
+        CPPFLAGS="-DXXH_VECTOR=XXH_SCALAR" RUN_ENV="node" NODE_JS=1 make clean check
+
+    - name: SIMD128 (via NEON SIMDe) code path (XXH_VECTOR=XXH_NEON)
+      run: |
+        CPPFLAGS="-DXXH_VECTOR=XXH_NEON -msimd128" RUN_ENV="node" NODE_JS=1 make clean check
+
+    - name: Scalar asm.js (-sWASM=0)
+      run: |
+        CPPFLAGS="-DXXH_VECTOR=XXH_SCALAR" RUN_ENV="node" NODE_JS=1 LDFLAGS="-sWASM=0" make clean check
+
+
   ubuntu-misc:
     name: Linux x64 misc tests
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3 # https://github.com/actions/checkout
+    - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
 
     - name: apt-get install
       run: |
@@ -249,11 +306,15 @@ jobs:
       run: |
         make clean test-filename-escape
 
+    - name: test-cli-comment-line
+      run: |
+        make clean test-cli-comment-line
+
   ubuntu-cmake-unofficial:
     name: Linux x64 cmake unofficial build test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3 # https://github.com/actions/checkout
+    - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
 
     - name: Environment info
       run: |
@@ -265,30 +326,43 @@ jobs:
     - name: cmake
       run: |
         cd cmake_unofficial
-        mkdir build
+        cmake -Bbuild
         cd build
-        cmake ..
         CFLAGS=-Werror make
-        mkdir test_install_dir
+        mkdir -p test_install_dir
         DESTDIR=test_install_dir cmake --install .
 
-    - name: cmake minimum version v2.8.12 test
+    - name: cmake pkgconfig generation
+      run: |
+        cd cmake_unofficial
+        pwd
+        ls
+        rm -rf build
+        cmake -Bbuild -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_INCLUDEDIR=/usr/include -DCMAKE_INSTALL_LIBDIR=/usr/lib
+        echo "checking content of libxxhash.pc"
+        cat build/libxxhash.pc | grep "libdir=/usr/lib"
+        cat build/libxxhash.pc | grep "includedir=/usr/include"
+
+    - name: cmake minimum version v3.5 test
       run: |
         mkdir -p cmake_bins
         cd cmake_bins
-        wget https://cmake.org/files/v2.8/cmake-2.8.12.2-Linux-i386.tar.gz
-        tar xzf cmake-2.8.12.2-Linux-i386.tar.gz
+        wget https://cmake.org/files/v3.5/cmake-3.5.0-Linux-i386.tar.gz
+        tar xzf cmake-3.5.0-Linux-i386.tar.gz
         cd ../cmake_unofficial
+        rm -rf build
+        pwd
+        ls
         mkdir -p build
         cd build
-        ../../cmake_bins/cmake-2.8.12.2-Linux-i386/bin/cmake --version
-        ../../cmake_bins/cmake-2.8.12.2-Linux-i386/bin/cmake ..
-        ../../cmake_bins/cmake-2.8.12.2-Linux-i386/bin/cmake --build .
+        ../../cmake_bins/cmake-3.5.0-Linux-i386/bin/cmake --version
+        ../../cmake_bins/cmake-3.5.0-Linux-i386/bin/cmake ..
+        ../../cmake_bins/cmake-3.5.0-Linux-i386/bin/cmake --build .
         mkdir -p test_install_dir
-        DESTDIR=test_install_dir ../../cmake_bins/cmake-2.8.12.2-Linux-i386/bin/cmake --install .
+        DESTDIR=test_install_dir ../../cmake_bins/cmake-3.5.0-Linux-i386/bin/cmake --install .
         rm -rf *
-        ../../cmake_bins/cmake-2.8.12.2-Linux-i386/bin/cmake -DCMAKE_BUILD_TYPE=Debug ..
-        ../../cmake_bins/cmake-2.8.12.2-Linux-i386/bin/cmake --build .
+        ../../cmake_bins/cmake-3.5.0-Linux-i386/bin/cmake -DCMAKE_BUILD_TYPE=Debug ..
+        ../../cmake_bins/cmake-3.5.0-Linux-i386/bin/cmake --build .
 
 
 
@@ -302,55 +376,47 @@ jobs:
       fail-fast: false  # 'false' means Don't stop matrix workflows even if some matrix failed.
       matrix:
         include: [
-          { name: 'ARM',             xcc_pkg: gcc-arm-linux-gnueabi,        xcc: arm-linux-gnueabi-gcc,        xemu_pkg: qemu-system-arm,   xemu: qemu-arm-static,     os: ubuntu-latest, },
-          { name: 'ARM64',           xcc_pkg: gcc-aarch64-linux-gnu,        xcc: aarch64-linux-gnu-gcc,        xemu_pkg: qemu-system-arm,   xemu: qemu-aarch64-static, os: ubuntu-latest, },
-          { name: 'PPC64LE',         xcc_pkg: gcc-powerpc64le-linux-gnu,    xcc: powerpc64le-linux-gnu-gcc,    xemu_pkg: qemu-system-ppc,   xemu: qemu-ppc64le-static, os: ubuntu-latest, },
-          { name: 'PPC64',           xcc_pkg: gcc-powerpc64-linux-gnu,      xcc: powerpc64-linux-gnu-gcc,      xemu_pkg: qemu-system-ppc,   xemu: qemu-ppc64-static,   os: ubuntu-latest, },
-          { name: 'S390X',           xcc_pkg: gcc-s390x-linux-gnu,          xcc: s390x-linux-gnu-gcc,          xemu_pkg: qemu-system-s390x, xemu: qemu-s390x-static,   os: ubuntu-latest, },
-          { name: 'MIPS',            xcc_pkg: gcc-mips-linux-gnu,           xcc: mips-linux-gnu-gcc,           xemu_pkg: qemu-system-mips,  xemu: qemu-mips-static,    os: ubuntu-latest, },
-          { name: 'M68K',            xcc_pkg: gcc-m68k-linux-gnu,           xcc: m68k-linux-gnu-gcc,           xemu_pkg: qemu-system-m68k,  xemu: qemu-m68k-static,    os: ubuntu-latest, },
+          { name: 'ARM',             xcc_pkg: gcc-arm-linux-gnueabi,        xcc: arm-linux-gnueabi-gcc,        xemu_pkg: qemu-system-arm,    xemu: qemu-arm-static,     os: ubuntu-latest, },
+          { name: 'AARCH64',         xcc_pkg: gcc-aarch64-linux-gnu,        xcc: aarch64-linux-gnu-gcc,        xemu_pkg: qemu-system-arm,    xemu: qemu-aarch64-static, os: ubuntu-latest, },
+          { name: 'PPC64LE',         xcc_pkg: gcc-powerpc64le-linux-gnu,    xcc: powerpc64le-linux-gnu-gcc,    xemu_pkg: qemu-system-ppc,    xemu: qemu-ppc64le-static, os: ubuntu-latest, },
+          { name: 'PPC64',           xcc_pkg: gcc-powerpc64-linux-gnu,      xcc: powerpc64-linux-gnu-gcc,      xemu_pkg: qemu-system-ppc,    xemu: qemu-ppc64-static,   os: ubuntu-latest, },
+          { name: 'S390X',           xcc_pkg: gcc-s390x-linux-gnu,          xcc: s390x-linux-gnu-gcc,          xemu_pkg: qemu-system-s390x,  xemu: qemu-s390x-static,   os: ubuntu-latest, },
+          { name: 'MIPS',            xcc_pkg: gcc-mips-linux-gnu,           xcc: mips-linux-gnu-gcc,           xemu_pkg: qemu-system-mips,   xemu: qemu-mips-static,    os: ubuntu-latest, },
+          { name: 'M68K',            xcc_pkg: gcc-m68k-linux-gnu,           xcc: m68k-linux-gnu-gcc,           xemu_pkg: qemu-system-m68k,   xemu: qemu-m68k-static,    os: ubuntu-latest, },
+          { name: 'RISC-V',          xcc_pkg: gcc-riscv64-linux-gnu,        xcc: riscv64-linux-gnu-gcc,        xemu_pkg: qemu-system-riscv64,xemu: qemu-riscv64-static, os: ubuntu-latest, },
+          # SPARC64 qemu emulation seems broken on Ubuntu-22
+          { name: 'SPARC',           xcc_pkg: gcc-sparc64-linux-gnu,        xcc: sparc64-linux-gnu-gcc,        xemu_pkg: qemu-system-sparc,  xemu: qemu-sparc64-static, os: ubuntu-20.04, },
 
           { name: 'ARM, gcc-10',     xcc_pkg: gcc-10-arm-linux-gnueabi,     xcc: arm-linux-gnueabi-gcc-10,     xemu_pkg: qemu-system-arm,   xemu: qemu-arm-static,     os: ubuntu-20.04, },
-          { name: 'ARM64, gcc-10',   xcc_pkg: gcc-10-aarch64-linux-gnu,     xcc: aarch64-linux-gnu-gcc-10,     xemu_pkg: qemu-system-arm,   xemu: qemu-aarch64-static, os: ubuntu-20.04, },
+          { name: 'AARCH64, gcc-10', xcc_pkg: gcc-10-aarch64-linux-gnu,     xcc: aarch64-linux-gnu-gcc-10,     xemu_pkg: qemu-system-arm,   xemu: qemu-aarch64-static, os: ubuntu-20.04, },
           { name: 'PPC64LE, gcc-10', xcc_pkg: gcc-10-powerpc64le-linux-gnu, xcc: powerpc64le-linux-gnu-gcc-10, xemu_pkg: qemu-system-ppc,   xemu: qemu-ppc64le-static, os: ubuntu-20.04, },
           { name: 'PPC64, gcc-10',   xcc_pkg: gcc-10-powerpc64-linux-gnu,   xcc: powerpc64-linux-gnu-gcc-10,   xemu_pkg: qemu-system-ppc,   xemu: qemu-ppc64-static,   os: ubuntu-20.04, },
           { name: 'S390X, gcc-10',   xcc_pkg: gcc-10-s390x-linux-gnu,       xcc: s390x-linux-gnu-gcc-10,       xemu_pkg: qemu-system-s390x, xemu: qemu-s390x-static,   os: ubuntu-20.04, },
           { name: 'MIPS, gcc-10',    xcc_pkg: gcc-10-mips-linux-gnu,        xcc: mips-linux-gnu-gcc-10,        xemu_pkg: qemu-system-mips,  xemu: qemu-mips-static,    os: ubuntu-20.04, },
 
           { name: 'ARM, gcc-9',      xcc_pkg: gcc-9-arm-linux-gnueabi,      xcc: arm-linux-gnueabi-gcc-9,      xemu_pkg: qemu-system-arm,   xemu: qemu-arm-static,     os: ubuntu-20.04, },
-          { name: 'ARM64, gcc-9',    xcc_pkg: gcc-9-aarch64-linux-gnu,      xcc: aarch64-linux-gnu-gcc-9,      xemu_pkg: qemu-system-arm,   xemu: qemu-aarch64-static, os: ubuntu-20.04, },
+          # SVE tests require at least gcc-10.1
+          # { name: 'AARCH64, gcc-9',  xcc_pkg: gcc-9-aarch64-linux-gnu,      xcc: aarch64-linux-gnu-gcc-9,      xemu_pkg: qemu-system-arm,   xemu: qemu-aarch64-static, os: ubuntu-20.04, },
           { name: 'PPC64LE, gcc-9',  xcc_pkg: gcc-9-powerpc64le-linux-gnu,  xcc: powerpc64le-linux-gnu-gcc-9,  xemu_pkg: qemu-system-ppc,   xemu: qemu-ppc64le-static, os: ubuntu-20.04, },
           { name: 'PPC64, gcc-9',    xcc_pkg: gcc-9-powerpc64-linux-gnu,    xcc: powerpc64-linux-gnu-gcc-9,    xemu_pkg: qemu-system-ppc,   xemu: qemu-ppc64-static,   os: ubuntu-20.04, },
           { name: 'S390X, gcc-9',    xcc_pkg: gcc-9-s390x-linux-gnu,        xcc: s390x-linux-gnu-gcc-9,        xemu_pkg: qemu-system-s390x, xemu: qemu-s390x-static,   os: ubuntu-20.04, },
           { name: 'MIPS, gcc-9',     xcc_pkg: gcc-9-mips-linux-gnu,         xcc: mips-linux-gnu-gcc-9,         xemu_pkg: qemu-system-mips,  xemu: qemu-mips-static,    os: ubuntu-20.04, },
 
           { name: 'ARM, gcc-8',      xcc_pkg: gcc-8-arm-linux-gnueabi,      xcc: arm-linux-gnueabi-gcc-8,      xemu_pkg: qemu-system-arm,   xemu: qemu-arm-static,     os: ubuntu-20.04, },
-          { name: 'ARM64, gcc-8',    xcc_pkg: gcc-8-aarch64-linux-gnu,      xcc: aarch64-linux-gnu-gcc-8,      xemu_pkg: qemu-system-arm,   xemu: qemu-aarch64-static, os: ubuntu-20.04, },
+          # aarch64-linux-gnu-gcc-8 linker has an issue for LDFLAGS="-static"
+          # { name: 'AARCH64, gcc-8',  xcc_pkg: gcc-8-aarch64-linux-gnu,      xcc: aarch64-linux-gnu-gcc-8,      xemu_pkg: qemu-system-arm,   xemu: qemu-aarch64-static, os: ubuntu-20.04, },
           { name: 'PPC64LE, gcc-8',  xcc_pkg: gcc-8-powerpc64le-linux-gnu,  xcc: powerpc64le-linux-gnu-gcc-8,  xemu_pkg: qemu-system-ppc,   xemu: qemu-ppc64le-static, os: ubuntu-20.04, },
           { name: 'PPC64, gcc-8',    xcc_pkg: gcc-8-powerpc64-linux-gnu,    xcc: powerpc64-linux-gnu-gcc-8,    xemu_pkg: qemu-system-ppc,   xemu: qemu-ppc64-static,   os: ubuntu-20.04, },
           { name: 'S390X, gcc-8',    xcc_pkg: gcc-8-s390x-linux-gnu,        xcc: s390x-linux-gnu-gcc-8,        xemu_pkg: qemu-system-s390x, xemu: qemu-s390x-static,   os: ubuntu-20.04, },
           # ubuntu-20.04 fails to retrieve gcc-8-mips-linux-gnu for some reason.
-          { name: 'MIPS, gcc-8',     xcc_pkg: gcc-8-mips-linux-gnu,         xcc: mips-linux-gnu-gcc-8,         xemu_pkg: qemu-system-mips,  xemu: qemu-mips-static,    os: ubuntu-18.04, },
-
-          { name: 'ARM, gcc-7',      xcc_pkg: gcc-7-arm-linux-gnueabi,      xcc: arm-linux-gnueabi-gcc-7,      xemu_pkg: qemu-system-arm,   xemu: qemu-arm-static,     os: ubuntu-18.04, },
-          { name: 'ARM64, gcc-7',    xcc_pkg: gcc-7-aarch64-linux-gnu,      xcc: aarch64-linux-gnu-gcc-7,      xemu_pkg: qemu-system-arm,   xemu: qemu-aarch64-static, os: ubuntu-18.04, },
-          { name: 'PPC64LE, gcc-7',  xcc_pkg: gcc-7-powerpc64le-linux-gnu,  xcc: powerpc64le-linux-gnu-gcc-7,  xemu_pkg: qemu-system-ppc,   xemu: qemu-ppc64le-static, os: ubuntu-18.04, },
-          { name: 'PPC64, gcc-7',    xcc_pkg: gcc-7-powerpc64-linux-gnu,    xcc: powerpc64-linux-gnu-gcc-7,    xemu_pkg: qemu-system-ppc,   xemu: qemu-ppc64-static,   os: ubuntu-18.04, },
-          { name: 'S390X, gcc-7',    xcc_pkg: gcc-7-s390x-linux-gnu,        xcc: s390x-linux-gnu-gcc-7,        xemu_pkg: qemu-system-s390x, xemu: qemu-s390x-static,   os: ubuntu-18.04, },
-          { name: 'MIPS, gcc-7',     xcc_pkg: gcc-7-mips-linux-gnu,         xcc: mips-linux-gnu-gcc-7,         xemu_pkg: qemu-system-mips,  xemu: qemu-mips-static,    os: ubuntu-18.04, },
-
-          { name: 'ARM, gcc-6',      xcc_pkg: gcc-6-arm-linux-gnueabi,      xcc: arm-linux-gnueabi-gcc-6,      xemu_pkg: qemu-system-arm,   xemu: qemu-arm-static,     os: ubuntu-18.04, },
-          { name: 'ARM64, gcc-6',    xcc_pkg: gcc-6-aarch64-linux-gnu,      xcc: aarch64-linux-gnu-gcc-6,      xemu_pkg: qemu-system-arm,   xemu: qemu-aarch64-static, os: ubuntu-18.04, },
-          { name: 'PPC64LE, gcc-6',  xcc_pkg: gcc-6-powerpc64le-linux-gnu,  xcc: powerpc64le-linux-gnu-gcc-6,  xemu_pkg: qemu-system-ppc,   xemu: qemu-ppc64le-static, os: ubuntu-18.04, },
-          { name: 'PPC64, gcc-6',    xcc_pkg: gcc-6-powerpc64-linux-gnu,    xcc: powerpc64-linux-gnu-gcc-6,    xemu_pkg: qemu-system-ppc,   xemu: qemu-ppc64-static,   os: ubuntu-18.04, },
-          { name: 'S390X, gcc-6',    xcc_pkg: gcc-6-s390x-linux-gnu,        xcc: s390x-linux-gnu-gcc-6,        xemu_pkg: qemu-system-s390x, xemu: qemu-s390x-static,   os: ubuntu-18.04, },
-          { name: 'MIPS, gcc-6',     xcc_pkg: gcc-6-mips-linux-gnu,         xcc: mips-linux-gnu-gcc-6,         xemu_pkg: qemu-system-mips,  xemu: qemu-mips-static,    os: ubuntu-18.04, },
+          # { name: 'MIPS, gcc-8',   xcc_pkg: gcc-8-mips-linux-gnu,         xcc: mips-linux-gnu-gcc-8,         xemu_pkg: qemu-system-mips,  xemu: qemu-mips-static,    os: ubuntu-20.04, },
         ]
     env:                        # Set environment variables
       XCC: ${{ matrix.xcc }}
       XEMU: ${{ matrix.xemu }}
+      MOREFLAGS: -Werror
     steps:
-    - uses: actions/checkout@v3 # https://github.com/actions/checkout
+    - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
     - name: apt update & install (1)
       run: |
         sudo apt-get update
@@ -373,46 +439,43 @@ jobs:
         echo && $XEMU --version
 
     - name: ARM (XXH_VECTOR=[ scalar, NEON ])
-      if: ${{ matrix.name == 'ARM' }}
+      if: ${{ startsWith(matrix.name, 'ARM') }}
       run: |
         CPPFLAGS="-DXXH_VECTOR=XXH_SCALAR" LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
         CPPFLAGS="-DXXH_VECTOR=XXH_NEON" CFLAGS="-O3 -march=armv7-a -fPIC -mfloat-abi=softfp -mfpu=neon-vfpv4" LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
+        make -C tests clean
+        CPPFLAGS="-DXXH_VECTOR=XXH_SCALAR" LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make -C tests sanity_test_vectors.h test_sanity
 
-    - name: ARM64 (XXH_VECTOR=[ scalar, NEON, SVE ])
-      if: ${{ matrix.name == 'ARM64' }}
+    - name: AARCH64 (XXH_VECTOR=[ scalar, NEON, SVE ])
+      if: ${{ startsWith(matrix.name, 'AARCH64') }}
       run: |
         CPPFLAGS="-DXXH_VECTOR=XXH_SCALAR" LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
         CPPFLAGS="-DXXH_VECTOR=XXH_NEON" LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
-        CPPFLAGS="-DXXH_VECTOR=XXH_SVE" LDFLAGS="-static" CC=$XCC RUN_ENV="$XEMU -cpu max,sve128=on,sve256=off,sve512=off,sve1024=off,sve2048=off" make clean check
-        CPPFLAGS="-DXXH_VECTOR=XXH_SVE" LDFLAGS="-static" CC=$XCC RUN_ENV="$XEMU -cpu max,sve128=on,sve256=on,sve512=off,sve1024=off,sve2048=off" make clean check
-        CPPFLAGS="-DXXH_VECTOR=XXH_SVE" LDFLAGS="-static" CC=$XCC RUN_ENV="$XEMU -cpu max,sve128=on,sve256=on,sve512=on,sve1024=off,sve2048=off" make clean check
-        CPPFLAGS="-DXXH_VECTOR=XXH_SVE" LDFLAGS="-static" CC=$XCC RUN_ENV="$XEMU -cpu max,sve128=on,sve256=on,sve512=on,sve1024=on,sve2048=off" make clean check
-        CPPFLAGS="-DXXH_VECTOR=XXH_SVE" LDFLAGS="-static" CC=$XCC RUN_ENV="$XEMU -cpu max,sve128=on,sve256=on,sve512=on,sve1024=on,sve2048=on" make clean check
+        CPPFLAGS="-DXXH_VECTOR=XXH_SVE" LDFLAGS="-static" CC="$XCC -march=armv8.2-a+sve" RUN_ENV="$XEMU -cpu max,sve128=on,sve256=off,sve512=off,sve1024=off,sve2048=off" make clean check
+        CPPFLAGS="-DXXH_VECTOR=XXH_SVE" LDFLAGS="-static" CC="$XCC -march=armv8.2-a+sve" RUN_ENV="$XEMU -cpu max,sve128=on,sve256=on,sve512=off,sve1024=off,sve2048=off" make clean check
+        CPPFLAGS="-DXXH_VECTOR=XXH_SVE" LDFLAGS="-static" CC="$XCC -march=armv8.2-a+sve" RUN_ENV="$XEMU -cpu max,sve128=on,sve256=on,sve512=on,sve1024=off,sve2048=off" make clean check
+        CPPFLAGS="-DXXH_VECTOR=XXH_SVE" LDFLAGS="-static" CC="$XCC -march=armv8.2-a+sve" RUN_ENV="$XEMU -cpu max,sve128=on,sve256=on,sve512=on,sve1024=on,sve2048=off" make clean check
+        CPPFLAGS="-DXXH_VECTOR=XXH_SVE" LDFLAGS="-static" CC="$XCC -march=armv8.2-a+sve" RUN_ENV="$XEMU -cpu max,sve128=on,sve256=on,sve512=on,sve1024=on,sve2048=on" make clean check
 
-    - name: ${{ matrix.name }} (XXH_VECTOR=[ scalar, VSX ])
+    - name: PPC64(LE) (XXH_VECTOR=[ scalar, VSX ])
       if: ${{ startsWith(matrix.name, 'PPC64') }}
       run: |
         CPPFLAGS="-DXXH_VECTOR=XXH_SCALAR" LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
         CPPFLAGS="-DXXH_VECTOR=XXH_VSX" CFLAGS="-O3 -maltivec -mvsx -mpower8-vector -mcpu=power8" LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
 
     - name: S390X (XXH_VECTOR=[ scalar, VSX ])
-      if: ${{ matrix.name == 'S390X' }}
+      if: ${{ startsWith(matrix.name, 'S390X') }}
       run: |
         CPPFLAGS="-DXXH_VECTOR=XXH_SCALAR" LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
         CPPFLAGS=-DXXH_VECTOR=XXH_VSX CFLAGS="-O3 -march=arch11 -mzvector" LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
 
-    - name: MIPS (XXH_VECTOR=[ scalar ])
-      if: ${{ matrix.name == 'MIPS' }}
+    - name: MIPS-M68K-RISCV-SPARC (XXH_VECTOR=[ scalar ])
+      if: ${{ startsWith(matrix.name, 'MIPS') || startsWith(matrix.name, 'M68K') || startsWith(matrix.name, 'RISC-V') || startsWith(matrix.name, 'SPARC') }}
       run: |
-        LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
-
-    - name: M68K (XXH_VECTOR=[ scalar ])
-      if: ${{ matrix.name == 'M68K' }}
-      run: |
-        LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make clean check
+        make clean; LDFLAGS="-static" CC=$XCC RUN_ENV=$XEMU make check
 
 
-  # macOS, { 11 }
+  # macOS
 
   macos-general:
     name: ${{ matrix.system.os }}
@@ -421,10 +484,11 @@ jobs:
       fail-fast: false  # 'false' means Don't stop matrix workflows even if some matrix failed.
       matrix:
         system: [
-          { os: macos-11    },
+          { os: macos-12     },
+          { os: macos-latest },
         ]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
 
     - name: Environment info
       run: |
@@ -441,7 +505,7 @@ jobs:
         make clean test MOREFLAGS='-Werror' | tee
 
 
-  # Windows, { VC++2022, VC++2019, VC++2017 } x { x64, Win32, ARM, ARM64 }
+  # Windows, { VC++2022, VC++2019 } x { x64, Win32, ARM, ARM64 }
   #
   # - Default shell for Windows environment is PowerShell Core.
   #   https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#using-a-specific-shell
@@ -456,22 +520,23 @@ jobs:
     name: ${{ matrix.system.vc }}, ${{ matrix.arch }}
     runs-on: ${{ matrix.system.os }}   # Runs-on foreach value of strategy.matrix.system.os
     strategy:
-      fail-fast: false  # 'false' means Don't stop matrix workflows even if some matrix failed.
+      fail-fast: false  # 'false' means: Don't stop matrix workflows even if some matrix failed.
       matrix:
         system: [
-          { os: windows-2022, vc: "VC++ 2022", clangcl: 'false', }, # CMake failed to configure clang-cl with VC++2022.
-          { os: windows-2019, vc: "VC++ 2019", clangcl: 'true',  },
+          { os: windows-2022, vc: "VC++ 2022", clangcl: 'true', },
+          { os: windows-2019, vc: "VC++ 2019", clangcl: 'true', },
         ]
         arch: [ x64, Win32, ARM, ARM64 ]
+
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
 
     - name: Build ${{ matrix.system.os }}, ${{ matrix.arch }}
       run: |
         cd cmake_unofficial
         mkdir build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -A ${{ matrix.arch }} -DXXHASH_C_FLAGS="/WX"
+        cmake .. -DCMAKE_BUILD_TYPE=Release -A ${{ matrix.arch }} -DCMAKE_C_FLAGS="/W4 /WX"
         cmake --build . --config Release
 
     - name: Test
@@ -479,6 +544,24 @@ jobs:
       if: ${{ matrix.arch == 'x64' || matrix.arch == 'Win32' }}
       run: |
         .\cmake_unofficial\build\Release\xxhsum.exe -bi1
+
+    - name: Build ${{ matrix.system.os }}, ${{ matrix.arch }}, with DISPATCH
+      # DISPATCH only if target arch is x64 or Win32.
+      if: ${{ ( matrix.arch == 'x64' || matrix.arch == 'Win32' ) }}
+      run: |
+        cd cmake_unofficial
+        mkdir build-visual-dispatch
+        cd build-visual-dispatch
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DDISPATCH=ON -A x64 -DCMAKE_C_FLAGS="/W4 /WX"
+        cmake --build . --config Release
+
+    - name: Runtime Test (DISPATCH)
+      # Run benchmark for testing only if target arch is x64 or Win32.
+      if: ${{ ( matrix.arch == 'x64' || matrix.arch == 'Win32' ) }}
+      run: |
+        .\cmake_unofficial\build-visual-dispatch\Release\xxhsum.exe -V | grep autoVec
+        .\cmake_unofficial\build-visual-dispatch\Release\xxhsum.exe -bi1
+
 
     - name: Build ${{ matrix.system.os }}, clang-cl, ${{ matrix.arch }}
       if: ${{ matrix.system.clangcl == 'true' }}
@@ -494,6 +577,7 @@ jobs:
       if: ${{ matrix.system.clangcl == 'true' && ( matrix.arch == 'x64' || matrix.arch == 'Win32' ) }}
       run: |
         .\cmake_unofficial\build-clang-cl\Release\xxhsum.exe -bi1
+
 
 
   # Windows, { mingw64, mingw32 }
@@ -517,8 +601,8 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
-      - uses: actions/checkout@v3  # https://github.com/actions/checkout
-      - uses: msys2/setup-msys2@v2 # https://github.com/msys2/setup-msys2
+      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+      - uses: msys2/setup-msys2@7efe20baefed56359985e327d329042cde2434ff # v2
         with:
           msystem: MSYS
           install: mingw-w64-i686-make ${{ matrix.toolchain }}
@@ -548,52 +632,3 @@ jobs:
           # Expected output is "./xxhsum.exe: PE32 executable (console) Intel 80386, for MS Windows"
           file ./xxhsum.exe | grep -q '80386' || $(exit 1)
           ./xxhsum.exe --version
-
-  tipi-build-linux:
-    name: tipi.build project build and dependency resolution
-    runs-on: ubuntu-latest
-    container: tipibuild/tipi-ubuntu
-
-    env:
-      HOME: /root
-
-    steps:
-      - uses: actions/checkout@v3
-        # FIX: we currently need a full clone
-        with:
-          fetch-depth: '0'
-      - run: |
-          mkdir -p /usr/local/share/.tipi
-          # FIX: Hack for github action
-          git config --global --add safe.directory /usr/local/share/.tipi
-          git config --global --add safe.directory /__w/xxHash/xxHash/
-
-      # checking if the xxHash project builds and passes tests
-      - name: Build as project target linux-cxx17 (run test multiInclude)
-        run: tipi . --dont-upgrade --verbose --test multiInclude -t linux-cxx17
-
-      - name: Build as project target linux-cxx20 (run test multiInclude)
-        run: tipi . --dont-upgrade --verbose --test multiInclude -t linux-cxx20
-
-      - name: Cleanup project builds
-        run: rm -r ./build
-
-      # trying if pulling the dependency with tipi works properly
-      #
-      # note: the xxhashsum sources include xxhash using a #include "../xxhash.h" 
-      # this defeats the purpose of this test AND becase a bug post tipi v0.0.35 
-      # because of source mirroring (not) supporting relative include to locations
-      # outside of the project tree. 
-      #
-      # because of this we create a copy of the ./cli and apply some sed magic 
-      # to make the includes proper 'library' includes to simulate what someone
-      # consuming xxHash would do
-      #
-      # e.g. turning #include "../xxhash.h" => #include <xxhash.h>
-      - name: Build as dependency
-        run: |
-          cp -a ./cli ./cli-tipi
-          cd ./cli-tipi
-          find ./ -type f -iname "*.c" | xargs sed -i 's;"../xxhash.h";<xxhash.h>;g'
-          tipi . --dont-upgrade --verbose -t linux-cxx17
-          ./build/linux-cxx17/bin/xsum_os_specific

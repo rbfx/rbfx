@@ -92,7 +92,6 @@ public:
     ShaderVariableVkImpl* GetVariable(const Char* Name) const;
     ShaderVariableVkImpl* GetVariable(Uint32 Index) const;
 
-    // Binds object pObj to resource with index ResIndex and array index ArrayIndex.
     void BindResource(Uint32 ResIndex, const BindResourceInfo& BindInfo);
 
     void SetBufferDynamicOffset(Uint32 ResIndex,

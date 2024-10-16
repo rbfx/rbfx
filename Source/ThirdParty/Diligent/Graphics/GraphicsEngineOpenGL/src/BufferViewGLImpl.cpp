@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -95,7 +95,7 @@ BufferViewGLImpl::BufferViewGLImpl(IReferenceCounters*   pRefCounters,
                                 "Only full-buffer views can be created on this device.");
 #endif
         }
-        CHECK_GL_ERROR_AND_THROW("Failed to create texture buffer");
+        DEV_CHECK_GL_ERROR_AND_THROW("Failed to create texture buffer");
 
         CtxState.BindTexture(-1, GL_TEXTURE_BUFFER, GLObjectWrappers::GLTextureObj(false));
 

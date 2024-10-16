@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -84,6 +84,10 @@
 
 #define glTexBuffer(...) 0
 
+#ifndef GL_FRAMEBUFFER_SRGB
+#    define GL_FRAMEBUFFER_SRGB 0x8DB9
+#endif
+
 #ifndef GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER
 #    define GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER 0x8CDB
 #endif
@@ -163,7 +167,7 @@
 #endif
 
 #ifndef GL_DEPTH_CLAMP
-#    define GL_DEPTH_CLAMP 0
+#    define GL_DEPTH_CLAMP 0x864F
 #endif
 
 
@@ -551,6 +555,15 @@
 #endif
 
 
+#ifndef GL_TEXTURE_MAX_ANISOTROPY_EXT
+#    define GL_TEXTURE_MAX_ANISOTROPY_EXT 0x84FE
+#endif
+
+#ifndef GL_MAX_TEXTURE_MAX_ANISOTROPY
+#    define GL_MAX_TEXTURE_MAX_ANISOTROPY 0x84FF
+#endif
+
+
 #ifndef GL_DOUBLE
 #    define GL_DOUBLE 0x140A
 #endif
@@ -604,6 +617,11 @@
 #endif
 
 
+#ifndef GL_COMPLETION_STATUS_KHR
+#    define GL_COMPLETION_STATUS_KHR 0x91B1
+#endif
+
+
 // Define unsupported GL function stubs
 template <typename T>
 void UnsupportedGLFunctionStub(const T& Name)
@@ -616,6 +634,10 @@ void UnsupportedGLFunctionStub(const T& Name)
 #define glDrawElementsInstancedBaseInstance(...)           UnsupportedGLFunctionStub("glDrawElementsInstancedBaseInstance")
 #define glDrawArraysInstancedBaseInstance(...)             UnsupportedGLFunctionStub("glDrawArraysInstancedBaseInstance")
 #define glDrawElementsBaseVertex(...)                      UnsupportedGLFunctionStub("glDrawElementsBaseVertex")
+#define glMultiDrawArrays(...)                             UnsupportedGLFunctionStub("glMultiDrawArrays")
+#define glMultiDrawElements(...)                           UnsupportedGLFunctionStub("glMultiDrawElements")
+#define glMultiDrawElementsBaseVertex(...)                 UnsupportedGLFunctionStub("glMultiDrawElementsBaseVertex")
+
 static void (*glTextureView)(GLuint texture, GLenum target, GLuint origtexture, GLenum internalformat, GLuint minlevel, GLuint numlevels, GLuint minlayer, GLuint numlayers) = nullptr;
 #define glTexStorage1D(...)            UnsupportedGLFunctionStub("glTexStorage1D")
 #define glTexSubImage1D(...)           UnsupportedGLFunctionStub("glTexSubImage1D")
@@ -631,6 +653,7 @@ static void (*glPolygonMode)(GLenum face, GLenum mode) = nullptr;
 #define glColorMaski(...)             UnsupportedGLFunctionStub("glColorMaski")
 #define glFramebufferTexture(...)     UnsupportedGLFunctionStub("glFramebufferTexture")
 #define glFramebufferTexture1D(...)   UnsupportedGLFunctionStub("glFramebufferTexture1D")
+#define glCopyTexSubImage1D(...)      UnsupportedGLFunctionStub("glCopyTexSubImage1D")
 #define glClipControl(...)            UnsupportedGLFunctionStub("glClipControl")
 static void (*glGetQueryObjectui64v)(GLuint id, GLenum pname, GLuint64* params) = nullptr;
 

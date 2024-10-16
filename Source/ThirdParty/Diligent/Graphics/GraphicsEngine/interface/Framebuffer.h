@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,7 +41,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {05DA9E47-3CA6-4F96-A967-1DDDC53181A6}
-static const struct INTERFACE_ID IID_Framebuffer =
+static DILIGENT_CONSTEXPR struct INTERFACE_ID IID_Framebuffer =
     { 0x5da9e47, 0x3ca6, 0x4f96, { 0xa9, 0x67, 0x1d, 0xdd, 0xc5, 0x31, 0x81, 0xa6 } };
 
 /// Framebuffer description.

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,11 +36,21 @@ namespace Diligent
 
 void AndroidDebug::AssertionFailed(const Char* Message, const char* Function, const char* File, int Line)
 {
-    auto AssertionFailedMessage = FormatAssertionFailedMessage(Message, Function, File, Line);
-    OutputDebugMessage(DEBUG_MESSAGE_SEVERITY_ERROR, AssertionFailedMessage.c_str(), nullptr, nullptr, 0);
+    String AssertionFailedMessage = FormatAssertionFailedMessage(Message, Function, File, Line);
+    if (DebugMessageCallback)
+    {
+        DebugMessageCallback(DEBUG_MESSAGE_SEVERITY_ERROR, AssertionFailedMessage.c_str(), nullptr, nullptr, 0);
+    }
+    else
+    {
+        OutputDebugMessage(DEBUG_MESSAGE_SEVERITY_ERROR, AssertionFailedMessage.c_str(), nullptr, nullptr, 0);
+    }
 
-    raise(SIGTRAP);
-};
+    if (GetBreakOnError())
+    {
+        raise(SIGTRAP);
+    }
+}
 
 void AndroidDebug::OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity,
                                       const Char*            Message,

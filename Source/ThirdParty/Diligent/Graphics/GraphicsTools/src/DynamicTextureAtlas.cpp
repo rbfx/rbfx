@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -384,6 +384,7 @@ public:
         // clang-format off
         m_MinAlignment    {CreateInfo.MinAlignment},
         m_ExtraSliceCount {CreateInfo.ExtraSliceCount},
+        m_ExtraSliceFactor{clamp(CreateInfo.GrowthFactor, 1.f, 2.f) - 1.f},
         m_MaxSliceCount   {CreateInfo.Desc.Type == RESOURCE_DIM_TEX_2D_ARRAY ? std::min(CreateInfo.MaxSliceCount, Uint32{2048}) : 1},
         m_Silent          {CreateInfo.Silent},
         m_SuballocationsAllocator
@@ -449,7 +450,7 @@ public:
 
     IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_DynamicTextureAtlas, TBase)
 
-    virtual ITexture* GetTexture(IRenderDevice* pDevice, IDeviceContext* pContext) override final
+    virtual ITexture* Update(IRenderDevice* pDevice, IDeviceContext* pContext) override final
     {
         if (m_DynamicTexArray)
         {
@@ -459,7 +460,7 @@ public:
                 m_DynamicTexArray->Resize(pDevice, pContext, ArraySize);
             }
 
-            return m_DynamicTexArray->GetTexture(pDevice, pContext);
+            return m_DynamicTexArray->Update(pDevice, pContext);
         }
         else
         {
@@ -473,6 +474,13 @@ public:
 
             return m_pTexture;
         }
+    }
+
+    virtual ITexture* GetTexture() const override final
+    {
+        return m_DynamicTexArray ?
+            m_DynamicTexArray->GetTexture() :
+            m_pTexture;
     }
 
     virtual Uint32 GetAllocationAlignment(Uint32 Width, Uint32 Height) const override final
@@ -681,7 +689,7 @@ private:
         {
             const auto ExtraSliceCount = m_ExtraSliceCount != 0 ?
                 m_ExtraSliceCount :
-                std::max(m_TexArraySize.load(), 1u);
+                std::max(static_cast<Uint32>(static_cast<float>(m_TexArraySize.load()) * m_ExtraSliceFactor), 1u);
 
             m_TexArraySize.store(std::min(m_TexArraySize + ExtraSliceCount, m_MaxSliceCount));
         }
@@ -714,6 +722,7 @@ private:
 
     const Uint32 m_MinAlignment;
     const Uint32 m_ExtraSliceCount;
+    const float  m_ExtraSliceFactor;
     const Uint32 m_MaxSliceCount;
     const bool   m_Silent;
 

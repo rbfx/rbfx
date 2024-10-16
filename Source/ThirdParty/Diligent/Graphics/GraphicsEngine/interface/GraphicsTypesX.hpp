@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@
 #include <utility>
 #include <string>
 #include <unordered_set>
+#include <memory>
 
 #include "RenderPass.h"
 #include "InputLayout.h"
@@ -43,6 +44,7 @@
 #include "RenderDevice.h"
 #include "../../../Platforms/Basic/interface/DebugUtilities.hpp"
 #include "../../../Common/interface/RefCntAutoPtr.hpp"
+#include "../../GraphicsAccessories/interface/GraphicsAccessories.hpp"
 
 namespace Diligent
 {
@@ -431,6 +433,14 @@ struct InputLayoutDescX
         return Add(Elem);
     }
 
+    InputLayoutDescX& Remove(Uint32 ElemIndex)
+    {
+        VERIFY_EXPR(ElemIndex < Desc.NumElements);
+        Elements.erase(Elements.begin() + ElemIndex);
+        SyncDesc();
+        return *this;
+    }
+
     void Clear()
     {
         InputLayoutDescX EmptyDesc;
@@ -440,6 +450,11 @@ struct InputLayoutDescX
     const InputLayoutDesc& Get() const noexcept
     {
         return Desc;
+    }
+
+    Uint32 GetNumElements() const noexcept
+    {
+        return Desc.NumElements;
     }
 
     operator const InputLayoutDesc&() const noexcept
@@ -463,6 +478,22 @@ struct InputLayoutDescX
     bool operator!=(const InputLayoutDescX& RHS) const noexcept
     {
         return *this != static_cast<const InputLayoutDesc&>(RHS);
+    }
+
+    const LayoutElement& operator[](size_t Index) const noexcept
+    {
+        return Elements[Index];
+    }
+
+    LayoutElement& operator[](size_t Index) noexcept
+    {
+        return Elements[Index];
+    }
+
+    std::vector<Uint32> ResolveAutoOffsetsAndStrides()
+    {
+        VERIFY_EXPR(Desc.NumElements == Elements.size());
+        return ResolveInputLayoutAutoOffsetsAndStrides(Elements.data(), Desc.NumElements);
     }
 
 private:
@@ -737,6 +768,13 @@ struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSig
         return SyncDesc();
     }
 
+    PipelineResourceSignatureDescX& RemoveResource(size_t Idx)
+    {
+        VERIFY_EXPR(Idx < ResCopy.size());
+        ResCopy.erase(ResCopy.begin() + Idx);
+        return SyncDesc();
+    }
+
     PipelineResourceSignatureDescX& RemoveImmutableSampler(const char* SamName, SHADER_TYPE Stages = SHADER_TYPE_ALL)
     {
         VERIFY_EXPR(!IsNullOrEmptyStr(SamName));
@@ -747,6 +785,13 @@ struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSig
             else
                 ++it;
         }
+        return SyncDesc();
+    }
+
+    PipelineResourceSignatureDescX& RemoveImmutableSampler(size_t Idx)
+    {
+        VERIFY_EXPR(Idx < ImtblSamCopy.size());
+        ImtblSamCopy.erase(ImtblSamCopy.begin() + Idx);
         return SyncDesc();
     }
 
@@ -787,6 +832,16 @@ struct PipelineResourceSignatureDescX : DeviceObjectAttribsX<PipelineResourceSig
         PipelineResourceSignatureDescX CleanDesc;
         std::swap(*this, CleanDesc);
         return *this;
+    }
+
+    const PipelineResourceDesc& GetResource(size_t Index) const
+    {
+        return ResCopy[Index];
+    }
+
+    const ImmutableSamplerDesc& GetImmutableSampler(size_t Index) const
+    {
+        return ImtblSamCopy[Index];
     }
 
 private:
@@ -1142,6 +1197,8 @@ private:
     std::unordered_set<std::string>  StringPool;
 };
 
+std::unique_ptr<Uint8[]> CopyPSOCreateInternalInfo(void* pData);
+
 /// C++ wrapper over PipelineStateCreateInfo
 
 template <typename DerivedType, typename CreateInfoType>
@@ -1151,13 +1208,17 @@ struct PipelineStateCreateInfoX : CreateInfoType
     {}
 
     PipelineStateCreateInfoX(const CreateInfoType& CI) noexcept :
-        CreateInfoType{CI}
+        CreateInfoType{CI},
+        ResourceLayout{CI.PSODesc.ResourceLayout},
+        InternalData{CopyPSOCreateInternalInfo(CI.pInternalData)}
     {
         SetName(this->PSODesc.Name);
         for (size_t i = 0; i < CI.ResourceSignaturesCount; ++i)
             AddSignature(CI.ppResourceSignatures[i]);
         if (CI.pPSOCache != nullptr)
             SetPipelineStateCache(CI.pPSOCache);
+        this->PSODesc.ResourceLayout = ResourceLayout;
+        this->pInternalData          = InternalData.get();
     }
 
     explicit PipelineStateCreateInfoX(const char* Name)
@@ -1186,7 +1247,8 @@ struct PipelineStateCreateInfoX : CreateInfoType
 
     DerivedType& SetResourceLayout(const PipelineResourceLayoutDesc& LayoutDesc) noexcept
     {
-        this->PSODesc.ResourceLayout = LayoutDesc;
+        ResourceLayout               = LayoutDesc;
+        this->PSODesc.ResourceLayout = ResourceLayout;
         return static_cast<DerivedType&>(*this);
     }
     template <typename... ArgsType>
@@ -1303,9 +1365,11 @@ protected:
     }
 
 protected:
+    PipelineResourceLayoutDescX               ResourceLayout;
     std::unordered_set<std::string>           StringPool;
     std::vector<RefCntAutoPtr<IDeviceObject>> Objects;
     std::vector<IPipelineResourceSignature*>  Signatures;
+    std::unique_ptr<Uint8[]>                  InternalData;
 };
 
 
@@ -1316,8 +1380,11 @@ struct GraphicsPipelineStateCreateInfoX : PipelineStateCreateInfoX<GraphicsPipel
     {}
 
     GraphicsPipelineStateCreateInfoX(const GraphicsPipelineStateCreateInfo& CI) :
-        PipelineStateCreateInfoX{CI}
+        PipelineStateCreateInfoX{CI},
+        InputLayout{CI.GraphicsPipeline.InputLayout}
     {
+        GraphicsPipeline.InputLayout = InputLayout;
+
         if (pVS != nullptr) Objects.emplace_back(pVS);
         if (pPS != nullptr) Objects.emplace_back(pPS);
         if (pDS != nullptr) Objects.emplace_back(pDS);
@@ -1441,7 +1508,8 @@ struct GraphicsPipelineStateCreateInfoX : PipelineStateCreateInfoX<GraphicsPipel
 
     GraphicsPipelineStateCreateInfoX& SetInputLayout(const InputLayoutDesc& LayoutDesc) noexcept
     {
-        GraphicsPipeline.InputLayout = LayoutDesc;
+        InputLayout                  = LayoutDesc;
+        GraphicsPipeline.InputLayout = InputLayout;
         return *this;
     }
 
@@ -1510,6 +1578,9 @@ struct GraphicsPipelineStateCreateInfoX : PipelineStateCreateInfoX<GraphicsPipel
         std::swap(*this, CleanDesc);
         return *this;
     }
+
+private:
+    InputLayoutDescX InputLayout;
 };
 
 
@@ -1573,6 +1644,13 @@ struct ComputePipelineStateCreateInfoX : PipelineStateCreateInfoX<ComputePipelin
         if (pCS == pShader) pCS = nullptr;
 
         return RemoveObject(pShader);
+    }
+
+    ComputePipelineStateCreateInfoX& Clear()
+    {
+        ComputePipelineStateCreateInfoX CleanDesc;
+        std::swap(*this, CleanDesc);
+        return *this;
     }
 };
 
@@ -1651,6 +1729,13 @@ struct TilePipelineStateCreateInfoX : PipelineStateCreateInfoX<TilePipelineState
         TilePipeline.RTVFormats[TilePipeline.NumRenderTargets++] = RTVFormat;
         return *this;
     }
+
+    TilePipelineStateCreateInfoX& Clear()
+    {
+        TilePipelineStateCreateInfoX CleanDesc;
+        std::swap(*this, CleanDesc);
+        return *this;
+    }
 };
 
 /// C++ wrapper over RayTracingPipelineStateCreateInfo
@@ -1671,7 +1756,7 @@ struct RayTracingPipelineStateCreateInfoX : PipelineStateCreateInfoX<RayTracingP
         if (ProceduralHitShaderCount != 0)
             ProceduralHitShaders.assign(pProceduralHitShaders, pProceduralHitShaders + ProceduralHitShaderCount);
 
-        SyncDesc(true);
+        SyncDesc(SYNC_FLAG_ALL);
     }
 
     RayTracingPipelineStateCreateInfoX(const std::initializer_list<RayTracingGeneralShaderGroup>&       _GeneralShaders,
@@ -1681,7 +1766,7 @@ struct RayTracingPipelineStateCreateInfoX : PipelineStateCreateInfoX<RayTracingP
         TriangleHitShaders{_TriangleHitShaders},
         ProceduralHitShaders{_ProceduralHitShaders}
     {
-        SyncDesc(true);
+        SyncDesc(SYNC_FLAG_ALL);
     }
 
     RayTracingPipelineStateCreateInfoX(const RayTracingPipelineStateCreateInfoX& _DescX) :
@@ -1711,7 +1796,7 @@ struct RayTracingPipelineStateCreateInfoX : PipelineStateCreateInfoX<RayTracingP
     {
         GeneralShaders.push_back(GenShader);
         GeneralShaders.back().Name = StringPool.emplace(GenShader.Name).first->c_str();
-        return SyncDesc();
+        return SyncDesc(SYNC_FLAG_UPDATE_SHADERS);
     }
 
     template <typename... ArgsType>
@@ -1725,7 +1810,7 @@ struct RayTracingPipelineStateCreateInfoX : PipelineStateCreateInfoX<RayTracingP
     {
         TriangleHitShaders.push_back(TriHitShader);
         TriangleHitShaders.back().Name = StringPool.emplace(TriHitShader.Name).first->c_str();
-        return SyncDesc();
+        return SyncDesc(SYNC_FLAG_UPDATE_SHADERS);
     }
 
     template <typename... ArgsType>
@@ -1739,7 +1824,7 @@ struct RayTracingPipelineStateCreateInfoX : PipelineStateCreateInfoX<RayTracingP
     {
         ProceduralHitShaders.push_back(ProcHitShader);
         ProceduralHitShaders.back().Name = StringPool.emplace(ProcHitShader.Name).first->c_str();
-        return SyncDesc();
+        return SyncDesc(SYNC_FLAG_UPDATE_SHADERS);
     }
 
     template <typename... ArgsType>
@@ -1775,19 +1860,19 @@ struct RayTracingPipelineStateCreateInfoX : PipelineStateCreateInfoX<RayTracingP
     RayTracingPipelineStateCreateInfoX& ClearGeneralShaders()
     {
         GeneralShaders.clear();
-        return SyncDesc();
+        return SyncDesc(SYNC_FLAG_UPDATE_SHADERS);
     }
 
     RayTracingPipelineStateCreateInfoX& ClearTriangleHitShaders()
     {
         TriangleHitShaders.clear();
-        return SyncDesc();
+        return SyncDesc(SYNC_FLAG_UPDATE_SHADERS);
     }
 
     RayTracingPipelineStateCreateInfoX& ClearProceduralHitShaders()
     {
         ProceduralHitShaders.clear();
-        return SyncDesc();
+        return SyncDesc(SYNC_FLAG_UPDATE_SHADERS);
     }
 
     RayTracingPipelineStateCreateInfoX& Clear()
@@ -1798,7 +1883,14 @@ struct RayTracingPipelineStateCreateInfoX : PipelineStateCreateInfoX<RayTracingP
     }
 
 private:
-    RayTracingPipelineStateCreateInfoX& SyncDesc(bool UpdateStrings = false)
+    enum SYNC_FLAGS : Uint32
+    {
+        SYNC_FLAG_NONE           = 0u,
+        SYNC_FLAG_UPDATE_STRINGS = 1u << 0u,
+        SYNC_FLAG_UPDATE_SHADERS = 1u << 1u,
+        SYNC_FLAG_ALL            = SYNC_FLAG_UPDATE_STRINGS | SYNC_FLAG_UPDATE_SHADERS
+    };
+    RayTracingPipelineStateCreateInfoX& SyncDesc(SYNC_FLAGS UpdateFlags)
     {
         GeneralShaderCount = static_cast<Uint32>(GeneralShaders.size());
         pGeneralShaders    = GeneralShaderCount > 0 ? GeneralShaders.data() : nullptr;
@@ -1809,7 +1901,7 @@ private:
         ProceduralHitShaderCount = static_cast<Uint32>(ProceduralHitShaders.size());
         pProceduralHitShaders    = ProceduralHitShaderCount > 0 ? ProceduralHitShaders.data() : nullptr;
 
-        if (UpdateStrings)
+        if ((UpdateFlags & SYNC_FLAG_UPDATE_STRINGS) != 0)
         {
             for (auto& Shader : GeneralShaders)
                 Shader.Name = StringPool.emplace(Shader.Name).first->c_str();
@@ -1822,6 +1914,37 @@ private:
 
             if (pShaderRecordName != nullptr)
                 pShaderRecordName = StringPool.emplace(pShaderRecordName).first->c_str();
+        }
+
+        if ((UpdateFlags & SYNC_FLAG_UPDATE_SHADERS) != 0)
+        {
+            // Keep current shader objects alive
+            std::vector<RefCntAutoPtr<IShader>> OldShaderObjects = std::move(ShaderObjects);
+
+            ShaderObjects.clear();
+            for (auto& Shader : GeneralShaders)
+            {
+                if (Shader.pShader != nullptr)
+                    ShaderObjects.emplace_back(Shader.pShader);
+            }
+
+            for (auto& Shader : TriangleHitShaders)
+            {
+                if (Shader.pClosestHitShader != nullptr)
+                    ShaderObjects.emplace_back(Shader.pClosestHitShader);
+                if (Shader.pAnyHitShader != nullptr)
+                    ShaderObjects.emplace_back(Shader.pAnyHitShader);
+            }
+
+            for (auto& Shader : ProceduralHitShaders)
+            {
+                if (Shader.pIntersectionShader != nullptr)
+                    ShaderObjects.emplace_back(Shader.pIntersectionShader);
+                if (Shader.pClosestHitShader != nullptr)
+                    ShaderObjects.emplace_back(Shader.pClosestHitShader);
+                if (Shader.pAnyHitShader != nullptr)
+                    ShaderObjects.emplace_back(Shader.pAnyHitShader);
+            }
         }
 
         return *this;
@@ -1838,12 +1961,41 @@ private:
             else
                 ++it;
         }
-        return SyncDesc();
+        return SyncDesc(SYNC_FLAG_UPDATE_SHADERS);
     }
 
     std::vector<RayTracingGeneralShaderGroup>       GeneralShaders;
     std::vector<RayTracingTriangleHitShaderGroup>   TriangleHitShaders;
     std::vector<RayTracingProceduralHitShaderGroup> ProceduralHitShaders;
+    std::vector<RefCntAutoPtr<IShader>>             ShaderObjects;
+};
+
+
+template <typename T>
+struct PipelineStateCreateInfoXTraits;
+
+template <>
+struct PipelineStateCreateInfoXTraits<GraphicsPipelineStateCreateInfo>
+{
+    using CreateInfoXType = GraphicsPipelineStateCreateInfoX;
+};
+
+template <>
+struct PipelineStateCreateInfoXTraits<ComputePipelineStateCreateInfo>
+{
+    using CreateInfoXType = ComputePipelineStateCreateInfoX;
+};
+
+template <>
+struct PipelineStateCreateInfoXTraits<RayTracingPipelineStateCreateInfo>
+{
+    using CreateInfoXType = RayTracingPipelineStateCreateInfoX;
+};
+
+template <>
+struct PipelineStateCreateInfoXTraits<TilePipelineStateCreateInfo>
+{
+    using CreateInfoXType = TilePipelineStateCreateInfoX;
 };
 
 
@@ -1854,7 +2006,13 @@ class RenderDeviceX
 public:
     RenderDeviceX() noexcept {}
 
-    explicit RenderDeviceX(IRenderDevice* pDevice) noexcept :
+    RenderDeviceX(IRenderDevice* pDevice) noexcept :
+        m_pDevice{pDevice}
+    {
+        DEV_CHECK_ERR(pDevice, "Device must not be null");
+    }
+
+    RenderDeviceX(const RefCntAutoPtr<IRenderDevice>& pDevice) noexcept :
         m_pDevice{pDevice}
     {
         DEV_CHECK_ERR(pDevice, "Device must not be null");
@@ -1868,9 +2026,15 @@ public:
     // clang-format on
 
     RefCntAutoPtr<IBuffer> CreateBuffer(const BufferDesc& BuffDesc,
-                                        const BufferData* pBuffData = nullptr) noexcept(!ThrowOnError)
+                                        const BufferData* pBuffData = nullptr) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<IBuffer>("buffer", BuffDesc.Name, &IRenderDevice::CreateBuffer, BuffDesc, pBuffData);
+    }
+
+    RefCntAutoPtr<IBuffer> CreateBuffer(const BufferDesc& BuffDesc,
+                                        const BufferData& BuffData) const noexcept(!ThrowOnError)
+    {
+        return CreateBuffer(BuffDesc, &BuffData);
     }
 
     RefCntAutoPtr<IBuffer> CreateBuffer(const Char*      Name,
@@ -1878,7 +2042,7 @@ public:
                                         USAGE            Usage          = USAGE_DYNAMIC,
                                         BIND_FLAGS       BindFlags      = BIND_UNIFORM_BUFFER,
                                         CPU_ACCESS_FLAGS CPUAccessFlags = CPU_ACCESS_NONE,
-                                        const void*      pData          = nullptr) noexcept(!ThrowOnError)
+                                        const void*      pData          = nullptr) const noexcept(!ThrowOnError)
     {
         BufferDesc Desc;
         Desc.Name      = Name;
@@ -1901,120 +2065,130 @@ public:
     }
 
     RefCntAutoPtr<ITexture> CreateTexture(const TextureDesc& TexDesc,
-                                          const TextureData* pData = nullptr) noexcept(!ThrowOnError)
+                                          const TextureData* pData = nullptr) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<ITexture>("texture", TexDesc.Name, &IRenderDevice::CreateTexture, TexDesc, pData);
     }
 
-    RefCntAutoPtr<IShader> CreateShader(const ShaderCreateInfo& ShaderCI) noexcept(!ThrowOnError)
+    RefCntAutoPtr<ITexture> CreateTexture(const TextureDesc& TexDesc,
+                                          const TextureData& Data) const noexcept(!ThrowOnError)
     {
-        return CreateDeviceObject<IShader>("shader", ShaderCI.Desc.Name, &IRenderDevice::CreateShader, ShaderCI);
+        return CreateTexture(TexDesc, &Data);
+    }
+
+    RefCntAutoPtr<IShader> CreateShader(const ShaderCreateInfo& ShaderCI) const noexcept(!ThrowOnError)
+    {
+        RefCntAutoPtr<IShader> pShader;
+        m_pDevice->CreateShader(ShaderCI, &pShader, nullptr);
+        if (!pShader && ThrowOnError)
+            LOG_ERROR_AND_THROW("Failed to create shader '", (ShaderCI.Desc.Name != nullptr ? ShaderCI.Desc.Name : "<unnamed>"), "'.");
+        return pShader;
     }
 
     template <typename... ArgsType>
-    RefCntAutoPtr<IShader> CreateShader(ArgsType&&... args) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IShader> CreateShader(ArgsType&&... args) const noexcept(!ThrowOnError)
     {
         const ShaderCreateInfo ShaderCI{std::forward<ArgsType>(args)...};
         return CreateShader(ShaderCI);
     }
 
-    RefCntAutoPtr<ISampler> CreateSampler(const SamplerDesc& SamDesc) noexcept(!ThrowOnError)
+    RefCntAutoPtr<ISampler> CreateSampler(const SamplerDesc& SamDesc) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<ISampler>("sampler", SamDesc.Name, &IRenderDevice::CreateSampler, SamDesc);
     }
 
-    RefCntAutoPtr<IResourceMapping> CreateResourceMapping(const ResourceMappingDesc& Desc) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IResourceMapping> CreateResourceMapping(const ResourceMappingCreateInfo& ResMappingCI) const noexcept(!ThrowOnError)
     {
         RefCntAutoPtr<IResourceMapping> pResMapping;
-        m_pDevice->CreateResourceMapping(Desc, &pResMapping);
+        m_pDevice->CreateResourceMapping(ResMappingCI, &pResMapping);
         if (!pResMapping && ThrowOnError)
             LOG_ERROR_AND_THROW("Failed to create resource mapping.");
         return pResMapping;
     }
 
-    RefCntAutoPtr<IPipelineState> CreateGraphicsPipelineState(const GraphicsPipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreateGraphicsPipelineState(const GraphicsPipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<IPipelineState>("graphics pipeline", CreateInfo.PSODesc.Name, &IRenderDevice::CreateGraphicsPipelineState, CreateInfo);
     }
 
-    RefCntAutoPtr<IPipelineState> CreateComputePipelineState(const ComputePipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreateComputePipelineState(const ComputePipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<IPipelineState>("compute pipeline", CreateInfo.PSODesc.Name, &IRenderDevice::CreateComputePipelineState, CreateInfo);
     }
 
-    RefCntAutoPtr<IPipelineState> CreateRayTracingPipelineState(const RayTracingPipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreateRayTracingPipelineState(const RayTracingPipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<IPipelineState>("ray-tracing pipeline", CreateInfo.PSODesc.Name, &IRenderDevice::CreateRayTracingPipelineState, CreateInfo);
     }
 
-    RefCntAutoPtr<IPipelineState> CreateTilePipelineState(const TilePipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreateTilePipelineState(const TilePipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<IPipelineState>("tile pipeline", CreateInfo.PSODesc.Name, &IRenderDevice::CreateTilePipelineState, CreateInfo);
     }
 
-    RefCntAutoPtr<IPipelineState> CreatePipelineState(const GraphicsPipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreatePipelineState(const GraphicsPipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return CreateGraphicsPipelineState(CreateInfo);
     }
-    RefCntAutoPtr<IPipelineState> CreatePipelineState(const ComputePipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreatePipelineState(const ComputePipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return CreateComputePipelineState(CreateInfo);
     }
-    RefCntAutoPtr<IPipelineState> CreatePipelineState(const RayTracingPipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreatePipelineState(const RayTracingPipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return CreateRayTracingPipelineState(CreateInfo);
     }
-    RefCntAutoPtr<IPipelineState> CreatePipelineState(const TilePipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreatePipelineState(const TilePipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return CreateTilePipelineState(CreateInfo);
     }
 
-    RefCntAutoPtr<IFence> CreateFence(const FenceDesc& Desc) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IFence> CreateFence(const FenceDesc& Desc) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<IFence>("fence", Desc.Name, &IRenderDevice::CreateFence, Desc);
     }
 
-    RefCntAutoPtr<IQuery> CreateQuery(const QueryDesc& Desc) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IQuery> CreateQuery(const QueryDesc& Desc) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<IQuery>("query", Desc.Name, &IRenderDevice::CreateQuery, Desc);
     }
 
-    RefCntAutoPtr<IRenderPass> CreateRenderPass(const RenderPassDesc& Desc) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IRenderPass> CreateRenderPass(const RenderPassDesc& Desc) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<IRenderPass>("render pass", Desc.Name, &IRenderDevice::CreateRenderPass, Desc);
     }
 
-    RefCntAutoPtr<IFramebuffer> CreateFramebuffer(const FramebufferDesc& Desc) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IFramebuffer> CreateFramebuffer(const FramebufferDesc& Desc) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<IFramebuffer>("framebuffer", Desc.Name, &IRenderDevice::CreateFramebuffer, Desc);
     }
 
-    RefCntAutoPtr<IBottomLevelAS> CreateBLAS(const BottomLevelASDesc& Desc) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IBottomLevelAS> CreateBLAS(const BottomLevelASDesc& Desc) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<IBottomLevelAS>("bottom-level AS", Desc.Name, &IRenderDevice::CreateBLAS, Desc);
     }
 
-    RefCntAutoPtr<ITopLevelAS> CreateTLAS(const TopLevelASDesc& Desc) noexcept(!ThrowOnError)
+    RefCntAutoPtr<ITopLevelAS> CreateTLAS(const TopLevelASDesc& Desc) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<ITopLevelAS>("top-level AS", Desc.Name, &IRenderDevice::CreateTLAS, Desc);
     }
 
-    RefCntAutoPtr<IShaderBindingTable> CreateSBT(const ShaderBindingTableDesc& Desc) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IShaderBindingTable> CreateSBT(const ShaderBindingTableDesc& Desc) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<IShaderBindingTable>("shader binding table", Desc.Name, &IRenderDevice::CreateSBT, Desc);
     }
 
-    RefCntAutoPtr<IPipelineResourceSignature> CreatePipelineResourceSignature(const PipelineResourceSignatureDesc& Desc) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineResourceSignature> CreatePipelineResourceSignature(const PipelineResourceSignatureDesc& Desc) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<IPipelineResourceSignature>("pipeline resource signature", Desc.Name, &IRenderDevice::CreatePipelineResourceSignature, Desc);
     }
 
-    RefCntAutoPtr<IDeviceMemory> CreateDeviceMemory(const DeviceMemoryCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IDeviceMemory> CreateDeviceMemory(const DeviceMemoryCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<IDeviceMemory>("device memory", CreateInfo.Desc.Name, &IRenderDevice::CreateDeviceMemory, CreateInfo);
     }
 
-    RefCntAutoPtr<IPipelineStateCache> CreatePipelineStateCache(const PipelineStateCacheCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineStateCache> CreatePipelineStateCache(const PipelineStateCacheCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return CreateDeviceObject<IPipelineStateCache>("PSO cache", CreateInfo.Desc.Name, &IRenderDevice::CreatePipelineStateCache, CreateInfo);
     }
@@ -2029,29 +2203,29 @@ public:
         return m_pDevice->GetAdapterInfo();
     }
 
-    const TextureFormatInfo& GetTextureFormatInfo(TEXTURE_FORMAT TexFormat) noexcept
+    const TextureFormatInfo& GetTextureFormatInfo(TEXTURE_FORMAT TexFormat) const noexcept
     {
         return m_pDevice->GetTextureFormatInfo(TexFormat);
     }
 
-    const TextureFormatInfoExt& GetTextureFormatInfoExt(TEXTURE_FORMAT TexFormat) noexcept
+    const TextureFormatInfoExt& GetTextureFormatInfoExt(TEXTURE_FORMAT TexFormat) const noexcept
     {
         return m_pDevice->GetTextureFormatInfoExt(TexFormat);
     }
 
     SparseTextureFormatInfo GetSparseTextureFormatInfo(TEXTURE_FORMAT     TexFormat,
                                                        RESOURCE_DIMENSION Dimension,
-                                                       Uint32             SampleCount) noexcept
+                                                       Uint32             SampleCount) const noexcept
     {
         return m_pDevice->GetSparseTextureFormatInfo(TexFormat, Dimension, SampleCount);
     }
 
-    void ReleaseStaleResources(bool ForceRelease = false) noexcept
+    void ReleaseStaleResources(bool ForceRelease = false) const noexcept
     {
         return m_pDevice->ReleaseStaleResources(ForceRelease);
     }
 
-    void IdleGPU() noexcept
+    void IdleGPU() const noexcept
     {
         return m_pDevice->IdleGPU();
     }
@@ -2059,6 +2233,11 @@ public:
     IEngineFactory* GetEngineFactory() const noexcept
     {
         return m_pDevice->GetEngineFactory();
+    }
+
+    IThreadPool* GetShaderCompilationThreadPool() const noexcept
+    {
+        return m_pDevice->GetShaderCompilationThreadPool();
     }
 
     IRenderDevice* GetDevice() const noexcept
@@ -2078,7 +2257,10 @@ public:
 
 private:
     template <typename ObjectType, typename CreateMethodType, typename... CreateArgsType>
-    RefCntAutoPtr<ObjectType> CreateDeviceObject(const char* ObjectTypeName, const char* ObjectName, CreateMethodType Create, CreateArgsType&&... Args) noexcept(!ThrowOnError)
+    RefCntAutoPtr<ObjectType> CreateDeviceObject(const char*      ObjectTypeName,
+                                                 const char*      ObjectName,
+                                                 CreateMethodType Create,
+                                                 CreateArgsType&&... Args) const noexcept(!ThrowOnError)
     {
         RefCntAutoPtr<ObjectType> pObject;
         (m_pDevice->*Create)(std::forward<CreateArgsType>(Args)..., &pObject);
@@ -2092,6 +2274,354 @@ private:
 
 private:
     RefCntAutoPtr<IRenderDevice> m_pDevice;
+};
+
+// Throws an Exception if object creation failed
+using RenderDeviceX_E = RenderDeviceX<true>;
+
+// Returns Null pointer if object creation failed
+using RenderDeviceX_N = RenderDeviceX<false>;
+
+
+/// C++ wrapper over IShaderResourceVariable.
+class ShaderResourceVariableX
+{
+public:
+    ShaderResourceVariableX() noexcept {}
+    explicit ShaderResourceVariableX(IShaderResourceVariable* pVar) noexcept :
+        m_pVar{pVar}
+    {
+    }
+
+    ShaderResourceVariableX(IShaderResourceBinding* pSRB, SHADER_TYPE ShaderStage, const char* Name) noexcept :
+        m_pVar{pSRB->GetVariableByName(ShaderStage, Name)}
+    {
+    }
+
+    ShaderResourceVariableX(IPipelineState* pPSO, SHADER_TYPE ShaderStage, const char* Name) noexcept :
+        m_pVar{pPSO->GetStaticVariableByName(ShaderStage, Name)}
+    {
+    }
+
+    ShaderResourceVariableX(IPipelineResourceSignature* pPRS, SHADER_TYPE ShaderStage, const char* Name) noexcept :
+        m_pVar{pPRS->GetStaticVariableByName(ShaderStage, Name)}
+    {
+    }
+
+    explicit operator bool() const noexcept
+    {
+        return m_pVar != nullptr;
+    }
+
+    operator IShaderResourceVariable*() const noexcept
+    {
+        return m_pVar;
+    }
+
+    IShaderResourceVariable* operator->() const noexcept
+    {
+        return m_pVar;
+    }
+
+    bool Set(IDeviceObject* pObject, SET_SHADER_RESOURCE_FLAGS Flags = SET_SHADER_RESOURCE_FLAG_NONE)
+    {
+        if (m_pVar)
+        {
+            m_pVar->Set(pObject, Flags);
+            return true;
+        }
+        return false;
+    }
+
+    bool SetArray(IDeviceObject* const*     ppObjects,
+                  Uint32                    FirstElement,
+                  Uint32                    NumElements,
+                  SET_SHADER_RESOURCE_FLAGS Flags = SET_SHADER_RESOURCE_FLAG_NONE)
+    {
+        if (m_pVar)
+        {
+            m_pVar->SetArray(ppObjects, FirstElement, NumElements, Flags);
+            return true;
+        }
+        return false;
+    }
+
+    bool SetBufferRange(IDeviceObject*            pObject,
+                        Uint64                    Offset,
+                        Uint64                    Size,
+                        Uint32                    ArrayIndex = 0,
+                        SET_SHADER_RESOURCE_FLAGS Flags      = SET_SHADER_RESOURCE_FLAG_NONE)
+    {
+        if (m_pVar)
+        {
+            m_pVar->SetBufferRange(pObject, Offset, Size, ArrayIndex, Flags);
+            return true;
+        }
+        return false;
+    }
+
+    bool SetBufferOffset(Uint32 Offset,
+                         Uint32 ArrayIndex = 0)
+    {
+        if (m_pVar)
+        {
+            m_pVar->SetBufferOffset(Offset, ArrayIndex);
+            return true;
+        }
+        return false;
+    }
+
+    IDeviceObject* Get(Uint32 ArrayIndex = 0) const
+    {
+        return m_pVar ? m_pVar->Get(ArrayIndex) : nullptr;
+    }
+
+private:
+    IShaderResourceVariable* m_pVar = nullptr;
+};
+
+
+/// C++ wrapper over MultiDrawAttribs.
+class MultiDrawAttribsX
+{
+public:
+    MultiDrawAttribsX() noexcept {}
+
+    MultiDrawAttribsX(const MultiDrawAttribs& Attribs) :
+        m_Attribs{Attribs},
+        m_DrawItems{Attribs.pDrawItems, Attribs.pDrawItems + Attribs.DrawCount}
+    {
+        SyncDrawItems();
+    }
+
+    MultiDrawAttribsX(const std::initializer_list<MultiDrawItem>& DrawItems,
+                      DRAW_FLAGS                                  Flags,
+                      Uint32                                      NumInstances          = 1,
+                      Uint32                                      FirstInstanceLocation = 0) :
+        m_Attribs{0, nullptr, Flags, NumInstances, FirstInstanceLocation},
+        m_DrawItems{DrawItems}
+    {
+        SyncDrawItems();
+    }
+
+    MultiDrawAttribsX(const MultiDrawAttribsX& Other) :
+        m_Attribs{Other.m_Attribs},
+        m_DrawItems{Other.m_DrawItems}
+    {
+        SyncDrawItems();
+    }
+
+    MultiDrawAttribsX(MultiDrawAttribsX&& Other) noexcept :
+        m_Attribs{std::move(Other.m_Attribs)},
+        m_DrawItems{std::move(Other.m_DrawItems)}
+    {
+        SyncDrawItems();
+        Other.m_Attribs.DrawCount  = 0;
+        Other.m_Attribs.pDrawItems = nullptr;
+    }
+
+    MultiDrawAttribsX& operator=(const MultiDrawAttribsX& Other)
+    {
+        MultiDrawAttribsX Copy{Other};
+        std::swap(*this, Copy);
+        return *this;
+    }
+
+    MultiDrawAttribsX& operator=(MultiDrawAttribsX&& Other) noexcept
+    {
+        MultiDrawAttribsX Copy{std::move(Other)};
+        std::swap(*this, Copy);
+        Other.m_Attribs.DrawCount  = 0;
+        Other.m_Attribs.pDrawItems = nullptr;
+        return *this;
+    }
+
+    MultiDrawAttribsX& SetFlags(DRAW_FLAGS Flags) noexcept
+    {
+        m_Attribs.Flags = Flags;
+        return *this;
+    }
+
+    MultiDrawAttribsX& SetNumInstances(Uint32 NumInstances) noexcept
+    {
+        m_Attribs.NumInstances = NumInstances;
+        return *this;
+    }
+
+    MultiDrawAttribsX& SetFirstInstanceLocation(Uint32 FirstInstanceLocation) noexcept
+    {
+        m_Attribs.FirstInstanceLocation = FirstInstanceLocation;
+        return *this;
+    }
+
+    MultiDrawAttribsX& AddDrawItem(const MultiDrawItem& Item)
+    {
+        m_DrawItems.push_back(Item);
+        return SyncDrawItems();
+    }
+
+    template <typename... ArgsType>
+    MultiDrawAttribsX& AddDrawItem(ArgsType&&... args)
+    {
+        const MultiDrawItem Item{std::forward<ArgsType>(args)...};
+        return AddDrawItem(Item);
+    }
+
+    MultiDrawAttribsX& ClearDrawItems()
+    {
+        m_DrawItems.clear();
+        return SyncDrawItems();
+    }
+
+    MultiDrawItem& GetDrawItem(Uint32 Index)
+    {
+        return m_DrawItems[Index];
+    }
+
+    const MultiDrawItem& GetDrawItem(Uint32 Index) const
+    {
+        return m_DrawItems[Index];
+    }
+
+    operator const MultiDrawAttribs&() const
+    {
+        return m_Attribs;
+    }
+
+private:
+    MultiDrawAttribsX& SyncDrawItems()
+    {
+        m_Attribs.pDrawItems = m_DrawItems.data();
+        m_Attribs.DrawCount  = static_cast<Uint32>(m_DrawItems.size());
+        return *this;
+    }
+
+private:
+    MultiDrawAttribs           m_Attribs;
+    std::vector<MultiDrawItem> m_DrawItems;
+};
+
+
+/// C++ wrapper over MultiDrawIndexedAttribs.
+class MultiDrawIndexedAttribsX
+{
+public:
+    MultiDrawIndexedAttribsX() noexcept {}
+
+    MultiDrawIndexedAttribsX(const MultiDrawIndexedAttribs& Attribs) :
+        m_Attribs{Attribs},
+        m_DrawItems{Attribs.pDrawItems, Attribs.pDrawItems + Attribs.DrawCount}
+    {
+        SyncDrawItems();
+    }
+
+    MultiDrawIndexedAttribsX(const std::initializer_list<MultiDrawIndexedItem>& DrawItems,
+                             VALUE_TYPE                                         IndexType,
+                             DRAW_FLAGS                                         Flags,
+                             Uint32                                             NumInstances          = 1,
+                             Uint32                                             FirstInstanceLocation = 0) :
+        m_Attribs{0, nullptr, IndexType, Flags, NumInstances, FirstInstanceLocation},
+        m_DrawItems{DrawItems}
+    {
+        SyncDrawItems();
+    }
+
+    MultiDrawIndexedAttribsX(const MultiDrawIndexedAttribsX& Other) :
+        m_Attribs{Other.m_Attribs},
+        m_DrawItems{Other.m_DrawItems}
+    {
+        SyncDrawItems();
+    }
+
+    MultiDrawIndexedAttribsX(MultiDrawIndexedAttribsX&& Other) noexcept :
+        m_Attribs{std::move(Other.m_Attribs)},
+        m_DrawItems{std::move(Other.m_DrawItems)}
+    {
+        SyncDrawItems();
+        Other.m_Attribs.DrawCount  = 0;
+        Other.m_Attribs.pDrawItems = nullptr;
+    }
+
+    MultiDrawIndexedAttribsX& operator=(const MultiDrawIndexedAttribsX& Other)
+    {
+        MultiDrawIndexedAttribsX Copy{Other};
+        std::swap(*this, Copy);
+        return *this;
+    }
+
+    MultiDrawIndexedAttribsX& operator=(MultiDrawIndexedAttribsX&& Other) noexcept
+    {
+        MultiDrawIndexedAttribsX Copy{std::move(Other)};
+        std::swap(*this, Copy);
+        Other.m_Attribs.DrawCount  = 0;
+        Other.m_Attribs.pDrawItems = nullptr;
+        return *this;
+    }
+
+    MultiDrawIndexedAttribsX& SetFlags(DRAW_FLAGS Flags) noexcept
+    {
+        m_Attribs.Flags = Flags;
+        return *this;
+    }
+
+    MultiDrawIndexedAttribsX& SetNumInstances(Uint32 NumInstances) noexcept
+    {
+        m_Attribs.NumInstances = NumInstances;
+        return *this;
+    }
+
+    MultiDrawIndexedAttribsX& SetFirstInstanceLocation(Uint32 FirstInstanceLocation) noexcept
+    {
+        m_Attribs.FirstInstanceLocation = FirstInstanceLocation;
+        return *this;
+    }
+
+    MultiDrawIndexedAttribsX& AddDrawItem(const MultiDrawIndexedItem& Item)
+    {
+        m_DrawItems.push_back(Item);
+        return SyncDrawItems();
+    }
+
+    template <typename... ArgsType>
+    MultiDrawAttribsX& AddDrawItem(ArgsType&&... args)
+    {
+        const MultiDrawItem Item{std::forward<ArgsType>(args)...};
+        return AddDrawItem(Item);
+    }
+
+
+    MultiDrawIndexedAttribsX& ClearDrawItems()
+    {
+        m_DrawItems.clear();
+        return SyncDrawItems();
+    }
+
+    MultiDrawIndexedItem& GetDrawItem(Uint32 Index)
+    {
+        return m_DrawItems[Index];
+    }
+
+    const MultiDrawIndexedItem& GetDrawItem(Uint32 Index) const
+    {
+        return m_DrawItems[Index];
+    }
+
+    operator const MultiDrawIndexedAttribs&() const
+    {
+        return m_Attribs;
+    }
+
+private:
+    MultiDrawIndexedAttribsX& SyncDrawItems()
+    {
+        m_Attribs.pDrawItems = m_DrawItems.data();
+        m_Attribs.DrawCount  = static_cast<Uint32>(m_DrawItems.size());
+        return *this;
+    }
+
+private:
+    MultiDrawIndexedAttribs           m_Attribs;
+    std::vector<MultiDrawIndexedItem> m_DrawItems;
 };
 
 } // namespace Diligent

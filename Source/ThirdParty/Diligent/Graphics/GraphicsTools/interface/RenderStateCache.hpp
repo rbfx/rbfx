@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -46,8 +46,8 @@ public:
 
     RenderDeviceWithCache() noexcept {}
 
-    explicit RenderDeviceWithCache(IRenderDevice*     pDevice,
-                                   IRenderStateCache* pCache = nullptr) noexcept :
+    RenderDeviceWithCache(IRenderDevice*     pDevice,
+                          IRenderStateCache* pCache = nullptr) noexcept :
         TBase{pDevice},
         m_pCache{pCache}
     {
@@ -69,74 +69,57 @@ public:
 
     ~RenderDeviceWithCache()
     {
-        if (m_pCache != nullptr && !m_CacheFilePath.empty())
-        {
-            // Save render state cache data to the file
-            RefCntAutoPtr<IDataBlob> pCacheData;
-            if (m_pCache->WriteToBlob(m_CacheContentVersion, &pCacheData))
-            {
-                if (pCacheData)
-                {
-                    FileWrapper CacheDataFile{m_CacheFilePath.c_str(), EFileAccessMode::Overwrite};
-                    if (CacheDataFile->Write(pCacheData->GetConstDataPtr(), pCacheData->GetSize()))
-                        LOG_INFO_MESSAGE("Successfully saved state cache file ", m_CacheFilePath, " (", FormatMemorySize(pCacheData->GetSize()), ").");
-                }
-            }
-            else
-            {
-                LOG_ERROR_MESSAGE("Failed to write cache data.");
-            }
-        }
+        SaveCache();
     }
 
-    RefCntAutoPtr<IShader> CreateShader(const ShaderCreateInfo& ShaderCI) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IShader> CreateShader(const ShaderCreateInfo& ShaderCI) const noexcept(!ThrowOnError)
     {
         return m_pCache ?
             UnpackCachedObject<IShader>("shader", ShaderCI.Desc.Name, &IRenderStateCache::CreateShader, ShaderCI) :
             TBase::CreateShader(ShaderCI);
     }
 
-    RefCntAutoPtr<IPipelineState> CreateGraphicsPipelineState(const GraphicsPipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreateGraphicsPipelineState(const GraphicsPipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return m_pCache ?
             UnpackCachedObject<IPipelineState>("graphics pipeline", CreateInfo.PSODesc.Name, &IRenderStateCache::CreateGraphicsPipelineState, CreateInfo) :
             TBase::CreateGraphicsPipelineState(CreateInfo);
     }
 
-    RefCntAutoPtr<IPipelineState> CreateComputePipelineState(const ComputePipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreateComputePipelineState(const ComputePipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return m_pCache ?
             UnpackCachedObject<IPipelineState>("compute pipeline", CreateInfo.PSODesc.Name, &IRenderStateCache::CreateComputePipelineState, CreateInfo) :
             TBase::CreateComputePipelineState(CreateInfo);
     }
 
-    RefCntAutoPtr<IPipelineState> CreateRayTracingPipelineState(const RayTracingPipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreateRayTracingPipelineState(const RayTracingPipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return m_pCache ?
             UnpackCachedObject<IPipelineState>("ray-tracing pipeline", CreateInfo.PSODesc.Name, &IRenderStateCache::CreateRayTracingPipelineState, CreateInfo) :
             TBase::CreateRayTracingPipelineState(CreateInfo);
     }
 
-    RefCntAutoPtr<IPipelineState> CreateTilePipelineState(const TilePipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreateTilePipelineState(const TilePipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return m_pCache ?
             UnpackCachedObject<IPipelineState>("tile pipeline", CreateInfo.PSODesc.Name, &IRenderStateCache::CreateTilePipelineState, CreateInfo) :
             TBase::CreateTilePipelineState(CreateInfo);
     }
 
-    RefCntAutoPtr<IPipelineState> CreatePipelineState(const GraphicsPipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreatePipelineState(const GraphicsPipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return CreateGraphicsPipelineState(CreateInfo);
     }
-    RefCntAutoPtr<IPipelineState> CreatePipelineState(const ComputePipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreatePipelineState(const ComputePipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return CreateComputePipelineState(CreateInfo);
     }
-    RefCntAutoPtr<IPipelineState> CreatePipelineState(const RayTracingPipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreatePipelineState(const RayTracingPipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return CreateRayTracingPipelineState(CreateInfo);
     }
-    RefCntAutoPtr<IPipelineState> CreatePipelineState(const TilePipelineStateCreateInfo& CreateInfo) noexcept(!ThrowOnError)
+    RefCntAutoPtr<IPipelineState> CreatePipelineState(const TilePipelineStateCreateInfo& CreateInfo) const noexcept(!ThrowOnError)
     {
         return CreateTilePipelineState(CreateInfo);
     }
@@ -209,6 +192,34 @@ public:
         }
     }
 
+    void SaveCache(const char* FilePath = nullptr)
+    {
+        if (m_pCache == nullptr)
+            return;
+
+        if (FilePath == nullptr)
+            FilePath = m_CacheFilePath.c_str();
+
+        if (FilePath[0] == '\0')
+            return;
+
+        // Save render state cache data to the file
+        RefCntAutoPtr<IDataBlob> pCacheData;
+        if (m_pCache->WriteToBlob(m_CacheContentVersion, &pCacheData))
+        {
+            if (pCacheData)
+            {
+                FileWrapper CacheDataFile{FilePath, EFileAccessMode::Overwrite};
+                if (CacheDataFile->Write(pCacheData->GetConstDataPtr(), pCacheData->GetSize()))
+                    LOG_INFO_MESSAGE("Successfully saved state cache file ", FilePath, " (", FormatMemorySize(pCacheData->GetSize()), ").");
+            }
+        }
+        else
+        {
+            LOG_ERROR_MESSAGE("Failed to write cache data.");
+        }
+    }
+
     void SetCacheFilePath(const char* FilePath)
     {
         if (FilePath == nullptr)
@@ -224,7 +235,10 @@ public:
 
 private:
     template <typename ObjectType, typename CreateMethodType, typename... CreateArgsType>
-    RefCntAutoPtr<ObjectType> UnpackCachedObject(const char* ObjectTypeName, const char* ObjectName, CreateMethodType Create, CreateArgsType&&... Args) noexcept(!ThrowOnError)
+    RefCntAutoPtr<ObjectType> UnpackCachedObject(const char*      ObjectTypeName,
+                                                 const char*      ObjectName,
+                                                 CreateMethodType Create,
+                                                 CreateArgsType&&... Args) const noexcept(!ThrowOnError)
     {
         RefCntAutoPtr<ObjectType> pObject;
         (m_pCache->*Create)(std::forward<CreateArgsType>(Args)..., &pObject);
@@ -241,6 +255,13 @@ private:
     std::string                      m_CacheFilePath;
     Uint32                           m_CacheContentVersion = 0;
 };
+
+// Throws an Exception if object creation failed
+using RenderDeviceWithCache_E = RenderDeviceWithCache<true>;
+
+// Returns Null pointer if object creation failed
+using RenderDeviceWithCache_N = RenderDeviceWithCache<false>;
+
 
 /// Special string to indicate that the render state cache file should be stored in the application data folder.
 static constexpr char RenderStateCacheLocationAppData[] = "<AppData>";

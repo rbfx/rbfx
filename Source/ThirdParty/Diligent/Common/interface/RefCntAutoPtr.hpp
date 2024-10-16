@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -305,7 +305,9 @@ template <typename T>
 class RefCntWeakPtr
 {
 public:
-    explicit RefCntWeakPtr(T* pObj = nullptr) noexcept :
+    RefCntWeakPtr() noexcept {}
+
+    explicit RefCntWeakPtr(T* pObj) noexcept :
         m_pRefCounters{nullptr},
         m_pObject{pObj}
     {
@@ -440,12 +442,18 @@ public:
     bool operator!=(const RefCntWeakPtr& Ptr) const noexcept { return m_pRefCounters != Ptr.m_pRefCounters; }
 
 protected:
-    RefCountersImpl* m_pRefCounters;
+    RefCountersImpl* m_pRefCounters = nullptr;
     // We need to store raw pointer to object itself,
     // because if the object is owned by another object,
     // m_pRefCounters->QueryObject(&pObj) will return
     // a pointer to the owner, which is not what we need.
-    T* m_pObject;
+    T* m_pObject = nullptr;
 };
+
+template <typename DstType, typename SrcType>
+NODISCARD DstType StaticCast(const RefCntAutoPtr<SrcType>& Src)
+{
+    return static_cast<DstType>(Src.RawPtr());
+}
 
 } // namespace Diligent

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -111,6 +111,9 @@
 
 #elif PLATFORM_EMSCRIPTEN
 
+#    include <webgl/webgl1_ext.h>
+#    include <webgl/webgl2.h>
+#    include <webgl/webgl2_ext.h>
 #    include <GLES3/gl32.h>
 #    include "GLStubsEmscripten.h"
 
@@ -150,10 +153,16 @@
     } while (false)
 
 #ifdef DILIGENT_DEVELOPMENT
-#    define DEV_CHECK_GL_ERROR CHECK_GL_ERROR
+#    define DEV_CHECK_GL_ERROR           CHECK_GL_ERROR
+#    define DEV_CHECK_GL_ERROR_AND_THROW CHECK_GL_ERROR_AND_THROW
 #else
 #    define DEV_CHECK_GL_ERROR(...) \
         do                          \
         {                           \
+        } while (false)
+
+#    define DEV_CHECK_GL_ERROR_AND_THROW(...) \
+        do                                    \
+        {                                     \
         } while (false)
 #endif

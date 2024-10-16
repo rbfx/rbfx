@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -1371,14 +1371,6 @@ static RESOURCE_STATE VkAccessFlagToResourceStates(VkAccessFlagBits AccessFlagBi
 class VkAccessFlagBitPosToResourceState
 {
 public:
-    VkAccessFlagBitPosToResourceState()
-    {
-        for (Uint32 bit = 0; bit < FlagBitPosToResourceState.size(); ++bit)
-        {
-            FlagBitPosToResourceState[bit] = VkAccessFlagToResourceStates(static_cast<VkAccessFlagBits>(1 << bit));
-        }
-    }
-
     RESOURCE_STATE operator()(Uint32 BitPos) const
     {
         VERIFY(BitPos <= MaxFlagBitPos, "Resource state flag bit position (", BitPos, ") exceeds max bit position (", Uint32{MaxFlagBitPos}, ")");
@@ -1386,8 +1378,18 @@ public:
     }
 
 private:
-    static constexpr const Uint32                 MaxFlagBitPos = 20;
-    std::array<RESOURCE_STATE, MaxFlagBitPos + 1> FlagBitPosToResourceState;
+    static constexpr const Uint32 MaxFlagBitPos = 20;
+
+    const std::array<RESOURCE_STATE, MaxFlagBitPos + 1> FlagBitPosToResourceState{
+        []() {
+            std::array<RESOURCE_STATE, MaxFlagBitPos + 1> BitPosToState;
+            for (Uint32 bit = 0; bit < BitPosToState.size(); ++bit)
+            {
+                BitPosToState[bit] = VkAccessFlagToResourceStates(static_cast<VkAccessFlagBits>(1 << bit));
+            }
+            return BitPosToState;
+        }(),
+    };
 };
 
 
@@ -1570,8 +1572,8 @@ ASSERT_SAME(PIPELINE_STAGE_FLAG_CONDITIONAL_RENDERING,        VK_PIPELINE_STAGE_
 ASSERT_SAME(PIPELINE_STAGE_FLAG_SHADING_RATE_TEXTURE,         VK_PIPELINE_STAGE_SHADING_RATE_IMAGE_BIT_NV);
 ASSERT_SAME(PIPELINE_STAGE_FLAG_RAY_TRACING_SHADER,           VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_NV);
 ASSERT_SAME(PIPELINE_STAGE_FLAG_ACCELERATION_STRUCTURE_BUILD, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV);
-ASSERT_SAME(PIPELINE_STAGE_FLAG_TASK_SHADER,                  VK_PIPELINE_STAGE_TASK_SHADER_BIT_NV);
-ASSERT_SAME(PIPELINE_STAGE_FLAG_MESH_SHADER,                  VK_PIPELINE_STAGE_MESH_SHADER_BIT_NV);
+ASSERT_SAME(PIPELINE_STAGE_FLAG_TASK_SHADER,                  VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT);
+ASSERT_SAME(PIPELINE_STAGE_FLAG_MESH_SHADER,                  VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT);
 ASSERT_SAME(PIPELINE_STAGE_FLAG_FRAGMENT_DENSITY_PROCESS,     VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT);
 // clang-format on
 VkPipelineStageFlags PipelineStageFlagsToVkPipelineStageFlags(PIPELINE_STAGE_FLAGS PipelineStageFlags)
@@ -1639,8 +1641,8 @@ VkShaderStageFlagBits ShaderTypeToVkShaderStageFlagBit(SHADER_TYPE ShaderType)
         case SHADER_TYPE_GEOMETRY:         return VK_SHADER_STAGE_GEOMETRY_BIT;
         case SHADER_TYPE_PIXEL:            return VK_SHADER_STAGE_FRAGMENT_BIT;
         case SHADER_TYPE_COMPUTE:          return VK_SHADER_STAGE_COMPUTE_BIT;
-        case SHADER_TYPE_AMPLIFICATION:    return VK_SHADER_STAGE_TASK_BIT_NV;
-        case SHADER_TYPE_MESH:             return VK_SHADER_STAGE_MESH_BIT_NV;
+        case SHADER_TYPE_AMPLIFICATION:    return VK_SHADER_STAGE_TASK_BIT_EXT;
+        case SHADER_TYPE_MESH:             return VK_SHADER_STAGE_MESH_BIT_EXT;
         case SHADER_TYPE_RAY_GEN:          return VK_SHADER_STAGE_RAYGEN_BIT_KHR;
         case SHADER_TYPE_RAY_MISS:         return VK_SHADER_STAGE_MISS_BIT_KHR;
         case SHADER_TYPE_RAY_CLOSEST_HIT:  return VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
@@ -1695,8 +1697,8 @@ SHADER_TYPE VkShaderStageFlagsToShaderTypes(VkShaderStageFlags StageFlags)
             case VK_SHADER_STAGE_GEOMETRY_BIT:                Result |= SHADER_TYPE_GEOMETRY;         break;
             case VK_SHADER_STAGE_FRAGMENT_BIT:                Result |= SHADER_TYPE_PIXEL;            break;
             case VK_SHADER_STAGE_COMPUTE_BIT:                 Result |= SHADER_TYPE_COMPUTE;          break;
-            case VK_SHADER_STAGE_TASK_BIT_NV:                 Result |= SHADER_TYPE_AMPLIFICATION;    break;
-            case VK_SHADER_STAGE_MESH_BIT_NV:                 Result |= SHADER_TYPE_MESH;             break;
+            case VK_SHADER_STAGE_TASK_BIT_EXT:                Result |= SHADER_TYPE_AMPLIFICATION;    break;
+            case VK_SHADER_STAGE_MESH_BIT_EXT:                Result |= SHADER_TYPE_MESH;             break;
             case VK_SHADER_STAGE_RAYGEN_BIT_KHR:              Result |= SHADER_TYPE_RAY_GEN;          break;
             case VK_SHADER_STAGE_MISS_BIT_KHR:                Result |= SHADER_TYPE_RAY_MISS;         break;
             case VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:         Result |= SHADER_TYPE_RAY_CLOSEST_HIT;  break;
@@ -1939,8 +1941,12 @@ DeviceFeatures VkFeaturesToDeviceFeatures(uint32_t                              
     Features.ComputeShaders                = DEVICE_FEATURE_STATE_ENABLED;
     Features.BindlessResources             = DEVICE_FEATURE_STATE_ENABLED;
     Features.BinaryOcclusionQueries        = DEVICE_FEATURE_STATE_ENABLED;
+    Features.ShaderResourceStaticArrays    = DEVICE_FEATURE_STATE_ENABLED;
     Features.SubpassFramebufferFetch       = DEVICE_FEATURE_STATE_ENABLED;
     Features.TextureComponentSwizzle       = DEVICE_FEATURE_STATE_ENABLED;
+    Features.TextureSubresourceViews       = DEVICE_FEATURE_STATE_ENABLED;
+    Features.AsyncShaderCompilation        = DEVICE_FEATURE_STATE_ENABLED;
+    Features.FormattedBuffers              = DEVICE_FEATURE_STATE_ENABLED;
 
     // Timestamps are not a feature and can't be disabled. They are either supported by the device, or not.
     Features.TimestampQueries = vkDeviceProps.limits.timestampComputeAndGraphics ? DEVICE_FEATURE_STATE_ENABLED : DEVICE_FEATURE_STATE_DISABLED;
@@ -1987,7 +1993,7 @@ DeviceFeatures VkFeaturesToDeviceFeatures(uint32_t                              
     // clang-format on
 
     const auto& DescrIndexingFeats = ExtFeatures.DescriptorIndexing;
-    INIT_FEATURE(ShaderResourceRuntimeArray, DescrIndexingFeats.runtimeDescriptorArray != VK_FALSE);
+    INIT_FEATURE(ShaderResourceRuntimeArrays, DescrIndexingFeats.runtimeDescriptorArray != VK_FALSE);
     const auto& AccelStructFeats = ExtFeatures.AccelStruct;
     const auto& RayTracingFeats  = ExtFeatures.RayTracingPipeline;
     const auto& RayQueryFeats    = ExtFeatures.RayQuery;
@@ -2028,6 +2034,9 @@ DeviceFeatures VkFeaturesToDeviceFeatures(uint32_t                              
                   ExtFeatures.ShadingRate.attachmentFragmentShadingRate != VK_FALSE ||
                   ExtFeatures.FragmentDensityMap.fragmentDensityMap != VK_FALSE));
 
+    INIT_FEATURE(NativeMultiDraw,
+                 ExtFeatures.MultiDraw.multiDraw != VK_FALSE && ExtFeatures.ShaderDrawParameters.shaderDrawParameters != VK_FALSE);
+
 #undef INIT_FEATURE
 
     // Not supported in Vulkan on top of Metal.
@@ -2037,7 +2046,7 @@ DeviceFeatures VkFeaturesToDeviceFeatures(uint32_t                              
     Features.DurationQueries        = DEVICE_FEATURE_STATE_DISABLED;
 #endif
 
-    ASSERT_SIZEOF(DeviceFeatures, 41, "Did you add a new feature to DeviceFeatures? Please handle its status here (if necessary).");
+    ASSERT_SIZEOF(DeviceFeatures, 46, "Did you add a new feature to DeviceFeatures? Please handle its status here (if necessary).");
 
     return Features;
 }

@@ -133,10 +133,8 @@ struct FileDialogAttribs
 
 struct FindFileData
 {
-    virtual const Char* Name() const        = 0;
-    virtual bool        IsDirectory() const = 0;
-
-    virtual ~FindFileData() {}
+    String Name;
+    bool   IsDirectory = false;
 };
 
 struct BasicFileSystem
@@ -147,6 +145,8 @@ public:
 #else
     static constexpr Char SlashSymbol = '/';
 #endif
+
+    using SearchFilesResult = std::vector<FindFileData>;
 
     static BasicFile* OpenFile(FileOpenAttribs& OpenAttribs);
     static void       ReleaseFile(BasicFile*);

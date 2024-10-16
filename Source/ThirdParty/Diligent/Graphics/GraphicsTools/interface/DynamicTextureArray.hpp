@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ public:
     /// \param[in] CreateInfo - Texture array create information, see Diligent::DynamicTextureArrayCreateInfo.
     ///
     /// \remarks            If pDevice is null, internal texture creation will be postponed
-    ///                     until GetTexture() or Resize() is called.
+    ///                     until Update() or Resize() is called.
     DynamicTextureArray(IRenderDevice* pDevice, const DynamicTextureArrayCreateInfo& CreateInfo);
 
     // clang-format off
@@ -98,14 +98,14 @@ public:
     /// \remarks    The method operation depends on which of pDevice and pContext parameters
     ///             are not null:
     ///             - Both pDevice and pContext are not null: internal texture is created (if necessary)
-    ///               and existing contents is copied (for non-sparse textures). GetTexture() may be called with
+    ///               and existing contents is copied (for non-sparse textures). Update() may be called with
     ///               both pDevice and pContext being null.
     ///             - pDevice is not null, pContext is null: internal texture or additional memory pages
     ///               are created, but existing contents is not copied and memory tiles are not bound.
-    ///               An application must provide non-null device context when calling GetTexture().
+    ///               An application must provide non-null device context when calling Update().
     ///             - Both pDevice and pContext are null: internal texture or memory pages are not created.
     ///               An application must provide non-null device and device context when calling
-    ///               GetTexture().
+    ///               Update().
     ///
     ///             Typically pContext is null when the method is called from a worker thread.
     ///
@@ -116,28 +116,38 @@ public:
                      bool            DiscardContent = false);
 
 
-    /// Returns the pointer to the texture object, initializing it if necessary.
+    /// Updates the internal texture object.
 
-    /// \param[in] pDevice  - Render device that will be used to create the new texture,
+    /// \param[in] pDevice  - Render device that will be used to create a new texture,
     ///                       if necessary (see remarks).
     /// \param[in] pContext - Device context that will be used to copy existing
     ///                       texture contents (when using non-sparse texture), or bind
     ///                       memory tiles (when using sparse textures), if necessary
     ///                       (see remarks).
-    /// \return               The pointer to the texture object.
+    /// \return               A pointer to the texture object.
     ///
     /// \remarks    If the texture has been resized, but internal texture object has not been
     ///             initialized, pDevice and pContext must not be null.
     ///
     ///             If the texture does not need to be updated (PendingUpdate() returns false),
     ///             both pDevice and pContext may be null.
-    ITexture* GetTexture(IRenderDevice*  pDevice,
-                         IDeviceContext* pContext);
+    ITexture* Update(IRenderDevice*  pDevice,
+                     IDeviceContext* pContext);
 
+
+    /// Returns a pointer to the texture object.
+
+    /// \remarks    If the texture has not be initialized, the method returns null.
+    ///             If the texture may need to be updated (initialized or resized),
+    ///             use the Update() method.
+    ITexture* GetTexture() const
+    {
+        return m_pTexture;
+    }
 
     /// Returns true if the texture must be updated before use (e.g. it has been resized,
     /// but internal texture has not been initialized or updated).
-    /// When update is not pending, GetTexture() may be called with null device and context.
+    /// When update is not pending, Update() may be called with null device and context.
     bool PendingUpdate() const
     {
         return m_PendingSize != m_Desc.ArraySize;

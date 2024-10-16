@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,10 +29,15 @@
 
 #include <memory>
 #include <vector>
+#include <string>
 
 #include "../../Basic/interface/BasicFileSystem.hpp"
 #include "../../Basic/interface/StandardFile.hpp"
 #include "../../Linux/interface/LinuxFileSystem.hpp"
+
+#if PLATFORM_MACOS
+#    define FILE_DIALOG_SUPPORTED 1
+#endif
 
 namespace Diligent
 {
@@ -45,6 +50,12 @@ public:
     static AppleFile* OpenFile(const FileOpenAttribs& OpenAttribs);
 
     static bool FileExists(const Char* strFilePath);
+
+    static std::string FindResource(const std::string& FilePath);
+
+#if FILE_DIALOG_SUPPORTED
+    static std::string FileDialog(const FileDialogAttribs& DialogAttribs);
+#endif
 
 #if PLATFORM_IOS || PLATFORM_TVOS
     static std::string GetLocalAppDataDirectory(const char* AppName = nullptr, bool Create = true);

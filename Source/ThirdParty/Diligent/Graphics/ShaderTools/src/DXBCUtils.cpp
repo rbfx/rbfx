@@ -565,7 +565,7 @@ constexpr Uint32 DXBCFourCC = FOURCC('D', 'X', 'B', 'C');
 constexpr Uint32 RDEFFourCC = FOURCC('R', 'D', 'E', 'F'); // Resource definition. Describes constant buffers and resource bindings.
 constexpr Uint32 SHDRFourCC = FOURCC('S', 'H', 'D', 'R'); // Shader (SM4)
 constexpr Uint32 SHEXFourCC = FOURCC('S', 'H', 'E', 'X'); // Shader (SM5)
-constexpr Uint32 DXILFourCC = FOURCC('D', 'X', 'I', 'L'); // Shader (SM6)
+//constexpr Uint32 DXILFourCC = FOURCC('D', 'X', 'I', 'L'); // Shader (SM6)
 
 
 RES_TYPE ToResType(D3D_SHADER_INPUT_TYPE InputType)
@@ -1092,6 +1092,9 @@ void ShaderBytecodeRemapper::RemapResourceOperandSM50(const OperandToken& Operan
 
         case D3D10_SB_OPERAND_TYPE_IMMEDIATE_CONSTANT_BUFFER:
             break; // ignore
+
+        default:
+            break; // ignore
     }
 }
 
@@ -1190,6 +1193,9 @@ void ShaderBytecodeRemapper::RemapResourceOperandSM51(const OperandToken& Operan
         }
 
         case D3D10_SB_OPERAND_TYPE_IMMEDIATE_CONSTANT_BUFFER:
+            break; // ignore
+
+        default:
             break; // ignore
     }
 }
@@ -1426,6 +1432,9 @@ void ShaderBytecodeRemapper::RemapResourceBindingSM51(const OpcodeToken& Opcode,
             Token[4] = Info.Space;
             break;
         }
+
+        default:
+            break; // ignore
     }
 }
 
@@ -1538,6 +1547,9 @@ void ShaderBytecodeRemapper::ParseOperand(Uint32*& Token, const void* Finish)
         case D3D11_SB_OPERAND_TYPE_UNORDERED_ACCESS_VIEW:
             RemapResourceOperand(Operand, Token, Finish);
             break;
+
+        default:
+            break; // ignore
     }
 
     if (Operand.IndexDim != D3D10_SB_OPERAND_INDEX_0D)
@@ -1765,7 +1777,7 @@ bool RemapResourceBindings(const TResourceBindingMap& ResourceMap,
                     RemapShaderResources<ResourceBindingInfo51>(ResourceMap, EndPtr, RDEFHeader, ExtResourceMap, BindingsPerType);
                     RemapResDef = true;
                 }
-                else if (RDEFHeader->MajorVersion == 5 && RDEFHeader->MinorVersion == 0 || RDEFHeader->MajorVersion < 5)
+                else if ((RDEFHeader->MajorVersion == 5 && RDEFHeader->MinorVersion == 0) || RDEFHeader->MajorVersion < 5)
                 {
                     RemapShaderResources<ResourceBindingInfo50>(ResourceMap, EndPtr, RDEFHeader, ExtResourceMap, BindingsPerType);
                     RemapResDef = true;

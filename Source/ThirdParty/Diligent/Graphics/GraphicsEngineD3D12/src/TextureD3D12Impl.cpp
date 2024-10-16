@@ -53,6 +53,7 @@ static DXGI_FORMAT GetClearFormat(DXGI_FORMAT Fmt, D3D12_RESOURCE_FLAGS Flags)
             case DXGI_FORMAT_R16_TYPELESS:      return DXGI_FORMAT_D16_UNORM;
             case DXGI_FORMAT_R24G8_TYPELESS:    return DXGI_FORMAT_D24_UNORM_S8_UINT;
             case DXGI_FORMAT_R32G8X24_TYPELESS: return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+            default: return Fmt;
         }
         // clang-format on
     }
@@ -74,6 +75,7 @@ static DXGI_FORMAT GetClearFormat(DXGI_FORMAT Fmt, D3D12_RESOURCE_FLAGS Flags)
             case DXGI_FORMAT_R8_TYPELESS:           return DXGI_FORMAT_R8_UNORM;
             case DXGI_FORMAT_B8G8R8A8_TYPELESS:     return DXGI_FORMAT_B8G8R8A8_UNORM;
             case DXGI_FORMAT_B8G8R8X8_TYPELESS:     return DXGI_FORMAT_B8G8R8X8_UNORM;
+            default: return Fmt;
         }
         // clang-format on
     }
@@ -365,7 +367,7 @@ TextureD3D12Impl::TextureD3D12Impl(IReferenceCounters*        pRefCounters,
         Uint32 NumSubresources   = Uint32{d3d12TexDesc.MipLevels} * (d3d12TexDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D ? 1 : Uint32{d3d12TexDesc.DepthOrArraySize});
         m_StagingFootprints      = ALLOCATE(GetRawAllocator(), "Memory for staging footprints", D3D12_PLACED_SUBRESOURCE_FOOTPRINT, size_t{NumSubresources} + 1);
         pd3d12Device->GetCopyableFootprints(&d3d12TexDesc, 0, NumSubresources, 0, m_StagingFootprints, nullptr, nullptr, &stagingBufferSize);
-        m_StagingFootprints[NumSubresources] = D3D12_PLACED_SUBRESOURCE_FOOTPRINT{stagingBufferSize};
+        m_StagingFootprints[NumSubresources] = D3D12_PLACED_SUBRESOURCE_FOOTPRINT{stagingBufferSize, {}};
 
         D3D12_RESOURCE_DESC BufferDesc{};
         BufferDesc.Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -458,6 +460,7 @@ static TextureDesc InitTexDescFromD3D12Resource(ID3D12Resource* pTexture, const 
         case D3D12_RESOURCE_DIMENSION_TEXTURE1D: TexDesc.Type = TexDesc.ArraySize == 1 ? RESOURCE_DIM_TEX_1D : RESOURCE_DIM_TEX_1D_ARRAY; break;
         case D3D12_RESOURCE_DIMENSION_TEXTURE2D: TexDesc.Type = TexDesc.ArraySize == 1 ? RESOURCE_DIM_TEX_2D : RESOURCE_DIM_TEX_2D_ARRAY; break;
         case D3D12_RESOURCE_DIMENSION_TEXTURE3D: TexDesc.Type = RESOURCE_DIM_TEX_3D; break;
+        default: break;
     }
 
     TexDesc.SampleCount = d3d12Desc.SampleDesc.Count;

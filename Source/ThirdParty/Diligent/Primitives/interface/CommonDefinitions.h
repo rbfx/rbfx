@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -87,6 +87,8 @@
 #    define DILIGENT_CONCATENATE0(X, Y) X##Y
 #    define DILIGENT_CONCATENATE(X, Y)  DILIGENT_CONCATENATE0(X, Y)
 
+#    define DILIGENT_CONSTEXPR const
+
 #else
 
 #    define DILIGENT_BEGIN_NAMESPACE(Name) \
@@ -107,6 +109,8 @@
 #    define DILIGENT_BEGIN_INTERFACE(Name, Base) struct Name : public Base
 
 #    define DEFAULT_VALUE(x) = x
+
+#    define DILIGENT_CONSTEXPR constexpr
 
 #endif
 

@@ -1,5 +1,47 @@
-## Current progress
+## v.2.5.6
 
+* Implemented WebGPU backend
+  * Added `EngineWebGPUCreateInfo`
+  * Added `IEngineFactoryWebGPU` interface
+  * Added `RENDER_DEVICE_TYPE_WEBGPU`, `SHADER_SOURCE_LANGUAGE_WGSL`, `SHADER_VARIABLE_FLAG_UNFILTERABLE_FLOAT_TEXTURE_WEBGPU`,
+   `SHADER_VARIABLE_FLAG_NON_FILTERING_SAMPLER_WEBGPU` enum values
+  * Added `WEB_GPU_BINDING_TYPE` enum, `WebGPUResourceAttribs` struct, and
+    `WebGPUResourceAttribs WebGPUAttribs` member to `PipelineResourceDesc` struct
+  * Added WebGPU-specific interfaces (`IRenderDeviceWebGPU`, `IDeviceContextWebGPU`, etc.) 
+* Enabled asynchronous shdare and pipeline state compilation (API255001)
+  * Added `AsyncShaderCompilation` render device feature
+  * Added `pAsyncShaderCompilationThreadPool` and `NumAsyncShaderCompilerThreads` members to `EngineCreateInfo` struct
+  * Added `SHADER_COMPILE_FLAG_ASYNCHRONOUS` and `PSO_CREATE_FLAG_ASYNCHRONOUS` flags
+  * Added `SHADER_STATUS` and `PIPELINE_STATE_STATUS` enums
+  * Added `IShader::GetStatus` and `IPipelineState::GetStatus` methods
+
+
+## v2.5.5
+
+* Added `MultiDraw` and `MultiDrawIndexed` commands (API254006)
+* Added `SerializationDeviceGLInfo` struct (API254005)
+  * The `ValidateShaders` member allows disabling time-consuming shader compilation
+* Replaced `AnisotropicFilteringSupported` member of `SamplerProperties` struct with `MaxAnisotropy` (API254004)
+* Added `TextureSubresourceViews` device feature (API254003)
+* Added device context rendering statistics (API254002)
+  * Added `DeviceContextStats` struct
+  * Added `IDeviceContext::ClearStats` and `IDeviceContext::GetStats` methods
+* `IDeviceContext::TransitionShaderResources`: removed unused `pPipelineState` parameter (API254001)
+
+## v2.5.4
+
+* Use thread group count X/Y/Z for mesh draw commands (API253012)
+* Added `ShaderMacroArray` struct (API253011)
+  * The `Macros` member of `ShaderCreateInfo` struct is now of type `ShaderMacroArray`
+* Replaced `ResourceMappingDesc` with `ResourceMappingCreateInfo` (API253010)
+  * Use `ResourceMappingCreateInfo::NumEntries` to define the number of entries instead of the trailing null entry
+* Removed `ShaderCreateInfo::ppConversionStream` (API253009)
+* Removed `ppCompilerOutput` member of the `ShaderCreateInfo` struct and added it as parameter to the `IRenderDevice::CreateShader` method (API253008)
+* Added `IPipelineStateGL::GetGLProgramHandle` and `IShaderGL::GetGLShaderHandle` methods (API253007)
+* Enabled read-only depth-stencil buffers (API253006)
+  * Added `TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL` view type
+  * Added `UseReadOnlyDSV` member to `GraphicsPipelineDesc` struct
+* Added `PSO_CACHE_FLAGS` enum and `PipelineStateCacheDesc::Flags` member (API253005)
 * Archiver and render state cache: added content version (API253004)
 * Added `RenderDeviceShaderVersionInfo` struct and `RenderDeviceInfo::MaxShaderVersion` member (API253003)
 * Added texture component swizzle (API253002)

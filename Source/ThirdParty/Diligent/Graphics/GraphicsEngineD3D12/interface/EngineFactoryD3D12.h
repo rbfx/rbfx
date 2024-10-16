@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,7 +44,7 @@ DILIGENT_BEGIN_NAMESPACE(Diligent)
 struct ICommandQueueD3D12;
 
 // {72BD38B0-684A-4889-9C68-0A80EC802DDE}
-static const INTERFACE_ID IID_EngineFactoryD3D12 =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_EngineFactoryD3D12 =
     {0x72bd38b0, 0x684a, 0x4889, {0x9c, 0x68, 0xa, 0x80, 0xec, 0x80, 0x2d, 0xde}};
 
 #define DILIGENT_INTERFACE_NAME IEngineFactoryD3D12

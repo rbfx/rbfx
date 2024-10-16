@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.6)
+cmake_minimum_required (VERSION 3.11)
 
 # cmake_minimum_required(VERSION) resets all policies to their default
 # values for the VERSION, so calling cmake_policy(SET CMP0063 NEW) has
@@ -18,7 +18,22 @@ if (GL_SUPPORTED AND (PLATFORM_WIN32 OR PLATFORM_LINUX OR PLATFORM_MACOS) AND (N
     install(FILES glew/LICENSE.txt DESTINATION "Licenses/ThirdParty/${DILIGENT_CORE_DIR}" RENAME GLEW-License.txt)
 endif()
 
-if (VULKAN_SUPPORTED OR METAL_SUPPORTED)
+if (VULKAN_SUPPORTED)
+    if (NOT TARGET Vulkan::Headers)
+        # Manually add the Vulkan-Headers target as this is all we need and the
+        # project's CMake creates unnecessary targets
+        add_library(Vulkan-Headers INTERFACE)
+        # Vulkan-Headers_SOURCE_DIR variable is normally created by project(Vulkan-Headers)
+        set(Vulkan-Headers_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Vulkan-Headers")
+        add_library(Vulkan::Headers ALIAS Vulkan-Headers)
+        target_include_directories(Vulkan-Headers INTERFACE "${Vulkan-Headers_SOURCE_DIR}/include")
+        install(FILES "${Vulkan-Headers_SOURCE_DIR}/LICENSE.md" DESTINATION "Licenses/ThirdParty/${DILIGENT_CORE_DIR}" RENAME Vulkan-Headers-License.md)
+    endif()
+endif()
+
+if (VULKAN_SUPPORTED OR METAL_SUPPORTED OR WEBGPU_SUPPORTED OR (ARCHIVER_SUPPORTED AND (GL_SUPPORTED OR GLES_SUPPORTED)))
+    set(DILIGENT_USE_SPIRV_TOOLCHAIN TRUE CACHE INTERNAL "Use SPIRV Toolchain")
+
     if (NOT TARGET SPIRV-Headers)
         # Manually add the SPIRV-Headers target as this is all we need and the
         # project's CMake creates unnecessary install targets
@@ -27,17 +42,6 @@ if (VULKAN_SUPPORTED OR METAL_SUPPORTED)
         set(SPIRV-Headers_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Headers")
         target_include_directories(SPIRV-Headers INTERFACE "${SPIRV-Headers_SOURCE_DIR}/include")
         install(FILES "${SPIRV-Headers_SOURCE_DIR}/LICENSE" DESTINATION "Licenses/ThirdParty/${DILIGENT_CORE_DIR}" RENAME SPIRV-Headers-License.txt)
-    endif()
-
-    if (NOT TARGET Vulkan::Headers)
-        # Manually add the Vulkan-Headers target as this is all we need and the
-        # project's CMake creates unnecessary targets
-        add_library(Vulkan-Headers INTERFACE)
-        # Vulkan-Headers_SOURCE_DIR variable is normally created by project(Vulkan-Headers)
-        set(Vulkan-Headers_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Vulkan-Headers")
-        add_library(Vulkan::Headers ALIAS Vulkan-Headers)
-        target_include_directories(Vulkan-Headers INTERFACE $<BUILD_INTERFACE:${Vulkan-Headers_SOURCE_DIR}/include>)
-        install(FILES "${Vulkan-Headers_SOURCE_DIR}/LICENSE.txt" DESTINATION "Licenses/ThirdParty/${DILIGENT_CORE_DIR}" RENAME Vulkan-Headers-License.txt)
     endif()
 
     option(DILIGENT_NO_GLSLANG "Do NOT build glslang compiler" OFF)
@@ -69,13 +73,21 @@ if (VULKAN_SUPPORTED OR METAL_SUPPORTED)
         set(ENABLE_SPVREMAPPER OFF CACHE BOOL "Do not build SPIRV remapper")
         set(SKIP_GLSLANG_INSTALL ON CACHE BOOL "Skip glslang installation")
         set(ENABLE_CTEST OFF CACHE BOOL "Disable testing")
+        if (PLATFORM_EMSCRIPTEN)
+            # Optimization has to be disabled on Web, see build instructions on https://github.com/KhronosGroup/glslang
+            set(ENABLE_OPT OFF)
+        endif()
         add_subdirectory(glslang)
         set_directory_root_folder("glslang" "DiligentCore/ThirdParty/glslang")
+
+        if (PLATFORM_EMSCRIPTEN)
+             set_targets_emscripten_properties(glslang MachineIndependent)
+        endif()
 
         # glslang "kindly" sets global CMAKE_DEBUG_POSTFIX to "d", which we have to unset now
         unset(CMAKE_DEBUG_POSTFIX CACHE)
 
-        list(APPEND THIRD_PARTY_LIBS GenericCodeGen glslang OGLCompiler OSDependent SPIRV HLSL MachineIndependent)
+        list(APPEND THIRD_PARTY_LIBS GenericCodeGen glslang OSDependent SPIRV MachineIndependent)
         install(FILES "${glslang_SOURCE_DIR}/LICENSE.txt" DESTINATION "Licenses/ThirdParty/${DILIGENT_CORE_DIR}" RENAME GLSLang-License.txt)
     endif()
 
@@ -84,7 +96,11 @@ if (VULKAN_SUPPORTED OR METAL_SUPPORTED)
         set(SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "Enable SPIRV-Cross tests.")
         set(SPIRV_CROSS_ENABLE_MSL ${METAL_SUPPORTED} CACHE BOOL "Enable MSL target support.")
         # MSL support requires GLSL
-        set(SPIRV_CROSS_ENABLE_GLSL ${SPIRV_CROSS_ENABLE_MSL} CACHE BOOL "Enable GLSL support.")
+        if (${SPIRV_CROSS_ENABLE_MSL} OR ${GL_SUPPORTED} OR ${GLES_SUPPORTED})
+            set(SPIRV_CROSS_ENABLE_GLSL TRUE CACHE BOOL "Enable GLSL support.")
+        else()
+            set(SPIRV_CROSS_ENABLE_GLSL OFF CACHE BOOL "Enable GLSL support.")
+        endif()
         set(SPIRV_CROSS_ENABLE_HLSL OFF CACHE BOOL "Enable HLSL target support.")
         set(SPIRV_CROSS_ENABLE_CPP OFF CACHE BOOL "Enable C++ target support.")
         set(SPIRV_CROSS_ENABLE_REFLECT OFF CACHE BOOL "Enable JSON reflection target support.")
@@ -97,8 +113,11 @@ if (VULKAN_SUPPORTED OR METAL_SUPPORTED)
         set_directory_root_folder("SPIRV-Cross" "DiligentCore/ThirdParty/SPIRV-Cross")
 
         list(APPEND THIRD_PARTY_LIBS spirv-cross-core)
-        if (METAL_SUPPORTED)
-            list(APPEND THIRD_PARTY_LIBS spirv-cross-msl spirv-cross-glsl)
+        if(SPIRV_CROSS_ENABLE_GLSL)
+            list(APPEND THIRD_PARTY_LIBS spirv-cross-glsl)
+        endif()
+        if (SPIRV_CROSS_ENABLE_MSL)
+            list(APPEND THIRD_PARTY_LIBS spirv-cross-msl)
         endif()
 
         install(FILES "${SPIRV-Cross_SOURCE_DIR}/LICENSE" DESTINATION "Licenses/ThirdParty/${DILIGENT_CORE_DIR}" RENAME SPIRV-Cross-License.txt)
@@ -132,6 +151,8 @@ if (VULKAN_SUPPORTED OR METAL_SUPPORTED)
         C_VISIBILITY_PRESET hidden # -fvisibility=hidden
         VISIBILITY_INLINES_HIDDEN TRUE
      )
+else()
+    set(DILIGENT_USE_SPIRV_TOOLCHAIN FALSE CACHE INTERNAL "")
 endif()
 
 if (VULKAN_SUPPORTED AND (PLATFORM_WIN32 OR PLATFORM_LINUX OR PLATFORM_MACOS OR PLATFORM_ANDROID) AND (NOT TARGET volk::volk_headers))
@@ -140,6 +161,14 @@ if (VULKAN_SUPPORTED AND (PLATFORM_WIN32 OR PLATFORM_LINUX OR PLATFORM_MACOS OR 
     set(VOLK_HEADERS_ONLY ON)
     add_subdirectory(volk)
     install(FILES "${volk_SOURCE_DIR}/LICENSE.md" DESTINATION "Licenses/ThirdParty/${DILIGENT_CORE_DIR}" RENAME Volk-License.md)
+endif()
+
+if (WEBGPU_SUPPORTED)
+    add_subdirectory(abseil-cpp EXCLUDE_FROM_ALL)
+    set_directory_root_folder("abseil-cpp" "DiligentCore/ThirdParty")
+
+    add_subdirectory(dawn EXCLUDE_FROM_ALL)
+    set_directory_root_folder("dawn" "DiligentCore/ThirdParty/dawn")
 endif()
 
 if ((${DILIGENT_BUILD_GOOGLE_TEST}) AND (NOT TARGET gtest))
@@ -156,6 +185,11 @@ if ((${DILIGENT_BUILD_GOOGLE_TEST}) AND (NOT TARGET gtest))
 
     get_target_property(GTEST_SOURCE_DIR gtest SOURCE_DIR)
     install(FILES "googletest/LICENSE" DESTINATION "Licenses/ThirdParty/${DILIGENT_CORE_DIR}" RENAME googletest-License.txt)
+
+    if (PLATFORM_EMSCRIPTEN)
+        find_targets_in_directory(GTEST_TARGETS ${GTEST_SOURCE_DIR})
+        set_targets_emscripten_properties(${GTEST_TARGETS})
+    endif()
 endif()
 
 if (NOT TARGET xxHash::xxhash)

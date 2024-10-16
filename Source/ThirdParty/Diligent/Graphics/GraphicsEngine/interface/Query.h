@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {70F2A88A-F8BE-4901-8F05-2F72FA695BA0}
-static const INTERFACE_ID IID_Query =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_Query =
     {0x70f2a88a, 0xf8be, 0x4901, {0x8f, 0x5, 0x2f, 0x72, 0xfa, 0x69, 0x5b, 0xa0}};
 
 /// Occlusion query data.
@@ -61,7 +61,7 @@ struct QueryDataBinaryOcclusion
 
     /// Indicates if at least one sample passed depth and stencil testing in between
     /// IDeviceContext::BeginQuery and IDeviceContext::EndQuery.
-    Bool AnySamplePassed DEFAULT_INITIALIZER(0);
+    Bool AnySamplePassed DEFAULT_INITIALIZER(False);
 };
 typedef struct QueryDataBinaryOcclusion QueryDataBinaryOcclusion;
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -410,7 +410,10 @@ void BufferD3D12Impl::CreateCBV(D3D12_CPU_DESCRIPTOR_HANDLE CBVDescriptor,
     VERIFY((Offset % D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) == 0, "Offset (", Offset, ") must be ", D3D12_TEXTURE_DATA_PITCH_ALIGNMENT, "-aligned");
     VERIFY(Offset + Size <= m_Desc.Size, "Range is out of bounds");
     if (Size == 0)
-        Size = m_Desc.Size - Offset;
+    {
+        // CBV can be at most 65536 bytes (D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT * 16 bytes)
+        Size = std::min(m_Desc.Size - Offset, Uint64{D3D12_REQ_CONSTANT_BUFFER_ELEMENT_COUNT} * 16u);
+    }
 
     D3D12_CONSTANT_BUFFER_VIEW_DESC D3D12_CBVDesc;
     D3D12_CBVDesc.BufferLocation = m_pd3d12Resource->GetGPUVirtualAddress() + Offset;

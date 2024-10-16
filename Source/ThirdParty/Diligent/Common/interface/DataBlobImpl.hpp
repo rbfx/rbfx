@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -93,6 +93,10 @@ public:
     virtual void* Allocate(size_t Size, const Char* dbgDescription, const char* dbgFileName, const Int32 dbgLineNumber) override final;
 
     virtual void Free(void* Ptr) override final;
+
+    virtual void* AllocateAligned(size_t Size, size_t Alignment, const Char* dbgDescription, const char* dbgFileName, const Int32 dbgLineNumber) override final;
+
+    virtual void FreeAligned(void* Ptr) override final;
 
     RefCntAutoPtr<DataBlobImpl> Release() { return std::move(m_pDataBlob); };
 

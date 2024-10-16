@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,6 +33,8 @@
 #include "EngineVkImplTraits.hpp"
 #include "ShaderBase.hpp"
 #include "SPIRVShaderResources.hpp"
+#include "ThreadPool.h"
+#include "RefCntAutoPtr.hpp"
 
 namespace Diligent
 {
@@ -54,6 +56,8 @@ public:
         const GraphicsAdapterInfo& AdapterInfo;
         const Uint32               VkVersion;
         const bool                 HasSpirv14;
+        IDataBlob** const          ppCompilerOutput;
+        IThreadPool* const         pCompilationThreadPool;
     };
     ShaderVkImpl(IReferenceCounters*     pRefCounters,
                  RenderDeviceVkImpl*     pRenderDeviceVk,
@@ -67,6 +71,7 @@ public:
     /// Implementation of IShader::GetResourceCount() in Vulkan backend.
     virtual Uint32 DILIGENT_CALL_TYPE GetResourceCount() const override final
     {
+        DEV_CHECK_ERR(!IsCompiling(), "Shader resources are not available until the shader is compiled. Use GetStatus() to check the shader status.");
         return m_pShaderResources ? m_pShaderResources->GetTotalResources() : 0;
     }
 
@@ -79,23 +84,37 @@ public:
     /// Implementation of IShaderVk::GetSPIRV().
     virtual const std::vector<uint32_t>& DILIGENT_CALL_TYPE GetSPIRV() const override final
     {
-        return m_SPIRV;
+        static const std::vector<uint32_t> NullSPIRV;
+        // NOTE: while shader is compiled asynchronously, m_SPIRV may be modified by
+        //       another thread and thus can't be accessed.
+        return !IsCompiling() ? m_SPIRV : NullSPIRV;
     }
 
-    const std::shared_ptr<const SPIRVShaderResources>& GetShaderResources() const { return m_pShaderResources; }
+    const std::shared_ptr<const SPIRVShaderResources>& GetShaderResources() const
+    {
+        DEV_CHECK_ERR(!IsCompiling(), "Shader resources are not available until the shader is compiled. Use GetStatus() to check the shader status.");
+        return m_pShaderResources;
+    }
 
-    const char* GetEntryPoint() const { return m_EntryPoint.c_str(); }
+    const char* GetEntryPoint() const
+    {
+        DEV_CHECK_ERR(!IsCompiling(), "Shader resources are not available until the shader is compiled. Use GetStatus() to check the shader status.");
+        return m_EntryPoint.c_str();
+    }
 
     virtual void DILIGENT_CALL_TYPE GetBytecode(const void** ppBytecode,
                                                 Uint64&      Size) const override final
     {
+        DEV_CHECK_ERR(!IsCompiling(), "Shader byte code is not available until the shader is compiled. Use GetStatus() to check the shader status.");
         *ppBytecode = !m_SPIRV.empty() ? m_SPIRV.data() : nullptr;
         Size        = m_SPIRV.size() * sizeof(m_SPIRV[0]);
     }
 
 private:
-    void MapHLSLVertexShaderInputs();
+    void Initialize(const ShaderCreateInfo& ShaderCI,
+                    const CreateInfo&       VkShaderCI) noexcept(false);
 
+private:
     std::shared_ptr<const SPIRVShaderResources> m_pShaderResources;
 
     std::string           m_EntryPoint;

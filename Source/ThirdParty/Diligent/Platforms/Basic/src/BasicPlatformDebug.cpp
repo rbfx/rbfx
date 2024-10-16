@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,6 +29,7 @@
 #include "FormatString.hpp"
 #include "BasicFileSystem.hpp"
 #include <iostream>
+#include <atomic>
 
 namespace Diligent
 {
@@ -123,6 +124,18 @@ const char* BasicPlatformDebug::TextColorToTextColorCode(DEBUG_MESSAGE_SEVERITY 
         default:
             return TextColorCode::Default;
     }
+}
+
+static std::atomic_bool g_BreakOnError{true};
+
+void BasicPlatformDebug::SetBreakOnError(bool BreakOnError)
+{
+    g_BreakOnError.store(BreakOnError);
+}
+
+bool BasicPlatformDebug::GetBreakOnError()
+{
+    return g_BreakOnError.load();
 }
 
 } // namespace Diligent
