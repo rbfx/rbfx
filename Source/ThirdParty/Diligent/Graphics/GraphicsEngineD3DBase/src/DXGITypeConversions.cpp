@@ -245,6 +245,9 @@ DXGI_FORMAT CorrectDXGIFormat(DXGI_FORMAT DXGIFormat, Uint32 BindFlags)
             case DXGI_FORMAT_R16_UNORM:
                 DXGIFormat = DXGI_FORMAT_D16_UNORM;
                 break;
+
+            default:
+                break;
         }
     }
 
@@ -265,6 +268,9 @@ DXGI_FORMAT CorrectDXGIFormat(DXGI_FORMAT DXGIFormat, Uint32 BindFlags)
             case DXGI_FORMAT_R16_TYPELESS:
             case DXGI_FORMAT_D16_UNORM:
                 DXGIFormat = DXGI_FORMAT_R16_UNORM;
+                break;
+
+            default:
                 break;
         }
     }

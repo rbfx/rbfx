@@ -653,52 +653,47 @@ bool DearchiverBase::LoadArchive(const IDataBlob* pArchiveData, Uint32 ContentVe
     if (pArchiveData == nullptr)
         return false;
 
-    try
+    for (const ArchiveData& Archive : m_Archives)
     {
-        for (const auto& Archive : m_Archives)
+        if (Archive.pObjArchive->GetData() == pArchiveData)
         {
-            if (Archive.pObjArchive->GetData() == pArchiveData)
-            {
-                // The archive is already loaded
-                return true;
-            }
+            // The archive is already loaded
+            return true;
         }
-
-        auto       pObjArchive = std::make_unique<DeviceObjectArchive>(DeviceObjectArchive::CreateInfo{pArchiveData, ContentVersion, MakeCopy});
-        const auto ArchiveIdx  = m_Archives.size();
-
-        const auto& ArchiveResources = pObjArchive->GetNamedResources();
-        for (const auto& it : ArchiveResources)
-        {
-            const auto     ResType      = it.first.GetType();
-            const auto*    ResName      = it.first.GetName();
-            constexpr auto MakeNameCopy = true;
-
-            const auto it_inserted = m_ResNameToArchiveIdx.emplace(NamedResourceKey{ResType, ResName, MakeNameCopy}, ArchiveIdx);
-            if (!it_inserted.second)
-            {
-                const auto& OtherArchiveResources = m_Archives[it_inserted.first->second].pObjArchive->GetNamedResources();
-                const auto  it_other              = OtherArchiveResources.find(NamedResourceKey{ResType, ResName});
-
-                const auto IsDuplicate =
-                    (it_other != OtherArchiveResources.end()) &&
-                    (it.second == it_other->second);
-                if (!IsDuplicate)
-                {
-                    LOG_ERROR_MESSAGE("Resource with name '", ResName, "' already exists in the archive.");
-                }
-            }
-        }
-
-        m_Archives.emplace_back(std::move(pObjArchive));
-
-        return true;
     }
-    catch (...)
-    {
-        LOG_ERROR("Failed to create the device object archive");
+
+    std::unique_ptr<DeviceObjectArchive> pObjArchive = std::make_unique<DeviceObjectArchive>();
+    if (!pObjArchive->Deserialize(DeviceObjectArchive::CreateInfo{pArchiveData, ContentVersion, MakeCopy}))
         return false;
+
+    const size_t ArchiveIdx = m_Archives.size();
+
+    const auto& ArchiveResources = pObjArchive->GetNamedResources();
+    for (const auto& it : ArchiveResources)
+    {
+        const ResourceType ResType      = it.first.GetType();
+        const char*        ResName      = it.first.GetName();
+        constexpr bool     MakeNameCopy = true;
+
+        const auto it_inserted = m_ResNameToArchiveIdx.emplace(NamedResourceKey{ResType, ResName, MakeNameCopy}, ArchiveIdx);
+        if (!it_inserted.second)
+        {
+            const auto& OtherArchiveResources = m_Archives[it_inserted.first->second].pObjArchive->GetNamedResources();
+            const auto  it_other              = OtherArchiveResources.find(NamedResourceKey{ResType, ResName});
+
+            const bool IsDuplicate =
+                (it_other != OtherArchiveResources.end()) &&
+                (it.second == it_other->second);
+            if (!IsDuplicate)
+            {
+                LOG_ERROR_MESSAGE("Resource with name '", ResName, "' already exists in the archive.");
+            }
+        }
     }
+
+    m_Archives.emplace_back(std::move(pObjArchive));
+
+    return true;
 }
 
 void DearchiverBase::UnpackPipelineState(const PipelineStateUnpackInfo& UnpackInfo, IPipelineState** ppPSO)

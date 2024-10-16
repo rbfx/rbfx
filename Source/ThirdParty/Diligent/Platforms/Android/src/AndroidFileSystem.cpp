@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,88 +25,102 @@
  *  of the possibility of such damages.
  */
 
-#include <string>
-#include <android/native_activity.h>
-
 #include "AndroidFileSystem.hpp"
 #include "Errors.hpp"
 #include "DebugUtilities.hpp"
 
+namespace Diligent
+{
+
 namespace
 {
 
-class JNIMiniHelper
+std::ios_base::openmode FileAccessModeToIosOpenMode(EFileAccessMode Mode)
 {
-public:
-    static void Init(ANativeActivity* activity, std::string activity_class_name, AAssetManager* asset_manager)
+    switch (Mode)
     {
-        VERIFY(activity != nullptr || asset_manager != nullptr, "Activity and asset manager can't both be null");
+        case EFileAccessMode::Read:
+            return std::ios::binary | std::ios::in;
 
-        auto& TheHelper                = GetInstance();
-        TheHelper.activity_            = activity;
-        TheHelper.activity_class_name_ = std::move(activity_class_name);
-        TheHelper.asset_manager_       = asset_manager;
-        if (TheHelper.asset_manager_ == nullptr && TheHelper.activity_ != nullptr)
-        {
-            TheHelper.asset_manager_ = TheHelper.activity_->assetManager;
-        }
+        case EFileAccessMode::Overwrite:
+            return std::ios::binary | std::ios::out | std::ios::trunc;
+
+        case EFileAccessMode::Append:
+            return std::ios::binary | std::ios::out | std::ios::app;
+
+        case EFileAccessMode::ReadUpdate:
+            return std::ios::binary | std::ios::in | std::ios::out;
+
+        case EFileAccessMode::OverwriteUpdate:
+            return std::ios::binary | std::ios::in | std::ios::out | std::ios::trunc;
+
+        case EFileAccessMode::AppendUpdate:
+            return std::ios::binary | std::ios::in | std::ios::out | std::ios::app;
+
+        default:
+            UNEXPECTED("Unknown file access mode");
+            return std::ios::binary;
+    }
+}
+
+struct AndroidFileSystemHelper
+{
+    static AndroidFileSystemHelper& GetInstance()
+    {
+        static AndroidFileSystemHelper Instance;
+        return Instance;
     }
 
-    static JNIMiniHelper& GetInstance()
+    void Init(AAssetManager* AssetManager, const char* ExternalFilesDir, const char* OutputFilesDir)
     {
-        static JNIMiniHelper helper;
-        return helper;
+        m_AssetManager     = AssetManager;
+        m_ExternalFilesDir = ExternalFilesDir != nullptr ? ExternalFilesDir : "";
+        m_OutputFilesDir   = OutputFilesDir != nullptr ? OutputFilesDir : "";
     }
 
-
-    bool OpenFile(const char* fileName, std::ifstream& IFS, AAsset*& AssetFile, size_t& FileSize)
+    bool OpenFile(const FileOpenAttribs& OpenAttribs, std::fstream& FS, AAsset*& AssetFile)
     {
-        if (activity_ == nullptr && asset_manager_ == nullptr)
+        const char* fileName = OpenAttribs.strFilePath;
+        if (fileName == nullptr || fileName[0] == '\0')
         {
-            LOG_ERROR_MESSAGE("JNIMiniHelper has not been initialized. Call init() to initialize the helper");
             return false;
         }
 
-        // Lock mutex
-        std::lock_guard<std::mutex> lock(mutex_);
-
-        if (activity_ != nullptr)
+        const auto IsAbsolutePath = AndroidFileSystem::IsPathAbsolute(fileName);
+        if (!IsAbsolutePath && m_ExternalFilesDir.empty() && m_AssetManager == nullptr)
         {
-            // First, try reading from externalFileDir;
-            std::string ExternalFilesPath;
-            {
-                JNIEnv* env          = nullptr;
-                bool    DetachThread = AttachCurrentThread(env);
-                if (jstring jstr_path = GetExternalFilesDirJString(env))
-                {
-                    const char* path  = env->GetStringUTFChars(jstr_path, nullptr);
-                    ExternalFilesPath = std::string(path);
-                    if (fileName[0] != '/')
-                    {
-                        ExternalFilesPath.append("/");
-                    }
-                    ExternalFilesPath.append(fileName);
-                    env->ReleaseStringUTFChars(jstr_path, path);
-                    env->DeleteLocalRef(jstr_path);
-                }
-                if (DetachThread)
-                    DetachCurrentThread();
-            }
-
-            IFS.open(ExternalFilesPath.c_str(), std::ios::binary);
+            LOG_ERROR_MESSAGE("File system has not been initialized. Call AndroidFileSystem::Init().");
+            return false;
         }
 
-        if (IFS && IFS.is_open())
+        // First, try reading from the external directory
+        if (IsAbsolutePath)
         {
-            IFS.seekg(0, std::ifstream::end);
-            FileSize = IFS.tellg();
-            IFS.seekg(0, std::ifstream::beg);
+            FS.open(fileName, FileAccessModeToIosOpenMode(OpenAttribs.AccessMode));
+        }
+        else if (!m_ExternalFilesDir.empty())
+        {
+            auto ExternalFilesPath = m_ExternalFilesDir;
+            if (ExternalFilesPath.back() != '/')
+                ExternalFilesPath.append("/");
+            ExternalFilesPath.append(fileName);
+            FS.open(ExternalFilesPath.c_str(), FileAccessModeToIosOpenMode(OpenAttribs.AccessMode));
+        }
+
+        if (FS && FS.is_open())
+        {
             return true;
         }
-        else if (asset_manager_ != nullptr)
+        else if (!IsAbsolutePath && m_AssetManager != nullptr)
         {
+            if (OpenAttribs.AccessMode != EFileAccessMode::Read)
+            {
+                LOG_ERROR_MESSAGE("Asset files can only be open for reading");
+                return false;
+            }
+
             // Fallback to assetManager
-            AssetFile = AAssetManager_open(asset_manager_, fileName, AASSET_MODE_BUFFER);
+            AssetFile = AAssetManager_open(m_AssetManager, fileName, AASSET_MODE_BUFFER);
             if (!AssetFile)
             {
                 return false;
@@ -119,7 +133,6 @@ public:
                 LOG_ERROR_MESSAGE("Failed to open: ", fileName);
                 return false;
             }
-            FileSize = AAsset_getLength(AssetFile);
             return true;
         }
         else
@@ -128,112 +141,45 @@ public:
         }
     }
 
-    /*
-     * Attach current thread
-     * In Android, the thread doesn't have to be 'Detach' current thread
-     * as application process is only killed and VM does not shut down
-     */
-    bool AttachCurrentThread(JNIEnv*& env)
+    const std::string& GetExternalFilesDir() const
     {
-        env = nullptr;
-        if (activity_->vm->GetEnv((void**)&env, JNI_VERSION_1_4) == JNI_OK)
-            return false; // Already attached
-        activity_->vm->AttachCurrentThread(&env, nullptr);
-        pthread_key_create((int32_t*)activity_, DetachCurrentThreadDtor);
-        return true;
+        return m_ExternalFilesDir;
     }
 
-    /*
-     * Unregister this thread from the VM
-     */
-    static void DetachCurrentThreadDtor(void* p)
+    const std::string& GetOutputFilesDir() const
     {
-        LOG_INFO_MESSAGE("detached current thread");
-        auto* activity = reinterpret_cast<ANativeActivity*>(p);
-        activity->vm->DetachCurrentThread();
+        return m_OutputFilesDir;
     }
 
 private:
-    JNIMiniHelper()
-    {
-    }
+    AndroidFileSystemHelper() {}
 
-    ~JNIMiniHelper()
-    {
-    }
-
-    // clang-format off
-    JNIMiniHelper           (const JNIMiniHelper&) = delete;
-    JNIMiniHelper& operator=(const JNIMiniHelper&) = delete;
-    JNIMiniHelper           (JNIMiniHelper&&)      = delete;
-    JNIMiniHelper& operator=(JNIMiniHelper&&)      = delete;
-    // clang-format on
-
-    jstring GetExternalFilesDirJString(JNIEnv* env)
-    {
-        if (activity_ == nullptr)
-        {
-            LOG_ERROR_MESSAGE("JNIHelper has not been initialized. Call init() to initialize the helper");
-            return NULL;
-        }
-
-        jstring obj_Path = nullptr;
-        // Invoking getExternalFilesDir() java API
-        jclass    cls_Env  = env->FindClass(activity_class_name_.c_str());
-        jmethodID mid      = env->GetMethodID(cls_Env, "getExternalFilesDir", "(Ljava/lang/String;)Ljava/io/File;");
-        jobject   obj_File = env->CallObjectMethod(activity_->clazz, mid, NULL);
-        if (obj_File)
-        {
-            jclass    cls_File    = env->FindClass("java/io/File");
-            jmethodID mid_getPath = env->GetMethodID(cls_File, "getPath", "()Ljava/lang/String;");
-            obj_Path              = (jstring)env->CallObjectMethod(obj_File, mid_getPath);
-            env->DeleteLocalRef(cls_File);
-            env->DeleteLocalRef(obj_File);
-        }
-        env->DeleteLocalRef(cls_Env);
-        return obj_Path;
-    }
-
-    void DetachCurrentThread()
-    {
-        activity_->vm->DetachCurrentThread();
-    }
-
-    ANativeActivity* activity_ = nullptr;
-    std::string      activity_class_name_;
-    AAssetManager*   asset_manager_ = nullptr;
-
-    // mutex for synchronization
-    // This class uses singleton pattern and can be invoked from multiple threads,
-    // each methods locks the mutex for a thread safety
-    mutable std::mutex mutex_;
+private:
+    AAssetManager* m_AssetManager = nullptr;
+    std::string    m_ExternalFilesDir;
+    std::string    m_OutputFilesDir;
 };
-
 
 } // namespace
 
-namespace Diligent
+bool AndroidFile::Open(const FileOpenAttribs& OpenAttribs, std::fstream& IFS, AAsset*& AssetFile)
 {
-
-bool AndroidFile::Open(const char* FileName, std::ifstream& IFS, AAsset*& AssetFile, size_t& Size)
-{
-    return JNIMiniHelper::GetInstance().OpenFile(FileName, IFS, AssetFile, Size);
+    return AndroidFileSystemHelper::GetInstance().OpenFile(OpenAttribs, IFS, AssetFile);
 }
 
 AndroidFile::AndroidFile(const FileOpenAttribs& OpenAttribs) :
     BasicFile{OpenAttribs}
 {
-    auto FullPath = m_OpenAttribs.strFilePath;
-    if (!Open(FullPath, m_IFS, m_AssetFile, m_Size))
+    if (!Open(m_OpenAttribs, m_FS, m_AssetFile))
     {
-        LOG_ERROR_AND_THROW("Failed to open file ", FullPath);
+        LOG_ERROR_AND_THROW("Failed to open file ", m_OpenAttribs.strFilePath);
     }
 }
 
 AndroidFile::~AndroidFile()
 {
-    if (m_IFS && m_IFS.is_open())
-        m_IFS.close();
+    if (m_FS && m_FS.is_open())
+        m_FS.close();
 
     if (m_AssetFile != nullptr)
         AAsset_close(m_AssetFile);
@@ -247,17 +193,17 @@ bool AndroidFile::Read(IDataBlob* pData)
 
 bool AndroidFile::Read(void* Data, size_t BufferSize)
 {
-    VERIFY(BufferSize == m_Size, "Only whole file reads are currently supported");
-
-    if (m_IFS && m_IFS.is_open())
+    if (m_FS && m_FS.is_open())
     {
-        m_IFS.read((char*)Data, BufferSize);
+        m_FS.read((char*)Data, BufferSize);
         return true;
     }
     else if (m_AssetFile != nullptr)
     {
         const uint8_t* src_data = (uint8_t*)AAsset_getBuffer(m_AssetFile);
         off_t          FileSize = AAsset_getLength(m_AssetFile);
+
+        VERIFY(BufferSize == static_cast<size_t>(FileSize), "Only whole asset file reads are currently supported");
         if (FileSize > static_cast<off_t>(BufferSize))
         {
             LOG_WARNING_MESSAGE("Requested buffer size (", BufferSize, ") exceeds file size (", FileSize, ")");
@@ -274,28 +220,60 @@ bool AndroidFile::Read(void* Data, size_t BufferSize)
 
 bool AndroidFile::Write(const void* Data, size_t BufferSize)
 {
-    UNSUPPORTED("Not implemented");
+    if (m_FS && m_FS.is_open())
+    {
+        m_FS.write((char*)Data, BufferSize);
+        return true;
+    }
 
     return false;
 }
 
+size_t AndroidFile::GetSize()
+{
+    if (m_FS && m_FS.is_open())
+    {
+        auto Pos = m_FS.tellg();
+        m_FS.seekg(0, std::ios_base::end);
+        auto FileSize = m_FS.tellg();
+        m_FS.seekg(Pos, std::ios_base::beg);
+        return FileSize;
+    }
+    else if (m_AssetFile != nullptr)
+    {
+        return AAsset_getLength(m_AssetFile);
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 size_t AndroidFile::GetPos()
 {
-    UNSUPPORTED("Not implemented");
+    if (m_FS && m_FS.is_open())
+    {
+        return m_FS.tellg();
+    }
 
     return 0;
 }
 
 bool AndroidFile::SetPos(size_t Offset, FilePosOrigin Origin)
 {
-    UNSUPPORTED("Not implemented");
+    if (m_FS && m_FS.is_open())
+    {
+        m_FS.seekg(Offset, std::ios_base::beg);
+    }
     return false;
 }
 
 
-void AndroidFileSystem::Init(ANativeActivity* NativeActivity, const char* NativeActivityClassName, AAssetManager* AssetManager)
+void AndroidFileSystem::Init(struct AAssetManager* AssetManager,
+                             const char*           ExternalFilesDir,
+                             const char*           OutputFilesDir)
 {
-    JNIMiniHelper::Init(NativeActivity, NativeActivityClassName != nullptr ? NativeActivityClassName : "", AssetManager);
+    AndroidFileSystemHelper::GetInstance().Init(AssetManager, ExternalFilesDir, OutputFilesDir);
 }
 
 AndroidFile* AndroidFileSystem::OpenFile(const FileOpenAttribs& OpenAttribs)
@@ -314,55 +292,30 @@ AndroidFile* AndroidFileSystem::OpenFile(const FileOpenAttribs& OpenAttribs)
 
 bool AndroidFileSystem::FileExists(const Char* strFilePath)
 {
-    std::ifstream   IFS;
+    std::fstream    FS;
     AAsset*         AssetFile = nullptr;
-    size_t          Size      = 0;
     FileOpenAttribs OpenAttribs;
     OpenAttribs.strFilePath = strFilePath;
     BasicFile   DummyFile{OpenAttribs};
     const auto& Path   = DummyFile.GetPath(); // This is necessary to correct slashes
-    bool        Exists = AndroidFile::Open(Path.c_str(), IFS, AssetFile, Size);
+    bool        Exists = AndroidFile::Open(Path.c_str(), FS, AssetFile);
 
-    if (IFS && IFS.is_open())
-        IFS.close();
+    if (FS && FS.is_open())
+        FS.close();
     if (AssetFile != nullptr)
         AAsset_close(AssetFile);
 
     return Exists;
 }
 
-bool AndroidFileSystem::PathExists(const Char* strPath)
+std::string AndroidFileSystem::GetLocalAppDataDirectory(const char* AppName /*= nullptr*/, bool Create /*= true*/)
 {
-    UNSUPPORTED("Not implemented");
-    return false;
-}
-
-bool AndroidFileSystem::CreateDirectory(const Char* strPath)
-{
-    UNSUPPORTED("Not implemented");
-    return false;
-}
-
-void AndroidFileSystem::ClearDirectory(const Char* strPath)
-{
-    UNSUPPORTED("Not implemented");
-}
-
-void AndroidFileSystem::DeleteFile(const Char* strPath)
-{
-    UNSUPPORTED("Not implemented");
-}
-
-std::vector<std::unique_ptr<FindFileData>> AndroidFileSystem::Search(const Char* SearchPattern)
-{
-    UNSUPPORTED("Not implemented");
-    return std::vector<std::unique_ptr<FindFileData>>();
-}
-
-std::string GetLocalAppDataDirectory(const char* AppName /*= nullptr*/, bool Create /*= true*/)
-{
-    UNSUPPORTED("GetLocalAppDataDirectory() is not supported on Android");
-    return "";
+    const std::string& OutputFilesDir = AndroidFileSystemHelper::GetInstance().GetOutputFilesDir();
+    if (OutputFilesDir.empty())
+    {
+        LOG_ERROR_MESSAGE("Output files directory has not been initialized. Call AndroidFileSystem::Init().");
+    }
+    return OutputFilesDir;
 }
 
 } // namespace Diligent

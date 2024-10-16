@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,6 +38,7 @@
 #include "../../../Primitives/interface/FlagEnum.h"
 #include "../../../Platforms/interface/NativeWindow.h"
 #include "../../../Common/interface/StringTools.h"
+#include "../../../Common/interface/ThreadPool.h"
 #include "APIInfo.h"
 #include "Constants.h"
 
@@ -85,6 +86,10 @@ DILIGENT_TYPED_ENUM(SHADER_TYPE, Uint32)
     SHADER_TYPE_CALLABLE         = 0x2000, ///< Callable shader
     SHADER_TYPE_TILE             = 0x4000, ///< Tile shader (Only for Metal backend)
     SHADER_TYPE_LAST             = SHADER_TYPE_TILE,
+
+    /// Vertex and pixel shader stages
+    SHADER_TYPE_VS_PS           = SHADER_TYPE_VERTEX |
+                                  SHADER_TYPE_PIXEL,
 
     /// All graphics pipeline shader stages
     SHADER_TYPE_ALL_GRAPHICS    = SHADER_TYPE_VERTEX   |
@@ -1581,6 +1586,7 @@ enum RENDER_DEVICE_TYPE
     RENDER_DEVICE_TYPE_GLES,           ///< OpenGLES device
     RENDER_DEVICE_TYPE_VULKAN,         ///< Vulkan device
     RENDER_DEVICE_TYPE_METAL,          ///< Metal device
+    RENDER_DEVICE_TYPE_WEBGPU,         ///< WebGPU device
     RENDER_DEVICE_TYPE_COUNT           ///< The total number of device types
 };
 
@@ -1678,6 +1684,12 @@ struct DeviceFeatures
     DEVICE_FEATURE_STATE DepthBiasClamp                DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
 
     /// Indicates if device supports depth clamping
+    ///
+    /// \remarks    By default polygon faces are clipped against the near and far planes of the view
+    ///             frustum. If depth clipping is disabled in the PSO, the depth of the fragments that
+    ///             would be clipped is clamped to the near/far plane instead of discarding them.
+    ///             If this feature is enabled, the DepthClipEnable member of the RasterizerStateDesc
+    ///             struct can be set to False. Otherwise it must always be set to True.
     DEVICE_FEATURE_STATE DepthClamp                    DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
 
     /// Indicates if device supports depth clamping
@@ -1730,12 +1742,18 @@ struct DeviceFeatures
     /// Indicates if device supports reading 8-bit types from uniform buffers.
     DEVICE_FEATURE_STATE UniformBuffer8BitAccess          DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
 
+    /// Indicates if device supports static-sized shader arrays.
+    ///
+    /// \remarks    This feature is always enabled in all backends,
+    ///             except for WebGPU.
+    DEVICE_FEATURE_STATE ShaderResourceStaticArrays       DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
+
     /// Indicates if device supports runtime-sized shader arrays (e.g. arrays without a specific size).
     ///
     /// \remarks    This feature is always enabled in DirectX12 backend and
     ///             can optionally be enabled in Vulkan backend.
     ///             Run-time sized shader arrays are not available in other backends.
-    DEVICE_FEATURE_STATE ShaderResourceRuntimeArray       DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
+    DEVICE_FEATURE_STATE ShaderResourceRuntimeArrays      DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
 
     /// Indicates if device supports wave ops (Direct3D12) or subgroups (Vulkan).
     DEVICE_FEATURE_STATE WaveOp                           DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
@@ -1778,6 +1796,37 @@ struct DeviceFeatures
     /// Indicates if device supports texture component swizzle.
     DEVICE_FEATURE_STATE TextureComponentSwizzle DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
 
+    /// Indicates if device supports texture subresource views.
+    ///
+    /// \remarks    This feature is always enabled in all backends except for GLES, WebGL and older
+    ///             OpenGL versions.
+    ///
+    ///             When this feature is disabled, only texture views that reference the entire
+    ///             texture can be created.
+    DEVICE_FEATURE_STATE TextureSubresourceViews DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
+
+    /// Indicates if device supports native multi-draw commands.
+    ///
+    /// \remarks    When this feature is enabled, the GPU supports a dedicated command that
+    ///             can be used to issue multiple draw calls with a single command (e.g. vkCmdDrawMultiEXT,
+    ///             glMultiDrawElements, etc.). In OpenGL and Vulkan, the shader can access the draw
+    ///             command index using the gl_DrawID built-in variable.
+    ///
+    ///             When this feature is disabled, the engine emulates multi-draw commands by issuing
+    ///             multiple individual draw calls. The draw command index is unavailable.
+    DEVICE_FEATURE_STATE NativeMultiDraw DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
+
+    /// Whether the device supports asynchronous shader compilation.
+    ///
+    /// \remarks    When this feature is enabled, the engine can create shaders and pipeline states
+    ///             asynchronously in a separate thread without blocking the main thread. An application
+    ///             can query the shader status using the IShader::GetStatus() method and the pipeline
+    ///             state status using the IPipelineState::GetStatus() method.
+    DEVICE_FEATURE_STATE AsyncShaderCompilation DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
+
+    /// Indicates if device supports formatted buffers.
+    DEVICE_FEATURE_STATE FormattedBuffers       DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
+
 #if DILIGENT_CPP_INTERFACE
     constexpr DeviceFeatures() noexcept {}
 
@@ -1813,7 +1862,8 @@ struct DeviceFeatures
     Handler(ShaderInt8)                        \
     Handler(ResourceBuffer8BitAccess)          \
     Handler(UniformBuffer8BitAccess)           \
-    Handler(ShaderResourceRuntimeArray)        \
+    Handler(ShaderResourceStaticArrays)        \
+    Handler(ShaderResourceRuntimeArrays)       \
     Handler(WaveOp)                            \
     Handler(InstanceDataStepRate)              \
     Handler(NativeFence)                       \
@@ -1822,11 +1872,15 @@ struct DeviceFeatures
     Handler(VariableRateShading)               \
     Handler(SparseResources)                   \
     Handler(SubpassFramebufferFetch)           \
-    Handler(TextureComponentSwizzle)
+    Handler(TextureComponentSwizzle)           \
+	Handler(TextureSubresourceViews)		   \
+	Handler(NativeMultiDraw)                   \
+    Handler(AsyncShaderCompilation)			   \
+	Handler(FormattedBuffers)
 
     explicit constexpr DeviceFeatures(DEVICE_FEATURE_STATE State) noexcept
     {
-        static_assert(sizeof(*this) == 41, "Did you add a new feature to DeviceFeatures? Please add it to ENUMERATE_DEVICE_FEATURES.");
+        static_assert(sizeof(*this) == 46, "Did you add a new feature to DeviceFeatures? Please add it to ENUMERATE_DEVICE_FEATURES.");
     #define INIT_FEATURE(Feature) Feature = State;
         ENUMERATE_DEVICE_FEATURES(INIT_FEATURE)
     #undef INIT_FEATURE
@@ -1907,10 +1961,9 @@ struct Version
     constexpr Version() noexcept
     {}
 
-    template <typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
-    constexpr Version(T _Major, T _Minor) noexcept :
-        Major{static_cast<decltype(Major)>(_Major)},
-        Minor{static_cast<decltype(Minor)>(_Minor)}
+    constexpr Version(Uint32 _Major, Uint32 _Minor) noexcept :
+        Major{_Major},
+        Minor{_Minor}
     {
     }
 
@@ -2062,8 +2115,9 @@ struct SamplerProperties
     /// Indicates if device supports border texture addressing mode
     Bool BorderSamplingModeSupported   DEFAULT_INITIALIZER(False);
 
-    /// Indicates if device supports anisotropic filtering
-    Bool AnisotropicFilteringSupported DEFAULT_INITIALIZER(False);
+    /// Maximum anisotropy level supported by the device.
+    /// If anisotropic filtering is not supported, this value is 1.
+    Uint8 MaxAnisotropy DEFAULT_INITIALIZER(1);
 
     /// Indicates if device supports MIP load bias
     Bool LODBiasSupported              DEFAULT_INITIALIZER(False);
@@ -2077,9 +2131,9 @@ struct SamplerProperties
     /// - False otherwise.
     constexpr bool operator==(const SamplerProperties& RHS) const
     {
-        return BorderSamplingModeSupported   == RHS.BorderSamplingModeSupported   &&
-               AnisotropicFilteringSupported == RHS.AnisotropicFilteringSupported &&
-               LODBiasSupported              == RHS.LODBiasSupported;
+        return BorderSamplingModeSupported == RHS.BorderSamplingModeSupported   &&
+               MaxAnisotropy               == RHS.MaxAnisotropy &&
+               LODBiasSupported            == RHS.LODBiasSupported;
     }
 #endif
 
@@ -2255,8 +2309,17 @@ typedef struct RayTracingProperties RayTracingProperties;
 /// Mesh Shader Properties
 struct MeshShaderProperties
 {
-    /// The maximum number of mesh shader tasks per draw command.
-    Uint32 MaxTaskCount DEFAULT_INITIALIZER(0);
+    /// The maximum number of mesh shader thread groups in X direction.
+    Uint32 MaxThreadGroupCountX DEFAULT_INITIALIZER(0);
+
+    /// The maximum number of mesh shader thread groups in Y direction.
+    Uint32 MaxThreadGroupCountY DEFAULT_INITIALIZER(0);
+
+    /// The maximum number of mesh shader thread groups in Z direction.
+    Uint32 MaxThreadGroupCountZ DEFAULT_INITIALIZER(0);
+
+    /// The total maximum number of mesh shader groups per draw command.
+    Uint32 MaxThreadGroupTotalCount DEFAULT_INITIALIZER(0);
 
 #if DILIGENT_CPP_INTERFACE
     /// Comparison operator tests if two structures are equivalent
@@ -2267,7 +2330,10 @@ struct MeshShaderProperties
     /// - False otherwise.
     constexpr bool operator==(const MeshShaderProperties& RHS) const
     {
-        return MaxTaskCount == RHS.MaxTaskCount;
+        return MaxThreadGroupCountX     == RHS.MaxThreadGroupCountX &&
+               MaxThreadGroupCountY     == RHS.MaxThreadGroupCountY &&
+               MaxThreadGroupCountZ     == RHS.MaxThreadGroupCountZ &&
+               MaxThreadGroupTotalCount == RHS.MaxThreadGroupTotalCount;
     }
 #endif
 };
@@ -2420,21 +2486,25 @@ struct RenderDeviceInfo
     RenderDeviceShaderVersionInfo MaxShaderVersion DEFAULT_INITIALIZER({});
 
 #if DILIGENT_CPP_INTERFACE
-    constexpr bool IsGLDevice()const
+    constexpr bool IsGLDevice() const
     {
         return Type == RENDER_DEVICE_TYPE_GL || Type == RENDER_DEVICE_TYPE_GLES;
     }
-    constexpr bool IsD3DDevice()const
+    constexpr bool IsD3DDevice() const
     {
         return Type == RENDER_DEVICE_TYPE_D3D11 || Type == RENDER_DEVICE_TYPE_D3D12;
     }
-    constexpr bool IsVulkanDevice()const
+    constexpr bool IsVulkanDevice() const
     {
         return Type == RENDER_DEVICE_TYPE_VULKAN;
     }
-    constexpr bool IsMetalDevice()const
+    constexpr bool IsMetalDevice() const
     {
         return Type == RENDER_DEVICE_TYPE_METAL;
+    }
+    constexpr bool IsWebGPUDevice() const
+    {
+        return Type == RENDER_DEVICE_TYPE_WEBGPU;
     }
 
     // for backward compatibility
@@ -3380,6 +3450,32 @@ struct EngineCreateInfo
     /// operations in the engine
     struct IMemoryAllocator* pRawMemAllocator       DEFAULT_INITIALIZER(nullptr);
 
+    /// An optional thread pool for asynchronous shader and pipeline state compilation.
+    ///
+    /// \remarks    When AsyncShaderCompilation device feature is enabled, the engine will use
+    ///             the provided thread pool to compile shaders and pipeline states asynchronously.
+    ///             If the thread pool is not provided, the engine will create a default thread pool.
+    /// 
+    /// \note       Thread pool is not used in OpenGL backend as asynchronous shader compilation
+    ///             is performed by the driver.
+    IThreadPool* pAsyncShaderCompilationThreadPool DEFAULT_INITIALIZER(nullptr);
+
+    /// When AsyncShaderCompilation is enabled, the maximum number of threads that can be used to compile shaders.
+    ///
+    /// \remarks    If AsyncShaderCompilation device feature is enabled and pAsyncShaderCompilationThreadPool is null,
+    ///             this value is used to define the number of threads in the default thread pool.
+    ///             If the value is 0xFFFFFFFF, the number of threads will be determined automatically.
+    ///             
+    ///             If pAsyncShaderCompilationThreadPool is not null, the value is ignored as the user-provided
+    ///             thread pool is used instead.
+    ///             
+    ///             In OpenGL backend, the thread pool is not used and the value is passed to glMaxShaderCompilerThreadsKHR()
+    ///             function.
+    Uint32 NumAsyncShaderCompilationThreads DEFAULT_INITIALIZER(0xFFFFFFFFu);
+
+    // The structure must be 8-byte aligned
+    Uint32 Padding DEFAULT_INITIALIZER(0);
+
 #if DILIGENT_CPP_INTERFACE
     EngineCreateInfo() noexcept
     {
@@ -3403,6 +3499,57 @@ struct EngineCreateInfo
 };
 typedef struct EngineCreateInfo EngineCreateInfo;
 
+#if PLATFORM_EMSCRIPTEN
+/// WebGL power preference.
+DILIGENT_TYPED_ENUM(WEBGL_POWER_PREFERENCE, Uint8)
+{
+    /// Default power preference.
+	WEBGL_POWER_PREFERENCE_DEFAULT = 0,
+
+    /// Low power preference.
+	WEBGL_POWER_PREFERENCE_LOW_POWER,
+
+    /// High performance power preference.
+	WEBGL_POWER_PREFERENCE_HIGH_PERFORMANCE
+};
+
+/// WebGL context attributes.
+///
+/// \remarks    This struct is used to set the members of the EmscriptenWebGLContextAttributes
+///             structure that is passed to emscripten_webgl_create_context().
+struct WebGLContextAttribs
+{
+    /// If true, request alpha channel for the context and enable blending of
+    /// the canvas with the underlying web page contents.
+    ///
+    /// \remarks    This corresponds to the alpha member of the EmscriptenWebGLContextAttributes struct.
+    Bool Alpha DEFAULT_INITIALIZER(true);
+
+    /// If true, enable antialiasing with a browser-specified algorithm and quality level.
+    ///
+    /// \remarks    This corresponds to the antialias member of the EmscriptenWebGLContextAttributes struct.
+    Bool Antialias DEFAULT_INITIALIZER(true);
+
+    /// If true, treat the rendered canvas contents as alpha-premultiplied.
+    ///
+    /// \remarks    This corresponds to the premultipliedAlpha member of the EmscriptenWebGLContextAttributes struct.
+    Bool PremultipliedAlpha DEFAULT_INITIALIZER(true);
+
+    /// If true, preserve the contents of the drawing buffer between consecutive requestAnimationFrame() calls.
+    /// If false, clear the color, depth and stencil at the beginning of each requestAnimationFrame().
+    /// Generally setting this to false gives better performance.
+    ///
+    /// \remarks    This corresponds to the preserveDrawingBuffer member of the EmscriptenWebGLContextAttributes struct.
+    Bool PreserveDrawingBuffer DEFAULT_INITIALIZER(false);
+
+    /// Specifies a hint to the WebGL canvas implementation to how it should choose the use of available GPU resources.
+    ///
+    /// \remarks    This corresponds to the powerPreference member of the EmscriptenWebGLContextAttributes struct.
+    WEBGL_POWER_PREFERENCE PowerPreference DEFAULT_INITIALIZER(WEBGL_POWER_PREFERENCE_DEFAULT);
+};
+typedef struct WebGLContextAttribs WebGLContextAttribs;
+#endif
+
 /// Attributes of the OpenGL-based engine implementation
 struct EngineGLCreateInfo DILIGENT_DERIVE(EngineCreateInfo)
 
@@ -3412,6 +3559,30 @@ struct EngineGLCreateInfo DILIGENT_DERIVE(EngineCreateInfo)
     /// Enable 0..1 normalized-device Z range, if required extension is supported; -1..+1 otherwise.
     /// Use IRenderDevice::GetDeviceInfo().NDC to get current NDC.
     Bool         ZeroToOneNDZ DEFAULT_INITIALIZER(false);
+
+    /// The GPU preference allows you to request either the integrated or dedicated GPU
+    /// on systems having both onboard and dedicated GPUs. Currently this works only on Windows and Linux.
+    ///
+    /// * On Windows this is done by setting the `NvOptimusEnablement` and `AmdPowerXpressRequestHighPerformance`.
+    ///   When the Nvidia and AMD drivers see their respective symbol exported and set to nonzero in a program,
+    ///   they will take precedence over the integrated GPU when creating the OpenGL context.
+    ///
+    ///   Unfortunately, there is no way to transfer exported symbols from static libraries
+    ///   to the executable file without explicitly creating a Module-Definition File (.def).
+    ///
+    ///   Therefore you need to explicitly define these variables in your executable file:
+    ///   https://gist.github.com/statico/6809850727c708f08458
+    ///   or you can use the `Diligent-GLAdapterSelector` object library as source input to your executable target:
+    ///   `target_sources(MyExecutable PRIVATE $<TARGET_OBJECTS:Diligent-GLAdapterSelector>)`,
+    ///   see https://cmake.org/cmake/help/v3.16/manual/cmake-buildsystem.7.html#object-libraries.
+    ///
+    /// * On Linux this affects the `DRI_PRIME` environment variable that is used by Mesa drivers that support PRIME.
+    ADAPTER_TYPE PreferredAdapterType DEFAULT_INITIALIZER(ADAPTER_TYPE_UNKNOWN);
+
+#if PLATFORM_EMSCRIPTEN
+    /// WebGL context attributes.
+    WebGLContextAttribs WebGLAttribs;
+#endif
 
 #if DILIGENT_CPP_INTERFACE
     EngineGLCreateInfo() noexcept : EngineGLCreateInfo{EngineCreateInfo{}}
@@ -3945,6 +4116,54 @@ struct EngineMtlCreateInfo DILIGENT_DERIVE(EngineCreateInfo)
 };
 typedef struct EngineMtlCreateInfo EngineMtlCreateInfo;
 
+/// Attributes of the WebGPU-based engine implementation
+struct EngineWebGPUCreateInfo DILIGENT_DERIVE(EngineCreateInfo)
+
+    /// Upload heap page size.
+    ///
+    /// \remarks    Upload heap is used to update resources with IDeviceContext::UpdateBuffer(),
+    ///  	        IDeviceContext::UpdateTexture(), or to map dynamic textures.
+    Uint32 UploadHeapPageSize  DEFAULT_INITIALIZER(8 << 20);
+
+    /// The size of the dynamic heap (the buffer that is used to suballocate memory for dynamic resources).
+    ///
+    /// \remarks    The dynamic heap is used to allocate memory for dynamic
+    ///             resources. Each time a dynamic buffer or dynamic texture is mapped,
+    ///             the engine allocates a new chunk of memory from the dynamic heap.
+    ///             At the end of the frame, all dynamic memory allocated for the frame
+    ///             is recycled. Note that unlike Vulkan, the dynamic memory becomes available
+    ///             immediately for use in the next frame.
+    Uint32 DynamicHeapSize     DEFAULT_INITIALIZER(8 << 20);
+
+    /// Size of the memory chunk suballocated by immediate/deferred context from
+    /// the global dynamic heap to perform lock-free dynamic suballocations.
+    Uint32 DynamicHeapPageSize DEFAULT_INITIALIZER(256 << 10);
+
+    /// Query pool size for each query type.
+    Uint32 QueryPoolSizes[QUERY_TYPE_NUM_TYPES]
+#if DILIGENT_CPP_INTERFACE
+    {
+        0,   // Ignored
+        128, // QUERY_TYPE_OCCLUSION
+        0,   // QUERY_TYPE_BINARY_OCCLUSION
+        512, // QUERY_TYPE_TIMESTAMP
+        0,   // QUERY_TYPE_PIPELINE_STATISTICS
+        256  // QUERY_TYPE_DURATION
+    }
+#endif
+    ;
+
+#if DILIGENT_CPP_INTERFACE
+    EngineWebGPUCreateInfo() noexcept :
+        EngineWebGPUCreateInfo{EngineCreateInfo{}}
+    {}
+
+    explicit EngineWebGPUCreateInfo(const EngineCreateInfo &EngineCI) noexcept :
+        EngineCreateInfo{EngineCI}
+    {}
+#endif
+};
+typedef struct EngineWebGPUCreateInfo EngineWebGPUCreateInfo;
 
 /// Box
 struct Box
@@ -4093,6 +4312,11 @@ struct TextureFormatAttribs
     }
 
     constexpr TextureFormatAttribs() noexcept {}
+
+    constexpr bool IsDepthStencil() const noexcept
+    {
+        return ComponentType == COMPONENT_TYPE_DEPTH || ComponentType == COMPONENT_TYPE_DEPTH_STENCIL;
+    }
 #endif
 };
 typedef struct TextureFormatAttribs TextureFormatAttribs;
@@ -4108,6 +4332,13 @@ struct TextureFormatInfo DILIGENT_DERIVE(TextureFormatAttribs)
 
     // Explicitly pad the structure to 8-byte boundary
     Bool Padding[7] DEFAULT_INITIALIZER({});
+
+#if DILIGENT_CPP_INTERFACE
+    explicit constexpr operator bool() const
+    {
+        return Supported;
+    }
+#endif
 };
 typedef struct TextureFormatInfo TextureFormatInfo;
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,7 @@
 /// \file
 /// Diligent API information
 
-#define DILIGENT_API_VERSION 253007
+#define DILIGENT_API_VERSION 255001
 
 #include "../../../Primitives/interface/BasicTypes.h"
 
@@ -87,10 +87,11 @@ struct APIInfo
     size_t RayTracingPipelineStateCreateInfoSize DEFAULT_INITIALIZER(0);
     size_t RasterizerStateDescSize               DEFAULT_INITIALIZER(0);
     size_t ResourceMappingEntrySize              DEFAULT_INITIALIZER(0);
-    size_t ResourceMappingDescSize               DEFAULT_INITIALIZER(0);
+    size_t ResourceMappingCreateInfoSize         DEFAULT_INITIALIZER(0);
     size_t SamplerDescSize                       DEFAULT_INITIALIZER(0);
     size_t ShaderDescSize                        DEFAULT_INITIALIZER(0);
     size_t ShaderMacroSize                       DEFAULT_INITIALIZER(0);
+    size_t ShaderMacroArraySize                  DEFAULT_INITIALIZER(0);
     size_t ShaderCreateInfoSize                  DEFAULT_INITIALIZER(0);
     size_t ShaderResourceDescSize                DEFAULT_INITIALIZER(0);
     size_t DepthStencilClearValueSize            DEFAULT_INITIALIZER(0);

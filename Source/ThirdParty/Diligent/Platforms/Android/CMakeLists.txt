@@ -8,12 +8,16 @@ set(INTERFACE
     interface/AndroidPlatformDefinitions.h
     interface/AndroidPlatformMisc.hpp
     interface/AndroidNativeWindow.h
+    interface/JNIMiniHelper.hpp
+    interface/JNIWrappers.hpp
     ../Linux/interface/LinuxPlatformMisc.hpp
 )
 
 set(SOURCE
     src/AndroidDebug.cpp
     src/AndroidFileSystem.cpp
+    src/AndroidPlatformMisc.cpp
+    ../Linux/src/LinuxFileSystem.cpp
 )
 
 add_library(Diligent-AndroidPlatform STATIC ${SOURCE} ${INTERFACE} ${PLATFORM_INTERFACE_HEADERS})
@@ -21,7 +25,7 @@ set_common_target_properties(Diligent-AndroidPlatform)
 
 target_include_directories(Diligent-AndroidPlatform
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    interface
 )
 
 target_link_libraries(Diligent-AndroidPlatform

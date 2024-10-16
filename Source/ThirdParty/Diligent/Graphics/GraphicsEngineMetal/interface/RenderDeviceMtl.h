@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {8D483E4A-2D53-47B2-B8D7-276F4CE57F68}
-static const INTERFACE_ID IID_RenderDeviceMtl =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_RenderDeviceMtl =
     {0x8d483e4a, 0x2d53, 0x47b2, {0xb8, 0xd7, 0x27, 0x6f, 0x4c, 0xe5, 0x7f, 0x68}};
 
 #define DILIGENT_INTERFACE_NAME IRenderDeviceMtl

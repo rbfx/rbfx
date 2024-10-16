@@ -54,22 +54,25 @@ public:
     using TDeviceObjectBase = DeviceObjectBase<BaseInterface, RenderDeviceImplType, TextureViewDesc>;
 
 
-    /// \param pRefCounters   - Reference counters object that controls the lifetime of this texture view.
-    /// \param pDevice        - Pointer to the render device.
-    /// \param ViewDesc       - Texture view description.
-    /// \param pTexture       - Pointer to the texture that the view is to be created for.
-    /// \param bIsDefaultView - Flag indicating if the view is default view, and is thus
-    ///						    part of the texture object. In this case the view will attach
-    ///							to the texture's reference counters.
+    /// \param pRefCounters      - Reference counters object that controls the lifetime of this texture view.
+    /// \param pDevice           - Pointer to the render device.
+    /// \param ViewDesc          - Texture view description.
+    /// \param pTexture          - Pointer to the texture that the view is to be created for.
+    /// \param bIsDefaultView    - Flag indicating if the view is default view, and is thus
+    ///						       part of the texture object. In this case the view will attach
+    ///							   to the texture's reference counters.
+    /// \param bIsDeviceInternal - Flag indicating if the texture is an internal device object and
+    ///						       must not keep a strong reference to the device
     TextureViewBase(IReferenceCounters*    pRefCounters,
                     RenderDeviceImplType*  pDevice,
                     const TextureViewDesc& ViewDesc,
                     ITexture*              pTexture,
-                    bool                   bIsDefaultView) :
+                    bool                   bIsDefaultView,
+                    bool                   bIsDeviceInternal = false) :
         // Default views are created as part of the texture, so we cannot not keep strong
         // reference to the texture to avoid cyclic links. Instead, we will attach to the
         // reference counters of the texture.
-        TDeviceObjectBase(pRefCounters, pDevice, ViewDesc),
+        TDeviceObjectBase(pRefCounters, pDevice, ViewDesc, bIsDeviceInternal),
         m_pTexture(pTexture),
         // For non-default view, we will keep strong reference to texture
         m_spTexture(bIsDefaultView ? nullptr : pTexture)

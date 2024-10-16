@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -78,6 +78,7 @@ class ShaderResourceCacheGL;
 class ShaderVariableManagerGL;
 
 struct PipelineResourceAttribsGL;
+struct ImmutableSamplerAttribsGL;
 struct PipelineResourceSignatureInternalDataGL;
 
 struct EngineGLImplTraits
@@ -133,7 +134,9 @@ struct EngineGLImplTraits
     using ShaderResourceCacheImplType   = ShaderResourceCacheGL;
     using ShaderVariableManagerImplType = ShaderVariableManagerGL;
 
-    using PipelineResourceAttribsType = PipelineResourceAttribsGL;
+    using PipelineResourceAttribsType               = PipelineResourceAttribsGL;
+    using ImmutableSamplerAttribsType               = ImmutableSamplerAttribsGL;
+    using PipelineResourceSignatureInternalDataType = PipelineResourceSignatureInternalDataGL;
 };
 
 } // namespace Diligent

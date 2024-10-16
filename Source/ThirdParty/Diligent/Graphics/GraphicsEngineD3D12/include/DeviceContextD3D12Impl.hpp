@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -76,8 +76,7 @@ public:
     virtual void DILIGENT_CALL_TYPE SetPipelineState(IPipelineState* pPipelineState) override final;
 
     /// Implementation of IDeviceContext::TransitionShaderResources() in Direct3D12 backend.
-    virtual void DILIGENT_CALL_TYPE TransitionShaderResources(IPipelineState*         pPipelineState,
-                                                              IShaderResourceBinding* pShaderResourceBinding) override final;
+    virtual void DILIGENT_CALL_TYPE TransitionShaderResources(IShaderResourceBinding* pShaderResourceBinding) override final;
 
     /// Implementation of IDeviceContext::CommitShaderResources() in Direct3D12 backend.
     virtual void DILIGENT_CALL_TYPE CommitShaderResources(IShaderResourceBinding*        pShaderResourceBinding,
@@ -92,7 +91,7 @@ public:
     /// Implementation of IDeviceContext::SetVertexBuffers() in Direct3D12 backend.
     virtual void DILIGENT_CALL_TYPE SetVertexBuffers(Uint32                         StartSlot,
                                                      Uint32                         NumBuffersSet,
-                                                     IBuffer**                      ppBuffers,
+                                                     IBuffer* const*                ppBuffers,
                                                      const Uint64*                  pOffsets,
                                                      RESOURCE_STATE_TRANSITION_MODE StateTransitionMode,
                                                      SET_VERTEX_BUFFERS_FLAGS       Flags) override final;
@@ -142,6 +141,10 @@ public:
     virtual void DILIGENT_CALL_TYPE DrawMesh           (const DrawMeshAttribs& Attribs) override final;
     /// Implementation of IDeviceContext::DrawMeshIndirect() in Direct3D12 backend.
     virtual void DILIGENT_CALL_TYPE DrawMeshIndirect   (const DrawMeshIndirectAttribs& Attribs) override final;
+    /// Implementation of IDeviceContext::MultiDraw() in Direct3D12 backend.
+    virtual void DILIGENT_CALL_TYPE MultiDraw          (const MultiDrawAttribs& Attribs) override final;
+    /// Implementation of IDeviceContext::MultiDrawIndexed() in Direct3D12 backend.
+    virtual void DILIGENT_CALL_TYPE MultiDrawIndexed   (const MultiDrawIndexedAttribs& Attribs) override final;
 
 
     /// Implementation of IDeviceContext::DispatchCompute() in Direct3D12 backend.
@@ -159,7 +162,7 @@ public:
 
     /// Implementation of IDeviceContext::ClearRenderTarget() in Direct3D12 backend.
     virtual void DILIGENT_CALL_TYPE ClearRenderTarget(ITextureView*                  pView,
-                                                      const float*                   RGBA,
+                                                      const void*                    RGBA,
                                                       RESOURCE_STATE_TRANSITION_MODE StateTransitionMode) override final;
 
     /// Implementation of IDeviceContext::UpdateBuffer() in Direct3D12 backend.

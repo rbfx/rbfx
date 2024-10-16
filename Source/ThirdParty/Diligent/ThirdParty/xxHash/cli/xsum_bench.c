@@ -45,6 +45,18 @@
 #define TIMELOOP  (TIMELOOP_S * CLOCKS_PER_SEC)   /* target timing per iteration */
 #define TIMELOOP_MIN (TIMELOOP / 2)               /* minimum timing to validate a result */
 
+/* Each benchmark iteration attempts to match TIMELOOP (1 second).
+ * The nb of loops is adjusted at each iteration to reach that target.
+ * However, initially, there is no information, so 1st iteration blindly targets an arbitrary speed.
+ * If it's too small, it will be adjusted, and a new attempt will be made.
+ * But if it's too large, the first iteration can be very long,
+ * before being fixed at second attempt.
+ * So prefer starting with small speed targets.
+ * XXH_1ST_SPEED_TARGET is defined in MB/s */
+#ifndef XXH_1ST_SPEED_TARGET
+# define XXH_1ST_SPEED_TARGET 10
+#endif
+
 #define MAX_MEM    (2 GB - 64 MB)
 
 static clock_t XSUM_clockSpan( clock_t start )
@@ -216,7 +228,7 @@ int g_nbIterations = NBLOOPS_DEFAULT;
 static void XSUM_benchHash(hashFunction h, const char* hName, int testID,
                            const void* buffer, size_t bufferSize)
 {
-    XSUM_U32 nbh_perIteration = (XSUM_U32)((300 MB) / (bufferSize+1)) + 1;  /* first iteration conservatively aims for 300 MB/s */
+    XSUM_U32 nbh_perIteration = (XSUM_U32)((XXH_1ST_SPEED_TARGET MB) / (bufferSize+1)) + 1;
     int iterationNb, nbIterations = g_nbIterations + !g_nbIterations /* min 1 */;
     double fastestH = 100000000.;
     assert(HASHNAME_MAX > 2);
@@ -328,9 +340,13 @@ static char* XSUM_strcatDup(const char* s1, const char* s2)
 
 /*!
  * XSUM_benchMem():
- * buffer: Must be 16-byte aligned.
- * The real allocated size of buffer is supposed to be >= (bufferSize+3).
- * returns: 0 on success, 1 if error (invalid mode selected)
+ * Benchmark provided content up to twice per function:
+ * - once at provided aligned memory address (%16)
+ * - second time at unaligned memory address (+3)
+ * Enabled functions and modes are provided via @g_hashesToBench global variable.
+ * @buffer: Must be 16-byte aligned.
+ * The allocated size of underlying @buffer must be >= (@bufferSize+3).
+ * This function also fills @g_benchSecretBuf, to bench XXH3's _withSecret() variants.
  */
 static void XSUM_benchMem(const void* buffer, size_t bufferSize)
 {

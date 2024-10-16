@@ -98,7 +98,7 @@ RootSignatureD3D12::RootSignatureD3D12(IReferenceCounters*                      
     // Reserve space for all d3d12 root parameters
     std::vector<D3D12_ROOT_PARAMETER, STDAllocatorRawMem<D3D12_ROOT_PARAMETER>> d3d12Parameters(
         TotalParams,
-        D3D12_ROOT_PARAMETER{static_cast<D3D12_ROOT_PARAMETER_TYPE>(-1)},
+        D3D12_ROOT_PARAMETER{static_cast<D3D12_ROOT_PARAMETER_TYPE>(-1), {}, {}},
         STD_ALLOCATOR_RAW_MEM(D3D12_ROOT_PARAMETER, GetRawAllocator(), "Allocator for vector<D3D12_ROOT_PARAMETER>"));
     // ... descriptor ranges,
     std::vector<D3D12_DESCRIPTOR_RANGE, STDAllocatorRawMem<D3D12_DESCRIPTOR_RANGE>> d3d12DescrRanges(

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -33,6 +33,39 @@
 namespace Diligent
 {
 
+static void SetFirstVertexConvention(EMSCRIPTEN_WEBGL_CONTEXT_HANDLE ContextHandle)
+{
+    // There is no c++ way to set the first vertex convention, so we have to use JavaScript.
+    EM_ASM(
+        {
+            try
+            {
+                const context = GL.getContext($0);
+                if (!context)
+                {
+                    console.error('Failed to get gl context from handle');
+                    return;
+                }
+
+                const epv = context.GLctx.getExtension('WEBGL_provoking_vertex');
+                if (epv)
+                {
+                    epv.provokingVertexWEBGL(epv.FIRST_VERTEX_CONVENTION_WEBGL);
+                }
+                else
+                {
+                    console.warn('WEBGL_provoking_vertex is not supported. Using flat shading may result in catastrophic performance degradation.');
+                }
+            }
+            catch (error)
+            {
+                console.error('An unexpected error occurred while setting the first vertex convention: ', error,
+                              '\nUsing flat shading may result in catastrophic performance degradation.');
+            }
+        },
+        ContextHandle);
+};
+
 GLContext::GLContext(const EngineGLCreateInfo& InitAttribs, RENDER_DEVICE_TYPE& DevType, Version& APIVersion, const struct SwapChainDesc* /*pSCDesc*/)
 {
     if (InitAttribs.Window.pCanvasId != nullptr)
@@ -40,10 +73,23 @@ GLContext::GLContext(const EngineGLCreateInfo& InitAttribs, RENDER_DEVICE_TYPE& 
         EmscriptenWebGLContextAttributes ContextAttributes = {};
         emscripten_webgl_init_context_attributes(&ContextAttributes);
 
-        // TODO: Initialization params
-        ContextAttributes.depth        = true;
-        ContextAttributes.majorVersion = 3;
-        ContextAttributes.minorVersion = 0;
+        ContextAttributes.depth                 = true;
+        ContextAttributes.majorVersion          = 3;
+        ContextAttributes.minorVersion          = 0;
+        ContextAttributes.alpha                 = InitAttribs.WebGLAttribs.Alpha;
+        ContextAttributes.antialias             = InitAttribs.WebGLAttribs.Antialias;
+        ContextAttributes.premultipliedAlpha    = InitAttribs.WebGLAttribs.PremultipliedAlpha;
+        ContextAttributes.preserveDrawingBuffer = InitAttribs.WebGLAttribs.PreserveDrawingBuffer;
+
+        switch (InitAttribs.WebGLAttribs.PowerPreference)
+        {
+            // clang-format off
+            case WEBGL_POWER_PREFERENCE_DEFAULT:          ContextAttributes.powerPreference = EM_WEBGL_POWER_PREFERENCE_DEFAULT;          break;
+            case WEBGL_POWER_PREFERENCE_LOW_POWER:        ContextAttributes.powerPreference = EM_WEBGL_POWER_PREFERENCE_LOW_POWER;        break;
+            case WEBGL_POWER_PREFERENCE_HIGH_PERFORMANCE: ContextAttributes.powerPreference = EM_WEBGL_POWER_PREFERENCE_HIGH_PERFORMANCE; break;
+            // clang-format on
+            default: UNEXPECTED("Unknown power preference");
+        }
 
         m_GLContext = emscripten_webgl_create_context(InitAttribs.Window.pCanvasId, &ContextAttributes);
         if (m_GLContext == 0)
@@ -77,25 +123,16 @@ GLContext::GLContext(const EngineGLCreateInfo& InitAttribs, RENDER_DEVICE_TYPE& 
     glGetIntegerv(GL_MINOR_VERSION, &MinorVersion);
     LOG_INFO_MESSAGE(InitAttribs.Window.pCanvasId != nullptr ? "Initialized OpenGLES " : "Attached to OpenGLES ", MajorVersion, '.', MinorVersion, " context (", GLVersionString, ", ", GLRenderer, ')');
 
-    // Under the standard filtering rules for cubemaps, filtering does not work across faces of the cubemap.
-    // This results in a seam across the faces of a cubemap. This was a hardware limitation in the past, but
-    // modern hardware is capable of interpolating across a cube face boundary.
-    // GL_TEXTURE_CUBE_MAP_SEAMLESS is not defined in OpenGLES
-    // glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-    // if (glGetError() != GL_NO_ERROR)
-    //     LOG_ERROR_MESSAGE("Failed to enable seamless cubemap filtering");
-
-    // When GL_FRAMEBUFFER_SRGB is enabled, and if the destination image is in the sRGB colorspace
-    // then OpenGL will assume the shader's output is in the linear RGB colorspace. It will therefore
-    // convert the output from linear RGB to sRGB.
-    // Any writes to images that are not in the sRGB format should not be affected.
-    // Thus this setting should be just set once and left that way
-    glEnable(GL_FRAMEBUFFER_SRGB);
-    if (glGetError() != GL_NO_ERROR)
-        LOG_ERROR_MESSAGE("Failed to enable SRGB framebuffers");
-
     DevType    = RENDER_DEVICE_TYPE_GLES;
-    APIVersion = Version{MajorVersion, MinorVersion};
+    APIVersion = Version{static_cast<Uint32>(MajorVersion), static_cast<Uint32>(MinorVersion)};
+
+    if (InitAttribs.Window.pCanvasId != nullptr)
+    {
+        // By default, OpenGL uses LAST_VERTEX_CONVENTION. Not only is this inconsistent with all other APIs,
+        // but most importantly this may result in catastrophic performance degradation.
+        // https://bugs.chromium.org/p/angleproject/issues/detail?id=8566
+        SetFirstVertexConvention(m_GLContext);
+    }
 }
 
 GLContext::~GLContext()

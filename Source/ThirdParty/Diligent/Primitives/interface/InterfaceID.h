@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,6 +58,6 @@ struct INTERFACE_ID
 typedef struct INTERFACE_ID INTERFACE_ID;
 
 /// Unknown interface
-static const INTERFACE_ID IID_Unknown = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_Unknown = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 
 DILIGENT_END_NAMESPACE // namespace Diligent

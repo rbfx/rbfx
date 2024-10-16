@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ namespace Diligent
 {
 
 // {A4AC2D45-50FF-44EE-A218-5388CA6BF432}
-static const INTERFACE_ID IID_SerializedResourceSignature =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_SerializedResourceSignature =
     {0xa4ac2d45, 0x50ff, 0x44ee, {0xa2, 0x18, 0x53, 0x88, 0xca, 0x6b, 0xf4, 0x32}};
 
 class SerializedResourceSignatureImpl final : public ObjectBase<IPipelineResourceSignature>
@@ -186,6 +186,10 @@ DECLARE_DEVICE_SIGNATURE_METHODS(PipelineResourceSignatureVkImpl)
 
 #if METAL_SUPPORTED
 DECLARE_DEVICE_SIGNATURE_METHODS(PipelineResourceSignatureMtlImpl)
+#endif
+
+#if WEBGPU_SUPPORTED
+DECLARE_DEVICE_SIGNATURE_METHODS(PipelineResourceSignatureWebGPUImpl)
 #endif
 
 } // namespace Diligent

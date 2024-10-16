@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -427,7 +427,7 @@ void TextureVkImpl::CreateStagingTexture(const TextureData* pInitData, const Tex
     VkStagingBuffCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     VkStagingBuffCI.pNext = nullptr;
     VkStagingBuffCI.flags = 0;
-    VkStagingBuffCI.size  = GetStagingTextureSubresourceOffset(m_Desc, m_Desc.GetArraySize(), 0, StagingBufferOffsetAlignment);
+    VkStagingBuffCI.size  = GetStagingTextureDataSize(m_Desc, StagingBufferOffsetAlignment);
 
     // clang-format off
         DEV_CHECK_ERR((m_Desc.CPUAccessFlags & (CPU_ACCESS_READ | CPU_ACCESS_WRITE)) == CPU_ACCESS_READ ||

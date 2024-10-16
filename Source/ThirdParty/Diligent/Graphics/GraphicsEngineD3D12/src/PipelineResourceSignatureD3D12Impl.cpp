@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,6 +36,7 @@
 #include "BufferViewD3D12Impl.hpp"
 #include "TextureD3D12Impl.hpp"
 #include "TextureViewD3D12Impl.hpp"
+#include "SamplerD3D12Impl.hpp"
 #include "ShaderVariableD3D.hpp"
 
 #include "D3D12TypeConversions.hpp"
@@ -123,7 +124,7 @@ PipelineResourceSignatureD3D12Impl::PipelineResourceSignatureD3D12Impl(IReferenc
         ValidatePipelineResourceSignatureDescD3D12(Desc);
 
         Initialize(
-            GetRawAllocator(), DecoupleCombinedSamplers(Desc), m_ImmutableSamplers,
+            GetRawAllocator(), DecoupleCombinedSamplers(Desc), /*CreateImmutableSamplers = */ false,
             [this]() //
             {
                 AllocateRootParameters(/*IsSerialized*/ false);
@@ -173,7 +174,7 @@ void PipelineResourceSignatureD3D12Impl::AllocateRootParameters(const bool IsSer
             {
                 ResourceToImmutableSamplerInd[i] = SrcImmutableSamplerInd;
                 // Set the immutable sampler array size to match the resource array size
-                auto& DstImtblSampAttribs = m_ImmutableSamplers[SrcImmutableSamplerInd];
+                auto& DstImtblSampAttribs = m_pImmutableSamplerAttribs[SrcImmutableSamplerInd];
                 // One immutable sampler may be used by different arrays in different shader stages - use the maximum array size
                 DstImtblSampAttribs.ArraySize = std::max(DstImtblSampAttribs.ArraySize, ResDesc.ArraySize);
             }
@@ -194,7 +195,7 @@ void PipelineResourceSignatureD3D12Impl::AllocateRootParameters(const bool IsSer
     // Allocate registers for immutable samplers first
     for (Uint32 i = 0; i < m_Desc.NumImmutableSamplers; ++i)
     {
-        auto&          ImmutableSampler    = m_ImmutableSamplers[i];
+        auto&          ImmutableSampler    = m_pImmutableSamplerAttribs[i];
         constexpr auto DescriptorRangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER;
         if (!IsSerialized)
         {
@@ -346,7 +347,7 @@ void PipelineResourceSignatureD3D12Impl::AllocateRootParameters(const bool IsSer
             DEV_CHECK_ERR(pAttrib->IsImmutableSamplerAssigned() == (SrcImmutableSamplerInd != InvalidImmutableSamplerIndex),
                           "Deserialized immutable sampler flag is invalid");
             DEV_CHECK_ERR(pAttrib->GetD3D12RootParamType() == d3d12RootParamType,
-                          "Deserailized root parameter type is invalid.");
+                          "Deserialized root parameter type is invalid.");
         }
     }
     ParamsBuilder.InitializeMgr(GetRawAllocator(), m_RootParams);
@@ -367,20 +368,6 @@ void PipelineResourceSignatureD3D12Impl::AllocateRootParameters(const bool IsSer
 PipelineResourceSignatureD3D12Impl::~PipelineResourceSignatureD3D12Impl()
 {
     Destruct();
-}
-
-void PipelineResourceSignatureD3D12Impl::Destruct()
-{
-    if (m_ImmutableSamplers != nullptr)
-    {
-        for (Uint32 i = 0; i < m_Desc.NumImmutableSamplers; ++i)
-        {
-            m_ImmutableSamplers[i].~ImmutableSamplerAttribs();
-        }
-        m_ImmutableSamplers = nullptr;
-    }
-
-    TPipelineResourceSignatureBase::Destruct();
 }
 
 void PipelineResourceSignatureD3D12Impl::InitSRBResourceCache(ShaderResourceCacheD3D12& ResourceCache)
@@ -808,7 +795,7 @@ bool PipelineResourceSignatureD3D12Impl::DvpValidateCommittedResource(const Devi
                         if (BuffDesc.Usage == USAGE_DYNAMIC)
                             pBuffD3D12->DvpVerifyDynamicAllocation(pCtx);
 
-                        if (BuffDesc.Usage == USAGE_DYNAMIC || CachedRes.BufferRangeSize != 0 && CachedRes.BufferRangeSize < BuffDesc.Size)
+                        if (BuffDesc.Usage == USAGE_DYNAMIC || (CachedRes.BufferRangeSize != 0 && CachedRes.BufferRangeSize < BuffDesc.Size))
                             VERIFY_EXPR((ResourceCache.GetDynamicRootBuffersMask() & (Uint64{1} << RootIndex)) != 0);
                         else
                             VERIFY_EXPR((ResourceCache.GetNonDynamicRootBuffersMask() & (Uint64{1} << RootIndex)) != 0);
@@ -833,7 +820,7 @@ bool PipelineResourceSignatureD3D12Impl::DvpValidateCommittedResource(const Devi
                         if (BuffDesc.Usage == USAGE_DYNAMIC)
                             pBuffD3D12->DvpVerifyDynamicAllocation(pCtx);
 
-                        if (BuffDesc.Usage == USAGE_DYNAMIC || CachedRes.BufferRangeSize != 0 && CachedRes.BufferRangeSize < BuffDesc.Size)
+                        if (BuffDesc.Usage == USAGE_DYNAMIC || (CachedRes.BufferRangeSize != 0 && CachedRes.BufferRangeSize < BuffDesc.Size))
                             VERIFY_EXPR((ResourceCache.GetDynamicRootBuffersMask() & (Uint64{1} << RootIndex)) != 0);
                         else
                             VERIFY_EXPR((ResourceCache.GetNonDynamicRootBuffersMask() & (Uint64{1} << RootIndex)) != 0);
@@ -862,7 +849,7 @@ PipelineResourceSignatureD3D12Impl::PipelineResourceSignatureD3D12Impl(IReferenc
         ValidatePipelineResourceSignatureDescD3D12(Desc);
 
         Deserialize(
-            GetRawAllocator(), DecoupleCombinedSamplers(Desc), InternalData, m_ImmutableSamplers,
+            GetRawAllocator(), DecoupleCombinedSamplers(Desc), InternalData, /*CreateImmutableSamplers = */ false,
             [this]() //
             {
                 AllocateRootParameters(/*IsSerialized*/ true);
@@ -877,20 +864,6 @@ PipelineResourceSignatureD3D12Impl::PipelineResourceSignatureD3D12Impl(IReferenc
         Destruct();
         throw;
     }
-}
-
-PipelineResourceSignatureInternalDataD3D12 PipelineResourceSignatureD3D12Impl::GetInternalData() const
-{
-    PipelineResourceSignatureInternalDataD3D12 InternalData;
-
-    TPipelineResourceSignatureBase::GetInternalData(InternalData);
-
-    InternalData.pResourceAttribs     = m_pResourceAttribs;
-    InternalData.NumResources         = GetDesc().NumResources;
-    InternalData.pImmutableSamplers   = m_ImmutableSamplers;
-    InternalData.NumImmutableSamplers = GetDesc().NumImmutableSamplers;
-
-    return InternalData;
 }
 
 } // namespace Diligent

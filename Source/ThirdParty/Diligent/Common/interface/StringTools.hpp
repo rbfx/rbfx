@@ -205,7 +205,7 @@ inline size_t CountFloatNumberChars(const char* Str)
 /// For each chunk, calls the Handler.
 ///
 /// \note   This function is used to split long messages on Android to avoid
-///         trunction in logcat.
+///         truncation in logcat.
 template <typename IterType, typename HandlerType>
 void SplitLongString(IterType Start, IterType End, size_t MaxChunkLen, size_t NewLineSearchLen, HandlerType&& Handler)
 {

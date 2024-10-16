@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,64 +44,67 @@ using namespace Parsing;
 namespace
 {
 
-constexpr ShaderMacro VSMacros[]  = {{"VERTEX_SHADER", "1"}, {}};
-constexpr ShaderMacro PSMacros[]  = {{"FRAGMENT_SHADER", "1"}, {"PIXEL_SHADER", "1"}, {}};
-constexpr ShaderMacro GSMacros[]  = {{"GEOMETRY_SHADER", "1"}, {}};
-constexpr ShaderMacro HSMacros[]  = {{"TESS_CONTROL_SHADER", "1"}, {"HULL_SHADER", "1"}, {}};
-constexpr ShaderMacro DSMacros[]  = {{"TESS_EVALUATION_SHADER", "1"}, {"DOMAIN_SHADER", "1"}, {}};
-constexpr ShaderMacro CSMacros[]  = {{"COMPUTE_SHADER", "1"}, {}};
-constexpr ShaderMacro ASMacros[]  = {{"TASK_SHADER", "1"}, {"AMPLIFICATION_SHADER", "1"}, {}};
-constexpr ShaderMacro MSMacros[]  = {{"MESH_SHADER", "1"}, {}};
-constexpr ShaderMacro RGMacros[]  = {{"RAY_GEN_SHADER", "1"}, {}};
-constexpr ShaderMacro RMMacros[]  = {{"RAY_MISS_SHADER", "1"}, {}};
-constexpr ShaderMacro RCHMacros[] = {{"RAY_CLOSEST_HIT_SHADER", "1"}, {}};
-constexpr ShaderMacro RAHMacros[] = {{"RAY_ANY_HIT_SHADER", "1"}, {}};
-constexpr ShaderMacro RIMacros[]  = {{"RAY_INTERSECTION_SHADER", "1"}, {}};
-constexpr ShaderMacro RCMacros[]  = {{"RAY_CALLABLE_SHADER", "1"}, {}};
+constexpr ShaderMacro VSMacros[]  = {{"VERTEX_SHADER", "1"}};
+constexpr ShaderMacro PSMacros[]  = {{"FRAGMENT_SHADER", "1"}, {"PIXEL_SHADER", "1"}};
+constexpr ShaderMacro GSMacros[]  = {{"GEOMETRY_SHADER", "1"}};
+constexpr ShaderMacro HSMacros[]  = {{"TESS_CONTROL_SHADER", "1"}, {"HULL_SHADER", "1"}};
+constexpr ShaderMacro DSMacros[]  = {{"TESS_EVALUATION_SHADER", "1"}, {"DOMAIN_SHADER", "1"}};
+constexpr ShaderMacro CSMacros[]  = {{"COMPUTE_SHADER", "1"}};
+constexpr ShaderMacro ASMacros[]  = {{"TASK_SHADER", "1"}, {"AMPLIFICATION_SHADER", "1"}};
+constexpr ShaderMacro MSMacros[]  = {{"MESH_SHADER", "1"}};
+constexpr ShaderMacro RGMacros[]  = {{"RAY_GEN_SHADER", "1"}};
+constexpr ShaderMacro RMMacros[]  = {{"RAY_MISS_SHADER", "1"}};
+constexpr ShaderMacro RCHMacros[] = {{"RAY_CLOSEST_HIT_SHADER", "1"}};
+constexpr ShaderMacro RAHMacros[] = {{"RAY_ANY_HIT_SHADER", "1"}};
+constexpr ShaderMacro RIMacros[]  = {{"RAY_INTERSECTION_SHADER", "1"}};
+constexpr ShaderMacro RCMacros[]  = {{"RAY_CALLABLE_SHADER", "1"}};
+
+#define SHADER_MACROS_ARRAY(Macros) \
+    ShaderMacroArray { Macros, _countof(Macros) }
 
 } // namespace
 
-const ShaderMacro* GetShaderTypeMacros(SHADER_TYPE Type)
+ShaderMacroArray GetShaderTypeMacros(SHADER_TYPE Type)
 {
     static_assert(SHADER_TYPE_LAST == 0x4000, "Please update the switch below to handle the new shader type");
     switch (Type)
     {
         // clang-format off
-        case SHADER_TYPE_VERTEX:           return VSMacros;
-        case SHADER_TYPE_PIXEL:            return PSMacros;
-        case SHADER_TYPE_GEOMETRY:         return GSMacros;
-        case SHADER_TYPE_HULL:             return HSMacros;
-        case SHADER_TYPE_DOMAIN:           return DSMacros;
-        case SHADER_TYPE_COMPUTE:          return CSMacros;
-        case SHADER_TYPE_AMPLIFICATION:    return ASMacros;
-        case SHADER_TYPE_MESH:             return MSMacros;
-        case SHADER_TYPE_RAY_GEN:          return RGMacros;
-        case SHADER_TYPE_RAY_MISS:         return RMMacros;
-        case SHADER_TYPE_RAY_CLOSEST_HIT:  return RCHMacros;
-        case SHADER_TYPE_RAY_ANY_HIT:      return RAHMacros;
-        case SHADER_TYPE_RAY_INTERSECTION: return RIMacros;
-        case SHADER_TYPE_CALLABLE:         return RCMacros;
+        case SHADER_TYPE_VERTEX:           return SHADER_MACROS_ARRAY(VSMacros);
+        case SHADER_TYPE_PIXEL:            return SHADER_MACROS_ARRAY(PSMacros);
+        case SHADER_TYPE_GEOMETRY:         return SHADER_MACROS_ARRAY(GSMacros);
+        case SHADER_TYPE_HULL:             return SHADER_MACROS_ARRAY(HSMacros);
+        case SHADER_TYPE_DOMAIN:           return SHADER_MACROS_ARRAY(DSMacros);
+        case SHADER_TYPE_COMPUTE:          return SHADER_MACROS_ARRAY(CSMacros);
+        case SHADER_TYPE_AMPLIFICATION:    return SHADER_MACROS_ARRAY(ASMacros);
+        case SHADER_TYPE_MESH:             return SHADER_MACROS_ARRAY(MSMacros);
+        case SHADER_TYPE_RAY_GEN:          return SHADER_MACROS_ARRAY(RGMacros);
+        case SHADER_TYPE_RAY_MISS:         return SHADER_MACROS_ARRAY(RMMacros);
+        case SHADER_TYPE_RAY_CLOSEST_HIT:  return SHADER_MACROS_ARRAY(RCHMacros);
+        case SHADER_TYPE_RAY_ANY_HIT:      return SHADER_MACROS_ARRAY(RAHMacros);
+        case SHADER_TYPE_RAY_INTERSECTION: return SHADER_MACROS_ARRAY(RIMacros);
+        case SHADER_TYPE_CALLABLE:         return SHADER_MACROS_ARRAY(RCMacros);
         // clang-format on
         case SHADER_TYPE_TILE:
             UNEXPECTED("Unsupported shader type");
-            return nullptr;
+            return ShaderMacroArray{};
         default:
             UNEXPECTED("Unexpected shader type");
-            return nullptr;
+            return ShaderMacroArray{};
     }
 }
 
-void AppendShaderMacros(std::string& Source, const ShaderMacro* Macros)
+void AppendShaderMacros(std::string& Source, const ShaderMacroArray& Macros)
 {
-    if (Macros == nullptr)
+    if (!Macros)
         return;
 
-    for (auto* pMacro = Macros; pMacro->Name != nullptr && pMacro->Definition != nullptr; ++pMacro)
+    for (size_t i = 0; i < Macros.Count; ++i)
     {
         Source += "#define ";
-        Source += pMacro->Name;
+        Source += Macros[i].Name;
         Source += ' ';
-        Source += pMacro->Definition;
+        Source += Macros[i].Definition;
         Source += "\n";
     }
 }
@@ -111,6 +114,28 @@ void AppendShaderTypeDefinitions(std::string& Source, SHADER_TYPE Type)
     AppendShaderMacros(Source, GetShaderTypeMacros(Type));
 }
 
+void AppendPlatformDefinition(std::string& Source)
+{
+#if PLATFORM_WIN32
+    Source.append("#define PLATFORM_WIN32 1\n");
+#elif PLATFORM_UNIVERSAL_WINDOWS
+    Source.append("#define PLATFORM_UWP 1\n");
+#elif PLATFORM_LINUX
+    Source.append("#define PLATFORM_LINUX 1\n");
+#elif PLATFORM_MACOS
+    Source.append("#define PLATFORM_MACOS 1\n");
+#elif PLATFORM_IOS
+    Source.append("#define PLATFORM_IOS 1\n");
+#elif PLATFORM_TVOS
+    Source.append("#define PLATFORM_TVOS 1\n");
+#elif PLATFORM_ANDROID
+    Source.append("#define PLATFORM_ANDROID 1\n");
+#elif PLATFORM_EMSCRIPTEN
+    Source.append("#define PLATFORM_EMSCRIPTEN 1\n");
+#else
+#    error Unexpected platform
+#endif
+}
 
 static const std::string ShaderSourceLanguageKey = "$SHADER_SOURCE_LANGUAGE";
 

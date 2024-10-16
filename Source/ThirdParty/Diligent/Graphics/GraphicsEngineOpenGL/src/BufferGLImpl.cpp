@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -145,7 +145,7 @@ BufferGLImpl::BufferGLImpl(IReferenceCounters*        pRefCounters,
     // All buffer bind targets (GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER etc.) relate to the same
     // kind of objects. As a result they are all equivalent from a transfer point of view.
     glBufferData(m_BindTarget, StaticCast<GLsizeiptr>(BuffDesc.Size), pData, m_GLUsageHint);
-    CHECK_GL_ERROR_AND_THROW("glBufferData() failed");
+    DEV_CHECK_GL_ERROR("glBufferData() failed");
     GLState.BindBuffer(m_BindTarget, GLObjectWrappers::GLBufferObj::Null(), ResetVAO);
 
     m_MemoryProperties = MEMORY_PROPERTY_HOST_COHERENT;
@@ -165,11 +165,11 @@ static BufferDesc GetBufferDescFromGLHandle(GLContextState& GLState, BufferDesc 
 
     // Note that any glBindBufferBase, glBindBufferRange etc. also bind the buffer to the generic buffer binding point.
     glBindBuffer(BindTarget, BufferHandle);
-    CHECK_GL_ERROR("Failed to bind GL buffer to ", BindTarget, " target");
+    DEV_CHECK_GL_ERROR("Failed to bind GL buffer to ", BindTarget, " target");
 
     GLint BufferSize = 0;
     glGetBufferParameteriv(BindTarget, GL_BUFFER_SIZE, &BufferSize);
-    CHECK_GL_ERROR("glGetBufferParameteriv() failed");
+    DEV_CHECK_GL_ERROR("glGetBufferParameteriv() failed");
     VERIFY_EXPR(BufferSize > 0);
 
     VERIFY(BuffDesc.Size == 0 || BuffDesc.Size == static_cast<Uint32>(BufferSize), "Buffer size specified by the BufferDesc (", BuffDesc.Size, ") does not match the size recovered from gl buffer object (", BufferSize, ")");
@@ -177,7 +177,7 @@ static BufferDesc GetBufferDescFromGLHandle(GLContextState& GLState, BufferDesc 
         BuffDesc.Size = static_cast<Uint32>(BufferSize);
 
     glBindBuffer(BindTarget, 0);
-    CHECK_GL_ERROR("Failed to unbind GL buffer");
+    DEV_CHECK_GL_ERROR("Failed to unbind GL buffer");
 
     return BuffDesc;
 }
@@ -229,7 +229,7 @@ void BufferGLImpl::UpdateData(GLContextState& CtxState, Uint64 Offset, Uint64 Si
     // All buffer bind targets (GL_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER etc.) relate to the same
     // kind of objects. As a result they are all equivalent from a transfer point of view.
     glBufferSubData(m_BindTarget, StaticCast<GLintptr>(Offset), StaticCast<GLsizeiptr>(Size), pData);
-    CHECK_GL_ERROR("glBufferSubData() failed");
+    DEV_CHECK_GL_ERROR("glBufferSubData() failed");
     CtxState.BindBuffer(m_BindTarget, GLObjectWrappers::GLBufferObj::Null(), ResetVAO);
 }
 
@@ -255,7 +255,7 @@ void BufferGLImpl::CopyData(GLContextState& CtxState, BufferGLImpl& SrcBufferGL,
     CtxState.BindBuffer(GL_COPY_WRITE_BUFFER, m_GlBuffer, ResetVAO);
     CtxState.BindBuffer(GL_COPY_READ_BUFFER, SrcBufferGL.m_GlBuffer, ResetVAO);
     glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, StaticCast<GLintptr>(SrcOffset), StaticCast<GLintptr>(DstOffset), StaticCast<GLsizeiptr>(Size));
-    CHECK_GL_ERROR("glCopyBufferSubData() failed");
+    DEV_CHECK_GL_ERROR("glCopyBufferSubData() failed");
     CtxState.BindBuffer(GL_COPY_READ_BUFFER, GLObjectWrappers::GLBufferObj::Null(), ResetVAO);
     CtxState.BindBuffer(GL_COPY_WRITE_BUFFER, GLObjectWrappers::GLBufferObj::Null(), ResetVAO);
 }
@@ -264,6 +264,55 @@ void BufferGLImpl::Map(GLContextState& CtxState, MAP_TYPE MapType, Uint32 MapFla
 {
     MapRange(CtxState, MapType, MapFlags, 0, m_Desc.Size, pMappedData);
 }
+
+#if PLATFORM_EMSCRIPTEN
+
+void BufferGLImpl::MapRange(GLContextState& CtxState, MAP_TYPE MapType, Uint32 MapFlags, Uint64 Offset, Uint64 Length, PVoid& pMappedData)
+{
+    m_Mapped.Type   = MapType;
+    m_Mapped.Offset = Offset;
+    if (MapType == MAP_READ)
+    {
+        // Emscripten does not support mapping buffers for reading
+
+        // We must unbind VAO because otherwise we will break the bindings
+        constexpr bool ResetVAO = true;
+        CtxState.BindBuffer(m_BindTarget, m_GlBuffer, ResetVAO);
+
+        m_Mapped.Data.resize(static_cast<size_t>(Length));
+        glGetBufferSubData(m_BindTarget, StaticCast<GLintptr>(Offset), StaticCast<GLsizeiptr>(Length), m_Mapped.Data.data());
+        DEV_CHECK_GL_ERROR("glGetBufferSubData() failed");
+        pMappedData = m_Mapped.Data.data();
+    }
+    else if (MapType == MAP_WRITE)
+    {
+        // glMapBuffer*() is emulated in Emscripten and is suboptimal.
+        // https://emscripten.org/docs/optimizing/Optimizing-WebGL.html#which-gl-mode-to-target
+        m_Mapped.Data.resize(static_cast<size_t>(Length));
+        pMappedData = m_Mapped.Data.data();
+    }
+    else
+    {
+        UNEXPECTED("Only MAP_READ and MAP_WRITE are supported in Emscripten");
+    }
+}
+
+void BufferGLImpl::Unmap(GLContextState& CtxState)
+{
+    if (m_Mapped.Type == MAP_WRITE)
+    {
+        constexpr bool ResetVAO = true;
+        CtxState.BindBuffer(m_BindTarget, m_GlBuffer, ResetVAO);
+
+        VERIFY_EXPR(!m_Mapped.Data.empty());
+        glBufferSubData(m_BindTarget, StaticCast<GLintptr>(m_Mapped.Offset), StaticCast<GLsizeiptr>(m_Mapped.Data.size()), m_Mapped.Data.data());
+        DEV_CHECK_GL_ERROR("glBufferSubData() failed");
+    }
+
+    m_Mapped.Data.clear();
+}
+
+#else
 
 void BufferGLImpl::MapRange(GLContextState& CtxState, MAP_TYPE MapType, Uint32 MapFlags, Uint64 Offset, Uint64 Length, PVoid& pMappedData)
 {
@@ -322,7 +371,7 @@ void BufferGLImpl::MapRange(GLContextState& CtxState, MAP_TYPE MapType, Uint32 M
     }
 
     pMappedData = glMapBufferRange(m_BindTarget, StaticCast<GLintptr>(Offset), StaticCast<GLsizeiptr>(Length), Access);
-    CHECK_GL_ERROR("glMapBufferRange() failed");
+    DEV_CHECK_GL_ERROR("glMapBufferRange() failed");
     VERIFY(pMappedData, "Map failed");
 }
 
@@ -342,6 +391,8 @@ void BufferGLImpl::Unmap(GLContextState& CtxState)
     VERIFY(Result != GL_FALSE, "Failed to unmap buffer. The data may have been corrupted");
     (void)Result;
 }
+
+#endif
 
 void BufferGLImpl::CreateViewInternal(const BufferViewDesc& OrigViewDesc, IBufferView** ppView, bool bIsDefaultView)
 {

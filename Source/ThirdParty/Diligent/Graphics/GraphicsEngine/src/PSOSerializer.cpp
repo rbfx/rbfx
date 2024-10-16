@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -78,7 +78,10 @@ bool PRSSerializer<Mode>::SerializeDesc(
                                            ResDesc.ArraySize,
                                            ResDesc.ResourceType,
                                            ResDesc.VarType,
-                                           ResDesc.Flags);
+                                           ResDesc.Flags,
+                                           ResDesc.WebGPUAttribs.BindingType,
+                                           ResDesc.WebGPUAttribs.TextureViewDim,
+                                           ResDesc.WebGPUAttribs.UAVTextureFormat);
                             }))
         return false;
 
@@ -86,18 +89,6 @@ bool PRSSerializer<Mode>::SerializeDesc(
 
     ASSERT_SIZEOF64(PipelineResourceSignatureDesc, 56, "Did you add a new member to PipelineResourceSignatureDesc? Please add serialization here.");
     ASSERT_SIZEOF64(PipelineResourceDesc, 24, "Did you add a new member to PipelineResourceDesc? Please add serialization here.");
-}
-
-template <SerializerMode Mode>
-bool PRSSerializer<Mode>::SerializeInternalData(Serializer<Mode>&                                 Ser,
-                                                ConstQual<PipelineResourceSignatureInternalData>& InternalData,
-                                                DynamicLinearAllocator*                           Allocator)
-{
-    return Ser(InternalData.ShaderStages,
-               InternalData.StaticResShaderStages,
-               InternalData.PipelineType,
-               InternalData.StaticResStageIndex);
-    ASSERT_SIZEOF(PipelineResourceSignatureInternalData, 16, "Did you add a new member to PipelineResourceSignatureInternalData? Please add serialization here.");
 }
 
 template <SerializerMode Mode>
@@ -196,6 +187,7 @@ bool PSOSerializer<Mode>::SerializeCreateInfo(
                CreateInfo.GraphicsPipeline.ShadingRateFlags,
                CreateInfo.GraphicsPipeline.RTVFormats,
                CreateInfo.GraphicsPipeline.DSVFormat,
+               CreateInfo.GraphicsPipeline.ReadOnlyDSV,
                CreateInfo.GraphicsPipeline.SmplDesc,
                RenderPassName); // for CreateInfo.GraphicsPipeline.pRenderPass
 
@@ -506,10 +498,20 @@ bool ShaderSerializer<Mode>::SerializeCI(Serializer<Mode>&            Ser,
              CI.Desc.CombinedSamplerSuffix,
              CI.EntryPoint,
              CI.SourceLanguage,
-             CI.ShaderCompiler))
+             CI.ShaderCompiler,
+             CI.HLSLVersion,
+             CI.GLSLVersion,
+             CI.GLESSLVersion,
+             CI.MSLVersion,
+             CI.CompileFlags,
+             CI.LoadConstantBufferReflection,
+             CI.GLSLExtensions,
+             CI.WebGPUEmulatedArrayIndexSuffix))
         return false;
 
     return SerializeBytecodeOrSource(Ser, CI);
+
+    ASSERT_SIZEOF64(ShaderCreateInfo, 152, "Did you add a new member to ShaderCreateInfo? Please add serialization here.");
 }
 
 template struct PSOSerializer<SerializerMode::Read>;

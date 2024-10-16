@@ -21,10 +21,14 @@ set(INTERFACE
 
 set(SOURCE
     src/AppleDebug.mm
-    src/AppleFileSystem.cpp
+    src/AppleFileSystem.mm
     src/ApplePlatformMisc.cpp
     ../Linux/src/LinuxFileSystem.cpp
 )
+
+if(PLATFORM_MACOS)
+	list(APPEND SOURCE src/MacOSNativeWindow.mm)
+endif()
 
 add_library(Diligent-ApplePlatform STATIC ${SOURCE} ${INTERFACE} ${PLATFORM_INTERFACE_HEADERS})
 set_common_target_properties(Diligent-ApplePlatform)
@@ -33,7 +37,7 @@ target_include_directories(Diligent-ApplePlatform
 PRIVATE
     ../Linux/interface/
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    interface
 )
 
 target_link_libraries(Diligent-ApplePlatform

@@ -34,7 +34,6 @@ set(INCLUDE
     include/ShaderResourceCacheCommon.hpp
     include/ShaderResourceVariableBase.hpp
     include/ShaderBindingTableBase.hpp
-    include/StateObjectsRegistry.hpp
     include/SwapChainBase.hpp
     include/TextureBase.hpp
     include/TextureViewBase.hpp
@@ -96,6 +95,7 @@ set(SOURCE
     src/EngineMemory.cpp
     src/EngineFactoryBase.cpp
     src/FramebufferBase.cpp
+    src/GraphicsTypesX.cpp
     src/PipelineResourceSignatureBase.cpp
     src/PipelineStateBase.cpp
     src/PipelineStateCacheBase.cpp
@@ -115,8 +115,8 @@ set_common_target_properties(Diligent-GraphicsEngine)
 
 target_include_directories(Diligent-GraphicsEngine 
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    include
+    interface
 )
 
 target_link_libraries(Diligent-GraphicsEngine 

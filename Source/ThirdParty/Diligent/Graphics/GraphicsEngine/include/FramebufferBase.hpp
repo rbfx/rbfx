@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -65,8 +65,7 @@ public:
                     RenderDeviceImplType*  pDevice,
                     const FramebufferDesc& Desc,
                     bool                   bIsDeviceInternal = false) :
-        TDeviceObjectBase{pRefCounters, pDevice, Desc, bIsDeviceInternal},
-        m_pRenderPass{Desc.pRenderPass}
+        TDeviceObjectBase{pRefCounters, pDevice, Desc, bIsDeviceInternal}
     {
         ValidateFramebufferDesc(this->m_Desc, this->GetDevice());
 
@@ -124,6 +123,46 @@ public:
         }
 
         Desc.pRenderPass->AddRef();
+
+        // Create read-only depth views for read-write depth attachments, if needed
+        const RenderPassDesc& RPDesc = this->m_Desc.pRenderPass->GetDesc();
+        for (Uint32 subpass = 0; subpass < RPDesc.SubpassCount; ++subpass)
+        {
+            const auto& SubpassDesc = RPDesc.pSubpasses[subpass];
+            if (SubpassDesc.pDepthStencilAttachment == nullptr)
+                continue;
+            if (SubpassDesc.pDepthStencilAttachment->AttachmentIndex == ATTACHMENT_UNUSED)
+                continue;
+            if (SubpassDesc.pDepthStencilAttachment->State != RESOURCE_STATE_DEPTH_READ)
+                continue;
+
+            if (m_ppReadOnlyDSVs == nullptr)
+            {
+                m_ppReadOnlyDSVs =
+                    ALLOCATE(GetRawAllocator(), "Memory for read-only depth attachment array", ITextureView*, RPDesc.SubpassCount);
+                memset(m_ppReadOnlyDSVs, 0, sizeof(m_ppReadOnlyDSVs[0]) * RPDesc.SubpassCount);
+            }
+
+            auto* pDepthAttachment = m_ppAttachments[SubpassDesc.pDepthStencilAttachment->AttachmentIndex];
+            VERIFY_EXPR(pDepthAttachment != nullptr);
+
+            auto DSVDesc = pDepthAttachment->GetDesc();
+            if (DSVDesc.ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL)
+            {
+                m_ppReadOnlyDSVs[subpass] = pDepthAttachment;
+                m_ppReadOnlyDSVs[subpass]->AddRef();
+            }
+            else
+            {
+                // Create read-only depth view for this attachment
+                VERIFY_EXPR(DSVDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL);
+                DSVDesc.ViewType     = TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL;
+                std::string ViewName = std::string{DSVDesc.Name} + " (read-only)";
+                DSVDesc.Name         = ViewName.c_str();
+                pDepthAttachment->GetTexture()->CreateView(DSVDesc, &m_ppReadOnlyDSVs[subpass]);
+                VERIFY_EXPR(m_ppReadOnlyDSVs[subpass] != nullptr);
+            }
+        }
     }
 
     ~FramebufferBase()
@@ -133,19 +172,41 @@ public:
             VERIFY_EXPR(m_ppAttachments != nullptr);
             for (Uint32 i = 0; i < this->m_Desc.AttachmentCount; ++i)
             {
-                m_ppAttachments[i]->Release();
+                if (m_ppAttachments[i] != nullptr)
+                    m_ppAttachments[i]->Release();
             }
             GetRawAllocator().Free(m_ppAttachments);
         }
+
+        if (m_ppReadOnlyDSVs != nullptr)
+        {
+            const auto SubpassCount = this->m_Desc.pRenderPass->GetDesc().SubpassCount;
+            for (Uint32 i = 0; i < SubpassCount; ++i)
+            {
+                if (m_ppReadOnlyDSVs[i] != nullptr)
+                    m_ppReadOnlyDSVs[i]->Release();
+            }
+            GetRawAllocator().Free(m_ppReadOnlyDSVs);
+        }
+
         this->m_Desc.pRenderPass->Release();
     }
 
     IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_Framebuffer, TDeviceObjectBase)
 
-private:
-    RefCntAutoPtr<IRenderPass> m_pRenderPass;
+    ITextureView* GetReadOnlyDSV(Uint32 Subpass) const
+    {
+        VERIFY(Subpass < this->m_Desc.pRenderPass->GetDesc().SubpassCount, "Subpass index (", Subpass, ") is out of range.");
+        return m_ppReadOnlyDSVs != nullptr ?
+            m_ppReadOnlyDSVs[Subpass] :
+            nullptr;
+    }
 
-    ITextureView** m_ppAttachments = nullptr;
+private:
+    ITextureView** m_ppAttachments = nullptr; // [AttachmentCount]
+
+    // Read-only depth views for read-write detph attachments
+    ITextureView** m_ppReadOnlyDSVs = nullptr; // [SubpassCount]
 };
 
 } // namespace Diligent

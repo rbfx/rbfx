@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -71,6 +71,7 @@ void CommandContext::Reset(CommandListManager& CmdListManager)
     // We only call Reset() on previously freed contexts. The command list persists, but we need to
     // request a new allocator
     VERIFY_EXPR(m_pCommandList != nullptr);
+    VERIFY_EXPR(m_pCommandList->GetType() == CmdListManager.GetCommandListType());
     if (!m_pCurrentAllocator)
     {
         CmdListManager.RequestAllocator(&m_pCurrentAllocator);
@@ -429,7 +430,7 @@ void StateTransitionHelper::operator()(ResourceType& Resource)
         // must complete before any future UAV accesses (reads or writes) can begin.
 
         DEV_CHECK_ERR(m_Barrier.TransitionType == STATE_TRANSITION_TYPE_IMMEDIATE, "UAV barriers must not be split");
-        D3D12_RESOURCE_BARRIER d3d12Barrier{D3D12_RESOURCE_BARRIER_TYPE_UAV, D3D12_RESOURCE_BARRIER_FLAG_NONE};
+        D3D12_RESOURCE_BARRIER d3d12Barrier{D3D12_RESOURCE_BARRIER_TYPE_UAV, D3D12_RESOURCE_BARRIER_FLAG_NONE, {}};
         d3d12Barrier.UAV.pResource = m_pd3d12Resource;
         m_CmdCtx.ResourceBarrier(d3d12Barrier);
     }

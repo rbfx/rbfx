@@ -1,0 +1,8 @@
+<Project>
+	<PropertyGroup>
+		<RelativeProjectPath>$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)', '$(MSBuildProjectDirectory)'))</RelativeProjectPath>
+		<BaseProjectPath>$(MSBuildThisFileDirectory)/build/.NET/$(RelativeProjectPath)</BaseProjectPath>
+		<OutputPath>$(BaseProjectPath)/bin/$(Platform)/$(Configuration)</OutputPath>
+		<BaseIntermediateOutputPath>$(BaseProjectPath)/obj</BaseIntermediateOutputPath>
+	</PropertyGroup>
+</Project>

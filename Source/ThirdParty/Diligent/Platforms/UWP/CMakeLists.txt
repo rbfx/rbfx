@@ -19,8 +19,8 @@ set_common_target_properties(Diligent-UniversalWindowsPlatform)
 
 target_include_directories(Diligent-UniversalWindowsPlatform
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../Win32/interface>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    ../Win32/interface
+    interface
 )
 
 target_link_libraries(Diligent-UniversalWindowsPlatform

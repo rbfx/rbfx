@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {99DADE81-04F7-4C81-AE06-32B25F5B45AA}
-static const INTERFACE_ID IID_DeviceMemoryD3D11 =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_DeviceMemoryD3D11 =
     {0x99dade81, 0x4f7, 0x4c81, {0xae, 0x6, 0x32, 0xb2, 0x5f, 0x5b, 0x45, 0xaa}};
 
 #define DILIGENT_INTERFACE_NAME IDeviceMemoryD3D11

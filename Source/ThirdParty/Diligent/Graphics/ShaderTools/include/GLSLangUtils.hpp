@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,14 +55,15 @@ void FinalizeGlslang();
 
 struct GLSLtoSPIRVAttribs
 {
-    SHADER_TYPE                      ShaderType                 = SHADER_TYPE_UNKNOWN;
-    const char*                      ShaderSource               = nullptr;
-    int                              SourceCodeLen              = 0;
-    const ShaderMacro*               Macros                     = nullptr;
+    SHADER_TYPE                      ShaderType    = SHADER_TYPE_UNKNOWN;
+    const char*                      ShaderSource  = nullptr;
+    int                              SourceCodeLen = 0;
+    ShaderMacroArray                 Macros;
     IShaderSourceInputStreamFactory* pShaderSourceStreamFactory = nullptr;
     SpirvVersion                     Version                    = SpirvVersion::Vk100;
     IDataBlob**                      ppCompilerOutput           = nullptr;
     bool                             AssignBindings             = true;
+    bool                             UseRowMajorMatrices        = false;
 };
 
 std::vector<unsigned int> GLSLtoSPIRV(const GLSLtoSPIRVAttribs& Attribs);

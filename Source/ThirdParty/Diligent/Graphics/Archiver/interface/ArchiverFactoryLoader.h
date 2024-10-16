@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@
 
 #include "ArchiverFactory.h"
 
-#if PLATFORM_ANDROID || PLATFORM_LINUX || PLATFORM_MACOS || PLATFORM_IOS || PLATFORM_TVOS || (PLATFORM_WIN32 && !defined(_MSC_VER))
+#if PLATFORM_ANDROID || PLATFORM_LINUX || PLATFORM_MACOS || PLATFORM_IOS || PLATFORM_TVOS || PLATFORM_EMSCRIPTEN || (PLATFORM_WIN32 && !defined(_MSC_VER))
 // https://gcc.gnu.org/wiki/Visibility
 #    define API_QUALIFIER __attribute__((visibility("default")))
 #elif PLATFORM_WIN32 || PLATFORM_UNIVERSAL_WINDOWS

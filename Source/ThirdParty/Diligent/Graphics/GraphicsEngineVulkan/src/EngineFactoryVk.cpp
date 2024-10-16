@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -118,9 +118,9 @@ public:
     }
 
 #if PLATFORM_ANDROID
-    virtual void InitAndroidFileSystem(struct ANativeActivity* NativeActivity,
-                                       const char*             NativeActivityClassName,
-                                       struct AAssetManager*   AssetManager) const override final;
+    virtual void InitAndroidFileSystem(struct AAssetManager* AssetManager,
+                                       const char*           ExternalFilesDir,
+                                       const char*           OutputFilesDir) const override final;
 #endif
 
 private:
@@ -188,9 +188,9 @@ GraphicsAdapterInfo GetPhysicalDeviceGraphicsAdapterInfo(const VulkanUtilities::
     // Sampler properties
     {
         auto& SamProps{AdapterInfo.Sampler};
-        SamProps.BorderSamplingModeSupported   = True;
-        SamProps.AnisotropicFilteringSupported = vkFeatures.samplerAnisotropy;
-        SamProps.LODBiasSupported              = True;
+        SamProps.BorderSamplingModeSupported = True;
+        SamProps.MaxAnisotropy               = static_cast<Uint8>(vkDeviceLimits.maxSamplerAnisotropy);
+        SamProps.LODBiasSupported            = True;
         ASSERT_SIZEOF(SamProps, 3, "Did you add a new member to SamplerProperites? Please initialize it here.");
     }
 
@@ -237,7 +237,7 @@ GraphicsAdapterInfo GetPhysicalDeviceGraphicsAdapterInfo(const VulkanUtilities::
         if (vkFeatures.tessellationShader != VK_FALSE)
             SupportedStages |= WaveOpStages & (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
         if (vkExtFeatures.MeshShader.meshShader != VK_FALSE && vkExtFeatures.MeshShader.taskShader != VK_FALSE)
-            SupportedStages |= WaveOpStages & (VK_SHADER_STAGE_TASK_BIT_NV | VK_SHADER_STAGE_MESH_BIT_NV);
+            SupportedStages |= WaveOpStages & (VK_SHADER_STAGE_TASK_BIT_EXT | VK_SHADER_STAGE_MESH_BIT_EXT);
         if (vkExtFeatures.RayTracingPipeline.rayTracingPipeline != VK_FALSE)
         {
             constexpr auto VK_SHADER_STAGE_ALL_RAY_TRACING =
@@ -262,8 +262,11 @@ GraphicsAdapterInfo GetPhysicalDeviceGraphicsAdapterInfo(const VulkanUtilities::
     if (AdapterInfo.Features.MeshShaders)
     {
         auto& MeshProps{AdapterInfo.MeshShader};
-        MeshProps.MaxTaskCount = vkDeviceExtProps.MeshShader.maxDrawMeshTasksCount;
-        ASSERT_SIZEOF(MeshProps, 4, "Did you add a new member to MeshShaderProperties? Please initialize it here.");
+        MeshProps.MaxThreadGroupCountX     = vkDeviceExtProps.MeshShader.maxMeshWorkGroupCount[0];
+        MeshProps.MaxThreadGroupCountY     = vkDeviceExtProps.MeshShader.maxMeshWorkGroupCount[1];
+        MeshProps.MaxThreadGroupCountZ     = vkDeviceExtProps.MeshShader.maxMeshWorkGroupCount[2];
+        MeshProps.MaxThreadGroupTotalCount = vkDeviceExtProps.MeshShader.maxMeshWorkGroupTotalCount;
+        ASSERT_SIZEOF(MeshProps, 16, "Did you add a new member to MeshShaderProperties? Please initialize it here.");
     }
 
     // Compute shader properties
@@ -840,10 +843,12 @@ void EngineFactoryVkImpl::CreateDeviceAndContextsVk(const EngineVkCreateInfo& En
             {
                 EnabledExtFeats.MeshShader = DeviceExtFeatures.MeshShader;
                 VERIFY_EXPR(EnabledExtFeats.MeshShader.taskShader != VK_FALSE && EnabledExtFeats.MeshShader.meshShader != VK_FALSE);
-                VERIFY(PhysicalDevice->IsExtensionSupported(VK_NV_MESH_SHADER_EXTENSION_NAME),
-                       "VK_NV_mesh_shader extension must be supported as it has already been checked by VulkanPhysicalDevice and "
+                const auto* MeshShaderExtensionName = VK_EXT_MESH_SHADER_EXTENSION_NAME;
+                VERIFY(PhysicalDevice->IsExtensionSupported(MeshShaderExtensionName),
+                       MeshShaderExtensionName,
+                       " extension must be supported as it has already been checked by VulkanPhysicalDevice and "
                        "both taskShader and meshShader features are TRUE");
-                DeviceExtensions.push_back(VK_NV_MESH_SHADER_EXTENSION_NAME);
+                DeviceExtensions.push_back(MeshShaderExtensionName);
                 *NextExt = &EnabledExtFeats.MeshShader;
                 NextExt  = &EnabledExtFeats.MeshShader.pNext;
             }
@@ -947,8 +952,8 @@ void EngineFactoryVkImpl::CreateDeviceAndContextsVk(const EngineVkCreateInfo& En
             }
 
             // clang-format off
-            if (EnabledFeatures.ShaderResourceRuntimeArray != DEVICE_FEATURE_STATE_DISABLED ||
-                EnabledFeatures.RayTracing                 != DEVICE_FEATURE_STATE_DISABLED)
+            if (EnabledFeatures.ShaderResourceRuntimeArrays != DEVICE_FEATURE_STATE_DISABLED ||
+                EnabledFeatures.RayTracing                  != DEVICE_FEATURE_STATE_DISABLED)
             // clang-format on
             {
                 VERIFY(PhysicalDevice->IsExtensionSupported(VK_KHR_MAINTENANCE3_EXTENSION_NAME), "VK_KHR_maintenance3 extension must be supported");
@@ -1139,6 +1144,23 @@ void EngineFactoryVkImpl::CreateDeviceAndContextsVk(const EngineVkCreateInfo& En
                 }
             }
 
+            if (EnabledFeatures.NativeMultiDraw != DEVICE_FEATURE_STATE_DISABLED)
+            {
+                VERIFY_EXPR(PhysicalDevice->IsExtensionSupported(VK_EXT_MULTI_DRAW_EXTENSION_NAME));
+                DeviceExtensions.push_back(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
+
+                EnabledExtFeats.MultiDraw = DeviceExtFeatures.MultiDraw;
+
+                *NextExt = &EnabledExtFeats.MultiDraw;
+                NextExt  = &EnabledExtFeats.MultiDraw.pNext;
+
+
+                EnabledExtFeats.ShaderDrawParameters = DeviceExtFeatures.ShaderDrawParameters;
+
+                *NextExt = &EnabledExtFeats.ShaderDrawParameters;
+                NextExt  = &EnabledExtFeats.ShaderDrawParameters.pNext;
+            }
+
             // Append user-defined features
             *NextExt = EngineCI.pDeviceExtensionFeatures;
         }
@@ -1148,7 +1170,7 @@ void EngineFactoryVkImpl::CreateDeviceAndContextsVk(const EngineVkCreateInfo& En
                 LOG_ERROR_MESSAGE("Can not enable extended device features when VK_KHR_get_physical_device_properties2 extension is not supported by device");
         }
 
-        ASSERT_SIZEOF(Diligent::DeviceFeatures, 41, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
+        ASSERT_SIZEOF(DeviceFeatures, 46, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
 
         for (Uint32 i = 0; i < EngineCI.DeviceExtensionCount; ++i)
         {
@@ -1379,11 +1401,11 @@ void EngineFactoryVkImpl::CreateSwapChainVk(IRenderDevice*       pDevice,
 
 
 #if PLATFORM_ANDROID
-void EngineFactoryVkImpl::InitAndroidFileSystem(struct ANativeActivity* NativeActivity,
-                                                const char*             NativeActivityClassName,
-                                                struct AAssetManager*   AssetManager) const
+void EngineFactoryVkImpl::InitAndroidFileSystem(struct AAssetManager* AssetManager,
+                                                const char*           ExternalFilesDir,
+                                                const char*           OutputFilesDir) const
 {
-    AndroidFileSystem::Init(NativeActivity, NativeActivityClassName, AssetManager);
+    AndroidFileSystem::Init(AssetManager, ExternalFilesDir, OutputFilesDir);
 }
 #endif
 

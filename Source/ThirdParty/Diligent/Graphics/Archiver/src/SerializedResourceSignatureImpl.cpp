@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ SerializedResourceSignatureImpl::SerializedResourceSignatureImpl(IReferenceCount
         const auto Flag    = ExtractLSB(DeviceFlags);
         const auto DevType = ArchiveDeviceDataFlagToArchiveDeviceType(Flag);
 
-        static_assert(ARCHIVE_DEVICE_DATA_FLAG_LAST == ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS, "Please update the switch below to handle the new device data type");
+        static_assert(ARCHIVE_DEVICE_DATA_FLAG_LAST == 1 << 7, "Please update the switch below to handle the new device data type");
         switch (Flag)
         {
 #if D3D11_SUPPORTED
@@ -94,6 +94,11 @@ SerializedResourceSignatureImpl::SerializedResourceSignatureImpl(IReferenceCount
             case ARCHIVE_DEVICE_DATA_FLAG_METAL_MACOS:
             case ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS:
                 CreateDeviceSignature<PipelineResourceSignatureMtlImpl>(DevType, Desc, ShaderStages);
+                break;
+#endif
+#if WEBGPU_SUPPORTED
+            case ARCHIVE_DEVICE_DATA_FLAG_WEBGPU:
+                CreateDeviceSignature<PipelineResourceSignatureWebGPUImpl>(DevType, Desc, ShaderStages);
                 break;
 #endif
             case ARCHIVE_DEVICE_DATA_FLAG_NONE:

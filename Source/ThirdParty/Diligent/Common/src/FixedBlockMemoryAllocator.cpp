@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -257,6 +257,17 @@ void FixedBlockMemoryAllocator::Free(void* Ptr)
     {
         UNEXPECTED("Address not found in the allocations list - double freeing memory?");
     }
+}
+
+void* FixedBlockMemoryAllocator::AllocateAligned(size_t Size, size_t Alignment, const Char* dbgDescription, const char* dbgFileName, const Int32 dbgLineNumber)
+{
+    VERIFY(Alignment <= sizeof(void*), "Alignment (", Alignment, ") exceeds the default alignment (", sizeof(void*), ")");
+    return Allocate(Size, dbgDescription, dbgFileName, dbgLineNumber);
+}
+
+void FixedBlockMemoryAllocator::FreeAligned(void* Ptr)
+{
+    Free(Ptr);
 }
 
 } // namespace Diligent

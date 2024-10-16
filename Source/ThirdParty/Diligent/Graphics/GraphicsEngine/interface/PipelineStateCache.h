@@ -97,7 +97,7 @@ typedef struct PipelineStateCacheCreateInfo PipelineStateCacheCreateInfo;
 // clang-format on
 
 // {6AC86F22-FFF4-493C-8C1F-C539D934F4BC}
-static const INTERFACE_ID IID_PipelineStateCache =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_PipelineStateCache =
     {0x6ac86f22, 0xfff4, 0x493c, {0x8c, 0x1f, 0xc5, 0x39, 0xd9, 0x34, 0xf4, 0xbc}};
 
 

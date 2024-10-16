@@ -12,15 +12,16 @@ libxxhash.*
 xxh32sum
 xxh64sum
 xxh128sum
+xxh3sum
 xxhsum
 xxhsum32
 xxhsum_privateXXH
 xxhsum_inlinedXXH
 dispatch
 tests/generate_unicode_test
-
-# local conf
-.clang_complete
+tests/sanity_test
+tests/sanity_test_vectors_generator
+fuzzer
 
 # Mac OS-X artefacts
 *.dSYM
@@ -45,3 +46,15 @@ infer-out
 tmp*
 tests/*.unicode
 tests/unicode_test*
+*.txt
+!CMakeLists.txt
+*.xxhsum
+
+# editor artifacts
+.clang_complete
+*.swp
+.vscode/
+.vs/
+
+# Doxygen
+doxygen/

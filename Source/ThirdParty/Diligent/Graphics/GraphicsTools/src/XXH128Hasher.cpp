@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ XXH128Hash XXH128State::Digest() noexcept
 
 void XXH128State::Update(const ShaderCreateInfo& ShaderCI) noexcept
 {
-    ASSERT_SIZEOF64(ShaderCI, 144, "Did you add new members to ShaderCreateInfo? Please handle them here.");
+    ASSERT_SIZEOF64(ShaderCI, 152, "Did you add new members to ShaderCreateInfo? Please handle them here.");
 
     Update(ShaderCI.SourceLength, // Aka ByteCodeSize
            ShaderCI.EntryPoint,
@@ -73,7 +73,8 @@ void XXH128State::Update(const ShaderCreateInfo& ShaderCI) noexcept
            ShaderCI.GLSLVersion,
            ShaderCI.GLESSLVersion,
            ShaderCI.MSLVersion,
-           ShaderCI.CompileFlags);
+           ShaderCI.CompileFlags,
+           ShaderCI.LoadConstantBufferReflection);
 
     if (ShaderCI.Source != nullptr || ShaderCI.FilePath != nullptr)
     {
@@ -87,12 +88,23 @@ void XXH128State::Update(const ShaderCreateInfo& ShaderCI) noexcept
         UpdateRaw(ShaderCI.ByteCode, ShaderCI.ByteCodeSize);
     }
 
-    if (ShaderCI.Macros != nullptr)
+    if (ShaderCI.Macros)
     {
-        for (auto* Macro = ShaderCI.Macros; *Macro != ShaderMacro{}; ++Macro)
+        for (size_t i = 0; i < ShaderCI.Macros.Count; ++i)
         {
-            Update(Macro->Name, Macro->Definition);
+            const auto& Macro = ShaderCI.Macros[i];
+            Update(Macro.Name, Macro.Definition);
         }
+    }
+
+    if (ShaderCI.GLSLExtensions != nullptr)
+    {
+        UpdateStr(ShaderCI.GLSLExtensions);
+    }
+
+    if (ShaderCI.WebGPUEmulatedArrayIndexSuffix != nullptr)
+    {
+        UpdateStr(ShaderCI.WebGPUEmulatedArrayIndexSuffix);
     }
 }
 

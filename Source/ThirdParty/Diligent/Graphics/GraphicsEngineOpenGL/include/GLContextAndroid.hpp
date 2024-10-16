@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -85,12 +85,13 @@ private:
     //Flags
     bool gles_initialized_        = false;
     bool egl_context_initialized_ = false;
-    bool context_valid_           = false;
 
     void InitGLES();
     void Terminate();
+    bool InitEGLDisplay();
     bool InitEGLSurface();
     bool InitEGLContext();
+    void AttachToCurrentEGLSurface();
     void AttachToCurrentEGLContext();
 };
 

@@ -278,7 +278,7 @@ RootParamsBuilder::RootTableData::RootTableData(Uint32                  _RootInd
     Group{_Group},
     d3d12RootParam{
         D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-        D3D12_ROOT_DESCRIPTOR_TABLE{0, nullptr},
+        {D3D12_ROOT_DESCRIPTOR_TABLE{0, nullptr}},
         _Visibility //
     }
 {
@@ -462,7 +462,7 @@ void RootParamsBuilder::InitializeMgr(IMemoryAllocator& MemAllocator, RootParams
             D3D12_ROOT_PARAMETER //
             {
                 D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-                D3D12_ROOT_DESCRIPTOR_TABLE{d3d12SrcTbl.NumDescriptorRanges, pCurrDescrRangePtr},
+                {D3D12_ROOT_DESCRIPTOR_TABLE{d3d12SrcTbl.NumDescriptorRanges, pCurrDescrRangePtr}},
                 d3d12SrcParam.ShaderVisibility //
             },
             TableOffsetInGroupAllocation //

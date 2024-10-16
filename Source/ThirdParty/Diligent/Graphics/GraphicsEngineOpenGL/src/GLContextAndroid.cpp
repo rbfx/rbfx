@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,12 +43,21 @@
 namespace Diligent
 {
 
-bool GLContext::InitEGLSurface()
+bool GLContext::InitEGLDisplay()
 {
     display_ = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     if (display_ == EGL_NO_DISPLAY)
     {
         LOG_ERROR_AND_THROW("No EGL display found");
+    }
+    return true;
+}
+
+bool GLContext::InitEGLSurface()
+{
+    if (!window_)
+    {
+        LOG_ERROR_AND_THROW("Native window pointer must be passed to EngineCreateInfo for Diligent to make EGL Surface");
     }
 
     auto success = eglInitialize(display_, &egl_major_version_, &egl_minor_version_);
@@ -123,8 +132,7 @@ bool GLContext::InitEGLSurface()
         LOG_ERROR_AND_THROW("Failed to create EGLSurface");
     }
 
-    eglQuerySurface(display_, surface_, EGL_WIDTH, &screen_width_);
-    eglQuerySurface(display_, surface_, EGL_HEIGHT, &screen_height_);
+    UpdateScreenSize();
 
     /* EGL_NATIVE_VISUAL_ID is an attribute of the EGLConfig that is
      * guaranteed to be accepted by ANativeWindow_setBuffersGeometry().
@@ -190,8 +198,16 @@ bool GLContext::InitEGLContext()
     }
 
     LOG_INFO_MESSAGE("Created OpenGLES Context ", major_version_, '.', minor_version_);
-    context_valid_ = true;
     return true;
+}
+
+void GLContext::AttachToCurrentEGLSurface()
+{
+    if (eglGetCurrentSurface(EGL_DRAW) == EGL_NO_SURFACE)
+    {
+        LOG_ERROR_AND_THROW("Failed to attach to EGLSurface: no active surface");
+    }
+    UpdateScreenSize();
 }
 
 void GLContext::AttachToCurrentEGLContext()
@@ -200,7 +216,6 @@ void GLContext::AttachToCurrentEGLContext()
     {
         LOG_ERROR_AND_THROW("Failed to attach to EGLContext: no active context");
     }
-    context_valid_ = true;
     glGetIntegerv(GL_MAJOR_VERSION, &major_version_);
     glGetIntegerv(GL_MINOR_VERSION, &minor_version_);
 }
@@ -216,15 +231,6 @@ void GLContext::InitGLES()
         return;
 
     LoadGLFunctions();
-
-    // When GL_FRAMEBUFFER_SRGB is enabled, and if the destination image is in the sRGB colorspace
-    // then OpenGL will assume the shader's output is in the linear RGB colorspace. It will therefore
-    // convert the output from linear RGB to sRGB.
-    // Any writes to images that are not in the sRGB format should not be affected.
-    // Thus this setting should be just set once and left that way
-    glEnable(GL_FRAMEBUFFER_SRGB);
-    if (glGetError() != GL_NO_ERROR)
-        LOG_ERROR_MESSAGE("Failed to enable SRGB framebuffers");
 
     glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
     if (glGetError() != GL_NO_ERROR)
@@ -242,15 +248,26 @@ bool GLContext::Init(ANativeWindow* window)
     //Initialize EGL
     //
     window_ = window;
-    if (window != nullptr)
+    InitEGLDisplay();
+
+    if (eglGetCurrentSurface(EGL_DRAW) != EGL_NO_SURFACE)
     {
-        InitEGLSurface();
-        InitEGLContext();
+        AttachToCurrentEGLSurface();
     }
     else
     {
+        InitEGLSurface();
+    }
+
+    if (eglGetCurrentContext() != EGL_NO_CONTEXT)
+    {
         AttachToCurrentEGLContext();
     }
+    else
+    {
+        InitEGLContext();
+    }
+
     InitGLES();
 
     egl_context_initialized_ = true;
@@ -275,8 +292,8 @@ GLContext::GLContext(const EngineGLCreateInfo& InitAttribs,
     Init(NativeWindow);
 
     DevType          = RENDER_DEVICE_TYPE_GLES;
-    APIVersion.Major = static_cast<Uint8>(major_version_);
-    APIVersion.Minor = static_cast<Uint8>(minor_version_);
+    APIVersion.Major = static_cast<Uint32>(major_version_);
+    APIVersion.Minor = static_cast<Uint32>(minor_version_);
 }
 
 GLContext::~GLContext()
@@ -286,7 +303,9 @@ GLContext::~GLContext()
 
 void GLContext::SwapBuffers(int SwapInterval)
 {
-    if (surface_ == EGL_NO_SURFACE)
+    EGLSurface CurrSurface = (surface_ == EGL_NO_SURFACE) ? eglGetCurrentSurface(EGL_DRAW) : surface_;
+
+    if (CurrSurface == EGL_NO_SURFACE)
     {
         LOG_WARNING_MESSAGE("No EGL surface when swapping buffers. This happens when SwapBuffers() is called after Suspend(). The operation will be ignored.");
         return;
@@ -296,7 +315,7 @@ void GLContext::SwapBuffers(int SwapInterval)
     SwapInterval = std::min(SwapInterval, max_swap_interval_);
     eglSwapInterval(display_, SwapInterval);
 
-    bool b = eglSwapBuffers(display_, surface_);
+    bool b = eglSwapBuffers(display_, CurrSurface);
     if (!b)
     {
         EGLint err = eglGetError();
@@ -305,7 +324,15 @@ void GLContext::SwapBuffers(int SwapInterval)
             LOG_INFO_MESSAGE("EGL surface has been lost. Attempting to recreate");
             try
             {
-                InitEGLSurface();
+                if (surface_ != EGL_NO_SURFACE)
+                {
+                    InitEGLSurface();
+                }
+                else
+                {
+                    // Attaching to an external surface was already attempted at the beginning
+                    LOG_ERROR_AND_THROW("Couldn't attach to an external surface");
+                }
             }
             catch (std::runtime_error&)
             {
@@ -316,9 +343,15 @@ void GLContext::SwapBuffers(int SwapInterval)
         else if (err == EGL_CONTEXT_LOST || err == EGL_BAD_CONTEXT)
         {
             //Context has been lost!!
-            context_valid_ = false;
             Terminate();
-            InitEGLContext();
+            if (context_)
+            {
+                InitEGLContext();
+            }
+            else
+            {
+                AttachToCurrentEGLContext();
+            }
         }
         //return err;
     }
@@ -327,34 +360,42 @@ void GLContext::SwapBuffers(int SwapInterval)
 
 void GLContext::Terminate()
 {
+    if (context_ != EGL_NO_CONTEXT)
+    {
+        eglDestroyContext(display_, context_);
+    }
+
+    if (surface_ != EGL_NO_SURFACE)
+    {
+        eglDestroySurface(display_, surface_);
+    }
+
     if (display_ != EGL_NO_DISPLAY)
     {
         eglMakeCurrent(display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-        if (context_ != EGL_NO_CONTEXT)
-        {
-            eglDestroyContext(display_, context_);
-        }
-
-        if (surface_ != EGL_NO_SURFACE)
-        {
-            eglDestroySurface(display_, surface_);
-        }
         eglTerminate(display_);
     }
 
-    display_       = EGL_NO_DISPLAY;
-    context_       = EGL_NO_CONTEXT;
-    surface_       = EGL_NO_SURFACE;
-    context_valid_ = false;
+    display_ = EGL_NO_DISPLAY;
+    context_ = EGL_NO_CONTEXT;
+    surface_ = EGL_NO_SURFACE;
 }
 
 
 void GLContext::UpdateScreenSize()
 {
+    EGLSurface CurrSurface = (surface_ == EGL_NO_SURFACE) ? eglGetCurrentSurface(EGL_DRAW) : surface_;
+
+    if (CurrSurface == EGL_NO_SURFACE)
+    {
+        LOG_ERROR("Failed to attach to EGLSurface: no active surface");
+        return;
+    }
+
     int32_t new_screen_width  = 0;
     int32_t new_screen_height = 0;
-    eglQuerySurface(display_, surface_, EGL_WIDTH, &new_screen_width);
-    eglQuerySurface(display_, surface_, EGL_HEIGHT, &new_screen_height);
+    eglQuerySurface(display_, CurrSurface, EGL_WIDTH, &new_screen_width);
+    eglQuerySurface(display_, CurrSurface, EGL_HEIGHT, &new_screen_height);
 
     if (new_screen_width != screen_width_ || new_screen_height != screen_height_)
     {
@@ -376,8 +417,16 @@ EGLint GLContext::Resume(ANativeWindow* window)
     }
 
     //Create surface
-    window_  = window;
-    surface_ = eglCreateWindowSurface(display_, config_, window_, NULL);
+    window_ = window;
+    if (surface_ == EGL_NO_SURFACE && eglGetCurrentSurface(EGL_DRAW) != EGL_NO_SURFACE)
+    {
+        AttachToCurrentEGLSurface();
+        return EGL_SUCCESS;
+    }
+    else
+    {
+        surface_ = eglCreateWindowSurface(display_, config_, window_, NULL);
+    }
     UpdateScreenSize();
 
     if (eglMakeCurrent(display_, surface_, surface_, context_) == EGL_TRUE)
@@ -411,6 +460,7 @@ void GLContext::Suspend()
     {
         LOG_INFO_MESSAGE("Destroying egl surface\n");
         eglDestroySurface(display_, surface_);
+        eglMakeCurrent(display_, EGL_NO_SURFACE, EGL_NO_SURFACE, context_);
         surface_ = EGL_NO_SURFACE;
     }
 }

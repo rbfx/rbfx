@@ -217,10 +217,10 @@ public:
                   bool      _IsRootView,
                   Uint32    _TableStartOffset = InvalidDescriptorOffset) noexcept :
             // clang-format off
+            m_TableStartOffset{_TableStartOffset    },
             m_NumResources    {_NumResources        },
             m_IsRootView      {_IsRootView ? 1u : 0u},
-            m_pResources      {_pResources          },
-            m_TableStartOffset{_TableStartOffset    }
+            m_pResources      {_pResources          }
         // clang-format on
         {
             VERIFY_EXPR(GetSize() == _NumResources);

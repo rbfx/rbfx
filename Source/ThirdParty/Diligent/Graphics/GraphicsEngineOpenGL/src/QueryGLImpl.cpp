@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -76,7 +76,7 @@ bool QueryGLImpl::GetData(void* pData, Uint32 DataSize, bool AutoInvalidate)
         case QUERY_TYPE_DURATION:
         case QUERY_TYPE_TIMESTAMP:
             glGetQueryObjectuiv(m_GlQuery, GL_QUERY_RESULT_AVAILABLE, &ResultAvailable);
-            CHECK_GL_ERROR("Failed to get query result");
+            DEV_CHECK_GL_ERROR("Failed to get query result");
             break;
 
         default:
@@ -93,7 +93,7 @@ bool QueryGLImpl::GetData(void* pData, Uint32 DataSize, bool AutoInvalidate)
 
                 GLuint SamplesPassed = 0;
                 glGetQueryObjectuiv(m_GlQuery, GL_QUERY_RESULT, &SamplesPassed);
-                CHECK_GL_ERROR("Failed to get query result");
+                DEV_CHECK_GL_ERROR("Failed to get query result");
                 QueryData.NumSamples = SamplesPassed;
             }
             break;
@@ -104,7 +104,7 @@ bool QueryGLImpl::GetData(void* pData, Uint32 DataSize, bool AutoInvalidate)
 
                 GLuint AnySamplePassed = 0;
                 glGetQueryObjectuiv(m_GlQuery, GL_QUERY_RESULT, &AnySamplePassed);
-                CHECK_GL_ERROR("Failed to get query result");
+                DEV_CHECK_GL_ERROR("Failed to get query result");
                 QueryData.AnySamplePassed = AnySamplePassed != 0;
             }
             break;
@@ -115,7 +115,7 @@ bool QueryGLImpl::GetData(void* pData, Uint32 DataSize, bool AutoInvalidate)
 
                 GLuint PrimitivesGenerated = 0;
                 glGetQueryObjectuiv(m_GlQuery, GL_QUERY_RESULT, &PrimitivesGenerated);
-                CHECK_GL_ERROR("Failed to get query result");
+                DEV_CHECK_GL_ERROR("Failed to get query result");
                 QueryData.ClippingInvocations = PrimitivesGenerated;
             }
             break;
@@ -127,7 +127,7 @@ bool QueryGLImpl::GetData(void* pData, Uint32 DataSize, bool AutoInvalidate)
                 {
                     GLuint64 Counter = 0;
                     glGetQueryObjectui64v(m_GlQuery, GL_QUERY_RESULT, &Counter);
-                    CHECK_GL_ERROR("Failed to get query result");
+                    DEV_CHECK_GL_ERROR("Failed to get query result");
                     if (m_Desc.Type == QUERY_TYPE_TIMESTAMP)
                     {
                         auto& QueryData   = *reinterpret_cast<QueryDataTimestamp*>(pData);

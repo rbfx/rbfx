@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -60,6 +60,7 @@ public:
         TBase              {pRefCounters},
         m_pDevice          {pDevice          },
         m_Desc             {ObjDesc          },
+        m_UniqueID         {pDevice != nullptr ? pDevice->GenerateUniqueId() : 0},
         m_bIsDeviceInternal{bIsDeviceInternal}
     //clang-format on
     {
@@ -139,20 +140,26 @@ public:
 
     IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_DeviceObject, TBase)
 
-    virtual const ObjectDescType& DILIGENT_CALL_TYPE GetDesc() const override final
+    virtual const ObjectDescType& DILIGENT_CALL_TYPE GetDesc() const override
     {
         return m_Desc;
     }
 
     /// Returns unique identifier
+
+    /// \remarks
+    ///     This unique ID is used to unambiguously identify device object for
+    ///     tracking purposes within the device.
+    ///     Neither GL handle nor pointer could be safely used for this purpose
+    ///     as both GL reuses released handles and we pool device objects and reuse
+    ///     released ones.
+    ///
+    /// \note
+    ///      Objects created from different devices may have the same unique ID.
     virtual Int32 DILIGENT_CALL_TYPE GetUniqueID() const override final
     {
-        /// \note
-        /// This unique ID is used to unambiguously identify device object for
-        /// tracking purposes.
-        /// Neither GL handle nor pointer could be safely used for this purpose
-        /// as both GL reuses released handles and the OS reuses released pointers.
-        return m_UniqueID.GetID();
+        VERIFY(m_UniqueID != 0, "Unique ID is not initialized. This indicates that this device object has been created without a device");
+        return m_UniqueID;
     }
 
     /// Implementation of IDeviceObject::SetUserData.
@@ -189,10 +196,11 @@ protected:
     /// Object description
     ObjectDescType m_Desc;
 
-    // Template argument is only used to separate counters for
-    // different groups of objects
-    UniqueIdHelper<BaseInterface> m_UniqueID;
-    const bool                    m_bIsDeviceInternal;
+    // WARNING: using static counter for unique ID is not safe
+    //          as there may be different counter instances in different
+    //          executable units (e.g. in different DLLs).
+    const UniqueIdentifier m_UniqueID;
+    const bool             m_bIsDeviceInternal;
 
     RefCntAutoPtr<IObject> m_pUserData;
 };

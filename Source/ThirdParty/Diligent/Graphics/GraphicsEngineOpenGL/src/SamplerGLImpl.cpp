@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -101,12 +101,10 @@ SamplerGLImpl::SamplerGLImpl(IReferenceCounters* pRefCounters, class RenderDevic
             LOG_WARNING_MESSAGE("Texture LOD bias sampler attribute is not supported\n");
     }
 
-    if (SamPrpos.AnisotropicFilteringSupported) // Can be unsupported
-        glSamplerParameterf(m_GlSampler, GL_TEXTURE_MAX_ANISOTROPY_EXT, bMipAnisotropic ? static_cast<float>(SamplerDesc.MaxAnisotropy) : 1.f);
-    else
+    if (bMinAnisotropic && SamPrpos.MaxAnisotropy > 1)
     {
-        if (bMipAnisotropic && SamplerDesc.MaxAnisotropy != 1)
-            LOG_WARNING_MESSAGE("Max anisotropy sampler attribute is not supported\n");
+        float MaxAnisotropy = static_cast<float>(std::min(SamplerDesc.MaxAnisotropy, Uint32{SamPrpos.MaxAnisotropy}));
+        glSamplerParameterf(m_GlSampler, GL_TEXTURE_MAX_ANISOTROPY_EXT, MaxAnisotropy);
     }
 
     glSamplerParameteri(m_GlSampler, GL_TEXTURE_COMPARE_MODE, bMinComparison ? GL_COMPARE_REF_TO_TEXTURE : GL_NONE);
@@ -124,7 +122,7 @@ SamplerGLImpl::SamplerGLImpl(IReferenceCounters* pRefCounters, class RenderDevic
     glSamplerParameterf(m_GlSampler, GL_TEXTURE_MAX_LOD, SamplerDesc.MaxLOD);
     glSamplerParameterf(m_GlSampler, GL_TEXTURE_MIN_LOD, SamplerDesc.MinLOD);
 
-    CHECK_GL_ERROR_AND_THROW("Failed to create OpenGL texture sampler\n");
+    DEV_CHECK_GL_ERROR_AND_THROW("Failed to create OpenGL texture sampler\n");
 
     m_GlSampler.SetName(m_Desc.Name);
 }

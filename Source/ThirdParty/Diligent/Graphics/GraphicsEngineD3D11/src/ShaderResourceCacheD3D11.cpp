@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -186,6 +186,10 @@ void ShaderResourceCacheD3D11::TransitionResourceStates(DeviceContextD3D11Impl& 
     TransitionResources<Mode>(Ctx, static_cast<ID3D11UnorderedAccessView*>(nullptr));
 }
 
+// Instantiate templates
+template void ShaderResourceCacheD3D11::TransitionResourceStates<ShaderResourceCacheD3D11::StateTransitionMode::Transition>(DeviceContextD3D11Impl& Ctx);
+template void ShaderResourceCacheD3D11::TransitionResourceStates<ShaderResourceCacheD3D11::StateTransitionMode::Verify>(DeviceContextD3D11Impl& Ctx);
+
 template <ShaderResourceCacheD3D11::StateTransitionMode Mode>
 void ShaderResourceCacheD3D11::TransitionResources(DeviceContextD3D11Impl& Ctx, const ID3D11Buffer* /*Selector*/) const
 {
@@ -209,7 +213,7 @@ void ShaderResourceCacheD3D11::TransitionResources(DeviceContextD3D11Impl& Ctx, 
                     else
                     {
                         LOG_ERROR_MESSAGE("Buffer '", pBuffer->GetDesc().Name,
-                                          "' has not been transitioned to Constant Buffer state. Call TransitionShaderResources(), use "
+                                          "' has not been transitioned to CONSTANT_BUFFER state. Call TransitionShaderResources(), use "
                                           "RESOURCE_STATE_TRANSITION_MODE_TRANSITION mode or explicitly transition the buffer to required state.");
                     }
                 }
@@ -233,7 +237,15 @@ void ShaderResourceCacheD3D11::TransitionResources(DeviceContextD3D11Impl& Ctx, 
             auto& SRVRes = SRVArrays.first[i];
             if (auto* pTexture = SRVRes.pTexture)
             {
-                if (pTexture->IsInKnownState() && !pTexture->CheckAnyState(RESOURCE_STATE_SHADER_RESOURCE | RESOURCE_STATE_INPUT_ATTACHMENT))
+                auto RequiredStates = RESOURCE_STATE_SHADER_RESOURCE | RESOURCE_STATE_INPUT_ATTACHMENT;
+
+                const auto& TexDesc    = pTexture->GetDesc();
+                const auto& FmtAttribs = GetTextureFormatAttribs(TexDesc.Format);
+                if (FmtAttribs.ComponentType == COMPONENT_TYPE_DEPTH || FmtAttribs.ComponentType == COMPONENT_TYPE_DEPTH_STENCIL)
+                {
+                    RequiredStates |= RESOURCE_STATE_DEPTH_READ;
+                }
+                if (pTexture->IsInKnownState() && !pTexture->CheckAnyState(RequiredStates))
                 {
                     if (Mode == StateTransitionMode::Transition)
                     {
@@ -242,8 +254,9 @@ void ShaderResourceCacheD3D11::TransitionResources(DeviceContextD3D11Impl& Ctx, 
                     else
                     {
                         LOG_ERROR_MESSAGE("Texture '", pTexture->GetDesc().Name,
-                                          "' has not been transitioned to Shader Resource state. Call TransitionShaderResources(), use "
-                                          "RESOURCE_STATE_TRANSITION_MODE_TRANSITION mode or explicitly transition the texture to required state.");
+                                          "' has not been transitioned to one of ", GetResourceStateString(RequiredStates),
+                                          ", states. Call TransitionShaderResources(), use RESOURCE_STATE_TRANSITION_MODE_TRANSITION mode "
+                                          "or explicitly transition the texture to required state.");
                     }
                 }
             }
@@ -258,7 +271,7 @@ void ShaderResourceCacheD3D11::TransitionResources(DeviceContextD3D11Impl& Ctx, 
                     else
                     {
                         LOG_ERROR_MESSAGE("Buffer '", pBuffer->GetDesc().Name,
-                                          "' has not been transitioned to Shader Resource state. Call TransitionShaderResources(), use "
+                                          "' has not been transitioned to SHADER_RESOURCE state. Call TransitionShaderResources(), use "
                                           "RESOURCE_STATE_TRANSITION_MODE_TRANSITION mode or explicitly transition the buffer to required state.");
                     }
                 }

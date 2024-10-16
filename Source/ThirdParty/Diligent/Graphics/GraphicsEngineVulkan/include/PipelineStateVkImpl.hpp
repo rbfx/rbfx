@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -128,6 +128,13 @@ private:
 
     void InitPipelineLayout(const PipelineStateCreateInfo& CreateInfo,
                             TShaderStages&                 ShaderStages) noexcept(false);
+
+    void InitializePipeline(const GraphicsPipelineStateCreateInfo& CreateInfo);
+    void InitializePipeline(const ComputePipelineStateCreateInfo& CreateInfo);
+    void InitializePipeline(const RayTracingPipelineStateCreateInfo& CreateInfo);
+
+    // TPipelineStateBase::Construct needs access to InitializePipeline
+    friend TPipelineStateBase;
 
     void Destruct();
 

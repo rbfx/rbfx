@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use  file except in compliance with the License.
@@ -89,6 +89,8 @@ public:
     UNSUPPORTED_CONST_METHOD(IPipelineResourceSignature*, GetResourceSignature, Uint32 Index)
     // clang-format on
 
+    virtual PIPELINE_STATE_STATUS DILIGENT_CALL_TYPE GetStatus(bool WaitForCompletion = false) override;
+
     virtual Uint32 DILIGENT_CALL_TYPE GetPatchedShaderCount(ARCHIVE_DEVICE_DATA_FLAGS DeviceType) const override final;
 
     virtual ShaderCreateInfo DILIGENT_CALL_TYPE GetPatchedShaderCreateInfo(
@@ -117,10 +119,17 @@ public:
         bool DoNotPackSignatures = false;
     };
 
-    const Data& GetData() const { return m_Data; }
+    const Data& GetData() const
+    {
+        DEV_CHECK_ERR(m_Status.load() == PIPELINE_STATE_STATUS_READY, "Pipeline state '", m_Desc.Name, "' is not ready. Use GetStatus() to check the pipeline state status.");
+        return m_Data;
+    }
 
-    const SerializedData& GetCommonData() const { return m_Data.Common; };
-
+    const SerializedData& GetCommonData() const
+    {
+        DEV_CHECK_ERR(m_Status.load() == PIPELINE_STATE_STATUS_READY, "Pipeline state '", m_Desc.Name, "' is not ready. Use GetStatus() to check the pipeline state status.");
+        return m_Data.Common;
+    }
 
     using RayTracingShaderMapType = std::unordered_map<const IShader*, /*Index in TShaderIndices*/ Uint32>;
 
@@ -147,9 +156,17 @@ public:
     }
 
     using SignaturesVector = std::vector<RefCntAutoPtr<IPipelineResourceSignature>>;
-    const SignaturesVector& GetSignatures() { return m_Signatures; }
+    const SignaturesVector& GetSignatures()
+    {
+        DEV_CHECK_ERR(m_Status.load() == PIPELINE_STATE_STATUS_READY, "Pipeline state '", m_Desc.Name, "' is not ready. Use GetStatus() to check the pipeline state status.");
+        return m_Signatures;
+    }
 
 private:
+    template <typename PSOCreateInfoType>
+    void Initialize(const PSOCreateInfoType&        CreateInfo,
+                    const PipelineStateArchiveInfo& ArchiveInfo);
+
     template <typename CreateInfoType>
     void PatchShadersVk(const CreateInfoType& CreateInfo) noexcept(false);
 
@@ -164,6 +181,9 @@ private:
 
     template <typename CreateInfoType>
     void PatchShadersMtl(const CreateInfoType& CreateInfo, DeviceType DevType, const std::string& DumpDir) noexcept(false);
+
+    template <typename CreateInfoType>
+    void PatchShadersWebGPU(const CreateInfoType& CreateInfo) noexcept(false);
 
     // Default signatures in OpenGL are not serialized and require special handling.
     template <typename CreateInfoType>
@@ -181,7 +201,7 @@ private:
                                         const ShaderStagesArrayType& ShaderStages,
                                         const ExtraArgsType&... ExtraArgs);
 
-protected:
+private:
     SerializationDeviceImpl* const m_pSerializationDevice;
 
     Data m_Data;
@@ -192,6 +212,9 @@ protected:
     RefCntAutoPtr<IRenderPass>                     m_pRenderPass;
     RefCntAutoPtr<SerializedResourceSignatureImpl> m_pDefaultSignature;
     SignaturesVector                               m_Signatures;
+
+    std::atomic<PIPELINE_STATE_STATUS> m_Status{PIPELINE_STATE_STATUS_UNINITIALIZED};
+    std::unique_ptr<AsyncInitializer>  m_AsyncInitializer;
 };
 
 #define INSTANTIATE_SERIALIZED_PSO_CTOR(CreateInfoType)                                                             \

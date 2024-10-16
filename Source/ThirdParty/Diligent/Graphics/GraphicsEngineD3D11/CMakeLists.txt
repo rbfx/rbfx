@@ -98,7 +98,7 @@ set(DLL_SRC
 
 add_library(Diligent-GraphicsEngineD3D11Interface INTERFACE)
 target_link_libraries     (Diligent-GraphicsEngineD3D11Interface INTERFACE Diligent-GraphicsEngineD3DBaseInterface)
-target_include_directories(Diligent-GraphicsEngineD3D11Interface INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>)
+target_include_directories(Diligent-GraphicsEngineD3D11Interface INTERFACE interface)
 
 
 add_library(Diligent-GraphicsEngineD3D11-static STATIC 
@@ -106,15 +106,15 @@ add_library(Diligent-GraphicsEngineD3D11-static STATIC
     readme.md
 )
 
-#add_library(Diligent-GraphicsEngineD3D11-shared SHARED
-#    ${DLL_SRC}
-#    readme.md
-#)
-#
-## Set output name to GraphicsEngineD3D11_{32|64}{r|d}
-#set_dll_output_name(Diligent-GraphicsEngineD3D11-shared GraphicsEngineD3D11)
-#
-#set_common_target_properties(Diligent-GraphicsEngineD3D11-shared)
+add_library(Diligent-GraphicsEngineD3D11-shared SHARED 
+    ${DLL_SRC}
+    readme.md
+)
+
+# Set output name to GraphicsEngineD3D11_{32|64}{r|d}
+set_dll_output_name(Diligent-GraphicsEngineD3D11-shared GraphicsEngineD3D11)
+
+set_common_target_properties(Diligent-GraphicsEngineD3D11-shared)
 set_common_target_properties(Diligent-GraphicsEngineD3D11-static)
 
 target_include_directories(Diligent-GraphicsEngineD3D11-static 
@@ -136,14 +136,14 @@ PUBLIC
     Diligent-GraphicsEngineD3D11Interface
 )
 
-#target_link_libraries(Diligent-GraphicsEngineD3D11-shared
-#PRIVATE
-#    Diligent-BuildSettings
-#    Diligent-GraphicsEngineD3D11-static
-#PUBLIC
-#    Diligent-GraphicsEngineD3D11Interface
-#)
-#target_compile_definitions(Diligent-GraphicsEngineD3D11-shared PUBLIC ENGINE_DLL=1)
+target_link_libraries(Diligent-GraphicsEngineD3D11-shared
+PRIVATE
+    Diligent-BuildSettings 
+    Diligent-GraphicsEngineD3D11-static
+PUBLIC
+    Diligent-GraphicsEngineD3D11Interface
+)
+target_compile_definitions(Diligent-GraphicsEngineD3D11-shared PUBLIC ENGINE_DLL=1)
 
 source_group("src" FILES ${SRC})
 source_group("dll" FILES ${DLL_SRC})
@@ -153,15 +153,15 @@ source_group("interface" FILES ${INTERFACE})
 set_target_properties(Diligent-GraphicsEngineD3D11-static PROPERTIES
     FOLDER DiligentCore/Graphics
 )
-#set_target_properties(Diligent-GraphicsEngineD3D11-shared PROPERTIES
-#    FOLDER DiligentCore/Graphics
-#)
+set_target_properties(Diligent-GraphicsEngineD3D11-shared PROPERTIES
+    FOLDER DiligentCore/Graphics
+)
 
 set_source_files_properties(
     readme.md PROPERTIES HEADER_FILE_ONLY TRUE
 )
 
 if(DILIGENT_INSTALL_CORE)
-#    install_core_lib(Diligent-GraphicsEngineD3D11-shared)
+    install_core_lib(Diligent-GraphicsEngineD3D11-shared)
     install_core_lib(Diligent-GraphicsEngineD3D11-static)
 endif()

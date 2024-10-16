@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,7 +47,7 @@ struct IShaderSourceInputStreamFactory;
 struct IDearchiver;
 
 // {D932B052-4ED6-4729-A532-F31DEEC100F3}
-static const INTERFACE_ID IID_EngineFactory =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_EngineFactory =
     {0xd932b052, 0x4ed6, 0x4729, {0xa5, 0x32, 0xf3, 0x1d, 0xee, 0xc1, 0x0, 0xf3}};
 
 #define DILIGENT_INTERFACE_NAME IEngineFactory
@@ -132,19 +132,25 @@ DILIGENT_BEGIN_INTERFACE(IEngineFactory, IObject)
     VIRTUAL void METHOD(SetMessageCallback)(THIS_
                                             DebugMessageCallbackType MessageCallback) CONST PURE;
 
+    /// Sets whether to break program execution on assertion failure.
+
+    /// \param [in]     BreakOnError - Whether to break on assertion failure.
+    VIRTUAL void METHOD(SetBreakOnError)(THIS_
+                                         bool BreakOnError) CONST PURE;
+
 #if PLATFORM_ANDROID
     /// On Android platform, it is necessary to initialize the file system before
     /// CreateDefaultShaderSourceStreamFactory() method can be called.
 
-    /// \param [in] NativeActivity          - Pointer to the native activity object (ANativeActivity).
-    /// \param [in] NativeActivityClassName - Native activity class name.
-    /// \param [in] AssetManager            - Pointer to the asset manager (AAssetManager).
+    /// \param [in] AssetManager     - A pointer to the asset manager (AAssetManager).
+    /// \param [in] ExternalFilesDir - External files directory.
+    /// \param [in] OutputFilesDir   - Output files directory.
     ///
     /// \remarks See AndroidFileSystem::Init.
     VIRTUAL void METHOD(InitAndroidFileSystem)(THIS_
-                                               struct ANativeActivity*  NativeActivity,
-                                               const Char*              NativeActivityClassName,
-                                               struct AAssetManager*    AssetManager) CONST PURE;
+                                               struct AAssetManager* AssetManager,
+                                               const char*           ExternalFilesDir DEFAULT_VALUE(nullptr),
+                                               const char*           OutputFilesDir   DEFAULT_VALUE(nullptr)) CONST PURE;
 #endif
 };
 DILIGENT_END_INTERFACE
@@ -164,7 +170,7 @@ DILIGENT_END_INTERFACE
 #    define IEngineFactory_InitAndroidFileSystem(This, ...)                  CALL_IFACE_METHOD(EngineFactory, InitAndroidFileSystem,                  This, __VA_ARGS__)
 #    define IEngineFactory_CreateDearchiver(This, ...)                       CALL_IFACE_METHOD(EngineFactory, CreateDearchiver,                       This, __VA_ARGS__)
 #    define IEngineFactory_SetMessageCallback(This, ...)                     CALL_IFACE_METHOD(EngineFactory, SetMessageCallback,                     This, __VA_ARGS__)
-
+#    define IEngineFactory_SetBreakOnError(This, ...)                        CALL_IFACE_METHOD(EngineFactory, SetBreakOnError,                        This, __VA_ARGS__)
 // clang-format on
 
 #endif

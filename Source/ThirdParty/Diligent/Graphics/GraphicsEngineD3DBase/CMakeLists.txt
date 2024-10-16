@@ -40,11 +40,11 @@ add_library(Diligent-GraphicsEngineD3DBase STATIC
 
 add_library(Diligent-GraphicsEngineD3DBaseInterface INTERFACE)
 target_link_libraries     (Diligent-GraphicsEngineD3DBaseInterface INTERFACE Diligent-GraphicsEngineInterface)
-target_include_directories(Diligent-GraphicsEngineD3DBaseInterface INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>)
+target_include_directories(Diligent-GraphicsEngineD3DBaseInterface INTERFACE interface)
 
 target_include_directories(Diligent-GraphicsEngineD3DBase
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    include
 )
 
 target_link_libraries(Diligent-GraphicsEngineD3DBase
@@ -80,7 +80,7 @@ if(MSVC)
 
     # Note that CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION is stated to be defined when targeting Windows 10
     # and above, however it is also defined when targeting 8.1 and Visual Studio 2019 (but not VS2017)
-    if(CMAKE_SYSTEM_VERSION VERSION_GREATER_EQUAL "10.0")
+    if("${WINDOWS_SDK_VERSION}" VERSION_GREATER_EQUAL "10.0")
         if (DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION)
             # Note that VS_WINDOWS_SDK_BIN_DIR as well as all derived paths can only be used in Visual Studio
             # commands and are not valid paths during CMake configuration
@@ -94,7 +94,7 @@ if(MSVC)
                 set(VS_DXIL_SIGNER_PATH  "\"${VS_WINDOWS_SDK_BIN_DIR}\\dxil.dll\"" CACHE INTERNAL "dxil.dll path")
             endif()
         endif()
-    elseif(CMAKE_SYSTEM_VERSION VERSION_EQUAL "8.1")
+    elseif("${WINDOWS_SDK_VERSION}" VERSION_EQUAL "8.1")
         # D3Dcompiler_47.dll from Win8.1 SDK is ancient (from 2013) and fails to
         # compile a number of test shaders. Use the compiler from Visual Studio
         # executable path instead

@@ -70,8 +70,8 @@ public:
     // Creates null allocation
     DescriptorHeapAllocation() noexcept :
         // clang-format off
-        m_NumHandles      {1      }, // One null descriptor handle
         m_pDescriptorHeap {nullptr},
+        m_NumHandles      {1      }, // One null descriptor handle
         m_DescriptorSize  {0      }
     // clang-format on
     {
@@ -90,8 +90,8 @@ public:
         m_FirstCpuHandle      {CpuHandle          },
         m_FirstGpuHandle      {GpuHandle          },
         m_pAllocator          {&Allocator         },
-        m_NumHandles          {NHandles           },
         m_pDescriptorHeap     {pHeap              },
+        m_NumHandles          {NHandles           },
         m_AllocationManagerId {AllocationManagerId}
     // clang-format on
     {
@@ -106,10 +106,10 @@ public:
         // clang-format off
         m_FirstCpuHandle      {std::move(Allocation.m_FirstCpuHandle)     },
         m_FirstGpuHandle      {std::move(Allocation.m_FirstGpuHandle)     },
-        m_NumHandles          {std::move(Allocation.m_NumHandles)         },
         m_pAllocator          {std::move(Allocation.m_pAllocator)         },
-        m_AllocationManagerId {std::move(Allocation.m_AllocationManagerId)},
         m_pDescriptorHeap     {std::move(Allocation.m_pDescriptorHeap)    },
+        m_NumHandles          {std::move(Allocation.m_NumHandles)         },
+        m_AllocationManagerId {std::move(Allocation.m_AllocationManagerId)},
         m_DescriptorSize      {std::move(Allocation.m_DescriptorSize)     }
     // clang-format on
     {
@@ -277,13 +277,13 @@ public:
         m_HeapDesc                  {rhs.m_HeapDesc                  },
         m_DescriptorSize            {rhs.m_DescriptorSize            },
         m_NumDescriptorsInAllocation{rhs.m_NumDescriptorsInAllocation},
-        m_FirstCPUHandle            {rhs.m_FirstCPUHandle            },
-        m_FirstGPUHandle            {rhs.m_FirstGPUHandle            },
-        m_MaxAllocatedSize          {rhs.m_MaxAllocatedSize          },
         // Mutex is not movable
         //m_FreeBlockManagerMutex     (std::move(rhs.m_FreeBlockManagerMutex))
         m_FreeBlockManager          {std::move(rhs.m_FreeBlockManager)    },
-        m_pd3d12DescriptorHeap      {std::move(rhs.m_pd3d12DescriptorHeap)}
+        m_pd3d12DescriptorHeap      {std::move(rhs.m_pd3d12DescriptorHeap)},
+        m_FirstCPUHandle            {rhs.m_FirstCPUHandle            },
+        m_FirstGPUHandle            {rhs.m_FirstGPUHandle            },
+        m_MaxAllocatedSize          {rhs.m_MaxAllocatedSize          }
     // clang-format on
     {
         rhs.m_NumDescriptorsInAllocation = 0; // Must be set to zero so that debug check in dtor passes
@@ -357,7 +357,7 @@ private:
     size_t m_MaxAllocatedSize = 0;
 
 #ifdef DILIGENT_DEVELOPMENT
-    std::atomic<Int32> m_AllocationsCounter = 0;
+    std::atomic<Int32> m_AllocationsCounter{0};
     // This descriptor heap is only used to copy invalid descriptors to
     // a new allocated region. Using these descriptors will result in device
     // removal. Note that using null descriptors is perfectly valid in D3D12

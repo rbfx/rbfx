@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,7 +54,8 @@ public:
     static void ClearDirectory(const Char* strPath, bool Recursive = false);
     static void DeleteFile(const Char* strPath);
 
-    static std::vector<std::unique_ptr<FindFileData>> Search(const Char* SearchPattern);
+    static SearchFilesResult Search(const Char* SearchPattern);
+    static SearchFilesResult SearchRecursive(const Char* Dir, const Char* SearchPattern);
 
     // Thread-safe popen/pclose
     static FILE* popen(const char* command, const char* type);

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,11 +30,14 @@
 /// \file
 /// Implementation of the Diligent::RenderDeviceBase template class and related structures
 
+#include <atomic>
+#include <thread>
+
 #include "RenderDevice.h"
 #include "DeviceObjectBase.hpp"
 #include "Defines.h"
 #include "ResourceMappingImpl.hpp"
-#include "StateObjectsRegistry.hpp"
+#include "ObjectsRegistry.hpp"
 #include "HashUtils.hpp"
 #include "ObjectBase.hpp"
 #include "DeviceContext.h"
@@ -44,6 +47,7 @@
 #include "EngineMemory.h"
 #include "STDAllocator.hpp"
 #include "IndexWrapper.hpp"
+#include "ThreadPool.hpp"
 
 namespace Diligent
 {
@@ -127,7 +131,6 @@ public:
         m_pEngineFactory      {pEngineFactory},
         m_ValidationFlags     {EngineCI.ValidationFlags},
         m_AdapterInfo         {AdapterInfo},
-        m_SamplersRegistry    {RawMemAllocator, "sampler"},
         m_TextureFormatsInfo  (TEX_FORMAT_NUM_FORMATS, TextureFormatInfoExt(), STD_ALLOCATOR_RAW_MEM(TextureFormatInfoExt, RawMemAllocator, "Allocator for vector<TextureFormatInfoExt>")),
         m_TexFmtInfoInitFlags (TEX_FORMAT_NUM_FORMATS, false, STD_ALLOCATOR_RAW_MEM(bool, RawMemAllocator, "Allocator for vector<bool>")),
         m_wpImmediateContexts (std::max(1u, EngineCI.NumImmediateContexts), RefCntWeakPtr<DeviceContextImplType>(), STD_ALLOCATOR_RAW_MEM(RefCntWeakPtr<DeviceContextImplType>, RawMemAllocator, "Allocator for vector<RefCntWeakPtr<DeviceContextImplType>>")),
@@ -217,20 +220,25 @@ public:
     }
 
     /// Implementation of IRenderDevice::CreateResourceMapping().
-    virtual void DILIGENT_CALL_TYPE CreateResourceMapping(const ResourceMappingDesc& MappingDesc, IResourceMapping** ppMapping) override final
+    virtual void DILIGENT_CALL_TYPE CreateResourceMapping(const ResourceMappingCreateInfo& ResMappingCI, IResourceMapping** ppMapping) override final
     {
         DEV_CHECK_ERR(ppMapping != nullptr, "Null pointer provided");
         if (ppMapping == nullptr)
             return;
         DEV_CHECK_ERR(*ppMapping == nullptr, "Overwriting reference to existing object may cause memory leaks");
+        DEV_CHECK_ERR(ResMappingCI.pEntries == nullptr || ResMappingCI.NumEntries != 0, "Starting with API253010, the number of entries is defined through the NumEntries member.");
 
         auto* pResourceMapping{NEW_RC_OBJ(m_ResMappingAllocator, "ResourceMappingImpl instance", ResourceMappingImpl)(GetRawAllocator())};
         pResourceMapping->QueryInterface(IID_ResourceMapping, reinterpret_cast<IObject**>(ppMapping));
-        if (MappingDesc.pEntries)
+        if (ResMappingCI.pEntries != nullptr)
         {
-            for (auto* pEntry = MappingDesc.pEntries; pEntry->Name && pEntry->pObject; ++pEntry)
+            for (Uint32 i = 0; i < ResMappingCI.NumEntries; ++i)
             {
-                (*ppMapping)->AddResourceArray(pEntry->Name, pEntry->ArrayIndex, &pEntry->pObject, 1, true);
+                const auto& Entry = ResMappingCI.pEntries[i];
+                if (Entry.Name != nullptr && Entry.pObject != nullptr)
+                    (*ppMapping)->AddResourceArray(Entry.Name, Entry.ArrayIndex, &Entry.pObject, 1, true);
+                else
+                    DEV_ERROR("Name and pObject must not be null. Note that starting with API253010, the number of entries is defined through the NumEntries member.");
             }
         }
     }
@@ -249,7 +257,7 @@ public:
     }
 
     /// Implementation of IRenderDevice::GetTextureFormatInfo().
-    virtual const TextureFormatInfo& DILIGENT_CALL_TYPE GetTextureFormatInfo(TEXTURE_FORMAT TexFormat) override final
+    virtual const TextureFormatInfo& DILIGENT_CALL_TYPE GetTextureFormatInfo(TEXTURE_FORMAT TexFormat) const override final
     {
         VERIFY(TexFormat >= TEX_FORMAT_UNKNOWN && TexFormat < TEX_FORMAT_NUM_FORMATS, "Texture format out of range");
         const auto& TexFmtInfo = m_TextureFormatsInfo[TexFormat];
@@ -283,8 +291,6 @@ public:
     {
         UNSUPPORTED("Tile pipeline is not supported by this device. Please check DeviceFeatures.TileShaders feature.");
     }
-
-    StateObjectsRegistry<SamplerDesc>& GetSamplerRegistry() { return m_SamplersRegistry; }
 
     /// Set weak reference to the immediate context
     void SetImmediateContext(size_t Ctx, DeviceContextImplType* pImmediateContext)
@@ -327,9 +333,45 @@ public:
         return m_DeviceInfo.Features;
     }
 
+    UniqueIdentifier GenerateUniqueId()
+    {
+        return m_UniqueId.fetch_add(1) + 1;
+    }
+
+    virtual IThreadPool* DILIGENT_CALL_TYPE GetShaderCompilationThreadPool() const override final
+    {
+        return m_pShaderCompilationThreadPool;
+    }
+
 protected:
     virtual void TestTextureFormat(TEXTURE_FORMAT TexFormat) = 0;
 
+    void InitShaderCompilationThreadPool(IThreadPool* pShaderCompilationThreadPool, Uint32 NumThreads)
+    {
+        if (!m_DeviceInfo.Features.AsyncShaderCompilation)
+            return;
+
+        if (pShaderCompilationThreadPool != nullptr)
+        {
+            m_pShaderCompilationThreadPool = pShaderCompilationThreadPool;
+        }
+        else if (NumThreads != 0)
+        {
+            const Uint32 NumCores = std::max(std::thread::hardware_concurrency(), 1u);
+
+            ThreadPoolCreateInfo ThreadPoolCI;
+            if (NumThreads == ~0u)
+            {
+                // Leave one core for the main thread
+                ThreadPoolCI.NumThreads = std::max(NumCores, 2u) - 1u;
+            }
+            else
+            {
+                ThreadPoolCI.NumThreads = std::min(NumThreads, std::max(NumCores * 4, 128u));
+            }
+            m_pShaderCompilationThreadPool = CreateThreadPool(ThreadPoolCI);
+        }
+    }
     /// Helper template function to facilitate device object creation
 
     /// \tparam ObjectType            - The type of the object being created (IBuffer, ITexture, etc.).
@@ -437,13 +479,13 @@ protected:
         CreateDeviceObject("Sampler", SamplerDesc, ppSampler,
                            [&]() //
                            {
-                               m_SamplersRegistry.Find(SamplerDesc, reinterpret_cast<IDeviceObject**>(ppSampler));
-                               if (*ppSampler == nullptr)
-                               {
-                                   auto* pSamplerImpl = NEW_RC_OBJ(m_SamplerObjAllocator, "Sampler instance", SamplerImplType)(static_cast<RenderDeviceImplType*>(this), SamplerDesc, ExtraArgs...);
-                                   pSamplerImpl->QueryInterface(IID_Sampler, reinterpret_cast<IObject**>(ppSampler));
-                                   m_SamplersRegistry.Add(SamplerDesc, *ppSampler);
-                               }
+                               auto pSampler = m_SamplersRegistry.Get(
+                                   SamplerDesc,
+                                   [&]() {
+                                       return RefCntAutoPtr<ISampler>{NEW_RC_OBJ(m_SamplerObjAllocator, "Sampler instance", SamplerImplType)(static_cast<RenderDeviceImplType*>(this), SamplerDesc, ExtraArgs...)};
+                                   });
+
+                               *ppSampler = pSampler.Detach();
                            });
     }
 
@@ -564,7 +606,7 @@ protected:
     // All state object registries hold raw pointers.
     // This is safe because every object unregisters itself
     // when it is deleted.
-    StateObjectsRegistry<SamplerDesc>                                           m_SamplersRegistry; ///< Sampler state registry
+    ObjectsRegistry<SamplerDesc, RefCntAutoPtr<ISampler>>                       m_SamplersRegistry; ///< Sampler state registry
     std::vector<TextureFormatInfoExt, STDAllocatorRawMem<TextureFormatInfoExt>> m_TextureFormatsInfo;
     std::vector<bool, STDAllocatorRawMem<bool>>                                 m_TexFmtInfoInitFlags;
 
@@ -595,6 +637,10 @@ protected:
     FixedBlockMemoryAllocator m_PipeResSignAllocator; ///< Allocator for pipeline resource signature objects
     FixedBlockMemoryAllocator m_MemObjAllocator;      ///< Allocator for device memory objects
     FixedBlockMemoryAllocator m_PSOCacheAllocator;    ///< Allocator for pipeline state cache objects
+
+    RefCntAutoPtr<IThreadPool> m_pShaderCompilationThreadPool;
+
+    std::atomic<UniqueIdentifier> m_UniqueId{0};
 };
 
 } // namespace Diligent

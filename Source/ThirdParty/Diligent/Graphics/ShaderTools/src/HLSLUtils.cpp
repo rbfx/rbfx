@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,7 +54,7 @@ String BuildHLSLSourceString(const ShaderCreateInfo& ShaderCI,
     if (ExtraDefinitions != nullptr)
         HLSLSource += ExtraDefinitions;
 
-    if (ShaderCI.Macros != nullptr)
+    if (ShaderCI.Macros)
     {
         HLSLSource += '\n';
         AppendShaderMacros(HLSLSource, ShaderCI.Macros);

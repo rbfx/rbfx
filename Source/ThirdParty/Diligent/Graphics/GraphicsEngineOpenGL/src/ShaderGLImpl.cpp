@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,6 +37,7 @@
 #include "GLSLUtils.hpp"
 #include "ShaderToolsCommon.hpp"
 #include "GLTypeConversions.hpp"
+#include "GLProgram.hpp"
 
 using namespace Diligent;
 
@@ -45,11 +46,163 @@ namespace Diligent
 
 constexpr INTERFACE_ID ShaderGLImpl::IID_InternalImpl;
 
+class ShaderGLImpl::ShaderBuilder
+{
+public:
+    ShaderBuilder(ShaderGLImpl&           Shader,
+                  const ShaderCreateInfo& ShaderCI,
+                  const CreateInfo&       GLShaderCI) :
+        m_Shader{Shader},
+        m_LoadConstantBufferReflection{ShaderCI.LoadConstantBufferReflection},
+        m_CreateAsynchronously{(ShaderCI.CompileFlags & SHADER_COMPILE_FLAG_ASYNCHRONOUS) != 0 && Shader.GetDevice()->GetDeviceInfo().Features.AsyncShaderCompilation},
+        m_ppCompilerOutput{GLShaderCI.ppCompilerOutput}
+    {}
+
+    bool Tick(bool WaitForCompletion)
+    {
+        VERIFY(m_State != State::Complete && m_State != State::Failed, "The shader is already in final state, this method should not be called");
+
+        if (!m_CreateAsynchronously)
+            WaitForCompletion = true;
+
+        if (m_State == State::Default)
+        {
+            HandleDefaultState(WaitForCompletion);
+        }
+
+        if (m_State == State::Compiling)
+        {
+            HandleCompilingState(WaitForCompletion);
+        }
+
+        if (m_State == State::Linking)
+        {
+            HandleLinkingState(WaitForCompletion);
+        }
+
+        if (m_State == State::Failed)
+        {
+            m_Shader.m_GLShaderObj.Release();
+        }
+
+        return m_State == State::Complete || m_State == State::Failed;
+    }
+
+private:
+    void HandleDefaultState(bool WaitForCompletion)
+    {
+        VERIFY_EXPR(m_State == State::Default);
+
+        m_Shader.CompileShader();
+        m_State = State::Compiling;
+    }
+
+    void HandleCompilingState(bool WaitForCompletion)
+    {
+        VERIFY_EXPR(m_State == State::Compiling);
+
+        GLint CompilationComplete = GL_FALSE;
+        if (!WaitForCompletion)
+        {
+            VERIFY_EXPR(m_CreateAsynchronously);
+            glGetShaderiv(m_Shader.m_GLShaderObj, GL_COMPLETION_STATUS_KHR, &CompilationComplete);
+        }
+        else
+        {
+            CompilationComplete = GL_TRUE;
+        }
+
+        if (CompilationComplete)
+        {
+            m_State = m_Shader.GetCompileStatus(m_ppCompilerOutput, /*ThrowOnError = */ !m_CreateAsynchronously) ? State::Linking : State::Failed;
+        }
+    }
+
+    void HandleLinkingState(bool WaitForCompletion)
+    {
+        VERIFY_EXPR(m_State == State::Linking);
+
+        RenderDeviceGLImpl*     pDevice    = m_Shader.GetDevice();
+        const RenderDeviceInfo& DeviceInfo = pDevice->GetDeviceInfo();
+
+        // Note: we have to always read reflection information in OpenGL as bindings are always assigned at run time.
+        if (DeviceInfo.Features.SeparablePrograms /*&& (ShaderCI.CompileFlags & SHADER_COMPILE_FLAG_SKIP_REFLECTION) == 0*/)
+        {
+            if (!m_Program)
+            {
+                ShaderGLImpl* const ThisShader[]{&m_Shader};
+                m_Program = std::make_unique<GLProgram>(ThisShader, 1, /*IsSeparableProgram = */ true);
+            }
+
+            const GLProgram::LinkStatus LinkStatus = m_Program->GetLinkStatus(WaitForCompletion);
+            if (LinkStatus == GLProgram::LinkStatus::Succeeded)
+            {
+                auto pImmediateCtx = pDevice->GetImmediateContext(0);
+                VERIFY_EXPR(pImmediateCtx);
+                auto& GLState = pImmediateCtx->GetContextState();
+
+                m_Shader.m_pShaderResources = m_Program->LoadResources(
+                    m_Shader.m_Desc.ShaderType,
+                    m_Shader.m_SourceLanguage == SHADER_SOURCE_LANGUAGE_HLSL ?
+                        PIPELINE_RESOURCE_FLAG_NONE :            // Reflect samplers as separate for consistency with other backends
+                        PIPELINE_RESOURCE_FLAG_COMBINED_SAMPLER, // Reflect samplers as combined
+                    GLState,
+                    m_LoadConstantBufferReflection,
+                    m_Shader.m_SourceLanguage);
+
+                m_State = State::Complete;
+            }
+            else if (LinkStatus == GLProgram::LinkStatus::Failed)
+            {
+                std::stringstream ss;
+                ss << "Failed to link separable program for shader '" << m_Shader.m_Desc.Name << "': " << m_Program->GetInfoLog();
+                if (m_CreateAsynchronously)
+                {
+                    LOG_ERROR_MESSAGE(ss.str());
+                }
+                else
+                {
+                    LOG_ERROR_AND_THROW(ss.str());
+                }
+                m_State = State::Failed;
+            }
+            else
+            {
+                VERIFY_EXPR(LinkStatus == GLProgram::LinkStatus::InProgress);
+            }
+        }
+        else
+        {
+            m_State = State::Complete;
+        }
+    }
+
+private:
+    ShaderGLImpl& m_Shader;
+
+    const bool        m_LoadConstantBufferReflection;
+    const bool        m_CreateAsynchronously;
+    IDataBlob** const m_ppCompilerOutput;
+
+    // Temporary program object used to load shader resources
+    std::unique_ptr<GLProgram> m_Program;
+
+    enum class State
+    {
+        Default,
+        Compiling,
+        Linking,
+        Complete,
+        Failed
+    };
+    State m_State = State::Default;
+};
+
 ShaderGLImpl::ShaderGLImpl(IReferenceCounters*     pRefCounters,
                            RenderDeviceGLImpl*     pDeviceGL,
                            const ShaderCreateInfo& ShaderCI,
                            const CreateInfo&       GLShaderCI,
-                           bool                    bIsDeviceInternal) :
+                           bool                    bIsDeviceInternal) noexcept(false) :
     // clang-format off
     TShaderBase
     {
@@ -61,7 +214,8 @@ ShaderGLImpl::ShaderGLImpl(IReferenceCounters*     pRefCounters,
         bIsDeviceInternal
     },
     m_SourceLanguage{ShaderCI.SourceLanguage},
-    m_GLShaderObj{pDeviceGL != nullptr, GLObjectWrappers::GLShaderObjCreateReleaseHelper{GetGLShaderType(m_Desc.ShaderType)}}
+    m_GLShaderObj{pDeviceGL != nullptr, GLObjectWrappers::GLShaderObjCreateReleaseHelper{GetGLShaderType(m_Desc.ShaderType)}},
+    m_Builder{pDeviceGL != nullptr ? std::make_unique<ShaderBuilder>(*this, ShaderCI, GLShaderCI) : nullptr}
 // clang-format on
 {
     DEV_CHECK_ERR(ShaderCI.ByteCode == nullptr, "'ByteCode' must be null when shader is created from the source code or a file");
@@ -70,38 +224,49 @@ ShaderGLImpl::ShaderGLImpl(IReferenceCounters*     pRefCounters,
     const auto& DeviceInfo  = GLShaderCI.DeviceInfo;
     const auto& AdapterInfo = GLShaderCI.AdapterInfo;
 
-    ShaderSourceFileData SourceData;
-    if (ShaderCI.SourceLanguage == SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM)
-    {
-        if (ShaderCI.Macros != nullptr)
+    // Build the full source code string that will contain GLSL version declaration,
+    // platform definitions, user-provided shader macros, etc.
+    m_GLSLSourceString = BuildGLSLSourceString(
         {
-            LOG_WARNING_MESSAGE("Shader macros are ignored when compiling GLSL verbatim in OpenGL backend");
-        }
+            ShaderCI,
+            AdapterInfo,
+            DeviceInfo.Features,
+            DeviceInfo.Type,
+            DeviceInfo.MaxShaderVersion,
+            TargetGLSLCompiler::driver,
+            DeviceInfo.NDC.MinZ == 0,
+        });
 
-        // Read the source file directly and use it as is
-        SourceData         = ReadShaderSourceFile(ShaderCI);
-        m_GLSLSourceString = std::string{SourceData.Source, SourceData.SourceLength};
-
-        auto SourceLang = ParseShaderSourceLanguageDefinition(m_GLSLSourceString);
-        if (SourceLang != SHADER_SOURCE_LANGUAGE_DEFAULT)
-            m_SourceLanguage = SourceLang;
+    const SHADER_SOURCE_LANGUAGE SourceLang = ParseShaderSourceLanguageDefinition(m_GLSLSourceString);
+    if (SourceLang != SHADER_SOURCE_LANGUAGE_DEFAULT)
+    {
+        // Source language is already defined in the shader source (for instance,
+        // it may have been added by the archiver).
+        m_SourceLanguage = SourceLang;
     }
     else
     {
-        static constexpr char NDCDefine[] = "#define _NDC_ZERO_TO_ONE 1\n";
-
-        // Build the full source code string that will contain GLSL version declaration,
-        // platform definitions, user-provided shader macros, etc.
-        m_GLSLSourceString = BuildGLSLSourceString(
-            ShaderCI, DeviceInfo, AdapterInfo, TargetGLSLCompiler::driver,
-            (DeviceInfo.NDC.MinZ >= 0 ? NDCDefine : nullptr));
-
+        // Add source language definition to the shader source. It may be used by e.g.
+        // render state cache when packing shader source into the archive.
         AppendShaderSourceLanguageDefinition(m_GLSLSourceString, ShaderCI.SourceLanguage);
     }
 
     if (pDeviceGL == nullptr)
         return;
 
+    // Force builder tick
+    SHADER_STATUS Status = GetStatus(/*WaitForCompletion = */ (ShaderCI.CompileFlags & SHADER_COMPILE_FLAG_ASYNCHRONOUS) == 0);
+    VERIFY_EXPR(Status == SHADER_STATUS_READY || (ShaderCI.CompileFlags & SHADER_COMPILE_FLAG_ASYNCHRONOUS) != 0);
+}
+
+ShaderGLImpl::~ShaderGLImpl()
+{
+}
+
+IMPLEMENT_QUERY_INTERFACE2(ShaderGLImpl, IID_ShaderGL, IID_InternalImpl, TShaderBase)
+
+void ShaderGLImpl::CompileShader() noexcept
+{
     // Note: there is a simpler way to create the program:
     //m_uiShaderSeparateProg = glCreateShaderProgramv(GL_VERTEX_SHADER, _countof(ShaderStrings), ShaderStrings);
     // NOTE: glCreateShaderProgramv() is considered equivalent to both a shader compilation and a program linking
@@ -126,147 +291,109 @@ ShaderGLImpl::ShaderGLImpl(IReferenceCounters*     pRefCounters,
     glShaderSource(m_GLShaderObj, static_cast<GLsizei>(ShaderStrings.size()), ShaderStrings.data(), Lengths.data());
     // When the shader is compiled, it will be compiled as if all of the given strings were concatenated end-to-end.
     glCompileShader(m_GLShaderObj);
+}
+
+bool ShaderGLImpl::GetCompileStatus(IDataBlob** ppCompilerOutput, bool ThrowOnError) noexcept(false)
+{
     GLint compiled = GL_FALSE;
     // Get compilation status
     glGetShaderiv(m_GLShaderObj, GL_COMPILE_STATUS, &compiled);
-    if (!compiled)
+
+    std::vector<GLchar> InfoLog;
     {
-        std::string FullSource;
-        for (const auto* str : ShaderStrings)
-            FullSource.append(str);
-
-        std::stringstream ErrorMsgSS;
-        ErrorMsgSS << "Failed to compile shader file '" << (ShaderCI.Desc.Name != nullptr ? ShaderCI.Desc.Name : "") << '\'' << std::endl;
-        int infoLogLen = 0;
+        int InfoLogLen = 0;
         // The function glGetShaderiv() tells how many bytes to allocate; the length includes the NULL terminator.
-        glGetShaderiv(m_GLShaderObj, GL_INFO_LOG_LENGTH, &infoLogLen);
+        glGetShaderiv(m_GLShaderObj, GL_INFO_LOG_LENGTH, &InfoLogLen);
 
-        std::vector<GLchar> infoLog(infoLogLen);
-        if (infoLogLen > 0)
+        if (InfoLogLen > 0)
         {
-            int charsWritten = 0;
-            // Get the log. infoLogLen is the size of infoLog. This tells OpenGL how many bytes at maximum it will write
+            InfoLog.resize(InfoLogLen);
+
+            int CharsWritten = 0;
+            // Get the log. InfoLogLen is the size of InfoLog. This tells OpenGL how many bytes at maximum it will write
             // charsWritten is a return value, specifying how many bytes it actually wrote. One may pass NULL if he
             // doesn't care
-            glGetShaderInfoLog(m_GLShaderObj, infoLogLen, &charsWritten, infoLog.data());
-            VERIFY(charsWritten == infoLogLen - 1, "Unexpected info log length");
-            ErrorMsgSS << "InfoLog:" << std::endl
-                       << infoLog.data() << std::endl;
+            glGetShaderInfoLog(m_GLShaderObj, InfoLogLen, &CharsWritten, InfoLog.data());
+            VERIFY(CharsWritten == InfoLogLen - 1, "Unexpected info log length");
+
+            if (ppCompilerOutput != nullptr)
+            {
+                // InfoLogLen accounts for null terminator
+                auto pOutputDataBlob = DataBlobImpl::Create(InfoLogLen + m_GLSLSourceString.length() + 1);
+
+                char* DataPtr = static_cast<char*>(pOutputDataBlob->GetDataPtr());
+                if (!InfoLog.empty())
+                {
+                    // Copy info log including null terminator
+                    memcpy(DataPtr, InfoLog.data(), InfoLogLen);
+                }
+                // Copy source code including null terminator
+                memcpy(DataPtr + InfoLogLen, m_GLSLSourceString.data(), m_GLSLSourceString.length() + 1);
+
+                pOutputDataBlob->QueryInterface(IID_DataBlob, reinterpret_cast<IObject**>(ppCompilerOutput));
+            }
+        }
+    }
+
+    if (!compiled || !InfoLog.empty())
+    {
+        std::stringstream ss;
+        ss << (compiled ? "Compiler output for shader '" : "Failed to compile shader '") << m_Desc.Name << "'";
+
+        if (!InfoLog.empty())
+        {
+            ss << ":" << std::endl;
+            ss.write(InfoLog.data(), InfoLog.size() - 1);
+        }
+        else if (!compiled)
+        {
+            ss << " (no shader log available).";
         }
 
-        if (ShaderCI.ppCompilerOutput != nullptr)
+        if (compiled)
         {
-            // infoLogLen accounts for null terminator
-            auto  pOutputDataBlob = DataBlobImpl::Create(infoLogLen + FullSource.length() + 1);
-            char* DataPtr         = reinterpret_cast<char*>(pOutputDataBlob->GetDataPtr());
-            if (infoLogLen > 0)
-                memcpy(DataPtr, infoLog.data(), infoLogLen);
-            memcpy(DataPtr + infoLogLen, FullSource.data(), FullSource.length() + 1);
-            pOutputDataBlob->QueryInterface(IID_DataBlob, reinterpret_cast<IObject**>(ShaderCI.ppCompilerOutput));
+            LOG_INFO_MESSAGE(ss.str());
         }
         else
         {
-            // Dump full source code to debug output
-            LOG_INFO_MESSAGE("Failed shader full source: \n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n",
-                             FullSource,
-                             "\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n");
+            if (ppCompilerOutput == nullptr)
+            {
+                // Dump full source code to debug output
+                LOG_INFO_MESSAGE("Failed shader full source: \n\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n",
+                                 m_GLSLSourceString,
+                                 "\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n\n");
+            }
+
+            if (ThrowOnError)
+            {
+                LOG_ERROR_AND_THROW(ss.str());
+            }
+            else
+            {
+                LOG_ERROR_MESSAGE(ss.str());
+            }
         }
-
-        LOG_ERROR_AND_THROW(ErrorMsgSS.str().c_str());
     }
 
-    // Note: we have to always read reflection information in OpenGL as bindings are always assigned at run time.
-    if (DeviceInfo.Features.SeparablePrograms /*&& (ShaderCI.CompileFlags & SHADER_COMPILE_FLAG_SKIP_REFLECTION) == 0*/)
-    {
-        ShaderGLImpl* const            ThisShader[] = {this};
-        GLObjectWrappers::GLProgramObj Program      = LinkProgram(ThisShader, 1, true);
-
-        auto pImmediateCtx = m_pDevice->GetImmediateContext(0);
-        VERIFY_EXPR(pImmediateCtx);
-        auto& GLState = pImmediateCtx->GetContextState();
-
-        auto pResources = std::make_unique<ShaderResourcesGL>();
-
-        pResources->LoadUniforms({m_Desc.ShaderType,
-                                  m_SourceLanguage == SHADER_SOURCE_LANGUAGE_HLSL ?
-                                      PIPELINE_RESOURCE_FLAG_NONE :            // Reflect samplers as separate for consistency with other backends
-                                      PIPELINE_RESOURCE_FLAG_COMBINED_SAMPLER, // Reflect samplers as combined
-                                  Program,
-                                  GLState,
-                                  ShaderCI.LoadConstantBufferReflection,
-                                  m_SourceLanguage});
-        m_pShaderResources.reset(pResources.release());
-    }
+    return compiled != GL_FALSE;
 }
 
-ShaderGLImpl::~ShaderGLImpl()
+SHADER_STATUS ShaderGLImpl::GetStatus(bool WaitForCompletion)
 {
-}
-
-IMPLEMENT_QUERY_INTERFACE2(ShaderGLImpl, IID_ShaderGL, IID_InternalImpl, TShaderBase)
-
-
-GLObjectWrappers::GLProgramObj ShaderGLImpl::LinkProgram(ShaderGLImpl* const* ppShaders, Uint32 NumShaders, bool IsSeparableProgram)
-{
-    VERIFY(!IsSeparableProgram || NumShaders == 1, "Number of shaders must be 1 when separable program is created");
-
-    GLObjectWrappers::GLProgramObj GLProg(true);
-
-    // GL_PROGRAM_SEPARABLE parameter must be set before linking!
-    if (IsSeparableProgram)
-        glProgramParameteri(GLProg, GL_PROGRAM_SEPARABLE, GL_TRUE);
-
-    for (Uint32 i = 0; i < NumShaders; ++i)
+    if (m_Builder)
     {
-        auto* pCurrShader = ppShaders[i];
-        glAttachShader(GLProg, pCurrShader->m_GLShaderObj);
-        CHECK_GL_ERROR("glAttachShader() failed");
+        if (m_Builder->Tick(WaitForCompletion))
+        {
+            m_Builder.reset();
+        }
     }
-
-    //With separable program objects, interfaces between shader stages may
-    //involve the outputs from one program object and the inputs from a
-    //second program object. For such interfaces, it is not possible to
-    //detect mismatches at link time, because the programs are linked
-    //separately. When each such program is linked, all inputs or outputs
-    //interfacing with another program stage are treated as active. The
-    //linker will generate an executable that assumes the presence of a
-    //compatible program on the other side of the interface. If a mismatch
-    //between programs occurs, no GL error will be generated, but some or all
-    //of the inputs on the interface will be undefined.
-    glLinkProgram(GLProg);
-    CHECK_GL_ERROR("glLinkProgram() failed");
-    int IsLinked = GL_FALSE;
-    glGetProgramiv(GLProg, GL_LINK_STATUS, &IsLinked);
-    CHECK_GL_ERROR("glGetProgramiv() failed");
-    if (!IsLinked)
-    {
-        int LengthWithNull = 0, Length = 0;
-        // Notice that glGetProgramiv is used to get the length for a shader program, not glGetShaderiv.
-        // The length of the info log includes a null terminator.
-        glGetProgramiv(GLProg, GL_INFO_LOG_LENGTH, &LengthWithNull);
-
-        // The maxLength includes the NULL character
-        std::vector<char> shaderProgramInfoLog(LengthWithNull);
-
-        // Notice that glGetProgramInfoLog  is used, not glGetShaderInfoLog.
-        glGetProgramInfoLog(GLProg, LengthWithNull, &Length, shaderProgramInfoLog.data());
-        VERIFY(Length == LengthWithNull - 1, "Incorrect program info log len");
-        LOG_ERROR_MESSAGE("Failed to link shader program:\n", shaderProgramInfoLog.data(), '\n');
-        UNEXPECTED("glLinkProgram failed");
-    }
-
-    for (Uint32 i = 0; i < NumShaders; ++i)
-    {
-        auto* pCurrShader = ClassPtrCast<const ShaderGLImpl>(ppShaders[i]);
-        glDetachShader(GLProg, pCurrShader->m_GLShaderObj);
-        CHECK_GL_ERROR("glDetachShader() failed");
-    }
-
-    return GLProg;
+    return m_Builder ? SHADER_STATUS_COMPILING : (m_GLShaderObj ? SHADER_STATUS_READY : SHADER_STATUS_FAILED);
 }
 
 Uint32 ShaderGLImpl::GetResourceCount() const
 {
+    DEV_CHECK_ERR(!m_Builder, "Shader resources are not available until the shader is compiled. Use GetStatus() to check the shader status.");
+
     if (m_pDevice->GetFeatures().SeparablePrograms)
     {
         return m_pShaderResources ? m_pShaderResources->GetVariableCount() : 0;
@@ -280,6 +407,8 @@ Uint32 ShaderGLImpl::GetResourceCount() const
 
 void ShaderGLImpl::GetResourceDesc(Uint32 Index, ShaderResourceDesc& ResourceDesc) const
 {
+    DEV_CHECK_ERR(!m_Builder, "Shader resources are not available until the shader is compiled. Use GetStatus() to check the shader status.");
+
     if (m_pDevice->GetFeatures().SeparablePrograms)
     {
         DEV_CHECK_ERR(Index < GetResourceCount(), "Index is out of range");
@@ -292,9 +421,10 @@ void ShaderGLImpl::GetResourceDesc(Uint32 Index, ShaderResourceDesc& ResourceDes
     }
 }
 
-
 const ShaderCodeBufferDesc* ShaderGLImpl::GetConstantBufferDesc(Uint32 Index) const
 {
+    DEV_CHECK_ERR(!m_Builder, "Shader resources are not available until the shader is compiled. Use GetStatus() to check the shader status.");
+
     if (m_pDevice->GetFeatures().SeparablePrograms)
     {
         if (Index >= GetResourceCount())

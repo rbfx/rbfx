@@ -215,7 +215,7 @@ private:
         {
             for (Uint32 att = 0; att < Desc.AttachmentCount; ++att)
             {
-                SetAttachmentState(subpass, att, subpass > 0 ? GetAttachmentState(subpass - 1, att) : Desc.pAttachments[subpass].InitialState);
+                SetAttachmentState(subpass, att, subpass > 0 ? GetAttachmentState(subpass - 1, att) : Desc.pAttachments[att].InitialState);
             }
 
             const auto& SrcSubpass = SrcSubpasses[subpass];

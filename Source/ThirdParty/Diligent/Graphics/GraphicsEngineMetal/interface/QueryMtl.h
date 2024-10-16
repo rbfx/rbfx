@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {514BAE55-C3E9-4D78-A013-63522FD595DA}
-static const INTERFACE_ID IID_QueryMtl =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_QueryMtl =
     {0x514bae55, 0xc3e9, 0x4d78, {0xa0, 0x13, 0x63, 0x52, 0x2f, 0xd5, 0x95, 0xda}};
 
 #define DILIGENT_INTERFACE_NAME IQueryMtl

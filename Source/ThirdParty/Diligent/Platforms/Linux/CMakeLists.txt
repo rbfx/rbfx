@@ -21,7 +21,7 @@ set_common_target_properties(Diligent-LinuxPlatform)
 
 target_include_directories(Diligent-LinuxPlatform
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    interface
 )
 
 target_link_libraries(Diligent-LinuxPlatform

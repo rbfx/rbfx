@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {07182C29-CC3B-43B2-99D8-A77F6FECBA82}
-static const INTERFACE_ID IID_ShaderMtl =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_ShaderMtl =
     {0x7182c29, 0xcc3b, 0x43b2, {0x99, 0xd8, 0xa7, 0x7f, 0x6f, 0xec, 0xba, 0x82}};
 
 #define DILIGENT_INTERFACE_NAME IShaderMtl

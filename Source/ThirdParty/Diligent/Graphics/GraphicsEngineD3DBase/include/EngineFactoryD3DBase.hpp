@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,6 +35,9 @@
 
 namespace Diligent
 {
+
+bool CheckAdapterD3D11Compatibility(IDXGIAdapter1* pDXGIAdapter, D3D_FEATURE_LEVEL FeatureLevel);
+bool CheckAdapterD3D12Compatibility(IDXGIAdapter1* pDXGIAdapter, D3D_FEATURE_LEVEL FeatureLevel);
 
 template <typename BaseInterface, RENDER_DEVICE_TYPE DevType>
 class EngineFactoryD3DBase : public EngineFactoryBase<BaseInterface>
@@ -106,13 +109,18 @@ public:
         }
 
         UINT numModes = 0;
+
         // Get the number of elements
         auto hr = pOutput->GetDisplayModeList(DXIGFormat, 0, &numModes, NULL);
+        (void)hr; // Suppress warning
+
         if (DisplayModes != nullptr)
         {
             // Get the list
             std::vector<DXGI_MODE_DESC> DXIDisplayModes(numModes);
             hr = pOutput->GetDisplayModeList(DXIGFormat, 0, &numModes, DXIDisplayModes.data());
+            (void)hr; // Suppress warning
+
             for (Uint32 m = 0; m < std::min(NumDisplayModes, numModes); ++m)
             {
                 const auto& SrcMode            = DXIDisplayModes[m];
@@ -212,10 +220,15 @@ public:
             Features.TextureCompressionBC          = DEVICE_FEATURE_STATE_ENABLED;
             Features.PixelUAVWritesAndAtomics      = DEVICE_FEATURE_STATE_ENABLED;
             Features.TextureUAVExtendedFormats     = DEVICE_FEATURE_STATE_ENABLED;
+            Features.ShaderResourceStaticArrays    = DEVICE_FEATURE_STATE_ENABLED;
             Features.InstanceDataStepRate          = DEVICE_FEATURE_STATE_ENABLED;
             Features.TileShaders                   = DEVICE_FEATURE_STATE_DISABLED;
             Features.SubpassFramebufferFetch       = DEVICE_FEATURE_STATE_DISABLED;
             Features.TextureComponentSwizzle       = DEVICE_FEATURE_STATE_DISABLED;
+            Features.TextureSubresourceViews       = DEVICE_FEATURE_STATE_ENABLED;
+            Features.NativeMultiDraw               = DEVICE_FEATURE_STATE_DISABLED;
+            Features.AsyncShaderCompilation        = DEVICE_FEATURE_STATE_ENABLED;
+            Features.FormattedBuffers              = DEVICE_FEATURE_STATE_ENABLED;
         }
 
         // Set memory properties
@@ -294,7 +307,7 @@ protected:
     }
 
 private:
-    template <RENDER_DEVICE_TYPE DevType>
+    template <RENDER_DEVICE_TYPE MyDevType>
     bool CheckAdapterCompatibility(IDXGIAdapter1*    pDXGIAdapter,
                                    D3D_FEATURE_LEVEL FeatureLevels) const;
 
@@ -302,27 +315,14 @@ private:
     bool CheckAdapterCompatibility<RENDER_DEVICE_TYPE_D3D11>(IDXGIAdapter1*    pDXGIAdapter,
                                                              D3D_FEATURE_LEVEL FeatureLevel) const
     {
-        auto hr = D3D11CreateDevice(
-            nullptr,
-            D3D_DRIVER_TYPE_NULL, // There is no need to create a real hardware device.
-            0,
-            0,                 // Flags.
-            &FeatureLevel,     // Feature levels.
-            1,                 // Number of feature levels
-            D3D11_SDK_VERSION, // Always set this to D3D11_SDK_VERSION for Windows Store apps.
-            nullptr,           // No need to keep the D3D device reference.
-            nullptr,           // Feature level of the created adapter.
-            nullptr            // No need to keep the D3D device context reference.
-        );
-        return SUCCEEDED(hr);
+        return CheckAdapterD3D11Compatibility(pDXGIAdapter, FeatureLevel);
     }
 
     template <>
     bool CheckAdapterCompatibility<RENDER_DEVICE_TYPE_D3D12>(IDXGIAdapter1*    pDXGIAdapter,
                                                              D3D_FEATURE_LEVEL FeatureLevel) const
     {
-        auto hr = D3D12CreateDevice(pDXGIAdapter, FeatureLevel, _uuidof(ID3D12Device), nullptr);
-        return SUCCEEDED(hr);
+        return CheckAdapterD3D12Compatibility(pDXGIAdapter, FeatureLevel);
     }
 };
 

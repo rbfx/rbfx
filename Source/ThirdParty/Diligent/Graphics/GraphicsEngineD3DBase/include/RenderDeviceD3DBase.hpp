@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -57,7 +57,7 @@ public:
         // Flag texture formats always supported in D3D11 and D3D12
 
         // clang-format off
-#define FLAG_FORMAT(Fmt, IsSupported) m_TextureFormatsInfo[Fmt].Supported=IsSupported
+#define FLAG_FORMAT(Fmt, IsSupported) this->m_TextureFormatsInfo[Fmt].Supported=IsSupported
 
         FLAG_FORMAT(TEX_FORMAT_RGBA32_TYPELESS,            true);
         FLAG_FORMAT(TEX_FORMAT_RGBA32_FLOAT,               true);
@@ -161,9 +161,9 @@ public:
 #undef FLAG_FORMAT
         // clang-format on
 
-        m_DeviceInfo.NDC = NDCAttribs{0.0f, 1.0f, -0.5f};
+        this->m_DeviceInfo.NDC = NDCAttribs{0.0f, 1.0f, -0.5f};
 
-        if (m_AdapterInfo.Vendor == ADAPTER_VENDOR_NVIDIA)
+        if (this->m_AdapterInfo.Vendor == ADAPTER_VENDOR_NVIDIA)
         {
             m_NVApi.Load();
         }

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,6 +27,7 @@
 
 #include "pch.h"
 #include "DefaultRawMemoryAllocator.hpp"
+#include "Align.hpp"
 
 #include <stdlib.h>
 
@@ -55,6 +56,28 @@ void* DefaultRawMemoryAllocator::Allocate(size_t Size, const Char* dbgDescriptio
 void DefaultRawMemoryAllocator::Free(void* Ptr)
 {
     free(Ptr);
+}
+
+void* DefaultRawMemoryAllocator::AllocateAligned(size_t Size, size_t Alignment, const Char* dbgDescription, const char* dbgFileName, const Int32 dbgLineNumber)
+{
+    VERIFY_EXPR(Size > 0 && Alignment > 0);
+    Size = AlignUp(Size, Alignment);
+#ifdef USE_CRT_MALLOC_DBG
+    return _aligned_malloc_dbg(Size, Alignment, dbgFileName, dbgLineNumber);
+#elif defined(_MSC_VER) || defined(__MINGW64__) || defined(__MINGW32__)
+    return _aligned_malloc(Size, Alignment);
+#else
+    return aligned_alloc(Alignment, Size);
+#endif
+}
+
+void DefaultRawMemoryAllocator::FreeAligned(void* Ptr)
+{
+#if defined(_MSC_VER) || defined(__MINGW64__) || defined(__MINGW32__)
+    _aligned_free(Ptr);
+#else
+    free(Ptr);
+#endif
 }
 
 DefaultRawMemoryAllocator& DefaultRawMemoryAllocator::GetAllocator()

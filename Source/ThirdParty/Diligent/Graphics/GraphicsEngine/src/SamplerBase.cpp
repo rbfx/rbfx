@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -41,14 +41,16 @@ namespace Diligent
 
 void ValidateSamplerDesc(const SamplerDesc& Desc, const IRenderDevice* pDevice)
 {
+    const auto& DeviceInfo  = pDevice->GetDeviceInfo();
+    const auto& AdapterInfo = pDevice->GetAdapterInfo();
     if (Desc.Flags & (SAMPLER_FLAG_SUBSAMPLED | SAMPLER_FLAG_SUBSAMPLED_COARSE_RECONSTRUCTION))
     {
-        VERIFY_SAMPLER(pDevice->GetAdapterInfo().ShadingRate.CapFlags & SHADING_RATE_CAP_FLAG_SUBSAMPLED_RENDER_TARGET,
+        VERIFY_SAMPLER(AdapterInfo.ShadingRate.CapFlags & SHADING_RATE_CAP_FLAG_SUBSAMPLED_RENDER_TARGET,
                        "Subsampled sampler requires SHADING_RATE_CAP_FLAG_SUBSAMPLED_RENDER_TARGET capability.");
     }
     if (Desc.UnnormalizedCoords)
     {
-        VERIFY_SAMPLER(pDevice->GetDeviceInfo().IsVulkanDevice() || pDevice->GetDeviceInfo().IsMetalDevice(),
+        VERIFY_SAMPLER(DeviceInfo.IsVulkanDevice() || DeviceInfo.IsMetalDevice(),
                        "Unnormalized coordinates are only supported in Vulkan and Metal.");
 
         VERIFY_SAMPLER(Desc.MinFilter == Desc.MagFilter, "When UnnormalizedCoords is true, MinFilter and MagFilter must be equal.");
@@ -57,6 +59,21 @@ void ValidateSamplerDesc(const SamplerDesc& Desc, const IRenderDevice* pDevice)
         VERIFY_SAMPLER(Desc.AddressV == TEXTURE_ADDRESS_CLAMP || Desc.AddressV == TEXTURE_ADDRESS_BORDER, "When UnnormalizedCoords is true, AddressV must be CLAMP or BORDER.");
         VERIFY_SAMPLER(!IsComparisonFilter(Desc.MinFilter), "When UnnormalizedCoords is true, MinFilter and MagFilter must not be comparison.");
         VERIFY_SAMPLER(!IsAnisotropicFilter(Desc.MinFilter), "When UnnormalizedCoords is true, MinFilter and MagFilter must not be anisotropic.");
+    }
+    if (IsAnisotropicFilter(Desc.MinFilter))
+    {
+        if (Desc.MaxAnisotropy > AdapterInfo.Sampler.MaxAnisotropy)
+        {
+            LOG_WARNING_MESSAGE("MaxAnisotropy (", Uint32{Desc.MaxAnisotropy}, ") requested for sampler '", Desc.Name,
+                                "' exceeds the maximum supported anisotropy (", Uint32{AdapterInfo.Sampler.MaxAnisotropy},
+                                "). Check the value of AdapterInfo.Sampler.MaxAnisotropy.");
+        }
+    }
+    if (!AdapterInfo.Sampler.BorderSamplingModeSupported)
+    {
+        VERIFY_SAMPLER(Desc.AddressU != TEXTURE_ADDRESS_BORDER, "Border address mode is not supported by this device. Check Sampler.BorderSamplingModeSupported adapter property");
+        VERIFY_SAMPLER(Desc.AddressV != TEXTURE_ADDRESS_BORDER, "Border address mode is not supported by this device. Check Sampler.BorderSamplingModeSupported adapter property");
+        VERIFY_SAMPLER(Desc.AddressW != TEXTURE_ADDRESS_BORDER, "Border address mode is not supported by this device. Check Sampler.BorderSamplingModeSupported adapter property");
     }
 }
 

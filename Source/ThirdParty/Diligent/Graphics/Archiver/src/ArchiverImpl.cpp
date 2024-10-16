@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -85,7 +85,29 @@ Bool ArchiverImpl::SerializeToBlob(Uint32 ContentVersion, IDataBlob** ppBlob)
     {
         const auto* Name    = pso_it.first.GetName();
         const auto  ResType = pso_it.first.GetType();
-        const auto& SrcPSO  = *pso_it.second;
+        auto&       SrcPSO  = *pso_it.second;
+
+        const PIPELINE_STATE_STATUS PSOStatus = SrcPSO.GetStatus(/*WaitForCompletion = */ true);
+        if (PSOStatus != PIPELINE_STATE_STATUS_READY)
+        {
+            LOG_ERROR_MESSAGE("Pipeline state '", Name, "' is in ", GetPipelineStateStatusString(PSOStatus),
+                              " state and cannot be serialized. Only ready pipeline states can be serialized."
+                              " Use GetStatus() to check the pipeline state status before calling SerializeToBlob().");
+            continue;
+        }
+
+        if (!SrcPSO.GetData().DoNotPackSignatures)
+        {
+            const auto& Signatures = SrcPSO.GetSignatures();
+            for (auto& pSign : Signatures)
+            {
+                if (!AddPipelineResourceSignature(pSign))
+                {
+                    LOG_ERROR_MESSAGE("Failed to add pipeline resource signature '", pSign->GetDesc().Name, "' to the archive.");
+                }
+            }
+        }
+
         const auto& SrcData = SrcPSO.GetData();
         VERIFY_EXPR(SafeStrEqual(Name, SrcPSO.GetDesc().Name));
         VERIFY_EXPR(ResType == PipelineTypeToArchiveResourceType(SrcPSO.GetDesc().PipelineType));
@@ -169,7 +191,17 @@ Bool ArchiverImpl::SerializeToBlob(Uint32 ContentVersion, IDataBlob** ppBlob)
     for (const auto& shader_it : m_Shaders)
     {
         const auto* Name      = shader_it.first.GetStr();
-        const auto& SrcShader = *shader_it.second;
+        auto&       SrcShader = *shader_it.second;
+        {
+            const SHADER_STATUS Status = SrcShader.GetStatus(/*WaitForCompletion = */ true);
+            if (Status != SHADER_STATUS_READY)
+            {
+                LOG_ERROR_MESSAGE("Shader '", Name, "' is in ", GetShaderStatusString(Status),
+                                  " state and cannot be serialized. Only ready shaders can be serialized."
+                                  " Use GetStatus() to check the shader status before calling SerializeToBlob().");
+                continue;
+            }
+        }
         VERIFY_EXPR(SafeStrEqual(Name, SrcShader.GetDesc().Name));
 
         auto& DstData  = Archive.GetResourceData(ResourceType::StandaloneShader, Name);
@@ -259,22 +291,30 @@ bool AddObjectToArchive(IfaceType*                                              
 
 Bool ArchiverImpl::AddShader(IShader* pShader)
 {
+    if (pShader == nullptr)
+        return false;
+
     return AddObjectToArchive<SerializedShaderImpl>(pShader, "Shader", IID_SerializedShader, m_ShadersMtx, m_Shaders);
 }
 
 bool ArchiverImpl::AddPipelineResourceSignature(IPipelineResourceSignature* pPRS)
 {
+    if (pPRS == nullptr)
+        return false;
+
     return AddObjectToArchive<SerializedResourceSignatureImpl>(pPRS, "Pipeline resource signature", IID_SerializedResourceSignature, m_SignaturesMtx, m_Signatures);
 }
 
 bool ArchiverImpl::AddRenderPass(IRenderPass* pRP)
 {
+    if (pRP == nullptr)
+        return false;
+
     return AddObjectToArchive<SerializedRenderPassImpl>(pRP, "Render pass", IID_SerializedRenderPass, m_RenderPassesMtx, m_RenderPasses);
 }
 
 Bool ArchiverImpl::AddPipelineState(IPipelineState* pPSO)
 {
-    DEV_CHECK_ERR(pPSO != nullptr, "Pipeline state must not be null");
     if (pPSO == nullptr)
         return false;
 
@@ -306,16 +346,6 @@ Bool ArchiverImpl::AddPipelineState(IPipelineState* pPSO)
     {
         if (!AddRenderPass(pRenderPass))
             Res = false;
-    }
-
-    if (!pSerializedPSO->GetData().DoNotPackSignatures)
-    {
-        const auto& Signatures = pSerializedPSO->GetSignatures();
-        for (auto& pSign : Signatures)
-        {
-            if (!AddPipelineResourceSignature(pSign))
-                Res = false;
-        }
     }
 
     return Res;

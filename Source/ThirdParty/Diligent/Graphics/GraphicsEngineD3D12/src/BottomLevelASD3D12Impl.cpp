@@ -80,6 +80,7 @@ BottomLevelASD3D12Impl::BottomLevelASD3D12Impl(IReferenceCounters*      pRefCoun
 
                 MaxPrimitiveCount += src.MaxPrimitiveCount;
             }
+            (void)MaxPrimitiveCount; // Suppress warning
             DEV_CHECK_ERR(MaxPrimitiveCount <= RTProps.MaxPrimitivesPerBLAS,
                           "Max primitive count (", MaxPrimitiveCount, ") exceeds device limit (", RTProps.MaxPrimitivesPerBLAS, ")");
         }
@@ -100,6 +101,7 @@ BottomLevelASD3D12Impl::BottomLevelASD3D12Impl(IReferenceCounters*      pRefCoun
 
                 MaxBoxCount += src.MaxBoxCount;
             }
+            (void)MaxBoxCount; // Suppress warning
             DEV_CHECK_ERR(MaxBoxCount <= RTProps.MaxPrimitivesPerBLAS,
                           "Max box count (", MaxBoxCount, ") exceeds device limit (", RTProps.MaxPrimitivesPerBLAS, ")");
         }

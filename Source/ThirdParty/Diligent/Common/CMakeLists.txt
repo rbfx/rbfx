@@ -10,6 +10,7 @@ set(INTERFACE
     interface/AdvancedMath.hpp
     interface/Align.hpp
     interface/Array2DTools.hpp
+    interface/AsyncInitializer.hpp
     interface/BasicMath.hpp
     interface/BasicFileStream.hpp
     interface/DataBlobImpl.hpp
@@ -25,6 +26,7 @@ set(INTERFACE
     interface/DynamicLinearAllocator.hpp
     interface/MemoryFileStream.hpp
     interface/ObjectBase.hpp
+    interface/ObjectsRegistry.hpp
     interface/ParsingTools.hpp
     interface/RefCntAutoPtr.hpp
     interface/RefCountedObjectImpl.hpp
@@ -32,9 +34,11 @@ set(INTERFACE
     interface/SpinLock.hpp
     interface/STDAllocator.hpp
     interface/StringDataBlobImpl.hpp
+    interface/ProxyDataBlob.hpp
     interface/StringTools.h
     interface/StringTools.hpp
     interface/StringPool.hpp
+    interface/ThreadPool.h
     interface/ThreadPool.hpp
     interface/ThreadSignal.hpp
     interface/Timer.hpp
@@ -63,7 +67,7 @@ target_include_directories(Diligent-Common
 PRIVATE
     include
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    interface
 )
 
 target_link_libraries(Diligent-Common
@@ -76,7 +80,8 @@ if(PLATFORM_LINUX)
     target_link_libraries(Diligent-Common PRIVATE pthread)
 endif()
 
-set_common_target_properties(Diligent-Common)
+# c++ 17 is needed for aligned_alloc
+set_common_target_properties(Diligent-Common 17)
 
 source_group("src" FILES ${SOURCE})
 source_group("include" FILES ${INCLUDE})

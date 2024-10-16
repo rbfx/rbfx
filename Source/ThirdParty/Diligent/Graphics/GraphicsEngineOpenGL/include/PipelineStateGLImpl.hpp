@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,6 +37,7 @@
 
 #include "GLObjectWrapper.hpp"
 #include "GLContext.hpp"
+#include "GLProgram.hpp"
 
 namespace Diligent
 {
@@ -62,6 +63,9 @@ public:
 
     /// Queries the specific interface, see IObject::QueryInterface() for details
     virtual void DILIGENT_CALL_TYPE QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface) override final;
+
+    /// Implementation of IPipelineState::GetStatus().
+    virtual PIPELINE_STATE_STATUS DILIGENT_CALL_TYPE GetStatus(bool WaitForCompletion = false) override final;
 
     /// Implementation of IPipelineStateGL::GetGLProgramHandle()
     virtual GLuint DILIGENT_CALL_TYPE GetGLProgramHandle(SHADER_TYPE Stage) const override final;
@@ -94,7 +98,7 @@ private:
     GLObjectWrappers::GLPipelineObj& GetGLProgramPipeline(GLContext::NativeGLContextType Context);
 
     template <typename PSOCreateInfoType>
-    void InitInternalObjects(const PSOCreateInfoType& CreateInfo, const TShaderStages& ShaderStages);
+    void InitInternalObjects(const PSOCreateInfoType& CreateInfo, const TShaderStages& ShaderStages) noexcept(false);
 
     void InitResourceLayout(PSO_CREATE_INTERNAL_FLAGS InternalFlags,
                             const TShaderStages&      ShaderStages,
@@ -119,8 +123,8 @@ private:
     // Linked GL programs for every shader stage. Every pipeline needs to have its own programs
     // because resource bindings assigned by PipelineResourceSignatureGLImpl::ApplyBindings depend on other
     // shader stages.
-    using GLProgramObj         = GLObjectWrappers::GLProgramObj;
-    GLProgramObj* m_GLPrograms = nullptr; // [m_NumPrograms]
+    using SharedGLProgramPtr         = std::shared_ptr<GLProgram>;
+    SharedGLProgramPtr* m_GLPrograms = nullptr; // [m_NumPrograms]
 
     Threading::SpinLock m_ProgPipelineLock;
 
@@ -131,6 +135,11 @@ private:
     SHADER_TYPE* m_ShaderTypes                = nullptr; // [m_NumPrograms]
 
     TBindings* m_BaseBindings = nullptr; // [m_SignatureCount]
+
+    class PipelineBuilderBase;
+    template <typename PSOCreateInfoType, typename PSOCreateInfoTypeX>
+    class PipelineBuilder;
+    std::unique_ptr<PipelineBuilderBase> m_Builder;
 
 #ifdef DILIGENT_DEVELOPMENT
     // Shader resources for all shaders in all shader stages in the pipeline.

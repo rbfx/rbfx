@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -73,6 +73,8 @@ template <class T> struct Vector4;
 
 template <class T> struct Vector2
 {
+    using ValueType = T;
+
     union
     {
         struct
@@ -220,13 +222,17 @@ template <class T> struct Vector2
 
     const T* Data() const { return reinterpret_cast<const T*>(this); }
 
+    static constexpr size_t GetComponentCount() { return 2; }
+
     T& operator[](size_t index)
     {
+        VERIFY_EXPR(index < GetComponentCount());
         return Data()[index];
     }
 
     const T& operator[](size_t index) const
     {
+        VERIFY_EXPR(index < GetComponentCount());
         return Data()[index];
     }
 
@@ -264,6 +270,8 @@ constexpr Vector2<T> operator*(T s, const Vector2<T>& a)
 
 template <class T> struct Vector3
 {
+    using ValueType = T;
+
     union
     {
         struct
@@ -431,13 +439,17 @@ template <class T> struct Vector3
 
     const T* Data() const { return reinterpret_cast<const T*>(this); }
 
+    static constexpr size_t GetComponentCount() { return 3; }
+
     T& operator[](size_t index)
     {
+        VERIFY_EXPR(index < GetComponentCount());
         return Data()[index];
     }
 
     const T& operator[](size_t index) const
     {
+        VERIFY_EXPR(index < GetComponentCount());
         return Data()[index];
     }
 
@@ -482,6 +494,8 @@ constexpr Vector3<T> operator*(T s, const Vector3<T>& a)
 
 template <class T> struct Vector4
 {
+    using ValueType = T;
+
     union
     {
         struct
@@ -659,13 +673,17 @@ template <class T> struct Vector4
 
     const T* Data() const { return reinterpret_cast<const T*>(this); }
 
+    static constexpr size_t GetComponentCount() { return 4; }
+
     T& operator[](size_t index)
     {
+        VERIFY_EXPR(index < GetComponentCount());
         return Data()[index];
     }
 
     const T& operator[](size_t index) const
     {
+        VERIFY_EXPR(index < GetComponentCount());
         return Data()[index];
     }
 
@@ -719,6 +737,8 @@ constexpr Vector4<T> operator*(T s, const Vector4<T>& a)
 
 template <class T> struct Matrix2x2
 {
+    using ValueType = T;
+
     union
     {
         struct
@@ -817,10 +837,54 @@ template <class T> struct Matrix2x2
         return *this;
     }
 
+    Matrix2x2& operator/=(T s)
+    {
+        for (int i = 0; i < 4; ++i)
+            (reinterpret_cast<T*>(this))[i] /= s;
+
+        return *this;
+    }
+
     Matrix2x2& operator*=(const Matrix2x2& right)
     {
         *this = Mul(*this, right);
         return *this;
+    }
+
+    Matrix2x2& operator+=(const Matrix2x2& right)
+    {
+        for (int i = 0; i < 4; ++i)
+            Data()[i] += right.Data()[i];
+        return *this;
+    }
+
+    Matrix2x2 operator+(const Matrix2x2& right) const
+    {
+        // clang-format off
+        return Matrix2x2
+        {
+            _11 + right._11, _12 + right._12,
+            _21 + right._21, _22 + right._22
+        };
+        // clang-format on
+    }
+
+    Matrix2x2& operator-=(const Matrix2x2& right)
+    {
+        for (int i = 0; i < 4; ++i)
+            Data()[i] -= right.Data()[i];
+        return *this;
+    }
+
+    Matrix2x2 operator-(const Matrix2x2& right) const
+    {
+        // clang-format off
+        return Matrix2x2
+        {
+            _11 - right._11, _12 - right._12,
+            _21 - right._21, _22 - right._22
+        };
+        // clang-format on
     }
 
     constexpr Matrix2x2 Transpose() const
@@ -835,6 +899,13 @@ template <class T> struct Matrix2x2
         return Matrix2x2{
             1, 0,
             0, 1};
+    }
+
+    constexpr static Matrix2x2 Scale(T x, T y)
+    {
+        return Matrix2x2{
+            x, 0,
+            0, y};
     }
 
     constexpr static Matrix2x2 Mul(const Matrix2x2& m1, const Matrix2x2& m2)
@@ -887,11 +958,55 @@ template <class T> struct Matrix2x2
     {
         return Matrix2x2<Y>::MakeMatrix(Data());
     }
+
+    template <typename Y = T>
+    constexpr Vector4<Y> ToVec4() const
+    {
+        return Vector4<Y>{static_cast<Y>(_11), static_cast<Y>(_12), static_cast<Y>(_21), static_cast<Y>(_22)};
+    }
+
+    template <typename Y>
+    static constexpr Matrix2x2 FromVec4(const Vector4<Y>& v)
+    {
+        return Matrix2x2{static_cast<T>(v.x), static_cast<T>(v.y), static_cast<T>(v.z), static_cast<T>(v.w)};
+    }
 };
+
+template <typename T>
+inline constexpr Matrix2x2<T> operator*(const Matrix2x2<T>& Mat, T s)
+{
+    // clang-format off
+    return 
+    {
+        Mat._11 * s, Mat._12 * s,
+        Mat._21 * s, Mat._22 * s
+    };
+    // clang-format on
+}
+
+template <typename T>
+inline constexpr Matrix2x2<T> operator*(T s, const Matrix2x2<T>& Mat)
+{
+    return Mat * s;
+}
+
+template <typename T>
+inline constexpr Matrix2x2<T> operator/(const Matrix2x2<T>& Mat, T s)
+{
+    // clang-format off
+    return 
+    {
+        Mat._11 / s, Mat._12 / s,
+        Mat._21 / s, Mat._22 / s
+    };
+    // clang-format on
+}
 
 
 template <class T> struct Matrix3x3
 {
+    using ValueType = T;
+
     union
     {
         struct
@@ -1001,6 +1116,52 @@ template <class T> struct Matrix3x3
             (reinterpret_cast<T*>(this))[i] *= s;
 
         return *this;
+    }
+
+    Matrix3x3& operator/=(T s)
+    {
+        for (int i = 0; i < 9; ++i)
+            (reinterpret_cast<T*>(this))[i] /= s;
+
+        return *this;
+    }
+
+    Matrix3x3& operator+=(const Matrix3x3& right)
+    {
+        for (int i = 0; i < 9; ++i)
+            Data()[i] += right.Data()[i];
+        return *this;
+    }
+
+    Matrix3x3 operator+(const Matrix3x3& right) const
+    {
+        // clang-format off
+        return Matrix3x3
+        {
+            _11 + right._11, _12 + right._12, _13 + right._13,
+            _21 + right._21, _22 + right._22, _23 + right._23,
+            _31 + right._31, _32 + right._32, _33 + right._33
+        };
+        // clang-format on
+    }
+
+    Matrix3x3& operator-=(const Matrix3x3& right)
+    {
+        for (int i = 0; i < 9; ++i)
+            Data()[i] -= right.Data()[i];
+        return *this;
+    }
+
+    Matrix3x3 operator-(const Matrix3x3& right) const
+    {
+        // clang-format off
+        return Matrix3x3
+        {
+            _11 - right._11, _12 - right._12, _13 - right._13,
+            _21 - right._21, _22 - right._22, _23 - right._23,
+            _31 - right._31, _32 - right._32, _33 - right._33
+        };
+        // clang-format on
     }
 
     Matrix3x3& operator*=(const Matrix3x3& right)
@@ -1169,8 +1330,43 @@ template <class T> struct Matrix3x3
     }
 };
 
+template <typename T>
+inline constexpr Matrix3x3<T> operator*(const Matrix3x3<T>& Mat, T s)
+{
+    // clang-format off
+    return 
+    {
+        Mat._11 * s, Mat._12 * s, Mat._13 * s,
+        Mat._21 * s, Mat._22 * s, Mat._23 * s,
+        Mat._31 * s, Mat._32 * s, Mat._33 * s
+    };
+    // clang-format on
+}
+
+template <typename T>
+inline constexpr Matrix3x3<T> operator*(T s, const Matrix3x3<T>& Mat)
+{
+    return Mat * s;
+}
+
+template <typename T>
+inline constexpr Matrix3x3<T> operator/(const Matrix3x3<T>& Mat, T s)
+{
+    // clang-format off
+    return 
+    {
+        Mat._11 / s, Mat._12 / s, Mat._13 / s,
+        Mat._21 / s, Mat._22 / s, Mat._23 / s,
+        Mat._31 / s, Mat._32 / s, Mat._33 / s
+    };
+    // clang-format on
+}
+
+
 template <class T> struct Matrix4x4
 {
+    using ValueType = T;
+
     union
     {
         struct
@@ -1304,10 +1500,58 @@ template <class T> struct Matrix4x4
         return *this;
     }
 
+    Matrix4x4& operator/=(T s)
+    {
+        for (int i = 0; i < 16; ++i)
+            (reinterpret_cast<T*>(this))[i] /= s;
+
+        return *this;
+    }
+
     Matrix4x4& operator*=(const Matrix4x4& right)
     {
         *this = Mul(*this, right);
         return *this;
+    }
+
+    Matrix4x4& operator+=(const Matrix4x4& right)
+    {
+        for (int i = 0; i < 16; ++i)
+            Data()[i] += right.Data()[i];
+        return *this;
+    }
+
+    Matrix4x4 operator+(const Matrix4x4& right) const
+    {
+        // clang-format off
+        return Matrix4x4
+        {
+            _11 + right._11, _12 + right._12, _13 + right._13, _14 + right._14,
+            _21 + right._21, _22 + right._22, _23 + right._23, _24 + right._24,
+            _31 + right._31, _32 + right._32, _33 + right._33, _34 + right._34,
+            _41 + right._41, _42 + right._42, _43 + right._43, _44 + right._44
+        };
+        // clang-format on
+    }
+
+    Matrix4x4& operator-=(const Matrix4x4& right)
+    {
+        for (int i = 0; i < 16; ++i)
+            Data()[i] -= right.Data()[i];
+        return *this;
+    }
+
+    Matrix4x4 operator-(const Matrix4x4& right) const
+    {
+        // clang-format off
+        return Matrix4x4
+        {
+            _11 - right._11, _12 - right._12, _13 - right._13, _14 - right._14,
+            _21 - right._21, _22 - right._22, _23 - right._23, _24 - right._24,
+            _31 - right._31, _32 - right._32, _33 - right._33, _34 - right._34,
+            _41 - right._41, _42 - right._42, _43 - right._43, _44 - right._44
+        };
+        // clang-format on
     }
 
     constexpr Matrix4x4 Transpose() const
@@ -1466,10 +1710,13 @@ template <class T> struct Matrix4x4
             };
     }
 
-
-    void SetNearFarClipPlanes(T zNear, T zFar, T bIsGL)
+    // All graphics APIs except for OpenGL use [0, 1] as NDC Z range.
+    // OpenGL uses [-1, 1] unless glClipControl is used to change it.
+    // Use IRenderDevice::GetDeviceInfo().NDC to get the NDC Z range.
+    // See https://github.com/DiligentGraphics/DiligentCore/blob/master/doc/CoordinateSystem.md
+    void SetNearFarClipPlanes(T zNear, T zFar, bool NegativeOneToOneZ)
     {
-        if (bIsGL)
+        if (NegativeOneToOneZ)
         {
             // https://www.opengl.org/sdk/docs/man2/xhtml/gluPerspective.xml
             // http://www.terathon.com/gdc07_lengyel.pdf
@@ -1498,9 +1745,9 @@ template <class T> struct Matrix4x4
         }
     }
 
-    void GetNearFarClipPlanes(T& zNear, T& zFar, bool bIsGL) const
+    void GetNearFarClipPlanes(T& zNear, T& zFar, bool NegativeOneToOneZ) const
     {
-        if (bIsGL)
+        if (NegativeOneToOneZ)
         {
             zNear = _43 / (-1 - _33);
             zFar  = _43 / (+1 - _33);
@@ -1512,7 +1759,7 @@ template <class T> struct Matrix4x4
         }
     }
 
-    static Matrix4x4 Projection(T fov, T aspectRatio, T zNear, T zFar, bool bIsGL) // Left-handed projection
+    static Matrix4x4 Projection(T fov, T aspectRatio, T zNear, T zFar, bool NegativeOneToOneZ) // Left-handed projection
     {
         Matrix4x4 mOut;
         auto      yScale = static_cast<T>(1) / std::tan(fov / static_cast<T>(2));
@@ -1520,15 +1767,15 @@ template <class T> struct Matrix4x4
         mOut._11         = xScale;
         mOut._22         = yScale;
 
-        mOut.SetNearFarClipPlanes(zNear, zFar, bIsGL);
+        mOut.SetNearFarClipPlanes(zNear, zFar, NegativeOneToOneZ);
 
         return mOut;
     }
 
-    static Matrix4x4 OrthoOffCenter(T left, T right, T bottom, T top, T zNear, T zFar, bool bIsGL) // Left-handed ortho projection
+    static Matrix4x4 OrthoOffCenter(T left, T right, T bottom, T top, T zNear, T zFar, bool NegativeOneToOneZ) // Left-handed ortho projection
     {
-        auto _22 = (bIsGL ? 2 : 1) / (zFar - zNear);
-        auto _32 = (bIsGL ? zNear + zFar : zNear) / (zNear - zFar);
+        auto _22 = (NegativeOneToOneZ ? 2 : 1) / (zFar - zNear);
+        auto _32 = (NegativeOneToOneZ ? zNear + zFar : zNear) / (zNear - zFar);
         // clang-format off
         return Matrix4x4
             {
@@ -1540,14 +1787,14 @@ template <class T> struct Matrix4x4
         // clang-format on
     }
 
-    static Matrix4x4 Ortho(T width, T height, T zNear, T zFar, bool bIsGL) // Left-handed ortho projection
+    static Matrix4x4 Ortho(T width, T height, T zNear, T zFar, bool NegativeOneToOneZ) // Left-handed ortho projection
     {
         return OrthoOffCenter(
             -width * static_cast<T>(0.5),
             +width * static_cast<T>(0.5),
             -height * static_cast<T>(0.5),
             +height * static_cast<T>(0.5),
-            zNear, zFar, bIsGL);
+            zNear, zFar, NegativeOneToOneZ);
     }
 
     static Matrix4x4 Mul(const Matrix4x4& m1, const Matrix4x4& m2)
@@ -1729,6 +1976,40 @@ template <class T> struct Matrix4x4
         return Matrix4x4<Y>::MakeMatrix(Data());
     }
 };
+
+template <typename T>
+inline constexpr Matrix4x4<T> operator*(const Matrix4x4<T>& Mat, T s)
+{
+    // clang-format off
+    return 
+    {
+        Mat._11 * s, Mat._12 * s, Mat._13 * s, Mat._14 * s,
+        Mat._21 * s, Mat._22 * s, Mat._23 * s, Mat._24 * s,
+        Mat._31 * s, Mat._32 * s, Mat._33 * s, Mat._34 * s,
+        Mat._41 * s, Mat._42 * s, Mat._43 * s, Mat._44 * s
+    };
+    // clang-format on
+}
+
+template <typename T>
+inline constexpr Matrix4x4<T> operator*(T s, const Matrix4x4<T>& Mat)
+{
+    return Mat * s;
+}
+
+template <typename T>
+inline constexpr Matrix4x4<T> operator/(const Matrix4x4<T>& Mat, T s)
+{
+    // clang-format off
+    return 
+    {
+        Mat._11 / s, Mat._12 / s, Mat._13 / s, Mat._14 / s,
+        Mat._21 / s, Mat._22 / s, Mat._23 / s, Mat._24 / s,
+        Mat._31 / s, Mat._32 / s, Mat._33 / s, Mat._34 / s,
+        Mat._41 / s, Mat._42 / s, Mat._43 / s, Mat._44 / s
+    };
+    // clang-format on
+}
 
 // Template Vector Operations
 
@@ -2003,10 +2284,16 @@ using double4x4 = Matrix4x4<double>;
 using double3x3 = Matrix3x3<double>;
 using double2x2 = Matrix2x2<double>;
 
+using int4x4 = Matrix4x4<Int32>;
+using int3x3 = Matrix3x3<Int32>;
+using int2x2 = Matrix2x2<Int32>;
+
 template <typename T = float>
 struct Quaternion
 {
-    Vector4<T> q;
+    using ValueType = T;
+
+    Vector4<T> q{0, 0, 0, 1};
 
     constexpr Quaternion(const Vector4<T>& _q) noexcept :
         q{_q}
@@ -2232,6 +2519,9 @@ struct _FastFloatIntermediateType<float>
 {
     // All floats that have fractional part are representable as 32-bit int
     using Type = Int32;
+
+    // First float that does not have fractional part
+    static constexpr float NoFracThreshold = 8388608; // 2^23
 };
 
 template <>
@@ -2239,6 +2529,9 @@ struct _FastFloatIntermediateType<double>
 {
     // All doubles that have fractional part are representable as 64-bit int
     using Type = Int64;
+
+    // First double that does not have fractional part
+    static constexpr double NoFracThreshold = 9007199254740992; // 2^53
 };
 
 // At least on MSVC std::floor is an actual function call into ucrtbase.dll.
@@ -2247,6 +2540,10 @@ struct _FastFloatIntermediateType<double>
 template <typename T>
 constexpr T FastFloor(T x)
 {
+    constexpr auto NoFracThreshold = _FastFloatIntermediateType<T>::NoFracThreshold;
+    if (x >= NoFracThreshold || x <= -NoFracThreshold)
+        return x;
+
     auto i   = static_cast<typename _FastFloatIntermediateType<T>::Type>(x);
     auto flr = static_cast<T>(i);
     //   x         flr    floor(x)  flr <= x
@@ -2371,6 +2668,60 @@ typename std::enable_if<std::is_enum<T>::value, T>::type ExtractLSB(T& bits)
     return static_cast<T>(ExtractLSB(reinterpret_cast<typename std::underlying_type<T>::type&>(bits)));
 }
 
+/// Wraps Value to the range [Min, Min + Range)
+template <typename T>
+T WrapToRange(T Value, T Min, T Range)
+{
+    VERIFY_EXPR(Range >= 0);
+    if (Range <= 0)
+        return Min;
+
+    T Result = (Value - Min) % Range;
+    if (Result < 0)
+        Result += Range;
+
+    return Result + Min;
+}
+
+/// Constructs an orthonormal basis from the given direction vector.
+///
+/// \param[in] Dir           - The direction vector.
+/// \param[in] IsRightHanded - Flag indicating if the basis should be right-handed.
+/// \param[out] X            - The resulting X basis vector.
+/// \param[out] Y            - The resulting Y basis vector.
+/// \param[out] Z            - The resulting Z basis vector.
+/// \return                    True if the basis was successfully constructed, and false otherwise.
+template <typename T>
+bool BasisFromDirection(const Vector3<T>& Dir, bool IsRightHanded, Vector3<T>& X, Vector3<T>& Y, Vector3<T>& Z)
+{
+    auto Len = length(Dir);
+    if (Len < static_cast<T>(1e-5))
+        return false;
+
+    Z = Dir / Len;
+
+    Vector3<T> AbsZ{
+        std::abs(Z.x),
+        std::abs(Z.y),
+        std::abs(Z.z),
+    };
+    auto min_cmp = (std::min)((std::min)(AbsZ.x, AbsZ.y), AbsZ.z);
+    if (min_cmp == AbsZ.x)
+        X = {1, 0, 0};
+    else if (min_cmp == AbsZ.y)
+        X = {0, 1, 0};
+    else
+        X = {0, 0, 1};
+
+    Y = cross(Z, X);
+    X = cross(Y, Z);
+    X = normalize(X);
+    Y = normalize(Y);
+    if (!IsRightHanded)
+        Y = -Y;
+
+    return true;
+}
 
 inline std::ostream& operator<<(std::ostream& os, const float4& vec)
 {

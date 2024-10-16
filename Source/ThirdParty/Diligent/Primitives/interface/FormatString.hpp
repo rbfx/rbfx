@@ -107,6 +107,14 @@ StreamType& operator<<(StreamType& Stream, const MemorySizeFormatter<Type>& Arg)
     return Stream;
 }
 
+template <typename Type>
+std::string GetMemorySizeString(Type _size, int _precision = 0, Type _ref_size = 0)
+{
+    std::stringstream ss;
+    ss << FormatMemorySize(_size, _precision, _ref_size);
+    return ss.str();
+}
+
 namespace TextColorCode
 {
 static constexpr char Default[] = "\033[39m";

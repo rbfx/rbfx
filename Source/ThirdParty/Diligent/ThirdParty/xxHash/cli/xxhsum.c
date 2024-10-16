@@ -1,6 +1,6 @@
 /*
  * xxhsum - Command line interface for xxhash algorithms
- * Copyright (C) 2013-2021 Yann Collet
+ * Copyright (C) 2013-2023 Yann Collet
  *
  * GPL v2 License
  *
@@ -347,6 +347,14 @@ static void XSUM_printLine_BSD(const char* filename, const void* canonicalHash, 
     XSUM_printLine_BSD_internal(filename, canonicalHash, hashType, XSUM_algoName, XSUM_display_BigEndian);
 }
 
+static void XSUM_displayPrefix(const AlgoSelected hashType)
+{
+    assert(0 <= hashType && (size_t)hashType <= XSUM_TABLE_ELT_SIZE(XSUM_algoName));
+    if (hashType == algo_xxh3) {
+        XSUM_output("XXH3_");
+    }
+}
+
 static void XSUM_printLine_GNU_internal(const char* filename,
                                const void* canonicalHash, const AlgoSelected hashType,
                                XSUM_displayHash_f f_displayHash)
@@ -357,6 +365,7 @@ static void XSUM_printLine_GNU_internal(const char* filename,
         if (needsEscape) {
             XSUM_output("%c", '\\');
         }
+        XSUM_displayPrefix(hashType);
         f_displayHash(canonicalHash, hashLength);
         XSUM_output("  ");
         XSUM_printFilename(filename, needsEscape);
@@ -375,7 +384,7 @@ static void XSUM_printLine_GNU_LE(const char* filename,
     XSUM_printLine_GNU_internal(filename, canonicalHash, hashType, XSUM_display_LittleEndian);
 }
 
-typedef enum { big_endian, little_endian} Display_endianess;
+typedef enum { big_endian, little_endian} Display_endianness;
 
 typedef enum { display_gnu, display_bsd } Display_convention;
 
@@ -388,14 +397,14 @@ static XSUM_displayLine_f XSUM_kDisplayLine_fTable[2][2] = {
 
 static int XSUM_hashFile(const char* fileName,
                          const AlgoSelected hashType,
-                         const Display_endianess displayEndianess,
+                         const Display_endianness displayEndianness,
                          const Display_convention convention)
 {
     size_t const blockSize = 64 KB;
-    XSUM_displayLine_f const f_displayLine = XSUM_kDisplayLine_fTable[convention][displayEndianess];
+    XSUM_displayLine_f const f_displayLine = XSUM_kDisplayLine_fTable[convention][displayEndianness];
     FILE* inFile;
     Multihash hashValue;
-    assert(displayEndianess==big_endian || displayEndianess==little_endian);
+    assert(displayEndianness==big_endian || displayEndianness==little_endian);
     assert(convention==display_gnu || convention==display_bsd);
 
     /* Check file existence */
@@ -470,24 +479,24 @@ static int XSUM_hashFile(const char* fileName,
  */
 static int XSUM_hashFiles(const char* fnList[], int fnTotal,
                           AlgoSelected hashType,
-                          Display_endianess displayEndianess,
+                          Display_endianness displayEndianness,
                           Display_convention convention)
 {
     int fnNb;
     int result = 0;
 
     if (fnTotal==0)
-        return XSUM_hashFile(stdinName, hashType, displayEndianess, convention);
+        return XSUM_hashFile(stdinName, hashType, displayEndianness, convention);
 
     for (fnNb=0; fnNb<fnTotal; fnNb++)
-        result |= XSUM_hashFile(fnList[fnNb], hashType, displayEndianess, convention);
-    XSUM_logVerbose(2, "\r%70s\r", "");
+        result |= XSUM_hashFile(fnList[fnNb], hashType, displayEndianness, convention);
     return result;
 }
 
 
 typedef enum {
     GetLine_ok,
+    GetLine_comment,
     GetLine_eof,
     GetLine_exceedMaxLineLength,
     GetLine_outOfMemory
@@ -525,8 +534,10 @@ typedef struct {
     unsigned long   nProperlyFormattedLines;
     unsigned long   nImproperlyFormattedLines;
     unsigned long   nMismatchedChecksums;
+    unsigned long   nMatchedChecksums;
     unsigned long   nOpenOrReadFailures;
     unsigned long   nMixedFormatLines;
+    unsigned long   nMissing;
     int             quit;
 } ParseFileReport;
 
@@ -539,6 +550,7 @@ typedef struct {
     char*           blockBuf;
     XSUM_U32        strictMode;
     XSUM_U32        statusOnly;
+    XSUM_U32        ignoreMissing;
     XSUM_U32        warn;
     XSUM_U32        quiet;
     XSUM_U32        algoBitmask;
@@ -549,6 +561,7 @@ typedef struct {
 /*
  * Reads a line from stream `inFile`.
  * Returns GetLine_ok, if it reads line successfully.
+ * Returns GetLine_comment, if the line is beginning with '#'.
  * Returns GetLine_eof, if stream reaches EOF.
  * Returns GetLine_exceedMaxLineLength, if line length is longer than MAX_LINE_LENGTH.
  * Returns GetLine_outOfMemory, if line buffer memory allocation failed.
@@ -598,6 +611,12 @@ static GetLineResult XSUM_getLine(char** lineBuf, int* lineMax, FILE* inFile)
     }
 
     (*lineBuf)[len] = '\0';
+
+    /* Ignore comment lines, which begin with a '#' character. */
+    if (result == GetLine_ok && len > 0 && ((*lineBuf)[0] == '#')) {
+        result = GetLine_comment;
+    }
+
     return result;
 }
 
@@ -696,6 +715,7 @@ static ParseLineResult XSUM_parseLine1(ParsedLine* parsedLine, char* line, int r
         hash_len = (size_t)(firstSpace - line);
         if (hash_len==8) parsedLine->algo = algo_xxh32;
         if (hash_len==16) parsedLine->algo = algo_xxh64;
+        if (hash_len==21) parsedLine->algo = algo_xxh3;
         if (hash_len==32) parsedLine->algo = algo_xxh128;
     }
 
@@ -720,6 +740,18 @@ static ParseLineResult XSUM_parseLine1(ParsedLine* parsedLine, char* line, int r
         if (parsedLine->algo != algo_xxh64 && parsedLine->algo != algo_xxh3) return ParseLine_invalidFormat;
         {   XXH64_canonical_t* xxh64c = &parsedLine->canonical.xxh64;
             if (XSUM_canonicalFromString(xxh64c->digest, sizeof(xxh64c->digest), hash_ptr, rev)
+                != CanonicalFromString_ok) {
+                return ParseLine_invalidFormat;
+            }
+            break;
+        }
+
+    case 21:
+        if (parsedLine->algo != algo_xxh3) return ParseLine_invalidFormat;
+        /* check XXH3 prefix*/
+        if (memcmp(hash_ptr, "XXH3_", 5) != 0) return ParseLine_invalidFormat;
+        {   XXH64_canonical_t* xxh64c = &parsedLine->canonical.xxh64;
+            if (XSUM_canonicalFromString(xxh64c->digest, sizeof(xxh64c->digest), (const char*)hash_ptr+5, rev)
                 != CanonicalFromString_ok) {
                 return ParseLine_invalidFormat;
             }
@@ -791,15 +823,23 @@ static void XSUM_parseFile1(ParseFileArg* XSUM_parseFileArg, int rev)
             break;
         }
 
-        {   GetLineResult const XSUM_getLineResult = XSUM_getLine(&XSUM_parseFileArg->lineBuf,
-                                                        &XSUM_parseFileArg->lineMax,
-                                                         XSUM_parseFileArg->inFile);
+        {   GetLineResult const XSUM_getLineResult =
+                XSUM_getLine(&XSUM_parseFileArg->lineBuf,
+                    &XSUM_parseFileArg->lineMax,
+                    XSUM_parseFileArg->inFile);
+
+            /* Ignore comment lines */
+            if (XSUM_getLineResult == GetLine_comment) {
+                continue;
+            }
+
             if (XSUM_getLineResult != GetLine_ok) {
                 if (XSUM_getLineResult == GetLine_eof) break;
 
                 switch (XSUM_getLineResult)
                 {
                 case GetLine_ok:
+                case GetLine_comment:
                 case GetLine_eof:
                     /* These cases never happen.  See above XSUM_getLineResult related "if"s.
                        They exist just for make gcc's -Wswitch-enum happy. */
@@ -881,10 +921,14 @@ static void XSUM_parseFile1(ParseFileArg* XSUM_parseFileArg, int rev)
             break;
 
         case LineStatus_failedToOpen:
-            report->nOpenOrReadFailures++;
-            if (!XSUM_parseFileArg->statusOnly) {
-                XSUM_output("%s:%lu: Could not open or read '%s': %s.\n",
-                    inFileName, lineNumber, parsedLine.filename, strerror(errno));
+            if (XSUM_parseFileArg->ignoreMissing) {
+                report->nMissing++;
+            } else {
+                report->nOpenOrReadFailures++;
+                if (!XSUM_parseFileArg->statusOnly) {
+                    XSUM_output("%s:%lu: Could not open or read '%s': %s.\n",
+                        inFileName, lineNumber, parsedLine.filename, strerror(errno));
+                }
             }
             break;
 
@@ -892,6 +936,7 @@ static void XSUM_parseFile1(ParseFileArg* XSUM_parseFileArg, int rev)
         case LineStatus_hashFailed:
             {   int b = 1;
                 if (lineStatus == LineStatus_hashOk) {
+                    report->nMatchedChecksums++;
                     /* If --quiet is specified, don't display "OK" */
                     if (XSUM_parseFileArg->quiet) b = 0;
                 } else {
@@ -918,6 +963,7 @@ static void XSUM_parseFile1(ParseFileArg* XSUM_parseFileArg, int rev)
  *
  *  If strictMode != 0, return error code if any line is invalid.
  *  If statusOnly != 0, don't generate any output.
+ *  If ignoreMissing != 0, ignore missing file.  But if no file was verified, returns 0 (failed).
  *  If warn != 0, print a warning message to stderr.
  *  If quiet != 0, suppress "OK" line.
  *
@@ -928,9 +974,10 @@ static void XSUM_parseFile1(ParseFileArg* XSUM_parseFileArg, int rev)
  *    - (strict mode) All lines in checksum file are consistent and well formatted.
  */
 static int XSUM_checkFile(const char* inFileName,
-                          const Display_endianess displayEndianess,
+                          const Display_endianness displayEndianness,
                           XSUM_U32 strictMode,
                           XSUM_U32 statusOnly,
+                          XSUM_U32 ignoreMissing,
                           XSUM_U32 warn,
                           XSUM_U32 quiet,
                           XSUM_U32 algoBitmask)
@@ -966,6 +1013,7 @@ static int XSUM_checkFile(const char* inFileName,
     XSUM_parseFileArg->blockBuf    = (char*) malloc(XSUM_parseFileArg->blockSize);
     XSUM_parseFileArg->strictMode  = strictMode;
     XSUM_parseFileArg->statusOnly  = statusOnly;
+    XSUM_parseFileArg->ignoreMissing = ignoreMissing;
     XSUM_parseFileArg->warn        = warn;
     XSUM_parseFileArg->quiet       = quiet;
     XSUM_parseFileArg->algoBitmask = algoBitmask;
@@ -975,7 +1023,7 @@ static int XSUM_checkFile(const char* inFileName,
         XSUM_log("Error: : memory allocation failed \n");
         exit(1);
     }
-    XSUM_parseFile1(XSUM_parseFileArg, displayEndianess != big_endian);
+    XSUM_parseFile1(XSUM_parseFileArg, displayEndianness != big_endian);
 
     free(XSUM_parseFileArg->blockBuf);
     free(XSUM_parseFileArg->lineBuf);
@@ -1010,14 +1058,23 @@ static int XSUM_checkFile(const char* inFileName,
             && report->nOpenOrReadFailures == 0
             && (!strictMode || report->nImproperlyFormattedLines == 0)
             && report->quit == 0;
+
+    /* If "--ignore-missing" is enabled and there's no matched checksum, report it as error.
+     * See https://github.com/coreutils/coreutils/blob/2f1cffe07ab0f0b4135a52d95f1689d7fc7f26c9/src/digest.c#L1325-L1328 */
+    if (ignoreMissing && report->nMatchedChecksums == 0) {
+        XSUM_output("%s: no file was verified\n", inFileName);
+        result = 0;
+    }
+
     return result;
 }
 
 
 static int XSUM_checkFiles(const char* fnList[], int fnTotal,
-                           const Display_endianess displayEndianess,
+                           const Display_endianness displayEndianness,
                            XSUM_U32 strictMode,
                            XSUM_U32 statusOnly,
+                           XSUM_U32 ignoreMissing,
                            XSUM_U32 warn,
                            XSUM_U32 quiet,
                            XSUM_U32 algoBitmask)
@@ -1027,11 +1084,11 @@ static int XSUM_checkFiles(const char* fnList[], int fnTotal,
     /* Special case for stdinName "-",
      * note: stdinName is not a string.  It's special pointer. */
     if (fnTotal==0) {
-        ok &= XSUM_checkFile(stdinName, displayEndianess, strictMode, statusOnly, warn, quiet, algoBitmask);
+        ok &= XSUM_checkFile(stdinName, displayEndianness, strictMode, statusOnly, ignoreMissing, warn, quiet, algoBitmask);
     } else {
         int fnNb;
         for (fnNb=0; fnNb<fnTotal; fnNb++)
-            ok &= XSUM_checkFile(fnList[fnNb], displayEndianess, strictMode, statusOnly, warn, quiet, algoBitmask);
+            ok &= XSUM_checkFile(fnList[fnNb], displayEndianness, strictMode, statusOnly, ignoreMissing, warn, quiet, algoBitmask);
     }
     return ok ? 0 : 1;
 }
@@ -1047,10 +1104,14 @@ static int XSUM_usage(const char* exename)
     XSUM_log( "Print or verify checksums using fast non-cryptographic algorithm xxHash \n\n" );
     XSUM_log( "Usage: %s [options] [files] \n\n", exename);
     XSUM_log( "When no filename provided or when '-' is provided, uses stdin as input. \n");
-    XSUM_log( "Options: \n");
-    XSUM_log( "  -H#         algorithm selection: 0,1,2,3 or 32,64,128 (default: %i) \n", (int)g_defaultAlgo);
-    XSUM_log( "  -c, --check read xxHash checksum from [files] and check them \n");
-    XSUM_log( "  -h, --help  display a long help page about advanced options \n");
+    XSUM_log( "\nOptions: \n");
+    XSUM_log( "  -H#          select an xxhash algorithm (default: %i) \n", (int)g_defaultAlgo);
+    XSUM_log( "               0: XXH32 \n");
+    XSUM_log( "               1: XXH64 \n");
+    XSUM_log( "               2: XXH128 (also called XXH3_128bits) \n");
+    XSUM_log( "               3: XXH3 (also called XXH3_64bits) \n");
+    XSUM_log( "  -c, --check  read xxHash checksum from [files] and check them \n");
+    XSUM_log( "  -h, --help   display a long help page about advanced options \n");
     return 0;
 }
 
@@ -1058,20 +1119,22 @@ static int XSUM_usage(const char* exename)
 static int XSUM_usage_advanced(const char* exename)
 {
     XSUM_usage(exename);
-    XSUM_log( "Advanced :\n");
+    XSUM_log( "\nAdvanced :\n");
     XSUM_log( "  -V, --version        Display version information \n");
     XSUM_log( "      --tag            Produce BSD-style checksum lines \n");
     XSUM_log( "      --little-endian  Checksum values use little endian convention (default: big endian) \n");
+    XSUM_log( "      --binary         Read in binary mode \n");
     XSUM_log( "  -b                   Run benchmark \n");
     XSUM_log( "  -b#                  Bench only algorithm variant # \n");
     XSUM_log( "  -i#                  Number of times to run the benchmark (default: %i) \n", NBLOOPS_DEFAULT);
     XSUM_log( "  -q, --quiet          Don't display version header in benchmark mode \n");
     XSUM_log( "\n");
-    XSUM_log( "The following four options are useful only when verifying checksums (-c): \n");
+    XSUM_log( "The following five options are useful only when verifying checksums (-c): \n");
     XSUM_log( "  -q, --quiet          Don't print OK for each successfully verified file \n");
     XSUM_log( "      --status         Don't output anything, status code shows success \n");
     XSUM_log( "      --strict         Exit non-zero for improperly formatted checksum lines \n");
     XSUM_log( "      --warn           Warn about improperly formatted checksum lines \n");
+    XSUM_log( "      --ignore-missing Don't fail or report status for missing files \n");
     return 0;
 }
 
@@ -1154,13 +1217,14 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
     XSUM_U32 strictMode    = 0;
     XSUM_U32 statusOnly    = 0;
     XSUM_U32 warn          = 0;
+    XSUM_U32 ignoreMissing = 0;
     XSUM_U32 algoBitmask   = algo_bitmask_all;
     int explicitStdin = 0;
     XSUM_U32 selectBenchIDs= 0;  /* 0 == use default k_testIDs_default, kBenchAll == bench all */
     static const XSUM_U32 kBenchAll = 99;
     size_t keySize    = XSUM_DEFAULT_SAMPLE_SIZE;
     AlgoSelected algo     = g_defaultAlgo;
-    Display_endianess displayEndianess = big_endian;
+    Display_endianness displayEndianness = big_endian;
     Display_convention convention = display_gnu;
     int nbIterations = NBLOOPS_DEFAULT;
 
@@ -1168,6 +1232,7 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
     if (strstr(exename,  "xxh32sum") != NULL) { algo = g_defaultAlgo = algo_xxh32;  algoBitmask = algo_bitmask_xxh32;  }
     if (strstr(exename,  "xxh64sum") != NULL) { algo = g_defaultAlgo = algo_xxh64;  algoBitmask = algo_bitmask_xxh64;  }
     if (strstr(exename, "xxh128sum") != NULL) { algo = g_defaultAlgo = algo_xxh128; algoBitmask = algo_bitmask_xxh128; }
+    if (strstr(exename,   "xxh3sum") != NULL) { algo = g_defaultAlgo = algo_xxh3;   algoBitmask = algo_bitmask_xxh3;  }
 
     for (i=1; i<argc; i++) {
         const char* argument = argv[i];
@@ -1177,10 +1242,12 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
         if (!strcmp(argument, "--benchmark-all")) { benchmarkMode = 1; selectBenchIDs = kBenchAll; continue; }
         if (!strcmp(argument, "--bench-all")) { benchmarkMode = 1; selectBenchIDs = kBenchAll; continue; }
         if (!strcmp(argument, "--quiet")) { XSUM_logLevel--; continue; }
-        if (!strcmp(argument, "--little-endian")) { displayEndianess = little_endian; continue; }
+        if (!strcmp(argument, "--little-endian")) { displayEndianness = little_endian; continue; }
         if (!strcmp(argument, "--strict")) { strictMode = 1; continue; }
         if (!strcmp(argument, "--status")) { statusOnly = 1; continue; }
         if (!strcmp(argument, "--warn")) { warn = 1; continue; }
+        if (!strcmp(argument, "--binary")) { continue; } /* Just ignore it. See https://github.com/Cyan4973/xxHash/issues/812 */
+        if (!strcmp(argument, "--ignore-missing")) { ignoreMissing = 1; continue; }
         if (!strcmp(argument, "--help")) { return XSUM_usage_advanced(exename); }
         if (!strcmp(argument, "--version")) { XSUM_log(FULL_WELCOME_MESSAGE(exename)); XSUM_sanityCheck(); return 0; }
         if (!strcmp(argument, "--tag")) { convention = display_bsd; continue; }
@@ -1220,10 +1287,8 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
                     case 64: algo = algo_xxh64; break;
                     case 2 :
                     case 128: algo = algo_xxh128; break;
-                    case 3 : /* xxh3 - necessarily uses BSD convention to avoid confusion with XXH64 */
-                        algo = algo_xxh3;
-                        convention = display_bsd;
-                        break;
+                    case 3 :
+                        algo = algo_xxh3; break;
                     default:
                         return XSUM_badusage(exename);
                 }
@@ -1298,8 +1363,8 @@ XSUM_API int XSUM_main(int argc, const char* argv[])
     if (filenamesStart==0) filenamesStart = argc;
     if (fileCheckMode) {
         return XSUM_checkFiles(argv+filenamesStart, argc-filenamesStart,
-                          displayEndianess, strictMode, statusOnly, warn, (XSUM_logLevel < 2) /*quiet*/, algoBitmask);
+                          displayEndianness, strictMode, statusOnly, ignoreMissing, warn, (XSUM_logLevel < 2) /*quiet*/, algoBitmask);
     } else {
-        return XSUM_hashFiles(argv+filenamesStart, argc-filenamesStart, algo, displayEndianess, convention);
+        return XSUM_hashFiles(argv+filenamesStart, argc-filenamesStart, algo, displayEndianness, convention);
     }
 }

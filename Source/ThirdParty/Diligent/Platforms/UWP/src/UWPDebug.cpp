@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,38 +38,48 @@ namespace Diligent
 
 void WindowsStoreDebug::AssertionFailed(const Char* Message, const char* Function, const char* File, int Line)
 {
-    auto AssertionFailedMessage = FormatAssertionFailedMessage(Message, Function, File, Line);
-    OutputDebugMessage(DEBUG_MESSAGE_SEVERITY_ERROR, AssertionFailedMessage.c_str(), nullptr, nullptr, 0);
+    String AssertionFailedMessage = FormatAssertionFailedMessage(Message, Function, File, Line);
+    if (DebugMessageCallback)
+    {
+        DebugMessageCallback(DEBUG_MESSAGE_SEVERITY_ERROR, AssertionFailedMessage.c_str(), nullptr, nullptr, 0);
+    }
+    else
+    {
+        OutputDebugMessage(DEBUG_MESSAGE_SEVERITY_ERROR, AssertionFailedMessage.c_str(), nullptr, nullptr, 0);
+    }
 
-    __debugbreak();
-    //int nCode = MessageBoxA(NULL,
-    //                        FullMsg.c_str(),
-    //                        "Runtime assertion failed",
-    //                        MB_TASKMODAL|MB_ICONHAND|MB_ABORTRETRYIGNORE|MB_SETFOREGROUND);
+    if (GetBreakOnError())
+    {
+        __debugbreak();
+        //int nCode = MessageBoxA(NULL,
+        //                        FullMsg.c_str(),
+        //                        "Runtime assertion failed",
+        //                        MB_TASKMODAL|MB_ICONHAND|MB_ABORTRETRYIGNORE|MB_SETFOREGROUND);
 
-    //// Abort: abort the program
-    //if (nCode == IDABORT)
-    //{
-    //    // raise abort signal
-    //    raise(SIGABRT);
+        //// Abort: abort the program
+        //if (nCode == IDABORT)
+        //{
+        //    // raise abort signal
+        //    raise(SIGABRT);
 
-    //    // We usually won't get here, but it's possible that
-    //    //  SIGABRT was ignored.  So exit the program anyway.
-    //    exit(3);
-    //}
+        //    // We usually won't get here, but it's possible that
+        //    //  SIGABRT was ignored.  So exit the program anyway.
+        //    exit(3);
+        //}
 
-    //// Retry: call the debugger
-    //if (nCode == IDRETRY)
-    //{
-    //    DebugBreak();
-    //    /* return to user code */
-    //    return;
-    //}
+        //// Retry: call the debugger
+        //if (nCode == IDRETRY)
+        //{
+        //    DebugBreak();
+        //    /* return to user code */
+        //    return;
+        //}
 
-    //// Ignore: continue execution
-    //if (nCode == IDIGNORE)
-    //    return;
-};
+        //// Ignore: continue execution
+        //if (nCode == IDIGNORE)
+        //    return;
+    }
+}
 
 void WindowsStoreDebug::OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity,
                                            const Char*            Message,

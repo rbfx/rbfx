@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,7 +41,7 @@ struct IPipelineState;
 struct IPipelineResourceSignature;
 
 // {061F8774-9A09-48E8-8411-B5BD20560104}
-static const INTERFACE_ID IID_ShaderResourceBinding =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_ShaderResourceBinding =
     {0x61f8774, 0x9a09, 0x48e8, {0x84, 0x11, 0xb5, 0xbd, 0x20, 0x56, 0x1, 0x4}};
 
 

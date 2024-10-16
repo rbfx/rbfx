@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -432,6 +432,254 @@ const TextureFormatAttribs& GetTextureFormatAttribs(TEXTURE_FORMAT Format)
     return FormatToTexFormatAttribs[Format];
 }
 
+COMPONENT_TYPE ValueTypeToComponentType(VALUE_TYPE ValType, bool IsNormalized, bool IsSRGB)
+{
+    static_assert(VT_NUM_TYPES == 10, "Please handle the new value type below");
+    switch (ValType)
+    {
+        case VT_UNDEFINED: return COMPONENT_TYPE_UNDEFINED;
+
+        case VT_UINT8:
+            return IsNormalized ? (IsSRGB ? COMPONENT_TYPE_UNORM_SRGB : COMPONENT_TYPE_UNORM) : COMPONENT_TYPE_UINT;
+
+        case VT_UINT16:
+            return IsNormalized ? COMPONENT_TYPE_UNORM : COMPONENT_TYPE_UINT;
+
+        case VT_INT8:
+        case VT_INT16:
+            return IsNormalized ? COMPONENT_TYPE_SNORM : COMPONENT_TYPE_SINT;
+
+        case VT_INT32:
+            return COMPONENT_TYPE_SINT;
+
+        case VT_UINT32:
+            return COMPONENT_TYPE_UINT;
+
+        case VT_FLOAT16:
+        case VT_FLOAT32:
+        case VT_FLOAT64:
+            return COMPONENT_TYPE_FLOAT;
+
+        default:
+            UNEXPECTED("Unknown value type");
+            return COMPONENT_TYPE_UNDEFINED;
+    }
+}
+
+VALUE_TYPE ComponentTypeToValueType(COMPONENT_TYPE CompType, Uint32 Size)
+{
+    switch (CompType)
+    {
+        case COMPONENT_TYPE_UNDEFINED:
+            return VT_UNDEFINED;
+
+        case COMPONENT_TYPE_FLOAT:
+            switch (Size)
+            {
+                case 2: return VT_FLOAT16;
+                case 4: return VT_FLOAT32;
+                case 8: return VT_FLOAT64;
+            }
+            break;
+
+        case COMPONENT_TYPE_SNORM:
+            switch (Size)
+            {
+                case 1: return VT_INT8;
+                case 2: return VT_INT16;
+            }
+            break;
+
+        case COMPONENT_TYPE_UNORM:
+            switch (Size)
+            {
+                case 1: return VT_UINT8;
+                case 2: return VT_UINT16;
+            }
+            break;
+
+        case COMPONENT_TYPE_UNORM_SRGB:
+            return Size == 1 ? VT_UINT8 : VT_UNDEFINED;
+
+        case COMPONENT_TYPE_SINT:
+            switch (Size)
+            {
+                case 1: return VT_INT8;
+                case 2: return VT_INT16;
+                case 4: return VT_INT32;
+            }
+            break;
+
+        case COMPONENT_TYPE_UINT:
+            switch (Size)
+            {
+                case 1: return VT_UINT8;
+                case 2: return VT_UINT16;
+                case 4: return VT_UINT32;
+            }
+            break;
+
+        case COMPONENT_TYPE_DEPTH:
+            return Size == 4 ? VT_FLOAT32 : VT_UNDEFINED;
+
+        default:
+            break;
+    }
+
+    return VT_UNDEFINED;
+}
+
+TEXTURE_FORMAT TextureComponentAttribsToTextureFormat(COMPONENT_TYPE CompType, Uint32 ComponentSize, Uint32 NumComponents)
+{
+    switch (CompType)
+    {
+        case COMPONENT_TYPE_FLOAT:
+            switch (ComponentSize)
+            {
+                case 2:
+                    switch (NumComponents)
+                    {
+                        case 1: return TEX_FORMAT_R16_FLOAT;
+                        case 2: return TEX_FORMAT_RG16_FLOAT;
+                        case 4: return TEX_FORMAT_RGBA16_FLOAT;
+                    }
+                    break;
+
+                case 4:
+                    switch (NumComponents)
+                    {
+                        case 1: return TEX_FORMAT_R32_FLOAT;
+                        case 2: return TEX_FORMAT_RG32_FLOAT;
+                        case 3: return TEX_FORMAT_RGB32_FLOAT;
+                        case 4: return TEX_FORMAT_RGBA32_FLOAT;
+                    }
+                    break;
+            }
+            break;
+
+        case COMPONENT_TYPE_SNORM:
+            switch (ComponentSize)
+            {
+                case 1:
+                    switch (NumComponents)
+                    {
+                        case 1: return TEX_FORMAT_R8_SNORM;
+                        case 2: return TEX_FORMAT_RG8_SNORM;
+                        case 4: return TEX_FORMAT_RGBA8_SNORM;
+                    }
+                    break;
+
+                case 2:
+                    switch (NumComponents)
+                    {
+                        case 1: return TEX_FORMAT_R16_SNORM;
+                        case 2: return TEX_FORMAT_RG16_SNORM;
+                        case 4: return TEX_FORMAT_RGBA16_SNORM;
+                    }
+                    break;
+            }
+            break;
+
+        case COMPONENT_TYPE_UNORM:
+            switch (ComponentSize)
+            {
+                case 1:
+                    switch (NumComponents)
+                    {
+                        case 1: return TEX_FORMAT_R8_UNORM;
+                        case 2: return TEX_FORMAT_RG8_UNORM;
+                        case 4: return TEX_FORMAT_RGBA8_UNORM;
+                    }
+
+                case 2:
+                    switch (NumComponents)
+                    {
+                        case 1: return TEX_FORMAT_R16_UNORM;
+                        case 2: return TEX_FORMAT_RG16_UNORM;
+                        case 4: return TEX_FORMAT_RGBA16_UNORM;
+                    }
+                    break;
+            }
+            break;
+
+        case COMPONENT_TYPE_UNORM_SRGB:
+            return ComponentSize == 1 && NumComponents == 4 ? TEX_FORMAT_RGBA8_UNORM_SRGB : TEX_FORMAT_UNKNOWN;
+
+        case COMPONENT_TYPE_SINT:
+            switch (ComponentSize)
+            {
+                case 1:
+                    switch (NumComponents)
+                    {
+                        case 1: return TEX_FORMAT_R8_SINT;
+                        case 2: return TEX_FORMAT_RG8_SINT;
+                        case 4: return TEX_FORMAT_RGBA8_SINT;
+                    }
+                    break;
+
+                case 2:
+                    switch (NumComponents)
+                    {
+                        case 1: return TEX_FORMAT_R16_SINT;
+                        case 2: return TEX_FORMAT_RG16_SINT;
+                        case 4: return TEX_FORMAT_RGBA16_SINT;
+                    }
+                    break;
+
+                case 4:
+                    switch (NumComponents)
+                    {
+                        case 1: return TEX_FORMAT_R32_SINT;
+                        case 2: return TEX_FORMAT_RG32_SINT;
+                        case 3: return TEX_FORMAT_RGB32_SINT;
+                        case 4: return TEX_FORMAT_RGBA32_SINT;
+                    }
+                    break;
+            }
+            break;
+
+        case COMPONENT_TYPE_UINT:
+            switch (ComponentSize)
+            {
+                case 1:
+                    switch (NumComponents)
+                    {
+                        case 1: return TEX_FORMAT_R8_UINT;
+                        case 2: return TEX_FORMAT_RG8_UINT;
+                        case 4: return TEX_FORMAT_RGBA8_UINT;
+                    }
+                    break;
+
+                case 2:
+                    switch (NumComponents)
+                    {
+                        case 1: return TEX_FORMAT_R16_UINT;
+                        case 2: return TEX_FORMAT_RG16_UINT;
+                        case 4: return TEX_FORMAT_RGBA16_UINT;
+                    }
+                    break;
+
+                case 4:
+                    switch (NumComponents)
+                    {
+                        case 1: return TEX_FORMAT_R32_UINT;
+                        case 2: return TEX_FORMAT_RG32_UINT;
+                        case 3: return TEX_FORMAT_RGB32_UINT;
+                        case 4: return TEX_FORMAT_RGBA32_UINT;
+                    }
+                    break;
+            }
+            break;
+
+        case COMPONENT_TYPE_DEPTH:
+            return ComponentSize == 4 && NumComponents == 1 ? TEX_FORMAT_D32_FLOAT : TEX_FORMAT_UNKNOWN;
+
+        default:
+            break;
+    }
+
+    return TEX_FORMAT_UNKNOWN;
+}
 
 const Char* GetTexViewTypeLiteralName(TEXTURE_VIEW_TYPE ViewType)
 {
@@ -784,24 +1032,21 @@ const Char* GetFillModeLiteralName(FILL_MODE FillMode)
 #undef FILL_MODE_TO_STR
 }
 
-const Char* GetCullModeLiteralName(CULL_MODE CullMode)
+const Char* GetCullModeLiteralName(CULL_MODE CullMode, bool GetEnumString)
 {
-#define CULL_MODE_TO_STR(Mode) \
-    case Mode: return #Mode
-
     static_assert(CULL_MODE_NUM_MODES == 4, "Please update the switch below to handle the new cull mode");
     switch (CullMode)
     {
-        CULL_MODE_TO_STR(CULL_MODE_UNDEFINED);
-        CULL_MODE_TO_STR(CULL_MODE_NONE);
-        CULL_MODE_TO_STR(CULL_MODE_FRONT);
-        CULL_MODE_TO_STR(CULL_MODE_BACK);
-
+        // clang-format off
+        case CULL_MODE_UNDEFINED: return GetEnumString ? "CULL_MODE_UNDEFINED" : "undefined";
+        case CULL_MODE_NONE:      return GetEnumString ? "CULL_MODE_NONE"      : "none";
+        case CULL_MODE_FRONT:     return GetEnumString ? "CULL_MODE_FRONT"     : "front";
+        case CULL_MODE_BACK:      return GetEnumString ? "CULL_MODE_BACK"      : "back";
+        // clang-format on
         default:
             UNEXPECTED("Unexpected cull mode (", static_cast<int>(CullMode), ")");
             return "UNKNOWN";
     }
-#undef CULL_MODE_TO_STR
 }
 
 const Char* GetMapTypeString(MAP_TYPE MapType)
@@ -1275,7 +1520,7 @@ const char* GetShaderCompilerTypeString(SHADER_COMPILER Compiler)
 
 const char* GetArchiveDeviceDataFlagString(ARCHIVE_DEVICE_DATA_FLAGS Flag, bool bGetFullName)
 {
-    static_assert(ARCHIVE_DEVICE_DATA_FLAG_LAST == 2 << 6, "Please update this function to handle the new archive device data flag");
+    static_assert(ARCHIVE_DEVICE_DATA_FLAG_LAST == 1 << 7, "Please update this function to handle the new archive device data flag");
     switch (Flag)
     {
         // clang-format off
@@ -1287,6 +1532,7 @@ const char* GetArchiveDeviceDataFlagString(ARCHIVE_DEVICE_DATA_FLAGS Flag, bool 
         case ARCHIVE_DEVICE_DATA_FLAG_VULKAN:      return bGetFullName ? "ARCHIVE_DEVICE_DATA_FLAG_VULKAN"      : "Vulkan";
         case ARCHIVE_DEVICE_DATA_FLAG_METAL_MACOS: return bGetFullName ? "ARCHIVE_DEVICE_DATA_FLAG_METAL_MACOS" : "Metal_MacOS";
         case ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS:   return bGetFullName ? "ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS"   : "Metal_IOS";
+        case ARCHIVE_DEVICE_DATA_FLAG_WEBGPU:      return bGetFullName ? "ARCHIVE_DEVICE_DATA_FLAG_WEBGPU"      : "WebGPU";
         // clang-format on
         default:
             UNEXPECTED("Unexpected device data flag (", Uint32{Flag}, ")");
@@ -1311,7 +1557,7 @@ const char* GetDeviceFeatureStateString(DEVICE_FEATURE_STATE State, bool bGetFul
 
 const char* GetRenderDeviceTypeString(RENDER_DEVICE_TYPE DeviceType, bool bGetEnumString)
 {
-    static_assert(RENDER_DEVICE_TYPE_COUNT == 7, "Did you add a new device type? Please update the switch below.");
+    static_assert(RENDER_DEVICE_TYPE_COUNT == 8, "Did you add a new device type? Please update the switch below.");
     switch (DeviceType)
     {
         // clang-format off
@@ -1322,6 +1568,7 @@ const char* GetRenderDeviceTypeString(RENDER_DEVICE_TYPE DeviceType, bool bGetEn
         case RENDER_DEVICE_TYPE_GLES:      return bGetEnumString ? "RENDER_DEVICE_TYPE_GLES"      : "OpenGLES";   break;
         case RENDER_DEVICE_TYPE_VULKAN:    return bGetEnumString ? "RENDER_DEVICE_TYPE_VULKAN"    : "Vulkan";     break;
         case RENDER_DEVICE_TYPE_METAL:     return bGetEnumString ? "RENDER_DEVICE_TYPE_METAL"     : "Metal";      break;
+        case RENDER_DEVICE_TYPE_WEBGPU:    return bGetEnumString ? "RENDER_DEVICE_TYPE_WEBGPU"    : "WebGPU";     break;
         // clang-format on
         default: UNEXPECTED("Unknown/unsupported device type"); return "UNKNOWN";
     }
@@ -1329,7 +1576,7 @@ const char* GetRenderDeviceTypeString(RENDER_DEVICE_TYPE DeviceType, bool bGetEn
 
 const char* GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE DeviceType, bool Capital)
 {
-    static_assert(RENDER_DEVICE_TYPE_COUNT == 7, "Did you add a new device type? Please update the switch below.");
+    static_assert(RENDER_DEVICE_TYPE_COUNT == 8, "Did you add a new device type? Please update the switch below.");
     switch (DeviceType)
     {
         // clang-format off
@@ -1340,6 +1587,7 @@ const char* GetRenderDeviceTypeShortString(RENDER_DEVICE_TYPE DeviceType, bool C
         case RENDER_DEVICE_TYPE_GLES:      return Capital ? "GLES"      : "gles";      break;
         case RENDER_DEVICE_TYPE_VULKAN:    return Capital ? "VK"        : "vk";        break;
         case RENDER_DEVICE_TYPE_METAL:     return Capital ? "MTL"       : "mtl";       break;
+        case RENDER_DEVICE_TYPE_WEBGPU:    return Capital ? "WGPU"      : "wgpu";      break;
         // clang-format on
         default: UNEXPECTED("Unknown/unsupported device type"); return "UNKNOWN";
     }
@@ -1507,6 +1755,36 @@ String GetShaderCodeVariableDescString(const ShaderCodeVariableDesc& Desc, size_
     return ss.str();
 }
 
+const char* GetInputElementFrequencyString(INPUT_ELEMENT_FREQUENCY Frequency)
+{
+    switch (Frequency)
+    {
+        case INPUT_ELEMENT_FREQUENCY_UNDEFINED: return "undefined";
+        case INPUT_ELEMENT_FREQUENCY_PER_VERTEX: return "per-vertex";
+        case INPUT_ELEMENT_FREQUENCY_PER_INSTANCE: return "per-instance";
+
+        default:
+            UNEXPECTED("Unknown/unsupported input element frequency");
+            return "UNKNOWN";
+    }
+}
+String GetLayoutElementString(const LayoutElement& Element)
+{
+    std::stringstream ss;
+    ss << "HLSLSemantic: " << Element.HLSLSemantic
+       << ", InputIndex: " << Element.InputIndex
+       << ", BufferSlot: " << Element.BufferSlot
+       << ", NumComponents: " << Element.NumComponents
+       << ", ValueType: " << GetValueTypeString(Element.ValueType)
+       << ", IsNormalized: " << Element.IsNormalized
+       << ", RelativeOffset: " << (Element.RelativeOffset == LAYOUT_ELEMENT_AUTO_OFFSET ? "auto" : std::to_string(Element.RelativeOffset))
+       << ", Stride: " << (Element.Stride == LAYOUT_ELEMENT_AUTO_STRIDE ? "auto" : std::to_string(Element.Stride))
+       << ", Frequency: " << GetInputElementFrequencyString(Element.Frequency)
+       << ", InstanceDataStepRate: " << Element.InstanceDataStepRate;
+
+    return ss.str();
+}
+
 PIPELINE_RESOURCE_FLAGS GetValidPipelineResourceFlags(SHADER_RESOURCE_TYPE ResourceType)
 {
     static_assert(SHADER_RESOURCE_TYPE_LAST == 8, "Please update the switch below to handle the new shader resource type");
@@ -1544,7 +1822,7 @@ PIPELINE_RESOURCE_FLAGS GetValidPipelineResourceFlags(SHADER_RESOURCE_TYPE Resou
 
 PIPELINE_RESOURCE_FLAGS ShaderVariableFlagsToPipelineResourceFlags(SHADER_VARIABLE_FLAGS Flags)
 {
-    static_assert(SHADER_VARIABLE_FLAG_LAST == 0x02, "Please update the switch below to handle the new shader variable flags");
+    static_assert(SHADER_VARIABLE_FLAG_LAST == (1 << 3), "Please update the switch below to handle the new shader variable flags");
     switch (Flags)
     {
         case SHADER_VARIABLE_FLAG_NONE:
@@ -1553,8 +1831,12 @@ PIPELINE_RESOURCE_FLAGS ShaderVariableFlagsToPipelineResourceFlags(SHADER_VARIAB
         case SHADER_VARIABLE_FLAG_NO_DYNAMIC_BUFFERS:
             return PIPELINE_RESOURCE_FLAG_NO_DYNAMIC_BUFFERS;
 
-        case SHADER_VARIABLE_FLAG_GENERAL_INPUT_ATTACHMENT:
+        case SHADER_VARIABLE_FLAG_GENERAL_INPUT_ATTACHMENT_VK:
             return PIPELINE_RESOURCE_FLAG_GENERAL_INPUT_ATTACHMENT;
+
+        case SHADER_VARIABLE_FLAG_UNFILTERABLE_FLOAT_TEXTURE_WEBGPU:
+        case SHADER_VARIABLE_FLAG_NON_FILTERING_SAMPLER_WEBGPU:
+            return PIPELINE_RESOURCE_FLAG_NONE;
 
         default:
             UNEXPECTED("Unexpected shader variable flag");
@@ -1592,6 +1874,78 @@ BIND_FLAGS SwapChainUsageFlagsToBindFlags(SWAP_CHAIN_USAGE_FLAGS SwapChainUsage)
         }
     }
     return BindFlags;
+}
+
+ARCHIVE_DEVICE_DATA_FLAGS RenderDeviceTypeToArchiveDataFlag(RENDER_DEVICE_TYPE DevType)
+{
+    static_assert(RENDER_DEVICE_TYPE_COUNT == 8, "Please update the switch below to handle the new device type");
+    switch (DevType)
+    {
+        case RENDER_DEVICE_TYPE_D3D11:
+            return ARCHIVE_DEVICE_DATA_FLAG_D3D11;
+
+        case RENDER_DEVICE_TYPE_D3D12:
+            return ARCHIVE_DEVICE_DATA_FLAG_D3D12;
+
+        case RENDER_DEVICE_TYPE_GL:
+            return ARCHIVE_DEVICE_DATA_FLAG_GL;
+
+        case RENDER_DEVICE_TYPE_GLES:
+            return ARCHIVE_DEVICE_DATA_FLAG_GLES;
+
+        case RENDER_DEVICE_TYPE_VULKAN:
+            return ARCHIVE_DEVICE_DATA_FLAG_VULKAN;
+
+        case RENDER_DEVICE_TYPE_METAL:
+#if PLATFORM_MACOS
+            return ARCHIVE_DEVICE_DATA_FLAG_METAL_MACOS;
+#elif PLATFORM_IOS
+            return ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS;
+#else
+            UNEXPECTED("Metal is not supported on this platform");
+            return ARCHIVE_DEVICE_DATA_FLAG_NONE;
+#endif
+
+        case RENDER_DEVICE_TYPE_WEBGPU:
+            return ARCHIVE_DEVICE_DATA_FLAG_WEBGPU;
+
+        default:
+            UNEXPECTED("Unexpected device type");
+            return ARCHIVE_DEVICE_DATA_FLAG_NONE;
+    }
+}
+
+RENDER_DEVICE_TYPE ArchiveDataFlagToRenderDeviceType(ARCHIVE_DEVICE_DATA_FLAGS Flag)
+{
+    VERIFY(IsPowerOfTwo(Flag), "Exactly one flag is expected");
+    switch (Flag)
+    {
+        case ARCHIVE_DEVICE_DATA_FLAG_D3D11:
+            return RENDER_DEVICE_TYPE_D3D11;
+
+        case ARCHIVE_DEVICE_DATA_FLAG_D3D12:
+            return RENDER_DEVICE_TYPE_D3D12;
+
+        case ARCHIVE_DEVICE_DATA_FLAG_GL:
+            return RENDER_DEVICE_TYPE_GL;
+
+        case ARCHIVE_DEVICE_DATA_FLAG_GLES:
+            return RENDER_DEVICE_TYPE_GLES;
+
+        case ARCHIVE_DEVICE_DATA_FLAG_VULKAN:
+            return RENDER_DEVICE_TYPE_VULKAN;
+
+        case ARCHIVE_DEVICE_DATA_FLAG_METAL_MACOS:
+        case ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS:
+            return RENDER_DEVICE_TYPE_METAL;
+
+        case ARCHIVE_DEVICE_DATA_FLAG_WEBGPU:
+            return RENDER_DEVICE_TYPE_WEBGPU;
+
+        default:
+            UNEXPECTED("Unexpected archive device data flag");
+            return RENDER_DEVICE_TYPE_UNDEFINED;
+    }
 }
 
 Uint32 ComputeMipLevelsCount(Uint32 Width)
@@ -2157,7 +2511,39 @@ const Char* GetFenceTypeString(FENCE_TYPE Type)
     }
 }
 
-TEXTURE_FORMAT TexFormatToSRGB(TEXTURE_FORMAT Fmt)
+const Char* GetShaderStatusString(SHADER_STATUS ShaderStatus, bool GetEnumString)
+{
+    switch (ShaderStatus)
+    {
+        // clang-format off
+        case SHADER_STATUS_UNINITIALIZED: return GetEnumString ? "SHADER_STATUS_UNINITIALIZED" : "Uninitialized";
+        case SHADER_STATUS_COMPILING:     return GetEnumString ? "SHADER_STATUS_COMPILING"     : "Compiling";
+        case SHADER_STATUS_READY: 	      return GetEnumString ? "SHADER_STATUS_READY"         : "Ready";
+        case SHADER_STATUS_FAILED: 	      return GetEnumString ? "SHADER_STATUS_FAILED"        : "Failed";
+        // clang-format on
+        default:
+            UNEXPECTED("Unexpected shader status");
+            return "Unknown";
+    }
+}
+
+const Char* GetPipelineStateStatusString(PIPELINE_STATE_STATUS PipelineStatus, bool GetEnumString)
+{
+    switch (PipelineStatus)
+    {
+        // clang-format off
+        case PIPELINE_STATE_STATUS_UNINITIALIZED: return GetEnumString ? "PIPELINE_STATE_STATUS_UNINITIALIZED" : "Uninitialized";
+        case PIPELINE_STATE_STATUS_COMPILING:     return GetEnumString ? "PIPELINE_STATE_STATUS_COMPILING"     : "Compiling";
+        case PIPELINE_STATE_STATUS_READY: 	      return GetEnumString ? "PIPELINE_STATE_STATUS_READY"         : "Ready";
+        case PIPELINE_STATE_STATUS_FAILED: 	      return GetEnumString ? "PIPELINE_STATE_STATUS_FAILED"        : "Failed";
+        // clang-format on
+        default:
+            UNEXPECTED("Unexpected pipeline state status");
+            return "Unknown";
+    }
+}
+
+TEXTURE_FORMAT UnormFormatToSRGB(TEXTURE_FORMAT Fmt)
 {
     switch (Fmt)
     {
@@ -2187,6 +2573,96 @@ TEXTURE_FORMAT TexFormatToSRGB(TEXTURE_FORMAT Fmt)
     }
 }
 
+TEXTURE_FORMAT SRGBFormatToUnorm(TEXTURE_FORMAT Fmt)
+{
+    switch (Fmt)
+    {
+        case TEX_FORMAT_RGBA8_UNORM_SRGB:
+            return TEX_FORMAT_RGBA8_UNORM;
+
+        case TEX_FORMAT_BC1_UNORM_SRGB:
+            return TEX_FORMAT_BC1_UNORM;
+
+        case TEX_FORMAT_BC2_UNORM_SRGB:
+            return TEX_FORMAT_BC2_UNORM;
+
+        case TEX_FORMAT_BC3_UNORM_SRGB:
+            return TEX_FORMAT_BC3_UNORM;
+
+        case TEX_FORMAT_BGRA8_UNORM_SRGB:
+            return TEX_FORMAT_BGRA8_UNORM;
+
+        case TEX_FORMAT_BGRX8_UNORM_SRGB:
+            return TEX_FORMAT_BGRX8_UNORM;
+
+        case TEX_FORMAT_BC7_UNORM_SRGB:
+            return TEX_FORMAT_BC7_UNORM;
+
+        default:
+            return Fmt;
+    }
+}
+
+TEXTURE_FORMAT BCFormatToUncompressed(TEXTURE_FORMAT Fmt)
+{
+    switch (Fmt)
+    {
+        // RGB 5:6:5 + 1 bit alpha
+        case TEX_FORMAT_BC1_TYPELESS:
+            return TEX_FORMAT_RGBA8_TYPELESS;
+        case TEX_FORMAT_BC1_UNORM:
+            return TEX_FORMAT_RGBA8_UNORM;
+        case TEX_FORMAT_BC1_UNORM_SRGB:
+            return TEX_FORMAT_RGBA8_UNORM_SRGB;
+
+        // RGB 5:6:5 + 4 bit alpha
+        case TEX_FORMAT_BC2_TYPELESS:
+            return TEX_FORMAT_RGBA8_TYPELESS;
+        case TEX_FORMAT_BC2_UNORM:
+            return TEX_FORMAT_RGBA8_UNORM;
+        case TEX_FORMAT_BC2_UNORM_SRGB:
+            return TEX_FORMAT_RGBA8_UNORM_SRGB;
+
+        // RGB 5:6:5 + 8 bit alpha
+        case TEX_FORMAT_BC3_TYPELESS:
+            return TEX_FORMAT_RGBA8_TYPELESS;
+        case TEX_FORMAT_BC3_UNORM:
+            return TEX_FORMAT_RGBA8_UNORM;
+        case TEX_FORMAT_BC3_UNORM_SRGB:
+            return TEX_FORMAT_RGBA8_UNORM_SRGB;
+
+        // R8
+        case TEX_FORMAT_BC4_TYPELESS:
+            return TEX_FORMAT_R8_TYPELESS;
+        case TEX_FORMAT_BC4_UNORM:
+            return TEX_FORMAT_R8_UNORM;
+        case TEX_FORMAT_BC4_SNORM:
+            return TEX_FORMAT_R8_SNORM;
+
+        // RG 8:8
+        case TEX_FORMAT_BC5_TYPELESS:
+            return TEX_FORMAT_RG8_TYPELESS;
+        case TEX_FORMAT_BC5_UNORM:
+            return TEX_FORMAT_RG8_UNORM;
+        case TEX_FORMAT_BC5_SNORM:
+            return TEX_FORMAT_RG8_SNORM;
+
+        default:
+            return TEX_FORMAT_UNKNOWN;
+    }
+}
+
+bool IsSRGBFormat(TEXTURE_FORMAT Fmt)
+{
+    return (Fmt == TEX_FORMAT_RGBA8_UNORM_SRGB ||
+            Fmt == TEX_FORMAT_BC1_UNORM_SRGB ||
+            Fmt == TEX_FORMAT_BC2_UNORM_SRGB ||
+            Fmt == TEX_FORMAT_BC3_UNORM_SRGB ||
+            Fmt == TEX_FORMAT_BGRA8_UNORM_SRGB ||
+            Fmt == TEX_FORMAT_BGRX8_UNORM_SRGB ||
+            Fmt == TEX_FORMAT_BC7_UNORM_SRGB);
+}
+
 String GetPipelineShadingRateFlagsString(PIPELINE_SHADING_RATE_FLAGS Flags)
 {
     if (Flags == PIPELINE_SHADING_RATE_FLAG_NONE)
@@ -2213,6 +2689,55 @@ String GetPipelineShadingRateFlagsString(PIPELINE_SHADING_RATE_FLAGS Flags)
         }
     }
     return Result;
+}
+
+String GetTextureComponentMappingString(const TextureComponentMapping& Mapping)
+{
+    static_assert(TEXTURE_COMPONENT_SWIZZLE_IDENTITY == 0, "TEXTURE_COMPONENT_SWIZZLE_IDENTITY == 0 is assumed below");
+    static_assert(TEXTURE_COMPONENT_SWIZZLE_ZERO == 1, "TEXTURE_COMPONENT_SWIZZLE_ZERO == 1 is assumed below");
+    static_assert(TEXTURE_COMPONENT_SWIZZLE_ONE == 2, "TEXTURE_COMPONENT_SWIZZLE_ONE == 2 is assumed below");
+    static_assert(TEXTURE_COMPONENT_SWIZZLE_R == 3, "TEXTURE_COMPONENT_SWIZZLE_R == 3 is assumed below");
+    static_assert(TEXTURE_COMPONENT_SWIZZLE_G == 4, "TEXTURE_COMPONENT_SWIZZLE_G == 4 is assumed below");
+    static_assert(TEXTURE_COMPONENT_SWIZZLE_B == 5, "TEXTURE_COMPONENT_SWIZZLE_B == 5 is assumed below");
+    static_assert(TEXTURE_COMPONENT_SWIZZLE_A == 6, "TEXTURE_COMPONENT_SWIZZLE_A == 6 is assumed below");
+    String Str;
+    Str.reserve(4);
+    for (size_t Comp = 0; Comp < 4; ++Comp)
+    {
+        TEXTURE_COMPONENT_SWIZZLE ComponentSwizzle = Mapping[Comp];
+        if (ComponentSwizzle == TEXTURE_COMPONENT_SWIZZLE_IDENTITY)
+            Str += "rgba"[Comp];
+        else
+            Str += "_01rgba"[ComponentSwizzle];
+    }
+    return Str;
+}
+
+bool TextureComponentMappingFromString(const String& MappingStr, TextureComponentMapping& Mapping)
+{
+    Mapping = TextureComponentMapping::Identity();
+
+    bool AllOK = MappingStr.length() <= 4;
+
+    for (size_t Comp = 0; Comp < MappingStr.length(); ++Comp)
+    {
+        const auto Chr = MappingStr[Comp];
+        if (Chr == 'r' || Chr == 'R')
+            Mapping[Comp] = Comp == 0 ? TEXTURE_COMPONENT_SWIZZLE_IDENTITY : TEXTURE_COMPONENT_SWIZZLE_R;
+        else if (Chr == 'g' || Chr == 'G')
+            Mapping[Comp] = Comp == 1 ? TEXTURE_COMPONENT_SWIZZLE_IDENTITY : TEXTURE_COMPONENT_SWIZZLE_G;
+        else if (Chr == 'b' || Chr == 'B')
+            Mapping[Comp] = Comp == 2 ? TEXTURE_COMPONENT_SWIZZLE_IDENTITY : TEXTURE_COMPONENT_SWIZZLE_B;
+        else if (Chr == 'a' || Chr == 'A')
+            Mapping[Comp] = Comp == 3 ? TEXTURE_COMPONENT_SWIZZLE_IDENTITY : TEXTURE_COMPONENT_SWIZZLE_A;
+        else if (Chr == '0')
+            Mapping[Comp] = TEXTURE_COMPONENT_SWIZZLE_ZERO;
+        else if (Chr == '1')
+            Mapping[Comp] = TEXTURE_COMPONENT_SWIZZLE_ONE;
+        else
+            AllOK = false;
+    }
+    return AllOK;
 }
 
 SparseTextureProperties GetStandardSparseTextureProperties(const TextureDesc& TexDesc)
@@ -2360,6 +2885,85 @@ bool IsIdentityComponentMapping(const TextureComponentMapping& Mapping)
             (Mapping.G == TEXTURE_COMPONENT_SWIZZLE_IDENTITY || Mapping.G == TEXTURE_COMPONENT_SWIZZLE_G) &&
             (Mapping.B == TEXTURE_COMPONENT_SWIZZLE_IDENTITY || Mapping.B == TEXTURE_COMPONENT_SWIZZLE_B) &&
             (Mapping.A == TEXTURE_COMPONENT_SWIZZLE_IDENTITY || Mapping.A == TEXTURE_COMPONENT_SWIZZLE_A));
+}
+
+
+std::vector<Uint32> ResolveInputLayoutAutoOffsetsAndStrides(LayoutElement* pLayoutElements, Uint32 NumElements)
+{
+    Uint32 BufferSlotsUsed = 0;
+    for (Uint32 i = 0; i < NumElements; ++i)
+    {
+        BufferSlotsUsed = std::max(BufferSlotsUsed, pLayoutElements[i].BufferSlot + 1);
+    }
+
+    std::vector<Uint32> TightStrides(BufferSlotsUsed);
+    // Set all strides to an invalid value because an application may want to use 0 stride
+    std::vector<Uint32> Strides(BufferSlotsUsed, LAYOUT_ELEMENT_AUTO_STRIDE);
+
+    for (Uint32 i = 0; i < NumElements; ++i)
+    {
+        auto& LayoutElem = pLayoutElements[i];
+
+        if (LayoutElem.ValueType == VT_FLOAT32 || LayoutElem.ValueType == VT_FLOAT16)
+            LayoutElem.IsNormalized = false; // Floating point values cannot be normalized
+
+        auto  BuffSlot       = LayoutElem.BufferSlot;
+        auto& CurrAutoStride = TightStrides[BuffSlot];
+        // If offset is not explicitly specified, use current auto stride value
+        if (LayoutElem.RelativeOffset == LAYOUT_ELEMENT_AUTO_OFFSET)
+        {
+            LayoutElem.RelativeOffset = CurrAutoStride;
+        }
+
+        // If stride is explicitly specified, use it for the current buffer slot
+        if (LayoutElem.Stride != LAYOUT_ELEMENT_AUTO_STRIDE)
+        {
+            // Verify that the value is consistent with the previously specified stride, if any
+            if (Strides[BuffSlot] != LAYOUT_ELEMENT_AUTO_STRIDE && Strides[BuffSlot] != LayoutElem.Stride)
+            {
+                LOG_ERROR_MESSAGE("Inconsistent strides are specified for buffer slot ", BuffSlot,
+                                  ". Input element at index ", LayoutElem.InputIndex, " explicitly specifies stride ",
+                                  LayoutElem.Stride, ", while current value is ", Strides[BuffSlot],
+                                  ". Specify consistent strides or use LAYOUT_ELEMENT_AUTO_STRIDE to allow "
+                                  "the engine compute strides automatically.");
+            }
+            Strides[BuffSlot] = LayoutElem.Stride;
+        }
+
+        CurrAutoStride = std::max(CurrAutoStride, LayoutElem.RelativeOffset + LayoutElem.NumComponents * GetValueSize(LayoutElem.ValueType));
+    }
+
+    for (Uint32 i = 0; i < NumElements; ++i)
+    {
+        auto& LayoutElem = pLayoutElements[i];
+
+        auto BuffSlot = LayoutElem.BufferSlot;
+        // If no input elements explicitly defined stride for this buffer slot, use automatic stride
+        if (Strides[BuffSlot] == LAYOUT_ELEMENT_AUTO_STRIDE)
+        {
+            Strides[BuffSlot] = TightStrides[BuffSlot];
+        }
+        else
+        {
+            if (Strides[BuffSlot] != 0 && Strides[BuffSlot] < TightStrides[BuffSlot])
+            {
+                LOG_ERROR_MESSAGE("Stride ", Strides[BuffSlot], " explicitly specified for slot ", BuffSlot,
+                                  " is smaller than the minimum stride ", TightStrides[BuffSlot],
+                                  " required to accommodate all input elements.");
+            }
+        }
+        if (LayoutElem.Stride == LAYOUT_ELEMENT_AUTO_STRIDE)
+            LayoutElem.Stride = Strides[BuffSlot];
+    }
+
+    // Set strides for all unused slots to 0
+    for (auto& Stride : Strides)
+    {
+        if (Stride == LAYOUT_ELEMENT_AUTO_STRIDE)
+            Stride = 0;
+    }
+
+    return Strides;
 }
 
 } // namespace Diligent

@@ -44,6 +44,9 @@ endif()
 if(GL_SUPPORTED OR GLES_SUPPORTED)
     list(APPEND SOURCE src/Archiver_GL.cpp)
 endif()
+if(WEBGPU_SUPPORTED)
+    list(APPEND SOURCE src/Archiver_WebGPU.cpp)
+endif()
 if(METAL_SUPPORTED)
     set(MTL_SOURCE src/Archiver_Mtl.mm)
     list(APPEND SOURCE ${MTL_SOURCE})
@@ -69,13 +72,13 @@ add_library(Diligent-Archiver-static STATIC
     ${SOURCE} ${INTERFACE} ${INCLUDE}
     readme.md
 )
-#add_library(Diligent-Archiver-shared SHARED
-#    readme.md
-#)
-#
-#if(MSVC)
-#    target_sources(Diligent-Archiver-shared PRIVATE ${DLL_SOURCE})
-#endif()
+add_library(Diligent-Archiver-shared SHARED
+    readme.md
+)
+
+if(MSVC)
+    target_sources(Diligent-Archiver-shared PRIVATE ${DLL_SOURCE})
+endif()
 
 target_include_directories(Diligent-Archiver-static
 PRIVATE
@@ -83,7 +86,6 @@ PRIVATE
     ../GraphicsEngine/include
     ../GraphicsEngineD3DBase/include
     ../GraphicsEngineNextGenBase/include
-    ../ShaderTools/include
 )
 
 target_compile_definitions(Diligent-Archiver-static
@@ -94,7 +96,7 @@ if(DEFINED DILIGENT_CORE_COMMIT_HASH)
     target_compile_definitions(Diligent-Archiver-static PRIVATE DILIGENT_CORE_COMMIT_HASH="${DILIGENT_CORE_COMMIT_HASH}")
 endif()
 
-#target_compile_definitions(Diligent-Archiver-shared PUBLIC ENGINE_DLL=1)
+target_compile_definitions(Diligent-Archiver-shared PUBLIC ENGINE_DLL=1)
 
 
 target_link_libraries(Diligent-Archiver-static
@@ -105,6 +107,7 @@ PRIVATE
     Diligent-PlatformInterface
     Diligent-Common
     Diligent-GraphicsAccessories
+    Diligent-ShaderTools
 )
 
 if(D3D11_SUPPORTED)
@@ -126,18 +129,26 @@ if(VULKAN_SUPPORTED)
 endif()
 
 if(GL_SUPPORTED OR GLES_SUPPORTED)
-    target_link_libraries(Diligent-Archiver-static PRIVATE Diligent-GraphicsEngineOpenGL-static)
+    target_link_libraries(Diligent-Archiver-static
+    PRIVATE
+        Diligent-GraphicsEngineOpenGL-static
+        spirv-cross-core
+        spirv-cross-glsl
+    )
     target_include_directories(Diligent-Archiver-static PRIVATE ../GraphicsEngineOpenGL/include)
 
     if(PLATFORM_WIN32)
         target_link_libraries(Diligent-Archiver-static PRIVATE GLEW::glew opengl32.lib)
     elseif(PLATFORM_LINUX)
-        target_link_libraries(Diligent-Archiver-static PRIVATE GLEW::glew GL X11)
+        find_package(X11 REQUIRED)
+        find_package(OpenGL REQUIRED)
+        target_link_libraries(Diligent-Archiver-static PRIVATE GLEW::glew OpenGL::GL X11::X11)
     elseif(PLATFORM_MACOS)
         find_package(OpenGL REQUIRED)
-        target_link_libraries(Diligent-Archiver-static PRIVATE GLEW::glew ${OPENGL_LIBRARY})
+        target_link_libraries(Diligent-Archiver-static PRIVATE GLEW::glew OpenGL::GL)
     elseif(PLATFORM_ANDROID)
         target_link_libraries(Diligent-Archiver-static PRIVATE GLESv3 EGL)
+    elseif(PLATFORM_EMSCRIPTEN)
     else()
         message(FATAL_ERROR "Unsupported platform")
     endif()
@@ -154,34 +165,44 @@ if(METAL_SUPPORTED)
     target_include_directories(Diligent-Archiver-static PRIVATE ../../../DiligentCorePro/Graphics/GraphicsEngineMetal/include)
 endif()
 
+if(WEBGPU_SUPPORTED)
+    target_link_libraries(Diligent-Archiver-static PRIVATE Diligent-GraphicsEngineWebGPU-static)
+    if (NOT PLATFORM_EMSCRIPTEN)
+        target_link_libraries(Diligent-Archiver-static PRIVATE webgpu_dawn)
+    endif()
+    target_include_directories(Diligent-Archiver-static
+    PRIVATE
+        ../GraphicsEngineWebGPU/include
+    )
+endif()
 
-#target_link_libraries(Diligent-Archiver-shared
-#PUBLIC
-#    Diligent-ArchiverInterface
-#PRIVATE
-#    Diligent-BuildSettings
-#    ${WHOLE_ARCHIVE_FLAG} Diligent-Archiver-static ${NO_WHOLE_ARCHIVE_FLAG}
-#)
-#
-#if(PLATFORM_WIN32)
-#    # Do not add 'lib' prefix when building with MinGW
-#    set_target_properties(Diligent-Archiver-shared PROPERTIES PREFIX "")
-#
-#    # Set output name to Archiver{32|64}{r|d}
-#    set_dll_output_name(Diligent-Archiver-shared Archiver)
-#else()
-#    set_target_properties(Diligent-Archiver-shared PROPERTIES
-#        OUTPUT_NAME Archiver
-#    )
-#endif()
+target_link_libraries(Diligent-Archiver-shared
+PUBLIC
+    Diligent-ArchiverInterface
+PRIVATE
+    Diligent-BuildSettings
+    ${WHOLE_ARCHIVE_FLAG} Diligent-Archiver-static ${NO_WHOLE_ARCHIVE_FLAG}
+)
 
-#if (MINGW_BUILD)
-#    # Restrict export to GetArchiverFactory
-#    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/export.map
-#        "{ global: *GetArchiverFactory*; local: *; };"
-#    )
-#    target_link_options(Diligent-Archiver-shared PRIVATE LINKER:--version-script=export.map)
-#endif()
+if(PLATFORM_WIN32)
+    # Do not add 'lib' prefix when building with MinGW
+    set_target_properties(Diligent-Archiver-shared PROPERTIES PREFIX "")
+
+    # Set output name to Archiver{32|64}{r|d}
+    set_dll_output_name(Diligent-Archiver-shared Archiver)
+else()
+    set_target_properties(Diligent-Archiver-shared PROPERTIES
+        OUTPUT_NAME Archiver
+    )
+endif()
+
+if (MINGW_BUILD)
+    # Restrict export to GetArchiverFactory
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/export.map
+        "{ global: *GetArchiverFactory*; local: *; };"
+    )
+    target_link_options(Diligent-Archiver-shared PRIVATE LINKER:--version-script=export.map)
+endif()
 
 source_group("src" FILES ${SOURCE})
 source_group("include" FILES ${INCLUDE})
@@ -192,14 +213,14 @@ set_source_files_properties(
     readme.md PROPERTIES HEADER_FILE_ONLY TRUE
 )
 
-#set_target_properties(Diligent-Archiver-static Diligent-Archiver-shared PROPERTIES
-#    FOLDER DiligentCore/Graphics
-#)
+set_target_properties(Diligent-Archiver-static Diligent-Archiver-shared PROPERTIES
+    FOLDER DiligentCore/Graphics
+)
 
 set_common_target_properties(Diligent-Archiver-static)
-#set_common_target_properties(Diligent-Archiver-shared)
+set_common_target_properties(Diligent-Archiver-shared)
 
 if(DILIGENT_INSTALL_CORE)
-#    install_core_lib(Diligent-Archiver-shared)
+    install_core_lib(Diligent-Archiver-shared)
     install_core_lib(Diligent-Archiver-static)
 endif()
