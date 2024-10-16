@@ -509,9 +509,9 @@ DynamicSuballocationsManager::DynamicSuballocationsManager(IMemoryAllocator&  Al
                                                            String             ManagerName) :
     // clang-format off
     m_ParentGPUHeap   {ParentGPUHeap   },
-    m_DynamicChunkSize{DynamicChunkSize},
+    m_ManagerName     {std::move(ManagerName)},
     m_Suballocations  (STD_ALLOCATOR_RAW_MEM(DescriptorHeapAllocation, GetRawAllocator(), "Allocator for vector<DescriptorHeapAllocation>")),
-    m_ManagerName     {std::move(ManagerName)}
+    m_DynamicChunkSize{DynamicChunkSize}
 // clang-format on
 {
 }

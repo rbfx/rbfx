@@ -237,9 +237,11 @@ foreach (dir common client tracy libbacktrace)
 endforeach ()
 
 set (DILIGENT_INSTALL_CORE OFF CACHE BOOL "" FORCE)
+set (DILIGENT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set (DILIGENT_NO_GLSLANG ON CACHE BOOL "" FORCE)
 set (DILIGENT_NO_HLSL ON CACHE BOOL "" FORCE)
 set (DILIGENT_NO_ARCHIVER ON CACHE BOOL "" FORCE)
+set (DILIGENT_NO_WEBGPU ON CACHE BOOL "" FORCE)
 assign_bool (DILIGENT_NO_OPENGL URHO3D_GRAPHICS_NO_GL)
 assign_bool (DILIGENT_NO_DIRECT3D11 URHO3D_GRAPHICS_NO_D3D11)
 assign_bool (DILIGENT_NO_DIRECT3D12 URHO3D_GRAPHICS_NO_D3D12)
@@ -251,11 +253,9 @@ else ()
     set (DILIGENT_MSVC_DEBUG_COMPILE_OPTIONS "" CACHE STRING "" FORCE)
 endif ()
 add_subdirectory (Diligent EXCLUDE_FROM_ALL)
-install_third_party_libs (
+set (DILIGENT_ALL_TARGETS
     Diligent-AndroidPlatform
     Diligent-ApplePlatform
-    Diligent-Archiver-static
-    Diligent-ArchiverInterface
     Diligent-BasicPlatform
     Diligent-BuildSettings
     Diligent-Common
@@ -282,14 +282,29 @@ install_third_party_libs (
     Diligent-ShaderTools
     Diligent-UniversalWindowsPlatform
     Diligent-Win32Platform
-    volk_headers
+    # Diligent creates this target manually instead of using 3rd-party CMake project, so it also has to be patched
     Vulkan-Headers
 )
+install_third_party_libs (${DILIGENT_ALL_TARGETS})
+install_third_party_libs (volk_headers)
+
+# Patch: Disable Diligent debug asserts in debug build unless requested.
 if (NOT URHO3D_DEBUG_GRAPHICS)
     get_target_property(DILIGENT_COMPILE_DEFS Diligent-PublicBuildSettings INTERFACE_COMPILE_DEFINITIONS)
     string(REPLACE "$<$<CONFIG:DEBUG>:DILIGENT_DEVELOPMENT;DILIGENT_DEBUG>" "" DILIGENT_COMPILE_DEFS "${DILIGENT_COMPILE_DEFS}")
     set_property(TARGET Diligent-PublicBuildSettings PROPERTY INTERFACE_COMPILE_DEFINITIONS ${DILIGENT_COMPILE_DEFS})
 endif ()
+
+# Patch: Diligent does not use install interface, make it explicitly empty
+foreach (TARGET ${DILIGENT_ALL_TARGETS})
+    if (TARGET ${TARGET})
+        get_target_property (DIRS ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+        if (DIRS)
+            set_target_properties (${TARGET} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "$<BUILD_INTERFACE:${DIRS}>")
+        endif ()
+    endif ()
+endforeach ()
+
 file(GLOB_RECURSE DILIGENT_INCLUDE_DIRS LIST_DIRECTORIES true RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/Diligent "Diligent/**")
 list(FILTER DILIGENT_INCLUDE_DIRS INCLUDE REGEX ".+/interface$")
 foreach(DIR ${DILIGENT_INCLUDE_DIRS})

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,15 +37,18 @@
 #include "ShaderBase.hpp"
 #include "DXCompiler.hpp"
 
+#include "dxc/dxcapi.h"
+
 namespace Diligent
 {
 
-static Uint32 GetRegisterSpace(const D3D12_SHADER_INPUT_BIND_DESC& BindingDesc)
+template <>
+Uint32 GetRegisterSpace<>(const D3D12_SHADER_INPUT_BIND_DESC& BindingDesc)
 {
     return BindingDesc.Space;
 }
 
-ShaderResourcesD3D12::ShaderResourcesD3D12(ID3DBlob*         pShaderBytecode,
+ShaderResourcesD3D12::ShaderResourcesD3D12(IDataBlob*        pShaderBytecode,
                                            const ShaderDesc& ShdrDesc,
                                            const char*       CombinedSamplerSuffix,
                                            IDXCompiler*      pDXCompiler,
@@ -53,10 +56,12 @@ ShaderResourcesD3D12::ShaderResourcesD3D12(ID3DBlob*         pShaderBytecode,
     ShaderResources{ShdrDesc.ShaderType}
 {
     CComPtr<ID3D12ShaderReflection> pShaderReflection;
-    if (IsDXILBytecode(pShaderBytecode->GetBufferPointer(), pShaderBytecode->GetBufferSize()))
+    if (IsDXILBytecode(pShaderBytecode->GetConstDataPtr(), pShaderBytecode->GetSize()))
     {
         VERIFY(pDXCompiler != nullptr, "DXC is not initialized");
-        pDXCompiler->GetD3D12ShaderReflection(reinterpret_cast<IDxcBlob*>(pShaderBytecode), &pShaderReflection);
+        CComPtr<IDxcBlob> pDxcBytecode;
+        CreateDxcBlobWrapper(pShaderBytecode, &pDxcBytecode);
+        pDXCompiler->GetD3D12ShaderReflection(pDxcBytecode, &pShaderReflection);
         if (!pShaderReflection)
         {
             LOG_ERROR_AND_THROW("Failed to read shader reflection from DXIL container");
@@ -65,7 +70,7 @@ ShaderResourcesD3D12::ShaderResourcesD3D12(ID3DBlob*         pShaderBytecode,
     else
     {
         // Use D3D compiler to get reflection.
-        auto hr = D3DReflect(pShaderBytecode->GetBufferPointer(), pShaderBytecode->GetBufferSize(), __uuidof(pShaderReflection), reinterpret_cast<void**>(&pShaderReflection));
+        auto hr = D3DReflect(pShaderBytecode->GetConstDataPtr(), pShaderBytecode->GetSize(), __uuidof(pShaderReflection), reinterpret_cast<void**>(&pShaderReflection));
         CHECK_D3D_RESULT_THROW(hr, "Failed to get the shader reflection");
     }
 

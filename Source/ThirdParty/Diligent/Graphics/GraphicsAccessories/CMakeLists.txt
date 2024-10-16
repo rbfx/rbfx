@@ -25,7 +25,7 @@ add_library(Diligent-GraphicsAccessories STATIC ${SOURCE} ${INTERFACE})
 
 target_include_directories(Diligent-GraphicsAccessories
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    interface
 )
 
 target_link_libraries(Diligent-GraphicsAccessories

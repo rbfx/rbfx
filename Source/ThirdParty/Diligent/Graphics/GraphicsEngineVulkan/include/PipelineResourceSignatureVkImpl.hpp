@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,23 +51,17 @@ namespace Diligent
 struct SPIRVShaderResourceAttribs;
 class DeviceContextVkImpl;
 
-struct PipelineResourceImmutableSamplerAttribsVk
+struct ImmutableSamplerAttribsVk
 {
     Uint32 DescrSet     = ~0u;
     Uint32 BindingIndex = ~0u;
 };
-ASSERT_SIZEOF(PipelineResourceImmutableSamplerAttribsVk, 8, "The struct is used in serialization and must be tightly packed");
+ASSERT_SIZEOF(ImmutableSamplerAttribsVk, 8, "The struct is used in serialization and must be tightly packed");
 
-struct PipelineResourceSignatureInternalDataVk : PipelineResourceSignatureInternalData
+struct PipelineResourceSignatureInternalDataVk : PipelineResourceSignatureInternalData<PipelineResourceAttribsVk, ImmutableSamplerAttribsVk>
 {
-    const PipelineResourceAttribsVk*                 pResourceAttribs          = nullptr; // [NumResources]
-    Uint32                                           NumResources              = 0;
-    const PipelineResourceImmutableSamplerAttribsVk* pImmutableSamplers        = nullptr; // [NumImmutableSamplers]
-    Uint32                                           NumImmutableSamplers      = 0;
-    Uint16                                           DynamicUniformBufferCount = 0;
-    Uint16                                           DynamicStorageBufferCount = 0;
-
-    std::unique_ptr<PipelineResourceImmutableSamplerAttribsVk[]> m_pImmutableSamplers;
+    Uint16 DynamicUniformBufferCount = 0;
+    Uint16 DynamicStorageBufferCount = 0;
 
     PipelineResourceSignatureInternalDataVk() noexcept
     {}
@@ -122,28 +116,6 @@ public:
     {
         static_assert(DESCRIPTOR_SET_ID_NUM_SETS == 2, "Please update this method with new descriptor set id");
         return (HasDescriptorSet(DESCRIPTOR_SET_ID_STATIC_MUTABLE) ? 1 : 0) + (HasDescriptorSet(DESCRIPTOR_SET_ID_DYNAMIC) ? 1 : 0);
-    }
-
-    struct ImmutableSamplerAttribs : PipelineResourceImmutableSamplerAttribsVk
-    {
-        ImmutableSamplerAttribs() noexcept {}
-        explicit ImmutableSamplerAttribs(const PipelineResourceImmutableSamplerAttribsVk& Attribs) noexcept :
-            PipelineResourceImmutableSamplerAttribsVk{Attribs} {}
-
-        void Init(RenderDeviceVkImpl* pDevice, const SamplerDesc& Desc);
-
-        explicit operator bool() const { return Ptr != nullptr; }
-
-        VkSampler GetVkSampler() const;
-
-    private:
-        RefCntAutoPtr<ISampler> Ptr;
-    };
-
-    const ImmutableSamplerAttribs& GetImmutableSamplerAttribs(Uint32 SampIndex) const
-    {
-        VERIFY_EXPR(SampIndex < m_Desc.NumImmutableSamplers);
-        return m_ImmutableSamplers[SampIndex];
     }
 
     VkDescriptorSetLayout GetVkDescriptorSetLayout(DESCRIPTOR_SET_ID SetId) const { return m_VkDescrSetLayouts[SetId]; }
@@ -221,8 +193,6 @@ private:
     // The total number storage buffers with dynamic offsets in both descriptor sets,
     // accounting for array size.
     Uint16 m_DynamicStorageBufferCount = 0;
-
-    ImmutableSamplerAttribs* m_ImmutableSamplers = nullptr; // [m_Desc.NumImmutableSamplers]
 };
 
 template <> Uint32 PipelineResourceSignatureVkImpl::GetDescriptorSetIndex<PipelineResourceSignatureVkImpl::DESCRIPTOR_SET_ID_STATIC_MUTABLE>() const;

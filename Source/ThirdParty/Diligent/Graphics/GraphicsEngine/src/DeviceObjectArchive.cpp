@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -39,10 +39,10 @@ namespace Diligent
 
 DeviceObjectArchive::DeviceType RenderDeviceTypeToArchiveDeviceType(RENDER_DEVICE_TYPE Type)
 {
-    static_assert(RENDER_DEVICE_TYPE_COUNT == 7, "Did you add a new render device type? Please handle it here.");
+    static_assert(RENDER_DEVICE_TYPE_COUNT == 8, "Did you add a new render device type? Please handle it here.");
     switch (Type)
     {
-        // clang-format off
+            // clang-format off
         case RENDER_DEVICE_TYPE_D3D11:  return DeviceObjectArchive::DeviceType::Direct3D11;
         case RENDER_DEVICE_TYPE_D3D12:  return DeviceObjectArchive::DeviceType::Direct3D12;
         case RENDER_DEVICE_TYPE_GL:     return DeviceObjectArchive::DeviceType::OpenGL;
@@ -53,6 +53,9 @@ DeviceObjectArchive::DeviceType RenderDeviceTypeToArchiveDeviceType(RENDER_DEVIC
 #elif PLATFORM_IOS || PLATFORM_TVOS
         case RENDER_DEVICE_TYPE_METAL:  return DeviceObjectArchive::DeviceType::Metal_iOS;
 #endif
+        case RENDER_DEVICE_TYPE_WEBGPU:
+            return DeviceObjectArchive::DeviceType::WebGPU;
+
         // clang-format on
         default:
             UNEXPECTED("Unexpected device type");
@@ -148,8 +151,36 @@ DeviceObjectArchive::DeviceObjectArchive(Uint32 ContentVersion) noexcept :
 {
 }
 
-void DeviceObjectArchive::Deserialize(const CreateInfo& CI) noexcept(false)
+void DeviceObjectArchive::Clear() noexcept
 {
+    m_NamedResources.clear();
+    m_DeviceShaders = {};
+    m_pArchiveData.Release();
+    m_ContentVersion = 0;
+}
+
+
+bool DeviceObjectArchive::Deserialize(const CreateInfo& CI) noexcept
+{
+    Clear();
+
+#define CHECK_ARCHIVE(Expr, ...)            \
+    do                                      \
+    {                                       \
+        if (!(Expr))                        \
+        {                                   \
+            LOG_ERROR_MESSAGE(__VA_ARGS__); \
+            Clear();                        \
+            return false;                   \
+        }                                   \
+    } while (false)
+
+    CHECK_ARCHIVE(CI.pData != nullptr, "pData must not be null");
+
+    m_pArchiveData = CI.MakeCopy ?
+        DataBlobImpl::MakeCopy(CI.pData) :
+        const_cast<IDataBlob*>(CI.pData); // Need to remove const for AddRef/Release
+
     Serializer<SerializerMode::Read> Reader{
         SerializedData{
             const_cast<void*>(CI.pData->GetConstDataPtr()),
@@ -161,56 +192,48 @@ void DeviceObjectArchive::Deserialize(const CreateInfo& CI) noexcept(false)
     // NB: this must match header serialization in DeviceObjectArchive::SerializeHeader
     ArchiveHeader Header;
     ASSERT_SIZEOF64(Header, 24, "Please handle new members here");
-    if (!ArchiveReader.Ser(Header.MagicNumber))
-        LOG_ERROR_AND_THROW("Failed to read device object archive header magic number.");
+    CHECK_ARCHIVE(ArchiveReader.Ser(Header.MagicNumber), "Failed to read device object archive header magic number.");
 
-    if (Header.MagicNumber != HeaderMagicNumber)
-        LOG_ERROR_AND_THROW("Invalid device object archive header.");
+    CHECK_ARCHIVE(Header.MagicNumber == HeaderMagicNumber, "Invalid device object archive header.");
 
-    if (!ArchiveReader.Ser(Header.Version))
-        LOG_ERROR_AND_THROW("Failed to read device object archive version.");
+    CHECK_ARCHIVE(ArchiveReader.Ser(Header.Version), "Failed to read device object archive version.");
 
-    if (Header.Version != ArchiveVersion)
-        LOG_ERROR_AND_THROW("Unsupported device object archive version: ", Header.Version, ". Expected version: ", Uint32{ArchiveVersion});
+    CHECK_ARCHIVE(Header.Version == ArchiveVersion, "Unsupported device object archive version: ", Header.Version, ". Expected version: ", Uint32{ArchiveVersion});
 
-    if (!ArchiveReader.Ser(Header.APIVersion))
-        LOG_ERROR_AND_THROW("Failed to read Diligent API version.");
+    CHECK_ARCHIVE(ArchiveReader.Ser(Header.APIVersion), "Failed to read Diligent API version.");
 
-    if (!ArchiveReader.Ser(Header.ContentVersion))
-        LOG_ERROR_AND_THROW("Failed to read device object archive content version.");
+    CHECK_ARCHIVE(ArchiveReader.Ser(Header.ContentVersion), "Failed to read device object archive content version.");
 
-    if (CI.ContentVersion != CreateInfo{}.ContentVersion && Header.ContentVersion != CI.ContentVersion)
-        LOG_ERROR_AND_THROW("Invalid archive content version: ", Header.ContentVersion, ". Expected version: ", CI.ContentVersion);
+    CHECK_ARCHIVE(CI.ContentVersion == CreateInfo{}.ContentVersion || Header.ContentVersion == CI.ContentVersion,
+                  "Invalid archive content version: ", Header.ContentVersion, ". Expected version: ", CI.ContentVersion);
     m_ContentVersion = Header.ContentVersion;
 
-    if (!ArchiveReader.Ser(Header.GitHash))
-        LOG_ERROR_AND_THROW("Failed to read Git Hash.");
+    CHECK_ARCHIVE(ArchiveReader.Ser(Header.GitHash), "Failed to read Git Hash.");
 
     Uint32 NumResources = 0;
-    if (!Reader(NumResources))
-        LOG_ERROR_AND_THROW("Failed to read the number of named resources in the device object archive.");
+    CHECK_ARCHIVE(Reader(NumResources), "Failed to read the number of named resources in the device object archive.");
 
     for (Uint32 res = 0; res < NumResources; ++res)
     {
         const char*  Name    = nullptr;
         ResourceType ResType = ResourceType::Undefined;
-        if (!Reader(ResType, Name))
-            LOG_ERROR_AND_THROW("Failed to read the type and name of resource ", res, "/", NumResources, '.');
+        CHECK_ARCHIVE(Reader(ResType, Name), "Failed to read the type and name of resource ", res, "/", NumResources, '.');
         VERIFY_EXPR(Name != nullptr);
 
         // No need to make the name copy as we keep the source data blob alive.
-        constexpr auto MakeNameCopy = false;
-        auto&          ResData      = m_NamedResources[NamedResourceKey{ResType, Name, MakeNameCopy}];
+        constexpr bool MakeNameCopy = false;
+        ResourceData&  ResData      = m_NamedResources[NamedResourceKey{ResType, Name, MakeNameCopy}];
 
-        if (!ArchiveReader.SerializeResourceData(ResData))
-            LOG_ERROR_AND_THROW("Failed to read data of resource '", Name, "'.");
+        CHECK_ARCHIVE(ArchiveReader.SerializeResourceData(ResData), "Failed to read data of resource '", Name, "'.");
     }
 
-    for (auto& Shaders : m_DeviceShaders)
+    for (std::vector<SerializedData>& Shaders : m_DeviceShaders)
     {
-        if (!ArchiveReader.SerializeShaders(Shaders))
-            LOG_ERROR_AND_THROW("Failed to read shader data from the device object archive.");
+        CHECK_ARCHIVE(ArchiveReader.SerializeShaders(Shaders), "Failed to read shader data from the device object archive.");
     }
+#undef CHECK_ARCHIVE
+
+    return true;
 }
 
 void DeviceObjectArchive::Serialize(IDataBlob** ppDataBlob) const
@@ -274,16 +297,17 @@ namespace
 const char* ArchiveDeviceTypeToString(Uint32 dev)
 {
     using DeviceType = DeviceObjectArchive::DeviceType;
-    static_assert(static_cast<Uint32>(DeviceType::Count) == 6, "Please handle the new archive device type below");
+    static_assert(static_cast<Uint32>(DeviceType::Count) == 7, "Please handle the new archive device type below");
     switch (static_cast<DeviceType>(dev))
     {
-        // clang-format off
+            // clang-format off
         case DeviceType::OpenGL:      return "OpenGL";
         case DeviceType::Direct3D11:  return "Direct3D11";
         case DeviceType::Direct3D12:  return "Direct3D12";
         case DeviceType::Vulkan:      return "Vulkan";
         case DeviceType::Metal_MacOS: return "Metal for MacOS";
         case DeviceType::Metal_iOS:   return "Metal for iOS";
+        case DeviceType::WebGPU:      return "WebGPU";
         // clang-format on
         default:
             UNEXPECTED("Unexpected device type");
@@ -297,7 +321,7 @@ const char* ResourceTypeToString(DeviceObjectArchive::ResourceType Type)
     static_assert(static_cast<size_t>(ResourceType::Count) == 8, "Please handle the new chunk type below");
     switch (Type)
     {
-        // clang-format off
+            // clang-format off
         case ResourceType::Undefined:          return "Undefined";
         case ResourceType::StandaloneShader:   return "Standalone Shaders";
         case ResourceType::ResourceSignature:  return "Resource Signatures";
@@ -316,17 +340,12 @@ const char* ResourceTypeToString(DeviceObjectArchive::ResourceType Type)
 } // namespace
 
 
-DeviceObjectArchive::DeviceObjectArchive(const CreateInfo& CI) noexcept(false) :
-    m_pArchiveData{
-        CI.MakeCopy ?
-            DataBlobImpl::MakeCopy(CI.pData) :
-            const_cast<IDataBlob*>(CI.pData) // Need to remove const for AddRef/Release
-    }
+DeviceObjectArchive::DeviceObjectArchive(const CreateInfo& CI) noexcept(false)
 {
-    if (!m_pArchiveData)
-        LOG_ERROR_AND_THROW("pData must not be null");
-
-    Deserialize(CI);
+    if (!Deserialize(CI))
+    {
+        LOG_ERROR_AND_THROW("Failed to deserialize device object archive");
+    }
 }
 
 const SerializedData& DeviceObjectArchive::GetDeviceSpecificData(ResourceType Type,

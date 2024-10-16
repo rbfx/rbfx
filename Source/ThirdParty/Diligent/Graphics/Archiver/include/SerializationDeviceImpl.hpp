@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ public:
     UNSUPPORTED_METHOD(void, CreateRayTracingPipelineState, const RayTracingPipelineStateCreateInfo& PSOCreateInfo, IPipelineState** ppPipelineState)
     UNSUPPORTED_METHOD(void, CreateTilePipelineState,       const TilePipelineStateCreateInfo&       PSOCreateInfo, IPipelineState** ppPipelineState)
 
-    UNSUPPORTED_METHOD(void, CreateShader,      const ShaderCreateInfo&  CreateInfo, IShader** ppShader)
+    UNSUPPORTED_METHOD(void, CreateShader,      const ShaderCreateInfo&  CreateInfo, IShader** ppShader, IDataBlob** ppCompilerOutput)
 
     UNSUPPORTED_METHOD(void, CreateBuffer,      const BufferDesc&  Desc, const BufferData*  pData, IBuffer**  ppBuffer)
     UNSUPPORTED_METHOD(void, CreateTexture,     const TextureDesc& Desc, const TextureData* pData, ITexture** ppTexture)
@@ -85,7 +85,8 @@ public:
     /// Implementation of ISerializationDevice::CreateShader().
     virtual void DILIGENT_CALL_TYPE CreateShader(const ShaderCreateInfo&  ShaderCI,
                                                  const ShaderArchiveInfo& ArchiveInfo,
-                                                 IShader**                ppShader) override final;
+                                                 IShader**                ppShader,
+                                                 IDataBlob**              ppCompilerOutput) override final;
 
     /// Implementation of ISerializationDevice::CreatePipelineResourceSignature().
     virtual void DILIGENT_CALL_TYPE CreatePipelineResourceSignature(const PipelineResourceSignatureDesc& Desc,
@@ -142,6 +143,12 @@ public:
         Version      ShaderVersion;
     };
 
+    struct GLProperties
+    {
+        bool OptimizeShaders = false;
+        bool ZeroToOneClipZ  = false;
+    };
+
     struct VkProperties
     {
         IDXCompiler* pDxCompiler     = nullptr;
@@ -161,10 +168,11 @@ public:
 
     const D3D11Properties& GetD3D11Properties() const { return m_D3D11Props; }
     const D3D12Properties& GetD3D12Properties() const { return m_D3D12Props; }
+    const GLProperties&    GetGLProperties() const { return m_GLProps; }
     const VkProperties&    GetVkProperties() const { return m_VkProps; }
     const MtlProperties&   GetMtlProperties() const { return m_MtlProps; }
 
-    IRenderDevice* GetRenderDevice(RENDER_DEVICE_TYPE Type)
+    IRenderDevice* GetRenderDevice(RENDER_DEVICE_TYPE Type) const
     {
         return m_RenderDevices[Type];
     }
@@ -184,6 +192,8 @@ private:
     static void GetPipelineResourceBindingsMtl(const PipelineResourceBindingAttribs& Attribs,
                                                std::vector<PipelineResourceBinding>& ResourceBindings,
                                                const Uint32                          MaxBufferArgs);
+    static void GetPipelineResourceBindingsWebGPU(const PipelineResourceBindingAttribs& Attribs,
+                                                  std::vector<PipelineResourceBinding>& ResourceBindings);
 
     virtual void TestTextureFormat(TEXTURE_FORMAT TexFormat) override final
     {
@@ -197,6 +207,7 @@ private:
 
     D3D11Properties m_D3D11Props;
     D3D12Properties m_D3D12Props;
+    GLProperties    m_GLProps;
     VkProperties    m_VkProps;
     MtlProperties   m_MtlProps;
 

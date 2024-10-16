@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,13 +37,15 @@
 #include <pwd.h>
 #include <errno.h>
 
-#include "LinuxFileSystem.hpp"
+#include "../interface/LinuxFileSystem.hpp"
 #include "Errors.hpp"
 #include "DebugUtilities.hpp"
+#include "../../Basic/include/SearchRecursive.inl"
 
 namespace Diligent
 {
 
+#if PLATFORM_LINUX || PLATFORM_APPLE || PLATFORM_EMSCRIPTEN
 LinuxFile* LinuxFileSystem::OpenFile(const FileOpenAttribs& OpenAttribs)
 {
     LinuxFile* pFile = nullptr;
@@ -56,6 +58,7 @@ LinuxFile* LinuxFileSystem::OpenFile(const FileOpenAttribs& OpenAttribs)
     }
     return pFile;
 }
+#endif
 
 bool LinuxFileSystem::FileExists(const Char* strFilePath)
 {
@@ -108,6 +111,7 @@ bool LinuxFileSystem::CreateDirectory(const Char* strPath)
     return true;
 }
 
+// The maximum number of file descriptors that shall be used by nftw() while traversing the file tree.
 static constexpr int MaxOpenNTFWDescriptors = 32;
 
 void LinuxFileSystem::ClearDirectory(const Char* strPath, bool Recursive)
@@ -163,25 +167,11 @@ bool LinuxFileSystem::IsDirectory(const Char* strPath)
     return S_ISDIR(StatBuff.st_mode);
 }
 
-struct LinuxFindFileData : public FindFileData
+LinuxFileSystem::SearchFilesResult LinuxFileSystem::Search(const Char* SearchPattern)
 {
-    virtual const Char* Name() const override { return m_Name.c_str(); }
+    LinuxFileSystem::SearchFilesResult SearchRes;
 
-    virtual bool IsDirectory() const override { return m_IsDirectory; }
-
-    const std::string m_Name;
-    const bool        m_IsDirectory;
-
-    LinuxFindFileData(std::string _Name, bool _IsDirectory) :
-        m_Name{std::move(_Name)},
-        m_IsDirectory{_IsDirectory}
-    {}
-};
-
-std::vector<std::unique_ptr<FindFileData>> LinuxFileSystem::Search(const Char* SearchPattern)
-{
-    std::vector<std::unique_ptr<FindFileData>> SearchRes;
-
+#if PLATFORM_LINUX || PLATFORM_APPLE
     glob_t glob_result = {};
     if (glob(SearchPattern, GLOB_TILDE, NULL, &glob_result) == 0)
     {
@@ -194,12 +184,25 @@ std::vector<std::unique_ptr<FindFileData>> LinuxFileSystem::Search(const Char* S
 
             std::string FileName;
             GetPathComponents(path, nullptr, &FileName);
-            SearchRes.emplace_back(std::make_unique<LinuxFindFileData>(std::move(FileName), S_ISDIR(StatBuff.st_mode)));
+            SearchRes.emplace_back(FindFileData{std::move(FileName), S_ISDIR(StatBuff.st_mode)});
         }
     }
     globfree(&glob_result);
+#else
+    UNSUPPORTED("Not implemented");
+#endif
 
     return SearchRes;
+}
+
+LinuxFileSystem::SearchFilesResult LinuxFileSystem::SearchRecursive(const Char* Dir, const Char* SearchPattern)
+{
+#if PLATFORM_LINUX || PLATFORM_APPLE
+    return Diligent::SearchRecursive<LinuxFileSystem>(Dir, SearchPattern);
+#else
+    UNSUPPORTED("Not implemented");
+    return {};
+#endif
 }
 
 // popen/pclose are not thread-safe
@@ -228,25 +231,27 @@ std::string LinuxFileSystem::GetCurrentDirectory()
     return CurrDir;
 }
 
+#if PLATFORM_LINUX || PLATFORM_APPLE
 std::string LinuxFileSystem::GetLocalAppDataDirectory(const char* AppName, bool Create)
 {
     const auto* pwuid = getpwuid(getuid());
     std::string AppDataDir{pwuid->pw_dir};
     if (!IsSlash(AppDataDir.back()))
         AppDataDir += SlashSymbol;
-#if PLATFORM_MACOS
+
+#    if PLATFORM_APPLE
     AppDataDir += "Library/Caches";
-#else
+#    else
     AppDataDir += ".cache";
-#endif
+#    endif
 
     if (AppName == nullptr)
     {
-#ifdef _GNU_SOURCE
+#    ifdef _GNU_SOURCE
         AppName = program_invocation_short_name;
-#elif defined(__APPLE__)
+#    elif defined(__APPLE__)
         AppName = getprogname();
-#endif
+#    endif
     }
 
     if (AppName != nullptr)
@@ -258,5 +263,6 @@ std::string LinuxFileSystem::GetLocalAppDataDirectory(const char* AppName, bool 
     }
     return AppDataDir;
 }
+#endif
 
 } // namespace Diligent

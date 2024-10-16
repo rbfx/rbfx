@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {1FDE020A-9C73-4A76-8AEF-C2C6C2CF0EA5}
-static const INTERFACE_ID IID_HLSL2GLSLConversionStream =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_HLSL2GLSLConversionStream =
     {0x1fde020a, 0x9c73, 0x4a76, {0x8a, 0xef, 0xc2, 0xc6, 0xc2, 0xcf, 0xe, 0xa5}};
 
 
@@ -57,6 +57,7 @@ DILIGENT_BEGIN_INTERFACE(IHLSL2GLSLConversionStream, IObject)
                                  bool        IncludeDefintions,
                                  const char* SamplerSuffix,
                                  bool        UseInOutLocationQualifiers,
+                                 bool        UseRowMajorMatrices,
                                  IDataBlob** ppGLSLSource) PURE;
 };
 DILIGENT_END_INTERFACE
@@ -75,7 +76,7 @@ DILIGENT_END_INTERFACE
 
 
 // {44A21160-77E0-4DDC-A57E-B8B8B65B5342}
-static const INTERFACE_ID IID_HLSL2GLSLConverter =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_HLSL2GLSLConverter =
     {0x44a21160, 0x77e0, 0x4ddc, {0xa5, 0x7e, 0xb8, 0xb8, 0xb6, 0x5b, 0x53, 0x42}};
 
 #define DILIGENT_INTERFACE_NAME IHLSL2GLSLConverter

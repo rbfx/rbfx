@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +37,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {2989B45C-143D-4886-B89C-C3271C2DCC5D}
-static const INTERFACE_ID IID_Shader =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_Shader =
     {0x2989b45c, 0x143d, 0x4886, {0xb8, 0x9c, 0xc3, 0x27, 0x1c, 0x2d, 0xcc, 0x5d}};
 
 // clang-format off
@@ -68,7 +68,7 @@ DILIGENT_TYPED_ENUM(SHADER_SOURCE_LANGUAGE, Uint32)
 
     /// The source language is Metal shading language (MSL)
     SHADER_SOURCE_LANGUAGE_MSL,
-    
+
     /// The source language is Metal shading language (MSL) that should be compiled verbatim
 
     /// Note that shader macros are ignored when compiling MSL verbatim, and an application
@@ -77,6 +77,9 @@ DILIGENT_TYPED_ENUM(SHADER_SOURCE_LANGUAGE, Uint32)
 
     /// The source language is Metal bytecode
     SHADER_SOURCE_LANGUAGE_MTLB,
+
+    /// The source language is WebGPU shading language (WGSL)
+    SHADER_SOURCE_LANGUAGE_WGSL,
 
     SHADER_SOURCE_LANGUAGE_COUNT
 };
@@ -185,10 +188,28 @@ struct ShaderDesc DILIGENT_DERIVE(DeviceObjectAttribs)
 };
 typedef struct ShaderDesc ShaderDesc;
 
+
+/// Shader status
+DILIGENT_TYPED_ENUM(SHADER_STATUS, Uint32)
+{
+    /// Initial shader status.
+    SHADER_STATUS_UNINITIALIZED = 0,
+
+    /// The shader is being compiled.
+	SHADER_STATUS_COMPILING,
+
+	/// The shader has been successfully compiled
+    /// and is ready to be used.
+	SHADER_STATUS_READY,
+
+	/// The shader compilation has failed.
+	SHADER_STATUS_FAILED
+};
+
 // clang-format on
 
 // {3EA98781-082F-4413-8C30-B9BA6D82DBB7}
-static const INTERFACE_ID IID_IShaderSourceInputStreamFactory =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_IShaderSourceInputStreamFactory =
     {0x3ea98781, 0x82f, 0x4413, {0x8c, 0x30, 0xb9, 0xba, 0x6d, 0x82, 0xdb, 0xb7}};
 
 
@@ -227,9 +248,13 @@ DILIGENT_END_INTERFACE
 #endif
 
 
+/// Shader Macro
 struct ShaderMacro
 {
-    const Char* Name       DEFAULT_INITIALIZER(nullptr);
+    /// Macro name
+    const Char* Name DEFAULT_INITIALIZER(nullptr);
+
+    /// Macro definition
     const Char* Definition DEFAULT_INITIALIZER(nullptr);
 
 #if DILIGENT_CPP_INTERFACE
@@ -256,21 +281,95 @@ struct ShaderMacro
 typedef struct ShaderMacro ShaderMacro;
 
 
+/// Shader macro array
+struct ShaderMacroArray
+{
+    /// A pointer to the array elements
+    const ShaderMacro* Elements DEFAULT_INITIALIZER(nullptr);
+
+    /// The number of elements in the array
+    Uint32 Count DEFAULT_INITIALIZER(0);
+
+#if DILIGENT_CPP_INTERFACE
+    constexpr ShaderMacroArray() noexcept
+    {}
+
+    constexpr ShaderMacroArray(const ShaderMacro* _Elements,
+                               Uint32             _Count) noexcept :
+        Elements{_Elements},
+        Count{_Count}
+    {}
+
+    constexpr bool operator==(const ShaderMacroArray& RHS) const noexcept
+    {
+        if (Count != RHS.Count)
+            return false;
+
+        if ((Count != 0 && Elements == nullptr) || (RHS.Count != 0 && RHS.Elements == nullptr))
+            return false;
+        for (Uint32 i = 0; i < Count; ++i)
+        {
+            if (Elements[i] != RHS.Elements[i])
+                return false;
+        }
+        return true;
+    }
+
+    constexpr bool operator!=(const ShaderMacroArray& RHS) const noexcept
+    {
+        return !(*this == RHS);
+    }
+
+    explicit constexpr operator bool() const noexcept
+    {
+        return Elements != nullptr && Count > 0;
+    }
+
+    const ShaderMacro& operator[](size_t index) const noexcept
+    {
+        return Elements[index];
+    }
+#endif
+};
+typedef struct ShaderMacroArray ShaderMacroArray;
+
+
 // clang-format off
 
 /// Shader compilation flags
 DILIGENT_TYPED_ENUM(SHADER_COMPILE_FLAGS, Uint32)
 {
     /// No flags.
-    SHADER_COMPILE_FLAG_NONE = 0x0,
+    SHADER_COMPILE_FLAG_NONE = 0,
 
     /// Enable unbounded resource arrays (e.g. Texture2D g_Texture[]).
-    SHADER_COMPILE_FLAG_ENABLE_UNBOUNDED_ARRAYS = 0x01,
+    SHADER_COMPILE_FLAG_ENABLE_UNBOUNDED_ARRAYS = 1u << 0u,
 
     /// Don't load shader reflection.
-    SHADER_COMPILE_FLAG_SKIP_REFLECTION         = 0x02,
+    SHADER_COMPILE_FLAG_SKIP_REFLECTION         = 1u << 1u,
 
-    SHADER_COMPILE_FLAG_LAST = SHADER_COMPILE_FLAG_SKIP_REFLECTION
+    /// Compile the shader asynchronously.
+    ///
+    /// \remarks	When this flag is set to true and if the devices supports
+    ///             AsyncShaderCompilation feature, the shader will be compiled
+    ///             asynchronously in the background. An application should use
+    ///             the IShader::GetStatus() method to check the shader status.
+    ///             If the device does not support asynchronous shader compilation,
+    ///             the flag is ignored and the shader is compiled synchronously.
+    SHADER_COMPILE_FLAG_ASYNCHRONOUS            = 1u << 2u,
+
+    /// Pack matrices in row-major order.
+    ///
+    /// \remarks    By default, matrices are laid out in GPU memory in column-major order,
+    ///             which means that the first four values in a 4x4 matrix represent
+    ///             the first column, the next four values represent the second column,
+    ///             and so on.
+    ///
+    ///             If this flag is set, matrices are packed in row-major order, i.e.
+    ///             they are laid out in memory row-by-row.
+    SHADER_COMPILE_FLAG_PACK_MATRIX_ROW_MAJOR   = 1u << 3u,
+
+    SHADER_COMPILE_FLAG_LAST = SHADER_COMPILE_FLAG_PACK_MATRIX_ROW_MAJOR
 };
 DEFINE_FLAG_ENUM_OPERATORS(SHADER_COMPILE_FLAGS);
 
@@ -290,19 +389,6 @@ struct ShaderCreateInfo
     /// The factory is used to load the shader source file if FilePath is not null.
     /// It is also used to create additional input streams for shader include files
     IShaderSourceInputStreamFactory* pShaderSourceStreamFactory DEFAULT_INITIALIZER(nullptr);
-
-    /// HLSL->GLSL conversion stream
-
-    /// If HLSL->GLSL converter is used to convert HLSL shader source to
-    /// GLSL, this member can provide pointer to the conversion stream. It is useful
-    /// when the same file is used to create a number of different shaders. If
-    /// ppConversionStream is null, the converter will parse the same file
-    /// every time new shader is converted. If ppConversionStream is not null,
-    /// the converter will write pointer to the conversion stream to *ppConversionStream
-    /// the first time and will use it in all subsequent times.
-    /// For all subsequent conversions, FilePath member must be the same, or
-    /// new stream will be created and warning message will be displayed.
-    struct IHLSL2GLSLConversionStream** ppConversionStream DEFAULT_INITIALIZER(nullptr);
 
     /// Shader source
 
@@ -324,6 +410,9 @@ struct ShaderCreateInfo
     ///        HLSL shaders need to be compiled against 4.0 profile or higher.
     const void* ByteCode DEFAULT_INITIALIZER(nullptr);
 
+#if defined(DILIGENT_SHARP_GEN)
+    size_t ByteCodeSize DEFAULT_INITIALIZER(0);
+#else
     union
     {
         /// Length of the source code, when Source is not null.
@@ -340,16 +429,15 @@ struct ShaderCreateInfo
         /// Byte code size (in bytes) must not be zero if ByteCode is not null.
         size_t ByteCodeSize;
     };
+#endif
 
     /// Shader entry point
 
     /// This member is ignored if ByteCode is not null
     const Char* EntryPoint DEFAULT_INITIALIZER("main");
 
-    /// Shader macros
-
-    /// This member is ignored if ByteCode is not null
-    const ShaderMacro* Macros DEFAULT_INITIALIZER(nullptr);
+    /// Shader macros (see Diligent::ShaderMacroArray)
+    ShaderMacroArray Macros;
 
     /// Shader description. See Diligent::ShaderDesc.
     ShaderDesc Desc;
@@ -393,14 +481,25 @@ struct ShaderCreateInfo
     ///       and should be disabled when it is not needed.
     bool LoadConstantBufferReflection DEFAULT_INITIALIZER(false);
 
-    /// Memory address where pointer to the compiler messages data blob will be written
+    /// An optional list of GLSL extensions to enable when compiling GLSL source code.
+    const char* GLSLExtensions DEFAULT_INITIALIZER(nullptr);
 
-    /// The buffer contains two null-terminated strings. The first one is the compiler
-    /// output message. The second one is the full shader source code including definitions added
-    /// by the engine. Data blob object must be released by the client.
-    IDataBlob** ppCompilerOutput DEFAULT_INITIALIZER(nullptr);
+    /// An optional suffix to append to the name of emulated array variables to get
+    /// the indexed array element name.
+    ///
+    /// \remarks    Since WebGPU does not support arrays of resources, Diligent Engine
+    ///             emulates them by appending an index to the resource name.
+    ///             For instance, if the suffix is set to "_", resources named
+    ///             "g_Tex2D_0", "g_Tex2D_1", "g_Tex2D_2" will be grouped into an array
+    ///             of 3 textures named "g_Tex2D" . All resources must be the same type
+    ///             to be grouped into an array.
+    ///
+    ///             When suffix is null or empty, no array emulation is performed.
+    ///
+    /// \remarks    This member is ignored when compiling shaders for backends other than WebGPU.
+    const char* WebGPUEmulatedArrayIndexSuffix DEFAULT_INITIALIZER(nullptr);
 
-#if DILIGENT_CPP_INTERFACE
+#if DILIGENT_CPP_INTERFACE && !defined(DILIGENT_SHARP_GEN)
     constexpr ShaderCreateInfo() noexcept
     {}
 
@@ -419,7 +518,7 @@ struct ShaderCreateInfo
     constexpr ShaderCreateInfo(const Char*                      _FilePath,
                                IShaderSourceInputStreamFactory* _pSourceFactory,
                                const Char*                      _EntryPoint,
-                               const ShaderMacro*               _Macros         = ShaderCreateInfo{}.Macros,
+                               const ShaderMacroArray&          _Macros         = ShaderCreateInfo{}.Macros,
                                SHADER_SOURCE_LANGUAGE           _SourceLanguage = ShaderCreateInfo{}.SourceLanguage,
                                const ShaderDesc&                _Desc           = ShaderDesc{}) noexcept :
         // clang-format off
@@ -432,12 +531,12 @@ struct ShaderCreateInfo
     // clang-format on
     {}
 
-    constexpr ShaderCreateInfo(const Char*            _Source,
-                               size_t                 _SourceLength,
-                               const Char*            _EntryPoint     = ShaderCreateInfo{}.EntryPoint,
-                               const ShaderMacro*     _Macros         = ShaderCreateInfo{}.Macros,
-                               SHADER_SOURCE_LANGUAGE _SourceLanguage = ShaderCreateInfo{}.SourceLanguage,
-                               const ShaderDesc&      _Desc           = ShaderDesc{}) noexcept :
+    constexpr ShaderCreateInfo(const Char*             _Source,
+                               size_t                  _SourceLength,
+                               const Char*             _EntryPoint     = ShaderCreateInfo{}.EntryPoint,
+                               const ShaderMacroArray& _Macros         = ShaderCreateInfo{}.Macros,
+                               SHADER_SOURCE_LANGUAGE  _SourceLanguage = ShaderCreateInfo{}.SourceLanguage,
+                               const ShaderDesc&       _Desc           = ShaderDesc{}) noexcept :
         // clang-format off
         Source        {_Source},
         SourceLength  {_SourceLength},
@@ -500,20 +599,7 @@ struct ShaderCreateInfo
         if (!SafeStrEqual(CI1.EntryPoint, CI2.EntryPoint))
             return false;
 
-        const auto* m1 = CI1.Macros;
-        const auto* m2 = CI2.Macros;
-        while (m1 != nullptr && m2 != nullptr)
-        {
-            if (*m1 != *m2)
-                return false;
-            ++m1;
-            ++m2;
-            if (*m1 == ShaderMacro{})
-                m1 = nullptr;
-            if (*m2 == ShaderMacro{})
-                m2 = nullptr;
-        }
-        if (m1 != nullptr || m2 != nullptr)
+        if (CI1.Macros != CI2.Macros)
             return false;
 
         if (CI1.Desc != CI2.Desc)
@@ -532,6 +618,15 @@ struct ShaderCreateInfo
             return false;
 
         if (CI1.CompileFlags != CI2.CompileFlags)
+            return false;
+
+        if (CI1.LoadConstantBufferReflection != CI2.LoadConstantBufferReflection)
+            return false;
+
+        if (!SafeStrEqual(CI1.GLSLExtensions, CI2.GLSLExtensions))
+            return false;
+
+        if (!SafeStrEqual(CI1.WebGPUEmulatedArrayIndexSuffix, CI2.WebGPUEmulatedArrayIndexSuffix))
             return false;
 
         return true;
@@ -947,6 +1042,15 @@ DILIGENT_BEGIN_INTERFACE(IShader, IDeviceObject)
     VIRTUAL void METHOD(GetBytecode)(THIS_
                                      const void** ppBytecode,
                                      Uint64 REF   Size) CONST PURE;
+
+    /// Returns the shader status, see Diligent::SHADER_STATUS.
+    ///
+    /// \param [in] WaitForCompletion - If true, the method will wait until the shader is compiled.
+    ///                                 If false, the method will return the shader status without waiting.
+    /// 							    This parameter is ignored if the shader was compiled synchronously.
+    /// \return     The shader status.
+    VIRTUAL SHADER_STATUS METHOD(GetStatus)(THIS_
+                                            bool WaitForCompletion DEFAULT_VALUE(false)) PURE;
 };
 DILIGENT_END_INTERFACE
 
@@ -962,6 +1066,7 @@ DILIGENT_END_INTERFACE
 #    define IShader_GetResourceDesc(This, ...)       CALL_IFACE_METHOD(Shader, GetResourceDesc,  This, __VA_ARGS__)
 #    define IShader_GetConstantBufferDesc(This, ...) CALL_IFACE_METHOD(Shader, GetConstantBufferDesc,  This, __VA_ARGS__)
 #    define IShader_GetBytecode(This, ...)           CALL_IFACE_METHOD(Shader, GetBytecode,      This, __VA_ARGS__)
+#    define IShader_GetStatus(This, ...)             CALL_IFACE_METHOD(Shader, GetStatus,        This, __VA_ARGS__)
 
 // clang-format on
 

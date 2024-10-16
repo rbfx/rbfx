@@ -15,6 +15,7 @@ set(INTERFACE
     interface/DebugOutput.h
     interface/DefineGlobalFuncHelperMacros.h
     interface/DefineInterfaceHelperMacros.h
+    interface/DefineRefMacro.h
     interface/FlagEnum.h
     interface/Errors.hpp
     interface/FileStream.h
@@ -25,6 +26,7 @@ set(INTERFACE
     interface/ReferenceCounters.h
     interface/UndefGlobalFuncHelperMacros.h
     interface/UndefInterfaceHelperMacros.h
+    interface/UndefRefMacro.h
 )
 
 # This should be an interface library. However, CMake does not show
@@ -39,7 +41,7 @@ PRIVATE
 
 target_include_directories(Diligent-Primitives
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    interface
 )
 
 source_group("interface" FILES ${INTERFACE})

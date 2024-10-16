@@ -42,13 +42,15 @@ namespace Diligent
 namespace
 {
 
-void ValidateRasterizerStateDesc(const PipelineStateDesc& PSODesc, const GraphicsPipelineDesc& GraphicsPipeline) noexcept(false)
+void ValidateRasterizerStateDesc(const PipelineStateDesc& PSODesc, const GraphicsPipelineDesc& GraphicsPipeline, const DeviceFeatures& Features) noexcept(false)
 {
     const auto& RSDesc = GraphicsPipeline.RasterizerDesc;
     if (RSDesc.FillMode == FILL_MODE_UNDEFINED)
         LOG_PSO_ERROR_AND_THROW("RasterizerDesc.FillMode must not be FILL_MODE_UNDEFINED.");
     if (RSDesc.CullMode == CULL_MODE_UNDEFINED)
         LOG_PSO_ERROR_AND_THROW("RasterizerDesc.CullMode must not be CULL_MODE_UNDEFINED.");
+    if (!RSDesc.DepthClipEnable && Features.DepthClamp == DEVICE_FEATURE_STATE_DISABLED)
+        LOG_ERROR_MESSAGE("Disabling depth clip is not supported by this device. Check the value of the DepthClamp device feature.");
 }
 
 void ValidateDepthStencilDesc(const PipelineStateDesc& PSODesc, const GraphicsPipelineDesc& GraphicsPipeline) noexcept(false)
@@ -96,6 +98,17 @@ void ValidateGraphicsPipelineDesc(const PipelineStateDesc& PSODesc, const Graphi
         {
             LOG_PSO_ERROR_AND_THROW("Multiple viewports with variable shading rate require SHADING_RATE_CAP_FLAG_PER_PRIMITIVE_WITH_MULTIPLE_VIEWPORTS capability");
         }
+    }
+
+    const auto& InputLayout = GraphicsPipeline.InputLayout;
+    if (InputLayout.NumElements > 0 && GraphicsPipeline.InputLayout.LayoutElements == nullptr)
+        LOG_PSO_ERROR_AND_THROW("InputLayout.LayoutElements must not be null when InputLayout.NumElements (", InputLayout.NumElements, ") is not zero.");
+
+    for (Uint32 i = 0; i < GraphicsPipeline.InputLayout.NumElements; ++i)
+    {
+        const auto& Elem = GraphicsPipeline.InputLayout.LayoutElements[i];
+        if (Elem.BufferSlot >= MAX_BUFFER_SLOTS)
+            LOG_PSO_ERROR_AND_THROW("InputLayout.LayoutElements[", i, "].BufferSlot (", Elem.BufferSlot, ") exceeds the limit (", MAX_BUFFER_SLOTS, ").");
     }
 }
 
@@ -182,6 +195,15 @@ void CorrectBlendStateDesc(GraphicsPipelineDesc& GraphicsPipeline) noexcept
     }
 }
 
+void CorrectRasterizerStateDesc(GraphicsPipelineDesc& GraphicsPipeline, const DeviceFeatures& Features) noexcept
+{
+    auto& RSDesc = GraphicsPipeline.RasterizerDesc;
+    if (!RSDesc.DepthClipEnable && Features.DepthClamp == DEVICE_FEATURE_STATE_DISABLED)
+    {
+        // The error message is printed by ValidateRasterizerStateDesc
+        RSDesc.DepthClipEnable = True;
+    }
+}
 
 void ValidatePipelineResourceSignatures(const PipelineStateCreateInfo& CreateInfo,
                                         const IRenderDevice*           pDevice) noexcept(false)
@@ -542,7 +564,7 @@ void ValidateGraphicsPipelineCreateInfo(const GraphicsPipelineStateCreateInfo& C
     const auto& GraphicsPipeline = CreateInfo.GraphicsPipeline;
 
     ValidateBlendStateDesc(PSODesc, GraphicsPipeline);
-    ValidateRasterizerStateDesc(PSODesc, GraphicsPipeline);
+    ValidateRasterizerStateDesc(PSODesc, GraphicsPipeline, Features);
     ValidateDepthStencilDesc(PSODesc, GraphicsPipeline);
     ValidateGraphicsPipelineDesc(PSODesc, GraphicsPipeline, AdapterInfo.ShadingRate);
     ValidatePipelineResourceLayoutDesc(PSODesc, Features);
@@ -633,8 +655,8 @@ void ValidateGraphicsPipelineCreateInfo(const GraphicsPipelineStateCreateInfo& C
             auto RTVFmt = GraphicsPipeline.RTVFormats[rt];
             if (RTVFmt != TEX_FORMAT_UNKNOWN)
             {
-                LOG_ERROR_MESSAGE("Render target format (", GetTextureFormatAttribs(RTVFmt).Name, ") of unused slot ", rt,
-                                  " must be set to TEX_FORMAT_UNKNOWN.");
+                LOG_WARNING_MESSAGE("Render target format (", GetTextureFormatAttribs(RTVFmt).Name, ") of unused slot ", rt,
+                                    " must be set to TEX_FORMAT_UNKNOWN.");
             }
         }
 
@@ -872,9 +894,13 @@ void ValidatePipelineResourceCompatibility(const PipelineResourceDesc& ResDesc,
     }
 }
 
-void CorrectGraphicsPipelineDesc(GraphicsPipelineDesc& GraphicsPipeline) noexcept
+void CorrectGraphicsPipelineDesc(GraphicsPipelineDesc& GraphicsPipeline, const DeviceFeatures& Features) noexcept
 {
+    for (size_t rt = GraphicsPipeline.NumRenderTargets; rt < _countof(GraphicsPipeline.RTVFormats); ++rt)
+        GraphicsPipeline.RTVFormats[rt] = TEX_FORMAT_UNKNOWN;
+
     CorrectBlendStateDesc(GraphicsPipeline);
+    CorrectRasterizerStateDesc(GraphicsPipeline, Features);
     CorrectDepthStencilDesc(GraphicsPipeline);
 }
 

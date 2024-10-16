@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.3)
+cmake_minimum_required (VERSION 3.6)
 
 project(Diligent-Win32Platform CXX)
 
@@ -21,7 +21,7 @@ set_common_target_properties(Diligent-Win32Platform)
 
 target_include_directories(Diligent-Win32Platform
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    interface
 )
 
 target_link_libraries(Diligent-Win32Platform

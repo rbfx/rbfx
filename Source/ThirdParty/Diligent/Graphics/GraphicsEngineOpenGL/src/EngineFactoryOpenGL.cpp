@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -112,9 +112,9 @@ public:
     }
 
 #if PLATFORM_ANDROID
-    virtual void InitAndroidFileSystem(struct ANativeActivity* NativeActivity,
-                                       const char*             NativeActivityClassName,
-                                       struct AAssetManager*   AssetManager) const override final;
+    virtual void InitAndroidFileSystem(struct AAssetManager* AssetManager,
+                                       const char*           ExternalFilesDir,
+                                       const char*           OutputFilesDir) const override final;
 #endif
 };
 
@@ -135,6 +135,39 @@ static void SetDefaultGraphicsAdapterInfo(GraphicsAdapterInfo& AdapterInfo)
     AdapterInfo.Queues[0].TextureCopyGranularity[0] = 1;
     AdapterInfo.Queues[0].TextureCopyGranularity[1] = 1;
     AdapterInfo.Queues[0].TextureCopyGranularity[2] = 1;
+}
+
+static void SetPreferredAdapter(const EngineGLCreateInfo& EngineCI)
+{
+    if (EngineCI.PreferredAdapterType == ADAPTER_TYPE_DISCRETE)
+    {
+#if PLATFORM_WIN32
+        const HMODULE ModuleHandle                         = GetModuleHandle(nullptr);
+        Uint64* const NvOptimusEnablement                  = reinterpret_cast<Uint64*>(GetProcAddress(ModuleHandle, "NvOptimusEnablement"));
+        Uint64* const AmdPowerXpressRequestHighPerformance = reinterpret_cast<Uint64*>(GetProcAddress(ModuleHandle, "AmdPowerXpressRequestHighPerformance"));
+        if (!NvOptimusEnablement && !AmdPowerXpressRequestHighPerformance)
+        {
+            LOG_WARNING_MESSAGE("Neither NvOptimusEnablement nor AmdPowerXpressRequestHighPerformance symbols found. "
+                                "You need to explicitly define these variables in your executable file: "
+                                "https://gist.github.com/statico/6809850727c708f08458, "
+                                "or you can use the `Diligent-GLAdapterSelector` object library as source input to your executable target: "
+                                "`target_sources(MyExecutable PRIVATE $<TARGET_OBJECTS:Diligent-GLAdapterSelector>)`, "
+                                "see https://cmake.org/cmake/help/v3.16/manual/cmake-buildsystem.7.html#object-libraries.");
+        }
+        if (AmdPowerXpressRequestHighPerformance)
+        {
+            *AmdPowerXpressRequestHighPerformance = 1;
+        }
+        if (NvOptimusEnablement)
+        {
+            *NvOptimusEnablement = 1;
+        }
+#elif PLATFORM_LINUX
+        setenv("DRI_PRIME", "1", 1);
+#else
+        LOG_WARNING_MESSAGE("Setting preferred adapter type isn't supported on this platform");
+#endif
+    }
 }
 
 void EngineFactoryOpenGLImpl::EnumerateAdapters(Version              MinVersion,
@@ -205,6 +238,7 @@ void EngineFactoryOpenGLImpl::CreateDeviceAndSwapChainGL(const EngineGLCreateInf
         SetRawAllocator(EngineCI.pRawMemAllocator);
         auto& RawMemAllocator = GetRawAllocator();
 
+        SetPreferredAdapter(EngineCI);
         RenderDeviceGLImpl* pRenderDeviceOpenGL{
             NEW_RC_OBJ(RawMemAllocator, "TRenderDeviceGLImpl instance", TRenderDeviceGLImpl)(
                 RawMemAllocator, this, EngineCI, &SCDesc //
@@ -227,9 +261,6 @@ void EngineFactoryOpenGLImpl::CreateDeviceAndSwapChainGL(const EngineGLCreateInf
         // keep a weak reference to the context
         pDeviceContextOpenGL->QueryInterface(IID_DeviceContext, reinterpret_cast<IObject**>(ppImmediateContext));
         pRenderDeviceOpenGL->SetImmediateContext(0, pDeviceContextOpenGL);
-
-        // Need to create immediate context first
-        pRenderDeviceOpenGL->InitTexRegionRender();
 
         TSwapChain* pSwapChainGL = NEW_RC_OBJ(RawMemAllocator, "SwapChainGLImpl instance", TSwapChain)(EngineCI, SCDesc, pRenderDeviceOpenGL, pDeviceContextOpenGL);
         pSwapChainGL->QueryInterface(IID_SwapChain, reinterpret_cast<IObject**>(ppSwapChain));
@@ -306,6 +337,7 @@ void EngineFactoryOpenGLImpl::AttachToActiveGLContext(const EngineGLCreateInfo& 
         SetRawAllocator(EngineCI.pRawMemAllocator);
         auto& RawMemAllocator = GetRawAllocator();
 
+        SetPreferredAdapter(EngineCI);
         RenderDeviceGLImpl* pRenderDeviceOpenGL{
             NEW_RC_OBJ(RawMemAllocator, "TRenderDeviceGLImpl instance", TRenderDeviceGLImpl)(
                 RawMemAllocator, this, EngineCI //
@@ -380,11 +412,11 @@ void EngineFactoryOpenGLImpl::CreateHLSL2GLSLConverter(IHLSL2GLSLConverter** ppC
 }
 
 #if PLATFORM_ANDROID
-void EngineFactoryOpenGLImpl::InitAndroidFileSystem(struct ANativeActivity* NativeActivity,
-                                                    const char*             NativeActivityClassName,
-                                                    struct AAssetManager*   AssetManager) const
+void EngineFactoryOpenGLImpl::InitAndroidFileSystem(struct AAssetManager* AssetManager,
+                                                    const char*           ExternalFilesDir,
+                                                    const char*           OutputFilesDir) const
 {
-    AndroidFileSystem::Init(NativeActivity, NativeActivityClassName, AssetManager);
+    AndroidFileSystem::Init(AssetManager, ExternalFilesDir, OutputFilesDir);
 }
 #endif
 

@@ -195,7 +195,7 @@ void ImGuiDiligentRendererEx::RenderSecondaryWindows()
     {
         SDL_GL_MakeCurrent(backupCurrentWindow, backupCurrentContext);
 
-        auto deviceContextGL = ClassPtrCast<Diligent::IDeviceContextGL>(renderDevice_->GetImmediateContext());
+        auto deviceContextGL = Diligent::ClassPtrCast<Diligent::IDeviceContextGL>(renderDevice_->GetImmediateContext());
         deviceContextGL->InvalidateState();
     }
 #endif
@@ -288,8 +288,8 @@ void ImGuiDiligentRendererEx::RenderWindow(ImGuiViewport* viewport, void* render
     {
         isCachedStateInvalid_ = true;
 
-        auto deviceContextGL = ClassPtrCast<Diligent::IDeviceContextGL>(deviceContext);
-        auto swapChainGL = ClassPtrCast<Diligent::ISwapChainGL>(userData->swapChain_.RawPtr());
+        auto deviceContextGL = Diligent::ClassPtrCast<Diligent::IDeviceContextGL>(deviceContext);
+        auto swapChainGL = Diligent::ClassPtrCast<Diligent::ISwapChainGL>(userData->swapChain_.RawPtr());
         deviceContextGL->SetSwapChain(swapChainGL);
         deviceContextGL->InvalidateState();
 

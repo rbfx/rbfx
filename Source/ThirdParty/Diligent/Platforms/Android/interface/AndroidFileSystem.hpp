@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +32,7 @@
 #include <fstream>
 #include <android/asset_manager.h>
 
-#include "../../Basic/interface/BasicFileSystem.hpp"
+#include "../../Linux/interface/LinuxFileSystem.hpp"
 #include "../../../Primitives/interface/DataBlob.h"
 
 struct ANativeActivity;
@@ -53,51 +53,43 @@ public:
 
     bool Write(const void* Data, size_t BufferSize);
 
-    size_t GetSize() { return m_Size; }
+    size_t GetSize();
 
     size_t GetPos();
 
     bool SetPos(size_t Offset, FilePosOrigin Origin);
 
-    static bool Open(const char* FileName, std::ifstream& IFS, AAsset*& AssetFile, size_t& Size);
+    static bool Open(const FileOpenAttribs& OpenAttribs, std::fstream& FS, AAsset*& AssetFile);
 
 private:
-    std::ifstream m_IFS;
-    AAsset*       m_AssetFile = nullptr;
-    size_t        m_Size      = 0;
+    std::fstream m_FS;
+    AAsset*      m_AssetFile = nullptr;
 };
 
 
 /// Android file system implementation.
-struct AndroidFileSystem : public BasicFileSystem
+struct AndroidFileSystem : public LinuxFileSystem
 {
 public:
     /// Initializes the file system.
 
-    /// \param [in] NativeActivity          - Pointer to the native activity object (ANativeActivity).
-    /// \param [in] NativeActivityClassName - Native activity class name.
-    /// \param [in] AssetManager            - Pointer to the asset manager (AAssetManager).
+    /// \param [in] AssetManager     - A pointer to the asset manager (AAssetManager).
+    /// \param [in] ExternalFilesDir - External files directory.
+    /// \param [in] OutputFilesDir   - Output files directory.
     ///
-    /// \remarks The file system can be initialized to use either native activity or asset manager, or both.
-    ///          When NativeActivity is not null, the file system will try to use it first when opening files.
-    ///          It will then resort to using the asset manager. When NativeActivity is not null, but AssetManager
-    ///          parameter is null, the file system will use the asset manager from the activity.
-    ///          If NativeActivity is null, the file system will only use the asset manager.
-    static void Init(struct ANativeActivity* NativeActivity,
-                     const char*             NativeActivityClassName,
-                     struct AAssetManager*   AssetManager);
-
+    /// \remarks The file system can be initialized to use either the external assets path or asset manager, or both.
+    ///          When ExternalFilesDir is not null, the file system will try to use it first when opening files.
+    ///          It will then resort to using the asset manager.
+    ///          If ExternalFilesDir is null, the file system will only use the asset manager.
+    // clang-format off
+    static void Init(struct AAssetManager* AssetManager,
+                     const char*           ExternalFilesDir DEFAULT_INITIALIZER(nullptr),
+                     const char*           OutputFilesDir   DEFAULT_INITIALIZER(nullptr));
+    // clang-format on
 
     static AndroidFile* OpenFile(const FileOpenAttribs& OpenAttribs);
 
     static bool FileExists(const Char* strFilePath);
-    static bool PathExists(const Char* strPath);
-
-    static bool CreateDirectory(const Char* strPath);
-    static void ClearDirectory(const Char* strPath);
-    static void DeleteFile(const Char* strPath);
-
-    static std::vector<std::unique_ptr<FindFileData>> Search(const Char* SearchPattern);
 
     static std::string GetLocalAppDataDirectory(const char* AppName = nullptr, bool Create = true);
 };

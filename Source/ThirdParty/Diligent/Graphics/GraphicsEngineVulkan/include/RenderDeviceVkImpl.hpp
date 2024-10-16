@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -94,7 +94,9 @@ public:
                                                  IBuffer**         ppBuffer) override final;
 
     /// Implementation of IRenderDevice::CreateShader() in Vulkan backend.
-    virtual void DILIGENT_CALL_TYPE CreateShader(const ShaderCreateInfo& ShaderCreateInfo, IShader** ppShader) override final;
+    virtual void DILIGENT_CALL_TYPE CreateShader(const ShaderCreateInfo& ShaderCreateInfo,
+                                                 IShader**               ppShader,
+                                                 IDataBlob**             ppCompilerOutput) override final;
 
     /// Implementation of IRenderDevice::CreateTexture() in Vulkan backend.
     virtual void DILIGENT_CALL_TYPE CreateTexture(const TextureDesc& TexDesc,

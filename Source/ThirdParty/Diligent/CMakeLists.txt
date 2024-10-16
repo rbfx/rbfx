@@ -54,6 +54,7 @@ set(GL_SUPPORTED               FALSE CACHE INTERNAL "GL is not supported")
 set(GLES_SUPPORTED             FALSE CACHE INTERNAL "GLES is not supported")
 set(VULKAN_SUPPORTED           FALSE CACHE INTERNAL "Vulkan is not supported")
 set(METAL_SUPPORTED            FALSE CACHE INTERNAL "Metal is not supported")
+set(WEBGPU_SUPPORTED           FALSE CACHE INTERNAL "WebGPU is not supported")
 set(ARCHIVER_SUPPORTED         FALSE CACHE INTERNAL "Archiver is not supported")
 
 set(DILIGENT_CORE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "DiligentCore module source directory")
@@ -99,12 +100,24 @@ endif()
 message("CMake generator: " ${CMAKE_GENERATOR})
 
 if(WIN32)
+    if (CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION)
+        set(WINDOWS_SDK_VERSION ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION} CACHE INTERNAL "Windows SDK version")
+    elseif(DEFINED ENV{WindowsSDKVersion})
+        set(WINDOWS_SDK_VERSION $ENV{WindowsSDKVersion})
+        # For unbeknown reason, the value ends with a backslash, so we need to remove it
+        string(REPLACE "\\" "" WINDOWS_SDK_VERSION ${WINDOWS_SDK_VERSION})
+        set(WINDOWS_SDK_VERSION ${WINDOWS_SDK_VERSION} CACHE INTERNAL "Windows SDK version")
+    else()
+        set(WINDOWS_SDK_VERSION "0.0" CACHE INTERNAL "Windows SDK version")
+        message(WARNING "Unable to determine Windows SDK version: neither the CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION CMake variable nor the WindowsSDKVersion environment variable is set")
+    endif()
+
     if(${CMAKE_SYSTEM_NAME} STREQUAL "WindowsStore")
         set(PLATFORM_UNIVERSAL_WINDOWS TRUE CACHE INTERNAL "Target platform: Windows Store")
-        message("Target platform: Universal Windows " ${ARCH} ". SDK Version: " ${CMAKE_SYSTEM_VERSION})
+        message("Target platform: Universal Windows " ${ARCH} ". Windows SDK Version: " ${WINDOWS_SDK_VERSION})
     else()
         set(PLATFORM_WIN32 TRUE CACHE INTERNAL "Target platform: Win32") #WIN32 is a variable, so we cannot use string "WIN32"
-        message("Target platform: Win32 " ${ARCH} ". SDK Version: " ${CMAKE_SYSTEM_VERSION})
+        message("Target platform: Win32 " ${ARCH} ". Windows SDK Version: " ${WINDOWS_SDK_VERSION})
     endif()
 else()
     if(${CMAKE_SYSTEM_NAME} STREQUAL "Android")
@@ -141,52 +154,66 @@ endif()
 
 add_library(Diligent-PublicBuildSettings INTERFACE)
 
-if(PLATFORM_WIN32)
-    if(MSVC)
-        set(D3D11_SUPPORTED TRUE CACHE INTERNAL "D3D11 is supported on Win32 platform")
-        if(CMAKE_SYSTEM_VERSION VERSION_GREATER_EQUAL "10.0")
-            set(D3D12_SUPPORTED TRUE CACHE INTERNAL "D3D12 is supported on Win32 platform")
-        endif()
-    else()
-        message("Building with MinGW")
-        set(MINGW_BUILD TRUE CACHE INTERNAL "Building with MinGW")
-        set(D3D11_SUPPORTED FALSE CACHE INTERNAL "D3D11 requires compiling with MSVC")
-        set(D3D12_SUPPORTED FALSE CACHE INTERNAL "D3D12 requires compiling with MSVC")
-    endif()
+if(PLATFORM_WIN32 OR PLATFORM_UNIVERSAL_WINDOWS)
+    try_compile(HAS_D3D11 "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/BuildTools/CMake/CheckD3D11.cpp")
+    try_compile(HAS_D3D12 "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/BuildTools/CMake/CheckD3D12.cpp")
+    try_compile(HAS_ATL "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/BuildTools/CMake/CheckATL.cpp")
+    message("")
+    message("Checking for Direct3D11 and Direct3D12 support:")
+    message("  d3d11.h found:   " ${HAS_D3D11})
+    message("  d3d12.h found:   " ${HAS_D3D12})
+    message("  atlbase.h found: " ${HAS_ATL})
 
+    if (HAS_D3D11 AND HAS_ATL)
+        set(D3D11_SUPPORTED TRUE CACHE INTERNAL "D3D11 is supported")
+    else()
+        set(D3D11_SUPPORTED FALSE CACHE INTERNAL "D3D11 is not supported")
+    endif()
+    if (HAS_D3D12 AND HAS_ATL)
+        set(D3D12_SUPPORTED TRUE CACHE INTERNAL "D3D12 is supported")
+    else()
+        set(D3D12_SUPPORTED FALSE CACHE INTERNAL "D3D12 is not supported")
+    endif()
+endif()
+
+if(${CMAKE_GENERATOR} MATCHES "MinGW")
+    message("Building with MinGW")
+    set(MINGW_BUILD TRUE CACHE INTERNAL "Building with MinGW")
+endif()
+
+if(PLATFORM_WIN32)
     set(GL_SUPPORTED       TRUE CACHE INTERNAL "OpenGL is supported on Win32 platform")
     set(VULKAN_SUPPORTED   TRUE CACHE INTERNAL "Vulkan is supported on Win32 platform")
-    set(ARCHIVER_SUPPORTED FALSE CACHE INTERNAL "Archiver is supported on Win32 platform")
+    set(WEBGPU_SUPPORTED   TRUE CACHE INTERNAL "WebGPU is supported on Win32 platform")
+    set(ARCHIVER_SUPPORTED TRUE CACHE INTERNAL "Archiver is supported on Win32 platform")
     target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_WIN32=1)
 elseif(PLATFORM_UNIVERSAL_WINDOWS)
-    set(D3D11_SUPPORTED TRUE CACHE INTERNAL "D3D11 is supported on Universal Windows platform")
-    if(CMAKE_SYSTEM_VERSION VERSION_GREATER_EQUAL "10.0")
-        set(D3D12_SUPPORTED TRUE CACHE INTERNAL "D3D12 is supported on Universal Windows platform")
-    endif()
-    set(ARCHIVER_SUPPORTED FALSE CACHE INTERNAL "Archiver is supported on Universal Windows platform")
+    set(ARCHIVER_SUPPORTED TRUE CACHE INTERNAL "Archiver is supported on Universal Windows platform")
     target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_UNIVERSAL_WINDOWS=1)
 elseif(PLATFORM_ANDROID)
     set(GLES_SUPPORTED     TRUE CACHE INTERNAL "OpenGLES is supported on Android platform")
     set(VULKAN_SUPPORTED   TRUE CACHE INTERNAL "Vulkan is supported on Android platform")
-    set(ARCHIVER_SUPPORTED FALSE CACHE INTERNAL "Archiver is supported on Android platform")
+    set(ARCHIVER_SUPPORTED TRUE CACHE INTERNAL "Archiver is supported on Android platform")
     target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_ANDROID=1)
 elseif(PLATFORM_LINUX)
     set(GL_SUPPORTED       TRUE CACHE INTERNAL "OpenGL is supported on Linux platform")
     set(VULKAN_SUPPORTED   TRUE CACHE INTERNAL "Vulkan is supported on Linux platform")
-    set(ARCHIVER_SUPPORTED FALSE CACHE INTERNAL "Archiver is supported on Linux platform")
+    set(ARCHIVER_SUPPORTED TRUE CACHE INTERNAL "Archiver is supported on Linux platform")
     target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_LINUX=1)
 elseif(PLATFORM_MACOS)
     set(GL_SUPPORTED       TRUE CACHE INTERNAL "OpenGL is supported on MacOS platform")
     set(VULKAN_SUPPORTED   TRUE CACHE INTERNAL "Vulkan is enabled through MoltenVK on MacOS platform")
-    set(ARCHIVER_SUPPORTED FALSE CACHE INTERNAL "Archiver is supported on MacOS platform")
-    target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_MACOS=1)
+    set(ARCHIVER_SUPPORTED TRUE CACHE INTERNAL "Archiver is supported on MacOS platform")
+    target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_MACOS=1 PLATFORM_APPLE=1)
 elseif(PLATFORM_IOS)
     set(GLES_SUPPORTED TRUE CACHE INTERNAL "OpenGLES is supported on iOS platform")
-    target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_IOS=1)
+    target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_IOS=1 PLATFORM_APPLE=1)
 elseif(PLATFORM_TVOS)
-    target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_TVOS=1)
+    target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_TVOS=1 PLATFORM_APPLE=1)
 elseif(PLATFORM_EMSCRIPTEN)
-    set(GLES_SUPPORTED TRUE CACHE INTERNAL "OpenGLES is supported on Emscripten platform")
+    set(GLES_SUPPORTED     TRUE CACHE INTERNAL "OpenGLES is supported on Emscripten platform")
+    set(WEBGPU_SUPPORTED   TRUE CACHE INTERNAL "WebGPU is supported on Emscripten platform")
+    set(ARCHIVER_SUPPORTED TRUE CACHE INTERNAL "Archiver is supported on Emscripten platform")
     target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_EMSCRIPTEN=1)   
 else()
     message(FATAL_ERROR "No PLATFORM_XXX variable defined. Make sure that 'DiligentCore' folder is processed first")
@@ -195,21 +222,28 @@ endif()
 if(PLATFORM_IOS OR PLATFORM_TVOS)
     if(VULKAN_SDK OR MOLTENVK_LIBRARY)
         if(NOT MOLTENVK_LIBRARY)
-            set(MoltenVK_FRAMEWORK "${VULKAN_SDK}/MoltenVK/MoltenVK.xcframework")
-            if(PLATFORM_IOS)
-                if(CMAKE_OSX_SYSROOT STREQUAL "iphonesimulator" OR PLATFORM_IOS_SIMULATOR)
-                    set(MOLTENVK_LIBRARY "${MoltenVK_FRAMEWORK}/ios-arm64_x86_64-simulator/libMoltenVK.a")
+            set(MoltenVK_FRAMEWORK "${VULKAN_SDK}/macOS/lib/MoltenVK.xcframework")
+            if(NOT EXISTS "${MoltenVK_FRAMEWORK}")
+                set(MoltenVK_FRAMEWORK "${VULKAN_SDK}/MoltenVK/MoltenVK.xcframework")
+            endif()
+            if(EXISTS "${MoltenVK_FRAMEWORK}")
+                if(PLATFORM_IOS)
+                    if(CMAKE_OSX_SYSROOT STREQUAL "iphonesimulator" OR PLATFORM_IOS_SIMULATOR)
+                        set(MOLTENVK_LIBRARY "${MoltenVK_FRAMEWORK}/ios-arm64_x86_64-simulator/libMoltenVK.a")
+                    else()
+                        set(MOLTENVK_LIBRARY "${MoltenVK_FRAMEWORK}/ios-arm64/libMoltenVK.a")
+                    endif()
+                elseif(PLATFORM_TVOS)
+                    if(CMAKE_OSX_SYSROOT STREQUAL "appletvsimulator" OR PLATFORM_TVOS_SIMULATOR)
+                        set(MOLTENVK_LIBRARY "${MoltenVK_FRAMEWORK}/tvos-arm64_x86_64-simulator/libMoltenVK.a")
+                    else()
+                        set(MOLTENVK_LIBRARY "${MoltenVK_FRAMEWORK}/tvos-arm64_arm64e/libMoltenVK.a")
+                    endif()
                 else()
-                    set(MOLTENVK_LIBRARY "${MoltenVK_FRAMEWORK}/ios-arm64/libMoltenVK.a")
-                endif()
-            elseif(PLATFORM_TVOS)
-                if(CMAKE_OSX_SYSROOT STREQUAL "appletvsimulator" OR PLATFORM_TVOS_SIMULATOR)
-                    set(MOLTENVK_LIBRARY "${MoltenVK_FRAMEWORK}/tvos-arm64_x86_64-simulator/libMoltenVK.a")
-                else()
-                    set(MOLTENVK_LIBRARY "${MoltenVK_FRAMEWORK}/tvos-arm64_arm64e/libMoltenVK.a")
+                    message(FATAL_ERROR "Unexpected platform")
                 endif()
             else()
-                message(FATAL_ERROR "Unexpected platform")
+                message(WARNING "Unable to find MoltenVK.xcframework at ${VULKAN_SDK}/macOS/lib or ${VULKAN_SDK}/MoltenVK")
             endif()
         endif()
 
@@ -259,13 +293,19 @@ endif()
 
 
 option(DILIGENT_NO_HLSL              "Disable HLSL support in non-Direct3D backends" OFF)
-option(DILIGENT_NO_FORMAT_VALIDATION "Disable source code format validation" OFF)
+option(DILIGENT_NO_FORMAT_VALIDATION "Disable source code format validation" ON)
 option(DILIGENT_NO_DIRECT3D11        "Disable Direct3D11 backend" OFF)
 option(DILIGENT_NO_DIRECT3D12        "Disable Direct3D12 backend" OFF)
 option(DILIGENT_NO_OPENGL            "Disable OpenGL/GLES backend" OFF)
 option(DILIGENT_NO_VULKAN            "Disable Vulkan backend" OFF)
 option(DILIGENT_NO_METAL             "Disable Metal backend" OFF)
-option(DILIGENT_NO_ARCHIVER          "Do not build archiver" ON)
+if (PLATFORM_EMSCRIPTEN)
+    option(DILIGENT_NO_WEBGPU        "Disable WebGPU backend" OFF)
+else()
+    option(DILIGENT_NO_WEBGPU        "Disable WebGPU backend" ON)
+endif()
+option(DILIGENT_NO_ARCHIVER          "Do not build archiver" OFF)
+
 if(${DILIGENT_NO_DIRECT3D11})
     set(D3D11_SUPPORTED FALSE CACHE INTERNAL "D3D11 backend is forcibly disabled")
 endif()
@@ -282,21 +322,26 @@ endif()
 if(${DILIGENT_NO_METAL})
     set(METAL_SUPPORTED FALSE CACHE INTERNAL "Metal backend is forcibly disabled")
 endif()
+if(${DILIGENT_NO_WEBGPU})
+    set(WEBGPU_SUPPORTED FALSE CACHE INTERNAL "WebGPU backend is forcibly disabled")
+endif()
 if(${DILIGENT_NO_ARCHIVER})
     set(ARCHIVER_SUPPORTED FALSE CACHE INTERNAL "Archiver is forcibly disabled")
 endif()
 
-if(NOT (${D3D11_SUPPORTED} OR ${D3D12_SUPPORTED} OR ${GL_SUPPORTED} OR ${GLES_SUPPORTED} OR ${VULKAN_SUPPORTED} OR ${METAL_SUPPORTED}))
+if(NOT (${D3D11_SUPPORTED} OR ${D3D12_SUPPORTED} OR ${GL_SUPPORTED} OR ${GLES_SUPPORTED} OR ${VULKAN_SUPPORTED} OR ${METAL_SUPPORTED} OR ${WEBGPU_SUPPORTED}))
     message(FATAL_ERROR "No rendering backends are select to build")
 endif()
 
-
+message("")
 message("D3D11_SUPPORTED:  " ${D3D11_SUPPORTED})
 message("D3D12_SUPPORTED:  " ${D3D12_SUPPORTED})
 message("GL_SUPPORTED:     " ${GL_SUPPORTED})
 message("GLES_SUPPORTED:   " ${GLES_SUPPORTED})
 message("VULKAN_SUPPORTED: " ${VULKAN_SUPPORTED})
 message("METAL_SUPPORTED:  " ${METAL_SUPPORTED})
+message("WEBGPU_SUPPORTED: " ${WEBGPU_SUPPORTED})
+message("")
 
 target_compile_definitions(Diligent-PublicBuildSettings
 INTERFACE
@@ -306,6 +351,7 @@ INTERFACE
     GLES_SUPPORTED=$<BOOL:${GLES_SUPPORTED}>
     VULKAN_SUPPORTED=$<BOOL:${VULKAN_SUPPORTED}>
     METAL_SUPPORTED=$<BOOL:${METAL_SUPPORTED}>
+    WEBGPU_SUPPORTED=$<BOOL:${WEBGPU_SUPPORTED}>
 )
 
 foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
@@ -320,6 +366,14 @@ endif()
 
 
 add_library(Diligent-BuildSettings INTERFACE)
+
+if (PLATFORM_EMSCRIPTEN)
+    target_compile_options(Diligent-BuildSettings INTERFACE
+        "-pthread"
+        "-mbulk-memory"
+    )
+endif()
+
 target_link_libraries(Diligent-BuildSettings INTERFACE Diligent-PublicBuildSettings)
 
 foreach(DBG_CONFIG ${DEBUG_CONFIGURATIONS})
@@ -332,16 +386,27 @@ endforeach()
 
 if(MSVC)
     # Treat warnings as errors
-    set(DILIGENT_MSVC_COMPILE_OPTIONS "/WX" CACHE STRING "Common MSVC compile options")
+    set(DILIGENT_MSVC_COMPILE_OPTIONS "" CACHE STRING "Common MSVC compile options")
+    if (DILIGENT_MSVC_COMPILE_OPTIONS)
+        message("Additional MSVC compile options: " ${DILIGENT_MSVC_COMPILE_OPTIONS})
+    endif()
 
     set(DILIGENT_MSVC_DEBUG_COMPILE_OPTIONS "" CACHE STRING "Additional MSVC compile options for debug configuration")
+    if (DILIGENT_MSVC_DEBUG_COMPILE_OPTIONS)
+        message("Additional MSVC compile options for debug configuration: " ${DILIGENT_MSVC_DEBUG_COMPILE_OPTIONS})
+    endif()
 
+    # Enable whole program optimization
+    set(DEFAULT_DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS /GL)
     if("${TARGET_CPU}" STREQUAL "x86_64")
         # Enable AVX2
         # rbfx: Don't do any extra options. This should be controlled by Urho3D CMake scripts.
-        # set(DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS "/arch:AVX2")
+        # set(DEFAULT_DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS ${DEFAULT_DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS} /arch:AVX2)
     endif()
-    set(DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS ${DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS} CACHE STRING "Additional MSVC compile options for release configurations")
+    set(DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS ${DEFAULT_DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS} CACHE STRING "Additional MSVC compile options for release configurations")
+    if (DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS)
+        message("Additional MSVC compile options for release configurations: " ${DILIGENT_MSVC_RELEASE_COMPILE_OPTIONS})
+    endif()
 
     # Enable level 4 warnings, but disable
     # - w4100  - unreferenced formal parameter
@@ -350,12 +415,17 @@ if(MSVC)
     # - C26812 - Prefer 'enum class' over 'enum' (Code analysis warning)
     target_compile_options(Diligent-BuildSettings INTERFACE /W4 /wd4100 /wd4201 /wd4505 /wd26812 /MP ${DILIGENT_MSVC_COMPILE_OPTIONS})
 
+    if (PLATFORM_WIN32)
+        # Enable conformance mode.
+        # Note that UWP sources don't compile in conformance mode.
+        target_compile_options(Diligent-BuildSettings INTERFACE /permissive-)
+    endif()
+
     # In all release modes also:
     # - disable w4189 - local variable is initialized but not referenced
     # - Disable RTTI (/GR-)
-    # - Enable whole program optimization (/GL)
     # - Enable string pooling (/GF)
-    set(MSVC_ALL_RELEASE_COMPILE_OPTIONS /wd4189 /GR- /GL /GF)
+    set(MSVC_ALL_RELEASE_COMPILE_OPTIONS /wd4189 /GR- /GF)
     #target_compile_options(Diligent-BuildSettings INTERFACE "$<$<CONFIG:RELEASE>:/wd4189 /Ot")
     # In RELEASE mode:
     # - Set favor fast code option (/Ot)
@@ -398,15 +468,24 @@ endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # Treat warnings as errors
-    set(DILIGENT_CLANG_COMPILE_OPTIONS "-Werror" CACHE STRING "Common Clang compile options")
+    set(DILIGENT_CLANG_COMPILE_OPTIONS "" CACHE STRING "Common Clang compile options")
+    if (DILIGENT_CLANG_COMPILE_OPTIONS)
+        message("Additional Clang compile options: " ${DILIGENT_CLANG_COMPILE_OPTIONS})
+    endif()
 
     set(DILIGENT_CLANG_DEBUG_COMPILE_OPTIONS "" CACHE STRING "Additional Clang compile options for debug configuration")
+    if (DILIGENT_CLANG_DEBUG_COMPILE_OPTIONS)
+        message("Additional Clang compile options for debug configuration: " ${DILIGENT_CLANG_DEBUG_COMPILE_OPTIONS})
+    endif()
 
     if("${TARGET_CPU}" STREQUAL "x86_64")
         # Enable AVX2
         set(DILIGENT_CLANG_RELEASE_COMPILE_OPTIONS "-mavx2")
     endif()
     set(DILIGENT_CLANG_RELEASE_COMPILE_OPTIONS ${DILIGENT_CLANG_RELEASE_COMPILE_OPTIONS} CACHE STRING "Additional Clang compile options for release configurations")
+    if (DILIGENT_CLANG_RELEASE_COMPILE_OPTIONS)
+        message("Additional Clang compile options for release configurations: " ${DILIGENT_CLANG_RELEASE_COMPILE_OPTIONS})
+    endif()
 
     target_compile_options(Diligent-BuildSettings INTERFACE
         ${DILIGENT_CLANG_COMPILE_OPTIONS}
@@ -414,14 +493,21 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         -Wall -Wextra -Wuninitialized -Wconditional-uninitialized -Wextra-tokens -Wpointer-arith -Wloop-analysis -Wunused
         # Disable few warnings
         -Wno-overloaded-virtual -Wno-incompatible-pointer-types-discards-qualifiers -Wno-unknown-pragmas
-        -Wno-zero-as-null-pointer-constant -Wno-unused-parameter
+        -Wno-zero-as-null-pointer-constant -Wno-unused-parameter -Wno-invalid-offsetof
     )
     target_compile_options(Diligent-BuildSettings INTERFACE "$<$<CONFIG:DEBUG>:${DILIGENT_CLANG_DEBUG_COMPILE_OPTIONS}>")
 
     set(CLANG_RELEASE_OPTIONS -Wno-unused-variable ${DILIGENT_CLANG_RELEASE_COMPILE_OPTIONS})
     target_compile_options(Diligent-BuildSettings INTERFACE $<$<NOT:$<CONFIG:Debug>>:${CLANG_RELEASE_OPTIONS}>)
 
-    if (PLATFORM_APPLE)
+    if (PLATFORM_WIN32)
+        target_compile_options(Diligent-BuildSettings
+        INTERFACE
+            -Wno-microsoft-exception-spec
+            -Wno-tautological-constant-out-of-range-compare
+            -Wno-enum-constexpr-conversion
+        )
+    elseif (PLATFORM_APPLE)
         # Allow unavailable API warnings not being errors as they tend to randomly
         # appear in new versions of XCode.
         # Besides, there is a known long-standing issue in simulator SDK:
@@ -443,32 +529,32 @@ endif()
 if(PLATFORM_MACOS)
     find_library(APP_KIT AppKit)
     if (NOT APP_KIT)
-            message(FATAL_ERROR "AppKit not found")
+            message(FATAL_ERROR "Failed to find AppKit framework")
     endif()
 elseif(PLATFORM_IOS)
     find_library(CORE_FOUNDATION CoreFoundation)
     if(NOT CORE_FOUNDATION)
-        message(FATAL_ERROR "Cannot find CoreFoundation framework")
+        message(FATAL_ERROR "Failed to find CoreFoundation framework")
     endif()
 
     find_library(FOUNDATION Foundation)
     if(NOT FOUNDATION)
-        message(FATAL_ERROR "Cannot find Foundation framework")
+        message(FATAL_ERROR "Failed to find Foundation framework")
     endif()
 
     find_library(OPENGLES OpenGLES)
     if(NOT OPENGLES)
-        message(FATAL_ERROR "Cannot find OpenGLES framework")
+        message(FATAL_ERROR "Failed to find OpenGLES framework")
     endif()
 elseif(PLATFORM_TVOS)
     find_library(CORE_FOUNDATION CoreFoundation)
     if(NOT CORE_FOUNDATION)
-        message(FATAL_ERROR "Cannot find CoreFoundation framework")
+        message(FATAL_ERROR "Failed to find CoreFoundation framework")
     endif()
 
     find_library(FOUNDATION Foundation)
     if(NOT FOUNDATION)
-        message(FATAL_ERROR "Cannot find Foundation framework")
+        message(FATAL_ERROR "Failed to find Foundation framework")
     endif()
 endif()
 
@@ -497,7 +583,31 @@ elseif (NOT IS_ABSOLUTE ${CMAKE_INSTALL_PREFIX})
     message("Transformed CMAKE_INSTALL_PREFIX into absolute path: " ${CMAKE_INSTALL_PREFIX})
 endif()
 
-include(BuildUtils.cmake)
+include(BuildTools/CMake/BuildUtils.cmake)
+
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    # Find available .NET SDKs
+    execute_process(COMMAND dotnet --list-sdks
+                    RESULTS_VARIABLE RES
+                    OUTPUT_VARIABLE DOT_NET_SDK_LIST)
+    if (${RES} EQUAL 0)
+        # Extract versions only from the list
+        string(REGEX MATCHALL "[0-9]+\\.[0-9]+\\.[0-9]+" DOT_NET_SDK_VERSIONS "${DOT_NET_SDK_LIST}")
+        set(DOT_NET_SDK_VERSIONS ${DOT_NET_SDK_VERSIONS} CACHE STRING "Available .NET SDK versions" FORCE)
+        message("Available .NET SDK versions: ${DOT_NET_SDK_VERSIONS}")
+
+        set(MAX_DOT_NET_SDK_VERSION "")
+        foreach(VER IN LISTS DOT_NET_SDK_VERSIONS)
+            if(VER VERSION_GREATER MAX_DOT_NET_SDK_VERSION)
+                set(MAX_DOT_NET_SDK_VERSION "${VER}")
+            endif()
+        endforeach()
+        set(MAX_DOT_NET_SDK_VERSION ${MAX_DOT_NET_SDK_VERSION} CACHE STRING "Maximum .NET SDK version" FORCE)
+        message("  Maximum .NET SDK version: ${MAX_DOT_NET_SDK_VERSION}")
+    else()
+        message("dotnet command is not found. This indicates that .NET SDK is not installed on this machine.")
+    endif()
+endif()
 
 add_subdirectory(ThirdParty)
 add_subdirectory(BuildTools)
@@ -523,4 +633,4 @@ if(DILIGENT_INSTALL_CORE)
 endif(DILIGENT_INSTALL_CORE)
 
 # Create a custom target to run source code formatting validation command
-#add_format_validation_target(DiligentCore "${CMAKE_CURRENT_SOURCE_DIR}" DiligentCore/BuildTools)
+add_format_validation_target(DiligentCore "${CMAKE_CURRENT_SOURCE_DIR}" DiligentCore/BuildTools)

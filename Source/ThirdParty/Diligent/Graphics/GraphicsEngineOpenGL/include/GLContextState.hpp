@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,6 +28,7 @@
 #pragma once
 
 #include <limits>
+#include <vector>
 
 #include "GraphicsTypes.h"
 #include "GLObjectWrapper.hpp"
@@ -104,6 +105,7 @@ public:
         m_FBOId = -1;
     }
     bool IsValidVAOBound() const { return m_VAOId > 0; }
+    bool IsValidFBOBound() const { return m_FBOId >= 0; }
 
     void SetCurrentGLContext(GLContext::NativeGLContextType Context) { m_CurrentGLContext = Context; }
 
@@ -113,11 +115,24 @@ public:
     {
         bool  IsFillModeSelectionSupported = true;
         bool  IsProgramPipelineSupported   = true;
+        bool  IsDepthClampSupported        = true;
         GLint MaxCombinedTexUnits          = 0;
         GLint MaxDrawBuffers               = 0;
         GLint MaxUniformBufferBindings     = 0;
     };
     const ContextCaps& GetContextCaps() { return m_Caps; }
+
+    // glBlitFramebuffer respects scissor test, which is never what we want
+    void BlitFramebufferNoScissor(GLint      srcX0,
+                                  GLint      srcY0,
+                                  GLint      srcX1,
+                                  GLint      srcY1,
+                                  GLint      dstX0,
+                                  GLint      dstY0,
+                                  GLint      dstX1,
+                                  GLint      dstY1,
+                                  GLbitfield mask,
+                                  GLenum     filter);
 
 private:
     // It is unsafe to use GL handle to keep track of bound objects
@@ -131,6 +146,20 @@ private:
     UniqueIdentifier m_GLPipelineId = -1;
     UniqueIdentifier m_VAOId        = -1;
     UniqueIdentifier m_FBOId        = -1;
+
+    struct BoundTextureInfo
+    {
+        UniqueIdentifier TexID      = -1;
+        GLenum           BindTarget = 0;
+
+        constexpr bool operator!=(const BoundTextureInfo& rhs) const
+        {
+            // clang-format off
+            return TexID      != rhs.TexID      ||
+                   BindTarget != rhs.BindTarget;
+            // clang-format on
+        }
+    };
 
     struct BoundBufferInfo
     {
@@ -148,7 +177,7 @@ private:
         GLintptr         Offset   = 0;
         GLsizeiptr       Size     = 0;
 
-        bool operator!=(const BoundBufferInfo& rhs) const
+        constexpr bool operator!=(const BoundBufferInfo& rhs) const
         {
             // clang-format off
             return BufferID != rhs.BufferID ||
@@ -188,7 +217,7 @@ private:
         // clang-format on
         {}
 
-        bool operator!=(const BoundImageInfo& rhs) const
+        constexpr bool operator!=(const BoundImageInfo& rhs) const
         {
             // clang-format off
             return InterfaceID != rhs.InterfaceID ||
@@ -202,7 +231,7 @@ private:
         }
     };
 
-    std::vector<UniqueIdentifier> m_BoundTextures;
+    std::vector<BoundTextureInfo> m_BoundTextures;
     std::vector<UniqueIdentifier> m_BoundSamplers;
     std::vector<BoundBufferInfo>  m_BoundUniformBuffers;
     std::vector<BoundImageInfo>   m_BoundImages;

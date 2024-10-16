@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -66,14 +66,11 @@ DynamicBuffer::DynamicBuffer(IRenderDevice*                 pDevice,
                              const DynamicBufferCreateInfo& CI) :
     m_Name{CI.Desc.Name != nullptr ? CI.Desc.Name : "Dynamic buffer"},
     m_Desc{CI.Desc},
-    m_VirtualSize{CI.VirtualSize},
+    m_VirtualSize{CI.Desc.Usage == USAGE_SPARSE ? CI.VirtualSize : 0},
     m_MemoryPageSize{CI.MemoryPageSize}
 {
-    if (m_Desc.BindFlags & (BIND_SHADER_RESOURCE | BIND_UNORDERED_ACCESS))
-    {
-        VERIFY_EXPR(m_Desc.ElementByteStride != 0);
-        m_VirtualSize = AlignDownNonPw2(m_VirtualSize, m_Desc.ElementByteStride);
-    }
+    DEV_CHECK_ERR(CI.Desc.Usage != USAGE_SPARSE || CI.VirtualSize > 0, "Virtual size must not be 0 for sparse buffers");
+
     m_Desc.Name   = m_Name.c_str();
     m_PendingSize = m_Desc.Size;
     m_Desc.Size   = 0; // Current buffer size
@@ -99,12 +96,22 @@ void DynamicBuffer::CreateSparseBuffer(IRenderDevice* pDevice)
     const auto& SparseResources    = pDevice->GetAdapterInfo().SparseResources;
     const auto  SparseMemBlockSize = SparseResources.StandardBlockSize;
 
-    m_MemoryPageSize = std::max(AlignUp(m_MemoryPageSize, SparseMemBlockSize), SparseMemBlockSize);
-    m_VirtualSize    = std::min(m_VirtualSize, AlignDown(SparseResources.ResourceSpaceSize, m_MemoryPageSize));
+    m_MemoryPageSize = std::max(AlignUpNonPw2(m_MemoryPageSize, SparseMemBlockSize), SparseMemBlockSize);
 
     {
         auto Desc = m_Desc;
-        Desc.Size = m_VirtualSize;
+
+        Desc.Size    = AlignUpNonPw2(m_VirtualSize, m_MemoryPageSize);
+        auto MaxSize = AlignDownNonPw2(SparseResources.ResourceSpaceSize, m_MemoryPageSize);
+        if (m_Desc.BindFlags & (BIND_SHADER_RESOURCE | BIND_UNORDERED_ACCESS))
+        {
+            VERIFY_EXPR(m_Desc.ElementByteStride != 0);
+            // Buffer size must be a multiple of the element stride
+            Desc.Size = AlignUpNonPw2(Desc.Size, m_Desc.ElementByteStride);
+            MaxSize   = AlignDownNonPw2(MaxSize, m_Desc.ElementByteStride);
+        }
+        Desc.Size = std::min(Desc.Size, MaxSize);
+
         pDevice->CreateBuffer(Desc, nullptr, &m_pBuffer);
         DEV_CHECK_ERR(m_pBuffer, "Failed to create sparse buffer");
         if (!m_pBuffer)
@@ -274,10 +281,11 @@ void DynamicBuffer::CommitResize(IRenderDevice*  pDevice,
             else
                 ResizeDefaultBuffer(pContext);
 
-            m_Desc.Size = m_PendingSize;
+            LOG_INFO_MESSAGE("Dynamic buffer: expanding dynamic buffer '", m_Desc.Name, "' from ",
+                             FormatMemorySize(m_Desc.Size, 1), " to ", FormatMemorySize(m_PendingSize, 1),
+                             ". Version: ", GetVersion());
 
-            LOG_INFO_MESSAGE("Dynamic buffer: expanding dynamic buffer '", m_Desc.Name,
-                             "' to ", FormatMemorySize(m_Desc.Size, 1), ". Version: ", GetVersion());
+            m_Desc.Size = m_PendingSize;
         }
         else
         {
@@ -292,7 +300,10 @@ IBuffer* DynamicBuffer::Resize(IRenderDevice*  pDevice,
                                bool            DiscardContent)
 {
     if (m_Desc.Usage == USAGE_SPARSE)
-        NewSize = AlignUp(NewSize, m_MemoryPageSize);
+    {
+        DEV_CHECK_ERR(NewSize <= m_VirtualSize, "New size (", NewSize, ") exceeds the buffer virtual size (", m_VirtualSize, ").");
+        NewSize = AlignUpNonPw2(NewSize, m_MemoryPageSize);
+    }
 
     if (m_Desc.Size != NewSize)
     {
@@ -308,7 +319,7 @@ IBuffer* DynamicBuffer::Resize(IRenderDevice*  pDevice,
                               "There is a non-null stale buffer. This likely indicates that "
                               "Resize() has been called multiple times with different sizes, "
                               "but copy has not been committed by providing non-null device "
-                              "context to either Resize() or GetBuffer()");
+                              "context to either Resize() or Update()");
             }
 
             if (m_PendingSize == 0)
@@ -328,8 +339,8 @@ IBuffer* DynamicBuffer::Resize(IRenderDevice*  pDevice,
     return m_pBuffer;
 }
 
-IBuffer* DynamicBuffer::GetBuffer(IRenderDevice*  pDevice,
-                                  IDeviceContext* pContext)
+IBuffer* DynamicBuffer::Update(IRenderDevice*  pDevice,
+                               IDeviceContext* pContext)
 {
     CommitResize(pDevice, pContext, false /*AllowNull*/);
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,7 +40,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {8B0C91B4-B1D8-4E03-9250-A70E131A59FA}
-static const INTERFACE_ID IID_ShaderVk =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_ShaderVk =
     {0x8b0c91b4, 0xb1d8, 0x4e03, {0x92, 0x50, 0xa7, 0xe, 0x13, 0x1a, 0x59, 0xfa}};
 
 #define IShaderVkInclusiveMethods \

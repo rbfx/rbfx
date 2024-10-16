@@ -5,7 +5,7 @@
 #
 # For details, see <https://creativecommons.org/publicdomain/zero/1.0/>.
 
-cmake_minimum_required (VERSION 2.8.12 FATAL_ERROR)
+cmake_minimum_required (VERSION 3.5 FATAL_ERROR)
 
 set(XXHASH_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
 
@@ -25,14 +25,10 @@ if("${CMAKE_VERSION}" VERSION_LESS "3.13")
 else()
     cmake_policy (SET CMP0077 NEW)
 endif()
-if("${CMAKE_VERSION}" VERSION_LESS "3.0")
-    project(xxHash C)
-else()
-    cmake_policy (SET CMP0048 NEW)
-    project(xxHash
-        VERSION ${XXHASH_VERSION_STRING}
-        LANGUAGES C)
-endif()
+cmake_policy (SET CMP0048 NEW)
+project(xxHash
+    VERSION ${XXHASH_VERSION_STRING}
+    LANGUAGES C)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Project build type" FORCE)
@@ -75,8 +71,29 @@ mark_as_advanced(XXHASH_BUNDLED_MODE)
 include(CMakeDependentOption)
 CMAKE_DEPENDENT_OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON "NOT XXHASH_BUNDLED_MODE" OFF)
 
+if("${CMAKE_VERSION}" VERSION_LESS "3.10")
+  # Can not enable DISPATCH mode since it fails to recognize architecture.
+else()
+  CMAKE_HOST_SYSTEM_INFORMATION(RESULT PLATFORM QUERY OS_PLATFORM)
+  message(STATUS "Architecture: ${PLATFORM}")
+endif()
+
 # libxxhash
-add_library(xxhash "${XXHASH_DIR}/xxhash.c")
+if((DEFINED DISPATCH) AND (DEFINED PLATFORM))
+  # Only support DISPATCH option on x86_64.
+  if(("${PLATFORM}" STREQUAL "x86_64") OR ("${PLATFORM}" STREQUAL "AMD64"))
+    set(XXHSUM_DISPATCH ON)
+    message(STATUS "Enable xxHash dispatch mode")
+    add_library(xxhash "${XXHASH_DIR}/xxh_x86dispatch.c"
+                       "${XXHASH_DIR}/xxhash.c"
+               )
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DXXHSUM_DISPATCH=1")
+  else()
+    add_library(xxhash "${XXHASH_DIR}/xxhash.c")
+  endif()
+else()
+  add_library(xxhash "${XXHASH_DIR}/xxhash.c")
+endif()
 add_library(${PROJECT_NAME}::xxhash ALIAS xxhash)
 
 target_include_directories(xxhash
@@ -93,12 +110,17 @@ set_target_properties(xxhash PROPERTIES
 if(XXHASH_BUILD_XXHSUM)
   set(XXHSUM_DIR "${XXHASH_DIR}/cli")
   # xxhsum
-  add_executable(xxhsum "${XXHSUM_DIR}/xxhsum.c"
-                        "${XXHSUM_DIR}/xsum_os_specific.c"
-                        "${XXHSUM_DIR}/xsum_output.c"
-                        "${XXHSUM_DIR}/xsum_sanity_check.c"
-                        "${XXHSUM_DIR}/xsum_bench.c"
-                )
+  set(XXHSUM_SOURCES)
+  if (XXHSUM_DISPATCH)
+    list(APPEND XXHSUM_SOURCES "${XXHASH_DIR}/xxh_x86dispatch.c")
+  endif()
+  list(APPEND XXHSUM_SOURCES "${XXHSUM_DIR}/xxhsum.c"
+                             "${XXHSUM_DIR}/xsum_os_specific.c"
+                             "${XXHSUM_DIR}/xsum_output.c"
+                             "${XXHSUM_DIR}/xsum_sanity_check.c"
+                             "${XXHSUM_DIR}/xsum_bench.c"
+      )
+  add_executable(xxhsum ${XXHSUM_SOURCES})
   add_executable(${PROJECT_NAME}::xxhsum ALIAS xxhsum)
 
   target_link_libraries(xxhsum PRIVATE xxhash)
@@ -123,6 +145,10 @@ if(NOT XXHASH_BUNDLED_MODE)
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
   install(FILES "${XXHASH_DIR}/xxh3.h"
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+  if(DISPATCH)
+    install(FILES "${XXHASH_DIR}/xxh_x86dispatch.h"
+      DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+  endif()
   if(XXHASH_BUILD_XXHSUM)
     install(TARGETS xxhsum
       EXPORT xxHashTargets
@@ -144,19 +170,9 @@ if(NOT XXHASH_BUNDLED_MODE)
     ${PROJECT_SOURCE_DIR}/xxHashConfig.cmake.in
     ${xxHash_PROJECT_CONFIG}
     INSTALL_DESTINATION ${xxHash_CONFIG_INSTALL_DIR})
-  if("${CMAKE_VERSION}" VERSION_LESS "3.0")
-      set(XXHASH_EXPORT_SET xxhash)
-      if(XXHASH_BUILD_XXHSUM)
-        set(XXHASH_EXPORT_SET ${XXHASH_EXPORT_SET} xxhsum)
-      endif()
-      export(TARGETS ${XXHASH_EXPORT_SET}
-      FILE ${xxHash_TARGETS_CONFIG}
-      NAMESPACE ${PROJECT_NAME}::)
-  else()
     export(EXPORT xxHashTargets
       FILE ${xxHash_TARGETS_CONFIG}
       NAMESPACE ${PROJECT_NAME}::)
-  endif()
 
   install(FILES ${xxHash_PROJECT_CONFIG} ${xxHash_VERSION_CONFIG}
     DESTINATION ${xxHash_CONFIG_INSTALL_DIR})
@@ -165,10 +181,11 @@ if(NOT XXHASH_BUNDLED_MODE)
     NAMESPACE ${PROJECT_NAME}::)
 
   # configure and install pkg-config
+  include(JoinPaths.cmake)
   set(PREFIX ${CMAKE_INSTALL_PREFIX})
   set(EXECPREFIX "\${prefix}")
-  set(INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}")
-  set(LIBDIR "${CMAKE_INSTALL_LIBDIR}")
+  join_paths(INCLUDEDIR "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
+  join_paths(LIBDIR "\${prefix}" "${CMAKE_INSTALL_LIBDIR}")
   set(VERSION "${XXHASH_VERSION_STRING}")
   configure_file(${XXHASH_DIR}/libxxhash.pc.in ${CMAKE_BINARY_DIR}/libxxhash.pc @ONLY)
 

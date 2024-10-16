@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -38,17 +38,8 @@ bool PRSSerializerD3D12<Mode>::SerializeInternalData(
     ConstQual<PipelineResourceSignatureInternalDataD3D12>& InternalData,
     DynamicLinearAllocator*                                Allocator)
 {
-    if (!PRSSerializer<Mode>::SerializeInternalData(Ser, InternalData, Allocator))
-        return false;
-
-    if (!Ser.SerializeArrayRaw(Allocator, InternalData.pResourceAttribs, InternalData.NumResources))
-        return false;
-    if (!Ser.SerializeArrayRaw(Allocator, InternalData.pImmutableSamplers, InternalData.NumImmutableSamplers))
-        return false;
-
-    ASSERT_SIZEOF64(InternalData, 48, "Did you add a new member to PipelineResourceSignatureInternalDataD3D12? Please add serialization here.");
-
-    return true;
+    ASSERT_SIZEOF64(InternalData, 40, "Did you add a new member to PipelineResourceSignatureInternalDataD3D12? Please add serialization here.");
+    return PRSSerializer<Mode>::template SerializeInternalData<PipelineResourceSignatureInternalDataD3D12>(Ser, InternalData, Allocator);
 }
 
 template struct PRSSerializerD3D12<SerializerMode::Read>;

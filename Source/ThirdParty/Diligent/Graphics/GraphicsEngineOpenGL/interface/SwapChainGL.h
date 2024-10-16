@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {F457BD7C-E725-4D3E-8607-A1F9BAE329EB}
-static const INTERFACE_ID IID_SwapChainGL =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_SwapChainGL =
     {0xf457bd7c, 0xe725, 0x4d3e, {0x86, 0x7, 0xa1, 0xf9, 0xba, 0xe3, 0x29, 0xeb}};
 
 #define ISwapChainGLInclusiveMethods \

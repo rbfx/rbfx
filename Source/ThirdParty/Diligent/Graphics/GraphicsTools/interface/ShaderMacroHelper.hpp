@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,21 +25,6 @@
  *  of the possibility of such damages.
  */
 
-//--------------------------------------------------------------------------------------
-// Copyright 2013 Intel Corporation
-// All Rights Reserved
-//
-// Permission is granted to use, copy, distribute and prepare derivative works of this
-// software for any purpose and without fee, provided, that the above copyright notice
-// and this statement appear in all copies.  Intel makes no representations about the
-// suitability of this software for any purpose.  THIS SOFTWARE IS PROVIDED "AS IS."
-// INTEL SPECIFICALLY DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, AND ALL LIABILITY,
-// INCLUDING CONSEQUENTIAL AND OTHER INDIRECT DAMAGES, FOR THE USE OF THIS SOFTWARE,
-// INCLUDING LIABILITY FOR INFRINGEMENT OF ANY PROPRIETARY RIGHTS, AND INCLUDING THE
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  Intel does not
-// assume any responsibility for any errors which may appear in this software nor any
-// responsibility to update it.
-//--------------------------------------------------------------------------------------
 #pragma once
 
 #include <set>
@@ -48,7 +33,6 @@
 #include <iomanip>
 #include "../../GraphicsEngine/interface/Shader.h"
 #include "../../../Platforms/Basic/interface/DebugUtilities.hpp"
-
 
 namespace Diligent
 {
@@ -64,7 +48,7 @@ public:
         {
             if (strcmp(m_Macros[i].Name, Name) == 0)
             {
-                UNEXPECTED("Macro '", Name, "' already exists. Use UpdateMacro() to update the macro value.");
+                UNEXPECTED("Macro '", Name, "' already exists. Use Update() to update the macro value.");
             }
         }
 #endif
@@ -73,13 +57,18 @@ public:
         return AddShaderMacro<const Char*>(Name, ss.str().c_str());
     }
 
+    template <typename DefinitionType>
+    ShaderMacroHelper& Add(const Char* Name, DefinitionType Definition)
+    {
+        return AddShaderMacro(Name, Definition);
+    }
+
     ShaderMacroHelper() = default;
 
     // NB: we need to make sure that string pointers in m_Macros don't become invalid
     //     after the copy or move due to short string optimization in std::string
     ShaderMacroHelper(const ShaderMacroHelper& rhs) :
-        m_Macros{rhs.m_Macros},
-        m_bIsFinalized{rhs.m_bIsFinalized}
+        m_Macros{rhs.m_Macros}
     {
         for (auto& Macros : m_Macros)
         {
@@ -99,40 +88,21 @@ public:
     ShaderMacroHelper(ShaderMacroHelper&&) = default;
     ShaderMacroHelper& operator=(ShaderMacroHelper&&) = default;
 
-    void Finalize()
-    {
-        if (!m_bIsFinalized)
-        {
-            m_Macros.emplace_back(nullptr, nullptr);
-            m_bIsFinalized = true;
-        }
-    }
-
-    void Reopen()
-    {
-        if (m_bIsFinalized)
-        {
-            VERIFY_EXPR(!m_Macros.empty() && m_Macros.back().Name == nullptr && m_Macros.back().Definition == nullptr);
-            m_Macros.pop_back();
-            m_bIsFinalized = false;
-        }
-    }
-
     void Clear()
     {
         m_Macros.clear();
         m_StringPool.clear();
-        m_bIsFinalized = false;
     }
 
-    operator const ShaderMacro*()
+    operator ShaderMacroArray() const
     {
-        if (!m_Macros.empty() && !m_bIsFinalized)
-            Finalize();
-        return !m_Macros.empty() ? m_Macros.data() : nullptr;
+        return {
+            !m_Macros.empty() ? m_Macros.data() : nullptr,
+            static_cast<Uint32>(m_Macros.size()),
+        };
     }
 
-    void RemoveMacro(const Char* Name)
+    ShaderMacroHelper& RemoveMacro(const Char* Name)
     {
         size_t i = 0;
         while (i < m_Macros.size() && m_Macros[i].Definition != nullptr)
@@ -147,6 +117,13 @@ public:
                 ++i;
             }
         }
+
+        return *this;
+    }
+
+    ShaderMacroHelper& Remove(const Char* Name)
+    {
+        return RemoveMacro(Name);
     }
 
     template <typename DefinitionType>
@@ -156,20 +133,71 @@ public:
         return AddShaderMacro(Name, Definition);
     }
 
+    template <typename DefinitionType>
+    ShaderMacroHelper& Update(const Char* Name, DefinitionType Definition)
+    {
+        return UpdateMacro(Name, Definition);
+    }
+
+    ShaderMacroHelper& Add(const ShaderMacro& Macro)
+    {
+        const auto* PooledDefinition = m_StringPool.insert(Macro.Definition).first->c_str();
+        const auto* PooledName       = m_StringPool.insert(Macro.Name).first->c_str();
+        m_Macros.emplace_back(PooledName, PooledDefinition);
+        return *this;
+    }
+
+    ShaderMacroHelper& operator+=(const ShaderMacroHelper& Macros)
+    {
+        for (const auto& Macro : Macros.m_Macros)
+            Add(Macro);
+
+        return *this;
+    }
+
+    ShaderMacroHelper& operator+=(const ShaderMacro& Macro)
+    {
+        return Add(Macro);
+    }
+
+    ShaderMacroHelper& operator+=(const ShaderMacroArray& Macros)
+    {
+        for (Uint32 i = 0; i < Macros.Count; ++i)
+            Add(Macros[i]);
+
+        return *this;
+    }
+
+    template <typename T>
+    ShaderMacroHelper operator+(const T& Macros) const
+    {
+        ShaderMacroHelper NewMacros{*this};
+        NewMacros += Macros;
+        return NewMacros;
+    }
+
+    const char* Find(const char* Name) const
+    {
+        if (Name == nullptr)
+            return nullptr;
+
+        for (const auto& Macro : m_Macros)
+        {
+            if (strcmp(Macro.Name, Name) == 0)
+                return Macro.Definition != nullptr ? Macro.Definition : "";
+        }
+        return nullptr;
+    }
+
 private:
     std::vector<ShaderMacro> m_Macros;
     std::set<std::string>    m_StringPool;
-    bool                     m_bIsFinalized = false;
 };
 
 template <>
 inline ShaderMacroHelper& ShaderMacroHelper::AddShaderMacro(const Char* Name, const Char* Definition)
 {
-    Reopen();
-    const auto* PooledDefinition = m_StringPool.insert(Definition).first->c_str();
-    const auto* PooledName       = m_StringPool.insert(Name).first->c_str();
-    m_Macros.emplace_back(PooledName, PooledDefinition);
-    return *this;
+    return Add(ShaderMacro{Name, Definition != nullptr ? Definition : ""});
 }
 
 template <>
@@ -203,9 +231,21 @@ inline ShaderMacroHelper& ShaderMacroHelper::AddShaderMacro(const Char* Name, Ui
 }
 
 template <>
+inline ShaderMacroHelper& ShaderMacroHelper::AddShaderMacro(const Char* Name, Uint16 Definition)
+{
+    return AddShaderMacro(Name, Uint32{Definition});
+}
+
+template <>
 inline ShaderMacroHelper& ShaderMacroHelper::AddShaderMacro(const Char* Name, Uint8 Definition)
 {
     return AddShaderMacro(Name, Uint32{Definition});
+}
+
+template <>
+inline ShaderMacroHelper& ShaderMacroHelper::AddShaderMacro(const Char* Name, Int8 Definition)
+{
+    return AddShaderMacro(Name, Int32{Definition});
 }
 
 #define ADD_SHADER_MACRO_ENUM_VALUE(Helper, EnumValue) Helper.AddShaderMacro(#EnumValue, static_cast<int>(EnumValue));

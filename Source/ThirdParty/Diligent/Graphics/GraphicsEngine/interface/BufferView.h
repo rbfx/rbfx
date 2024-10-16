@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +37,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {E2E83490-E9D2-495B-9A83-ABB413A38B07}
-static const struct INTERFACE_ID IID_BufferView =
+static DILIGENT_CONSTEXPR struct INTERFACE_ID IID_BufferView =
     {0xe2e83490, 0xe9d2, 0x495b, {0x9a, 0x83, 0xab, 0xb4, 0x13, 0xa3, 0x8b, 0x7}};
 
 /// Buffer format description

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {B6A17C51-CCA9-44E1-A2DC-5DE250CF85AD}
-static const INTERFACE_ID IID_PipelineStateMtl =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_PipelineStateMtl =
     {0xb6a17c51, 0xcca9, 0x44e1, {0xa2, 0xdc, 0x5d, 0xe2, 0x50, 0xcf, 0x85, 0xad}};
 
 #define DILIGENT_INTERFACE_NAME IPipelineStateMtl

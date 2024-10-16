@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@
 #include "ArchiverImpl.hpp"
 #include "SerializationDeviceImpl.hpp"
 #include "EngineMemory.h"
+#include "PlatformDebug.hpp"
 
 namespace Diligent
 {
@@ -40,7 +41,7 @@ DeviceObjectArchive::DeviceType ArchiveDeviceDataFlagToArchiveDeviceType(ARCHIVE
 {
     using DeviceType = DeviceObjectArchive::DeviceType;
     VERIFY(IsPowerOfTwo(DeviceFlag), "Only single flag is expected");
-    static_assert(ARCHIVE_DEVICE_DATA_FLAG_LAST == ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS, "Please handle the new data type below");
+    static_assert(ARCHIVE_DEVICE_DATA_FLAG_LAST == 1 << 7, "Please handle the new data type below");
     switch (DeviceFlag)
     {
         case ARCHIVE_DEVICE_DATA_FLAG_NONE:
@@ -65,6 +66,9 @@ DeviceObjectArchive::DeviceType ArchiveDeviceDataFlagToArchiveDeviceType(ARCHIVE
 
         case ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS:
             return DeviceType::Metal_iOS;
+
+        case ARCHIVE_DEVICE_DATA_FLAG_WEBGPU:
+            return DeviceType::WebGPU;
 
         default:
             UNEXPECTED("Unexpected data type");
@@ -137,6 +141,8 @@ public:
 
     virtual void DILIGENT_CALL_TYPE SetMessageCallback(DebugMessageCallbackType MessageCallback) const override final;
 
+    virtual void DILIGENT_CALL_TYPE SetBreakOnError(bool BreakOnError) const override final;
+
 private:
     DummyReferenceCounters<ArchiverFactoryImpl> m_RefCounters;
 };
@@ -195,10 +201,12 @@ void ArchiverFactoryImpl::CreateSerializationDevice(const SerializationDeviceCre
 
 void ArchiverFactoryImpl::CreateDefaultShaderSourceStreamFactory(const Char* SearchDirectories, struct IShaderSourceInputStreamFactory** ppShaderSourceFactory) const
 {
-    DEV_CHECK_ERR(ppShaderSourceFactory != nullptr, "ppShaderSourceFactory must not be null.");
-    DEV_CHECK_ERR(*ppShaderSourceFactory == nullptr, "*ppShaderSourceFactory is not null. Make sure the pointer is null to avoid memory leaks.");
-    if (!ppShaderSourceFactory)
+    if (ppShaderSourceFactory == nullptr)
+    {
+        DEV_ERROR("ppShaderSourceFactory must not be null.");
         return;
+    }
+    DEV_CHECK_ERR(*ppShaderSourceFactory == nullptr, "*ppShaderSourceFactory is not null. Make sure the pointer is null to avoid memory leaks.");
 
     Diligent::CreateDefaultShaderSourceStreamFactory(SearchDirectories, ppShaderSourceFactory);
 }
@@ -207,12 +215,17 @@ Bool ArchiverFactoryImpl::RemoveDeviceData(const IDataBlob*          pSrcArchive
                                            ARCHIVE_DEVICE_DATA_FLAGS DeviceFlags,
                                            IDataBlob**               ppDstArchive) const
 {
-    DEV_CHECK_ERR(pSrcArchive != nullptr, "pSrcArchive must not be null");
-    DEV_CHECK_ERR(ppDstArchive != nullptr, "ppDstArchive must not be null");
-    DEV_CHECK_ERR(*ppDstArchive == nullptr, "*ppDstArchive must be null");
-
-    if (ppDstArchive == nullptr || pSrcArchive == nullptr)
+    if (pSrcArchive == nullptr)
+    {
+        DEV_ERROR("pSrcArchive must not be null");
         return false;
+    }
+    if (ppDstArchive == nullptr)
+    {
+        DEV_ERROR("ppDstArchive must not be null");
+        return false;
+    }
+    DEV_CHECK_ERR(*ppDstArchive == nullptr, "*ppDstArchive must be null");
 
     try
     {
@@ -240,13 +253,22 @@ Bool ArchiverFactoryImpl::AppendDeviceData(const IDataBlob*          pSrcArchive
                                            const IDataBlob*          pDeviceArchive,
                                            IDataBlob**               ppDstArchive) const
 {
-    DEV_CHECK_ERR(pSrcArchive != nullptr, "pSrcArchive must not be null");
-    DEV_CHECK_ERR(pDeviceArchive != nullptr, "pDeviceArchive must not be null");
-    DEV_CHECK_ERR(ppDstArchive != nullptr, "ppDstArchive must not be null");
-    DEV_CHECK_ERR(*ppDstArchive == nullptr, "*ppDstArchive must be null");
-
-    if (ppDstArchive == nullptr || pDeviceArchive == nullptr || pSrcArchive == nullptr)
+    if (pSrcArchive == nullptr)
+    {
+        DEV_ERROR("pSrcArchive must not be null");
         return false;
+    }
+    if (pDeviceArchive == nullptr)
+    {
+        DEV_ERROR("pDeviceArchive must not be null");
+        return false;
+    }
+    if (ppDstArchive == nullptr)
+    {
+        DEV_ERROR("ppDstArchive must not be null");
+        return false;
+    }
+    DEV_CHECK_ERR(*ppDstArchive == nullptr, "*ppDstArchive must be null");
 
     try
     {
@@ -320,6 +342,11 @@ Bool ArchiverFactoryImpl::PrintArchiveContent(const IDataBlob* pArchive) const
 void ArchiverFactoryImpl::SetMessageCallback(DebugMessageCallbackType MessageCallback) const
 {
     SetDebugMessageCallback(MessageCallback);
+}
+
+void ArchiverFactoryImpl::SetBreakOnError(bool BreakOnError) const
+{
+    PlatformDebug::SetBreakOnError(BreakOnError);
 }
 
 } // namespace

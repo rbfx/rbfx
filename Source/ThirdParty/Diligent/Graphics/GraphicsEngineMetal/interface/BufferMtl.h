@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {F8A1A3AC-923A-419D-AB9D-FE9E35DC654B}
-static const INTERFACE_ID IID_BufferMtl =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_BufferMtl =
     {0xf8a1a3ac, 0x923a, 0x419d, {0xab, 0x9d, 0xfe, 0x9e, 0x35, 0xdc, 0x65, 0x4b}};
 
 #define DILIGENT_INTERFACE_NAME IBufferMtl

@@ -12,16 +12,21 @@ set(INTERFACE
     interface/DurationQueryHelper.hpp
     interface/GraphicsUtilities.h
     interface/MapHelper.hpp
+    interface/OffScreenSwapChain.hpp
+    interface/ResourceRegistry.hpp
     interface/ScopedDebugGroup.hpp
     interface/GPUCompletionAwaitQueue.hpp
     interface/ScopedQueryHelper.hpp
     interface/ScreenCapture.hpp
     interface/ShaderMacroHelper.hpp
     interface/StreamingBuffer.hpp
+    interface/ShaderSourceFactoryUtils.h
+    interface/ShaderSourceFactoryUtils.hpp
     interface/TextureUploader.hpp
     interface/TextureUploaderBase.hpp
     interface/XXH128Hasher.hpp
     interface/VertexPool.h
+    interface/VertexPoolX.hpp
 )
 
 set(SOURCE
@@ -32,20 +37,38 @@ set(SOURCE
     src/DynamicTextureArray.cpp
     src/DynamicTextureAtlas.cpp
     src/GraphicsUtilities.cpp
+    src/GraphicsUtilitiesD3D11.cpp
+    src/GraphicsUtilitiesD3D12.cpp
+    src/GraphicsUtilitiesGL.cpp
+    src/GraphicsUtilitiesVk.cpp
+    src/GraphicsUtilitiesWebGPU.cpp
+    src/OffScreenSwapChain.cpp
     src/ScopedQueryHelper.cpp
     src/ScreenCapture.cpp
+    src/ShaderSourceFactoryUtils.cpp
     src/TextureUploader.cpp
     src/XXH128Hasher.cpp
     src/VertexPool.cpp
 )
+
+set(INCLUDE include/ProxyPipelineState.hpp)
 
 if(ARCHIVER_SUPPORTED)
     list(APPEND INTERFACE
         interface/RenderStateCache.h
         interface/RenderStateCache.hpp
     )
+    list(APPEND INCLUDE
+        include/AsyncPipelineState.hpp
+        include/RenderStateCacheImpl.hpp
+        include/ReloadableShader.hpp
+        include/ReloadablePipelineState.hpp
+    )
     list(APPEND SOURCE
-        src/RenderStateCache.cpp
+        src/AsyncPipelineState.cpp
+        src/RenderStateCacheImpl.cpp
+        src/ReloadableShader.cpp
+        src/ReloadablePipelineState.cpp
     )
     set(RENDER_STATE_CACHE_SUPPORTED TRUE CACHE INTERNAL "Render state cache is supported")
 else()
@@ -55,18 +78,16 @@ endif()
 set(DEPENDENCIES)
 
 if(D3D11_SUPPORTED)
-    list(APPEND SOURCE src/TextureUploaderD3D11.cpp src/GraphicsUtilitiesD3D11.cpp)
+    list(APPEND SOURCE src/TextureUploaderD3D11.cpp)
     list(APPEND INTERFACE interface/TextureUploaderD3D11.hpp)
     list(APPEND DEPENDENCIES Diligent-GraphicsEngineD3D11Interface)
 endif()
 
 if(D3D12_SUPPORTED)
-    list(APPEND SOURCE src/GraphicsUtilitiesD3D12.cpp)
     list(APPEND DEPENDENCIES Diligent-GraphicsEngineD3D12Interface)
 endif()
 
 if(VULKAN_SUPPORTED)
-    list(APPEND SOURCE src/GraphicsUtilitiesVk.cpp)
     list(APPEND DEPENDENCIES Diligent-GraphicsEngineVkInterface Vulkan::Headers)
 endif()
 
@@ -76,9 +97,18 @@ if(D3D12_SUPPORTED OR VULKAN_SUPPORTED)
 endif()
 
 if(GL_SUPPORTED OR GLES_SUPPORTED)
-    list(APPEND SOURCE src/TextureUploaderGL.cpp src/GraphicsUtilitiesGL.cpp)
+    list(APPEND SOURCE src/TextureUploaderGL.cpp)
     list(APPEND INTERFACE interface/TextureUploaderGL.hpp)
     list(APPEND DEPENDENCIES Diligent-GraphicsEngineOpenGLInterface)
+endif()
+
+if(WEBGPU_SUPPORTED)
+    list(APPEND SOURCE src/TextureUploaderWebGPU.cpp)
+    list(APPEND INTERFACE interface/TextureUploaderWebGPU.hpp)
+    list(APPEND DEPENDENCIES Diligent-GraphicsEngineWebGPUInterface)
+    if (NOT PLATFORM_EMSCRIPTEN)
+        list(APPEND DEPENDENCIES dawn_proc)
+    endif()
 endif()
 
 if(METAL_SUPPORTED)
@@ -86,13 +116,14 @@ if(METAL_SUPPORTED)
     list(APPEND DEPENDENCIES Diligent-GraphicsEngineMetalInterface)
 endif()
 
-add_library(Diligent-GraphicsTools STATIC ${SOURCE} ${INTERFACE})
+add_library(Diligent-GraphicsTools STATIC ${SOURCE} ${INCLUDE} ${INTERFACE})
 
 target_include_directories(Diligent-GraphicsTools
 PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>
+    interface
 PRIVATE
     ../GraphicsEngineD3DBase/include
+    include
 )
 
 target_link_libraries(Diligent-GraphicsTools
@@ -131,6 +162,7 @@ set_common_target_properties(Diligent-GraphicsTools)
 
 source_group("src" FILES ${SOURCE})
 source_group("interface" FILES ${INTERFACE})
+source_group("include" FILES ${INCLUDE})
 
 set_target_properties(Diligent-GraphicsTools PROPERTIES
     FOLDER DiligentCore/Graphics

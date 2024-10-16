@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,7 +40,7 @@ DILIGENT_BEGIN_NAMESPACE(Diligent)
 struct ISampler;
 
 // {5B2EA04E-8128-45E4-AA4D-6DC7E70DC424}
-static const INTERFACE_ID IID_TextureView =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_TextureView =
     {0x5b2ea04e, 0x8128, 0x45e4,{0xaa, 0x4d, 0x6d, 0xc7, 0xe7, 0xd, 0xc4, 0x24}};
 
 // clang-format off
@@ -146,14 +146,74 @@ struct TextureComponentMapping
 
     constexpr bool operator==(const TextureComponentMapping& RHS) const
     {
-        return R == RHS.R &&
-               G == RHS.G && 
-               B == RHS.B &&
-               A == RHS.A;
+        return (R == RHS.R || (R == TEXTURE_COMPONENT_SWIZZLE_IDENTITY && RHS.R == TEXTURE_COMPONENT_SWIZZLE_R) || (R == TEXTURE_COMPONENT_SWIZZLE_R && RHS.R == TEXTURE_COMPONENT_SWIZZLE_IDENTITY)) &&
+               (G == RHS.G || (G == TEXTURE_COMPONENT_SWIZZLE_IDENTITY && RHS.G == TEXTURE_COMPONENT_SWIZZLE_G) || (G == TEXTURE_COMPONENT_SWIZZLE_G && RHS.G == TEXTURE_COMPONENT_SWIZZLE_IDENTITY)) &&
+			   (B == RHS.B || (B == TEXTURE_COMPONENT_SWIZZLE_IDENTITY && RHS.B == TEXTURE_COMPONENT_SWIZZLE_B) || (B == TEXTURE_COMPONENT_SWIZZLE_B && RHS.B == TEXTURE_COMPONENT_SWIZZLE_IDENTITY)) &&
+			   (A == RHS.A || (A == TEXTURE_COMPONENT_SWIZZLE_IDENTITY && RHS.A == TEXTURE_COMPONENT_SWIZZLE_A) || (A == TEXTURE_COMPONENT_SWIZZLE_A && RHS.A == TEXTURE_COMPONENT_SWIZZLE_IDENTITY));
     }
     constexpr bool operator!=(const TextureComponentMapping& RHS) const
     {
         return !(*this == RHS);
+    }
+
+    constexpr TEXTURE_COMPONENT_SWIZZLE operator[](size_t Component) const
+	{
+		return (&R)[Component];
+	}
+
+    constexpr TEXTURE_COMPONENT_SWIZZLE& operator[](size_t Component)
+	{
+		return (&R)[Component];
+	}
+
+    static constexpr TextureComponentMapping Identity()
+	{
+		return {
+            TEXTURE_COMPONENT_SWIZZLE_IDENTITY,
+            TEXTURE_COMPONENT_SWIZZLE_IDENTITY,
+            TEXTURE_COMPONENT_SWIZZLE_IDENTITY,
+            TEXTURE_COMPONENT_SWIZZLE_IDENTITY
+        };
+    }
+
+    // Combines two component mappings into one.
+    // The resulting mapping is equivalent to first applying the first (lhs) mapping,
+    // then applying the second (rhs) mapping.
+    TextureComponentMapping operator*(const TextureComponentMapping& Rhs) const
+	{
+        TextureComponentMapping CombinedMapping;
+        for (size_t c = 0; c < 4; ++c)
+        {
+        	TEXTURE_COMPONENT_SWIZZLE  RhsCompSwizzle = Rhs[c];
+            TEXTURE_COMPONENT_SWIZZLE& DstCompSwizzle = CombinedMapping[c];
+            switch (RhsCompSwizzle)
+            {
+                case TEXTURE_COMPONENT_SWIZZLE_IDENTITY: DstCompSwizzle = (*this)[c]; break;
+                case TEXTURE_COMPONENT_SWIZZLE_ZERO:     DstCompSwizzle = TEXTURE_COMPONENT_SWIZZLE_ZERO; break;
+                case TEXTURE_COMPONENT_SWIZZLE_ONE:      DstCompSwizzle = TEXTURE_COMPONENT_SWIZZLE_ONE; break;
+                case TEXTURE_COMPONENT_SWIZZLE_R:        DstCompSwizzle = (R == TEXTURE_COMPONENT_SWIZZLE_IDENTITY) ? TEXTURE_COMPONENT_SWIZZLE_R : R; break;
+                case TEXTURE_COMPONENT_SWIZZLE_G:        DstCompSwizzle = (G == TEXTURE_COMPONENT_SWIZZLE_IDENTITY) ? TEXTURE_COMPONENT_SWIZZLE_G : G; break;
+                case TEXTURE_COMPONENT_SWIZZLE_B:        DstCompSwizzle = (B == TEXTURE_COMPONENT_SWIZZLE_IDENTITY) ? TEXTURE_COMPONENT_SWIZZLE_B : B; break;
+                case TEXTURE_COMPONENT_SWIZZLE_A:        DstCompSwizzle = (A == TEXTURE_COMPONENT_SWIZZLE_IDENTITY) ? TEXTURE_COMPONENT_SWIZZLE_A : A; break;
+                default: DstCompSwizzle = (*this)[c]; break;
+            }
+
+            if ((DstCompSwizzle == TEXTURE_COMPONENT_SWIZZLE_R && c == 0) ||
+                (DstCompSwizzle == TEXTURE_COMPONENT_SWIZZLE_G && c == 1) ||
+				(DstCompSwizzle == TEXTURE_COMPONENT_SWIZZLE_B && c == 2) ||
+				(DstCompSwizzle == TEXTURE_COMPONENT_SWIZZLE_A && c == 3))
+			{
+				DstCompSwizzle = TEXTURE_COMPONENT_SWIZZLE_IDENTITY;
+			}
+        }
+        static_assert(TEXTURE_COMPONENT_SWIZZLE_COUNT == 7, "Please handle the new component swizzle");
+        return CombinedMapping;
+	}
+
+    TextureComponentMapping& operator*=(const TextureComponentMapping& rhs)
+    {
+        *this = *this * rhs;
+        return *this;
     }
 #endif
 };
@@ -187,6 +247,9 @@ struct TextureViewDesc DILIGENT_DERIVE(DeviceObjectAttribs)
     /// will be referenced.
     Uint32 NumMipLevels            DEFAULT_INITIALIZER(0);
 
+#if defined(DILIGENT_SHARP_GEN)
+    Uint32 FirstSlice DEFAULT_INITIALIZER(0);
+#else
     union
     {
         /// For a texture array, first array slice to address in the view
@@ -195,7 +258,11 @@ struct TextureViewDesc DILIGENT_DERIVE(DeviceObjectAttribs)
         /// For a 3D texture, first depth slice to address the view
         Uint32 FirstDepthSlice;
     };
+#endif
 
+#if defined(DILIGENT_SHARP_GEN)
+    Uint32 NumSlices DEFAULT_INITIALIZER(0);
+#else
     union
     {
         /// For a texture array, number of array slices to address in the view.
@@ -206,6 +273,7 @@ struct TextureViewDesc DILIGENT_DERIVE(DeviceObjectAttribs)
         /// Set to 0 to address all depth slices.
         Uint32 NumDepthSlices;
     };
+#endif
 
     /// For an unordered access view, allowed access flags. See Diligent::UAV_ACCESS_FLAG
     /// for details.
@@ -221,7 +289,7 @@ struct TextureViewDesc DILIGENT_DERIVE(DeviceObjectAttribs)
     // NB: when adding new members, don't forget to update std::hash<Diligent::TextureViewDesc>
     //
 
-#if DILIGENT_CPP_INTERFACE
+#if DILIGENT_CPP_INTERFACE && !defined(DILIGENT_SHARP_GEN)
 
     constexpr TextureViewDesc() noexcept {}
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -510,7 +510,7 @@ void ShaderResources::Initialize(TShaderReflection*  pShaderReflection,
                                  const Char*         CombinedSamplerSuffix,
                                  bool                LoadConstantBufferReflection)
 {
-    using D3D_SHADER_DESC = TD3DReflectionTraits::D3D_SHADER_DESC;
+    using D3D_SHADER_DESC = typename TD3DReflectionTraits::D3D_SHADER_DESC;
 
     Uint32 CurrCB = 0, CurrTexSRV = 0, CurrTexUAV = 0, CurrBufSRV = 0, CurrBufUAV = 0, CurrSampler = 0, CurrAS = 0;
 
@@ -520,7 +520,7 @@ void ShaderResources::Initialize(TShaderReflection*  pShaderReflection,
     // Constant buffer reflections
     std::vector<ShaderCodeBufferDescX> CBReflections;
 
-    LoadD3DShaderResources<TD3DReflectionTraits>(
+    LoadD3DShaderResources<D3DShaderResourceAttribs, TD3DReflectionTraits>(
         pShaderReflection, LoadConstantBufferReflection,
 
         [&](const D3D_SHADER_DESC& d3dShaderDesc) //

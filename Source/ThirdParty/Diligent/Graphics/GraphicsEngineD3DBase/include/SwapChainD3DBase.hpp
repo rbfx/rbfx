@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,6 +29,8 @@
 
 #include <VersionHelpers.h>
 #include "SwapChainBase.hpp"
+#include "DXGITypeConversions.hpp"
+#include "GraphicsAccessories.hpp"
 
 /// \file
 /// Base implementation of a D3D swap chain
@@ -359,6 +361,10 @@ protected:
     }
 
     virtual void SetDXGIDeviceMaximumFrameLatency() {}
+
+    using TBase::m_pRenderDevice;
+    using TBase::m_SwapChainDesc;
+    using TBase::m_DesiredPreTransform;
 
     FullScreenModeDesc         m_FSDesc;
     CComPtr<DXGISwapChainType> m_pSwapChain;

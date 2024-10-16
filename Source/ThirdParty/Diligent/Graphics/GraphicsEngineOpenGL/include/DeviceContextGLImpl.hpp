@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -67,7 +67,7 @@ public:
     virtual void DILIGENT_CALL_TYPE SetPipelineState(IPipelineState* pPipelineState) override final;
 
     /// Implementation of IDeviceContext::TransitionShaderResources() in OpenGL backend.
-    virtual void DILIGENT_CALL_TYPE TransitionShaderResources(IPipelineState* pPipelineState, IShaderResourceBinding* pShaderResourceBinding) override final;
+    virtual void DILIGENT_CALL_TYPE TransitionShaderResources(IShaderResourceBinding* pShaderResourceBinding) override final;
 
     /// Implementation of IDeviceContext::CommitShaderResources() in OpenGL backend.
     virtual void DILIGENT_CALL_TYPE CommitShaderResources(IShaderResourceBinding*        pShaderResourceBinding,
@@ -82,7 +82,7 @@ public:
     /// Implementation of IDeviceContext::SetVertexBuffers() in OpenGL backend.
     virtual void DILIGENT_CALL_TYPE SetVertexBuffers(Uint32                         StartSlot,
                                                      Uint32                         NumBuffersSet,
-                                                     IBuffer**                      ppBuffers,
+                                                     IBuffer* const*                ppBuffers,
                                                      const Uint64*                  pOffsets,
                                                      RESOURCE_STATE_TRANSITION_MODE StateTransitionMode,
                                                      SET_VERTEX_BUFFERS_FLAGS       Flags) override final;
@@ -133,6 +133,10 @@ public:
     virtual void DILIGENT_CALL_TYPE DrawMesh           (const DrawMeshAttribs& Attribs) override final;
     /// Implementation of IDeviceContext::DrawMeshIndirect() in OpenGL backend.
     virtual void DILIGENT_CALL_TYPE DrawMeshIndirect   (const DrawMeshIndirectAttribs& Attribs) override final;
+    /// Implementation of IDeviceContext::MultiDraw() in OpenGL backend.
+    virtual void DILIGENT_CALL_TYPE MultiDraw          (const MultiDrawAttribs& Attribs) override final;
+    /// Implementation of IDeviceContext::MultiDrawIndexed() in OpenGL backend.
+    virtual void DILIGENT_CALL_TYPE MultiDrawIndexed   (const MultiDrawIndexedAttribs& Attribs) override final;
 
     /// Implementation of IDeviceContext::DispatchCompute() in OpenGL backend.
     virtual void DILIGENT_CALL_TYPE DispatchCompute        (const DispatchComputeAttribs& Attribs) override final;
@@ -150,7 +154,7 @@ public:
 
     /// Implementation of IDeviceContext::ClearRenderTarget() in OpenGL backend.
     virtual void DILIGENT_CALL_TYPE ClearRenderTarget(ITextureView*                  pView,
-                                                      const float*                   RGBA,
+                                                      const void*                    RGBA,
                                                       RESOURCE_STATE_TRANSITION_MODE StateTransitionMode) override final;
 
     /// Implementation of IDeviceContext::UpdateBuffer() in OpenGL backend.
@@ -291,6 +295,9 @@ public:
     /// Implementation of IDeviceContextGL::UpdateCurrentGLContext().
     virtual bool DILIGENT_CALL_TYPE UpdateCurrentGLContext() override final;
 
+    /// Implementation of IDeviceContextGL::PurgeCurrentGLContextCaches().
+    virtual void DILIGENT_CALL_TYPE PurgeCurrentGLContextCaches() override final;
+
     GLContextState& GetContextState() { return m_ContextState; }
 
     void CommitRenderTargets();
@@ -299,6 +306,7 @@ public:
 
     virtual void ResetRenderTargets() override final;
 
+    GLuint GetDefaultFBO() const;
 
 protected:
     friend class BufferGLImpl;

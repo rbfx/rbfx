@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,57 +35,59 @@ namespace Diligent
 namespace
 {
 
-class LinearToSRGBMap
+class LinearToGammaMap
 {
 public:
-    LinearToSRGBMap() noexcept
-    {
-        for (Uint32 i = 0; i < m_ToSRBG.size(); ++i)
-        {
-            m_ToSRBG[i] = LinearToSRGB(static_cast<float>(i) / 255.f);
-        }
-    }
-
     float operator[](Uint8 x) const
     {
-        return m_ToSRBG[x];
+        return m_ToGamma[x];
     }
 
 private:
-    std::array<float, 256> m_ToSRBG;
+    const std::array<float, 256> m_ToGamma{
+        []() {
+            std::array<float, 256> ToGamma;
+            for (Uint32 i = 0; i < ToGamma.size(); ++i)
+            {
+                ToGamma[i] = LinearToGamma(static_cast<float>(i) / 255.f);
+            }
+            return ToGamma;
+        }(),
+    };
 };
 
-class SRGBToLinearMap
+class GammaToLinearMap
 {
 public:
-    SRGBToLinearMap() noexcept
-    {
-        for (Uint32 i = 0; i < m_ToLinear.size(); ++i)
-        {
-            m_ToLinear[i] = SRGBToLinear(static_cast<float>(i) / 255.f);
-        }
-    }
-
     float operator[](Uint8 x) const
     {
         return m_ToLinear[x];
     }
 
 private:
-    std::array<float, 256> m_ToLinear;
+    const std::array<float, 256> m_ToLinear{
+        []() {
+            std::array<float, 256> ToLinear;
+            for (Uint32 i = 0; i < ToLinear.size(); ++i)
+            {
+                ToLinear[i] = GammaToLinear(static_cast<float>(i) / 255.f);
+            }
+            return ToLinear;
+        }(),
+    };
 };
 
 } // namespace
 
-float LinearToSRGB(Uint8 x)
+float LinearToGamma(Uint8 x)
 {
-    static const LinearToSRGBMap map;
+    static const LinearToGammaMap map;
     return map[x];
 }
 
-float SRGBToLinear(Uint8 x)
+float GammaToLinear(Uint8 x)
 {
-    static const SRGBToLinearMap map;
+    static const GammaToLinearMap map;
     return map[x];
 }
 

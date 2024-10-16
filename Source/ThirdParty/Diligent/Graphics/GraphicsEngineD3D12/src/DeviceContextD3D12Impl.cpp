@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -150,7 +150,7 @@ DeviceContextD3D12Impl::DeviceContextD3D12Impl(IReferenceCounters*          pRef
     }
 
     {
-        D3D12_RENDER_TARGET_VIEW_DESC NullRTVDesc{DXGI_FORMAT_R8G8B8A8_UNORM, D3D12_RTV_DIMENSION_TEXTURE2D};
+        D3D12_RENDER_TARGET_VIEW_DESC NullRTVDesc{DXGI_FORMAT_R8G8B8A8_UNORM, D3D12_RTV_DIMENSION_TEXTURE2D, {}};
         // A null pResource is used to initialize a null descriptor, which guarantees D3D11-like null binding behavior
         // (reading 0s, writes are discarded), but must have a valid pDesc in order to determine the descriptor type.
         // https://docs.microsoft.com/en-us/windows/win32/api/d3d12/nf-d3d12-id3d12device-createrendertargetview
@@ -424,9 +424,8 @@ void DeviceContextD3D12Impl::CommitRootTablesAndViews(RootTableInfo& RootInfo, U
     RootInfo.StaleSRBMask &= ~RootInfo.ActiveSRBMask;
 }
 
-void DeviceContextD3D12Impl::TransitionShaderResources(IPipelineState* pPipelineState, IShaderResourceBinding* pShaderResourceBinding)
+void DeviceContextD3D12Impl::TransitionShaderResources(IShaderResourceBinding* pShaderResourceBinding)
 {
-    DEV_CHECK_ERR(pPipelineState != nullptr, "Pipeline state must not be null");
     DEV_CHECK_ERR(!m_pActiveRenderPass, "State transitions are not allowed inside a render pass.");
 
     auto& CmdCtx               = GetCmdContext();
@@ -668,7 +667,7 @@ void DeviceContextD3D12Impl::PrepareForIndexedDraw(GraphicsContext& GraphCtx, DR
 
 void DeviceContextD3D12Impl::Draw(const DrawAttribs& Attribs)
 {
-    DvpVerifyDrawArguments(Attribs);
+    TDeviceContextBase::Draw(Attribs, 0);
 
     auto& GraphCtx = GetCmdContext().AsGraphicsContext();
     PrepareForDraw(GraphCtx, Attribs.Flags);
@@ -679,9 +678,29 @@ void DeviceContextD3D12Impl::Draw(const DrawAttribs& Attribs)
     }
 }
 
+void DeviceContextD3D12Impl::MultiDraw(const MultiDrawAttribs& Attribs)
+{
+    TDeviceContextBase::MultiDraw(Attribs, 0);
+
+    auto& GraphCtx = GetCmdContext().AsGraphicsContext();
+    PrepareForDraw(GraphCtx, Attribs.Flags);
+    if (Attribs.NumInstances > 0)
+    {
+        for (Uint32 i = 0; i < Attribs.DrawCount; ++i)
+        {
+            const auto& Item = Attribs.pDrawItems[i];
+            if (Item.NumVertices > 0)
+            {
+                GraphCtx.Draw(Item.NumVertices, Attribs.NumInstances, Item.StartVertexLocation, Attribs.FirstInstanceLocation);
+                ++m_State.NumCommands;
+            }
+        }
+    }
+}
+
 void DeviceContextD3D12Impl::DrawIndexed(const DrawIndexedAttribs& Attribs)
 {
-    DvpVerifyDrawIndexedArguments(Attribs);
+    TDeviceContextBase::DrawIndexed(Attribs, 0);
 
     auto& GraphCtx = GetCmdContext().AsGraphicsContext();
     PrepareForIndexedDraw(GraphCtx, Attribs.Flags, Attribs.IndexType);
@@ -689,6 +708,26 @@ void DeviceContextD3D12Impl::DrawIndexed(const DrawIndexedAttribs& Attribs)
     {
         GraphCtx.DrawIndexed(Attribs.NumIndices, Attribs.NumInstances, Attribs.FirstIndexLocation, Attribs.BaseVertex, Attribs.FirstInstanceLocation);
         ++m_State.NumCommands;
+    }
+}
+
+void DeviceContextD3D12Impl::MultiDrawIndexed(const MultiDrawIndexedAttribs& Attribs)
+{
+    TDeviceContextBase::MultiDrawIndexed(Attribs, 0);
+
+    auto& GraphCtx = GetCmdContext().AsGraphicsContext();
+    PrepareForIndexedDraw(GraphCtx, Attribs.Flags, Attribs.IndexType);
+    if (Attribs.NumInstances > 0)
+    {
+        for (Uint32 i = 0; i < Attribs.DrawCount; ++i)
+        {
+            const auto& Item = Attribs.pDrawItems[i];
+            if (Item.NumIndices > 0)
+            {
+                GraphCtx.DrawIndexed(Item.NumIndices, Attribs.NumInstances, Item.FirstIndexLocation, Item.BaseVertex, Attribs.FirstInstanceLocation);
+                ++m_State.NumCommands;
+            }
+        }
     }
 }
 
@@ -716,7 +755,7 @@ void DeviceContextD3D12Impl::PrepareIndirectAttribsBuffer(CommandContext&       
 
 void DeviceContextD3D12Impl::DrawIndirect(const DrawIndirectAttribs& Attribs)
 {
-    DvpVerifyDrawIndirectArguments(Attribs);
+    TDeviceContextBase::DrawIndirect(Attribs, 0);
 
     auto& GraphCtx = GetCmdContext().AsGraphicsContext();
     PrepareForDraw(GraphCtx, Attribs.Flags);
@@ -752,7 +791,7 @@ void DeviceContextD3D12Impl::DrawIndirect(const DrawIndirectAttribs& Attribs)
 
 void DeviceContextD3D12Impl::DrawIndexedIndirect(const DrawIndexedIndirectAttribs& Attribs)
 {
-    DvpVerifyDrawIndexedIndirectArguments(Attribs);
+    TDeviceContextBase::DrawIndexedIndirect(Attribs, 0);
 
     auto& GraphCtx = GetCmdContext().AsGraphicsContext();
     PrepareForIndexedDraw(GraphCtx, Attribs.Flags, Attribs.IndexType);
@@ -789,21 +828,21 @@ void DeviceContextD3D12Impl::DrawIndexedIndirect(const DrawIndexedIndirectAttrib
 
 void DeviceContextD3D12Impl::DrawMesh(const DrawMeshAttribs& Attribs)
 {
-    DvpVerifyDrawMeshArguments(Attribs);
+    TDeviceContextBase::DrawMesh(Attribs, 0);
 
     auto& GraphCtx = GetCmdContext().AsGraphicsContext6();
     PrepareForDraw(GraphCtx, Attribs.Flags);
 
-    if (Attribs.ThreadGroupCount > 0)
+    if (Attribs.ThreadGroupCountX > 0 && Attribs.ThreadGroupCountY > 0 && Attribs.ThreadGroupCountZ > 0)
     {
-        GraphCtx.DrawMesh(Attribs.ThreadGroupCount, 1, 1);
+        GraphCtx.DrawMesh(Attribs.ThreadGroupCountX, Attribs.ThreadGroupCountY, Attribs.ThreadGroupCountZ);
         ++m_State.NumCommands;
     }
 }
 
 void DeviceContextD3D12Impl::DrawMeshIndirect(const DrawMeshIndirectAttribs& Attribs)
 {
-    DvpVerifyDrawMeshIndirectArguments(Attribs);
+    TDeviceContextBase::DrawMeshIndirect(Attribs, 0);
 
     auto& GraphCtx = GetCmdContext().AsGraphicsContext();
     PrepareForDraw(GraphCtx, Attribs.Flags);
@@ -860,7 +899,7 @@ void DeviceContextD3D12Impl::PrepareForDispatchRays(GraphicsContext& GraphCtx)
 
 void DeviceContextD3D12Impl::DispatchCompute(const DispatchComputeAttribs& Attribs)
 {
-    DvpVerifyDispatchArguments(Attribs);
+    TDeviceContextBase::DispatchCompute(Attribs, 0);
 
     auto& ComputeCtx = GetCmdContext().AsComputeContext();
     PrepareForDispatchCompute(ComputeCtx);
@@ -873,7 +912,7 @@ void DeviceContextD3D12Impl::DispatchCompute(const DispatchComputeAttribs& Attri
 
 void DeviceContextD3D12Impl::DispatchComputeIndirect(const DispatchComputeIndirectAttribs& Attribs)
 {
-    DvpVerifyDispatchIndirectArguments(Attribs);
+    TDeviceContextBase::DispatchComputeIndirect(Attribs, 0);
 
     auto& ComputeCtx = GetCmdContext().AsComputeContext();
     PrepareForDispatchCompute(ComputeCtx);
@@ -912,7 +951,7 @@ void DeviceContextD3D12Impl::ClearDepthStencil(ITextureView*                  pV
     ++m_State.NumCommands;
 }
 
-void DeviceContextD3D12Impl::ClearRenderTarget(ITextureView* pView, const float* RGBA, RESOURCE_STATE_TRANSITION_MODE StateTransitionMode)
+void DeviceContextD3D12Impl::ClearRenderTarget(ITextureView* pView, const void* RGBA, RESOURCE_STATE_TRANSITION_MODE StateTransitionMode)
 {
     DEV_CHECK_ERR(m_pActiveRenderPass == nullptr, "Direct3D12 does not allow render target clears inside a render pass");
 
@@ -924,13 +963,25 @@ void DeviceContextD3D12Impl::ClearRenderTarget(ITextureView* pView, const float*
     if (RGBA == nullptr)
         RGBA = Zero;
 
+#ifdef DILIGENT_DEVELOPMENT
+    {
+        const TEXTURE_FORMAT        RTVFormat  = pViewD3D12->GetDesc().Format;
+        const TextureFormatAttribs& FmtAttribs = GetTextureFormatAttribs(RTVFormat);
+        if (FmtAttribs.ComponentType == COMPONENT_TYPE_SINT ||
+            FmtAttribs.ComponentType == COMPONENT_TYPE_UINT)
+        {
+            DEV_CHECK_ERR(memcmp(RGBA, Zero, 4 * sizeof(float)) == 0, "Integer render targets can at the moment only be cleared to zero in Direct3D12");
+        }
+    }
+#endif
+
     auto* pTextureD3D12 = ClassPtrCast<TextureD3D12Impl>(pViewD3D12->GetTexture());
     auto& CmdCtx        = GetCmdContext();
     TransitionOrVerifyTextureState(CmdCtx, *pTextureD3D12, StateTransitionMode, RESOURCE_STATE_RENDER_TARGET, "Clearing render target (DeviceContextD3D12Impl::ClearRenderTarget)");
 
     // The full extent of the resource view is always cleared.
     // Viewport and scissor settings are not applied??
-    CmdCtx.AsGraphicsContext().ClearRenderTarget(pViewD3D12->GetCPUDescriptorHandle(), RGBA);
+    CmdCtx.AsGraphicsContext().ClearRenderTarget(pViewD3D12->GetCPUDescriptorHandle(), static_cast<const float*>(RGBA));
     ++m_State.NumCommands;
 }
 
@@ -1081,7 +1132,7 @@ void DeviceContextD3D12Impl::FinishFrame()
 
 void DeviceContextD3D12Impl::SetVertexBuffers(Uint32                         StartSlot,
                                               Uint32                         NumBuffersSet,
-                                              IBuffer**                      ppBuffers,
+                                              IBuffer* const*                ppBuffers,
                                               const Uint64*                  pOffsets,
                                               RESOURCE_STATE_TRANSITION_MODE StateTransitionMode,
                                               SET_VERTEX_BUFFERS_FLAGS       Flags)
@@ -1264,9 +1315,15 @@ void DeviceContextD3D12Impl::CommitRenderTargets(RESOURCE_STATE_TRANSITION_MODE 
     {
         const auto ViewType = m_pBoundDepthStencil->GetDesc().ViewType;
         VERIFY_EXPR(ViewType == TEXTURE_VIEW_DEPTH_STENCIL || ViewType == TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL);
-        const auto NewState = ViewType == TEXTURE_VIEW_DEPTH_STENCIL ?
+        auto NewState = ViewType == TEXTURE_VIEW_DEPTH_STENCIL ?
             RESOURCE_STATE_DEPTH_WRITE :
             RESOURCE_STATE_DEPTH_READ;
+        if (NewState == RESOURCE_STATE_DEPTH_READ && StateTransitionMode == RESOURCE_STATE_TRANSITION_MODE_TRANSITION)
+        {
+            // Read-only depth is likely to be used as shader resource, so set this flag.
+            // If this is not intended, the app should manually transition resource states.
+            NewState |= RESOURCE_STATE_SHADER_RESOURCE;
+        }
 
         auto* pTexture = ClassPtrCast<TextureD3D12Impl>(pDSV->GetTexture());
 
@@ -1366,7 +1423,7 @@ void DeviceContextD3D12Impl::CommitSubpassRenderTargets()
     const auto& Subpass = RPDesc.pSubpasses[m_SubpassIndex];
     VERIFY(Subpass.RenderTargetAttachmentCount == m_NumBoundRenderTargets,
            "The number of currently bound render targets (", m_NumBoundRenderTargets,
-           ") is not consistent with the number of redner target attachments (", Subpass.RenderTargetAttachmentCount,
+           ") is not consistent with the number of render target attachments (", Subpass.RenderTargetAttachmentCount,
            ") in current subpass");
 
     D3D12_RENDER_PASS_RENDER_TARGET_DESC RenderPassRTs[MAX_RENDER_TARGETS];
@@ -1481,10 +1538,13 @@ void DeviceContextD3D12Impl::CommitSubpassRenderTargets()
 
         const auto& DSAttachmentRef = *Subpass.pDepthStencilAttachment;
         VERIFY_EXPR(Subpass.pDepthStencilAttachment != nullptr && DSAttachmentRef.AttachmentIndex != ATTACHMENT_UNUSED);
-        VERIFY(m_pBoundDepthStencil == FBDesc.ppAttachments[DSAttachmentRef.AttachmentIndex],
-               "Depth-stencil buffer in the device context is inconsistent with the framebuffer");
         const auto  FirstLastUse     = m_pActiveRenderPass->GetAttachmentFirstLastUse(DSAttachmentRef.AttachmentIndex);
         const auto& DSAttachmentDesc = RPDesc.pAttachments[DSAttachmentRef.AttachmentIndex];
+        VERIFY(m_pBoundDepthStencil ==
+                   (DSAttachmentRef.State == RESOURCE_STATE_DEPTH_READ ?
+                        m_pBoundFramebuffer->GetReadOnlyDSV(m_SubpassIndex) :
+                        FBDesc.ppAttachments[DSAttachmentRef.AttachmentIndex]),
+               "Depth-stencil buffer in the device context is inconsistent with the framebuffer");
 
         RenderPassDS.cpuDescriptor = m_pBoundDepthStencil->GetCPUDescriptorHandle();
         if (FirstLastUse.first == m_SubpassIndex)

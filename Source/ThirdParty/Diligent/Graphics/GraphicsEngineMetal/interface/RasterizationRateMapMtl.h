@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {89148E0E-1300-4FF2-BEA4-F1127ED24CF9}
-static const INTERFACE_ID IID_RasterizationRateMapMtl =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_RasterizationRateMapMtl =
     {0x89148e0e, 0x1300, 0x4ff2, {0xbe, 0xa4, 0xf1, 0x12, 0x7e, 0xd2, 0x4c, 0xf9}};
 
 #define DILIGENT_INTERFACE_NAME IRasterizationRateMapMtl

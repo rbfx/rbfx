@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -89,23 +89,14 @@ void SwapChainVkImpl::CreateSurface()
 
         err = vkCreateAndroidSurfaceKHR(m_VulkanInstance->GetVkInstance(), &surfaceCreateInfo, NULL, &m_VkSurface);
     }
-#elif defined(VK_USE_PLATFORM_IOS_MVK)
-    if (m_Window.pCALayer != nullptr)
+#elif defined(VK_USE_PLATFORM_METAL_EXT)
+    if (void* pLayer = m_Window.GetLayer())
     {
-        VkIOSSurfaceCreateInfoMVK surfaceCreateInfo{};
-        surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK;
-        surfaceCreateInfo.pView = m_Window.pCALayer;
+        VkMetalSurfaceCreateInfoEXT surfaceCreateInfo{};
+        surfaceCreateInfo.sType  = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
+        surfaceCreateInfo.pLayer = pLayer;
 
-        err = vkCreateIOSSurfaceMVK(m_VulkanInstance->GetVkInstance(), &surfaceCreateInfo, nullptr, &m_VkSurface);
-    }
-#elif defined(VK_USE_PLATFORM_MACOS_MVK)
-    if (m_Window.pNSView != nullptr)
-    {
-        VkMacOSSurfaceCreateInfoMVK surfaceCreateInfo{};
-        surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
-        surfaceCreateInfo.pView = m_Window.pNSView;
-
-        err = vkCreateMacOSSurfaceMVK(m_VulkanInstance->GetVkInstance(), &surfaceCreateInfo, NULL, &m_VkSurface);
+        err = vkCreateMetalSurfaceEXT(m_VulkanInstance->GetVkInstance(), &surfaceCreateInfo, NULL, &m_VkSurface);
     }
 #elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
     if (m_Window.pDisplay != nullptr)
@@ -765,6 +756,17 @@ void SwapChainVkImpl::Present(Uint32 SyncInterval)
             m_SemaphoreIndex = m_SwapChainDesc.BufferCount - 1; // To start with 0 index when acquire next image
 
             res = AcquireNextImage(pImmediateCtxVk);
+
+#if PLATFORM_APPLE
+            // For some reason, on MoltenVk we may get VK_SUBOPTIMAL_KHR first time we
+            // acquire the image after the swap chain has been recreated.
+            // Recreating it yet again seems to fix the problem.
+            if (res == VK_SUBOPTIMAL_KHR)
+            {
+                RecreateVulkanSwapchain(pImmediateCtxVk);
+                res = AcquireNextImage(pImmediateCtxVk);
+            }
+#endif
         }
         DEV_CHECK_ERR(res == VK_SUCCESS, "Failed to acquire next swap chain image");
     }
