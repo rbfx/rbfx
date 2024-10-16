@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -193,6 +193,8 @@ RenderDeviceVkImpl::RenderDeviceVkImpl(IReferenceCounters*                      
 
     for (Uint32 fmt = 1; fmt < m_TextureFormatsInfo.size(); ++fmt)
         m_TextureFormatsInfo[fmt].Supported = true; // We will test every format on a specific hardware device
+
+    InitShaderCompilationThreadPool(EngineCI.pAsyncShaderCompilationThreadPool, EngineCI.NumAsyncShaderCompilationThreads);
 }
 
 RenderDeviceVkImpl::~RenderDeviceVkImpl()
@@ -588,14 +590,18 @@ void RenderDeviceVkImpl::CreateBuffer(const BufferDesc& BuffDesc, const BufferDa
 }
 
 
-void RenderDeviceVkImpl::CreateShader(const ShaderCreateInfo& ShaderCI, IShader** ppShader)
+void RenderDeviceVkImpl::CreateShader(const ShaderCreateInfo& ShaderCI,
+                                      IShader**               ppShader,
+                                      IDataBlob**             ppCompilerOutput)
 {
     const ShaderVkImpl::CreateInfo VkShaderCI{
         GetDxCompiler(),
         GetDeviceInfo(),
         GetAdapterInfo(),
         GetVkVersion(),
-        GetLogicalDevice().GetEnabledExtFeatures().Spirv14 //
+        GetLogicalDevice().GetEnabledExtFeatures().Spirv14,
+        ppCompilerOutput,
+        m_pShaderCompilationThreadPool,
     };
     CreateShaderImpl(ppShader, ShaderCI, VkShaderCI);
 }

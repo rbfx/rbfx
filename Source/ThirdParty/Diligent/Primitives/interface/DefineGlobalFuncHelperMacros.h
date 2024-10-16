@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,16 +26,4 @@
  */
 
 #include "CommonDefinitions.h"
-
-#pragma push_macro("REF")
-#undef REF
-
-#if DILIGENT_C_INTERFACE
-
-#    define REF *
-
-#else
-
-#    define REF &
-
-#endif
+#include "DefineRefMacro.h"

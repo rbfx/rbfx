@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -78,7 +78,7 @@ TopLevelASVkImpl::TopLevelASVkImpl(IReferenceCounters*   pRefCounters,
     vkBuffCI.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     vkBuffCI.flags                 = 0;
     vkBuffCI.size                  = AccelStructSize;
-    vkBuffCI.usage                 = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR;
+    vkBuffCI.usage                 = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
     vkBuffCI.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
     vkBuffCI.queueFamilyIndexCount = 0;
     vkBuffCI.pQueueFamilyIndices   = nullptr;

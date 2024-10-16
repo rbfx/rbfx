@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -70,6 +70,14 @@ struct BasicPlatformDebug
                                      int                    Line);
 
     static const char* TextColorToTextColorCode(DEBUG_MESSAGE_SEVERITY Severity, TextColor Color);
+
+    static bool ColoredTextSupported()
+    {
+        return true;
+    }
+
+    static void SetBreakOnError(bool BreakOnError);
+    static bool GetBreakOnError();
 };
 
 // Forward declarations of platform-specific debug functions

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,21 +34,24 @@
 #include <atlcomcli.h>
 #include "WinHPostface.h"
 
+#include "ShaderD3DBase.hpp"
+
 #include "dxc/dxcapi.h"
 
 #include "D3DErrors.hpp"
 #include "DataBlobImpl.hpp"
-#include "RefCntAutoPtr.hpp"
-#include "ShaderD3DBase.hpp"
 #include "DXCompiler.hpp"
 #include "HLSLUtils.hpp"
-#include "BasicMath.hpp"
+#include "ThreadPool.hpp"
 
 #ifndef D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES
 #    define D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES (1 << 20)
 #endif
 
 namespace Diligent
+{
+
+namespace
 {
 
 class D3DIncludeImpl : public ID3DInclude
@@ -92,12 +95,12 @@ private:
     std::unordered_map<LPCVOID, RefCntAutoPtr<IDataBlob>> m_DataBlobs;
 };
 
-static HRESULT CompileShader(const char*             Source,
-                             size_t                  SourceLength,
-                             const ShaderCreateInfo& ShaderCI,
-                             LPCSTR                  profile,
-                             ID3DBlob**              ppBlobOut,
-                             ID3DBlob**              ppCompilerOutput)
+HRESULT CompileShader(const char*             Source,
+                      size_t                  SourceLength,
+                      const ShaderCreateInfo& ShaderCI,
+                      LPCSTR                  profile,
+                      ID3DBlob**              ppBlobOut,
+                      ID3DBlob**              ppCompilerOutput)
 {
     DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
 #if defined(DILIGENT_DEBUG)
@@ -112,20 +115,12 @@ static HRESULT CompileShader(const char*             Source,
     // dwShaderFlags |= D3D10_SHADER_OPTIMIZATION_LEVEL3;
 #endif
 
-    for (auto CompileFlags = ShaderCI.CompileFlags; CompileFlags != SHADER_COMPILE_FLAG_NONE;)
-    {
-        auto Flag = ExtractLSB(CompileFlags);
-        static_assert(SHADER_COMPILE_FLAG_LAST == 2, "Please updated the switch below to handle the new shader flag");
-        switch (Flag)
-        {
-            case SHADER_COMPILE_FLAG_ENABLE_UNBOUNDED_ARRAYS:
-                dwShaderFlags |= D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
-                break;
+    static_assert(SHADER_COMPILE_FLAG_LAST == 1u << 3u, "Did you add a new shader compile flag? You may need to handle it here.");
+    if (ShaderCI.CompileFlags & SHADER_COMPILE_FLAG_ENABLE_UNBOUNDED_ARRAYS)
+        dwShaderFlags |= D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
 
-            default:
-                UNEXPECTED("Unexpected shader compile flag");
-        }
-    }
+    if (ShaderCI.CompileFlags & SHADER_COMPILE_FLAG_PACK_MATRIX_ROW_MAJOR)
+        dwShaderFlags |= D3DCOMPILE_PACK_MATRIX_ROW_MAJOR;
 
     D3D_SHADER_MACRO Macros[] = {{"D3DCOMPILER", ""}, {}};
 
@@ -133,7 +128,12 @@ static HRESULT CompileShader(const char*             Source,
     return D3DCompile(Source, SourceLength, nullptr, Macros, &IncludeImpl, ShaderCI.EntryPoint, profile, dwShaderFlags, 0, ppBlobOut, ppCompilerOutput);
 }
 
-ShaderD3DBase::ShaderD3DBase(const ShaderCreateInfo& ShaderCI, const ShaderVersion ShaderModel, IDXCompiler* DxCompiler)
+} // namespace
+
+RefCntAutoPtr<IDataBlob> CompileD3DBytecode(const ShaderCreateInfo& ShaderCI,
+                                            const ShaderVersion     ShaderModel,
+                                            IDXCompiler*            DxCompiler,
+                                            IDataBlob**             ppCompilerOutput) noexcept(false)
 {
     if (ShaderCI.Source || ShaderCI.FilePath)
     {
@@ -159,36 +159,40 @@ ShaderD3DBase::ShaderD3DBase(const ShaderCreateInfo& ShaderCI, const ShaderVersi
                 UseDXC = false;
                 break;
 
-            default: UNEXPECTED("Unsupported shader compiler");
+            default:
+                LOG_ERROR_AND_THROW("Unsupported shader compiler");
         }
 
         if (UseDXC)
         {
-            VERIFY_EXPR(__uuidof(ID3DBlob) == __uuidof(IDxcBlob));
-            DxCompiler->Compile(ShaderCI, ShaderModel, nullptr, reinterpret_cast<IDxcBlob**>(&m_pShaderByteCode), nullptr, ShaderCI.ppCompilerOutput);
+            CComPtr<IDxcBlob> pShaderByteCode;
+            DxCompiler->Compile(ShaderCI, ShaderModel, nullptr, &pShaderByteCode, nullptr, ppCompilerOutput);
+            return DataBlobImpl::Create(pShaderByteCode->GetBufferSize(), pShaderByteCode->GetBufferPointer());
         }
         else
         {
-            std::string strShaderProfile = GetHLSLProfileString(ShaderCI.Desc.ShaderType, ShaderModel);
-
-            String ShaderSource = BuildHLSLSourceString(ShaderCI);
+            const String Profile    = GetHLSLProfileString(ShaderCI.Desc.ShaderType, ShaderModel);
+            const String HLSLSource = BuildHLSLSourceString(ShaderCI);
 
             CComPtr<ID3DBlob> CompilerOutput;
+            CComPtr<ID3DBlob> pShaderByteCode;
 
-            auto hr = CompileShader(ShaderSource.c_str(), ShaderSource.length(), ShaderCI, strShaderProfile.c_str(), &m_pShaderByteCode, &CompilerOutput);
-            HandleHLSLCompilerResult(SUCCEEDED(hr), CompilerOutput.p, ShaderSource, ShaderCI.Desc.Name, ShaderCI.ppCompilerOutput);
+            auto hr = CompileShader(HLSLSource.c_str(), HLSLSource.length(), ShaderCI, Profile.c_str(), &pShaderByteCode, &CompilerOutput);
+            HandleHLSLCompilerResult(SUCCEEDED(hr), CompilerOutput.p, HLSLSource, ShaderCI.Desc.Name, ppCompilerOutput);
+            return DataBlobImpl::Create(pShaderByteCode->GetBufferSize(), pShaderByteCode->GetBufferPointer());
         }
     }
     else if (ShaderCI.ByteCode)
     {
         DEV_CHECK_ERR(ShaderCI.ByteCodeSize != 0, "ByteCode size must be greater than 0");
-        CHECK_D3D_RESULT_THROW(D3DCreateBlob(ShaderCI.ByteCodeSize, &m_pShaderByteCode), "Failed to create D3D blob");
-        memcpy(m_pShaderByteCode->GetBufferPointer(), ShaderCI.ByteCode, ShaderCI.ByteCodeSize);
+        return DataBlobImpl::Create(ShaderCI.ByteCodeSize, ShaderCI.ByteCode);
     }
     else
     {
         LOG_ERROR_AND_THROW("Shader source must be provided through one of the 'Source', 'FilePath' or 'ByteCode' members");
     }
+
+    return {};
 }
 
 } // namespace Diligent

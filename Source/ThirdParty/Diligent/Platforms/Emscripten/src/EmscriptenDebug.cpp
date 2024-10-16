@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -35,11 +35,21 @@ namespace Diligent
 
 void EmscriptenDebug::AssertionFailed(const Char* Message, const char* Function, const char* File, int Line)
 {
-    auto AssertionFailedMessage = FormatAssertionFailedMessage(Message, Function, File, Line);
-    OutputDebugMessage(DEBUG_MESSAGE_SEVERITY_ERROR, AssertionFailedMessage.c_str(), nullptr, nullptr, 0);
+    String AssertionFailedMessage = FormatAssertionFailedMessage(Message, Function, File, Line);
+    if (DebugMessageCallback)
+    {
+        DebugMessageCallback(DEBUG_MESSAGE_SEVERITY_ERROR, AssertionFailedMessage.c_str(), nullptr, nullptr, 0);
+    }
+    else
+    {
+        OutputDebugMessage(DEBUG_MESSAGE_SEVERITY_ERROR, AssertionFailedMessage.c_str(), nullptr, nullptr, 0);
+    }
 
-    raise(SIGTRAP);
-};
+    if (GetBreakOnError())
+    {
+        raise(SIGTRAP);
+    }
+}
 
 void EmscriptenDebug::OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity,
                                          const Char*            Message,

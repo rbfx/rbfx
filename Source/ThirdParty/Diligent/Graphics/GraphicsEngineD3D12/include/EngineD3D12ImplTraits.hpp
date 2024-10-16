@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -84,7 +84,7 @@ class ShaderResourceCacheD3D12;
 class ShaderVariableManagerD3D12;
 
 struct PipelineResourceAttribsD3D12;
-struct PipelineResourceImmutableSamplerAttribsD3D12;
+struct ImmutableSamplerAttribsD3D12;
 struct PipelineResourceSignatureInternalDataD3D12;
 
 struct EngineD3D12ImplTraits
@@ -142,7 +142,9 @@ struct EngineD3D12ImplTraits
     using ShaderResourceCacheImplType   = ShaderResourceCacheD3D12;
     using ShaderVariableManagerImplType = ShaderVariableManagerD3D12;
 
-    using PipelineResourceAttribsType = PipelineResourceAttribsD3D12;
+    using PipelineResourceAttribsType               = PipelineResourceAttribsD3D12;
+    using ImmutableSamplerAttribsType               = ImmutableSamplerAttribsD3D12;
+    using PipelineResourceSignatureInternalDataType = PipelineResourceSignatureInternalDataD3D12;
 };
 
 } // namespace Diligent

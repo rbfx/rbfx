@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -97,10 +97,11 @@ static APIInfo InitAPIInfo()
     INIT_STRUCTURE_SIZE(RayTracingPipelineStateCreateInfo);
     INIT_STRUCTURE_SIZE(RasterizerStateDesc);
     INIT_STRUCTURE_SIZE(ResourceMappingEntry);
-    INIT_STRUCTURE_SIZE(ResourceMappingDesc);
+    INIT_STRUCTURE_SIZE(ResourceMappingCreateInfo);
     INIT_STRUCTURE_SIZE(SamplerDesc);
     INIT_STRUCTURE_SIZE(ShaderDesc);
     INIT_STRUCTURE_SIZE(ShaderMacro);
+    INIT_STRUCTURE_SIZE(ShaderMacroArray);
     INIT_STRUCTURE_SIZE(ShaderCreateInfo);
     INIT_STRUCTURE_SIZE(ShaderResourceDesc);
     INIT_STRUCTURE_SIZE(DepthStencilClearValue);

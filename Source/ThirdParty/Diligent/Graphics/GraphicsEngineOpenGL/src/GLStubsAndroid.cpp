@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -173,6 +173,10 @@
     DECLARE_GL_FUNCTION( glFramebufferTexture1D, PFNGLFRAMEBUFFERTEXTURE1DPROC, GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level)
 #endif
 
+#ifdef LOAD_GL_COPY_TEX_SUBIMAGE_1D
+    DECLARE_GL_FUNCTION( glCopyTexSubImage1D, PFNGLCOPYTEXSUBIMAGE1DEXTPROC, GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width)
+#endif
+
 #ifdef LOAD_GL_FRAMEBUFFER_TEXTURE_3D
     DECLARE_GL_FUNCTION( glFramebufferTexture3D, PFNGLFRAMEBUFFERTEXTURE3DPROC, GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint layer )
 #endif
@@ -265,6 +269,13 @@
     DECLARE_GL_FUNCTION( glMultiDrawElementsIndirect, PFNGLMULTIDRAWELEMENTSINDIRECTPROC, GLenum mode, GLenum type, const void *indirect, GLsizei primcount, GLsizei stride)
 #endif
 
+#ifdef LOAD_GL_MULTI_DRAW_ARRAYS
+    DECLARE_GL_FUNCTION( glMultiDrawArrays, PFNGLMULTIDRAWARRAYSPROC, GLenum mode, const GLint *first, const GLsizei *count, GLsizei drawcount)
+#endif
+
+#ifdef LOAD_GL_MULTI_DRAW_ELEMENTS
+	DECLARE_GL_FUNCTION( glMultiDrawElements, PFNGLMULTIDRAWELEMENTSPROC, GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount)
+#endif
 
 void LoadGLFunctions()
 {
@@ -275,7 +286,7 @@ void LoadGLFunctions()
     {
         glGetIntegerv(GL_MINOR_VERSION, &MinorVersion);
         if (glGetError() == GL_NO_ERROR)
-            glesVer = {MajorVersion, MinorVersion};
+            glesVer = {static_cast<Diligent::Uint32>(MajorVersion), static_cast<Diligent::Uint32>(MinorVersion)};
     }
     VERIFY_EXPR(glesVer >= Diligent::Version(3, 0));
 
@@ -421,6 +432,10 @@ void LoadGLFunctions()
     LOAD_GL_FUNCTION(glFramebufferTexture1D)
 #endif
 
+#ifdef LOAD_GL_COPY_TEX_SUBIMAGE_1D
+    LOAD_GL_FUNCTION(glCopyTexSubImage1D)
+#endif
+
 #ifdef LOAD_GL_FRAMEBUFFER_TEXTURE_3D
     LOAD_GL_FUNCTION2(glFramebufferTexture3D, {{"glFramebufferTexture3DOES", {3,0}}} )
 #endif
@@ -511,5 +526,13 @@ void LoadGLFunctions()
 
 #ifdef LOAD_GL_MULTIDRAW_ELEMENTS_INDIRECT
     LOAD_GL_FUNCTION_NO_STUB(glMultiDrawElementsIndirect, {{"glMultiDrawElementsIndirectEXT", {3,1}}} );
+#endif
+
+#ifdef LOAD_GL_MULTI_DRAW_ARRAYS
+    LOAD_GL_FUNCTION_NO_STUB(glMultiDrawArrays, {{"glMultiDrawArraysEXT", {3,0}}} );
+#endif
+
+#ifdef LOAD_GL_MULTI_DRAW_ELEMENTS
+	LOAD_GL_FUNCTION_NO_STUB(glMultiDrawElements, {{"glMultiDrawElementsEXT", {3,0}}} );
 #endif
 }

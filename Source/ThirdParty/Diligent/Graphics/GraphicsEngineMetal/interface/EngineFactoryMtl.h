@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {CF4A590D-2E40-4F48-9579-0D25991F963B}
-static const INTERFACE_ID IID_EngineFactoryMtl =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_EngineFactoryMtl =
     {0xcf4a590d, 0x2e40, 0x4f48, {0x95, 0x79, 0xd, 0x25, 0x99, 0x1f, 0x96, 0x3b}};
 
 #define DILIGENT_INTERFACE_NAME IEngineFactoryMtl

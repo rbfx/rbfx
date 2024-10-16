@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +37,7 @@ DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 /// IFileStream interface unique identifier
 // {E67F386C-6A5A-4A24-A0CE-C66435465D41}
-static const struct INTERFACE_ID IID_FileStream =
+static DILIGENT_CONSTEXPR struct INTERFACE_ID IID_FileStream =
     {0xe67f386c, 0x6a5a, 0x4a24, {0xa0, 0xce, 0xc6, 0x64, 0x35, 0x46, 0x5d, 0x41}};
 
 // clang-format off

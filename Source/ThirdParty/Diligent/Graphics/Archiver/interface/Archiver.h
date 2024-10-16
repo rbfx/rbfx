@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {D8EBEC99-5A44-41A3-968F-1D7127ABEC79}
-static const INTERFACE_ID IID_Archiver =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_Archiver =
     {0xd8ebec99, 0x5a44, 0x41a3, {0x96, 0x8f, 0x1d, 0x71, 0x27, 0xab, 0xec, 0x79}};
 
 #define DILIGENT_INTERFACE_NAME IArchiver
@@ -55,27 +55,30 @@ DILIGENT_TYPED_ENUM(ARCHIVE_DEVICE_DATA_FLAGS, Uint32)
     ARCHIVE_DEVICE_DATA_FLAG_NONE        = 0u,
 
     /// Direct3D11 device data will be serialized.
-    ARCHIVE_DEVICE_DATA_FLAG_D3D11       = 1u << RENDER_DEVICE_TYPE_D3D11,
+    ARCHIVE_DEVICE_DATA_FLAG_D3D11       = 1u << 0u,
 
     /// Direct3D12 device data will be serialized.
-    ARCHIVE_DEVICE_DATA_FLAG_D3D12       = 1u << RENDER_DEVICE_TYPE_D3D12,
+    ARCHIVE_DEVICE_DATA_FLAG_D3D12       = 1u << 1u,
 
     /// OpenGL device data will be serialized.
-    ARCHIVE_DEVICE_DATA_FLAG_GL          = 1u << RENDER_DEVICE_TYPE_GL,
+    ARCHIVE_DEVICE_DATA_FLAG_GL          = 1u << 2u,
 
     /// OpenGLES device data will be serialized.
-    ARCHIVE_DEVICE_DATA_FLAG_GLES        = 1u << RENDER_DEVICE_TYPE_GLES,
+    ARCHIVE_DEVICE_DATA_FLAG_GLES        = 1u << 3u,
 
     /// Vulkan device data will be serialized.
-    ARCHIVE_DEVICE_DATA_FLAG_VULKAN      = 1u << RENDER_DEVICE_TYPE_VULKAN,
+    ARCHIVE_DEVICE_DATA_FLAG_VULKAN      = 1u << 4u,
 
     /// Metal device data for MacOS will be serialized.
-    ARCHIVE_DEVICE_DATA_FLAG_METAL_MACOS = 1u << RENDER_DEVICE_TYPE_METAL,
+    ARCHIVE_DEVICE_DATA_FLAG_METAL_MACOS = 1u << 5u,
 
     /// Metal device data for iOS will be serialized.
-    ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS   = 2u << RENDER_DEVICE_TYPE_METAL,
+    ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS   = 1u << 6u,
 
-    ARCHIVE_DEVICE_DATA_FLAG_LAST        = ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS,
+    /// WebGPU device data will be serialized.
+    ARCHIVE_DEVICE_DATA_FLAG_WEBGPU      = 1u << 7u,
+
+    ARCHIVE_DEVICE_DATA_FLAG_LAST        = ARCHIVE_DEVICE_DATA_FLAG_WEBGPU,
 
     ARCHIVE_DEVICE_DATA_FLAG_ALL         = ARCHIVE_DEVICE_DATA_FLAG_LAST * 2 - 1
 };
@@ -164,7 +167,7 @@ DILIGENT_BEGIN_INTERFACE(IArchiver, IObject)
     /// \return     A pointer to the shader object, or null if the object with that name was not added.
     ///
     /// \ note      The method does *not* increment the reference counter of the returned object,
-    ///             so the application must not call Release() unless it also explcitily calls AddRef().
+    ///             so the application must not call Release() unless it also explicitly calls AddRef().
     VIRTUAL IShader* METHOD(GetShader)(THIS_
                                        const char* ShaderName) PURE;
 
@@ -175,7 +178,7 @@ DILIGENT_BEGIN_INTERFACE(IArchiver, IObject)
     /// \return     A pointer to the pipeline state object, or null if the object with that name was not added.
     ///
     /// \ note      The method does *not* increment the reference counter of the returned object,
-    ///             so the application must not call Release() unless it also explcitily calls AddRef().
+    ///             so the application must not call Release() unless it also explicitly calls AddRef().
     VIRTUAL IPipelineState* METHOD(GetPipelineState)(THIS_
                                                      PIPELINE_TYPE PSOType,
                                                      const char*   PSOName) PURE;
@@ -186,7 +189,7 @@ DILIGENT_BEGIN_INTERFACE(IArchiver, IObject)
     /// \return     A pointer to the the pipeline resource signature object, or null if the object with that name was not added.
     ///
     /// \ note      The method does *not* increment the reference counter of the returned object,
-    ///             so the application must not call Release() unless it also explcitily calls AddRef().
+    ///             so the application must not call Release() unless it also explicitly calls AddRef().
     VIRTUAL IPipelineResourceSignature* METHOD(GetPipelineResourceSignature)(THIS_
                                                                              const char* PRSName) PURE;
 };

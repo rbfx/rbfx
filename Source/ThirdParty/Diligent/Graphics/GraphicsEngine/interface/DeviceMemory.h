@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {815F7AE1-84A8-4ADD-A93B-3E28C1711D5E}
-static const INTERFACE_ID IID_DeviceMemory =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_DeviceMemory =
     {0x815f7ae1, 0x84a8, 0x4add, {0xa9, 0x3b, 0x3e, 0x28, 0xc1, 0x71, 0x1d, 0x5e}};
 
 // clang-format off

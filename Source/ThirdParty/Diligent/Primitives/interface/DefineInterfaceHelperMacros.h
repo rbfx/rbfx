@@ -26,6 +26,7 @@
  */
 
 #include "CommonDefinitions.h"
+#include "DefineRefMacro.h"
 
 #ifndef DILIGENT_INTERFACE_NAME
 #    error Interface name is undefined
@@ -36,7 +37,6 @@
 #pragma push_macro("VIRTUAL")
 #pragma push_macro("CONST")
 #pragma push_macro("PURE")
-#pragma push_macro("REF")
 #pragma push_macro("METHOD")
 
 #undef THIS
@@ -44,7 +44,6 @@
 #undef VIRTUAL
 #undef CONST
 #undef PURE
-#undef REF
 #undef METHOD
 
 #if DILIGENT_C_INTERFACE
@@ -54,7 +53,6 @@
 #    define VIRTUAL
 #    define CONST
 #    define PURE
-#    define REF          *
 #    define METHOD(Name) (DILIGENT_CALL_TYPE * Name)
 
 // Suppose that DILIGENT_INTERFACE_NAME == Iface, then DILIGENT_END_INTERFACE macro below will expand to the following:
@@ -83,7 +81,6 @@
 #    define VIRTUAL      virtual
 #    define CONST        const
 #    define PURE         = 0
-#    define REF          &
 #    define METHOD(Name) DILIGENT_CALL_TYPE Name
 #    define DILIGENT_END_INTERFACE
 

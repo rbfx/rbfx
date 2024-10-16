@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -66,13 +66,16 @@ BottomLevelASVkImpl::BottomLevelASVkImpl(IReferenceCounters*      pRefCounters,
                 dst.sType        = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
                 dst.pNext        = nullptr;
                 dst.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
-                dst.flags        = VkGeometryFlagsKHR(0);
+                dst.flags        = 0;
 
-                tri.sType                       = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
-                tri.pNext                       = nullptr;
-                tri.vertexFormat                = TypeToVkFormat(src.VertexValueType, src.VertexComponentCount, src.VertexValueType < VT_FLOAT16);
-                tri.maxVertex                   = src.MaxVertexCount;
-                tri.indexType                   = TypeToVkIndexType(src.IndexType);
+                tri.sType        = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
+                tri.pNext        = nullptr;
+                tri.vertexFormat = TypeToVkFormat(src.VertexValueType, src.VertexComponentCount, src.VertexValueType < VT_FLOAT16);
+                // maxVertex is the number of vertices in vertexData minus one.
+                VERIFY(src.MaxVertexCount > 0, "MaxVertexCount must be greater than 0");
+                tri.maxVertex = src.MaxVertexCount - 1;
+                tri.indexType = TypeToVkIndexType(src.IndexType);
+                // Non-null address indicates that non-null transform data will be provided to the build command.
                 tri.transformData.deviceAddress = src.AllowsTransforms ? 1 : 0;
                 MaxPrimitiveCounts[i]           = src.MaxPrimitiveCount;
 
@@ -146,7 +149,7 @@ BottomLevelASVkImpl::BottomLevelASVkImpl(IReferenceCounters*      pRefCounters,
     vkBuffCI.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     vkBuffCI.flags                 = 0;
     vkBuffCI.size                  = AccelStructSize;
-    vkBuffCI.usage                 = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR;
+    vkBuffCI.usage                 = VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
     vkBuffCI.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
     vkBuffCI.queueFamilyIndexCount = 0;
     vkBuffCI.pQueueFamilyIndices   = nullptr;

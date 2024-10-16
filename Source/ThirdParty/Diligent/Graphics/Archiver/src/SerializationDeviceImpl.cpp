@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -43,6 +43,9 @@ static constexpr ARCHIVE_DEVICE_DATA_FLAGS GetSupportedDeviceFlags()
     Flags = Flags | ARCHIVE_DEVICE_DATA_FLAG_GL;
     Flags = Flags | ARCHIVE_DEVICE_DATA_FLAG_GLES;
 #endif
+#if GLES_SUPPORTED
+    Flags = Flags | ARCHIVE_DEVICE_DATA_FLAG_GLES;
+#endif
 #if D3D11_SUPPORTED
     Flags = Flags | ARCHIVE_DEVICE_DATA_FLAG_D3D11;
 #endif
@@ -55,6 +58,9 @@ static constexpr ARCHIVE_DEVICE_DATA_FLAGS GetSupportedDeviceFlags()
 #if METAL_SUPPORTED
     Flags = Flags | ARCHIVE_DEVICE_DATA_FLAG_METAL_MACOS;
     Flags = Flags | ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS;
+#endif
+#if WEBGPU_SUPPORTED
+    Flags = Flags | ARCHIVE_DEVICE_DATA_FLAG_WEBGPU;
 #endif
     return Flags;
 }
@@ -79,6 +85,12 @@ SerializationDeviceImpl::SerializationDeviceImpl(IReferenceCounters* pRefCounter
         m_pDxCompiler              = CreateDXCompiler(DXCompilerTarget::Direct3D12, 0, CreateInfo.D3D12.DxCompilerPath);
         m_D3D12Props.pDxCompiler   = m_pDxCompiler.get();
         m_D3D12Props.ShaderVersion = CreateInfo.D3D12.ShaderVersion;
+    }
+
+    if (m_ValidDeviceFlags & (ARCHIVE_DEVICE_DATA_FLAG_GL | ARCHIVE_DEVICE_DATA_FLAG_GLES))
+    {
+        m_GLProps.OptimizeShaders = CreateInfo.GL.OptimizeShaders;
+        m_GLProps.ZeroToOneClipZ  = CreateInfo.GL.ZeroToOneClipZ;
     }
 
     if (m_ValidDeviceFlags & ARCHIVE_DEVICE_DATA_FLAG_VULKAN)
@@ -132,6 +144,8 @@ SerializationDeviceImpl::SerializationDeviceImpl(IReferenceCounters* pRefCounter
             m_MtlProps.DumpFolder = DumpFolder;
         }
     }
+
+    InitShaderCompilationThreadPool(CreateInfo.pAsyncShaderCompilationThreadPool, CreateInfo.NumAsyncShaderCompilationThreads);
 }
 
 SerializationDeviceImpl::~SerializationDeviceImpl()
@@ -143,9 +157,10 @@ SerializationDeviceImpl::~SerializationDeviceImpl()
 
 void SerializationDeviceImpl::CreateShader(const ShaderCreateInfo&  ShaderCI,
                                            const ShaderArchiveInfo& ArchiveInfo,
-                                           IShader**                ppShader)
+                                           IShader**                ppShader,
+                                           IDataBlob**              ppCompilerOutput)
 {
-    CreateShaderImpl(ppShader, ShaderCI, ArchiveInfo);
+    CreateShaderImpl(ppShader, ShaderCI, ArchiveInfo, ppCompilerOutput);
 }
 
 void SerializationDeviceImpl::CreateRenderPass(const RenderPassDesc& Desc, IRenderPass** ppRenderPass)

@@ -47,6 +47,9 @@ if(GL_SUPPORTED OR GLES_SUPPORTED)
     add_subdirectory(GraphicsEngineOpenGL)
 endif()
 
+if (WEBGPU_SUPPORTED)
+    add_subdirectory(GraphicsEngineWebGPU)
+endif()
 
 if(ARCHIVER_SUPPORTED)
     add_subdirectory(Archiver)

@@ -1,9 +1,10 @@
 # Diligent Core [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=An%20easy-to-use%20cross-platform%20graphics%20library%20that%20takes%20full%20advantage%20of%20%23Direct3D12%20and%20%23VulkanAPI&url=https://github.com/DiligentGraphics/DiligentEngine) <img src="media/diligentgraphics-logo.png" height=64 align="right" valign="middle">
 
-Diligent Core is a modern cross-platfrom low-level graphics API that makes the foundation of [Diligent Engine](https://github.com/DiligentGraphics/DiligentEngine).
+Diligent Core is a modern cross-platfrom low-level graphics API that makes the foundation of the [Diligent Engine](https://github.com/DiligentGraphics/DiligentEngine).
 The module implements Direct3D11, Direct3D12, OpenGL, OpenGLES, and Vulkan rendering backends (Metal implementation is available for commercial clients),
 as well as basic platform-specific utilities. It is self-contained and can be built by its own.
-The module's cmake script defines a number of variables that are required to generate build files for other modules, so it must always be included first.
+Please refer to the [main repository](https://github.com/DiligentGraphics/DiligentEngine) for information about the supported platforms and features,
+build instructions, etc.
 
 | Platform             | Build Status  |
 | ---------------------| ------------- |
@@ -22,7 +23,7 @@ The module's cmake script defines a number of variables that are required to gen
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/DiligentGraphics/DiligentCore?svg=true)](https://ci.appveyor.com/project/DiligentGraphics/diligentcore)
 [![CodeQL Scanning](https://github.com/DiligentGraphics/DiligentCore/actions/workflows/codeql.yml/badge.svg?branch=master)](https://github.com/DiligentGraphics/DiligentCore/actions/workflows/codeql.yml?query=branch%3Amaster)
 [![MSVC Analysis](https://github.com/DiligentGraphics/DiligentCore/actions/workflows/msvc_analysis.yml/badge.svg?branch=master)](https://github.com/DiligentGraphics/DiligentCore/actions/workflows/msvc_analysis.yml?query=branch%3Amaster)
-[![Lines of Code](https://tokei.rs/b1/github.com/DiligentGraphics/DiligentCore)](https://github.com/DiligentGraphics/DiligentCore)
+[![Lines of code](https://sloc.xyz/github/DiligentGraphics/DiligentCore)](https://github.com/DiligentGraphics/DiligentCore)
 
 
 # Table of Contents
@@ -45,6 +46,7 @@ The module's cmake script defines a number of variables that are required to gen
   - [Binding Shader Resources](#binding_resources)
   - [Setting the Pipeline State and Invoking Draw Command](#draw_command)
 - [Low-level API interoperability](#low_level_api_interoperability)
+- [NuGet package build instructions](#nuget_build_instructions)
 - [License](#license)
 - [Contributing](#contributing)
 - [Release History](#release_history)
@@ -560,13 +562,13 @@ actual resources:
 ```cpp
 ResourceMappingEntry Entries[] =
 {
-    {"g_Texture", pTexture->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE)},
-    ResourceMappingEntry{}
+    {"g_Texture", pTexture->GetDefaultView(TEXTURE_VIEW_SHADER_RESOURCE)}
 };
-ResourceMappingDesc ResMappingDesc;
-ResMappingDesc.pEntries= Entries;
+ResourceMappingCreateInfo ResMappingCI;
+ResMappingCI.pEntries   = Entries;
+ResMappingCI.NumEntries = _countof(Entries);
 RefCntAutoPtr<IResourceMapping> pResMapping;
-pRenderDevice->CreateResourceMapping( ResMappingDesc, &pResMapping );
+pRenderDevice->CreateResourceMapping(ResMappingCI, &pResMapping);
 ```
 
 The resource mapping can then be used to bind all static resources in a pipeline state (`IPipelineState::BindStaticResources()`):
@@ -696,6 +698,39 @@ objects. Refer to the following pages for more information:
 [Vulkan Interoperability](https://github.com/DiligentGraphics/DiligentCore/tree/master/Graphics/GraphicsEngineVulkan#interoperability-with-vulkan)
 
 
+<a name="nuget_build_instructions"></a>
+# NuGet Package Build Instructions
+
+Follow the following steps to build the NuGet package:
+
+1. Install the required Python packages
+
+
+```
+python -m pip install -r ./BuildTools/.NET/requirements.txt
+```
+
+2. Run the NuGet package build script, for example:
+
+
+```
+python ./BuildTools/.NET/dotnet-build-package.py -c Debug -d ./
+```
+
+## Command Line Arguments
+
+|       Argument             |         Description                                                             |   Required          |
+|----------------------------|---------------------------------------------------------------------------------|---------------------|
+| `-c` (`configuration`)     | Native dynamic libraries build configuration (e.g. Debug, Release, etc.)        |  Yes                |
+| `-d` (`root-dir`)          | The path to the root directory of DiligentCore                                  |  Yes                |
+| `-s` (`settings`)          | The path to the settings file                                                   |  No                 |
+| `dotnet-tests`             | Flag indicating whether to run .NET tests                                       |  No                 |
+| `dotnet-publish`           | Flag indicating whether to publish the package to NuGet Gallery                 |  No                 |
+| `free-memory`              | Use this argument if you encounter insufficient memory during the build process |  No                 |
+
+You can override the default settings using a settings file 
+(check the `default_settings` dictionary in `dotnet-build-package.py`)
+
 <a name="license"></a>
 # License
 
@@ -703,7 +738,7 @@ See [Apache 2.0 license](License.txt).
 
 This project has some third-party dependencies, each of which may have independent licensing:
 
-* [Vulkan-Headers](https://github.com/KhronosGroup/Vulkan-Headers): Vulkan Header files and API registry ([Apache License 2.0](https://github.com/DiligentGraphics/Vulkan-Headers/blob/master/LICENSE.txt)).
+* [Vulkan-Headers](https://github.com/KhronosGroup/Vulkan-Headers): Vulkan Header files and API registry ([Apache License 2.0](https://github.com/DiligentGraphics/Vulkan-Headers/blob/master/LICENSE.md)).
 * [SPIRV-Cross](https://github.com/KhronosGroup/SPIRV-Cross): SPIRV parsing and cross-compilation tools ([Apache License 2.0](https://github.com/DiligentGraphics/SPIRV-Cross/blob/master/LICENSE)).
 * [SPIRV-Headers](https://github.com/KhronosGroup/SPIRV-Headers): SPIRV header files ([Khronos MIT-like license](https://github.com/DiligentGraphics/SPIRV-Headers/blob/master/LICENSE)).
 * [SPIRV-Tools](https://github.com/KhronosGroup/SPIRV-Tools): SPIRV optimization and validation tools ([Apache License 2.0](https://github.com/DiligentGraphics/SPIRV-Tools/blob/master/LICENSE)).

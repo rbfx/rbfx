@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -84,7 +84,7 @@ class ShaderResourceCacheVk;
 class ShaderVariableManagerVk;
 
 struct PipelineResourceAttribsVk;
-struct PipelineResourceImmutableSamplerAttribsVk;
+struct ImmutableSamplerAttribsVk;
 struct PipelineResourceSignatureInternalDataVk;
 
 struct EngineVkImplTraits
@@ -142,7 +142,9 @@ struct EngineVkImplTraits
     using ShaderResourceCacheImplType   = ShaderResourceCacheVk;
     using ShaderVariableManagerImplType = ShaderVariableManagerVk;
 
-    using PipelineResourceAttribsType = PipelineResourceAttribsVk;
+    using PipelineResourceAttribsType               = PipelineResourceAttribsVk;
+    using ImmutableSamplerAttribsType               = ImmutableSamplerAttribsVk;
+    using PipelineResourceSignatureInternalDataType = PipelineResourceSignatureInternalDataVk;
 };
 
 } // namespace Diligent

@@ -15,12 +15,16 @@ set(INTERFACE
     interface/DebugUtilities.hpp
 )
 
+set(INCLUDE
+    include/SearchRecursive.inl
+)
+
 if(PLATFORM_LINUX OR PLATFORM_WIN32 OR PLATFORM_APPLE OR PLATFORM_EMSCRIPTEN)
     list(APPEND SOURCE src/StandardFile.cpp)
     list(APPEND INTERFACE interface/StandardFile.hpp)
 endif()
 
-add_library(Diligent-BasicPlatform STATIC ${SOURCE} ${INTERFACE})
+add_library(Diligent-BasicPlatform STATIC ${SOURCE} ${INTERFACE} ${INCLUDE})
 set_common_target_properties(Diligent-BasicPlatform)
 
 target_include_directories(Diligent-BasicPlatform 
@@ -37,6 +41,7 @@ PUBLIC
 
 source_group("src" FILES ${SOURCE})
 source_group("interface" FILES ${INTERFACE})
+source_group("include" FILES ${INCLUDE})
 
 set_target_properties(Diligent-BasicPlatform PROPERTIES
     FOLDER DiligentCore/Platforms

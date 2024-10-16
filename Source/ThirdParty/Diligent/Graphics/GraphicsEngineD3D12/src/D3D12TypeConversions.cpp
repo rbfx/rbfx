@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -180,6 +180,12 @@ UINT TextureComponentMappingToD3D12Shader4ComponentMapping(const TextureComponen
         TextureComponentSwizzleToD3D12ShaderComponentMapping(Mapping.A, D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_3));
 }
 
+static UINT GetPlaneSlice(TEXTURE_FORMAT Format)
+{
+    // Stencil is in plane 1
+    return Format == TEX_FORMAT_X32_TYPELESS_G8X24_UINT || Format == TEX_FORMAT_X24_TYPELESS_G8_UINT ? 1 : 0;
+}
+
 void TextureViewDesc_to_D3D12_SRV_DESC(const TextureViewDesc&           SRVDesc,
                                        D3D12_SHADER_RESOURCE_VIEW_DESC& D3D12SRVDesc,
                                        Uint32                           SampleCount)
@@ -202,7 +208,7 @@ void TextureViewDesc_to_D3D12_SRV_DESC(const TextureViewDesc&           SRVDesc,
             }
             else
             {
-                D3D12SRVDesc.Texture2D.PlaneSlice          = 0;
+                D3D12SRVDesc.Texture2D.PlaneSlice          = GetPlaneSlice(SRVDesc.Format);
                 D3D12SRVDesc.Texture2D.ResourceMinLODClamp = 0;
             }
             break;
@@ -213,7 +219,7 @@ void TextureViewDesc_to_D3D12_SRV_DESC(const TextureViewDesc&           SRVDesc,
             }
             else
             {
-                D3D12SRVDesc.Texture2DArray.PlaneSlice          = 0;
+                D3D12SRVDesc.Texture2DArray.PlaneSlice          = GetPlaneSlice(SRVDesc.Format);
                 D3D12SRVDesc.Texture2DArray.ResourceMinLODClamp = 0;
             }
             break;
@@ -296,11 +302,11 @@ void TextureViewDesc_to_D3D12_UAV_DESC(const TextureViewDesc&            UAVDesc
             break;
 
         case RESOURCE_DIM_TEX_2D:
-            D3D12UAVDesc.Texture2D.PlaneSlice = 0;
+            D3D12UAVDesc.Texture2D.PlaneSlice = GetPlaneSlice(UAVDesc.Format);
             break;
 
         case RESOURCE_DIM_TEX_2D_ARRAY:
-            D3D12UAVDesc.Texture2DArray.PlaneSlice = 0;
+            D3D12UAVDesc.Texture2DArray.PlaneSlice = GetPlaneSlice(UAVDesc.Format);
             break;
 
         case RESOURCE_DIM_TEX_3D:
@@ -396,15 +402,6 @@ static D3D12_RESOURCE_STATES ResourceStateFlagToD3D12ResourceState(RESOURCE_STAT
 class StateFlagBitPosToD3D12ResourceState
 {
 public:
-    StateFlagBitPosToD3D12ResourceState()
-    {
-        static_assert((1 << MaxFlagBitPos) == RESOURCE_STATE_MAX_BIT, "This function must be updated to handle new resource state flag");
-        for (Uint32 bit = 0; bit < FlagBitPosToResStateMap.size(); ++bit)
-        {
-            FlagBitPosToResStateMap[bit] = ResourceStateFlagToD3D12ResourceState(static_cast<RESOURCE_STATE>(1 << bit));
-        }
-    }
-
     D3D12_RESOURCE_STATES operator()(Uint32 BitPos) const
     {
         VERIFY(BitPos <= MaxFlagBitPos, "Resource state flag bit position (", BitPos, ") exceeds max bit position (", MaxFlagBitPos, ")");
@@ -412,8 +409,19 @@ public:
     }
 
 private:
-    static constexpr Uint32                              MaxFlagBitPos = 21;
-    std::array<D3D12_RESOURCE_STATES, MaxFlagBitPos + 1> FlagBitPosToResStateMap;
+    static constexpr Uint32 MaxFlagBitPos = 21;
+
+    const std::array<D3D12_RESOURCE_STATES, MaxFlagBitPos + 1> FlagBitPosToResStateMap{
+        []() {
+            std::array<D3D12_RESOURCE_STATES, MaxFlagBitPos + 1> BitPosToStateMap;
+            static_assert((1 << MaxFlagBitPos) == RESOURCE_STATE_MAX_BIT, "This function must be updated to handle new resource state flag");
+            for (Uint32 bit = 0; bit < BitPosToStateMap.size(); ++bit)
+            {
+                BitPosToStateMap[bit] = ResourceStateFlagToD3D12ResourceState(static_cast<RESOURCE_STATE>(1 << bit));
+            }
+            return BitPosToStateMap;
+        }(),
+    };
 };
 
 D3D12_RESOURCE_STATES ResourceStateFlagsToD3D12ResourceStates(RESOURCE_STATE StateFlags)
@@ -509,14 +517,6 @@ static RESOURCE_STATE D3D12ResourceStateToResourceStateFlags(D3D12_RESOURCE_STAT
 class D3D12StateFlagBitPosToResourceState
 {
 public:
-    D3D12StateFlagBitPosToResourceState()
-    {
-        for (Uint32 bit = 0; bit < FlagBitPosToResStateMap.size(); ++bit)
-        {
-            FlagBitPosToResStateMap[bit] = D3D12ResourceStateToResourceStateFlags(static_cast<D3D12_RESOURCE_STATES>(1 << bit));
-        }
-    }
-
     RESOURCE_STATE operator()(Uint32 BitPos) const
     {
         VERIFY(BitPos <= MaxFlagBitPos, "Resource state flag bit position (", BitPos, ") exceeds max bit position (", MaxFlagBitPos, ")");
@@ -524,8 +524,18 @@ public:
     }
 
 private:
-    static constexpr Uint32                       MaxFlagBitPos = 13;
-    std::array<RESOURCE_STATE, MaxFlagBitPos + 1> FlagBitPosToResStateMap;
+    static constexpr Uint32 MaxFlagBitPos = 13;
+
+    const std::array<RESOURCE_STATE, MaxFlagBitPos + 1> FlagBitPosToResStateMap{
+        []() {
+            std::array<RESOURCE_STATE, MaxFlagBitPos + 1> BitPosToStateMap;
+            for (Uint32 bit = 0; bit < BitPosToStateMap.size(); ++bit)
+            {
+                BitPosToStateMap[bit] = D3D12ResourceStateToResourceStateFlags(static_cast<D3D12_RESOURCE_STATES>(1 << bit));
+            }
+            return BitPosToStateMap;
+        }(),
+    };
 };
 
 RESOURCE_STATE D3D12ResourceStatesToResourceStateFlags(D3D12_RESOURCE_STATES StateFlags)

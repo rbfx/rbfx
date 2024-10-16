@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -98,7 +98,6 @@ public:
     ShaderVariableD3D12Impl* GetVariable(const Char* Name) const;
     ShaderVariableD3D12Impl* GetVariable(Uint32 Index) const;
 
-    // Binds object pObj to resource with index ResIndex and array index ArrayIndex.
     void BindResource(Uint32 ResIndex, const BindResourceInfo& BindInfo);
 
     void SetBufferDynamicOffset(Uint32 ResIndex,

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,7 +46,7 @@ size_t ShaderResourceCacheVk::GetRequiredMemorySize(Uint32 NumSets, const Uint32
     Uint32 TotalResources = 0;
     for (Uint32 t = 0; t < NumSets; ++t)
         TotalResources += SetSizes[t];
-    auto MemorySize = NumSets * sizeof(DescriptorSet) + TotalResources * sizeof(Resource);
+    size_t MemorySize = NumSets * sizeof(DescriptorSet) + TotalResources * sizeof(Resource);
     return MemorySize;
 }
 
@@ -86,8 +86,8 @@ void ShaderResourceCacheVk::InitializeSets(IMemoryAllocator& MemAllocator, Uint3
             STDDeleter<void, IMemoryAllocator>(MemAllocator) //
         };
 
-        auto* pSets       = reinterpret_cast<DescriptorSet*>(m_pMemory.get());
-        auto* pCurrResPtr = reinterpret_cast<Resource*>(pSets + m_NumSets);
+        DescriptorSet* pSets       = reinterpret_cast<DescriptorSet*>(m_pMemory.get());
+        Resource*      pCurrResPtr = reinterpret_cast<Resource*>(pSets + m_NumSets);
         for (Uint32 t = 0; t < NumSets; ++t)
         {
             new (&GetDescriptorSet(t)) DescriptorSet{SetSizes[t], SetSizes[t] > 0 ? pCurrResPtr : nullptr};
@@ -148,7 +148,7 @@ static bool IsDynamicBuffer(const ShaderResourceCacheVk::Resource& Res)
     if (pBuffer == nullptr)
         return false;
 
-    const auto& BuffDesc = pBuffer->GetDesc();
+    const BufferDesc& BuffDesc = pBuffer->GetDesc();
 
     bool IsDynamic = (BuffDesc.Usage == USAGE_DYNAMIC);
     if (!IsDynamic)
@@ -169,15 +169,15 @@ void ShaderResourceCacheVk::DbgVerifyResourceInitialization() const
 {
     for (const auto& SetFlags : m_DbgInitializedResources)
     {
-        for (auto ResInitialized : SetFlags)
+        for (bool ResInitialized : SetFlags)
             VERIFY(ResInitialized, "Not all resources in the cache have been initialized. This is a bug.");
     }
 }
 
 void ShaderResourceCacheVk::DbgVerifyDynamicBuffersCounter() const
 {
-    const auto* pResources        = GetFirstResourcePtr();
-    Uint32      NumDynamicBuffers = 0;
+    const Resource* pResources        = GetFirstResourcePtr();
+    Uint32          NumDynamicBuffers = 0;
     for (Uint32 res = 0; res < m_TotalResources; ++res)
     {
         if (IsDynamicBuffer(pResources[res]))
@@ -191,7 +191,7 @@ ShaderResourceCacheVk::~ShaderResourceCacheVk()
 {
     if (m_pMemory)
     {
-        auto* pResources = GetFirstResourcePtr();
+        Resource* pResources = GetFirstResourcePtr();
         for (Uint32 res = 0; res < m_TotalResources; ++res)
             pResources[res].~Resource();
         for (Uint32 t = 0; t < m_NumSets; ++t)
@@ -206,7 +206,7 @@ void ShaderResourceCacheVk::Resource::SetUniformBuffer(RefCntAutoPtr<IDeviceObje
 
     pObject = std::move(_pBuffer);
 
-    const auto* pBuffVk = pObject.ConstPtr<BufferVkImpl>();
+    const BufferVkImpl* pBuffVk = pObject.ConstPtr<BufferVkImpl>();
 
 #ifdef DILIGENT_DEBUG
     if (pBuffVk != nullptr)
@@ -245,16 +245,16 @@ void ShaderResourceCacheVk::Resource::SetStorageBuffer(RefCntAutoPtr<IDeviceObje
     if (!pObject)
         return;
 
-    const auto* pBuffViewVk = pObject.ConstPtr<BufferViewVkImpl>();
-    const auto& ViewDesc    = pBuffViewVk->GetDesc();
+    const BufferViewVkImpl* pBuffViewVk = pObject.ConstPtr<BufferViewVkImpl>();
+    const BufferViewDesc&   ViewDesc    = pBuffViewVk->GetDesc();
 
     BufferBaseOffset = ViewDesc.ByteOffset;
     BufferRangeSize  = ViewDesc.ByteWidth;
 
 #ifdef DILIGENT_DEBUG
     {
-        const auto* pBuffVk  = pBuffViewVk->GetBuffer<const BufferVkImpl>();
-        const auto& BuffDesc = pBuffVk->GetDesc();
+        const BufferVkImpl* pBuffVk  = pBuffViewVk->GetBuffer<const BufferVkImpl>();
+        const BufferDesc&   BuffDesc = pBuffVk->GetDesc();
         VERIFY(Type == DescriptorType::StorageBufferDynamic || Type == DescriptorType::StorageBufferDynamic_ReadOnly || BuffDesc.Usage != USAGE_DYNAMIC,
                "Dynamic buffer must be used with StorageBufferDynamic or StorageBufferDynamic_ReadOnly descriptor");
 
@@ -294,8 +294,8 @@ const ShaderResourceCacheVk::Resource& ShaderResourceCacheVk::SetResource(
     Uint32                                      CacheOffset,
     SetResourceInfo&&                           SrcRes)
 {
-    auto& DescrSet = GetDescriptorSet(DescrSetIndex);
-    auto& DstRes   = DescrSet.GetResource(CacheOffset);
+    DescriptorSet& DescrSet = GetDescriptorSet(DescrSetIndex);
+    Resource&      DstRes   = DescrSet.GetResource(CacheOffset);
 
     if (IsDynamicBuffer(DstRes))
     {
@@ -328,7 +328,7 @@ const ShaderResourceCacheVk::Resource& ShaderResourceCacheVk::SetResource(
         ++m_NumDynamicBuffers;
     }
 
-    auto vkSet = DescrSet.GetVkDescriptorSet();
+    VkDescriptorSet vkSet = DescrSet.GetVkDescriptorSet();
     if (vkSet != VK_NULL_HANDLE && DstRes.pObject)
     {
         VERIFY(pLogicalDevice != nullptr, "Logical device must not be null to write descriptor to a non-null set");
@@ -419,12 +419,12 @@ void ShaderResourceCacheVk::SetDynamicBufferOffset(Uint32 DescrSetIndex,
                                                    Uint32 CacheOffset,
                                                    Uint32 DynamicBufferOffset)
 {
-    auto& DescrSet = GetDescriptorSet(DescrSetIndex);
-    auto& DstRes   = DescrSet.GetResource(CacheOffset);
+    DescriptorSet& DescrSet = GetDescriptorSet(DescrSetIndex);
+    Resource&      DstRes   = DescrSet.GetResource(CacheOffset);
     VERIFY(IsDynamicDescriptorType(DstRes.Type), "Dynamic offsets can only be set of dynamic uniform or storage buffers");
 
     DEV_CHECK_ERR(DstRes.pObject, "Setting dynamic offset when no object is bound");
-    const auto* pBufferVk = DstRes.Type == DescriptorType::UniformBufferDynamic ?
+    const BufferVkImpl* pBufferVk = DstRes.Type == DescriptorType::UniformBufferDynamic ?
         DstRes.pObject.ConstPtr<BufferVkImpl>() :
         DstRes.pObject.ConstPtr<BufferViewVkImpl>()->GetBuffer<const BufferVkImpl>();
     DEV_CHECK_ERR(DstRes.BufferBaseOffset + DstRes.BufferRangeSize + DynamicBufferOffset <= pBufferVk->GetDesc().Size,
@@ -442,7 +442,7 @@ RESOURCE_STATE DescriptorTypeToResourceState(DescriptorType Type)
     static_assert(static_cast<Uint32>(DescriptorType::Count) == 16, "Please update the switch below to handle the new descriptor type");
     switch (Type)
     {
-        // clang-format off
+            // clang-format off
         case DescriptorType::Sampler:                       return RESOURCE_STATE_UNKNOWN;
         case DescriptorType::CombinedImageSampler:          return RESOURCE_STATE_SHADER_RESOURCE;
         case DescriptorType::SeparateImage:                 return RESOURCE_STATE_SHADER_RESOURCE;
@@ -508,7 +508,7 @@ inline void TransitionBufferView(DeviceContextVkImpl* pCtxVkImpl,
     if (pBuffViewVk == nullptr)
         return;
 
-    auto* pBufferVk = pBuffViewVk->GetBuffer<BufferVkImpl>();
+    BufferVkImpl* pBufferVk = pBuffViewVk->GetBuffer<BufferVkImpl>();
     if (!pBufferVk->IsInKnownState())
         return;
 
@@ -553,7 +553,7 @@ inline void TransitionTextureView(DeviceContextVkImpl* pCtxVkImpl,
     if (pTextureViewVk == nullptr)
         return;
 
-    auto* pTextureVk = pTextureViewVk->GetTexture<TextureVkImpl>();
+    TextureVkImpl* pTextureVk = pTextureViewVk->GetTexture<TextureVkImpl>();
     if (!pTextureVk->IsInKnownState())
         return;
 
@@ -618,7 +618,7 @@ inline void TransitionAccelStruct(DeviceContextVkImpl* pCtxVkImpl,
     if (pTLASVk == nullptr || !pTLASVk->IsInKnownState())
         return;
 
-    constexpr auto RequiredState = RESOURCE_STATE_RAY_TRACING;
+    constexpr RESOURCE_STATE RequiredState = RESOURCE_STATE_RAY_TRACING;
     VERIFY_EXPR(DescriptorTypeToResourceState(DescrType) == RequiredState);
     const bool IsInRequiredState = pTLASVk->CheckState(RequiredState);
     if (VerifyOnly)
@@ -651,10 +651,10 @@ inline void TransitionAccelStruct(DeviceContextVkImpl* pCtxVkImpl,
 template <bool VerifyOnly>
 void ShaderResourceCacheVk::TransitionResources(DeviceContextVkImpl* pCtxVkImpl)
 {
-    auto* pResources = GetFirstResourcePtr();
+    Resource* pResources = GetFirstResourcePtr();
     for (Uint32 res = 0; res < m_TotalResources; ++res)
     {
-        auto& Res = pResources[res];
+        Resource& Res = pResources[res];
 
         static_assert(static_cast<Uint32>(DescriptorType::Count) == 16, "Please update the switch below to handle the new descriptor type");
         switch (Res.Type)
@@ -711,7 +711,7 @@ VkDescriptorBufferInfo ShaderResourceCacheVk::Resource::GetUniformBufferDescript
            "Uniform buffer resource is expected");
     DEV_CHECK_ERR(pObject != nullptr, "Unable to get uniform buffer write info: cached object is null");
 
-    const auto* pBuffVk = pObject.ConstPtr<BufferVkImpl>();
+    const BufferVkImpl* pBuffVk = pObject.ConstPtr<BufferVkImpl>();
     // VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER or VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC descriptor type require
     // buffer to be created with VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
     VERIFY(Type == DescriptorType::UniformBufferDynamic || pBuffVk->GetDesc().Usage != USAGE_DYNAMIC,
@@ -736,8 +736,8 @@ VkDescriptorBufferInfo ShaderResourceCacheVk::Resource::GetStorageBufferDescript
            "Storage buffer resource is expected");
     DEV_CHECK_ERR(pObject != nullptr, "Unable to get storage buffer write info: cached object is null");
 
-    const auto* pBuffViewVk = pObject.ConstPtr<BufferViewVkImpl>();
-    const auto* pBuffVk     = pBuffViewVk->GetBuffer<const BufferVkImpl>();
+    const BufferViewVkImpl* pBuffViewVk = pObject.ConstPtr<BufferViewVkImpl>();
+    const BufferVkImpl*     pBuffVk     = pBuffViewVk->GetBuffer<const BufferVkImpl>();
     VERIFY(Type == DescriptorType::StorageBufferDynamic || Type == DescriptorType::StorageBufferDynamic_ReadOnly || pBuffVk->GetDesc().Usage != USAGE_DYNAMIC,
            "Dynamic buffer must be used with StorageBufferDynamic or StorageBufferDynamic_ReadOnly descriptor");
 
@@ -760,7 +760,7 @@ VkDescriptorImageInfo ShaderResourceCacheVk::Resource::GetImageDescriptorWriteIn
 
     bool IsStorageImage = (Type == DescriptorType::StorageImage);
 
-    const auto* pTexViewVk = pObject.ConstPtr<TextureViewVkImpl>();
+    const TextureViewVkImpl* pTexViewVk = pObject.ConstPtr<TextureViewVkImpl>();
     VERIFY_EXPR(pTexViewVk->GetDesc().ViewType == (IsStorageImage ? TEXTURE_VIEW_UNORDERED_ACCESS : TEXTURE_VIEW_SHADER_RESOURCE));
 
     VkDescriptorImageInfo DescrImgInfo;
@@ -771,7 +771,7 @@ VkDescriptorImageInfo ShaderResourceCacheVk::Resource::GetImageDescriptorWriteIn
     {
         // Immutable samplers are permanently bound into the set layout; later binding a sampler
         // into an immutable sampler slot in a descriptor set is not allowed (13.2.1)
-        const auto* pSamplerVk = pTexViewVk->GetSampler<const SamplerVkImpl>();
+        const SamplerVkImpl* pSamplerVk = pTexViewVk->GetSampler<const SamplerVkImpl>();
         if (pSamplerVk != nullptr)
         {
             // If descriptorType is VK_DESCRIPTOR_TYPE_SAMPLER or VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -816,7 +816,7 @@ VkBufferView ShaderResourceCacheVk::Resource::GetBufferViewWriteInfo() const
     // The following bits must have been set at buffer creation time:
     //  * VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER  ->  VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT
     //  * VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER  ->  VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT
-    const auto* pBuffViewVk = pObject.ConstPtr<BufferViewVkImpl>();
+    const BufferViewVkImpl* pBuffViewVk = pObject.ConstPtr<BufferViewVkImpl>();
     return pBuffViewVk->GetVkBufferView();
 }
 
@@ -826,7 +826,7 @@ VkDescriptorImageInfo ShaderResourceCacheVk::Resource::GetSamplerDescriptorWrite
     VERIFY(!HasImmutableSampler, "Separate immutable samplers can't be updated");
     DEV_CHECK_ERR(pObject != nullptr, "Unable to get separate sampler descriptor write info: cached object is null");
 
-    const auto* pSamplerVk = pObject.ConstPtr<SamplerVkImpl>();
+    const SamplerVkImpl* pSamplerVk = pObject.ConstPtr<SamplerVkImpl>();
 
     VkDescriptorImageInfo DescrImgInfo;
     // For VK_DESCRIPTOR_TYPE_SAMPLER, only the sample member of each element of VkWriteDescriptorSet::pImageInfo is accessed (13.2.4)
@@ -843,7 +843,7 @@ VkDescriptorImageInfo ShaderResourceCacheVk::Resource::GetInputAttachmentDescrip
            "Input attachment resource is expected");
     DEV_CHECK_ERR(pObject != nullptr, "Unable to get input attachment write info: cached object is null");
 
-    const auto* pTexViewVk = pObject.ConstPtr<TextureViewVkImpl>();
+    const TextureViewVkImpl* pTexViewVk = pObject.ConstPtr<TextureViewVkImpl>();
     VERIFY_EXPR(pTexViewVk->GetDesc().ViewType == TEXTURE_VIEW_SHADER_RESOURCE);
 
     VkDescriptorImageInfo DescrImgInfo;
@@ -859,7 +859,7 @@ VkWriteDescriptorSetAccelerationStructureKHR ShaderResourceCacheVk::Resource::Ge
     VERIFY(Type == DescriptorType::AccelerationStructure, "Acceleration structure resource is expected");
     DEV_CHECK_ERR(pObject != nullptr, "Unable to get acceleration structure write info: cached object is null");
 
-    const auto* pTLASVk = pObject.ConstPtr<TopLevelASVkImpl>();
+    const TopLevelASVkImpl* pTLASVk = pObject.ConstPtr<TopLevelASVkImpl>();
 
     VkWriteDescriptorSetAccelerationStructureKHR DescrAS;
     DescrAS.sType                      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;

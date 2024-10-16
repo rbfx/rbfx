@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,8 +37,8 @@
 #include "ObjectBase.hpp"
 #include "Shader.h"
 #include "HashUtils.hpp"
-#include "HLSLKeywords.h"
 #include "Constants.h"
+#include "HLSLTokenizer.hpp"
 
 namespace Diligent
 {
@@ -134,6 +134,9 @@ public:
         /// This requires separate shader objects extension:
         /// https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_separate_shader_objects.txt
         bool                                UseInOutLocationQualifiers = true;
+
+        /// Whether to add layot(row_major) qualifier to uniform blocks.
+        bool                                UseRowMajorMatrices        = false;
     };
 
     // clang-format on
@@ -215,139 +218,9 @@ private:
     // Example: {"sampler2D", "Sample", 2} -> {"Sample_2", "_SWIZZLE"}
     std::unordered_map<FunctionStubHashKey, GLSLStubInfo, FunctionStubHashKey::Hasher> m_GLSLStubs;
 
-    // clang-format off
-    enum class TokenType
-    {
-        Undefined,
-#define ADD_KEYWORD(keyword)kw_##keyword,
-        ITERATE_KEYWORDS(ADD_KEYWORD)
-#undef ADD_KEYWORD
-        PreprocessorDirective,
-        Operator,
-        OpenBrace,
-        ClosingBrace,
-        OpenParen,
-        ClosingParen,
-        OpenSquareBracket,
-        ClosingSquareBracket,
-        OpenAngleBracket,
-        ClosingAngleBracket,
-        Identifier,
-        NumericConstant,
-        StringConstant,
-        Semicolon,
-        Comma,
-        Colon,
-        DoubleColon,
-        QuestionMark,
-        TextBlock,
-        Assignment,
-        ComparisonOp,
-        LogicOp,
-        BitwiseOp,
-        IncDecOp,
-        MathOp
-    };
-    // clang-format on
-
-    struct TokenInfo
-    {
-        using TokenType = HLSL2GLSLConverterImpl::TokenType;
-
-        TokenType Type = TokenType::Undefined;
-        String    Literal;
-        String    Delimiter;
-
-        void SetType(TokenType _Type)
-        {
-            Type = _Type;
-        }
-
-        TokenType GetType() const { return Type; }
-
-        bool CompareLiteral(const char* Str)
-        {
-            return Literal == Str;
-        }
-
-        bool CompareLiteral(const std::string::const_iterator& Start,
-                            const std::string::const_iterator& End)
-        {
-            const size_t Len = End - Start;
-            if (strncmp(Literal.c_str(), &*Start, Len) != 0)
-                return false;
-            return Literal.length() == Len;
-        }
-
-        void ExtendLiteral(const std::string::const_iterator& Start,
-                           const std::string::const_iterator& End)
-        {
-            Literal.append(Start, End);
-        }
-
-        bool IsBuiltInType() const
-        {
-            static_assert(static_cast<int>(TokenType::kw_bool) == 1 && static_cast<int>(TokenType::kw_void) == 191,
-                          "If you updated built-in types, double check that all types are defined between bool and void");
-            return Type >= TokenType::kw_bool && Type <= TokenType::kw_void;
-        }
-
-        bool IsFlowControl() const
-        {
-            static_assert(static_cast<int>(TokenType::kw_break) == 192 && static_cast<int>(TokenType::kw_while) == 202,
-                          "If you updated control flow keywords, double check that all keywords are defined between break and while");
-            return Type >= TokenType::kw_break && Type <= TokenType::kw_while;
-        }
-
-        static TokenInfo Create(TokenType                          _Type,
-                                const std::string::const_iterator& DelimStart,
-                                const std::string::const_iterator& DelimEnd,
-                                const std::string::const_iterator& LiteralStart,
-                                const std::string::const_iterator& LiteralEnd)
-        {
-            return TokenInfo{_Type, std::string{LiteralStart, LiteralEnd}, std::string{DelimStart, DelimEnd}};
-        }
-
-        TokenInfo() {}
-
-        TokenInfo(TokenType   _Type,
-                  std::string _Literal,
-                  std::string _Delimiter = "") :
-            Type{_Type},
-            Literal{std::move(_Literal)},
-            Delimiter{std::move(_Delimiter)}
-        {}
-
-        size_t GetDelimiterLen() const
-        {
-            return Delimiter.length();
-        }
-        size_t GetLiteralLen() const
-        {
-            return Literal.length();
-        }
-        const std::pair<const char*, const char*> GetDelimiter() const
-        {
-            return {Delimiter.c_str(), Delimiter.c_str() + GetDelimiterLen()};
-        }
-        const std::pair<const char*, const char*> GetLiteral() const
-        {
-            return {Literal.c_str(), Literal.c_str() + GetLiteralLen()};
-        }
-
-        std::ostream& OutputDelimiter(std::ostream& os) const
-        {
-            os << Delimiter;
-            return os;
-        }
-        std::ostream& OutputLiteral(std::ostream& os) const
-        {
-            os << Literal;
-            return os;
-        }
-    };
-    typedef std::list<TokenInfo> TokenListType;
-
+    using TokenType     = Parsing::HLSLTokenType;
+    using TokenInfo     = Parsing::HLSLTokenInfo;
+    using TokenListType = Parsing::HLSLTokenizer::TokenListType;
 
     class ConversionStream : public ObjectBase<IHLSL2GLSLConversionStream>
     {
@@ -381,13 +254,15 @@ private:
                        SHADER_TYPE ShaderType,
                        bool        IncludeDefintions,
                        const char* SamplerSuffix,
-                       bool        UseInOutLocationQualifiers);
+                       bool        UseInOutLocationQualifiers,
+                       bool        UseRowMajorMatrices);
 
         virtual void DILIGENT_CALL_TYPE Convert(const Char* EntryPoint,
                                                 SHADER_TYPE ShaderType,
                                                 bool        IncludeDefintions,
                                                 const char* SamplerSuffix,
                                                 bool        UseInOutLocationQualifiers,
+                                                bool        UseRowMajorMatrices,
                                                 IDataBlob** ppGLSLSource) override final;
 
         IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_HLSL2GLSLConversionStream, TBase)
@@ -396,11 +271,12 @@ private:
 
     private:
         void InsertIncludes(String& GLSLSource, IShaderSourceInputStreamFactory* pSourceStreamFactory);
-        void Tokenize(const String& Source);
 
-        typedef std::unordered_map<String, bool> SamplerHashType;
+        using SamplerHashType = std::unordered_map<String, bool>;
 
         const HLSLObjectInfo* FindHLSLObject(const String& Name);
+
+        void ParseGlobalPreprocessorDefines();
 
         void ProcessShaderDeclaration(TokenListType::iterator EntryPointToken, SHADER_TYPE ShaderType);
 
@@ -415,6 +291,7 @@ private:
 
         void ProcessConstantBuffer(TokenListType::iterator& Token);
         void ProcessStructuredBuffer(TokenListType::iterator& Token, Uint32& ShaderStorageBlockBinding);
+        void ProcessPreprocessorDirective(TokenListType::iterator& Token);
         void ParseSamplers(TokenListType::iterator& ScopeStart, SamplerHashType& SamplersHash);
 
         void ProcessTextureDeclaration(TokenListType::iterator&            Token,
@@ -435,6 +312,8 @@ private:
         void   RemoveSpecialShaderAttributes();
         void   RemoveSemanticsFromBlock(TokenListType::iterator& Token, TokenType OpenBracketType, TokenType ClosingBracketType);
         void   RemoveSamplerRegister(TokenListType::iterator& Token);
+
+        TokenListType::iterator FindMacroDefinition(const std::string& MacroName);
 
         // IteratorType may be String::iterator or String::const_iterator.
         // While iterator is convertible to const_iterator,
@@ -513,7 +392,8 @@ private:
 
         const char* GetInterpolationQualifier(const ShaderParameterInfo& ParamInfo) const;
 
-        void ProcessFragmentShaderArguments(std::vector<ShaderParameterInfo>& Params,
+        void ProcessFragmentShaderArguments(TokenListType::iterator&          Token,
+                                            std::vector<ShaderParameterInfo>& Params,
                                             String&                           GlobalVariables,
                                             std::stringstream&                ReturnHandlerSS,
                                             String&                           Prologue);
@@ -585,6 +465,9 @@ private:
         // List of tokens defining structs
         std::unordered_map<HashMapStringKey, TokenListType::iterator> m_StructDefinitions;
 
+        // List of preprocessor macro definitions in global scope
+        std::unordered_map<HashMapStringKey, TokenListType::iterator> m_PreprocessorDefinitions;
+
         // Stack of parsed objects, for every scope level.
         // There are currently only two levels:
         // level 0 - global scope, contains all global objects
@@ -595,6 +478,7 @@ private:
 
         const bool m_bPreserveTokens;
         bool       m_bUseInOutLocationQualifiers = true;
+        bool       m_bUseRowMajorMatrices        = false;
 
         const HLSL2GLSLConverterImpl& m_Converter;
 
@@ -603,15 +487,16 @@ private:
         const String m_InputFileName;
     };
 
-    // HLSL keyword->token info hash map
-    // Example: "Texture2D" -> TokenInfo(TokenType::Texture2D, "Texture2D")
-    std::unordered_map<HashMapStringKey, TokenInfo> m_HLSLKeywords;
+    Parsing::HLSLTokenizer m_HLSLTokenizer;
 
     // Set of all GLSL image types (image1D, uimage1D, iimage1D, image2D, ... )
     std::unordered_set<HashMapStringKey> m_ImageTypes;
 
     // Set of all HLSL atomic operations (InterlockedAdd, InterlockedOr, ...)
     std::unordered_set<HashMapStringKey> m_AtomicOperations;
+
+    // Set of all HLSL special shader attributes (numthreads, earlydepthstencil, ...)
+    std::unordered_set<HashMapStringKey> m_SpecialShaderAttributes;
 
     // HLSL semantic -> glsl variable, for every shader stage and input/output type (in == 0, out == 1)
     // Example: [vertex, output] SV_Position -> gl_Position

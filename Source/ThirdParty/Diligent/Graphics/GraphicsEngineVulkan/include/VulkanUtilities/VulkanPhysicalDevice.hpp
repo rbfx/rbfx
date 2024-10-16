@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,7 +48,7 @@ public:
 
     struct ExtensionFeatures
     {
-        VkPhysicalDeviceMeshShaderFeaturesNV              MeshShader             = {};
+        VkPhysicalDeviceMeshShaderFeaturesEXT             MeshShader             = {};
         VkPhysicalDevice16BitStorageFeaturesKHR           Storage16Bit           = {};
         VkPhysicalDevice8BitStorageFeaturesKHR            Storage8Bit            = {};
         VkPhysicalDeviceShaderFloat16Int8FeaturesKHR      ShaderFloat16Int8      = {};
@@ -65,6 +65,8 @@ public:
         VkPhysicalDeviceFragmentDensityMapFeaturesEXT     FragmentDensityMap     = {}; // Only for desktop devices
         VkPhysicalDeviceFragmentDensityMap2FeaturesEXT    FragmentDensityMap2    = {}; // Only for mobile devices
         VkPhysicalDeviceMultiviewFeaturesKHR              Multiview              = {}; // Required for RenderPass2
+        VkPhysicalDeviceMultiDrawFeaturesEXT              MultiDraw              = {};
+        VkPhysicalDeviceShaderDrawParametersFeatures      ShaderDrawParameters   = {};
 
         bool Spirv14              = false; // Ray tracing requires Vulkan 1.2 or SPIRV 1.4 extension
         bool Spirv15              = false; // DXC shaders with ray tracing requires Vulkan 1.2 with SPIRV 1.5
@@ -76,7 +78,7 @@ public:
 
     struct ExtensionProperties
     {
-        VkPhysicalDeviceMeshShaderPropertiesNV              MeshShader             = {};
+        VkPhysicalDeviceMeshShaderPropertiesEXT             MeshShader             = {};
         VkPhysicalDeviceAccelerationStructurePropertiesKHR  AccelStruct            = {};
         VkPhysicalDeviceRayTracingPipelinePropertiesKHR     RayTracingPipeline     = {};
         VkPhysicalDeviceDescriptorIndexingPropertiesEXT     DescriptorIndexing     = {};
@@ -89,6 +91,7 @@ public:
         VkPhysicalDeviceMultiviewPropertiesKHR              Multiview              = {};
         VkPhysicalDeviceMaintenance3Properties              Maintenance3           = {};
         VkPhysicalDeviceFragmentDensityMap2PropertiesEXT    FragmentDensityMap2    = {};
+        VkPhysicalDeviceMultiDrawPropertiesEXT              MultiDraw              = {};
     };
 
 public:

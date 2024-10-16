@@ -1,0 +1,5 @@
+{
+    "windows": {
+        "test-gapi": [ "d3d11", "d3d12" ]
+    }
+}

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {3EA6E3F4-9966-47FC-8CE8-0EB3E2273061}
-static const struct INTERFACE_ID IID_PipelineStateD3D11 =
+static DILIGENT_CONSTEXPR struct INTERFACE_ID IID_PipelineStateD3D11 =
     {0x3ea6e3f4, 0x9966, 0x47fc, {0x8c, 0xe8, 0xe, 0xb3, 0xe2, 0x27, 0x30, 0x61}};
 
 #define DILIGENT_INTERFACE_NAME IPipelineStateD3D11

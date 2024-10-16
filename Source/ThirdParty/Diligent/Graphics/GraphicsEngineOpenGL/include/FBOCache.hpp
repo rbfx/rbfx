@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,6 +32,7 @@
 #include "SpinLock.hpp"
 #include "HashUtils.hpp"
 #include "GLObjectWrapper.hpp"
+#include "TextureBaseGL.hpp"
 
 namespace Diligent
 {
@@ -55,12 +56,19 @@ public:
     static GLObjectWrappers::GLFrameBufferObj CreateFBO(GLContextState&    ContextState,
                                                         Uint32             NumRenderTargets,
                                                         TextureViewGLImpl* ppRTVs[],
-                                                        TextureViewGLImpl* pDSV);
+                                                        TextureViewGLImpl* pDSV,
+                                                        Uint32             DefaultWidth  = 0,
+                                                        Uint32             DefaultHeight = 0);
 
     const GLObjectWrappers::GLFrameBufferObj& GetFBO(Uint32             NumRenderTargets,
                                                      TextureViewGLImpl* ppRTVs[],
                                                      TextureViewGLImpl* pDSV,
                                                      GLContextState&    ContextState);
+
+    const GLObjectWrappers::GLFrameBufferObj& GetFBO(Uint32 Width, Uint32 Height, GLContextState& ContextState);
+
+    // NOTE: the function may bind a framebuffer, so the FBO in the GL context state must be invalidated.
+    const GLObjectWrappers::GLFrameBufferObj& GetFBO(TextureBaseGL* pTex, Uint32 ArraySlice, Uint32 MipLevel, TextureBaseGL::FRAMEBUFFER_TARGET_FLAGS Targets);
 
     void OnReleaseTexture(ITexture* pTexture);
 
@@ -79,6 +87,9 @@ private:
         // Unique IDs of texture bound as depth stencil
         UniqueIdentifier DSId    = 0;
         TextureViewDesc  DSVDesc = {};
+
+        Uint32 Width  = 0;
+        Uint32 Height = 0;
 
         mutable size_t Hash = 0;
 

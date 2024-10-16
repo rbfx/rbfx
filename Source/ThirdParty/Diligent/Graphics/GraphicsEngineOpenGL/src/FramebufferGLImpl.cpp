@@ -110,7 +110,7 @@ FramebufferGLImpl::FramebufferGLImpl(IReferenceCounters*    pRefCounters,
         }
         auto RenderTargetFBO = UseDefaultFBO(SubpassDesc.RenderTargetAttachmentCount, ppRTVs, pDSV) ?
             GLObjectWrappers::GLFrameBufferObj{false} :
-            FBOCache::CreateFBO(CtxState, SubpassDesc.RenderTargetAttachmentCount, ppRTVs, pDSV);
+            FBOCache::CreateFBO(CtxState, SubpassDesc.RenderTargetAttachmentCount, ppRTVs, pDSV, Desc.Width, Desc.Height);
 
         GLObjectWrappers::GLFrameBufferObj ResolveFBO{false};
         if (SubpassDesc.pResolveAttachments != nullptr)
@@ -126,7 +126,7 @@ FramebufferGLImpl::FramebufferGLImpl(IReferenceCounters*    pRefCounters,
             }
             ResolveFBO = UseDefaultFBO(SubpassDesc.RenderTargetAttachmentCount, ppRsvlViews, nullptr) ?
                 GLObjectWrappers::GLFrameBufferObj{false} :
-                FBOCache::CreateFBO(CtxState, SubpassDesc.RenderTargetAttachmentCount, ppRsvlViews, nullptr);
+                FBOCache::CreateFBO(CtxState, SubpassDesc.RenderTargetAttachmentCount, ppRsvlViews, nullptr, Desc.Width, Desc.Height);
         }
 
         RenderTargetFBO.SetName(m_Desc.Name);

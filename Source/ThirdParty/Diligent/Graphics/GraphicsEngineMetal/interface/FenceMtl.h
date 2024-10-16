@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {54FE9F8F-FBBF-4ABB-8280-D980982DA364}
-static const INTERFACE_ID IID_FenceMtl =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_FenceMtl =
     {0x54fe9f8f, 0xfbbf, 0x4abb, {0x82, 0x80, 0xd9, 0x80, 0x98, 0x2d, 0xa3, 0x64}};
 
 #define DILIGENT_INTERFACE_NAME IFenceMtl

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -247,7 +247,11 @@
 #endif
 
 #ifndef GL_TEXTURE_MAX_ANISOTROPY_EXT
-#   define GL_TEXTURE_MAX_ANISOTROPY_EXT 0
+#   define GL_TEXTURE_MAX_ANISOTROPY_EXT 0x84FE
+#endif
+
+#ifndef GL_MAX_TEXTURE_MAX_ANISOTROPY
+#   define GL_MAX_TEXTURE_MAX_ANISOTROPY 0x84FF
 #endif
 
 #ifndef GL_TEXTURE_BORDER_COLOR
@@ -874,7 +878,7 @@
 
 
 #ifndef GL_DEPTH_CLAMP
-#   define GL_DEPTH_CLAMP 0
+#   define GL_DEPTH_CLAMP 0x864F
 #endif
 
 // Blend functions
@@ -1073,6 +1077,13 @@
 
 #ifndef GL_ZERO_TO_ONE
 #   define GL_ZERO_TO_ONE 0x935F
+#endif
+
+
+/* -------------------------- GL_KHR_parallel_shader_compile ------------------------- */
+
+#ifndef GL_COMPLETION_STATUS_KHR
+#   define GL_COMPLETION_STATUS_KHR 0x91B1
 #endif
 
 
@@ -1287,6 +1298,11 @@ extern PFNGLFRAMEBUFFERTEXTUREPROC glFramebufferTexture;
 typedef void (GL_APIENTRY* PFNGLFRAMEBUFFERTEXTURE1DPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 extern PFNGLFRAMEBUFFERTEXTURE1DPROC glFramebufferTexture1D;
 
+// not supported
+#define LOAD_GL_COPY_TEX_SUBIMAGE_1D
+typedef void (GL_APIENTRY* PFNGLCOPYTEXSUBIMAGE1DEXTPROC) (GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width);
+extern PFNGLCOPYTEXSUBIMAGE1DEXTPROC glCopyTexSubImage1D;
+
 // GL_OES_texture_3D
 #define LOAD_GL_FRAMEBUFFER_TEXTURE_3D
 typedef void (GL_APIENTRY* PFNGLFRAMEBUFFERTEXTURE3DPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint layer);
@@ -1431,5 +1447,17 @@ extern PFNGLCLIPCONTROLPROC glClipControl;
 #ifndef GL_KHR_debug
 #   define GL_KHR_debug 1
 #endif
+
+
+// GL_EXT_multi_draw_arrays
+#define LOAD_GL_MULTI_DRAW_ARRAYS
+typedef void (GL_APIENTRY* PFNGLMULTIDRAWARRAYSPROC) (GLenum mode, const GLint *first, const GLsizei *count, GLsizei drawcount);
+extern PFNGLMULTIDRAWARRAYSPROC glMultiDrawArrays;
+
+#define LOAD_GL_MULTI_DRAW_ELEMENTS
+typedef void (GL_APIENTRY* PFNGLMULTIDRAWELEMENTSPROC) (GLenum mode, const GLsizei *count, GLenum type, const void *const*indices, GLsizei drawcount);
+extern PFNGLMULTIDRAWELEMENTSPROC glMultiDrawElements;
+
+#define glMultiDrawElementsBaseVertex(...) UnsupportedGLFunctionStub("glMultiDrawElementsBaseVertex")
 
 void LoadGLFunctions();

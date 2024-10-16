@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -66,6 +66,9 @@ void ValidateBufferDesc(const BufferDesc& Desc, const IRenderDevice* pDevice) no
         (Desc.BindFlags & BIND_SHADER_RESOURCE))
     {
         VERIFY_BUFFER(Desc.Mode > BUFFER_MODE_UNDEFINED && Desc.Mode < BUFFER_MODE_NUM_MODES, GetBufferModeString(Desc.Mode), " is not a valid mode for a buffer created with BIND_SHADER_RESOURCE or BIND_UNORDERED_ACCESS flags.");
+        if (Desc.Mode == BUFFER_MODE_FORMATTED)
+            VERIFY_BUFFER(Features.FormattedBuffers, "the device does not support formatted buffers. Check the FormattedBuffers device feature.");
+
         if (Desc.Mode == BUFFER_MODE_STRUCTURED || Desc.Mode == BUFFER_MODE_FORMATTED)
         {
             VERIFY_BUFFER(Desc.ElementByteStride != 0, "element stride must not be zero for structured and formatted buffers.");

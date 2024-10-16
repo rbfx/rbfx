@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,6 +28,7 @@
 #include "Win32FileSystem.hpp"
 #include "Errors.hpp"
 #include "../../Common/interface/StringTools.hpp"
+#include "../../Basic/include/SearchRecursive.inl"
 
 // We can't use namespace Diligent before #including <Windows.h> because Diligent::INTERFACE_ID will conflict with windows InterfaceID
 //using namespace Diligent;
@@ -420,21 +421,9 @@ void WindowsFileSystem::SetWorkingDirectory(const Char* strWorkingDir)
     WindowsPathHelper::SetWorkingDirectory(strWorkingDir);
 }
 
-struct WndFindFileData : public FindFileData
+WindowsFileSystem::SearchFilesResult WindowsFileSystem::Search(const Char* SearchPattern)
 {
-    virtual const Char* Name() const override { return ffd.cFileName; }
-
-    virtual bool IsDirectory() const override { return (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0; }
-
-    WIN32_FIND_DATAA ffd;
-
-    WndFindFileData(const WIN32_FIND_DATAA& _ffd) :
-        ffd{_ffd} {}
-};
-
-std::vector<std::unique_ptr<FindFileData>> WindowsFileSystem::Search(const Char* SearchPattern)
-{
-    std::vector<std::unique_ptr<FindFileData>> SearchRes;
+    SearchFilesResult SearchRes;
 
     WIN32_FIND_DATAA ffd;
     // Find the first file in the directory.
@@ -452,7 +441,7 @@ std::vector<std::unique_ptr<FindFileData>> WindowsFileSystem::Search(const Char*
         if (IsDot(ffd.cFileName) || IsDblDot(ffd.cFileName))
             continue;
 
-        SearchRes.emplace_back(std::make_unique<WndFindFileData>(ffd));
+        SearchRes.emplace_back(FindFileData{ffd.cFileName, (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0});
     } while (FindNextFileA(hFind, &ffd) != 0);
 
     auto dwError = GetLastError();
@@ -464,6 +453,11 @@ std::vector<std::unique_ptr<FindFileData>> WindowsFileSystem::Search(const Char*
     FindClose(hFind);
 
     return SearchRes;
+}
+
+WindowsFileSystem::SearchFilesResult WindowsFileSystem::SearchRecursive(const Char* Dir, const Char* SearchPattern)
+{
+    return Diligent::SearchRecursive<WindowsFileSystem>(Dir, SearchPattern);
 }
 
 static DWORD FileDialogFlagsToOFNFlags(FILE_DIALOG_FLAGS FileDialogFlags)

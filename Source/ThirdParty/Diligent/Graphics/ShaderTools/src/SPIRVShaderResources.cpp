@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -205,8 +205,8 @@ spv::ExecutionModel ShaderTypeToSpvExecutionModel(SHADER_TYPE ShaderType)
         case SHADER_TYPE_GEOMETRY:         return spv::ExecutionModelGeometry;
         case SHADER_TYPE_PIXEL:            return spv::ExecutionModelFragment;
         case SHADER_TYPE_COMPUTE:          return spv::ExecutionModelGLCompute;
-        case SHADER_TYPE_AMPLIFICATION:    return spv::ExecutionModelTaskNV;
-        case SHADER_TYPE_MESH:             return spv::ExecutionModelMeshNV;
+        case SHADER_TYPE_AMPLIFICATION:    return spv::ExecutionModelTaskEXT;
+        case SHADER_TYPE_MESH:             return spv::ExecutionModelMeshEXT;
         case SHADER_TYPE_RAY_GEN:          return spv::ExecutionModelRayGenerationKHR;
         case SHADER_TYPE_RAY_MISS:         return spv::ExecutionModelMissKHR;
         case SHADER_TYPE_RAY_CLOSEST_HIT:  return spv::ExecutionModelClosestHitKHR;
@@ -294,17 +294,32 @@ static SHADER_CODE_BASIC_TYPE SpirvBaseTypeToShaderCodeBasicType(diligent_spirv_
     }
 }
 
-void LoadShaderCodeVariableDesc(const diligent_spirv_cross::Compiler& Compiler, const diligent_spirv_cross::TypeID& TypeID, bool IsHLSLSource, ShaderCodeVariableDescX& TypeDesc)
+void LoadShaderCodeVariableDesc(const diligent_spirv_cross::Compiler& Compiler,
+                                const diligent_spirv_cross::TypeID&   TypeID,
+                                const diligent_spirv_cross::Bitset&   Decoration,
+                                bool                                  IsHLSLSource,
+                                ShaderCodeVariableDescX&              TypeDesc)
 {
     const auto& SpvType = Compiler.get_type(TypeID);
     if (SpvType.basetype == diligent_spirv_cross::SPIRType::Struct)
+    {
         TypeDesc.Class = SHADER_CODE_VARIABLE_CLASS_STRUCT;
+    }
     else if (SpvType.vecsize > 1 && SpvType.columns > 1)
-        TypeDesc.Class = SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS;
+    {
+        if (Decoration.get(spv::Decoration::DecorationRowMajor))
+            TypeDesc.Class = IsHLSLSource ? SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS : SHADER_CODE_VARIABLE_CLASS_MATRIX_ROWS;
+        else
+            TypeDesc.Class = IsHLSLSource ? SHADER_CODE_VARIABLE_CLASS_MATRIX_ROWS : SHADER_CODE_VARIABLE_CLASS_MATRIX_COLUMNS;
+    }
     else if (SpvType.vecsize > 1)
+    {
         TypeDesc.Class = SHADER_CODE_VARIABLE_CLASS_VECTOR;
+    }
     else
+    {
         TypeDesc.Class = SHADER_CODE_VARIABLE_CLASS_SCALAR;
+    }
 
     if (TypeDesc.Class != SHADER_CODE_VARIABLE_CLASS_STRUCT)
     {
@@ -321,7 +336,7 @@ void LoadShaderCodeVariableDesc(const diligent_spirv_cross::Compiler& Compiler, 
     if (TypeDesc.TypeName == nullptr || TypeDesc.TypeName[0] == '\0')
         TypeDesc.SetDefaultTypeName(IsHLSLSource ? SHADER_SOURCE_LANGUAGE_HLSL : SHADER_SOURCE_LANGUAGE_GLSL);
 
-    TypeDesc.ArraySize = SpvType.array[0];
+    TypeDesc.ArraySize = !SpvType.array.empty() ? SpvType.array[0] : 0;
 
     for (uint32_t i = 0; i < SpvType.member_types.size(); ++i)
     {
@@ -334,7 +349,7 @@ void LoadShaderCodeVariableDesc(const diligent_spirv_cross::Compiler& Compiler, 
 
         auto idx = TypeDesc.AddMember(VarDesc);
         VERIFY_EXPR(idx == i);
-        LoadShaderCodeVariableDesc(Compiler, SpvType.member_types[i], IsHLSLSource, TypeDesc.GetMember(i));
+        LoadShaderCodeVariableDesc(Compiler, SpvType.member_types[i], Compiler.get_member_decoration_bitset(TypeID, i), IsHLSLSource, TypeDesc.GetMember(i));
     }
 }
 
@@ -353,7 +368,7 @@ ShaderCodeBufferDescX LoadUBReflection(const diligent_spirv_cross::Compiler& Com
 
         auto idx = UBDesc.AddVariable(VarDesc);
         VERIFY_EXPR(idx == i);
-        LoadShaderCodeVariableDesc(Compiler, SpvType.member_types[i], IsHLSLSource, UBDesc.GetVariable(idx));
+        LoadShaderCodeVariableDesc(Compiler, SpvType.member_types[i], Compiler.get_member_decoration_bitset(SpvType.self, i), IsHLSLSource, UBDesc.GetVariable(idx));
     }
 
     return UBDesc;
@@ -366,7 +381,7 @@ SPIRVShaderResources::SPIRVShaderResources(IMemoryAllocator&     Allocator,
                                            const char*           CombinedSamplerSuffix,
                                            bool                  LoadShaderStageInputs,
                                            bool                  LoadUniformBufferReflection,
-                                           std::string&          EntryPoint) :
+                                           std::string&          EntryPoint) noexcept(false) :
     m_ShaderType{shaderDesc.ShaderType}
 {
     // https://github.com/KhronosGroup/SPIRV-Cross/wiki/Reflection-API-user-guide
@@ -802,9 +817,41 @@ SPIRVShaderResources::~SPIRVShaderResources()
     static_assert(Uint32{SPIRVShaderResourceAttribs::ResourceType::NumResourceTypes} == 12, "Please add destructor for the new resource");
 }
 
+void SPIRVShaderResources::MapHLSLVertexShaderInputs(std::vector<uint32_t>& SPIRV) const
+{
+    VERIFY(IsHLSLSource(), "This method is only relevant for HLSL source");
 
+    for (Uint32 i = 0; i < GetNumShaderStageInputs(); ++i)
+    {
+        const SPIRVShaderStageInputAttribs& Input = GetShaderStageInputAttribs(i);
 
-std::string SPIRVShaderResources::DumpResources()
+        const char*        s      = Input.Semantic;
+        static const char* Prefix = "attrib";
+        const char*        p      = Prefix;
+        while (*s != 0 && *p != 0 && *p == std::tolower(static_cast<unsigned char>(*s)))
+        {
+            ++p;
+            ++s;
+        }
+
+        if (*p != 0)
+        {
+            LOG_ERROR_MESSAGE("Unable to map semantic '", Input.Semantic, "' to input location: semantics must have '", Prefix, "x' format.");
+            continue;
+        }
+
+        char*    EndPtr   = nullptr;
+        uint32_t Location = static_cast<uint32_t>(strtol(s, &EndPtr, 10));
+        if (*EndPtr != 0)
+        {
+            LOG_ERROR_MESSAGE("Unable to map semantic '", Input.Semantic, "' to input location: semantics must have '", Prefix, "x' format.");
+            continue;
+        }
+        SPIRV[Input.LocationDecorationOffset] = Location;
+    }
+}
+
+std::string SPIRVShaderResources::DumpResources() const
 {
     std::stringstream ss;
     ss << "Shader '" << m_ShaderName << "' resource stats: total resources: " << GetTotalResources() << ":" << std::endl

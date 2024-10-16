@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {12D8EC02-96F4-431E-9695-C5F572CC7587}
-static const INTERFACE_ID IID_BufferVk =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_BufferVk =
     {0x12d8ec02, 0x96f4, 0x431e, {0x96, 0x95, 0xc5, 0xf5, 0x72, 0xcc, 0x75, 0x87}};
 
 #define DILIGENT_INTERFACE_NAME IBufferVk

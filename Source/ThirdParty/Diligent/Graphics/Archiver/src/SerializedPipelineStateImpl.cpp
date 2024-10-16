@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -180,31 +180,9 @@ std::string GetPSODumpFolder(const std::string& Root, const PipelineStateDesc& P
 } // namespace
 
 template <typename PSOCreateInfoType>
-SerializedPipelineStateImpl::SerializedPipelineStateImpl(IReferenceCounters*             pRefCounters,
-                                                         SerializationDeviceImpl*        pDevice,
-                                                         const PSOCreateInfoType&        CreateInfo,
-                                                         const PipelineStateArchiveInfo& ArchiveInfo) :
-    TBase{pRefCounters},
-    m_pSerializationDevice{pDevice},
-    m_Name{CreateInfo.PSODesc.Name != nullptr ? CreateInfo.PSODesc.Name : ""},
-    m_Desc //
-    {
-        [this](PipelineStateDesc Desc) //
-        {
-            Desc.Name = m_Name.c_str();
-            // We don't need resource layout and we don't copy variables and immutable samplers
-            Desc.ResourceLayout = {};
-            return Desc;
-        }(CreateInfo.PSODesc) //
-    },
-    m_pRenderPass{RenderPassFromCI(CreateInfo)}
+void SerializedPipelineStateImpl::Initialize(const PSOCreateInfoType&        CreateInfo,
+                                             const PipelineStateArchiveInfo& ArchiveInfo)
 {
-    if (CreateInfo.PSODesc.Name == nullptr || CreateInfo.PSODesc.Name[0] == '\0')
-        LOG_ERROR_AND_THROW("Serialized pipeline state name can't be null or empty");
-
-    ValidatePipelineStateArchiveInfo(CreateInfo, ArchiveInfo, pDevice->GetSupportedDeviceFlags());
-    ValidatePSOCreateInfo(pDevice, CreateInfo);
-
     auto DeviceBits = ArchiveInfo.DeviceFlags;
     if ((DeviceBits & ARCHIVE_DEVICE_DATA_FLAG_GL) != 0 && (DeviceBits & ARCHIVE_DEVICE_DATA_FLAG_GLES) != 0)
     {
@@ -217,7 +195,7 @@ SerializedPipelineStateImpl::SerializedPipelineStateImpl(IReferenceCounters*    
     {
         const auto Flag = ExtractLSB(DeviceBits);
 
-        static_assert(ARCHIVE_DEVICE_DATA_FLAG_LAST == ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS, "Please update the switch below to handle the new data type");
+        static_assert(ARCHIVE_DEVICE_DATA_FLAG_LAST == 1 << 7, "Please update the switch below to handle the new data type");
         switch (Flag)
         {
 #if D3D11_SUPPORTED
@@ -245,7 +223,12 @@ SerializedPipelineStateImpl::SerializedPipelineStateImpl(IReferenceCounters*    
             case ARCHIVE_DEVICE_DATA_FLAG_METAL_MACOS:
             case ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS:
                 PatchShadersMtl(CreateInfo, ArchiveDeviceDataFlagToArchiveDeviceType(Flag),
-                                GetPSODumpFolder(pDevice->GetMtlProperties().DumpFolder, GetDesc(), Flag));
+                                GetPSODumpFolder(m_pSerializationDevice->GetMtlProperties().DumpFolder, GetDesc(), Flag));
+                break;
+#endif
+#if WEBGPU_SUPPORTED
+            case ARCHIVE_DEVICE_DATA_FLAG_WEBGPU:
+                PatchShadersWebGPU(CreateInfo);
                 break;
 #endif
             case ARCHIVE_DEVICE_DATA_FLAG_NONE:
@@ -316,6 +299,138 @@ SerializedPipelineStateImpl::SerializedPipelineStateImpl(IReferenceCounters*    
             VERIFY_EXPR(Ser.IsEnded());
         }
     }
+
+    m_Status.store(PIPELINE_STATE_STATUS_READY);
+}
+
+struct SerializedShaderStageInfo
+{
+    SerializedShaderStageInfo() {}
+
+    SerializedShaderStageInfo(const SerializedShaderImpl* pShader) :
+        Type{pShader->GetDesc().ShaderType},
+        Shaders{pShader}
+    {}
+
+    void Append(const SerializedShaderImpl* pShader)
+    {
+        VERIFY_EXPR(pShader != nullptr);
+        VERIFY(std::find(Shaders.begin(), Shaders.end(), pShader) == Shaders.end(),
+               "Shader '", pShader->GetDesc().Name, "' already exists in the stage. Shaders must be deduplicated.");
+
+        const SHADER_TYPE NewShaderType = pShader->GetDesc().ShaderType;
+        if (Type == SHADER_TYPE_UNKNOWN)
+        {
+            VERIFY_EXPR(Shaders.empty());
+            Type = NewShaderType;
+        }
+        else
+        {
+            VERIFY(Type == NewShaderType, "The type (", GetShaderTypeLiteralName(NewShaderType),
+                   ") of shader '", pShader->GetDesc().Name, "' being added to the stage is inconsistent with the stage type (",
+                   GetShaderTypeLiteralName(Type), ").");
+        }
+        Shaders.push_back(pShader);
+    }
+
+    size_t Count() const
+    {
+        return Shaders.size();
+    }
+
+    friend SHADER_TYPE GetShaderStageType(const SerializedShaderStageInfo& Stage)
+    {
+        return Stage.Type;
+    }
+
+    SHADER_TYPE                              Type = SHADER_TYPE_UNKNOWN;
+    std::vector<const SerializedShaderImpl*> Shaders;
+};
+
+template <typename PSOCreateInfoType>
+SerializedPipelineStateImpl::SerializedPipelineStateImpl(IReferenceCounters*             pRefCounters,
+                                                         SerializationDeviceImpl*        pDevice,
+                                                         const PSOCreateInfoType&        CreateInfo,
+                                                         const PipelineStateArchiveInfo& ArchiveInfo) :
+    TBase{pRefCounters},
+    m_pSerializationDevice{pDevice},
+    m_Name{CreateInfo.PSODesc.Name != nullptr ? CreateInfo.PSODesc.Name : ""},
+    m_Desc //
+    {
+        [this](PipelineStateDesc Desc) //
+        {
+            Desc.Name = m_Name.c_str();
+            // We don't need resource layout and we don't copy variables and immutable samplers
+            Desc.ResourceLayout = {};
+            return Desc;
+        }(CreateInfo.PSODesc) //
+    },
+    m_pRenderPass{RenderPassFromCI(CreateInfo)}
+{
+    if (CreateInfo.PSODesc.Name == nullptr || CreateInfo.PSODesc.Name[0] == '\0')
+        LOG_ERROR_AND_THROW("Serialized pipeline state name can't be null or empty");
+
+    ValidatePipelineStateArchiveInfo(CreateInfo, ArchiveInfo, pDevice->GetSupportedDeviceFlags());
+    ValidatePSOCreateInfo(pDevice, CreateInfo);
+
+    m_Status.store(PIPELINE_STATE_STATUS_COMPILING);
+    if ((CreateInfo.Flags & PSO_CREATE_FLAG_ASYNCHRONOUS) != 0 && pDevice->GetShaderCompilationThreadPool() != nullptr)
+    {
+        // Collect all asynchronous shader compile tasks
+        std::vector<SerializedShaderStageInfo> ShaderStages;
+        SHADER_TYPE                            ActiveShaderStages    = SHADER_TYPE_UNKNOWN;
+        constexpr bool                         WaitUntilShadersReady = false;
+        PipelineStateUtils::ExtractShaders<SerializedShaderImpl>(CreateInfo, ShaderStages, WaitUntilShadersReady, ActiveShaderStages);
+
+        std::vector<const SerializedShaderImpl*> Shaders;
+        for (const SerializedShaderStageInfo& Stage : ShaderStages)
+        {
+            Shaders.insert(Shaders.end(), Stage.Shaders.begin(), Stage.Shaders.end());
+        }
+
+        std::vector<RefCntAutoPtr<IAsyncTask>> ShaderCompileTasks;
+        for (const SerializedShaderImpl* pShader : Shaders)
+        {
+            for (RefCntAutoPtr<IAsyncTask> pCompileTask : pShader->GetCompileTasks())
+                ShaderCompileTasks.emplace_back(std::move(pCompileTask));
+        }
+
+        m_AsyncInitializer = AsyncInitializer::Start(
+            pDevice->GetShaderCompilationThreadPool(),
+            ShaderCompileTasks, // Make sure that all asynchronous shader compile tasks are completed first
+            [this,
+#ifdef DILIGENT_DEBUG
+             Shaders,
+#endif
+             CreateInfo = typename PipelineStateCreateInfoXTraits<PSOCreateInfoType>::CreateInfoXType{CreateInfo},
+             ArchiveInfo](Uint32 ThreadId) mutable //
+            {
+#ifdef DILIGENT_DEBUG
+                for (const SerializedShaderImpl* pShader : Shaders)
+                {
+                    VERIFY(!pShader->IsCompiling(), "All shader compile tasks must have been completed since we used them as "
+                                                    "prerequisites for the pipeline initialization task. This appears to be a bug.");
+                }
+#endif
+                try
+                {
+                    Initialize(static_cast<const PSOCreateInfoType&>(CreateInfo), ArchiveInfo);
+                    m_Status.store(PIPELINE_STATE_STATUS_READY);
+                }
+                catch (...)
+                {
+                    m_Status.store(PIPELINE_STATE_STATUS_FAILED);
+                }
+
+                // Release create info objects
+                CreateInfo.Clear();
+            });
+    }
+    else
+    {
+        Initialize(static_cast<const PSOCreateInfoType&>(CreateInfo), ArchiveInfo);
+        m_Status.store(PIPELINE_STATE_STATUS_READY);
+    }
 }
 
 INSTANTIATE_SERIALIZED_PSO_CTOR(GraphicsPipelineStateCreateInfo);
@@ -342,6 +457,7 @@ void SerializedPipelineStateImpl::SerializeShaderCreateInfo(DeviceType          
 
 Uint32 DILIGENT_CALL_TYPE SerializedPipelineStateImpl::GetPatchedShaderCount(ARCHIVE_DEVICE_DATA_FLAGS DeviceType) const
 {
+    DEV_CHECK_ERR(m_Status.load() == PIPELINE_STATE_STATUS_READY, "Pipeline state '", m_Desc.Name, "' is not ready. Use GetStatus() to check the pipeline state status.");
     DEV_CHECK_ERR(IsPowerOfTwo(DeviceType), "Only single device data flag is expected");
     const auto  Type    = ArchiveDeviceDataFlagToArchiveDeviceType(DeviceType);
     const auto& Shaders = m_Data.Shaders[static_cast<size_t>(Type)];
@@ -352,6 +468,7 @@ ShaderCreateInfo DILIGENT_CALL_TYPE SerializedPipelineStateImpl::GetPatchedShade
     ARCHIVE_DEVICE_DATA_FLAGS DeviceType,
     Uint32                    ShaderIndex) const
 {
+    DEV_CHECK_ERR(m_Status.load() == PIPELINE_STATE_STATUS_READY, "Pipeline state '", m_Desc.Name, "' is not ready. Use GetStatus() to check the pipeline state status.");
     DEV_CHECK_ERR(IsPowerOfTwo(DeviceType), "Only single device data flag is expected");
 
     ShaderCreateInfo ShaderCI;
@@ -377,6 +494,17 @@ ShaderCreateInfo DILIGENT_CALL_TYPE SerializedPipelineStateImpl::GetPatchedShade
     }
 
     return ShaderCI;
+}
+
+PIPELINE_STATE_STATUS SerializedPipelineStateImpl::GetStatus(bool WaitForCompletion)
+{
+    VERIFY_EXPR(m_Status.load() != PIPELINE_STATE_STATUS_UNINITIALIZED);
+    ASYNC_TASK_STATUS InitTaskStatus = AsyncInitializer::Update(m_AsyncInitializer, WaitForCompletion);
+    if (InitTaskStatus == ASYNC_TASK_STATUS_COMPLETE)
+    {
+        VERIFY(m_Status.load() > PIPELINE_STATE_STATUS_COMPILING, "Pipeline state status must be atomically set by the initialization task before it finishes");
+    }
+    return m_Status.load();
 }
 
 } // namespace Diligent

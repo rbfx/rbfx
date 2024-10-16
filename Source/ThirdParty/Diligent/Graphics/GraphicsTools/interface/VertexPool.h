@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@
 #include "../../GraphicsEngine/interface/RenderDevice.h"
 #include "../../GraphicsEngine/interface/DeviceContext.h"
 #include "../../GraphicsEngine/interface/Buffer.h"
+#include "../../../Common/interface/StringTools.h"
 
 namespace Diligent
 {
@@ -39,11 +40,11 @@ namespace Diligent
 struct IVertexPool;
 
 // {7649D93A-E8A8-4BE8-8FEB-24CA8E232179}
-static const INTERFACE_ID IID_VertexPoolAllocation =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_VertexPoolAllocation =
     {0x7649d93a, 0xe8a8, 0x4be8, {0x8f, 0xeb, 0x24, 0xca, 0x8e, 0x23, 0x21, 0x79}};
 
 // {972DA1D1-A587-45FE-95FF-831637F37601}
-static const INTERFACE_ID IID_VertexPool =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_VertexPool =
     {0x972da1d1, 0xa587, 0x45fe, {0x95, 0xff, 0x83, 0x16, 0x37, 0xf3, 0x76, 0x1}};
 
 
@@ -59,10 +60,15 @@ struct IVertexPoolAllocation : public IObject
     /// Returns a pointer to the parent vertex pool.
     virtual IVertexPool* GetPool() = 0;
 
-    /// Returns a pointer to the internal buffer at given index.
+    /// Updates internal buffer at the given index.
 
-    /// \remarks    This method is a shortcut for GetPool()->GetBuffer(Index, pDevice, pContext).
-    virtual IBuffer* GetBuffer(Uint32 Index, IRenderDevice* pDevice, IDeviceContext* pContext) = 0;
+    /// \remarks    This method is a shortcut for GetPool()->Update(Index, pDevice, pContext).
+    virtual IBuffer* Update(Uint32 Index, IRenderDevice* pDevice, IDeviceContext* pContext) = 0;
+
+    /// Returns a pointer to the internal buffer at the given index.
+
+    /// \remarks    This method is a shortcut for GetPool()->GetBuffer(Index).
+    virtual IBuffer* GetBuffer(Uint32 Index) const = 0;
 
     /// Stores a pointer to the user-provided data object, which
     /// may later be retrieved through GetUserData().
@@ -98,6 +104,16 @@ struct VertexPoolUsageStats
 
     /// The number of allocations.
     Uint32 AllocationCount = 0;
+
+    VertexPoolUsageStats& operator+=(const VertexPoolUsageStats& RHS)
+    {
+        TotalVertexCount += RHS.TotalVertexCount;
+        AllocatedVertexCount += RHS.AllocatedVertexCount;
+        CommittedMemorySize += RHS.CommittedMemorySize;
+        UsedMemorySize += RHS.UsedMemorySize;
+        AllocationCount += RHS.AllocationCount;
+        return *this;
+    }
 };
 
 
@@ -166,6 +182,27 @@ struct VertexPoolDesc
 
     /// The number of vertices in the pool.
     Uint32 VertexCount DEFAULT_INITIALIZER(0);
+
+    bool operator==(const VertexPoolDesc& RHS) const
+    {
+        if (!SafeStrEqual(Name, RHS.Name) ||
+            NumElements != RHS.NumElements ||
+            VertexCount != RHS.VertexCount)
+            return false;
+
+        for (Uint32 i = 0; i < NumElements; ++i)
+        {
+            if (pElements[i] != RHS.pElements[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    bool operator!=(const VertexPoolDesc& RHS) const
+    {
+        return !(*this == RHS);
+    }
 };
 
 /// Vertex pool interface.
@@ -173,7 +210,7 @@ struct VertexPoolDesc
 /// The vertex pool is a collection of dynamic buffers that can be used to store vertex data.
 struct IVertexPool : public IObject
 {
-    /// Returns a pointer to the internal buffer at given index.
+    /// Updates the internal buffer object at the given index.
 
     /// \param[in]  Index    - The vertex buffer index. Must be in range [0, Desc.NumElements-1].
     /// \param[in]  pDevice  - A pointer to the render device that will be used to
@@ -181,11 +218,25 @@ struct IVertexPool : public IObject
     /// \param[in]  pContext - A pointer to the device context that will be used to
     ///                        copy existing contents to the new buffer, if necessary.
     ///
+    /// \return                A pointer to the internal buffer object.
+    ///
     /// \remarks    If the internal buffer needs to be resized, pDevice and pContext will
     ///             be used to create a new buffer and copy existing contents to the new buffer.
     ///             The method is not thread-safe and an application must externally synchronize the
     ///             access.
-    virtual IBuffer* GetBuffer(Uint32 Index, IRenderDevice* pDevice, IDeviceContext* pContext) = 0;
+    virtual IBuffer* Update(Uint32 Index, IRenderDevice* pDevice, IDeviceContext* pContext) = 0;
+
+    /// Updates all internal buffers.
+    ///
+    /// \remarks    This method is equivalent to calling Update() for each internal buffer.
+    virtual void UpdateAll(IRenderDevice* pDevice, IDeviceContext* pContext) = 0;
+
+    /// Returns a pointer to the internal buffer at the given index.
+    ///
+    /// \remarks    If the internal buffer has not been initialized yet, the method will return null.
+    ///             If the buffer may need to be updated (resized or initialized), use the Update()
+    ///             method.
+    virtual IBuffer* GetBuffer(Uint32 Index) const = 0;
 
 
     /// Allocates vertices from the pool.
@@ -224,6 +275,10 @@ struct VertexPoolCreateInfo
     /// when more space is needed.
     Uint32 ExtraVertexCount = 0;
 
+    /// The maximum number of vertices that can be stored in the pool.
+    /// If zero, the number of vertices is unlimited.
+    Uint32 MaxVertexCount = 0;
+
     /// Whether to disable debug validation of the internal pool structure.
 
     /// \remarks    By default, internal pool structure is validated in debug
@@ -232,13 +287,27 @@ struct VertexPoolCreateInfo
     ///             to true, the validation is disabled.
     ///             The flag is ignored in release builds as the validation is always disabled.
     bool DisableDebugValidation = false;
+
+
+    bool operator==(const VertexPoolCreateInfo& RHS) const
+    {
+        return Desc == RHS.Desc &&
+            ExtraVertexCount == RHS.ExtraVertexCount &&
+            MaxVertexCount == RHS.MaxVertexCount &&
+            DisableDebugValidation == RHS.DisableDebugValidation;
+    }
+
+    bool operator!=(const VertexPoolCreateInfo& RHS) const
+    {
+        return !(*this == RHS);
+    }
 };
 
 /// Creates a new vertex pool.
 
 /// \param[in]  pDevice      - A pointer to the render device that will be used to initialize
 ///                            internal buffer objects. If this parameter is null, the
-///                            buffers will be created when GetBuffer() is called.
+///                            buffers will be created when Update() is called.
 /// \param[in]  CreateInfo   - Vertex pool create info, see Diligent::VertexPoolCreateInfo.
 /// \param[in]  ppVertexPool - Memory location where a pointer to the vertex pool will be stored.
 void CreateVertexPool(IRenderDevice*              pDevice,

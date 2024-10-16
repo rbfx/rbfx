@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {610228AF-F161-4B12-A00E-71E6E3BB97FE}
-static const INTERFACE_ID IID_BottomLevelASD3D12 =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_BottomLevelASD3D12 =
     {0x610228af, 0xf161, 0x4b12, {0xa0, 0xe, 0x71, 0xe6, 0xe3, 0xbb, 0x97, 0xfe}};
 
 #define DILIGENT_INTERFACE_NAME IBottomLevelASD3D12

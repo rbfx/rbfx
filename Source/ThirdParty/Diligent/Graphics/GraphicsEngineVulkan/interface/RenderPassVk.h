@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {3DE6938F-D34D-4135-A6FA-15A89E9525D0}
-static const INTERFACE_ID IID_RenderPassVk =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_RenderPassVk =
     {0x3de6938f, 0xd34d, 0x4135, {0xa6, 0xfa, 0x15, 0xa8, 0x9e, 0x95, 0x25, 0xd0}};
 
 #define DILIGENT_INTERFACE_NAME IRenderPassVk
@@ -49,7 +49,7 @@ static const INTERFACE_ID IID_RenderPassVk =
 DILIGENT_BEGIN_INTERFACE(IRenderPassVk, IRenderPass)
 {
     /// Returns a Vulkan handle of the internal render pass object.
-    VIRTUAL VkRenderPass METHOD(GetVkRenderPass)() CONST PURE;
+    VIRTUAL VkRenderPass METHOD(GetVkRenderPass)(THIS) CONST PURE;
 };
 DILIGENT_END_INTERFACE
 

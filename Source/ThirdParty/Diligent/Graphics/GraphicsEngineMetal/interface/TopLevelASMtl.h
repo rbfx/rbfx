@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {2156C051-350D-4FCE-84F3-295B536622D3}
-static const INTERFACE_ID IID_TopLevelASMtl =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_TopLevelASMtl =
     {0x2156c051, 0x350d, 0x4fce, {0x84, 0xf3, 0x29, 0x5b, 0x53, 0x66, 0x22, 0xd3}};
 
 #define DILIGENT_INTERFACE_NAME ITopLevelASMtl

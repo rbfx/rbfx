@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,12 +38,13 @@
 namespace Diligent
 {
 
-static constexpr Uint32 GetRegisterSpace(const D3D11_SHADER_INPUT_BIND_DESC&)
+template <>
+Uint32 GetRegisterSpace<>(const D3D11_SHADER_INPUT_BIND_DESC&)
 {
     return 0;
 }
 
-ShaderResourcesD3D11::ShaderResourcesD3D11(ID3DBlob*         pShaderBytecode,
+ShaderResourcesD3D11::ShaderResourcesD3D11(const IDataBlob*  pShaderBytecode,
                                            const ShaderDesc& ShdrDesc,
                                            const char*       CombinedSamplerSuffix,
                                            bool              LoadConstantBufferReflection) :
@@ -60,7 +61,11 @@ ShaderResourcesD3D11::ShaderResourcesD3D11(ID3DBlob*         pShaderBytecode,
             CombinedSamplerSuffix{_CombinedSamplerSuffix},
             Resources            {_Resources            }
         // clang-format on
-        {}
+        {
+            // Silence "private field is never used" compile error
+            (void)ShdrDesc;
+            (void)CombinedSamplerSuffix;
+        }
 
         void OnNewCB(const D3DShaderResourceAttribs& CBAttribs)
         {
@@ -114,7 +119,7 @@ ShaderResourcesD3D11::ShaderResourcesD3D11(ID3DBlob*         pShaderBytecode,
     };
 
     CComPtr<ID3D11ShaderReflection> pShaderReflection;
-    HRESULT                         hr = D3DReflect(pShaderBytecode->GetBufferPointer(), pShaderBytecode->GetBufferSize(), __uuidof(pShaderReflection), reinterpret_cast<void**>(&pShaderReflection));
+    HRESULT                         hr = D3DReflect(pShaderBytecode->GetConstDataPtr(), pShaderBytecode->GetSize(), __uuidof(pShaderReflection), reinterpret_cast<void**>(&pShaderReflection));
     CHECK_D3D_RESULT_THROW(hr, "Failed to get the shader reflection");
 
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -64,19 +64,29 @@ struct CompiledShaderD3D11 final : SerializedShaderImpl::CompiledShader
 
     virtual SerializedData Serialize(ShaderCreateInfo ShaderCI) const override final
     {
-        const auto& pBytecode = ShaderD3D11.GetD3DBytecode();
+        const IDataBlob* pBytecode = ShaderD3D11.GetD3DBytecode();
 
         ShaderCI.Source       = nullptr;
         ShaderCI.FilePath     = nullptr;
-        ShaderCI.Macros       = nullptr;
-        ShaderCI.ByteCode     = pBytecode->GetBufferPointer();
-        ShaderCI.ByteCodeSize = pBytecode->GetBufferSize();
+        ShaderCI.Macros       = {};
+        ShaderCI.ByteCode     = pBytecode->GetConstDataPtr();
+        ShaderCI.ByteCodeSize = pBytecode->GetSize();
         return SerializedShaderImpl::SerializeCreateInfo(ShaderCI);
     }
 
     virtual IShader* GetDeviceShader() override final
     {
         return &ShaderD3D11;
+    }
+
+    virtual bool IsCompiling() const override final
+    {
+        return ShaderD3D11.IsCompiling();
+    }
+
+    virtual RefCntAutoPtr<IAsyncTask> GetCompileTask() const override final
+    {
+        return ShaderD3D11.GetCompileTask();
     }
 };
 
@@ -128,8 +138,9 @@ template <typename CreateInfoType>
 void SerializedPipelineStateImpl::PatchShadersD3D11(const CreateInfoType& CreateInfo) noexcept(false)
 {
     std::vector<ShaderStageInfoD3D11> ShaderStages;
-    SHADER_TYPE                       ActiveShaderStages = SHADER_TYPE_UNKNOWN;
-    PipelineStateD3D11Impl::ExtractShaders<SerializedShaderImpl>(CreateInfo, ShaderStages, ActiveShaderStages);
+    SHADER_TYPE                       ActiveShaderStages    = SHADER_TYPE_UNKNOWN;
+    constexpr bool                    WaitUntilShadersReady = true;
+    PipelineStateUtils::ExtractShaders<SerializedShaderImpl>(CreateInfo, ShaderStages, WaitUntilShadersReady, ActiveShaderStages);
 
     std::vector<ShaderD3D11Impl*> ShadersD3D11{ShaderStages.size()};
     for (size_t i = 0; i < ShadersD3D11.size(); ++i)
@@ -148,7 +159,7 @@ void SerializedPipelineStateImpl::PatchShadersD3D11(const CreateInfoType& Create
         ppSignatures         = DefaultSignatures;
     }
 
-    std::vector<CComPtr<ID3DBlob>> ShaderBytecode{ShaderStages.size()};
+    std::vector<RefCntAutoPtr<IDataBlob>> ShaderBytecode{ShaderStages.size()};
     {
         // Sort signatures by binding index.
         // Note that SignaturesCount will be overwritten with the maximum binding index.
@@ -173,7 +184,7 @@ void SerializedPipelineStateImpl::PatchShadersD3D11(const CreateInfoType& Create
             Signatures.data(),
             SignaturesCount,
             BaseBindings.data(),
-            [&ShaderBytecode](size_t ShaderIdx, ShaderD3D11Impl* pShader, ID3DBlob* pPatchedBytecode) //
+            [&ShaderBytecode](size_t ShaderIdx, ShaderD3D11Impl* pShader, IDataBlob* pPatchedBytecode) //
             {
                 ShaderBytecode[ShaderIdx] = pPatchedBytecode;
             });
@@ -182,13 +193,14 @@ void SerializedPipelineStateImpl::PatchShadersD3D11(const CreateInfoType& Create
     VERIFY_EXPR(m_Data.Shaders[static_cast<size_t>(DeviceType::Direct3D11)].empty());
     for (size_t i = 0; i < ShadersD3D11.size(); ++i)
     {
-        const auto& pBytecode = ShaderBytecode[i];
-        auto        ShaderCI  = ShaderStages[i].pSerialized->GetCreateInfo();
+        const IDataBlob* pBytecode = ShaderBytecode[i];
+        ShaderCreateInfo ShaderCI  = ShaderStages[i].pSerialized->GetCreateInfo();
+
         ShaderCI.Source       = nullptr;
         ShaderCI.FilePath     = nullptr;
-        ShaderCI.Macros       = nullptr;
-        ShaderCI.ByteCode     = pBytecode->GetBufferPointer();
-        ShaderCI.ByteCodeSize = pBytecode->GetBufferSize();
+        ShaderCI.Macros       = {};
+        ShaderCI.ByteCode     = pBytecode->GetConstDataPtr();
+        ShaderCI.ByteCodeSize = pBytecode->GetSize();
         SerializeShaderCreateInfo(DeviceType::Direct3D11, ShaderCI);
     }
     VERIFY_EXPR(m_Data.Shaders[static_cast<size_t>(DeviceType::Direct3D11)].size() == ShadersD3D11.size());
@@ -197,12 +209,21 @@ void SerializedPipelineStateImpl::PatchShadersD3D11(const CreateInfoType& Create
 INSTANTIATE_PATCH_SHADER_METHODS(PatchShadersD3D11)
 INSTANTIATE_DEVICE_SIGNATURE_METHODS(PipelineResourceSignatureD3D11Impl)
 
-void SerializedShaderImpl::CreateShaderD3D11(IReferenceCounters* pRefCounters, const ShaderCreateInfo& ShaderCI) noexcept(false)
+void SerializedShaderImpl::CreateShaderD3D11(IReferenceCounters*     pRefCounters,
+                                             const ShaderCreateInfo& ShaderCI,
+                                             IDataBlob**             ppCompilerOutput) noexcept(false)
 {
     const ShaderD3D11Impl::CreateInfo D3D11ShaderCI{
-        m_pDevice->GetDeviceInfo(),
-        m_pDevice->GetAdapterInfo(),
-        static_cast<D3D_FEATURE_LEVEL>(m_pDevice->GetD3D11Properties().FeatureLevel) //
+        {
+            m_pDevice->GetDeviceInfo(),
+            m_pDevice->GetAdapterInfo(),
+            nullptr, // pDXCompiler
+            // Do not overwrite compiler output from other APIs.
+            // TODO: collect all outputs.
+            ppCompilerOutput == nullptr || *ppCompilerOutput == nullptr ? ppCompilerOutput : nullptr,
+            m_pDevice->GetShaderCompilationThreadPool(),
+        },
+        static_cast<D3D_FEATURE_LEVEL>(m_pDevice->GetD3D11Properties().FeatureLevel),
     };
     CreateShader<CompiledShaderD3D11>(DeviceType::Direct3D11, pRefCounters, ShaderCI, D3D11ShaderCI, m_pDevice->GetRenderDevice(RENDER_DEVICE_TYPE_D3D11));
 }

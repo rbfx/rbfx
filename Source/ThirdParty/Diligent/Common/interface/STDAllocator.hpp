@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -125,7 +125,7 @@ struct STDAllocator
         static constexpr const char* m_dvpFileName    = "<Unavailable in release build>";
         static constexpr Int32       m_dvpLineNumber  = -1;
 #endif
-        return reinterpret_cast<T*>(m_Allocator.Allocate(count * sizeof(T), m_dvpDescription, m_dvpFileName, m_dvpLineNumber));
+        return reinterpret_cast<T*>(m_Allocator.AllocateAligned(count * sizeof(T), alignof(T), m_dvpDescription, m_dvpFileName, m_dvpLineNumber));
     }
 
     pointer       address(reference r) { return &r; }
@@ -133,7 +133,7 @@ struct STDAllocator
 
     void deallocate(T* p, std::size_t count)
     {
-        m_Allocator.Free(p);
+        m_Allocator.FreeAligned(p);
     }
 
     inline size_type max_size() const

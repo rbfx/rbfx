@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,6 +29,9 @@
 
 /// \file
 /// Defines graphics engine utilities
+
+#include <vector>
+#include <cstring>
 
 #include "../../GraphicsEngine/interface/GraphicsTypes.h"
 #include "../../GraphicsEngine/interface/Shader.h"
@@ -140,8 +143,8 @@ template <> struct VALUE_TYPE2CType<VT_FLOAT64>
     typedef Float64 CType;
 };
 
-static const Uint32 ValueTypeToSizeMap[] =
-    // clang-format off
+// clang-format off
+static constexpr Uint32 ValueTypeToSizeMap[] =
 {
     0,
     sizeof(VALUE_TYPE2CType<VT_INT8>    :: CType),
@@ -173,6 +176,27 @@ const Char* GetValueTypeString(VALUE_TYPE Val);
 /// \return Constant reference to the TextureFormatAttribs structure containing
 ///         format attributes.
 const TextureFormatAttribs& GetTextureFormatAttribs(TEXTURE_FORMAT Format);
+
+/// Converts value type to component type, for example:
+///  * VT_UINT8, true,  false -> COMPONENT_TYPE_UNORM
+///  * VT_UINT8, false, false -> COMPONENT_TYPE_UINT
+///  * VT_UINT8, true,  true  -> COMPONENT_TYPE_UNORM_SRGB
+///
+/// \note Use GetValueSize() to get the component size.
+COMPONENT_TYPE ValueTypeToComponentType(VALUE_TYPE ValType, bool IsNormalized, bool IsSRGB);
+
+/// Converts component type and size to value type, for example:
+///  * COMPONENT_TYPE_UNORM, 1 -> VT_UINT8
+///  * COMPONENT_TYPE_FLOAT, 4 -> VT_FLOAT32
+VALUE_TYPE ComponentTypeToValueType(COMPONENT_TYPE CompType, Uint32 Size);
+
+/// Returns texture format for the specified component type, size and number of components, for example:
+/// * COMPONENT_TYPE_UNORM, 1, 4 -> TEX_FORMAT_RGBA8_UNORM
+/// * COMPONENT_TYPE_FLOAT, 4, 1 -> TEX_FORMAT_R32_FLOAT
+///
+/// If the format is not found, TEXTURE_FORMAT_UNKNOWN is returned.
+TEXTURE_FORMAT TextureComponentAttribsToTextureFormat(COMPONENT_TYPE CompType, Uint32 ComponentSize, Uint32 NumComponents);
+
 
 /// Returns the default format for a specified texture view type
 
@@ -324,9 +348,12 @@ const Char* GetFillModeLiteralName(FILL_MODE FillMode);
 
 /// Returns the literal name of a cull mode.
 
-/// \param [in] CullMode - Cull mode, see Diligent::CULL_MODE.
-/// \return                Literal name of the cull mode.
-const Char* GetCullModeLiteralName(CULL_MODE CullMode);
+/// \param [in] CullMode      - Cull mode, see Diligent::CULL_MODE.
+/// \param [in] GetEnumString - Whether to return string representation of the enum value.
+
+/// \return                    Literal name of the cull mode (e.g. "CULL_MODE_BACK" when bGetFullName == true,
+///                            or "back" when GetEnumString == false).
+const Char* GetCullModeLiteralName(CULL_MODE CullMode, bool GetEnumString = false);
 
 /// Returns the string containing the map type
 const Char* GetMapTypeString(MAP_TYPE MapType);
@@ -370,6 +397,15 @@ String GetCommandQueueTypeString(COMMAND_QUEUE_TYPE Type);
 
 /// Returns the string containing the fence type
 const Char* GetFenceTypeString(FENCE_TYPE Type);
+
+/// Returns the string containing the shader status (e.g. "SHADER_STATUS_UNINITIALIZED" when GetEnumString is true,
+/// or "Uninitialized" when GetEnumString is false).
+const Char* GetShaderStatusString(SHADER_STATUS ShaderStatus, bool GetEnumString = false);
+
+/// Returns the string containing the pipeline state status (e.g. "PIPELINE_STATE_STATUS_UNINITIALIZED" when
+/// GetEnumString is true, or "Uninitialized" when GetEnumString is false).
+const Char* GetPipelineStateStatusString(PIPELINE_STATE_STATUS PipelineStatus, bool GetEnumString = false);
+
 
 /// Helper template function that converts object description into a string
 template <typename TObjectDescType>
@@ -435,11 +471,19 @@ String GetShaderCodeBufferDescString(const ShaderCodeBufferDesc& Desc, size_t Gl
 /// Returns the string containing the shader code variable description.
 String GetShaderCodeVariableDescString(const ShaderCodeVariableDesc& Desc, size_t GlobalIdent = 0, size_t MemberIdent = 2);
 
+const char* GetInputElementFrequencyString(INPUT_ELEMENT_FREQUENCY Frequency);
+
+/// Returns the string containing the layout element description.
+String GetLayoutElementString(const LayoutElement& Element);
+
 PIPELINE_RESOURCE_FLAGS GetValidPipelineResourceFlags(SHADER_RESOURCE_TYPE ResourceType);
 
 PIPELINE_RESOURCE_FLAGS ShaderVariableFlagsToPipelineResourceFlags(SHADER_VARIABLE_FLAGS Flags);
 
 BIND_FLAGS SwapChainUsageFlagsToBindFlags(SWAP_CHAIN_USAGE_FLAGS SwapChainUsage);
+
+ARCHIVE_DEVICE_DATA_FLAGS RenderDeviceTypeToArchiveDataFlag(RENDER_DEVICE_TYPE DevType);
+RENDER_DEVICE_TYPE        ArchiveDataFlagToRenderDeviceType(ARCHIVE_DEVICE_DATA_FLAGS Flag);
 
 Uint32 ComputeMipLevelsCount(Uint32 Width);
 Uint32 ComputeMipLevelsCount(Uint32 Width, Uint32 Height);
@@ -653,6 +697,12 @@ inline Uint64 GetStagingTextureSubresourceOffset(const TextureDesc& TexDesc,
     return GetStagingTextureLocationOffset(TexDesc, ArraySlice, MipLevel, Alignment, 0, 0, 0);
 }
 
+/// Returns the total memory size required to store the staging texture data.
+inline Uint64 GetStagingTextureDataSize(const TextureDesc& TexDesc,
+                                        Uint32             Alignment = 4)
+{
+    return GetStagingTextureSubresourceOffset(TexDesc, TexDesc.GetArraySize(), 0, Alignment);
+}
 
 /// Information required to perform a copy operation between a buffer and a texture
 struct BufferToTextureCopyInfo
@@ -723,9 +773,36 @@ String GetShaderResourcePrintName(const DescType& ResDesc, Uint32 ArrayIndex = 0
     return GetShaderResourcePrintName(ResDesc.Name, ResDesc.ArraySize, ArrayIndex);
 }
 
-TEXTURE_FORMAT TexFormatToSRGB(TEXTURE_FORMAT Fmt);
+/// Converts UNORM format to a corresponding SRGB format, for example:
+///   RGBA8_UNORM -> RGBA8_UNORM_SRGB
+///   BC3_UNORM -> BC3_UNORM_SRGB
+TEXTURE_FORMAT UnormFormatToSRGB(TEXTURE_FORMAT Fmt);
+
+/// Converts SRGB format to a corresponding UNORM format, for example:
+///   RGBA8_UNORM_SRGB -> RGBA8_UNORM
+///   BC3_UNORM_SRGB -> BC3_UNORM
+TEXTURE_FORMAT SRGBFormatToUnorm(TEXTURE_FORMAT Fmt);
+
+/// Converts block-compressed format to a corresponding uncompressed format, for example:
+///   BC1_UNORM -> RGBA8_UNORM
+///   BC4_UNORM -> R8_UNORM
+TEXTURE_FORMAT BCFormatToUncompressed(TEXTURE_FORMAT Fmt);
+
+
+bool IsSRGBFormat(TEXTURE_FORMAT Fmt);
 
 String GetPipelineShadingRateFlagsString(PIPELINE_SHADING_RATE_FLAGS Flags);
+
+/// Converts texture component mapping to a string, for example:
+/// {R, G, B, A} -> "rgba"
+/// {R, G, B, 1} -> "rgb1"
+String GetTextureComponentMappingString(const TextureComponentMapping& Mapping);
+
+/// Converts texture component mapping string to the mapping, for example:
+/// "rgba" -> {R, G, B, A}
+/// "rgb1" -> {R, G, B, 1}
+bool TextureComponentMappingFromString(const String& MappingStr, TextureComponentMapping& Mapping);
+
 
 /// Returns the sparse texture properties assuming the standard tile shapes
 SparseTextureProperties GetStandardSparseTextureProperties(const TextureDesc& TexDesc);
@@ -753,5 +830,122 @@ inline uint3 GetNumSparseTilesInMipLevel(const TextureDesc& Desc,
 
 /// Returns true if the Mapping defines an identity texture component swizzle
 bool IsIdentityComponentMapping(const TextureComponentMapping& Mapping);
+
+/// Resolves LAYOUT_ELEMENT_AUTO_OFFSET and LAYOUT_ELEMENT_AUTO_STRIDE values in the input layout,
+/// and returns an array of buffer strides for each used input buffer slot.
+std::vector<Uint32> ResolveInputLayoutAutoOffsetsAndStrides(LayoutElement* pLayoutElements, Uint32 NumElements);
+
+inline void WriteShaderMatrix(void* pDst, const float4x4& Mat, bool Transpose)
+{
+    if (!Transpose)
+    {
+        std::memcpy(pDst, &Mat, sizeof(float4x4));
+    }
+    else
+    {
+        const float4x4 TransposedMat = Mat.Transpose();
+        std::memcpy(pDst, &TransposedMat, sizeof(float4x4));
+    }
+}
+
+inline void WriteShaderMatrices(void* pDst, const float4x4* pMat, size_t NumMatrices, bool Transpose)
+{
+    if (!Transpose)
+    {
+        std::memcpy(pDst, pMat, sizeof(float4x4) * NumMatrices);
+    }
+    else
+    {
+        for (size_t i = 0; i < NumMatrices; ++i)
+        {
+            const float4x4 TransposedMat = pMat[i].Transpose();
+            std::memcpy(static_cast<float4x4*>(pDst) + i, &TransposedMat, sizeof(float4x4));
+        }
+    }
+}
+
+template <typename CreateInfoType, typename HandlerType>
+typename std::enable_if<std::is_same<typename std::decay<CreateInfoType>::type, GraphicsPipelineStateCreateInfo>::value>::type
+ProcessPipelineStateCreateInfoShaders(CreateInfoType&& CI, HandlerType&& Handler)
+{
+    Handler(CI.pVS);
+    Handler(CI.pPS);
+    Handler(CI.pDS);
+    Handler(CI.pHS);
+    Handler(CI.pGS);
+    Handler(CI.pAS);
+    Handler(CI.pMS);
+}
+
+template <typename CreateInfoType, typename HandlerType>
+typename std::enable_if<std::is_same<typename std::decay<CreateInfoType>::type, ComputePipelineStateCreateInfo>::value>::type
+ProcessPipelineStateCreateInfoShaders(CreateInfoType&& CI, HandlerType&& Handler)
+{
+    Handler(CI.pCS);
+}
+
+template <typename CreateInfoType, typename HandlerType>
+typename std::enable_if<std::is_same<typename std::decay<CreateInfoType>::type, TilePipelineStateCreateInfo>::value>::type
+ProcessPipelineStateCreateInfoShaders(CreateInfoType&& CI, HandlerType&& Handler)
+{
+    Handler(CI.pTS);
+}
+
+template <typename CreateInfoType, typename HandlerType>
+typename std::enable_if<std::is_same<typename std::decay<CreateInfoType>::type, RayTracingPipelineStateCreateInfo>::value>::type
+ProcessPipelineStateCreateInfoShaders(CreateInfoType&& CI, HandlerType&& Handler)
+{
+    for (Uint32 i = 0; i < CI.GeneralShaderCount; ++i)
+    {
+        Handler(CI.pGeneralShaders[i].pShader);
+    }
+
+    for (Uint32 i = 0; i < CI.TriangleHitShaderCount; ++i)
+    {
+        Handler(CI.pTriangleHitShaders[i].pClosestHitShader);
+        Handler(CI.pTriangleHitShaders[i].pAnyHitShader);
+    }
+
+    for (Uint32 i = 0; i < CI.ProceduralHitShaderCount; ++i)
+    {
+        Handler(CI.pProceduralHitShaders[i].pIntersectionShader);
+        Handler(CI.pProceduralHitShaders[i].pClosestHitShader);
+        Handler(CI.pProceduralHitShaders[i].pAnyHitShader);
+    }
+}
+
+template <typename CreateInfoType>
+SHADER_STATUS GetPipelineStateCreateInfoShadersStatus(const CreateInfoType& CI, bool WaitForCompletion = false)
+{
+    SHADER_STATUS OverallStatus = SHADER_STATUS_READY;
+    ProcessPipelineStateCreateInfoShaders(CI, [&OverallStatus, WaitForCompletion](IShader* pShader) {
+        if (pShader == nullptr)
+            return;
+
+        SHADER_STATUS ShaderStatus = pShader->GetStatus(WaitForCompletion);
+        switch (ShaderStatus)
+        {
+            case SHADER_STATUS_UNINITIALIZED:
+                UNEXPECTED("Shader status must not be uninitialized");
+                break;
+
+            case SHADER_STATUS_COMPILING:
+                OverallStatus = (OverallStatus == SHADER_STATUS_READY) ? SHADER_STATUS_COMPILING : OverallStatus;
+                break;
+
+            case SHADER_STATUS_READY:
+                // Do nothing
+                break;
+
+            case SHADER_STATUS_FAILED:
+                OverallStatus = SHADER_STATUS_FAILED;
+                break;
+
+            default:
+                UNEXPECTED("Unexpected shader status");
+        }
+    });
+    return OverallStatus;
+}
 
 } // namespace Diligent

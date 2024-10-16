@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,12 +41,12 @@ namespace Diligent
 struct IDynamicTextureAtlas;
 
 // {F7ACDCFB-074F-4E31-94C5-DD4C988E4532}
-static const INTERFACE_ID IID_TextureAtlasSuballocation =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_TextureAtlasSuballocation =
     {0xf7acdcfb, 0x74f, 0x4e31, {0x94, 0xc5, 0xdd, 0x4c, 0x98, 0x8e, 0x45, 0x32}};
 
 
 // {00E1D6FA-47B4-4062-B96C-D3E191A02351}
-static const INTERFACE_ID IID_DynamicTextureAtlas =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_DynamicTextureAtlas =
     {0xe1d6fa, 0x47b4, 0x4062, {0xb9, 0x6c, 0xd3, 0xe1, 0x91, 0xa0, 0x23, 0x51}};
 
 
@@ -117,11 +117,11 @@ struct DynamicTextureAtlasUsageStats
 /// Dynamic texture atlas.
 struct IDynamicTextureAtlas : public IObject
 {
-    /// Returns the pointer to the internal texture object.
+    /// Updates the internal texture object.
 
-    /// \param[in]  pDevice  - Pointer to the render device that will be used to
+    /// \param[in]  pDevice  - A pointer to the render device that will be used to
     ///                        create a new internal texture array, if necessary.
-    /// \param[in]  pContext - Pointer to the device context that will be used to
+    /// \param[in]  pContext - A pointer to the device context that will be used to
     ///                        copy existing contents to the new texture array, if
     ///                        necessary.
     ///
@@ -130,7 +130,15 @@ struct IDynamicTextureAtlas : public IObject
     ///
     ///             The method is not thread safe. An application must externally synchronize
     ///             the access.
-    virtual ITexture* GetTexture(IRenderDevice* pDevice, IDeviceContext* pContext) = 0;
+    virtual ITexture* Update(IRenderDevice* pDevice, IDeviceContext* pContext) = 0;
+
+
+    /// Returns a pointer to the internal texture object.
+
+    /// \remarks    If the texture has not been created yet, the method returns null.
+    ///             If the texture may need to be updated (initialized or resized), use
+    ///             the Update() method.
+    virtual ITexture* GetTexture() const = 0;
 
 
     /// Performs suballocation from the atlas.
@@ -143,7 +151,7 @@ struct IDynamicTextureAtlas : public IObject
     /// \remarks    The method is thread-safe and can be called from multiple threads simultaneously.
     ///
     ///             Internal texture array may need to be extended after the allocation happened.
-    ///             An application may call GetTexture() to ensure that the texture is resized and old
+    ///             An application may call the Update() to ensure that the texture is resized and old
     ///             contents is copied.
     virtual void Allocate(Uint32                       Width,
                           Uint32                       Height,
@@ -216,10 +224,15 @@ struct DynamicTextureAtlasCreateInfo
     /// The number of extra slices.
 
     /// When non-zero, the array will be expanded by the specified number of slices every time
-    /// there is insufficient space. If zero, the array size will be doubled when
-    /// more space is needed.
+    /// there is insufficient space. If zero, the array size will be expanded by the growth factor.
     Uint32 ExtraSliceCount = 0;
 
+    /// Growth factor.
+
+    /// If ExtraSliceCount is zero, defines the factor by which the array size will be expanded.
+    /// The factor must be in the range (1, 2]. For example, if the factor is 2.0, the array size
+    /// will be doubled every time there is insufficient space.
+    float GrowthFactor = 2.0f;
 
     /// Maximum number of slices in texture array.
     Uint32 MaxSliceCount = 2048;
@@ -242,7 +255,7 @@ Uint32 ComputeTextureAtlasSuballocationAlignment(Uint32 Width, Uint32 Height, Ui
 
 /// \param[in] pDevice    - Pointer to the render device that will be used to create internal
 ///                         texture array. If this parameter is null, the texture will be created
-///                         when GetTexture() is called.
+///                         when Update() is called.
 /// \param[in] CreateInfo - Atlas create info, see Diligent::DynamicTextureAtlasCreateInfo.
 /// \param[in] ppAtlas    - Memory location where pointer to the texture atlas object will be written.
 void CreateDynamicTextureAtlas(IRenderDevice*                       pDevice,

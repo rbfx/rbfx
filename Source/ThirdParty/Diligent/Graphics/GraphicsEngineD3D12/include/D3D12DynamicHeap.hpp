@@ -156,7 +156,7 @@ private:
     std::multimap<Uint64, D3D12DynamicPage, std::less<Uint64>, STDAllocatorRawMem<AvailablePagesMapElemType>> m_AvailablePages;
 
 #ifdef DILIGENT_DEVELOPMENT
-    std::atomic<Int32> m_AllocatedPageCounter = 0;
+    std::atomic<Int32> m_AllocatedPageCounter{0};
 #endif
 };
 

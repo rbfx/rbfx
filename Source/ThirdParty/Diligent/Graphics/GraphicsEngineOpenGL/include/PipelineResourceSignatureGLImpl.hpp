@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,13 +58,13 @@ enum BINDING_RANGE : Uint32
 BINDING_RANGE PipelineResourceToBindingRange(const PipelineResourceDesc& Desc);
 const char*   GetBindingRangeName(BINDING_RANGE Range);
 
-struct PipelineResourceSignatureInternalDataGL : PipelineResourceSignatureInternalData
+struct ImmutableSamplerAttribsGL
 {
-    const PipelineResourceAttribsGL* pResourceAttribs     = nullptr; // [NumResources]
-    Uint32                           NumResources         = 0;
-    const RefCntAutoPtr<ISampler>*   pImmutableSamplers   = nullptr; // unused
-    Uint32                           NumImmutableSamplers = 0;       // unused
+    Uint32 Dummy = 0;
+};
 
+struct PipelineResourceSignatureInternalDataGL : PipelineResourceSignatureInternalData<PipelineResourceAttribsGL, ImmutableSamplerAttribsGL>
+{
     PipelineResourceSignatureInternalDataGL() noexcept
     {}
 
@@ -143,12 +143,8 @@ public:
         return ImtblSamIdx;
     }
 
-    PipelineResourceSignatureInternalDataGL GetInternalData() const;
-
 private:
     void CreateLayout(bool IsSerialized);
-
-    void Destruct();
 
 private:
     TBindings m_BindingCount = {};
@@ -157,9 +153,6 @@ private:
     Uint64 m_DynamicUBOMask = 0;
     // Indicates which SSBO slots allow binding buffers with dynamic offsets
     Uint64 m_DynamicSSBOMask = 0;
-
-    using SamplerPtr                = RefCntAutoPtr<ISampler>;
-    SamplerPtr* m_ImmutableSamplers = nullptr; // [m_Desc.NumImmutableSamplers]
 };
 
 } // namespace Diligent

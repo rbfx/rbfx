@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,7 @@
 
 #include "CommonDefinitions.h"
 
-#if DILIGENT_C_INTERFACE
+#if DILIGENT_C_INTERFACE || defined(DILIGENT_SHARP_GEN)
 #    include <stdbool.h>
 #    include <stddef.h>
 #else
@@ -57,11 +57,11 @@ typedef const void* CPVoid;
 
 typedef bool Bool; ///< Boolean
 
-static const Bool False = false;
-static const Bool True  = true;
+static DILIGENT_CONSTEXPR Bool False = false;
+static DILIGENT_CONSTEXPR Bool True  = true;
 
 typedef char Char;
-#if !DILIGENT_C_INTERFACE
+#if !DILIGENT_C_INTERFACE && !defined(DILIGENT_SHARP_GEN)
 using String = std::basic_string<Char>; ///< String variable
 #endif
 

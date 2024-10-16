@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -90,7 +90,7 @@ struct SPIRVShaderResourceAttribs
 /*  0  */const char* const      Name;
 /*  8  */const Uint16           ArraySize;
 /* 10  */const ResourceType     Type;
-/* 11.0*/const Uint8            ResourceDim   : 7;
+/* 11.0*/const Uint8            ResourceDim   : 7; // RESOURCE_DIMENSION
 /* 11.7*/const Uint8            IsMS          : 1;
 
       // Offset in SPIRV words (uint32_t) of binding & descriptor set decorations in SPIRV binary
@@ -153,7 +153,7 @@ public:
                          const char*           CombinedSamplerSuffix,
                          bool                  LoadShaderStageInputs,
                          bool                  LoadUniformBufferReflection,
-                         std::string&          EntryPoint);
+                         std::string&          EntryPoint) noexcept(false);
 
     // clang-format off
     SPIRVShaderResources             (const SPIRVShaderResources&)  = delete;
@@ -235,7 +235,6 @@ public:
         return m_ComputeGroupSize;
     }
 
-    // Process only resources listed in AllowedVarTypes
     template <typename THandleUB,
               typename THandleSB,
               typename THandleImg,
@@ -322,7 +321,7 @@ public:
         }
     }
 
-    std::string DumpResources();
+    std::string DumpResources() const;
 
     // clang-format off
 
@@ -333,6 +332,9 @@ public:
     // clang-format on
 
     bool IsHLSLSource() const { return m_IsHLSLSource; }
+
+    // Sets the input location decorations using the HLSL semantic names.
+    void MapHLSLVertexShaderInputs(std::vector<uint32_t>& SPIRV) const;
 
 private:
     void Initialize(IMemoryAllocator&       Allocator,

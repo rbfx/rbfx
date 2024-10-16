@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -59,7 +59,8 @@ public:
 
     /// Implementation of IRenderDevice::CreateShader() in Direct3D11 backend.
     virtual void DILIGENT_CALL_TYPE CreateShader(const ShaderCreateInfo& ShaderCI,
-                                                 IShader**               ppShader) override final;
+                                                 IShader**               ppShader,
+                                                 IDataBlob**             ppCompilerOutput) override final;
 
     /// Implementation of IRenderDevice::CreateTexture() in Direct3D11 backend.
     virtual void DILIGENT_CALL_TYPE CreateTexture(const TextureDesc& TexDesc,

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -76,7 +76,7 @@ TextureCubeArray_GL::TextureCubeArray_GL(IReferenceCounters*        pRefCounters
     VERIFY((m_Desc.ArraySize % 6) == 0, "Array size must be multiple of 6");
     //                             levels             format          width         height          depth
     glTexStorage3D(m_BindTarget, m_Desc.MipLevels, m_GLTexFormat, m_Desc.Width, m_Desc.Height, m_Desc.ArraySize);
-    CHECK_GL_ERROR_AND_THROW("Failed to allocate storage for the Cubemap texture array");
+    DEV_CHECK_GL_ERROR_AND_THROW("Failed to allocate storage for the Cubemap texture array");
     //When target is GL_TEXTURE_CUBE_MAP_ARRAY glTexStorage3D is equivalent to:
     //
     //for (i = 0; i < levels; i++) {
@@ -171,6 +171,8 @@ void TextureCubeArray_GL::UpdateData(GLContextState&          ContextState,
     const auto& TransferAttribs = GetNativePixelTransferAttribs(m_Desc.Format);
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, PBOOffsetAlignment);
+    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 
     if (TransferAttribs.IsCompressed)
     {
@@ -193,7 +195,7 @@ void TextureCubeArray_GL::UpdateData(GLContextState&          ContextState,
 
         // Every OpenGL API call that operates on cubemap array textures takes layer-faces, not array layers.
 
-        //glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0); // Must be 0 on WebGL
         //glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_WIDTH, 0);
         auto UpdateRegionWidth  = DstBox.Width();
         auto UpdateRegionHeight = DstBox.Height();
@@ -226,8 +228,6 @@ void TextureCubeArray_GL::UpdateData(GLContextState&          ContextState,
         const auto PixelSize  = Uint32{TexFmtInfo.NumComponents} * Uint32{TexFmtInfo.ComponentSize};
         VERIFY((SubresData.Stride % PixelSize) == 0, "Data stride is not multiple of pixel size");
         glPixelStorei(GL_UNPACK_ROW_LENGTH, StaticCast<GLint>(SubresData.Stride / PixelSize));
-        glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-        glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 
         // Every OpenGL API call that operates on cubemap array textures takes layer-faces, not array layers.
         // When uploading texel data to the cubemap array, the parameters that represent the Z component
@@ -250,7 +250,7 @@ void TextureCubeArray_GL::UpdateData(GLContextState&          ContextState,
                         // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexSubImage3D.xhtml
                         SubresData.pSrcBuffer != nullptr ? reinterpret_cast<void*>(StaticCast<size_t>(SubresData.SrcOffset)) : SubresData.pData);
     }
-    CHECK_GL_ERROR("Failed to update subimage data");
+    DEV_CHECK_GL_ERROR("Failed to update subimage data");
 
     if (UnpackBuffer != 0)
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -258,33 +258,63 @@ void TextureCubeArray_GL::UpdateData(GLContextState&          ContextState,
     ContextState.BindTexture(-1, m_BindTarget, GLObjectWrappers::GLTextureObj::Null());
 }
 
-void TextureCubeArray_GL::AttachToFramebuffer(const TextureViewDesc& ViewDesc, GLenum AttachmentPoint)
+void TextureCubeArray_GL::AttachToFramebuffer(const TextureViewDesc& ViewDesc, GLenum AttachmentPoint, FRAMEBUFFER_TARGET_FLAGS Targets)
 {
     // Same as for 2D array textures
 
     // Every OpenGL API call that operates on cubemap array textures takes layer-faces, not array layers.
     // So the parameters that represent the Z component are layer-faces.
-    if (ViewDesc.NumArraySlices == m_Desc.ArraySize)
-    {
-        // glFramebufferTexture() attaches the given mipmap level as a layered image with the number of layers that the given texture has.
-        glFramebufferTexture(GL_DRAW_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip);
-        CHECK_GL_ERROR("Failed to attach texture cubemap array to draw framebuffer");
-        glFramebufferTexture(GL_READ_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip);
-        CHECK_GL_ERROR("Failed to attach texture cubemap array to read framebuffer");
-    }
-    else if (ViewDesc.NumArraySlices == 1)
+    if (ViewDesc.NumArraySlices == 1)
     {
         // Texture name must either be zero or the name of an existing 3D texture, 1D or 2D array texture,
         // cube map array texture, or multisample array texture.
-        glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip, ViewDesc.FirstArraySlice);
-        CHECK_GL_ERROR("Failed to attach texture cubemap array to draw framebuffer");
-        glFramebufferTextureLayer(GL_READ_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip, ViewDesc.FirstArraySlice);
-        CHECK_GL_ERROR("Failed to attach texture cubemap array to read framebuffer");
+        if (Targets & FRAMEBUFFER_TARGET_FLAG_DRAW)
+        {
+            VERIFY_EXPR(ViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET || ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL);
+            glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip, ViewDesc.FirstArraySlice);
+            DEV_CHECK_GL_ERROR("Failed to attach texture cubemap array to draw framebuffer");
+        }
+        if (Targets & FRAMEBUFFER_TARGET_FLAG_READ)
+        {
+            glFramebufferTextureLayer(GL_READ_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip, ViewDesc.FirstArraySlice);
+            DEV_CHECK_GL_ERROR("Failed to attach texture cubemap array to read framebuffer");
+        }
+    }
+    else if (ViewDesc.NumArraySlices == m_Desc.ArraySize)
+    {
+        // glFramebufferTexture() attaches the given mipmap level as a layered image with the number of layers that the given texture has.
+        if (Targets & FRAMEBUFFER_TARGET_FLAG_DRAW)
+        {
+            VERIFY_EXPR(ViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET || ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL);
+            glFramebufferTexture(GL_DRAW_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip);
+            DEV_CHECK_GL_ERROR("Failed to attach texture cubemap array to draw framebuffer");
+        }
+        if (Targets & FRAMEBUFFER_TARGET_FLAG_READ)
+        {
+            glFramebufferTexture(GL_READ_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip);
+            DEV_CHECK_GL_ERROR("Failed to attach texture cubemap array to read framebuffer");
+        }
     }
     else
     {
         UNEXPECTED("Only one slice or the entire cubemap array can be attached to a framebuffer");
     }
+}
+
+void TextureCubeArray_GL::CopyTexSubimage(GLContextState& GLState, const CopyTexSubimageAttribs& Attribs)
+{
+    GLState.BindTexture(-1, GetBindTarget(), GetGLHandle());
+
+    glCopyTexSubImage3D(GetBindTarget(),
+                        Attribs.DstMip,
+                        Attribs.DstX,
+                        Attribs.DstY,
+                        Attribs.DstLayer,
+                        Attribs.SrcBox.MinX,
+                        Attribs.SrcBox.MinY,
+                        Attribs.SrcBox.Width(),
+                        Attribs.SrcBox.Height());
+    DEV_CHECK_GL_ERROR("Failed to copy subimage data to texture cube array");
 }
 
 } // namespace Diligent

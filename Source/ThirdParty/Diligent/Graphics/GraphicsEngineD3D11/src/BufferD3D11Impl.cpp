@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -129,7 +129,7 @@ BufferD3D11Impl::BufferD3D11Impl(IReferenceCounters*        pRefCounters,
         DEV_CHECK_ERR(SUCCEEDED(hr), "Failed to set buffer name");
     }
 
-    SetState(RESOURCE_STATE_UNDEFINED);
+    SetState(m_Desc.Usage == USAGE_DYNAMIC ? RESOURCE_STATE_GENERIC_READ : RESOURCE_STATE_UNDEFINED);
 
     // The memory is always coherent in Direct3D11
     m_MemoryProperties = MEMORY_PROPERTY_HOST_COHERENT;

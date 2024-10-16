@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,6 +26,8 @@
  */
 
 #pragma once
+
+#include <array>
 
 namespace Diligent
 {
@@ -452,5 +454,24 @@ WAVE_FEATURE GLSubgroupFeatureBitsToWaveFeatures(GLenum FeatureBits);
 ShaderCodeVariableDesc GLDataTypeToShaderCodeVariableDesc(GLenum glDataType);
 
 GLint TextureComponentSwizzleToGLTextureSwizzle(TEXTURE_COMPONENT_SWIZZLE Swizzle, GLint IdentitySwizzle);
+
+const char* GetFramebufferStatusString(GLenum Status);
+
+inline GLenum GetCubeMapFaceBindTarget(Uint32 Slice)
+{
+    // clang-format off
+    static constexpr std::array<GLenum, 6> CubeMapFaceTargets =
+    {
+        GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+        GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+        GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+        GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+        GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+        GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
+    };
+    // clang-format on
+
+    return Slice < CubeMapFaceTargets.size() ? CubeMapFaceTargets[Slice] : 0;
+}
 
 } // namespace Diligent

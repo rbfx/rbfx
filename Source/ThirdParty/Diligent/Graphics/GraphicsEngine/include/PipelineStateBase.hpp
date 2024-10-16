@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,6 +45,9 @@
 #include "FixedLinearAllocator.hpp"
 #include "HashUtils.hpp"
 #include "PipelineResourceSignatureBase.hpp"
+#include "RefCntAutoPtr.hpp"
+#include "AsyncInitializer.hpp"
+#include "GraphicsTypesX.hpp"
 
 namespace Diligent
 {
@@ -113,7 +116,7 @@ void CopyRTShaderGroupNames(std::unordered_map<HashMapStringKey, Uint32>& NameTo
                             const RayTracingPipelineStateCreateInfo&      CreateInfo,
                             FixedLinearAllocator&                         MemPool) noexcept;
 
-void CorrectGraphicsPipelineDesc(GraphicsPipelineDesc& GraphicsPipeline) noexcept;
+void CorrectGraphicsPipelineDesc(GraphicsPipelineDesc& GraphicsPipeline, const DeviceFeatures& Features) noexcept;
 
 
 /// Finds a pipeline resource layout variable with the name 'Name' in shader stage 'ShaderStage'
@@ -170,13 +173,202 @@ protected:
     SHADER_TYPE ShaderStages = SHADER_TYPE_UNKNOWN;
 };
 
+namespace PipelineStateUtils
+{
+
+template <typename ShaderImplType>
+void WaitUntilShaderReadyIfRequested(RefCntAutoPtr<ShaderImplType>& pShader, bool WaitForCompletion)
+{
+    if (WaitForCompletion)
+    {
+        const SHADER_STATUS ShaderStatus = pShader->GetStatus(/*WaitForCompletion = */ true);
+        if (ShaderStatus != SHADER_STATUS_READY)
+        {
+            LOG_ERROR_AND_THROW("Shader '", pShader->GetDesc().Name, "' is in ", GetShaderStatusString(ShaderStatus),
+                                " status and cannot be used to create a pipeline state. Use GetStatus() to check the shader status.");
+        }
+    }
+}
+
+template <typename ShaderImplType, typename TShaderStages>
+void ExtractShaders(const GraphicsPipelineStateCreateInfo& CreateInfo,
+                    TShaderStages&                         ShaderStages,
+                    bool                                   WaitUntilShadersReady,
+                    SHADER_TYPE&                           ActiveShaderStages)
+{
+    VERIFY_EXPR(CreateInfo.PSODesc.IsAnyGraphicsPipeline());
+
+    ShaderStages.clear();
+    ActiveShaderStages = SHADER_TYPE_UNKNOWN;
+
+    auto AddShaderStage = [&](IShader* pShader) {
+        if (pShader != nullptr)
+        {
+            RefCntAutoPtr<ShaderImplType> pShaderImpl{pShader, ShaderImplType::IID_InternalImpl};
+            VERIFY(pShaderImpl, "Unexpected shader object implementation");
+            WaitUntilShaderReadyIfRequested(pShaderImpl, WaitUntilShadersReady);
+            ShaderStages.emplace_back(pShaderImpl);
+            const SHADER_TYPE ShaderType = pShader->GetDesc().ShaderType;
+            VERIFY((ActiveShaderStages & ShaderType) == 0,
+                   "Shader stage ", GetShaderTypeLiteralName(ShaderType), " has already been initialized in PSO.");
+            ActiveShaderStages |= ShaderType;
+#ifdef DILIGENT_DEBUG
+            for (size_t i = 0; i + 1 < ShaderStages.size(); ++i)
+                VERIFY_EXPR(GetShaderStageType(ShaderStages[i]) != ShaderType);
+#endif
+        }
+    };
+
+    switch (CreateInfo.PSODesc.PipelineType)
+    {
+        case PIPELINE_TYPE_GRAPHICS:
+        {
+            AddShaderStage(CreateInfo.pVS);
+            AddShaderStage(CreateInfo.pHS);
+            AddShaderStage(CreateInfo.pDS);
+            AddShaderStage(CreateInfo.pGS);
+            AddShaderStage(CreateInfo.pPS);
+            VERIFY(CreateInfo.pVS != nullptr, "Vertex shader must not be null");
+            break;
+        }
+
+        case PIPELINE_TYPE_MESH:
+        {
+            AddShaderStage(CreateInfo.pAS);
+            AddShaderStage(CreateInfo.pMS);
+            AddShaderStage(CreateInfo.pPS);
+            VERIFY(CreateInfo.pMS != nullptr, "Mesh shader must not be null");
+            break;
+        }
+
+        default:
+            UNEXPECTED("unknown pipeline type");
+    }
+
+    VERIFY_EXPR(!ShaderStages.empty());
+}
+
+template <typename ShaderImplType, typename TShaderStages>
+void ExtractShaders(const ComputePipelineStateCreateInfo& CreateInfo,
+                    TShaderStages&                        ShaderStages,
+                    bool                                  WaitUntilShadersReady,
+                    SHADER_TYPE&                          ActiveShaderStages)
+{
+    VERIFY_EXPR(CreateInfo.PSODesc.IsComputePipeline());
+
+    ShaderStages.clear();
+
+    VERIFY_EXPR(CreateInfo.PSODesc.PipelineType == PIPELINE_TYPE_COMPUTE);
+    VERIFY_EXPR(CreateInfo.pCS != nullptr);
+    VERIFY_EXPR(CreateInfo.pCS->GetDesc().ShaderType == SHADER_TYPE_COMPUTE);
+
+    RefCntAutoPtr<ShaderImplType> pShaderImpl{CreateInfo.pCS, ShaderImplType::IID_InternalImpl};
+    VERIFY(pShaderImpl, "Unexpected shader object implementation");
+    WaitUntilShaderReadyIfRequested(pShaderImpl, WaitUntilShadersReady);
+    ShaderStages.emplace_back(pShaderImpl);
+    ActiveShaderStages = SHADER_TYPE_COMPUTE;
+
+    VERIFY_EXPR(!ShaderStages.empty());
+}
+
+template <typename ShaderImplType, typename TShaderStages>
+void ExtractShaders(const RayTracingPipelineStateCreateInfo& CreateInfo,
+                    TShaderStages&                           ShaderStages,
+                    bool                                     WaitUntilShadersReady,
+                    SHADER_TYPE&                             ActiveShaderStages)
+{
+    VERIFY_EXPR(CreateInfo.PSODesc.IsRayTracingPipeline());
+
+    std::unordered_set<IShader*> UniqueShaders;
+
+    auto AddShader = [&ShaderStages,
+                      &UniqueShaders,
+                      &ActiveShaderStages,
+                      WaitUntilShadersReady](IShader* pShader) {
+        if (pShader != nullptr && UniqueShaders.insert(pShader).second)
+        {
+            const SHADER_TYPE ShaderType = pShader->GetDesc().ShaderType;
+            const Int32       StageInd   = GetShaderTypePipelineIndex(ShaderType, PIPELINE_TYPE_RAY_TRACING);
+            auto&             Stage      = ShaderStages[StageInd];
+            ActiveShaderStages |= ShaderType;
+            RefCntAutoPtr<ShaderImplType> pShaderImpl{pShader, ShaderImplType::IID_InternalImpl};
+            VERIFY(pShaderImpl, "Unexpected shader object implementation");
+            WaitUntilShaderReadyIfRequested(pShaderImpl, WaitUntilShadersReady);
+            Stage.Append(pShaderImpl);
+        }
+    };
+
+    ShaderStages.clear();
+    ShaderStages.resize(MAX_SHADERS_IN_PIPELINE);
+    ActiveShaderStages = SHADER_TYPE_UNKNOWN;
+
+    for (Uint32 i = 0; i < CreateInfo.GeneralShaderCount; ++i)
+    {
+        AddShader(CreateInfo.pGeneralShaders[i].pShader);
+    }
+    for (Uint32 i = 0; i < CreateInfo.TriangleHitShaderCount; ++i)
+    {
+        AddShader(CreateInfo.pTriangleHitShaders[i].pClosestHitShader);
+        AddShader(CreateInfo.pTriangleHitShaders[i].pAnyHitShader);
+    }
+    for (Uint32 i = 0; i < CreateInfo.ProceduralHitShaderCount; ++i)
+    {
+        AddShader(CreateInfo.pProceduralHitShaders[i].pIntersectionShader);
+        AddShader(CreateInfo.pProceduralHitShaders[i].pClosestHitShader);
+        AddShader(CreateInfo.pProceduralHitShaders[i].pAnyHitShader);
+    }
+
+    if (ShaderStages[GetShaderTypePipelineIndex(SHADER_TYPE_RAY_GEN, PIPELINE_TYPE_RAY_TRACING)].Count() == 0)
+        LOG_ERROR_AND_THROW("At least one shader with type SHADER_TYPE_RAY_GEN must be provided.");
+
+    // Remove empty stages
+    for (auto iter = ShaderStages.begin(); iter != ShaderStages.end();)
+    {
+        if (iter->Count() == 0)
+        {
+            iter = ShaderStages.erase(iter);
+        }
+        else
+        {
+            ++iter;
+        }
+    }
+
+    VERIFY_EXPR(!ShaderStages.empty());
+}
+
+template <typename ShaderImplType, typename TShaderStages>
+void ExtractShaders(const TilePipelineStateCreateInfo& CreateInfo,
+                    TShaderStages&                     ShaderStages,
+                    bool                               WaitUntilShadersReady,
+                    SHADER_TYPE&                       ActiveShaderStages)
+{
+    VERIFY_EXPR(CreateInfo.PSODesc.IsTilePipeline());
+
+    ShaderStages.clear();
+
+    VERIFY_EXPR(CreateInfo.PSODesc.PipelineType == PIPELINE_TYPE_TILE);
+    VERIFY_EXPR(CreateInfo.pTS != nullptr);
+    VERIFY_EXPR(CreateInfo.pTS->GetDesc().ShaderType == SHADER_TYPE_TILE);
+
+    RefCntAutoPtr<ShaderImplType> pShaderImpl{CreateInfo.pTS, ShaderImplType::IID_InternalImpl};
+    VERIFY(pShaderImpl, "Unexpected shader object implementation");
+    WaitUntilShaderReadyIfRequested(pShaderImpl, WaitUntilShadersReady);
+    ShaderStages.emplace_back(pShaderImpl);
+    ActiveShaderStages = SHADER_TYPE_TILE;
+
+    VERIFY_EXPR(!ShaderStages.empty());
+}
+
+} // namespace PipelineStateUtils
+
 /// Template class implementing base functionality of the pipeline state object.
 
 /// \tparam EngineImplTraits - Engine implementation type traits.
 template <typename EngineImplTraits>
 class PipelineStateBase : public DeviceObjectBase<typename EngineImplTraits::PipelineStateInterface, typename EngineImplTraits::RenderDeviceImplType, PipelineStateDesc>
 {
-private:
+protected:
     // Base interface this class inherits (IPipelineStateD3D12, IPipelineStateVk, etc.)
     using BaseInterface = typename EngineImplTraits::PipelineStateInterface;
 
@@ -234,6 +426,8 @@ public:
 
     ~PipelineStateBase()
     {
+        VERIFY(!AsyncInitializer::GetAsyncTask(m_AsyncInitializer), "Initialize task is still running. This may result in a crash if the task accesses resources owned by the pipeline state object.");
+
         /*
         /// \note Destructor cannot directly remove the object from the registry as this may cause a
         ///       deadlock at the point where StateObjectsRegistry::Find() locks the weak pointer: if we
@@ -290,14 +484,22 @@ public:
 
     IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_PipelineState, TDeviceObjectBase)
 
+    virtual const PipelineStateDesc& DILIGENT_CALL_TYPE GetDesc() const override final
+    {
+        CheckPipelineReady();
+        return this->m_Desc;
+    }
+
     Uint32 GetBufferStride(Uint32 BufferSlot) const
     {
+        CheckPipelineReady();
         VERIFY_EXPR(this->m_Desc.IsAnyGraphicsPipeline());
         return BufferSlot < m_pGraphicsPipelineData->BufferSlotsUsed ? m_pGraphicsPipelineData->pStrides[BufferSlot] : 0;
     }
 
     Uint32 GetNumBufferSlotsUsed() const
     {
+        CheckPipelineReady();
         VERIFY_EXPR(this->m_Desc.IsAnyGraphicsPipeline());
         return m_pGraphicsPipelineData->BufferSlotsUsed;
     }
@@ -316,6 +518,7 @@ public:
 
     virtual const GraphicsPipelineDesc& DILIGENT_CALL_TYPE GetGraphicsPipelineDesc() const override final
     {
+        CheckPipelineReady();
         VERIFY_EXPR(this->m_Desc.IsAnyGraphicsPipeline());
         VERIFY_EXPR(m_pGraphicsPipelineData != nullptr);
         return m_pGraphicsPipelineData->Desc;
@@ -323,6 +526,7 @@ public:
 
     virtual const RayTracingPipelineDesc& DILIGENT_CALL_TYPE GetRayTracingPipelineDesc() const override final
     {
+        CheckPipelineReady();
         VERIFY_EXPR(this->m_Desc.IsRayTracingPipeline());
         VERIFY_EXPR(m_pRayTracingPipelineData != nullptr);
         return m_pRayTracingPipelineData->Desc;
@@ -330,6 +534,7 @@ public:
 
     virtual const TilePipelineDesc& DILIGENT_CALL_TYPE GetTilePipelineDesc() const override final
     {
+        CheckPipelineReady();
         VERIFY_EXPR(this->m_Desc.IsTilePipeline());
         VERIFY_EXPR(m_pTilePipelineData != nullptr);
         return m_pTilePipelineData->Desc;
@@ -363,6 +568,8 @@ public:
     virtual void DILIGENT_CALL_TYPE CreateShaderResourceBinding(IShaderResourceBinding** ppShaderResourceBinding,
                                                                 bool                     InitStaticResources) override final
     {
+        CheckPipelineReady();
+
         *ppShaderResourceBinding = nullptr;
 
         if (!m_UsingImplicitSignature)
@@ -378,6 +585,8 @@ public:
     virtual IShaderResourceVariable* DILIGENT_CALL_TYPE GetStaticVariableByName(SHADER_TYPE ShaderType,
                                                                                 const Char* Name) override final
     {
+        CheckPipelineReady();
+
         if (!m_UsingImplicitSignature)
         {
             LOG_ERROR_MESSAGE("IPipelineState::GetStaticVariableByName is not allowed for pipelines that use explicit "
@@ -398,6 +607,8 @@ public:
     virtual IShaderResourceVariable* DILIGENT_CALL_TYPE GetStaticVariableByIndex(SHADER_TYPE ShaderType,
                                                                                  Uint32      Index) override final
     {
+        CheckPipelineReady();
+
         if (!m_UsingImplicitSignature)
         {
             LOG_ERROR_MESSAGE("IPipelineState::GetStaticVariableByIndex is not allowed for pipelines that use explicit "
@@ -417,6 +628,8 @@ public:
 
     virtual Uint32 DILIGENT_CALL_TYPE GetStaticVariableCount(SHADER_TYPE ShaderType) const override final
     {
+        CheckPipelineReady();
+
         if (!m_UsingImplicitSignature)
         {
             LOG_ERROR_MESSAGE("IPipelineState::GetStaticVariableCount is not allowed for pipelines that use explicit "
@@ -438,6 +651,8 @@ public:
                                                         IResourceMapping*           pResourceMapping,
                                                         BIND_SHADER_RESOURCES_FLAGS Flags) override final
     {
+        CheckPipelineReady();
+
         if (!m_UsingImplicitSignature)
         {
             LOG_ERROR_MESSAGE("IPipelineState::BindStaticResources is not allowed for pipelines that use explicit "
@@ -450,6 +665,8 @@ public:
 
     virtual void DILIGENT_CALL_TYPE InitializeStaticSRBResources(IShaderResourceBinding* pSRB) const override final
     {
+        CheckPipelineReady();
+
         if (!m_UsingImplicitSignature)
         {
             LOG_ERROR_MESSAGE("IPipelineState::InitializeStaticSRBResources is not allowed for pipelines that use explicit "
@@ -462,6 +679,8 @@ public:
 
     virtual void DILIGENT_CALL_TYPE CopyStaticResources(IPipelineState* pDstPipeline) const override final
     {
+        CheckPipelineReady();
+
         if (pDstPipeline == nullptr)
         {
             DEV_ERROR("Destination pipeline must not be null");
@@ -488,12 +707,14 @@ public:
     /// Implementation of IPipelineState::GetResourceSignatureCount().
     virtual Uint32 DILIGENT_CALL_TYPE GetResourceSignatureCount() const override final
     {
+        CheckPipelineReady();
         return m_SignatureCount;
     }
 
     /// Implementation of IPipelineState::GetResourceSignature().
     virtual PipelineResourceSignatureImplType* DILIGENT_CALL_TYPE GetResourceSignature(Uint32 Index) const override final
     {
+        CheckPipelineReady();
         VERIFY_EXPR(Index < m_SignatureCount);
         return m_Signatures[Index];
     }
@@ -501,6 +722,7 @@ public:
     /// Implementation of IPipelineState::IsCompatibleWith().
     virtual bool DILIGENT_CALL_TYPE IsCompatibleWith(const IPipelineState* pPSO) const override // May be overridden
     {
+        CheckPipelineReady();
         DEV_CHECK_ERR(pPSO != nullptr, "pPSO must not be null");
 
         if (pPSO == this)
@@ -527,6 +749,17 @@ public:
         return true;
     }
 
+    virtual PIPELINE_STATE_STATUS DILIGENT_CALL_TYPE GetStatus(bool WaitForCompletion = false) override
+    {
+        VERIFY_EXPR(m_Status.load() != PIPELINE_STATE_STATUS_UNINITIALIZED);
+        ASYNC_TASK_STATUS InitTaskStatus = AsyncInitializer::Update(m_AsyncInitializer, WaitForCompletion);
+        if (InitTaskStatus == ASYNC_TASK_STATUS_COMPLETE)
+        {
+            VERIFY(m_Status.load() > PIPELINE_STATE_STATUS_COMPILING, "Pipeline state status must be atomically set by the initialization task before it finishes");
+        }
+        return m_Status.load();
+    }
+
     SHADER_TYPE GetActiveShaderStages() const
     {
         return m_ActiveShaderStages;
@@ -542,17 +775,20 @@ protected:
         ReserveResourceLayout(CreateInfo.PSODesc.ResourceLayout, MemPool);
         ReserveResourceSignatures(CreateInfo, MemPool);
 
-        const auto& InputLayout     = CreateInfo.GraphicsPipeline.InputLayout;
-        Uint32      BufferSlotsUsed = 0;
-        MemPool.AddSpace<LayoutElement>(InputLayout.NumElements);
-        for (Uint32 i = 0; i < InputLayout.NumElements; ++i)
+        const auto& InputLayout = CreateInfo.GraphicsPipeline.InputLayout;
+        if (InputLayout.NumElements > 0)
         {
-            auto& LayoutElem = InputLayout.LayoutElements[i];
-            MemPool.AddSpaceForString(LayoutElem.HLSLSemantic);
-            BufferSlotsUsed = std::max(BufferSlotsUsed, LayoutElem.BufferSlot + 1);
-        }
+            Uint32 BufferSlotsUsed = 0;
+            MemPool.AddSpace<LayoutElement>(InputLayout.NumElements);
+            for (Uint32 i = 0; i < InputLayout.NumElements; ++i)
+            {
+                auto& LayoutElem = InputLayout.LayoutElements[i];
+                MemPool.AddSpaceForString(LayoutElem.HLSLSemantic);
+                BufferSlotsUsed = std::max(BufferSlotsUsed, LayoutElem.BufferSlot + 1);
+            }
 
-        MemPool.AddSpace<Uint32>(BufferSlotsUsed);
+            MemPool.AddSpace<Uint32>(BufferSlotsUsed);
+        }
 
         static_assert(std::is_trivially_destructible<decltype(*InputLayout.LayoutElements)>::value, "Add destructor for this object to Destruct()");
     }
@@ -604,171 +840,87 @@ protected:
     }
 
 public:
-    template <typename ShaderImplType, typename TShaderStages>
-    static void ExtractShaders(const GraphicsPipelineStateCreateInfo& CreateInfo,
-                               TShaderStages&                         ShaderStages,
-                               SHADER_TYPE&                           ActiveShaderStages)
-    {
-        VERIFY_EXPR(CreateInfo.PSODesc.IsAnyGraphicsPipeline());
-
-        ShaderStages.clear();
-        ActiveShaderStages = SHADER_TYPE_UNKNOWN;
-
-        auto AddShaderStage = [&](IShader* pShader) {
-            if (pShader != nullptr)
-            {
-                RefCntAutoPtr<ShaderImplType> pShaderImpl{pShader, ShaderImplType::IID_InternalImpl};
-                VERIFY(pShaderImpl, "Unexpected shader object implementation");
-                ShaderStages.emplace_back(pShaderImpl);
-                const auto ShaderType = pShader->GetDesc().ShaderType;
-                VERIFY((ActiveShaderStages & ShaderType) == 0,
-                       "Shader stage ", GetShaderTypeLiteralName(ShaderType), " has already been initialized in PSO.");
-                ActiveShaderStages |= ShaderType;
-#ifdef DILIGENT_DEBUG
-                for (size_t i = 0; i + 1 < ShaderStages.size(); ++i)
-                    VERIFY_EXPR(GetShaderStageType(ShaderStages[i]) != ShaderType);
-#endif
-            }
-        };
-
-        switch (CreateInfo.PSODesc.PipelineType)
-        {
-            case PIPELINE_TYPE_GRAPHICS:
-            {
-                AddShaderStage(CreateInfo.pVS);
-                AddShaderStage(CreateInfo.pHS);
-                AddShaderStage(CreateInfo.pDS);
-                AddShaderStage(CreateInfo.pGS);
-                AddShaderStage(CreateInfo.pPS);
-                VERIFY(CreateInfo.pVS != nullptr, "Vertex shader must not be null");
-                break;
-            }
-
-            case PIPELINE_TYPE_MESH:
-            {
-                AddShaderStage(CreateInfo.pAS);
-                AddShaderStage(CreateInfo.pMS);
-                AddShaderStage(CreateInfo.pPS);
-                VERIFY(CreateInfo.pMS != nullptr, "Mesh shader must not be null");
-                break;
-            }
-
-            default:
-                UNEXPECTED("unknown pipeline type");
-        }
-
-        VERIFY_EXPR(!ShaderStages.empty());
-    }
-
-    template <typename ShaderImplType, typename TShaderStages>
-    static void ExtractShaders(const ComputePipelineStateCreateInfo& CreateInfo,
-                               TShaderStages&                        ShaderStages,
-                               SHADER_TYPE&                          ActiveShaderStages)
-    {
-        VERIFY_EXPR(CreateInfo.PSODesc.IsComputePipeline());
-
-        ShaderStages.clear();
-
-        VERIFY_EXPR(CreateInfo.PSODesc.PipelineType == PIPELINE_TYPE_COMPUTE);
-        VERIFY_EXPR(CreateInfo.pCS != nullptr);
-        VERIFY_EXPR(CreateInfo.pCS->GetDesc().ShaderType == SHADER_TYPE_COMPUTE);
-
-        RefCntAutoPtr<ShaderImplType> pShaderImpl{CreateInfo.pCS, ShaderImplType::IID_InternalImpl};
-        VERIFY(pShaderImpl, "Unexpected shader object implementation");
-        ShaderStages.emplace_back(pShaderImpl);
-        ActiveShaderStages = SHADER_TYPE_COMPUTE;
-
-        VERIFY_EXPR(!ShaderStages.empty());
-    }
-
-    template <typename ShaderImplType, typename TShaderStages>
-    static void ExtractShaders(const RayTracingPipelineStateCreateInfo& CreateInfo,
-                               TShaderStages&                           ShaderStages,
-                               SHADER_TYPE&                             ActiveShaderStages)
-    {
-        VERIFY_EXPR(CreateInfo.PSODesc.IsRayTracingPipeline());
-
-        std::unordered_set<IShader*> UniqueShaders;
-
-        auto AddShader = [&ShaderStages, &UniqueShaders, &ActiveShaderStages](IShader* pShader) {
-            if (pShader != nullptr && UniqueShaders.insert(pShader).second)
-            {
-                const auto ShaderType = pShader->GetDesc().ShaderType;
-                const auto StageInd   = GetShaderTypePipelineIndex(ShaderType, PIPELINE_TYPE_RAY_TRACING);
-                auto&      Stage      = ShaderStages[StageInd];
-                ActiveShaderStages |= ShaderType;
-                RefCntAutoPtr<ShaderImplType> pShaderImpl{pShader, ShaderImplType::IID_InternalImpl};
-                VERIFY(pShaderImpl, "Unexpected shader object implementation");
-                Stage.Append(pShaderImpl);
-            }
-        };
-
-        ShaderStages.clear();
-        ShaderStages.resize(MAX_SHADERS_IN_PIPELINE);
-        ActiveShaderStages = SHADER_TYPE_UNKNOWN;
-
-        for (Uint32 i = 0; i < CreateInfo.GeneralShaderCount; ++i)
-        {
-            AddShader(CreateInfo.pGeneralShaders[i].pShader);
-        }
-        for (Uint32 i = 0; i < CreateInfo.TriangleHitShaderCount; ++i)
-        {
-            AddShader(CreateInfo.pTriangleHitShaders[i].pClosestHitShader);
-            AddShader(CreateInfo.pTriangleHitShaders[i].pAnyHitShader);
-        }
-        for (Uint32 i = 0; i < CreateInfo.ProceduralHitShaderCount; ++i)
-        {
-            AddShader(CreateInfo.pProceduralHitShaders[i].pIntersectionShader);
-            AddShader(CreateInfo.pProceduralHitShaders[i].pClosestHitShader);
-            AddShader(CreateInfo.pProceduralHitShaders[i].pAnyHitShader);
-        }
-
-        if (ShaderStages[GetShaderTypePipelineIndex(SHADER_TYPE_RAY_GEN, PIPELINE_TYPE_RAY_TRACING)].Count() == 0)
-            LOG_ERROR_AND_THROW("At least one shader with type SHADER_TYPE_RAY_GEN must be provided.");
-
-        // Remove empty stages
-        for (auto iter = ShaderStages.begin(); iter != ShaderStages.end();)
-        {
-            if (iter->Count() == 0)
-            {
-                iter = ShaderStages.erase(iter);
-                continue;
-            }
-
-            ++iter;
-        }
-
-        VERIFY_EXPR(!ShaderStages.empty());
-    }
-
-    template <typename ShaderImplType, typename TShaderStages>
-    static void ExtractShaders(const TilePipelineStateCreateInfo& CreateInfo,
-                               TShaderStages&                     ShaderStages,
-                               SHADER_TYPE&                       ActiveShaderStages)
-    {
-        VERIFY_EXPR(CreateInfo.PSODesc.IsTilePipeline());
-
-        ShaderStages.clear();
-
-        VERIFY_EXPR(CreateInfo.PSODesc.PipelineType == PIPELINE_TYPE_TILE);
-        VERIFY_EXPR(CreateInfo.pTS != nullptr);
-        VERIFY_EXPR(CreateInfo.pTS->GetDesc().ShaderType == SHADER_TYPE_TILE);
-
-        RefCntAutoPtr<ShaderImplType> pShaderImpl{CreateInfo.pTS, ShaderImplType::IID_InternalImpl};
-        VERIFY(pShaderImpl, "Unexpected shader object implementation");
-        ShaderStages.emplace_back(pShaderImpl);
-        ActiveShaderStages = SHADER_TYPE_TILE;
-
-        VERIFY_EXPR(!ShaderStages.empty());
-    }
-
 protected:
+    template <typename ShaderImplType, typename PSOCreateInfoType>
+    void Construct(const PSOCreateInfoType& CreateInfo)
+    {
+        auto* const pThisImpl = static_cast<PipelineStateImplType*>(this);
+
+        m_Status.store(PIPELINE_STATE_STATUS_COMPILING);
+        if ((CreateInfo.Flags & PSO_CREATE_FLAG_ASYNCHRONOUS) != 0 && this->m_pDevice->GetShaderCompilationThreadPool() != nullptr)
+        {
+            // Collect all asynchronous shader compile tasks
+            typename PipelineStateImplType::TShaderStages ShaderStages;
+            SHADER_TYPE                                   ActiveShaderStages    = SHADER_TYPE_UNKNOWN;
+            constexpr bool                                WaitUntilShadersReady = false;
+            PipelineStateUtils::ExtractShaders<ShaderImplType>(CreateInfo, ShaderStages, WaitUntilShadersReady, ActiveShaderStages);
+
+            std::vector<const ShaderImplType*> Shaders;
+            for (const auto& Stage : ShaderStages)
+            {
+                std::vector<const ShaderImplType*> StageShaders = GetStageShaders(Stage);
+                Shaders.insert(Shaders.end(), StageShaders.begin(), StageShaders.end());
+            }
+
+            std::vector<RefCntAutoPtr<IAsyncTask>> ShaderCompileTasks;
+            for (const ShaderImplType* pShader : Shaders)
+            {
+                if (RefCntAutoPtr<IAsyncTask> pCompileTask = pShader->GetCompileTask())
+                    ShaderCompileTasks.emplace_back(std::move(pCompileTask));
+            }
+
+            m_AsyncInitializer = AsyncInitializer::Start(
+                this->m_pDevice->GetShaderCompilationThreadPool(),
+                ShaderCompileTasks, // Make sure that all asynchronous shader compile tasks are completed first
+                [pThisImpl,
+#ifdef DILIGENT_DEBUG
+                 Shaders,
+#endif
+                 CreateInfo = typename PipelineStateCreateInfoXTraits<PSOCreateInfoType>::CreateInfoXType{CreateInfo}](Uint32 ThreadId) mutable //
+                {
+#ifdef DILIGENT_DEBUG
+                    for (const ShaderImplType* pShader : Shaders)
+                    {
+                        VERIFY(!pShader->IsCompiling(), "All shader compile tasks must have been completed since we used them as "
+                                                        "prerequisites for the pipeline initialization task. This appears to be a bug.");
+                    }
+#endif
+                    try
+                    {
+                        pThisImpl->InitializePipeline(CreateInfo);
+                        pThisImpl->m_Status.store(PIPELINE_STATE_STATUS_READY);
+                    }
+                    catch (...)
+                    {
+                        pThisImpl->m_Status.store(PIPELINE_STATE_STATUS_FAILED);
+                    }
+
+                    // Release create info objects
+                    CreateInfo.Clear();
+                });
+        }
+        else
+        {
+            try
+            {
+                pThisImpl->InitializePipeline(CreateInfo);
+                m_Status.store(PIPELINE_STATE_STATUS_READY);
+            }
+            catch (...)
+            {
+                pThisImpl->Destruct();
+                throw;
+            }
+        }
+    }
+
     template <typename ShaderImplType, typename PSOCreateInfoType, typename TShaderStages>
     void ExtractShaders(const PSOCreateInfoType& PSOCreateInfo,
-                        TShaderStages&           ShaderStages)
+                        TShaderStages&           ShaderStages,
+                        bool                     WaitUntilShadersReady = false)
     {
         VERIFY_EXPR(this->m_Desc.PipelineType == PSOCreateInfo.PSODesc.PipelineType);
-        ExtractShaders<ShaderImplType>(PSOCreateInfo, ShaderStages, m_ActiveShaderStages);
+        PipelineStateUtils::ExtractShaders<ShaderImplType>(PSOCreateInfo, ShaderStages, WaitUntilShadersReady, m_ActiveShaderStages);
     }
 
     void InitializePipelineDesc(const GraphicsPipelineStateCreateInfo& CreateInfo,
@@ -784,7 +936,7 @@ protected:
         auto& pStrides         = this->m_pGraphicsPipelineData->pStrides;
 
         GraphicsPipeline = CreateInfo.GraphicsPipeline;
-        CorrectGraphicsPipelineDesc(GraphicsPipeline);
+        CorrectGraphicsPipelineDesc(GraphicsPipeline, this->GetDevice()->GetDeviceInfo().Features);
 
         CopyResourceLayout(CreateInfo.PSODesc.ResourceLayout, this->m_Desc.ResourceLayout, MemPool);
         CopyResourceSignatures(CreateInfo, MemPool);
@@ -819,93 +971,25 @@ protected:
         }
 
         const auto&    InputLayout     = GraphicsPipeline.InputLayout;
-        LayoutElement* pLayoutElements = MemPool.ConstructArray<LayoutElement>(InputLayout.NumElements);
-        for (size_t Elem = 0; Elem < InputLayout.NumElements; ++Elem)
+        LayoutElement* pLayoutElements = nullptr;
+        if (InputLayout.NumElements > 0)
         {
-            const auto& SrcElem   = InputLayout.LayoutElements[Elem];
-            pLayoutElements[Elem] = SrcElem;
-            VERIFY_EXPR(SrcElem.HLSLSemantic != nullptr);
-            pLayoutElements[Elem].HLSLSemantic = MemPool.CopyString(SrcElem.HLSLSemantic);
+            pLayoutElements = MemPool.ConstructArray<LayoutElement>(InputLayout.NumElements);
+            for (size_t Elem = 0; Elem < InputLayout.NumElements; ++Elem)
+            {
+                const auto& SrcElem   = InputLayout.LayoutElements[Elem];
+                pLayoutElements[Elem] = SrcElem;
+                VERIFY_EXPR(SrcElem.HLSLSemantic != nullptr);
+                pLayoutElements[Elem].HLSLSemantic = MemPool.CopyString(SrcElem.HLSLSemantic);
+            }
+
+            // Correct description and compute offsets and tight strides
+            const auto Strides = ResolveInputLayoutAutoOffsetsAndStrides(pLayoutElements, InputLayout.NumElements);
+            BufferSlotsUsed    = static_cast<Uint8>(Strides.size());
+
+            pStrides = MemPool.CopyConstructArray<Uint32>(Strides.data(), BufferSlotsUsed);
         }
         GraphicsPipeline.InputLayout.LayoutElements = pLayoutElements;
-
-
-        // Correct description and compute offsets and tight strides
-        std::array<Uint32, MAX_BUFFER_SLOTS> Strides, TightStrides = {};
-        // Set all strides to an invalid value because an application may want to use 0 stride
-        Strides.fill(LAYOUT_ELEMENT_AUTO_STRIDE);
-
-        for (Uint32 i = 0; i < InputLayout.NumElements; ++i)
-        {
-            auto& LayoutElem = pLayoutElements[i];
-
-            if (LayoutElem.ValueType == VT_FLOAT32 || LayoutElem.ValueType == VT_FLOAT16)
-                LayoutElem.IsNormalized = false; // Floating point values cannot be normalized
-
-            auto BuffSlot = LayoutElem.BufferSlot;
-            if (BuffSlot >= Strides.size())
-            {
-                UNEXPECTED("Buffer slot (", BuffSlot, ") exceeds the maximum allowed value (", Strides.size() - 1, ")");
-                continue;
-            }
-            BufferSlotsUsed = std::max(BufferSlotsUsed, static_cast<Uint8>(BuffSlot + 1));
-
-            auto& CurrAutoStride = TightStrides[BuffSlot];
-            // If offset is not explicitly specified, use current auto stride value
-            if (LayoutElem.RelativeOffset == LAYOUT_ELEMENT_AUTO_OFFSET)
-            {
-                LayoutElem.RelativeOffset = CurrAutoStride;
-            }
-
-            // If stride is explicitly specified, use it for the current buffer slot
-            if (LayoutElem.Stride != LAYOUT_ELEMENT_AUTO_STRIDE)
-            {
-                // Verify that the value is consistent with the previously specified stride, if any
-                if (Strides[BuffSlot] != LAYOUT_ELEMENT_AUTO_STRIDE && Strides[BuffSlot] != LayoutElem.Stride)
-                {
-                    LOG_ERROR_MESSAGE("Inconsistent strides are specified for buffer slot ", BuffSlot,
-                                      ". Input element at index ", LayoutElem.InputIndex, " explicitly specifies stride ",
-                                      LayoutElem.Stride, ", while current value is ", Strides[BuffSlot],
-                                      ". Specify consistent strides or use LAYOUT_ELEMENT_AUTO_STRIDE to allow "
-                                      "the engine compute strides automatically.");
-                }
-                Strides[BuffSlot] = LayoutElem.Stride;
-            }
-
-            CurrAutoStride = std::max(CurrAutoStride, LayoutElem.RelativeOffset + LayoutElem.NumComponents * GetValueSize(LayoutElem.ValueType));
-        }
-
-        for (Uint32 i = 0; i < InputLayout.NumElements; ++i)
-        {
-            auto& LayoutElem = pLayoutElements[i];
-
-            auto BuffSlot = LayoutElem.BufferSlot;
-            // If no input elements explicitly specified stride for this buffer slot, use automatic stride
-            if (Strides[BuffSlot] == LAYOUT_ELEMENT_AUTO_STRIDE)
-            {
-                Strides[BuffSlot] = TightStrides[BuffSlot];
-            }
-            else
-            {
-                if (Strides[BuffSlot] < TightStrides[BuffSlot])
-                {
-                    LOG_ERROR_MESSAGE("Stride ", Strides[BuffSlot], " explicitly specified for slot ", BuffSlot,
-                                      " is smaller than the minimum stride ", TightStrides[BuffSlot],
-                                      " required to accommodate all input elements.");
-                }
-            }
-            if (LayoutElem.Stride == LAYOUT_ELEMENT_AUTO_STRIDE)
-                LayoutElem.Stride = Strides[BuffSlot];
-        }
-
-        pStrides = MemPool.ConstructArray<Uint32>(BufferSlotsUsed);
-
-        // Set strides for all unused slots to 0
-        for (Uint32 i = 0; i < BufferSlotsUsed; ++i)
-        {
-            auto Stride = Strides[i];
-            pStrides[i] = Stride != LAYOUT_ELEMENT_AUTO_STRIDE ? Stride : 0;
-        }
     }
 
     void InitializePipelineDesc(const ComputePipelineStateCreateInfo& CreateInfo,
@@ -1052,6 +1136,14 @@ protected:
     }
 
 private:
+    void CheckPipelineReady() const
+    {
+        // It is OK to use m_Desc.Name as it is initialized by DeviceObjectBase
+        DEV_CHECK_ERR(m_Status.load() == PIPELINE_STATE_STATUS_READY, "Pipeline state '", this->m_Desc.Name,
+                      "' is expected to be Ready, but its actual status is ", GetPipelineStateStatusString(m_Status.load()),
+                      ". Use GetStatus() to check the pipeline state status.");
+    }
+
     static void ReserveResourceLayout(const PipelineResourceLayoutDesc& SrcLayout, FixedLinearAllocator& MemPool) noexcept
     {
         if (SrcLayout.Variables != nullptr)
@@ -1187,11 +1279,15 @@ private:
     }
 
 protected:
+    std::unique_ptr<AsyncInitializer> m_AsyncInitializer;
+
     /// Shader stages that are active in this PSO.
     SHADER_TYPE m_ActiveShaderStages = SHADER_TYPE_UNKNOWN;
 
     /// True if the pipeline was created using implicit root signature.
     const bool m_UsingImplicitSignature;
+
+    std::atomic<PIPELINE_STATE_STATUS> m_Status{PIPELINE_STATE_STATUS_UNINITIALIZED};
 
     /// The number of signatures in m_Signatures array.
     /// Note that this is not necessarily the same as the number of signatures

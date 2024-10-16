@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {15F93272-6135-414F-AB10-53FF9A5004AD}
-static const INTERFACE_ID IID_TextureViewGL =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_TextureViewGL =
     {0x15f93272, 0x6135, 0x414f, {0xab, 0x10, 0x53, 0xff, 0x9a, 0x50, 0x4, 0xad}};
 
 #define DILIGENT_INTERFACE_NAME ITextureViewGL

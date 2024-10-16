@@ -1,4 +1,6 @@
-/*     Copyright 2015-2019 Egor Yusov
+/*
+ *  Copyright 2019-2024 Diligent Graphics LLC
+ *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -34,11 +36,44 @@ namespace Diligent
 
 void AppleDebug::AssertionFailed(const Char *Message, const char *Function, const char *File, int Line)
 {
-    auto AssertionFailedMessage = FormatAssertionFailedMessage(Message, Function, File, Line);
-    OutputDebugMessage(DEBUG_MESSAGE_SEVERITY_ERROR, AssertionFailedMessage.c_str(), nullptr, nullptr, 0);
+    String AssertionFailedMessage = FormatAssertionFailedMessage(Message, Function, File, Line);
+    if (DebugMessageCallback)
+    {
+        DebugMessageCallback(DEBUG_MESSAGE_SEVERITY_ERROR, AssertionFailedMessage.c_str(), nullptr, nullptr, 0);
+    }
+    else
+    {
+        OutputDebugMessage(DEBUG_MESSAGE_SEVERITY_ERROR, AssertionFailedMessage.c_str(), nullptr, nullptr, 0);
+    }
 
-    raise( SIGTRAP );
-};
+    if (GetBreakOnError())
+    {
+        raise(SIGTRAP);
+    }
+}
+
+bool AppleDebug::ColoredTextSupported()
+{
+    static const bool StartedFromXCode =
+        []() -> bool
+        {
+            NSDictionary* environment = [[NSProcessInfo processInfo] environment];
+            if (NSString* DtMode = [environment objectForKey:@"IDE_DISABLED_OS_ACTIVITY_DT_MODE"]) // Since XCode 15
+            {
+                return [DtMode boolValue];
+            }
+            else if (NSString* DtMode = [environment objectForKey:@"OS_ACTIVITY_DT_MODE"]) // Before XCode 15
+            {
+                return [DtMode boolValue];
+            }
+            else
+            {
+                return false;
+            }
+        }();
+    // XCode does not support colored console
+    return !StartedFromXCode;
+}
 
 void AppleDebug::OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity,
                                     const Char*            Message,
@@ -48,10 +83,18 @@ void AppleDebug::OutputDebugMessage(DEBUG_MESSAGE_SEVERITY Severity,
                                     TextColor              Color)
 {
     auto msg = FormatDebugMessage(Severity, Message, Function, File, Line);
-    const auto* ColorCode = TextColorToTextColorCode(Severity, Color);
-    printf("%s%s%s\n", ColorCode, msg.c_str(), TextColorCode::Default);
-    // NSLog truncates the log at 1024 symbols
-    //NSLog(@"%s", str.c_str());
+    
+    if (ColoredTextSupported())
+    {
+        const auto* ColorCode = TextColorToTextColorCode(Severity, Color);
+        printf("%s%s%s\n", ColorCode, msg.c_str(), TextColorCode::Default);
+        // NSLog truncates the log at 1024 symbols
+        //NSLog(@"%s", str.c_str());
+    }
+    else
+    {
+        printf("%s\n",msg.c_str());
+    }
 }
 
 void DebugAssertionFailed(const Char* Message, const char* Function, const char* File, int Line)

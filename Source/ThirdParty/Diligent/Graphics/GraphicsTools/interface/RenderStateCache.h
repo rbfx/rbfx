@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -65,6 +65,13 @@ struct RenderStateCacheCreateInfo
     ///         generally be disabled in production builds.
     bool EnableHotReload DEFAULT_INITIALIZER(false);
 
+    /// Whether to optimize OpenGL shaders.
+    ///
+    /// \remarks    This option directly controls the value of the
+    ///             SerializationDeviceGLInfo::OptimizeShaders member
+    ///             of the internal serialization device.
+    bool OptimizeGLShaders DEFAULT_INITIALIZER(true);
+
     /// Optional shader source input stream factory to use when reloading
     /// shaders. If null, original source factory will be used.
     IShaderSourceInputStreamFactory* pReloadSource DEFAULT_INITIALIZER(nullptr);
@@ -75,33 +82,31 @@ struct RenderStateCacheCreateInfo
 
     constexpr explicit RenderStateCacheCreateInfo(
         IRenderDevice*                   _pDevice,
-        RENDER_STATE_CACHE_LOG_LEVEL     _LogLevel        = RenderStateCacheCreateInfo{}.LogLevel,
-        bool                             _EnableHotReload = RenderStateCacheCreateInfo{}.EnableHotReload,
-        IShaderSourceInputStreamFactory* _pReloadSource   = RenderStateCacheCreateInfo{}.pReloadSource) noexcept :
+        RENDER_STATE_CACHE_LOG_LEVEL     _LogLevel          = RenderStateCacheCreateInfo{}.LogLevel,
+        bool                             _EnableHotReload   = RenderStateCacheCreateInfo{}.EnableHotReload,
+        bool                             _OptimizeGLShaders = RenderStateCacheCreateInfo{}.OptimizeGLShaders,
+        IShaderSourceInputStreamFactory* _pReloadSource     = RenderStateCacheCreateInfo{}.pReloadSource) noexcept :
         pDevice{_pDevice},
         LogLevel{_LogLevel},
         EnableHotReload{_EnableHotReload},
+        OptimizeGLShaders{_OptimizeGLShaders},
         pReloadSource{_pReloadSource}
     {}
 #endif
 };
 typedef struct RenderStateCacheCreateInfo RenderStateCacheCreateInfo;
 
-#if DILIGENT_C_INTERFACE
-#    define REF *
-#else
-#    define REF &
-#endif
+#include "../../../Primitives/interface/DefineRefMacro.h"
 
 /// Type of the callback function called by the IRenderStateCache::Reload method.
 typedef void(DILIGENT_CALL_TYPE* ReloadGraphicsPipelineCallbackType)(const char* PipelineName, GraphicsPipelineDesc REF GraphicsDesc, void* pUserData);
 
-#undef REF
+#include "../../../Primitives/interface/UndefRefMacro.h"
 
 // clang-format on
 
 // {5B356268-256C-401F-BDE2-B9832157141A}
-static const INTERFACE_ID IID_RenderStateCache =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_RenderStateCache =
     {0x5b356268, 0x256c, 0x401f, {0xbd, 0xe2, 0xb9, 0x83, 0x21, 0x57, 0x14, 0x1a}};
 
 #define DILIGENT_INTERFACE_NAME IRenderStateCache

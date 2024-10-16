@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,7 +55,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {9BAAC767-02CC-4FFA-9E4B-E1340F572C49}
-static const INTERFACE_ID IID_EngineFactoryOpenGL =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_EngineFactoryOpenGL =
     {0x9baac767, 0x2cc, 0x4ffa, {0x9e, 0x4b, 0xe1, 0x34, 0xf, 0x57, 0x2c, 0x49}};
 
 #define DILIGENT_INTERFACE_NAME IEngineFactoryOpenGL

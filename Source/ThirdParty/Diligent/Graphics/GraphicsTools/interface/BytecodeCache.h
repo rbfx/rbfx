@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ typedef struct BytecodeCacheCreateInfo BytecodeCacheCreateInfo;
 // clang-format on
 
 // {D1F8295F-F9D7-4CD4-9D13-D950FE7572C1}
-static const INTERFACE_ID IID_BytecodeCache = {0xD1F8295F, 0xF9D7, 0x4CD4, {0x9D, 0x13, 0xD9, 0x50, 0xFE, 0x75, 0x72, 0xC1}};
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_BytecodeCache = {0xD1F8295F, 0xF9D7, 0x4CD4, {0x9D, 0x13, 0xD9, 0x50, 0xFE, 0x75, 0x72, 0xC1}};
 
 #define DILIGENT_INTERFACE_NAME IBytecodeCache
 #include "../../../Primitives/interface/DefineInterfaceHelperMacros.h"

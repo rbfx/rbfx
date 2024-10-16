@@ -1,0 +1,12 @@
+<Project>
+	<Target Name="PlatformCheck" BeforeTargets="InjectReference"
+	  Condition="(('$(Platform)' != 'x86') AND  ('$(Platform)' != 'x64'))">
+		<Error  Text="$(MSBuildThisFileName) does not work correctly on '$(Platform)' platform. You need to specify platform (x86 or x64)." />
+	</Target>
+	<Target Name="InjectReference" BeforeTargets="ResolveAssemblyReferences">
+		<Message Text="Copy platform specific dll: $(MSBuildThisFileDirectory)../lib/net6.0/$(Platform)/Diligent-GraphicsEngine.NET.dll" Importance="High" />
+		<Copy SourceFiles="$(MSBuildThisFileDirectory)../lib/net6.0/$(Platform)/Diligent-GraphicsEngine.NET.dll"
+		      DestinationFolder="$(MSBuildThisFileDirectory)../lib/net6.0/" />
+
+	</Target>
+</Project>

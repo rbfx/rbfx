@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,13 +48,14 @@ public:
     {
         const RenderDeviceInfo&    DeviceInfo;
         const GraphicsAdapterInfo& AdapterInfo;
+        IDataBlob** const          ppCompilerOutput;
     };
 
     ShaderGLImpl(IReferenceCounters*     pRefCounters,
                  RenderDeviceGLImpl*     pDeviceGL,
                  const ShaderCreateInfo& ShaderCI,
                  const CreateInfo&       GLShaderCI,
-                 bool                    bIsDeviceInternal = false);
+                 bool                    bIsDeviceInternal = false) noexcept(false);
     ~ShaderGLImpl();
 
     virtual void DILIGENT_CALL_TYPE QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface) override final;
@@ -71,8 +72,6 @@ public:
     /// Implementation of IShaderGL::GetGLShaderHandle() in OpenGL backend.
     virtual GLuint DILIGENT_CALL_TYPE GetGLShaderHandle() const override final { return m_GLShaderObj; }
 
-    static GLObjectWrappers::GLProgramObj LinkProgram(ShaderGLImpl* const* ppShaders, Uint32 NumShaders, bool IsSeparableProgram);
-
     const std::shared_ptr<const ShaderResourcesGL>& GetShaderResources() const { return m_pShaderResources; }
 
     SHADER_SOURCE_LANGUAGE GetSourceLanguage() const { return m_SourceLanguage; }
@@ -84,11 +83,20 @@ public:
         DataSize = m_GLSLSourceString.length();
     }
 
+    virtual SHADER_STATUS DILIGENT_CALL_TYPE GetStatus(bool WaitForCompletion) override final;
+
+private:
+    void CompileShader() noexcept;
+    bool GetCompileStatus(IDataBlob** ppCompilerOutput, bool ThrowOnError) noexcept(false);
+
 private:
     SHADER_SOURCE_LANGUAGE                   m_SourceLanguage = SHADER_SOURCE_LANGUAGE_DEFAULT;
     std::string                              m_GLSLSourceString;
     GLObjectWrappers::GLShaderObj            m_GLShaderObj;
     std::shared_ptr<const ShaderResourcesGL> m_pShaderResources;
+
+    class ShaderBuilder;
+    std::unique_ptr<ShaderBuilder> m_Builder;
 };
 
 } // namespace Diligent

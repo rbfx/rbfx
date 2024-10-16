@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,8 +35,14 @@
 
 #else
 
+
+#    if defined(DILIGENT_SHARP_GEN)
+template <typename EnumType>
+using _UNDERLYING_ENUM_T = Diligent::Uint64;
+#    else
 template <typename EnumType>
 using _UNDERLYING_ENUM_T = typename std::underlying_type<EnumType>::type;
+#    endif
 
 #    define DEFINE_FLAG_ENUM_OPERATORS(ENUMTYPE)                                                                                                                                                                      \
         extern "C++"                                                                                                                                                                                                  \
@@ -49,5 +55,14 @@ using _UNDERLYING_ENUM_T = typename std::underlying_type<EnumType>::type;
             inline constexpr ENUMTYPE operator^(ENUMTYPE a, ENUMTYPE b) { return static_cast<ENUMTYPE>(static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(a) ^ static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(b)); }                \
             inline constexpr ENUMTYPE operator~(ENUMTYPE a) { return static_cast<ENUMTYPE>(~static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(a)); }                                                                          \
         }
+
+#    define DECLARE_FRIEND_FLAG_ENUM_OPERATORS(ENUMTYPE)               \
+        friend ENUMTYPE&          operator|=(ENUMTYPE& a, ENUMTYPE b); \
+        friend ENUMTYPE&          operator&=(ENUMTYPE& a, ENUMTYPE b); \
+        friend ENUMTYPE&          operator^=(ENUMTYPE& a, ENUMTYPE b); \
+        friend constexpr ENUMTYPE operator|(ENUMTYPE a, ENUMTYPE b);   \
+        friend constexpr ENUMTYPE operator&(ENUMTYPE a, ENUMTYPE b);   \
+        friend constexpr ENUMTYPE operator^(ENUMTYPE a, ENUMTYPE b);   \
+        friend constexpr ENUMTYPE operator~(ENUMTYPE a);
 
 #endif

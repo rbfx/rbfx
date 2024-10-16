@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {45F2BE28-652B-4180-B6E4-E75F83F63CC7}
-static const struct INTERFACE_ID IID_FenceD3D11 =
+static DILIGENT_CONSTEXPR struct INTERFACE_ID IID_FenceD3D11 =
     {0x45f2be28, 0x652b, 0x4180, {0xb6, 0xe4, 0xe7, 0x5f, 0x83, 0xf6, 0x3c, 0xc7}};
 
 #define DILIGENT_INTERFACE_NAME IFenceD3D11

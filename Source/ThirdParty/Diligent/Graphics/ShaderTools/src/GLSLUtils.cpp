@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,100 +36,121 @@
 #include "RefCntAutoPtr.hpp"
 #include "DataBlobImpl.hpp"
 #include "ShaderToolsCommon.hpp"
+#include "ParsingTools.hpp"
 
 namespace Diligent
 {
 
-String BuildGLSLSourceString(const ShaderCreateInfo&    ShaderCI,
-                             const RenderDeviceInfo&    DeviceInfo,
-                             const GraphicsAdapterInfo& AdapterInfo,
-                             TargetGLSLCompiler         TargetCompiler,
-                             const char*                ExtraDefinitions) noexcept(false)
+static bool IsESSL(RENDER_DEVICE_TYPE DeviceType)
 {
-    // clang-format off
-    VERIFY(ShaderCI.SourceLanguage == SHADER_SOURCE_LANGUAGE_DEFAULT ||
-           ShaderCI.SourceLanguage == SHADER_SOURCE_LANGUAGE_GLSL    ||
-           ShaderCI.SourceLanguage == SHADER_SOURCE_LANGUAGE_HLSL,
-           "Unsupported shader source language");
-    // clang-format on
-
-    String GLSLSource;
-
-    const auto ShaderType = ShaderCI.Desc.ShaderType;
-
-#if PLATFORM_WIN32 || PLATFORM_LINUX
-
-    auto GLSLVer = ShaderCI.GLSLVersion;
-    if (GLSLVer == ShaderVersion{})
-        GLSLVer = DeviceInfo.MaxShaderVersion.GLSL;
-    if (GLSLVer == ShaderVersion{})
-        GLSLVer = ShaderVersion{4, 3};
-
+    if (DeviceType == RENDER_DEVICE_TYPE_GL)
     {
-        std::stringstream verss;
-        verss << "#version " << Uint32{GLSLVer.Major} << Uint32{GLSLVer.Minor} << "0 core\n";
-        GLSLSource.append(verss.str());
+        return false;
     }
-    GLSLSource.append("#define DESKTOP_GL 1\n");
+    else if (DeviceType == RENDER_DEVICE_TYPE_GLES)
+    {
+        return true;
+    }
+    else
+    {
+#if PLATFORM_WIN32 || PLATFORM_LINUX || PLATFORM_MACOS
+        return false;
+#elif PLATFORM_ANDROID || PLATFORM_IOS || PLATFORM_TVOS || PLATFORM_EMSCRIPTEN
+        return true;
+#else
+#    error Unknown platform
+#endif
+    }
+}
 
-#    if PLATFORM_WIN32
-    GLSLSource.append("#define PLATFORM_WIN32 1\n");
-#    elif PLATFORM_LINUX
-    GLSLSource.append("#define PLATFORM_LINUX 1\n");
-#    else
-#        error Unexpected platform
-#    endif
+void GetGLSLVersion(const ShaderCreateInfo&              ShaderCI,
+                    TargetGLSLCompiler                   TargetCompiler,
+                    RENDER_DEVICE_TYPE                   DeviceType,
+                    const RenderDeviceShaderVersionInfo& MaxShaderVersion,
+                    ShaderVersion&                       GLSLVer,
+                    bool&                                IsES)
+{
+    IsES = IsESSL(DeviceType);
 
-#elif PLATFORM_MACOS
-
+    ShaderVersion CompilerVer = IsES ? MaxShaderVersion.GLESSL : MaxShaderVersion.GLSL;
     if (TargetCompiler == TargetGLSLCompiler::glslang)
     {
-        GLSLSource.append("#version 430 core\n");
+        if (IsES)
+        {
+            // glslang requires at least GLES3.1
+            CompilerVer = ShaderVersion::Max(CompilerVer, ShaderVersion{3, 1});
+        }
+        else
+        {
+#if PLATFORM_APPLE
+            CompilerVer = ShaderVersion{4, 3};
+#endif
+        }
     }
-    else if (TargetCompiler == TargetGLSLCompiler::driver)
+
+    GLSLVer = IsES ? ShaderCI.GLESSLVersion : ShaderCI.GLSLVersion;
+    if (GLSLVer != ShaderVersion{})
     {
-        GLSLSource.append("#version 410 core\n"
-                          "#extension GL_ARB_shading_language_420pack : enable\n");
+        if (CompilerVer != ShaderVersion{} && GLSLVer > CompilerVer)
+        {
+            LOG_WARNING_MESSAGE("Requested GLSL version (", GLSLVer.Major, ".", GLSLVer.Minor,
+                                ") is greater than the maximum supported version (",
+                                CompilerVer.Major, ".", CompilerVer.Minor, ")");
+            GLSLVer = CompilerVer;
+        }
+    }
+    else if (CompilerVer != ShaderVersion{})
+    {
+        GLSLVer = CompilerVer;
     }
     else
     {
-        UNEXPECTED("Unexpected target GLSL compiler");
-    }
-
-    GLSLSource.append(
-        "#define DESKTOP_GL 1\n"
-        "#define PLATFORM_MACOS 1\n");
-
+#if PLATFORM_WIN32 || PLATFORM_LINUX
+        {
+            VERIFY_EXPR(!IsES);
+            GLSLVer = {4, 3};
+        }
+#elif PLATFORM_MACOS
+        {
+            VERIFY_EXPR(!IsES);
+            VERIFY_EXPR(TargetCompiler == TargetGLSLCompiler::driver);
+            GLSLVer = {4, 1};
+        }
 #elif PLATFORM_ANDROID || PLATFORM_IOS || PLATFORM_TVOS || PLATFORM_EMSCRIPTEN
+        {
+            VERIFY_EXPR(IsES);
+            if (DeviceType == RENDER_DEVICE_TYPE_VULKAN || DeviceType == RENDER_DEVICE_TYPE_METAL)
+            {
+                GLSLVer = {3, 1};
+            }
+            else if (DeviceType == RENDER_DEVICE_TYPE_GLES)
+            {
+                GLSLVer = {3, 0};
+            }
+            else
+            {
+                UNEXPECTED("Unexpected device type");
+            }
+        }
+#else
+#    error Unknown platform
+#endif
+    }
+}
 
-    bool IsES30        = false;
-    bool IsES31OrAbove = false;
-    bool IsES32OrAbove = false;
-    if (DeviceInfo.Type == RENDER_DEVICE_TYPE_VULKAN || DeviceInfo.Type == RENDER_DEVICE_TYPE_METAL)
-    {
-        IsES30        = false;
-        IsES31OrAbove = true;
-        IsES32OrAbove = false;
-        GLSLSource.append("#version 310 es\n");
-    }
-    else if (DeviceInfo.Type == RENDER_DEVICE_TYPE_GLES)
-    {
-        IsES30        = DeviceInfo.APIVersion == Version{3, 0};
-        IsES31OrAbove = DeviceInfo.APIVersion >= Version{3, 1};
-        IsES32OrAbove = DeviceInfo.APIVersion >= Version{3, 2};
-        std::stringstream versionss;
-        versionss << "#version " << Uint32{DeviceInfo.APIVersion.Major} << Uint32{DeviceInfo.APIVersion.Minor} << "0 es\n";
-        GLSLSource.append(versionss.str());
-    }
-    else
-    {
-        UNEXPECTED("Unexpected device type");
-    }
+static void AppendGLESExtensions(SHADER_TYPE              ShaderType,
+                                 const DeviceFeatures&    Features,
+                                 const TextureProperties& TexProps,
+                                 const ShaderVersion&     LangVer,
+                                 std::string&             GLSLSource)
+{
+    const bool IsES31OrAbove = LangVer >= ShaderVersion{3, 1};
+    const bool IsES32OrAbove = LangVer >= ShaderVersion{3, 2};
 
-    if (DeviceInfo.Features.SeparablePrograms && !IsES31OrAbove)
+    if (Features.SeparablePrograms && !IsES31OrAbove)
         GLSLSource.append("#extension GL_EXT_separate_shader_objects : enable\n");
 
-    if (AdapterInfo.Texture.CubemapArraysSupported && !IsES32OrAbove)
+    if (TexProps.CubemapArraysSupported && !IsES32OrAbove)
         GLSLSource.append("#extension GL_EXT_texture_cube_map_array : enable\n");
 
     if (ShaderType == SHADER_TYPE_GEOMETRY && !IsES32OrAbove)
@@ -137,23 +158,14 @@ String BuildGLSLSourceString(const ShaderCreateInfo&    ShaderCI,
 
     if ((ShaderType == SHADER_TYPE_HULL || ShaderType == SHADER_TYPE_DOMAIN) && !IsES32OrAbove)
         GLSLSource.append("#extension GL_EXT_tessellation_shader : enable\n");
+}
 
-    GLSLSource.append(
-        "#ifndef GL_ES\n"
-        "#  define GL_ES 1\n"
-        "#endif\n");
-
-#    if PLATFORM_ANDROID
-    GLSLSource.append("#define PLATFORM_ANDROID 1\n");
-#    elif PLATFORM_IOS
-    GLSLSource.append("#define PLATFORM_IOS 1\n");
-#    elif PLATFORM_TVOS
-    GLSLSource.append("#define PLATFORM_TVOS 1\n");
-#    elif PLATFORM_EMSCRIPTEN
-    GLSLSource.append("#define PLATFORM_EMSCRIPTEN 1\n");
-#    else
-#        error "Unexpected platform"
-#    endif
+static void AppendPrecisionQualifiers(const DeviceFeatures&    Features,
+                                      const TextureProperties& TexProps,
+                                      const ShaderVersion&     LangVer,
+                                      std::string&             GLSLSource)
+{
+    const bool IsES32OrAbove = LangVer >= ShaderVersion{3, 2};
 
     GLSLSource.append(
         "precision highp float;\n"
@@ -177,38 +189,34 @@ String BuildGLSLSourceString(const ShaderCreateInfo&    ShaderCI,
         "precision highp usampler2D;\n"
         "precision highp usampler3D;\n"
         "precision highp usamplerCube;\n"
-        "precision highp usampler2DArray;\n" // clang-format off
-        ); // clang-format on
+        "precision highp usampler2DArray;\n");
 
     if (IsES32OrAbove)
     {
         GLSLSource.append(
             "precision highp samplerBuffer;\n"
             "precision highp isamplerBuffer;\n"
-            "precision highp usamplerBuffer;\n" // clang-format off
-        ); // clang-format on
+            "precision highp usamplerBuffer;\n");
     }
 
-    if (AdapterInfo.Texture.CubemapArraysSupported)
+    if (TexProps.CubemapArraysSupported)
     {
         GLSLSource.append(
             "precision highp samplerCubeArray;\n"
             "precision highp samplerCubeArrayShadow;\n"
             "precision highp isamplerCubeArray;\n"
-            "precision highp usamplerCubeArray;\n" // clang-format off
-        ); // clang-format on
+            "precision highp usamplerCubeArray;\n");
     }
 
-    if (AdapterInfo.Texture.Texture2DMSSupported)
+    if (TexProps.Texture2DMSSupported)
     {
         GLSLSource.append(
             "precision highp sampler2DMS;\n"
             "precision highp isampler2DMS;\n"
-            "precision highp usampler2DMS;\n" // clang-format off
-        ); // clang-format on
+            "precision highp usampler2DMS;\n");
     }
 
-    if (DeviceInfo.Features.ComputeShaders)
+    if (Features.ComputeShaders)
     {
         GLSLSource.append(
             "precision highp image2D;\n"
@@ -224,19 +232,107 @@ String BuildGLSLSourceString(const ShaderCreateInfo&    ShaderCI,
             "precision highp uimage2D;\n"
             "precision highp uimage3D;\n"
             "precision highp uimageCube;\n"
-            "precision highp uimage2DArray;\n" // clang-format off
-        ); // clang-format on
+            "precision highp uimage2DArray;\n");
+
         if (IsES32OrAbove)
         {
             GLSLSource.append(
                 "precision highp imageBuffer;\n"
                 "precision highp iimageBuffer;\n"
-                "precision highp uimageBuffer;\n" // clang-format off
-            ); // clang-format on
+                "precision highp uimageBuffer;\n");
         }
     }
+}
 
-    if (IsES30 && DeviceInfo.Features.SeparablePrograms && ShaderType == SHADER_TYPE_VERTEX)
+String BuildGLSLSourceString(const BuildGLSLSourceStringAttribs& Attribs) noexcept(false)
+{
+    const ShaderCreateInfo& ShaderCI = Attribs.ShaderCI;
+
+    if (!(ShaderCI.SourceLanguage == SHADER_SOURCE_LANGUAGE_DEFAULT ||
+          ShaderCI.SourceLanguage == SHADER_SOURCE_LANGUAGE_GLSL ||
+          ShaderCI.SourceLanguage == SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM ||
+          ShaderCI.SourceLanguage == SHADER_SOURCE_LANGUAGE_HLSL))
+    {
+        UNSUPPORTED("Unsupported shader source language");
+        return "";
+    }
+
+    const auto SourceData = ReadShaderSourceFile(ShaderCI);
+    if (ShaderCI.SourceLanguage == SHADER_SOURCE_LANGUAGE_GLSL_VERBATIM)
+    {
+        if (ShaderCI.Macros)
+        {
+            LOG_WARNING_MESSAGE("Shader macros are ignored when compiling GLSL verbatim");
+        }
+
+        return std::string{SourceData.Source, SourceData.SourceLength};
+    }
+
+    ShaderVersion GLSLVer;
+    bool          IsES = false;
+    GetGLSLVersion(ShaderCI, Attribs.TargetCompiler, Attribs.DeviceType, Attribs.MaxShaderVersion, GLSLVer, IsES);
+
+    const auto ShaderType = ShaderCI.Desc.ShaderType;
+
+    String GLSLSource;
+    {
+        std::stringstream verss;
+        verss << "#version " << Uint32{GLSLVer.Major} << Uint32{GLSLVer.Minor} << (IsES ? "0 es\n" : "0 core\n");
+        GLSLSource = verss.str();
+    }
+
+    // All extensions must go right after the version directive
+    if (IsES)
+    {
+        AppendGLESExtensions(ShaderType, Attribs.Features, Attribs.AdapterInfo.Texture, GLSLVer, GLSLSource);
+    }
+
+    if (ShaderCI.GLSLExtensions != nullptr && ShaderCI.GLSLExtensions[0] != '\0')
+    {
+        GLSLSource.append(ShaderCI.GLSLExtensions);
+        GLSLSource.push_back('\n');
+    }
+
+    if (IsES)
+    {
+        GLSLSource.append("#ifndef GL_ES\n"
+                          "#  define GL_ES 1\n"
+                          "#endif\n");
+    }
+    else
+    {
+        GLSLSource.append("#define DESKTOP_GL 1\n");
+    }
+
+    if (Attribs.ZeroToOneClipZ)
+    {
+        GLSLSource.append("#define _NDC_ZERO_TO_ONE 1\n");
+    }
+
+    if (Attribs.ExtraDefinitions != nullptr)
+    {
+        GLSLSource.append(Attribs.ExtraDefinitions);
+    }
+
+    AppendPlatformDefinition(GLSLSource);
+    AppendShaderTypeDefinitions(GLSLSource, ShaderType);
+
+    if (IsES)
+    {
+        AppendPrecisionQualifiers(Attribs.Features, Attribs.AdapterInfo.Texture, GLSLVer, GLSLSource);
+    }
+
+    // It would be much more convenient to use row_major matrices.
+    // But unfortunately on NVIDIA, the following directive
+    // layout(std140, row_major) uniform;
+    // does not have any effect on matrices that are part of structures
+    // So we have to use column-major matrices which are default in both
+    // DX and GLSL.
+    GLSLSource.append("layout(std140) uniform;\n");
+
+    AppendShaderMacros(GLSLSource, ShaderCI.Macros);
+
+    if (IsES && GLSLVer == ShaderVersion{3, 0} && Attribs.Features.SeparablePrograms && ShaderType == SHADER_TYPE_VERTEX)
     {
         // From https://www.khronos.org/registry/OpenGL/extensions/EXT/EXT_separate_shader_objects.gles.txt:
         //
@@ -263,30 +359,6 @@ String BuildGLSLSourceString(const ShaderCreateInfo&    ShaderCI,
         GLSLSource.append("out vec4 gl_Position;\n");
     }
 
-#else
-#    error "Undefined platform"
-#endif
-
-    // It would be much more convenient to use row_major matrices.
-    // But unfortunately on NVIDIA, the following directive
-    // layout(std140, row_major) uniform;
-    // does not have any effect on matrices that are part of structures
-    // So we have to use column-major matrices which are default in both
-    // DX and GLSL.
-    GLSLSource.append(
-        "layout(std140) uniform;\n");
-
-    AppendShaderTypeDefinitions(GLSLSource, ShaderType);
-
-    if (ExtraDefinitions != nullptr)
-    {
-        GLSLSource.append(ExtraDefinitions);
-    }
-
-    AppendShaderMacros(GLSLSource, ShaderCI.Macros);
-
-    const auto SourceData = ReadShaderSourceFile(ShaderCI);
-
     if (ShaderCI.SourceLanguage == SHADER_SOURCE_LANGUAGE_HLSL)
     {
 #if DILIGENT_NO_HLSL
@@ -299,25 +371,29 @@ String BuildGLSLSourceString(const ShaderCreateInfo&    ShaderCI,
         // Convert HLSL to GLSL
         const auto& Converter = HLSL2GLSLConverterImpl::GetInstance();
 
-        HLSL2GLSLConverterImpl::ConversionAttribs Attribs;
-        Attribs.pSourceStreamFactory = ShaderCI.pShaderSourceStreamFactory;
-        Attribs.ppConversionStream   = ShaderCI.ppConversionStream;
-        Attribs.HLSLSource           = SourceData.Source;
-        Attribs.NumSymbols           = SourceData.SourceLength;
-        Attribs.EntryPoint           = ShaderCI.EntryPoint;
-        Attribs.ShaderType           = ShaderCI.Desc.ShaderType;
-        Attribs.IncludeDefinitions   = true;
-        Attribs.InputFileName        = ShaderCI.FilePath;
-        Attribs.SamplerSuffix        = ShaderCI.Desc.CombinedSamplerSuffix != nullptr ?
+        HLSL2GLSLConverterImpl::ConversionAttribs ConvertAttribs;
+        ConvertAttribs.pSourceStreamFactory = ShaderCI.pShaderSourceStreamFactory;
+        ConvertAttribs.ppConversionStream   = Attribs.ppConversionStream;
+        ConvertAttribs.HLSLSource           = SourceData.Source;
+        ConvertAttribs.NumSymbols           = SourceData.SourceLength;
+        ConvertAttribs.EntryPoint           = ShaderCI.EntryPoint;
+        ConvertAttribs.ShaderType           = ShaderCI.Desc.ShaderType;
+        ConvertAttribs.IncludeDefinitions   = true;
+        ConvertAttribs.InputFileName        = ShaderCI.FilePath;
+        ConvertAttribs.SamplerSuffix        = ShaderCI.Desc.CombinedSamplerSuffix != nullptr ?
             ShaderCI.Desc.CombinedSamplerSuffix :
             ShaderDesc{}.CombinedSamplerSuffix;
         // Separate shader objects extension also allows input/output layout qualifiers for
         // all shader stages.
         // https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_separate_shader_objects.txt
         // (search for "Input Layout Qualifiers" and "Output Layout Qualifiers").
-        Attribs.UseInOutLocationQualifiers = DeviceInfo.Features.SeparablePrograms;
-        auto ConvertedSource               = Converter.Convert(Attribs);
-
+        ConvertAttribs.UseInOutLocationQualifiers = Attribs.Features.SeparablePrograms;
+        ConvertAttribs.UseRowMajorMatrices        = (ShaderCI.CompileFlags & SHADER_COMPILE_FLAG_PACK_MATRIX_ROW_MAJOR) != 0;
+        auto ConvertedSource                      = Converter.Convert(ConvertAttribs);
+        if (ConvertedSource.empty())
+        {
+            LOG_ERROR_AND_THROW("Failed to convert HLSL source to GLSL");
+        }
         GLSLSource.append(ConvertedSource);
 #endif
     }
@@ -327,6 +403,81 @@ String BuildGLSLSourceString(const ShaderCreateInfo&    ShaderCI,
     }
 
     return GLSLSource;
+}
+
+std::vector<std::pair<std::string, std::string>> GetGLSLExtensions(const char* Source, size_t SourceLen)
+{
+    if (Source == nullptr)
+        return {};
+
+    if (SourceLen == 0)
+        SourceLen = std::strlen(Source);
+
+    std::vector<std::pair<std::string, std::string>> Extensions;
+
+    const auto*       Pos = Source;
+    const auto* const End = Source + SourceLen;
+    while (Pos != End)
+    {
+        const char *NameStart = nullptr, *NameEnd = nullptr;
+        Pos = Parsing::FindNextPreprocessorDirective(Pos, End, NameStart, NameEnd);
+        if (Pos == End)
+            break;
+
+        VERIFY_EXPR(*Pos == '#');
+
+        // # extension GL_ARB_shader_draw_parameters : enable
+        // ^ ^        ^
+        // | |      NameEnd
+        // | NameStart
+        // Pos
+
+        const auto* LineEnd = Parsing::SkipLine(NameEnd, End, /* GoToNextLine = */ false);
+
+        std::string DirectiveIdentifier{NameStart, NameEnd};
+        if (DirectiveIdentifier == "extension")
+        {
+            const auto* ExtNameStart = Parsing::SkipDelimiters(NameEnd, LineEnd, " \t");
+            // # extension GL_ARB_shader_draw_parameters : enable
+            //             ^
+            //             ExtNameStart
+
+            const auto* ExtNameEnd = Parsing::SkipIdentifier(ExtNameStart, LineEnd);
+            // # extension GL_ARB_shader_draw_parameters : enable
+            //                                          ^
+            //                                     ExtNameStart
+
+            std::string ExtensionName{ExtNameStart, ExtNameEnd};
+            if (!ExtensionName.empty())
+            {
+                Pos = ExtNameEnd;
+                while (Pos != LineEnd && *Pos != ':')
+                    ++Pos;
+
+                std::string ExtensionBehavior;
+                if (Pos != LineEnd && *Pos == ':')
+                {
+                    const auto* BehaviorStart = Parsing::SkipDelimiters(Pos + 1, LineEnd, " \t");
+                    // # extension GL_ARB_shader_draw_parameters : enable
+                    //                                             ^
+                    //                                         BehaviorStart
+
+                    const auto* BehaviorEnd = Parsing::SkipIdentifier(BehaviorStart, LineEnd);
+                    // # extension GL_ARB_shader_draw_parameters : enable
+                    //                                                   ^
+                    //                                               BehaviorEnd
+
+                    ExtensionBehavior.assign(BehaviorStart, BehaviorEnd);
+                }
+
+                Extensions.emplace_back(std::move(ExtensionName), std::move(ExtensionBehavior));
+            }
+        }
+
+        Pos = Parsing::SkipLine(LineEnd, End, /* GoToNextLine = */ true);
+    }
+
+    return Extensions;
 }
 
 } // namespace Diligent

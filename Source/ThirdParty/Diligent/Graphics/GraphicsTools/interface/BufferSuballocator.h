@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,6 +30,8 @@
 /// \file
 /// Declaration of BufferSuballocator interface and related data structures
 
+#include <algorithm>
+
 #include "../../GraphicsEngine/interface/RenderDevice.h"
 #include "../../GraphicsEngine/interface/DeviceContext.h"
 #include "../../GraphicsEngine/interface/Buffer.h"
@@ -40,12 +42,12 @@ namespace Diligent
 struct IBufferSuballocator;
 
 // {562552DA-67F0-40C2-A4AF-F286DFCA1626}
-static const INTERFACE_ID IID_BufferSuballocation =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_BufferSuballocation =
     {0x562552da, 0x67f0, 0x40c2, {0xa4, 0xaf, 0xf2, 0x86, 0xdf, 0xca, 0x16, 0x26}};
 
 
 // {71F59B50-7D13-49A7-A4F7-FC986715FFAC}
-static const INTERFACE_ID IID_BufferSuballocator =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_BufferSuballocator =
     {0x71f59b50, 0x7d13, 0x49a7, {0xa4, 0xf7, 0xfc, 0x98, 0x67, 0x15, 0xff, 0xac}};
 
 
@@ -61,10 +63,15 @@ struct IBufferSuballocation : public IObject
     /// Returns a pointer to the parent allocator.
     virtual IBufferSuballocator* GetAllocator() = 0;
 
+    /// Updates the internal buffer object.
+
+    /// \remarks    This method is a shortcut for GetAllocator()->Update(pDevice, pContext).
+    virtual IBuffer* Update(IRenderDevice* pDevice, IDeviceContext* pContext) = 0;
+
     /// Returns a pointer to the internal buffer object.
 
-    /// \remarks    This method is a shortcut for GetAllocator()->GetBuffer(pDevice, pContext).
-    virtual IBuffer* GetBuffer(IRenderDevice* pDevice, IDeviceContext* pContext) = 0;
+    /// \remarks    This method is a shortcut for GetAllocator()->GetBuffer().
+    virtual IBuffer* GetBuffer() const = 0;
 
     /// Stores a pointer to the user-provided data object, which
     /// may later be retrieved through GetUserData().
@@ -97,12 +104,21 @@ struct BufferSuballocatorUsageStats
 
     /// The current number of allocations.
     Uint32 AllocationCount = 0;
+
+    BufferSuballocatorUsageStats& operator+=(const BufferSuballocatorUsageStats& rhs)
+    {
+        CommittedSize += rhs.CommittedSize;
+        UsedSize += rhs.UsedSize;
+        MaxFreeChunkSize = (std::max)(MaxFreeChunkSize, rhs.MaxFreeChunkSize);
+        AllocationCount += rhs.AllocationCount;
+        return *this;
+    }
 };
 
 /// Buffer suballocator.
 struct IBufferSuballocator : public IObject
 {
-    /// Returns a pointer to the internal buffer object.
+    /// Updates the internal buffer object.
 
     /// \param[in]  pDevice  - A pointer to the render device that will be used to
     ///                        create a new internal buffer, if necessary.
@@ -113,7 +129,13 @@ struct IBufferSuballocator : public IObject
     ///             be used to create a new buffer and copy existing contents to the new buffer.
     ///             The method is not thread-safe and an application must externally synchronize the
     ///             access.
-    virtual IBuffer* GetBuffer(IRenderDevice* pDevice, IDeviceContext* pContext) = 0;
+    virtual IBuffer* Update(IRenderDevice* pDevice, IDeviceContext* pContext) = 0;
+
+    /// Returns a pointer to the internal buffer object.
+    ///
+    /// \remarks    If the buffer has not been created yet, the method returns null.
+    ///             If the buffer may need to be updated, use the Update() method instead.
+    virtual IBuffer* GetBuffer() const = 0;
 
 
     /// Performs suballocation from the buffer.
@@ -151,8 +173,11 @@ struct BufferSuballocatorCreateInfo
     /// more space is needed.
     Uint32 ExpansionSize = 0;
 
-    /// If Desc.Usage == USAGE_SPARSE, the virtual buffer size; ignored otherwise.
-    Uint64 VirtualSize = 0;
+    /// The maximum buffer size, in bytes.
+    /// If Desc.Usage == USAGE_SPARSE, also the buffer virtual size.
+    ///
+    /// \remarks    If MaxSize is zero, the buffer will not be expanded beyond the initial size.
+    Uint64 MaxSize = 0;
 
     /// Whether to disable debug validation of the internal buffer structure.
 
@@ -168,7 +193,7 @@ struct BufferSuballocatorCreateInfo
 
 /// \param[in]  pDevice              - A pointer to the render device that will be used to initialize
 ///                                    the internal buffer object. If this parameter is null, the
-///                                    buffer will be created when GetBuffer() is called.
+///                                    buffer will be created when Update() is called.
 /// \param[in]  CreateInfo           - Suballocator create info, see Diligent::BufferSuballocatorCreateInfo.
 /// \param[in]  ppBufferSuballocator - Memory location where pointer to the buffer suballocator will be stored.
 void CreateBufferSuballocator(IRenderDevice*                      pDevice,

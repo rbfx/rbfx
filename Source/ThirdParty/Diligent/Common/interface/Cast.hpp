@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,6 +29,9 @@
 
 #include "../../Platforms/Basic/interface/DebugUtilities.hpp"
 #include "CompilerDefinitions.h"
+
+namespace Diligent
+{
 
 template <typename DstType, typename SrcType>
 NODISCARD DstType* ClassPtrCast(SrcType* Ptr)
@@ -62,3 +65,5 @@ NODISCARD DstType StaticCast(const SrcType& Src)
 #endif
     return static_cast<DstType>(Src);
 }
+
+} // namespace Diligent
