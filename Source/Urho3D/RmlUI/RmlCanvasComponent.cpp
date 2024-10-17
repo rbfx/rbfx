@@ -101,7 +101,7 @@ void RmlCanvasComponent::SetUISize(IntVector2 size)
     {
         RenderSurface* surface = texture_->GetRenderSurface();
         surface->SetUpdateMode(SURFACE_MANUALUPDATE);
-        offScreenUI_->SetRenderTarget(surface, Color::BLACK);
+        offScreenUI_->SetRenderTarget(surface, Color::TRANSPARENT_BLACK);
     }
     else
     {
