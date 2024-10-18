@@ -194,14 +194,3 @@ if(TRACY_CLIENT_PYTHON)
 
     add_subdirectory(python)
 endif()
-
-# rbfx
-# Headers are required even in non-profiled builds so we can keep all profiling macros.
-foreach (dir common client tracy libbacktrace)
-    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/public/${dir} DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/tracy/
-        PATTERN ".+\\.h(pp)?$"
-        PATTERN "TracyClient\\.cpp" EXCLUDE
-        PATTERN ".+/tracy/Tracy(OpenCL|Vulkan).hpp" EXCLUDE)
-endforeach ()
-install(TARGETS TracyClient EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-# /rbfx
