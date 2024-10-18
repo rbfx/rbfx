@@ -29,7 +29,7 @@ add_library(TracyClient STATIC "${TRACY_PUBLIC_DIR}/TracyClient.cpp")
 target_compile_features(TracyClient PUBLIC cxx_std_11)
 target_include_directories(TracyClient SYSTEM PUBLIC
     $<BUILD_INTERFACE:${TRACY_PUBLIC_DIR}>
-    $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/tracy>)  # rbfx
+    $<INSTALL_INTERFACE:include>)
 target_link_libraries(
     TracyClient
     PUBLIC

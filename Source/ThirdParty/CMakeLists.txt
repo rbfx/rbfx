@@ -201,18 +201,9 @@ if (URHO3D_PROFILING)
     install_third_party_libs (capstone)
 endif ()
 
-# Tracy's headers are included even in non-profiled builds in order to provide stub profiler macros.
-foreach (dir common client tracy libbacktrace)
-    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tracy/public/${dir} DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/tracy/
-        PATTERN ".+\\.h(pp)?$"
-        PATTERN "TracyClient\\.cpp" EXCLUDE
-        PATTERN ".+/tracy/Tracy(OpenCL|Vulkan).hpp" EXCLUDE)
-endforeach ()
-
 if (URHO3D_PROFILING)
     set (TRACY_ON_DEMAND ON)
     add_subdirectory(tracy)
-    install_third_party_libs(TracyClient)
 
     if (DESKTOP)
         add_library(TracyImGui ALIAS ImGui)
@@ -229,7 +220,21 @@ if (URHO3D_PROFILING)
         set(NO_FILESELECTOR ON)
         add_subdirectory(tracy/profiler)
     endif ()
+else ()
+    add_library(TracyClient INTERFACE)
+    target_include_directories(TracyClient INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tracy/public>)
 endif ()
+
+# Tracy's headers are included even in non-profiled builds in order to provide stub profiler macros.
+install_third_party_libs(TracyClient)
+target_include_directories(TracyClient SYSTEM INTERFACE $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/tracy>)
+
+foreach (dir common client tracy libbacktrace)
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tracy/public/${dir} DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/tracy/
+        PATTERN ".+\\.h(pp)?$"
+        PATTERN "TracyClient\\.cpp" EXCLUDE
+        PATTERN ".+/tracy/Tracy(OpenCL|Vulkan).hpp" EXCLUDE)
+endforeach ()
 
 set (DILIGENT_INSTALL_CORE OFF CACHE BOOL "" FORCE)
 set (DILIGENT_NO_GLSLANG ON CACHE BOOL "" FORCE)

@@ -355,12 +355,7 @@ if (GNU OR Clang)
 endif ()
 
 # Profiling
-if (URHO3D_PROFILING)
-    target_link_libraries(Urho3D PUBLIC TracyClient)
-else ()
-    # Includes are needed even without profiling, because of profiler macros.
-    target_include_directories(Urho3D PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/tracy/public>)
-endif ()
+target_link_libraries(Urho3D PUBLIC TracyClient)
 
 if (WEB)
     target_link_libraries(Urho3D PUBLIC "-s WASM=$<BOOL:EMSCRIPTEN_WASM>")
