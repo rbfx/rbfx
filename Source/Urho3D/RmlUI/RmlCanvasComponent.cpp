@@ -71,6 +71,7 @@ void RmlCanvasComponent::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Texture", GetTextureRef, SetTextureRef, ResourceRef, ResourceRef(Texture2D::GetTypeStatic()), AM_DEFAULT);
     URHO3D_ATTRIBUTE("Remap Mouse Position", bool, remapMousePos_, true, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Clear Color", GetClearColor, SetClearColor, Color, Color::TRANSPARENT_BLACK, AM_DEFAULT);
 }
 
 void RmlCanvasComponent::OnNodeSet(Node* previousNode, Node* currentNode)
@@ -101,7 +102,7 @@ void RmlCanvasComponent::SetUISize(IntVector2 size)
     {
         RenderSurface* surface = texture_->GetRenderSurface();
         surface->SetUpdateMode(SURFACE_MANUALUPDATE);
-        offScreenUI_->SetRenderTarget(surface, Color::TRANSPARENT_BLACK);
+        offScreenUI_->SetRenderTarget(surface, clearColor_);
     }
     else
     {
@@ -146,7 +147,7 @@ void RmlCanvasComponent::ClearTexture()
     if (w > 0 && h > 0)
     {
         clear.SetSize(w, h, 4);
-        clear.Clear(Color::TRANSPARENT_BLACK);
+        clear.Clear(clearColor_);
         texture_->SetData(0, 0, 0, w, h, clear.GetData());
     }
 }
@@ -236,14 +237,14 @@ void RmlCanvasComponent::RemapMousePos(IntVector2& screenPos)
 
 void RmlCanvasComponent::SetTexture(Texture2D* texture)
 {
-    if (texture)
+    texture_ = texture;
+    if (texture_)
     {
         texture_->SetFilterMode(FILTER_BILINEAR);
         texture_->SetAddressMode(TextureCoordinate::U, ADDRESS_CLAMP);
         texture_->SetAddressMode(TextureCoordinate::V, ADDRESS_CLAMP);
         texture_->SetNumLevels(1);  // No mipmaps
     }
-    texture_ = texture;
 }
 
 }
