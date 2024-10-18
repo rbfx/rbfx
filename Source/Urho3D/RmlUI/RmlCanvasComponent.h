@@ -53,6 +53,8 @@ public:
     bool GetRemapMousePos() const { return remapMousePos_; }
     /// Return off-screen RmlUI instance.
     RmlUI* GetUI() const { return offScreenUI_; }
+    void SetClearColor(const Color &clearColor) { clearColor_ = clearColor; }
+    Color GetClearColor() const { return clearColor_; }
 
 protected:
     /// Set texture (for attribute).
@@ -74,6 +76,8 @@ protected:
     SharedPtr<RmlUI> offScreenUI_;
     /// Flag indicating that this component remaps mouse position on to a sibling StaticModel if present.
     bool remapMousePos_ = true;
+    /// Color to clear texture to
+    Color clearColor_{Color::TRANSPARENT_BLACK};
 };
 
 }
