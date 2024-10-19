@@ -1044,10 +1044,16 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
     switch (var.GetType())
     {
     case VAR_NONE:
+        ui::Text("None");
+        return false;
+
     case VAR_PTR:
     case VAR_VOIDPTR:
+        ui::Text("Unsupported: raw pointer");
+        return false;
+
     case VAR_CUSTOM:
-        ui::Text("Unsupported type");
+        ui::Text("Unsupported: custom object");
         return false;
 
     case VAR_INT:
