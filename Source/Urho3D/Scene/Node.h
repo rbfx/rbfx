@@ -693,9 +693,12 @@ public:
     /// Return listener components.
     const ea::vector<WeakPtr<Component> > GetListeners() const { return listeners_; }
 
-    /// Return a user variable.
+    /// Return constant user variable or empty Variant if not found.
     const Variant& GetVar(const ea::string& key) const;
     const Variant& GetVarByHash(StringHash key) const;
+    /// Return mutable user variable or nullptr if not found.
+    Variant* GetMutableVar(const ea::string& key);
+    Variant* GetMutableVarByHash(StringHash key);
 
     /// Return all user variables.
     const StringVariantMap& GetVars() const { return vars_; }
