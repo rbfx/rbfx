@@ -67,9 +67,9 @@ bool DataChannelConnection::Connect(const URL& url)
 
 void DataChannelConnection::Disconnect()
 {
+    AddRef(); // Ensure this object is alive until all callbacks are done executing.
     if (peer_)
     {
-        AddRef();    // Ensure this object is alive until all callbacks are done executing.
         state_ = State::Disconnecting;
 #ifndef URHO3D_PLATFORM_WEB
         peer_->resetCallbacks();
@@ -128,6 +128,9 @@ void DataChannelConnection::OnDataChannelConnected(int index)
 
     if (onConnected_)
         onConnected_();
+
+    if (server_)
+        server_->onConnected_(this);
 
     // Signaling server connection is no longer needed.
     websocket_->close();
