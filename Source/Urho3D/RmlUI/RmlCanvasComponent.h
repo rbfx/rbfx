@@ -51,10 +51,11 @@ public:
     void SetRemapMousePos(bool remap) { remapMousePos_ = remap; }
     /// Return whether input remapping is enabled.
     bool GetRemapMousePos() const { return remapMousePos_; }
+    void SetClearColor(const Color& clearColor) { clearColor_ = clearColor; }
+    const Color& GetClearColor() const { return clearColor_; }
+
     /// Return off-screen RmlUI instance.
     RmlUI* GetUI() const { return offScreenUI_; }
-    void SetClearColor(const Color &clearColor) { clearColor_ = clearColor; }
-    Color GetClearColor() const { return clearColor_; }
 
 protected:
     /// Set texture (for attribute).
