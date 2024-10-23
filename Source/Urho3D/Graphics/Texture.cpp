@@ -401,7 +401,8 @@ bool Texture::UpdateFromImage(unsigned arraySlice, Image* image)
             currentLevel = currentLevelHolder;
         }
     }
-    else if (SetTextureFormatSRGB(internalFormat, false) == TextureFormat::TEX_FORMAT_RGBA8_UNORM)
+    else if (SetTextureFormatSRGB(internalFormat, false) == TextureFormat::TEX_FORMAT_RGBA8_UNORM
+        && image->GetCompressedFormat() != CF_RGBA)
     {
         // RGBA8 is default format, use it if hardware format is not available.
         URHO3D_LOGWARNING("Image '{}' is converted to RGBA8 format on upload to GPU", GetName());

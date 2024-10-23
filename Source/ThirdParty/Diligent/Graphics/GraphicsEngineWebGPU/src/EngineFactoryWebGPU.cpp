@@ -203,6 +203,9 @@ WebGPUDeviceWrapper CreateDeviceForAdapter(EngineWebGPUCreateInfo const& EngineC
         if (EngineCI.Features.TextureCompressionBC && wgpuAdapterHasFeature(wgpuAdapter, WGPUFeatureName_TextureCompressionBC))
             Features.push_back(WGPUFeatureName_TextureCompressionBC);
 
+        if (EngineCI.Features.TextureCompressionETC2 && wgpuAdapterHasFeature(wgpuAdapter, WGPUFeatureName_TextureCompressionETC2))
+            Features.push_back(WGPUFeatureName_TextureCompressionETC2);
+
         if (EngineCI.Features.ShaderFloat16 && wgpuAdapterHasFeature(wgpuAdapter, WGPUFeatureName_ShaderF16))
             Features.push_back(WGPUFeatureName_ShaderF16);
 
@@ -358,6 +361,9 @@ GraphicsAdapterInfo GetGraphicsAdapterInfo(WGPUAdapter wgpuAdapter, WGPUDevice w
         if (CheckWebGPUFeature(WGPUFeatureName_TextureCompressionBC))
             Features.TextureCompressionBC = DEVICE_FEATURE_STATE_ENABLED;
 
+        if (CheckWebGPUFeature(WGPUFeatureName_TextureCompressionETC2))
+            Features.TextureCompressionETC2 = DEVICE_FEATURE_STATE_ENABLED;
+
         if (CheckWebGPUFeature(WGPUFeatureName_ShaderF16))
             Features.ShaderFloat16 = DEVICE_FEATURE_STATE_ENABLED;
 
@@ -369,7 +375,7 @@ GraphicsAdapterInfo GetGraphicsAdapterInfo(WGPUAdapter wgpuAdapter, WGPUDevice w
         }
     }
 
-    ASSERT_SIZEOF(DeviceFeatures, 46, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
+    ASSERT_SIZEOF(DeviceFeatures, 47, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
 
     WGPUSupportedLimits wgpuSupportedLimits{};
     if (wgpuAdapter)

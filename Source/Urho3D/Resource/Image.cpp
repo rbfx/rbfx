@@ -1682,6 +1682,9 @@ TextureFormat Image::GetGPUFormat() const
         case CF_DXT1: return Diligent::TEX_FORMAT_BC1_UNORM;
         case CF_DXT3: return Diligent::TEX_FORMAT_BC2_UNORM;
         case CF_DXT5: return Diligent::TEX_FORMAT_BC3_UNORM;
+        case CF_ETC1: return Diligent::TEX_FORMAT_ETC2_RGB8_UNORM;
+        case CF_ETC2_RGB: return Diligent::TEX_FORMAT_ETC2_RGB8_UNORM;
+        case CF_ETC2_RGBA: return Diligent::TEX_FORMAT_ETC2_RGBA8_UNORM;
         default: return Diligent::TEX_FORMAT_UNKNOWN;
         }
     }

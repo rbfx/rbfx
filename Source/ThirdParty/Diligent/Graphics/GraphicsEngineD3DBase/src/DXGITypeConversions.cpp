@@ -407,13 +407,13 @@ DXGI_FORMAT TexFormatToDXGI_Format(TEXTURE_FORMAT TexFormat, Uint32 BindFlags)
         FmtToDXGIFmtMap[TEX_FORMAT_BC7_UNORM_SRGB]         = DXGI_FORMAT_BC7_UNORM_SRGB;
         // clang-format on
 
+        static_assert(TEX_FORMAT_NUM_FORMATS == 106, "Please enter the new format information above");
         bFormatMapInitialized = true;
     }
 
     if (TexFormat >= TEX_FORMAT_UNKNOWN && TexFormat < TEX_FORMAT_NUM_FORMATS)
     {
         auto DXGIFormat = FmtToDXGIFmtMap[TexFormat];
-        VERIFY(TexFormat == TEX_FORMAT_UNKNOWN || DXGIFormat != DXGI_FORMAT_UNKNOWN, "Unsupported texture format");
         if (BindFlags != 0)
             DXGIFormat = CorrectDXGIFormat(DXGIFormat, BindFlags);
         return DXGIFormat;

@@ -67,6 +67,9 @@ const auto textureFormatMapSRGB = []
         {TextureFormat::TEX_FORMAT_BC2_UNORM, TextureFormat::TEX_FORMAT_BC2_UNORM_SRGB},
         {TextureFormat::TEX_FORMAT_BC3_UNORM, TextureFormat::TEX_FORMAT_BC3_UNORM_SRGB},
         {TextureFormat::TEX_FORMAT_BC7_UNORM, TextureFormat::TEX_FORMAT_BC7_UNORM_SRGB},
+        {TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM, TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM_SRGB},
+        {TextureFormat::TEX_FORMAT_ETC2_RGB8A1_UNORM, TextureFormat::TEX_FORMAT_ETC2_RGB8A1_UNORM_SRGB},
+        {TextureFormat::TEX_FORMAT_ETC2_RGBA8_UNORM, TextureFormat::TEX_FORMAT_ETC2_RGBA8_UNORM_SRGB},
     };
 
     ea::unordered_map<TextureFormat, TextureFormat> fromSrgb;

@@ -247,8 +247,6 @@ public:
     /// @property
     Vector3 GetDisplayDPI(int monitor=0) const;
 
-    /// Return hardware format for a compressed image format, or 0 if unsupported.
-    TextureFormat GetFormat(CompressedFormat format) const;
     /// Return a shader variation by name and defines.
     ShaderVariation* GetShader(ShaderType type, const ea::string& name, const ea::string& defines = EMPTY_STRING) const;
     /// Return a shader variation by name and defines.

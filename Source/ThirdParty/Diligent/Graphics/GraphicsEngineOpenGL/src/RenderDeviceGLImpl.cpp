@@ -1009,6 +1009,13 @@ void RenderDeviceGLImpl::InitAdapterInfo()
         const bool bS3TC = CheckExtension("GL_EXT_texture_compression_s3tc") || CheckExtension("GL_WEBGL_compressed_texture_s3tc");
         ENABLE_FEATURE(TextureCompressionBC, bRGTC && bBPTC && bS3TC);
 
+#if PLATFORM_EMSCRIPTEN
+        const bool bETC2 = CheckExtension("GL_WEBGL_compressed_texture_etc");
+#else
+        const bool bETC2 = m_DeviceInfo.Type == RENDER_DEVICE_TYPE_GLES || CheckExtension("GL_ARB_ES3_compatibility");
+#endif
+        ENABLE_FEATURE(TextureCompressionETC2, bETC2);
+
         // Buffer properties
         {
             auto& BufferProps{m_AdapterInfo.Buffer};
@@ -1108,7 +1115,7 @@ void RenderDeviceGLImpl::InitAdapterInfo()
         m_AdapterInfo.Queues[0].TextureCopyGranularity[2] = 1;
     }
 
-    ASSERT_SIZEOF(DeviceFeatures, 46, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
+    ASSERT_SIZEOF(DeviceFeatures, 47, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
 }
 
 void RenderDeviceGLImpl::FlagSupportedTexFormats()
@@ -1122,6 +1129,12 @@ void RenderDeviceGLImpl::FlagSupportedTexFormats()
     const bool bS3TC       = CheckExtension("GL_EXT_texture_compression_s3tc") || CheckExtension("GL_WEBGL_compressed_texture_s3tc");
     const bool bTexNorm16  = bDekstopGL || CheckExtension("GL_EXT_texture_norm16"); // Only for ES3.1+
     const bool bTexSwizzle = bDekstopGL || bGLES30OrAbove || CheckExtension("GL_ARB_texture_swizzle");
+
+#if PLATFORM_EMSCRIPTEN
+    const bool bETC2 = CheckExtension("GL_WEBGL_compressed_texture_etc");
+#else
+    const bool bETC2 = bGLES30OrAbove || CheckExtension("GL_ARB_ES3_compatibility");
+#endif
 
     //              ||   GLES3.0   ||            GLES3.1              ||            GLES3.2              ||
     // |   Format   ||  CR  |  TF  ||  CR  |  TF  | Req RB | Req. Tex ||  CR  |  TF  | Req RB | Req. Tex ||
@@ -1306,6 +1319,13 @@ void RenderDeviceGLImpl::FlagSupportedTexFormats()
     FlagFormat(TEX_FORMAT_BC7_TYPELESS,               bBPTC);
     FlagFormat(TEX_FORMAT_BC7_UNORM,                  bBPTC,        BIND_SHADER_RESOURCE,   true);
     FlagFormat(TEX_FORMAT_BC7_UNORM_SRGB,             bBPTC,        BIND_SHADER_RESOURCE,   true);
+
+    FlagFormat(TEX_FORMAT_ETC2_RGB8_UNORM,            bETC2,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_ETC2_RGB8_UNORM_SRGB,       bETC2,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_ETC2_RGB8A1_UNORM,          bETC2,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_ETC2_RGB8A1_UNORM_SRGB,     bETC2,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_ETC2_RGBA8_UNORM,           bETC2,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_ETC2_RGBA8_UNORM_SRGB,      bETC2,        BIND_SHADER_RESOURCE,   true);
     // clang-format on
 
 #ifdef DILIGENT_DEVELOPMENT
