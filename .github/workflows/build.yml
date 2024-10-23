@@ -184,7 +184,7 @@ jobs:
 
   MacOS-Tools:
     if: github.event.pull_request.draft == false
-    runs-on: macos-12
+    runs-on: macos-15
     needs: [CheckSkipCI]
     env:
       BUILD_SHARED_LIBS: ON
@@ -640,7 +640,7 @@ jobs:
 
   MacOS:
     if: github.event.pull_request.draft == false
-    runs-on: macos-12
+    runs-on: macos-15
     needs: [CheckSkipCI]
 
     strategy:
@@ -864,7 +864,7 @@ jobs:
 
   iOS:
     if: github.event.pull_request.draft == false
-    runs-on: macos-12
+    runs-on: macos-15
     needs: [CheckSkipCI, MacOS-Tools]
 
     strategy:
