@@ -197,6 +197,7 @@ void ImGuiDiligentRendererEx::RenderSecondaryWindows()
 
         auto deviceContextGL = Diligent::ClassPtrCast<Diligent::IDeviceContextGL>(renderDevice_->GetImmediateContext());
         deviceContextGL->InvalidateState();
+        deviceContextGL->UpdateCurrentGLContext();
     }
 #endif
 }
@@ -292,6 +293,7 @@ void ImGuiDiligentRendererEx::RenderWindow(ImGuiViewport* viewport, void* render
         auto swapChainGL = Diligent::ClassPtrCast<Diligent::ISwapChainGL>(userData->swapChain_.RawPtr());
         deviceContextGL->SetSwapChain(swapChainGL);
         deviceContextGL->InvalidateState();
+        deviceContextGL->UpdateCurrentGLContext();
 
         glEnable(GL_FRAMEBUFFER_SRGB);
     }
