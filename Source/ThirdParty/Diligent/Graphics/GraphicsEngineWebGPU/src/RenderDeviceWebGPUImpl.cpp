@@ -430,6 +430,7 @@ void RenderDeviceWebGPUImpl::FindSupportedTextureFormats()
     const bool TextureCompressionBCSupported    = wgpuDeviceHasFeature(m_wgpuDevice, WGPUFeatureName_TextureCompressionBC);
     const bool R16UnormSupported                = wgpuDeviceHasFeature(m_wgpuDevice, WGPUFeatureName_Unorm16TextureFormats);
     const bool R16SnormSupported                = wgpuDeviceHasFeature(m_wgpuDevice, WGPUFeatureName_Snorm16TextureFormats);
+    const bool TextureCompressionETC2Supported  = wgpuDeviceHasFeature(m_wgpuDevice, WGPUFeatureName_TextureCompressionETC2);
 
     // https://www.w3.org/TR/webgpu/#texture-format-caps
 
@@ -524,6 +525,17 @@ void RenderDeviceWebGPUImpl::FindSupportedTextureFormats()
         SetTexFormatInfo({TEX_FORMAT_R16_SNORM}, BIND_SR, FMT_FLAG_FILTER | FMT_FLAG_MSAA);
         SetTexFormatInfo({TEX_FORMAT_RG16_SNORM}, BIND_SR, FMT_FLAG_FILTER | FMT_FLAG_MSAA);
         SetTexFormatInfo({TEX_FORMAT_RGBA16_SNORM}, BIND_SR, FMT_FLAG_FILTER | FMT_FLAG_MSAA);
+    }
+
+    if (TextureCompressionETC2Supported)
+    {
+        SetTexFormatInfo({TEX_FORMAT_ETC2_RGB8_UNORM,
+                          TEX_FORMAT_ETC2_RGB8_UNORM_SRGB,
+                          TEX_FORMAT_ETC2_RGB8A1_UNORM,
+                          TEX_FORMAT_ETC2_RGB8A1_UNORM_SRGB,
+                          TEX_FORMAT_ETC2_RGBA8_UNORM,
+                          TEX_FORMAT_ETC2_RGBA8_UNORM_SRGB},
+                         BIND_S, FMT_FLAG_FILTER);
     }
 }
 

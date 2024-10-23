@@ -793,6 +793,7 @@ void EngineFactoryVkImpl::CreateDeviceAndContextsVk(const EngineVkCreateInfo& En
         ENABLE_VKFEATURE(dualSrcBlend,                      EnabledFeatures.DualSourceBlend);
         ENABLE_VKFEATURE(multiViewport,                     EnabledFeatures.MultiViewport);
         ENABLE_VKFEATURE(textureCompressionBC,              EnabledFeatures.TextureCompressionBC);
+        ENABLE_VKFEATURE(textureCompressionETC2,            EnabledFeatures.TextureCompressionETC2);
         ENABLE_VKFEATURE(vertexPipelineStoresAndAtomics,    EnabledFeatures.VertexPipelineUAVWritesAndAtomics);
         ENABLE_VKFEATURE(fragmentStoresAndAtomics,          EnabledFeatures.PixelUAVWritesAndAtomics);
         ENABLE_VKFEATURE(shaderStorageImageExtendedFormats, EnabledFeatures.TextureUAVExtendedFormats);
@@ -1170,7 +1171,7 @@ void EngineFactoryVkImpl::CreateDeviceAndContextsVk(const EngineVkCreateInfo& En
                 LOG_ERROR_MESSAGE("Can not enable extended device features when VK_KHR_get_physical_device_properties2 extension is not supported by device");
         }
 
-        ASSERT_SIZEOF(DeviceFeatures, 46, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
+        ASSERT_SIZEOF(DeviceFeatures, 47, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
 
         for (Uint32 i = 0; i < EngineCI.DeviceExtensionCount; ++i)
         {

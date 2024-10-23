@@ -906,6 +906,30 @@ DILIGENT_TYPED_ENUM(TEXTURE_FORMAT, Uint16)
     ///     <a href = "https://www.opengl.org/wiki/BPTC_Texture_Compression">BPTC Texture Compression on OpenGL.org </a>
     TEX_FORMAT_BC7_UNORM_SRGB,
 
+    /// Three-component block-compression unsigned-normalized-integer format. \n
+    /// OpenGL counterpart: GL_COMPRESSED_RGB8_ETC2.
+    TEX_FORMAT_ETC2_RGB8_UNORM,
+
+    /// Three-component block-compression unsigned-normalized-integer sRGB format. \n
+    /// OpenGL counterpart: GL_COMPRESSED_SRGB8_ETC2.
+    TEX_FORMAT_ETC2_RGB8_UNORM_SRGB,
+
+    /// Four-component block-compression unsigned-normalized-integer format. \n
+    /// OpenGL counterpart: GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2.
+    TEX_FORMAT_ETC2_RGB8A1_UNORM,
+
+    /// Four-component block-compression unsigned-normalized-integer sRGB format. \n
+    /// OpenGL counterpart: GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2.
+    TEX_FORMAT_ETC2_RGB8A1_UNORM_SRGB,
+
+    /// Four-component block-compression unsigned-normalized-integer format. \n
+    /// OpenGL counterpart: GL_COMPRESSED_RGBA8_ETC2_EAC.
+    TEX_FORMAT_ETC2_RGBA8_UNORM,
+
+    /// Four-component block-compression unsigned-normalized-integer sRGB format. \n
+    /// OpenGL counterpart: GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC.
+    TEX_FORMAT_ETC2_RGBA8_UNORM_SRGB,
+
     /// Helper member containing the total number of texture formats in the enumeration
     TEX_FORMAT_NUM_FORMATS
 };
@@ -1704,6 +1728,9 @@ struct DeviceFeatures
     /// Indicates if device supports all BC-compressed formats
     DEVICE_FEATURE_STATE TextureCompressionBC          DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
 
+    /// Indicates if device supports all ETC-compressed formats
+    DEVICE_FEATURE_STATE TextureCompressionETC2        DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
+
     /// Indicates if device supports writes to UAVs as well as atomic operations in vertex,
     /// tessellation, and geometry shader stages.
     DEVICE_FEATURE_STATE VertexPipelineUAVWritesAndAtomics DEFAULT_INITIALIZER(DEVICE_FEATURE_STATE_DISABLED);
@@ -1852,6 +1879,7 @@ struct DeviceFeatures
     Handler(DualSourceBlend)                   \
     Handler(MultiViewport)                     \
     Handler(TextureCompressionBC)              \
+    Handler(TextureCompressionETC2)             \
     Handler(VertexPipelineUAVWritesAndAtomics) \
     Handler(PixelUAVWritesAndAtomics)          \
     Handler(TextureUAVExtendedFormats)         \
@@ -1880,7 +1908,7 @@ struct DeviceFeatures
 
     explicit constexpr DeviceFeatures(DEVICE_FEATURE_STATE State) noexcept
     {
-        static_assert(sizeof(*this) == 46, "Did you add a new feature to DeviceFeatures? Please add it to ENUMERATE_DEVICE_FEATURES.");
+        static_assert(sizeof(*this) == 47, "Did you add a new feature to DeviceFeatures? Please add it to ENUMERATE_DEVICE_FEATURES.");
     #define INIT_FEATURE(Feature) Feature = State;
         ENUMERATE_DEVICE_FEATURES(INIT_FEATURE)
     #undef INIT_FEATURE

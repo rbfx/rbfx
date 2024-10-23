@@ -93,6 +93,7 @@ DeviceFeatures EnableDeviceFeatures(const DeviceFeatures& SupportedFeatures,
     ENABLE_FEATURE(DualSourceBlend,                   "Dual-source blend is");
     ENABLE_FEATURE(MultiViewport,                     "Multiviewport is");
     ENABLE_FEATURE(TextureCompressionBC,              "BC texture compression is");
+    ENABLE_FEATURE(TextureCompressionETC2,            "ETC texture compression is");
     ENABLE_FEATURE(VertexPipelineUAVWritesAndAtomics, "Vertex pipeline UAV writes and atomics are");
     ENABLE_FEATURE(PixelUAVWritesAndAtomics,          "Pixel UAV writes and atomics are");
     ENABLE_FEATURE(TextureUAVExtendedFormats,         "Texture UAV extended formats are");
@@ -121,7 +122,7 @@ DeviceFeatures EnableDeviceFeatures(const DeviceFeatures& SupportedFeatures,
     // clang-format on
 #undef ENABLE_FEATURE
 
-    ASSERT_SIZEOF(DeviceFeatures, 46, "Did you add a new feature to DeviceFeatures? Please handle its status here (if necessary).");
+    ASSERT_SIZEOF(DeviceFeatures, 47, "Did you add a new feature to DeviceFeatures? Please handle its status here (if necessary).");
 
     return EnabledFeatures;
 }

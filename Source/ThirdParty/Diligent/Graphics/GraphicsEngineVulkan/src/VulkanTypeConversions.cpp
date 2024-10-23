@@ -165,6 +165,12 @@ public:
         m_FmtToVkFmtMap[TEX_FORMAT_BC7_TYPELESS]   = VK_FORMAT_BC7_UNORM_BLOCK;
         m_FmtToVkFmtMap[TEX_FORMAT_BC7_UNORM]      = VK_FORMAT_BC7_UNORM_BLOCK;
         m_FmtToVkFmtMap[TEX_FORMAT_BC7_UNORM_SRGB] = VK_FORMAT_BC7_SRGB_BLOCK;
+        m_FmtToVkFmtMap[TEX_FORMAT_ETC2_RGB8_UNORM]        = VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK;
+        m_FmtToVkFmtMap[TEX_FORMAT_ETC2_RGB8_UNORM_SRGB]   = VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK;
+        m_FmtToVkFmtMap[TEX_FORMAT_ETC2_RGB8A1_UNORM]      = VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK;
+        m_FmtToVkFmtMap[TEX_FORMAT_ETC2_RGB8A1_UNORM_SRGB] = VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK;
+        m_FmtToVkFmtMap[TEX_FORMAT_ETC2_RGBA8_UNORM]       = VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK;
+        m_FmtToVkFmtMap[TEX_FORMAT_ETC2_RGBA8_UNORM_SRGB]  = VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK;
         // clang-format on
     }
 
@@ -361,12 +367,13 @@ public:
         m_VkFmtToTexFmtMap[VK_FORMAT_BC7_UNORM_BLOCK]           = TEX_FORMAT_BC7_UNORM;
         m_VkFmtToTexFmtMap[VK_FORMAT_BC7_SRGB_BLOCK]            = TEX_FORMAT_BC7_UNORM_SRGB;
 
-        m_VkFmtToTexFmtMap[VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK]   = TEX_FORMAT_UNKNOWN;
-        m_VkFmtToTexFmtMap[VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK]    = TEX_FORMAT_UNKNOWN;
-        m_VkFmtToTexFmtMap[VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK] = TEX_FORMAT_UNKNOWN;
-        m_VkFmtToTexFmtMap[VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK]  = TEX_FORMAT_UNKNOWN;
-        m_VkFmtToTexFmtMap[VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK] = TEX_FORMAT_UNKNOWN;
-        m_VkFmtToTexFmtMap[VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK]  = TEX_FORMAT_UNKNOWN;
+        m_VkFmtToTexFmtMap[VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK]   = TEX_FORMAT_ETC2_RGB8_UNORM;
+        m_VkFmtToTexFmtMap[VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK]    = TEX_FORMAT_ETC2_RGB8_UNORM_SRGB;
+        m_VkFmtToTexFmtMap[VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK] = TEX_FORMAT_ETC2_RGB8A1_UNORM;
+        m_VkFmtToTexFmtMap[VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK]  = TEX_FORMAT_ETC2_RGB8A1_UNORM_SRGB;
+        m_VkFmtToTexFmtMap[VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK] = TEX_FORMAT_ETC2_RGBA8_UNORM;
+        m_VkFmtToTexFmtMap[VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK]  = TEX_FORMAT_ETC2_RGBA8_UNORM_SRGB;
+
         m_VkFmtToTexFmtMap[VK_FORMAT_EAC_R11_UNORM_BLOCK]       = TEX_FORMAT_UNKNOWN;
         m_VkFmtToTexFmtMap[VK_FORMAT_EAC_R11_SNORM_BLOCK]       = TEX_FORMAT_UNKNOWN;
         m_VkFmtToTexFmtMap[VK_FORMAT_EAC_R11G11_UNORM_BLOCK]    = TEX_FORMAT_UNKNOWN;
@@ -1964,6 +1971,7 @@ DeviceFeatures VkFeaturesToDeviceFeatures(uint32_t                              
     INIT_FEATURE(DualSourceBlend,                   vkFeatures.dualSrcBlend);
     INIT_FEATURE(MultiViewport,                     vkFeatures.multiViewport);
     INIT_FEATURE(TextureCompressionBC,              vkFeatures.textureCompressionBC);
+    INIT_FEATURE(TextureCompressionETC2,            vkFeatures.textureCompressionETC2);
     INIT_FEATURE(VertexPipelineUAVWritesAndAtomics, vkFeatures.vertexPipelineStoresAndAtomics);
     INIT_FEATURE(PixelUAVWritesAndAtomics,          vkFeatures.fragmentStoresAndAtomics);
     INIT_FEATURE(TextureUAVExtendedFormats,         vkFeatures.shaderStorageImageExtendedFormats);
@@ -2046,7 +2054,7 @@ DeviceFeatures VkFeaturesToDeviceFeatures(uint32_t                              
     Features.DurationQueries        = DEVICE_FEATURE_STATE_DISABLED;
 #endif
 
-    ASSERT_SIZEOF(DeviceFeatures, 46, "Did you add a new feature to DeviceFeatures? Please handle its status here (if necessary).");
+    ASSERT_SIZEOF(DeviceFeatures, 47, "Did you add a new feature to DeviceFeatures? Please handle its status here (if necessary).");
 
     return Features;
 }
