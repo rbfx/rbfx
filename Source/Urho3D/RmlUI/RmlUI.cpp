@@ -985,4 +985,8 @@ void RegisterRmlUILibrary(Context* context)
     RmlSerializableInspector::RegisterObject(context);
 }
 
-}
+} // namespace Urho3D
+
+template class URHO3D_API Rml::Family<Urho3D::Variant>;
+template class URHO3D_API Rml::Family<Urho3D::VariantVector>;
+template class URHO3D_API Rml::Family<Urho3D::VariantMap>;
