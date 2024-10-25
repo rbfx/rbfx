@@ -61,7 +61,7 @@ generators_ios=()
 toolchains_ios=(
     '-DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/IOS.cmake'
     '-DPLATFORM=SIMULATOR64'
-    '-DDEPLOYMENT_TARGET=11'
+    '-DDEPLOYMENT_TARGET=12'
 )
 toolchains_web=(
     "-DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
