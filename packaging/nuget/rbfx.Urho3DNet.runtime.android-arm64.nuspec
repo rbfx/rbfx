@@ -12,6 +12,7 @@
         <tags>rbfx Urho3D gamedev csharp dotnet gameengine</tags>
     </metadata>
     <files>
+        <file src="build/rbfx.Urho3DNet.runtime.android-arm64.targets" target="build/" />
         <file src="in/Android/build/intermediates/cmake/release/obj/arm64-v8a/libUrho3D.so" target="runtimes/android-arm64/native/" />
     </files>
 </package>

@@ -11,17 +11,16 @@
         <description>rbfx game engine package for C#</description>
         <tags>rbfx Urho3D gamedev csharp dotnet gameengine</tags>
         <dependencies>
-            <group targetFramework="net8.0">
-                <dependency id="System.CodeDom" version="8.0.0" exclude="Build,Analyzers" />
-            </group>
-            <group targetFramework="netstandard2.0">
-                <dependency id="System.CodeDom" version="8.0.0" exclude="Build,Analyzers" />
+            <group targetFramework=".NETStandard2.0">
+			    <dependency id="System.CodeDom" version="8.0.0" exclude="Build,Analyzers" />
             </group>
         </dependencies>
     </metadata>
     <files>
+        <file src="build/rbfx.Urho3DNet.props" target="build/" />
+        <file src="build/rbfx.Urho3DNet.targets" target="build/" />
         <file src="java/**" target="content/"/>
-	
+
         <file src="in/Windows/bin/RelWithDebInfo/Urho3DNet.dll" target="runtimes/win-x64/lib/net8.0/"/>
         <!-- <file src="in/Windows/bin/RelWithDebInfo/Urho3DNet.pdb" target="runtimes/win-x64/lib/net8.0/"/> -->
         <file src="in/Windows/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="runtimes/win-x64/lib/net8.0/"/>
