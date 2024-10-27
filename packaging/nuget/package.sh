@@ -48,6 +48,14 @@ package() {
 
     echo "Packaging $version"
 
+    cat <<EOF > ./build/rbfx.Urho3DNet.props
+<Project>
+  <PropertyGroup>
+    <Urho3DNetVersion>$version</Urho3DNetVersion>
+  </PropertyGroup>
+</Project>
+EOF
+
     ln -s ../../bin/CoreData CoreData
     ln -s ../../bin/EditorData EditorData
     ln -s ../../bin/Data Data
