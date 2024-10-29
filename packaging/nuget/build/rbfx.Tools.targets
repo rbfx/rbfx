@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Condition=" '$(RuntimeIdentifier)' == 'win-x64' ">
+    <PackageReference Include="rbfx.Tools.runtime.win-x64" Version="$(Urho3DNetVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(RuntimeIdentifier)' == 'linux-x64' ">
+    <PackageReference Include="rbfx.Tools.runtime.linux-x64" Version="$(Urho3DNetVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(RuntimeIdentifier)' == 'osx-x64' ">
+    <PackageReference Include="rbfx.Tools.runtime.osx-x64" Version="$(Urho3DNetVersion)" />
+  </ItemGroup>
+</Project>
