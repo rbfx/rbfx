@@ -16,12 +16,12 @@
         </dependencies>
     </metadata>
     <files>
-        <file src="in/MacOS/bin/*Editor*" target="runtimes/osx-x64/native/" />
-        <file src="in/MacOS/bin/*Player*" target="runtimes/osx-x64/native/" />
-        <file src="in/MacOS/bin/crunch" target="runtimes/osx-x64/native/crunch" />
-        <file src="in/MacOS/bin/PackageTool" target="runtimes/osx-x64/native/PackageTool" />
-        <file src="in/MacOS/bin/Profiler" target="runtimes/osx-x64/native/Profiler" />
-        <file src="in/MacOS/bin/RampGenerator" target="runtimes/osx-x64/native/RampGenerator" />
-        <file src="in/MacOS/bin/SpritePacker" target="runtimes/osx-x64/native/SpritePacker" />
+        <file src="in\MacOS\bin\*Editor*" target="runtimes\osx-x64\native\" />
+        <file src="in\MacOS\bin\*Player*" target="runtimes\osx-x64\native\" />
+        <file src="in\MacOS\bin\crunch" target="runtimes\osx-x64\native\crunch" />
+        <file src="in\MacOS\bin\PackageTool" target="runtimes\osx-x64\native\PackageTool" />
+        <file src="in\MacOS\bin\Profiler" target="runtimes\osx-x64\native\Profiler" />
+        <file src="in\MacOS\bin\RampGenerator" target="runtimes\osx-x64\native\RampGenerator" />
+        <file src="in\MacOS\bin\SpritePacker" target="runtimes\osx-x64\native\SpritePacker" />
     </files>
 </package>

@@ -16,12 +16,12 @@
         </dependencies>
     </metadata>
     <files>
-        <file src="in/Linux/bin/*Editor*" target="runtimes/linux-x64/native/" />
-        <file src="in/Linux/bin/*Player*" target="runtimes/linux-x64/native/" />
-        <file src="in/Linux/bin/crunch" target="runtimes/linux-x64/native/crunch" />
-        <file src="in/Linux/bin/PackageTool" target="runtimes/linux-x64/native/PackageTool" />
-        <file src="in/Linux/bin/Profiler" target="runtimes/linux-x64/native/Profiler" />
-        <file src="in/Linux/bin/RampGenerator" target="runtimes/linux-x64/native/RampGenerator" />
-        <file src="in/Linux/bin/SpritePacker" target="runtimes/linux-x64/native/SpritePacker" />
+        <file src="in\Linux\bin\*Editor*" target="runtimes\linux-x64\native\" />
+        <file src="in\Linux\bin\*Player*" target="runtimes\linux-x64\native\" />
+        <file src="in\Linux\bin\crunch" target="runtimes\linux-x64\native\crunch" />
+        <file src="in\Linux\bin\PackageTool" target="runtimes\linux-x64\native\PackageTool" />
+        <file src="in\Linux\bin\Profiler" target="runtimes\linux-x64\native\Profiler" />
+        <file src="in\Linux\bin\RampGenerator" target="runtimes\linux-x64\native\RampGenerator" />
+        <file src="in\Linux\bin\SpritePacker" target="runtimes\linux-x64\native\SpritePacker" />
     </files>
 </package>

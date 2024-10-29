@@ -15,7 +15,7 @@
         </dependencies>
     </metadata>
     <files>
-        <file src="build/rbfx.EditorData.targets" target="build/" />
-        <file src="EditorData/**" target="content/" />
+        <file src="build\rbfx.EditorData.targets" target="build\" />
+        <file src="EditorData\**" target="content\" />
     </files>
 </package>
