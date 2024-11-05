@@ -1093,10 +1093,13 @@ jobs:
         shell: bash
         working-directory: source-code/packaging/nuget/
         run: |
-          ./package.sh
+          ./package.sh package
           for pkg in out/*.nupkg;
           do
-            dotnet nuget push $pkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+            if [[ $pkg != *"android"* ]];
+            then
+              dotnet nuget push $pkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+            fi
           done
 
   Docs:
