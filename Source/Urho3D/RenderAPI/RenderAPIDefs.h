@@ -9,6 +9,7 @@
 
 #include "Urho3D/Container/FlagSet.h"
 #include "Urho3D/Container/Hash.h"
+#include "Urho3D/Core/Format.h"
 #include "Urho3D/Core/Variant.h"
 #include "Urho3D/Math/Color.h"
 
@@ -297,6 +298,22 @@ enum ShaderType
 
 /// Texture format, equivalent to Diligent::TEXTURE_FORMAT.
 using TextureFormat = Diligent::TEXTURE_FORMAT;
+
+/// Deprecated. Texture formats that don't have hardware support and are always unpacked on CPU.
+namespace EmulatedTextureFormat
+{
+
+// clang-format off
+static constexpr TextureFormat TEX_FORMAT_PVRTC_RGB_2BPP = static_cast<TextureFormat>(TextureFormat::TEX_FORMAT_NUM_FORMATS + 1);
+static constexpr TextureFormat TEX_FORMAT_PVRTC_RGBA_2BPP = static_cast<TextureFormat>(TextureFormat::TEX_FORMAT_NUM_FORMATS + 2);
+static constexpr TextureFormat TEX_FORMAT_PVRTC_RGB_4BPP = static_cast<TextureFormat>(TextureFormat::TEX_FORMAT_NUM_FORMATS + 3);
+static constexpr TextureFormat TEX_FORMAT_PVRTC_RGBA_4BPP = static_cast<TextureFormat>(TextureFormat::TEX_FORMAT_NUM_FORMATS + 4);
+// clang-format on
+
+} // namespace EmulatedTextureFormat
+
+/// Return texture format description.
+const Diligent::TextureFormatAttribs& GetTextureFormatInfo(TextureFormat textureFormat);
 
 /// Vertex declaration element semantics.
 enum VertexElementSemantic : unsigned char
@@ -658,3 +675,18 @@ enum class PipelineStateType
 using RawVertexBufferArray = ea::array<RawBuffer*, MaxVertexStreams>;
 
 } // namespace Urho3D
+
+namespace fmt
+{
+// Support formatting for TextureFormat.
+template <> struct formatter<Urho3D::TextureFormat>
+{
+    constexpr auto parse(format_parse_context& ctx) -> format_parse_context::iterator { return ctx.begin(); }
+
+    auto format(const Urho3D::TextureFormat& value, format_context& ctx) const -> format_context::iterator
+    {
+        return fmt::format_to(
+            ctx.out(), "{} ({})", Urho3D::GetTextureFormatInfo(value).Name, static_cast<unsigned>(value));
+    }
+};
+} // namespace fmt

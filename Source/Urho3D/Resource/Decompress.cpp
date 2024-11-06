@@ -213,29 +213,35 @@ static void DecompressAlphaDXT5(unsigned char* rgba, void const* block)
         rgba[4 * i + 3] = codes[indices[i]];
 }
 
-static void DecompressDXT(unsigned char* rgba, const void* block, CompressedFormat format)
+static void DecompressDXT(unsigned char* rgba, const void* block, TextureFormat format)
 {
+    URHO3D_ASSERT(format == TextureFormat::TEX_FORMAT_BC1_UNORM || format == TextureFormat::TEX_FORMAT_BC2_UNORM
+        || format == TextureFormat::TEX_FORMAT_BC3_UNORM);
+
     // get the block locations
     void const* colourBlock = block;
     void const* alphaBock = block;
-    if (format == CF_DXT3 || format == CF_DXT5)
+    if (format == TextureFormat::TEX_FORMAT_BC2_UNORM || format == TextureFormat::TEX_FORMAT_BC3_UNORM)
         colourBlock = reinterpret_cast< unsigned char const* >( block ) + 8;
 
     // decompress colour
-    DecompressColourDXT(rgba, colourBlock, format == CF_DXT1);
+    DecompressColourDXT(rgba, colourBlock, format == TextureFormat::TEX_FORMAT_BC1_UNORM);
 
     // decompress alpha separately if necessary
-    if (format == CF_DXT3)
+    if (format == TextureFormat::TEX_FORMAT_BC2_UNORM)
         DecompressAlphaDXT3(rgba, alphaBock);
-    else if (format == CF_DXT5)
+    else if (format == TextureFormat::TEX_FORMAT_BC3_UNORM)
         DecompressAlphaDXT5(rgba, alphaBock);
 }
 
-void DecompressImageDXT(unsigned char* rgba, const void* blocks, int width, int height, int depth, CompressedFormat format)
+void DecompressImageDXT(unsigned char* rgba, const void* blocks, int width, int height, int depth, TextureFormat format)
 {
+    URHO3D_ASSERT(format == TextureFormat::TEX_FORMAT_BC1_UNORM || format == TextureFormat::TEX_FORMAT_BC2_UNORM
+        || format == TextureFormat::TEX_FORMAT_BC3_UNORM);
+
     // initialise the block input
     auto const* sourceBlock = reinterpret_cast< unsigned char const* >( blocks );
-    int bytesPerBlock = format == CF_DXT1 ? 8 : 16;
+    int bytesPerBlock = format == TextureFormat::TEX_FORMAT_BC1_UNORM ? 8 : 16;
 
     // loop over blocks
     for (int z = 0; z < depth; ++z)
@@ -634,11 +640,12 @@ static unsigned TwiddleUV(unsigned YSize, unsigned XSize, unsigned YPos, unsigne
     return Twiddled;
 }
 
-void DecompressImagePVRTC(unsigned char* rgba, const void* blocks, int width, int height, CompressedFormat format)
+void DecompressImagePVRTC(unsigned char* rgba, const void* blocks, int width, int height, TextureFormat format)
 {
     auto* pCompressedData = (AMTC_BLOCK_STRUCT*)blocks;
     int AssumeImageTiles = 1;
-    int Do2bitMode = format == CF_PVRTC_RGB_2BPP || format == CF_PVRTC_RGBA_2BPP;
+    int Do2bitMode = format == EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_2BPP
+        || format == EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_2BPP;
 
     int x, y;
     int i, j;
@@ -780,16 +787,31 @@ void DecompressImagePVRTC(unsigned char* rgba, const void* blocks, int width, in
     }
 }
 
-void FlipBlockVertical(unsigned char* dest, const unsigned char* src, CompressedFormat format)
+bool IsFlipBlockImplemented(TextureFormat format)
 {
     switch (format)
     {
-    case CF_RGBA:
+    case TextureFormat::TEX_FORMAT_RGBA8_UNORM:
+    case TextureFormat::TEX_FORMAT_BC1_UNORM:
+    case TextureFormat::TEX_FORMAT_BC2_UNORM:
+    case TextureFormat::TEX_FORMAT_BC3_UNORM:
+        // Only a few formats support flipping
+        return true;
+
+    default: return false;
+    }
+}
+
+void FlipBlockVertical(unsigned char* dest, const unsigned char* src, TextureFormat format)
+{
+    switch (format)
+    {
+    case TextureFormat::TEX_FORMAT_RGBA8_UNORM:
         for (unsigned i = 0; i < 4; ++i)
             dest[i] = src[i];
         break;
 
-    case CF_DXT1:
+    case TextureFormat::TEX_FORMAT_BC1_UNORM:
         for (unsigned i = 0; i < 4; ++i)
         {
             dest[i] = src[i];
@@ -797,7 +819,7 @@ void FlipBlockVertical(unsigned char* dest, const unsigned char* src, Compressed
         }
         break;
 
-    case CF_DXT3:
+    case TextureFormat::TEX_FORMAT_BC2_UNORM:
         for (unsigned i = 0; i < 8; i += 2)
         {
             dest[i] = src[6 - i];
@@ -810,7 +832,7 @@ void FlipBlockVertical(unsigned char* dest, const unsigned char* src, Compressed
         }
         break;
 
-    case CF_DXT5:
+    case TextureFormat::TEX_FORMAT_BC3_UNORM:
         dest[0] = src[0];
         dest[1] = src[1];
         {
@@ -850,11 +872,16 @@ static unsigned FlipDXT5AlphaHorizontal(unsigned src)
            ((src & 0x7000) << 9) | ((src & 0x38000) << 3) | ((src & 0x1c0000) >> 3) | ((src & 0xe00000) >> 9);
 }
 
-void FlipBlockHorizontal(unsigned char* dest, const unsigned char* src, CompressedFormat format)
+void FlipBlockHorizontal(unsigned char* dest, const unsigned char* src, TextureFormat format)
 {
     switch (format)
     {
-    case CF_DXT1:
+    case TextureFormat::TEX_FORMAT_RGBA8_UNORM:
+        for (unsigned i = 0; i < 4; ++i)
+            dest[i] = src[i];
+        break;
+
+    case TextureFormat::TEX_FORMAT_BC1_UNORM:
         for (unsigned i = 0; i < 4; ++i)
         {
             dest[i] = src[i];
@@ -862,7 +889,7 @@ void FlipBlockHorizontal(unsigned char* dest, const unsigned char* src, Compress
         }
         break;
 
-    case CF_DXT3:
+    case TextureFormat::TEX_FORMAT_BC2_UNORM:
         for (unsigned i = 0; i < 8; i += 2)
         {
             dest[i] = (unsigned char)(((src[i + 1] & 0xf0) >> 4) | ((src[i + 1] & 0xf) << 4));
@@ -875,7 +902,7 @@ void FlipBlockHorizontal(unsigned char* dest, const unsigned char* src, Compress
         }
         break;
 
-    case CF_DXT5:
+    case TextureFormat::TEX_FORMAT_BC3_UNORM:
         dest[0] = src[0];
         dest[1] = src[1];
         {
