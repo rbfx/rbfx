@@ -227,29 +227,28 @@ bool CompressedLevel::Decompress(unsigned char* dest) const
 
     switch (format_)
     {
-    case CF_RGBA:
+    case TextureFormat::TEX_FORMAT_RGBA8_UNORM:
         memcpy(dest, data_, width_ * height_ * depth_ * 4);
         return true;
 
-    case CF_DXT1:
-    case CF_DXT3:
-    case CF_DXT5:
+    case TextureFormat::TEX_FORMAT_BC1_UNORM:
+    case TextureFormat::TEX_FORMAT_BC2_UNORM:
+    case TextureFormat::TEX_FORMAT_BC3_UNORM:
         DecompressImageDXT(dest, data_, width_, height_, depth_, format_);
         return true;
 
     // ETC2 format is compatible with ETC1, so we just use the same function.
-    case CF_ETC1:
-    case CF_ETC2_RGB:
+    case TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM:
         DecompressImageETC(dest, data_, width_, height_, false);
         return true;
-    case CF_ETC2_RGBA:
+    case TextureFormat::TEX_FORMAT_ETC2_RGBA8_UNORM:
         DecompressImageETC(dest, data_, width_, height_, true);
         return true;
 
-    case CF_PVRTC_RGB_2BPP:
-    case CF_PVRTC_RGBA_2BPP:
-    case CF_PVRTC_RGB_4BPP:
-    case CF_PVRTC_RGBA_4BPP:
+    case EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_2BPP:
+    case EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_2BPP:
+    case EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_4BPP:
+    case EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_4BPP:
         DecompressImagePVRTC(dest, data_, width_, height_, format_);
         return true;
 
@@ -328,42 +327,38 @@ bool Image::BeginLoad(Deserializer& source)
         switch (fourCC)
         {
         case FOURCC_DXT1:
-            compressedFormat_ = CF_DXT1;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_BC1_UNORM;
             components_ = 3;
             break;
 
         case FOURCC_DXT3:
-            compressedFormat_ = CF_DXT3;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_BC2_UNORM;
             components_ = 4;
             break;
 
         case FOURCC_DXT5:
-            compressedFormat_ = CF_DXT5;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_BC3_UNORM;
             components_ = 4;
             break;
 
         case FOURCC_ETC1:
-            compressedFormat_ = CF_ETC1;
-            components_ = 3;
-            break;
-
         case FOURCC_ETC2:
-            compressedFormat_ = CF_ETC2_RGB;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM;
             components_ = 3;
             break;
 
         case FOURCC_ETC2A:
-            compressedFormat_ = CF_ETC2_RGBA;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_ETC2_RGBA8_UNORM;
             components_ = 4;
             break;
 
         case FOURCC_PTC2:
-            compressedFormat_ = CF_PVRTC_RGBA_2BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_2BPP;
             components_ = 4;
             break;
 
         case FOURCC_PTC4:
-            compressedFormat_ = CF_PVRTC_RGBA_4BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_4BPP;
             components_ = 4;
             break;
 
@@ -373,7 +368,7 @@ bool Image::BeginLoad(Deserializer& source)
                 URHO3D_LOGERROR("Unsupported DDS pixel byte size");
                 return false;
             }
-            compressedFormat_ = CF_RGBA;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_RGBA8_UNORM;
             components_ = 4;
             break;
 
@@ -395,11 +390,11 @@ bool Image::BeginLoad(Deserializer& source)
 
         // Calculate the size of the data
         unsigned dataSize = 0;
-        if (compressedFormat_ != CF_RGBA)
+        if (compressedFormat_ != TextureFormat::TEX_FORMAT_RGBA8_UNORM)
         {
-            if (compressedFormat_ == CF_PVRTC_RGB_2BPP || compressedFormat_ == CF_PVRTC_RGBA_2BPP || compressedFormat_ == CF_PVRTC_RGB_4BPP || compressedFormat_ == CF_PVRTC_RGBA_4BPP)
+            if (compressedFormat_ == EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_2BPP || compressedFormat_ == EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_2BPP || compressedFormat_ == EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_4BPP || compressedFormat_ == EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_4BPP)
             {
-                const unsigned xSize =  (compressedFormat_ == CF_PVRTC_RGB_2BPP || compressedFormat_ == CF_PVRTC_RGBA_2BPP) ? 8 : 4;
+                const unsigned xSize =  (compressedFormat_ == EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_2BPP || compressedFormat_ == EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_2BPP) ? 8 : 4;
                 const unsigned blockSize = 8;
                 // For MBX don't allow the sizes to get too small
                 unsigned blocksWide = Max(2, ddsd.dwWidth_ / xSize);
@@ -419,7 +414,7 @@ bool Image::BeginLoad(Deserializer& source)
             }
             else
             {
-                unsigned blockSize = (compressedFormat_ == CF_DXT1 || compressedFormat_ == CF_ETC1 || compressedFormat_ == CF_ETC2_RGB) ? 8 : 16;
+                unsigned blockSize = (compressedFormat_ == TextureFormat::TEX_FORMAT_BC1_UNORM || compressedFormat_ == TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM) ? 8 : 16;
                 // Add 3 to ensure valid block: ie 2x2 fits uses a whole 4x4 block
                 unsigned blocksWide = (ddsd.dwWidth_ + 3) / 4;
                 unsigned blocksHeight = (ddsd.dwHeight_ + 3) / 4;
@@ -483,7 +478,7 @@ bool Image::BeginLoad(Deserializer& source)
         }
 
         // If uncompressed DDS, convert the data to 8bit RGBA as the texture classes can not currently use eg. RGB565 format
-        if (compressedFormat_ == CF_RGBA)
+        if (compressedFormat_ == TextureFormat::TEX_FORMAT_RGBA8_UNORM)
         {
             URHO3D_PROFILE("ConvertDDSToRGBA");
 
@@ -623,61 +618,57 @@ bool Image::BeginLoad(Deserializer& source)
         switch (internalFormat)
         {
         case 0x83f1:
-            compressedFormat_ = CF_DXT1;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_BC1_UNORM;
             components_ = 4;
             break;
 
         case 0x83f2:
-            compressedFormat_ = CF_DXT3;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_BC2_UNORM;
             components_ = 4;
             break;
 
         case 0x83f3:
-            compressedFormat_ = CF_DXT5;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_BC3_UNORM;
             components_ = 4;
             break;
 
         case 0x8d64:
-            compressedFormat_ = CF_ETC1;
-            components_ = 3;
-            break;
-
         case 0x9274:
-            compressedFormat_ = CF_ETC2_RGB;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM;
             components_ = 3;
             break;
 
         case 0x9278:
-            compressedFormat_ = CF_ETC2_RGBA;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_ETC2_RGBA8_UNORM;
             components_ = 4;
             break;
 
         case 0x8c00:
-            compressedFormat_ = CF_PVRTC_RGB_4BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_4BPP;
             components_ = 3;
             break;
 
         case 0x8c01:
-            compressedFormat_ = CF_PVRTC_RGB_2BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_2BPP;
             components_ = 3;
             break;
 
         case 0x8c02:
-            compressedFormat_ = CF_PVRTC_RGBA_4BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_4BPP;
             components_ = 4;
             break;
 
         case 0x8c03:
-            compressedFormat_ = CF_PVRTC_RGBA_2BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_2BPP;
             components_ = 4;
             break;
 
         default:
-            compressedFormat_ = CF_NONE;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_UNKNOWN;
             break;
         }
 
-        if (compressedFormat_ == CF_NONE)
+        if (compressedFormat_ == TextureFormat::TEX_FORMAT_UNKNOWN)
         {
             URHO3D_LOGERROR("Unsupported texture format in KTX file");
             return false;
@@ -739,62 +730,62 @@ bool Image::BeginLoad(Deserializer& source)
         switch (pixelFormatLo)
         {
         case 0:
-            compressedFormat_ = CF_PVRTC_RGB_2BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_2BPP;
             components_ = 3;
             break;
 
         case 1:
-            compressedFormat_ = CF_PVRTC_RGBA_2BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_2BPP;
             components_ = 4;
             break;
 
         case 2:
-            compressedFormat_ = CF_PVRTC_RGB_4BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_4BPP;
             components_ = 3;
             break;
 
         case 3:
-            compressedFormat_ = CF_PVRTC_RGBA_4BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_4BPP;
             components_ = 4;
             break;
 
         case 6:
-            compressedFormat_ = CF_ETC1;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM;
             components_ = 3;
             break;
 
         case 7:
-            compressedFormat_ = CF_DXT1;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_BC1_UNORM;
             components_ = 4;
             break;
 
         case 9:
-            compressedFormat_ = CF_DXT3;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_BC2_UNORM;
             components_ = 4;
             break;
 
         case 11:
-            compressedFormat_ = CF_DXT5;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_BC3_UNORM;
             components_ = 4;
             break;
 
         // .pvr files also support ETC2 texture format.
         case 22:
-            compressedFormat_ = CF_ETC2_RGB;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM;
             components_ = 3;
             break;
 
         case 23:
-            compressedFormat_ = CF_ETC2_RGBA;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_ETC2_RGBA8_UNORM;
             components_ = 4;
             break;
 
         default:
-            compressedFormat_ = CF_NONE;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_UNKNOWN;
             break;
         }
 
-        if (compressedFormat_ == CF_NONE)
+        if (compressedFormat_ == TextureFormat::TEX_FORMAT_UNKNOWN)
         {
             URHO3D_LOGERROR("Unsupported texture format in PVR file");
             return false;
@@ -977,7 +968,7 @@ bool Image::SetSize(int width, int height, int depth, unsigned components)
     height_ = height;
     depth_ = depth;
     components_ = components;
-    compressedFormat_ = CF_NONE;
+    compressedFormat_ = TextureFormat::TEX_FORMAT_UNKNOWN;
     numCompressedLevels_ = 0;
     nextLevel_.Reset();
 
@@ -1124,9 +1115,9 @@ bool Image::FlipHorizontal()
     }
     else
     {
-        if (compressedFormat_ > CF_DXT5)
+        if (!IsFlipBlockImplemented(compressedFormat_))
         {
-            URHO3D_LOGERROR("FlipHorizontal not yet implemented for other compressed formats than RGBA & DXT1,3,5");
+            URHO3D_LOGERROR("FlipHorizontal not implemented for {}", compressedFormat_);
             return false;
         }
 
@@ -1185,9 +1176,9 @@ bool Image::FlipVertical()
     }
     else
     {
-        if (compressedFormat_ > CF_DXT5)
+        if (!IsFlipBlockImplemented(compressedFormat_))
         {
-            URHO3D_LOGERROR("FlipVertical not yet implemented for other compressed formats than DXT1,3,5");
+            URHO3D_LOGERROR("FlipVertical not implemented for {}", compressedFormat_);
             return false;
         }
 
@@ -1664,30 +1655,21 @@ Color Image::GetPixelTrilinear(float x, float y, float z) const
 
 TextureFormat Image::GetGPUFormat() const
 {
+    static const TextureFormat unormFormats[] = {
+        TextureFormat::TEX_FORMAT_UNKNOWN,
+
+        TextureFormat::TEX_FORMAT_R8_UNORM,
+        TextureFormat::TEX_FORMAT_RG8_UNORM,
+        TextureFormat::TEX_FORMAT_UNKNOWN,
+        TextureFormat::TEX_FORMAT_RGBA8_UNORM,
+    };
+
     if (!IsCompressed())
-    {
-        switch (GetComponents())
-        {
-        case 1: return Diligent::TEX_FORMAT_R8_UNORM;
-        case 2: return Diligent::TEX_FORMAT_RG8_UNORM;
-        case 4: return Diligent::TEX_FORMAT_RGBA8_UNORM;
-        default: return Diligent::TEX_FORMAT_UNKNOWN;
-        }
-    }
+        return unormFormats[GetComponents()];
+    else if (GetCompressedFormat() < TextureFormat::TEX_FORMAT_NUM_FORMATS)
+        return GetCompressedFormat();
     else
-    {
-        switch (GetCompressedFormat())
-        {
-        case CF_RGBA: return Diligent::TEX_FORMAT_RGBA8_UNORM;
-        case CF_DXT1: return Diligent::TEX_FORMAT_BC1_UNORM;
-        case CF_DXT3: return Diligent::TEX_FORMAT_BC2_UNORM;
-        case CF_DXT5: return Diligent::TEX_FORMAT_BC3_UNORM;
-        case CF_ETC1: return Diligent::TEX_FORMAT_ETC2_RGB8_UNORM;
-        case CF_ETC2_RGB: return Diligent::TEX_FORMAT_ETC2_RGB8_UNORM;
-        case CF_ETC2_RGBA: return Diligent::TEX_FORMAT_ETC2_RGBA8_UNORM;
-        default: return Diligent::TEX_FORMAT_UNKNOWN;
-        }
-    }
+        return TextureFormat::TEX_FORMAT_UNKNOWN;
 }
 
 SharedPtr<Image> Image::GetNextLevel() const
@@ -2069,7 +2051,7 @@ CompressedLevel Image::GetCompressedLevel(unsigned index) const
 {
     CompressedLevel level;
 
-    if (compressedFormat_ == CF_NONE)
+    if (compressedFormat_ == TextureFormat::TEX_FORMAT_UNKNOWN)
     {
         URHO3D_LOGERROR("Image is not compressed");
         return level;
@@ -2085,7 +2067,7 @@ CompressedLevel Image::GetCompressedLevel(unsigned index) const
     level.height_ = height_;
     level.depth_ = depth_;
 
-    if (compressedFormat_ == CF_RGBA)
+    if (compressedFormat_ == TextureFormat::TEX_FORMAT_RGBA8_UNORM)
     {
         level.blockSize_ = 4;
         unsigned i = 0;
@@ -2123,9 +2105,9 @@ CompressedLevel Image::GetCompressedLevel(unsigned index) const
             ++i;
         }
     }
-    else if (compressedFormat_ < CF_PVRTC_RGB_2BPP)
+    else if (compressedFormat_ < EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_2BPP)
     {
-        level.blockSize_ = (compressedFormat_ == CF_DXT1 || compressedFormat_ == CF_ETC1 || compressedFormat_ == CF_ETC2_RGB) ? 8 : 16;
+        level.blockSize_ = (compressedFormat_ == TextureFormat::TEX_FORMAT_BC1_UNORM || compressedFormat_ == TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM) ? 8 : 16;
         unsigned i = 0;
         unsigned offset = 0;
 
@@ -2163,7 +2145,7 @@ CompressedLevel Image::GetCompressedLevel(unsigned index) const
     }
     else
     {
-        level.blockSize_ = compressedFormat_ < CF_PVRTC_RGB_4BPP ? 2 : 4;
+        level.blockSize_ = compressedFormat_ < EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_4BPP ? 2 : 4;
         unsigned i = 0;
         unsigned offset = 0;
 

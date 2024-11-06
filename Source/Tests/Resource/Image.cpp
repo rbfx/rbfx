@@ -40,7 +40,7 @@ const char* ETC2 = "RERTIHwAAAAHEAgAEAAAABAAAACAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAA
 const char* PVRTC2 = "RERTIHwAAAAHEAgAEAAAABAAAABAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVVZFUgAAAABOVlRUAgECACAAAAAEAAAAUFRDMgAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAADw8PDwKADMKPH08LAFF3Af/////4IjmJIPDw8PwDpgofDw8PAINGB1Dw8PD3Ar+1oPDx8P9QCv7w8PDw9yD39C";
 const char* PVRTC4 = "RERTIHwAAAAHEAgAEAAAABAAAACAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVVZFUgAAAABOVlRUAgECACAAAAAEAAAAUFRDNAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJwDaNlBQUFAGFnAf/////3M03Dj/////oaFwHwAAAAAZIudn/////2UV+ltRm5ZqgGnArAAAAABjLc81/////2F3XWUAAAAAYXagHf////+EJLmDAAECAcAq5yAAAAAAj+u8IP////9hC29F/////1Mo8gAAAAAAgw/rdQ==";
 
-SharedPtr<Image> ReadImage(Context* context, const char* data, CompressedFormat format)
+SharedPtr<Image> ReadImage(Context* context, const char* data, TextureFormat format)
 {
     auto encodedBytes = DecodeBase64(data);
     auto image = MakeShared<Image>(context);
@@ -74,14 +74,14 @@ TEST_CASE("DXT, ETC and PVRTC images are decompressed")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
 
-    const auto imageReference = ReadImage(context, PNG, CF_NONE);
-    const auto imageDXT1 = ReadImage(context, DXT1, CF_DXT1);
-    const auto imageDXT3 = ReadImage(context, DXT3, CF_DXT3);
-    const auto imageDXT5 = ReadImage(context, DXT5, CF_DXT5);
-    const auto imageETC1 = ReadImage(context, ETC1, CF_ETC1);
-    const auto imageETC2 = ReadImage(context, ETC2, CF_ETC2_RGB);
-    const auto imagePVRTC2 = ReadImage(context, PVRTC2, CF_PVRTC_RGBA_2BPP);
-    const auto imagePVRTC4 = ReadImage(context, PVRTC4, CF_PVRTC_RGBA_4BPP);
+    const auto imageReference = ReadImage(context, PNG, TextureFormat::TEX_FORMAT_UNKNOWN);
+    const auto imageDXT1 = ReadImage(context, DXT1, TextureFormat::TEX_FORMAT_BC1_UNORM);
+    const auto imageDXT3 = ReadImage(context, DXT3, TextureFormat::TEX_FORMAT_BC2_UNORM);
+    const auto imageDXT5 = ReadImage(context, DXT5, TextureFormat::TEX_FORMAT_BC3_UNORM);
+    const auto imageETC1 = ReadImage(context, ETC1, TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM);
+    const auto imageETC2 = ReadImage(context, ETC2, TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM);
+    const auto imagePVRTC2 = ReadImage(context, PVRTC2, EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_2BPP);
+    const auto imagePVRTC4 = ReadImage(context, PVRTC4, EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_4BPP);
 
     // Test that reference image is expected
     REQUIRE(imageReference->GetSize() == IntVector3{ 16, 16, 1 });
