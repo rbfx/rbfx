@@ -202,6 +202,15 @@ IntVector3 GetMipLevelSize(const IntVector3& size, unsigned level)
     return VectorMax(dim, IntVector3::ONE);
 }
 
+unsigned GetMipLevelSizeInBytes(TextureFormat textureFormat, const IntVector3& size, unsigned level)
+{
+    const auto& formatAttribs = GetTextureFormatInfo(textureFormat);
+    const IntVector3 levelSize = GetMipLevelSize(size, level);
+    const unsigned widthInBlocks = (levelSize.x_ + formatAttribs.BlockWidth - 1) / formatAttribs.BlockWidth;
+    const unsigned heightInBlocks = (levelSize.y_ + formatAttribs.BlockHeight - 1) / formatAttribs.BlockHeight;
+    return formatAttribs.GetElementSize() * widthInBlocks * heightInBlocks * levelSize.z_;
+}
+
 bool IsTextureFormatSRGB(TextureFormat format)
 {
     return textureFormatMapSRGB.second.contains(format);
