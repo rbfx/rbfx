@@ -105,11 +105,15 @@ void TextureFormatsSample::CreateScene()
         const bool isHardwareSupported = image && texture && image->GetGPUFormat() == texture->GetFormat();
 
         const auto decompressedImage = image ? image->GetDecompressedImage() : SharedPtr<Image>(invalidImage);
-        const auto decompressedTexture = MakeShared<Texture2D>(context_);
-        decompressedTexture->SetData(decompressedImage);
 
-        Node* softwareBox = CreateTexturedBox(decompressedTexture);
-        softwareBox->SetPosition({0.0f, 0.5f, 2.0f + 2.0f * index});
+        if (decompressedImage)
+        {
+            const auto decompressedTexture = MakeShared<Texture2D>(context_);
+            decompressedTexture->SetData(decompressedImage);
+
+            Node* softwareBox = CreateTexturedBox(decompressedTexture);
+            softwareBox->SetPosition({0.0f, 0.5f, 2.0f + 2.0f * index});
+        }
 
         if (isHardwareSupported)
         {
