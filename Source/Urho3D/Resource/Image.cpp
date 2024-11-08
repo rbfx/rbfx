@@ -35,6 +35,8 @@
 #include <STB/stb_image.h>
 #include <STB/stb_image_write.h>
 
+#include <EASTL/utility.h>
+
 #include <SDL_surface.h>
 #ifdef URHO3D_WEBP
     #include <webp/decode.h>
@@ -834,33 +836,35 @@ bool Image::FlipHorizontal()
         return false;
     }
 
+    const auto& formatAttribs = GetTextureFormatInfo(compressedFormat_);
+    const bool isWidthPowerOf2 = IsPowerOfTwo(width_);
+    const bool isSimpleFlip = !IsCompressed() || (formatAttribs.BlockWidth == 1 && formatAttribs.BlockHeight == 1);
+    const bool isBlockFlip = !isSimpleFlip && IsFlipBlockImplemented(compressedFormat_) && isWidthPowerOf2;
+    if (!isSimpleFlip && !isBlockFlip)
+    {
+        URHO3D_LOGERROR(
+            "FlipHorizontal not implemented for {}{}", compressedFormat_, !isWidthPowerOf2 ? " (NPOT)" : "");
+        return false;
+    }
+
     if (!IsCompressed())
     {
-        ea::shared_array<unsigned char> newData(new unsigned char[width_ * height_ * components_]);
-        unsigned rowSize = width_ * components_;
-
+        const unsigned rowSize = width_ * components_;
         for (int y = 0; y < height_; ++y)
         {
-            for (int x = 0; x < width_; ++x)
+            for (int x = 0; x < width_ / 2; ++x)
             {
-                for (unsigned c = 0; c < components_; ++c)
-                    newData[y * rowSize + x * components_ + c] = data_[y * rowSize + (width_ - x - 1) * components_ + c];
+                unsigned char* first = &data_[y * rowSize + x * components_];
+                unsigned char* second = &data_[y * rowSize + (width_ - x - 1) * components_];
+                ea::swap_ranges(first, first + components_, second);
             }
         }
-
-        data_ = newData;
     }
     else
     {
-        if (!IsFlipBlockImplemented(compressedFormat_))
-        {
-            URHO3D_LOGERROR("FlipHorizontal not implemented for {}", compressedFormat_);
-            return false;
-        }
-
-        // Memory use = combined size of the compressed mip levels
-        ea::shared_array<unsigned char> newData(new unsigned char[GetMemoryUse()]);
-        unsigned dataOffset = 0;
+        const unsigned blockSize = formatAttribs.GetElementSize();
+        ea::vector<unsigned char> tempBlock1(blockSize);
+        ea::vector<unsigned char> tempBlock2(blockSize);
 
         for (unsigned i = 0; i < numCompressedLevels_; ++i)
         {
@@ -871,20 +875,31 @@ bool Image::FlipHorizontal()
                 return false;
             }
 
-            for (unsigned y = 0; y < level.rows_; ++y)
+            // Bug: Small blocks cannot be flipped in current implementation.
+            if (level.width_ < formatAttribs.BlockWidth)
+                continue;
+
+            const unsigned numRows = (level.height_ + formatAttribs.BlockHeight - 1) / formatAttribs.BlockHeight;
+            const unsigned numBlocksInRow = (level.width_ + formatAttribs.BlockWidth - 1) / formatAttribs.BlockWidth;
+            const unsigned rowSize = numBlocksInRow * blockSize;
+            for (unsigned y = 0; y < numRows; ++y)
             {
-                for (unsigned x = 0; x < level.rowSize_; x += level.blockSize_)
+                for (unsigned x = 0; x < numBlocksInRow / 2; ++x)
                 {
-                    unsigned char* src = level.data_ + y * level.rowSize_ + (level.rowSize_ - level.blockSize_ - x);
-                    unsigned char* dest = newData.get() + y * level.rowSize_ + x;
-                    FlipBlockHorizontal(dest, src, compressedFormat_);
+                    unsigned char* first = level.data_ + y * rowSize + (numBlocksInRow - x - 1) * blockSize;
+                    unsigned char* second = level.data_ + y * rowSize + x * blockSize;
+                    if (isSimpleFlip)
+                        ea::swap_ranges(first, first + blockSize, second);
+                    else
+                    {
+                        FlipBlockHorizontal(tempBlock1.data(), first, compressedFormat_);
+                        FlipBlockHorizontal(tempBlock2.data(), second, compressedFormat_);
+                        ea::copy(tempBlock1.begin(), tempBlock1.end(), second);
+                        ea::copy(tempBlock2.begin(), tempBlock2.end(), first);
+                    }
                 }
             }
-
-            dataOffset += level.dataSize_;
         }
-
-        data_ = newData;
     }
 
     return true;
@@ -901,27 +916,31 @@ bool Image::FlipVertical()
         return false;
     }
 
+    const auto& formatAttribs = GetTextureFormatInfo(compressedFormat_);
+    const bool isHeightPowerOf2 = IsPowerOfTwo(height_);
+    const bool isSimpleFlip = !IsCompressed() || (formatAttribs.BlockWidth == 1 && formatAttribs.BlockHeight == 1);
+    const bool isBlockFlip = !isSimpleFlip && IsFlipBlockImplemented(compressedFormat_) && isHeightPowerOf2;
+    if (!isSimpleFlip && !isBlockFlip)
+    {
+        URHO3D_LOGERROR(
+            "FlipVertical not implemented for {}{}", compressedFormat_, !isHeightPowerOf2 ? " (NPOT)" : "");
+        return false;
+    }
+
     if (!IsCompressed())
     {
-        ea::shared_array<unsigned char> newData(new unsigned char[width_ * height_ * components_]);
-        unsigned rowSize = width_ * components_;
-
-        for (int y = 0; y < height_; ++y)
-            memcpy(&newData[(height_ - y - 1) * rowSize], &data_[y * rowSize], rowSize);
-
-        data_ = newData;
+        const unsigned rowSize = width_ * components_;
+        for (int y = 0; y < height_ / 2; ++y)
+        {
+            unsigned char* first = &data_[y * rowSize];
+            unsigned char* second = &data_[(height_ - y - 1) * rowSize];
+            ea::swap_ranges(first, first + rowSize, second);
+        }
     }
     else
     {
-        if (!IsFlipBlockImplemented(compressedFormat_))
-        {
-            URHO3D_LOGERROR("FlipVertical not implemented for {}", compressedFormat_);
-            return false;
-        }
-
-        // Memory use = combined size of the compressed mip levels
-        ea::shared_array<unsigned char> newData(new unsigned char[GetMemoryUse()]);
-        unsigned dataOffset = 0;
+        const unsigned blockSize = formatAttribs.GetElementSize();
+        ea::vector<unsigned char> tempBlock(blockSize);
 
         for (unsigned i = 0; i < numCompressedLevels_; ++i)
         {
@@ -932,19 +951,32 @@ bool Image::FlipVertical()
                 return false;
             }
 
-            for (unsigned y = 0; y < level.rows_; ++y)
+            // Bug: Small blocks cannot be flipped in current implementation.
+            if (level.height_ < formatAttribs.BlockHeight)
+                continue;
+
+            const unsigned numRows = (level.height_ + formatAttribs.BlockHeight - 1) / formatAttribs.BlockHeight;
+            const unsigned numBlocksInRow = (level.width_ + formatAttribs.BlockWidth - 1) / formatAttribs.BlockWidth;
+            const unsigned rowSize = numBlocksInRow * blockSize;
+            for (unsigned y = 0; y < numRows / 2; ++y)
             {
-                unsigned char* src = level.data_ + y * level.rowSize_;
-                unsigned char* dest = newData.get() + dataOffset + (level.rows_ - y - 1) * level.rowSize_;
+                unsigned char* first = level.data_ + y * rowSize;
+                unsigned char* second = level.data_ + (numRows - y - 1) * rowSize;
+                ea::swap_ranges(first, first + rowSize, second);
 
-                for (unsigned x = 0; x < level.rowSize_; x += level.blockSize_)
-                    FlipBlockVertical(dest + x, src + x, compressedFormat_);
+                if (isSimpleFlip)
+                    continue;
+
+                for (unsigned char* data : {first, second})
+                {
+                    for (unsigned x = 0; x < numBlocksInRow; ++x)
+                    {
+                        FlipBlockVertical(tempBlock.data(), data + x * blockSize, compressedFormat_);
+                        ea::copy(tempBlock.begin(), tempBlock.end(), data + x * blockSize);
+                    }
+                }
             }
-
-            dataOffset += level.dataSize_;
         }
-
-        data_ = newData;
     }
 
     return true;
@@ -1892,12 +1924,15 @@ SharedPtr<Image> Image::GetSubimage(const IntRect& rect) const
     }
     else
     {
+        const auto& formatAttribs = GetTextureFormatInfo(compressedFormat_);
+        const unsigned blockSize = formatAttribs.GetElementSize();
+
         // Pad the region to be a multiple of block size
         IntRect paddedRect = rect;
-        paddedRect.left_ = (rect.left_ / 4) * 4;
-        paddedRect.top_ = (rect.top_ / 4) * 4;
-        paddedRect.right_ = (rect.right_ / 4) * 4;
-        paddedRect.bottom_ = (rect.bottom_ / 4) * 4;
+        paddedRect.left_ = (rect.left_ / formatAttribs.BlockWidth) * formatAttribs.BlockWidth;
+        paddedRect.right_ = (rect.right_ / formatAttribs.BlockWidth) * formatAttribs.BlockWidth;
+        paddedRect.top_ = (rect.top_ / formatAttribs.BlockHeight) * formatAttribs.BlockHeight;
+        paddedRect.bottom_ = (rect.bottom_ / formatAttribs.BlockHeight) * formatAttribs.BlockHeight;
         IntRect currentRect = paddedRect;
 
         ea::vector<unsigned char> subimageData;
@@ -1911,32 +1946,37 @@ SharedPtr<Image> Image::GetSubimage(const IntRect& rect) const
                 break;
 
             // Mips are stored continuously
-            unsigned destStartOffset = subimageData.size();
-            unsigned destRowSize = currentRect.Width() / 4 * level.blockSize_;
-            unsigned destSize = currentRect.Height() / 4 * destRowSize;
+            const unsigned sourceBlocksInRow = (level.width_ + formatAttribs.BlockWidth - 1) / formatAttribs.BlockWidth;
+            const unsigned sourceRowSize = sourceBlocksInRow * blockSize;
+
+            const unsigned destStartOffset = subimageData.size();
+            const unsigned destRowSize = currentRect.Width() / formatAttribs.BlockWidth * blockSize;
+            const unsigned destSize = currentRect.Height() / formatAttribs.BlockHeight * destRowSize;
             if (!destSize)
                 break;
 
             subimageData.resize(destStartOffset + destSize);
             unsigned char* dest = &subimageData[destStartOffset];
 
-            for (int y = currentRect.top_; y < currentRect.bottom_; y += 4)
+            const unsigned beginX = currentRect.left_ / formatAttribs.BlockWidth;
+            const unsigned beginY = currentRect.top_ / formatAttribs.BlockHeight;
+            const unsigned endY = currentRect.bottom_ / formatAttribs.BlockHeight;
+            for (unsigned y = beginY; y < endY; ++y)
             {
-                unsigned char* src = level.data_ + level.rowSize_ * (y / 4) + currentRect.left_ / 4 * level.blockSize_;
+                unsigned char* src = level.data_ + sourceRowSize * y + beginX * blockSize;
                 memcpy(dest, src, destRowSize);
                 dest += destRowSize;
             }
 
             ++subimageLevels;
-            if ((currentRect.left_ & 4) || (currentRect.right_ & 4) || (currentRect.top_ & 4) || (currentRect.bottom_ & 4))
+            if ((currentRect.left_ & formatAttribs.BlockWidth) || (currentRect.right_ & formatAttribs.BlockWidth)
+                || (currentRect.top_ & formatAttribs.BlockHeight) || (currentRect.bottom_ & formatAttribs.BlockHeight))
                 break;
-            else
-            {
-                currentRect.left_ /= 2;
-                currentRect.right_ /= 2;
-                currentRect.top_ /= 2;
-                currentRect.bottom_ /= 2;
-            }
+
+            currentRect.left_ /= 2;
+            currentRect.right_ /= 2;
+            currentRect.top_ /= 2;
+            currentRect.bottom_ /= 2;
         }
 
         if (!subimageLevels)

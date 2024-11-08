@@ -297,6 +297,8 @@ SphericalHarmonicsColor9 ImageCube::CalculateSphericalHarmonics() const
         const unsigned bestLevel = ea::min(maxLevel, GetSphericalHarmonicsMipLevel());
         const unsigned bestLevelWidth = width_ >> bestLevel;
         auto decompressedImage = faceImage->GetDecompressedImageLevel(bestLevel);
+        if (!decompressedImage)
+            continue;
 
         for (int y = 0; y < bestLevelWidth; ++y)
         {
@@ -314,7 +316,8 @@ SphericalHarmonicsColor9 ImageCube::CalculateSphericalHarmonics() const
         }
     }
 
-    result *= 4.0f * M_PI / weightSum;
+    if (weightSum > 0.0f)
+        result *= 4.0f * M_PI / weightSum;
     return result;
 }
 
