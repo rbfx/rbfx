@@ -52,14 +52,8 @@ struct URHO3D_API CompressedLevel
     int height_{};
     /// Depth.
     int depth_{};
-    /// Block size in bytes.
-    unsigned blockSize_{};
     /// Total data size in bytes.
     unsigned dataSize_{};
-    /// Row size in bytes.
-    unsigned rowSize_{};
-    /// Number of rows.
-    unsigned rows_{};
 };
 
 /// %Image resource.
