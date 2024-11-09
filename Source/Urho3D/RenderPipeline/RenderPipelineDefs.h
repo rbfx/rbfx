@@ -556,6 +556,7 @@ struct SceneProcessorSettings
 {
     SpecularQuality specularQuality_{ SpecularQuality::Simple };
     ReflectionQuality reflectionQuality_{ ReflectionQuality::Pixel };
+    bool linearReflectionMaps_{};
     bool depthPrePass_{ false };
     bool enableShadows_{ true };
     DirectLightingMode lightingMode_{};
@@ -585,6 +586,7 @@ struct SceneProcessorSettings
         CombineHash(hash, BatchRendererSettings::CalculatePipelineStateHash());
         CombineHash(hash, MakeHash(specularQuality_));
         CombineHash(hash, MakeHash(reflectionQuality_));
+        CombineHash(hash, linearReflectionMaps_);
         CombineHash(hash, enableShadows_);
         CombineHash(hash, MakeHash(lightingMode_));
         return hash;
@@ -607,6 +609,7 @@ struct SceneProcessorSettings
             && BatchRendererSettings::operator==(rhs)
             && specularQuality_ == rhs.specularQuality_
             && reflectionQuality_ == rhs.reflectionQuality_
+            && linearReflectionMaps_ == rhs.linearReflectionMaps_
             && depthPrePass_ == rhs.depthPrePass_
             && enableShadows_ == rhs.enableShadows_
             && lightingMode_ == rhs.lightingMode_
