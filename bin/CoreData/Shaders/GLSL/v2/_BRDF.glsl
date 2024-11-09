@@ -35,14 +35,14 @@ half3 Indirect_Simple(half3 ambientLighting, half3 albedo)
     half3 Indirect_SimpleReflection(half3 ambientLighting, half3 reflectionColor,
         half3 albedo, half3 specular)
     {
-        return ambientLighting * albedo + GammaToLightSpace(specular * reflectionColor);
+        return ambientLighting * albedo + GammaToLightSpace(specular) * LinearToLightSpace(reflectionColor);
     }
 
     /// Calculate simple indirect lighting and transparency for water.
     half4 Indirect_SimpleWater(half3 reflectionColor, half3 specular, half NoV)
     {
         half fresnel = pow(1.0 - NoV, 5.0);
-        return vec4(GammaToLightSpace(specular * reflectionColor), fresnel);
+        return vec4(GammaToLightSpace(specular) * LinearToLightSpace(reflectionColor), fresnel);
     }
 #endif
 
@@ -87,7 +87,7 @@ half4 Indirect_PBRWater(half3 reflectionColor, half3 specular, half NoV)
     half3 brdf = F_Schlick(specular * specular, NoV);
 #endif
 
-    half3 specularColor = brdf * GammaToLinearSpace(reflectionColor);
+    half3 specularColor = brdf * reflectionColor;
 
 #ifndef URHO3D_GAMMA_CORRECTION
     specularColor = sqrt(max(specularColor, 0.0));
