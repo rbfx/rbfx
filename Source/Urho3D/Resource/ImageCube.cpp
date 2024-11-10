@@ -191,6 +191,20 @@ bool ImageCube::BeginLoad(Deserializer& source)
         }
     }
 
+    // Load spherical harmonics, if present.
+    cachedSphericalHarmonics_.reset();
+    if (XMLElement shElement = textureElem.GetChild("sh"))
+    {
+        cachedSphericalHarmonics_ = SphericalHarmonicsDot9{};
+        cachedSphericalHarmonics_->Ar_ = shElement.GetVector4("ar");
+        cachedSphericalHarmonics_->Ag_ = shElement.GetVector4("ag");
+        cachedSphericalHarmonics_->Ab_ = shElement.GetVector4("ab");
+        cachedSphericalHarmonics_->Br_ = shElement.GetVector4("br");
+        cachedSphericalHarmonics_->Bg_ = shElement.GetVector4("bg");
+        cachedSphericalHarmonics_->Bb_ = shElement.GetVector4("bb");
+        cachedSphericalHarmonics_->C_ = shElement.GetVector4("c");
+    }
+
     // Precalculate mip levels if async loading
     if (GetAsyncLoadState() == ASYNC_LOADING)
     {
@@ -319,6 +333,14 @@ SphericalHarmonicsColor9 ImageCube::CalculateSphericalHarmonics() const
     if (weightSum > 0.0f)
         result *= 4.0f * M_PI / weightSum;
     return result;
+}
+
+SphericalHarmonicsDot9 ImageCube::GetOrCreateSphericalHarmonics() const
+{
+    if (cachedSphericalHarmonics_)
+        return *cachedSphericalHarmonics_;
+    else
+        return SphericalHarmonicsDot9(CalculateSphericalHarmonics());
 }
 
 Vector3 ImageCube::ProjectUVOnCube(CubeMapFace face, const Vector2& uv)
