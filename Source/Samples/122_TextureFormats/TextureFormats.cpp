@@ -78,7 +78,6 @@ void TextureFormatsSample::CreateScene()
 
     // Create textured objects.
     static const StringVector textures = {
-        "Textures/Formats/RGBA.dds",
         "Textures/Formats/DXT1.dds",
         "Textures/Formats/DXT3.dds",
         "Textures/Formats/DXT5.dds",
@@ -86,21 +85,35 @@ void TextureFormatsSample::CreateScene()
         "Textures/Formats/ETC2.dds",
         "Textures/Formats/PTC2.dds",
         "Textures/Formats/PTC4.dds",
+
+        "Textures/Formats/RGBA.dds",
+        "Textures/Formats/RGBE.dds",
+        "Textures/Formats/RGBA16.dds",
+        "Textures/Formats/RGBA_F16.dds",
+        "Textures/Formats/RGBA_F32.dds",
+        "Textures/Formats/RGB10A2.dds",
+        "Textures/Formats/BGR5A1.dds",
+        "Textures/Formats/BGR565.dds",
     };
 
     int index = 0;
+    const auto invalidImage = cache->GetResource<Image>("Textures/Formats/Invalid.png");
     for (const ea::string& textureName : textures)
     {
         const auto image = cache->GetResource<Image>(textureName);
         const auto texture = cache->GetResource<Texture2D>(textureName);
-        const bool isHardwareSupported = image->GetGPUFormat() == texture->GetFormat();
+        const bool isHardwareSupported = image && texture && image->GetGPUFormat() == texture->GetFormat();
 
-        const auto decompressedImage = image->GetDecompressedImage();
-        const auto decompressedTexture = MakeShared<Texture2D>(context_);
-        decompressedTexture->SetData(decompressedImage);
+        const auto decompressedImage = image ? image->GetDecompressedImage() : SharedPtr<Image>(invalidImage);
 
-        Node* softwareBox = CreateTexturedBox(decompressedTexture);
-        softwareBox->SetPosition({0.0f, 0.5f, 2.0f + 2.0f * index});
+        if (decompressedImage)
+        {
+            const auto decompressedTexture = MakeShared<Texture2D>(context_);
+            decompressedTexture->SetData(decompressedImage);
+
+            Node* softwareBox = CreateTexturedBox(decompressedTexture);
+            softwareBox->SetPosition({0.0f, 0.5f, 2.0f + 2.0f * index});
+        }
 
         if (isHardwareSupported)
         {

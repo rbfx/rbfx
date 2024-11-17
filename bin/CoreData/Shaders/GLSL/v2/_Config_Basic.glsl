@@ -25,11 +25,14 @@
 /// Whether Y axis of clip space is the opposite of Y axis of render target texture.
 // #define URHO3D_FEATURE_FRAMEBUFFER_Y_INVERTED
 
-/// URHO3D_DEPTH_ONLY_PASS: Whether there's no color output and caller needs only depth.
+/// Whether there's no color output and caller needs only depth.
 // #define URHO3D_DEPTH_ONLY_PASS
 
-/// URHO3D_LIGHT_PASS: Whether there's active per-pixel light source in this pass (litbase, light and lightvolume passes).
+/// Whether there's active per-pixel light source in this pass (litbase, light and lightvolume passes).
 // #define URHO3D_LIGHT_PASS
+
+/// Whether reflection maps are in linear space.
+// #define URHO3D_LINEAR_SPACE_REFLECTIONS
 
 /// =================================== Utility defines ===================================
 

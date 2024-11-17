@@ -507,20 +507,20 @@
 
         /// Planar reflections don't support reflection blending
         #define Surface_SetPlanarReflection(surfaceData, refMap, planeX, planeY) \
-            surfaceData.reflectionColor[0] = texture(refMap, \
-                GetPlanarReflectionUV(surfaceData.screenPos, vec4(surfaceData.normal, 1.0), planeX, planeY));
+            surfaceData.reflectionColor[0] = Reflection_ToLinear(texture(refMap, \
+                GetPlanarReflectionUV(surfaceData.screenPos, vec4(surfaceData.normal, 1.0), planeX, planeY)));
 
     #elif defined(URHO3D_VERTEX_REFLECTION)
 
         #ifdef URHO3D_BLEND_REFLECTIONS
             #define Surface_SetCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
             { \
-                surfaceData.reflectionColor[0] = texture(refMap0, reflectionVec); \
-                surfaceData.reflectionColor[1] = texture(refMap1, reflectionVec); \
+                surfaceData.reflectionColor[0] = Reflection_ToLinear(texture(refMap0, reflectionVec)); \
+                surfaceData.reflectionColor[1] = Reflection_ToLinear(texture(refMap1, reflectionVec)); \
             }
         #else
             #define Surface_SetCubeReflection(surfaceData, refMap0, refMap1, reflectionVec, worldPos) \
-                surfaceData.reflectionColor[0] = texture(refMap0, reflectionVec);
+                surfaceData.reflectionColor[0] = Reflection_ToLinear(texture(refMap0, reflectionVec));
         #endif
 
     #else
@@ -530,9 +530,9 @@
             half3 reflectionVec, half roughness, half roughnessFactor)
         {
         #ifdef URHO3D_BLUR_REFLECTION
-            return textureLod(source, reflectionVec, roughness * roughnessFactor);
+            return Reflection_ToLinear(textureLod(source, reflectionVec, roughness * roughnessFactor));
         #else
-            return texture(source, reflectionVec);
+            return Reflection_ToLinear(texture(source, reflectionVec));
         #endif
         }
 

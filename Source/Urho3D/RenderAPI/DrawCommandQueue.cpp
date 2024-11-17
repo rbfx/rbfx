@@ -99,6 +99,12 @@ void DrawCommandQueue::ExecuteInContext(RenderContext* renderContext)
     {
         const ShaderResourceData& data = shaderResources_[i];
 
+        if (data.view_)
+        {
+            temp_.shaderResourceViews_[i] = data.view_;
+            continue;
+        }
+
         RawTexture* texture = GetReadableTexture(renderContext, data.type_, data.texture_, data.backupTexture_);
         if (texture->GetResolveDirty())
             texture->Resolve();

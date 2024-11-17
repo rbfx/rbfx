@@ -677,34 +677,50 @@ void DebugRenderer::Render()
     if (lines_.size())
     {
         count = lines_.size() * 2;
-        drawQueue->SetPipelineState(pipelineStates_.GetState(depthLinesPipelineState_[lineAntiAlias_], outputDesc));
-        setDefaultConstants();
-        drawQueue->Draw(start, count);
+        PipelineState* pipelineState = pipelineStates_.GetState(depthLinesPipelineState_[lineAntiAlias_], outputDesc);
+        if (pipelineState && pipelineState->IsValid())
+        {
+            drawQueue->SetPipelineState(pipelineState);
+            setDefaultConstants();
+            drawQueue->Draw(start, count);
+        }
         start += count;
     }
     if (noDepthLines_.size())
     {
         count = noDepthLines_.size() * 2;
-        drawQueue->SetPipelineState(pipelineStates_.GetState(noDepthLinesPipelineState_[lineAntiAlias_], outputDesc));
-        setDefaultConstants();
-        drawQueue->Draw(start, count);
+        PipelineState* pipelineState = pipelineStates_.GetState(noDepthLinesPipelineState_[lineAntiAlias_], outputDesc);
+        if (pipelineState && pipelineState->IsValid())
+        {
+            drawQueue->SetPipelineState(pipelineState);
+            setDefaultConstants();
+            drawQueue->Draw(start, count);
+        }
         start += count;
     }
 
     if (triangles_.size())
     {
         count = triangles_.size() * 3;
-        drawQueue->SetPipelineState(pipelineStates_.GetState(depthTrianglesPipelineState_, outputDesc));
-        setDefaultConstants();
-        drawQueue->Draw(start, count);
+        PipelineState* pipelineState = pipelineStates_.GetState(depthTrianglesPipelineState_, outputDesc);
+        if (pipelineState && pipelineState->IsValid())
+        {
+            drawQueue->SetPipelineState(pipelineState);
+            setDefaultConstants();
+            drawQueue->Draw(start, count);
+        }
         start += count;
     }
     if (noDepthTriangles_.size())
     {
         count = noDepthTriangles_.size() * 3;
-        drawQueue->SetPipelineState(pipelineStates_.GetState(noDepthTrianglesPipelineState_, outputDesc));
-        setDefaultConstants();
-        drawQueue->Draw(start, count);
+        PipelineState* pipelineState = pipelineStates_.GetState(noDepthTrianglesPipelineState_, outputDesc);
+        if (pipelineState && pipelineState->IsValid())
+        {
+            drawQueue->SetPipelineState(pipelineState);
+            setDefaultConstants();
+            drawQueue->Draw(start, count);
+        }
     }
 
     renderContext->Execute(drawQueue);

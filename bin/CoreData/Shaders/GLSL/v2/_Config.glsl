@@ -90,6 +90,9 @@
 /// Indicates that reflection map should be 2D texture and reflection should be planar
 // #define PLANEREFLECTION
 
+/// Whether to ignore vertex color if it's present in layout.
+// #define IGNOREVERTEXCOLOR
+
 
 /// =================================== Deprecated material defines ===================================
 

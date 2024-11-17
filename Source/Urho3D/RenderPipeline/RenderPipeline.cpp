@@ -117,6 +117,7 @@ void RenderPipeline::RegisterObject(Context* context)
     URHO3D_ENUM_ATTRIBUTE_EX("Material Quality", settings_.sceneProcessor_.materialQuality_, MarkSettingsDirty, materialQualityNames, SceneProcessorSettings{}.materialQuality_, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Specular Quality", settings_.sceneProcessor_.specularQuality_, MarkSettingsDirty, specularQualityNames, SceneProcessorSettings{}.specularQuality_, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Reflection Quality", settings_.sceneProcessor_.reflectionQuality_, MarkSettingsDirty, reflectionQualityNames, SceneProcessorSettings{}.reflectionQuality_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Linear Space Reflection Maps", bool, settings_.sceneProcessor_.linearReflectionMaps_, MarkSettingsDirty, SceneProcessorSettings{}.linearReflectionMaps_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Readable Depth", bool, settings_.renderBufferManager_.readableDepth_, MarkSettingsDirty, RenderBufferManagerSettings{}.readableDepth_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Max Vertex Lights", unsigned, settings_.sceneProcessor_.maxVertexLights_, MarkSettingsDirty, DrawableProcessorSettings{}.maxVertexLights_, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Max Pixel Lights", unsigned, settings_.sceneProcessor_.maxPixelLights_, MarkSettingsDirty, DrawableProcessorSettings{}.maxPixelLights_, AM_DEFAULT);

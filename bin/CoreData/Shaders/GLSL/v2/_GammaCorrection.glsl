@@ -80,6 +80,12 @@ half4 LinearToGammaSpaceAlpha(half4 color) { return vec4(LinearToGammaSpace(colo
     #define Texture_ToLight_1(color) Texture_ToGamma_1(color)
     #define Texture_ToLight_2(color) Texture_ToGamma_2(color)
 #endif
+
+#ifdef URHO3D_LINEAR_SPACE_REFLECTIONS
+    #define Reflection_ToLinear(color) (color)
+#else
+    #define Reflection_ToLinear(color) GammaToLinearSpaceAlpha(color)
+#endif
 /// @}
 
 #endif // _GAMMA_CORRECTION_GLSL_

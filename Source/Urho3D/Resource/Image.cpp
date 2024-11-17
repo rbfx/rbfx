@@ -20,46 +20,41 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/Profiler.h"
-#include "../IO/File.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
-#include "../IO/VirtualFileSystem.h"
-#include "../Resource/Decompress.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/IO/File.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
+#include "Urho3D/RenderAPI/RenderAPIUtils.h"
+#include "Urho3D/Resource/Decompress.h"
+#include "Urho3D/Resource/ImageDDS.h"
 
-#include <SDL_surface.h>
 #include <STB/stb_image.h>
 #include <STB/stb_image_write.h>
+
+#include <EASTL/utility.h>
+
+#include <SDL_surface.h>
 #ifdef URHO3D_WEBP
-#include <webp/decode.h>
-#include <webp/encode.h>
-#include <webp/mux.h>
+    #include <webp/decode.h>
+    #include <webp/encode.h>
+    #include <webp/mux.h>
 #endif
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 STBIWDEF unsigned char* stbi_write_png_to_mem(const unsigned char* pixels, int stride_bytes, int x, int y, int n, int* out_len);
 
-#ifndef MAKEFOURCC
-#define MAKEFOURCC(ch0, ch1, ch2, ch3) ((unsigned)(ch0) | ((unsigned)(ch1) << 8) | ((unsigned)(ch2) << 16) | ((unsigned)(ch3) << 24))
-#endif
+namespace Urho3D
+{
 
-#define FOURCC_DXT1 (MAKEFOURCC('D','X','T','1'))
-#define FOURCC_DXT2 (MAKEFOURCC('D','X','T','2'))
-#define FOURCC_DXT3 (MAKEFOURCC('D','X','T','3'))
-#define FOURCC_DXT4 (MAKEFOURCC('D','X','T','4'))
-#define FOURCC_DXT5 (MAKEFOURCC('D','X','T','5'))
-#define FOURCC_DX10 (MAKEFOURCC('D','X','1','0'))
+namespace
+{
 
-#define FOURCC_ETC1 (MAKEFOURCC('E','T','C','1'))
-#define FOURCC_ETC2 (MAKEFOURCC('E','T','C','2'))
-#define FOURCC_ETC2A (MAKEFOURCC('E','T','2','A'))
-
-#define FOURCC_PTC2 (MAKEFOURCC('P','T','C','2'))
-#define FOURCC_PTC4 (MAKEFOURCC('P','T','C','4'))
+static constexpr unsigned FOURCC_DX10 = MakeFourCC('D', 'X', '1', '0');
 
 static const unsigned DDSCAPS_COMPLEX = 0x00000008U;
 static const unsigned DDSCAPS_TEXTURE = 0x00001000U;
@@ -82,143 +77,12 @@ static const unsigned DDS_DIMENSION_TEXTURE3D = 4;
 
 static const unsigned DDS_RESOURCE_MISC_TEXTURECUBE = 0x4;
 
-static const unsigned DDS_DXGI_FORMAT_R8G8B8A8_UNORM = 28;
-static const unsigned DDS_DXGI_FORMAT_R8G8B8A8_UNORM_SRGB = 26;
-static const unsigned DDS_DXGI_FORMAT_BC1_UNORM = 71;
-static const unsigned DDS_DXGI_FORMAT_BC1_UNORM_SRGB = 72;
-static const unsigned DDS_DXGI_FORMAT_BC2_UNORM = 74;
-static const unsigned DDS_DXGI_FORMAT_BC2_UNORM_SRGB = 75;
-static const unsigned DDS_DXGI_FORMAT_BC3_UNORM = 77;
-static const unsigned DDS_DXGI_FORMAT_BC3_UNORM_SRGB = 78;
-
-namespace Urho3D
+IntVector3 ToIntVector3(unsigned x, unsigned y, unsigned z)
 {
+    return {static_cast<int>(x), static_cast<int>(y), static_cast<int>(z)};
+}
 
-/// DirectDraw color key definition.
-struct DDColorKey
-{
-    unsigned dwColorSpaceLowValue_;
-    unsigned dwColorSpaceHighValue_;
-};
-
-/// DirectDraw pixel format definition.
-struct DDPixelFormat
-{
-    unsigned dwSize_;
-    unsigned dwFlags_;
-    unsigned dwFourCC_;
-    union
-    {
-        unsigned dwRGBBitCount_;
-        unsigned dwYUVBitCount_;
-        unsigned dwZBufferBitDepth_;
-        unsigned dwAlphaBitDepth_;
-        unsigned dwLuminanceBitCount_;
-        unsigned dwBumpBitCount_;
-        unsigned dwPrivateFormatBitCount_;
-    };
-    union
-    {
-        unsigned dwRBitMask_;
-        unsigned dwYBitMask_;
-        unsigned dwStencilBitDepth_;
-        unsigned dwLuminanceBitMask_;
-        unsigned dwBumpDuBitMask_;
-        unsigned dwOperations_;
-    };
-    union
-    {
-        unsigned dwGBitMask_;
-        unsigned dwUBitMask_;
-        unsigned dwZBitMask_;
-        unsigned dwBumpDvBitMask_;
-        struct
-        {
-            unsigned short wFlipMSTypes_;
-            unsigned short wBltMSTypes_;
-        } multiSampleCaps_;
-    };
-    union
-    {
-        unsigned dwBBitMask_;
-        unsigned dwVBitMask_;
-        unsigned dwStencilBitMask_;
-        unsigned dwBumpLuminanceBitMask_;
-    };
-    union
-    {
-        unsigned dwRGBAlphaBitMask_;
-        unsigned dwYUVAlphaBitMask_;
-        unsigned dwLuminanceAlphaBitMask_;
-        unsigned dwRGBZBitMask_;
-        unsigned dwYUVZBitMask_;
-    };
-};
-
-/// DirectDraw surface capabilities.
-struct DDSCaps2
-{
-    unsigned dwCaps_;
-    unsigned dwCaps2_;
-    unsigned dwCaps3_;
-    union
-    {
-        unsigned dwCaps4_;
-        unsigned dwVolumeDepth_;
-    };
-};
-
-struct DDSHeader10
-{
-    unsigned dxgiFormat;
-    unsigned resourceDimension;
-    unsigned miscFlag;
-    unsigned arraySize;
-    unsigned reserved;
-};
-
-/// DirectDraw surface description.
-struct DDSurfaceDesc2
-{
-    unsigned dwSize_;
-    unsigned dwFlags_;
-    unsigned dwHeight_;
-    unsigned dwWidth_;
-    union
-    {
-        unsigned lPitch_;
-        unsigned dwLinearSize_;
-    };
-    union
-    {
-        unsigned dwBackBufferCount_;
-        unsigned dwDepth_;
-    };
-    union
-    {
-        unsigned dwMipMapCount_;
-        unsigned dwRefreshRate_;
-        unsigned dwSrcVBHandle_;
-    };
-    unsigned dwAlphaBitDepth_;
-    unsigned dwReserved_;
-    unsigned lpSurface_; // Do not define as a void pointer, as it is 8 bytes in a 64bit build
-    union
-    {
-        DDColorKey ddckCKDestOverlay_;
-        unsigned dwEmptyFaceColor_;
-    };
-    DDColorKey ddckCKDestBlt_;
-    DDColorKey ddckCKSrcOverlay_;
-    DDColorKey ddckCKSrcBlt_;
-    union
-    {
-        DDPixelFormat ddpfPixelFormat_;
-        unsigned dwFVF_;
-    };
-    DDSCaps2 ddsCaps_;
-    unsigned dwTextureStage_;
-};
+} // namespace
 
 bool CompressedLevel::Decompress(unsigned char* dest) const
 {
@@ -227,29 +91,28 @@ bool CompressedLevel::Decompress(unsigned char* dest) const
 
     switch (format_)
     {
-    case CF_RGBA:
+    case TextureFormat::TEX_FORMAT_RGBA8_UNORM:
         memcpy(dest, data_, width_ * height_ * depth_ * 4);
         return true;
 
-    case CF_DXT1:
-    case CF_DXT3:
-    case CF_DXT5:
+    case TextureFormat::TEX_FORMAT_BC1_UNORM:
+    case TextureFormat::TEX_FORMAT_BC2_UNORM:
+    case TextureFormat::TEX_FORMAT_BC3_UNORM:
         DecompressImageDXT(dest, data_, width_, height_, depth_, format_);
         return true;
 
     // ETC2 format is compatible with ETC1, so we just use the same function.
-    case CF_ETC1:
-    case CF_ETC2_RGB:
+    case TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM:
         DecompressImageETC(dest, data_, width_, height_, false);
         return true;
-    case CF_ETC2_RGBA:
+    case TextureFormat::TEX_FORMAT_ETC2_RGBA8_UNORM:
         DecompressImageETC(dest, data_, width_, height_, true);
         return true;
 
-    case CF_PVRTC_RGB_2BPP:
-    case CF_PVRTC_RGBA_2BPP:
-    case CF_PVRTC_RGB_4BPP:
-    case CF_PVRTC_RGBA_4BPP:
+    case EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_2BPP:
+    case EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_2BPP:
+    case EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_4BPP:
+    case EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_4BPP:
         DecompressImagePVRTC(dest, data_, width_, height_, format_);
         return true;
 
@@ -284,103 +147,22 @@ bool Image::BeginLoad(Deserializer& source)
 
         // DDS DX10+
         const bool hasDXGI = ddsd.ddpfPixelFormat_.dwFourCC_ == FOURCC_DX10;
-        DDSHeader10 dxgiHeader;     // NOLINT(hicpp-member-init)
+        DDSHeader10 dxgiHeader{};
         if (hasDXGI)
             source.Read(&dxgiHeader, sizeof(dxgiHeader));
 
-        unsigned fourCC = ddsd.ddpfPixelFormat_.dwFourCC_;
-
-        // If the DXGI header is available then remap formats and check sRGB
-        if (hasDXGI)
+        const TextureFormat originalTextureFormat = PickTextureFormat(ddsd.ddpfPixelFormat_, dxgiHeader.dxgiFormat);
+        if (originalTextureFormat == TextureFormat::TEX_FORMAT_UNKNOWN)
         {
-            switch (dxgiHeader.dxgiFormat)
-            {
-            case DDS_DXGI_FORMAT_BC1_UNORM:
-            case DDS_DXGI_FORMAT_BC1_UNORM_SRGB:
-                fourCC = FOURCC_DXT1;
-                break;
-            case DDS_DXGI_FORMAT_BC2_UNORM:
-            case DDS_DXGI_FORMAT_BC2_UNORM_SRGB:
-                fourCC = FOURCC_DXT3;
-                break;
-            case DDS_DXGI_FORMAT_BC3_UNORM:
-            case DDS_DXGI_FORMAT_BC3_UNORM_SRGB:
-                fourCC = FOURCC_DXT5;
-                break;
-            case DDS_DXGI_FORMAT_R8G8B8A8_UNORM:
-            case DDS_DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-                fourCC = 0;
-                break;
-            default:
-                URHO3D_LOGERROR("Unrecognized DDS DXGI image format");
-                return false;
-            }
-
-            // Check the internal sRGB formats
-            if (dxgiHeader.dxgiFormat == DDS_DXGI_FORMAT_BC1_UNORM_SRGB ||
-                dxgiHeader.dxgiFormat == DDS_DXGI_FORMAT_BC2_UNORM_SRGB ||
-                dxgiHeader.dxgiFormat == DDS_DXGI_FORMAT_BC3_UNORM_SRGB ||
-                dxgiHeader.dxgiFormat == DDS_DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
-            {
-                sRGB_ = true;
-            }
-        }
-        switch (fourCC)
-        {
-        case FOURCC_DXT1:
-            compressedFormat_ = CF_DXT1;
-            components_ = 3;
-            break;
-
-        case FOURCC_DXT3:
-            compressedFormat_ = CF_DXT3;
-            components_ = 4;
-            break;
-
-        case FOURCC_DXT5:
-            compressedFormat_ = CF_DXT5;
-            components_ = 4;
-            break;
-
-        case FOURCC_ETC1:
-            compressedFormat_ = CF_ETC1;
-            components_ = 3;
-            break;
-
-        case FOURCC_ETC2:
-            compressedFormat_ = CF_ETC2_RGB;
-            components_ = 3;
-            break;
-
-        case FOURCC_ETC2A:
-            compressedFormat_ = CF_ETC2_RGBA;
-            components_ = 4;
-            break;
-
-        case FOURCC_PTC2:
-            compressedFormat_ = CF_PVRTC_RGBA_2BPP;
-            components_ = 4;
-            break;
-
-        case FOURCC_PTC4:
-            compressedFormat_ = CF_PVRTC_RGBA_4BPP;
-            components_ = 4;
-            break;
-
-        case 0:
-            if (ddsd.ddpfPixelFormat_.dwRGBBitCount_ != 32)
-            {
-                URHO3D_LOGERROR("Unsupported DDS pixel byte size");
-                return false;
-            }
-            compressedFormat_ = CF_RGBA;
-            components_ = 4;
-            break;
-
-        default:
-            URHO3D_LOGERROR("Unrecognized DDS image format");
+            URHO3D_LOGERROR("Unsupported DDS image format");
             return false;
         }
+
+        compressedFormat_ = SetTextureFormatSRGB(originalTextureFormat, false);
+        sRGB_ = compressedFormat_ != originalTextureFormat;
+
+        const auto& formatAttribs = GetTextureFormatInfo(compressedFormat_);
+        components_ = formatAttribs.NumComponents;
 
         // Is it a cube map or texture array? If so determine the size of the image chain.
         cubemap_ = (ddsd.ddsCaps_.dwCaps2_ & DDSCAPS2_CUBEMAP_ALL_FACES) != 0 || (hasDXGI && (dxgiHeader.miscFlag & DDS_RESOURCE_MISC_TEXTURECUBE) != 0);
@@ -394,59 +176,10 @@ bool Image::BeginLoad(Deserializer& source)
         }
 
         // Calculate the size of the data
+        const IntVector3 dimensions = ToIntVector3(ddsd.dwWidth_, ddsd.dwHeight_, ddsd.dwDepth_);
         unsigned dataSize = 0;
-        if (compressedFormat_ != CF_RGBA)
-        {
-            if (compressedFormat_ == CF_PVRTC_RGB_2BPP || compressedFormat_ == CF_PVRTC_RGBA_2BPP || compressedFormat_ == CF_PVRTC_RGB_4BPP || compressedFormat_ == CF_PVRTC_RGBA_4BPP)
-            {
-                const unsigned xSize =  (compressedFormat_ == CF_PVRTC_RGB_2BPP || compressedFormat_ == CF_PVRTC_RGBA_2BPP) ? 8 : 4;
-                const unsigned blockSize = 8;
-                // For MBX don't allow the sizes to get too small
-                unsigned blocksWide = Max(2, ddsd.dwWidth_ / xSize);
-                unsigned blocksHeight = Max(2, ddsd.dwHeight_ / 4);
-                dataSize = blocksWide * blocksHeight * blockSize;
-
-                // Calculate mip data size
-                unsigned x = ddsd.dwWidth_ / 2;
-                unsigned y = ddsd.dwHeight_ / 2;
-                unsigned z = ddsd.dwDepth_ / 2;
-                for (unsigned level = ddsd.dwMipMapCount_; level > 1; x /= 2, y /= 2, z /= 2, --level)
-                {
-                    blocksWide = Max(2, x / xSize);
-                    blocksHeight = Max(2, y / 4);
-                    dataSize += blockSize * blocksWide * blocksHeight * Max(z, 1U);
-                }
-            }
-            else
-            {
-                unsigned blockSize = (compressedFormat_ == CF_DXT1 || compressedFormat_ == CF_ETC1 || compressedFormat_ == CF_ETC2_RGB) ? 8 : 16;
-                // Add 3 to ensure valid block: ie 2x2 fits uses a whole 4x4 block
-                unsigned blocksWide = (ddsd.dwWidth_ + 3) / 4;
-                unsigned blocksHeight = (ddsd.dwHeight_ + 3) / 4;
-                dataSize = blocksWide * blocksHeight * blockSize;
-
-                // Calculate mip data size
-                unsigned x = ddsd.dwWidth_ / 2;
-                unsigned y = ddsd.dwHeight_ / 2;
-                unsigned z = ddsd.dwDepth_ / 2;
-                for (unsigned level = ddsd.dwMipMapCount_; level > 1; x /= 2, y /= 2, z /= 2, --level)
-                {
-                    blocksWide = (Max(x, 1U) + 3) / 4;
-                    blocksHeight = (Max(y, 1U) + 3) / 4;
-                    dataSize += blockSize * blocksWide * blocksHeight * Max(z, 1U);
-                }
-            }
-        }
-        else
-        {
-            dataSize = (ddsd.ddpfPixelFormat_.dwRGBBitCount_ / 8) * ddsd.dwWidth_ * ddsd.dwHeight_ * Max(ddsd.dwDepth_, 1U);
-            // Calculate mip data size
-            unsigned x = ddsd.dwWidth_ / 2;
-            unsigned y = ddsd.dwHeight_ / 2;
-            unsigned z = ddsd.dwDepth_ / 2;
-            for (unsigned level = ddsd.dwMipMapCount_; level > 1; x /= 2, y /= 2, z /= 2, --level)
-                dataSize += (ddsd.ddpfPixelFormat_.dwRGBBitCount_ / 8) * Max(x, 1U) * Max(y, 1U) * Max(z, 1U);
-        }
+        for (unsigned level = 0; level < ddsd.dwMipMapCount_; ++level)
+            dataSize += GetMipLevelSizeInBytes(compressedFormat_, dimensions, level);
 
         // Do not use a shared ptr here, in case nothing is refcounting the image outside this function.
         // A raw pointer is fine as the image chain (if needed) uses shared ptr's properly
@@ -483,7 +216,8 @@ bool Image::BeginLoad(Deserializer& source)
         }
 
         // If uncompressed DDS, convert the data to 8bit RGBA as the texture classes can not currently use eg. RGB565 format
-        if (compressedFormat_ == CF_RGBA)
+        if (compressedFormat_ == TextureFormat::TEX_FORMAT_RGBA8_UNORM
+            && !AreTextureComponentsMatching(ddsd.ddpfPixelFormat_, compressedFormat_))
         {
             URHO3D_PROFILE("ConvertDDSToRGBA");
 
@@ -623,61 +357,57 @@ bool Image::BeginLoad(Deserializer& source)
         switch (internalFormat)
         {
         case 0x83f1:
-            compressedFormat_ = CF_DXT1;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_BC1_UNORM;
             components_ = 4;
             break;
 
         case 0x83f2:
-            compressedFormat_ = CF_DXT3;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_BC2_UNORM;
             components_ = 4;
             break;
 
         case 0x83f3:
-            compressedFormat_ = CF_DXT5;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_BC3_UNORM;
             components_ = 4;
             break;
 
         case 0x8d64:
-            compressedFormat_ = CF_ETC1;
-            components_ = 3;
-            break;
-
         case 0x9274:
-            compressedFormat_ = CF_ETC2_RGB;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM;
             components_ = 3;
             break;
 
         case 0x9278:
-            compressedFormat_ = CF_ETC2_RGBA;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_ETC2_RGBA8_UNORM;
             components_ = 4;
             break;
 
         case 0x8c00:
-            compressedFormat_ = CF_PVRTC_RGB_4BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_4BPP;
             components_ = 3;
             break;
 
         case 0x8c01:
-            compressedFormat_ = CF_PVRTC_RGB_2BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_2BPP;
             components_ = 3;
             break;
 
         case 0x8c02:
-            compressedFormat_ = CF_PVRTC_RGBA_4BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_4BPP;
             components_ = 4;
             break;
 
         case 0x8c03:
-            compressedFormat_ = CF_PVRTC_RGBA_2BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_2BPP;
             components_ = 4;
             break;
 
         default:
-            compressedFormat_ = CF_NONE;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_UNKNOWN;
             break;
         }
 
-        if (compressedFormat_ == CF_NONE)
+        if (compressedFormat_ == TextureFormat::TEX_FORMAT_UNKNOWN)
         {
             URHO3D_LOGERROR("Unsupported texture format in KTX file");
             return false;
@@ -739,62 +469,62 @@ bool Image::BeginLoad(Deserializer& source)
         switch (pixelFormatLo)
         {
         case 0:
-            compressedFormat_ = CF_PVRTC_RGB_2BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_2BPP;
             components_ = 3;
             break;
 
         case 1:
-            compressedFormat_ = CF_PVRTC_RGBA_2BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_2BPP;
             components_ = 4;
             break;
 
         case 2:
-            compressedFormat_ = CF_PVRTC_RGB_4BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGB_4BPP;
             components_ = 3;
             break;
 
         case 3:
-            compressedFormat_ = CF_PVRTC_RGBA_4BPP;
+            compressedFormat_ = EmulatedTextureFormat::TEX_FORMAT_PVRTC_RGBA_4BPP;
             components_ = 4;
             break;
 
         case 6:
-            compressedFormat_ = CF_ETC1;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM;
             components_ = 3;
             break;
 
         case 7:
-            compressedFormat_ = CF_DXT1;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_BC1_UNORM;
             components_ = 4;
             break;
 
         case 9:
-            compressedFormat_ = CF_DXT3;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_BC2_UNORM;
             components_ = 4;
             break;
 
         case 11:
-            compressedFormat_ = CF_DXT5;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_BC3_UNORM;
             components_ = 4;
             break;
 
         // .pvr files also support ETC2 texture format.
         case 22:
-            compressedFormat_ = CF_ETC2_RGB;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM;
             components_ = 3;
             break;
 
         case 23:
-            compressedFormat_ = CF_ETC2_RGBA;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_ETC2_RGBA8_UNORM;
             components_ = 4;
             break;
 
         default:
-            compressedFormat_ = CF_NONE;
+            compressedFormat_ = TextureFormat::TEX_FORMAT_UNKNOWN;
             break;
         }
 
-        if (compressedFormat_ == CF_NONE)
+        if (compressedFormat_ == TextureFormat::TEX_FORMAT_UNKNOWN)
         {
             URHO3D_LOGERROR("Unsupported texture format in PVR file");
             return false;
@@ -977,7 +707,7 @@ bool Image::SetSize(int width, int height, int depth, unsigned components)
     height_ = height;
     depth_ = depth;
     components_ = components;
-    compressedFormat_ = CF_NONE;
+    compressedFormat_ = TextureFormat::TEX_FORMAT_UNKNOWN;
     numCompressedLevels_ = 0;
     nextLevel_.Reset();
 
@@ -1106,33 +836,35 @@ bool Image::FlipHorizontal()
         return false;
     }
 
+    const auto& formatAttribs = GetTextureFormatInfo(compressedFormat_);
+    const bool isWidthPowerOf2 = IsPowerOfTwo(width_);
+    const bool isSimpleFlip = !IsCompressed() || (formatAttribs.BlockWidth == 1 && formatAttribs.BlockHeight == 1);
+    const bool isBlockFlip = !isSimpleFlip && IsFlipBlockImplemented(compressedFormat_) && isWidthPowerOf2;
+    if (!isSimpleFlip && !isBlockFlip)
+    {
+        URHO3D_LOGERROR(
+            "FlipHorizontal not implemented for {}{}", compressedFormat_, !isWidthPowerOf2 ? " (NPOT)" : "");
+        return false;
+    }
+
     if (!IsCompressed())
     {
-        ea::shared_array<unsigned char> newData(new unsigned char[width_ * height_ * components_]);
-        unsigned rowSize = width_ * components_;
-
+        const unsigned rowSize = width_ * components_;
         for (int y = 0; y < height_; ++y)
         {
-            for (int x = 0; x < width_; ++x)
+            for (int x = 0; x < width_ / 2; ++x)
             {
-                for (unsigned c = 0; c < components_; ++c)
-                    newData[y * rowSize + x * components_ + c] = data_[y * rowSize + (width_ - x - 1) * components_ + c];
+                unsigned char* first = &data_[y * rowSize + x * components_];
+                unsigned char* second = &data_[y * rowSize + (width_ - x - 1) * components_];
+                ea::swap_ranges(first, first + components_, second);
             }
         }
-
-        data_ = newData;
     }
     else
     {
-        if (compressedFormat_ > CF_DXT5)
-        {
-            URHO3D_LOGERROR("FlipHorizontal not yet implemented for other compressed formats than RGBA & DXT1,3,5");
-            return false;
-        }
-
-        // Memory use = combined size of the compressed mip levels
-        ea::shared_array<unsigned char> newData(new unsigned char[GetMemoryUse()]);
-        unsigned dataOffset = 0;
+        const unsigned blockSize = formatAttribs.GetElementSize();
+        ea::vector<unsigned char> tempBlock1(blockSize);
+        ea::vector<unsigned char> tempBlock2(blockSize);
 
         for (unsigned i = 0; i < numCompressedLevels_; ++i)
         {
@@ -1143,20 +875,31 @@ bool Image::FlipHorizontal()
                 return false;
             }
 
-            for (unsigned y = 0; y < level.rows_; ++y)
+            // Bug: Small blocks cannot be flipped in current implementation.
+            if (level.width_ < formatAttribs.BlockWidth)
+                continue;
+
+            const unsigned numRows = (level.height_ + formatAttribs.BlockHeight - 1) / formatAttribs.BlockHeight;
+            const unsigned numBlocksInRow = (level.width_ + formatAttribs.BlockWidth - 1) / formatAttribs.BlockWidth;
+            const unsigned rowSize = numBlocksInRow * blockSize;
+            for (unsigned y = 0; y < numRows; ++y)
             {
-                for (unsigned x = 0; x < level.rowSize_; x += level.blockSize_)
+                for (unsigned x = 0; x < numBlocksInRow / 2; ++x)
                 {
-                    unsigned char* src = level.data_ + y * level.rowSize_ + (level.rowSize_ - level.blockSize_ - x);
-                    unsigned char* dest = newData.get() + y * level.rowSize_ + x;
-                    FlipBlockHorizontal(dest, src, compressedFormat_);
+                    unsigned char* first = level.data_ + y * rowSize + (numBlocksInRow - x - 1) * blockSize;
+                    unsigned char* second = level.data_ + y * rowSize + x * blockSize;
+                    if (isSimpleFlip)
+                        ea::swap_ranges(first, first + blockSize, second);
+                    else
+                    {
+                        FlipBlockHorizontal(tempBlock1.data(), first, compressedFormat_);
+                        FlipBlockHorizontal(tempBlock2.data(), second, compressedFormat_);
+                        ea::copy(tempBlock1.begin(), tempBlock1.end(), second);
+                        ea::copy(tempBlock2.begin(), tempBlock2.end(), first);
+                    }
                 }
             }
-
-            dataOffset += level.dataSize_;
         }
-
-        data_ = newData;
     }
 
     return true;
@@ -1173,27 +916,31 @@ bool Image::FlipVertical()
         return false;
     }
 
+    const auto& formatAttribs = GetTextureFormatInfo(compressedFormat_);
+    const bool isHeightPowerOf2 = IsPowerOfTwo(height_);
+    const bool isSimpleFlip = !IsCompressed() || (formatAttribs.BlockWidth == 1 && formatAttribs.BlockHeight == 1);
+    const bool isBlockFlip = !isSimpleFlip && IsFlipBlockImplemented(compressedFormat_) && isHeightPowerOf2;
+    if (!isSimpleFlip && !isBlockFlip)
+    {
+        URHO3D_LOGERROR(
+            "FlipVertical not implemented for {}{}", compressedFormat_, !isHeightPowerOf2 ? " (NPOT)" : "");
+        return false;
+    }
+
     if (!IsCompressed())
     {
-        ea::shared_array<unsigned char> newData(new unsigned char[width_ * height_ * components_]);
-        unsigned rowSize = width_ * components_;
-
-        for (int y = 0; y < height_; ++y)
-            memcpy(&newData[(height_ - y - 1) * rowSize], &data_[y * rowSize], rowSize);
-
-        data_ = newData;
+        const unsigned rowSize = width_ * components_;
+        for (int y = 0; y < height_ / 2; ++y)
+        {
+            unsigned char* first = &data_[y * rowSize];
+            unsigned char* second = &data_[(height_ - y - 1) * rowSize];
+            ea::swap_ranges(first, first + rowSize, second);
+        }
     }
     else
     {
-        if (compressedFormat_ > CF_DXT5)
-        {
-            URHO3D_LOGERROR("FlipVertical not yet implemented for other compressed formats than DXT1,3,5");
-            return false;
-        }
-
-        // Memory use = combined size of the compressed mip levels
-        ea::shared_array<unsigned char> newData(new unsigned char[GetMemoryUse()]);
-        unsigned dataOffset = 0;
+        const unsigned blockSize = formatAttribs.GetElementSize();
+        ea::vector<unsigned char> tempBlock(blockSize);
 
         for (unsigned i = 0; i < numCompressedLevels_; ++i)
         {
@@ -1204,19 +951,32 @@ bool Image::FlipVertical()
                 return false;
             }
 
-            for (unsigned y = 0; y < level.rows_; ++y)
+            // Bug: Small blocks cannot be flipped in current implementation.
+            if (level.height_ < formatAttribs.BlockHeight)
+                continue;
+
+            const unsigned numRows = (level.height_ + formatAttribs.BlockHeight - 1) / formatAttribs.BlockHeight;
+            const unsigned numBlocksInRow = (level.width_ + formatAttribs.BlockWidth - 1) / formatAttribs.BlockWidth;
+            const unsigned rowSize = numBlocksInRow * blockSize;
+            for (unsigned y = 0; y < numRows / 2; ++y)
             {
-                unsigned char* src = level.data_ + y * level.rowSize_;
-                unsigned char* dest = newData.get() + dataOffset + (level.rows_ - y - 1) * level.rowSize_;
+                unsigned char* first = level.data_ + y * rowSize;
+                unsigned char* second = level.data_ + (numRows - y - 1) * rowSize;
+                ea::swap_ranges(first, first + rowSize, second);
 
-                for (unsigned x = 0; x < level.rowSize_; x += level.blockSize_)
-                    FlipBlockVertical(dest + x, src + x, compressedFormat_);
+                if (isSimpleFlip)
+                    continue;
+
+                for (unsigned char* data : {first, second})
+                {
+                    for (unsigned x = 0; x < numBlocksInRow; ++x)
+                    {
+                        FlipBlockVertical(tempBlock.data(), data + x * blockSize, compressedFormat_);
+                        ea::copy(tempBlock.begin(), tempBlock.end(), data + x * blockSize);
+                    }
+                }
             }
-
-            dataOffset += level.dataSize_;
         }
-
-        data_ = newData;
     }
 
     return true;
@@ -1664,30 +1424,21 @@ Color Image::GetPixelTrilinear(float x, float y, float z) const
 
 TextureFormat Image::GetGPUFormat() const
 {
+    static const TextureFormat unormFormats[] = {
+        TextureFormat::TEX_FORMAT_UNKNOWN,
+
+        TextureFormat::TEX_FORMAT_R8_UNORM,
+        TextureFormat::TEX_FORMAT_RG8_UNORM,
+        TextureFormat::TEX_FORMAT_UNKNOWN,
+        TextureFormat::TEX_FORMAT_RGBA8_UNORM,
+    };
+
     if (!IsCompressed())
-    {
-        switch (GetComponents())
-        {
-        case 1: return Diligent::TEX_FORMAT_R8_UNORM;
-        case 2: return Diligent::TEX_FORMAT_RG8_UNORM;
-        case 4: return Diligent::TEX_FORMAT_RGBA8_UNORM;
-        default: return Diligent::TEX_FORMAT_UNKNOWN;
-        }
-    }
+        return unormFormats[GetComponents()];
+    else if (GetCompressedFormat() < TextureFormat::TEX_FORMAT_NUM_FORMATS)
+        return GetCompressedFormat();
     else
-    {
-        switch (GetCompressedFormat())
-        {
-        case CF_RGBA: return Diligent::TEX_FORMAT_RGBA8_UNORM;
-        case CF_DXT1: return Diligent::TEX_FORMAT_BC1_UNORM;
-        case CF_DXT3: return Diligent::TEX_FORMAT_BC2_UNORM;
-        case CF_DXT5: return Diligent::TEX_FORMAT_BC3_UNORM;
-        case CF_ETC1: return Diligent::TEX_FORMAT_ETC2_RGB8_UNORM;
-        case CF_ETC2_RGB: return Diligent::TEX_FORMAT_ETC2_RGB8_UNORM;
-        case CF_ETC2_RGBA: return Diligent::TEX_FORMAT_ETC2_RGBA8_UNORM;
-        default: return Diligent::TEX_FORMAT_UNKNOWN;
-        }
-    }
+        return TextureFormat::TEX_FORMAT_UNKNOWN;
 }
 
 SharedPtr<Image> Image::GetNextLevel() const
@@ -2069,7 +1820,7 @@ CompressedLevel Image::GetCompressedLevel(unsigned index) const
 {
     CompressedLevel level;
 
-    if (compressedFormat_ == CF_NONE)
+    if (compressedFormat_ == TextureFormat::TEX_FORMAT_UNKNOWN)
     {
         URHO3D_LOGERROR("Image is not compressed");
         return level;
@@ -2081,123 +1832,26 @@ CompressedLevel Image::GetCompressedLevel(unsigned index) const
     }
 
     level.format_ = compressedFormat_;
-    level.width_ = width_;
-    level.height_ = height_;
-    level.depth_ = depth_;
 
-    if (compressedFormat_ == CF_RGBA)
+    const IntVector3 levelSize = GetMipLevelSize(GetSize(), index);
+    level.width_ = levelSize.x_;
+    level.height_ = levelSize.y_;
+    level.depth_ = levelSize.z_;
+    level.dataSize_ = GetMipLevelSizeInBytes(compressedFormat_, GetSize(), index);
+
+    unsigned offset = 0;
+    for (unsigned i = 0; i < index; ++i)
+        offset += GetMipLevelSizeInBytes(compressedFormat_, GetSize(), i);
+
+    if (offset + level.dataSize_ > GetMemoryUse())
     {
-        level.blockSize_ = 4;
-        unsigned i = 0;
-        unsigned offset = 0;
-
-        for (;;)
-        {
-            if (!level.width_)
-                level.width_ = 1;
-            if (!level.height_)
-                level.height_ = 1;
-            if (!level.depth_)
-                level.depth_ = 1;
-
-            level.rowSize_ = level.width_ * level.blockSize_;
-            level.rows_ = (unsigned)level.height_;
-            level.data_ = data_.get() + offset;
-            level.dataSize_ = level.depth_ * level.rows_ * level.rowSize_;
-
-            if (offset + level.dataSize_ > GetMemoryUse())
-            {
-                URHO3D_LOGERROR("Compressed level is outside image data. Offset: " + ea::to_string(offset) + " Size: " + ea::to_string(level.dataSize_) +
-                         " Datasize: " + ea::to_string(GetMemoryUse()));
-                level.data_ = nullptr;
-                return level;
-            }
-
-            if (i == index)
-                return level;
-
-            offset += level.dataSize_;
-            level.width_ /= 2;
-            level.height_ /= 2;
-            level.depth_ /= 2;
-            ++i;
-        }
+        URHO3D_LOGERROR("Compressed level is outside image data. Offset: {} Size: {} Datasize: {}", offset,
+            level.dataSize_, GetMemoryUse());
+        return level;
     }
-    else if (compressedFormat_ < CF_PVRTC_RGB_2BPP)
-    {
-        level.blockSize_ = (compressedFormat_ == CF_DXT1 || compressedFormat_ == CF_ETC1 || compressedFormat_ == CF_ETC2_RGB) ? 8 : 16;
-        unsigned i = 0;
-        unsigned offset = 0;
 
-        for (;;)
-        {
-            if (!level.width_)
-                level.width_ = 1;
-            if (!level.height_)
-                level.height_ = 1;
-            if (!level.depth_)
-                level.depth_ = 1;
-
-            level.rowSize_ = ((level.width_ + 3) / 4) * level.blockSize_;
-            level.rows_ = (unsigned)((level.height_ + 3) / 4);
-            level.data_ = data_.get() + offset;
-            level.dataSize_ = level.depth_ * level.rows_ * level.rowSize_;
-
-            if (offset + level.dataSize_ > GetMemoryUse())
-            {
-                URHO3D_LOGERROR("Compressed level is outside image data. Offset: " + ea::to_string(offset) + " Size: " + ea::to_string(level.dataSize_) +
-                         " Datasize: " + ea::to_string(GetMemoryUse()));
-                level.data_ = nullptr;
-                return level;
-            }
-
-            if (i == index)
-                return level;
-
-            offset += level.dataSize_;
-            level.width_ /= 2;
-            level.height_ /= 2;
-            level.depth_ /= 2;
-            ++i;
-        }
-    }
-    else
-    {
-        level.blockSize_ = compressedFormat_ < CF_PVRTC_RGB_4BPP ? 2 : 4;
-        unsigned i = 0;
-        unsigned offset = 0;
-
-        for (;;)
-        {
-            if (!level.width_)
-                level.width_ = 1;
-            if (!level.height_)
-                level.height_ = 1;
-
-            int dataWidth = Max(level.width_, level.blockSize_ == 2 ? 16 : 8);
-            int dataHeight = Max(level.height_, 8);
-            level.data_ = data_.get() + offset;
-            level.dataSize_ = (dataWidth * dataHeight * level.blockSize_ + 7) >> 3;
-            level.rows_ = (unsigned)dataHeight;
-            level.rowSize_ = level.dataSize_ / level.rows_;
-
-            if (offset + level.dataSize_ > GetMemoryUse())
-            {
-                URHO3D_LOGERROR("Compressed level is outside image data. Offset: " + ea::to_string(offset) + " Size: " + ea::to_string(level.dataSize_) +
-                         " Datasize: " + ea::to_string(GetMemoryUse()));
-                level.data_ = nullptr;
-                return level;
-            }
-
-            if (i == index)
-                return level;
-
-            offset += level.dataSize_;
-            level.width_ /= 2;
-            level.height_ /= 2;
-            ++i;
-        }
-    }
+    level.data_ = data_.get() + offset;
+    return level;
 }
 
 SharedPtr<Image> Image::GetDecompressedImageLevel(unsigned index) const
@@ -2270,12 +1924,15 @@ SharedPtr<Image> Image::GetSubimage(const IntRect& rect) const
     }
     else
     {
+        const auto& formatAttribs = GetTextureFormatInfo(compressedFormat_);
+        const unsigned blockSize = formatAttribs.GetElementSize();
+
         // Pad the region to be a multiple of block size
         IntRect paddedRect = rect;
-        paddedRect.left_ = (rect.left_ / 4) * 4;
-        paddedRect.top_ = (rect.top_ / 4) * 4;
-        paddedRect.right_ = (rect.right_ / 4) * 4;
-        paddedRect.bottom_ = (rect.bottom_ / 4) * 4;
+        paddedRect.left_ = (rect.left_ / formatAttribs.BlockWidth) * formatAttribs.BlockWidth;
+        paddedRect.right_ = (rect.right_ / formatAttribs.BlockWidth) * formatAttribs.BlockWidth;
+        paddedRect.top_ = (rect.top_ / formatAttribs.BlockHeight) * formatAttribs.BlockHeight;
+        paddedRect.bottom_ = (rect.bottom_ / formatAttribs.BlockHeight) * formatAttribs.BlockHeight;
         IntRect currentRect = paddedRect;
 
         ea::vector<unsigned char> subimageData;
@@ -2289,32 +1946,37 @@ SharedPtr<Image> Image::GetSubimage(const IntRect& rect) const
                 break;
 
             // Mips are stored continuously
-            unsigned destStartOffset = subimageData.size();
-            unsigned destRowSize = currentRect.Width() / 4 * level.blockSize_;
-            unsigned destSize = currentRect.Height() / 4 * destRowSize;
+            const unsigned sourceBlocksInRow = (level.width_ + formatAttribs.BlockWidth - 1) / formatAttribs.BlockWidth;
+            const unsigned sourceRowSize = sourceBlocksInRow * blockSize;
+
+            const unsigned destStartOffset = subimageData.size();
+            const unsigned destRowSize = currentRect.Width() / formatAttribs.BlockWidth * blockSize;
+            const unsigned destSize = currentRect.Height() / formatAttribs.BlockHeight * destRowSize;
             if (!destSize)
                 break;
 
             subimageData.resize(destStartOffset + destSize);
             unsigned char* dest = &subimageData[destStartOffset];
 
-            for (int y = currentRect.top_; y < currentRect.bottom_; y += 4)
+            const unsigned beginX = currentRect.left_ / formatAttribs.BlockWidth;
+            const unsigned beginY = currentRect.top_ / formatAttribs.BlockHeight;
+            const unsigned endY = currentRect.bottom_ / formatAttribs.BlockHeight;
+            for (unsigned y = beginY; y < endY; ++y)
             {
-                unsigned char* src = level.data_ + level.rowSize_ * (y / 4) + currentRect.left_ / 4 * level.blockSize_;
+                unsigned char* src = level.data_ + sourceRowSize * y + beginX * blockSize;
                 memcpy(dest, src, destRowSize);
                 dest += destRowSize;
             }
 
             ++subimageLevels;
-            if ((currentRect.left_ & 4) || (currentRect.right_ & 4) || (currentRect.top_ & 4) || (currentRect.bottom_ & 4))
+            if ((currentRect.left_ & formatAttribs.BlockWidth) || (currentRect.right_ & formatAttribs.BlockWidth)
+                || (currentRect.top_ & formatAttribs.BlockHeight) || (currentRect.bottom_ & formatAttribs.BlockHeight))
                 break;
-            else
-            {
-                currentRect.left_ /= 2;
-                currentRect.right_ /= 2;
-                currentRect.top_ /= 2;
-                currentRect.bottom_ /= 2;
-            }
+
+            currentRect.left_ /= 2;
+            currentRect.right_ /= 2;
+            currentRect.top_ /= 2;
+            currentRect.bottom_ /= 2;
         }
 
         if (!subimageLevels)
