@@ -893,7 +893,7 @@ DataModelConstructor Context::CreateDataModel(const String& name, DataTypeRegist
 		return DataModelConstructor(result.first->second.get());
 
 	Log::Message(Log::LT_ERROR, "Data model name '%s' already exists.", name.c_str());
-	return DataModelConstructor();
+	return GetDataModel(name);
 }
 
 DataModelConstructor Context::GetDataModel(const String& name)
