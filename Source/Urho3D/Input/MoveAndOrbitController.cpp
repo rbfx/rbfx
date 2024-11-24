@@ -47,7 +47,7 @@ MoveAndOrbitController::~MoveAndOrbitController()
 
 void MoveAndOrbitController::RegisterObject(Context* context)
 {
-    context->AddFactoryReflection<MoveAndOrbitController>();
+    context->AddFactoryReflection<MoveAndOrbitController>(Category_Logic);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE(
         "Input Map", GetInputMapAttr, SetInputMapAttr, ResourceRef, ResourceRef(InputMap::GetTypeStatic()), AM_DEFAULT);
 }
