@@ -379,16 +379,6 @@ void Network::SendPackageToClients(Scene* scene, PackageFile* package)
     }
 }
 
-SharedPtr<HttpRequest> Network::MakeHttpRequest(const ea::string& url, const ea::string& verb, const ea::vector<ea::string>& headers,
-    const ea::string& postData)
-{
-    URHO3D_PROFILE("MakeHttpRequest");
-
-    // The initialization of the request will take time, can not know at this point if it has an error or not
-    SharedPtr<HttpRequest> request(new HttpRequest(url, verb, headers, postData));
-    return request;
-}
-
 Connection* Network::GetServerConnection() const
 {
     return connectionToServer_;
