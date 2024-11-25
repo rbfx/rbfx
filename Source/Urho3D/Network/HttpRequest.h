@@ -46,11 +46,13 @@ enum HttpRequestState
 };
 
 /// An HTTP connection with response data stream.
+/// Perform an HTTP request to the specified URL. Empty verb defaults to a GET request. Return a request object which
+/// can be used to read the response data.
 class URHO3D_API HttpRequest : public RefCounted, public Deserializer, public Thread
 {
 public:
     /// Construct with parameters.
-    HttpRequest(const ea::string& url, const ea::string& verb, const ea::vector<ea::string>& headers, const ea::string& postData);
+    HttpRequest(const ea::string& url, const ea::string& verb = EMPTY_STRING, const ea::vector<ea::string>& headers = ea::vector<ea::string>(), const ea::string& postData = EMPTY_STRING);
     /// Destruct. Release the connection object.
     ~HttpRequest() override;
 
