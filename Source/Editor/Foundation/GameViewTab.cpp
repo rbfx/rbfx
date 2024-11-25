@@ -22,6 +22,8 @@
 
 #include "../Foundation/GameViewTab.h"
 
+#include "../Core/IniHelpers.h"
+
 #include <Urho3D/Engine/StateManager.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/GraphicsEvents.h>
@@ -33,12 +35,14 @@
 #include <Urho3D/RenderAPI/RenderDevice.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
-#if URHO3D_RMLUI
-#include <Urho3D/RmlUI/RmlUI.h>
-#endif
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/SystemUI/DebugHud.h>
 #include <Urho3D/SystemUI/Widgets.h>
 #include <Urho3D/UI/UI.h>
+
+#if URHO3D_RMLUI
+    #include <Urho3D/RmlUI/RmlUI.h>
+#endif
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
@@ -209,8 +213,7 @@ private:
 
 GameViewTab::GameViewTab(Context* context)
     : EditorTab(context, "Game", "212a6577-8a2a-42d6-aaed-042d226c724c",
-        EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault,
-        EditorTabPlacement::DockCenter)
+          EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault, EditorTabPlacement::DockCenter)
     , backbuffer_(MakeShared<CustomBackbufferTexture>(context_))
 {
     BindHotkey(Hotkey_ReleaseInput, &GameViewTab::ReleaseInput);
@@ -257,6 +260,14 @@ void GameViewTab::ReleaseInput()
         state_->ReleaseInput();
 }
 
+void GameViewTab::RenderToolbar()
+{
+    if (Widgets::ToolbarButton(ICON_FA_BUG, "Toggle Debug HUD", hudVisible_))
+        hudVisible_ = !hudVisible_;
+
+    Widgets::ToolbarSeparator();
+}
+
 void GameViewTab::RenderContent()
 {
     const IntVector2 contentSize = GetContentSize();
@@ -292,10 +303,29 @@ void GameViewTab::RenderContent()
         else if (wasGrabbed && needRelease)
             state_->ReleaseInput();
     }
+
+    auto hud = GetSubsystem<DebugHud>();
+    if (hud && hudVisible_)
+    {
+        const IntVector2 position = GetContentPosition();
+        ui::SetCursorScreenPos(ToImGui(position.ToVector2()));
+        hud->RenderUI(DEBUGHUD_SHOW_ALL);
+    }
 }
 
 void GameViewTab::RenderContextMenuItems()
 {
 }
 
+void GameViewTab::WriteIniSettings(ImGuiTextBuffer& output)
+{
+    WriteIntToIni(output, "IsHudVisible", hudVisible_ ? 1 : 0);
 }
+
+void GameViewTab::ReadIniSettings(const char* line)
+{
+    if (const auto isHudVisible = ReadIntFromIni(line, "IsHudVisible"))
+        hudVisible_ = *isHudVisible != 0;
+}
+
+} // namespace Urho3D

@@ -67,15 +67,11 @@ SceneDebugInfo::SceneDebugInfo(SceneViewTab* owner, SettingsPage* settings)
 
 void SceneDebugInfo::Render(SceneViewPage& scenePage)
 {
-    const ImGuiContext& g = *GImGui;
-    const ImGuiWindow* window = g.CurrentWindow;
-    const ImRect rect = ImRound(window->ContentRegionRect);
-
     auto hud = GetSubsystem<DebugHud>();
     if (hud && hudVisible_)
     {
-        ImGuiWindow* window = ui::GetCurrentWindow();
-        ui::SetCursorScreenPos(rect.Min);
+        const IntVector2 position = owner_->GetContentPosition();
+        ui::SetCursorScreenPos(ToImGui(position.ToVector2()));
         hud->RenderUI(DEBUGHUD_SHOW_ALL);
     }
 }
