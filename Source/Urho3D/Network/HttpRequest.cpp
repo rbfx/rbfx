@@ -77,7 +77,7 @@ HttpRequest::HttpRequest(
     , headers_(headers)
     , postData_(postData)
 {
-    URHO3D_PROFILE("HttpRequest()");
+    URHO3D_PROFILE("HttpRequest");
 
     // Size of response is unknown, so just set maximum value. The position will also be changed
     // to maximum value once the request is done, signaling end for Deserializer::IsEof().
