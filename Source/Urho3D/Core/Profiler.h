@@ -24,7 +24,7 @@
 
 #include <tracy/Tracy.hpp>
 #if URHO3D_PROFILING
-#include <tracy/client/TracyLock.hpp>
+#include <client/TracyLock.hpp>
 #endif
 
 namespace Urho3D

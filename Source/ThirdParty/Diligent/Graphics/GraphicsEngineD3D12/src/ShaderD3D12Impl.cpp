@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -91,9 +91,15 @@ static ShaderVersion GetD3D12ShaderModel(const ShaderCreateInfo& ShaderCI,
         VERIFY(ShaderCI.ByteCode != nullptr, "ByteCode must not be null when both Source and FilePath are null");
     }
 
-    return (HLSLVersion == ShaderVersion{0, 0}) ?
-        MaxSupportedSM :
-        ShaderVersion::Min(HLSLVersion, MaxSupportedSM);
+    if (HLSLVersion == ShaderVersion{0, 0})
+    {
+        // Limit shader version to 6.6 to avoid issues with byte code changes in newer untested versions of DXC.
+        return ShaderVersion::Min(MaxSupportedSM, ShaderVersion{6, 6});
+    }
+    else
+    {
+        return ShaderVersion::Min(HLSLVersion, MaxSupportedSM);
+    }
 }
 
 ShaderD3D12Impl::ShaderD3D12Impl(IReferenceCounters*     pRefCounters,
@@ -101,44 +107,38 @@ ShaderD3D12Impl::ShaderD3D12Impl(IReferenceCounters*     pRefCounters,
                                  const ShaderCreateInfo& ShaderCI,
                                  const CreateInfo&       D3D12ShaderCI,
                                  bool                    IsDeviceInternal) :
-    // clang-format off
-    TShaderBase
+    TShaderBase //
     {
         pRefCounters,
         pRenderDeviceD3D12,
-        ShaderCI.Desc,
-        D3D12ShaderCI.DeviceInfo,
-        D3D12ShaderCI.AdapterInfo,
-        IsDeviceInternal
-    },
-    ShaderD3DBase
-    {
         ShaderCI,
+        D3D12ShaderCI,
+        IsDeviceInternal,
         GetD3D12ShaderModel(ShaderCI, D3D12ShaderCI.pDXCompiler, D3D12ShaderCI.MaxShaderVersion),
-        D3D12ShaderCI.pDXCompiler
+        [pDXCompiler      = D3D12ShaderCI.pDXCompiler,
+         LoadCBReflection = ShaderCI.LoadConstantBufferReflection](const ShaderDesc& Desc, IDataBlob* pShaderByteCode) {
+            auto& Allocator  = GetRawAllocator();
+            auto* pRawMem    = ALLOCATE(Allocator, "Allocator for ShaderResources", ShaderResourcesD3D12, 1);
+            auto* pResources = new (pRawMem) ShaderResourcesD3D12 //
+                {
+                    pShaderByteCode,
+                    Desc,
+                    Desc.UseCombinedTextureSamplers ? Desc.CombinedSamplerSuffix : nullptr,
+                    pDXCompiler,
+                    LoadCBReflection,
+                };
+            return std::shared_ptr<const ShaderResourcesD3D12>{pResources, STDDeleterRawMem<ShaderResourcesD3D12>(Allocator)};
+        },
     },
     m_EntryPoint{ShaderCI.EntryPoint}
-// clang-format on
 {
-    // Load shader resources
-    if ((ShaderCI.CompileFlags & SHADER_COMPILE_FLAG_SKIP_REFLECTION) == 0)
-    {
-        auto& Allocator  = GetRawAllocator();
-        auto* pRawMem    = ALLOCATE(Allocator, "Allocator for ShaderResources", ShaderResourcesD3D12, 1);
-        auto* pResources = new (pRawMem) ShaderResourcesD3D12 //
-            {
-                m_pShaderByteCode,
-                m_Desc,
-                m_Desc.UseCombinedTextureSamplers ? m_Desc.CombinedSamplerSuffix : nullptr,
-                D3D12ShaderCI.pDXCompiler,
-                ShaderCI.LoadConstantBufferReflection //
-            };
-        m_pShaderResources.reset(pResources, STDDeleterRawMem<ShaderResourcesD3D12>(Allocator));
-    }
 }
 
 ShaderD3D12Impl::~ShaderD3D12Impl()
 {
+    // Make sure that asynchrous task is complete as it references the shader object.
+    // This needs to be done in the final class before the destruction begins.
+    GetStatus(/*WaitForCompletion = */ true);
 }
 
 void ShaderD3D12Impl::QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface)

@@ -7,7 +7,6 @@
 %constant int ColorLutSize = 16;
 %constant unsigned int PriorityLast = Urho3D::PRIORITY_LAST;
 %ignore Urho3D::PRIORITY_LAST;
-%csconstvalue("0") Urho3D::CF_NONE;
 %csconstvalue("0") Urho3D::PLVT_NONE;
 %csattribute(Urho3D::JSONValue, %arg(Urho3D::JSONValueType), ValueType, GetValueType);
 %csattribute(Urho3D::JSONValue, %arg(Urho3D::JSONNumberType), NumberType, GetNumberType);
@@ -35,7 +34,7 @@
 %csattribute(Urho3D::Image, %arg(unsigned int), Components, GetComponents);
 %csattribute(Urho3D::Image, %arg(unsigned char *), Data, GetData, SetData);
 %csattribute(Urho3D::Image, %arg(bool), IsCompressed, IsCompressed);
-%csattribute(Urho3D::Image, %arg(Urho3D::CompressedFormat), CompressedFormat, GetCompressedFormat);
+%csattribute(Urho3D::Image, %arg(Urho3D::TextureFormat), CompressedFormat, GetCompressedFormat);
 %csattribute(Urho3D::Image, %arg(unsigned int), NumCompressedLevels, GetNumCompressedLevels);
 %csattribute(Urho3D::Image, %arg(SharedPtr<Urho3D::Image>), NextLevel, GetNextLevel);
 %csattribute(Urho3D::Image, %arg(SharedPtr<Urho3D::Image>), NextSibling, GetNextSibling);

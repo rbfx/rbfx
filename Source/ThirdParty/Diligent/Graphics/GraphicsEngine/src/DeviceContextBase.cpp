@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -77,15 +77,31 @@ bool VerifyDrawIndexedAttribs(const DrawIndexedAttribs& Attribs)
     return true;
 }
 
-bool VerifyDrawMeshAttribs(Uint32 MaxDrawMeshTasksCount, const DrawMeshAttribs& Attribs)
+bool VerifyDrawMeshAttribs(const MeshShaderProperties& MeshShaderProps, const DrawMeshAttribs& Attribs)
 {
 #define CHECK_DRAW_MESH_ATTRIBS(Expr, ...) CHECK_PARAMETER(Expr, "Draw mesh attribs are invalid: ", __VA_ARGS__)
 
-    if (Attribs.ThreadGroupCount == 0)
-        LOG_INFO_MESSAGE("DrawMeshAttribs.ThreadGroupCount is 0. This is OK as the draw command will be ignored, but may be unintentional.");
+    if (Attribs.ThreadGroupCountX == 0)
+        LOG_INFO_MESSAGE("DrawMeshAttribs.ThreadGroupCountX is 0. This is OK as the draw command will be ignored, but may be unintentional.");
+    if (Attribs.ThreadGroupCountY == 0)
+        LOG_INFO_MESSAGE("DrawMeshAttribs.ThreadGroupCountY is 0. This is OK as the draw command will be ignored, but may be unintentional.");
+    if (Attribs.ThreadGroupCountZ == 0)
+        LOG_INFO_MESSAGE("DrawMeshAttribs.ThreadGroupCountZ is 0. This is OK as the draw command will be ignored, but may be unintentional.");
 
-    CHECK_DRAW_MESH_ATTRIBS(Attribs.ThreadGroupCount <= MaxDrawMeshTasksCount,
-                            "ThreadGroupCount (", Attribs.ThreadGroupCount, ") must not exceed ", MaxDrawMeshTasksCount);
+    CHECK_DRAW_MESH_ATTRIBS(Attribs.ThreadGroupCountX <= MeshShaderProps.MaxThreadGroupCountX,
+                            "ThreadGroupCountX (", Attribs.ThreadGroupCountX, ") must not exceed MeshShaderProps.MaxThreadGroupCountX (",
+                            MeshShaderProps.MaxThreadGroupCountX, ").");
+    CHECK_DRAW_MESH_ATTRIBS(Attribs.ThreadGroupCountY <= MeshShaderProps.MaxThreadGroupCountY,
+                            "ThreadGroupCountY (", Attribs.ThreadGroupCountY, ") must not exceed MeshShaderProps.MaxThreadGroupCountY (",
+                            MeshShaderProps.MaxThreadGroupCountY, ").");
+    CHECK_DRAW_MESH_ATTRIBS(Attribs.ThreadGroupCountZ <= MeshShaderProps.MaxThreadGroupCountZ,
+                            "ThreadGroupCountZ (", Attribs.ThreadGroupCountZ, ") must not exceed MeshShaderProps.MaxThreadGroupCountZ (",
+                            MeshShaderProps.MaxThreadGroupCountZ, ").");
+
+    const auto TotalGroups = Uint64{Attribs.ThreadGroupCountX} * Uint64{Attribs.ThreadGroupCountY} * Uint64{Attribs.ThreadGroupCountZ};
+    CHECK_DRAW_MESH_ATTRIBS(TotalGroups <= MeshShaderProps.MaxThreadGroupTotalCount,
+                            "Total thread group count (", TotalGroups, ") must not exceed MeshShaderProps.MaxThreadGroupTotalCount (",
+                            MeshShaderProps.MaxThreadGroupTotalCount, ").");
 
 #undef CHECK_DRAW_MESH_ATTRIBS
 
@@ -199,6 +215,32 @@ bool VerifyDrawMeshIndirectAttribs(const DrawMeshIndirectAttribs& Attribs, Uint3
     return true;
 }
 
+bool VerifyMultiDrawAttribs(const MultiDrawAttribs& Attribs)
+{
+    DEV_CHECK_ERR(Attribs.DrawCount == 0 || Attribs.pDrawItems != nullptr, "DrawCount is ", Attribs.DrawCount, ", but pDrawItems is null.");
+
+    if (Attribs.NumInstances == 0)
+        LOG_INFO_MESSAGE("MultiDrawAttribs.NumInstances is 0. This is OK as the draw command will be ignored, but may be unintentional.");
+
+    return true;
+}
+
+bool VerifyMultiDrawIndexedAttribs(const MultiDrawIndexedAttribs& Attribs)
+{
+    DEV_CHECK_ERR(Attribs.DrawCount == 0 || Attribs.pDrawItems != nullptr, "DrawCount is ", Attribs.DrawCount, ", but pDrawItems is null.");
+
+#define CHECK_MULTI_DRAW_INDEXED_ATTRIBS(Expr, ...) CHECK_PARAMETER(Expr, "Draw indexed attribs are invalid: ", __VA_ARGS__)
+
+    CHECK_MULTI_DRAW_INDEXED_ATTRIBS(Attribs.IndexType == VT_UINT16 || Attribs.IndexType == VT_UINT32,
+                                     "IndexType (", GetValueTypeString(Attribs.IndexType), ") must be VT_UINT16 or VT_UINT32.");
+
+    if (Attribs.NumInstances == 0)
+        LOG_INFO_MESSAGE("MultiDrawAttribs.NumInstances is 0. This is OK as the draw command will be ignored, but may be unintentional.");
+
+#undef CHECK_MULTI_DRAW_INDEXED_ATTRIBS
+
+    return true;
+}
 
 bool VerifyDispatchComputeAttribs(const DispatchComputeAttribs& Attribs)
 {

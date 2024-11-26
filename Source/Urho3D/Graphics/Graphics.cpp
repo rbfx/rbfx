@@ -579,18 +579,6 @@ bool Graphics::IsInitialized() const
     return renderDevice_ != nullptr;
 }
 
-TextureFormat Graphics::GetFormat(CompressedFormat format) const
-{
-    switch (format)
-    {
-    case CF_RGBA: return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
-    case CF_DXT1: return TextureFormat::TEX_FORMAT_BC1_UNORM;
-    case CF_DXT3: return TextureFormat::TEX_FORMAT_BC2_UNORM;
-    case CF_DXT5: return TextureFormat::TEX_FORMAT_BC3_UNORM;
-    default: return TextureFormat::TEX_FORMAT_UNKNOWN;
-    }
-}
-
 ShaderVariation* Graphics::GetShader(ShaderType type, const ea::string& name, const ea::string& defines) const
 {
     return GetShader(type, name.c_str(), defines.c_str());

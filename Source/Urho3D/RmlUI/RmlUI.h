@@ -225,3 +225,10 @@ void URHO3D_API RegisterVariantDefinition(Rml::DataTypeRegister* typeRegister);
 void URHO3D_API RegisterRmlUILibrary(Context* context);
 
 }
+
+/// Pin type IDs for built-in objects so they are the same across all binaries.
+/// @{
+extern template class URHO3D_API Rml::Family<Urho3D::Variant>;
+extern template class URHO3D_API Rml::Family<Urho3D::VariantVector>;
+extern template class URHO3D_API Rml::Family<Urho3D::VariantMap>;
+/// @}

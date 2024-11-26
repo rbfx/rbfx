@@ -71,6 +71,9 @@ public:
     void OnDestroyBuffer(const BufferGLImpl& Buffer);
     void OnDestroyPSO(const PipelineStateGLImpl& PSO);
 
+    // Clears all cached objects
+    void Clear();
+
 private:
     // This structure is used as the key to find VAO
     struct VAOHashKey
@@ -85,8 +88,8 @@ private:
         // PSO uniquely defines the layout (attrib pointers, divisors, etc.),
         // so we do not need to add individual layout elements to the key.
         // The key needs to contain all bound buffers.
-        UniqueIdentifier PsoUId;
-        UniqueIdentifier IndexBufferUId;
+        UniqueIdentifier PsoUId         = 0;
+        UniqueIdentifier IndexBufferUId = 0;
 
         Uint32 UsedSlotsMask = 0;
         static_assert(MAX_BUFFER_SLOTS <= sizeof(UsedSlotsMask) * 8, "Use more bits for UsedSlotsMask");

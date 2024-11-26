@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -81,14 +81,14 @@ public:
     struct ShaderStageInfo
     {
         ShaderStageInfo() {}
-        explicit ShaderStageInfo(const ShaderD3D12Impl* _pShader);
+        explicit ShaderStageInfo(const ShaderD3D12Impl* pShader);
 
         void   Append(const ShaderD3D12Impl* pShader);
         size_t Count() const;
 
-        SHADER_TYPE                         Type = SHADER_TYPE_UNKNOWN;
-        std::vector<const ShaderD3D12Impl*> Shaders;
-        std::vector<CComPtr<ID3DBlob>>      ByteCodes;
+        SHADER_TYPE                           Type = SHADER_TYPE_UNKNOWN;
+        std::vector<const ShaderD3D12Impl*>   Shaders;
+        std::vector<RefCntAutoPtr<IDataBlob>> ByteCodes;
 
         friend SHADER_TYPE GetShaderStageType(const ShaderStageInfo& Stage) { return Stage.Type; }
     };
@@ -123,6 +123,13 @@ private:
     void InitRootSignature(const PipelineStateCreateInfo& CreateInfo,
                            TShaderStages&                 ShaderStages,
                            LocalRootSignatureD3D12*       pLocalRootSig) noexcept(false);
+
+    void InitializePipeline(const GraphicsPipelineStateCreateInfo& CreateInfo);
+    void InitializePipeline(const ComputePipelineStateCreateInfo& CreateInfo);
+    void InitializePipeline(const RayTracingPipelineStateCreateInfo& CreateInfo);
+
+    // TPipelineStateBase::Construct needs access to InitializePipeline
+    friend TPipelineStateBase;
 
     void Destruct();
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -169,7 +169,7 @@ void DeviceContextGLImpl::SetPipelineState(IPipelineState* pPipelineState)
     PrepareCommittedResources(m_BindInfo, DvpCompatibleSRBCount);
 }
 
-void DeviceContextGLImpl::TransitionShaderResources(IPipelineState* pPipelineState, IShaderResourceBinding* pShaderResourceBinding)
+void DeviceContextGLImpl::TransitionShaderResources(IShaderResourceBinding* pShaderResourceBinding)
 {
     DEV_CHECK_ERR(!m_pActiveRenderPass, "State transitions are not allowed inside a render pass.");
 }
@@ -207,7 +207,7 @@ void DeviceContextGLImpl::SetBlendFactors(const float* pBlendFactors)
 
 void DeviceContextGLImpl::SetVertexBuffers(Uint32                         StartSlot,
                                            Uint32                         NumBuffersSet,
-                                           IBuffer**                      ppBuffers,
+                                           IBuffer* const*                ppBuffers,
                                            const Uint64*                  pOffsets,
                                            RESOURCE_STATE_TRANSITION_MODE StateTransitionMode,
                                            SET_VERTEX_BUFFERS_FLAGS       Flags)
@@ -294,6 +294,25 @@ void DeviceContextGLImpl::SetViewports(Uint32 NumViewports, const Viewport* pVie
             DEV_CHECK_GL_ERROR("Failed to set depth range for viewport #", i);
         }
     }
+
+    if (m_NumBoundRenderTargets == 0 && !m_pBoundDepthStencil)
+    {
+        // Rendering without render targets
+
+        DEV_CHECK_ERR(m_NumViewports == 1, "Only a single viewport is supported when rendering without render targets");
+
+        const auto VPWidth  = static_cast<Uint32>(m_Viewports[0].Width);
+        const auto VPHeight = static_cast<Uint32>(m_Viewports[0].Height);
+        if (m_FramebufferWidth != VPWidth || m_FramebufferHeight != VPHeight)
+        {
+            // We need to bind another framebuffer since the size has changed
+            m_ContextState.InvalidateFBO();
+        }
+        m_FramebufferWidth   = VPWidth;
+        m_FramebufferHeight  = VPHeight;
+        m_FramebufferSlices  = 1;
+        m_FramebufferSamples = 1;
+    }
 }
 
 void DeviceContextGLImpl::SetScissorRects(Uint32 NumRects, const Rect* pRects, Uint32 RTWidth, Uint32 RTHeight)
@@ -343,6 +362,11 @@ void DeviceContextGLImpl::SetSwapChain(ISwapChainGL* pSwapChain)
     m_pSwapChain = pSwapChain;
 }
 
+GLuint DeviceContextGLImpl::GetDefaultFBO() const
+{
+    return m_pSwapChain ? m_pSwapChain->GetDefaultFBO() : 0;
+}
+
 void DeviceContextGLImpl::CommitRenderTargets()
 {
     DEV_CHECK_ERR(m_pActiveRenderPass == nullptr, "This method must not be called inside render pass");
@@ -355,7 +379,7 @@ void DeviceContextGLImpl::CommitRenderTargets()
         GLuint DefaultFBOHandle = m_pSwapChain->GetDefaultFBO();
         if (m_DefaultFBO != DefaultFBOHandle)
         {
-            m_DefaultFBO = GLObjectWrappers::GLFrameBufferObj{true, GLObjectWrappers::GLFBOCreateReleaseHelper(DefaultFBOHandle)};
+            m_DefaultFBO = GLObjectWrappers::GLFrameBufferObj{true, GLObjectWrappers::GLFBOCreateReleaseHelper{DefaultFBOHandle}};
         }
         m_ContextState.BindFBO(m_DefaultFBO);
     }
@@ -364,11 +388,11 @@ void DeviceContextGLImpl::CommitRenderTargets()
         VERIFY(m_NumBoundRenderTargets != 0 || m_pBoundDepthStencil, "At least one render target or a depth stencil is expected");
 
         Uint32 NumRenderTargets = m_NumBoundRenderTargets;
-        VERIFY(NumRenderTargets < MAX_RENDER_TARGETS, "Too many render targets (", NumRenderTargets, ") are being set");
+        DEV_CHECK_ERR(NumRenderTargets <= MAX_RENDER_TARGETS, "Too many render targets (", NumRenderTargets, ") are being set");
         NumRenderTargets = std::min(NumRenderTargets, MAX_RENDER_TARGETS);
 
         const auto& CtxCaps = m_ContextState.GetContextCaps();
-        VERIFY(NumRenderTargets < static_cast<Uint32>(CtxCaps.MaxDrawBuffers), "This device only supports ", CtxCaps.MaxDrawBuffers, " draw buffers, but ", NumRenderTargets, " are being set");
+        DEV_CHECK_ERR(NumRenderTargets <= static_cast<Uint32>(CtxCaps.MaxDrawBuffers), "This device only supports ", CtxCaps.MaxDrawBuffers, " draw buffers, but ", NumRenderTargets, " are being set");
         NumRenderTargets = std::min(NumRenderTargets, static_cast<Uint32>(CtxCaps.MaxDrawBuffers));
 
         TextureViewGLImpl* pBoundRTVs[MAX_RENDER_TARGETS] = {};
@@ -384,9 +408,8 @@ void DeviceContextGLImpl::CommitRenderTargets()
                       "Depth buffer of the default framebuffer can only be bound with the default framebuffer's color buffer "
                       "and cannot be combined with any other render target in OpenGL backend.");
 
-        auto        CurrentNativeGLContext = m_ContextState.GetCurrentGLContext();
-        auto&       FBOCache               = m_pDevice->GetFBOCache(CurrentNativeGLContext);
-        const auto& FBO                    = FBOCache.GetFBO(NumRenderTargets, pBoundRTVs, m_pBoundDepthStencil, m_ContextState);
+        auto&       FBOCache = m_pDevice->GetFBOCache(m_ContextState.GetCurrentGLContext());
+        const auto& FBO      = FBOCache.GetFBO(NumRenderTargets, pBoundRTVs, m_pBoundDepthStencil, m_ContextState);
         // Even though the write mask only applies to writes to a framebuffer, the mask state is NOT
         // Framebuffer state. So it is NOT part of a Framebuffer Object or the Default Framebuffer.
         // Binding a new framebuffer will NOT affect the mask.
@@ -449,7 +472,7 @@ void DeviceContextGLImpl::BeginSubpass()
         GLuint DefaultFBOHandle = m_pSwapChain->GetDefaultFBO();
         if (m_DefaultFBO != DefaultFBOHandle)
         {
-            m_DefaultFBO = GLObjectWrappers::GLFrameBufferObj{true, GLObjectWrappers::GLFBOCreateReleaseHelper(DefaultFBOHandle)};
+            m_DefaultFBO = GLObjectWrappers::GLFrameBufferObj{true, GLObjectWrappers::GLFBOCreateReleaseHelper{DefaultFBOHandle}};
         }
         m_ContextState.BindFBO(m_DefaultFBO);
     }
@@ -522,7 +545,7 @@ void DeviceContextGLImpl::EndSubpass()
     {
         GLint glCurrReadFB = 0;
         glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &glCurrReadFB);
-        CHECK_GL_ERROR("Failed to get current read framebuffer");
+        DEV_CHECK_GL_ERROR("Failed to get current read framebuffer");
         GLuint glExpectedReadFB = SubpassFBOs.RenderTarget != 0 ? static_cast<GLuint>(SubpassFBOs.RenderTarget) : m_pSwapChain->GetDefaultFBO();
         VERIFY(static_cast<GLuint>(glCurrReadFB) == glExpectedReadFB, "Unexpected read framebuffer");
     }
@@ -539,12 +562,12 @@ void DeviceContextGLImpl::EndSubpass()
         DEV_CHECK_GL_ERROR("Failed to bind resolve destination FBO as draw framebuffer");
 
         const auto& FBODesc = m_pBoundFramebuffer->GetDesc();
-        glBlitFramebuffer(0, 0, static_cast<GLint>(FBODesc.Width), static_cast<GLint>(FBODesc.Height),
-                          0, 0, static_cast<GLint>(FBODesc.Width), static_cast<GLint>(FBODesc.Height),
-                          GL_COLOR_BUFFER_BIT,
-                          GL_NEAREST // Filter is ignored
+        m_ContextState.BlitFramebufferNoScissor(
+            0, 0, static_cast<GLint>(FBODesc.Width), static_cast<GLint>(FBODesc.Height),
+            0, 0, static_cast<GLint>(FBODesc.Width), static_cast<GLint>(FBODesc.Height),
+            GL_COLOR_BUFFER_BIT,
+            GL_NEAREST // Filter is ignored
         );
-        DEV_CHECK_GL_ERROR("glBlitFramebuffer() failed when resolving multi-sampled attachments");
     }
 
     if (glInvalidateFramebuffer != nullptr)
@@ -719,6 +742,16 @@ void DeviceContextGLImpl::BindProgramResources(Uint32 BindSRBMask)
 
 void DeviceContextGLImpl::PrepareForDraw(DRAW_FLAGS Flags, bool IsIndexed, GLenum& GlTopology)
 {
+    if (!m_ContextState.IsValidFBOBound() && m_NumBoundRenderTargets == 0 && !m_pBoundDepthStencil)
+    {
+        // Framebuffer without attachments
+        DEV_CHECK_ERR(m_FramebufferWidth > 0 && m_FramebufferHeight > 0,
+                      "Framebuffer width and height must be positive when rendering without attachments. Call SetViewports() to set the framebuffer size.");
+        auto&       FBOCache = m_pDevice->GetFBOCache(m_ContextState.GetCurrentGLContext());
+        const auto& FBO      = FBOCache.GetFBO(m_FramebufferWidth, m_FramebufferHeight, m_ContextState);
+        m_ContextState.BindFBO(FBO);
+    }
+
 #ifdef DILIGENT_DEVELOPMENT
     if ((Flags & DRAW_FLAG_VERIFY_RENDER_TARGETS) != 0)
         DvpVerifyRenderTargets();
@@ -737,11 +770,10 @@ void DeviceContextGLImpl::PrepareForDraw(DRAW_FLAGS Flags, bool IsIndexed, GLenu
     DvpValidateCommittedShaderResources();
 #endif
 
-    const auto  CurrNativeGLContext = m_pDevice->m_GLContext.GetCurrentNativeGLContext();
-    const auto& PipelineDesc        = m_pPipelineState->GetGraphicsPipelineDesc();
+    const auto& PipelineDesc = m_pPipelineState->GetGraphicsPipelineDesc();
     if (!m_ContextState.IsValidVAOBound())
     {
-        auto& VaoCache     = m_pDevice->GetVAOCache(CurrNativeGLContext);
+        auto& VaoCache     = m_pDevice->GetVAOCache(m_ContextState.GetCurrentGLContext());
         auto* pIndexBuffer = IsIndexed ? m_pIndexBuffer.RawPtr() : nullptr;
         if (PipelineDesc.InputLayout.NumElements > 0 || pIndexBuffer != nullptr)
         {
@@ -801,35 +833,162 @@ void DeviceContextGLImpl::PostDraw()
     m_CommittedResourcesTentativeBarriers = MEMORY_BARRIER_NONE;
 }
 
+inline void DrawArrays(GLenum  GlTopology,
+                       GLsizei NumVertices,
+                       GLsizei NumInstances,
+                       GLint   StartVertexLocation,
+                       GLuint  FirstInstanceLocation)
+{
+    if (NumInstances > 1 || FirstInstanceLocation != 0)
+    {
+        if (FirstInstanceLocation != 0)
+            glDrawArraysInstancedBaseInstance(GlTopology, StartVertexLocation, NumVertices, NumInstances, FirstInstanceLocation);
+        else
+            glDrawArraysInstanced(GlTopology, StartVertexLocation, NumVertices, NumInstances);
+    }
+    else
+    {
+        glDrawArrays(GlTopology, StartVertexLocation, NumVertices);
+    }
+
+    DEV_CHECK_GL_ERROR("DrawaArrays failed");
+}
+
 void DeviceContextGLImpl::Draw(const DrawAttribs& Attribs)
 {
-    DvpVerifyDrawArguments(Attribs);
+    TDeviceContextBase::Draw(Attribs, 0);
 
     GLenum GlTopology;
     PrepareForDraw(Attribs.Flags, false, GlTopology);
 
     if (Attribs.NumVertices > 0 && Attribs.NumInstances > 0)
     {
-        if (Attribs.NumInstances > 1 || Attribs.FirstInstanceLocation != 0)
-        {
-            if (Attribs.FirstInstanceLocation != 0)
-                glDrawArraysInstancedBaseInstance(GlTopology, Attribs.StartVertexLocation, Attribs.NumVertices, Attribs.NumInstances, Attribs.FirstInstanceLocation);
-            else
-                glDrawArraysInstanced(GlTopology, Attribs.StartVertexLocation, Attribs.NumVertices, Attribs.NumInstances);
-        }
-        else
-        {
-            glDrawArrays(GlTopology, Attribs.StartVertexLocation, Attribs.NumVertices);
-        }
-        DEV_CHECK_GL_ERROR("OpenGL draw command failed");
+        DrawArrays(GlTopology,
+                   Attribs.NumVertices,
+                   Attribs.NumInstances,
+                   Attribs.StartVertexLocation,
+                   Attribs.FirstInstanceLocation);
     }
 
     PostDraw();
 }
 
+inline void MultiDrawArrays(GLenum         GlTopology,
+                            GLsizei        DrawCount,
+                            const GLsizei* NumVertices,
+                            const GLint*   StartVertexLocation,
+                            GLsizei        NumInstances,
+                            GLuint         FirstInstanceLocation)
+{
+    if (NumInstances > 1 || FirstInstanceLocation != 0)
+    {
+        UNSUPPORTED("Instanced multi-draw is not currently supported in OpenGL");
+    }
+    else
+    {
+        glMultiDrawArrays(GlTopology, StartVertexLocation, NumVertices, DrawCount);
+    }
+
+    DEV_CHECK_GL_ERROR("MultiDrawArrays failed");
+}
+
+void DeviceContextGLImpl::MultiDraw(const MultiDrawAttribs& Attribs)
+{
+    TDeviceContextBase::MultiDraw(Attribs, 0);
+
+    GLenum GlTopology;
+    PrepareForDraw(Attribs.Flags, false, GlTopology);
+
+    if (Attribs.NumInstances > 0)
+    {
+        if (m_NativeMultiDrawSupported)
+        {
+            size_t NumVerticesDataSize = AlignUp(sizeof(GLsizei) * Attribs.DrawCount, sizeof(void*));
+            size_t StartVertexDataSize = AlignUp(sizeof(GLint) * Attribs.DrawCount, sizeof(void*));
+            m_ScratchSpace.resize(NumVerticesDataSize + StartVertexDataSize);
+
+            GLsizei* NumVertices         = reinterpret_cast<GLsizei*>(m_ScratchSpace.data());
+            GLint*   StartVertexLocation = reinterpret_cast<GLint*>(m_ScratchSpace.data() + NumVerticesDataSize);
+
+            GLsizei DrawCount = 0;
+            for (Uint32 i = 0; i < Attribs.DrawCount; ++i)
+            {
+                const auto& DrawItem = Attribs.pDrawItems[i];
+                if (DrawItem.NumVertices > 0)
+                {
+                    NumVertices[DrawCount]         = DrawItem.NumVertices;
+                    StartVertexLocation[DrawCount] = DrawItem.StartVertexLocation;
+                    ++DrawCount;
+                }
+            }
+            if (DrawCount > 0)
+            {
+                MultiDrawArrays(GlTopology,
+                                DrawCount,
+                                NumVertices,
+                                StartVertexLocation,
+                                Attribs.NumInstances,
+                                Attribs.FirstInstanceLocation);
+            }
+        }
+        else
+        {
+            for (Uint32 i = 0; i < Attribs.DrawCount; ++i)
+            {
+                const auto& DrawItem = Attribs.pDrawItems[i];
+                if (DrawItem.NumVertices > 0)
+                {
+                    DrawArrays(GlTopology,
+                               DrawItem.NumVertices,
+                               Attribs.NumInstances,
+                               DrawItem.StartVertexLocation,
+                               Attribs.FirstInstanceLocation);
+                }
+            }
+        }
+    }
+    PostDraw();
+}
+
+inline void DrawElements(GLenum  GlTopology,
+                         GLsizei NumIndices,
+                         GLenum  GLIndexType,
+                         GLsizei NumInstances,
+                         size_t  FirstIndexByteOffset,
+                         GLint   BaseVertex,
+                         GLuint  FirstInstanceLocation)
+{
+    if (NumInstances > 1 || FirstInstanceLocation != 0)
+    {
+        if (BaseVertex > 0)
+        {
+            if (FirstInstanceLocation != 0)
+                glDrawElementsInstancedBaseVertexBaseInstance(GlTopology, NumIndices, GLIndexType, reinterpret_cast<GLvoid*>(FirstIndexByteOffset), NumInstances, BaseVertex, FirstInstanceLocation);
+            else
+                glDrawElementsInstancedBaseVertex(GlTopology, NumIndices, GLIndexType, reinterpret_cast<GLvoid*>(FirstIndexByteOffset), NumInstances, BaseVertex);
+        }
+        else
+        {
+            if (FirstInstanceLocation != 0)
+                glDrawElementsInstancedBaseInstance(GlTopology, NumIndices, GLIndexType, reinterpret_cast<GLvoid*>(FirstIndexByteOffset), NumInstances, FirstInstanceLocation);
+            else
+                glDrawElementsInstanced(GlTopology, NumIndices, GLIndexType, reinterpret_cast<GLvoid*>(FirstIndexByteOffset), NumInstances);
+        }
+    }
+    else
+    {
+        if (BaseVertex > 0)
+            glDrawElementsBaseVertex(GlTopology, NumIndices, GLIndexType, reinterpret_cast<GLvoid*>(FirstIndexByteOffset), BaseVertex);
+        else
+            glDrawElements(GlTopology, NumIndices, GLIndexType, reinterpret_cast<GLvoid*>(FirstIndexByteOffset));
+    }
+
+    DEV_CHECK_GL_ERROR("DrawElements failed");
+}
+
 void DeviceContextGLImpl::DrawIndexed(const DrawIndexedAttribs& Attribs)
 {
-    DvpVerifyDrawIndexedArguments(Attribs);
+    TDeviceContextBase::DrawIndexed(Attribs, 0);
 
     GLenum GlTopology;
     PrepareForDraw(Attribs.Flags, true, GlTopology);
@@ -844,31 +1003,112 @@ void DeviceContextGLImpl::DrawIndexed(const DrawIndexedAttribs& Attribs)
 
     if (Attribs.NumIndices > 0 && Attribs.NumInstances > 0)
     {
-        if (Attribs.NumInstances > 1 || Attribs.FirstInstanceLocation != 0)
+        DrawElements(GlTopology,
+                     Attribs.NumIndices,
+                     GLIndexType,
+                     Attribs.NumInstances,
+                     FirstIndexByteOffset,
+                     Attribs.BaseVertex,
+                     Attribs.FirstInstanceLocation);
+    }
+
+    PostDraw();
+}
+
+inline void MultiDrawElements(GLenum   GlTopology,
+                              GLsizei  DrawCount,
+                              GLsizei* NumIndices,
+                              GLenum   GLIndexType,
+                              GLsizei  NumInstances,
+                              void**   FirstIndexByteOffset,
+                              GLint*   BaseVertex,
+                              GLuint   FirstInstanceLocation)
+{
+    if (NumInstances > 1 || FirstInstanceLocation != 0)
+    {
+        UNSUPPORTED("Instanced multi-draw is not currently supported in OpenGL");
+    }
+    else
+    {
+        if (BaseVertex != nullptr)
+            glMultiDrawElementsBaseVertex(GlTopology, NumIndices, GLIndexType, FirstIndexByteOffset, DrawCount, BaseVertex);
+        else
+            glMultiDrawElements(GlTopology, NumIndices, GLIndexType, FirstIndexByteOffset, DrawCount);
+    }
+
+    DEV_CHECK_GL_ERROR("MultiDrawElements failed");
+}
+
+
+void DeviceContextGLImpl::MultiDrawIndexed(const MultiDrawIndexedAttribs& Attribs)
+{
+    TDeviceContextBase::MultiDrawIndexed(Attribs, 0);
+
+    GLenum GlTopology;
+    PrepareForDraw(Attribs.Flags, true, GlTopology);
+    GLenum GLIndexType;
+    size_t FirstIndexByteOffset;
+    PrepareForIndexedDraw(Attribs.IndexType, 0, GLIndexType, FirstIndexByteOffset);
+
+    if (Attribs.NumInstances > 0)
+    {
+        const size_t IndexSize = GetValueSize(Attribs.IndexType);
+        if (m_NativeMultiDrawSupported)
         {
-            if (Attribs.BaseVertex > 0)
+            const size_t IndexDataSize      = AlignUp(sizeof(GLsizei) * Attribs.DrawCount, sizeof(void*));
+            const size_t OffsetDataSize     = AlignUp(sizeof(void*) * Attribs.DrawCount, sizeof(void*));
+            const size_t BaseVertexDataSize = AlignUp(sizeof(GLint) * Attribs.DrawCount, sizeof(void*));
+
+            m_ScratchSpace.resize(IndexDataSize + OffsetDataSize + BaseVertexDataSize);
+
+            GLsizei* NumIndices = reinterpret_cast<GLsizei*>(m_ScratchSpace.data());
+            void**   Offsets    = reinterpret_cast<void**>(m_ScratchSpace.data() + IndexDataSize);
+            GLint*   BaseVertex = reinterpret_cast<GLint*>(m_ScratchSpace.data() + IndexDataSize + OffsetDataSize);
+
+            GLsizei DrawCount     = 0;
+            bool    HasBaseVertex = false;
+            for (Uint32 i = 0; i < Attribs.DrawCount; ++i)
             {
-                if (Attribs.FirstInstanceLocation != 0)
-                    glDrawElementsInstancedBaseVertexBaseInstance(GlTopology, Attribs.NumIndices, GLIndexType, reinterpret_cast<GLvoid*>(static_cast<size_t>(FirstIndexByteOffset)), Attribs.NumInstances, Attribs.BaseVertex, Attribs.FirstInstanceLocation);
-                else
-                    glDrawElementsInstancedBaseVertex(GlTopology, Attribs.NumIndices, GLIndexType, reinterpret_cast<GLvoid*>(static_cast<size_t>(FirstIndexByteOffset)), Attribs.NumInstances, Attribs.BaseVertex);
+                const auto& DrawItem = Attribs.pDrawItems[i];
+                if (DrawItem.NumIndices > 0)
+                {
+                    NumIndices[DrawCount] = DrawItem.NumIndices;
+                    Offsets[DrawCount]    = reinterpret_cast<void*>(FirstIndexByteOffset + IndexSize * static_cast<size_t>(DrawItem.FirstIndexLocation));
+                    BaseVertex[DrawCount] = DrawItem.BaseVertex;
+                    if (BaseVertex[DrawCount] != 0)
+                        HasBaseVertex = true;
+                    ++DrawCount;
+                }
             }
-            else
+            if (DrawCount > 0)
             {
-                if (Attribs.FirstInstanceLocation != 0)
-                    glDrawElementsInstancedBaseInstance(GlTopology, Attribs.NumIndices, GLIndexType, reinterpret_cast<GLvoid*>(static_cast<size_t>(FirstIndexByteOffset)), Attribs.NumInstances, Attribs.FirstInstanceLocation);
-                else
-                    glDrawElementsInstanced(GlTopology, Attribs.NumIndices, GLIndexType, reinterpret_cast<GLvoid*>(static_cast<size_t>(FirstIndexByteOffset)), Attribs.NumInstances);
+                MultiDrawElements(GlTopology,
+                                  DrawCount,
+                                  NumIndices,
+                                  GLIndexType,
+                                  Attribs.NumInstances,
+                                  Offsets,
+                                  HasBaseVertex ? BaseVertex : nullptr,
+                                  Attribs.FirstInstanceLocation);
             }
         }
         else
         {
-            if (Attribs.BaseVertex > 0)
-                glDrawElementsBaseVertex(GlTopology, Attribs.NumIndices, GLIndexType, reinterpret_cast<GLvoid*>(static_cast<size_t>(FirstIndexByteOffset)), Attribs.BaseVertex);
-            else
-                glDrawElements(GlTopology, Attribs.NumIndices, GLIndexType, reinterpret_cast<GLvoid*>(static_cast<size_t>(FirstIndexByteOffset)));
+            for (Uint32 i = 0; i < Attribs.DrawCount; ++i)
+            {
+                const auto& DrawItem = Attribs.pDrawItems[i];
+                if (DrawItem.NumIndices > 0)
+                {
+                    DrawElements(GlTopology,
+                                 DrawItem.NumIndices,
+                                 GLIndexType,
+                                 Attribs.NumInstances,
+                                 FirstIndexByteOffset + IndexSize * static_cast<size_t>(DrawItem.FirstIndexLocation),
+                                 DrawItem.BaseVertex,
+                                 Attribs.FirstInstanceLocation);
+                }
+            }
         }
-        DEV_CHECK_GL_ERROR("OpenGL draw command failed");
     }
 
     PostDraw();
@@ -914,7 +1154,7 @@ void DeviceContextGLImpl::PrepareForIndirectDrawCount(IBuffer* pCountBuffer)
 
 void DeviceContextGLImpl::DrawIndirect(const DrawIndirectAttribs& Attribs)
 {
-    DvpVerifyDrawIndirectArguments(Attribs);
+    TDeviceContextBase::DrawIndirect(Attribs, 0);
 
     GLenum GlTopology;
     PrepareForDraw(Attribs.Flags, true, GlTopology);
@@ -988,7 +1228,7 @@ void DeviceContextGLImpl::DrawIndirect(const DrawIndirectAttribs& Attribs)
 
 void DeviceContextGLImpl::DrawIndexedIndirect(const DrawIndexedIndirectAttribs& Attribs)
 {
-    DvpVerifyDrawIndexedIndirectArguments(Attribs);
+    TDeviceContextBase::DrawIndexedIndirect(Attribs, 0);
 
     GLenum GlTopology;
     PrepareForDraw(Attribs.Flags, true, GlTopology);
@@ -1080,7 +1320,7 @@ void DeviceContextGLImpl::DrawMeshIndirect(const DrawMeshIndirectAttribs& Attrib
 
 void DeviceContextGLImpl::DispatchCompute(const DispatchComputeAttribs& Attribs)
 {
-    DvpVerifyDispatchArguments(Attribs);
+    TDeviceContextBase::DispatchCompute(Attribs, 0);
 
 #if GL_ARB_compute_shader
     // The program might have changed since the last SetPipelineState call if a shader was
@@ -1110,7 +1350,7 @@ void DeviceContextGLImpl::DispatchCompute(const DispatchComputeAttribs& Attribs)
 
 void DeviceContextGLImpl::DispatchComputeIndirect(const DispatchComputeIndirectAttribs& Attribs)
 {
-    DvpVerifyDispatchIndirectArguments(Attribs);
+    TDeviceContextBase::DispatchComputeIndirect(Attribs, 0);
 
 #if GL_ARB_compute_shader
     // The program might have changed since the last SetPipelineState call if a shader was
@@ -1193,7 +1433,7 @@ void DeviceContextGLImpl::ClearDepthStencil(ITextureView*                  pView
     m_ContextState.EnableScissorTest(ScissorTestEnabled);
 }
 
-void DeviceContextGLImpl::ClearRenderTarget(ITextureView* pView, const float* RGBA, RESOURCE_STATE_TRANSITION_MODE StateTransitionMode)
+void DeviceContextGLImpl::ClearRenderTarget(ITextureView* pView, const void* RGBA, RESOURCE_STATE_TRANSITION_MODE StateTransitionMode)
 {
     TDeviceContextBase::ClearRenderTarget(pView);
 
@@ -1213,7 +1453,7 @@ void DeviceContextGLImpl::ClearRenderTarget(ITextureView* pView, const float* RG
         return;
     }
 
-    static const float Zero[4] = {0, 0, 0, 0};
+    static constexpr float Zero[4] = {0, 0, 0, 0};
     if (RGBA == nullptr)
         RGBA = Zero;
 
@@ -1235,8 +1475,23 @@ void DeviceContextGLImpl::ClearRenderTarget(ITextureView* pView, const float* RG
     m_ContextState.GetColorWriteMask(RTIndex, WriteMask, bIndependentBlend);
     m_ContextState.SetColorWriteMask(RTIndex, COLOR_MASK_ALL, bIndependentBlend);
 
-    glClearBufferfv(GL_COLOR, RTIndex, RGBA);
-    DEV_CHECK_GL_ERROR("glClearBufferfv() failed");
+    const TEXTURE_FORMAT        RTVFormat  = m_pBoundRenderTargets[RTIndex]->GetDesc().Format;
+    const TextureFormatAttribs& FmtAttribs = GetTextureFormatAttribs(RTVFormat);
+    if (FmtAttribs.ComponentType == COMPONENT_TYPE_SINT)
+    {
+        glClearBufferiv(GL_COLOR, RTIndex, static_cast<const GLint*>(RGBA));
+        DEV_CHECK_GL_ERROR("glClearBufferiv() failed");
+    }
+    else if (FmtAttribs.ComponentType == COMPONENT_TYPE_UINT)
+    {
+        glClearBufferuiv(GL_COLOR, RTIndex, static_cast<const GLuint*>(RGBA));
+        DEV_CHECK_GL_ERROR("glClearBufferuiv() failed");
+    }
+    else
+    {
+        glClearBufferfv(GL_COLOR, RTIndex, static_cast<const float*>(RGBA));
+        DEV_CHECK_GL_ERROR("glClearBufferfv() failed");
+    }
 
     m_ContextState.SetColorWriteMask(RTIndex, WriteMask, bIndependentBlend);
     m_ContextState.EnableScissorTest(ScissorTestEnabled);
@@ -1406,6 +1661,13 @@ bool DeviceContextGLImpl::UpdateCurrentGLContext()
 
     m_ContextState.SetCurrentGLContext(NativeGLContext);
     return true;
+}
+
+void DeviceContextGLImpl::PurgeCurrentGLContextCaches()
+{
+    auto NativeGLContext = m_pDevice->m_GLContext.GetCurrentNativeGLContext();
+    if (NativeGLContext != NULL)
+        m_pDevice->PurgeContextCaches(NativeGLContext);
 }
 
 void DeviceContextGLImpl::UpdateBuffer(IBuffer*                       pBuffer,
@@ -1648,8 +1910,7 @@ void DeviceContextGLImpl::ResolveTextureSubresource(ITexture*                   
     const auto& SrcTexDesc = pSrcTexGl->GetDesc();
     //const auto& DstTexDesc = pDstTexGl->GetDesc();
 
-    auto  CurrentNativeGLContext = m_ContextState.GetCurrentGLContext();
-    auto& FBOCache               = m_pDevice->GetFBOCache(CurrentNativeGLContext);
+    auto& FBOCache = m_pDevice->GetFBOCache(m_ContextState.GetCurrentGLContext());
 
     GLuint SrcFBOHandle = 0;
     {
@@ -1707,12 +1968,12 @@ void DeviceContextGLImpl::ResolveTextureSubresource(ITexture*                   
     DEV_CHECK_GL_ERROR("Failed to bind FBO as read framebuffer");
 
     const auto& MipAttribs = GetMipLevelProperties(SrcTexDesc, ResolveAttribs.SrcMipLevel);
-    glBlitFramebuffer(0, 0, static_cast<GLint>(MipAttribs.LogicalWidth), static_cast<GLint>(MipAttribs.LogicalHeight),
-                      0, 0, static_cast<GLint>(MipAttribs.LogicalWidth), static_cast<GLint>(MipAttribs.LogicalHeight),
-                      GL_COLOR_BUFFER_BIT,
-                      GL_NEAREST // Filter is ignored
+    m_ContextState.BlitFramebufferNoScissor(
+        0, 0, static_cast<GLint>(MipAttribs.LogicalWidth), static_cast<GLint>(MipAttribs.LogicalHeight),
+        0, 0, static_cast<GLint>(MipAttribs.LogicalWidth), static_cast<GLint>(MipAttribs.LogicalHeight),
+        GL_COLOR_BUFFER_BIT,
+        GL_NEAREST // Filter is ignored
     );
-    DEV_CHECK_GL_ERROR("glBlitFramebuffer() failed when resolving multi-sampled texture");
 
     // Restore original FBO
     m_ContextState.InvalidateFBO();

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -56,7 +56,7 @@ DEFINE_TYPE_PRINTER(STENCIL_OP, GetStencilOpLiteralName)
 DEFINE_TYPE_PRINTER(BLEND_FACTOR, GetBlendFactorLiteralName)
 DEFINE_TYPE_PRINTER(BLEND_OPERATION, GetBlendOperationLiteralName)
 DEFINE_TYPE_PRINTER(FILL_MODE, GetFillModeLiteralName)
-DEFINE_TYPE_PRINTER(CULL_MODE, GetCullModeLiteralName)
+DEFINE_TYPE_PRINTER(CULL_MODE, GetCullModeLiteralName, true)
 DEFINE_TYPE_PRINTER(MAP_TYPE, GetMapTypeString)
 DEFINE_TYPE_PRINTER(USAGE, GetUsageString)
 DEFINE_TYPE_PRINTER(RESOURCE_DIMENSION, GetResourceDimString)
@@ -69,6 +69,8 @@ DEFINE_TYPE_PRINTER(AttachmentReference, GetAttachmentReferenceString)
 DEFINE_TYPE_PRINTER(ShaderDesc, GetShaderDescString)
 DEFINE_TYPE_PRINTER(ShaderCodeBufferDesc, GetShaderCodeBufferDescString)
 DEFINE_TYPE_PRINTER(ShaderCodeVariableDesc, GetShaderCodeVariableDescString)
+DEFINE_TYPE_PRINTER(LayoutElement, GetLayoutElementString)
+DEFINE_TYPE_PRINTER(TextureComponentMapping, GetTextureComponentMappingString)
 #undef DEFINE_TYPE_PRINTER
 
 } // namespace Diligent

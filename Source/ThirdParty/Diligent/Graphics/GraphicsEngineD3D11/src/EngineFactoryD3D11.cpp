@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,6 +46,23 @@
 
 namespace Diligent
 {
+
+bool CheckAdapterD3D11Compatibility(IDXGIAdapter1* pDXGIAdapter, D3D_FEATURE_LEVEL FeatureLevel)
+{
+    auto hr = D3D11CreateDevice(
+        nullptr,
+        D3D_DRIVER_TYPE_NULL, // There is no need to create a real hardware device.
+        0,
+        0,                 // Flags.
+        &FeatureLevel,     // Feature levels.
+        1,                 // Number of feature levels
+        D3D11_SDK_VERSION, // Always set this to D3D11_SDK_VERSION for Windows Store apps.
+        nullptr,           // No need to keep the D3D device reference.
+        nullptr,           // Feature level of the created adapter.
+        nullptr            // No need to keep the D3D device context reference.
+    );
+    return SUCCEEDED(hr);
+}
 
 /// Engine factory for D3D11 implementation
 class EngineFactoryD3D11Impl : public EngineFactoryD3DBase<IEngineFactoryD3D11, RENDER_DEVICE_TYPE_D3D11>
@@ -438,7 +455,8 @@ GraphicsAdapterInfo EngineFactoryD3D11Impl::GetGraphicsAdapterInfo(void*        
         }
         Features.ShaderFloat16 = ShaderFloat16Supported ? DEVICE_FEATURE_STATE_ENABLED : DEVICE_FEATURE_STATE_DISABLED;
     }
-    ASSERT_SIZEOF(Features, 41, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
+
+    ASSERT_SIZEOF(Features, 47, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
 
     // Texture properties
     {
@@ -460,9 +478,9 @@ GraphicsAdapterInfo EngineFactoryD3D11Impl::GetGraphicsAdapterInfo(void*        
     // Sampler properties
     {
         auto& SamProps{AdapterInfo.Sampler};
-        SamProps.BorderSamplingModeSupported   = True;
-        SamProps.AnisotropicFilteringSupported = True;
-        SamProps.LODBiasSupported              = True;
+        SamProps.BorderSamplingModeSupported = True;
+        SamProps.MaxAnisotropy               = D3D11_DEFAULT_MAX_ANISOTROPY;
+        SamProps.LODBiasSupported            = True;
         ASSERT_SIZEOF(SamProps, 3, "Did you add a new member to SamplerProperites? Please initialize it here.");
     }
 

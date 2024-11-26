@@ -67,6 +67,9 @@ const auto textureFormatMapSRGB = []
         {TextureFormat::TEX_FORMAT_BC2_UNORM, TextureFormat::TEX_FORMAT_BC2_UNORM_SRGB},
         {TextureFormat::TEX_FORMAT_BC3_UNORM, TextureFormat::TEX_FORMAT_BC3_UNORM_SRGB},
         {TextureFormat::TEX_FORMAT_BC7_UNORM, TextureFormat::TEX_FORMAT_BC7_UNORM_SRGB},
+        {TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM, TextureFormat::TEX_FORMAT_ETC2_RGB8_UNORM_SRGB},
+        {TextureFormat::TEX_FORMAT_ETC2_RGB8A1_UNORM, TextureFormat::TEX_FORMAT_ETC2_RGB8A1_UNORM_SRGB},
+        {TextureFormat::TEX_FORMAT_ETC2_RGBA8_UNORM, TextureFormat::TEX_FORMAT_ETC2_RGBA8_UNORM_SRGB},
     };
 
     ea::unordered_map<TextureFormat, TextureFormat> fromSrgb;
@@ -76,6 +79,29 @@ const auto textureFormatMapSRGB = []
 }();
 
 } // namespace
+
+const Diligent::TextureFormatAttribs& GetTextureFormatInfo(TextureFormat textureFormat)
+{
+#define INIT_TEX_FORMAT_INFO(TexFmt, ComponentSize, NumComponents, ComponentType, IsTypeless, BlockWidth, BlockHeight) \
+    {EmulatedTextureFormat::TexFmt, \
+        Diligent::TextureFormatAttribs{#TexFmt, EmulatedTextureFormat::TexFmt, ComponentSize, NumComponents, \
+            Diligent::ComponentType, IsTypeless, BlockWidth, BlockHeight}}
+
+    static const ea::unordered_map<TextureFormat, Diligent::TextureFormatAttribs> emulatedTextureFormat = {
+        INIT_TEX_FORMAT_INFO(TEX_FORMAT_PVRTC_RGB_2BPP,  8, 3, COMPONENT_TYPE_COMPRESSED, false, 8, 4),
+        INIT_TEX_FORMAT_INFO(TEX_FORMAT_PVRTC_RGBA_2BPP, 8, 4, COMPONENT_TYPE_COMPRESSED, false, 8, 4),
+        INIT_TEX_FORMAT_INFO(TEX_FORMAT_PVRTC_RGB_4BPP,  8, 3, COMPONENT_TYPE_COMPRESSED, false, 4, 4),
+        INIT_TEX_FORMAT_INFO(TEX_FORMAT_PVRTC_RGBA_4BPP, 8, 4, COMPONENT_TYPE_COMPRESSED, false, 4, 4),
+    };
+#undef INIT_TEX_FORMAT_INFO
+
+    if (textureFormat < TextureFormat::TEX_FORMAT_NUM_FORMATS)
+        return Diligent::GetTextureFormatAttribs(textureFormat);
+    else if (const auto iter = emulatedTextureFormat.find(textureFormat); iter != emulatedTextureFormat.end())
+        return iter->second;
+    else
+        return Diligent::GetTextureFormatAttribs(TextureFormat::TEX_FORMAT_UNKNOWN);
+}
 
 bool IsOpenGLESBackend(RenderBackend backend)
 {
@@ -174,6 +200,15 @@ IntVector3 GetMipLevelSize(const IntVector3& size, unsigned level)
     dim.y_ >>= level;
     dim.z_ >>= level;
     return VectorMax(dim, IntVector3::ONE);
+}
+
+unsigned GetMipLevelSizeInBytes(TextureFormat textureFormat, const IntVector3& size, unsigned level)
+{
+    const auto& formatAttribs = GetTextureFormatInfo(textureFormat);
+    const IntVector3 levelSize = GetMipLevelSize(size, level);
+    const unsigned widthInBlocks = (levelSize.x_ + formatAttribs.BlockWidth - 1) / formatAttribs.BlockWidth;
+    const unsigned heightInBlocks = (levelSize.y_ + formatAttribs.BlockHeight - 1) / formatAttribs.BlockHeight;
+    return formatAttribs.GetElementSize() * widthInBlocks * heightInBlocks * levelSize.z_;
 }
 
 bool IsTextureFormatSRGB(TextureFormat format)

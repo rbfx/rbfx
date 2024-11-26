@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -169,10 +169,10 @@ public:
             return m_DescriptorSetAllocation.GetVkDescriptorSet();
         }
 
-        // clang-format off
-/* 0 */ const Uint32 m_NumResources = 0;
     private:
-/* 8 */ Resource* const m_pResources = nullptr;
+        // clang-format off
+/* 0 */ const Uint32            m_NumResources = 0;
+/* 8 */ Resource* const         m_pResources   = nullptr;
 /*16 */ DescriptorSetAllocation m_DescriptorSetAllocation;
 /*48 */ // End of structure
         // clang-format on
@@ -252,7 +252,7 @@ public:
     ResourceCacheContentType GetContentType() const { return static_cast<ResourceCacheContentType>(m_ContentType); }
 
 #ifdef DILIGENT_DEBUG
-    // Only for debug purposes: indicates what types of resources are stored in the cache
+    // For debug purposes only
     void DbgVerifyResourceInitialization() const;
     void DbgVerifyDynamicBuffersCounter() const;
 #endif

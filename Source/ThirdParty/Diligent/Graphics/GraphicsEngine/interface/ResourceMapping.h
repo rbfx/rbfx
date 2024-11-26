@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {6C1AC7A6-B429-4139-9433-9E54E93E384A}
-static const INTERFACE_ID IID_ResourceMapping =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_ResourceMapping =
     {0x6c1ac7a6, 0xb429, 0x4139, {0x94, 0x33, 0x9e, 0x54, 0xe9, 0x3e, 0x38, 0x4a}};
 
 /// Describes the resource mapping object entry
@@ -71,24 +71,27 @@ struct ResourceMappingEntry
 typedef struct ResourceMappingEntry ResourceMappingEntry;
 
 
-/// Resource mapping description
-struct ResourceMappingDesc
+/// Resource mapping create information
+struct ResourceMappingCreateInfo
 {
-    /// Pointer to the array of resource mapping entries.
-    /// The last element in the array must be default value
-    /// created by ResourceMappingEntry::ResourceMappingEntry()
-    ResourceMappingEntry* pEntries DEFAULT_INITIALIZER(nullptr);
+    /// A pointer to the array of resource mapping entries.
+    const ResourceMappingEntry* pEntries DEFAULT_INITIALIZER(nullptr);
+
+    /// The number of entries in pEntries array.
+    Uint32 NumEntries DEFAULT_INITIALIZER(0);
 
 #if DILIGENT_CPP_INTERFACE
-    constexpr ResourceMappingDesc() noexcept
+    constexpr ResourceMappingCreateInfo() noexcept
     {}
 
-    explicit constexpr ResourceMappingDesc(ResourceMappingEntry* _pEntries) noexcept :
-        pEntries{_pEntries}
+    constexpr ResourceMappingCreateInfo(const ResourceMappingEntry* _pEntries,
+                                        Uint32                      _NumEntries) noexcept :
+        pEntries{_pEntries},
+        NumEntries{_NumEntries}
     {}
 #endif
 };
-typedef struct ResourceMappingDesc ResourceMappingDesc;
+typedef struct ResourceMappingCreateInfo ResourceMappingCreateInfo;
 
 #define DILIGENT_INTERFACE_NAME IResourceMapping
 #include "../../../Primitives/interface/DefineInterfaceHelperMacros.h"

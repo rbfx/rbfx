@@ -1,33 +1,18 @@
-//
 // Copyright (c) 2008-2017 the Urho3D project.
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2024 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../SystemUI/ImGui.h"
+#include "Urho3D/SystemUI/ImGui.h"
 
 #include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Input/Input.h"
 
 #include <SDL.h>
+
+extern ImGuiKey ImGui_ImplSDL2_KeyEventToImGuiKey(SDL_Keycode keycode, SDL_Scancode scancode);
 
 namespace Urho3D
 {
@@ -120,22 +105,42 @@ void ui::ResetMouseDragDelta(Urho3D::MouseButton button)
 
 bool ui::IsKeyDown(Urho3D::Key key)
 {
-    return IsKeyDown(SDL_GetScancodeFromKey(key));
+    return IsKeyDown(ImGui_ImplSDL2_KeyEventToImGuiKey((SDL_Keycode)key, (SDL_Scancode)Urho3D::Input::GetScancodeFromKey(key)));
 }
 
 bool ui::IsKeyPressed(Urho3D::Key key, bool repeat)
 {
-    return IsKeyPressed(SDL_GetScancodeFromKey(key), repeat);
+    return IsKeyPressed(ImGui_ImplSDL2_KeyEventToImGuiKey((SDL_Keycode)key, (SDL_Scancode)Urho3D::Input::GetScancodeFromKey(key)), repeat);
 }
 
 bool ui::IsKeyReleased(Urho3D::Key key)
 {
-    return IsKeyReleased(SDL_GetScancodeFromKey(key));
+    return IsKeyReleased(ImGui_ImplSDL2_KeyEventToImGuiKey((SDL_Keycode)key, (SDL_Scancode)Urho3D::Input::GetScancodeFromKey(key)));
 }
 
 int ui::GetKeyPressedAmount(Urho3D::Key key, float repeatDelay, float rate)
 {
-    return GetKeyPressedAmount(SDL_GetScancodeFromKey(key), repeatDelay, rate);
+    return GetKeyPressedAmount(ImGui_ImplSDL2_KeyEventToImGuiKey((SDL_Keycode)key, (SDL_Scancode)Urho3D::Input::GetScancodeFromKey(key)), repeatDelay, rate);
+}
+
+bool ui::IsKeyDown(Urho3D::Scancode scancode)
+{
+    return IsKeyDown(Urho3D::Input::GetKeyFromScancode(scancode));
+}
+
+bool ui::IsKeyPressed(Urho3D::Scancode scancode, bool repeat)
+{
+    return IsKeyPressed(Urho3D::Input::GetKeyFromScancode(scancode), repeat);
+}
+
+bool ui::IsKeyReleased(Urho3D::Scancode scancode)
+{
+    return IsKeyReleased(Urho3D::Input::GetKeyFromScancode(scancode));
+}
+
+int ui::GetKeyPressedAmount(Urho3D::Scancode scancode, float repeatDelay, float rate)
+{
+    return GetKeyPressedAmount(Urho3D::Input::GetKeyFromScancode(scancode), repeatDelay, rate);
 }
 
 float ui::GetMouseWheel()

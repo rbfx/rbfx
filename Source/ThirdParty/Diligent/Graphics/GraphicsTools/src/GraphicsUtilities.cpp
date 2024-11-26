@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,6 +33,7 @@
 #include "DebugUtilities.hpp"
 #include "GraphicsAccessories.hpp"
 #include "ColorConversion.h"
+#include "RefCntAutoPtr.hpp"
 
 #define PI_F 3.1415926f
 
@@ -48,6 +49,9 @@ void CreateUniformBuffer(IRenderDevice*   pDevice,
                          CPU_ACCESS_FLAGS CPUAccessFlags,
                          void*            pInitialData)
 {
+    if (Usage == USAGE_DEFAULT || Usage == USAGE_IMMUTABLE)
+        CPUAccessFlags = CPU_ACCESS_NONE;
+
     BufferDesc CBDesc;
     CBDesc.Name           = Name;
     CBDesc.Size           = Size;
@@ -107,7 +111,7 @@ void GenerateCheckerBoardPattern(Uint32 Width, Uint32 Height, TEXTURE_FORMAT Fmt
                 Width, Height, Fmt, HorzCells, VertCells, pData, StrideInBytes,
                 [](Uint8* pDstTexel, Uint32 NumComponents, float fVal) //
                 {
-                    Uint8 uVal = static_cast<Uint8>(FastLinearToSRGB(fVal) * 255.f);
+                    Uint8 uVal = static_cast<Uint8>(FastLinearToGamma(fVal) * 255.f);
                     for (Uint32 c = 0; c < NumComponents; ++c)
                         pDstTexel[c] = uVal;
                 } //
@@ -146,8 +150,8 @@ ChannelType SRGBAverage(ChannelType c0, ChannelType c1, ChannelType c2, ChannelT
     float fc2 = static_cast<float>(c2) * MaxValInv;
     float fc3 = static_cast<float>(c3) * MaxValInv;
 
-    float fLinearAverage = (FastSRGBToLinear(fc0) + FastSRGBToLinear(fc1) + FastSRGBToLinear(fc2) + FastSRGBToLinear(fc3)) * 0.25f;
-    float fSRGBAverage   = FastLinearToSRGB(fLinearAverage) * MaxVal;
+    float fLinearAverage = (FastGammaToLinear(fc0) + FastGammaToLinear(fc1) + FastGammaToLinear(fc2) + FastGammaToLinear(fc3)) * 0.25f;
+    float fSRGBAverage   = FastLinearToGamma(fLinearAverage) * MaxVal;
 
     // Clamping on both ends is essential because fast SRGB math is imprecise
     fSRGBAverage = std::max(fSRGBAverage, 0.f);
@@ -460,6 +464,82 @@ void CreateSparseTextureMtl(IRenderDevice*     pDevice,
 }
 #endif
 
+inline ITextureView* ExtractTextureView(ITexture* pTexture, TEXTURE_VIEW_TYPE ViewType)
+{
+    return pTexture != nullptr ? pTexture->GetDefaultView(ViewType) : nullptr;
+}
+
+inline IBufferView* ExtractBufferView(IBuffer* pBuffer, BUFFER_VIEW_TYPE ViewType)
+{
+    return pBuffer != nullptr ? pBuffer->GetDefaultView(ViewType) : nullptr;
+}
+
+ITextureView* GetDefaultSRV(ITexture* pTexture)
+{
+    return ExtractTextureView(pTexture, TEXTURE_VIEW_SHADER_RESOURCE);
+}
+
+ITextureView* GetDefaultRTV(ITexture* pTexture)
+{
+    return ExtractTextureView(pTexture, TEXTURE_VIEW_RENDER_TARGET);
+}
+
+ITextureView* GetDefaultDSV(ITexture* pTexture)
+{
+    return ExtractTextureView(pTexture, TEXTURE_VIEW_DEPTH_STENCIL);
+}
+
+ITextureView* GetDefaultUAV(ITexture* pTexture)
+{
+    return ExtractTextureView(pTexture, TEXTURE_VIEW_UNORDERED_ACCESS);
+}
+
+IBufferView* GetDefaultSRV(IBuffer* pBuffer)
+{
+    return ExtractBufferView(pBuffer, BUFFER_VIEW_SHADER_RESOURCE);
+}
+
+IBufferView* GetDefaultUAV(IBuffer* pBuffer)
+{
+    return ExtractBufferView(pBuffer, BUFFER_VIEW_UNORDERED_ACCESS);
+}
+
+ITextureView* GetTextureDefaultSRV(IObject* pTexture)
+{
+    DEV_CHECK_ERR(pTexture == nullptr || RefCntAutoPtr<ITexture>(pTexture, IID_Texture), "Resource is not a texture");
+    return GetDefaultSRV(static_cast<ITexture*>(pTexture));
+}
+
+ITextureView* GetTextureDefaultRTV(IObject* pTexture)
+{
+    DEV_CHECK_ERR(pTexture == nullptr || RefCntAutoPtr<ITexture>(pTexture, IID_Texture), "Resource is not a texture");
+    return GetDefaultRTV(static_cast<ITexture*>(pTexture));
+}
+
+ITextureView* GetTextureDefaultDSV(IObject* pTexture)
+{
+    DEV_CHECK_ERR(pTexture == nullptr || RefCntAutoPtr<ITexture>(pTexture, IID_Texture), "Resource is not a texture");
+    return GetDefaultDSV(static_cast<ITexture*>(pTexture));
+}
+
+ITextureView* GetTextureDefaultUAV(IObject* pTexture)
+{
+    DEV_CHECK_ERR(pTexture == nullptr || RefCntAutoPtr<ITexture>(pTexture, IID_Texture), "Resource is not a texture");
+    return GetDefaultUAV(static_cast<ITexture*>(pTexture));
+}
+
+IBufferView* GetBufferDefaultSRV(IObject* pBuffer)
+{
+    DEV_CHECK_ERR(pBuffer == nullptr || RefCntAutoPtr<IBuffer>(pBuffer, IID_Buffer), "Resource is not a buffer");
+    return GetDefaultSRV(static_cast<IBuffer*>(pBuffer));
+}
+
+IBufferView* GetBufferDefaultUAV(IObject* pBuffer)
+{
+    DEV_CHECK_ERR(pBuffer == nullptr || RefCntAutoPtr<IBuffer>(pBuffer, IID_Buffer), "Resource is not a buffer");
+    return GetDefaultUAV(static_cast<IBuffer*>(pBuffer));
+}
+
 } // namespace Diligent
 
 
@@ -499,5 +579,41 @@ extern "C"
                                          Diligent::ITexture**         ppTexture)
     {
         Diligent::CreateSparseTextureMtl(pDevice, TexDesc, pMemory, ppTexture);
+    }
+
+
+    Diligent::ITextureView* Diligent_GetTextureDefaultSRV(Diligent::IObject* pTexture)
+    {
+        return Diligent::GetTextureDefaultSRV(pTexture);
+    }
+
+    Diligent::ITextureView* Diligent_GetTextureDefaultRTV(Diligent::IObject* pTexture)
+    {
+        return Diligent::GetTextureDefaultRTV(pTexture);
+    }
+
+    Diligent::ITextureView* Diligent_GetTextureDefaultDSV(Diligent::IObject* pTexture)
+    {
+        return Diligent::GetTextureDefaultDSV(pTexture);
+    }
+
+    Diligent::ITextureView* Diligent_GetTextureDefaultUAV(Diligent::IObject* pTexture)
+    {
+        return Diligent::GetTextureDefaultUAV(pTexture);
+    }
+
+    Diligent::IBufferView* Diligent_GetBufferDefaultSRV(Diligent::IObject* pBuffer)
+    {
+        return Diligent::GetBufferDefaultSRV(pBuffer);
+    }
+
+    Diligent::IBufferView* Diligent_GetBufferDefaultRTV(Diligent::IObject* pBuffer)
+    {
+        return Diligent::GetBufferDefaultUAV(pBuffer);
+    }
+
+    const char* Diligent_GetWebGPUEmulatedArrayIndexSuffix(Diligent::IShader* pShader)
+    {
+        return Diligent::GetWebGPUEmulatedArrayIndexSuffix(pShader);
     }
 }

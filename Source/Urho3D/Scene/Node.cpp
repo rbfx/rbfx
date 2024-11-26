@@ -1643,6 +1643,18 @@ const Variant& Node::GetVarByHash(StringHash key) const
     return i != vars_.end() ? i->second : Variant::EMPTY;
 }
 
+Variant* Node::GetMutableVar(const ea::string& key)
+{
+    auto i = vars_.find(key);
+    return i != vars_.end() ? &i->second : nullptr;
+}
+
+Variant* Node::GetMutableVarByHash(StringHash key)
+{
+    auto i = vars_.find_by_hash(key.Value());
+    return i != vars_.end() ? &i->second : nullptr;
+}
+
 Component* Node::FindComponent(StringHash type, ComponentSearchFlags flags) const
 {
     Component* result = nullptr;

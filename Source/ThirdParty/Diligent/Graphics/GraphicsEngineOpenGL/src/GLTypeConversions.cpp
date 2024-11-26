@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -167,9 +167,15 @@ public:
         m_FmtToGLFmtMap[TEX_FORMAT_BC7_TYPELESS]           = GL_COMPRESSED_RGBA_BPTC_UNORM;
         m_FmtToGLFmtMap[TEX_FORMAT_BC7_UNORM]              = GL_COMPRESSED_RGBA_BPTC_UNORM;
         m_FmtToGLFmtMap[TEX_FORMAT_BC7_UNORM_SRGB]         = GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
+        m_FmtToGLFmtMap[TEX_FORMAT_ETC2_RGB8_UNORM]        = GL_COMPRESSED_RGB8_ETC2;
+        m_FmtToGLFmtMap[TEX_FORMAT_ETC2_RGB8_UNORM_SRGB]   = GL_COMPRESSED_SRGB8_ETC2;
+        m_FmtToGLFmtMap[TEX_FORMAT_ETC2_RGB8A1_UNORM]      = GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2;
+        m_FmtToGLFmtMap[TEX_FORMAT_ETC2_RGB8A1_UNORM_SRGB] = GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2;
+        m_FmtToGLFmtMap[TEX_FORMAT_ETC2_RGBA8_UNORM]       = GL_COMPRESSED_RGBA8_ETC2_EAC;
+        m_FmtToGLFmtMap[TEX_FORMAT_ETC2_RGBA8_UNORM_SRGB]  = GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC;
         // clang-format on
 
-        static_assert(TEX_FORMAT_NUM_FORMATS == 100, "Please enter the new format information above");
+        static_assert(TEX_FORMAT_NUM_FORMATS == 106, "Please enter the new format information above");
     }
 
     GLenum operator[](TEXTURE_FORMAT TexFormat) const
@@ -250,6 +256,14 @@ public:
         }
         else
         {
+            if (GlFormat == GL_RGBA)
+            {
+                // Note: GL_RGBA is not a valid internal format (GL_RGBA8 is).
+                // However, Android returns this as an internal format of the external camera
+                // texture (which is incorrect), so we have to handle it.
+                return TEX_FORMAT_RGBA8_UNORM;
+            }
+
             UNEXPECTED("Unknown GL format");
             return TEX_FORMAT_UNKNOWN;
         }
@@ -404,6 +418,12 @@ NativePixelAttribs GetNativePixelTransferAttribs(TEXTURE_FORMAT TexFormat)
         FmtToGLPixelFmt[TEX_FORMAT_BC7_TYPELESS]           = NativePixelAttribs{GL_RGBA, 0,  True};
         FmtToGLPixelFmt[TEX_FORMAT_BC7_UNORM]              = NativePixelAttribs{GL_RGBA, 0,  True};
         FmtToGLPixelFmt[TEX_FORMAT_BC7_UNORM_SRGB]         = NativePixelAttribs{GL_RGBA, 0,  True};
+        FmtToGLPixelFmt[TEX_FORMAT_ETC2_RGB8_UNORM]        = NativePixelAttribs{GL_RGB,  0,  True};
+        FmtToGLPixelFmt[TEX_FORMAT_ETC2_RGB8_UNORM_SRGB]   = NativePixelAttribs{GL_RGB,  0,  True};
+        FmtToGLPixelFmt[TEX_FORMAT_ETC2_RGB8A1_UNORM]      = NativePixelAttribs{GL_RGBA, 0,  True};
+        FmtToGLPixelFmt[TEX_FORMAT_ETC2_RGB8A1_UNORM_SRGB] = NativePixelAttribs{GL_RGBA, 0,  True};
+        FmtToGLPixelFmt[TEX_FORMAT_ETC2_RGBA8_UNORM]       = NativePixelAttribs{GL_RGBA, 0,  True};
+        FmtToGLPixelFmt[TEX_FORMAT_ETC2_RGBA8_UNORM_SRGB]  = NativePixelAttribs{GL_RGBA, 0,  True};
         // clang-format on
         bAttribsMapInitialized = true;
     }
@@ -1098,6 +1118,25 @@ GLint TextureComponentSwizzleToGLTextureSwizzle(TEXTURE_COMPONENT_SWIZZLE Swizzl
         default:
             UNEXPECTED("Unknown swizzle");
             return IdentitySwizzle;
+    }
+}
+
+const char* GetFramebufferStatusString(GLenum Status)
+{
+    switch (Status)
+    {
+        // clang-format off
+        case GL_FRAMEBUFFER_COMPLETE:                      return "GL_FRAMEBUFFER_COMPLETE";
+        case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:         return "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+        case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: return "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
+        case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:        return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER";
+        case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:        return "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER";
+        case GL_FRAMEBUFFER_UNSUPPORTED:                   return "GL_FRAMEBUFFER_UNSUPPORTED";
+        case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:        return "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
+        case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:      return "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS";
+        // clang-format on
+        default:
+            return "UNKNOWN";
     }
 }
 

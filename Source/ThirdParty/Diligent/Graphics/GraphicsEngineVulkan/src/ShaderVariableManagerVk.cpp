@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,7 +48,7 @@ void ProcessSignatureResources(const PipelineResourceSignatureVkImpl& Signature,
     Signature.ProcessResources(AllowedVarTypes, NumAllowedTypes, ShaderStages,
                                [&](const PipelineResourceDesc& ResDesc, Uint32 Index) //
                                {
-                                   const auto& ResAttr = Signature.GetResourceAttribs(Index);
+                                   const PipelineResourceAttribsVk& ResAttr = Signature.GetResourceAttribs(Index);
 
                                    // When using HLSL-style combined image samplers, we need to skip separate samplers.
                                    // Also always skip immutable separate samplers.
@@ -118,7 +118,7 @@ ShaderVariableVkImpl* ShaderVariableManagerVk::GetVariable(const Char* Name) con
 {
     for (Uint32 v = 0; v < m_NumVariables; ++v)
     {
-        auto& Var = m_pVariables[v];
+        ShaderVariableVkImpl& Var = m_pVariables[v];
         if (strcmp(Var.GetDesc().Name, Name) == 0)
             return &Var;
     }
@@ -147,7 +147,7 @@ Uint32 ShaderVariableManagerVk::GetVariableIndex(const ShaderVariableVkImpl& Var
 
     const auto Offset = reinterpret_cast<const Uint8*>(&Variable) - reinterpret_cast<Uint8*>(m_pVariables);
     DEV_CHECK_ERR(Offset % sizeof(ShaderVariableVkImpl) == 0, "Offset is not multiple of ShaderVariableVkImpl class size");
-    const auto Index = static_cast<Uint32>(Offset / sizeof(ShaderVariableVkImpl));
+    const Uint32 Index = static_cast<Uint32>(Offset / sizeof(ShaderVariableVkImpl));
     if (Index < m_NumVariables)
         return Index;
     else
@@ -453,7 +453,7 @@ void BindResourceHelper::CacheStorageBuffer(const BindResourceInfo& BindInfo) co
 #ifdef DILIGENT_DEVELOPMENT
     {
         // HLSL buffer SRVs are mapped to storage buffers in GLSL
-        const auto RequiredViewType = DvpDescriptorTypeToBufferView(m_DstRes.Type);
+        const BUFFER_VIEW_TYPE RequiredViewType = DvpDescriptorTypeToBufferView(m_DstRes.Type);
         VerifyResourceViewBinding(m_ResDesc, BindInfo, pBufferViewVk.RawPtr(),
                                   {RequiredViewType},
                                   RESOURCE_DIM_BUFFER, // Expected resource dim
@@ -482,7 +482,7 @@ void BindResourceHelper::CacheTexelBuffer(const BindResourceInfo& BindInfo) cons
 #ifdef DILIGENT_DEVELOPMENT
     {
         // HLSL buffer SRVs are mapped to storage buffers in GLSL
-        const auto RequiredViewType = DvpDescriptorTypeToBufferView(m_DstRes.Type);
+        const BUFFER_VIEW_TYPE RequiredViewType = DvpDescriptorTypeToBufferView(m_DstRes.Type);
         VerifyResourceViewBinding(m_ResDesc, BindInfo, pBufferViewVk.RawPtr(),
                                   {RequiredViewType},
                                   RESOURCE_DIM_BUFFER, // Expected resource dim
@@ -511,7 +511,7 @@ void BindResourceHelper::CacheImage(const BindResourceInfo& BindInfo) const
 #ifdef DILIGENT_DEVELOPMENT
     {
         // HLSL buffer SRVs are mapped to storage buffers in GLSL
-        auto RequiredViewType = DvpDescriptorTypeToTextureView(m_DstRes.Type);
+        TEXTURE_VIEW_TYPE RequiredViewType = DvpDescriptorTypeToTextureView(m_DstRes.Type);
         VerifyResourceViewBinding(m_ResDesc, BindInfo, pTexViewVk0.RawPtr(),
                                   {RequiredViewType},
                                   RESOURCE_DIM_UNDEFINED, // Required resource dimension is not known
@@ -541,14 +541,13 @@ void BindResourceHelper::CacheImage(const BindResourceInfo& BindInfo) const
                    "Only separate images can be assigned separate samplers when using HLSL-style combined samplers.");
             VERIFY(!m_Attribs.IsImmutableSamplerAssigned(), "Separate image can't be assigned an immutable sampler.");
 
-            const auto& SamplerResDesc = m_Signature.GetResourceDesc(m_Attribs.SamplerInd);
-            const auto& SamplerAttribs = m_Signature.GetResourceAttribs(m_Attribs.SamplerInd);
+            const PipelineResourceDesc&      SamplerResDesc = m_Signature.GetResourceDesc(m_Attribs.SamplerInd);
+            const PipelineResourceAttribsVk& SamplerAttribs = m_Signature.GetResourceAttribs(m_Attribs.SamplerInd);
             VERIFY_EXPR(SamplerResDesc.ResourceType == SHADER_RESOURCE_TYPE_SAMPLER);
 
             if (!SamplerAttribs.IsImmutableSamplerAssigned())
             {
-                auto* pSampler = pTexViewVk->GetSampler();
-                if (pSampler != nullptr)
+                if (ISampler* pSampler = pTexViewVk->GetSampler())
                 {
                     DEV_CHECK_ERR(SamplerResDesc.ArraySize == 1 || SamplerResDesc.ArraySize == m_ResDesc.ArraySize,
                                   "Array size (", SamplerResDesc.ArraySize,
@@ -638,13 +637,13 @@ void ShaderVariableManagerVk::SetBufferDynamicOffset(Uint32 ResIndex,
                                                      Uint32 ArrayIndex,
                                                      Uint32 BufferDynamicOffset)
 {
-    const auto& Attribs           = m_pSignature->GetResourceAttribs(ResIndex);
-    const auto  DstResCacheOffset = Attribs.CacheOffset(m_ResourceCache.GetContentType()) + ArrayIndex;
+    const PipelineResourceAttribsVk& Attribs           = m_pSignature->GetResourceAttribs(ResIndex);
+    const Uint32                     DstResCacheOffset = Attribs.CacheOffset(m_ResourceCache.GetContentType()) + ArrayIndex;
 #ifdef DILIGENT_DEVELOPMENT
     {
-        const auto& ResDesc = m_pSignature->GetResourceDesc(ResIndex);
-        const auto& Set     = const_cast<const ShaderResourceCacheVk&>(m_ResourceCache).GetDescriptorSet(Attribs.DescrSet);
-        const auto& DstRes  = Set.GetResource(DstResCacheOffset);
+        const PipelineResourceDesc&                 ResDesc = m_pSignature->GetResourceDesc(ResIndex);
+        const ShaderResourceCacheVk::DescriptorSet& Set     = const_cast<const ShaderResourceCacheVk&>(m_ResourceCache).GetDescriptorSet(Attribs.DescrSet);
+        const ShaderResourceCacheVk::Resource&      DstRes  = Set.GetResource(DstResCacheOffset);
         VerifyDynamicBufferOffset<BufferVkImpl, BufferViewVkImpl>(ResDesc, DstRes.pObject, DstRes.BufferBaseOffset, DstRes.BufferRangeSize, BufferDynamicOffset);
     }
 #endif
@@ -653,18 +652,18 @@ void ShaderVariableManagerVk::SetBufferDynamicOffset(Uint32 ResIndex,
 
 IDeviceObject* ShaderVariableManagerVk::Get(Uint32 ArrayIndex, Uint32 ResIndex) const
 {
-    const auto&  ResDesc     = GetResourceDesc(ResIndex);
-    const auto&  Attribs     = GetResourceAttribs(ResIndex);
-    const Uint32 CacheOffset = Attribs.CacheOffset(m_ResourceCache.GetContentType());
+    const PipelineResourceDesc&      ResDesc     = GetResourceDesc(ResIndex);
+    const PipelineResourceAttribsVk& Attribs     = GetResourceAttribs(ResIndex);
+    const Uint32                     CacheOffset = Attribs.CacheOffset(m_ResourceCache.GetContentType());
 
     VERIFY_EXPR(ArrayIndex < ResDesc.ArraySize);
 
     if (Attribs.DescrSet < m_ResourceCache.GetNumDescriptorSets())
     {
-        const auto& Set = const_cast<const ShaderResourceCacheVk&>(m_ResourceCache).GetDescriptorSet(Attribs.DescrSet);
+        const ShaderResourceCacheVk::DescriptorSet& Set = const_cast<const ShaderResourceCacheVk&>(m_ResourceCache).GetDescriptorSet(Attribs.DescrSet);
         if (CacheOffset + ArrayIndex < Set.GetSize())
         {
-            const auto& CachedRes = Set.GetResource(CacheOffset + ArrayIndex);
+            const ShaderResourceCacheVk::Resource& CachedRes = Set.GetResource(CacheOffset + ArrayIndex);
             return CachedRes.pObject;
         }
     }

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {87C21E88-8A9F-4AD2-9A1E-D5EC140415EA}
-static const INTERFACE_ID IID_SamplerVk =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_SamplerVk =
     {0x87c21e88, 0x8a9f, 0x4ad2, {0x9a, 0x1e, 0xd5, 0xec, 0x14, 0x4, 0x15, 0xea}};
 
 #define DILIGENT_INTERFACE_NAME ISamplerVk
@@ -49,7 +49,7 @@ static const INTERFACE_ID IID_SamplerVk =
 DILIGENT_BEGIN_INTERFACE(ISamplerVk, ISampler)
 {
     /// Returns a Vulkan handle of the internal sampler object.
-    VIRTUAL VkSampler METHOD(GetVkSampler)() CONST PURE;
+    VIRTUAL VkSampler METHOD(GetVkSampler)(THIS) CONST PURE;
 };
 DILIGENT_END_INTERFACE
 

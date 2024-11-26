@@ -57,11 +57,11 @@ ea::pair<unsigned, unsigned> GetLevelsOffsetAndCount(const Image& image, unsigne
 
 TextureFormat ToHardwareFormat(const TextureFormat format, RenderDevice* renderDevice)
 {
-    if (format == Diligent::TEX_FORMAT_UNKNOWN)
-        return Diligent::TEX_FORMAT_RGBA8_UNORM;
+    if (format == TextureFormat::TEX_FORMAT_UNKNOWN)
+        return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
 
     if (renderDevice && !renderDevice->IsTextureFormatSupported(format))
-        return Diligent::TEX_FORMAT_RGBA8_UNORM;
+        return TextureFormat::TEX_FORMAT_RGBA8_UNORM;
 
     return format;
 }
@@ -401,7 +401,8 @@ bool Texture::UpdateFromImage(unsigned arraySlice, Image* image)
             currentLevel = currentLevelHolder;
         }
     }
-    else if (SetTextureFormatSRGB(internalFormat, false) == TextureFormat::TEX_FORMAT_RGBA8_UNORM)
+    else if (SetTextureFormatSRGB(internalFormat, false) == TextureFormat::TEX_FORMAT_RGBA8_UNORM
+        && image->GetCompressedFormat() != TextureFormat::TEX_FORMAT_RGBA8_UNORM)
     {
         // RGBA8 is default format, use it if hardware format is not available.
         URHO3D_LOGWARNING("Image '{}' is converted to RGBA8 format on upload to GPU", GetName());

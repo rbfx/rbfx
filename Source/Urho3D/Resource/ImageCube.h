@@ -22,13 +22,14 @@
 
 #pragma once
 
-#include "../Graphics/GraphicsDefs.h"
-#include "../Resource/Image.h"
-#include "../Resource/Resource.h"
-#include "../Math/SphericalHarmonics.h"
+#include "Urho3D/Graphics/GraphicsDefs.h"
+#include "Urho3D/Math/SphericalHarmonics.h"
+#include "Urho3D/Resource/Image.h"
+#include "Urho3D/Resource/Resource.h"
 
-#include <EASTL/vector.h>
+#include <EASTL/optional.h>
 #include <EASTL/utility.h>
+#include <EASTL/vector.h>
 
 namespace Urho3D
 {
@@ -76,6 +77,8 @@ public:
     ea::pair<CubeMapFace, IntVector2> ProjectDirectionOnFaceTexel(const Vector3& direction) const;
     /// Calculate spherical harmonics for the cube map.
     SphericalHarmonicsColor9 CalculateSphericalHarmonics() const;
+    /// Return cached spherical harmonics or recalculate from image if cache is not available.
+    SphericalHarmonicsDot9 GetOrCreateSphericalHarmonics() const;
 
     /// Project UV onto cube.
     static Vector3 ProjectUVOnCube(CubeMapFace face, const Vector2& uv);
@@ -89,6 +92,8 @@ private:
     SharedPtr<XMLFile> parametersXml_;
     /// Cube width.
     int width_{};
+    /// Precalculated spherical harmonics.
+    ea::optional<SphericalHarmonicsDot9> cachedSphericalHarmonics_;
 };
 
 }

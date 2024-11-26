@@ -18,8 +18,8 @@
     #include <jni.h>
 #endif
 
-#include <ThirdParty/OpenXRSDK/include/openxr/openxr.h>
-#include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform.h>
+#include <openxr/openxr.h>
+#include <openxr/openxr_platform.h>
 
 namespace Urho3D
 {

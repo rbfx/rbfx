@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -187,8 +187,11 @@ DILIGENT_TYPED_ENUM(COLOR_MASK, Uint8)
     /// Allow data to be stored in the alpha component.
     COLOR_MASK_ALPHA = 1u << 3u,
 
+    /// Allow data to be stored in all RGB components.
+    COLOR_MASK_RGB   = COLOR_MASK_RED | COLOR_MASK_GREEN | COLOR_MASK_BLUE,
+
     /// Allow data to be stored in all components.
-    COLOR_MASK_ALL   = (((COLOR_MASK_RED | COLOR_MASK_GREEN) | COLOR_MASK_BLUE) | COLOR_MASK_ALPHA)
+    COLOR_MASK_ALL   = (COLOR_MASK_RGB | COLOR_MASK_ALPHA)
 };
 
 DEFINE_FLAG_ENUM_OPERATORS(COLOR_MASK);

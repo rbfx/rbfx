@@ -49,6 +49,12 @@
     #endif
 #endif
 
+#if defined(IGNOREVERTEXCOLOR)
+    #ifndef URHO3D_IGNORE_VERTEX_COLOR
+        #define URHO3D_IGNORE_VERTEX_COLOR
+    #endif
+#endif
+
 /// =================================== Configure material with color output ===================================
 
 #if !defined(URHO3D_DEPTH_ONLY_PASS) && !defined(URHO3D_LIGHT_VOLUME_PASS)
@@ -137,7 +143,7 @@
         #endif
     #endif
 
-    #if defined(URHO3D_VERTEX_HAS_COLOR)
+    #if defined(URHO3D_VERTEX_HAS_COLOR) && !defined(URHO3D_IGNORE_VERTEX_COLOR)
         #ifndef URHO3D_PIXEL_NEED_VERTEX_COLOR
             #define URHO3D_PIXEL_NEED_VERTEX_COLOR
         #endif

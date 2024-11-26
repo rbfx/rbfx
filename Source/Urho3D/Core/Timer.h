@@ -37,7 +37,7 @@ public:
     Timer();
 
     /// Return elapsed milliseconds and optionally reset.
-    unsigned GetMSec(bool reset);
+    unsigned GetMSec(bool reset = false);
     /// Reset the timer.
     void Reset();
 
@@ -56,7 +56,7 @@ public:
     HiresTimer();
 
     /// Return elapsed microseconds and optionally reset.
-    long long GetUSec(bool reset);
+    long long GetUSec(bool reset = false);
     /// Reset the timer.
     void Reset();
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -127,7 +127,9 @@ public:
         if (glObjectLabel && m_uiHandle)
         {
             glObjectLabel(m_CreateReleaseHelper.Type, m_uiHandle, -1, Name);
-            (void)glGetError();
+#    ifdef DILIGENT_DEVELOPMENT
+            glGetError(); // Ignore GL error
+#    endif
         }
 #endif
     }

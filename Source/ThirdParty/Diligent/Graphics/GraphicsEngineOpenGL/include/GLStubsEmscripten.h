@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -260,7 +260,7 @@
 #endif
 
 #ifndef GL_DEPTH_CLAMP
-#    define GL_DEPTH_CLAMP 0
+#    define GL_DEPTH_CLAMP 0x864F
 #endif
 
 // Blend functions
@@ -290,7 +290,11 @@
 #endif
 
 #ifndef GL_TEXTURE_MAX_ANISOTROPY_EXT
-#    define GL_TEXTURE_MAX_ANISOTROPY_EXT 0
+#    define GL_TEXTURE_MAX_ANISOTROPY_EXT 0x84FE
+#endif
+
+#ifndef GL_MAX_TEXTURE_MAX_ANISOTROPY
+#    define GL_MAX_TEXTURE_MAX_ANISOTROPY 0x84FF
 #endif
 
 #ifndef GL_TEXTURE_BORDER_COLOR
@@ -662,11 +666,21 @@ void UnsupportedGLFunctionStub(const T& Name, Args const&... Arg)
     LOG_ERROR_MESSAGE(Name, "() is not supported on Emscripten!\n");
 }
 
-#define glDrawElementsInstancedBaseVertexBaseInstance(...) UnsupportedGLFunctionStub("glDrawElementsInstancedBaseVertexBaseInstance", __VA_ARGS__)
-#define glDrawElementsInstancedBaseVertex(...)             UnsupportedGLFunctionStub("glDrawElementsInstancedBaseVertex", __VA_ARGS__)
-#define glDrawElementsInstancedBaseInstance(...)           UnsupportedGLFunctionStub("glDrawElementsInstancedBaseInstance", __VA_ARGS__)
-#define glDrawArraysInstancedBaseInstance(...)             UnsupportedGLFunctionStub("glDrawArraysInstancedBaseInstance", __VA_ARGS__)
-#define glDrawElementsBaseVertex(...)                      UnsupportedGLFunctionStub("glDrawElementsBaseVertex", __VA_ARGS__)
+// 46. https://www.khronos.org/registry/webgl/extensions/WEBGL_draw_instanced_base_vertex_base_instance/
+#define glDrawElementsInstancedBaseVertexBaseInstance glDrawElementsInstancedBaseVertexBaseInstanceWEBGL
+#define glDrawArraysInstancedBaseInstance             glDrawArraysInstancedBaseInstanceWEBGL
+
+#define glDrawElementsInstancedBaseVertex(mode, count, type, indices, instancecount, basevertex)     glDrawElementsInstancedBaseVertexBaseInstance(mode, count, type, indices, instancecount, basevertex, 0)
+#define glDrawElementsInstancedBaseInstance(mode, count, type, indices, instancecount, baseinstance) glDrawElementsInstancedBaseVertexBaseInstance(mode, count, type, indices, instancecount, 0, baseinstance)
+#define glDrawElementsBaseVertex(mode, count, type, indices, basevertex)                             glDrawElementsInstancedBaseVertexBaseInstance(mode, count, type, indices, 1, basevertex, 0)
+
+
+// 40. https://www.khronos.org/registry/webgl/extensions/WEBGL_multi_draw/
+#define glMultiDrawArrays                  glMultiDrawArraysWEBGL
+#define glMultiDrawElements                glMultiDrawElementsWEBGL
+#define glMultiDrawElementsBaseVertex(...) UnsupportedGLFunctionStub("glMultiDrawElementsBaseVertex", __VA_ARGS__)
+
+
 static void (*glTextureView)(GLuint texture, GLenum target, GLuint origtexture, GLenum internalformat, GLuint minlevel, GLuint numlevels, GLuint minlayer, GLuint numlayers) = nullptr;
 #define glTexStorage1D(...)            UnsupportedGLFunctionStub("glTexStorage1D", __VA_ARGS__)
 #define glViewportIndexedf(...)        UnsupportedGLFunctionStub("glViewportIndexedf", __VA_ARGS__)
@@ -684,6 +698,7 @@ static void (*glPolygonMode)(GLenum face, GLenum mode) = nullptr;
 #define glColorMaski(...)             UnsupportedGLFunctionStub("glColorMaski", __VA_ARGS__)
 #define glFramebufferTexture(...)     UnsupportedGLFunctionStub("glFramebufferTexture", __VA_ARGS__)
 #define glFramebufferTexture1D(...)   UnsupportedGLFunctionStub("glFramebufferTexture1D", __VA_ARGS__)
+#define glCopyTexSubImage1D(...)      UnsupportedGLFunctionStub("glCopyTexSubImage1D", __VA_ARGS__)
 static void (*glGetQueryObjectui64v)(GLuint id, GLenum pname, GLuint64* params) = nullptr;
 #define glGenProgramPipelines(...)     UnsupportedGLFunctionStub("glGenProgramPipelines", __VA_ARGS__)
 #define glBindProgramPipeline(...)     UnsupportedGLFunctionStub("glBindProgramPipeline", __VA_ARGS__)

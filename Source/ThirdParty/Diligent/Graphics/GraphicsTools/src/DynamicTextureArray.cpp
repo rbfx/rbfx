@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -208,7 +208,7 @@ void DynamicTextureArray::CreateSparseTexture(IRenderDevice* pDevice)
 
     // Create fences
     // Note: D3D11 does not support general fences
-    if (pDevice->GetDeviceInfo().Type != RENDER_DEVICE_TYPE_D3D11)
+    if (pDevice->GetDeviceInfo().Type != RENDER_DEVICE_TYPE_D3D11 && pDevice->GetDeviceInfo().Type != RENDER_DEVICE_TYPE_WEBGPU)
     {
         FenceDesc Desc;
         Desc.Type = FENCE_TYPE_GENERAL;
@@ -462,7 +462,7 @@ ITexture* DynamicTextureArray::Resize(IRenderDevice*  pDevice,
                               "There is a non-null stale Texture. This likely indicates that "
                               "Resize() has been called multiple times with different sizes, "
                               "but copy has not been committed by providing non-null device "
-                              "context to either Resize() or GetTexture()");
+                              "context to either Resize() or Update()");
             }
 
             if (m_PendingSize == 0)
@@ -482,8 +482,8 @@ ITexture* DynamicTextureArray::Resize(IRenderDevice*  pDevice,
     return m_pTexture;
 }
 
-ITexture* DynamicTextureArray::GetTexture(IRenderDevice*  pDevice,
-                                          IDeviceContext* pContext)
+ITexture* DynamicTextureArray::Update(IRenderDevice*  pDevice,
+                                      IDeviceContext* pContext)
 {
     CommitResize(pDevice, pContext, false /*AllowNull*/);
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -24,69 +24,16 @@
  *  of the possibility of such damages.
  */
 
-#include <stdio.h>
-#include <unistd.h>
-#include <cstdio>
-
 #include "EmscriptenFileSystem.hpp"
-#include "Errors.hpp"
 #include "DebugUtilities.hpp"
 
 namespace Diligent
 {
 
-EmscriptenFile* EmscriptenFileSystem::OpenFile(const FileOpenAttribs& OpenAttribs)
-{
-    EmscriptenFile* pFile = nullptr;
-    try
-    {
-        pFile = new EmscriptenFile{OpenAttribs};
-    }
-    catch (const std::runtime_error& err)
-    {
-    }
-    return pFile;
-}
-
-bool EmscriptenFileSystem::FileExists(const Char* strFilePath)
-{
-    FileOpenAttribs OpenAttribs;
-    OpenAttribs.strFilePath = strFilePath;
-    BasicFile   DummyFile{OpenAttribs};
-    const auto& Path   = DummyFile.GetPath(); // This is necessary to correct slashes
-    FILE*       pFile  = fopen(Path.c_str(), "r");
-    bool        Exists = (pFile != nullptr);
-    if (Exists)
-        fclose(pFile);
-    return Exists;
-}
-
-bool EmscriptenFileSystem::PathExists(const Char* strPath)
+std::string EmscriptenFileSystem::GetLocalAppDataDirectory(const char* AppName, bool Create)
 {
     UNSUPPORTED("Not implemented");
-    return false;
-}
-
-bool EmscriptenFileSystem::CreateDirectory(const Char* strPath)
-{
-    UNSUPPORTED("Not implemented");
-    return false;
-}
-
-void EmscriptenFileSystem::ClearDirectory(const Char* strPath)
-{
-    UNSUPPORTED("Not implemented");
-}
-
-void EmscriptenFileSystem::DeleteFile(const Char* strPath)
-{
-    remove(strPath);
-}
-
-std::vector<std::unique_ptr<FindFileData>> EmscriptenFileSystem::Search(const Char* SearchPattern)
-{
-    UNSUPPORTED("Not implemented");
-    return std::vector<std::unique_ptr<FindFileData>>();
+    return std::string();
 }
 
 } // namespace Diligent

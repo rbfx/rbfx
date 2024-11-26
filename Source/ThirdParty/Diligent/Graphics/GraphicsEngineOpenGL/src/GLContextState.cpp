@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,6 +47,7 @@ GLContextState::GLContextState(RenderDeviceGLImpl* pDeviceGL)
     const auto& AdapterInfo             = pDeviceGL->GetAdapterInfo();
     m_Caps.IsFillModeSelectionSupported = AdapterInfo.Features.WireframeFill;
     m_Caps.IsProgramPipelineSupported   = AdapterInfo.Features.SeparablePrograms;
+    m_Caps.IsDepthClampSupported        = AdapterInfo.Features.DepthClamp;
 
     {
         m_Caps.MaxCombinedTexUnits = 0;
@@ -195,15 +196,6 @@ void GLContextState::BindFBO(const GLFrameBufferObj& FBO)
     }
 }
 
-template <class ObjectType>
-bool UpdateBoundObjectsArr(std::vector<UniqueIdentifier>& BoundObjectIDs, Uint32 Index, const ObjectType& NewObject, GLuint& NewGLHandle)
-{
-    if (Index >= BoundObjectIDs.size())
-        BoundObjectIDs.resize(size_t{Index} + 1, -1);
-
-    return UpdateBoundObject(BoundObjectIDs[Index], NewObject, NewGLHandle);
-}
-
 void GLContextState::SetActiveTexture(Int32 Index)
 {
     if (Index < 0)
@@ -220,8 +212,10 @@ void GLContextState::SetActiveTexture(Int32 Index)
     }
 }
 
-void GLContextState::BindTexture(Int32 Index, GLenum BindTarget, const GLObjectWrappers::GLTextureObj& Tex)
+void GLContextState::BindTexture(Int32 Index, GLenum BindTarget, const GLObjectWrappers::GLTextureObj& TexObj)
 {
+    VERIFY_EXPR(BindTarget != 0);
+
     if (Index < 0)
     {
         Index += m_Caps.MaxCombinedTexUnits;
@@ -231,18 +225,35 @@ void GLContextState::BindTexture(Int32 Index, GLenum BindTarget, const GLObjectW
     // Always update active texture unit
     SetActiveTexture(Index);
 
-    GLuint GLTexHandle = 0;
-    if (UpdateBoundObjectsArr(m_BoundTextures, Index, Tex, GLTexHandle))
+    if (static_cast<size_t>(Index) >= m_BoundTextures.size())
+        m_BoundTextures.resize(Index + 1);
+
+    BoundTextureInfo  NewTex{TexObj ? TexObj.GetUniqueID() : 0, BindTarget};
+    BoundTextureInfo& BoundTex = m_BoundTextures[Index];
+    if (BoundTex != NewTex)
     {
-        glBindTexture(BindTarget, GLTexHandle);
-        DEV_CHECK_GL_ERROR("Failed to bind texture to slot ", Index);
+        // Unbind texture from the previous target.
+        // This is necessary as at least on NVidia, having different textures bound to
+        // multiple targets simultaneously may cause problems.
+        if (BoundTex.BindTarget != 0 && BoundTex.BindTarget != BindTarget && BoundTex.TexID != 0)
+        {
+            glBindTexture(BoundTex.BindTarget, 0);
+            DEV_CHECK_GL_ERROR("Failed to unbind texture from target ", BindTarget, " slot ", Index, ".");
+        }
+        glBindTexture(BindTarget, TexObj);
+        DEV_CHECK_GL_ERROR("Failed to bind texture to target ", BindTarget, " slot ", Index, ".");
+
+        BoundTex = NewTex;
     }
 }
 
 void GLContextState::BindSampler(Uint32 Index, const GLObjectWrappers::GLSamplerObj& GLSampler)
 {
+    if (static_cast<size_t>(Index) >= m_BoundSamplers.size())
+        m_BoundSamplers.resize(size_t{Index} + 1, -1);
+
     GLuint GLSamplerHandle = 0;
-    if (UpdateBoundObjectsArr(m_BoundSamplers, Index, GLSampler, GLSamplerHandle))
+    if (UpdateBoundObject(m_BoundSamplers[Index], GLSampler, GLSamplerHandle))
     {
         glBindSampler(Index, GLSamplerHandle);
         DEV_CHECK_GL_ERROR("Failed to bind sampler to slot ", Index);
@@ -659,26 +670,23 @@ void GLContextState::SetDepthClamp(bool bEnableDepthClamp)
             // disabling clipping in Direct3D.
             // https://docs.microsoft.com/en-us/windows/win32/api/d3d11/ns-d3d11-d3d11_rasterizer_desc
             // https://www.khronos.org/opengl/wiki/GLAPI/glEnable
-#pragma warning(push)
-#pragma warning(disable : 4127)
-            if (GL_DEPTH_CLAMP)
+            if (m_Caps.IsDepthClampSupported)
             {
                 glEnable(GL_DEPTH_CLAMP);
                 DEV_CHECK_GL_ERROR("Failed to enable depth clamp");
             }
+            else
+            {
+                LOG_WARNING_MESSAGE("Depth clamp is not supported by this device. Check the value of the DepthClamp device feature.");
+            }
         }
         else
         {
-            if (GL_DEPTH_CLAMP)
+            if (m_Caps.IsDepthClampSupported)
             {
                 glDisable(GL_DEPTH_CLAMP);
                 DEV_CHECK_GL_ERROR("Failed to disable depth clamp");
             }
-            else
-            {
-                LOG_WARNING_MESSAGE("Disabling depth clamp is not supported");
-            }
-#pragma warning(pop)
         }
         m_RSState.DepthClampEnable = bEnableDepthClamp;
     }
@@ -878,6 +886,28 @@ void GLContextState::SetNumPatchVertices(Int32 NumVertices)
         DEV_CHECK_GL_ERROR("Failed to set the number of patch vertices");
     }
 #endif
+}
+
+void GLContextState::BlitFramebufferNoScissor(GLint      srcX0,
+                                              GLint      srcY0,
+                                              GLint      srcX1,
+                                              GLint      srcY1,
+                                              GLint      dstX0,
+                                              GLint      dstY0,
+                                              GLint      dstX1,
+                                              GLint      dstY1,
+                                              GLbitfield mask,
+                                              GLenum     filter)
+{
+    bool ScissorEnabled = m_RSState.ScissorTestEnable;
+    if (ScissorEnabled)
+        EnableScissorTest(false);
+
+    glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+    DEV_CHECK_GL_ERROR("glBlitFramebuffer() failed");
+
+    if (ScissorEnabled)
+        EnableScissorTest(true);
 }
 
 } // namespace Diligent

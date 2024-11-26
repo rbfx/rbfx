@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,6 +27,6 @@
 
 #pragma once
 
-#if !D3D11_SUPPORTED && !D3D12_SUPPORTED && !GL_SUPPORTED && !GLES_SUPPORTED && !VULKAN_SUPPORTED && !METAL_SUPPORTED
-#    error No API is supported on this platform: one of D3D11_SUPPORTED, D3D12_SUPPORTED, GL_SUPPORTED, GLES_SUPPORTED, VULKAN_SUPPORTED, or METAL_SUPPORTED macros must be defined as 1.
+#if !D3D11_SUPPORTED && !D3D12_SUPPORTED && !GL_SUPPORTED && !GLES_SUPPORTED && !VULKAN_SUPPORTED && !METAL_SUPPORTED && !WEBGPU_SUPPORTED
+#    error No API is supported on this platform: one of D3D11_SUPPORTED, D3D12_SUPPORTED, GL_SUPPORTED, GLES_SUPPORTED, VULKAN_SUPPORTED, METAL_SUPPORTED, or WEBGPU_SUPPORTED macros must be defined as 1.
 #endif

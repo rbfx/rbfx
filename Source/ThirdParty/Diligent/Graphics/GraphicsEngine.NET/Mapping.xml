@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config id="Diligent-GraphicsEngine" xmlns="urn:SharpGen.Config">
+	<namespace>Diligent</namespace>
+
+	<sdk name="StdLib" />
+
+	<include-prolog>
+		#define PLATFORM_WIN32 1
+		#define DILIGENT_SHARP_GEN
+		#define INTERFACE_ID GUID
+	</include-prolog>
+
+	<include file="$(THIS_CONFIG_PATH)/../../Platforms/interface/NativeWindow.h" namespace="Diligent" attach="true"/>
+	<include file="$(THIS_CONFIG_PATH)/../../Platforms/Win32/interface/Win32NativeWindow.h" namespace="Diligent" attach="true"/>
+
+	<include file="$(THIS_CONFIG_PATH)/../../Primitives/interface/DataBlob.h" namespace="Diligent" attach="true"/>
+	<include file="$(THIS_CONFIG_PATH)/../../Primitives/interface/DebugOutput.h" namespace="Diligent" attach="true"/>
+	<include file="$(THIS_CONFIG_PATH)/../../Primitives/interface/FileStream.h" namespace="Diligent" attach="true"/>
+	<include file="$(THIS_CONFIG_PATH)/../../Primitives/interface/CommonDefinitions.h" namespace="Diligent" attach="true"/>
+
+	<include file="$(THIS_CONFIG_PATH)/../../Common/interface/ThreadPool.h" namespace="Diligent" attach="true"/>
+
+	<include file="$(THIS_CONFIG_PATH)/../HLSL2GLSLConverterLib/interface/HLSL2GLSLConverter.h" namespace="Diligent" attach="true"/>
+
+	<include-dir>$(THIS_CONFIG_PATH)/../GraphicsEngine/interface/</include-dir>
+	<include file="APIInfo.h" namespace="Diligent" attach="true"/>
+	<include file="BlendState.h" namespace="Diligent" attach="true"/>
+	<include file="BottomLevelAS.h" namespace="Diligent" attach="true"/>
+	<include file="Buffer.h" namespace="Diligent" attach="true"/>
+	<include file="BufferView.h" namespace="Diligent" attach="true"/>
+	<include file="CommandList.h" namespace="Diligent" attach="true"/>
+	<include file="CommandQueue.h" namespace="Diligent" attach="true"/>
+	<include file="Constants.h" namespace="Diligent" attach="true"/>
+	<include file="Dearchiver.h" namespace="Diligent" attach="true"/>
+	<include file="DepthStencilState.h" namespace="Diligent" attach="true"/>
+	<include file="DeviceContext.h" namespace="Diligent" attach="true"/>
+	<include file="DeviceMemory.h" namespace="Diligent" attach="true"/>
+	<include file="DeviceObject.h" namespace="Diligent" attach="true"/>
+	<include file="EngineFactory.h" namespace="Diligent" attach="true"/>
+	<include file="Fence.h" namespace="Diligent" attach="true"/>
+	<include file="Framebuffer.h" namespace="Diligent" attach="true"/>
+	<include file="GraphicsTypes.h" namespace="Diligent" attach="true"/>
+	<include file="InputLayout.h" namespace="Diligent" attach="true"/>
+	<include file="LoadEngineDll.h" namespace="Diligent" attach="true"/>
+	<include file="PipelineResourceSignature.h" namespace="Diligent" attach="true"/>
+	<include file="PipelineState.h" namespace="Diligent" attach="true"/>
+	<include file="PipelineStateCache.h" namespace="Diligent" attach="true"/>
+	<include file="Query.h" namespace="Diligent" attach="true"/>
+	<include file="RasterizerState.h" namespace="Diligent" attach="true"/>
+	<include file="RenderDevice.h" namespace="Diligent" attach="true"/>
+	<include file="RenderPass.h" namespace="Diligent" attach="true"/>
+	<include file="ResourceMapping.h" namespace="Diligent" attach="true"/>
+	<include file="Sampler.h" namespace="Diligent" attach="true"/>
+	<include file="Shader.h" namespace="Diligent" attach="true"/>
+	<include file="ShaderBindingTable.h" namespace="Diligent" attach="true"/>
+	<include file="ShaderResourceBinding.h" namespace="Diligent" attach="true"/>
+	<include file="ShaderResourceVariable.h" namespace="Diligent" attach="true"/>
+	<include file="SwapChain.h" namespace="Diligent" attach="true"/>
+	<include file="Texture.h" namespace="Diligent" attach="true"/>
+	<include file="TextureView.h" namespace="Diligent" attach="true"/>
+	<include file="TopLevelAS.h" namespace="Diligent" attach="true"/>
+
+	<include-dir>$(THIS_CONFIG_PATH)/../GraphicsEngineD3D11/interface/</include-dir>
+	<include file="EngineFactoryD3D11.h" namespace="Diligent" attach="true"/>
+
+	<include-dir>$(THIS_CONFIG_PATH)/../GraphicsEngineD3D12/interface/</include-dir>
+	<include file="EngineFactoryD3D12.h" namespace="Diligent" attach="true"/>
+
+	<include-dir>$(THIS_CONFIG_PATH)/../GraphicsEngineVulkan/interface/</include-dir>
+	<include file="EngineFactoryVk.h" namespace="Diligent" attach="true"/>
+
+	<include-dir>$(THIS_CONFIG_PATH)/../GraphicsEngineOpenGL/interface/</include-dir>
+	<include file="EngineFactoryOpenGL.h" namespace="Diligent" attach="true"/>
+
+	<extension>
+		<define struct="System.Numerics.Vector4"     sizeof="16" />
+		<define struct="System.Numerics.Matrix3x4"   sizeof="48" />
+
+		<define interface="Diligent.IObject" native="Diligent.ComObject" shadow="Diligent.ComObjectShadow" vtbl="Diligent.ComObjectVtbl" />
+
+		<create class="Native" visibility="public static" />
+		<const from-macro="DILIGENT_API_VERSION" class="Diligent.Native" type="int" name="ApiVersion" />
+		<const from-macro="DILIGENT_INVALID_INDEX" class="Diligent.Native" type="uint" cpp-type="unsigned int" name="InvalidIndex" />
+		<const from-macro="DILIGENT_DEFAULT_ADAPTER_ID" class="Diligent.Native" type="uint" cpp-type="unsigned int" name="DefaultAdapterId" />
+		<const from-macro="DILIGENT_DEFAULT_QUEUE_ID" class="Diligent.Native" type="byte" cpp-type="unsigned char" name="DefaultQueueId" />
+		<const from-macro="DILIGENT_SHADING_RATE_X_SHIFT" class="Diligent.Native" type="int" name="ShadingRateXShift" />
+		<const from-macro="DILIGENT_SUBPASS_EXTERNAL" class="Diligent.Native" type="uint" cpp-type="unsigned int" name="SubpassExternal" />
+		<const from-macro="DILIGENT_ATTACHMENT_UNUSED" class="Diligent.Native" type="uint" cpp-type="unsigned int" name="AttachmentUnused" />
+		<const from-macro="DILIGENT_LAYOUT(.+)" class="Diligent.Native" type="uint" cpp-type="unsigned int" name="Layout$1" />
+		<const from-macro="DILIGENT_MAX(.+)" class="Diligent.Native" type="int" name="Max$1" />
+		<const from-macro="DILIGENT_REMAINING(.+)" class="Diligent.Native" type="uint" cpp-type="unsigned int" name="Remaining$1" />
+		<const from-macro="DILIGENT_TLAS(.+)" class="Diligent.Native" type="uint" cpp-type="unsigned int" name="TLAS$1" />
+	</extension>
+
+	<bindings>
+		<bind from="IMemoryAllocator" to="System.IntPtr" />
+		<bind from="Vector4" to="System.Numerics.Vector4" />
+		<bind from="InstanceMatrix" to="System.Numerics.Matrix3x4" />
+		<bind from="IObject" to="Diligent.IObject" />
+	</bindings>
+
+	<naming>
+		<short name="(RG(\d)+)$">$1</short>
+		<short name="(RGB(\d)+(A2)?)$">$1</short>
+		<short name="(RGBA(\d)+)$">$1</short>
+		<short name="(BGR[AX](\d)+)$">$1</short>
+		<short name="(BC(\d)[H]?)$">$1</short>
+		<short name="UINT8">UInt8</short>
+		<short name="UINT">UInt</short>
+		<short name="SINT">SInt</short>
+		<short name="UNORM">UNorm</short>
+		<short name="SNORM">SNorm</short>
+		<short name="SRGB">sRGB</short>
+	</naming>
+
+	<mapping>
+		<map function="GetEngineFactoryD3D11" group="Diligent.Native" dll='"GraphicsEngineD3D11"' />
+		<map function="GetEngineFactoryD3D12" group="Diligent.Native" dll='"GraphicsEngineD3D12"' />
+		<map function="GetEngineFactoryVk" group="Diligent.Native" dll='"GraphicsEngineVk"' />
+		<map function="GetEngineFactoryOpenGL" group="Diligent.Native" dll='"GraphicsEngineOpenGL"' />
+		<remove function="SetDebugMessageCallback" />
+		<remove function="CreateHLSL2GLSLConverter" />
+
+		<!-- TODO -->
+		<remove method="IEngineFactoryD3D11::AttachToD3D11Device"/>
+		<remove method="IEngineFactoryD3D12::CreateCommandQueueD3D12"/>
+		<remove method="IEngineFactoryD3D12::AttachToD3D12Device"/>
+		<remove method="IEngineFactoryOpenGL::AttachToActiveGLContext"/>
+
+		<map enum-item="MEMORY_PROPERTY_(.+)" name-tmp="$1" />
+		<map enum-item="TEX_FORMAT_(.+)" name-tmp="$1" naming="underscore" />
+		<map enum-item="TEX_FORMAT_RGB9E5_SHAREDEXP" name="RGB9E5_Sharedexr" />
+		<map enum-item="TEX_FORMAT_NUM_FORMATS" name="NumFormats" />
+		<map enum-item="VT_(.+)" name-tmp="$1" />
+		<map enum-item="CLEAR_DEPTH_FLAG_NONE" name-tmp="None"/>
+		<map enum-item="CLEAR_DEPTH_FLAG" name-tmp="Depth"/>
+		<map enum-item="CLEAR_STENCIL_FLAG" name-tmp="Stencil"/>
+		<map enum-item="SHADER_RESOURCE_VARIABLE_TYPE_FLAG_MUT_DYN" name-tmp="MutableDynamic"/>
+
+		<map enum="COLOR_MASK" flags="true"/>
+		<map enum="SHADER_TYPE" flags="true" none="false"/>
+		<map enum="MEMORY_PROPERTIES" flags="true" none="false"/>
+		<map enum="WAVE_FEATURE" flags="true" none="false"/>
+		<map enum="COMMAND_QUEUE_TYPE" flags="true"/>
+		<map enum="SHADING_RATE_COMBINER" flags="true"/>\
+		<map enum="SAMPLE_COUNT" flags="true"/>
+		<map enum="RESOURCE_DIMENSION_SUPPORT" flags="true"/>
+		<map enum="RESOURCE_STATE" flags="true"/>
+		<map enum="PSO_CACHE_MODE" flags="true"/>
+		<map enum="CLEAR_DEPTH_STENCIL_FLAGS" none="false"/>
+		<map enum="COMMAND_QUEUE_TYPE" none="false"/>
+		<map enum="PIPELINE_STAGE_FLAGS" none="false"/>
+		<map enum="RESOURCE_STATE" none="false"/>
+		<map enum="UAV_ACCESS_FLAG" none="false"/>
+
+		<map field="(.+)::[_]?Padding" visibility="private"/>
+
+		<map field="OptimizedClearValue::Color" type="Vector4" array="" override-native-type="true"/>
+		<map field="SamplerDesc::BorderColor" type="Vector4" array="" override-native-type="true"/>
+		<map field="QueryData(.+)::Type" visibility="public readonly"/>
+
+		<map struct="EngineCreateInfo" diligent-inheritance="true" />
+		<map struct="PipelineStateCreateInfo" diligent-inheritance="true" />
+
+		<map field="EngineCreateInfo::NumImmediateContexts" relation="length(pImmediateContextInfo)"/>
+
+		<map field="EngineVkCreateInfo::InstanceLayerCount" relation="length(ppInstanceLayerNames)"/>
+		<map field="EngineVkCreateInfo::InstanceExtensionCount" relation="length(ppInstanceExtensionNames)"/>
+		<map field="EngineVkCreateInfo::DeviceExtensionCount" relation="length(ppDeviceExtensionNames)"/>
+		<map field="EngineVkCreateInfo::IgnoreDebugMessageCount" relation="length(ppIgnoreDebugMessageNames)"/>
+
+		<map field="PipelineStateCreateInfo::ResourceSignaturesCount" relation="length(ppResourceSignatures)"/>
+		<map field="PipelineStateCreateInfo::pInternalData" visibility="private"/>
+
+		<map field="RayTracingPipelineStateCreateInfo::GeneralShaderCount" relation="length(pGeneralShaders)"/>
+		<map field="RayTracingPipelineStateCreateInfo::TriangleHitShaderCount" relation="length(pTriangleHitShaders"/>
+		<map field="RayTracingPipelineStateCreateInfo::ProceduralHitShaderCount" relation="length(pProceduralHitShaders"/>
+
+		<map field="BottomLevelASDesc::TriangleCount" relation="length(pTriangles)"/>
+		<map field="BottomLevelASDesc::BoxCount" relation="length(pBoxes)"/>
+		<map field="BeginRenderPassAttribs::ClearValueCount" relation="length(pClearValues)" />
+		<map field="SparseBufferMemoryBindInfo::NumRanges" relation="length(pRanges)" />
+		<map field="SparseTextureMemoryBindInfo::NumRanges" relation="length(pRanges)" />
+
+		<map field="BindSparseResourceMemoryAttribs::NumBufferBinds" relation="length(pBufferBinds)" />
+		<map field="BindSparseResourceMemoryAttribs::NumTextureBinds" relation="length(pTextureBinds)" />
+		<map field="BindSparseResourceMemoryAttribs::NumWaitFences" relation="length(ppWaitFences), length(pWaitFenceValues)" />
+		<map field="BindSparseResourceMemoryAttribs::NumSignalFences" relation="length(ppSignalFences), length(pSignalFenceValues)" />
+
+		<map field="ShaderMacroArray::Count" relation="length(Elements)"/>
+		<map field="InputLayoutDesc::NumElements" relation="length(LayoutElements)" />
+		<map field="PipelineResourceSignatureDesc::NumResources" relation="length(Resources)" />
+		<map field="PipelineResourceSignatureDesc::NumImmutableSamplers" relation="length(ImmutableSamplers)" />
+		<map field="PipelineResourceLayoutDesc::NumVariables" relation="length(Variables)" />
+		<map field="PipelineResourceLayoutDesc::NumImmutableSamplers" relation="length(ImmutableSamplers)" />
+
+		<map field="ShaderUnpackInfo::ModifyShaderDesc" diligent-callback="type(ModifyShaderDelegate); pfn(pUserData)" />
+		<map field="PipelineStateUnpackInfo::ModifyPipelineStateCreateInfo" diligent-callback="type(ModifyPipelineStateDelegate); pfn(pUserData)" />
+		<map field="RenderPassUnpackInfo::ModifyRenderPassDesc" diligent-callback="type(ModifyRenderPassDelegate); pfn(pUserData))" />
+
+		<map field="TextureData::NumSubresources" relation="length(pSubResources)" />
+
+		<map field="CopyTextureAttribs::pSrcBox" diligent-optional="true" />
+
+		<map field="SubpassDesc::InputAttachmentCount" relation="length(pInputAttachments)" />
+		<map field="SubpassDesc::RenderTargetAttachmentCount" relation="length(pRenderTargetAttachments)" />
+		<map field="SubpassDesc::PreserveAttachmentCount" relation="length(pPreserveAttachments)" />
+		<map field="SubpassDesc::pResolveAttachments" diligent-optional="true" />
+		<map field="SubpassDesc::pDepthStencilAttachment" diligent-optional="true" />
+		<map field="SubpassDesc::pShadingRateAttachment" diligent-optional="true" />
+
+		<map field="RenderPassDesc::AttachmentCount" relation="length(pAttachments)" />
+		<map field="RenderPassDesc::SubpassCount" relation="length(pSubpasses)" />
+		<map field="RenderPassDesc::DependencyCount" relation="length(pDependencies)" />
+
+		<map field="BuildBLASAttribs::TriangleDataCount" relation="length(pTriangleData)" />
+		<map field="BuildBLASAttribs::BoxDataCount" relation="length(pBoxData)" />
+		<map field="BuildTLASAttribs::InstanceCount" relation="length(pInstances)" />
+
+		<map field="ShaderCreateInfo::ByteCode" type="unsigned char" override-native-type="true" />
+		<map field="ShaderCreateInfo::ByteCodeSize" relation="length(ByteCode)" />
+		<map field="ResourceMappingCreateInfo::NumEntries" relation="length(pEntries)" />
+		<map field="ShaderCodeVariableDesc::NumMembers" relation="length(pMembers)"/>
+		<map field="DeviceMemoryCreateInfo::NumResources" relation="length(ppCompatibleResources)"/>
+		<map field="FramebufferDesc::AttachmentCount" relation="length(ppAttachments)" />
+		<map field="SetRenderTargetsAttribs::NumRenderTargets" relation="length(ppRenderTargets)"/>
+
+		<map method="I(.+)::(.+)" property="false" />
+
+		<!--Diligent::IEngineFactory-->
+		<map method="IEngineFactory(.+)::CreateDeviceAndContexts(.+)" visibility="private"/>
+		<map param="IEngineFactory(.+)::CreateDeviceAndContexts(.+)::pp[A-Za-z]*"  type="void" keep-pointers="true"/>
+
+		<map param="IEngineFactory(.+)::CreateSwapChain(.+)::SCDesc" name="swapChainDesc"/>
+		<map param="IEngineFactory(.+)::CreateSwapChain(.+)::FSDesc" name="fullScreenDesc"/>
+		<map method="IEngineFactory::EnumerateAdapters" visibility="private"/>
+		<map param="IEngineFactory::EnumerateAdapters::NumAdapters" type="void" keep-pointers="true"/>
+		<map param="IEngineFactory::EnumerateAdapters::Adapters" type="void" keep-pointers="true"/>
+
+		<!--Diligent::IEngineFactoryD3D11/D3D12-->
+		<map method="IEngineFactoryD3D\d\d::EnumerateDisplayModes" visibility="private"/>
+		<map param="IEngineFactoryD3D\d\d::EnumerateDisplayModes::NumDisplayModes" type="void" keep-pointers="true"/>
+		<map param="IEngineFactoryD3D\d\d::EnumerateDisplayModes::DisplayModes" type="void" keep-pointers="true"/>
+
+		<!--Diligent::IRenderDevice-->
+		<map param="IRenderDevice::CreateShader::ppShader" return="true"/>
+		<map param="IRenderDevice::CreateBuffer::pBuffData" attribute="optional" default="null"/>
+		<map param="IRenderDevice::CreateTexture::pData" attribute="optional" default="null"/>
+		<map param="IRenderDevice::Create(.+)PipelineState::PSOCreateInfo" name="createInfo"/>
+
+		<!--Diligent::IDeviceContext-->
+		<map method="IDeviceContext::SetVertexBuffers" visibility="private"/>
+		<map param="IDeviceContext::SetVertexBuffers::ppBuffers" type="void" keep-pointers="true"/>
+		<map param="IDeviceContext::SetVertexBuffers::pOffsets"  type="void" keep-pointers="true"/>
+		<map param="IDeviceContext::SetBlendFactors::pBlendFactors" attribute="optional" type="Vector4" override-native-type="true" default="null"/>
+		<map method="IDeviceContext::SetRenderTargets" visibility="private"/>
+		<map param="IDeviceContext::SetRenderTargets::ppRenderTargets" type="void" keep-pointers="true"/>
+		<map param="IDeviceContext::SetViewports::pViewports" attribute="in buffer"/>
+		<map param="IDeviceContext::SetViewports::NumViewports" relation="length(pViewports)"/>
+		<map param="IDeviceContext::SetViewports::RTWidth" name="width"/>
+		<map param="IDeviceContext::SetViewports::RTHeight" name="height"/>
+		<map param="IDeviceContext::SetScissorRects::pRects" attribute="in buffer"/>
+		<map param="IDeviceContext::SetScissorRects::NumRects" relation="length(pRects)"/>
+		<map param="IDeviceContext::SetScissorRects::RTWidth" name="width"/>
+		<map param="IDeviceContext::SetScissorRects::RTHeight" name="height"/>
+		<map param="IDeviceContext::FinishCommandList::ppCommandList" attribute="out"/>
+		<map method="IDeviceContext::ExecuteCommandLists" visibility="private"/>
+		<map param="IDeviceContext::ExecuteCommandLists::ppCommandLists" type="void" keep-pointers="true"/>
+		<map param="IDeviceContext::ClearRenderTarget::RGBA" type="Vector4" override-native-type="true"/>
+		<map param="IDeviceContext::BeginDebugGroup::pColor" type="Vector4" override-native-type="true"/>
+		<map param="IDeviceContext::InsertDebugLabel::pColor" type="Vector4" override-native-type="true"/>
+		<map param="IDeviceContext::GetTileSize::TileSize[A-Z]" attribute="out"/>
+		<map param="IDeviceContext::TransitionResourceStates::pResourceBarriers" attribute="buffer"/>
+		<map param="IDeviceContext::TransitionResourceStates::BarrierCount" relation="length(pResourceBarriers)"/>
+		<map param="IDeviceContext::UpdateSBT::pUpdateIndirectBufferAttribs" attribute="in optional"/>
+		<map param="IDeviceContext::MapBuffer::pMappedData" attribute="out"/>
+		<map param="IDeviceContext::MapTextureSubresource::pMapRegion" attribute="optional"/>
+		<map param="IDeviceContext::MapTextureSubresource::MappedData" attribute="out"/>
+
+		<!--Diligent::IResourceMapping-->
+		<map param="IResourceMapping::AddResource::pObject" name="deviceObject"/>
+		<map method="IResourceMapping::AddResourceArray" visibility="private"/>
+		<map param="IResourceMapping::AddResourceArray::ppObjects" type="void" keep-pointers="true"/>
+
+		<!--Diligent::IShaderResourceVariable-->
+		<map method="IShaderResourceVariable::SetArray" visibility="private"/>
+		<map param="IShaderResourceVariable::SetArray::ppObjects" type="void" keep-pointers="true"/>
+		<map method="IShaderResourceVariable::GetType" name="GetResourceVariableType" />
+		<map param="IShaderResourceVariable::Set::pObject" name="deviceObject"/>
+		<map param="IShaderResourceVariable::GetResourceDesc::ResourceDesc" attribute="out"/>
+
+		<!--Diligent::IShader-->
+		<map param="IShader::GetResourceDesc::ResourceDesc" attribute="out"/>
+		<map method="IShader::GetBytecode" visibility="private" />
+		<map param="IShader::GetBytecode::ppBytecode" type="void" keep-pointers="true"/>
+		<map param="IShader::GetBytecode::Size" type="void" keep-pointers="true"/>
+
+		<!--Diligent::IQuery-->
+		<map method="IQuery::GetData" visibility="private"/>
+		<map param="IQuery::GetData::pData" type="void" keep-pointers="true"/>
+	</mapping>
+
+</config>

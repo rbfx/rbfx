@@ -33,6 +33,8 @@ env:
   ci_sdk_dir: ${{ github.workspace }}/SDK
   ci_latest_release_url: https://uploads.github.com/repos/rbfx/rbfx/releases/129063815/assets{?name,label}
   ci_latest_release_id: 129063815
+  # etc
+  TRACY_NO_INVARIANT_CHECK: 1
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -182,7 +184,7 @@ jobs:
 
   MacOS-Tools:
     if: github.event.pull_request.draft == false
-    runs-on: macos-12
+    runs-on: macos-13
     needs: [CheckSkipCI]
     env:
       BUILD_SHARED_LIBS: ON
@@ -638,7 +640,7 @@ jobs:
 
   MacOS:
     if: github.event.pull_request.draft == false
-    runs-on: macos-12
+    runs-on: macos-13
     needs: [CheckSkipCI]
 
     strategy:
@@ -862,7 +864,7 @@ jobs:
 
   iOS:
     if: github.event.pull_request.draft == false
-    runs-on: macos-12
+    runs-on: macos-13
     needs: [CheckSkipCI, MacOS-Tools]
 
     strategy:

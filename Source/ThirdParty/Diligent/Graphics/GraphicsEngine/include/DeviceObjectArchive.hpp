@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -91,6 +91,7 @@ public:
         Vulkan,
         Metal_MacOS,
         Metal_iOS,
+        WebGPU,
         Count
     };
 
@@ -127,7 +128,7 @@ public:
     };
 
     static constexpr Uint32 HeaderMagicNumber = 0xDE00000A;
-    static constexpr Uint32 ArchiveVersion    = 5;
+    static constexpr Uint32 ArchiveVersion    = 8;
 
     struct ArchiveHeader
     {
@@ -241,7 +242,7 @@ public:
     void AppendDeviceData(const DeviceObjectArchive& Src, DeviceType Dev) noexcept(false);
     void Merge(const DeviceObjectArchive& Src) noexcept(false);
 
-    void Deserialize(const CreateInfo& CI) noexcept(false);
+    bool Deserialize(const CreateInfo& CI) noexcept;
     void Serialize(IFileStream* pStream) const;
     void Serialize(IDataBlob** ppDataBlob) const;
 
@@ -298,6 +299,8 @@ public:
     {
         return m_NamedResources;
     }
+
+    void Clear() noexcept;
 
 private:
     // Named resources

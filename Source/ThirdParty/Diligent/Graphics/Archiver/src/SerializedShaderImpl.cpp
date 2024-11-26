@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -43,7 +43,8 @@ const INTERFACE_ID SerializedShaderImpl::IID_InternalImpl;
 SerializedShaderImpl::SerializedShaderImpl(IReferenceCounters*      pRefCounters,
                                            SerializationDeviceImpl* pDevice,
                                            const ShaderCreateInfo&  ShaderCI,
-                                           const ShaderArchiveInfo& ArchiveInfo) :
+                                           const ShaderArchiveInfo& ArchiveInfo,
+                                           IDataBlob**              ppCompilerOutput) :
     TBase{pRefCounters},
     m_pDevice{pDevice}
 {
@@ -73,40 +74,46 @@ SerializedShaderImpl::SerializedShaderImpl(IReferenceCounters*      pRefCounters
 
     while (DeviceFlags != ARCHIVE_DEVICE_DATA_FLAG_NONE)
     {
-        const auto Flag = ExtractLSB(DeviceFlags);
+        const ARCHIVE_DEVICE_DATA_FLAGS Flag = ExtractLSB(DeviceFlags);
 
-        static_assert(ARCHIVE_DEVICE_DATA_FLAG_LAST == ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS, "Please update the switch below to handle the new device data type");
+        static_assert(ARCHIVE_DEVICE_DATA_FLAG_LAST == 1 << 7, "Please update the switch below to handle the new device data type");
         switch (Flag)
         {
 #if D3D11_SUPPORTED
             case ARCHIVE_DEVICE_DATA_FLAG_D3D11:
-                CreateShaderD3D11(pRefCounters, ShaderCI);
+                CreateShaderD3D11(pRefCounters, ShaderCI, ppCompilerOutput);
                 break;
 #endif
 
 #if D3D12_SUPPORTED
             case ARCHIVE_DEVICE_DATA_FLAG_D3D12:
-                CreateShaderD3D12(pRefCounters, ShaderCI);
+                CreateShaderD3D12(pRefCounters, ShaderCI, ppCompilerOutput);
                 break;
 #endif
 
 #if GL_SUPPORTED || GLES_SUPPORTED
             case ARCHIVE_DEVICE_DATA_FLAG_GL:
             case ARCHIVE_DEVICE_DATA_FLAG_GLES:
-                CreateShaderGL(pRefCounters, ShaderCI, Flag == ARCHIVE_DEVICE_DATA_FLAG_GL ? RENDER_DEVICE_TYPE_GL : RENDER_DEVICE_TYPE_GLES);
+                CreateShaderGL(pRefCounters, ShaderCI, Flag == ARCHIVE_DEVICE_DATA_FLAG_GL ? RENDER_DEVICE_TYPE_GL : RENDER_DEVICE_TYPE_GLES, ppCompilerOutput);
                 break;
 #endif
 
 #if VULKAN_SUPPORTED
             case ARCHIVE_DEVICE_DATA_FLAG_VULKAN:
-                CreateShaderVk(pRefCounters, ShaderCI);
+                CreateShaderVk(pRefCounters, ShaderCI, ppCompilerOutput);
                 break;
 #endif
 
 #if METAL_SUPPORTED
             case ARCHIVE_DEVICE_DATA_FLAG_METAL_MACOS:
             case ARCHIVE_DEVICE_DATA_FLAG_METAL_IOS:
-                CreateShaderMtl(pRefCounters, ShaderCI, Flag == ARCHIVE_DEVICE_DATA_FLAG_METAL_MACOS ? DeviceType::Metal_MacOS : DeviceType::Metal_iOS);
+                CreateShaderMtl(pRefCounters, ShaderCI, Flag == ARCHIVE_DEVICE_DATA_FLAG_METAL_MACOS ? DeviceType::Metal_MacOS : DeviceType::Metal_iOS, ppCompilerOutput);
+                break;
+#endif
+
+#if WEBGPU_SUPPORTED
+            case ARCHIVE_DEVICE_DATA_FLAG_WEBGPU:
+                CreateShaderWebGPU(pRefCounters, ShaderCI, ppCompilerOutput);
                 break;
 #endif
 
@@ -122,7 +129,10 @@ SerializedShaderImpl::SerializedShaderImpl(IReferenceCounters*      pRefCounters
 }
 
 SerializedShaderImpl::~SerializedShaderImpl()
-{}
+{
+    // Make sure that all asynchrous tasks are complete.
+    GetStatus(/*WaitForCompletion = */ true);
+}
 
 void DILIGENT_CALL_TYPE SerializedShaderImpl::QueryInterface(const INTERFACE_ID& IID, IObject** ppInterface)
 {
@@ -165,6 +175,8 @@ SerializedData SerializedShaderImpl::SerializeCreateInfo(const ShaderCreateInfo&
 
 SerializedData SerializedShaderImpl::GetDeviceData(DeviceType Type) const
 {
+    DEV_CHECK_ERR(!IsCompiling(), "Device data is not available until compilation is complete. Use GetStatus() to check the shader status.");
+
     const auto& pCompiledShader = m_Shaders[static_cast<size_t>(Type)];
     return pCompiledShader ?
         pCompiledShader->Serialize(GetCreateInfo()) :
@@ -173,11 +185,71 @@ SerializedData SerializedShaderImpl::GetDeviceData(DeviceType Type) const
 
 IShader* SerializedShaderImpl::GetDeviceShader(RENDER_DEVICE_TYPE Type) const
 {
-    const auto  ArchiveDeviceType = RenderDeviceTypeToArchiveDeviceType(Type);
-    const auto& pCompiledShader   = m_Shaders[static_cast<size_t>(ArchiveDeviceType)];
+    const DeviceType ArchiveDeviceType = RenderDeviceTypeToArchiveDeviceType(Type);
+    const auto&      pCompiledShader   = m_Shaders[static_cast<size_t>(ArchiveDeviceType)];
     return pCompiledShader ?
         pCompiledShader->GetDeviceShader() :
         nullptr;
+}
+
+SHADER_STATUS SerializedShaderImpl::GetStatus(bool WaitForCompletion)
+{
+    SHADER_STATUS OverallStatus = SHADER_STATUS_READY;
+    for (size_t type = 0; type < static_cast<size_t>(DeviceType::Count); ++type)
+    {
+        const auto& pCompiledShader = m_Shaders[type];
+        if (!pCompiledShader)
+            continue;
+
+        const SHADER_STATUS Status = pCompiledShader->GetStatus(WaitForCompletion);
+        switch (Status)
+        {
+            case SHADER_STATUS_UNINITIALIZED:
+                UNEXPECTED("Shader status must not be uninitialized");
+                break;
+
+            case SHADER_STATUS_COMPILING:
+                OverallStatus = SHADER_STATUS_COMPILING;
+                break;
+
+            case SHADER_STATUS_READY:
+                // Nothing to do
+                break;
+
+            case SHADER_STATUS_FAILED:
+                return SHADER_STATUS_FAILED;
+
+            default:
+                UNEXPECTED("Unexpected shader status");
+                break;
+        }
+    }
+
+    return OverallStatus;
+}
+
+bool SerializedShaderImpl::IsCompiling() const
+{
+    for (const auto& pCompiledShader : m_Shaders)
+    {
+        if (pCompiledShader && pCompiledShader->IsCompiling())
+            return true;
+    }
+
+    return false;
+}
+
+std::vector<RefCntAutoPtr<IAsyncTask>> SerializedShaderImpl::GetCompileTasks() const
+{
+    std::vector<RefCntAutoPtr<IAsyncTask>> Tasks;
+    for (const auto& pCompiledShader : m_Shaders)
+    {
+        if (RefCntAutoPtr<IAsyncTask> pTask{pCompiledShader ? pCompiledShader->GetCompileTask() : RefCntAutoPtr<IAsyncTask>{}})
+        {
+            Tasks.emplace_back(std::move(pTask));
+        }
+    }
+    return Tasks;
 }
 
 } // namespace Diligent

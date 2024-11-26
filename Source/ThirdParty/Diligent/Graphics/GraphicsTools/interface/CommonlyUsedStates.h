@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,114 +38,170 @@
 
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
-// clang-format off
 
-// Common depth-stencil states
-static const DepthStencilStateDesc DSS_Default{};
+// =========================== Depth-stencil states ===========================
 
-static const DepthStencilStateDesc DSS_DisableDepth
-{
+static DILIGENT_CONSTEXPR DepthStencilStateDesc DSS_Default{};
+
+static DILIGENT_CONSTEXPR DepthStencilStateDesc DSS_DisableDepth{
     False, // DepthEnable
     False  // DepthWriteEnable
 };
 
-static const DepthStencilStateDesc DSS_EnableDepthNoWrites
-{
+static DILIGENT_CONSTEXPR DepthStencilStateDesc DSS_EnableDepthNoWrites{
     True, // DepthEnable
     False // DepthWriteEnable
 };
 
 
-// Common rasterizer states
-static const RasterizerStateDesc RS_Default{};
+// ============================ Rasterizer states =============================
 
-static const RasterizerStateDesc RS_SolidFillNoCull
-{
+static DILIGENT_CONSTEXPR RasterizerStateDesc RS_Default{};
+
+static DILIGENT_CONSTEXPR RasterizerStateDesc RS_SolidFillNoCull{
     FILL_MODE_SOLID,
-    CULL_MODE_NONE
+    CULL_MODE_NONE,
 };
 
-static const RasterizerStateDesc RS_WireFillNoCull
-{
+static DILIGENT_CONSTEXPR RasterizerStateDesc RS_SolidFillCullBack{
+    FILL_MODE_SOLID,
+    CULL_MODE_BACK,
+};
+
+static DILIGENT_CONSTEXPR RasterizerStateDesc RS_SolidFillCullFront{
+    FILL_MODE_SOLID,
+    CULL_MODE_FRONT,
+};
+
+static DILIGENT_CONSTEXPR RasterizerStateDesc RS_SolidFillCullBackCCW{
+    FILL_MODE_SOLID,
+    CULL_MODE_BACK,
+    True,
+};
+
+static DILIGENT_CONSTEXPR RasterizerStateDesc RS_SolidFillCullFrontCCW{
+    FILL_MODE_SOLID,
+    CULL_MODE_FRONT,
+    True,
+};
+
+static DILIGENT_CONSTEXPR RasterizerStateDesc RS_WireFillNoCull{
     FILL_MODE_WIREFRAME,
-    CULL_MODE_NONE
+    CULL_MODE_NONE,
+};
+
+static DILIGENT_CONSTEXPR RasterizerStateDesc RS_WireFillCullBack{
+    FILL_MODE_WIREFRAME,
+    CULL_MODE_BACK,
+};
+
+static DILIGENT_CONSTEXPR RasterizerStateDesc RS_WireFillCullFront{
+    FILL_MODE_WIREFRAME,
+    CULL_MODE_FRONT,
 };
 
 
-// Blend states
-static const BlendStateDesc BS_Default{};
+// =============================== Blend states ===============================
 
-static const BlendStateDesc BS_AlphaBlend =
-{
-    False,                  // AlphaToCoverageEnable
-    False,                  // IndependentBlendEnable
-	RenderTargetBlendDesc   // Render Target 0
+static DILIGENT_CONSTEXPR BlendStateDesc BS_Default{};
+
+static DILIGENT_CONSTEXPR BlendStateDesc BS_AlphaBlend{
+    False,                // AlphaToCoverageEnable
+    False,                // IndependentBlendEnable
+    RenderTargetBlendDesc // Render Target 0
     {
-		True,                       // BlendEnable
+        True,                       // BlendEnable
         False,                      // LogicOperationEnable
         BLEND_FACTOR_SRC_ALPHA,     // SrcBlend
         BLEND_FACTOR_INV_SRC_ALPHA, // DestBlend
-		BLEND_OPERATION_ADD,        // BlendOp
+        BLEND_OPERATION_ADD,        // BlendOp
         BLEND_FACTOR_SRC_ALPHA,     // SrcBlendAlpha
         BLEND_FACTOR_INV_SRC_ALPHA, // DestBlendAlpha
-		BLEND_OPERATION_ADD         // BlendOpAlpha
-	}
+        BLEND_OPERATION_ADD         // BlendOpAlpha
+    },
+};
+
+static DILIGENT_CONSTEXPR BlendStateDesc BS_PremultipliedAlphaBlend{
+    False,                // AlphaToCoverageEnable
+    False,                // IndependentBlendEnable
+    RenderTargetBlendDesc // Render Target 0
+    {
+        True,                       // BlendEnable
+        False,                      // LogicOperationEnable
+        BLEND_FACTOR_ONE,           // SrcBlend
+        BLEND_FACTOR_INV_SRC_ALPHA, // DestBlend
+        BLEND_OPERATION_ADD,        // BlendOp
+        BLEND_FACTOR_ONE,           // SrcBlendAlpha
+        BLEND_FACTOR_INV_SRC_ALPHA, // DestBlendAlpha
+        BLEND_OPERATION_ADD,        // BlendOpAlpha
+    },
+};
+
+static DILIGENT_CONSTEXPR BlendStateDesc BS_AdditiveBlend{
+    False,                // AlphaToCoverageEnable
+    False,                // IndependentBlendEnable
+    RenderTargetBlendDesc // Render Target 0
+    {
+        True,                // BlendEnable
+        False,               // LogicOperationEnable
+        BLEND_FACTOR_ONE,    // SrcBlend
+        BLEND_FACTOR_ONE,    // DestBlend
+        BLEND_OPERATION_ADD, // BlendOp
+        BLEND_FACTOR_ONE,    // SrcBlendAlpha
+        BLEND_FACTOR_ONE,    // DestBlendAlpha
+        BLEND_OPERATION_ADD, // BlendOpAlpha
+    },
 };
 
 
-// Common sampler states
-static const SamplerDesc Sam_LinearClamp
-{
+// ================================= Samplers =================================
+
+static DILIGENT_CONSTEXPR SamplerDesc Sam_LinearClamp{
     FILTER_TYPE_LINEAR,
     FILTER_TYPE_LINEAR,
     FILTER_TYPE_LINEAR,
     TEXTURE_ADDRESS_CLAMP,
     TEXTURE_ADDRESS_CLAMP,
-    TEXTURE_ADDRESS_CLAMP
+    TEXTURE_ADDRESS_CLAMP,
 };
 
-static const SamplerDesc Sam_PointClamp
-{
+static DILIGENT_CONSTEXPR SamplerDesc Sam_PointClamp{
     FILTER_TYPE_POINT,
     FILTER_TYPE_POINT,
     FILTER_TYPE_POINT,
     TEXTURE_ADDRESS_CLAMP,
     TEXTURE_ADDRESS_CLAMP,
-    TEXTURE_ADDRESS_CLAMP
+    TEXTURE_ADDRESS_CLAMP,
 };
 
-static const SamplerDesc Sam_LinearMirror
-{
+static DILIGENT_CONSTEXPR SamplerDesc Sam_LinearMirror{
     FILTER_TYPE_LINEAR,
     FILTER_TYPE_LINEAR,
     FILTER_TYPE_LINEAR,
     TEXTURE_ADDRESS_MIRROR,
     TEXTURE_ADDRESS_MIRROR,
-    TEXTURE_ADDRESS_MIRROR
+    TEXTURE_ADDRESS_MIRROR,
 };
 
-static const SamplerDesc Sam_PointWrap
-{
+static DILIGENT_CONSTEXPR SamplerDesc Sam_PointWrap{
     FILTER_TYPE_POINT,
     FILTER_TYPE_POINT,
     FILTER_TYPE_POINT,
     TEXTURE_ADDRESS_WRAP,
     TEXTURE_ADDRESS_WRAP,
-    TEXTURE_ADDRESS_WRAP
+    TEXTURE_ADDRESS_WRAP,
 };
 
-static const SamplerDesc Sam_LinearWrap
-{
+static DILIGENT_CONSTEXPR SamplerDesc Sam_LinearWrap{
     FILTER_TYPE_LINEAR,
     FILTER_TYPE_LINEAR,
     FILTER_TYPE_LINEAR,
     TEXTURE_ADDRESS_WRAP,
     TEXTURE_ADDRESS_WRAP,
-    TEXTURE_ADDRESS_WRAP
+    TEXTURE_ADDRESS_WRAP,
 };
 
-static const SamplerDesc Sam_ComparisonLinearClamp
-{
+static DILIGENT_CONSTEXPR SamplerDesc Sam_ComparisonLinearClamp{
     FILTER_TYPE_COMPARISON_LINEAR,
     FILTER_TYPE_COMPARISON_LINEAR,
     FILTER_TYPE_COMPARISON_LINEAR,
@@ -154,11 +210,10 @@ static const SamplerDesc Sam_ComparisonLinearClamp
     TEXTURE_ADDRESS_CLAMP,
     SamplerDesc{}.MipLODBias,
     SamplerDesc{}.MaxAnisotropy,
-    COMPARISON_FUNC_LESS
+    COMPARISON_FUNC_LESS,
 };
 
-static const SamplerDesc Sam_Aniso2xClamp
-{
+static DILIGENT_CONSTEXPR SamplerDesc Sam_Aniso2xClamp{
     FILTER_TYPE_ANISOTROPIC,
     FILTER_TYPE_ANISOTROPIC,
     FILTER_TYPE_ANISOTROPIC,
@@ -169,8 +224,7 @@ static const SamplerDesc Sam_Aniso2xClamp
     2    // MaxAnisotropy
 };
 
-static const SamplerDesc Sam_Aniso4xClamp
-{
+static DILIGENT_CONSTEXPR SamplerDesc Sam_Aniso4xClamp{
     FILTER_TYPE_ANISOTROPIC,
     FILTER_TYPE_ANISOTROPIC,
     FILTER_TYPE_ANISOTROPIC,
@@ -181,8 +235,7 @@ static const SamplerDesc Sam_Aniso4xClamp
     4    // MaxAnisotropy
 };
 
-static const SamplerDesc Sam_Aniso8xClamp
-{
+static DILIGENT_CONSTEXPR SamplerDesc Sam_Aniso8xClamp{
     FILTER_TYPE_ANISOTROPIC,
     FILTER_TYPE_ANISOTROPIC,
     FILTER_TYPE_ANISOTROPIC,
@@ -193,40 +246,59 @@ static const SamplerDesc Sam_Aniso8xClamp
     8    // MaxAnisotropy
 };
 
-static const SamplerDesc Sam_Aniso16xClamp
-{
+static DILIGENT_CONSTEXPR SamplerDesc Sam_Aniso16xClamp{
     FILTER_TYPE_ANISOTROPIC,
     FILTER_TYPE_ANISOTROPIC,
     FILTER_TYPE_ANISOTROPIC,
     TEXTURE_ADDRESS_CLAMP,
     TEXTURE_ADDRESS_CLAMP,
     TEXTURE_ADDRESS_CLAMP,
-    0.f,  // MipLODBias
-    16    // MaxAnisotropy
+    0.f, // MipLODBias
+    16   // MaxAnisotropy
 };
 
-static const SamplerDesc Sam_Aniso4xWrap
-{
+static DILIGENT_CONSTEXPR SamplerDesc Sam_Aniso2xWrap{
     FILTER_TYPE_ANISOTROPIC,
     FILTER_TYPE_ANISOTROPIC,
     FILTER_TYPE_ANISOTROPIC,
     TEXTURE_ADDRESS_WRAP,
     TEXTURE_ADDRESS_WRAP,
     TEXTURE_ADDRESS_WRAP,
-    0.f,  // MipLODBias
-    4     // MaxAnisotropy
+    0.f, // MipLODBias
+    2    // MaxAnisotropy
 };
 
-static const SamplerDesc Sam_Aniso8xWrap
-{
+static DILIGENT_CONSTEXPR SamplerDesc Sam_Aniso4xWrap{
     FILTER_TYPE_ANISOTROPIC,
     FILTER_TYPE_ANISOTROPIC,
     FILTER_TYPE_ANISOTROPIC,
     TEXTURE_ADDRESS_WRAP,
     TEXTURE_ADDRESS_WRAP,
     TEXTURE_ADDRESS_WRAP,
-    0.f,  // MipLODBias
-    8     // MaxAnisotropy
+    0.f, // MipLODBias
+    4    // MaxAnisotropy
+};
+
+static DILIGENT_CONSTEXPR SamplerDesc Sam_Aniso8xWrap{
+    FILTER_TYPE_ANISOTROPIC,
+    FILTER_TYPE_ANISOTROPIC,
+    FILTER_TYPE_ANISOTROPIC,
+    TEXTURE_ADDRESS_WRAP,
+    TEXTURE_ADDRESS_WRAP,
+    TEXTURE_ADDRESS_WRAP,
+    0.f, // MipLODBias
+    8    // MaxAnisotropy
+};
+
+static DILIGENT_CONSTEXPR SamplerDesc Sam_Aniso16xWrap{
+    FILTER_TYPE_ANISOTROPIC,
+    FILTER_TYPE_ANISOTROPIC,
+    FILTER_TYPE_ANISOTROPIC,
+    TEXTURE_ADDRESS_WRAP,
+    TEXTURE_ADDRESS_WRAP,
+    TEXTURE_ADDRESS_WRAP,
+    0.f, // MipLODBias
+    16   // MaxAnisotropy
 };
 
 DILIGENT_END_NAMESPACE // namespace Diligent

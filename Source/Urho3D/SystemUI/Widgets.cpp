@@ -1044,10 +1044,16 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
     switch (var.GetType())
     {
     case VAR_NONE:
+        ui::Text("None");
+        return false;
+
     case VAR_PTR:
     case VAR_VOIDPTR:
+        ui::Text("Unsupported: raw pointer");
+        return false;
+
     case VAR_CUSTOM:
-        ui::Text("Unsupported type");
+        ui::Text("Unsupported: custom object");
         return false;
 
     case VAR_INT:
@@ -1183,9 +1189,7 @@ bool ImageButton(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, cons
     const ImGuiID id = window->GetID("#image");
     ui::PopID();
 
-    const auto framePaddingFloat = static_cast<float>(framePadding);
-    const ImVec2 padding = (framePadding >= 0) ? ImVec2(framePaddingFloat, framePaddingFloat) : style.FramePadding;
-    return ui::ImageButtonEx(id, ToImTextureID(texture), size, uv0, uv1, padding, bgCol, tintCol);
+    return ui::ImageButtonEx(id, ToImTextureID(texture), size, uv0, uv1, bgCol, tintCol);
 }
 
 }

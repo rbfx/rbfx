@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.6)
 
 add_library(Diligent-PlatformInterface INTERFACE)
 
-target_include_directories(Diligent-PlatformInterface INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/interface>)
+target_include_directories(Diligent-PlatformInterface INTERFACE interface)
 
 set(PLATFORM_INTERFACE_HEADERS
     ../interface/FileSystem.hpp

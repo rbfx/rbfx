@@ -101,6 +101,7 @@ void CopyPipelineResourceSignatureDesc(FixedLinearAllocator&                    
                                        std::array<Uint16, SHADER_RESOURCE_VARIABLE_TYPE_NUM_TYPES + 1>& ResourceOffsets);
 
 /// Pipeline resource signature internal data required for serialization/deserialization.
+template <typename PipelineResourceAttribsType, typename ImmutableSamplerAttribsType>
 struct PipelineResourceSignatureInternalData
 {
     SHADER_TYPE                               ShaderStages          = SHADER_TYPE_UNKNOWN;
@@ -108,19 +109,44 @@ struct PipelineResourceSignatureInternalData
     PIPELINE_TYPE                             PipelineType          = PIPELINE_TYPE_INVALID;
     std::array<Int8, MAX_SHADERS_IN_PIPELINE> StaticResStageIndex   = {};
 
+    // The struct is used in serialization and must be tightly packed
     Uint8 _Padding = 0;
+
+    Uint32 NumResources         = 0;
+    Uint32 NumImmutableSamplers = 0;
+
+    const PipelineResourceAttribsType* pResourceAttribs   = nullptr; // [NumResources]
+    const ImmutableSamplerAttribsType* pImmutableSamplers = nullptr; // [NumImmutableSamplers]
 
     constexpr bool operator==(const PipelineResourceSignatureInternalData& Rhs) const
     {
         // clang-format off
-        return ShaderStages          == Rhs.ShaderStages          &&
-               StaticResShaderStages == Rhs.StaticResShaderStages &&
-               PipelineType          == Rhs.PipelineType          &&
-               StaticResStageIndex   == Rhs.StaticResStageIndex;
+        if (ShaderStages          != Rhs.ShaderStages ||
+            StaticResShaderStages != Rhs.StaticResShaderStages ||
+            PipelineType          != Rhs.PipelineType ||
+            StaticResStageIndex   != Rhs.StaticResStageIndex ||
+            NumResources          != Rhs.NumResources ||
+            NumImmutableSamplers  != Rhs.NumImmutableSamplers)
         // clang-format on
+        {
+            return false;
+        }
+
+        for (Uint32 i = 0; i < NumResources; ++i)
+        {
+            if (pResourceAttribs[i] != Rhs.pResourceAttribs[i])
+                return false;
+        }
+
+        for (Uint32 i = 0; i < NumImmutableSamplers; ++i)
+        {
+            if (pImmutableSamplers[i] != Rhs.pImmutableSamplers[i])
+                return false;
+        }
+
+        return true;
     }
 };
-ASSERT_SIZEOF(PipelineResourceSignatureInternalData, 16, "The struct is used in serialization and must be tightly packed");
 
 
 /// Helper class that wraps the pipeline resource signature description.
@@ -314,11 +340,20 @@ public:
     // Shader resource binding implementation type (ShaderResourceBindingD3D12Impl, ShaderResourceBindingVkImpl, etc.)
     using ShaderResourceBindingImplType = typename EngineImplTraits::ShaderResourceBindingImplType;
 
+    // Sampler implementation type (SamplerD3D12Impl, SamplerVkImpl, etc.)
+    using SamplerImplType = typename EngineImplTraits::SamplerImplType;
+
     // Pipeline resource signature implementation type (PipelineResourceSignatureD3D12Impl, PipelineResourceSignatureVkImpl, etc.)
     using PipelineResourceSignatureImplType = typename EngineImplTraits::PipelineResourceSignatureImplType;
 
     // Pipeline resource attribs type (PipelineResourceAttribsD3D12, PipelineResourceAttribsVk, etc.)
     using PipelineResourceAttribsType = typename EngineImplTraits::PipelineResourceAttribsType;
+
+    // Immutable sampler attribs type (ImmutableSamplerAttribsD3D12, ImmutableSamplerAttribsVk, etc.)
+    using ImmutableSamplerAttribsType = typename EngineImplTraits::ImmutableSamplerAttribsType;
+
+    // Pipeline resource signature internal data type (PipelineResourceSignatureInternalDataD3D12, PipelineResourceSignatureInternalDataVk, etc.)
+    using PipelineResourceSignatureInternalDataType = typename EngineImplTraits::PipelineResourceSignatureInternalDataType;
 
     using TDeviceObjectBase = DeviceObjectBase<BaseInterface, RenderDeviceImplType, PipelineResourceSignatureDesc>;
 
@@ -374,10 +409,10 @@ public:
         }
     }
 
-    PipelineResourceSignatureBase(IReferenceCounters*                          pRefCounters,
-                                  RenderDeviceImplType*                        pDevice,
-                                  const PipelineResourceSignatureDesc&         Desc,
-                                  const PipelineResourceSignatureInternalData& InternalData) :
+    PipelineResourceSignatureBase(IReferenceCounters*                              pRefCounters,
+                                  RenderDeviceImplType*                            pDevice,
+                                  const PipelineResourceSignatureDesc&             Desc,
+                                  const PipelineResourceSignatureInternalDataType& InternalData) :
         TDeviceObjectBase{pRefCounters, pDevice, Desc, false /*bIsDeviceInternal*/},
         // clang-format off
         m_ShaderStages         {InternalData.ShaderStages},
@@ -666,6 +701,12 @@ public:
         return m_pResourceAttribs[ResIndex];
     }
 
+    const ImmutableSamplerAttribsType& GetImmutableSamplerAttribs(Uint32 SampIndex) const
+    {
+        VERIFY_EXPR(SampIndex < this->m_Desc.NumImmutableSamplers);
+        return m_pImmutableSamplerAttribs[SampIndex];
+    }
+
     static bool SignaturesCompatible(const PipelineResourceSignatureImplType* pSign0,
                                      const PipelineResourceSignatureImplType* pSign1)
     {
@@ -723,14 +764,30 @@ public:
         return GetTotalResourceCount() == 0 && GetImmutableSamplerCount() == 0;
     }
 
+    PipelineResourceSignatureInternalDataType GetInternalData() const
+    {
+        PipelineResourceSignatureInternalDataType InternalData;
+
+        InternalData.ShaderStages          = m_ShaderStages;
+        InternalData.StaticResShaderStages = m_StaticResShaderStages;
+        InternalData.PipelineType          = m_PipelineType;
+        InternalData.StaticResStageIndex   = m_StaticResStageIndex;
+
+        InternalData.pResourceAttribs     = m_pResourceAttribs;
+        InternalData.NumResources         = this->m_Desc.NumResources;
+        InternalData.pImmutableSamplers   = m_pImmutableSamplerAttribs;
+        InternalData.NumImmutableSamplers = this->m_Desc.NumImmutableSamplers;
+
+        return InternalData;
+    }
+
 protected:
     using AllocResourceAttribsCallbackType         = std::function<PipelineResourceAttribsType*(FixedLinearAllocator&)>;
     using AllocImmutableSamplerAttribsCallbackType = std::function<void*(FixedLinearAllocator&)>;
 
-    template <typename ImmutableSamplerAttribsType>
     void Initialize(IMemoryAllocator&                               RawAllocator,
                     const PipelineResourceSignatureDesc&            Desc,
-                    ImmutableSamplerAttribsType*&                   ImmutableSamAttribs,
+                    bool                                            CreateImmutableSamplers,
                     const std::function<void()>&                    InitResourceLayout,
                     const std::function<size_t()>&                  GetRequiredResourceCacheMemorySize,
                     const AllocResourceAttribsCallbackType&         AllocResourceAttribs  = nullptr,
@@ -750,6 +807,10 @@ protected:
         }
 
         Allocator.AddSpace<ImmutableSamplerAttribsType>(Desc.NumImmutableSamplers);
+        if (CreateImmutableSamplers)
+        {
+            Allocator.AddSpace<RefCntAutoPtr<SamplerImplType>>(Desc.NumImmutableSamplers);
+        }
 
         Allocator.Reserve();
         // The memory is now owned by PipelineResourceSignatureBase and will be freed by Destruct().
@@ -783,9 +844,24 @@ protected:
             m_StaticVarsMgrs = Allocator.ConstructArray<ShaderVariableManagerImplType>(NumStaticResStages, std::ref(*this), std::ref(*m_pStaticResCache));
         }
 
-        ImmutableSamAttribs = AllocImmutableSampler ?
+        m_pImmutableSamplerAttribs = AllocImmutableSampler ?
             static_cast<ImmutableSamplerAttribsType*>(AllocImmutableSampler(Allocator)) :
             Allocator.ConstructArray<ImmutableSamplerAttribsType>(Desc.NumImmutableSamplers);
+        if (CreateImmutableSamplers)
+        {
+            m_pImmutableSamplers = Allocator.ConstructArray<RefCntAutoPtr<SamplerImplType>>(Desc.NumImmutableSamplers);
+            if (this->HasDevice())
+            {
+                IRenderDevice* pDevice = this->GetDevice();
+                for (Uint32 s = 0; s < Desc.NumImmutableSamplers; ++s)
+                {
+                    const ImmutableSamplerDesc&     ImtblSamDesc = Desc.ImmutableSamplers[s];
+                    RefCntAutoPtr<SamplerImplType>& pSampler     = m_pImmutableSamplers[s];
+                    pDevice->CreateSampler(ImtblSamDesc.Desc, pSampler.template RawDblPtr<ISampler>());
+                    VERIFY_EXPR(pSampler);
+                }
+            }
+        }
 
         InitResourceLayout();
 
@@ -823,18 +899,18 @@ protected:
     }
 
 protected:
-    template <typename ImmutableSamplerAttribsType, typename SerializedData>
+    template <typename SerializedData>
     void Deserialize(IMemoryAllocator&                    RawAllocator,
                      const PipelineResourceSignatureDesc& Desc,
                      const SerializedData&                Serialized,
-                     ImmutableSamplerAttribsType*&        ImmutableSamAttribs,
+                     bool                                 CreateImmutableSamplers,
                      const std::function<void()>&         InitResourceLayout,
                      const std::function<size_t()>&       GetRequiredResourceCacheMemorySize) noexcept(false)
     {
         VERIFY_EXPR(Desc.NumResources == Serialized.NumResources);
 
         Initialize(
-            RawAllocator, Desc, ImmutableSamAttribs, InitResourceLayout, GetRequiredResourceCacheMemorySize,
+            RawAllocator, Desc, CreateImmutableSamplers, InitResourceLayout, GetRequiredResourceCacheMemorySize,
             [&Serialized](FixedLinearAllocator& Allocator) {
                 return Allocator.CopyArray<PipelineResourceAttribsType>(Serialized.pResourceAttribs, Serialized.NumResources);
             },
@@ -887,15 +963,6 @@ protected:
         return UpdatedDesc;
     }
 
-    void GetInternalData(PipelineResourceSignatureInternalData& InternalData) const
-    {
-        InternalData.ShaderStages          = m_ShaderStages;
-        InternalData.StaticResShaderStages = m_StaticResShaderStages;
-        InternalData.PipelineType          = m_PipelineType;
-        InternalData.StaticResStageIndex   = m_StaticResStageIndex;
-    }
-
-
 protected:
     void Destruct()
     {
@@ -930,6 +997,14 @@ protected:
 
         static_assert(std::is_trivially_destructible<PipelineResourceAttribsType>::value, "Destructors for m_pResourceAttribs[] are required");
         m_pResourceAttribs = nullptr;
+        static_assert(std::is_trivially_destructible<ImmutableSamplerAttribsType>::value, "Destructors for m_pImmutableSamplerAttribs[] are required");
+        m_pImmutableSamplerAttribs = nullptr;
+
+        if (m_pImmutableSamplers != nullptr)
+        {
+            for (size_t i = 0; i < this->m_Desc.NumImmutableSamplers; ++i)
+                m_pImmutableSamplers[i].~RefCntAutoPtr<SamplerImplType>();
+        }
 
         m_pRawMemory.reset();
 
@@ -984,6 +1059,12 @@ protected:
 
     // Pipeline resource attributes
     PipelineResourceAttribsType* m_pResourceAttribs = nullptr; // [m_Desc.NumResources]
+
+    // Immutable sampler attributes
+    ImmutableSamplerAttribsType* m_pImmutableSamplerAttribs = nullptr; // [m_Desc.NumImmutableSamplers]
+
+    // Immutable samplers
+    RefCntAutoPtr<SamplerImplType>* m_pImmutableSamplers = nullptr; // [m_Desc.NumImmutableSamplers]
 
     // Static resource cache for all static resources
     ShaderResourceCacheImplType* m_pStaticResCache = nullptr;

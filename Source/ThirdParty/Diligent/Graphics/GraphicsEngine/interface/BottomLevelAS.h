@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,14 +39,14 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {E56F5755-FE5E-496C-BFA7-BCD535360FF7}
-static const INTERFACE_ID IID_BottomLevelAS =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_BottomLevelAS =
     {0xe56f5755, 0xfe5e, 0x496c, {0xbf, 0xa7, 0xbc, 0xd5, 0x35, 0x36, 0xf, 0xf7}};
 
 // clang-format off
 
 #define DILIGENT_INVALID_INDEX 0xFFFFFFFFU
 
-static const Uint32 INVALID_INDEX = DILIGENT_INVALID_INDEX;
+static DILIGENT_CONSTEXPR Uint32 INVALID_INDEX = DILIGENT_INVALID_INDEX;
 
 /// Defines bottom level acceleration structure triangles description.
 

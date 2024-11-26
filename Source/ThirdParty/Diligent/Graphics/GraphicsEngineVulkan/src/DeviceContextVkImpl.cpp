@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -329,6 +329,11 @@ void DeviceContextVkImpl::SetPipelineState(IPipelineState* pPipelineState)
                 CommitScissorRects();
             }
             m_State.vkPipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+            m_State.NullRenderTargets =
+                GraphicsPipeline.pRenderPass == nullptr &&
+                GraphicsPipeline.NumRenderTargets == 0 &&
+                GraphicsPipeline.DSVFormat == TEX_FORMAT_UNKNOWN;
             break;
         }
         case PIPELINE_TYPE_COMPUTE:
@@ -516,7 +521,7 @@ void DeviceContextVkImpl::DvpValidateCommittedShaderResources(ResourceBindInfo& 
 }
 #endif
 
-void DeviceContextVkImpl::TransitionShaderResources(IPipelineState*, IShaderResourceBinding* pShaderResourceBinding)
+void DeviceContextVkImpl::TransitionShaderResources(IShaderResourceBinding* pShaderResourceBinding)
 {
     DEV_CHECK_ERR(!m_pActiveRenderPass, "State transitions are not allowed inside a render pass.");
     DEV_CHECK_ERR(pShaderResourceBinding != nullptr, "pShaderResourceBinding must not be null");
@@ -722,6 +727,13 @@ void DeviceContextVkImpl::DvpLogRenderPass_PSOMismatch()
 
 void DeviceContextVkImpl::PrepareForDraw(DRAW_FLAGS Flags)
 {
+    if (m_vkFramebuffer == VK_NULL_HANDLE && m_State.NullRenderTargets)
+    {
+        DEV_CHECK_ERR(m_FramebufferWidth > 0 && m_FramebufferHeight > 0,
+                      "Framebuffer width/height is zero. Call SetViewports to set the framebuffer sizes when no render targets are set.");
+        ChooseRenderPassAndFramebuffer();
+    }
+
 #ifdef DILIGENT_DEVELOPMENT
     if ((Flags & DRAW_FLAG_VERIFY_RENDER_TARGETS) != 0)
         DvpVerifyRenderTargets();
@@ -813,7 +825,7 @@ void DeviceContextVkImpl::PrepareForIndexedDraw(DRAW_FLAGS Flags, VALUE_TYPE Ind
 
 void DeviceContextVkImpl::Draw(const DrawAttribs& Attribs)
 {
-    DvpVerifyDrawArguments(Attribs);
+    TDeviceContextBase::Draw(Attribs, 0);
 
     PrepareForDraw(Attribs.Flags);
 
@@ -824,9 +836,52 @@ void DeviceContextVkImpl::Draw(const DrawAttribs& Attribs)
     }
 }
 
+void DeviceContextVkImpl::MultiDraw(const MultiDrawAttribs& Attribs)
+{
+    TDeviceContextBase::MultiDraw(Attribs, 0);
+
+    PrepareForDraw(Attribs.Flags);
+
+    if (Attribs.NumInstances == 0)
+        return;
+
+    if (m_NativeMultiDrawSupported)
+    {
+        m_ScratchSpace.resize(sizeof(VkMultiDrawInfoEXT) * Attribs.DrawCount);
+        VkMultiDrawInfoEXT* pDrawInfo = reinterpret_cast<VkMultiDrawInfoEXT*>(m_ScratchSpace.data());
+
+        Uint32 DrawCount = 0;
+        for (Uint32 i = 0; i < Attribs.DrawCount; ++i)
+        {
+            const auto& Item = Attribs.pDrawItems[i];
+            if (Item.NumVertices > 0)
+            {
+                pDrawInfo[i] = {Item.StartVertexLocation, Item.NumVertices};
+                ++DrawCount;
+            }
+        }
+        if (DrawCount > 0)
+        {
+            m_CommandBuffer.MultiDraw(DrawCount, pDrawInfo, Attribs.NumInstances, Attribs.FirstInstanceLocation);
+        }
+    }
+    else
+    {
+        for (Uint32 i = 0; i < Attribs.DrawCount; ++i)
+        {
+            const auto& Item = Attribs.pDrawItems[i];
+            if (Item.NumVertices > 0)
+            {
+                m_CommandBuffer.Draw(Item.NumVertices, Attribs.NumInstances, Item.StartVertexLocation, Attribs.FirstInstanceLocation);
+                ++m_State.NumCommands;
+            }
+        }
+    }
+}
+
 void DeviceContextVkImpl::DrawIndexed(const DrawIndexedAttribs& Attribs)
 {
-    DvpVerifyDrawIndexedArguments(Attribs);
+    TDeviceContextBase::DrawIndexed(Attribs, 0);
 
     PrepareForIndexedDraw(Attribs.Flags, Attribs.IndexType);
 
@@ -837,9 +892,52 @@ void DeviceContextVkImpl::DrawIndexed(const DrawIndexedAttribs& Attribs)
     }
 }
 
+void DeviceContextVkImpl::MultiDrawIndexed(const MultiDrawIndexedAttribs& Attribs)
+{
+    TDeviceContextBase::MultiDrawIndexed(Attribs, 0);
+
+    PrepareForIndexedDraw(Attribs.Flags, Attribs.IndexType);
+
+    if (Attribs.NumInstances == 0)
+        return;
+
+    if (m_NativeMultiDrawSupported)
+    {
+        m_ScratchSpace.resize(sizeof(VkMultiDrawIndexedInfoEXT) * Attribs.DrawCount);
+        VkMultiDrawIndexedInfoEXT* pDrawInfo = reinterpret_cast<VkMultiDrawIndexedInfoEXT*>(m_ScratchSpace.data());
+
+        Uint32 DrawCount = 0;
+        for (Uint32 i = 0; i < Attribs.DrawCount; ++i)
+        {
+            const auto& Item = Attribs.pDrawItems[i];
+            if (Item.NumIndices > 0)
+            {
+                pDrawInfo[i] = {Item.FirstIndexLocation, Item.NumIndices, static_cast<int32_t>(Item.BaseVertex)};
+                ++DrawCount;
+            }
+        }
+        if (DrawCount > 0)
+        {
+            m_CommandBuffer.MultiDrawIndexed(DrawCount, pDrawInfo, Attribs.NumInstances, Attribs.FirstInstanceLocation);
+        }
+    }
+    else
+    {
+        for (Uint32 i = 0; i < Attribs.DrawCount; ++i)
+        {
+            const auto& Item = Attribs.pDrawItems[i];
+            if (Item.NumIndices > 0)
+            {
+                m_CommandBuffer.DrawIndexed(Item.NumIndices, Attribs.NumInstances, Item.FirstIndexLocation, Item.BaseVertex, Attribs.FirstInstanceLocation);
+                ++m_State.NumCommands;
+            }
+        }
+    }
+}
+
 void DeviceContextVkImpl::DrawIndirect(const DrawIndirectAttribs& Attribs)
 {
-    DvpVerifyDrawIndirectArguments(Attribs);
+    TDeviceContextBase::DrawIndirect(Attribs, 0);
 
     // We must prepare indirect draw attribs buffer first because state transitions must
     // be performed outside of render pass, and PrepareForDraw commits render pass
@@ -874,7 +972,7 @@ void DeviceContextVkImpl::DrawIndirect(const DrawIndirectAttribs& Attribs)
 
 void DeviceContextVkImpl::DrawIndexedIndirect(const DrawIndexedIndirectAttribs& Attribs)
 {
-    DvpVerifyDrawIndexedIndirectArguments(Attribs);
+    TDeviceContextBase::DrawIndexedIndirect(Attribs, 0);
 
     // We must prepare indirect draw attribs buffer first because state transitions must
     // be performed outside of render pass, and PrepareForDraw commits render pass
@@ -909,20 +1007,20 @@ void DeviceContextVkImpl::DrawIndexedIndirect(const DrawIndexedIndirectAttribs& 
 
 void DeviceContextVkImpl::DrawMesh(const DrawMeshAttribs& Attribs)
 {
-    DvpVerifyDrawMeshArguments(Attribs);
+    TDeviceContextBase::DrawMesh(Attribs, 0);
 
     PrepareForDraw(Attribs.Flags);
 
-    if (Attribs.ThreadGroupCount > 0)
+    if (Attribs.ThreadGroupCountX > 0 && Attribs.ThreadGroupCountY > 0 && Attribs.ThreadGroupCountZ > 0)
     {
-        m_CommandBuffer.DrawMesh(Attribs.ThreadGroupCount, 0);
+        m_CommandBuffer.DrawMesh(Attribs.ThreadGroupCountX, Attribs.ThreadGroupCountY, Attribs.ThreadGroupCountZ);
         ++m_State.NumCommands;
     }
 }
 
 void DeviceContextVkImpl::DrawMeshIndirect(const DrawMeshIndirectAttribs& Attribs)
 {
-    DvpVerifyDrawMeshIndirectArguments(Attribs);
+    TDeviceContextBase::DrawMeshIndirect(Attribs, 0);
 
     // We must prepare indirect draw attribs buffer first because state transitions must
     // be performed outside of render pass, and PrepareForDraw commits render pass
@@ -994,7 +1092,7 @@ void DeviceContextVkImpl::PrepareForRayTracing()
 
 void DeviceContextVkImpl::DispatchCompute(const DispatchComputeAttribs& Attribs)
 {
-    DvpVerifyDispatchArguments(Attribs);
+    TDeviceContextBase::DispatchCompute(Attribs, 0);
 
     PrepareForDispatchCompute();
 
@@ -1007,7 +1105,7 @@ void DeviceContextVkImpl::DispatchCompute(const DispatchComputeAttribs& Attribs)
 
 void DeviceContextVkImpl::DispatchComputeIndirect(const DispatchComputeIndirectAttribs& Attribs)
 {
-    DvpVerifyDispatchIndirectArguments(Attribs);
+    TDeviceContextBase::DispatchComputeIndirect(Attribs, 0);
 
     PrepareForDispatchCompute();
 
@@ -1125,30 +1223,30 @@ void DeviceContextVkImpl::ClearDepthStencil(ITextureView*                  pView
     ++m_State.NumCommands;
 }
 
-VkClearColorValue ClearValueToVkClearValue(const float* RGBA, TEXTURE_FORMAT TexFmt)
+VkClearColorValue ClearValueToVkClearValue(const void* RGBA, TEXTURE_FORMAT TexFmt)
 {
     VkClearColorValue ClearValue;
     const auto&       FmtAttribs = GetTextureFormatAttribs(TexFmt);
     if (FmtAttribs.ComponentType == COMPONENT_TYPE_SINT)
     {
         for (int i = 0; i < 4; ++i)
-            ClearValue.int32[i] = static_cast<int32_t>(RGBA[i]);
+            ClearValue.int32[i] = static_cast<const int32_t*>(RGBA)[i];
     }
     else if (FmtAttribs.ComponentType == COMPONENT_TYPE_UINT)
     {
         for (int i = 0; i < 4; ++i)
-            ClearValue.uint32[i] = static_cast<uint32_t>(RGBA[i]);
+            ClearValue.uint32[i] = static_cast<const uint32_t*>(RGBA)[i];
     }
     else
     {
         for (int i = 0; i < 4; ++i)
-            ClearValue.float32[i] = RGBA[i];
+            ClearValue.float32[i] = static_cast<const float*>(RGBA)[i];
     }
 
     return ClearValue;
 }
 
-void DeviceContextVkImpl::ClearRenderTarget(ITextureView* pView, const float* RGBA, RESOURCE_STATE_TRANSITION_MODE StateTransitionMode)
+void DeviceContextVkImpl::ClearRenderTarget(ITextureView* pView, const void* RGBA, RESOURCE_STATE_TRANSITION_MODE StateTransitionMode)
 {
     TDeviceContextBase::ClearRenderTarget(pView);
 
@@ -1509,7 +1607,7 @@ void DeviceContextVkImpl::Flush(Uint32               NumCommandLists,
 
 void DeviceContextVkImpl::SetVertexBuffers(Uint32                         StartSlot,
                                            Uint32                         NumBuffersSet,
-                                           IBuffer**                      ppBuffers,
+                                           IBuffer* const*                ppBuffers,
                                            const Uint64*                  pOffsets,
                                            RESOURCE_STATE_TRANSITION_MODE StateTransitionMode,
                                            SET_VERTEX_BUFFERS_FLAGS       Flags)
@@ -1605,7 +1703,29 @@ void DeviceContextVkImpl::SetViewports(Uint32 NumViewports, const Viewport* pVie
     TDeviceContextBase::SetViewports(NumViewports, pViewports, RTWidth, RTHeight);
     VERIFY(NumViewports == m_NumViewports, "Unexpected number of viewports");
 
-    CommitViewports();
+    if (m_State.NullRenderTargets)
+    {
+        DEV_CHECK_ERR(m_NumViewports == 1, "Only a single viewport is supported when rendering without render targets");
+
+        const auto VPWidth  = static_cast<Uint32>(m_Viewports[0].Width);
+        const auto VPHeight = static_cast<Uint32>(m_Viewports[0].Height);
+        if (m_FramebufferWidth != VPWidth || m_FramebufferHeight != VPHeight)
+        {
+            // We need to bind another framebuffer since the size has changed
+            m_vkFramebuffer = VK_NULL_HANDLE;
+        }
+        m_FramebufferWidth   = VPWidth;
+        m_FramebufferHeight  = VPHeight;
+        m_FramebufferSlices  = 1;
+        m_FramebufferSamples = 1;
+    }
+
+    // If no graphics PSO is currently bound, viewports will be committed by
+    // the SetPipelineState() when a graphics PSO is set.
+    if (m_pPipelineState && m_pPipelineState->GetDesc().IsAnyGraphicsPipeline())
+    {
+        CommitViewports();
+    }
 }
 
 void DeviceContextVkImpl::CommitScissorRects()
@@ -1754,6 +1874,9 @@ void DeviceContextVkImpl::ChooseRenderPassAndFramebuffer()
             RenderPassKey.RTVFormats[rt] = TEX_FORMAT_UNKNOWN;
         }
     }
+
+    if (RenderPassKey.SampleCount == 0)
+        RenderPassKey.SampleCount = static_cast<Uint8>(m_FramebufferSamples);
 
     if (m_pBoundShadingRateMap)
     {
@@ -2128,17 +2251,19 @@ void DeviceContextVkImpl::CopyTexture(const CopyTextureAttribs& CopyAttribs)
         CopyRegion.extent.height = std::max(pSrcBox->Height(), 1u);
         CopyRegion.extent.depth  = std::max(pSrcBox->Depth(), 1u);
 
-        const auto& DstFmtAttribs = GetTextureFormatAttribs(DstTexDesc.Format);
-
-        VkImageAspectFlags aspectMask = 0;
-        if (DstFmtAttribs.ComponentType == COMPONENT_TYPE_DEPTH)
-            aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-        else if (DstFmtAttribs.ComponentType == COMPONENT_TYPE_DEPTH_STENCIL)
-        {
-            aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-        }
-        else
-            aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        auto GetAspectMak = [](TEXTURE_FORMAT Format) -> VkImageAspectFlags {
+            const auto& FmtAttribs = GetTextureFormatAttribs(Format);
+            switch (FmtAttribs.ComponentType)
+            {
+                // clang-format off
+                case COMPONENT_TYPE_DEPTH:         return VK_IMAGE_ASPECT_DEPTH_BIT;
+                case COMPONENT_TYPE_DEPTH_STENCIL: return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+                // clang-format on
+                default: return VK_IMAGE_ASPECT_COLOR_BIT;
+            }
+        };
+        VkImageAspectFlags aspectMask = GetAspectMak(SrcTexDesc.Format);
+        DEV_CHECK_ERR(aspectMask == GetAspectMak(DstTexDesc.Format), "Vulkan spec requires that dst and src aspect masks must match");
 
         CopyRegion.srcSubresource.baseArrayLayer = CopyAttribs.SrcSlice;
         CopyRegion.srcSubresource.layerCount     = 1;
@@ -3309,9 +3434,11 @@ void DeviceContextVkImpl::BuildBLAS(const BuildBLASAttribs& Attribs)
             auto* const pVB = ClassPtrCast<BufferVkImpl>(SrcTris.pVertexBuffer);
 
             // vertex format in SrcTris may be undefined, so use vertex format from description
-            vkTris.vertexFormat             = TypeToVkFormat(TriDesc.VertexValueType, TriDesc.VertexComponentCount, TriDesc.VertexValueType < VT_FLOAT16);
-            vkTris.vertexStride             = SrcTris.VertexStride;
-            vkTris.maxVertex                = SrcTris.VertexCount;
+            vkTris.vertexFormat = TypeToVkFormat(TriDesc.VertexValueType, TriDesc.VertexComponentCount, TriDesc.VertexValueType < VT_FLOAT16);
+            vkTris.vertexStride = SrcTris.VertexStride;
+            // maxVertex is the number of vertices in vertexData minus one.
+            VERIFY(SrcTris.VertexCount > 0, "Vertex count must be greater than 0");
+            vkTris.maxVertex                = SrcTris.VertexCount - 1;
             vkTris.vertexData.deviceAddress = pVB->GetVkDeviceAddress() + SrcTris.VertexOffset;
 
             // geometry.triangles.vertexData.deviceAddress must be aligned to the size in bytes of the smallest component of the format in vertexFormat

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {3E9B15ED-A289-48DC-8214-C6E3E6177378}
-static const INTERFACE_ID IID_BufferD3D12 =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_BufferD3D12 =
     {0x3e9b15ed, 0xa289, 0x48dc, {0x82, 0x14, 0xc6, 0xe3, 0xe6, 0x17, 0x73, 0x78}};
 
 #define DILIGENT_INTERFACE_NAME IBufferD3D12

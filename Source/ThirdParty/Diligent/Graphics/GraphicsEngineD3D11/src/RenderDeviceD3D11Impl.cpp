@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -125,6 +125,8 @@ RenderDeviceD3D11Impl::RenderDeviceD3D11Impl(IReferenceCounters*          pRefCo
 
     // Initialize device features
     m_DeviceInfo.Features = EnableDeviceFeatures(m_AdapterInfo.Features, EngineCI.Features);
+
+    InitShaderCompilationThreadPool(EngineCI.pAsyncShaderCompilationThreadPool, EngineCI.NumAsyncShaderCompilationThreads);
 }
 
 RenderDeviceD3D11Impl::~RenderDeviceD3D11Impl()
@@ -191,12 +193,19 @@ void RenderDeviceD3D11Impl::CreateBuffer(const BufferDesc& BuffDesc, const Buffe
     CreateBufferImpl(ppBuffer, BuffDesc, pBuffData);
 }
 
-void RenderDeviceD3D11Impl::CreateShader(const ShaderCreateInfo& ShaderCI, IShader** ppShader)
+void RenderDeviceD3D11Impl::CreateShader(const ShaderCreateInfo& ShaderCI,
+                                         IShader**               ppShader,
+                                         IDataBlob**             ppCompilerOutput)
 {
     const ShaderD3D11Impl::CreateInfo D3D11ShaderCI{
-        GetDeviceInfo(),
-        GetAdapterInfo(),
-        GetD3D11Device()->GetFeatureLevel() //
+        {
+            GetDeviceInfo(),
+            GetAdapterInfo(),
+            nullptr, // pDXCompiler
+            ppCompilerOutput,
+            m_pShaderCompilationThreadPool,
+        },
+        GetD3D11Device()->GetFeatureLevel(),
     };
     CreateShaderImpl(ppShader, ShaderCI, D3D11ShaderCI);
 }
@@ -390,8 +399,8 @@ SparseTextureFormatInfo RenderDeviceD3D11Impl::GetSparseTextureFormatInfo(TEXTUR
                                                                           Uint32             SampleCount) const
 {
     D3D11_FEATURE_DATA_FORMAT_SUPPORT2 FormatSupport2{
-        TexFormatToDXGI_Format(TexFormat) // .InFormat
-    };
+        TexFormatToDXGI_Format(TexFormat), // .InFormat
+        {}};
     if (FAILED(m_pd3d11Device->CheckFeatureSupport(D3D11_FEATURE_FORMAT_SUPPORT2, &FormatSupport2, sizeof(FormatSupport2))) ||
         (FormatSupport2.OutFormatSupport2 & D3D11_FORMAT_SUPPORT2_TILED) != D3D11_FORMAT_SUPPORT2_TILED)
     {

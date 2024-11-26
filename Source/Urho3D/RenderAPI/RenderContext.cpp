@@ -184,7 +184,7 @@ void RenderContext::Execute(DrawCommandQueue* drawQueue)
 void RenderContext::UpdateCurrentRenderTargetInfo()
 {
     currentOutputDesc_.depthStencilFormat_ =
-        currentDepthStencil_ ? currentDepthStencil_->GetDesc().Format : Diligent::TEX_FORMAT_UNKNOWN;
+        currentDepthStencil_ ? currentDepthStencil_->GetDesc().Format : TextureFormat::TEX_FORMAT_UNKNOWN;
     currentOutputDesc_.numRenderTargets_ = currentRenderTargets_.size();
     for (unsigned i = 0; i < currentRenderTargets_.size(); ++i)
         currentOutputDesc_.renderTargetFormats_[i] = currentRenderTargets_[i]->GetDesc().Format;

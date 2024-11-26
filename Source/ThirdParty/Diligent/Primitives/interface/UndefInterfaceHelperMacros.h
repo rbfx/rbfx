@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,12 +25,13 @@
  *  of the possibility of such damages.
  */
 
+#include "UndefRefMacro.h"
+
 #pragma pop_macro("THIS")
 #pragma pop_macro("THIS_")
 #pragma pop_macro("VIRTUAL")
 #pragma pop_macro("CONST")
 #pragma pop_macro("PURE")
-#pragma pop_macro("REF")
 #pragma pop_macro("METHOD")
 
 #undef DILIGENT_INTERFACE_NAME

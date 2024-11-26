@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,6 +38,7 @@
 #include "DummyReferenceCounters.hpp"
 #include "EngineMemory.h"
 #include "RefCntAutoPtr.hpp"
+#include "PlatformDebug.hpp"
 
 namespace Diligent
 {
@@ -114,6 +115,11 @@ public:
     virtual void DILIGENT_CALL_TYPE SetMessageCallback(DebugMessageCallbackType MessageCallback) const override final
     {
         SetDebugMessageCallback(MessageCallback);
+    }
+
+    virtual void DILIGENT_CALL_TYPE SetBreakOnError(bool BreakOnError) const override final
+    {
+        PlatformDebug::SetBreakOnError(BreakOnError);
     }
 
 protected:

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -61,7 +61,9 @@ DeviceContextD3D11Impl::DeviceContextD3D11Impl(IReferenceCounters*          pRef
         Desc
     },
     m_pd3d11DeviceContext {pd3d11DeviceContext          },
+#ifdef DILIGENT_DEVELOPMENT
     m_D3D11ValidationFlags{EngineCI.D3D11ValidationFlags},
+#endif
     m_CmdListAllocator    {GetRawAllocator(), sizeof(CommandListD3D11Impl), 64}
 // clang-format on
 {
@@ -199,9 +201,8 @@ static const decltype (&ID3D11DeviceContext1::VSSetConstantBuffers1) SetCB1Metho
 
 // clang-format on
 
-void DeviceContextD3D11Impl::TransitionShaderResources(IPipelineState* pPipelineState, IShaderResourceBinding* pShaderResourceBinding)
+void DeviceContextD3D11Impl::TransitionShaderResources(IShaderResourceBinding* pShaderResourceBinding)
 {
-    DEV_CHECK_ERR(pPipelineState != nullptr, "Pipeline state must not be null");
     DEV_CHECK_ERR(pShaderResourceBinding != nullptr, "Shader resource binding must not be null");
     if (m_pActiveRenderPass)
     {
@@ -323,9 +324,34 @@ void DeviceContextD3D11Impl::BindCacheResources(const ShaderResourceCacheD3D11& 
                 }
                 else if (ShaderInd == CSInd)
                 {
+                    // In Direct3D11, a resource can only be bound as UAV once.
+                    // Check if any resource in the range is currently bound as UAV to another slot and unbind it.
+                    if (const Uint32 NumUAVSlots = m_CommittedRes.NumUAVs[CSInd])
+                    {
+                        for (Uint32 slot = (Slots.MinSlot > 0) ? 0 : (Slots.MaxSlot + 1); slot < NumUAVSlots;)
+                        {
+                            if (ID3D11Resource* pRes = d3d11UAVRes[slot])
+                            {
+                                for (Uint32 s = Slots.MinSlot; s <= Slots.MaxSlot; ++s)
+                                {
+                                    if (d3d11UAVRes[s] == pRes)
+                                    {
+                                        d3d11UAVRes[slot] = nullptr;
+                                        d3d11UAVs[slot]   = nullptr;
+                                        m_pd3d11DeviceContext->CSSetUnorderedAccessViews(slot, 1, d3d11UAVs + slot, nullptr);
+                                    }
+                                }
+                            }
+
+                            ++slot;
+                            if (slot == Slots.MinSlot)
+                                slot = Slots.MaxSlot + 1;
+                        }
+                    }
+
                     // This can only be CS
-                    auto SetUAVMethod = SetUAVMethods[ShaderInd];
-                    (m_pd3d11DeviceContext->*SetUAVMethod)(Slots.MinSlot, Slots.MaxSlot - Slots.MinSlot + 1, d3d11UAVs + Slots.MinSlot, nullptr);
+                    VERIFY_EXPR(SetUAVMethods[ShaderInd] == &ID3D11DeviceContext::CSSetUnorderedAccessViews);
+                    m_pd3d11DeviceContext->CSSetUnorderedAccessViews(Slots.MinSlot, Slots.MaxSlot - Slots.MinSlot + 1, d3d11UAVs + Slots.MinSlot, nullptr);
                     m_CommittedRes.NumUAVs[ShaderInd] = std::max(m_CommittedRes.NumUAVs[ShaderInd], static_cast<Uint8>(Slots.MaxSlot + 1));
                 }
                 else
@@ -660,7 +686,7 @@ void DeviceContextD3D11Impl::PrepareForIndexedDraw(DRAW_FLAGS Flags, VALUE_TYPE 
 
 void DeviceContextD3D11Impl::Draw(const DrawAttribs& Attribs)
 {
-    DvpVerifyDrawArguments(Attribs);
+    TDeviceContextBase::Draw(Attribs, 0);
 
     PrepareForDraw(Attribs.Flags);
 
@@ -673,9 +699,39 @@ void DeviceContextD3D11Impl::Draw(const DrawAttribs& Attribs)
     }
 }
 
+void DeviceContextD3D11Impl::MultiDraw(const MultiDrawAttribs& Attribs)
+{
+    TDeviceContextBase::MultiDraw(Attribs, 0);
+
+    PrepareForDraw(Attribs.Flags);
+
+    if (Attribs.NumInstances > 1 || Attribs.FirstInstanceLocation != 0)
+    {
+        for (Uint32 i = 0; i < Attribs.DrawCount; ++i)
+        {
+            const auto& Item = Attribs.pDrawItems[i];
+            if (Item.NumVertices > 0)
+            {
+                m_pd3d11DeviceContext->DrawInstanced(Item.NumVertices, Attribs.NumInstances, Item.StartVertexLocation, Attribs.FirstInstanceLocation);
+            }
+        }
+    }
+    else if (Attribs.NumInstances > 0)
+    {
+        for (Uint32 i = 0; i < Attribs.DrawCount; ++i)
+        {
+            const auto& Item = Attribs.pDrawItems[i];
+            if (Item.NumVertices > 0)
+            {
+                m_pd3d11DeviceContext->Draw(Item.NumVertices, Item.StartVertexLocation);
+            }
+        }
+    }
+}
+
 void DeviceContextD3D11Impl::DrawIndexed(const DrawIndexedAttribs& Attribs)
 {
-    DvpVerifyDrawIndexedArguments(Attribs);
+    TDeviceContextBase::DrawIndexed(Attribs, 0);
 
     PrepareForIndexedDraw(Attribs.Flags, Attribs.IndexType);
 
@@ -688,9 +744,33 @@ void DeviceContextD3D11Impl::DrawIndexed(const DrawIndexedAttribs& Attribs)
     }
 }
 
+void DeviceContextD3D11Impl::MultiDrawIndexed(const MultiDrawIndexedAttribs& Attribs)
+{
+    TDeviceContextBase::MultiDrawIndexed(Attribs, 0);
+
+    PrepareForIndexedDraw(Attribs.Flags, Attribs.IndexType);
+
+    if (Attribs.NumInstances > 1 || Attribs.FirstInstanceLocation != 0)
+    {
+        for (Uint32 i = 0; i < Attribs.DrawCount; ++i)
+        {
+            const auto& Item = Attribs.pDrawItems[i];
+            m_pd3d11DeviceContext->DrawIndexedInstanced(Item.NumIndices, Attribs.NumInstances, Item.FirstIndexLocation, Item.BaseVertex, Attribs.FirstInstanceLocation);
+        }
+    }
+    else if (Attribs.NumInstances > 0)
+    {
+        for (Uint32 i = 0; i < Attribs.DrawCount; ++i)
+        {
+            const auto& Item = Attribs.pDrawItems[i];
+            m_pd3d11DeviceContext->DrawIndexed(Item.NumIndices, Item.FirstIndexLocation, Item.BaseVertex);
+        }
+    }
+}
+
 void DeviceContextD3D11Impl::DrawIndirect(const DrawIndirectAttribs& Attribs)
 {
-    DvpVerifyDrawIndirectArguments(Attribs);
+    TDeviceContextBase::DrawIndirect(Attribs, 0);
     DEV_CHECK_ERR(Attribs.pCounterBuffer == nullptr, "Direct3D11 does not support indirect counter buffer");
 
     PrepareForDraw(Attribs.Flags);
@@ -727,7 +807,7 @@ void DeviceContextD3D11Impl::DrawIndirect(const DrawIndirectAttribs& Attribs)
 
 void DeviceContextD3D11Impl::DrawIndexedIndirect(const DrawIndexedIndirectAttribs& Attribs)
 {
-    DvpVerifyDrawIndexedIndirectArguments(Attribs);
+    TDeviceContextBase::DrawIndexedIndirect(Attribs, 0);
     DEV_CHECK_ERR(Attribs.pCounterBuffer == nullptr, "Direct3D11 does not support indirect counter buffer");
 
     PrepareForIndexedDraw(Attribs.Flags, Attribs.IndexType);
@@ -773,7 +853,7 @@ void DeviceContextD3D11Impl::DrawMeshIndirect(const DrawMeshIndirectAttribs& Att
 
 void DeviceContextD3D11Impl::DispatchCompute(const DispatchComputeAttribs& Attribs)
 {
-    DvpVerifyDispatchArguments(Attribs);
+    TDeviceContextBase::DispatchCompute(Attribs, 0);
 
     if (Uint32 BindSRBMask = m_BindInfo.GetCommitMask())
     {
@@ -803,7 +883,7 @@ void DeviceContextD3D11Impl::DispatchCompute(const DispatchComputeAttribs& Attri
 
 void DeviceContextD3D11Impl::DispatchComputeIndirect(const DispatchComputeIndirectAttribs& Attribs)
 {
-    DvpVerifyDispatchIndirectArguments(Attribs);
+    TDeviceContextBase::DispatchComputeIndirect(Attribs, 0);
 
     if (Uint32 BindSRBMask = m_BindInfo.GetCommitMask())
     {
@@ -851,7 +931,7 @@ void DeviceContextD3D11Impl::ClearDepthStencil(ITextureView*                  pV
     m_pd3d11DeviceContext->ClearDepthStencilView(pd3d11DSV, d3d11ClearFlags, fDepth, Stencil);
 }
 
-void DeviceContextD3D11Impl::ClearRenderTarget(ITextureView* pView, const float* RGBA, RESOURCE_STATE_TRANSITION_MODE StateTransitionMode)
+void DeviceContextD3D11Impl::ClearRenderTarget(ITextureView* pView, const void* RGBA, RESOURCE_STATE_TRANSITION_MODE StateTransitionMode)
 {
     TDeviceContextBase::ClearRenderTarget(pView);
 
@@ -860,13 +940,25 @@ void DeviceContextD3D11Impl::ClearRenderTarget(ITextureView* pView, const float*
     auto* pViewD3D11 = ClassPtrCast<TextureViewD3D11Impl>(pView);
     auto* pd3d11RTV  = static_cast<ID3D11RenderTargetView*>(pViewD3D11->GetD3D11View());
 
-    static const float Zero[4] = {0.f, 0.f, 0.f, 0.f};
+    static constexpr float Zero[4] = {0.f, 0.f, 0.f, 0.f};
     if (RGBA == nullptr)
         RGBA = Zero;
 
+#ifdef DILIGENT_DEVELOPMENT
+    {
+        const TEXTURE_FORMAT        RTVFormat  = pViewD3D11->GetDesc().Format;
+        const TextureFormatAttribs& FmtAttribs = GetTextureFormatAttribs(RTVFormat);
+        if (FmtAttribs.ComponentType == COMPONENT_TYPE_SINT ||
+            FmtAttribs.ComponentType == COMPONENT_TYPE_UINT)
+        {
+            DEV_CHECK_ERR(memcmp(RGBA, Zero, 4 * sizeof(float)) == 0, "Integer render targets can at the moment only be cleared to zero in Direct3D12");
+        }
+    }
+#endif
+
     // The full extent of the resource view is always cleared.
     // Viewport and scissor settings are not applied.
-    m_pd3d11DeviceContext->ClearRenderTargetView(pd3d11RTV, RGBA);
+    m_pd3d11DeviceContext->ClearRenderTargetView(pd3d11RTV, static_cast<const float*>(RGBA));
 }
 
 void DeviceContextD3D11Impl::Flush()
@@ -1081,7 +1173,7 @@ void DeviceContextD3D11Impl::FinishFrame()
 
 void DeviceContextD3D11Impl::SetVertexBuffers(Uint32                         StartSlot,
                                               Uint32                         NumBuffersSet,
-                                              IBuffer**                      ppBuffers,
+                                              IBuffer* const*                ppBuffers,
                                               const Uint64*                  pOffsets,
                                               RESOURCE_STATE_TRANSITION_MODE StateTransitionMode,
                                               SET_VERTEX_BUFFERS_FLAGS       Flags)

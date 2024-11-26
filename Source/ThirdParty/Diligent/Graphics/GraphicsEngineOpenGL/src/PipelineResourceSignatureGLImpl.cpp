@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -85,7 +85,7 @@ PipelineResourceSignatureGLImpl::PipelineResourceSignatureGLImpl(IReferenceCount
     try
     {
         Initialize(
-            GetRawAllocator(), Desc, m_ImmutableSamplers,
+            GetRawAllocator(), Desc, /*CreateImmutableSamplers = */ true,
             [this]() //
             {
                 CreateLayout(/*IsSerialized*/ false);
@@ -105,12 +105,6 @@ PipelineResourceSignatureGLImpl::PipelineResourceSignatureGLImpl(IReferenceCount
 void PipelineResourceSignatureGLImpl::CreateLayout(const bool IsSerialized)
 {
     TBindings StaticResCounter = {};
-
-    if (HasDevice())
-    {
-        for (Uint32 s = 0; s < m_Desc.NumImmutableSamplers; ++s)
-            GetDevice()->CreateSampler(m_Desc.ImmutableSamplers[s].Desc, &m_ImmutableSamplers[s]);
-    }
 
     for (Uint32 i = 0; i < m_Desc.NumResources; ++i)
     {
@@ -212,19 +206,6 @@ PipelineResourceSignatureGLImpl::~PipelineResourceSignatureGLImpl()
     Destruct();
 }
 
-void PipelineResourceSignatureGLImpl::Destruct()
-{
-    if (m_ImmutableSamplers != nullptr)
-    {
-        for (Uint32 s = 0; s < m_Desc.NumImmutableSamplers; ++s)
-            m_ImmutableSamplers[s].~SamplerPtr();
-
-        m_ImmutableSamplers = nullptr;
-    }
-
-    TPipelineResourceSignatureBase::Destruct();
-}
-
 namespace
 {
 
@@ -238,7 +219,7 @@ inline void ApplyUBBindigs(GLuint glProg, const char* UBName, Uint32 BaseBinding
     for (Uint32 ArrInd = 0; ArrInd < ArraySize; ++ArrInd)
     {
         glUniformBlockBinding(glProg, UniformBlockIndex + ArrInd, BaseBinding + ArrInd);
-        CHECK_GL_ERROR("Failed to set binding point for uniform buffer '", UBName, '\'');
+        DEV_CHECK_GL_ERROR("Failed to set binding point for uniform buffer '", UBName, '\'');
     }
 }
 
@@ -251,7 +232,7 @@ inline void ApplyTextureBindings(GLuint glProg, const char* TexName, Uint32 Base
     for (Uint32 ArrInd = 0; ArrInd < ArraySize; ++ArrInd)
     {
         glUniform1i(UniformLocation + ArrInd, BaseBinding + ArrInd);
-        CHECK_GL_ERROR("Failed to set binding point for sampler uniform '", TexName, '\'');
+        DEV_CHECK_GL_ERROR("Failed to set binding point for sampler uniform '", TexName, '\'');
     }
 }
 
@@ -268,6 +249,7 @@ inline void ApplyImageBindings(GLuint glProg, const char* ImgName, Uint32 BaseBi
         // glProgramUniform1i is not available in GLES3.0
         const Uint32 ImgBinding = BaseBinding + ArrInd;
         glUniform1i(UniformLocation + ArrInd, ImgBinding);
+#    ifdef DILIGENT_DEVELOPMENT
         if (glGetError() != GL_NO_ERROR)
         {
             if (ArraySize > 1)
@@ -289,6 +271,7 @@ inline void ApplyImageBindings(GLuint glProg, const char* ImgName, Uint32 BaseBi
                                     " converter will work fine.");
             }
         }
+#    endif
     }
 }
 #endif
@@ -305,7 +288,7 @@ inline void ApplySSBOBindings(GLuint glProg, const char* SBName, Uint32 BaseBind
         for (Uint32 ArrInd = 0; ArrInd < ArraySize; ++ArrInd)
         {
             glShaderStorageBlockBinding(glProg, SBIndex + ArrInd, BaseBinding + ArrInd);
-            CHECK_GL_ERROR("glShaderStorageBlockBinding() failed");
+            DEV_CHECK_GL_ERROR("glShaderStorageBlockBinding() failed");
         }
     }
     else
@@ -313,7 +296,7 @@ inline void ApplySSBOBindings(GLuint glProg, const char* SBName, Uint32 BaseBind
         const GLenum props[]                 = {GL_BUFFER_BINDING};
         GLint        params[_countof(props)] = {};
         glGetProgramResourceiv(glProg, GL_SHADER_STORAGE_BLOCK, SBIndex, _countof(props), props, _countof(params), nullptr, params);
-        CHECK_GL_ERROR("glGetProgramResourceiv() failed");
+        DEV_CHECK_GL_ERROR("glGetProgramResourceiv() failed");
 
         if (BaseBinding != static_cast<Uint32>(params[0]))
         {
@@ -541,7 +524,7 @@ void PipelineResourceSignatureGLImpl::InitSRBResourceCache(ShaderResourceCacheGL
         const auto ImtblSamplerIdx = GetImmutableSamplerIdx(ResAttr);
         if (ImtblSamplerIdx != InvalidImmutableSamplerIndex)
         {
-            ISampler* pSampler = m_ImmutableSamplers[ImtblSamplerIdx];
+            ISampler* pSampler = m_pImmutableSamplers[ImtblSamplerIdx];
             VERIFY(pSampler != nullptr, "Immutable sampler is not initialized - this is a bug");
 
             for (Uint32 ArrInd = 0; ArrInd < ResDesc.ArraySize; ++ArrInd)
@@ -620,7 +603,7 @@ bool PipelineResourceSignatureGLImpl::DvpValidateCommittedResource(const ShaderR
                 if (ImmutableSamplerIdx != InvalidImmutableSamplerIndex)
                 {
                     VERIFY(Tex.pSampler != nullptr, "Immutable sampler is not initialized in the cache - this is a bug");
-                    VERIFY(Tex.pSampler == m_ImmutableSamplers[ImmutableSamplerIdx], "Immutable sampler initialized in the cache is not valid");
+                    VERIFY(Tex.pSampler == m_pImmutableSamplers[ImmutableSamplerIdx], "Immutable sampler initialized in the cache is not valid");
                 }
             }
             break;
@@ -663,7 +646,7 @@ PipelineResourceSignatureGLImpl::PipelineResourceSignatureGLImpl(IReferenceCount
     try
     {
         Deserialize(
-            GetRawAllocator(), Desc, InternalData, m_ImmutableSamplers,
+            GetRawAllocator(), Desc, InternalData, /*CreateImmutableSamplers = */ true,
             [this]() //
             {
                 CreateLayout(/*IsSerialized*/ true);
@@ -678,18 +661,6 @@ PipelineResourceSignatureGLImpl::PipelineResourceSignatureGLImpl(IReferenceCount
         Destruct();
         throw;
     }
-}
-
-PipelineResourceSignatureInternalDataGL PipelineResourceSignatureGLImpl::GetInternalData() const
-{
-    PipelineResourceSignatureInternalDataGL InternalData;
-
-    TPipelineResourceSignatureBase::GetInternalData(InternalData);
-
-    InternalData.pResourceAttribs = m_pResourceAttribs;
-    InternalData.NumResources     = GetDesc().NumResources;
-
-    return InternalData;
 }
 
 } // namespace Diligent

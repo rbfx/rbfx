@@ -23,7 +23,6 @@
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Input/Input.h>
-#include <Urho3D/Network/Network.h>
 #include <Urho3D/Network/HttpRequest.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
@@ -80,16 +79,14 @@ void HttpRequestDemo::SubscribeToEvents()
 
 void HttpRequestDemo::Update(float timeStep)
 {
-    auto* network = GetSubsystem<Network>();
-
     if (httpRequest_ == nullptr)
     {
         const ea::string verb = "GET";
         const ea::vector<ea::string> headers = {"hello: world"};
 #ifdef URHO3D_SSL
-        httpRequest_ = network->MakeHttpRequest("https://api.ipify.org/?format=json", verb, headers);
+        httpRequest_ = MakeShared<HttpRequest>("https://api.ipify.org/?format=json", verb, headers);
 #else
-        httpRequest_ = network->MakeHttpRequest("http://httpbin.org/ip", verb, headers);
+        httpRequest_ = MakeShared<HttpRequest>("http://httpbin.org/ip", verb, headers);
 #endif
     }
     else

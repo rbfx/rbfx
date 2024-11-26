@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,26 +30,25 @@
 #include "D3D12Utils.h"
 
 #include <cstring>
+#include <array>
 
 namespace Diligent
 {
 
 const Char* GetD3D12DescriptorHeapTypeLiteralName(D3D12_DESCRIPTOR_HEAP_TYPE Type)
 {
-    static bool        bIsInitialized = false;
-    static const Char* HeapTypeNames[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
-    if (!bIsInitialized)
-    {
-        // clang-format off
-        HeapTypeNames[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV] = "D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV";
-        HeapTypeNames[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER]     = "D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER";
-        HeapTypeNames[D3D12_DESCRIPTOR_HEAP_TYPE_RTV]         = "D3D12_DESCRIPTOR_HEAP_TYPE_RTV";
-        HeapTypeNames[D3D12_DESCRIPTOR_HEAP_TYPE_DSV]         = "D3D12_DESCRIPTOR_HEAP_TYPE_DSV";
-        // clang-format on
-
-        bIsInitialized = true;
-    }
-    VERIFY_EXPR(Type >= 0 && Type < D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES);
+    // clang-format off
+    static_assert(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV == 0, "D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV is expected to be 0");
+    static_assert(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER     == 1, "D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER is expected to be 1");
+    static_assert(D3D12_DESCRIPTOR_HEAP_TYPE_RTV         == 2, "D3D12_DESCRIPTOR_HEAP_TYPE_RTV is expected to be 2");
+    static_assert(D3D12_DESCRIPTOR_HEAP_TYPE_DSV         == 3, "D3D12_DESCRIPTOR_HEAP_TYPE_DSV is expected to be 3");
+    // clang-format on
+    static constexpr std::array<const Char*, D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES> HeapTypeNames{
+        "D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV",
+        "D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER",
+        "D3D12_DESCRIPTOR_HEAP_TYPE_RTV",
+        "D3D12_DESCRIPTOR_HEAP_TYPE_DSV",
+    };
     return HeapTypeNames[Type];
 }
 

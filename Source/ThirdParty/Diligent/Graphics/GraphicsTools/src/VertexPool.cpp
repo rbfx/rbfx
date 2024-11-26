@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -93,7 +93,9 @@ public:
 
     virtual IVertexPool* GetPool() override final;
 
-    virtual IBuffer* GetBuffer(Uint32 Index, IRenderDevice* pDevice, IDeviceContext* pContext) override final;
+    virtual IBuffer* Update(Uint32 Index, IRenderDevice* pDevice, IDeviceContext* pContext) override final;
+
+    virtual IBuffer* GetBuffer(Uint32 Index) const override final;
 
     virtual void SetUserData(IObject* pUserData) override final
     {
@@ -143,13 +145,22 @@ public:
         m_MgrSize         {m_Mgr.GetMaxSize()},
         m_BufferSizes     (m_Desc.NumElements),
         m_ExtraVertexCount{CreateInfo.ExtraVertexCount},
-        m_AllocationObjAllocator
-        {
+        // clang-format on
+        m_MaxVertexCount{
+            [](Uint32 VertexCount, Uint32 MaxVertexCount) {
+                if (MaxVertexCount != 0 && MaxVertexCount < VertexCount)
+                {
+                    LOG_WARNING_MESSAGE("MaxVertexCount (", MaxVertexCount, ") is less than VertexCount (", VertexCount, ").");
+                    MaxVertexCount = VertexCount;
+                }
+                return MaxVertexCount;
+            }(CreateInfo.Desc.VertexCount, CreateInfo.MaxVertexCount),
+        },
+        m_AllocationObjAllocator{
             DefaultRawMemoryAllocator::GetAllocator(),
             sizeof(VertexPoolAllocationImpl),
             1024u / Uint32{sizeof(VertexPoolAllocationImpl)} // Use 1 Kb pages.
         }
-    // clang-format on
     {
         m_Desc.Name      = m_Name.c_str();
         m_Desc.pElements = m_Elements.data();
@@ -165,7 +176,7 @@ public:
 
             DynamicBufferCreateInfo DynBuffCI;
             DynBuffCI.Desc.Name           = Name.c_str();
-            DynBuffCI.Desc.Size           = m_Desc.VertexCount * VtxElem.Size;
+            DynBuffCI.Desc.Size           = Uint64{m_Desc.VertexCount} * Uint64{VtxElem.Size};
             DynBuffCI.Desc.BindFlags      = VtxElem.BindFlags;
             DynBuffCI.Desc.Usage          = VtxElem.Usage;
             DynBuffCI.Desc.CPUAccessFlags = VtxElem.CPUAccessFlags;
@@ -178,8 +189,11 @@ public:
                 CreateInfo.ExtraVertexCount * VtxElem.Size :
                 static_cast<Uint32>(DynBuffCI.Desc.Size);
 
-            // 1 GB should be enough for any use case.
-            DynBuffCI.VirtualSize = Uint64{1} << Uint64{30};
+            DynBuffCI.VirtualSize = m_MaxVertexCount != 0 ?
+                Uint64{m_MaxVertexCount} * Uint64{VtxElem.Size} :
+                // Use 2GB as the default virtual size, but reserve at least 1 MB for alignment.
+                // Resources above 2GB don't work in Direct3D11 (even though there are no errors).
+                (Uint64{2} << Uint64{30}) - AlignUp(DynBuffCI.MemoryPageSize, 1u << 20u);
 
             m_Buffers.emplace_back(std::make_unique<DynamicBuffer>(pDevice, DynBuffCI));
             if (!m_Buffers.back())
@@ -195,7 +209,7 @@ public:
         VERIFY_EXPR(m_AllocationCount.load() == 0);
     }
 
-    virtual IBuffer* GetBuffer(Uint32 Index, IRenderDevice* pDevice, IDeviceContext* pContext) override final
+    virtual IBuffer* Update(Uint32 Index, IRenderDevice* pDevice, IDeviceContext* pContext) override final
     {
         if (Index >= m_Buffers.size())
         {
@@ -214,8 +228,27 @@ public:
             // We must use atomic because this value is read in another thread,
             // while m_Buffer internally does not use mutex or other synchronization.
             BufferSize.store(Buffer.GetDesc().Size);
+
+            UpdateCommittedMemorySize();
         }
-        return Buffer.GetBuffer(pDevice, pContext);
+        return Buffer.Update(pDevice, pContext);
+    }
+
+    virtual void UpdateAll(IRenderDevice* pDevice, IDeviceContext* pContext) override final
+    {
+        for (Uint32 i = 0; i < m_Buffers.size(); ++i)
+            Update(i, pDevice, pContext);
+    }
+
+    virtual IBuffer* GetBuffer(Uint32 Index) const override final
+    {
+        if (Index >= m_Buffers.size())
+        {
+            UNEXPECTED("Index (", Index, ") is out of range: there are only ", m_Buffers.size(), " buffers.");
+            return nullptr;
+        }
+
+        return m_Buffers[Index]->GetBuffer();
     }
 
     virtual void Allocate(Uint32                  NumVertices,
@@ -261,11 +294,14 @@ public:
 
             Region = m_Mgr.Allocate(NumVertices, 1);
 
-            while (!Region.IsValid())
+            while (!Region.IsValid() && (m_MaxVertexCount == 0 || m_Mgr.GetMaxSize() < m_MaxVertexCount))
             {
-                auto ExtraSize = m_ExtraVertexCount != 0 ?
+                size_t ExtraSize = m_ExtraVertexCount != 0 ?
                     std::max(m_ExtraVertexCount, NumVertices) :
                     m_Mgr.GetMaxSize();
+
+                if (m_MaxVertexCount != 0)
+                    ExtraSize = std::min(ExtraSize, size_t{m_MaxVertexCount} - m_Mgr.GetMaxSize());
 
                 m_Mgr.Extend(ExtraSize);
                 m_MgrSize.store(m_Mgr.GetMaxSize());
@@ -277,20 +313,23 @@ public:
             UpdateUsageStats();
         }
 
-        // clang-format off
-        VertexPoolAllocationImpl* pSuballocation{
-            NEW_RC_OBJ(m_AllocationObjAllocator, "VertexPoolAllocationImpl instance", VertexPoolAllocationImpl)
-            (
-                this,
-                static_cast<Uint32>(Region.UnalignedOffset),
-                NumVertices,
-                std::move(Region)
-            )
-        };
-        // clang-format on
+        if (Region.IsValid())
+        {
+            // clang-format off
+            VertexPoolAllocationImpl* pSuballocation{
+                NEW_RC_OBJ(m_AllocationObjAllocator, "VertexPoolAllocationImpl instance", VertexPoolAllocationImpl)
+                (
+                    this,
+                    static_cast<Uint32>(Region.UnalignedOffset),
+                    NumVertices,
+                    std::move(Region)
+                )
+            };
+            // clang-format on
 
-        pSuballocation->QueryInterface(IID_VertexPoolAllocation, reinterpret_cast<IObject**>(ppAllocation));
-        m_AllocationCount.fetch_add(1);
+            pSuballocation->QueryInterface(IID_VertexPoolAllocation, reinterpret_cast<IObject**>(ppAllocation));
+            m_AllocationCount.fetch_add(1);
+        }
     }
 
     void Free(VariableSizeAllocationsManager::Allocation&& Region)
@@ -334,6 +373,10 @@ private:
     {
         m_AllocatedVertexCount.store(m_Mgr.GetUsedSize());
         m_TotalVertexCount.store(m_Mgr.GetMaxSize());
+        UpdateCommittedMemorySize();
+    }
+    void UpdateCommittedMemorySize()
+    {
         Uint64 CommittedMemorySize = 0;
         for (const auto& BuffSize : m_BufferSizes)
             CommittedMemorySize += BuffSize.load();
@@ -355,6 +398,7 @@ private:
     std::vector<std::atomic<Uint64>>            m_BufferSizes;
 
     const Uint32 m_ExtraVertexCount;
+    const Uint32 m_MaxVertexCount;
 
     std::atomic<Int32>  m_AllocationCount{0};
     std::atomic<Uint64> m_AllocatedVertexCount{0};
@@ -375,9 +419,14 @@ IVertexPool* VertexPoolAllocationImpl::GetPool()
     return m_pParentPool;
 }
 
-IBuffer* VertexPoolAllocationImpl::GetBuffer(Uint32 Index, IRenderDevice* pDevice, IDeviceContext* pContext)
+IBuffer* VertexPoolAllocationImpl::Update(Uint32 Index, IRenderDevice* pDevice, IDeviceContext* pContext)
 {
-    return m_pParentPool->GetBuffer(Index, pDevice, pContext);
+    return m_pParentPool->Update(Index, pDevice, pContext);
+}
+
+IBuffer* VertexPoolAllocationImpl::GetBuffer(Uint32 Index) const
+{
+    return m_pParentPool->GetBuffer(Index);
 }
 
 void CreateVertexPool(IRenderDevice*              pDevice,

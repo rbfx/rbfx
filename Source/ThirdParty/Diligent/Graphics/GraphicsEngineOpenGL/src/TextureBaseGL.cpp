@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -75,7 +75,7 @@ TextureBaseGL::TextureBaseGL(IReferenceCounters*        pRefCounters,
         StagingBuffName += '\'';
         StagingBufferDesc.Name = StagingBuffName.c_str();
 
-        StagingBufferDesc.Size           = GetStagingTextureSubresourceOffset(m_Desc, m_Desc.GetArraySize(), 0, PBOOffsetAlignment);
+        StagingBufferDesc.Size           = GetStagingTextureDataSize(m_Desc, PBOOffsetAlignment);
         StagingBufferDesc.Usage          = USAGE_STAGING;
         StagingBufferDesc.CPUAccessFlags = TexDesc.CPUAccessFlags;
 
@@ -84,7 +84,11 @@ TextureBaseGL::TextureBaseGL(IReferenceCounters*        pRefCounters,
     }
 }
 
-static GLenum GetTextureInternalFormat(GLContextState& GLState, GLenum BindTarget, const GLObjectWrappers::GLTextureObj& GLTex, TEXTURE_FORMAT TexFmtFromDesc)
+static GLenum GetTextureInternalFormat(const RenderDeviceInfo&               DeviceInfo,
+                                       GLContextState&                       GLState,
+                                       GLenum                                BindTarget,
+                                       const GLObjectWrappers::GLTextureObj& GLTex,
+                                       TEXTURE_FORMAT                        TexFmtFromDesc)
 {
     GLState.BindTexture(-1, BindTarget, GLTex);
 
@@ -94,9 +98,21 @@ static GLenum GetTextureInternalFormat(GLContextState& GLState, GLenum BindTarge
         QueryBindTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
 
 #if GL_TEXTURE_INTERNAL_FORMAT
-    glGetTexLevelParameteriv(QueryBindTarget, 0, GL_TEXTURE_INTERNAL_FORMAT, &GlFormat);
-    if (glGetError() == GL_NO_ERROR && GlFormat != 0)
+    if (DeviceInfo.Type == RENDER_DEVICE_TYPE_GL || (DeviceInfo.Type == RENDER_DEVICE_TYPE_GLES && DeviceInfo.APIVersion >= Version{3, 1}))
     {
+        glGetTexLevelParameteriv(QueryBindTarget, 0, GL_TEXTURE_INTERNAL_FORMAT, &GlFormat);
+        DEV_CHECK_GL_ERROR("glGetTexLevelParameteriv(GL_TEXTURE_INTERNAL_FORMAT) failed");
+    }
+    if (GlFormat != 0)
+    {
+        if (GlFormat == GL_RGBA)
+        {
+            // Note: GL_RGBA is not a valid internal format (GL_RGBA8 is).
+            // However, Android returns this as an internal format of the external camera
+            // texture (which is incorrect), so we have to handle it.
+            GlFormat = GL_RGBA8;
+        }
+
         VERIFY(TexFmtFromDesc == TEX_FORMAT_UNKNOWN || static_cast<GLenum>(GlFormat) == TexFormatToGLInternalTexFormat(TexFmtFromDesc), "Texture format does not match the format specified by the texture description");
     }
     else
@@ -128,7 +144,11 @@ static GLenum GetTextureInternalFormat(GLContextState& GLState, GLenum BindTarge
     return GlFormat;
 }
 
-static TextureDesc GetTextureDescFromGLHandle(GLContextState& GLState, TextureDesc TexDesc, GLuint GLHandle, GLenum BindTarget)
+static TextureDesc GetTextureDescFromGLHandle(const RenderDeviceInfo& DeviceInfo,
+                                              GLContextState&         GLState,
+                                              TextureDesc             TexDesc,
+                                              GLuint                  GLHandle,
+                                              GLenum                  BindTarget)
 {
     VERIFY(BindTarget != GL_TEXTURE_CUBE_MAP_ARRAY, "Cubemap arrays are not currently supported");
 
@@ -141,8 +161,12 @@ static TextureDesc GetTextureDescFromGLHandle(GLContextState& GLState, TextureDe
 
 #if GL_TEXTURE_WIDTH
     GLint TexWidth = 0;
-    glGetTexLevelParameteriv(QueryBindTarget, 0, GL_TEXTURE_WIDTH, &TexWidth);
-    if (glGetError() == GL_NO_ERROR && TexWidth > 0)
+    if (DeviceInfo.Type == RENDER_DEVICE_TYPE_GL || (DeviceInfo.Type == RENDER_DEVICE_TYPE_GLES && DeviceInfo.APIVersion >= Version{3, 1}))
+    {
+        glGetTexLevelParameteriv(QueryBindTarget, 0, GL_TEXTURE_WIDTH, &TexWidth);
+        DEV_CHECK_GL_ERROR("glGetTexLevelParameteriv(GL_TEXTURE_WIDTH) failed");
+    }
+    if (TexWidth > 0)
     {
         if (TexDesc.Width != 0 && TexDesc.Width != static_cast<Uint32>(TexWidth))
         {
@@ -173,8 +197,12 @@ static TextureDesc GetTextureDescFromGLHandle(GLContextState& GLState, TextureDe
     {
 #if GL_TEXTURE_HEIGHT
         GLint TexHeight = 0;
-        glGetTexLevelParameteriv(QueryBindTarget, 0, GL_TEXTURE_HEIGHT, &TexHeight);
-        if (glGetError() == GL_NO_ERROR && TexHeight > 0)
+        if (DeviceInfo.Type == RENDER_DEVICE_TYPE_GL || (DeviceInfo.Type == RENDER_DEVICE_TYPE_GLES && DeviceInfo.APIVersion >= Version{3, 1}))
+        {
+            glGetTexLevelParameteriv(QueryBindTarget, 0, GL_TEXTURE_HEIGHT, &TexHeight);
+            DEV_CHECK_GL_ERROR("glGetTexLevelParameteriv(GL_TEXTURE_HEIGHT) failed");
+        }
+        if (TexHeight > 0)
         {
             if (TexDesc.Height != 0 && TexDesc.Height != static_cast<Uint32>(TexHeight))
             {
@@ -208,8 +236,12 @@ static TextureDesc GetTextureDescFromGLHandle(GLContextState& GLState, TextureDe
     {
 #if GL_TEXTURE_DEPTH
         GLint TexDepth = 0;
-        glGetTexLevelParameteriv(QueryBindTarget, 0, GL_TEXTURE_DEPTH, &TexDepth);
-        if (glGetError() == GL_NO_ERROR && TexDepth > 0)
+        if (DeviceInfo.Type == RENDER_DEVICE_TYPE_GL || (DeviceInfo.Type == RENDER_DEVICE_TYPE_GLES && DeviceInfo.APIVersion >= Version{3, 1}))
+        {
+            glGetTexLevelParameteriv(QueryBindTarget, 0, GL_TEXTURE_DEPTH, &TexDepth);
+            DEV_CHECK_GL_ERROR("glGetTexLevelParameteriv(GL_TEXTURE_DEPTH) failed");
+        }
+        if (TexDepth > 0)
         {
             if (TexDesc.Depth != 0 && TexDesc.Depth != static_cast<Uint32>(TexDepth))
             {
@@ -240,8 +272,12 @@ static TextureDesc GetTextureDescFromGLHandle(GLContextState& GLState, TextureDe
 
 #if GL_TEXTURE_INTERNAL_FORMAT
     GLint GlFormat = 0;
-    glGetTexLevelParameteriv(QueryBindTarget, 0, GL_TEXTURE_INTERNAL_FORMAT, &GlFormat);
-    if (glGetError() == GL_NO_ERROR && GlFormat != 0)
+    if (DeviceInfo.Type == RENDER_DEVICE_TYPE_GL || (DeviceInfo.Type == RENDER_DEVICE_TYPE_GLES && DeviceInfo.APIVersion >= Version{3, 1}))
+    {
+        glGetTexLevelParameteriv(QueryBindTarget, 0, GL_TEXTURE_INTERNAL_FORMAT, &GlFormat);
+        DEV_CHECK_GL_ERROR("glGetTexLevelParameteriv(GL_TEXTURE_INTERNAL_FORMAT) failed");
+    }
+    if (GlFormat != 0)
     {
         if (TexDesc.Format != TEX_FORMAT_UNKNOWN && static_cast<GLenum>(GlFormat) != TexFormatToGLInternalTexFormat(TexDesc.Format))
         {
@@ -267,10 +303,14 @@ static TextureDesc GetTextureDescFromGLHandle(GLContextState& GLState, TextureDe
     }
 #endif
 
-    // GL_TEXTURE_IMMUTABLE_LEVELS is only supported in GL4.3+ and GLES3.1+
     GLint MipLevels = 0;
-    glGetTexParameteriv(BindTarget, GL_TEXTURE_IMMUTABLE_LEVELS, &MipLevels);
-    if (glGetError() == GL_NO_ERROR && MipLevels > 0)
+    // GL_TEXTURE_IMMUTABLE_LEVELS is supported in GL4.3+ and GLES3.0+.
+    if ((DeviceInfo.Type == RENDER_DEVICE_TYPE_GL && DeviceInfo.APIVersion >= Version{4, 3}) || DeviceInfo.Type == RENDER_DEVICE_TYPE_GLES)
+    {
+        glGetTexParameteriv(BindTarget, GL_TEXTURE_IMMUTABLE_LEVELS, &MipLevels);
+        DEV_CHECK_GL_ERROR("glGetTexParameteriv(GL_TEXTURE_IMMUTABLE_LEVELS) failed");
+    }
+    if (MipLevels > 0)
     {
         if (TexDesc.MipLevels != 0 && TexDesc.MipLevels != static_cast<Uint32>(MipLevels))
         {
@@ -307,13 +347,13 @@ TextureBaseGL::TextureBaseGL(IReferenceCounters*        pRefCounters,
         pRefCounters,
         TexViewObjAllocator,
         pDeviceGL,
-        GetTextureDescFromGLHandle(GLState, TexDesc, GLTextureHandle, BindTarget),
+        GetTextureDescFromGLHandle(pDeviceGL->GetDeviceInfo(), GLState, TexDesc, GLTextureHandle, BindTarget),
         bIsDeviceInternal
     },
     // Create texture object wrapper, but use external texture handle
     m_GlTexture     {true, GLObjectWrappers::GLTextureCreateReleaseHelper(GLTextureHandle)},
     m_BindTarget    {BindTarget},
-    m_GLTexFormat   {GetTextureInternalFormat(GLState, BindTarget, m_GlTexture, TexDesc.Format)}
+    m_GLTexFormat   {GetTextureInternalFormat(pDeviceGL->GetDeviceInfo(), GLState, BindTarget, m_GlTexture, TexDesc.Format)}
 // clang-format on
 {
 }
@@ -450,7 +490,7 @@ void TextureBaseGL::CreateViewInternal(const TextureViewDesc& OrigViewDesc, ITex
                     LOG_ERROR_AND_THROW("glTextureView is not supported");
 
                 glTextureView(pViewOGL->GetHandle(), GLViewTarget, m_GlTexture, GLViewFormat, ViewDesc.MostDetailedMip, ViewDesc.NumMipLevels, ViewDesc.FirstArraySlice, NumLayers);
-                CHECK_GL_ERROR_AND_THROW("Failed to create texture view");
+                DEV_CHECK_GL_ERROR_AND_THROW("Failed to create texture view");
                 pViewOGL->SetBindTarget(GLViewTarget);
 
                 if (!IsIdentityComponentMapping(ViewDesc.Swizzle))
@@ -461,13 +501,13 @@ void TextureBaseGL::CreateViewInternal(const TextureViewDesc& OrigViewDesc, ITex
 
                     GLState.BindTexture(-1, GLViewTarget, pViewOGL->GetHandle());
                     glTexParameteri(GLViewTarget, GL_TEXTURE_SWIZZLE_R, TextureComponentSwizzleToGLTextureSwizzle(ViewDesc.Swizzle.R, GL_RED));
-                    CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_R texture parameter");
+                    DEV_CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_R texture parameter");
                     glTexParameteri(GLViewTarget, GL_TEXTURE_SWIZZLE_G, TextureComponentSwizzleToGLTextureSwizzle(ViewDesc.Swizzle.G, GL_GREEN));
-                    CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_G texture parameter");
+                    DEV_CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_G texture parameter");
                     glTexParameteri(GLViewTarget, GL_TEXTURE_SWIZZLE_B, TextureComponentSwizzleToGLTextureSwizzle(ViewDesc.Swizzle.B, GL_BLUE));
-                    CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_B texture parameter");
+                    DEV_CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_B texture parameter");
                     glTexParameteri(GLViewTarget, GL_TEXTURE_SWIZZLE_A, TextureComponentSwizzleToGLTextureSwizzle(ViewDesc.Swizzle.A, GL_ALPHA));
-                    CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_A texture parameter");
+                    DEV_CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_A texture parameter");
                     GLState.BindTexture(-1, GLViewTarget, GLObjectWrappers::GLTextureObj::Null());
                 }
             }
@@ -542,6 +582,20 @@ void TextureBaseGL::UpdateData(GLContextState& CtxState, Uint32 MipLevel, Uint32
 //}
 //
 
+inline GLbitfield GetFramebufferCopyMask(TEXTURE_FORMAT Format)
+{
+    const auto& FmtAttribs = GetTextureFormatAttribs(Format);
+    switch (FmtAttribs.ComponentType)
+    {
+        case COMPONENT_TYPE_DEPTH:
+            return GL_DEPTH_BUFFER_BIT;
+        case COMPONENT_TYPE_DEPTH_STENCIL:
+            return GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT;
+        default:
+            return GL_COLOR_BUFFER_BIT;
+    }
+}
+
 void TextureBaseGL::CopyData(DeviceContextGLImpl* pDeviceCtxGL,
                              TextureBaseGL*       pSrcTextureGL,
                              Uint32               SrcMipLevel,
@@ -572,8 +626,8 @@ void TextureBaseGL::CopyData(DeviceContextGLImpl* pDeviceCtxGL,
         pSrcBox = &SrcBox;
     }
 
-#if GL_ARB_copy_image
     const bool IsDefaultBackBuffer = GetGLHandle() == 0;
+#if GL_ARB_copy_image
     // We can't use glCopyImageSubData with the proxy texture of a default framebuffer
     // because we don't have the texture handle. Resort to quad rendering in this case.
     if (glCopyImageSubData && !IsDefaultBackBuffer)
@@ -598,77 +652,124 @@ void TextureBaseGL::CopyData(DeviceContextGLImpl* pDeviceCtxGL,
             pSrcBox->Width(),
             pSrcBox->Height(),
             pSrcBox->Depth());
-        CHECK_GL_ERROR("glCopyImageSubData() failed");
+        DEV_CHECK_GL_ERROR("glCopyImageSubData() failed");
     }
     else
 #endif
     {
-        const auto& FmtAttribs = GetDevice()->GetTextureFormatInfoExt(m_Desc.Format);
-        if ((FmtAttribs.BindFlags & BIND_RENDER_TARGET) == 0)
+#if PLATFORM_EMSCRIPTEN
+        // Always use BlitFramebuffer on WebGL as CopyTexSubimage has
+        // a very high performance penalty.
+        bool UseBlitFramebuffer = true;
+#else
+        bool UseBlitFramebuffer = IsDefaultBackBuffer;
+        if (!UseBlitFramebuffer && m_pDevice->GetDeviceInfo().Type == RENDER_DEVICE_TYPE_GLES)
         {
-            LOG_ERROR_MESSAGE("Unable to perform copy operation because ", FmtAttribs.Name, " is not a color renderable format");
-            return;
-        }
-
-        auto* pRenderDeviceGL = GetDevice();
-#ifdef DILIGENT_DEBUG
-        {
-            auto& TexViewObjAllocator = pRenderDeviceGL->GetTexViewObjAllocator();
-            VERIFY(&TexViewObjAllocator == &m_dbgTexViewObjAllocator, "Texture view allocator does not match allocator provided during texture initialization");
+            const auto& FmtAttribs = GetTextureFormatAttribs(m_Desc.Format);
+            if (FmtAttribs.ComponentType == COMPONENT_TYPE_DEPTH ||
+                FmtAttribs.ComponentType == COMPONENT_TYPE_DEPTH_STENCIL)
+            {
+                // glCopyTexSubImage* does not support depth formats in GLES
+                UseBlitFramebuffer = true;
+            }
         }
 #endif
-        auto& TexRegionRender = *pRenderDeviceGL->m_pTexRegionRender;
-        TexRegionRender.SetStates(pDeviceCtxGL);
 
-        // Create temporary SRV for the entire source texture
-        TextureViewDesc SRVDesc;
-        SRVDesc.TextureDim = SrcTexDesc.Type;
-        SRVDesc.ViewType   = TEXTURE_VIEW_SHADER_RESOURCE;
-        ValidatedAndCorrectTextureViewDesc(m_Desc, SRVDesc);
-        // Note: texture view allocates memory for the copy of the name
-        // If the name is empty, memory should not be allocated
-        // We have to provide allocator even though it will never be used
-        TextureViewGLImpl SRV(GetReferenceCounters(), GetDevice(), SRVDesc, pSrcTextureGL,
-                              false, // Do NOT create texture view OpenGL object
-                              true   // The view, like default view, should not
-                                     // keep strong reference to the texture
-        );
+        auto& GLState = pDeviceCtxGL->GetContextState();
+
+        // Copy operations (glCopyTexSubImage* and glBindFramebuffer) are affected by scissor test!
+        auto ScissorEnabled = GLState.GetScissorTestEnabled();
+        if (ScissorEnabled)
+            GLState.EnableScissorTest(false);
 
         for (Uint32 DepthSlice = 0; DepthSlice < pSrcBox->Depth(); ++DepthSlice)
         {
-            // Create temporary RTV for the target subresource
-            TextureViewDesc RTVDesc;
-            RTVDesc.TextureDim      = m_Desc.Type;
-            RTVDesc.ViewType        = TEXTURE_VIEW_RENDER_TARGET;
-            RTVDesc.FirstArraySlice = DepthSlice + DstSlice;
-            RTVDesc.MostDetailedMip = DstMipLevel;
-            RTVDesc.NumArraySlices  = 1;
-            ValidatedAndCorrectTextureViewDesc(m_Desc, RTVDesc);
-            // Note: texture view allocates memory for the copy of the name
-            // If the name is empty, memory should not be allocated
-            // We have to provide allocator even though it will never be used
-            TextureViewGLImpl RTV(GetReferenceCounters(), GetDevice(), RTVDesc, this,
-                                  false, // Do NOT create texture view OpenGL object
-                                  true   // The view, like default view, should not
-                                         // keep strong reference to the texture
-            );
+            GLuint SrcFboHandle = 0;
+            if (pSrcTextureGL->GetGLHandle() != 0)
+            {
+                // Get read framebuffer for the source subimage
 
-            ITextureView* pRTVs[] = {&RTV};
-            pDeviceCtxGL->SetRenderTargets(_countof(pRTVs), pRTVs, nullptr, RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+                auto& FBOCache = m_pDevice->GetFBOCache(GLState.GetCurrentGLContext());
+                VERIFY_EXPR(SrcSlice == 0 || SrcTexDesc.IsArray());
+                VERIFY_EXPR((pSrcBox->MinZ == 0 && DepthSlice == 0) || SrcTexDesc.Is3D());
+                const auto SrcFramebufferSlice = SrcSlice + pSrcBox->MinZ + DepthSlice;
+                // NOTE: GetFBO may bind a framebuffer, so we need to invalidate it in the GL context state.
+                const auto& ReadFBO = FBOCache.GetFBO(pSrcTextureGL, SrcFramebufferSlice, SrcMipLevel, TextureBaseGL::FRAMEBUFFER_TARGET_FLAG_READ);
 
-            // No need to set up the viewport as SetRenderTargets() does that
+                SrcFboHandle = ReadFBO;
+            }
+            else
+            {
+                SrcFboHandle = pDeviceCtxGL->GetDefaultFBO();
+            }
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, SrcFboHandle);
+            DEV_CHECK_GL_ERROR("Failed to bind read framebuffer");
+            DEV_CHECK_ERR(glCheckFramebufferStatus(GL_READ_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
+                          "Read framebuffer is incomplete: ", GetFramebufferStatusString(glCheckFramebufferStatus(GL_READ_FRAMEBUFFER)));
 
-            TexRegionRender.Render(pDeviceCtxGL,
-                                   &SRV,
-                                   SrcTexDesc.Type,
-                                   SrcTexDesc.Format,
-                                   static_cast<Int32>(pSrcBox->MinX) - static_cast<Int32>(DstX),
-                                   static_cast<Int32>(pSrcBox->MinY) - static_cast<Int32>(DstY),
-                                   SrcSlice + pSrcBox->MinZ + DepthSlice,
-                                   SrcMipLevel);
+            if (!UseBlitFramebuffer)
+            {
+                CopyTexSubimageAttribs CopyAttribs{*pSrcBox};
+                CopyAttribs.DstMip   = DstMipLevel;
+                CopyAttribs.DstLayer = DstSlice;
+                CopyAttribs.DstX     = DstX;
+                CopyAttribs.DstY     = DstY;
+                CopyAttribs.DstZ     = DstZ + DepthSlice;
+                CopyTexSubimage(GLState, CopyAttribs);
+            }
+            else
+            {
+                GLuint DstFboHandle = 0;
+                if (IsDefaultBackBuffer)
+                {
+                    DstFboHandle = pDeviceCtxGL->GetDefaultFBO();
+                }
+                else
+                {
+                    // Get draw framebuffer for the destination subimage
+
+                    auto& FBOCache = m_pDevice->GetFBOCache(GLState.GetCurrentGLContext());
+                    VERIFY_EXPR(DstSlice == 0 || m_Desc.IsArray());
+                    VERIFY_EXPR((DstZ == 0 && DepthSlice == 0) || m_Desc.Is3D());
+                    const auto DstFramebufferSlice = DstSlice + DstZ + DepthSlice;
+                    // NOTE: GetFBO may bind a framebuffer, so we need to invalidate it in the GL context state.
+                    const auto& DrawFBO = FBOCache.GetFBO(this, DstFramebufferSlice, DstMipLevel, TextureBaseGL::FRAMEBUFFER_TARGET_FLAG_DRAW);
+
+                    DstFboHandle = DrawFBO;
+                }
+
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, DstFboHandle);
+                DEV_CHECK_GL_ERROR("Failed to bind draw framebuffer");
+                DEV_CHECK_ERR(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE,
+                              "Draw framebuffer is incomplete: ", GetFramebufferStatusString(glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER)));
+
+                const auto CopyMask = GetFramebufferCopyMask(SrcTexDesc.Format);
+                DEV_CHECK_ERR(CopyMask == GetFramebufferCopyMask(m_Desc.Format),
+                              "Src and dst framebuffer copy masks must be the same");
+                glBlitFramebuffer(pSrcBox->MinX,
+                                  pSrcBox->MinY,
+                                  pSrcBox->MaxX,
+                                  pSrcBox->MaxY,
+                                  DstX,
+                                  DstY,
+                                  DstX + pSrcBox->Width(),
+                                  DstY + pSrcBox->Height(),
+                                  CopyMask,
+                                  GL_NEAREST);
+                DEV_CHECK_GL_ERROR("Failed to blit framebuffer");
+            }
         }
 
-        TexRegionRender.RestoreStates(pDeviceCtxGL);
+        if (ScissorEnabled)
+            GLState.EnableScissorTest(true);
+
+        // Invalidate FBO as we used glBindFramebuffer directly
+        GLState.InvalidateFBO();
+
+        if (!UseBlitFramebuffer)
+            GLState.BindTexture(-1, GetBindTarget(), GLObjectWrappers::GLTextureObj::Null());
+
+        pDeviceCtxGL->CommitRenderTargets();
     }
 }
 
@@ -694,7 +795,7 @@ void TextureBaseGL::SetDefaultGLParameters()
                 // clang-format on
         }
         glGetIntegerv(TextureBinding, &BoundTex);
-        CHECK_GL_ERROR("Failed to set GL_TEXTURE_MIN_FILTER texture parameter");
+        DEV_CHECK_GL_ERROR("Failed to set GL_TEXTURE_MIN_FILTER texture parameter");
         VERIFY(static_cast<GLuint>(BoundTex) == m_GlTexture, "Current texture is not bound to GL context");
     }
 #endif
@@ -704,26 +805,26 @@ void TextureBaseGL::SetDefaultGLParameters()
         // We need to do channel swizzling since TEX_FORMAT_A8_UNORM
         // is actually implemented using GL_RED
         glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_R, GL_ZERO);
-        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_R texture parameter");
+        DEV_CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_R texture parameter");
         glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_G, GL_ZERO);
-        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_G texture parameter");
+        DEV_CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_G texture parameter");
         glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_B, GL_ZERO);
-        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_B texture parameter");
+        DEV_CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_B texture parameter");
         glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_A, GL_RED);
-        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_A texture parameter");
+        DEV_CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_A texture parameter");
     }
     else if (m_Desc.Format == TEX_FORMAT_BGRA8_UNORM)
     {
         // We need to do channel swizzling since TEX_FORMAT_BGRA8_UNORM
         // is actually implemented using GL_RGBA
         glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
-        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_R texture parameter");
+        DEV_CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_R texture parameter");
         glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_G, GL_GREEN);
-        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_G texture parameter");
+        DEV_CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_G texture parameter");
         glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_B, GL_RED);
-        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_B texture parameter");
+        DEV_CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_B texture parameter");
         glTexParameteri(m_BindTarget, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
-        CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_A texture parameter");
+        DEV_CHECK_GL_ERROR("Failed to set GL_TEXTURE_SWIZZLE_A texture parameter");
     }
 
     if (m_BindTarget != GL_TEXTURE_2D_MULTISAMPLE &&
@@ -737,11 +838,11 @@ void TextureBaseGL::SetDefaultGLParameters()
         // The default value of GL_TEXTURE_MIN_FILTER is GL_NEAREST_MIPMAP_LINEAR
         // Reset it to GL_NEAREST to avoid incompleteness issues with integer textures
         glTexParameteri(m_BindTarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        CHECK_GL_ERROR("Failed to set GL_TEXTURE_MIN_FILTER texture parameter");
+        DEV_CHECK_GL_ERROR("Failed to set GL_TEXTURE_MIN_FILTER texture parameter");
 
         // The default value of GL_TEXTURE_MAG_FILTER is GL_LINEAR
         glTexParameteri(m_BindTarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        CHECK_GL_ERROR("Failed to set GL_TEXTURE_MAG_FILTER texture parameter");
+        DEV_CHECK_GL_ERROR("Failed to set GL_TEXTURE_MAG_FILTER texture parameter");
     }
 }
 

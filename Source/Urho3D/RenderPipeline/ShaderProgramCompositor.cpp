@@ -153,6 +153,9 @@ void ShaderProgramCompositor::ApplyCommonDefines(ShaderProgramDesc& result,
         if (settings_.sceneProcessor_.cubemapBoxProjection_)
             result.AddCommonShaderDefines("URHO3D_BOX_PROJECTION");
 
+        if (settings_.sceneProcessor_.linearReflectionMaps_)
+            result.AddCommonShaderDefines("URHO3D_LINEAR_SPACE_REFLECTIONS");
+
         if (linearColorSpace_)
             result.AddCommonShaderDefines("URHO3D_GAMMA_CORRECTION");
 

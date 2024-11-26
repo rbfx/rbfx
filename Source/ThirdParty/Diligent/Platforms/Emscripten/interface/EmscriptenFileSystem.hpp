@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -31,25 +31,16 @@
 
 #include "../../Basic/interface/BasicFileSystem.hpp"
 #include "../../Basic/interface/StandardFile.hpp"
+#include "../../Linux/interface/LinuxFileSystem.hpp"
 
 namespace Diligent
 {
 
 using EmscriptenFile = StandardFile;
 
-struct EmscriptenFileSystem : public BasicFileSystem
+struct EmscriptenFileSystem : public LinuxFileSystem
 {
-public:
-    static EmscriptenFile* OpenFile(const FileOpenAttribs& OpenAttribs);
-
-    static bool FileExists(const Char* strFilePath);
-    static bool PathExists(const Char* strPath);
-
-    static bool CreateDirectory(const Char* strPath);
-    static void ClearDirectory(const Char* strPath);
-    static void DeleteFile(const Char* strPath);
-
-    static std::vector<std::unique_ptr<FindFileData>> Search(const Char* SearchPattern);
+    static std::string GetLocalAppDataDirectory(const char* AppName = nullptr, bool Create = true);
 };
 
 } // namespace Diligent

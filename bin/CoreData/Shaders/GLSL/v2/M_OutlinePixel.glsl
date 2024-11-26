@@ -1,9 +1,7 @@
 #define URHO3D_PIXEL_NEED_TEXCOORD
 #define URHO3D_CUSTOM_LIGHT_UNIFORMS
 #define URHO3D_CUSTOM_MATERIAL_UNIFORMS
-#ifdef URHO3D_VERTEX_HAS_COLOR
-    #undef URHO3D_VERTEX_HAS_COLOR
-#endif
+#define URHO3D_IGNORE_VERTEX_COLOR
 
 #include "_Config.glsl"
 #include "_Uniforms.glsl"

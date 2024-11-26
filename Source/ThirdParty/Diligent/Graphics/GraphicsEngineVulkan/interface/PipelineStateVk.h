@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {2FEA0868-0932-412A-9F0A-7CEA7E61B5E0}
-static const INTERFACE_ID IID_PipelineStateVk =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_PipelineStateVk =
     {0x2fea0868, 0x932, 0x412a, {0x9f, 0xa, 0x7c, 0xea, 0x7e, 0x61, 0xb5, 0xe0}};
 
 #define DILIGENT_INTERFACE_NAME IPipelineStateVk

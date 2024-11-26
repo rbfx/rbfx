@@ -41,8 +41,8 @@
     #include <Diligent/Graphics/GraphicsEngineVulkan/interface/RenderDeviceVk.h>
 #endif
 
-#include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform.h>
-#include <ThirdParty/OpenXRSDK/include/openxr/openxr_platform_defines.h>
+#include <openxr/openxr_platform.h>
+#include <openxr/openxr_platform_defines.h>
 
 #include <EASTL/optional.h>
 

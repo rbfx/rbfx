@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -148,7 +148,7 @@ PipelineResourceSignatureVkImpl::PipelineResourceSignatureVkImpl(IReferenceCount
     try
     {
         Initialize(
-            GetRawAllocator(), Desc, m_ImmutableSamplers,
+            GetRawAllocator(), Desc, /*CreateImmutableSamplers = */ true,
             [this]() //
             {
                 CreateSetLayouts(/*IsSerialized*/ false);
@@ -163,25 +163,6 @@ PipelineResourceSignatureVkImpl::PipelineResourceSignatureVkImpl(IReferenceCount
         Destruct();
         throw;
     }
-}
-
-void PipelineResourceSignatureVkImpl::ImmutableSamplerAttribs::Init(RenderDeviceVkImpl* pDevice, const SamplerDesc& Desc)
-{
-    VERIFY_EXPR(!Ptr);
-    if (pDevice != nullptr)
-    {
-        pDevice->CreateSampler(Desc, &Ptr);
-    }
-    else
-    {
-        Ptr = NEW_RC_OBJ(GetRawAllocator(), "Dummy sampler instance", SamplerVkImpl)(Desc);
-    }
-}
-
-VkSampler PipelineResourceSignatureVkImpl::ImmutableSamplerAttribs::GetVkSampler() const
-{
-    VERIFY_EXPR(Ptr);
-    return Ptr.RawPtr<SamplerVkImpl>()->GetVkSampler();
 }
 
 void PipelineResourceSignatureVkImpl::CreateSetLayouts(const bool IsSerialized)
@@ -267,6 +248,7 @@ void PipelineResourceSignatureVkImpl::CreateSetLayouts(const bool IsSerialized)
 
     DynamicLinearAllocator TempAllocator{GetRawAllocator(), 256};
 
+    std::vector<bool> ImmutableSamplerWithResource(m_Desc.NumImmutableSamplers, false);
     for (Uint32 i = 0; i < m_Desc.NumResources; ++i)
     {
         const auto& ResDesc   = m_Desc.Resources[i];
@@ -295,17 +277,14 @@ void PipelineResourceSignatureVkImpl::CreateSetLayouts(const bool IsSerialized)
             // Only search for immutable sampler for combined image samplers and separate samplers.
             // Note that for DescriptorType::SeparateImage with immutable sampler, we will initialize
             // a separate immutable sampler below. It will not be assigned to the image variable.
-            const auto SrcImmutableSamplerInd = FindImmutableSamplerVk(ResDesc, DescrType, m_Desc, GetCombinedSamplerSuffix());
+            const Uint32 SrcImmutableSamplerInd = FindImmutableSamplerVk(ResDesc, DescrType, m_Desc, GetCombinedSamplerSuffix());
             if (SrcImmutableSamplerInd != InvalidImmutableSamplerIndex)
             {
-                auto& ImmutableSampler = m_ImmutableSamplers[SrcImmutableSamplerInd];
-                if (!ImmutableSampler)
-                {
-                    const auto& ImmutableSamplerDesc = m_Desc.ImmutableSamplers[SrcImmutableSamplerInd].Desc;
-                    // The same immutable sampler may be used by different resources in different shader stages.
-                    ImmutableSampler.Init(HasDevice() ? GetDevice() : nullptr, ImmutableSamplerDesc);
-                }
-                pVkImmutableSamplers = TempAllocator.ConstructArray<VkSampler>(ResDesc.ArraySize, ImmutableSampler.GetVkSampler());
+                const RefCntAutoPtr<SamplerVkImpl>& pSamplerVk = m_pImmutableSamplers[SrcImmutableSamplerInd];
+
+                pVkImmutableSamplers = TempAllocator.ConstructArray<VkSampler>(ResDesc.ArraySize, pSamplerVk ? pSamplerVk->GetVkSampler() : VK_NULL_HANDLE);
+
+                ImmutableSamplerWithResource[SrcImmutableSamplerInd] = true;
             }
         }
 
@@ -332,7 +311,7 @@ void PipelineResourceSignatureVkImpl::CreateSetLayouts(const bool IsSerialized)
                           "Deserialized sampler index (", pAttribs->SamplerInd, ") is invalid: ", AssignedSamplerInd, " is expected.");
             DEV_CHECK_ERR(pAttribs->ArraySize == ResDesc.ArraySize,
                           "Deserialized array size (", pAttribs->ArraySize, ") is invalid: ", ResDesc.ArraySize, " is expected.");
-            DEV_CHECK_ERR(pAttribs->GetDescriptorType() == DescrType, "Deserialized descriptor type in invalid");
+            DEV_CHECK_ERR(pAttribs->GetDescriptorType() == DescrType, "Deserialized descriptor type is invalid");
             DEV_CHECK_ERR(pAttribs->DescrSet == DSMapping[SetId],
                           "Deserialized descriptor set (", pAttribs->DescrSet, ") is invalid: ", DSMapping[SetId], " is expected.");
             DEV_CHECK_ERR(pAttribs->IsImmutableSamplerAssigned() == (pVkImmutableSamplers != nullptr), "Immutable sampler flag is invalid");
@@ -404,43 +383,44 @@ void PipelineResourceSignatureVkImpl::CreateSetLayouts(const bool IsSerialized)
     // 'g_Texture_sampler'.
     for (Uint32 i = 0; i < m_Desc.NumImmutableSamplers; ++i)
     {
-        auto& ImmutableSampler = m_ImmutableSamplers[i];
-        if (ImmutableSampler)
+        if (ImmutableSamplerWithResource[i])
         {
             // Immutable sampler has already been initialized as resource
             continue;
         }
 
-        const auto& SamplerDesc = m_Desc.ImmutableSamplers[i];
+        ImmutableSamplerAttribsVk&         ImtblSampAttribs = m_pImmutableSamplerAttribs[i];
+        const ImmutableSamplerDesc&        SamplerDesc      = m_Desc.ImmutableSamplers[i];
+        const RefCntAutoPtr<SamplerVkImpl> pSamplerVk       = m_pImmutableSamplers[i];
+
         // If static/mutable descriptor set layout is empty, then add samplers to dynamic set.
         const auto SetId = (DSMapping[DESCRIPTOR_SET_ID_STATIC_MUTABLE] < MAX_DESCRIPTOR_SETS ? DESCRIPTOR_SET_ID_STATIC_MUTABLE : DESCRIPTOR_SET_ID_DYNAMIC);
         DEV_CHECK_ERR(DSMapping[SetId] < MAX_DESCRIPTOR_SETS,
                       "There are no descriptor sets in this signature, which indicates there are no other "
                       "resources besides immutable samplers. This is not currently allowed.");
 
-        ImmutableSampler.Init(HasDevice() ? GetDevice() : nullptr, SamplerDesc.Desc);
 
-        auto& BindingIndex = BindingIndices[SetId * 3 + CACHE_GROUP_OTHER];
+        Uint32& BindingIndex = BindingIndices[SetId * 3 + CACHE_GROUP_OTHER];
         if (!IsSerialized)
         {
-            ImmutableSampler.DescrSet     = DSMapping[SetId];
-            ImmutableSampler.BindingIndex = BindingIndex;
+            ImtblSampAttribs.DescrSet     = DSMapping[SetId];
+            ImtblSampAttribs.BindingIndex = BindingIndex;
         }
         else
         {
-            DEV_CHECK_ERR(ImmutableSampler.DescrSet == DSMapping[SetId],
-                          "Immutable sampler descriptor set (", ImmutableSampler.DescrSet, ") is invalid: ", DSMapping[SetId], " is expected.");
-            DEV_CHECK_ERR(ImmutableSampler.BindingIndex == BindingIndex,
-                          "Immutable sampler bind index (", ImmutableSampler.BindingIndex, ") is invalid: ", BindingIndex, " is expected.");
+            DEV_CHECK_ERR(ImtblSampAttribs.DescrSet == DSMapping[SetId],
+                          "Immutable sampler descriptor set (", ImtblSampAttribs.DescrSet, ") is invalid: ", DSMapping[SetId], " is expected.");
+            DEV_CHECK_ERR(ImtblSampAttribs.BindingIndex == BindingIndex,
+                          "Immutable sampler bind index (", ImtblSampAttribs.BindingIndex, ") is invalid: ", BindingIndex, " is expected.");
         }
         ++BindingIndex;
 
         VkDescriptorSetLayoutBinding vkSetLayoutBinding{};
-        vkSetLayoutBinding.binding            = ImmutableSampler.BindingIndex;
+        vkSetLayoutBinding.binding            = ImtblSampAttribs.BindingIndex;
         vkSetLayoutBinding.descriptorCount    = 1;
         vkSetLayoutBinding.stageFlags         = ShaderTypesToVkShaderStageFlags(SamplerDesc.ShaderStages);
         vkSetLayoutBinding.descriptorType     = VK_DESCRIPTOR_TYPE_SAMPLER;
-        vkSetLayoutBinding.pImmutableSamplers = TempAllocator.Construct<VkSampler>(ImmutableSampler.GetVkSampler());
+        vkSetLayoutBinding.pImmutableSamplers = TempAllocator.Construct<VkSampler>(pSamplerVk ? pSamplerVk->GetVkSampler() : VK_NULL_HANDLE);
         vkSetLayoutBindings[SetId].push_back(vkSetLayoutBinding);
     }
 
@@ -504,15 +484,6 @@ void PipelineResourceSignatureVkImpl::Destruct()
     {
         if (Layout)
             GetDevice()->SafeReleaseDeviceObject(std::move(Layout), ~0ull);
-    }
-
-    if (m_ImmutableSamplers != nullptr)
-    {
-        for (Uint32 i = 0; i < m_Desc.NumImmutableSamplers; ++i)
-        {
-            m_ImmutableSamplers[i].~ImmutableSamplerAttribs();
-        }
-        m_ImmutableSamplers = nullptr;
     }
 
     TPipelineResourceSignatureBase::Destruct();
@@ -971,18 +942,14 @@ PipelineResourceSignatureVkImpl::PipelineResourceSignatureVkImpl(IReferenceCount
                                                                  const PipelineResourceSignatureDesc&           Desc,
                                                                  const PipelineResourceSignatureInternalDataVk& InternalData) :
     TPipelineResourceSignatureBase{pRefCounters, pDevice, Desc, InternalData}
-//m_DynamicUniformBufferCount{Serialized.DynamicUniformBufferCount}
-//m_DynamicStorageBufferCount{Serialized.DynamicStorageBufferCount}
 {
     try
     {
         Deserialize(
-            GetRawAllocator(), Desc, InternalData, m_ImmutableSamplers,
+            GetRawAllocator(), Desc, InternalData, /*CreateImmutableSamplers = */ true,
             [this]() //
             {
                 CreateSetLayouts(/*IsSerialized*/ true);
-                //VERIFY_EXPR(m_DynamicUniformBufferCount == Serialized.DynamicUniformBufferCount);
-                //VERIFY_EXPR(m_DynamicStorageBufferCount == Serialized.DynamicStorageBufferCount);
             },
             [this]() //
             {
@@ -998,24 +965,8 @@ PipelineResourceSignatureVkImpl::PipelineResourceSignatureVkImpl(IReferenceCount
 
 PipelineResourceSignatureInternalDataVk PipelineResourceSignatureVkImpl::GetInternalData() const
 {
-    PipelineResourceSignatureInternalDataVk InternalData;
+    PipelineResourceSignatureInternalDataVk InternalData = TPipelineResourceSignatureBase::GetInternalData();
 
-    TPipelineResourceSignatureBase::GetInternalData(InternalData);
-
-    const auto NumImmutableSamplers = GetDesc().NumImmutableSamplers;
-    if (NumImmutableSamplers > 0)
-    {
-        VERIFY_EXPR(m_ImmutableSamplers != nullptr);
-        InternalData.m_pImmutableSamplers = std::make_unique<PipelineResourceImmutableSamplerAttribsVk[]>(NumImmutableSamplers);
-
-        for (Uint32 i = 0; i < NumImmutableSamplers; ++i)
-            InternalData.m_pImmutableSamplers[i] = m_ImmutableSamplers[i];
-    }
-
-    InternalData.pResourceAttribs          = m_pResourceAttribs;
-    InternalData.NumResources              = GetDesc().NumResources;
-    InternalData.pImmutableSamplers        = InternalData.m_pImmutableSamplers.get();
-    InternalData.NumImmutableSamplers      = NumImmutableSamplers;
     InternalData.DynamicStorageBufferCount = m_DynamicStorageBufferCount;
     InternalData.DynamicUniformBufferCount = m_DynamicUniformBufferCount;
 
