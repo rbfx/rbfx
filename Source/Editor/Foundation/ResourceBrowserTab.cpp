@@ -720,7 +720,10 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     if (IsRightSelected(entry.resourceName_))
         flags |= ImGuiTreeNodeFlags_Selected;
 
-    const bool isOpen = ui::TreeNodeEx(GetDisplayName(entry, false), flags);
+    // TODO: Cache this string
+    const ea::string name = Format("{} {}", GetEntryIcon(entry, false), localResourceName);
+
+    const bool isOpen = ui::TreeNodeEx(name.c_str(), flags);
     const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
     const bool toggleSelection = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
 
