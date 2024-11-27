@@ -43,6 +43,9 @@ class URHO3D_API Network : public Object
     URHO3D_OBJECT(Network, Object);
 
 public:
+    using CreateServerCallback = ea::function<SharedPtr<NetworkServer>(Context* context)>;
+    using CreateConnectionCallback = ea::function<SharedPtr<NetworkConnection>(Context* context)>;
+
     /// Construct.
     explicit Network(Context* context);
     /// Destruct.
@@ -101,6 +104,13 @@ public:
     /// Return the amount of time that happened after fixed-time network update.
     float GetUpdateOvertime() const { return updateAcc_; }
 
+    /// Use the default transport (WebRTC)
+    void SetTransportDefault();
+    /// Use the WebRTC transport
+    void SetTransportWebRTC();
+    /// Use a user defined transport
+    void SetTransportCustom(const CreateServerCallback& createServer, const CreateConnectionCallback& createConnection);
+
     /// Return whether the network is updated on this frame.
     bool IsUpdateNow() const { return updateNow_; }
 
@@ -136,6 +146,8 @@ public:
     /// @}
 
 private:
+    void InitializeTransportCreateFuncs();
+
     /// Event handlers.
     /// @{
     void HandleApplicationExit();
@@ -173,6 +185,9 @@ private:
     int serverMaxConnections_ = 0;
     /// Actual server, which accepts connections.
     SharedPtr<NetworkServer> transportServer_;
+
+    CreateServerCallback createServer_;
+    CreateConnectionCallback createConnection_;
 };
 
 /// Register Network library objects.

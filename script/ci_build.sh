@@ -92,8 +92,6 @@ quirks_web=(
     '-DURHO3D_PROFILING=OFF'
     '-DURHO3D_CSHARP=OFF'
     '-DCI_WEB_BUILD=ON'
-)
-quirks_web_dbg=(
     '-DURHO3D_PLAYER=OFF'
 )
 quirks_dll=('-DURHO3D_CSHARP=ON')
