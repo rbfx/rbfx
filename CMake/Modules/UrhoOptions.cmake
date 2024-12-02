@@ -221,7 +221,7 @@ cmake_dependent_option(URHO3D_TESTING            "Enable unit tests"            
 option                (URHO3D_PACKAGING          "Enable *.pak file creation"                            OFF                                                     )
 # Web
 cmake_dependent_option(EMSCRIPTEN_WASM           "Use wasm instead of asm.js"                            ON                   "EMSCRIPTEN"                           OFF)
-set(EMSCRIPTEN_TOTAL_MEMORY 128 CACHE STRING  "Memory limit in megabytes. Set to 0 for dynamic growth. Must be multiple of 64KB.")
+set(EMSCRIPTEN_TOTAL_MEMORY 0 CACHE STRING       "Memory limit in megabytes. Set to 0 for dynamic growth.")
 
 # Graphics configuration
 option                (URHO3D_DEBUG_GRAPHICS     "Enable debug checks in renderer"                       OFF)
