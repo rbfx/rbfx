@@ -295,7 +295,7 @@ jobs:
           fetch-depth: 1
 
       - name: Set up butler
-        if: ${{ env.ci_itch == 'true' }}
+        if: ${{ (env.ci_itch == 'true') && (vars.DISABLE_ITCH != 'true') }}
         uses: jdno/setup-butler@v1
 
       - name: Build Cache
@@ -391,7 +391,7 @@ jobs:
           max_releases: 1
 
       - name: Publish to itch.io
-        if: ${{ env.ci_itch == 'true' }}
+        if: ${{ (env.ci_itch == 'true') && (vars.DISABLE_ITCH != 'true') }}
         shell: bash
         run: ${{ env.ci_build_script }} publish-to-itch
 
@@ -545,7 +545,7 @@ jobs:
           fetch-depth: 1
 
       - name: Set up butler
-        if: ${{ env.ci_itch == 'true' }}
+        if: ${{ (env.ci_itch == 'true') && (vars.DISABLE_ITCH != 'true') }}
         uses: jdno/setup-butler@v1
 
       - name: Build Cache
@@ -634,7 +634,7 @@ jobs:
           max_releases: 1
 
       - name: Publish to itch.io
-        if: ${{ env.ci_itch == 'true' }}
+        if: ${{ (env.ci_itch == 'true') && (vars.DISABLE_ITCH != 'true') }}
         shell: bash
         run: ${{ env.ci_build_script }} publish-to-itch
 
@@ -697,7 +697,7 @@ jobs:
           fetch-depth: 1
 
       - name: Set up butler
-        if: ${{ env.ci_itch == 'true' }}
+        if: ${{ (env.ci_itch == 'true') && (vars.DISABLE_ITCH != 'true') }}
         uses: jdno/setup-butler@v1
 
       - name: Build Cache
@@ -786,7 +786,7 @@ jobs:
           max_releases: 1
 
       - name: Publish to itch.io
-        if: ${{ env.ci_itch == 'true' }}
+        if: ${{ (env.ci_itch == 'true') && (vars.DISABLE_ITCH != 'true') }}
         shell: bash
         run: ${{ env.ci_build_script }} publish-to-itch
 
