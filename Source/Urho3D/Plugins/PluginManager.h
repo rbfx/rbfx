@@ -97,6 +97,9 @@ public:
 
     /// Reload all dynamic modules.
     void Reload();
+    /// Commit updates to the list of loaded plugins and to application status.
+    /// This may be unsafe to call inside of the frame. Called automatically between frames.
+    void Commit();
 
     /// Start plugin application for all loaded plugins.
     void StartApplication();

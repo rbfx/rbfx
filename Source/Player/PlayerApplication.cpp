@@ -79,6 +79,7 @@ void PlayerApplication::Stop()
 {
     auto pluginManager = GetSubsystem<PluginManager>();
     pluginManager->StopApplication();
+    pluginManager->Commit();
 
     auto stateManager = GetSubsystem<StateManager>();
     stateManager->Reset();

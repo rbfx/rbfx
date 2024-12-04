@@ -278,6 +278,11 @@ void PluginManager::Reload()
     forceReload_ = true;
 }
 
+void PluginManager::Commit()
+{
+    Update(false);
+}
+
 void PluginManager::StartApplication()
 {
     // If StopApplication was called during this frame, it's okay to start again
