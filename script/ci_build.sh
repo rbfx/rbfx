@@ -92,7 +92,7 @@ quirks_web=(
     '-DURHO3D_PROFILING=OFF'
     '-DURHO3D_CSHARP=OFF'
     '-DCI_WEB_BUILD=ON'
-    '-DURHO3D_PLAYER=OFF'
+    '-DURHO3D_NO_EDITOR_PLAYER_EXE=ON'
 )
 quirks_dll=('-DURHO3D_CSHARP=ON')
 quirks_windows_msvc_x64=('-A' 'x64')
