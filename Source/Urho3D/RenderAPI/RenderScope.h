@@ -6,19 +6,18 @@
 
 #include "Urho3D/Core/Format.h"
 #include "Urho3D/Core/NonCopyable.h"
+#include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/Urho3D.h"
 
 namespace Urho3D
 {
-
-class RenderContext;
 
 /// Utility class to add debug scope markers.
 class URHO3D_API RenderScope : public NonCopyable
 {
 public:
     explicit RenderScope(RenderContext* renderContext, ea::string_view name)
-        : renderContext_(renderContext)
+        : renderContext_(renderContext && renderContext->IsDebugScopeEnabled() ? renderContext : nullptr)
     {
         if (renderContext_)
             BeginGroup(name);
@@ -26,7 +25,7 @@ public:
 
     template <class ... T>
     explicit RenderScope(RenderContext* renderContext, ea::string_view format, T&& ... args)
-        : renderContext_(renderContext)
+        : renderContext_(renderContext && renderContext->IsDebugScopeEnabled() ? renderContext : nullptr)
     {
         if (renderContext_)
             BeginGroup(Format(format, args...));

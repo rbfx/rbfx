@@ -6,6 +6,7 @@
 
 #include "Urho3D/RenderAPI/RenderContext.h"
 
+#include "Urho3D/Core/ProcessUtils.h"
 #include "Urho3D/RenderAPI/DrawCommandQueue.h"
 #include "Urho3D/RenderAPI/GAPIIncludes.h"
 #include "Urho3D/RenderAPI/RawTexture.h"
@@ -36,6 +37,9 @@ RenderContext::RenderContext(RenderDevice* renderDevice)
     , handle_(renderDevice->GetImmediateContext())
 {
     renderDevice_->OnDeviceLost.Subscribe(this, &RenderContext::ResetCachedContextState);
+
+    // TODO: Have more flexible configuration
+    debugScopeEnabled_ = GetPlatform() != PlatformId::Web;
 }
 
 RenderContext::~RenderContext()

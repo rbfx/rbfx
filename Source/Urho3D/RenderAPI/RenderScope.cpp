@@ -8,7 +8,6 @@
 
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/RenderAPI/GAPIIncludes.h"
-#include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 
 #include <Diligent/Graphics/GraphicsEngine/interface/DeviceContext.h>
