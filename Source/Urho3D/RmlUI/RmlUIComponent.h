@@ -1,27 +1,10 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2024 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
+
 #pragma once
 
-#include "../Scene/LogicComponent.h"
+#include "Urho3D/Scene/LogicComponent.h"
 
 #include <RmlUi/Core/DataModelHandle.h>
 
@@ -124,8 +107,7 @@ protected:
     /// @}
 
     /// Wrap data event callback.
-    template <class T>
-    Rml::DataEventFunc WrapCallback(void(T::*callback)())
+    template <class T> Rml::DataEventFunc WrapCallback(void (T::*callback)())
     {
         auto self = static_cast<T*>(this);
         return [self, callback](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList& args)
@@ -133,6 +115,16 @@ protected:
             const bool enabled = args.empty() || args[0].Get<bool>();
             if (enabled)
                 (self->*callback)();
+        };
+    }
+    template <class T> Rml::DataEventFunc WrapCallback(void (T::*callback)(const Rml::VariantList& args))
+    {
+        auto self = static_cast<T*>(this);
+        return [self, callback](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList& args)
+        {
+            const bool enabled = args.empty() || args[0].Get<bool>();
+            if (enabled)
+                (self->*callback)(args);
         };
     }
 
@@ -197,7 +189,8 @@ private:
     SharedPtr<RmlNavigationManager> navigationManager_;
     /// Currently open document. Null if document was closed.
     Rml::ElementDocument* document_{};
-    /// Component which holds RmlUI instance containing UI managed by this component. May be null if UI is rendered into default RmlUI subsystem.
+    /// Component which holds RmlUI instance containing UI managed by this component. May be null if UI is rendered into
+    /// default RmlUI subsystem.
     WeakPtr<RmlCanvasComponent> canvasComponent_;
 
     /// Type registry for the data model.
@@ -211,4 +204,4 @@ private:
     ea::unique_ptr<Rml::DataModelConstructor> modelConstructor_;
 };
 
-}
+} // namespace Urho3D

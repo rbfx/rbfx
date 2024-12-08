@@ -1,40 +1,22 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2024 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../RmlUI/RmlUI.h"
+#include "Urho3D/RmlUI/RmlUIComponent.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/Material.h"
-#include "../IO/Log.h"
-#include "../Resource/BinaryFile.h"
-#include "../RmlUI/RmlCanvasComponent.h"
-#include "../RmlUI/RmlNavigationManager.h"
-#include "../RmlUI/RmlUIComponent.h"
-#include "../Scene/Node.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Resource/BinaryFile.h"
+#include "Urho3D/RmlUI/RmlCanvasComponent.h"
+#include "Urho3D/RmlUI/RmlNavigationManager.h"
+#include "Urho3D/RmlUI/RmlUI.h"
+#include "Urho3D/Scene/Node.h"
+#include "Urho3D/Scene/Scene.h"
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -64,12 +46,14 @@ void RmlUIComponent::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<RmlUIComponent>(Category_RmlUI);
 
+    // clang-format off
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Resource", GetResource, SetResource, ResourceRef, ResourceRef{BinaryFile::GetTypeStatic()}, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Use Normalized Coordinates", bool, useNormalized_, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector2, Vector2::ZERO, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Size", GetSize, SetSize, Vector2, Vector2::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Auto Size", bool, autoSize_, true, AM_DEFAULT);
+    // clang-format on
 }
 
 void RmlUIComponent::Update(float timeStep)
@@ -86,16 +70,14 @@ bool RmlUIComponent::BindDataModelProperty(const ea::string& name, GetterFunc ge
     {
         return false;
     }
-    return constructor->BindFunc(
-        name,
+    return constructor->BindFunc(name,
         [=](Rml::Variant& outputValue)
-        {
+    {
         Variant variant;
         getter(variant);
         ToRmlUi(variant, outputValue);
-        },
-        [=](const Rml::Variant& inputValue)
-        {
+    }, [=](const Rml::Variant& inputValue)
+    {
         Variant variant;
         if (FromRmlUi(inputValue, variant))
         {
@@ -141,12 +123,10 @@ bool RmlUIComponent::BindDataModelEvent(const ea::string& name, EventFunc eventC
     {
         return false;
     }
-    return constructor->BindEventCallback(
-        name,
-        [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList& args)
-        {
+    return constructor->BindEventCallback(name, [=](Rml::DataModelHandle, Rml::Event&, const Rml::VariantList& args)
+    {
         VariantVector urhoArgs;
-        for (auto& src: args)
+        for (auto& src : args)
         {
             FromRmlUi(src, urhoArgs.push_back());
         }
@@ -338,9 +318,9 @@ void RmlUIComponent::OnUICanvasResized(const RmlCanvasResizedArgs& args)
         // Element is positioned using absolute pixel values. Nothing to adjust.
         return;
 
-    // When using normalized coordinates, element is positioned relative to canvas size. When canvas is resized old positions are no longer
-    // valid. Convert pixel size and position back to normalized coordiantes using old size and reapply them, which will use new canvas size
-    // for calculating new pixel position and size.
+    // When using normalized coordinates, element is positioned relative to canvas size. When canvas is resized old
+    // positions are no longer valid. Convert pixel size and position back to normalized coordiantes using old size and
+    // reapply them, which will use new canvas size for calculating new pixel position and size.
 
     Vector2 pos = ToVector2(document_->GetAbsoluteOffset(Rml::BoxArea::Border));
     Vector2 size = ToVector2(document_->GetBox().GetSize(Rml::BoxArea::Content));
@@ -484,4 +464,4 @@ RmlUIComponent* RmlUIComponent::FromDocument(Rml::ElementDocument* document)
     return nullptr;
 }
 
-}
+} // namespace Urho3D
