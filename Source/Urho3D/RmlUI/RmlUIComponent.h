@@ -86,7 +86,7 @@ public:
     bool BindDataModelEvent(const ea::string& name, EventFunc eventCallback);
 
 protected:
-    /// Data model facade
+    /// Data model facade.
     /// @{
     bool IsVariableDirty(const ea::string& variableName)
     {
@@ -142,12 +142,15 @@ protected:
 
     /// Get data model constructor. Only available in OnDataModelInitialized method.
     Rml::DataModelConstructor* GetDataModelConstructor() const { return modelConstructor_.get(); }
+    /// If current focus is invalid, focus on the first valid navigable element.
+    void RestoreFocus();
 
     /// Implement Component
     /// @{
     void OnSetEnabled() override;
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// @}
+
 private:
     /// Get data model constructor. Logs error if the constructor is not available.
     Rml::DataModelConstructor* ExpectDataModelConstructor() const;
@@ -168,6 +171,7 @@ private:
     void SetDocument(Rml::ElementDocument* document);
     void UpdateDocumentOpen();
     void UpdateConnectedCanvas();
+    void UpdatePendingFocus();
 
     void CreateDataModel();
     void RemoveDataModel();
@@ -175,6 +179,7 @@ private:
     void OnNavigableGroupChanged();
     void DoNavigablePush(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args);
     void DoNavigablePop(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args);
+    void DoFocusById(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args);
 
     /// Attributes
     /// @{
@@ -202,6 +207,11 @@ private:
 
     /// Data model constructor.
     ea::unique_ptr<Rml::DataModelConstructor> modelConstructor_;
+
+    /// Element id to be focused on next update.
+    ea::optional<ea::string> pendingFocusId_;
+    /// Whether to suppress next call to RestoreFocus().
+    bool suppressRestoreFocus_{};
 };
 
 } // namespace Urho3D

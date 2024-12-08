@@ -16,6 +16,8 @@
 #include "Urho3D/Scene/Node.h"
 #include "Urho3D/Scene/Scene.h"
 
+#include <RmlUi/Core/ComputedValues.h>
+
 #include "Urho3D/DebugNew.h"
 
 namespace Urho3D
@@ -26,7 +28,25 @@ namespace
 
 const Rml::String ComponentPtrAttribute = "__RmlUIComponentPtr__";
 
-}
+bool IsElementNavigable(Rml::Element* element)
+{
+    // The element itself should be tab-able
+    if (!element || element->GetComputedValues().tab_index() == Rml::Style::TabIndex::None)
+        return false;
+
+    // Entire element hierarchy should be visible and focusable
+    while (element)
+    {
+        if (!element->IsVisible() || element->GetComputedValues().focus() == Rml::Style::Focus::None)
+            return false;
+
+        element = element->GetParentNode();
+    }
+
+    return true;
+};
+
+} // namespace
 
 RmlUIComponent::RmlUIComponent(Context* context)
     : LogicComponent(context)
@@ -61,6 +81,7 @@ void RmlUIComponent::Update(float timeStep)
     navigationManager_->Update();
     // There should be only a few of RmlUIComponent enabled at a time, so this is not a performance issue.
     UpdateConnectedCanvas();
+    UpdatePendingFocus();
 }
 
 bool RmlUIComponent::BindDataModelProperty(const ea::string& name, GetterFunc getter, SetterFunc setter)
@@ -142,6 +163,38 @@ Rml::DataModelConstructor* RmlUIComponent::ExpectDataModelConstructor() const
         URHO3D_LOGERROR("BindDataModelProperty can only be executed from OnDataModelInitialized");
     }
     return constructor;
+}
+
+void RmlUIComponent::UpdatePendingFocus()
+{
+    suppressRestoreFocus_ = false;
+
+    if (pendingFocusId_ && document_)
+    {
+        if (Rml::Element* element = document_->GetElementById(*pendingFocusId_))
+        {
+            if (element->Focus(true))
+            {
+                element->ScrollIntoView(Rml::ScrollAlignment::Nearest);
+                suppressRestoreFocus_ = true;
+            }
+        }
+        pendingFocusId_ = ea::nullopt;
+    }
+}
+
+void RmlUIComponent::RestoreFocus()
+{
+    if (document_ && !suppressRestoreFocus_ && !IsElementNavigable(document_->GetFocusLeafNode()))
+    {
+        if (Rml::Element* nextElement = document_->FindNextTabElement(document_, true))
+        {
+            if (nextElement->Focus(true))
+            {
+                nextElement->ScrollIntoView(Rml::ScrollAlignment::Nearest);
+            }
+        }
+    }
 }
 
 void RmlUIComponent::OnSetEnabled()
@@ -402,6 +455,18 @@ void RmlUIComponent::DoNavigablePop(Rml::DataModelHandle model, Rml::Event& even
         navigationManager_->PopCursorGroup();
 }
 
+void RmlUIComponent::DoFocusById(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args)
+{
+    if (args.size() != 2)
+    {
+        URHO3D_LOGWARNING("RmlUIComponent::DoFocusById is called with unexpected arguments");
+        return;
+    }
+
+    const auto& id = args[1].Get<Rml::String>();
+    pendingFocusId_ = id;
+}
+
 void RmlUIComponent::CreateDataModel()
 {
     RmlUI* ui = GetUI();
@@ -417,6 +482,7 @@ void RmlUIComponent::CreateDataModel()
         "navigable_group", [this](Rml::Variant& result) { result = navigationManager_->GetTopCursorGroup(); });
     modelConstructor_->BindEventCallback("navigable_push", &RmlUIComponent::DoNavigablePush, this);
     modelConstructor_->BindEventCallback("navigable_pop", &RmlUIComponent::DoNavigablePop, this);
+    modelConstructor_->BindEventCallback("focus", &RmlUIComponent::DoFocusById, this);
 }
 
 void RmlUIComponent::RemoveDataModel()
