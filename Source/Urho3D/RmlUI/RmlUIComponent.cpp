@@ -107,31 +107,31 @@ bool RmlUIComponent::BindDataModelProperty(const ea::string& name, GetterFunc ge
 bool RmlUIComponent::BindDataModelVariant(const ea::string& name, Variant* value)
 {
     const auto constructor = ExpectDataModelConstructor();
-    if (!constructor)
+    if (!constructor || !typeRegister_)
     {
         return false;
     }
-    return constructor->BindCustomDataVariable(name, {typeRegister_.GetDefinition<Variant>(), value});
+    return constructor->BindCustomDataVariable(name, {typeRegister_->GetDefinition<Variant>(), value});
 }
 
 bool RmlUIComponent::BindDataModelVariantVector(const ea::string& name, VariantVector* value)
 {
     const auto constructor = ExpectDataModelConstructor();
-    if (!constructor)
+    if (!constructor || !typeRegister_)
     {
         return false;
     }
-    return constructor->BindCustomDataVariable(name, {typeRegister_.GetDefinition<VariantVector>(), value});
+    return constructor->BindCustomDataVariable(name, {typeRegister_->GetDefinition<VariantVector>(), value});
 }
 
 bool RmlUIComponent::BindDataModelVariantMap(const ea::string& name, VariantMap* value)
 {
     const auto constructor = ExpectDataModelConstructor();
-    if (!constructor)
+    if (!constructor || !typeRegister_)
     {
         return false;
     }
-    return constructor->BindCustomDataVariable(name, {typeRegister_.GetDefinition<VariantMap>(), value});
+    return constructor->BindCustomDataVariable(name, {typeRegister_->GetDefinition<VariantMap>(), value});
 }
 
 bool RmlUIComponent::BindDataModelEvent(const ea::string& name, EventFunc eventCallback)
@@ -428,8 +428,10 @@ void RmlUIComponent::CreateDataModel()
     Rml::Context* context = ui->GetRmlContext();
 
     dataModelName_ = GetDataModelName();
-    modelConstructor_ = ea::make_unique<Rml::DataModelConstructor>(context->CreateDataModel(dataModelName_, &typeRegister_));
-    RegisterVariantDefinition(&typeRegister_);
+    typeRegister_.emplace();
+    modelConstructor_ =
+        ea::make_unique<Rml::DataModelConstructor>(context->CreateDataModel(dataModelName_, &*typeRegister_));
+    RegisterVariantDefinition(&*typeRegister_);
 
     modelConstructor_->BindFunc(
         "navigable_group", [this](Rml::Variant& result) { result = navigationManager_->GetTopCursorGroup(); });
@@ -444,6 +446,7 @@ void RmlUIComponent::RemoveDataModel()
     context->RemoveDataModel(dataModelName_);
 
     dataModel_ = nullptr;
+    typeRegister_ = ea::nullopt;
     dataModelName_.clear();
 }
 

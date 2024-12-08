@@ -25,6 +25,7 @@
 
 #include <RmlUi/Core/DataModelHandle.h>
 
+#include <EASTL/optional.h>
 #include <EASTL/unordered_set.h>
 
 namespace Rml
@@ -200,7 +201,7 @@ private:
     WeakPtr<RmlCanvasComponent> canvasComponent_;
 
     /// Type registry for the data model.
-    Rml::DataTypeRegister typeRegister_;
+    ea::optional<Rml::DataTypeRegister> typeRegister_;
     /// Data model for the document.
     Rml::DataModelHandle dataModel_;
     /// Name of the data model.
