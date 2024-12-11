@@ -144,6 +144,8 @@ protected:
     Rml::DataModelConstructor* GetDataModelConstructor() const { return modelConstructor_.get(); }
     /// If current focus is invalid, focus on the first valid navigable element.
     void RestoreFocus();
+    /// Schedule element focus by ID on next update. This is useful when focus-ability is not updated yet.
+    void ScheduleFocusById(const ea::string& elementId);
 
     /// Implement Component
     /// @{

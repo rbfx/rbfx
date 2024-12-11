@@ -197,6 +197,11 @@ void RmlUIComponent::RestoreFocus()
     }
 }
 
+void RmlUIComponent::ScheduleFocusById(const ea::string& elementId)
+{
+    pendingFocusId_ = elementId;
+}
+
 void RmlUIComponent::OnSetEnabled()
 {
     UpdateDocumentOpen();
@@ -463,8 +468,10 @@ void RmlUIComponent::DoFocusById(Rml::DataModelHandle model, Rml::Event& event, 
         return;
     }
 
+    const bool enabled = args.size() > 0 ? args[0].Get<bool>() : true;
     const auto& id = args[1].Get<Rml::String>();
-    pendingFocusId_ = id;
+    if (enabled)
+        ScheduleFocusById(id);
 }
 
 void RmlUIComponent::CreateDataModel()
