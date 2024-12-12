@@ -1,38 +1,20 @@
+// Copyright (c) 2022-2024 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-//
-// Copyright (c) 2022-2022 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+#include "Urho3D/Precompiled.h"
 
-#include "../Precompiled.h"
+#include "Urho3D/Engine/StateManager.h"
 
-#include "../Engine/StateManager.h"
-#include "../Engine/StateManagerEvents.h"
-#include "../Core/CoreEvents.h"
-#include "../Core/Thread.h"
-#include "../Graphics/Renderer.h"
-#include "../Graphics/Zone.h"
-#include "../UI/UI.h"
-#include "../Resource/ResourceCache.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/Core/Thread.h"
+#include "Urho3D/Engine/StateManagerEvents.h"
+#include "Urho3D/Graphics/Renderer.h"
+#include "Urho3D/Graphics/Zone.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/UI/UI.h"
 #if URHO3D_SYSTEMUI
-    #include "../SystemUI/Console.h"
+    #include "Urho3D/SystemUI/Console.h"
 #endif
 
 namespace Urho3D
@@ -49,9 +31,11 @@ ApplicationState::ApplicationState(Context* context)
 
 ApplicationState::~ApplicationState() = default;
 
-void ApplicationState::RegisterObject(Context* context) { context->AddFactoryReflection<ApplicationState>(); }
+void ApplicationState::RegisterObject(Context* context)
+{
+    context->AddFactoryReflection<ApplicationState>();
+}
 
-/// Activate game screen. Executed by Application.
 void ApplicationState::Activate(StringVariantMap& bundle)
 {
     if (active_)
@@ -98,28 +82,23 @@ void ApplicationState::Activate(StringVariantMap& bundle)
     }
 }
 
-
-/// Transition into the state complete. Executed by StateManager.
 void ApplicationState::TransitionComplete()
 {
 }
 
-/// Transition out of the state started. Executed by StateManager.
 void ApplicationState::TransitionStarted()
 {
 }
 
-/// Return true if state is ready to be deactivated. Executed by StateManager.
 bool ApplicationState::CanLeaveState() const
 {
     return true;
 }
 
+void ApplicationState::Update(float timeStep)
+{
+}
 
-/// Handle the logic update event.
-void ApplicationState::Update(float timeStep) {}
-
-/// Deactivate game screen. Executed by Application.
 void ApplicationState::Deactivate()
 {
     if (!active_)
@@ -153,7 +132,6 @@ void ApplicationState::Deactivate()
     }
 }
 
-/// Set whether the operating system mouse cursor is visible.
 void ApplicationState::SetMouseVisible(bool enable)
 {
     mouseVisible_ = enable;
@@ -164,7 +142,6 @@ void ApplicationState::SetMouseVisible(bool enable)
     }
 }
 
-/// Set whether the mouse is currently being grabbed by an operation.
 void ApplicationState::SetMouseGrabbed(bool grab)
 {
     mouseGrabbed_ = grab;
@@ -175,7 +152,6 @@ void ApplicationState::SetMouseGrabbed(bool grab)
     }
 }
 
-/// Set the mouse mode.
 void ApplicationState::SetMouseMode(MouseMode mode)
 {
     mouseMode_ = mode;
@@ -185,7 +161,6 @@ void ApplicationState::SetMouseMode(MouseMode mode)
     }
 }
 
-/// Set cursor UI element.
 void ApplicationState::SetCursor(Cursor* cursor)
 {
     cursor_ = cursor;
@@ -206,7 +181,10 @@ void ApplicationState::SetUICustomSize(const IntVector2& size)
     }
 }
 
-void ApplicationState::SetUICustomSize(int width, int height) { SetUICustomSize(IntVector2(width, height)); }
+void ApplicationState::SetUICustomSize(int width, int height)
+{
+    SetUICustomSize(IntVector2(width, height));
+}
 
 void ApplicationState::SetNumViewports(unsigned num)
 {
@@ -272,7 +250,6 @@ Viewport* ApplicationState::GetViewportForScene(Scene* scene, unsigned index) co
 }
 
 #if URHO3D_ACTIONS
-/// Add action to the state's action manager.
 Actions::ActionState* ApplicationState::AddAction(Actions::BaseAction* action, Object* target, bool paused)
 {
     return actionManager_->AddAction(action, target, paused);
@@ -304,7 +281,6 @@ void ApplicationState::InitMouseMode()
     }
 }
 
-// If the user clicks the canvas, attempt to switch to relative mouse mode on web platform
 void ApplicationState::HandleMouseModeRequest(StringHash /*eventType*/, VariantMap& eventData)
 {
 #if URHO3D_SYSTEMUI
@@ -348,9 +324,6 @@ void ApplicationState::HandleUpdate(StringHash eventType, VariantMap& eventData)
     Update(timeStep);
 }
 
-/// Construct. Parse default engine parameters from the command line, and create the engine in an uninitialized
-/// state.
-
 StateManager::StateManager(Context* context)
     : BaseClassName(context)
 {
@@ -360,7 +333,7 @@ StateManager::~StateManager()
 {
     Reset();
 }
-/// Start transition out of current state.
+
 void StateManager::StartTransition()
 {
     if (activeState_)
@@ -375,7 +348,6 @@ void StateManager::StartTransition()
     Notify(E_STATETRANSITIONSTARTED);
 }
 
-/// Complete transition into the current state.
 void StateManager::CompleteTransition()
 {
     if (activeState_)
@@ -385,7 +357,6 @@ void StateManager::CompleteTransition()
     Notify(E_STATETRANSITIONCOMPLETE);
 }
 
-/// Deactivate state.
 void StateManager::DeactivateState()
 {
     if (activeState_)
@@ -397,7 +368,6 @@ void StateManager::DeactivateState()
     }
 }
 
-/// Hard reset of state manager. Current state will be set to nullptr and the queue is purged.
 void StateManager::Reset()
 {
     const bool hasState = activeState_;
@@ -417,7 +387,6 @@ void StateManager::Reset()
     }
 }
 
-/// Set current game state.
 void StateManager::EnqueueState(ApplicationState* gameScreen, StringVariantMap& bundle)
 {
     if (!gameScreen)
@@ -434,14 +403,12 @@ void StateManager::EnqueueState(ApplicationState* gameScreen, StringVariantMap& 
     InitiateTransition();
 }
 
-/// Transition to the application state.
 void StateManager::EnqueueState(ApplicationState* gameScreen)
 {
     StringVariantMap bundle;
     EnqueueState(gameScreen, bundle);
 }
 
-/// Transition to the application state.
 void StateManager::EnqueueState(StringHash type, StringVariantMap& bundle)
 {
     if (!Thread::IsMainThread())
@@ -453,14 +420,18 @@ void StateManager::EnqueueState(StringHash type, StringVariantMap& bundle)
     InitiateTransition();
 }
 
-/// Transition to the application state.
 void StateManager::EnqueueState(StringHash type)
 {
     StringVariantMap bundle;
     EnqueueState(type, bundle);
 }
 
-/// Set current transition state and initialize related values.
+ApplicationState* StateManager::GetCachedState(StringHash type) const
+{
+    const auto iter = stateCache_.find(type);
+    return iter != stateCache_.end() ? iter->second : nullptr;
+}
+
 void StateManager::SetTransitionState(TransitionState state)
 {
     if (transitionState_ == state)
@@ -492,8 +463,7 @@ void StateManager::SetTransitionState(TransitionState state)
         }
         SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(StateManager, HandleUpdate));
         break;
-    default:
-        break;
+    default: break;
     }
     if (transitionState_ == TransitionState::FadeOut)
     {
@@ -526,7 +496,6 @@ void StateManager::UpdateFadeOverlay(float t)
     overlay->SetOpacity(t);
     overlay->SetSize(ui->GetSize());
 }
-
 
 /// Notify subscribers about transition state updates.
 void StateManager::Notify(StringHash eventType)
@@ -567,9 +536,11 @@ void StateManager::InitiateTransition()
     }
 }
 
-ApplicationState* StateManager::GetState() const { return activeState_; }
+ApplicationState* StateManager::GetState() const
+{
+    return activeState_;
+}
 
-/// Get target application state.
 StringHash StateManager::GetTargetState() const
 {
     if (stateQueue_.empty())
@@ -579,7 +550,6 @@ StringHash StateManager::GetTargetState() const
     return stateQueue_.back().stateType_;
 }
 
-/// Get fade overlay
 Window* StateManager::GetFadeOverlay()
 {
     if (!fadeOverlay_)
@@ -594,18 +564,16 @@ Window* StateManager::GetFadeOverlay()
     return fadeOverlay_;
 }
 
-/// Set fade in animation duration;
 void StateManager::SetFadeInDuration(float durationInSeconds)
 {
     fadeInDuration_ = Clamp(durationInSeconds, ea::numeric_limits<float>::epsilon(), ea::numeric_limits<float>::max());
 }
-/// Set fade out animation duration;
+
 void StateManager::SetFadeOutDuration(float durationInSeconds)
 {
     fadeOutDuration_ = Clamp(durationInSeconds, ea::numeric_limits<float>::epsilon(), ea::numeric_limits<float>::max());
 }
 
-/// Handle update event to animate state transitions.
 void StateManager::HandleUpdate(StringHash eventName, VariantMap& args)
 {
     using namespace Update;
@@ -620,7 +588,7 @@ void StateManager::Update(float timeStep)
     {
         switch (transitionState_)
         {
-        case TransitionState::Sustain:
+        case TransitionState::Sustain: //
             return;
         case TransitionState::WaitToExit:
             if (activeState_ && activeState_->CanLeaveState())
@@ -667,7 +635,11 @@ void StateManager::Update(float timeStep)
     } while (timeStep > 0.0f && iterationCount < 16);
 }
 
-/// Dequeue and set next state as active.
+void StateManager::CacheState(ApplicationState* state)
+{
+    stateCache_[state->GetType()] = state;
+}
+
 void StateManager::CreateNextState()
 {
     DeactivateState();
@@ -713,6 +685,5 @@ void StateManager::CreateNextState()
     SetTransitionState(TransitionState::Sustain);
     CompleteTransition();
 }
-
 
 } // namespace Urho3D
