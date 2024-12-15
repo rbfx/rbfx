@@ -114,8 +114,12 @@ HttpRequest::HttpRequest(
 
         HttpRequest* request = static_cast<HttpRequest*>(fetch->userData);
         MutexLock lock(request->mutex_);
-        request->state_ = HTTP_ERROR;
-        request->error_ = fetch->statusText;
+        const bool error = fetch->status == 0;
+        request->state_ = error ? HTTP_ERROR : HTTP_CLOSED;
+        if (error)
+        {
+            request->error_ = fetch->statusText;
+        }
         request->requestHandle_ = nullptr;
         request->statusCode_ = fetch->status;
 
