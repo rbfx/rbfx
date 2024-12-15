@@ -97,8 +97,11 @@ HttpRequest::HttpRequest(
         HttpRequest* request = static_cast<HttpRequest*>(fetch->userData);
         MutexLock lock(request->mutex_);
         request->state_ = HTTP_CLOSED;
-        request->readBuffer_.Resize(fetch->numBytes - 1);
-        request->readBuffer_.SetData(fetch->data, fetch->numBytes - 1);
+        if (fetch->numBytes > 0)
+        {
+            request->readBuffer_.Resize(fetch->numBytes - 1);
+            request->readBuffer_.SetData(fetch->data, fetch->numBytes - 1);
+        }
         request->requestHandle_ = nullptr;
         request->statusCode_ = fetch->status;
 
