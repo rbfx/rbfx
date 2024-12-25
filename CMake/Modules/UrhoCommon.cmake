@@ -88,7 +88,6 @@ else ()
 endif ()
 
 if (EMSCRIPTEN)
-    set (WEB ON)
     set (EMPACKAGER python ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py CACHE PATH "file_packager.py")
     set (EMCC_WITH_SOURCE_MAPS_FLAG -gsource-map --source-map-base=. -fdebug-compilation-dir='.' -gseparate-dwarf)
 endif ()
@@ -104,10 +103,6 @@ endif ()
 # Generate CMake.props which will be included in .csproj files. This function should be called after all targets are
 # added to the project, because it depends on target properties.
 function (rbfx_configure_cmake_props)
-    if (NOT URHO3D_CSHARP)
-        return ()
-    endif ()
-
     if (NOT PROJECT_IS_TOP_LEVEL)
         return ()
     endif ()
@@ -127,6 +122,7 @@ function (rbfx_configure_cmake_props)
         CMAKE_GENERATOR
         CMAKE_RUNTIME_OUTPUT_DIRECTORY
         CMAKE_CONFIGURATION_TYPES
+        URHO3D_CSHARP
         URHO3D_CSHARP_PROPS_FILE
         URHO3D_PLATFORM
         URHO3D_IS_SDK
@@ -145,8 +141,15 @@ function (rbfx_configure_cmake_props)
             if (NOT "${${var}}" MATCHES "^.+/ThirdParty/.+$")
                 string(REPLACE "." "_" var_name "${var}")
                 set(var_value "${${var}}")
-                if (NOT "${var_value}" MATCHES "/$")
-                    set(var_value "${var_value}/")
+                if ("${var_value}" MATCHES "/")
+                    # Paths end with /
+                    if (NOT "${var_value}" MATCHES "/$")
+                        set(var_value "${var_value}/")
+                    endif ()
+                elseif ("${var_value}" MATCHES "1|ON|YES|TRUE|Y|on|yes|true|y|On|Yes|True")
+                    set(var_value "ON")
+                elseif ("${var_value}" MATCHES "0|OFF|NO|FALSE|Y|off|no|false|n|Off|No|False")
+                    set(var_value "OFF")
                 endif ()
                 file(APPEND "${PROPS_OUT}" "    <${var_name}>${var_value}</${var_name}>\n")
             endif ()

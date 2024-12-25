@@ -78,6 +78,10 @@ if ((WIN32 OR LINUX OR MACOS) AND NOT EMSCRIPTEN AND NOT MOBILE AND NOT UWP)
     set (DESKTOP ON)
 endif ()
 
+if (EMSCRIPTEN)
+    set (WEB ON)
+endif ()
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set (CLANG ON)
     set (GNU ON)

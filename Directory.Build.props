@@ -7,7 +7,7 @@
   <Import Project="$(CMAKE_BINARY_DIR)/CMake.props" Condition=" '$(CMakePropsIncluded)' == '' And '$(CMAKE_BINARY_DIR)' != '' And Exists('$(CMAKE_BINARY_DIR)/CMake.props') " />
   <!-- Azure pipelines for some reason have SolutionDir undefined however -->
   <Import Project="$(MSBuildStartupDirectory)/CMake.props" Condition=" '$(CMakePropsIncluded)' == '' And '$(SolutionDir)' == '' And Exists('$(MSBuildStartupDirectory)/CMake.props') " />
-  <PropertyGroup>
+  <PropertyGroup Condition=" '$(URHO3D_CSHARP)' == 'ON' ">
     <LangVersion>7.2</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
