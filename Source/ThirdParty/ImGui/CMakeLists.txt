@@ -28,7 +28,8 @@ file (GLOB SOURCE_FILES
 )
 
 add_library (ImGui STATIC ${SOURCE_FILES})
-target_link_libraries(ImGui PUBLIC SDL2-static STB FreeType EASTL)
+find_package(SDL2 REQUIRED)
+target_link_libraries(ImGui PRIVATE SDL2::SDL2-static STB FreeType EASTL)
 target_compile_definitions(ImGui PRIVATE -DSDL_EXPORTS) # A workaround for MinGW to not try to import SDL APIs from a static library that exports them.
 target_compile_definitions(ImGui PUBLIC -DIMGUI_DEFINE_MATH_OPERATORS=1 -DUSE_IMGUI_API=1)
 target_include_directories(ImGui SYSTEM
