@@ -185,7 +185,8 @@ void RmlUIComponent::UpdatePendingFocus()
 
 void RmlUIComponent::RestoreFocus()
 {
-    if (document_ && !suppressRestoreFocus_ && !IsElementNavigable(document_->GetFocusLeafNode()))
+    if (document_ && document_->IsVisible() && !suppressRestoreFocus_
+        && !IsElementNavigable(document_->GetFocusLeafNode()))
     {
         if (Rml::Element* nextElement = document_->FindNextTabElement(document_, true))
         {
