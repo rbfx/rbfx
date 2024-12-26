@@ -1,0 +1,47 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "MSVC-0",
+            "displayName": "",
+            "binaryDir": "${sourceDir}/cmake-build/MSVC-0",
+            "installDir": "${sourceDir}/cmake-build/MSVC-0-install",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_SHARED_LIBS": "ON",
+                "URHO3D_ENABLE_ALL": "OFF"
+            },
+            "environment": {
+                "CPM_BINARY_CACHE_DISABLED": "0"
+            }
+        },
+        {
+            "name": "MSVC-1",
+            "displayName": "",
+            "binaryDir": "${sourceDir}/cmake-build/MSVC-1",
+            "installDir": "${sourceDir}/cmake-build/MSVC-1-install",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_SHARED_LIBS": "ON",
+                "URHO3D_ENABLE_ALL": "OFF"
+            },
+            "environment": {
+                "CPM_BINARY_CACHE_DISABLED": "0"
+            }
+        },
+        {
+            "name": "MSVC-NoCache",
+            "displayName": "",
+            "binaryDir": "${sourceDir}/cmake-build/MSVC-NoCache",
+            "installDir": "${sourceDir}/cmake-build/MSVC-NoCache-install",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_SHARED_LIBS": "ON",
+                "URHO3D_ENABLE_ALL": "OFF"
+            },
+            "environment": {
+                "CPM_BINARY_CACHE_DISABLED": "1"
+            }
+        }
+    ]
+}
