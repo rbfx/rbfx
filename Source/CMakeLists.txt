@@ -95,5 +95,15 @@ install(FILES
     DESTINATION ${DEST_SHARE_DIR})
 
 # This is a normal install that users are supposed to use.
-install (EXPORT Urho3D DESTINATION ${DEST_SHARE_DIR}/CMake FILE Urho3D_GeneratedConfig.cmake)
-install (FILES ${rbfx_SOURCE_DIR}/CMake/Urho3DConfig.cmake DESTINATION ${DEST_SHARE_DIR}/CMake)
+install (EXPORT Urho3D DESTINATION ${DEST_SHARE_DIR}/CMake FILE Urho3D.cmake)
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    ${rbfx_SOURCE_DIR}/CMake/Urho3DConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfig.cmake
+    INSTALL_DESTINATION ${DEST_SHARE_DIR}/CMake/
+)
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfig.cmake
+    DESTINATION ${DEST_SHARE_DIR}/CMake/
+)
