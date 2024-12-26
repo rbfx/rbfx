@@ -73,6 +73,8 @@ public:
     Rml::ElementDocument* LoadDocument(const ea::string& path);
     /// Show or hide RmlUi debugger.
     void SetDebuggerVisible(bool visible);
+    /// Return whether RmlUi debugger is visible.
+    bool IsDebuggerVisible() const;
     /// Load a font resource for RmlUi to use.
     /// Set fallback parameter to true if font should be used as a fallback font for unsupported characters.
     bool LoadFont(const ea::string& resourceName, bool fallback = false);
