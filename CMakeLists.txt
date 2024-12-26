@@ -23,6 +23,10 @@
 # Set CMake minimum version. Also set in android/build.gradle for android projects.
 cmake_minimum_required (VERSION 3.14)
 
+if (POLICY CMP0177)
+    cmake_policy(SET CMP0177 NEW)
+endif ()
+
 # Get rid of obscene amount of CMake-added targets we do not use.
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
 

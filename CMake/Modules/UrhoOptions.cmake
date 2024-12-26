@@ -51,6 +51,30 @@ endforeach()
 
 include(CMakeDependentOption)
 
+foreach (feature
+    MSVC
+    LINUX
+    ANDROID
+    IOS
+    UWP
+    APPLE
+    MACOS
+    MINGW
+    WEB
+    EMSCRIPTEN
+    MOBILE
+    DESKTOP
+    CLANG
+    GNU
+    GCC
+    HOST_LINUX
+    HOST_WIN32
+    HOST_MACOS)
+    if (NOT ${feature})
+        set (${feature} OFF)
+    endif ()
+endforeach ()
+
 # Set MULTI_CONFIG_PROJECT if applicable
 if (MSVC OR "${CMAKE_GENERATOR}" STREQUAL "Xcode")
     set (MULTI_CONFIG_PROJECT ON)

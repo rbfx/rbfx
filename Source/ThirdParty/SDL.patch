@@ -1,0 +1,1141 @@
+From d6c82b17a4f4656ec1736f71c2a9fe1f04ee73a4 Mon Sep 17 00:00:00 2001
+From: Rokas Kupstys <rokups@zoho.com>
+Date: Tue, 24 Dec 2024 11:25:23 +0200
+Subject: [PATCH] Custom Urho3D/rbfx patches.
+
+---
+ CMakeLists.txt                                |  41 ++++++-
+ .../main/java/org/libsdl/app/SDLActivity.java |  31 ++++-
+ include/SDL_config.h.cmake                    |   4 +
+ include/SDL_cpuinfo.h                         |   8 +-
+ include/SDL_gesture.h                         |   4 +
+ include/SDL_surface.h                         |   5 +
+ include/SDL_video.h                           |   5 +-
+ include/begin_code.h                          |  18 +++
+ src/audio/arts/SDL_artsaudio.h                |   6 +-
+ src/audio/emscripten/SDL_emscriptenaudio.c    |   2 +
+ src/core/android/SDL_android.c                | 106 +++++++++++++++++-
+ src/core/winrt/SDL_winrtapp_direct3d.cpp      |   2 +-
+ src/cpuinfo/SDL_cpuinfo.c                     |  10 ++
+ src/dynapi/SDL_dynapi.h                       |   3 +-
+ src/events/SDL_gesture.c                      |  50 ++++++++-
+ src/events/SDL_mouse.c                        |   4 +
+ src/filesystem/winrt/SDL_sysfilesystem.cpp    |  12 +-
+ src/joystick/SDL_joystick.c                   |   4 +-
+ src/joystick/emscripten/SDL_sysjoystick.c     |   6 +
+ src/sensor/android/SDL_androidsensor.c        |   2 +-
+ src/video/SDL_egl.c                           |   7 ++
+ src/video/SDL_video.c                         |  16 ++-
+ src/video/android/SDL_androidevents.c         |   9 +-
+ src/video/android/SDL_androidvideo.c          |  25 +++++
+ src/video/cocoa/SDL_cocoawindow.m             |   6 +-
+ src/video/haiku/SDL_bkeyboard.h               |   2 +-
+ src/video/uikit/SDL_uikitappdelegate.m        |  49 ++++++++
+ src/video/windows/SDL_windowsevents.c         |   8 +-
+ src/video/windows/SDL_windowskeyboard.c       |   3 +
+ src/video/windows/SDL_windowsmouse.c          |   7 +-
+ src/video/windows/SDL_windowswindow.c         |   7 ++
+ src/video/winrt/SDL_winrtmouse.cpp            |  10 +-
+ src/video/winrt/SDL_winrtvideo.cpp            |  18 ++-
+ src/video/x11/SDL_x11keyboard.c               |   3 +-
+ 34 files changed, 450 insertions(+), 43 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 6b5369937..30fd66060 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -3137,7 +3137,8 @@ if(SDL_STATIC)
+       "$<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include>"
+       "$<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include-config-$<LOWER_CASE:$<CONFIG>>>"
+       "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+-      "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/SDL2>")
++      "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/SDL2>"
++  )
+   # This picks up all the compiler options and such we've accumulated up to here.
+   target_link_libraries(SDL2-static PRIVATE $<BUILD_INTERFACE:sdl-build-options>)
+   if(NOT ANDROID)
+@@ -3340,3 +3341,41 @@ set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} ${CMAKE_C_FLAGS}")
+ if(TARGET SDL2::SDL2-static AND NOT TARGET SDL2::SDL2)
+   add_library(SDL2::SDL2 ALIAS SDL2-static)
+ endif()
++
++########################################################################################################################
++
++# General includes
++# Urho3D - use 'generated' path suffix for generated config header file, the suffic prevents overwriting the header file with the same name in the source tree in case of non out-of-source build tree is being used
++target_include_directories (SDL2-static SYSTEM
++  PUBLIC $<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include/SDL/generated>
++         #$<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>
++)
++if (WEB)
++    target_compile_options(SDL2-static PUBLIC -sUSE_SDL=0)
++endif ()
++if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "10.0")) OR
++("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "11.0")))
++  # Fix multiple definition of `WAYLAND_*' with GCC 10, because -fno-common is a new default.
++  target_compile_options(SDL2-static PRIVATE -fcommon)
++endif ()
++#if (BUILD_SHARED_LIBS)
++#  target_compile_definitions(SDL2-static PRIVATE -DSDL_EXPORTS PUBLIC -DSDL_IMPORTS)
++#endif ()
++if (WIN32)
++  target_link_libraries (SDL2-static PUBLIC user32 gdi32 imm32 version winmm setupapi)
++elseif (ANDROID)
++  target_link_libraries (SDL2-static PUBLIC dl log android)
++elseif (APPLE)
++  target_link_libraries (SDL2-static PUBLIC iconv "-framework AudioToolbox" "-framework CoreAudio")
++  if (IOS)
++    target_link_libraries (SDL2-static PUBLIC "-framework AVFoundation" "-framework CoreGraphics" "-framework CoreBluetooth" "-framework CoreMotion" "-framework Foundation" "-framework GameController" "-framework OpenGLES" "-framework QuartzCore" "-framework UIKit")
++  else ()
++    target_link_libraries (SDL2-static PUBLIC "-framework Carbon" "-framework Cocoa" "-framework CoreFoundation" "-framework SystemConfiguration" "-framework CoreServices" "-framework CoreVideo" "-framework ForceFeedback" "-framework IOKit" "-framework OpenGL")
++  endif ()
++elseif (EMSCRIPTEN)
++  target_link_libraries(SDL2-static PUBLIC "-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0")
++endif ()
++
++if (IOS OR UWP OR ANDROID)
++    target_sources(SDL2-static PRIVATE ${SDLMAIN_SOURCES})
++endif ()
+diff --git a/android-project/app/src/main/java/org/libsdl/app/SDLActivity.java b/android-project/app/src/main/java/org/libsdl/app/SDLActivity.java
+index d982943a1..830ce09b2 100644
+--- a/android-project/app/src/main/java/org/libsdl/app/SDLActivity.java
++++ b/android-project/app/src/main/java/org/libsdl/app/SDLActivity.java
+@@ -58,6 +58,9 @@ import android.widget.Toast;
+ 
+ import java.util.Hashtable;
+ import java.util.Locale;
++import java.util.List;
++
++import io.urho3d.UrhoActivity;
+ 
+ 
+ /**
+@@ -239,11 +242,15 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
+         return mMotionListener;
+     }
+ 
++    // Urho3D - default implementation returns the last shared lib being loaded
++    private static String mMainSharedLib;
++
+     /**
+      * This method returns the name of the shared object with the application entry point
+      * It can be overridden by derived classes.
+      */
+     protected String getMainSharedObject() {
++        /*
+         String library;
+         String[] libraries = SDLActivity.mSingleton.getLibraries();
+         if (libraries.length > 0) {
+@@ -252,6 +259,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
+             library = "libmain.so";
+         }
+         return getContext().getApplicationInfo().nativeLibraryDir + "/" + library;
++        */
++        // Urho3D - should not be called before the library is loaded.
++        return mMainSharedLib;
+     }
+ 
+     /**
+@@ -270,6 +280,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
+      * Also keep in mind that the order the libraries are loaded may matter.
+      * @return names of shared libraries to be loaded (e.g. "SDL2", "main").
+      */
++    /*
+     protected String[] getLibraries() {
+         return new String[] {
+             "SDL2",
+@@ -287,6 +298,14 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
+           SDL.loadLibrary(lib);
+        }
+     }
++    */
++    // Urho3D - avoid hardcoding of the library list
++    protected void onLoadLibrary(List<String> libraryNames) {
++        for (final String name : libraryNames) {
++            SDL.loadLibrary(name);
++        }
++        mMainSharedLib = "lib" + libraryNames.get(libraryNames.size() - 1) + ".so";
++    }
+ 
+     /**
+      * This method is called by SDL before starting the native application thread.
+@@ -295,7 +314,8 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
+      * @return arguments for the native application.
+      */
+     protected String[] getArguments() {
+-        return new String[0];
++        // Urho3D - the default implementation returns the "app_process" as the first argument instead of empty array
++        return new String[]{"app_process"};
+     }
+ 
+     public static void initialize() {
+@@ -329,17 +349,18 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
+             Log.v(TAG, "modify thread properties failed " + e.toString());
+         }
+ 
+-        // Load shared libraries
++        // Urho3D - auto load all the shared libraries available in the library path
+         String errorMsgBrokenLib = "";
+         try {
+-            loadLibraries();
++            //loadLibraries();
++            onLoadLibrary(UrhoActivity.getLibraryNames(this));
+             mBrokenLibraries = false; /* success */
+         } catch(UnsatisfiedLinkError e) {
+             System.err.println(e.getMessage());
+             mBrokenLibraries = true;
+             errorMsgBrokenLib = e.getMessage();
+         } catch(Exception e) {
+-            System.err.println(e.getMessage());
++            //System.err.println(e.getMessage());
+             mBrokenLibraries = true;
+             errorMsgBrokenLib = e.getMessage();
+         }
+@@ -652,6 +673,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
+         // Ignore certain special keys so they're handled by Android
+         if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN ||
+             keyCode == KeyEvent.KEYCODE_VOLUME_UP ||
++            keyCode == KeyEvent.KEYCODE_HOME || // Urho3D - also ignore the Home key
+             keyCode == KeyEvent.KEYCODE_CAMERA ||
+             keyCode == KeyEvent.KEYCODE_ZOOM_IN || /* API 11 */
+             keyCode == KeyEvent.KEYCODE_ZOOM_OUT /* API 11 */
+@@ -2466,4 +2488,3 @@ class SDLClipboardHandler implements
+         SDLActivity.onNativeClipboardChanged();
+     }
+ }
+-
+diff --git a/include/SDL_config.h.cmake b/include/SDL_config.h.cmake
+index 2d21b37dd..1339f8993 100644
+--- a/include/SDL_config.h.cmake
++++ b/include/SDL_config.h.cmake
+@@ -524,9 +524,13 @@
+ /* Enable ime support */
+ #cmakedefine SDL_USE_IME @SDL_USE_IME@
+ 
++/* Enable dynamic udev support */
++#cmakedefine SDL_UDEV_DYNAMIC @SDL_UDEV_DYNAMIC@
++
+ /* Platform specific definitions */
+ #cmakedefine SDL_IPHONE_KEYBOARD @SDL_IPHONE_KEYBOARD@
+ #cmakedefine SDL_IPHONE_LAUNCHSCREEN @SDL_IPHONE_LAUNCHSCREEN@
++#cmakedefine SDL_IPHONE_MAX_GFORCE @SDL_IPHONE_MAX_GFORCE@
+ 
+ #cmakedefine SDL_VIDEO_VITA_PIB @SDL_VIDEO_VITA_PIB@
+ #cmakedefine SDL_VIDEO_VITA_PVR @SDL_VIDEO_VITA_PVR@
+diff --git a/include/SDL_cpuinfo.h b/include/SDL_cpuinfo.h
+index 43a8ac501..799fc9dcc 100644
+--- a/include/SDL_cpuinfo.h
++++ b/include/SDL_cpuinfo.h
+@@ -82,7 +82,7 @@ _m_prefetch(void *__P)
+ #  elif defined(__WINDOWS__) || defined(__WINRT__) || defined(__GDK__)
+ /* Visual Studio doesn't define __ARM_ARCH, but _M_ARM (if set, always 7), and _M_ARM64 (if set, always 1). */
+ #    if defined(_M_ARM)
+-#      include <armintr.h>
++//#      include <armintr.h>    // rbfx fix for UWP ARM64
+ #      include <arm_neon.h>
+ #      define __ARM_NEON 1 /* Set __ARM_NEON so that it can be used elsewhere, at compile time */
+ #    endif
+@@ -495,6 +495,11 @@ extern DECLSPEC int SDLCALL SDL_GetSystemRAM(void);
+  */
+ extern DECLSPEC size_t SDLCALL SDL_SIMDGetAlignment(void);
+ 
++// Urho3D - bug fix - check if SIMD is supported
++#ifdef __EMSCRIPTEN__
++#define SDL_SIMDAlloc SDL_malloc
++#define SDL_SIMDFree SDL_free
++#else
+ /**
+  * Allocate memory in a SIMD-friendly way.
+  *
+@@ -581,6 +586,7 @@ extern DECLSPEC void * SDLCALL SDL_SIMDRealloc(void *mem, const size_t len);
+  * \sa SDL_SIMDRealloc
+  */
+ extern DECLSPEC void SDLCALL SDL_SIMDFree(void *ptr);
++#endif  // __EMSCRIPTEN__
+ 
+ /* Ends C function definitions when using C++ */
+ #ifdef __cplusplus
+diff --git a/include/SDL_gesture.h b/include/SDL_gesture.h
+index e2caea2a9..72ee4a293 100644
+--- a/include/SDL_gesture.h
++++ b/include/SDL_gesture.h
+@@ -106,6 +106,10 @@ extern DECLSPEC int SDLCALL SDL_SaveDollarTemplate(SDL_GestureID gestureId,SDL_R
+  */
+ extern DECLSPEC int SDLCALL SDL_LoadDollarTemplates(SDL_TouchID touchId, SDL_RWops *src);
+ 
++// Urho3d: added functions
++extern DECLSPEC int SDLCALL SDL_RemoveDollarTemplate(SDL_GestureID gestureId);
++extern DECLSPEC void SDLCALL SDL_RemoveAllDollarTemplates(void);
++
+ /* Ends C function definitions when using C++ */
+ #ifdef __cplusplus
+ }
+diff --git a/include/SDL_surface.h b/include/SDL_surface.h
+index 838de654e..52eccbe19 100644
+--- a/include/SDL_surface.h
++++ b/include/SDL_surface.h
+@@ -53,7 +53,12 @@ extern "C" {
+ #define SDL_PREALLOC        0x00000001  /**< Surface uses preallocated memory */
+ #define SDL_RLEACCEL        0x00000002  /**< Surface is RLE encoded */
+ #define SDL_DONTFREE        0x00000004  /**< Surface is referenced internally */
++// Urho3D - bug fix - check if SIMD is supported
++#ifdef __EMSCRIPTEN__
++#define SDL_SIMD_ALIGNED    0
++#else
+ #define SDL_SIMD_ALIGNED    0x00000008  /**< Surface uses aligned memory */
++#endif
+ /* @} *//* Surface flags */
+ 
+ /**
+diff --git a/include/SDL_video.h b/include/SDL_video.h
+index 0b1065dbb..6ad4334dd 100644
+--- a/include/SDL_video.h
++++ b/include/SDL_video.h
+@@ -796,9 +796,10 @@ extern DECLSPEC SDL_Window * SDLCALL SDL_CreateWindow(const char *title,
+  * \since This function is available since SDL 2.0.0.
+  *
+  * \sa SDL_CreateWindow
+- * \sa SDL_DestroyWindow
++ * \sa SDL_DestroyWindowSDL_LoadDollarTemplates
+  */
+-extern DECLSPEC SDL_Window * SDLCALL SDL_CreateWindowFrom(const void *data);
++// Urho3D: added window flags parameter
++extern DECLSPEC SDL_Window * SDLCALL SDL_CreateWindowFrom(const void *data, Uint32 flags);
+ 
+ /**
+  * Get the numeric ID of a window.
+diff --git a/include/begin_code.h b/include/begin_code.h
+index b3e69e85c..3c5d9df5c 100644
+--- a/include/begin_code.h
++++ b/include/begin_code.h
+@@ -49,7 +49,22 @@
+ #  endif
+ #endif
+ 
++// rbfx: Custom export logic to facilitate exporting lib API from main engine dll.
++#if _WIN32
++#   if defined(SDL_EXPORTS)
++#       define DECLSPEC __declspec(dllexport)
++#   elif defined(SDL_IMPORTS)
++#       define DECLSPEC __declspec(dllimport)
++#	else
++#		define DECLSPEC
++#   endif
++#elif SDL_EXPORTS || SDL_IMPORTS
++#   define DECLSPEC __attribute__((visibility("default")))
++#else
++#   define DECLSPEC
++#endif
+ /* Some compilers use a special export keyword */
++/*
+ #ifndef DECLSPEC
+ # if defined(__WIN32__) || defined(__WINRT__) || defined(__CYGWIN__) || defined(__GDK__)
+ #  ifdef DLL_EXPORT
+@@ -71,6 +88,7 @@
+ #  endif
+ # endif
+ #endif
++*/
+ 
+ /* By default SDL uses the C calling convention */
+ #ifndef SDLCALL
+diff --git a/src/audio/arts/SDL_artsaudio.h b/src/audio/arts/SDL_artsaudio.h
+index 0f6e1693c..0c78588b5 100644
+--- a/src/audio/arts/SDL_artsaudio.h
++++ b/src/audio/arts/SDL_artsaudio.h
+@@ -18,12 +18,16 @@
+      misrepresented as being the original software.
+   3. This notice may not be removed or altered from any source distribution.
+ */
++
++// Modified by Yao Wei Tjong for Urho3D
++
+ #include "../../SDL_internal.h"
+ 
+ #ifndef SDL_artsaudio_h_
+ #define SDL_artsaudio_h_
+ 
+-#include <artsc.h>
++// Urho3D - bug fix - use the correct include path to avoid adding artsc-specific include directory into header search path
++#include <artsc/artsc.h>
+ 
+ #include "../SDL_sysaudio.h"
+ 
+diff --git a/src/audio/emscripten/SDL_emscriptenaudio.c b/src/audio/emscripten/SDL_emscriptenaudio.c
+index bfe42821a..4ceb9f9ec 100644
+--- a/src/audio/emscripten/SDL_emscriptenaudio.c
++++ b/src/audio/emscripten/SDL_emscriptenaudio.c
+@@ -33,6 +33,8 @@
+    !!! FIXME:  true always once pthread support becomes widespread. Revisit this code
+    !!! FIXME:  at some point and see what needs to be done for that! */
+ 
++EM_JS_DEPS(main, "$autoResumeAudioContext");
++
+ static void
+ FeedAudioDevice(_THIS, const void *buf, const int buflen)
+ {
+diff --git a/src/core/android/SDL_android.c b/src/core/android/SDL_android.c
+index b0884eda8..ac90cc537 100644
+--- a/src/core/android/SDL_android.c
++++ b/src/core/android/SDL_android.c
+@@ -369,6 +369,9 @@ static void Internal_Android_Destroy_AssetManager(void);
+ static AAssetManager *asset_manager = NULL;
+ static jobject javaAssetManagerRef = 0;
+ 
++// Urho3D: application files dir
++static char* mFilesDir = 0;
++
+ /*******************************************************************************
+                  Functions called by JNI
+ *******************************************************************************/
+@@ -536,6 +539,12 @@ void checkJNIReady(void)
+     SDL_SetMainReady();
+ }
+ 
++// Urho3D: added function
++const char* SDL_Android_GetFilesDir()
++{
++    return mFilesDir;
++}
++
+ /* Activity initialization -- called before SDL_main() to initialize JNI bindings */
+ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSetupJNI)(JNIEnv *env, jclass cls)
+ {
+@@ -748,13 +757,10 @@ JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(JNIEnv *env, jclass cls,
+             SDL_bool isstack;
+ 
+             /* Prepare the arguments. */
++            // Urho3D: Remove any assumption on the arguments, except that the first argument will be the program name set by SDLActivity or its subclass
+             len = (*env)->GetArrayLength(env, array);
+-            argv = SDL_small_alloc(char *, 1 + len + 1, &isstack);  /* !!! FIXME: check for NULL */
++            argv = SDL_small_alloc(char *, len + 1, &isstack);  /* !!! FIXME: check for NULL */
+             argc = 0;
+-            /* Use the name "app_process" so PHYSFS_platformCalcBaseDir() works.
+-               https://bitbucket.org/MartinFelis/love-android-sdl2/issue/23/release-build-crash-on-start
+-             */
+-            argv[argc++] = SDL_strdup("app_process");
+             for (i = 0; i < len; ++i) {
+                 const char *utf;
+                 char *arg = NULL;
+@@ -774,6 +780,27 @@ JNIEXPORT int JNICALL SDL_JAVA_INTERFACE(nativeRunMain)(JNIEnv *env, jclass cls,
+             }
+             argv[argc] = NULL;
+ 
++            // Urho3D: Set the files dir
++            jobject context = (*env)->CallStaticObjectMethod(env, mActivityClass, midGetContext);
++            jmethodID mid = (*env)->GetMethodID(env, (*env)->GetObjectClass(env, context),
++                "getFilesDir", "()Ljava/io/File;");
++            jobject dir = (*env)->CallObjectMethod(env, context, mid);
++            mid = (*env)->GetMethodID(env, (*env)->GetObjectClass(env, dir),
++                "getAbsolutePath", "()Ljava/lang/String;");
++            jstring filesDir = (jstring)(*env)->CallObjectMethod(env, dir, mid);
++
++            const char *str;
++            str = (*env)->GetStringUTFChars(env, filesDir, 0);
++            if (str)
++            {
++                if (mFilesDir)
++                    free(mFilesDir);
++
++                size_t length = strlen(str) + 1;
++                mFilesDir = (char*)malloc(length);
++                memcpy(mFilesDir, str, length);
++                (*env)->ReleaseStringUTFChars(env, filesDir, str);
++            }
+ 
+             /* Run the application. */
+             status = SDL_main(argc, argv);
+@@ -1169,6 +1196,14 @@ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(onNativeLocaleChanged)(
+ JNIEXPORT void JNICALL SDL_JAVA_INTERFACE(nativeSendQuit)(
+                                     JNIEnv *env, jclass cls)
+ {
++    // Urho3D: added log print
++    __android_log_print(ANDROID_LOG_VERBOSE, "SDL", "nativeQuit()");
++    // Urho3D: Free the memory that we allocate during init
++    if (mFilesDir) {
++        free(mFilesDir);
++        mFilesDir = 0;
++    }
++
+     /* Discard previous events. The user should have handled state storage
+      * in SDL_APP_WILLENTERBACKGROUND. After nativeSendQuit() is called, no
+      * events other than SDL_QUIT and SDL_APP_TERMINATING should fire */
+@@ -2256,6 +2291,67 @@ int Android_JNI_ShowMessageBox(const SDL_MessageBoxData *messageboxdata, int *bu
+ //////////////////////////////////////////////////////////////////////////////
+ */
+ 
++// Urho3D - function to return a list of files under a given path in "assets" directory (caller is responsible to free the C string array)
++char** SDL_Android_GetFileList(const char* path, int* count)
++{
++    struct LocalReferenceHolder refs = LocalReferenceHolder_Setup(__FUNCTION__);
++    JNIEnv* env = Android_JNI_GetEnv();
++    if (!LocalReferenceHolder_Init(&refs, env))
++    {
++        LocalReferenceHolder_Cleanup(&refs);
++        return NULL;
++    }
++
++    jstring pathJString = (*env)->NewStringUTF(env, path);
++
++    /* context = SDLActivity.getContext(); */
++    jobject context = (*env)->CallStaticObjectMethod(env, mActivityClass, midGetContext);
++
++    /* assetManager = context.getAssets(); */
++    jmethodID mid = (*env)->GetMethodID(env, (*env)->GetObjectClass(env, context),
++            "getAssets", "()Landroid/content/res/AssetManager;");
++    jobject assetManager = (*env)->CallObjectMethod(env, context, mid);
++
++    /* stringArray = assetManager.list(path) */
++    mid = (*env)->GetMethodID(env, (*env)->GetObjectClass(env, assetManager), "list", "(Ljava/lang/String;)[Ljava/lang/String;");
++    jobjectArray stringArray = (*env)->CallObjectMethod(env, assetManager, mid, pathJString);
++    if (Android_JNI_ExceptionOccurred(SDL_TRUE))
++    {
++        LocalReferenceHolder_Cleanup(&refs);
++        return NULL;
++    }
++
++    jsize arrayLength = (*env)->GetArrayLength(env, stringArray);
++    char** cStringArray = (char**)SDL_malloc(arrayLength * sizeof(char*));
++    jint i;
++    for (i = 0; i < arrayLength; ++i)
++    {
++        jstring string = (jstring)(*env)->GetObjectArrayElement(env, stringArray, i);
++        const char* cString = (*env)->GetStringUTFChars(env, string, 0);
++        cStringArray[i] = cString ? SDL_strdup(cString) : NULL;
++        (*env)->ReleaseStringUTFChars(env, string, cString);
++    }
++
++    *count = arrayLength;
++
++    LocalReferenceHolder_Cleanup(&refs);
++    return cStringArray;
++}
++
++// Urho3D - helper function to free the file list returned by SDL_Android_GetFileList()
++void SDL_Android_FreeFileList(char*** array, int* count)
++{
++    int i = *count;
++    if ((i > 0) && (*array != NULL))
++    {
++        while (i--)
++            SDL_free((*array)[i]);
++    }
++    SDL_free(*array);
++    *array = NULL;
++    *count = 0;
++}
++
+ void *SDL_AndroidGetJNIEnv(void)
+ {
+     return Android_JNI_GetEnv();
+diff --git a/src/core/winrt/SDL_winrtapp_direct3d.cpp b/src/core/winrt/SDL_winrtapp_direct3d.cpp
+index 1f0962fca..700c41d69 100644
+--- a/src/core/winrt/SDL_winrtapp_direct3d.cpp
++++ b/src/core/winrt/SDL_winrtapp_direct3d.cpp
+@@ -24,7 +24,7 @@
+ #include <functional>
+ #include <string>
+ #include <sstream>
+-using namespace std;
++//using namespace std;  // rbfx fix
+ 
+ 
+ /* Windows includes */
+diff --git a/src/cpuinfo/SDL_cpuinfo.c b/src/cpuinfo/SDL_cpuinfo.c
+index 8221f7796..05da51f80 100644
+--- a/src/cpuinfo/SDL_cpuinfo.c
++++ b/src/cpuinfo/SDL_cpuinfo.c
+@@ -1097,6 +1097,15 @@ SDL_GetSystemRAM(void)
+ }
+ 
+ 
++// Urho3D - bug fix - check if SIMD is supported
++#ifdef __EMSCRIPTEN__
++size_t
++SDL_SIMDGetAlignment(void)
++{
++    SDL_assert(0 && "We should never get here if the platform does not support SIMD");
++    return 4;
++}
++#else
+ size_t
+ SDL_SIMDGetAlignment(void)
+ {
+@@ -1196,6 +1205,7 @@ SDL_SIMDFree(void *ptr)
+         SDL_free(*(((void **) ptr) - 1));
+     }
+ }
++#endif
+ 
+ 
+ #ifdef TEST_MAIN
+diff --git a/src/dynapi/SDL_dynapi.h b/src/dynapi/SDL_dynapi.h
+index dc53e58b2..ebad8faac 100644
+--- a/src/dynapi/SDL_dynapi.h
++++ b/src/dynapi/SDL_dynapi.h
+@@ -69,7 +69,8 @@
+ 
+ /* everyone else. This is where we turn on the API if nothing forced it off. */
+ #ifndef SDL_DYNAMIC_API
+-#define SDL_DYNAMIC_API 1
++// Urho3D: disabled dynamic API
++#define SDL_DYNAMIC_API 0
+ #endif
+ 
+ #endif
+diff --git a/src/events/SDL_gesture.c b/src/events/SDL_gesture.c
+index 2cdb0d594..89d2d5446 100644
+--- a/src/events/SDL_gesture.c
++++ b/src/events/SDL_gesture.c
+@@ -174,7 +174,8 @@ int SDL_SaveDollarTemplate(SDL_GestureID gestureId, SDL_RWops *dst)
+     for (i = 0; i < SDL_numGestureTouches; i++) {
+         SDL_GestureTouch* touch = &SDL_gestureTouch[i];
+         for (j = 0; j < touch->numDollarTemplates; j++) {
+-            if (touch->dollarTemplate[j].hash == gestureId) {
++            // Urho3D: gesture IDs are stored as 32bit, so check the low bits only. Fix index variable (i -> j)
++            if ((touch->dollarTemplate[j].hash & 0xffffffff) == (gestureId & 0xffffffff)) {
+                 return SaveTemplate(&touch->dollarTemplate[j], dst);
+             }
+         }
+@@ -182,6 +183,53 @@ int SDL_SaveDollarTemplate(SDL_GestureID gestureId, SDL_RWops *dst)
+     return SDL_SetError("Unknown gestureId");
+ }
+ 
++// Urho3D: added function
++static void SDL_RemoveDollarTemplate_one(SDL_GestureTouch* inTouch, int index)
++{
++    if (index < inTouch->numDollarTemplates - 1) {
++        SDL_memmove(&inTouch->dollarTemplate[index], &inTouch->dollarTemplate[index + 1],
++            (inTouch->numDollarTemplates - 1 - index) * sizeof(SDL_DollarTemplate));
++    }
++    if (inTouch->numDollarTemplates > 1) {
++        inTouch->dollarTemplate = SDL_realloc(inTouch->dollarTemplate,
++            (inTouch->numDollarTemplates - 1) * sizeof(SDL_DollarTemplate));
++    }
++    else {
++        SDL_free(inTouch->dollarTemplate);
++        inTouch->dollarTemplate = NULL;
++    }
++    --inTouch->numDollarTemplates;
++}
++
++// Urho3D: added function
++int SDL_RemoveDollarTemplate(SDL_GestureID gestureId)
++{
++    int i,j,ret = 0;
++    for (i = 0; i < SDL_numGestureTouches; i++) {
++        SDL_GestureTouch* touch = &SDL_gestureTouch[i];
++        for (j = 0; j < touch->numDollarTemplates; j++) {
++            // Urho3D: gesture IDs are stored as 32bit, so check the low bits only
++            if ((touch->dollarTemplate[j].hash & 0xffffffff) == (gestureId & 0xffffffff)) {
++                SDL_RemoveDollarTemplate_one(touch, j);
++                ret = 1;
++            }
++        }
++    }
++    return ret;
++}
++
++// Urho3D: added function
++void SDL_RemoveAllDollarTemplates(void)
++{
++    int i;
++    for (i = 0; i < SDL_numGestureTouches; i++) {
++        SDL_GestureTouch* touch = &SDL_gestureTouch[i];
++        SDL_free(touch->dollarTemplate);
++        touch->dollarTemplate = NULL;
++        touch->numDollarTemplates = 0;
++    }
++}
++
+ /* path is an already sampled set of points
+ Returns the index of the gesture on success, or -1 */
+ static int SDL_AddDollarGesture_one(SDL_GestureTouch* inTouch, SDL_FloatPoint* path)
+diff --git a/src/events/SDL_mouse.c b/src/events/SDL_mouse.c
+index ae85a0c1e..d543800e0 100644
+--- a/src/events/SDL_mouse.c
++++ b/src/events/SDL_mouse.c
+@@ -929,6 +929,10 @@ SDL_PerformWarpMouseInWindow(SDL_Window *window, int x, int y, SDL_bool ignore_r
+     } else {
+         SDL_PrivateSendMouseMotion(window, mouse->mouseID, 0, x, y);
+     }
++
++    // Urho3D: update mouse internal state immediately
++    mouse->last_x = mouse->x = x;
++    mouse->last_y = mouse->y = y;
+ }
+ 
+ void
+diff --git a/src/filesystem/winrt/SDL_sysfilesystem.cpp b/src/filesystem/winrt/SDL_sysfilesystem.cpp
+index 115b45b1a..3f90244e1 100644
+--- a/src/filesystem/winrt/SDL_sysfilesystem.cpp
++++ b/src/filesystem/winrt/SDL_sysfilesystem.cpp
+@@ -37,7 +37,7 @@ extern "C" {
+ #include <string>
+ #include <unordered_map>
+ 
+-using namespace std;
++//using namespace std;  // rbfx fix
+ using namespace Windows::Storage;
+ 
+ extern "C" const wchar_t *
+@@ -46,7 +46,7 @@ SDL_WinRTGetFSPathUNICODE(SDL_WinRT_Path pathType)
+     switch (pathType) {
+         case SDL_WINRT_PATH_INSTALLED_LOCATION:
+         {
+-            static wstring path;
++            static std::wstring path;
+             if (path.empty()) {
+ #if defined(NTDDI_WIN10_19H1) && (NTDDI_VERSION >= NTDDI_WIN10_19H1) && (WINAPI_FAMILY == WINAPI_FAMILY_PC_APP) /* Only PC supports mods */
+                 /* Windows 1903 supports mods, via the EffectiveLocation API */
+@@ -64,7 +64,7 @@ SDL_WinRTGetFSPathUNICODE(SDL_WinRT_Path pathType)
+ 
+         case SDL_WINRT_PATH_LOCAL_FOLDER:
+         {
+-            static wstring path;
++            static std::wstring path;
+             if (path.empty()) {
+                 path = ApplicationData::Current->LocalFolder->Path->Data();
+             }
+@@ -74,7 +74,7 @@ SDL_WinRTGetFSPathUNICODE(SDL_WinRT_Path pathType)
+ #if (WINAPI_FAMILY != WINAPI_FAMILY_PHONE_APP) || (NTDDI_VERSION > NTDDI_WIN8)
+         case SDL_WINRT_PATH_ROAMING_FOLDER:
+         {
+-            static wstring path;
++            static std::wstring path;
+             if (path.empty()) {
+                 path = ApplicationData::Current->RoamingFolder->Path->Data();
+             }
+@@ -83,7 +83,7 @@ SDL_WinRTGetFSPathUNICODE(SDL_WinRT_Path pathType)
+ 
+         case SDL_WINRT_PATH_TEMP_FOLDER:
+         {
+-            static wstring path;
++            static std::wstring path;
+             if (path.empty()) {
+                 path = ApplicationData::Current->TemporaryFolder->Path->Data();
+             }
+@@ -102,7 +102,7 @@ SDL_WinRTGetFSPathUNICODE(SDL_WinRT_Path pathType)
+ extern "C" const char *
+ SDL_WinRTGetFSPathUTF8(SDL_WinRT_Path pathType)
+ {
+-    typedef unordered_map<SDL_WinRT_Path, string> UTF8PathMap;
++    typedef std::unordered_map<SDL_WinRT_Path, std::string> UTF8PathMap;
+     static UTF8PathMap utf8Paths;
+ 
+     UTF8PathMap::iterator searchResult = utf8Paths.find(pathType);
+diff --git a/src/joystick/SDL_joystick.c b/src/joystick/SDL_joystick.c
+index 26b017bb9..01e164c28 100644
+--- a/src/joystick/SDL_joystick.c
++++ b/src/joystick/SDL_joystick.c
+@@ -2309,9 +2309,11 @@ static SDL_bool SDL_IsJoystickProductArcadeStick(Uint32 vidpid)
+ static SDL_bool SDL_IsJoystickProductFlightStick(Uint32 vidpid)
+ {
+     static Uint32 flightstick_joysticks[] = {
+-        MAKE_VIDPID(0x044f, 0x0402),    /* HOTAS Warthog Joystick */
+         MAKE_VIDPID(0x0738, 0x2221),    /* Saitek Pro Flight X-56 Rhino Stick */
++        MAKE_VIDPID(0x044f, 0x0402),    /* ThrustMaster, Inc. HOTAS Warthog Joystick */
++        MAKE_VIDPID(0x044f, 0xb108),    /* ThrustMaster, Inc. T.Flight Hotas X Joystick */
+         MAKE_VIDPID(0x044f, 0xb10a),    /* ThrustMaster, Inc. T.16000M Joystick */
++        MAKE_VIDPID(0x11c0, 0x5603),    /* Defender COBRA M5 USB Joystick */
+     };
+     int i;
+ 
+diff --git a/src/joystick/emscripten/SDL_sysjoystick.c b/src/joystick/emscripten/SDL_sysjoystick.c
+index 1664a907c..62335dbdf 100644
+--- a/src/joystick/emscripten/SDL_sysjoystick.c
++++ b/src/joystick/emscripten/SDL_sysjoystick.c
+@@ -186,6 +186,12 @@ EMSCRIPTEN_JoystickInit(void)
+     int retval, i, numjs;
+     EmscriptenGamepadEvent gamepadState;
+ 
++    retval = emscripten_sample_gamepad_data();
++    /* Check if gamepad is supported by browser */
++    if (retval == EMSCRIPTEN_RESULT_NOT_SUPPORTED) {
++        return SDL_SetError("Gamepads not supported");
++    }
++
+     numjoysticks = 0;
+ 
+     retval = emscripten_sample_gamepad_data();
+diff --git a/src/sensor/android/SDL_androidsensor.c b/src/sensor/android/SDL_androidsensor.c
+index e6cfc2302..9484857df 100644
+--- a/src/sensor/android/SDL_androidsensor.c
++++ b/src/sensor/android/SDL_androidsensor.c
+@@ -171,7 +171,7 @@ SDL_ANDROID_SensorUpdate(SDL_Sensor *sensor)
+     ASensorEvent event;
+     struct android_poll_source* source;
+ 
+-    if (ALooper_pollAll(0, NULL, &events, (void**)&source) == LOOPER_ID_USER) {
++    if (ALooper_pollOnce(0, NULL, &events, (void**)&source) == LOOPER_ID_USER) {
+         SDL_zero(event);
+         while (ASensorEventQueue_getEvents(sensor->hwdata->eventqueue, &event, 1) > 0) {
+             SDL_PrivateSensorUpdate(sensor, event.data, SDL_arraysize(event.data));
+diff --git a/src/video/SDL_egl.c b/src/video/SDL_egl.c
+index c768b9914..1aa905496 100644
+--- a/src/video/SDL_egl.c
++++ b/src/video/SDL_egl.c
+@@ -1291,6 +1291,13 @@ SDL_EGL_DestroySurface(_THIS, EGLSurface egl_surface)
+     }
+ }
+ 
++EGLConfig
++SDL_EGL_GetConfig()
++{
++    SDL_VideoDevice* _this = SDL_GetVideoDevice();
++    return _this->egl_data ? _this->egl_data->egl_config : NULL;
++}
++
+ #endif /* SDL_VIDEO_OPENGL_EGL */
+ 
+ /* vi: set ts=4 sw=4 expandtab: */
+diff --git a/src/video/SDL_video.c b/src/video/SDL_video.c
+index 21c516265..dfe9451b7 100644
+--- a/src/video/SDL_video.c
++++ b/src/video/SDL_video.c
+@@ -1773,11 +1773,12 @@ SDL_CreateWindow(const char *title, int x, int y, int w, int h, Uint32 flags)
+     return window;
+ }
+ 
++// Urho3D: added flags parameter
+ SDL_Window *
+-SDL_CreateWindowFrom(const void *data)
++SDL_CreateWindowFrom(const void *data, Uint32 flags)
+ {
+     SDL_Window *window;
+-    Uint32 flags = SDL_WINDOW_FOREIGN;
++    flags |= SDL_WINDOW_FOREIGN;
+ 
+     if (!_this) {
+         SDL_UninitializedVideo();
+@@ -1836,6 +1837,17 @@ SDL_CreateWindowFrom(const void *data)
+     }
+     _this->windows = window;
+ 
++    // Urho3D: load OpenGL if initializing an external OpenGL window
++    if (flags & SDL_WINDOW_OPENGL) {
++        if (!_this->GL_CreateContext) {
++            SDL_SetError("No OpenGL support in video driver");
++            SDL_DestroyWindow(window);
++            return NULL;
++        }
++        SDL_GL_LoadLibrary(NULL);
++        window->flags |= SDL_WINDOW_OPENGL;
++    }
++
+     if (_this->CreateSDLWindowFrom(_this, window, data) < 0) {
+         SDL_DestroyWindow(window);
+         return NULL;
+diff --git a/src/video/android/SDL_androidevents.c b/src/video/android/SDL_androidevents.c
+index 3424a8254..a05596156 100644
+--- a/src/video/android/SDL_androidevents.c
++++ b/src/video/android/SDL_androidevents.c
+@@ -74,12 +74,15 @@ android_egl_context_restore(SDL_Window *window)
+     if (window) {
+         SDL_Event event;
+         SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
+-        if (SDL_GL_MakeCurrent(window, (SDL_GLContext) data->egl_context) < 0) {
++        // Urho3D: make sure there is a valid stored context to restore
++        if (data->egl_context && SDL_GL_MakeCurrent(window, (SDL_GLContext) data->egl_context) < 0) {
++            // Urho3D: if the old context could not be restored, leave it to the Graphics subsystem to create a new one
++            data->egl_context = NULL;
+             /* The context is no longer valid, create a new one */
+-            data->egl_context = (EGLContext) SDL_GL_CreateContext(window);
++            /*data->egl_context = (EGLContext) SDL_GL_CreateContext(window);
+             SDL_GL_MakeCurrent(window, (SDL_GLContext) data->egl_context);
+             event.type = SDL_RENDER_DEVICE_RESET;
+-            SDL_PushEvent(&event);
++            SDL_PushEvent(&event);*/
+         }
+         data->backup_done = 0;
+     }
+diff --git a/src/video/android/SDL_androidvideo.c b/src/video/android/SDL_androidvideo.c
+index cf8a526e2..720b0f2cf 100644
+--- a/src/video/android/SDL_androidvideo.c
++++ b/src/video/android/SDL_androidvideo.c
+@@ -192,6 +192,31 @@ Android_VideoInit(_THIS)
+     mode.refresh_rate    = Android_ScreenRate;
+     mode.driverdata      = NULL;
+ 
++    // Urho3D: merge patch found in https://bugzilla.libsdl.org/show_bug.cgi?id=2291 submitted by Thomas Faller
++    SDL_PixelFormat pixelFormat;
++    Uint32 mask;
++    int bitCount;
++
++    /* We need to set color sizes */
++    if(!SDL_InitFormat(&pixelFormat, mode.format)){
++        for(mask = pixelFormat.Rmask >> pixelFormat.Rshift,
++            bitCount = 0; mask > 0; mask >>= 1)
++            bitCount += 1;
++        SDL_GL_SetAttribute(SDL_GL_RED_SIZE, bitCount);
++        for(mask = pixelFormat.Gmask >> pixelFormat.Gshift,
++            bitCount = 0; mask > 0; mask >>= 1)
++            bitCount += 1;
++        SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, bitCount);
++        for(mask = pixelFormat.Bmask >> pixelFormat.Bshift,
++            bitCount = 0; mask > 0; mask >>= 1)
++            bitCount += 1;
++        SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, bitCount);
++        for(mask = pixelFormat.Amask >> pixelFormat.Ashift,
++            bitCount = 0; mask > 0; mask >>= 1)
++            bitCount += 1;
++        SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, bitCount);
++    }
++
+     display_index = SDL_AddBasicVideoDisplay(&mode);
+     if (display_index < 0) {
+         return -1;
+diff --git a/src/video/cocoa/SDL_cocoawindow.m b/src/video/cocoa/SDL_cocoawindow.m
+index ad7d9e2af..13525761f 100644
+--- a/src/video/cocoa/SDL_cocoawindow.m
++++ b/src/video/cocoa/SDL_cocoawindow.m
+@@ -1479,7 +1479,9 @@ Cocoa_SendMouseButtonClicks(SDL_Mouse * mouse, NSEvent *theEvent, SDL_Window * w
+         /* Make the origin the upper left instead of the lower left */
+         y = 1.0f - y;
+ 
+-        switch (phase) {
++        // Urho3D: disable touch events from the touchpad, as touch in Urho3D is understood
++        // to originate from absolute positioning devices like touch screens
++        /*switch (phase) {
+         case NSTouchPhaseBegan:
+             SDL_SendTouch(touchId, fingerId, window, SDL_TRUE, x, y, 1.0f);
+             break;
+@@ -1492,7 +1494,7 @@ Cocoa_SendMouseButtonClicks(SDL_Mouse * mouse, NSEvent *theEvent, SDL_Window * w
+             break;
+         default:
+             break;
+-        }
++        }*/
+     }
+ }
+ 
+diff --git a/src/video/haiku/SDL_bkeyboard.h b/src/video/haiku/SDL_bkeyboard.h
+index 4c2a5903a..8a56f7659 100644
+--- a/src/video/haiku/SDL_bkeyboard.h
++++ b/src/video/haiku/SDL_bkeyboard.h
+@@ -28,7 +28,7 @@
+ extern "C" {
+ #endif
+ 
+-#include "../../../include/SDL_keyboard.h"
++#include "SDL/SDL_keyboard.h"
+ 
+ extern void HAIKU_InitOSKeymap(void);
+ extern SDL_Scancode HAIKU_GetScancodeFromBeKey(int32 bkey);
+diff --git a/src/video/uikit/SDL_uikitappdelegate.m b/src/video/uikit/SDL_uikitappdelegate.m
+index 4c21d7336..6cc51fd2a 100644
+--- a/src/video/uikit/SDL_uikitappdelegate.m
++++ b/src/video/uikit/SDL_uikitappdelegate.m
+@@ -42,6 +42,10 @@ static int forward_argc;
+ static char **forward_argv;
+ static int exit_status;
+ 
++// Urho3D: added variables
++const char* resource_dir = 0;
++const char* documents_dir = 0;
++
+ int SDL_UIKitRunApp(int argc, char *argv[], SDL_main_func mainFunction)
+ {
+     int i;
+@@ -70,6 +74,51 @@ int SDL_UIKitRunApp(int argc, char *argv[], SDL_main_func mainFunction)
+     return exit_status;
+ }
+ 
++// Urho3D: added function
++void SDL_IOS_LogMessage(const char *message)
++{
++    #ifdef _DEBUG
++    NSLog(@"%@", [NSString stringWithUTF8String: message]);
++    #endif
++}
++
++// Urho3D: added function
++const char* SDL_IOS_GetResourceDir()
++{
++    if (!resource_dir)
++    {
++        const char *temp = [[[NSBundle mainBundle] resourcePath] UTF8String];
++        resource_dir = malloc(strlen(temp) + 1);
++        strcpy(resource_dir, temp);
++    }
++
++    return resource_dir;
++}
++
++// Urho3D: added function
++const char* SDL_IOS_GetDocumentsDir()
++{
++    if (!documents_dir)
++    {
++        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
++        NSString *basePath = ([paths count] > 0) ? [paths objectAtIndex:0] : nil;
++
++        const char *temp = [basePath UTF8String];
++        documents_dir = malloc(strlen(temp) + 1);
++        strcpy(documents_dir, temp);
++    }
++
++    return documents_dir;
++}
++
++// Urho3D: added function
++#if TARGET_OS_TV
++unsigned SDL_TVOS_GetActiveProcessorCount()
++{
++    return [NSProcessInfo class] ? (unsigned)[[NSProcessInfo processInfo] activeProcessorCount] : 1;
++}
++#endif
++
+ static void SDLCALL
+ SDL_IdleTimerDisabledChanged(void *userdata, const char *name, const char *oldValue, const char *hint)
+ {
+diff --git a/src/video/windows/SDL_windowsevents.c b/src/video/windows/SDL_windowsevents.c
+index e2b95ad4e..29127fb28 100644
+--- a/src/video/windows/SDL_windowsevents.c
++++ b/src/video/windows/SDL_windowsevents.c
+@@ -769,7 +769,13 @@ WIN_WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+     case WM_XBUTTONDOWN:
+     case WM_XBUTTONDBLCLK:
+         {
+-            SDL_Mouse *mouse = SDL_GetMouse();
++            SDL_Mouse *mouse;
++
++            // Urho3D: in_title_click may be erroneously left on with non-Aero styles, causing the hidden mouse centering to stop working.
++            // To work around, reset whenever a normal mouse button up/down event is received
++            data->in_title_click = SDL_FALSE;
++
++            mouse = SDL_GetMouse();
+             if (!mouse->relative_mode || mouse->relative_mode_warp) {
+                 if (GetMouseMessageSource() != SDL_MOUSE_EVENT_SOURCE_TOUCH &&
+                     lParam != data->last_pointer_update) {
+diff --git a/src/video/windows/SDL_windowskeyboard.c b/src/video/windows/SDL_windowskeyboard.c
+index 0f0402b90..29cab31b0 100644
+--- a/src/video/windows/SDL_windowskeyboard.c
++++ b/src/video/windows/SDL_windowskeyboard.c
+@@ -1034,6 +1034,9 @@ IME_HandleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM *lParam, SDL_VideoD
+             IME_GetCompositionString(videodata, himc, GCS_RESULTSTR);
+             SDL_SendEditingText("", 0, 0);
+             IME_SendInputEvent(videodata);
++            // Urho3D: When text inputed, it is need to clear the text in composition
++            ImmAssociateContext(videodata->ime_hwnd_main, (HIMC)0);
++            ImmAssociateContext(videodata->ime_hwnd_main, videodata->ime_himc);
+         }
+         if (*lParam & GCS_COMPSTR) {
+             if (!videodata->ime_uiless)
+diff --git a/src/video/windows/SDL_windowsmouse.c b/src/video/windows/SDL_windowsmouse.c
+index a52c44079..2b4ba6fa5 100644
+--- a/src/video/windows/SDL_windowsmouse.c
++++ b/src/video/windows/SDL_windowsmouse.c
+@@ -272,9 +272,10 @@ WIN_WarpMouse(SDL_Window * window, int x, int y)
+     POINT pt;
+ 
+     /* Don't warp the mouse while we're doing a modal interaction */
+-    if (data->in_title_click || data->focus_click_pending) {
+-        return;
+-    }
++    // Urho3D: disable check as warping should already be used responsibly and a possible bug #1258 results from this from SDL 2.0.4 onward
++    //if (data->in_title_click || data->focus_click_pending) {
++    //    return;
++    //}
+ 
+     pt.x = x;
+     pt.y = y;
+diff --git a/src/video/windows/SDL_windowswindow.c b/src/video/windows/SDL_windowswindow.c
+index eb536bbe4..796fd0d68 100644
+--- a/src/video/windows/SDL_windowswindow.c
++++ b/src/video/windows/SDL_windowswindow.c
+@@ -600,6 +600,13 @@ WIN_CreateWindowFrom(_THIS, SDL_Window * window, const void *data)
+         return -1;
+     }
+ 
++    // Urho3D: if window will be used for OpenGL, choose pixel format
++    if (window->flags & SDL_WINDOW_OPENGL) {
++        if (WIN_GL_SetupWindow(_this, window) < 0) {
++            return -1;
++        }
++    }
++
+ #if SDL_VIDEO_OPENGL_WGL
+     {
+         const char *hint = SDL_GetHint(SDL_HINT_VIDEO_WINDOW_SHARE_PIXEL_FORMAT);
+diff --git a/src/video/winrt/SDL_winrtmouse.cpp b/src/video/winrt/SDL_winrtmouse.cpp
+index 8c32e5fcf..bbe398037 100644
+--- a/src/video/winrt/SDL_winrtmouse.cpp
++++ b/src/video/winrt/SDL_winrtmouse.cpp
+@@ -189,6 +189,14 @@ WINRT_SetRelativeMouseMode(SDL_bool enabled)
+     return 0;
+ }
+ 
++// rbfx: WINRT_WarpMouse impl
++void
++WINRT_WarpMouse(SDL_Window* window, int x, int y)
++{
++    CoreWindow^ coreWindow = CoreWindow::GetForCurrentThread();
++    coreWindow->PointerPosition = Windows::Foundation::Point(x, y);
++}
++
+ void
+ WINRT_InitMouse(_THIS)
+ {
+@@ -205,7 +213,7 @@ WINRT_InitMouse(_THIS)
+     mouse->CreateSystemCursor = WINRT_CreateSystemCursor;
+     mouse->ShowCursor = WINRT_ShowCursor;
+     mouse->FreeCursor = WINRT_FreeCursor;
+-    //mouse->WarpMouse = WINRT_WarpMouse;
++    mouse->WarpMouse = WINRT_WarpMouse;    // rbfx: Oh yes it does!
+     mouse->SetRelativeMouseMode = WINRT_SetRelativeMouseMode;
+ 
+     SDL_SetDefaultCursor(WINRT_CreateDefaultCursor());
+diff --git a/src/video/winrt/SDL_winrtvideo.cpp b/src/video/winrt/SDL_winrtvideo.cpp
+index a71ba9b07..f89272a2a 100644
+--- a/src/video/winrt/SDL_winrtvideo.cpp
++++ b/src/video/winrt/SDL_winrtvideo.cpp
+@@ -32,7 +32,7 @@
+ #include <functional>
+ #include <string>
+ #include <sstream>
+-using namespace std;
++//using namespace std;  // rbfx fix
+ 
+ /* Windows includes */
+ #include <agile.h>
+@@ -262,8 +262,20 @@ WINRT_VideoInit(_THIS)
+     return 0;
+ }
+ 
+-extern "C"
+-Uint32 D3D11_DXGIFormatToSDLPixelFormat(DXGI_FORMAT dxgiFormat);
++// rbfx: Copy D3D11_DXGIFormatToSDLPixelFormat() from SDL_render_d3d11.c, because we build without renderer.
++//extern "C"
++//Uint32 D3D11_DXGIFormatToSDLPixelFormat(DXGI_FORMAT dxgiFormat);
++static Uint32 D3D11_DXGIFormatToSDLPixelFormat(DXGI_FORMAT dxgiFormat)
++{
++    switch (dxgiFormat) {
++    case DXGI_FORMAT_B8G8R8A8_UNORM:
++        return SDL_PIXELFORMAT_ARGB8888;
++    case DXGI_FORMAT_B8G8R8X8_UNORM:
++        return SDL_PIXELFORMAT_RGB888;
++    default:
++        return SDL_PIXELFORMAT_UNKNOWN;
++    }
++}
+ 
+ static void
+ WINRT_DXGIModeToSDLDisplayMode(const DXGI_MODE_DESC * dxgiMode, SDL_DisplayMode * sdlMode)
+diff --git a/src/video/x11/SDL_x11keyboard.c b/src/video/x11/SDL_x11keyboard.c
+index c14e13d1c..ecad00d77 100644
+--- a/src/video/x11/SDL_x11keyboard.c
++++ b/src/video/x11/SDL_x11keyboard.c
+@@ -289,7 +289,8 @@ X11_InitKeyboard(_THIS)
+            Compose keys will work correctly. */
+         char *prev_locale = setlocale(LC_ALL, NULL);
+         char *prev_xmods  = X11_XSetLocaleModifiers(NULL);
+-        const char *new_xmods = "";
++        // Urho3D - bug fix - the default XMODIFIERS should be null instead of empty string
++        const char *new_xmods = 0;
+         const char *env_xmods = SDL_getenv("XMODIFIERS");
+         SDL_bool has_dbus_ime_support = SDL_FALSE;
+ 
+-- 
+2.41.0.windows.3
+

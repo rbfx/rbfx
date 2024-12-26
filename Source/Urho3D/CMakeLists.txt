@@ -170,13 +170,18 @@ if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/librevision.h)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} OUTPUT_QUIET ERROR_QUIET)
 endif ()
 
+find_package(Threads REQUIRED)
+find_package(fmt REQUIRED)
+find_package(spdlog REQUIRED)
+find_package(SDL2 REQUIRED)
+
 # Public dependencies that are available to the user or are exposed in the public API or headers
 set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     FreeType
     LZ4
     PugiXml
     rapidjson
-    SDL2-static
+    SDL2::SDL2-static
     StanHull
     STB
     IconFontCppHeaders
@@ -192,8 +197,7 @@ set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     GLEW
     nfd
     CLI11
-    fmt
-    spdlog
+    fmt::fmt
     EASTL
     ETCPACK
     xatlas
@@ -224,6 +228,7 @@ set (PRIVATE_THIRD_PARTY_DEPENDENCIES
     SPIRV-Tools
     SPIRV-Tools-opt
     SPIRV-Reflect
+    spdlog::spdlog
 )
 if (TARGET datachannel-wasm)
     target_link_libraries(Urho3D PUBLIC datachannel-wasm)
@@ -250,55 +255,72 @@ elseif (TARGET Bullet)
     endif ()
 endif ()
 
+cpm_cache_path(CPM_CACHE_DIR)
 foreach (dep ${PUBLIC_THIRD_PARTY_DEPENDENCIES})
     if (TARGET "${dep}")
         # By linking them as private but inheriting definitions/options/dirs we avoid having
         # to export third party lib targets in a monolithic dll build.
         get_target_property(_TARGET_TYPE ${dep} TYPE)
         if (${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
-            if (BUILD_SHARED_LIBS)
-                if (MSVC)
-                    set_property(TARGET Urho3D APPEND_STRING PROPERTY LINK_FLAGS " /WHOLEARCHIVE:${dep}")
-                elseif (APPLE)
-                    set_property(TARGET Urho3D APPEND PROPERTY LINK_LIBRARIES -force_load ${dep})
-                endif ()
-            elseif (UWP)
-                set_property(TARGET Urho3D APPEND_STRING PROPERTY LINK_FLAGS " /WHOLEARCHIVE:${dep}")
+            if ((BUILD_SHARED_LIBS AND MSVC) OR UWP)
+                # Somehow this is necessary for UWP no matter what.
+                target_link_options(Urho3D PRIVATE /WHOLEARCHIVE:$<TARGET_FILE:${dep}>)
+            elseif (BUILD_SHARED_LIBS AND APPLE)
+                target_link_libraries(Urho3D PRIVATE -force_load $<TARGET_FILE:${dep}>)
+            elseif (BUILD_SHARED_LIBS)
+                target_link_libraries(Urho3D PRIVATE -Wl,--whole-archive ${dep} -Wl,--no-whole-archive)
             endif ()
+            if (BUILD_SHARED_LIBS OR URHO3D_MERGE_STATIC_LIBS)
+                # Shared builds and static builds with URHO3D_MERGE_STATIC_LIBS export dependencies from Urho3D target.
+                add_dependencies(Urho3D ${dep})
+            else ()
+                # Static builds with no monolithic library target. Do the normal linking.
+                target_link_libraries(Urho3D PUBLIC ${dep})
+                continue()
+            endif ()
+        else ()
+            # Shared libraries can not be merged into the final dll.
+            target_link_libraries(Urho3D PUBLIC ${dep})
+            continue()
         endif ()
-        get_target_property(VALUE ${dep} INTERFACE_COMPILE_DEFINITIONS)
+
+        get_target_property(VALUE "${dep}" INTERFACE_COMPILE_DEFINITIONS)
         if (VALUE)
             target_compile_definitions(Urho3D PUBLIC ${VALUE})
         endif ()
-        get_target_property(VALUE ${dep} INTERFACE_COMPILE_OPTIONS)
+        get_target_property(VALUE "${dep}" INTERFACE_COMPILE_OPTIONS)
         if (VALUE)
             target_compile_options(Urho3D PUBLIC ${VALUE})
         endif ()
-        get_target_property(VALUE ${dep} INTERFACE_INCLUDE_DIRECTORIES)
+        get_target_property(VALUE "${dep}" INTERFACE_INCLUDE_DIRECTORIES)
         if (VALUE)
-            target_include_directories(Urho3D PUBLIC ${VALUE})
+            foreach(inc ${VALUE})
+                # This is probably an external package that reisdes in the cache.
+                # Assume include path is in the format of $<CACHE_DIR>/<name>/include/...
+                if (CPM_CACHE_DIR AND "${inc}" MATCHES "^${CPM_CACHE_DIR}/([^/]+)/[a-fA-F0-9]+/include(/.+)?$")
+                    # This is a dependency from package cache.
+                    set(install_dir ${DEST_BASE_INCLUDE_DIR}${CMAKE_MATCH_2})
+                    target_include_directories(Urho3D PUBLIC $<BUILD_INTERFACE:${inc}> $<INSTALL_INTERFACE:${install_dir}>)
+                    install(DIRECTORY ${inc}/ DESTINATION ${install_dir})
+                else ()
+                    # Assume that package took care of paths being well-formed.
+                    # These paths should be a mixture of $<BUILD_INTERFACE:...> and $<INSTALL_INTERFACE:...>
+                    # that can be forwarded as is.
+                    target_include_directories(Urho3D PUBLIC ${inc})
+                endif ()
+            endforeach()
         endif ()
         get_target_property(VALUE ${dep} INTERFACE_LINK_LIBRARIES)
         if (VALUE)
             foreach (dep_lib ${VALUE})
-                string(FIND "${dep_lib}" "$" DOLLAR_OFFSET)
-                if (DOLLAR_OFFSET LESS 0 AND NOT TARGET "${dep_lib}")
-                    target_link_libraries (Urho3D PUBLIC "${dep_lib}")
-                endif ()
+                if ("${dep_lib}" IN_LIST PUBLIC_THIRD_PARTY_DEPENDENCIES)
+                    # This library will be/was merged into the dll already.
+                    continue()
+                endif()
+
+                # Merge libraties that are not generator expressions.
+                target_link_libraries (Urho3D PRIVATE ${dep_lib})
             endforeach ()
-        endif ()
-        if (BUILD_SHARED_LIBS OR NOT URHO3D_MERGE_STATIC_LIBS)
-            if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)
-                target_link_libraries(Urho3D PRIVATE -Wl,--whole-archive)
-            endif ()
-            target_link_libraries(Urho3D PRIVATE ${dep})
-            if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)
-                target_link_libraries(Urho3D PRIVATE -Wl,--no-whole-archive)
-            endif ()
-        else ()
-            if (${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
-                list (APPEND DEPENDENCY_TARGET_FILES $<TARGET_FILE:${dep}>)
-            endif ()
         endif ()
     endif ()
 endforeach()
@@ -380,10 +402,11 @@ endif ()
 
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(Urho3D
-        PRIVATE -DURHO3D_EXPORTS=1 -DAL_EXPORTS=1 -DBOX2D_EXPORTS=1 -DCIVETWEB_DLL_EXPORTS=1 -DEASTL_EXPORTS=1
-            -DEASTDC_EXPORTS=1 -DURHO3D_EXPORTS=1 -DFMT_LIB_EXPORT=1 -DGLEW_BUILD=1 -DIMGUI_EXPORTS=1
-            -DLZ4_DLL_EXPORT=1 -DNFD_EXPORTS=1 -DPUGIXML_EXPORTS=1 -DSDL_EXPORTS=1 -DRmlCore_EXPORTS=1
+        PRIVATE ${RBFX_DLL_EXPORT_DEFINES} -DURHO3D_EXPORTS=1 -DAL_EXPORTS=1 -DBOX2D_EXPORTS=1 -DCIVETWEB_DLL_EXPORTS=1
+            -DEASTL_EXPORTS=1 -DEASTDC_EXPORTS=1 -DURHO3D_EXPORTS=1 -DGLEW_BUILD=1 -DIMGUI_EXPORTS=1
+            -DLZ4_DLL_EXPORT=1 -DNFD_EXPORTS=1 -DPUGIXML_EXPORTS=1 -DRmlCore_EXPORTS=1
             -DRmlDebugger_EXPORTS=1 -DGLSLANG_EXPORTING=1 -DTRACY_EXPORTS=1
+        PUBLIC ${RBFX_DLL_IMPORT_DEFINES}
     )
 else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)
@@ -397,7 +420,7 @@ foreach (HEADER stdint.h inttypes.h malloc.h)
     string (REPLACE . _ HAVE_HEADER ${HAVE_HEADER})
     check_include_file (${HEADER} ${HAVE_HEADER})
 endforeach ()
-include (CheckFunctionExists)
+include (CheckSymbolExists)
 foreach (FUNCT __sincosf sincosf malloc_usable_size)
     string (TOUPPER HAVE_${FUNCT} HAVE_FUNCT)
     check_symbol_exists (${FUNCT} "math.h;malloc.h" ${HAVE_FUNCT})

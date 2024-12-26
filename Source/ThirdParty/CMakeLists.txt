@@ -20,6 +20,17 @@
 # THE SOFTWARE.
 #
 
+# Configure cache directories
+if (NOT "$ENV{CPM_BINARY_CACHE_DIR}")
+    set(CPM_BINARY_CACHE_DIR ${CMAKE_BINARY_DIR}/../rbfx-deps-cache)
+    get_filename_component(CPM_BINARY_CACHE_DIR ${CPM_BINARY_CACHE_DIR} REALPATH)
+endif()
+if (NOT "$ENV{CPM_SOURCE_CACHE}")
+    set(CPM_SOURCE_CACHE ${CPM_BINARY_CACHE_DIR}/src)
+    get_filename_component(CPM_BINARY_CACHE_DIR ${CPM_BINARY_CACHE_DIR} REALPATH)
+endif()
+include(${rbfx_SOURCE_DIR}/CMake/Modules/CPM.Cached.cmake)
+
 # Third party warnings are irrelevant to us.
 if (MSVC)
     ucm_replace_flag("/W[0-3]" "/W0" REGEX)
@@ -38,9 +49,55 @@ add_subdirectory(rapidjson)
 add_subdirectory(STB)
 add_subdirectory(IconFontCppHeaders)
 add_subdirectory(CLI11)
-add_subdirectory(fmt)
-add_subdirectory(spdlog)
-add_subdirectory(SDL)
+
+# fmt
+CPMAddPackageCached(
+  NAME fmt
+  GITHUB_REPOSITORY fmtlib/fmt
+  GIT_TAG 10.2.0
+  EXCLUDE_FROM_ALL ON
+  OPTIONS "BUILD_SHARED_LIBS OFF"
+          "FMT_DOC OFF"
+          "FMT_TEST OFF"
+          "CMAKE_CXX_FLAGS -DFMT_LIB_EXPORT=1"
+)
+list(APPEND RBFX_DLL_EXPORT_DEFINES "-DFMT_LIB_EXPORT=1")
+list(APPEND RBFX_DLL_IMPORT_DEFINES "-DFMT_SHARED=1")
+
+# spdlog
+CPMAddPackageCached(
+  NAME spdlog
+  GITHUB_REPOSITORY gabime/spdlog
+  VERSION 1.13.0
+  EXCLUDE_FROM_ALL ON
+  OPTIONS "BUILD_SHARED_LIBS OFF"
+          "SPDLOG_FMT_EXTERNAL ON"
+          "SPDLOG_DISABLE_DEFAULT_LOGGER ON"
+)
+
+# SDL
+CPMAddPackageCached(
+  NAME SDL2
+  GITHUB_REPOSITORY libsdl-org/SDL
+  GIT_TAG release-2.24.0
+  EXCLUDE_FROM_ALL ON
+  OPTIONS "BUILD_SHARED_LIBS OFF"
+          "IOS ${IOS}"
+          "UWP ${UWP}"
+          "ANDROID ${ANDROID}"
+          "WEB ${WEB}"
+          "SDL_RENDER_D3D OFF"
+          "SDL_RENDER_METAL OFF"
+          "SDL_TEST OFF"
+          "SDL2_DISABLE_SDL2MAIN ON"
+          "SDL2_DISABLE_INSTALL OFF"
+          "CMAKE_C_FLAGS -DSDL_EXPORTS=1"
+          "CMAKE_CXX_FLAGS -DSDL_EXPORTS=1"
+  PATCHES ${CMAKE_CURRENT_SOURCE_DIR}/SDL.patch
+)
+list(APPEND RBFX_DLL_EXPORT_DEFINES "-DSDL_EXPORTS=1")
+list(APPEND RBFX_DLL_IMPORT_DEFINES "-DSDL_IMPORTS=1")
+
 add_subdirectory(ETCPACK)
 
 if (NOT WEB)
@@ -210,7 +267,9 @@ if (URHO3D_PROFILING)
         if (TARGET nfd)
             add_library(TracyNfd ALIAS nfd)
         endif ()
-        add_library(TracyGlfw3 ALIAS SDL2-static)
+        find_package(SDL2 REQUIRED)
+        add_library(TracyGlfw3 INTERFACE)
+        target_link_libraries(TracyGlfw3 INTERFACE SDL2::SDL2-static)
         add_library(TracyFreetype ALIAS FreeType)
         add_library(TracyCapstone ALIAS capstone)
 
@@ -340,3 +399,11 @@ add_subdirectory(swig)
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} ThirdParty)
 
 set_property_recursive(. POSITION_INDEPENDENT_CODE ON)
+
+# Pass these defines to Urho3D target so dependencies can be exported from the main dll.
+set(RBFX_DLL_EXPORT_DEFINES "${RBFX_DLL_EXPORT_DEFINES}" PARENT_SCOPE)
+set(RBFX_DLL_IMPORT_DEFINES "${RBFX_DLL_IMPORT_DEFINES}" PARENT_SCOPE)
+
+# CPM may have modified this variable, expose CPM packages to our other projects.
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" PARENT_SCOPE)
+set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}" PARENT_SCOPE)
