@@ -42,6 +42,7 @@
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/RmlUI/RmlUI.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/SystemUI/Widgets.h>
 #include <Urho3D/Utility/SceneViewerApplication.h>
@@ -791,6 +792,9 @@ void Project::Render()
         initialFocusPending = true;
 
         pluginReloadEndTime_ = ea::nullopt;
+
+        auto rmlUi = GetSubsystem<RmlUI>();
+        rmlUi->ReloadFonts();
 
         OnInitialized(this);
 
