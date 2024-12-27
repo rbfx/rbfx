@@ -25,7 +25,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/VSSolution.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CCache.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/UrhoOptions.cmake)
 
-if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../Urho3D_GeneratedConfig.cmake)
+if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../Urho3D.cmake)
     set (URHO3D_IS_SDK ON)
     set (URHO3D_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../)
     get_filename_component(URHO3D_SDK_PATH "${URHO3D_SDK_PATH}" REALPATH)
