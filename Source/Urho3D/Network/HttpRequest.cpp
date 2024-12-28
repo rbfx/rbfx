@@ -99,9 +99,13 @@ HttpRequest::HttpRequest(
         HttpRequest* request = static_cast<HttpRequest*>(fetch->userData);
         MutexLock lock(request->mutex_);
         request->state_ = HTTP_CLOSED;
-        request->readBuffer_.Resize(fetch->numBytes - 1);
-        request->readBuffer_.SetData(fetch->data, fetch->numBytes - 1);
+        if (fetch->numBytes > 0)
+        {
+            request->readBuffer_.Resize(fetch->numBytes - 1);
+            request->readBuffer_.SetData(fetch->data, fetch->numBytes - 1);
+        }
         request->requestHandle_ = nullptr;
+        request->statusCode_ = fetch->status;
 
         emscripten_fetch_close(fetch);
     };
@@ -112,9 +116,14 @@ HttpRequest::HttpRequest(
 
         HttpRequest* request = static_cast<HttpRequest*>(fetch->userData);
         MutexLock lock(request->mutex_);
-        request->state_ = HTTP_ERROR;
-        request->error_ = fetch->statusText;
+        const bool error = fetch->status == 0;
+        request->state_ = error ? HTTP_ERROR : HTTP_CLOSED;
+        if (error)
+        {
+            request->error_ = fetch->statusText;
+        }
         request->requestHandle_ = nullptr;
+        request->statusCode_ = fetch->status;
 
         emscripten_fetch_close(fetch);
     };
@@ -269,6 +278,10 @@ void HttpRequest::ThreadFunction()
         memcpy(readBuffer_.GetModifiableData() + writePos, readBuffer, bytesRead);
     }
 
+    if (const mg_response_info* response = mg_get_response_info(connection))
+    {
+        statusCode_ = response->status_code;
+    }
     // Close the connection
     mg_close_connection(connection);
     {
@@ -314,6 +327,11 @@ unsigned HttpRequest::GetAvailableSize() const
 {
     MutexLock lock(mutex_);
     return readBuffer_.GetSize() - readPosition_;
+}
+
+int HttpRequest::GetStatusCode() const
+{
+    return statusCode_;
 }
 
 }

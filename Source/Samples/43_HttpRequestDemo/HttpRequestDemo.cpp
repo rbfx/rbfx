@@ -99,13 +99,15 @@ void HttpRequestDemo::Update(float timeStep)
         {
             text_->SetText("An error has occurred: " + httpRequest_->GetError());
             UnsubscribeFromEvent(E_UPDATE);
-            URHO3D_LOGERRORF("HttpRequest error: %s", httpRequest_->GetError().c_str());
+            URHO3D_LOGERRORF("HttpRequest error: %s (%d)", httpRequest_->GetError().c_str(), httpRequest_->GetStatusCode());
         }
         else if (httpRequest_->GetState() == Urho3D::HTTP_OPEN)
             text_->SetText("Processing...");
         else if (httpRequest_->GetState() == Urho3D::HTTP_CLOSED)
         {
             message_ = httpRequest_->ReadString();
+
+            URHO3D_LOGINFOF("HttpRequest success: %s (%d)", message_.c_str(), httpRequest_->GetStatusCode());
 
             SharedPtr<JSONFile> json(new JSONFile(context_));
             json->FromString(message_);
