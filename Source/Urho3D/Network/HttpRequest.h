@@ -87,8 +87,7 @@ public:
     /// @property
     bool IsOpen() const { return GetState() == HTTP_OPEN; }
 
-    /// Return HTTP response status code eg. 200(OK) or 404(NOT_FOUND).
-    /// @property
+    /// Return HTTP response status code, e.g. 200(OK) or 404(NOT_FOUND).
     int GetStatusCode() const;
 
 private:
@@ -110,7 +109,7 @@ private:
     VectorBuffer readBuffer_;
     /// Read buffer read cursor.
     unsigned readPosition_ = 0;
-    /// HTTP response status code eg. 200(OK) or 404(NOT_FOUND)
+    /// HTTP response status code, e.g. 200(OK) or 404(NOT_FOUND).
     int statusCode_ = 0;
 #ifdef URHO3D_PLATFORM_WEB
     /// HTTP request handle.
