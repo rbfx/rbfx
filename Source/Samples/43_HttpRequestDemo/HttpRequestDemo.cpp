@@ -83,11 +83,7 @@ void HttpRequestDemo::Update(float timeStep)
     {
         const ea::string verb = "GET";
         const ea::vector<ea::string> headers = {"hello: world"};
-#ifdef URHO3D_SSL
-        httpRequest_ = MakeShared<HttpRequest>("https://api.ipify.org/?format=json", verb, headers);
-#else
-        httpRequest_ = MakeShared<HttpRequest>("http://httpbin.org/ip", verb, headers);
-#endif
+        httpRequest_ = MakeShared<HttpRequest>("https://httpbin.org/ip", verb, headers);
     }
     else
     {
@@ -112,12 +108,7 @@ void HttpRequestDemo::Update(float timeStep)
             SharedPtr<JSONFile> json(new JSONFile(context_));
             json->FromString(message_);
 
-#ifdef URHO3D_SSL
-            JSONValue val = json->GetRoot().Get("ip");
-#else
-            JSONValue val = json->GetRoot().Get("origin");
-#endif
-
+            const JSONValue val = json->GetRoot().Get("origin");
             if (val.IsNull())
                 text_->SetText("Invalid JSON response retrieved!");
             else

@@ -50,7 +50,7 @@ void URL::ParseURL(ea::string_view url)
 {
     scheme_ = user_ = password_ = host_ = path_ = query_ = hash_ = "";
     port_ = 0;
-    std::regex rx (R"(^(([^:\/?#]+)://)?((([^:\/?#@]+)(:([^:\/?#@]+))?@)?([^\/?#:]*)(:([0-9]+))?)?(/([^?#]+))?(\?([^#]*))?(#(.*))?)", std::regex::extended);
+    std::regex rx (R"(^(([^:\/?#]+)://)?((([^:\/?#@]+)(:([^:\/?#@]+))?@)?([^\/?#:]*)(:([0-9]+))?)?(/([^?#]*))?(\?([^#]*))?(#(.*))?)", std::regex::extended);
     std::smatch matches;
     std::string stringUrl(url.data());
     if (std::regex_match(stringUrl, matches, rx) && matches.size() == 17)
