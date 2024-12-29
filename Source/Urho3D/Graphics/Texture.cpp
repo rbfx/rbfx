@@ -405,7 +405,11 @@ bool Texture::UpdateFromImage(unsigned arraySlice, Image* image)
         && image->GetCompressedFormat() != TextureFormat::TEX_FORMAT_RGBA8_UNORM)
     {
         // RGBA8 is default format, use it if hardware format is not available.
-        URHO3D_LOGWARNING("Image '{}' is converted to RGBA8 format on upload to GPU", GetName());
+        const bool isRGB8 = !image->IsCompressed() && image->GetComponents() == 3;
+        if (isRGB8)
+            URHO3D_LOGDEBUG("Image '{}' is converted from RGB8 to RGBA8 format on upload to GPU", GetName());
+        else
+            URHO3D_LOGWARNING("Image '{}' is converted to RGBA8 format on upload to GPU", GetName());
 
         for (unsigned level = 0; level < GetLevels(); ++level)
         {

@@ -74,9 +74,7 @@ bool RmlSystem::LogMessage(Rml::Log::Type type, const Rml::String& message)
     case Rml::Log::LT_WARNING:
         URHO3D_LOGWARNING(message.c_str());
         break;
-    case Rml::Log::LT_INFO:
-        URHO3D_LOGINFO(message.c_str());
-        break;
+    case Rml::Log::LT_INFO: // There is nothing worthy of "info" status reported by RmlUI.
     case Rml::Log::LT_DEBUG:
         URHO3D_LOGDEBUG(message.c_str());
         break;
