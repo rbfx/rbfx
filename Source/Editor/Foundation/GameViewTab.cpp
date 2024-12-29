@@ -24,6 +24,7 @@
 
 #include "../Core/IniHelpers.h"
 
+#include <Urho3D/Core/WorkQueue.h>
 #include <Urho3D/Engine/StateManager.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/GraphicsEvents.h>
@@ -217,10 +218,15 @@ GameViewTab::GameViewTab(Context* context)
     , backbuffer_(MakeShared<CustomBackbufferTexture>(context_))
 {
     BindHotkey(Hotkey_ReleaseInput, &GameViewTab::ReleaseInput);
+
+    auto pluginManager = GetSubsystem<PluginManager>();
+    pluginManager->SetQuitApplicationCallback([this] { QuitApplication(); });
 }
 
 GameViewTab::~GameViewTab()
 {
+    auto pluginManager = GetSubsystem<PluginManager>();
+    pluginManager->SetQuitApplicationCallback([] {});
 }
 
 bool GameViewTab::IsInputGrabbed() const
@@ -326,6 +332,15 @@ void GameViewTab::ReadIniSettings(const char* line)
 {
     if (const auto isHudVisible = ReadIntFromIni(line, "IsHudVisible"))
         hudVisible_ = *isHudVisible != 0;
+}
+
+void GameViewTab::QuitApplication()
+{
+    auto workQueue = GetSubsystem<WorkQueue>();
+    if (IsPlaying())
+        workQueue->PostDelayedTaskForMainThread([this] { Stop(); });
+    else
+        URHO3D_LOGWARNING("Application quit was requested when nothing is played");
 }
 
 } // namespace Urho3D

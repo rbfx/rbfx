@@ -67,6 +67,8 @@ public:
     /// @}
 
 private:
+    void QuitApplication();
+
     class PlayState;
 
     SharedPtr<CustomBackbufferTexture> backbuffer_;

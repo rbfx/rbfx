@@ -235,6 +235,8 @@ Project::Project(
     context_->RemoveSubsystem<PluginManager>();
     context_->RegisterSubsystem(pluginManager_);
 
+    pluginManager_->SetQuitApplicationCallback([] {});
+
     SubscribeToEvent(E_ENDPLUGINRELOAD, [this] { pluginReloadEndTime_ = std::chrono::steady_clock::now(); });
 
     if (!isHeadless_ && !flags_.Test(ProjectFlag::ReadOnly))
