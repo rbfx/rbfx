@@ -28,6 +28,12 @@ target_include_directories(datachannel-wasm PUBLIC
 target_include_directories(datachannel-wasm PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/wasm/include/rtc)
 
+target_link_options(datachannel-wasm PUBLIC
+	"SHELL:--js-library $<BUILD_INTERFACE:\"${CMAKE_CURRENT_SOURCE_DIR}/wasm/js/webrtc.js\">
+						$<INSTALL_INTERFACE:\"${DEST_THIRDPARTY_HEADERS_DIR}/libdatachannel-wasm/wasm/js/webrtc.js\">"
+	"SHELL:--js-library $<BUILD_INTERFACE:\"${CMAKE_CURRENT_SOURCE_DIR}/wasm/js/websocket.js\">
+						$<INSTALL_INTERFACE:\"${DEST_THIRDPARTY_HEADERS_DIR}/libdatachannel-wasm/wasm/js/websocket.js\">")
+
 if (NOT URHO3D_MERGE_STATIC_LIBS)
 	install (TARGETS datachannel-wasm EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
 	install (FILES
