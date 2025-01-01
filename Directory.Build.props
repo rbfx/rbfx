@@ -7,7 +7,10 @@
   <Import Project="$(CMAKE_BINARY_DIR)/CMake.props" Condition=" '$(CMakePropsIncluded)' == '' And '$(CMAKE_BINARY_DIR)' != '' And Exists('$(CMAKE_BINARY_DIR)/CMake.props') " />
   <!-- Azure pipelines for some reason have SolutionDir undefined however -->
   <Import Project="$(MSBuildStartupDirectory)/CMake.props" Condition=" '$(CMakePropsIncluded)' == '' And '$(SolutionDir)' == '' And Exists('$(MSBuildStartupDirectory)/CMake.props') " />
-  <PropertyGroup Condition=" '$(URHO3D_CSHARP)' == 'ON' ">
+  <PropertyGroup>
+    <IsCSharpProject Condition="'$(MSBuildProjectExtension)' == '.csproj'">true</IsCSharpProject>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(IsCSharpProject)' == 'true' ">
     <LangVersion>7.2</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -25,16 +28,16 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>                                                         <!-- Do not include a heap of language resource folders -->
     <RuntimeIdentifier>$(URHO3D_NETFX_RUNTIME_IDENTIFIER)</RuntimeIdentifier>
   </PropertyGroup>
-  <PropertyGroup>
+  <PropertyGroup Condition=" '$(IsCSharpProject)' == 'true' ">
     <!-- Move C# bin and obj output to CMAKE_BINARY_DIR. -->
     <BaseIntermediateOutputPath>$(CMAKE_BINARY_DIR)/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
     <BaseOutputPath>$(CMAKE_BINARY_DIR)/bin/</BaseOutputPath>
   </PropertyGroup>
-  <PropertyGroup Condition=" $(CMAKE_GENERATOR.Contains('Visual Studio')) Or '$(CMAKE_GENERATOR)' == 'Xcode' Or '$(CMAKE_GENERATOR)' == 'Ninja Multi-Config' ">
+  <PropertyGroup Condition=" '$(IsCSharpProject)' == 'true' And ($(CMAKE_GENERATOR.Contains('Visual Studio')) Or '$(CMAKE_GENERATOR)' == 'Xcode' Or '$(CMAKE_GENERATOR)' == 'Ninja Multi-Config') ">
     <!-- In case of multi-config generators move output to a configuration subdirectory. -->
     <BaseOutputPath>$(BaseOutputPath)$(Configuration)/</BaseOutputPath>
   </PropertyGroup>
-  <PropertyGroup>
+  <PropertyGroup Condition=" '$(IsCSharpProject)' == 'true' ">
     <!-- Remove framework subdirs from final output, all managed and native binaries are in same folder now. -->
     <OutDir>$(BaseOutputPath)</OutDir>
     <OutputPath>$(BaseOutputPath)</OutputPath>
