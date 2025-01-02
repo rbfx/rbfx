@@ -281,6 +281,10 @@ void HttpRequest::ThreadFunction()
     if (const mg_response_info* response = mg_get_response_info(connection))
     {
         statusCode_ = response->status_code;
+        for(int i=0;i<response->num_headers;i++){
+            responseHeaders_[response->http_headers[i].name] = response->http_headers[i].value;
+        }
+
     }
     // Close the connection
     mg_close_connection(connection);
@@ -333,5 +337,19 @@ int HttpRequest::GetStatusCode() const
 {
     return statusCode_;
 }
+ea::map<ea::string,ea::string> HttpRequest::GetResponseHeaders() const
+{
+    return responseHeaders_;
+}
+
+ea::optional<ea::string> HttpRequest::GetResponseHeader(ea::string headerName) const
+{
+    ea::optional<ea::string> result = ea::nullopt;
+    if(responseHeaders_.find(headerName)!=responseHeaders_.end())
+        result = responseHeaders_.at(headerName);
+    return result;
+}
 
 }
+
+
