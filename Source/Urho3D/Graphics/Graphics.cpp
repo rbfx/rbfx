@@ -183,6 +183,9 @@ bool Graphics::SetScreenMode(const WindowSettings& windowSettings)
 
     window_ = renderDevice_->GetSDLWindow();
 
+    SetWindowTitle(windowTitle_);
+    SetWindowIcon(windowIcon_);
+
     // Clear the initial window contents to black
     RenderContext* renderContext = renderDevice_->GetRenderContext();
     renderContext->SetSwapChainRenderTargets();
