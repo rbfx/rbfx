@@ -50,6 +50,7 @@ public:
 
         Color directSelectionColor_{0xfd5602_rgb};
         Color indirectSelectionColor_{0x009dff_rgb};
+        bool debugGeometryDepthTest_{};
     };
     using SettingsPage = SimpleSettingsPage<Settings>;
 
@@ -78,6 +79,7 @@ private:
     void AddNodeDrawablesToGroup(const Node* node, OutlineGroup* group, OutlineGroup* excludeGroup = nullptr) const;
     void AddNodeChildrenDrawablesToGroup(const Node* node, OutlineGroup* group, OutlineGroup* excludeGroup = nullptr) const;
 
+    bool NeedDepthTest(Component* component) const;
     void DrawNodeSelection(Scene* scene, Node* node, bool recursive);
     void DrawComponentSelection(Scene* scene, Component* component);
 
