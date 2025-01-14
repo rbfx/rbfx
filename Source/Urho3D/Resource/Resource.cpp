@@ -202,6 +202,11 @@ SimpleResource::SimpleResource(Context* context)
 {
 }
 
+void SimpleResource::SetSaveFormatHint(InternalResourceFormat format)
+{
+    saveFormat_ = format != InternalResourceFormat::Unknown ? ea::make_optional(format) : ea::nullopt;
+}
+
 bool SimpleResource::Save(Serializer& dest, InternalResourceFormat format) const
 {
     const auto binaryMagic = GetBinaryMagic();

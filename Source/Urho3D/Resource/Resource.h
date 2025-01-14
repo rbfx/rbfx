@@ -167,6 +167,8 @@ public:
     /// Force override of SerializeInBlock.
     void SerializeInBlock(Archive& archive) override = 0;
 
+    /// Set preferred save format.
+    void SetSaveFormatHint(InternalResourceFormat format);
     /// Save resource in specified internal format.
     bool Save(Serializer& dest, InternalResourceFormat format) const;
     /// Save file with specified internal format.
@@ -192,6 +194,7 @@ protected:
 
 private:
     ea::optional<InternalResourceFormat> loadFormat_;
+    ea::optional<InternalResourceFormat> saveFormat_;
 };
 
 /// Base class for resources that support arbitrary metadata stored. Metadata serialization shall be implemented in derived classes.
