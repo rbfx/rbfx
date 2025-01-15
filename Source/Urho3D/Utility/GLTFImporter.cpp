@@ -3781,7 +3781,7 @@ tg::Model LoadGLTF(const ea::string& fileName)
     return model;
 }
 
-tg::Model LoadGLTFBinary(ByteSpan data)
+tg::Model LoadGLTFBinary(ConstByteSpan data)
 {
     tg::TinyGLTF loader;
     loader.SetImageLoader(&GLTFTextureImporter::LoadImageData, nullptr);
@@ -3891,7 +3891,7 @@ bool GLTFImporter::LoadFile(const ea::string& fileName)
     return LoadFileInternal([&]() { return LoadGLTF(fileName); });
 }
 
-bool GLTFImporter::LoadFileBinary(ByteSpan data)
+bool GLTFImporter::LoadFileBinary(ConstByteSpan data)
 {
     return LoadFileInternal([&]() { return LoadGLTFBinary(data); });
 }

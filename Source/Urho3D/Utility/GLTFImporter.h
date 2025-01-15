@@ -108,7 +108,7 @@ public:
 
     /// Load primary GLTF file into memory without any processing.
     bool LoadFile(const ea::string& fileName);
-    bool LoadFileBinary(ByteSpan data);
+    bool LoadFileBinary(ConstByteSpan data);
     /// Load and merge secondary GLTF file.
     /// Merge functionality is limited, unsupported content of secondary file is ignored.
     bool MergeFile(const ea::string& fileName, const ea::string& assetName);
