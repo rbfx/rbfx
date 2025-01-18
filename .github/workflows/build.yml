@@ -1021,9 +1021,9 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} dependencies
 
-      - name: Generate Debug
+      - name: Generate
         shell: bash
-        run: ${{ env.ci_build_script }} generate dbg
+        run: ${{ env.ci_build_script }} generate
 
       - name: Build Debug
         shell: bash
@@ -1032,10 +1032,6 @@ jobs:
       - name: Install Debug
         shell: bash
         run: ${{ env.ci_build_script }} install dbg
-
-      - name: Generate Release
-        shell: bash
-        run: ${{ env.ci_build_script }} generate rel
 
       - name: Build Release
         shell: bash

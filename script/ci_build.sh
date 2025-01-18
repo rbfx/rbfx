@@ -328,7 +328,7 @@ function action-test() {
 function action-cstest() {
     cd "$ci_build_dir/bin/${types[$ci_build_type]}"
     # We don't want to fail C# tests if build was without C# support.
-    test_file = "Urho3DNet.Tests.dll"
+    test_file="Urho3DNet.Tests.dll"
     if test -f "$test_file"; then
         dotnet test $test_file
     fi
