@@ -204,10 +204,10 @@ void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std:
     if (server != nullptr)
     {
         using namespace std::chrono_literals;
-        dataChannels_[PacketType::UnreliableUnordered] = peer_->createDataChannel("uu", {{rtc::Reliability::Type::Rexmit, false, 0}});
-        dataChannels_[PacketType::Reliable] = peer_->createDataChannel("ru", {{rtc::Reliability::Type::Reliable, false}});
-        dataChannels_[PacketType::Ordered] = peer_->createDataChannel("uo", {{rtc::Reliability::Type::Rexmit, true, 0}});
-        dataChannels_[PacketType::ReliableOrdered] = peer_->createDataChannel("ro", {{rtc::Reliability::Type::Reliable, true}});
+        dataChannels_[PacketType::UnreliableUnordered] = peer_->createDataChannel("uu", {{rtc::Reliability::Type::Rexmit, true, 0}});
+        dataChannels_[PacketType::Reliable] = peer_->createDataChannel("ru", {{rtc::Reliability::Type::Reliable, true}});
+        dataChannels_[PacketType::Ordered] = peer_->createDataChannel("uo", {{rtc::Reliability::Type::Rexmit, false, 0}});
+        dataChannels_[PacketType::ReliableOrdered] = peer_->createDataChannel("ro", {{rtc::Reliability::Type::Reliable, false}});
         for (int i = 0; i < URHO3D_ARRAYSIZE(dataChannels_); i++)
         {
             auto& dc = dataChannels_[i];
