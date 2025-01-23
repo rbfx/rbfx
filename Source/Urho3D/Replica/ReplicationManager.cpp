@@ -388,7 +388,7 @@ bool ReplicationManager::ProcessMessageOnUninitializedClient(
     if (messageId == MSG_CONFIGURE)
     {
         const auto msg = ReadNetworkMessage<MsgConfigure>(messageData);
-        connection->OnMessageReceived(messageId, msg);
+        connection->LogReceivedMessage(messageId, msg);
 
         client_->ackMagic_ = msg.magic_;
         client_->serverSettings_ = msg.settings_;
@@ -396,7 +396,7 @@ bool ReplicationManager::ProcessMessageOnUninitializedClient(
     else if (messageId == MSG_SCENE_CLOCK)
     {
         const auto msg = ReadNetworkMessage<MsgSceneClock>(messageData);
-        connection->OnMessageReceived(messageId, msg);
+        connection->LogReceivedMessage(messageId, msg);
 
         client_->initialClock_ = msg;
     }

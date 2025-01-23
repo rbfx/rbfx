@@ -297,8 +297,8 @@ bool ClientSynchronizationState::ProcessMessage(NetworkMessageId messageId, Memo
     {
     case MSG_SYNCHRONIZED:
     {
-        const auto& msg = ReadNetworkMessage<MsgSynchronized>(messageData);
-        connection_->OnMessageReceived(messageId, msg);
+        const auto msg = ReadNetworkMessage<MsgSynchronized>(messageData);
+        connection_->LogReceivedMessage(messageId, msg);
 
         ProcessSynchronized(msg);
         return true;
@@ -344,8 +344,6 @@ bool ClientReplicationState::ProcessMessage(NetworkMessageId messageId, MemoryBu
     switch (messageId)
     {
     case MSG_OBJECTS_FEEDBACK_UNRELIABLE:
-        connection_->OnMessageReceived(messageId, messageData);
-
         ProcessObjectsFeedbackUnreliable(messageData);
         return true;
 
@@ -416,71 +414,77 @@ void ClientReplicationState::SendRemoveObjects()
 
 void ClientReplicationState::SendAddObjects()
 {
-    connection_->SendGeneratedMessage(MSG_ADD_OBJECTS, PacketType::ReliableOrdered,
-        [&](VectorBuffer& msg, ea::string* debugInfo)
+    LargeMessageWriter writer{*connection_, MSG_ADD_OBJECTS_INCOMPLETE, MSG_ADD_OBJECTS};
+
+    VectorBuffer& msg = writer.GetBuffer();
+    ea::string* debugInfo = writer.GetDebugInfo();
+
+    msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
+
+    bool sendMessage = false;
+    for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
     {
-        msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
+        if (!isSnapshot)
+            continue;
 
-        bool sendMessage = false;
-        for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
+        sendMessage = true;
+        msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
+        msg.WriteStringHash(networkObject->GetType());
+        msg.WriteVLE(networkObject->GetOwnerConnectionId());
+
+        componentBuffer_.Clear();
+        networkObject->WriteSnapshot(GetCurrentFrame(), componentBuffer_);
+        msg.WriteBuffer(componentBuffer_.GetBuffer());
+
+        if (debugInfo)
         {
-            if (!isSnapshot)
-                continue;
-
-            sendMessage = true;
-            msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
-            msg.WriteStringHash(networkObject->GetType());
-            msg.WriteVLE(networkObject->GetOwnerConnectionId());
-
-            componentBuffer_.Clear();
-            networkObject->WriteSnapshot(GetCurrentFrame(), componentBuffer_);
-            msg.WriteBuffer(componentBuffer_.GetBuffer());
-
-            if (debugInfo)
-            {
-                if (!debugInfo->empty())
-                    debugInfo->append(", ");
-                debugInfo->append(ToString(networkObject->GetNetworkId()));
-            }
+            if (!debugInfo->empty())
+                debugInfo->append(", ");
+            debugInfo->append(ToString(networkObject->GetNetworkId()));
         }
-        return sendMessage;
-    });
+    }
+
+    if (!sendMessage)
+        writer.Discard();
 }
 
 void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationState& sharedState)
 {
-    connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_RELIABLE, PacketType::ReliableOrdered,
-        [&](VectorBuffer& msg, ea::string* debugInfo)
+    LargeMessageWriter writer{*connection_, MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE, MSG_UPDATE_OBJECTS_RELIABLE};
+
+    VectorBuffer& msg = writer.GetBuffer();
+    ea::string* debugInfo = writer.GetDebugInfo();
+
+    msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
+
+    bool sendMessage = false;
+    for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
     {
-        msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
+        const unsigned index = GetIndex(networkObject->GetNetworkId());
+        if (isSnapshot)
+            continue;
 
-        bool sendMessage = false;
-        for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
+        const auto updateSpan = sharedState.GetReliableUpdateByIndex(index);
+        if (!updateSpan)
+            continue;
+
+        sendMessage = true;
+        msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
+        msg.WriteStringHash(networkObject->GetType());
+
+        msg.WriteVLE(updateSpan->size());
+        msg.Write(updateSpan->data(), updateSpan->size());
+
+        if (debugInfo)
         {
-            const unsigned index = GetIndex(networkObject->GetNetworkId());
-            if (isSnapshot)
-                continue;
-
-            const auto updateSpan = sharedState.GetReliableUpdateByIndex(index);
-            if (!updateSpan)
-                continue;
-
-            sendMessage = true;
-            msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
-            msg.WriteStringHash(networkObject->GetType());
-
-            msg.WriteVLE(updateSpan->size());
-            msg.Write(updateSpan->data(), updateSpan->size());
-
-            if (debugInfo)
-            {
-                if (!debugInfo->empty())
-                    debugInfo->append(", ");
-                debugInfo->append(ToString(networkObject->GetNetworkId()));
-            }
+            if (!debugInfo->empty())
+                debugInfo->append(", ");
+            debugInfo->append(ToString(networkObject->GetNetworkId()));
         }
-        return sendMessage;
-    });
+    }
+
+    if (!sendMessage)
+        writer.Discard();
 }
 
 void ClientReplicationState::SendUpdateObjectsUnreliable(

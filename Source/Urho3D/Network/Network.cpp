@@ -278,7 +278,7 @@ void Network::BroadcastMessage(NetworkMessageId msgID, const unsigned char* data
     }
 
     for (auto& pair : clientConnections_)
-        pair.second->SendMessage(msgID, data, numBytes, packetType);
+        pair.second->SendMessage(msgID, ConstByteSpan{data, numBytes}, packetType);
 }
 
 void Network::BroadcastRemoteEvent(StringHash eventType, bool inOrder, const VariantMap& eventData)

@@ -104,13 +104,13 @@ void Connection::RegisterObject(Context* context)
 
 void Connection::SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType)
 {
-    URHO3D_ASSERT(messageId <= MSG_MAX);
-    URHO3D_ASSERT(numBytes <= packedMessageLimit_);
+    URHO3D_ASSERT(numBytes <= GetMaxMessageSize());
     URHO3D_ASSERT((data == nullptr && numBytes == 0) || (data != nullptr && numBytes > 0));
 
     VectorBuffer& buffer = outgoingBuffer_[packetType];
 
-    if (buffer.GetSize() + numBytes >= packedMessageLimit_)
+    // Flush buffer if it overflows on this message.
+    if (buffer.GetSize() + NetworkMessageHeaderSize + numBytes > GetMaxPacketSize())
         SendBuffer(packetType);
 
     buffer.WriteUShort(messageId);
@@ -767,11 +767,6 @@ void Connection::SendPackageToClient(PackageFile* package)
     msg_.WriteUInt(package->GetTotalSize());
     msg_.WriteUInt(package->GetChecksum());
     SendMessage(MSG_PACKAGEINFO, msg_);
-}
-
-void Connection::SetPacketSizeLimit(int limit)
-{
-    packedMessageLimit_ = limit;
 }
 
 void Connection::HandleAsyncLoadFinished()
