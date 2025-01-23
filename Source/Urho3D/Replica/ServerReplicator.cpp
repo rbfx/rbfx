@@ -390,26 +390,27 @@ void ClientReplicationState::ProcessObjectsFeedbackUnreliable(MemoryBuffer& mess
 
 void ClientReplicationState::SendRemoveObjects()
 {
-    connection_->SendGeneratedMessage(MSG_REMOVE_OBJECTS, PacketType::ReliableOrdered,
-        [&](VectorBuffer& msg, ea::string* debugInfo)
+    MultiMessageWriter writer{*connection_, MSG_REMOVE_OBJECTS, PacketType::ReliableOrdered};
+
+    VectorBuffer& msg = writer.GetBuffer();
+    ea::string* debugInfo = writer.GetDebugInfo();
+
+    msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
+    writer.CompleteHeader();
+
+    for (NetworkId networkId : pendingRemovedObjects_)
     {
+        msg.WriteUInt(static_cast<unsigned>(networkId));
+
         if (debugInfo)
         {
-            for (NetworkId networkId : pendingRemovedObjects_)
-            {
-                if (!debugInfo->empty())
-                    debugInfo->append(", ");
-                debugInfo->append(ToString(networkId));
-            }
+            if (!debugInfo->empty())
+                debugInfo->append(", ");
+            debugInfo->append(ToString(networkId));
         }
 
-        msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
-        for (NetworkId networkId : pendingRemovedObjects_)
-            msg.WriteUInt(static_cast<unsigned>(networkId));
-
-        const bool sendMessage = !pendingRemovedObjects_.empty();
-        return sendMessage;
-    });
+        writer.CompletePayload();
+    }
 }
 
 void ClientReplicationState::SendAddObjects()
@@ -490,48 +491,48 @@ void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationSt
 void ClientReplicationState::SendUpdateObjectsUnreliable(
     NetworkFrame currentFrame, const SharedReplicationState& sharedState)
 {
-    connection_->SendGeneratedMessage(MSG_UPDATE_OBJECTS_UNRELIABLE, PacketType::UnreliableUnordered,
-        [&](VectorBuffer& msg, ea::string* debugInfo)
+    MultiMessageWriter writer{*connection_, MSG_UPDATE_OBJECTS_UNRELIABLE, PacketType::UnreliableUnordered};
+
+    VectorBuffer& msg = writer.GetBuffer();
+    ea::string* debugInfo = writer.GetDebugInfo();
+
+    msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
+    writer.CompleteHeader();
+
+    for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
     {
-        bool sendMessage = false;
+        // Skip redundant updates, both if update is empty or if snapshot was already sent
+        const unsigned index = GetIndex(networkObject->GetNetworkId());
+        if (isSnapshot)
+            continue;
 
-        msg.WriteInt64(static_cast<long long>(GetCurrentFrame()));
+        const auto updateSpan = sharedState.GetUnreliableUpdateByIndex(index);
+        if (!updateSpan)
+            continue;
 
-        for (const auto& [networkObject, isSnapshot] : pendingUpdatedObjects_)
+        const NetworkObjectRelevance relevance = objectsRelevance_[index];
+        URHO3D_ASSERT(relevance != NetworkObjectRelevance::Irrelevant);
+        if (relevance == NetworkObjectRelevance::NoUpdates)
+            continue;
+
+        if (static_cast<long long>(currentFrame) % static_cast<unsigned>(relevance) != 0)
+            continue;
+
+        msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
+        msg.WriteStringHash(networkObject->GetType());
+
+        msg.WriteVLE(updateSpan->size());
+        msg.Write(updateSpan->data(), updateSpan->size());
+
+        if (debugInfo)
         {
-            // Skip redundant updates, both if update is empty or if snapshot was already sent
-            const unsigned index = GetIndex(networkObject->GetNetworkId());
-            if (isSnapshot)
-                continue;
-
-            const auto updateSpan = sharedState.GetUnreliableUpdateByIndex(index);
-            if (!updateSpan)
-                continue;
-
-            const NetworkObjectRelevance relevance = objectsRelevance_[index];
-            URHO3D_ASSERT(relevance != NetworkObjectRelevance::Irrelevant);
-            if (relevance == NetworkObjectRelevance::NoUpdates)
-                continue;
-
-            if (static_cast<long long>(currentFrame) % static_cast<unsigned>(relevance) != 0)
-                continue;
-
-            sendMessage = true;
-            msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
-            msg.WriteStringHash(networkObject->GetType());
-
-            msg.WriteVLE(updateSpan->size());
-            msg.Write(updateSpan->data(), updateSpan->size());
-
-            if (debugInfo)
-            {
-                if (!debugInfo->empty())
-                    debugInfo->append(", ");
-                debugInfo->append(ToString(networkObject->GetNetworkId()));
-            }
+            if (!debugInfo->empty())
+                debugInfo->append(", ");
+            debugInfo->append(ToString(networkObject->GetNetworkId()));
         }
-        return sendMessage;
-    });
+
+        writer.CompletePayload();
+    }
 }
 
 void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& sharedState)

@@ -412,35 +412,36 @@ void ClientReplica::OnNetworkUpdate()
 
 void ClientReplica::SendObjectsFeedbackUnreliable(NetworkFrame feedbackFrame)
 {
-    connection_->SendGeneratedMessage(MSG_OBJECTS_FEEDBACK_UNRELIABLE, PacketType::UnreliableUnordered,
-        [&](VectorBuffer& msg, ea::string* debugInfo)
+    MultiMessageWriter writer{*connection_, MSG_OBJECTS_FEEDBACK_UNRELIABLE, PacketType::UnreliableUnordered};
+
+    VectorBuffer& msg = writer.GetBuffer();
+    ea::string* debugInfo = writer.GetDebugInfo();
+
+    msg.WriteInt64(static_cast<long long>(feedbackFrame));
+    writer.CompleteHeader();
+
+    for (NetworkObject* networkObject : ownedObjects_)
     {
-        msg.WriteInt64(static_cast<long long>(feedbackFrame));
+        if (!networkObject)
+            continue;
 
-        bool sendMessage = false;
-        for (NetworkObject* networkObject : ownedObjects_)
+        if (!networkObject->PrepareUnreliableFeedback(feedbackFrame))
+            continue;
+
+        componentBuffer_.Clear();
+        networkObject->WriteUnreliableFeedback(feedbackFrame, componentBuffer_);
+        msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
+        msg.WriteBuffer(componentBuffer_.GetBuffer());
+
+        if (debugInfo)
         {
-            if (!networkObject)
-                continue;
-
-            componentBuffer_.Clear();
-            if (networkObject->PrepareUnreliableFeedback(feedbackFrame))
-            {
-                networkObject->WriteUnreliableFeedback(feedbackFrame, componentBuffer_);
-                sendMessage = true;
-                msg.WriteUInt(static_cast<unsigned>(networkObject->GetNetworkId()));
-                msg.WriteBuffer(componentBuffer_.GetBuffer());
-            }
-
-            if (debugInfo)
-            {
-                if (!debugInfo->empty())
-                    debugInfo->append(", ");
-                debugInfo->append(ToString(networkObject->GetNetworkId()));
-            }
+            if (!debugInfo->empty())
+                debugInfo->append(", ");
+            debugInfo->append(ToString(networkObject->GetNetworkId()));
         }
-        return sendMessage;
-    });
+
+        writer.CompletePayload();
+    }
 }
 
 }
