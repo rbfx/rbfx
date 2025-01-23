@@ -159,7 +159,7 @@ bool ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
     case MSG_SCENE_CLOCK:
     {
         const auto msg = ReadNetworkMessage<MsgSceneClock>(messageData);
-        connection_->OnMessageReceived(messageId, msg);
+        connection_->LogReceivedMessage(messageId, msg);
 
         ProcessSceneClock(msg);
         return true;
@@ -167,32 +167,32 @@ bool ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
 
     case MSG_REMOVE_OBJECTS:
     {
-        connection_->OnMessageReceived(messageId, messageData);
-
         ProcessRemoveObjects(messageData);
         return true;
     }
 
     case MSG_ADD_OBJECTS:
+    case MSG_ADD_OBJECTS_INCOMPLETE:
     {
-        connection_->OnMessageReceived(messageId, messageData);
+        LargeMessageReader reader{*connection_, MSG_ADD_OBJECTS_INCOMPLETE, MSG_ADD_OBJECTS};
+        reader.OnMessage(messageId, messageData, //
+            [this](MemoryBuffer& fullMessageData) { ProcessAddObjects(fullMessageData); });
 
-        ProcessAddObjects(messageData);
         return true;
     }
 
     case MSG_UPDATE_OBJECTS_RELIABLE:
+    case MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE:
     {
-        connection_->OnMessageReceived(messageId, messageData);
+        LargeMessageReader reader{*connection_, MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE, MSG_UPDATE_OBJECTS_RELIABLE};
+        reader.OnMessage(messageId, messageData,
+            [this](MemoryBuffer& fullMessageData) { ProcessUpdateObjectsReliable(fullMessageData); });
 
-        ProcessUpdateObjectsReliable(messageData);
         return true;
     }
 
     case MSG_UPDATE_OBJECTS_UNRELIABLE:
     {
-        connection_->OnMessageReceived(messageId, messageData);
-
         ProcessUpdateObjectsUnreliable(messageData);
         return true;
     }
