@@ -99,8 +99,6 @@ LargeMessageWriter::~LargeMessageWriter()
             connection_.SendMessage(messageId, chunkData, PacketType::ReliableOrdered, chunkDebugInfo);
         }
     }
-
-    buffer_.Clear();
 }
 
 void LargeMessageWriter::Discard()
@@ -134,6 +132,82 @@ void LargeMessageReader::OnMessage(NetworkMessageId messageId, MemoryBuffer& mes
             buffer_.clear();
         }
     }
+}
+
+MultiMessageWriter::MultiMessageWriter(
+    AbstractConnection& connection, NetworkMessageId messageId, PacketTypeFlags packetType)
+    : connection_(connection)
+    , buffer_(connection_.GetOutgoingMessageBuffer())
+    , debugInfo_(connection_.GetDebugInfoBuffer())
+    , messageId_(messageId)
+    , packetType_(packetType)
+{
+    buffer_.Clear();
+    debugInfo_.clear();
+}
+
+MultiMessageWriter::~MultiMessageWriter()
+{
+    if (nextPayloadOffset_ != headerSize_)
+        SendPreviousPayloads();
+}
+
+void MultiMessageWriter::CompleteHeader()
+{
+    if (headerSize_)
+    {
+        URHO3D_ASSERTLOG(false, "Common message header ({} bytes) is already completed", *headerSize_);
+        return;
+    }
+
+    headerSize_ = buffer_.GetSize();
+    nextPayloadOffset_ = *headerSize_;
+
+    URHO3D_ASSERTLOG(
+        *headerSize_ <= connection_.GetMaxMessageSize(), "Common message header ({} bytes) is too big", *headerSize_);
+}
+
+void MultiMessageWriter::CompletePayload()
+{
+    if (!headerSize_)
+        headerSize_ = 0;
+
+    // If latest payload doesn't fit, send the message and move the buffer.
+    if (buffer_.GetSize() > connection_.GetMaxMessageSize() && nextPayloadOffset_ != headerSize_)
+    {
+        SendPreviousPayloads();
+
+        auto& data = buffer_.GetBuffer();
+        const unsigned nextPayloadSize = data.size() - nextPayloadOffset_;
+        ea::copy(data.begin() + nextPayloadOffset_, data.end(), data.begin() + *headerSize_);
+        buffer_.Resize(*headerSize_ + nextPayloadSize);
+        debugInfo_.erase(0, nextDebugInfoOffset_);
+    }
+
+    // Current payload is ok to send
+    nextPayloadOffset_ = buffer_.GetSize();
+    nextDebugInfoOffset_ = debugInfo_.size();
+}
+
+VectorBuffer& MultiMessageWriter::GetBuffer()
+{
+    return buffer_;
+}
+
+ea::string* MultiMessageWriter::GetDebugInfo()
+{
+#ifdef URHO3D_LOGGING
+    return &debugInfo_;
+#else
+    return nullptr;
+#endif
+}
+
+void MultiMessageWriter::SendPreviousPayloads()
+{
+    const auto payload = ConstByteSpan{buffer_.GetBuffer()}.subspan(0, nextPayloadOffset_);
+    const auto debugInfo = ea::string_view{debugInfo_}.substr(0, nextDebugInfoOffset_);
+    connection_.SendMessage(messageId_, payload, packetType_, debugInfo);
 }
 
 } // namespace Urho3D

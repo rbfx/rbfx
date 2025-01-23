@@ -83,6 +83,7 @@ struct ClockSynchronizerMessage
 
     void Load(Deserializer& src);
     void Save(Serializer& dest) const;
+    ea::string ToString() const;
 };
 
 class URHO3D_API ClockSynchronizer

@@ -13,6 +13,7 @@
 #include "Urho3D/Network/Protocol.h"
 #include "Urho3D/Network/PacketTypeFlags.h"
 
+#include <EASTL/optional.h>
 #include <EASTL/unordered_set.h>
 
 namespace Urho3D
@@ -68,22 +69,6 @@ public:
         msg_.Clear();
         message.Save(msg_);
         SendMessage(messageId, msg_.GetBuffer(), messageType, debugInfo);
-    }
-
-    template <class T>
-    void SendGeneratedMessage(NetworkMessageId messageId, PacketTypeFlags messageType, T generator)
-    {
-    #ifdef URHO3D_LOGGING
-        ea::string debugInfo;
-        ea::string* debugInfoPtr = &debugInfo;
-    #else
-        static const ea::string debugInfo;
-        ea::string* debugInfoPtr = nullptr;
-    #endif
-
-        msg_.Clear();
-        if (generator(msg_, debugInfoPtr))
-            SendMessage(messageId, msg_.GetBuffer(), messageType, debugInfo);
     }
 
     void LogReceivedMessage(NetworkMessageId messageId, ea::string_view debugInfo) const;
@@ -152,6 +137,38 @@ private:
     ByteVector& buffer_;
     const NetworkMessageId incompleteMessageId_;
     const NetworkMessageId lastMessageId_;
+};
+
+/// Helper class to send multiple messages of the same type with the same common header.
+/// Messages are sent as soon as maximum packet size is reached.
+/// Message without payloads is not sent.
+/// Size of header and single payload should not exceed maximum message size.
+class MultiMessageWriter
+{
+public:
+    MultiMessageWriter(AbstractConnection& connection, NetworkMessageId messageId, PacketTypeFlags packetType);
+    ~MultiMessageWriter();
+
+    /// Complete shared header that is going to be sent for each individual message. Could be empty.
+    void CompleteHeader();
+    /// Complete individual payload. Single message will contain one or more payloads.
+    void CompletePayload();
+
+    VectorBuffer& GetBuffer();
+    ea::string* GetDebugInfo();
+
+private:
+    void SendPreviousPayloads();
+
+    AbstractConnection& connection_;
+    VectorBuffer& buffer_;
+    ea::string& debugInfo_;
+    const NetworkMessageId messageId_;
+    const PacketTypeFlags packetType_;
+
+    ea::optional<unsigned> headerSize_;
+    unsigned nextPayloadOffset_{};
+    unsigned nextDebugInfoOffset_{};
 };
 
 } // namespace Urho3D

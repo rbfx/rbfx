@@ -283,14 +283,7 @@ void Connection::SendAllBuffers()
     {
         auto& buffer = outgoingBuffer_[PacketType::UnreliableUnordered];
         while (const auto clockMessage = clock_->PollMessage())
-        {
-            SendGeneratedMessage(MSG_CLOCK_SYNC, PacketType::UnreliableUnordered,
-                [&](VectorBuffer& msg, ea::string* debugInfo)
-            {
-                clockMessage->Save(msg);
-                return true;
-            });
-        }
+            SendSerializedMessage(MSG_CLOCK_SYNC, *clockMessage, PacketType::UnreliableUnordered);
     }
 
     SendBuffer(PacketType::ReliableOrdered);
