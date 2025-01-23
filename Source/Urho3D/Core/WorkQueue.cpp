@@ -341,7 +341,7 @@ void WorkQueue::ProcessPostedTasks()
     }
 }
 
-void WorkQueue::ProcessMainThreadTasks()
+bool WorkQueue::ProcessMainThreadTasks()
 {
 #ifdef URHO3D_THREADING
     if (taskScheduler_)
@@ -355,7 +355,10 @@ void WorkQueue::ProcessMainThreadTasks()
 
     for (const auto& callback : mainThreadTasksSwap_)
         callback(0, this);
+    const bool nothingToRun = mainThreadTasksSwap_.empty();
     mainThreadTasksSwap_.clear();
+
+    return !nothingToRun;
 }
 
 void WorkQueue::PurgeProcessedTasksInFallbackQueue()
@@ -519,6 +522,11 @@ void WorkQueue::CompleteAll()
         for (auto& [taskPriority, task] : fallbackTaskQueue_)
             task(0, this);
         fallbackTaskQueue_.clear();
+    }
+
+    while (ProcessMainThreadTasks())
+    {
+        // Run tasks in main thread until there is nothing to run
     }
 }
 
