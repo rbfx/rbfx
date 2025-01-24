@@ -1,33 +1,18 @@
-//
-// Copyright (c) 2017-2022 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include <rtc/websocket.hpp>
-#include <rtc/peerconnection.hpp>
-#include <rtc/description.hpp>
+#include "Urho3D/Network/Transport/DataChannel/DataChannelConnection.h"
+
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Timer.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/Network/Transport/DataChannel/DataChannelServer.h"
+
 #include <rtc/candidate.hpp>
-#include <Urho3D/Core/Context.h>
-#include <Urho3D/Core/Timer.h>
-#include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
-#include <Urho3D/Network/Transport/DataChannel/DataChannelConnection.h>
+#include <rtc/description.hpp>
+#include <rtc/peerconnection.hpp>
+#include <rtc/websocket.hpp>
 
 namespace Urho3D
 {

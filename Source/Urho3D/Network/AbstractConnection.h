@@ -8,12 +8,10 @@
 #include "Urho3D/Container/IndexAllocator.h"
 #include "Urho3D/Core/Object.h"
 #include "Urho3D/IO/Log.h"
-#include "Urho3D/IO/MemoryBuffer.h"
 #include "Urho3D/IO/VectorBuffer.h"
 #include "Urho3D/Network/Protocol.h"
 #include "Urho3D/Network/PacketTypeFlags.h"
 
-#include <EASTL/optional.h>
 #include <EASTL/unordered_set.h>
 
 namespace Urho3D
@@ -28,9 +26,12 @@ class URHO3D_API AbstractConnection : public Object, public IDFamily<AbstractCon
 public:
     AbstractConnection(Context* context) : Object(context) {}
 
+    /// Connection limits.
+    /// @{
     void SetMaxPacketSize(unsigned limit) { maxPacketSize_ = limit; }
     unsigned GetMaxPacketSize() const { return maxPacketSize_; }
     unsigned GetMaxMessageSize() const { return maxPacketSize_ - NetworkMessageHeaderSize; }
+    /// @}
 
     /// Send message to the other end of the connection.
     virtual void SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType = PacketType::ReliableOrdered) = 0;
@@ -49,27 +50,13 @@ public:
     /// Return ping of the connection.
     virtual unsigned GetPing() const = 0;
 
-    /// Syntax sugar for SendBuffer
+    /// Syntax sugar for sending and receiving messages.
     /// @{
     void SendMessage(NetworkMessageId messageId, ConstByteSpan payload = {},
         PacketTypeFlags packetType = PacketType::ReliableOrdered, ea::string_view debugInfo = {});
 
     void SendMessage(NetworkMessageId messageId, const VectorBuffer& msg,
         PacketTypeFlags packetType = PacketType::ReliableOrdered, ea::string_view debugInfo = {});
-
-    template <class T>
-    void SendSerializedMessage(NetworkMessageId messageId, const T& message, PacketTypeFlags messageType = PacketType::ReliableOrdered)
-    {
-    #ifdef URHO3D_LOGGING
-        const ea::string debugInfo = message.ToString();
-    #else
-        static const ea::string debugInfo;
-    #endif
-
-        msg_.Clear();
-        message.Save(msg_);
-        SendMessage(messageId, msg_.GetBuffer(), messageType, debugInfo);
-    }
 
     void LogReceivedMessage(NetworkMessageId messageId, ea::string_view debugInfo) const;
 
@@ -95,80 +82,6 @@ private:
 
     ByteVector incomingMessageBuffer_;
     ea::string debugInfoBuffer_;
-};
-
-/// Helper class to send large message as multiple small messages.
-/// All messages are sent on destruction.
-/// Separate large messages will never overlap neither on send nor on receive.
-class LargeMessageWriter
-{
-public:
-    LargeMessageWriter(
-        AbstractConnection& connection, NetworkMessageId incompleteMessageId, NetworkMessageId lastMessageId);
-    ~LargeMessageWriter();
-
-    void Discard();
-
-    VectorBuffer& GetBuffer();
-    ea::string* GetDebugInfo();
-
-private:
-    AbstractConnection& connection_;
-    VectorBuffer& buffer_;
-    ea::string& debugInfo_;
-    const NetworkMessageId incompleteMessageId_;
-    const NetworkMessageId lastMessageId_;
-
-    bool discarded_{};
-};
-
-/// Helper class to reassemble large messages.
-class LargeMessageReader
-{
-public:
-    using Callback = ea::function<void(MemoryBuffer& messageData)>;
-
-    LargeMessageReader(
-        AbstractConnection& connection, NetworkMessageId incompleteMessageId, NetworkMessageId lastMessageId);
-
-    void OnMessage(NetworkMessageId messageId, MemoryBuffer& messageData, Callback onMessageReceived);
-
-private:
-    ByteVector& buffer_;
-    const NetworkMessageId incompleteMessageId_;
-    const NetworkMessageId lastMessageId_;
-};
-
-/// Helper class to send multiple messages of the same type with the same common header.
-/// Messages are sent as soon as maximum packet size is reached.
-/// Message without payloads is not sent.
-/// Size of header and single payload should not exceed maximum message size.
-class MultiMessageWriter
-{
-public:
-    MultiMessageWriter(AbstractConnection& connection, NetworkMessageId messageId, PacketTypeFlags packetType);
-    ~MultiMessageWriter();
-
-    /// Complete shared header that is going to be sent for each individual message. Could be empty.
-    void CompleteHeader();
-    /// Complete individual payload. Single message will contain one or more payloads.
-    void CompletePayload();
-
-    VectorBuffer& GetBuffer();
-    ea::string* GetDebugInfo();
-
-private:
-    void SendPreviousPayloads();
-
-    AbstractConnection& connection_;
-    VectorBuffer& buffer_;
-    ea::string& debugInfo_;
-    const NetworkMessageId messageId_;
-    const PacketTypeFlags packetType_;
-
-    ea::optional<unsigned> headerSize_;
-    unsigned nextPayloadOffset_{};
-    unsigned nextDebugInfoOffset_{};
 };
 
 } // namespace Urho3D

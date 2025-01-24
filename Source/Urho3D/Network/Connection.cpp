@@ -1,55 +1,40 @@
-//
 // Copyright (c) 2008-2022 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2022-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Core/Profiler.h"
-#include "../Core/WorkQueue.h"
-#include "../IO/File.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
-#include "../IO/MemoryBuffer.h"
-#include "../IO/PackageFile.h"
-#include "../IO/VirtualFileSystem.h"
-#include "../Network/ClockSynchronizer.h"
-#include "../Network/Connection.h"
-#include "../Network/Network.h"
-#include "../Network/NetworkEvents.h"
-#include "../Network/Protocol.h"
-#include "../Network/Transport/NetworkConnection.h"
-#include "../Replica/ReplicationManager.h"
-#include "../Resource/ResourceCache.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
+#include "Urho3D/Network/Connection.h"
 
-#ifdef SendMessage
-#undef SendMessage
-#endif
-
-#include "../DebugNew.h"
-#include "Connection.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Profiler.h"
+#include "Urho3D/Core/WorkQueue.h"
+#include "Urho3D/IO/File.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/IO/PackageFile.h"
+#include "Urho3D/IO/VirtualFileSystem.h"
+#include "Urho3D/Network/ClockSynchronizer.h"
+#include "Urho3D/Network/Connection.h"
+#include "Urho3D/Network/MessageUtils.h"
+#include "Urho3D/Network/Network.h"
+#include "Urho3D/Network/NetworkEvents.h"
+#include "Urho3D/Network/Protocol.h"
+#include "Urho3D/Network/Transport/NetworkConnection.h"
+#include "Urho3D/Replica/ReplicationManager.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
 
 #include <cstdio>
+
+#include "Urho3D/DebugNew.h"
+
+#ifdef SendMessage
+    #undef SendMessage
+#endif
 
 namespace Urho3D
 {
@@ -283,7 +268,7 @@ void Connection::SendAllBuffers()
     {
         auto& buffer = outgoingBuffer_[PacketType::UnreliableUnordered];
         while (const auto clockMessage = clock_->PollMessage())
-            SendSerializedMessage(MSG_CLOCK_SYNC, *clockMessage, PacketType::UnreliableUnordered);
+            WriteSerializedMessage(*this, MSG_CLOCK_SYNC, *clockMessage, PacketType::UnreliableUnordered);
     }
 
     SendBuffer(PacketType::ReliableOrdered);
