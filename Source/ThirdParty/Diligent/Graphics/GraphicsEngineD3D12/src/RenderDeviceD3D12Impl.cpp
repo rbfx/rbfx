@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -142,12 +142,6 @@ RenderDeviceD3D12Impl::RenderDeviceD3D12Impl(IReferenceCounters*          pRefCo
         AdapterInfo
     },
     m_pd3d12Device   {pd3d12Device},
-    m_CmdListManagers
-    {
-        {*this, D3D12_COMMAND_LIST_TYPE_DIRECT},
-        {*this, D3D12_COMMAND_LIST_TYPE_COMPUTE},
-        {*this, D3D12_COMMAND_LIST_TYPE_COPY}
-    },
     m_CPUDescriptorHeaps
     {
         {RawMemAllocator, *this, EngineCI.CPUDescriptorHeapAllocationSize[0], D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE},
@@ -160,7 +154,12 @@ RenderDeviceD3D12Impl::RenderDeviceD3D12Impl(IReferenceCounters*          pRefCo
         {RawMemAllocator, *this, EngineCI.GPUDescriptorHeapSize[0], EngineCI.GPUDescriptorHeapDynamicSize[0], D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE},
         {RawMemAllocator, *this, EngineCI.GPUDescriptorHeapSize[1], EngineCI.GPUDescriptorHeapDynamicSize[1], D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,     D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE}
     },
-    m_ContextPool           (STD_ALLOCATOR_RAW_MEM(PooledCommandContext, GetRawAllocator(), "Allocator for vector<PooledCommandContext>")),
+    m_CmdListManagers
+    {
+        {*this, D3D12_COMMAND_LIST_TYPE_DIRECT},
+        {*this, D3D12_COMMAND_LIST_TYPE_COMPUTE},
+        {*this, D3D12_COMMAND_LIST_TYPE_COPY}
+    },
     m_DynamicMemoryManager  {GetRawAllocator(), *this, EngineCI.NumDynamicHeapPagesToReserve, EngineCI.DynamicHeapPageSize},
     m_MipsGenerator         {pd3d12Device},
     m_pDxCompiler           {CreateDXCompiler(DXCompilerTarget::Direct3D12, 0, EngineCI.pDxCompilerPath)},
@@ -257,6 +256,8 @@ RenderDeviceD3D12Impl::RenderDeviceD3D12Impl(IReferenceCounters*          pRefCo
                 m_IsPSOCacheSupported = (ShaderCacheFeature.SupportFlags & D3D12_SHADER_CACHE_SUPPORT_LIBRARY) != 0;
             }
         }
+
+        InitShaderCompilationThreadPool(EngineCI.pAsyncShaderCompilationThreadPool, EngineCI.NumAsyncShaderCompilationThreads);
     }
     catch (...)
     {
@@ -282,11 +283,11 @@ RenderDeviceD3D12Impl::~RenderDeviceD3D12Impl()
     ReleaseStaleResources(true);
 
 #ifdef DILIGENT_DEVELOPMENT
-    for (auto i = 0; i < _countof(m_CPUDescriptorHeaps); ++i)
+    for (size_t i = 0; i < _countof(m_CPUDescriptorHeaps); ++i)
     {
         DEV_CHECK_ERR(m_CPUDescriptorHeaps[i].DvpGetTotalAllocationCount() == 0, "All CPU descriptor heap allocations must be released");
     }
-    for (auto i = 0; i < _countof(m_GPUDescriptorHeaps); ++i)
+    for (size_t i = 0; i < _countof(m_GPUDescriptorHeaps); ++i)
     {
         DEV_CHECK_ERR(m_GPUDescriptorHeaps[i].DvpGetTotalAllocationCount() == 0, "All GPU descriptor heap allocations must be released");
     }
@@ -316,8 +317,10 @@ void RenderDeviceD3D12Impl::DisposeCommandContext(PooledCommandContext&& Ctx)
 
 void RenderDeviceD3D12Impl::FreeCommandContext(PooledCommandContext&& Ctx)
 {
-    std::lock_guard<std::mutex> LockGuard(m_ContextPoolMutex);
-    m_ContextPool.emplace_back(std::move(Ctx));
+    const auto CmdListType = Ctx->GetCommandListType();
+
+    std::lock_guard<std::mutex> Guard{m_ContextPoolMutex};
+    m_ContextPool.emplace(CmdListType, std::move(Ctx));
 #ifdef DILIGENT_DEVELOPMENT
     m_AllocatedCtxCounter.fetch_add(-1);
 #endif
@@ -454,11 +457,13 @@ RenderDeviceD3D12Impl::PooledCommandContext RenderDeviceD3D12Impl::AllocateComma
 {
     auto& CmdListMngr = GetCmdListManager(CommandQueueId);
     {
-        std::lock_guard<std::mutex> LockGuard(m_ContextPoolMutex);
-        if (!m_ContextPool.empty())
+        std::lock_guard<std::mutex> Guard{m_ContextPoolMutex};
+
+        auto pool_it = m_ContextPool.find(CmdListMngr.GetCommandListType());
+        if (pool_it != m_ContextPool.end())
         {
-            PooledCommandContext Ctx = std::move(m_ContextPool.back());
-            m_ContextPool.pop_back();
+            PooledCommandContext Ctx = std::move(pool_it->second);
+            m_ContextPool.erase(pool_it);
             Ctx->Reset(CmdListMngr);
             Ctx->SetID(ID);
 #ifdef DILIGENT_DEVELOPMENT
@@ -485,7 +490,7 @@ void RenderDeviceD3D12Impl::TestTextureFormat(TEXTURE_FORMAT TexFormat)
 
     auto DXGIFormat = TexFormatToDXGI_Format(TexFormat);
 
-    D3D12_FEATURE_DATA_FORMAT_SUPPORT FormatSupport = {DXGIFormat};
+    D3D12_FEATURE_DATA_FORMAT_SUPPORT FormatSupport = {DXGIFormat, {}, {}};
 
     auto hr = m_pd3d12Device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &FormatSupport, sizeof(FormatSupport));
     if (FAILED(hr))
@@ -519,7 +524,7 @@ void RenderDeviceD3D12Impl::TestTextureFormat(TEXTURE_FORMAT TexFormat)
     TexFormatInfo.SampleCounts = SAMPLE_COUNT_NONE;
     for (Uint32 SampleCount = 1; SampleCount <= D3D12_MAX_MULTISAMPLE_SAMPLE_COUNT; SampleCount *= 2)
     {
-        D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS QualityLevels = {DXGIFormat, SampleCount};
+        D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS QualityLevels = {DXGIFormat, SampleCount, {}, {}};
 
         hr = m_pd3d12Device->CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, &QualityLevels, sizeof(QualityLevels));
         if (SUCCEEDED(hr) && QualityLevels.NumQualityLevels > 0)
@@ -553,12 +558,18 @@ void RenderDeviceD3D12Impl::CreateBuffer(const BufferDesc& BuffDesc, const Buffe
 }
 
 
-void RenderDeviceD3D12Impl::CreateShader(const ShaderCreateInfo& ShaderCI, IShader** ppShader)
+void RenderDeviceD3D12Impl::CreateShader(const ShaderCreateInfo& ShaderCI,
+                                         IShader**               ppShader,
+                                         IDataBlob**             ppCompilerOutput)
 {
     const ShaderD3D12Impl::CreateInfo D3D12ShaderCI{
-        GetDxCompiler(),
-        GetDeviceInfo(),
-        GetAdapterInfo(),
+        {
+            GetDeviceInfo(),
+            GetAdapterInfo(),
+            GetDxCompiler(),
+            ppCompilerOutput,
+            m_pShaderCompilationThreadPool,
+        },
         m_DeviceInfo.MaxShaderVersion.HLSL,
     };
     CreateShaderImpl(ppShader, ShaderCI, D3D12ShaderCI);
@@ -707,8 +718,9 @@ SparseTextureFormatInfo RenderDeviceD3D12Impl::GetSparseTextureFormatInfo(TEXTUR
                                                                           Uint32             SampleCount) const
 {
     D3D12_FEATURE_DATA_FORMAT_SUPPORT FormatSupport{
-        TexFormatToDXGI_Format(TexFormat) // .Format
-    };
+        TexFormatToDXGI_Format(TexFormat), // .Format
+        {},
+        {}};
     if (FAILED(m_pd3d12Device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &FormatSupport, sizeof(FormatSupport))) ||
         (FormatSupport.Support2 & D3D12_FORMAT_SUPPORT2_TILED) != D3D12_FORMAT_SUPPORT2_TILED)
     {

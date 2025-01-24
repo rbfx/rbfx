@@ -98,16 +98,6 @@ void Object::SerializeInBlock(Archive& /*archive*/)
     throw ArchiveException("Serialization is not supported for type '{}'", GetTypeName());
 }
 
-bool Object::IsInstanceOf(StringHash type) const
-{
-    return GetTypeInfo()->IsTypeOf(type);
-}
-
-bool Object::IsInstanceOf(const TypeInfo* typeInfo) const
-{
-    return GetTypeInfo()->IsTypeOf(typeInfo);
-}
-
 void Object::SubscribeToEventManual(StringHash eventType, EventHandler* handler)
 {
     if (!handler)

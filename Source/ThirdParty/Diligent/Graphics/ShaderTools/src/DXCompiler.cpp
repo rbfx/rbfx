@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,21 +32,14 @@
 #include <memory>
 #include <mutex>
 #include <atomic>
+#include <array>
+#include <sstream>
 
-// Platforms that support DXCompiler.
-#if PLATFORM_WIN32
-#    include "DXCompilerBaseWin32.hpp"
-#elif PLATFORM_UNIVERSAL_WINDOWS
-#    include "DXCompilerBaseUWP.hpp"
-#elif PLATFORM_LINUX
-#    include "DXCompilerBaseLinux.hpp"
-#else
-#    error DXC is not supported on this platform
+#if PLATFORM_WIN32 || PLATFORM_UNIVERSAL_WINDOWS
+#    include "WinHPreface.h"
+#    include <atlbase.h>
+#    include "WinHPostface.h"
 #endif
-
-#include "DataBlobImpl.hpp"
-#include "RefCntAutoPtr.hpp"
-#include "ShaderToolsCommon.hpp"
 
 #if D3D12_SUPPORTED
 #    include "WinHPreface.h"
@@ -61,6 +54,13 @@
 #    endif
 #endif
 
+#include "DXCompilerLibrary.hpp"
+#include "DXCompiler.hpp"
+
+#include "DataBlobImpl.hpp"
+#include "RefCntAutoPtr.hpp"
+#include "ShaderToolsCommon.hpp"
+
 #include "HLSLUtils.hpp"
 
 #include "dxc/DxilContainer/DxilContainer.h"
@@ -74,36 +74,31 @@ constexpr Uint32 VK_API_VERSION_1_1 = (1u << 22) | (1u << 12);
 constexpr Uint32 VK_API_VERSION_1_2 = (1u << 22) | (2u << 12);
 
 
-class DXCompilerImpl final : public DXCompilerBase
+class DXCompilerImpl final : public IDXCompiler
 {
 public:
-    DXCompilerImpl(DXCompilerTarget Target, Uint32 APIVersion, const char* pLibName) :
-        m_LibName{pLibName ? pLibName : (Target == DXCompilerTarget::Direct3D12 ? "dxcompiler" : "spv_dxcompiler")},
-        m_Target{Target},
+    DXCompilerImpl(DXCompilerTarget Target, Uint32 APIVersion, const char* LibName) :
+        m_Library{Target, LibName != nullptr && LibName[0] != '\0' ? LibName : (Target == DXCompilerTarget::Direct3D12 ? "dxcompiler" : "spv_dxcompiler")},
         m_APIVersion{APIVersion}
     {}
 
     ShaderVersion GetMaxShaderModel() override final
     {
-        Load();
-        // mutex is not needed here
-        return m_MaxShaderModel;
+        // Force loading the library
+        m_Library.GetDxcCreateInstance();
+        return m_Library.GetMaxShaderModel();
     }
 
     bool IsLoaded() override final
     {
-        return GetCreateInstanceProc() != nullptr;
+        return m_Library.GetDxcCreateInstance() != nullptr;
     }
 
-    DxcCreateInstanceProc GetCreateInstanceProc()
+    virtual Version GetVersion() override final
     {
-        return Load();
-    }
-
-    virtual void GetVersion(Uint32& MajorVersion, Uint32& MinorVersion) const override final
-    {
-        MajorVersion = m_MajorVer;
-        MinorVersion = m_MinorVer;
+        // Force loading the library
+        m_Library.GetDxcCreateInstance();
+        return m_Library.GetVersion();
     }
 
     bool Compile(const CompileAttribs& Attribs) override final;
@@ -123,36 +118,6 @@ public:
                                        IDxcBlob**                 ppDstByteCode) override final;
 
 private:
-    DxcCreateInstanceProc Load()
-    {
-        std::unique_lock<std::mutex> lock{m_Guard};
-
-        if (m_IsInitialized)
-            return m_pCreateInstance;
-
-        m_IsInitialized   = true;
-        m_pCreateInstance = DXCompilerBase::Load(m_Target, m_LibName);
-
-        if (m_pCreateInstance)
-        {
-            m_MaxShaderModel = TestMaxShaderModel(m_pCreateInstance, m_Target);
-
-            CComPtr<IDxcValidator> pdxcValidator;
-            if (SUCCEEDED(m_pCreateInstance(CLSID_DxcValidator, IID_PPV_ARGS(&pdxcValidator))))
-            {
-                CComPtr<IDxcVersionInfo> pdxcVerInfo;
-                if (SUCCEEDED(pdxcValidator->QueryInterface(IID_PPV_ARGS(&pdxcVerInfo))))
-                {
-                    pdxcVerInfo->GetVersion(&m_MajorVer, &m_MinorVer);
-                }
-            }
-
-            LOG_INFO_MESSAGE("Loaded DX Shader Compiler ", m_MajorVer, ".", m_MinorVer, ". Max supported shader model: ", m_MaxShaderModel.Major, '.', m_MaxShaderModel.Minor);
-        }
-
-        return m_pCreateInstance;
-    }
-
     bool ValidateAndSign(DxcCreateInstanceProc CreateInstance, IDxcLibrary* pdxcLibrary, CComPtr<IDxcBlob>& pCompiled, IDxcBlob** ppOutput) const noexcept(false);
 
     enum RES_TYPE : Uint32
@@ -168,6 +133,7 @@ private:
     struct ResourceExtendedInfo
     {
         Uint32   SrcBindPoint = ~0u;
+        Uint32   SrcArraySize = ~0u;
         Uint32   SrcSpace     = ~0u;
         Uint32   RecordId     = ~0u;
         RES_TYPE Type         = RES_TYPE_INVALID;
@@ -177,21 +143,19 @@ private:
     static bool PatchDXIL(const TResourceBindingMap& ResourceMap, TExtendedResourceMap& ExtResMap, SHADER_TYPE ShaderType, String& DXIL);
     static void PatchResourceDeclaration(const TResourceBindingMap& ResourceMap, TExtendedResourceMap& ExtResMap, String& DXIL) noexcept(false);
     static void PatchResourceDeclarationRT(const TResourceBindingMap& ResourceMap, TExtendedResourceMap& ExtResMap, String& DXIL) noexcept(false);
-    static void PatchResourceHandle(const TResourceBindingMap& ResourceMap, TExtendedResourceMap& ExtResMap, String& DXIL) noexcept(false);
+    static void PatchCreateHandle(const TResourceBindingMap& ResourceMap, TExtendedResourceMap& ExtResMap, String& DXIL) noexcept(false);
+    static void PatchCreateHandleFromBinding(const TResourceBindingMap& ResourceMap, TExtendedResourceMap& ExtResMap, String& DXIL) noexcept(false);
 
-    static ShaderVersion TestMaxShaderModel(DxcCreateInstanceProc CreateInstance, DXCompilerTarget Target);
+    static RES_TYPE ResClassToResType(Uint32 ResClass);
+
+    static const TExtendedResourceMap::value_type* FindResourceByRecordId(const TExtendedResourceMap& ExtResMap, Uint32 ResClass, Uint32 RecordId);
+    static const TExtendedResourceMap::value_type* FindResourceByBindPoint(const TExtendedResourceMap& ExtResMap, Uint32 ResClass, Uint32 BindPoint, Uint32 Space);
+
+    static void PatchResourceIndex(const ResourceExtendedInfo& ResInfo, const BindInfo& Bind, String& DXIL, size_t& pos);
 
 private:
-    DxcCreateInstanceProc  m_pCreateInstance = nullptr;
-    bool                   m_IsInitialized   = false;
-    ShaderVersion          m_MaxShaderModel;
-    std::mutex             m_Guard;
-    const String           m_LibName;
-    const DXCompilerTarget m_Target;
-    const Uint32           m_APIVersion;
-    // Compiler version
-    UINT32 m_MajorVer = 0;
-    UINT32 m_MinorVer = 0;
+    DXCompilerLibrary m_Library;
+    const Uint32      m_APIVersion;
 };
 
 #define CHECK_D3D_RESULT(Expr, Message)   \
@@ -216,7 +180,13 @@ public:
     HRESULT STDMETHODCALLTYPE LoadSource(_In_ LPCWSTR pFilename, _COM_Outptr_result_maybenull_ IDxcBlob** ppIncludeSource) override
     {
         if (pFilename == nullptr)
-            return E_FAIL;
+            return E_INVALIDARG;
+
+
+        if (ppIncludeSource == nullptr)
+            return E_INVALIDARG;
+
+        *ppIncludeSource = nullptr;
 
         String fileName;
         fileName.resize(wcslen(pFilename));
@@ -284,6 +254,70 @@ private:
     std::vector<RefCntAutoPtr<IDataBlob>>  m_FileDataCache;
 };
 
+class DxcBlobWrapper final : public IDxcBlob
+{
+public:
+    static void Create(IDataBlob* pDataBlob, IDxcBlob** ppBlob)
+    {
+        auto* pBlob = new DxcBlobWrapper{pDataBlob};
+        pBlob->QueryInterface(__uuidof(IDxcBlob), reinterpret_cast<void**>(ppBlob));
+    }
+
+    ~DxcBlobWrapper()
+    {
+        VERIFY(m_RefCount.load() == 0, "Destroying object with outstanding references");
+    }
+
+    virtual HRESULT STDMETHODCALLTYPE QueryInterface(const IID& riid, void** ppvObject) override final
+    {
+        if (riid == __uuidof(IDxcBlob) || riid == __uuidof(IUnknown))
+        {
+            *ppvObject = this;
+            AddRef();
+            return S_OK;
+        }
+        else
+        {
+            *ppvObject = nullptr;
+            return E_NOINTERFACE;
+        }
+    }
+
+    virtual ULONG STDMETHODCALLTYPE AddRef(void) override final
+    {
+        return m_RefCount.fetch_add(1) + 1;
+    }
+
+    virtual ULONG STDMETHODCALLTYPE Release(void) override final
+    {
+        auto RemainingRefs = m_RefCount.fetch_add(-1) - 1;
+        if (RemainingRefs == 0)
+            delete this;
+
+        return RemainingRefs;
+    }
+
+    virtual LPVOID STDMETHODCALLTYPE GetBufferPointer(void) override final
+    {
+        return m_pData->GetDataPtr();
+    }
+
+    virtual SIZE_T STDMETHODCALLTYPE GetBufferSize(void) override final
+    {
+        return m_pData->GetSize();
+    }
+
+private:
+    DxcBlobWrapper(IDataBlob* pDataBlob) :
+        m_pData{pDataBlob}
+    {}
+
+private:
+    RefCntAutoPtr<IDataBlob> m_pData;
+
+    std::atomic<long> m_RefCount{0};
+};
+
 } // namespace
 
 
@@ -292,76 +326,11 @@ std::unique_ptr<IDXCompiler> CreateDXCompiler(DXCompilerTarget Target, Uint32 AP
     return std::make_unique<DXCompilerImpl>(Target, APIVersion, pLibraryName);
 }
 
-ShaderVersion DXCompilerImpl::TestMaxShaderModel(DxcCreateInstanceProc CreateInstance, DXCompilerTarget Target)
-{
-    VERIFY_EXPR(CreateInstance != nullptr);
-    try
-    {
-        CComPtr<IDxcLibrary> pdxcLibrary;
-        CHECK_D3D_RESULT(CreateInstance(CLSID_DxcLibrary, IID_PPV_ARGS(&pdxcLibrary)), "Failed to create DXC Library");
-
-        CComPtr<IDxcCompiler> pdxcCompiler;
-        CHECK_D3D_RESULT(CreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&pdxcCompiler)), "Failed to create DXC Compiler");
-
-        constexpr char TestShader[] = R"(
-float4 main() : SV_Target0
-{
-    return float4(0.0, 0.0, 0.0, 0.0);
-}
-)";
-
-        CComPtr<IDxcBlobEncoding> pSourceBlob;
-        CHECK_D3D_RESULT(pdxcLibrary->CreateBlobWithEncodingFromPinned(TestShader, sizeof(TestShader), CP_UTF8, &pSourceBlob), "Failed to create DXC Blob Encoding");
-
-        ShaderVersion MaxSM{6, 0};
-
-        std::vector<const wchar_t*> DxilArgs;
-        if (Target == DXCompilerTarget::Vulkan)
-            DxilArgs.push_back(L"-spirv");
-
-        for (Uint32 MinorVer = 1;; ++MinorVer)
-        {
-            std::wstring Profile = L"ps_6_";
-            Profile += std::to_wstring(MinorVer);
-
-            CComPtr<IDxcOperationResult> pdxcResult;
-
-            auto hr = pdxcCompiler->Compile(
-                pSourceBlob,
-                L"",
-                L"main",
-                Profile.c_str(),
-                !DxilArgs.empty() ? DxilArgs.data() : nullptr,
-                static_cast<UINT32>(DxilArgs.size()),
-                nullptr, // Array of defines
-                0,       // Number of defines
-                nullptr, // Include handler
-                &pdxcResult);
-            if (FAILED(hr))
-                break;
-
-            HRESULT status = E_FAIL;
-            if (FAILED(pdxcResult->GetStatus(&status)))
-                break;
-            if (FAILED(status))
-                break;
-
-            MaxSM.Minor = MinorVer;
-        }
-
-        return MaxSM;
-    }
-    catch (...)
-    {
-        return {};
-    }
-}
-
 bool DXCompilerImpl::Compile(const CompileAttribs& Attribs)
 {
     try
     {
-        auto CreateInstance = GetCreateInstanceProc();
+        DxcCreateInstanceProc CreateInstance = m_Library.GetDxcCreateInstance();
         if (CreateInstance == nullptr)
             LOG_ERROR_AND_THROW("Failed to load DXCompiler");
 
@@ -427,7 +396,7 @@ bool DXCompilerImpl::Compile(const CompileAttribs& Attribs)
         CHECK_D3D_RESULT(pdxcResult->GetResult(&pCompiledBlob), "Failed to get compiled blob from DXC operation result");
 
         // Validate and sign
-        if (m_Target == DXCompilerTarget::Direct3D12)
+        if (m_Library.GetTarget() == DXCompilerTarget::Direct3D12)
         {
             return ValidateAndSign(CreateInstance, pdxcLibrary, pCompiledBlob, Attribs.ppBlobOut);
         }
@@ -671,10 +640,12 @@ private:
 void DXCompilerImpl::GetD3D12ShaderReflection(IDxcBlob*                pShaderBytecode,
                                               ID3D12ShaderReflection** ppShaderReflection)
 {
+    // NOTE: a reference to pShaderBytecode may be kept in the returned object
+
 #if D3D12_SUPPORTED
     try
     {
-        auto CreateInstance = GetCreateInstanceProc();
+        DxcCreateInstanceProc CreateInstance = m_Library.GetDxcCreateInstance();
         if (CreateInstance == nullptr)
             return;
 
@@ -753,38 +724,35 @@ void DXCompilerImpl::Compile(const ShaderCreateInfo& ShaderCI,
     const std::wstring wstrEntryPoint{ShaderCI.EntryPoint, ShaderCI.EntryPoint + strlen(ShaderCI.EntryPoint)};
 
     std::vector<const wchar_t*> DxilArgs;
-    if (m_Target == DXCompilerTarget::Direct3D12)
+    if (m_Library.GetTarget() == DXCompilerTarget::Direct3D12)
     {
-        DxilArgs.push_back(L"-Zpc"); // Matrices in column-major order
-
         //DxilArgs.push_back(L"-WX");  // Warnings as errors
 #ifdef DILIGENT_DEBUG
-        DxilArgs.push_back(L"-Zi"); // Debug info
-        DxilArgs.push_back(L"-Od"); // Disable optimization
-        if (m_MajorVer > 1 || (m_MajorVer == 1 && m_MinorVer >= 5))
+        DxilArgs.push_back(DXC_ARG_DEBUG);              // Debug info
+        DxilArgs.push_back(DXC_ARG_SKIP_OPTIMIZATIONS); // Disable optimization
+        if (m_Library.GetVersion() >= Version{1, 5})
         {
             // Silence the following warning:
             // no output provided for debug - embedding PDB in shader container.  Use -Qembed_debug to silence this warning.
             DxilArgs.push_back(L"-Qembed_debug");
         }
 #else
-        if (m_MajorVer > 1 || (m_MajorVer == 1 && m_MinorVer >= 5))
-            DxilArgs.push_back(L"-O3"); // Optimization level 3
+        if (m_Library.GetVersion() >= Version{1, 5})
+            DxilArgs.push_back(DXC_ARG_OPTIMIZATION_LEVEL3); // Optimization level 3
         else
-            DxilArgs.push_back(L"-Od"); // TODO: something goes wrong if optimization is enabled
+            DxilArgs.push_back(DXC_ARG_SKIP_OPTIMIZATIONS); // TODO: something goes wrong if optimization is enabled
 #endif
     }
-    else if (m_Target == DXCompilerTarget::Vulkan)
+    else if (m_Library.GetTarget() == DXCompilerTarget::Vulkan)
     {
         DxilArgs.assign(
             {
                 L"-spirv",
                 L"-fspv-reflect",
-                L"-Zpc", // Matrices in column-major order
 #ifdef DILIGENT_DEBUG
-                L"-Od",
+                DXC_ARG_SKIP_OPTIMIZATIONS,
 #else
-                L"-O3"
+                DXC_ARG_OPTIMIZATION_LEVEL3
 #endif
             });
 
@@ -804,7 +772,9 @@ void DXCompilerImpl::Compile(const ShaderCreateInfo& ShaderCI,
     {
         UNEXPECTED("Unknown compiler target");
     }
-
+    DxilArgs.push_back((ShaderCI.CompileFlags & SHADER_COMPILE_FLAG_PACK_MATRIX_ROW_MAJOR) != 0 ?
+                           DXC_ARG_PACK_MATRIX_ROW_MAJOR :
+                           DXC_ARG_PACK_MATRIX_COLUMN_MAJOR);
 
     CComPtr<IDxcBlob> pDXIL;
     CComPtr<IDxcBlob> pDxcLog;
@@ -845,10 +815,12 @@ bool DXCompilerImpl::RemapResourceBindings(const TResourceBindingMap& ResourceMa
                                            IDxcBlob*                  pSrcBytecode,
                                            IDxcBlob**                 ppDstByteCode)
 {
+    // NOTE: a reference to pSrcBytecode may be kept in the returned object
+
 #if D3D12_SUPPORTED
     try
     {
-        auto CreateInstance = GetCreateInstanceProc();
+        DxcCreateInstanceProc CreateInstance = m_Library.GetDxcCreateInstance();
         if (CreateInstance == nullptr)
         {
             LOG_ERROR("Failed to load DXCompiler");
@@ -881,20 +853,20 @@ bool DXCompilerImpl::RemapResourceBindings(const TResourceBindingMap& ResourceMa
             switch (ShType)
             {
                     // clang-format off
-            case D3D12_SHVER_PIXEL_SHADER:    ShaderType = SHADER_TYPE_PIXEL;            break;
-            case D3D12_SHVER_VERTEX_SHADER:   ShaderType = SHADER_TYPE_VERTEX;           break;
-            case D3D12_SHVER_GEOMETRY_SHADER: ShaderType = SHADER_TYPE_GEOMETRY;         break;
-            case D3D12_SHVER_HULL_SHADER:     ShaderType = SHADER_TYPE_HULL;             break;
-            case D3D12_SHVER_DOMAIN_SHADER:   ShaderType = SHADER_TYPE_DOMAIN;           break;
-            case D3D12_SHVER_COMPUTE_SHADER:  ShaderType = SHADER_TYPE_COMPUTE;          break;
-            case 7:                           ShaderType = SHADER_TYPE_RAY_GEN;          break;
-            case 8:                           ShaderType = SHADER_TYPE_RAY_INTERSECTION; break;
-            case 9:                           ShaderType = SHADER_TYPE_RAY_ANY_HIT;      break;
-            case 10:                          ShaderType = SHADER_TYPE_RAY_CLOSEST_HIT;  break;
-            case 11:                          ShaderType = SHADER_TYPE_RAY_MISS;         break;
-            case 12:                          ShaderType = SHADER_TYPE_CALLABLE;         break;
-            case 13:                          ShaderType = SHADER_TYPE_MESH;             break;
-            case 14:                          ShaderType = SHADER_TYPE_AMPLIFICATION;    break;
+                case D3D12_SHVER_PIXEL_SHADER:    ShaderType = SHADER_TYPE_PIXEL;            break;
+                case D3D12_SHVER_VERTEX_SHADER:   ShaderType = SHADER_TYPE_VERTEX;           break;
+                case D3D12_SHVER_GEOMETRY_SHADER: ShaderType = SHADER_TYPE_GEOMETRY;         break;
+                case D3D12_SHVER_HULL_SHADER:     ShaderType = SHADER_TYPE_HULL;             break;
+                case D3D12_SHVER_DOMAIN_SHADER:   ShaderType = SHADER_TYPE_DOMAIN;           break;
+                case D3D12_SHVER_COMPUTE_SHADER:  ShaderType = SHADER_TYPE_COMPUTE;          break;
+                case 7:                           ShaderType = SHADER_TYPE_RAY_GEN;          break;
+                case 8:                           ShaderType = SHADER_TYPE_RAY_INTERSECTION; break;
+                case 9:                           ShaderType = SHADER_TYPE_RAY_ANY_HIT;      break;
+                case 10:                          ShaderType = SHADER_TYPE_RAY_CLOSEST_HIT;  break;
+                case 11:                          ShaderType = SHADER_TYPE_RAY_MISS;         break;
+                case 12:                          ShaderType = SHADER_TYPE_CALLABLE;         break;
+                case 13:                          ShaderType = SHADER_TYPE_MESH;             break;
+                case 14:                          ShaderType = SHADER_TYPE_AMPLIFICATION;    break;
                 // clang-format on
                 default:
                     UNEXPECTED("Unknown shader type");
@@ -903,13 +875,14 @@ bool DXCompilerImpl::RemapResourceBindings(const TResourceBindingMap& ResourceMa
 
         TExtendedResourceMap ExtResourceMap;
 
-        for (auto& NameAndBinding : ResourceMap)
+        for (const auto& NameAndBinding : ResourceMap)
         {
             D3D12_SHADER_INPUT_BIND_DESC ResDesc = {};
             if (pd3d12Reflection->GetResourceBindingDescByName(NameAndBinding.first.GetStr(), &ResDesc) == S_OK)
             {
                 auto& Ext        = ExtResourceMap[&NameAndBinding];
                 Ext.SrcBindPoint = ResDesc.BindPoint;
+                Ext.SrcArraySize = ResDesc.BindCount;
                 Ext.SrcSpace     = ResDesc.Space;
 
 #    ifdef NO_D3D_SIT_ACCELSTRUCT_FEEDBACK_TEX
@@ -952,14 +925,14 @@ bool DXCompilerImpl::RemapResourceBindings(const TResourceBindingMap& ResourceMa
                     switch (NameAndBinding.second.ResType)
                     {
                             // clang-format off
-                    case SHADER_RESOURCE_TYPE_CONSTANT_BUFFER:  ExpectedResType = RES_TYPE_CBV;     break;
-                    case SHADER_RESOURCE_TYPE_TEXTURE_SRV:      ExpectedResType = RES_TYPE_SRV;     break;
-                    case SHADER_RESOURCE_TYPE_BUFFER_SRV:       ExpectedResType = RES_TYPE_SRV;     break;
-                    case SHADER_RESOURCE_TYPE_TEXTURE_UAV:      ExpectedResType = RES_TYPE_UAV;     break;
-                    case SHADER_RESOURCE_TYPE_BUFFER_UAV:       ExpectedResType = RES_TYPE_UAV;     break;
-                    case SHADER_RESOURCE_TYPE_SAMPLER:          ExpectedResType = RES_TYPE_SAMPLER; break;
-                    case SHADER_RESOURCE_TYPE_INPUT_ATTACHMENT: ExpectedResType = RES_TYPE_SRV;     break;
-                    case SHADER_RESOURCE_TYPE_ACCEL_STRUCT:     ExpectedResType = RES_TYPE_SRV;     break;
+                        case SHADER_RESOURCE_TYPE_CONSTANT_BUFFER:  ExpectedResType = RES_TYPE_CBV;     break;
+                        case SHADER_RESOURCE_TYPE_TEXTURE_SRV:      ExpectedResType = RES_TYPE_SRV;     break;
+                        case SHADER_RESOURCE_TYPE_BUFFER_SRV:       ExpectedResType = RES_TYPE_SRV;     break;
+                        case SHADER_RESOURCE_TYPE_TEXTURE_UAV:      ExpectedResType = RES_TYPE_UAV;     break;
+                        case SHADER_RESOURCE_TYPE_BUFFER_UAV:       ExpectedResType = RES_TYPE_UAV;     break;
+                        case SHADER_RESOURCE_TYPE_SAMPLER:          ExpectedResType = RES_TYPE_SAMPLER; break;
+                        case SHADER_RESOURCE_TYPE_INPUT_ATTACHMENT: ExpectedResType = RES_TYPE_SRV;     break;
+                        case SHADER_RESOURCE_TYPE_ACCEL_STRUCT:     ExpectedResType = RES_TYPE_SRV;     break;
                         // clang-format on
                         default: UNEXPECTED("Unsupported shader resource type.");
                     }
@@ -1037,7 +1010,9 @@ bool DXCompilerImpl::PatchDXIL(const TResourceBindingMap& ResourceMap, TExtended
         else
         {
             PatchResourceDeclaration(ResourceMap, ExtResMap, DXIL);
-            PatchResourceHandle(ResourceMap, ExtResMap, DXIL);
+            PatchCreateHandle(ResourceMap, ExtResMap, DXIL);
+            // SM 6.6 and higher
+            PatchCreateHandleFromBinding(ResourceMap, ExtResMap, DXIL);
         }
         return true;
     }
@@ -1049,6 +1024,125 @@ bool DXCompilerImpl::PatchDXIL(const TResourceBindingMap& ResourceMap, TExtended
 
 namespace
 {
+
+inline bool IsAlpha(char c)
+{
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
+inline bool IsNumber(char c)
+{
+    return (c >= '0' && c <= '9');
+}
+
+inline bool IsWordSymbol(char c)
+{
+    return IsAlpha(c) || IsNumber(c) || (c == '_');
+}
+
+inline bool SkipSpaces(const String& DXIL, size_t& pos)
+{
+    while (pos < DXIL.length() && DXIL[pos] == ' ')
+        ++pos;
+
+    return pos < DXIL.length();
+}
+
+inline bool SkipCommaAndSpaces(const String& DXIL, size_t& pos)
+{
+    // , i32 -1
+    // ^
+    if (pos >= DXIL.length() || DXIL[pos] != ',')
+        return false;
+
+    ++pos;
+    // , i32 -1
+    //  ^
+
+    if (pos >= DXIL.length() || DXIL[pos] != ' ')
+        return false;
+
+    return SkipSpaces(DXIL, pos);
+    // , i32 -1
+    //   ^
+}
+
+// Parses i32/i8 record
+//
+// Input:
+//     i32 78
+//     ^
+//    pos
+//
+// Output:
+//     i32 78
+//         ^ ^
+//         | pos
+//       Return value
+//       Value = 78
+template <typename T>
+size_t ParseIntRecord(const String& DXIL, size_t& pos, VALUE_TYPE Type, const char* RecordName, T* Value = nullptr)
+{
+#define CHECK_PARSING_ERROR(Cond, ...)                                                    \
+    if (!(Cond))                                                                          \
+    {                                                                                     \
+        LOG_ERROR_AND_THROW("Unable to read '", RecordName, "' record: ", ##__VA_ARGS__); \
+    }
+
+    CHECK_PARSING_ERROR(SkipSpaces(DXIL, pos), "unexpected end of file")
+
+    static const String i32 = "i32";
+    static const String i8  = "i8";
+    VERIFY_EXPR(Type == VT_INT32 || Type == VT_INT8);
+    const String& TypeStr = Type == VT_INT32 ? i32 : i8;
+
+    // i32 -1
+    // ^
+
+    CHECK_PARSING_ERROR(std::strncmp(&DXIL[pos], TypeStr.c_str(), TypeStr.length()) == 0, TypeStr, " is expected")
+    pos += TypeStr.length();
+    // i32 -1
+    //    ^
+
+    CHECK_PARSING_ERROR(pos < DXIL.length() && DXIL[pos] == ' ', "' ' is expected")
+    CHECK_PARSING_ERROR(SkipSpaces(DXIL, pos), "unexpected end of file")
+
+    const size_t ValueStartPos = pos;
+    // i32 -1
+    //     ^
+    //  ValueStartPos
+
+    if (DXIL[pos] == '-' || DXIL[pos] == '+')
+        ++pos;
+    while (IsNumber(DXIL[pos]))
+        ++pos;
+
+    CHECK_PARSING_ERROR(pos > ValueStartPos, "number is expected")
+
+    // i32 -1
+    //       ^
+
+    if (Value != nullptr)
+    {
+        const String ValueStr = DXIL.substr(ValueStartPos, pos - ValueStartPos);
+        *Value                = static_cast<T>(std::stoi(ValueStr));
+    }
+
+    return ValueStartPos;
+#undef CHECK_PARSING_ERROR
+}
+
+// Replaces i32 record
+//
+// Input:
+//    , i32 -1
+//    ^
+//    pos
+//
+// Output:
+//    , i32 1
+//           ^
+//           pos
 void ReplaceRecord(String& DXIL, size_t& pos, const String& NewValue, const char* Name, const char* RecordName, const Uint32 ExpectedPrevValue)
 {
 #define CHECK_PATCHING_ERROR(Cond, ...)                                                         \
@@ -1057,52 +1151,30 @@ void ReplaceRecord(String& DXIL, size_t& pos, const String& NewValue, const char
         LOG_ERROR_AND_THROW("Unable to patch DXIL for resource '", Name, "': ", ##__VA_ARGS__); \
     }
 
-    static const String i32           = "i32 ";
-    static const String NumberSymbols = "+-0123456789";
-
     // , i32 -1
     // ^
-    CHECK_PATCHING_ERROR(pos + 1 < DXIL.length() && DXIL[pos] == ',' && DXIL[pos + 1] == ' ', RecordName, " record is not found")
+    CHECK_PATCHING_ERROR(SkipCommaAndSpaces(DXIL, pos), RecordName, " record is not found")
 
-    pos += 2;
     // , i32 -1
     //   ^
 
-    CHECK_PATCHING_ERROR(std::strncmp(&DXIL[pos], i32.c_str(), i32.length()) == 0, "unexpected ", RecordName, " record type")
-    pos += i32.length();
+    Uint32       PrevValue     = 0;
+    const size_t ValueStartPos = ParseIntRecord(DXIL, pos, VT_INT32, RecordName, &PrevValue);
     // , i32 -1
-    //       ^
-
-    auto RecordEndPos = DXIL.find_first_not_of(NumberSymbols, pos);
-    CHECK_PATCHING_ERROR(pos != String::npos, "unable to find the end of the ", RecordName, " record data")
-    // , i32 -1
-    //         ^
-    //    RecordEndPos
-
-    Uint32 PrevValue = static_cast<Uint32>(std::stoi(DXIL.substr(pos, RecordEndPos - pos)));
+    //       ^ ^
+    //       | pos
+    //	ValueStartPos
     CHECK_PATCHING_ERROR(PrevValue == ExpectedPrevValue, "previous value does not match the expected");
 
-    DXIL.replace(pos, RecordEndPos - pos, NewValue);
+    DXIL.replace(ValueStartPos, pos - ValueStartPos, NewValue);
     // , i32 1
     //         ^
-    //    RecordEndPos
 
-    pos += NewValue.length();
+    pos = ValueStartPos + NewValue.length();
     // , i32 1
     //        ^
-    //       pos
 
 #undef CHECK_PATCHING_ERROR
-}
-
-bool IsWordSymbol(char c)
-{
-    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_');
-}
-
-bool IsNumberSymbol(char c)
-{
-    return (c >= '0' && c <= '9');
 }
 
 } // namespace
@@ -1115,8 +1187,6 @@ void DXCompilerImpl::PatchResourceDeclarationRT(const TResourceBindingMap& Resou
         LOG_ERROR_AND_THROW("Unable to patch DXIL for resource '", Name, "': ", ##__VA_ARGS__); \
     }
 
-    static const String i32              = "i32 ";
-    static const String NumberSymbols    = "+-0123456789";
     static const String ResourceRecStart = "= !{";
 
     // This resource patching method is valid for ray tracing shaders and non-optimized shaders with metadata.
@@ -1159,18 +1229,11 @@ void DXCompilerImpl::PatchResourceDeclarationRT(const TResourceBindingMap& Resou
 
         // !5 = !{i32 0,
         //        ^
-        CHECK_PATCHING_ERROR(std::strncmp(DXIL.c_str() + pos, i32.c_str(), i32.length()) == 0, "");
+        Uint32 RecordId = 0;
+        ParseIntRecord(DXIL, pos, VT_INT32, "record ID", &RecordId);
 
         // !5 = !{i32 0,
-        //            ^
-        pos += i32.length();
-
-        const size_t RecordIdStartPos = pos;
-
-        pos = DXIL.find_first_not_of(NumberSymbols, pos);
-        CHECK_PATCHING_ERROR(pos != String::npos, "");
-
-        const Uint32 RecordId = static_cast<Uint32>(std::atoi(DXIL.c_str() + RecordIdStartPos));
+        //             ^
 
         VERIFY_EXPR(Ext.RecordId == ~0u || Ext.RecordId == RecordId);
         Ext.RecordId = RecordId;
@@ -1194,7 +1257,7 @@ void DXCompilerImpl::PatchResourceDeclaration(const TResourceBindingMap& Resourc
 {
     // This resource patching method is valid for optimized shaders without metadata.
 
-    static const String i32                   = "i32 ";
+    static const String i32_                  = "i32 ";
     static const String NumberSymbols         = "+-0123456789";
     static const String ResourceRecStart      = "= !{";
     static const String ResNameDecl           = ", !\"";
@@ -1239,16 +1302,15 @@ void DXCompilerImpl::PatchResourceDeclaration(const TResourceBindingMap& Resourc
     {
         // , i32 -1
         // ^
-        if (pos + 1 >= DXIL.length() || DXIL[pos] != ',' || DXIL[pos + 1] != ' ')
+        if (!SkipCommaAndSpaces(DXIL, pos))
             return false;
 
-        pos += 2;
         // , i32 -1
         //   ^
 
-        if (std::strncmp(&DXIL[pos], i32.c_str(), i32.length()) != 0)
+        if (std::strncmp(&DXIL[pos], i32_.c_str(), i32_.length()) != 0)
             return false;
-        pos += i32.length();
+        pos += i32_.length();
         // , i32 -1
         //       ^
 
@@ -1327,7 +1389,7 @@ void DXCompilerImpl::PatchResourceDeclaration(const TResourceBindingMap& Resourc
 
         // !5 = !{i32 0,
         //        ^
-        if (std::strncmp(DXIL.c_str() + pos, i32.c_str(), i32.length()) != 0)
+        if (std::strncmp(DXIL.c_str() + pos, i32_.c_str(), i32_.length()) != 0)
         {
             // This is not a resource declaration record, continue searching.
             pos = BindingRecordStart;
@@ -1335,7 +1397,7 @@ void DXCompilerImpl::PatchResourceDeclaration(const TResourceBindingMap& Resourc
         }
         // !5 = !{i32 0,
         //            ^
-        pos += i32.length();
+        pos += i32_.length();
 
         const size_t RecordIdStartPos = pos;
 
@@ -1345,8 +1407,8 @@ void DXCompilerImpl::PatchResourceDeclaration(const TResourceBindingMap& Resourc
         //        ^
         const Uint32 RecordId = static_cast<Uint32>(std::atoi(DXIL.c_str() + RecordIdStartPos));
 
-        CHECK_PATCHING_ERROR(pos + 1 < DXIL.length() && DXIL[pos] == ',' && DXIL[pos + 1] == ' ', "failed to find the end of the Record ID record data");
-        pos += 2;
+        CHECK_PATCHING_ERROR(SkipCommaAndSpaces(DXIL, pos), "failed to find the end of the Record ID record data");
+
         // !{i32 0, %"class.Texture2D<...  or  !{i32 0, [4 x %"class.Texture2D<...
         //          ^                                   ^
 
@@ -1357,7 +1419,7 @@ void DXCompilerImpl::PatchResourceDeclaration(const TResourceBindingMap& Resourc
             for (; pos < EndOfResTypeRecord; ++pos)
             {
                 const char c = DXIL[pos];
-                if (!(IsNumberSymbol(c) || (c == ' ') || (c == 'x')))
+                if (!(IsNumber(c) || (c == ' ') || (c == 'x')))
                     break;
             }
         }
@@ -1450,7 +1512,7 @@ void DXCompilerImpl::PatchResourceDeclaration(const TResourceBindingMap& Resourc
                     if (IsWordSymbol(c))
                         continue; // name is partially equal, continue searching
 
-                    VERIFY_EXPR((c == '*' && ResInfo.first->second.ArraySize == 1) || (c == ']' && ResInfo.first->second.ArraySize > 1));
+                    VERIFY_EXPR((c == '*' && ResInfo.first->second.ArraySize == 1) || (c == ']' && ResInfo.first->second.ArraySize >= 1));
 
                     ResType = RES_TYPE_CBV;
                     break;
@@ -1527,62 +1589,308 @@ void DXCompilerImpl::PatchResourceDeclaration(const TResourceBindingMap& Resourc
 #undef CHECK_PATCHING_ERROR
 }
 
-void DXCompilerImpl::PatchResourceHandle(const TResourceBindingMap& ResourceMap, TExtendedResourceMap& ExtResMap, String& DXIL) noexcept(false)
+// Finds position of the next argument
+//
+// Input:
+//	 i32 78, i32 79, i32 80)
+//	 ^
+//	 pos
+//
+// Output:
+//	 i32 78, i32 79, i32 80)
+//	       ^
+//	       pos
+static bool NextArg(String& DXIL, size_t& pos)
 {
-    // Patch createHandle command
-    static const String   CallHandlePattern = " = call %dx.types.Handle @dx.op.createHandle(";
-    static const String   i32               = "i32 ";
-    static const String   i8                = "i8 ";
-    static const RES_TYPE ResClassToType[]  = {RES_TYPE_SRV, RES_TYPE_UAV, RES_TYPE_CBV, RES_TYPE_SAMPLER};
-
-    const auto NextArg = [&DXIL](size_t& pos) //
+    for (; pos < DXIL.size(); ++pos)
     {
-        for (; pos < DXIL.size(); ++pos)
-        {
-            const char c = DXIL[pos];
-            if (c == ',')
-                return true; // OK
-            if (c == ')' || c == '\n')
-                return false; // end of createHandle()
-        }
-        // end of bytecode
-        return false;
-    };
+        const char c = DXIL[pos];
+        if (c == ',')
+            return true; // More arguments
+        if (c == ')' || c == '}' || c == '\n')
+            return false; // End of declaration
+    }
 
-    const auto ReplaceBindPoint = [&](Uint32 ResClass, Uint32 RangeId, size_t IndexStartPos, size_t IndexEndPos) //
+    return false; // end of bytecode
+}
+
+DXCompilerImpl::RES_TYPE DXCompilerImpl::ResClassToResType(Uint32 ResClass)
+{
+    static constexpr std::array<RES_TYPE, 4> ClassToTypeMap = {
+        RES_TYPE_SRV,
+        RES_TYPE_UAV,
+        RES_TYPE_CBV,
+        RES_TYPE_SAMPLER,
+    };
+    return ClassToTypeMap[ResClass];
+}
+
+const DXCompilerImpl::TExtendedResourceMap::value_type* DXCompilerImpl::FindResourceByRecordId(const TExtendedResourceMap& ExtResMap, Uint32 ResClass, Uint32 RecordId)
+{
+    const RES_TYPE ResType = ResClassToResType(ResClass);
+    for (const auto& ResInfo : ExtResMap)
+    {
+        if (ResInfo.second.RecordId == RecordId &&
+            ResInfo.second.Type == ResType)
+        {
+#ifdef DILIGENT_DEVELOPMENT
+            for (const auto& ResInfo2 : ExtResMap)
+            {
+                if (ResInfo2.second.RecordId == RecordId &&
+                    ResInfo2.second.Type == ResType)
+                {
+                    VERIFY(&ResInfo2 == &ResInfo, "Multiple resources with the same RecordId (", RecordId, ") and type (", ResType, ") found");
+                }
+            }
+#endif
+            return &ResInfo;
+        }
+    }
+
+    return nullptr;
+}
+
+const DXCompilerImpl::TExtendedResourceMap::value_type* DXCompilerImpl::FindResourceByBindPoint(const TExtendedResourceMap& ExtResMap, Uint32 ResClass, Uint32 BindPoint, Uint32 Space)
+{
+    const RES_TYPE ResType = ResClassToResType(ResClass);
+    for (const auto& ResInfo : ExtResMap)
+    {
+        if (ResInfo.second.SrcBindPoint == BindPoint &&
+            ResInfo.second.SrcSpace == Space &&
+            ResInfo.second.Type == ResType)
+        {
+#ifdef DILIGENT_DEVELOPMENT
+            for (const auto& ResInfo2 : ExtResMap)
+            {
+                if (ResInfo2.second.SrcBindPoint == BindPoint &&
+                    ResInfo2.second.SrcSpace == Space &&
+                    ResInfo2.second.Type == ResType)
+                {
+                    VERIFY(&ResInfo2 == &ResInfo, "Multiple resources with the same BindPoint (", BindPoint, "), register space (", Space, ") and type (", ResType, ") found");
+                }
+            }
+#endif
+            return &ResInfo;
+        }
+    }
+
+    return nullptr;
+}
+
+// Patch resource index in createHandle or createHandleFromBinding operation.
+//
+// Examples:
+//
+// Static Index
+//
+//      StructuredBuffer<float4> g_Buffer1[5] : register(t29, space5);
+//      ...
+//      g_Buffer1[1][9];
+//
+//  SM6.5
+//      %g_Buffer1_texture_structbuf41 = call %dx.types.Handle @dx.op.createHandle(i32 57, i8 0, i32 2, i32 30, i1 false)
+//                                                                                                           ^
+//                                                                                                         29+1
+//  SM6.5
+//      %g_Buffer1_texture_structbuf42 = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 29, i32 33, i32 5, i8 0 }, i32 30, i1 false)
+//                                                                                                                                                             ^
+//                                                                                                                                                           29+1
+//
+// Dynamic Index
+//
+//      StructuredBuffer<float4> g_Buffer1[5] : register(t29, space5);
+//      ...
+//      g_Buffer1[DynamicIndex + 1][26];
+//
+//  SM6.5
+//      %69 = add i32 %68, 1 ;
+//      %70 = add i32 %69, 29 ; <- We will patch this index
+//      %g_Buffer1_texture_structbuf43 = call %dx.types.Handle @dx.op.createHandle(i32 57, i8 0, i32 2, i32 %70, i1 false)
+//                                                                                                           ^
+//  SM6.6
+//     %85 = add i32 %84, 1 ;
+//     %86 = add i32 %85, 29 ;  <- We will patch this index
+//     %g_Buffer1_texture_structbuf43 = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 29, i32 33, i32 5, i8 0 }, i32 %86, i1 false)
+//                                                                                                                                                            ^
+
+
+void DXCompilerImpl::PatchResourceIndex(const ResourceExtendedInfo& ResInfo, const BindInfo& Bind, String& DXIL, size_t& pos)
+{
+#define CHECK_PATCHING_ERROR(Cond, ...)                                         \
+    if (!(Cond))                                                                \
+    {                                                                           \
+        LOG_ERROR_AND_THROW("Unable to patch resource index: ", ##__VA_ARGS__); \
+    }
+
+    const auto ReplaceBindPoint = [&DXIL](const ResourceExtendedInfo& ResInfo, const BindInfo& Bind, size_t IndexStartPos, size_t IndexEndPos) //
     {
         const String SrcIndexStr = DXIL.substr(IndexStartPos, IndexEndPos - IndexStartPos);
-        VERIFY_EXPR(IsNumberSymbol(SrcIndexStr.front()));
+        VERIFY_EXPR(IsNumber(SrcIndexStr.front()));
 
         const Uint32 SrcIndex = static_cast<Uint32>(std::stoi(SrcIndexStr));
-        const auto   ResType  = ResClassToType[ResClass];
 
-        BindInfo const*       pBind = nullptr;
-        ResourceExtendedInfo* pExt  = nullptr;
-        for (auto& ResInfo : ExtResMap)
-        {
-            if (ResInfo.second.RecordId == RangeId &&
-                ResInfo.second.Type == ResType &&
-                SrcIndex >= ResInfo.second.SrcBindPoint &&
-                SrcIndex < ResInfo.second.SrcBindPoint + ResInfo.first->second.ArraySize)
-            {
-                pBind = &ResInfo.first->second;
-                pExt  = &ResInfo.second;
-                break;
-            }
-        }
-        if (pBind == nullptr || pExt == nullptr)
-            LOG_ERROR_AND_THROW("Failed to find resource in ResourceMap");
+        VERIFY_EXPR(ResInfo.SrcBindPoint != ~0u);
 
-        VERIFY_EXPR(SrcIndex >= pExt->SrcBindPoint);
-        VERIFY_EXPR(pExt->SrcBindPoint != ~0u);
+        VERIFY(SrcIndex >= ResInfo.SrcBindPoint,
+               "Source index (", SrcIndex, ") can't be less than the source bind point. (", ResInfo.SrcBindPoint,
+               "). Either the byte code is corrupted or the source bind point is incorrect.");
 
-        const Uint32 IndexOffset = SrcIndex - pExt->SrcBindPoint;
-        VERIFY_EXPR((pBind->BindPoint + IndexOffset) >= pBind->BindPoint);
+        // Texture2D              g_Textures[];        // SrcArraySize == 0
+        // ConstantBuffer<CBData> g_ConstantBuffers[]; // SrcArraySize == ~0u
+        VERIFY(ResInfo.SrcArraySize == ~0u || SrcIndex < ResInfo.SrcBindPoint + std::max(ResInfo.SrcArraySize, 1u),
+               "Source index (", SrcIndex, ") can't exceed the source bind point + array size. (", ResInfo.SrcBindPoint, " + ", ResInfo.SrcArraySize,
+               "). Either the byte code is corrupted or the source bind point is incorrect.");
+        // Texture2D g_Tex[4] : register(t8);
+        // ...
+        // g_Tex[2].Sample(...);
+        //
+        // ResInfo.SrcBindPoint:  8
+        // ResInfo.SrcArraySize:  4
+        // SrcIndex:             10
+        // IndexOffset:           2
+        const Uint32 IndexOffset = SrcIndex - ResInfo.SrcBindPoint;
 
-        const String NewIndexStr = std::to_string(pBind->BindPoint + IndexOffset);
+        const String NewIndexStr = std::to_string(Bind.BindPoint + IndexOffset);
         DXIL.replace(DXIL.begin() + IndexStartPos, DXIL.begin() + IndexEndPos, NewIndexStr);
+
+        return static_cast<int>(NewIndexStr.length()) - static_cast<int>(SrcIndexStr.length());
     };
+
+    CHECK_PATCHING_ERROR(SkipSpaces(DXIL, pos), "unexpected end of file")
+
+    // @dx.op.createHandle(i32 57, i8 2, i32 0, i32 0, i1 false)
+    //                                          ^
+
+    static const String i32 = "i32";
+
+    CHECK_PATCHING_ERROR(std::strncmp(&DXIL[pos], i32.c_str(), i32.length()) == 0, "i32 data is expected");
+    pos += i32.length();
+
+    CHECK_PATCHING_ERROR(pos < DXIL.length() && DXIL[pos] == ' ', "' ' is expected")
+    CHECK_PATCHING_ERROR(SkipSpaces(DXIL, pos), "unexpected end of file")
+
+    // @dx.op.createHandle(i32 57, i8 2, i32 0, i32 0, i1 false)
+    //                                              ^
+    //                                         IndexStartPos
+    const size_t IndexStartPos = pos;
+
+    CHECK_PATCHING_ERROR(NextArg(DXIL, pos), "failed to find the end of the Index record data");
+    // @dx.op.createHandle(i32 57, i8 2, i32 0, i32 0, i1 false)
+    //                                               ^
+    //										     IndexEndPos
+    const size_t IndexEndPos = pos;
+
+    const String SrcIndexStr = DXIL.substr(IndexStartPos, IndexEndPos - IndexStartPos);
+    CHECK_PATCHING_ERROR(!SrcIndexStr.empty(), "Bind point index must not be empty");
+
+    int IndexLengthDelta = 0;
+    if (SrcIndexStr.front() == '%')
+    {
+        // dynamic bind point
+        // SrcIndexStr == "%22"
+
+        // SM6.5
+        //   %22 = add i32 %17, 7 ;
+        //   %g_Buffer2_UAV_rawbuf38 = call %dx.types.Handle @dx.op.createHandle(i32 57, i8 1, i32 3, i32 %22, i1 false) ;
+        //																							      ^
+
+        // SM6.6
+        //   %28 = add i32 %17, 7 ;
+        //   %g_Buffer2_UAV_rawbuf38 = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 0, i32 -1, i32 1, i8 1 }, i32 %28, i1 false) ;
+        //																							                                                       ^
+
+        const String IndexDecl = SrcIndexStr + " = add i32 ";
+        // IndexDecl == "%22 = add i32 "
+
+        size_t IndexDeclPos = DXIL.rfind(IndexDecl, IndexEndPos);
+        CHECK_PATCHING_ERROR(IndexDeclPos != String::npos, "failed to find dynamic index declaration");
+
+        // Example:
+        //   %22 = add i32 %17, 7
+        //                 ^
+        pos = IndexDeclPos + IndexDecl.length();
+
+        size_t ArgStart = std::string::npos;
+
+        // check first arg
+        if (DXIL[pos] == '%')
+        {
+            // first arg is variable, move to second arg
+            CHECK_PATCHING_ERROR(NextArg(DXIL, pos), "");
+            //   %22 = add i32 %17, 7  or  %24 = add i32 %j.0, 1
+            //                    ^                          ^
+            CHECK_PATCHING_ERROR(SkipCommaAndSpaces(DXIL, pos), "unexpected end of file")
+            // skip ", "
+
+            // second arg must be a constant
+            CHECK_PATCHING_ERROR(IsNumber(DXIL[pos]), "second argument expected to be an integer constant");
+
+            ArgStart = pos;
+            for (; pos < DXIL.size(); ++pos)
+            {
+                const char c = DXIL[pos];
+                if (!IsNumber(c))
+                    break;
+            }
+            CHECK_PATCHING_ERROR(DXIL[pos] == ',' || DXIL[pos] == '\n', "failed to parse second argument");
+
+            //   %22 = add i32 %17, 7
+            //                       ^
+        }
+        else
+        {
+            // first arg is a constant
+            VERIFY_EXPR(IsNumber(DXIL[pos]));
+
+            ArgStart = pos;
+            for (; pos < DXIL.size(); ++pos)
+            {
+                const char c = DXIL[pos];
+                if (!IsNumber(c))
+                    break;
+            }
+            CHECK_PATCHING_ERROR(DXIL[pos] == ',' || DXIL[pos] == '\n', "failed to parse second argument");
+            //   %22 = add i32 7, %17
+            //                  ^
+        }
+
+        IndexLengthDelta = ReplaceBindPoint(ResInfo, Bind, ArgStart, pos);
+
+#ifdef DILIGENT_DEVELOPMENT
+        Uint32 IndexVarUsageCount = 0;
+        for (pos = 0; pos < DXIL.size();)
+        {
+            pos = DXIL.find(SrcIndexStr, pos + 1);
+            if (pos == String::npos)
+                break;
+
+            pos += SrcIndexStr.size();
+            if (DXIL[pos] == ' ' || DXIL[pos] == ',')
+                ++IndexVarUsageCount;
+        }
+        DEV_CHECK_ERR(IndexVarUsageCount == 2, "Temp variable '", SrcIndexStr, "' with resource bind point is used more than 2 times, patching for this variable may lead to UB");
+#endif
+    }
+    else
+    {
+        // constant bind point
+        IndexLengthDelta = ReplaceBindPoint(ResInfo, Bind, IndexStartPos, IndexEndPos);
+    }
+
+    pos = IndexEndPos;
+    if (IndexLengthDelta > 0)
+        pos += IndexLengthDelta;
+    else if (IndexLengthDelta < 0)
+        pos -= static_cast<size_t>(-IndexLengthDelta);
+    VERIFY_EXPR(DXIL[pos] == ',');
+
+#undef CHECK_PATCHING_ERROR
+}
+
+void DXCompilerImpl::PatchCreateHandle(const TResourceBindingMap& ResourceMap, TExtendedResourceMap& ExtResMap, String& DXIL) noexcept(false)
+{
+    // Patch createHandle command
+    static const String CallHandlePattern = " = call %dx.types.Handle @dx.op.createHandle(";
 
 #define CHECK_PATCHING_ERROR(Cond, ...)                                              \
     if (!(Cond))                                                                     \
@@ -1612,162 +1920,230 @@ void DXCompilerImpl::PatchResourceHandle(const TResourceBindingMap& ResourceMap,
         //                     ^
 
         // Skip opcode.
-
-        CHECK_PATCHING_ERROR(std::strncmp(&DXIL[pos], i32.c_str(), i32.length()) == 0, "Opcode record is not found");
-        pos += i32.length();
-        // @dx.op.createHandle(i32 57, i8 2, i32 0, i32 0, i1 false)
-        //                         ^
-
-        CHECK_PATCHING_ERROR(NextArg(pos), "failed to find end of the Opcode record data");
+        ParseIntRecord<Int32>(DXIL, pos, VT_INT32, "opcode");
         // @dx.op.createHandle(i32 57, i8 2, i32 0, i32 0, i1 false)
         //                           ^
 
         // Read resource class.
 
-        CHECK_PATCHING_ERROR(pos + 1 < DXIL.length() && DXIL[pos] == ',' && DXIL[pos + 1] == ' ', "Resource Class record is not found");
-        pos += 2;
+        CHECK_PATCHING_ERROR(SkipCommaAndSpaces(DXIL, pos), "Resource Class record is not found");
         // @dx.op.createHandle(i32 57, i8 2, i32 0, i32 0, i1 false)
         //                             ^
 
-        CHECK_PATCHING_ERROR(std::strncmp(&DXIL[pos], i8.c_str(), i8.length()) == 0, "Resource Class record data is not found");
-        pos += i8.length();
-        // @dx.op.createHandle(i32 57, i8 2, i32 0, i32 0, i1 false)
-        //                                ^
-
-        const size_t ResClassStartPos = pos;
-
-        CHECK_PATCHING_ERROR(NextArg(pos), "failed to find end of the Resource class record data");
+        Uint32 ResClass = 0;
+        ParseIntRecord(DXIL, pos, VT_INT8, "resource class", &ResClass);
         // @dx.op.createHandle(i32 57, i8 2, i32 0, i32 0, i1 false)
         //                                 ^
-        const Uint32 ResClass = static_cast<Uint32>(std::atoi(DXIL.c_str() + ResClassStartPos));
 
         // Read resource range ID.
 
-        CHECK_PATCHING_ERROR(pos + 1 < DXIL.length() && DXIL[pos] == ',' && DXIL[pos + 1] == ' ', "Range ID record is not found");
-        pos += 2;
+        CHECK_PATCHING_ERROR(SkipCommaAndSpaces(DXIL, pos), "Range ID record is not found");
         // @dx.op.createHandle(i32 57, i8 2, i32 0, i32 0, i1 false)
         //                                   ^
 
-        CHECK_PATCHING_ERROR(std::strncmp(&DXIL[pos], i32.c_str(), i32.length()) == 0, "Range ID record data is not found");
-        pos += i32.length();
-        // @dx.op.createHandle(i32 57, i8 2, i32 0, i32 0, i1 false)
-        //                                       ^
-
-        const size_t RangeIdStartPos = pos;
-
-        CHECK_PATCHING_ERROR(NextArg(pos), "failed to find end of the Range ID record data");
+        Uint32 RangeId = 0;
+        ParseIntRecord(DXIL, pos, VT_INT32, "Range ID", &RangeId);
         // @dx.op.createHandle(i32 57, i8 2, i32 0, i32 0, i1 false)
         //                                        ^
-        const Uint32 RangeId = static_cast<Uint32>(std::atoi(DXIL.c_str() + RangeIdStartPos));
 
-        // Read index in range.
+        const auto* pResInfo = FindResourceByRecordId(ExtResMap, ResClass, RangeId);
+        CHECK_PATCHING_ERROR(pResInfo != nullptr, "Index record for resource class ", ResClass, " and range ID ", RangeId, " is not found");
+        const ResourceExtendedInfo& ResInfo = pResInfo->second;
+        const BindInfo&             Bind    = pResInfo->first->second;
 
-        CHECK_PATCHING_ERROR(pos + 1 < DXIL.length() && DXIL[pos] == ',' && DXIL[pos + 1] == ' ', "Index record is not found");
-        pos += 2;
+        // Patch index in range.
+
+        CHECK_PATCHING_ERROR(SkipCommaAndSpaces(DXIL, pos), "Index record is not found");
         // @dx.op.createHandle(i32 57, i8 2, i32 0, i32 0, i1 false)
         //                                          ^
 
-        CHECK_PATCHING_ERROR(std::strncmp(&DXIL[pos], i32.c_str(), i32.length()) == 0, "Index record data is not found");
-        pos += i32.length();
-        // @dx.op.createHandle(i32 57, i8 2, i32 0, i32 0, i1 false)
-        //                                              ^
-
-        const size_t IndexStartPos = pos;
-
-        CHECK_PATCHING_ERROR(NextArg(pos), "failed to find the end of the Index record data");
-        // @dx.op.createHandle(i32 57, i8 2, i32 0, i32 0, i1 false)
-        //                                               ^
-
-        // Replace index.
-        const size_t IndexEndPos = pos;
-        const String SrcIndexStr = DXIL.substr(IndexStartPos, pos - IndexStartPos);
-        CHECK_PATCHING_ERROR(!SrcIndexStr.empty(), "Bind point index must not be empty");
-
-        if (SrcIndexStr.front() == '%')
-        {
-            // dynamic bind point
-            const String IndexDecl = SrcIndexStr + " = add i32 ";
-
-            size_t IndexDeclPos = DXIL.rfind(IndexDecl, IndexEndPos);
-            CHECK_PATCHING_ERROR(IndexDeclPos != String::npos, "failed to find dynamic index declaration");
-
-            // Example:
-            //   %22 = add i32 %17, 7
-            //                 ^
-            pos = IndexDeclPos + IndexDecl.length();
-
-            // check first arg
-            if (DXIL[pos] == '%')
-            {
-                // first arg is variable, move to second arg
-                CHECK_PATCHING_ERROR(NextArg(pos), "");
-                //   %22 = add i32 %17, 7  or  %24 = add i32 %j.0, 1
-                //                    ^                          ^
-                VERIFY_EXPR(pos + 1 < DXIL.length() && DXIL[pos] == ',' && DXIL[pos + 1] == ' ');
-                pos += 2; // skip ', '
-
-                // second arg must be a constant
-                CHECK_PATCHING_ERROR(IsNumberSymbol(DXIL[pos]), "second argument expected to be an integer constant");
-
-                const size_t ArgStart = pos;
-                for (; pos < DXIL.size(); ++pos)
-                {
-                    const char c = DXIL[pos];
-                    if (!IsNumberSymbol(c))
-                        break;
-                }
-                CHECK_PATCHING_ERROR(DXIL[pos] == ',' || DXIL[pos] == '\n', "failed to parse second argument");
-
-                //   %22 = add i32 %17, 7
-                //                       ^
-
-                const size_t ArgEnd = pos;
-                ReplaceBindPoint(ResClass, RangeId, ArgStart, ArgEnd);
-            }
-            else
-            {
-                // first arg is a constant
-                VERIFY_EXPR(IsNumberSymbol(DXIL[pos]));
-
-                const size_t ArgStart = pos;
-                for (; pos < DXIL.size(); ++pos)
-                {
-                    const char c = DXIL[pos];
-                    if (!IsNumberSymbol(c))
-                        break;
-                }
-                CHECK_PATCHING_ERROR(DXIL[pos] == ',' || DXIL[pos] == '\n', "failed to parse second argument");
-                //   %22 = add i32 7, %17
-                //                  ^
-
-                const size_t ArgEnd = pos;
-                ReplaceBindPoint(ResClass, RangeId, ArgStart, ArgEnd);
-            }
-
-#ifdef DILIGENT_DEVELOPMENT
-            Uint32 IndexVarUsageCount = 0;
-            for (pos = 0; pos < DXIL.size();)
-            {
-                pos = DXIL.find(SrcIndexStr, pos + 1);
-                if (pos == String::npos)
-                    break;
-
-                pos += SrcIndexStr.size();
-                if (DXIL[pos] == ' ' || DXIL[pos] == ',')
-                    ++IndexVarUsageCount;
-            }
-            DEV_CHECK_ERR(IndexVarUsageCount == 2, "Temp variable '", SrcIndexStr, "' with resource bind point used more than 2 times, patching for this variable may lead to UB");
-#endif
-        }
-        else
-        {
-            // constant bind point
-            ReplaceBindPoint(ResClass, RangeId, IndexStartPos, IndexEndPos);
-        }
-        pos = IndexEndPos;
+        PatchResourceIndex(ResInfo, Bind, DXIL, pos);
     }
 #undef CHECK_PATCHING_ERROR
 }
+
+static void ParseResBindRecord(const String& DXIL, size_t& pos, Int32& RangeMin, Int32& RangeMax, Int32& Space, Int32& Class)
+{
+#define CHECK_PATCHING_ERROR(Cond, ...)                                                   \
+    if (!(Cond))                                                                          \
+    {                                                                                     \
+        LOG_ERROR_AND_THROW("Unable to parse %dx.types.ResBind record: ", ##__VA_ARGS__); \
+    }
+
+    static const String ZeroInitializer = "zeroinitializer";
+
+    if (std::strncmp(&DXIL[pos], ZeroInitializer.c_str(), ZeroInitializer.length()) == 0)
+    {
+        // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind zeroinitializer, i32 0, i1 false)
+        //  																			     ^
+        RangeMin = 0;
+        RangeMax = 0;
+        Space    = 0;
+        Class    = 0;
+        pos += ZeroInitializer.length();
+        return;
+    }
+
+    // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 41, i32 44, i32 1, i8 0 }, i32 43, i1 false)
+    //  																			     ^
+
+    CHECK_PATCHING_ERROR(pos < DXIL.length() && DXIL[pos] == '{', "'{' is expected");
+    ++pos;
+    // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 41, i32 44, i32 1, i8 0 }, i32 43, i1 false)
+    //                                                                                    ^
+
+    ParseIntRecord(DXIL, pos, VT_INT32, "resource range min", &RangeMin);
+    // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 41, i32 44, i32 1, i8 0 }, i32 43, i1 false)
+    //                                                                                           ^
+
+    CHECK_PATCHING_ERROR(SkipCommaAndSpaces(DXIL, pos), "',' is expected");
+    // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 41, i32 44, i32 1, i8 0 }, i32 43, i1 false)
+    //                                                                                             ^
+
+    ParseIntRecord(DXIL, pos, VT_INT32, "resource range max", &RangeMax);
+    // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 41, i32 44, i32 1, i8 0 }, i32 43, i1 false)
+    //                                                                                                   ^
+
+    CHECK_PATCHING_ERROR(SkipCommaAndSpaces(DXIL, pos), "',' is expected");
+    // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 41, i32 44, i32 1, i8 0 }, i32 43, i1 false)
+    //                                                                                                     ^
+
+    ParseIntRecord(DXIL, pos, VT_INT32, "space", &Space);
+    // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 41, i32 44, i32 1, i8 0 }, i32 43, i1 false)
+    //                                                                                                          ^
+
+    CHECK_PATCHING_ERROR(SkipCommaAndSpaces(DXIL, pos), "',' is expected");
+    // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 41, i32 44, i32 1, i8 0 }, i32 43, i1 false)
+    //                                                                                                            ^
+
+    ParseIntRecord(DXIL, pos, VT_INT8, "resource class", &Class);
+    // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 41, i32 44, i32 1, i8 0 }, i32 43, i1 false)
+    //                                                                                                                ^
+
+    CHECK_PATCHING_ERROR(SkipSpaces(DXIL, pos), "unexpected end of file")
+    CHECK_PATCHING_ERROR(pos < DXIL.length() && DXIL[pos] == '}', "'}' is expected");
+    ++pos;
+    // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 41, i32 44, i32 1, i8 0 }, i32 43, i1 false)
+    //                                                                                                                  ^
+
+#undef CHECK_PATCHING_ERROR
+}
+
+void DXCompilerImpl::PatchCreateHandleFromBinding(const TResourceBindingMap& ResourceMap, TExtendedResourceMap& ExtResMap, String& DXIL) noexcept(false)
+{
+    // Patch createHandleFromBinding operation
+    static const String CreateHandlePattern = " = call %dx.types.Handle @dx.op.createHandleFromBinding(";
+    static const String ResBindRecord       = "%dx.types.ResBind ";
+
+#define CHECK_PATCHING_ERROR(Cond, ...)                                                         \
+    if (!(Cond))                                                                                \
+    {                                                                                           \
+        LOG_ERROR_AND_THROW("Unable to patch DXIL createHandleFromBinding(): ", ##__VA_ARGS__); \
+    }
+
+    for (size_t pos = 0; pos < DXIL.size();)
+    {
+        // %dx.types.Handle @dx.op.createHandleFromBinding(
+        //        i32,                  ; opcode
+        //        %dx.types.ResBind {
+        //            i32,              ; resource range ID min (constant)
+        //            i32,              ; resource range ID max (constant)
+        //            i32,              ; register space
+        //            i8}               ; resource class: SRV=0, UAV=1, CBV=2, Sampler=3
+        //        i32,                  ; index into the range
+        //        i1)                   ; non-uniform resource index: false or true
+
+        // Examples:
+        //
+        // Single resource:
+        //      = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 2, i32 2, i32 0, i8 1 }, i32 2, i1 false)
+        //                                                                                              ^      ^                     ^
+        //                                                                                             min    max                  index
+        // Array of resources:
+        //      = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 41, i32 44, i32 1, i8 0 }, i32 43, i1 false)
+        //                                                                                              ^       ^                      ^
+        //                                                                                             min     max                   index
+        // Unbounded array of resources:
+        //      = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 0, i32 -1, i32 1, i8 1 }, i32 %28, i1 false)
+        //                                                                                              ^       ^                     ^
+        //                                                                                             min      max                  index
+        //
+        // Zero initializer:
+        //      = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind zeroinitializer, i32 0, i1 false)
+
+        size_t callHandlePos = DXIL.find(CreateHandlePattern, pos);
+        if (callHandlePos == String::npos)
+            break;
+
+        pos = callHandlePos + CreateHandlePattern.length();
+        // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 2, i32 2, i32 0, i8 1 }, i32 2, i1 false)
+        //                                                        ^
+
+        // Skip opcode.
+        ParseIntRecord<Int32>(DXIL, pos, VT_INT32, "opcode");
+
+        // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 2, i32 2, i32 0, i8 1 }, i32 2, i1 false)
+        //                                                               ^
+
+        // Read dx.types.ResBind record.
+
+        CHECK_PATCHING_ERROR(SkipCommaAndSpaces(DXIL, pos), "Unexpected end of record");
+        // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 2, i32 2, i32 0, i8 1 }, i32 2, i1 false)
+        //                                                                 ^
+
+        CHECK_PATCHING_ERROR(std::strncmp(&DXIL[pos], ResBindRecord.c_str(), ResBindRecord.length()) == 0, "dx.types.ResBind record is not found");
+        pos += ResBindRecord.length();
+        // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 2, i32 2, i32 0, i8 1 }, i32 2, i1 false)
+        //                                                                                   ^
+
+        Int32        RangeMin              = 0;
+        Int32        RangeMax              = 0;
+        Int32        Space                 = 0;
+        Int32        ResClass              = 0;
+        const size_t ResBindRecordStartPos = pos;
+        ParseResBindRecord(DXIL, pos, RangeMin, RangeMax, Space, ResClass);
+        // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 2, i32 2, i32 0, i8 1 }, i32 2, i1 false)
+        //  																		         ^                            ^
+        //                                                                              ResBindRecordStartPos            pos
+
+        VERIFY_EXPR(RangeMin >= 0 && (RangeMax == -1 || RangeMax >= RangeMin));
+        VERIFY_EXPR(Space >= 0);
+        VERIFY_EXPR(ResClass >= 0 && ResClass < 4);
+
+        // Register range and space are unique for each resource, so we can reliably find the resource by these values
+        const auto* pResInfo = FindResourceByBindPoint(ExtResMap, ResClass, static_cast<Uint32>(RangeMin), static_cast<Uint32>(Space));
+        CHECK_PATCHING_ERROR(pResInfo != nullptr, "Index record for resource class ", ResClass, " bind point ", RangeMin, " and space ", Space, " is not found");
+        const ResourceExtendedInfo& ResInfo = pResInfo->second;
+        const BindInfo&             Bind    = pResInfo->first->second;
+
+        // Patch ResBind record
+        {
+            std::stringstream ss;
+            ss << "{ i32 " << Bind.BindPoint << ", i32 ";
+            if (Bind.ArraySize == ~0u)
+                ss << -1;
+            else
+                ss << Bind.BindPoint + std::max(Bind.ArraySize, 1u) - 1u;
+            ss << ", i32 " << Bind.Space << ", i8 " << ResClass << " }";
+            const String NewResBindRecord = ss.str();
+            DXIL.replace(DXIL.begin() + ResBindRecordStartPos, DXIL.begin() + pos, NewResBindRecord);
+
+            pos = ResBindRecordStartPos + NewResBindRecord.length();
+        }
+
+        // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 2, i32 2, i32 0, i8 1 }, i32 2, i1 false)
+        //  																		                                      ^
+
+        CHECK_PATCHING_ERROR(SkipCommaAndSpaces(DXIL, pos), "Unexpected end of record");
+
+        // = call %dx.types.Handle @dx.op.createHandleFromBinding(i32 217, %dx.types.ResBind { i32 2, i32 2, i32 0, i8 1 }, i32 2, i1 false)
+        //  																		                                        ^
+
+        PatchResourceIndex(ResInfo, Bind, DXIL, pos);
+    }
+#undef CHECK_PATCHING_ERROR
+}
+
 
 bool IsDXILBytecode(const void* pBytecode, size_t Size)
 {
@@ -1825,6 +2201,11 @@ bool IsDXILBytecode(const void* pBytecode, size_t Size)
     }
 
     return false;
+}
+
+void CreateDxcBlobWrapper(IDataBlob* pDataBlob, IDxcBlob** pDxcBlobWrapper)
+{
+    DxcBlobWrapper::Create(pDataBlob, pDxcBlobWrapper);
 }
 
 } // namespace Diligent

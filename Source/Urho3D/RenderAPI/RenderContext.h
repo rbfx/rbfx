@@ -65,6 +65,7 @@ public:
     RenderDeviceStats& GetMutableStats() { return stats_; }
     RenderDevice* GetRenderDevice() const { return renderDevice_; }
     RenderPool* GetRenderPool() const { return renderPool_; }
+    bool IsDebugScopeEnabled() const { return debugScopeEnabled_; }
     const IntVector2& GetCurrentRenderTargetSize() const { return currentDimensions_; }
     const PipelineStateOutputDesc& GetCurrentRenderTargetsDesc() const { return currentOutputDesc_; }
     bool IsSwapChainRenderTarget() const { return isSwapChain_; }
@@ -78,6 +79,7 @@ private:
     RenderDevice* renderDevice_{};
     SharedPtr<RenderPool> renderPool_;
     Diligent::RefCntAutoPtr<Diligent::IDeviceContext> handle_;
+    bool debugScopeEnabled_{};
 
     RenderDeviceStats stats_;
 

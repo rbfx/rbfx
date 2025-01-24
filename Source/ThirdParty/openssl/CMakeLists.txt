@@ -30,15 +30,15 @@
 #   ./config
 
 project(openssl)
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0)
 
 include(CheckTypeSize)
 check_type_size("long" LONG_INT)
 check_type_size("long long" LONG_LONG_INT)
 check_type_size("int" INT)
-if(HAVE_LONG_INT AND (${LONG_INT} EQUAL 8))
+if("${LONG_INT}" EQUAL 8)
     set(SIXTY_FOUR_BIT_LONG ON )
-elseif(HAVE_LONG_LONG_INT AND (${LONG_LONG_INT} EQUAL 8))
+elseif("${LONG_LONG_INT}" EQUAL 8)
     set(SIXTY_FOUR_BIT ON)
 else()
     set(THIRTY_TWO_BIT ON)

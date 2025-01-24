@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -246,11 +246,8 @@ VulkanInstance::VulkanInstance(const CreateInfo& CI) :
 #if defined(VK_USE_PLATFORM_XCB_KHR)
         InstanceExtensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
 #endif
-#if defined(VK_USE_PLATFORM_IOS_MVK)
-        InstanceExtensions.push_back(VK_MVK_IOS_SURFACE_EXTENSION_NAME);
-#endif
-#if defined(VK_USE_PLATFORM_MACOS_MVK)
-        InstanceExtensions.push_back(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
+#if defined(VK_USE_PLATFORM_METAL_EXT)
+        InstanceExtensions.push_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
 #endif
     };
 

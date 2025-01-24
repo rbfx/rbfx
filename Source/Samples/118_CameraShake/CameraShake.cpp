@@ -69,7 +69,7 @@ void CameraShake::CreateScene()
     scene_->LoadFile("Scenes/SimpleScene.scene");
     
     cameraNode_ = scene_->GetChild("MainCamera");
-    shakeComponent_ = cameraNode_->GetComponent<ShakeComponent>(true);
+    shakeComponent_ = cameraNode_->FindComponent<ShakeComponent>();
     cameraNode_->CreateComponent<FreeFlyController>();
 }
 
@@ -94,7 +94,7 @@ void CameraShake::SetupViewport()
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen. We need to define the scene and the camera
     // at minimum. Additionally we could configure the viewport screen size and the rendering path (eg. forward / deferred) to
     // use, but now we just use full screen and default render path configured in the engine command line options
-    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>(true)));
+    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->FindComponent<Camera>()));
     SetViewport(0, viewport);
 }
 

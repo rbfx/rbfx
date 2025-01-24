@@ -236,6 +236,7 @@ void PluginManager::RegisterPluginApplication(const ea::string& name, PluginAppl
 
 PluginManager::PluginManager(Context* context)
     : Object(context)
+    , renamePluginBinaries_(context_->GetSubsystem<Engine>()->GetParameter(EP_RENAME_PLUGINS).GetBool())
     , enableAutoReload_(!context_->GetSubsystem<Engine>()->IsHeadless())
     , pluginStack_(MakeShared<PluginStack>(this, loadedPlugins_))
 {
@@ -277,6 +278,11 @@ void PluginManager::Reload()
     forceReload_ = true;
 }
 
+void PluginManager::Commit()
+{
+    Update(false);
+}
+
 void PluginManager::StartApplication()
 {
     // If StopApplication was called during this frame, it's okay to start again
@@ -307,6 +313,14 @@ void PluginManager::StopApplication()
     }
 
     stopPending_ = true;
+}
+
+void PluginManager::QuitApplication()
+{
+    if (quitApplication_)
+        quitApplication_();
+    else
+        GetSubsystem<Engine>()->Exit();
 }
 
 void PluginManager::SetPluginsLoaded(const StringVector& plugins)

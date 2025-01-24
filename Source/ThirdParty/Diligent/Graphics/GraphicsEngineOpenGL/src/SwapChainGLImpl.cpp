@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,6 +50,17 @@ SwapChainGLImpl::SwapChainGLImpl(IReferenceCounters*       pRefCounters,
     }
 // clang-format on
 {
+    if ((m_SwapChainDesc.ColorBufferFormat == TEX_FORMAT_RGBA8_UNORM_SRGB ||
+         m_SwapChainDesc.ColorBufferFormat == TEX_FORMAT_BGRA8_UNORM_SRGB) &&
+        !pRenderDeviceGL->GetGLCaps().FramebufferSRGB)
+    {
+        auto ColorFmt = m_SwapChainDesc.ColorBufferFormat == TEX_FORMAT_RGBA8_UNORM_SRGB ?
+            TEX_FORMAT_RGBA8_UNORM :
+            TEX_FORMAT_BGRA8_UNORM;
+        LOG_WARNING_MESSAGE("Changing the swap chain color format to ", GetTextureFormatAttribs(ColorFmt).Name, " because sRGB framebuffers are not enabled.");
+        m_SwapChainDesc.ColorBufferFormat = ColorFmt;
+    }
+
     if (m_DesiredPreTransform != SURFACE_TRANSFORM_OPTIMAL &&
         m_DesiredPreTransform != SURFACE_TRANSFORM_IDENTITY)
     {
@@ -84,9 +95,9 @@ SwapChainGLImpl::SwapChainGLImpl(IReferenceCounters*       pRefCounters,
     m_SwapChainDesc.Width  = 1024;
     m_SwapChainDesc.Height = 768;
 #elif PLATFORM_EMSCRIPTEN
-    double CanvasWidth  = 0;
-    double CanvasHeight = 0;
-    emscripten_get_element_css_size(InitAttribs.Window.pCanvasId, &CanvasWidth, &CanvasHeight);
+    int32_t CanvasWidth  = 0;
+    int32_t CanvasHeight = 0;
+    emscripten_get_canvas_element_size(InitAttribs.Window.pCanvasId, &CanvasWidth, &CanvasHeight);
     m_SwapChainDesc.Width  = static_cast<uint32_t>(CanvasWidth);
     m_SwapChainDesc.Height = static_cast<uint32_t>(CanvasHeight);
 #else
@@ -111,7 +122,7 @@ void SwapChainGLImpl::Present(Uint32 SyncInterval)
 #elif PLATFORM_MACOS
     LOG_ERROR("Swap buffers operation must be performed by the app on MacOS");
 #elif PLATFORM_EMSCRIPTEN
-    LOG_ERROR("Swap buffers operation must be performed by the app on Emscripten");
+    LOG_INFO_MESSAGE_ONCE("Swap buffers operation should be performed by the app on the Web");
 #else
 #    error Unsupported platform
 #endif

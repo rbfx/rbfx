@@ -56,22 +56,25 @@ public:
 
     using TDeviceObjectBase = DeviceObjectBase<BaseInterface, RenderDeviceImplType, BufferViewDesc>;
 
-    /// \param pRefCounters   - Reference counters object that controls the lifetime of this buffer view.
-    /// \param pDevice        - Pointer to the render device.
-    /// \param ViewDesc       - Buffer view description.
-    /// \param pBuffer        - Pointer to the buffer that the view is to be created for.
-    /// \param bIsDefaultView - Flag indicating if the view is a default view, and is thus
-    ///						    part of the buffer object. In this case the view will attach
-    ///							to the buffer's reference counters.
+    /// \param pRefCounters      - Reference counters object that controls the lifetime of this buffer view.
+    /// \param pDevice           - Pointer to the render device.
+    /// \param ViewDesc          - Buffer view description.
+    /// \param pBuffer           - Pointer to the buffer that the view is to be created for.
+    /// \param bIsDefaultView    - Flag indicating if the view is a default view, and is thus
+    ///						       part of the buffer object. In this case the view will attach
+    ///							   to the buffer's reference counters.
+    /// \param bIsDeviceInternal - Flag indicating if the texture is an internal device object and
+    ///						       must not keep a strong reference to the device
     BufferViewBase(IReferenceCounters*   pRefCounters,
                    RenderDeviceImplType* pDevice,
                    const BufferViewDesc& ViewDesc,
                    IBuffer*              pBuffer,
-                   bool                  bIsDefaultView) :
+                   bool                  bIsDefaultView,
+                   bool                  bIsDeviceInternal = false) :
         // Default views are created as part of the buffer, so we cannot not keep strong
         // reference to the buffer to avoid cyclic links. Instead, we will attach to the
         // reference counters of the buffer.
-        TDeviceObjectBase(pRefCounters, pDevice, ViewDesc),
+        TDeviceObjectBase(pRefCounters, pDevice, ViewDesc, bIsDeviceInternal),
         m_pBuffer{pBuffer},
         // For non-default view, we will keep strong reference to buffer
         m_spBuffer{bIsDefaultView ? nullptr : pBuffer}

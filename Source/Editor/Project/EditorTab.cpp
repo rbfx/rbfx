@@ -201,6 +201,14 @@ IntVector2 EditorTab::GetContentSize() const
     return {RoundToInt(rect.GetWidth()), RoundToInt(rect.GetHeight())};
 }
 
+IntVector2 EditorTab::GetContentPosition() const
+{
+    const ImGuiContext& g = *GImGui;
+    const ImGuiWindow* window = g.CurrentWindow;
+    const ImRect rect = ImRound(window->ContentRegionRect);
+    return VectorRoundToInt(ToVector2(rect.Min));
+}
+
 void EditorTab::RenderEditMenuItems()
 {
     auto undoManager = GetProject()->GetUndoManager();

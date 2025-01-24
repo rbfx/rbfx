@@ -130,6 +130,9 @@ void FreeFlyController::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Accelerated Speed", float, acceleratedSpeed_, 100.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Min Pitch", float, minPitch_, -90.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Max Pitch", float, maxPitch_, 90.0f, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Mouse Sensitivity", float, mouseSensitivity_, DEFAULT_MOUSE_SENSITIVITY, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Touch Sensitivity", float, touchSensitivity_, DEFAULT_TOUCH_ROTATION_SENSITIVITY, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Axis Sensitivity", float, axisSensitivity_, DEFAULT_AXIS_ROTATION_SENSITIVITY, AM_DEFAULT);
 }
 
 void FreeFlyController::SetCameraRotation(Quaternion quaternion)

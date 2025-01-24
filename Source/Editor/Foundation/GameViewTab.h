@@ -58,17 +58,23 @@ public:
 
     /// Implement EditorTab
     /// @{
+    void RenderToolbar() override;
     void RenderContent() override;
     void RenderContextMenuItems() override;
+
+    void WriteIniSettings(ImGuiTextBuffer& output) override;
+    void ReadIniSettings(const char* line) override;
     /// @}
 
 private:
+    void QuitApplication();
+
     class PlayState;
 
     SharedPtr<CustomBackbufferTexture> backbuffer_;
 
-    ea::string lastPlayedScene_;
     ea::unique_ptr<PlayState> state_;
+    bool hudVisible_{};
 };
 
-}
+} // namespace Urho3D

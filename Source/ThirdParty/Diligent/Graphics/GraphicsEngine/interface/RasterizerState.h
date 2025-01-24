@@ -112,6 +112,13 @@ struct RasterizerStateDesc
 
     /// Enable clipping against near and far clip planes.
     /// Default value: True.
+    ///
+    /// \remarks    By default polygon faces are clipped against the near and far planes of the view
+    ///             frustum. If depth clipping is disabled, the depth of the fragments that would be
+    ///             clipped is clamped to the near/far plane instead of discarding them.
+    ///
+    ///             To check if the device supports depth clamping, use the DepthClamp device feature.
+    ///             If it is not supported, the value of this member must be True.
     Bool      DepthClipEnable       DEFAULT_INITIALIZER(True);
 
     /// Enable scissor-rectangle culling. All pixels outside an active scissor rectangle are culled.

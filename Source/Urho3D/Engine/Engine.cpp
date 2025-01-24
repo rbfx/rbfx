@@ -40,8 +40,10 @@
 #include "../Engine/StateManager.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
+#include "../Graphics/Texture2D.h"
 #include "../RenderAPI/PipelineState.h"
 #include "../RenderAPI/RenderAPIUtils.h"
+#include "../RenderAPI/RenderDevice.h"
 #include "../Resource/JSONArchive.h"
 #include "../Graphics/Renderer.h"
 #include "../Input/Input.h"
@@ -72,7 +74,15 @@
 #endif
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Localization.h"
+#include "../RenderPipeline/RenderPass.h"
+#include "../RenderPipeline/RenderPath.h"
 #include "../RenderPipeline/RenderPipeline.h"
+#include "../RenderPipeline/Passes/AmbientOcclusionPass.h"
+#include "../RenderPipeline/Passes/AutoExposurePass.h"
+#include "../RenderPipeline/Passes/BloomPass.h"
+#include "../RenderPipeline/Passes/FullScreenShaderPass.h"
+#include "../RenderPipeline/Passes/OutlineRenderPass.h"
+#include "../RenderPipeline/Passes/ToneMappingPass.h"
 #include "../Resource/JSONArchive.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
@@ -265,6 +275,14 @@ Engine::Engine(Context* context) :
     // Register render pipeline.
     // Extract this code into function if you are adding more.
     RenderPipeline::RegisterObject(context_);
+    RenderPath::RegisterObject(context_);
+    RenderPass::RegisterObject(context_);
+    AmbientOcclusionPass::RegisterObject(context_);
+    AutoExposurePass::RegisterObject(context_);
+    BloomPass::RegisterObject(context_);
+    FullScreenShaderPass::RegisterObject(context_);
+    OutlineRenderPass::RegisterObject(context_);
+    ToneMappingPass::RegisterObject(context_);
 
 #ifdef URHO3D_IK
     RegisterIKLibrary(context_);
@@ -525,12 +543,15 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
         }
 
 #ifdef URHO3D_RMLUI
+        const auto rmlUi = GetSubsystem<RmlUI>();
+
         const bool loadFonts = GetParameter(EP_LOAD_FONTS).GetBool();
         if (loadFonts)
-        {
-            auto rmlUi = GetSubsystem<RmlUI>();
             rmlUi->ReloadFonts();
-        }
+
+        const auto renderDevice = GetSubsystem<RenderDevice>();
+        const float dpiScale = renderDevice->GetDpiScale();
+        rmlUi->SetScale(dpiScale);
 #endif
     }
 
@@ -1269,9 +1290,10 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_ORIENTATIONS, "LandscapeLeft LandscapeRight");
     engineParameters_->DefineVariable(EP_PACKAGE_CACHE_DIR, EMPTY_STRING);
     engineParameters_->DefineVariable(EP_PLUGINS, EMPTY_STRING);
+    engineParameters_->DefineVariable(EP_RENAME_PLUGINS, false);
     engineParameters_->DefineVariable(EP_REFRESH_RATE, 0).Overridable();
     engineParameters_->DefineVariable(EP_RESOURCE_PACKAGES, EMPTY_STRING).CommandLinePriority();
-    engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "CoreData;Data;Cache").CommandLinePriority();
+    engineParameters_->DefineVariable(EP_RESOURCE_PATHS, "CoreData;Cache;Data").CommandLinePriority();
     engineParameters_->DefineVariable(EP_RESOURCE_PREFIX_PATHS, EMPTY_STRING).CommandLinePriority();
     engineParameters_->DefineVariable(EP_RESOURCE_ROOT_FILE, "ResourceRoot.ini");
     engineParameters_->DefineVariable(EP_SAVE_SHADER_CACHE, true);

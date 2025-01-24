@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -62,25 +62,8 @@ GLContext::GLContext(const EngineGLCreateInfo& InitAttribs,
     glGetIntegerv(GL_MINOR_VERSION, &MinorVersion);
     LOG_INFO_MESSAGE(InitAttribs.Window.WindowId != 0 ? "Initialized OpenGL " : "Attached to OpenGL ", MajorVersion, '.', MinorVersion, " context (", GLVersionString, ", ", GLRenderer, ')');
 
-    // Under the standard filtering rules for cubemaps, filtering does not work across faces of the cubemap.
-    // This results in a seam across the faces of a cubemap. This was a hardware limitation in the past, but
-    // modern hardware is capable of interpolating across a cube face boundary.
-    // GL_TEXTURE_CUBE_MAP_SEAMLESS is not defined in OpenGLES
-    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-    if (glGetError() != GL_NO_ERROR)
-        LOG_ERROR_MESSAGE("Failed to enable seamless cubemap filtering");
-
-    // When GL_FRAMEBUFFER_SRGB is enabled, and if the destination image is in the sRGB colorspace
-    // then OpenGL will assume the shader's output is in the linear RGB colorspace. It will therefore
-    // convert the output from linear RGB to sRGB.
-    // Any writes to images that are not in the sRGB format should not be affected.
-    // Thus this setting should be just set once and left that way
-    glEnable(GL_FRAMEBUFFER_SRGB);
-    if (glGetError() != GL_NO_ERROR)
-        LOG_ERROR_MESSAGE("Failed to enable SRGB framebuffers");
-
     DevType    = RENDER_DEVICE_TYPE_GL;
-    APIVersion = Version{MajorVersion, MinorVersion};
+    APIVersion = Version{static_cast<Uint32>(MajorVersion), static_cast<Uint32>(MinorVersion)};
 }
 
 GLContext::~GLContext()

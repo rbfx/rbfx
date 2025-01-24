@@ -6,6 +6,7 @@
 
 #include "Urho3D/RenderAPI/RenderContext.h"
 
+#include "Urho3D/Core/ProcessUtils.h"
 #include "Urho3D/RenderAPI/DrawCommandQueue.h"
 #include "Urho3D/RenderAPI/GAPIIncludes.h"
 #include "Urho3D/RenderAPI/RawTexture.h"
@@ -36,6 +37,9 @@ RenderContext::RenderContext(RenderDevice* renderDevice)
     , handle_(renderDevice->GetImmediateContext())
 {
     renderDevice_->OnDeviceLost.Subscribe(this, &RenderContext::ResetCachedContextState);
+
+    // TODO: Have more flexible configuration
+    debugScopeEnabled_ = GetPlatform() != PlatformId::Web;
 }
 
 RenderContext::~RenderContext()
@@ -184,7 +188,7 @@ void RenderContext::Execute(DrawCommandQueue* drawQueue)
 void RenderContext::UpdateCurrentRenderTargetInfo()
 {
     currentOutputDesc_.depthStencilFormat_ =
-        currentDepthStencil_ ? currentDepthStencil_->GetDesc().Format : Diligent::TEX_FORMAT_UNKNOWN;
+        currentDepthStencil_ ? currentDepthStencil_->GetDesc().Format : TextureFormat::TEX_FORMAT_UNKNOWN;
     currentOutputDesc_.numRenderTargets_ = currentRenderTargets_.size();
     for (unsigned i = 0; i < currentRenderTargets_.size(); ++i)
         currentOutputDesc_.renderTargetFormats_[i] = currentRenderTargets_[i]->GetDesc().Format;

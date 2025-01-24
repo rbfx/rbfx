@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,6 +45,12 @@ public:
 
     /// Releases memory
     virtual void Free(void* Ptr) override;
+
+    /// Allocates block of memory with specified alignment
+    virtual void* AllocateAligned(size_t Size, size_t Alignment, const Char* dbgDescription, const char* dbgFileName, const Int32 dbgLineNumber) override;
+
+    /// Releases memory allocated with AllocateAligned
+    virtual void FreeAligned(void* Ptr) override;
 
     static DefaultRawMemoryAllocator& GetAllocator();
 

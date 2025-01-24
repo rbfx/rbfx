@@ -148,7 +148,7 @@ AnimationParameters& AnimationParameters::Looped()
     return *this;
 }
 
-AnimationParameters& AnimationParameters::StartBone(const ea::string& startBone)
+AnimationParameters& AnimationParameters::StartBone(ea::string_view startBone)
 {
     startBone_ = startBone;
     return *this;
@@ -163,6 +163,12 @@ AnimationParameters& AnimationParameters::Layer(unsigned layer)
 AnimationParameters& AnimationParameters::Time(float time)
 {
     time_.Set(time);
+    return *this;
+}
+
+AnimationParameters& AnimationParameters::TimeRange(float minTime, float maxTime)
+{
+    time_ = {time_.Value(), minTime, maxTime};
     return *this;
 }
 
@@ -201,6 +207,11 @@ AnimationParameters& AnimationParameters::KeepOnZeroWeight()
 {
     removeOnZeroWeight_ = false;
     return *this;
+}
+
+void AnimationParameters::SetDefaultTimeRange()
+{
+    time_ = {time_.Value(), 0.0f, animation_ ? animation_->GetLength() : M_LARGE_VALUE};
 }
 
 WrappedScalarRange<float> AnimationParameters::Update(float scaledTimeStep)
@@ -453,6 +464,8 @@ void AnimationController::Update(float timeStep)
         UpdateInstance(params, timeStep, true);
         if (!params.removed_)
             UpdateState(state, params);
+        else
+            animationStatesDirty_ = true;
     }
     ea::erase_if(animations_, [](const AnimationInstance& value) { return value.params_.removed_; });
 
@@ -471,7 +484,7 @@ void AnimationController::Update(float timeStep)
     if (resetSkeleton_)
     {
         if (auto model = GetComponent<AnimatedModel>())
-            model->GetSkeleton().Reset();
+            model->ResetBones();
     }
 
     // Node and attribute animations need to be applied manually
@@ -611,8 +624,10 @@ void AnimationController::AddAnimation(const AnimationParameters& params)
     instance.params_ = params;
     instance.params_.instanceIndex_ = instanceIndex;
 
-    auto* model = GetComponent<AnimatedModel>();
-    instance.state_ = model ? MakeShared<AnimationState>(this, model) : MakeShared<AnimationState>(this, node_);
+    instance.state_ = MakeShared<AnimationState>(this);
+    if (auto* model = GetComponent<AnimatedModel>())
+        instance.state_->ConnectToAnimatedModel(model);
+
     EnsureStateInitialized(instance.state_, instance.params_);
 
     animationStatesDirty_ = true;
@@ -680,6 +695,12 @@ unsigned AnimationController::FindLastAnimation(Animation* animation, unsigned l
 }
 
 const AnimationParameters* AnimationController::GetLastAnimationParameters(Animation* animation, unsigned layer) const
+{
+    const unsigned index = FindLastAnimation(animation, layer);
+    return index != M_MAX_UNSIGNED ? &animations_[index].params_ : nullptr;
+}
+
+AnimationParameters* AnimationController::GetMutableLastAnimationParameters(Animation* animation, unsigned layer)
 {
     const unsigned index = FindLastAnimation(animation, layer);
     return index != M_MAX_UNSIGNED ? &animations_[index].params_ : nullptr;
@@ -1272,7 +1293,11 @@ void AnimationController::ConnectToAnimatedModel()
 {
     auto model = GetComponent<AnimatedModel>();
     if (model)
+    {
         model->ConnectToAnimationStateSource(this);
+        for (AnimationInstance& instance : animations_)
+            instance.state_->ConnectToAnimatedModel(model);
+    }
 }
 
 }

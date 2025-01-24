@@ -71,6 +71,9 @@ public:
     void OnDestroyBuffer(const BufferGLImpl& Buffer);
     void OnDestroyPSO(const PipelineStateGLImpl& PSO);
 
+    // Clears all cached objects
+    void Clear();
+
 private:
     // This structure is used as the key to find VAO
     struct VAOHashKey
@@ -85,8 +88,8 @@ private:
         // PSO uniquely defines the layout (attrib pointers, divisors, etc.),
         // so we do not need to add individual layout elements to the key.
         // The key needs to contain all bound buffers.
-        const UniqueIdentifier PsoUId;
-        const UniqueIdentifier IndexBufferUId;
+        UniqueIdentifier PsoUId         = 0;
+        UniqueIdentifier IndexBufferUId = 0;
 
         Uint32 UsedSlotsMask = 0;
         static_assert(MAX_BUFFER_SLOTS <= sizeof(UsedSlotsMask) * 8, "Use more bits for UsedSlotsMask");
@@ -123,8 +126,8 @@ private:
     Threading::SpinLock                                                                    m_CacheLock;
     std::unordered_map<VAOHashKey, GLObjectWrappers::GLVertexArrayObj, VAOHashKey::Hasher> m_Cache;
 
-    std::unordered_multimap<UniqueIdentifier, VAOHashKey> m_PSOToKey;
-    std::unordered_multimap<UniqueIdentifier, VAOHashKey> m_BuffToKey;
+    std::unordered_map<UniqueIdentifier, std::vector<VAOHashKey>> m_PSOToKey;
+    std::unordered_map<UniqueIdentifier, std::vector<VAOHashKey>> m_BuffToKey;
 
     // Any draw command fails if no VAO is bound. We will use this empty
     // VAO for draw commands with null input layout, such as these that

@@ -1,0 +1,12 @@
+{
+	"type": "CollisionShape",
+	"value": {
+		"attributes": [
+			{
+				"name": "Shape Type",
+				"type": "Int",
+				"value": 1
+			}
+		]
+	}
+}

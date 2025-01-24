@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,14 +43,14 @@ namespace Diligent
 
 /// Returns shader type definition macro(s), e.g., for a vertex shader:
 ///
-///     {"VERTEX_SHADER", "1"}, {nullptr, nullptr}
+///     ShaderMacroArray{{{"VERTEX_SHADER", "1"}}, 1}
 ///
 /// or, for a fragment shader:
 ///
-///     {"FRAGMENT_SHADER", "1"}, {"PIXEL_SHADER", "1"}, {nullptr, nullptr}
+///     ShaderMacroArray{{{"FRAGMENT_SHADER", "1"}, {"PIXEL_SHADER", "1"}}, 2}
 ///
 /// etc.
-const ShaderMacro* GetShaderTypeMacros(SHADER_TYPE Type);
+ShaderMacroArray GetShaderTypeMacros(SHADER_TYPE Type);
 
 
 /// Appends shader macro definitions to the end of the source string:
@@ -58,7 +58,7 @@ const ShaderMacro* GetShaderTypeMacros(SHADER_TYPE Type);
 ///     #define Name[0] Definition[0]
 ///     #define Name[1] Definition[1]
 ///     ...
-void AppendShaderMacros(std::string& Source, const ShaderMacro* Macros);
+void AppendShaderMacros(std::string& Source, const ShaderMacroArray& Macros);
 
 
 /// Appends the shader type definition macro(s), e.g., for a vertex shader:
@@ -72,6 +72,13 @@ void AppendShaderMacros(std::string& Source, const ShaderMacro* Macros);
 ///
 /// etc.
 void AppendShaderTypeDefinitions(std::string& Source, SHADER_TYPE Type);
+
+
+/// Appends platform definition macro, e.g. for Windows:
+///
+///    #define PLATFORM_WIN32 1
+///
+void AppendPlatformDefinition(std::string& Source);
 
 
 /// Appends a special comment that contains the shader source language definition.
@@ -175,7 +182,7 @@ struct ShaderCodeVariableDescX : ShaderCodeVariableDesc
     }
 
 
-    ShaderCodeVariableDescX& operator=(ShaderCodeVariableDescX&& RHS)
+    ShaderCodeVariableDescX& operator=(ShaderCodeVariableDescX&& RHS) noexcept
     {
         static_cast<ShaderCodeVariableDesc&>(*this) = RHS;
 

@@ -101,13 +101,36 @@ void ShakeComponent::Update(float timeStep)
         return;
     }
 
+    const auto currentPosition = node_->GetPosition();
+    const auto currentRotation = node_->GetRotation();
+    if (!hasOriginalPosition_)
+    {
+        lastKnownPosition_ = originalPosition_ = currentPosition;
+        lastKnownRotation_ = originalRotation_ = currentRotation;
+        hasOriginalPosition_ = true;
+    }
+    else
+    {
+        if (lastKnownPosition_ != currentPosition)
+        {
+            const auto diff = currentPosition - lastKnownPosition_;
+            originalPosition_ = originalPosition_ + diff;
+        }
+        if (lastKnownRotation_ != currentRotation)
+        {
+            const auto diff = lastKnownRotation_.Inverse() * currentRotation;
+            originalRotation_ = originalRotation_ * diff;
+        }
+    }
+
     time_ += timeStep * timeScale_;
     trauma_ = Max(0.0f, trauma_ - traumaFalloff_ * timeStep);
     if (trauma_ == 0.0f)
     {
-        node_->SetPosition(Vector3::ZERO);
-        node_->SetRotation(Quaternion::IDENTITY);
+        node_->SetPosition(originalPosition_);
+        node_->SetRotation(originalRotation_);
         SetUpdateEventMask(USE_NO_EVENT);
+        hasOriginalPosition_ = false;
         return;
     }
 
@@ -119,7 +142,7 @@ void ShakeComponent::Update(float timeStep)
                      - Vector3::ONE)
             * shiftRange_ * scale;
     }
-    node_->SetPosition(offset);
+    node_->SetPosition(lastKnownPosition_ = originalPosition_ + offset);
 
     Vector3 rotation = Vector3::ZERO;
     if (rotationRange_ != Vector3::ZERO)
@@ -129,6 +152,6 @@ void ShakeComponent::Update(float timeStep)
                 - Vector3::ONE)
             * rotationRange_ * scale;
     }
-    node_->SetRotation(Quaternion(rotation));
+    node_->SetRotation(lastKnownRotation_ = originalRotation_ * Quaternion(rotation));
 }
 }

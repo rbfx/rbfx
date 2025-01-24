@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Diligent-SharpGenTools.Sdk" Version="2.0.3" />
+  <Import Project="$(BaseProjectPath)/Version.props" />
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Platforms>x86;x64</Platforms>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PackageId>DiligentGraphics.DiligentEngine.Core</PackageId>
+    <Authors>Diligent Graphics</Authors>
+    <Company>Diligent Graphics</Company>
+    <Version>$(PackageGitVersion)</Version>
+    <Description>A modern cross-platform low-level graphics library designed
+to take full advantage of Direct3D12 and Vulkan, while supporting
+older platforms via Direct3D11, OpenGL and OpenGLES.</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/DiligentGraphics/DiligentEngine</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/DiligentGraphics/DiligentCore</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Copyright>Copyright (c) Diligent Graphics LLC 2023</Copyright>
+    <PackageTags>Graphics;Rendering;3D;Direct3D11;D3D11;Direct3D12;D3D12;DirectX;Direct3D;Vulkan;OpenGL</PackageTags>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <Title>Core graphics library of the Diligent Engine</Title>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <SharpGenMapping Include="Mapping.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="$(PackageId).targets">
+      <PackagePath>build</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+    <None Include="$(BaseProjectPath)/bin/x86/$(Configuration)/$(TargetFramework)/$(ProjectName).dll">
+      <PackagePath>lib/$(TargetFramework)/x86/$(ProjectName).dll</PackagePath>
+      <Visible>false</Visible>
+      <Pack>true</Pack>
+    </None>
+    <None Include="$(BaseProjectPath)/bin/x64/$(Configuration)/$(TargetFramework)/$(ProjectName).dll">
+      <PackagePath>lib/$(TargetFramework)/x64/$(ProjectName).dll</PackagePath>
+      <Visible>false</Visible>
+      <Pack>true</Pack>
+    </None>
+    <Content Include="$(BaseProjectPath)/native/win-x86/**">
+      <Visible>false</Visible>
+      <PackagePath>runtimes/win-x86/native</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+    <Content Include="$(BaseProjectPath)/native/win-x64/**">
+      <Visible>false</Visible>
+      <PackagePath>runtimes/win-x64/native</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+  </ItemGroup>
+
+</Project>

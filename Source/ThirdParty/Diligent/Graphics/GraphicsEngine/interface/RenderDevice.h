@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -61,7 +61,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {F0E9B607-AE33-4B2B-B1AF-A8B2C3104022}
-static const INTERFACE_ID IID_RenderDevice =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_RenderDevice =
     {0xf0e9b607, 0xae33, 0x4b2b, {0xb1, 0xaf, 0xa8, 0xb2, 0xc3, 0x10, 0x40, 0x22}};
 
 #define DILIGENT_INTERFACE_NAME IRenderDevice
@@ -98,14 +98,23 @@ DILIGENT_BEGIN_INTERFACE(IRenderDevice, IObject)
 
     /// Creates a new shader object
 
-    /// \param [in] ShaderCI  - Shader create info, see Diligent::ShaderCreateInfo for details.
+    /// \param [in]  ShaderCI - Shader create info, see Diligent::ShaderCreateInfo for details.
     /// \param [out] ppShader - Address of the memory location where a pointer to the
     ///                         shader interface will be written.
     ///                         The function calls AddRef(), so that the new object will have
     ///                         one reference.
+    /// \param [out] ppCompilerOutput - Address of the memory location where a pointer to the
+    ///                                 the compiler output data blob will be written.
+    ///                                 If null, the compiler output will be ignored.
+    ///
+    /// \remarks    The buffer returned in ppCompilerOutput contains two null-terminated strings.
+    ///             The first one is the compiler output message. The second one is the full
+    ///             shader source code including definitions added by the engine. The data blob
+    ///             object must be released by the client.
     VIRTUAL void METHOD(CreateShader)(THIS_
                                       const ShaderCreateInfo REF ShaderCI,
-                                      IShader**                   ppShader) PURE;
+                                      IShader**                  ppShader,
+                                      IDataBlob**                ppCompilerOutput DEFAULT_VALUE(nullptr)) PURE;
 
     /// Creates a new texture object
 
@@ -150,14 +159,14 @@ DILIGENT_BEGIN_INTERFACE(IRenderDevice, IObject)
 
     /// Creates a new resource mapping
 
-    /// \param [in]  MappingDesc - Resource mapping description, see Diligent::ResourceMappingDesc for details.
-    /// \param [out] ppMapping   - Address of the memory location where a pointer to the
-    ///                            resource mapping interface will be written.
-    ///                            The function calls AddRef(), so that the new object will have
-    ///                            one reference.
+    /// \param [in]  ResMappingCI - Resource mapping create info, see Diligent::ResourceMappingCreateInfo for details.
+    /// \param [out] ppMapping    - Address of the memory location where a pointer to the
+    ///                             resource mapping interface will be written.
+    ///                             The function calls AddRef(), so that the new object will have
+    ///                             one reference.
     VIRTUAL void METHOD(CreateResourceMapping)(THIS_
-                                               const ResourceMappingDesc REF MappingDesc,
-                                               IResourceMapping**            ppMapping) PURE;
+                                               const ResourceMappingCreateInfo REF ResMappingCI,
+                                               IResourceMapping**                  ppMapping) PURE;
 
     /// Creates a new graphics pipeline state object
 
@@ -341,7 +350,7 @@ DILIGENT_BEGIN_INTERFACE(IRenderDevice, IObject)
     ///
     /// \remarks This method must be externally synchronized.
     VIRTUAL const TextureFormatInfo REF METHOD(GetTextureFormatInfo)(THIS_
-                                                                     TEXTURE_FORMAT TexFormat) PURE;
+                                                                     TEXTURE_FORMAT TexFormat) CONST PURE;
 
 
     /// Returns the extended texture format information.
@@ -386,10 +395,15 @@ DILIGENT_BEGIN_INTERFACE(IRenderDevice, IObject)
 
 
     /// Returns engine factory this device was created from.
-    /// \remark This method does not increment the reference counter of the returned interface,
-    ///         so the application should not call Release().
+    /// \remarks This method does not increment the reference counter of the returned interface,
+    ///          so an application should not call Release().
     VIRTUAL IEngineFactory* METHOD(GetEngineFactory)(THIS) CONST PURE;
 
+
+    /// Returns a pointer to the shader compilation thread pool.
+    /// \remarks This method does not increment the reference counter of the returned interface,
+    ///          so an application should not call Release().
+    VIRTUAL IThreadPool* METHOD(GetShaderCompilationThreadPool)(THIS) CONST PURE;
 
 #if DILIGENT_CPP_INTERFACE
     /// Overloaded alias for CreateGraphicsPipelineState.
@@ -446,6 +460,7 @@ DILIGENT_END_INTERFACE
 #    define IRenderDevice_ReleaseStaleResources(This, ...)           CALL_IFACE_METHOD(RenderDevice, ReleaseStaleResources,           This, __VA_ARGS__)
 #    define IRenderDevice_IdleGPU(This)                              CALL_IFACE_METHOD(RenderDevice, IdleGPU,                         This)
 #    define IRenderDevice_GetEngineFactory(This)                     CALL_IFACE_METHOD(RenderDevice, GetEngineFactory,                This)
+#    define IRenderDevice_GetShaderCompilationThreadPool(This)       CALL_IFACE_METHOD(RenderDevice, GetShaderCompilationThreadPool,  This)
 // clang-format on
 
 #endif

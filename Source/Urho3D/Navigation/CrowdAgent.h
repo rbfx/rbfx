@@ -100,6 +100,10 @@ public:
     void SetVelocityCallback(const CrowdAgentVelocityCallback& callback) { velocityCallback_ = callback; }
     /// Return current velocity callback.
     const CrowdAgentVelocityCallback& GetVelocityCallback() const { return velocityCallback_; }
+    /// Set height callback.
+    void SetHeightCallback(const CrowdAgentHeightCallback& callback) { heightCallback_ = callback; }
+    /// Return current height callback.
+    const CrowdAgentHeightCallback& GetHeightCallback() const { return heightCallback_; }
 
     /// Submit a new target position request for this agent.
     /// @property
@@ -107,6 +111,8 @@ public:
     /// Submit a new target velocity request for this agent.
     /// @property
     void SetTargetVelocity(const Vector3& velocity);
+    /// Set actual immediate velocity. Target is not affected.
+    void SetActualVelocity(const Vector3& velocity);
     /// Reset any target request for the specified agent. Note that the agent will continue to move into the current direction; set a zero target velocity to actually stop.
     void ResetTarget();
     /// Update the node position. When set to false, the node position should be updated by other means (e.g. using Physics) in response to the E_CROWD_AGENT_REPOSITION event.
@@ -229,6 +235,8 @@ protected:
     void OnMarkedDirty(Node* node) override;
     /// Get internal Detour crowd agent.
     const dtCrowdAgent* GetDetourCrowdAgent() const;
+    /// Get editable internal Detour crowd agent.
+    dtCrowdAgent* GetEditableDetourCrowdAgent();
     /// Handle navigation mesh tile added.
     void HandleNavigationTileAdded(StringHash eventType, VariantMap& eventData);
 
@@ -243,6 +251,8 @@ private:
     WeakPtr<CrowdManager> crowdManager_;
     /// Velocity callback.
     CrowdAgentVelocityCallback velocityCallback_;
+    /// Height callback.
+    CrowdAgentHeightCallback heightCallback_;
     /// Crowd manager reference to this agent.
     int agentCrowdId_;
     /// Requested target position.

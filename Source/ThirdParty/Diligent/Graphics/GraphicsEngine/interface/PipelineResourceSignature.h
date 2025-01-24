@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -134,6 +134,126 @@ DILIGENT_TYPED_ENUM(PIPELINE_RESOURCE_FLAGS, Uint8)
 DEFINE_FLAG_ENUM_OPERATORS(PIPELINE_RESOURCE_FLAGS);
 
 
+/// WebGPU-specific resource binding types.
+DILIGENT_TYPED_ENUM(WEB_GPU_BINDING_TYPE, Uint8)
+{
+    /// Default resource binding.
+    WEB_GPU_BINDING_TYPE_DEFAULT = 0,
+
+
+    /// When resource type is SHADER_RESOURCE_TYPE_SAMPLER, specifies the
+    /// WebGPU sampler binding type as "filtering".
+    /// This is the default sampler binding type if WEB_GPU_BINDING_TYPE_DEFAULT is used.
+    WEB_GPU_BINDING_TYPE_FILTERING_SAMPLER,
+
+    /// When resource type is SHADER_RESOURCE_TYPE_SAMPLER, specifies the
+    /// WebGPU sampler binding type as "non-filtering".
+    WEB_GPU_BINDING_TYPE_NON_FILTERING_SAMPLER,
+
+    /// When resource type is SHADER_RESOURCE_TYPE_SAMPLER, specifies the
+    /// WebGPU sampler binding type as "comparison".
+    WEB_GPU_BINDING_TYPE_COMPARISON_SAMPLER,
+
+
+    /// When resource type is SHADER_RESOURCE_TYPE_TEXTURE_SRV, specifies the
+    /// WebGPU texture sample type as "float".
+    /// This is the default texture sample type if WEB_GPU_BINDING_TYPE_DEFAULT is used.
+    WEB_GPU_BINDING_TYPE_FLOAT_TEXTURE,
+
+    /// When resource type is SHADER_RESOURCE_TYPE_TEXTURE_SRV, specifies the
+    /// WebGPU texture sample type as "unfilterable-float".
+    WEB_GPU_BINDING_TYPE_UNFILTERABLE_FLOAT_TEXTURE,
+
+    /// When resource type is SHADER_RESOURCE_TYPE_TEXTURE_SRV, specifies the
+    /// WebGPU texture sample type as "depth".
+    WEB_GPU_BINDING_TYPE_DEPTH_TEXTURE,
+    
+    /// When resource type is SHADER_RESOURCE_TYPE_TEXTURE_SRV, specifies the
+    /// WebGPU texture sample type as "sint".
+    WEB_GPU_BINDING_TYPE_SINT_TEXTURE,
+
+    /// When resource type is SHADER_RESOURCE_TYPE_TEXTURE_SRV, specifies the
+    /// WebGPU texture sample type as "uint".
+    WEB_GPU_BINDING_TYPE_UINT_TEXTURE,
+
+
+    /// When resource type is SHADER_RESOURCE_TYPE_TEXTURE_SRV, specifies the
+    /// WebGPU texture sample type as "float" and the texture is multisampled.
+    WEB_GPU_BINDING_TYPE_FLOAT_TEXTURE_MS,
+
+    /// When resource type is SHADER_RESOURCE_TYPE_TEXTURE_SRV, specifies the
+    /// WebGPU texture sample type as "unfilterable-float" and the texture is multisampled.
+    WEB_GPU_BINDING_TYPE_UNFILTERABLE_FLOAT_TEXTURE_MS,
+
+    /// When resource type is SHADER_RESOURCE_TYPE_TEXTURE_SRV, specifies the
+    /// WebGPU texture sample type as "depth" and the texture is multisampled.
+    WEB_GPU_BINDING_TYPE_DEPTH_TEXTURE_MS,
+    
+    /// When resource type is SHADER_RESOURCE_TYPE_TEXTURE_SRV, specifies the
+    /// WebGPU texture sample type as "sint" and the texture is multisampled.
+    WEB_GPU_BINDING_TYPE_SINT_TEXTURE_MS,
+
+    /// When resource type is SHADER_RESOURCE_TYPE_TEXTURE_SRV, specifies the
+    /// WebGPU texture sample type as "uint" and the texture is multisampled.
+    WEB_GPU_BINDING_TYPE_UINT_TEXTURE_MS,
+
+
+    /// When resource type is SHADER_RESOURCE_TYPE_TEXTURE_UAV, specifies the
+    /// WebGPU storage texture access type as "write-only".
+    /// This is the default storage texture access type if WEB_GPU_BINDING_TYPE_DEFAULT is used.
+    WEB_GPU_BINDING_TYPE_WRITE_ONLY_TEXTURE_UAV,
+
+    /// When resource type is SHADER_RESOURCE_TYPE_TEXTURE_UAV, specifies the
+    /// WebGPU storage texture access type as "read-only".
+    WEB_GPU_BINDING_TYPE_READ_ONLY_TEXTURE_UAV,
+
+    /// When resource type is SHADER_RESOURCE_TYPE_TEXTURE_UAV, specifies the
+    /// WebGPU storage texture access type as "read-write".
+    WEB_GPU_BINDING_TYPE_READ_WRITE_TEXTURE_UAV,
+
+    WEB_GPU_BINDING_TYPE_COUNT
+};
+
+/// WebGPU-specific resource attributes.
+struct WebGPUResourceAttribs
+{
+    /// WebGPU-specific binding type, see Diligent::WEB_GPU_BINDING_TYPE.
+    WEB_GPU_BINDING_TYPE BindingType      DEFAULT_INITIALIZER(WEB_GPU_BINDING_TYPE_DEFAULT);
+
+    /// When resource type is SHADER_RESOURCE_TYPE_TEXTURE_SRV or SHADER_RESOURCE_TYPE_TEXTURE_UAV,
+    /// specifies the texture view dimension.
+    /// If not specified, the dimension is assumed to be RESOURCE_DIM_TEX_2D.
+    RESOURCE_DIMENSION   TextureViewDim   DEFAULT_INITIALIZER(RESOURCE_DIM_TEX_2D);
+
+    /// When resource type is SHADER_RESOURCE_TYPE_TEXTURE_UAV, the texture view format.
+    TEXTURE_FORMAT       UAVTextureFormat DEFAULT_INITIALIZER(TEX_FORMAT_UNKNOWN);
+
+#if DILIGENT_CPP_INTERFACE
+    constexpr WebGPUResourceAttribs() noexcept {}
+
+    constexpr WebGPUResourceAttribs(WEB_GPU_BINDING_TYPE _BindingType,
+						            RESOURCE_DIMENSION   _TextureViewDim,
+						            TEXTURE_FORMAT       _UAVTextureFormat = TEX_FORMAT_UNKNOWN) noexcept :
+		BindingType     {_BindingType    },
+		TextureViewDim  {_TextureViewDim },
+		UAVTextureFormat{_UAVTextureFormat}
+	{}
+
+    constexpr bool operator==(const WebGPUResourceAttribs& rhs) const noexcept
+	{
+		return BindingType      == rhs.BindingType      &&
+			   TextureViewDim   == rhs.TextureViewDim   &&
+			   UAVTextureFormat == rhs.UAVTextureFormat;
+	}
+
+    constexpr bool operator!=(const WebGPUResourceAttribs& rhs) const noexcept
+	{
+		return !(*this == rhs);
+	}
+#endif
+};
+typedef struct WebGPUResourceAttribs WebGPUResourceAttribs;
+
 /// Pipeline resource description.
 struct PipelineResourceDesc
 {
@@ -159,6 +279,13 @@ struct PipelineResourceDesc
     /// Special resource flags, see Diligent::PIPELINE_RESOURCE_FLAGS.
     PIPELINE_RESOURCE_FLAGS        Flags         DEFAULT_INITIALIZER(PIPELINE_RESOURCE_FLAG_NONE);
 
+    /// WebGPU-specific resource attributes.
+    ///
+    /// \remarks    WebGPU requires additional information for certain resources.
+    ///             This member is used to provide that information.
+    ///             The member is ignored by all backends other than WebGPU.
+    WebGPUResourceAttribs 	       WebGPUAttribs DEFAULT_INITIALIZER({});
+
 #if DILIGENT_CPP_INTERFACE
     constexpr PipelineResourceDesc() noexcept {}
 
@@ -166,35 +293,40 @@ struct PipelineResourceDesc
                                    const Char*                   _Name,
                                    Uint32                        _ArraySize,
                                    SHADER_RESOURCE_TYPE          _ResourceType,
-                                   SHADER_RESOURCE_VARIABLE_TYPE _VarType = PipelineResourceDesc{}.VarType,
-                                   PIPELINE_RESOURCE_FLAGS       _Flags   = PipelineResourceDesc{}.Flags) noexcept :
-        Name        {_Name        },
-        ShaderStages{_ShaderStages},
-        ArraySize   {_ArraySize   },
-        ResourceType{_ResourceType},
-        VarType     {_VarType     },
-        Flags       {_Flags       }
+                                   SHADER_RESOURCE_VARIABLE_TYPE _VarType       = PipelineResourceDesc{}.VarType,
+                                   PIPELINE_RESOURCE_FLAGS       _Flags         = PipelineResourceDesc{}.Flags,
+                                   WebGPUResourceAttribs         _WebGPUAttribs = PipelineResourceDesc{}.WebGPUAttribs) noexcept :
+        Name         {_Name         },
+        ShaderStages {_ShaderStages },
+        ArraySize    {_ArraySize    },
+        ResourceType {_ResourceType },
+        VarType      {_VarType      },
+        Flags        {_Flags        },
+        WebGPUAttribs{_WebGPUAttribs}
     {}
 
     constexpr PipelineResourceDesc(SHADER_TYPE                   _ShaderStages,
                                    const Char*                   _Name,
                                    SHADER_RESOURCE_TYPE          _ResourceType,
-                                   SHADER_RESOURCE_VARIABLE_TYPE _VarType = PipelineResourceDesc{}.VarType,
-                                   PIPELINE_RESOURCE_FLAGS       _Flags   = PipelineResourceDesc{}.Flags) noexcept :
-        Name        {_Name        },
-        ShaderStages{_ShaderStages},
-        ResourceType{_ResourceType},
-        VarType     {_VarType     },
-        Flags       {_Flags       }
+                                   SHADER_RESOURCE_VARIABLE_TYPE _VarType       = PipelineResourceDesc{}.VarType,
+                                   PIPELINE_RESOURCE_FLAGS       _Flags         = PipelineResourceDesc{}.Flags,
+                                   WebGPUResourceAttribs         _WebGPUAttribs = PipelineResourceDesc{}.WebGPUAttribs) noexcept :
+        Name         {_Name         },
+        ShaderStages {_ShaderStages },
+        ResourceType {_ResourceType },
+        VarType      {_VarType      },
+        Flags        {_Flags        },
+        WebGPUAttribs{_WebGPUAttribs}
     {}
 
     bool operator==(const PipelineResourceDesc& Rhs) const noexcept
     {
-        return ShaderStages == Rhs.ShaderStages &&
-               ArraySize    == Rhs.ArraySize    &&
-               ResourceType == Rhs.ResourceType &&
-               VarType      == Rhs.VarType      &&
-               Flags        == Rhs.Flags        &&
+        return ShaderStages  == Rhs.ShaderStages  &&
+               ArraySize     == Rhs.ArraySize     &&
+               ResourceType  == Rhs.ResourceType  &&
+               VarType       == Rhs.VarType       &&
+               Flags         == Rhs.Flags         &&
+               WebGPUAttribs == Rhs.WebGPUAttribs &&
                SafeStrEqual(Name, Rhs.Name);
     }
     bool operator!=(const PipelineResourceDesc& Rhs) const noexcept
@@ -299,7 +431,7 @@ typedef struct PipelineResourceSignatureDesc PipelineResourceSignatureDesc;
 
 
 // {DCE499A5-F812-4C93-B108-D684A0B56118}
-static const INTERFACE_ID IID_PipelineResourceSignature =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_PipelineResourceSignature =
     {0xdce499a5, 0xf812, 0x4c93, {0xb1, 0x8, 0xd6, 0x84, 0xa0, 0xb5, 0x61, 0x18}};
 
 #define DILIGENT_INTERFACE_NAME IPipelineResourceSignature

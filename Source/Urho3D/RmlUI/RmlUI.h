@@ -35,7 +35,7 @@
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/EventListener.h>
 #include <RmlUi/Core/Context.h>
-
+#include <RmlUi/Core/DataTypeRegister.h>
 
 namespace Urho3D
 {
@@ -73,6 +73,8 @@ public:
     Rml::ElementDocument* LoadDocument(const ea::string& path);
     /// Show or hide RmlUi debugger.
     void SetDebuggerVisible(bool visible);
+    /// Return whether RmlUi debugger is visible.
+    bool IsDebuggerVisible() const;
     /// Load a font resource for RmlUi to use.
     /// Set fallback parameter to true if font should be used as a fallback font for unsupported characters.
     bool LoadFont(const ea::string& resourceName, bool fallback = false);
@@ -82,6 +84,8 @@ public:
     Rml::Context* GetRmlContext() const;
     /// Set UI scale aka dp to px ratio. 1.0 is default (pixel perfect).
     void SetScale(float scale);
+    /// Return UI scale.
+    float GetScale() const;
     /// Set render target where this instance will render into.
     void SetRenderTarget(RenderSurface* target, const Color& clearColor=Color::TRANSPARENT_BLACK);
     /// Set render target where this instance will render into.
@@ -216,7 +220,17 @@ private:
 
 }
 
+/// Register Urho3D Variant* types in the RmlUI type registry
+void URHO3D_API RegisterVariantDefinition(Rml::DataTypeRegister* typeRegister);
+
 /// Register UI library objects.
 void URHO3D_API RegisterRmlUILibrary(Context* context);
 
 }
+
+/// Pin type IDs for built-in objects so they are the same across all binaries.
+/// @{
+extern template class URHO3D_API Rml::Family<Urho3D::Variant>;
+extern template class URHO3D_API Rml::Family<Urho3D::VariantVector>;
+extern template class URHO3D_API Rml::Family<Urho3D::VariantMap>;
+/// @}

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +37,7 @@ DILIGENT_BEGIN_NAMESPACE(Diligent)
 struct ISwapChainGL;
 
 // {3464FDF1-C548-4935-96C3-B454C9DF6F6A}
-static const INTERFACE_ID IID_DeviceContextGL =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_DeviceContextGL =
     {0x3464fdf1, 0xc548, 0x4935, {0x96, 0xc3, 0xb4, 0x54, 0xc9, 0xdf, 0x6f, 0x6a}};
 
 #define DILIGENT_INTERFACE_NAME IDeviceContextGL
@@ -56,10 +56,17 @@ DILIGENT_BEGIN_INTERFACE(IDeviceContextGL, IDeviceContext)
 
     /// If an application uses multiple GL contexts, this method must be called before any
     /// other command to let the engine update active context every time when control flow
-    /// is passed over from the main application
+    /// is passed over from the main application.
     ///
-    /// \return false if there is no active GL context, and true otherwise
-    VIRTUAL bool METHOD(UpdateCurrentGLContext)(THIS) PURE;
+    /// \return     false if there is no active GL context, and true otherwise.
+    VIRTUAL Bool METHOD(UpdateCurrentGLContext)(THIS) PURE;
+
+    /// Purges current OpenGL context caches (e.g. VAO, FBO).
+
+    /// If an application uses multiple GL contexts, this method must be called
+    /// before the current context is about to be released,
+    /// to let the engine cleanup internal OpenGL object caches.
+    VIRTUAL void METHOD(PurgeCurrentGLContextCaches)(THIS) PURE;
 
     /// Sets the swap in the device context. The swap chain is used by the device context
     /// to obtain the default FBO handle.
@@ -74,8 +81,9 @@ DILIGENT_END_INTERFACE
 
 // clang-format off
 
-#    define IDeviceContextGL_UpdateCurrentGLContext(This) CALL_IFACE_METHOD(DeviceContextGL, UpdateCurrentGLContext, This)
-#    define IDeviceContextGL_SetSwapChain(This, ...)      CALL_IFACE_METHOD(DeviceContextGL, SetSwapChain,           This, __VA_ARGS__)
+#    define IDeviceContextGL_UpdateCurrentGLContext(This)      CALL_IFACE_METHOD(DeviceContextGL, UpdateCurrentGLContext,      This)
+#    define IDeviceContextGL_PurgeCurrentGLContextCaches(This) CALL_IFACE_METHOD(DeviceContextGL, PurgeCurrentGLContextCaches, This)
+#    define IDeviceContextGL_SetSwapChain(This, ...)           CALL_IFACE_METHOD(DeviceContextGL, SetSwapChain,                This, __VA_ARGS__)
 
 // clang-format on
 

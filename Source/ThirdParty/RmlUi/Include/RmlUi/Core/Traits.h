@@ -74,11 +74,7 @@ enum class FamilyId : int {};
 
 class RMLUICORE_API FamilyBase {
 protected:
-	static int GetNewId()
-	{
-		static int id = 0;
-		return id++;
-	}
+	static int GetNewId();
 };
 
 template <typename T>

@@ -34,7 +34,7 @@ MoveAndOrbitComponent::MoveAndOrbitComponent(Context* context)
 
 void MoveAndOrbitComponent::RegisterObject(Context* context)
 {
-    context->AddFactoryReflection<MoveAndOrbitComponent>();
+    context->AddFactoryReflection<MoveAndOrbitComponent>(Category_Logic);
 }
 
 void MoveAndOrbitComponent::SetVelocity(const Vector3& velocity)

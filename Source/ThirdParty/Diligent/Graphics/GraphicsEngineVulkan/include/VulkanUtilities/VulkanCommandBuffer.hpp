@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -166,14 +166,14 @@ public:
 #endif
     }
 
-    __forceinline void DrawMesh(uint32_t TaskCount, uint32_t FirstTask)
+    __forceinline void DrawMesh(uint32_t TaskCountX, uint32_t TaskCountY, uint32_t TaskCountZ)
     {
 #if DILIGENT_USE_VOLK
         VERIFY_EXPR(m_VkCmdBuffer != VK_NULL_HANDLE);
-        VERIFY(m_State.RenderPass != VK_NULL_HANDLE, "vkCmdDrawMeshTasksNV() must be called inside render pass");
+        VERIFY(m_State.RenderPass != VK_NULL_HANDLE, "vkCmdDrawMeshTasksEXT() must be called inside render pass");
         VERIFY(m_State.GraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound");
 
-        vkCmdDrawMeshTasksNV(m_VkCmdBuffer, TaskCount, FirstTask);
+        vkCmdDrawMeshTasksEXT(m_VkCmdBuffer, TaskCountX, TaskCountY, TaskCountZ);
 #else
         UNSUPPORTED("DrawMesh is not supported when vulkan library is linked statically");
 #endif
@@ -183,10 +183,10 @@ public:
     {
 #if DILIGENT_USE_VOLK
         VERIFY_EXPR(m_VkCmdBuffer != VK_NULL_HANDLE);
-        VERIFY(m_State.RenderPass != VK_NULL_HANDLE, "vkCmdDrawMeshTasksNV() must be called inside render pass");
+        VERIFY(m_State.RenderPass != VK_NULL_HANDLE, "vkCmdDrawMeshTasksIndirectEXT() must be called inside render pass");
         VERIFY(m_State.GraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound");
 
-        vkCmdDrawMeshTasksIndirectNV(m_VkCmdBuffer, Buffer, Offset, DrawCount, Stride);
+        vkCmdDrawMeshTasksIndirectEXT(m_VkCmdBuffer, Buffer, Offset, DrawCount, Stride);
 #else
         UNSUPPORTED("DrawMeshIndirect is not supported when vulkan library is linked statically");
 #endif
@@ -196,12 +196,48 @@ public:
     {
 #if DILIGENT_USE_VOLK
         VERIFY_EXPR(m_VkCmdBuffer != VK_NULL_HANDLE);
-        VERIFY(m_State.RenderPass != VK_NULL_HANDLE, "vkCmdDrawMeshTasksIndirectCountNV() must be called inside render pass");
+        VERIFY(m_State.RenderPass != VK_NULL_HANDLE, "vkCmdDrawMeshTasksIndirectCountEXT() must be called inside render pass");
         VERIFY(m_State.GraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound");
 
-        vkCmdDrawMeshTasksIndirectCountNV(m_VkCmdBuffer, Buffer, Offset, CountBuffer, CountBufferOffset, MaxDrawCount, Stride);
+        vkCmdDrawMeshTasksIndirectCountEXT(m_VkCmdBuffer, Buffer, Offset, CountBuffer, CountBufferOffset, MaxDrawCount, Stride);
 #else
         UNSUPPORTED("DrawMeshIndirectCount is not supported when vulkan library is linked statically");
+#endif
+    }
+
+    __forceinline void MultiDraw(uint32_t                  DrawCount,
+                                 const VkMultiDrawInfoEXT* pVertexInfo,
+                                 uint32_t                  InstanceCount,
+                                 uint32_t                  FirstInstance)
+    {
+#if DILIGENT_USE_VOLK
+        VERIFY_EXPR(m_VkCmdBuffer != VK_NULL_HANDLE);
+        VERIFY(m_State.RenderPass != VK_NULL_HANDLE, "vkCmdDraw() must be called inside render pass (19.3)");
+        VERIFY(m_State.GraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound");
+
+        vkCmdDrawMultiEXT(m_VkCmdBuffer, DrawCount, pVertexInfo, InstanceCount, FirstInstance, sizeof(VkMultiDrawInfoEXT));
+#else
+        UNSUPPORTED("MultiDraw is not supported when vulkan library is linked statically");
+#endif
+    }
+
+    __forceinline void MultiDrawIndexed(uint32_t                         DrawCount,
+                                        const VkMultiDrawIndexedInfoEXT* pIndexInfo,
+                                        uint32_t                         InstanceCount,
+                                        uint32_t                         FirstInstance)
+    {
+#if DILIGENT_USE_VOLK
+        VERIFY_EXPR(m_VkCmdBuffer != VK_NULL_HANDLE);
+        VERIFY(m_State.RenderPass != VK_NULL_HANDLE, "vkCmdDrawIndexed() must be called inside render pass (19.3)");
+        VERIFY(m_State.GraphicsPipeline != VK_NULL_HANDLE, "No graphics pipeline bound");
+        VERIFY(m_State.IndexBuffer != VK_NULL_HANDLE, "No index buffer bound");
+
+        // NULL or a pointer to the value added to the vertex index before indexing into the vertex buffer.
+        // When specified, VkMultiDrawIndexedInfoEXT::offset is ignored.
+        static constexpr int32_t* pVertexOffset = nullptr;
+        vkCmdDrawMultiIndexedEXT(m_VkCmdBuffer, DrawCount, pIndexInfo, InstanceCount, FirstInstance, sizeof(VkMultiDrawIndexedInfoEXT), pVertexOffset);
+#else
+        UNSUPPORTED("MultiDrawIndexed is not supported when vulkan library is linked statically");
 #endif
     }
 

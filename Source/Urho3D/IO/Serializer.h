@@ -140,4 +140,4 @@ public:
     bool WriteLine(const ea::string& value);
 };
 
-}
+} // namespace Urho3D

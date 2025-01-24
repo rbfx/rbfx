@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,7 @@ DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 
 // {F578FF0D-ABD2-4514-9D32-7CB454D4A73B}
-static const struct INTERFACE_ID IID_DataBlob =
+static DILIGENT_CONSTEXPR struct INTERFACE_ID IID_DataBlob =
     {0xf578ff0d, 0xabd2, 0x4514, {0x9d, 0x32, 0x7c, 0xb4, 0x54, 0xd4, 0xa7, 0x3b}};
 
 // clang-format off

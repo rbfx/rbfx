@@ -112,9 +112,6 @@ public:
     /// Set zone mask for patches. Is and'ed with zone's zone mask to see if the object should belong to the zone.
     /// @property
     void SetZoneMask(unsigned mask);
-    /// Set maximum number of per-pixel lights for patches. Default 0 is unlimited.
-    /// @property
-    void SetMaxLights(unsigned num);
     /// Set shadowcaster flag for patches.
     /// @property
     void SetCastShadows(bool enable);
@@ -227,10 +224,6 @@ public:
     /// Return zone mask.
     /// @property
     unsigned GetZoneMask() const { return zoneMask_; }
-
-    /// Return maximum number of per-pixel lights.
-    /// @property
-    unsigned GetMaxLights() const { return maxLights_; }
 
     /// Return visible flag.
     bool IsVisible() const { return visible_; }
@@ -398,8 +391,6 @@ private:
     float shadowDistance_;
     /// LOD bias.
     float lodBias_;
-    /// Maximum lights.
-    unsigned maxLights_;
     /// Node ID of north neighbor.
     unsigned northID_;
     /// Node ID of south neighbor.

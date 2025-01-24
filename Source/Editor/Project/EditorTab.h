@@ -167,14 +167,17 @@ public:
     ea::string GetHotkeyLabel(const EditorHotkey& info) const;
     template <class T> void BindHotkey(const EditorHotkey& info, void(T::*callback)());
     template <class T, class ... Args> SharedPtr<T> PushAction(const Args& ... args);
+
+    /// Return size of the window content. Should be called only during content rendering.
+    IntVector2 GetContentSize() const;
+    /// Return position of the window content in absolute coordinates. Should be called only during content rendering.
+    IntVector2 GetContentPosition() const;
     /// @}
 
 protected:
     /// Return whether the document is modified and prompt to save should be shown.
     virtual bool IsMarkedUnsaved() { return false; }
 
-    /// Return size of the window content. Should be called only during content rendering.
-    IntVector2 GetContentSize() const;
     /// Render common Edit menu.
     void RenderEditMenuItems();
 

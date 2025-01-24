@@ -7,7 +7,6 @@
 %constant int ColorLutSize = 16;
 %constant unsigned int PriorityLast = Urho3D::PRIORITY_LAST;
 %ignore Urho3D::PRIORITY_LAST;
-%csconstvalue("0") Urho3D::CF_NONE;
 %csconstvalue("0") Urho3D::PLVT_NONE;
 %csattribute(Urho3D::JSONValue, %arg(Urho3D::JSONValueType), ValueType, GetValueType);
 %csattribute(Urho3D::JSONValue, %arg(Urho3D::JSONNumberType), NumberType, GetNumberType);
@@ -35,7 +34,7 @@
 %csattribute(Urho3D::Image, %arg(unsigned int), Components, GetComponents);
 %csattribute(Urho3D::Image, %arg(unsigned char *), Data, GetData, SetData);
 %csattribute(Urho3D::Image, %arg(bool), IsCompressed, IsCompressed);
-%csattribute(Urho3D::Image, %arg(Urho3D::CompressedFormat), CompressedFormat, GetCompressedFormat);
+%csattribute(Urho3D::Image, %arg(Urho3D::TextureFormat), CompressedFormat, GetCompressedFormat);
 %csattribute(Urho3D::Image, %arg(unsigned int), NumCompressedLevels, GetNumCompressedLevels);
 %csattribute(Urho3D::Image, %arg(SharedPtr<Urho3D::Image>), NextLevel, GetNextLevel);
 %csattribute(Urho3D::Image, %arg(SharedPtr<Urho3D::Image>), NextSibling, GetNextSibling);
@@ -64,7 +63,7 @@
 %csattribute(Urho3D::XMLFile, %arg(pugi::xml_document *), Document, GetDocument);
 %csattribute(Urho3D::JSONFile, %arg(Urho3D::JSONValue), Root, GetRoot);
 %csattribute(Urho3D::BinaryFile, %arg(Urho3D::ByteVector), Data, GetData, SetData);
-%csattribute(Urho3D::BinaryFile, %arg(ea::string_view), Text, GetText);
+%csattribute(Urho3D::BinaryFile, %arg(ea::string_view), Text, GetText, SetText);
 %csattribute(Urho3D::BinaryFile, %arg(Urho3D::VectorBuffer), MutableBuffer, GetMutableBuffer);
 %csattribute(Urho3D::ImageCube, %arg(ea::vector<SharedPtr<Image>>), Images, GetImages);
 %csattribute(Urho3D::ImageCube, %arg(Urho3D::XMLFile *), ParametersXML, GetParametersXML);
@@ -107,6 +106,7 @@
 %csattribute(Urho3D::ResourceCache, %arg(bool), ReturnFailedResources, GetReturnFailedResources, SetReturnFailedResources);
 %csattribute(Urho3D::ResourceCache, %arg(bool), SearchPackagesFirst, GetSearchPackagesFirst, SetSearchPackagesFirst);
 %csattribute(Urho3D::ResourceCache, %arg(int), FinishBackgroundResourcesMs, GetFinishBackgroundResourcesMs, SetFinishBackgroundResourcesMs);
+%csattribute(Urho3D::SerializableResource, %arg(Urho3D::Serializable *), Value, GetValue, SetValue);
 %csattribute(Urho3D::XMLAttributeReference, %arg(Urho3D::XMLElement), Element, GetElement);
 %csattribute(Urho3D::XMLAttributeReference, %arg(char *), AttributeName, GetAttributeName);
 %csattribute(Urho3D::XMLOutputArchiveBlock, %arg(bool), IsUnorderedAccessSupported, IsUnorderedAccessSupported);

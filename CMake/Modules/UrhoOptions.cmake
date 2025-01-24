@@ -78,6 +78,10 @@ if ((WIN32 OR LINUX OR MACOS) AND NOT EMSCRIPTEN AND NOT MOBILE AND NOT UWP)
     set (DESKTOP ON)
 endif ()
 
+if (EMSCRIPTEN)
+    set (WEB ON)
+endif ()
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set (CLANG ON)
     set (GNU ON)
@@ -221,7 +225,7 @@ cmake_dependent_option(URHO3D_TESTING            "Enable unit tests"            
 option                (URHO3D_PACKAGING          "Enable *.pak file creation"                            OFF                                                     )
 # Web
 cmake_dependent_option(EMSCRIPTEN_WASM           "Use wasm instead of asm.js"                            ON                   "EMSCRIPTEN"                           OFF)
-set(EMSCRIPTEN_TOTAL_MEMORY 128 CACHE STRING  "Memory limit in megabytes. Set to 0 for dynamic growth. Must be multiple of 64KB.")
+set(EMSCRIPTEN_TOTAL_MEMORY 0 CACHE STRING       "Memory limit in megabytes. Set to 0 for dynamic growth.")
 
 # Graphics configuration
 option                (URHO3D_DEBUG_GRAPHICS     "Enable debug checks in renderer"                       OFF)
@@ -231,7 +235,7 @@ cmake_dependent_option(URHO3D_GRAPHICS_NO_D3D12  "Disable Direct3D12 backend in 
 cmake_dependent_option(URHO3D_GRAPHICS_NO_VULKAN "Disable Vulkan backend in renderer"                    OFF "URHO3D_SHADER_TRANSLATOR" ON)
 
 # Misc
-rbfx_dependent_option(URHO3D_PLUGIN_LIST "List of plugins to be statically linked with Editor and Player executables" "103_GamePlugin;113_InputLogger" URHO3D_SAMPLES "")
+rbfx_dependent_option(URHO3D_PLUGIN_LIST "List of plugins to be statically linked with Editor and Player executables" "Sample.103_GamePlugin;Sample.113_InputLogger" URHO3D_SAMPLES "")
 option               (URHO3D_PARALLEL_BUILD     "MSVC-only: enable parallel builds. A bool or a number of processors to use." ON)
 
 option(URHO3D_PLAYER                            "Build player application"                              ${URHO3D_ENABLE_ALL})
@@ -278,6 +282,11 @@ endif ()
 
 if (ANDROID)
     set (SDL_CPUINFO ON)
+endif ()
+
+# UWP does not support other framework types.
+if (UWP)
+    set (URHO3D_NETFX netstandard2.0)
 endif ()
 
 # At the end because it depends on URHO3D_SYSTEMUI which is may be off, but implicitly enabled if URHO3D_TOOLS is enabled.

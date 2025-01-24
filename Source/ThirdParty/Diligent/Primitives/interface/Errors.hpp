@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -124,6 +124,29 @@ void LogError(bool IsFatal, const char* Function, const char* FullFilePath, int 
 #define LOG_WARNING_MESSAGE(...)     LOG_DEBUG_MESSAGE(Diligent::DEBUG_MESSAGE_SEVERITY_WARNING, ##__VA_ARGS__)
 #define LOG_INFO_MESSAGE(...)        LOG_DEBUG_MESSAGE(Diligent::DEBUG_MESSAGE_SEVERITY_INFO, ##__VA_ARGS__)
 
+#ifdef DILIGENT_DEBUG
+#    define LOG_DBG_FATAL_ERROR_MESSAGE LOG_FATAL_ERROR_MESSAGE
+#    define LOG_DBG_ERROR_MESSAGE       LOG_ERROR_MESSAGE
+#    define LOG_DBG_WARNING_MESSAGE     LOG_WARNING_MESSAGE
+#    define LOG_DBG_INFO_MESSAGE        LOG_INFO_MESSAGE
+#else
+#    define LOG_DBG_FATAL_ERROR_MESSAGE(...)
+#    define LOG_DBG_ERROR_MESSAGE(...)
+#    define LOG_DBG_WARNING_MESSAGE(...)
+#    define LOG_DBG_INFO_MESSAGE(...)
+#endif
+
+#ifdef DILIGENT_DEVELOPMENT
+#    define LOG_DVP_FATAL_ERROR_MESSAGE LOG_FATAL_ERROR_MESSAGE
+#    define LOG_DVP_ERROR_MESSAGE       LOG_ERROR_MESSAGE
+#    define LOG_DVP_WARNING_MESSAGE     LOG_WARNING_MESSAGE
+#    define LOG_DVP_INFO_MESSAGE        LOG_INFO_MESSAGE
+#else
+#    define LOG_DVP_FATAL_ERROR_MESSAGE(...)
+#    define LOG_DVP_ERROR_MESSAGE(...)
+#    define LOG_DVP_WARNING_MESSAGE(...)
+#    define LOG_DVP_INFO_MESSAGE(...)
+#endif
 
 #define LOG_DEBUG_MESSAGE_ONCE(Severity, ...)           \
     do                                                  \

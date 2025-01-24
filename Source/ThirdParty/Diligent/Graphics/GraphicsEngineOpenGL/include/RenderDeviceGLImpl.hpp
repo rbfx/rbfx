@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@
 #include "VAOCache.hpp"
 #include "BaseInterfacesGL.h"
 #include "FBOCache.hpp"
-#include "TexRegionRender.hpp"
+#include "GLProgramCache.hpp"
 
 namespace Diligent
 {
@@ -69,11 +69,13 @@ public:
     // Special version used to create internal shaders (e.g. used by TexRegionRender)
     void CreateShader(const ShaderCreateInfo& ShaderCreateInfo,
                       IShader**               ppShader,
+                      IDataBlob**             ppCompilerOutput,
                       bool                    bIsDeviceInternal);
 
     /// Implementation of IRenderDevice::CreateShader() in OpenGL backend.
     virtual void DILIGENT_CALL_TYPE CreateShader(const ShaderCreateInfo& ShaderCreateInfo,
-                                                 IShader**               ppShader) override final;
+                                                 IShader**               ppShader,
+                                                 IDataBlob**             ppCompilerOutput) override final;
 
     void CreateTexture(const TextureDesc& TexDesc,
                        const TextureData* pData,
@@ -195,10 +197,12 @@ public:
     void      OnDestroyPSO(PipelineStateGLImpl& PSO);
     void      OnDestroyBuffer(BufferGLImpl& Buffer);
 
+    void PurgeContextCaches(GLContext::NativeGLContextType Context);
+
+    GLProgramCache& GetProgramCache() { return m_ProgramCache; }
+
     size_t GetCommandQueueCount() const { return 1; }
     Uint64 GetCommandQueueMask() const { return Uint64{1}; }
-
-    void InitTexRegionRender();
 
     struct GLDeviceLimits
     {
@@ -208,6 +212,13 @@ public:
         GLint MaxImagesUnits;
     };
     const GLDeviceLimits& GetDeviceLimits() const { return m_DeviceLimits; }
+
+    struct GLDeviceCaps
+    {
+        bool FramebufferSRGB  = false;
+        bool SemalessCubemaps = false;
+    };
+    const GLDeviceCaps& GetGLCaps() const { return m_GLCaps; }
 
 protected:
     friend class DeviceContextGLImpl;
@@ -230,7 +241,7 @@ protected:
     Threading::SpinLock                                          m_FBOCacheLock;
     std::unordered_map<GLContext::NativeGLContextType, FBOCache> m_FBOCache;
 
-    std::unique_ptr<TexRegionRender> m_pTexRegionRender;
+    GLProgramCache m_ProgramCache;
 
 private:
     virtual void TestTextureFormat(TEXTURE_FORMAT TexFormat) override final;
@@ -241,6 +252,7 @@ private:
     int m_ShowDebugGLOutput = 1;
 
     GLDeviceLimits m_DeviceLimits = {};
+    GLDeviceCaps   m_GLCaps       = {};
 };
 
 } // namespace Diligent

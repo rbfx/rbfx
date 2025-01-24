@@ -1,25 +1,6 @@
-//
-// Copyright (c) 2021-2022 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR rhs
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR rhsWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR rhs DEALINGS IN
-// THE SOFTWARE.
-//
-
+// Copyright (c) 2021-2024 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #include "../CommonUtils.h"
 
@@ -30,9 +11,20 @@ using namespace Urho3D;
 
 TEST_CASE("StringHash is persistent and stable across builds and types")
 {
-    const char* testString = "Test string 12345";
-    const unsigned testStringHash = 373547853u;
-    const unsigned emptyStringHash = 2166136261u;
+    constexpr const char testString[] = "Test string 12345";
+    constexpr unsigned testStringHash = 373547853u;
+    constexpr unsigned emptyStringHash = 2166136261u;
+
+    static_assert(StringHash::Calculate(ea::string_view{testString}) == testStringHash);
+    static_assert(StringHash::Calculate(testString) == testStringHash);
+    static_assert(StringHash::Calculate(testString, sizeof(testString) - 1) == testStringHash);
+
+    static_assert(StringHash{}.Value() == emptyStringHash);
+    static_assert(StringHash{testStringHash}.Value() == testStringHash);
+    static_assert(StringHash{testString, StringHash::NoReverse{}}.Value() == testStringHash);
+
+    static_assert(""_sh == StringHash{emptyStringHash});
+    static_assert("Test string 12345"_sh == StringHash{testStringHash});
 
     CHECK(ea::hash<ea::string>()(testString) == testStringHash);
     CHECK(ea::hash<ea::string_view>()(testString) == testStringHash);

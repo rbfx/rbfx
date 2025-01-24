@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {05B1CBB8-FCAD-49EE-BADA-7801223EC3FE}
-static const struct INTERFACE_ID IID_RenderDeviceD3D11 =
+static DILIGENT_CONSTEXPR struct INTERFACE_ID IID_RenderDeviceD3D11 =
     {0x5b1cbb8, 0xfcad, 0x49ee, {0xba, 0xda, 0x78, 0x1, 0x22, 0x3e, 0xc3, 0xfe}};
 
 #define DILIGENT_INTERFACE_NAME IRenderDeviceD3D11

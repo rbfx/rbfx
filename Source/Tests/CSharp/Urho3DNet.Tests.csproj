@@ -1,27 +1,35 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <AssemblyName>Urho3DNet.Tests</AssemblyName>
-    <OutputType>Library</OutputType>
-    <LangVersion>9.0</LangVersion>
-    <IsPackable>false</IsPackable>
-    <TargetFramework>$(URHO3D_NETFX_RUNTIME)</TargetFramework>
-  </PropertyGroup>
-  <PropertyGroup>
-    <GeneratedCodePath>$(RBFX_BINARY_DIR)Source/Urho3D/</GeneratedCodePath>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="**/*.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
-    <PackageReference Include="xunit" Version="2.4.2" />
-    <PackageReference Include="xunit.abstractions" Version="2.0.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Urho3D\CSharp\Urho3DNet.csproj" />
-  </ItemGroup>
+    <PropertyGroup>
+        <AssemblyName>Urho3DNet.Tests</AssemblyName>
+        <OutputType>Library</OutputType>
+        <LangVersion>9.0</LangVersion>
+        <IsPackable>false</IsPackable>
+        <TargetFramework>$(URHO3D_NETFX_RUNTIME)</TargetFramework>
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    </PropertyGroup>
+    <PropertyGroup>
+        <GeneratedCodePath>$(RBFX_BINARY_DIR)Source/Tests/</GeneratedCodePath>
+    </PropertyGroup>
+    <ItemGroup>
+        <Compile Include="**/*.cs" />
+    </ItemGroup>
+    <Target Name="GatherBuildFilesTests" BeforeTargets="BeforeCompile" Condition="Exists('$(GeneratedCodePath)TestsLibCSharp_$(URHO3D_CSHARP_BIND_CONFIG)')">
+        <CreateItem Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)TestsLibCSharp_$(URHO3D_CSHARP_BIND_CONFIG)&quot;, &quot;*.cs&quot;))">
+            <Output TaskParameter="Include" ItemName="Compile" />
+        </CreateItem>
+    </Target>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
+        <PackageReference Include="xunit" Version="2.4.2" />
+        <PackageReference Include="xunit.abstractions" Version="2.0.3" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\Urho3D\CSharp\Urho3DNet.csproj" />
+        <ProjectReference Include="$(GeneratedCodePath)TestsLib.vcxproj" Condition=" Exists('$(GeneratedCodePath)TestsLib.vcxproj') " />
+        <ProjectReference Include="..\..\Urho3D\CSharp\Urho3DNet.CodeGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
 </Project>

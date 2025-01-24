@@ -28,6 +28,13 @@
             <option>Foo</option>
             <option>Bar</option>
         </select>
+        <h3>Variant binds</h3>
+        {{variant}}<br/>
+        <div data-for="v : variant_vector">
+        {{v}}<br/>
+        </div>
+        {{variant_map.int}}<br/>
+        {{variant_map.str}}<br/>
         <h3>Progress bars</h3>
         <progressbar class="progress-horizontal" data-value="progress" />
         <progressbar class="progress-vertical" direction="top" data-value="progress" style="height: 100dp;"/>

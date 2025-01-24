@@ -21,11 +21,12 @@
 #include "Foundation/InspectorTab/ModelInspector.h"
 #include "Foundation/InspectorTab/NodeComponentInspector.h"
 #include "Foundation/InspectorTab/PlaceholderResourceInspector.h"
+#include "Foundation/InspectorTab/RenderPathInspector.h"
+#include "Foundation/InspectorTab/SerializableResourceInspector.h"
 #include "Foundation/InspectorTab/SoundInspector.h"
 #include "Foundation/InspectorTab/Texture2DInspector.h"
 #include "Foundation/InspectorTab/TextureCubeInspector.h"
 #include "Foundation/ModelViewTab.h"
-#include "Foundation/ProfilerTab.h"
 #include "Foundation/ResourceBrowserTab.h"
 #include "Foundation/ResourceBrowserTab/AssetPipelineFactory.h"
 #include "Foundation/ResourceBrowserTab/MaterialFactory.h"
@@ -66,7 +67,7 @@
 #include <Urho3D/SystemUI/Widgets.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
-#include <nativefiledialog/nfd.h>
+#include <nfd.h>
 
 #ifdef WIN32
     #include <windows.h>
@@ -95,7 +96,6 @@ EditorApplication::EditorApplication(Context* context)
     editorPluginManager_->AddPlugin("Foundation.HierarchyBrowser", &Foundation_HierarchyBrowserTab);
     editorPluginManager_->AddPlugin("Foundation.Settings", &Foundation_SettingsTab);
     editorPluginManager_->AddPlugin("Foundation.Inspector", &Foundation_InspectorTab);
-    editorPluginManager_->AddPlugin("Foundation.Profiler", &Foundation_ProfilerTab);
 
     editorPluginManager_->AddPlugin("Foundation.Settings.KeyBindings", &Foundation_KeyBindingsPage);
     editorPluginManager_->AddPlugin("Foundation.Settings.Launch", &Foundation_LaunchPage);
@@ -121,6 +121,8 @@ EditorApplication::EditorApplication(Context* context)
     editorPluginManager_->AddPlugin("Foundation.Inspector.Material", &Foundation_MaterialInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.NodeComponent", &Foundation_NodeComponentInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.PlaceholderResource", &Foundation_PlaceholderResourceInspector);
+    editorPluginManager_->AddPlugin("Foundation.Inspector.RenderPath", &Foundation_RenderPathInspector);
+    editorPluginManager_->AddPlugin("Foundation.Inspector.SerializableResource", &Foundation_SerializableResourceInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.Sound", &Foundation_SoundInspector);
 
     editorPluginManager_->AddPlugin("Foundation.ResourceBrowser.AssetPipelineFactory", &Foundation_AssetPipelineFactory);
@@ -194,6 +196,7 @@ void EditorApplication::Setup()
     engineParameters_[EP_RESOURCE_ROOT_FILE] = "";
     engineParameters_[EP_WINDOW_MAXIMIZE] = true;
     engineParameters_[EP_ENGINE_AUTO_LOAD_SCRIPTS] = false;
+    engineParameters_[EP_RENAME_PLUGINS] = true;
 
     // TODO: Consider scaling fonts based on DPI. ImGuiConfigFlags_DpiEnableScaleFonts seems to create issues on Retina.
     unsigned imguiFlags = 0;
@@ -204,12 +207,13 @@ void EditorApplication::Setup()
 #endif
 
     engineParameters_[EP_SYSTEMUI_FLAGS] = imguiFlags;
-
-    PluginApplication::RegisterStaticPlugins();
 }
 
 void EditorApplication::Start()
 {
+    if (NFD_Init() != NFD_OKAY)
+        URHO3D_LOGERROR("NFD_Init() failed: {}", NFD_GetError());
+
     auto cache = GetSubsystem<ResourceCache>();
     auto input = GetSubsystem<Input>();
     auto fs = GetSubsystem<FileSystem>();
@@ -270,6 +274,8 @@ void EditorApplication::Stop()
 
     context_->RemoveSubsystem<WorkQueue>(); // Prevents deadlock when unloading plugin AppDomain in managed host.
     context_->RemoveSubsystem<EditorPluginManager>();
+
+    NFD_Quit();
 }
 
 Texture2D* EditorApplication::GetProjectPreview(const ea::string& projectPath)
@@ -413,7 +419,7 @@ void EditorApplication::Render()
         ui::PopStyleVar();
     }
 
-    const float menuBarHeight = ui::GetCurrentWindow()->MenuBarHeight();
+    const float menuBarHeight = ui::GetCurrentWindow()->MenuBarHeight;
 
     ui::End();
     ui::PopStyleVar();
@@ -545,6 +551,15 @@ void EditorApplication::RenderMenuBar()
 
         if (project_)
             project_->RenderMainMenu();
+
+#if URHO3D_PROFILING
+        if (ui::BeginMenu("Tools"))
+        {
+            if (ui::MenuItem("Profiler"))
+                OpenProfilerApplication();
+            ui::EndMenu();
+        }
+#endif
 
         if (ui::BeginMenu("Help"))
         {
@@ -707,6 +722,7 @@ void EditorApplication::InitializeSystemUI()
 
     ImGuiIO& io = ui::GetIO();
     io.FontDefault = defaultFont;
+    io.ConfigWindowsMoveFromTitleBarOnly = true;
 
     ImFont* monoFont = systemUI->AddFont("Fonts/NotoMono-Regular.ttf", notoMonoRanges, 14.f);
     Project::SetMonoFont(monoFont);
@@ -770,9 +786,9 @@ void EditorApplication::InitializeImGuiStyle()
     colors[ImGuiCol_ResizeGripActive]       = ImVec4(0.37f, 0.37f, 0.37f, 1.00f);
     colors[ImGuiCol_Tab]                    = ImVec4(0.26f, 0.26f, 0.26f, 0.40f);
     colors[ImGuiCol_TabHovered]             = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
-    colors[ImGuiCol_TabActive]              = ImVec4(0.28f, 0.28f, 0.28f, 1.00f);
-    colors[ImGuiCol_TabUnfocused]           = ImVec4(0.17f, 0.17f, 0.17f, 1.00f);
-    colors[ImGuiCol_TabUnfocusedActive]     = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
+    colors[ImGuiCol_TabSelected]            = ImVec4(0.28f, 0.28f, 0.28f, 1.00f);
+    colors[ImGuiCol_TabDimmed]              = ImVec4(0.17f, 0.17f, 0.17f, 1.00f);
+    colors[ImGuiCol_TabDimmedSelected]      = ImVec4(0.26f, 0.26f, 0.26f, 1.00f);
     colors[ImGuiCol_DockingPreview]         = ImVec4(0.55f, 0.55f, 0.55f, 1.00f);
     colors[ImGuiCol_DockingEmptyBg]         = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
     colors[ImGuiCol_PlotLines]              = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
@@ -822,7 +838,7 @@ void EditorApplication::InitializeImGuiHandlers()
 void EditorApplication::OpenOrCreateProject()
 {
     nfdchar_t* projectDir = nullptr;
-    if (NFD_PickFolder("", &projectDir) == NFD_OKAY)
+    if (NFD_PickFolder(&projectDir, "") == NFD_OKAY)
     {
         OpenProject(projectDir);
         NFD_FreePath(projectDir);
@@ -847,6 +863,21 @@ void EditorApplication::OnConsoleUriClick(VariantMap& args)
                 fileSystem->SystemOpen(address);
         }
     }
+}
+
+void EditorApplication::OpenProfilerApplication()
+{
+#if URHO3D_PROFILING
+    auto* engine = GetSubsystem<Engine>();
+    auto* fileSystem = GetSubsystem<FileSystem>();
+    ea::string profilerPath = fileSystem->GetProgramDir() + "/Profiler";
+#ifdef _WIN32
+    profilerPath += ".exe";
+#endif
+    fileSystem->SystemOpen(profilerPath);
+#else
+    URHO3D_LOGERROR("Profiling is not enabled in this build.");
+#endif
 }
 
 } // namespace Urho3D

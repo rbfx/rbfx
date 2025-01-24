@@ -67,9 +67,9 @@ bool DataChannelConnection::Connect(const URL& url)
 
 void DataChannelConnection::Disconnect()
 {
-    AddRef(); // Ensure this object is alive until all callbacks are done executing.
     if (peer_)
     {
+        selfHolder_ = this; // Ensure this object is alive until all callbacks are done executing.
         state_ = State::Disconnecting;
 #ifndef URHO3D_PLATFORM_WEB
         peer_->resetCallbacks();
@@ -103,7 +103,7 @@ void DataChannelConnection::SendMessage(ea::string_view data, PacketTypeFlags ty
     }
     else
     {
-        URHO3D_LOGERROR("DataChannel {} is not connected!", type);
+        URHO3D_LOGERROR("DataChannel {} is not connected!", (int)type);
         Disconnect();
     }
 }
@@ -174,7 +174,7 @@ void DataChannelConnection::OnDataChannelDisconnected(int index)
     }
     peer_ = nullptr;
     server_ = nullptr;
-    ReleaseRef();
+    selfHolder_ = nullptr;
 }
 
 void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std::shared_ptr<rtc::WebSocket> websocket)
@@ -207,10 +207,10 @@ void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std:
     if (server != nullptr)
     {
         using namespace std::chrono_literals;
-        dataChannels_[PacketType::UnreliableUnordered] = peer_->createDataChannel("uu", {{rtc::Reliability::Type::Rexmit, false, 0}});
-        dataChannels_[PacketType::Reliable] = peer_->createDataChannel("ru", {{rtc::Reliability::Type::Reliable, false}});
-        dataChannels_[PacketType::Ordered] = peer_->createDataChannel("uo", {{rtc::Reliability::Type::Rexmit, true, 0}});
-        dataChannels_[PacketType::ReliableOrdered] = peer_->createDataChannel("ro", {{rtc::Reliability::Type::Reliable, true}});
+        dataChannels_[PacketType::UnreliableUnordered] = peer_->createDataChannel("uu", {{rtc::Reliability::Type::Rexmit, true, 0}});
+        dataChannels_[PacketType::Reliable] = peer_->createDataChannel("ru", {{rtc::Reliability::Type::Reliable, true}});
+        dataChannels_[PacketType::Ordered] = peer_->createDataChannel("uo", {{rtc::Reliability::Type::Rexmit, false, 0}});
+        dataChannels_[PacketType::ReliableOrdered] = peer_->createDataChannel("ro", {{rtc::Reliability::Type::Reliable, false}});
         for (int i = 0; i < URHO3D_ARRAYSIZE(dataChannels_); i++)
         {
             auto& dc = dataChannels_[i];

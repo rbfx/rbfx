@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,7 +36,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {DCA2FAD9-2C41-4419-9D16-79731C0ED9D8}
-static const INTERFACE_ID IID_ShaderBindingTableD3D12 =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_ShaderBindingTableD3D12 =
     {0xdca2fad9, 0x2c41, 0x4419, {0x9d, 0x16, 0x79, 0x73, 0x1c, 0xe, 0xd9, 0xd8}};
 
 #define DILIGENT_INTERFACE_NAME IShaderBindingTableD3D12

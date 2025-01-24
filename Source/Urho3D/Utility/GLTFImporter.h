@@ -50,10 +50,12 @@ struct GLTFImporterSettings
     float scale_{1.0f};
     Quaternion rotation_;
 
+    bool fadeTransparency_{false};
+
     bool cleanupBoneNames_{true};
     bool cleanupRootNodes_{true};
     bool combineLODs_{true};
-    ea::string skipTag_;
+    StringVector skipTags_;
     bool keepNamesOnMerge_{false};
     bool addEmptyNodesToSkeleton_{false};
 
@@ -106,7 +108,7 @@ public:
 
     /// Load primary GLTF file into memory without any processing.
     bool LoadFile(const ea::string& fileName);
-    bool LoadFileBinary(ByteSpan data);
+    bool LoadFileBinary(ConstByteSpan data);
     /// Load and merge secondary GLTF file.
     /// Merge functionality is limited, unsupported content of secondary file is ignored.
     bool MergeFile(const ea::string& fileName, const ea::string& assetName);

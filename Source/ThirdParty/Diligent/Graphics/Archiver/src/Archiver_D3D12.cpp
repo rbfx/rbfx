@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -53,19 +53,29 @@ struct CompiledShaderD3D12 final : SerializedShaderImpl::CompiledShader
 
     virtual SerializedData Serialize(ShaderCreateInfo ShaderCI) const override final
     {
-        const auto& pBytecode = ShaderD3D12.GetD3DBytecode();
+        const IDataBlob* pBytecode = ShaderD3D12.GetD3DBytecode();
 
         ShaderCI.Source       = nullptr;
         ShaderCI.FilePath     = nullptr;
-        ShaderCI.Macros       = nullptr;
-        ShaderCI.ByteCode     = pBytecode->GetBufferPointer();
-        ShaderCI.ByteCodeSize = pBytecode->GetBufferSize();
+        ShaderCI.Macros       = {};
+        ShaderCI.ByteCode     = pBytecode->GetConstDataPtr();
+        ShaderCI.ByteCodeSize = pBytecode->GetSize();
         return SerializedShaderImpl::SerializeCreateInfo(ShaderCI);
     }
 
     virtual IShader* GetDeviceShader() override final
     {
         return &ShaderD3D12;
+    }
+
+    virtual bool IsCompiling() const override final
+    {
+        return ShaderD3D12.IsCompiling();
+    }
+
+    virtual RefCntAutoPtr<IAsyncTask> GetCompileTask() const override final
+    {
+        return ShaderD3D12.GetCompileTask();
     }
 };
 
@@ -108,8 +118,9 @@ template <typename CreateInfoType>
 void SerializedPipelineStateImpl::PatchShadersD3D12(const CreateInfoType& CreateInfo) noexcept(false)
 {
     std::vector<ShaderStageInfoD3D12> ShaderStages;
-    SHADER_TYPE                       ActiveShaderStages = SHADER_TYPE_UNKNOWN;
-    PipelineStateD3D12Impl::ExtractShaders<SerializedShaderImpl>(CreateInfo, ShaderStages, ActiveShaderStages);
+    SHADER_TYPE                       ActiveShaderStages    = SHADER_TYPE_UNKNOWN;
+    constexpr bool                    WaitUntilShadersReady = true;
+    PipelineStateUtils::ExtractShaders<SerializedShaderImpl>(CreateInfo, ShaderStages, WaitUntilShadersReady, ActiveShaderStages);
 
     PipelineStateD3D12Impl::TShaderStages ShaderStagesD3D12{ShaderStages.size()};
     for (size_t i = 0; i < ShaderStagesD3D12.size(); ++i)
@@ -154,13 +165,14 @@ void SerializedPipelineStateImpl::PatchShadersD3D12(const CreateInfoType& Create
         const auto& Stage = ShaderStagesD3D12[j];
         for (size_t i = 0; i < Stage.Count(); ++i)
         {
-            const auto& pBytecode = Stage.ByteCodes[i];
-            auto        ShaderCI  = ShaderStages[j].Serialized[i]->GetCreateInfo();
+            const IDataBlob* pBytecode = Stage.ByteCodes[i];
+            ShaderCreateInfo ShaderCI  = ShaderStages[j].Serialized[i]->GetCreateInfo();
+
             ShaderCI.Source       = nullptr;
             ShaderCI.FilePath     = nullptr;
-            ShaderCI.Macros       = nullptr;
-            ShaderCI.ByteCode     = pBytecode->GetBufferPointer();
-            ShaderCI.ByteCodeSize = pBytecode->GetBufferSize();
+            ShaderCI.Macros       = {};
+            ShaderCI.ByteCode     = pBytecode->GetConstDataPtr();
+            ShaderCI.ByteCodeSize = pBytecode->GetSize();
             SerializeShaderCreateInfo(DeviceType::Direct3D12, ShaderCI);
         }
     }
@@ -170,7 +182,9 @@ INSTANTIATE_PATCH_SHADER_METHODS(PatchShadersD3D12)
 INSTANTIATE_DEVICE_SIGNATURE_METHODS(PipelineResourceSignatureD3D12Impl)
 
 
-void SerializedShaderImpl::CreateShaderD3D12(IReferenceCounters* pRefCounters, const ShaderCreateInfo& ShaderCI) noexcept(false)
+void SerializedShaderImpl::CreateShaderD3D12(IReferenceCounters*     pRefCounters,
+                                             const ShaderCreateInfo& ShaderCI,
+                                             IDataBlob**             ppCompilerOutput) noexcept(false)
 {
     const auto& D3D12Props         = m_pDevice->GetD3D12Properties();
     const auto& DeviceInfo         = m_pDevice->GetDeviceInfo();
@@ -178,10 +192,16 @@ void SerializedShaderImpl::CreateShaderD3D12(IReferenceCounters* pRefCounters, c
     auto*       pRenderDeviceD3D12 = m_pDevice->GetRenderDevice(RENDER_DEVICE_TYPE_D3D12);
 
     const ShaderD3D12Impl::CreateInfo D3D12ShaderCI{
-        D3D12Props.pDxCompiler,
-        DeviceInfo,
-        AdapterInfo,
-        D3D12Props.ShaderVersion //
+        {
+            DeviceInfo,
+            AdapterInfo,
+            D3D12Props.pDxCompiler,
+            // Do not overwrite compiler output from other APIs.
+            // TODO: collect all outputs.
+            ppCompilerOutput == nullptr || *ppCompilerOutput == nullptr ? ppCompilerOutput : nullptr,
+            m_pDevice->GetShaderCompilationThreadPool(),
+        },
+        D3D12Props.ShaderVersion,
     };
     CreateShader<CompiledShaderD3D12>(DeviceType::Direct3D12, pRefCounters, ShaderCI, D3D12ShaderCI, pRenderDeviceD3D12);
 }
@@ -219,8 +239,9 @@ void SerializationDeviceImpl::GetPipelineResourceBindingsD3D12(const PipelineRes
 void SerializedPipelineStateImpl::ExtractShadersD3D12(const RayTracingPipelineStateCreateInfo& CreateInfo, RayTracingShaderMapType& ShaderMap)
 {
     std::vector<ShaderStageInfoD3D12> ShaderStages;
-    SHADER_TYPE                       ActiveShaderStages = SHADER_TYPE_UNKNOWN;
-    PipelineStateD3D12Impl::ExtractShaders<SerializedShaderImpl>(CreateInfo, ShaderStages, ActiveShaderStages);
+    SHADER_TYPE                       ActiveShaderStages    = SHADER_TYPE_UNKNOWN;
+    constexpr bool                    WaitUntilShadersReady = true;
+    PipelineStateUtils::ExtractShaders<SerializedShaderImpl>(CreateInfo, ShaderStages, WaitUntilShadersReady, ActiveShaderStages);
 
     GetRayTracingShaderMap(ShaderStages, ShaderMap);
 }

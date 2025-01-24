@@ -74,13 +74,6 @@ public:
 
     ~SamplerBase()
     {
-        /// \note Destructor cannot directly remove the object from the registry as this may cause a
-        ///       deadlock.
-        if (this->HasDevice())
-        {
-            auto& SamplerRegistry = this->GetDevice()->GetSamplerRegistry();
-            SamplerRegistry.ReportDeletedObject();
-        }
     }
 
     IMPLEMENT_QUERY_INTERFACE_IN_PLACE(IID_Sampler, TDeviceObjectBase)

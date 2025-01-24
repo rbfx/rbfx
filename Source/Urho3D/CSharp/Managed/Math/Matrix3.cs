@@ -23,6 +23,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -326,10 +327,18 @@ namespace Urho3DNet
             return new Vector3(this[0, j], this[1, j], this[2, j]);
         }
 
-        /// Return as string.
+        /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{M00} {M01} {M02} {M10} {M11} {M12} {M20} {M21} {M22}";
+            return string.Format(CultureInfo.InvariantCulture, "{0} {1} {2} {3} {4} {5} {6} {7} {8}", M00, M01, M02, M10, M11, M12, M20, M21, M22);
+        }
+
+        /// <summary>
+        /// Converts the string representation of a Matrix3 into value.
+        /// </summary>
+        public static Matrix3 Parse(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? default : Urho3D.ToMatrix3(value);
         }
 
         public float M00;

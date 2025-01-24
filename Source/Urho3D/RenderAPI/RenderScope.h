@@ -4,11 +4,10 @@
 
 #pragma once
 
-#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Format.h"
 #include "Urho3D/Core/NonCopyable.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
-
-#include <Diligent/Graphics/GraphicsEngine/interface/DeviceContext.h>
+#include "Urho3D/Urho3D.h"
 
 namespace Urho3D
 {
@@ -18,7 +17,7 @@ class URHO3D_API RenderScope : public NonCopyable
 {
 public:
     explicit RenderScope(RenderContext* renderContext, ea::string_view name)
-        : renderContext_(renderContext)
+        : renderContext_(renderContext && renderContext->IsDebugScopeEnabled() ? renderContext : nullptr)
     {
         if (renderContext_)
             BeginGroup(name);
@@ -26,7 +25,7 @@ public:
 
     template <class ... T>
     explicit RenderScope(RenderContext* renderContext, ea::string_view format, T&& ... args)
-        : renderContext_(renderContext)
+        : renderContext_(renderContext && renderContext->IsDebugScopeEnabled() ? renderContext : nullptr)
     {
         if (renderContext_)
             BeginGroup(Format(format, args...));
@@ -35,14 +34,12 @@ public:
     ~RenderScope()
     {
         if (renderContext_)
-            renderContext_->GetHandle()->EndDebugGroup();
+            EndGroup();
     }
 
 private:
-    void BeginGroup(ea::string_view name)
-    {
-        renderContext_->GetHandle()->BeginDebugGroup(name.data());
-    }
+    void BeginGroup(ea::string_view name);
+    void EndGroup();
 
     RenderContext* renderContext_{};
 };

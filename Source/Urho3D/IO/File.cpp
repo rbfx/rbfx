@@ -410,19 +410,6 @@ void File::Close()
         size_ = 0;
         offset_ = 0;
         checksum_ = 0;
-
-#ifdef __EMSCRIPTEN__
-        if (mode_ & FILE_WRITE)
-        {
-            MAIN_THREAD_EM_ASM(
-                FS.syncfs(function (err) {
-                    if (err) {
-                        console.error(err);
-                    }
-                });
-            );
-        }
-#endif
     }
 }
 

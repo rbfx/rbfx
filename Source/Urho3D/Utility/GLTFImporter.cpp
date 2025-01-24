@@ -88,6 +88,12 @@ ea::array<T, N> ToArray(const U& vec)
     return result;
 }
 
+bool IsNameSkipped(const ea::string& name, const StringVector& skipTags)
+{
+    const auto isMatching = [&name](const ea::string& tag) { return name.find(tag) != ea::string::npos; };
+    return ea::any_of(skipTags.begin(), skipTags.end(), isMatching);
+}
+
 bool IsWordBorder(unsigned char first, unsigned char second)
 {
     // Blanks and punctuation is always considered to be a word border
@@ -2394,8 +2400,17 @@ private:
         litOpaqueTechnique_ = LoadTechnique("Techniques/LitOpaque.xml");
         unlitOpaqueTechnique_ = LoadTechnique("Techniques/UnlitOpaque.xml");
 
-        litTransparentFadeNormalMapTechnique_ = LoadTechnique("Techniques/LitTransparentFadeNormalMap.xml");
-        litTransparentFadeTechnique_ = LoadTechnique("Techniques/LitTransparentFade.xml");
+        if (base_.GetSettings().fadeTransparency_)
+        {
+            litTransparentNormalMapTechnique_ = LoadTechnique("Techniques/LitTransparentFadeNormalMap.xml");
+            litTransparentTechnique_ = LoadTechnique("Techniques/LitTransparentFade.xml");
+        }
+        else
+        {
+            litTransparentNormalMapTechnique_ = LoadTechnique("Techniques/LitTransparentNormalMap.xml");
+            litTransparentTechnique_ = LoadTechnique("Techniques/LitTransparent.xml");
+        }
+
         unlitTransparentTechnique_ = LoadTechnique("Techniques/UnlitTransparent.xml");
     }
 
@@ -2477,8 +2492,8 @@ private:
         if (!isOpaque && !isAlphaMask && !isTransparent)
             throw RuntimeException("Unknown alpha mode '{}'", sourceMaterial.alphaMode.c_str());
 
-        Technique* litNormalMapTechnique = isOpaque || isAlphaMask ? litOpaqueNormalMapTechnique_ : litTransparentFadeNormalMapTechnique_;
-        Technique* litTechnique = isOpaque || isAlphaMask ? litOpaqueTechnique_ : litTransparentFadeTechnique_;
+        Technique* litNormalMapTechnique = isOpaque || isAlphaMask ? litOpaqueNormalMapTechnique_ : litTransparentNormalMapTechnique_;
+        Technique* litTechnique = isOpaque || isAlphaMask ? litOpaqueTechnique_ : litTransparentTechnique_;
         Technique* unlitTechnique = isOpaque || isAlphaMask ? unlitOpaqueTechnique_ : unlitTransparentTechnique_;
 
         ea::string shaderDefines;
@@ -2649,8 +2664,8 @@ private:
     Technique* litOpaqueTechnique_{};
     Technique* unlitOpaqueTechnique_{};
 
-    Technique* litTransparentFadeNormalMapTechnique_{};
-    Technique* litTransparentFadeTechnique_{};
+    Technique* litTransparentNormalMapTechnique_{};
+    Technique* litTransparentTechnique_{};
     Technique* unlitTransparentTechnique_{};
 
     struct ImportedMaterial
@@ -3147,6 +3162,9 @@ private:
         for (unsigned animationIndex = 0; animationIndex < numAnimations; ++animationIndex)
         {
             const GLTFAnimation& sourceAnimation = hierarchyAnalyzer_.GetAnimation(animationIndex);
+            if (IsNameSkipped(sourceAnimation.name_, base_.GetSettings().skipTags_))
+                continue;
+
             for (const auto& [groupIndex, group] : sourceAnimation.animationGroups_)
             {
                 const ea::string animationNameHint = GetAnimationGroupName(sourceAnimation, groupIndex);
@@ -3475,8 +3493,8 @@ private:
             auto pipelineSettings = renderPipeline->GetSettings();
             pipelineSettings.renderBufferManager_.colorSpace_ = RenderPipelineColorSpace::LinearLDR;
             pipelineSettings.sceneProcessor_.pcfKernelSize_ = 5;
-            pipelineSettings.antialiasing_ = PostProcessAntialiasing::FXAA3;
             renderPipeline->SetSettings(pipelineSettings);
+            renderPipeline->SetRenderPassEnabled("Postprocess: FXAA v3", true);
         }
 
         Node* rootNode = scene->CreateChild(settings.assetName_);
@@ -3494,13 +3512,13 @@ private:
                 scene->CreateChild("Disabled Node Placeholder");
         }
 
-        if (!settings.skipTag_.empty())
+        if (!settings.skipTags_.empty())
         {
             const auto children = rootNode->GetChildren(true);
             const ea::vector<WeakPtr<Node>> weakChildren(children.begin(), children.end());
-            for (Node* child : weakChildren)
+            for (const auto& child : weakChildren)
             {
-                if (child && child->GetName().contains(settings.skipTag_))
+                if (child && IsNameSkipped(child->GetName(), settings.skipTags_))
                     child->Remove();
             }
         }
@@ -3641,7 +3659,7 @@ private:
         auto scene = importedScene.scene_;
         const GLTFImporterSettings& settings = base_.GetSettings();
 
-        if (settings.preview_.addLights_ && !scene->GetComponent<Light>(true))
+        if (settings.preview_.addLights_ && !scene->FindComponent<Light>())
         {
             // Model forward is Z+, make default lighting from top right when looking at forward side of model.
             Node* node = scene->CreateChild("Default Light");
@@ -3652,7 +3670,7 @@ private:
             light->SetCastShadows(true);
         }
 
-        if (settings.preview_.addSkybox_ && !scene->GetComponent<Skybox>(true))
+        if (settings.preview_.addSkybox_ && !scene->FindComponent<Skybox>())
         {
             static const ea::string skyboxModelName = "Models/Box.mdl";
 
@@ -3673,7 +3691,7 @@ private:
             }
         }
 
-        if (settings.preview_.addReflectionProbe_ && !scene->GetComponent<Zone>(true))
+        if (settings.preview_.addReflectionProbe_ && !scene->FindComponent<Zone>())
         {
             auto skyboxTexture = cache->GetResource<TextureCube>(settings.preview_.reflectionProbeCubemap_);
             if (!skyboxTexture)
@@ -3707,21 +3725,12 @@ private:
 
     static Node* GetOrCreateNode(ImportedScene& importedScene, Node& parentNode, const GLTFNode& sourceNode)
     {
-        // If node is not in the skeleton, or it is skeleton root node, create as is.
-        // Otherwise, node should be already created by AnimatedModel, connect to it.
-        if (!sourceNode.skeletonIndex_ || !sourceNode.skinnedMeshNodes_.empty())
-        {
-            Node* node = parentNode.CreateChild(sourceNode.GetEffectiveName());
-            RegisterNode(importedScene, *node, sourceNode);
-            return node;
-        }
-        else
-        {
-            Node* node = importedScene.indexToNode_[sourceNode.index_];
-            if (!node)
-                throw RuntimeException("Cannot find bone node #{}", sourceNode.index_);
-            return node;
-        }
+        if (Node* existingNode = importedScene.indexToNode_[sourceNode.index_])
+            return existingNode;
+
+        Node* node = parentNode.CreateChild(sourceNode.GetEffectiveName());
+        RegisterNode(importedScene, *node, sourceNode);
+        return node;
     }
 
     GLTFImporterBase& base_;
@@ -3772,7 +3781,7 @@ tg::Model LoadGLTF(const ea::string& fileName)
     return model;
 }
 
-tg::Model LoadGLTFBinary(ByteSpan data)
+tg::Model LoadGLTFBinary(ConstByteSpan data)
 {
     tg::TinyGLTF loader;
     loader.SetImageLoader(&GLTFTextureImporter::LoadImageData, nullptr);
@@ -3844,10 +3853,12 @@ void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& va
     SerializeValue(archive, "scale", value.scale_);
     SerializeValue(archive, "rotation", value.rotation_);
 
+    SerializeValue(archive, "pbrTransparency", value.fadeTransparency_);
+
     SerializeValue(archive, "cleanupBoneNames", value.cleanupBoneNames_);
     SerializeValue(archive, "cleanupRootNodes", value.cleanupRootNodes_);
     SerializeValue(archive, "combineLODs", value.combineLODs_);
-    SerializeValue(archive, "skipTag", value.skipTag_);
+    SerializeValue(archive, "skipTag", value.skipTags_);
     SerializeValue(archive, "keepNamesOnMerge", value.keepNamesOnMerge_);
     SerializeValue(archive, "addEmptyNodesToSkeleton", value.addEmptyNodesToSkeleton_);
 
@@ -3880,7 +3891,7 @@ bool GLTFImporter::LoadFile(const ea::string& fileName)
     return LoadFileInternal([&]() { return LoadGLTF(fileName); });
 }
 
-bool GLTFImporter::LoadFileBinary(ByteSpan data)
+bool GLTFImporter::LoadFileBinary(ConstByteSpan data)
 {
     return LoadFileInternal([&]() { return LoadGLTFBinary(data); });
 }

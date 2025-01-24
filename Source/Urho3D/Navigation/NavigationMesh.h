@@ -24,18 +24,12 @@
 
 #pragma once
 
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Navigation/NavigationDefs.h"
+#include "Urho3D/Scene/Component.h"
+
 #include <EASTL/unique_ptr.h>
 #include <EASTL/unordered_set.h>
-
-#include "../Math/BoundingBox.h"
-#include "../Math/Matrix3x4.h"
-#include "../Scene/Component.h"
-
-#ifdef DT_POLYREF64
-using dtPolyRef = uint64_t;
-#else
-using dtPolyRef = unsigned int;
-#endif
 
 class dtNavMesh;
 class dtNavMeshQuery;
@@ -55,20 +49,7 @@ class NavArea;
 
 struct FindPathData;
 struct NavBuildData;
-
-/// Description of a navigation mesh geometry component, with transform and bounds information.
-struct NavigationGeometryInfo
-{
-    /// Component.
-    Component* component_;
-    /// Geometry LOD level if applicable.
-    unsigned lodLevel_;
-    /// Transform relative to the navigation mesh root node.
-    Matrix3x4 transform_;
-    /// Bounding box relative to the navigation mesh root node.
-    BoundingBox boundingBox_;
-
-};
+struct NavigationGeometryInfo;
 
 /// A flag representing the type of path point- none, the start of a path segment, the end of one, or an off-mesh connection.
 enum NavigationPathPointFlag
@@ -97,6 +78,13 @@ class URHO3D_API NavigationMesh : public Component
     friend class CrowdManager;
 
 public:
+    /// Version of compiled navigation data. Navigation data should be discarded and rebuilt on mismatch.
+    static constexpr int NavigationDataVersion = 1;
+    /// Default maximum number of tiles.
+    static constexpr int DefaultMaxTiles = 256;
+    /// Maximum number of layers in the single tile.
+    static constexpr unsigned MaxLayers = 255;
+
     /// Construct.
     explicit NavigationMesh(Context* context);
     /// Destruct.
@@ -108,6 +96,8 @@ public:
     /// Visualize the component as debug geometry.
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
+    /// Set maximum number of tiles.
+    void SetMaxTiles(int maxTiles) { maxTiles_ = Max(maxTiles, 1); }
     /// Set tile size.
     /// @property
     void SetTileSize(int size);
@@ -117,6 +107,8 @@ public:
     /// Set cell height.
     /// @property
     void SetCellHeight(float height);
+    /// Set min and max height of the navigation mesh, i.e. min and max Y value in world space.
+    void SetHeightRange(const Vector2& range) { heightRange_ = range; }
     /// Set navigation agent height.
     /// @property
     void SetAgentHeight(float height);
@@ -152,26 +144,32 @@ public:
     void SetPadding(const Vector3& padding);
     /// Set the cost of an area.
     void SetAreaCost(unsigned areaID, float cost);
-    /// Allocate the navigation mesh without building any tiles. Bounding box is not padded. Return true if successful.
-    virtual bool Allocate(const BoundingBox& boundingBox, unsigned maxTiles);
-    /// Rebuild the navigation mesh. Return true if successful.
-    virtual bool Build();
+
+    /// Clear navigation mesh data.
+    void Clear();
+    /// Allocate the navigation mesh without building any tiles. Return true if successful.
+    bool Allocate();
     /// Rebuild part of the navigation mesh contained by the world-space bounding box. Return true if successful.
-    virtual bool Build(const BoundingBox& boundingBox);
+    bool BuildTilesInRegion(const BoundingBox& boundingBox);
     /// Rebuild part of the navigation mesh in the rectangular area. Return true if successful.
-    virtual bool Build(const IntVector2& from, const IntVector2& to);
+    bool BuildTiles(const IntVector2& from, const IntVector2& to);
+    /// Rebuild the navigation mesh allocating sufficient maximum number of tiles. Return true if successful.
+    bool Rebuild();
+
+    /// Enumerate all tiles.
+    ea::vector<IntVector2> GetAllTileIndices() const;
     /// Return tile data.
-    virtual ea::vector<unsigned char> GetTileData(const IntVector2& tile) const;
+    virtual ea::vector<unsigned char> GetTileData(const IntVector2& tileIndex) const;
     /// Add tile to navigation mesh.
     virtual bool AddTile(const ea::vector<unsigned char>& tileData);
     /// Remove tile from navigation mesh.
-    virtual void RemoveTile(const IntVector2& tile);
+    virtual void RemoveTile(const IntVector2& tileIndex);
     /// Remove all tiles from navigation mesh.
     virtual void RemoveAllTiles();
     /// Return whether the navigation mesh has tile.
-    bool HasTile(const IntVector2& tile) const;
-    /// Return bounding box of the tile in the node space.
-    BoundingBox GetTileBoundingBox(const IntVector2& tile) const;
+    bool HasTile(const IntVector2& tileIndex) const;
+    /// Return bounding box of the tile in the world space. Y coordinate spans from -infinity to infinity.
+    BoundingBox GetTileBoundingBoxColumn(const IntVector2& tileIndex) const;
     /// Return index of the tile at the position.
     IntVector2 GetTileIndex(const Vector3& position) const;
     /// Find the nearest point on the navigation mesh to a given point. Extents specifies how far out from the specified point to check along each axis.
@@ -210,6 +208,9 @@ public:
     /// Set the name of this navigation mesh.
     void SetMeshName(const ea::string& newName);
 
+    /// Return maximum number of tiles.
+    int GetMaxTiles() const { return maxTiles_; }
+
     /// Return tile size.
     /// @property
     int GetTileSize() const { return tileSize_; }
@@ -221,6 +222,12 @@ public:
     /// Return cell height.
     /// @property
     float GetCellHeight() const { return cellHeight_; }
+
+    /// Return min and max height of the navigation mesh, i.e. min and max Y value in world space.
+    const Vector2& GetHeightRange() const { return heightRange_; }
+
+    /// Return whether the height range is valid.
+    bool IsHeightRangeValid() const { return heightRange_.x_ < heightRange_.y_; }
 
     /// Return navigation agent height.
     /// @property
@@ -273,18 +280,6 @@ public:
     /// @property
     bool IsInitialized() const { return navMesh_ != nullptr; }
 
-    /// Return local space bounding box of the navigation mesh.
-    /// @property
-    const BoundingBox& GetBoundingBox() const { return boundingBox_; }
-
-    /// Return world space bounding box of the navigation mesh.
-    /// @property
-    BoundingBox GetWorldBoundingBox() const;
-
-    /// Return number of tiles.
-    /// @property
-    IntVector2 GetNumTiles() const { return IntVector2(numTilesX_, numTilesZ_); }
-
     /// Set the partition type used for polygon generation.
     /// @property
     void SetPartitionType(NavmeshPartitionType partitionType);
@@ -315,12 +310,22 @@ public:
     bool GetDrawNavAreas() const { return drawNavAreas_; }
 
 private:
-    /// Write tile data.
-    void WriteTile(Serializer& dest, int x, int z) const;
     /// Read tile data to the navigation mesh.
     bool ReadTile(Deserializer& source, bool silent);
 
 protected:
+    /// Allocate the navigation mesh without building any tiles. Return true if successful.
+    virtual bool AllocateMesh(unsigned maxTiles);
+    /// Rebuild the navigation mesh allocating sufficient maximum number of tiles. Return true if successful.
+    virtual bool RebuildMesh();
+    /// Build mesh tiles from the geometry data. Return true if successful.
+    virtual unsigned BuildTilesFromGeometry(
+        ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to);
+
+    /// Send rebuild event.
+    void SendRebuildEvent();
+    /// Send tile added event.
+    void SendTileAddedEvent(const IntVector2& tileIndex);
     /// Collect geometry from under Navigable components.
     void CollectGeometries(ea::vector<NavigationGeometryInfo>& geometryList);
     /// Visit nodes and collect navigable geometry.
@@ -330,13 +335,14 @@ protected:
     /// Add a triangle mesh to the geometry data.
     void AddTriMeshGeometry(NavBuildData* build, Geometry* geometry, const Matrix3x4& transform);
     /// Build one tile of the navigation mesh. Return true if successful.
-    virtual bool BuildTile(ea::vector<NavigationGeometryInfo>& geometryList, int x, int z);
-    /// Build tiles in the rectangular area. Return number of built tiles.
-    unsigned BuildTiles(ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to);
+    bool BuildTile(ea::vector<NavigationGeometryInfo>& geometryList, int x, int z);
     /// Ensure that the navigation mesh query is initialized. Return true if successful.
     bool InitializeQuery();
     /// Release the navigation mesh and the query.
     virtual void ReleaseNavigationMesh();
+
+    /// Draw debug geometry for single tile.
+    void DrawDebugTileGeometry(DebugRenderer* debug, bool depthTest, int tileIndex);
 
     /// Identifying name for this navigation mesh.
     ea::string meshName_;
@@ -348,12 +354,16 @@ protected:
     ea::unique_ptr<dtQueryFilter> queryFilter_;
     /// Temporary data for finding a path.
     ea::unique_ptr<FindPathData> pathData_;
+    /// Maximum number of tiles.
+    int maxTiles_{DefaultMaxTiles};
     /// Tile size.
     int tileSize_;
     /// Cell size.
     float cellSize_;
     /// Cell height.
     float cellHeight_;
+    /// Total height range of the navigation mesh, in world space.
+    Vector2 heightRange_;
     /// Navigation agent height.
     float agentHeight_;
     /// Navigation agent radius.
@@ -376,12 +386,6 @@ protected:
     float detailSampleMaxError_;
     /// Bounding box padding.
     Vector3 padding_;
-    /// Number of tiles in X direction.
-    int numTilesX_;
-    /// Number of tiles in Z direction.
-    int numTilesZ_;
-    /// Whole navigation mesh bounding box.
-    BoundingBox boundingBox_;
     /// Type of the heightfield partitioning.
     NavmeshPartitionType partitionType_;
     /// Keep internal build resources for debug draw modes.

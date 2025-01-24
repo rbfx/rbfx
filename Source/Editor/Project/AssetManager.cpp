@@ -570,8 +570,9 @@ bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const Ap
         return false;
 
     const ea::string tempPath = project_->GetRandomTemporaryPath();
-    const ea::string outputFileName = tempPath + resourceName;
-    requestQueue_.push_back(AssetTransformerInput{input, tempPath, outputFileName});
+    const ea::string outputResourceName = resourceName + ".d";
+    const ea::string outputFileName = tempPath + outputResourceName;
+    requestQueue_.push_back(AssetTransformerInput{input, tempPath, outputFileName, outputResourceName});
     return true;
 }
 

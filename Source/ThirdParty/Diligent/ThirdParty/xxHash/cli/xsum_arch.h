@@ -103,7 +103,11 @@
 #     define XSUM_ARCH XSUM_ARCH_X86
 #  endif
 #elif defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64) || defined(_M_ARM64EC)
-#  define XSUM_ARCH "aarch64 + NEON"
+#  if defined(__ARM_FEATURE_SVE)
+#    define XSUM_ARCH "aarch64 + SVE"
+#  else
+#    define XSUM_ARCH "aarch64 + NEON"
+#  endif
 #elif defined(__arm__) || defined(__thumb__) || defined(__thumb2__) || defined(_M_ARM)
 /* ARM has a lot of different features that can change xxHash significantly. */
 #  ifdef __ARM_ARCH
@@ -151,6 +155,12 @@
 #  define XSUM_ARCH "s390x"
 #elif defined(__s390__)
 #  define XSUM_ARCH "s390"
+#elif defined(__wasm__) || defined(__asmjs__) || defined(__EMSCRIPTEN__)
+#  if defined(__wasm_simd128__)
+#    define XSUM_ARCH "wasm/asmjs + simd128"
+#  else
+#    define XSUM_ARCH "wasm/asmjs"
+#  endif
 #else
 #  define XSUM_ARCH "unknown"
 #endif

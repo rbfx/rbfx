@@ -39,7 +39,7 @@ namespace Urho3D
 namespace
 {
 
-const ea::string DefaultSkipTag = "[skip]";
+const StringVector DefaultSkipTags{"[skip]"};
 
 bool IsFileNameGLTF(const ea::string& fileName, bool strict = true)
 {
@@ -154,7 +154,7 @@ void ModelImporter::ModelMetadata::SerializeInBlock(Archive& archive)
 ModelImporter::ModelImporter(Context* context)
     : AssetTransformer(context)
 {
-    settings_.skipTag_ = DefaultSkipTag;
+    settings_.skipTags_ = DefaultSkipTags;
 }
 
 void ModelImporter::RegisterObject(Context* context)
@@ -164,14 +164,19 @@ void ModelImporter::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Mirror X", bool, settings_.mirrorX_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Scale", float, settings_.scale_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Rotation", Quaternion, settings_.rotation_, Quaternion::IDENTITY, AM_DEFAULT);
+
+    URHO3D_ATTRIBUTE("Fade Transparency", bool, settings_.fadeTransparency_, false, AM_DEFAULT);
+
     URHO3D_ATTRIBUTE("Cleanup Bone Names", bool, settings_.cleanupBoneNames_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Cleanup Root Nodes", bool, settings_.cleanupRootNodes_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Combine LODs", bool, settings_.combineLODs_, true, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Skip Tag", ea::string, settings_.skipTag_, DefaultSkipTag, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Skip Tags", StringVector, settings_.skipTags_, DefaultSkipTags, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Keep Names On Merge", bool, settings_.keepNamesOnMerge_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Add Empty Nodes To Skeleton", bool, settings_.addEmptyNodesToSkeleton_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Repair Looping", bool, repairLooping_, false, AM_DEFAULT);
+
     URHO3D_ATTRIBUTE("Blender: Apply Modifiers", bool, blenderApplyModifiers_, true, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Blender: Deforming Bones Only", bool, blenderDeformingBonesOnly_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("LightMap UV: Generate", bool, lightmapUVGenerate_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("LightMap UV: Texels per Unit", float, lightmapUVTexelsPerUnit_, 10.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("LightMap UV: Channel", unsigned, lightmapUVChannel_, 1, AM_DEFAULT);
@@ -247,7 +252,7 @@ bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& m
     auto importer = MakeShared<GLTFImporter>(context_, settings_);
 
     const ea::string outputPath = AddTrailingSlash(input.outputFileName_);
-    const ea::string resourceNamePrefix = AddTrailingSlash(input.resourceName_);
+    const ea::string resourceNamePrefix = AddTrailingSlash(input.outputResourceName_);
     if (!importer->LoadFile(fileHandle->fileName_))
     {
         URHO3D_LOGERROR("Failed to load asset {} as GLTF model", input.resourceName_);
@@ -431,7 +436,7 @@ void ModelImporter::AppendResourceMetadata(ResourceWithMetadata& resource) const
 ModelImporter::ModelMetadata ModelImporter::LoadMetadata(const ea::string& fileName) const
 {
     ModelMetadata result;
-    result.metadataFileName_ = fileName + ".import";
+    result.metadataFileName_ = fileName + ".d/import.json";
 
     JSONFile file{context_};
     if (file.LoadFile(result.metadataFileName_))
@@ -515,9 +520,10 @@ ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromBlend(
         "bpy.ops.export_scene.gltf("
         "  filepath='{}', "
         "  export_format='GLB', "
-        "  export_apply={}"
+        "  export_apply={}, "
+        "  export_def_bones={}"
         ");",
-        tempGltfFile, blenderApplyModifiers_ ? "True" : "False");
+        tempGltfFile, blenderApplyModifiers_ ? "True" : "False", blenderDeformingBonesOnly_ ? "True" : "False");
 
     const StringVector arguments{"-b", fileName, "--python-expr", script};
 

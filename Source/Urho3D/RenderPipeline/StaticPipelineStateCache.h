@@ -37,6 +37,7 @@ private:
         ea::vector<SharedPtr<PipelineState>> pipelineStates_;
     };
 
+    ea::unordered_map<GraphicsPipelineStateDesc, StaticPipelineStateId> descToIndex_;
     ea::vector<GraphicsPipelineStateDesc> desc_;
     ea::unordered_map<unsigned, PerOutputCache> caches_;
 };

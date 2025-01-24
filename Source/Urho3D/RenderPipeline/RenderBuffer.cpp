@@ -111,6 +111,9 @@ TextureRenderBuffer::~TextureRenderBuffer()
 
 void TextureRenderBuffer::OnRenderBegin(const CommonFrameInfo& frameInfo)
 {
+    if (!isEnabled_)
+        return;
+
     RenderPool* renderPool = renderDevice_->GetRenderPool();
 
     currentSize_ = CalculateRenderTargetSize(frameInfo.viewportRect_, sizeMultiplier_, fixedSize_);

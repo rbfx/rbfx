@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -61,9 +61,7 @@ SamplerVkImpl::SamplerVkImpl(IReferenceCounters* pRefCounters, RenderDeviceVkImp
     SamplerCI.mipLodBias   = m_Desc.MipLODBias;
 
     SamplerCI.anisotropyEnable = IsAnisotropicFilter(m_Desc.MinFilter);
-    DEV_CHECK_ERR(!SamplerCI.anisotropyEnable || (m_Desc.MaxAnisotropy >= 1 && static_cast<float>(m_Desc.MaxAnisotropy) <= Limits.maxSamplerAnisotropy),
-                  "MaxAnisotropy (", m_Desc.MaxAnisotropy, ") must be in range 1 .. ", Limits.maxSamplerAnisotropy, ".");
-    SamplerCI.maxAnisotropy = SamplerCI.anisotropyEnable ? clamp(static_cast<float>(m_Desc.MaxAnisotropy), 1.f, Limits.maxSamplerAnisotropy) : 0.f;
+    SamplerCI.maxAnisotropy    = SamplerCI.anisotropyEnable ? clamp(static_cast<float>(m_Desc.MaxAnisotropy), 1.f, Limits.maxSamplerAnisotropy) : 0.f;
     DEV_CHECK_ERR((SamplerCI.anisotropyEnable != VK_FALSE) == IsAnisotropicFilter(m_Desc.MagFilter),
                   "Min and mag filters must both be either anisotropic filters or non-anisotropic ones");
 

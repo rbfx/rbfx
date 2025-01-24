@@ -23,8 +23,6 @@ public:
     /// Attributes.
     /// @{
     // clang-format off
-    void SetShoulderBoneName(const ea::string& name) { shoulderBoneName_ = name; OnTreeDirty(); }
-    const ea::string& GetShoulderBoneName() const { return shoulderBoneName_; }
     void SetArmBoneName(const ea::string& name) { armBoneName_ = name; OnTreeDirty(); }
     const ea::string& GetArmBoneName() const { return armBoneName_; }
     void SetForearmBoneName(const ea::string& name) { forearmBoneName_ = name; OnTreeDirty(); }
@@ -47,12 +45,8 @@ public:
     float GetMinAngle() const { return minElbowAngle_; }
     void SetMaxAngle(float angle) { maxElbowAngle_ = angle; }
     float GetMaxAngle() const { return maxElbowAngle_; }
-    void SetShoulderWeight(const Vector2& weight) { shoulderWeight_ = weight; }
-    const Vector2& GetShoulderWeight() const { return shoulderWeight_; }
     void SetBendDirection(const Vector3& direction) { bendDirection_ = direction; }
     const Vector3& GetBendDirection() const { return bendDirection_; }
-    void SetUpDirection(const Vector3& direction) { upDirection_ = direction; }
-    const Vector3& GetUpDirection() const { return upDirection_; }
     // clang-format on
     /// @}
 
@@ -66,15 +60,11 @@ private:
 
     void EnsureInitialized();
 
-    void RotateShoulder(const Quaternion& rotation);
-
     ea::pair<Vector3, Vector3> CalculateBendDirections(
         const Transform& frameOfReference, const Vector3& handTargetPosition) const;
-    Quaternion CalculateMaxShoulderRotation(const Vector3& handTargetPosition) const;
 
     /// Attributes.
     /// @{
-    ea::string shoulderBoneName_;
     ea::string armBoneName_;
     ea::string forearmBoneName_;
     ea::string handBoneName_;
@@ -87,15 +77,12 @@ private:
     float bendWeight_{1.0f};
     float minElbowAngle_{0.0f};
     float maxElbowAngle_{180.0f};
-    Vector2 shoulderWeight_{};
     Vector3 bendDirection_{Vector3::FORWARD};
-    Vector3 upDirection_{Vector3::UP};
     /// @}
 
     /// IK nodes and effectors.
     /// @{
-    IKTrigonometricChain armChain_;
-    IKNodeSegment shoulderSegment_;
+    IKTrigonometricChain chain_;
     WeakPtr<Node> target_;
     WeakPtr<Node> bendTarget_;
     /// @}
@@ -103,10 +90,8 @@ private:
     struct LocalCache
     {
         Vector3 bendDirection_;
-        Vector3 up_;
         Vector3 targetDirection_;
 
-        Quaternion shoulderRotation_;
         Vector3 armOffset_;
         Quaternion armRotation_;
     } local_;

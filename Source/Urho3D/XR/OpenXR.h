@@ -9,7 +9,7 @@
 #include "Urho3D/RenderAPI/RenderAPIDefs.h"
 #include "Urho3D/XR/VirtualReality.h"
 
-#include <ThirdParty/OpenXRSDK/include/openxr/openxr.h>
+#include <openxr/openxr.h>
 
 #include <EASTL/shared_ptr.h>
 

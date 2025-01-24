@@ -43,6 +43,9 @@ class URHO3D_API Network : public Object
     URHO3D_OBJECT(Network, Object);
 
 public:
+    using CreateServerCallback = ea::function<SharedPtr<NetworkServer>(Context* context)>;
+    using CreateConnectionCallback = ea::function<SharedPtr<NetworkConnection>(Context* context)>;
+
     /// Construct.
     explicit Network(Context* context);
     /// Destruct.
@@ -86,8 +89,6 @@ public:
     void SetPackageCacheDir(const ea::string& path);
     /// Trigger all client connections in the specified scene to download a package file from the server. Can be used to download additional resource packages when clients are already joined in the scene. The package must have been added as a requirement to the scene, or else the eventual download will fail.
     void SendPackageToClients(Scene* scene, PackageFile* package);
-    /// Perform an HTTP request to the specified URL. Empty verb defaults to a GET request. Return a request object which can be used to read the response data.
-    SharedPtr<HttpRequest> MakeHttpRequest(const ea::string& url, const ea::string& verb = EMPTY_STRING, const ea::vector<ea::string>& headers = ea::vector<ea::string>(), const ea::string& postData = EMPTY_STRING);
     /// Return network update FPS.
     /// @property
     unsigned GetUpdateFps() const { return updateFps_; }
@@ -102,6 +103,13 @@ public:
 
     /// Return the amount of time that happened after fixed-time network update.
     float GetUpdateOvertime() const { return updateAcc_; }
+
+    /// Use the default transport (WebRTC)
+    void SetTransportDefault();
+    /// Use the WebRTC transport
+    void SetTransportWebRTC();
+    /// Use a user defined transport
+    void SetTransportCustom(const CreateServerCallback& createServer, const CreateConnectionCallback& createConnection);
 
     /// Return whether the network is updated on this frame.
     bool IsUpdateNow() const { return updateNow_; }
@@ -138,6 +146,8 @@ public:
     /// @}
 
 private:
+    void InitializeTransportCreateFuncs();
+
     /// Event handlers.
     /// @{
     void HandleApplicationExit();
@@ -173,12 +183,11 @@ private:
     ea::string packageCacheDir_;
     /// Number of max allowed connections. Set by %Network::StartServer.
     int serverMaxConnections_ = 0;
-    /// Server/Client password used for connecting.
-    ea::string password_;
-    /// Scene which will be used for NAT punchtrough connections.
-    Scene* scene_ = nullptr;
     /// Actual server, which accepts connections.
     SharedPtr<NetworkServer> transportServer_;
+
+    CreateServerCallback createServer_;
+    CreateConnectionCallback createConnection_;
 };
 
 /// Register Network library objects.

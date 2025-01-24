@@ -1,31 +1,22 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2024 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #include "../Foundation/ConsoleTab.h"
+
+#include "../Core/IniHelpers.h"
 
 #include <Urho3D/SystemUI/Console.h>
 
 namespace Urho3D
 {
+
+namespace
+{
+
+const LogLevel logLevels[] = {LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERROR};
+
+}
 
 void Foundation_ConsoleTab(Context* context, Project* project)
 {
@@ -33,8 +24,8 @@ void Foundation_ConsoleTab(Context* context, Project* project)
 }
 
 ConsoleTab::ConsoleTab(Context* context)
-    : EditorTab(context, "Console", "2c1b8e59-3e21-4a14-bc20-d35af0ba5031",
-        EditorTabFlag::OpenByDefault, EditorTabPlacement::DockBottom)
+    : EditorTab(context, "Console", "2c1b8e59-3e21-4a14-bc20-d35af0ba5031", EditorTabFlag::OpenByDefault,
+          EditorTabPlacement::DockBottom)
 {
 }
 
@@ -55,9 +46,15 @@ void ConsoleTab::RenderContextMenuItems()
     auto console = GetSubsystem<Console>();
 
     contextMenuSeparator_.Reset();
+
+    if (ui::MenuItem("Clear"))
+    {
+        console->Clear();
+    }
+
     if (ui::BeginMenu("Levels"))
     {
-        for (const LogLevel level : {LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERROR})
+        for (const LogLevel level : logLevels)
         {
             const bool visible = console->GetLevelVisible(level);
             if (ui::MenuItem(logLevelNames[level], nullptr, visible))
@@ -69,4 +66,29 @@ void ConsoleTab::RenderContextMenuItems()
     contextMenuSeparator_.Add();
 }
 
+void ConsoleTab::WriteIniSettings(ImGuiTextBuffer& output)
+{
+    BaseClassName::WriteIniSettings(output);
+
+    if (auto console = GetSubsystem<Console>())
+    {
+        for (const LogLevel level : logLevels)
+            WriteIntToIni(output, Format("Show_{}", logLevelNames[level]), console->GetLevelVisible(level));
+    }
 }
+
+void ConsoleTab::ReadIniSettings(const char* line)
+{
+    BaseClassName::ReadIniSettings(line);
+
+    if (auto console = GetSubsystem<Console>())
+    {
+        for (const LogLevel level : logLevels)
+        {
+            if (const auto value = ReadIntFromIni(line, Format("Show_{}", logLevelNames[level])))
+                console->SetLevelVisible(level, !!*value);
+        }
+    }
+}
+
+} // namespace Urho3D

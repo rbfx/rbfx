@@ -1,12 +1,16 @@
 #define URHO3D_PIXEL_NEED_TEXCOORD
 #define URHO3D_CUSTOM_LIGHT_UNIFORMS
 #define URHO3D_CUSTOM_MATERIAL_UNIFORMS
-#ifdef URHO3D_VERTEX_HAS_COLOR
-    #undef URHO3D_VERTEX_HAS_COLOR
-#endif
+#define URHO3D_IGNORE_VERTEX_COLOR
 
 #include "_Config.glsl"
 #include "_Uniforms.glsl"
+
+// JS: this has to be before samplers so we can see it for depth reconstruction
+#ifdef URHO3D_XR
+    VERTEX_OUTPUT_QUAL(flat, int vInstID)
+#endif
+
 #include "_DefaultSamplers.glsl"
 #include "_SamplerUtils.glsl"
 #include "_Material_Common.glsl"

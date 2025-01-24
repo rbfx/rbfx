@@ -66,6 +66,8 @@ public:
     void Clear();
     /// Set data.
     void SetData(const ByteVector& data);
+    /// Set data from text.
+    void SetText(ea::string_view text);
     /// Return immutable data.
     const ByteVector& GetData() const;
     /// Return immutable data as string view.

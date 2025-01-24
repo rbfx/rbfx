@@ -123,6 +123,20 @@ void CopyBackendDeviceSettings(Diligent::EngineD3D12CreateInfo& createInfo, Rend
         CopyOptionalMember(createInfo.QueryPoolSizes[i], settings.queryPoolSizes_[i]);
 }
 
+bool SkipInfoMessage(const ea::string& message)
+{
+    static const StringVector skipMessages = {
+        "[diligent] Compiler output for shader",
+        "[diligent] Failed shader full source",
+    };
+    for (const ea::string& skipMessage : skipMessages)
+    {
+        if (message.starts_with(skipMessage))
+            return true;
+    }
+    return false;
+}
+
 void DebugMessageCallback(
     Diligent::DEBUG_MESSAGE_SEVERITY severity, const char* msg, const char* func, const char* file, int line)
 {
@@ -136,7 +150,12 @@ void DebugMessageCallback(
 
     switch (severity)
     {
-    case Diligent::DEBUG_MESSAGE_SEVERITY_INFO: URHO3D_LOGINFO(message); break;
+    case Diligent::DEBUG_MESSAGE_SEVERITY_INFO:
+    {
+        if (!SkipInfoMessage(message))
+            URHO3D_LOGINFO(message);
+        break;
+    }
     case Diligent::DEBUG_MESSAGE_SEVERITY_WARNING: URHO3D_LOGWARNING(message); break;
     case Diligent::DEBUG_MESSAGE_SEVERITY_ERROR: URHO3D_LOGERROR(message); break;
     case Diligent::DEBUG_MESSAGE_SEVERITY_FATAL_ERROR: URHO3D_LOGERROR(message); break;
@@ -1659,9 +1678,17 @@ IntVector2 RenderDevice::GetWindowSize() const
 
 float RenderDevice::GetDpiScale() const
 {
+#if defined(URHO3D_PLATFORM_WINDOWS)
+    float logicalDpi{};
+    if (SDL_GetDisplayDPI(windowSettings_.monitor_, nullptr, &logicalDpi, nullptr) != 0)
+        return 1.0f;
+
+    return logicalDpi / 96.0f;
+#else
     const Vector2 ratio = GetSwapChainSize().ToVector2() / GetWindowSize().ToVector2();
     // This is just a hack to get rid of possible rounding errors
     return SnapRound((ratio.x_ + ratio.y_) / 2.0f, 0.05f);
+#endif
 }
 
 ea::vector<FullscreenMode> RenderDevice::GetFullscreenModes(int monitor)

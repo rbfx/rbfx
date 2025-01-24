@@ -351,6 +351,12 @@ void CrowdAgent::SetTargetVelocity(const Vector3& velocity)
     }
 }
 
+void CrowdAgent::SetActualVelocity(const Vector3& velocity)
+{
+    if (auto agent = GetEditableDetourCrowdAgent())
+        dtVcopy(agent->vel, velocity.Data());
+}
+
 void CrowdAgent::ResetTarget()
 {
     if (CA_REQUESTEDTARGET_NONE != requestedTargetType_)
@@ -526,6 +532,8 @@ void CrowdAgent::OnCrowdPositionUpdate(dtCrowdAgent* ag, float* /*pos*/, float d
         Vector3 newPos(ag->npos);
         Vector3 newVel(ag->vel);
 
+        crowdManager_->UpdateAgentPosition(this, dt, newPos);
+
         // Notify parent node of the reposition
         if (newPos != previousPosition_)
         {
@@ -648,6 +656,11 @@ const dtCrowdAgent* CrowdAgent::GetDetourCrowdAgent() const
     return IsInCrowd() ? crowdManager_->GetDetourCrowdAgent(agentCrowdId_) : nullptr;
 }
 
+dtCrowdAgent* CrowdAgent::GetEditableDetourCrowdAgent()
+{
+    return IsInCrowd() ? crowdManager_->GetEditableDetourCrowdAgent(agentCrowdId_) : nullptr;
+}
+
 void CrowdAgent::HandleNavigationTileAdded(StringHash eventType, VariantMap& eventData)
 {
     if (!crowdManager_)
@@ -657,9 +670,8 @@ void CrowdAgent::HandleNavigationTileAdded(StringHash eventType, VariantMap& eve
     if (crowdManager_->GetNavigationMesh() != mesh)
         return;
 
-    const IntVector2 tile = eventData[NavigationTileRemoved::P_TILE].GetIntVector2();
+    const IntVector2 tile = eventData[NavigationTileAdded::P_TILE].GetIntVector2();
     const IntVector2 agentTile = mesh->GetTileIndex(node_->GetWorldPosition());
-    const BoundingBox boundingBox = mesh->GetTileBoundingBox(agentTile);
     if (tile == agentTile && IsInCrowd())
     {
         RemoveAgentFromCrowd();

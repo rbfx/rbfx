@@ -31,11 +31,11 @@ list (REMOVE_ITEM SOURCE_FILES Editor.cpp EditorWrapper.cpp)
 # TODO: Support SHARED EditorLibrary for external Editor plugins.
 add_library (EditorLibrary STATIC ${SOURCE_FILES})
 
-target_include_directories(EditorLibrary PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(EditorLibrary PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+    $<INSTALL_INTERFACE:${DEST_INCLUDE_DIR}/Tools>
+)
 target_link_libraries (EditorLibrary PUBLIC Urho3D)
-if (TARGET TracyEmbedded)
-    target_link_libraries (EditorLibrary PUBLIC TracyEmbedded)
-endif ()
 
 # Unless forbidden by the user, add Editor executable(s).
 set (EDITOR_TARGETS "")
@@ -76,11 +76,17 @@ if (NOT URHO3D_NO_EDITOR_PLAYER_EXE)
 endif ()
 
 foreach (EDITOR_TARGET ${EDITOR_TARGETS})
-    link_static_plugins (${EDITOR_TARGET} "${URHO3D_PLUGIN_LIST}")
-
-    install(TARGETS ${EDITOR_TARGET}
-        RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
-        LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
-        ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
-    )
+    target_link_plugins (${EDITOR_TARGET} "${URHO3D_PLUGIN_LIST}")
 endforeach ()
+
+# SDK installation
+install (TARGETS ${EDITOR_TARGETS}
+    RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
+    LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
+    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
+)
+install (TARGETS EditorLibrary EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
+install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    DESTINATION ${DEST_INCLUDE_DIR}/Tools
+    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+)

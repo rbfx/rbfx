@@ -143,6 +143,18 @@ public:
         constantBuffers_.currentGroup_ = MAX_SHADER_PARAMETER_GROUPS;
     }
 
+    /// Add shader resource with specific view.
+    void AddShaderResource(StringHash name, Diligent::ITextureView* textureView)
+    {
+        const ShaderResourceReflection* shaderParameter = currentShaderProgramReflection_->GetShaderResource(name);
+        if (!shaderParameter || !shaderParameter->variable_)
+            return;
+
+        shaderResources_.push_back(
+            ShaderResourceData{shaderParameter->variable_, nullptr, nullptr, TextureType::Count, textureView});
+        ++currentShaderResourceGroup_.second;
+    }
+
     /// Add non-null shader resource.
     void AddShaderResource(StringHash name, RawTexture* texture, RawTexture* backupTexture = nullptr)
     {
@@ -333,6 +345,7 @@ private:
         RawTexture* texture_{};
         RawTexture* backupTexture_{};
         TextureType type_{};
+        Diligent::ITextureView* view_{};
     };
 
     struct UnorderedAccessViewData

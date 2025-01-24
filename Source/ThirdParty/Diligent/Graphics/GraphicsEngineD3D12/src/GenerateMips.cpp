@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -207,7 +207,7 @@ void GenerateMipsHelper::GenerateMips(ID3D12Device* pd3d12Device, TextureViewD3D
             NumMips,
             0, // Array slices are relative to the view's first array slice
             0,
-            1.0f / static_cast<float>(DstWidth), 1.0f / static_cast<float>(DstHeight)};
+            {1.0f / static_cast<float>(DstWidth), 1.0f / static_cast<float>(DstHeight)}};
 
         Ctx.GetCommandList()->SetComputeRoot32BitConstants(0, 6, &CBData, 0);
 
@@ -229,23 +229,23 @@ void GenerateMipsHelper::GenerateMips(ID3D12Device* pd3d12Device, TextureViewD3D
 
         // Transition top mip level to the shader resource state
         StateTransitionDesc SrcMipBarrier{pTexD3D12, TopMip == 0 ? OriginalState : RESOURCE_STATE_UNORDERED_ACCESS, RESOURCE_STATE_SHADER_RESOURCE, STATE_TRANSITION_FLAG_NONE};
+        SrcMipBarrier.FirstMipLevel   = ViewDesc.MostDetailedMip + TopMip;
+        SrcMipBarrier.MipLevelsCount  = 1;
+        SrcMipBarrier.FirstArraySlice = ViewDesc.FirstArraySlice;
+        SrcMipBarrier.ArraySliceCount = ViewDesc.NumArraySlices;
         if (SrcMipBarrier.OldState != SrcMipBarrier.NewState)
         {
-            SrcMipBarrier.FirstMipLevel   = ViewDesc.MostDetailedMip + TopMip;
-            SrcMipBarrier.MipLevelsCount  = 1;
-            SrcMipBarrier.FirstArraySlice = ViewDesc.FirstArraySlice;
-            SrcMipBarrier.ArraySliceCount = ViewDesc.NumArraySlices;
             Ctx.TransitionResource(*pTexD3D12, SrcMipBarrier);
         }
 
         // Transition dst mip levels to UAV state
         StateTransitionDesc DstMipsBarrier{pTexD3D12, OriginalState, RESOURCE_STATE_UNORDERED_ACCESS, STATE_TRANSITION_FLAG_NONE};
+        DstMipsBarrier.FirstMipLevel   = ViewDesc.MostDetailedMip + TopMip + 1;
+        DstMipsBarrier.MipLevelsCount  = NumMips;
+        DstMipsBarrier.FirstArraySlice = ViewDesc.FirstArraySlice;
+        DstMipsBarrier.ArraySliceCount = ViewDesc.NumArraySlices;
         if (DstMipsBarrier.OldState != DstMipsBarrier.NewState)
         {
-            DstMipsBarrier.FirstMipLevel   = ViewDesc.MostDetailedMip + TopMip + 1;
-            DstMipsBarrier.MipLevelsCount  = NumMips;
-            DstMipsBarrier.FirstArraySlice = ViewDesc.FirstArraySlice;
-            DstMipsBarrier.ArraySliceCount = ViewDesc.NumArraySlices;
             Ctx.TransitionResource(*pTexD3D12, DstMipsBarrier);
         }
 

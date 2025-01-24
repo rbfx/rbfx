@@ -11,16 +11,14 @@
 #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS 1
 %{
 #include <Urho3D/CSharp/Native/SWIGHelpers.h>
-#include <ImGui/imgui.h>
-//#include <ImGui/imgui_internal.h>
+#include <imgui.h>
+//#include <imgui_internal.h>
 %}
 
 // imgui defines this to ints
 %ignore ImGuiCol;
 %ignore ImGuiCond;
 %ignore ImGuiDataType;
-%ignore ImGuiDir;
-%ignore ImGuiKey;
 %ignore ImGuiNavInput;
 %ignore ImGuiMouseCursor;
 %ignore ImGuiStyleVar;
@@ -62,17 +60,7 @@
 
 %ignore ImGui::SetAllocatorFunctions;
 %ignore ImGui::SaveIniSettingsToMemory;
-%ignore ImGui::LogTextV;
-%ignore ImGui::TextV;
-%ignore ImGui::TextColoredV;
-%ignore ImGui::TextDisabledV;
-%ignore ImGui::TextWrappedV;
-%ignore ImGui::LabelTextV;
-%ignore ImGui::BulletTextV;
-%ignore ImGui::TreeNodeV;
-%ignore ImGui::TreeNodeExV;
-%ignore ImGui::SetTooltipV;
-%ignore ImGui::ColorConvertRGBtoHSV;
+%rename("$ignore", regextarget=1, fullname=1) "^ImGui::.+[a-z]V$";
 %ignore ImGui::SetNextWindowSizeConstraints(const ImVec2& size_min, const ImVec2& size_max, ImGuiSizeConstraintCallback custom_callback, void* custom_callback_data = NULL);
 %ignore ImGui::PlotLines(const char* label, float (*values_getter)(void* data, int idx), void* data, int values_count, int values_offset = 0, const char* overlay_text = NULL, float scale_min = FLT_MAX, float scale_max = FLT_MAX, ImVec2 graph_size = ImVec2(0,0));
 %ignore ImGui::PlotHistogram(const char* label, float (*values_getter)(void* data, int idx), void* data, int values_count, int values_offset = 0, const char* overlay_text = NULL, float scale_min = FLT_MAX, float scale_max = FLT_MAX, ImVec2 graph_size = ImVec2(0,0));
@@ -89,6 +77,7 @@
 %ignore ImGui::GetMainViewport;
 %ignore ImGui::FindViewportByID;
 %ignore ImGui::FindViewportByPlatformHandle;
+%ignore ImGui::InputText;
 
 %ignore ImGui::PlotEx;
 %ignore ImGui::ImFontAtlasBuildMultiplyCalcLookupTable;
@@ -105,7 +94,6 @@
 %ignore ImStrbolW;
 %ignore ImStristr;
 %ignore ImFormatString;
-%ignore ImFormatStringV;
 %ignore ImSwap;
 %ignore ImDrawList;
 %ignore ImDrawListSplitter;
@@ -169,7 +157,6 @@
 %imgui_enum(ImGuiComboFlags);
 %imgui_enum(ImGuiDragDropFlags);
 %imgui_enum(ImGuiHoveredFlags);
-%imgui_enum(ImGuiKey);
 %imgui_enum(ImGuiSelectableFlags);
 %imgui_enum(ImGuiTreeNodeFlags);
 %imgui_enum(ImDrawListFlags);
@@ -184,7 +171,6 @@
 %imgui_enum(ImGuiBackendFlags);
 %imgui_enum(ImGuiConfigFlags);
 %imgui_enum(ImGuiDataType);
-%imgui_enum(ImGuiDir);
 %imgui_enum(ImGuiNavInput);
 %imgui_enum(ImGuiMouseButton);
 
@@ -192,5 +178,5 @@ URHO3D_BINARY_COMPATIBLE_TYPE_EX(Urho3DNet.Vector2, ImVec2, pod::float2);
 URHO3D_BINARY_COMPATIBLE_TYPE_EX(Urho3DNet.Color, ImVec4, pod::float4);
 URHO3D_BINARY_COMPATIBLE_TYPE_EX(Urho3DNet.Color, ImColor, pod::float4);
 
-%include "../include/ImGui/imgui.h"
-//%include "../include/ImGui/imgui_internal.h"
+%include "../imgui.h"
+//%include "../imgui_internal.h"

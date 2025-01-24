@@ -24,6 +24,8 @@
 
 #include "../Core/IniHelpers.h"
 
+#include <Urho3D/Graphics/Camera.h>
+#include <Urho3D/Graphics/CameraOperator.h>
 #include <Urho3D/Resource/ResourceCache.h>
 
 namespace Urho3D
@@ -43,6 +45,9 @@ ModelViewTab::ModelViewTab(Context* context)
         EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault, EditorTabPlacement::DockCenter)
 {
     modelNode_ = GetScene()->CreateChild("Model");
+    cameraOperator_ = GetCamera()->GetNode()->CreateComponent<CameraOperator>();
+    cameraOperator_->SetBoundingBoxTrackingEnabled(true);
+    cameraOperator_->SetEnabled(false);
     staticModel_ = modelNode_->CreateComponent<StaticModel>();
     staticModel_->SetCastShadows(true);
 }
@@ -68,7 +73,9 @@ void ModelViewTab::ResetCamera()
 {
     if (model_)
     {
-        state_.LookAt(model_->GetBoundingBox());
+        cameraOperator_->SetBoundingBox(model_->GetBoundingBox());
+        cameraOperator_->MoveCamera();
+        state_.lastCameraPosition_ = GetCamera()->GetNode()->GetPosition();
     }
 }
 

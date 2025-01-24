@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -67,7 +67,7 @@ Texture3D_GL::Texture3D_GL(IReferenceCounters*        pRefCounters,
 
     //                             levels             format          width        height          depth
     glTexStorage3D(m_BindTarget, m_Desc.MipLevels, m_GLTexFormat, m_Desc.Width, m_Desc.Height, m_Desc.Depth);
-    CHECK_GL_ERROR_AND_THROW("Failed to allocate storage for the 3D texture");
+    DEV_CHECK_GL_ERROR_AND_THROW("Failed to allocate storage for the 3D texture");
     // When target is GL_TEXTURE_3D, calling glTexStorage3D is equivalent to the following pseudo-code:
     //for (i = 0; i < levels; i++)
     //{
@@ -186,7 +186,7 @@ void Texture3D_GL::UpdateData(GLContextState&          ContextState,
                     // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexSubImage3D.xhtml
                     SubresData.pSrcBuffer != nullptr ? reinterpret_cast<void*>(StaticCast<size_t>(SubresData.SrcOffset)) : SubresData.pData);
 
-    CHECK_GL_ERROR("Failed to update subimage data");
+    DEV_CHECK_GL_ERROR("Failed to update subimage data");
 
     if (UnpackBuffer != 0)
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -194,17 +194,10 @@ void Texture3D_GL::UpdateData(GLContextState&          ContextState,
     ContextState.BindTexture(-1, m_BindTarget, GLObjectWrappers::GLTextureObj::Null());
 }
 
-void Texture3D_GL::AttachToFramebuffer(const TextureViewDesc& ViewDesc, GLenum AttachmentPoint)
+void Texture3D_GL::AttachToFramebuffer(const TextureViewDesc& ViewDesc, GLenum AttachmentPoint, FRAMEBUFFER_TARGET_FLAGS Targets)
 {
     auto NumDepthSlicesInMip = m_Desc.Depth >> ViewDesc.MostDetailedMip;
-    if (ViewDesc.NumDepthSlices == NumDepthSlicesInMip)
-    {
-        glFramebufferTexture(GL_DRAW_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip);
-        CHECK_GL_ERROR("Failed to attach texture 3D to draw framebuffer");
-        glFramebufferTexture(GL_READ_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip);
-        CHECK_GL_ERROR("Failed to attach texture 3D to read framebuffer");
-    }
-    else if (ViewDesc.NumDepthSlices == 1)
+    if (ViewDesc.NumDepthSlices == 1)
     {
         // For glFramebufferTexture3D(), if texture name is not zero, then texture target must be GL_TEXTURE_3D
         //glFramebufferTexture3D( GL_DRAW_FRAMEBUFFER, AttachmentPoint, m_BindTarget, m_GlTexture, ViewDesc.MostDetailedMip, ViewDesc.FirstDepthSlice );
@@ -212,15 +205,52 @@ void Texture3D_GL::AttachToFramebuffer(const TextureViewDesc& ViewDesc, GLenum A
 
         // On Android (at least on Intel HW), glFramebufferTexture3D() runs without errors, but the
         // FBO turns out to be incomplete. glFramebufferTextureLayer() seems to work fine.
-        glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip, ViewDesc.FirstDepthSlice);
-        CHECK_GL_ERROR("Failed to attach texture 3D to draw framebuffer");
-        glFramebufferTextureLayer(GL_READ_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip, ViewDesc.FirstDepthSlice);
-        CHECK_GL_ERROR("Failed to attach texture 3D to read framebuffer");
+        if (Targets & FRAMEBUFFER_TARGET_FLAG_DRAW)
+        {
+            VERIFY_EXPR(ViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET || ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL);
+            glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip, ViewDesc.FirstDepthSlice);
+            DEV_CHECK_GL_ERROR("Failed to attach texture 3D to draw framebuffer");
+        }
+        if (Targets & FRAMEBUFFER_TARGET_FLAG_READ)
+        {
+            glFramebufferTextureLayer(GL_READ_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip, ViewDesc.FirstDepthSlice);
+            DEV_CHECK_GL_ERROR("Failed to attach texture 3D to read framebuffer");
+        }
+    }
+    else if (ViewDesc.NumDepthSlices == NumDepthSlicesInMip)
+    {
+        if (Targets & FRAMEBUFFER_TARGET_FLAG_DRAW)
+        {
+            VERIFY_EXPR(ViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET || ViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL);
+            glFramebufferTexture(GL_DRAW_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip);
+            DEV_CHECK_GL_ERROR("Failed to attach texture 3D to draw framebuffer");
+        }
+        if (Targets & FRAMEBUFFER_TARGET_FLAG_READ)
+        {
+            glFramebufferTexture(GL_READ_FRAMEBUFFER, AttachmentPoint, m_GlTexture, ViewDesc.MostDetailedMip);
+            DEV_CHECK_GL_ERROR("Failed to attach texture 3D to read framebuffer");
+        }
     }
     else
     {
         UNEXPECTED("Only one slice or the entire 3D texture can be attached to a framebuffer");
     }
+}
+
+void Texture3D_GL::CopyTexSubimage(GLContextState& GLState, const CopyTexSubimageAttribs& Attribs)
+{
+    GLState.BindTexture(-1, GetBindTarget(), GetGLHandle());
+
+    glCopyTexSubImage3D(GetBindTarget(),
+                        Attribs.DstMip,
+                        Attribs.DstX,
+                        Attribs.DstY,
+                        Attribs.DstZ,
+                        Attribs.SrcBox.MinX,
+                        Attribs.SrcBox.MinY,
+                        Attribs.SrcBox.Width(),
+                        Attribs.SrcBox.Height());
+    DEV_CHECK_GL_ERROR("Failed to copy subimage data to texture 3D");
 }
 
 } // namespace Diligent

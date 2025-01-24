@@ -23,6 +23,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -203,10 +204,18 @@ namespace Urho3DNet
         /// Return float data.
         public float[] Data => new[] {M00, M01, M10, M11};
 
-        /// Return as string.
+        /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{M00} {M01} {M10} {M11}";
+            return string.Format(CultureInfo.InvariantCulture, "{0} {1} {2} {3}", M00, M01, M10, M11);
+        }
+
+        /// <summary>
+        /// Converts the string representation of a Matrix2 into value.
+        /// </summary>
+        public static Matrix2 Parse(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? default : Urho3D.ToMatrix2(value);
         }
 
         public float M00;

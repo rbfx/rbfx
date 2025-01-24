@@ -26,6 +26,7 @@
 #include "../Project/Project.h"
 #include "../Project/ResourceEditorTab.h"
 
+#include <Urho3D/Graphics/CameraOperator.h>
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/Model.h>
 
@@ -65,6 +66,7 @@ private:
     SharedPtr<Model> model_;
     SharedPtr<Node> modelNode_;
     SharedPtr<StaticModel> staticModel_;
+    SharedPtr<CameraOperator> cameraOperator_;
 };
 
 } // namespace Urho3D

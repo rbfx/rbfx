@@ -41,16 +41,7 @@ const auto Hotkey_Rename = EditorHotkey{"ResourceBrowserTab.Rename"}.Press(KEY_F
 const auto Hotkey_RevealInExplorer = EditorHotkey{"ResourceBrowserTab.RevealInExplorer"}.Alt().Shift().Press(KEY_R);
 
 const ea::string contextMenuId = "ResourceBrowserTab_PopupDirectory";
-
-bool IsLeafDirectory(const FileSystemEntry& entry)
-{
-    for (const FileSystemEntry& childEntry : entry.children_)
-    {
-        if (!childEntry.isFile_)
-            return false;
-    }
-    return true;
-}
+const ea::string satelliteDirectoryExtension = ".d";
 
 ea::optional<ea::string> TryAdjustPathOnRename(const ea::string& path, const ea::string& oldResourceName, const ea::string& newResourceName)
 {
@@ -183,6 +174,19 @@ const FileSystemEntry* ResourceBrowserTab::FindLeftPanelEntry(const ea::string& 
     return entry;
 }
 
+ResourceBrowserTab::CachedEntryData& ResourceBrowserTab::GetCachedEntryData(const FileSystemEntry& entry) const
+{
+    const auto iter = cachedEntryData_.find(&entry);
+    if (iter != cachedEntryData_.end())
+        return iter->second;
+
+    CachedEntryData& result = cachedEntryData_[&entry];
+    result.simpleDisplayName_ = Format("{} {}", GetEntryIcon(entry, false), entry.localName_);
+    result.compositeDisplayName_ = Format("{} {}", GetEntryIcon(entry, true), entry.localName_);
+    result.isFileNameIgnored_ = GetProject()->IsFileNameIgnored(entry.localName_);
+    return result;
+}
+
 ResourceBrowserTab::~ResourceBrowserTab()
 {
 }
@@ -230,6 +234,12 @@ void ResourceBrowserTab::RevealInExplorerSelected()
 {
     if (const FileSystemEntry* entry = GetSelectedEntryForCursor())
         RevealInExplorer(entry->absolutePath_);
+}
+
+void ResourceBrowserTab::OpenSelected()
+{
+    if (const FileSystemEntry* entry = GetSelectedEntryForCursor())
+        OpenEntryInEditor(*entry);
 }
 
 void ResourceBrowserTab::WriteIniSettings(ImGuiTextBuffer& output)
@@ -343,7 +353,7 @@ void ResourceBrowserTab::RenderDialogs()
 void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const ea::string& displayedName)
 {
     const auto project = GetProject();
-    if (project->IsFileNameIgnored(displayedName))
+    if (IsFileNameIgnored(entry, project, displayedName))
         return;
 
     const IdScopeGuard guard(displayedName.c_str());
@@ -398,7 +408,7 @@ void ResourceBrowserTab::RenderDirectoryTree(const FileSystemEntry& entry, const
     {
         for (const FileSystemEntry& childEntry : entry.children_)
         {
-            if (!childEntry.isFile_)
+            if (IsNormalDirectory(childEntry))
                 RenderDirectoryTree(childEntry, childEntry.localName_);
         }
         ui::TreePop();
@@ -431,6 +441,12 @@ void ResourceBrowserTab::RenderEntryContextMenuItems(const FileSystemEntry& entr
     if (needSeparator)
         ui::Separator();
     needSeparator = false;
+
+    if (ui::MenuItem("Open"))
+    {
+        if (!entry.resourceName_.empty())
+            OpenEntryInEditor(entry);
+    }
 
     if (ui::MenuItem("Reveal in Explorer", GetHotkeyLabel(Hotkey_RevealInExplorer).c_str()))
     {
@@ -561,31 +577,32 @@ void ResourceBrowserTab::RenderDirectoryUp(const FileSystemEntry& entry)
 void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entry)
 {
     const auto project = GetProject();
-    if (project->IsFileNameIgnored(entry.localName_))
+    if (IsFileNameIgnored(entry, project, entry.localName_))
         return;
 
     const IdScopeGuard guard(entry.localName_.c_str());
 
     ImGuiContext& g = *GImGui;
-    const ResourceRoot& root = GetRoot(entry);
-    const bool isNormalDirectory = !entry.isFile_;
-    const bool isNormalFile = !entry.isDirectory_;
-    const bool isCompositeFile = root.supportCompositeFiles_ && entry.isFile_ && entry.isDirectory_;
+    const auto [isCompositeFile, satelliteDirectory] = IsCompositeFile(entry);
+    const bool isNormalDirectory = IsNormalDirectory(entry);
+    const bool isNormalFile = !entry.isDirectory_ && !isCompositeFile;
     const bool isSelected = IsRightSelected(entry.resourceName_);
+
+    if (!isNormalDirectory && !isNormalFile && !isCompositeFile)
+        return;
 
     // Scroll to selection if requested
     if (right_.scrollToSelection_ && isSelected)
         ui::SetScrollHereY();
 
     // Render the element itself
-    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
-        | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanFullWidth;
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanFullWidth;
     if (isSelected)
         flags |= ImGuiTreeNodeFlags_Selected;
-    flags |= isCompositeFile ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_Leaf;
+    if (!isCompositeFile)
+        flags |= ImGuiTreeNodeFlags_Leaf;
 
-    const ea::string name = Format("{} {}", GetEntryIcon(entry), entry.localName_);
-    const bool isOpen = ui::TreeNodeEx(name.c_str(), flags);
+    const bool isOpen = ui::TreeNodeEx(GetDisplayName(entry, isCompositeFile), flags);
     const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
     const bool toggleSelection = ui::IsKeyDown(KEY_LCTRL) || ui::IsKeyDown(KEY_RCTRL);
 
@@ -599,7 +616,7 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
             SelectLeftPanel(entry.resourceName_);
             ScrollToSelection();
         }
-        else if (isNormalFile)
+        else if (isNormalFile || isCompositeFile)
         {
             ChangeRightPanelSelection(entry.resourceName_, toggleSelection);
             OpenEntryInEditor(entry);
@@ -647,7 +664,10 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     if (isOpen)
     {
         if (isCompositeFile)
-            RenderCompositeFile(entry);
+        {
+            const FileSystemEntry* entries[] = {&entry, satelliteDirectory};
+            RenderCompositeFile(entries);
+        }
         ui::TreePop();
     }
 
@@ -658,29 +678,38 @@ void ResourceBrowserTab::RenderDirectoryContentEntry(const FileSystemEntry& entr
     RenderEntryContextMenu(entry);
 }
 
-void ResourceBrowserTab::RenderCompositeFile(const FileSystemEntry& entry)
+void ResourceBrowserTab::RenderCompositeFile(ea::span<const FileSystemEntry*> entries)
 {
     tempEntryList_.clear();
-    entry.ForEach([&](const FileSystemEntry& childEntry)
+    for (const FileSystemEntry* entry : entries)
     {
-        if (&childEntry != &entry && childEntry.isFile_)
-            tempEntryList_.push_back(&childEntry);
-    });
+        if (!entry || !entry->isDirectory_)
+            continue;
 
-    const auto compare = [](const FileSystemEntry* lhs, const FileSystemEntry* rhs)
-    {
-        return FileSystemEntry::CompareFilesFirst(*lhs, *rhs);
+        entry->ForEach([&](const FileSystemEntry& childEntry)
+        {
+            if (&childEntry != entry && childEntry.isFile_)
+            {
+                const ea::string localResourceName = childEntry.resourceName_.substr(entry->resourceName_.size() + 1);
+                tempEntryList_.push_back(TempEntry{&childEntry, localResourceName});
+            }
+        });
+    }
+
+    const auto compare = [](const TempEntry& lhs, const TempEntry& rhs) //
+    { //
+        return FileSystemEntry::ComparePathFilesFirst(lhs.localName_, rhs.localName_);
     };
     ea::sort(tempEntryList_.begin(), tempEntryList_.end(), compare);
 
-    for (const FileSystemEntry* childEntry : tempEntryList_)
-        RenderCompositeFileEntry(*childEntry, entry);
+    for (const TempEntry& item : tempEntryList_)
+        RenderCompositeFileEntry(*item.entry_, item.localName_);
 }
 
-void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, const FileSystemEntry& ownerEntry)
+void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, const ea::string& localResourceName)
 {
     const auto project = GetProject();
-    if (project->IsFileNameIgnored(entry.localName_))
+    if (IsFileNameIgnored(entry, project, localResourceName))
         return;
 
     const IdScopeGuard guard(entry.resourceName_.c_str());
@@ -691,8 +720,8 @@ void ResourceBrowserTab::RenderCompositeFileEntry(const FileSystemEntry& entry, 
     if (IsRightSelected(entry.resourceName_))
         flags |= ImGuiTreeNodeFlags_Selected;
 
-    const ea::string localResourceName = entry.resourceName_.substr(ownerEntry.resourceName_.size() + 1);
-    const ea::string name = Format("{} {}", GetEntryIcon(entry), localResourceName);
+    // TODO: Cache this string
+    const ea::string name = Format("{} {}", GetEntryIcon(entry, false), localResourceName);
 
     const bool isOpen = ui::TreeNodeEx(name.c_str(), flags);
     const bool isContextMenuOpen = ui::IsItemClicked(MOUSEB_RIGHT);
@@ -928,7 +957,12 @@ SharedPtr<ResourceDragDropPayload> ResourceBrowserTab::CreatePayloadFromRightSel
     {
         const FileSystemEntry* entry = GetEntry({left_.selectedRoot_, resourcePath});
         if (entry)
+        {
             AddEntryToPayload(*payload, *entry);
+            const auto [_, satelliteDirectory] = IsCompositeFile(*entry);
+            if (satelliteDirectory && !IsEntryFromCache(*satelliteDirectory))
+                AddEntryToPayload(*payload, *satelliteDirectory);
+        }
     }
 
     // Last selected resource is the first in the payload
@@ -978,14 +1012,28 @@ void ResourceBrowserTab::DropPayloadToFolder(const FileSystemEntry& entry)
     }
 }
 
-ea::string ResourceBrowserTab::GetEntryIcon(const FileSystemEntry& entry) const
+const char* ResourceBrowserTab::GetDisplayName(const FileSystemEntry& entry, bool isCompositeFile) const
 {
-    if (!entry.isFile_)
+    CachedEntryData& cachedData = GetCachedEntryData(entry);
+    return isCompositeFile ? cachedData.compositeDisplayName_.c_str() : cachedData.simpleDisplayName_.c_str();
+}
+
+bool ResourceBrowserTab::IsFileNameIgnored(const FileSystemEntry& entry, const Project* project, const ea::string& name) const
+{
+    CachedEntryData& cachedData = GetCachedEntryData(entry);
+    return cachedData.isFileNameIgnored_;
+}
+
+const char* ResourceBrowserTab::GetEntryIcon(const FileSystemEntry& entry, bool isCompositeFile) const
+{
+    if (isCompositeFile)
+        return ICON_FA_FILE_ZIPPER;
+    else if (!entry.isFile_)
         return ICON_FA_FOLDER;
     else if (!entry.isDirectory_)
         return ICON_FA_FILE;
     else
-        return ICON_FA_FILE_ZIPPER;
+        return ICON_FA_CIRCLE_QUESTION;
 }
 
 unsigned ResourceBrowserTab::GetRootIndex(const FileSystemEntry& entry) const
@@ -1179,6 +1227,49 @@ ea::optional<unsigned> ResourceBrowserTab::GetRootIndex(const ea::string& fileNa
     return ea::nullopt;
 }
 
+bool ResourceBrowserTab::IsNormalDirectory(const FileSystemEntry& entry) const
+{
+    if (entry.isFile_)
+        return false;
+    if (entry.parent_ && entry.resourceName_.ends_with(satelliteDirectoryExtension))
+    {
+        const ea::string primaryFileName =
+            entry.localName_.substr(0, entry.localName_.size() - satelliteDirectoryExtension.size());
+        const FileSystemEntry* primaryFileEntry = entry.parent_->FindChild(primaryFileName);
+        if (primaryFileEntry && primaryFileEntry->isFile_)
+            return false;
+    }
+    return true;
+}
+
+bool ResourceBrowserTab::IsLeafDirectory(const FileSystemEntry& entry) const
+{
+    for (const FileSystemEntry& childEntry : entry.children_)
+    {
+        if (IsNormalDirectory(childEntry))
+            return false;
+    }
+    return true;
+}
+
+ea::pair<bool, const FileSystemEntry*> ResourceBrowserTab::IsCompositeFile(const FileSystemEntry& entry) const
+{
+    const ResourceRoot& root = GetRoot(entry);
+    if (!root.supportCompositeFiles_ || !entry.isFile_)
+        return {false, nullptr};
+
+    const FileSystemEntry* satelliteDirectoryEntry = nullptr;
+    if (entry.parent_)
+    {
+        const FileSystemEntry* otherEntry = entry.parent_->FindChild(entry.localName_ + satelliteDirectoryExtension);
+        if (otherEntry && otherEntry->isDirectory_)
+            satelliteDirectoryEntry = otherEntry;
+    }
+
+    const bool isCompositeFile = satelliteDirectoryEntry || entry.isDirectory_;
+    return {isCompositeFile, satelliteDirectoryEntry};
+}
+
 void ResourceBrowserTab::BeginEntryDelete(const FileSystemEntry& entry)
 {
     delete_.entryRefs_ = {GetReference(entry)};
@@ -1220,6 +1311,7 @@ void ResourceBrowserTab::RefreshContents()
 {
     ScrollToSelection();
     waitingForUpdate_ = false;
+    cachedEntryData_.clear();
 }
 
 void ResourceBrowserTab::RevealInExplorer(const ea::string& path)
@@ -1233,6 +1325,10 @@ void ResourceBrowserTab::RenameEntry(const FileSystemEntry& entry, const ea::str
     const ea::string newFileName = GetPath(entry.absolutePath_) + newName;
     const ea::string newResourceName = GetPath(entry.resourceName_) + newName;
     RenameOrMove(entry.absolutePath_, newFileName, entry.resourceName_, newResourceName);
+
+    const auto [_, satelliteDirectory] = IsCompositeFile(entry);
+    if (satelliteDirectory && !IsEntryFromCache(*satelliteDirectory))
+        RenameEntry(*satelliteDirectory, newName + satelliteDirectoryExtension);
 }
 
 void ResourceBrowserTab::RenameOrMove(const ea::string& oldFileName, const ea::string& newFileName,
@@ -1291,6 +1387,10 @@ void ResourceBrowserTab::DeleteEntry(const FileSystemEntry& entry)
         if (isFile)
             CleanupResourceCache(entry.resourceName_);
     }
+
+    const auto [_, satelliteDirectory] = IsCompositeFile(entry);
+    if (satelliteDirectory && !IsEntryFromCache(*satelliteDirectory))
+        DeleteEntry(*satelliteDirectory);
 }
 
 void ResourceBrowserTab::CleanupResourceCache(const ea::string& resourceName)
@@ -1308,6 +1408,12 @@ void ResourceBrowserTab::OpenEntryInEditor(const FileSystemEntry& entry)
     auto project = GetProject();
 
     const auto request = MakeShared<OpenResourceRequest>(context_, entry.resourceName_);
+    request->QueueProcessCallback([=]()
+    {
+        auto fs = GetSubsystem<FileSystem>();
+        fs->SystemOpen(entry.absolutePath_);
+    }, M_MIN_INT);
+
     project->ProcessRequest(request, this);
 }
 

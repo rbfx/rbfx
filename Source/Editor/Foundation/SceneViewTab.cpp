@@ -1086,7 +1086,11 @@ void SceneViewTab::RenderContent()
         debug->SetLineAntiAlias(true);
     }
 
-    activePage->renderer_->SetTextureSize(GetContentSize());
+    const IntVector2 contentSize = GetContentSize();
+    if (contentSize.x_ == 0 || contentSize.y_ == 0)
+        return;
+
+    activePage->renderer_->SetTextureSize(contentSize);
     activePage->renderer_->Update();
 
     const ImVec2 basePosition = ui::GetCursorPos();

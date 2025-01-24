@@ -42,6 +42,7 @@
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/RmlUI/RmlUI.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/SystemUI/Widgets.h>
 #include <Urho3D/Utility/SceneViewerApplication.h>
@@ -233,6 +234,8 @@ Project::Project(
 
     context_->RemoveSubsystem<PluginManager>();
     context_->RegisterSubsystem(pluginManager_);
+
+    pluginManager_->SetQuitApplicationCallback([] {});
 
     SubscribeToEvent(E_ENDPLUGINRELOAD, [this] { pluginReloadEndTime_ = std::chrono::steady_clock::now(); });
 
@@ -515,6 +518,17 @@ void Project::AddTab(SharedPtr<EditorTab> tab)
     sortedTabs_[tab->GetTitle()] = tab;
 }
 
+void Project::SetGlobalHotkeysEnabled(bool enabled)
+{
+    areGlobalHotkeysEnabled_ = enabled;
+
+    auto& io = ui::GetIO();
+    if (enabled)
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    else
+        io.ConfigFlags &= ~ImGuiConfigFlags_NavEnableKeyboard;
+}
+
 ea::string Project::GetRandomTemporaryPath() const
 {
     return Format("{}{}/", tempPath_, GenerateUUID());
@@ -635,19 +649,24 @@ void Project::InitializeResourceCache()
     cache->ReleaseAllResources(true);
 
     const auto vfs = GetSubsystem<VirtualFileSystem>();
+
+    vfs->SetWatching(false);
+
     vfs->UnmountAll();
     vfs->MountAliasRoot();
     vfs->MountRoot();
     vfs->MountDir(oldCacheState_.GetEditorData());
 
     MountPoint* coreDataMountPoint = vfs->MountDir(oldCacheState_.GetCoreData());
-    MountPoint* dataMountPoint = vfs->MountDir(dataPath_);
     MountPoint* cacheMountPoint = vfs->MountDir(cachePath_);
+    MountPoint* dataMountPoint = vfs->MountDir(dataPath_);
     vfs->MountAlias("res:CoreData", coreDataMountPoint);
-    vfs->MountAlias("res:Data", dataMountPoint);
     vfs->MountAlias("res:Cache", cacheMountPoint);
+    vfs->MountAlias("res:Data", dataMountPoint);
 
     vfs->MountDir("conf" , engine->GetAppPreferencesDir());
+
+    vfs->SetWatching(true);
 }
 
 void Project::ResetLayout()
@@ -740,9 +759,9 @@ void Project::Render()
     const ColorScopeGuard guardHighlightColors{{
         {ImGuiCol_Tab,                ImVec4(0.26f, 0.26f + tint, 0.26f, 0.40f)},
         {ImGuiCol_TabHovered,         ImVec4(0.31f, 0.31f + tint, 0.31f, 1.00f)},
-        {ImGuiCol_TabActive,          ImVec4(0.28f, 0.28f + tint, 0.28f, 1.00f)},
-        {ImGuiCol_TabUnfocused,       ImVec4(0.17f, 0.17f + tint, 0.17f, 1.00f)},
-        {ImGuiCol_TabUnfocusedActive, ImVec4(0.26f, 0.26f + tint, 0.26f, 1.00f)},
+        {ImGuiCol_TabSelected,        ImVec4(0.28f, 0.28f + tint, 0.28f, 1.00f)},
+        {ImGuiCol_TabDimmed,          ImVec4(0.17f, 0.17f + tint, 0.17f, 1.00f)},
+        {ImGuiCol_TabDimmedSelected,  ImVec4(0.26f, 0.26f + tint, 0.26f, 1.00f)},
     }, isHighlightEnabled_};
 
     if (!isHeadless_)
@@ -762,6 +781,7 @@ void Project::Render()
     if (!assetManagerInitialized_ && !pluginManager_->IsReloadPending())
     {
         assetManagerInitialized_ = true;
+        toolManager_->Update();
         assetManager_->Initialize(flags_.Test(ProjectFlag::ReadOnly));
     }
 
@@ -774,6 +794,9 @@ void Project::Render()
         initialFocusPending = true;
 
         pluginReloadEndTime_ = ea::nullopt;
+
+        auto rmlUi = GetSubsystem<RmlUI>();
+        rmlUi->ReloadFonts();
 
         OnInitialized(this);
 

@@ -268,7 +268,7 @@
             Module['addRunDependency']('IndexedDB')
 
             FS.mkdir('/IndexedDB');
-            FS.mount(IDBFS, {}, '/IndexedDB');
+            FS.mount(IDBFS, {autoPersist: true}, '/IndexedDB');
             FS.syncfs(true, function (err) {
                 if (err) {
                     console.error(err);

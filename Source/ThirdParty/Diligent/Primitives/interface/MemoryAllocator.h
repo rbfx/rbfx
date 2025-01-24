@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,6 +45,12 @@ struct IMemoryAllocator
 
     /// Releases memory
     virtual void Free(void* Ptr) = 0;
+
+    /// Allocates block of memory with specified alignment
+    virtual void* AllocateAligned(size_t Size, size_t Alignment, const Char* dbgDescription, const char* dbgFileName, const Int32 dbgLineNumber) = 0;
+
+    /// Releases memory allocated with AllocateAligned
+    virtual void FreeAligned(void* Ptr) = 0;
 };
 
 #else
@@ -55,8 +61,10 @@ struct IMemoryAllocator;
 
 struct IMemoryAllocatorMethods
 {
-    void* (*Allocate) (struct IMemoryAllocator*, size_t Size, const Char* dbgDescription, const char* dbgFileName, const Int32 dbgLineNumber);
-    void  (*Free)     (struct IMemoryAllocator*, void* Ptr);
+    void* (*Allocate)       (struct IMemoryAllocator*, size_t Size, const Char* dbgDescription, const char* dbgFileName, const Int32 dbgLineNumber);
+    void  (*Free)           (struct IMemoryAllocator*, void* Ptr);
+    void* (*AllocateAligned)(struct IMemoryAllocator*, size_t Size, size_t Alignment, const Char* dbgDescription, const char* dbgFileName, const Int32 dbgLineNumber)
+    void  (*FreeAligned)    (struct IMemoryAllocator*, void* Ptr);
 };
 
 struct IMemoryAllocatorVtbl
@@ -73,8 +81,10 @@ typedef struct IMemoryAllocator
 
 // clang-format off
 
-#    define IMemoryAllocator_Allocate(This, ...) CALL_IFACE_METHOD(MemoryAllocator, Allocate, This, __VA_ARGS__)
-#    define IMemoryAllocator_Free(This, ...)     CALL_IFACE_METHOD(MemoryAllocator, Free,     This, __VA_ARGS__)
+#    define IMemoryAllocator_Allocate(This, ...)        CALL_IFACE_METHOD(MemoryAllocator, Allocate,        This, __VA_ARGS__)
+#    define IMemoryAllocator_Free(This, ...)            CALL_IFACE_METHOD(MemoryAllocator, Free,            This, __VA_ARGS__)
+#    define IMemoryAllocator_AllocateAligned(This, ...) CALL_IFACE_METHOD(MemoryAllocator, AllocateAligned, This, __VA_ARGS__)
+#    define IMemoryAllocator_FreeAligned(This, ...)     CALL_IFACE_METHOD(MemoryAllocator, FreeAligned,     This, __VA_ARGS__)
 
 #endif
 

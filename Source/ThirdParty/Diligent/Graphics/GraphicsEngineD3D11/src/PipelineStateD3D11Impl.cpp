@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,6 +39,7 @@
 #include "RenderDeviceD3D11Impl.hpp"
 #include "ShaderResourceBindingD3D11Impl.hpp"
 #include "RenderPassD3D11Impl.hpp"
+#include "DataBlobImpl.hpp"
 
 #include "EngineMemory.h"
 #include "DXBCUtils.hpp"
@@ -120,9 +121,9 @@ void PipelineStateD3D11Impl::RemapOrVerifyShaderResources(const TShaderStages&  
     // Verify that pipeline layout is compatible with shader resources and remap resource bindings.
     for (size_t s = 0; s < Shaders.size(); ++s)
     {
-        auto* const pShader    = Shaders[s];
-        auto const  ShaderType = pShader->GetDesc().ShaderType;
-        auto* const pBytecode  = Shaders[s]->GetD3DBytecode();
+        auto* const      pShader    = Shaders[s];
+        auto const       ShaderType = pShader->GetDesc().ShaderType;
+        const IDataBlob* pBytecode  = Shaders[s]->GetD3DBytecode();
 
         ResourceBinding::TMap ResourceMap;
         for (Uint32 sign = 0; sign < SignatureCount; ++sign)
@@ -140,11 +141,8 @@ void PipelineStateD3D11Impl::RemapOrVerifyShaderResources(const TShaderStages&  
 
         if (HandleRemappedBytecodeFn)
         {
-            CComPtr<ID3DBlob> pPatchedBytecode;
-            D3DCreateBlob(pBytecode->GetBufferSize(), &pPatchedBytecode);
-            memcpy(pPatchedBytecode->GetBufferPointer(), pBytecode->GetBufferPointer(), pBytecode->GetBufferSize());
-
-            if (!DXBCUtils::RemapResourceBindings(ResourceMap, pPatchedBytecode->GetBufferPointer(), pPatchedBytecode->GetBufferSize()))
+            RefCntAutoPtr<IDataBlob> pPatchedBytecode = DataBlobImpl::MakeCopy(pBytecode);
+            if (!DXBCUtils::RemapResourceBindings(ResourceMap, pPatchedBytecode->GetDataPtr(), pPatchedBytecode->GetSize()))
                 LOG_ERROR_AND_THROW("Failed to remap resource bindings in shader '", pShader->GetDesc().Name, "'.");
 
             HandleRemappedBytecodeFn(s, pShader, pPatchedBytecode);
@@ -160,7 +158,7 @@ void PipelineStateD3D11Impl::RemapOrVerifyShaderResources(const TShaderStages&  
 
 void PipelineStateD3D11Impl::InitResourceLayouts(const PipelineStateCreateInfo&       CreateInfo,
                                                  const std::vector<ShaderD3D11Impl*>& Shaders,
-                                                 CComPtr<ID3DBlob>&                   pVSByteCode)
+                                                 RefCntAutoPtr<IDataBlob>&            pVSByteCode)
 {
     const auto InternalFlags = GetInternalCreateFlags(CreateInfo);
     if (m_UsingImplicitSignature && (InternalFlags & PSO_CREATE_INTERNAL_FLAG_IMPLICIT_SIGNATURE0) == 0)
@@ -174,7 +172,7 @@ void PipelineStateD3D11Impl::InitResourceLayouts(const PipelineStateCreateInfo& 
     if (m_Desc.IsAnyGraphicsPipeline())
     {
         // In Direct3D11, UAVs use the same register space as render targets
-        ResCounters[D3D11_RESOURCE_RANGE_UAV][PSInd] = GetGraphicsPipelineDesc().NumRenderTargets;
+        ResCounters[D3D11_RESOURCE_RANGE_UAV][PSInd] = m_pGraphicsPipelineData->Desc.NumRenderTargets;
     }
 
     for (Uint32 sign = 0; sign < m_SignatureCount; ++sign)
@@ -213,7 +211,7 @@ void PipelineStateD3D11Impl::InitResourceLayouts(const PipelineStateCreateInfo& 
     }
 #endif
 
-    const auto HandleRemappedBytecode = [this, &pVSByteCode](size_t ShaderIdx, ShaderD3D11Impl* pShader, ID3DBlob* pPatchedBytecode) //
+    const auto HandleRemappedBytecode = [this, &pVSByteCode](size_t ShaderIdx, ShaderD3D11Impl* pShader, IDataBlob* pPatchedBytecode) //
     {
         m_ppd3d11Shaders[ShaderIdx] = pShader->GetD3D11Shader(pPatchedBytecode);
         VERIFY_EXPR(m_ppd3d11Shaders[ShaderIdx]); // GetD3D11Shader() throws an exception in case of an error
@@ -257,17 +255,19 @@ void PipelineStateD3D11Impl::InitResourceLayouts(const PipelineStateCreateInfo& 
             VERIFY_EXPR(m_ppd3d11Shaders[s]);
 
             if (pShader->GetDesc().ShaderType == SHADER_TYPE_VERTEX)
+            {
                 pVSByteCode = pShader->GetD3DBytecode();
+            }
         }
     }
 }
 
 template <typename PSOCreateInfoType>
-void PipelineStateD3D11Impl::InitInternalObjects(const PSOCreateInfoType& CreateInfo,
-                                                 CComPtr<ID3DBlob>&       pVSByteCode)
+void PipelineStateD3D11Impl::InitInternalObjects(const PSOCreateInfoType&  CreateInfo,
+                                                 RefCntAutoPtr<IDataBlob>& pVSByteCode)
 {
     std::vector<ShaderD3D11Impl*> Shaders;
-    ExtractShaders<ShaderD3D11Impl>(CreateInfo, Shaders);
+    ExtractShaders<ShaderD3D11Impl>(CreateInfo, Shaders, /*WaitUntilShadersReady = */ true);
 
     m_NumShaders = static_cast<Uint8>(Shaders.size());
     for (Uint32 s = 0; s < m_NumShaders; ++s)
@@ -283,66 +283,75 @@ void PipelineStateD3D11Impl::InitInternalObjects(const PSOCreateInfoType& Create
     ReserveSpaceForPipelineDesc(CreateInfo, MemPool);
     MemPool.AddSpace<D3D11ShaderAutoPtrType>(m_NumShaders);
 
-    const auto SignCount = GetResourceSignatureCount(); // Must be called after ReserveSpaceForPipelineDesc()
-    MemPool.AddSpace<D3D11ShaderResourceCounters>(SignCount);
+    // m_SignatureCount is initialized by ReserveSpaceForPipelineDesc()
+    MemPool.AddSpace<D3D11ShaderResourceCounters>(m_SignatureCount);
 
     MemPool.Reserve();
 
     InitializePipelineDesc(CreateInfo, MemPool);
     m_ppd3d11Shaders = MemPool.ConstructArray<D3D11ShaderAutoPtrType>(m_NumShaders);
-    m_BaseBindings   = MemPool.ConstructArray<D3D11ShaderResourceCounters>(SignCount);
+    m_BaseBindings   = MemPool.ConstructArray<D3D11ShaderResourceCounters>(m_SignatureCount);
 
     InitResourceLayouts(CreateInfo, Shaders, pVSByteCode);
 }
 
+void PipelineStateD3D11Impl::InitializePipeline(const GraphicsPipelineStateCreateInfo& CreateInfo)
+{
+    RefCntAutoPtr<IDataBlob> pVSByteCode;
+    InitInternalObjects(CreateInfo, pVSByteCode);
+
+    if (GetD3D11VertexShader() == nullptr)
+        LOG_ERROR_AND_THROW("Vertex shader is null");
+
+    const GraphicsPipelineDesc& GraphicsPipeline = m_pGraphicsPipelineData->Desc;
+    ID3D11Device* const         pDeviceD3D11     = m_pDevice->GetD3D11Device();
+
+    D3D11_BLEND_DESC D3D11BSDesc = {};
+    BlendStateDesc_To_D3D11_BLEND_DESC(GraphicsPipeline.BlendDesc, D3D11BSDesc);
+    CHECK_D3D_RESULT_THROW(pDeviceD3D11->CreateBlendState(&D3D11BSDesc, &m_pd3d11BlendState),
+                           "Failed to create D3D11 blend state object");
+
+    D3D11_RASTERIZER_DESC D3D11RSDesc = {};
+    RasterizerStateDesc_To_D3D11_RASTERIZER_DESC(GraphicsPipeline.RasterizerDesc, D3D11RSDesc);
+    CHECK_D3D_RESULT_THROW(pDeviceD3D11->CreateRasterizerState(&D3D11RSDesc, &m_pd3d11RasterizerState),
+                           "Failed to create D3D11 rasterizer state");
+
+    D3D11_DEPTH_STENCIL_DESC D3D11DSSDesc = {};
+    DepthStencilStateDesc_To_D3D11_DEPTH_STENCIL_DESC(GraphicsPipeline.DepthStencilDesc, D3D11DSSDesc);
+    CHECK_D3D_RESULT_THROW(pDeviceD3D11->CreateDepthStencilState(&D3D11DSSDesc, &m_pd3d11DepthStencilState),
+                           "Failed to create D3D11 depth stencil state");
+
+    // Create input layout
+    const auto& InputLayout = GraphicsPipeline.InputLayout;
+    if (InputLayout.NumElements > 0)
+    {
+        std::vector<D3D11_INPUT_ELEMENT_DESC, STDAllocatorRawMem<D3D11_INPUT_ELEMENT_DESC>> d311InputElements(STD_ALLOCATOR_RAW_MEM(D3D11_INPUT_ELEMENT_DESC, GetRawAllocator(), "Allocator for vector<D3D11_INPUT_ELEMENT_DESC>"));
+        LayoutElements_To_D3D11_INPUT_ELEMENT_DESCs(InputLayout, d311InputElements);
+
+        CHECK_D3D_RESULT_THROW(pDeviceD3D11->CreateInputLayout(d311InputElements.data(), static_cast<UINT>(d311InputElements.size()), pVSByteCode->GetConstDataPtr(), pVSByteCode->GetSize(), &m_pd3d11InputLayout),
+                               "Failed to create the Direct3D11 input layout");
+    }
+}
+
+void PipelineStateD3D11Impl::InitializePipeline(const ComputePipelineStateCreateInfo& CreateInfo)
+{
+    RefCntAutoPtr<IDataBlob> pVSByteCode;
+    InitInternalObjects(CreateInfo, pVSByteCode);
+    VERIFY(!pVSByteCode, "There must be no VS in a compute pipeline.");
+}
+
+// Used by TPipelineStateBase::Construct()
+inline std::vector<const ShaderD3D11Impl*> GetStageShaders(const ShaderD3D11Impl* Stage)
+{
+    return {Stage};
+}
 
 PipelineStateD3D11Impl::PipelineStateD3D11Impl(IReferenceCounters*                    pRefCounters,
                                                RenderDeviceD3D11Impl*                 pRenderDeviceD3D11,
                                                const GraphicsPipelineStateCreateInfo& CreateInfo) :
     TPipelineStateBase{pRefCounters, pRenderDeviceD3D11, CreateInfo}
 {
-    try
-    {
-        CComPtr<ID3DBlob> pVSByteCode;
-        InitInternalObjects(CreateInfo, pVSByteCode);
-
-        if (GetD3D11VertexShader() == nullptr)
-            LOG_ERROR_AND_THROW("Vertex shader is null");
-
-        const auto& GraphicsPipeline = GetGraphicsPipelineDesc();
-        auto* const pDeviceD3D11     = pRenderDeviceD3D11->GetD3D11Device();
-
-        D3D11_BLEND_DESC D3D11BSDesc = {};
-        BlendStateDesc_To_D3D11_BLEND_DESC(GraphicsPipeline.BlendDesc, D3D11BSDesc);
-        CHECK_D3D_RESULT_THROW(pDeviceD3D11->CreateBlendState(&D3D11BSDesc, &m_pd3d11BlendState),
-                               "Failed to create D3D11 blend state object");
-
-        D3D11_RASTERIZER_DESC D3D11RSDesc = {};
-        RasterizerStateDesc_To_D3D11_RASTERIZER_DESC(GraphicsPipeline.RasterizerDesc, D3D11RSDesc);
-        CHECK_D3D_RESULT_THROW(pDeviceD3D11->CreateRasterizerState(&D3D11RSDesc, &m_pd3d11RasterizerState),
-                               "Failed to create D3D11 rasterizer state");
-
-        D3D11_DEPTH_STENCIL_DESC D3D11DSSDesc = {};
-        DepthStencilStateDesc_To_D3D11_DEPTH_STENCIL_DESC(GraphicsPipeline.DepthStencilDesc, D3D11DSSDesc);
-        CHECK_D3D_RESULT_THROW(pDeviceD3D11->CreateDepthStencilState(&D3D11DSSDesc, &m_pd3d11DepthStencilState),
-                               "Failed to create D3D11 depth stencil state");
-
-        // Create input layout
-        const auto& InputLayout = GraphicsPipeline.InputLayout;
-        if (InputLayout.NumElements > 0)
-        {
-            std::vector<D3D11_INPUT_ELEMENT_DESC, STDAllocatorRawMem<D3D11_INPUT_ELEMENT_DESC>> d311InputElements(STD_ALLOCATOR_RAW_MEM(D3D11_INPUT_ELEMENT_DESC, GetRawAllocator(), "Allocator for vector<D3D11_INPUT_ELEMENT_DESC>"));
-            LayoutElements_To_D3D11_INPUT_ELEMENT_DESCs(InputLayout, d311InputElements);
-
-            CHECK_D3D_RESULT_THROW(pDeviceD3D11->CreateInputLayout(d311InputElements.data(), static_cast<UINT>(d311InputElements.size()), pVSByteCode->GetBufferPointer(), pVSByteCode->GetBufferSize(), &m_pd3d11InputLayout),
-                                   "Failed to create the Direct3D11 input layout");
-        }
-    }
-    catch (...)
-    {
-        Destruct();
-        throw;
-    }
+    Construct<ShaderD3D11Impl>(CreateInfo);
 }
 
 PipelineStateD3D11Impl::PipelineStateD3D11Impl(IReferenceCounters*                   pRefCounters,
@@ -350,21 +359,15 @@ PipelineStateD3D11Impl::PipelineStateD3D11Impl(IReferenceCounters*              
                                                const ComputePipelineStateCreateInfo& CreateInfo) :
     TPipelineStateBase{pRefCounters, pRenderDeviceD3D11, CreateInfo}
 {
-    try
-    {
-        CComPtr<ID3DBlob> pVSByteCode;
-        InitInternalObjects(CreateInfo, pVSByteCode);
-        VERIFY(!pVSByteCode, "There must be no VS in a compute pipeline.");
-    }
-    catch (...)
-    {
-        Destruct();
-        throw;
-    }
+    Construct<ShaderD3D11Impl>(CreateInfo);
 }
 
 PipelineStateD3D11Impl::~PipelineStateD3D11Impl()
 {
+    // Make sure that asynchrous task is complete as it references the pipeline object.
+    // This needs to be done in the final class before the destruction begins.
+    GetStatus(/*WaitForCompletion =*/true);
+
     Destruct();
 }
 

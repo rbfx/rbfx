@@ -195,6 +195,14 @@ void CrowdManager::UpdateAgentVelocity(
         callback(agent, timeStep, desiredVelocity, desiredSpeed);
 }
 
+void CrowdManager::UpdateAgentPosition(CrowdAgent* agent, float timeStep, Vector3& position) const
+{
+    const CrowdAgentHeightCallback& agentCallback = agent->GetHeightCallback();
+    const CrowdAgentHeightCallback& callback = agentCallback ? agentCallback : heightCallback_;
+    if (callback)
+        position.y_ = callback(agent, timeStep, position);
+}
+
 void CrowdManager::SetCrowdTarget(const Vector3& position, Node* node)
 {
     if (!crowd_)
@@ -553,7 +561,7 @@ ea::vector<CrowdAgent*> CrowdManager::GetAgents(Node* node, bool inCrowdFilter) 
     if (!node)
         node = GetScene();
     ea::vector<CrowdAgent*> agents;
-    node->GetComponents<CrowdAgent>(agents, true);
+    node->FindComponents<CrowdAgent>(agents);
     if (inCrowdFilter)
     {
         auto i = agents.begin();
@@ -654,7 +662,7 @@ void CrowdManager::OnSceneSet(Scene* scene)
         // Attempt to auto discover a NavigationMesh component (or its derivative) under the scene node
         if (navigationMeshId_ == 0)
         {
-            auto* navMesh = scene->GetDerivedComponent<NavigationMesh>(true);
+            auto* navMesh = scene->FindComponent<NavigationMesh>(ComponentSearchFlag::SelfOrChildrenRecursive | ComponentSearchFlag::Derived);
             if (navMesh)
                 SetNavigationMesh(navMesh);
             else
@@ -685,6 +693,11 @@ void CrowdManager::Update(float delta)
 const dtCrowdAgent* CrowdManager::GetDetourCrowdAgent(int agent) const
 {
     return crowd_ ? crowd_->getAgent(agent) : nullptr;
+}
+
+dtCrowdAgent* CrowdManager::GetEditableDetourCrowdAgent(int agent)
+{
+    return crowd_ ? crowd_->getEditableAgent(agent) : nullptr;
 }
 
 const dtQueryFilter* CrowdManager::GetDetourQueryFilter(unsigned queryFilterType) const
@@ -733,7 +746,7 @@ void CrowdManager::HandleComponentAdded(StringHash eventType, VariantMap& eventD
     Scene* scene = GetScene();
     if (scene)
     {
-        auto* navMesh = scene->GetDerivedComponent<NavigationMesh>(true);
+        auto* navMesh = scene->FindComponent<NavigationMesh>(ComponentSearchFlag::SelfOrChildrenRecursive | ComponentSearchFlag::Derived);
         if (navMesh)
             SetNavigationMesh(navMesh);
     }

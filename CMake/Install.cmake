@@ -26,10 +26,12 @@ cmake_policy(SET CMP0009 NEW)
 # binary directory we inconditionally install any possible C# artifacts.
 file (GLOB_RECURSE INSTALL_FILES
     RELATIVE ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/*.dll
-    ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/*.exe
-    ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/*.exe.config
-    ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/*.pdb
+    ${CMAKE_BINARY_DIR}/bin/*.dll
+    ${CMAKE_BINARY_DIR}/bin/*.exe
+    ${CMAKE_BINARY_DIR}/bin/*.exe.config
+    ${CMAKE_BINARY_DIR}/bin/*.deps.json
+    ${CMAKE_BINARY_DIR}/bin/*.runtimeconfig.json
+    ${CMAKE_BINARY_DIR}/bin/*.pdb
 )
 
 foreach (file ${INSTALL_FILES})

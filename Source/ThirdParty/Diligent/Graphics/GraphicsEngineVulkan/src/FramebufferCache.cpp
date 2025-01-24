@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -69,6 +69,16 @@ size_t FramebufferCache::FramebufferCacheKey::GetHash() const
     return Hash;
 }
 
+bool FramebufferCache::FramebufferCacheKey::UsesImageView(VkImageView View) const
+{
+    for (Uint32 rt = 0; rt < NumRenderTargets; ++rt)
+    {
+        if (RTVs[rt] == View)
+            return true;
+    }
+    return DSV == View || ShadingRate == View;
+}
+
 VkFramebuffer FramebufferCache::GetFramebuffer(const FramebufferCacheKey& Key, uint32_t width, uint32_t height, uint32_t layers)
 {
     std::lock_guard<std::mutex> Lock{m_Mutex};
@@ -134,16 +144,14 @@ FramebufferCache::~FramebufferCache()
 
 void FramebufferCache::OnDestroyImageView(VkImageView ImgView)
 {
-    // TODO: when a render pass is released, we need to also destroy
-    // all entries in the m_ViewToKeyMap that refer to all keys with
-    // that render pass
-
     std::lock_guard<std::mutex> Lock{m_Mutex};
 
     auto equal_range = m_ViewToKeyMap.equal_range(ImgView);
     for (auto it = equal_range.first; it != equal_range.second; ++it)
     {
-        auto fb_it = m_Cache.find(it->second);
+        const FramebufferCacheKey& Key = it->second;
+
+        auto fb_it = m_Cache.find(Key);
         // Multiple image views may be associated with the same key.
         // The framebuffer is deleted whenever any of the image views is deleted
         if (fb_it != m_Cache.end())
@@ -151,21 +159,32 @@ void FramebufferCache::OnDestroyImageView(VkImageView ImgView)
             m_DeviceVk.SafeReleaseDeviceObject(std::move(fb_it->second), it->second.CommandQueueMask);
             m_Cache.erase(fb_it);
         }
+
+        // Remove all keys from m_RenderPassToKeyMap that use the image view
+        {
+            auto rp_it_range = m_RenderPassToKeyMap.equal_range(Key.Pass);
+            for (auto rp_it = rp_it_range.first; rp_it != rp_it_range.second;)
+            {
+                if (Key.UsesImageView(ImgView))
+                    rp_it = m_RenderPassToKeyMap.erase(rp_it);
+                else
+                    ++rp_it;
+            }
+        }
     }
     m_ViewToKeyMap.erase(equal_range.first, equal_range.second);
 }
 
 void FramebufferCache::OnDestroyRenderPass(VkRenderPass Pass)
 {
-    // TODO: when an image view is released, we need to also destroy
-    // all entries in the m_RenderPassToKeyMap that refer to the keys
-    // with the same image view
     std::lock_guard<std::mutex> Lock{m_Mutex};
 
     auto equal_range = m_RenderPassToKeyMap.equal_range(Pass);
     for (auto it = equal_range.first; it != equal_range.second; ++it)
     {
-        auto fb_it = m_Cache.find(it->second);
+        const FramebufferCacheKey& Key = it->second;
+
+        auto fb_it = m_Cache.find(Key);
         // Multiple image views may be associated with the same key.
         // The framebuffer is deleted whenever any of the image views or render pass is destroyed
         if (fb_it != m_Cache.end())
@@ -173,6 +192,26 @@ void FramebufferCache::OnDestroyRenderPass(VkRenderPass Pass)
             m_DeviceVk.SafeReleaseDeviceObject(std::move(fb_it->second), it->second.CommandQueueMask);
             m_Cache.erase(fb_it);
         }
+
+        // Remove all keys from m_ViewToKeyMap that use the render pass
+        auto PurgeViewToKeyMap = [this, Pass](VkImageView vkView) {
+            if (vkView == VK_NULL_HANDLE)
+                return;
+            auto view_it_range = m_ViewToKeyMap.equal_range(vkView);
+            for (auto view_it = view_it_range.first; view_it != view_it_range.second;)
+            {
+                if (view_it->second.Pass == Pass)
+                    view_it = m_ViewToKeyMap.erase(view_it);
+                else
+                    ++view_it;
+            }
+        };
+        for (Uint32 rt = 0; rt < Key.NumRenderTargets; ++rt)
+        {
+            PurgeViewToKeyMap(Key.RTVs[rt]);
+        }
+        PurgeViewToKeyMap(Key.DSV);
+        PurgeViewToKeyMap(Key.ShadingRate);
     }
     m_RenderPassToKeyMap.erase(equal_range.first, equal_range.second);
 }

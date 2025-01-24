@@ -1,10 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>102_CSharpProject</AssemblyName>
     <OutputType>WinExe</OutputType>
     <RootNamespace>CSharpProject</RootNamespace>
     <LangVersion>9.0</LangVersion>
     <TargetFramework>$(URHO3D_NETFX_RUNTIME)</TargetFramework>
+    <StartupObject>DemoApplication.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="**/*.cs" />

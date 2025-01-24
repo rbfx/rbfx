@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,7 +52,7 @@ SamplerD3D11Impl::SamplerD3D11Impl(IReferenceCounters*    pRefCounters,
             TexAddressModeToD3D11AddressMode(SamplerDesc.AddressV),
             TexAddressModeToD3D11AddressMode(SamplerDesc.AddressW),
             SamplerDesc.MipLODBias,
-            SamplerDesc.MaxAnisotropy,
+            std::min<UINT>(SamplerDesc.MaxAnisotropy, D3D11_DEFAULT_MAX_ANISOTROPY),
             ComparisonFuncToD3D11ComparisonFunc(SamplerDesc.ComparisonFunc),
             {SamplerDesc.BorderColor[0], SamplerDesc.BorderColor[1], SamplerDesc.BorderColor[2], SamplerDesc.BorderColor[3]},
             SamplerDesc.MinLOD,

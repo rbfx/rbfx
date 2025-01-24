@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 // {9FBF582F-3069-41B9-AC05-344D5AF5CE8C}
-static const INTERFACE_ID IID_CommandQueueVk =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_CommandQueueVk =
     {0x9fbf582f, 0x3069, 0x41b9, {0xac, 0x5, 0x34, 0x4d, 0x5a, 0xf5, 0xce, 0x8c}};
 
 #define DILIGENT_INTERFACE_NAME ICommandQueueVk

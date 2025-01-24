@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using Xunit.Abstractions;
 
 namespace Urho3DNet.Tests
@@ -6,7 +7,7 @@ namespace Urho3DNet.Tests
     /// <summary>
     /// Test application.
     /// </summary>
-    public class SimpleHeadlessApplication : Application
+    public partial class SimpleHeadlessApplication : Application
     {
         public SimpleHeadlessApplication(Context context) : base(context)
         {
@@ -45,11 +46,15 @@ namespace Urho3DNet.Tests
             try
             {
                 var helper = TestOutput;
+                var logLevel = (LogLevel)args[E.LogMessage.Level].Int;
+                var message = args[E.LogMessage.Message].String;
                 if (helper != null)
                 {
-                    var logLevel = (LogLevel)args[E.LogMessage.Level].Int;
-                    var message = args[E.LogMessage.Message].String;
                     helper.WriteLine($"{logLevel}: {message}");
+                }
+                else
+                {
+                    Trace.WriteLine($"{logLevel}: {message}");
                 }
             }
             catch (NullReferenceException)

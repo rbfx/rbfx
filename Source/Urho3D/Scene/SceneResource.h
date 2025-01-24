@@ -51,6 +51,7 @@ public:
 
     void SetPrefab(bool value) { isPrefab_ = value; }
 
+    void SetSaveFormatHint(InternalResourceFormat format);
     bool Save(Serializer& dest, InternalResourceFormat format, bool asPrefab = false) const;
     bool SaveFile(const FileIdentifier& fileName, InternalResourceFormat format, bool asPrefab = false) const;
 
@@ -72,6 +73,7 @@ private:
     SharedPtr<Scene> scene_;
 
     ea::optional<InternalResourceFormat> loadFormat_;
+    ea::optional<InternalResourceFormat> saveFormat_;
     bool isPrefab_{};
 
     SharedPtr<BinaryFile> loadBinaryFile_;

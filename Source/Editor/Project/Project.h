@@ -171,7 +171,7 @@ public:
     /// Find first tab of matching type.
     template <class T> T* FindTab() const;
     /// Set whether the global hotkeys are enabled.
-    void SetGlobalHotkeysEnabled(bool enabled) { areGlobalHotkeysEnabled_ = enabled; }
+    void SetGlobalHotkeysEnabled(bool enabled);
     /// Set whether the UI highlight is enabled.
     void SetHighlightEnabled(bool enabled) { isHighlightEnabled_ = enabled; }
     /// Set current launch configuration name.

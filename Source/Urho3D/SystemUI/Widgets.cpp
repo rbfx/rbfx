@@ -43,15 +43,25 @@ namespace Widgets
 namespace
 {
 
-ea::string GetFormatStringForStep(double step)
+unsigned GetFloatNumberOfDigits(ea::span<const float> values, const EditVariantOptions& options)
 {
-    if (step >= 1.0 || step <= 0.0)
-        return "%.0f";
-    else
+    if (options.step_ >= 1.0 || options.step_ <= 0.0)
+        return 0;
+
+    int result = RoundToInt(-std::log10(options.step_));
+    for (float value : values)
     {
-        const auto numDigits = Clamp(RoundToInt(-std::log10(step)), 1, 8);
-        return Format("%.{}f", numDigits);
+        const float absValue = Abs(value);
+        const int numDigits = absValue != 0.0f ? RoundToInt(-std::log10(absValue)) + 1 : 0;
+        result = ea::max(result, numDigits);
     }
+    return Clamp(result, 1, 8);
+}
+
+ea::string GetFloatFormatString(ea::span<const float> values, const EditVariantOptions& options)
+{
+    const unsigned numDigits = GetFloatNumberOfDigits(values, options);
+    return Format("%.{}f", numDigits);
 }
 
 ea::optional<StringHash> GetMatchingType(const ResourceFileDescriptor& desc, StringHash currentType, const StringVector* allowedTypes)
@@ -378,6 +388,87 @@ bool EditResourceRefList(StringHash& type, StringVector& names, const StringVect
         if (ui::IsItemHovered())
             ui::SetTooltip("Add item");
     }
+    else if (names.empty())
+        ui::NewLine();
+
+    return modified;
+}
+
+bool EditBitmask(unsigned& value)
+{
+    bool modified = false;
+
+    static const unsigned groupWidth = 8;
+    static const unsigned groupHeight = 2;
+    static const unsigned numGroups = 2;
+
+    const ImGuiStyle& style = ui::GetStyle();
+    const ImVec2 buttonSize = [&]
+    {
+        const float availableWidth = ui::CalcItemWidth();
+        const float width = Round(availableWidth / ((groupWidth + 2) * numGroups));
+        const float height = Round(GImGui->FontSize * 0.5f + style.ItemSpacing.y);
+        return ImVec2{width, height};
+    }();
+
+    if (ui::Button(ICON_FA_ELLIPSIS_VERTICAL))
+        ui::OpenPopup("##Action");
+    ui::SameLine();
+
+    if (ui::BeginPopup("##Action"))
+    {
+        if (ui::Selectable("Reset all to 0"))
+        {
+            modified = value != 0;
+            value = 0;
+        }
+
+        if (ui::Selectable("Set all to 1"))
+        {
+            modified = value != 0xffffffffu;
+            value = 0xffffffffu;
+        }
+
+        if (ui::Selectable("Invert all"))
+        {
+            modified = true;
+            value = ~value;
+        }
+        ui::EndPopup();
+    }
+
+    const ImVec2 baseCursorPos = ui::GetCursorPos();
+    ui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3.0f);
+    for (unsigned row = 0; row < groupHeight; row++)
+    {
+        for (unsigned col = 0; col < groupWidth * numGroups; col++)
+        {
+            const unsigned groupIndex = col / groupWidth;
+            const unsigned columnInGroup = col % groupWidth;
+
+            const unsigned bitIndex = columnInGroup + groupWidth * (row + groupIndex * groupHeight);
+            const unsigned bitMask = 1u << bitIndex;
+            const bool selected = (value & bitMask) != 0;
+
+            const ImVec4 currentColor = selected ? style.Colors[ImGuiCol_ButtonActive] : style.Colors[ImGuiCol_Button];
+            const ColorScopeGuard guardColor{
+                {ea::make_pair(ImGuiCol_Button, currentColor), ea::make_pair(ImGuiCol_ButtonActive, currentColor)}};
+            const IdScopeGuard guardId{bitIndex};
+
+            if (ui::Button("", buttonSize))
+            {
+                modified = true;
+                value ^= bitMask;
+            }
+            if (ui::IsItemHovered())
+                ui::SetTooltip("Bit %d", bitIndex);
+            ui::SameLine(0, style.PointSize + (columnInGroup == groupWidth - 1 ? buttonSize.x : 0));
+        }
+        ui::NewLine();
+        if (row != groupHeight - 1)
+            ui::SetCursorPos({baseCursorPos.x, baseCursorPos.y + buttonSize.y + style.PointSize});
+    }
+    ui::PopStyleVar();
 
     return modified;
 }
@@ -569,7 +660,7 @@ bool EditStringVector(StringVector& value, bool resizable)
     return modified;
 }
 
-bool EditStringVariantMap(StringVariantMap& value, bool resizable, bool dynamicTypes)
+bool EditStringVariantMap(StringVariantMap& value, bool resizable, bool dynamicTypes, bool dynamicMetadata)
 {
     bool modified = false;
     ea::optional<ea::string> pendingRemove;
@@ -579,6 +670,9 @@ bool EditStringVariantMap(StringVariantMap& value, bool resizable, bool dynamicT
 
     for (const auto& key : sortedKeys)
     {
+        if (dynamicMetadata && key.ends_with("@"))
+            continue;
+
         const IdScopeGuard guardKey{key.c_str()};
 
         Widgets::ItemLabel(key.c_str());
@@ -601,6 +695,23 @@ bool EditStringVariantMap(StringVariantMap& value, bool resizable, bool dynamicT
                 modified = true;
             }
             ui::SameLine();
+        }
+
+        if (dynamicMetadata)
+        {
+            const ea::string metadataKey = key + "@";
+            const auto iter = value.find(metadataKey);
+            if (iter != value.end())
+            {
+                // Only enum names are currently supported.
+                if (elementType == VAR_INT && iter->second.GetType() == VAR_STRINGVECTOR)
+                {
+                    const auto options = EditVariantOptions{}.Enum(iter->second.GetStringVector());
+                    if (EditVariant(value[key], options))
+                        modified = true;
+                    continue;
+                }
+            }
         }
 
         if (EditVariantValue(value[key]))
@@ -670,7 +781,9 @@ bool EditVariantFloat(Variant& var, const EditVariantOptions& options)
 {
     float value = var.GetFloat();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat("", &value, options.step_, options.min_, options.max_, GetFormatStringForStep(options.step_).c_str()))
+
+    const ea::string format = GetFloatFormatString({&value, 1}, options);
+    if (ui::DragFloat("", &value, options.step_, options.min_, options.max_, format.c_str()))
     {
         var = value;
         return true;
@@ -682,7 +795,9 @@ bool EditVariantVector2(Variant& var, const EditVariantOptions& options)
 {
     Vector2 value = var.GetVector2();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat2("", &value.x_, options.step_, options.min_, options.max_, GetFormatStringForStep(options.step_).c_str()))
+
+    const ea::string format = GetFloatFormatString({value.Data(), 2}, options);
+    if (ui::DragFloat2("", &value.x_, options.step_, options.min_, options.max_, format.c_str()))
     {
         var = value;
         return true;
@@ -706,7 +821,9 @@ bool EditVariantVector3(Variant& var, const EditVariantOptions& options)
 {
     Vector3 value = var.GetVector3();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat3("", &value.x_, options.step_, options.min_, options.max_, GetFormatStringForStep(options.step_).c_str()))
+
+    const ea::string format = GetFloatFormatString({value.Data(), 3}, options);
+    if (ui::DragFloat3("", &value.x_, options.step_, options.min_, options.max_, format.c_str()))
     {
         var = value;
         return true;
@@ -730,7 +847,23 @@ bool EditVariantVector4(Variant& var, const EditVariantOptions& options)
 {
     Vector4 value = var.GetVector4();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::DragFloat4("", &value.x_, options.step_, options.min_, options.max_, GetFormatStringForStep(options.step_).c_str()))
+
+    const ea::string format = GetFloatFormatString({value.Data(), 4}, options);
+    if (ui::DragFloat4("", &value.x_, options.step_, options.min_, options.max_, format.c_str()))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariantRect(Variant& var, const EditVariantOptions& options)
+{
+    Rect value = var.GetRect();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+
+    const ea::string format = GetFloatFormatString({value.Data(), 4}, options);
+    if (ui::DragFloat4("", &value.min_.x_, options.step_, options.min_, options.max_, format.c_str()))
     {
         var = value;
         return true;
@@ -787,7 +920,10 @@ bool EditVariantString(Variant& var, const EditVariantOptions& options)
 {
     ea::string value = var.GetString();
     ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
-    if (ui::InputText("", &value, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo))
+    const bool isCommitted = ui::InputText("", &value,
+        ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo | ImGuiInputTextFlags_CallbackAlways);
+    const bool isDeactivated = ui::IsItemDeactivatedAfterEdit();
+    if (isCommitted || isDeactivated)
     {
         var = value;
         return true;
@@ -902,12 +1038,23 @@ bool EditVariantStringVariantMap(Variant& var, const EditVariantOptions& options
 
     bool modified = false;
     ui::Indent();
-    if (EditStringVariantMap(*value, options.allowResize_, options.allowTypeChange_))
+    if (EditStringVariantMap(*value, options.allowResize_, options.allowTypeChange_, options.dynamicMetadata_))
     {
         modified = true;
     }
     ui::Unindent();
     return modified;
+}
+
+bool EditVariantBitmask(Variant& var, const EditVariantOptions& options)
+{
+    unsigned value = var.GetUInt();
+    if (EditBitmask(value))
+    {
+        var = value;
+        return true;
+    }
+    return false;
 }
 
 bool EditVariant(Variant& var, const EditVariantOptions& options)
@@ -916,14 +1063,22 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
     switch (var.GetType())
     {
     case VAR_NONE:
+        ui::Text("None");
+        return false;
+
     case VAR_PTR:
     case VAR_VOIDPTR:
+        ui::Text("Unsupported: raw pointer");
+        return false;
+
     case VAR_CUSTOM:
-        ui::Text("Unsupported type");
+        ui::Text("Unsupported: custom object");
         return false;
 
     case VAR_INT:
-        if (options.intToString_ && !options.intToString_->empty())
+        if (options.asBitmask_)
+            return EditVariantBitmask(var, options);
+        else if (options.intToString_ && !options.intToString_->empty())
             return EditVariantEnum(var, options);
         else
             return EditVariantInt(var, options);
@@ -985,7 +1140,9 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
     case VAR_STRINGVECTOR:
         return EditVariantStringVector(var, options);
 
-    // case VAR_RECT:
+    case VAR_RECT:
+        return EditVariantRect(var, options);
+
     // case VAR_INTVECTOR3:
     // case VAR_INT64:
     // case VAR_VARIANTCURVE:
@@ -1051,9 +1208,7 @@ bool ImageButton(Texture2D* texture, const ImVec2& size, const ImVec2& uv0, cons
     const ImGuiID id = window->GetID("#image");
     ui::PopID();
 
-    const auto framePaddingFloat = static_cast<float>(framePadding);
-    const ImVec2 padding = (framePadding >= 0) ? ImVec2(framePaddingFloat, framePaddingFloat) : style.FramePadding;
-    return ui::ImageButtonEx(id, ToImTextureID(texture), size, uv0, uv1, padding, bgCol, tintCol);
+    return ui::ImageButtonEx(id, ToImTextureID(texture), size, uv0, uv1, bgCol, tintCol);
 }
 
 }

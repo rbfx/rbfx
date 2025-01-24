@@ -45,12 +45,13 @@ AssetTransformerInput::AssetTransformerInput(const ApplicationFlavor& flavor, co
 {
 }
 
-AssetTransformerInput::AssetTransformerInput(
-    const AssetTransformerInput& other, const ea::string& tempPath, const ea::string& outputFileName)
+AssetTransformerInput::AssetTransformerInput(const AssetTransformerInput& other, const ea::string& tempPath,
+    const ea::string& outputFileName, const ea::string& outputResourceName)
 {
     *this = other;
     tempPath_ = tempPath;
     outputFileName_ = outputFileName;
+    outputResourceName_ = outputResourceName;
 }
 
 void AssetTransformerInput::SerializeInBlock(Archive& archive)
@@ -65,6 +66,7 @@ void AssetTransformerInput::SerializeInBlock(Archive& archive)
 
     SerializeValue(archive, "tempPath", tempPath_);
     SerializeValue(archive, "outputFileName", outputFileName_);
+    SerializeValue(archive, "outputResourceName", outputResourceName_);
 }
 
 AssetTransformerInput AssetTransformerInput::FromBase64(const ea::string& base64)

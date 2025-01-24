@@ -65,7 +65,7 @@ public:
     /// @}
 
 private:
-    bool textureDirty_{true};
+    bool textureDirty_{false};
     bool isActive_{};
     IntVector2 textureSize_;
     SharedPtr<Texture2D> texture_;

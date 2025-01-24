@@ -846,27 +846,31 @@ void Material::ReleaseShaders()
 SharedPtr<Material> Material::Clone(const ea::string& cloneName) const
 {
     SharedPtr<Material> ret(MakeShared<Material>(context_));
-
+    ret->CopyFrom(this);
     ret->SetName(cloneName);
-    ret->techniques_ = techniques_;
-    ret->vertexShaderDefines_ = vertexShaderDefines_;
-    ret->pixelShaderDefines_ = pixelShaderDefines_;
-    ret->shaderParameters_ = shaderParameters_;
-    ret->shaderParameterHash_ = shaderParameterHash_;
-    ret->textures_ = textures_;
-    ret->depthBias_ = depthBias_;
-    ret->alphaToCoverage_ = alphaToCoverage_;
-    ret->lineAntiAlias_ = lineAntiAlias_;
-    ret->occlusion_ = occlusion_;
-    ret->specular_ = specular_;
-    ret->cullMode_ = cullMode_;
-    ret->shadowCullMode_ = shadowCullMode_;
-    ret->fillMode_ = fillMode_;
-    ret->renderOrder_ = renderOrder_;
-    ret->RefreshMemoryUse();
-    ret->RefreshTextureEventSubscriptions();
-
     return ret;
+}
+
+void Material::CopyFrom(const Material* material)
+{
+    this->SetName(material->GetName());
+    techniques_ = material->techniques_;
+    vertexShaderDefines_ = material->vertexShaderDefines_;
+    pixelShaderDefines_ = material->pixelShaderDefines_;
+    shaderParameters_ = material->shaderParameters_;
+    shaderParameterHash_ = material->shaderParameterHash_;
+    textures_ = material->textures_;
+    depthBias_ = material->depthBias_;
+    alphaToCoverage_ = material->alphaToCoverage_;
+    lineAntiAlias_ = material->lineAntiAlias_;
+    occlusion_ = material->occlusion_;
+    specular_ = material->specular_;
+    cullMode_ = material->cullMode_;
+    shadowCullMode_ = material->shadowCullMode_;
+    fillMode_ = material->fillMode_;
+    renderOrder_ = material->renderOrder_;
+    RefreshMemoryUse();
+    RefreshTextureEventSubscriptions();
 }
 
 void Material::SortTechniques()

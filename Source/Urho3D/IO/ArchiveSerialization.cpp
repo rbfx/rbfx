@@ -97,9 +97,7 @@ struct ResourceRefStringCaster
 {
     ea::string ToArchive(Archive& archive, const char* name, const ResourceRef& value) const
     {
-        Context* context = archive.GetContext();
-        const ea::string typeName = context->GetTypeName(value.type_);
-        return Format("{};{}", typeName, value.name_);
+        return value.ToString(archive.GetContext());
     }
 
     ResourceRef FromArchive(Archive& archive, const char* name, const ea::string& value) const
@@ -117,9 +115,7 @@ struct ResourceRefListStringCaster
 {
     ea::string ToArchive(Archive& archive, const char* name, const ResourceRefList& value) const
     {
-        Context* context = archive.GetContext();
-        const ea::string typeName = context->GetTypeName(value.type_);
-        return Format("{};{}", typeName, ea::string::joined(value.names_, ";"));
+        return value.ToString(archive.GetContext());
     }
 
     ResourceRefList FromArchive(Archive& archive, const char* name, const ea::string& value) const

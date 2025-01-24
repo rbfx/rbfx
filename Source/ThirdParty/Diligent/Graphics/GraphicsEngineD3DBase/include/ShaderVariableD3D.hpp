@@ -76,6 +76,9 @@ bool VerifyBufferViewModeD3D(BufferViewImplType* pViewD3D, const D3DShaderResour
                 return false;
             }
             break;
+
+        default:
+            break;
     }
 
     return true;

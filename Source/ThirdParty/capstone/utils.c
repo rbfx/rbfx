@@ -1,5 +1,5 @@
 /* Capstone Disassembly Engine */
-/* By Nguyen Anh Quynh <aquynh@gmail.com>, 2013-2015 */
+/* By Nguyen Anh Quynh <aquynh@gmail.com>, 2013-2019 */
 
 #if defined(CAPSTONE_HAS_OSXKERNEL)
 #include <Availability.h>
@@ -10,62 +10,6 @@
 #include <string.h>
 
 #include "utils.h"
-
-// create a cache for fast id lookup
-static unsigned short *make_id2insn(const insn_map *insns, unsigned int size)
-{
-	// NOTE: assume that the max id is always put at the end of insns array
-	unsigned short max_id = insns[size - 1].id;
-	unsigned short i;
-
-	unsigned short *cache = (unsigned short *)cs_mem_calloc(max_id + 1, sizeof(*cache));
-
-	for (i = 1; i < size; i++)
-		cache[insns[i].id] = i;
-
-	return cache;
-}
-
-// look for @id in @insns, given its size in @max. first time call will update @cache.
-// return 0 if not found
-unsigned short insn_find(const insn_map *insns, unsigned int max, unsigned int id, unsigned short **cache)
-{
-	if (id > insns[max - 1].id)
-		return 0;
-
-	if (*cache == NULL)
-		*cache = make_id2insn(insns, max);
-
-	return (*cache)[id];
-}
-
-int name2id(const name_map* map, int max, const char *name)
-{
-	int i;
-
-	for (i = 0; i < max; i++) {
-		if (!strcmp(map[i].name, name)) {
-			return map[i].id;
-		}
-	}
-
-	// nothing match
-	return -1;
-}
-
-const char *id2name(const name_map* map, int max, const unsigned int id)
-{
-	int i;
-
-	for (i = 0; i < max; i++) {
-		if (map[i].id == id) {
-			return map[i].name;
-		}
-	}
-
-	// nothing match
-	return NULL;
-}
 
 // count number of positive members in a list.
 // NOTE: list must be guaranteed to end in 0
@@ -91,7 +35,7 @@ unsigned int count_positive8(const unsigned char *list)
 
 char *cs_strdup(const char *str)
 {
-	size_t len = strlen(str)+ 1;
+	size_t len = strlen(str) + 1;
 	void *new = cs_mem_malloc(len);
 
 	if (new == NULL)
@@ -137,3 +81,60 @@ bool arr_exist(uint16_t *arr, unsigned char max, unsigned int id)
 	return false;
 }
 
+// binary search for encoding in IndexType array
+// return -1 if not found, or index if found
+unsigned int binsearch_IndexTypeEncoding(const struct IndexType *index, size_t size, uint16_t encoding)
+{
+	// binary searching since the index is sorted in encoding order
+	size_t left, right, m;
+
+	right = size - 1;
+
+	if (encoding < index[0].encoding || encoding > index[right].encoding)
+		// not found
+		return -1;
+
+	left = 0;
+
+	while(left <= right) {
+		m = (left + right) / 2;
+		if (encoding == index[m].encoding) {
+			return m;
+		}
+
+		if (encoding < index[m].encoding)
+			right = m - 1;
+		else
+			left = m + 1;
+	}
+
+	// not found
+	return -1;
+}
+
+/// Reads 4 bytes in the endian order specified in MI->cs->mode.
+uint32_t readBytes32(MCInst *MI, const uint8_t *Bytes)
+{
+	assert(MI && Bytes);
+	uint32_t Insn;
+	if (MODE_IS_BIG_ENDIAN(MI->csh->mode))
+		Insn = (Bytes[3] << 0) | (Bytes[2] << 8) | (Bytes[1] << 16) |
+		       ((uint32_t)Bytes[0] << 24);
+	else
+		Insn = ((uint32_t)Bytes[3] << 24) | (Bytes[2] << 16) |
+		       (Bytes[1] << 8) | (Bytes[0] << 0);
+	return Insn;
+}
+
+/// Reads 2 bytes in the endian order specified in MI->cs->mode.
+uint16_t readBytes16(MCInst *MI, const uint8_t *Bytes)
+{
+	assert(MI && Bytes);
+	uint16_t Insn;
+	if (MODE_IS_BIG_ENDIAN(MI->csh->mode))
+		Insn = (Bytes[0] << 8) | Bytes[1];
+	else
+		Insn = (Bytes[1] << 8) | Bytes[0];
+
+	return Insn;
+}

@@ -125,6 +125,8 @@ public:
     /// Set how the text should rotate in relation to the camera. Default is to not rotate (FC_NONE).
     /// @property
     void SetFaceCameraMode(FaceCameraMode mode);
+    /// Set whether to enable the depth test when rendering the text. Default is true.
+    void SetDepthTest(bool enable);
 
     /// Return font.
     /// @property
@@ -209,6 +211,8 @@ public:
     /// Return how the text rotates in relation to the camera.
     /// @property
     FaceCameraMode GetFaceCameraMode() const { return faceCameraMode_; }
+    /// Return whether the depth test is enabled when rendering the text.
+    bool GetDepthTest() const { return depthTest_; }
 
     /// Set font attribute.
     void SetFontAttr(const ResourceRef& value);
@@ -262,6 +266,8 @@ protected:
     bool fixedScreenSize_;
     /// Snap to pixel flag. Has effect only if fixed screen size is enabled.
     bool snapToPixels_{};
+    /// Whether to enable the depth test when rendering the text.
+    bool depthTest_{true};
     /// Text needs update flag.
     bool textDirty_;
     /// Geometry dirty flag.

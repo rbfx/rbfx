@@ -123,7 +123,19 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %typemap(cstype) void                                           "void"
 
 %typemap(ctype) char *, char *&, char[ANY], char[]   "char *"
-%typemap(imtype) char *, char *&, char[ANY], char[]   "string"
+// rbfx
+#if defined(UWP)
+// UWP does not support UnmanagedType.CustomMarshaler
+%typemap(imtype) char *, char *&, char[ANY], char[] "string"
+#else
+%typemap(imtype,
+  inattributes="[global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]",
+  outattributes="[return: global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]",
+  directorinattributes="[global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]",
+  directoroutattributes="[return: global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.CustomMarshaler, MarshalTypeRef=typeof($imclassname.SWIGUTF8StringMarshaller))]"
+) char *, char *&, char[ANY], char[] "string"
+#endif
+// /rbfx
 %typemap(cstype) char *, char *&, char[ANY], char[]   "string"
 
 /* Non primitive types */
@@ -961,8 +973,8 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 
 /* Set the default csbody typemaps to use internal visibility.
    Use the macros to change to public if using multiple modules. */
-SWIG_CSBODY_PROXY(internal, internal, SWIGTYPE)
-SWIG_CSBODY_TYPEWRAPPER(internal, protected, internal, SWIGTYPE)
+SWIG_CSBODY_PROXY(public, public, SWIGTYPE)
+SWIG_CSBODY_TYPEWRAPPER(public, protected, public, SWIGTYPE)
 
 %typemap(csdispose) SWIGTYPE %{
   ~$csclassname() {
@@ -1082,3 +1094,11 @@ SWIG_CSBODY_TYPEWRAPPER(internal, protected, internal, SWIGTYPE)
     } %}
 */
 
+// rbfx
+%apply void* VOID_INT_PTR { void* }
+void* malloc(int size);
+void free(void* ptr);
+
+%apply void* VOID_INT_PTR { const char* void_ptr_string }
+int strlen(const char* void_ptr_string);
+// /rbfx

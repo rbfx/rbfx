@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,7 +63,7 @@ DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 
 // {DC92711B-A1BE-4319-B2BD-C662D1CC19E4}
-static const INTERFACE_ID IID_DeviceContext =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_DeviceContext =
     {0xdc92711b, 0xa1be, 0x4319, {0xb2, 0xbd, 0xc6, 0x62, 0xd1, 0xcc, 0x19, 0xe4}};
 
 /// Device context description.
@@ -408,8 +408,8 @@ struct DrawIndirectAttribs
     Uint32 DrawCount                DEFAULT_INITIALIZER(1);
 
     /// When DrawCount > 1, the byte stride between successive sets of draw parameters.
-    /// Must be a multiple of 4 and greater than or equal to 16 bytes.
-    Uint32 DrawArgsStride           DEFAULT_INITIALIZER(sizeof(Uint32) * 4);
+    /// Must be a multiple of 4 and greater than or equal to 16 bytes (sizeof(Uint32) * 4).
+    Uint32 DrawArgsStride           DEFAULT_INITIALIZER(16);
 
     /// State transition mode for indirect draw arguments buffer.
     RESOURCE_STATE_TRANSITION_MODE  AttribsBufferStateTransitionMode DEFAULT_INITIALIZER(RESOURCE_STATE_TRANSITION_MODE_NONE);
@@ -486,8 +486,8 @@ struct DrawIndexedIndirectAttribs
     Uint32 DrawCount                DEFAULT_INITIALIZER(1);
 
     /// When DrawCount > 1, the byte stride between successive sets of draw parameters.
-    /// Must be a multiple of 4 and greater than or equal to 20 bytes.
-    Uint32 DrawArgsStride           DEFAULT_INITIALIZER(sizeof(Uint32) * 5);
+    /// Must be a multiple of 4 and greater than or equal to 20 bytes (sizeof(Uint32) * 5).
+    Uint32 DrawArgsStride           DEFAULT_INITIALIZER(20);
 
     /// State transition mode for indirect draw arguments buffer.
     RESOURCE_STATE_TRANSITION_MODE AttribsBufferStateTransitionMode DEFAULT_INITIALIZER(RESOURCE_STATE_TRANSITION_MODE_NONE);
@@ -540,20 +540,43 @@ typedef struct DrawIndexedIndirectAttribs DrawIndexedIndirectAttribs;
 /// This structure is used by IDeviceContext::DrawMesh().
 struct DrawMeshAttribs
 {
-    /// The number of dispatched groups
-    Uint32 ThreadGroupCount DEFAULT_INITIALIZER(1);
+    /// The number of groups dispatched in X direction.
+    Uint32 ThreadGroupCountX DEFAULT_INITIALIZER(1);
+
+    /// The number of groups dispatched in Y direction.
+    Uint32 ThreadGroupCountY DEFAULT_INITIALIZER(1);
+
+    /// The number of groups dispatched in Y direction.
+    Uint32 ThreadGroupCountZ DEFAULT_INITIALIZER(1);
 
     /// Additional flags, see Diligent::DRAW_FLAGS.
-    DRAW_FLAGS Flags        DEFAULT_INITIALIZER(DRAW_FLAG_NONE);
+    DRAW_FLAGS Flags         DEFAULT_INITIALIZER(DRAW_FLAG_NONE);
 
 #if DILIGENT_CPP_INTERFACE
     /// Initializes the structure members with default values.
     constexpr DrawMeshAttribs() noexcept {}
 
-    /// Initializes the structure with user-specified values.
-    constexpr DrawMeshAttribs(Uint32     _ThreadGroupCount,
-                              DRAW_FLAGS _Flags) noexcept :
-        ThreadGroupCount {_ThreadGroupCount},
+    explicit constexpr DrawMeshAttribs(Uint32     _ThreadGroupCountX,
+                                       DRAW_FLAGS _Flags = DRAW_FLAG_NONE) noexcept :
+        ThreadGroupCountX{_ThreadGroupCountX},
+        Flags            {_Flags}
+    {}
+
+    constexpr DrawMeshAttribs(Uint32     _ThreadGroupCountX,
+                              Uint32     _ThreadGroupCountY,
+                              DRAW_FLAGS _Flags = DRAW_FLAG_NONE) noexcept :
+        ThreadGroupCountX{_ThreadGroupCountX},
+        ThreadGroupCountY{_ThreadGroupCountY},
+        Flags            {_Flags}
+    {}
+
+    constexpr DrawMeshAttribs(Uint32     _ThreadGroupCountX,
+                              Uint32     _ThreadGroupCountY,
+                              Uint32     _ThreadGroupCountZ,
+                              DRAW_FLAGS _Flags = DRAW_FLAG_NONE) noexcept :
+        ThreadGroupCountX{_ThreadGroupCountX},
+        ThreadGroupCountY{_ThreadGroupCountY},
+        ThreadGroupCountZ{_ThreadGroupCountZ},
         Flags            {_Flags}
     {}
 #endif
@@ -627,6 +650,117 @@ struct DrawMeshIndirectAttribs
 #endif
 };
 typedef struct DrawMeshIndirectAttribs DrawMeshIndirectAttribs;
+
+
+/// Multi-draw command item.
+struct MultiDrawItem
+{
+    /// The number of vertices to draw.
+    Uint32     NumVertices           DEFAULT_INITIALIZER(0);
+
+    /// LOCATION (or INDEX, but NOT the byte offset) of the first vertex in the
+    /// vertex buffer to start reading vertices from.
+    Uint32     StartVertexLocation   DEFAULT_INITIALIZER(0);
+};
+typedef struct MultiDrawItem MultiDrawItem;
+
+/// MultiDraw command attributes.
+struct MultiDrawAttribs
+{
+    /// The number of draw items to execute.
+    Uint32               DrawCount   DEFAULT_INITIALIZER(0);
+
+    /// A pointer to the array of DrawCount draw command items.
+    const MultiDrawItem* pDrawItems  DEFAULT_INITIALIZER(nullptr);
+
+    /// Additional flags, see Diligent::DRAW_FLAGS.
+    DRAW_FLAGS Flags                 DEFAULT_INITIALIZER(DRAW_FLAG_NONE);
+
+    /// The number of instances to draw. If more than one instance is specified,
+    /// instanced draw call will be performed.
+    Uint32     NumInstances          DEFAULT_INITIALIZER(1);
+
+    /// LOCATION (or INDEX, but NOT the byte offset) in the vertex buffer to start
+    /// reading instance data from.
+    Uint32     FirstInstanceLocation DEFAULT_INITIALIZER(0);
+
+#if DILIGENT_CPP_INTERFACE
+    constexpr MultiDrawAttribs() noexcept {}
+
+    constexpr MultiDrawAttribs(Uint32               _DrawCount,
+                               const MultiDrawItem* _pDrawItems,
+							   DRAW_FLAGS           _Flags,
+							   Uint32               _NumInstances          = 1,
+							   Uint32               _FirstInstanceLocation = 0) noexcept :
+		DrawCount            {_DrawCount            },
+		pDrawItems           {_pDrawItems           },
+		Flags                {_Flags                },
+		NumInstances         {_NumInstances         },
+		FirstInstanceLocation{_FirstInstanceLocation}
+	{}
+#endif
+};
+typedef struct MultiDrawAttribs MultiDrawAttribs;
+
+
+/// Multi-draw indexed command item.
+struct MultiDrawIndexedItem
+{
+    /// The number of indices to draw.
+    Uint32     NumIndices            DEFAULT_INITIALIZER(0);
+
+    /// LOCATION (NOT the byte offset) of the first index in
+    /// the index buffer to start reading indices from.
+    Uint32     FirstIndexLocation    DEFAULT_INITIALIZER(0);
+
+    /// A constant which is added to each index before accessing the vertex buffer.
+    Uint32     BaseVertex            DEFAULT_INITIALIZER(0);
+};
+typedef struct MultiDrawIndexedItem MultiDrawIndexedItem;
+
+/// MultiDraw command attributes.
+struct MultiDrawIndexedAttribs
+{
+    /// The number of draw items to execute.
+    Uint32                      DrawCount  DEFAULT_INITIALIZER(0);
+
+    /// A pointer to the array of DrawCount draw command items.
+    const MultiDrawIndexedItem* pDrawItems DEFAULT_INITIALIZER(nullptr);
+
+    /// The type of elements in the index buffer.
+    /// Allowed values: VT_UINT16 and VT_UINT32.
+    VALUE_TYPE IndexType             DEFAULT_INITIALIZER(VT_UNDEFINED);
+
+    /// Additional flags, see Diligent::DRAW_FLAGS.
+    DRAW_FLAGS Flags                 DEFAULT_INITIALIZER(DRAW_FLAG_NONE);
+
+    /// Number of instances to draw. If more than one instance is specified,
+    /// instanced draw call will be performed.
+    Uint32     NumInstances          DEFAULT_INITIALIZER(1);
+
+    /// LOCATION (or INDEX, but NOT the byte offset) in the vertex
+    /// buffer to start reading instance data from.
+    Uint32     FirstInstanceLocation DEFAULT_INITIALIZER(0);
+
+#if DILIGENT_CPP_INTERFACE
+constexpr MultiDrawIndexedAttribs() noexcept {}
+
+	constexpr MultiDrawIndexedAttribs(Uint32                      _DrawCount,
+									  const MultiDrawIndexedItem* _pDrawItems,
+									  VALUE_TYPE                  _IndexType,
+									  DRAW_FLAGS                  _Flags,
+									  Uint32                      _NumInstances          = 1,
+									  Uint32                      _FirstInstanceLocation = 0) noexcept :
+		DrawCount            {_DrawCount            },
+		pDrawItems           {_pDrawItems           },
+		IndexType            {_IndexType            },
+		Flags                {_Flags                },
+		NumInstances         {_NumInstances         },
+		FirstInstanceLocation{_FirstInstanceLocation}
+	{}
+#endif
+};
+typedef struct MultiDrawIndexedAttribs MultiDrawIndexedAttribs;
 
 
 /// Defines which parts of the depth-stencil buffer to clear.
@@ -852,6 +986,38 @@ struct Viewport
         MaxDepth {_MaxDepth}
     {}
 
+    constexpr Viewport(Uint32  _Width,        Uint32  _Height,
+                       Float32 _MinDepth = 0, Float32 _MaxDepth = 1) noexcept :
+        Width   {static_cast<Float32>(_Width) },
+        Height  {static_cast<Float32>(_Height)},
+        MinDepth{_MinDepth},
+        MaxDepth{_MaxDepth}
+    {}
+
+    constexpr Viewport(Float32 _Width, Float32 _Height) noexcept :
+        Width {_Width },
+        Height{_Height}
+    {}
+
+    explicit constexpr Viewport(const SwapChainDesc& SCDesc) noexcept :
+        Viewport{SCDesc.Width, SCDesc.Height}
+    {}
+
+    constexpr bool operator == (const Viewport& vp) const
+	{
+		return TopLeftX == vp.TopLeftX &&
+			   TopLeftY == vp.TopLeftY &&
+			   Width    == vp.Width    &&
+			   Height   == vp.Height   &&
+			   MinDepth == vp.MinDepth &&
+			   MaxDepth == vp.MaxDepth;
+	}
+
+    constexpr bool operator != (const Viewport& vp) const
+    {
+        return !(*this == vp);
+	}
+
     constexpr Viewport() noexcept {}
 #endif
 };
@@ -887,6 +1053,19 @@ struct Rect
     {
         return right > left && bottom > top;
     }
+
+    constexpr bool operator == (const Rect& rc) const
+	{
+		return left   == rc.left   &&
+			   top    == rc.top    &&
+			   right  == rc.right  &&
+			   bottom == rc.bottom;
+	}
+
+    constexpr bool operator != (const Rect& rc) const
+	{
+		return !(*this == rc);
+	}
 #endif
 };
 typedef struct Rect Rect;
@@ -1267,7 +1446,7 @@ typedef struct BuildBLASAttribs BuildBLASAttribs;
 
 #define DILIGENT_TLAS_INSTANCE_OFFSET_AUTO 0xFFFFFFFFU
 
-static const Uint32 TLAS_INSTANCE_OFFSET_AUTO = DILIGENT_TLAS_INSTANCE_OFFSET_AUTO;
+static DILIGENT_CONSTEXPR Uint32 TLAS_INSTANCE_OFFSET_AUTO = DILIGENT_TLAS_INSTANCE_OFFSET_AUTO;
 
 
 /// Row-major matrix
@@ -1360,7 +1539,7 @@ typedef struct TLASBuildInstanceData TLASBuildInstanceData;
 
 #define DILIGENT_TLAS_INSTANCE_DATA_SIZE 64
 
-static const Uint32 TLAS_INSTANCE_DATA_SIZE = DILIGENT_TLAS_INSTANCE_DATA_SIZE;
+static DILIGENT_CONSTEXPR Uint32 TLAS_INSTANCE_DATA_SIZE = DILIGENT_TLAS_INSTANCE_DATA_SIZE;
 
 
 /// This structure is used by IDeviceContext::BuildTLAS().
@@ -1873,8 +2052,8 @@ typedef struct BindSparseResourceMemoryAttribs BindSparseResourceMemoryAttribs;
 /// Special constant for all remaining array slices.
 #define DILIGENT_REMAINING_ARRAY_SLICES 0xFFFFFFFFU
 
-static const Uint32 REMAINING_MIP_LEVELS   = DILIGENT_REMAINING_MIP_LEVELS;
-static const Uint32 REMAINING_ARRAY_SLICES = DILIGENT_REMAINING_ARRAY_SLICES;
+static DILIGENT_CONSTEXPR Uint32 REMAINING_MIP_LEVELS   = DILIGENT_REMAINING_MIP_LEVELS;
+static DILIGENT_CONSTEXPR Uint32 REMAINING_ARRAY_SLICES = DILIGENT_REMAINING_ARRAY_SLICES;
 
 /// Resource state transition flags.
 DILIGENT_TYPED_ENUM(STATE_TRANSITION_FLAGS, Uint8)
@@ -2038,6 +2217,166 @@ struct StateTransitionDesc
 };
 typedef struct StateTransitionDesc StateTransitionDesc;
 
+/// Device context command counters.
+struct DeviceContextCommandCounters
+{
+    /// The total number of SetPipelineState calls.
+    Uint32 SetPipelineState DEFAULT_INITIALIZER(0);
+
+    /// The total number of CommitShaderResources calls.
+    Uint32 CommitShaderResources DEFAULT_INITIALIZER(0);
+
+    /// The total number of SetVertexBuffers calls.
+    Uint32 SetVertexBuffers DEFAULT_INITIALIZER(0);
+
+    /// The total number of SetIndexBuffer calls.
+    Uint32 SetIndexBuffer DEFAULT_INITIALIZER(0);
+
+    /// The total number of SetRenderTargets calls.
+    Uint32 SetRenderTargets DEFAULT_INITIALIZER(0);
+
+    /// The total number of SetBlendFactors calls.
+    Uint32 SetBlendFactors DEFAULT_INITIALIZER(0);
+
+    /// The total number of SetStencilRef calls.
+    Uint32 SetStencilRef DEFAULT_INITIALIZER(0);
+
+    /// The total number of SetViewports calls.
+    Uint32 SetViewports DEFAULT_INITIALIZER(0);
+
+    /// The total number of SetScissorRects calls.
+    Uint32 SetScissorRects DEFAULT_INITIALIZER(0);
+
+    /// The total number of ClearRenderTarget calls.
+    Uint32 ClearRenderTarget DEFAULT_INITIALIZER(0);
+
+    /// The total number of ClearDepthStencil calls.
+    Uint32 ClearDepthStencil DEFAULT_INITIALIZER(0);
+
+    /// The total number of Draw calls.
+    Uint32 Draw DEFAULT_INITIALIZER(0);
+
+    /// The total number of DrawIndexed calls.
+    Uint32 DrawIndexed DEFAULT_INITIALIZER(0);
+
+    /// The total number of indirect DrawIndirect calls.
+    Uint32 DrawIndirect DEFAULT_INITIALIZER(0);
+
+    /// The total number of indexed indirect DrawIndexedIndirect calls.
+    Uint32 DrawIndexedIndirect DEFAULT_INITIALIZER(0);
+
+    /// The total number of MultiDraw calls.
+    Uint32 MultiDraw DEFAULT_INITIALIZER(0);
+
+    /// The total number of MultiDrawIndexed calls.
+    Uint32 MultiDrawIndexed DEFAULT_INITIALIZER(0);
+
+    /// The total number of DispatchCompute calls.
+    Uint32 DispatchCompute DEFAULT_INITIALIZER(0);
+
+    /// The total number of DispatchComputeIndirect calls.
+    Uint32 DispatchComputeIndirect DEFAULT_INITIALIZER(0);
+
+    /// The total number of DispatchTile calls.
+    Uint32 DispatchTile DEFAULT_INITIALIZER(0);
+
+    /// The total number of DrawMesh calls.
+    Uint32 DrawMesh DEFAULT_INITIALIZER(0);
+
+    /// The total number of DrawMeshIndirect calls.
+    Uint32 DrawMeshIndirect DEFAULT_INITIALIZER(0);
+
+    /// The total number of BuildBLAS calls.
+    Uint32 BuildBLAS DEFAULT_INITIALIZER(0);
+
+    /// The total number of BuildTLAS calls.
+    Uint32 BuildTLAS DEFAULT_INITIALIZER(0);
+
+    /// The total number of CopyBLAS calls.
+    Uint32 CopyBLAS DEFAULT_INITIALIZER(0);
+
+    /// The total number of CopyTLAS calls.
+    Uint32 CopyTLAS DEFAULT_INITIALIZER(0);
+
+    /// The total number of WriteBLASCompactedSize calls.
+    Uint32 WriteBLASCompactedSize DEFAULT_INITIALIZER(0);
+
+    /// The total number of WriteTLASCompactedSize calls.
+    Uint32 WriteTLASCompactedSize DEFAULT_INITIALIZER(0);
+
+    /// The total number of TraceRays calls.
+    Uint32 TraceRays DEFAULT_INITIALIZER(0);
+
+    /// The total number of TraceRaysIndirect calls.
+    Uint32 TraceRaysIndirect DEFAULT_INITIALIZER(0);
+
+    /// The total number of UpdateSBT calls.
+    Uint32 UpdateSBT DEFAULT_INITIALIZER(0);
+
+    /// The total number of UpdateBuffer calls.
+    Uint32 UpdateBuffer DEFAULT_INITIALIZER(0);
+
+    /// The total number of CopyBuffer calls.
+    Uint32 CopyBuffer DEFAULT_INITIALIZER(0);
+
+    /// The total number of MapBuffer calls.
+    Uint32 MapBuffer DEFAULT_INITIALIZER(0);
+
+    /// The total number of UpdateTexture calls.
+    Uint32 UpdateTexture DEFAULT_INITIALIZER(0);
+
+    /// The total number of CopyTexture calls.
+    Uint32 CopyTexture DEFAULT_INITIALIZER(0);
+
+    /// The total number of MapTextureSubresource calls.
+    Uint32 MapTextureSubresource DEFAULT_INITIALIZER(0);
+
+    /// The total number of BeginQuery calls.
+    Uint32 BeginQuery DEFAULT_INITIALIZER(0);
+
+    /// The total number of GenerateMips calls.
+    Uint32 GenerateMips DEFAULT_INITIALIZER(0);
+
+    /// The total number of ResolveTextureSubresource calls.
+    Uint32 ResolveTextureSubresource DEFAULT_INITIALIZER(0);
+
+    /// The total number of BindSparseResourceMemory calls.
+    Uint32 BindSparseResourceMemory DEFAULT_INITIALIZER(0);
+};
+typedef struct DeviceContextCommandCounters DeviceContextCommandCounters;
+
+/// Device context statistics.
+struct DeviceContextStats
+{
+    /// The total number of primitives rendered, for each primitive topology.
+    Uint32 PrimitiveCounts[PRIMITIVE_TOPOLOGY_NUM_TOPOLOGIES] DEFAULT_INITIALIZER({});
+    
+    /// Command counters, see Diligent::DeviceContextCommandCounters.
+    DeviceContextCommandCounters CommandCounters DEFAULT_INITIALIZER({});
+
+#if DILIGENT_CPP_INTERFACE
+    constexpr Uint32 GetTotalTriangleCount() const noexcept
+    {
+        return PrimitiveCounts[PRIMITIVE_TOPOLOGY_TRIANGLE_LIST] +
+               PrimitiveCounts[PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP] +
+               PrimitiveCounts[PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_ADJ];
+    }
+
+    constexpr Uint32 GetTotalLineCount() const noexcept
+    {
+        return PrimitiveCounts[PRIMITIVE_TOPOLOGY_LINE_LIST] +
+               PrimitiveCounts[PRIMITIVE_TOPOLOGY_LINE_STRIP] +
+               PrimitiveCounts[PRIMITIVE_TOPOLOGY_LINE_STRIP_ADJ];
+    }
+
+    constexpr Uint32 GetTotalPointCount() const noexcept
+	{
+    	return PrimitiveCounts[PRIMITIVE_TOPOLOGY_POINT_LIST];
+    }
+#endif
+};
+typedef struct DeviceContextStats DeviceContextStats;
+
 
 #define DILIGENT_INTERFACE_NAME IDeviceContext
 #include "../../../Primitives/interface/DefineInterfaceHelperMacros.h"
@@ -2082,7 +2421,6 @@ DILIGENT_BEGIN_INTERFACE(IDeviceContext, IObject)
 
     /// Transitions shader resources to the states required by Draw or Dispatch command.
     ///
-    /// \param [in] pPipelineState         - Pipeline state object that was used to create the shader resource binding.
     /// \param [in] pShaderResourceBinding - Shader resource binding whose resources will be transitioned.
     ///
     /// \remarks This method explicitly transitions all resources except ones in unknown state to the states required
@@ -2099,7 +2437,6 @@ DILIGENT_BEGIN_INTERFACE(IDeviceContext, IObject)
     ///          Refer to http://diligentgraphics.com/2018/12/09/resource-state-management/ for detailed explanation
     ///          of resource state management in Diligent Engine.
     VIRTUAL void METHOD(TransitionShaderResources)(THIS_
-                                                   IPipelineState*         pPipelineState,
                                                    IShaderResourceBinding* pShaderResourceBinding) PURE;
 
     /// Commits shader resources to the device context.
@@ -2196,7 +2533,7 @@ DILIGENT_BEGIN_INTERFACE(IDeviceContext, IObject)
     VIRTUAL void METHOD(SetVertexBuffers)(THIS_
                                           Uint32                         StartSlot,
                                           Uint32                         NumBuffersSet,
-                                          IBuffer**                      ppBuffers,
+                                          IBuffer* const*                ppBuffers,
                                           const Uint64*                  pOffsets,
                                           RESOURCE_STATE_TRANSITION_MODE StateTransitionMode,
                                           SET_VERTEX_BUFFERS_FLAGS       Flags DEFAULT_VALUE(SET_VERTEX_BUFFERS_FLAG_NONE)) PURE;
@@ -2494,6 +2831,32 @@ DILIGENT_BEGIN_INTERFACE(IDeviceContext, IObject)
                                           const DrawMeshIndirectAttribs REF Attribs) PURE;
 
 
+    /// Executes a multi-draw command.
+
+    /// \param [in] Attribs - Multi-draw command attributes, see Diligent::MultiDrawAttribs for details.
+    ///
+    /// \remarks  If the device does not support the NativeMultiDraw feature, the method will emulate it by
+    ///           issuing a sequence of individual draw commands. Note that draw command index is only
+    ///           available in the shader when the NativeMultiDraw feature is supported.
+    ///
+    /// \remarks Supported contexts: graphics.
+    VIRTUAL void METHOD(MultiDraw)(THIS_
+                                   const MultiDrawAttribs REF Attribs) PURE;
+    
+
+    /// Executes an indexed multi-draw command.
+
+    /// \param [in] Attribs - Multi-draw command attributes, see Diligent::MultiDrawIndexedAttribs for details.
+    ///
+    /// \remarks  If the device does not support the NativeMultiDraw feature, the method will emulate it by
+    ///           issuing a sequence of individual draw commands. Note that draw command index is only
+    ///           available in the shader when the NativeMultiDraw feature is supported.
+    ///
+    /// \remarks Supported contexts: graphics.
+    VIRTUAL void METHOD(MultiDrawIndexed)(THIS_
+                                          const MultiDrawIndexedAttribs REF Attribs) PURE;
+
+
     /// Executes a dispatch compute command.
 
     /// \param [in] Attribs - Dispatch command attributes, see Diligent::DispatchComputeAttribs for details.
@@ -2584,7 +2947,10 @@ DILIGENT_BEGIN_INTERFACE(IDeviceContext, IObject)
 
     /// \param [in] pView               - Pointer to ITextureView interface to clear. The view type must be
     ///                                   Diligent::TEXTURE_VIEW_RENDER_TARGET.
-    /// \param [in] RGBA                - A 4-component array that represents the color to fill the render target with.
+    /// \param [in] RGBA                - A 4-component array that represents the color to fill the render target with:
+    ///                                   - Float values for floating point render target formats.
+    ///                                   - Uint32 values for unsigned integer render target formats.
+    ///                                   - Int32 values for signed integer render target formats.
     ///                                   If nullptr is provided, the default array {0,0,0,0} will be used.
     /// \param [in] StateTransitionMode - Defines required state transitions (see Diligent::RESOURCE_STATE_TRANSITION_MODE)
     ///
@@ -2609,7 +2975,7 @@ DILIGENT_BEGIN_INTERFACE(IDeviceContext, IObject)
     /// \remarks Supported contexts: graphics.
     VIRTUAL void METHOD(ClearRenderTarget)(THIS_
                                            ITextureView*                  pView,
-                                           const float*                   RGBA,
+                                           const void*                    RGBA,
                                            RESOURCE_STATE_TRANSITION_MODE StateTransitionMode) PURE;
 
 
@@ -3205,6 +3571,12 @@ DILIGENT_BEGIN_INTERFACE(IDeviceContext, IObject)
     ///          internal queue supports COMMAND_QUEUE_TYPE_SPARSE_BINDING.
     VIRTUAL void METHOD(BindSparseResourceMemory)(THIS_
                                                   const BindSparseResourceMemoryAttribs REF Attribs) PURE;
+
+    /// Clears the device context statistics.
+    VIRTUAL void METHOD(ClearStats)(THIS) PURE;
+
+    /// Returns the device context statistics, see Diligent::DeviceContextStats.
+    VIRTUAL const DeviceContextStats REF METHOD(GetStats)(THIS) CONST PURE;
 };
 DILIGENT_END_INTERFACE
 
@@ -3282,6 +3654,8 @@ DILIGENT_END_INTERFACE
 #    define IDeviceContext_UnlockCommandQueue(This)                 CALL_IFACE_METHOD(DeviceContext, UnlockCommandQueue,        This)
 #    define IDeviceContext_SetShadingRate(This, ...)                CALL_IFACE_METHOD(DeviceContext, SetShadingRate,            This, __VA_ARGS__)
 #    define IDeviceContext_BindSparseResourceMemory(This, ...)      CALL_IFACE_METHOD(DeviceContext, BindSparseResourceMemory,  This, __VA_ARGS__)
+#    define IDeviceContext_ClearStats(This)                         CALL_IFACE_METHOD(DeviceContext, ClearStats,                This)
+#    define IDeviceContext_GetStats(This)                           CALL_IFACE_METHOD(DeviceContext, GetStats,                  This)
 
 // clang-format on
 

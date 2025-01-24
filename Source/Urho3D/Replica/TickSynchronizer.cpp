@@ -45,6 +45,7 @@ public:
     Urho3D::StringHash GetType() const override { return {}; }
     const ea::string& GetTypeName() const override { return EMPTY_STRING; }
     const Urho3D::TypeInfo* GetTypeInfo() const override { return nullptr; }
+    bool IsInstanceOf(StringHash type) const override { return false; }
 };
 
 }

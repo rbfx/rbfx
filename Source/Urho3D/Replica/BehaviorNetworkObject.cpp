@@ -53,9 +53,7 @@ NetworkObject* NetworkBehavior::FindClosestNetworkObject() const
 {
     if (!node_)
         return nullptr;
-    if (auto sibling = node_->GetDerivedComponent<NetworkObject>())
-        return sibling;
-    return node_->GetParentDerivedComponent<NetworkObject>(true);
+    return node_->FindComponent<NetworkObject>(ComponentSearchFlag::SelfOrParentRecursive | ComponentSearchFlag::Derived);
 }
 
 void NetworkBehavior::OnNodeSet(Node* previousNode, Node* currentNode)
@@ -88,7 +86,7 @@ void BehaviorNetworkObject::InitializeBehaviors()
     InvalidateBehaviors();
 
     ea::vector<NetworkBehavior*> networkBehaviors;
-    node_->GetDerivedComponents(networkBehaviors, true);
+    node_->FindComponents(networkBehaviors, ComponentSearchFlag::SelfOrChildrenRecursive | ComponentSearchFlag::Derived);
 
     ea::erase_if(networkBehaviors,
         [this](NetworkBehavior* networkBehavior) { return networkBehavior->FindClosestNetworkObject() != this; });

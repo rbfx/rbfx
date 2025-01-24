@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -35,11 +35,7 @@
 
 DILIGENT_BEGIN_NAMESPACE(Diligent)
 
-#if DILIGENT_C_INTERFACE
-#    define REF *
-#else
-#    define REF &
-#endif
+#include "../../../Primitives/interface/DefineRefMacro.h"
 
 // clang-format off
 
@@ -198,13 +194,13 @@ struct RenderPassUnpackInfo
 };
 typedef struct RenderPassUnpackInfo RenderPassUnpackInfo;
 
-#undef REF
+#include "../../../Primitives/interface/UndefRefMacro.h"
 
 // clang-format on
 
 
 // {ACB3F67A-CE3B-4212-9592-879122D3C191}
-static const INTERFACE_ID IID_Dearchiver =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_Dearchiver =
     {0xacb3f67a, 0xce3b, 0x4212, {0x95, 0x92, 0x87, 0x91, 0x22, 0xd3, 0xc1, 0x91}};
 
 #define DILIGENT_INTERFACE_NAME IDearchiver

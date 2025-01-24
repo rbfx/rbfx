@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,7 +51,7 @@ namespace Diligent
 class CommandContext;
 struct D3DShaderResourceAttribs;
 
-struct PipelineResourceImmutableSamplerAttribsD3D12
+struct ImmutableSamplerAttribsD3D12
 {
 private:
     static constexpr Uint32 _ShaderRegisterBits    = 24;
@@ -64,18 +64,18 @@ public:
     Uint32 ShaderRegister : _ShaderRegisterBits;
     Uint32 RegisterSpace : _RegisterSpaceBits;
 
-    PipelineResourceImmutableSamplerAttribsD3D12() :
+    ImmutableSamplerAttribsD3D12() :
         ShaderRegister{_InvalidShaderRegister},
         RegisterSpace{_InvalidRegisterSpace}
     {}
 
-    PipelineResourceImmutableSamplerAttribsD3D12(Uint32 _ArraySize,
-                                                 Uint32 _ShaderRegister,
-                                                 Uint32 _RegisterSpace) noexcept :
+    ImmutableSamplerAttribsD3D12(Uint32 _ArraySize,
+                                 Uint32 _ShaderRegister,
+                                 Uint32 _RegisterSpace) noexcept :
         // clang-format off
-            ArraySize     {_ArraySize     },
-            ShaderRegister{_ShaderRegister},
-            RegisterSpace {_RegisterSpace }
+        ArraySize     {_ArraySize     },
+        ShaderRegister{_ShaderRegister},
+        RegisterSpace {_RegisterSpace }
     // clang-format on
     {
         VERIFY(ShaderRegister == _ShaderRegister, "Shader register (", _ShaderRegister, ") exceeds maximum representable value");
@@ -88,21 +88,16 @@ public:
                 RegisterSpace != _InvalidRegisterSpace);
     }
 };
-ASSERT_SIZEOF(PipelineResourceImmutableSamplerAttribsD3D12, 8, "The struct is used in serialization and must be tightly packed");
+ASSERT_SIZEOF(ImmutableSamplerAttribsD3D12, 8, "The struct is used in serialization and must be tightly packed");
 
 
-struct PipelineResourceSignatureInternalDataD3D12 : PipelineResourceSignatureInternalData
+struct PipelineResourceSignatureInternalDataD3D12 : PipelineResourceSignatureInternalData<PipelineResourceAttribsD3D12, ImmutableSamplerAttribsD3D12>
 {
-    const PipelineResourceAttribsD3D12*                 pResourceAttribs     = nullptr; // [NumResources]
-    Uint32                                              NumResources         = 0;
-    const PipelineResourceImmutableSamplerAttribsD3D12* pImmutableSamplers   = nullptr; // [NumImmutableSamplers]
-    Uint32                                              NumImmutableSamplers = 0;
-
     PipelineResourceSignatureInternalDataD3D12() noexcept
     {}
 
-    explicit PipelineResourceSignatureInternalDataD3D12(const PipelineResourceSignatureInternalData& InternalData) noexcept :
-        PipelineResourceSignatureInternalData{InternalData}
+    explicit PipelineResourceSignatureInternalDataD3D12(const PipelineResourceSignatureInternalData& Serialized) noexcept :
+        PipelineResourceSignatureInternalData{Serialized}
     {}
 };
 
@@ -112,8 +107,7 @@ class PipelineResourceSignatureD3D12Impl final : public PipelineResourceSignatur
 public:
     using TPipelineResourceSignatureBase = PipelineResourceSignatureBase<EngineD3D12ImplTraits>;
 
-    using ResourceAttribs         = TPipelineResourceSignatureBase::PipelineResourceAttribsType;
-    using ImmutableSamplerAttribs = PipelineResourceImmutableSamplerAttribsD3D12;
+    using ResourceAttribs = TPipelineResourceSignatureBase::PipelineResourceAttribsType;
 
     PipelineResourceSignatureD3D12Impl(IReferenceCounters*                  pRefCounters,
                                        RenderDeviceD3D12Impl*               pDevice,
@@ -127,12 +121,6 @@ public:
                                        const PipelineResourceSignatureInternalDataD3D12& InternalData);
 
     ~PipelineResourceSignatureD3D12Impl();
-
-    const ImmutableSamplerAttribs& GetImmutableSamplerAttribs(Uint32 SampIndex) const
-    {
-        VERIFY_EXPR(SampIndex < m_Desc.NumImmutableSamplers);
-        return m_ImmutableSamplers[SampIndex];
-    }
 
     Uint32 GetTotalRootParamsCount() const
     {
@@ -178,8 +166,6 @@ public:
     // Returns true if there is an immutable sampler array in the given shader stage.
     bool HasImmutableSamplerArray(SHADER_TYPE ShaderStage) const;
 
-    PipelineResourceSignatureInternalDataD3D12 GetInternalData() const;
-
 #ifdef DILIGENT_DEVELOPMENT
     /// Verifies committed resource using the resource attributes from the PSO.
     bool DvpValidateCommittedResource(const DeviceContextD3D12Impl*   pDeviceCtx,
@@ -193,11 +179,7 @@ public:
 private:
     void AllocateRootParameters(bool IsSerialized);
 
-    void Destruct();
-
 private:
-    ImmutableSamplerAttribs* m_ImmutableSamplers = nullptr; // [m_Desc.NumImmutableSamplers]
-
     RootParamsManager m_RootParams;
 };
 

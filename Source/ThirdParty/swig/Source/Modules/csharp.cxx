@@ -1111,7 +1111,7 @@ public:
     }
 
     if (!null_attribute)
-      Replaceall(f->code, "$null", "0");
+      Replaceall(f->code, "$null", "{}"); // rbfx: more universal "empty" value.
     else
       Replaceall(f->code, "$null", null_attribute);
 

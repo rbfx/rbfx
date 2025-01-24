@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2023 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -108,9 +108,19 @@ DILIGENT_TYPED_ENUM(SHADER_VARIABLE_FLAGS, Uint8)
     /// attachment.
     ///
     /// \note This flag is only valid in Vulkan.
-    SHADER_VARIABLE_FLAG_GENERAL_INPUT_ATTACHMENT = 1u << 1,
+    SHADER_VARIABLE_FLAG_GENERAL_INPUT_ATTACHMENT_VK = 1u << 1,
 
-    SHADER_VARIABLE_FLAG_LAST               = SHADER_VARIABLE_FLAG_GENERAL_INPUT_ATTACHMENT
+    /// Indicates that the resource is an unfilterable-float texture.
+    ///
+    /// \note This flag is only valid in WebGPU and ignored in other backends.
+    SHADER_VARIABLE_FLAG_UNFILTERABLE_FLOAT_TEXTURE_WEBGPU = 1u << 2,
+
+    /// Indicates that the resource is a non-filtering sampler.
+    ///
+    /// \note This flag is only valid in WebGPU and ignored in other backends.
+    SHADER_VARIABLE_FLAG_NON_FILTERING_SAMPLER_WEBGPU = 1u << 3,
+
+    SHADER_VARIABLE_FLAG_LAST = SHADER_VARIABLE_FLAG_NON_FILTERING_SAMPLER_WEBGPU
 };
 DEFINE_FLAG_ENUM_OPERATORS(SHADER_VARIABLE_FLAGS);
 
@@ -576,6 +586,13 @@ struct PipelineStateDesc DILIGENT_DERIVE(DeviceObjectAttribs)
     PipelineResourceLayoutDesc ResourceLayout;
 
 #if DILIGENT_CPP_INTERFACE
+    constexpr PipelineStateDesc() noexcept {}
+
+    explicit constexpr PipelineStateDesc(const Char* _Name, PIPELINE_TYPE Type = PipelineStateDesc{}.PipelineType) :
+        DeviceObjectAttribs{_Name},
+        PipelineType       {Type  }
+    {}
+
     /// Tests if two pipeline state descriptions are equal.
 
     /// \param [in] RHS - reference to the structure to compare with.
@@ -634,7 +651,17 @@ DILIGENT_TYPED_ENUM(PSO_CREATE_FLAGS, Uint32)
     /// by the PSO's resource signatures.
     PSO_CREATE_FLAG_DONT_REMAP_SHADER_RESOURCES       = 1u << 2u,
 
-    PSO_CREATE_FLAG_LAST = PSO_CREATE_FLAG_DONT_REMAP_SHADER_RESOURCES
+    /// Create the pipeline state asynchronously.
+    
+    /// \remarks	When this flag is set to true and if the devices supports
+    ///             AsyncShaderCompilation feature, the pipeline will be created
+    ///             asynchronously in the background. An application should use
+    ///             the IPipelineState::GetStatus() method to check the pipeline status.
+    ///             If the device does not support asynchronous shader compilation,
+    ///             the flag is ignored and the pipeline is created synchronously.
+    PSO_CREATE_FLAG_ASYNCHRONOUS                      = 1u << 3u,
+
+    PSO_CREATE_FLAG_LAST = PSO_CREATE_FLAG_ASYNCHRONOUS
 };
 DEFINE_FLAG_ENUM_OPERATORS(PSO_CREATE_FLAGS);
 
@@ -677,6 +704,12 @@ struct PipelineStateCreateInfo
 #endif
 
 #if DILIGENT_CPP_INTERFACE
+    constexpr PipelineStateCreateInfo() noexcept {}
+
+    constexpr PipelineStateCreateInfo(const Char* Name, PIPELINE_TYPE Type) :
+        PSODesc{Name, Type}
+    {}
+
     bool operator==(const PipelineStateCreateInfo& RHS) const noexcept
     {
         if (PSODesc                 != RHS.PSODesc ||
@@ -745,6 +778,15 @@ struct GraphicsPipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo)
     IShader* pMS DEFAULT_INITIALIZER(nullptr);
 
 #if DILIGENT_CPP_INTERFACE
+    constexpr GraphicsPipelineStateCreateInfo() noexcept 
+    {
+        PSODesc.PipelineType = PIPELINE_TYPE_GRAPHICS;
+    }
+
+    explicit constexpr GraphicsPipelineStateCreateInfo(const Char* Name) :
+        PipelineStateCreateInfo{Name, PIPELINE_TYPE_GRAPHICS}
+    {}
+
     bool operator==(const GraphicsPipelineStateCreateInfo& Rhs) const noexcept
     {
         if (static_cast<const PipelineStateCreateInfo&>(*this) != static_cast<const PipelineStateCreateInfo&>(Rhs))
@@ -781,6 +823,10 @@ struct ComputePipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo)
     {
         PSODesc.PipelineType = PIPELINE_TYPE_COMPUTE;
     }
+
+    explicit constexpr ComputePipelineStateCreateInfo(const Char* Name) :
+        PipelineStateCreateInfo{Name, PIPELINE_TYPE_COMPUTE}
+    {}
 
     bool operator==(const ComputePipelineStateCreateInfo& Rhs) const noexcept
     {
@@ -842,6 +888,10 @@ struct RayTracingPipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo
     {
         PSODesc.PipelineType = PIPELINE_TYPE_RAY_TRACING;
     }
+
+    explicit constexpr RayTracingPipelineStateCreateInfo(const Char* Name) :
+        PipelineStateCreateInfo{Name, PIPELINE_TYPE_RAY_TRACING}
+    {}
 
     bool operator==(const RayTracingPipelineStateCreateInfo& RHS)const noexcept
     {
@@ -935,6 +985,11 @@ struct TilePipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo)
     {
         PSODesc.PipelineType = PIPELINE_TYPE_TILE;
     }
+
+    explicit constexpr TilePipelineStateCreateInfo(const Char* Name) :
+        PipelineStateCreateInfo{Name, PIPELINE_TYPE_TILE}
+    {}
+
     bool operator==(const TilePipelineStateCreateInfo& Rhs) const noexcept
     {
         if (static_cast<const PipelineStateCreateInfo&>(*this) != static_cast<const PipelineStateCreateInfo&>(Rhs))
@@ -954,8 +1009,26 @@ struct TilePipelineStateCreateInfo DILIGENT_DERIVE(PipelineStateCreateInfo)
 typedef struct TilePipelineStateCreateInfo TilePipelineStateCreateInfo;
 
 
+/// Pipeline state status
+DILIGENT_TYPED_ENUM(PIPELINE_STATE_STATUS, Uint32)
+{
+    /// Initial state.
+    PIPELINE_STATE_STATUS_UNINITIALIZED = 0,
+
+    /// The pipeline state is being compiled.
+	PIPELINE_STATE_STATUS_COMPILING,
+
+	/// The pipeline state has been successfully compiled
+    /// and is ready to be used.
+	PIPELINE_STATE_STATUS_READY,
+
+	/// The pipeline state compilation has failed.
+	PIPELINE_STATE_STATUS_FAILED
+};
+
+
 // {06084AE5-6A71-4FE8-84B9-395DD489A28C}
-static const struct INTERFACE_ID IID_PipelineState =
+static DILIGENT_CONSTEXPR struct INTERFACE_ID IID_PipelineState =
     {0x6084ae5, 0x6a71, 0x4fe8, {0x84, 0xb9, 0x39, 0x5d, 0xd4, 0x89, 0xa2, 0x8c}};
 
 #define DILIGENT_INTERFACE_NAME IPipelineState
@@ -1154,6 +1227,15 @@ DILIGENT_BEGIN_INTERFACE(IPipelineState, IDeviceObject)
     /// \return     Pointer to pipeline resource signature interface.
     VIRTUAL IPipelineResourceSignature* METHOD(GetResourceSignature)(THIS_
                                                                      Uint32 Index) CONST PURE;
+
+    /// Returns the pipeline state status, see Diligent::PIPELINE_STATE_STATUS.
+
+    /// \param [in] WaitForCompletion - If true, the method will wait until the pipeline state is compiled.
+    ///                                 If false, the method will return the pipeline state status without waiting.
+    /// 							    This parameter is ignored if the pipeline state was compiled synchronously.
+    /// \return     The pipeline state status.
+    VIRTUAL PIPELINE_STATE_STATUS METHOD(GetStatus)(THIS_
+                                                    bool WaitForCompletion DEFAULT_VALUE(false)) PURE;
 };
 DILIGENT_END_INTERFACE
 
@@ -1178,6 +1260,7 @@ DILIGENT_END_INTERFACE
 #    define IPipelineState_IsCompatibleWith(This, ...)             CALL_IFACE_METHOD(PipelineState, IsCompatibleWith,             This, __VA_ARGS__)
 #    define IPipelineState_GetResourceSignatureCount(This)         CALL_IFACE_METHOD(PipelineState, GetResourceSignatureCount,    This)
 #    define IPipelineState_GetResourceSignature(This, ...)         CALL_IFACE_METHOD(PipelineState, GetResourceSignature,         This, __VA_ARGS__)
+#    define IPipelineState_GetStatus(This, ...)                    CALL_IFACE_METHOD(PipelineState, GetStatus,                    This, __VA_ARGS__)
 
 // clang-format on
 

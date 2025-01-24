@@ -55,13 +55,13 @@ generators_windows=('-G' 'Visual Studio 17 2022')
 generators_uwp=('-G' 'Visual Studio 17 2022' '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0' '-DURHO3D_PACKAGING=ON')
 generators_linux=('-G' 'Ninja')
 generators_web=('-G' 'Ninja')
-generators_macos=('-G' 'Xcode' '-T' 'buildsystem=1')
-generators_ios=('-G' 'Xcode' '-T' 'buildsystem=1')
+generators_macos=()
+generators_ios=()
 
 toolchains_ios=(
     '-DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/IOS.cmake'
     '-DPLATFORM=SIMULATOR64'
-    '-DDEPLOYMENT_TARGET=11'
+    '-DDEPLOYMENT_TARGET=12'
 )
 toolchains_web=(
     "-DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
@@ -92,16 +92,14 @@ quirks_web=(
     '-DURHO3D_PROFILING=OFF'
     '-DURHO3D_CSHARP=OFF'
     '-DCI_WEB_BUILD=ON'
-)
-quirks_web_dbg=(
-    '-DURHO3D_PLAYER=OFF'
+    '-DURHO3D_NO_EDITOR_PLAYER_EXE=ON'
 )
 quirks_dll=('-DURHO3D_CSHARP=ON')
 quirks_windows_msvc_x64=('-A' 'x64')
 quirks_windows_msvc_x86=('-A' 'Win32')
 quirks_uwp_msvc_arm=('-A' 'ARM')
 quirks_uwp_msvc_arm64=('-A' 'ARM64')
-quirks_clang=('-DTRACY_NO_PARALLEL_ALGORITHMS=ON')                  # Includes macos and ios
+quirks_clang=('-DNO_PARALLEL_STL=ON')                  # Tracy, includes macos and ios
 quirks_macos_x86=('-DCMAKE_OSX_ARCHITECTURES=i386')
 quirks_macos_x64=('-DCMAKE_OSX_ARCHITECTURES=x86_64')
 quirks_linux_x86=(

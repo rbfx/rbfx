@@ -46,11 +46,13 @@ enum HttpRequestState
 };
 
 /// An HTTP connection with response data stream.
+/// Perform an HTTP request to the specified URL. Empty verb defaults to a GET request. Return a request object which
+/// can be used to read the response data.
 class URHO3D_API HttpRequest : public RefCounted, public Deserializer, public Thread
 {
 public:
     /// Construct with parameters.
-    HttpRequest(const ea::string& url, const ea::string& verb, const ea::vector<ea::string>& headers, const ea::string& postData);
+    HttpRequest(const ea::string& url, const ea::string& verb = EMPTY_STRING, const ea::vector<ea::string>& headers = ea::vector<ea::string>(), const ea::string& postData = EMPTY_STRING);
     /// Destruct. Release the connection object.
     ~HttpRequest() override;
 
@@ -87,6 +89,9 @@ public:
     /// @property
     bool IsOpen() const { return GetState() == HTTP_OPEN; }
 
+    /// Return HTTP response status code, e.g. 200(OK) or 404(NOT_FOUND).
+    int GetStatusCode() const;
+
 private:
     /// URL.
     URL url_;
@@ -106,9 +111,13 @@ private:
     VectorBuffer readBuffer_;
     /// Read buffer read cursor.
     unsigned readPosition_ = 0;
+    /// HTTP response status code, e.g. 200(OK) or 404(NOT_FOUND).
+    int statusCode_ = 0;
 #ifdef URHO3D_PLATFORM_WEB
     /// HTTP request handle.
-    int requestHandle_ = 0;
+    void* requestHandle_ = nullptr;
+    ea::vector<const char*> requestHeaders_;
+    ea::vector<ea::string> requestHeadersStr_;
 #endif
 };
 

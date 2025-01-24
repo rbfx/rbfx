@@ -1028,10 +1028,11 @@ void Node::AddChild(Node* node, unsigned index)
 
     // Add to the child vector, then add to the scene if not added yet
     children_.insert_at(index, nodeShared);
+    node->parent_ = this;
+
     if (scene_ && node->GetScene() != scene_)
         scene_->NodeAdded(node);
 
-    node->parent_ = this;
     node->MarkDirty();
 
     // Send change event
@@ -1548,20 +1549,15 @@ ea::pair<Serializable*, unsigned> Node::FindComponentAttribute(ea::string_view p
     return { serializable, attributeIndex };
 }
 
-void Node::GetComponents(ea::vector<Component*>& dest, StringHash type, bool recursive) const
+void Node::GetComponents(ea::vector<Component*>& dest, StringHash type) const
 {
     dest.clear();
 
-    if (!recursive)
+    for (auto i = components_.begin(); i != components_.end(); ++i)
     {
-        for (auto i = components_.begin(); i != components_.end(); ++i)
-        {
-            if ((*i)->GetType() == type)
-                dest.push_back(i->Get());
-        }
+        if ((*i)->GetType() == type)
+            dest.push_back(i->Get());
     }
-    else
-        GetComponentsRecursive(dest, type);
 }
 
 unsigned Node::GetComponentIndex(const Component* component) const
@@ -1647,58 +1643,52 @@ const Variant& Node::GetVarByHash(StringHash key) const
     return i != vars_.end() ? i->second : Variant::EMPTY;
 }
 
-void Node::GetDerivedComponents(ea::vector<Component*>& dest, StringHash type, bool recursive) const
+Variant* Node::GetMutableVar(const ea::string& key)
 {
-    dest.clear();
-
-    if (!recursive)
-    {
-        for (auto i = components_.begin(); i != components_.end(); ++i)
-        {
-            if ((*i)->GetTypeInfo()->IsTypeOf(type))
-                dest.push_back(i->Get());
-        }
-    }
-    else
-        GetDerivedComponentsRecursive(dest, type);
+    auto i = vars_.find(key);
+    return i != vars_.end() ? &i->second : nullptr;
 }
 
-Component* Node::GetDerivedComponent(StringHash type, bool recursive) const
+Variant* Node::GetMutableVarByHash(StringHash key)
+{
+    auto i = vars_.find_by_hash(key.Value());
+    return i != vars_.end() ? &i->second : nullptr;
+}
+
+Component* Node::FindComponent(StringHash type, ComponentSearchFlags flags) const
+{
+    Component* result = nullptr;
+    FindComponents(flags, type,
+        [&](Component* component)
+    {
+        result = component;
+        return false;
+    });
+    return result;
+}
+
+void Node::FindComponents(ea::vector<Component*>& dest, StringHash type, ComponentSearchFlags flags, bool clearVector) const
+{
+    if (clearVector)
+        dest.clear();
+
+    FindComponents(flags, type,
+        [&](Component* component)
+    {
+        dest.push_back(component);
+        return true;
+    });
+}
+
+Component* Node::GetDerivedComponent(StringHash type) const
 {
     for (auto i = components_.begin(); i != components_.end(); ++i)
     {
-        if ((*i)->GetTypeInfo()->IsTypeOf(type))
+        if ((*i)->IsInstanceOf(type))
             return *i;
     }
 
-    if (recursive)
-    {
-        for (auto i = children_.begin(); i != children_.end(); ++i)
-        {
-            auto* component = (*i)->GetDerivedComponent(type, true);
-            if (component)
-                return component;
-        }
-    }
-
     return nullptr;
-}
-
-Component* Node::GetParentDerivedComponent(StringHash type, bool fullTraversal) const
-{
-    Node* current = GetParent();
-    while (current)
-    {
-        auto* soughtComponent = current->GetDerivedComponent(type);
-        if (soughtComponent)
-            return soughtComponent;
-
-        if (fullTraversal)
-            current = current->GetParent();
-        else
-            break;
-    }
-    return 0;
 }
 
 bool Node::GetChildLazy(WeakPtr<Node>& childNode, StringHash nameHash, SceneLookupFlags flags) const
@@ -1732,22 +1722,12 @@ bool Node::GetChildLazy(WeakPtr<Node>& childNode, StringHash nameHash, SceneLook
     return false;
 }
 
-Component* Node::GetComponent(StringHash type, bool recursive) const
+Component* Node::GetComponent(StringHash type) const
 {
     for (auto i = components_.begin(); i != components_.end(); ++i)
     {
         if ((*i)->GetType() == type)
             return i->Get();
-    }
-
-    if (recursive)
-    {
-        for (auto i = children_.begin(); i != children_.end(); ++i)
-        {
-            Component* component = (*i)->GetComponent(type, true);
-            if (component)
-                return component;
-        }
     }
 
     return nullptr;
@@ -1768,19 +1748,11 @@ Component* Node::GetNthComponent(StringHash type, unsigned index) const
     return nullptr;
 }
 
-Component* Node::GetParentComponent(StringHash type, bool fullTraversal) const
+Component* Node::GetParentComponent(StringHash type) const
 {
-    Node* current = GetParent();
-    while (current)
+    if (const Node* current = GetParent())
     {
-        Component* soughtComponent = current->GetComponent(type);
-        if (soughtComponent)
-            return soughtComponent;
-
-        if (fullTraversal)
-            current = current->GetParent();
-        else
-            break;
+        return current->GetComponent(type);
     }
     return nullptr;
 }
@@ -2177,28 +2149,6 @@ void Node::GetChildrenWithComponentRecursive(ea::vector<Node*>& dest, StringHash
         if (!node->children_.empty())
             node->GetChildrenWithComponentRecursive(dest, type);
     }
-}
-
-void Node::GetComponentsRecursive(ea::vector<Component*>& dest, StringHash type) const
-{
-    for (auto i = components_.begin(); i != components_.end(); ++i)
-    {
-        if ((*i)->GetType() == type)
-            dest.push_back(i->Get());
-    }
-    for (auto i = children_.begin(); i != children_.end(); ++i)
-        (*i)->GetComponentsRecursive(dest, type);
-}
-
-void Node::GetDerivedComponentsRecursive(ea::vector<Component*>& dest, StringHash type) const
-{
-    for (auto i = components_.begin(); i != components_.end(); ++i)
-    {
-        if ((*i)->GetTypeInfo()->IsTypeOf(type))
-            dest.push_back(i->Get());
-    }
-    for (auto i = children_.begin(); i != children_.end(); ++i)
-        (*i)->GetDerivedComponentsRecursive(dest, type);
 }
 
 void Node::GetChildrenWithTagRecursive(ea::vector<Node*>& dest, const ea::string& tag) const

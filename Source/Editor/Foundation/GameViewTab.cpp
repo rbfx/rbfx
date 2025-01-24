@@ -22,6 +22,9 @@
 
 #include "../Foundation/GameViewTab.h"
 
+#include "../Core/IniHelpers.h"
+
+#include <Urho3D/Core/WorkQueue.h>
 #include <Urho3D/Engine/StateManager.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/GraphicsEvents.h>
@@ -33,12 +36,14 @@
 #include <Urho3D/RenderAPI/RenderDevice.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
-#if URHO3D_RMLUI
-#include <Urho3D/RmlUI/RmlUI.h>
-#endif
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/SystemUI/DebugHud.h>
 #include <Urho3D/SystemUI/Widgets.h>
 #include <Urho3D/UI/UI.h>
+
+#if URHO3D_RMLUI
+    #include <Urho3D/RmlUI/RmlUI.h>
+#endif
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
@@ -209,15 +214,19 @@ private:
 
 GameViewTab::GameViewTab(Context* context)
     : EditorTab(context, "Game", "212a6577-8a2a-42d6-aaed-042d226c724c",
-        EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault,
-        EditorTabPlacement::DockCenter)
+          EditorTabFlag::NoContentPadding | EditorTabFlag::OpenByDefault, EditorTabPlacement::DockCenter)
     , backbuffer_(MakeShared<CustomBackbufferTexture>(context_))
 {
     BindHotkey(Hotkey_ReleaseInput, &GameViewTab::ReleaseInput);
+
+    auto pluginManager = GetSubsystem<PluginManager>();
+    pluginManager->SetQuitApplicationCallback([this] { QuitApplication(); });
 }
 
 GameViewTab::~GameViewTab()
 {
+    auto pluginManager = GetSubsystem<PluginManager>();
+    pluginManager->SetQuitApplicationCallback([] {});
 }
 
 bool GameViewTab::IsInputGrabbed() const
@@ -257,15 +266,27 @@ void GameViewTab::ReleaseInput()
         state_->ReleaseInput();
 }
 
+void GameViewTab::RenderToolbar()
+{
+    if (Widgets::ToolbarButton(ICON_FA_BUG, "Toggle Debug HUD", hudVisible_))
+        hudVisible_ = !hudVisible_;
+
+    Widgets::ToolbarSeparator();
+}
+
 void GameViewTab::RenderContent()
 {
-    backbuffer_->SetTextureSize(GetContentSize());
+    const IntVector2 contentSize = GetContentSize();
+    if (contentSize.x_ == 0 || contentSize.y_ == 0)
+        return;
+
+    backbuffer_->SetTextureSize(contentSize);
     backbuffer_->Update();
 
     if (state_)
     {
         Texture2D* sceneTexture = backbuffer_->GetTexture();
-        Widgets::ImageButton(sceneTexture, ToImGui(sceneTexture->GetSize()), {0, 0}, {1, 1}, 0);
+        Widgets::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
 
 #if URHO3D_SYSTEMUI_VIEWPORTS
         const IntVector2 origin = IntVector2::ZERO;
@@ -288,10 +309,38 @@ void GameViewTab::RenderContent()
         else if (wasGrabbed && needRelease)
             state_->ReleaseInput();
     }
+
+    auto hud = GetSubsystem<DebugHud>();
+    if (hud && hudVisible_)
+    {
+        const IntVector2 position = GetContentPosition();
+        ui::SetCursorScreenPos(ToImGui(position.ToVector2()));
+        hud->RenderUI(DEBUGHUD_SHOW_ALL);
+    }
 }
 
 void GameViewTab::RenderContextMenuItems()
 {
 }
 
+void GameViewTab::WriteIniSettings(ImGuiTextBuffer& output)
+{
+    WriteIntToIni(output, "IsHudVisible", hudVisible_ ? 1 : 0);
 }
+
+void GameViewTab::ReadIniSettings(const char* line)
+{
+    if (const auto isHudVisible = ReadIntFromIni(line, "IsHudVisible"))
+        hudVisible_ = *isHudVisible != 0;
+}
+
+void GameViewTab::QuitApplication()
+{
+    auto workQueue = GetSubsystem<WorkQueue>();
+    if (IsPlaying())
+        workQueue->PostDelayedTaskForMainThread([this] { Stop(); });
+    else
+        URHO3D_LOGWARNING("Application quit was requested when nothing is played");
+}
+
+} // namespace Urho3D

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,7 +39,7 @@ DILIGENT_BEGIN_NAMESPACE(Diligent)
 
 
 // {EC47EAD3-A2C4-44F2-81C5-5248D14F10E4}
-static const INTERFACE_ID IID_Buffer =
+static DILIGENT_CONSTEXPR INTERFACE_ID IID_Buffer =
     {0xec47ead3, 0xa2c4, 0x44f2, {0x81, 0xc5, 0x52, 0x48, 0xd1, 0x4f, 0x10, 0xe4}};
 
 /// Describes the buffer access mode.

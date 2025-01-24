@@ -135,7 +135,8 @@ if (URHO3D_SHADER_TRANSLATOR)
 endif ()
 
 if (URHO3D_SYSTEMUI)
-    add_subdirectory(imgui)
+    add_subdirectory(ImGui)
+    add_subdirectory(ImGuizmo)
 endif ()
 
 if (URHO3D_NETWORK)
@@ -174,7 +175,8 @@ if (URHO3D_PHYSICS)
     add_subdirectory (StanHull)
 endif ()
 
-if (URHO3D_TOOLS OR URHO3D_EDITOR)
+if (DESKTOP AND (URHO3D_PROFILING OR URHO3D_TOOLS OR URHO3D_EDITOR))
+    set(NFD_PORTAL ON)
     add_subdirectory(nativefiledialog)
 endif ()
 
@@ -189,45 +191,81 @@ if (URHO3D_PROFILING)
     set (CAPSTONE_BUILD_SHARED OFF)
     set (CAPSTONE_BUILD_TESTS OFF)
     set (CAPSTONE_BUILD_CSTOOL OFF)
+    set (CAPSTONE_INSTALL OFF)
     set (CAPSTONE_ARCHITECTURE_DEFAULT OFF)
     set (CAPSTONE_X86_SUPPORT ON)
     set (CAPSTONE_ARM_SUPPORT ON)
     set (CAPSTONE_ARM64_SUPPORT ON)
     set (CAPSTONE_X86_ATT_DISABLE ON)
     add_subdirectory (capstone)
+    install_third_party_libs (capstone)
+endif ()
+
+if (URHO3D_PROFILING)
+    set (TRACY_ON_DEMAND ON)
+    add_subdirectory(tracy)
+
+    if (DESKTOP)
+        add_library(TracyImGui ALIAS ImGui)
+        if (TARGET nfd)
+            add_library(TracyNfd ALIAS nfd)
+        endif ()
+        add_library(TracyGlfw3 ALIAS SDL2-static)
+        add_library(TracyFreetype ALIAS FreeType)
+        add_library(TracyCapstone ALIAS capstone)
+
+        set(LEGACY ON)
+        set(NO_ISA_EXTENSIONS ON)
+        set(NO_PARALLEL_STL ON)
+        set(NO_FILESELECTOR ON)
+        add_subdirectory(tracy/profiler)
+
+        install (TARGETS tracy-profiler RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG})
+    endif ()
+else ()
+    add_library(TracyClient INTERFACE)
+    target_include_directories(TracyClient INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tracy/public>)
 endif ()
 
 # Tracy's headers are included even in non-profiled builds in order to provide stub profiler macros.
-add_subdirectory (tracy)
+install_third_party_libs(TracyClient)
+target_include_directories(TracyClient SYSTEM INTERFACE $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/tracy>)
+
+foreach (dir common client tracy libbacktrace)
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tracy/public/${dir} DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/tracy/
+        PATTERN ".+\\.h(pp)?$"
+        PATTERN "TracyClient\\.cpp" EXCLUDE
+        PATTERN ".+/tracy/Tracy(OpenCL|Vulkan).hpp" EXCLUDE)
+endforeach ()
 
 set (DILIGENT_INSTALL_CORE OFF CACHE BOOL "" FORCE)
+set (DILIGENT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set (DILIGENT_NO_GLSLANG ON CACHE BOOL "" FORCE)
 set (DILIGENT_NO_HLSL ON CACHE BOOL "" FORCE)
+set (DILIGENT_NO_ARCHIVER ON CACHE BOOL "" FORCE)
+set (DILIGENT_NO_WEBGPU ON CACHE BOOL "" FORCE)
 assign_bool (DILIGENT_NO_OPENGL URHO3D_GRAPHICS_NO_GL)
 assign_bool (DILIGENT_NO_DIRECT3D11 URHO3D_GRAPHICS_NO_D3D11)
 assign_bool (DILIGENT_NO_DIRECT3D12 URHO3D_GRAPHICS_NO_D3D12)
 assign_bool (DILIGENT_NO_VULKAN URHO3D_GRAPHICS_NO_VULKAN)
 if (NOT URHO3D_DEBUG_GRAPHICS)
     set (DILIGENT_MSVC_DEBUG_COMPILE_OPTIONS "/wd4189" CACHE STRING "" FORCE)
+    set (DILIGENT_CLANG_COMPILE_OPTIONS ""  CACHE STRING "" FORCE)
 else ()
     set (DILIGENT_MSVC_DEBUG_COMPILE_OPTIONS "" CACHE STRING "" FORCE)
 endif ()
-add_subdirectory (Diligent)
-install_third_party_libs (
+add_subdirectory (Diligent EXCLUDE_FROM_ALL)
+set (DILIGENT_ALL_TARGETS
     Diligent-AndroidPlatform
     Diligent-ApplePlatform
-    Diligent-Archiver-static
-    Diligent-ArchiverInterface
     Diligent-BasicPlatform
     Diligent-BuildSettings
     Diligent-Common
     Diligent-EmscriptenPlatform
     Diligent-GraphicsAccessories
     Diligent-GraphicsEngine
-    Diligent-GraphicsEngineD3D11-shared
     Diligent-GraphicsEngineD3D11-static
     Diligent-GraphicsEngineD3D11Interface
-    Diligent-GraphicsEngineD3D12-shared
     Diligent-GraphicsEngineD3D12-static
     Diligent-GraphicsEngineD3D12Interface
     Diligent-GraphicsEngineD3DBase
@@ -246,14 +284,29 @@ install_third_party_libs (
     Diligent-ShaderTools
     Diligent-UniversalWindowsPlatform
     Diligent-Win32Platform
-    volk_headers
+    # Diligent creates this target manually instead of using 3rd-party CMake project, so it also has to be patched
     Vulkan-Headers
 )
+install_third_party_libs (${DILIGENT_ALL_TARGETS})
+install_third_party_libs (volk_headers)
+
+# Patch: Disable Diligent debug asserts in debug build unless requested.
 if (NOT URHO3D_DEBUG_GRAPHICS)
     get_target_property(DILIGENT_COMPILE_DEFS Diligent-PublicBuildSettings INTERFACE_COMPILE_DEFINITIONS)
     string(REPLACE "$<$<CONFIG:DEBUG>:DILIGENT_DEVELOPMENT;DILIGENT_DEBUG>" "" DILIGENT_COMPILE_DEFS "${DILIGENT_COMPILE_DEFS}")
     set_property(TARGET Diligent-PublicBuildSettings PROPERTY INTERFACE_COMPILE_DEFINITIONS ${DILIGENT_COMPILE_DEFS})
 endif ()
+
+# Patch: Diligent does not use install interface, make it explicitly empty
+foreach (TARGET ${DILIGENT_ALL_TARGETS})
+    if (TARGET ${TARGET})
+        get_target_property (DIRS ${TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+        if (DIRS)
+            set_target_properties (${TARGET} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "$<BUILD_INTERFACE:${DIRS}>")
+        endif ()
+    endif ()
+endforeach ()
+
 file(GLOB_RECURSE DILIGENT_INCLUDE_DIRS LIST_DIRECTORIES true RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/Diligent "Diligent/**")
 list(FILTER DILIGENT_INCLUDE_DIRS INCLUDE REGEX ".+/interface$")
 foreach(DIR ${DILIGENT_INCLUDE_DIRS})
@@ -274,11 +327,16 @@ if (URHO3D_XR)
         set (BUILD_LOADER ON CACHE BOOL "" FORCE)
     endif ()
 
-    add_subdirectory(OpenXRSDK)
+    add_subdirectory(OpenXRSDK EXCLUDE_FROM_ALL)
     install_third_party_libs(openxr_loader)
+
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/OpenXRSDK/include/openxr DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR})
+    target_include_directories(openxr_loader INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/OpenXRSDK/include>)
 endif ()
 
 # When crosscompiling, swig will be built as part of native tools build. See Source/CMakeLists.txt.
 add_subdirectory(swig)
 
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} ThirdParty)
+
+set_property_recursive(. POSITION_INDEPENDENT_CODE ON)

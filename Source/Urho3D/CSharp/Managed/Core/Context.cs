@@ -56,6 +56,8 @@ namespace Urho3DNet
         // This method may be overriden in partial class in order to attach extra logic to object constructor
         internal void OnSetupInstance()
         {
+            Instance = this;
+
             using (var script = new Script(this))
             {
                 RegisterSubsystem(script);
@@ -74,8 +76,6 @@ namespace Urho3DNet
             }
 
             Urho3DRegisterDirectorFactories(swigCPtr);
-
-            Instance = this;
         }
 
         public void RegisterFactories(Assembly assembly)
@@ -110,7 +110,18 @@ namespace Urho3DNet
             if (!type.IsSubclassOf(typeof(Object)))
                 throw new ArgumentException("Type must be subclass of Object.");
 
-            _factoryTypes[StringHash.Calculate(type.Name)] = type;
+            StringHash typeId;
+            var getTypeNameStatic = type.GetMethod(nameof(Urho3DNet.Object.GetTypeStatic), BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            if (getTypeNameStatic != null)
+            {
+                typeId = (StringHash)getTypeNameStatic.Invoke(null, Array.Empty<object>());
+            }
+            else
+            {
+                typeId = type.Name;
+            }
+
+            _factoryTypes[typeId.Hash] = type;
 
             // Find a wrapper base type.
             var baseType = type.BaseType;
@@ -133,7 +144,7 @@ namespace Urho3DNet
         // Create an object by type. Return pointer to it or null if no factory found.
         public T CreateObject<T>() where T : Object
         {
-            return (T)CreateObject(typeof(T).Name);
+            return (T)CreateObject(ObjectReflection<T>.TypeId);
         }
 
         internal HandleRef CreateObject(uint managedType)
@@ -148,7 +159,7 @@ namespace Urho3DNet
 
         public T GetSubsystem<T>() where T: Object
         {
-            return (T) GetSubsystem(new StringHash(typeof(T).Name));
+            return (T) GetSubsystem(ObjectReflection<T>.TypeId);
         }
 
         public ConfiguredTaskAwaitable<bool> ToMainThreadAsync()

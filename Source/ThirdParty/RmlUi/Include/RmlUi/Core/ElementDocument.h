@@ -139,6 +139,9 @@ public:
 	/// already been called after the change. This has a perfomance penalty, only call when necessary.
 	void UpdateDocument();
 
+	/// Find the next element to focus, starting at the current element
+	Element* FindNextTabElement(Element* current_element, bool forward);
+
 protected:
 	/// Repositions the document if necessary.
 	void OnPropertyChange(const PropertyIdSet& changed_properties) override;
@@ -150,8 +153,6 @@ protected:
 	void OnResize() override;
 
 private:
-	/// Find the next element to focus, starting at the current element
-	Element* FindNextTabElement(Element* current_element, bool forward);
 	/// Searches forwards or backwards for a focusable element in the given substree
 	Element* SearchFocusSubtree(Element* element, bool forward);
 	/// Find the next element to navigate to, starting at the current element.

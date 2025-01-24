@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2023 Diligent Graphics LLC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -35,14 +35,13 @@ ShaderCreateInfoWrapper::ShaderCreateInfoWrapper(const ShaderCreateInfo& ShaderC
     m_CreateInfo{ShaderCI},
     m_SourceFactory{ShaderCI.pShaderSourceStreamFactory}
 {
-    m_CreateInfo.ppConversionStream = nullptr;
-    m_CreateInfo.ppCompilerOutput   = nullptr;
-
     FixedLinearAllocator Allocator{RawAllocator};
 
     Allocator.AddSpaceForString(ShaderCI.EntryPoint);
     Allocator.AddSpaceForString(ShaderCI.Desc.Name);
     Allocator.AddSpaceForString(ShaderCI.Desc.CombinedSamplerSuffix);
+    Allocator.AddSpaceForString(ShaderCI.GLSLExtensions);
+    Allocator.AddSpaceForString(ShaderCI.WebGPUEmulatedArrayIndexSuffix);
 
     if (ShaderCI.ByteCode && ShaderCI.ByteCodeSize > 0)
     {
@@ -61,14 +60,11 @@ ShaderCreateInfoWrapper::ShaderCreateInfoWrapper(const ShaderCreateInfo& ShaderC
         LOG_ERROR_AND_THROW("Shader create info must contain Source, Bytecode or FilePath with pShaderSourceStreamFactory");
     }
 
-    size_t MacroCount = 0;
     if (ShaderCI.Macros)
     {
-        for (auto* Macro = ShaderCI.Macros; Macro->Name != nullptr && Macro->Definition != nullptr; ++Macro, ++MacroCount)
-        {}
-        Allocator.AddSpace<ShaderMacro>(MacroCount + 1);
+        Allocator.AddSpace<ShaderMacro>(ShaderCI.Macros.Count);
 
-        for (size_t i = 0; i < MacroCount; ++i)
+        for (size_t i = 0; i < ShaderCI.Macros.Count; ++i)
         {
             Allocator.AddSpaceForString(ShaderCI.Macros[i].Name);
             Allocator.AddSpaceForString(ShaderCI.Macros[i].Definition);
@@ -79,9 +75,11 @@ ShaderCreateInfoWrapper::ShaderCreateInfoWrapper(const ShaderCreateInfo& ShaderC
 
     m_pRawMemory = decltype(m_pRawMemory){Allocator.ReleaseOwnership(), STDDeleterRawMem<void>{RawAllocator}};
 
-    m_CreateInfo.EntryPoint                 = Allocator.CopyString(ShaderCI.EntryPoint);
-    m_CreateInfo.Desc.Name                  = Allocator.CopyString(ShaderCI.Desc.Name);
-    m_CreateInfo.Desc.CombinedSamplerSuffix = Allocator.CopyString(ShaderCI.Desc.CombinedSamplerSuffix);
+    m_CreateInfo.EntryPoint                     = Allocator.CopyString(ShaderCI.EntryPoint);
+    m_CreateInfo.Desc.Name                      = Allocator.CopyString(ShaderCI.Desc.Name);
+    m_CreateInfo.Desc.CombinedSamplerSuffix     = Allocator.CopyString(ShaderCI.Desc.CombinedSamplerSuffix);
+    m_CreateInfo.GLSLExtensions                 = Allocator.CopyString(ShaderCI.GLSLExtensions);
+    m_CreateInfo.WebGPUEmulatedArrayIndexSuffix = Allocator.CopyString(ShaderCI.WebGPUEmulatedArrayIndexSuffix);
 
     if (m_CreateInfo.Desc.Name == nullptr)
         m_CreateInfo.Desc.Name = "";
@@ -101,17 +99,15 @@ ShaderCreateInfoWrapper::ShaderCreateInfoWrapper(const ShaderCreateInfo& ShaderC
         m_CreateInfo.FilePath = Allocator.CopyString(ShaderCI.FilePath);
     }
 
-    if (MacroCount > 0)
+    if (ShaderCI.Macros)
     {
-        auto* pMacros       = Allocator.ConstructArray<ShaderMacro>(MacroCount + 1);
-        m_CreateInfo.Macros = pMacros;
-        for (auto* Macro = ShaderCI.Macros; Macro->Name != nullptr && Macro->Definition != nullptr; ++Macro, ++pMacros)
+        auto* pMacros                = Allocator.ConstructArray<ShaderMacro>(ShaderCI.Macros.Count);
+        m_CreateInfo.Macros.Elements = pMacros;
+        for (size_t i = 0; i < ShaderCI.Macros.Count; ++i)
         {
-            pMacros->Name       = Allocator.CopyString(Macro->Name);
-            pMacros->Definition = Allocator.CopyString(Macro->Definition);
+            pMacros[i].Name       = Allocator.CopyString(ShaderCI.Macros[i].Name);
+            pMacros[i].Definition = Allocator.CopyString(ShaderCI.Macros[i].Definition);
         }
-        pMacros->Name       = nullptr;
-        pMacros->Definition = nullptr;
     }
 }
 

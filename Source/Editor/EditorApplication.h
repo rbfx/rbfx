@@ -52,6 +52,7 @@ protected:
     void SaveTempJson();
     void OnExitRequested();
     void OnConsoleUriClick(VariantMap& args);
+    void OpenProfilerApplication();
 
     void OpenOrCreateProject();
 

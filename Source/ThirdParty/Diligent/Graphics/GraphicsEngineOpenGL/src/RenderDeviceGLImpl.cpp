@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019-2022 Diligent Graphics LLC
+ *  Copyright 2019-2024 Diligent Graphics LLC
  *  Copyright 2015-2019 Egor Yusov
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -245,6 +245,15 @@ RenderDeviceGLImpl::RenderDeviceGLImpl(IReferenceCounters*       pRefCounters,
             LOG_ERROR_MESSAGE("Failed to enable primitive restart");
         }
     }
+
+    {
+        // In all APIs except for OpenGL, the first primitive vertex is the provoking vertex
+        // for flat shading. In OpenGL, the last vertex is the provoking vertex by default.
+        // Make the behavior consistent across all APIs
+        glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
+        if (glGetError() != GL_NO_ERROR)
+            LOG_ERROR_MESSAGE("Failed to set provoking vertex convention to GL_FIRST_VERTEX_CONVENTION");
+    }
 #endif
 
     InitAdapterInfo();
@@ -271,6 +280,37 @@ RenderDeviceGLImpl::RenderDeviceGLImpl(IReferenceCounters*       pRefCounters,
     {
         m_DeviceInfo.NDC = NDCAttribs{-1.0f, 0.5f, 0.5f};
     }
+
+    if (m_GLCaps.FramebufferSRGB)
+    {
+        // When GL_FRAMEBUFFER_SRGB is enabled, and if the destination image is in the sRGB colorspace
+        // then OpenGL will assume the shader's output is in the linear RGB colorspace. It will therefore
+        // convert the output from linear RGB to sRGB.
+        // Any writes to images that are not in the sRGB format should not be affected.
+        // Thus this setting should be just set once and left that way
+        glEnable(GL_FRAMEBUFFER_SRGB);
+        if (glGetError() != GL_NO_ERROR)
+        {
+            LOG_ERROR_MESSAGE("Failed to enable SRGB framebuffers");
+            m_GLCaps.FramebufferSRGB = false;
+        }
+    }
+
+#if PLATFORM_WIN32 || PLATFORM_LINUX || PLATFORM_MACOS
+    if (m_GLCaps.SemalessCubemaps)
+    {
+        // Under the standard filtering rules for cubemaps, filtering does not work across faces of the cubemap.
+        // This results in a seam across the faces of a cubemap. This was a hardware limitation in the past, but
+        // modern hardware is capable of interpolating across a cube face boundary.
+        // GL_TEXTURE_CUBE_MAP_SEAMLESS is not defined in OpenGLES
+        glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+        if (glGetError() != GL_NO_ERROR)
+        {
+            LOG_ERROR_MESSAGE("Failed to enable seamless cubemap filtering");
+            m_GLCaps.SemalessCubemaps = false;
+        }
+    }
+#endif
 
     // get device limits
     {
@@ -301,6 +341,13 @@ RenderDeviceGLImpl::RenderDeviceGLImpl(IReferenceCounters*       pRefCounters,
 #if !DILIGENT_NO_HLSL
     m_DeviceInfo.MaxShaderVersion.HLSL = {5, 0};
 #endif
+
+#if GL_KHR_parallel_shader_compile
+    if (m_DeviceInfo.Features.AsyncShaderCompilation)
+    {
+        glMaxShaderCompilerThreadsKHR(EngineCI.NumAsyncShaderCompilationThreads);
+    }
+#endif
 }
 
 RenderDeviceGLImpl::~RenderDeviceGLImpl()
@@ -308,11 +355,6 @@ RenderDeviceGLImpl::~RenderDeviceGLImpl()
 }
 
 IMPLEMENT_QUERY_INTERFACE(RenderDeviceGLImpl, IID_RenderDeviceGL, TRenderDeviceBase)
-
-void RenderDeviceGLImpl::InitTexRegionRender()
-{
-    m_pTexRegionRender = std::make_unique<TexRegionRender>(this);
-}
 
 void RenderDeviceGLImpl::CreateBuffer(const BufferDesc& BuffDesc, const BufferData* pBuffData, IBuffer** ppBuffer, bool bIsDeviceInternal)
 {
@@ -335,18 +377,24 @@ void RenderDeviceGLImpl::CreateBufferFromGLHandle(Uint32 GLHandle, const BufferD
     CreateBufferImpl(ppBuffer, BuffDesc, std::ref(pDeviceContext->GetContextState()), GLHandle, /*bIsDeviceInternal =*/false);
 }
 
-void RenderDeviceGLImpl::CreateShader(const ShaderCreateInfo& ShaderCreateInfo, IShader** ppShader, bool bIsDeviceInternal)
+void RenderDeviceGLImpl::CreateShader(const ShaderCreateInfo& ShaderCreateInfo,
+                                      IShader**               ppShader,
+                                      IDataBlob**             ppCompilerOutput,
+                                      bool                    bIsDeviceInternal)
 {
     const ShaderGLImpl::CreateInfo GLShaderCI{
         GetDeviceInfo(),
-        GetAdapterInfo() //
+        GetAdapterInfo(),
+        ppCompilerOutput,
     };
     CreateShaderImpl(ppShader, ShaderCreateInfo, GLShaderCI, bIsDeviceInternal);
 }
 
-void RenderDeviceGLImpl::CreateShader(const ShaderCreateInfo& ShaderCreateInfo, IShader** ppShader)
+void RenderDeviceGLImpl::CreateShader(const ShaderCreateInfo& ShaderCreateInfo,
+                                      IShader**               ppShader,
+                                      IDataBlob**             ppCompilerOutput)
 {
-    CreateShader(ShaderCreateInfo, ppShader, false);
+    CreateShader(ShaderCreateInfo, ppShader, ppCompilerOutput, false);
 }
 
 void RenderDeviceGLImpl::CreateTexture(const TextureDesc& TexDesc, const TextureData* pData, ITexture** ppTexture, bool bIsDeviceInternal)
@@ -620,8 +668,8 @@ void RenderDeviceGLImpl::InitAdapterInfo()
 
     // Set graphics adapter properties
     {
-        std::basic_string<GLubyte> glstrVendor = glGetString(GL_VENDOR);
-        std::string                Vendor      = StrToLower(std::string(glstrVendor.begin(), glstrVendor.end()));
+        const std::string glstrVendor = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
+        const std::string Vendor      = StrToLower(glstrVendor);
         LOG_INFO_MESSAGE("GPU Vendor: ", Vendor);
 
         for (size_t i = 0; i < _countof(m_AdapterInfo.Description) - 1 && i < glstrVendor.length(); ++i)
@@ -725,14 +773,15 @@ void RenderDeviceGLImpl::InitAdapterInfo()
         glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &MaxLayers);
         CHECK_GL_ERROR("Failed to get maximum number of texture array layers");
 
-        Features.MeshShaders                = DEVICE_FEATURE_STATE_DISABLED;
-        Features.RayTracing                 = DEVICE_FEATURE_STATE_DISABLED;
-        Features.ShaderResourceRuntimeArray = DEVICE_FEATURE_STATE_DISABLED;
-        Features.InstanceDataStepRate       = DEVICE_FEATURE_STATE_ENABLED;
-        Features.NativeFence                = DEVICE_FEATURE_STATE_DISABLED;
-        Features.TileShaders                = DEVICE_FEATURE_STATE_DISABLED;
-        Features.SubpassFramebufferFetch    = DEVICE_FEATURE_STATE_DISABLED;
-        Features.TextureComponentSwizzle    = DEVICE_FEATURE_STATE_DISABLED;
+        Features.MeshShaders                 = DEVICE_FEATURE_STATE_DISABLED;
+        Features.RayTracing                  = DEVICE_FEATURE_STATE_DISABLED;
+        Features.ShaderResourceStaticArrays  = DEVICE_FEATURE_STATE_ENABLED;
+        Features.ShaderResourceRuntimeArrays = DEVICE_FEATURE_STATE_DISABLED;
+        Features.InstanceDataStepRate        = DEVICE_FEATURE_STATE_ENABLED;
+        Features.NativeFence                 = DEVICE_FEATURE_STATE_DISABLED;
+        Features.TileShaders                 = DEVICE_FEATURE_STATE_DISABLED;
+        Features.SubpassFramebufferFetch     = DEVICE_FEATURE_STATE_DISABLED;
+        Features.TextureComponentSwizzle     = DEVICE_FEATURE_STATE_DISABLED;
 
         {
             bool WireframeFillSupported = (glPolygonMode != nullptr);
@@ -806,6 +855,10 @@ void RenderDeviceGLImpl::InitAdapterInfo()
             ENABLE_FEATURE(ResourceBuffer8BitAccess,      CheckExtension("GL_EXT_shader_8bit_storage"));
             ENABLE_FEATURE(UniformBuffer8BitAccess,       CheckExtension("GL_EXT_shader_8bit_storage"));
             ENABLE_FEATURE(TextureComponentSwizzle,       IsGL46OrAbove || CheckExtension("GL_ARB_texture_swizzle"));
+            ENABLE_FEATURE(TextureSubresourceViews,       IsGL43OrAbove || CheckExtension("GL_ARB_texture_view"));
+            ENABLE_FEATURE(NativeMultiDraw,               IsGL46OrAbove || CheckExtension("GL_ARB_shader_draw_parameters")); // Requirements for gl_DrawID
+            ENABLE_FEATURE(AsyncShaderCompilation,        CheckExtension("GL_KHR_parallel_shader_compile"));
+            ENABLE_FEATURE(FormattedBuffers,              IsGL40OrAbove);
             // clang-format on
 
             TexProps.MaxTexture1DDimension      = MaxTextureSize;
@@ -821,10 +874,20 @@ void RenderDeviceGLImpl::InitAdapterInfo()
             TexProps.TextureView2DOn3DSupported = TexProps.TextureViewSupported;
             ASSERT_SIZEOF(TexProps, 32, "Did you add a new member to TextureProperites? Please initialize it here.");
 
-            SamProps.BorderSamplingModeSupported   = True;
-            SamProps.AnisotropicFilteringSupported = IsGL46OrAbove || CheckExtension("GL_ARB_texture_filter_anisotropic");
-            SamProps.LODBiasSupported              = True;
+            SamProps.BorderSamplingModeSupported = True;
+            if (IsGL46OrAbove || CheckExtension("GL_ARB_texture_filter_anisotropic"))
+            {
+                GLint MaxAnisotropy = 0;
+                glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &MaxAnisotropy);
+                CHECK_GL_ERROR("glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY)");
+                SamProps.MaxAnisotropy = static_cast<Uint8>(MaxAnisotropy);
+            }
+
+            SamProps.LODBiasSupported = True;
             ASSERT_SIZEOF(SamProps, 3, "Did you add a new member to SamplerProperites? Please initialize it here.");
+
+            m_GLCaps.FramebufferSRGB  = IsGL40OrAbove || CheckExtension("GL_ARB_framebuffer_sRGB");
+            m_GLCaps.SemalessCubemaps = IsGL40OrAbove || CheckExtension("GL_ARB_seamless_cube_map");
         }
         else
         {
@@ -873,6 +936,10 @@ void RenderDeviceGLImpl::InitAdapterInfo()
             ENABLE_FEATURE(ResourceBuffer8BitAccess,  strstr(Extensions, "shader_8bit_storage"));
             ENABLE_FEATURE(UniformBuffer8BitAccess,   strstr(Extensions, "shader_8bit_storage"));
             ENABLE_FEATURE(TextureComponentSwizzle,   true);
+            ENABLE_FEATURE(TextureSubresourceViews,   strstr(Extensions, "texture_view"));
+            ENABLE_FEATURE(NativeMultiDraw,           strstr(Extensions, "multi_draw"));
+            ENABLE_FEATURE(AsyncShaderCompilation,    strstr(Extensions, "parallel_shader_compile"));
+            ENABLE_FEATURE(FormattedBuffers,          IsGLES32OrAbove);
             // clang-format on
 
             TexProps.MaxTexture1DDimension      = 0; // Not supported in GLES 3.2
@@ -888,10 +955,19 @@ void RenderDeviceGLImpl::InitAdapterInfo()
             TexProps.TextureView2DOn3DSupported = TexProps.TextureViewSupported;
             ASSERT_SIZEOF(TexProps, 32, "Did you add a new member to TextureProperites? Please initialize it here.");
 
-            SamProps.BorderSamplingModeSupported   = GL_TEXTURE_BORDER_COLOR && (IsGLES32OrAbove || strstr(Extensions, "texture_border_clamp"));
-            SamProps.AnisotropicFilteringSupported = GL_TEXTURE_MAX_ANISOTROPY_EXT && strstr(Extensions, "texture_filter_anisotropic");
-            SamProps.LODBiasSupported              = GL_TEXTURE_LOD_BIAS && IsGLES31OrAbove;
+            SamProps.BorderSamplingModeSupported = GL_TEXTURE_BORDER_COLOR && (IsGLES32OrAbove || strstr(Extensions, "texture_border_clamp"));
+            if (strstr(Extensions, "texture_filter_anisotropic"))
+            {
+                GLint MaxAnisotropy = 0;
+                glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &MaxAnisotropy);
+                CHECK_GL_ERROR("glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY)");
+                SamProps.MaxAnisotropy = static_cast<Uint8>(MaxAnisotropy);
+            }
+            SamProps.LODBiasSupported = GL_TEXTURE_LOD_BIAS && IsGLES31OrAbove;
             ASSERT_SIZEOF(SamProps, 3, "Did you add a new member to SamplerProperites? Please initialize it here.");
+
+            m_GLCaps.FramebufferSRGB  = strstr(Extensions, "sRGB_write_control");
+            m_GLCaps.SemalessCubemaps = false;
         }
 
 #ifdef GL_KHR_shader_subgroup
@@ -928,10 +1004,17 @@ void RenderDeviceGLImpl::InitAdapterInfo()
 
         Features.ShaderResourceQueries = Features.SeparablePrograms;
 
-        const bool bRGTC = CheckExtension("GL_ARB_texture_compression_rgtc");
-        const bool bBPTC = CheckExtension("GL_ARB_texture_compression_bptc");
-        const bool bS3TC = CheckExtension("GL_EXT_texture_compression_s3tc");
+        const bool bRGTC = CheckExtension("GL_EXT_texture_compression_rgtc") || CheckExtension("GL_ARB_texture_compression_rgtc");
+        const bool bBPTC = CheckExtension("GL_EXT_texture_compression_bptc") || CheckExtension("GL_ARB_texture_compression_bptc");
+        const bool bS3TC = CheckExtension("GL_EXT_texture_compression_s3tc") || CheckExtension("GL_WEBGL_compressed_texture_s3tc");
         ENABLE_FEATURE(TextureCompressionBC, bRGTC && bBPTC && bS3TC);
+
+#if PLATFORM_EMSCRIPTEN
+        const bool bETC2 = CheckExtension("GL_WEBGL_compressed_texture_etc");
+#else
+        const bool bETC2 = m_DeviceInfo.Type == RENDER_DEVICE_TYPE_GLES || CheckExtension("GL_ARB_ES3_compatibility");
+#endif
+        ENABLE_FEATURE(TextureCompressionETC2, bETC2);
 
         // Buffer properties
         {
@@ -1032,135 +1115,220 @@ void RenderDeviceGLImpl::InitAdapterInfo()
         m_AdapterInfo.Queues[0].TextureCopyGranularity[2] = 1;
     }
 
-    ASSERT_SIZEOF(DeviceFeatures, 41, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
+    ASSERT_SIZEOF(DeviceFeatures, 47, "Did you add a new feature to DeviceFeatures? Please handle its status here.");
 }
 
 void RenderDeviceGLImpl::FlagSupportedTexFormats()
 {
     const auto& DeviceInfo     = GetDeviceInfo();
-    const auto  bGL33OrAbove   = DeviceInfo.Type == RENDER_DEVICE_TYPE_GL && DeviceInfo.APIVersion >= Version{3, 3};
+    const auto  bDekstopGL     = DeviceInfo.Type == RENDER_DEVICE_TYPE_GL;
     const auto  bGLES30OrAbove = DeviceInfo.Type == RENDER_DEVICE_TYPE_GLES && DeviceInfo.APIVersion >= Version{3, 0};
 
-    const bool bRGTC       = CheckExtension("GL_ARB_texture_compression_rgtc");
-    const bool bBPTC       = CheckExtension("GL_ARB_texture_compression_bptc");
-    const bool bS3TC       = CheckExtension("GL_EXT_texture_compression_s3tc");
-    const bool bTexNorm16  = CheckExtension("GL_EXT_texture_norm16"); // Only for ES3.1+
-    const bool bTexSwizzle = bGL33OrAbove || bGLES30OrAbove || CheckExtension("GL_ARB_texture_swizzle");
+    const bool bRGTC       = CheckExtension("GL_EXT_texture_compression_rgtc") || CheckExtension("GL_ARB_texture_compression_rgtc");
+    const bool bBPTC       = CheckExtension("GL_EXT_texture_compression_bptc") || CheckExtension("GL_ARB_texture_compression_bptc");
+    const bool bS3TC       = CheckExtension("GL_EXT_texture_compression_s3tc") || CheckExtension("GL_WEBGL_compressed_texture_s3tc");
+    const bool bTexNorm16  = bDekstopGL || CheckExtension("GL_EXT_texture_norm16"); // Only for ES3.1+
+    const bool bTexSwizzle = bDekstopGL || bGLES30OrAbove || CheckExtension("GL_ARB_texture_swizzle");
 
+#if PLATFORM_EMSCRIPTEN
+    const bool bETC2 = CheckExtension("GL_WEBGL_compressed_texture_etc");
+#else
+    const bool bETC2 = bGLES30OrAbove || CheckExtension("GL_ARB_ES3_compatibility");
+#endif
 
-#define FLAG_FORMAT(Fmt, IsSupported) \
-    m_TextureFormatsInfo[Fmt].Supported = IsSupported
+    //              ||   GLES3.0   ||            GLES3.1              ||            GLES3.2              ||
+    // |   Format   ||  CR  |  TF  ||  CR  |  TF  | Req RB | Req. Tex ||  CR  |  TF  | Req RB | Req. Tex ||
+    // |------------||------|------||------|------|--------|----------||------|------|--------|----------||
+    // |     U8     ||  V   |  V   ||  V   |  V   |   V    |    V     ||  V   |  V   |   V    |    V     ||
+    // |     S8     ||      |  V   ||      |  V   |        |    V     ||      |  V   |        |    V     ||
+    // |  SRGBA8    ||  V   |  V   ||  V   |  V   |   V    |    V     ||  V   |  V   |   V    |    V     ||
+    // |    UI8     ||  V   |      ||  V   |      |   V    |    V     ||  V   |      |   V    |    V     ||
+    // |    SI8     ||  V   |      ||  V   |      |   V    |    V     ||  V   |      |   V    |    V     ||
+    // |    U16     ||  -   |  -   ||  -   |  -   |   -    |    -     ||  -   |  -   |   -    |    -     ||
+    // |    S16     ||  -   |  -   ||  -   |  -   |   -    |    -     ||  -   |  -   |   -    |    -     ||
+    // |   UI16     ||  V   |      ||  V   |      |   V    |    V     ||  V   |      |   V    |    V     ||
+    // |   SI16     ||  V   |      ||  V   |      |   V    |    V     ||  V   |      |   V    |    V     ||
+    // |   UI32     ||  V   |      ||  V   |      |   V    |    V     ||  V   |      |   V    |    V     ||
+    // |   SI32     ||  V   |      ||  V   |      |   V    |    V     ||  V   |      |   V    |    V     ||
+    // |    F16     ||      |  V   ||      |  V   |        |    V     || +V   |  V   |  +V    |    V     ||
+    // |    F32     ||      |      ||      |      |        |    V     || +V   |      |  +V    |    V     ||
+    // |  RGB10A2   ||  V   |  V   ||  V   |  V   |   V    |    V     ||  V   |  V   |   V    |    V     ||
+    // | RGB10A2UI  ||  V   |      ||  V   |      |   V    |    V     ||  V   |      |   V    |    V     ||
+    // | R11G11B10F ||      |  V   ||      |  V   |        |    V     || +V   |  V   |   V    |    V     ||
+    // |  RGB9_E5   ||      |      ||      |  V   |        |    V     ||      |  V   |        |    V     ||
+
+    // CR (Color Renderable)          - texture can be used as color attachment
+    // TF (Texture Filterable)        - texture can be filtered (mipmapping and minification/magnification filtering)
+    // Req RB (Required Renderbuffer) - texture supports renderbuffer usage
+    // Req. Tex (Required Texture)    - texture usage is supported
+
+    static constexpr Version NotAvaiable = Version{~0u, ~0u};
+
+    auto CheckBindFlagSupport = [&](BIND_FLAGS                     BindFlag,
+                                    const Version&                 MinGLVersion,
+                                    const Version&                 MinGLESVersion = Version{~0u, ~0u},
+                                    const std::vector<const char*> Extensions     = {}) {
+        if (DeviceInfo.Type == RENDER_DEVICE_TYPE_GL && DeviceInfo.APIVersion >= MinGLVersion)
+            return BindFlag;
+
+        if (DeviceInfo.Type == RENDER_DEVICE_TYPE_GLES && DeviceInfo.APIVersion >= MinGLESVersion)
+            return BindFlag;
+
+        for (const auto* Ext : Extensions)
+        {
+            if (CheckExtension(Ext))
+                return BindFlag;
+        }
+
+        return BIND_NONE;
+    };
+
+    const BIND_FLAGS TexBindFlags =
+        BIND_SHADER_RESOURCE |
+        (m_DeviceInfo.Features.PixelUAVWritesAndAtomics ? BIND_UNORDERED_ACCESS : BIND_NONE);
+
+    BIND_FLAGS U8BindFlags         = TexBindFlags | BIND_RENDER_TARGET;
+    BIND_FLAGS SRGBA8BindFlags     = TexBindFlags | BIND_RENDER_TARGET;
+    BIND_FLAGS S8BindFlags         = TexBindFlags | CheckBindFlagSupport(BIND_RENDER_TARGET, {4, 4}, NotAvaiable, {"GL_EXT_render_snorm"});
+    BIND_FLAGS UI8BindFlags        = TexBindFlags | BIND_RENDER_TARGET;
+    BIND_FLAGS SI8BindFlags        = TexBindFlags | BIND_RENDER_TARGET;
+    BIND_FLAGS U16BindFlags        = TexBindFlags | CheckBindFlagSupport(BIND_RENDER_TARGET, {4, 0}, NotAvaiable, {"GL_EXT_texture_norm16"});
+    BIND_FLAGS S16BindFlags        = TexBindFlags | CheckBindFlagSupport(BIND_RENDER_TARGET, {4, 4}, NotAvaiable, {"GL_EXT_render_snorm"});
+    BIND_FLAGS UI16BindFlags       = TexBindFlags | BIND_RENDER_TARGET;
+    BIND_FLAGS SI16BindFlags       = TexBindFlags | BIND_RENDER_TARGET;
+    BIND_FLAGS UI32BindFlags       = TexBindFlags | BIND_RENDER_TARGET;
+    BIND_FLAGS SI32BindFlags       = TexBindFlags | BIND_RENDER_TARGET;
+    BIND_FLAGS F16BindFlags        = TexBindFlags | CheckBindFlagSupport(BIND_RENDER_TARGET, {4, 0}, {3, 2}, {"GL_EXT_color_buffer_half_float"});
+    BIND_FLAGS F32BindFlags        = TexBindFlags | CheckBindFlagSupport(BIND_RENDER_TARGET, {4, 0}, {3, 2}, {"GL_EXT_color_buffer_float"});
+    BIND_FLAGS R11G11B10FBindFlags = TexBindFlags | CheckBindFlagSupport(BIND_RENDER_TARGET, {4, 0}, {3, 2});
+    BIND_FLAGS BindSrvRtvUav       = TexBindFlags | BIND_RENDER_TARGET;
+
+    auto FlagFormat = [this](TEXTURE_FORMAT Fmt, bool Supported, BIND_FLAGS BindFlags = BIND_NONE, bool Filterable = false) {
+        TextureFormatInfoExt& FmtInfo = m_TextureFormatsInfo[Fmt];
+
+        FmtInfo.Supported  = Supported;
+        FmtInfo.BindFlags  = Supported ? BindFlags : BIND_NONE;
+        FmtInfo.Filterable = Supported && Filterable;
+    };
 
     // The formats marked by true below are required in GL 3.3+ and GLES 3.0+
     // Note that GLES2.0 does not specify any required formats
 
     // clang-format off
-    FLAG_FORMAT(TEX_FORMAT_RGBA32_TYPELESS,            true);
-    FLAG_FORMAT(TEX_FORMAT_RGBA32_FLOAT,               true);
-    FLAG_FORMAT(TEX_FORMAT_RGBA32_UINT,                true);
-    FLAG_FORMAT(TEX_FORMAT_RGBA32_SINT,                true);
-    FLAG_FORMAT(TEX_FORMAT_RGB32_TYPELESS,             true);
-    FLAG_FORMAT(TEX_FORMAT_RGB32_FLOAT,                true);
-    FLAG_FORMAT(TEX_FORMAT_RGB32_UINT,                 true);
-    FLAG_FORMAT(TEX_FORMAT_RGB32_SINT,                 true);
-    FLAG_FORMAT(TEX_FORMAT_RGBA16_TYPELESS,            true);
-    FLAG_FORMAT(TEX_FORMAT_RGBA16_FLOAT,               true);
-    FLAG_FORMAT(TEX_FORMAT_RGBA16_UNORM,               bGL33OrAbove || bTexNorm16);
-    FLAG_FORMAT(TEX_FORMAT_RGBA16_UINT,                true);
-    FLAG_FORMAT(TEX_FORMAT_RGBA16_SNORM,               bGL33OrAbove || bTexNorm16);
-    FLAG_FORMAT(TEX_FORMAT_RGBA16_SINT,                true);
-    FLAG_FORMAT(TEX_FORMAT_RG32_TYPELESS,              true);
-    FLAG_FORMAT(TEX_FORMAT_RG32_FLOAT,                 true);
-    FLAG_FORMAT(TEX_FORMAT_RG32_UINT,                  true);
-    FLAG_FORMAT(TEX_FORMAT_RG32_SINT,                  true);
-    FLAG_FORMAT(TEX_FORMAT_R32G8X24_TYPELESS,          true);
-    FLAG_FORMAT(TEX_FORMAT_D32_FLOAT_S8X24_UINT,       true);
-    FLAG_FORMAT(TEX_FORMAT_R32_FLOAT_X8X24_TYPELESS,   true);
-    FLAG_FORMAT(TEX_FORMAT_X32_TYPELESS_G8X24_UINT,    false);
-    FLAG_FORMAT(TEX_FORMAT_RGB10A2_TYPELESS,           true);
-    FLAG_FORMAT(TEX_FORMAT_RGB10A2_UNORM,              true);
-    FLAG_FORMAT(TEX_FORMAT_RGB10A2_UINT,               true);
-    FLAG_FORMAT(TEX_FORMAT_R11G11B10_FLOAT,            true);
-    FLAG_FORMAT(TEX_FORMAT_RGBA8_TYPELESS,             true);
-    FLAG_FORMAT(TEX_FORMAT_RGBA8_UNORM,                true);
-    FLAG_FORMAT(TEX_FORMAT_RGBA8_UNORM_SRGB,           true);
-    FLAG_FORMAT(TEX_FORMAT_RGBA8_UINT,                 true);
-    FLAG_FORMAT(TEX_FORMAT_RGBA8_SNORM,                true);
-    FLAG_FORMAT(TEX_FORMAT_RGBA8_SINT,                 true);
-    FLAG_FORMAT(TEX_FORMAT_RG16_TYPELESS,              true);
-    FLAG_FORMAT(TEX_FORMAT_RG16_FLOAT,                 true);
-    FLAG_FORMAT(TEX_FORMAT_RG16_UNORM,                 bGL33OrAbove || bTexNorm16);
-    FLAG_FORMAT(TEX_FORMAT_RG16_UINT,                  true);
-    FLAG_FORMAT(TEX_FORMAT_RG16_SNORM,                 bGL33OrAbove || bTexNorm16);
-    FLAG_FORMAT(TEX_FORMAT_RG16_SINT,                  true);
-    FLAG_FORMAT(TEX_FORMAT_R32_TYPELESS,               true);
-    FLAG_FORMAT(TEX_FORMAT_D32_FLOAT,                  true);
-    FLAG_FORMAT(TEX_FORMAT_R32_FLOAT,                  true);
-    FLAG_FORMAT(TEX_FORMAT_R32_UINT,                   true);
-    FLAG_FORMAT(TEX_FORMAT_R32_SINT,                   true);
-    FLAG_FORMAT(TEX_FORMAT_R24G8_TYPELESS,             true);
-    FLAG_FORMAT(TEX_FORMAT_D24_UNORM_S8_UINT,          true);
-    FLAG_FORMAT(TEX_FORMAT_R24_UNORM_X8_TYPELESS,      true);
-    FLAG_FORMAT(TEX_FORMAT_X24_TYPELESS_G8_UINT,       false);
-    FLAG_FORMAT(TEX_FORMAT_RG8_TYPELESS,               true);
-    FLAG_FORMAT(TEX_FORMAT_RG8_UNORM,                  true);
-    FLAG_FORMAT(TEX_FORMAT_RG8_UINT,                   true);
-    FLAG_FORMAT(TEX_FORMAT_RG8_SNORM,                  true);
-    FLAG_FORMAT(TEX_FORMAT_RG8_SINT,                   true);
-    FLAG_FORMAT(TEX_FORMAT_R16_TYPELESS,               true);
-    FLAG_FORMAT(TEX_FORMAT_R16_FLOAT,                  true);
-    FLAG_FORMAT(TEX_FORMAT_D16_UNORM,                  true);
-    FLAG_FORMAT(TEX_FORMAT_R16_UNORM,                  bGL33OrAbove || bTexNorm16);
-    FLAG_FORMAT(TEX_FORMAT_R16_UINT,                   true);
-    FLAG_FORMAT(TEX_FORMAT_R16_SNORM,                  bGL33OrAbove || bTexNorm16);
-    FLAG_FORMAT(TEX_FORMAT_R16_SINT,                   true);
-    FLAG_FORMAT(TEX_FORMAT_R8_TYPELESS,                true);
-    FLAG_FORMAT(TEX_FORMAT_R8_UNORM,                   true);
-    FLAG_FORMAT(TEX_FORMAT_R8_UINT,                    true);
-    FLAG_FORMAT(TEX_FORMAT_R8_SNORM,                   true);
-    FLAG_FORMAT(TEX_FORMAT_R8_SINT,                    true);
-    FLAG_FORMAT(TEX_FORMAT_A8_UNORM,                   bTexSwizzle);
-    FLAG_FORMAT(TEX_FORMAT_R1_UNORM,                   false); // Not supported in OpenGL
-    FLAG_FORMAT(TEX_FORMAT_RGB9E5_SHAREDEXP,           true);
-    FLAG_FORMAT(TEX_FORMAT_RG8_B8G8_UNORM,             false); // Not supported in OpenGL
-    FLAG_FORMAT(TEX_FORMAT_G8R8_G8B8_UNORM,            false); // Not supported in OpenGL
+    //               Format                           Supported     BindFlags       Filterable
+    FlagFormat(TEX_FORMAT_RGBA32_TYPELESS,            true                                      );
+    FlagFormat(TEX_FORMAT_RGBA32_FLOAT,               true,         F32BindFlags,     bDekstopGL);
+    FlagFormat(TEX_FORMAT_RGBA32_UINT,                true,         UI32BindFlags               );
+    FlagFormat(TEX_FORMAT_RGBA32_SINT,                true,         SI32BindFlags               );
+    FlagFormat(TEX_FORMAT_RGB32_TYPELESS,             true                                      );
+    FlagFormat(TEX_FORMAT_RGB32_FLOAT,                true,         F32BindFlags,     bDekstopGL);
+    FlagFormat(TEX_FORMAT_RGB32_SINT,                 true,         SI32BindFlags               );
+    FlagFormat(TEX_FORMAT_RGB32_UINT,                 true,         UI32BindFlags               );
+    FlagFormat(TEX_FORMAT_RGBA16_TYPELESS,            true                                      );
+    FlagFormat(TEX_FORMAT_RGBA16_FLOAT,               true,         F16BindFlags,           true);
+    FlagFormat(TEX_FORMAT_RGBA16_UNORM,               bTexNorm16,   U16BindFlags,           true);
+    FlagFormat(TEX_FORMAT_RGBA16_UINT,                true,         UI16BindFlags               );
+    FlagFormat(TEX_FORMAT_RGBA16_SNORM,               bTexNorm16,   S16BindFlags,           true);
+    FlagFormat(TEX_FORMAT_RGBA16_SINT,                true,         SI16BindFlags               );
+    FlagFormat(TEX_FORMAT_RG32_TYPELESS,              true                                      );
+    FlagFormat(TEX_FORMAT_RG32_FLOAT,                 true,         F32BindFlags,     bDekstopGL);
+    FlagFormat(TEX_FORMAT_RG32_SINT,                  true,         SI32BindFlags               );
+    FlagFormat(TEX_FORMAT_RG32_UINT,                  true,         UI32BindFlags               );
+    FlagFormat(TEX_FORMAT_R32G8X24_TYPELESS,          true                                      );
+    FlagFormat(TEX_FORMAT_D32_FLOAT_S8X24_UINT,       true,         BIND_DEPTH_STENCIL          );
+    FlagFormat(TEX_FORMAT_R32_FLOAT_X8X24_TYPELESS,   true,         TexBindFlags,     bDekstopGL);
+    FlagFormat(TEX_FORMAT_X32_TYPELESS_G8X24_UINT,    false                                     );
+    FlagFormat(TEX_FORMAT_RGB10A2_TYPELESS,           true                                      );
+    FlagFormat(TEX_FORMAT_RGB10A2_UNORM,              true,         BindSrvRtvUav,          true);
+    FlagFormat(TEX_FORMAT_RGB10A2_UINT,               true,         BindSrvRtvUav               );
+    FlagFormat(TEX_FORMAT_R11G11B10_FLOAT,            true,         R11G11B10FBindFlags,    true);
+    FlagFormat(TEX_FORMAT_RGBA8_TYPELESS,             true                                      );
+    FlagFormat(TEX_FORMAT_RGBA8_UNORM,                true,         U8BindFlags,            true);
+    FlagFormat(TEX_FORMAT_RGBA8_UNORM_SRGB,           true,         SRGBA8BindFlags,        true);
+    FlagFormat(TEX_FORMAT_RGBA8_UINT,                 true,         UI8BindFlags                );
+    FlagFormat(TEX_FORMAT_RGBA8_SNORM,                true,         S8BindFlags,            true);
+    FlagFormat(TEX_FORMAT_RGBA8_SINT,                 true,         SI8BindFlags                );
+    FlagFormat(TEX_FORMAT_RG16_TYPELESS,              true                                      );
+    FlagFormat(TEX_FORMAT_RG16_FLOAT,                 true,         F16BindFlags,           true);
+    FlagFormat(TEX_FORMAT_RG16_UNORM,                 bTexNorm16,   U16BindFlags,           true);
+    FlagFormat(TEX_FORMAT_RG16_UINT,                  true,         UI16BindFlags               );
+    FlagFormat(TEX_FORMAT_RG16_SNORM,                 bTexNorm16,   S16BindFlags,           true);
+    FlagFormat(TEX_FORMAT_RG16_SINT,                  true,         SI16BindFlags               );
+    FlagFormat(TEX_FORMAT_R32_TYPELESS,               true                                      );
+    FlagFormat(TEX_FORMAT_D32_FLOAT,                  true,         BIND_DEPTH_STENCIL          );
+    FlagFormat(TEX_FORMAT_R32_FLOAT,                  true,         F32BindFlags,     bDekstopGL);
+    FlagFormat(TEX_FORMAT_R32_UINT,                   true,         UI32BindFlags               );
+    FlagFormat(TEX_FORMAT_R32_SINT,                   true,         SI32BindFlags               );
+    FlagFormat(TEX_FORMAT_R24G8_TYPELESS,             true                                      );
+    FlagFormat(TEX_FORMAT_D24_UNORM_S8_UINT,          true,         BIND_DEPTH_STENCIL          );
+    FlagFormat(TEX_FORMAT_R24_UNORM_X8_TYPELESS,      true,         TexBindFlags,           true);
+    FlagFormat(TEX_FORMAT_X24_TYPELESS_G8_UINT,       false                                     );
+    FlagFormat(TEX_FORMAT_RG8_TYPELESS,               true                                      );
+    FlagFormat(TEX_FORMAT_RG8_UNORM,                  true,         U8BindFlags,            true);
+    FlagFormat(TEX_FORMAT_RG8_UINT,                   true,         UI8BindFlags                );
+    FlagFormat(TEX_FORMAT_RG8_SNORM,                  true,         S8BindFlags,            true);
+    FlagFormat(TEX_FORMAT_RG8_SINT,                   true,         SI8BindFlags                );
+    FlagFormat(TEX_FORMAT_R16_TYPELESS,               true                                      );
+    FlagFormat(TEX_FORMAT_R16_FLOAT,                  true,         F16BindFlags,           true);
+    FlagFormat(TEX_FORMAT_D16_UNORM,                  true,         BIND_DEPTH_STENCIL          );
+    FlagFormat(TEX_FORMAT_R16_UNORM,                  bTexNorm16,   U16BindFlags,           true);
+    FlagFormat(TEX_FORMAT_R16_UINT,                   true,         UI16BindFlags               );
+    FlagFormat(TEX_FORMAT_R16_SNORM,                  bTexNorm16,   S16BindFlags,           true);
+    FlagFormat(TEX_FORMAT_R16_SINT,                   true,         SI16BindFlags               );
+    FlagFormat(TEX_FORMAT_R8_TYPELESS,                true                                      );
+    FlagFormat(TEX_FORMAT_R8_UNORM,                   true,         U8BindFlags,            true);
+    FlagFormat(TEX_FORMAT_R8_UINT,                    true,         UI8BindFlags                );
+    FlagFormat(TEX_FORMAT_R8_SNORM,                   true,         S8BindFlags,            true);
+    FlagFormat(TEX_FORMAT_R8_SINT,                    true,         SI8BindFlags                );
+    FlagFormat(TEX_FORMAT_A8_UNORM,                   bTexSwizzle,  U8BindFlags,            true);
+    FlagFormat(TEX_FORMAT_R1_UNORM,                   false                                     ); // Not supported in OpenGL
+    FlagFormat(TEX_FORMAT_RGB9E5_SHAREDEXP,           true,         BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_RG8_B8G8_UNORM,             false                                     ); // Not supported in OpenGL
+    FlagFormat(TEX_FORMAT_G8R8_G8B8_UNORM,            false                                     ); // Not supported in OpenGL
 
-    FLAG_FORMAT(TEX_FORMAT_BC1_TYPELESS,               bS3TC);
-    FLAG_FORMAT(TEX_FORMAT_BC1_UNORM,                  bS3TC);
-    FLAG_FORMAT(TEX_FORMAT_BC1_UNORM_SRGB,             bS3TC);
-    FLAG_FORMAT(TEX_FORMAT_BC2_TYPELESS,               bS3TC);
-    FLAG_FORMAT(TEX_FORMAT_BC2_UNORM,                  bS3TC);
-    FLAG_FORMAT(TEX_FORMAT_BC2_UNORM_SRGB,             bS3TC);
-    FLAG_FORMAT(TEX_FORMAT_BC3_TYPELESS,               bS3TC);
-    FLAG_FORMAT(TEX_FORMAT_BC3_UNORM,                  bS3TC);
-    FLAG_FORMAT(TEX_FORMAT_BC3_UNORM_SRGB,             bS3TC);
+    FlagFormat(TEX_FORMAT_BC1_TYPELESS,               bS3TC                                     );
+    FlagFormat(TEX_FORMAT_BC1_UNORM,                  bS3TC,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_BC1_UNORM_SRGB,             bS3TC,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_BC2_TYPELESS,               bS3TC                                     );
+    FlagFormat(TEX_FORMAT_BC2_UNORM,                  bS3TC,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_BC2_UNORM_SRGB,             bS3TC,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_BC3_TYPELESS,               bS3TC                                     );
+    FlagFormat(TEX_FORMAT_BC3_UNORM,                  bS3TC,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_BC3_UNORM_SRGB,             bS3TC,        BIND_SHADER_RESOURCE,   true);
 
-    FLAG_FORMAT(TEX_FORMAT_BC4_TYPELESS,               bRGTC);
-    FLAG_FORMAT(TEX_FORMAT_BC4_UNORM,                  bRGTC);
-    FLAG_FORMAT(TEX_FORMAT_BC4_SNORM,                  bRGTC);
-    FLAG_FORMAT(TEX_FORMAT_BC5_TYPELESS,               bRGTC);
-    FLAG_FORMAT(TEX_FORMAT_BC5_UNORM,                  bRGTC);
-    FLAG_FORMAT(TEX_FORMAT_BC5_SNORM,                  bRGTC);
+    FlagFormat(TEX_FORMAT_BC4_TYPELESS,               bRGTC                                     );
+    FlagFormat(TEX_FORMAT_BC4_UNORM,                  bRGTC,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_BC4_SNORM,                  bRGTC,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_BC5_TYPELESS,               bRGTC                                     );
+    FlagFormat(TEX_FORMAT_BC5_UNORM,                  bRGTC,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_BC5_SNORM,                  bRGTC,        BIND_SHADER_RESOURCE,   true);
 
-    FLAG_FORMAT(TEX_FORMAT_B5G6R5_UNORM,               false); // Not supported in OpenGL
-    FLAG_FORMAT(TEX_FORMAT_B5G5R5A1_UNORM,             false); // Not supported in OpenGL
-    FLAG_FORMAT(TEX_FORMAT_BGRA8_UNORM,                bTexSwizzle);
-    FLAG_FORMAT(TEX_FORMAT_BGRX8_UNORM,                false); // Not supported in OpenGL
-    FLAG_FORMAT(TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM, false); // Not supported in OpenGL
-    FLAG_FORMAT(TEX_FORMAT_BGRA8_TYPELESS,             false); // Not supported in OpenGL
-    FLAG_FORMAT(TEX_FORMAT_BGRA8_UNORM_SRGB,           false); // Not supported in OpenGL
-    FLAG_FORMAT(TEX_FORMAT_BGRX8_TYPELESS,             false); // Not supported in OpenGL
-    FLAG_FORMAT(TEX_FORMAT_BGRX8_UNORM_SRGB,           false); // Not supported in OpenGL
+    FlagFormat(TEX_FORMAT_B5G6R5_UNORM,               false                                     ); // Not supported in OpenGL
+    FlagFormat(TEX_FORMAT_B5G5R5A1_UNORM,             false                                     ); // Not supported in OpenGL
+    FlagFormat(TEX_FORMAT_BGRA8_UNORM,                bTexSwizzle,  BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_BGRX8_UNORM,                false                                     ); // Not supported in OpenGL
+    FlagFormat(TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM, false                                     ); // Not supported in OpenGL
+    FlagFormat(TEX_FORMAT_BGRA8_TYPELESS,             false                                     ); // Not supported in OpenGL
+    FlagFormat(TEX_FORMAT_BGRA8_UNORM_SRGB,           false                                     ); // Not supported in OpenGL
+    FlagFormat(TEX_FORMAT_BGRX8_TYPELESS,             false                                     ); // Not supported in OpenGL
+    FlagFormat(TEX_FORMAT_BGRX8_UNORM_SRGB,           false                                     ); // Not supported in OpenGL
 
-    FLAG_FORMAT(TEX_FORMAT_BC6H_TYPELESS,              bBPTC);
-    FLAG_FORMAT(TEX_FORMAT_BC6H_UF16,                  bBPTC);
-    FLAG_FORMAT(TEX_FORMAT_BC6H_SF16,                  bBPTC);
-    FLAG_FORMAT(TEX_FORMAT_BC7_TYPELESS,               bBPTC);
-    FLAG_FORMAT(TEX_FORMAT_BC7_UNORM,                  bBPTC);
-    FLAG_FORMAT(TEX_FORMAT_BC7_UNORM_SRGB,             bBPTC);
+    FlagFormat(TEX_FORMAT_BC6H_TYPELESS,              bBPTC);
+    FlagFormat(TEX_FORMAT_BC6H_UF16,                  bBPTC,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_BC6H_SF16,                  bBPTC,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_BC7_TYPELESS,               bBPTC);
+    FlagFormat(TEX_FORMAT_BC7_UNORM,                  bBPTC,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_BC7_UNORM_SRGB,             bBPTC,        BIND_SHADER_RESOURCE,   true);
+
+    FlagFormat(TEX_FORMAT_ETC2_RGB8_UNORM,            bETC2,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_ETC2_RGB8_UNORM_SRGB,       bETC2,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_ETC2_RGB8A1_UNORM,          bETC2,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_ETC2_RGB8A1_UNORM_SRGB,     bETC2,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_ETC2_RGBA8_UNORM,           bETC2,        BIND_SHADER_RESOURCE,   true);
+    FlagFormat(TEX_FORMAT_ETC2_RGBA8_UNORM_SRGB,      bETC2,        BIND_SHADER_RESOURCE,   true);
     // clang-format on
 
-#ifdef DILIGENT_DEBUG
+#ifdef DILIGENT_DEVELOPMENT
     const bool bGL43OrAbove = DeviceInfo.Type == RENDER_DEVICE_TYPE_GL && DeviceInfo.APIVersion >= Version{4, 3};
 
     constexpr int      TestTextureDim = 8;
@@ -1168,15 +1336,15 @@ void RenderDeviceGLImpl::FlagSupportedTexFormats()
     std::vector<Uint8> ZeroData(TestTextureDim * TestTextureDim * MaxTexelSize);
 
     // Go through all formats and try to create small 2D texture to check if the format is supported
-    for (auto FmtInfo = m_TextureFormatsInfo.begin(); FmtInfo != m_TextureFormatsInfo.end(); ++FmtInfo)
+    for (auto& FmtInfo : m_TextureFormatsInfo)
     {
-        if (FmtInfo->Format == TEX_FORMAT_UNKNOWN)
+        if (FmtInfo.Format == TEX_FORMAT_UNKNOWN)
             continue;
 
-        auto GLFmt = TexFormatToGLInternalTexFormat(FmtInfo->Format);
+        auto GLFmt = TexFormatToGLInternalTexFormat(FmtInfo.Format);
         if (GLFmt == 0)
         {
-            VERIFY(!FmtInfo->Supported, "Format should be marked as unsupported");
+            VERIFY(!FmtInfo.Supported, "Format should be marked as unsupported");
             continue;
         }
 
@@ -1187,16 +1355,16 @@ void RenderDeviceGLImpl::FlagSupportedTexFormats()
             GLint params = 0;
             glGetInternalformativ(GL_TEXTURE_2D, GLFmt, GL_INTERNALFORMAT_SUPPORTED, 1, &params);
             CHECK_GL_ERROR("glGetInternalformativ() failed");
-            VERIFY(FmtInfo->Supported == (params == GL_TRUE), "This internal format should be supported");
+            VERIFY(FmtInfo.Supported == (params == GL_TRUE), "This internal format should be supported");
         }
 #    else
         (void)bGL43OrAbove; // To suppress warning
 #    endif
 
         // Check that the format is indeed supported
-        if (FmtInfo->Supported)
+        if (FmtInfo.Supported && !FmtInfo.IsDepthStencil() && !FmtInfo.IsTypeless)
         {
-            GLObjectWrappers::GLTextureObj TestGLTex(true);
+            GLObjectWrappers::GLTextureObj TestGLTex{true};
             // Immediate context has not been created yet, so use raw GL functions
             glBindTexture(GL_TEXTURE_2D, TestGLTex);
             CHECK_GL_ERROR("Failed to bind texture");
@@ -1207,10 +1375,10 @@ void RenderDeviceGLImpl::FlagSupportedTexFormats()
                 // For some reason glTexStorage2D() may succeed, but upload operation
                 // will later fail. So we need to additionally try to upload some
                 // data to the texture
-                const auto& TransferAttribs = GetNativePixelTransferAttribs(FmtInfo->Format);
+                const auto& TransferAttribs = GetNativePixelTransferAttribs(FmtInfo.Format);
                 if (TransferAttribs.IsCompressed)
                 {
-                    const auto& FmtAttribs = GetTextureFormatAttribs(FmtInfo->Format);
+                    const auto& FmtAttribs = GetTextureFormatAttribs(FmtInfo.Format);
                     static_assert((TestTextureDim & (TestTextureDim - 1)) == 0, "Test texture dim must be power of two!");
                     auto BlockBytesInRow = (TestTextureDim / int{FmtAttribs.BlockWidth}) * int{FmtAttribs.ComponentSize};
                     glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, // mip level
@@ -1229,16 +1397,16 @@ void RenderDeviceGLImpl::FlagSupportedTexFormats()
 
                 if (glGetError() != GL_NO_ERROR)
                 {
-                    LOG_WARNING_MESSAGE("Failed to upload data to a test ", TestTextureDim, "x", TestTextureDim, " ", FmtInfo->Name, " texture. "
-                                                                                                                                     "This likely indicates that the format is not supported despite being reported so by the device.");
-                    FmtInfo->Supported = false;
+                    LOG_WARNING_MESSAGE("Failed to upload data to a test ", TestTextureDim, "x", TestTextureDim, " ", FmtInfo.Name,
+                                        " texture. This likely indicates that the format is not supported despite being reported so by the device.");
+                    FmtInfo.Supported = false;
                 }
             }
             else
             {
-                LOG_WARNING_MESSAGE("Failed to allocate storage for a test ", TestTextureDim, "x", TestTextureDim, " ", FmtInfo->Name, " texture. "
-                                                                                                                                       "This likely indicates that the format is not supported despite being reported so by the device.");
-                FmtInfo->Supported = false;
+                LOG_WARNING_MESSAGE("Failed to allocate storage for a test ", TestTextureDim, "x", TestTextureDim, " ", FmtInfo.Name,
+                                    " texture. This likely indicates that the format is not supported despite being reported so by the device.");
+                FmtInfo.Supported = false;
             }
             glBindTexture(GL_TEXTURE_2D, 0);
         }
@@ -1252,7 +1420,7 @@ bool CreateTestGLTexture(GLContextState& GlCtxState, GLenum BindTarget, const GL
     GlCtxState.BindTexture(-1, BindTarget, GLTexObj);
     CreateFunc();
     bool bSuccess = glGetError() == GL_NO_ERROR;
-    GlCtxState.BindTexture(-1, BindTarget, GLObjectWrappers::GLTextureObj(false));
+    GlCtxState.BindTexture(-1, BindTarget, GLObjectWrappers::GLTextureObj{false});
     return bSuccess;
 }
 
@@ -1279,11 +1447,13 @@ void RenderDeviceGLImpl::TestTextureFormat(TEXTURE_FORMAT TexFormat)
     const int TestArraySlices  = 8;
     const int TestTextureDepth = 8;
 
-    TexFormatInfo.BindFlags  = BIND_SHADER_RESOURCE;
     TexFormatInfo.Dimensions = RESOURCE_DIMENSION_SUPPORT_NONE;
 
     // Disable debug messages - errors are expected
     m_ShowDebugGLOutput = 0;
+
+    // Clear error code
+    glGetError();
 
     const auto& TexProps = GetAdapterInfo().Texture;
     // Create test texture 1D
@@ -1356,10 +1526,12 @@ void RenderDeviceGLImpl::TestTextureFormat(TEXTURE_FORMAT TexFormat)
                 }
             }
 
-            bool bTestDepthAttachment =
-                TexFormatInfo.ComponentType == COMPONENT_TYPE_DEPTH ||
-                TexFormatInfo.ComponentType == COMPONENT_TYPE_DEPTH_STENCIL;
-            bool bTestColorAttachment = !bTestDepthAttachment && TexFormatInfo.ComponentType != COMPONENT_TYPE_COMPRESSED;
+            bool bTestDepthAttachment = (TexFormatInfo.BindFlags & BIND_DEPTH_STENCIL) != 0;
+            VERIFY_EXPR(!bTestDepthAttachment ||
+                        TexFormatInfo.ComponentType == COMPONENT_TYPE_DEPTH ||
+                        TexFormatInfo.ComponentType == COMPONENT_TYPE_DEPTH_STENCIL);
+            bool bTestColorAttachment = (TexFormatInfo.BindFlags & BIND_RENDER_TARGET) != 0;
+            VERIFY_EXPR(!bTestColorAttachment || (!bTestDepthAttachment && TexFormatInfo.ComponentType != COMPONENT_TYPE_COMPRESSED));
 
             GLObjectWrappers::GLFrameBufferObj NewFBO{false};
 
@@ -1396,13 +1568,17 @@ void RenderDeviceGLImpl::TestTextureFormat(TEXTURE_FORMAT TexFormat)
                     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ColorTex, 0);
                     CHECK_GL_ERROR("Failed to bind dummy render target to framebuffer");
 
-                    static const GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0};
+                    static constexpr GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0};
                     glDrawBuffers(_countof(DrawBuffers), DrawBuffers);
                     CHECK_GL_ERROR("Failed to set draw buffers via glDrawBuffers()");
 
                     GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-                    if ((glGetError() == GL_NO_ERROR) && (Status == GL_FRAMEBUFFER_COMPLETE))
-                        TexFormatInfo.BindFlags |= BIND_DEPTH_STENCIL;
+                    if ((glGetError() != GL_NO_ERROR) || (Status != GL_FRAMEBUFFER_COMPLETE))
+                        TexFormatInfo.BindFlags &= ~BIND_DEPTH_STENCIL;
+                }
+                else
+                {
+                    TexFormatInfo.BindFlags &= ~BIND_DEPTH_STENCIL;
                 }
             }
             else if (bTestColorAttachment)
@@ -1410,13 +1586,17 @@ void RenderDeviceGLImpl::TestTextureFormat(TEXTURE_FORMAT TexFormat)
                 glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, TestGLTex2D, 0);
                 if (glGetError() == GL_NO_ERROR)
                 {
-                    static const GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0};
+                    static constexpr GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0};
                     glDrawBuffers(_countof(DrawBuffers), DrawBuffers);
                     CHECK_GL_ERROR("Failed to set draw buffers via glDrawBuffers()");
 
                     GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-                    if ((glGetError() == GL_NO_ERROR) && (Status == GL_FRAMEBUFFER_COMPLETE))
-                        TexFormatInfo.BindFlags |= BIND_RENDER_TARGET;
+                    if ((glGetError() != GL_NO_ERROR) || (Status != GL_FRAMEBUFFER_COMPLETE))
+                        TexFormatInfo.BindFlags &= ~BIND_RENDER_TARGET;
+                }
+                else
+                {
+                    TexFormatInfo.BindFlags &= ~BIND_RENDER_TARGET;
                 }
             }
 
@@ -1428,7 +1608,7 @@ void RenderDeviceGLImpl::TestTextureFormat(TEXTURE_FORMAT TexFormat)
         }
 
 #if GL_ARB_shader_image_load_store
-        if (GetDeviceInfo().Features.PixelUAVWritesAndAtomics)
+        if (TexFormatInfo.BindFlags & BIND_UNORDERED_ACCESS)
         {
             GLuint    CurrentImg     = 0;
             GLint     CurrentLevel   = 0;
@@ -1439,12 +1619,11 @@ void RenderDeviceGLImpl::TestTextureFormat(TEXTURE_FORMAT TexFormat)
             ContextState.GetBoundImage(0, CurrentImg, CurrentLevel, CurrentLayered, CurrentLayer, CurrenAccess, CurrenFormat);
 
             glBindImageTexture(0, TestGLTex2D, 0, GL_FALSE, 0, GL_READ_WRITE, GLFmt);
-            if (glGetError() == GL_NO_ERROR)
-                TexFormatInfo.BindFlags |= BIND_UNORDERED_ACCESS;
+            if (glGetError() != GL_NO_ERROR)
+                TexFormatInfo.BindFlags &= ~BIND_UNORDERED_ACCESS;
 
             glBindImageTexture(0, CurrentImg, CurrentLevel, CurrentLayered, CurrentLayer, CurrenAccess, CurrenFormat);
-            if (glGetError() != GL_NO_ERROR)
-                LOG_ERROR("Failed to restore original image");
+            CHECK_GL_ERROR("Failed to restore original image");
         }
 #endif
     }
@@ -1521,6 +1700,31 @@ void RenderDeviceGLImpl::OnDestroyBuffer(BufferGLImpl& Buffer)
     Threading::SpinLockGuard VAOCacheGuard{m_VAOCacheLock};
     for (auto& VAOCacheIt : m_VAOCache)
         VAOCacheIt.second.OnDestroyBuffer(Buffer);
+}
+
+
+void RenderDeviceGLImpl::PurgeContextCaches(GLContext::NativeGLContextType Context)
+{
+    {
+        Threading::SpinLockGuard FBOCacheGuard{m_FBOCacheLock};
+
+        auto it = m_FBOCache.find(Context);
+        if (it != m_FBOCache.end())
+        {
+            it->second.Clear();
+            m_FBOCache.erase(it);
+        }
+    }
+    {
+        Threading::SpinLockGuard VAOCacheGuard{m_VAOCacheLock};
+
+        auto it = m_VAOCache.find(Context);
+        if (it != m_VAOCache.end())
+        {
+            it->second.Clear();
+            m_VAOCache.erase(it);
+        }
+    }
 }
 
 void RenderDeviceGLImpl::IdleGPU()

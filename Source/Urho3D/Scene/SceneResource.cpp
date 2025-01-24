@@ -52,6 +52,11 @@ void SceneResource::RegisterObject(Context* context)
     context->AddFactoryReflection<SceneResource>();
 }
 
+void SceneResource::SetSaveFormatHint(InternalResourceFormat format)
+{
+    saveFormat_ = format != InternalResourceFormat::Unknown ? ea::make_optional(format) : ea::nullopt;
+}
+
 bool SceneResource::Save(Serializer& dest, InternalResourceFormat format, bool asPrefab) const
 {
     if (asPrefab)
@@ -235,12 +240,14 @@ bool SceneResource::EndLoad()
 
 bool SceneResource::Save(Serializer& dest) const
 {
-    return Save(dest, loadFormat_.value_or(InternalResourceFormat::Xml), isPrefab_);
+    const auto format = saveFormat_.value_or(loadFormat_.value_or(InternalResourceFormat::Xml));
+    return Save(dest, format, isPrefab_);
 }
 
 bool SceneResource::SaveFile(const FileIdentifier& fileName) const
 {
-    return SaveFile(fileName, loadFormat_.value_or(InternalResourceFormat::Xml), isPrefab_);
+    const auto format = saveFormat_.value_or(loadFormat_.value_or(InternalResourceFormat::Xml));
+    return SaveFile(fileName, format, isPrefab_);
 }
 
 const char* SceneResource::GetXmlRootName()

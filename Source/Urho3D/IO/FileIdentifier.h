@@ -24,6 +24,8 @@
 
 #include <Urho3D/Urho3D.h>
 
+#include <Urho3D/Core/Format.h>
+
 #include <EASTL/string.h>
 #include <EASTL/string_view.h>
 
@@ -49,7 +51,10 @@ struct URHO3D_API FileIdentifier
     /// Construct from scheme and path (as is).
     FileIdentifier(ea::string_view scheme, ea::string_view fileName);
     /// Deprecated. Use FromUri() instead.
-    FileIdentifier(const ea::string& uri) : FileIdentifier(FromUri(uri)) {}
+    FileIdentifier(const ea::string& uri)
+        : FileIdentifier(FromUri(uri))
+    {
+    }
 
     /// Construct from uri-like path.
     static FileIdentifier FromUri(ea::string_view uri);
@@ -103,3 +108,20 @@ struct URHO3D_API FileIdentifier
 };
 
 } // namespace Urho3D
+
+#ifndef SWIG
+// Support formatting for FileIdentifier.
+template <> struct fmt::formatter<Urho3D::FileIdentifier>
+{
+    constexpr auto parse(format_parse_context& ctx) -> format_parse_context::iterator
+    {
+        // TODO: Support formatting specifiers
+        return ctx.begin();
+    }
+
+    auto format(const Urho3D::FileIdentifier& value, format_context& ctx) const -> format_context::iterator
+    {
+        return fmt::format_to(ctx.out(), "{}", value.ToUri());
+    }
+};
+#endif

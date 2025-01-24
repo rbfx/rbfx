@@ -25,6 +25,8 @@
 #include "../Container/Str.h"
 #include "../Math/MathDefs.h"
 
+#include <EASTL/tuple.h>
+
 namespace Urho3D
 {
 class Vector2;
@@ -75,6 +77,9 @@ public:
 
     /// Test for inequality with another vector.
     bool operator !=(const IntVector2& rhs) const { return x_ != rhs.x_ || y_ != rhs.y_; }
+
+    /// Lexicographic comparison for sorting.
+    bool operator<(const IntVector2& rhs) const { return ea::tie(x_, y_) < ea::tie(rhs.x_, rhs.y_); }
 
     /// Add a vector.
     IntVector2 operator +(const IntVector2& rhs) const { return IntVector2(x_ + rhs.x_, y_ + rhs.y_); }
@@ -327,8 +332,14 @@ public:
     /// Project vector onto axis.
     float ProjectOntoAxis(const Vector2& axis) const { return DotProduct(axis.Normalized()); }
 
+    /// Return scalar cross product of 2D vectors.
+    float ScalarCrossProduct(const Vector2& rhs) const { return y_ * rhs.x_ - x_ * rhs.y_; }
+
     /// Returns the angle between this vector and another vector in degrees.
     float Angle(const Vector2& rhs) const { return Urho3D::Acos(DotProduct(rhs) / (Length() * rhs.Length())); }
+
+    /// Returns signed angle between this vector and another vector in degrees. Clockwise direction is positive.
+    float SignedAngle(const Vector2& rhs) const { return Angle(rhs) * (ScalarCrossProduct(rhs) >= 0 ? 1 : -1); }
 
     /// Return absolute vector.
     Vector2 Abs() const { return Vector2(Urho3D::Abs(x_), Urho3D::Abs(y_)); }
