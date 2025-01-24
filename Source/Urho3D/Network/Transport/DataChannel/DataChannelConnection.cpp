@@ -129,6 +129,9 @@ void DataChannelConnection::OnDataChannelConnected(int index)
     if (onConnected_)
         onConnected_();
 
+    if (server_)
+        server_->onConnected_(this);
+
     // Signaling server connection is no longer needed.
     websocket_->close();
     websocket_ = nullptr;
