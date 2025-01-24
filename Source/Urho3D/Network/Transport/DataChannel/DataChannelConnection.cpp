@@ -69,7 +69,7 @@ void DataChannelConnection::Disconnect()
 {
     if (peer_)
     {
-        AddRef();    // Ensure this object is alive until all callbacks are done executing.
+        selfHolder_ = this; // Ensure this object is alive until all callbacks are done executing.
         state_ = State::Disconnecting;
 #ifndef URHO3D_PLATFORM_WEB
         peer_->resetCallbacks();
@@ -171,7 +171,7 @@ void DataChannelConnection::OnDataChannelDisconnected(int index)
     }
     peer_ = nullptr;
     server_ = nullptr;
-    ReleaseRef();
+    selfHolder_ = nullptr;
 }
 
 void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std::shared_ptr<rtc::WebSocket> websocket)
