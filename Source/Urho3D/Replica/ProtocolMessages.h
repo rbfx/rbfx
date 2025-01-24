@@ -30,14 +30,6 @@
 namespace Urho3D
 {
 
-template <class T>
-T ReadNetworkMessage(MemoryBuffer& src)
-{
-    T msg;
-    msg.Load(src);
-    return msg;
-}
-
 struct MsgConfigure
 {
     unsigned magic_{};
