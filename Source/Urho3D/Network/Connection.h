@@ -193,6 +193,14 @@ public:
     /// @property
     unsigned long long GetBytesOutPerSec() const;
 
+    /// Return bytes sent per second if compression was not applied.
+    /// @property
+    unsigned long long GetBytesOutWithoutCompressionPerSec() const;
+
+    /// Return bytes received per second if compression was not applied.
+    /// @property
+    unsigned long long GetBytesInWithoutCompressionPerSec() const;
+
     /// Return packets received per second.
     /// @property
     int GetPacketsInPerSec() const;
@@ -260,12 +268,14 @@ private:
     mutable TimedCounter packetCounterOutgoing_{10, 1000};
     mutable TimedCounter bytesCounterIncoming_{10, 1000};
     mutable TimedCounter bytesCounterOutgoing_{10, 1000};
+    mutable TimedCounter bytesCounterOutgoingWithoutCompression_{10, 1000};
+    mutable TimedCounter bytesCounterIncomingWithoutCompression_{10, 1000};
     /// Statistics timer.
     Timer statsTimer_;
     /// Outgoing packet buffer which can contain multiple messages.
     ea::unordered_map<int, VectorBuffer> outgoingBuffer_;
     /// Outgoing packet size limit.
-    int packedMessageLimit_ = 1024;
+    int packetMessageLimit_ = 1024;
     /// Queued remote events.
     ea::vector<RemoteEvent> remoteEvents_;
     /// @}
@@ -302,7 +312,9 @@ private:
     SharedPtr<NetworkConnection> transportConnection_;
     Mutex packetQueueLock_;
     ea::vector<VectorBuffer> incomingPackets_;
-
+    ea::vector<char> compressedPacketBuffer_;
+    ea::vector<char> decompressedPacketBuffer_;
+    unsigned compressedBytesOut_;
 };
 
 }
