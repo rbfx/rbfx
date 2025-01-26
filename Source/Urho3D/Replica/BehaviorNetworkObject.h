@@ -115,6 +115,8 @@ public:
     void ReadUnreliableFeedback(NetworkFrame feedbackFrame, Deserializer& src) override;
 
     void Update(float replicaTimeStep, float inputTimeStep) override;
+
+    void PrepareToRemove() override;
     /// @}
 
 private:

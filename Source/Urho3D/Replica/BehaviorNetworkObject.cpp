@@ -422,4 +422,14 @@ void BehaviorNetworkObject::Update(float replicaTimeStep, float inputTimeStep)
     }
 }
 
+void BehaviorNetworkObject::PrepareToRemove()
+{
+    for (const auto& connectedBehavior : behaviors_)
+    {
+        if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::PrepareToRemove))
+            connectedBehavior.component_->PrepareToRemove();
+    }
+    BaseClassName::PrepareToRemove();
+}
+
 }
