@@ -415,21 +415,27 @@ void BehaviorNetworkObject::Update(float replicaTimeStep, float inputTimeStep)
 {
     BaseClassName::Update(replicaTimeStep, inputTimeStep);
 
-    for (const auto& connectedBehavior : behaviors_)
+    if (callbackMask_.Test(NetworkCallbackMask::Update))
     {
-        if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::Update))
-            connectedBehavior.component_->Update(replicaTimeStep, inputTimeStep);
+        for (const auto& connectedBehavior : behaviors_)
+        {
+            if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::Update))
+                connectedBehavior.component_->Update(replicaTimeStep, inputTimeStep);
+        }
     }
 }
 
 void BehaviorNetworkObject::PrepareToRemove()
 {
-    for (const auto& connectedBehavior : behaviors_)
+    if (callbackMask_.Test(NetworkCallbackMask::PrepareToRemove))
     {
-        if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::PrepareToRemove))
-            connectedBehavior.component_->PrepareToRemove();
+        for (const auto& connectedBehavior : behaviors_)
+        {
+            if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::PrepareToRemove))
+                connectedBehavior.component_->PrepareToRemove();
+        }
     }
+
     BaseClassName::PrepareToRemove();
 }
-
 }
