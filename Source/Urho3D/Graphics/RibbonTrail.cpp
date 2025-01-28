@@ -421,9 +421,9 @@ void RibbonTrail::SetMaterial(Material* material)
     batches_[0].material_ = material;
 }
 
-void RibbonTrail::OnSceneSet(Scene* scene)
+void RibbonTrail::OnSceneSet(Scene* previousScene, Scene* scene)
 {
-    Drawable::OnSceneSet(scene);
+    Drawable::OnSceneSet(previousScene, scene);
 
     if (scene && IsEnabledEffective())
         SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(RibbonTrail, HandleScenePostUpdate));

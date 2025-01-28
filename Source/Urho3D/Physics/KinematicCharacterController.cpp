@@ -129,7 +129,7 @@ void KinematicCharacterController::OnNodeSet(Node* previousNode, Node* currentNo
         node_->AddListener(this);
 }
 
-void KinematicCharacterController::OnSceneSet(Scene* scene)
+void KinematicCharacterController::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     if (scene)
     {

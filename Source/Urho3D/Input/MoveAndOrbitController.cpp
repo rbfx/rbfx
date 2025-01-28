@@ -105,10 +105,8 @@ void MoveAndOrbitController::OnNodeSet(Node* previousNode, Node* currentNode)
     UpdateEventSubscription();
 }
 
-void MoveAndOrbitController::OnSceneSet(Scene* scene)
+void MoveAndOrbitController::OnSceneSet(Scene* previousScene, Scene* scene)
 {
-    Component::OnSceneSet(scene);
-
     UpdateEventSubscription();
 }
 

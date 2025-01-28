@@ -169,9 +169,9 @@ void ReplicationManager::RegisterObject(Context* context)
     context->AddFactoryReflection<ReplicationManager>(Category_Subsystem);
 }
 
-void ReplicationManager::OnSceneSet(Scene* scene)
+void ReplicationManager::OnSceneSet(Scene* previousScene, Scene* scene)
 {
-    BaseClassName::OnSceneSet(scene);
+    BaseClassName::OnSceneSet(previousScene, scene);
 
     if (scene)
     {

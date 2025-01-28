@@ -88,7 +88,7 @@ void Obstacle::OnNodeSet(Node* previousNode, Node* currentNode)
         node_->AddListener(this);
 }
 
-void Obstacle::OnSceneSet(Scene* scene)
+void Obstacle::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     if (scene)
     {

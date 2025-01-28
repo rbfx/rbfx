@@ -227,7 +227,7 @@ protected:
     /// Handle node being assigned.
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
 
 private:
     /// Handle scene post-update event.

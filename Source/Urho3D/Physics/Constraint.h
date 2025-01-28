@@ -179,7 +179,7 @@ protected:
     /// Handle node being assigned.
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     /// Handle node transform being dirtied.
     void OnMarkedDirty(Node* node) override;
 

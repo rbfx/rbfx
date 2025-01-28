@@ -997,7 +997,7 @@ void AnimationController::OnNodeSet(Node* previousNode, Node* currentNode)
     ConnectToAnimatedModel();
 }
 
-void AnimationController::OnSceneSet(Scene* scene)
+void AnimationController::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     if (scene && IsEnabledEffective())
         SubscribeToEvent(scene, E_SCENEPOSTUPDATE, URHO3D_HANDLER(AnimationController, HandleScenePostUpdate));

@@ -154,7 +154,7 @@ void Constraint2D::OnNodeSet(Node* previousNode, Node* currentNode)
     }
 }
 
-void Constraint2D::OnSceneSet(Scene* scene)
+void Constraint2D::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     if (scene)
     {

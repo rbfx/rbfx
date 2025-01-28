@@ -204,7 +204,7 @@ public:
 
 protected:
     /// Handle node being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     /// Recalculate the world-space bounding box.
     void OnWorldBoundingBoxUpdate() override;
     /// Mark vertex buffer to need an update.

@@ -850,7 +850,7 @@ void PhysicsWorld::CleanupGeometryCache()
     CleanupGeometryCacheImpl(gimpactTrimeshCache_);
 }
 
-void PhysicsWorld::OnSceneSet(Scene* scene)
+void PhysicsWorld::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     // Subscribe to the scene subsystem update, which will trigger the physics simulation step
     if (scene)

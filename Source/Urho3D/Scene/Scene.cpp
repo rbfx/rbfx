@@ -736,7 +736,6 @@ void Scene::SetUpdateEnabled(bool enable)
     {
         updateEnabled_ = enable;
 
-        
         using namespace SceneUpdateChanged;
 
         VariantMap& eventData = GetEventDataMap();
@@ -1018,7 +1017,7 @@ void Scene::ComponentAdded(Component* component)
 
     replicatedComponents_[id] = component;
 
-    component->OnSceneSet(this);
+    component->OnSceneSet(nullptr, this);
 
     if (auto index = GetMutableComponentIndex(component->GetType()))
         index->insert(component);
@@ -1036,7 +1035,7 @@ void Scene::ComponentRemoved(Component* component)
     replicatedComponents_.erase(id);
 
     component->SetID(0);
-    component->OnSceneSet(nullptr);
+    component->OnSceneSet(this, nullptr);
 }
 
 void Scene::HandleUpdate(StringHash eventType, VariantMap& eventData)

@@ -186,7 +186,7 @@ protected:
 
 protected:
     /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     /// Update the crowd simulation.
     void Update(float delta);
     /// Get the detour crowd agent.

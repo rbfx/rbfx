@@ -615,7 +615,7 @@ void CrowdAgent::OnNodeSet(Node* previousNode, Node* currentNode)
         node_->AddListener(this);
 }
 
-void CrowdAgent::OnSceneSet(Scene* scene)
+void CrowdAgent::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     if (scene)
     {

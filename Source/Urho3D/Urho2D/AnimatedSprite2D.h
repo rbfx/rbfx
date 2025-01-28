@@ -111,7 +111,7 @@ public:
 
 protected:
     /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     /// Handle update vertices.
     void UpdateSourceBatches() override;
     /// Handle scene post update.

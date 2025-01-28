@@ -126,7 +126,7 @@ public:
     /// @}
 
 protected:
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     void OnComponentAdded(TrackedComponentBase* baseComponent) override;
 
 private:

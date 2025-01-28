@@ -866,7 +866,7 @@ void RigidBody::OnNodeSet(Node* previousNode, Node* currentNode)
         node_->AddListener(this);
 }
 
-void RigidBody::OnSceneSet(Scene* scene)
+void RigidBody::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     if (scene)
     {

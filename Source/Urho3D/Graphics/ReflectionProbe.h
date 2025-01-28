@@ -112,7 +112,7 @@ public:
     bool HasDynamicProbes() const { return !spatial_.movableProbes_.empty(); }
 
 protected:
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     void OnComponentAdded(TrackedComponentBase* baseComponent) override;
     void OnComponentRemoved(TrackedComponentBase* baseComponent) override;
 

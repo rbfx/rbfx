@@ -904,7 +904,7 @@ void CollisionShape::OnNodeSet(Node* previousNode, Node* currentNode)
     }
 }
 
-void CollisionShape::OnSceneSet(Scene* scene)
+void CollisionShape::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     if (scene)
     {

@@ -326,7 +326,7 @@ public:
 
 protected:
     /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
 
 private:
     /// Handle the scene subsystem update event, step simulation here.

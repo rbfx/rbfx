@@ -531,7 +531,7 @@ void RigidBody2D::OnNodeSet(Node* previousNode, Node* currentNode)
     }
 }
 
-void RigidBody2D::OnSceneSet(Scene* scene)
+void RigidBody2D::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     if (scene)
     {

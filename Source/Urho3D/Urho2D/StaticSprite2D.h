@@ -157,7 +157,7 @@ public:
 protected:
 
     /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     /// Recalculate the world-space bounding box.
     void OnWorldBoundingBoxUpdate() override;
     /// Handle draw order changed.

@@ -114,7 +114,7 @@ protected:
     /// @}
 
     /// Subscribe to events when assigned to a scene.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     /// Trigger the tile cache to make updates to the nav mesh if necessary.
     void HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& eventData);
 

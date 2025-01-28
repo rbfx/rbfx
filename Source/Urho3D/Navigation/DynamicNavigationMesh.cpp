@@ -830,7 +830,7 @@ void DynamicNavigationMesh::UpdateTileCache()
     } while (!upToDate);
 }
 
-void DynamicNavigationMesh::OnSceneSet(Scene* scene)
+void DynamicNavigationMesh::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     // Subscribe to the scene subsystem update, which will trigger the tile cache to update the nav mesh
     if (scene)

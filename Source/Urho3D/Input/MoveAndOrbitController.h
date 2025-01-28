@@ -95,7 +95,7 @@ protected:
     /// Handle scene node being assigned at creation.
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
     /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
 
 private:
     /// Called on input end.

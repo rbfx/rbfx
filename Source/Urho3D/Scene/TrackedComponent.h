@@ -80,7 +80,7 @@ public:
     /// @}
 
 protected:
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
 
     virtual void OnComponentAdded(TrackedComponentBase* baseComponent) {}
     virtual void OnComponentMoved(TrackedComponentBase* baseComponent, unsigned oldIndex) {}
@@ -206,7 +206,7 @@ public:
     }
 
 protected:
-    void OnSceneSet(Scene* scene) override
+    void OnSceneSet(Scene* previousScene, Scene* scene) override
     {
         auto newRegistry = scene ? scene->GetDerivedComponent<RegistryComponentType>() : nullptr;
         if (newRegistry == registry_)

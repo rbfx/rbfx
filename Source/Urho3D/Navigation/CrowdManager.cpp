@@ -645,7 +645,7 @@ void CrowdManager::RemoveAgent(CrowdAgent* agent)
     crowd_->removeAgent(agent->GetAgentCrowdId());
 }
 
-void CrowdManager::OnSceneSet(Scene* scene)
+void CrowdManager::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     // Subscribe to the scene subsystem update, which will trigger the crowd update step, and grab a reference
     // to the scene's NavigationMesh

@@ -43,7 +43,7 @@ class URHO3D_API CameraOperator : public Component
 
     /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
     void ApplyAttributes() override;
-    
+
     /// Set node IDs attribute.
     void SetNodeIDsAttr(const VariantVector& value);
     /// Return node IDs attribute.
@@ -88,7 +88,7 @@ protected:
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
     /// Handle scene being assigned.
-    void OnSceneSet(Scene* scene) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
 
 private:
     void HandleSceneDrawableUpdateFinished(StringHash eventType, VariantMap& eventData);

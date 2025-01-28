@@ -150,7 +150,7 @@ void Component::OnNodeSet(Node* previousNode, Node* currentNode)
 {
 }
 
-void Component::OnSceneSet(Scene* scene)
+void Component::OnSceneSet(Scene* previousScene, Scene* scene)
 {
 }
 

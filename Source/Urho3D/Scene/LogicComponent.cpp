@@ -97,7 +97,7 @@ void LogicComponent::OnNodeSet(Node* previousNode, Node* currentNode)
     }
 }
 
-void LogicComponent::OnSceneSet(Scene* scene)
+void LogicComponent::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     if (scene)
         UpdateEventSubscription();

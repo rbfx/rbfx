@@ -711,7 +711,7 @@ bool PhysicsWorld2D::GetAutoClearForces() const
     return world_->GetAutoClearForces();
 }
 
-void PhysicsWorld2D::OnSceneSet(Scene* scene)
+void PhysicsWorld2D::OnSceneSet(Scene* previousScene, Scene* scene)
 {
     // Subscribe to the scene subsystem update, which will trigger the physics simulation step
     if (scene)
