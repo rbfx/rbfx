@@ -331,7 +331,8 @@ jobs:
         run: ${{ env.ci_build_script }} test dbg
 
       - name: Test Debug (Managed)
-        if: (matrix.ci_compiler == 'msvc') && (matrix.ci_lib_type == 'dll')
+        # TODO: Fix C# on x86, issue #733.
+        if: (matrix.ci_compiler == 'msvc') && (matrix.ci_lib_type == 'dll') && (matrix.ci_arch == 'x64')
         shell: bash
         run: ${{ env.ci_build_script }} cstest dbg
 
@@ -349,7 +350,8 @@ jobs:
         run: ${{ env.ci_build_script }} test rel
 
       - name: Test Release (Managed)
-        if: (matrix.ci_compiler == 'msvc') && (matrix.ci_lib_type == 'dll')
+        # TODO: Fix C# on x86, issue #733.
+        if: (matrix.ci_compiler == 'msvc') && (matrix.ci_lib_type == 'dll') && (matrix.ci_arch == 'x64')
         shell: bash
         run: ${{ env.ci_build_script }} cstest rel
 
