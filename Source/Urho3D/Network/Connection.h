@@ -113,6 +113,7 @@ public:
 
     /// Implement AbstractConnection
     /// @{
+    void SetMaxPacketSize(unsigned limit) override;
     void SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType = PacketType::ReliableOrdered) override;
     ea::string ToString() const override;
     bool IsClockSynchronized() const override;

@@ -79,12 +79,16 @@ enum NetworkMessageId : uint16_t
     MSG_MAX = 0xFFFF,
 };
 
-/// Default limit for the size of the message transmitted over underlying transport.
-static constexpr unsigned DefaultMaxPacketSize = 4096;
+/// Conservative limit for the size of the packet transmitted over underlying transport.
+/// Real limit may be higher.
+/// @see AbstractConnection::GetMaxPacketSize
+static constexpr unsigned MaxNetworkPacketSize = 1024;
+/// Maximum possible size of network message payload. Transport limitations are not considered.
+/// Real limit may be lower.
+/// @see AbstractConnection::GetMaxMessageSize
+static constexpr unsigned MaxNetworkMessageSize = 0xffff;
+
 /// Size of the message header (message id and size).
 static constexpr unsigned NetworkMessageHeaderSize = 4;
 
-/// Package file fragment size.
-static constexpr unsigned PACKAGE_FRAGMENT_SIZE = 1024;
-
-}
+} // namespace Urho3D

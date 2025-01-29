@@ -39,7 +39,25 @@
 namespace Urho3D
 {
 
+namespace
+{
+
 static const int STATS_INTERVAL_MSEC = 2000;
+
+/// Size of package file fragment header.
+static constexpr unsigned PackageFragmentHeaderSize = 8;
+/// Package file fragment size.
+static constexpr unsigned PACKAGE_FRAGMENT_SIZE =
+    MaxNetworkPacketSize - PackageFragmentHeaderSize - NetworkMessageHeaderSize;
+
+unsigned CalculateMaxPacketSize(unsigned requestedLimit, unsigned transportLimit)
+{
+    const unsigned effectiveRequestedLimit = requestedLimit != 0 ? requestedLimit : M_MAX_UNSIGNED;
+    const unsigned effectiveTransportLimit = transportLimit != 0 ? transportLimit : MaxNetworkPacketSize;
+    return ea::min(effectiveTransportLimit, effectiveRequestedLimit);
+}
+
+} // namespace
 
 PackageDownload::PackageDownload() :
     totalFragments_(0),
@@ -80,11 +98,21 @@ void Connection::Initialize()
     auto network = GetSubsystem<Network>();
     clock_ = ea::make_unique<ClockSynchronizer>(network->GetPingIntervalMs(), network->GetMaxPingIntervalMs(),
         network->GetClockBufferSize(), network->GetPingBufferSize());
+
+    // Re-set the limit to apply transport limitations.
+    const unsigned requestedMaxPacketSize = GetMaxPacketSize();
+    SetMaxPacketSize(requestedMaxPacketSize);
 }
 
 void Connection::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<Connection>();
+}
+
+void Connection::SetMaxPacketSize(unsigned limit)
+{
+    const unsigned transportLimit = transportConnection_->GetMaxMessageSize();
+    BaseClassName::SetMaxPacketSize(CalculateMaxPacketSize(limit, transportLimit));
 }
 
 void Connection::SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType)

@@ -53,6 +53,7 @@ public:
     bool Connect(const URL& url) override;
     void Disconnect() override;
     void SendMessage(ea::string_view data, PacketTypeFlags type = PacketType::ReliableOrdered) override;
+    unsigned GetMaxMessageSize() const override;
 
 protected:
     void InitializeFromSocket(DataChannelServer* server, std::shared_ptr<rtc::WebSocket> websocket);
@@ -64,7 +65,6 @@ protected:
     std::shared_ptr<rtc::WebSocket> websocket_ = {};
     std::shared_ptr<rtc::PeerConnection> peer_ = {};
     std::shared_ptr<rtc::DataChannel> dataChannels_[4] = {};
-    static const unsigned short maxDataSize_ = UINT16_MAX;
     VectorBuffer buffer_;
     bool websocketWasOpened_ = false;
     SharedPtr<DataChannelConnection> selfHolder_;

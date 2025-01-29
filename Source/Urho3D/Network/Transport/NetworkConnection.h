@@ -35,10 +35,13 @@ public:
     virtual void Disconnect() = 0;
     /// Copies data and queues it for sending.
     virtual void SendMessage(ea::string_view data, PacketTypeFlags type = PacketType::ReliableOrdered) = 0;
+    /// Return maximum size of network message.
+    virtual unsigned GetMaxMessageSize() const = 0;
     /// Result may be empty, when connection is not %State::Connected.
     ea::string GetAddress() const { return address_; }
     /// Result may be 0, when connection is not %State::Connected or when result is not applicable to the underlying transport.
     unsigned short GetPort() const { return port_; }
+    /// Return current state of the connection.
     State GetState() const { return state_; }
 
     /// Called once, when connection is fully set up and data is ready to be sent and received. May be called from non-main thread.

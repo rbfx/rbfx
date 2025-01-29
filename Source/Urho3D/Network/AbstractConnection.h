@@ -24,15 +24,16 @@ class URHO3D_API AbstractConnection : public Object, public IDFamily<AbstractCon
     URHO3D_OBJECT(AbstractConnection, Object);
 
 public:
-    AbstractConnection(Context* context) : Object(context) {}
+    AbstractConnection(Context* context);
 
     /// Connection limits.
     /// @{
-    void SetMaxPacketSize(unsigned limit) { maxPacketSize_ = limit; }
-    unsigned GetMaxPacketSize() const { return maxPacketSize_; }
-    unsigned GetMaxMessageSize() const { return maxPacketSize_ - NetworkMessageHeaderSize; }
+    unsigned GetMaxPacketSize() const;
+    unsigned GetMaxMessageSize() const;
     /// @}
 
+    /// Set maximum size of network packet. Connection transport may override this value.
+    virtual void SetMaxPacketSize(unsigned limit);
     /// Send message to the other end of the connection.
     virtual void SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType = PacketType::ReliableOrdered) = 0;
     /// Return debug connection string for logging.
@@ -78,7 +79,7 @@ protected:
     VectorBuffer msg_;
 
 private:
-    unsigned maxPacketSize_{DefaultMaxPacketSize};
+    unsigned maxPacketSize_{};
 
     ByteVector incomingMessageBuffer_;
     ea::string debugInfoBuffer_;

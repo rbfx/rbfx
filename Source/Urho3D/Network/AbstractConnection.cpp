@@ -9,6 +9,26 @@
 namespace Urho3D
 {
 
+AbstractConnection::AbstractConnection(Context* context)
+    : Object(context)
+{
+}
+
+unsigned AbstractConnection::GetMaxPacketSize() const
+{
+    return maxPacketSize_;
+}
+
+unsigned AbstractConnection::GetMaxMessageSize() const
+{
+    return ea::min(MaxNetworkMessageSize, maxPacketSize_ - NetworkMessageHeaderSize);
+}
+
+void AbstractConnection::SetMaxPacketSize(unsigned limit)
+{
+    maxPacketSize_ = limit;
+}
+
 void AbstractConnection::SendMessage(
     NetworkMessageId messageId, ConstByteSpan payload, PacketTypeFlags packetType, ea::string_view debugInfo)
 {
