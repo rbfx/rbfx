@@ -52,9 +52,7 @@ endforeach()
 include(CMakeDependentOption)
 
 # Set MULTI_CONFIG_PROJECT if applicable
-if (MSVC OR "${CMAKE_GENERATOR}" STREQUAL "Xcode")
-    set (MULTI_CONFIG_PROJECT ON)
-endif ()
+get_property(MULTI_CONFIG_PROJECT GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 # Set platform and compiler variables
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")

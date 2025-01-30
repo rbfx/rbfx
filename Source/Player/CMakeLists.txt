@@ -45,7 +45,8 @@ if (NOT URHO3D_NO_EDITOR_PLAYER_EXE)
             endif ()
             install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Player${CMAKE_EXECUTABLE_SUFFIX}" DESTINATION ${DEST_BIN_DIR_CONFIG})
         endif ()
-    else ()
+    elseif (NOT WEB)
+        # Player executable is not usefil in web builds, because there would be no way to load user code.
         if (NOT URHO3D_WIN32_CONSOLE)
             set (TARGET_TYPE WIN32)
         endif ()
@@ -53,17 +54,22 @@ if (NOT URHO3D_NO_EDITOR_PLAYER_EXE)
         set (PLAYER_TARGET Player)
     endif ()
 
-    target_link_libraries(${PLAYER_TARGET} PUBLIC PlayerLibrary)
-    target_link_plugins (${PLAYER_TARGET} "${URHO3D_PLUGIN_LIST}")
+    if (PLAYER_TARGET)
+        target_link_libraries(${PLAYER_TARGET} PUBLIC PlayerLibrary)
+        target_link_plugins(${PLAYER_TARGET} "${URHO3D_PLUGIN_LIST}")
+    endif ()
 endif ()
 
 # SDK installation
-install (TARGETS ${PLAYER_TARGET}
-    LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
-    RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
-    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
-    BUNDLE  DESTINATION ${DEST_BIN_DIR_CONFIG}
-)
+if (PLAYER_TARGET)
+    install (TARGETS ${PLAYER_TARGET}
+        LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
+        RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
+        ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
+        BUNDLE  DESTINATION ${DEST_BIN_DIR_CONFIG}
+    )
+endif ()
+
 install (TARGETS PlayerLibrary EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
 install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DESTINATION ${DEST_INCLUDE_DIR}/Tools

@@ -31,6 +31,10 @@ if (NOT DEFINED CMAKE_CXX_STANDARD)
     set (CMAKE_CXX_STANDARD 17)
 endif ()
 
+if (POLICY CMP0177)
+    cmake_policy(SET CMP0177 NEW)
+endif ()
+
 # Set project name and languages
 project (rbfx C CXX)
 if (APPLE)
@@ -380,4 +384,4 @@ if (NOT ANDROID)
         install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/${dir} DESTINATION ${CMAKE_INSTALL_PREFIX}/${DEST_BIN_DIR}/${dir}/../)
     endforeach()
 endif ()
-install (FILES ${CMAKE_SOURCE_DIR}/bin/shell.html DESTINATION ${CMAKE_INSTALL_PREFIX}/${DEST_BIN_DIR}/)
+install (FILES ${CMAKE_SOURCE_DIR}/bin/shell.html DESTINATION ${CMAKE_INSTALL_PREFIX}/${DEST_BIN_DIR_CONFIG})
