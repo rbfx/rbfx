@@ -813,6 +813,7 @@ jobs:
                         (matrix.ci_build_type == 'rel')
                     }}
       URHO3D_SDK: ${{ github.workspace }}/host-sdk
+      URHO3D_CSHARP: ON   # Must be here so that we do not need to modify gradle build script.
 
     steps:
       - uses: actions/checkout@v4
@@ -860,7 +861,12 @@ jobs:
         if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_build_type }}-${{ github.sha }}'
-          path: '**/*.apk'
+          path: |
+            ${{ github.workspace }}/source-code/android/**/*.apk
+            ${{ github.workspace }}/source-code/android/build/intermediates/cmake/release/obj/*/libUrho3D.so
+            ${{ github.workspace }}/source-code/android/.cxx/RelWithDebInfo/*/*/bin/*.dll
+            ${{ github.workspace }}/source-code/android/.cxx/RelWithDebInfo/*/*/bin/*.pdb
+            ${{ github.workspace }}/source-code/android/.cxx/RelWithDebInfo/*/*/bin/*.json
 
   iOS:
     if: github.event.pull_request.draft == false
@@ -1087,10 +1093,13 @@ jobs:
         shell: bash
         working-directory: source-code/packaging/nuget/
         run: |
-          ./package.sh
+          ./package.sh package
           for pkg in out/*.nupkg;
           do
-            dotnet nuget push $pkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+            if [[ $pkg != *"android"* ]];
+            then
+              dotnet nuget push $pkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+            fi
           done
 
   Docs:
