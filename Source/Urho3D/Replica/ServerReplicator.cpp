@@ -283,7 +283,7 @@ bool ClientSynchronizationState::ProcessMessage(NetworkMessageId messageId, Memo
     case MSG_SYNCHRONIZED:
     {
         const auto msg = ReadSerializedMessage<MsgSynchronized>(messageData);
-        connection_->LogReceivedMessage(messageId, msg);
+        connection_->LogMessagePayload(messageId, msg);
 
         ProcessSynchronized(msg);
         return true;

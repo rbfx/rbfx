@@ -41,9 +41,13 @@ void AbstractConnection::SendMessage(
 
     SendMessageInternal(messageId, payload.data(), payload.size(), packetType);
 
-    Log::GetLogger().Write(GetMessageLogLevel(messageId), "{}: Message #{} ({} bytes) sent{}{}{}{}", ToString(),
-        static_cast<unsigned>(messageId), payload.size(), (packetType & PacketType::Reliable) ? ", reliable" : "",
-        (packetType & PacketType::Ordered) ? ", ordered" : "", debugInfo.empty() ? "" : ": ", debugInfo);
+    const LogLevel logLevel = GetMessageLogLevel(messageId);
+    if (logLevel != LOG_NONE)
+    {
+        Log::GetLogger().Write(GetMessageLogLevel(messageId), "{}: Message #{} ({} bytes) sent{}{}{}{}", ToString(),
+            static_cast<unsigned>(messageId), payload.size(), (packetType & PacketType::Reliable) ? ", reliable" : "",
+            (packetType & PacketType::Ordered) ? ", ordered" : "", debugInfo.empty() ? "" : ": ", debugInfo);
+    }
 }
 
 void AbstractConnection::SendMessage(
@@ -52,16 +56,21 @@ void AbstractConnection::SendMessage(
     SendMessage(messageId, msg.GetBuffer(), packetType, debugInfo);
 }
 
-void AbstractConnection::LogReceivedMessage(NetworkMessageId messageId, ea::string_view debugInfo) const
+void AbstractConnection::LogMessagePayload(NetworkMessageId messageId, ea::string_view debugInfo) const
 {
-    Log::GetLogger().Write(GetMessageLogLevel(messageId), "{}: Message #{} received: {}", ToString(),
-        static_cast<unsigned>(messageId), debugInfo);
+    const LogLevel logLevel = GetMessageLogLevel(messageId);
+    if (logLevel != LOG_NONE)
+    {
+        Log::GetLogger().Write(
+            logLevel, "{}: Message #{} payload: {}", ToString(), static_cast<unsigned>(messageId), debugInfo);
+    }
 }
 
 LogLevel AbstractConnection::GetMessageLogLevel(NetworkMessageId messageId) const
 {
-    static const ea::unordered_set<NetworkMessageId> debugMessages = {
+    static const ea::unordered_set<NetworkMessageId> importantMessages = {
         MSG_IDENTITY,
+        MSG_CONNECTION_LIMIT_EXCEEDED,
         MSG_SCENELOADED,
         MSG_REQUESTPACKAGE,
 
@@ -72,7 +81,7 @@ LogLevel AbstractConnection::GetMessageLogLevel(NetworkMessageId messageId) cons
         MSG_CONFIGURE,
         MSG_SYNCHRONIZED,
     };
-    return debugMessages.contains(messageId) ? LOG_DEBUG : LOG_TRACE;
+    return importantMessages.contains(messageId) ? LOG_DEBUG : logAllMessages_ ? LOG_TRACE : LOG_NONE;
 }
 
 } // namespace Urho3D

@@ -26,6 +26,9 @@ class URHO3D_API AbstractConnection : public Object, public IDFamily<AbstractCon
 public:
     AbstractConnection(Context* context);
 
+    void SetLogAllMessages(bool enabled) { logAllMessages_ = enabled; }
+    bool IsLogAllMessages() const { return logAllMessages_; }
+
     /// Connection limits.
     /// @{
     unsigned GetMaxPacketSize() const;
@@ -59,11 +62,12 @@ public:
     void SendMessage(NetworkMessageId messageId, const VectorBuffer& msg,
         PacketTypeFlags packetType = PacketType::ReliableOrdered, ea::string_view debugInfo = {});
 
-    void LogReceivedMessage(NetworkMessageId messageId, ea::string_view debugInfo) const;
+    void LogMessagePayload(NetworkMessageId messageId, ea::string_view debugInfo) const;
 
-    template <class T> void LogReceivedMessage(NetworkMessageId messageId, const T& message) const
+    template <class T> void LogMessagePayload(NetworkMessageId messageId, const T& message) const
     {
-        LogReceivedMessage(messageId, ea::string_view{message.ToString()});
+        if (GetMessageLogLevel(messageId) != LOG_NONE)
+            LogMessagePayload(messageId, ea::string_view{message.ToString()});
     }
 
     LogLevel GetMessageLogLevel(NetworkMessageId messageId) const;
@@ -80,6 +84,7 @@ protected:
 
 private:
     unsigned maxPacketSize_{};
+    bool logAllMessages_{};
 
     ByteVector incomingMessageBuffer_;
     ea::string debugInfoBuffer_;

@@ -307,11 +307,10 @@ void Connection::SendAllBuffers()
 
 bool Connection::ProcessMessage(MemoryBuffer& buffer)
 {
-    int msgID;
     packetCounterIncoming_.AddSample(1);
     bytesCounterIncoming_.AddSample(buffer.GetSize());
 
-    if (buffer.GetSize() < sizeof(msgID))
+    if (buffer.GetSize() < NetworkMessageHeaderSize)
     {
         URHO3D_LOGERROR("Invalid network message size {}: too small.", buffer.GetSize());
         return false;
@@ -319,15 +318,17 @@ bool Connection::ProcessMessage(MemoryBuffer& buffer)
 
     while (!buffer.IsEof())
     {
-        msgID = buffer.ReadUShort();
+        const auto msgID = static_cast<NetworkMessageId>(buffer.ReadUShort());
         unsigned int packetSize = buffer.ReadUShort();
         MemoryBuffer msg(buffer.GetData() + buffer.GetPosition(), packetSize);
         buffer.Seek(buffer.GetPosition() + packetSize);
 
-        Log::GetLogger().Write(GetMessageLogLevel((NetworkMessageId)msgID), "{}: Message #{} ({} bytes) received",
-            ToString(),
-            static_cast<unsigned>(msgID),
-            packetSize);
+        const LogLevel logLevel = GetMessageLogLevel(msgID);
+        if (logLevel != LOG_NONE)
+        {
+            Log::GetLogger().Write(
+                logLevel, "{}: Message #{} ({} bytes) received", ToString(), msgID, packetSize);
+        }
 
         switch (msgID)
         {

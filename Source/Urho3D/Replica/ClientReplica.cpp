@@ -143,7 +143,7 @@ bool ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
     case MSG_SCENE_CLOCK:
     {
         const auto msg = ReadSerializedMessage<MsgSceneClock>(messageData);
-        connection_->LogReceivedMessage(messageId, msg);
+        connection_->LogMessagePayload(messageId, msg);
 
         ProcessSceneClock(msg);
         return true;

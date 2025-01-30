@@ -372,7 +372,7 @@ bool ReplicationManager::ProcessMessageOnUninitializedClient(
     if (messageId == MSG_CONFIGURE)
     {
         const auto msg = ReadSerializedMessage<MsgConfigure>(messageData);
-        connection->LogReceivedMessage(messageId, msg);
+        connection->LogMessagePayload(messageId, msg);
 
         client_->ackMagic_ = msg.magic_;
         client_->serverSettings_ = msg.settings_;
@@ -380,7 +380,7 @@ bool ReplicationManager::ProcessMessageOnUninitializedClient(
     else if (messageId == MSG_SCENE_CLOCK)
     {
         const auto msg = ReadSerializedMessage<MsgSceneClock>(messageData);
-        connection->LogReceivedMessage(messageId, msg);
+        connection->LogMessagePayload(messageId, msg);
 
         client_->initialClock_ = msg;
     }
