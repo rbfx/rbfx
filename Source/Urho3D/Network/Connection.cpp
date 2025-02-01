@@ -395,6 +395,9 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
         return;
     }
 
+    // We need to reload the scene
+    sceneLoaded_ = false;
+
     // Store the scene file name we need to eventually load
     sceneFileName_ = msg.ReadString();
 
