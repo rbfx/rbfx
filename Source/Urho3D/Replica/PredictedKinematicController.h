@@ -39,6 +39,7 @@ class KinematicCharacterController;
 class ReplicatedTransform;
 
 /// Kinematic controller of the player replicated over network.
+/// Input will be silently ignored if the client is not allowed to send it.
 class URHO3D_API PredictedKinematicController : public NetworkBehavior
 {
     URHO3D_OBJECT(PredictedKinematicController, NetworkBehavior);
@@ -55,6 +56,7 @@ public:
     void SetWalkVelocity(const Vector3& velocity);
     /// Set whether to jump on the next update. Automatically reset on jump.
     void SetJump();
+
     /// Return whether the behavior is properly connected to components.
     bool IsConnectedToComponents() const { return physicsWorld_ && replicatedTransform_ && kinematicController_; }
     bool IsConnectedToStandaloneComponents() const { return physicsWorld_ && kinematicController_; }

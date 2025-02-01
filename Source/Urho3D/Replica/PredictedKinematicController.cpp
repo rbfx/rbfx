@@ -55,42 +55,12 @@ void PredictedKinematicController::RegisterObject(Context* context)
 
 void PredictedKinematicController::SetWalkVelocity(const Vector3& velocity)
 {
-    if (!IsConnectedToStandaloneComponents())
-        return;
-
-    NetworkObject* networkObject = GetNetworkObject();
-    URHO3D_ASSERT(networkObject);
-
-    if (networkObject->IsStandalone() || networkObject->IsOwnedByThisClient())
-    {
-        client_.walkVelocity_ = velocity;
-    }
-    else
-    {
-        URHO3D_LOGWARNING(
-            "PredictedKinematicController::SetWalkVelocity is called for object {} by the client that doesn't own this object.",
-            ToString(networkObject->GetNetworkId()));
-    }
+    client_.walkVelocity_ = velocity;
 }
 
 void PredictedKinematicController::SetJump()
 {
-    if (!IsConnectedToStandaloneComponents())
-        return;
-
-    NetworkObject* networkObject = GetNetworkObject();
-    URHO3D_ASSERT(networkObject);
-
-    if (networkObject->IsStandalone() || networkObject->IsOwnedByThisClient())
-    {
-        client_.needJump_ = true;
-    }
-    else
-    {
-        URHO3D_LOGWARNING(
-            "PredictedKinematicController::SetJump is called for object {} by the client that doesn't own this object.",
-            ToString(networkObject->GetNetworkId()));
-    }
+    client_.needJump_ = true;
 }
 
 void PredictedKinematicController::InitializeStandalone()

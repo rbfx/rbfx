@@ -128,13 +128,20 @@ public:
 protected:
     void OnSceneSet(Scene* previousScene, Scene* scene) override;
     void OnComponentAdded(TrackedComponentBase* baseComponent) override;
+    void OnComponentRemoved(TrackedComponentBase* baseComponent) override;
 
 private:
     void OnSceneUpdate(float timeStep);
+    void InitializeObjectsStandalone();
     void Stop();
     bool ProcessMessageOnUninitializedClient(
         AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
     ea::string GetUninitializedClientDebugInfo() const;
+
+    struct StandaloneData
+    {
+        ea::unordered_set<NetworkId> recentlyAddedObjects_;
+    };
 
     struct ClientData
     {
@@ -151,6 +158,7 @@ private:
     ReplicationManagerMode mode_{};
     SharedPtr<ServerReplicator> server_;
     ea::optional<ClientData> client_;
+    StandaloneData standalone_;
 };
 
 }
