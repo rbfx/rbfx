@@ -1040,6 +1040,9 @@ void Scene::ComponentRemoved(Component* component)
 
 void Scene::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
+    if (manualUpdate_)
+        return;
+
     using namespace Update;
     Update(eventData[P_TIMESTEP].GetFloat());
 }

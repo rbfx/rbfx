@@ -64,7 +64,7 @@ public:
     void customStepSimulation(unsigned clampedSimulationSteps, btScalar fixedTimeStep, btScalar overtime)
     {
         m_fixedTimeStep = fixedTimeStep;
-        m_localTime = overtime;
+        m_localTime = 0.0f;
 
         if (getDebugDrawer())
         {
@@ -78,6 +78,10 @@ public:
 
             for (int i = 0; i < clampedSimulationSteps; i++)
             {
+                const bool isLastStep = i + 1 == clampedSimulationSteps;
+                if (isLastStep)
+                    m_localTime = overtime;
+
                 // Urho3D: apply gravity on each substep
                 applyGravity();
 
@@ -90,6 +94,7 @@ public:
         }
         else
         {
+            m_localTime = overtime;
             synchronizeMotionStates();
         }
 
@@ -369,7 +374,8 @@ void PhysicsWorld::ApplyDelayedWorldTransforms()
     }
 }
 
-void PhysicsWorld::CustomUpdate(unsigned numSteps, float fixedTimeStep, float overtime, ea::optional<SynchronizedPhysicsStep> sync)
+void PhysicsWorld::CustomUpdate(
+    unsigned numSteps, float fixedTimeStep, float overtime, ea::optional<NetworkFrameSync> sync)
 {
     URHO3D_PROFILE("UpdatePhysics");
     const float timeStep = numSteps * fixedTimeStep + overtime;
@@ -864,7 +870,7 @@ void PhysicsWorld::OnSceneSet(Scene* previousScene, Scene* scene)
 
 void PhysicsWorld::HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& eventData)
 {
-    if (!updateEnabled_)
+    if (!updateEnabled_ || manualUpdate_)
         return;
 
     using namespace SceneSubsystemUpdate;

@@ -111,6 +111,14 @@ public:
     /// Process connection dropped. Removes client connection for server, converts scene to standalone for client.
     void DropConnection(AbstractConnection* connection);
 
+    /// Attributes.
+    /// @{
+    bool IsFixedUpdateServer() const { return attributes_.isFixedUpdateServer_; }
+    void SetFixedUpdateServer(bool fixed) { attributes_.isFixedUpdateServer_ = fixed; }
+    bool IsAllowZeroUpdatesOnServer() const { return attributes_.allowZeroUpdatesOnServer_; }
+    void SetAllowZeroUpdatesOnServer(bool allow) { attributes_.allowZeroUpdatesOnServer_ = allow; }
+    /// @}
+
     /// Return current state specific to client or server.
     /// @{
     unsigned GetUpdateFrequency() const;
@@ -154,6 +162,12 @@ private:
 
         SharedPtr<ClientReplica> replica_;
     };
+
+    struct Attributes
+    {
+        bool isFixedUpdateServer_{true};
+        bool allowZeroUpdatesOnServer_{};
+    } attributes_;
 
     ReplicationManagerMode mode_{};
     SharedPtr<ServerReplicator> server_;

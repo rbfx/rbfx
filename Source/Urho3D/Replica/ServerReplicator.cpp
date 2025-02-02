@@ -599,11 +599,19 @@ ServerReplicator::ServerReplicator(Scene* scene)
     : Object(scene->GetContext())
     , network_(GetSubsystem<Network>())
     , scene_(scene)
-    , objectRegistry_(scene->GetComponent<ReplicationManager>())
+    , replicationManager_(scene->GetComponent<ReplicationManager>())
     , updateFrequency_(network_->GetUpdateFps())
-    , physicsSync_(scene_, updateFrequency_, true)
-    , sharedState_(MakeShared<SharedReplicationState>(objectRegistry_))
+    , sharedState_(MakeShared<SharedReplicationState>(replicationManager_))
 {
+    if (replicationManager_->IsFixedUpdateServer())
+    {
+        SceneUpdateSynchronizer::Params params;
+        params.isServer_ = true;
+        params.networkFrequency_ = updateFrequency_;
+        params.allowZeroUpdatesOnServer_ = replicationManager_->IsAllowZeroUpdatesOnServer();
+        updateSync_ = MakeShared<SceneUpdateSynchronizer>(scene_, params);
+    }
+
     SetDefaultNetworkSetting(settings_, NetworkSettings::InternalProtocolVersion);
     SetNetworkSetting(settings_, NetworkSettings::UpdateFrequency, updateFrequency_);
 
@@ -637,7 +645,8 @@ void ServerReplicator::OnInputReady(float timeStep, bool isUpdateNow, float over
     if (isUpdateNow)
     {
         ++currentFrame_;
-        physicsSync_.Synchronize(currentFrame_, overtime);
+        if (updateSync_)
+            updateSync_->Synchronize(currentFrame_, overtime);
 
         for (auto& [connection, clientState] : connections_)
             clientState->BeginNetworkFrame(currentFrame_, overtime);
@@ -649,7 +658,8 @@ void ServerReplicator::OnInputReady(float timeStep, bool isUpdateNow, float over
     }
     else
     {
-        physicsSync_.Update(timeStep);
+        if (updateSync_)
+            updateSync_->Update(timeStep);
     }
 }
 
@@ -679,7 +689,7 @@ void ServerReplicator::AddConnection(AbstractConnection* connection)
 
     connections_.erase(connection);
     const auto& [iter, insterted] =
-        connections_.emplace(connection, MakeShared<ClientReplicationState>(objectRegistry_, connection, settings_));
+        connections_.emplace(connection, MakeShared<ClientReplicationState>(replicationManager_, connection, settings_));
 
     URHO3D_LOGINFO("Connection {} is added", connection->ToString());
 }

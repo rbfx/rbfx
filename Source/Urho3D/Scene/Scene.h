@@ -112,6 +112,9 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// Set whether the scene is updated manually by external code.
+    void SetManualUpdate(bool enabled) { manualUpdate_ = enabled; }
+
     /// Create component index. Scene must be empty.
     bool CreateComponentIndex(StringHash componentType);
     /// Create component index for template type. Scene must be empty.
@@ -351,6 +354,8 @@ private:
     float elapsedTime_;
     /// Update enabled flag.
     bool updateEnabled_;
+    /// Whether update is invoked manually.
+    bool manualUpdate_{};
     /// Asynchronous loading flag.
     bool asyncLoading_;
     /// Threaded update flag.

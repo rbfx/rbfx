@@ -1,54 +1,21 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Replica/TickSynchronizer.h"
+#include "Urho3D/Replica/TickSynchronizer.h"
 
-#include "../IO/Log.h"
+#include "Urho3D/Core/CoreEvents.h"
+#include "Urho3D/IO/Log.h"
 #ifdef URHO3D_PHYSICS
-#include "../Physics/PhysicsEvents.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
+#include "Urho3D/Physics/PhysicsEvents.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
 #endif
 
 namespace Urho3D
 {
-
-namespace
-{
-
-class PlaceholderObject : public Object
-{
-public:
-    using Object::Object;
-
-    Urho3D::StringHash GetType() const override { return {}; }
-    const ea::string& GetTypeName() const override { return EMPTY_STRING; }
-    const Urho3D::TypeInfo* GetTypeInfo() const override { return nullptr; }
-    bool IsInstanceOf(StringHash type) const override { return false; }
-};
-
-}
 
 TickSynchronizer::TickSynchronizer(unsigned leaderFrequency, bool isServer)
     : leaderFrequency_(leaderFrequency)
@@ -77,7 +44,7 @@ unsigned TickSynchronizer::Synchronize(float overtime)
     {
         numPendingFollowerTicks_ = maxFollowerTicks;
         numFollowerTicks_ = maxFollowerTicks;
-        timeAccumulator_ = overtime;
+        timeAccumulator_ = 0.0f;
         return 0;
     }
     else
@@ -96,11 +63,11 @@ unsigned TickSynchronizer::Synchronize(float overtime)
 void TickSynchronizer::Update(float timeStep)
 {
     numPendingFollowerTicks_ = 0;
-    timeAccumulator_ += timeStep;
-    if (isServer_)
-        return;
-
-    NormalizeOnClient();
+    if (!isServer_)
+    {
+        timeAccumulator_ += timeStep;
+        NormalizeOnClient();
+    }
 }
 
 void TickSynchronizer::NormalizeOnClient()
@@ -122,71 +89,95 @@ void TickSynchronizer::NormalizeOnClient()
     }
 }
 
-PhysicsTickSynchronizer::PhysicsTickSynchronizer(Scene* scene, unsigned networkFrequency, bool isServer)
+SceneUpdateSynchronizer::SceneUpdateSynchronizer(Scene* scene, const Params& params)
+    : Object(scene->GetContext())
+    , params_(params)
+    , sync_(params_.networkFrequency_, params_.isServer_)
+    , scene_(scene)
 #ifdef URHO3D_PHYSICS
-    : physicsWorld_(scene->GetComponent<PhysicsWorld>())
-    , sync_(networkFrequency, isServer)
-    , eventListener_(MakeShared<PlaceholderObject>(scene->GetContext()))
+    , physicsWorld_(scene->GetComponent<PhysicsWorld>())
 #endif
 {
+    sync_.SetFollowerFrequency(params_.networkFrequency_);
+
+    if (params_.isServer_)
+    {
+        scene_->SetManualUpdate(true);
+        SubscribeToEvent(E_UPDATE, &SceneUpdateSynchronizer::UpdateSceneOnServer);
+    }
+
 #ifdef URHO3D_PHYSICS
     if (physicsWorld_)
     {
-        wasUpdateEnabled_ = physicsWorld_->IsUpdateEnabled();
+        physicsWorld_->SetManualUpdate(true);
+
         wasInterpolated_ = physicsWorld_->GetInterpolation();
-        interpolated_ = !isServer && wasInterpolated_;
+        if (params_.isServer_)
+            physicsWorld_->SetInterpolation(false);
 
-        physicsWorld_->SetUpdateEnabled(false);
-        physicsWorld_->SetInterpolation(interpolated_);
+        SubscribeToEvent(scene, E_SCENESUBSYSTEMUPDATE, &SceneUpdateSynchronizer::UpdatePhysics);
     }
-
-    eventListener_->SubscribeToEvent(scene, E_SCENESUBSYSTEMUPDATE, [this] { UpdatePhysics(); });
 #endif
 }
 
-PhysicsTickSynchronizer::~PhysicsTickSynchronizer()
+SceneUpdateSynchronizer::~SceneUpdateSynchronizer()
 {
+    if (scene_)
+        scene_->SetManualUpdate(false);
+
 #ifdef URHO3D_PHYSICS
     if (physicsWorld_)
     {
-        physicsWorld_->SetUpdateEnabled(wasUpdateEnabled_);
+        physicsWorld_->SetManualUpdate(false);
         physicsWorld_->SetInterpolation(wasInterpolated_);
     }
 #endif
 }
 
-void PhysicsTickSynchronizer::Synchronize(NetworkFrame networkFrame, float overtime)
+void SceneUpdateSynchronizer::Synchronize(NetworkFrame networkFrame, float overtime)
+{
+    UpdateFollowerFrequency();
+
+    const unsigned synchronizedTick = sync_.Synchronize(overtime);
+    synchronizedNetworkFrame_ = NetworkFrameSync{networkFrame, synchronizedTick};
+}
+
+void SceneUpdateSynchronizer::Update(float timeStep)
+{
+    UpdateFollowerFrequency();
+
+    sync_.Update(timeStep);
+}
+
+void SceneUpdateSynchronizer::UpdateFollowerFrequency()
 {
 #ifdef URHO3D_PHYSICS
     if (physicsWorld_)
-    {
         sync_.SetFollowerFrequency(physicsWorld_->GetFps());
-        const unsigned synchronizedTick = sync_.Synchronize(overtime);
-        synchronizedStep_ = SynchronizedPhysicsStep{synchronizedTick, networkFrame};
-    }
 #endif
 }
 
-void PhysicsTickSynchronizer::Update(float timeStep)
+void SceneUpdateSynchronizer::UpdateSceneOnServer()
 {
-#ifdef URHO3D_PHYSICS
-    if (physicsWorld_)
-    {
-        sync_.SetFollowerFrequency(physicsWorld_->GetFps());
-        sync_.Update(timeStep);
-    }
-#endif
+    if (!scene_)
+        return;
+
+    const float fixedTimeStep = 1.0f / sync_.GetFollowerFrequency();
+    const unsigned numSteps = sync_.GetPendingFollowerTicks();
+    if (numSteps != 0 || params_.allowZeroUpdatesOnServer_)
+        scene_->Update(numSteps * fixedTimeStep);
 }
 
-void PhysicsTickSynchronizer::UpdatePhysics()
+void SceneUpdateSynchronizer::UpdatePhysics()
 {
 #ifdef URHO3D_PHYSICS
     if (physicsWorld_)
     {
         const float fixedTimeStep = 1.0f / sync_.GetFollowerFrequency();
-        const float overtime = interpolated_ ? sync_.GetFollowerAccumulatedTime() : 0.0f;
-        physicsWorld_->CustomUpdate(sync_.GetPendingFollowerTicks(), fixedTimeStep, overtime, synchronizedStep_);
-        synchronizedStep_ = ea::nullopt;
+        const float overtime = physicsWorld_->GetInterpolation() ? sync_.GetFollowerAccumulatedTime() : 0.0f;
+        physicsWorld_->CustomUpdate(
+            sync_.GetPendingFollowerTicks(), fixedTimeStep, overtime, synchronizedNetworkFrame_);
+        synchronizedNetworkFrame_ = ea::nullopt;
     }
 #endif
 }

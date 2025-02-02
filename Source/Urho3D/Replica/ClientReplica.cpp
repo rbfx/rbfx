@@ -25,8 +25,8 @@
 namespace Urho3D
 {
 
-ClientReplicaClock::ClientReplicaClock(Scene* scene, AbstractConnection* connection,
-    const MsgSceneClock& initialClock, const VariantMap& serverSettings)
+ClientReplicaClock::ClientReplicaClock(
+    Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock, const VariantMap& serverSettings)
     : Object(scene->GetContext())
     , scene_(scene)
     , connection_(connection)
@@ -36,7 +36,7 @@ ClientReplicaClock::ClientReplicaClock(Scene* scene, AbstractConnection* connect
     , inputDelay_(initialClock.inputDelay_)
     , replicaTime_(InitializeSoftTime())
     , inputTime_(InitializeSoftTime())
-    , physicsSync_(scene_, updateFrequency_, false)
+    , updateSync_(MakeShared<SceneUpdateSynchronizer>(scene_, SceneUpdateSynchronizer::Params{false, updateFrequency_}))
 {
     UpdateServerTime(initialClock, false);
     replicaTime_.Reset(ToReplicaTime(serverTime_));
@@ -64,9 +64,9 @@ void ClientReplicaClock::UpdateClientClocks(float timeStep, const ea::vector<Msg
 
     isNewInputFrame_ = previousInputTime.Frame() != inputTime_.GetTime().Frame();
     if (isNewInputFrame_)
-        physicsSync_.Synchronize(inputTime_.GetTime().Frame(), inputTime_.GetTime().Fraction() / updateFrequency_);
+        updateSync_->Synchronize(inputTime_.GetTime().Frame(), inputTime_.GetTime().Fraction() / updateFrequency_);
     else
-        physicsSync_.Update(inputTimeStep_);
+        updateSync_->Update(inputTimeStep_);
 }
 
 const Variant& ClientReplicaClock::GetSetting(const NetworkSetting& setting) const

@@ -69,12 +69,6 @@ class XMLElement;
 
 struct CollisionGeometryData;
 
-struct SynchronizedPhysicsStep
-{
-    unsigned offset_{};
-    NetworkFrame networkFrame_{};
-};
-
 /// Physics raycast hit.
 struct URHO3D_API PhysicsRaycastResult
 {
@@ -160,6 +154,9 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// Set whether the physical world is updated manually by external code.
+    void SetManualUpdate(bool enabled) { manualUpdate_ = enabled; }
+
     /// Check if an AABB is visible for debug drawing.
     bool isVisible(const btVector3& aabbMin, const btVector3& aabbMax) override;
     /// Draw a physics debug line.
@@ -184,7 +181,7 @@ public:
     /// Step the simulation forward.
     void Update(float timeStep);
     /// Custom simulation with explicit steps and extrapolation/interpolation time.
-    void CustomUpdate(unsigned numSteps, float fixedTimeStep, float overtime, ea::optional<SynchronizedPhysicsStep> sync);
+    void CustomUpdate(unsigned numSteps, float fixedTimeStep, float overtime, ea::optional<NetworkFrameSync> sync);
     /// Refresh collisions only without updating dynamics.
     void UpdateCollisions();
     /// Set simulation substeps per second.
@@ -384,13 +381,15 @@ private:
     /// Maximum number of simulation substeps per frame. 0 (default) unlimited, or negative values for adaptive timestep.
     int maxSubSteps_{};
     /// Indicates which physical step is synchronized with network frame.
-    ea::optional<SynchronizedPhysicsStep> synchronizedStep_;
+    ea::optional<NetworkFrameSync> synchronizedStep_;
     /// Time accumulator for non-interpolated mode.
     float timeAcc_{};
     /// Maximum angular velocity for network replication.
     float maxNetworkAngularVelocity_{DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY};
     /// Automatic simulation update enabled flag.
     bool updateEnabled_{true};
+    /// Whether update is invoked manually.
+    bool manualUpdate_{};
     /// Interpolation flag.
     bool interpolation_{true};
     /// Use internal edge utility flag.

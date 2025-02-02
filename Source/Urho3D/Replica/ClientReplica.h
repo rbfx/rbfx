@@ -116,7 +116,7 @@ private:
     SoftNetworkTime inputTime_;
     float inputTimeStep_{};
 
-    PhysicsTickSynchronizer physicsSync_;
+    SharedPtr<SceneUpdateSynchronizer> updateSync_;
 };
 
 /// Client part of ReplicationManager subsystem.

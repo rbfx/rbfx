@@ -167,6 +167,11 @@ ReplicationManager::~ReplicationManager() = default;
 void ReplicationManager::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<ReplicationManager>(Category_Subsystem);
+
+    // clang-format off
+    URHO3D_ATTRIBUTE("Is Fixed Update Server", bool, attributes_.isFixedUpdateServer_, Attributes{}.isFixedUpdateServer_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Allow Zero Updates On Server", bool, attributes_.allowZeroUpdatesOnServer_, Attributes{}.allowZeroUpdatesOnServer_, AM_DEFAULT);
+    // clang-format on
 }
 
 void ReplicationManager::OnSceneSet(Scene* previousScene, Scene* scene)
