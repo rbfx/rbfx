@@ -91,6 +91,10 @@ static const char* SPEAKER_MODE_NAMES[] = {
 Audio::Audio(Context* context) :
     Object(context)
 {
+#ifdef URHO3D_STEAM_AUDIO
+    return;
+#endif
+
     context_->RequireSDL(SDL_INIT_AUDIO);
 
     // Set the master to the default value
@@ -104,12 +108,20 @@ Audio::Audio(Context* context) :
 
 Audio::~Audio()
 {
+#ifdef URHO3D_STEAM_AUDIO
+    return;
+#endif
+
     Release();
     context_->ReleaseSDL();
 }
 
 bool Audio::SetMode(int bufferLengthMSec, int mixRate, SpeakerMode speakerMode, bool interpolation)
 {
+#ifdef URHO3D_STEAM_AUDIO
+    return false;
+#endif
+
     Release();
 
     bufferLengthMSec = Max(bufferLengthMSec, MIN_BUFFERLENGTH);
@@ -421,6 +433,10 @@ void Audio::HandleRenderUpdate(StringHash eventType, VariantMap& eventData)
 
 void Audio::Release()
 {
+#ifdef URHO3D_STEAM_AUDIO
+    return;
+#endif
+
     Stop();
 
     if (deviceID_)
@@ -554,6 +570,10 @@ SharedPtr<Microphone> Audio::CreateMicrophone(const ea::string& name, bool forSp
 
 void Audio::CloseMicrophoneForLoss(unsigned which)
 {
+#ifdef URHO3D_STEAM_AUDIO
+    return;
+#endif
+
     for (auto m : microphones_)
     {
         auto mic = m.Lock();
