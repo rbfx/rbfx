@@ -67,9 +67,9 @@ struct DelayedWorldTransform2D
 };
 
 /// 2D physics simulation world component. Should be added only to the root scene node.
-class URHO3D_API PhysicsWorld2D : public Component, public b2ContactListener, public b2Draw
+class URHO3D_API PhysicsWorld2D : public SystemComponent, public b2ContactListener, public b2Draw
 {
-    URHO3D_OBJECT(PhysicsWorld2D, Component);
+    URHO3D_OBJECT(PhysicsWorld2D, SystemComponent);
 
 public:
     /// Construct.

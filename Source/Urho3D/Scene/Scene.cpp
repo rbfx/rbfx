@@ -38,6 +38,7 @@
 #include "Urho3D/Resource/XMLArchive.h"
 #include "Urho3D/Resource/XMLFile.h"
 #include "Urho3D/Scene/Component.h"
+#include "Urho3D/Scene/LogicComponent.h"
 #include "Urho3D/Scene/ObjectAnimation.h"
 #include "Urho3D/Scene/PrefabReference.h"
 #include "Urho3D/Scene/PrefabResource.h"
@@ -45,6 +46,7 @@
 #include "Urho3D/Scene/SceneResource.h"
 #include "Urho3D/Scene/ShakeComponent.h"
 #include "Urho3D/Scene/SplinePath.h"
+#include "Urho3D/Scene/TrackedComponent.h"
 #include "Urho3D/Scene/UnknownComponent.h"
 #include "Urho3D/Scene/ValueAnimation.h"
 
@@ -52,6 +54,27 @@
 
 namespace Urho3D
 {
+
+namespace
+{
+
+bool IsSystemComponentTypeIndexed(StringHash type)
+{
+    // Common base types that will only bloat type index unnecessarily
+    static constexpr StringHash ignoredSystemTypes[] = {
+        Component::TypeId,
+        SystemComponent::TypeId,
+        LogicComponent::TypeId,
+        TrackedComponentBase::TypeId,
+        TrackedComponentRegistryBase::TypeId,
+        ReferencedComponentBase::TypeId,
+        ReferencedComponentRegistryBase::TypeId,
+    };
+
+    return ea::find(ea::begin(ignoredSystemTypes), ea::end(ignoredSystemTypes), type) == ea::end(ignoredSystemTypes);
+}
+
+} // namespace
 
 const StringVector Scene::DefaultUpdateEvents = {
     "@SceneForcedUpdate", // E_SCENEFORCEDUPDATE
@@ -87,6 +110,9 @@ Scene::Scene(Context* context) :
 
 Scene::~Scene()
 {
+    systemComponents_.clear();
+    systemComponentsByType_.clear();
+
     // Remove root-level components first, so that scene subsystems such as the octree destroy themselves. This will speed up
     // the removal of child nodes' components
     RemoveAllComponents();
@@ -109,6 +135,33 @@ void Scene::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Update Events", GetUpdateEvents, SetUpdateEvents, StringVector, DefaultUpdateEvents, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Lightmaps", ResourceRefList, lightmaps_, ReloadLightmaps, ResourceRefList(Texture2D::GetTypeStatic()), AM_DEFAULT);
+}
+
+Component* Scene::GetSystemComponent(StringHash componentType) const
+{
+    URHO3D_ASSERTLOG(IsSystemComponentTypeIndexed(componentType), "GetSystemComponent is called with too generic type");
+
+    const auto iter = systemComponentsByType_.find(componentType);
+    if (iter == systemComponentsByType_.end())
+        return nullptr;
+
+    const auto& candidates = iter->second;
+    return !candidates.empty() ? candidates.front() : nullptr;
+}
+
+Component* Scene::GetOrCreateSystemComponent(StringHash componentType)
+{
+    if (Component* component = GetSystemComponent(componentType))
+        return component;
+
+    if (Component* component = GetDerivedComponent(componentType))
+    {
+        URHO3D_ASSERTLOG(false, "Component {} of type {} is found but it is not registered as system",
+            component->GetID(), component->GetTypeName());
+        return nullptr;
+    }
+
+    return CreateComponent(componentType);
 }
 
 bool Scene::CreateComponentIndex(StringHash componentType)
@@ -142,10 +195,10 @@ void Scene::SerializeInBlock(
         [&](Archive& archive, const char* name, int&)
     {
         ea::unordered_map<ea::string, Component*> components;
-        for (Component* component : GetComponents())
+        for (Component* component : systemComponents_)
         {
-            if (component->HasAuxiliaryData())
-                components[component->GetTypeName()] = component;
+            if (component->HasSystemData())
+                components[component->GetSystemDataKey()] = component;
         }
 
         SerializeMap(archive, name, components, "component",
@@ -156,7 +209,7 @@ void Scene::SerializeInBlock(
             else if (value)
             {
                 auto block = archive.OpenSafeUnorderedBlock(name);
-                ConsumeArchiveException([&] { value->SerializeAuxiliaryData(archive); });
+                ConsumeArchiveException([&] { value->SerializeSystemData(archive); });
             }
         }, false);
     });
@@ -1036,6 +1089,38 @@ void Scene::ComponentRemoved(Component* component)
 
     component->SetID(0);
     component->OnSceneSet(this, nullptr);
+}
+
+void Scene::SystemComponentAdded(Component* component)
+{
+    URHO3D_ASSERT(component);
+
+    systemComponents_.push_back(SharedPtr<Component>{component});
+
+    const TypeInfo* typeInfo = component->GetTypeInfo();
+    while (typeInfo && IsSystemComponentTypeIndexed(typeInfo->GetType()))
+    {
+        systemComponentsByType_[typeInfo->GetType()].push_back(component);
+        typeInfo = typeInfo->GetBaseTypeInfo();
+    }
+}
+
+void Scene::SystemComponentRemoved(Component* component)
+{
+    URHO3D_ASSERT(component);
+
+    // Shortcut for scene destruction.
+    if (systemComponents_.empty() && systemComponentsByType_.empty())
+        return;
+
+    systemComponents_.erase_first(SharedPtr<Component>{component});
+
+    const TypeInfo* typeInfo = component->GetTypeInfo();
+    while (typeInfo && IsSystemComponentTypeIndexed(typeInfo->GetType()))
+    {
+        systemComponentsByType_[typeInfo->GetType()].erase_first(component);
+        typeInfo = typeInfo->GetBaseTypeInfo();
+    }
 }
 
 void Scene::HandleUpdate(StringHash eventType, VariantMap& eventData)

@@ -443,7 +443,7 @@ ea::string Network::GetDebugInfo() const
 
         if (Scene* scene = connection->GetScene())
         {
-            if (auto replicationManager = scene->GetComponent<ReplicationManager>())
+            if (auto replicationManager = scene->GetSystemComponent<ReplicationManager>())
                 replicationManagers.insert(replicationManager);
         }
     }
@@ -458,7 +458,7 @@ ea::string Network::GetDebugInfo() const
 
         if (Scene* scene = connection->GetScene())
         {
-            if (auto replicationManager = scene->GetComponent<ReplicationManager>())
+            if (auto replicationManager = scene->GetSystemComponent<ReplicationManager>())
                 replicationManagers.insert(replicationManager);
         }
     }

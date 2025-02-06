@@ -46,7 +46,7 @@ static const int DEFAULT_VELOCITY_ITERATIONS = 8;
 static const int DEFAULT_POSITION_ITERATIONS = 3;
 
 PhysicsWorld2D::PhysicsWorld2D(Context* context) :
-    Component(context),
+    SystemComponent(context),
     gravity_(DEFAULT_GRAVITY),
     velocityIterations_(DEFAULT_VELOCITY_ITERATIONS),
     positionIterations_(DEFAULT_POSITION_ITERATIONS)
@@ -713,6 +713,8 @@ bool PhysicsWorld2D::GetAutoClearForces() const
 
 void PhysicsWorld2D::OnSceneSet(Scene* previousScene, Scene* scene)
 {
+    BaseClassName::OnSceneSet(previousScene, scene);
+
     // Subscribe to the scene subsystem update, which will trigger the physics simulation step
     if (scene)
         SubscribeToEvent(scene, E_SCENESUBSYSTEMUPDATE, URHO3D_HANDLER(PhysicsWorld2D, HandleSceneSubsystemUpdate));

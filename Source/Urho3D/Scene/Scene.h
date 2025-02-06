@@ -115,6 +115,15 @@ public:
     /// Set whether the scene is updated manually by external code.
     void SetManualUpdate(bool enabled) { manualUpdate_ = enabled; }
 
+    /// Get system component by exact or base type.
+    /// If multiple components of the same type are present, either is returned.
+    /// Note that common base types like SystemComponent are excluded from the index.
+    Component* GetSystemComponent(StringHash componentType) const;
+    template <class T> T* GetSystemComponent();
+    /// Get system component or create it in the Scene root.
+    Component* GetOrCreateSystemComponent(StringHash componentType);
+    template <class T> T* GetOrCreateSystemComponent();
+
     /// Create component index. Scene must be empty.
     bool CreateComponentIndex(StringHash componentType);
     /// Create component index for template type. Scene must be empty.
@@ -292,6 +301,10 @@ public:
     void ComponentAdded(Component* component);
     /// Component removed. Remove from ID map.
     void ComponentRemoved(Component* component);
+    /// System component added. Add to type index.
+    void SystemComponentAdded(Component* component);
+    /// System component removed. Remove from type index.
+    void SystemComponentRemoved(Component* component);
 
 private:
     /// Handle the logic update event to update the scene, if active.
@@ -321,6 +334,11 @@ private:
     ea::vector<StringHash> indexedComponentTypes_;
     /// Indexes of components.
     ea::vector<SceneComponentIndex> componentIndexes_;
+
+    /// All system components.
+    ea::vector<SharedPtr<Component>> systemComponents_;
+    /// All system components by implemented type.
+    ea::unordered_map<StringHash, ea::vector<Component*>> systemComponentsByType_;
 
     /// Replicated scene nodes by ID.
     ea::unordered_map<unsigned, Node*> replicatedNodes_;
@@ -375,4 +393,14 @@ private:
 /// @nobind
 void URHO3D_API RegisterSceneLibrary(Context* context);
 
+template <class T> T* Scene::GetSystemComponent()
+{
+    return static_cast<T*>(GetSystemComponent(T::TypeId));
 }
+
+template <class T> T* Scene::GetOrCreateSystemComponent()
+{
+    return static_cast<T*>(GetOrCreateSystemComponent(T::TypeId));
+}
+
+} // namespace Urho3D

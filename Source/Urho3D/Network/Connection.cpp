@@ -160,7 +160,7 @@ void Connection::SetScene(Scene* newScene)
 
     if (isClient_)
     {
-        replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>();
+        replicationManager_ = scene_->GetOrCreateSystemComponent<ReplicationManager>();
         if (!replicationManager_->IsServer())
             replicationManager_->StartServer();
 
@@ -781,7 +781,7 @@ void Connection::SendPackageToClient(PackageFile* package)
 
 void Connection::HandleAsyncLoadFinished()
 {
-    replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>();
+    replicationManager_ = scene_->GetOrCreateSystemComponent<ReplicationManager>();
     replicationManager_->StartClient(this);
     sceneLoaded_ = true;
 
@@ -927,7 +927,7 @@ void Connection::OnPackagesReady()
 
     if (sceneFileName_.empty())
     {
-        replicationManager_ = scene_->GetOrCreateComponent<ReplicationManager>();
+        replicationManager_ = scene_->GetOrCreateSystemComponent<ReplicationManager>();
         replicationManager_->StartClient(this);
         sceneLoaded_ = true;
 

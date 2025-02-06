@@ -599,7 +599,7 @@ ServerReplicator::ServerReplicator(Scene* scene)
     : Object(scene->GetContext())
     , network_(GetSubsystem<Network>())
     , scene_(scene)
-    , replicationManager_(scene->GetComponent<ReplicationManager>())
+    , replicationManager_(scene->GetSystemComponent<ReplicationManager>())
     , updateFrequency_(network_->GetUpdateFps())
     , sharedState_(MakeShared<SharedReplicationState>(replicationManager_))
 {

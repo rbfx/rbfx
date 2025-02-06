@@ -40,7 +40,7 @@ constexpr unsigned versionOffset = 24;
 } // namespace
 
 TrackedComponentRegistryBase::TrackedComponentRegistryBase(Context* context, StringHash componentType)
-    : Component(context)
+    : SystemComponent(context)
     , componentType_(componentType)
 {
 }
@@ -98,6 +98,8 @@ void TrackedComponentRegistryBase::RemoveTrackedComponent(TrackedComponentBase* 
 
 void TrackedComponentRegistryBase::OnSceneSet(Scene* previousScene, Scene* scene)
 {
+    BaseClassName::OnSceneSet(previousScene, scene);
+
     if (scene)
     {
         InitializeTrackedComponents();

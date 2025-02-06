@@ -114,7 +114,7 @@ ClientReplica::ClientReplica(
     Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock, const VariantMap& serverSettings)
     : ClientReplicaClock(scene, connection, initialClock, serverSettings)
     , network_(GetSubsystem<Network>())
-    , objectRegistry_(scene->GetComponent<ReplicationManager>())
+    , objectRegistry_(scene->GetSystemComponent<ReplicationManager>())
 {
     URHO3D_ASSERT(objectRegistry_);
 

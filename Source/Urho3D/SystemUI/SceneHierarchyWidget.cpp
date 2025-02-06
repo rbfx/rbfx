@@ -85,36 +85,26 @@ ImVec4 GetItemColor(const HierarchyItemFlags& flags)
 {
     const bool enabled = flags.Test(HierarchyItemFlag::Enabled);
     const bool temporary = flags.Test(HierarchyItemFlag::Temporary);
-    if (flags.Test(HierarchyItemFlag::Component))
-    {
-        if (temporary)
-        {
-            return enabled
-                ? ImVec4(0.65f, 0.65f, 1.00f, 1.00f)
-                : ImVec4(0.25f, 0.25f, 0.50f, 1.00f);
-        }
-        else
-        {
-            return enabled
-                ? ImVec4(1.00f, 1.00f, 0.35f, 1.00f)
-                : ImVec4(0.50f, 0.50f, 0.00f, 1.00f);
-        }
-    }
+
+    static const Color nodeColor{1.00f, 1.00f, 1.00f, 1.00f};
+    static const Color componentColor{1.00f, 1.00f, 0.35f, 1.00f};
+    static const Color systemColor{1.00f, 0.70f, 1.00f, 1.00f};
+    static const Color temporaryColor{0.70f, 0.70f, 1.00f, 1.00f};
+
+    static const Color disabledTint{0.5f, 0.5f, 0.5f, 1.00f};
+
+    Color color;
+    if (flags.Test(HierarchyItemFlag::Subsystem))
+        color = temporary ? temporaryColor * systemColor : systemColor;
+    else if (flags.Test(HierarchyItemFlag::Component))
+        color = temporary ? temporaryColor : componentColor;
     else
-    {
-        if (temporary)
-        {
-            return enabled
-                ? ImVec4(0.65f, 0.65f, 1.00f, 1.00f)
-                : ImVec4(0.25f, 0.25f, 0.50f, 1.00f);
-        }
-        else
-        {
-            return enabled
-                ? ImVec4(1.00f, 1.00f, 1.00f, 1.00f)
-                : ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-        }
-    }
+        color = temporary ? temporaryColor : nodeColor;
+
+    if (!enabled)
+        color = color * disabledTint;
+
+    return ToImGui(color.ToVector4());
 }
 
 unsigned GetVisibleChildCount(Node* node, bool showTemporary)
@@ -303,6 +293,8 @@ void SceneHierarchyWidget::RenderComponent(SceneSelection& selection, Component*
         itemFlags |= HierarchyItemFlag::Temporary;
     if (component->IsEnabledEffective())
         itemFlags |= HierarchyItemFlag::Enabled;
+    if (component->IsSystemComponent())
+        itemFlags |= HierarchyItemFlag::Subsystem;
 
     const IdScopeGuard guard(component->GetID());
     ui::PushStyleColor(ImGuiCol_Text, GetItemColor(itemFlags));

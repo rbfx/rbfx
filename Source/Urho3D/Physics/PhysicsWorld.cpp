@@ -196,7 +196,7 @@ struct PhysicsQueryCallback : public btCollisionWorld::ContactResultCallback
 };
 
 PhysicsWorld::PhysicsWorld(Context* context) :
-    Component(context),
+    SystemComponent(context),
     fps_(DEFAULT_FPS),
     debugMode_(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawConstraints | btIDebugDraw::DBG_DrawConstraintLimits)
 {
@@ -858,6 +858,8 @@ void PhysicsWorld::CleanupGeometryCache()
 
 void PhysicsWorld::OnSceneSet(Scene* previousScene, Scene* scene)
 {
+    BaseClassName::OnSceneSet(previousScene, scene);
+
     // Subscribe to the scene subsystem update, which will trigger the physics simulation step
     if (scene)
     {

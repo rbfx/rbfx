@@ -233,4 +233,18 @@ void Component::DoAutoRemove(AutoRemoveMode mode)
     }
 }
 
+void SystemComponent::HandleSceneSet(Component* component, Scene* previousScene, Scene* scene)
+{
+    if (previousScene)
+        previousScene->SystemComponentRemoved(component);
+
+    if (scene)
+        scene->SystemComponentAdded(component);
 }
+
+void SystemComponent::OnSceneSet(Scene* previousScene, Scene* scene)
+{
+    HandleSceneSet(this, previousScene, scene);
+}
+
+} // namespace Urho3D

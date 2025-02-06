@@ -75,12 +75,18 @@ public:
     /// Visualize the component as debug geometry.
     virtual void DrawDebugGeometry(DebugRenderer* debug, bool depthTest);
 
-    /// Return whether the component provides auxiliary data.
-    /// Only components directly attached to the Scene can have auxiliary data.
-    /// Auxiliary data is not supported in prefabs.
-    virtual bool HasAuxiliaryData() const { return false; }
+    /// Return whether the component instance is considered a subsystem of the Scene,
+    /// i.e. "system" in "entity-component-system" pattern.
+    /// Each Scene is expected to contain only one instance of any given subsystem type.
+    virtual bool IsSystemComponent() const { return false; }
+    /// Return whether the system component stores additional unstructured data inside of the scene archive.
+    /// Unlike attributes, this data is never imported from prefabs.
+    virtual bool HasSystemData() const { return false; }
+    /// Return string key that identifies the data that belongs to this component.
+    virtual const ea::string& GetSystemDataKey() const { return GetTypeName(); }
     /// Serialize auxiliary data from/to the current block of the archive. May throw ArchiveException.
-    virtual void SerializeAuxiliaryData(Archive& archive) {}
+    /// Called after all other save/load logic. The order of calls for different systems is unspecified.
+    virtual void SerializeSystemData(Archive& archive) {}
 
     /// Set enabled/disabled state.
     /// @property
@@ -143,6 +149,29 @@ protected:
     bool networkUpdate_;
     /// Enabled flag.
     bool enabled_;
+};
+
+/// Base class for system-like components of the Scene.
+class SystemComponent : public Component
+{
+    URHO3D_OBJECT(SystemComponent, Component);
+
+public:
+    using Component::Component;
+
+    /// Implement Component.
+    /// @{
+    bool IsSystemComponent() const override { return true; }
+    /// @}
+
+    /// Register arbitrary component as a system. Should be called inside Component::OnSceneSet callback.
+    static void HandleSceneSet(Component* component, Scene* previousScene, Scene* scene);
+
+protected:
+    /// Implement Component.
+    /// @{
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
+    /// @}
 };
 
 template <class T> T* Component::GetComponent() const { return static_cast<T*>(GetComponent(T::GetTypeStatic())); }

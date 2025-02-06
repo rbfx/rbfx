@@ -60,9 +60,9 @@ private:
 };
 
 /// Base class for component registry that keeps components derived from TrackedComponentBase.
-class URHO3D_API TrackedComponentRegistryBase : public Component
+class URHO3D_API TrackedComponentRegistryBase : public SystemComponent
 {
-    URHO3D_OBJECT(TrackedComponentRegistryBase, Component);
+    URHO3D_OBJECT(TrackedComponentRegistryBase, SystemComponent);
 
 public:
     static constexpr bool IsOnlyEnabledTracked = false;
@@ -186,7 +186,7 @@ public:
     void ReconnectToRegistry() override
     {
         Scene* scene = this->GetScene();
-        registry_ = scene ? scene->GetDerivedComponent<RegistryComponentType>() : nullptr;
+        registry_ = scene ? scene->GetSystemComponent<RegistryComponentType>() : nullptr;
     }
 
     void OnSetEnabled() override
@@ -208,7 +208,7 @@ public:
 protected:
     void OnSceneSet(Scene* previousScene, Scene* scene) override
     {
-        auto newRegistry = scene ? scene->GetDerivedComponent<RegistryComponentType>() : nullptr;
+        auto newRegistry = scene ? scene->GetSystemComponent<RegistryComponentType>() : nullptr;
         if (newRegistry == registry_)
             return;
 
