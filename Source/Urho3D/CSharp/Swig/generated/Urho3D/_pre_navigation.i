@@ -17,7 +17,7 @@
 %csattribute(Urho3D::CrowdManager, %arg(unsigned int), NumObstacleAvoidanceTypes, GetNumObstacleAvoidanceTypes);
 %csattribute(Urho3D::CrowdManager, %arg(Urho3D::VariantVector), ObstacleAvoidanceTypesAttr, GetObstacleAvoidanceTypesAttr, SetObstacleAvoidanceTypesAttr);
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::CrowdAgentVelocityCallback), VelocityCallback, GetVelocityCallback, SetVelocityCallback);
-%csattribute(Urho3D::CrowdAgent, %arg(Urho3D::CrowdAgentHeightCallback), HeightCallback, GetHeightCallback, SetHeightCallback);
+%csattribute(Urho3D::CrowdAgent, %arg(Urho3D::CrowdAgentPositionCallback), PositionCallback, GetPositionCallback, SetPositionCallback);
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::Vector3), Position, GetPosition);
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::Vector3), DesiredVelocity, GetDesiredVelocity);
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::Vector3), ActualVelocity, GetActualVelocity);
