@@ -1,0 +1,134 @@
+<?xml version="1.0"?>
+<resource _id="1">
+	<attributes>
+		<attribute name="Next Node ID" type="Int" value="7" />
+		<attribute name="Next Component ID" type="Int" value="13" />
+	</attributes>
+	<components>
+		<component _id="1" _typeName="Octree" />
+		<component _id="2" _typeName="RenderPipeline">
+			<attributes>
+				<attribute name="Render Passes" type="VariantVector">
+					<value>
+						<element type="String" value="Postprocess: Exposure" />
+						<element type="Bool" value="true" />
+						<element type="String" value="Postprocess: SSAO" />
+						<element type="Bool" value="false" />
+						<element type="String" value="Postprocess: Bloom" />
+						<element type="Bool" value="false" />
+						<element type="String" value="Postprocess: Draw Outlines" />
+						<element type="Bool" value="true" />
+						<element type="String" value="Postprocess: Tone Mapping" />
+						<element type="Bool" value="true" />
+						<element type="String" value="Postprocess: Adjust Color" />
+						<element type="Bool" value="true" />
+						<element type="String" value="Postprocess: FXAA v2" />
+						<element type="Bool" value="false" />
+						<element type="String" value="Postprocess: FXAA v3" />
+						<element type="Bool" value="true" />
+					</value>
+				</attribute>
+				<attribute name="Render Path Parameters" type="StringVariantMap">
+					<value>
+						<element key="SSAO: Near Distance" type="Float" value="1.000000" />
+						<element key="Exposure: Adapt Rate" type="Float" value="0.600000" />
+						<element key="Exposure: Min" type="Float" value="1.000000" />
+						<element key="Bloom: Max Brightness" type="Float" value="1.000000" />
+						<element key="SSAO: Normal Threshold" type="Float" value="0.200000" />
+						<element key="SSAO: Near Radius" type="Float" value="0.050000" />
+						<element key="SSAO: Strength" type="Float" value="0.700000" />
+						<element key="Adjust Color: HSVParams" type="Vector4" value="1 1 1 1" />
+						<element key="SSAO: End Fade Distance" type="Float" value="200.000000" />
+						<element key="Exposure: Automatic" type="Bool" value="false" />
+						<element key="Tone Mapping: Mode@" type="StringVector">
+							<value>
+								<element value="None" />
+								<element value="Reinhard" />
+								<element value="ReinhardWhite" />
+								<element value="Uncharted2" />
+							</value>
+						</element>
+						<element key="SSAO: Begin Fade Distance" type="Float" value="100.000000" />
+						<element key="Adjust Color: ColorOffset" type="Vector4" value="0 0 0 0" />
+						<element key="Bloom: Base Intensity" type="Float" value="1.000000" />
+						<element key="Bloom: Iteration Intensity Factor" type="Float" value="1.000000" />
+						<element key="Bloom: Min Brightness" type="Float" value="0.800000" />
+						<element key="SSAO: Depth Threshold" type="Float" value="0.100000" />
+						<element key="SSAO: Far Distance" type="Float" value="100.000000" />
+						<element key="SSAO: Downscale" type="Int" value="0" />
+						<element key="Exposure: Max" type="Float" value="3.000000" />
+						<element key="Adjust Color: ColorFilter" type="Vector4" value="1 1 1 1" />
+						<element key="SSAO: Exponent" type="Float" value="1.500000" />
+						<element key="FXAA: FXAAParams" type="Vector3" value="0.4 0.5 0.75" />
+						<element key="SSAO: Far Radius" type="Float" value="1.000000" />
+						<element key="Bloom: Num Iterations" type="Int" value="5" />
+						<element key="Tone Mapping: Mode" type="Int" value="0" />
+					</value>
+				</attribute>
+				<attribute name="Color Space" type="String" value="HDR Linear" />
+				<attribute name="PCF Kernel Size" type="Int" value="5" />
+			</attributes>
+		</component>
+		<component _id="11" _typeName="ReflectionProbeManager" />
+	</components>
+	<nodes>
+		<node _id="2">
+			<attributes>
+				<attribute name="Name" type="String" value="Skybox" />
+			</attributes>
+			<components>
+				<component _id="3" _typeName="Skybox">
+					<attributes>
+						<attribute name="Model" type="ResourceRef" value="Model;Models/Box.mdl" />
+						<attribute name="Material" type="ResourceRefList" value="Material;Materials/DefaultSkybox.xml" />
+					</attributes>
+				</component>
+			</components>
+		</node>
+		<node _id="3">
+			<attributes>
+				<attribute name="Name" type="String" value="Global Zone" />
+			</attributes>
+			<components>
+				<component _id="4" _typeName="Zone">
+					<attributes>
+						<attribute name="Bounding Box Min" type="Vector3" value="-1000 -1000 -1000" />
+						<attribute name="Bounding Box Max" type="Vector3" value="1000 1000 1000" />
+						<attribute name="Ambient Color" type="Color" value="0 0 0 1" />
+						<attribute name="Background Brightness" type="Float" value="0.500000" />
+						<attribute name="Zone Texture" type="ResourceRef" value="TextureCube;Textures/DefaultSkybox.xml" />
+					</attributes>
+				</component>
+			</components>
+		</node>
+		<node _id="4">
+			<attributes>
+				<attribute name="Name" type="String" value="Global Light" />
+				<attribute name="Rotation" type="Quaternion" value="0.888074 0.325058 0.325058 -0" />
+			</attributes>
+			<components>
+				<component _id="5" _typeName="Light">
+					<attributes>
+						<attribute name="Light Type" type="String" value="Directional" />
+						<attribute name="Brightness Multiplier" type="Float" value="0.500000" />
+						<attribute name="Cast Shadows" type="Bool" value="true" />
+					</attributes>
+				</component>
+			</components>
+		</node>
+		<node _id="6">
+			<attributes>
+				<attribute name="Name" type="String" value="Ground Plane" />
+				<attribute name="Scale" type="Vector3" value="7 7 7" />
+			</attributes>
+			<components>
+				<component _id="12" _typeName="PrefabReference">
+					<attributes>
+						<attribute name="Prefab" type="ResourceRef" value="PrefabResource;Prefabs/GroundPlaneAndTeaPot.prefab" />
+					</attributes>
+				</component>
+			</components>
+		</node>
+	</nodes>
+	<auxiliary />
+</resource>
