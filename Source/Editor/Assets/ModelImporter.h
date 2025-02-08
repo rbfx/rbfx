@@ -91,17 +91,20 @@ private:
     };
 
     /// Handler of GLTF file. Deletes temporary file on destruction.
-    using GLTFFileHandle = ea::shared_ptr<const GLTFFileInfo>;
+    using ModelFileHandle = ea::shared_ptr<const GLTFFileInfo>;
 
-    bool ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& metadata, const AssetTransformerInput& input,
+    bool ImportGLTF(ModelFileHandle fileHandle, const ModelMetadata& metadata, const AssetTransformerInput& input,
+        AssetTransformerOutput& output, const AssetTransformerVector& transformers);
+
+    bool ImportOBJ(ModelFileHandle fileHandle, const ModelMetadata& metadata, const AssetTransformerInput& input,
         AssetTransformerOutput& output, const AssetTransformerVector& transformers);
 
     ModelMetadata LoadMetadata(const ea::string& fileName) const;
-    GLTFFileHandle LoadData(const ea::string& fileName, const ea::string& tempPath) const;
+    ModelFileHandle LoadData(const ea::string& fileName, const ea::string& tempPath) const;
 
-    GLTFFileHandle LoadDataNative(const ea::string& fileName) const;
-    GLTFFileHandle LoadDataFromFBX(const ea::string& fileName, const ea::string& tempPath) const;
-    GLTFFileHandle LoadDataFromBlend(const ea::string& fileName, const ea::string& tempPath) const;
+    ModelFileHandle LoadDataNative(const ea::string& fileName) const;
+    ModelFileHandle LoadDataFromFBX(const ea::string& fileName, const ea::string& tempPath) const;
+    ModelFileHandle LoadDataFromBlend(const ea::string& fileName, const ea::string& tempPath) const;
 
     ToolManager* GetToolManager() const;
 
