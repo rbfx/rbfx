@@ -63,11 +63,6 @@ void StaticNetworkObject::SetClientPrefab(PrefabResource* prefab)
     clientPrefab_ = prefab;
 }
 
-void StaticNetworkObject::InitializeOnServer()
-{
-    latestSentParentObject_ = GetParentNetworkId();
-}
-
 void StaticNetworkObject::WriteSnapshot(NetworkFrame frame, Serializer& dest)
 {
     dest.WriteUInt(static_cast<unsigned>(GetParentNetworkId()));
@@ -77,19 +72,6 @@ void StaticNetworkObject::WriteSnapshot(NetworkFrame frame, Serializer& dest)
     dest.WriteVector3(node_->GetWorldPosition());
     dest.WritePackedQuaternion(node_->GetWorldRotation());
     dest.WriteVector3(node_->GetSignedWorldScale());
-}
-
-bool StaticNetworkObject::PrepareReliableDelta(NetworkFrame frame)
-{
-    const auto parentObject = GetParentNetworkId();
-    const bool needUpdate = latestSentParentObject_ != parentObject;
-    latestSentParentObject_ = parentObject;
-    return needUpdate;
-}
-
-void StaticNetworkObject::WriteReliableDelta(NetworkFrame frame, Serializer& dest)
-{
-    dest.WriteUInt(static_cast<unsigned>(latestSentParentObject_));
 }
 
 void StaticNetworkObject::InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned)
@@ -117,12 +99,6 @@ void StaticNetworkObject::InitializeFromSnapshot(NetworkFrame frame, Deserialize
         ? worldTransform
         : node_->GetParent()->GetWorldTransform().Inverse() * worldTransform;
     node_->SetTransformMatrix(localTransform);
-}
-
-void StaticNetworkObject::ReadReliableDelta(NetworkFrame frame, Deserializer& src)
-{
-    const auto parentObject = static_cast<NetworkId>(src.ReadUInt());
-    SetParentNetworkObject(parentObject);
 }
 
 ResourceRef StaticNetworkObject::GetClientPrefabAttr() const

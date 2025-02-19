@@ -50,14 +50,9 @@ public:
 
     /// Implement NetworkObject
     /// @{
-    void InitializeOnServer() override;
-
     void WriteSnapshot(NetworkFrame frame, Serializer& dest) override;
-    bool PrepareReliableDelta(NetworkFrame frame) override;
-    void WriteReliableDelta(NetworkFrame frame, Serializer& dest) override;
 
     void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override;
-    void ReadReliableDelta(NetworkFrame frame, Deserializer& src) override;
     /// @}
 
 protected:
@@ -66,8 +61,6 @@ protected:
 
 private:
     SharedPtr<PrefabResource> clientPrefab_;
-
-    NetworkId latestSentParentObject_{NetworkId::None};
 };
 
 }; // namespace Urho3D

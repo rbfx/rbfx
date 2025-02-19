@@ -43,6 +43,7 @@
 #include "../Replica/NetworkObject.h"
 #include "../Replica/PredictedKinematicController.h"
 #include "../Replica/ReplicatedAnimation.h"
+#include "../Replica/ReplicatedParent.h"
 #include "../Replica/ReplicatedTransform.h"
 #include "../Replica/ReplicationManager.h"
 #include "../Replica/StaticNetworkObject.h"
@@ -569,6 +570,7 @@ void RegisterNetworkLibrary(Context* context)
 
     NetworkBehavior::RegisterObject(context);
     ReplicatedAnimation::RegisterObject(context);
+    ReplicatedParent::RegisterObject(context);
     ReplicatedTransform::RegisterObject(context);
     TrackedAnimatedModel::RegisterObject(context);
     FilteredByDistance::RegisterObject(context);

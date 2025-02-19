@@ -37,6 +37,7 @@
 #include <Urho3D/Replica/ReplicationManager.h>
 #include <Urho3D/Replica/NetworkObject.h>
 #include <Urho3D/Replica/NetworkValue.h>
+#include <Urho3D/Replica/ReplicatedParent.h>
 #include <Urho3D/Replica/ReplicatedTransform.h>
 
 namespace
@@ -46,6 +47,7 @@ SharedPtr<PrefabResource> CreateComplexTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
     node->CreateComponent<ReplicatedTransform>();
+    node->CreateComponent<ReplicatedParent>();
 
     auto staticModel = node->CreateComponent<StaticModel>();
     staticModel->SetCastShadows(true);
@@ -63,6 +65,7 @@ SharedPtr<PrefabResource> CreateSimpleTestPrefab(Context* context)
 {
     auto node = MakeShared<Node>(context);
     node->CreateComponent<ReplicatedTransform>();
+    node->CreateComponent<ReplicatedParent>();
 
     return Tests::ConvertNodeToPrefab(node);
 }

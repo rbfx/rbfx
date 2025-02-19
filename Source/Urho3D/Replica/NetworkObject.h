@@ -82,6 +82,9 @@ public:
     void SetNetworkMode(NetworkObjectMode mode) { networkMode_ = mode; }
     /// @}
 
+    /// Set another NetworkObject as parent of this NetworkObject.
+    void SetParentNetworkObject(NetworkId parentNetworkId);
+
     /// Return current or last NetworkId. Return NetworkId::None if not registered.
     NetworkId GetNetworkId() const { return GetReference(); }
     ReplicationManager* GetReplicationManager() const { return static_cast<ReplicationManager*>(GetRegistry()); }
@@ -114,7 +117,6 @@ protected:
     /// @}
 
     NetworkObject* GetOtherNetworkObject(NetworkId networkId) const;
-    void SetParentNetworkObject(NetworkId parentNetworkId);
 
 private:
     NetworkObject* FindParentNetworkObject() const;
