@@ -85,6 +85,8 @@ void BehaviorNetworkObject::InitializeBehaviors()
 {
     InvalidateBehaviors();
 
+    CreateBehaviors();
+
     ea::vector<NetworkBehavior*> networkBehaviors;
     node_->FindComponents(networkBehaviors, ComponentSearchFlag::SelfOrChildrenRecursive | ComponentSearchFlag::Derived);
 

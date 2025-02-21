@@ -119,6 +119,12 @@ public:
     void PrepareToRemove() override;
     /// @}
 
+protected:
+    /// Callback to create behaviors from code.
+    /// Invoked after prefab is initialized and before behaviors are finalized.
+    /// May be invoked multiple times during object lifetime.
+    virtual void CreateBehaviors() {}
+
 private:
     void InitializeBehaviors();
 
