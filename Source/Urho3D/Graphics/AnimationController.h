@@ -161,7 +161,9 @@ public:
     /// Update the animations. Is called from HandleScenePostUpdate().
     virtual void Update(float timeStep);
     /// Smoothly replace existing animations with animations from external source.
-    void ReplaceAnimations(ea::span<const AnimationParameters> newAnimations, float elapsedTime, float fadeTime);
+    /// If layers are specified, only these layers will be affected.
+    void ReplaceAnimations(ea::span<const AnimationParameters> newAnimations, float elapsedTime, float fadeTime,
+        ea::span<const unsigned> layers = {});
 
     /// Manage played animations on low level.
     /// @{

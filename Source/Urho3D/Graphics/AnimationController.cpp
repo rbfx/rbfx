@@ -47,8 +47,7 @@ namespace Urho3D
 namespace
 {
 
-const StringVector animationParametersNames =
-{
+const StringVector animationParametersNames = {
     "Animation Count",
     "   Animation",
     "   Is Looped",
@@ -69,21 +68,21 @@ const StringVector animationParametersNames =
 
 enum class AnimationParameterMask
 {
-    InstanceIndex       = 1 << 0,
-    Looped              = 1 << 1,
-    RemoveOnCompletion  = 1 << 2,
-    Layer               = 1 << 3,
-    Additive            = 1 << 4,
-    StartBone           = 1 << 5,
-    AutoFadeOutTime     = 1 << 6,
-    Time                = 1 << 7,
-    MinTime             = 1 << 8,
-    MaxTime             = 1 << 9,
-    Speed               = 1 << 10,
-    RemoveOnZeroWeight  = 1 << 11,
-    Weight              = 1 << 12,
-    TargetWeight        = 1 << 13,
-    TargetWeightDelay   = 1 << 14
+    InstanceIndex = 1 << 0,
+    Looped = 1 << 1,
+    RemoveOnCompletion = 1 << 2,
+    Layer = 1 << 3,
+    Additive = 1 << 4,
+    StartBone = 1 << 5,
+    AutoFadeOutTime = 1 << 6,
+    Time = 1 << 7,
+    MinTime = 1 << 8,
+    MaxTime = 1 << 9,
+    Speed = 1 << 10,
+    RemoveOnZeroWeight = 1 << 11,
+    Weight = 1 << 12,
+    TargetWeight = 1 << 13,
+    TargetWeightDelay = 1 << 14
 };
 URHO3D_FLAGSET(AnimationParameterMask, AnimationParameterFlags);
 
@@ -98,7 +97,12 @@ bool MatchesQuery(const AnimationParameters& params, Animation* animation, unsig
     return true;
 }
 
+bool IsFilteredOut(const AnimationParameters& params, ea::span<const unsigned> layers)
+{
+    return !layers.empty() && ea::find(layers.begin(), layers.end(), params.layer_) == layers.end();
 }
+
+} // namespace
 
 const AnimationParameters AnimationParameters::EMPTY {};
 
@@ -553,7 +557,8 @@ void AnimationController::SendTriggerEvents()
     }
 }
 
-void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> newAnimations, float elapsedTime, float fadeTime)
+void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> newAnimations, float elapsedTime,
+    float fadeTime, ea::span<const unsigned> layers)
 {
     // Upload new parameters and correct them according to elapsed time, some states may be removed
     const unsigned numNewAnimations = newAnimations.size();
@@ -592,7 +597,10 @@ void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> 
     // Remove all merged states from the animations, and fade out unmerged animations
     ea::erase_if(animations_, [](const AnimationInstance& instance) { return instance.params_.merged_; });
     for (AnimationInstance& instance : animations_)
-        instance.params_.RemoveDelayed(fadeTime);
+    {
+        if (!IsFilteredOut(instance.params_, layers))
+            instance.params_.RemoveDelayed(fadeTime);
+    }
 
     // Append new animations
     for (const AnimationInstance& instance : tempAnimations_)

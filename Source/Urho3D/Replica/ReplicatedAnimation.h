@@ -1,30 +1,10 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
-
-/// \file
+// Copyright (c) 2017-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
-#include "../Replica/BehaviorNetworkObject.h"
+#include "Urho3D/Replica/BehaviorNetworkObject.h"
 
 #include <EASTL/fixed_vector.h>
 
@@ -36,7 +16,6 @@ class AnimationController;
 class AnimationParameters;
 
 /// Behavior that replicates animation over network.
-/// TODO: This behavior doesn't really replicate any animation now, it only does essential setup on the server.
 class URHO3D_API ReplicatedAnimation : public NetworkBehavior
 {
     URHO3D_OBJECT(ReplicatedAnimation, NetworkBehavior);
@@ -46,8 +25,8 @@ public:
     static constexpr unsigned DefaultNumUploadAttempts = 4;
     static constexpr float DefaultSmoothingTime = 0.2f;
 
-    static constexpr NetworkCallbackFlags CallbackMask =
-        NetworkCallbackMask::ReliableDelta | NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::InterpolateState | NetworkCallbackMask::Update;
+    static constexpr NetworkCallbackFlags CallbackMask = NetworkCallbackMask::ReliableDelta
+        | NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::InterpolateState | NetworkCallbackMask::Update;
 
     explicit ReplicatedAnimation(Context* context);
     ~ReplicatedAnimation() override;
@@ -60,6 +39,10 @@ public:
     bool GetReplicateOwner() const { return replicateOwner_; }
     void SetSmoothingTime(float value) { smoothingTime_ = value; }
     float GetSmoothingTime() const { return smoothingTime_; }
+    void SetLayers(const ea::vector<unsigned>& layers) { layers_ = layers; }
+    const ea::vector<unsigned>& GetLayers() const { return layers_; }
+    void SetLayersAttr(const VariantVector& layers);
+    const VariantVector& GetLayersAttr() const;
 
     const StringMap& GetAnimationLookup() const { return animationLookup_; }
 
@@ -78,7 +61,8 @@ public:
     void WriteUnreliableDelta(NetworkFrame frame, Serializer& dest) override;
     void ReadUnreliableDelta(NetworkFrame frame, Deserializer& src) override;
 
-    void InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
+    void InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime,
+        const NetworkTime& inputTime) override;
     void Update(float replicaTimeStep, float inputTimeStep) override;
     /// @}
 
@@ -102,6 +86,7 @@ private:
     unsigned numUploadAttempts_{DefaultNumUploadAttempts};
     bool replicateOwner_{};
     float smoothingTime_{DefaultSmoothingTime};
+    ea::vector<unsigned> layers_;
     /// @}
 
     StringMap animationLookup_;
@@ -125,4 +110,4 @@ private:
     } client_;
 };
 
-};
+}; // namespace Urho3D

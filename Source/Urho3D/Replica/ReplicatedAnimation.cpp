@@ -1,33 +1,16 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Core/Context.h"
-#include "../Graphics/Animation.h"
-#include "../Graphics/AnimationController.h"
-#include "../Network/NetworkEvents.h"
-#include "../Replica/ReplicatedAnimation.h"
-#include "../Resource/ResourceCache.h"
+#include "Urho3D/Replica/ReplicatedAnimation.h"
+
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/Animation.h"
+#include "Urho3D/Graphics/AnimationController.h"
+#include "Urho3D/Network/NetworkEvents.h"
+#include "Urho3D/Resource/ResourceCache.h"
 
 namespace Urho3D
 {
@@ -47,9 +30,27 @@ void ReplicatedAnimation::RegisterObject(Context* context)
 
     URHO3D_COPY_BASE_ATTRIBUTES(NetworkBehavior);
 
+    // clang-format off
     URHO3D_ATTRIBUTE("Num Upload Attempts", unsigned, numUploadAttempts_, DefaultNumUploadAttempts, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Replicate Owner", bool, replicateOwner_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Smoothing Time", float, smoothingTime_, DefaultSmoothingTime, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Layers", GetLayersAttr, SetLayersAttr, VariantVector, Variant::emptyVariantVector, AM_DEFAULT);
+    // clang-format on
+}
+
+void ReplicatedAnimation::SetLayersAttr(const VariantVector& layers)
+{
+    layers_.clear();
+    const auto toUint = [](const Variant& value) { return value.GetUInt(); };
+    ea::transform(layers.begin(), layers.end(), ea::back_inserter(layers_), toUint);
+}
+
+const VariantVector& ReplicatedAnimation::GetLayersAttr() const
+{
+    static thread_local VariantVector result;
+    result.clear();
+    ea::copy(layers_.begin(), layers_.end(), ea::back_inserter(result));
+    return result;
 }
 
 void ReplicatedAnimation::InitializeStandalone()
@@ -179,6 +180,9 @@ void ReplicatedAnimation::WriteSnapshot(Serializer& dest)
     for (unsigned i = 0; i < numAnimations; ++i)
     {
         const AnimationParameters& params = animationController_->GetAnimationParameters(i);
+        if (!layers_.empty() && !layers_.contains(params.layer_))
+            continue;
+
         server_.snapshotBuffer_.WriteStringHash(params.GetAnimationName());
         params.Serialize(server_.snapshotBuffer_);
     }
@@ -260,7 +264,8 @@ void ReplicatedAnimation::InterpolateState(float replicaTimeStep, float inputTim
     DecodeSnapshot(snapshot, client_.snapshotAnimations_);
 
     const float delay = (adjustedReplicaTime - NetworkTime{*closestPriorFrame}) * client_.networkStepTime_;
-    animationController_->ReplaceAnimations(client_.snapshotAnimations_, delay, firstUpdate ? 0.0f : smoothingTime_);
+    animationController_->ReplaceAnimations(
+        client_.snapshotAnimations_, delay, firstUpdate ? 0.0f : smoothingTime_, layers_);
 }
 
 void ReplicatedAnimation::Update(float replicaTimeStep, float inputTimeStep)
