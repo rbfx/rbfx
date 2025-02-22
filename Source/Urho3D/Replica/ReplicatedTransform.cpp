@@ -176,17 +176,27 @@ void ReplicatedTransform::InterpolateState(float replicaTimeStep, float inputTim
     if (!replicateOwner_ && GetNetworkObject()->IsOwnedByThisClient())
         return;
 
-    if (!positionTrackOnly_ && synchronizePosition_)
+    const bool maintainPosition = !positionTrackOnly_ && synchronizePosition_;
+    const bool maintainRotation = !rotationTrackOnly_ && synchronizeRotation_ != ReplicatedRotationMode::None;
+
+    if (maintainPosition)
     {
+        if (client_.previousPositionInvalid_)
+            client_.positionSampler_.UpdatePreviousValue(replicaTime, node_->GetWorldPosition());
         if (auto newPosition = client_.positionSampler_.UpdateAndSample(positionTrace_, replicaTime, replicaTimeStep))
             node_->SetWorldPosition(*newPosition);
     }
 
-    if (!rotationTrackOnly_ && synchronizeRotation_ != ReplicatedRotationMode::None)
+    if (maintainRotation)
     {
+        if (client_.previousRotationInvalid_)
+            client_.rotationSampler_.UpdatePreviousValue(replicaTime, node_->GetWorldRotation());
         if (auto newRotation = client_.rotationSampler_.UpdateAndSample(rotationTrace_, replicaTime, replicaTimeStep))
             node_->SetWorldRotation(*newRotation);
     }
+
+    client_.previousPositionInvalid_ = !maintainPosition;
+    client_.previousRotationInvalid_ = !maintainRotation;
 }
 
 bool ReplicatedTransform::PrepareUnreliableDelta(NetworkFrame frame)

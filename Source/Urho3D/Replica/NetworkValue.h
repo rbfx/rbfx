@@ -549,6 +549,13 @@ public:
         snapThreshold_ = snapThreshold;
     }
 
+    /// Reset previous value to different value.
+    /// Useful for smooth fade-in when sampler was disabled for a while and value was updated externally.
+    void UpdatePreviousValue(const NetworkTime& time, const ReturnType& value)
+    {
+        previousValue_ = TimeAndValue{time, value};
+    }
+
     /// Update sampler state for new time and return current value.
     ea::optional<ReturnType> UpdateAndSample(
         const NetworkValueType& value, const NetworkTime& time, float timeStep)

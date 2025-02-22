@@ -162,6 +162,9 @@ private:
     {
         NetworkValueSampler<PositionAndVelocity> positionSampler_;
         NetworkValueSampler<RotationAndVelocity> rotationSampler_;
+
+        bool previousPositionInvalid_{};
+        bool previousRotationInvalid_{};
     } client_;
 };
 
