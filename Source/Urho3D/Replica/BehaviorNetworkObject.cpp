@@ -123,6 +123,19 @@ void BehaviorNetworkObject::InitializeBehaviors()
             Update(replicaTimeStep, inputTimeStep);
         });
     }
+
+    UnsubscribeFromEvent(E_SCENENETWORKPOSTUPDATE);
+    if (callbackMask_.Test(NetworkCallbackMask::PostUpdate))
+    {
+        SubscribeToEvent(GetScene(), E_SCENENETWORKPOSTUPDATE,
+            [this](VariantMap& eventData)
+        {
+            using namespace SceneNetworkPostUpdate;
+            const float replicaTimeStep = eventData[P_TIMESTEP_REPLICA].GetFloat();
+            const float inputTimeStep = eventData[P_TIMESTEP_INPUT].GetFloat();
+            PostUpdate(replicaTimeStep, inputTimeStep);
+        });
+    }
 }
 
 void BehaviorNetworkObject::InvalidateBehaviors()
@@ -423,6 +436,20 @@ void BehaviorNetworkObject::Update(float replicaTimeStep, float inputTimeStep)
         {
             if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::Update))
                 connectedBehavior.component_->Update(replicaTimeStep, inputTimeStep);
+        }
+    }
+}
+
+void BehaviorNetworkObject::PostUpdate(float replicaTimeStep, float inputTimeStep)
+{
+    BaseClassName::PostUpdate(replicaTimeStep, inputTimeStep);
+
+    if (callbackMask_.Test(NetworkCallbackMask::PostUpdate))
+    {
+        for (const auto& connectedBehavior : behaviors_)
+        {
+            if (connectedBehavior.callbackMask_.Test(NetworkCallbackMask::PostUpdate))
+                connectedBehavior.component_->PostUpdate(replicaTimeStep, inputTimeStep);
         }
     }
 }

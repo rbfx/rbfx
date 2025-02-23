@@ -186,7 +186,7 @@ bool ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
     }
 }
 
-void ClientReplica::ProcessSceneUpdate()
+void ClientReplica::ProcessSceneUpdate(StringHash eventType)
 {
     VariantMap& eventData = scene_->GetEventDataMap();
 
@@ -194,7 +194,7 @@ void ClientReplica::ProcessSceneUpdate()
     eventData[P_SCENE] = scene_;
     eventData[P_TIMESTEP_REPLICA] = GetReplicaTimeStep();
     eventData[P_TIMESTEP_INPUT] = GetInputTimeStep();
-    scene_->SendEvent(E_SCENENETWORKUPDATE, eventData);
+    scene_->SendEvent(eventType, eventData);
 }
 
 void ClientReplica::ProcessSceneClock(const MsgSceneClock& msg)

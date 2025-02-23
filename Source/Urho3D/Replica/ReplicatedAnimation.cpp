@@ -268,7 +268,7 @@ void ReplicatedAnimation::InterpolateState(float replicaTimeStep, float inputTim
         client_.snapshotAnimations_, delay, firstUpdate ? 0.0f : smoothingTime_, layers_);
 }
 
-void ReplicatedAnimation::Update(float replicaTimeStep, float inputTimeStep)
+void ReplicatedAnimation::PostUpdate(float replicaTimeStep, float inputTimeStep)
 {
     if (!animationController_)
         return;

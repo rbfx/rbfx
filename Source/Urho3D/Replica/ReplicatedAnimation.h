@@ -26,7 +26,8 @@ public:
     static constexpr float DefaultSmoothingTime = 0.2f;
 
     static constexpr NetworkCallbackFlags CallbackMask = NetworkCallbackMask::ReliableDelta
-        | NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::InterpolateState | NetworkCallbackMask::Update;
+        | NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::InterpolateState
+        | NetworkCallbackMask::PostUpdate;
 
     explicit ReplicatedAnimation(Context* context);
     ~ReplicatedAnimation() override;
@@ -63,7 +64,7 @@ public:
 
     void InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime,
         const NetworkTime& inputTime) override;
-    void Update(float replicaTimeStep, float inputTimeStep) override;
+    void PostUpdate(float replicaTimeStep, float inputTimeStep) override;
     /// @}
 
 private:

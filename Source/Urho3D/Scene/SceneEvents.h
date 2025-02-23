@@ -68,6 +68,14 @@ URHO3D_EVENT(E_SCENENETWORKUPDATE, SceneNetworkUpdate)
     URHO3D_PARAM(P_TIMESTEP_INPUT, TimeStepInput);      // float
 }
 
+/// Network-aware scene post-update.
+URHO3D_EVENT(E_SCENENETWORKPOSTUPDATE, SceneNetworkPostUpdate)
+{
+    URHO3D_PARAM(P_SCENE, Scene);                       // Scene pointer
+    URHO3D_PARAM(P_TIMESTEP_REPLICA, TimeStepReplica);  // float
+    URHO3D_PARAM(P_TIMESTEP_INPUT, TimeStepInput);      // float
+}
+
 /// Scene drawable update finished. Custom animation (eg. IK) can be done at this point.
 URHO3D_EVENT(E_SCENEDRAWABLEUPDATEFINISHED, SceneDrawableUpdateFinished)
 {

@@ -139,7 +139,10 @@ protected:
     void OnComponentRemoved(TrackedComponentBase* baseComponent) override;
 
 private:
+    void HandleSceneUpdate(StringHash eventType, float timeStep);
     void OnSceneUpdate(float timeStep);
+    void OnScenePostUpdate(float timeStep);
+
     void InitializeObjectsStandalone();
     void Stop();
     bool ProcessMessageOnUninitializedClient(

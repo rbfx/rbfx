@@ -183,12 +183,16 @@ void ReplicationManager::OnSceneSet(Scene* previousScene, Scene* scene)
         SubscribeToEvent(scene, E_SCENEUPDATE,
             [this](VariantMap& eventData)
         {
-            using namespace SceneUpdate;
-            const float timeStep = eventData[P_TIMESTEP].GetFloat();
+            const float timeStep = eventData[SceneUpdate::P_TIMESTEP].GetFloat();
             OnSceneUpdate(timeStep);
         });
 
-        SubscribeToEvent(scene, E_SCENEPOSTUPDATE, &ReplicationManager::UpdateNetworkObjects);
+        SubscribeToEvent(scene, E_SCENEPOSTUPDATE,
+            [this](VariantMap& eventData)
+        {
+            const float timeStep = eventData[ScenePostUpdate::P_TIMESTEP].GetFloat();
+            OnScenePostUpdate(timeStep);
+        });
     }
     else
     {
@@ -219,7 +223,7 @@ void ReplicationManager::OnComponentRemoved(TrackedComponentBase* baseComponent)
     BaseClassName::OnComponentRemoved(baseComponent);
 }
 
-void ReplicationManager::OnSceneUpdate(float timeStep)
+void ReplicationManager::HandleSceneUpdate(StringHash eventType, float timeStep)
 {
     switch (mode_)
     {
@@ -236,7 +240,7 @@ void ReplicationManager::OnSceneUpdate(float timeStep)
         eventData[P_SCENE] = scene;
         eventData[P_TIMESTEP_REPLICA] = timeStep;
         eventData[P_TIMESTEP_INPUT] = timeStep;
-        scene->SendEvent(E_SCENENETWORKUPDATE, eventData);
+        scene->SendEvent(eventType, eventData);
 
         break;
     }
@@ -244,7 +248,7 @@ void ReplicationManager::OnSceneUpdate(float timeStep)
     {
         URHO3D_ASSERT(server_);
 
-        server_->ProcessSceneUpdate();
+        server_->ProcessSceneUpdate(eventType);
 
         break;
     }
@@ -254,13 +258,24 @@ void ReplicationManager::OnSceneUpdate(float timeStep)
         URHO3D_ASSERT(client_);
 
         if (client_->replica_)
-            client_->replica_->ProcessSceneUpdate();
+            client_->replica_->ProcessSceneUpdate(eventType);
 
         break;
     }
 
     default: break;
     }
+}
+
+void ReplicationManager::OnSceneUpdate(float timeStep)
+{
+    HandleSceneUpdate(E_SCENENETWORKUPDATE, timeStep);
+}
+
+void ReplicationManager::OnScenePostUpdate(float timeStep)
+{
+    HandleSceneUpdate(E_SCENENETWORKPOSTUPDATE, timeStep);
+    UpdateNetworkObjects();
 }
 
 void ReplicationManager::InitializeObjectsStandalone()

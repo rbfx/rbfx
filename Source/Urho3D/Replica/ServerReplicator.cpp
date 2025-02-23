@@ -714,7 +714,7 @@ bool ServerReplicator::ProcessMessage(
     return false;
 }
 
-void ServerReplicator::ProcessSceneUpdate()
+void ServerReplicator::ProcessSceneUpdate(StringHash eventType)
 {
     if (network_->IsUpdateNow())
     {
@@ -725,7 +725,7 @@ void ServerReplicator::ProcessSceneUpdate()
         eventData[P_SCENE] = scene_;
         eventData[P_TIMESTEP_REPLICA] = fixedTimeStep;
         eventData[P_TIMESTEP_INPUT] = fixedTimeStep;
-        scene_->SendEvent(E_SCENENETWORKUPDATE, eventData);
+        scene_->SendEvent(eventType, eventData);
     }
 }
 

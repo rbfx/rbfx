@@ -130,7 +130,7 @@ public:
     ~ClientReplica() override;
 
     bool ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
-    void ProcessSceneUpdate();
+    void ProcessSceneUpdate(StringHash eventType);
 
     ea::string GetDebugInfo() const;
     const ea::unordered_set<WeakPtr<NetworkObject>>& GetOwnedNetworkObjects() const { return ownedObjects_; };
