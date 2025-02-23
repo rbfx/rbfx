@@ -74,6 +74,11 @@ public:
     /// Return navigation manager.
     RmlNavigationManager& GetNavigationManager() const { return *navigationManager_; }
 
+    /// Set current document body element font size in pixels, also known as "em" unit.
+    void SetEmSize(float sizePx);
+    /// Get current document body element font size, also known as "em" unit.
+    float GetEmSize() const;
+
     // Bind data model property.
     bool BindDataModelProperty(const ea::string& name, GetterFunc getter, SetterFunc setter);
     // Bind data model property or Urho3D::Variant type.

@@ -412,6 +412,26 @@ RmlUI* RmlUIComponent::GetUI() const
     return GetSubsystem<RmlUI>();
 }
 
+void RmlUIComponent::SetEmSize(float sizePx)
+{
+    if (!document_)
+    {
+        return;
+    }
+
+    document_->SetProperty(Rml::PropertyId::FontSize, Rml::Property(sizePx, Rml::Unit::PX));
+}
+
+float RmlUIComponent::GetEmSize() const
+{
+    if (!document_)
+    {
+        return 0.0f;
+    }
+
+    return document_->ResolveLength(document_->GetProperty(Rml::PropertyId::FontSize)->GetNumericValue());
+}
+
 void RmlUIComponent::SetDocument(Rml::ElementDocument* document)
 {
     if (document_ != document)
