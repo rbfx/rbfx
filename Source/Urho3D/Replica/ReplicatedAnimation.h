@@ -75,6 +75,7 @@ private:
 
     using AnimationSnapshot = ea::fixed_vector<unsigned char, SmallSnapshotSize>;
 
+    bool IsAnimationReplicated() const;
     Animation* GetAnimationByHash(StringHash nameHash) const;
     void WriteSnapshot(Serializer& dest);
     AnimationSnapshot ReadSnapshot(Deserializer& src) const;

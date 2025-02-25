@@ -69,8 +69,7 @@ void ReplicatedAnimation::InitializeOnServer()
     UpdateLookupsOnServer();
     server_.newAnimationLookups_.clear();
 
-    SubscribeToEvent(E_ENDSERVERNETWORKFRAME,
-        [this](VariantMap& eventData)
+    SubscribeToEvent(E_ENDSERVERNETWORKFRAME, [this](VariantMap& eventData)
     {
         using namespace BeginServerNetworkFrame;
         const auto serverFrame = static_cast<NetworkFrame>(eventData[P_FRAME].GetInt64());
@@ -163,6 +162,12 @@ void ReplicatedAnimation::ReadLookupsOnClient(Deserializer& src)
     }
 }
 
+bool ReplicatedAnimation::IsAnimationReplicated() const
+{
+    NetworkObject* networkObject = GetNetworkObject();
+    return networkObject->IsReplicatedClient() || (replicateOwner_ && networkObject->IsOwnedByThisClient());
+}
+
 Animation* ReplicatedAnimation::GetAnimationByHash(StringHash nameHash) const
 {
     const auto iter = animationLookup_.find(nameHash);
@@ -199,7 +204,8 @@ ReplicatedAnimation::AnimationSnapshot ReplicatedAnimation::ReadSnapshot(Deseria
     return result;
 }
 
-void ReplicatedAnimation::DecodeSnapshot(const AnimationSnapshot& snapshot, ea::vector<AnimationParameters>& result) const
+void ReplicatedAnimation::DecodeSnapshot(
+    const AnimationSnapshot& snapshot, ea::vector<AnimationParameters>& result) const
 {
     result.clear();
     MemoryBuffer src{snapshot.data(), snapshot.size()};
@@ -247,14 +253,16 @@ void ReplicatedAnimation::ReadUnreliableDelta(NetworkFrame frame, Deserializer& 
     client_.animationTrace_.Set(frame, snapshot);
 }
 
-void ReplicatedAnimation::InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
+void ReplicatedAnimation::InterpolateState(
+    float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
 {
-    if (!animationController_ || !GetNetworkObject()->IsReplicatedClient())
+    if (!animationController_ || !IsAnimationReplicated())
         return;
 
     // Subtract time step because it is will be applied during Update
     const NetworkTime adjustedReplicaTime = replicaTime - replicaTimeStep / client_.networkStepTime_;
-    const auto closestPriorFrame = client_.animationTrace_.FindClosestAllocatedFrame(adjustedReplicaTime.Frame(), true, false);
+    const auto closestPriorFrame =
+        client_.animationTrace_.FindClosestAllocatedFrame(adjustedReplicaTime.Frame(), true, false);
     if (!closestPriorFrame || *closestPriorFrame == client_.latestAppliedFrame_)
         return;
 
@@ -274,10 +282,10 @@ void ReplicatedAnimation::PostUpdate(float replicaTimeStep, float inputTimeStep)
         return;
 
     NetworkObject* networkObject = GetNetworkObject();
-    if (networkObject->IsOwnedByThisClient() && !replicateOwner_)
-        animationController_->Update(inputTimeStep);
-    else
+    if (IsAnimationReplicated())
         animationController_->Update(replicaTimeStep);
+    else
+        animationController_->Update(inputTimeStep);
 }
 
-}
+} // namespace Urho3D
