@@ -1,46 +1,28 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Replica/PredictedKinematicController.h"
+#include "Urho3D/Replica/PredictedKinematicController.h"
 
 #ifdef URHO3D_PHYSICS
-#include "../Core/Context.h"
-#include "../Core/CoreEvents.h"
-#include "../Physics/KinematicCharacterController.h"
-#include "../Physics/PhysicsEvents.h"
-#include "../Physics/PhysicsWorld.h"
-#include "../Scene/Node.h"
-#include "../Scene/Scene.h"
-#include "../Network/NetworkEvents.h"
-#include "../Replica/NetworkSettingsConsts.h"
-#include "../Replica/ReplicatedTransform.h"
+    #include "Urho3D/Core/Context.h"
+    #include "Urho3D/Core/CoreEvents.h"
+    #include "Urho3D/Network/NetworkEvents.h"
+    #include "Urho3D/Physics/KinematicCharacterController.h"
+    #include "Urho3D/Physics/PhysicsEvents.h"
+    #include "Urho3D/Physics/PhysicsWorld.h"
+    #include "Urho3D/Replica/NetworkSettingsConsts.h"
+    #include "Urho3D/Replica/ReplicatedTransform.h"
+    #include "Urho3D/Scene/Node.h"
+    #include "Urho3D/Scene/Scene.h"
 
 namespace Urho3D
 {
 
 PredictedKinematicController::PredictedKinematicController(Context* context)
-    : NetworkBehavior(context, CallbackMask)
+    : BaseFeedbackBehavior<PredictedKinematicControllerFrame>(context, CallbackMask)
 {
 }
 
@@ -55,12 +37,12 @@ void PredictedKinematicController::RegisterObject(Context* context)
 
 void PredictedKinematicController::SetWalkVelocity(const Vector3& velocity)
 {
-    client_.walkVelocity_ = velocity;
+    client_.currentFrameData_.walkVelocity_ = velocity;
 }
 
 void PredictedKinematicController::SetJump()
 {
-    client_.needJump_ = true;
+    client_.currentFrameData_.needJump_ = true;
 }
 
 void PredictedKinematicController::InitializeStandalone()
@@ -69,8 +51,9 @@ void PredictedKinematicController::InitializeStandalone()
     if (!IsConnectedToStandaloneComponents())
         return;
 
-    SubscribeToEvent(physicsWorld_, E_PHYSICSPRESTEP,
-        [this]
+    BaseClassName::InitializeStandalone();
+
+    SubscribeToEvent(physicsWorld_, E_PHYSICSPRESTEP, [this]
     {
         UpdateEffectiveVelocity(physicsStepTime_);
         ApplyActionsOnClient();
@@ -83,18 +66,7 @@ void PredictedKinematicController::InitializeOnServer()
     if (!IsConnectedToComponents())
         return;
 
-    const auto replicationManager = GetNetworkObject()->GetReplicationManager();
-    const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
-
-    server_.input_.Resize(maxInputFrames_);
-
-    SubscribeToEvent(E_BEGINSERVERNETWORKFRAME,
-        [this](VariantMap& eventData)
-    {
-        using namespace BeginServerNetworkFrame;
-        const auto frame = static_cast<NetworkFrame>(eventData[P_FRAME].GetInt64());
-        OnServerFrameBegin(frame);
-    });
+    BaseClassName::InitializeOnServer();
 }
 
 void PredictedKinematicController::InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned)
@@ -103,14 +75,13 @@ void PredictedKinematicController::InitializeFromSnapshot(NetworkFrame frame, De
     if (!IsConnectedToComponents())
         return;
 
+    BaseClassName::InitializeFromSnapshot(frame, src, isOwned);
+
     if (isOwned)
     {
         replicatedTransform_->SetPositionTrackOnly(true);
 
-        client_.input_.set_capacity(maxInputFrames_);
-
-        SubscribeToEvent(physicsWorld_, E_PHYSICSPRESTEP,
-            [this](VariantMap& eventData)
+        SubscribeToEvent(physicsWorld_, E_PHYSICSPRESTEP, [this](VariantMap& eventData)
         {
             const Variant& networkFrame = eventData[PhysicsPreStep::P_NETWORKFRAME];
             if (!networkFrame.IsEmpty())
@@ -121,10 +92,13 @@ void PredictedKinematicController::InitializeFromSnapshot(NetworkFrame frame, De
         kinematicController_->SetGravity(Vector3::ZERO);
 }
 
-void PredictedKinematicController::InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
+void PredictedKinematicController::InterpolateState(
+    float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime)
 {
     if (!IsConnectedToComponents())
         return;
+
+    BaseClassName::InterpolateState(replicaTimeStep, inputTimeStep, replicaTime, inputTime);
 
     NetworkObject* networkObject = GetNetworkObject();
     if (!networkObject->IsOwnedByThisClient())
@@ -135,15 +109,10 @@ void PredictedKinematicController::InterpolateState(float replicaTimeStep, float
         const auto positionAndVelocity = replicatedTransform_->SampleTemporalPosition(NetworkTime{replicaTime.Frame()});
         effectiveVelocity_ = positionAndVelocity.derivative_ * derivativeTimeStep;
     }
-    else
-    {
-        client_.desiredRedundancy_ = ea::max(1, FloorToInt(inputTime - replicaTime));
-    }
 }
 
 void PredictedKinematicController::InitializeCommon()
 {
-    UnsubscribeFromEvent(E_BEGINSERVERNETWORKFRAME);
     UnsubscribeFromEvent(E_PHYSICSPRESTEP);
 
     replicatedTransform_ = node_->GetComponent<ReplicatedTransform>();
@@ -157,42 +126,9 @@ void PredictedKinematicController::InitializeCommon()
         physicsStepTime_ = physicsWorld_ ? 1.0f / physicsWorld_->GetFps() : 0.0f;
     }
 
-    if (NetworkObject* networkObject = GetNetworkObject())
-    {
-        const auto replicationManager = networkObject->GetReplicationManager();
-        maxInputFrames_ = replicationManager->GetSetting(NetworkSettings::MaxInputFrames).GetUInt();
-        maxRedundancy_ = replicationManager->GetSetting(NetworkSettings::MaxInputRedundancy).GetUInt();
-        networkStepTime_ = 1.0f / replicationManager->GetUpdateFrequency();
-    }
-}
-
-bool PredictedKinematicController::PrepareUnreliableFeedback(NetworkFrame frame)
-{
-    return true;
-}
-
-void PredictedKinematicController::WriteUnreliableFeedback(NetworkFrame frame, Serializer& dest)
-{
-    if (client_.input_.empty() || client_.input_.back().frame_ != frame)
-    {
-        URHO3D_ASSERTLOG(0, "NetworkObject {}: Unexpected call to WriteUnreliableFeedback",
-            ToString(GetNetworkObject()->GetNetworkId()));
-        return;
-    }
-
-    const unsigned maxSize = client_.input_.size();
-    const unsigned inputBufferSize = ea::min({client_.desiredRedundancy_, maxRedundancy_, maxSize});
-
-    dest.WriteVLE(inputBufferSize);
-    ea::for_each_n(client_.input_.rbegin(), inputBufferSize,
-        [&](const InputFrame& inputFrame) { WriteInputFrame(inputFrame, dest); });
-}
-
-void PredictedKinematicController::ReadUnreliableFeedback(NetworkFrame feedbackFrame, Deserializer& src)
-{
-    const unsigned numInputFrames = ea::min(src.ReadVLE(), maxRedundancy_);
-    for (unsigned i = 0; i < numInputFrames; ++i)
-        ReadInputFrame(feedbackFrame - i, src);
+    NetworkObject* networkObject = GetNetworkObject();
+    const auto replicationManager = networkObject->GetReplicationManager();
+    networkStepTime_ = 1.0f / replicationManager->GetUpdateFrequency();
 }
 
 void PredictedKinematicController::OnServerFrameBegin(NetworkFrame serverFrame)
@@ -202,36 +138,7 @@ void PredictedKinematicController::OnServerFrameBegin(NetworkFrame serverFrame)
 
     UpdateEffectiveVelocity(networkStepTime_);
 
-    if (const auto frameDataAndIndex = server_.input_.GetRawOrPrior(serverFrame))
-    {
-        const auto& [currentInput, currentInputFrame] = *frameDataAndIndex;
-
-        node_->SetWorldRotation(currentInput.rotation_);
-        kinematicController_->SetWalkIncrement(currentInput.walkVelocity_ * physicsStepTime_);
-        if (currentInput.needJump_ && kinematicController_->OnGround())
-            kinematicController_->Jump();
-
-        if (currentInputFrame != serverFrame)
-            ++server_.lostFrames_;
-    }
-    else
-    {
-        ++server_.lostFrames_;
-    }
-    ++server_.totalFrames_;
-
-    static const unsigned batchSize = 100;
-    if (server_.totalFrames_ >= batchSize)
-    {
-        const float loss = static_cast<float>(server_.lostFrames_) / server_.totalFrames_;
-        server_.lostFrames_ = 0;
-        server_.totalFrames_ = 0;
-
-        const auto replicationManager = GetNetworkObject()->GetReplicationManager();
-        ServerReplicator* serverReplicator = replicationManager->GetServerReplicator();
-        if (AbstractConnection* ownerConnection = GetNetworkObject()->GetOwnerConnection())
-            serverReplicator->ReportInputLoss(ownerConnection, loss);
-    }
+    BaseClassName::OnServerFrameBegin(serverFrame);
 }
 
 void PredictedKinematicController::OnPhysicsSynchronizedOnClient(NetworkFrame frame)
@@ -240,17 +147,21 @@ void PredictedKinematicController::OnPhysicsSynchronizedOnClient(NetworkFrame fr
         return;
 
     CheckAndCorrectController(frame);
-    TrackCurrentInput(frame);
+
+    client_.currentFrameData_.startPosition_ = kinematicController_->GetRawPosition();
+    client_.currentFrameData_.rotation_ = node_->GetWorldRotation();
+    CreateFrameOnClient(frame, client_.currentFrameData_);
+
     ApplyActionsOnClient();
     UpdateEffectiveVelocity(networkStepTime_);
 }
 
 void PredictedKinematicController::ApplyActionsOnClient()
 {
-    kinematicController_->SetWalkIncrement(client_.walkVelocity_ * physicsStepTime_);
-    if (client_.needJump_ && kinematicController_->OnGround())
+    kinematicController_->SetWalkIncrement(client_.currentFrameData_.walkVelocity_ * physicsStepTime_);
+    if (client_.currentFrameData_.needJump_ && kinematicController_->OnGround())
         kinematicController_->Jump();
-    client_.needJump_ = false;
+    client_.currentFrameData_.needJump_ = false;
 }
 
 void PredictedKinematicController::UpdateEffectiveVelocity(float timeStep)
@@ -264,7 +175,7 @@ void PredictedKinematicController::CheckAndCorrectController(NetworkFrame frame)
 {
     // Skip if not ready
     const auto latestConfirmedFrame = replicatedTransform_->GetLatestFrame();
-    if (client_.input_.empty() || !latestConfirmedFrame)
+    if (!HasFramesOnClient() || !latestConfirmedFrame)
         return;
 
     // Apply only latest confirmed state only once.
@@ -276,18 +187,17 @@ void PredictedKinematicController::CheckAndCorrectController(NetworkFrame frame)
         return;
 
     // Skip if cannot find matching input frame for whatever reason
-    const auto nextInputFrameIter = ea::find_if(client_.input_.begin(), client_.input_.end(),
-        [&](const InputFrame& inputFrame) { return !inputFrame.isLost_ && inputFrame.frame_ == *latestConfirmedFrame + 1; });
-    if (nextInputFrameIter == client_.input_.end())
+    const auto* nextInputFrame = FindFrameOnClient(*latestConfirmedFrame + 1);
+    if (!nextInputFrame)
         return;
 
-    const unsigned nextInputFrameIndex = nextInputFrameIter - client_.input_.begin();
-    if (AdjustConfirmedFrame(*latestConfirmedFrame, nextInputFrameIndex))
+    if (AdjustConfirmedFrame(*latestConfirmedFrame, *nextInputFrame))
         client_.latestAffectedFrame_ = frame;
     client_.latestConfirmedFrame_ = *latestConfirmedFrame;
 }
 
-bool PredictedKinematicController::AdjustConfirmedFrame(NetworkFrame confirmedFrame, unsigned nextInputFrameIndex)
+bool PredictedKinematicController::AdjustConfirmedFrame(
+    NetworkFrame confirmedFrame, const PredictedKinematicControllerFrame& nextInput)
 {
     const float movementThreshold = replicatedTransform_->GetMovementThreshold();
     const float smoothingConstant = replicatedTransform_->GetSmoothingConstant();
@@ -295,7 +205,6 @@ bool PredictedKinematicController::AdjustConfirmedFrame(NetworkFrame confirmedFr
     const auto confirmedPosition = replicatedTransform_->GetTemporalPosition(confirmedFrame);
     URHO3D_ASSERT(confirmedPosition);
 
-    const InputFrame& nextInput = client_.input_[nextInputFrameIndex];
     const Vector3 offset = confirmedPosition->value_ - nextInput.startPosition_;
     if (!offset.Equals(Vector3::ZERO, movementThreshold))
     {
@@ -305,63 +214,31 @@ bool PredictedKinematicController::AdjustConfirmedFrame(NetworkFrame confirmedFr
     return false;
 }
 
-void PredictedKinematicController::TrackCurrentInput(NetworkFrame frame)
+void PredictedKinematicController::ApplyPayload(const PredictedKinematicControllerFrame& payload)
 {
-    if (!client_.input_.empty())
-    {
-        const NetworkFrame previousInputFrame = client_.input_.back().frame_;
-        const auto numSkippedFrames = static_cast<int>(frame - previousInputFrame) - 1;
-        if (numSkippedFrames > 0)
-        {
-            if (numSkippedFrames >= client_.input_.capacity())
-                client_.input_.clear();
-            else
-            {
-                InputFrame lastFrame = client_.input_.back();
-                lastFrame.isLost_ = true;
-                for (int i = 1; i <= numSkippedFrames; ++i)
-                {
-                    lastFrame.frame_ = previousInputFrame;
-                    client_.input_.push_back(lastFrame);
-                }
-            }
+    if (!IsConnectedToComponents())
+        return;
 
-            URHO3D_LOGWARNING("NetworkObject {}: skipped {} input frames on client starting from #{}",
-                ToString(GetNetworkObject()->GetNetworkId()), numSkippedFrames, previousInputFrame);
-        }
-    }
-
-    InputFrame currentInput;
-    currentInput.frame_ = frame;
-    currentInput.walkVelocity_ = client_.walkVelocity_;
-    currentInput.startPosition_ = kinematicController_->GetRawPosition();
-    currentInput.needJump_ = client_.needJump_;
-    currentInput.rotation_ = node_->GetWorldRotation();
-    client_.input_.push_back(currentInput);
+    node_->SetWorldRotation(payload.rotation_);
+    kinematicController_->SetWalkIncrement(payload.walkVelocity_ * physicsStepTime_);
+    if (payload.needJump_ && kinematicController_->OnGround())
+        kinematicController_->Jump();
 }
 
-void PredictedKinematicController::WriteInputFrame(const InputFrame& inputFrame, Serializer& dest) const
+void PredictedKinematicController::WritePayload(
+    const PredictedKinematicControllerFrame& payload, Serializer& dest) const
 {
-    dest.WriteVector3(inputFrame.walkVelocity_);
-    dest.WriteBool(inputFrame.needJump_);
-    dest.WriteQuaternion(inputFrame.rotation_);
+    dest.WriteVector3(payload.walkVelocity_);
+    dest.WriteBool(payload.needJump_);
+    dest.WriteQuaternion(payload.rotation_);
 }
 
-void PredictedKinematicController::ReadInputFrame(NetworkFrame frame, Deserializer& src)
+void PredictedKinematicController::ReadPayload(PredictedKinematicControllerFrame& payload, Deserializer& src) const
 {
-    const Vector3 walkVelocity = src.ReadVector3();
-    const bool needJump = src.ReadBool();
-    const Quaternion rotation = src.ReadQuaternion();
-
-    InputFrame inputFrame;
-    inputFrame.frame_ = frame;
-    inputFrame.walkVelocity_ = walkVelocity;
-    inputFrame.needJump_ = needJump;
-    inputFrame.rotation_ = rotation;
-
-    if (!server_.input_.Has(frame))
-        server_.input_.Set(frame, inputFrame);
+    payload.walkVelocity_ = src.ReadVector3();
+    payload.needJump_ = src.ReadBool();
+    payload.rotation_ = src.ReadQuaternion();
 }
 
-}
+} // namespace Urho3D
 #endif

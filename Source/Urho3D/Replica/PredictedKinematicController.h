@@ -1,34 +1,12 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
-
-/// \file
+// Copyright (c) 2017-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
-#include "../Replica/BehaviorNetworkObject.h"
+#include "Urho3D/Replica/BaseFeedbackBehavior.h"
 
 #include <EASTL/optional.h>
-#include <EASTL/vector.h>
-#include <EASTL/bonus/ring_buffer.h>
 
 #ifdef URHO3D_PHYSICS
 
@@ -38,15 +16,24 @@ namespace Urho3D
 class KinematicCharacterController;
 class ReplicatedTransform;
 
+/// Input frame of predicted kinematic controller.
+struct PredictedKinematicControllerFrame
+{
+    Vector3 walkVelocity_;
+    Quaternion rotation_;
+    bool needJump_{};
+
+    /// Client only: body position in the beginning of the frame.
+    Vector3 startPosition_;
+};
+
 /// Kinematic controller of the player replicated over network.
 /// Input will be silently ignored if the client is not allowed to send it.
-class URHO3D_API PredictedKinematicController : public NetworkBehavior
+class URHO3D_API PredictedKinematicController : public BaseFeedbackBehavior<PredictedKinematicControllerFrame>
 {
-    URHO3D_OBJECT(PredictedKinematicController, NetworkBehavior);
+    URHO3D_OBJECT(PredictedKinematicController, BaseFeedbackBehavior<PredictedKinematicControllerFrame>);
 
 public:
-    static constexpr NetworkCallbackFlags CallbackMask = NetworkCallbackMask::UnreliableFeedback | NetworkCallbackMask::InterpolateState;
-
     explicit PredictedKinematicController(Context* context);
     ~PredictedKinematicController() override;
 
@@ -73,37 +60,27 @@ public:
     void InitializeOnServer() override;
     void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override;
 
-    void InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
+    void InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime,
+        const NetworkTime& inputTime) override;
+    /// @}
 
-    bool PrepareUnreliableFeedback(NetworkFrame frame) override;
-    void WriteUnreliableFeedback(NetworkFrame frame, Serializer& dest) override;
-    void ReadUnreliableFeedback(NetworkFrame feedbackFrame, Deserializer& src) override;
+protected:
+    /// Implement BaseFeedbackBehavior.
+    /// @{
+    void OnServerFrameBegin(NetworkFrame serverFrame) override;
+    void ApplyPayload(const PredictedKinematicControllerFrame& payload) override;
+    void WritePayload(const PredictedKinematicControllerFrame& payload, Serializer& dest) const override;
+    void ReadPayload(PredictedKinematicControllerFrame& payload, Deserializer& src) const override;
     /// @}
 
 private:
-    struct InputFrame
-    {
-        bool isLost_{};
-        NetworkFrame frame_{};
-        Vector3 startPosition_;
-        Vector3 walkVelocity_;
-        Quaternion rotation_;
-        bool needJump_{};
-    };
-
     void InitializeCommon();
-
-    void OnServerFrameBegin(NetworkFrame serverFrame);
 
     void OnPhysicsSynchronizedOnClient(NetworkFrame frame);
     void CheckAndCorrectController(NetworkFrame frame);
-    bool AdjustConfirmedFrame(NetworkFrame confirmedFrame, unsigned nextInputFrameIndex);
-    void TrackCurrentInput(NetworkFrame frame);
+    bool AdjustConfirmedFrame(NetworkFrame confirmedFrame, const PredictedKinematicControllerFrame& nextInput);
     void ApplyActionsOnClient();
     void UpdateEffectiveVelocity(float timeStep);
-
-    void WriteInputFrame(const InputFrame& inputFrame, Serializer& dest) const;
-    void ReadInputFrame(NetworkFrame frame, Deserializer& src);
 
     WeakPtr<ReplicatedTransform> replicatedTransform_;
     WeakPtr<KinematicCharacterController> kinematicController_;
@@ -114,28 +91,16 @@ private:
 
     float networkStepTime_{};
     float physicsStepTime_{};
-    unsigned maxRedundancy_{};
-    unsigned maxInputFrames_{};
-
-    struct ServerData
-    {
-        NetworkValue<InputFrame> input_;
-        unsigned totalFrames_{};
-        unsigned lostFrames_{};
-    } server_;
 
     struct ClientData
     {
-        Vector3 walkVelocity_;
-        bool needJump_{};
+        PredictedKinematicControllerFrame currentFrameData_;
 
-        unsigned desiredRedundancy_{};
-        ea::ring_buffer<InputFrame> input_;
         ea::optional<NetworkFrame> latestConfirmedFrame_;
         ea::optional<NetworkFrame> latestAffectedFrame_;
     } client_;
 };
 
-}
+} // namespace Urho3D
 
 #endif
