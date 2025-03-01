@@ -4,7 +4,7 @@
     <title>Sample Window</title>
 </head>
 
-<body template="window" style="width: 300px">
+<body template="window" style="width: 300px; overflow: auto">
     <p>Sample Window</p>
     <div data-model="SimpleWindow">
         <h3>Text</h3>
@@ -24,6 +24,7 @@
             <input type="radio" value="2"/> Radio 2<br/>
         </form>
         <input type="range" min="10" max="50" step="2" data-value="slider_value"/>&nbsp;<span>{{slider_value}}</span>
+        <input type="range" min="10" max="50" step="2" orientation="vertical" style="height: 10em" data-value="slider_value"/>
         <input type="range" min="10" max="50" step="1" data-value="font_size"/>&nbsp;<span>{{font_size}}px</span>
         <select>
             <option>Foo</option>

@@ -563,6 +563,13 @@ void RmlUI::HandleMouseMove(StringHash, VariantMap& eventData)
     mouseMoveEvent_(this, pos);
     if (pos.x_ >= 0 && pos.y_ >= 0)
         rmlContext_->ProcessMouseMove(pos.x_, pos.y_, modifiers);
+
+    MouseButtonFlags buttons = static_cast<MouseButton>(eventData[P_BUTTONS].GetInt());
+    if (buttons.Test(MouseButton::MOUSEB_LEFT))
+    {
+        IntVector2 delta(eventData[P_DX].GetInt(), eventData[P_DY].GetInt());
+        HandleScroll(pos, delta);
+    }
 }
 
 void RmlUI::HandleMouseWheel(StringHash, VariantMap& eventData)
@@ -612,6 +619,9 @@ void RmlUI::HandleTouchMove(StringHash, VariantMap& eventData)
     mouseMoveEvent_(this, pos);
     if (pos.x_ >= 0 && pos.y_ >= 0)
         rmlContext_->ProcessMouseMove(pos.x_, pos.y_, modifiers);
+
+    IntVector2 delta(eventData[P_DX].GetInt(), eventData[P_DY].GetInt());
+    HandleScroll(pos, delta);
 }
 
 void RmlUI::HandleKeyDown(StringHash, VariantMap& eventData)
@@ -636,6 +646,56 @@ void RmlUI::HandleKeyUp(StringHash, VariantMap& eventData)
     Rml::Input::KeyIdentifier key = static_cast<Rml::Input::KeyIdentifier>(it->second);
     int modifiers = ModifiersUrho3DToRml((QualifierFlags)eventData[P_QUALIFIERS].GetInt());
     rmlContext_->ProcessKeyUp(key, modifiers);
+}
+
+void RmlUI::HandleScroll(const IntVector2& pos, const IntVector2& delta)
+{
+    Rml::Element* focusElement = rmlContext_->GetFocusElement();
+
+    int deltaY = -delta.y_;
+    //Rml::Element * element = rmlContext_->GetElementAtPoint(ToRmlUi(pos.ToVector2()));
+    //Rml::Dictionary scroll_parameters;
+    //scroll_parameters.reserve(3);
+    //scroll_parameters["mouse_x"] = pos.x_;
+    //scroll_parameters["mouse_y"] = pos.y_;
+    //scroll_parameters["button"] = 0;
+
+    //	static const Rml::String property_names[] = {
+    //    "ctrl_key", "shift_key", "alt_key", "meta_key", "caps_lock_key", "num_lock_key", "scroll_lock_key"};
+
+    //for (int i = 0; i < 7; i++)
+    //        scroll_parameters[property_names[i]] = 0;
+    //    //(int)((key_modifier_state & (1 << i)) > 0);
+
+    //scroll_parameters["autoscroll"] = true;
+    //element->DispatchEvent(Rml::EventId::Mousescroll, scroll_parameters);
+
+    if (!focusElement || (focusElement->GetTagName() != "keyselect"))
+    {
+        Rml::Element* element;
+        for (element = rmlContext_->GetElementAtPoint(ToRmlUi(pos.ToVector2())); element; element = element->GetParentNode())
+        {
+            if (element->GetTagName() == "scrollbarvertical" || element->GetTagName() == "sliderbar" || element->GetTagName() == "slidertrack")
+            {
+                break;
+            }
+
+            Rml::Style::Overflow overflow =
+                (Rml::Style::Overflow)element->GetProperty(Rml::PropertyId::OverflowY)->Get<int>();
+            if ((overflow != Rml::Style::Overflow::Auto) && (overflow != Rml::Style::Overflow::Scroll))
+            {
+                continue;
+            }
+
+            int scrollTop = element->GetScrollTop();
+            if (((deltaY < 0) && (scrollTop > 0))
+                || ((deltaY > 0) && (element->GetScrollHeight() > scrollTop + element->GetClientHeight())))
+            {
+                element->SetScrollTop(element->GetScrollTop() + deltaY);
+                break;
+            }
+        }
+    }
 }
 
 void RmlUI::HandleTextInput(StringHash, VariantMap& eventData)
