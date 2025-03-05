@@ -82,6 +82,10 @@ public:
     void SetNetworkMode(NetworkObjectMode mode) { networkMode_ = mode; }
     /// @}
 
+    /// Calculate distance to another network object, for the purpose of per-connection object filtering.
+    /// Return null if this network object cannot be used to evaluate filtering distance.
+    virtual ea::optional<float> CalculateDistanceForFiltering(NetworkObject* otherNetworkObject);
+
     /// Set another NetworkObject as parent of this NetworkObject.
     void SetParentNetworkObject(NetworkId parentNetworkId);
 

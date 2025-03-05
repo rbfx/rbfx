@@ -42,6 +42,7 @@ void StaticNetworkObject::RegisterObject(Context* context)
     context->AddFactoryReflection<StaticNetworkObject>(Category_Network);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Client Prefab", GetClientPrefabAttr, SetClientPrefabAttr, ResourceRef, ResourceRef(PrefabResource::GetTypeStatic()), AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Is Origin For Distance Filtering", bool, isOriginForDistanceFiltering_, true, AM_DEFAULT);
 }
 
 void StaticNetworkObject::SetClientPrefab(PrefabResource* prefab)
@@ -61,6 +62,14 @@ void StaticNetworkObject::SetClientPrefab(PrefabResource* prefab)
     }
 
     clientPrefab_ = prefab;
+}
+
+ea::optional<float> StaticNetworkObject::CalculateDistanceForFiltering(NetworkObject* otherNetworkObject)
+{
+    if (!isOriginForDistanceFiltering_)
+        return ea::nullopt;
+
+    return BaseClassName::CalculateDistanceForFiltering(otherNetworkObject);
 }
 
 void StaticNetworkObject::WriteSnapshot(NetworkFrame frame, Serializer& dest)
