@@ -364,17 +364,19 @@ public:
         return *this - normal.Normalized() * delta.ProjectOntoAxis(normal);
     }
 
-    /// Project position vector onto line segment.
-    Vector3 ProjectOntoLine(const Vector3& from, const Vector3& to, bool clamped = false) const
+    /// Project position vector onto line segment. Returns interpolation factor between line points.
+    float ProjectOntoLineScalar(const Vector3& from, const Vector3& to, bool clamped = false) const
     {
         const Vector3 direction = to - from;
         const float lengthSquared = direction.LengthSquared();
-        float factor = (*this - from).DotProduct(direction) / lengthSquared;
+        const float factor = (*this - from).DotProduct(direction) / lengthSquared;
+        return clamped ? Clamp(factor, 0.0f, 1.0f) : factor;
+    }
 
-        if (clamped)
-            factor = Clamp(factor, 0.0f, 1.0f);
-
-        return from + direction * factor;
+    /// Project position vector onto line segment. Returns new position.
+    Vector3 ProjectOntoLine(const Vector3& from, const Vector3& to, bool clamped = false) const
+    {
+        return from.Lerp(to, ProjectOntoLineScalar(from, to, clamped));
     }
 
     /// Calculate distance to another position vector.
