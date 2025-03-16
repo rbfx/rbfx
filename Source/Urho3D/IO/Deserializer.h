@@ -152,6 +152,8 @@ public:
     unsigned ReadVLE();
     /// Read a text line.
     ea::string ReadLine();
+    /// Read a text line into provided string.
+    void ReadLine(ea::string& output);
 
 protected:
     /// Stream position.
