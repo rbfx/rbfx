@@ -259,7 +259,7 @@ void RmlUIComponent::OpenInternal()
 
     SetPosition(position_);
     SetSize(size_);
-    document_->Show();
+    document_->Show(modal_ ? Rml::ModalFlag::Modal : Rml::ModalFlag::None, Rml::FocusFlag::None);
     OnDocumentPostLoad();
 }
 
@@ -430,6 +430,40 @@ float RmlUIComponent::GetEmSize() const
     }
 
     return document_->ResolveLength(document_->GetProperty(Rml::PropertyId::FontSize)->GetNumericValue());
+}
+
+bool RmlUIComponent::IsModal() const
+{
+    return modal_;
+}
+
+void RmlUIComponent::SetModal(bool modal)
+{
+    if (modal_ == modal)
+        return;
+
+    modal_ = modal;
+    if (!document_)
+        return;
+
+    if (document_->IsVisible())
+    {
+        const Rml::Element* oldFocusedElement = document_->GetContext()->GetFocusElement();
+        const Rml::FocusFlag focus = oldFocusedElement && oldFocusedElement->GetOwnerDocument() == document_
+            ? Rml::FocusFlag::Document
+            : Rml::FocusFlag::Auto;
+
+        document_->Hide();
+        document_->Show(modal ? Rml::ModalFlag::Modal : Rml::ModalFlag::None, focus);
+    }
+}
+
+void RmlUIComponent::Focus(bool focusVisible)
+{
+    if (document_)
+    {
+        document_->Focus(focusVisible);
+    }
 }
 
 void RmlUIComponent::SetDocument(Rml::ElementDocument* document)

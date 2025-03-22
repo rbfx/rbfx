@@ -812,7 +812,8 @@ public:
 	bool Run()
 	{
 		bool success = true;
-		for (size_t i = 0; i < program.size(); i++)
+		const size_t programSize = program.size();
+		for (size_t i = 0; i < programSize; i++)
 		{
 			if (!Execute(program[i].instruction, program[i].data))
 			{

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2023 the rbfx project.
+// Copyright (c) 2024-2024 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,22 +20,25 @@
 // THE SOFTWARE.
 //
 
+using System;
+using System.Runtime.InteropServices;
+
 namespace Urho3DNet
 {
-    public partial class ResourceCache
+    public partial class Microphone
     {
-        public T GetResource<T>(string name, bool sendEventOnFailure = true) where T: Resource
-        {
-            if (string.IsNullOrEmpty(name))
-                return null;
-            return (T) GetResource(ObjectReflection<T>.TypeId, name, sendEventOnFailure);
-        }
+        [DllImport(global::Urho3DNet.Urho3DPINVOKE.DllImportModule, EntryPoint = "Urho3D_Microphone_CopyDataToSpan")]
+        private static extern uint Urho3D_Microphone_CopyDataToSpan(HandleRef receiver, IntPtr data, uint length);
 
-        public T GetTempResource<T>(string name, bool sendEventOnFailure = true) where T : Resource
+        public uint CopyData(Span<short> data)
         {
-            if (string.IsNullOrEmpty(name))
-                return null;
-            return (T)GetTempResource(ObjectReflection<T>.TypeId, name, sendEventOnFailure);
+            unsafe
+            {
+                fixed (short* pointer = data)
+                {
+                    return Urho3D_Microphone_CopyDataToSpan(swigCPtr, (IntPtr)pointer, (uint)data.Length);
+                }
+            }
         }
     }
 }

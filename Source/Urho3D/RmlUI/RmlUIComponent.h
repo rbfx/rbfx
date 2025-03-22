@@ -79,6 +79,14 @@ public:
     /// Get current document body element font size, also known as "em" unit.
     float GetEmSize() const;
 
+    /// Return whether the current document is modal.
+    bool IsModal() const;
+    /// Set modal flag to the current document.
+    void SetModal(bool modal);
+
+    /// Focus on the document.
+    void Focus(bool focusVisible);
+
     // Bind data model property.
     bool BindDataModelProperty(const ea::string& name, GetterFunc getter, SetterFunc setter);
     // Bind data model property or Urho3D::Variant type.
@@ -195,6 +203,7 @@ private:
     Vector2 size_;
     Vector2 position_;
     bool autoSize_ = true;
+    bool modal_ = false;
     /// @}
 
     /// Navigation manager.
