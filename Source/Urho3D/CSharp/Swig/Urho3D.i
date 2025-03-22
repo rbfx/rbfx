@@ -576,6 +576,7 @@ public:
 %include "Urho3D/Audio/Audio.h"
 %include "Urho3D/Audio/Sound.h"
 %include "Urho3D/Audio/SoundStream.h"
+%include "Urho3D/Audio/Microphone.h"
 %include "Urho3D/Audio/BufferedSoundStream.h"
 %include "Urho3D/Audio/OggVorbisSoundStream.h"
 %include "Urho3D/Audio/SoundListener.h"
