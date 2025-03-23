@@ -332,6 +332,24 @@ public:
     /// Project vector onto axis.
     float ProjectOntoAxis(const Vector2& axis) const { return DotProduct(axis.Normalized()); }
 
+    /// Project position vector onto line segment. Returns interpolation factor between line points.
+    float ProjectOntoLineScalar(const Vector2& from, const Vector2& to, bool clamped = false) const
+    {
+        const Vector2 direction = to - from;
+        const float lengthSquared = direction.LengthSquared();
+        const float factor = (*this - from).DotProduct(direction) / lengthSquared;
+        return clamped ? Clamp(factor, 0.0f, 1.0f) : factor;
+    }
+
+    /// Project position vector onto line segment. Returns new position.
+    Vector2 ProjectOntoLine(const Vector2& from, const Vector2& to, bool clamped = false) const
+    {
+        return from.Lerp(to, ProjectOntoLineScalar(from, to, clamped));
+    }
+
+    /// Calculate distance to another position vector.
+    float DistanceToPoint(const Vector2& point) const { return (*this - point).Length(); }
+
     /// Return scalar cross product of 2D vectors.
     float ScalarCrossProduct(const Vector2& rhs) const { return y_ * rhs.x_ - x_ * rhs.y_; }
 

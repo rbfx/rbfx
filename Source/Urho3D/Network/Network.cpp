@@ -40,6 +40,7 @@
 #include "../Network/Transport/DataChannel/DataChannelServer.h"
 #include "../Replica/BehaviorNetworkObject.h"
 #include "../Replica/FilteredByDistance.h"
+#include "../Replica/FilteredByOwner.h"
 #include "../Replica/NetworkObject.h"
 #include "../Replica/PredictedKinematicController.h"
 #include "../Replica/ReplicatedAnimation.h"
@@ -574,6 +575,7 @@ void RegisterNetworkLibrary(Context* context)
     ReplicatedTransform::RegisterObject(context);
     TrackedAnimatedModel::RegisterObject(context);
     FilteredByDistance::RegisterObject(context);
+    FilteredByOwner::RegisterObject(context);
 #ifdef URHO3D_PHYSICS
     PredictedKinematicController::RegisterObject(context);
 #endif

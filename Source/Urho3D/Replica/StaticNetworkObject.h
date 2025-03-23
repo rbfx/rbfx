@@ -43,6 +43,12 @@ public:
 
     static void RegisterObject(Context* context);
 
+    /// Server-only attributes.
+    /// @{
+    bool IsOriginForDistanceFiltering() const { return isOriginForDistanceFiltering_; }
+    void SetOriginForDistanceFiltering(bool isOrigin) { isOriginForDistanceFiltering_ = isOrigin; }
+    /// @}
+
     /// Attribute modification. Don't do that after replication!
     /// @{
     void SetClientPrefab(PrefabResource* prefab);
@@ -50,6 +56,8 @@ public:
 
     /// Implement NetworkObject
     /// @{
+    ea::optional<float> CalculateDistanceForFiltering(NetworkObject* otherNetworkObject) override;
+
     void WriteSnapshot(NetworkFrame frame, Serializer& dest) override;
 
     void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override;
@@ -61,6 +69,7 @@ protected:
 
 private:
     SharedPtr<PrefabResource> clientPrefab_;
+    bool isOriginForDistanceFiltering_{true};
 };
 
 }; // namespace Urho3D
