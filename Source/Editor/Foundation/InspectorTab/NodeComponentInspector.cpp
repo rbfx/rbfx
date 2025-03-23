@@ -46,7 +46,7 @@ template <class T>
 auto CastVectorTo(const WeakSerializableVector& objects)
 {
     ea::span<const WeakPtr<Serializable>> objectsSpan{objects};
-    return TransformedSpan<const WeakPtr<Serializable>, T, WeakToRawStaticCaster<T>>(objectsSpan);
+    return TransformedSpan<const WeakPtr<Serializable>, const T, WeakToRawStaticCaster<const T>>(objectsSpan);
 }
 
 NodeInspectorWidget::NodeVector GetSortedTopmostNodes(const WeakSerializableVector& objects)
