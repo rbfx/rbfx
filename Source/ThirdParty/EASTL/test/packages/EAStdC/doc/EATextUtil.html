@@ -1,0 +1,724 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<Title>EATextUtil</title>
+
+    <link type="text/css" rel="stylesheet" href="UTFDoc.css">
+    <meta name="author" content="Paul Pedriana">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EATextUtil</h1>
+
+<h2>Introduction</h2>
+<p>EATextUtil is a collection of string utilities that are of a higher-level nature than those found in the C runtime library or our <a href="EAString.html">EAString</a> 
+    module. EASTL/string.h and EASTL/algorithm.h contain C++/STL variations of functions that are similar to the C runtime library functions, but which are generally 
+    more powerful and flexible than the C functions while usually being more efficient. </p>
+<p>All functions in EATextUtil are present in char8_t versions and char16_t versions, and assume UTF8 and UCS2 Unicode encoding respectively. Recall that these encodings 
+    are backward-compatible with ASCII and so will work for most or all of the text that you give them. </p>
+<p>Each of the functions comes in a version that doesn't allocate any memory but instead uses user-supplied memory in-place. In a few cases, there are String versions 
+    that will allocate memory if they need to increase the size of the user-supplied string.</p>
+<p>Here's a brief summary of the functions currently found in EATextUtil. We use char_t in the declarations below to refer to both char8_t and char16_t; there are 
+    thus two versions of each function. </p>
+<pre class="code-example">bool WildcardMatch(const char_t* pString, const char_t* pPattern, bool bCaseSensitive);
+ 
+bool ParseDelimitedText(const char_t*  pText,  const char_t*  pTextEnd,  char_t cDelimiter, 
+                        const char_t*& pToken, const char_t*& pTokenEnd, const char_t** ppNewText);
+  
+const char_t* GetTextLine(const char_t* pText, const char_t* pTextEnd, const char_t** ppNewText);
+ 
+bool SplitTokenDelimited(const char_t* pSource, size_t nSourceLength, char_t cDelimiter, 
+                         char_t* pToken, size_t nTokenLength, const char_t** ppNewSource = NULL);
+bool SplitTokenSeparated(const char_t* pSource, size_t nSourceLength, char_t cDelimiter, 
+                         char_t* pToken, size_t nTokenLength, const char_t** ppNewSource = NULL);
+
+void ConvertBinaryDataToASCIIArray(const void* pBinaryData, size_t nBinaryDataLength, char_t* pASCIIArray);
+bool ConvertASCIIArrayToBinaryData(const char_t* pASCIIArray, size_t nASCIIArrayLength, void* pBinaryData);
+ 
+int BoyerMooreSearch(const char8_t* pPattern, int nPatternLength, const char8_t* pSearchString, int nSearchStringLength, 
+                     int* pPatternBuffer1, int* pPatternBuffer2, int* pAlphabetBuffer, int nAlphabetBufferSize);
+</pre>
+<p>We will proceed to address each of the above functions.</p>
+<h2>WildcardMatch</h2>
+<pre class="code-example">bool WildcardMatch(const char16_t* pString, const char16_t* pPattern, bool bCaseSensitive);
+bool WildcardMatch(const char8_t*  pString, const char8_t*  pPattern, bool bCaseSensitive);
+</pre>
+<p>These functions match source strings to wildcard patterns like those used in file specifications. '*' in the pattern means match zero or more consecutive source 
+    characters. '?' in the pattern means match exactly one source character. Multiple * and ? characters may be used. Two consecutive * characters are treated as 
+    if they were one. Here are some examples:</p>
+<table width="500" border="1" hspace="32">
+    <tr> 
+        <td><b>Source</b></td>
+        <td><b>Pattern</b></td>
+        <td><b>Result</b></td>
+    </tr>
+    <tr> 
+        <td>abcde</td>
+        <td>*e</td>
+        <td>true</td>
+    </tr>
+    <tr> 
+        <td>abcde</td>
+        <td>*f</td>
+        <td>false</td>
+    </tr>
+    <tr> 
+        <td>abcde</td>
+        <td>???de</td>
+        <td>true</td>
+    </tr>
+    <tr> 
+        <td>abcde</td>
+        <td>????g</td>
+        <td>false</td>
+    </tr>
+    <tr> 
+        <td>abcde</td>
+        <td>*c??</td>
+        <td>true</td>
+    </tr>
+    <tr> 
+        <td>abcde</td>
+        <td>*e??</td>
+        <td>false</td>
+    </tr>
+    <tr> 
+        <td>abcde</td>
+        <td>*????</td>
+        <td>true</td>
+    </tr>
+    <tr> 
+        <td>abcde</td>
+        <td>bcdef</td>
+        <td>false</td>
+    </tr>
+    <tr>
+        <td>abcde</td>
+        <td> *?????</td>
+        <td>true</td>
+    </tr>
+</table>
+<p>Example usage:</p>
+<pre class="code-example">bool result = WildcardMatch(&quot;Hello world&quot;, &quot;hello*&quot;, false);   <font color="#0033CC">    // result becomes true</font>
+bool result = WildcardMatch(&quot;Hello world&quot;, &quot;hello?&quot;, false);       <font color="#0033CC">// result becomes false</font>
+bool result = WildcardMatch(&quot;Hello world&quot;, &quot;Hello??orld&quot;, true);   <font color="#0033CC">// result becomes true</font>
+bool result = WildcardMatch(&quot;Hello world&quot;, &quot;*Hello*world*&quot;, true); <font color="#0033CC">// result becomes true</font>
+</pre>
+<h2>ParseDelimitedText (iterative version)</h2>
+<pre class="code-example">bool ParseDelimitedText(const char16_t* pText, const char16_t* pTextEnd, char16_t cDelimiter, 
+                        const char16_t*& pToken, const char16_t*& pTokenEnd, const char16_t** ppNewText);
+
+bool ParseDelimitedText(const char8_t* pText, const char8_t* pTextEnd, char8_t cDelimiter, 
+                        const char8_t*& pToken, const char8_t*& pTokenEnd, const char8_t** ppNewText);
+</pre>
+<p>Given a line of text (e.g. like this:)</p>
+<pre class="code-example">342.5, &quot;This is a string&quot;, test, &quot;This is a string, with a comma&quot;</pre>
+<p>ParseDelimitedText parses it into separate fields (e.g. like this:)</p>
+<pre class="code-example">342.5
+This is a string
+test
+This is a string, with a comma </pre>
+<p> ParseDelimitedText lets you dynamically specify the delimiter. The delimiter can be any char (e.g. space, tab, semicolon) except the quote char itself, which 
+    is reserved for the purpose of grouping. See the source code comments for more details. However, in the case of text that is UTF8-encoded, you need to make sure 
+    the delimiter char is a value that is less than 127, so as not to collide with UTF8 encoded chars.<br>
+    <br>
+    The input is a pointer to text and the text length. For ASCII, MBCS, and UTF8, this is the number of bytes or chars. For UTF16 (Unicode) it is the number of characters. 
+    There are two bytes (two chars) per character in UTF16. The input nTextLength can be -1 (kLengthNull) to indicate that the string is null-terminated. </p>
+<p>Example behaviour for string array version (which you can extrapolate to the iterative version):</p>
+<table width="100%" border="1">
+    <tr> 
+        <td><b>Input string</b></td>
+        <td><b>MaxResults</b></td>
+        <td><b>Delimiter</b></td>
+        <td><b>Return value</b></td>
+        <td>
+            <p><b>O</b><b>utput array size</b></p>
+      </td>
+        <td><b>Output array value</b></td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre><font size="-1">""</font></pre>
+        </td>
+        <td><font size="-1">-1</font></td>
+        <td> 
+            <pre><font size="-1">' '</font></pre>
+        </td>
+        <td><font size="-1">0</font></td>
+        <td><font size="-1">0</font></td>
+        <td> 
+            <pre><font size="-1">""</font></pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre><font size="-1">"000 111"</font></pre>
+        </td>
+        <td><font size="-1">-1</font></td>
+        <td> 
+            <pre><font size="-1">' '</font></pre>
+        </td>
+        <td><font size="-1">2</font></td>
+        <td><font size="-1">2</font></td>
+        <td> 
+            <pre><font size="-1">"000"  "111"</font></pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre><font size="-1">"000 111   222   333 444 \"555 555\" 666"</font></pre>
+        </td>
+        <td><font size="-1">-1</font></td>
+        <td> 
+            <pre><font size="-1">' '</font></pre>
+        </td>
+        <td><font size="-1">7</font></td>
+        <td><font size="-1">7</font></td>
+        <td> 
+            <pre><font size="-1">"000"  "111"  "222"  "333"  "444"  "555 555"  "666"</font></pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre><font size="-1">"     000 111 222         333                "</font></pre>
+        </td>
+        <td><font size="-1">-1</font></td>
+        <td> 
+            <pre><font size="-1">' '</font></pre>
+        </td>
+        <td><font size="-1">4</font></td>
+        <td><font size="-1">4</font></td>
+        <td> 
+            <pre><font size="-1">"000"  "111"  "222"  "333"</font></pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre><font size="-1">"     000 111 222         333                "</font></pre>
+        </td>
+        <td><font size="-1">-1</font></td>
+        <td> 
+            <pre><font size="-1">' '</font></pre>
+        </td>
+        <td><font size="-1">2</font></td>
+        <td><font size="-1">2</font></td>
+        <td> 
+            <pre><font size="-1">"000"  "111"</font></pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre><font size="-1">""</font></pre>
+        </td>
+        <td><font size="-1">-1</font></td>
+        <td> 
+            <pre><font size="-1">','</font></pre>
+        </td>
+        <td><font size="-1">0</font></td>
+        <td><font size="-1">0</font></td>
+        <td> 
+            <pre><font size="-1">""</font></pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre><font size="-1">"000,111"</font></pre>
+        </td>
+        <td><font size="-1">-1</font></td>
+        <td> 
+            <pre><font size="-1">','</font></pre>
+        </td>
+        <td><font size="-1">2</font></td>
+        <td><font size="-1">2</font></td>
+        <td> 
+            <pre><font size="-1">"000"  "111"</font></pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre><font size="-1">"000,  111 , 222   333 ,444 \"555,  555  \" 666"</font></pre>
+        </td>
+        <td><font size="-1">-1</font></td>
+        <td> 
+            <pre><font size="-1">','</font></pre>
+        </td>
+        <td><font size="-1">4</font></td>
+        <td><font size="-1">4</font></td>
+        <td> 
+            <pre><font size="-1">"000"  "111"  "222   333"  "444 \"555,  555  \" 666"</font></pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre><font size="-1">"  ,, 000 ,111, 222,         333          ,     "</font></pre>
+        </td>
+        <td><font size="-1">-1</font></td>
+        <td> 
+            <pre><font size="-1">','</font></pre>
+        </td>
+        <td><font size="-1">6</font></td>
+        <td><font size="-1">6</font></td>
+        <td> 
+            <pre><font size="-1">""   ""   "000"   "111"   "222"   "333"</font></pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre><font size="-1">"  ,, 000 ,111, 222,         333          ,     "</font></pre>
+        </td>
+        <td><font size="-1">2 </font></td>
+        <td> 
+            <pre><font size="-1">','</font></pre>
+        </td>
+        <td><font size="-1">0</font></td>
+        <td><font size="-1">0</font></td>
+        <td> 
+            <pre><font size="-1">""   ""</font></pre>
+        </td>
+    </tr>
+</table>
+<h2>Convert binary ASCII</h2>
+<pre class="code-example">void ConvertBinaryDataToASCIIArray(const void* pBinaryData, size_t nBinaryDataLength, char16_t* pASCIIArray);
+void ConvertBinaryDataToASCIIArray(const void* pBinaryData, size_t nBinaryDataLength, char8_t*  pASCIIArray);
+ 
+bool ConvertASCIIArrayToBinaryData(const char8_t*  pASCIIArray, size_t nASCIIArrayLength, void* pBinaryData);
+bool ConvertASCIIArrayToBinaryData(const char16_t* pASCIIArray, size_t nASCIIArrayLength, void* pBinaryData);
+</pre>
+<p> The first two functions convert an array of binary characters into an encoded ASCII format that can be later converted back to binary. You might want to do this 
+    if you are trying to embed binary data into a text file (e.g. .ini file) and need a way to encode the binary data as text.</p>
+<p> The second two functions take an ASCII string of text and converts it to binary data. This is the reverse of the ConvertBinaryDataToASCIIArray functions. If an 
+    invalid hexidecimal character is encountered, it is replaced with a '0' character. These functions return true if the input was entirely valid hexadecimal data.</p>
+<p>Example usage:</p>
+<pre class="code-example">const uint8_t data[4] = { 0x12, 0x34, 0x56, 0x78 };
+char8_t ascii[8];
+ 
+ConvertBinaryDataToASCIIArray(data, 4 * sizeof(uint8_t), ascii);    <font color="#0033CC">// ascii becomes "12345678"</font>
+</pre>
+<pre class="code-example">const char16_t ascii[8] = &quot;12345678&quot;;
+uint8_t data[4];
+ 
+ConvertASCIIArrayToBinaryData(ascii, 8, data);    <font color="#0033CC">// data becomes { 0x12, 0x34, 0x56, 0x78 }</font>
+</pre>
+<h2>GetTextLine</h2>
+<pre class="code-example">const char16_t* GetTextLine(const char16_t* pText, const char16_t* pTextEnd, const char16_t** ppNewText);
+const char8_t*  GetTextLine(const char8_t*  pText, const char8_t*  pTextEnd, const char8_t**  ppNewText);
+</pre>
+<p>Given a block of text, this function reads a line of text and moves to the beginning of the next line. The return value is the end of the current line, previous 
+    to the newline characters. If ppNewText is supplied, it holds the start of the new line, which will often be different from the return value, as the start of 
+    the new line is after any newline characters. The length of the current line is pTextEnd - pText.</p>
+<p>These functions are useful for reading lines of text from a text file via an iterative method, which is perhaps the most flexible way of doing this.</p>
+<p>Example usage:</p>
+<pre class="code-example">char  buffer[256];<br>char* pLineNext(buffer);<br>char* pLine;<br><br>do{<br>    pText = pLineNext;<br>    const char* pLineEnd = GetTextLine(pLine, buffer + 256, &amp;pLineNext);<br>    <span class="code-example-comment">// Use pLine - pLineEnd here</span><br>}while(pLineNext != (buffer + 256));</pre>
+<h2>SplitTokenDelimited </h2>
+<pre class="code-example">bool SplitTokenDelimited(const char16_t* pSource, size_t nSourceLength, char16_t cDelimiter, 
+                         char16_t* pToken, size_t nTokenLength, const char16_t** ppNewSource = NULL);
+
+
+bool SplitTokenDelimited(const char8_t* pSource, size_t nSourceLength, char8_t cDelimiter, 
+                         char8_t* pToken, size_t nTokenLength, const char8_t** ppNewSource = NULL);
+</pre>
+<p> SplitTokenDelimited returns tokens that are delimited by a single character -- repetitions of that character will result in empty tokens returned. This is most 
+    commonly useful when you want to parse a string of text delimited by commas or spaces. Returns true whenever it extracts a token. Note however that the extracted 
+    token may be empty. Note that the return value will be true if the source has length and will be false if the source is empty. If the input pToken is non-null, 
+    the text before the delimiter is copied to it. </p>
+<p>Example behaviour (delimiter is a comma):</p>
+<table width="500" border="1" hspace="32">
+    <tr> 
+        <td><b>Source</b></td>
+        <td><b>Token</b></td>
+        <td><b>New source</b></td>
+        <td><b>Return value</b></td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>"a,b"</pre>
+        </td>
+        <td> 
+            <pre>"a"</pre>
+        </td>
+        <td> 
+            <pre>"b"</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>" a , b "</pre>
+        </td>
+        <td> 
+            <pre>" a "</pre>
+        </td>
+        <td> 
+            <pre>" b "</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>"ab,b"</pre>
+        </td>
+        <td> 
+            <pre>"ab"</pre>
+        </td>
+        <td> 
+            <pre>"b"</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>",a,b"</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>"a,b"</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>",b"</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>"b"</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>",,b"</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>",b"</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>",a,"</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>"a,"</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>"a,"</pre>
+        </td>
+        <td> 
+            <pre>"a"</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>","</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>", "</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>&quot; &quot;</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>"a"</pre>
+        </td>
+        <td> 
+            <pre>"a"</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>" "</pre>
+        </td>
+        <td> 
+            <pre>&quot; &quot;</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>&quot;&quot;</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>false</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>NULL</pre>
+        </td>
+        <td> 
+            <pre>&quot;&quot;</pre>
+        </td>
+        <td> 
+            <pre>NULL</pre>
+        </td>
+        <td> 
+            <pre>false</pre>
+        </td>
+    </tr>
+</table>
+<p>Example usage:</p>
+<pre class="code-example">const char16_t* pString = L"a, b, c, d";
+char16_t pToken[16];
+
+while(SplitTokenDelimited(pString, kLengthNull, ',', pToken, 16, &pString))
+    printf("%s\n", pToken);
+</pre>
+<h2>SplitTokenSeparated </h2>
+<pre class="code-example">bool SplitTokenSeparated(const char16_t* pSource, size_t nSourceLength, char16_t cDelimiter, 
+                         char16_t* pToken, size_t nTokenLength, const char16_t** ppNewSource = NULL);
+
+
+bool SplitTokenSeparated(const char8_t* pSource, size_t nSourceLength, char8_t cDelimiter, 
+                         char8_t* pToken, size_t nTokenLength, const char8_t** ppNewSource = NULL);</pre>
+<p>SplitTokenSeparated returns tokens that are separated by one or more instances of a character. Returns true whenever it extracts a token. </p>
+<p>Example behaviour (delimiter is a space char):</p>
+<table width="500" border="1" hspace="32">
+    <tr> 
+        <td><b>Source</b></td>
+        <td><b>Token</b></td>
+        <td><b>New source</b></td>
+        <td><b>Return value</b></td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>"a"</pre>
+        </td>
+        <td> 
+            <pre>"a"</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>"a b"</pre>
+        </td>
+        <td> 
+            <pre>"a"</pre>
+        </td>
+        <td> 
+            <pre>"b"</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>"a  b"</pre>
+        </td>
+        <td> 
+            <pre>"a"</pre>
+        </td>
+        <td> 
+            <pre>"b"</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>" a b"</pre>
+        </td>
+        <td> 
+            <pre>"a"</pre>
+        </td>
+        <td> 
+            <pre>"b"</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>" a b "</pre>
+        </td>
+        <td> 
+            <pre>"a"</pre>
+        </td>
+        <td> 
+            <pre>"b "</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>" a "</pre>
+        </td>
+        <td> 
+            <pre>"a"</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>" a  "</pre>
+        </td>
+        <td> 
+            <pre>"a"</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>true</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>&quot;&quot;</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>false</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>" "</pre>
+        </td>
+        <td> 
+            <pre>&quot;&quot;</pre>
+        </td>
+        <td> 
+            <pre>""</pre>
+        </td>
+        <td> 
+            <pre>false</pre>
+        </td>
+    </tr>
+    <tr> 
+        <td> 
+            <pre>NULL</pre>
+        </td>
+        <td> 
+            <pre>&quot;&quot;</pre>
+        </td>
+        <td> 
+            <pre>NULL</pre>
+        </td>
+        <td> 
+            <pre>false</pre>
+        </td>
+    </tr>
+</table>
+<h2>BoyerMooreSearch</h2>
+<pre class="code-example"><span class="code-example-comment">/// BoyerMooreSearch
+///
+/// patternBuffer1 is a user-supplied buffer and must be at least as long as the search pattern.
+/// patternBuffer2 is a user-supplied buffer and must be at least as long as the search pattern.
+/// alphabetBuffer is a user-supplied buffer and must be at least as long as the highest character value 
+/// used in the searched string and search pattern.
+///
+</span>int BoyerMooreSearch(const char* pPattern, int nPatternLength, const char* pSearchString, int nSearchStringLength, 
+                     int* pPatternBuffer1, int* pPatternBuffer2, int* pAlphabetBuffer, int nAlphabetBufferSize)
+</pre>
+<p> Boyer-Moore is a very fast string search compared to most others, including those in the STL. However, you need to be searching a string of at least 100 chars 
+    and have a search pattern of at least 3 characters for the speed to show, as Boyer-Moore has a startup precalculation that costs some cycles. This startup precalculation 
+    is proportional to the size of your search pattern and the size of the alphabet in use. Thus, doing Boyer-Moore searches on the entire Unicode alphabet is going 
+    to incur a fairly expensive precalculation cost.</p>
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p> </p>
+</body></html>
+
+
+

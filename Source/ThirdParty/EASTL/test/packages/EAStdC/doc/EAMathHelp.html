@@ -1,0 +1,232 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<Title>EAMathHelp</title>
+
+    <link type="text/css" rel="stylesheet" href="UTFDoc.css">
+    <meta name="author" content="Paul Pedriana">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EAMathHelp</h1>
+
+<h2>Introduction</h2>
+<p>EAMathHelp provides fast floating point math primitives. It is not a vector/matrix math library such as those in use around Electronic Arts, but rather is a base 
+    for doing floating point characterizations and for doing fast floating point conversions. The former often serve to help implement the latter.</p>
+<p>The constants listed below may look odd if you aren't familiar with the standardized IEEE floating point format. A description of this format is outside the scope 
+    of this document, but you can find plenty of documentation about it by looking it up on the Internet. Suffice it to say the floating point numbers are essentially 
+    bitfields that specify a sign, an integer value (mantissa), and an exponent to raise the integer value by.</p>
+<h2>Constants</h2>
+<pre class="code-example"><span class="code-example-comment">// 32 bit float bits
+</span>const uint32_t  kFloat32SignMask                = UINT32_C(0x80000000);
+const uint32_t  kFloat32ExponentMask            = UINT32_C(0x7F800000);
+const uint32_t  kFloat32MantissaMask            = UINT32_C(0x007FFFFF);
+const uint32_t  kFloat32SignAndExponentMask     = UINT32_C(0xFF800000);
+const uint32_t  kFloat32SignAndMantissaMask     = UINT32_C(0x807FFFFF);
+const uint32_t  kFloat32ExponentAndMantissaMask = UINT32_C(0x7FFFFFFF);
+const uint32_t  kFloat32PositiveInfinityBits    = UINT32_C(0x7F800000);
+const unsigned  kFloat32SignBits                = 1;
+const unsigned  kFloat32ExponentBits            = 8;
+const unsigned  kFloat32MantissaBits            = 23;
+const unsigned  kFloat32BiasValue               = 127;
+ 
+<span class="code-example-comment">// 64 bit float bits
+</span>const uint64_t  kFloat64SignMask                = UINT64_C(0x8000000000000000);
+const uint64_t  kFloat64ExponentMask            = UINT64_C(0x7FF0000000000000);
+const uint64_t  kFloat64MantissaMask            = UINT64_C(0x000FFFFFFFFFFFFF);
+const uint64_t  kFloat64SignAndExponentMask     = UINT64_C(0xFFF0000000000000);
+const uint64_t  kFloat64SignAndMantissaMask     = UINT64_C(0x800FFFFFFFFFFFFF);
+const uint64_t  kFloat64ExponentAndMantissaMask = UINT64_C(0x7FFFFFFFFFFFFFFF);
+const uint64_t  kFloat64PositiveInfinityBits    = UINT64_C(0x7FF0000000000000);
+const unsigned  kFloat64SignBits                = 1;
+const unsigned  kFloat64ExponentBits            = 11;
+const unsigned  kFloat64MantissaBits            = 52;
+const unsigned  kFloat64BiasValue               = 1023;
+
+const float32_t kFloat32Infinity                = kFloat32PositiveInfinityBits;
+const float64_t kFloat64Infinity                = kFloat64PositiveInfinityBits;
+ 
+<span class="code-example-comment">// bias to integer
+</span>const float32_t kFToIBiasF32 = uint32_t(3) << 22;
+const int32_t   kFToIBiasS32 = 0x4B400000;           <span class="code-example-comment">// Same as ((int32_t&) kFToIBiasF32), but known to optimizer at compile time.</span>
+const float64_t kFToIBiasF64 = uint64_t(3) << 52;
+ 
+<span class="code-example-comment">// bias to 8-bit fraction
+</span>const float32_t kFToI8BiasF32 = uint32_t(3) << 14;
+const int32_t   kFToI8BiasS32 = 0x47400000;          <span class="code-example-comment">// Same as ((int32_t&) kFToI8BiasF32), but known to optimizer at compile time.</span>
+ 
+<span class="code-example-comment">// bias to 16-bit fraction
+</span>const float32_t kFToI16BiasF32 = uint32_t(3) << 6;
+const int32_t   kFToI16BiasS32 = 0x43400000;         <span class="code-example-comment">// Same as ((int32_t&) kFToI16BiasF32), but known to optimizer at compile time.</span>
+</pre>
+<h2>Functions</h2>
+<p>Float conversion functions</p>
+<pre class="code-example"><span class="code-example-comment">///////////////////////////////////////////////////////////////////////
+// Full range conversion functions
+//
+// These are good for floats within the full range of a float. Remember
+// that a single-precision float only has a 24-bit significand so
+// most integers |x| > 2^24 cannot be represented exactly.
+//
+// The result of converting an out-of-range number, infinity, or NaN
+// is undefined.
+//
+</span>inline uint32_t RoundToUint32(float fValue);
+inline int32_t  RoundToInt32(float fValue);
+inline int32_t  FloorToInt32(float fValue);
+inline int32_t  CeilToInt32(float fValue);
+inline int32_t  TruncateToInt32(float fValue);
+
+<span class="code-example-comment">///////////////////////////////////////////////////////////////////////
+// Partial range conversion functions.
+//
+// These are only good for |x| &lt;= 2^23. The result of converting an
+// out-of-range number, infinity, or NaN is undefined.
+//
+</span>inline int32_t FastRoundToInt23(float fValue);
+
+
+<span class="code-example-comment">///////////////////////////////////////////////////////////////////////
+// Unit-to-byte functions.
+//
+// Converts real values in the range |x| &lt;= 1 to unsigned 8-bit values
+// [0, 255]. The result of calling UnitFloatToUint8() with |x|>1 is
+// undefined.
+//
+</span>inline uint8_t UnitFloatToUint8(float fValue);
+inline uint8_t ClampUnitFloatToUint8(float fValue);
+
+</pre>
+<p>Float characterization functions</p>
+<pre class="code-example"><span class="code-example-comment">///////////////////////////////////////////////////////////////////////
+// IsInvalid
+//
+// Returns true if a value does not obey normal arithmetic rules;
+// specifically, x != x. In the case of Visual C++ 2003, this is true
+// for NaNs and indefinites, and not for normalized finite values,
+// denormals, and infinities. Other compilers may return different
+// results or even false for all values.
+//
+// IsInvalid() is useful as a fast assert check that floats are
+// sane and won't poison computations as NaNs can with masked
+// exceptions.
+//
+</span>inline bool IsInvalid(float32_t fValue);
+inline bool IsInvalid(float64_t fValue);
+ 
+<span class="code-example-comment">///////////////////////////////////////////////////////////////////////////////
+// IsNormal
+//
+// Returns true if the value is a normalized finite number. That is, it is neither
+// an infinite, nor a NaN (including indefinite NaN), nor a denormalized number.
+// You generally want to write math operation checking code that asserts for 
+// IsNormal() as opposed to checking specifically for IsNaN, etc.
+//
+// Normal values are defined as any floating point value with an exponent in 
+// the range of [1, 254], as 0 is reserved for denormalized (underflow) values 
+// and 255 is reserved for infinite (overflow) and NaN values. 
+//
+</span>inline bool IsNormal(float32_t fValue);
+inline bool IsNormal(float64_t fValue);
+ 
+<span class="code-example-comment">///////////////////////////////////////////////////////////////////////////////
+// IsNAN
+//
+// A NaN is a special kind of number that is neither finite nor infinite. 
+// It is the result of doing things like the following:
+//    float x = 1 * NaN;
+//    float x = NaN + NaN;
+//    float x = 0 / 0;
+//    float x = 0 / infinite;
+//    float x = infinite - infinite
+//    float x = sqrt(-1);
+//    float x = cos(infinite);
+// Under the VC++ debugger, x will be displayed as 1.#QNAN00 or 1.#IND00 and 
+// the bit representation of x will be 0x7fc00001 (in the case of 1 * NaN). 
+// The 'Q' in front of NAN stands for "quiet" and means that use of that value 
+// in expressions won't generate exceptions. A signaling NaN (SNAN) means that 
+// use of the value would generate exceptions.
+// 
+// NaNs are frequently generated in physics simulations and similar mathematical 
+// situations when you are simulating an object moving or turning over time but 
+// the time or distance differential in the calculation is very small. 
+// Also, floating point roundoff error can generate NaNs if you do things 
+// like call acos(x) where you didn't take care to clamp x to &lt;= 1. You can 
+// also get a NaN when memory used to store a floating point value is written 
+// with random data.
+//
+// A curious property of NaNs is that all comparisons between NaNs return 
+// false except the expression: NaN != NaN. This is so even if the bit 
+// representation of the two compared NaNs are identical. Thus, with NaNs, 
+// the following holds:
+//    x == x is always false
+//    x < y is always false
+//    x > y is always false
+//
+// As a result, one simple way to test for a NaN without fiddling with bits is 
+// to simply test for x == x. If this returns false, then you have a NaN. 
+// Unfortunately, many C and C++ compilers don't obey this, so you are usually 
+// stuck fiddling with bits.
+//
+// With a NaN, all exponent bits are 1 and the mantissa is not zero.
+// If the highest fraction bit is 1, the NAN is "quiet" -- it represents
+// and indeterminant operation rather than an invalid one.
+//</span>
+inline bool IsNAN(float32_t fValue);
+inline bool IsNAN(float64_t fValue);
+
+<span class="code-example-comment">///////////////////////////////////////////////////////////////////////////////
+// IsInfinite
+//
+// A value is infinity if the exponent bits are all 1 and all the bits of the 
+// mantissa (significand) are 0. The sign bit indicates positive or negative
+// infinity. Thus, for Float32, 0x7f800000 is positive infinity and 0xff800000
+// is negative infinity.
+//
+</span>inline bool IsInfinite(float32_t fValue);
+inline bool IsInfinite(float64_t fValue);
+
+<span class="code-example-comment">///////////////////////////////////////////////////////////////////////////////
+// IsIndefinite
+//
+// An indefinite is a special kind of NaN that is used to signify that an 
+// operation between non-NaNs generated a NaN. Other than that, it really is 
+// simply another NaN.
+//
+</span>inline bool IsIndefinite(float32_t fValue);
+inline bool IsIndefinite(float64_t fValue);
+
+<span class="code-example-comment">///////////////////////////////////////////////////////////////////////////////
+// IsDenormalized
+//
+// Much in the same way that infinite numbers represent an overflow, 
+// denormalized numbers represent an underflow. A denormalized number is 
+// indicated by an exponent with a value of zero. You get a denormalized 
+// number when you do operations such as this:
+//    float x = 1e-10 / 1e35;
+// Under the VC++ debugger, x will be displayed as 1.4e-045#DEN and the 
+// bit representation of x will be 0x00000001. Unlike infinites and NaNs, 
+// you can still do math with denormalized numbers. However, the results 
+// of your math will likely have a lot of imprecision. You can also get a 
+// denormalized value when memory used to store a floating point value is 
+// written with random data.
+//
+</span>inline bool IsDenormalized(float32_t fValue);
+inline bool IsDenormalized(float64_t fValue);</pre>
+
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+</body></html>
+
+
+

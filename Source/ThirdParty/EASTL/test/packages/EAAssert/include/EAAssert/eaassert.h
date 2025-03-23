@@ -59,8 +59,10 @@
 //
 
 #if defined(EA_DLL) && defined(_MSC_VER)
-	#ifndef EA_ASSERT_API
-		#define EA_ASSERT_API __declspec(dllimport)
+	#if defined(EAASSERT_EXPORTS)
+		#define EA_ASSERT_API      __declspec(dllexport)
+	#else
+		#define EA_ASSERT_API      __declspec(dllimport)
 	#endif
 #else
 	#define EA_ASSERT_API

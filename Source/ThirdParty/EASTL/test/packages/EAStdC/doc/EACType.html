@@ -1,0 +1,235 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<Title>EAString</title>
+
+    <link type="text/css" rel="stylesheet" href="UTFDoc.css">
+    <meta name="author" content="Paul Pedriana">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EAString</h1>
+
+<h2>Introduction</h2>
+<p>EACRT stands for EA C Runtime. EACRT implements an extensive suite of C string functionality in a portable way. Some of this functionality is the same as what 
+    is present in the C standard and in common (but non-portable) extensions to the C standard. EACRT presents a consistent portable interface to its functionality 
+    in both 8 bit and 16 bit string form.</p>
+<p>The C language provides various functions which work with non-portable data types, such as long. EACRT defines all significant data types in terms of portable 
+    types such as int32_t and int64_t. </p>
+<p>Additionally, the EACRT versions of functions are usually faster than the C runtime library versions, usually because the EACRT versions minimize cache misses 
+    and branching, whereas typical C runtime libraries optimize for the smallest memory footprint with little or no regard to other performance characteristics.</p>
+<p>C-style printf functionality is separate from EACRT and is found in <a href="EASprintf.html">EASprintf</a>. Memcpy functionality (which comes from the C string.h 
+    header file) is present in <a href="Memcpy.html">EAMemcpy</a>. However, EACRT has a few mem functions itself.</p>
+<p>In some cases, EACRT simply #defines its function to be the same as the equivalent C function. This is done when the equivalent C function is known to be present 
+    and known to conform to the C/C++ language standard correctly.</p>
+<h2>Extension functions</h2>
+<p> EACRT provides extended functionality that isn't found in conventional C libraries, but it useful nevertheless.</p>
+<table width="100%" border="1" cellpadding="3">
+    <tr> 
+        <td><b>Function</b></td>
+        <td><b>Description</b></td>
+        <td><b>Signature</b></td>
+    </tr>
+    <tr> 
+        <td>Strlcat</td>
+        <td>Safe variation of strncat</td>
+        <td><font size="-1">char_t* Strlcat(char_t* pDestination, const char_t* pSource, size_t n); </font></td>
+    </tr>
+    <tr> 
+        <td>Strlcpy</td>
+        <td>Safe variation of strcpy</td>
+        <td><font size="-1">char_t* Strlcpy(char_t* pDestination, const char_t* pSource, size_t n); </font></td>
+    </tr>
+    <tr> 
+        <td>Stristr</td>
+        <td>Case insensitive version of strstr (find string within string)</td>
+        <td><font size="-1">char_t* Stristr(const char_t* pString, const char_t* pSubString);</font></td>
+    </tr>
+    <tr> 
+        <td>FtoaEnglish</td>
+        <td> 
+            <p>Float to ascii; always use English numeric format, regardless of the current locale.</p>
+        </td>
+        <td><font size="-1">char_t* FtoaEnglish(double dValue, char_t* pResult, int nInputLength, int nPrecision, bool bExponentEnabled); </font></td>
+    </tr>
+    <tr> 
+        <td>AtofEnglish</td>
+        <td>Ascii to float; always use English numeric format, regardless of the current locale.</td>
+        <td><font size="-1">double AtofEnglish(const char_t* pString); </font></td>
+    </tr>
+    <tr> 
+        <td> StrtodEnglish</td>
+        <td>Same as strtod, but always use English numeric format, regardless of the current locale.</td>
+        <td><font size="-1">double StrtodEnglish(const char_t* pString, char_t** ppStringEnd);</font></td>
+    </tr>
+    <tr> 
+        <td>Memset16</td>
+        <td>Sets 16 bit values in memory (as opposed to memset's 8 bit values)</td>
+        <td><font size="-1">uint16_t* Memset16(void* pDestination, uint16_t c, size_t count); </font></td>
+    </tr>
+    <tr> 
+        <td>Memset32</td>
+        <td>Sets 32 bit values in memory (as opposed to memset's 8 bit values)</td>
+        <td><font size="-1"> uint32_t* Memset32(void* pDestination, uint32_t c, size_t count);</font></td>
+    </tr>
+    <tr> 
+        <td>Memset64</td>
+        <td>Sets 64 bit values in memory (as opposed to memset's 8 bit values)</td>
+        <td><font size="-1">uint64_t* Memset64(void* pDestination, uint64_t c, size_t count);</font></td>
+    </tr>
+    <tr> 
+        <td>MemsetN</td>
+        <td>Sets arbitrarily sized values in memory.</td>
+        <td><font size="-1">void* MemsetN (void* pDestination, const void* pSource, size_t sourceBytes, size_t count); </font></td>
+    </tr>
+    <tr> 
+        <td>EcvtBuf</td>
+        <td>Base function for converting a float to a %e string.</td>
+        <td> 
+            <p><font size="-1">char_t* EcvtBuf(double dValue, int nDigitCount, int* decimalPos, int* sign, char_t* buffer); </font></p>
+        </td>
+    </tr>
+    <tr> 
+        <td>FcvtBuf</td>
+        <td>Base function for converting a float to a %f string.</td>
+        <td><font size="-1">char_t* FcvtBuf(double dValue, int nDigitCountAfterDecimal, int* decimalPos, int* sign, char_t* buffer); </font></td>
+    </tr>
+</table>
+<p>&nbsp;</p>
+<h2>Example usage </h2>
+<p>We provide a random smattering of example code here.</p>
+<pre class="code-example">char16_t buffer[32] = L"hello ";
+
+Strcat16(buffer, L"world");
+</pre>
+<p>Strlcat:</p>
+
+<pre class="code-example">char buffer[32];
+
+Strlcpy8(buffer, "Hello ", sizeof(buffer));
+Strlcat8(buffer, "world", sizeof(buffer));
+</pre>
+<p>U64toa:</p>
+
+<pre class="code-example">char buffer[32];
+
+U64toa8(UINT64_C(12345678901234567890), buffer, 16);
+</pre>
+<p>AtoI32:</p>
+
+<pre class="code-example">int32_t x = AtoI328(&quot;1234567890&quot;);
+</pre>
+<p>StrtodEnglish:</p>
+<pre class="code-example">const char16_t* pString = L"12345.678 123.456 1.23456";
+
+while(*pString)
+{
+    double value = StrtodEnglish16(pString, &pString);
+    printf("Field = %f\n, value);
+}
+</pre>
+<p>Memset16:</p>
+
+<pre class="code-example">uint16_t buffer[50];
+
+Memset16(buffer, 0x1234, 50);
+</pre>
+<h2>Interface</h2>
+<p>In each of the functions below, there is an char8_t and char16_t version. The actual function that EACRT implements is one with an 8 or 16 appended to the function names listed below. Thus below we have <span class="code-example-span">Strcat(char_t*, char_t*)</span>, and thus EACRT presents <span class="code-example-span">Strcat8(char8_t*, char8_t*)</span> and <span class="code-example-span">Strcat16(char16_t*, char16_t*)</span>.</p>
+<p>See EACRT.h for per-function documentation.</p>
+<pre class="code-example">char_t*       Strcat(char_t* pDestination, const char_t* pSource);
+char_t*       Strncat(char_t* pDestination, const char_t* pSource, size_t n);
+char_t*       Strlcat(char_t* pDestination, const char_t* pSource, size_t n);
+char_t*       Strcpy(char_t* pDestination, const char_t* pSource);
+char_t*       Strncpy(char_t* pDestination, const char_t* pSource, size_t n);
+char_t*       Strlcpy(char_t* pDestination, const char_t* pSource, size_t n);
+size_t        Strlen(const char_t* pString);
+size_t        Strxfrm(char_t* pDest, const char_t* pSource, size_t n);
+char_t*       Strdup(const char_t* pString);
+
+int           Isalnum(char_t c);
+int           Isalpha(char_t c);
+int           Isdigit(char_t c);
+int           Isxdigit(char_t c);
+int           Isgraph(char_t c);
+int           Islower(char_t c);
+int           Isprint(char_t c);
+int           Ispunct(char_t c);
+int           Isspace(char_t c);
+int           Iscntrl(char_t c);
+int           Isascii(char_t c);
+int           Toupper(char_t c);
+int           Tolower(char_t c);
+
+char_t*       Strlwr(char_t* pString);
+char_t*       Strupr(char_t* pString);
+char_t*       Strchr(const char_t* pString, char_t c);
+size_t        Strcspn(const char_t* pString1, const char_t* pString2);
+char_t*       Strpbrk(const char_t* pString1, const char_t* pString2);
+char_t*       Strrchr(const char_t* pString, char_t c);
+size_t        Strspn(const char_t* pString, const char_t* pSubString);
+char_t*       Strstr(const char_t* pString, const char_t* pSubString);
+char_t*       Stristr(const char_t* pString, const char_t* pSubString);
+char_t*       Strtok(char_t* pString, const char_t*  pTokens, char_t** pContext);
+char_t*       Strset(char_t* pString, char_t c);
+char_t*       Strnset(char_t* pString, char_t c, size_t n);
+char_t*       Strrev(char_t* pString);
+int           Strcmp(const char_t* pString1, const char_t* pString2);
+int           Strncmp(const char_t* pString1, const char_t* pString2, size_t n);
+int           Stricmp(const char_t*  pString1, const char_t* pString2);
+int           Strnicmp(const char_t* pString1, const char_t* pString2, size_t n);
+int           Strcoll(const char_t*  pString1, const char_t* pString2);
+int           Strncoll(const char_t* pString1, const char_t* pString2, size_t n);
+int           Stricoll(const char_t* pString1, const char_t* pString2);
+int           Strnicoll(const char_t* pString1, const char_t* pString1, size_t n);
+
+char_t*       EcvtBuf(double dValue, int nDigitCount, int* decimalPos, int* sign, char_t* buffer);
+char_t*       FcvtBuf(double dValue, int nDigitCountAfterDecimal, int* decimalPos, int* sign, char_t* buffer);
+
+char_t*       I32toa(int32_t nValue, char_t* pResult, int nBase);
+char_t*       U32toa(uint32_t nValue, char_t* pResult, int nBase);
+char_t*       I64toa(int64_t nValue, char_t* pBuffer, int nBase);
+char_t*       U64toa(uint64_t nValue, char_t* pBuffer, int nBase);
+double        Strtod(const char_t* pString, char_t** ppStringEnd);
+double        StrtodEnglish(const char_t* pString, char_t** ppStringEnd);
+int64_t       StrtoI64(const char_t* pString, char_t** ppStringEnd, int nBase);
+uint64_t      StrtoU64(const char_t* pString, char_t** ppStringEnd, int nBase);
+int32_t       StrtoI32(const char_t* pString, char_t** ppStringEnd, int nBase);
+uint32_t      StrtoU32(const char_t* pString, char_t** ppStringEnd, int nBase);
+int32_t       AtoI32(const char_t* pString);
+uint32_t      AtoU32(const char_t* pString);
+int64_t       AtoI64(const char_t* pString);
+uint64_t      AtoU64(const char_t* pString);
+double        Atof(const char_t* pString);
+double        AtofEnglish(const char_t* pString);
+char_t*       Ftoa(double dValue, char_t* pResult, int nInputLength, int nPrecision, bool bExponentEnabled);
+char_t*       FtoaEnglish(double dValue, char_t* pResult, int nInputLength, int nPrecision, bool bExponentEnabled);
+
+uint8_t*      Memset8 (void* pDestination, uint8_t  c, size_t count);
+uint16_t*     Memset16(void* pDestination, uint16_t c, size_t count);
+uint32_t*     Memset32(void* pDestination, uint32_t c, size_t count);
+uint64_t*     Memset64(void* pDestination, uint64_t c, size_t count);
+void*         MemsetN (void* pDestination, const void* pSource, size_t sourceBytes, size_t count);
+const char_t* Memchr(const char_t* pString, char_t c, size_t n);
+int           Memcmp(const char_t* pString1, const char_t* pString2, size_t n);
+char_t*       Memcpy(char_t* pDestination, const char_t* pSource, size_t n);
+char_t*       Memmove(char_t* pDestination, const char_t* pSource, size_t n);
+char_t*       Memset(char_t* pString, char_t c, size_t n);
+</pre>
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p> </p>
+</body></html>
+
+
+

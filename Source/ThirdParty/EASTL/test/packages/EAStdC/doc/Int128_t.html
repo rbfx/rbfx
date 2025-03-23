@@ -1,0 +1,219 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+    <title>Int128_t</title>
+    <link type="text/css" rel="stylesheet" href="UTFDoc.css">
+    <meta name="author" content="Paul Pedriana">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>int128_t</h1>
+
+<h2>Introduction</h2>
+<p>The int128_t module implements the int128_t and uint128_t integer data types 
+  via C++ classes. These types are largely identical in behavior to how a compiler's 
+  built-in int128_t / uint128_t would be. These classes exist because compilers 
+  don't provide true 128 bit data types. The most you'll typically see from a 
+  compiler is int64_t / uint64_t. </p>
+<p>128 bit integers are useful for things such as the following:</p>
+<ul>
+  <li>Storing very large numbers or bitfields. This can be useful when attempting 
+    to simulate city or world economies, for example.</li>
+  <li>Implementing 64 * 64 bit multiplication without losing data.</li>
+  <li>Implementing very precise fixed point mathematics.</li>
+</ul>
+<h2> Example usage </h2>
+<p>For the most part, you can use int128_t the same way you would use int64_t. 
+</p>
+<p>Mixed integer math expressions:</p>
+<pre class="code-example">int            a(17);
+short          b(26);
+int128_t       c(45);
+int64_t        d(77);
+unsigned short e(25);
+uint128_t      x(13);
+uint128_t      y;
+     
+y = (((x + (a + b) * 37) / c) * x) % (d + e);</pre>
+<p>Logical expressions:</p>
+<pre class="code-example">uint128_t x;<br>uint128_t y(&quot;0x11111111000100001111111100000001&quot;, 16);   // Assign a full 128 bit value of base 16 via a string.<br>uint128_t z(&quot;0x22222222000100002222222200000001&quot;, 16);
+<br>x = (y ^ z) + (y &amp; z) + (y | z);</pre>
+<blockquote></blockquote>
+<p>Floating point:</p>
+<pre class="code-example">uint128_t x = 143249.f;
+x *= 32245.6f
+<br>printf(&quot;%f&quot;, x.AsFloat());</pre>
+<p>Mixture of int128_t and uint128_t:</p>
+<pre class="code-example">int128_t  x(-1000000000);<br>uint128_t y(120);
+<br>x *= y; </pre>
+<p>Converting int128_t to a string:</p>
+<pre class="code-example">char     buffer[64];
+int128_t x = 10345;
+
+s.Int128ToStr(buffer, NULL, 10); // Just like strtol().</pre>
+<p>Set int128_t as a very large value from a string:</p>
+<pre class="code-example">uint128_t x("141183460469231731687303715884105728");</pre>
+<p>Set int128_t as a very large value from two 64 bit values:</p>
+<pre class="code-example">uint128_t x(0x1122334455667788);
+x &lt;&lt;= 64;
+x |= 0x8877665544332211;</pre>
+<h2> 
+  Limitations</h2>
+<p>The primary differences between our int128_t and a hypothetical built-in version 
+  are:</p>
+<ul>
+  <li>int128_t doesn't implement cast operators to lesser integer types. Instead, 
+    provides explicit converters such as AsInt32, AsInt64, etc. This is by design, 
+    as such casting operators result in ambiguous conversions and would need built-in 
+    compiler knowledge to resolve the situation.</li>
+  <li>Standard library functions such as sprintf have no support for such 128 
+    bit types. We partially rectify this by providing StrToInt128 and Int128ToStr 
+    functions.</li>
+  <li>128 bit contant literals aren't supported by the compiler, so we implement 
+    them via strings (and indirectly via shifting). You can assign an 8 through 
+    64 bit integral constant to int128_t, but if you want to assign a full 128 
+    bit constant to an int128_t, you'll need to use a string or use two 64 bit 
+    constants, one for low and one for high.</li>
+</ul>
+<h2>Interface </h2>
+<pre class="code-example">class int128_t
+{
+public:
+    int128_t();
+    int128_t(uint32_t nPart0, uint32_t nPart1, uint32_t nPart2, uint32_t nPart3);
+    int128_t(uint64_t nPart0, uint64_t nPart1);
+
+    int128_t(int8_t value);
+    int128_t(uint8_t value);
+
+    int128_t(int16_t value);
+    int128_t(uint16_t value);
+
+    int128_t(int32_t value);
+    int128_t(uint32_t value);
+
+    int128_t(int64_t value);
+    int128_t(uint64_t value);
+
+    int128_t(const int128_t& value);
+
+    int128_t(const float value);
+    int128_t(const double value);
+
+    int128_t(const char* pValue, int nBase = 10);
+    int128_t(const wchar_t* pValue, int nBase = 10);
+
+    // Assignment operator
+    int128_t& operator=(const int128_t_base& value);
+
+    // Unary arithmetic/logic operators
+    int128_t  operator-() const;
+    int128_t& operator++();
+    int128_t& operator--();
+    int128_t  operator++(int);
+    int128_t  operator--(int);
+    int128_t  operator~() const;
+    int128_t  operator+() const;
+
+    // Math operators
+    friend int128_t operator+(const int128_t& value1, const int128_t& value2);
+    friend int128_t operator-(const int128_t& value1, const int128_t& value2);
+    friend int128_t operator*(const int128_t& value1, const int128_t& value2);
+    friend int128_t operator/(const int128_t& value1, const int128_t& value2);
+    friend int128_t operator%(const int128_t& value1, const int128_t& value2);
+
+    int128_t& operator+=(const int128_t& value);
+    int128_t& operator-=(const int128_t& value);
+    int128_t& operator*=(const int128_t& value);
+    int128_t& operator/=(const int128_t& value);
+    int128_t& operator%=(const int128_t& value);
+
+    // Shift operators
+    int128_t  operator>> (int nShift) const;
+    int128_t  operator<< (int nShift) const;
+    int128_t& operator>>=(int nShift);
+    int128_t& operator<<=(int nShift);
+
+    // Logical operators
+    friend int128_t operator^(const int128_t& value1, const int128_t& value2);
+    friend int128_t operator|(const int128_t& value1, const int128_t& value2);
+    friend int128_t operator&(const int128_t& value1, const int128_t& value2);
+
+    int128_t& operator^= (const int128_t& value);
+    int128_t& operator|= (const int128_t& value);
+    int128_t& operator&= (const int128_t& value);
+
+    // Equality operators
+    friend int  compare   (const int128_t& value1, const int128_t& value2);
+    friend bool operator==(const int128_t& value1, const int128_t& value2);
+    friend bool operator!=(const int128_t& value1, const int128_t& value2);
+    friend bool operator> (const int128_t& value1, const int128_t& value2);
+    friend bool operator>=(const int128_t& value1, const int128_t& value2);
+    friend bool operator< (const int128_t& value1, const int128_t& value2);
+    friend bool operator<=(const int128_t& value1, const int128_t& value2);
+
+    // Operators to convert back to basic types
+    int8_t  AsInt8()   const;
+    int16_t AsInt16()  const;
+    int32_t AsInt32()  const;
+    int64_t AsInt64()  const;
+    float   AsFloat()  const;
+    double  AsDouble() const;
+
+    // Misc. Functions
+    void    Negate();
+    bool    IsNegative() const;
+    bool    IsPositive() const;
+    void    Modulus(const int128_t& divisor, int128_t& quotient, int128_t& remainder) const;
+
+    // String conversion functions
+    int128_t StrToInt128(const char* pValue, char** ppEnd, int base) const;
+    int128_t StrToInt128(const wchar_t* pValue, wchar_t** ppEnd, int base) const;
+    void     Int128ToStr(char* pValue, char** ppEnd, int base) const;
+    void     Int128ToStr(wchar_t* pValue, wchar_t** ppEnd, int base) const;
+
+}; <span class="code-example-comment">// class int128_t</span>
+
+
+
+class uint128_t<br>{<br>public:<br>    uint128_t();<br>    uint128_t(uint32_t nPart0, uint32_t nPart1, uint32_t nPart2, uint32_t nPart3);<br>    uint128_t(uint64_t nPart0, uint64_t nPart1);
+
+    uint128_t(int8_t value);
+    uint128_t(uint8_t value);
+
+    uint128_t(int16_t value);<br>    uint128_t(uint16_t value);
+<br>    uint128_t(int32_t value);<br>    uint128_t(uint32_t value);
+<br>    uint128_t(int64_t value);<br>    uint128_t(uint64_t value);
+<br>    uint128_t(const int128_t&amp; value);<br>    uint128_t(const uint128_t&amp; value);
+<br>    uint128_t(const float value);<br>    uint128_t(const double value);
+<br>    uint128_t(const char* pValue, int nBase = 10);<br>    uint128_t(const wchar_t* pValue, int nBase = 10);
+<br>    // Assignment operator<br>    uint128_t&amp; operator=(const int128_t_base&amp; value);
+<br>    // Unary arithmetic/logic operators<br>    uint128_t  operator-() const;<br>    uint128_t&amp; operator++();<br>    uint128_t&amp; operator--();<br>    uint128_t  operator++(int);<br>    uint128_t  operator--(int);<br>    uint128_t  operator~() const;<br>    uint128_t  operator+() const;
+<br>    // Math operators<br>    friend uint128_t operator+(const uint128_t&amp; value1, const uint128_t&amp; value2);<br>    friend uint128_t operator-(const uint128_t&amp; value1, const uint128_t&amp; value2);<br>    friend uint128_t operator*(const uint128_t&amp; value1, const uint128_t&amp; value2);<br>    friend uint128_t operator/(const uint128_t&amp; value1, const uint128_t&amp; value2);<br>    friend uint128_t operator%(const uint128_t&amp; value1, const uint128_t&amp; value2);
+<br>    uint128_t&amp; operator+=(const uint128_t&amp; value);<br>    uint128_t&amp; operator-=(const uint128_t&amp; value);<br>    uint128_t&amp; operator*=(const uint128_t&amp; value);<br>    uint128_t&amp; operator/=(const uint128_t&amp; value);<br>    uint128_t&amp; operator%=(const uint128_t&amp; value);
+<br>    // Shift operators<br>    uint128_t  operator&gt;&gt; (int nShift) const;<br>    uint128_t  operator&lt;&lt; (int nShift) const;<br>    uint128_t&amp; operator&gt;&gt;=(int nShift);<br>    uint128_t&amp; operator&lt;&lt;=(int nShift);
+<br>    // Logical operators<br>    friend uint128_t operator^(const uint128_t&amp; value1, const uint128_t&amp; value2);<br>    friend uint128_t operator|(const uint128_t&amp; value1, const uint128_t&amp; value2);<br>    friend uint128_t operator&amp;(const uint128_t&amp; value1, const uint128_t&amp; value2);<br>    uint128_t&amp; operator^= (const uint128_t&amp; value);<br>    uint128_t&amp; operator|= (const uint128_t&amp; value);<br>    uint128_t&amp; operator&amp;= (const uint128_t&amp; value);
+<br>    // Equality operators<br>    friend int  compare   (const uint128_t&amp; value1, const uint128_t&amp; value2);<br>    friend bool operator==(const uint128_t&amp; value1, const uint128_t&amp; value2);<br>    friend bool operator!=(const uint128_t&amp; value1, const uint128_t&amp; value2);<br>    friend bool operator&gt; (const uint128_t&amp; value1, const uint128_t&amp; value2);<br>    friend bool operator&gt;=(const uint128_t&amp; value1, const uint128_t&amp; value2);<br>    friend bool operator&lt; (const uint128_t&amp; value1, const uint128_t&amp; value2);<br>    friend bool operator&lt;=(const uint128_t&amp; value1, const uint128_t&amp; value2);
+<br>    // Operators to convert back to basic types<br>    int8_t  AsInt8()   const;<br>    int16_t AsInt16()  const;<br>    int32_t AsInt32()  const;<br>    int64_t AsInt64()  const;<br>    float   AsFloat()  const;<br>    double  AsDouble() const;
+<br>    // Misc. Functions<br>    void    Negate();<br>    bool    IsNegative() const;<br>    bool    IsPositive() const;<br>    void    Modulus(const uint128_t&amp; divisor, uint128_t&amp; quotient, uint128_t&amp; remainder) const;
+<br>    // String conversion functions<br>    uint128_t StrToInt128(const char* pValue, char** ppEnd, int base) const;<br>    uint128_t StrToInt128(const wchar_t* pValue, wchar_t** ppEnd, int base) const;<br>    void      Int128ToStr(char* pValue, char** ppEnd, int base) const;<br>    void      Int128ToStr(wchar_t* pValue, wchar_t** ppEnd, int base) const;
+<br>}; <span class="code-example-comment">// class uint128_t</span>
+</pre>
+<p></p>
+<hr>
+<p><br>
+  <br>
+  <br>
+  <span style="font-family: monospace;">&nbsp;&nbsp; </span><br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+</p>
+</body></html>
