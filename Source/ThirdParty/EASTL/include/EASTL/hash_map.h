@@ -19,6 +19,9 @@
 #include <EASTL/internal/hashtable.h>
 #include <EASTL/functional.h>
 #include <EASTL/utility.h>
+#if EASTL_EXCEPTIONS_ENABLED
+#include <stdexcept>
+#endif
 
 #if defined(EA_PRAGMA_ONCE_SUPPORTED)
 	#pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
@@ -94,7 +97,7 @@ namespace eastl
 	///
 	/// Example find_as usage (namespaces omitted for brevity):
 	///     hash_map<string, int> hashMap;
-	///     i = hashMap.find_as("hello", hash<char*>(), equal_to_2<string, char*>());
+	///     i = hashMap.find_as("hello", hash<char*>(), equal_to<>());
 	///
 	template <typename Key, typename T, typename Hash = eastl::hash<Key>, typename Predicate = eastl::equal_to<Key>, 
 			  typename Allocator = EASTLAllocatorType, bool bCacheHashCode = false>
@@ -126,8 +129,7 @@ namespace eastl
 		/// Default constructor.
 		///
 		hash_map()
-			: base_type(0, Hash(), mod_range_hashing(), default_ranged_hash(),
-						Predicate(), eastl::use_first<eastl::pair<const Key, T> >(), EASTL_HASH_MAP_DEFAULT_ALLOCATOR)
+			: this_type(EASTL_HASH_MAP_DEFAULT_ALLOCATOR)
 		{
 			// Empty
 		}
@@ -135,7 +137,7 @@ namespace eastl
 
 		/// hash_map
 		///
-		/// Default constructor.
+		/// Constructor which creates an empty container with allocator.
 		///
 		explicit hash_map(const allocator_type& allocator)
 			: base_type(0, Hash(), mod_range_hashing(), default_ranged_hash(),
@@ -151,6 +153,7 @@ namespace eastl
 		/// We default to a small nBucketCount value, though the user really should manually 
 		/// specify an appropriate value in order to prevent memory from being reallocated.
 		///
+		/// note: difference in explicit keyword from the standard.
 		explicit hash_map(size_type nBucketCount, const Hash& hashFunction = Hash(), 
 						  const Predicate& predicate = Predicate(), const allocator_type& allocator = EASTL_HASH_MAP_DEFAULT_ALLOCATOR)
 			: base_type(nBucketCount, hashFunction, mod_range_hashing(), default_ranged_hash(), 
@@ -159,11 +162,16 @@ namespace eastl
 			// Empty
 		}
 
+		// hash_map(size_type nBucketCount, const allocator_type& allocator)
+		// hash_map(size_type nBucketCount, const Hash& hashFunction, const allocator_type& allocator)
+
 
 		hash_map(const this_type& x)
 		  : base_type(x)
 		{
 		}
+
+		// hash_map(const this_type& x, const allocator_type& allocator)
 
 
 		hash_map(this_type&& x)
@@ -191,6 +199,16 @@ namespace eastl
 			// Empty
 		}
 
+		hash_map(std::initializer_list<value_type> ilist, const allocator_type& allocator)
+			: base_type(ilist.begin(), ilist.end(), 0, Hash(), mod_range_hashing(), default_ranged_hash(), Predicate(), eastl::use_first<eastl::pair<const Key, T> >(), allocator)
+		{
+			// Empty
+		}
+
+		// hash_map(std::initializer_list<value_type> ilist, size_type nBucketCount, const allocator_type& allocator)
+
+		// hash_map(std::initializer_list<value_type> ilist, size_type nBucketCount, const Hash& hashFunction,
+		// 	const allocator_type& allocator)
 
 		/// hash_map
 		///
@@ -206,6 +224,11 @@ namespace eastl
 			// Empty
 		}
 
+		// template <typename ForwardIterator>
+		// hash_map(ForwardIterator first, ForwardIterator last, size_type nBucketCount, const allocator_type& allocator)
+
+		// template <typename ForwardIterator>
+		// hash_map(ForwardIterator first, ForwardIterator last, size_type nBucketCount, const Hash& hashFunction, const allocator_type& allocator)
 
 		this_type& operator=(const this_type& x)
 		{
@@ -310,15 +333,15 @@ namespace eastl
 		}
 
 		template <class... Args>
-		inline iterator try_emplace(const_iterator hint, const key_type& k, Args&&... args) {
-			// Currently, `hint` is ignored.
+		inline iterator try_emplace(const_iterator, const key_type& k, Args&&... args) {
+			// Currently, the first parameter is ignored.
 			insert_return_type result = try_emplace(k, eastl::forward<Args>(args)...);
 			return base_type::DoGetResultIterator(true_type(), result);
 		}
 
 		template <class... Args>
-		inline iterator try_emplace(const_iterator hint, key_type&& k, Args&&... args) {
-			// Currently, `hint` is ignored.
+		inline iterator try_emplace(const_iterator, key_type&& k, Args&&... args) {
+			// Currently, the first parameter is ignored.
 			insert_return_type result = try_emplace(eastl::move(k), eastl::forward<Args>(args)...);
 			return base_type::DoGetResultIterator(true_type(), result);
 		}
@@ -359,8 +382,9 @@ namespace eastl
 	///
 	/// https://en.cppreference.com/w/cpp/container/unordered_map/erase_if
 	template <typename Key, typename T, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode, typename UserPredicate>
-	void erase_if(eastl::hash_map<Key, T, Hash, Predicate, Allocator, bCacheHashCode>& c, UserPredicate predicate)
+	typename eastl::hash_map<Key, T, Hash, Predicate, Allocator, bCacheHashCode>::size_type erase_if(eastl::hash_map<Key, T, Hash, Predicate, Allocator, bCacheHashCode>& c, UserPredicate predicate)
 	{
+		auto oldSize = c.size();
 		// Erases all elements that satisfy the predicate from the container.
 		for (auto i = c.begin(), last = c.end(); i != last;)
 		{
@@ -373,6 +397,7 @@ namespace eastl
 				++i;
 			}
 		}
+		return oldSize - c.size();
 	}
 
 
@@ -427,6 +452,7 @@ namespace eastl
 		/// We default to a small nBucketCount value, though the user really should manually 
 		/// specify an appropriate value in order to prevent memory from being reallocated.
 		///
+		/// note: difference in explicit keyword from the standard.
 		explicit hash_multimap(size_type nBucketCount, const Hash& hashFunction = Hash(), 
 							   const Predicate& predicate = Predicate(), const allocator_type& allocator = EASTL_HASH_MULTIMAP_DEFAULT_ALLOCATOR)
 			: base_type(nBucketCount, hashFunction, mod_range_hashing(), default_ranged_hash(), 
@@ -435,11 +461,16 @@ namespace eastl
 			// Empty
 		}
 
+		// hash_multimap(size_type nBucketCount, const allocator_type& allocator)
+		// hash_multimap(size_type nBucketCount, const Hash& hashFunction, const allocator_type& allocator)
+
 
 		hash_multimap(const this_type& x)
 		  : base_type(x)
 		{
 		}
+
+		// hash_multimap(const this_type& x, const allocator_type& allocator)
 
 
 		hash_multimap(this_type&& x)
@@ -467,6 +498,17 @@ namespace eastl
 			// Empty
 		}
 
+		hash_multimap(std::initializer_list<value_type> ilist, const allocator_type& allocator)
+			: base_type(ilist.begin(), ilist.end(), 0, Hash(), mod_range_hashing(), default_ranged_hash(), Predicate(), eastl::use_first<eastl::pair<const Key, T> >(), allocator)
+		{
+			// Empty
+		}
+
+		// hash_multimap(std::initializer_list<value_type> ilist, size_type nBucketCount, const allocator_type& allocator)
+
+		// hash_multimap(std::initializer_list<value_type> ilist, size_type nBucketCount, const Hash& hashFunction,
+		// 	const allocator_type& allocator)
+
 
 		/// hash_multimap
 		///
@@ -482,6 +524,11 @@ namespace eastl
 			// Empty
 		}
 
+		// template <typename ForwardIterator>
+		// hash_multimap(ForwardIterator first, ForwardIterator last, size_type nBucketCount, const allocator_type& allocator)
+
+		// template <typename ForwardIterator>
+		// hash_multimap(ForwardIterator first, ForwardIterator last, size_type nBucketCount, const Hash& hashFunction, const allocator_type& allocator)
 
 		this_type& operator=(const this_type& x)
 		{
@@ -524,8 +571,9 @@ namespace eastl
 	///
 	/// https://en.cppreference.com/w/cpp/container/unordered_multimap/erase_if
 	template <typename Key, typename T, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode, typename UserPredicate>
-	void erase_if(eastl::hash_multimap<Key, T, Hash, Predicate, Allocator, bCacheHashCode>& c, UserPredicate predicate)
+	typename eastl::hash_multimap<Key, T, Hash, Predicate, Allocator, bCacheHashCode>::size_type erase_if(eastl::hash_multimap<Key, T, Hash, Predicate, Allocator, bCacheHashCode>& c, UserPredicate predicate)
 	{
+		auto oldSize = c.size();
 		// Erases all elements that satisfy the predicate from the container.
 		for (auto i = c.begin(), last = c.end(); i != last;)
 		{
@@ -538,6 +586,7 @@ namespace eastl
 				++i;
 			}
 		}
+		return oldSize - c.size();
 	}
 
 

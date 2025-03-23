@@ -2287,6 +2287,35 @@
 		#define EA_ASAN_ENABLED 0
 	#endif
 
+	/////////////////////////////////////////////////////////////////////////////////
+	//
+	// EA_UBSAN_ENABLED
+	//
+	// Defined as 0 or 1. It's value depends on the compile environment.
+	// Specifies whether the code is being built with Undefined Behavior Sanitizer.
+	//
+	#if EA_COMPILER_HAS_FEATURE(undefined_behavior_sanitizer)
+		#define EA_UBSAN_ENABLED 1
+	#else
+		#define EA_UBSAN_ENABLED 0
+	#endif
+
+	/////////////////////////////////////////////////////////////////////////////////
+	//
+	// EA_MSAN_ENABLED
+	//
+	// Defined as 0 or 1. It's value depends on the compile environment.
+	// Specifies whether the code is being built with Memory Sanitizer.
+	//
+	// MSAN documentation:
+	// https://clang.llvm.org/docs/MemorySanitizer.html
+	// https://github.com/google/sanitizers/wiki/MemorySanitizer
+	//
+	#if EA_COMPILER_HAS_FEATURE(memory_sanitizer)
+		#define EA_MSAN_ENABLED 1
+	#else
+		#define EA_MSAN_ENABLED 0
+	#endif
 
 	// ------------------------------------------------------------------------
 	// EA_NON_COPYABLE

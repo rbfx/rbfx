@@ -1,0 +1,298 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<Title>EAString</title>
+
+    <link type="text/css" rel="stylesheet" href="UTFDoc.css">
+    <meta name="author" content="Paul Pedriana">
+</head>
+<body bgcolor="#FFFFFF">
+<h1>EAString</h1>
+
+<h2>Introduction</h2>
+<p>EAString implements an extensive suite of C string functionality from &lt;string.h&gt; in a portable way. Much of this functionality is the same as what 
+    is present in the C standard and in common (but non-portable) extensions to the C standard. EAString presents a consistent portable interface to its functionality 
+    in both 8 bit and 16 bit string form.</p>
+<p>The C language provides various functions which work with non-portable data types, such as long. EAString defines all significant data types in terms of portable 
+    types such as int32_t and int64_t. Additionally, the EAString versions of functions are usually faster than the C runtime library versions, usually because the EAString versions minimize cache misses 
+    and branching, whereas typical C runtime libraries optimize for the smallest memory footprint with little or no regard to other performance characteristics. Also, the EAString functions do not implement locale-specific functionality and thus save time and space as a result. Other packages within EA implement localization functionality in a way that is better suited to high performance game development.</p>
+<p>C-style printf functionality is separate from EAString and is found in <a href="EASprintf.html">EASprintf</a>. Memcpy functionality (which comes from the  &lt;string.h&gt; 
+    header file) is present in <a href="EAMemory.html">EAMemory</a>. </p>
+<h2>Extension functions</h2>
+<p> EAString provides extended functionality that isn't found in conventional C libraries, but it useful nevertheless.</p>
+<table width="100%" border="1" cellpadding="3">
+    <tr> 
+        <td><b>Function</b></td>
+        <td><b>Description</b></td>
+        <td><b>Signature</b></td>
+    </tr>
+    <tr> 
+        <td>Strlcat</td>
+        <td>Safe variation of strncat</td>
+        <td><font size="-1">char_t* Strlcat(char_t* pDestination, const char_t* pSource, size_t n); </font></td>
+    </tr>
+    <tr> 
+        <td>Strlcpy</td>
+        <td>Safe variation of strcpy</td>
+        <td><p><font size="-1">char_t* Strlcpy(char_t* pDestination, const char_t* pSource, size_t n); <br>
+        int Strlcpy(char16_t* pDestination, const char8_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);<br>
+        int Strlcpy(char32_t* pDestination, const char8_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);<br>
+        int Strlcpy(char8_t* pDestination, const char16_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);<br>
+        int Strlcpy(char32_t* pDestination, const char16_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);<br>
+        int Strlcpy(char8_t* pDestination, const char32_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);<br>
+        int Strlcpy(char16_t* pDestination, const char32_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0); <br>
+        int Strlcpy(char8_t* pDestination, const wchar_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);<br>
+        int Strlcpy(char16_t* pDestination, const wchar_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0); <br>
+        int Strlcpy(char32_t* pDestination, const wchar_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);<br>
+        int Strlcpy(wchar_t* pDestination, const char8_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);<br>
+        int Strlcpy(wchar_t* pDestination, const char16_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0); <br>
+        int Strlcpy(wchar_t* pDestination, const char32_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);<br>
+        bool Strlcpy(char16_t* pDestination, const char8_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);<br>
+        bool Strlcpy(char32_t* pDestination, const char8_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);<br>
+        bool Strlcpy(char8_t* pDestination, const char16_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);<br>
+        bool Strlcpy(char32_t* pDestination, const char16_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);<br>
+        bool Strlcpy(char8_t* pDestination, const char32_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);<br>
+        bool Strlcpy(char16_t* pDestination, const char32_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);<br>
+        bool Strlcpy(char8_t* pDestination, const wchar_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);<br>
+        bool Strlcpy(char16_t* pDestination, const wchar_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);<br>
+        bool Strlcpy(char32_t* pDestination, const wchar_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);<br>
+        bool Strlcpy(wchar_t* pDestination, const char8_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);<br>
+        bool Strlcpy(wchar_t* pDestination, const char16_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);<br>
+        bool Strlcpy(wchar_t* pDestination, const char32_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);
+        </font></p>
+        </td>
+    </tr>
+    <tr> 
+        <td>Stristr</td>
+        <td>Case insensitive version of strstr (find string within string)</td>
+        <td><font size="-1">char_t* Stristr(const char_t* pString, const char_t* pSubString);</font></td>
+    </tr>
+    <tr> 
+        <td>FtoaEnglish</td>
+        <td> 
+            <p>Float to ascii; always use English numeric format, regardless of the current locale.</p>
+        </td>
+        <td><font size="-1">char_t* FtoaEnglish(double dValue, char_t* pResult, int nInputLength, int nPrecision, bool bExponentEnabled); </font></td>
+    </tr>
+    <tr> 
+        <td>AtofEnglish</td>
+        <td>Ascii to float; always use English numeric format, regardless of the current locale.</td>
+        <td><font size="-1">double AtofEnglish(const char_t* pString); </font></td>
+    </tr>
+    <tr> 
+        <td> StrtodEnglish</td>
+        <td>Same as strtod, but always use English numeric format, regardless of the current locale.</td>
+        <td><font size="-1">double StrtodEnglish(const char_t* pString, char_t** ppStringEnd);</font></td>
+    </tr>
+    <tr> 
+        <td>Memset16</td>
+        <td>Sets 16 bit values in memory (as opposed to memset's 8 bit values)</td>
+        <td><font size="-1">uint16_t* Memset16(void* pDestination, uint16_t c, size_t count); </font></td>
+    </tr>
+    <tr> 
+        <td>Memset32</td>
+        <td>Sets 32 bit values in memory (as opposed to memset's 8 bit values)</td>
+        <td><font size="-1"> uint32_t* Memset32(void* pDestination, uint32_t c, size_t count);</font></td>
+    </tr>
+    <tr> 
+        <td>Memset64</td>
+        <td>Sets 64 bit values in memory (as opposed to memset's 8 bit values)</td>
+        <td><font size="-1">uint64_t* Memset64(void* pDestination, uint64_t c, size_t count);</font></td>
+    </tr>
+    <tr> 
+        <td>MemsetN</td>
+        <td>Sets arbitrarily sized values in memory.</td>
+        <td><font size="-1">void* MemsetN (void* pDestination, const void* pSource, size_t sourceBytes, size_t count); </font></td>
+    </tr>
+    <tr> 
+        <td>EcvtBuf</td>
+        <td>Base function for converting a float to a %e string.</td>
+        <td> 
+            <p><font size="-1">char_t* EcvtBuf(double dValue, int nDigitCount, int* decimalPos, int* sign, char_t* buffer); </font></p>
+        </td>
+    </tr>
+    <tr> 
+        <td>FcvtBuf</td>
+        <td>Base function for converting a float to a %f string.</td>
+        <td><font size="-1">char_t* FcvtBuf(double dValue, int nDigitCountAfterDecimal, int* decimalPos, int* sign, char_t* buffer); </font></td>
+    </tr>
+</table>
+<h2>Example usage </h2>
+<p>We provide a random smattering of example code here.</p>
+<pre class="code-example">char16_t buffer[32] = L"hello ";
+
+Strcat(buffer, L"world");
+</pre>
+<p>Strlcpy, Strlcat:</p>
+
+<pre class="code-example">char8_t buffer[32];
+
+
+Strlcpy(buffer, "Hello ", sizeof(buffer));<br>Strlcat(buffer, "world", sizeof(buffer));
+</pre>
+<p>Strlcpy, used to translate UTF8 to UTF16: </p>
+<pre class="code-example">char8_t  buffer8[64];
+char16_t buffer16[64];
+
+
+int length16 = Strlcpy(buffer16, buffer8, 64);</pre>
+<p>U64toa:</p>
+<pre class="code-example">char buffer[32];
+U64toa(UINT64_C(12345678901234567890), buffer, 16);
+</pre>
+<p>AtoI32:</p>
+
+<pre class="code-example">int32_t x = AtoI32(&quot;1234567890&quot;);
+</pre>
+<p>Strtod:</p>
+<pre class="code-example">const char16_t* pString = L"12345.678 123.456 1.23456";
+
+while(*pString)
+{
+    double value = Strtod(pString, &pString);
+    printf("Field = %f\n, value);
+}
+</pre>
+<h2>Interface</h2>
+<p>In each of the functions below, there is an char8_t and char16_t version. So for Strcat there are the following:</p>
+<blockquote>
+  <p><span class="code-example-span">char8_t*       &nbsp;Strcat(char8_t* &nbsp;pDestination, const char8_t* &nbsp;pSource)<br>
+  </span><span class="code-example-span">char16_t* Strcat(char16_t* pDestination, const char16_t* pSource)</span></p>
+</blockquote>
+<p>The list below may be out of date as you read this, so see EAString.h for a definitive list of supported functionality.</p>
+<pre class="code-example">char_t*       Strcat(char_t* pDestination, const char_t* pSource);
+char_t*       Strncat(char_t* pDestination, const char_t* pSource, size_t n);
+char_t*       Strlcat(char_t* pDestination, const char_t* pSource, size_t n);
+char_t*       Strcpy(char_t* pDestination, const char_t* pSource);
+char_t*       Strncpy(char_t* pDestination, const char_t* pSource, size_t n);
+char_t*       Strlcpy(char_t* pDestination, const char_t* pSource, size_t n);
+int           Strlcpy(char16_t* pDestination, const char8_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);
+int           Strlcpy(char32_t* pDestination, const char8_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);
+int           Strlcpy(char8_t* pDestination, const char16_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);
+int           Strlcpy(char32_t* pDestination, const char16_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);
+int           Strlcpy(char8_t* pDestination, const char32_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);
+int           Strlcpy(char16_t* pDestination, const char32_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);
+int           Strlcpy(char8_t* pDestination, const wchar_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);
+int           Strlcpy(char16_t* pDestination, const wchar_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);
+int           Strlcpy(char32_t* pDestination, const wchar_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);
+int           Strlcpy(wchar_t* pDestination, const char8_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);
+int           Strlcpy(wchar_t* pDestination, const char16_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);
+int           Strlcpy(wchar_t* pDestination, const char32_t* pSource, size_t nDestCapacity, size_t nSourceLength = (size_t)~0);
+bool          Strlcpy(char16_t* pDestination, const char8_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);
+bool          Strlcpy(char32_t* pDestination, const char8_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);
+bool          Strlcpy(char8_t* pDestination, const char16_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);
+bool          Strlcpy(char32_t* pDestination, const char16_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);
+bool          Strlcpy(char8_t* pDestination, const char32_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);
+bool          Strlcpy(char16_t* pDestination, const char32_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed); 
+bool          Strlcpy(char8_t* pDestination, const wchar_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);
+bool          Strlcpy(char16_t* pDestination, const wchar_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);
+bool          Strlcpy(char32_t* pDestination, const wchar_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed); 
+bool          Strlcpy(wchar_t* pDestination, const char8_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);
+bool          Strlcpy(wchar_t* pDestination, const char16_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed);
+bool          Strlcpy(wchar_t* pDestination, const char32_t* pSource, size_t nDestCapacity, size_t nSourceLength, size_t&amp; nDestUsed, size_t&amp; nSourceUsed); 
+size_t        Strlen(const char_t* pString);
+size_t        Strxfrm(char_t* pDest, const char_t* pSource, size_t n);
+char_t*       Strdup(const char_t* pString);
+char_t*       Strlwr(char_t* pString);
+char_t*       Strupr(char_t* pString);
+char_t*       Strchr(const char_t* pString, char_t c);
+size_t        Strcspn(const char_t* pString1, const char_t* pString2);
+char_t*       Strpbrk(const char_t* pString1, const char_t* pString2);
+char_t*       Strrchr(const char_t* pString, char_t c);
+size_t        Strspn(const char_t* pString, const char_t* pSubString);
+char_t*       Strstr(const char_t* pString, const char_t* pSubString);
+char_t*       Stristr(const char_t* pString, const char_t* pSubString);
+char_t*       Strtok(char_t* pString, const char_t*  pTokens, char_t** pContext);
+char_t*       Strset(char_t* pString, char_t c);
+char_t*       Strnset(char_t* pString, char_t c, size_t n);
+char_t*       Strrev(char_t* pString);
+int           Strcmp(const char_t* pString1, const char_t* pString2);
+int           Strncmp(const char_t* pString1, const char_t* pString2, size_t n);
+int           Stricmp(const char_t*  pString1, const char_t* pString2);
+int           Strnicmp(const char_t* pString1, const char_t* pString2, size_t n);
+int           Strcoll(const char_t*  pString1, const char_t* pString2);
+int           Strncoll(const char_t* pString1, const char_t* pString2, size_t n);
+int           Stricoll(const char_t* pString1, const char_t* pString2);
+int           Strnicoll(const char_t* pString1, const char_t* pString1, size_t n);
+
+char_t*       EcvtBuf(double dValue, int nDigitCount, int* decimalPos, int* sign, char_t* buffer);
+char_t*       FcvtBuf(double dValue, int nDigitCountAfterDecimal, int* decimalPos, int* sign, char_t* buffer);
+
+char_t*       I32toa(int32_t nValue, char_t* pResult, int nBase);
+char_t*       U32toa(uint32_t nValue, char_t* pResult, int nBase);
+char_t*       I64toa(int64_t nValue, char_t* pBuffer, int nBase);
+char_t*       U64toa(uint64_t nValue, char_t* pBuffer, int nBase);
+double        Strtod(const char_t* pString, char_t** ppStringEnd);
+double        StrtodEnglish(const char_t* pString, char_t** ppStringEnd);
+int64_t       StrtoI64(const char_t* pString, char_t** ppStringEnd, int nBase);
+uint64_t      StrtoU64(const char_t* pString, char_t** ppStringEnd, int nBase);
+int32_t       StrtoI32(const char_t* pString, char_t** ppStringEnd, int nBase);
+uint32_t      StrtoU32(const char_t* pString, char_t** ppStringEnd, int nBase);
+int32_t       AtoI32(const char_t* pString);
+uint32_t      AtoU32(const char_t* pString);
+int64_t       AtoI64(const char_t* pString);
+uint64_t      AtoU64(const char_t* pString);
+double        Atof(const char_t* pString);
+double        AtofEnglish(const char_t* pString);
+char_t*       Ftoa(double dValue, char_t* pResult, int nInputLength, int nPrecision, bool bExponentEnabled);
+char_t*       FtoaEnglish(double dValue, char_t* pResult, int nInputLength, int nPrecision, bool bExponentEnabled);
+</pre>
+<h2>Encoded Strlcpy Issue </h2>
+<p>The Strlcpy function <span class="code-example-comment"> size_t Strlcpy(char16_t* pDestination, const char8_t*  pSource, size_t nDestCapacity, size_t nSourceLength)</span> converts UTF8 text (char8_t) to UCS2  (char16_t). It doesn't work if your pSource string isn't truly UTF8-encoded. Typically this would happen because the source string is using Windows code page 1252 or HTML's ISO 8859-1. All 8 bit strings in EAStdC are assumed to be UTF8 unless specifically documented otherwise. </p>
+<p>Any 8 bit text that's not UTF8 has to be defined within the context of a code page; otherwise any chars above 127 have an arbitrary meaning, and may include multi-byte characters for some code pages. If you need to convert code page 1252 to UCS2, you need to implement a function which uses a  table that maps the high byte values into their proper Unicode values. It's not so simple to just cast the byte value to char16_t, as some of the code page 1252 characters don't map directly to their numerical values in Unicode, though ISO 8859-1 characters to completely map to their equivalent Unicode values. </p>
+<p>The following is an implementation of Strcpy and Strlcpy for ISO 8859-1 char8_t text which isn't currently part of EAStdC: </p>
+<p class="code-example">char16_t* StrcpyISO8859_1(char16_t* pDestination, const char8_t* pSource)<br>
+{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;char16_t* pDestSaved = pDestination;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;while(*pSource)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*(pDestination++) = (uint8_t)*pSource++;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;*pDestination = 0;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return pDestSaved;<br>
+}</p>
+<p> </p>
+<p class="code-example">size_t StrlcpyISO8859_1(char16_t* pDestination, const char8_t* pSource, size_t nDestCapacity)<br>
+{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;const char8_t* s = pSource;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;size_t n = nDestCapacity;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;if(n &amp;&amp; --n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;do{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if((*pDestination++ = (uint8_t)*s++) == 0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} while(--n);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;if(!n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if(nDestCapacity)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*pDestination = 0;<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;while(*s)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;++s;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return (s - pSource - 1);<br>
+}</p>
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p> </p>
+</body>
+</html>
+
+
+

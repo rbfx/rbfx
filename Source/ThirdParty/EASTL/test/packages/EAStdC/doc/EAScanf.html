@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="content-type"
+ content="text/html; charset=ISO-8859-1">
+  <title>EAScanf</title>
+  <link type="text/css" rel="stylesheet"
+ href="UTFDoc.css">
+  <meta name="author" content="Paul Pedriana">
+</head>
+<body style="background-color: rgb(255, 255, 255);">
+<h1>EAScanf</h1>
+<h2>Introduction</h2>
+<p>EAScanf provides a portable
+version of the C scanf family of functions which improves on
+the C family in the following ways:</p>
+<ul>
+  <li>Behaves identically on all
+platforms</li>
+  <li>Provides the full gamut of
+scanf functions, including vsscanf</li>
+  <li>Is more efficient</li>
+  <li>Never allocates memory</li>
+  <li>Provides both 8 and 16 bit
+versions for all platforms</li>
+  <li>Provides&nbsp;useful
+extended functionality</li>
+  <li>Complies with the C99
+standard (except for the %a format, as of this writing)</li>
+  <li>Is readable enough to be
+traced/debugged by non-experts</li>
+  <li>Is savvy to UTF8 Unicode</li>
+</ul>
+<p>The primary disadvantages of
+EAScanf are:</p>
+<ul>
+  <li>It doesn't use
+locale-specific formatting</li>
+  <li>It isn't part of the C/C++
+standard library</li>
+</ul>
+<p>EAScanf doesn't attempt to
+solve the locale formatting problem because users really are better off
+using serious locale libraries for such things rather than using the
+meager support provided by the C standard library. The EALocale library
+attempts to provide such functionality.</p>
+<p>EAScanf provides the
+following functions in 8 and 16 bit versions:
+</p>
+<pre><span class="code-example">int Cscanf(ReadFunction8 pReadFunction8, void* pContext, const char8_t* pFormat, ...);
+int Fscanf(FILE* pFile, const char8_t* pFormat, ...);
+int Scanf(const char8_t* pFormat, ...);
+int Sscanf(const char8_t*  pTextBuffer, const char8_t* pFormat, ...);
+
+int Cscanf(ReadFunction16 pReadFunction16, void* pContext, const char16_t* pFormat, ...);
+int Fscanf(FILE* pFile, const char16_t* pFormat, ...);
+int Scanf(const char16_t* pFormat, ...);
+int Sscanf(const char16_t* pTextBuffer, const char16_t* pFormat, ...);
+
+int Vcscanf(ReadFunction8 pReadFunction8, void* pContext, const char8_t* pFormat, va_list arguments);
+int Vfscanf(FILE* pFile, const char8_t* pFormat, va_list arguments);
+int Vscanf(const char8_t* pFormat, va_list arguments);
+int Vsscanf(const char8_t* pTextBuffer, const char8_t* pFormat, va_list arguments);
+
+int Vcscanf(ReadFunction16 pReadFunction16, void* pContext, const char16_t* pFormat, va_list arguments);
+int Vfscanf(FILE* pFile, const char16_t* pFormat, va_list arguments);
+int Vscanf(const char16_t* pFormat, va_list arguments);
+int Vsscanf(const char16_t* pTextBuffer, const char16_t* pFormat, va_list arguments);</span></pre>
+<blockquote> </blockquote>
+<h2>Extended Functionality</h2>
+<p> EAPrintf provides extended
+format functionality not found in the C99 standard but which is useful
+nevertheless:</p>
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2"
+ cellspacing="2">
+  <tbody>
+    <tr style="font-weight: bold;">
+      <td>Format</td>
+      <td>Description</td>
+      <td>Example</td>
+      <td>Example output</td>
+    </tr>
+    <tr style="font-weight: bold;">
+      <td><span style="font-weight: normal;">b</span></td>
+      <td style="font-weight: normal;">Binary
+output field type (joins d, i, x, o, etc.).</td>
+      <td><span style="font-weight: normal;">sscanf(&quot;11111111&quot;, "%b", &amp;integer);</span></td>
+      <td><span style="font-weight: normal;">integer == 0xff </span></td>
+    </tr>
+    <tr>
+      <td>I8</td>
+      <td>8 bit integer field
+modifier.</td>
+      <td><span style="font-weight: normal;">sscanf</span>(&quot;0xff&quot;, "%I8d"<span style="font-weight: normal;">, &amp;int8</span>);</td>
+      <td><span style="font-weight: normal;"><span style="font-weight: normal;">int8</span> == <span style="font-weight: normal;">0xff </span></span></td>
+    </tr>
+    <tr>
+      <td>I16</td>
+      <td>16 bit integer field
+modifier.</td>
+      <td><span style="font-weight: normal;">sscanf</span>(&quot;0xffff&quot;, "%I16u"<span style="font-weight: normal;">, &amp;uint16</span>);</td>
+      <td><span style="font-weight: normal;"><span style="font-weight: normal;">uint16</span> == <span style="font-weight: normal;">0xffff</span></span></td>
+    </tr>
+    <tr>
+      <td>I32</td>
+      <td>32 bit integer field
+modifier.</td>
+      <td><span style="font-weight: normal;">sscanf</span>(&quot;0xffffffff&quot;, "%I32d"<span style="font-weight: normal;">, &amp;int32</span>);</td>
+      <td><span style="font-weight: normal;"><span style="font-weight: normal;">int32</span> == <span style="font-weight: normal;">0xffff</span></span>ffff</td>
+    </tr>
+    <tr>
+      <td>I64</td>
+      <td>64 bit integer field
+modifier.</td>
+      <td><span style="font-weight: normal;">sscanf</span>(&quot;0xffffffffffffffff&quot;, "%I64u"<span style="font-weight: normal;">, &amp;int64</span>);</td>
+      <td><span style="font-weight: normal;">int64</span> == -1 </td>
+    </tr>
+    <tr>
+      <td>I128</td>
+      <td>128 bit integer field
+modifier.</td>
+      <td><span style="font-weight: normal;">sscanf</span>(&quot;0xffffffffffffffffffffffffffffffff&quot;, "%I128d"<span style="font-weight: normal;">, &amp;int128</span>);</td>
+      <td><span style="font-weight: normal;">int128</span> = -1</td>
+    </tr>
+  </tbody>
+</table>
+<h2>Example usage</h2>
+<p>To do.<br>
+</p>
+<hr>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p> </p>
+</body>
+</html>

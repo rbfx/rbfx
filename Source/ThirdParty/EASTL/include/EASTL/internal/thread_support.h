@@ -95,6 +95,7 @@ namespace eastl
 	{
 		/// atomic_increment
 		/// Returns the new value.
+		/// Removed by EASTL, restored by rbfx.
 		inline int32_t atomic_increment(int32_t* p32) EA_NOEXCEPT
 		{
 			#if defined(__clang__) || (defined(EA_COMPILER_GNUC) && (EA_COMPILER_VERSION >= 4003))
@@ -118,6 +119,7 @@ namespace eastl
 
 		/// atomic_decrement
 		/// Returns the new value.
+		/// Removed by EASTL, restored by rbfx.
 		inline int32_t atomic_decrement(int32_t* p32) EA_NOEXCEPT
 		{
 			#if defined(__clang__) || (defined(EA_COMPILER_GNUC) && (EA_COMPILER_VERSION >= 4003))
@@ -145,6 +147,7 @@ namespace eastl
 		/// assignment occurred. The comparison and value setting are done as
 		/// an atomic operation and thus another thread cannot intervene between
 		/// the two as would be the case with simple C code.
+		/// Removed by EASTL, restored by rbfx.
 		inline bool atomic_compare_and_swap(int32_t* p32, int32_t newValue, int32_t condition)
 		{
 			#if defined(__clang__) || (defined(EA_COMPILER_GNUC) && (EA_COMPILER_VERSION >= 4003))
