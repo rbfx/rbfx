@@ -168,3 +168,7 @@
 #if URHO3D_PLATFORM_WEB
     #define PLATFORM_EMSCRIPTEN 1
 #endif
+
+namespace Urho3D
+{
+}
