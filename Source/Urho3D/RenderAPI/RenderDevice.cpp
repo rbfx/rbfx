@@ -1098,7 +1098,8 @@ void RenderDevice::InitializeCaps()
 
     if (IsOpenGLESBackend(deviceSettings_.backend_))
     {
-        caps_.clipDistance_ = supportedExtensions.contains("GL_EXT_clip_cull_distance");
+        caps_.clipDistance_ = supportedExtensions.contains("GL_EXT_clip_cull_distance")
+            || supportedExtensions.contains("GL_WEBGL_clip_cull_distance");
     }
     else
     {
