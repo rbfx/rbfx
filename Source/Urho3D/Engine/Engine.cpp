@@ -151,6 +151,10 @@ EMSCRIPTEN_BINDINGS(Module)
 {
     emscripten::function("JSCanvasSize", &OnCanvasResize);
 }
+
+// TODO: Remove after SDL is updated
+// https://github.com/libsdl-org/SDL/commit/b42cb1c6f2e4af13288615624c0bb65a57289f0b
+EM_JS_DEPS(engine, "$autoResumeAudioContext,$dynCall,$stringToUTF8,$UTF8ToString")
 #endif
 
 namespace Urho3D
