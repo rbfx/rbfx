@@ -67,7 +67,7 @@ namespace Urho3DNet
                     {
                         // Exclude system libraries and UWP HiddenScope assembly.
                         var assemblyName = assembly.GetName().Name;
-                        if (!assemblyName.StartsWith("System.") && assemblyName != "HiddenScope")
+                        if (!assemblyName.StartsWith("System.") && !assemblyName.StartsWith("Microsoft.Maui.") && assemblyName != "HiddenScope")
                         {
                             RegisterFactories(assembly);
                         }
@@ -168,6 +168,13 @@ namespace Urho3DNet
             var workQueue = GetSubsystem<WorkQueue>();
             workQueue.PostTaskForMainThread((threadId, queue) => tcs.TrySetResult(true));
             return tcs.Task.ConfigureAwait(false);
+        }
+
+        public string GetUrhoTypeName(StringHash stringHash)
+        {
+            var ret = Urho3DPINVOKE.Context_GetTypeName(swigCPtr, stringHash.Hash);
+            if (Urho3DPINVOKE.SWIGPendingException.Pending) throw Urho3DPINVOKE.SWIGPendingException.Retrieve();
+            return ret;
         }
 
         #region Interop
