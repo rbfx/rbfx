@@ -790,9 +790,8 @@ void DebugRenderer::InitializePipelineStates()
 
     for (bool lineAntiAlias : { false, true })
     {
-        const BlendMode blendMode = lineAntiAlias_ ? BLEND_ALPHA : BLEND_REPLACE;
-        depthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, blendMode, CMP_LESSEQUAL, true, lineAntiAlias, "Lines with Depth Test");
-        noDepthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, blendMode, CMP_ALWAYS, false, lineAntiAlias, "Lines without Depth Test");
+        depthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, BLEND_ALPHA, CMP_LESSEQUAL, true, lineAntiAlias, "Lines with Depth Test");
+        noDepthLinesPipelineState_[lineAntiAlias] = createPipelineState(LINE_LIST, BLEND_ALPHA, CMP_ALWAYS, false, lineAntiAlias, "Lines without Depth Test");
     }
 
     depthTrianglesPipelineState_ = createPipelineState(TRIANGLE_LIST, BLEND_ALPHA, CMP_LESSEQUAL, false, false, "Triangles with Depth Test");
