@@ -349,11 +349,13 @@ void EditorApplication::Render()
         : 0.0f;
     const float toolbarEffectiveHeight = toolbarHeight + 1;
 
+    const float menuBarHeight = g.FontSize + g.Style.FramePadding.y * 2.0f; 
+
     ImGuiWindowFlags flags = ImGuiWindowFlags_MenuBar;
     flags |= ImGuiWindowFlags_NoDocking;
     ImGuiViewport* viewport = ui::GetMainViewport();
-    ui::SetNextWindowPos(viewport->Pos + ImVec2(0, toolbarEffectiveHeight));
-    ui::SetNextWindowSize(viewport->Size - ImVec2(0, toolbarEffectiveHeight));
+    ui::SetNextWindowPos(viewport->Pos + ImVec2(0, toolbarEffectiveHeight + menuBarHeight));
+    ui::SetNextWindowSize(viewport->Size - ImVec2(0, toolbarEffectiveHeight + menuBarHeight));
     ui::SetNextWindowViewport(viewport->ID);
     ui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
@@ -418,8 +420,6 @@ void EditorApplication::Render()
         ui::EndGroup();
         ui::PopStyleVar();
     }
-
-    const float menuBarHeight = ui::GetCurrentWindow()->MenuBarHeight;
 
     ui::End();
     ui::PopStyleVar();
