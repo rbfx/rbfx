@@ -66,7 +66,7 @@ if (DEFINED URHO3D_SDK)
     endif ()
 endif ()
 
-if (NOT DEFINED URHO3D_SDK)
+if (NOT DEFINED URHO3D_SDK AND URHO3D_TOOLS)
     set (PACKAGE_TOOL $<TARGET_FILE:PackageTool>)
     set (SWIG_EXECUTABLE $<TARGET_FILE:swig>)
 endif ()
