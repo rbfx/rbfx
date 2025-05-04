@@ -31,6 +31,8 @@
     #include <Urho3D/Glow/LightmapUVGenerator.h>
 #endif
 
+#include "Urho3D/Utility/OBJImporter.h"
+
 #include <EASTL/finally.h>
 
 namespace Urho3D
@@ -63,6 +65,14 @@ bool IsFileNameBlend(const ea::string& fileName, bool strict = true)
         return true;
 
     return fileName.ends_with(".blend", false);
+}
+
+bool IsFileNameObj(const ea::string& fileName, bool strict = true)
+{
+    if (!strict && fileName.ends_with(".obj_", false))
+        return true;
+
+    return fileName.ends_with(".obj", false);
 }
 
 bool IsAnimationLooped(const Animation& animation)
@@ -223,6 +233,12 @@ bool ModelImporter::IsApplicable(const AssetTransformerInput& input)
 
         return true;
     }
+
+    if (IsFileNameObj(input.resourceName_))
+    {
+        return true;
+    }
+
     return false;
 }
 
@@ -230,15 +246,54 @@ bool ModelImporter::Execute(
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
     const ModelMetadata metadata = LoadMetadata(input.inputFileName_);
-    const GLTFFileHandle handle = LoadData(input.inputFileName_, input.tempPath_);
+
+    const ModelFileHandle handle = LoadData(input.inputFileName_, input.tempPath_);
 
     if (!handle)
         return false;
 
-    return ImportGLTF(handle, metadata, input, output, transformers);
+    if (IsFileNameObj(input.inputFileName_, false))
+    {
+        return ImportOBJ(handle, metadata, input, output, transformers);
+    }
+    else
+    {
+        return ImportGLTF(handle, metadata, input, output, transformers);
+    }
 }
 
-bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& metadata,
+bool ModelImporter::ImportOBJ(ModelFileHandle fileHandle, const ModelMetadata& metadata,
+    const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
+{
+    auto importer = MakeShared<OBJImporter>(context_);
+
+    //AddDependency(input, output, secondaryFilePath);
+    // AddDependency mtl
+
+    // Загрузить в ResourceCache
+
+    // Заполнить output
+
+
+    const ea::string outputPath = AddTrailingSlash(input.outputFileName_);
+    const ea::string resourceNamePrefix = AddTrailingSlash(input.outputResourceName_);
+
+    if (!importer->LoadFileToResourceCache(fileHandle->fileName_, resourceNamePrefix))
+    {
+        URHO3D_LOGERROR("Failed to load asset {} as OBJ model", input.resourceName_);
+        return false;
+    }
+
+    if (!importer->SaveResources(outputPath))
+    {
+        URHO3D_LOGERROR("Failed to save output files for asset {}", input.resourceName_);
+        return false;
+    }
+
+    return true;
+}
+
+bool ModelImporter::ImportGLTF(ModelFileHandle fileHandle, const ModelMetadata& metadata,
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
     currentMetadata_ = &metadata;
@@ -262,7 +317,7 @@ bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& m
     for (const ea::string& secondaryFileName : metadata.appendFiles_)
     {
         const ea::string secondaryFilePath = GetPath(input.originalInputFileName_) + secondaryFileName;
-        const GLTFFileHandle secondaryFileHandle = LoadData(secondaryFilePath, input.tempPath_);
+        const ModelFileHandle secondaryFileHandle = LoadData(secondaryFilePath, input.tempPath_);
         if (!secondaryFileHandle)
         {
             URHO3D_LOGWARNING("Failed to load secondary file {} for asset {}", secondaryFilePath, input.resourceName_);
@@ -448,9 +503,9 @@ ModelImporter::ModelMetadata ModelImporter::LoadMetadata(const ea::string& fileN
     return {};
 }
 
-ModelImporter::GLTFFileHandle ModelImporter::LoadData(const ea::string& fileName, const ea::string& tempPath) const
+ModelImporter::ModelFileHandle ModelImporter::LoadData(const ea::string& fileName, const ea::string& tempPath) const
 {
-    if (IsFileNameGLTF(fileName, false))
+    if (IsFileNameGLTF(fileName, false) || IsFileNameObj(fileName, false))
     {
         return LoadDataNative(fileName);
     }
@@ -465,7 +520,7 @@ ModelImporter::GLTFFileHandle ModelImporter::LoadData(const ea::string& fileName
     return nullptr;
 }
 
-ModelImporter::GLTFFileHandle ModelImporter::LoadDataNative(const ea::string& fileName) const
+ModelImporter::ModelFileHandle ModelImporter::LoadDataNative(const ea::string& fileName) const
 {
     auto fs = context_->GetSubsystem<FileSystem>();
 
@@ -475,7 +530,7 @@ ModelImporter::GLTFFileHandle ModelImporter::LoadDataNative(const ea::string& fi
     return ea::make_shared<GLTFFileInfo>(GLTFFileInfo{fileName});
 }
 
-ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromFBX(
+ModelImporter::ModelFileHandle ModelImporter::LoadDataFromFBX(
     const ea::string& fileName, const ea::string& tempPath) const
 {
     auto fs = context_->GetSubsystem<FileSystem>();
@@ -503,7 +558,7 @@ ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromFBX(
     return ea::shared_ptr<GLTFFileInfo>(new GLTFFileInfo{tempGltfFile}, deleter);
 }
 
-ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromBlend(
+ModelImporter::ModelFileHandle ModelImporter::LoadDataFromBlend(
     const ea::string& fileName, const ea::string& tempPath) const
 {
     auto fs = context_->GetSubsystem<FileSystem>();
