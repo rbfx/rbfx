@@ -104,6 +104,7 @@ void CrowdAgent::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<CrowdAgent>(Category_Navigation);
 
+    URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Target Position", Vector3, targetPosition_, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Target Velocity", Vector3, targetVelocity_, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE("Requested Target Type", requestedTargetType_, crowdAgentRequestedTargetTypeNames,

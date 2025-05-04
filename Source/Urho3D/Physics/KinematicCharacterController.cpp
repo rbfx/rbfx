@@ -73,6 +73,7 @@ void KinematicCharacterController::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<KinematicCharacterController>(Category_Physics);
 
+    URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Gravity", GetGravity, SetGravity, Vector3, Vector3(0.0f, -14.0f, 0.0f), AM_DEFAULT);
     URHO3D_ATTRIBUTE("Collision Layer", int, colLayer_, 1, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Collision Mask", int, colMask_, 0xffff, AM_DEFAULT);
