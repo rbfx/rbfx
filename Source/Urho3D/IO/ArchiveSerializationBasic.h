@@ -154,7 +154,7 @@ template <class T> struct EnumStringSafeCaster
     ea::string ToArchive(Archive& archive, const char* name, const T& value) const
     {
         UnderlyingInteger index = static_cast<UnderlyingInteger>(value);
-        if (index < 0 || index >= enumConstants_.size())
+        if (index < 0 || static_cast<eastl_size_t>(index) >= enumConstants_.size())
             return ea::to_string(index);
         return ea::string{enumConstants_[index]};
     }
