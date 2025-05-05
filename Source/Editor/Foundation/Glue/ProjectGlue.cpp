@@ -182,8 +182,9 @@ void Foundation_ProjectGlue(Context* context, Project* project)
 
         {
             const char* title = isPlaying ? ICON_FA_STOP : ICON_FA_PLAY;
-            const char* tooltip = isPlaying ? "Stop" : "Launch";
-            if (Widgets::ToolbarButton(title, tooltip))
+            const ea::string tooltip = Format(isPlaying ? "Stop ({})" : "Launch ({})", Hotkey_Play.ToString());
+
+            if (Widgets::ToolbarButton(title, tooltip.c_str()))
                 state->TogglePlayedDefault();
         }
     });
