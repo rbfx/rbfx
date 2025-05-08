@@ -52,6 +52,7 @@ public:
     /// Attribute modification. Don't do that after replication!
     /// @{
     void SetClientPrefab(PrefabResource* prefab);
+    PrefabResource* GetClientPrefab() const { return clientPrefab_; }
     /// @}
 
     /// Implement NetworkObject
