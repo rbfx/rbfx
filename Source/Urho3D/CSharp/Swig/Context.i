@@ -77,6 +77,10 @@
 #endif
     [global::System.Runtime.InteropServices.UnmanagedFunctionPointer(global::System.Runtime.InteropServices.CallingConvention.Cdecl)]
     internal delegate System.IntPtr CreateObjectDelegate(System.IntPtr context, uint type);
+    
+#if __IOS__
+    [global::ObjCRuntime.MonoPInvokeCallback(typeof(CreateObjectDelegate))]
+#endif
     private static System.IntPtr CreateObject(System.IntPtr context, uint type)
     {
         var newObject = Context.wrap(context, false).CreateObject(type);
