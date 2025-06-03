@@ -413,13 +413,6 @@ if (MINGW)
     endif ()
 endif ()
 
-# Workarounds
-if (WEB OR ANDROID)
-    if (URHO3D_CXX_STANDARD)
-        target_compile_options(Urho3D PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++${URHO3D_CXX_STANDARD}>)
-    endif ()
-endif ()
-
 if (CLANG AND NOT WEB)
     if (APPLE)
         target_compile_options(Urho3D INTERFACE $<INSTALL_INTERFACE:-stdlib=libc++>)
