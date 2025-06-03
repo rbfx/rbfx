@@ -187,6 +187,8 @@ endif ()
 
 if (URHO3D_PROFILING)
     set (TRACY_ON_DEMAND ON)
+    set (TRACY_DELAYED_INIT ON)
+    set (TRACY_MANUAL_LIFETIME ON)
     add_subdirectory(tracy)
 
     if (DESKTOP)
