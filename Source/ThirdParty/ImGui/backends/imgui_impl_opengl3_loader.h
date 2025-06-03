@@ -179,6 +179,7 @@ typedef khronos_uint8_t GLubyte;
 #define GL_VERSION                        0x1F02
 #define GL_EXTENSIONS                     0x1F03
 #define GL_LINEAR                         0x2601
+#define GL_LINEAR_MIPMAP_LINEAR           0x2703
 #define GL_TEXTURE_MAG_FILTER             0x2800
 #define GL_TEXTURE_MIN_FILTER             0x2801
 typedef void (APIENTRYP PFNGLPOLYGONMODEPROC) (GLenum face, GLenum mode);
@@ -235,8 +236,10 @@ GLAPI void APIENTRY glGenTextures (GLsizei n, GLuint *textures);
 #define GL_TEXTURE0                       0x84C0
 #define GL_ACTIVE_TEXTURE                 0x84E0
 typedef void (APIENTRYP PFNGLACTIVETEXTUREPROC) (GLenum texture);
+typedef void (APIENTRYP PFNGLCOMPRESSEDTEXIMAGE2DPROC) (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data);
 #ifdef GL_GLEXT_PROTOTYPES
 GLAPI void APIENTRY glActiveTexture (GLenum texture);
+GLAPI void APIENTRY glCompressedTexImage2D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data);
 #endif
 #endif /* GL_VERSION_1_3 */
 #ifndef GL_VERSION_1_4
@@ -472,7 +475,7 @@ GL3W_API GL3WglProc imgl3wGetProcAddress(const char *proc);
 
 /* gl3w internal state */
 union ImGL3WProcs {
-    GL3WglProc ptr[59];
+    GL3WglProc ptr[60];
     struct {
         PFNGLACTIVETEXTUREPROC            ActiveTexture;
         PFNGLATTACHSHADERPROC             AttachShader;
@@ -488,6 +491,7 @@ union ImGL3WProcs {
         PFNGLCLEARPROC                    Clear;
         PFNGLCLEARCOLORPROC               ClearColor;
         PFNGLCOMPILESHADERPROC            CompileShader;
+        PFNGLCOMPRESSEDTEXIMAGE2DPROC     CompressedTexImage2D;
         PFNGLCREATEPROGRAMPROC            CreateProgram;
         PFNGLCREATESHADERPROC             CreateShader;
         PFNGLDELETEBUFFERSPROC            DeleteBuffers;
@@ -553,6 +557,7 @@ GL3W_API extern union ImGL3WProcs imgl3wProcs;
 #define glClear                           imgl3wProcs.gl.Clear
 #define glClearColor                      imgl3wProcs.gl.ClearColor
 #define glCompileShader                   imgl3wProcs.gl.CompileShader
+#define glCompressedTexImage2D            imgl3wProcs.gl.CompressedTexImage2D
 #define glCreateProgram                   imgl3wProcs.gl.CreateProgram
 #define glCreateShader                    imgl3wProcs.gl.CreateShader
 #define glDeleteBuffers                   imgl3wProcs.gl.DeleteBuffers
@@ -848,6 +853,7 @@ static const char *proc_names[] = {
     "glClear",
     "glClearColor",
     "glCompileShader",
+    "glCompressedTexImage2D",
     "glCreateProgram",
     "glCreateShader",
     "glDeleteBuffers",

@@ -22,11 +22,14 @@
 
 static SDL_Window* s_window;
 static std::function<void()> s_redraw;
+static std::function<void(float)> s_scaleChanged;
+static std::function<int(void)> s_isBusy;
 static RunQueue* s_mainThreadTasks;
 static WindowPosition* s_winPos;
 static bool s_iconified;
 static bool s_done = false;
 static SDL_GLContext gl_context = nullptr;
+static float s_prevScale = -1;
 
 extern tracy::Config s_config;
 
@@ -36,6 +39,10 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     // Setup SDL
     // (Some versions of SDL before <2.0.10 appears to have performance/stalling issues on a minority of Windows systems,
     // depending on whether SDL_INIT_GAMECONTROLLER is enabled or disabled.. updating to latest version of SDL is recommended!)
+    // Set process DPI aware before SDL init
+    SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system");
+    SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "0");
+    
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {
         printf("Error: %s\n", SDL_GetError());
@@ -85,6 +92,8 @@ Backend::Backend( const char* title, const std::function<void()>& redraw, const 
     s_mainThreadTasks = mainThreadTasks;
     s_winPos = &m_winPos;
     s_iconified = false;
+    s_scaleChanged = scaleChanged;
+    s_isBusy = isBusy;
 }
 
 Backend::~Backend()
@@ -140,6 +149,13 @@ void Backend::Attention()
 
 void Backend::NewFrame( int& w, int& h )
 {
+    const auto scale = GetDpiScale();
+    if( scale != s_prevScale )
+    {
+        s_prevScale = scale;
+        s_scaleChanged( scale );
+    }
+
     SDL_GetWindowSize( s_window, &w, &h );
     m_w = w;
     m_h = h;

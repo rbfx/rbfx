@@ -17,13 +17,15 @@ void View::DrawMessages()
 
     if( msgs.empty() )
     {
-        ImGui::TextUnformatted( "No messages were collected." );
+        const auto ty = ImGui::GetTextLineHeight();
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+        TextCentered( ICON_FA_FISH_FINS );
+        TextCentered( "No messages were collected" );
+        ImGui::PopFont();
         ImGui::End();
         return;
     }
-
-    size_t tsz = 0;
-    for( const auto& t : m_threadOrder ) if( !t->messages.empty() ) tsz++;
 
     bool filterChanged = m_messageFilter.Draw( ICON_FA_FILTER " Filter messages", 200 );
     ImGui::SameLine();
@@ -51,7 +53,22 @@ void View::DrawMessages()
     bool threadsChanged = false;
     auto expand = ImGui::TreeNode( ICON_FA_SHUFFLE " Visible threads:" );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%zu)", tsz );
+    size_t visibleThreads = 0;
+    size_t tsz = 0;
+    for( const auto& t : m_threadOrder )
+    {
+        if( t->messages.empty() ) continue;
+        if( VisibleMsgThread( t->id ) ) visibleThreads++;
+        tsz++;
+    }
+    if( visibleThreads == tsz )
+    {
+        ImGui::TextDisabled( "(%zu)", tsz );
+    }
+    else
+    {
+        ImGui::TextDisabled( "(%zu/%zu)", visibleThreads, tsz );
+    }
     if( expand )
     {
         auto& crash = m_worker.GetCrashEvent();
@@ -235,7 +252,7 @@ void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx 
     const auto text = m_worker.GetString( msg.ref );
     const auto tid = m_worker.DecompressThread( msg.thread );
     ImGui::PushID( &msg );
-    if( ImGui::Selectable( TimeToStringExact( msg.time ), m_msgHighlight == &msg, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap ) )
+    if( ImGui::Selectable( TimeToStringExact( msg.time ), m_msgHighlight == &msg, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap ) )
     {
         CenterAtTime( msg.time );
     }
