@@ -99,7 +99,7 @@ quirks_windows_msvc_x64=('-A' 'x64')
 quirks_windows_msvc_x86=('-A' 'Win32')
 quirks_uwp_msvc_arm=('-A' 'ARM')
 quirks_uwp_msvc_arm64=('-A' 'ARM64')
-quirks_clang=('-DNO_PARALLEL_STL=ON')                  # Tracy, includes macos and ios
+quirks_clang=('-DTRACY_TIMER_FALLBACK=ON')                  # Tracy, includes macos and ios
 quirks_macos_x86=('-DCMAKE_OSX_ARCHITECTURES=i386')
 quirks_macos_x64=('-DCMAKE_OSX_ARCHITECTURES=x86_64')
 quirks_linux_x86=(

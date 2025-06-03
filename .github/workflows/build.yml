@@ -34,7 +34,7 @@ env:
   ci_latest_release_url: https://uploads.github.com/repos/rbfx/rbfx/releases/129063815/assets{?name,label}
   ci_latest_release_id: 129063815
   # etc
-  TRACY_NO_INVARIANT_CHECK: 1
+  TRACY_TIMER_FALLBACK: 1
 
 concurrency:
   group: ci-${{ github.ref }}
