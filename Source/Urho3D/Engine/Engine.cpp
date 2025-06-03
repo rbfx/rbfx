@@ -321,7 +321,13 @@ Engine::Engine(Context* context) :
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Engine, HandleEndFrame));
 }
 
-Engine::~Engine() = default;
+Engine::~Engine()
+{
+#ifdef URHO3D_PROFILING
+    if (GetParameter(EP_PROFILE).GetBool())
+        tracy::ShutdownProfiler();
+#endif
+}
 
 bool Engine::Initialize(const StringVariantMap& applicationParameters, const StringVariantMap& commandLineParameters)
 {
@@ -332,6 +338,11 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
 
     engineParameters_->DefineVariables(applicationParameters);
     engineParameters_->UpdatePriorityVariables(commandLineParameters);
+
+#ifdef URHO3D_PROFILING
+    if (GetParameter(EP_PROFILE).GetBool())
+        tracy::StartupProfiler();
+#endif
 
     auto* fileSystem = GetSubsystem<FileSystem>();
 
@@ -1214,6 +1225,8 @@ void Engine::DefineParameters(CLI::App& commandLine, StringVariantMap& enginePar
     addFlag("--discard-shader-cache", EP_DISCARD_SHADER_CACHE, true, "Discard all cached shader bytecode and logged shader sources");
     addFlag("--no-save-shader-cache", EP_SAVE_SHADER_CACHE, false, "Disable saving shader bytecode to cache directory");
     addFlag("--xr", EP_XR, true, "Launch the engine in XR mode");
+    addFlag("--profile", EP_PROFILE, true, "Enable profiling");
+    addFlag("--no-profile", EP_PROFILE, false, "Disable profiling");
 
     addFlag("--d3d11", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::D3D11), "Use Direct3D11 rendering backend");
     addFlag("--d3d12", EP_RENDER_BACKEND, static_cast<int>(RenderBackend::D3D12), "Use Direct3D12 rendering backend");
@@ -1330,7 +1343,8 @@ void Engine::PopulateDefaultParameters()
     engineParameters_->DefineVariable(EP_WORKER_THREADS, true);
     engineParameters_->DefineVariable(EP_PSO_CACHE, "conf://psocache.bin");
     engineParameters_->DefineVariable(EP_RENDER_BACKEND).SetOptional<int>();
-    engineParameters_->DefineVariable(EP_XR, defaultXR);
+    engineParameters_->DefineVariable(EP_XR, defaultXR).CommandLinePriority();
+    engineParameters_->DefineVariable(EP_PROFILE, false).CommandLinePriority();
 }
 
 void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)
