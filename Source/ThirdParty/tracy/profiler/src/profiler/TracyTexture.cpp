@@ -5,12 +5,7 @@
 #  include <emscripten/html5.h>
 #  include <GLES2/gl2.h>
 #else
-#  include "imgui_impl_opengl3_loader.h"
-#define GL_LINEAR_MIPMAP_LINEAR           0x2703
-#define GL_TEXTURE_WRAP_S                 0x2802
-#define GL_TEXTURE_WRAP_T			0x2803
-#define GL_REPEAT				0x2901
-#define GL_CLAMP_TO_EDGE                  0x812F
+#  include <backends/imgui_impl_opengl3_loader.h>
 #endif
 #include "TracyTexture.hpp"
 #include "../public/common/TracyForceInline.hpp"
@@ -18,6 +13,12 @@
 #ifndef COMPRESSED_RGB_S3TC_DXT1_EXT
 #  define COMPRESSED_RGB_S3TC_DXT1_EXT 0x83F0
 #endif
+
+#define GL_LINEAR_MIPMAP_LINEAR           0x2703
+#define GL_TEXTURE_WRAP_S                 0x2802
+#define GL_TEXTURE_WRAP_T                 0x2803
+#define GL_REPEAT                         0x2901
+#define GL_CLAMP_TO_EDGE                  0x812F
 
 namespace tracy
 {
@@ -37,14 +38,14 @@ void InitTexture()
         auto ext = (const char*)glGetStringi( GL_EXTENSIONS, GLuint( i ) );
         if( strcmp( ext, "GL_EXT_texture_compression_s3tc" ) == 0 )
         {
-            // TODO: s_hardwareS3tc = true;
+            s_hardwareS3tc = true;
             break;
         }
     }
 #endif
 }
 
-void* MakeTexture( bool zigzag )
+ImTextureID MakeTexture( bool zigzag )
 {
     GLuint tex;
     glGenTextures( 1, &tex );
@@ -53,12 +54,12 @@ void* MakeTexture( bool zigzag )
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, zigzag ? GL_REPEAT : GL_CLAMP_TO_EDGE );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-    return (void*)(intptr_t)tex;
+    return reinterpret_cast<ImTextureID>(tex);
 }
 
-void FreeTexture( void* _tex, void(*runOnMainThread)(const std::function<void()>&, bool) )
+void FreeTexture( ImTextureID _tex, void(*runOnMainThread)(const std::function<void()>&, bool) )
 {
-    auto tex = (GLuint)(intptr_t)_tex;
+    auto tex = static_cast<GLuint>(reinterpret_cast<uintptr_t>(_tex));
     runOnMainThread( [tex] { glDeleteTextures( 1, &tex ); }, false );
 }
 
@@ -144,13 +145,13 @@ static tracy_force_inline void DecodeDxt1Part( uint64_t d, uint32_t* dst, uint32
     memcpy( dst+3, dict + (idx & 0x3), 4 );
 }
 
-void UpdateTexture( void* _tex, const char* data, int w, int h )
+void UpdateTexture( ImTextureID _tex, const char* data, int w, int h )
 {
-    auto tex = (GLuint)(intptr_t)_tex;
+    auto tex = static_cast<GLuint>(reinterpret_cast<uintptr_t>(_tex));
     glBindTexture( GL_TEXTURE_2D, tex );
     if( s_hardwareS3tc )
     {
-        // TODO: glCompressedTexImage2D( GL_TEXTURE_2D, 0, COMPRESSED_RGB_S3TC_DXT1_EXT, w, h, 0, w * h / 2, data );
+        glCompressedTexImage2D( GL_TEXTURE_2D, 0, COMPRESSED_RGB_S3TC_DXT1_EXT, w, h, 0, w * h / 2, data );
     }
     else
     {
@@ -172,16 +173,16 @@ void UpdateTexture( void* _tex, const char* data, int w, int h )
     }
 }
 
-void UpdateTextureRGBA( void* _tex, void* data, int w, int h )
+void UpdateTextureRGBA( ImTextureID _tex, void* data, int w, int h )
 {
-    auto tex = (GLuint)(intptr_t)_tex;
+    auto tex = static_cast<GLuint>(reinterpret_cast<uintptr_t>(_tex));
     glBindTexture( GL_TEXTURE_2D, tex );
     glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 }
 
-void UpdateTextureRGBAMips( void* _tex, void** data, int* w, int* h, size_t mips )
+void UpdateTextureRGBAMips( ImTextureID _tex, void** data, int* w, int* h, size_t mips )
 {
-    auto tex = (GLuint)(intptr_t)_tex;
+    auto tex = static_cast<GLuint>(reinterpret_cast<uintptr_t>(_tex));
     glBindTexture( GL_TEXTURE_2D, tex );
     for( size_t i=0; i<mips; i++ )
     {

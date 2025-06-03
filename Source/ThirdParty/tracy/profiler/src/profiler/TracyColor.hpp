@@ -20,12 +20,28 @@ static tracy_force_inline uint32_t HighlightColor( uint32_t color )
         ( std::min<int>( 0xFF, ( ( ( color & 0x000000FF )       ) + V ) )       );
 }
 
+static tracy_force_inline uint32_t DarkenColorSlightly( uint32_t color )
+{
+    return 0xFF000000 |
+        ( ( ( ( color & 0x00FF0000 ) >> 16 ) * 4 / 5 ) << 16 ) |
+        ( ( ( ( color & 0x0000FF00 ) >> 8  ) * 4 / 5 ) << 8  ) |
+        ( ( ( ( color & 0x000000FF )       ) * 4 / 5 )       );
+}
+
 static tracy_force_inline uint32_t DarkenColor( uint32_t color )
 {
     return 0xFF000000 |
         ( ( ( ( color & 0x00FF0000 ) >> 16 ) * 2 / 3 ) << 16 ) |
         ( ( ( ( color & 0x0000FF00 ) >> 8  ) * 2 / 3 ) << 8  ) |
         ( ( ( ( color & 0x000000FF )       ) * 2 / 3 )       );
+}
+
+static tracy_force_inline uint32_t DarkenColorHalf( uint32_t color )
+{
+    return 0xFF000000 |
+        ( ( ( ( color & 0x00FF0000 ) >> 16 ) / 2 ) << 16 ) |
+        ( ( ( ( color & 0x0000FF00 ) >> 8  ) / 2 ) << 8  ) |
+        ( ( ( ( color & 0x000000FF )       ) / 2 )       );
 }
 
 static tracy_force_inline uint32_t DarkenColorMore( uint32_t color )

@@ -7,7 +7,9 @@
 #include "TracyImGui.hpp"
 #include "TracyMouse.hpp"
 #include "TracyPrint.hpp"
+#include "TracySort.hpp"
 #include "TracyView.hpp"
+#include "tracy_pdqsort.h"
 
 namespace tracy
 {
@@ -17,6 +19,7 @@ extern double s_time;
 #ifndef TRACY_NO_STATISTICS
 void View::FindZones()
 {
+    m_findZone.hasResults = true;
     m_findZone.match = m_worker.GetMatchingSourceLocation( m_findZone.pattern, m_findZone.ignoreCase );
     if( m_findZone.match.empty() ) return;
 
@@ -263,8 +266,23 @@ void View::DrawFindZone()
 #else
     if( !m_worker.AreSourceLocationZonesReady() )
     {
-        ImGui::TextWrapped( "Please wait, computing data..." );
+        const auto ty = ImGui::GetTextLineHeight();
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 - ty ) * 0.5f ) );
+        TextCentered( ICON_FA_CROW );
+        TextCentered( "Please wait, computing data..." );
+        ImGui::PopFont();
         DrawWaitingDots( s_time );
+        ImGui::End();
+        return;
+    }
+    if( m_worker.GetZoneCount() == 0 )
+    {
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+        TextCentered( ICON_FA_CROW );
+        TextCentered( "No zones were collected" );
+        ImGui::PopFont();
         ImGui::End();
         return;
     }
@@ -324,15 +342,31 @@ void View::DrawFindZone()
         FindZones();
     }
 
-    if( !m_findZone.match.empty() )
+    ImGui::Separator();
+    ImGui::BeginChild( "##findzone" );
+
+    if( m_findZone.match.empty() )
+    {
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+        TextCentered( ICON_FA_CROW );
+        if( m_findZone.hasResults )
+        {
+            TextCentered( "No matching zones found" );
+        }
+        else
+        {
+            TextCentered( "Please enter search pattern" );
+        }
+        ImGui::PopFont();
+    }
+    else
     {
         Achieve( "findZone" );
 
         const auto rangeMin = m_findZone.range.min;
         const auto rangeMax = m_findZone.range.max;
 
-        ImGui::Separator();
-        ImGui::BeginChild( "##findzone" );
         bool expand = ImGui::TreeNodeEx( "Matched source locations", ImGuiTreeNodeFlags_DefaultOpen );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%zu)", m_findZone.match.size() );
@@ -507,10 +541,10 @@ void View::DrawFindZone()
                     }
                 }
                 auto mid = vec.begin() + vszorig;
-#ifdef NO_PARALLEL_SORT
+#ifdef __EMSCRIPTEN__
                 pdqsort_branchless( mid, vec.end() );
 #else
-                std::sort( std::execution::par_unseq, mid, vec.end() );
+                ppqsort::sort( ppqsort::execution::par, mid, vec.end() );
 #endif
                 std::inplace_merge( vec.begin(), mid, vec.end() );
 
@@ -519,6 +553,8 @@ void View::DrawFindZone()
                 {
                     m_findZone.average = float( total ) / vsz;
                     m_findZone.median = vec[vsz/2];
+                    m_findZone.p75 = vec[3 * (vsz / 4)];
+                    m_findZone.p90 = vec[vsz / 10 * 9];
                     m_findZone.total = total;
                     m_findZone.sortedNum = i;
                     m_findZone.tmin = tmin;
@@ -936,6 +972,14 @@ void View::DrawFindZone()
                         ImGui::Spacing();
                         ImGui::SameLine();
                         TextFocused( "Median:", TimeToString( m_findZone.median ) );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        TextFocused( "P75:", TimeToString( m_findZone.p75 ) );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        TextFocused( "P90:", TimeToString( m_findZone.p90 ) );
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
@@ -1976,14 +2020,13 @@ void View::DrawFindZone()
             }
         }
 
-        ImGui::EndChild();
-
         if( changeZone != 0 )
         {
             auto& srcloc = m_worker.GetSourceLocation( changeZone );
             m_findZone.ShowZone( changeZone, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
         }
     }
+    ImGui::EndChild();
 #endif
 
     ImGui::End();
