@@ -44,6 +44,12 @@ else()
     set(TRACY_VISIBILITY "SHARED")
 endif()
 
+# Optimizations lead to a crash in a release build with Clang with shared lib configuration.
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set_source_files_properties(public/TracyClient.cpp PROPERTIES
+        COMPILE_FLAGS "$<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-O1>")
+endif ()
+
 add_library(TracyClient ${TRACY_VISIBILITY} "${TRACY_PUBLIC_DIR}/TracyClient.cpp")
 target_compile_features(TracyClient PUBLIC cxx_std_11)
 set_target_properties(TracyClient PROPERTIES INTERPROCEDURAL_OPTIMIZATION ${LTO_SUPPORTED})
