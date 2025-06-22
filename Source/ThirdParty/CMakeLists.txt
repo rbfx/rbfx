@@ -205,7 +205,7 @@ if (URHO3D_PROFILING)
         set(NO_FILESELECTOR OFF)
         add_subdirectory(tracy/profiler)
 
-        install (TARGETS tracy-profiler RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG})
+        install (TARGETS tracy-profiler TracyClient RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG})
     endif ()
 else ()
     add_library(TracyClient INTERFACE)
