@@ -57,6 +57,7 @@ endif ()
 
 # Set CMake modules search path
 set (CMAKE_MODULE_PATH ${rbfx_SOURCE_DIR}/CMake/Modules)
+set (CPM_SOURCE_CACHE ${CMAKE_BINARY_DIR}/_deps_src)
 
 # Include common utilities
 include(UrhoCommon)
