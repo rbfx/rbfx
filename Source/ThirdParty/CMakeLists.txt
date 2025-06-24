@@ -42,6 +42,7 @@ add_subdirectory(fmt)
 add_subdirectory(spdlog)
 add_subdirectory(SDL)
 add_subdirectory(ETCPACK)
+add_subdirectory(FastNoiseLite)
 
 if (NOT WEB)
     add_subdirectory(enkiTS)
