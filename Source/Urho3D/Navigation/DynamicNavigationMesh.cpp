@@ -328,11 +328,7 @@ void DynamicNavigationMesh::RemoveTile(const IntVector2& tileIndex)
     dtCompressedTileRef existing[MaxLayers];
     const int existingCt = tileCache_->getTilesAt(tileIndex.x_, tileIndex.y_, existing, maxLayers_);
     for (int i = 0; i < existingCt; ++i)
-    {
-        unsigned char* data = nullptr;
-        if (!dtStatusFailed(tileCache_->removeTile(existing[i], &data, nullptr)) && data != nullptr)
-            dtFree(data);
-    }
+        tileCache_->removeTile(existing[i], nullptr, nullptr);
 
     NavigationMesh::RemoveTile(tileIndex);
 }
@@ -565,13 +561,10 @@ int DynamicNavigationMesh::BuildTile(ea::vector<NavigationGeometryInfo>& geometr
 {
     URHO3D_PROFILE("BuildNavigationMeshTile");
 
-    const dtMeshTile* tilesToRemove[MaxLayers];
-    const int numTilesToRemove = navMesh_->getTilesAt(x, z, tilesToRemove, MaxLayers);
+    dtCompressedTileRef tilesToRemove[MaxLayers];
+    const int numTilesToRemove = tileCache_->getTilesAt(x, z, tilesToRemove, MaxLayers);
     for (int i = 0; i < numTilesToRemove; ++i)
-    {
-        const dtTileRef tileRef = navMesh_->getTileRefAt(x, z, tilesToRemove[i]->header->layer);
-        tileCache_->removeTile(tileRef, nullptr, nullptr);
-    }
+        tileCache_->removeTile(tilesToRemove[i], nullptr, nullptr);
 
     const BoundingBox tileColumn = GetTileBoundingBoxColumn(IntVector2{x, z});
     const BoundingBox tileBoundingBox =
@@ -762,11 +755,7 @@ unsigned DynamicNavigationMesh::BuildTilesFromGeometry(
             dtCompressedTileRef existing[MaxLayers];
             const int existingCt = tileCache_->getTilesAt(x, z, existing, maxLayers_);
             for (int i = 0; i < existingCt; ++i)
-            {
-                unsigned char* data = nullptr;
-                if (!dtStatusFailed(tileCache_->removeTile(existing[i], &data, nullptr)) && data != nullptr)
-                    dtFree(data);
-            }
+                tileCache_->removeTile(existing[i], nullptr, nullptr);
 
             TileCacheData tiles[MaxLayers];
             int layerCt = BuildTile(geometryList, x, z, tiles);
@@ -785,6 +774,9 @@ unsigned DynamicNavigationMesh::BuildTilesFromGeometry(
                     ++numTiles;
                 }
             }
+
+            for (int i = layerCt; i < existingCt; ++i)
+                navMesh_->removeTile(navMesh_->getTileRefAt(x, z, i), 0, 0);
         }
     }
 
