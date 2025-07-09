@@ -269,6 +269,13 @@
 /// @param[in,optional] vertexColor Vertex color.
 ///     Ignored if URHO3D_PIXEL_NEED_VERTEX_COLOR is not defined.
 
+/// @def GetCutoutAlpha(albedoAlpha, vertexColorAlpha)
+/// @brief Returns alpha value for alpha cutout.
+/// @param[in] albedoAlpha Alpha value from albedo texture.
+/// @param[in,optional] vertexColorAlpha Alpha value from vertex color.
+///     Ignored if URHO3D_PIXEL_NEED_VERTEX_COLOR is not defined.
+/// @return Alpha value for cutout check.
+
 /// @def DeduceAlbedoSpecularForPBR(albedo, specular, oneMinusReflectivity)
 /// @brief Deduce effective albedo and specular for PBR material from base albedo and metalness.
 /// @param[in,out] albedo Base albedo as input, effective albedo as output.
@@ -327,8 +334,14 @@
 #ifdef URHO3D_PIXEL_NEED_VERTEX_COLOR
     #define ModulateAlbedoByVertexColor(albedo, vertexColor) \
         albedo *= LinearToLightSpaceAlpha(vertexColor)
+
+    #define GetCutoutAlpha(albedoAlpha, vertexColorAlpha) \
+        ((albedoAlpha) * (vertexColorAlpha))
 #else
     #define ModulateAlbedoByVertexColor(albedo, vertexColor)
+
+    #define GetCutoutAlpha(albedoAlpha, vertexColorAlpha) \
+        (albedoAlpha)
 #endif
 
 #ifdef URHO3D_PHYSICAL_MATERIAL
@@ -357,7 +370,7 @@
     #define _Surface_SetBaseAlbedo(surfaceData, albedoColor, alphaCutoff, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
     { \
         half4 albedoInput = texture(albedoMap, albedoTexCoord); \
-        CutoutByAlpha(albedoInput.a, alphaCutoff); \
+        CutoutByAlpha(GetCutoutAlpha(albedoInput.a, vertexColor.a), alphaCutoff); \
         surfaceData.albedo = (colorSpace == 1 ? Texture_ToLightAlpha_1(albedoInput) : Texture_ToLightAlpha_2(albedoInput)) \
             * GammaToLightSpaceAlpha(albedoColor); \
         ModulateAlbedoByVertexColor(surfaceData.albedo, vertexColor); \
@@ -365,6 +378,7 @@
 #else
     #define _Surface_SetBaseAlbedo(surfaceData, albedoColor, alphaCutoff, vertexColor, albedoMap, albedoTexCoord, colorSpace) \
     { \
+        CutoutByAlpha(GetCutoutAlpha(1.0, vertexColor.a), alphaCutoff); \
         surfaceData.albedo = GammaToLightSpaceAlpha(albedoColor); \
         ModulateAlbedoByVertexColor(surfaceData.albedo, vertexColor); \
     }
