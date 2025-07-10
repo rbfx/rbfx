@@ -199,6 +199,7 @@ function action-dependencies() {
     elif [[ "$ci_platform" == "web" || "$ci_platform" == "android" ]];
     then
         # Web / android dependencies
+        sudo apt-get update
         sudo apt-get install -y --no-install-recommends uuid-dev ninja-build ccache
     elif [[ "$ci_platform" == "macos" || "$ci_platform" == "ios" ]];
     then
