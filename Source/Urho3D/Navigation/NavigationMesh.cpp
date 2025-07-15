@@ -950,7 +950,10 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
     for (unsigned i = 0; i < navigables.size(); ++i)
     {
         if (navigables[i]->IsEnabledEffective())
-            CollectGeometries(geometryList, navigables[i]->GetNode(), processedNodes, navigables[i]->IsRecursive());
+        {
+            CollectGeometries(
+                geometryList, navigables[i], navigables[i]->GetNode(), processedNodes, navigables[i]->IsRecursive());
+        }
     }
 
     // Get offmesh connections
@@ -991,8 +994,8 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
     }
 }
 
-void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geometryList, Node* node, ea::hash_set<Node*>& processedNodes,
-    bool recursive)
+void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geometryList, Navigable* navigable,
+    Node* node, ea::hash_set<Node*>& processedNodes, bool recursive)
 {
     // Make sure nodes are not included twice
     if (processedNodes.contains(node))
@@ -1026,6 +1029,7 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
             info.component_ = shape;
             info.transform_ = inverse * node->GetWorldTransform() * shapeTransform;
             info.boundingBox_ = shape->GetWorldBoundingBox().Transformed(inverse);
+            info.areaId_ = navigable->GetEffectiveAreaId();
 
             geometryList.push_back(info);
             collisionShapeFound = true;
@@ -1056,6 +1060,7 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
             info.component_ = drawable;
             info.transform_ = inverse * node->GetWorldTransform();
             info.boundingBox_ = drawable->GetWorldBoundingBox().Transformed(inverse);
+            info.areaId_ = navigable->GetEffectiveAreaId();
 
             geometryList.push_back(info);
         }
@@ -1065,23 +1070,25 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
     {
         const ea::vector<SharedPtr<Node> >& children = node->GetChildren();
         for (unsigned i = 0; i < children.size(); ++i)
-            CollectGeometries(geometryList, children[i], processedNodes, recursive);
+            CollectGeometries(geometryList, navigable, children[i], processedNodes, recursive);
     }
 }
 
-void NavigationMesh::GetTileGeometry(NavBuildData* build, ea::vector<NavigationGeometryInfo>& geometryList, BoundingBox& box)
+void NavigationMesh::GetTileGeometry(
+    NavBuildData* build, const ea::vector<NavigationGeometryInfo>& geometryList, BoundingBox& box)
 {
     Matrix3x4 inverse = node_->GetWorldTransform().Inverse();
 
     for (unsigned i = 0; i < geometryList.size(); ++i)
     {
-        if (box.IsInsideFast(geometryList[i].boundingBox_) != OUTSIDE)
+        const NavigationGeometryInfo& geometryInfo = geometryList[i];
+        if (box.IsInsideFast(geometryInfo.boundingBox_) != OUTSIDE)
         {
-            const Matrix3x4& transform = geometryList[i].transform_;
+            const Matrix3x4& transform = geometryInfo.transform_;
 
-            if (geometryList[i].component_->GetType() == OffMeshConnection::GetTypeStatic())
+            if (geometryInfo.component_->GetType() == OffMeshConnection::GetTypeStatic())
             {
-                auto* connection = static_cast<OffMeshConnection*>(geometryList[i].component_);
+                auto* connection = static_cast<OffMeshConnection*>(geometryInfo.component_);
                 Vector3 start = inverse * connection->GetNode()->GetWorldPosition();
                 Vector3 end = inverse * connection->GetEndPoint()->GetWorldPosition();
 
@@ -1093,9 +1100,9 @@ void NavigationMesh::GetTileGeometry(NavBuildData* build, ea::vector<NavigationG
                 build->offMeshDir_.push_back((unsigned char) (connection->IsBidirectional() ? DT_OFFMESH_CON_BIDIR : 0));
                 continue;
             }
-            else if (geometryList[i].component_->GetType() == NavArea::GetTypeStatic())
+            else if (geometryInfo.component_->GetType() == NavArea::GetTypeStatic())
             {
-                auto* area = static_cast<NavArea*>(geometryList[i].component_);
+                auto* area = static_cast<NavArea*>(geometryInfo.component_);
                 NavAreaStub stub;
                 stub.areaID_ = (unsigned char)area->GetAreaID();
                 stub.bounds_ = area->GetWorldBoundingBox();
@@ -1104,7 +1111,7 @@ void NavigationMesh::GetTileGeometry(NavBuildData* build, ea::vector<NavigationG
             }
 
 #ifdef URHO3D_PHYSICS
-            auto* shape = dynamic_cast<CollisionShape*>(geometryList[i].component_);
+            auto* shape = dynamic_cast<CollisionShape*>(geometryInfo.component_);
             if (shape)
             {
                 switch (shape->GetShapeType())
@@ -1117,7 +1124,7 @@ void NavigationMesh::GetTileGeometry(NavBuildData* build, ea::vector<NavigationG
 
                         unsigned lodLevel = shape->GetLodLevel();
                         for (unsigned j = 0; j < model->GetNumGeometries(); ++j)
-                            AddTriMeshGeometry(build, model->GetGeometry(j, lodLevel), transform);
+                            AddTriMeshGeometry(build, model->GetGeometry(j, lodLevel), transform, geometryInfo.areaId_);
                     }
                     break;
 
@@ -1136,6 +1143,8 @@ void NavigationMesh::GetTileGeometry(NavBuildData* build, ea::vector<NavigationG
 
                         for (unsigned j = 0; j < numIndices; ++j)
                             build->indices_.push_back(data->indexData_[j] + destVertexStart);
+
+                        build->areaIds_.insert(build->areaIds_.end(), numIndices / 3, geometryInfo.areaId_);
                     }
                     break;
 
@@ -1159,6 +1168,8 @@ void NavigationMesh::GetTileGeometry(NavBuildData* build, ea::vector<NavigationG
 
                         for (unsigned index : indices)
                             build->indices_.push_back(index + destVertexStart);
+
+                        build->areaIds_.insert(build->areaIds_.end(), std::size(indices) / 3, geometryInfo.areaId_);
                     }
                     break;
 
@@ -1169,19 +1180,23 @@ void NavigationMesh::GetTileGeometry(NavBuildData* build, ea::vector<NavigationG
                 continue;
             }
 #endif
-            auto* drawable = dynamic_cast<Drawable*>(geometryList[i].component_);
+            auto* drawable = dynamic_cast<Drawable*>(geometryInfo.component_);
             if (drawable)
             {
                 const ea::vector<SourceBatch>& batches = drawable->GetBatches();
 
                 for (unsigned j = 0; j < batches.size(); ++j)
-                    AddTriMeshGeometry(build, drawable->GetLodGeometry(j, geometryList[i].lodLevel_), transform);
+                {
+                    AddTriMeshGeometry(
+                        build, drawable->GetLodGeometry(j, geometryInfo.lodLevel_), transform, geometryInfo.areaId_);
+                }
             }
         }
     }
 }
 
-void NavigationMesh::AddTriMeshGeometry(NavBuildData* build, Geometry* geometry, const Matrix3x4& transform)
+void NavigationMesh::AddTriMeshGeometry(
+    NavBuildData* build, Geometry* geometry, const Matrix3x4& transform, unsigned char areaId)
 {
     if (!geometry)
         return;
@@ -1235,6 +1250,8 @@ void NavigationMesh::AddTriMeshGeometry(NavBuildData* build, Geometry* geometry,
             ++indices;
         }
     }
+
+    build->areaIds_.insert(build->areaIds_.end(), srcIndexCount / 3, areaId);
 }
 
 bool NavigationMesh::ReadTile(Deserializer& source, bool silent)
@@ -1336,14 +1353,13 @@ bool NavigationMesh::BuildTile(ea::vector<NavigationGeometryInfo>& geometryList,
         return false;
     }
 
-    unsigned numTriangles = build.indices_.size() / 3;
-    ea::shared_array<unsigned char> triAreas(new unsigned char[numTriangles]);
-    memset(triAreas.get(), 0, numTriangles);
+    const unsigned numTriangles = build.indices_.size() / 3;
+    URHO3D_ASSERT(numTriangles == build.areaIds_.size());
 
-    rcMarkWalkableTriangles(build.ctx_, cfg.walkableSlopeAngle, &build.vertices_[0].x_, build.vertices_.size(),
-        &build.indices_[0], numTriangles, triAreas.get());
+    DeduceAreaIds(cfg.walkableSlopeAngle, &build.vertices_[0].x_, &build.indices_[0], numTriangles, &build.areaIds_[0]);
+
     rcRasterizeTriangles(build.ctx_, &build.vertices_[0].x_, build.vertices_.size(), &build.indices_[0],
-        triAreas.get(), numTriangles, *build.heightField_, cfg.walkableClimb);
+        &build.areaIds_[0], numTriangles, *build.heightField_, cfg.walkableClimb);
     rcFilterLowHangingWalkableObstacles(build.ctx_, cfg.walkableClimb, *build.heightField_);
 
     rcFilterWalkableLowHeightSpans(build.ctx_, cfg.walkableHeight, *build.heightField_);

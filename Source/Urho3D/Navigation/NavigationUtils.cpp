@@ -6,6 +6,8 @@
 
 #include "Urho3D/Navigation/NavigationUtils.h"
 
+#include <Recast/Recast.h>
+
 namespace Urho3D
 {
 
@@ -58,6 +60,24 @@ unsigned CalculateMaxTiles(const BoundingBox& boundingBox, int tileSize, float c
     const IntVector2 numTiles = endTileIndex - beginTileIndex + IntVector2::ONE;
 
     return NextPowerOfTwo(static_cast<unsigned>(numTiles.x_ * numTiles.y_));
+}
+
+void DeduceAreaIds(
+    float walkableSlopeAngle, const float* vertices, const int* triangles, int numTriangles, unsigned char* areas)
+{
+    const float walkableThreshold = cosf(walkableSlopeAngle / 180.0f * M_PI);
+    for (int i = 0; i < numTriangles; ++i)
+    {
+        if (areas[i] != DeduceAreaId)
+            continue;
+
+        const int* triangle = &triangles[i * 3];
+        const Vector3 v0{&vertices[triangle[0] * 3]};
+        const Vector3 v1{&vertices[triangle[1] * 3]};
+        const Vector3 v2{&vertices[triangle[2] * 3]};
+        const Vector3 normal = (v1 - v0).CrossProduct(v2 - v0).Normalized();
+        areas[i] = normal.y_ > walkableThreshold ? RC_WALKABLE_AREA : 0;
+    }
 }
 
 } // namespace Urho3D

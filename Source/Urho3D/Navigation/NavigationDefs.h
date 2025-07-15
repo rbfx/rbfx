@@ -11,3 +11,11 @@ using dtPolyRef = uint64_t;
 #else
 using dtPolyRef = unsigned int;
 #endif
+
+namespace Urho3D
+{
+
+/// Special area ID. Evaluates to RC_WALKABLE_AREA or 0 depending on polygon slope.
+static constexpr unsigned char DeduceAreaId = 0xff;
+
+} // namespace Urho3D

@@ -1,33 +1,18 @@
-//
 // Copyright (c) 2008-2022 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2023-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
-#include "../Scene/Component.h"
+#include "Urho3D/Navigation/NavigationDefs.h"
+#include "Urho3D/Scene/Component.h"
 
 namespace Urho3D
 {
 
-/// Component which tags geometry for inclusion in the navigation mesh. Optionally auto-includes geometry from child nodes.
+/// Component which tags geometry for inclusion in the navigation mesh. Optionally auto-includes geometry from child
+/// nodes.
 class URHO3D_API Navigable : public Component
 {
     URHO3D_OBJECT(Navigable, Component);
@@ -38,20 +23,33 @@ public:
     /// Destruct.
     ~Navigable() override;
     /// Register object factory.
-    /// @nobind
     static void RegisterObject(Context* context);
 
     /// Set whether geometry is automatically collected from child nodes. Default true.
-    /// @property
-    void SetRecursive(bool enable);
-
+    void SetRecursive(bool enable) { recursive_ = enable; }
     /// Return whether geometry is automatically collected from child nodes.
-    /// @property
     bool IsRecursive() const { return recursive_; }
+
+    /// Set whether geometry is walkable. Default true.
+    void SetWalkable(bool enable) { walkable_ = enable; }
+    /// Return whether geometry is walkable.
+    bool IsWalkable() const { return walkable_; }
+
+    /// Set area ID of geometry. Deduced by default.
+    void SetAreaId(unsigned char enable) { areaId_ = enable; }
+    /// Return area ID of geometry.
+    unsigned char GetAreaId() const { return areaId_; }
+
+    /// Return effective area ID for navigation mesh builder.
+    unsigned char GetEffectiveAreaId() const { return areaId_ != DeduceAreaId || walkable_ ? areaId_ : 0; }
 
 private:
     /// Recursive flag.
-    bool recursive_;
+    bool recursive_{true};
+    /// Walkable flag.
+    bool walkable_{true};
+    /// Area ID.
+    unsigned char areaId_{DeduceAreaId};
 };
 
-}
+} // namespace Urho3D

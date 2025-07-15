@@ -621,14 +621,13 @@ int DynamicNavigationMesh::BuildTile(ea::vector<NavigationGeometryInfo>& geometr
         return 0;
     }
 
-    unsigned numTriangles = build.indices_.size() / 3;
-    ea::shared_array<unsigned char> triAreas(new unsigned char[numTriangles]);
-    memset(triAreas.get(), 0, numTriangles);
+    const unsigned numTriangles = build.indices_.size() / 3;
+    URHO3D_ASSERT(numTriangles == build.areaIds_.size());
 
-    rcMarkWalkableTriangles(build.ctx_, cfg.walkableSlopeAngle, &build.vertices_[0].x_, build.vertices_.size(),
-        &build.indices_[0], numTriangles, triAreas.get());
+    DeduceAreaIds(cfg.walkableSlopeAngle, &build.vertices_[0].x_, &build.indices_[0], numTriangles, &build.areaIds_[0]);
+
     rcRasterizeTriangles(build.ctx_, &build.vertices_[0].x_, build.vertices_.size(), &build.indices_[0],
-        triAreas.get(), numTriangles, *build.heightField_, cfg.walkableClimb);
+        &build.areaIds_[0], numTriangles, *build.heightField_, cfg.walkableClimb);
     rcFilterLowHangingWalkableObstacles(build.ctx_, cfg.walkableClimb, *build.heightField_);
 
     rcFilterLedgeSpans(build.ctx_, cfg.walkableHeight, cfg.walkableClimb, *build.heightField_);

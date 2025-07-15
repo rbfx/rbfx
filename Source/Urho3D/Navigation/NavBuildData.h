@@ -1,31 +1,14 @@
-//
 // Copyright (c) 2008-2022 the Urho3D project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2023-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
-#include <EASTL/vector.h>
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/Vector3.h"
 
-#include "../Math/BoundingBox.h"
-#include "../Math/Vector3.h"
+#include <EASTL/vector.h>
 
 class rcContext;
 
@@ -65,6 +48,8 @@ struct URHO3D_API NavBuildData
     ea::vector<Vector3> vertices_;
     /// Triangle indices from geometries.
     ea::vector<int> indices_;
+    /// Triangle area IDs.
+    ea::vector<unsigned char> areaIds_;
     /// Offmesh connection vertices.
     ea::vector<Vector3> offMeshVertices_;
     /// Offmesh connection radii.
@@ -118,4 +103,4 @@ struct URHO3D_API DynamicNavBuildData : public NavBuildData
     dtTileCacheAlloc* alloc_;
 };
 
-}
+} // namespace Urho3D

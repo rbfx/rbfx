@@ -6,6 +6,7 @@
 
 #include "Urho3D/Math/BoundingBox.h"
 #include "Urho3D/Math/Matrix3x4.h"
+#include "Urho3D/Navigation/NavigationDefs.h"
 
 #include <vector>
 
@@ -17,7 +18,7 @@ class Component;
 /// Description of a navigation mesh geometry component, with transform and bounds information.
 struct NavigationGeometryInfo
 {
-    /// Component.
+    /// Geometry component.
     Component* component_{};
     /// Geometry LOD level if applicable.
     unsigned lodLevel_{};
@@ -25,6 +26,8 @@ struct NavigationGeometryInfo
     Matrix3x4 transform_;
     /// Bounding box relative to the navigation mesh root node.
     BoundingBox boundingBox_;
+    /// Area ID.
+    unsigned char areaId_{DeduceAreaId};
 };
 
 /// Calculate bounding box of given geometry.
@@ -37,5 +40,10 @@ URHO3D_API BoundingBox CalculateTileBoundingBox(
 
 /// Calculate maximum number of tiles required to contain the given bounding box.
 URHO3D_API unsigned CalculateMaxTiles(const BoundingBox& boundingBox, int tileSize, float cellSize);
+
+/// Deduce area ID when applicable for walkable triangles.
+/// @see rcMarkWalkableTriangles
+URHO3D_API void DeduceAreaIds(
+    float walkableSlopeAngle, const float* vertices, const int* triangles, int numTriangles, unsigned char* areas);
 
 } // namespace Urho3D
