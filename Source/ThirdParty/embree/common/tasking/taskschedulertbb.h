@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -11,7 +11,7 @@
 #include "../sys/condition.h"
 #include "../sys/ref.h"
 
-#if defined(__WIN32__)
+#if defined(__WIN32__) && !defined(NOMINMAX)
 #  define NOMINMAX
 #endif
 

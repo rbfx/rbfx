@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -137,7 +137,7 @@ namespace embree
 	/* allocate new task on right side of stack */
         size_t oldStackPtr = stackPtr;
         TaskFunction* func = new (alloc(sizeof(ClosureTaskFunction<Closure>))) ClosureTaskFunction<Closure>(closure);
-        new (&tasks[right]) Task(func,thread.task,oldStackPtr,size);
+        new (&(tasks[right.load()])) Task(func,thread.task,oldStackPtr,size);
         right++;
 
 	/* also move left pointer */

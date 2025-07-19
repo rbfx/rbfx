@@ -1,10 +1,10 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include "../../include/embree3/rtcore.h"
-RTC_NAMESPACE_OPEN
+RTC_NAMESPACE_USE
 
 namespace embree
 {  

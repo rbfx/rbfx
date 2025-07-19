@@ -1,0 +1,46 @@
+%% Copyright 2009-2021 Intel Corporation
+%% SPDX-License-Identifier: Apache-2.0
+
+\IfFileExists{intelstyle/intel-spec.cls}
+{
+  \documentclass[oneside]{intelstyle/intel-spec}
+  \include{preamble}
+  \copyrightyears{2009--2020}
+  \trademarkacknowledgment{%
+  Intel, the Intel logo, Xeon, Intel Xeon Phi, and Intel Core are
+  trademarks of Intel Corporation in the U.S. and/or other countries.
+  }
+  \performancedisclaimer
+  \optimizationdisclaimer
+}
+{
+  \documentclass[oneside]{report}
+  \include{preamble}
+}
+
+\usepackage{longtable}
+
+\begin{document}
+
+\IfFileExists{intelstyle/intel-spec.cls} {
+  \title{Intel® Embree\vskip0.3\baselineskip\LARGE
+  \noindent High Performance Ray Tracing Kernels}
+  \version{\embreeversion}
+} {
+  \title{Intel® Embree\vskip0.3\baselineskip\LARGE
+  \noindent High Performance Ray Tracing Kernels \\
+  \embreeversion}
+}
+
+\maketitle
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{1}
+\tableofcontents
+
+\input{tmp/readme_all}
+
+\IfFileExists{intelstyle/intel-spec.cls} {
+  \makedisclaimers
+} {}
+
+\end{document}
