@@ -12,48 +12,8 @@ option(DOWNLOAD_CAPSTONE "Force download capstone" ON)
 option(DOWNLOAD_GLFW "Force download glfw" OFF)
 option(DOWNLOAD_FREETYPE "Force download freetype" OFF)
 
-# capstone
-
-pkg_check_modules(CAPSTONE capstone)
-if(CAPSTONE_FOUND AND NOT DOWNLOAD_CAPSTONE)
-    message(STATUS "Capstone found: ${CAPSTONE}")
-    add_library(TracyCapstone INTERFACE)
-    target_include_directories(TracyCapstone INTERFACE ${CAPSTONE_INCLUDE_DIRS})
-    target_link_libraries(TracyCapstone INTERFACE ${CAPSTONE_LINK_LIBRARIES})
-else()
-    CPMAddPackage(
-        NAME capstone
-        GITHUB_REPOSITORY capstone-engine/capstone
-        GIT_TAG 6.0.0-Alpha1
-        OPTIONS
-            "CAPSTONE_X86_ATT_DISABLE ON"
-            "CAPSTONE_ALPHA_SUPPORT OFF"
-            "CAPSTONE_HPPA_SUPPORT OFF"
-            "CAPSTONE_LOONGARCH_SUPPORT OFF"
-            "CAPSTONE_M680X_SUPPORT OFF"
-            "CAPSTONE_M68K_SUPPORT OFF"
-            "CAPSTONE_MIPS_SUPPORT OFF"
-            "CAPSTONE_MOS65XX_SUPPORT OFF"
-            "CAPSTONE_PPC_SUPPORT OFF"
-            "CAPSTONE_SPARC_SUPPORT OFF"
-            "CAPSTONE_SYSTEMZ_SUPPORT OFF"
-            "CAPSTONE_XCORE_SUPPORT OFF"
-            "CAPSTONE_TRICORE_SUPPORT OFF"
-            "CAPSTONE_TMS320C64X_SUPPORT OFF"
-            "CAPSTONE_M680X_SUPPORT OFF"
-            "CAPSTONE_EVM_SUPPORT OFF"
-            "CAPSTONE_WASM_SUPPORT OFF"
-            "CAPSTONE_BPF_SUPPORT OFF"
-            "CAPSTONE_RISCV_SUPPORT OFF"
-            "CAPSTONE_SH_SUPPORT OFF"
-            "CAPSTONE_XTENSA_SUPPORT OFF"
-            "CAPSTONE_BUILD_MACOS_THIN ON"
-        EXCLUDE_FROM_ALL TRUE
-    )
-    add_library(TracyCapstone INTERFACE)
-    target_include_directories(TracyCapstone INTERFACE ${capstone_SOURCE_DIR}/include/capstone)
-    target_link_libraries(TracyCapstone INTERFACE capstone)
-endif()
+# capstone - Using bundled version from rbfx
+# TracyCapstone is already provided by Source/ThirdParty/capstone/CMakeLists.txt
 
 # GLFW
 
@@ -102,17 +62,8 @@ endif()
 
 endif() # rbfx TracyFreetype
 
-# Zstd
-
-CPMAddPackage(
-    NAME zstd
-    GITHUB_REPOSITORY facebook/zstd
-    GIT_TAG v1.5.7
-    OPTIONS
-        "ZSTD_BUILD_SHARED OFF"
-    EXCLUDE_FROM_ALL TRUE
-    SOURCE_SUBDIR build/cmake
-)
+# Zstd - Using bundled version from rbfx
+# libzstd is already provided by Source/ThirdParty/zstd/CMakeLists.txt
 
 # Diff Template Library
 
@@ -185,13 +136,5 @@ if(NOT NO_FILESELECTOR AND NOT EMSCRIPTEN AND NOT TARGET nfd)	# rbfx
     )
 endif()
 
-# PPQSort
-
-CPMAddPackage(
-    NAME PPQSort
-    GITHUB_REPOSITORY GabTux/PPQSort
-    VERSION 1.0.5
-    EXCLUDE_FROM_ALL TRUE
-    PATCHES
-        "${CMAKE_CURRENT_LIST_DIR}/ppqsort-nodebug.patch"
-)
+# PPQSort - Using bundled version from rbfx
+# PPQSort::PPQSort is already provided by Source/ThirdParty/ppqsort/CMakeLists.txt
