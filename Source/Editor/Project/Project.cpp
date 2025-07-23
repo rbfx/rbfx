@@ -919,7 +919,8 @@ void Project::ProcessPendingRemoteCommands()
 
 void Project::RenderToolbar()
 {
-    if (Widgets::ToolbarButton(ICON_FA_FLOPPY_DISK, "Save Project"))
+    const ea::string tooltip = Format("Save Project ({})", Hotkey_SaveProject.ToString());
+    if (Widgets::ToolbarButton(ICON_FA_FLOPPY_DISK, tooltip.c_str()))
         Save();
     OnRenderProjectToolbar(this);
 
