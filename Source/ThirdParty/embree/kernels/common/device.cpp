@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #include "device.h"
@@ -38,18 +38,53 @@ namespace embree
 
   Device::Device (const char* cfg)
   {
-    /* check CPU */
-    if (!hasISA(ISA)) 
+    /* check that CPU supports lowest ISA */
+    if (!hasISA(ISA)) {
       throw_RTCError(RTC_ERROR_UNSUPPORTED_CPU,"CPU does not support " ISA_STR);
+    }
+
+    /* set default frequency level for detected CPU */
+    switch (getCPUModel()) {
+    case CPU::UNKNOWN:         frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::XEON_ICE_LAKE:   frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::CORE_ICE_LAKE:   frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::CORE_TIGER_LAKE: frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE_COMET_LAKE: frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE_CANNON_LAKE:frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE_KABY_LAKE:  frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::XEON_SKY_LAKE:   frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE_SKY_LAKE:   frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::XEON_BROADWELL:  frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::CORE_BROADWELL:  frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::XEON_HASWELL:    frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::CORE_HASWELL:    frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::XEON_IVY_BRIDGE: frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::CORE_IVY_BRIDGE: frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::SANDY_BRIDGE:    frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::NEHALEM:         frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE2:           frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE1:           frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::XEON_PHI_KNIGHTS_MILL   : frequency_level = FREQUENCY_SIMD512; break;
+    case CPU::XEON_PHI_KNIGHTS_LANDING: frequency_level = FREQUENCY_SIMD512; break;
+#if defined(__APPLE__)
+    case CPU::ARM:             frequency_level = FREQUENCY_SIMD256; break; // Apple M1 supports high throughput for SIMD4
+#else
+    case CPU::ARM:             frequency_level = FREQUENCY_SIMD128; break;
+#endif
+    }
 
     /* initialize global state */
+#if defined(EMBREE_CONFIG)
+    State::parseString(EMBREE_CONFIG);
+#endif
     State::parseString(cfg);
-    if (!ignore_config_files && FileName::executableFolder() != FileName(""))
-      State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(RTC_VERSION_MAJOR)));
-    if (!ignore_config_files && FileName::homeFolder() != FileName(""))
-      State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(RTC_VERSION_MAJOR)));
     State::verify();
 
+    /* check whether selected ISA is supported by the HW, as the user could have forced an unsupported ISA */    
+    if (!checkISASupport()) {
+      throw_RTCError(RTC_ERROR_UNSUPPORTED_CPU,"CPU does not support selected ISA");
+    }    
+    
     /*! do some internal tests */
     assert(isa::Cylinder::verify());
 
@@ -75,7 +110,7 @@ namespace embree
       //exceptions &= ~_MM_MASK_INEXACT;
       _MM_SET_EXCEPTION_MASK(exceptions);
     }
-
+    
     /* print info header */
     if (State::verbosity(1))
       print();
@@ -95,7 +130,7 @@ namespace embree
     /* ray stream SOA to AOS conversion */
 #if defined(EMBREE_RAY_PACKETS)
     RayStreamFilterFuncsType rayStreamFilterFuncs;
-    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(enabled_cpu_features,rayStreamFilterFuncs);
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(enabled_cpu_features,rayStreamFilterFuncs);
     rayStreamFilters = rayStreamFilterFuncs();
 #endif
   }
@@ -121,11 +156,8 @@ namespace embree
 #if defined(EMBREE_TARGET_AVX2)
     v += "AVX2 ";
 #endif
-#if defined(EMBREE_TARGET_AVX512KNL)
-    v += "AVX512KNL ";
-#endif
-#if defined(EMBREE_TARGET_AVX512SKX)
-    v += "AVX512SKX ";
+#if defined(EMBREE_TARGET_AVX512)
+    v += "AVX512 ";
 #endif
     return v;
   }
@@ -138,6 +170,9 @@ namespace embree
 #endif
 #if defined (EMBREE_BACKFACE_CULLING)
     v += "backfaceculling ";
+#endif
+#if defined (EMBREE_BACKFACE_CULLING_CURVES)
+    v += "backfacecullingcurves ";
 #endif
 #if defined(EMBREE_FILTER_FUNCTION)
     v += "intersection_filter ";
@@ -177,7 +212,11 @@ namespace embree
     std::cout << "    Tasking : ";
 #if defined(TASKING_TBB)
     std::cout << "TBB" << TBB_VERSION_MAJOR << "." << TBB_VERSION_MINOR << " ";
+  #if TBB_INTERFACE_VERSION >= 12002
+    std::cout << "TBB_header_interface_" << TBB_INTERFACE_VERSION << " TBB_lib_interface_" << TBB_runtime_interface_version() << " ";
+  #else
     std::cout << "TBB_header_interface_" << TBB_INTERFACE_VERSION << " TBB_lib_interface_" << tbb::TBB_runtime_interface_version() << " ";
+  #endif
 #endif
 #if defined(TASKING_INTERNAL)
     std::cout << "internal_tasking_system ";
@@ -406,7 +445,7 @@ namespace embree
 #endif
 
 #if defined(EMBREE_TARGET_SIMD16) && defined(EMBREE_RAY_PACKETS)
-    case RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED: return hasISA(AVX512KNL) | hasISA(AVX512SKX);
+    case RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED: return hasISA(AVX512);
 #else
     case RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED: return 0;
 #endif
@@ -427,6 +466,12 @@ namespace embree
     case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED: return 1;
 #else
     case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED: return 0;
+#endif
+
+#if defined(EMBREE_BACKFACE_CULLING_CURVES)
+    case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_CURVES_ENABLED: return 1;
+#else
+    case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_CURVES_ENABLED: return 0;
 #endif
 
 #if defined(EMBREE_COMPACT_POLYS)

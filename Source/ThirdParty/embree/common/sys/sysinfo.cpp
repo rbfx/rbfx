@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #include "sysinfo.h"
@@ -21,29 +21,33 @@ namespace embree
   
   std::string getPlatformName() 
   {
-#if defined(__LINUX__) && !defined(__X86_64__)
+#if defined(__ANDROID__) && !defined(__64BIT__)
+    return "Android (32bit)";
+#elif defined(__ANDROID__) && defined(__64BIT__)
+    return "Android (64bit)";
+#elif defined(__LINUX__) && !defined(__64BIT__)
     return "Linux (32bit)";
-#elif defined(__LINUX__) && defined(__X86_64__)
+#elif defined(__LINUX__) && defined(__64BIT__)
     return "Linux (64bit)";
-#elif defined(__FREEBSD__) && !defined(__X86_64__)
+#elif defined(__FREEBSD__) && !defined(__64BIT__)
     return "FreeBSD (32bit)";
-#elif defined(__FREEBSD__) && defined(__X86_64__)
+#elif defined(__FREEBSD__) && defined(__64BIT__)
     return "FreeBSD (64bit)";
-#elif defined(__CYGWIN__) && !defined(__X86_64__)
+#elif defined(__CYGWIN__) && !defined(__64BIT__)
     return "Cygwin (32bit)";
-#elif defined(__CYGWIN__) && defined(__X86_64__)
+#elif defined(__CYGWIN__) && defined(__64BIT__)
     return "Cygwin (64bit)";
-#elif defined(__WIN32__) && !defined(__X86_64__)
+#elif defined(__WIN32__) && !defined(__64BIT__)
     return "Windows (32bit)";
-#elif defined(__WIN32__) && defined(__X86_64__)
+#elif defined(__WIN32__) && defined(__64BIT__)
     return "Windows (64bit)";
-#elif defined(__MACOSX__) && !defined(__X86_64__)
+#elif defined(__MACOSX__) && !defined(__64BIT__)
     return "Mac OS X (32bit)";
-#elif defined(__MACOSX__) && defined(__X86_64__)
+#elif defined(__MACOSX__) && defined(__64BIT__)
     return "Mac OS X (64bit)";
-#elif defined(__UNIX__) && !defined(__X86_64__)
+#elif defined(__UNIX__) && !defined(__64BIT__)
     return "Unix (32bit)";
-#elif defined(__UNIX__) && defined(__X86_64__)
+#elif defined(__UNIX__) && defined(__64BIT__)
     return "Unix (64bit)";
 #else
     return "Unknown";
@@ -79,6 +83,7 @@ namespace embree
 
   std::string getCPUVendor()
   {
+#if defined(__X86_ASM__)
     int cpuinfo[4]; 
     __cpuid (cpuinfo, 0); 
     int name[4];
@@ -87,51 +92,119 @@ namespace embree
     name[2] = cpuinfo[2];
     name[3] = 0;
     return (char*)name;
+#elif defined(__ARM_NEON)
+    return "ARM";
+#else
+    return "Unknown";
+#endif
   }
 
-  CPUModel getCPUModel() 
+  CPU getCPUModel() 
   {
+#if defined(__X86_ASM__)
     if (getCPUVendor() != "GenuineIntel")
-      return CPU_UNKNOWN;
+      return CPU::UNKNOWN;
     
     int out[4];
     __cpuid(out, 0);
-    if (out[0] < 1) return CPU_UNKNOWN;
+    if (out[0] < 1) return CPU::UNKNOWN;
     __cpuid(out, 1);
-    int family = ((out[0] >> 8) & 0x0F) + ((out[0] >> 20) & 0xFF);
-    int model  = ((out[0] >> 4) & 0x0F) | ((out[0] >> 12) & 0xF0);
-    if (family !=   6) return CPU_UNKNOWN;           // earlier than P6
-    if (model == 0x0E) return CPU_CORE1;             // Core 1
-    if (model == 0x0F) return CPU_CORE2;             // Core 2, 65 nm
-    if (model == 0x16) return CPU_CORE2;             // Core 2, 65 nm Celeron
-    if (model == 0x17) return CPU_CORE2;             // Core 2, 45 nm
-    if (model == 0x1A) return CPU_CORE_NEHALEM;      // Core i7, Nehalem
-    if (model == 0x1E) return CPU_CORE_NEHALEM;      // Core i7
-    if (model == 0x1F) return CPU_CORE_NEHALEM;      // Core i7
-    if (model == 0x2C) return CPU_CORE_NEHALEM;      // Core i7, Xeon
-    if (model == 0x2E) return CPU_CORE_NEHALEM;      // Core i7, Xeon
-    if (model == 0x2A) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
-    if (model == 0x2D) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
-    if (model == 0x45) return CPU_HASWELL;           // Haswell
-    if (model == 0x3C) return CPU_HASWELL;           // Haswell
-    if (model == 0x55) return CPU_SKYLAKE_SERVER;   // Skylake server based CPUs
-    return CPU_UNKNOWN;
+
+    /* please see CPUID documentation for these formulas */
+    uint32_t family_ID          = (out[0] >>  8) & 0x0F;
+    uint32_t extended_family_ID = (out[0] >> 20) & 0xFF;
+    
+    uint32_t model_ID           = (out[0] >>  4) & 0x0F;
+    uint32_t extended_model_ID  = (out[0] >> 16) & 0x0F;
+    
+    uint32_t DisplayFamily = family_ID;
+    if (family_ID == 0x0F)
+      DisplayFamily += extended_family_ID;
+    
+    uint32_t DisplayModel = model_ID;
+    if (family_ID == 0x06 || family_ID == 0x0F)
+      DisplayModel += extended_model_ID << 4;
+
+    uint32_t DisplayFamily_DisplayModel = (DisplayFamily << 8) + (DisplayModel << 0);
+
+    // Data from Intel® 64 and IA-32 Architectures, Volume 4, Chapter 2, Table 2-1 (CPUID Signature Values of DisplayFamily_DisplayModel)
+    if (DisplayFamily_DisplayModel == 0x067D) return CPU::CORE_ICE_LAKE;
+    if (DisplayFamily_DisplayModel == 0x067E) return CPU::CORE_ICE_LAKE;
+    if (DisplayFamily_DisplayModel == 0x068C) return CPU::CORE_TIGER_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06A5) return CPU::CORE_COMET_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06A6) return CPU::CORE_COMET_LAKE;
+    if (DisplayFamily_DisplayModel == 0x0666) return CPU::CORE_CANNON_LAKE;
+    if (DisplayFamily_DisplayModel == 0x068E) return CPU::CORE_KABY_LAKE;
+    if (DisplayFamily_DisplayModel == 0x069E) return CPU::CORE_KABY_LAKE;
+    if (DisplayFamily_DisplayModel == 0x066A) return CPU::XEON_ICE_LAKE;
+    if (DisplayFamily_DisplayModel == 0x066C) return CPU::XEON_ICE_LAKE;
+    if (DisplayFamily_DisplayModel == 0x0655) return CPU::XEON_SKY_LAKE;
+    if (DisplayFamily_DisplayModel == 0x064E) return CPU::CORE_SKY_LAKE;
+    if (DisplayFamily_DisplayModel == 0x065E) return CPU::CORE_SKY_LAKE;
+    if (DisplayFamily_DisplayModel == 0x0656) return CPU::XEON_BROADWELL;
+    if (DisplayFamily_DisplayModel == 0x064F) return CPU::XEON_BROADWELL;
+    if (DisplayFamily_DisplayModel == 0x0647) return CPU::CORE_BROADWELL;
+    if (DisplayFamily_DisplayModel == 0x063D) return CPU::CORE_BROADWELL;
+    if (DisplayFamily_DisplayModel == 0x063F) return CPU::XEON_HASWELL;
+    if (DisplayFamily_DisplayModel == 0x063C) return CPU::CORE_HASWELL;
+    if (DisplayFamily_DisplayModel == 0x0645) return CPU::CORE_HASWELL;
+    if (DisplayFamily_DisplayModel == 0x0646) return CPU::CORE_HASWELL;
+    if (DisplayFamily_DisplayModel == 0x063E) return CPU::XEON_IVY_BRIDGE;
+    if (DisplayFamily_DisplayModel == 0x063A) return CPU::CORE_IVY_BRIDGE;
+    if (DisplayFamily_DisplayModel == 0x062D) return CPU::SANDY_BRIDGE;
+    if (DisplayFamily_DisplayModel == 0x062F) return CPU::SANDY_BRIDGE;
+    if (DisplayFamily_DisplayModel == 0x062A) return CPU::SANDY_BRIDGE;
+    if (DisplayFamily_DisplayModel == 0x062E) return CPU::NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x0625) return CPU::NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x062C) return CPU::NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x061E) return CPU::NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x061F) return CPU::NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x061A) return CPU::NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x061D) return CPU::NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x0617) return CPU::CORE2;
+    if (DisplayFamily_DisplayModel == 0x060F) return CPU::CORE2;
+    if (DisplayFamily_DisplayModel == 0x060E) return CPU::CORE1;
+
+    if (DisplayFamily_DisplayModel == 0x0685) return CPU::XEON_PHI_KNIGHTS_MILL;
+    if (DisplayFamily_DisplayModel == 0x0657) return CPU::XEON_PHI_KNIGHTS_LANDING;
+    
+#elif defined(__ARM_NEON)
+    return CPU::ARM;
+#endif
+    
+    return CPU::UNKNOWN;
   }
 
-  std::string stringOfCPUModel(CPUModel model)
+  std::string stringOfCPUModel(CPU model)
   {
     switch (model) {
-    case CPU_CORE1           : return "Core1";
-    case CPU_CORE2           : return "Core2";
-    case CPU_CORE_NEHALEM    : return "Nehalem";
-    case CPU_CORE_SANDYBRIDGE: return "SandyBridge";
-    case CPU_HASWELL         : return "Haswell";
-    case CPU_KNIGHTS_LANDING : return "Knights Landing";
-    case CPU_SKYLAKE_SERVER  : return "Skylake Server";
-    default                  : return "Unknown CPU";
+    case CPU::XEON_ICE_LAKE           : return "Xeon Ice Lake";
+    case CPU::CORE_ICE_LAKE           : return "Core Ice Lake";
+    case CPU::CORE_TIGER_LAKE         : return "Core Tiger Lake";
+    case CPU::CORE_COMET_LAKE         : return "Core Comet Lake";
+    case CPU::CORE_CANNON_LAKE        : return "Core Cannon Lake";
+    case CPU::CORE_KABY_LAKE          : return "Core Kaby Lake";
+    case CPU::XEON_SKY_LAKE           : return "Xeon Sky Lake";
+    case CPU::CORE_SKY_LAKE           : return "Core Sky Lake";
+    case CPU::XEON_PHI_KNIGHTS_MILL   : return "Xeon Phi Knights Mill";
+    case CPU::XEON_PHI_KNIGHTS_LANDING: return "Xeon Phi Knights Landing";
+    case CPU::XEON_BROADWELL          : return "Xeon Broadwell";
+    case CPU::CORE_BROADWELL          : return "Core Broadwell";
+    case CPU::XEON_HASWELL            : return "Xeon Haswell";
+    case CPU::CORE_HASWELL            : return "Core Haswell";
+    case CPU::XEON_IVY_BRIDGE         : return "Xeon Ivy Bridge";
+    case CPU::CORE_IVY_BRIDGE         : return "Core Ivy Bridge";
+    case CPU::SANDY_BRIDGE            : return "Sandy Bridge";
+    case CPU::NEHALEM                 : return "Nehalem";
+    case CPU::CORE2                   : return "Core2";
+    case CPU::CORE1                   : return "Core";
+    case CPU::ARM                     : return "ARM";
+    case CPU::UNKNOWN                 : return "Unknown CPU";
     }
+    return "Unknown CPU (error)";
   }
 
+#if defined(__X86_ASM__)
   /* constants to access destination registers of CPUID instruction */
   static const int EAX = 0;
   static const int EBX = 1;
@@ -174,10 +247,12 @@ namespace embree
   
   /* cpuid[eax=7,ecx=0].ecx */
   static const int CPU_FEATURE_BIT_AVX512VBMI = 1 << 1;   // AVX512VBMI (vector bit manipulation instructions)
+#endif
 
+#if defined(__X86_ASM__)
   __noinline int64_t get_xcr0() 
   {
-#if defined (__WIN32__)
+#if defined (__WIN32__) && !defined (__MINGW32__) && defined(_XCR_XFEATURE_ENABLED_MASK)
     int64_t xcr0 = 0; // int64_t is workaround for compiler bug under VS2013, Win32
     xcr0 = _xgetbv(0);
     return xcr0;
@@ -187,9 +262,11 @@ namespace embree
     return xcr0;
 #endif
   }
+#endif
 
   int getCPUFeatures()
   {
+#if defined(__X86_ASM__)
     /* cache CPU features access */
     static int cpu_features = 0;
     if (cpu_features) 
@@ -242,7 +319,7 @@ namespace embree
     if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSE4_2) cpu_features |= CPU_FEATURE_SSE42;
     if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_POPCNT) cpu_features |= CPU_FEATURE_POPCNT;
     
-    if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_AVX   ) cpu_features |= CPU_FEATURE_AVX | CPU_FEATURE_PSEUDO_HIFREQ256BIT;
+    if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_AVX   ) cpu_features |= CPU_FEATURE_AVX;
     if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_F16C  ) cpu_features |= CPU_FEATURE_F16C;
     if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_RDRAND) cpu_features |= CPU_FEATURE_RDRAND;
     if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX2  ) cpu_features |= CPU_FEATURE_AVX2;
@@ -261,10 +338,29 @@ namespace embree
     if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512VL  ) cpu_features |= CPU_FEATURE_AVX512VL;
     if (cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI;
 
-    if (getCPUModel() == CPU_SKYLAKE_SERVER)
-      cpu_features &= ~CPU_FEATURE_PSEUDO_HIFREQ256BIT;
-
     return cpu_features;
+
+#elif defined(__ARM_NEON) || defined(__EMSCRIPTEN__)
+
+    int cpu_features = CPU_FEATURE_NEON|CPU_FEATURE_SSE|CPU_FEATURE_SSE2;
+    cpu_features |= CPU_FEATURE_SSE3|CPU_FEATURE_SSSE3|CPU_FEATURE_SSE42;
+    cpu_features |= CPU_FEATURE_XMM_ENABLED;
+    cpu_features |= CPU_FEATURE_YMM_ENABLED;
+    cpu_features |= CPU_FEATURE_SSE41 | CPU_FEATURE_RDRAND | CPU_FEATURE_F16C;
+    cpu_features |= CPU_FEATURE_POPCNT;
+    cpu_features |= CPU_FEATURE_AVX;
+    cpu_features |= CPU_FEATURE_AVX2;
+    cpu_features |= CPU_FEATURE_FMA3;
+    cpu_features |= CPU_FEATURE_LZCNT;
+    cpu_features |= CPU_FEATURE_BMI1;
+    cpu_features |= CPU_FEATURE_BMI2;
+    cpu_features |= CPU_FEATURE_NEON_2X;
+    return cpu_features;
+
+#else
+    /* Unknown CPU. */
+    return 0;
+#endif
   }
 
   std::string stringOfCPUFeatures(int features)
@@ -297,6 +393,8 @@ namespace embree
     if (features & CPU_FEATURE_AVX512VL) str += "AVX512VL ";
     if (features & CPU_FEATURE_AVX512IFMA) str += "AVX512IFMA ";
     if (features & CPU_FEATURE_AVX512VBMI) str += "AVX512VBMI ";
+    if (features & CPU_FEATURE_NEON) str += "NEON ";
+    if (features & CPU_FEATURE_NEON_2X) str += "2xNEON ";
     return str;
   }
   
@@ -310,8 +408,10 @@ namespace embree
     if (isa == SSE42) return "SSE4.2";
     if (isa == AVX) return "AVX";
     if (isa == AVX2) return "AVX2";
-    if (isa == AVX512KNL) return "AVX512KNL";
-    if (isa == AVX512SKX) return "AVX512SKX";
+    if (isa == AVX512) return "AVX512";
+
+    if (isa == NEON) return "NEON";
+    if (isa == NEON_2X) return "2xNEON";
     return "UNKNOWN";
   }
 
@@ -331,8 +431,10 @@ namespace embree
     if (hasISA(features,AVX)) v += "AVX ";
     if (hasISA(features,AVXI)) v += "AVXI ";
     if (hasISA(features,AVX2)) v += "AVX2 ";
-    if (hasISA(features,AVX512KNL)) v += "AVX512KNL ";
-    if (hasISA(features,AVX512SKX)) v += "AVX512SKX ";
+    if (hasISA(features,AVX512)) v += "AVX512 ";
+
+    if (hasISA(features,NEON)) v += "NEON ";
+    if (hasISA(features,NEON_2X)) v += "2xNEON ";
     return v;
   }
 }
@@ -536,6 +638,10 @@ namespace embree
 #include <sys/time.h>
 #include <pthread.h>
 
+#if defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+#endif
+
 namespace embree
 {
   unsigned int getNumberOfLogicalThreads() 
@@ -543,9 +649,25 @@ namespace embree
     static int nThreads = -1;
     if (nThreads != -1) return nThreads;
 
-#if defined(__MACOSX__)
+#if defined(__MACOSX__) || defined(__ANDROID__)
     nThreads = sysconf(_SC_NPROCESSORS_ONLN); // does not work in Linux LXC container
     assert(nThreads);
+#elif defined(__EMSCRIPTEN__)
+    // WebAssembly supports pthreads, but not pthread_getaffinity_np. Get the number of logical
+    // threads from the browser or Node.js using JavaScript.
+    nThreads = MAIN_THREAD_EM_ASM_INT({
+        const isBrowser = typeof window !== 'undefined';
+        const isNode = typeof process !== 'undefined' && process.versions != null &&
+            process.versions.node != null;
+        if (isBrowser) {
+            // Return 1 if the browser does not expose hardwareConcurrency.
+            return window.navigator.hardwareConcurrency || 1;
+        } else if (isNode) {
+            return require('os').cpus().length;
+        } else {
+            return 1;
+        }
+    });
 #else
     cpu_set_t set;
     if (pthread_getaffinity_np(pthread_self(), sizeof(set), &set) == 0)

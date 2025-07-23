@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -275,5 +275,6 @@ namespace embree
     DEFINE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelTriangle4iMeshSAH,void* COMMA Scene* COMMA bool);
     DEFINE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelQuadMeshSAH,void* COMMA Scene* COMMA bool);
     DEFINE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelVirtualSAH,void* COMMA Scene* COMMA bool);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelInstanceSAH,void* COMMA Scene* COMMA Geometry::GTypeMask COMMA bool);
   };
 }

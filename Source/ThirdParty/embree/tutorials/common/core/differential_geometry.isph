@@ -1,0 +1,21 @@
+// Copyright 2009-2021 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+#pragma once
+
+#include "../../../include/embree3/rtcore.isph"
+#include "../math/vec.isph"
+
+struct DifferentialGeometry
+{
+  unsigned int instIDs[RTC_MAX_INSTANCE_LEVEL_COUNT];
+  unsigned int geomID;
+  unsigned int primID;
+  float u,v;
+  Vec3f P;
+  Vec3f Ng;
+  Vec3f Ns;
+  Vec3f Tx; //direction along hair
+  Vec3f Ty;
+  float eps;
+};

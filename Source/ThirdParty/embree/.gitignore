@@ -1,0 +1,11 @@
+*.user
+Win32
+x64
+*.suo
+*.ncb
+.*sw?
+.DS_Store
+kernels/config.h
+kernels/hash.h
+include/embree3/rtcore_config.h
+build

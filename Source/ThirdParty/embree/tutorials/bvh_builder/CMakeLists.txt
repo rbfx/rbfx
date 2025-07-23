@@ -1,0 +1,15 @@
+## Copyright 2009-2021 Intel Corporation
+## SPDX-License-Identifier: Apache-2.0
+
+SET(EMBREE_ISPC_SUPPORT OFF)
+
+IF (TASKING_TBB)
+  SET(ADDITIONAL_LIBRARIES ${TBB_LIBRARIES})
+ENDIF()
+
+INCLUDE(tutorial)
+ADD_TUTORIAL(bvh_builder)
+
+IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
+  ADD_TEST(NAME bvh_builder COMMAND bvh_builder)
+ENDIF()

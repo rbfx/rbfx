@@ -1,0 +1,15 @@
+## Copyright 2009-2021 Intel Corporation
+## SPDX-License-Identifier: Apache-2.0
+
+INCLUDE(tutorial)
+ADD_TUTORIAL(hair_geometry)
+IF (EMBREE_RAY_PACKETS)
+  ADD_TUTORIAL_ISPC(hair_geometry)
+ENDIF()
+
+IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
+  IF (NOT ${EMBREE_RAY_PACKETS})
+    SET(DISABLE_ISPC_TEST ON)
+  ENDIF()
+  ADD_EMBREE_TEST(hair_geometry)
+ENDIF()
