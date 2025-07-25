@@ -30,39 +30,9 @@ list (REMOVE_ITEM SOURCE_FILES Editor.cpp EditorWrapper.cpp)
 #
 # Groups sources so that they're displayed in IDE matching their layout in the filesystem
 #
-file (GLOB CoreFiles ${CMAKE_CURRENT_SOURCE_DIR} Core/*.*)
-source_group(Core FILES ${CoreFiles})
-
-file (GLOB ProjectFiles ${CMAKE_CURRENT_SOURCE_DIR} Project/*.*)
-source_group(Project FILES ${ProjectFiles})
-
-file(GLOB Foundation ${CMAKE_CURRENT_SOURCE_DIR} Foundation/*.*)
-source_group(Foundation FILES ${Foundation})
-
-file(GLOB Glue ${CMAKE_CURRENT_SOURCE_DIR} Foundation/Glue/*.*)
-source_group(Foundation/Glue FILES ${Glue})
-
-file(GLOB InspectorTab ${CMAKE_CURRENT_SOURCE_DIR} Foundation/InspectorTab/*.*)
-source_group(Foundation/InspectorTab FILES ${InspectorTab})
-
-file(GLOB ResourceBrowserTab ${CMAKE_CURRENT_SOURCE_DIR} Foundation/ResourceBrowserTab/*.*)
-source_group(Foundation/ResourceBrowserTab FILES ${ResourceBrowserTab})
-
-file(GLOB SceneViewTab ${CMAKE_CURRENT_SOURCE_DIR} Foundation/SceneViewTab/*.*)
-source_group(Foundation/SceneViewTab FILES ${SceneViewTab})
-
-file(GLOB SettingsTab ${CMAKE_CURRENT_SOURCE_DIR} Foundation/SettingsTab/*.*)
-source_group(Foundation/SettingsTab FILES ${SettingsTab})
-
-file(GLOB Shared ${CMAKE_CURRENT_SOURCE_DIR} Foundation/Shared/*.*)
-source_group(Foundation/Shared FILES ${Shared})
-
-file(GLOB Assets ${CMAKE_CURRENT_SOURCE_DIR} Assets/*.*)
-source_group(Assets FILES ${Assets})
-
-
-file (GLOB sourceFiles ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.h *.hpp)
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${sourceFiles})
+group_sources()
+file (GLOB rootFiles ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.h *.hpp)
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${rootFiles})
 
 # Always export Editor without entry point as EditorLibrary.
 # TODO: Support SHARED EditorLibrary for external Editor plugins.
