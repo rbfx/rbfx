@@ -1890,14 +1890,14 @@ void SoundSource::MixNull(float timeStep, float effectiveFrequency)
 
 float SoundSource::GetEffectiveTimeScale() const
 {
+    if (ignoreSceneTimeScale_)
+        return 1.0f;
+
     if (!node_ || !node_->GetScene())
         return 0.0f;
 
     if (!IsEnabledEffective())
         return 0.0f;
-
-    if (ignoreSceneTimeScale_)
-        return 1.0f;
 
     return node_->GetScene()->GetEffectiveTimeScale();
 }
