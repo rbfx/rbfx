@@ -40,6 +40,7 @@ SoundInspector_::SoundInspector_(Project* project)
     , project_(project)
     , soundSource_(MakeShared<SoundSource>(context_))
 {
+    soundSource_->SetIgnoreSceneTimeScale(true);
     project_->OnRequest.Subscribe(this, &SoundInspector_::OnProjectRequest);
 }
 

@@ -27,6 +27,13 @@ endif ()
 file (GLOB_RECURSE SOURCE_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.h *.hpp)
 list (REMOVE_ITEM SOURCE_FILES Editor.cpp EditorWrapper.cpp)
 
+#
+# Groups sources so that they're displayed in IDE matching their layout in the filesystem
+#
+group_sources()
+file (GLOB rootFiles ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.h *.hpp)
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${rootFiles})
+
 # Always export Editor without entry point as EditorLibrary.
 # TODO: Support SHARED EditorLibrary for external Editor plugins.
 add_library (EditorLibrary STATIC ${SOURCE_FILES})

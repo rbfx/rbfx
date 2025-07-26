@@ -81,14 +81,14 @@ Variant Spline::GetPoint(float f) const
                 if (knots_.front() != knots_.back())
                 {
                     fullKnots.push_back(knots_.front());
-                    fullKnots.push_back(knots_);
+                    fullKnots.insert(fullKnots.end(), knots_.begin(), knots_.end());
                     fullKnots.push_back(knots_.back());
                 }
                 // Cyclic case: smooth the tangents
                 else
                 {
                     fullKnots.push_back(knots_[knots_.size() - 2]);
-                    fullKnots.push_back(knots_);
+                    fullKnots.insert(fullKnots.end(), knots_.begin(), knots_.end());
                     fullKnots.push_back(knots_[1]);
                 }
             }
