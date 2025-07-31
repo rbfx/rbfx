@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 // TODO: 
@@ -275,7 +275,7 @@ namespace embree
               openNodesBasedOnExtend(set);
 #endif
 
-            /* disable opening when unsufficient space for opening a node available */
+            /* disable opening when insufficient space for opening a node available */
             if (set.ext_range_size() < max_open_size-1) 
               set.set_ext_range(set.end()); /* disable opening */
           }

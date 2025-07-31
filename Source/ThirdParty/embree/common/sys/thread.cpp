@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #include "thread.h"
@@ -6,7 +6,14 @@
 #include "string.h"
 
 #include <iostream>
+#if defined(__ARM_NEON)
+#include "../simd/arm/emulation.h"
+#else
 #include <xmmintrin.h>
+#if defined(__EMSCRIPTEN__)
+#include "../simd/wasm/emulation.h"
+#endif
+#endif
 
 #if defined(PTHREADS_WIN32)
 #pragma comment (lib, "pthreadVC.lib")
@@ -154,7 +161,7 @@ namespace embree
 /// Linux Platform
 ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__LINUX__)
+#if defined(__LINUX__) && !defined(__ANDROID__)
 
 #include <fstream>
 #include <sstream>
@@ -213,6 +220,8 @@ namespace embree
 
     /* find correct thread to affinitize to */
     cpu_set_t set;
+    CPU_ZERO(&set);
+    
     if (pthread_getaffinity_np(pthread_self(), sizeof(set), &set) == 0)
     {
       for (int i=0, j=0; i<CPU_SETSIZE; i++)
@@ -235,11 +244,31 @@ namespace embree
   {
     cpu_set_t cset;
     CPU_ZERO(&cset);
-    size_t threadID = mapThreadID(affinity);
+    //size_t threadID = mapThreadID(affinity); // this is not working properly in LXC containers when some processors are disabled
+    size_t threadID = affinity;
     CPU_SET(threadID, &cset);
 
-    if (pthread_setaffinity_np(pthread_self(), sizeof(cset), &cset) != 0)
-      WARNING("pthread_setaffinity_np failed to set affinity to thread "+std::to_string(threadID)); // on purpose only a warning
+    pthread_setaffinity_np(pthread_self(), sizeof(cset), &cset);
+  }
+}
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+/// Android Platform
+////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__ANDROID__)
+
+namespace embree
+{
+  /*! set affinity of the calling thread */
+  void setAffinity(ssize_t affinity)
+  {
+    cpu_set_t cset;
+    CPU_ZERO(&cset);
+    CPU_SET(affinity, &cset);
+
+    sched_setaffinity(0, sizeof(cset), &cset);
   }
 }
 #endif
@@ -261,8 +290,22 @@ namespace embree
     CPU_ZERO(&cset);
     CPU_SET(affinity, &cset);
 
-    if (pthread_setaffinity_np(pthread_self(), sizeof(cset), &cset) != 0)
-      WARNING("pthread_setaffinity_np failed"); // on purpose only a warning
+    pthread_setaffinity_np(pthread_self(), sizeof(cset), &cset);
+  }
+}
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+/// WebAssembly Platform
+////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__EMSCRIPTEN__)
+namespace embree
+{
+  /*! set affinity of the calling thread */
+  void setAffinity(ssize_t affinity)
+  {
+      // Setting thread affinity is not supported in WASM.
   }
 }
 #endif
@@ -282,10 +325,14 @@ namespace embree
   /*! set affinity of the calling thread */
   void setAffinity(ssize_t affinity)
   {
+#if !defined(__ARM_NEON) // affinity seems not supported on M1 chip
+    
     thread_affinity_policy ap;
     ap.affinity_tag = affinity;
     if (thread_policy_set(mach_thread_self(),THREAD_AFFINITY_POLICY,(thread_policy_t)&ap,THREAD_AFFINITY_POLICY_COUNT) != KERN_SUCCESS)
       WARNING("setting thread affinity failed"); // on purpose only a warning
+    
+#endif
   }
 }
 #endif
@@ -349,22 +396,27 @@ namespace embree
     pthread_attr_destroy(&attr);
 
     /* set affinity */
-#if defined(__LINUX__)
+#if defined(__LINUX__) && !defined(__ANDROID__)
     if (threadID >= 0) {
       cpu_set_t cset;
       CPU_ZERO(&cset);
       threadID = mapThreadID(threadID);
       CPU_SET(threadID, &cset);
-      if (pthread_setaffinity_np(*tid, sizeof(cset), &cset))
-        WARNING("pthread_setaffinity_np failed to set affinity to thread "+std::to_string(threadID)); // on purpose only a warning
+      pthread_setaffinity_np(*tid, sizeof(cset), &cset);
     }
 #elif defined(__FreeBSD__)
     if (threadID >= 0) {
       cpuset_t cset;
       CPU_ZERO(&cset);
       CPU_SET(threadID, &cset);
-      if (pthread_setaffinity_np(*tid, sizeof(cset), &cset))
-        WARNING("pthread_setaffinity_np failed"); // on purpose only a warning
+      pthread_setaffinity_np(*tid, sizeof(cset), &cset);
+    }
+#elif defined(__ANDROID__)
+    if (threadID >= 0) {
+      cpu_set_t cset;
+      CPU_ZERO(&cset);
+      CPU_SET(threadID, &cset);
+      sched_setaffinity(pthread_gettid_np(*tid), sizeof(cset), &cset);
     }
 #endif
 
@@ -385,8 +437,12 @@ namespace embree
 
   /*! destroy a hardware thread by its handle */
   void destroyThread(thread_t tid) {
+#if defined(__ANDROID__)
+    FATAL("Can't destroy threads on Android."); // pthread_cancel not implemented.
+#else
     pthread_cancel(*(pthread_t*)tid);
     delete (pthread_t*)tid;
+#endif
   }
 
   /*! creates thread local storage */

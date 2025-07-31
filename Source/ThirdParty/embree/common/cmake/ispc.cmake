@@ -1,4 +1,4 @@
-## Copyright 2009-2020 Intel Corporation
+## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
 # ##################################################################
@@ -12,7 +12,7 @@ ENDMACRO ()
 
 IF (EMBREE_ISPC_SUPPORT)
 
-# ISPC versions to look for, in decending order (newest first)
+# ISPC versions to look for, in descending order (newest first)
 SET(ISPC_VERSION_WORKING "1.9.1" "1.9.0" "1.8.3" "1.8.2")
 LIST(GET ISPC_VERSION_WORKING -1 ISPC_VERSION_REQUIRED)
 
@@ -32,7 +32,7 @@ IF (NOT EMBREE_ISPC_EXECUTABLE)
   ENDIF()
   FOREACH(ver ${ISPC_VERSION_WORKING})
     FOREACH(suffix ${ISPC_DIR_SUFFIX})
-      LIST(APPEND ISPC_DIR_HINT ${PROJECT_SOURCE_DIR}/../ispc-v${ver}-${suffix})
+      LIST(APPEND ISPC_DIR_HINT "${PROJECT_SOURCE_DIR}/../ispc-v${ver}-${suffix}")
     ENDFOREACH()
   ENDFOREACH()
 
@@ -73,12 +73,16 @@ MACRO (ISPC_COMPILE)
   STRING(REPLACE ";" "," ISPC_TARGET_ARGS "${ISPC_TARGETS}")
 
   IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    SET(ISPC_ARCHITECTURE "x86-64")
+    IF (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm64|aarch64")
+      SET(ISPC_ARCHITECTURE "aarch64")
+    ELSE()
+      SET(ISPC_ARCHITECTURE "x86-64")
+    ENDIF()
   ELSE()
     SET(ISPC_ARCHITECTURE "x86")
   ENDIF()
 
-  SET(ISPC_TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR})
+  SET(ISPC_TARGET_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
   IF(ISPC_INCLUDE_DIR)
     STRING(REPLACE ";" ";-I;" ISPC_INCLUDE_DIR_PARMS "${ISPC_INCLUDE_DIR}")
@@ -104,7 +108,7 @@ MACRO (ISPC_COMPILE)
     GET_FILENAME_COMPONENT(dir ${src} PATH)
 
     SET(outdir "${ISPC_TARGET_DIR}/${dir}")
-    SET(input ${CMAKE_CURRENT_SOURCE_DIR}/${src})
+    SET(input "${CMAKE_CURRENT_SOURCE_DIR}/${src}")
 
     SET(deps "")
     IF (EXISTS ${outdir}/${fname}.dev.idep)
@@ -125,10 +129,7 @@ MACRO (ISPC_COMPILE)
     LIST(LENGTH ISPC_TARGETS NUM_TARGETS)
     IF (NUM_TARGETS GREATER 1)
       FOREACH(target ${ISPC_TARGETS})
-        # in v1.9.0 ISPC changed the ISA suffix of avx512knl-i32x16 to just 'avx512knl'
-        IF (${target} STREQUAL "avx512knl-i32x16" AND NOT ISPC_VERSION VERSION_LESS "1.9.0")
-          SET(target "avx512knl")
-        ELSEIF (${target} STREQUAL "avx512skx-i32x16")
+        IF (${target} STREQUAL "avx512skx-i32x16")
           SET(target "avx512skx")
         ENDIF()
         SET(results ${results} "${outdir}/${fname}.dev_${target}${ISPC_TARGET_EXT}")
@@ -136,10 +137,10 @@ MACRO (ISPC_COMPILE)
     ENDIF()
 
     ADD_CUSTOM_COMMAND(
-      OUTPUT ${results} ${ISPC_TARGET_DIR}/${fname}_ispc.h
+      OUTPUT ${results} "${ISPC_TARGET_DIR}/${fname}_ispc.h"
       COMMAND ${CMAKE_COMMAND} -E make_directory ${outdir}
       COMMAND ${EMBREE_ISPC_EXECUTABLE}
-      -I ${CMAKE_CURRENT_SOURCE_DIR}
+      -I "${CMAKE_CURRENT_SOURCE_DIR}"
       ${ISPC_INCLUDE_DIR_PARMS}
       ${ISPC_DEFINITIONS}
       --arch=${ISPC_ARCHITECTURE}
@@ -149,7 +150,7 @@ MACRO (ISPC_COMPILE)
       --woff
       --opt=fast-math
       ${ISPC_ADDITIONAL_ARGS}
-      -h ${ISPC_TARGET_DIR}/${fname}_ispc.h
+      -h "${ISPC_TARGET_DIR}/${fname}_ispc.h"
       -MMM  ${outdir}/${fname}.dev.idep
       -o ${outdir}/${fname}.dev${ISPC_TARGET_EXT}
       ${input}

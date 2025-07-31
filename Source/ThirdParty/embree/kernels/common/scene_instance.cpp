@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #include "scene_instance.h"
@@ -60,7 +60,7 @@ namespace embree
   void Instance::preCommit()
   {
 #if 0 // disable expensive instance optimization for now
-    // decide whether we're an expensive instnace or not
+    // decide whether we're an expensive instance or not
     auto numExpensiveGeo =  static_cast<Scene*> (object)->getNumPrimitives(CurveGeometry::geom_type, false)
                           + static_cast<Scene*> (object)->getNumPrimitives(CurveGeometry::geom_type, true)
                           + static_cast<Scene*> (object)->getNumPrimitives(UserGeometry::geom_type, false)

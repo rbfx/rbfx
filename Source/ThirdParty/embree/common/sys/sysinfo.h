@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -16,13 +16,9 @@
 
 /* define isa namespace and ISA bitvector */
 #if defined (__AVX512VL__)
-#  define isa avx512skx
-#  define ISA AVX512SKX
-#  define ISA_STR "AVX512SKX"
-#elif defined (__AVX512F__)
-#  define isa avx512knl
-#  define ISA AVX512KNL
-#  define ISA_STR "AVX512KNL"
+#  define isa avx512
+#  define ISA AVX512
+#  define ISA_STR "AVX512"
 #elif defined (__AVX2__)
 #  define isa avx2
 #  define ISA AVX2
@@ -59,23 +55,43 @@
 #  define isa sse
 #  define ISA SSE
 #  define ISA_STR "SSE"
-#else 
+#elif defined(__ARM_NEON)
+// NOTE(LTE): Use sse2 for `isa` for the compatibility at the moment.
+#define isa sse2
+#define ISA NEON
+#define ISA_STR "NEON"
+#else
 #error Unknown ISA
 #endif
 
 namespace embree
 {
-  enum CPUModel {
-    CPU_UNKNOWN,
-    CPU_CORE1,
-    CPU_CORE2,
-    CPU_CORE_NEHALEM,
-    CPU_CORE_SANDYBRIDGE,
-    CPU_HASWELL,
-    CPU_KNIGHTS_LANDING,
-    CPU_SKYLAKE_SERVER
+  enum class CPU
+  {
+    XEON_ICE_LAKE,
+    CORE_ICE_LAKE,
+    CORE_TIGER_LAKE,
+    CORE_COMET_LAKE,
+    CORE_CANNON_LAKE,
+    CORE_KABY_LAKE,
+    XEON_SKY_LAKE,
+    CORE_SKY_LAKE,
+    XEON_PHI_KNIGHTS_MILL,
+    XEON_PHI_KNIGHTS_LANDING,
+    XEON_BROADWELL,
+    CORE_BROADWELL,
+    XEON_HASWELL,
+    CORE_HASWELL,
+    XEON_IVY_BRIDGE,
+    CORE_IVY_BRIDGE,
+    SANDY_BRIDGE,
+    NEHALEM,
+    CORE2,
+    CORE1,
+    ARM,
+    UNKNOWN,
   };
-
+  
   /*! get the full path to the running executable */
   std::string getExecutableFileName();
 
@@ -89,10 +105,10 @@ namespace embree
   std::string getCPUVendor();
 
   /*! get microprocessor model */
-  CPUModel getCPUModel(); 
+  CPU getCPUModel(); 
 
   /*! converts CPU model into string */
-  std::string stringOfCPUModel(CPUModel model);
+  std::string stringOfCPUModel(CPU model);
 
   /*! CPU features */
   static const int CPU_FEATURE_SSE    = 1 << 0;
@@ -122,9 +138,9 @@ namespace embree
   static const int CPU_FEATURE_XMM_ENABLED = 1 << 25;
   static const int CPU_FEATURE_YMM_ENABLED = 1 << 26;
   static const int CPU_FEATURE_ZMM_ENABLED = 1 << 27;
- 
-  static const int CPU_FEATURE_PSEUDO_HIFREQ256BIT = 1 << 30;
- 
+  static const int CPU_FEATURE_NEON = 1 << 28;
+  static const int CPU_FEATURE_NEON_2X = 1 << 29;
+
   /*! get CPU features */
   int getCPUFeatures();
 
@@ -144,18 +160,16 @@ namespace embree
   static const int AVX    = SSE42 | CPU_FEATURE_AVX | CPU_FEATURE_YMM_ENABLED;
   static const int AVXI   = AVX | CPU_FEATURE_F16C | CPU_FEATURE_RDRAND;
   static const int AVX2   = AVXI | CPU_FEATURE_AVX2 | CPU_FEATURE_FMA3 | CPU_FEATURE_BMI1 | CPU_FEATURE_BMI2 | CPU_FEATURE_LZCNT;
-  static const int AVX512KNL = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512PF | CPU_FEATURE_AVX512ER | CPU_FEATURE_AVX512CD | CPU_FEATURE_ZMM_ENABLED;
-  static const int AVX512SKX = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512DQ | CPU_FEATURE_AVX512CD | CPU_FEATURE_AVX512BW | CPU_FEATURE_AVX512VL | CPU_FEATURE_ZMM_ENABLED;
-
-  static const int AVX_FAST = AVX | CPU_FEATURE_PSEUDO_HIFREQ256BIT;
-  static const int AVX2_FAST = AVX2 | CPU_FEATURE_PSEUDO_HIFREQ256BIT;
+  static const int AVX512 = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512DQ | CPU_FEATURE_AVX512CD | CPU_FEATURE_AVX512BW | CPU_FEATURE_AVX512VL | CPU_FEATURE_ZMM_ENABLED;
+  static const int NEON = CPU_FEATURE_NEON | CPU_FEATURE_SSE | CPU_FEATURE_SSE2;
+  static const int NEON_2X = CPU_FEATURE_NEON_2X | AVX2;
 
   /*! converts ISA bitvector into a string */
   std::string stringOfISA(int features);
 
   /*! return the number of logical threads of the system */
   unsigned int getNumberOfLogicalThreads();
-  
+
   /*! returns the size of the terminal window in characters */
   int getTerminalWidth();
 

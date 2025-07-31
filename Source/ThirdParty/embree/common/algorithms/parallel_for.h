@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -23,13 +23,21 @@ namespace embree
       if (!TaskScheduler::wait())
         throw std::runtime_error("task cancelled");
     }
-    
 #elif defined(TASKING_TBB)
-    tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
-	func(i);
+  #if TBB_INTERFACE_VERSION >= 12002
+    tbb::task_group_context context;
+    tbb::parallel_for(Index(0),N,Index(1),[&](Index i) {
+        func(i);
+      },context);
+    if (context.is_group_execution_cancelled())
+      throw std::runtime_error("task cancelled");
+  #else
+    tbb::parallel_for(Index(0),N,Index(1),[&](Index i) {
+        func(i);
       });
     if (tbb::task::self().is_cancelled())
       throw std::runtime_error("task cancelled");
+  #endif
 
 #elif defined(TASKING_PPL)
     concurrency::parallel_for(Index(0),N,Index(1),[&](Index i) { 
@@ -51,11 +59,20 @@ namespace embree
       throw std::runtime_error("task cancelled");
 
 #elif defined(TASKING_TBB)
-    tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) { 
+  #if TBB_INTERFACE_VERSION >= 12002
+    tbb::task_group_context context;
+    tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) {
+        func(range<Index>(r.begin(),r.end()));
+      },context);
+    if (context.is_group_execution_cancelled())
+      throw std::runtime_error("task cancelled");
+  #else
+    tbb::parallel_for(tbb::blocked_range<Index>(first,last,minStepSize),[&](const tbb::blocked_range<Index>& r) {
         func(range<Index>(r.begin(),r.end()));
       });
     if (tbb::task::self().is_cancelled())
       throw std::runtime_error("task cancelled");
+  #endif
 
 #elif defined(TASKING_PPL)
     concurrency::parallel_for(first, last, Index(1) /*minStepSize*/, [&](Index i) { 
@@ -80,11 +97,20 @@ namespace embree
   template<typename Index, typename Func>
     __forceinline void parallel_for_static( const Index N, const Func& func)
   {
-    tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
-	func(i);
-      },tbb::simple_partitioner());
-    if (tbb::task::self().is_cancelled())
-      throw std::runtime_error("task cancelled");
+    #if TBB_INTERFACE_VERSION >= 12002
+      tbb::task_group_context context;
+      tbb::parallel_for(Index(0),N,Index(1),[&](Index i) {
+          func(i);
+        },tbb::simple_partitioner(),context);
+      if (context.is_group_execution_cancelled())
+        throw std::runtime_error("task cancelled");
+    #else
+      tbb::parallel_for(Index(0),N,Index(1),[&](Index i) {
+          func(i);
+        },tbb::simple_partitioner());
+      if (tbb::task::self().is_cancelled())
+        throw std::runtime_error("task cancelled");
+    #endif
   }
 
   typedef tbb::affinity_partitioner affinity_partitioner;
@@ -92,11 +118,20 @@ namespace embree
   template<typename Index, typename Func>
     __forceinline void parallel_for_affinity( const Index N, const Func& func, tbb::affinity_partitioner& ap)
   {
-    tbb::parallel_for(Index(0),N,Index(1),[&](Index i) { 
-	func(i);
-      },ap);
-    if (tbb::task::self().is_cancelled())
-      throw std::runtime_error("task cancelled");
+    #if TBB_INTERFACE_VERSION >= 12002
+      tbb::task_group_context context;
+      tbb::parallel_for(Index(0),N,Index(1),[&](Index i) {
+          func(i);
+        },ap,context);
+      if (context.is_group_execution_cancelled())
+        throw std::runtime_error("task cancelled");
+    #else
+      tbb::parallel_for(Index(0),N,Index(1),[&](Index i) {
+          func(i);
+        },ap);
+      if (tbb::task::self().is_cancelled())
+        throw std::runtime_error("task cancelled");
+    #endif
   }
 
 #else
