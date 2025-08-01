@@ -128,7 +128,7 @@ else ()
     set (URHO3D_PCH OFF)
 endif ()
 
-if (UWP)
+if (UWP OR (APPLE AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64"))
     set (URHO3D_SSE OFF)
 else ()
     set (URHO3D_SSE           SSE2 CACHE STRING "Enable SSE instructions")
