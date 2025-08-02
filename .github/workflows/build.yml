@@ -972,8 +972,7 @@ jobs:
         ci_lib_type:
           - lib
         ci_emsdk_version:
-          - latest
-          #- 3.1.24  # Minimal supported
+          - ${{ vars.EMSDK_VERSION }}
 
     env:
       BINARYEN_CORES: 1
