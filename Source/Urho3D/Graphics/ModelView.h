@@ -209,6 +209,8 @@ struct URHO3D_API GeometryView
     ea::vector<GeometryLODView> lods_;
     /// Material resource name.
     ea::string material_;
+    /// Whether this geometry should be exported to Model.
+    bool exported_{true};
 
     /// Calculate number of morphs in the model.
     unsigned CalculateNumMorphs() const;
@@ -298,7 +300,7 @@ public:
     /// @}
 
     /// Calculate bounding box.
-    BoundingBox CalculateBoundingBox() const;
+    BoundingBox CalculateBoundingBox(bool exportedOnly = true) const;
     /// All equivalent views should be literally equal after normalization.
     void Normalize();
     /// Mirror geometries along X axis. Useful for conversion between left-handed and right-handed systems.
@@ -314,7 +316,7 @@ public:
     /// Normalize bone weights and cleanup invalid bones. Ignored if there's no bones.
     void RepairBoneWeights();
     /// Recalculate bounding boxes for bones.
-    void RecalculateBoneBoundingBoxes();
+    void RecalculateBoneBoundingBoxes(bool exportedOnly = true);
 
     /// Set contents
     /// @{

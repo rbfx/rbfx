@@ -1067,8 +1067,14 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
     ea::vector<unsigned> indexBufferData;
     SharedPtr<IndexBuffer> indexBuffer;
 
-    for (const GeometryView& sourceGeometry : geometries_)
+    ea::vector<unsigned> exportedGeometries;
+    for (unsigned geometryIndex = 0; geometryIndex < geometries_.size(); ++geometryIndex)
     {
+        const GeometryView& sourceGeometry = geometries_[geometryIndex];
+        if (!sourceGeometry.exported_)
+            continue;
+
+        exportedGeometries.push_back(geometryIndex);
         for (const GeometryLODView& sourceGeometryLod : sourceGeometry.lods_)
         {
             const unsigned newVertexBufferIndex = vertexBuffersData.size();
@@ -1262,11 +1268,11 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
     unsigned indexStart = 0;
     ea::unordered_map<ModelVertexFormat, unsigned> vertexStart;
 
-    const unsigned numGeometries = geometries_.size();
+    const unsigned numGeometries = exportedGeometries.size();
     model->SetNumGeometries(numGeometries);
     for (unsigned geometryIndex = 0; geometryIndex < numGeometries; ++geometryIndex)
     {
-        const GeometryView& sourceGeometry = geometries_[geometryIndex];
+        const GeometryView& sourceGeometry = geometries_[exportedGeometries[geometryIndex]];
         if (sourceGeometry.lods_.empty())
             continue;
 
@@ -1343,7 +1349,10 @@ ResourceRefList ModelView::ExportMaterialList() const
     ResourceRefList result(Material::GetTypeStatic());
 
     for (const GeometryView& geometry : geometries_)
-        result.names_.push_back(geometry.material_);
+    {
+        if (geometry.exported_)
+            result.names_.push_back(geometry.material_);
+    }
     return result;
 }
 
@@ -1356,11 +1365,14 @@ const Variant& ModelView::GetMetadata(const ea::string& key) const
     return Variant::EMPTY;
 }
 
-BoundingBox ModelView::CalculateBoundingBox() const
+BoundingBox ModelView::CalculateBoundingBox(bool exportedOnly) const
 {
     BoundingBox boundingBox;
     for (const GeometryView& sourceGeometry : geometries_)
     {
+        if (exportedOnly && !sourceGeometry.exported_)
+            continue;
+
         for (const GeometryLODView& sourceGeometryLod : sourceGeometry.lods_)
         {
             for (const ModelVertex& vertex : sourceGeometryLod.vertices_)
@@ -1533,7 +1545,7 @@ void ModelView::RepairBoneWeights()
     }
 }
 
-void ModelView::RecalculateBoneBoundingBoxes()
+void ModelView::RecalculateBoneBoundingBoxes(bool exportedOnly)
 {
     if (bones_.empty())
         return;
@@ -1543,6 +1555,9 @@ void ModelView::RecalculateBoneBoundingBoxes()
 
     for (const GeometryView& geometryView : geometries_)
     {
+        if (exportedOnly && !geometryView.exported_)
+            continue;
+
         for (const GeometryLODView& lodView : geometryView.lods_)
         {
             for (const ModelVertex& vertex : lodView.vertices_)
