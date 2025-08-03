@@ -1,0 +1,75 @@
+# CPack Configuration for @COMPONENT_NAME_INTERNAL@ component
+# This file is generated from CPackComponent.cmake.in
+
+# Basic package information
+set(CPACK_PACKAGE_NAME "@CPACK_PROJECT_NAME@-@COMPONENT_NAME_INTERNAL@")
+set(CPACK_PACKAGE_VERSION "@CPACK_PROJECT_VERSION@")
+
+# Sanitize version for filename (replace forward slashes with dashes)
+string(REPLACE "/" "-" CPACK_PACKAGE_VERSION_SANITIZED "${CPACK_PACKAGE_VERSION}")
+set(CPACK_PACKAGE_VENDOR "rbfx")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "rbfx @COMPONENT_NAME_INTERNAL@ component")
+set(CPACK_PACKAGE_DESCRIPTION "rbfx is a free lightweight, cross-platform 2D and 3D game engine. This package contains the @COMPONENT_NAME_INTERNAL@ component.")
+
+# Generator settings
+if(@WIN32@)
+    set(CPACK_GENERATOR "ZIP")
+elseif(@APPLE@)
+    set(CPACK_GENERATOR "TGZ")
+else()
+    set(CPACK_GENERATOR "TGZ")
+endif()
+
+# Component selection - only pack the requested component
+# Core component also includes ThirdParty and Tools
+if("@COMPONENT_NAME_INTERNAL@" STREQUAL "Core")
+    set(CPACK_COMPONENTS_ALL Core ThirdParty Tools)
+    # When packaging Core, group all components into one archive
+    set(CPACK_COMPONENTS_GROUPING ALL_COMPONENTS_IN_ONE)
+else()
+    set(CPACK_COMPONENTS_ALL @COMPONENT_NAME_INTERNAL@)
+    set(CPACK_COMPONENTS_GROUPING ONE_PER_GROUP)
+endif()
+set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
+
+# Set archive-specific file names for component install
+set(CPACK_ARCHIVE_@COMPONENT_NAME_INTERNAL@_FILE_NAME "@CPACK_PROJECT_NAME@-@COMPONENT_NAME_INTERNAL@-${CPACK_PACKAGE_VERSION_SANITIZED}-@CMAKE_SYSTEM_NAME@-@BUILD_TYPE_SUFFIX@")
+
+# For non-component install (fallback)
+set(CPACK_PACKAGE_FILE_NAME "@CPACK_PROJECT_NAME@-@COMPONENT_NAME_INTERNAL@-${CPACK_PACKAGE_VERSION_SANITIZED}-@CMAKE_SYSTEM_NAME@-@BUILD_TYPE_SUFFIX@")
+
+# Force the output name by setting the archive file name without component suffix
+set(CPACK_ARCHIVE_FILE_NAME "@CPACK_PROJECT_NAME@-@COMPONENT_NAME_INTERNAL@-${CPACK_PACKAGE_VERSION_SANITIZED}-@CMAKE_SYSTEM_NAME@-@BUILD_TYPE_SUFFIX@")
+
+# Component descriptions
+set(CPACK_COMPONENT_CORE_DISPLAY_NAME "Core Libraries")
+set(CPACK_COMPONENT_CORE_DESCRIPTION "Core Urho3D engine libraries and headers")
+
+set(CPACK_COMPONENT_THIRDPARTY_DISPLAY_NAME "Third Party Libraries")
+set(CPACK_COMPONENT_THIRDPARTY_DESCRIPTION "Third party dependencies")
+
+set(CPACK_COMPONENT_SAMPLES_DISPLAY_NAME "Sample Applications")
+set(CPACK_COMPONENT_SAMPLES_DESCRIPTION "Sample applications demonstrating engine features")
+
+set(CPACK_COMPONENT_TOOLS_DISPLAY_NAME "Development Tools")
+set(CPACK_COMPONENT_TOOLS_DESCRIPTION "Tools for development with rbfx")
+
+# Component dependencies
+set(CPACK_COMPONENT_CORE_DEPENDS ThirdParty)
+set(CPACK_COMPONENT_SAMPLES_DEPENDS Core)
+set(CPACK_COMPONENT_TOOLS_DEPENDS Core)
+
+# Set the CMake generator for CPack
+set(CPACK_CMAKE_GENERATOR "@CMAKE_GENERATOR@")
+
+# Ensure we're only packaging the specific component
+# For Core, we need to install Core, ThirdParty, and Tools
+if("@COMPONENT_NAME_INTERNAL@" STREQUAL "Core")
+    set(CPACK_INSTALL_CMAKE_PROJECTS 
+        "@CMAKE_BINARY_DIR@;@CMAKE_PROJECT_NAME@;Core;/"
+        "@CMAKE_BINARY_DIR@;@CMAKE_PROJECT_NAME@;ThirdParty;/"
+        "@CMAKE_BINARY_DIR@;@CMAKE_PROJECT_NAME@;Tools;/"
+    )
+else()
+    set(CPACK_INSTALL_CMAKE_PROJECTS "@CMAKE_BINARY_DIR@;@CMAKE_PROJECT_NAME@;@COMPONENT_NAME_INTERNAL@;/")
+endif()

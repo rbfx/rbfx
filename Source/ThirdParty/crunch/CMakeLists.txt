@@ -21,6 +21,8 @@
 #
 return_if_not_tool(crunch)
 
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME Tools)
+
 add_library(crn_decomp INTERFACE)
 target_include_directories(crn_decomp INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 

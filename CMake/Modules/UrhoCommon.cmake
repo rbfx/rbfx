@@ -34,11 +34,11 @@ else ()
 endif ()
 
 if (URHO3D_IS_SDK)
-    set (URHO3D_THIRDPARTY_DIR ${URHO3D_SDK_PATH}/include/Urho3D/ThirdParty)
+    set (URHO3D_SWIG_LIB_DIR ${URHO3D_SDK_PATH}/include/swig/Lib)
     set (URHO3D_CMAKE_DIR ${URHO3D_SDK_PATH}/share/CMake)
     set (URHO3D_CSHARP_PROPS_FILE ${URHO3D_CMAKE_DIR}/Directory.Build.props)
 else ()
-    set (URHO3D_THIRDPARTY_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty)
+    set (URHO3D_SWIG_LIB_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty/swig/Lib)
     set (URHO3D_CMAKE_DIR ${rbfx_SOURCE_DIR}/CMake)
     set (URHO3D_CSHARP_PROPS_FILE ${rbfx_SOURCE_DIR}/Directory.Build.props)
 endif ()
@@ -430,7 +430,7 @@ function (csharp_bind_target)
     add_custom_command(OUTPUT ${BIND_OUT_FILE}
         COMMAND ${CMAKE_COMMAND} -E remove_directory ${BIND_OUT_DIR}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${BIND_OUT_DIR}
-        COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${URHO3D_THIRDPARTY_DIR}/swig/Lib" "${SWIG_EXECUTABLE}"
+        COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${URHO3D_SWIG_LIB_DIR}" "${SWIG_EXECUTABLE}"
         ARGS @"${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" > ${CMAKE_CURRENT_BINARY_DIR}/swig_${BIND_TARGET}.log
 
         MAIN_DEPENDENCY ${BIND_SWIG}
@@ -618,7 +618,7 @@ function (install_third_party_libs)
     if (NOT URHO3D_MERGE_STATIC_LIBS)
         foreach (TARGET ${ARGV})
             if (TARGET ${TARGET})
-                install (TARGETS ${TARGET} EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+                install (TARGETS ${TARGET} EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ThirdParty)
             endif ()
         endforeach ()
     endif ()

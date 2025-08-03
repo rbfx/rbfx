@@ -27,6 +27,8 @@ else ()
     ucm_add_flags("-w")
 endif ()
 
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME ThirdParty)
+
 if (UWP)
     add_definitions (-DUWP=1)
 endif ()
@@ -244,7 +246,7 @@ if (URHO3D_PROFILING)
         set(NO_FILESELECTOR OFF)
         add_subdirectory(tracy/profiler)
 
-        install (TARGETS tracy-profiler TracyClient
+        install (TARGETS TracyClient
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
             LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})

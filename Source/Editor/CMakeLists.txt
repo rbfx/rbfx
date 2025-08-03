@@ -24,6 +24,8 @@ if (NOT URHO3D_SYSTEMUI OR NOT DESKTOP)
     return ()
 endif ()
 
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME Tools)
+
 file (GLOB_RECURSE SOURCE_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.h *.hpp)
 list (REMOVE_ITEM SOURCE_FILES Editor.cpp EditorWrapper.cpp)
 
