@@ -111,6 +111,12 @@ if (ANDROID)
 endif ()
 
 if (WIN32)
+    set(CMAKE_INSTALL_CMAKEDIR ".")
+else ()
+    set(CMAKE_INSTALL_CMAKEDIR ${CMAKE_INSTALL_DATADIR})
+endif ()
+
+if (WIN32)
     if (NOT DEFINED URHO3D_WINVER)
         if (UWP OR NOT URHO3D_GRAPHICS_NO_D3D12)
             set (URHO3D_WINVER 0x0A00)
@@ -403,11 +409,11 @@ create_pack_target("Tools")
 ################################################### SDK preparation ####################################################
 
 # Install CMake modules and toolchains provided by and for Urho3D
-install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Toolchains/ DESTINATION ${CMAKE_INSTALL_DATADIR}/CMake/Toolchains)    # Note: the trailing slash is significant
-install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Modules/ DESTINATION ${CMAKE_INSTALL_DATADIR}/CMake/Modules/)
+install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Toolchains/ DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/Toolchains)    # Note: the trailing slash is significant
+install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Modules/ DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/Modules/)
 # Install CMake build scripts
 file (GLOB CMAKE_SCRIPTS ${CMAKE_SOURCE_DIR}/Script/*${SCRIPT_EXT})
-install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${CMAKE_INSTALL_DATADIR}/Scripts)
+install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/Scripts)
 # Install data files
 file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 if (NOT ANDROID)

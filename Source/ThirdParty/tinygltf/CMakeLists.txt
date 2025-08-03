@@ -23,10 +23,15 @@
 add_library (tinygltf STATIC tiny_gltf.cc)
 target_link_libraries(tinygltf STB)
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS tinygltf EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif ()
+install_third_party_libs(tinygltf)
 
 target_include_directories(tinygltf PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+# Install headers
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/tiny_gltf.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    COMPONENT ThirdParty
 )

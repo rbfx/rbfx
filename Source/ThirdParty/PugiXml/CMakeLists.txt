@@ -32,6 +32,4 @@ target_include_directories(PugiXml
 
 install (DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ FILES_MATCHING PATTERN *.hpp)
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS PugiXml EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif ()
+install_third_party_libs(PugiXml)

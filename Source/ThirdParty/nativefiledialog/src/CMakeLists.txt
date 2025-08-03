@@ -147,7 +147,5 @@ endif()
 install (DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/nativefiledialog/ FILES_MATCHING PATTERN *.h)
 target_include_directories(${TARGET_NAME} INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/nativefiledialog>)
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS ${TARGET_NAME} EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif ()
+install_third_party_libs(${TARGET_NAME})
 # /rbfx

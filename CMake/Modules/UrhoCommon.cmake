@@ -218,7 +218,7 @@ if (URHO3D_CSHARP)
 
     # For .csproj embedded into visual studio solution
     if (NOT URHO3D_IS_SDK)
-        install (FILES ${rbfx_SOURCE_DIR}/Directory.Build.props DESTINATION ${CMAKE_INSTALL_DATADIR}/CMake/)
+        install (FILES ${rbfx_SOURCE_DIR}/Directory.Build.props DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/)
     endif ()
 endif()
 
@@ -618,7 +618,19 @@ function (install_third_party_libs)
     if (NOT URHO3D_MERGE_STATIC_LIBS)
         foreach (TARGET ${ARGV})
             if (TARGET ${TARGET})
-                install (TARGETS ${TARGET} EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ThirdParty)
+                install (TARGETS ${TARGET}
+                    EXPORT Urho3DThirdParty
+                    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+                    LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+                    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                    COMPONENT ThirdParty)
+                # Also add to main Urho3D export for backward compatibility
+                install (TARGETS ${TARGET}
+                    EXPORT Urho3D
+                    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+                    LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+                    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                    COMPONENT ThirdParty)
             endif ()
         endforeach ()
     endif ()
@@ -627,38 +639,38 @@ endfunction ()
 # Install runtime dependencies for targets with component support
 function (install_target_runtime_deps)
     cmake_parse_arguments(ARG "" "TARGET;COMPONENT" "ADDITIONAL_MODULES" ${ARGN})
-    
+
     if (NOT ARG_TARGET)
         message(FATAL_ERROR "TARGET must be specified")
     endif()
-    
+
     # Check if target exists
     if (NOT TARGET ${ARG_TARGET})
         message(WARNING "Target '${ARG_TARGET}' does not exist")
         return()
     endif()
-    
+
     # Get target type
     get_target_property(target_type ${ARG_TARGET} TYPE)
-    
+
     # Only process executable and shared library targets
-    if (NOT target_type STREQUAL "EXECUTABLE" AND 
+    if (NOT target_type STREQUAL "EXECUTABLE" AND
         NOT target_type STREQUAL "SHARED_LIBRARY" AND
         NOT target_type STREQUAL "MODULE_LIBRARY")
         return()
     endif()
-    
+
     # Skip static libraries - they don't have runtime dependencies
     if (target_type STREQUAL "STATIC_LIBRARY")
         return()
     endif()
-    
+
     # Build COMPONENT argument if provided
     set(COMPONENT_ARG "")
     if (ARG_COMPONENT)
         set(COMPONENT_ARG "COMPONENT" "${ARG_COMPONENT}")
     endif()
-    
+
     # Use install(CODE) with file(GET_RUNTIME_DEPENDENCIES) for CMake 3.21+
     install(CODE "
         file(GET_RUNTIME_DEPENDENCIES

@@ -23,6 +23,4 @@
 file (GLOB_RECURSE SOURCE_FILES source/etcdec.cxx)
 add_library (ETCPACK STATIC ${SOURCE_FILES})
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS ETCPACK EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif ()
+install_third_party_libs(ETCPACK)

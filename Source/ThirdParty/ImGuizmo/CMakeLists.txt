@@ -37,6 +37,4 @@ endif ()
 
 install (DIRECTORY ./ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ImGuizmo/ FILES_MATCHING PATTERN *.h)
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS ImGuizmo EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif ()
+install_third_party_libs(ImGuizmo)

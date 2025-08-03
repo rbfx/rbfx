@@ -1,10 +1,23 @@
+# ThirdPartyConfig.cmake - Configuration file for the ThirdParty component
+
 @PACKAGE_INIT@
 
-# TODO: Finding threads should not be necessary here.
 include(CMakeFindDependencyMacro)
+
+# Find required dependencies
 find_dependency(Threads)
 
-include("${CMAKE_CURRENT_LIST_DIR}/Urho3D.cmake")
+# Include the exported targets
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/Urho3DThirdParty.cmake")
+    include("${CMAKE_CURRENT_LIST_DIR}/Urho3DThirdParty.cmake")
+endif()
+
+# The third-party libraries are provided through the Urho3DThirdParty export set
+set(ThirdParty_FOUND TRUE)
+
+# Provide compatibility variables
+set(ThirdParty_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+set(ThirdParty_LIBRARY_DIRS "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
 
 # Export platform detection variables
 set(PLATFORM_WIN32 @PLATFORM_WIN32@ CACHE INTERNAL "")

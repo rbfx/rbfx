@@ -25,8 +25,14 @@ add_library (Detour STATIC ${SOURCE_FILES})
 target_include_directories(Detour SYSTEM
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include/Detour>
+           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Detour>
 )
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS Detour EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif ()
+install_third_party_libs(Detour)
+
+# Install headers
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Detour
+    COMPONENT ThirdParty
+)

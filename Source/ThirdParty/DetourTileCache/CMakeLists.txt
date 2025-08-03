@@ -25,9 +25,14 @@ add_library (DetourTileCache STATIC ${SOURCE_FILES})
 target_link_libraries(DetourTileCache Detour)
 target_include_directories(DetourTileCache
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
+              $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     PRIVATE   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include/DetourTileCache>
 )
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS DetourTileCache EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-endif ()
+install_third_party_libs(DetourTileCache)
+
+# Install headers
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DetourTileCache
+    COMPONENT ThirdParty
+)

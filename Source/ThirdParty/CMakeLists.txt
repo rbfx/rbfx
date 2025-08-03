@@ -105,6 +105,15 @@ if (URHO3D_SHADER_TRANSLATOR)
     unset (LLVM_USE_CRT_RELWITHDEBINFO CACHE)
     add_subdirectory(glslang)
     install_third_party_libs (glslang OGLCompiler OSDependent MachineIndependent GenericCodeGen glslang-default-resource-limits)
+    # Install glslang headers
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/glslang/glslang
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        COMPONENT ThirdParty
+        FILES_MATCHING PATTERN "*.h")
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/glslang/SPIRV
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        COMPONENT ThirdParty
+        FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp")
 
     set (SPIRV_CROSS_CLI OFF CACHE BOOL "" FORCE)
     set (SPIRV_CROSS_ENABLE_MSL ON CACHE BOOL "" FORCE)
@@ -120,6 +129,11 @@ if (URHO3D_SHADER_TRANSLATOR)
     set (SPIRV_CROSS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
     add_subdirectory(SPIRV-Cross)
     install_third_party_libs (SPIRV spirv-cross-core spirv-cross-glsl spirv-cross-msl spirv-cross-hlsl)
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Cross/include/spirv_cross
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/spirv_cross)
+    # Install SPIRV-Cross headers from root directory
+    file(GLOB SPIRV_CROSS_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Cross/spirv*.hpp" "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Cross/spirv*.h")
+    install (FILES ${SPIRV_CROSS_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT ThirdParty)
 
     if (URHO3D_SHADER_OPTIMIZER)
         add_subdirectory(SPIRV-Headers)
@@ -134,6 +148,10 @@ if (URHO3D_SHADER_TRANSLATOR)
         set (SPIRV_GENERATOR_CACHE "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Tools-artifacts" CACHE STRING "" FORCE)
         add_subdirectory(SPIRV-Tools)
         install_third_party_libs (SPIRV-Tools-static SPIRV-Tools-opt)
+        # Install SPIRV-Tools headers
+        install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Tools/include/spirv-tools
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+            COMPONENT ThirdParty)
     endif ()
 endif ()
 
@@ -369,3 +387,35 @@ add_subdirectory(swig)
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} ThirdParty)
 
 set_property_recursive(. POSITION_INDEPENDENT_CODE ON)
+
+# Export configuration for ThirdParty component
+include(CMakePackageConfigHelpers)
+
+# Generate the config file from the template
+configure_package_config_file(
+    "${CMAKE_SOURCE_DIR}/CMake/ThirdPartyConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/ThirdPartyConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/ThirdParty/CMake
+)
+
+# Generate the version file
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/ThirdPartyConfigVersion.cmake"
+    VERSION ${CMAKE_PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+# Install the generated config files
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/ThirdPartyConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/ThirdPartyConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/ThirdParty/CMake
+    COMPONENT ThirdParty
+)
+
+# Install the export file
+install(EXPORT Urho3DThirdParty
+    FILE Urho3DThirdParty.cmake
+    DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/ThirdParty/CMake
+    COMPONENT ThirdParty
+)
