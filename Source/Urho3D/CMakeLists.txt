@@ -35,7 +35,7 @@ macro (define_engine_source_files)
         list (REMOVE_ITEM _files Urho3D.h)
         list (APPEND HEADER_FILES ${_files})
         # Install them
-        install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
+        install (FILES ${_files} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${path})
         # Get source files
         file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.cpp)
         list (APPEND SOURCE_FILES ${_files})
@@ -135,8 +135,8 @@ target_include_directories(Urho3D PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>> # Urho3D.h
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>        # For parent projects to find engine headers
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty> # For accessing includes of some third party libs that do not have 'include' folder with headers (like tracy).
-    $<INSTALL_INTERFACE:${DEST_BASE_INCLUDE_DIR}>
-    $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 if (URHO3D_PCH)
@@ -430,7 +430,7 @@ if (URHO3D_CSHARP)
     # Not necessary for build, but required so that users can import Urho3D.i in their bindings .i
     target_include_directories(Urho3D PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig>
-        $<INSTALL_INTERFACE:${DEST_INCLUDE_DIR}/CSharp/Swig>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/CSharp/Swig>
     )
 
     csharp_bind_target(
@@ -453,14 +453,14 @@ if (URHO3D_CSHARP)
     add_target_csharp(
         TARGET Urho3DNet.Scripts
         PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.Scripts.csproj
-        OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Urho3DNet.Scripts
+        OUTPUT ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/Urho3DNet.Scripts
         DEPENDS Urho3DNet
     )
 
     add_target_csharp(
         TARGET Urho3DNet.CodeGenerator
         PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.CodeGenerator.csproj
-        OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Urho3DNet.CodeGenerator
+        OUTPUT ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/Urho3DNet.CodeGenerator
     )
 
     file (GLOB_RECURSE EXTRA_NATIVE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.h)
@@ -476,8 +476,8 @@ if (URHO3D_CSHARP)
         target_compile_options(Urho3D PRIVATE /bigobj)
     endif ()
 
-    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig DESTINATION ${DEST_INCLUDE_DIR}/CSharp)
-    install (FILES ${EXTRA_NATIVE_HEADERS} DESTINATION ${DEST_INCLUDE_DIR}/CSharp/Native)
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/CSharp)
+    install (FILES ${EXTRA_NATIVE_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/CSharp/Native)
 endif ()
 
 # Install C# dependencies
@@ -524,9 +524,9 @@ endif ()
 # SDK installation
 install(TARGETS Urho3D
     EXPORT Urho3D
-    LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
-    RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
-    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 if (URHO3D_MONOLITHIC_HEADER)
@@ -536,7 +536,7 @@ if (URHO3D_MONOLITHIC_HEADER)
     string (REPLACE ";" ">\n#include <Urho3D/" HEADER_FILES "${HEADER_FILES}")
     set (HEADER_FILES "#include <Urho3D/${HEADER_FILES}>")
     configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3DAll.h.in ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h @ONLY)
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h DESTINATION ${DEST_INCLUDE_DIR})
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endif ()
 
 # Generate import/export header with engine configuration defines
@@ -564,7 +564,7 @@ foreach (config Debug RelWithDebInfo Release MinSizeRel)
     file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${config})
 endforeach ()
 file (GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h CONTENT ${URHO3D_H_DATA})
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h DESTINATION ${DEST_INCLUDE_DIR})
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 file(GLOB ROOT_HEADERS *.h)
 list(REMOVE_ITEM ROOT_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h)
-install (FILES ${ROOT_HEADERS} "LinkedPlugins.cpp.in" "Resources.load.js.in" DESTINATION ${DEST_INCLUDE_DIR})
+install (FILES ${ROOT_HEADERS} "LinkedPlugins.cpp.in" "Resources.load.js.in" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

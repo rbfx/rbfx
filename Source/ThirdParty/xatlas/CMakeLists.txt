@@ -5,7 +5,7 @@ project(xatlas)
 add_library(xatlas STATIC xatlas.cpp)
 
 if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS xatlas EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
+    install(TARGETS xatlas EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif ()
 
 target_include_directories(xatlas PUBLIC

@@ -83,7 +83,7 @@ if (URHO3D_GLOW AND DESKTOP)
     set (EMBREE_GEOMETRY_SUBDIVISION OFF CACHE BOOL "" FORCE)
     set (EMBREE_GEOMETRY_USER OFF CACHE BOOL "" FORCE)
     set (EMBREE_API_NAMESPACE "embree3" CACHE STRING "" FORCE)
-    set (EMBREE_CMAKEEXPORT_DIR "${DEST_ARCHIVE_DIR_CONFIG}")
+    set (EMBREE_CMAKEEXPORT_DIR "${CMAKE_INSTALL_LIBDIR}")
     add_subdirectory(embree)
 endif ()
 
@@ -215,7 +215,7 @@ if (URHO3D_PROFILING)
     target_include_directories(TracyCapstone INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/capstone/include/capstone)
     target_link_libraries(TracyCapstone INTERFACE capstone)
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/capstone/include/capstone/
-        DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/capstone
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/capstone
         FILES_MATCHING PATTERN "*.h"
     )
     install_third_party_libs(capstone)
@@ -244,9 +244,9 @@ if (URHO3D_PROFILING)
         add_subdirectory(tracy/profiler)
 
         install (TARGETS tracy-profiler TracyClient
-            RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
-            LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
-            ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif ()
 else ()
     add_library(TracyClient INTERFACE)
@@ -255,10 +255,10 @@ endif ()
 
 # Tracy's headers are included even in non-profiled builds in order to provide stub profiler macros.
 install_third_party_libs(TracyClient)
-target_include_directories(TracyClient SYSTEM INTERFACE $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/tracy>)
+target_include_directories(TracyClient SYSTEM INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/tracy>)
 
 foreach (dir common client tracy libbacktrace)
-    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tracy/public/${dir} DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/tracy/
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tracy/public/${dir} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tracy/
         PATTERN ".+\\.h(pp)?$"
         PATTERN "TracyClient\\.cpp" EXCLUDE
         PATTERN ".+/tracy/Tracy(OpenCL|Vulkan).hpp" EXCLUDE)
@@ -336,7 +336,7 @@ endforeach ()
 file(GLOB_RECURSE DILIGENT_INCLUDE_DIRS LIST_DIRECTORIES true RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/Diligent "Diligent/**")
 list(FILTER DILIGENT_INCLUDE_DIRS INCLUDE REGEX ".+/interface$")
 foreach(DIR ${DILIGENT_INCLUDE_DIRS})
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Diligent/${DIR} DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/Diligent/${DIR}/..)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Diligent/${DIR} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Diligent/${DIR}/..)
 endforeach()
 
 # Setup OpenXR after Diligent to use platform defines
@@ -356,7 +356,7 @@ if (URHO3D_XR)
     add_subdirectory(OpenXRSDK EXCLUDE_FROM_ALL)
     install_third_party_libs(openxr_loader)
 
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/OpenXRSDK/include/openxr DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR})
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/OpenXRSDK/include/openxr DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
     target_include_directories(openxr_loader INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/OpenXRSDK/include>)
 endif ()
 

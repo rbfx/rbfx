@@ -130,7 +130,8 @@ function (rbfx_configure_cmake_props)
         URHO3D_NETFX
         URHO3D_NETFX_RUNTIME_IDENTIFIER
         URHO3D_NETFX_RUNTIME)
-        file(APPEND "${PROPS_OUT}" "    <${var}>${${var}}</${var}>\n")
+        string(REPLACE "$<CONFIG>" "$(Configuration)" var_value "${${var}}")
+        file(APPEND "${PROPS_OUT}" "    <${var}>${var_value}</${var}>\n")
     endforeach ()
 
     # Binary/sourece dirs
@@ -141,6 +142,7 @@ function (rbfx_configure_cmake_props)
             if (NOT "${${var}}" MATCHES "^.+/ThirdParty/.+$")
                 string(REPLACE "." "_" var_name "${var}")
                 set(var_value "${${var}}")
+                string(REPLACE "$<CONFIG>" "$(Configuration)" var_value "${var_value}")
                 if ("${var_value}" MATCHES "/")
                     # Paths end with /
                     if (NOT "${var_value}" MATCHES "/$")
@@ -216,7 +218,7 @@ if (URHO3D_CSHARP)
 
     # For .csproj embedded into visual studio solution
     if (NOT URHO3D_IS_SDK)
-        install (FILES ${rbfx_SOURCE_DIR}/Directory.Build.props DESTINATION ${DEST_SHARE_DIR}/CMake/)
+        install (FILES ${rbfx_SOURCE_DIR}/Directory.Build.props DESTINATION ${CMAKE_INSTALL_DATADIR}/CMake/)
     endif ()
 endif()
 
@@ -324,8 +326,8 @@ function (add_target_csharp)
         list(APPEND RBFX_CSPROJ_LIST ${CS_PROJECT})
         set(RBFX_CSPROJ_LIST "${RBFX_CSPROJ_LIST}" CACHE STRING "A list of C# projects." FORCE)
     endif ()
-    install (FILES "${CS_OUTPUT}.runtimeconfig.json" DESTINATION "${DEST_BIN_DIR_CONFIG}" OPTIONAL)
-    install (FILES "${CS_OUTPUT}.dll" DESTINATION "${DEST_BIN_DIR_CONFIG}" OPTIONAL)
+    install (FILES "${CS_OUTPUT}.runtimeconfig.json" DESTINATION "${CMAKE_INSTALL_BINDIR}" OPTIONAL)
+    install (FILES "${CS_OUTPUT}.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" OPTIONAL)
 endfunction ()
 
 function (csharp_bind_target)
@@ -444,24 +446,17 @@ function (csharp_bind_target)
         target_sources(${BIND_TARGET} PRIVATE ${BIND_OUT_FILE})
     endif ()
 
-    if (MULTI_CONFIG_PROJECT)
-        set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>)
-    else ()
-        set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-        # Needed for mono on unixes but not on windows.
-        set (FACADES Facades/)
-    endif ()
     if (BIND_CSPROJ)
         get_filename_component(BIND_MANAGED_TARGET "${BIND_CSPROJ}" NAME_WLE)
         add_target_csharp(
             TARGET ${BIND_MANAGED_TARGET}
             PROJECT ${BIND_CSPROJ}
-            OUTPUT ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET})
+            OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET})
         if (TARGET ${BIND_MANAGED_TARGET})
             # Real C# target
             add_dependencies(${BIND_MANAGED_TARGET} ${BIND_TARGET} ${BIND_EMBED})
         endif ()
-        install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll DESTINATION ${DEST_LIBRARY_DIR_CONFIG})
+        install (FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll DESTINATION ${CMAKE_INSTALL_BINDIR})
     endif ()
 endfunction ()
 
@@ -623,7 +618,7 @@ function (install_third_party_libs)
     if (NOT URHO3D_MERGE_STATIC_LIBS)
         foreach (TARGET ${ARGV})
             if (TARGET ${TARGET})
-                install (TARGETS ${TARGET} EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
+                install (TARGETS ${TARGET} EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
             endif ()
         endforeach ()
     endif ()

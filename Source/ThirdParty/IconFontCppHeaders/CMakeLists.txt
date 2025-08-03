@@ -26,4 +26,4 @@ target_include_directories(IconFontCppHeaders
 )
 
 install (TARGETS IconFontCppHeaders EXPORT Urho3D)
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
+install (DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ FILES_MATCHING PATTERN *.h)

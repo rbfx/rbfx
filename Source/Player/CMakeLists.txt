@@ -24,7 +24,7 @@
 add_library (PlayerLibrary STATIC PlayerApplication.cpp PlayerApplication.h)
 target_include_directories(PlayerLibrary PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-    $<INSTALL_INTERFACE:${DEST_INCLUDE_DIR}/Tools>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Tools>
 )
 target_link_libraries(PlayerLibrary PUBLIC Urho3D)
 
@@ -38,12 +38,12 @@ if (NOT URHO3D_NO_EDITOR_PLAYER_EXE)
                 TARGET Player
                 EXE
                 PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/ManagedHost/Player.csproj
-                OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Player
+                OUTPUT ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/Player
                 DEPENDS Urho3DNet)
             if (TARGET Player)
                 add_dependencies(Player libPlayer Urho3DNet)
             endif ()
-            install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Player${CMAKE_EXECUTABLE_SUFFIX}" DESTINATION ${DEST_BIN_DIR_CONFIG})
+            install(FILES "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/Player${CMAKE_EXECUTABLE_SUFFIX}" DESTINATION ${CMAKE_INSTALL_BINDIR})
         endif ()
     elseif (NOT WEB)
         # Player executable is not usefil in web builds, because there would be no way to load user code.
@@ -63,15 +63,15 @@ endif ()
 # SDK installation
 if (PLAYER_TARGET)
     install (TARGETS ${PLAYER_TARGET}
-        LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
-        RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
-        ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
-        BUNDLE  DESTINATION ${DEST_BIN_DIR_CONFIG}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        BUNDLE  DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
 endif ()
 
-install (TARGETS PlayerLibrary EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
+install (TARGETS PlayerLibrary EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    DESTINATION ${DEST_INCLUDE_DIR}/Tools
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Tools
     FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
 )

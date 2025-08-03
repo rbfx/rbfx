@@ -42,22 +42,12 @@ if (APPLE)
     enable_language(OBJCXX)
 endif ()
 
-set (DEST_BASE_INCLUDE_DIR include)
-set (DEST_INCLUDE_DIR ${DEST_BASE_INCLUDE_DIR}/Urho3D)
-set (DEST_BIN_DIR bin)
-set (DEST_SHARE_DIR share)
-set (DEST_RESOURCE_DIR ${DEST_BIN_DIR})
-set (DEST_BUNDLE_DIR ${DEST_SHARE_DIR}/Applications)
-set (DEST_ARCHIVE_DIR lib)
-set (DEST_THIRDPARTY_HEADERS_DIR ${DEST_INCLUDE_DIR}/ThirdParty)
-
 if (BUILD_SHARED_LIBS OR WEB)
     set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif ()
 
 # Set CMake modules search path
 set (CMAKE_MODULE_PATH ${rbfx_SOURCE_DIR}/CMake/Modules)
-set (CPM_SOURCE_CACHE ${CMAKE_BINARY_DIR}/_deps_src)
 
 # Include common utilities
 include(UrhoCommon)
@@ -102,20 +92,19 @@ if (ANDROID)
     set (LIB_SUFFIX s/${ANDROID_NDK_ABI_NAME})
 endif ()
 
-if (ANDROID)
-    set (DEST_LIBRARY_DIR ${DEST_ARCHIVE_DIR})
-else ()
-    set (DEST_LIBRARY_DIR bin)
+include(GNUInstallDirs)
+
+set(CMAKE_INSTALL_INCLUDEDIR include)
+set(CMAKE_INSTALL_BINDIR_BASE ${CMAKE_INSTALL_BINDIR})
+
+get_cmake_property(MULTI_CONFIG_PROJECT GENERATOR_IS_MULTI_CONFIG)
+if (MULTI_CONFIG_PROJECT)
+    set(CMAKE_INSTALL_BINDIR ${CMAKE_INSTALL_BINDIR}/$<CONFIG>)
+    set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>)
 endif ()
 
-if (MULTI_CONFIG_PROJECT)
-    set (DEST_BIN_DIR_CONFIG ${DEST_BIN_DIR}/$<CONFIG>)
-    set (DEST_LIBRARY_DIR_CONFIG ${DEST_LIBRARY_DIR}/$<CONFIG>)
-    set (DEST_ARCHIVE_DIR_CONFIG ${DEST_ARCHIVE_DIR}/$<CONFIG>)
-else ()
-    set (DEST_BIN_DIR_CONFIG ${DEST_BIN_DIR})
-    set (DEST_LIBRARY_DIR_CONFIG ${DEST_LIBRARY_DIR})
-    set (DEST_ARCHIVE_DIR_CONFIG ${DEST_ARCHIVE_DIR})
+if (ANDROID)
+    set (CMAKE_INSTALL_LIBDIR bin)
 endif ()
 
 if (WIN32)
@@ -141,20 +130,14 @@ if (NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET AND MACOS)
     set (CMAKE_OSX_DEPLOYMENT_TARGET 10.10)
 endif ()
 
-# A workaround for Ninja generator putting executables to wrong output dir. This breaks
-# VS/Xcode, they work properly without any workarounds.
-if ("${CMAKE_GENERATOR}" STREQUAL "Ninja")
-    set (_CONFIG "_CONFIG")
-endif ()
-
 if (NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
-    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR${_CONFIG}})
+    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 endif ()
 if (NOT DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-    set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR${_CONFIG}})
+    set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR})
 endif ()
 if (NOT DEFINED CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
-    set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_ARCHIVE_DIR${_CONFIG}})
+    set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
 endif ()
 
 if (NOT DEFINED VS_DEBUGGER_WORKING_DIRECTORY)
@@ -174,9 +157,9 @@ if (MINGW)
     foreach (DLL_FILE_PATH ${DLL_FILE_PATH_1} ${DLL_FILE_PATH_2} ${DLL_FILE_PATH_3})
         if (DLL_FILE_PATH)
             # Copies dlls to bin or tools.
-            file (COPY ${DLL_FILE_PATH} DESTINATION ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG})
+            file (COPY ${DLL_FILE_PATH} DESTINATION ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
             if (NOT URHO3D_STATIC_RUNTIME)
-                file (COPY ${DLL_FILE_PATH} DESTINATION ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG})
+                file (COPY ${DLL_FILE_PATH} DESTINATION ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
             endif ()
         endif ()
     endforeach ()
@@ -356,11 +339,11 @@ endif()
 ################################################### SDK preparation ####################################################
 
 # Install CMake modules and toolchains provided by and for Urho3D
-install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Toolchains/ DESTINATION ${DEST_SHARE_DIR}/CMake/Toolchains)    # Note: the trailing slash is significant
-install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Modules/ DESTINATION ${DEST_SHARE_DIR}/CMake/Modules/)
+install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Toolchains/ DESTINATION ${CMAKE_INSTALL_DATADIR}/CMake/Toolchains)    # Note: the trailing slash is significant
+install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Modules/ DESTINATION ${CMAKE_INSTALL_DATADIR}/CMake/Modules/)
 # Install CMake build scripts
 file (GLOB CMAKE_SCRIPTS ${CMAKE_SOURCE_DIR}/Script/*${SCRIPT_EXT})
-install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${DEST_SHARE_DIR}/Scripts)
+install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${CMAKE_INSTALL_DATADIR}/Scripts)
 # Install data files
 file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 if (NOT ANDROID)
@@ -374,7 +357,7 @@ if (NOT ANDROID)
             create_symlink(${CMAKE_CURRENT_SOURCE_DIR}/bin/${dir} ${RUNTIME_OUTPUT_DIRECTORY_NO_CONFIG}/${dir})
         endif ()
         # /${dir}/../ trick is used for installing Autoload subdirs.
-        install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/${dir} DESTINATION ${CMAKE_INSTALL_PREFIX}/${DEST_BIN_DIR}/${dir}/../)
+        install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/${dir} DESTINATION ${CMAKE_INSTALL_BINDIR_BASE}/${dir}/../)
     endforeach()
 endif ()
-install (FILES ${CMAKE_SOURCE_DIR}/bin/shell.html DESTINATION ${CMAKE_INSTALL_PREFIX}/${DEST_BIN_DIR_CONFIG})
+install (FILES ${CMAKE_SOURCE_DIR}/bin/shell.html DESTINATION ${CMAKE_INSTALL_BINDIR_BASE})

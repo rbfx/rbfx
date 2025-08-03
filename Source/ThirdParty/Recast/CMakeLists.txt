@@ -29,5 +29,5 @@ target_include_directories(Recast
 )
 
 if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS Recast EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
+    install(TARGETS Recast EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif ()
