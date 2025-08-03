@@ -624,6 +624,62 @@ function (install_third_party_libs)
     endif ()
 endfunction ()
 
+# Install runtime dependencies for targets with component support
+function (install_target_runtime_deps)
+    cmake_parse_arguments(ARG "" "TARGET;COMPONENT" "ADDITIONAL_MODULES" ${ARGN})
+    
+    if (NOT ARG_TARGET)
+        message(FATAL_ERROR "TARGET must be specified")
+    endif()
+    
+    # Check if target exists
+    if (NOT TARGET ${ARG_TARGET})
+        message(WARNING "Target '${ARG_TARGET}' does not exist")
+        return()
+    endif()
+    
+    # Get target type
+    get_target_property(target_type ${ARG_TARGET} TYPE)
+    
+    # Only process executable and shared library targets
+    if (NOT target_type STREQUAL "EXECUTABLE" AND 
+        NOT target_type STREQUAL "SHARED_LIBRARY" AND
+        NOT target_type STREQUAL "MODULE_LIBRARY")
+        return()
+    endif()
+    
+    # Skip static libraries - they don't have runtime dependencies
+    if (target_type STREQUAL "STATIC_LIBRARY")
+        return()
+    endif()
+    
+    # Build COMPONENT argument if provided
+    set(COMPONENT_ARG "")
+    if (ARG_COMPONENT)
+        set(COMPONENT_ARG "COMPONENT" "${ARG_COMPONENT}")
+    endif()
+    
+    # Use install(CODE) with file(GET_RUNTIME_DEPENDENCIES) for CMake 3.21+
+    install(CODE "
+        file(GET_RUNTIME_DEPENDENCIES
+            EXECUTABLES \"$<TARGET_FILE:${ARG_TARGET}>\"
+            RESOLVED_DEPENDENCIES_VAR _r_deps
+            UNRESOLVED_DEPENDENCIES_VAR _u_deps
+            PRE_EXCLUDE_REGEXES \"api-ms-.*\" \"ext-ms-.*\"
+            POST_EXCLUDE_REGEXES \".*system32/.*\\\\.dll\" \".*syswow64/.*\\\\.dll\" \"/usr/lib\" \"/lib\"
+            DIRECTORIES \"${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}\" ${ARG_ADDITIONAL_MODULES}
+        )
+        foreach(_file \${_r_deps})
+            file(INSTALL
+                DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}\"
+                TYPE SHARED_LIBRARY
+                FILES \"\${_file}\"
+            )
+        endforeach()
+        " ${COMPONENT_ARG}
+    )
+endfunction()
+
 macro (return_if_not_tool ToolName)
     string(TOUPPER "${ToolName}" _TOOL_NAME)
     string(TOUPPER "${URHO3D_TOOLS}" _URHO3D_TOOLS)

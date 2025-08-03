@@ -21,7 +21,7 @@
 #
 
 # Set CMake minimum version. Also set in android/build.gradle for android projects.
-cmake_minimum_required (VERSION 3.14)
+cmake_minimum_required (VERSION 3.21)
 
 # Get rid of obscene amount of CMake-added targets we do not use.
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
@@ -148,21 +148,6 @@ if (MULTI_CONFIG_PROJECT)
     set (URHO3D_CONFIG $<CONFIG>)
 else ()
     set (URHO3D_CONFIG ${CMAKE_BUILD_TYPE})
-endif ()
-
-if (MINGW)
-    find_file(DLL_FILE_PATH_1 "libstdc++-6.dll")
-    find_file(DLL_FILE_PATH_2 "libgcc_s_seh-1.dll")
-    find_file(DLL_FILE_PATH_3 "libwinpthread-1.dll")
-    foreach (DLL_FILE_PATH ${DLL_FILE_PATH_1} ${DLL_FILE_PATH_2} ${DLL_FILE_PATH_3})
-        if (DLL_FILE_PATH)
-            # Copies dlls to bin or tools.
-            file (COPY ${DLL_FILE_PATH} DESTINATION ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
-            if (NOT URHO3D_STATIC_RUNTIME)
-                file (COPY ${DLL_FILE_PATH} DESTINATION ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
-            endif ()
-        endif ()
-    endforeach ()
 endif ()
 
 # Configure for web

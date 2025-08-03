@@ -149,4 +149,7 @@ if (NOT ANDROID)
         LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
         BUNDLE DESTINATION  ${CMAKE_INSTALL_BINDIR}
     )
+    
+    # Install runtime dependencies
+    install_target_runtime_deps(TARGET Samples COMPONENT Samples)
 endif ()

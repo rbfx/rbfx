@@ -68,6 +68,9 @@ if (PLAYER_TARGET)
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         BUNDLE  DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
+    
+    # Install runtime dependencies
+    install_target_runtime_deps(TARGET ${PLAYER_TARGET})
 endif ()
 
 install (TARGETS PlayerLibrary EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})

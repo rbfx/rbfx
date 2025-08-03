@@ -231,7 +231,8 @@ if (URHO3D_PROFILING)
 
     if (DESKTOP)
         add_library(TracyImGui ALIAS ImGui)
-        if (TARGET nfd)
+        # NOTE: nfd::nfd alias might already exist
+        if (TARGET nfd AND NOT TARGET nfd::nfd)
             add_library(nfd::nfd ALIAS nfd)
         endif ()
         add_library(TracyGlfw3 ALIAS SDL2-static)

@@ -27,3 +27,6 @@ add_executable (PackageTool ${SOURCE_FILES})
 # dependencies explicitly.
 target_link_libraries (PackageTool Urho3D LZ4)
 install(TARGETS PackageTool EXPORT Urho3D RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} PERMISSIONS ${PERMISSIONS_755})
+
+# Install runtime dependencies
+install_target_runtime_deps(TARGET PackageTool COMPONENT Tools)
