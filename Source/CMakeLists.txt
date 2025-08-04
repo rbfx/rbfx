@@ -53,25 +53,33 @@ if (URHO3D_EDITOR)
     add_subdirectory (Editor)
 endif ()
 
-# Generate a helper script for consuming built tools during crosscompiling.
+# Generate CMake config files for tools export
 if (NOT DEFINED URHO3D_SDK)
-    set(SWIG_EXECUTABLE OFF)
-    set(PACKAGE_TOOL OFF)
-    if (TARGET swig)
-        set (SWIG_EXECUTABLE ${CMAKE_INSTALL_BINDIR}/$<TARGET_FILE_NAME:swig>)
-    endif ()
-    if (TARGET PackageTool)
-        set (PACKAGE_TOOL ${CMAKE_INSTALL_BINDIR}/$<TARGET_FILE_NAME:PackageTool>)
-    endif ()
-    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/share/CMake)
-    configure_file("${rbfx_SOURCE_DIR}/CMake/SDKTools.cmake.in" "${CMAKE_BINARY_DIR}/share/CMake/SDKTools.cmake.in" @ONLY)
-    file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/share/CMake/SDKTools-$<CONFIG>.cmake" INPUT "${CMAKE_BINARY_DIR}/share/CMake/SDKTools.cmake.in")
-    file(COPY "${rbfx_SOURCE_DIR}/CMake/SDKTools.cmake" DESTINATION "${CMAKE_BINARY_DIR}/share/CMake/")
-    foreach (config ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE})
-        install(FILES ${CMAKE_BINARY_DIR}/share/CMake/SDKTools-${config}.cmake DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/Urho3D/CMake OPTIONAL)
-    endforeach ()
-    install(FILES ${CMAKE_BINARY_DIR}/share/CMake/SDKTools.cmake DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/Urho3D/CMake)
-    unset(config)
+    # Install the tools export file
+    install(EXPORT Urho3DTools
+        FILE Urho3DTools.cmake
+        DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/Urho3DTools/CMake
+        COMPONENT Tools
+    )
+
+    # Configure and install the tools config file
+    include(CMakePackageConfigHelpers)
+    configure_package_config_file(
+        ${rbfx_SOURCE_DIR}/CMake/Urho3DToolsConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfig.cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/Urho3DTools/CMake/
+    )
+    write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfigVersion.cmake
+        VERSION ${URHO3D_VERSION}
+        COMPATIBILITY SameMajorVersion
+    )
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/Urho3DTools/CMake/
+        COMPONENT Tools
+    )
 endif ()
 
 if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)

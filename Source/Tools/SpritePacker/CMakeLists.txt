@@ -24,7 +24,7 @@ return_if_not_tool(SpritePacker)
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (SpritePacker ${SOURCE_FILES})
 target_link_libraries (SpritePacker Urho3D)
-install(TARGETS SpritePacker EXPORT Urho3D RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} PERMISSIONS ${PERMISSIONS_755})
+install_tools(SpritePacker)
 
 # Install runtime dependencies
 install_target_runtime_deps(TARGET SpritePacker COMPONENT Tools)

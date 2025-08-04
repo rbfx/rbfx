@@ -20,12 +20,15 @@
 # THE SOFTWARE.
 #
 
-set(SWIG_EXECUTABLE "${URHO3D_SDK}/@SWIG_EXECUTABLE@")
-set(PACKAGE_TOOL    "${URHO3D_SDK}/@PACKAGE_TOOL@")
+@PACKAGE_INIT@
 
-set(TOOL_ANY_EXIST OFF)
-foreach (pth SWIG_EXECUTABLE PACKAGE_TOOL)
-    if (EXISTS "${${pth}}")
-        set(TOOL_ANY_EXIST ON)
-    endif ()
-endforeach ()
+# Find the tools export file
+include(${CMAKE_CURRENT_LIST_DIR}/Urho3DTools.cmake)
+
+# Check which tools are available
+set(Urho3DTools_FOUND FALSE)
+if (TARGET swig OR TARGET PackageTool)
+    set(Urho3DTools_FOUND TRUE)
+endif ()
+
+check_required_components(Urho3DTools)

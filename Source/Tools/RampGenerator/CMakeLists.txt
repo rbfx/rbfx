@@ -24,7 +24,7 @@ return_if_not_tool(RampGenerator)
 file (GLOB SOURCE_FILES *.cpp *.h)
 add_executable (RampGenerator ${SOURCE_FILES})
 target_link_libraries (RampGenerator Urho3D)
-install(TARGETS RampGenerator EXPORT Urho3D RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} PERMISSIONS ${PERMISSIONS_755})
+install_tools(RampGenerator)
 
 # Install runtime dependencies
 install_target_runtime_deps(TARGET RampGenerator COMPONENT Tools)

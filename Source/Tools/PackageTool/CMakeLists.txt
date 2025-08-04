@@ -26,7 +26,7 @@ add_executable (PackageTool ${SOURCE_FILES})
 # Minimal engine builds which this target uses do not merge third party dependencies to monolithic lib. Link to
 # dependencies explicitly.
 target_link_libraries (PackageTool Urho3D LZ4)
-install(TARGETS PackageTool EXPORT Urho3D RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} PERMISSIONS ${PERMISSIONS_755})
+install_tools(PackageTool)
 
 # Install runtime dependencies
 install_target_runtime_deps(TARGET PackageTool COMPONENT Tools)

@@ -75,4 +75,4 @@ add_executable (crunch ${CRUNCH_SOURCE_FILES})
 target_link_libraries(crunch crnlib)
 set_target_properties(crunch PROPERTIES FOLDER Tools)
 
-install(TARGETS crunch RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install_third_party_tools(crunch)

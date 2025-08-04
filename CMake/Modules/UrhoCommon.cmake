@@ -62,14 +62,15 @@ if (DEFINED URHO3D_SDK)
     if (DESKTOP)
         message(FATAL_ERROR "URHO3D_SDK is can not be defined for a desktop platform.")
     else ()
-        include("${URHO3D_SDK}/share/CMake/SDKTools.cmake")
+        find_package(Urho3DTools PATHS "${URHO3D_SDK}/share/CMake/Urho3DTools" NO_DEFAULT_PATH)
+        if (NOT Urho3DTools_FOUND)
+            message(WARNING "Urho3DTools not found in SDK at ${URHO3D_SDK}")
+        endif ()
     endif ()
 endif ()
 
-if (NOT DEFINED URHO3D_SDK)
-    set (PACKAGE_TOOL $<TARGET_FILE:PackageTool>)
-    set (SWIG_EXECUTABLE $<TARGET_FILE:swig>)
-endif ()
+# Note: We use $<TARGET_FILE:swig> and $<TARGET_FILE:PackageTool> directly in commands
+# instead of setting SWIG_EXECUTABLE and PACKAGE_TOOL variables
 
 # Xcode does not support per-config source files, therefore we must lock generated bindings to some config
 # and they wont switch when build config changes in Xcode.
@@ -430,11 +431,11 @@ function (csharp_bind_target)
     add_custom_command(OUTPUT ${BIND_OUT_FILE}
         COMMAND ${CMAKE_COMMAND} -E remove_directory ${BIND_OUT_DIR}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${BIND_OUT_DIR}
-        COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${URHO3D_SWIG_LIB_DIR}" "${SWIG_EXECUTABLE}"
+        COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${URHO3D_SWIG_LIB_DIR}" "$<TARGET_FILE:swig>"
         ARGS @"${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" > ${CMAKE_CURRENT_BINARY_DIR}/swig_${BIND_TARGET}.log
 
         MAIN_DEPENDENCY ${BIND_SWIG}
-        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" ${BIND_DEPENDS}
+        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" ${BIND_DEPENDS} swig
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "SWIG: Generating C# bindings for ${BIND_TARGET}")
 
@@ -469,20 +470,11 @@ function (create_pak PAK_DIR PAK_FILE)
         list (APPEND PAK_FLAGS -c)
     endif ()
 
-    if (NOT EXISTS "${PACKAGE_TOOL}")
-        if (TARGET PackageTool)
-            set(PACKAGE_TOOL "$<TARGET_FILE:PackageTool>")
-            set(PACKAGE_TOOL_TARGET PackageTool)
-        else ()
-            message(FATAL_ERROR "PackageTool is required, but missing. Either set URHO3D_SDK to path of installed SDK built on current host or set PACKAGE_TOOL to path of PackageTool executable.")
-        endif ()
-    endif ()
-
     set_property (SOURCE ${PAK_FILE} PROPERTY GENERATED TRUE)
     add_custom_command(
         OUTPUT "${PAK_FILE}"
-        COMMAND "${PACKAGE_TOOL}" "${PAK_DIR}" "${PAK_FILE}" -q ${PAK_FLAGS}
-        DEPENDS ${PACKAGE_TOOL_TARGET} ${PAK_DEPENDS}
+        COMMAND "$<TARGET_FILE:PackageTool>" "${PAK_DIR}" "${PAK_FILE}" -q ${PAK_FLAGS}
+        DEPENDS PackageTool ${PAK_DEPENDS}
         COMMENT "Packaging ${NAME}"
     )
 endfunction ()
@@ -634,6 +626,58 @@ function (install_third_party_libs)
             endif ()
         endforeach ()
     endif ()
+endfunction ()
+
+function (install_third_party_tools)
+    foreach (TARGET ${ARGV})
+        if (TARGET ${TARGET})
+            install (TARGETS ${TARGET}
+                EXPORT Urho3DThirdParty
+                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+                LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                COMPONENT Tools
+                PERMISSIONS ${PERMISSIONS_755})
+            # Also add to Urho3DTools export
+            install (TARGETS ${TARGET}
+                EXPORT Urho3DTools
+                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+                LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                COMPONENT Tools
+                PERMISSIONS ${PERMISSIONS_755})
+            # Also add to main Urho3D export for backward compatibility
+            install (TARGETS ${TARGET}
+                EXPORT Urho3D
+                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+                LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                COMPONENT Tools
+                PERMISSIONS ${PERMISSIONS_755})
+        endif ()
+    endforeach ()
+endfunction ()
+
+function (install_tools)
+    foreach (TARGET ${ARGV})
+        if (TARGET ${TARGET})
+            install (TARGETS ${TARGET}
+                EXPORT Urho3DTools
+                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+                LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                COMPONENT Tools
+                PERMISSIONS ${PERMISSIONS_755})
+            # Also add to main Urho3D export for backward compatibility
+            install (TARGETS ${TARGET}
+                EXPORT Urho3D
+                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+                LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                COMPONENT Tools
+                PERMISSIONS ${PERMISSIONS_755})
+        endif ()
+    endforeach ()
 endfunction ()
 
 # Install runtime dependencies for targets with component support

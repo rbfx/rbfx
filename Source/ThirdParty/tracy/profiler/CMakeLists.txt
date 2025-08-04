@@ -209,7 +209,7 @@ endif()
         COMMAND ${CMAKE_COMMAND} -E echo "namespace tracy { static inline const char* GitRef = \"unknown\"; }" >> GitRef.hpp
         VERBATIM
     )
-    target_sources(${PROJECT_NAME} PUBLIC GitRef.hpp)
+    target_sources(${PROJECT_NAME} PRIVATE GitRef.hpp)
 #endif()
 
 if(NOT EMSCRIPTEN)
@@ -230,7 +230,7 @@ if(EMSCRIPTEN)
     file(COPY_FILE ${CMAKE_CURRENT_LIST_DIR}/../icon/icon.svg ${CMAKE_CURRENT_BINARY_DIR}/favicon.svg)
 endif()
 
-install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Tools)
+install_third_party_tools(${PROJECT_NAME})
 
 # rbfx
 find_package(TBB QUIET)
