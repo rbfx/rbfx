@@ -49,8 +49,8 @@ endif ()
 # Set CMake modules search path
 set (CMAKE_MODULE_PATH ${rbfx_SOURCE_DIR}/CMake/Modules)
 
-# Defualt install component
-set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME Core)
+# Default install component
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME SDK)
 
 # Include common utilities
 include(UrhoCommon)
@@ -342,73 +342,12 @@ set(CPACK_PROJECT_VERSION "${URHO3D_VERSION}")
 # Include CPack module
 include(CPack)
 
-# Function to create component-specific packaging targets
-function(create_pack_target COMPONENT_NAME)
-    # Create a unique target name
-    set(TARGET_NAME "pack-${COMPONENT_NAME}")
-
-    # Set component-specific variables for the template
-    set(COMPONENT_NAME_INTERNAL ${COMPONENT_NAME})
-
-    # Determine build type suffix
-    if(BUILD_SHARED_LIBS)
-        set(BUILD_TYPE_SUFFIX "dll")
-    else()
-        set(BUILD_TYPE_SUFFIX "lib")
-    endif()
-
-    # Configure CPack for this specific component
-    configure_file(${CMAKE_SOURCE_DIR}/CMake/Modules/CPackComponent.cmake.in
-        ${CMAKE_BINARY_DIR}/CPackConfig-${COMPONENT_NAME}.cmake @ONLY)
-
-    # Create the custom target that runs CPack with the component-specific config
-    if(MULTI_CONFIG_PROJECT)
-        # For multi-config generators (Visual Studio, Xcode), package all configurations
-        # We need to create a script that calls CPack with all configurations
-        set(PACK_SCRIPT "${CMAKE_BINARY_DIR}/pack-${COMPONENT_NAME}.cmake")
-        file(WRITE "${PACK_SCRIPT}"
-"# Auto-generated script to package all configurations
-set(CONFIGS \"${CMAKE_CONFIGURATION_TYPES}\")
-string(REPLACE \";\" \";\" CONFIGS_LIST \"\${CONFIGS}\")
-execute_process(
-    COMMAND \"${CMAKE_CPACK_COMMAND}\" -G ZIP -C \"\${CONFIGS_LIST}\" --config \"${CMAKE_BINARY_DIR}/CPackConfig-${COMPONENT_NAME}.cmake\"
-    WORKING_DIRECTORY \"${CMAKE_BINARY_DIR}\"
-    RESULT_VARIABLE result
-)
-if(NOT result EQUAL 0)
-    message(FATAL_ERROR \"CPack failed with error code \${result}\")
-endif()
-")
-
-        add_custom_target(${TARGET_NAME}
-            COMMAND ${CMAKE_COMMAND} -P ${PACK_SCRIPT}
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            COMMENT "Creating package for ${COMPONENT_NAME} component (all configurations)"
-            VERBATIM
-        )
-    else()
-        # For single-config generators (Make, Ninja)
-        add_custom_target(${TARGET_NAME}
-            COMMAND ${CMAKE_CPACK_COMMAND} --config ${CMAKE_BINARY_DIR}/CPackConfig-${COMPONENT_NAME}.cmake
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            COMMENT "Creating package for ${COMPONENT_NAME} component"
-            VERBATIM
-        )
-    endif()
-
-    # Mark as utility target
-    set_target_properties(${TARGET_NAME} PROPERTIES
-        EXCLUDE_FROM_ALL ON
-        EXCLUDE_FROM_DEFAULT_BUILD ON
-        FOLDER "Package")
-endfunction()
-
 # Create packaging targets for each component
 if (NOT CMAKE_SKIP_INSTALL_RULES)
-    create_pack_target("Core")
-    create_pack_target("ThirdParty")
+    create_pack_target("SDK")
     create_pack_target("Samples")
     create_pack_target("Tools")
+    create_pack_all_target()
 endif ()
 
 ################################################### SDK preparation ####################################################
@@ -435,11 +374,11 @@ if (NOT ANDROID)
     endforeach()
 
     # Install data directories with appropriate components
-    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/CoreData DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT Core)
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/CoreData DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT SDK)
     install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/CoreData DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT Tools)
     install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/CoreData DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT Samples)
 
-    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/EditorData DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT Core)
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/EditorData DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT SDK)
     install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/EditorData DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT Tools)
 
     install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/Data DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT Samples)

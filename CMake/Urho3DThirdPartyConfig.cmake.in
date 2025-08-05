@@ -1,4 +1,4 @@
-# ThirdPartyConfig.cmake - Configuration file for the ThirdParty component
+# Urho3DThirdPartyConfig.cmake - Configuration file for the ThirdParty component
 
 @PACKAGE_INIT@
 
@@ -13,11 +13,11 @@ if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/Urho3DThirdParty.cmake")
 endif()
 
 # The third-party libraries are provided through the Urho3DThirdParty export set
-set(ThirdParty_FOUND TRUE)
+set(Urho3DThirdParty_FOUND TRUE)
 
 # Provide compatibility variables
-set(ThirdParty_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
-set(ThirdParty_LIBRARY_DIRS "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
+set(Urho3DThirdParty_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+set(Urho3DThirdParty_LIBRARY_DIRS "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
 
 # Export platform detection variables
 set(PLATFORM_WIN32 @PLATFORM_WIN32@ CACHE INTERNAL "")

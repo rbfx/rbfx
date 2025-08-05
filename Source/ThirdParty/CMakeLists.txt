@@ -394,29 +394,29 @@ include(CMakePackageConfigHelpers)
 
 # Generate the config file from the template
 configure_package_config_file(
-    "${CMAKE_SOURCE_DIR}/CMake/ThirdPartyConfig.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/ThirdPartyConfig.cmake"
-    INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/ThirdParty/CMake
+    "${CMAKE_SOURCE_DIR}/CMake/Urho3DThirdPartyConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/Urho3DThirdPartyConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/Urho3DThirdParty/CMake
 )
 
 # Generate the version file
 write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/ThirdPartyConfigVersion.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/Urho3DThirdPartyConfigVersion.cmake"
     VERSION ${CMAKE_PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion
 )
 
 # Install the generated config files
 install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/ThirdPartyConfig.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/ThirdPartyConfigVersion.cmake"
-    DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/ThirdParty/CMake
+    "${CMAKE_CURRENT_BINARY_DIR}/Urho3DThirdPartyConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/Urho3DThirdPartyConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/Urho3DThirdParty/CMake
     COMPONENT ThirdParty
 )
 
 # Install the export file
 install(EXPORT Urho3DThirdParty
     FILE Urho3DThirdParty.cmake
-    DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/ThirdParty/CMake
+    DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/Urho3DThirdParty/CMake
     COMPONENT ThirdParty
 )

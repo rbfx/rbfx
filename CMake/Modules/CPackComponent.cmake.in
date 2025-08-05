@@ -21,10 +21,15 @@ else()
 endif()
 
 # Component selection - only pack the requested component
-# Core component also includes ThirdParty and Tools
-if("@COMPONENT_NAME_INTERNAL@" STREQUAL "Core")
-    set(CPACK_COMPONENTS_ALL Core ThirdParty Tools)
-    # When packaging Core, group all components into one archive
+# All component includes everything
+if("@COMPONENT_NAME_INTERNAL@" STREQUAL "All")
+    set(CPACK_COMPONENTS_ALL SDK ThirdParty Tools Samples)
+    # When packaging All, group all components into one archive
+    set(CPACK_COMPONENTS_GROUPING ALL_COMPONENTS_IN_ONE)
+elseif("@COMPONENT_NAME_INTERNAL@" STREQUAL "SDK")
+    # SDK component includes ThirdParty and Tools
+    set(CPACK_COMPONENTS_ALL SDK ThirdParty Tools)
+    # Group all SDK-related components into one archive
     set(CPACK_COMPONENTS_GROUPING ALL_COMPONENTS_IN_ONE)
 else()
     set(CPACK_COMPONENTS_ALL @COMPONENT_NAME_INTERNAL@)
@@ -42,8 +47,8 @@ set(CPACK_PACKAGE_FILE_NAME "@CPACK_PROJECT_NAME@-@COMPONENT_NAME_INTERNAL@-${CP
 set(CPACK_ARCHIVE_FILE_NAME "@CPACK_PROJECT_NAME@-@COMPONENT_NAME_INTERNAL@-${CPACK_PACKAGE_VERSION_SANITIZED}-@CMAKE_SYSTEM_NAME@-@BUILD_TYPE_SUFFIX@")
 
 # Component descriptions
-set(CPACK_COMPONENT_CORE_DISPLAY_NAME "Core Libraries")
-set(CPACK_COMPONENT_CORE_DESCRIPTION "Core Urho3D engine libraries and headers")
+set(CPACK_COMPONENT_SDK_DISPLAY_NAME "SDK Libraries")
+set(CPACK_COMPONENT_SDK_DESCRIPTION "Core Urho3D engine libraries and headers")
 
 set(CPACK_COMPONENT_THIRDPARTY_DISPLAY_NAME "Third Party Libraries")
 set(CPACK_COMPONENT_THIRDPARTY_DESCRIPTION "Third party dependencies")
@@ -55,18 +60,26 @@ set(CPACK_COMPONENT_TOOLS_DISPLAY_NAME "Development Tools")
 set(CPACK_COMPONENT_TOOLS_DESCRIPTION "Tools for development with rbfx")
 
 # Component dependencies
-set(CPACK_COMPONENT_CORE_DEPENDS ThirdParty)
-set(CPACK_COMPONENT_SAMPLES_DEPENDS Core)
-set(CPACK_COMPONENT_TOOLS_DEPENDS Core)
+set(CPACK_COMPONENT_SDK_DEPENDS ThirdParty)
+set(CPACK_COMPONENT_SAMPLES_DEPENDS SDK)
+set(CPACK_COMPONENT_TOOLS_DEPENDS SDK)
 
 # Set the CMake generator for CPack
 set(CPACK_CMAKE_GENERATOR "@CMAKE_GENERATOR@")
 
 # Ensure we're only packaging the specific component
-# For Core, we need to install Core, ThirdParty, and Tools
-if("@COMPONENT_NAME_INTERNAL@" STREQUAL "Core")
+# For All, we need to install all components
+if("@COMPONENT_NAME_INTERNAL@" STREQUAL "All")
     set(CPACK_INSTALL_CMAKE_PROJECTS 
-        "@CMAKE_BINARY_DIR@;@CMAKE_PROJECT_NAME@;Core;/"
+        "@CMAKE_BINARY_DIR@;@CMAKE_PROJECT_NAME@;SDK;/"
+        "@CMAKE_BINARY_DIR@;@CMAKE_PROJECT_NAME@;ThirdParty;/"
+        "@CMAKE_BINARY_DIR@;@CMAKE_PROJECT_NAME@;Tools;/"
+        "@CMAKE_BINARY_DIR@;@CMAKE_PROJECT_NAME@;Samples;/"
+    )
+elseif("@COMPONENT_NAME_INTERNAL@" STREQUAL "SDK")
+    # SDK includes ThirdParty and Tools
+    set(CPACK_INSTALL_CMAKE_PROJECTS 
+        "@CMAKE_BINARY_DIR@;@CMAKE_PROJECT_NAME@;SDK;/"
         "@CMAKE_BINARY_DIR@;@CMAKE_PROJECT_NAME@;ThirdParty;/"
         "@CMAKE_BINARY_DIR@;@CMAKE_PROJECT_NAME@;Tools;/"
     )

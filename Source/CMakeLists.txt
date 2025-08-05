@@ -32,8 +32,8 @@ if (MSVC)
 endif ()
 
 # Try to find ThirdParty as an external package first
-find_package(ThirdParty QUIET NO_DEFAULT_PATH HINTS "${CMAKE_PREFIX_PATH}")
-if (ThirdParty_FOUND)
+find_package(Urho3DThirdParty QUIET NO_DEFAULT_PATH HINTS "${CMAKE_PREFIX_PATH}")
+if (Urho3DThirdParty_FOUND)
     message(STATUS "Using external ThirdParty component, SDK builds disabled")
     set(CMAKE_SKIP_INSTALL_RULES ON PARENT_SCOPE)
 else ()
