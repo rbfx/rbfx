@@ -55,6 +55,9 @@ set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME Core)
 # Include common utilities
 include(UrhoCommon)
 
+# Find threading libraries (required by Tracy and other components)
+find_package(Threads REQUIRED)
+
 # Enable testing
 if (URHO3D_TESTING)
     include (CTest)

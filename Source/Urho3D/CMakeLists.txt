@@ -211,6 +211,7 @@ set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     Diligent-HLSL2GLSLConverterLib
     Vulkan-Headers
     datachannel-static
+    TracyClient
 )
 
 # Private dependencies that are hidden from the user and are not exposed in the public API or headers
@@ -395,6 +396,11 @@ if (URHO3D_SSE)
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_SSE)
 endif ()
 
+if (URHO3D_THREADING OR URHO3D_PROFILING)
+    find_package(Threads REQUIRED)
+    target_link_libraries(Urho3D PRIVATE Threads::Threads)
+endif ()
+
 if (WIN32)
     if (URHO3D_MINIDUMPS OR URHO3D_PROFILING)
         target_link_libraries (Urho3D PUBLIC dbghelp)
@@ -420,9 +426,6 @@ endif ()
 if (GNU OR Clang)
     target_compile_options(Urho3D PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
 endif ()
-
-# Profiling
-target_link_libraries(Urho3D PUBLIC TracyClient)
 
 if (WEB)
     target_link_libraries(Urho3D PUBLIC "-s WASM=$<BOOL:EMSCRIPTEN_WASM>")

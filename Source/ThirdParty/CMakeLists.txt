@@ -247,6 +247,7 @@ if (URHO3D_PROFILING)
     set (TRACY_ON_DEMAND ON)
     set (TRACY_DELAYED_INIT ON)
     set (TRACY_MANUAL_LIFETIME ON)
+    set (TRACY_STATIC ON)
     add_subdirectory(tracy)
 
     if (DESKTOP)
