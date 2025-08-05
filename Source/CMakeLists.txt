@@ -34,7 +34,8 @@ endif ()
 # Try to find ThirdParty as an external package first
 find_package(ThirdParty QUIET NO_DEFAULT_PATH HINTS "${CMAKE_PREFIX_PATH}")
 if (ThirdParty_FOUND)
-    message(STATUS "Using external ThirdParty component")
+    message(STATUS "Using external ThirdParty component, SDK builds disabled")
+    set(CMAKE_SKIP_INSTALL_RULES ON PARENT_SCOPE)
 else ()
     message(STATUS "External ThirdParty not found, building from source")
     add_subdirectory (ThirdParty)
@@ -54,7 +55,7 @@ if (URHO3D_EDITOR)
 endif ()
 
 # Generate CMake config files for tools export
-if (NOT DEFINED URHO3D_SDK)
+if (DESKTOP)
     # Install the tools export file
     install(EXPORT Urho3DTools
         FILE Urho3DTools.cmake

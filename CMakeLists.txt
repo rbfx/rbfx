@@ -404,10 +404,12 @@ endif()
 endfunction()
 
 # Create packaging targets for each component
-create_pack_target("Core")
-create_pack_target("ThirdParty")
-create_pack_target("Samples")
-create_pack_target("Tools")
+if (NOT CMAKE_SKIP_INSTALL_RULES)
+    create_pack_target("Core")
+    create_pack_target("ThirdParty")
+    create_pack_target("Samples")
+    create_pack_target("Tools")
+endif ()
 
 ################################################### SDK preparation ####################################################
 
