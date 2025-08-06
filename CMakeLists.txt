@@ -21,7 +21,7 @@
 #
 
 # Set CMake minimum version. Also set in android/build.gradle for android projects.
-cmake_minimum_required (VERSION 3.21)
+cmake_minimum_required (VERSION 3.24)
 
 # Get rid of obscene amount of CMake-added targets we do not use.
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
