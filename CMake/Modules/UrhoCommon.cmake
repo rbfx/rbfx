@@ -58,14 +58,24 @@ endif ()
 # Ensure variable is in the cache.
 set(RBFX_CSPROJ_LIST "" CACHE STRING "A list of C# projects." FORCE)
 
-if (DEFINED URHO3D_SDK)
-    if (DESKTOP)
-        message(FATAL_ERROR "URHO3D_SDK is can not be defined for a desktop platform.")
-    else ()
-        find_package(Urho3DTools PATHS "${URHO3D_SDK}/share/CMake/Urho3DTools" NO_DEFAULT_PATH)
-        if (NOT Urho3DTools_FOUND)
-            message(WARNING "Urho3DTools not found in SDK at ${URHO3D_SDK}")
-        endif ()
+if (NOT DESKTOP)
+    # We are cross-compiling, tools for the host platform should be provided through CMAKE_PREFIX_PATH.
+    # Cross-compiler toolchains often set CMAKE_FIND_ROOT_PATH_MODE_PACKAGE to ONLY, which prevents finding Urho3DTools.
+    if (CMAKE_PREFIX_PATH AND CMAKE_FIND_ROOT_PATH_MODE_PACKAGE STREQUAL "ONLY")
+        list(APPEND CMAKE_FIND_ROOT_PATH ${CMAKE_PREFIX_PATH})
+    endif ()
+
+    find_package(Urho3DTools QUIET NO_CMAKE_INSTALL_PREFIX)
+    if (URHO3D_PACKAGING AND (NOT Urho3DTools_FOUND OR NOT TARGET PackageTool))
+        message(FATAL_ERROR "PackageTool not found, please provide Urho3DTools in CMAKE_PREFIX_PATH")
+    endif ()
+
+    if (URHO3D_CSHARP AND (NOT Urho3DTools_FOUND OR NOT TARGET swig))
+        message(FATAL_ERROR "swig not found, please provide Urho3DTools in CMAKE_PREFIX_PATH")
+    endif ()
+
+    if (Urho3DTools_FOUND)
+        message(STATUS "Found Urho3DTools: ${Urho3DTools_VERSION}")
     endif ()
 endif ()
 
@@ -486,6 +496,8 @@ function (web_executable TARGET)
     if (WEB)
         set_target_properties (${TARGET} PROPERTIES SUFFIX .html)
         target_link_libraries(${TARGET} PRIVATE -sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1 -sASSERTIONS=0 -lidbfs.js)
+        target_compile_options(${TARGET} PRIVATE -pthread)
+        target_link_options(${TARGET} PRIVATE -pthread -sUSE_PTHREADS=1)
         if (BUILD_SHARED_LIBS)
             target_link_libraries(${TARGET} PRIVATE -sMAIN_MODULE=1)
         endif ()

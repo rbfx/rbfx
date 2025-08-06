@@ -87,6 +87,9 @@ if (URHO3D_GLOW AND DESKTOP)
     set (EMBREE_API_NAMESPACE "embree3" CACHE STRING "" FORCE)
     set (EMBREE_CMAKEEXPORT_DIR "${CMAKE_INSTALL_LIBDIR}")
     add_subdirectory(embree)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/embree/include/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        COMPONENT ThirdParty)
 endif ()
 
 if (URHO3D_SHADER_TRANSLATOR)
@@ -130,10 +133,12 @@ if (URHO3D_SHADER_TRANSLATOR)
     add_subdirectory(SPIRV-Cross)
     install_third_party_libs (SPIRV spirv-cross-core spirv-cross-glsl spirv-cross-msl spirv-cross-hlsl)
     install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Cross/include/spirv_cross
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/spirv_cross)
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
     # Install SPIRV-Cross headers from root directory
-    file(GLOB SPIRV_CROSS_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Cross/spirv*.hpp" "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Cross/spirv*.h")
-    install (FILES ${SPIRV_CROSS_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT ThirdParty)
+    file(GLOB SPIRV_CROSS_HEADERS
+        "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Cross/*.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Cross/*.h")
+    install (FILES ${SPIRV_CROSS_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/spirv_cross COMPONENT ThirdParty)
 
     if (URHO3D_SHADER_OPTIMIZER)
         add_subdirectory(SPIRV-Headers)
@@ -167,9 +172,15 @@ if (URHO3D_NETWORK)
     set(CMAKE_PROJECT_VERSION 1.0.0)
     if (WEB)
         add_subdirectory(libdatachannel-wasm)
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/libdatachannel-wasm/wasm/include/
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+            COMPONENT ThirdParty)
     else ()
         add_subdirectory(openssl)
         add_subdirectory(libdatachannel)
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/libdatachannel/include/
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+            COMPONENT ThirdParty)
     endif ()
     if (NOT WEB)
         add_subdirectory(Civetweb)
@@ -338,6 +349,16 @@ set (DILIGENT_ALL_TARGETS
 install_third_party_libs (${DILIGENT_ALL_TARGETS})
 install_third_party_libs (volk_headers)
 
+# Install Vulkan headers from Diligent/ThirdParty
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Diligent/ThirdParty/Vulkan-Headers/include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    COMPONENT ThirdParty)
+
+# Install Volk header
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/Diligent/ThirdParty/volk/volk.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/volk/
+    COMPONENT ThirdParty)
+
 # Patch: Disable Diligent debug asserts in debug build unless requested.
 if (NOT URHO3D_DEBUG_GRAPHICS)
     get_target_property(DILIGENT_COMPILE_DEFS Diligent-PublicBuildSettings INTERFACE_COMPILE_DEFINITIONS)
@@ -399,11 +420,11 @@ configure_package_config_file(
     INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/Urho3DThirdParty/CMake
 )
 
-# Generate the version file
-write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/Urho3DThirdPartyConfigVersion.cmake"
-    VERSION ${CMAKE_PROJECT_VERSION}
-    COMPATIBILITY SameMajorVersion
+# Generate the version file with platform compatibility checking
+configure_file(
+    ${rbfx_SOURCE_DIR}/CMake/Urho3DThirdPartyConfigVersion.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Urho3DThirdPartyConfigVersion.cmake
+    @ONLY
 )
 
 # Install the generated config files

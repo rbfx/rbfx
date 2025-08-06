@@ -24,11 +24,6 @@
 
 # Find the tools export file
 include(${CMAKE_CURRENT_LIST_DIR}/Urho3DTools.cmake)
-
-# Check which tools are available
-set(Urho3DTools_FOUND FALSE)
-if (TARGET swig OR TARGET PackageTool)
-    set(Urho3DTools_FOUND TRUE)
-endif ()
+set(Urho3DTools_FOUND TRUE)
 
 check_required_components(Urho3DTools)

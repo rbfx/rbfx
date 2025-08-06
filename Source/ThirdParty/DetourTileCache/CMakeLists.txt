@@ -33,6 +33,6 @@ install_third_party_libs(DetourTileCache)
 
 # Install headers
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Include/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/DetourTileCache
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     COMPONENT ThirdParty
 )

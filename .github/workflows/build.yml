@@ -440,7 +440,7 @@ jobs:
                         (matrix.ci_lib_type == 'dll')                 &&
                         (matrix.ci_compiler == 'msvc')
                     }}
-      URHO3D_SDK: ${{ github.workspace }}/host-sdk
+      CMAKE_PREFIX_PATH: ${{ github.workspace }}/host-sdk
 
     steps:
       - uses: actions/checkout@v4
@@ -831,7 +831,7 @@ jobs:
                           startsWith(github.ref, 'refs/heads/nuget/')
                         )
                     }}
-      URHO3D_SDK: ${{ github.workspace }}/host-sdk
+      CMAKE_PREFIX_PATH: ${{ github.workspace }}/host-sdk
 
     steps:
       - uses: actions/checkout@v4
@@ -911,7 +911,7 @@ jobs:
                           startsWith(github.ref, 'refs/heads/nuget/')
                         )
                     }}
-      URHO3D_SDK: ${{ github.workspace }}/host-sdk
+      CMAKE_PREFIX_PATH: ${{ github.workspace }}/host-sdk
 
     steps:
       - uses: actions/checkout@v4
@@ -996,7 +996,7 @@ jobs:
                         (github.repository == 'rbfx/rbfx')  &&
                         (github.ref == 'refs/heads/master')
                       }}
-      URHO3D_SDK: ${{ github.workspace }}/host-sdk
+      CMAKE_PREFIX_PATH: ${{ github.workspace }}/host-sdk
 
     steps:
       - uses: mymindstorm/setup-emsdk@v12

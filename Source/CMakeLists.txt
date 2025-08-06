@@ -32,7 +32,7 @@ if (MSVC)
 endif ()
 
 # Try to find ThirdParty as an external package first
-find_package(Urho3DThirdParty QUIET NO_DEFAULT_PATH HINTS "${CMAKE_PREFIX_PATH}")
+find_package(Urho3DThirdParty QUIET NO_CMAKE_INSTALL_PREFIX)
 if (Urho3DThirdParty_FOUND)
     message(STATUS "Using external ThirdParty component, SDK builds disabled")
     set(CMAKE_SKIP_INSTALL_RULES ON PARENT_SCOPE)
@@ -64,17 +64,21 @@ if (DESKTOP)
     )
 
     # Configure and install the tools config file
+    # Generate version file to ensure host tools compatibility when cross-compiling.
     include(CMakePackageConfigHelpers)
     configure_package_config_file(
         ${rbfx_SOURCE_DIR}/CMake/Urho3DToolsConfig.cmake.in
         ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfig.cmake
         INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/Urho3DTools/CMake/
     )
-    write_basic_package_version_file(
+
+    # Generate the version file for Urho3DTools with host platform compatibility checking
+    configure_file(
+        ${rbfx_SOURCE_DIR}/CMake/Urho3DToolsConfigVersion.cmake.in
         ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfigVersion.cmake
-        VERSION ${URHO3D_VERSION}
-        COMPATIBILITY SameMajorVersion
+        @ONLY
     )
+
     install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfig.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfigVersion.cmake
@@ -120,7 +124,16 @@ configure_package_config_file(
     ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfig.cmake
     INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/Urho3D/CMake/
 )
+
+# Generate the version file for Urho3D with platform compatibility checking
+configure_file(
+    ${rbfx_SOURCE_DIR}/CMake/Urho3DConfigVersion.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfigVersion.cmake
+    @ONLY
+)
+
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfigVersion.cmake
     DESTINATION ${CMAKE_INSTALL_CMAKEDIR}/Urho3D/CMake/
 )

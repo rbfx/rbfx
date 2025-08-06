@@ -6,6 +6,8 @@ find_dependency(Threads)
 
 include("${CMAKE_CURRENT_LIST_DIR}/Urho3D.cmake")
 
+set(Urho3D_FOUND TRUE)
+
 # Export platform detection variables
 set(PLATFORM_WIN32 @PLATFORM_WIN32@ CACHE INTERNAL "")
 set(PLATFORM_UNIVERSAL_WINDOWS @PLATFORM_UNIVERSAL_WINDOWS@ CACHE INTERNAL "")

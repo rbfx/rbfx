@@ -66,7 +66,10 @@ endif ()
 
 # Set compiler variable
 set ("${CMAKE_CXX_COMPILER_ID}" ON)
-if (NOT WEB)
+if (WEB)
+    # Ensure EVERYTHING is compiled with threads support for emscripten.
+    add_compile_options(-pthread -sUSE_PTHREADS=1)
+else ()
     set (CMAKE_INSTALL_RPATH "$ORIGIN")
     if (GNU OR MINGW)
         if (NOT "$ENV{CI}" STREQUAL "")
