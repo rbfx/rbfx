@@ -262,7 +262,7 @@ foreach (dep ${PUBLIC_THIRD_PARTY_DEPENDENCIES})
                 if (MSVC)
                     target_link_options(Urho3D PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:${dep}>")
                 elseif (APPLE)
-                    target_link_options(Urho3D PRIVATE "-force_load $<TARGET_FILE:${dep}>")
+                    set_property(TARGET Urho3D APPEND PROPERTY LINK_LIBRARIES -force_load $<TARGET_FILE:${dep}>)
                 endif ()
             elseif (UWP)
                 target_link_options(Urho3D PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:${dep}>")
@@ -453,7 +453,7 @@ if (BUILD_SHARED_LIBS)
     target_compile_definitions(Urho3D
         PRIVATE -DURHO3D_EXPORTS=1 -DAL_EXPORTS=1 -DBOX2D_EXPORTS=1 -DCIVETWEB_DLL_EXPORTS=1 -DEASTL_EXPORTS=1
             -DEASTDC_EXPORTS=1 -DEAASSERT_EXPORTS=1 -DURHO3D_EXPORTS=1 -DFMT_LIB_EXPORT=1 -DGLEW_BUILD=1 -DIMGUI_EXPORTS=1
-            -DLZ4_DLL_EXPORT=1 -DNFD_EXPORTS=1 -DPUGIXML_EXPORTS=1 -DSDL_EXPORTS=1 -DRmlCore_EXPORTS=1
+            -DLZ4_DLL_EXPORT=1 -DNFD_EXPORT=1 -DPUGIXML_EXPORTS=1 -DSDL_EXPORTS=1 -DRmlCore_EXPORTS=1
             -DRmlDebugger_EXPORTS=1 -DGLSLANG_EXPORTING=1 -DTRACY_EXPORTS=1
     )
 else ()
