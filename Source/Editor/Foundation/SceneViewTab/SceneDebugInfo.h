@@ -73,6 +73,7 @@ private:
     const WeakPtr<SettingsPage> settings_;
 
     bool hudVisible_{};
+    bool drawWireframe_{};
 };
 
 }

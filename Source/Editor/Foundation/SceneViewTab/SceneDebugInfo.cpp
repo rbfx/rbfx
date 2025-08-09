@@ -23,6 +23,7 @@
 #include "../../Core/IniHelpers.h"
 #include "../../Foundation/SceneViewTab/SceneDebugInfo.h"
 
+#include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/SystemUI/Widgets.h>
 
@@ -74,6 +75,9 @@ void SceneDebugInfo::Render(SceneViewPage& scenePage)
         ui::SetCursorScreenPos(ToImGui(position.ToVector2()));
         hud->RenderUI(DEBUGHUD_SHOW_ALL);
     }
+
+    if (Camera* camera = scenePage.renderer_->GetCamera())
+        camera->SetFillMode(drawWireframe_ ? FILL_WIREFRAME : FILL_SOLID);
 }
 
 void SceneDebugInfo::ApplyHotkeys(HotkeyManager* hotkeyManager)
@@ -90,6 +94,8 @@ bool SceneDebugInfo::RenderToolbar()
 {
     if (Widgets::ToolbarButton(ICON_FA_BUG, "Toggle Debug HUD", hudVisible_))
         ToggleHud();
+    if (Widgets::ToolbarButton(ICON_FA_BORDER_ALL, "Toggle Wireframe", drawWireframe_))
+        drawWireframe_ = !drawWireframe_;
 
     Widgets::ToolbarSeparator();
 
@@ -99,12 +105,16 @@ bool SceneDebugInfo::RenderToolbar()
 void SceneDebugInfo::WriteIniSettings(ImGuiTextBuffer& output)
 {
     WriteIntToIni(output, "SceneDebugInfo.HudVisible", hudVisible_);
+    WriteIntToIni(output, "SceneDebugInfo.DrawWireframe", drawWireframe_);
 }
 
 void SceneDebugInfo::ReadIniSettings(const char* line)
 {
     if (const auto value = ReadIntFromIni(line, "SceneDebugInfo.HudVisible"))
         hudVisible_ = *value != 0;
+
+    if (const auto value = ReadIntFromIni(line, "SceneDebugInfo.DrawWireframe"))
+        drawWireframe_ = *value != 0;
 }
 
 }
