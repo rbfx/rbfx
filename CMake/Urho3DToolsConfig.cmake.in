@@ -22,8 +22,44 @@
 
 @PACKAGE_INIT@
 
+# Capture imported targets before including our export file
+get_property(_targets_before DIRECTORY PROPERTY IMPORTED_TARGETS)
+
 # Find the tools export file
 include(${CMAKE_CURRENT_LIST_DIR}/Urho3DTools.cmake)
+
+# Capture imported targets after including our export file
+get_property(_targets_after DIRECTORY PROPERTY IMPORTED_TARGETS)
+
+# Find targets that were added by our export file
+set(_our_targets)
+foreach(_target IN LISTS _targets_after)
+    list(FIND _targets_before ${_target} _found)
+    if(_found EQUAL -1)
+        list(APPEND _our_targets ${_target})
+    endif()
+endforeach()
+
+# Set up configuration mapping only for our targets
+foreach(_target IN LISTS _our_targets)
+    if(TARGET ${_target})
+        # Set up fallback configurations for maximum compatibility
+        # Each configuration will try its exact match first, then fallback to other available configurations
+        set_property(TARGET ${_target} APPEND PROPERTY MAP_IMPORTED_CONFIG_DEBUG DEBUG RELWITHDEBINFO RELEASE MINSIZEREL NONE)
+        set_property(TARGET ${_target} APPEND PROPERTY MAP_IMPORTED_CONFIG_RELEASE RELEASE RELWITHDEBINFO DEBUG MINSIZEREL NONE)
+        set_property(TARGET ${_target} APPEND PROPERTY MAP_IMPORTED_CONFIG_RELWITHDEBINFO RELWITHDEBINFO RELEASE DEBUG MINSIZEREL NONE)
+        set_property(TARGET ${_target} APPEND PROPERTY MAP_IMPORTED_CONFIG_MINSIZEREL MINSIZEREL RELEASE RELWITHDEBINFO DEBUG NONE)
+        set_property(TARGET ${_target} APPEND PROPERTY MAP_IMPORTED_CONFIG_NONE NONE RELEASE RELWITHDEBINFO DEBUG MINSIZEREL)
+    endif()
+endforeach()
+
+# Clean up temporary variables
+unset(_targets_before)
+unset(_targets_after)
+unset(_our_targets)
+unset(_target)
+unset(_found)
+
 set(Urho3DTools_FOUND TRUE)
 
 check_required_components(Urho3DTools)
