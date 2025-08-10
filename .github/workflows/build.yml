@@ -999,7 +999,7 @@ jobs:
       CMAKE_PREFIX_PATH: ${{ github.workspace }}/host-sdk
 
     steps:
-      - uses: mymindstorm/setup-emsdk@v12
+      - uses: mymindstorm/setup-emsdk@v14
         with:
           version: ${{ matrix.ci_emsdk_version }}
 

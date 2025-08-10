@@ -131,6 +131,7 @@ if (URHO3D_SHADER_TRANSLATOR)
     set (SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
     set (SPIRV_CROSS_SKIP_INSTALL ON CACHE BOOL "" FORCE)
     add_subdirectory(SPIRV-Cross)
+
     install_third_party_libs (SPIRV spirv-cross-core spirv-cross-glsl spirv-cross-msl spirv-cross-hlsl)
     install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/SPIRV-Cross/include/spirv_cross
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
