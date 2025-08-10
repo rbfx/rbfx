@@ -351,7 +351,7 @@ void NodeComponentInspector::RenderAddComponent()
     {
         if (const auto componentType = RenderCreateComponentMenu(context_))
         {
-            AddComponentToNodes(*componentType);
+            AddComponentToNodes(componentType->GetTypeNameHash());
             ui::CloseCurrentPopup();
         }
         ui::EndPopup();
