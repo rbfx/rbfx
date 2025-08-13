@@ -1228,7 +1228,7 @@ TRACY_API void ShutdownProfiler()
     //s_profilerData->~ProfilerData();
     //tracy_free( s_profilerData );
     delete s_profilerData;
-    s_profilerData = nullptr;
+    s_profilerData = new ProfilerData();
     rpmalloc_finalize();
     RpThreadInitDone = false;
     RpInitDone.store( 0, std::memory_order_release );
