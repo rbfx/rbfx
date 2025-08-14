@@ -275,6 +275,10 @@ enum class ModelViewExportFlag
     /// Export into pre-allocated GPU resources.
     /// If there is not enough space, export is aborted before any changes are made to Model.
     Inplace = 1 << 0,
+    /// Create headless vertex and index buffers.
+    /// Exported model will be unusable for rendering.
+    /// Headless export could be performed from any thread.
+    Headless = 1 << 1,
 };
 URHO3D_FLAGSET(ModelViewExportFlag, ModelViewExportFlags);
 
@@ -295,7 +299,8 @@ public:
     /// @{
     bool ImportModel(const Model* model);
     void ExportModel(Model* model, ModelViewExportFlags flags = ModelViewExportFlag::None) const;
-    SharedPtr<Model> ExportModel(const ea::string& name = EMPTY_STRING) const;
+    SharedPtr<Model> ExportModel(
+        ModelViewExportFlags flags = ModelViewExportFlag::None, const ea::string& name = EMPTY_STRING) const;
     ResourceRefList ExportMaterialList() const;
     /// @}
 

@@ -40,7 +40,7 @@ class URHO3D_API VertexBuffer : public RawBuffer, public PipelineStateTracker
     URHO3D_OBJECT(VertexBuffer, RawBuffer);
 
 public:
-    explicit VertexBuffer(Context* context);
+    explicit VertexBuffer(Context* context, DeviceObjectFlags flags = DeviceObjectFlag::None);
 
     /// Enable shadowing in CPU memory. Shadowing is forced on if the graphics subsystem does not exist.
     /// @property

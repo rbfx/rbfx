@@ -1167,6 +1167,9 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
     }
     else
     {
+        const bool isHeadless = flags.IsAnyOf(ModelViewExportFlag::Headless);
+        const auto deviceObjectFlags = isHeadless ? DeviceObjectFlag::Headless : DeviceObjectFlag::None;
+
         // Create vertex buffers
         for (auto& [vertexFormat, vertexBufferData] : vertexBuffersData)
         {
@@ -1174,7 +1177,7 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
             if (vertexElements.empty())
                 URHO3D_LOGERROR("No vertex elements in vertex buffer");
 
-            auto vertexBuffer = MakeShared<VertexBuffer>(context_);
+            auto vertexBuffer = MakeShared<VertexBuffer>(context_, deviceObjectFlags);
             vertexBuffer->SetDebugName(Format("Model '{}' Vertex Buffer", name_));
             vertexBuffer->SetShadowed(true);
             vertexBuffer->SetSize(vertexBufferData.vertices_.size(), vertexElements);
@@ -1183,7 +1186,7 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
         }
 
         // Create index buffer
-        indexBuffer = MakeShared<IndexBuffer>(context_);
+        indexBuffer = MakeShared<IndexBuffer>(context_, deviceObjectFlags);
         indexBuffer->SetDebugName(Format("Model '{}' Index Buffer", name_));
         indexBuffer->SetShadowed(true);
         indexBuffer->SetSize(indexBufferData.size(), largeIndices);
@@ -1335,10 +1338,16 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
     model->SetSkeleton(skeleton);
 }
 
-SharedPtr<Model> ModelView::ExportModel(const ea::string& name) const
+SharedPtr<Model> ModelView::ExportModel(ModelViewExportFlags flags, const ea::string& name) const
 {
+    if (flags.IsAnyOf(ModelViewExportFlag::Inplace))
+    {
+        URHO3D_LOGWARNING("ModelViewExportFlag::Inplace is ignored: Model is not provided to ModelView::ExportModel");
+        flags.Unset(ModelViewExportFlag::Inplace);
+    }
+
     auto model = MakeShared<Model>(context_);
-    ExportModel(model);
+    ExportModel(model, flags);
     if (!name.empty())
         model->SetName(name);
     return model;

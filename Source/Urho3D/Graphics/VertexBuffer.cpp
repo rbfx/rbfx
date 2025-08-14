@@ -126,8 +126,8 @@ Ubyte4 Vector4ToUbyte4Norm(const Vector4& value) { return Vector4ToUbyte4(value 
 
 }
 
-VertexBuffer::VertexBuffer(Context* context)
-    : RawBuffer(context)
+VertexBuffer::VertexBuffer(Context* context, DeviceObjectFlags flags)
+    : RawBuffer(context, flags)
 {
     UpdateOffsets();
 }
