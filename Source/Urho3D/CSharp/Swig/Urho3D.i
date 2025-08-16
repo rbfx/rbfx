@@ -207,9 +207,6 @@ CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
 // Containers
 using StringMap = eastl::unordered_map<Urho3D::StringHash, eastl::string>;
 %template(ObjectReflectionMap) eastl::unordered_map<Urho3D::StringHash, Urho3D::SharedPtr<Urho3D::ObjectReflection>>;
-#if defined(URHO3D_PHYSICS)
-%template(CollisionGeometryDataCache) eastl::unordered_map<eastl::pair<Urho3D::Model*, unsigned>, Urho3D::SharedPtr<Urho3D::CollisionGeometryData>>;
-#endif
 
 // Declare inheritable classes in this file
 %include "Context.i"
@@ -884,6 +881,8 @@ public:
 #endif
 
 %include "generated/Urho3D/_pre_physics.i"
+%include "Urho3D/Physics/PhysicsDefs.h"
+%include "Urho3D/Physics/CollisionGeometryDataCache.h"
 %include "Urho3D/Physics/CollisionShape.h"
 %include "Urho3D/Physics/Constraint.h"
 %include "Urho3D/Physics/PhysicsWorld.h"

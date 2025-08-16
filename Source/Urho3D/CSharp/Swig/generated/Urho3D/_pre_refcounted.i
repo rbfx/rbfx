@@ -306,6 +306,7 @@ URHO3D_REFCOUNTED(Urho3D::ReplicatedAnimation);
 URHO3D_REFCOUNTED(Urho3D::ReplicatedTransform);
 URHO3D_REFCOUNTED(Urho3D::TrackedAnimatedModel);
 URHO3D_REFCOUNTED(Urho3D::CollisionGeometryData);
+URHO3D_REFCOUNTED(Urho3D::CollisionGeometryDataCache);
 URHO3D_REFCOUNTED(Urho3D::TriangleMeshData);
 URHO3D_REFCOUNTED(Urho3D::GImpactMeshData);
 URHO3D_REFCOUNTED(Urho3D::ConvexData);

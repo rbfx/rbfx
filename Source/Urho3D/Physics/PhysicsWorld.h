@@ -22,14 +22,13 @@
 
 #pragma once
 
-#include <EASTL/unique_ptr.h>
-
-#include "../IO/VectorBuffer.h"
-#include "../Math/BoundingBox.h"
-#include "../Math/Sphere.h"
-#include "../Math/Vector3.h"
-#include "../Replica/NetworkId.h"
-#include "../Scene/Component.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/Sphere.h"
+#include "Urho3D/Math/Vector3.h"
+#include "Urho3D/Physics/CollisionGeometryDataCache.h"
+#include "Urho3D/Replica/NetworkId.h"
+#include "Urho3D/Scene/Component.h"
 
 #if defined(_MSC_VER)
     #pragma warning(push)
@@ -41,6 +40,7 @@
 #endif
 
 #include <EASTL/optional.h>
+#include <EASTL/unique_ptr.h>
 
 class btCollisionConfiguration;
 class btCollisionShape;
@@ -133,9 +133,6 @@ struct PhysicsWorldConfig
 
 static const int DEFAULT_FPS = 60;
 static const float DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY = 100.0f;
-
-/// Cache of collision geometry data.
-using CollisionGeometryDataCache = ea::unordered_map<ea::pair<Model*, unsigned>, SharedPtr<CollisionGeometryData> >;
 
 /// Physics simulation world component. Should be added only to the root scene node.
 class URHO3D_API PhysicsWorld : public Component, public btIDebugDraw
@@ -297,17 +294,14 @@ public:
     /// Return the Bullet physics world.
     btDiscreteDynamicsWorld* GetWorld() const;
 
-    /// Clean up the geometry cache.
-    void CleanupGeometryCache();
-
     /// Return trimesh collision geometry cache.
-    CollisionGeometryDataCache& GetTriMeshCache() { return triMeshCache_; }
+    CollisionGeometryDataCache& GetTriMeshCache() { return *triMeshCache_; }
 
     /// Return convex collision geometry cache.
-    CollisionGeometryDataCache& GetConvexCache() { return convexCache_; }
+    CollisionGeometryDataCache& GetConvexCache() { return *convexCache_; }
 
     /// Return GImpact trimesh collision geometry cache.
-    CollisionGeometryDataCache& GetGImpactTrimeshCache() { return gimpactTrimeshCache_; }
+    CollisionGeometryDataCache& GetGImpactTrimeshCache() { return *gimpactTrimeshCache_; }
 
     /// Set node dirtying to be disregarded.
     void SetApplyingTransforms(bool enable) { applyingTransforms_ = enable; }
@@ -365,11 +359,11 @@ private:
     /// Delayed (parented) world transform assignments.
     ea::unordered_map<RigidBody*, DelayedWorldTransform> delayedWorldTransforms_;
     /// Cache for trimesh geometry data by model and LOD level.
-    CollisionGeometryDataCache triMeshCache_;
+    SharedPtr<CollisionGeometryDataCache> triMeshCache_;
     /// Cache for convex geometry data by model and LOD level.
-    CollisionGeometryDataCache convexCache_;
+    SharedPtr<CollisionGeometryDataCache> convexCache_;
     /// Cache for GImpact trimesh geometry data by model and LOD level.
-    CollisionGeometryDataCache gimpactTrimeshCache_;
+    SharedPtr<CollisionGeometryDataCache> gimpactTrimeshCache_;
     /// Preallocated event data map for physics collision events.
     VariantMap physicsCollisionData_;
     /// Preallocated event data map for node collision events.

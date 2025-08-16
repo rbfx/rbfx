@@ -374,44 +374,15 @@ HeightfieldData::HeightfieldData(Terrain* terrain, unsigned lodLevel) :
     }
 }
 
-bool HasDynamicBuffers(Model* model, unsigned lodLevel)
-{
-    unsigned numGeometries = model->GetNumGeometries();
-
-    for (unsigned i = 0; i < numGeometries; ++i)
-    {
-        Geometry* geometry = model->GetGeometry(i, lodLevel);
-        if (!geometry)
-            continue;
-        unsigned numVertexBuffers = geometry->GetNumVertexBuffers();
-        for (unsigned j = 0; j < numVertexBuffers; ++j)
-        {
-            VertexBuffer* buffer = geometry->GetVertexBuffer(j);
-            if (!buffer)
-                continue;
-            if (buffer->IsDynamic())
-                return true;
-        }
-        IndexBuffer* buffer = geometry->GetIndexBuffer();
-        if (buffer && buffer->IsDynamic())
-            return true;
-    }
-
-    return false;
-}
-
-CollisionGeometryData* CreateCollisionGeometryData(ShapeType shapeType, Model* model, unsigned lodLevel)
+SharedPtr<CollisionGeometryData> CollisionGeometryDataCache::CreateCollisionGeometryData(
+    ShapeType shapeType, Model* model, unsigned lodLevel)
 {
     switch (shapeType)
     {
-    case SHAPE_TRIANGLEMESH:
-        return new TriangleMeshData(model, lodLevel);
-    case SHAPE_CONVEXHULL:
-        return new ConvexData(model, lodLevel);
-    case SHAPE_GIMPACTMESH:
-        return new GImpactMeshData(model, lodLevel);
-    default:
-        return nullptr;
+    case SHAPE_TRIANGLEMESH: return MakeShared<TriangleMeshData>(model, lodLevel);
+    case SHAPE_CONVEXHULL: return MakeShared<ConvexData>(model, lodLevel);
+    case SHAPE_GIMPACTMESH: return MakeShared<GImpactMeshData>(model, lodLevel);
+    default: return nullptr;
     }
 }
 
@@ -887,9 +858,6 @@ void CollisionShape::ReleaseShape()
     shape_.reset();
 
     geometry_.Reset();
-
-    if (physicsWorld_)
-        physicsWorld_->CleanupGeometryCache();
 }
 
 void CollisionShape::OnNodeSet(Node* previousNode, Node* currentNode)
@@ -1077,9 +1045,6 @@ void CollisionShape::UpdateShape()
         }
     }
 
-    if (physicsWorld_)
-        physicsWorld_->CleanupGeometryCache();
-
     recreateShape_ = false;
     retryCreation_ = false;
 }
@@ -1104,19 +1069,7 @@ void CollisionShape::UpdateCachedGeometryShape(CollisionGeometryDataCache& cache
     }
     else if (model_ && model_->GetNumGeometries())
     {
-        // Check the geometry cache
-        ea::pair<Model*, unsigned> id = ea::make_pair(model_.Get(), lodLevel_);
-        auto cachedGeometry = cache.find(id);
-        if (cachedGeometry != cache.end())
-            geometry_ = cachedGeometry->second;
-        else
-        {
-            geometry_ = CreateCollisionGeometryData(shapeType_, model_, lodLevel_);
-            assert(geometry_);
-            // Check if model has dynamic buffers, do not cache in that case
-            if (!HasDynamicBuffers(model_, lodLevel_))
-                cache[id] = geometry_;
-        }
+        geometry_ = cache.GetOrCreateGeometry(model_, lodLevel_);
 
         shape_.reset(CreateCollisionGeometryDataShape(shapeType_, geometry_, cachedWorldScale_ * size_));
         assert(shape_);

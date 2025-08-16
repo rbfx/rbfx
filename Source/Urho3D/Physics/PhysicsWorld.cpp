@@ -146,26 +146,6 @@ static bool CustomMaterialCombinerCallback(btManifoldPoint& cp, const btCollisio
     return true;
 }
 
-void RemoveCachedGeometryImpl(CollisionGeometryDataCache& cache, Model* model)
-{
-    for (auto i = cache.begin(); i != cache.end();)
-    {
-        auto current = i++;
-        if (current->first.first == model)
-            cache.erase(current);
-    }
-}
-
-void CleanupGeometryCacheImpl(CollisionGeometryDataCache& cache)
-{
-    for (auto i = cache.begin(); i != cache.end();)
-    {
-        auto current = i++;
-        if (current->second.Refs() == 1)
-            cache.erase(current);
-    }
-}
-
 /// Callback for physics world queries.
 struct PhysicsQueryCallback : public btCollisionWorld::ContactResultCallback
 {
@@ -195,10 +175,14 @@ struct PhysicsQueryCallback : public btCollisionWorld::ContactResultCallback
     unsigned collisionMask_;
 };
 
-PhysicsWorld::PhysicsWorld(Context* context) :
-    Component(context),
-    fps_(DEFAULT_FPS),
-    debugMode_(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawConstraints | btIDebugDraw::DBG_DrawConstraintLimits)
+PhysicsWorld::PhysicsWorld(Context* context)
+    : Component(context)
+    , fps_(DEFAULT_FPS)
+    , debugMode_(
+          btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawConstraints | btIDebugDraw::DBG_DrawConstraintLimits)
+    , triMeshCache_{MakeShared<CollisionGeometryDataCache>(context_, SHAPE_TRIANGLEMESH)}
+    , convexCache_{MakeShared<CollisionGeometryDataCache>(context_, SHAPE_CONVEXHULL)}
+    , gimpactTrimeshCache_{MakeShared<CollisionGeometryDataCache>(context_, SHAPE_GIMPACTMESH)}
 {
     gContactAddedCallback = CustomMaterialCombinerCallback;
 
@@ -688,9 +672,9 @@ void PhysicsWorld::ConvexCast(PhysicsRaycastResult& result, btCollisionShape* sh
 
 void PhysicsWorld::RemoveCachedGeometry(Model* model)
 {
-    RemoveCachedGeometryImpl(triMeshCache_, model);
-    RemoveCachedGeometryImpl(convexCache_, model);
-    RemoveCachedGeometryImpl(gimpactTrimeshCache_, model);
+    triMeshCache_->ReleaseCachedGeometry(model);
+    convexCache_->ReleaseCachedGeometry(model);
+    gimpactTrimeshCache_->ReleaseCachedGeometry(model);
 }
 
 void PhysicsWorld::GetRigidBodies(ea::vector<RigidBody*>& result, const Sphere& sphere, unsigned collisionMask)
@@ -846,14 +830,6 @@ void PhysicsWorld::SetDebugDepthTest(bool enable)
 btDiscreteDynamicsWorld* PhysicsWorld::GetWorld() const
 {
     return world_.get();
-}
-
-void PhysicsWorld::CleanupGeometryCache()
-{
-    // Remove cached shapes whose only reference is the cache itself
-    CleanupGeometryCacheImpl(triMeshCache_);
-    CleanupGeometryCacheImpl(convexCache_);
-    CleanupGeometryCacheImpl(gimpactTrimeshCache_);
 }
 
 void PhysicsWorld::OnSceneSet(Scene* previousScene, Scene* scene)
