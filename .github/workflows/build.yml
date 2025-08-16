@@ -5,6 +5,20 @@ on:
       - 'no-ci-**'
       - 'skip-ci-**'
   pull_request:
+  workflow_dispatch:
+    inputs:
+      # ci_jobs: Control which jobs run via manual workflow dispatch
+      # Go to Actions -> Build -> Run workflow -> enter job names in ci_jobs field
+      # If not set or empty, all jobs run. Dependencies are automatically included.
+      # Examples:
+      #   ci_jobs: "Linux"          # Runs only Linux job
+      #   ci_jobs: "Linux,Windows"  # Runs Linux and Windows jobs
+      #   ci_jobs: "Android"        # Runs Android and its dependency Linux-Tools
+      ci_jobs:
+        description: 'Comma-separated list of jobs to run (e.g., "Linux,Android"). Leave empty to run all jobs.'
+        required: false
+        default: ''
+        type: string
 
 env:
   # common settings
@@ -78,7 +92,11 @@ jobs:
           git push -f origin latest
 
   Windows-Tools:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'Windows-Tools') ||
+       contains(inputs.ci_jobs, 'UWP'))
     runs-on: windows-2022
     needs: [CheckSkipCI]
     env:
@@ -127,7 +145,12 @@ jobs:
           path: ${{ env.ci_sdk_dir }}
 
   Linux-Tools:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'Linux-Tools') ||
+       contains(inputs.ci_jobs, 'Android') ||
+       contains(inputs.ci_jobs, 'Web'))
     runs-on: ubuntu-latest
     needs: [CheckSkipCI]
     env:
@@ -183,7 +206,11 @@ jobs:
           path: ${{ env.ci_sdk_dir }}
 
   MacOS-Tools:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'MacOS-Tools') ||
+       contains(inputs.ci_jobs, 'iOS'))
     runs-on: macos-13
     needs: [CheckSkipCI]
     env:
@@ -232,7 +259,10 @@ jobs:
           path: ${{ env.ci_sdk_dir }}
 
   Windows:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'Windows'))
     runs-on: windows-2022
     needs: [CheckSkipCI]
 
@@ -410,7 +440,10 @@ jobs:
         run: ${{ env.ci_build_script }} publish-to-itch
 
   UWP:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'UWP'))
     runs-on: windows-2022
     needs: [CheckSkipCI, Windows-Tools]
 
@@ -506,7 +539,10 @@ jobs:
           path: ${{ env.ci_sdk_dir }}
 
   Linux:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'Linux'))
     runs-on: ubuntu-latest
     needs: [CheckSkipCI]
 
@@ -665,7 +701,10 @@ jobs:
         run: ${{ env.ci_build_script }} publish-to-itch
 
   MacOS:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'MacOS'))
     runs-on: macos-13
     needs: [CheckSkipCI]
 
@@ -819,7 +858,10 @@ jobs:
         run: ${{ env.ci_build_script }} publish-to-itch
 
   Android:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'Android'))
     runs-on: ubuntu-latest
     needs: [CheckSkipCI, Linux-Tools]
 
@@ -891,7 +933,10 @@ jobs:
           path: '**/*.apk'
 
   iOS:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'iOS'))
     runs-on: macos-13
     needs: [CheckSkipCI, MacOS-Tools]
 
@@ -970,7 +1015,10 @@ jobs:
           path: '**/*.app'
 
   Web:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'Web'))
     runs-on: ubuntu-latest
     needs: [CheckSkipCI, Linux-Tools]
 
