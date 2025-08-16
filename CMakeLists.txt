@@ -52,6 +52,18 @@ set (CMAKE_MODULE_PATH ${rbfx_SOURCE_DIR}/CMake/Modules)
 # Default install component
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME SDK)
 
+# Generate ThirdParty version hash based on git-tracked files
+include(${rbfx_SOURCE_DIR}/CMake/Modules/GetThirdPartyHash.cmake)
+get_thirdparty_hash("${CMAKE_CURRENT_SOURCE_DIR}" URHO3D_THIRDPARTY_VERSION)
+message(STATUS "ThirdParty version hash: ${URHO3D_THIRDPARTY_VERSION}")
+
+# Try to find ThirdParty as an external package first
+# Whether we use CCache depends on result of this call
+find_package(Urho3DThirdParty ${URHO3D_THIRDPARTY_VERSION} EXACT QUIET NO_CMAKE_INSTALL_PREFIX)
+
+# Include GNUInstallDirs early to ensure install directories are defined
+include(GNUInstallDirs)
+
 # Include common utilities
 include(UrhoCommon)
 
@@ -100,8 +112,6 @@ if (ANDROID)
     # For Android platform, install to a path based on the chosen Android ABI, e.g. libs/armeabi-v7a
     set (LIB_SUFFIX s/${ANDROID_NDK_ABI_NAME})
 endif ()
-
-include(GNUInstallDirs)
 
 set(CMAKE_INSTALL_INCLUDEDIR include)
 set(CMAKE_INSTALL_BINDIR_BASE ${CMAKE_INSTALL_BINDIR})

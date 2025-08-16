@@ -41,20 +41,39 @@ function(fnv1a_hash input output)
 endfunction()
 
 function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
+    # Parse optional HASH_FORMAT argument
+    set(options "")
+    set(oneValueArgs HASH_FORMAT)
+    set(multiValueArgs "")
+    cmake_parse_arguments(PARSE_ARGV 2 ARG "${options}" "${oneValueArgs}" "${multiValueArgs}")
+
+    # Default format is "version"
+    if(NOT ARG_HASH_FORMAT)
+        set(ARG_HASH_FORMAT "version")
+    endif()
+
     set(HASH_VALUE "0.0.0")
 
     # Check if we're in a git repository
     find_package(Git QUIET)
     if(NOT GIT_FOUND)
-        message(WARNING "Git not found, ThirdParty hash will be '0.0.0'")
-        set(${OUTPUT_VAR} ${HASH_VALUE} PARENT_SCOPE)
+        if(ARG_HASH_FORMAT STREQUAL "short")
+            set(${OUTPUT_VAR} "00000000" PARENT_SCOPE)
+        else()
+            message(WARNING "Git not found, ThirdParty hash will be '0.0.0'")
+            set(${OUTPUT_VAR} ${HASH_VALUE} PARENT_SCOPE)
+        endif()
         return()
     endif()
 
     # Check if directory exists
     if(NOT EXISTS "${DIRECTORY_PATH}")
-        message(WARNING "ThirdParty directory '${DIRECTORY_PATH}' not found, hash will be '0.0.0'")
-        set(${OUTPUT_VAR} ${HASH_VALUE} PARENT_SCOPE)
+        if(ARG_HASH_FORMAT STREQUAL "short")
+            set(${OUTPUT_VAR} "00000000" PARENT_SCOPE)
+        else()
+            message(WARNING "ThirdParty directory '${DIRECTORY_PATH}' not found, hash will be '0.0.0'")
+            set(${OUTPUT_VAR} ${HASH_VALUE} PARENT_SCOPE)
+        endif()
         return()
     endif()
 
@@ -69,8 +88,12 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
     )
 
     if(NOT GIT_RESULT EQUAL 0)
-        message(WARNING "Not in a git repository, ThirdParty hash will be '0.0.0'")
-        set(${OUTPUT_VAR} ${HASH_VALUE} PARENT_SCOPE)
+        if(ARG_HASH_FORMAT STREQUAL "short")
+            set(${OUTPUT_VAR} "00000000" PARENT_SCOPE)
+        else()
+            message(WARNING "Not in a git repository, ThirdParty hash will be '0.0.0'")
+            set(${OUTPUT_VAR} ${HASH_VALUE} PARENT_SCOPE)
+        endif()
         return()
     endif()
 
@@ -89,8 +112,12 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
     )
 
     if(NOT GIT_RESULT EQUAL 0)
-        message(WARNING "Failed to get git file list, ThirdParty hash will be '0.0.0'")
-        set(${OUTPUT_VAR} ${HASH_VALUE} PARENT_SCOPE)
+        if(ARG_HASH_FORMAT STREQUAL "short")
+            set(${OUTPUT_VAR} "00000000" PARENT_SCOPE)
+        else()
+            message(WARNING "Failed to get git file list, ThirdParty hash will be '0.0.0'")
+            set(${OUTPUT_VAR} ${HASH_VALUE} PARENT_SCOPE)
+        endif()
         return()
     endif()
 
@@ -154,17 +181,40 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
     string(JOIN "\n" HASH_INPUT ${FILE_HASH_LIST})
     string(SHA1 FINAL_HASH "${HASH_INPUT}")
 
-    # Convert hash to version components
-    fnv1a_hash("${FINAL_HASH}" _hash_value)
-    math(EXPR _major "(${_hash_value} >> 24) & 0xFF")
-    math(EXPR _minor "(${_hash_value} >> 12) & 0xFFF")
-    math(EXPR _patch "${_hash_value} & 0xFFF")
-
-    set(${OUTPUT_VAR} "${_major}.${_minor}.${_patch}" PARENT_SCOPE)
+    # Return based on requested format
+    if(ARG_HASH_FORMAT STREQUAL "short")
+        # Return first 8 characters of the hash
+        string(SUBSTRING "${FINAL_HASH}" 0 8 SHORT_HASH)
+        set(${OUTPUT_VAR} "${SHORT_HASH}" PARENT_SCOPE)
+    elseif(ARG_HASH_FORMAT STREQUAL "full")
+        # Return full SHA1 hash
+        set(${OUTPUT_VAR} "${FINAL_HASH}" PARENT_SCOPE)
+    else()
+        # Default: Convert hash to version components
+        fnv1a_hash("${FINAL_HASH}" _hash_value)
+        math(EXPR _major "(${_hash_value} >> 24) & 0xFF")
+        math(EXPR _minor "(${_hash_value} >> 12) & 0xFFF")
+        math(EXPR _patch "${_hash_value} & 0xFFF")
+        set(${OUTPUT_VAR} "${_major}.${_minor}.${_patch}" PARENT_SCOPE)
+    endif()
 endfunction()
 
-# If this script is run directly, output the hash
-if(DIRECTORY_PATH)
-    get_thirdparty_hash("${DIRECTORY_PATH}" THIRDPARTY_HASH)
+# If this script is run directly with cmake -P
+if(CMAKE_SCRIPT_MODE_FILE)
+    # Default to ThirdParty subdirectory relative to this script's location
+    if(NOT DEFINED DIRECTORY_PATH)
+        get_filename_component(_script_dir "${CMAKE_SCRIPT_MODE_FILE}" DIRECTORY)
+        get_filename_component(_root_dir "${_script_dir}" DIRECTORY)
+        get_filename_component(_root_dir "${_root_dir}" DIRECTORY)
+        set(DIRECTORY_PATH "${_root_dir}/Source/ThirdParty")
+    endif()
+
+    # Default format is "short" when run as script
+    if(NOT DEFINED HASH_FORMAT)
+        set(HASH_FORMAT "short")
+    endif()
+
+    # Generate the hash with specified format
+    get_thirdparty_hash("${DIRECTORY_PATH}" THIRDPARTY_HASH HASH_FORMAT ${HASH_FORMAT})
     message("${THIRDPARTY_HASH}")
 endif()

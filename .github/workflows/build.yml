@@ -26,6 +26,7 @@ env:
   URHO3D_SAMPLES: ON
   URHO3D_TESTING: ON
   URHO3D_PROFILING_FALLBACK: ON
+  URHO3D_PRISTINE_FULL_BUILDS: ON
   DOTNET_VERSION: '8.0'
   CMAKE_VERSION: 3.24.x
   # ccache configuration
@@ -93,7 +94,7 @@ jobs:
 
   Windows-Tools:
     if: |
-      github.event.pull_request.draft == false &&
+      false && github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'Windows-Tools') ||
        contains(inputs.ci_jobs, 'UWP'))
@@ -146,7 +147,7 @@ jobs:
 
   Linux-Tools:
     if: |
-      github.event.pull_request.draft == false &&
+      false && github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'Linux-Tools') ||
        contains(inputs.ci_jobs, 'Android') ||
@@ -207,7 +208,7 @@ jobs:
 
   MacOS-Tools:
     if: |
-      github.event.pull_request.draft == false &&
+      false && github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'MacOS-Tools') ||
        contains(inputs.ci_jobs, 'iOS'))
@@ -260,7 +261,7 @@ jobs:
 
   Windows:
     if: |
-      github.event.pull_request.draft == false &&
+      false && github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'Windows'))
     runs-on: windows-2022
@@ -389,6 +390,14 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install rel
 
+      - name: Get ThirdParty version
+        if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
+        shell: bash
+        run: |
+          THIRDPARTY_VERSION=$(grep -oP 'set\(PACKAGE_VERSION\s+"\K[^"]+' "${{ env.ci_sdk_dir }}/Urho3DThirdParty/CMake/Urho3DThirdPartyConfigVersion.cmake" || echo "unknown")
+          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
+          echo "ThirdParty version: $THIRDPARTY_VERSION"
+
       - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
@@ -441,7 +450,7 @@ jobs:
 
   UWP:
     if: |
-      github.event.pull_request.draft == false &&
+      false && github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'UWP'))
     runs-on: windows-2022
@@ -532,10 +541,18 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install rel
 
+      - name: Get ThirdParty version
+        if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
+        shell: bash
+        run: |
+          THIRDPARTY_VERSION=$(grep -oP 'set\(PACKAGE_VERSION\s+"\K[^"]+' "${{ env.ci_sdk_dir }}/Urho3DThirdParty/CMake/Urho3DThirdPartyConfigVersion.cmake" || echo "unknown")
+          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
+          echo "ThirdParty version: $THIRDPARTY_VERSION"
+
       - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.THIRDPARTY_VERSION }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
   Linux:
@@ -564,15 +581,7 @@ jobs:
       ci_arch: ${{ matrix.ci_arch }}
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
-      ci_artifacts: ${{ (
-                          github.ref == 'refs/heads/master'           ||
-                          startsWith(github.ref, 'refs/tags/nuget/')  ||
-                          startsWith(github.ref, 'refs/heads/nuget/')
-                        )                                             &&
-                        (matrix.ci_arch == 'x64')                     &&
-                        (matrix.ci_lib_type == 'dll')                 &&
-                        (matrix.ci_compiler == 'gcc')
-                    }}
+      ci_artifacts: true
       ci_release_sdk: ${{
                         (matrix.ci_arch == 'x64')           &&
                         (matrix.ci_lib_type == 'dll')       &&
@@ -605,6 +614,25 @@ jobs:
           key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}
+
+      - name: Get ThirdParty version
+        shell: bash
+        run: |
+          THIRDPARTY_VERSION=$(cmake -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          echo "ThirdParty version: $THIRDPARTY_VERSION"
+          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
+
+      - name: Check for existing SDK artifact
+        id: check_sdk
+        if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
+        shell: bash
+        run: |
+          ARTIFACT_PREFIX="rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.THIRDPARTY_VERSION }}-"
+          bash ${{ env.ci_source_dir }}/script/ci_download_artifact.sh \
+            "$ARTIFACT_PREFIX" \
+            "${{ github.token }}" \
+            "${{ github.repository }}" \
+            "${{ github.workspace }}"
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v4
@@ -652,7 +680,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.THIRDPARTY_VERSION }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
       - name: Zip SDK
@@ -702,7 +730,7 @@ jobs:
 
   MacOS:
     if: |
-      github.event.pull_request.draft == false &&
+      false && github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'MacOS'))
     runs-on: macos-13
@@ -806,10 +834,18 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install rel
 
+      - name: Get ThirdParty version
+        if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
+        shell: bash
+        run: |
+          THIRDPARTY_VERSION=$(grep -oP 'set\(PACKAGE_VERSION\s+"\K[^"]+' "${{ env.ci_sdk_dir }}/share/Urho3DThirdParty/CMake/Urho3DThirdPartyConfigVersion.cmake" || echo "unknown")
+          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
+          echo "ThirdParty version: $THIRDPARTY_VERSION"
+
       - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.THIRDPARTY_VERSION }}-${{ github.sha }}'
           path: ${{ env.ci_sdk_dir }}
 
       - name: Zip SDK
@@ -859,7 +895,7 @@ jobs:
 
   Android:
     if: |
-      github.event.pull_request.draft == false &&
+      false && github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'Android'))
     runs-on: ubuntu-latest
@@ -934,7 +970,7 @@ jobs:
 
   iOS:
     if: |
-      github.event.pull_request.draft == false &&
+      false && github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'iOS'))
     runs-on: macos-13
@@ -1016,7 +1052,7 @@ jobs:
 
   Web:
     if: |
-      github.event.pull_request.draft == false &&
+      false && github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'Web'))
     runs-on: ubuntu-latest

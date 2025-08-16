@@ -6,6 +6,7 @@ include(CMakeFindDependencyMacro)
 
 # Find required dependencies
 find_dependency(Threads)
+find_dependency(OpenGL)
 
 # Include the exported targets
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/Urho3DThirdParty.cmake")
