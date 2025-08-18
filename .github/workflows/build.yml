@@ -448,6 +448,9 @@ jobs:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
+      - name: Install Windows 10 SDK 20348
+        run: choco install windows-sdk-10-version-2104-all -y
+
       - name: Build Cache
         uses: actions/cache@v4
         with:
