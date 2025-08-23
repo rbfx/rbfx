@@ -83,6 +83,8 @@ public:
     /// Set local-space bounding box.
     /// @note Setting or reloading Model will overwrite bounding box.
     void SetBoundingBox(const BoundingBox& box);
+    /// Reset cached LOD levels and associated geometries.
+    void ResetLodLevels();
 
     /// Return model.
     /// @property
@@ -141,8 +143,6 @@ protected:
     void OnWorldBoundingBoxUpdate() override;
     /// Set number of geometries.
     void SetNumGeometries(unsigned num);
-    /// Reset LOD levels.
-    void ResetLodLevels();
     /// Choose LOD levels based on distance.
     void CalculateLodLevels();
     /// Update lightmaps in batches.
