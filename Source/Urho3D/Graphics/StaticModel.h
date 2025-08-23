@@ -80,6 +80,9 @@ public:
     void SetOcclusionLodLevel(unsigned level);
     /// Apply default materials from a material list file. If filename is empty (default), the model's resource name with extension .txt will be used.
     void ApplyMaterialList(const ea::string& fileName = EMPTY_STRING);
+    /// Set local-space bounding box.
+    /// @note Setting or reloading Model will overwrite bounding box.
+    void SetBoundingBox(const BoundingBox& box);
 
     /// Return model.
     /// @property
@@ -136,8 +139,6 @@ public:
 protected:
     /// Recalculate the world-space bounding box.
     void OnWorldBoundingBoxUpdate() override;
-    /// Set local-space bounding box.
-    void SetBoundingBox(const BoundingBox& box);
     /// Set number of geometries.
     void SetNumGeometries(unsigned num);
     /// Reset LOD levels.
