@@ -95,7 +95,7 @@ jobs:
 
   Windows-Tools:
     if: |
-      false && github.event.pull_request.draft == false &&
+      github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'Windows-Tools') ||
        contains(inputs.ci_jobs, 'UWP'))
@@ -117,11 +117,15 @@ jobs:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
+      - name: Get short SHA
+        shell: bash
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
       - name: Build Cache
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ github.sha }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ env.SHORT_SHA }}
           restore-keys: ${{ env.ccache_prefix }}-${{ github.job }}
 
       - name: Setup cmake
@@ -143,12 +147,12 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
 
   Linux-Tools:
     if: |
-      false && github.event.pull_request.draft == false &&
+      github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'Linux-Tools') ||
        contains(inputs.ci_jobs, 'Android') ||
@@ -171,11 +175,15 @@ jobs:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
+      - name: Get short SHA
+        shell: bash
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
       - name: Build Cache
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ github.sha }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ env.SHORT_SHA }}
           restore-keys: ${{ env.ccache_prefix }}-${{ github.job }}
 
       - name: Setup cmake
@@ -204,12 +212,12 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
 
   MacOS-Tools:
     if: |
-      false && github.event.pull_request.draft == false &&
+      github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'MacOS-Tools') ||
        contains(inputs.ci_jobs, 'iOS'))
@@ -231,11 +239,14 @@ jobs:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
+      - name: Get short SHA
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
       - name: Build Cache
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ github.sha }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ env.SHORT_SHA }}
           restore-keys: ${{ env.ccache_prefix }}-${{ github.job }}
 
       - name: Setup cmake
@@ -257,12 +268,12 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
 
   Windows:
     if: |
-      false && github.event.pull_request.draft == false &&
+      github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'Windows'))
     runs-on: windows-2022
@@ -290,15 +301,6 @@ jobs:
       ci_arch: ${{ matrix.ci_arch }}
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
-      ci_artifacts: ${{ (
-                          github.ref == 'refs/heads/master'           ||
-                          startsWith(github.ref, 'refs/tags/nuget/')  ||
-                          startsWith(github.ref, 'refs/heads/nuget/')
-                        )                                             &&
-                        (matrix.ci_arch == 'x64')                     &&
-                        (matrix.ci_lib_type == 'dll')                 &&
-                        (matrix.ci_compiler == 'msvc')
-                    }}
       ci_release_sdk: ${{
                         (matrix.ci_arch == 'x64')           &&
                         (matrix.ci_lib_type == 'dll')       &&
@@ -313,12 +315,17 @@ jobs:
                       }}
       ci_itch: ${{ (github.ref == 'refs/heads/master') }}
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+      CMAKE_PREFIX_PATH: ${{ github.workspace }}/cached-sdk
 
     steps:
       - uses: actions/checkout@v4
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
+
+      - name: Get short SHA
+        shell: bash
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
 
       - name: Set up butler
         if: ${{ (env.ci_itch == 'true') && (vars.DISABLE_ITCH != 'true') }}
@@ -328,7 +335,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}-${{ env.SHORT_SHA }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}
 
@@ -344,6 +351,22 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
+
+      - name: Check for existing SDK artifact
+        id: check_sdk
+        if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
+        shell: bash
+        run: |
+          THIRDPARTY_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          echo "ThirdParty short hash: $THIRDPARTY_VERSION"
+          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
+
+          ARTIFACT_PREFIX="rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-$THIRDPARTY_VERSION-"
+          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' \
+            '$ARTIFACT_PREFIX' \
+            '${{ github.token }}' \
+            '${{ github.repository }}' \
+            '${{ github.workspace }}/cached-sdk'
 
       - name: Dependencies
         shell: bash
@@ -391,18 +414,9 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install rel
 
-      - name: Get ThirdParty version
-        if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
-        shell: bash
-        run: |
-          THIRDPARTY_VERSION=$(grep -oP 'set\(PACKAGE_VERSION\s+"\K[^"]+' "${{ env.ci_sdk_dir }}/Urho3DThirdParty/CMake/Urho3DThirdPartyConfigVersion.cmake" || echo "unknown")
-          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
-          echo "ThirdParty version: $THIRDPARTY_VERSION"
-
       - uses: actions/upload-artifact@v4
-        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
 
       - name: Zip SDK
@@ -451,7 +465,7 @@ jobs:
 
   UWP:
     if: |
-      false && github.event.pull_request.draft == false &&
+      github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'UWP'))
     runs-on: windows-2022
@@ -474,15 +488,6 @@ jobs:
       ci_arch: ${{ matrix.ci_arch }}
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
-      ci_artifacts: ${{ (
-                          github.ref == 'refs/heads/master'           ||
-                          startsWith(github.ref, 'refs/tags/nuget/')  ||
-                          startsWith(github.ref, 'refs/heads/nuget/')
-                        )                                             &&
-                        (matrix.ci_arch == 'x64')                     &&
-                        (matrix.ci_lib_type == 'dll')                 &&
-                        (matrix.ci_compiler == 'msvc')
-                    }}
       CMAKE_PREFIX_PATH: ${{ github.workspace }}/host-sdk
 
     steps:
@@ -494,17 +499,21 @@ jobs:
       - name: Install Windows 10 SDK 20348
         run: choco install windows-sdk-10-version-2104-all -y
 
+      - name: Get short SHA
+        shell: bash
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
       - name: Build Cache
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ github.sha }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ env.SHORT_SHA }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}
 
       - uses: actions/download-artifact@v4
         with:
-          name: 'rbfx-Windows-Tools-${{ github.sha }}'
+          name: 'rbfx-Windows-Tools-${{ env.SHORT_SHA }}'
           path: host-sdk/
 
       - name: Setup dotnet
@@ -517,6 +526,22 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
+
+      - name: Check for existing SDK artifact
+        id: check_sdk
+        if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
+        shell: bash
+        run: |
+          THIRDPARTY_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          echo "ThirdParty short hash: $THIRDPARTY_VERSION"
+          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
+
+          ARTIFACT_PREFIX="rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-$THIRDPARTY_VERSION-"
+          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' \
+            '$ARTIFACT_PREFIX' \
+            '${{ github.token }}' \
+            '${{ github.repository }}' \
+            '${{ github.workspace }}/cached-sdk'
 
       - name: Dependencies
         shell: bash
@@ -542,18 +567,9 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install rel
 
-      - name: Get ThirdParty version
-        if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
-        shell: bash
-        run: |
-          THIRDPARTY_VERSION=$(grep -oP 'set\(PACKAGE_VERSION\s+"\K[^"]+' "${{ env.ci_sdk_dir }}/Urho3DThirdParty/CMake/Urho3DThirdPartyConfigVersion.cmake" || echo "unknown")
-          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
-          echo "ThirdParty version: $THIRDPARTY_VERSION"
-
       - uses: actions/upload-artifact@v4
-        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.THIRDPARTY_VERSION }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.THIRDPARTY_VERSION }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
 
   Linux:
@@ -582,7 +598,6 @@ jobs:
       ci_arch: ${{ matrix.ci_arch }}
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
-      ci_artifacts: true
       ci_release_sdk: ${{
                         (matrix.ci_arch == 'x64')           &&
                         (matrix.ci_lib_type == 'dll')       &&
@@ -605,6 +620,7 @@ jobs:
           fetch-depth: 1
 
       - name: Get short SHA
+        shell: bash
         run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
 
       - name: Set up butler
@@ -615,7 +631,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}-${{ env.SHORT_SHA }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}
 
@@ -629,11 +645,11 @@ jobs:
           echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
 
           ARTIFACT_PREFIX="rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-$THIRDPARTY_VERSION-"
-          bash ${{ env.ci_source_dir }}/script/ci_download_artifact.sh \
-            "$ARTIFACT_PREFIX" \
-            "${{ github.token }}" \
-            "${{ github.repository }}" \
-            "${{ github.workspace }}/cached-sdk"
+          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' \
+            '$ARTIFACT_PREFIX' \
+            '${{ github.token }}' \
+            '${{ github.repository }}' \
+            '${{ github.workspace }}/cached-sdk'
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v4
@@ -679,7 +695,6 @@ jobs:
         run: ${{ env.ci_build_script }} install rel
 
       - uses: actions/upload-artifact@v4
-        if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.THIRDPARTY_VERSION }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
@@ -731,7 +746,7 @@ jobs:
 
   MacOS:
     if: |
-      false && github.event.pull_request.draft == false &&
+      github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'MacOS'))
     runs-on: macos-13
@@ -754,15 +769,6 @@ jobs:
       ci_arch: ${{ matrix.ci_arch }}
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
-      ci_artifacts: ${{ (
-                          github.ref == 'refs/heads/master'           ||
-                          startsWith(github.ref, 'refs/tags/nuget/')  ||
-                          startsWith(github.ref, 'refs/heads/nuget/')
-                        )                                             &&
-                        (matrix.ci_arch == 'x64')                     &&
-                        (matrix.ci_lib_type == 'dll')                 &&
-                        (matrix.ci_compiler == 'clang')
-                    }}
       ci_release_sdk: ${{
                         (matrix.ci_arch == 'x64')           &&
                         (matrix.ci_lib_type == 'dll')       &&
@@ -784,6 +790,10 @@ jobs:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
+      - name: Get short SHA
+        shell: bash
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
       - name: Set up butler
         if: ${{ (env.ci_itch == 'true') && (vars.DISABLE_ITCH != 'true') }}
         uses: jdno/setup-butler@v1
@@ -792,7 +802,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}-${{ env.SHORT_SHA }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}
 
@@ -810,6 +820,22 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
+
+      - name: Check for existing SDK artifact
+        id: check_sdk
+        if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
+        shell: bash
+        run: |
+          THIRDPARTY_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          echo "ThirdParty short hash: $THIRDPARTY_VERSION"
+          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
+
+          ARTIFACT_PREFIX="rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-$THIRDPARTY_VERSION-"
+          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' \
+            '$ARTIFACT_PREFIX' \
+            '${{ github.token }}' \
+            '${{ github.repository }}' \
+            '${{ github.workspace }}/cached-sdk'
 
       - name: Dependencies
         shell: bash
@@ -835,18 +861,9 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} install rel
 
-      - name: Get ThirdParty version
-        if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
-        shell: bash
-        run: |
-          THIRDPARTY_VERSION=$(grep -oP 'set\(PACKAGE_VERSION\s+"\K[^"]+' "${{ env.ci_sdk_dir }}/share/Urho3DThirdParty/CMake/Urho3DThirdPartyConfigVersion.cmake" || echo "unknown")
-          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
-          echo "ThirdParty version: $THIRDPARTY_VERSION"
-
       - uses: actions/upload-artifact@v4
-        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.THIRDPARTY_VERSION }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.THIRDPARTY_VERSION }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
 
       - name: Zip SDK
@@ -896,7 +913,7 @@ jobs:
 
   Android:
     if: |
-      false && github.event.pull_request.draft == false &&
+      github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'Android'))
     runs-on: ubuntu-latest
@@ -918,17 +935,21 @@ jobs:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
+      - name: Get short SHA
+        shell: bash
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
       - name: Build Cache
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ github.sha }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ env.SHORT_SHA }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}
 
       - uses: actions/download-artifact@v4
         with:
-          name: 'rbfx-Linux-Tools-${{ github.sha }}'
+          name: 'rbfx-Linux-Tools-${{ env.SHORT_SHA }}'
           path: host-sdk/
 
       - name: Setup dotnet
@@ -971,7 +992,7 @@ jobs:
 
   iOS:
     if: |
-      false && github.event.pull_request.draft == false &&
+      github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'iOS'))
     runs-on: macos-13
@@ -1001,17 +1022,20 @@ jobs:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
+      - name: Get short SHA
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
       - name: Build Cache
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ github.sha }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ env.SHORT_SHA }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}
 
       - uses: actions/download-artifact@v4
         with:
-          name: 'rbfx-MacOS-Tools-${{ github.sha }}'
+          name: 'rbfx-MacOS-Tools-${{ env.SHORT_SHA }}'
           path: host-sdk/
 
       - name: Setup dotnet
@@ -1053,7 +1077,7 @@ jobs:
 
   Web:
     if: |
-      false && github.event.pull_request.draft == false &&
+      github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'Web'))
     runs-on: ubuntu-latest
@@ -1071,12 +1095,6 @@ jobs:
       BINARYEN_CORES: 1
       ci_platform: web
       ci_lib_type: ${{ matrix.ci_lib_type }}
-      ci_artifacts: ${{ (
-                          github.ref == 'refs/heads/master'           ||
-                          startsWith(github.ref, 'refs/tags/nuget/')  ||
-                          startsWith(github.ref, 'refs/heads/nuget/')
-                        )
-                    }}
       ci_release_sdk: ${{
                         (github.repository == 'rbfx/rbfx')  &&
                         (github.ref == 'refs/heads/master')
@@ -1093,23 +1111,43 @@ jobs:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
+      - name: Get short SHA
+        shell: bash
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
       - name: Build Cache
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ github.sha }}
+          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ env.SHORT_SHA }}
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}
 
       - uses: actions/download-artifact@v4
         with:
-          name: 'rbfx-Linux-Tools-${{ github.sha }}'
+          name: 'rbfx-Linux-Tools-${{ env.SHORT_SHA }}'
           path: host-sdk/
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
+
+      - name: Check for existing SDK artifact
+        id: check_sdk
+        if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
+        shell: bash
+        run: |
+          THIRDPARTY_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          echo "ThirdParty short hash: $THIRDPARTY_VERSION"
+          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
+
+          ARTIFACT_PREFIX="rbfx-${{ github.job }}-${{ matrix.ci_lib_type }}-$THIRDPARTY_VERSION-"
+          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' \
+            '$ARTIFACT_PREFIX' \
+            '${{ github.token }}' \
+            '${{ github.repository }}' \
+            '${{ github.workspace }}/cached-sdk'
 
       - name: Dependencies
         shell: bash
@@ -1147,9 +1185,8 @@ jobs:
           publish_branch: master
 
       - uses: actions/upload-artifact@v4
-        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ env.ci_lib_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ env.ci_lib_type }}-${{ env.THIRDPARTY_VERSION }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
 
       - name: Zip SDK
