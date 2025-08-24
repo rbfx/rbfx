@@ -133,21 +133,53 @@ jobs:
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
+      - name: Cached build
+        id: cache-check
+        shell: bash
+        run: |
+          THIRDPARTY_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          TOOLS_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          TOOLS_SLUG="$TOOLS_VERSION+$THIRDPARTY_VERSION"
+          echo "Tools slug: $TOOLS_SLUG"
+          echo "TOOLS_SLUG=$TOOLS_SLUG" >> $GITHUB_ENV
+
+          ARTIFACT_PREFIX="rbfx-${{ github.job }}-$TOOLS_SLUG"
+          set +e
+          ARTIFACT_EXISTS=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' \
+            "$ARTIFACT_PREFIX" \
+            '${{ github.token }}' \
+            '${{ github.repository }}' \
+            '${{ github.workspace }}/cached-sdk' \
+            --check-only)
+          set -e
+
+          if [[ "$ARTIFACT_EXISTS" == "0" ]]; then
+            echo "Found cached SDK artifact: $ARTIFACT_PREFIX"
+            echo "is-cached=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No cached SDK artifact found"
+            echo "is-cached=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Generate
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
         run: cmake '-S${{ env.ci_source_dir }}' '-B${{ env.ci_build_dir }}' '-DCMAKE_INSTALL_PREFIX=${{ env.ci_sdk_dir }}' -DCMAKE_BUILD_TYPE=Release -DURHO3D_PARALLEL_BUILD=$NUMBER_OF_PROCESSORS
 
       - name: Build
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
         run: cmake --build '${{ env.ci_build_dir }}' --config Release --parallel $NUMBER_OF_PROCESSORS
 
       - name: Install
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
         run: cmake --install '${{ env.ci_build_dir }}' --config Release
 
       - uses: actions/upload-artifact@v4
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         with:
-          name: 'rbfx-${{ github.job }}-${{ env.SHORT_SHA }}'
+          name: 'rbfx-${{ github.job }}-${{ env.TOOLS_SLUG }}'
           path: ${{ env.ci_sdk_dir }}
 
   Linux-Tools:
@@ -191,7 +223,36 @@ jobs:
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
+      - name: Cached build
+        id: cache-check
+        shell: bash
+        run: |
+          THIRDPARTY_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          TOOLS_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          TOOLS_SLUG="$TOOLS_VERSION+$THIRDPARTY_VERSION"
+          echo "Tools slug: $TOOLS_SLUG"
+          echo "TOOLS_SLUG=$TOOLS_SLUG" >> $GITHUB_ENV
+
+          ARTIFACT_PREFIX="rbfx-${{ github.job }}-$TOOLS_SLUG"
+          set +e
+          ARTIFACT_EXISTS=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' \
+            "$ARTIFACT_PREFIX" \
+            '${{ github.token }}' \
+            '${{ github.repository }}' \
+            '${{ github.workspace }}/cached-sdk' \
+            --check-only)
+          set -e
+
+          if [[ "$ARTIFACT_EXISTS" == "0" ]]; then
+            echo "Found cached SDK artifact: $ARTIFACT_PREFIX"
+            echo "is-cached=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No cached SDK artifact found"
+            echo "is-cached=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Dependencies
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
         run: |
           sudo apt-get update
@@ -199,20 +260,24 @@ jobs:
             libxrender-dev libxss-dev libasound2-dev libpulse-dev libibus-1.0-dev libdbus-1-dev libreadline6-dev libudev-dev uuid-dev libtbb-dev
 
       - name: Generate
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
         run: cmake '-S${{ env.ci_source_dir }}' '-B${{ env.ci_build_dir }}' '-DCMAKE_INSTALL_PREFIX=${{ env.ci_sdk_dir }}' -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
         run: cmake --build '${{ env.ci_build_dir }}' --config Release --parallel $(nproc)
 
       - name: Install
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
         run: cmake --install '${{ env.ci_build_dir }}' --config Release
 
       - uses: actions/upload-artifact@v4
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         with:
-          name: 'rbfx-${{ github.job }}-${{ env.SHORT_SHA }}'
+          name: 'rbfx-${{ github.job }}-${{ env.TOOLS_SLUG }}'
           path: ${{ env.ci_sdk_dir }}
 
   MacOS-Tools:
@@ -254,21 +319,53 @@ jobs:
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
+      - name: Cached build
+        id: cache-check
+        shell: bash
+        run: |
+          THIRDPARTY_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          TOOLS_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          TOOLS_SLUG="$TOOLS_VERSION+$THIRDPARTY_VERSION"
+          echo "Tools slug: $TOOLS_SLUG"
+          echo "TOOLS_SLUG=$TOOLS_SLUG" >> $GITHUB_ENV
+
+          ARTIFACT_PREFIX="rbfx-${{ github.job }}-$TOOLS_SLUG"
+          set +e
+          ARTIFACT_EXISTS=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' \
+            "$ARTIFACT_PREFIX" \
+            '${{ github.token }}' \
+            '${{ github.repository }}' \
+            '${{ github.workspace }}/cached-sdk' \
+            --check-only)
+          set -e
+
+          if [[ "$ARTIFACT_EXISTS" == "0" ]]; then
+            echo "Found cached SDK artifact: $ARTIFACT_PREFIX"
+            echo "is-cached=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No cached SDK artifact found"
+            echo "is-cached=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Generate
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
         run: cmake -S${{ env.ci_source_dir }} -B${{ env.ci_build_dir }} '-DCMAKE_INSTALL_PREFIX=${{ env.ci_sdk_dir }}' -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
         run: cmake --build '${{ env.ci_build_dir }}' --config Release --parallel $(sysctl -n hw.ncpu)
 
       - name: Install
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
         run: cmake --install '${{ env.ci_build_dir }}' --config Release
 
       - uses: actions/upload-artifact@v4
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         with:
-          name: 'rbfx-${{ github.job }}-${{ env.SHORT_SHA }}'
+          name: 'rbfx-${{ github.job }}-${{ env.TOOLS_SLUG }}'
           path: ${{ env.ci_sdk_dir }}
 
   Windows:
@@ -363,7 +460,7 @@ jobs:
 
           ARTIFACT_PREFIX="rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-$THIRDPARTY_VERSION-"
           bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' \
-            '$ARTIFACT_PREFIX' \
+            "$ARTIFACT_PREFIX" \
             '${{ github.token }}' \
             '${{ github.repository }}' \
             '${{ github.workspace }}/cached-sdk'
@@ -511,9 +608,30 @@ jobs:
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}
 
+      - name: Check for existing SDK artifact
+        id: check_sdk
+        if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
+        shell: bash
+        run: |
+          THIRDPARTY_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          echo "ThirdParty short hash: $THIRDPARTY_VERSION"
+          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
+
+          TOOLS_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          TOOLS_SLUG="$TOOLS_VERSION+$THIRDPARTY_VERSION"
+          echo "Tools slug: $TOOLS_SLUG"
+          echo "TOOLS_SLUG=$TOOLS_SLUG" >> $GITHUB_ENV
+
+          ARTIFACT_PREFIX="rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-$THIRDPARTY_VERSION-"
+          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' \
+            "$ARTIFACT_PREFIX" \
+            '${{ github.token }}' \
+            '${{ github.repository }}' \
+            '${{ github.workspace }}/cached-sdk'
+
       - uses: actions/download-artifact@v4
         with:
-          name: 'rbfx-Windows-Tools-${{ env.SHORT_SHA }}'
+          name: 'rbfx-Windows-Tools-${{ env.TOOLS_SLUG }}'
           path: host-sdk/
 
       - name: Setup dotnet
@@ -526,22 +644,6 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
-
-      - name: Check for existing SDK artifact
-        id: check_sdk
-        if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
-        shell: bash
-        run: |
-          THIRDPARTY_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
-          echo "ThirdParty short hash: $THIRDPARTY_VERSION"
-          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
-
-          ARTIFACT_PREFIX="rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-$THIRDPARTY_VERSION-"
-          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' \
-            '$ARTIFACT_PREFIX' \
-            '${{ github.token }}' \
-            '${{ github.repository }}' \
-            '${{ github.workspace }}/cached-sdk'
 
       - name: Dependencies
         shell: bash
@@ -646,7 +748,7 @@ jobs:
 
           ARTIFACT_PREFIX="rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-$THIRDPARTY_VERSION-"
           bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' \
-            '$ARTIFACT_PREFIX' \
+            "$ARTIFACT_PREFIX" \
             '${{ github.token }}' \
             '${{ github.repository }}' \
             '${{ github.workspace }}/cached-sdk'
@@ -832,7 +934,7 @@ jobs:
 
           ARTIFACT_PREFIX="rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-$THIRDPARTY_VERSION-"
           bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' \
-            '$ARTIFACT_PREFIX' \
+            "$ARTIFACT_PREFIX" \
             '${{ github.token }}' \
             '${{ github.repository }}' \
             '${{ github.workspace }}/cached-sdk'
@@ -947,9 +1049,23 @@ jobs:
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}
 
+      - name: Check for existing SDK artifact
+        id: check_sdk
+        if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
+        shell: bash
+        run: |
+          THIRDPARTY_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          echo "ThirdParty short hash: $THIRDPARTY_VERSION"
+          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
+
+          TOOLS_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          TOOLS_SLUG="$TOOLS_VERSION+$THIRDPARTY_VERSION"
+          echo "Tools slug: $TOOLS_SLUG"
+          echo "TOOLS_SLUG=$TOOLS_SLUG" >> $GITHUB_ENV
+
       - uses: actions/download-artifact@v4
         with:
-          name: 'rbfx-Linux-Tools-${{ env.SHORT_SHA }}'
+          name: 'rbfx-Linux-Tools-${{ env.TOOLS_SLUG }}'
           path: host-sdk/
 
       - name: Setup dotnet
@@ -1033,9 +1149,23 @@ jobs:
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}
 
+      - name: Check for existing SDK artifact
+        id: check_sdk
+        if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
+        shell: bash
+        run: |
+          THIRDPARTY_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          echo "ThirdParty short hash: $THIRDPARTY_VERSION"
+          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
+
+          TOOLS_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          TOOLS_SLUG="$TOOLS_VERSION+$THIRDPARTY_VERSION"
+          echo "Tools slug: $TOOLS_SLUG"
+          echo "TOOLS_SLUG=$TOOLS_SLUG" >> $GITHUB_ENV
+
       - uses: actions/download-artifact@v4
         with:
-          name: 'rbfx-MacOS-Tools-${{ env.SHORT_SHA }}'
+          name: 'rbfx-MacOS-Tools-${{ env.TOOLS_SLUG }}'
           path: host-sdk/
 
       - name: Setup dotnet
@@ -1123,16 +1253,6 @@ jobs:
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: 'rbfx-Linux-Tools-${{ env.SHORT_SHA }}'
-          path: host-sdk/
-
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: '${{ env.CMAKE_VERSION }}'
-
       - name: Check for existing SDK artifact
         id: check_sdk
         if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
@@ -1142,12 +1262,27 @@ jobs:
           echo "ThirdParty short hash: $THIRDPARTY_VERSION"
           echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
 
+          TOOLS_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          TOOLS_SLUG="$TOOLS_VERSION+$THIRDPARTY_VERSION"
+          echo "Tools slug: $TOOLS_SLUG"
+          echo "TOOLS_SLUG=$TOOLS_SLUG" >> $GITHUB_ENV
+
           ARTIFACT_PREFIX="rbfx-${{ github.job }}-${{ matrix.ci_lib_type }}-$THIRDPARTY_VERSION-"
           bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' \
-            '$ARTIFACT_PREFIX' \
+            "$ARTIFACT_PREFIX" \
             '${{ github.token }}' \
             '${{ github.repository }}' \
             '${{ github.workspace }}/cached-sdk'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: 'rbfx-Linux-Tools-${{ env.TOOLS_SLUG }}'
+          path: host-sdk/
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '${{ env.CMAKE_VERSION }}'
 
       - name: Dependencies
         shell: bash

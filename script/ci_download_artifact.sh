@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Download matching SDK artifact from previous builds
-# Usage: ci_download_artifact.sh <artifact_prefix> <github_token> <github_repository> <output_dir>
+# Download or check existence of matching SDK artifact from previous builds
+# Usage: ci_download_artifact.sh <artifact_prefix> <github_token> <github_repository> <output_dir> [--check-only]
 
 set -e
 
@@ -10,9 +10,10 @@ ARTIFACT_PREFIX=$1
 GITHUB_TOKEN=$2
 GITHUB_REPOSITORY=$3
 OUTPUT_DIR=$4
+CHECK_ONLY=${5:-}
 
-if [ $# -ne 4 ]; then
-    echo "Usage: $0 <artifact_prefix> <github_token> <github_repository> <output_dir>"
+if [ $# -lt 4 ] || [ $# -gt 5 ]; then
+    echo "Usage: $0 <artifact_prefix> <github_token> <github_repository> <output_dir> [--check-only]"
     exit 1
 fi
 
@@ -36,11 +37,10 @@ if [ "$MATCHING_ARTIFACT" != "null" ] && [ -n "$MATCHING_ARTIFACT" ]; then
 
     echo "Found matching artifact: $ARTIFACT_NAME (ID: $ARTIFACT_ID, Version: $ARTIFACT_VERSION)"
 
-    # Output for GitHub Actions
-    echo "FOUND_SDK=true" >> $GITHUB_OUTPUT
-    echo "ARTIFACT_ID=$ARTIFACT_ID" >> $GITHUB_OUTPUT
-    echo "ARTIFACT_VERSION=$ARTIFACT_VERSION" >> $GITHUB_OUTPUT
-    echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+    if [ "$CHECK_ONLY" = "--check-only" ]; then
+        echo "Check-only mode: Artifact exists"
+        exit 0
+    fi
 
     # Download the artifact
     URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/$ARTIFACT_ID/zip"
@@ -59,6 +59,9 @@ if [ "$MATCHING_ARTIFACT" != "null" ] && [ -n "$MATCHING_ARTIFACT" ]; then
     exit 0
 else
     echo "No matching SDK artifact found"
+    if [ "$CHECK_ONLY" = "--check-only" ]; then
+        exit 1
+    fi
     echo "FOUND_SDK=false" >> $GITHUB_OUTPUT
     exit 0
 fi
