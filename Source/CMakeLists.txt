@@ -30,13 +30,8 @@ if (MSVC)
         ucm_add_flags(/MP${URHO3D_PARALLEL_BUILD})
     endif ()
 endif ()
-# Generate ThirdParty version hash based on git-tracked files
-include(${rbfx_SOURCE_DIR}/CMake/Modules/GetThirdPartyHash.cmake)
-get_thirdparty_hash("${CMAKE_CURRENT_SOURCE_DIR}" URHO3D_THIRDPARTY_VERSION)
-message(STATUS "ThirdParty version hash: ${URHO3D_THIRDPARTY_VERSION}")
 
-# Try to find ThirdParty as an external package first
-find_package(Urho3DThirdParty ${URHO3D_THIRDPARTY_VERSION} EXACT QUIET NO_CMAKE_INSTALL_PREFIX)
+# Package is found in the main CMakeLists.txt
 if (Urho3DThirdParty_FOUND)
     message(STATUS "Using external ThirdParty component, SDK builds disabled")
     set(CMAKE_SKIP_INSTALL_RULES ON PARENT_SCOPE)

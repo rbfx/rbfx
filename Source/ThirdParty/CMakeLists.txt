@@ -416,14 +416,14 @@ include(CMakePackageConfigHelpers)
 
 # Generate the config file from the template
 configure_package_config_file(
-    "${CMAKE_SOURCE_DIR}/CMake/Urho3DThirdPartyConfig.cmake.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/CMake/Urho3DThirdPartyConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/Urho3DThirdPartyConfig.cmake"
     INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR}Urho3DThirdParty/CMake
 )
 
 # Generate the version file with platform compatibility checking
 configure_file(
-    ${rbfx_SOURCE_DIR}/CMake/Urho3DThirdPartyConfigVersion.cmake.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/CMake/Urho3DThirdPartyConfigVersion.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/Urho3DThirdPartyConfigVersion.cmake
     @ONLY
 )

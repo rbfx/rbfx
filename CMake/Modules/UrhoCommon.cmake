@@ -23,9 +23,7 @@
 include(${CMAKE_CURRENT_LIST_DIR}/ucm.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/VSSolution.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/UrhoOptions.cmake)
-if (NOT (URHO3D_PRISTINE_FULL_BUILDS AND Urho3DThirdParty_FOUND))
-    include(${CMAKE_CURRENT_LIST_DIR}/CCache.cmake)
-endif ()
+include(${CMAKE_CURRENT_LIST_DIR}/CCache.cmake)
 
 if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../Urho3D.cmake)
     set (URHO3D_IS_SDK ON)

@@ -3402,7 +3402,7 @@ endif ()
 install (DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/SDL/ FILES_MATCHING PATTERN *.h)    # Note: the trailing slash is significant
 install (FILES
   "${SDL2_BINARY_DIR}/include/SDL_revision.h"
-  #"${SDL2_BINARY_DIR}/include-config-$<LOWER_CASE:$<CONFIG>>/SDL_config.h"
+  "${SDL2_BINARY_DIR}/include-config-$<LOWER_CASE:$<CONFIG>>/SDL_config.h"
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/SDL)
 
 install_third_party_libs(SDL2-static)

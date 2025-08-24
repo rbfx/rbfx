@@ -54,17 +54,21 @@ set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME SDK)
 
 # Generate ThirdParty version hash based on git-tracked files
 include(${rbfx_SOURCE_DIR}/CMake/Modules/GetThirdPartyHash.cmake)
-get_thirdparty_hash("${CMAKE_CURRENT_SOURCE_DIR}" URHO3D_THIRDPARTY_VERSION)
-message(STATUS "ThirdParty version hash: ${URHO3D_THIRDPARTY_VERSION}")
+get_thirdparty_hash("${rbfx_SOURCE_DIR}/Source/ThirdParty" URHO3D_THIRDPARTY_VERSION HASH_FORMAT version)
+get_thirdparty_hash("${rbfx_SOURCE_DIR}/Source/ThirdParty" URHO3D_THIRDPARTY_SHORT_HASH HASH_FORMAT short)
+message(STATUS "ThirdParty version: ${URHO3D_THIRDPARTY_VERSION} | ${URHO3D_THIRDPARTY_SHORT_HASH}")
 
 # Try to find ThirdParty as an external package first
 # Whether we use CCache depends on result of this call
-find_package(Urho3DThirdParty ${URHO3D_THIRDPARTY_VERSION} EXACT QUIET NO_CMAKE_INSTALL_PREFIX)
+find_package(Urho3DThirdParty ${URHO3D_THIRDPARTY_VERSION} EXACT NO_CMAKE_INSTALL_PREFIX)
 
-# Include GNUInstallDirs early to ensure install directories are defined
-include(GNUInstallDirs)
+# Disable ccache
+if (URHO3D_PRISTINE_FULL_BUILDS OR (ENV{CI} AND NOT Urho3DThirdParty_FOUND))
+    set(ENV{CCACHE_DISABLE} 1)
+endif ()
 
 # Include common utilities
+include(GNUInstallDirs)
 include(UrhoCommon)
 
 # Find threading libraries (required by Tracy and other components)

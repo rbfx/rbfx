@@ -29,6 +29,7 @@ env:
   URHO3D_PRISTINE_FULL_BUILDS: ON
   DOTNET_VERSION: '8.0'
   CMAKE_VERSION: 3.24.x
+  CMAKE_PREFIX_PATH: ${{ github.workspace }}/cached-sdk
   # ccache configuration
   ccache_prefix: ${{ secrets.CACHE_VERSION }}-master
   CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -603,6 +604,9 @@ jobs:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
+      - name: Get short SHA
+        run: echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
       - name: Set up butler
         if: ${{ (env.ci_itch == 'true') && (vars.DISABLE_ITCH != 'true') }}
         uses: jdno/setup-butler@v1
@@ -615,24 +619,21 @@ jobs:
           restore-keys: |
             ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}
 
-      - name: Get ThirdParty version
-        shell: bash
-        run: |
-          THIRDPARTY_VERSION=$(cmake -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
-          echo "ThirdParty version: $THIRDPARTY_VERSION"
-          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
-
       - name: Check for existing SDK artifact
         id: check_sdk
         if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
         shell: bash
         run: |
-          ARTIFACT_PREFIX="rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.THIRDPARTY_VERSION }}-"
+          THIRDPARTY_VERSION=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          echo "ThirdParty short hash: $THIRDPARTY_VERSION"
+          echo "THIRDPARTY_VERSION=$THIRDPARTY_VERSION" >> $GITHUB_ENV
+
+          ARTIFACT_PREFIX="rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-$THIRDPARTY_VERSION-"
           bash ${{ env.ci_source_dir }}/script/ci_download_artifact.sh \
             "$ARTIFACT_PREFIX" \
             "${{ github.token }}" \
             "${{ github.repository }}" \
-            "${{ github.workspace }}"
+            "${{ github.workspace }}/cached-sdk"
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v4
@@ -680,7 +681,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.THIRDPARTY_VERSION }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.THIRDPARTY_VERSION }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
 
       - name: Zip SDK
