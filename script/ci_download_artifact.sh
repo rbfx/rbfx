@@ -2,6 +2,7 @@
 
 # Download or check existence of matching SDK artifact from previous builds
 # Usage: ci_download_artifact.sh <artifact_prefix> <github_token> <github_repository> <output_dir> [--check-only]
+# Outputs: "true" or "false" to stdout, log messages to stderr
 
 set -e
 
@@ -10,14 +11,17 @@ ARTIFACT_PREFIX=$1
 GITHUB_TOKEN=$2
 GITHUB_REPOSITORY=$3
 OUTPUT_DIR=$4
-CHECK_ONLY=${5:-}
+FLAG=${5:-}
 
 if [ $# -lt 4 ] || [ $# -gt 5 ]; then
-    echo "Usage: $0 <artifact_prefix> <github_token> <github_repository> <output_dir> [--check-only]"
+    echo "Usage: $0 <artifact_prefix> <github_token> <github_repository> <output_dir> [--check-only|--required]" >&2
     exit 1
 fi
 
-echo "Searching for artifacts matching prefix: $ARTIFACT_PREFIX"
+# Only show searching message if not in check-only mode
+if [ "$FLAG" != "--check-only" ]; then
+    echo "Searching for artifacts matching prefix: $ARTIFACT_PREFIX" >&2
+fi
 
 # Fetch artifacts list
 ARTIFACTS_JSON=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
@@ -35,33 +39,37 @@ if [ "$MATCHING_ARTIFACT" != "null" ] && [ -n "$MATCHING_ARTIFACT" ]; then
     # Extract version from artifact name (everything between prefix and last dash)
     ARTIFACT_VERSION=$(echo "$ARTIFACT_NAME" | sed -n "s/^${ARTIFACT_PREFIX}\([^-]*\)-.*$/\1/p")
 
-    echo "Found matching artifact: $ARTIFACT_NAME (ID: $ARTIFACT_ID, Version: $ARTIFACT_VERSION)"
-
-    if [ "$CHECK_ONLY" = "--check-only" ]; then
-        echo "Check-only mode: Artifact exists"
+    if [ "$FLAG" = "--check-only" ]; then
+        echo "true"
         exit 0
     fi
 
+    echo "Found matching artifact: $ARTIFACT_NAME (ID: $ARTIFACT_ID, Version: $ARTIFACT_VERSION)" >&2
+
     # Download the artifact
     URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/$ARTIFACT_ID/zip"
-    echo "Downloading artifact from $URL"
-    curl -L -H "Authorization: token ${GITHUB_TOKEN}" \
+    echo "Downloading artifact from $URL" >&2
+
+    if curl -L -H "Authorization: token ${GITHUB_TOKEN}" \
         $URL \
-        -o sdk-artifact.zip
+        -o sdk-artifact.zip; then
 
-    # Extract to a temporary location
-    mkdir -p "$OUTPUT_DIR"
-    echo "Extracting artifact to $OUTPUT_DIR..."
-    unzip -q sdk-artifact.zip -d "$OUTPUT_DIR"
+        # Extract to a temporary location
+        mkdir -p "$OUTPUT_DIR"
+        echo "Extracting artifact to $OUTPUT_DIR..." >&2
 
-    echo "Successfully downloaded and extracted SDK artifact"
-
-    exit 0
-else
-    echo "No matching SDK artifact found"
-    if [ "$CHECK_ONLY" = "--check-only" ]; then
-        exit 1
+        if unzip -q sdk-artifact.zip -d "$OUTPUT_DIR"; then
+            echo "Successfully downloaded and extracted SDK artifact" >&2
+            echo "true"
+        else
+            echo "Failed to extract SDK artifact" >&2
+            echo "false"
+        fi
+    else
+        echo "Failed to download SDK artifact" >&2
+        echo "false"
     fi
-    echo "FOUND_SDK=false" >> $GITHUB_OUTPUT
-    exit 0
+else
+    echo "No matching SDK artifact found" >&2
+    echo "false"
 fi

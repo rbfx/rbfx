@@ -219,43 +219,6 @@ if (NOT UWP)
 endif ()
 
 if (URHO3D_PROFILING)
-    # Add Tracy dependencies
-
-    # Configure zstd as static library (using simplified single-file amalgamation)
-    add_subdirectory(zstd)
-    install_third_party_libs(zstd)
-
-    # Configure capstone as static library
-    set(BUILD_SHARED_LIBS_SAVED ${BUILD_SHARED_LIBS})
-    set(BUILD_SHARED_LIBS OFF)
-    set(CAPSTONE_BUILD_STATIC ON CACHE BOOL "" FORCE)
-    set(CAPSTONE_BUILD_SHARED OFF CACHE BOOL "" FORCE)
-    set(CAPSTONE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(CAPSTONE_BUILD_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
-    set(CAPSTONE_BUILD_LEGACY_TESTS OFF CACHE BOOL "" FORCE)
-    set(CAPSTONE_BUILD_CSTOOL OFF CACHE BOOL "" FORCE)
-    set(CAPSTONE_BUILD_CSTEST OFF CACHE BOOL "" FORCE)
-    set(CAPSTONE_ARCHITECTURE_DEFAULT OFF CACHE BOOL "" FORCE)
-    set(CAPSTONE_INSTALL OFF CACHE BOOL "" FORCE)
-    # Architecture options - match Tracy's configuration
-    set(CAPSTONE_X86_ATT_DISABLE ON CACHE BOOL "" FORCE)
-    set(CAPSTONE_BUILD_MACOS_THIN ON CACHE BOOL "" FORCE)
-    add_subdirectory(capstone)
-    set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS_SAVED})
-    # Create alias for compatibility with Tracy
-    add_library(TracyCapstone INTERFACE)
-    target_include_directories(TracyCapstone INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/capstone/include/capstone)
-    target_link_libraries(TracyCapstone INTERFACE capstone)
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/capstone/include/capstone/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/capstone
-        FILES_MATCHING PATTERN "*.h"
-    )
-    install_third_party_libs(capstone)
-
-    # ppqsort (header-only library)
-    add_subdirectory(ppqsort)
-    install_third_party_libs(ppqsort)
-
     set (TRACY_ON_DEMAND ON)
     set (TRACY_DELAYED_INIT ON)
     set (TRACY_MANUAL_LIFETIME ON)
@@ -263,6 +226,43 @@ if (URHO3D_PROFILING)
     add_subdirectory(tracy)
 
     if (DESKTOP)
+        # Add Tracy dependencies
+
+        # Configure zstd as static library (using simplified single-file amalgamation)
+        add_subdirectory(zstd)
+        install_third_party_libs(zstd)
+
+        # Configure capstone as static library
+        set(BUILD_SHARED_LIBS_SAVED ${BUILD_SHARED_LIBS})
+        set(BUILD_SHARED_LIBS OFF)
+        set(CAPSTONE_BUILD_STATIC ON CACHE BOOL "" FORCE)
+        set(CAPSTONE_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+        set(CAPSTONE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+        set(CAPSTONE_BUILD_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
+        set(CAPSTONE_BUILD_LEGACY_TESTS OFF CACHE BOOL "" FORCE)
+        set(CAPSTONE_BUILD_CSTOOL OFF CACHE BOOL "" FORCE)
+        set(CAPSTONE_BUILD_CSTEST OFF CACHE BOOL "" FORCE)
+        set(CAPSTONE_ARCHITECTURE_DEFAULT OFF CACHE BOOL "" FORCE)
+        set(CAPSTONE_INSTALL OFF CACHE BOOL "" FORCE)
+        # Architecture options - match Tracy's configuration
+        set(CAPSTONE_X86_ATT_DISABLE ON CACHE BOOL "" FORCE)
+        set(CAPSTONE_BUILD_MACOS_THIN ON CACHE BOOL "" FORCE)
+        add_subdirectory(capstone)
+        set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS_SAVED})
+        # Create alias for compatibility with Tracy
+        add_library(TracyCapstone INTERFACE)
+        target_include_directories(TracyCapstone INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/capstone/include/capstone)
+        target_link_libraries(TracyCapstone INTERFACE capstone)
+        install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/capstone/include/capstone/
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/capstone
+            FILES_MATCHING PATTERN "*.h"
+        )
+        install_third_party_libs(capstone)
+
+        # ppqsort (header-only library)
+        add_subdirectory(ppqsort)
+        install_third_party_libs(ppqsort)
+
         add_library(TracyImGui ALIAS ImGui)
         # NOTE: nfd::nfd alias might already exist
         if (TARGET nfd AND NOT TARGET nfd::nfd)

@@ -65,6 +65,7 @@ find_package(Urho3DThirdParty ${URHO3D_THIRDPARTY_VERSION} EXACT NO_CMAKE_INSTAL
 # Disable ccache
 if (URHO3D_PRISTINE_FULL_BUILDS OR (ENV{CI} AND NOT Urho3DThirdParty_FOUND))
     set(ENV{CCACHE_DISABLE} 1)
+    message(STATUS "CCache disabled")
 endif ()
 
 # Include common utilities
