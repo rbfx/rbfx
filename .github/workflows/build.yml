@@ -1574,3 +1574,95 @@ jobs:
         shell: bash
         run: |
           gh workflow run --repo rbfx/rbfx-docs Documentation
+
+  BuildSummary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - Windows
+      - UWP
+      - Linux
+      - MacOS
+      - Android
+      - iOS
+      - Web
+      - Windows-Tools
+      - Linux-Tools
+      - MacOS-Tools
+
+    steps:
+      - name: Generate Build Summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobs = context.workflow_run ? context.workflow_run.jobs : [];
+
+            // Get job information from the workflow run
+            const workflowRun = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            });
+
+            // Create summary table
+            let summary = '## Build Summary\n\n';
+            summary += '| Job | Status | Duration |\n';
+            summary += '|-----|--------|----------|\n';
+
+            // Filter and sort jobs (exclude utility jobs)
+            const buildJobs = workflowRun.data.jobs.filter(job =>
+              !['CheckSkipCI', 'Web Hooks', "Release 'latest'", 'Build Summary', 'Docs', 'NuGet'].includes(job.name)
+            ).sort((a, b) => a.name.localeCompare(b.name));
+
+            for (const job of buildJobs) {
+              const status = job.conclusion || job.status;
+              let statusIcon = '';
+
+              switch (status) {
+                case 'success':
+                  statusIcon = '✅';
+                  break;
+                case 'failure':
+                  statusIcon = '❌';
+                  break;
+                case 'cancelled':
+                  statusIcon = '🚫';
+                  break;
+                case 'skipped':
+                  statusIcon = '⏭️';
+                  break;
+                default:
+                  statusIcon = '⏳';
+              }
+
+              // Calculate duration
+              let duration = 'N/A';
+              if (job.started_at && job.completed_at) {
+                const start = new Date(job.started_at);
+                const end = new Date(job.completed_at);
+                const durationMs = end - start;
+                const minutes = Math.floor(durationMs / 60000);
+                const seconds = Math.floor((durationMs % 60000) / 1000);
+                duration = `${minutes}m ${seconds}s`;
+              } else if (job.started_at) {
+                duration = 'In progress...';
+              }
+
+              summary += `| ${job.name} | ${statusIcon} ${status} | ${duration} |\n`;
+            }
+
+            // Add summary statistics
+            const successCount = buildJobs.filter(j => j.conclusion === 'success').length;
+            const failureCount = buildJobs.filter(j => j.conclusion === 'failure').length;
+            const totalCount = buildJobs.length;
+
+            summary += '\n### Summary Statistics\n\n';
+            summary += `- Total build jobs: ${totalCount}\n`;
+            summary += `- Successful: ${successCount}\n`;
+            summary += `- Failed: ${failureCount}\n`;
+
+            // Write to job summary
+            await core.summary
+              .addRaw(summary)
+              .write();
