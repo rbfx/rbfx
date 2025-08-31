@@ -605,7 +605,7 @@ jobs:
       ci_arch: ${{ matrix.ci_arch }}
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
-      CMAKE_PREFIX_PATH: ${{ github.workspace }}/host-sdk
+      CMAKE_PREFIX_PATH: "${{ github.workspace }}/cached-sdk:${{ github.workspace }}/host-sdk"
 
     steps:
       - uses: actions/checkout@v5
@@ -1083,7 +1083,7 @@ jobs:
 
     env:
       ci_platform: android
-      CMAKE_PREFIX_PATH: ${{ github.workspace }}/host-sdk
+      CMAKE_PREFIX_PATH: "${{ github.workspace }}/cached-sdk:${{ github.workspace }}/host-sdk"
 
     steps:
       - uses: actions/checkout@v5
@@ -1273,7 +1273,7 @@ jobs:
                           startsWith(github.ref, 'refs/heads/nuget/')
                         )
                     }}
-      CMAKE_PREFIX_PATH: ${{ github.workspace }}/host-sdk
+      CMAKE_PREFIX_PATH: "${{ github.workspace }}/cached-sdk:${{ github.workspace }}/host-sdk"
 
     steps:
       - uses: actions/checkout@v5
@@ -1391,7 +1391,7 @@ jobs:
                         (github.repository == 'rbfx/rbfx')  &&
                         (github.ref == 'refs/heads/master')
                       }}
-      CMAKE_PREFIX_PATH: ${{ github.workspace }}/host-sdk
+      CMAKE_PREFIX_PATH: "${{ github.workspace }}/cached-sdk:${{ github.workspace }}/host-sdk"
 
     steps:
       - name: Checkout emsdk
