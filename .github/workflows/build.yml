@@ -29,7 +29,6 @@ env:
   URHO3D_PRISTINE_FULL_BUILDS: ON
   DOTNET_VERSION: '8.0'
   CMAKE_VERSION: 3.24.x
-  CMAKE_PREFIX_PATH: ${{ github.workspace }}/cached-sdk
   # ccache configuration
   ccache_prefix: ${{ secrets.CACHE_VERSION }}-master
   CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -605,7 +604,7 @@ jobs:
       ci_arch: ${{ matrix.ci_arch }}
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
-      CMAKE_PREFIX_PATH: "${{ github.workspace }}/cached-sdk:${{ github.workspace }}/host-sdk"
+      CMAKE_PREFIX_PATH: "${{ github.workspace }}/cached-sdk;${{ github.workspace }}/host-sdk"
 
     steps:
       - uses: actions/checkout@v5
@@ -748,6 +747,7 @@ jobs:
                       }}
       ci_itch: ${{ (github.ref == 'refs/heads/master') }}
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+      CMAKE_PREFIX_PATH: ${{ github.workspace }}/cached-sdk
 
     steps:
       - uses: actions/checkout@v5
@@ -932,6 +932,7 @@ jobs:
                       }}
       ci_itch: ${{ (github.ref == 'refs/heads/master') }}
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+      CMAKE_PREFIX_PATH: ${{ github.workspace }}/cached-sdk
 
     steps:
       - uses: actions/checkout@v5
@@ -1133,7 +1134,13 @@ jobs:
         id: cached_sdk
         if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
         shell: bash
-        run: echo "sdk-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk')" >> "$GITHUB_OUTPUT"
+        run: |
+          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "rbfx-${{ github.job }}-sdk-Debug-arm64-v8a" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk-Debug-arm64-v8a'
+          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "rbfx-${{ github.job }}-sdk-Debug-x86_64" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk-Debug-x86_64'
+          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "rbfx-${{ github.job }}-sdk-Debug-armeabi-v7a" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk-Debug-armeabi-v7a'
+          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "rbfx-${{ github.job }}-sdk-RelWithDebInfo-arm64-v8a" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk-RelWithDebInfo-arm64-v8a'
+          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "rbfx-${{ github.job }}-sdk-RelWithDebInfo-x86_64" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk-RelWithDebInfo-x86_64'
+          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "rbfx-${{ github.job }}-sdk-RelWithDebInfo-armeabi-v7a" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk-RelWithDebInfo-armeabi-v7a'
 
       - name: Download cached tools
         id: cached_tools
@@ -1164,42 +1171,63 @@ jobs:
       #  shell: bash
       #  run: ${{ env.ci_build_script }} generate
 
-      - name: Build Debug
+      # Matrix is not used because apk build depends on all archs to be built.
+      # Since gradle does all of this it is not clear how to separate arch builds into their own build steps.
+      - name: Build Debug arm64-v8a
         shell: bash
-        run: ${{ env.ci_build_script }} build dbg
+        run: CMAKE_PREFIX_PATH=${{ github.workspace }}/cached-sdk-Debug-arm64-v8a ci_arch=arm64-v8a ${{ env.ci_build_script }} build dbg
 
-      - name: Build Release
+      - name: Install Debug arm64-v8a
         shell: bash
-        run: ${{ env.ci_build_script }} build rel
+        run: cmake --install ${{ env.ci_source_dir }}/android/.cxx/Debug/*/arm64-v8a --config Debug --prefix "${{ github.workspace }}/android-sdk-Debug-arm64-v8a"
 
-      - name: Install Android SDKs
-        if: steps.cached_sdk.outputs.sdk-cached != 'true'
+      - name: Build Debug armeabi-v7a
         shell: bash
-        run: |
-          echo "Installing Android SDKs from CMake build directories..."
+        run: CMAKE_PREFIX_PATH=${{ github.workspace }}/cached-sdk-Debug-armeabi-v7a ci_arch=armeabi-v7a ${{ env.ci_build_script }} build dbg
 
-          # Find all CMake build directories and install SDKs
-          # Directory structure: ${{ env.ci_source_dir }}/android/.cxx/<BuildType>/<RandomString>/<Architecture>
-          for build_type in Debug RelWithDebInfo; do
-            for random_dir in ${{ env.ci_source_dir }}/android/.cxx/$build_type/*/; do
-              if [ -d "$random_dir" ]; then
-                echo "Found build directory: $random_dir"
+      - name: Install Debug armeabi-v7a
+        shell: bash
+        run: cmake --install ${{ env.ci_source_dir }}/android/.cxx/Debug/*/armeabi-v7a --config Debug --prefix "${{ github.workspace }}/android-sdk-Debug-armeabi-v7a"
 
-                # Process each architecture within the random directory
-                for arch in arm64-v8a x86_64 armeabi-v7a; do
-                  arch_path="${random_dir}${arch}"
-                  if [ -d "$arch_path" ]; then
-                    # Create install directory for this specific combination
-                    install_dir="${{ github.workspace }}/android-sdk-${build_type}-${arch}"
-                    echo "Installing SDK for $build_type $arch to $install_dir..."
-                    cmake --install "$arch_path" --config $build_type --prefix "$install_dir" || echo "Warning: Install failed for $build_type $arch"
-                  fi
-                done
-              fi
-            done
-          done
+      - name: Build Debug x86_64
+        shell: bash
+        run: CMAKE_PREFIX_PATH=${{ github.workspace }}/cached-sdk-Debug-x86_64 ci_arch=x86_64 ${{ env.ci_build_script }} build dbg
 
-          echo "Android SDK installation complete."
+      - name: Install Debug x86_64
+        shell: bash
+        run: cmake --install ${{ env.ci_source_dir }}/android/.cxx/Debug/*/x86_64 --config Debug --prefix "${{ github.workspace }}/android-sdk-Debug-x86_64"
+
+      - name: Build Debug apk
+        shell: bash
+        run: ${{ env.ci_build_script }} apk dbg
+
+      - name: Build RelWithDebInfo arm64-v8a
+        shell: bash
+        run:  CMAKE_PREFIX_PATH=${{ github.workspace }}/cached-sdk-RelWithDebInfo-arm64-v8a ci_arch=arm64-v8a ${{ env.ci_build_script }} build rel
+
+      - name: Install RelWithDebInfo arm64-v8a
+        shell: bash
+        run:  cmake --install ${{ env.ci_source_dir }}/android/.cxx/RelWithDebInfo/*/arm64-v8a --config RelWithDebInfo --prefix "${{ github.workspace }}/android-sdk-RelWithDebInfo-arm64-v8a"
+
+      - name: Build RelWithDebInfo armeabi-v7a
+        shell: bash
+        run: CMAKE_PREFIX_PATH=${{ github.workspace }}/cached-sdk-RelWithDebInfo-armeabi-v7a ci_arch=armeabi-v7a ${{ env.ci_build_script }} build rel
+
+      - name: Install RelWithDebInfo armeabi-v7a
+        shell: bash
+        run: cmake --install ${{ env.ci_source_dir }}/android/.cxx/RelWithDebInfo/*/armeabi-v7a --config RelWithDebInfo --prefix "${{ github.workspace }}/android-sdk-RelWithDebInfo-armeabi-v7a"
+
+      - name: Build RelWithDebInfo x86_64
+        shell: bash
+        run: CMAKE_PREFIX_PATH=${{ github.workspace }}/cached-sdk-RelWithDebInfo-x86_64 ci_arch=x86_64 ${{ env.ci_build_script }} build rel
+
+      - name: Install RelWithDebInfo x86_64
+        shell: bash
+        run: cmake --install ${{ env.ci_source_dir }}/android/.cxx/RelWithDebInfo/*/x86_64 --config RelWithDebInfo --prefix "${{ github.workspace }}/android-sdk-RelWithDebInfo-x86_64"
+
+      - name: Build RelWithDebInfo apk
+        shell: bash
+        run: ${{ env.ci_build_script }} apk rel
 
       - uses: actions/upload-artifact@v4
         with:
@@ -1391,7 +1419,6 @@ jobs:
                         (github.repository == 'rbfx/rbfx')  &&
                         (github.ref == 'refs/heads/master')
                       }}
-      CMAKE_PREFIX_PATH: "${{ github.workspace }}/cached-sdk:${{ github.workspace }}/host-sdk"
 
     steps:
       - name: Checkout emsdk
@@ -1474,7 +1501,10 @@ jobs:
 
       - name: Generate
         shell: bash
-        run: ${{ env.ci_build_script }} generate
+        run: |
+          ${{ env.ci_build_script }} generate \
+            -DUrho3DThirdParty_DIR="${{ github.workspace }}/cached-sdk/share/Urho3DThirdParty/CMake" \
+            -DUrho3DTools_DIR="${{ github.workspace }}/host-sdk/share/Urho3DTools/CMake"
 
       - name: Build Debug
         shell: bash

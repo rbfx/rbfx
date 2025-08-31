@@ -15,6 +15,17 @@
 ci_action=$1; shift;
 ci_build_type=$1; shift;
 
+# Parse for extra cmake arguments after -- without modifying $@
+extra_cmake_args=()
+found_separator=0
+for arg in "$@"; do
+    if [[ $found_separator -eq 1 ]]; then
+        extra_cmake_args+=("$arg")
+    elif [[ "$arg" == "--" ]]; then
+        found_separator=1
+    fi
+done
+
 # default values
 ci_compiler=${ci_compiler:-"default"}
 ci_build_type=${ci_build_type:-"rel"}
@@ -45,7 +56,12 @@ declare -A types=(
 # Web builds cannot handle RelWithDebInfo configuration.
 if [[ "$ci_platform" == "web" ]]; then types[rel]='Release'; fi
 
-declare -A android_types=(
+declare -A android_build_types=(
+    [dbg]='buildCMakeDebug'
+    [rel]='buildCMakeRelWithDebInfo'
+)
+
+declare -A android_apk_types=(
     [dbg]='assembleDebug'
     [rel]='assembleRelease'
 )
@@ -261,6 +277,9 @@ function action-generate() {
         )
     fi
 
+    # Add any extra CMake arguments passed after --
+    ci_cmake_params+=("${extra_cmake_args[@]}")
+
     ci_cmake_params+=(-B $ci_build_dir -S "$ci_source_dir")
 
     echo "${ci_cmake_params[@]}"
@@ -281,8 +300,8 @@ function action-build() {
       # Custom platform build paths used only on android.
       cd $ci_source_dir/android
       ccache -s
-      gradle wrapper                                && \
-      ./gradlew "${android_types[$ci_build_type]}"  && \
+      gradle wrapper                                                  && \
+      ./gradlew "${android_build_types[$ci_build_type]}[${ci_arch}]"  && \
       ccache -s
     else
       # Default build path using plain CMake.
@@ -297,6 +316,12 @@ function action-build() {
       cmake --build $ci_build_dir --parallel $NUMBER_OF_PROCESSORS --config "${types[$ci_build_type]}" && \
       ccache -s
     fi
+}
+
+function action-apk() {
+    cd $ci_source_dir/android
+    gradle wrapper                                   && \
+    ./gradlew "${android_apk_types[$ci_build_type]}"
 }
 
 function action-install() {
