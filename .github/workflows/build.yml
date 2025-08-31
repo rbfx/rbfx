@@ -86,7 +86,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Create and Push Tag
         run: |
@@ -112,7 +112,7 @@ jobs:
       URHO3D_TOOLS: "swig;PackageTool"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
@@ -204,7 +204,7 @@ jobs:
       URHO3D_TOOLS: "swig;PackageTool"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
@@ -303,7 +303,7 @@ jobs:
       URHO3D_TOOLS: "swig;PackageTool"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
@@ -422,7 +422,7 @@ jobs:
       CMAKE_PREFIX_PATH: ${{ github.workspace }}/cached-sdk
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
@@ -608,7 +608,7 @@ jobs:
       CMAKE_PREFIX_PATH: ${{ github.workspace }}/host-sdk
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
@@ -750,7 +750,7 @@ jobs:
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
@@ -934,7 +934,7 @@ jobs:
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
@@ -1086,7 +1086,7 @@ jobs:
       CMAKE_PREFIX_PATH: ${{ github.workspace }}/host-sdk
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
@@ -1276,7 +1276,7 @@ jobs:
       CMAKE_PREFIX_PATH: ${{ github.workspace }}/host-sdk
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
@@ -1381,7 +1381,7 @@ jobs:
         ci_lib_type:
           - lib
         ci_emsdk_version:
-          - ${{ vars.EMSDK_VERSION }}
+          - latest
 
     env:
       BINARYEN_CORES: 1
@@ -1394,11 +1394,22 @@ jobs:
       CMAKE_PREFIX_PATH: ${{ github.workspace }}/host-sdk
 
     steps:
-      - uses: mymindstorm/setup-emsdk@v14
+      - name: Checkout emsdk
+        uses: actions/checkout@v5
         with:
-          version: ${{ matrix.ci_emsdk_version }}
+          repository: emscripten-core/emsdk
+          path: ${{ github.workspace }}/emsdk
 
-      - uses: actions/checkout@v4
+      - name: Setup emsdk
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/emsdk
+          ./emsdk install ${{ matrix.ci_emsdk_version }}
+          ./emsdk activate ${{ matrix.ci_emsdk_version }}
+          echo "PATH=$PATH:${{ github.workspace }}/emsdk:${{ github.workspace }}/emsdk/upstream/emscripten" >> $GITHUB_ENV
+          echo "EMSDK=${{ github.workspace }}/emsdk" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
@@ -1532,7 +1543,7 @@ jobs:
       - Web
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: source-code
           fetch-depth: 1
