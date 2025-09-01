@@ -12,19 +12,34 @@
 # ci_build_dir:    cmake cache directory
 # ci_sdk_dir:      sdk installation directory
 
-ci_action=$1; shift;
-ci_build_type=$1; shift;
+# Parse arguments: action [build_type] [-- extra cmake args]
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 action [build_type] [-- extra cmake args]"
+    exit 1
+fi
 
-# Parse for extra cmake arguments after -- without modifying $@
+ci_action=$1; shift;
+ci_build_type=""
 extra_cmake_args=()
-found_separator=0
-for arg in "$@"; do
-    if [[ $found_separator -eq 1 ]]; then
-        extra_cmake_args+=("$arg")
-    elif [[ "$arg" == "--" ]]; then
-        found_separator=1
+
+# Check if we have more arguments
+if [ $# -gt 0 ]; then
+    # Check if next argument is "--" (meaning no build_type)
+    if [ "$1" = "--" ]; then
+        shift
+        extra_cmake_args=("$@")
+    else
+        # We have a build_type
+        ci_build_type="$1"
+        shift
+
+        # Check for remaining arguments after build_type
+        if [ $# -gt 0 ] && [ "$1" = "--" ]; then
+            shift
+            extra_cmake_args=("$@")
+        fi
     fi
-done
+fi
 
 # default values
 ci_compiler=${ci_compiler:-"default"}

@@ -1082,8 +1082,21 @@ jobs:
     runs-on: ubuntu-latest
     needs: [CheckSkipCI, Linux-Tools]
 
+    strategy:
+      fail-fast: false
+      matrix:
+        ci_arch:
+          - arm64-v8a
+          - armeabi-v7a
+          - x86_64
+        ci_build_type:
+          - dbg
+          - rel
+
     env:
       ci_platform: android
+      ci_arch: ${{ matrix.ci_arch }}
+      ci_build_type: ${{ matrix.ci_build_type }}
       CMAKE_PREFIX_PATH: "${{ github.workspace }}/cached-sdk:${{ github.workspace }}/host-sdk"
 
     steps:
@@ -1097,12 +1110,19 @@ jobs:
         run: |
           # Gather values
           SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
-          BUILD_ID='${{ github.job }}'
+          BUILD_ID='${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}'
           CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
           HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
           HASH_TOOLS=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
-          ARTIFACT_ID_SDK="rbfx-$BUILD_ID-$HASH_THIRDPARTY"
+          ARTIFACT_ID_SDK="rbfx-Android-sdk-${{ matrix.ci_build_type }}-${{ matrix.ci_arch }}-$HASH_THIRDPARTY"
           ARTIFACT_ID_TOOLS="rbfx-Linux-Tools-$HASH_TOOLS-$HASH_THIRDPARTY"
+
+          # Get build type name for Gradle
+          if [ "${{ matrix.ci_build_type }}" == "dbg" ]; then
+            GRADLE_BUILD_TYPE="Debug"
+          else
+            GRADLE_BUILD_TYPE="RelWithDebInfo"
+          fi
 
           # Display values
           echo "SHORT_SHA=$SHORT_SHA"
@@ -1112,6 +1132,7 @@ jobs:
           echo "HASH_TOOLS=$HASH_TOOLS"
           echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK"
           echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS"
+          echo "GRADLE_BUILD_TYPE=$GRADLE_BUILD_TYPE"
 
           # Save values to environment
           echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
@@ -1121,6 +1142,7 @@ jobs:
           echo "HASH_TOOLS=$HASH_TOOLS" >> $GITHUB_ENV
           echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK" >> $GITHUB_ENV
           echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS" >> $GITHUB_ENV
+          echo "GRADLE_BUILD_TYPE=$GRADLE_BUILD_TYPE" >> $GITHUB_ENV
 
       - name: Build Cache
         uses: actions/cache@v4
@@ -1134,13 +1156,7 @@ jobs:
         id: cached_sdk
         if: ${{ !contains(github.event.head_commit.message, '#skip-thirdparty') }}
         shell: bash
-        run: |
-          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "rbfx-${{ github.job }}-sdk-Debug-arm64-v8a" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk-Debug-arm64-v8a'
-          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "rbfx-${{ github.job }}-sdk-Debug-x86_64" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk-Debug-x86_64'
-          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "rbfx-${{ github.job }}-sdk-Debug-armeabi-v7a" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk-Debug-armeabi-v7a'
-          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "rbfx-${{ github.job }}-sdk-RelWithDebInfo-arm64-v8a" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk-RelWithDebInfo-arm64-v8a'
-          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "rbfx-${{ github.job }}-sdk-RelWithDebInfo-x86_64" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk-RelWithDebInfo-x86_64'
-          bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "rbfx-${{ github.job }}-sdk-RelWithDebInfo-armeabi-v7a" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk-RelWithDebInfo-armeabi-v7a'
+        run: echo "sdk-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk')" >> "$GITHUB_OUTPUT"
 
       - name: Download cached tools
         id: cached_tools
@@ -1156,6 +1172,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
+          add-job-summary: 'never'
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
@@ -1166,116 +1183,32 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} dependencies
 
-      # Not applicable on Android, because build is performed through Gradle.
-      #- name: Generate
-      #  shell: bash
-      #  run: ${{ env.ci_build_script }} generate
-
-      # Matrix is not used because apk build depends on all archs to be built.
-      # Since gradle does all of this it is not clear how to separate arch builds into their own build steps.
-      - name: Build Debug arm64-v8a
+      - name: Build
         shell: bash
-        run: CMAKE_PREFIX_PATH=${{ github.workspace }}/cached-sdk-Debug-arm64-v8a ci_arch=arm64-v8a ${{ env.ci_build_script }} build dbg
+        run: ${{ env.ci_build_script }} build ${{ matrix.ci_build_type }}
 
-      - name: Install Debug arm64-v8a
+      - name: Install
+        if: steps.cached_sdk.outputs.sdk-cached != 'true'
         shell: bash
-        run: cmake --install ${{ env.ci_source_dir }}/android/.cxx/Debug/*/arm64-v8a --config Debug --prefix "${{ github.workspace }}/android-sdk-Debug-arm64-v8a"
-
-      - name: Build Debug armeabi-v7a
-        shell: bash
-        run: CMAKE_PREFIX_PATH=${{ github.workspace }}/cached-sdk-Debug-armeabi-v7a ci_arch=armeabi-v7a ${{ env.ci_build_script }} build dbg
-
-      - name: Install Debug armeabi-v7a
-        shell: bash
-        run: cmake --install ${{ env.ci_source_dir }}/android/.cxx/Debug/*/armeabi-v7a --config Debug --prefix "${{ github.workspace }}/android-sdk-Debug-armeabi-v7a"
-
-      - name: Build Debug x86_64
-        shell: bash
-        run: CMAKE_PREFIX_PATH=${{ github.workspace }}/cached-sdk-Debug-x86_64 ci_arch=x86_64 ${{ env.ci_build_script }} build dbg
-
-      - name: Install Debug x86_64
-        shell: bash
-        run: cmake --install ${{ env.ci_source_dir }}/android/.cxx/Debug/*/x86_64 --config Debug --prefix "${{ github.workspace }}/android-sdk-Debug-x86_64"
-
-      - name: Build Debug apk
-        shell: bash
-        run: ${{ env.ci_build_script }} apk dbg
-
-      - name: Build RelWithDebInfo arm64-v8a
-        shell: bash
-        run:  CMAKE_PREFIX_PATH=${{ github.workspace }}/cached-sdk-RelWithDebInfo-arm64-v8a ci_arch=arm64-v8a ${{ env.ci_build_script }} build rel
-
-      - name: Install RelWithDebInfo arm64-v8a
-        shell: bash
-        run:  cmake --install ${{ env.ci_source_dir }}/android/.cxx/RelWithDebInfo/*/arm64-v8a --config RelWithDebInfo --prefix "${{ github.workspace }}/android-sdk-RelWithDebInfo-arm64-v8a"
-
-      - name: Build RelWithDebInfo armeabi-v7a
-        shell: bash
-        run: CMAKE_PREFIX_PATH=${{ github.workspace }}/cached-sdk-RelWithDebInfo-armeabi-v7a ci_arch=armeabi-v7a ${{ env.ci_build_script }} build rel
-
-      - name: Install RelWithDebInfo armeabi-v7a
-        shell: bash
-        run: cmake --install ${{ env.ci_source_dir }}/android/.cxx/RelWithDebInfo/*/armeabi-v7a --config RelWithDebInfo --prefix "${{ github.workspace }}/android-sdk-RelWithDebInfo-armeabi-v7a"
-
-      - name: Build RelWithDebInfo x86_64
-        shell: bash
-        run: CMAKE_PREFIX_PATH=${{ github.workspace }}/cached-sdk-RelWithDebInfo-x86_64 ci_arch=x86_64 ${{ env.ci_build_script }} build rel
-
-      - name: Install RelWithDebInfo x86_64
-        shell: bash
-        run: cmake --install ${{ env.ci_source_dir }}/android/.cxx/RelWithDebInfo/*/x86_64 --config RelWithDebInfo --prefix "${{ github.workspace }}/android-sdk-RelWithDebInfo-x86_64"
-
-      - name: Build RelWithDebInfo apk
-        shell: bash
-        run: ${{ env.ci_build_script }} apk rel
+        run: cmake --install ${{ env.ci_source_dir }}/android/.cxx/${{ env.GRADLE_BUILD_TYPE }}/*/${{ matrix.ci_arch }} --config ${{ env.GRADLE_BUILD_TYPE }} --prefix "${{ github.workspace }}/android-sdk"
 
       - uses: actions/upload-artifact@v4
+        if: steps.cached_sdk.outputs.sdk-cached != 'true'
         with:
-          name: 'rbfx-${{ github.job }}-apks-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-sdk-${{ matrix.ci_build_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
+          path: '${{ github.workspace }}/android-sdk'
+          if-no-files-found: warn
+
+      - name: Build APK
+        if: matrix.ci_build_type == 'rel'
+        shell: bash
+        run: ${{ env.ci_build_script }} apk ${{ matrix.ci_build_type }}
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.ci_build_type == 'rel'
+        with:
+          name: 'rbfx-${{ github.job }}-apks-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: '**/*.apk'
-
-      # Upload Android SDKs as separate artifacts
-      - uses: actions/upload-artifact@v4
-        if: steps.cached_sdk.outputs.sdk-cached != 'true'
-        with:
-          name: 'rbfx-${{ github.job }}-sdk-Debug-arm64-v8a-${{ github.sha }}'
-          path: '${{ github.workspace }}/android-sdk-Debug-arm64-v8a'
-          if-no-files-found: warn
-
-      - uses: actions/upload-artifact@v4
-        if: steps.cached_sdk.outputs.sdk-cached != 'true'
-        with:
-          name: 'rbfx-${{ github.job }}-sdk-Debug-x86_64-${{ github.sha }}'
-          path: '${{ github.workspace }}/android-sdk-Debug-x86_64'
-          if-no-files-found: warn
-
-      - uses: actions/upload-artifact@v4
-        if: steps.cached_sdk.outputs.sdk-cached != 'true'
-        with:
-          name: 'rbfx-${{ github.job }}-sdk-Debug-armeabi-v7a-${{ github.sha }}'
-          path: '${{ github.workspace }}/android-sdk-Debug-armeabi-v7a'
-          if-no-files-found: warn
-
-      - uses: actions/upload-artifact@v4
-        if: steps.cached_sdk.outputs.sdk-cached != 'true'
-        with:
-          name: 'rbfx-${{ github.job }}-sdk-RelWithDebInfo-arm64-v8a-${{ github.sha }}'
-          path: '${{ github.workspace }}/android-sdk-RelWithDebInfo-arm64-v8a'
-          if-no-files-found: warn
-
-      - uses: actions/upload-artifact@v4
-        if: steps.cached_sdk.outputs.sdk-cached != 'true'
-        with:
-          name: 'rbfx-${{ github.job }}-sdk-RelWithDebInfo-x86_64-${{ github.sha }}'
-          path: '${{ github.workspace }}/android-sdk-RelWithDebInfo-x86_64'
-          if-no-files-found: warn
-
-      - uses: actions/upload-artifact@v4
-        if: steps.cached_sdk.outputs.sdk-cached != 'true'
-        with:
-          name: 'rbfx-${{ github.job }}-sdk-RelWithDebInfo-armeabi-v7a-${{ github.sha }}'
-          path: '${{ github.workspace }}/android-sdk-RelWithDebInfo-armeabi-v7a'
-          if-no-files-found: warn
 
   iOS:
     if: |
@@ -1502,7 +1435,7 @@ jobs:
       - name: Generate
         shell: bash
         run: |
-          ${{ env.ci_build_script }} generate \
+          ${{ env.ci_build_script }} generate --\
             -DUrho3DThirdParty_DIR="${{ github.workspace }}/cached-sdk/share/Urho3DThirdParty/CMake" \
             -DUrho3DTools_DIR="${{ github.workspace }}/host-sdk/share/Urho3DTools/CMake"
 
