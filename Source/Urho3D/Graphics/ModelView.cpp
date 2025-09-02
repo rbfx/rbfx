@@ -1157,7 +1157,7 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
             return;
         }
 
-        if (largeIndices != (originalIndexBuffer->GetIndexSize() == 4))
+        if (largeIndices && originalIndexBuffer->GetIndexSize() != 4)
         {
             URHO3D_LOGERROR("Cannot create Model inplace: Index Buffer index size does not match");
             return;
