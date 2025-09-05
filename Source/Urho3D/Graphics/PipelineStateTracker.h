@@ -122,7 +122,7 @@ private:
     DependantVector::iterator FindSubscriberIter(PipelineStateTracker* subscriber);
 
     /// Cached hash.
-    mutable std::atomic_uint32_t pipelineStateHash_;
+    mutable std::atomic_uint32_t pipelineStateHash_{0};
     /// Other pipeline state trackers depending on this tracker.
     DependantVector subscribers_;
 };
