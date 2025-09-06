@@ -145,16 +145,6 @@ quirks_linux_clang_x64=(
     '-DURHO3D_PCH=OFF' # Keep PCH disabled somewhere to catch missing includes
 )
 
-# Find msbuild.exe
-MSBUILD=msbuild
-if [[ "$ci_platform" == "windows" || "$ci_platform" == "uwp" ]];
-then
-    MSBUILD=$(vswhere -products '*' -requires Microsoft.Component.MSBuild -property installationPath -latest)
-    MSBUILD=$(echo $MSBUILD | tr "\\" "/" 2>/dev/null)    # Fix slashes
-    MSBUILD=$(echo $MSBUILD | sed "s/://" 2>/dev/null)    # Remove :
-    MSBUILD="/$MSBUILD/MSBuild/Current/Bin/MSBuild.exe"
-fi
-
 copy-runtime-libraries-for-executables() {
     local dir=$1
     local executable_files=($(find "$dir" -type f -executable))
@@ -308,7 +298,8 @@ function action-build() {
       ccache_path=$(realpath /c/ProgramData/chocolatey/lib/ccache/tools/ccache-*)
       cp $ccache_path/ccache.exe $ccache_path/cl.exe  # https://github.com/ccache/ccache/wiki/MS-Visual-Studio
       $ccache_path/ccache.exe -s
-      cmake --build $ci_build_dir --config "${types[$ci_build_type]}" -- -r -maxcpucount:$NUMBER_OF_PROCESSORS -p:TrackFileAccess=false -p:UseMultiToolTask=true -p:CLToolPath=$ccache_path && \
+      cmake --build $ci_build_dir --config "${types[$ci_build_type]}" -- -r -maxcpucount:$NUMBER_OF_PROCESSORS -p:TrackFileAccess=false -p:UseMultiToolTask=true -p:CLToolPath=$ccache_path \
+        '-p:ObjectFileName=$(IntDir)%(FileName).obj' -p:DebugInformationFormat=OldStyle && \
       $ccache_path/ccache.exe -s
     elif [[ "$ci_platform" == "android" ]];
     then
@@ -340,7 +331,11 @@ function action-apk() {
 }
 
 function action-install() {
-    cmake --install $ci_build_dir --config "${types[$ci_build_type]}"
+    if [[ "$ci_platform" == "android" ]]; then
+        cmake --install $ci_source_dir/android/.cxx/${types[$ci_build_type]}/*/$ci_arch --config ${types[$ci_build_type]} ${extra_cmake_args[@]}
+    else
+        cmake --install $ci_build_dir --config "${types[$ci_build_type]}" ${extra_cmake_args[@]}
+    fi
 
     # Copy .NET runtime libraries for executables on windows.
     if [[ "$ci_platform" == "windows" ]]; then

@@ -29,6 +29,12 @@ endif ()
 
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME ThirdParty)
 
+# CI builds should not use ccache for dependencies, as dependencies are
+# reused from older SDK uploads.
+if (ENV{CI})
+    set(ENV{CCACHE_DISABLE} 1)
+endif ()
+
 if (UWP)
     add_definitions (-DUWP=1)
 endif ()

@@ -38,7 +38,7 @@ env:
   CCACHE_HARDLINK: true
   CCACHE_SLOPPINESS: pch_defines,time_macros,include_file_mtime,include_file_ctime
   CCACHE_NOHASHDIR: true
-  CCACHE_MAXSIZE: 5G
+  CCACHE_MAXSIZE: 10G
   CCACHE_LIMIT_MULTIPLE: 0.6
   # paths
   ci_workspace_dir: ${{ github.workspace }}
@@ -592,7 +592,7 @@ jobs:
       matrix:
         ci_arch:
           - x64
-          - arm64
+          #- arm64
         ci_lib_type:
           - dll
           - lib
@@ -1117,13 +1117,6 @@ jobs:
           ARTIFACT_ID_SDK="rbfx-Android-sdk-${{ matrix.ci_build_type }}-${{ matrix.ci_arch }}-$HASH_THIRDPARTY"
           ARTIFACT_ID_TOOLS="rbfx-Linux-Tools-$HASH_TOOLS-$HASH_THIRDPARTY"
 
-          # Get build type name for Gradle
-          if [ "${{ matrix.ci_build_type }}" == "dbg" ]; then
-            GRADLE_BUILD_TYPE="Debug"
-          else
-            GRADLE_BUILD_TYPE="RelWithDebInfo"
-          fi
-
           # Display values
           echo "SHORT_SHA=$SHORT_SHA"
           echo "BUILD_ID=$BUILD_ID"
@@ -1132,7 +1125,6 @@ jobs:
           echo "HASH_TOOLS=$HASH_TOOLS"
           echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK"
           echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS"
-          echo "GRADLE_BUILD_TYPE=$GRADLE_BUILD_TYPE"
 
           # Save values to environment
           echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
@@ -1142,7 +1134,6 @@ jobs:
           echo "HASH_TOOLS=$HASH_TOOLS" >> $GITHUB_ENV
           echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK" >> $GITHUB_ENV
           echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS" >> $GITHUB_ENV
-          echo "GRADLE_BUILD_TYPE=$GRADLE_BUILD_TYPE" >> $GITHUB_ENV
 
       - name: Build Cache
         uses: actions/cache@v4
@@ -1190,7 +1181,7 @@ jobs:
       - name: Install
         if: steps.cached_sdk.outputs.sdk-cached != 'true'
         shell: bash
-        run: cmake --install ${{ env.ci_source_dir }}/android/.cxx/${{ env.GRADLE_BUILD_TYPE }}/*/${{ matrix.ci_arch }} --config ${{ env.GRADLE_BUILD_TYPE }} --prefix "${{ github.workspace }}/android-sdk"
+        run: ${{ env.ci_build_script }} install -- --prefix "${{ github.workspace }}/android-sdk"
 
       - uses: actions/upload-artifact@v4
         if: steps.cached_sdk.outputs.sdk-cached != 'true'
@@ -1318,9 +1309,25 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} build dbg
 
+      - name: Install Debug
+        if: steps.cached_sdk.outputs.sdk-cached != 'true'
+        shell: bash
+        run: ${{ env.ci_build_script }} install dbg
+
       - name: Build Release
         shell: bash
         run: ${{ env.ci_build_script }} build rel
+
+      - name: Install Release
+        if: steps.cached_sdk.outputs.sdk-cached != 'true'
+        shell: bash
+        run: ${{ env.ci_build_script }} install rel
+
+      - uses: actions/upload-artifact@v4
+        if: steps.cached_sdk.outputs.sdk-cached != 'true'
+        with:
+          name: '${{ env.ARTIFACT_ID_SDK }}-${{ env.SHORT_SHA }}'
+          path: ${{ env.ci_sdk_dir }}
 
       - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
