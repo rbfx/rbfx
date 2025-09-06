@@ -40,6 +40,8 @@ env:
   CCACHE_NOHASHDIR: true
   CCACHE_MAXSIZE: 10G
   CCACHE_LIMIT_MULTIPLE: 0.6
+  CCACHE_DEBUG: 1
+  CCACHE_DEBUGDIR: ${{ github.workspace }}/ccache-debug
   # paths
   ci_workspace_dir: ${{ github.workspace }}
   ci_source_dir: ${{ github.workspace }}/source-code
@@ -183,6 +185,13 @@ jobs:
           name: '${{ env.ARTIFACT_ID_TOOLS }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
   Linux-Tools:
     if: |
       github.event.pull_request.draft == false &&
@@ -283,6 +292,13 @@ jobs:
           name: '${{ env.ARTIFACT_ID_TOOLS }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
   MacOS-Tools:
     if: |
       github.event.pull_request.draft == false &&
@@ -373,6 +389,13 @@ jobs:
         with:
           name: '${{ env.ARTIFACT_ID_TOOLS }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
 
   Windows:
     if: |
@@ -579,6 +602,13 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} publish-to-itch
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
   UWP:
     if: |
       github.event.pull_request.draft == false &&
@@ -706,6 +736,13 @@ jobs:
         with:
           name: '${{ env.ARTIFACT_ID_SDK }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
 
   Linux:
     if: |
@@ -893,6 +930,13 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} publish-to-itch
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
   MacOS:
     if: |
       github.event.pull_request.draft == false &&
@@ -1074,6 +1118,13 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} publish-to-itch
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
   Android:
     if: |
       github.event.pull_request.draft == false &&
@@ -1200,6 +1251,13 @@ jobs:
         with:
           name: 'rbfx-${{ github.job }}-apks-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: '**/*.apk'
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
 
   iOS:
     if: |
@@ -1334,6 +1392,13 @@ jobs:
         with:
           name: 'rbfx-${{ github.job }}-${{ env.ci_lib_type }}-${{ github.sha }}'
           path: '**/*.app'
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
 
   Web:
     if: |
@@ -1500,6 +1565,13 @@ jobs:
           asset_name: 'rebelfork-sdk-${{ github.job }}-${{ matrix.ci_lib_type }}-latest.zip'
           asset_content_type: application/zip
           max_releases: 1
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
 
   NuGet:
     runs-on: ubuntu-latest
