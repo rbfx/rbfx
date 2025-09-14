@@ -625,12 +625,12 @@ void AnimationController::ReplaceAnimations(ea::span<const AnimationParameters> 
 
 void AnimationController::AddAnimation(const AnimationParameters& params)
 {
-    const unsigned instanceIndex = ea::count_if(animations_.begin(), animations_.end(),
+    const auto instanceIndex = ea::count_if(animations_.begin(), animations_.end(),
         [&](const AnimationInstance& instance) { return instance.params_.GetAnimation() == params.GetAnimation(); });
 
     AnimationInstance& instance = animations_.emplace_back();
     instance.params_ = params;
-    instance.params_.instanceIndex_ = instanceIndex;
+    instance.params_.instanceIndex_ = static_cast<unsigned>(instanceIndex);
 
     instance.state_ = MakeShared<AnimationState>(this);
     if (auto* model = GetComponent<AnimatedModel>())
@@ -699,7 +699,7 @@ unsigned AnimationController::FindLastAnimation(Animation* animation, unsigned l
 {
     const auto iter = ea::find_if(animations_.rbegin(), animations_.rend(),
         [&](const AnimationInstance& value) { return MatchesQuery(value.params_, animation, layer); });
-    return iter != animations_.rend() ? (iter.base() - animations_.begin()) - 1 : M_MAX_UNSIGNED;
+    return iter != animations_.rend() ? static_cast<unsigned>((iter.base() - animations_.begin()) - 1) : M_MAX_UNSIGNED;
 }
 
 const AnimationParameters* AnimationController::GetLastAnimationParameters(Animation* animation, unsigned layer) const

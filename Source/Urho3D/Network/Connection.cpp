@@ -81,7 +81,7 @@ Connection::Connection(Context* context, NetworkConnection* connection)
         connection->onMessage_ = [this](ea::string_view msg)
         {
             MutexLock lock(packetQueueLock_);
-            incomingPackets_.emplace_back(VectorBuffer(msg.data(), msg.size()));
+            incomingPackets_.emplace_back(VectorBuffer(msg.data(), static_cast<unsigned>(msg.size())));
         };
     }
 }
@@ -215,7 +215,9 @@ void Connection::SendRemoteEvents()
     {
         statsTimer_.Reset();
         char statsBuffer[256];
-        sprintf(statsBuffer, "PING %.3f ms Pkt in %i Pkt out %i Data in %.3f KB/s Data out %.3f KB/s", GetPing() / 1000.0f,
+        snprintf(statsBuffer,
+                 sizeof(statsBuffer), "PING %.3f ms Pkt in %i Pkt out %i Data in %.3f KB/s Data out %.3f KB/s",
+                 GetPing() / 1000.0f,
             GetPacketsInPerSec(),
             GetPacketsOutPerSec(),
             (float)GetBytesInPerSec(),

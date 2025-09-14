@@ -150,11 +150,11 @@ ea::optional<VertexShaderAttribute> ParseVertexAttribute(ea::string_view name)
         const ea::string& semanticName = shaderInputsNames[index];
         VertexElementSemantic semanticValue = static_cast<VertexElementSemantic>(index);
 
-        const unsigned semanticPos = name.find(semanticName);
+        const auto semanticPos = name.find(semanticName);
         if (semanticPos == ea::string::npos)
             continue;
 
-        const unsigned semanticIndexPos = semanticPos + semanticName.length();
+        const auto semanticIndexPos = semanticPos + semanticName.length();
         const unsigned semanticIndex = ToUInt(&name[semanticIndexPos]);
         return VertexShaderAttribute{semanticValue, semanticIndex};
     }

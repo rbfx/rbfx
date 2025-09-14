@@ -52,7 +52,7 @@ public:
         return inter;
     }
 
-    virtual void TestDrawables(Drawable** start, Drawable** end, bool inside)
+    virtual void TestDrawables(Drawable** start, Drawable** end, bool inside) override
     {
         while (start != end)
         {

@@ -395,7 +395,7 @@ unsigned TetrahedralMesh::FindTetrahedron(const Vector3& position, ea::vector<bo
         return M_MAX_UNSIGNED;
 
     const unsigned maxIters = tetrahedrons_.size();
-    unsigned tetIndex = firstNotRemovedIter - removed.begin();
+    unsigned tetIndex = static_cast<unsigned>(firstNotRemovedIter - removed.begin());
     for (unsigned i = 0; i < maxIters; ++i)
     {
         // Found one

@@ -215,7 +215,7 @@ SourceToDestinationMap MapNodesByNames(const tg::Model& sourceModel, const tg::M
 
 unsigned CountMergeableResources(const tg::Model& inputModel)
 {
-    return inputModel.animations.size();
+    return static_cast<unsigned>(inputModel.animations.size());
 }
 
 void MergeModels(tg::Model& outputModel, tg::Model&& inputModel, ea::optional<ea::string> overrideName)
@@ -242,7 +242,7 @@ void MergeModels(tg::Model& outputModel, tg::Model&& inputModel, ea::optional<ea
     outputModel.bufferViews.insert(outputModel.bufferViews.end(),
         ea::make_move_iterator(inputModel.bufferViews.begin()), ea::make_move_iterator(inputModel.bufferViews.end()));
 
-    for (unsigned i = startBufferViewIndex; i < outputModel.bufferViews.size(); ++i)
+    for (std::vector<tinygltf::BufferView>::size_type i = startBufferViewIndex; i < outputModel.bufferViews.size(); ++i)
     {
         tg::BufferView& bufferView = outputModel.bufferViews[i];
         bufferView.buffer += startBufferIndex;
@@ -253,7 +253,7 @@ void MergeModels(tg::Model& outputModel, tg::Model&& inputModel, ea::optional<ea
     outputModel.accessors.insert(outputModel.accessors.end(), ea::make_move_iterator(inputModel.accessors.begin()),
         ea::make_move_iterator(inputModel.accessors.end()));
 
-    for (unsigned i = startAccessorIndex; i < outputModel.accessors.size(); ++i)
+    for (std::vector<tinygltf::Accessor>::size_type i = startAccessorIndex; i < outputModel.accessors.size(); ++i)
     {
         tg::Accessor& accessor = outputModel.accessors[i];
         accessor.bufferView += startBufferViewIndex;
@@ -265,7 +265,7 @@ void MergeModels(tg::Model& outputModel, tg::Model&& inputModel, ea::optional<ea
         ea::make_move_iterator(inputModel.animations.end()));
 
     ea::unordered_set<ea::string> ignoredNodes;
-    for (unsigned i = startAnimationIndex; i < outputModel.animations.size(); ++i)
+    for (std::vector<tinygltf::Animation>::size_type i = startAnimationIndex; i < outputModel.animations.size(); ++i)
     {
         tg::Animation& animation = outputModel.animations[i];
         for (tg::AnimationChannel& channel : animation.channels)
@@ -521,12 +521,12 @@ public:
         ea::vector<T> result;
         if (accessor.bufferView >= 0)
         {
-            result = ReadBufferView<T>(accessor.bufferView, accessor.byteOffset,
-                accessor.componentType, accessor.type, accessor.count, accessor.normalized);
+            result = ReadBufferView<T>(accessor.bufferView, static_cast<int>(accessor.byteOffset),
+                accessor.componentType, accessor.type, static_cast<unsigned>(accessor.count), accessor.normalized);
         }
         else
         {
-            result.resize(accessor.count * numComponents);
+            result.resize(static_cast<unsigned>(accessor.count * numComponents));
         }
 
         // Read sparse buffer data
@@ -935,20 +935,20 @@ public:
 private:
     void ProcessMeshMorphs()
     {
-        const unsigned numMeshes = model_.meshes.size();
+        const unsigned numMeshes = static_cast<unsigned>(model_.meshes.size());
         numMorphsInMesh_.resize(numMeshes);
         for (unsigned meshIndex = 0; meshIndex < numMeshes; ++meshIndex)
         {
             const tg::Mesh& mesh = model_.meshes[meshIndex];
             if (mesh.primitives.empty())
                 throw RuntimeException("Mesh #{} has no primitives", meshIndex);
-            numMorphsInMesh_[meshIndex] = mesh.primitives[0].targets.size();
+            numMorphsInMesh_[meshIndex] = static_cast<unsigned>(mesh.primitives[0].targets.size());
         }
     }
 
     void InitializeParents()
     {
-        const unsigned numNodes = model_.nodes.size();
+        const unsigned numNodes = static_cast<unsigned>(model_.nodes.size());
         nodeToParent_.resize(numNodes);
         for (unsigned nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex)
         {
@@ -970,7 +970,7 @@ private:
 
     void InitializeTrees()
     {
-        const unsigned numNodes = model_.nodes.size();
+        const unsigned numNodes = static_cast<unsigned>(model_.nodes.size());
         nodeByIndex_.resize(numNodes);
         for (unsigned nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex)
         {
@@ -1118,7 +1118,7 @@ private:
 
     void PreProcessSkins()
     {
-        const unsigned numSkins = model_.skins.size();
+        const unsigned numSkins = static_cast<unsigned>(model_.skins.size());
         skinToRootNode_.resize(numSkins);
         for (unsigned skinIndex = 0; skinIndex < numSkins; ++skinIndex)
         {
@@ -1189,7 +1189,7 @@ private:
 
     void InitializeSkeletons()
     {
-        const unsigned numSkins = model_.skins.size();
+        const unsigned numSkins = static_cast<unsigned>(model_.skins.size());
         ea::vector<unsigned> skinToGroup(numSkins);
         ea::iota(skinToGroup.begin(), skinToGroup.end(), 0);
 
@@ -1350,7 +1350,7 @@ private:
 
     void InitializeSkins()
     {
-        const unsigned numSkins = model_.skins.size();
+        const unsigned numSkins = static_cast<unsigned>(model_.skins.size());
         skins_.resize(numSkins);
         for (unsigned skinIndex = 0; skinIndex < numSkins; ++skinIndex)
         {
@@ -1541,7 +1541,7 @@ private:
 
     void ImportAnimations()
     {
-        const unsigned numAnimations = model_.animations.size();
+        const unsigned numAnimations = static_cast<unsigned>(model_.animations.size());
         animations_.resize(numAnimations);
         for (unsigned animationIndex = 0; animationIndex < numAnimations; ++animationIndex)
         {
@@ -1931,7 +1931,7 @@ public:
         : base_(base)
         , model_(base_.GetModel())
     {
-        const unsigned numTextures = model_.textures.size();
+        const unsigned numTextures = static_cast<unsigned>(model_.textures.size());
         texturesAsIs_.resize(numTextures);
         for (unsigned i = 0; i < numTextures; ++i)
             texturesAsIs_[i] = ImportTexture(i, model_.textures[i]);
@@ -2165,7 +2165,7 @@ private:
         }
 
         ByteVector imageBytes;
-        imageBytes.resize(sourceImage.image.size());
+        imageBytes.resize(static_cast<unsigned>(sourceImage.image.size()));
         ea::copy(sourceImage.image.begin(), sourceImage.image.end(), imageBytes.begin());
         image->SetData(imageBytes);
         return image;
@@ -2425,7 +2425,7 @@ private:
 
     void InitializeMaterials()
     {
-        materials_.resize(model_.materials.size());
+        materials_.resize(static_cast<unsigned>(model_.materials.size()));
         for (unsigned i = 0; i < model_.materials.size(); ++i)
         {
             const tg::Material& sourceMaterial = model_.materials[i];
@@ -2781,7 +2781,7 @@ private:
                 if (numOtherGeometries > finalGeometries.size())
                     finalGeometries.resize(numOtherGeometries);
 
-                for (size_t geometryIndex = 0; geometryIndex < numOtherGeometries; ++geometryIndex)
+                for (unsigned geometryIndex = 0; geometryIndex < numOtherGeometries; ++geometryIndex)
                 {
                     const auto& otherGeometryView = otherGeometries[geometryIndex];
                     auto& geometryView = finalGeometries[geometryIndex];
@@ -2873,13 +2873,13 @@ private:
         auto modelView = MakeShared<ModelView>(base_.GetContext());
         modelView->SetBones(bones);
 
-        const unsigned numMorphWeights = sourceMesh.weights.size();
+        const unsigned numMorphWeights = static_cast<unsigned>(sourceMesh.weights.size());
         for (unsigned morphIndex = 0; morphIndex < numMorphWeights; ++morphIndex)
             modelView->SetMorph(morphIndex, { "", static_cast<float>(sourceMesh.weights[morphIndex]) });
 
         auto& geometries = modelView->GetGeometries();
 
-        const unsigned numGeometries = sourceMesh.primitives.size();
+        const unsigned numGeometries = static_cast<unsigned>(sourceMesh.primitives.size());
         geometries.resize(numGeometries);
         for (unsigned geometryIndex = 0; geometryIndex < numGeometries; ++geometryIndex)
         {
@@ -2893,7 +2893,7 @@ private:
             if (primitive.attributes.empty())
                 throw RuntimeException("No attributes in primitive #{} in mesh '{}'.", geometryIndex, sourceMesh.name.c_str());
 
-            const unsigned numVertices = model_.accessors[primitive.attributes.begin()->second].count;
+            const unsigned numVertices = static_cast<unsigned>(model_.accessors[primitive.attributes.begin()->second].count);
             geometryLODView.vertices_.resize(numVertices);
             for (const auto& attribute : primitive.attributes)
             {
@@ -3158,7 +3158,7 @@ private:
 
     void ImportAnimations()
     {
-        const unsigned numAnimations = base_.GetModel().animations.size();
+        const unsigned numAnimations = static_cast<unsigned>(base_.GetModel().animations.size());
         for (unsigned animationIndex = 0; animationIndex < numAnimations; ++animationIndex)
         {
             const GLTFAnimation& sourceAnimation = hierarchyAnalyzer_.GetAnimation(animationIndex);
@@ -3381,7 +3381,7 @@ private:
         {
             const float destKey = destKeys[i];
             const auto iter = ea::lower_bound(sourceKeys.begin(), sourceKeys.end(), destKey);
-            const unsigned secondIndex = ea::min<unsigned>(sourceKeys.size() - 1, iter - sourceKeys.begin());
+            const unsigned secondIndex = ea::min<unsigned>(sourceKeys.size() - 1, static_cast<unsigned>(iter - sourceKeys.begin()));
             const unsigned firstIndex = iter == sourceKeys.end() ? secondIndex : ea::max(1u, secondIndex) - 1;
 
             if (firstIndex == secondIndex)
@@ -3463,7 +3463,7 @@ private:
 
     void ImportScenes()
     {
-        const unsigned numScenes = model_.scenes.size();
+        const unsigned numScenes = static_cast<unsigned>(model_.scenes.size());
         scenes_.resize(numScenes);
         for (unsigned sceneIndex = 0; sceneIndex < numScenes; ++sceneIndex)
         {

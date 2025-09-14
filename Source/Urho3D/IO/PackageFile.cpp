@@ -100,7 +100,7 @@ bool PackageFile::Open(const ea::string& fileName, unsigned startOffset)
         unsigned version = file->ReadUInt();                        // Reserved for future use.
         assert(version == 0);
         int64_t fileListOffset = file->ReadInt64();                 // New format has file list at the end of the file.
-        file->Seek(fileListOffset);                                 // TODO: Serializer/Deserializer do not support files bigger than 4 GB
+        file->Seek(static_cast<unsigned>(fileListOffset));                                 // TODO: Serializer/Deserializer do not support files bigger than 4 GB
     }
 
     for (unsigned i = 0; i < numFiles; ++i)

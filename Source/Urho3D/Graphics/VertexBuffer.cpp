@@ -99,7 +99,7 @@ Ubyte4 Vector4WeightsToUbyte4Norm(const Vector4& value)
 
     Ubyte4 result = Vector4ToUbyte4(value * 255.0f / weightSum);
     const int underflowError = 255 - ea::accumulate(result.begin(), result.end(), 0);
-    const unsigned patchIndex = ea::max_element(result.begin(), result.end()) - result.begin();
+    const unsigned patchIndex = static_cast<unsigned>(ea::max_element(result.begin(), result.end()) - result.begin());
     result[patchIndex] += underflowError;
     return result;
 }
@@ -427,7 +427,7 @@ void VertexBuffer::ShuffleUnpackedVertexData(unsigned vertexCount,
             continue;
 
         // Copy data
-        const unsigned destElementIndex = iterMatching - destElements.begin();
+        const unsigned destElementIndex = static_cast<unsigned>(iterMatching - destElements.begin());
         for (unsigned i = 0; i < vertexCount; ++i)
             dest[i * numDestElements + destElementIndex] = source[i * numSourceElements + sourceElementIndex];
     }

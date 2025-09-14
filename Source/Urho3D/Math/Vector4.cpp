@@ -37,7 +37,7 @@ const Vector4 Vector4::ONE(1.0f, 1.0f, 1.0f, 1.0f);
 ea::string Vector4::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
-    sprintf(tempBuffer, "%g %g %g %g", x_, y_, z_, w_);
+    snprintf(tempBuffer, CONVERSION_BUFFER_LENGTH, "%g %g %g %g", x_, y_, z_, w_);
     return ea::string(tempBuffer);
 }
 

@@ -645,7 +645,7 @@ ea::string ToString(void* value)
 ea::string ToStringHex(unsigned value)
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
-    sprintf(tempBuffer, "%08x", value);
+    snprintf(tempBuffer, CONVERSION_BUFFER_LENGTH, "%08x", value);
     return ea::string(tempBuffer);
 }
 
@@ -765,7 +765,7 @@ void BufferToHexString(ea::string& dest, const void* data, unsigned size)
 
 bool HexStringToBuffer(ea::vector<unsigned char>& dest, const ea::string_view& source)
 {
-    dest.resize(source.size() / 2);
+    dest.resize(static_cast<unsigned>(source.size() / 2));
 
     for (unsigned i = 0; i < source.size(); ++i)
     {
@@ -884,7 +884,7 @@ ea::string GetFileSizeString(unsigned long long memorySize)
         const double majorValue = ((double)memorySize) / pow(1024.0, exponent);
         char buffer[64];
         memset(buffer, 0, 64);
-        sprintf(buffer, "%.1f", majorValue);
+        snprintf(buffer, sizeof(buffer), "%.1f", majorValue);
         output = buffer;
         output += " ";
         output += memorySizeStrings[exponent - 1];

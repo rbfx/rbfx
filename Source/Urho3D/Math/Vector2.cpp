@@ -48,14 +48,14 @@ const IntVector2 IntVector2::ONE(1, 1);
 ea::string Vector2::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
-    sprintf(tempBuffer, "%g %g", x_, y_);
+    snprintf(tempBuffer, CONVERSION_BUFFER_LENGTH, "%g %g", x_, y_);
     return ea::string(tempBuffer);
 }
 
 ea::string IntVector2::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
-    sprintf(tempBuffer, "%d %d", x_, y_);
+    snprintf(tempBuffer, CONVERSION_BUFFER_LENGTH, "%d %d", x_, y_);
     return ea::string(tempBuffer);
 }
 

@@ -523,17 +523,19 @@ float ActionMapping::Evaluate(Input* input, UI* ui, float deadZone, int ignoreJo
         {
             switch (key.scancode_)
             {
-            case 1:
+            case SCANCODE_CTRL:
                 if (input->GetKeyDown(KEY_LCTRL) || input->GetKeyDown(KEY_RCTRL))
                     return 1.0f;
                 break;
-            case 2:
+            case SCANCODE_SHIFT:
                 if (input->GetKeyDown(KEY_LSHIFT) || input->GetKeyDown(KEY_RSHIFT))
                     return 1.0f;
                 break;
-            case 3:
+            case SCANCODE_ALT:
                 if (input->GetKeyDown(KEY_LALT) || input->GetKeyDown(KEY_RALT))
                     return 1.0f;
+                break;
+            default:
                 break;
             }
             if (input->GetScancodeDown(key.scancode_))

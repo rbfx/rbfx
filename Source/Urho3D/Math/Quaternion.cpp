@@ -369,7 +369,7 @@ float Quaternion::TwistAngle(const Vector3& axis) const
 ea::string Quaternion::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
-    sprintf(tempBuffer, "%g %g %g %g", w_, x_, y_, z_);
+    snprintf(tempBuffer, CONVERSION_BUFFER_LENGTH, "%g %g %g %g", w_, x_, y_, z_);
     return ea::string(tempBuffer);
 }
 

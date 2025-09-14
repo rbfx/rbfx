@@ -52,14 +52,14 @@ const IntVector3 IntVector3::ONE(1, 1, 1);
 ea::string Vector3::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
-    sprintf(tempBuffer, "%g %g %g", x_, y_, z_);
+    snprintf(tempBuffer, CONVERSION_BUFFER_LENGTH, "%g %g %g", x_, y_, z_);
     return ea::string(tempBuffer);
 }
 
 ea::string IntVector3::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
-    sprintf(tempBuffer, "%d %d %d", x_, y_, z_);
+    snprintf(tempBuffer, CONVERSION_BUFFER_LENGTH, "%d %d %d", x_, y_, z_);
     return ea::string(tempBuffer);
 }
 

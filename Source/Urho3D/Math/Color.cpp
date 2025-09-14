@@ -252,7 +252,7 @@ Color Color::Lerp(const Color& rhs, float t) const
 ea::string Color::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
-    sprintf(tempBuffer, "%g %g %g %g", r_, g_, b_, a_);
+    snprintf(tempBuffer, CONVERSION_BUFFER_LENGTH, "%g %g %g %g", r_, g_, b_, a_);
     return ea::string(tempBuffer);
 }
 

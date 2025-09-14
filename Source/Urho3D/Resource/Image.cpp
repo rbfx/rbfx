@@ -578,7 +578,7 @@ bool Image::BeginLoad(Deserializer& source)
 
         memset(data.get(), 0, sizeof(uint8_t) * dataSize);
         source.Seek(0);
-        source.Read(data.get(), dataSize);
+        source.Read(data.get(), static_cast<unsigned>(dataSize));
 
         WebPBitstreamFeatures features;
 
@@ -1295,7 +1295,7 @@ bool Image::SaveWEBP(const ea::string& fileName, float compression /* = 0.0f */)
     }
 
     WebPPictureFree(&pic);
-    outFile.Write(wrt.mem, wrt.size);
+    outFile.Write(wrt.mem, static_cast<unsigned>(wrt.size));
     WebPMemoryWriterClear(&wrt);
 
     return true;

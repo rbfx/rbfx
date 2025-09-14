@@ -164,7 +164,7 @@ ea::optional<ShaderParameterGroup> ParseConstantBufferName(ea::string_view name)
 ea::optional<ea::string_view> SanitateGLUniformName(ea::string_view name)
 {
     // Remove trailing '[0]' from array names
-    const unsigned subscriptIndex = name.find('[');
+    const auto subscriptIndex = name.find('[');
     if (subscriptIndex != ea::string::npos)
     {
         // If not the first index, skip
@@ -175,7 +175,7 @@ ea::optional<ea::string_view> SanitateGLUniformName(ea::string_view name)
     }
 
     // Remove uniform buffer name
-    const unsigned dotIndex = name.find('.');
+    const auto dotIndex = name.find('.');
     if (dotIndex != ea::string::npos)
         name = name.substr(dotIndex + 1);
 
