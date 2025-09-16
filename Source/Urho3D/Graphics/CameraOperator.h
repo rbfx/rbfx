@@ -92,7 +92,7 @@ protected:
 
 private:
     void HandleSceneDrawableUpdateFinished(StringHash eventType, VariantMap& eventData);
-    virtual void OnNodeSet(Node* previousNode, Node* currentNode) override;
+    void OnNodeSet(Node* previousNode, Node* currentNode) override;
     void FocusOn(const Vector3* begin, const Vector3* end, Camera* camera);
 
     /// Instance nodes.

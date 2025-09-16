@@ -44,12 +44,12 @@ namespace Urho3D
 
 ea::optional<ea::pair<unsigned, unsigned>> FindVersionTag(ea::string_view shaderCode)
 {
-    const auto start = shaderCode.find("#version");
-    if (start == ea::string::npos)
+    const ea::string_view::size_type start = shaderCode.find("#version");
+    if (start == ea::string_view::npos)
         return ea::nullopt;
 
-    const auto end = shaderCode.find('\n', start);
-    if (end == ea::string::npos)
+    const ea::string_view::size_type end = shaderCode.find('\n', start);
+    if (end == ea::string_view::npos)
         return ea::make_pair(static_cast<unsigned>(start), static_cast<unsigned>(shaderCode.size()));
     return ea::make_pair(static_cast<unsigned>(start), static_cast<unsigned>(end));
 }

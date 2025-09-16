@@ -165,10 +165,10 @@ ea::optional<ea::string_view> SanitateGLUniformName(ea::string_view name)
 {
     // Remove trailing '[0]' from array names
     const auto subscriptIndex = name.find('[');
-    if (subscriptIndex != ea::string::npos)
+    if (subscriptIndex != ea::string_view::npos)
     {
         // If not the first index, skip
-        if (name.find("[0]", subscriptIndex) == ea::string::npos)
+        if (name.find("[0]", subscriptIndex) == ea::string_view::npos)
             return ea::nullopt;
 
         name = name.substr(0, subscriptIndex);
@@ -176,7 +176,7 @@ ea::optional<ea::string_view> SanitateGLUniformName(ea::string_view name)
 
     // Remove uniform buffer name
     const auto dotIndex = name.find('.');
-    if (dotIndex != ea::string::npos)
+    if (dotIndex != ea::string_view::npos)
         name = name.substr(dotIndex + 1);
 
     // Remove trailing 'c', ignore other uniforms
