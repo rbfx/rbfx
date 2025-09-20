@@ -53,7 +53,7 @@ Matrix2 Matrix2::Inverse() const
 ea::string Matrix2::ToString() const
 {
     char tempBuffer[MATRIX_CONVERSION_BUFFER_LENGTH];
-    sprintf(tempBuffer, "%g %g %g %g", m00_, m01_, m10_, m11_);
+    snprintf(tempBuffer, MATRIX_CONVERSION_BUFFER_LENGTH, "%g %g %g %g", m00_, m01_, m10_, m11_);
     return ea::string(tempBuffer);
 }
 }

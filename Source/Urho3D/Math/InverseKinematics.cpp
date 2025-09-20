@@ -438,7 +438,7 @@ void IKSpineChain::Twist(float angle, const IKSettings& settings)
         return;
 
     float accumulatedAngle = 0.0f;
-    for (size_t i = 0; i < segments_.size(); ++i)
+    for (ea::vector<IKNodeSegment>::size_type i = 0; i < segments_.size(); ++i)
     {
         accumulatedAngle += angle * weights_[i];
         segments_[i].Twist(accumulatedAngle, i == segments_.size() - 1);

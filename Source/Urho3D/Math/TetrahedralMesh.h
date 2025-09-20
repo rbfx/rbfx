@@ -286,7 +286,7 @@ struct Tetrahedron
     /// Return face index corresponding to given neighbor. Return 4 if not found.
     unsigned GetNeighborFaceIndex(unsigned neighborTetIndex) const
     {
-        return ea::find(ea::begin(neighbors_), ea::end(neighbors_), neighborTetIndex) - ea::begin(neighbors_);
+        return static_cast<unsigned>(ea::find(ea::begin(neighbors_), ea::end(neighbors_), neighborTetIndex) - ea::begin(neighbors_));
     }
 
     /// Return whether the tetrahedron has given neighbour.

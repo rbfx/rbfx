@@ -100,6 +100,12 @@ void Sample2D::CreateCollisionShapesFromTMXObjects(Node* tileMapNode, TileMapLay
                 CreatePolyLineShape(tileMapNode, tileMapObject);
             }
             break;
+                
+            // Ignore unsupported tiles.
+            case OT_TILE:
+                break;
+            case OT_INVALID:
+                break;
         }
     }
 }

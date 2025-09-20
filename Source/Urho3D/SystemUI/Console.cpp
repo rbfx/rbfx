@@ -221,7 +221,7 @@ void Console::RenderContent()
             {
                 if (copying && ui::IsWindowFocused())
                 {
-                    copyBuffer_.append(selectedStart, selectedEnd - selectedStart);
+                    copyBuffer_.append(selectedStart, static_cast<ea::string::size_type>(selectedEnd - selectedStart));
                     if (selectedEnd == rowEnd && Max(selection_.x_, selection_.y_) > textEnd)
                     {
                         // Append new line if this line is selected to the end and selection on the next line exists.
@@ -281,12 +281,12 @@ void Console::RenderContent()
                             using namespace ConsoleUriClick;
                             VariantMap& newEventData = GetEventDataMap();
                             newEventData[P_PROTOCOL] = ea::string(uriStart, rowStart + uriPos);
-                            newEventData[P_ADDRESS] = ea::string(rowStart + uriPos + 3, uriEnd - (rowStart + uriPos + 3));
+                            newEventData[P_ADDRESS] = ea::string(rowStart + uriPos + 3, static_cast<ea::string::size_type>( uriEnd - (rowStart + uriPos + 3)));
                             SendEvent(E_CONSOLEURICLICK, newEventData);
                         }
                     }
 
-                    i = uriEnd - rowStart;
+                    i = static_cast<unsigned>(uriEnd - rowStart);
                 }
             }
             ui::PopStyleColor();

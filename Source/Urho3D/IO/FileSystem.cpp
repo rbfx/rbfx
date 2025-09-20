@@ -179,7 +179,7 @@ std::future<ea::string> ReadFileAsync(FileDescriptor fileHandle, StopToken& stop
             if (bytesRead == 0 && stopToken.IsStopped())
                 break;
 #else
-            int bytesRead = read(fileHandle, buf, sizeof(buf));
+            ssize_t bytesRead = read(fileHandle, buf, sizeof(buf));
             if (bytesRead < 0)
             {
                 if (errno != EAGAIN)
@@ -192,7 +192,7 @@ std::future<ea::string> ReadFileAsync(FileDescriptor fileHandle, StopToken& stop
 #endif
 
             if (bytesRead > 0)
-                result.append(buf, bytesRead);
+                result.append(buf, static_cast<unsigned>(bytesRead));
         }
         return result;
     });
@@ -1705,7 +1705,7 @@ ea::string ResolvePath(ea::string_view filePath)
 {
     ea::string sanitizedName;
     ea::string::size_type segmentStartIndex{0};
-    sanitizedName.reserve(filePath.length());
+    sanitizedName.reserve(static_cast<unsigned>(filePath.length()));
 
     for (auto c : filePath)
     {

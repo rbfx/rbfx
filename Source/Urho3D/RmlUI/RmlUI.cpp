@@ -784,6 +784,8 @@ bool ToRmlUi(const Variant& src, Rml::Variant& dst)
     case VAR_CUSTOM: break;
     case VAR_VARIANTCURVE: break;
     case VAR_STRINGVARIANTMAP: break;
+    case MAX_VAR_MASK: break;
+    case MAX_VAR_TYPES: break;
     }
     auto string = src.ToString();
     if (string.empty())

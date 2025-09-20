@@ -142,7 +142,7 @@ ea::string URL::Decode(ea::string_view string)
         if (c == '%')
         {
             char* end = nullptr;
-            c = strtol(p, &end, 16);
+            c = static_cast<int>(strtol(p, &end, 16));
             p = end;
         }
         result.append(1, static_cast<char>(c));

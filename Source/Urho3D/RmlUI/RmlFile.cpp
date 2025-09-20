@@ -60,7 +60,7 @@ void RmlFile::Close(Rml::FileHandle file)
 
 size_t RmlFile::Read(void* buffer, size_t size, Rml::FileHandle file)
 {
-    return reinterpret_cast<AbstractFile*>(file)->Read(buffer, size);
+    return reinterpret_cast<AbstractFile*>(file)->Read(buffer, static_cast<unsigned>(size));
 }
 
 bool RmlFile::Seek(Rml::FileHandle file, long offset, int origin)
@@ -70,7 +70,9 @@ bool RmlFile::Seek(Rml::FileHandle file, long offset, int origin)
         offset = fp->Tell() + offset;
     else if (origin == SEEK_END)
         offset = fp->GetSize() - offset;
-    return fp->Seek(offset) == offset;
+    if (offset < 0 || offset > M_MAX_UNSIGNED)
+        return false;
+    return fp->Seek(static_cast<unsigned>(offset)) == offset;
 }
 
 size_t RmlFile::Tell(Rml::FileHandle file)

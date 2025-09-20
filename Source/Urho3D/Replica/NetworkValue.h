@@ -83,7 +83,7 @@ public:
         const auto capacity = GetCapacity();
         const auto behind = lastFrame_ - frame;
         if (behind >= 0 && behind < capacity)
-            return (lastIndex_ + capacity - behind) % capacity;
+            return (lastIndex_ + capacity - static_cast<unsigned>(behind)) % capacity;
         return ea::nullopt;
     }
 
