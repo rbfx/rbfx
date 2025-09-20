@@ -53,6 +53,9 @@
 #include "../IO/MountedDirectory.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
+#ifdef URHO3D_STEAM_AUDIO
+#include "../SteamAudio/SteamAudio.h"
+#endif
 #ifdef URHO3D_GLOW
 #include "../Glow/StaticModelForLightmap.h"
 #endif
@@ -394,7 +397,11 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
     context_->RegisterSubsystem(new RmlUI(context_));
 #endif
 
+#ifdef URHO3D_STEAM_AUDIO
+    context_->RegisterSubsystem(new SteamAudio(context_));
+#else
     context_->RegisterSubsystem(new Audio(context_));
+#endif
     if (!headless_)
     {
         context_->RegisterSubsystem(new Graphics(context_));
@@ -549,12 +556,19 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
 
         if (GetParameter(EP_SOUND).GetBool())
         {
+#ifdef URHO3D_STEAM_AUDIO
+            GetSubsystem<SteamAudio>()->SetMode(
+                GetParameter(EP_SOUND_MIX_RATE).GetInt(),
+                (SpeakerMode)GetParameter(EP_SOUND_MODE).GetInt()
+            );
+#else
             GetSubsystem<Audio>()->SetMode(
                 GetParameter(EP_SOUND_BUFFER).GetInt(),
                 GetParameter(EP_SOUND_MIX_RATE).GetInt(),
                 (SpeakerMode)GetParameter(EP_SOUND_MODE).GetInt(),
                 GetParameter(EP_SOUND_INTERPOLATION).GetBool()
             );
+#endif
         }
 
 #ifdef URHO3D_RMLUI

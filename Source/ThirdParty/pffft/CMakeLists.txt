@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 3.17)
+
+project(PFFFT VERSION 4.5.2)
+
+set(CMAKE_C_STANDARD 11)
+
+add_library(PFFFT STATIC
+    pffft.c pffft.h
+    fftpack.c fftpack.h)
+
+target_include_directories(PFFFT PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+    install(TARGETS PFFFT EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
+endif ()
+install(DIRECTORY phonon DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR} FILES_MATCHING PATTERN *.h)
