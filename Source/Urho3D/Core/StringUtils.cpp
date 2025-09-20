@@ -765,7 +765,7 @@ void BufferToHexString(ea::string& dest, const void* data, unsigned size)
 
 bool HexStringToBuffer(ea::vector<unsigned char>& dest, const ea::string_view& source)
 {
-    dest.resize(static_cast<unsigned>(source.size() / 2));
+    dest.resize(static_cast<ea::vector<unsigned char>::size_type>(source.size() / 2));
 
     for (unsigned i = 0; i < source.size(); ++i)
     {
