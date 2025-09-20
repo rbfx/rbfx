@@ -495,10 +495,17 @@ unsigned Deserializer::ReadVLE()
 ea::string Deserializer::ReadLine()
 {
     ea::string ret;
+    ReadLine(ret);
+    return ret;
+}
+
+void Deserializer::ReadLine(ea::string& output)
+{
+    output.clear();
 
     while (!IsEof())
     {
-        char c = ReadByte();
+        const char c = ReadByte();
         if (c == 10)
             break;
         if (c == 13)
@@ -506,17 +513,15 @@ ea::string Deserializer::ReadLine()
             // Peek next char to see if it's 10, and skip it too
             if (!IsEof())
             {
-                char next = ReadByte();
+                const char next = ReadByte();
                 if (next != 10)
                     Seek(position_ - 1);
             }
             break;
         }
 
-        ret += c;
+        output += c;
     }
-
-    return ret;
 }
 
 }

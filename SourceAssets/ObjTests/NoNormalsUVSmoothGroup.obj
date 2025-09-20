@@ -1,0 +1,23 @@
+mtllib NoNormalsUVSmoothGroup.mtl
+
+#
+# object TestPiramid
+#
+
+v  -5.0000 -5.0000 -5.0000
+v  0.0000 10.0000 -5.0000
+v  5.0000 -5.0000 -5.0000
+v  0.0000 0.0000 5.0000
+# 4 vertices
+
+o TestPiramid
+g TestPiramid
+usemtl Common
+f 1 2 3 
+f 1 3 4 
+usemtl Red
+f 3 2 4 
+usemtl Common
+f 2 1 4 
+# 0 polygons - 4 triangles
+
