@@ -32,7 +32,6 @@ target_compile_definitions(RmlUi
     PRIVATE RMLUI_VERSION="${RMLUI_VERSION_SHORT}"
     PUBLIC  RMLUI_NO_THIRDPARTY_CONTAINERS=1
             RMLUI_CUSTOM_CONFIGURATION_FILE="RmlUi/Config/RbfxConfig.h"
-            RMLUI_DEBUG_BUILD=$<AND:$<CONFIG:Debug>,$<NOT:$<BOOL:${CI_WEB_BUILD}>>>
 )
 if (APPLE)
     # Disables naked builtins from AssertMacros.h which
@@ -44,6 +43,7 @@ target_link_libraries(RmlUi PUBLIC FreeType EASTL)
 target_include_directories(RmlUi SYSTEM
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..
     PUBLIC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
+            $<BUILD_INTERFACE:${Urho3D_BINARY_DIR}/..>
     PRIVATE ../..
 )
 

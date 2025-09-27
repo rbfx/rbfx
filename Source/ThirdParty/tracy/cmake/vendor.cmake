@@ -5,7 +5,7 @@ set (ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/../")
 
 # Dependencies are taken from the system first and if not found, they are pulled with CPM and built from source
 
-include(FindPkgConfig)
+#include(FindPkgConfig)
 include(${CMAKE_CURRENT_LIST_DIR}/CPM.cmake)
 
 option(DOWNLOAD_CAPSTONE "Force download capstone" ON)

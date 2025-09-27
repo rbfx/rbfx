@@ -33,8 +33,7 @@ endif ()
 
 # Package is found in the main CMakeLists.txt
 if (Urho3DThirdParty_FOUND)
-    message(STATUS "Using external ThirdParty component, SDK builds disabled")
-    set(CMAKE_SKIP_INSTALL_RULES ON PARENT_SCOPE)
+    message(STATUS "Using external ThirdParty component")
 else ()
     message(STATUS "External ThirdParty not found, building from source")
     add_subdirectory (ThirdParty)

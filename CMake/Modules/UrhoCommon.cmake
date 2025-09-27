@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+include_guard(DIRECTORY)
 
 include(${CMAKE_CURRENT_LIST_DIR}/ucm.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/VSSolution.cmake)
@@ -27,7 +28,11 @@ include(${CMAKE_CURRENT_LIST_DIR}/CCache.cmake)
 
 if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../Urho3D.cmake)
     set (URHO3D_IS_SDK ON)
-    set (URHO3D_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../)
+    if(WIN32)
+        set (URHO3D_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../)
+    else ()
+        set (URHO3D_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../../)
+    endif()
     get_filename_component(URHO3D_SDK_PATH "${URHO3D_SDK_PATH}" REALPATH)
 else ()
     set (URHO3D_IS_SDK OFF)
@@ -59,12 +64,6 @@ endif ()
 set(RBFX_CSPROJ_LIST "" CACHE STRING "A list of C# projects." FORCE)
 
 if (NOT DESKTOP)
-    # We are cross-compiling, tools for the host platform should be provided through CMAKE_PREFIX_PATH.
-    # Cross-compiler toolchains often set CMAKE_FIND_ROOT_PATH_MODE_PACKAGE to ONLY, which prevents finding Urho3DTools.
-    if (CMAKE_PREFIX_PATH AND CMAKE_FIND_ROOT_PATH_MODE_PACKAGE STREQUAL "ONLY")
-        list(APPEND CMAKE_FIND_ROOT_PATH ${CMAKE_PREFIX_PATH})
-    endif ()
-
     find_package(Urho3DTools QUIET NO_CMAKE_INSTALL_PREFIX)
     if (URHO3D_PACKAGING AND (NOT Urho3DTools_FOUND OR NOT TARGET PackageTool))
         message(FATAL_ERROR "PackageTool not found, please provide Urho3DTools in CMAKE_PREFIX_PATH")
@@ -503,7 +502,7 @@ function (web_executable TARGET)
         endif ()
         if (TARGET datachannel-wasm)
             if (URHO3D_IS_SDK)
-                set (LIBDATACHANNEL_WASM_DIR "${URHO3D_SDK_PATH}/include/Urho3D/ThirdParty/libdatachannel-wasm")
+                set (LIBDATACHANNEL_WASM_DIR "${URHO3D_SDK_PATH}/include/libdatachannel-wasm")
             else ()
                 set (LIBDATACHANNEL_WASM_DIR "${rbfx_SOURCE_DIR}/Source/ThirdParty/libdatachannel-wasm")
             endif ()
@@ -694,6 +693,10 @@ endfunction ()
 
 # Install runtime dependencies for targets with component support
 function (install_target_runtime_deps)
+    if(NOT DESKTOP)
+        return()
+    endif()
+
     cmake_parse_arguments(ARG "" "TARGET;COMPONENT" "ADDITIONAL_MODULES" ${ARGN})
 
     if (NOT ARG_TARGET)
@@ -713,11 +716,7 @@ function (install_target_runtime_deps)
     if (NOT target_type STREQUAL "EXECUTABLE" AND
         NOT target_type STREQUAL "SHARED_LIBRARY" AND
         NOT target_type STREQUAL "MODULE_LIBRARY")
-        return()
-    endif()
-
-    # Skip static libraries - they don't have runtime dependencies
-    if (target_type STREQUAL "STATIC_LIBRARY")
+        message(WARNING "Target '${ARG_TARGET}' is not an executable or shared library")
         return()
     endif()
 
@@ -804,7 +803,7 @@ function(create_pack_target COMPONENT_NAME)
     endif()
 
     # Configure CPack for this specific component
-    configure_file(${CMAKE_SOURCE_DIR}/CMake/Modules/CPackComponent.cmake.in
+    configure_file(${rbfx_SOURCE_DIR}/CMake/Modules/CPackComponent.cmake.in
         ${CMAKE_BINARY_DIR}/CPackConfig-${COMPONENT_NAME}.cmake @ONLY)
 
     # Create the custom target that runs CPack with the component-specific config

@@ -145,6 +145,13 @@ quirks_linux_clang_x64=(
     '-DURHO3D_PCH=OFF' # Keep PCH disabled somewhere to catch missing includes
 )
 
+if [[ "$ci_platform" == "macos" || "$ci_platform" == "ios" ]];
+then
+    NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
+else
+    NUMBER_OF_PROCESSORS=$(nproc)
+fi
+
 copy-runtime-libraries-for-executables() {
     local dir=$1
     local executable_files=($(find "$dir" -type f -executable))
@@ -226,10 +233,13 @@ function action-dependencies() {
     then
         # iOS/MacOS dependencies
         brew install pkg-config ccache
-    elif [[ "$ci_platform" == "windows" || "$ci_platform" == "uwp" ]];
-    then
-        # Windows dependencies
+    else
+        # Windows/UWP dependencies
         choco install -y ccache
+        if [[ "$ci_platform" == "uwp" ]];
+        then
+            choco install -y windows-sdk-10-version-2104-all
+        fi
     fi
 }
 
@@ -282,6 +292,11 @@ function action-generate() {
         )
     fi
 
+    # Precise configuration types control
+    ci_cmake_params+=(
+        "-DCMAKE_CONFIGURATION_TYPES=${types[dbg]};${types[rel]}"
+    )
+
     # Add any extra CMake arguments passed after --
     ci_cmake_params+=("${extra_cmake_args[@]}")
 
@@ -312,12 +327,6 @@ function action-build() {
     else
       # Default build path using plain CMake.
       # ci_platform:     windows|linux|macos|android|ios|web
-      if [[ "$ci_platform" == "macos" || "$ci_platform" == "ios" ]];
-      then
-        NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
-      else
-        NUMBER_OF_PROCESSORS=$(nproc)
-      fi
       ccache -s
       cmake --build $ci_build_dir --parallel $NUMBER_OF_PROCESSORS --config "${types[$ci_build_type]}" && \
       ccache -s
@@ -345,20 +354,20 @@ function action-install() {
     # Create deploy directory on Web.
     if [[ "$ci_platform" == "web" && "$ci_build_type" == "rel" ]];
     then
-        mkdir $ci_sdk_dir/deploy
+        mkdir -p $ci_sdk_dir/deploy/
         cp -r \
             $ci_sdk_dir/bin/${types[$ci_build_type]}/Resources.js        \
             $ci_sdk_dir/bin/${types[$ci_build_type]}/Resources.js.data   \
             $ci_sdk_dir/bin/${types[$ci_build_type]}/Samples.js          \
             $ci_sdk_dir/bin/${types[$ci_build_type]}/Samples.wasm        \
             $ci_sdk_dir/bin/${types[$ci_build_type]}/Samples.html        \
-            $ci_sdk_dir/deploy
+            $ci_sdk_dir/deploy/
     fi
 }
 
 function action-test() {
     cd $ci_build_dir
-    ctest --output-on-failure -C "${types[$ci_build_type]}"
+    ctest --output-on-failure -C "${types[$ci_build_type]}" -j $NUMBER_OF_PROCESSORS
 }
 
 function action-cstest() {

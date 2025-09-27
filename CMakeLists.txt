@@ -371,10 +371,10 @@ endif ()
 ################################################### SDK preparation ####################################################
 
 # Install CMake modules and toolchains provided by and for Urho3D
-install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Toolchains/ DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/Toolchains)    # Note: the trailing slash is significant
-install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Modules/ DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/Modules/)
+install (DIRECTORY ${rbfx_SOURCE_DIR}/CMake/Toolchains/ DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/Toolchains)    # Note: the trailing slash is significant
+install (DIRECTORY ${rbfx_SOURCE_DIR}/CMake/Modules/ DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/Modules/)
 # Install CMake build scripts
-file (GLOB CMAKE_SCRIPTS ${CMAKE_SOURCE_DIR}/Script/*${SCRIPT_EXT})
+file (GLOB CMAKE_SCRIPTS ${rbfx_SOURCE_DIR}/Script/*${SCRIPT_EXT})
 install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/Scripts)
 # Install data files
 file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -402,4 +402,4 @@ if (NOT ANDROID)
     install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/Data DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT Samples)
     install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/Autoload DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT Samples)
 endif ()
-install (FILES ${CMAKE_SOURCE_DIR}/bin/shell.html DESTINATION ${CMAKE_INSTALL_BINDIR_BASE})
+install (FILES ${rbfx_SOURCE_DIR}/bin/shell.html DESTINATION ${CMAKE_INSTALL_BINDIR_BASE})

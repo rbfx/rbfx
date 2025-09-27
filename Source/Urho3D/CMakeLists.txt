@@ -132,12 +132,10 @@ set_target_properties(Urho3D PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(Urho3D PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>        # For parent projects to find auto-generated engine headers
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>           # Misc configured headers
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>> # Urho3D.h
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>        # For parent projects to find engine headers
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty> # For accessing includes of some third party libs that do not have 'include' folder with headers (like tracy).
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Urho3D>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Urho3D/$<CONFIG>>
 )
 
 if (URHO3D_PCH)
@@ -449,6 +447,31 @@ if (WEB)
     target_link_libraries(Urho3D PUBLIC "-s FULL_ES3=1")
 endif ()
 
+# Diligent platform defines.
+# This is needed so the user can include Diligent-using headers without linking to Diligent-PublicBuildSettings.
+# Platform detection using standard CMake variables
+if (EMSCRIPTEN)
+    target_compile_definitions(Urho3D PUBLIC -DPLATFORM_EMSCRIPTEN=1)
+elseif (ANDROID)
+    target_compile_definitions(Urho3D PUBLIC -DPLATFORM_ANDROID=1)
+elseif (WIN32)
+    if (UWP)
+        target_compile_definitions(Urho3D PUBLIC -DPLATFORM_UNIVERSAL_WINDOWS=1)
+    else()
+        target_compile_definitions(Urho3D PUBLIC -DPLATFORM_WIN32=1)
+    endif()
+elseif (APPLE)
+    if (IOS)
+        target_compile_definitions(Urho3D PUBLIC -DPLATFORM_IOS=1)
+    elseif (CMAKE_SYSTEM_NAME STREQUAL "tvOS")
+        target_compile_definitions(Urho3D PUBLIC -DPLATFORM_TVOS=1)
+    else()
+        target_compile_definitions(Urho3D PUBLIC -DPLATFORM_MACOS=1)
+    endif()
+elseif (UNIX)
+    target_compile_definitions(Urho3D PUBLIC -DPLATFORM_LINUX=1)
+endif()
+
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(Urho3D
         PRIVATE -DURHO3D_EXPORTS=1 -DAL_EXPORTS=1 -DBOX2D_EXPORTS=1 -DCIVETWEB_DLL_EXPORTS=1 -DEASTL_EXPORTS=1
@@ -608,32 +631,6 @@ if (URHO3D_MONOLITHIC_HEADER)
     install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Urho3D/)
 endif ()
 
-# Generate import/export header with engine configuration defines
-get_property(URHO3D_ENGINE_CONFIG TARGET Urho3D PROPERTY INTERFACE_COMPILE_DEFINITIONS)
-list (REMOVE_ITEM URHO3D_ENGINE_CONFIG URHO3D_64BIT)
-# TODO: Maybe these should be directly in header?
-foreach(HAVE HAVE___SINCOSF HAVE_MALLOC_USABLE_SIZE HAVE_STDINT_H HAVE_INTTYPES_H HAVE_MALLOC_H HAVE_SINCOSF HAVE_RTL_OSVERSIONINFOW)
-    if (${${HAVE}})
-        list (APPEND URHO3D_ENGINE_CONFIG ${HAVE})
-    endif ()
-endforeach()
-list (REMOVE_DUPLICATES URHO3D_ENGINE_CONFIG)
-list (APPEND URHO3D_ENGINE_CONFIG "")   # For last item to be processed correctly.
-# Give defines without value a value "1".
-string (REPLACE ";" "=1;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")                   # Append =1 to all defines
-string (REGEX REPLACE "(\=[0-9]+)+;" "\\1;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")   # Clear =1 from defines that already had a value
-# Turn list into c++ preprocessor code
-string (REGEX REPLACE "([^=]+)=([^;]+);" "#ifndef \\1\n#   define \\1 \\2\n#endif\n" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
-# This will be commented out line in the header.
-list (INSERT URHO3D_ENGINE_CONFIG 0 "Engine configuration")
-string (REPLACE ";" "\n" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
-file (READ ${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h URHO3D_H_DATA)
-string (REPLACE "@URHO3D_ENGINE_CONFIG@" "${URHO3D_ENGINE_CONFIG}" URHO3D_H_DATA "${URHO3D_H_DATA}")
-foreach (config Debug RelWithDebInfo Release MinSizeRel)
-    file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${config})
-endforeach ()
-file (GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h CONTENT ${URHO3D_H_DATA})
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Urho3D/$<CONFIG>/)
 file(GLOB ROOT_HEADERS *.h)
-list(REMOVE_ITEM ROOT_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h)
-install (FILES ${ROOT_HEADERS} "LinkedPlugins.cpp.in" "Resources.load.js.in" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES ${ROOT_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Urho3D/)
+install (FILES "LinkedPlugins.cpp.in" "Resources.load.js.in" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

@@ -4,6 +4,11 @@ include(CMakeFindDependencyMacro)
 
 # Find required dependencies
 find_dependency(Threads REQUIRED)
+
+# If built with external ThirdParty package, find it
+if (@Urho3DThirdParty_FOUND@)
+    find_dependency(Urho3DThirdParty @URHO3D_THIRDPARTY_VERSION@ EXACT)
+endif()
 find_package(OpenGL QUIET)
 find_package(TBB QUIET)
 find_package(EGL QUIET)
@@ -35,3 +40,6 @@ set(GLES_SUPPORTED @GLES_SUPPORTED@ CACHE INTERNAL "OpenGL ES is supported")
 set(VULKAN_SUPPORTED @VULKAN_SUPPORTED@ CACHE INTERNAL "Vulkan is supported")
 set(METAL_SUPPORTED @METAL_SUPPORTED@ CACHE INTERNAL "Metal is supported")
 set(WEBGPU_SUPPORTED @WEBGPU_SUPPORTED@ CACHE INTERNAL "WebGPU is supported")
+
+list(APPEND CMAKE_MODULE_PATH "${PACKAGE_PREFIX_DIR}/share/Urho3D/CMake/Modules")
+include(UrhoCommon)
