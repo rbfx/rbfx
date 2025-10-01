@@ -502,7 +502,7 @@ jobs:
 
       - name: Download cached SDK
         id: cached_sdk
-        if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') && env.ci_release_sdk != 'true' }}
         shell: bash
         run: echo "sdk-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk')" >> "$GITHUB_OUTPUT"
 
@@ -949,7 +949,7 @@ jobs:
 
       - name: Download cached SDK
         id: cached_sdk
-        if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') && env.ci_release_sdk != 'true' }}
         shell: bash
         run: echo "sdk-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk')" >> "$GITHUB_OUTPUT"
 
@@ -1179,7 +1179,7 @@ jobs:
 
       - name: Download cached SDK
         id: cached_sdk
-        if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') && env.ci_release_sdk != 'true' }}
         shell: bash
         run: echo "sdk-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk')" >> "$GITHUB_OUTPUT"
 
@@ -1334,6 +1334,12 @@ jobs:
       ci_platform: android
       ci_arch: ${{ matrix.ci_arch }}
       ci_build_type: ${{ matrix.ci_build_type }}
+      ci_artifacts: ${{ (
+                          github.ref == 'refs/heads/master'           ||
+                          startsWith(github.ref, 'refs/tags/nuget/')  ||
+                          startsWith(github.ref, 'refs/heads/nuget/')
+                        )
+                    }}
       CMAKE_PREFIX_PATH: "${{ github.workspace }}/host-sdk"
 
     steps:
@@ -1440,7 +1446,7 @@ jobs:
         run: ${{ env.ci_build_script }} apk ${{ matrix.ci_build_type }}
 
       - uses: actions/upload-artifact@v4
-        if: matrix.ci_build_type == 'rel'
+        if: env.ci_artifacts == 'true'
         with:
           name: 'rbfx-${{ github.job }}-apks-${{ matrix.ci_arch }}-${{ github.sha }}'
           path: '**/*.apk'
@@ -1675,7 +1681,7 @@ jobs:
 
       - name: Download cached SDK
         id: cached_sdk
-        if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') && env.ci_release_sdk != 'true' }}
         shell: bash
         run: echo "sdk-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk')" >> $GITHUB_OUTPUT
 
