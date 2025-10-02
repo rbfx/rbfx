@@ -52,6 +52,7 @@ env:
   ci_latest_release_id: 129063815
   # etc
   TRACY_TIMER_FALLBACK: 1
+  SOURCE_REF: ${{ github.head_ref || github.ref_name }}
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -571,7 +572,7 @@ jobs:
         with:
           repository: rbfx/empty-project
           path: ${{ github.workspace }}/empty-project
-          ref: ${{ github.ref }}
+          ref: ${{ env.SOURCE_REF }}
           fetch-depth: 1
           submodules: true
 
@@ -792,7 +793,7 @@ jobs:
         with:
           repository: rbfx/empty-project
           path: ${{ github.workspace }}/empty-project
-          ref: ${{ github.ref }}
+          ref: ${{ env.SOURCE_REF }}
           fetch-depth: 1
           submodules: true
 
@@ -897,7 +898,7 @@ jobs:
         with:
           repository: rbfx/empty-project
           path: ${{ github.workspace }}/empty-project
-          ref: ${{ github.ref }}
+          ref: ${{ env.SOURCE_REF }}
           fetch-depth: 1
           submodules: true
 
@@ -1226,7 +1227,7 @@ jobs:
         with:
           repository: rbfx/empty-project
           path: ${{ github.workspace }}/empty-project
-          ref: ${{ github.ref }}
+          ref: ${{ env.SOURCE_REF }}
           fetch-depth: 1
           submodules: true
 
@@ -1750,7 +1751,7 @@ jobs:
         with:
           repository: rbfx/empty-project
           path: ${{ github.workspace }}/empty-project
-          ref: ${{ github.ref }}
+          ref: ${{ env.SOURCE_REF }}
           fetch-depth: 1
           submodules: true
 
