@@ -1530,9 +1530,10 @@ jobs:
             ${{ env.CACHE_ID }}
 
       - name: Download cached SDK
+        id: cached_sdk
         if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
         shell: bash
-        run: bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk'
+        run: echo "sdk-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk')" >> "$GITHUB_OUTPUT"
 
       - name: Download cached tools
         id: cached_tools
@@ -1566,17 +1567,24 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} build dbg
 
-      - name: Install Debug
-        shell: bash
-        run: ${{ env.ci_build_script }} install dbg
-
       - name: Build Release
         shell: bash
         run: ${{ env.ci_build_script }} build rel
 
-      - name: Install Release
+      - name: Copy cached SDK (ThirdParty component)
+        if: steps.cached_sdk.outputs.sdk-cached == 'true'
         shell: bash
-        run: ${{ env.ci_build_script }} install rel
+        run: |
+          src='${{ github.workspace }}/cached-sdk'
+          dst='${{ env.ci_sdk_dir }}'
+          mkdir -p $dst
+          cp -r $src/* $dst/
+
+      - name: Install (Debug+Release)
+        shell: bash
+        run: |
+          ${{ env.ci_build_script }} install dbg
+          ${{ env.ci_build_script }} install rel
 
       - uses: actions/upload-artifact@v4
         with:
