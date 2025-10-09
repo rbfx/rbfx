@@ -52,6 +52,8 @@ if (TARGET Utilities2D)
     target_link_libraries(Samples PUBLIC Utilities2D)
 endif ()
 
+group_sources()
+
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} "Sample Projects")
 
 # Package resources for samples.
@@ -86,11 +88,11 @@ if (XCODE)
         # Default app icon on the iOS/tvOS home screen
         list(APPEND RESOURCE_FILES ${rbfx_SOURCE_DIR}/bin/Data/Textures/UrhoIcon.png)
     endif ()
-    
+
     # Add REOSOURCE FILES to the bundle
     set_source_files_properties (${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     target_sources(Samples PRIVATE ${RESOURCE_FILES})
-    
+
     # Add other resources to the bundle
     if (URHO3D_PACKAGING)
         set_source_files_properties (${URHO3D_DATA_PAKS} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)

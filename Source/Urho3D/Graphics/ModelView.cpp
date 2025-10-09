@@ -1067,8 +1067,14 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
     ea::vector<unsigned> indexBufferData;
     SharedPtr<IndexBuffer> indexBuffer;
 
-    for (const GeometryView& sourceGeometry : geometries_)
+    ea::vector<unsigned> exportedGeometries;
+    for (unsigned geometryIndex = 0; geometryIndex < geometries_.size(); ++geometryIndex)
     {
+        const GeometryView& sourceGeometry = geometries_[geometryIndex];
+        if (!sourceGeometry.exported_)
+            continue;
+
+        exportedGeometries.push_back(geometryIndex);
         for (const GeometryLODView& sourceGeometryLod : sourceGeometry.lods_)
         {
             const unsigned newVertexBufferIndex = vertexBuffersData.size();
@@ -1151,7 +1157,7 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
             return;
         }
 
-        if (largeIndices != (originalIndexBuffer->GetIndexSize() == 4))
+        if (largeIndices && originalIndexBuffer->GetIndexSize() != 4)
         {
             URHO3D_LOGERROR("Cannot create Model inplace: Index Buffer index size does not match");
             return;
@@ -1161,6 +1167,9 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
     }
     else
     {
+        const bool isHeadless = flags.IsAnyOf(ModelViewExportFlag::Headless);
+        const auto deviceObjectFlags = isHeadless ? DeviceObjectFlag::Headless : DeviceObjectFlag::None;
+
         // Create vertex buffers
         for (auto& [vertexFormat, vertexBufferData] : vertexBuffersData)
         {
@@ -1168,7 +1177,7 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
             if (vertexElements.empty())
                 URHO3D_LOGERROR("No vertex elements in vertex buffer");
 
-            auto vertexBuffer = MakeShared<VertexBuffer>(context_);
+            auto vertexBuffer = MakeShared<VertexBuffer>(context_, deviceObjectFlags);
             vertexBuffer->SetDebugName(Format("Model '{}' Vertex Buffer", name_));
             vertexBuffer->SetShadowed(true);
             vertexBuffer->SetSize(vertexBufferData.vertices_.size(), vertexElements);
@@ -1177,7 +1186,7 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
         }
 
         // Create index buffer
-        indexBuffer = MakeShared<IndexBuffer>(context_);
+        indexBuffer = MakeShared<IndexBuffer>(context_, deviceObjectFlags);
         indexBuffer->SetDebugName(Format("Model '{}' Index Buffer", name_));
         indexBuffer->SetShadowed(true);
         indexBuffer->SetSize(indexBufferData.size(), largeIndices);
@@ -1262,11 +1271,11 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
     unsigned indexStart = 0;
     ea::unordered_map<ModelVertexFormat, unsigned> vertexStart;
 
-    const unsigned numGeometries = geometries_.size();
+    const unsigned numGeometries = exportedGeometries.size();
     model->SetNumGeometries(numGeometries);
     for (unsigned geometryIndex = 0; geometryIndex < numGeometries; ++geometryIndex)
     {
-        const GeometryView& sourceGeometry = geometries_[geometryIndex];
+        const GeometryView& sourceGeometry = geometries_[exportedGeometries[geometryIndex]];
         if (sourceGeometry.lods_.empty())
             continue;
 
@@ -1329,10 +1338,16 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
     model->SetSkeleton(skeleton);
 }
 
-SharedPtr<Model> ModelView::ExportModel(const ea::string& name) const
+SharedPtr<Model> ModelView::ExportModel(ModelViewExportFlags flags, const ea::string& name) const
 {
+    if (flags.IsAnyOf(ModelViewExportFlag::Inplace))
+    {
+        URHO3D_LOGWARNING("ModelViewExportFlag::Inplace is ignored: Model is not provided to ModelView::ExportModel");
+        flags.Unset(ModelViewExportFlag::Inplace);
+    }
+
     auto model = MakeShared<Model>(context_);
-    ExportModel(model);
+    ExportModel(model, flags);
     if (!name.empty())
         model->SetName(name);
     return model;
@@ -1343,7 +1358,10 @@ ResourceRefList ModelView::ExportMaterialList() const
     ResourceRefList result(Material::GetTypeStatic());
 
     for (const GeometryView& geometry : geometries_)
-        result.names_.push_back(geometry.material_);
+    {
+        if (geometry.exported_)
+            result.names_.push_back(geometry.material_);
+    }
     return result;
 }
 
@@ -1356,11 +1374,14 @@ const Variant& ModelView::GetMetadata(const ea::string& key) const
     return Variant::EMPTY;
 }
 
-BoundingBox ModelView::CalculateBoundingBox() const
+BoundingBox ModelView::CalculateBoundingBox(bool exportedOnly) const
 {
     BoundingBox boundingBox;
     for (const GeometryView& sourceGeometry : geometries_)
     {
+        if (exportedOnly && !sourceGeometry.exported_)
+            continue;
+
         for (const GeometryLODView& sourceGeometryLod : sourceGeometry.lods_)
         {
             for (const ModelVertex& vertex : sourceGeometryLod.vertices_)
@@ -1533,7 +1554,7 @@ void ModelView::RepairBoneWeights()
     }
 }
 
-void ModelView::RecalculateBoneBoundingBoxes()
+void ModelView::RecalculateBoneBoundingBoxes(bool exportedOnly)
 {
     if (bones_.empty())
         return;
@@ -1543,6 +1564,9 @@ void ModelView::RecalculateBoneBoundingBoxes()
 
     for (const GeometryView& geometryView : geometries_)
     {
+        if (exportedOnly && !geometryView.exported_)
+            continue;
+
         for (const GeometryLODView& lodView : geometryView.lods_)
         {
             for (const ModelVertex& vertex : lodView.vertices_)

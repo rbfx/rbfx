@@ -8,6 +8,14 @@
 namespace tracy
 {
 
+bool View::IsFrameExternal( const char* filename, const char* image )
+{
+    if( strncmp( filename, "/usr/", 5 ) == 0 || strncmp( filename, "/lib/", 5 ) == 0 || strcmp( filename, "[unknown]" ) == 0 || strcmp( filename, "<kernel>" ) == 0 ) return true;
+    if( strncmp( filename, "C:\\Program Files\\", 17 ) == 0 || strncmp( filename, "d:\\a01\\_work\\", 13 ) == 0 ) return true;
+    if( !image ) return false;
+    return strncmp( image, "/usr/", 5 ) == 0 || strncmp( image, "/lib/", 5 ) == 0 || strncmp( image, "/lib64/", 7 ) == 0 || strcmp( image, "<kernel>" ) == 0;
+}
+
 uint32_t View::GetThreadColor( uint64_t thread, int depth )
 {
     return tracy::GetThreadColor( thread, depth, m_vd.dynamicColors != 0 );
@@ -76,27 +84,27 @@ uint32_t View::GetZoneColor( const GpuEvent& ev )
     return color != 0 ? ( color | 0xFF000000 ) : 0xFF222288;
 }
 
-View::ZoneColorData View::GetZoneColorData( const ZoneEvent& ev, uint64_t thread, int depth )
+View::ZoneColorData View::GetZoneColorData( const ZoneEvent& ev, uint64_t thread, int depth, uint32_t inheritedColor )
 {
     ZoneColorData ret;
     const auto& srcloc = ev.SrcLoc();
     if( m_zoneInfoWindow == &ev )
     {
-        ret.color = GetZoneColor( ev, thread, depth );
+        ret.color = inheritedColor ? inheritedColor : GetZoneColor( ev, thread, depth );
         ret.accentColor = 0xFF44DD44;
         ret.thickness = 3.f;
         ret.highlight = true;
     }
     else if( m_zoneHighlight == &ev )
     {
-        ret.color = GetZoneColor( ev, thread, depth );
+        ret.color = inheritedColor ? inheritedColor : GetZoneColor( ev, thread, depth );
         ret.accentColor = 0xFF4444FF;
         ret.thickness = 3.f;
         ret.highlight = true;
     }
     else if( m_zoneSrcLocHighlight == srcloc )
     {
-        ret.color = GetZoneColor( ev, thread, depth );
+        ret.color = inheritedColor ? inheritedColor : GetZoneColor( ev, thread, depth );
         ret.accentColor = 0xFFEEEEEE;
         ret.thickness = 1.f;
         ret.highlight = true;
@@ -119,7 +127,7 @@ View::ZoneColorData View::GetZoneColorData( const ZoneEvent& ev, uint64_t thread
     }
     else
     {
-        const auto color = GetZoneColor( ev, thread, depth );
+        const auto color = inheritedColor ? inheritedColor : GetZoneColor( ev, thread, depth );
         ret.color = color;
         ret.accentColor = HighlightColor( color );
         ret.thickness = 1.f;

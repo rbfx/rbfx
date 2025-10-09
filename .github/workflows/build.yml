@@ -34,7 +34,7 @@ env:
   ci_latest_release_url: https://uploads.github.com/repos/rbfx/rbfx/releases/129063815/assets{?name,label}
   ci_latest_release_id: 129063815
   # etc
-  TRACY_NO_INVARIANT_CHECK: 1
+  TRACY_TIMER_FALLBACK: 1
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -448,6 +448,9 @@ jobs:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
+      - name: Install Windows 10 SDK 20348
+        run: choco install windows-sdk-10-version-2104-all -y
+
       - name: Build Cache
         uses: actions/cache@v4
         with:
@@ -854,6 +857,11 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
         with:
@@ -972,8 +980,7 @@ jobs:
         ci_lib_type:
           - lib
         ci_emsdk_version:
-          - latest
-          #- 3.1.24  # Minimal supported
+          - ${{ vars.EMSDK_VERSION }}
 
     env:
       BINARYEN_CORES: 1

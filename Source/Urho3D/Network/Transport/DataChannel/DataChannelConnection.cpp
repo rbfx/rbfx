@@ -245,7 +245,7 @@ void DataChannelConnection::InitializeFromSocket(DataChannelServer* server, std:
     websocket->onOpen([this]() { websocketWasOpened_ = true; });
     websocket->onMessage([this](rtc::binary data)
     {
-        MemoryBuffer msg(data.data(), data.size());
+        MemoryBuffer msg(data.data(), static_cast<unsigned>(data.size()));
         ea::string type = msg.ReadString();
         if (type == "offer" || type == "answer")
         {

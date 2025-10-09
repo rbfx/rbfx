@@ -2,6 +2,73 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+v0.12.0 (2025-05-30)
+--------------------
+
+- Enabled workaround for MSVC runtime library SNAFU, which manifested with
+  the profiler executables crashing at startup inside mutex code.
+- CPU topology data now includes CPU die information.
+- Clients running under Wine will now report that in the trace info.
+- Added flame graph.
+- The Git ref information for the build is now included in the about dialog.
+- Added support for clipboard copy and paste on Wayland.
+- The welcome dialog client address entry field will now trim the entered
+  address, so that stray spaces at the start and the end are removed. This
+  should reduce the amount of user precision required when copy pasting the
+  address from somewhere else.
+- GPU profiling is now available with Metal and CUDA.
+- Profiling zones can now optionally inherit their parent color.
+- It is no longer needed to have up-to-date copy of wayland-protocols
+  installed. CMake will download the required version from GitHub.
+- Added option to show the top inline in symbol statistics list in stead of
+  the symbol name.
+- Parallel sorting is now performed with PPQSort (which removes potential
+  dependency on TBB).
+- Added CMake option TRACY_DEBUGINFOD to enable use of libdebuginfod to
+  retrieve symbols on Linux clients.
+- Added a "custom" label as an option to select for GPU context type.
+- Symbol code retrieval is now protected against reading no longer available
+  memory.
+- Clicking on a symbol in the symbol statistics list will now open a popup
+  with two options. This change intends to make the useful but quite hidden
+  disassembly view more discoverable.
+  - "View symbol" shows the symbol code disassembly. It was previously
+    available by right-click on the source file name.
+  - "Sample entry stacks" shows the list window that was previously
+    opened when the symbol entry was clicked.
+- Plots are now extended to the end of the trace, instead of ending at the
+  last data point.
+- Added TracyMemoryDiscard macros to mark that all allocations made in a
+  certain memory pool were freed. This enables better support for arena
+  allocators.
+- It is now possible to fine-tune horizontal and vertical mouse wheel scroll
+  sensitivity.
+- Added p75 and p90 percentiles in the Find zone window.
+- Zone info window will now display (approximate) wall-clock time of when
+  the zone appeared, in addition to the previously displayed time from the
+  start of the program.
+- Zone values passed via ZoneValue macro will be now also displayed in hex.
+- The csvexport utility can now export:
+  - plots,
+  - GPU zones,
+  - zone text.
+- Fortran integration is now available.
+- Added TRACY_LTO CMake option to enable Link-Time Optimizations.
+- Executable image names will now be shortened to just the file name. The
+  full path is available as a tooltip. Shortening can be disabled with a
+  "scissors" checkbox.
+- Entry stacks can be now also viewed via a button in the symbol view.
+- On Wayland the application icon is now set even without the desktop file.
+- Lua code can be now automatically instrumented via a hook.
+- User text set in zone can be now copied to clipboard.
+- The LockMark() macro is now less strict about what object you can pass
+  to it. It is now possible to pass members, e.g. LockMark(obj.mutex).
+- The profiler application now adapts to per-monitor DPI on Windows.
+- It is now possible to save the UI scale of the profiler (needs to be
+  enabled in settings).
+- Added thread wakeup visualization.
+
+
 v0.11.1 (2024-08-22)
 --------------------
 

@@ -24,11 +24,12 @@
 
 #pragma once
 
-#include <EASTL/shared_array.h>
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/Quaternion.h"
+#include "Urho3D/Physics/CollisionGeometryDataCache.h"
+#include "Urho3D/Scene/Component.h"
 
-#include "../Math/BoundingBox.h"
-#include "../Math/Quaternion.h"
-#include "../Scene/Component.h"
+#include <EASTL/shared_array.h>
 
 class btBvhTriangleMeshShape;
 class btCollisionShape;
@@ -48,30 +49,6 @@ class PhysicsWorld;
 class RigidBody;
 class Terrain;
 class TriangleMeshInterface;
-
-/// Collision shape type.
-enum ShapeType
-{
-    SHAPE_BOX = 0,
-    SHAPE_SPHERE,
-    SHAPE_STATICPLANE,
-    SHAPE_CYLINDER,
-    SHAPE_CAPSULE,
-    SHAPE_CONE,
-    SHAPE_TRIANGLEMESH,
-    SHAPE_CONVEXHULL,
-    SHAPE_TERRAIN,
-    SHAPE_GIMPACTMESH
-};
-
-/// Base class for collision shape geometry data.
-struct CollisionGeometryData : public RefCounted
-{
-};
-
-/// Cache of collision geometry data.
-/// \todo Remove duplicate declaration
-using CollisionGeometryDataCache = ea::unordered_map<ea::pair<Model*, unsigned>, SharedPtr<CollisionGeometryData> >;
 
 /// Triangle mesh geometry data.
 struct TriangleMeshData : public CollisionGeometryData

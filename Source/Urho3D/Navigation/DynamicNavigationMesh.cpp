@@ -328,11 +328,7 @@ void DynamicNavigationMesh::RemoveTile(const IntVector2& tileIndex)
     dtCompressedTileRef existing[MaxLayers];
     const int existingCt = tileCache_->getTilesAt(tileIndex.x_, tileIndex.y_, existing, maxLayers_);
     for (int i = 0; i < existingCt; ++i)
-    {
-        unsigned char* data = nullptr;
-        if (!dtStatusFailed(tileCache_->removeTile(existing[i], &data, nullptr)) && data != nullptr)
-            dtFree(data);
-    }
+        tileCache_->removeTile(existing[i], nullptr, nullptr);
 
     NavigationMesh::RemoveTile(tileIndex);
 }
@@ -565,13 +561,10 @@ int DynamicNavigationMesh::BuildTile(ea::vector<NavigationGeometryInfo>& geometr
 {
     URHO3D_PROFILE("BuildNavigationMeshTile");
 
-    const dtMeshTile* tilesToRemove[MaxLayers];
-    const int numTilesToRemove = navMesh_->getTilesAt(x, z, tilesToRemove, MaxLayers);
+    dtCompressedTileRef tilesToRemove[MaxLayers];
+    const int numTilesToRemove = tileCache_->getTilesAt(x, z, tilesToRemove, MaxLayers);
     for (int i = 0; i < numTilesToRemove; ++i)
-    {
-        const dtTileRef tileRef = navMesh_->getTileRefAt(x, z, tilesToRemove[i]->header->layer);
-        tileCache_->removeTile(tileRef, nullptr, nullptr);
-    }
+        tileCache_->removeTile(tilesToRemove[i], nullptr, nullptr);
 
     const BoundingBox tileColumn = GetTileBoundingBoxColumn(IntVector2{x, z});
     const BoundingBox tileBoundingBox =
@@ -628,14 +621,13 @@ int DynamicNavigationMesh::BuildTile(ea::vector<NavigationGeometryInfo>& geometr
         return 0;
     }
 
-    unsigned numTriangles = build.indices_.size() / 3;
-    ea::shared_array<unsigned char> triAreas(new unsigned char[numTriangles]);
-    memset(triAreas.get(), 0, numTriangles);
+    const unsigned numTriangles = build.indices_.size() / 3;
+    URHO3D_ASSERT(numTriangles == build.areaIds_.size());
 
-    rcMarkWalkableTriangles(build.ctx_, cfg.walkableSlopeAngle, &build.vertices_[0].x_, build.vertices_.size(),
-        &build.indices_[0], numTriangles, triAreas.get());
+    DeduceAreaIds(cfg.walkableSlopeAngle, &build.vertices_[0].x_, &build.indices_[0], numTriangles, &build.areaIds_[0]);
+
     rcRasterizeTriangles(build.ctx_, &build.vertices_[0].x_, build.vertices_.size(), &build.indices_[0],
-        triAreas.get(), numTriangles, *build.heightField_, cfg.walkableClimb);
+        &build.areaIds_[0], numTriangles, *build.heightField_, cfg.walkableClimb);
     rcFilterLowHangingWalkableObstacles(build.ctx_, cfg.walkableClimb, *build.heightField_);
 
     rcFilterLedgeSpans(build.ctx_, cfg.walkableHeight, cfg.walkableClimb, *build.heightField_);
@@ -762,11 +754,7 @@ unsigned DynamicNavigationMesh::BuildTilesFromGeometry(
             dtCompressedTileRef existing[MaxLayers];
             const int existingCt = tileCache_->getTilesAt(x, z, existing, maxLayers_);
             for (int i = 0; i < existingCt; ++i)
-            {
-                unsigned char* data = nullptr;
-                if (!dtStatusFailed(tileCache_->removeTile(existing[i], &data, nullptr)) && data != nullptr)
-                    dtFree(data);
-            }
+                tileCache_->removeTile(existing[i], nullptr, nullptr);
 
             TileCacheData tiles[MaxLayers];
             int layerCt = BuildTile(geometryList, x, z, tiles);
@@ -785,6 +773,9 @@ unsigned DynamicNavigationMesh::BuildTilesFromGeometry(
                     ++numTiles;
                 }
             }
+
+            for (int i = layerCt; i < existingCt; ++i)
+                navMesh_->removeTile(navMesh_->getTileRefAt(x, z, i), 0, 0);
         }
     }
 

@@ -289,7 +289,7 @@ void Texture::OnCreateGPU()
             renderSurfaces_[i]->Restore(renderSurfaceHandles[i]);
     }
 
-    SetMemoryUse(CalculateMemoryUseGPU());
+    SetMemoryUse(static_cast<unsigned>(CalculateMemoryUseGPU()));
 }
 
 void Texture::OnDestroyGPU()

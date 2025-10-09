@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -64,6 +64,11 @@ namespace embree
       const Instance* instance = scene->get<Instance>(geomID);
       new (this) InstancePrimitive(instance,geomID);
       return instance->linearBounds(0,time_range);
+    }
+
+    /* Updates the primitive */
+    __forceinline BBox3fa update(Instance* instance) {
+      return instance->bounds(0);
     }
 
   public:

@@ -94,7 +94,7 @@ ea::optional<ea::string> ParseNavigate(ea::string_view str)
     if (match.str(1) == "push")
     {
         const std::string group = match.str(2);
-        return ea::string(group.data(), group.size());
+        return ea::string(group.data(), static_cast<unsigned>(group.size()));
     }
     else if (match.str(1) == "pop")
         return EMPTY_STRING;

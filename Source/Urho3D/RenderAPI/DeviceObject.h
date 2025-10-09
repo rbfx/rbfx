@@ -18,11 +18,21 @@ namespace Urho3D
 class Context;
 class RenderDevice;
 
+enum class DeviceObjectFlag : unsigned char
+{
+    None = 0,
+
+    /// Device object should be created only on CPU side, like in "headless" engine mode.
+    /// Such object cannot be used during rendering. Headless objects could be constructed from any thread.
+    Headless = 1 << 0,
+};
+URHO3D_FLAGSET(DeviceObjectFlag, DeviceObjectFlags);
+
 /// Base class for GPU resources.
 class URHO3D_API DeviceObject
 {
 public:
-    explicit DeviceObject(Context* context);
+    explicit DeviceObject(Context* context, DeviceObjectFlags flags = DeviceObjectFlag::None);
     virtual ~DeviceObject();
 
     /// Invalidate GPU data.

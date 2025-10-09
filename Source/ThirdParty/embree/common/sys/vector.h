@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -127,14 +127,15 @@ namespace embree
       {
         assert(!empty());
         size_active--;
-        alloc.destroy(&items[size_active]);
+        items[size_active].~T();
       }
 
       __forceinline void clear() 
       {
         /* destroy elements */
-        for (size_t i=0; i<size_active; i++)
+        for (size_t i=0; i<size_active; i++){
           items[i].~T();
+        }
         
         /* free memory */
         alloc.deallocate(items,size_alloced); 
@@ -178,8 +179,9 @@ namespace embree
         /* destroy elements */
         if (new_active < size_active) 
         {
-          for (size_t i=new_active; i<size_active; i++)
+          for (size_t i=new_active; i<size_active; i++){
             items[i].~T();
+          }
           size_active = new_active;
         }
 

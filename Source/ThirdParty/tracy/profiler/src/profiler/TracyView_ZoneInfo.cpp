@@ -5,6 +5,7 @@
 #include "TracyPrint.hpp"
 #include "TracyMouse.hpp"
 #include "TracyView.hpp"
+#include "tracy_pdqsort.h"
 
 namespace tracy
 {
@@ -446,7 +447,14 @@ void View::DrawZoneInfoWindow()
         }
         if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).text.Active() )
         {
-            TextFocused( "User text:", m_worker.GetString( m_worker.GetZoneExtra( ev ).text ) );
+            TextDisabledUnformatted( "User text:" );
+            ImGui::SameLine();
+            if( ClipboardButton( 4 ) )
+            {
+                ImGui::SetClipboardText( m_worker.GetString( m_worker.GetZoneExtra( ev ).text ) );
+            }
+            ImGui::SameLine();
+            ImGui::TextUnformatted( m_worker.GetString( m_worker.GetZoneExtra( ev ).text ) );
         }
 
         ImGui::Separator();
@@ -456,6 +464,8 @@ void View::DrawZoneInfoWindow()
         const auto ztime = end - ev.Start();
         const auto selftime = GetZoneSelfTime( ev );
         TextFocused( "Time from start of program:", TimeToStringExact( ev.Start() ) );
+        const std::time_t ts = m_worker.GetCaptureTime() + ev.Start() / 1000000000;
+        TextFocused( "Wall clock time:", std::asctime( std::localtime( &ts) ) );
         TextFocused( "Execution time:", TimeToString( ztime ) );
 #ifndef TRACY_NO_STATISTICS
         if( m_worker.AreSourceLocationZonesReady() )
@@ -673,23 +683,69 @@ void View::DrawZoneInfoWindow()
                                         if( cpu0 == cpu1 )
                                         {
                                             ImGui::TextUnformatted( RealToString( cpu0 ) );
+                                            if( ImGui::IsItemHovered() )
+                                            {
+                                                const auto tt = m_worker.GetThreadTopology( cpu0 );
+                                                if( tt )
+                                                {
+                                                    ImGui::BeginTooltip();
+                                                    TextFocused( "Package", RealToString( tt->package ) );
+                                                    TextFocused( "Die", RealToString( tt->die ) );
+                                                    TextFocused( "Core", RealToString( tt->core ) );
+                                                    ImGui::EndTooltip();
+                                                }
+                                            }
                                         }
                                         else
                                         {
-                                            ImGui::Text( "%i " ICON_FA_RIGHT_LONG " %i", cpu0, cpu1 );
                                             const auto tt0 = m_worker.GetThreadTopology( cpu0 );
                                             const auto tt1 = m_worker.GetThreadTopology( cpu1 );
+                                            ImGui::Text( "%i ", cpu0 );
+                                            if( tt0 && ImGui::IsItemHovered() )
+                                            {
+                                                ImGui::BeginTooltip();
+                                                TextFocused( "Package", RealToString( tt0->package ) );
+                                                TextFocused( "Die", RealToString( tt0->die ) );
+                                                TextFocused( "Core", RealToString( tt0->core ) );
+                                                ImGui::EndTooltip();
+                                            }
+                                            ImGui::SameLine( 0, 0 );
+                                            TextDisabledUnformatted( ICON_FA_RIGHT_LONG );
+                                            ImGui::SameLine( 0, 0 );
+                                            ImGui::Text( " %i", cpu1 );
+                                            if( tt1 && ImGui::IsItemHovered() )
+                                            {
+                                                ImGui::BeginTooltip();
+                                                TextFocused( "Package", RealToString( tt1->package ) );
+                                                TextFocused( "Die", RealToString( tt1->die ) );
+                                                TextFocused( "Core", RealToString( tt1->core ) );
+                                                ImGui::EndTooltip();
+                                            }
                                             if( tt0 && tt1 )
                                             {
                                                 if( tt0->package != tt1->package )
                                                 {
                                                     ImGui::SameLine();
                                                     TextDisabledUnformatted( "P" );
+                                                    TooltipIfHovered( "Jump from one CPU package to another" );
+                                                }
+                                                else if( tt0->die != tt1->die )
+                                                {
+                                                    ImGui::SameLine();
+                                                    TextDisabledUnformatted( "D" );
+                                                    TooltipIfHovered( "Jump from one CPU die to another, within the same package" );
                                                 }
                                                 else if( tt0->core != tt1->core )
                                                 {
                                                     ImGui::SameLine();
                                                     TextDisabledUnformatted( "C" );
+                                                    TooltipIfHovered( "Jump from one CPU core to another, within the same die" );
+                                                }
+                                                else
+                                                {
+                                                    ImGui::SameLine();
+                                                    TextDisabledUnformatted( "H" );
+                                                    TooltipIfHovered( "Jump from one CPU hyperthread to another, within the same core" );
                                                 }
                                             }
                                         }
@@ -883,7 +939,25 @@ void View::DrawZoneInfoWindow()
                         SmallCheckbox( "Time relative to zone start", &m_messageTimeRelativeToZone );
                         ImGui::SameLine();
                         SmallCheckbox( "Exclude children", &m_messagesExcludeChildren );
-                        if( ImGui::BeginTable( "##messages", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * std::min<int64_t>( msgend-msgit+1, 15 ) ) ) )
+                        int64_t viewSize;
+                        if( !m_messagesExcludeChildren )
+                        {
+                            viewSize = std::min<int64_t>( msgend - msgit + 1, 15 );
+                        }
+                        else
+                        {
+                            viewSize = 0;
+                            for( auto it = msgit; it < msgend; ++it )
+                            {
+                                if( !GetZoneChild( ev, (*it)->time ) )
+                                {
+                                    viewSize++;
+                                    if( viewSize == 15 ) break;
+                                }
+                            }
+                            if( viewSize < 15 ) viewSize++;
+                        }
+                        if( ImGui::BeginTable( "##messages", 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerV, ImVec2( 0, ImGui::GetTextLineHeightWithSpacing() * viewSize ) ) )
                         {
                             ImGui::TableSetupScrollFreeze( 0, 1 );
                             ImGui::TableSetupColumn( "Time", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize );
@@ -906,7 +980,19 @@ void View::DrawZoneInfoWindow()
                                 ImGui::PopID();
                                 ImGui::TableNextColumn();
                                 ImGui::PushStyleColor( ImGuiCol_Text, (*msgit)->color );
-                                ImGui::TextWrapped( "%s", m_worker.GetString( (*msgit)->ref ) );
+                                const auto text = m_worker.GetString( (*msgit)->ref );
+                                auto tend = text;
+                                while( *tend != '\0' && *tend != '\n' ) tend++;
+                                const auto cw = ImGui::GetContentRegionAvail().x;
+                                const auto tw = ImGui::CalcTextSize( text, tend ).x;
+                                ImGui::TextUnformatted( text, tend );
+                                if( tw > cw && ImGui::IsItemHovered() )
+                                {
+                                    ImGui::SetNextWindowSize( ImVec2( 1000 * GetScale(), 0 ) );
+                                    ImGui::BeginTooltip();
+                                    ImGui::TextWrapped( "%s", text );
+                                    ImGui::EndTooltip();
+                                }
                                 ImGui::PopStyleColor();
                             }
                             while( ++msgit != msgend );

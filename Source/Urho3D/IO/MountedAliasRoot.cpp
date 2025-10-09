@@ -16,7 +16,7 @@ static const ea::string aliasSeparator = ":/";
 
 ea::string_view StripFileName(ea::string_view fileName, ea::string_view alias)
 {
-    const unsigned offset = alias.size() + aliasSeparator.size();
+    const auto offset = alias.size() + aliasSeparator.size();
     return offset < fileName.size() ? fileName.substr(offset) : ea::string_view{};
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #include "../builders/bvh_builder_hair.h"
@@ -47,7 +47,7 @@ namespace embree
 
         /* create primref array */
         prims.resize(numPrimitives);
-        const PrimInfo pinfo = createPrimRefArray(scene,Geometry::MTY_CURVES,false,prims,scene->progressInterface);
+        const PrimInfo pinfo = createPrimRefArray(scene,Geometry::MTY_CURVES,false,numPrimitives,prims,scene->progressInterface);
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.size()*sizeof(typename BVH::OBBNode)/(4*N);

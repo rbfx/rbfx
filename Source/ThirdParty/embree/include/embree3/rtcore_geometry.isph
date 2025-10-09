@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #ifndef __EMBREE_GEOMETRY_ISPH__
@@ -22,6 +22,7 @@ enum RTCGeometryType
 
   RTC_GEOMETRY_TYPE_SUBDIVISION = 8, // Catmull-Clark subdivision surface
 
+  RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE   = 15, // Cone linear curves - discontinuous at edge boundaries
   RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE   = 17, // flat (ribbon-like) linear curves
   RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE  = 16, // Round (rounded cone like) linear curves
   
@@ -63,7 +64,7 @@ enum RTCSubdivisionMode
 enum RTCCurveFlags
 {
   RTC_CURVE_FLAG_NEIGHBOR_LEFT  = (1 << 0), // left segment exists
-  RTC_CURVE_FLAG_NEIGHBOR_RIGHT = (1 << 1)  // right segement exists
+  RTC_CURVE_FLAG_NEIGHBOR_RIGHT = (1 << 1)  // right segment exists
 };
 
 /* Arguments for RTCBoundsFunction */

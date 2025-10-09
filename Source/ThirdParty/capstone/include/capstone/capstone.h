@@ -17,6 +17,7 @@ extern "C" {
 #include <stdio.h>
 #endif
 
+#include "cs_operand.h"
 #include "platform.h"
 
 #ifdef _MSC_VER
@@ -47,77 +48,18 @@ extern "C" {
 #endif
 
 // Capstone API version
-#define CS_API_MAJOR 5
+#define CS_API_MAJOR 6
 #define CS_API_MINOR 0
 
 // Version for bleeding edge code of the Github's "next" branch.
 // Use this if you want the absolutely latest development code.
 // This version number will be bumped up whenever we have a new major change.
-#define CS_NEXT_VERSION 5
+#define CS_NEXT_VERSION 7
 
 // Capstone package version
 #define CS_VERSION_MAJOR CS_API_MAJOR
 #define CS_VERSION_MINOR CS_API_MINOR
-#define CS_VERSION_EXTRA 3
-
-/// Macro for meta programming.
-/// Meant for projects using Capstone and need to support multiple
-/// versions of it.
-/// These macros replace several instances of the old "ARM64" with
-/// the new "AArch64" name depending on the CS version.
-#if CS_NEXT_VERSION < 6
-#define CS_AARCH64(x) ARM64##x
-#else
-#define CS_AARCH64(x) AArch64##x
-#endif
-
-#if CS_NEXT_VERSION < 6
-#define CS_AARCH64pre(x) x##ARM64
-#else
-#define CS_AARCH64pre(x) x##AARCH64
-#endif
-
-#if CS_NEXT_VERSION < 6
-#define CS_AARCH64CC(x) ARM64_CC##x
-#else
-#define CS_AARCH64CC(x) AArch64CC##x
-#endif
-
-#if CS_NEXT_VERSION < 6
-#define CS_AARCH64_VL_(x) ARM64_VAS_##x
-#else
-#define CS_AARCH64_VL_(x) AArch64Layout_VL_##x
-#endif
-
-#if CS_NEXT_VERSION < 6
-#define CS_aarch64_ arm64
-#else
-#define CS_aarch64_ aarch64
-#endif
-
-#if CS_NEXT_VERSION < 6
-#define CS_aarch64(x) arm64##x
-#else
-#define CS_aarch64(x) aarch64##x
-#endif
-
-#if CS_NEXT_VERSION < 6
-#define CS_aarch64_op() cs_arm64_op
-#define CS_aarch64_reg() arm64_reg
-#define CS_aarch64_cc() arm64_cc
-#define CS_cs_aarch64() cs_arm64
-#define CS_aarch64_extender() arm64_extender
-#define CS_aarch64_shifter() arm64_shifter
-#define CS_aarch64_vas() arm64_vas
-#else
-#define CS_aarch64_op() cs_aarch64_op
-#define CS_aarch64_reg() aarch64_reg
-#define CS_aarch64_cc() AArch64CC_CondCode
-#define CS_cs_aarch64() cs_aarch64
-#define CS_aarch64_extender() aarch64_extender
-#define CS_aarch64_shifter() aarch64_shifter
-#define CS_aarch64_vas() AArch64Layout_VectorLayout
-#endif
+#define CS_VERSION_EXTRA 0
 
 /// Macro to create combined version which can be compared to
 /// result of cs_version() API.
@@ -132,12 +74,20 @@ typedef size_t csh;
 /// Architecture type
 typedef enum cs_arch {
 	CS_ARCH_ARM = 0,	///< ARM architecture (including Thumb, Thumb-2)
-	CS_ARCH_ARM64,		///< ARM-64, also called AArch64
+#ifdef CAPSTONE_AARCH64_COMPAT_HEADER
+	CS_ARCH_ARM64 = 1,	///< ARM64
+#else
+	CS_ARCH_AARCH64 = 1,	///< AArch64
+#endif
+#ifdef CAPSTONE_SYSTEMZ_COMPAT_HEADER
+	CS_ARCH_SYSZ = 2,	///< SystemZ architecture
+#else
+	CS_ARCH_SYSTEMZ = 2,	///< SystemZ architecture
+#endif
 	CS_ARCH_MIPS,		///< Mips architecture
 	CS_ARCH_X86,		///< X86 architecture (including x86 & x86-64)
 	CS_ARCH_PPC,		///< PowerPC architecture
 	CS_ARCH_SPARC,		///< Sparc architecture
-	CS_ARCH_SYSZ,		///< SystemZ architecture
 	CS_ARCH_XCORE,		///< XCore architecture
 	CS_ARCH_M68K,		///< 68K architecture
 	CS_ARCH_TMS320C64X,	///< TMS320C64x architecture
@@ -149,6 +99,10 @@ typedef enum cs_arch {
 	CS_ARCH_RISCV,          ///< RISCV architecture
 	CS_ARCH_SH,             ///< SH architecture
 	CS_ARCH_TRICORE,	///< TriCore architecture
+	CS_ARCH_ALPHA, 		///< Alpha architecture
+	CS_ARCH_HPPA, 		///< HPPA architecture
+	CS_ARCH_LOONGARCH, 	///< LoongArch architecture
+	CS_ARCH_XTENSA, 	///< Xtensa architecture
 	CS_ARCH_MAX,
 	CS_ARCH_ALL = 0xFFFF, // All architectures - for cs_support()
 } cs_arch;
@@ -173,10 +127,6 @@ typedef enum cs_mode {
 	CS_MODE_THUMB = 1 << 4,	///< ARM's Thumb mode, including Thumb-2
 	CS_MODE_MCLASS = 1 << 5,	///< ARM's Cortex-M series
 	CS_MODE_V8 = 1 << 6,	///< ARMv8 A32 encodings for ARM
-	CS_MODE_MICRO = 1 << 4, ///< MicroMips mode (MIPS)
-	CS_MODE_MIPS3 = 1 << 5, ///< Mips III ISA
-	CS_MODE_MIPS32R6 = 1 << 6, ///< Mips32r6 ISA
-	CS_MODE_MIPS2 = 1 << 7, ///< Mips II ISA
 	CS_MODE_V9 = 1 << 4, ///< SparcV9 mode (Sparc)
 	CS_MODE_QPX = 1 << 4, ///< Quad Processing eXtensions mode (PPC)
 	CS_MODE_SPE = 1 << 5, ///< Signal Processing Engine mode (PPC)
@@ -188,9 +138,33 @@ typedef enum cs_mode {
 	CS_MODE_M68K_030 = 1 << 4, ///< M68K 68030 mode
 	CS_MODE_M68K_040 = 1 << 5, ///< M68K 68040 mode
 	CS_MODE_M68K_060 = 1 << 6, ///< M68K 68060 mode
-	CS_MODE_BIG_ENDIAN = 1U << 31,	///< big-endian mode
-	CS_MODE_MIPS32 = CS_MODE_32,	///< Mips32 ISA (Mips)
-	CS_MODE_MIPS64 = CS_MODE_64,	///< Mips64 ISA (Mips)
+	CS_MODE_BIG_ENDIAN = 1U << 31, ///< big-endian mode
+	CS_MODE_MIPS16 = CS_MODE_16, ///< Generic mips16
+	CS_MODE_MIPS32 = CS_MODE_32, ///< Generic mips32
+	CS_MODE_MIPS64 = CS_MODE_64, ///< Generic mips64
+	CS_MODE_MICRO = 1 << 4, ///< microMips
+	CS_MODE_MIPS1 = 1 << 5, ///< Mips I ISA Support
+	CS_MODE_MIPS2 = 1 << 6, ///< Mips II ISA Support
+	CS_MODE_MIPS32R2 = 1 << 7, ///< Mips32r2 ISA Support
+	CS_MODE_MIPS32R3 = 1 << 8, ///< Mips32r3 ISA Support
+	CS_MODE_MIPS32R5 = 1 << 9, ///< Mips32r5 ISA Support
+	CS_MODE_MIPS32R6 = 1 << 10, ///< Mips32r6 ISA Support
+	CS_MODE_MIPS3 = 1 << 11, ///< MIPS III ISA Support
+	CS_MODE_MIPS4 = 1 << 12, ///< MIPS IV ISA Support
+	CS_MODE_MIPS5 = 1 << 13, ///< MIPS V ISA Support
+	CS_MODE_MIPS64R2 = 1 << 14, ///< Mips64r2 ISA Support
+	CS_MODE_MIPS64R3 = 1 << 15, ///< Mips64r3 ISA Support
+	CS_MODE_MIPS64R5 = 1 << 16, ///< Mips64r5 ISA Support
+	CS_MODE_MIPS64R6 = 1 << 17, ///< Mips64r6 ISA Support
+	CS_MODE_OCTEON = 1 << 18, ///< Octeon cnMIPS Support
+	CS_MODE_OCTEONP = 1 << 19, ///< Octeon+ cnMIPS Support
+	CS_MODE_NANOMIPS = 1 << 20, ///< Generic nanomips 
+	CS_MODE_NMS1 = ((1 << 21) | CS_MODE_NANOMIPS), ///< nanoMips NMS1
+	CS_MODE_I7200 = ((1 << 22) | CS_MODE_NANOMIPS), ///< nanoMips I7200
+	CS_MODE_MIPS_NOFLOAT = 1 << 23, ///< Disable floating points ops
+	CS_MODE_MIPS_PTR64 = 1 << 24, ///< Mips pointers are 64-bit
+	CS_MODE_MICRO32R3 = (CS_MODE_MICRO | CS_MODE_MIPS32R3), ///< microMips32r3
+	CS_MODE_MICRO32R6 = (CS_MODE_MICRO | CS_MODE_MIPS32R6), ///< microMips32r6
 	CS_MODE_M680X_6301 = 1 << 1, ///< M680X Hitachi 6301,6303 mode
 	CS_MODE_M680X_6309 = 1 << 2, ///< M680X Hitachi 6309 mode
 	CS_MODE_M680X_6800 = 1 << 3, ///< M680X Motorola 6800,6802 mode
@@ -200,7 +174,7 @@ typedef enum cs_mode {
 	CS_MODE_M680X_6809 = 1 << 7, ///< M680X Motorola 6809 mode
 	CS_MODE_M680X_6811 = 1 << 8, ///< M680X Motorola/Freescale/NXP 68HC11 mode
 	CS_MODE_M680X_CPU12 = 1 << 9, ///< M680X Motorola/Freescale/NXP CPU12
-					///< used on M68HC12/HCS12
+							///< used on M68HC12/HCS12
 	CS_MODE_M680X_HCS08 = 1 << 10, ///< M680X Freescale/NXP HCS08 mode
 	CS_MODE_BPF_CLASSIC = 0,	///< Classic BPF mode (default)
 	CS_MODE_BPF_EXTENDED = 1 << 0,	///< Extended BPF mode
@@ -228,6 +202,27 @@ typedef enum cs_mode {
 	CS_MODE_TRICORE_160 = 1 << 5, ///< Tricore 1.6
 	CS_MODE_TRICORE_161 = 1 << 6, ///< Tricore 1.6.1
 	CS_MODE_TRICORE_162 = 1 << 7, ///< Tricore 1.6.2
+	CS_MODE_HPPA_11 = 1 << 1, ///< HPPA 1.1
+	CS_MODE_HPPA_20 = 1 << 2, ///< HPPA 2.0
+	CS_MODE_HPPA_20W = CS_MODE_HPPA_20 | (1 << 3), ///< HPPA 2.0 wide
+	CS_MODE_LOONGARCH32  = 1 << 0,        ///< LoongArch32
+	CS_MODE_LOONGARCH64  = 1 << 1,        ///< LoongArch64
+	CS_MODE_SYSTEMZ_ARCH8 = 1 << 1, ///< Enables features of the ARCH8 processor
+	CS_MODE_SYSTEMZ_ARCH9 = 1 << 2, ///< Enables features of the ARCH9 processor
+	CS_MODE_SYSTEMZ_ARCH10 = 1 << 3, ///< Enables features of the ARCH10 processor
+	CS_MODE_SYSTEMZ_ARCH11 = 1 << 4, ///< Enables features of the ARCH11 processor
+	CS_MODE_SYSTEMZ_ARCH12 = 1 << 5, ///< Enables features of the ARCH12 processor
+	CS_MODE_SYSTEMZ_ARCH13 = 1 << 6, ///< Enables features of the ARCH13 processor
+	CS_MODE_SYSTEMZ_ARCH14 = 1 << 7, ///< Enables features of the ARCH14 processor
+	CS_MODE_SYSTEMZ_Z10 = 1 << 8, ///< Enables features of the Z10 processor
+	CS_MODE_SYSTEMZ_Z196 = 1 << 9, ///< Enables features of the Z196 processor
+	CS_MODE_SYSTEMZ_ZEC12 = 1 << 10, ///< Enables features of the ZEC12 processor
+	CS_MODE_SYSTEMZ_Z13 = 1 << 11, ///< Enables features of the Z13 processor
+	CS_MODE_SYSTEMZ_Z14 = 1 << 12, ///< Enables features of the Z14 processor
+	CS_MODE_SYSTEMZ_Z15 = 1 << 13, ///< Enables features of the Z15 processor
+	CS_MODE_SYSTEMZ_Z16 = 1 << 14, ///< Enables features of the Z16 processor
+	CS_MODE_SYSTEMZ_GENERIC = 1 << 15, ///< Enables features of the generic processor
+	CS_MODE_XTENSA = 1 << 1, ///< Xtensa
 } cs_mode;
 
 typedef void* (CAPSTONE_API *cs_malloc_t)(size_t size);
@@ -269,37 +264,31 @@ typedef enum cs_opt_type {
 	CS_OPT_SKIPDATA_SETUP, ///< Setup user-defined function for SKIPDATA option
 	CS_OPT_MNEMONIC,       ///< Customize instruction mnemonic
 	CS_OPT_UNSIGNED,       ///< print immediate operands in unsigned form
-	CS_OPT_NO_BRANCH_OFFSET, ///< ARM, prints branch immediates without offset.
+	CS_OPT_ONLY_OFFSET_BRANCH, ///< ARM, PPC, AArch64: Don't add the branch immediate value to the PC.
+	CS_OPT_LITBASE, ///< Xtensa, set the LITBASE value. LITBASE is set to 0 by default.
 } cs_opt_type;
 
 /// Runtime option value (associated with option type above)
 typedef enum cs_opt_value {
 	CS_OPT_OFF = 0,  ///< Turn OFF an option - default for CS_OPT_DETAIL, CS_OPT_SKIPDATA, CS_OPT_UNSIGNED.
-	CS_OPT_ON = 3, ///< Turn ON an option (CS_OPT_DETAIL, CS_OPT_SKIPDATA).
-	CS_OPT_SYNTAX_DEFAULT = 0, ///< Default asm syntax (CS_OPT_SYNTAX).
-	CS_OPT_SYNTAX_INTEL, ///< X86 Intel asm syntax - default on X86 (CS_OPT_SYNTAX).
-	CS_OPT_SYNTAX_ATT,   ///< X86 ATT asm syntax (CS_OPT_SYNTAX).
-	CS_OPT_SYNTAX_NOREGNAME, ///< Prints register name with only number (CS_OPT_SYNTAX)
-	CS_OPT_SYNTAX_MASM, ///< X86 Intel Masm syntax (CS_OPT_SYNTAX).
-	CS_OPT_SYNTAX_MOTOROLA, ///< MOS65XX use $ as hex prefix
+	CS_OPT_ON = 1 << 0, ///< Turn ON an option (CS_OPT_DETAIL, CS_OPT_SKIPDATA).
+	CS_OPT_SYNTAX_DEFAULT = 1 << 1, ///< Default asm syntax (CS_OPT_SYNTAX).
+	CS_OPT_SYNTAX_INTEL = 1 << 2, ///< X86 Intel asm syntax - default on X86 (CS_OPT_SYNTAX).
+	CS_OPT_SYNTAX_ATT = 1 << 3,   ///< X86 ATT asm syntax (CS_OPT_SYNTAX).
+	CS_OPT_SYNTAX_NOREGNAME = 1 << 4, ///< Prints register name with only number (CS_OPT_SYNTAX)
+	CS_OPT_SYNTAX_MASM = 1 << 5, ///< X86 Intel Masm syntax (CS_OPT_SYNTAX).
+	CS_OPT_SYNTAX_MOTOROLA = 1 << 6, ///< MOS65XX use $ as hex prefix
+	CS_OPT_SYNTAX_CS_REG_ALIAS = 1 << 7, ///< Prints common register alias which are not defined in LLVM (ARM: r9 = sb etc.)
+	CS_OPT_SYNTAX_PERCENT = 1 << 8, ///< Prints the % in front of PPC registers.
+	CS_OPT_SYNTAX_NO_DOLLAR = 1 << 9, ///< Does not print the $ in front of Mips registers.
+	CS_OPT_DETAIL_REAL = 1 << 1, ///< If enabled, always sets the real instruction detail. Even if the instruction is an alias.
 } cs_opt_value;
 
-/// Common instruction operand types - to be consistent across all architectures.
-typedef enum cs_op_type {
-	CS_OP_INVALID = 0, ///< uninitialized/invalid operand.
-	CS_OP_REG,	   ///< Register operand.
-	CS_OP_IMM,	   ///< Immediate operand.
-	CS_OP_MEM,	   ///< Memory operand. Can be ORed with another operand type.
-	CS_OP_FP,	   ///< Floating-Point operand.
-} cs_op_type;
-
-/// Common instruction operand access types - to be consistent across all architectures.
-/// It is possible to combine access types, for example: CS_AC_READ | CS_AC_WRITE
-typedef enum cs_ac_type {
-	CS_AC_INVALID = 0,        ///< Uninitialized/invalid access type.
-	CS_AC_READ    = 1 << 0,   ///< Operand read from memory or register.
-	CS_AC_WRITE   = 1 << 1,   ///< Operand write to memory or register.
-} cs_ac_type;
+/// An option
+typedef struct {
+	cs_opt_type type; ///< The option type
+	cs_opt_value val; ///< The option value to set.
+} cs_opt;
 
 /// Common instruction groups - to be consistent across all architectures.
 typedef enum cs_group_type {
@@ -343,21 +332,22 @@ typedef struct cs_opt_skipdata {
 	/// immediately from cs_disasm()
 	/// NOTE: if this callback pointer is NULL, Capstone would skip a number
 	/// of bytes depending on architectures, as following:
-	/// Arm:     2 bytes (Thumb mode) or 4 bytes.
-	/// Arm64:   4 bytes.
-	/// Mips:    4 bytes.
-	/// M680x:   1 byte.
-	/// PowerPC: 4 bytes.
-	/// Sparc:   4 bytes.
-	/// SystemZ: 2 bytes.
-	/// X86:     1 bytes.
-	/// XCore:   2 bytes.
-	/// EVM:     1 bytes.
-	/// RISCV:   4 bytes.
-	/// WASM:    1 bytes.
-	/// MOS65XX: 1 bytes.
-	/// BPF:     8 bytes.
-	/// TriCore: 2 bytes.
+	/// Arm:       2 bytes (Thumb mode) or 4 bytes.
+	/// AArch64:   4 bytes.
+	/// Mips:      4 bytes.
+	/// M680x:     1 byte.
+	/// PowerPC:   4 bytes.
+	/// Sparc:     4 bytes.
+	/// SystemZ:   2 bytes.
+	/// X86:       1 bytes.
+	/// XCore:     2 bytes.
+	/// EVM:       1 bytes.
+	/// RISCV:     4 bytes.
+	/// WASM:      1 bytes.
+	/// MOS65XX:   1 bytes.
+	/// BPF:       8 bytes.
+	/// TriCore:   2 bytes.
+	/// LoongArch: 4 bytes.
 	cs_skipdata_cb_t callback; 	// default value is NULL
 
 	/// User-defined data to be passed to @callback function pointer.
@@ -366,7 +356,11 @@ typedef struct cs_opt_skipdata {
 
 
 #include "arm.h"
+#ifdef CAPSTONE_AARCH64_COMPAT_HEADER
 #include "arm64.h"
+#else
+#include "aarch64.h"
+#endif
 #include "m68k.h"
 #include "mips.h"
 #include "ppc.h"
@@ -383,10 +377,14 @@ typedef struct cs_opt_skipdata {
 #include "bpf.h"
 #include "sh.h"
 #include "tricore.h"
+#include "alpha.h"
+#include "hppa.h"
+#include "loongarch.h"
+#include "xtensa.h"
 
-#define MAX_IMPL_W_REGS 20
+#define MAX_IMPL_W_REGS 47
 #define MAX_IMPL_R_REGS 20
-#define MAX_NUM_GROUPS 8
+#define MAX_NUM_GROUPS 16
 
 /// NOTE: All information in cs_detail is only available when CS_OPT_DETAIL = CS_OPT_ON
 /// Initialized as memset(., 0, offsetof(cs_detail, ARCH)+sizeof(cs_ARCH))
@@ -410,13 +408,22 @@ typedef struct cs_detail {
 	/// Architecture-specific instruction info
 	union {
 		cs_x86 x86;     ///< X86 architecture, including 16-bit, 32-bit & 64-bit mode
-		cs_arm64 arm64; ///< ARM64 architecture (aka AArch64)
+#ifdef CAPSTONE_AARCH64_COMPAT_HEADER
+		cs_arm64 arm64;
+#else
+		cs_aarch64 aarch64; ///< AArch6464 architecture (aka ARM64)
+#endif
+
+#ifdef CAPSTONE_SYSTEMZ_COMPAT_HEADER
+		cs_sysz sysz;   ///< SystemZ architecture
+#else
+		cs_systemz systemz; ///< SystemZ architecture (aka SysZ)
+#endif
 		cs_arm arm;     ///< ARM architecture (including Thumb/Thumb2)
 		cs_m68k m68k;   ///< M68K architecture
 		cs_mips mips;   ///< MIPS architecture
 		cs_ppc ppc;	    ///< PowerPC architecture
 		cs_sparc sparc; ///< Sparc architecture
-		cs_sysz sysz;   ///< SystemZ architecture
 		cs_xcore xcore; ///< XCore architecture
 		cs_tms320c64x tms320c64x;  ///< TMS320C64x architecture
 		cs_m680x m680x; ///< M680X architecture
@@ -427,6 +434,10 @@ typedef struct cs_detail {
 		cs_riscv riscv; ///< RISCV architecture
 		cs_sh sh;        ///< SH architecture
 		cs_tricore tricore; ///< TriCore architecture
+		cs_alpha alpha; ///< Alpha architecture
+		cs_hppa hppa; ///< HPPA architecture
+		cs_loongarch loongarch; ///< LoongArch architecture
+		cs_xtensa xtensa; ///< Xtensa architecture
 	};
 } cs_detail;
 
@@ -439,6 +450,12 @@ typedef struct cs_insn {
 	/// This information is available even when CS_OPT_DETAIL = CS_OPT_OFF
 	/// NOTE: in Skipdata mode, "data" instruction has 0 for this id field.
 	unsigned int id;
+
+	/// If this instruction is an alias instruction, this member is set with
+	/// the alias ID.
+	/// Otherwise to <ARCH>_INS_INVALID.
+	/// -- Only supported by auto-sync archs --
+	uint64_t alias_id;
 
 	/// Address (EIP) of this instruction
 	/// This information is available even when CS_OPT_DETAIL = CS_OPT_OFF
@@ -459,6 +476,15 @@ typedef struct cs_insn {
 	/// Ascii text of instruction operands
 	/// This information is available even when CS_OPT_DETAIL = CS_OPT_OFF
 	char op_str[160];
+
+	/// True: This instruction is an alias.
+	/// False: Otherwise.
+	/// -- Only supported by auto-sync archs --
+	bool is_alias;
+
+	/// True: The operands are the ones of the alias instructions.
+	/// False: The detail operands are from the real instruction.
+	bool usesAliasDetails;
 
 	/// Pointer to cs_detail.
 	/// NOTE: detail pointer is only valid when both requirements below are met:
@@ -517,6 +543,52 @@ typedef enum cs_err {
 CAPSTONE_EXPORT
 unsigned int CAPSTONE_API cs_version(int *major, int *minor);
 
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_arm(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_aarch64(void);
+#ifdef CAPSTONE_AARCH64_COMPAT_HEADER
+#define cs_arch_register_aarch64 cs_arch_register_arm64
+#endif
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_mips(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_x86(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_powerpc(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_sparc(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_systemz(void);
+#ifdef CAPSTONE_SYSTEMZ_COMPAT_HEADER
+#define cs_arch_register_sysz cs_arch_register_systemz
+#endif
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_xcore(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_m68k(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_tms320c64x(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_m680x(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_evm(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_mos65xx(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_wasm(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_bpf(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_riscv(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_sh(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_tricore(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_alpha(void);
+CAPSTONE_EXPORT
+void CAPSTONE_API cs_arch_register_loongarch(void);
 
 /**
  This API can be used to either ask for archs supported by this library,

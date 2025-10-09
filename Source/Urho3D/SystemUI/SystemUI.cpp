@@ -138,21 +138,46 @@ void SystemUI::OnRawEvent(VariantMap& args)
         relativeMouseMove_.y_ += evt->motion.yrel;
         break;
     case SDL_FINGERUP:
+    {
         io.AddMouseSourceEvent(ImGuiMouseSource_TouchScreen);
-        io.AddMousePosEvent(-1, -1);
         io.AddMouseButtonEvent(0, false);
+        io.AddMousePosEvent(-1, -1);
         break;
+    }
     case SDL_FINGERDOWN:
+    {
         io.AddMouseSourceEvent(ImGuiMouseSource_TouchScreen);
+        ImVec2 mouse_pos((float)evt->tfinger.x, (float)evt->tfinger.y);
+        // TODO: is this condition actually relevant, looks not?
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
+            int window_x, window_y;
+            int size_x, size_y;
+            auto win = SDL_GetWindowFromID(evt->tfinger.windowID);
+            SDL_GetWindowPosition(win, &window_x, &window_y);
+            SDL_GetWindowSize(win, &size_x, &size_y);
+            mouse_pos.x *= size_x;
+            mouse_pos.y *= size_y;
+            mouse_pos.x += window_x;
+            mouse_pos.y += window_y;
+        }
+        io.AddMousePosEvent(mouse_pos.x, mouse_pos.y);
         io.AddMouseButtonEvent(0, true);
+        io.AddMousePosEvent(mouse_pos.x, mouse_pos.y);
         break;
+    }
     case SDL_FINGERMOTION:
     {
         ImVec2 mouse_pos((float)evt->tfinger.x, (float)evt->tfinger.y);
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
             int window_x, window_y;
-            SDL_GetWindowPosition(SDL_GetWindowFromID(evt->tfinger.windowID), &window_x, &window_y);
+            int size_x, size_y;
+            auto win = SDL_GetWindowFromID(evt->tfinger.windowID);
+            SDL_GetWindowPosition(win, &window_x, &window_y);
+            SDL_GetWindowSize(win, &size_x, &size_y);
+            mouse_pos.x *= size_x;
+            mouse_pos.y *= size_y;
             mouse_pos.x += window_x;
             mouse_pos.y += window_y;
         }
@@ -163,7 +188,14 @@ void SystemUI::OnRawEvent(VariantMap& args)
     default:
         break;
     }
-    ImGui_ImplSDL2_ProcessEvent(evt);
+
+    // Disable mouse button press and movement events when in "relative" mode
+    // so that invisible cursor does not interact with UI widgets.
+    // Mouse button release is allowed because relative mouse mode is usually disabled on release.
+    const bool isRelativeMouseEventConsumed =
+        enableRelativeMouseMove_ && (evt->type == SDL_MOUSEBUTTONDOWN || evt->type == SDL_MOUSEMOTION);
+    if (!isRelativeMouseEventConsumed)
+        ImGui_ImplSDL2_ProcessEvent(evt);
 
     // Consume events handled by imgui, unless explicitly told not to.
     if (!passThroughEvents_)
@@ -184,7 +216,7 @@ void SystemUI::OnRawEvent(VariantMap& args)
         case SDL_FINGERDOWN:
         case SDL_FINGERUP:
         case SDL_FINGERMOTION:
-            args[P_CONSUMED] = io.WantCaptureMouse;
+            args[P_CONSUMED] = io.WantCaptureMouse || isRelativeMouseEventConsumed;
             break;
         default:
             break;

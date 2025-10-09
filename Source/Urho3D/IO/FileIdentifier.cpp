@@ -52,7 +52,7 @@ FileIdentifier FileIdentifier::FromUri(ea::string_view uri)
     const auto path = uri.substr(schemePos + 1);
 
     const auto isSlash = [](char c) { return c == '/'; };
-    const unsigned numSlashes = ea::find_if_not(path.begin(), path.end(), isSlash) - path.begin();
+    const unsigned numSlashes = static_cast<unsigned>(ea::find_if_not(path.begin(), path.end(), isSlash) - path.begin());
 
     // Special case: file scheme
     if (scheme == "file")
@@ -112,7 +112,7 @@ void FileIdentifier::AppendPath(ea::string_view path)
     if (fileName_.back() == '/' && path.front() == '/')
         path = path.substr(1);
 
-    fileName_.append(path.data(), path.length());
+    fileName_.append(path.data(), static_cast<ea::string::size_type>(path.length()));
 }
 
 ea::string FileIdentifier::SanitizeFileName(ea::string_view fileName)

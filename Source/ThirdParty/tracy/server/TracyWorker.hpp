@@ -126,7 +126,7 @@ public:
     struct ZoneThreadData
     {
         tracy_force_inline ZoneEvent* Zone() const { return (ZoneEvent*)( _zone_thread >> 16 ); }
-        tracy_force_inline void SetZone( ZoneEvent* zone ) { assert( ( uint64_t( zone ) & 0xFFFF000000000000 ) == 0 ); memcpy( ((char*)&_zone_thread)+2, &zone, 4 ); memcpy( ((char*)&_zone_thread)+6, ((char*)&zone)+4, 2 ); }
+        tracy_force_inline void SetZone( ZoneEvent* zone ) { auto z64 = (uint64_t)zone; assert( ( z64 & 0xFFFF000000000000 ) == 0 ); memcpy( ((char*)&_zone_thread)+2, &z64, 4 ); memcpy( ((char*)&_zone_thread)+6, ((char*)&z64)+4, 2 ); }
         tracy_force_inline uint16_t Thread() const { return uint16_t( _zone_thread & 0xFFFF ); }
         tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_zone_thread, &thread, 2 ); }
 
@@ -137,7 +137,7 @@ public:
     struct GpuZoneThreadData
     {
         tracy_force_inline GpuEvent* Zone() const { return (GpuEvent*)( _zone_thread >> 16 ); }
-        tracy_force_inline void SetZone( GpuEvent* zone ) { assert( ( uint64_t( zone ) & 0xFFFF000000000000 ) == 0 ); memcpy( ((char*)&_zone_thread)+2, &zone, 4 ); memcpy( ((char*)&_zone_thread)+6, ((char*)&zone)+4, 2 ); }
+        tracy_force_inline void SetZone( GpuEvent* zone ) { auto z64 = (uint64_t)zone; assert( ( z64 & 0xFFFF000000000000 ) == 0 ); memcpy( ((char*)&_zone_thread)+2, &z64, 4 ); memcpy( ((char*)&_zone_thread)+6, ((char*)&z64)+4, 2 ); }
         tracy_force_inline uint16_t Thread() const { return uint16_t( _zone_thread & 0xFFFF ); }
         tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_zone_thread, &thread, 2 ); }
 
@@ -148,6 +148,7 @@ public:
     struct CpuThreadTopology
     {
         uint32_t package;
+        uint32_t die;
         uint32_t core;
     };
 
@@ -197,7 +198,7 @@ public:
 private:
     struct SourceLocationZones
     {
-        struct ZtdSort { bool operator()( const ZoneThreadData& lhs, const ZoneThreadData& rhs ) { return lhs.Zone()->Start() < rhs.Zone()->Start(); } };
+        struct ZtdSort { bool operator()( const ZoneThreadData& lhs, const ZoneThreadData& rhs ) const { return lhs.Zone()->Start() < rhs.Zone()->Start(); } };
 
         SortedVector<ZoneThreadData, ZtdSort> zones;
         int64_t min = std::numeric_limits<int64_t>::max();
@@ -216,7 +217,7 @@ private:
 
     struct GpuSourceLocationZones
     {
-        struct GpuZtdSort { bool operator()( const GpuZoneThreadData& lhs, const GpuZoneThreadData& rhs ) { return lhs.Zone()->GpuStart() < rhs.Zone()->GpuStart(); } };
+        struct GpuZtdSort { bool operator()( const GpuZoneThreadData& lhs, const GpuZoneThreadData& rhs ) const { return lhs.Zone()->GpuStart() < rhs.Zone()->GpuStart(); } };
 
         SortedVector<GpuZoneThreadData, GpuZtdSort> zones;
         int64_t min = std::numeric_limits<int64_t>::max();
@@ -392,7 +393,7 @@ private:
         bool ctxUsageReady = false;
 #endif
 
-        unordered_flat_map<uint32_t, unordered_flat_map<uint32_t, std::vector<uint32_t>>> cpuTopology;
+        unordered_flat_map<uint32_t, unordered_flat_map<uint32_t, unordered_flat_map<uint32_t, std::vector<uint32_t>>>> cpuTopology;
         unordered_flat_map<uint32_t, CpuThreadTopology> cpuTopologyMap;
 
         unordered_flat_map<uint64_t, MemoryBlock> symbolCode;
@@ -744,10 +745,12 @@ private:
     tracy_force_inline MemEvent* ProcessMemAllocNamed( const QueueMemAlloc& ev );
     tracy_force_inline MemEvent* ProcessMemFree( const QueueMemFree& ev );
     tracy_force_inline MemEvent* ProcessMemFreeNamed( const QueueMemFree& ev );
+    tracy_force_inline void ProcessMemDiscard( const QueueMemDiscard& ev );
     tracy_force_inline void ProcessMemAllocCallstack( const QueueMemAlloc& ev );
     tracy_force_inline void ProcessMemAllocCallstackNamed( const QueueMemAlloc& ev );
     tracy_force_inline void ProcessMemFreeCallstack( const QueueMemFree& ev );
     tracy_force_inline void ProcessMemFreeCallstackNamed( const QueueMemFree& ev );
+    tracy_force_inline void ProcessMemDiscardCallstack( const QueueMemDiscard& ev );
     tracy_force_inline void ProcessCallstackSerial();
     tracy_force_inline void ProcessCallstack();
     tracy_force_inline void ProcessCallstackSample( const QueueCallstackSample& ev );

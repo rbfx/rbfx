@@ -213,7 +213,7 @@ ea::optional<Vector3> AnimationVelocityExtractor::EvaluateVelocity(const Positio
         if (const auto groupIndex = groupIndices[i])
             ++groupLengths[*groupIndex];
     }
-    const unsigned longestGroupIndex = ea::max_element(groupLengths.begin(), groupLengths.end()) - groupLengths.begin();
+    const auto longestGroupIndex = static_cast<ea::vector<unsigned>::size_type>(ea::max_element(groupLengths.begin(), groupLengths.end()) - groupLengths.begin());
     const unsigned longestGroupLength = groupLengths[longestGroupIndex];
     if (longestGroupLength < 2)
         return ea::nullopt;

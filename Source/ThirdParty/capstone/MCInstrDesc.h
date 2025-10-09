@@ -91,9 +91,9 @@ typedef struct MCOperandInfo {
 	/// Information about the type of the operand.
 	uint8_t OperandType;
 
-	/// The lower 16 bits are used to specify which constraints are set.
-	/// The higher 16 bits are used to specify the value of constraints (4 bits each).
-	uint32_t Constraints;
+	/// The lower 3 bits are used to specify which constraints are set.
+	/// The higher 13 bits are used to specify the value of constraints (4 bits each).
+	uint16_t Constraints;
 	/// Currently no other information.
 } MCOperandInfo;
 
@@ -163,5 +163,9 @@ bool MCOperandInfo_isTiedToOp(const MCOperandInfo *m);
 int MCOperandInfo_getOperandConstraint(const MCInstrDesc *OpInfo,
 				       unsigned OpNum,
 				       MCOI_OperandConstraint Constraint);
+const MCInstrDesc *MCInstrDesc_get(unsigned opcode,
+                                   const MCInstrDesc *table,
+                                   unsigned tbl_size);
+
 
 #endif

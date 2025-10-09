@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -7,6 +7,7 @@
 #include "intrinsics.h"
 #include "atomic.h"
 
+#define CPU_CACHELINE_SIZE 64
 namespace embree
 {
   /*! system mutex */
@@ -83,6 +84,11 @@ namespace embree
     atomic<bool> flag;
   };
 
+  class PaddedSpinLock : public SpinLock
+  {
+    private:
+      char padding[CPU_CACHELINE_SIZE - sizeof(SpinLock)];
+  };
   /*! safe mutex lock and unlock helper */
   template<typename Mutex> class Lock {
   public:

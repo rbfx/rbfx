@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #define RTC_EXPORT_API
@@ -7,6 +7,7 @@
 #include "device.h"
 #include "scene.h"
 #include "context.h"
+#include "../geometry/filter.h"
 #include "../../include/embree3/rtcore_ray.h"
 using namespace embree;
 
@@ -479,7 +480,7 @@ RTC_NAMESPACE_BEGIN;
 
     IntersectContext context(scene,user_context);
 #if !defined(EMBREE_RAY_PACKETS)
-    Ray4* ray4 = (Ray4*) rayhit;
+    RayHit4* ray4 = (RayHit4*) rayhit;
     for (size_t i=0; i<4; i++) {
       if (!valid[i]) continue;
       RayHit ray1; ray4->get(i,ray1);
@@ -510,7 +511,7 @@ RTC_NAMESPACE_BEGIN;
 
     IntersectContext context(scene,user_context);
 #if !defined(EMBREE_RAY_PACKETS)
-    Ray8* ray8 = (Ray8*) rayhit;
+    RayHit8* ray8 = (RayHit8*) rayhit;
     for (size_t i=0; i<8; i++) {
       if (!valid[i]) continue;
       RayHit ray1; ray8->get(i,ray1);
@@ -543,7 +544,7 @@ RTC_NAMESPACE_BEGIN;
 
     IntersectContext context(scene,user_context);
 #if !defined(EMBREE_RAY_PACKETS)
-    Ray16* ray16 = (Ray16*) rayhit;
+    RayHit16* ray16 = (RayHit16*) rayhit;
     for (size_t i=0; i<16; i++) {
       if (!valid[i]) continue;
       RayHit ray1; ray16->get(i,ray1);
@@ -1094,13 +1095,13 @@ RTC_NAMESPACE_BEGIN;
   RTC_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
     IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_i;
-    args->report(args,filter_args);
+    isa::reportIntersection1(args, filter_args);
   }
 
   RTC_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
     OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_i;
-    args->report(args,filter_args);
+    isa::reportOcclusion1(args,filter_args);
   }
   
   RTC_API RTCGeometry rtcNewGeometry (RTCDevice hdevice, RTCGeometryType type)
@@ -1116,7 +1117,7 @@ RTC_NAMESPACE_BEGIN;
     {
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
       createTriangleMeshTy createTriangleMesh = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createTriangleMesh);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createTriangleMesh);
       Geometry* geom = createTriangleMesh(device);
       return (RTCGeometry) geom->refInc();
 #else
@@ -1128,7 +1129,7 @@ RTC_NAMESPACE_BEGIN;
     {
 #if defined(EMBREE_GEOMETRY_QUAD)
       createQuadMeshTy createQuadMesh = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createQuadMesh);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createQuadMesh);
       Geometry* geom = createQuadMesh(device);
       return (RTCGeometry) geom->refInc();
 #else
@@ -1142,7 +1143,7 @@ RTC_NAMESPACE_BEGIN;
     {
 #if defined(EMBREE_GEOMETRY_POINT)
       createPointsTy createPoints = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_builder_cpu_features, createPoints);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_builder_cpu_features, createPoints);
 
       Geometry *geom;
       switch(type) {
@@ -1165,6 +1166,7 @@ RTC_NAMESPACE_BEGIN;
 #endif
     }
 
+    case RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE:
     case RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE:
     case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE:
       
@@ -1186,12 +1188,13 @@ RTC_NAMESPACE_BEGIN;
     {
 #if defined(EMBREE_GEOMETRY_CURVE)
       createLineSegmentsTy createLineSegments = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createLineSegments);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createLineSegments);
       createCurvesTy createCurves = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createCurves);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createCurves);
       
       Geometry* geom;
       switch (type) {
+      case RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE             : geom = createLineSegments (device,Geometry::GTY_CONE_LINEAR_CURVE); break;
       case RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE            : geom = createLineSegments (device,Geometry::GTY_ROUND_LINEAR_CURVE); break;
       case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE             : geom = createLineSegments (device,Geometry::GTY_FLAT_LINEAR_CURVE); break;
       //case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_LINEAR_CURVE  : geom = createLineSegments (device,Geometry::GTY_ORIENTED_LINEAR_CURVE); break;
@@ -1224,7 +1227,7 @@ RTC_NAMESPACE_BEGIN;
 #if defined(EMBREE_GEOMETRY_SUBDIVISION)
       createSubdivMeshTy createSubdivMesh = nullptr;
       SELECT_SYMBOL_DEFAULT_AVX(device->enabled_cpu_features,createSubdivMesh);
-      //SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createSubdivMesh); // FIXME: this does not work for some reason?
+      //SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createSubdivMesh); // FIXME: this does not work for some reason?
       Geometry* geom = createSubdivMesh(device);
       return (RTCGeometry) geom->refInc();
 #else
@@ -1236,7 +1239,7 @@ RTC_NAMESPACE_BEGIN;
     {
 #if defined(EMBREE_GEOMETRY_USER)
       createUserGeometryTy createUserGeometry = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createUserGeometry);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createUserGeometry);
       Geometry* geom = createUserGeometry(device);
       return (RTCGeometry) geom->refInc();
 #else
@@ -1248,7 +1251,7 @@ RTC_NAMESPACE_BEGIN;
     {
 #if defined(EMBREE_GEOMETRY_INSTANCE)
       createInstanceTy createInstance = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createInstance);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createInstance);
       Geometry* geom = createInstance(device);
       return (RTCGeometry) geom->refInc();
 #else
@@ -1260,7 +1263,7 @@ RTC_NAMESPACE_BEGIN;
     {
 #if defined(EMBREE_GEOMETRY_GRID)
       createGridMeshTy createGridMesh = nullptr;
-      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(device->enabled_cpu_features,createGridMesh);
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createGridMesh);
       Geometry* geom = createGridMesh(device);
       return (RTCGeometry) geom->refInc();
 #else
@@ -1751,6 +1754,21 @@ RTC_NAMESPACE_BEGIN;
     RTC_VERIFY_GEOMID(geomID);
 #endif
     return (RTCGeometry) scene->get(geomID);
+    RTC_CATCH_END2(scene);
+    return nullptr;
+  }
+
+  RTC_API RTCGeometry rtcGetGeometryThreadSafe (RTCScene hscene, unsigned int geomID)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetGeometryThreadSafe);
+#if defined(DEBUG)
+    RTC_VERIFY_HANDLE(hscene);
+    RTC_VERIFY_GEOMID(geomID);
+#endif
+    Ref<Geometry> geom = scene->get_locked(geomID);
+    return (RTCGeometry) geom.ptr; 
     RTC_CATCH_END2(scene);
     return nullptr;
   }

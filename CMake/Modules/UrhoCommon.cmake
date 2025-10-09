@@ -266,6 +266,9 @@ endfunction ()
 
 # Groups sources into subfolders.
 function (group_sources)
+    file (GLOB files LIST_DIRECTORIES false ${CMAKE_CURRENT_SOURCE_DIR}/*)
+    source_group("" FILES ${files})
+
     file (GLOB_RECURSE children LIST_DIRECTORIES true RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/**)
     foreach (child ${children})
         if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${child})

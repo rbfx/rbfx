@@ -346,7 +346,7 @@ void SceneViewTab::RenderCreateMenu(Scene* scene, SceneSelection& selection)
     ui::MenuItem("Create Component:", nullptr, false, false);
     ui::Indent();
     if (const auto componentType = RenderCreateComponentMenu(context_))
-        CreateComponentInSelection(scene, selection, *componentType);
+        CreateComponentInSelection(scene, selection, componentType->GetTypeNameHash());
     ui::Unindent();
 }
 

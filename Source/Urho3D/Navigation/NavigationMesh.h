@@ -46,6 +46,7 @@ enum NavmeshPartitionType
 
 class Geometry;
 class NavArea;
+class Navigable;
 
 struct FindPathData;
 struct NavBuildData;
@@ -329,11 +330,12 @@ protected:
     /// Collect geometry from under Navigable components.
     void CollectGeometries(ea::vector<NavigationGeometryInfo>& geometryList);
     /// Visit nodes and collect navigable geometry.
-    void CollectGeometries(ea::vector<NavigationGeometryInfo>& geometryList, Node* node, ea::hash_set<Node*>& processedNodes, bool recursive);
+    void CollectGeometries(ea::vector<NavigationGeometryInfo>& geometryList, Navigable* navigable, Node* node,
+        ea::hash_set<Node*>& processedNodes, bool recursive);
     /// Get geometry data within a bounding box.
-    void GetTileGeometry(NavBuildData* build, ea::vector<NavigationGeometryInfo>& geometryList, BoundingBox& box);
+    void GetTileGeometry(NavBuildData* build, const ea::vector<NavigationGeometryInfo>& geometryList, BoundingBox& box);
     /// Add a triangle mesh to the geometry data.
-    void AddTriMeshGeometry(NavBuildData* build, Geometry* geometry, const Matrix3x4& transform);
+    void AddTriMeshGeometry(NavBuildData* build, Geometry* geometry, const Matrix3x4& transform, unsigned char areaId);
     /// Build one tile of the navigation mesh. Return true if successful.
     bool BuildTile(ea::vector<NavigationGeometryInfo>& geometryList, int x, int z);
     /// Ensure that the navigation mesh query is initialized. Return true if successful.

@@ -1,6 +1,5 @@
 /* Capstone Disassembly Engine */
 /* By Nguyen Anh Quynh <aquynh@gmail.com>, 2013-2019 */
-
 #if defined(CAPSTONE_HAS_OSXKERNEL)
 #include <Availability.h>
 #include <libkern/libkern.h>
@@ -11,14 +10,15 @@
 #include <string.h>
 #include <assert.h>
 
+#include "MCInstrDesc.h"
 #include "MCInst.h"
 #include "utils.h"
 
 #define MCINST_CACHE (ARR_SIZE(mcInst->Operands) - 1)
 
-void MCInst_Init(MCInst *inst)
+void MCInst_Init(MCInst *inst, cs_arch arch)
 {
-	// unnecessary to initialize in loop . its expensive and inst->size shuold be honored
+	// unnecessary to initialize in loop . its expensive and inst->size should be honored
 	inst->Operands[0].Kind = kInvalid;
 	inst->Operands[0].ImmVal = 0;
 
@@ -27,7 +27,6 @@ void MCInst_Init(MCInst *inst)
 	inst->size = 0;
 	inst->has_imm = false;
 	inst->op1_size = 0;
-	inst->writeback = false;
 	inst->ac_idx = 0;
 	inst->popcode_adjust = 0;
 	inst->assembly[0] = '\0';
@@ -35,6 +34,18 @@ void MCInst_Init(MCInst *inst)
 	inst->xAcquireRelease = 0;
 	for (int i = 0; i < MAX_MC_OPS; ++i)
 		inst->tied_op_idx[i] = -1;
+	inst->isAliasInstr = false;
+	inst->fillDetailOps = false;
+	memset(&inst->hppa_ext, 0, sizeof(inst->hppa_ext));
+
+	// Set default assembly dialect.
+	switch (arch) {
+	default:
+		break;
+	case CS_ARCH_SYSTEMZ:
+		inst->MAI.assemblerDialect = SYSTEMZASMDIALECT_AD_HLASM;
+		break;
+	}
 }
 
 void MCInst_clear(MCInst *inst)
@@ -45,7 +56,7 @@ void MCInst_clear(MCInst *inst)
 // does not free @Op
 void MCInst_insert0(MCInst *inst, int index, MCOperand *Op)
 {
-	assert(index < MAX_MC_OPS);
+	CS_ASSERT_RET(index < MAX_MC_OPS);
 	int i;
 
 	for(i = inst->size; i > index; i--)
@@ -87,10 +98,10 @@ unsigned MCInst_getNumOperands(const MCInst *inst)
 	return inst->size;
 }
 
-// This addOperand2 function doesnt free Op
+// This addOperand2 function doesn't free Op
 void MCInst_addOperand2(MCInst *inst, MCOperand *Op)
 {
-	assert(inst->size < MAX_MC_OPS);
+	CS_ASSERT_RET(inst->size < MAX_MC_OPS);
 	inst->Operands[inst->size] = *Op;
 
 	inst->size++;
@@ -103,12 +114,12 @@ bool MCOperand_isValid(const MCOperand *op)
 
 bool MCOperand_isReg(const MCOperand *op)
 {
-	return op->Kind == kRegister;
+	return op->Kind == kRegister || op->MachineOperandType == kRegister;
 }
 
 bool MCOperand_isImm(const MCOperand *op)
 {
-	return op->Kind == kImmediate;
+	return op->Kind == kImmediate || op->MachineOperandType == kImmediate;
 }
 
 bool MCOperand_isFPImm(const MCOperand *op)
@@ -143,7 +154,12 @@ void MCOperand_setReg(MCOperand *op, unsigned Reg)
 	op->RegVal = Reg;
 }
 
-int64_t MCOperand_getImm(MCOperand *op)
+int64_t MCOperand_getImm(const MCOperand *op)
+{
+	return op->ImmVal;
+}
+
+int64_t MCOperand_getExpr(const MCOperand *op)
 {
 	return op->ImmVal;
 }
@@ -222,16 +238,26 @@ bool MCInst_isPredicable(const MCInstrDesc *MIDesc)
 /// Checks if tied operands exist in the instruction and sets
 /// - The writeback flag in detail
 /// - Saves the indices of the tied destination operands.
-void MCInst_handleWriteback(MCInst *MI, const MCInstrDesc *InstDesc)
+void MCInst_handleWriteback(MCInst *MI, const MCInstrDesc *InstDescTable, unsigned tbl_size)
 {
-	const MCOperandInfo *OpInfo = InstDesc[MCInst_getOpcode(MI)].OpInfo;
-	unsigned short NumOps = InstDesc[MCInst_getOpcode(MI)].NumOperands;
+	const MCInstrDesc *InstDesc = NULL;
+	const MCOperandInfo *OpInfo = NULL;
+	unsigned short NumOps = 0;
+	if (MI->csh->arch == CS_ARCH_ARM) {
+		// Uses old (pre LLVM 18) indexing method.
+		InstDesc = &InstDescTable[MCInst_getOpcode(MI)];
+		OpInfo = InstDescTable[MCInst_getOpcode(MI)].OpInfo;
+		NumOps = InstDescTable[MCInst_getOpcode(MI)].NumOperands;
+	} else {
+		InstDesc = MCInstrDesc_get(MCInst_getOpcode(MI), InstDescTable, tbl_size);
+		OpInfo = MCInstrDesc_get(MCInst_getOpcode(MI), InstDescTable, tbl_size)->OpInfo;
+		NumOps = MCInstrDesc_get(MCInst_getOpcode(MI), InstDescTable, tbl_size)->NumOperands;
+	}
 
-	unsigned i;
-	for (i = 0; i < NumOps; ++i) {
+	for (unsigned i = 0; i < NumOps; ++i) {
 		if (MCOperandInfo_isTiedToOp(&OpInfo[i])) {
 			int idx = MCOperandInfo_getOperandConstraint(
-				&InstDesc[MCInst_getOpcode(MI)], i,
+				InstDesc, i,
 				MCOI_TIED_TO);
 
 			if (idx == -1)
@@ -267,4 +293,35 @@ bool MCInst_opIsTying(const MCInst *MI, unsigned OpNum)
 {
 	assert(OpNum < MAX_MC_OPS && "Maximum number of MC operands exceeded.");
 	return MI->tied_op_idx[OpNum] != -1;
+}
+
+/// Returns the value of the @MCInst operand at index @OpNum.
+uint64_t MCInst_getOpVal(MCInst *MI, unsigned OpNum)
+{
+	assert(OpNum < MAX_MC_OPS);
+	MCOperand *op = MCInst_getOperand(MI, OpNum);
+	if (MCOperand_isReg(op))
+		return MCOperand_getReg(op);
+	else if (MCOperand_isImm(op))
+		return MCOperand_getImm(op);
+	else
+		assert(0 && "Operand type not handled in this getter.");
+	return MCOperand_getImm(op);
+}
+
+void MCInst_setIsAlias(MCInst *MI, bool Flag) {
+	assert(MI);
+	MI->isAliasInstr = Flag;
+	MI->flat_insn->is_alias = Flag;
+}
+
+/// @brief Copies the relevant members of a temporary MCInst to
+/// the main MCInst. This is used if TryDecode was run on a temporary MCInst.
+/// @param MI The main MCInst
+/// @param TmpMI The temporary MCInst.
+void MCInst_updateWithTmpMI(MCInst *MI, MCInst *TmpMI) {
+	MI->size = TmpMI->size;
+	MI->Opcode = TmpMI->Opcode;
+	assert(MI->size < MAX_MC_OPS);
+	memcpy(MI->Operands, TmpMI->Operands, sizeof(MI->Operands[0]) * MI->size);
 }

@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -152,7 +152,7 @@ namespace embree
     Vec3vf<M> v0;      // 1st vertex of the quads
     Vec3vf<M> v1;      // 2nd vertex of the quads
     Vec3vf<M> v2;      // 3rd vertex of the quads
-    Vec3vf<M> v3;      // 4rd vertex of the quads
+    Vec3vf<M> v3;      // 4th vertex of the quads
   private:
     vuint<M> geomIDs; // geometry ID
     vuint<M> primIDs; // primitive ID

@@ -83,6 +83,7 @@ if (URHO3D_GLOW AND DESKTOP)
     set (EMBREE_GEOMETRY_SUBDIVISION OFF CACHE BOOL "" FORCE)
     set (EMBREE_GEOMETRY_USER OFF CACHE BOOL "" FORCE)
     set (EMBREE_API_NAMESPACE "embree3" CACHE STRING "" FORCE)
+    set (EMBREE_CMAKEEXPORT_DIR "${DEST_ARCHIVE_DIR_CONFIG}")
     add_subdirectory(embree)
 endif ()
 
@@ -186,41 +187,66 @@ if (NOT UWP)
 endif ()
 
 if (URHO3D_PROFILING)
-    set (CAPSTONE_BUILD_STATIC_RUNTIME ${URHO3D_STATIC_RUNTIME})
-    set (CAPSTONE_BUILD_STATIC ON)
-    set (CAPSTONE_BUILD_SHARED OFF)
-    set (CAPSTONE_BUILD_TESTS OFF)
-    set (CAPSTONE_BUILD_CSTOOL OFF)
-    set (CAPSTONE_INSTALL OFF)
-    set (CAPSTONE_ARCHITECTURE_DEFAULT OFF)
-    set (CAPSTONE_X86_SUPPORT ON)
-    set (CAPSTONE_ARM_SUPPORT ON)
-    set (CAPSTONE_ARM64_SUPPORT ON)
-    set (CAPSTONE_X86_ATT_DISABLE ON)
-    add_subdirectory (capstone)
-    install_third_party_libs (capstone)
-endif ()
+    # Add Tracy dependencies
 
-if (URHO3D_PROFILING)
+    # Configure zstd as static library (using simplified single-file amalgamation)
+    add_subdirectory(zstd)
+    install_third_party_libs(zstd)
+
+    # Configure capstone as static library
+    set(BUILD_SHARED_LIBS_SAVED ${BUILD_SHARED_LIBS})
+    set(BUILD_SHARED_LIBS OFF)
+    set(CAPSTONE_BUILD_STATIC ON CACHE BOOL "" FORCE)
+    set(CAPSTONE_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+    set(CAPSTONE_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(CAPSTONE_BUILD_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
+    set(CAPSTONE_BUILD_LEGACY_TESTS OFF CACHE BOOL "" FORCE)
+    set(CAPSTONE_BUILD_CSTOOL OFF CACHE BOOL "" FORCE)
+    set(CAPSTONE_BUILD_CSTEST OFF CACHE BOOL "" FORCE)
+    set(CAPSTONE_ARCHITECTURE_DEFAULT OFF CACHE BOOL "" FORCE)
+    set(CAPSTONE_INSTALL OFF CACHE BOOL "" FORCE)
+    # Architecture options - match Tracy's configuration
+    set(CAPSTONE_X86_ATT_DISABLE ON CACHE BOOL "" FORCE)
+    set(CAPSTONE_BUILD_MACOS_THIN ON CACHE BOOL "" FORCE)
+    add_subdirectory(capstone)
+    set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS_SAVED})
+    # Create alias for compatibility with Tracy
+    add_library(TracyCapstone INTERFACE)
+    target_include_directories(TracyCapstone INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/capstone/include/capstone)
+    target_link_libraries(TracyCapstone INTERFACE capstone)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/capstone/include/capstone/
+        DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/capstone
+        FILES_MATCHING PATTERN "*.h"
+    )
+    install_third_party_libs(capstone)
+
+    # ppqsort (header-only library)
+    add_subdirectory(ppqsort)
+    install_third_party_libs(ppqsort)
+
     set (TRACY_ON_DEMAND ON)
+    set (TRACY_DELAYED_INIT ON)
+    set (TRACY_MANUAL_LIFETIME ON)
     add_subdirectory(tracy)
 
     if (DESKTOP)
         add_library(TracyImGui ALIAS ImGui)
         if (TARGET nfd)
-            add_library(TracyNfd ALIAS nfd)
+            add_library(nfd::nfd ALIAS nfd)
         endif ()
         add_library(TracyGlfw3 ALIAS SDL2-static)
         add_library(TracyFreetype ALIAS FreeType)
-        add_library(TracyCapstone ALIAS capstone)
 
         set(LEGACY ON)
         set(NO_ISA_EXTENSIONS ON)
         set(NO_PARALLEL_STL ON)
-        set(NO_FILESELECTOR ON)
+        set(NO_FILESELECTOR OFF)
         add_subdirectory(tracy/profiler)
 
-        install (TARGETS tracy-profiler RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG})
+        install (TARGETS tracy-profiler TracyClient
+            RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
+            LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
+            ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
     endif ()
 else ()
     add_library(TracyClient INTERFACE)

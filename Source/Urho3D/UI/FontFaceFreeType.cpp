@@ -194,7 +194,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
 
     while (glyphIndex != 0)
     {
-        if (!LoadCharGlyph(charCode, image))
+        if (!LoadCharGlyph(static_cast<unsigned int>(charCode), image))
         {
             hasMutableGlyph_ = true;
             break;
@@ -265,8 +265,8 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
                         unsigned rightIndex = deserializer.ReadUShort();
                         float amount = deserializer.ReadShort() * xScale;
 
-                        unsigned leftCharCode = charCodes[leftIndex];
-                        unsigned rightCharCode = charCodes[rightIndex];
+                        unsigned leftCharCode = static_cast<unsigned>(charCodes[leftIndex]);
+                        unsigned rightCharCode = static_cast<unsigned>(charCodes[rightIndex]);
                         unsigned value = (leftCharCode << 16u) + rightCharCode;
                         // TODO: need to store kerning for glyphs but not for charCodes
                         kerningMapping_[value] = amount;

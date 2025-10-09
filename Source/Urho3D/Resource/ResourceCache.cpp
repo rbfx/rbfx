@@ -739,7 +739,7 @@ ea::string ResourceCache::PrintMemoryUsage() const
 
         memset(outputLine, ' ', 256);
         outputLine[255] = 0;
-        sprintf(outputLine, "%-28s %4s %9s %9s %9s %9s\n", resTypeName.c_str(), countString.c_str(), memUseString.c_str(), memMaxString.c_str(), memBudgetString.c_str(), memTotalString.c_str());
+        snprintf(outputLine, sizeof(outputLine), "%-28s %4s %9s %9s %9s %9s\n", resTypeName.c_str(), countString.c_str(), memUseString.c_str(), memMaxString.c_str(), memBudgetString.c_str(), memTotalString.c_str());
 
         output += ((const char*)outputLine);
     }
@@ -754,7 +754,7 @@ ea::string ResourceCache::PrintMemoryUsage() const
 
     memset(outputLine, ' ', 256);
     outputLine[255] = 0;
-    sprintf(outputLine, "%-28s %4s %9s %9s %9s %9s\n", "All", countString.c_str(), memUseString.c_str(), memMaxString.c_str(), "-", memTotalString.c_str());
+    snprintf(outputLine, sizeof(outputLine), "%-28s %4s %9s %9s %9s %9s\n", "All", countString.c_str(), memUseString.c_str(), memMaxString.c_str(), "-", memTotalString.c_str());
     output += ((const char*)outputLine);
 
     return output;

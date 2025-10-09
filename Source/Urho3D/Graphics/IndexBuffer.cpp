@@ -35,8 +35,8 @@
 namespace Urho3D
 {
 
-IndexBuffer::IndexBuffer(Context* context)
-    : RawBuffer(context)
+IndexBuffer::IndexBuffer(Context* context, DeviceObjectFlags flags)
+    : RawBuffer(context, flags)
 {
 }
 

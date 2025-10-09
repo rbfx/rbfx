@@ -9,6 +9,7 @@
 #include "TracyTimelineContext.hpp"
 #include "TracyTimelineDraw.hpp"
 #include "TracyView.hpp"
+#include "tracy_pdqsort.h"
 
 namespace tracy
 {
@@ -108,7 +109,11 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
 
     if( data.empty() )
     {
-        ImGui::TextUnformatted( "No entries to be displayed." );
+        ImGui::PushFont( m_bigFont );
+        ImGui::Dummy( ImVec2( 0, ( ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeight() * 2 ) * 0.5f ) );
+        TextCentered( ICON_FA_HIPPO );
+        TextCentered( "No entries to be displayed" );
+        ImGui::PopFont();
     }
     else
     {
@@ -270,6 +275,103 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                             }
                         }
                     }
+
+                    Vector<SymList> inSymList;
+                    if( !m_statSeparateInlines && !hasNoSamples && v.count > 0 && v.symAddr != 0 && ( expand || m_topInline ) )
+                    {
+                        assert( v.count > 0 );
+                        assert( symlen != 0 );
+                        auto inSym = m_worker.GetInlineSymbolList( v.symAddr, symlen );
+                        assert( inSym != nullptr );
+                        const auto symEnd = v.symAddr + symlen;
+                        if( !m_mergeInlines )
+                        {
+                            while( *inSym < symEnd )
+                            {
+                                auto sit = inlineMap.find( *inSym );
+                                if( sit != inlineMap.end() )
+                                {
+                                    inSymList.push_back( SymList { *inSym, sit->second.incl, sit->second.excl } );
+                                }
+                                else
+                                {
+                                    inSymList.push_back( SymList { *inSym, 0, 0 } );
+                                }
+                                inSym++;
+                            }
+                        }
+                        else
+                        {
+                            unordered_flat_map<uint32_t, uint64_t> mergeMap;
+                            unordered_flat_map<uint64_t, SymList> outMap;
+                            while( *inSym < symEnd )
+                            {
+                                auto symAddr = *inSym;
+                                auto sit = inlineMap.find( symAddr );
+                                auto sym = symMap.find( symAddr );
+                                if( sym != symMap.end() )
+                                {
+                                    auto mit = mergeMap.find( sym->second.name.Idx() );
+                                    if( mit == mergeMap.end() )
+                                    {
+                                        mergeMap.emplace( sym->second.name.Idx(), symAddr );
+                                    }
+                                    else
+                                    {
+                                        symAddr = mit->second;
+                                    }
+                                    if( sit != inlineMap.end() )
+                                    {
+                                        auto oit = outMap.find( symAddr );
+                                        if( oit == outMap.end() )
+                                        {
+                                            outMap.emplace( symAddr, SymList { symAddr, sit->second.incl, sit->second.excl, 1 } );
+                                        }
+                                        else
+                                        {
+                                            oit->second.incl += sit->second.incl;
+                                            oit->second.excl += sit->second.excl;
+                                            oit->second.count++;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        auto oit = outMap.find( symAddr );
+                                        if( oit == outMap.end() )
+                                        {
+                                            outMap.emplace( symAddr, SymList { symAddr, 0, 0, 1 } );
+                                        }
+                                        else
+                                        {
+                                            oit->second.count++;
+                                        }
+                                    }
+                                }
+                                inSym++;
+                            }
+                            inSymList.reserve( outMap.size() );
+                            for( auto& v : outMap )
+                            {
+                                inSymList.push_back( v.second );
+                            }
+                        }
+                        auto statIt = inlineMap.find( v.symAddr );
+                        if( statIt != inlineMap.end() )
+                        {
+                            inSymList.push_back( SymList { v.symAddr, statIt->second.incl, statIt->second.excl } );
+                        }
+
+                        if( accumulationMode == AccumulationMode::SelfOnly )
+                        {
+                            pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.excl != r.excl ? l.excl > r.excl : l.symAddr < r.symAddr; } );
+                        }
+                        else
+                        {
+                            pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.incl != l.incl ? l.incl > r.incl : l.symAddr < r.symAddr; } );
+                        }
+                    }
+
+                    const auto origName = name;
                     if( hasNoSamples )
                     {
                         if( isKernel )
@@ -289,6 +391,19 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                     }
                     else
                     {
+                        if( !inSymList.empty() && m_topInline )
+                        {
+                            const auto topName = m_worker.GetString( symMap.find( inSymList[0].symAddr )->second.name );
+                            if( topName != name )
+                            {
+                                // Parent name at this point should only be enabled if m_statSeparateInlines
+                                // is enabled. These two code paths should be mutually exclusive.
+                                assert( !parentName );
+
+                                parentName = name;
+                                name = topName;
+                            }
+                        }
                         ImGui::PushID( idx++ );
                         bool clicked;
                         if( isKernel )
@@ -309,7 +424,33 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                             ImGui::TextUnformatted( normalized );
                             TooltipNormalizedName( name, normalized );
                         }
-                        if( clicked ) ShowSampleParents( v.symAddr, !m_statSeparateInlines );
+                        if( clicked ) ImGui::OpenPopup( "menuPopup" );
+                        if( ImGui::BeginPopup( "menuPopup" ) )
+                        {
+                            uint32_t len;
+                            const bool sfv = SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) || ( symlen != 0 && m_worker.GetSymbolCode( codeAddr, len ) );
+                            if( !sfv ) ImGui::BeginDisabled();
+                            if( ImGui::MenuItem( " " ICON_FA_FILE_LINES " View symbol" ) )
+                            {
+                                if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
+                                {
+                                    ViewSymbol( file, line, codeAddr, v.symAddr );
+                                    if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( false );
+                                }
+                                else if( symlen != 0 )
+                                {
+                                    uint32_t len;
+                                    if( m_worker.GetSymbolCode( codeAddr, len ) )
+                                    {
+                                        ViewSymbol( nullptr, 0, codeAddr, v.symAddr );
+                                        if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( false );
+                                    }
+                                }
+                            }
+                            if( !sfv ) ImGui::EndDisabled();
+                            if( ImGui::MenuItem( ICON_FA_ARROW_DOWN_SHORT_WIDE " Sample entry stacks" ) ) ShowSampleParents( v.symAddr, !m_statSeparateInlines );
+                            ImGui::EndPopup();
+                        }
                         ImGui::PopID();
                     }
                     if( parentName )
@@ -381,7 +522,25 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                         ImGui::Unindent( indentVal );
                     }
                     ImGui::TableNextColumn();
-                    TextDisabledUnformatted( imageName );
+                    if( m_shortImageNames )
+                    {
+                        const char* end = imageName + strlen( imageName );
+                        const char* ptr = end - 1;
+                        while( ptr > imageName && *ptr != '/' && *ptr != '\\' ) ptr--;
+                        if( *ptr == '/' || *ptr == '\\' ) ptr++;
+                        const auto cw = ImGui::GetContentRegionAvail().x;
+                        const auto tw = ImGui::CalcTextSize( imageName, end ).x;
+                        TextDisabledUnformatted( ptr );
+                        if( ptr != imageName || tw > cw ) TooltipIfHovered( imageName );
+                    }
+                    else
+                    {
+                        const char* end = imageName + strlen( imageName );
+                        const auto cw = ImGui::GetContentRegionAvail().x;
+                        const auto tw = ImGui::CalcTextSize( imageName, end ).x;
+                        TextDisabledUnformatted( imageName );
+                        if( tw > cw ) TooltipIfHovered( imageName );
+                    }
                     ImGui::TableNextColumn();
                     const auto baseCnt = cnt;
                     if( cnt > 0 )
@@ -419,97 +578,7 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
 
                     if( !m_statSeparateInlines && expand )
                     {
-                        assert( v.count > 0 );
-                        assert( symlen != 0 );
                         const auto revBaseCnt = 100.0 / baseCnt;
-                        auto inSym = m_worker.GetInlineSymbolList( v.symAddr, symlen );
-                        assert( inSym != nullptr );
-                        const auto symEnd = v.symAddr + symlen;
-                        Vector<SymList> inSymList;
-                        if( !m_mergeInlines )
-                        {
-                            while( *inSym < symEnd )
-                            {
-                                auto sit = inlineMap.find( *inSym );
-                                if( sit != inlineMap.end() )
-                                {
-                                    inSymList.push_back( SymList { *inSym, sit->second.incl, sit->second.excl } );
-                                }
-                                else
-                                {
-                                    inSymList.push_back( SymList { *inSym, 0, 0 } );
-                                }
-                                inSym++;
-                            }
-                        }
-                        else
-                        {
-                            unordered_flat_map<uint32_t, uint64_t> mergeMap;
-                            unordered_flat_map<uint64_t, SymList> outMap;
-                            while( *inSym < symEnd )
-                            {
-                                auto symAddr = *inSym;
-                                auto sit = inlineMap.find( symAddr );
-                                auto sym = symMap.find( symAddr );
-                                assert( sym != symMap.end() );
-                                auto mit = mergeMap.find( sym->second.name.Idx() );
-                                if( mit == mergeMap.end() )
-                                {
-                                    mergeMap.emplace( sym->second.name.Idx(), symAddr );
-                                }
-                                else
-                                {
-                                    symAddr = mit->second;
-                                }
-                                if( sit != inlineMap.end() )
-                                {
-                                    auto oit = outMap.find( symAddr );
-                                    if( oit == outMap.end() )
-                                    {
-                                        outMap.emplace( symAddr, SymList { symAddr, sit->second.incl, sit->second.excl, 1 } );
-                                    }
-                                    else
-                                    {
-                                        oit->second.incl += sit->second.incl;
-                                        oit->second.excl += sit->second.excl;
-                                        oit->second.count++;
-                                    }
-                                }
-                                else
-                                {
-                                    auto oit = outMap.find( symAddr );
-                                    if( oit == outMap.end() )
-                                    {
-                                        outMap.emplace( symAddr, SymList { symAddr, 0, 0, 1 } );
-                                    }
-                                    else
-                                    {
-                                        oit->second.count++;
-                                    }
-                                }
-                                inSym++;
-                            }
-                            inSymList.reserve( outMap.size() );
-                            for( auto& v : outMap )
-                            {
-                                inSymList.push_back( v.second );
-                            }
-                        }
-                        auto statIt = inlineMap.find( v.symAddr );
-                        if( statIt != inlineMap.end() )
-                        {
-                            inSymList.push_back( SymList { v.symAddr, statIt->second.incl, statIt->second.excl } );
-                        }
-
-                        if( accumulationMode == AccumulationMode::SelfOnly )
-                        {
-                            pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.excl != r.excl ? l.excl > r.excl : l.symAddr < r.symAddr; } );
-                        }
-                        else
-                        {
-                            pdqsort_branchless( inSymList.begin(), inSymList.end(), []( const auto& l, const auto& r ) { return l.incl != l.incl ? l.incl > r.incl : l.symAddr < r.symAddr; } );
-                        }
-
                         ImGui::Indent();
                         for( auto& iv : inSymList )
                         {
@@ -548,7 +617,22 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                     break;
                                 }
 
-                                const auto sn = iv.symAddr == v.symAddr ? "[ - self - ]" : name;
+                                const char* sn;
+                                if( iv.symAddr == v.symAddr )
+                                {
+                                    if( parentName )
+                                    {
+                                        sn = parentName;
+                                    }
+                                    else
+                                    {
+                                        sn = "[ - self - ]";
+                                    }
+                                }
+                                else
+                                {
+                                    sn = name;
+                                }
                                 if( m_mergeInlines || iv.excl == 0 )
                                 {
                                     if( m_vd.shortenName == ShortenName::Never )
@@ -578,8 +662,39 @@ void View::DrawSamplesStatistics( Vector<SymList>& data, int64_t timeRange, Accu
                                         ImGui::TextUnformatted( normalized );
                                         TooltipNormalizedName( sn, normalized );
                                     }
-                                    if( clicked ) ShowSampleParents( iv.symAddr, false );
+                                    if( clicked ) ImGui::OpenPopup( "menuPopup" );
+                                    if( ImGui::BeginPopup( "menuPopup" ) )
+                                    {
+                                        uint32_t len;
+                                        const bool sfv = SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) || ( symlen != 0 && m_worker.GetSymbolCode( codeAddr, len ) );
+                                        if( !sfv ) ImGui::BeginDisabled();
+                                        if( ImGui::MenuItem( " " ICON_FA_FILE_LINES " View symbol" ) )
+                                        {
+                                            if( SourceFileValid( file, m_worker.GetCaptureTime(), *this, m_worker ) )
+                                            {
+                                                ViewSymbol( file, line, codeAddr, iv.symAddr );
+                                                if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( true );
+                                            }
+                                            else if( symlen != 0 )
+                                            {
+                                                uint32_t len;
+                                                if( m_worker.GetSymbolCode( codeAddr, len ) )
+                                                {
+                                                    ViewSymbol( nullptr, 0, codeAddr, iv.symAddr );
+                                                    if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( true );
+                                                }
+                                            }
+                                        }
+                                        if( !sfv ) ImGui::EndDisabled();
+                                        if( ImGui::MenuItem( ICON_FA_ARROW_DOWN_SHORT_WIDE " Sample entry stacks" ) ) ShowSampleParents( iv.symAddr, false );
+                                        ImGui::EndPopup();
+                                    }
                                     ImGui::PopID();
+                                }
+                                if( sn == parentName )
+                                {
+                                    ImGui::SameLine();
+                                    TextDisabledUnformatted( "(self)" );
                                 }
                                 if( iv.count > 1 )
                                 {
@@ -689,7 +804,7 @@ void View::DrawSampleParents()
     bool show = true;
     const auto scale = GetScale();
     ImGui::SetNextWindowSize( ImVec2( 1400 * scale, 500 * scale ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "Sample entry call stacks", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+    ImGui::Begin( "Sample entry stacks", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( !ImGui::GetCurrentWindowRead()->SkipItems )
     {
         auto ss = m_worker.GetSymbolStats( m_sampleParents.symAddr );
@@ -786,6 +901,21 @@ void View::DrawSampleParents()
         ImGui::Spacing();
         ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        if( m_sampleParents.mode == 0 )
+        {
+            ImGui::Checkbox( ICON_FA_SHIELD_HALVED " External frames", &m_showExternalFrames );
+        }
+        else if( m_sampleParents.mode == 1 )
+        {
+            ImGui::Checkbox( ICON_FA_LAYER_GROUP " Group by function name", &m_sampleParents.groupBottomUp );
+        }
+        else if( m_sampleParents.mode == 2 )
+        {
+            ImGui::Checkbox( ICON_FA_LAYER_GROUP " Group by function name", &m_sampleParents.groupTopDown );
+        }
         ImGui::PopStyleVar();
         ImGui::Separator();
         ImGui::BeginChild( "##sampleParents" );
@@ -829,6 +959,10 @@ void View::DrawSampleParents()
             ImGui::Spacing();
             ImGui::SameLine();
             ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+            ImGui::Checkbox( ICON_FA_SCISSORS " Short images", &m_shortImageNames );
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
             ImGui::TextUnformatted( ICON_FA_AT " Frame location:" );
             ImGui::SameLine();
             ImGui::RadioButton( "Source code", &m_showCallstackFrameAddress, 0 );
@@ -851,6 +985,7 @@ void View::DrawSampleParents()
                 ImGui::TableSetupColumn( "Image" );
                 ImGui::TableHeadersRow();
 
+                int external = 0;
                 int fidx = 0;
                 int bidx = 0;
                 for( auto& entry : cs )
@@ -861,10 +996,40 @@ void View::DrawSampleParents()
                     for( uint8_t f=0; f<fsz; f++ )
                     {
                         const auto& frame = frameData->data[f];
-                        auto txt = m_worker.GetString( frame.name );
-                        bidx++;
+                        auto filename = m_worker.GetString( frame.file );
+                        auto image = frameData->imageName.Active() ? m_worker.GetString( frameData->imageName ) : nullptr;
+
+                        if( IsFrameExternal( filename, image ) )
+                        {
+                            if( !m_showExternalFrames )
+                            {
+                                if( f == fsz-1 ) fidx++;
+                                external++;
+                                continue;
+                            }
+                        }
+                        else if( external != 0 )
+                        {
+                            ImGui::TableNextRow();
+                            ImGui::TableNextColumn();
+                            ImGui::PushFont( m_smallFont );
+                            TextDisabledUnformatted( "external" );
+                            ImGui::TableNextColumn();
+                            if( external == 1 )
+                            {
+                                TextDisabledUnformatted( "1 frame" );
+                            }
+                            else
+                            {
+                                ImGui::TextDisabled( "%i frames", external );
+                            }
+                            ImGui::PopFont();
+                            external = 0;
+                        }
+
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
+                        bidx++;
                         if( f == fsz-1 )
                         {
                             ImGui::Text( "%i", fidx++ );
@@ -876,6 +1041,7 @@ void View::DrawSampleParents()
                             ImGui::PopFont();
                         }
                         ImGui::TableNextColumn();
+                        auto txt = m_worker.GetString( frame.name );
                         {
                             ImGui::PushTextWrapPos( 0.0f );
                             if( txt[0] == '[' )
@@ -1019,9 +1185,45 @@ void View::DrawSampleParents()
                         ImGui::TableNextColumn();
                         if( frameData->imageName.Active() )
                         {
-                            TextDisabledUnformatted( m_worker.GetString( frameData->imageName ) );
+                            const char* imageName = m_worker.GetString( frameData->imageName );
+                            const char* end = imageName + strlen( imageName );
+
+                            if( m_shortImageNames )
+                            {
+                                const char* ptr = end - 1;
+                                while( ptr > imageName && *ptr != '/' && *ptr != '\\' ) ptr--;
+                                if( *ptr == '/' || *ptr == '\\' ) ptr++;
+                                const auto cw = ImGui::GetContentRegionAvail().x;
+                                const auto tw = ImGui::CalcTextSize( imageName, end ).x;
+                                TextDisabledUnformatted( ptr );
+                                if( ptr != imageName || tw > cw ) TooltipIfHovered( imageName );
+                            }
+                            else
+                            {
+                                const auto cw = ImGui::GetContentRegionAvail().x;
+                                const auto tw = ImGui::CalcTextSize( imageName, end ).x;
+                                TextDisabledUnformatted( imageName );
+                                if( tw > cw ) TooltipIfHovered( imageName );
+                            }
                         }
                     }
+                }
+                if( external != 0 )
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::PushFont( m_smallFont );
+                    TextDisabledUnformatted( "external" );
+                    ImGui::TableNextColumn();
+                    if( external == 1 )
+                    {
+                        TextDisabledUnformatted( "1 frame" );
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled( "%i frames", external );
+                    }
+                    ImGui::PopFont();
                 }
                 ImGui::EndTable();
             }
@@ -1029,7 +1231,6 @@ void View::DrawSampleParents()
         }
         case 1:
         {
-            SmallCheckbox( ICON_FA_LAYER_GROUP " Group by function name", &m_sampleParents.groupBottomUp );
             auto tree = GetParentsCallstackFrameTreeBottomUp( stats, m_sampleParents.groupBottomUp );
             if( !tree.empty() )
             {
@@ -1045,7 +1246,6 @@ void View::DrawSampleParents()
         }
         case 2:
         {
-            SmallCheckbox( ICON_FA_LAYER_GROUP " Group by function name", &m_sampleParents.groupTopDown );
             auto tree = GetParentsCallstackFrameTreeTopDown( stats, m_sampleParents.groupTopDown );
             if( !tree.empty() )
             {

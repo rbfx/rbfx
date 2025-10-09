@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #define RTC_EXPORT_API
@@ -371,7 +371,7 @@ RTC_NAMESPACE_BEGIN
       bvh->allocator.init_estimate(arguments->primitiveCount*sizeof(BBox3fa));
       bvh->allocator.reset();
 
-      /* switch between differnet builders based on quality level */
+      /* switch between different builders based on quality level */
       if (arguments->buildQuality == RTC_BUILD_QUALITY_LOW)
         return rtcBuildBVHMorton(arguments);
       else if (arguments->buildQuality == RTC_BUILD_QUALITY_MEDIUM)

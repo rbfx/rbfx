@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.21)
 
 option(NO_FILESELECTOR "Disable the file selector" OFF)
 option(GTK_FILESELECTOR "Use the GTK file selector on Linux instead of the xdg-portal one" OFF)
@@ -6,7 +6,6 @@ option(LEGACY "Instead of Wayland, use the legacy X11 backend on Linux" OFF)
 option(NO_ISA_EXTENSIONS "Disable ISA extensions (don't pass -march=native or -mcpu=native to the compiler)" OFF)
 option(NO_STATISTICS "Disable calculation of statistics" OFF)
 option(SELF_PROFILE "Enable self-profiling" OFF)
-option(NO_PARALLEL_STL "Disable parallel STL" OFF)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/version.cmake)
 
@@ -17,6 +16,11 @@ project(
     LANGUAGES C CXX
     VERSION ${TRACY_VERSION_STRING}
 )
+
+if(SELF_PROFILE)
+    add_definitions(-DTRACY_ENABLE)
+    add_compile_options(-g -O3 -fno-omit-frame-pointer)
+endif()
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/config.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/vendor.cmake)
@@ -55,6 +59,7 @@ set(SERVER_FILES
     TracyView_ContextSwitch.cpp
     TracyView_CpuData.cpp
     TracyView_FindZone.cpp
+    TracyView_FlameGraph.cpp
     TracyView_FrameOverview.cpp
     TracyView_FrameTimeline.cpp
     TracyView_FrameTree.cpp
@@ -81,7 +86,6 @@ set(SERVER_FILES
 list(TRANSFORM SERVER_FILES PREPEND "src/profiler/")
 
 set(PROFILER_FILES
-    #src/imgui/imgui_impl_opengl3.cpp
     src/ConnectionHistory.cpp
     src/Filters.cpp
     src/Fonts.cpp
@@ -97,12 +101,11 @@ set(PROFILER_FILES
     src/winmainArchDiscovery.cpp
 )
 
-set(INCLUDES "")
+set(INCLUDES "${CMAKE_CURRENT_BINARY_DIR}")
 set(LIBS "")
 
 if(USE_WAYLAND)
     pkg_check_modules(WAYLAND REQUIRED egl wayland-egl wayland-cursor xkbcommon)
-    set(INCLUDES "${INCLUDES};${CMAKE_CURRENT_BINARY_DIR}")
     set(LIBS "${LIBS};${WAYLAND_LIBRARIES}")
     set(PROFILER_FILES ${PROFILER_FILES}
         src/BackendWayland.cpp
@@ -110,42 +113,53 @@ if(USE_WAYLAND)
 
     include(${CMAKE_CURRENT_LIST_DIR}/../cmake/FindWaylandScanner.cmake)
 
-    pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED wayland-protocols)
-    pkg_get_variable(WAYLAND_PROTOCOLS_PKGDATADIR wayland-protocols pkgdatadir)
+    CPMAddPackage(
+        NAME wayland-protocols
+        GIT_REPOSITORY https://gitlab.freedesktop.org/wayland/wayland-protocols.git
+        GIT_TAG 1.37
+        DOWNLOAD_ONLY YES
+    )
 
     ecm_add_wayland_client_protocol(PROFILER_FILES
-        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/stable/xdg-shell/xdg-shell.xml
+        PROTOCOL ${wayland-protocols_SOURCE_DIR}/stable/xdg-shell/xdg-shell.xml
         BASENAME xdg-shell
     )
     ecm_add_wayland_client_protocol(PROFILER_FILES
-        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/staging/xdg-activation/xdg-activation-v1.xml
+        PROTOCOL ${wayland-protocols_SOURCE_DIR}/staging/xdg-activation/xdg-activation-v1.xml
         BASENAME xdg-activation
     )
     ecm_add_wayland_client_protocol(PROFILER_FILES
-        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml
+        PROTOCOL ${wayland-protocols_SOURCE_DIR}/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml
         BASENAME xdg-decoration
     )
     ecm_add_wayland_client_protocol(PROFILER_FILES
-        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/staging/fractional-scale/fractional-scale-v1.xml
+        PROTOCOL ${wayland-protocols_SOURCE_DIR}/staging/fractional-scale/fractional-scale-v1.xml
         BASENAME fractional-scale
     )
     ecm_add_wayland_client_protocol(PROFILER_FILES
-        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/stable/viewporter/viewporter.xml
+        PROTOCOL ${wayland-protocols_SOURCE_DIR}/stable/viewporter/viewporter.xml
         BASENAME viewporter
     )
     ecm_add_wayland_client_protocol(PROFILER_FILES
-        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/staging/cursor-shape/cursor-shape-v1.xml
+        PROTOCOL ${wayland-protocols_SOURCE_DIR}/staging/cursor-shape/cursor-shape-v1.xml
         BASENAME cursor-shape
     )
     ecm_add_wayland_client_protocol(PROFILER_FILES
-        PROTOCOL ${WAYLAND_PROTOCOLS_PKGDATADIR}/unstable/tablet/tablet-unstable-v2.xml
+        PROTOCOL ${wayland-protocols_SOURCE_DIR}/unstable/tablet/tablet-unstable-v2.xml
         BASENAME tablet
+    )
+    ecm_add_wayland_client_protocol(PROFILER_FILES
+        PROTOCOL ${wayland-protocols_SOURCE_DIR}/staging/xdg-toplevel-icon/xdg-toplevel-icon-v1.xml
+        BASENAME xdg-toplevel-icon
+    )
+elseif(EMSCRIPTEN)
+    set(PROFILER_FILES ${PROFILER_FILES}
+        src/BackendEmscripten.cpp
     )
 else()
     set(PROFILER_FILES ${PROFILER_FILES}
-        #src/BackendGlfw.cpp
-        #src/imgui/imgui_impl_glfw.cpp
         src/BackendSDL2.cpp
+        ${ImGui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
     )
 endif()
 
@@ -153,9 +167,6 @@ include_directories(${INCLUDES})
 link_libraries(${LIBS})
 
 if(SELF_PROFILE)
-    add_definitions(-DTRACY_ENABLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -fno-omit-frame-pointer")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O3 -fno-omit-frame-pointer")
     set(PROFILER_FILES ${PROFILER_FILES}
         ../public/TracyClient.cpp
     )
@@ -172,25 +183,59 @@ else()
     add_executable(${PROJECT_NAME} ${PROFILER_FILES} ${COMMON_FILES} ${SERVER_FILES})
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer TracyImGui)
+find_package(Threads REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE TracyServer TracyImGui Threads::Threads)
+
+if(NOT DEFINED GIT_REV)
+    set(GIT_REV "HEAD")
+endif()
+# rbfx
+#find_package(Git)
+#if(Git_FOUND)
+#    add_custom_target(git-ref
+#        COMMAND ${GIT_EXECUTABLE} log -1 "--format=#pragma once %nnamespace tracy { static inline const char* GitRef = %x22%h%x22; }" ${GIT_REV} > GitRef.hpp.tmp
+#        COMMAND ${CMAKE_COMMAND} -E copy_if_different GitRef.hpp.tmp GitRef.hpp
+#        BYPRODUCTS GitRef.hpp GitRef.hpp.tmp
+#        VERBATIM
+#    )
+#    add_dependencies(${PROJECT_NAME} git-ref)
+#else()
+#    message(WARNING "git not found, using 'unknown' as git ref.")
+    add_custom_command(
+        OUTPUT GitRef.hpp
+        COMMAND ${CMAKE_COMMAND} -E echo "#pragma once" > GitRef.hpp
+        COMMAND ${CMAKE_COMMAND} -E echo "namespace tracy { static inline const char* GitRef = \"unknown\"; }" >> GitRef.hpp
+        VERBATIM
+    )
+    target_sources(${PROJECT_NAME} PUBLIC GitRef.hpp)
+#endif()
 
 if(NOT EMSCRIPTEN)
-    target_link_libraries(${PROJECT_NAME} PRIVATE TracyNfd)
-    if (NOT USE_WAYLAND)
+    if(NOT NO_FILESELECTOR)
+        target_link_libraries(${PROJECT_NAME} PRIVATE nfd::nfd)
+    endif()
+    if(NOT USE_WAYLAND)
         target_link_libraries(${PROJECT_NAME} PRIVATE TracyGlfw3)
     endif()
 endif()
 
 if(EMSCRIPTEN)
-    set_property(TARGET ${PROJECT_NAME} PROPERTY COMPILE_FLAGS "-sUSE_FREETYPE=1 -pthread -DIMGUI_IMPL_OPENGL_ES2")
-    set_property(TARGET ${PROJECT_NAME} PROPERTY LINK_FLAGS "-sASSERTIONS=0 -sUSE_GLFW=3 -sINITIAL_MEMORY=384mb -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=4gb -sWASM_BIGINT=1 -sPTHREAD_POOL_SIZE=4 -sEXPORTED_FUNCTIONS=_main,_nativeResize,_nativeOpenFile -sEXPORTED_RUNTIME_METHODS=ccall -sENVIRONMENT=web,worker --preload-file embed.tracy")
+    target_link_options(${PROJECT_NAME} PRIVATE -pthread -sASSERTIONS=0 -sINITIAL_MEMORY=384mb -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=4gb -sSTACK_SIZE=1048576 -sWASM_BIGINT=1 -sPTHREAD_POOL_SIZE=8 -sEXPORTED_FUNCTIONS=_main,_nativeOpenFile -sEXPORTED_RUNTIME_METHODS=ccall -sENVIRONMENT=web,worker --preload-file embed.tracy)
 
     file(DOWNLOAD https://share.nereid.pl/i/embed.tracy ${CMAKE_CURRENT_BINARY_DIR}/embed.tracy EXPECTED_MD5 ca0fa4f01e7b8ca5581daa16b16c768d)
     file(COPY ${CMAKE_CURRENT_LIST_DIR}/wasm/index.html DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     file(COPY ${CMAKE_CURRENT_LIST_DIR}/wasm/httpd.py DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    file(COPY_FILE ${CMAKE_CURRENT_LIST_DIR}/../icon/icon.svg ${CMAKE_CURRENT_BINARY_DIR}/favicon.svg)
 endif()
 
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_BINDIR})
+
 # rbfx
+find_package(TBB QUIET)
+if (TBB_FOUND)
+    target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb)
+endif ()
+
 target_sources(${PROJECT_NAME} PRIVATE ../../ImGui/backends/imgui_impl_opengl3.cpp)
 target_compile_definitions(${PROJECT_NAME} PRIVATE -DIMGUI_STATIC -DSDL_STATIC -DNFD_STATIC)
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME Profiler)

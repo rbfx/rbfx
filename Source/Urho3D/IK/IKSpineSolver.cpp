@@ -110,7 +110,7 @@ void IKSpineSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 
     const auto& bones = chain_.GetNodes();
     local_.defaultTransforms_.resize(bones.size());
-    for (size_t i = 0; i < bones.size(); ++i)
+    for (ea::vector<IKNode*>::size_type i = 0; i < bones.size(); ++i)
     {
         const IKNode& bone = *bones[i];
         local_.defaultTransforms_[i] = inverseFrameOfReference * Transform{bone.position_, bone.rotation_};
@@ -124,7 +124,7 @@ void IKSpineSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
 void IKSpineSolver::SetOriginalTransforms(const Transform& frameOfReference)
 {
     auto& nodes = chain_.GetNodes();
-    for (size_t i = 0; i < nodes.size(); ++i)
+    for (ea::vector<IKNode*>::size_type i = 0; i < nodes.size(); ++i)
     {
         IKNode& bone = *nodes[i];
         const Transform& defaultTransform = local_.defaultTransforms_[i];
@@ -185,7 +185,7 @@ void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSet
 
     // Store original rotation
     originalBoneRotations_.resize(bones.size());
-    for (size_t i = 0; i < bones.size(); ++i)
+    for (ea::vector<IKNode*>::size_type i = 0; i < bones.size(); ++i)
         originalBoneRotations_[i] = bones[i]->rotation_;
 
     // Solve rotations for full solver weight for position target
@@ -195,7 +195,7 @@ void IKSpineSolver::SolveInternal(const Transform& frameOfReference, const IKSet
     chain_.Solve(target_->GetWorldPosition(), baseDirection, maxAngle_, settings, weightFunction);
 
     // Interpolate rotation to apply solver weight
-    for (size_t i = 0; i < bones.size(); ++i)
+    for (ea::vector<IKNode*>::size_type i = 0; i < bones.size(); ++i)
         bones[i]->rotation_ = originalBoneRotations_[i].Slerp(bones[i]->rotation_, positionWeight_);
 
     // Solve rotations for partial solver weight for twist target

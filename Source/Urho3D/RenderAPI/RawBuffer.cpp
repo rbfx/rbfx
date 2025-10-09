@@ -16,15 +16,15 @@
 namespace Urho3D
 {
 
-RawBuffer::RawBuffer(Context* context)
+RawBuffer::RawBuffer(Context* context, DeviceObjectFlags flags)
     : Object(context)
-    , DeviceObject(context)
+    , DeviceObject(context, flags)
 {
 }
 
-RawBuffer::RawBuffer(Context* context, const RawBufferParams& params, const void* data)
+RawBuffer::RawBuffer(Context* context, const RawBufferParams& params, const void* data, DeviceObjectFlags flags)
     : Object(context)
-    , DeviceObject(context)
+    , DeviceObject(context, flags)
 {
     Create(params, data);
 }

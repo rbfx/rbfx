@@ -448,7 +448,22 @@ bool DecodeVariableLength(T& value, unsigned& offset, unsigned char byte)
     return !(byte & 0x80);
 }
 
+/// Zigzag encode signed integer as unsigned.
+template <class Integer> constexpr std::make_unsigned_t<Integer> ZigzagEncode(Integer x)
+{
+    using UnsignedInteger = std::make_unsigned_t<Integer>;
+    return (static_cast<UnsignedInteger>(x) << 1)
+        ^ static_cast<UnsignedInteger>(x >> (std::numeric_limits<Integer>::digits - 1));
 }
+
+/// Zigzag decode unsigned integer as signed.
+template <class UnsignedInteger> constexpr std::make_signed_t<UnsignedInteger> ZigzagDecode(UnsignedInteger x)
+{
+    using Integer = std::make_signed_t<UnsignedInteger>;
+    return (x >> 1) ^ -static_cast<Integer>(x & 1);
+}
+
+} // namespace Urho3D
 
 #ifdef _MSC_VER
 #pragma warning(pop)

@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -8,7 +8,7 @@
 RTC_NAMESPACE_BEGIN
 
 /*
- * Structure for transformation respresentation as a matrix decomposition using
+ * Structure for transformation representation as a matrix decomposition using
  * a quaternion
  */
 struct RTC_ALIGN(16) RTCQuaternionDecomposition

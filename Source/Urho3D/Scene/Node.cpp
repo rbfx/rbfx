@@ -1545,7 +1545,7 @@ ea::pair<Serializable*, unsigned> Node::FindComponentAttribute(ea::string_view p
     if (iter == attributes->end())
         return {};
 
-    const unsigned attributeIndex = iter - attributes->begin();
+    const unsigned attributeIndex = static_cast<unsigned>(iter - attributes->begin());
     return { serializable, attributeIndex };
 }
 

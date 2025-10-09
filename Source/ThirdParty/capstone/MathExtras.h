@@ -24,10 +24,12 @@
 #endif
 
 #ifndef __cplusplus
-#if defined (WIN32) || defined (WIN64) || defined (_WIN32) || defined (_WIN64)
+#ifdef _MSC_VER
 #define inline /* inline */
 #endif
 #endif
+
+#include <limits.h>
 
 // NOTE: The following support functions use the _32/_64 extensions instead of
 // type overloading so that signed and unsigned integers can be used without
@@ -51,9 +53,9 @@ static inline bool isUIntN(unsigned N, uint64_t x) {
 
 /// isIntN - Checks if an signed integer fits into the given (dynamic)
 /// bit width.
-//static inline bool isIntN(unsigned N, int64_t x) {
-//  return N >= 64 || (-(INT64_C(1)<<(N-1)) <= x && x < (INT64_C(1)<<(N-1)));
-//}
+static inline bool isIntN(unsigned N, int64_t x) {
+  return N >= 64 || (-(INT64_C(1)<<(N-1)) <= x && x < (INT64_C(1)<<(N-1)));
+}
 
 /// isMask_32 - This function returns true if the argument is a sequence of ones
 /// starting at the least significant bit with the remainder zero (32 bit
@@ -203,6 +205,18 @@ static inline unsigned CountTrailingZeros_32(uint32_t Value) {
 #endif
 }
 
+// Count trailing zeros as in:
+// https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightParallel
+static inline unsigned CountTrailingZeros_8(uint8_t Value) {
+	uint8_t c = 8;
+	Value &= -((int8_t)Value);
+	if (Value) c--;
+	if (Value & 0x0F) c -= 4;
+	if (Value & 0x33) c -= 2;
+	if (Value & 0x55) c -= 1;
+	return c;
+}
+
 /// CountTrailingOnes_32 - this function performs the operation of
 /// counting the number of ones from the least significant bit to the first zero
 /// bit.  Ex. CountTrailingOnes_32(0x00FF00FF) == 8.
@@ -268,15 +282,21 @@ static inline unsigned CountPopulation_64(uint64_t Value) {
 }
 
 /// Log2_32 - This function returns the floor log base 2 of the specified value,
-/// -1 if the value is zero. (32 bit edition.)
+/// UINT_MAX if the value is zero. (32 bit edition.)
 /// Ex. Log2_32(32) == 5, Log2_32(1) == 0, Log2_32(0) == -1, Log2_32(6) == 2
 static inline unsigned Log2_32(uint32_t Value) {
+	if (Value == 0) {
+		return UINT_MAX;
+	}
 	return 31 - CountLeadingZeros_32(Value);
 }
 
 /// Log2_64 - This function returns the floor log base 2 of the specified value,
-/// -1 if the value is zero. (64 bit edition.)
+/// UINT_MAX if the value is zero. (64 bit edition.)
 static inline unsigned Log2_64(uint64_t Value) {
+	if (Value == 0) {
+		return UINT32_MAX;
+	}
 	return 63 - CountLeadingZeros_64(Value);
 }
 
@@ -404,14 +424,36 @@ static inline int64_t abs64(int64_t x) {
 
 /// \brief Sign extend number in the bottom B bits of X to a 32-bit int.
 /// Requires 0 < B <= 32.
+/// Note that this implementation relies on right shift of signed
+/// integers being an arithmetic shift.
 static inline int32_t SignExtend32(uint32_t X, unsigned B) {
 	return (int32_t)(X << (32 - B)) >> (32 - B);
 }
 
 /// \brief Sign extend number in the bottom B bits of X to a 64-bit int.
 /// Requires 0 < B <= 64.
+/// Note that this implementation relies on right shift of signed
+/// integers being an arithmetic shift.
 static inline int64_t SignExtend64(uint64_t X, unsigned B) {
 	return (int64_t)(X << (64 - B)) >> (64 - B);
+}
+
+/// \brief Removes the rightmost bit of x and extends the field to the left with that
+/// bit to form a 64-bit quantity. The field is of size len
+static inline int64_t LowSignExtend64(uint64_t x, unsigned len) {
+    return (x >> 1) - ((x & 1) << (len - 1));
+}
+
+/// \brief One extend number X starting at bit B and returns it as int32_t.
+/// Requires 0 < B <= 32.
+static inline int32_t OneExtend32(uint32_t X, unsigned B) {
+	return (~0U << B) | X;
+}
+
+/// \brief One extend number X starting at bit B and returns it as int64_t.
+/// Requires 0 < B <= 64.
+static inline int64_t OneExtend64(uint64_t X, unsigned B) {
+	return (~0ULL << B) | X;
 }
 
 /// \brief Count number of 0's from the most significant bit to the least
@@ -437,6 +479,18 @@ static inline unsigned int countLeadingZeros(int x)
 	}
 
 	return count;
+}
+
+/// \brief Get specified field from 32-bit instruction. Returns bits from the segment [from, to]
+static inline uint32_t get_insn_field(uint32_t insn, uint8_t from, uint8_t to) 
+{
+	return insn >> (31 - to) & ((1 << (to - from + 1)) - 1);
+}
+
+/// \brief Get specified bit from 32-bit instruction
+static inline uint32_t get_insn_bit(uint32_t insn, uint8_t bit) 
+{
+	return get_insn_field(insn, bit, bit);
 }
 
 #endif
