@@ -33,7 +33,7 @@ static const char *log_level_colors[] = {
 
 static mutex_t log_mutex = MUTEX_INITIALIZER;
 static volatile juice_log_cb_t log_cb = NULL;
-static atomic(juice_log_level_t) log_level = ATOMIC_VAR_INIT(JUICE_LOG_LEVEL_WARN);
+static atomic(juice_log_level_t) log_level = JUICE_LOG_LEVEL_WARN;
 
 static bool use_color(void) {
 #ifdef _WIN32

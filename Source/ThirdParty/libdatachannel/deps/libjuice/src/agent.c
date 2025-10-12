@@ -111,7 +111,7 @@ juice_agent_t *agent_create(const juice_config_t *config) {
 
 	agent->state = JUICE_STATE_DISCONNECTED;
 	agent->mode = AGENT_MODE_UNKNOWN;
-	agent->selected_entry = ATOMIC_VAR_INIT(NULL);
+	agent->selected_entry = NULL;
 
 	agent->conn_index = -1;
 	agent->conn_impl = NULL;
