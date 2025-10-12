@@ -607,6 +607,48 @@ jobs:
           cmake -A $arch -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared '-DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
           # Skip building as it would require full engine build
 
+      # Sample project using current branch (if present)
+      - uses: actions/checkout@v5
+        id: sample_project_checkout
+        continue-on-error: true
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      # Sample project using master branch
+      - uses: actions/checkout@v5
+        if: steps.sample_project_checkout.outcome != 'success'
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: 'refs/heads/master'
+          fetch-depth: 1
+          submodules: true
+
+      - name: Test sample_project build with SDK
+        shell: bash
+        run: |
+          source_dir='${{ github.workspace }}/sample-project'
+          build_dir='${{ github.workspace }}/sample-project-sdk-build'
+          arch=$([[ '${{ matrix.ci_arch }}' == "x86" ]] && echo Win32 || echo x64)
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -A $arch -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared '-DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }}' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake --build $build_dir --config Debug
+          cmake --build $build_dir --config RelWithDebInfo
+
+      - name: Test sample_project configure with engine source
+        shell: bash
+        run: |
+          source_dir='${{ github.workspace }}/sample-project'
+          build_dir='${{ github.workspace }}/sample-project-source-build'
+          arch=$([[ '${{ matrix.ci_arch }}' == "x86" ]] && echo Win32 || echo x64)
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -A $arch -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared '-DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          # Skip building as it would require full engine build
+
       - name: Zip SDK
         if: ${{ env.ci_release_sdk == 'true' }}
         uses: TheDoctor0/zip-release@0.7.6
@@ -836,6 +878,56 @@ jobs:
           cmake -A ${archs[${{ matrix.ci_arch }}]} -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 '-DCMAKE_PREFIX_PATH=${{ github.workspace }}/host-sdk;${{ env.ci_source_dir }}/CMake' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
           # Skip building as it would require full engine build
 
+      # Sample project using current branch (if present)
+      - uses: actions/checkout@v5
+        id: sample_project_checkout
+        continue-on-error: true
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      # Sample project using master branch
+      - uses: actions/checkout@v5
+        if: steps.sample_project_checkout.outcome != 'success'
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: 'refs/heads/master'
+          fetch-depth: 1
+          submodules: true
+
+      - name: Test sample_project build with SDK
+        shell: bash
+        run: |
+          source_dir='${{ github.workspace }}/sample-project'
+          build_dir='${{ github.workspace }}/sample-project-sdk-build'
+          declare -A archs
+          archs[x86]="Win32"
+          archs[x64]="x64"
+          archs[arm]="ARM"
+          archs[arm64]="ARM64"
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -A ${archs[${{ matrix.ci_arch }}]} -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 '-DCMAKE_PREFIX_PATH=${{ github.workspace }}/host-sdk;${{ env.ci_sdk_dir }}' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake --build $build_dir --config Debug
+          cmake --build $build_dir --config RelWithDebInfo
+
+      - name: Test sample_project configure with engine source
+        shell: bash
+        run: |
+          source_dir='${{ github.workspace }}/sample-project'
+          build_dir='${{ github.workspace }}/sample-project-source-build'
+          declare -A archs
+          archs[x86]="Win32"
+          archs[x64]="x64"
+          archs[arm]="ARM"
+          archs[arm64]="ARM64"
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -A ${archs[${{ matrix.ci_arch }}]} -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 '-DCMAKE_PREFIX_PATH=${{ github.workspace }}/host-sdk;${{ env.ci_source_dir }}/CMake' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          # Skip building as it would require full engine build
+
       - uses: actions/upload-artifact@v4
         if: ${{ env.CCACHE_DEBUG == '1' }}
         with:
@@ -1024,6 +1116,46 @@ jobs:
         run: |
           source_dir=${{ github.workspace }}/empty-project
           build_dir=${{ github.workspace }}/empty-project-source-build
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          CC=${ci_compiler} CXX=${ci_compiler/gcc/g}++ cmake -G 'Ninja Multi-Config' -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          # Skip building as it would require full engine build
+
+      # Sample project using current branch (if present)
+      - uses: actions/checkout@v5
+        id: sample_project_checkout
+        continue-on-error: true
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      # Sample project using master branch
+      - uses: actions/checkout@v5
+        if: steps.sample_project_checkout.outcome != 'success'
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: 'refs/heads/master'
+          fetch-depth: 1
+          submodules: true
+
+      - name: Test sample_project build with SDK
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/sample-project
+          build_dir=${{ github.workspace }}/sample-project-sdk-build
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          CC=${ci_compiler} CXX=${ci_compiler/gcc/g}++ cmake -G 'Ninja Multi-Config' -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }} -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake --build $build_dir --config Debug
+          cmake --build $build_dir --config RelWithDebInfo
+
+      - name: Test sample_project configure with engine source
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/sample-project
+          build_dir=${{ github.workspace }}/sample-project-source-build
           shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
           CC=${ci_compiler} CXX=${ci_compiler/gcc/g}++ cmake -G 'Ninja Multi-Config' -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
           # Skip building as it would require full engine build
@@ -1256,6 +1388,46 @@ jobs:
         run: |
           source_dir=${{ github.workspace }}/empty-project
           build_dir=${{ github.workspace }}/empty-project-source-build
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -S $source_dir -B $build_dir -DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake -DBUILD_SHARED_LIBS=$shared -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          # Skip building as it would require full engine build
+
+      # Sample project using current branch (if present)
+      - uses: actions/checkout@v5
+        id: sample_project_checkout
+        continue-on-error: true
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      # Sample project using master branch
+      - uses: actions/checkout@v5
+        if: steps.sample_project_checkout.outcome != 'success'
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: 'refs/heads/master'
+          fetch-depth: 1
+          submodules: true
+
+      - name: Test sample_project build with SDK
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/sample-project
+          build_dir=${{ github.workspace }}/sample-project-sdk-build
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -S $source_dir -B $build_dir -DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }} -DBUILD_SHARED_LIBS=$shared -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake --build $build_dir --config Debug
+          cmake --build $build_dir --config RelWithDebInfo
+
+      - name: Test sample_project configure with engine source
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/sample-project
+          build_dir=${{ github.workspace }}/sample-project-source-build
           shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
           cmake -S $source_dir -B $build_dir -DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake -DBUILD_SHARED_LIBS=$shared -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
           # Skip building as it would require full engine build
@@ -1791,6 +1963,52 @@ jobs:
         run: |
           source_dir=${{ github.workspace }}/empty-project
           build_dir=${{ github.workspace }}/empty-project-source-build
+          cmake -G 'Ninja Multi-Config' -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=OFF -DCMAKE_CONFIGURATION_TYPES="Debug;Release" \
+            -DEMSCRIPTEN_ROOT_PATH=$EMSDK/upstream/emscripten/ \
+            -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
+            '-DCMAKE_FIND_ROOT_PATH=${{ github.workspace }}/host-sdk;${{ env.ci_source_dir }}/CMake'
+
+          # Skip building as it would require full engine build
+
+      # Sample project using current branch (if present)
+      - uses: actions/checkout@v5
+        id: sample_project_checkout
+        continue-on-error: true
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      # Sample project using master branch
+      - uses: actions/checkout@v5
+        if: steps.sample_project_checkout.outcome != 'success'
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: 'refs/heads/master'
+          fetch-depth: 1
+          submodules: true
+
+      - name: Test sample_project build with SDK
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/sample-project
+          build_dir=${{ github.workspace }}/sample-project-sdk-build
+          cmake -G 'Ninja Multi-Config' -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=OFF -DCMAKE_CONFIGURATION_TYPES="Debug;Release" \
+            -DEMSCRIPTEN_ROOT_PATH=$EMSDK/upstream/emscripten/ \
+            -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
+            '-DCMAKE_FIND_ROOT_PATH=${{ github.workspace }}/host-sdk;${{ env.ci_sdk_dir }}'
+
+          cmake --build $build_dir --config Debug
+          cmake --build $build_dir --config Release
+
+      - name: Test sample_project configure with engine source
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/sample-project
+          build_dir=${{ github.workspace }}/sample-project-source-build
           cmake -G 'Ninja Multi-Config' -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=OFF -DCMAKE_CONFIGURATION_TYPES="Debug;Release" \
             -DEMSCRIPTEN_ROOT_PATH=$EMSDK/upstream/emscripten/ \
             -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
