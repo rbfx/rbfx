@@ -36,5 +36,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${rbfx_SOURCE_DIR}/CMake/Modules)
 # Include common functionality
 include(UrhoCommon)
 
+# Provide path to package root
+set(Urho3D_PACKAGE_ROOT "${rbfx_SOURCE_DIR}")
+
 # Mark Urho3D as found
 set(Urho3D_FOUND TRUE)

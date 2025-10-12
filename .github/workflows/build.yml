@@ -1437,7 +1437,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: 'rbfx-${{ github.job }}-sdk-${{ matrix.ci_build_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-sdk-${{ matrix.ci_build_type }}-${{ matrix.ci_arch }}-${{ env.HASH_THIRDPARTY }}-${{ env.SHORT_SHA }}'
           path: '${{ env.ci_sdk_dir }}'
           if-no-files-found: warn
 
@@ -1449,7 +1449,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-apks-${{ matrix.ci_arch }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-apks-${{ matrix.ci_arch }}-${{ env.SHORT_SHA }}'
           path: '**/*.apk'
 
       - uses: actions/upload-artifact@v4
@@ -1594,7 +1594,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ env.ci_lib_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ env.ci_lib_type }}-${{ env.SHORT_SHA }}'
           path: '**/*.app'
 
       - uses: actions/upload-artifact@v4
