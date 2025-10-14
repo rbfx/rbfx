@@ -69,7 +69,6 @@ if (URHO3D_PRISTINE_FULL_BUILDS OR (ENV{CI} AND NOT Urho3DThirdParty_FOUND))
 endif ()
 
 # Include common utilities
-include(GNUInstallDirs)
 include(UrhoCommon)
 
 # Find threading libraries (required by Tracy and other components)
@@ -116,25 +115,6 @@ endif ()
 if (ANDROID)
     # For Android platform, install to a path based on the chosen Android ABI, e.g. libs/armeabi-v7a
     set (LIB_SUFFIX s/${ANDROID_NDK_ABI_NAME})
-endif ()
-
-set(CMAKE_INSTALL_INCLUDEDIR include)
-set(CMAKE_INSTALL_BINDIR_BASE ${CMAKE_INSTALL_BINDIR})
-
-get_cmake_property(MULTI_CONFIG_PROJECT GENERATOR_IS_MULTI_CONFIG)
-if (MULTI_CONFIG_PROJECT)
-    set(CMAKE_INSTALL_BINDIR ${CMAKE_INSTALL_BINDIR}/$<CONFIG>)
-    set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>)
-endif ()
-
-if (ANDROID)
-    set (CMAKE_INSTALL_LIBDIR bin)
-endif ()
-
-if (WIN32)
-    set(CMAKE_INSTALL_CMAKEDIR "")
-else ()
-    set(CMAKE_INSTALL_CMAKEDIR "${CMAKE_INSTALL_DATADIR}/")
 endif ()
 
 if (WIN32)

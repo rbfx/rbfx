@@ -424,7 +424,7 @@ include(CMakePackageConfigHelpers)
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/CMake/Urho3DThirdPartyConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/Urho3DThirdPartyConfig.cmake"
-    INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR}Urho3DThirdParty/CMake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DThirdParty/CMake
 )
 
 # Generate the version file with platform compatibility checking
@@ -438,13 +438,13 @@ configure_file(
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/Urho3DThirdPartyConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/Urho3DThirdPartyConfigVersion.cmake"
-    DESTINATION ${CMAKE_INSTALL_CMAKEDIR}Urho3DThirdParty/CMake
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DThirdParty/CMake
     COMPONENT ThirdParty
 )
 
 # Install the export file
 install(EXPORT Urho3DThirdParty
     FILE Urho3DThirdParty.cmake
-    DESTINATION ${CMAKE_INSTALL_CMAKEDIR}Urho3DThirdParty/CMake
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DThirdParty/CMake
     COMPONENT ThirdParty
 )

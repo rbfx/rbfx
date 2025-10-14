@@ -57,7 +57,7 @@ if (DESKTOP)
     # Install the tools export file
     install(EXPORT Urho3DTools
         FILE Urho3DTools.cmake
-        DESTINATION ${CMAKE_INSTALL_CMAKEDIR}Urho3DTools/CMake
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DTools/CMake
         COMPONENT Tools
     )
 
@@ -67,7 +67,7 @@ if (DESKTOP)
     configure_package_config_file(
         ${rbfx_SOURCE_DIR}/CMake/Urho3DToolsConfig.cmake.in
         ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfig.cmake
-        INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR}Urho3DTools/CMake/
+        INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DTools/CMake/
     )
 
     # Generate the version file for Urho3DTools with host platform compatibility checking
@@ -80,7 +80,7 @@ if (DESKTOP)
     install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfig.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfigVersion.cmake
-        DESTINATION ${CMAKE_INSTALL_CMAKEDIR}Urho3DTools/CMake/
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DTools/CMake/
         COMPONENT Tools
     )
 endif ()
@@ -114,13 +114,13 @@ install(FILES
     DESTINATION ${CMAKE_INSTALL_DATADIR})
 
 # This is a normal install that users are supposed to use.
-install (EXPORT Urho3D DESTINATION ${CMAKE_INSTALL_CMAKEDIR}Urho3D/CMake FILE Urho3D.cmake)
+install (EXPORT Urho3D DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake FILE Urho3D.cmake)
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(
     ${rbfx_SOURCE_DIR}/CMake/Urho3DConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfig.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_CMAKEDIR}Urho3D/CMake/
+    INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/
 )
 
 # Generate the version file for Urho3D with platform compatibility checking
@@ -133,5 +133,5 @@ configure_file(
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfig.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfigVersion.cmake
-    DESTINATION ${CMAKE_INSTALL_CMAKEDIR}Urho3D/CMake/
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/
 )

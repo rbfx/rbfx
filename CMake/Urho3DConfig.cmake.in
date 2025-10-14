@@ -43,6 +43,7 @@ set(WEBGPU_SUPPORTED @WEBGPU_SUPPORTED@ CACHE INTERNAL "WebGPU is supported")
 
 # Provide path to package root
 set(Urho3D_PACKAGE_ROOT "${PACKAGE_PREFIX_DIR}")
+set(Urho3D_IS_SDK ON)
 
 list(APPEND CMAKE_MODULE_PATH "${PACKAGE_PREFIX_DIR}/share/Urho3D/CMake/Modules")
 include(UrhoCommon)

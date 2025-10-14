@@ -27,19 +27,22 @@ include(${CMAKE_CURRENT_LIST_DIR}/VSSolution.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/UrhoOptions.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CCache.cmake)
 
-if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/../Urho3D.cmake)
-    set (URHO3D_IS_SDK ON)
-    set (URHO3D_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../../)
-    get_filename_component(URHO3D_SDK_PATH "${URHO3D_SDK_PATH}" REALPATH)
-else ()
-    set (URHO3D_IS_SDK OFF)
+set(CMAKE_INSTALL_BINDIR_BASE ${CMAKE_INSTALL_BINDIR})
+get_cmake_property(MULTI_CONFIG_PROJECT GENERATOR_IS_MULTI_CONFIG)
+if (MULTI_CONFIG_PROJECT)
+    set(CMAKE_INSTALL_BINDIR ${CMAKE_INSTALL_BINDIR}/$<CONFIG>)
+    set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>)
 endif ()
 
-if (URHO3D_IS_SDK)
-    set (URHO3D_SWIG_LIB_DIR ${URHO3D_SDK_PATH}/include/swig/Lib)
-    set (URHO3D_CMAKE_DIR ${URHO3D_SDK_PATH}/share/CMake)
+if (ANDROID)
+    set (CMAKE_INSTALL_LIBDIR bin)
+endif ()
+
+if (Urho3D_IS_SDK)
+    set (URHO3D_SWIG_LIB_DIR ${Urho3D_PACKAGE_ROOT}/include/swig/Lib)
+    set (URHO3D_CMAKE_DIR ${Urho3D_PACKAGE_ROOT}/share/CMake)
     set (URHO3D_CSHARP_PROPS_FILE ${URHO3D_CMAKE_DIR}/Directory.Build.props)
-    set (URHO3D_TEMPLATE_DIR ${URHO3D_SDK_PATH}/include)
+    set (URHO3D_TEMPLATE_DIR ${Urho3D_PACKAGE_ROOT}/include)
 else ()
     set (URHO3D_SWIG_LIB_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty/swig/Lib)
     set (URHO3D_CMAKE_DIR ${rbfx_SOURCE_DIR}/CMake)
@@ -134,8 +137,8 @@ function (rbfx_configure_cmake_props)
         URHO3D_CSHARP
         URHO3D_CSHARP_PROPS_FILE
         URHO3D_PLATFORM
-        URHO3D_IS_SDK
-        URHO3D_SDK_PATH
+        Urho3D_IS_SDK
+        Urho3D_PACKAGE_ROOT
         URHO3D_NETFX
         URHO3D_NETFX_RUNTIME_IDENTIFIER
         URHO3D_NETFX_RUNTIME)
@@ -226,7 +229,7 @@ if (URHO3D_CSHARP)
     unset (DOTNET_FRAMEWORK_INDEX)
 
     # For .csproj embedded into visual studio solution
-    if (NOT URHO3D_IS_SDK)
+    if (NOT Urho3D_IS_SDK)
         install (FILES ${rbfx_SOURCE_DIR}/Directory.Build.props DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/)
     endif ()
 endif()
@@ -500,8 +503,8 @@ function (web_executable TARGET)
             target_link_libraries(${TARGET} PRIVATE -sMAIN_MODULE=1)
         endif ()
         if (TARGET datachannel-wasm)
-            if (URHO3D_IS_SDK)
-                set (LIBDATACHANNEL_WASM_DIR "${URHO3D_SDK_PATH}/include/libdatachannel-wasm")
+            if (Urho3D_IS_SDK)
+                set (LIBDATACHANNEL_WASM_DIR "${Urho3D_PACKAGE_ROOT}/include/libdatachannel-wasm")
             else ()
                 set (LIBDATACHANNEL_WASM_DIR "${rbfx_SOURCE_DIR}/Source/ThirdParty/libdatachannel-wasm")
             endif ()

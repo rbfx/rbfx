@@ -513,7 +513,7 @@ jobs:
 
       - name: Generate
         shell: bash
-        run: ${{ env.ci_build_script }} generate -- '-DCMAKE_PREFIX_PATH=${{ github.workspace }}/cached-sdk'
+        run: ${{ env.ci_build_script }} generate -- '-DCMAKE_PREFIX_PATH=${{ github.workspace }}/cached-sdk/share'
 
       - name: Build Debug
         shell: bash
@@ -593,7 +593,7 @@ jobs:
           build_dir='${{ github.workspace }}/empty-project-sdk-build'
           arch=$([[ '${{ matrix.ci_arch }}' == "x86" ]] && echo Win32 || echo x64)
           shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
-          cmake -A $arch -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared '-DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }}' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake -A $arch -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared '-DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }}/share' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
           cmake --build $build_dir --config Debug
           cmake --build $build_dir --config RelWithDebInfo
 
@@ -635,7 +635,7 @@ jobs:
           build_dir='${{ github.workspace }}/sample-project-sdk-build'
           arch=$([[ '${{ matrix.ci_arch }}' == "x86" ]] && echo Win32 || echo x64)
           shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
-          cmake -A $arch -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared '-DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }}' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake -A $arch -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared '-DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }}/share' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
           cmake --build $build_dir --config Debug
           cmake --build $build_dir --config RelWithDebInfo
 
@@ -798,7 +798,7 @@ jobs:
 
       - name: Generate
         shell: bash
-        run: ${{ env.ci_build_script }} generate -- -DCMAKE_PREFIX_PATH="${{ github.workspace }}/cached-sdk;${{ github.workspace }}/host-sdk"
+        run: ${{ env.ci_build_script }} generate -- -DCMAKE_PREFIX_PATH="${{ github.workspace }}/cached-sdk/share;${{ github.workspace }}/host-sdk/share"
 
       - name: Build Debug
         shell: bash
@@ -860,7 +860,7 @@ jobs:
           archs[arm]="ARM"
           archs[arm64]="ARM64"
           shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
-          cmake -A ${archs[${{ matrix.ci_arch }}]} -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 '-DCMAKE_PREFIX_PATH=${{ github.workspace }}/host-sdk;${{ env.ci_sdk_dir }}' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake -A ${archs[${{ matrix.ci_arch }}]} -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 '-DCMAKE_PREFIX_PATH=${{ github.workspace }}/host-sdk/share;${{ env.ci_sdk_dir }}/share' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
           cmake --build $build_dir --config Debug
           cmake --build $build_dir --config RelWithDebInfo
 
@@ -875,7 +875,7 @@ jobs:
           archs[arm]="ARM"
           archs[arm64]="ARM64"
           shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
-          cmake -A ${archs[${{ matrix.ci_arch }}]} -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 '-DCMAKE_PREFIX_PATH=${{ github.workspace }}/host-sdk;${{ env.ci_source_dir }}/CMake' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake -A ${archs[${{ matrix.ci_arch }}]} -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 '-DCMAKE_PREFIX_PATH=${{ github.workspace }}/host-sdk/share;${{ env.ci_source_dir }}/CMake' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
           # Skip building as it would require full engine build
 
       # Sample project using current branch (if present)
