@@ -36,7 +36,7 @@ add_library(libzstd_static ALIAS zstd)
 # Set include directories
 target_include_directories(zstd PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/zstd>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/zstd>
 )
 
 # Define ZSTD_STATIC_LINKING_ONLY if building static library
@@ -51,4 +51,4 @@ set_target_properties(zstd PROPERTIES
 
 # Export headers for installation
 file(GLOB ZSTD_PUBLIC_HEADERS *.h)
-install(FILES ${ZSTD_PUBLIC_HEADERS} DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/zstd)
+install(FILES ${ZSTD_PUBLIC_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/zstd)

@@ -24,9 +24,14 @@ file (GLOB_RECURSE SOURCE_FILES *.cpp *.h)
 add_library (StanHull STATIC ${SOURCE_FILES})
 target_include_directories(StanHull
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+              $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/StanHull>
 )
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS StanHull EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-endif ()
+install_third_party_libs(StanHull)
+
+# Install headers
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/StanHull
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    COMPONENT ThirdParty
+)

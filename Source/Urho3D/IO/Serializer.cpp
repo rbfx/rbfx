@@ -409,7 +409,7 @@ bool Serializer::WriteStringVariantMap(const StringVariantMap& value)
 bool Serializer::WriteVLE(unsigned value)
 {
     unsigned char data[MaxVariableLengthBytes<unsigned>];
-    const unsigned numBytes = EncodeVariableLength(value, data);
+    const unsigned numBytes = EncodeVariableLength(value, ea::span(data));
     return Write(data, numBytes) == numBytes;
 }
 

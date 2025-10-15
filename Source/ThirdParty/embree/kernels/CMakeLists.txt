@@ -259,7 +259,7 @@ IF (EMBREE_ISA_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
   CheckGlobals(embree_sse42)
   IF (EMBREE_STATIC_LIB)
     # Urho3D: Fix exports
-    INSTALL(TARGETS embree_sse42 EXPORT Urho3D ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT devel)
+    install_third_party_libs(embree_sse42)
     #INSTALL(EXPORT embree_sse42-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)
   ENDIF()
 ENDIF ()
@@ -274,7 +274,7 @@ IF (EMBREE_ISA_AVX  AND EMBREE_LIBRARY_FILES_AVX)
   CheckGlobals(embree_avx)
   IF (EMBREE_STATIC_LIB)
     # Urho3D: Fix exports
-    INSTALL(TARGETS embree_avx EXPORT Urho3D ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT devel)
+    install_third_party_libs(embree_avx)
     #INSTALL(EXPORT embree_avx-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)
   ENDIF()
 ENDIF()
@@ -289,7 +289,7 @@ IF (EMBREE_ISA_AVX2 AND EMBREE_LIBRARY_FILES_AVX2)
   CheckGlobals(embree_avx2)
   IF (EMBREE_STATIC_LIB)
     # Urho3D: Fix exports
-    INSTALL(TARGETS embree_avx2 EXPORT Urho3D ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT devel)
+    install_third_party_libs(embree_avx2)
     #INSTALL(EXPORT embree_avx2-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)
   ENDIF()
 ENDIF()
@@ -304,7 +304,7 @@ IF (EMBREE_ISA_AVX512 AND EMBREE_LIBRARY_FILES_AVX512)
   CheckGlobals(embree_avx512)
   IF (EMBREE_STATIC_LIB)
     # Urho3D: Fix exports
-    INSTALL(TARGETS embree_avx512 EXPORT Urho3D ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT devel)
+    install_third_party_libs(embree_avx512)
     #INSTALL(EXPORT embree_avx512-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)
   ENDIF()
 ENDIF()
@@ -340,13 +340,7 @@ ELSE()
 ENDIF()
 
 # Urho3D: Fix exports
-INSTALL(TARGETS embree EXPORT Urho3D
-  LIBRARY NAMELINK_SKIP DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib
-  # on Windows put the dlls into bin
-  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples
-  # ... and the import lib into the devel package
-  ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT devel
-)
+install_third_party_libs(embree)
 
 # export Embree targets
 #INSTALL(EXPORT embree-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)

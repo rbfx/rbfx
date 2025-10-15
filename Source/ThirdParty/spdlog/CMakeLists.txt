@@ -21,7 +21,16 @@
 #
 
 add_library(spdlog INTERFACE)
-target_include_directories(spdlog INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+target_include_directories(spdlog INTERFACE 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 target_link_libraries(spdlog INTERFACE fmt)
 target_compile_definitions(spdlog INTERFACE -DSPDLOG_FMT_EXTERNAL=1 -DSPDLOG_DISABLE_DEFAULT_LOGGER=1)
-install (TARGETS spdlog EXPORT Urho3D)
+install_third_party_libs(spdlog)
+
+# Install headers
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/spdlog
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    COMPONENT ThirdParty
+)

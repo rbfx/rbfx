@@ -378,7 +378,7 @@ endif()
 #set_target_properties(datachannel PROPERTIES EXPORT_NAME LibDataChannel)
 #add_library(LibDataChannel::LibDataChannel ALIAS datachannel)
 
-set_target_properties(datachannel-static PROPERTIES EXPORT_NAME LibDataChannelStatic)
+#set_target_properties(datachannel-static PROPERTIES EXPORT_NAME LibDataChannelStatic)
 add_library(LibDataChannel::LibDataChannelStatic ALIAS datachannel-static)
 
 if(NOT MSVC)
@@ -493,6 +493,4 @@ if(NOT NO_EXAMPLES)
 	add_subdirectory(examples/copy-paste-capi)
 endif()
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS datachannel-static usrsctp plog juice-static EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-endif ()
+install_third_party_libs(datachannel-static usrsctp plog juice-static)

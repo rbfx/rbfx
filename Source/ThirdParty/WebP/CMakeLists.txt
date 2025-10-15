@@ -24,10 +24,17 @@ check_include_file("cpu-features.h" HAVE_CPU_FEATURES_H)
 
 file (GLOB_RECURSE SOURCE_FILES src/*.c src/*.h)
 add_library (WebP STATIC ${SOURCE_FILES})
-target_include_directories(WebP SYSTEM PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>)
+target_include_directories(WebP SYSTEM PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 if (HAVE_CPU_FEATURES_H)
     target_compile_definitions(WebP PRIVATE -DHAVE_CPU_FEATURES_H=1)
 endif ()
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS WebP EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-endif ()
+install_third_party_libs(WebP)
+
+# Install headers
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/webp
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    COMPONENT ThirdParty
+)
