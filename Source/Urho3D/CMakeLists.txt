@@ -405,6 +405,10 @@ if (WIN32)
     endif ()
     if (UWP)
         target_compile_definitions (Urho3D PUBLIC -DUWP=1)
+        # Fix UWP linker error LNK2038: vccorlib must be linked before MSVCRT
+        # This ensures proper initialization order of the C++ runtime for UWP applications
+        # Link vccorlib library before any other libraries to satisfy UWP requirements
+        target_link_libraries(Urho3D PUBLIC $<IF:$<CONFIG:Debug>,vccorlibd,vccorlib>)
     endif ()
     target_link_libraries (Urho3D PUBLIC rpcrt4)
 else ()
