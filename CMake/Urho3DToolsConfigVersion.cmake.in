@@ -1,0 +1,107 @@
+# Urho3DToolsConfigVersion.cmake - Custom version file with host platform compatibility checking
+
+set(PACKAGE_VERSION "@URHO3D_VERSION@")
+
+# Host platform compatibility check for Urho3DTools
+function(urho3d_tools_check_host_platform_compatibility_version)
+    set(CURRENT_HOST_WIN32 FALSE)
+    set(CURRENT_HOST_APPLE FALSE)
+    set(CURRENT_HOST_MACOS FALSE)
+    set(CURRENT_HOST_LINUX FALSE)
+
+    # Detect current host platform
+    if(CMAKE_HOST_WIN32)
+        set(CURRENT_HOST_WIN32 TRUE)
+    elseif(CMAKE_HOST_APPLE)
+        set(CURRENT_HOST_APPLE TRUE)
+        set(CURRENT_HOST_MACOS TRUE)
+    elseif(CMAKE_HOST_UNIX)
+        set(CURRENT_HOST_LINUX TRUE)
+    endif()
+
+    # Check if current host platform matches any supported host platform
+    set(HOST_PLATFORM_SUPPORTED FALSE)
+    if(CURRENT_HOST_WIN32 AND @PLATFORM_WIN32@)
+        set(HOST_PLATFORM_SUPPORTED TRUE)
+    elseif(CURRENT_HOST_LINUX AND @PLATFORM_LINUX@)
+        set(HOST_PLATFORM_SUPPORTED TRUE)
+    elseif(CURRENT_HOST_MACOS AND @PLATFORM_MACOS@)
+        set(HOST_PLATFORM_SUPPORTED TRUE)
+    endif()
+
+    if(NOT HOST_PLATFORM_SUPPORTED)
+        set(SUPPORTED_HOST_PLATFORMS "")
+        if(@PLATFORM_WIN32@)
+            list(APPEND SUPPORTED_HOST_PLATFORMS "Windows")
+        endif()
+        if(@PLATFORM_LINUX@)
+            list(APPEND SUPPORTED_HOST_PLATFORMS "Linux")
+        endif()
+        if(@PLATFORM_MACOS@)
+            list(APPEND SUPPORTED_HOST_PLATFORMS "macOS")
+        endif()
+
+        string(JOIN ", " SUPPORTED_HOST_PLATFORMS_STR ${SUPPORTED_HOST_PLATFORMS})
+        set(PACKAGE_VERSION_UNSUITABLE TRUE PARENT_SCOPE)
+        set(PACKAGE_VERSION_COMPATIBLE FALSE PARENT_SCOPE)
+        if(NOT Urho3DTools_FIND_QUIETLY)
+            message(STATUS "Urho3DTools: Current host platform is not compatible with these build tools. "
+                          "Tools were built for: ${SUPPORTED_HOST_PLATFORMS_STR}. "
+                          "Current host: ${CMAKE_HOST_SYSTEM_NAME}")
+        endif()
+        return()
+    endif()
+
+    # Host platform is compatible, continue with version checking
+    set(PACKAGE_VERSION_COMPATIBLE TRUE PARENT_SCOPE)
+endfunction()
+
+# Perform host platform compatibility check
+urho3d_tools_check_host_platform_compatibility_version()
+
+# Only do version checking if host platform is compatible
+if(PACKAGE_VERSION_COMPATIBLE)
+    # Check whether the requested PACKAGE_FIND_VERSION is compatible
+    if("@URHO3D_VERSION@" MATCHES "^([0-9]+)\\.")
+        set(CVF_VERSION_MAJOR "${CMAKE_MATCH_1}")
+        if(PACKAGE_FIND_VERSION_RANGE)
+            # both endpoints of the range must have the expected major version
+            math(EXPR CVF_VERSION_MAJOR_NEXT "${CVF_VERSION_MAJOR} + 1")
+            if (NOT PACKAGE_FIND_VERSION_MIN_MAJOR STREQUAL CVF_VERSION_MAJOR
+                OR ((PACKAGE_FIND_VERSION_INCLUDE_MAX
+                    AND NOT PACKAGE_FIND_VERSION_MAX_MAJOR STREQUAL CVF_VERSION_MAJOR)
+                    OR (NOT PACKAGE_FIND_VERSION_INCLUDE_MAX
+                    AND NOT PACKAGE_FIND_VERSION_MAX_MAJOR STREQUAL CVF_VERSION_MAJOR_NEXT)))
+                set(PACKAGE_VERSION_COMPATIBLE FALSE)
+            endif()
+        else()
+            if(NOT PACKAGE_FIND_VERSION_MAJOR STREQUAL CVF_VERSION_MAJOR)
+                set(PACKAGE_VERSION_COMPATIBLE FALSE)
+            endif()
+        endif()
+    else()
+        set(PACKAGE_VERSION_COMPATIBLE FALSE)
+    endif()
+
+    # if the installed or the requested version are pre-release versions,
+    # exact version match is required
+    if("@URHO3D_VERSION@" MATCHES "(.*[-+].+)|([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)")
+        set(CVF_VERSION_PRERELEASE TRUE)
+    else()
+        set(CVF_VERSION_PRERELEASE FALSE)
+    endif()
+
+    if(PACKAGE_FIND_VERSION MATCHES "(.*[-+].+)|([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)")
+        set(CVF_VERSION_FIND_PRERELEASE TRUE)
+    else()
+        set(CVF_VERSION_FIND_PRERELEASE FALSE)
+    endif()
+
+    if((CVF_VERSION_PRERELEASE AND NOT CVF_VERSION_FIND_PRERELEASE) OR (CVF_VERSION_FIND_PRERELEASE AND NOT CVF_VERSION_PRERELEASE))
+        set(PACKAGE_VERSION_COMPATIBLE FALSE)
+    endif()
+
+    if (PACKAGE_FIND_VERSION STREQUAL PACKAGE_VERSION)
+        set(PACKAGE_VERSION_EXACT TRUE)
+    endif()
+endif()

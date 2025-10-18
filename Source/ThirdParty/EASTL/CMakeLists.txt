@@ -40,12 +40,14 @@ target_compile_features(EASTL PUBLIC cxx_std_14)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Header Files" FILES ${EASTL_HEADERS})
 
 if (MSVC)
-    set(EASTL_NATVIS_DIR "doc")
-    set(EASTL_NATVIS_FILE "${EASTL_NATVIS_DIR}/EASTL.natvis")
     target_sources(EASTL INTERFACE
-        $<INSTALL_INTERFACE:${EASTL_NATVIS_FILE}>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${EASTL_NATVIS_FILE}>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_DATADIR}/EASTL.natvis>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/doc/EASTL.natvis>
     )
+    # Install the natvis file
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/doc/EASTL.natvis
+            DESTINATION ${CMAKE_INSTALL_DATADIR}
+            COMPONENT ThirdParty)
 endif()
 
 if(EASTL_BUILD_BENCHMARK)
@@ -129,10 +131,8 @@ endif()
 #-------------------------------------------------------------------------------------------
 # Installation
 #-------------------------------------------------------------------------------------------
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
-install (DIRECTORY ${EABase_SOURCE_DIR}/include/Common/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
-install (DIRECTORY ${EAAssert_SOURCE_DIR}/include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
-install (DIRECTORY ${EAStdC_SOURCE_DIR}/include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS EASTL EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-endif ()
+install (DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ FILES_MATCHING PATTERN *.h)
+install (DIRECTORY ${EABase_SOURCE_DIR}/include/Common/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ FILES_MATCHING PATTERN *.h)
+install (DIRECTORY ${EAAssert_SOURCE_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ FILES_MATCHING PATTERN *.h)
+install (DIRECTORY ${EAStdC_SOURCE_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ FILES_MATCHING PATTERN *.h)
+install_third_party_libs(EASTL)

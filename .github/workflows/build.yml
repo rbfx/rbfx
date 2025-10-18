@@ -5,6 +5,20 @@ on:
       - 'no-ci-**'
       - 'skip-ci-**'
   pull_request:
+  workflow_dispatch:
+    inputs:
+      # ci_jobs: Control which jobs run via manual workflow dispatch
+      # Go to Actions -> Build -> Run workflow -> enter job names in ci_jobs field
+      # If not set or empty, all jobs run. Dependencies are automatically included.
+      # Examples:
+      #   ci_jobs: "Linux"          # Runs only Linux job
+      #   ci_jobs: "Linux,Windows"  # Runs Linux and Windows jobs
+      #   ci_jobs: "Android"        # Runs Android and its dependency Linux-Tools
+      ci_jobs:
+        description: 'Comma-separated list of jobs to run (e.g., "Linux,Android"). Leave empty to run all jobs.'
+        required: false
+        default: ''
+        type: string
 
 env:
   # common settings
@@ -12,8 +26,9 @@ env:
   URHO3D_SAMPLES: ON
   URHO3D_TESTING: ON
   URHO3D_PROFILING_FALLBACK: ON
+  URHO3D_PRISTINE_FULL_BUILDS: ON
   DOTNET_VERSION: '8.0'
-  CMAKE_VERSION: 3.21.x
+  CMAKE_VERSION: 3.24.x
   # ccache configuration
   ccache_prefix: ${{ secrets.CACHE_VERSION }}-master
   CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -23,8 +38,10 @@ env:
   CCACHE_HARDLINK: true
   CCACHE_SLOPPINESS: pch_defines,time_macros,include_file_mtime,include_file_ctime
   CCACHE_NOHASHDIR: true
-  CCACHE_MAXSIZE: 5G
+  CCACHE_MAXSIZE: 10G
   CCACHE_LIMIT_MULTIPLE: 0.6
+  #CCACHE_DEBUG: 1
+  CCACHE_DEBUGDIR: ${{ github.workspace }}/ccache-debug
   # paths
   ci_workspace_dir: ${{ github.workspace }}
   ci_source_dir: ${{ github.workspace }}/source-code
@@ -35,6 +52,7 @@ env:
   ci_latest_release_id: 129063815
   # etc
   TRACY_TIMER_FALLBACK: 1
+  SOURCE_REF: ${{ github.head_ref || github.ref_name }}
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -70,7 +88,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Create and Push Tag
         run: |
@@ -78,7 +96,11 @@ jobs:
           git push -f origin latest
 
   Windows-Tools:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'Windows-Tools') ||
+       contains(inputs.ci_jobs, 'UWP'))
     runs-on: windows-2022
     needs: [CheckSkipCI]
     env:
@@ -92,42 +114,93 @@ jobs:
       URHO3D_TOOLS: "swig;PackageTool"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
+      - name: Gather information
+        shell: bash
+        run: |
+          # Gather values
+          SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
+          BUILD_ID='${{ github.job }}'
+          CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
+          HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          HASH_TOOLS=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          ARTIFACT_ID_TOOLS="rbfx-$BUILD_ID-$HASH_TOOLS-$HASH_THIRDPARTY"
+
+          # Display values
+          echo "SHORT_SHA=$SHORT_SHA"
+          echo "BUILD_ID=$BUILD_ID"
+          echo "CACHE_ID=$CACHE_ID"
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY"
+          echo "HASH_TOOLS=$HASH_TOOLS"
+          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS"
+
+          # Save values to environment
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+          echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
+          echo "HASH_TOOLS=$HASH_TOOLS" >> $GITHUB_ENV
+          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS" >> $GITHUB_ENV
+
+      - name: Check for cached build
+        id: cache-check
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
+        shell: bash
+        run: echo "is-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' '${{ env.ARTIFACT_ID_TOOLS }}' '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk' --check-only)" >> "$GITHUB_OUTPUT"
+
       - name: Build Cache
         uses: actions/cache@v4
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ github.sha }}
-          restore-keys: ${{ env.ccache_prefix }}-${{ github.job }}
+          key: ${{ env.CACHE_ID }}-${{ env.SHORT_SHA }}
+          restore-keys: ${{ env.CACHE_ID }}
 
       - name: Setup cmake
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
       - name: Generate
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
-        run: cmake '-S${{ env.ci_source_dir }}' '-B${{ env.ci_build_dir }}' '-DCMAKE_INSTALL_PREFIX=${{ env.ci_sdk_dir }}' -DCMAKE_BUILD_TYPE=Release -DURHO3D_PARALLEL_BUILD=$NUMBER_OF_PROCESSORS
+        run: cmake '-S${{ env.ci_source_dir }}' '-B${{ env.ci_build_dir }}' -DBUILD_SHARED_LIBS=OFF '-DCMAKE_INSTALL_PREFIX=${{ env.ci_sdk_dir }}' -DCMAKE_BUILD_TYPE=Release -DURHO3D_PARALLEL_BUILD=$NUMBER_OF_PROCESSORS
 
       - name: Build
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
         run: cmake --build '${{ env.ci_build_dir }}' --config Release --parallel $NUMBER_OF_PROCESSORS
 
       - name: Install
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
-        run: cmake --install '${{ env.ci_build_dir }}' --config Release
+        run: cmake --install '${{ env.ci_build_dir }}' --config Release --component Tools
 
       - uses: actions/upload-artifact@v4
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         with:
-          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
+          name: '${{ env.ARTIFACT_ID_TOOLS }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
   Linux-Tools:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'Linux-Tools') ||
+       contains(inputs.ci_jobs, 'Android') ||
+       contains(inputs.ci_jobs, 'Web'))
     runs-on: ubuntu-latest
     needs: [CheckSkipCI]
     env:
@@ -141,24 +214,60 @@ jobs:
       URHO3D_TOOLS: "swig;PackageTool"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
+      - name: Gather information
+        shell: bash
+        run: |
+          # Gather values
+          SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
+          BUILD_ID='${{ github.job }}'
+          CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
+          HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          HASH_TOOLS=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          ARTIFACT_ID_TOOLS="rbfx-$BUILD_ID-$HASH_TOOLS-$HASH_THIRDPARTY"
+
+          # Display values
+          echo "SHORT_SHA=$SHORT_SHA"
+          echo "BUILD_ID=$BUILD_ID"
+          echo "CACHE_ID=$CACHE_ID"
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY"
+          echo "HASH_TOOLS=$HASH_TOOLS"
+          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS"
+
+          # Save values to environment
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+          echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
+          echo "HASH_TOOLS=$HASH_TOOLS" >> $GITHUB_ENV
+          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS" >> $GITHUB_ENV
+
+      - name: Check for cached build
+        id: cache-check
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
+        shell: bash
+        run: echo "is-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' '${{ env.ARTIFACT_ID_TOOLS }}' '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk' --check-only)" >> "$GITHUB_OUTPUT"
+
       - name: Build Cache
         uses: actions/cache@v4
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ github.sha }}
-          restore-keys: ${{ env.ccache_prefix }}-${{ github.job }}
+          key: ${{ env.CACHE_ID }}-${{ env.SHORT_SHA }}
+          restore-keys: ${{ env.CACHE_ID }}
 
       - name: Setup cmake
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
       - name: Dependencies
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
         run: |
           sudo apt-get update
@@ -166,24 +275,39 @@ jobs:
             libxrender-dev libxss-dev libasound2-dev libpulse-dev libibus-1.0-dev libdbus-1-dev libreadline6-dev libudev-dev uuid-dev libtbb-dev
 
       - name: Generate
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
-        run: cmake '-S${{ env.ci_source_dir }}' '-B${{ env.ci_build_dir }}' '-DCMAKE_INSTALL_PREFIX=${{ env.ci_sdk_dir }}' -DCMAKE_BUILD_TYPE=Release
+        run: cmake '-S${{ env.ci_source_dir }}' '-B${{ env.ci_build_dir }}' -DBUILD_SHARED_LIBS=OFF '-DCMAKE_INSTALL_PREFIX=${{ env.ci_sdk_dir }}' -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
         run: cmake --build '${{ env.ci_build_dir }}' --config Release --parallel $(nproc)
 
       - name: Install
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
-        run: cmake --install '${{ env.ci_build_dir }}' --config Release
+        run: cmake --install '${{ env.ci_build_dir }}' --config Release --component Tools
 
       - uses: actions/upload-artifact@v4
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         with:
-          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
+          name: '${{ env.ARTIFACT_ID_TOOLS }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
   MacOS-Tools:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'MacOS-Tools') ||
+       contains(inputs.ci_jobs, 'iOS'))
     runs-on: macos-13
     needs: [CheckSkipCI]
     env:
@@ -197,42 +321,91 @@ jobs:
       URHO3D_TOOLS: "swig;PackageTool"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
+      - name: Gather information
+        shell: bash
+        run: |
+          # Gather values
+          SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
+          BUILD_ID='${{ github.job }}'
+          CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
+          HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          HASH_TOOLS=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          ARTIFACT_ID_TOOLS="rbfx-$BUILD_ID-$HASH_TOOLS-$HASH_THIRDPARTY"
+
+          # Display values
+          echo "SHORT_SHA=$SHORT_SHA"
+          echo "BUILD_ID=$BUILD_ID"
+          echo "CACHE_ID=$CACHE_ID"
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY"
+          echo "HASH_TOOLS=$HASH_TOOLS"
+          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS"
+
+          # Save values to environment
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+          echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
+          echo "HASH_TOOLS=$HASH_TOOLS" >> $GITHUB_ENV
+          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS" >> $GITHUB_ENV
+
+      - name: Check for cached build
+        id: cache-check
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
+        shell: bash
+        run: echo "is-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' '${{ env.ARTIFACT_ID_TOOLS }}' '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk' --check-only)" >> "$GITHUB_OUTPUT"
+
       - name: Build Cache
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ github.sha }}
-          restore-keys: ${{ env.ccache_prefix }}-${{ github.job }}
+          key: ${{ env.CACHE_ID }}-${{ env.SHORT_SHA }}
+          restore-keys: ${{ env.CACHE_ID }}
 
       - name: Setup cmake
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
       - name: Generate
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
-        run: cmake -S${{ env.ci_source_dir }} -B${{ env.ci_build_dir }} '-DCMAKE_INSTALL_PREFIX=${{ env.ci_sdk_dir }}' -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S${{ env.ci_source_dir }} -B${{ env.ci_build_dir }} -DBUILD_SHARED_LIBS=OFF '-DCMAKE_INSTALL_PREFIX=${{ env.ci_sdk_dir }}' -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
         run: cmake --build '${{ env.ci_build_dir }}' --config Release --parallel $(sysctl -n hw.ncpu)
 
       - name: Install
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         shell: bash
-        run: cmake --install '${{ env.ci_build_dir }}' --config Release
+        run: cmake --install '${{ env.ci_build_dir }}' --config Release --component Tools
 
       - uses: actions/upload-artifact@v4
+        if: ${{ steps.cache-check.outputs.is-cached != 'true' }}
         with:
-          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
+          name: '${{ env.ARTIFACT_ID_TOOLS }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
   Windows:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'Windows'))
     runs-on: windows-2022
     needs: [CheckSkipCI]
 
@@ -258,15 +431,6 @@ jobs:
       ci_arch: ${{ matrix.ci_arch }}
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
-      ci_artifacts: ${{ (
-                          github.ref == 'refs/heads/master'           ||
-                          startsWith(github.ref, 'refs/tags/nuget/')  ||
-                          startsWith(github.ref, 'refs/heads/nuget/')
-                        )                                             &&
-                        (matrix.ci_arch == 'x64')                     &&
-                        (matrix.ci_lib_type == 'dll')                 &&
-                        (matrix.ci_compiler == 'msvc')
-                    }}
       ci_release_sdk: ${{
                         (matrix.ci_arch == 'x64')           &&
                         (matrix.ci_lib_type == 'dll')       &&
@@ -283,10 +447,34 @@ jobs:
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
+
+      - name: Gather information
+        shell: bash
+        run: |
+          # Gather values
+          SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
+          BUILD_ID='${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}'
+          CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
+          HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          ARTIFACT_ID_SDK="rbfx-$BUILD_ID-$HASH_THIRDPARTY"
+
+          # Display values
+          echo "SHORT_SHA=$SHORT_SHA"
+          echo "BUILD_ID=$BUILD_ID"
+          echo "CACHE_ID=$CACHE_ID"
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY"
+          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK"
+
+          # Save values to environment
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+          echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
+          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK" >> $GITHUB_ENV
 
       - name: Set up butler
         if: ${{ (env.ci_itch == 'true') && (vars.DISABLE_ITCH != 'true') }}
@@ -296,9 +484,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
+          key: ${{ env.CACHE_ID }}-${{ env.SHORT_SHA }}
           restore-keys: |
-            ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}
+            ${{ env.CACHE_ID }}
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v4
@@ -313,13 +501,19 @@ jobs:
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
+      - name: Download cached SDK
+        id: cached_sdk
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') && env.ci_release_sdk != 'true' }}
+        shell: bash
+        run: echo "sdk-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk')" >> "$GITHUB_OUTPUT"
+
       - name: Dependencies
         shell: bash
         run: ${{ env.ci_build_script }} dependencies
 
       - name: Generate
         shell: bash
-        run: ${{ env.ci_build_script }} generate
+        run: ${{ env.ci_build_script }} generate -- '-DCMAKE_PREFIX_PATH=${{ github.workspace }}/cached-sdk/share'
 
       - name: Build Debug
         shell: bash
@@ -336,10 +530,6 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} cstest dbg
 
-      - name: Install Debug
-        shell: bash
-        run: ${{ env.ci_build_script }} install dbg
-
       - name: Build Release
         shell: bash
         run: ${{ env.ci_build_script }} build rel
@@ -355,15 +545,109 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} cstest rel
 
-      - name: Install Release
+      - name: Copy cached SDK (ThirdParty component)
+        if: steps.cached_sdk.outputs.sdk-cached == 'true'
         shell: bash
-        run: ${{ env.ci_build_script }} install rel
+        run: |
+          src=$(cygpath '${{ github.workspace }}/cached-sdk')
+          dst=$(cygpath '${{ env.ci_sdk_dir }}')
+          mkdir -p $dst
+          cp -r $src/* $dst/
+
+      - name: Install (Debug+Release)
+        shell: bash
+        run: |
+          ${{ env.ci_build_script }} install dbg
+          ${{ env.ci_build_script }} install rel
 
       - uses: actions/upload-artifact@v4
-        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
+          name: '${{ env.ARTIFACT_ID_SDK }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
+
+      # Empty project using current branch (if present)
+      - uses: actions/checkout@v5
+        id: empty_project_checkout
+        continue-on-error: true
+        with:
+          repository: rbfx/empty-project
+          path: ${{ github.workspace }}/empty-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      # Empty project using master branch
+      - uses: actions/checkout@v5
+        if: steps.empty_project_checkout.outcome != 'success'
+        with:
+          repository: rbfx/empty-project
+          path: ${{ github.workspace }}/empty-project
+          ref: 'refs/heads/master'
+          fetch-depth: 1
+          submodules: true
+
+      - name: Test empty_project build with SDK
+        shell: bash
+        run: |
+          source_dir='${{ github.workspace }}/empty-project'
+          build_dir='${{ github.workspace }}/empty-project-sdk-build'
+          arch=$([[ '${{ matrix.ci_arch }}' == "x86" ]] && echo Win32 || echo x64)
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -A $arch -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared '-DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }}/share' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake --build $build_dir --config Debug
+          cmake --build $build_dir --config RelWithDebInfo
+
+      - name: Test empty_project configure with engine source
+        shell: bash
+        run: |
+          source_dir='${{ github.workspace }}/empty-project'
+          build_dir='${{ github.workspace }}/empty-project-source-build'
+          arch=$([[ '${{ matrix.ci_arch }}' == "x86" ]] && echo Win32 || echo x64)
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -A $arch -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared '-DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          # Skip building as it would require full engine build
+
+      # Sample project using current branch (if present)
+      - uses: actions/checkout@v5
+        id: sample_project_checkout
+        continue-on-error: true
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      # Sample project using master branch
+      - uses: actions/checkout@v5
+        if: steps.sample_project_checkout.outcome != 'success'
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: 'refs/heads/master'
+          fetch-depth: 1
+          submodules: true
+
+      - name: Test sample_project build with SDK
+        shell: bash
+        run: |
+          source_dir='${{ github.workspace }}/sample-project'
+          build_dir='${{ github.workspace }}/sample-project-sdk-build'
+          arch=$([[ '${{ matrix.ci_arch }}' == "x86" ]] && echo Win32 || echo x64)
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -A $arch -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared '-DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }}/share' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake --build $build_dir --config Debug
+          cmake --build $build_dir --config RelWithDebInfo
+
+      - name: Test sample_project configure with engine source
+        shell: bash
+        run: |
+          source_dir='${{ github.workspace }}/sample-project'
+          build_dir='${{ github.workspace }}/sample-project-source-build'
+          arch=$([[ '${{ matrix.ci_arch }}' == "x86" ]] && echo Win32 || echo x64)
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -A $arch -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared '-DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          # Skip building as it would require full engine build
 
       - name: Zip SDK
         if: ${{ env.ci_release_sdk == 'true' }}
@@ -372,7 +656,7 @@ jobs:
           directory: ${{ github.workspace }}
           filename: ${{ github.workspace }}/SDK.zip
           path: 'SDK'
-          exclusions: 'SDK/cmake-build SDK/SDK'
+          exclusions: 'SDK/cmake-build'
 
       - name: Release SDK
         if: ${{ env.ci_release_sdk == 'true' }}
@@ -409,8 +693,18 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} publish-to-itch
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
   UWP:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'UWP'))
     runs-on: windows-2022
     needs: [CheckSkipCI, Windows-Tools]
 
@@ -419,7 +713,7 @@ jobs:
       matrix:
         ci_arch:
           - x64
-          - arm64
+          #- arm64
         ci_lib_type:
           - dll
           - lib
@@ -431,38 +725,61 @@ jobs:
       ci_arch: ${{ matrix.ci_arch }}
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
-      ci_artifacts: ${{ (
-                          github.ref == 'refs/heads/master'           ||
-                          startsWith(github.ref, 'refs/tags/nuget/')  ||
-                          startsWith(github.ref, 'refs/heads/nuget/')
-                        )                                             &&
-                        (matrix.ci_arch == 'x64')                     &&
-                        (matrix.ci_lib_type == 'dll')                 &&
-                        (matrix.ci_compiler == 'msvc')
-                    }}
-      URHO3D_SDK: ${{ github.workspace }}/host-sdk
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
 
-      - name: Install Windows 10 SDK 20348
-        run: choco install windows-sdk-10-version-2104-all -y
+      - name: Gather information
+        shell: bash
+        run: |
+          # Gather values
+          SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
+          BUILD_ID='${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}'
+          CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
+          HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          HASH_TOOLS=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          ARTIFACT_ID_TOOLS="rbfx-Windows-Tools-$HASH_TOOLS-$HASH_THIRDPARTY"
+          ARTIFACT_ID_SDK="rbfx-$BUILD_ID-$HASH_THIRDPARTY"
+
+          # Display values
+          echo "SHORT_SHA=$SHORT_SHA"
+          echo "BUILD_ID=$BUILD_ID"
+          echo "CACHE_ID=$CACHE_ID"
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY"
+          echo "HASH_TOOLS=$HASH_TOOLS"
+          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS"
+          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK"
+
+          # Save values to environment
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+          echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
+          echo "HASH_TOOLS=$HASH_TOOLS" >> $GITHUB_ENV
+          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS" >> $GITHUB_ENV
+          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK" >> $GITHUB_ENV
+
+      - name: Download cached SDK
+        id: cached_sdk
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
+        shell: bash
+        run: echo "sdk-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk')" >> "$GITHUB_OUTPUT"
+
+      - name: Download cached tools
+        id: cached_tools
+        shell: bash
+        run: bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_TOOLS" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/host-sdk' --required
 
       - name: Build Cache
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ github.sha }}
+          key: ${{ env.CACHE_ID }}-${{ env.SHORT_SHA }}
           restore-keys: |
-            ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: 'rbfx-Windows-Tools-${{ github.sha }}'
-          path: host-sdk/
+            ${{ env.CACHE_ID }}
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v4
@@ -481,32 +798,148 @@ jobs:
 
       - name: Generate
         shell: bash
-        run: ${{ env.ci_build_script }} generate
+        run: ${{ env.ci_build_script }} generate -- -DCMAKE_PREFIX_PATH="${{ github.workspace }}/cached-sdk/share;${{ github.workspace }}/host-sdk/share"
 
       - name: Build Debug
         shell: bash
         run: ${{ env.ci_build_script }} build dbg
 
-      - name: Install Debug
-        shell: bash
-        run: ${{ env.ci_build_script }} install dbg
-
       - name: Build Release
         shell: bash
         run: ${{ env.ci_build_script }} build rel
 
-      - name: Install Release
+      - name: Copy cached SDK (ThirdParty component)
+        if: steps.cached_sdk.outputs.sdk-cached == 'true'
         shell: bash
-        run: ${{ env.ci_build_script }} install rel
+        run: |
+          src=$(cygpath '${{ github.workspace }}/cached-sdk')
+          dst=$(cygpath '${{ env.ci_sdk_dir }}')
+          mkdir -p $dst
+          cp -r $src/* $dst/
+
+      - name: Install (Debug+Release)
+        shell: bash
+        run: |
+          ${{ env.ci_build_script }} install dbg
+          ${{ env.ci_build_script }} install rel
 
       - uses: actions/upload-artifact@v4
-        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
+          name: '${{ env.ARTIFACT_ID_SDK }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
 
+      # Empty project using current branch (if present)
+      - uses: actions/checkout@v5
+        id: empty_project_checkout
+        continue-on-error: true
+        with:
+          repository: rbfx/empty-project
+          path: ${{ github.workspace }}/empty-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      # Empty project using master branch
+      - uses: actions/checkout@v5
+        if: steps.empty_project_checkout.outcome != 'success'
+        with:
+          repository: rbfx/empty-project
+          path: ${{ github.workspace }}/empty-project
+          ref: 'refs/heads/master'
+          fetch-depth: 1
+          submodules: true
+
+      - name: Test empty_project build with SDK
+        shell: bash
+        run: |
+          source_dir='${{ github.workspace }}/empty-project'
+          build_dir='${{ github.workspace }}/empty-project-sdk-build'
+          declare -A archs
+          archs[x86]="Win32"
+          archs[x64]="x64"
+          archs[arm]="ARM"
+          archs[arm64]="ARM64"
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -A ${archs[${{ matrix.ci_arch }}]} -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 '-DCMAKE_PREFIX_PATH=${{ github.workspace }}/host-sdk/share;${{ env.ci_sdk_dir }}/share' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake --build $build_dir --config Debug
+          cmake --build $build_dir --config RelWithDebInfo
+
+      - name: Test empty_project configure with engine source
+        shell: bash
+        run: |
+          source_dir='${{ github.workspace }}/empty-project'
+          build_dir='${{ github.workspace }}/empty-project-source-build'
+          declare -A archs
+          archs[x86]="Win32"
+          archs[x64]="x64"
+          archs[arm]="ARM"
+          archs[arm64]="ARM64"
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -A ${archs[${{ matrix.ci_arch }}]} -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 '-DCMAKE_PREFIX_PATH=${{ github.workspace }}/host-sdk/share;${{ env.ci_source_dir }}/CMake' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          # Skip building as it would require full engine build
+
+      # Sample project using current branch (if present)
+      - uses: actions/checkout@v5
+        id: sample_project_checkout
+        continue-on-error: true
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      # Sample project using master branch
+      - uses: actions/checkout@v5
+        if: steps.sample_project_checkout.outcome != 'success'
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: 'refs/heads/master'
+          fetch-depth: 1
+          submodules: true
+
+      - name: Test sample_project build with SDK
+        shell: bash
+        run: |
+          source_dir='${{ github.workspace }}/sample-project'
+          build_dir='${{ github.workspace }}/sample-project-sdk-build'
+          declare -A archs
+          archs[x86]="Win32"
+          archs[x64]="x64"
+          archs[arm]="ARM"
+          archs[arm64]="ARM64"
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -A ${archs[${{ matrix.ci_arch }}]} -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 '-DCMAKE_PREFIX_PATH=${{ github.workspace }}/host-sdk;${{ env.ci_sdk_dir }}' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake --build $build_dir --config Debug
+          cmake --build $build_dir --config RelWithDebInfo
+
+      - name: Test sample_project configure with engine source
+        shell: bash
+        run: |
+          source_dir='${{ github.workspace }}/sample-project'
+          build_dir='${{ github.workspace }}/sample-project-source-build'
+          declare -A archs
+          archs[x86]="Win32"
+          archs[x64]="x64"
+          archs[arm]="ARM"
+          archs[arm64]="ARM64"
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -A ${archs[${{ matrix.ci_arch }}]} -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION=10.0 '-DCMAKE_PREFIX_PATH=${{ github.workspace }}/host-sdk;${{ env.ci_source_dir }}/CMake' -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          # Skip building as it would require full engine build
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
   Linux:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'Linux'))
     runs-on: ubuntu-latest
     needs: [CheckSkipCI]
 
@@ -528,15 +961,6 @@ jobs:
       ci_arch: ${{ matrix.ci_arch }}
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
-      ci_artifacts: ${{ (
-                          github.ref == 'refs/heads/master'           ||
-                          startsWith(github.ref, 'refs/tags/nuget/')  ||
-                          startsWith(github.ref, 'refs/heads/nuget/')
-                        )                                             &&
-                        (matrix.ci_arch == 'x64')                     &&
-                        (matrix.ci_lib_type == 'dll')                 &&
-                        (matrix.ci_compiler == 'gcc')
-                    }}
       ci_release_sdk: ${{
                         (matrix.ci_arch == 'x64')           &&
                         (matrix.ci_lib_type == 'dll')       &&
@@ -551,12 +975,58 @@ jobs:
                       }}
       ci_itch: ${{ (github.ref == 'refs/heads/master') }}
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+      CMAKE_PREFIX_PATH: ${{ github.workspace }}/cached-sdk
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
+
+      # Empty project using current branch (if present)
+      - uses: actions/checkout@v5
+        id: empty_project_checkout
+        continue-on-error: true
+        with:
+          repository: rbfx/empty-project
+          path: ${{ github.workspace }}/empty-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      # Empty project using master branch
+      - uses: actions/checkout@v5
+        if: steps.empty_project_checkout.outcome != 'success'
+        with:
+          repository: rbfx/empty-project
+          path: ${{ github.workspace }}/empty-project
+          ref: 'refs/heads/master'
+          fetch-depth: 1
+          submodules: true
+
+      - name: Gather information
+        shell: bash
+        run: |
+          # Gather values
+          SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
+          BUILD_ID='${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}'
+          CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
+          HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          ARTIFACT_ID_SDK="rbfx-$BUILD_ID-$HASH_THIRDPARTY"
+
+          # Display values
+          echo "SHORT_SHA=$SHORT_SHA"
+          echo "BUILD_ID=$BUILD_ID"
+          echo "CACHE_ID=$CACHE_ID"
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY"
+          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK"
+
+          # Save values to environment
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+          echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
+          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK" >> $GITHUB_ENV
 
       - name: Set up butler
         if: ${{ (env.ci_itch == 'true') && (vars.DISABLE_ITCH != 'true') }}
@@ -566,9 +1036,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
+          key: ${{ env.CACHE_ID }}-${{ env.SHORT_SHA }}
           restore-keys: |
-            ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}
+            ${{ env.CACHE_ID }}
+
+      - name: Download cached SDK
+        id: cached_sdk
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') && env.ci_release_sdk != 'true' }}
+        shell: bash
+        run: echo "sdk-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk')" >> "$GITHUB_OUTPUT"
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v4
@@ -597,10 +1073,6 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} test dbg
 
-      - name: Install Debug
-        shell: bash
-        run: ${{ env.ci_build_script }} install dbg
-
       - name: Build Release
         shell: bash
         run: ${{ env.ci_build_script }} build rel
@@ -609,15 +1081,84 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} test rel
 
-      - name: Install Release
+      - name: Copy cached SDK (ThirdParty component)
+        if: steps.cached_sdk.outputs.sdk-cached == 'true'
         shell: bash
-        run: ${{ env.ci_build_script }} install rel
+        run: |
+          src='${{ github.workspace }}/cached-sdk'
+          dst='${{ env.ci_sdk_dir }}'
+          mkdir -p $dst
+          cp -r $src/* $dst/
+
+      - name: Install (Debug+Release)
+        shell: bash
+        run: |
+          ${{ env.ci_build_script }} install dbg
+          ${{ env.ci_build_script }} install rel
 
       - uses: actions/upload-artifact@v4
-        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
+          name: '${{ env.ARTIFACT_ID_SDK }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
+
+      - name: Test empty_project build with SDK
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/empty-project
+          build_dir=${{ github.workspace }}/empty-project-sdk-build
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          CC=${ci_compiler} CXX=${ci_compiler/gcc/g}++ cmake -G 'Ninja Multi-Config' -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }} -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake --build $build_dir --config Debug
+          cmake --build $build_dir --config RelWithDebInfo
+
+      - name: Test empty_project configure with engine source
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/empty-project
+          build_dir=${{ github.workspace }}/empty-project-source-build
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          CC=${ci_compiler} CXX=${ci_compiler/gcc/g}++ cmake -G 'Ninja Multi-Config' -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          # Skip building as it would require full engine build
+
+      # Sample project using current branch (if present)
+      - uses: actions/checkout@v5
+        id: sample_project_checkout
+        continue-on-error: true
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      # Sample project using master branch
+      - uses: actions/checkout@v5
+        if: steps.sample_project_checkout.outcome != 'success'
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: 'refs/heads/master'
+          fetch-depth: 1
+          submodules: true
+
+      - name: Test sample_project build with SDK
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/sample-project
+          build_dir=${{ github.workspace }}/sample-project-sdk-build
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          CC=${ci_compiler} CXX=${ci_compiler/gcc/g}++ cmake -G 'Ninja Multi-Config' -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }} -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake --build $build_dir --config Debug
+          cmake --build $build_dir --config RelWithDebInfo
+
+      - name: Test sample_project configure with engine source
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/sample-project
+          build_dir=${{ github.workspace }}/sample-project-source-build
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          CC=${ci_compiler} CXX=${ci_compiler/gcc/g}++ cmake -G 'Ninja Multi-Config' -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=$shared -DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          # Skip building as it would require full engine build
 
       - name: Zip SDK
         if: ${{ env.ci_release_sdk == 'true' }}
@@ -626,7 +1167,7 @@ jobs:
           directory: ${{ github.workspace }}
           filename: ${{ github.workspace }}/SDK.zip
           path: 'SDK'
-          exclusions: '/SDK/cmake-build/* /SDK/SDK/*'
+          exclusions: '/SDK/cmake-build/*'
 
       - name: Release SDK
         if: ${{ env.ci_release_sdk == 'true' }}
@@ -654,7 +1195,7 @@ jobs:
         with:
           upload_url: ${{ env.ci_latest_release_url }}
           release_id: ${{ env.ci_latest_release_id }}
-          asset_path: ${{ env.ci_sdk_dir }}-bin.zip
+          asset_path: ${{ github.workspace }}/SDK-bin.zip
           asset_name: 'rebelfork-bin-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip'
           asset_content_type: application/zip
           max_releases: 1
@@ -664,8 +1205,18 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} publish-to-itch
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
   MacOS:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'MacOS'))
     runs-on: macos-13
     needs: [CheckSkipCI]
 
@@ -686,15 +1237,6 @@ jobs:
       ci_arch: ${{ matrix.ci_arch }}
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
-      ci_artifacts: ${{ (
-                          github.ref == 'refs/heads/master'           ||
-                          startsWith(github.ref, 'refs/tags/nuget/')  ||
-                          startsWith(github.ref, 'refs/heads/nuget/')
-                        )                                             &&
-                        (matrix.ci_arch == 'x64')                     &&
-                        (matrix.ci_lib_type == 'dll')                 &&
-                        (matrix.ci_compiler == 'clang')
-                    }}
       ci_release_sdk: ${{
                         (matrix.ci_arch == 'x64')           &&
                         (matrix.ci_lib_type == 'dll')       &&
@@ -709,12 +1251,37 @@ jobs:
                       }}
       ci_itch: ${{ (github.ref == 'refs/heads/master') }}
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+      CMAKE_PREFIX_PATH: ${{ github.workspace }}/cached-sdk
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
+
+      - name: Gather information
+        shell: bash
+        run: |
+          # Gather values
+          SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
+          BUILD_ID='${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}'
+          CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
+          HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          ARTIFACT_ID_SDK="rbfx-$BUILD_ID-$HASH_THIRDPARTY"
+
+          # Display values
+          echo "SHORT_SHA=$SHORT_SHA"
+          echo "BUILD_ID=$BUILD_ID"
+          echo "CACHE_ID=$CACHE_ID"
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY"
+          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK"
+
+          # Save values to environment
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+          echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
+          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK" >> $GITHUB_ENV
 
       - name: Set up butler
         if: ${{ (env.ci_itch == 'true') && (vars.DISABLE_ITCH != 'true') }}
@@ -724,9 +1291,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}-${{ github.sha }}
+          key: ${{ env.CACHE_ID }}-${{ env.SHORT_SHA }}
           restore-keys: |
-            ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_compiler }}
+            ${{ env.CACHE_ID }}
 
       - name: Bash
         shell: bash
@@ -743,6 +1310,12 @@ jobs:
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
+      - name: Download cached SDK
+        id: cached_sdk
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') && env.ci_release_sdk != 'true' }}
+        shell: bash
+        run: echo "sdk-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk')" >> "$GITHUB_OUTPUT"
+
       - name: Dependencies
         shell: bash
         run: ${{ env.ci_build_script }} dependencies
@@ -755,23 +1328,109 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} build dbg
 
-      - name: Install Debug
-        shell: bash
-        run: ${{ env.ci_build_script }} install dbg
-
       - name: Build Release
         shell: bash
         run: ${{ env.ci_build_script }} build rel
 
-      - name: Install Release
+      - name: Copy cached SDK (ThirdParty component)
+        if: steps.cached_sdk.outputs.sdk-cached == 'true'
         shell: bash
-        run: ${{ env.ci_build_script }} install rel
+        run: |
+          src='${{ github.workspace }}/cached-sdk'
+          dst='${{ env.ci_sdk_dir }}'
+          mkdir -p $dst
+          cp -r $src/* $dst/
+
+      - name: Install (Debug+Release)
+        shell: bash
+        run: |
+          ${{ env.ci_build_script }} install dbg
+          ${{ env.ci_build_script }} install rel
 
       - uses: actions/upload-artifact@v4
-        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ github.sha }}'
+          name: '${{ env.ARTIFACT_ID_SDK }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
+
+      # Empty project using current branch (if present)
+      - uses: actions/checkout@v5
+        id: empty_project_checkout
+        continue-on-error: true
+        with:
+          repository: rbfx/empty-project
+          path: ${{ github.workspace }}/empty-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      # Empty project using master branch
+      - uses: actions/checkout@v5
+        if: steps.empty_project_checkout.outcome != 'success'
+        with:
+          repository: rbfx/empty-project
+          path: ${{ github.workspace }}/empty-project
+          ref: 'refs/heads/master'
+          fetch-depth: 1
+          submodules: true
+
+      - name: Test empty_project build with SDK
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/empty-project
+          build_dir=${{ github.workspace }}/empty-project-sdk-build
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -S $source_dir -B $build_dir -DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }} -DBUILD_SHARED_LIBS=$shared -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake --build $build_dir --config Debug
+          cmake --build $build_dir --config RelWithDebInfo
+
+      - name: Test empty_project configure with engine source
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/empty-project
+          build_dir=${{ github.workspace }}/empty-project-source-build
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -S $source_dir -B $build_dir -DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake -DBUILD_SHARED_LIBS=$shared -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          # Skip building as it would require full engine build
+
+      # Sample project using current branch (if present)
+      - uses: actions/checkout@v5
+        id: sample_project_checkout
+        continue-on-error: true
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      # Sample project using master branch
+      - uses: actions/checkout@v5
+        if: steps.sample_project_checkout.outcome != 'success'
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: 'refs/heads/master'
+          fetch-depth: 1
+          submodules: true
+
+      - name: Test sample_project build with SDK
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/sample-project
+          build_dir=${{ github.workspace }}/sample-project-sdk-build
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -S $source_dir -B $build_dir -DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }} -DBUILD_SHARED_LIBS=$shared -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          cmake --build $build_dir --config Debug
+          cmake --build $build_dir --config RelWithDebInfo
+
+      - name: Test sample_project configure with engine source
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/sample-project
+          build_dir=${{ github.workspace }}/sample-project-source-build
+          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+          cmake -S $source_dir -B $build_dir -DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake -DBUILD_SHARED_LIBS=$shared -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo"
+          # Skip building as it would require full engine build
 
       - name: Zip SDK
         if: ${{ env.ci_release_sdk == 'true' }}
@@ -780,7 +1439,7 @@ jobs:
           directory: ${{ github.workspace }}
           filename: ${{ github.workspace }}/SDK.zip
           path: 'SDK'
-          exclusions: '/SDK/cmake-build/* /SDK/obj/*'
+          exclusions: '/SDK/cmake-build/*'
 
       - name: Release SDK
         if: ${{ env.ci_release_sdk == 'true' }}
@@ -808,7 +1467,7 @@ jobs:
         with:
           upload_url: ${{ env.ci_latest_release_url }}
           release_id: ${{ env.ci_latest_release_id }}
-          asset_path: ${{ env.ci_sdk_dir }}-bin.zip
+          asset_path: ${{ github.workspace }}/SDK-bin.zip
           asset_name: 'rebelfork-bin-${{ github.job }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip'
           asset_content_type: application/zip
           max_releases: 1
@@ -818,39 +1477,98 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} publish-to-itch
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
   Android:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'Android'))
     runs-on: ubuntu-latest
     needs: [CheckSkipCI, Linux-Tools]
 
+    strategy:
+      fail-fast: false
+      matrix:
+        ci_arch:
+          - arm64-v8a
+          - armeabi-v7a
+          - x86_64
+        ci_build_type:
+          - dbg
+          - rel
+
     env:
       ci_platform: android
+      ci_arch: ${{ matrix.ci_arch }}
+      ci_build_type: ${{ matrix.ci_build_type }}
       ci_artifacts: ${{ (
                           github.ref == 'refs/heads/master'           ||
                           startsWith(github.ref, 'refs/tags/nuget/')  ||
                           startsWith(github.ref, 'refs/heads/nuget/')
                         )
                     }}
-      URHO3D_SDK: ${{ github.workspace }}/host-sdk
+      CMAKE_PREFIX_PATH: "${{ github.workspace }}/host-sdk"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
+
+      - name: Gather information
+        shell: bash
+        run: |
+          # Gather values
+          SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
+          BUILD_ID='${{ github.job }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}'
+          CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
+          HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          HASH_TOOLS=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          ARTIFACT_ID_SDK="rbfx-Android-sdk-${{ matrix.ci_build_type }}-${{ matrix.ci_arch }}-$HASH_THIRDPARTY"
+          ARTIFACT_ID_TOOLS="rbfx-Linux-Tools-$HASH_TOOLS-$HASH_THIRDPARTY"
+
+          # Display values
+          echo "SHORT_SHA=$SHORT_SHA"
+          echo "BUILD_ID=$BUILD_ID"
+          echo "CACHE_ID=$CACHE_ID"
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY"
+          echo "HASH_TOOLS=$HASH_TOOLS"
+          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK"
+          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS"
+
+          # Save values to environment
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+          echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
+          echo "HASH_TOOLS=$HASH_TOOLS" >> $GITHUB_ENV
+          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK" >> $GITHUB_ENV
+          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS" >> $GITHUB_ENV
 
       - name: Build Cache
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ github.sha }}
+          key: ${{ env.CACHE_ID }}-${{ env.SHORT_SHA }}
           restore-keys: |
-            ${{ env.ccache_prefix }}-${{ github.job }}
+            ${{ env.CACHE_ID }}
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: 'rbfx-Linux-Tools-${{ github.sha }}'
-          path: host-sdk/
+      - name: Download cached SDK
+        id: cached_sdk
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
+        shell: bash
+        run: echo "is-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk')" >> "$GITHUB_OUTPUT"
+
+      - name: Download cached tools
+        id: cached_tools
+        shell: bash
+        run: bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_TOOLS" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/host-sdk' --required
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v4
@@ -861,6 +1579,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
+          add-job-summary: 'never'
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
@@ -871,27 +1590,52 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} dependencies
 
-      # Not applicable on Android, because build is performed through Gradle.
-      #- name: Generate
-      #  shell: bash
-      #  run: ${{ env.ci_build_script }} generate
-
-      - name: Build Debug
+      - name: Build
         shell: bash
-        run: ${{ env.ci_build_script }} build dbg
+        run: ${{ env.ci_build_script }} build ${{ matrix.ci_build_type }}
 
-      - name: Build Release
+      - name: Copy cached SDK (ThirdParty component)
+        if: steps.cached_tools.outputs.is-cached == 'true'
         shell: bash
-        run: ${{ env.ci_build_script }} build rel
+        run: |
+          src='${{ github.workspace }}/cached-sdk'
+          dst='${{ env.ci_sdk_dir }}'
+          mkdir -p $dst
+          cp -r $src/* $dst/
+
+      - name: Install
+        shell: bash
+        run: ${{ env.ci_build_script }} install -- --prefix "${{ env.ci_sdk_dir }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 'rbfx-${{ github.job }}-sdk-${{ matrix.ci_build_type }}-${{ matrix.ci_arch }}-${{ env.HASH_THIRDPARTY }}-${{ env.SHORT_SHA }}'
+          path: '${{ env.ci_sdk_dir }}'
+          if-no-files-found: warn
+
+      - name: Build APK
+        if: matrix.ci_build_type == 'rel'
+        shell: bash
+        run: ${{ env.ci_build_script }} apk ${{ matrix.ci_build_type }}
 
       - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-apks-${{ matrix.ci_arch }}-${{ env.SHORT_SHA }}'
           path: '**/*.apk'
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
   iOS:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'iOS'))
     runs-on: macos-13
     needs: [CheckSkipCI, MacOS-Tools]
 
@@ -911,26 +1655,62 @@ jobs:
                           startsWith(github.ref, 'refs/heads/nuget/')
                         )
                     }}
-      URHO3D_SDK: ${{ github.workspace }}/host-sdk
+      CMAKE_PREFIX_PATH: "${{ github.workspace }}/cached-sdk:${{ github.workspace }}/host-sdk"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
+
+      - name: Gather information
+        shell: bash
+        run: |
+          # Gather values
+          SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
+          BUILD_ID='${{ github.job }}-${{ matrix.ci_lib_type }}'
+          CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
+          HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          HASH_TOOLS=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          ARTIFACT_ID_SDK="rbfx-$BUILD_ID-$HASH_THIRDPARTY"
+          ARTIFACT_ID_TOOLS="rbfx-MacOS-Tools-$HASH_TOOLS-$HASH_THIRDPARTY"
+
+          # Display values
+          echo "SHORT_SHA=$SHORT_SHA"
+          echo "BUILD_ID=$BUILD_ID"
+          echo "CACHE_ID=$CACHE_ID"
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY"
+          echo "HASH_TOOLS=$HASH_TOOLS"
+          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK"
+          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS"
+
+          # Save values to environment
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+          echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
+          echo "HASH_TOOLS=$HASH_TOOLS" >> $GITHUB_ENV
+          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK" >> $GITHUB_ENV
+          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS" >> $GITHUB_ENV
 
       - name: Build Cache
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ github.sha }}
+          key: ${{ env.CACHE_ID }}-${{ env.SHORT_SHA }}
           restore-keys: |
-            ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}
+            ${{ env.CACHE_ID }}
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: 'rbfx-MacOS-Tools-${{ github.sha }}'
-          path: host-sdk/
+      - name: Download cached SDK
+        id: cached_sdk
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
+        shell: bash
+        run: echo "sdk-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk')" >> "$GITHUB_OUTPUT"
+
+      - name: Download cached tools
+        id: cached_tools
+        shell: bash
+        run: bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_TOOLS" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/host-sdk' --required
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v4
@@ -963,14 +1743,44 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} build rel
 
+      - name: Copy cached SDK (ThirdParty component)
+        if: steps.cached_sdk.outputs.sdk-cached == 'true'
+        shell: bash
+        run: |
+          src='${{ github.workspace }}/cached-sdk'
+          dst='${{ env.ci_sdk_dir }}'
+          mkdir -p $dst
+          cp -r $src/* $dst/
+
+      - name: Install (Debug+Release)
+        shell: bash
+        run: |
+          ${{ env.ci_build_script }} install dbg
+          ${{ env.ci_build_script }} install rel
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: '${{ env.ARTIFACT_ID_SDK }}-${{ env.SHORT_SHA }}'
+          path: ${{ env.ci_sdk_dir }}
+
       - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ env.ci_lib_type }}-${{ github.sha }}'
+          name: 'rbfx-${{ github.job }}-${{ env.ci_lib_type }}-${{ env.SHORT_SHA }}'
           path: '**/*.app'
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
   Web:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      (inputs.ci_jobs == '' ||
+       contains(inputs.ci_jobs, 'Web'))
     runs-on: ubuntu-latest
     needs: [CheckSkipCI, Linux-Tools]
 
@@ -980,46 +1790,86 @@ jobs:
         ci_lib_type:
           - lib
         ci_emsdk_version:
-          - ${{ vars.EMSDK_VERSION }}
+          - latest
 
     env:
       BINARYEN_CORES: 1
       ci_platform: web
       ci_lib_type: ${{ matrix.ci_lib_type }}
-      ci_artifacts: ${{ (
-                          github.ref == 'refs/heads/master'           ||
-                          startsWith(github.ref, 'refs/tags/nuget/')  ||
-                          startsWith(github.ref, 'refs/heads/nuget/')
-                        )
-                    }}
       ci_release_sdk: ${{
                         (github.repository == 'rbfx/rbfx')  &&
                         (github.ref == 'refs/heads/master')
                       }}
-      URHO3D_SDK: ${{ github.workspace }}/host-sdk
 
     steps:
-      - uses: mymindstorm/setup-emsdk@v12
+      - name: Checkout emsdk
+        uses: actions/checkout@v5
         with:
-          version: ${{ matrix.ci_emsdk_version }}
+          repository: emscripten-core/emsdk
+          path: ${{ github.workspace }}/emsdk
 
-      - uses: actions/checkout@v4
+      - name: Setup emsdk
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/emsdk
+          ./emsdk install ${{ matrix.ci_emsdk_version }}
+          ./emsdk activate ${{ matrix.ci_emsdk_version }}
+          echo "PATH=$PATH:${{ github.workspace }}/emsdk:${{ github.workspace }}/emsdk/upstream/emscripten" >> $GITHUB_ENV
+          echo "EMSDK=${{ github.workspace }}/emsdk" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v5
         with:
           path: ${{ env.ci_source_dir }}
           fetch-depth: 1
+
+      - name: Gather information
+        shell: bash
+        run: |
+          # Gather values
+          SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
+          BUILD_ID='${{ github.job }}-${{ matrix.ci_lib_type }}'
+          CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
+          HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          HASH_TOOLS=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+          ARTIFACT_ID_SDK="rbfx-$BUILD_ID-$HASH_THIRDPARTY"
+          ARTIFACT_ID_TOOLS="rbfx-Linux-Tools-$HASH_TOOLS-$HASH_THIRDPARTY"
+
+          # Display values
+          echo "SHORT_SHA=$SHORT_SHA"
+          echo "BUILD_ID=$BUILD_ID"
+          echo "CACHE_ID=$CACHE_ID"
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY"
+          echo "HASH_TOOLS=$HASH_TOOLS"
+          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK"
+          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS"
+
+          # Save values to environment
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+          echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
+          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
+          echo "HASH_TOOLS=$HASH_TOOLS" >> $GITHUB_ENV
+          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK" >> $GITHUB_ENV
+          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS" >> $GITHUB_ENV
 
       - name: Build Cache
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}-${{ github.sha }}
+          key: ${{ env.CACHE_ID }}-${{ env.SHORT_SHA }}
           restore-keys: |
-            ${{ env.ccache_prefix }}-${{ github.job }}-${{ matrix.ci_lib_type }}
+            ${{ env.CACHE_ID }}
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: 'rbfx-Linux-Tools-${{ github.sha }}'
-          path: host-sdk/
+      - name: Download cached SDK
+        id: cached_sdk
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') && env.ci_release_sdk != 'true' }}
+        shell: bash
+        run: echo "sdk-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk')" >> $GITHUB_OUTPUT
+
+      - name: Download cached tools
+        id: cached_tools
+        shell: bash
+        run: bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_TOOLS" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/host-sdk' --required
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
@@ -1032,23 +1882,31 @@ jobs:
 
       - name: Generate
         shell: bash
-        run: ${{ env.ci_build_script }} generate
+        run: |
+          ${{ env.ci_build_script }} generate -- -DCMAKE_FIND_ROOT_PATH="${{ github.workspace }}/cached-sdk;${{ github.workspace }}/host-sdk"
 
       - name: Build Debug
         shell: bash
         run: ${{ env.ci_build_script }} build dbg
 
-      - name: Install Debug
-        shell: bash
-        run: ${{ env.ci_build_script }} install dbg
-
       - name: Build Release
         shell: bash
         run: ${{ env.ci_build_script }} build rel
 
-      - name: Install Release
+      - name: Copy cached SDK (ThirdParty component)
+        if: steps.cached_sdk.outputs.sdk-cached == 'true'
         shell: bash
-        run: ${{ env.ci_build_script }} install rel
+        run: |
+          src='${{ github.workspace }}/cached-sdk'
+          dst='${{ env.ci_sdk_dir }}'
+          mkdir -p $dst
+          cp -r $src/* $dst/
+
+      - name: Install (Debug+Release)
+        shell: bash
+        run: |
+          ${{ env.ci_build_script }} install dbg
+          ${{ env.ci_build_script }} install rel
 
       - name: Deploy
         if: github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master'
@@ -1062,10 +1920,101 @@ jobs:
           publish_branch: master
 
       - uses: actions/upload-artifact@v4
-        if: env.ci_artifacts == 'true'
         with:
-          name: 'rbfx-${{ github.job }}-${{ env.ci_lib_type }}-${{ github.sha }}'
+          name: '${{ env.ARTIFACT_ID_SDK }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
+
+      # Empty project using current branch (if present)
+      - uses: actions/checkout@v5
+        id: empty_project_checkout
+        continue-on-error: true
+        with:
+          repository: rbfx/empty-project
+          path: ${{ github.workspace }}/empty-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      # Empty project using master branch
+      - uses: actions/checkout@v5
+        if: steps.empty_project_checkout.outcome != 'success'
+        with:
+          repository: rbfx/empty-project
+          path: ${{ github.workspace }}/empty-project
+          ref: 'refs/heads/master'
+          fetch-depth: 1
+          submodules: true
+
+      - name: Test empty_project build with SDK
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/empty-project
+          build_dir=${{ github.workspace }}/empty-project-sdk-build
+          cmake -G 'Ninja Multi-Config' -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=OFF -DCMAKE_CONFIGURATION_TYPES="Debug;Release" \
+            -DEMSCRIPTEN_ROOT_PATH=$EMSDK/upstream/emscripten/ \
+            -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
+            '-DCMAKE_FIND_ROOT_PATH=${{ github.workspace }}/host-sdk;${{ env.ci_sdk_dir }}'
+
+          cmake --build $build_dir --config Debug
+          cmake --build $build_dir --config Release
+
+      - name: Test empty_project configure with engine source
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/empty-project
+          build_dir=${{ github.workspace }}/empty-project-source-build
+          cmake -G 'Ninja Multi-Config' -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=OFF -DCMAKE_CONFIGURATION_TYPES="Debug;Release" \
+            -DEMSCRIPTEN_ROOT_PATH=$EMSDK/upstream/emscripten/ \
+            -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
+            '-DCMAKE_FIND_ROOT_PATH=${{ github.workspace }}/host-sdk;${{ env.ci_source_dir }}/CMake'
+
+          # Skip building as it would require full engine build
+
+      # Sample project using current branch (if present)
+      - uses: actions/checkout@v5
+        id: sample_project_checkout
+        continue-on-error: true
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: ${{ env.SOURCE_REF }}
+          fetch-depth: 1
+          submodules: true
+
+      # Sample project using master branch
+      - uses: actions/checkout@v5
+        if: steps.sample_project_checkout.outcome != 'success'
+        with:
+          repository: rbfx/sample-project
+          path: ${{ github.workspace }}/sample-project
+          ref: 'refs/heads/master'
+          fetch-depth: 1
+          submodules: true
+
+      - name: Test sample_project build with SDK
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/sample-project
+          build_dir=${{ github.workspace }}/sample-project-sdk-build
+          cmake -G 'Ninja Multi-Config' -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=OFF -DCMAKE_CONFIGURATION_TYPES="Debug;Release" \
+            -DEMSCRIPTEN_ROOT_PATH=$EMSDK/upstream/emscripten/ \
+            -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
+            '-DCMAKE_FIND_ROOT_PATH=${{ github.workspace }}/host-sdk;${{ env.ci_sdk_dir }}'
+
+          cmake --build $build_dir --config Debug
+          cmake --build $build_dir --config Release
+
+      - name: Test sample_project configure with engine source
+        shell: bash
+        run: |
+          source_dir=${{ github.workspace }}/sample-project
+          build_dir=${{ github.workspace }}/sample-project-source-build
+          cmake -G 'Ninja Multi-Config' -S $source_dir -B $build_dir -DBUILD_SHARED_LIBS=OFF -DCMAKE_CONFIGURATION_TYPES="Debug;Release" \
+            -DEMSCRIPTEN_ROOT_PATH=$EMSDK/upstream/emscripten/ \
+            -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
+            '-DCMAKE_FIND_ROOT_PATH=${{ github.workspace }}/host-sdk;${{ env.ci_source_dir }}/CMake'
+
+          # Skip building as it would require full engine build
 
       - name: Zip SDK
         if: ${{ env.ci_release_sdk == 'true' }}
@@ -1087,6 +2036,13 @@ jobs:
           asset_content_type: application/zip
           max_releases: 1
 
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.CCACHE_DEBUG == '1' }}
+        with:
+          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
   NuGet:
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/nuget/') || startsWith(github.ref, 'refs/heads/nuget/') }}
@@ -1099,7 +2055,7 @@ jobs:
       - Web
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: source-code
           fetch-depth: 1
@@ -1141,3 +2097,95 @@ jobs:
         shell: bash
         run: |
           gh workflow run --repo rbfx/rbfx-docs Documentation
+
+  BuildSummary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - Windows
+      - UWP
+      - Linux
+      - MacOS
+      - Android
+      - iOS
+      - Web
+      - Windows-Tools
+      - Linux-Tools
+      - MacOS-Tools
+
+    steps:
+      - name: Generate Build Summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobs = context.workflow_run ? context.workflow_run.jobs : [];
+
+            // Get job information from the workflow run
+            const workflowRun = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            });
+
+            // Create summary table
+            let summary = '## Build Summary\n\n';
+            summary += '| Job | Status | Duration |\n';
+            summary += '|-----|--------|----------|\n';
+
+            // Filter and sort jobs (exclude utility jobs)
+            const buildJobs = workflowRun.data.jobs.filter(job =>
+              !['CheckSkipCI', 'Web Hooks', "Release 'latest'", 'Build Summary', 'Docs', 'NuGet'].includes(job.name)
+            ).sort((a, b) => a.name.localeCompare(b.name));
+
+            for (const job of buildJobs) {
+              const status = job.conclusion || job.status;
+              let statusIcon = '';
+
+              switch (status) {
+                case 'success':
+                  statusIcon = '✅';
+                  break;
+                case 'failure':
+                  statusIcon = '❌';
+                  break;
+                case 'cancelled':
+                  statusIcon = '🚫';
+                  break;
+                case 'skipped':
+                  statusIcon = '⏭️';
+                  break;
+                default:
+                  statusIcon = '⏳';
+              }
+
+              // Calculate duration
+              let duration = 'N/A';
+              if (job.started_at && job.completed_at) {
+                const start = new Date(job.started_at);
+                const end = new Date(job.completed_at);
+                const durationMs = end - start;
+                const minutes = Math.floor(durationMs / 60000);
+                const seconds = Math.floor((durationMs % 60000) / 1000);
+                duration = `${minutes}m ${seconds}s`;
+              } else if (job.started_at) {
+                duration = 'In progress...';
+              }
+
+              summary += `| ${job.name} | ${statusIcon} ${status} | ${duration} |\n`;
+            }
+
+            // Add summary statistics
+            const successCount = buildJobs.filter(j => j.conclusion === 'success').length;
+            const failureCount = buildJobs.filter(j => j.conclusion === 'failure').length;
+            const totalCount = buildJobs.length;
+
+            summary += '\n### Summary Statistics\n\n';
+            summary += `- Total build jobs: ${totalCount}\n`;
+            summary += `- Successful: ${successCount}\n`;
+            summary += `- Failed: ${failureCount}\n`;
+
+            // Write to job summary
+            await core.summary
+              .addRaw(summary)
+              .write();

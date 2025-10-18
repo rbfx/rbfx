@@ -35,7 +35,7 @@ macro (define_engine_source_files)
         list (REMOVE_ITEM _files Urho3D.h)
         list (APPEND HEADER_FILES ${_files})
         # Install them
-        install (FILES ${_files} DESTINATION ${DEST_INCLUDE_DIR}/${path})
+        install (FILES ${_files} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Urho3D/${path})
         # Get source files
         file (${_action} _files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${path}/*.cpp)
         list (APPEND SOURCE_FILES ${_files})
@@ -132,11 +132,10 @@ set_target_properties(Urho3D PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(Urho3D PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>        # For parent projects to find auto-generated engine headers
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>           # Misc configured headers
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>> # Urho3D.h
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>        # For parent projects to find engine headers
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty> # For accessing includes of some third party libs that do not have 'include' folder with headers (like tracy).
-    $<INSTALL_INTERFACE:${DEST_BASE_INCLUDE_DIR}>
-    $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Urho3D>
 )
 
 if (URHO3D_PCH)
@@ -210,6 +209,7 @@ set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     Diligent-HLSL2GLSLConverterLib
     Vulkan-Headers
     datachannel-static
+    TracyClient
 )
 
 # Private dependencies that are hidden from the user and are not exposed in the public API or headers
@@ -258,12 +258,12 @@ foreach (dep ${PUBLIC_THIRD_PARTY_DEPENDENCIES})
         if (${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
             if (BUILD_SHARED_LIBS)
                 if (MSVC)
-                    set_property(TARGET Urho3D APPEND_STRING PROPERTY LINK_FLAGS " /WHOLEARCHIVE:${dep}")
+                    target_link_options(Urho3D PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:${dep}>")
                 elseif (APPLE)
-                    set_property(TARGET Urho3D APPEND PROPERTY LINK_LIBRARIES -force_load ${dep})
+                    set_property(TARGET Urho3D APPEND PROPERTY LINK_LIBRARIES -force_load $<TARGET_FILE:${dep}>)
                 endif ()
             elseif (UWP)
-                set_property(TARGET Urho3D APPEND_STRING PROPERTY LINK_FLAGS " /WHOLEARCHIVE:${dep}")
+                target_link_options(Urho3D PRIVATE "/WHOLEARCHIVE:$<TARGET_FILE:${dep}>")
             endif ()
         endif ()
         get_target_property(VALUE ${dep} INTERFACE_COMPILE_DEFINITIONS)
@@ -276,7 +276,40 @@ foreach (dep ${PUBLIC_THIRD_PARTY_DEPENDENCIES})
         endif ()
         get_target_property(VALUE ${dep} INTERFACE_INCLUDE_DIRECTORIES)
         if (VALUE)
-            target_include_directories(Urho3D PUBLIC ${VALUE})
+            # Process include directories to handle prefix paths properly
+            set(PROCESSED_INCLUDES)
+            foreach(include_dir ${VALUE})
+                # Check if this is an absolute path that starts with a prefix from CMAKE_PREFIX_PATH
+                set(FOUND_PREFIX FALSE)
+                foreach(prefix ${CMAKE_PREFIX_PATH})
+                    if(prefix)
+                        # Normalize the prefix path
+                        get_filename_component(prefix "${prefix}" ABSOLUTE)
+                        # Check if include_dir starts with prefix/include
+                        string(FIND "${include_dir}" "${prefix}/${CMAKE_INSTALL_INCLUDEDIR}" PREFIX_POS)
+                        if(PREFIX_POS EQUAL 0)
+                            # This include path is under a prefix, handle it specially
+                            # For BUILD_INTERFACE, use the absolute path
+                            # For INSTALL_INTERFACE, remove the prefix
+                            string(REPLACE "${prefix}/" "" RELATIVE_INCLUDE "${include_dir}")
+                            list(APPEND PROCESSED_INCLUDES
+                                "$<BUILD_INTERFACE:${include_dir}>"
+                                "$<INSTALL_INTERFACE:${RELATIVE_INCLUDE}>")
+                            set(FOUND_PREFIX TRUE)
+                            break()
+                        endif()
+                    endif()
+                endforeach()
+
+                # If not under any prefix, just forward as-is
+                if(NOT FOUND_PREFIX)
+                    list(APPEND PROCESSED_INCLUDES "${include_dir}")
+                endif()
+            endforeach()
+
+            if(PROCESSED_INCLUDES)
+                target_include_directories(Urho3D PUBLIC ${PROCESSED_INCLUDES})
+            endif()
         endif ()
         get_target_property(VALUE ${dep} INTERFACE_LINK_LIBRARIES)
         if (VALUE)
@@ -303,6 +336,39 @@ foreach (dep ${PUBLIC_THIRD_PARTY_DEPENDENCIES})
     endif ()
 endforeach()
 
+# Fix Diligent include directories that are missing from exported targets
+# This allows to build the engine with Diligent from edternal ThirdParty
+if (TARGET Diligent-Common)
+    target_include_directories(Urho3D PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/Diligent/Graphics/GraphicsEngine/interface>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/Diligent/Platforms/interface>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/Diligent/Common/interface>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/Diligent/Primitives/interface>
+    )
+    # Add graphics API specific include directories
+    if (TARGET Diligent-GraphicsEngineD3D11-static)
+        target_include_directories(Urho3D PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/Diligent/Graphics/GraphicsEngineD3D11/interface>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/Diligent/Graphics/GraphicsEngineD3DBase/interface>
+        )
+    endif()
+    if (TARGET Diligent-GraphicsEngineD3D12-static)
+        target_include_directories(Urho3D PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/Diligent/Graphics/GraphicsEngineD3D12/interface>
+        )
+    endif()
+    if (TARGET Diligent-GraphicsEngineOpenGL-static)
+        target_include_directories(Urho3D PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/Diligent/Graphics/GraphicsEngineOpenGL/interface>
+        )
+    endif()
+    if (TARGET Diligent-GraphicsEngineVk-static)
+        target_include_directories(Urho3D PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/Diligent/Graphics/GraphicsEngineVulkan/interface>
+        )
+    endif()
+endif()
+
 foreach (dep ${PRIVATE_THIRD_PARTY_DEPENDENCIES})
     if (TARGET "${dep}")
         target_link_libraries(Urho3D PRIVATE ${dep})
@@ -328,12 +394,21 @@ if (URHO3D_SSE)
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_SSE)
 endif ()
 
+if (URHO3D_THREADING OR URHO3D_PROFILING)
+    find_package(Threads REQUIRED)
+    target_link_libraries(Urho3D PRIVATE Threads::Threads)
+endif ()
+
 if (WIN32)
     if (URHO3D_MINIDUMPS OR URHO3D_PROFILING)
         target_link_libraries (Urho3D PUBLIC dbghelp)
     endif ()
     if (UWP)
         target_compile_definitions (Urho3D PUBLIC -DUWP=1)
+        # Fix UWP linker error LNK2038: vccorlib must be linked before MSVCRT
+        # This ensures proper initialization order of the C++ runtime for UWP applications
+        # Link vccorlib library before any other libraries to satisfy UWP requirements
+        target_link_libraries(Urho3D PUBLIC $<IF:$<CONFIG:Debug>,vccorlibd,vccorlib>)
     endif ()
     target_link_libraries (Urho3D PUBLIC rpcrt4)
 else ()
@@ -354,16 +429,11 @@ if (GNU OR Clang)
     target_compile_options(Urho3D PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
 endif ()
 
-# Profiling
-target_link_libraries(Urho3D PUBLIC TracyClient)
-
 if (WEB)
     target_link_libraries(Urho3D PUBLIC "-s WASM=$<BOOL:EMSCRIPTEN_WASM>")
-    if (URHO3D_THREADING)
-        target_compile_options(Urho3D PRIVATE "-s USE_PTHREADS=1")
-    endif ()
-    set_target_properties(Urho3D PROPERTIES COMPILE_OPTIONS $<$<OR:$<CONFIG:Release>,$<CONFIG:MinSizeRel>>:-O3>)
-    set_target_properties(Urho3D PROPERTIES LINK_FLAGS_RELEASE -sAGGRESSIVE_VARIABLE_ELIMINATION=1)
+    target_compile_options(Urho3D PUBLIC -pthread -sUSE_PTHREADS=1)
+    target_compile_options(Urho3D PRIVATE $<$<OR:$<CONFIG:Release>,$<CONFIG:MinSizeRel>>:-O3>)
+    target_link_options(Urho3D PRIVATE $<$<OR:$<CONFIG:Release>,$<CONFIG:MinSizeRel>>:-sAGGRESSIVE_VARIABLE_ELIMINATION=1>)
     target_compile_options(Urho3D PUBLIC $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:${EMCC_WITH_SOURCE_MAPS_FLAG}>)
     target_link_libraries(Urho3D PUBLIC -sFETCH -sDISABLE_EXCEPTION_CATCHING=1 -sFORCE_FILESYSTEM=1 -sDISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0 -lidbfs.js)
     target_link_libraries(Urho3D PUBLIC --bind)
@@ -381,11 +451,36 @@ if (WEB)
     target_link_libraries(Urho3D PUBLIC "-s FULL_ES3=1")
 endif ()
 
+# Diligent platform defines.
+# This is needed so the user can include Diligent-using headers without linking to Diligent-PublicBuildSettings.
+# Platform detection using standard CMake variables
+if (EMSCRIPTEN)
+    target_compile_definitions(Urho3D PUBLIC -DPLATFORM_EMSCRIPTEN=1)
+elseif (ANDROID)
+    target_compile_definitions(Urho3D PUBLIC -DPLATFORM_ANDROID=1)
+elseif (WIN32)
+    if (UWP)
+        target_compile_definitions(Urho3D PUBLIC -DPLATFORM_UNIVERSAL_WINDOWS=1)
+    else()
+        target_compile_definitions(Urho3D PUBLIC -DPLATFORM_WIN32=1)
+    endif()
+elseif (APPLE)
+    if (IOS)
+        target_compile_definitions(Urho3D PUBLIC -DPLATFORM_IOS=1)
+    elseif (CMAKE_SYSTEM_NAME STREQUAL "tvOS")
+        target_compile_definitions(Urho3D PUBLIC -DPLATFORM_TVOS=1)
+    else()
+        target_compile_definitions(Urho3D PUBLIC -DPLATFORM_MACOS=1)
+    endif()
+elseif (UNIX)
+    target_compile_definitions(Urho3D PUBLIC -DPLATFORM_LINUX=1)
+endif()
+
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(Urho3D
         PRIVATE -DURHO3D_EXPORTS=1 -DAL_EXPORTS=1 -DBOX2D_EXPORTS=1 -DCIVETWEB_DLL_EXPORTS=1 -DEASTL_EXPORTS=1
             -DEASTDC_EXPORTS=1 -DEAASSERT_EXPORTS=1 -DURHO3D_EXPORTS=1 -DFMT_LIB_EXPORT=1 -DGLEW_BUILD=1 -DIMGUI_EXPORTS=1
-            -DLZ4_DLL_EXPORT=1 -DNFD_EXPORTS=1 -DPUGIXML_EXPORTS=1 -DSDL_EXPORTS=1 -DRmlCore_EXPORTS=1
+            -DLZ4_DLL_EXPORT=1 -DNFD_EXPORT=1 -DPUGIXML_EXPORTS=1 -DSDL_EXPORTS=1 -DRmlCore_EXPORTS=1
             -DRmlDebugger_EXPORTS=1 -DGLSLANG_EXPORTING=1 -DTRACY_EXPORTS=1
     )
 else ()
@@ -395,6 +490,7 @@ endif ()
 # Check existence of various header files and their functions required by some of the third-party libraries and Urho3D library
 # Set the CMake variables in this scope but only add the compiler defines in the respective library's scope
 include (CheckIncludeFile)
+include (CheckSymbolExists)
 foreach (HEADER stdint.h inttypes.h malloc.h)
     string (TOUPPER HAVE_${HEADER} HAVE_HEADER)
     string (REPLACE . _ HAVE_HEADER ${HAVE_HEADER})
@@ -430,7 +526,7 @@ if (URHO3D_CSHARP)
     # Not necessary for build, but required so that users can import Urho3D.i in their bindings .i
     target_include_directories(Urho3D PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig>
-        $<INSTALL_INTERFACE:${DEST_INCLUDE_DIR}/CSharp/Swig>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Urho3D/CSharp/Swig>
     )
 
     csharp_bind_target(
@@ -453,14 +549,14 @@ if (URHO3D_CSHARP)
     add_target_csharp(
         TARGET Urho3DNet.Scripts
         PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.Scripts.csproj
-        OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Urho3DNet.Scripts
+        OUTPUT ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/Urho3DNet.Scripts
         DEPENDS Urho3DNet
     )
 
     add_target_csharp(
         TARGET Urho3DNet.CodeGenerator
         PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.CodeGenerator.csproj
-        OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Urho3DNet.CodeGenerator
+        OUTPUT ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/Urho3DNet.CodeGenerator
     )
 
     file (GLOB_RECURSE EXTRA_NATIVE_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.h)
@@ -476,8 +572,8 @@ if (URHO3D_CSHARP)
         target_compile_options(Urho3D PRIVATE /bigobj)
     endif ()
 
-    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig DESTINATION ${DEST_INCLUDE_DIR}/CSharp)
-    install (FILES ${EXTRA_NATIVE_HEADERS} DESTINATION ${DEST_INCLUDE_DIR}/CSharp/Native)
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Swig DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Urho3D/CSharp)
+    install (FILES ${EXTRA_NATIVE_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Urho3D/CSharp/Native)
 endif ()
 
 # Install C# dependencies
@@ -524,9 +620,9 @@ endif ()
 # SDK installation
 install(TARGETS Urho3D
     EXPORT Urho3D
-    LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
-    RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
-    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 if (URHO3D_MONOLITHIC_HEADER)
@@ -536,35 +632,9 @@ if (URHO3D_MONOLITHIC_HEADER)
     string (REPLACE ";" ">\n#include <Urho3D/" HEADER_FILES "${HEADER_FILES}")
     set (HEADER_FILES "#include <Urho3D/${HEADER_FILES}>")
     configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3DAll.h.in ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h @ONLY)
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h DESTINATION ${DEST_INCLUDE_DIR})
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Urho3D/)
 endif ()
 
-# Generate import/export header with engine configuration defines
-get_property(URHO3D_ENGINE_CONFIG TARGET Urho3D PROPERTY INTERFACE_COMPILE_DEFINITIONS)
-list (REMOVE_ITEM URHO3D_ENGINE_CONFIG URHO3D_64BIT)
-# TODO: Maybe these should be directly in header?
-foreach(HAVE HAVE___SINCOSF HAVE_MALLOC_USABLE_SIZE HAVE_STDINT_H HAVE_INTTYPES_H HAVE_MALLOC_H HAVE_SINCOSF HAVE_RTL_OSVERSIONINFOW)
-    if (${${HAVE}})
-        list (APPEND URHO3D_ENGINE_CONFIG ${HAVE})
-    endif ()
-endforeach()
-list (REMOVE_DUPLICATES URHO3D_ENGINE_CONFIG)
-list (APPEND URHO3D_ENGINE_CONFIG "")   # For last item to be processed correctly.
-# Give defines without value a value "1".
-string (REPLACE ";" "=1;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")                   # Append =1 to all defines
-string (REGEX REPLACE "(\=[0-9]+)+;" "\\1;" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")   # Clear =1 from defines that already had a value
-# Turn list into c++ preprocessor code
-string (REGEX REPLACE "([^=]+)=([^;]+);" "#ifndef \\1\n#   define \\1 \\2\n#endif\n" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
-# This will be commented out line in the header.
-list (INSERT URHO3D_ENGINE_CONFIG 0 "Engine configuration")
-string (REPLACE ";" "\n" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
-file (READ ${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h URHO3D_H_DATA)
-string (REPLACE "@URHO3D_ENGINE_CONFIG@" "${URHO3D_ENGINE_CONFIG}" URHO3D_H_DATA "${URHO3D_H_DATA}")
-foreach (config Debug RelWithDebInfo Release MinSizeRel)
-    file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${config})
-endforeach ()
-file (GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h CONTENT ${URHO3D_H_DATA})
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h DESTINATION ${DEST_INCLUDE_DIR})
 file(GLOB ROOT_HEADERS *.h)
-list(REMOVE_ITEM ROOT_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h)
-install (FILES ${ROOT_HEADERS} "LinkedPlugins.cpp.in" "Resources.load.js.in" DESTINATION ${DEST_INCLUDE_DIR})
+install(FILES ${ROOT_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Urho3D/)
+install (FILES "LinkedPlugins.cpp.in" "Resources.load.js.in" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

@@ -21,7 +21,7 @@
 #
 
 # Set CMake minimum version. Also set in android/build.gradle for android projects.
-cmake_minimum_required (VERSION 3.14)
+cmake_minimum_required (VERSION 3.24)
 
 # Get rid of obscene amount of CMake-added targets we do not use.
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
@@ -42,25 +42,37 @@ if (APPLE)
     enable_language(OBJCXX)
 endif ()
 
-set (DEST_BASE_INCLUDE_DIR include)
-set (DEST_INCLUDE_DIR ${DEST_BASE_INCLUDE_DIR}/Urho3D)
-set (DEST_BIN_DIR bin)
-set (DEST_SHARE_DIR share)
-set (DEST_RESOURCE_DIR ${DEST_BIN_DIR})
-set (DEST_BUNDLE_DIR ${DEST_SHARE_DIR}/Applications)
-set (DEST_ARCHIVE_DIR lib)
-set (DEST_THIRDPARTY_HEADERS_DIR ${DEST_INCLUDE_DIR}/ThirdParty)
-
 if (BUILD_SHARED_LIBS OR WEB)
     set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif ()
 
 # Set CMake modules search path
 set (CMAKE_MODULE_PATH ${rbfx_SOURCE_DIR}/CMake/Modules)
-set (CPM_SOURCE_CACHE ${CMAKE_BINARY_DIR}/_deps_src)
+
+# Default install component
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME SDK)
+
+# Generate ThirdParty version hash based on git-tracked files
+include(${rbfx_SOURCE_DIR}/CMake/Modules/GetThirdPartyHash.cmake)
+get_thirdparty_hash("${rbfx_SOURCE_DIR}/Source/ThirdParty" URHO3D_THIRDPARTY_VERSION HASH_FORMAT version)
+get_thirdparty_hash("${rbfx_SOURCE_DIR}/Source/ThirdParty" URHO3D_THIRDPARTY_SHORT_HASH HASH_FORMAT short)
+message(STATUS "ThirdParty version: ${URHO3D_THIRDPARTY_VERSION} | ${URHO3D_THIRDPARTY_SHORT_HASH}")
+
+# Try to find ThirdParty as an external package first
+# Whether we use CCache depends on result of this call
+find_package(Urho3DThirdParty ${URHO3D_THIRDPARTY_VERSION} EXACT NO_CMAKE_INSTALL_PREFIX)
+
+# Disable ccache
+if (URHO3D_PRISTINE_FULL_BUILDS OR (ENV{CI} AND NOT Urho3DThirdParty_FOUND))
+    set(ENV{CCACHE_DISABLE} 1)
+    message(STATUS "CCache disabled")
+endif ()
 
 # Include common utilities
 include(UrhoCommon)
+
+# Find threading libraries (required by Tracy and other components)
+find_package(Threads REQUIRED)
 
 # Enable testing
 if (URHO3D_TESTING)
@@ -70,7 +82,10 @@ endif ()
 
 # Set compiler variable
 set ("${CMAKE_CXX_COMPILER_ID}" ON)
-if (NOT WEB)
+if (WEB)
+    # Ensure EVERYTHING is compiled with threads support for emscripten.
+    add_compile_options(-pthread -sUSE_PTHREADS=1)
+else ()
     set (CMAKE_INSTALL_RPATH "$ORIGIN")
     if (GNU OR MINGW)
         if (NOT "$ENV{CI}" STREQUAL "")
@@ -102,22 +117,6 @@ if (ANDROID)
     set (LIB_SUFFIX s/${ANDROID_NDK_ABI_NAME})
 endif ()
 
-if (ANDROID)
-    set (DEST_LIBRARY_DIR ${DEST_ARCHIVE_DIR})
-else ()
-    set (DEST_LIBRARY_DIR bin)
-endif ()
-
-if (MULTI_CONFIG_PROJECT)
-    set (DEST_BIN_DIR_CONFIG ${DEST_BIN_DIR}/$<CONFIG>)
-    set (DEST_LIBRARY_DIR_CONFIG ${DEST_LIBRARY_DIR}/$<CONFIG>)
-    set (DEST_ARCHIVE_DIR_CONFIG ${DEST_ARCHIVE_DIR}/$<CONFIG>)
-else ()
-    set (DEST_BIN_DIR_CONFIG ${DEST_BIN_DIR})
-    set (DEST_LIBRARY_DIR_CONFIG ${DEST_LIBRARY_DIR})
-    set (DEST_ARCHIVE_DIR_CONFIG ${DEST_ARCHIVE_DIR})
-endif ()
-
 if (WIN32)
     if (NOT DEFINED URHO3D_WINVER)
         if (UWP OR NOT URHO3D_GRAPHICS_NO_D3D12)
@@ -141,20 +140,14 @@ if (NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET AND MACOS)
     set (CMAKE_OSX_DEPLOYMENT_TARGET 10.10)
 endif ()
 
-# A workaround for Ninja generator putting executables to wrong output dir. This breaks
-# VS/Xcode, they work properly without any workarounds.
-if ("${CMAKE_GENERATOR}" STREQUAL "Ninja")
-    set (_CONFIG "_CONFIG")
-endif ()
-
 if (NOT DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
-    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR${_CONFIG}})
+    set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 endif ()
 if (NOT DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
-    set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR${_CONFIG}})
+    set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_LIBRARY_DIR})
 endif ()
 if (NOT DEFINED CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
-    set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_ARCHIVE_DIR${_CONFIG}})
+    set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
 endif ()
 
 if (NOT DEFINED VS_DEBUGGER_WORKING_DIRECTORY)
@@ -165,21 +158,6 @@ if (MULTI_CONFIG_PROJECT)
     set (URHO3D_CONFIG $<CONFIG>)
 else ()
     set (URHO3D_CONFIG ${CMAKE_BUILD_TYPE})
-endif ()
-
-if (MINGW)
-    find_file(DLL_FILE_PATH_1 "libstdc++-6.dll")
-    find_file(DLL_FILE_PATH_2 "libgcc_s_seh-1.dll")
-    find_file(DLL_FILE_PATH_3 "libwinpthread-1.dll")
-    foreach (DLL_FILE_PATH ${DLL_FILE_PATH_1} ${DLL_FILE_PATH_2} ${DLL_FILE_PATH_3})
-        if (DLL_FILE_PATH)
-            # Copies dlls to bin or tools.
-            file (COPY ${DLL_FILE_PATH} DESTINATION ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG})
-            if (NOT URHO3D_STATIC_RUNTIME)
-                file (COPY ${DLL_FILE_PATH} DESTINATION ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG})
-            endif ()
-        endif ()
-    endforeach ()
 endif ()
 
 # Configure for web
@@ -353,19 +331,37 @@ if (CLANG_TIDY)
     set_target_properties(tidy PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
 endif()
 
+################################################### CPack Configuration ################################################
+
+# Set up basic CPack configuration
+set(CPACK_PROJECT_NAME ${PROJECT_NAME})
+set(CPACK_PROJECT_VERSION "${URHO3D_VERSION}")
+
+# Include CPack module
+include(CPack)
+
+# Create packaging targets for each component
+if (NOT CMAKE_SKIP_INSTALL_RULES)
+    create_pack_target("SDK")
+    create_pack_target("Samples")
+    create_pack_target("Tools")
+    create_pack_all_target()
+endif ()
+
 ################################################### SDK preparation ####################################################
 
 # Install CMake modules and toolchains provided by and for Urho3D
-install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Toolchains/ DESTINATION ${DEST_SHARE_DIR}/CMake/Toolchains)    # Note: the trailing slash is significant
-install (DIRECTORY ${CMAKE_SOURCE_DIR}/CMake/Modules/ DESTINATION ${DEST_SHARE_DIR}/CMake/Modules/)
+install (DIRECTORY ${rbfx_SOURCE_DIR}/CMake/Toolchains/ DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/Toolchains)    # Note: the trailing slash is significant
+install (DIRECTORY ${rbfx_SOURCE_DIR}/CMake/Modules/ DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/Modules/)
 # Install CMake build scripts
-file (GLOB CMAKE_SCRIPTS ${CMAKE_SOURCE_DIR}/Script/*${SCRIPT_EXT})
-install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${DEST_SHARE_DIR}/Scripts)
+file (GLOB CMAKE_SCRIPTS ${rbfx_SOURCE_DIR}/Script/*${SCRIPT_EXT})
+install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/Scripts)
 # Install data files
 file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 if (NOT ANDROID)
     # Multi-config projects store data files in parent dir of binary files.
     string (REPLACE "/$<CONFIG>" "" RUNTIME_OUTPUT_DIRECTORY_NO_CONFIG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    # Copy data directories for development
     set (INSTALL_DATA_DIRS Data CoreData EditorData Autoload)
     foreach(dir ${INSTALL_DATA_DIRS})
         if (URHO3D_COPY_DATA_DIRS)
@@ -373,8 +369,17 @@ if (NOT ANDROID)
         else ()
             create_symlink(${CMAKE_CURRENT_SOURCE_DIR}/bin/${dir} ${RUNTIME_OUTPUT_DIRECTORY_NO_CONFIG}/${dir})
         endif ()
-        # /${dir}/../ trick is used for installing Autoload subdirs.
-        install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/${dir} DESTINATION ${CMAKE_INSTALL_PREFIX}/${DEST_BIN_DIR}/${dir}/../)
     endforeach()
+
+    # Install data directories with appropriate components
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/CoreData DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT SDK)
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/CoreData DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT Tools)
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/CoreData DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT Samples)
+
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/EditorData DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT SDK)
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/EditorData DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT Tools)
+
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/Data DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT Samples)
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/Autoload DESTINATION ${CMAKE_INSTALL_BINDIR_BASE} COMPONENT Samples)
 endif ()
-install (FILES ${CMAKE_SOURCE_DIR}/bin/shell.html DESTINATION ${CMAKE_INSTALL_PREFIX}/${DEST_BIN_DIR_CONFIG})
+install (FILES ${rbfx_SOURCE_DIR}/bin/shell.html DESTINATION ${CMAKE_INSTALL_BINDIR_BASE})

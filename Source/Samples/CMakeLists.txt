@@ -28,6 +28,8 @@ if (NOT URHO3D_WIN32_CONSOLE)
     set (PLATFORM WIN32)
 endif ()
 
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME Samples)
+
 ## Add samples
 file (GLOB_RECURSE DIRS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CMakeLists.txt)
 list (SORT DIRS)
@@ -71,13 +73,13 @@ if (WEB)
                      "${CMAKE_BINARY_DIR}/bin/CoreData.pak"
         RELATIVE_DIR "${CMAKE_BINARY_DIR}/bin"
         OUTPUT       "Resources.js"
-        INSTALL_TO   ${DEST_BIN_DIR_CONFIG}
+        INSTALL_TO   ${CMAKE_INSTALL_BINDIR}
     )
     web_link_resources(Samples Resources.js)
     target_link_libraries(Samples PRIVATE "--shell-file ${CMAKE_SOURCE_DIR}/bin/shell.html")
-    install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.js" DESTINATION ${DEST_BIN_DIR_CONFIG})
+    install(FILES "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/Samples.js" DESTINATION ${CMAKE_INSTALL_BINDIR})
     if (EMSCRIPTEN_WASM)
-        install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.wasm" DESTINATION ${DEST_BIN_DIR_CONFIG})
+        install(FILES "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/Samples.wasm" DESTINATION ${CMAKE_INSTALL_BINDIR})
     endif ()
 endif ()
 
@@ -145,8 +147,11 @@ endif ()
 
 if (NOT ANDROID)
     install(TARGETS Samples
-        RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
-        LIBRARY DESTINATION ${DEST_BIN_DIR_CONFIG}
-        BUNDLE DESTINATION  ${DEST_BIN_DIR_CONFIG}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+        BUNDLE DESTINATION  ${CMAKE_INSTALL_BINDIR}
     )
+    
+    # Install runtime dependencies
+    install_target_runtime_deps(TARGET Samples COMPONENT Samples)
 endif ()

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2017-2023 the rbfx project.
+# Copyright (c) 2025-2025 the rbfx project.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,13 +19,25 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+# This is a dummy package configuration file for Urho3D, which allows consuming
+# engine through in-source builds (through `add_subdirectory()`) by using same
+# `find_package()` mechanism like using SDK.
+#
 
-set(SWIG_EXECUTABLE "${URHO3D_SDK}/@SWIG_EXECUTABLE@")
-set(PACKAGE_TOOL    "${URHO3D_SDK}/@PACKAGE_TOOL@")
+# Source root directory
+get_filename_component(rbfx_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../.." ABSOLUTE)
 
-set(TOOL_ANY_EXIST OFF)
-foreach (pth SWIG_EXECUTABLE PACKAGE_TOOL)
-    if (EXISTS "${${pth}}")
-        set(TOOL_ANY_EXIST ON)
-    endif ()
-endforeach ()
+# Include engine as in-source build
+add_subdirectory(${rbfx_SOURCE_DIR} ${CMAKE_BINARY_DIR}/rbfx)
+
+# Make engine modules accessible
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${rbfx_SOURCE_DIR}/CMake/Modules)
+
+# Include common functionality
+include(UrhoCommon)
+
+# Provide path to package root
+set(Urho3D_PACKAGE_ROOT "${rbfx_SOURCE_DIR}")
+
+# Mark Urho3D as found
+set(Urho3D_FOUND TRUE)

@@ -1,14 +1,11 @@
+# Urho3DThirdPartyConfig.cmake - Configuration file for the ThirdParty component
+
 @PACKAGE_INIT@
 
 include(CMakeFindDependencyMacro)
 
 # Find required dependencies
 find_dependency(Threads REQUIRED)
-
-# If built with external ThirdParty package, find it
-if (@Urho3DThirdParty_FOUND@)
-    find_dependency(Urho3DThirdParty @URHO3D_THIRDPARTY_VERSION@ EXACT)
-endif()
 find_package(OpenGL QUIET)
 find_package(TBB QUIET)
 find_package(EGL QUIET)
@@ -17,9 +14,17 @@ if(CMAKE_SYSTEM_NAME MATCHES ".*Linux")
     find_package(X11 REQUIRED)
 endif ()
 
-include("${CMAKE_CURRENT_LIST_DIR}/Urho3D.cmake")
+# Include the exported targets
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/Urho3DThirdParty.cmake")
+    include("${CMAKE_CURRENT_LIST_DIR}/Urho3DThirdParty.cmake")
+endif()
 
-set(Urho3D_FOUND TRUE)
+# The third-party libraries are provided through the Urho3DThirdParty export set
+set(Urho3DThirdParty_FOUND TRUE)
+
+# Provide compatibility variables
+set(Urho3DThirdParty_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+set(Urho3DThirdParty_LIBRARY_DIRS "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
 
 # Export platform detection variables
 set(PLATFORM_WIN32 @PLATFORM_WIN32@ CACHE INTERNAL "")
@@ -40,10 +45,3 @@ set(GLES_SUPPORTED @GLES_SUPPORTED@ CACHE INTERNAL "OpenGL ES is supported")
 set(VULKAN_SUPPORTED @VULKAN_SUPPORTED@ CACHE INTERNAL "Vulkan is supported")
 set(METAL_SUPPORTED @METAL_SUPPORTED@ CACHE INTERNAL "Metal is supported")
 set(WEBGPU_SUPPORTED @WEBGPU_SUPPORTED@ CACHE INTERNAL "WebGPU is supported")
-
-# Provide path to package root
-set(Urho3D_PACKAGE_ROOT "${PACKAGE_PREFIX_DIR}")
-set(Urho3D_IS_SDK ON)
-
-list(APPEND CMAKE_MODULE_PATH "${PACKAGE_PREFIX_DIR}/share/Urho3D/CMake/Modules")
-include(UrhoCommon)

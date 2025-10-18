@@ -3366,7 +3366,7 @@ target_include_directories (SDL2-static SYSTEM
   PUBLIC $<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include-config-$<LOWER_CASE:$<CONFIG>>>
          $<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include/SDL/generated>
          $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>
-         $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/SDL>
+         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/SDL>
 )
 if (WEB)
     target_compile_options(SDL2-static PUBLIC -sUSE_SDL=0)
@@ -3399,14 +3399,12 @@ if (IOS OR UWP OR ANDROID)
 endif ()
 
 # Install headers for building and using the Urho3D library (install dependency for InputEvents.h)
-install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/SDL/ FILES_MATCHING PATTERN *.h)    # Note: the trailing slash is significant
+install (DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/SDL/ FILES_MATCHING PATTERN *.h)    # Note: the trailing slash is significant
 install (FILES
   "${SDL2_BINARY_DIR}/include/SDL_revision.h"
-  #"${SDL2_BINARY_DIR}/include-config-$<LOWER_CASE:$<CONFIG>>/SDL_config.h"
-  DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/SDL)
+  "${SDL2_BINARY_DIR}/include-config-$<LOWER_CASE:$<CONFIG>>/SDL_config.h"
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/SDL)
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-  install(TARGETS SDL2-static EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-endif ()
+install_third_party_libs(SDL2-static)
 
 group_sources()

@@ -12,8 +12,34 @@
 # ci_build_dir:    cmake cache directory
 # ci_sdk_dir:      sdk installation directory
 
+# Parse arguments: action [build_type] [-- extra cmake args]
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 action [build_type] [-- extra cmake args]"
+    exit 1
+fi
+
 ci_action=$1; shift;
-ci_build_type=$1; shift;
+ci_build_type=""
+extra_cmake_args=()
+
+# Check if we have more arguments
+if [ $# -gt 0 ]; then
+    # Check if next argument is "--" (meaning no build_type)
+    if [ "$1" = "--" ]; then
+        shift
+        extra_cmake_args=("$@")
+    else
+        # We have a build_type
+        ci_build_type="$1"
+        shift
+
+        # Check for remaining arguments after build_type
+        if [ $# -gt 0 ] && [ "$1" = "--" ]; then
+            shift
+            extra_cmake_args=("$@")
+        fi
+    fi
+fi
 
 # default values
 ci_compiler=${ci_compiler:-"default"}
@@ -45,7 +71,12 @@ declare -A types=(
 # Web builds cannot handle RelWithDebInfo configuration.
 if [[ "$ci_platform" == "web" ]]; then types[rel]='Release'; fi
 
-declare -A android_types=(
+declare -A android_build_types=(
+    [dbg]='buildCMakeDebug'
+    [rel]='buildCMakeRelWithDebInfo'
+)
+
+declare -A android_apk_types=(
     [dbg]='assembleDebug'
     [rel]='assembleRelease'
 )
@@ -114,14 +145,11 @@ quirks_linux_clang_x64=(
     '-DURHO3D_PCH=OFF' # Keep PCH disabled somewhere to catch missing includes
 )
 
-# Find msbuild.exe
-MSBUILD=msbuild
-if [[ "$ci_platform" == "windows" || "$ci_platform" == "uwp" ]];
+if [[ "$ci_platform" == "macos" || "$ci_platform" == "ios" ]];
 then
-    MSBUILD=$(vswhere -products '*' -requires Microsoft.Component.MSBuild -property installationPath -latest)
-    MSBUILD=$(echo $MSBUILD | tr "\\" "/" 2>/dev/null)    # Fix slashes
-    MSBUILD=$(echo $MSBUILD | sed "s/://" 2>/dev/null)    # Remove :
-    MSBUILD="/$MSBUILD/MSBuild/Current/Bin/MSBuild.exe"
+    NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
+else
+    NUMBER_OF_PROCESSORS=$(nproc)
 fi
 
 copy-runtime-libraries-for-executables() {
@@ -205,10 +233,13 @@ function action-dependencies() {
     then
         # iOS/MacOS dependencies
         brew install pkg-config ccache
-    elif [[ "$ci_platform" == "windows" || "$ci_platform" == "uwp" ]];
-    then
-        # Windows dependencies
+    else
+        # Windows/UWP dependencies
         choco install -y ccache
+        if [[ "$ci_platform" == "uwp" ]];
+        then
+            choco install -y windows-sdk-10-version-2104-all
+        fi
     fi
 }
 
@@ -261,6 +292,14 @@ function action-generate() {
         )
     fi
 
+    # Precise configuration types control
+    ci_cmake_params+=(
+        "-DCMAKE_CONFIGURATION_TYPES=${types[dbg]};${types[rel]}"
+    )
+
+    # Add any extra CMake arguments passed after --
+    ci_cmake_params+=("${extra_cmake_args[@]}")
+
     ci_cmake_params+=(-B $ci_build_dir -S "$ci_source_dir")
 
     echo "${ci_cmake_params[@]}"
@@ -274,33 +313,38 @@ function action-build() {
       ccache_path=$(realpath /c/ProgramData/chocolatey/lib/ccache/tools/ccache-*)
       cp $ccache_path/ccache.exe $ccache_path/cl.exe  # https://github.com/ccache/ccache/wiki/MS-Visual-Studio
       $ccache_path/ccache.exe -s
-      cmake --build $ci_build_dir --config "${types[$ci_build_type]}" -- -r -maxcpucount:$NUMBER_OF_PROCESSORS -p:TrackFileAccess=false -p:UseMultiToolTask=true -p:CLToolPath=$ccache_path && \
+      cmake --build $ci_build_dir --config "${types[$ci_build_type]}" -- -r -maxcpucount:$NUMBER_OF_PROCESSORS -p:TrackFileAccess=false -p:UseMultiToolTask=true -p:CLToolPath=$ccache_path \
+        '-p:ObjectFileName=$(IntDir)%(FileName).obj' -p:DebugInformationFormat=OldStyle && \
       $ccache_path/ccache.exe -s
     elif [[ "$ci_platform" == "android" ]];
     then
       # Custom platform build paths used only on android.
       cd $ci_source_dir/android
       ccache -s
-      gradle wrapper                                && \
-      ./gradlew "${android_types[$ci_build_type]}"  && \
+      gradle wrapper                                                  && \
+      ./gradlew "${android_build_types[$ci_build_type]}[${ci_arch}]"  && \
       ccache -s
     else
       # Default build path using plain CMake.
       # ci_platform:     windows|linux|macos|android|ios|web
-      if [[ "$ci_platform" == "macos" || "$ci_platform" == "ios" ]];
-      then
-        NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
-      else
-        NUMBER_OF_PROCESSORS=$(nproc)
-      fi
       ccache -s
       cmake --build $ci_build_dir --parallel $NUMBER_OF_PROCESSORS --config "${types[$ci_build_type]}" && \
       ccache -s
     fi
 }
 
+function action-apk() {
+    cd $ci_source_dir/android
+    gradle wrapper                                   && \
+    ./gradlew "${android_apk_types[$ci_build_type]}"
+}
+
 function action-install() {
-    cmake --install $ci_build_dir --config "${types[$ci_build_type]}"
+    if [[ "$ci_platform" == "android" ]]; then
+        cmake --install $ci_source_dir/android/.cxx/${types[$ci_build_type]}/*/$ci_arch --config ${types[$ci_build_type]} ${extra_cmake_args[@]}
+    else
+        cmake --install $ci_build_dir --config "${types[$ci_build_type]}" ${extra_cmake_args[@]}
+    fi
 
     # Copy .NET runtime libraries for executables on windows.
     if [[ "$ci_platform" == "windows" ]]; then
@@ -310,20 +354,20 @@ function action-install() {
     # Create deploy directory on Web.
     if [[ "$ci_platform" == "web" && "$ci_build_type" == "rel" ]];
     then
-        mkdir $ci_sdk_dir/deploy
+        mkdir -p $ci_sdk_dir/deploy/
         cp -r \
             $ci_sdk_dir/bin/${types[$ci_build_type]}/Resources.js        \
             $ci_sdk_dir/bin/${types[$ci_build_type]}/Resources.js.data   \
             $ci_sdk_dir/bin/${types[$ci_build_type]}/Samples.js          \
             $ci_sdk_dir/bin/${types[$ci_build_type]}/Samples.wasm        \
             $ci_sdk_dir/bin/${types[$ci_build_type]}/Samples.html        \
-            $ci_sdk_dir/deploy
+            $ci_sdk_dir/deploy/
     fi
 }
 
 function action-test() {
     cd $ci_build_dir
-    ctest --output-on-failure -C "${types[$ci_build_type]}"
+    ctest --output-on-failure -C "${types[$ci_build_type]}" -j $NUMBER_OF_PROCESSORS
 }
 
 function action-cstest() {

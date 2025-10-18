@@ -36,6 +36,6 @@ if (WIN32)
     target_link_libraries(GLEW opengl32.lib)
 endif ()
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS GLEW EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-endif ()
+install (DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ FILES_MATCHING PATTERN *.h)
+
+install_third_party_libs(GLEW)

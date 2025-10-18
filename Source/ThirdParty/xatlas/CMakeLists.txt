@@ -4,10 +4,15 @@ project(xatlas)
 # Urho3D: Removed all extra things
 add_library(xatlas STATIC xatlas.cpp)
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS xatlas EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-endif ()
+install_third_party_libs(xatlas)
 
 target_include_directories(xatlas PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+# Install headers
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/xatlas.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    COMPONENT ThirdParty
 )

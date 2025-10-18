@@ -31,7 +31,14 @@ if (MSVC)
     endif ()
 endif ()
 
-add_subdirectory (ThirdParty)
+# Package is found in the main CMakeLists.txt
+if (Urho3DThirdParty_FOUND)
+    message(STATUS "Using external ThirdParty component")
+else ()
+    message(STATUS "External ThirdParty not found, building from source")
+    add_subdirectory (ThirdParty)
+endif ()
+
 add_subdirectory (Urho3D)
 add_subdirectory (Tools)
 add_subdirectory (Samples)
@@ -45,25 +52,37 @@ if (URHO3D_EDITOR)
     add_subdirectory (Editor)
 endif ()
 
-# Generate a helper script for consuming built tools during crosscompiling.
-if (NOT DEFINED URHO3D_SDK)
-    set(SWIG_EXECUTABLE OFF)
-    set(PACKAGE_TOOL OFF)
-    if (TARGET swig)
-        set (SWIG_EXECUTABLE ${DEST_BIN_DIR_CONFIG}/$<TARGET_FILE_NAME:swig>)
-    endif ()
-    if (TARGET PackageTool)
-        set (PACKAGE_TOOL ${DEST_BIN_DIR_CONFIG}/$<TARGET_FILE_NAME:PackageTool>)
-    endif ()
-    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/share/CMake)
-    configure_file("${rbfx_SOURCE_DIR}/CMake/SDKTools.cmake.in" "${CMAKE_BINARY_DIR}/share/CMake/SDKTools.cmake.in" @ONLY)
-    file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/share/CMake/SDKTools-$<CONFIG>.cmake" INPUT "${CMAKE_BINARY_DIR}/share/CMake/SDKTools.cmake.in")
-    file(COPY "${rbfx_SOURCE_DIR}/CMake/SDKTools.cmake" DESTINATION "${CMAKE_BINARY_DIR}/share/CMake/")
-    foreach (config ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE})
-        install(FILES ${CMAKE_BINARY_DIR}/share/CMake/SDKTools-${config}.cmake DESTINATION ${DEST_SHARE_DIR}/CMake OPTIONAL)
-    endforeach ()
-    install(FILES ${CMAKE_BINARY_DIR}/share/CMake/SDKTools.cmake DESTINATION ${DEST_SHARE_DIR}/CMake)
-    unset(config)
+# Generate CMake config files for tools export
+if (DESKTOP)
+    # Install the tools export file
+    install(EXPORT Urho3DTools
+        FILE Urho3DTools.cmake
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DTools/CMake
+        COMPONENT Tools
+    )
+
+    # Configure and install the tools config file
+    # Generate version file to ensure host tools compatibility when cross-compiling.
+    include(CMakePackageConfigHelpers)
+    configure_package_config_file(
+        ${rbfx_SOURCE_DIR}/CMake/Urho3DToolsConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfig.cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DTools/CMake/
+    )
+
+    # Generate the version file for Urho3DTools with host platform compatibility checking
+    configure_file(
+        ${rbfx_SOURCE_DIR}/CMake/Urho3DToolsConfigVersion.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfigVersion.cmake
+        @ONLY
+    )
+
+    install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/Urho3DToolsConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DTools/CMake/
+        COMPONENT Tools
+    )
 endif ()
 
 if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
@@ -92,18 +111,27 @@ endif ()
 install(FILES
     ${rbfx_SOURCE_DIR}/script/rbfx.natvis
     ${rbfx_SOURCE_DIR}/script/rbfx.vscode.unix.natvis
-    DESTINATION ${DEST_SHARE_DIR})
+    DESTINATION ${CMAKE_INSTALL_DATADIR})
 
 # This is a normal install that users are supposed to use.
-install (EXPORT Urho3D DESTINATION ${DEST_SHARE_DIR}/CMake FILE Urho3D.cmake)
+install (EXPORT Urho3D DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake FILE Urho3D.cmake)
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(
     ${rbfx_SOURCE_DIR}/CMake/Urho3DConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfig.cmake
-    INSTALL_DESTINATION ${DEST_SHARE_DIR}/CMake/
+    INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/
 )
+
+# Generate the version file for Urho3D with platform compatibility checking
+configure_file(
+    ${rbfx_SOURCE_DIR}/CMake/Urho3DConfigVersion.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfigVersion.cmake
+    @ONLY
+)
+
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfig.cmake
-    DESTINATION ${DEST_SHARE_DIR}/CMake/
+    ${CMAKE_CURRENT_BINARY_DIR}/Urho3DConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/CMake/
 )

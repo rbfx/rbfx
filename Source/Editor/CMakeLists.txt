@@ -24,6 +24,8 @@ if (NOT URHO3D_SYSTEMUI OR NOT DESKTOP)
     return ()
 endif ()
 
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME Tools)
+
 file (GLOB_RECURSE SOURCE_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.h *.hpp)
 list (REMOVE_ITEM SOURCE_FILES Editor.cpp EditorWrapper.cpp)
 
@@ -38,7 +40,7 @@ add_library (EditorLibrary STATIC ${SOURCE_FILES})
 
 target_include_directories(EditorLibrary PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-    $<INSTALL_INTERFACE:${DEST_INCLUDE_DIR}/Tools>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Tools>
 )
 target_link_libraries (EditorLibrary PUBLIC Urho3D)
 
@@ -66,13 +68,13 @@ if (NOT URHO3D_NO_EDITOR_PLAYER_EXE)
             TARGET EditorManaged
             EXE
             PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/EditorManaged/EditorManaged.csproj
-            OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/EditorManaged
+            OUTPUT ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/EditorManaged
             DEPENDS Urho3DNet)
 
         if (TARGET EditorManaged)
             add_dependencies(EditorManaged libEditorWrapper Urho3DNet)
-            install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/EditorManaged${CMAKE_EXECUTABLE_SUFFIX}"
-                DESTINATION ${DEST_BIN_DIR_CONFIG}
+            install(FILES "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/EditorManaged${CMAKE_EXECUTABLE_SUFFIX}"
+                DESTINATION ${CMAKE_INSTALL_BINDIR}
             )
         endif ()
     else ()
@@ -85,13 +87,12 @@ foreach (EDITOR_TARGET ${EDITOR_TARGETS})
 endforeach ()
 
 # SDK installation
-install (TARGETS ${EDITOR_TARGETS}
-    RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
-    LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
-    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
-)
-install (TARGETS EditorLibrary EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
+install_tools(${EDITOR_TARGETS})
+foreach (EDITOR_TARGET ${EDITOR_TARGETS})
+    install_target_runtime_deps(TARGET ${EDITOR_TARGET} COMPONENT Tools)
+endforeach ()
+install (TARGETS EditorLibrary EXPORT Urho3D ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    DESTINATION ${DEST_INCLUDE_DIR}/Tools
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Tools
     FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
 )

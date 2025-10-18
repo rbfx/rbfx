@@ -32,7 +32,6 @@ target_compile_definitions(RmlUi
     PRIVATE RMLUI_VERSION="${RMLUI_VERSION_SHORT}"
     PUBLIC  RMLUI_NO_THIRDPARTY_CONTAINERS=1
             RMLUI_CUSTOM_CONFIGURATION_FILE="RmlUi/Config/RbfxConfig.h"
-            RMLUI_DEBUG_BUILD=$<AND:$<CONFIG:Debug>,$<NOT:$<BOOL:${CI_WEB_BUILD}>>>
 )
 if (APPLE)
     # Disables naked builtins from AssertMacros.h which
@@ -44,12 +43,13 @@ target_link_libraries(RmlUi PUBLIC FreeType EASTL)
 target_include_directories(RmlUi SYSTEM
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..
     PUBLIC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Include>
+            $<BUILD_INTERFACE:${Urho3D_BINARY_DIR}/..>
     PRIVATE ../..
 )
 
 foreach (ext *.h *.inl)
-    install (DIRECTORY Include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN ${ext})
-    install (DIRECTORY Config/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/RmlUi/Config/ FILES_MATCHING PATTERN ${ext})
+    install (DIRECTORY Include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ FILES_MATCHING PATTERN ${ext})
+    install (DIRECTORY Config/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/RmlUi/Config/ FILES_MATCHING PATTERN ${ext})
 endforeach ()
 
 if (BUILD_SHARED_LIBS)
@@ -58,6 +58,4 @@ else ()
     target_compile_definitions(RmlUi PUBLIC -DRMLUI_STATIC_LIB=1)
 endif ()
 
-if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS RmlUi EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
-endif ()
+install_third_party_libs(RmlUi)
