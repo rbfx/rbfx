@@ -232,7 +232,7 @@ function action-dependencies() {
     elif [[ "$ci_platform" == "macos" || "$ci_platform" == "ios" ]];
     then
         # iOS/MacOS dependencies
-        brew install pkg-config ccache
+        brew install pkg-config ccache bash
     else
         # Windows/UWP dependencies
         choco install -y ccache
