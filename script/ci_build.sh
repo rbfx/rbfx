@@ -277,6 +277,14 @@ function action-generate() {
         "-DURHO3D_NETFX=net$DOTNET_VERSION"
     )
 
+    if [[ "$ci_platform" == "web" ]]; then
+        CMAKE_PREFIX_PATH='CMAKE_FIND_ROOT_PATH'
+    else
+        CMAKE_PREFIX_PATH='CMAKE_PREFIX_PATH'
+    fi
+
+    ci_cmake_params+=("-D$CMAKE_PREFIX_PATH=${ci_workspace_dir}/cached-sdk;${ci_workspace_dir}/host-sdk")
+
     if [[ "$ci_compiler" != "msvc" ]];
     then
         ci_cmake_params+=(
@@ -390,6 +398,63 @@ function action-publish-to-itch() {
     fi
 
     butler push "$ci_build_dir/bin" "rebelfork/rebelfork:$ci_platform-$ci_arch-$ci_lib_type-$ci_compiler-$ci_build_type"
+}
+
+function action-test-project() {
+    # Usage: test-project <project_name> <mode>
+    # project_name: empty-project or sample-project
+    # mode: sdk or source
+    local project_name=$1
+    local mode=$2
+
+    local source_dir="$ci_workspace_dir/$project_name"
+    local build_dir="$ci_workspace_dir/${project_name}-${mode}-build"
+    local shared=$([[ "$ci_lib_type" == 'dll' ]] && echo ON || echo OFF)
+
+    # Build cmake args array
+    local cmake_args=(-S "$source_dir" -B "$build_dir" -DBUILD_SHARED_LIBS=$shared -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo")
+    local sdk_suffix=''
+    local sdk_path=''
+
+    if [[ "$ci_platform" == "windows" ]];
+    then
+        sdk_suffix='/share'
+    fi
+
+    # Determine CMAKE_PREFIX_PATH based on mode
+    if [[ "$mode" == "sdk" ]];
+    then
+        sdk_path="${ci_sdk_dir}${sdk_suffix}"
+    else
+        sdk_path="$ci_source_dir/CMake"
+    fi
+
+    # Platform-specific configuration
+    if [[ "$ci_platform" == "windows" ]];
+    then
+        local arch=$([[ "$ci_arch" == "x86" ]] && echo Win32 || echo x64)
+        cmake_args+=(-A "$arch")
+    elif [[ "$ci_platform" == "linux" ]];
+    then
+        export CC=${ci_compiler}
+        export CXX=${ci_compiler/gcc/g++}
+        cmake_args+=(-G 'Ninja Multi-Config')
+    fi
+
+    cmake_args+=("-DCMAKE_PREFIX_PATH=$sdk_path;${ci_workspace_dir}/host-sdk")
+
+    echo "Configuring $project_name with $mode mode..."
+    cmake "${cmake_args[@]}"
+
+    # Only build for SDK mode
+    if [[ "$mode" == "sdk" ]];
+    then
+        echo "Building $project_name..."
+        cmake --build "$build_dir" --config Debug
+        cmake --build "$build_dir" --config RelWithDebInfo
+    else
+        echo "Skipping build for $project_name in source mode as it would take too long."
+    fi
 }
 
 # Invoke requested action.

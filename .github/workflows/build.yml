@@ -48,8 +48,6 @@ env:
   ci_build_script: ./source-code/script/ci_build.sh
   ci_build_dir: ${{ github.workspace }}/cmake-build
   ci_sdk_dir: ${{ github.workspace }}/SDK
-  ci_latest_release_url: https://uploads.github.com/repos/rbfx/rbfx/releases/129063815/assets{?name,label}
-  ci_latest_release_id: 129063815
   # etc
   TRACY_TIMER_FALLBACK: 1
   SOURCE_REF: ${{ github.head_ref || github.ref_name }}
@@ -134,11 +132,14 @@ jobs:
       - name: Gather information
         shell: bash
         run: |
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          if [[ "${{ matrix.os }}" == "windows-latest" ]];
+          then
             BUILD_ID='Windows-Tools'
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]];
+          then
             BUILD_ID='Linux-Tools'
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]];
+          then
             BUILD_ID='MacOS-Tools'
           fi
 
@@ -150,13 +151,16 @@ jobs:
           ARTIFACT_ID_TOOLS="rbfx-$BUILD_ID-$HASH_TOOLS-$HASH_THIRDPARTY"
 
           # Determine number of processors
-          if [ '$BUILD_ID' == 'Linux-Tools' ]; then
+          if [ "$BUILD_ID" == "Linux-Tools" ];
+          then
             NUMBER_OF_PROCESSORS=$(nproc)
-          elif [ '$BUILD_ID' == 'MacOS-Tools' ]; then
+          elif [ "$BUILD_ID" == "MacOS-Tools" ];
+          then
             NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
           fi
           NUMBER_OF_PROCESSORS=$(( (NUMBER_OF_PROCESSORS + 1) / 2 ))
-          if [ "$NUMBER_OF_PROCESSORS" -lt 1 ]; then
+          if [ "$NUMBER_OF_PROCESSORS" -lt 1 ];
+          then
             NUMBER_OF_PROCESSORS=1
           fi
 
@@ -247,7 +251,7 @@ jobs:
        contains(inputs.ci_jobs, 'Android') ||
        contains(inputs.ci_jobs, 'iOS') ||
        contains(inputs.ci_jobs, 'Web'))
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ (matrix.ci_platform == 'windows' || matrix.ci_platform == 'uwp') && 'windows-latest' || ((matrix.ci_platform == 'macos' || matrix.ci_platform == 'ios') && 'macos-13' || 'ubuntu-latest') }}
     needs: [CheckSkipCI, Tools]
 
     strategy:
@@ -255,131 +259,97 @@ jobs:
       matrix:
         include:
           # Desktop: Windows builds
-          - os: windows-2022
-            ci_platform: windows
+          - ci_platform: windows
             ci_arch: x64
             ci_lib_type: dll
             ci_compiler: msvc
             ci_build_type: both
-            job_name: Windows
-          - os: windows-2022
-            ci_platform: windows
+          - ci_platform: windows
             ci_arch: x64
             ci_lib_type: lib
             ci_compiler: msvc
             ci_build_type: both
-            job_name: Windows
-          - os: windows-2022
-            ci_platform: windows
+          - ci_platform: windows
             ci_arch: x86
             ci_lib_type: dll
             ci_compiler: msvc
             ci_build_type: both
-            job_name: Windows
-          - os: windows-2022
-            ci_platform: windows
+          - ci_platform: windows
             ci_arch: x86
             ci_lib_type: lib
             ci_compiler: msvc
             ci_build_type: both
-            job_name: Windows
           # Desktop: Linux builds
-          - os: ubuntu-latest
-            ci_platform: linux
+          - ci_platform: linux
             ci_arch: x64
             ci_lib_type: dll
             ci_compiler: gcc
             ci_build_type: both
-            job_name: Linux
-          - os: ubuntu-latest
-            ci_platform: linux
+          - ci_platform: linux
             ci_arch: x64
             ci_lib_type: lib
             ci_compiler: gcc
             ci_build_type: both
-            job_name: Linux
-          - os: ubuntu-latest
-            ci_platform: linux
+          - ci_platform: linux
             ci_arch: x64
             ci_lib_type: dll
             ci_compiler: clang
             ci_build_type: both
-            job_name: Linux
-          - os: ubuntu-latest
-            ci_platform: linux
+          - ci_platform: linux
             ci_arch: x64
             ci_lib_type: lib
             ci_compiler: clang
             ci_build_type: both
-            job_name: Linux
           # Desktop: MacOS builds
-          - os: macos-latest
-            ci_platform: macos
+          - ci_platform: macos
             ci_arch: x64
             ci_lib_type: dll
             ci_compiler: clang
             ci_build_type: both
-            job_name: MacOS
-          - os: macos-latest
-            ci_platform: macos
+          - ci_platform: macos
             ci_arch: x64
             ci_lib_type: lib
             ci_compiler: clang
             ci_build_type: both
-            job_name: MacOS
           # Mobile: UWP builds
-          - os: windows-2022
-            ci_platform: uwp
+          - ci_platform: uwp
             ci_arch: x64
             ci_lib_type: dll
             ci_compiler: msvc
             ci_build_type: both
-            job_name: UWP
-          - os: windows-2022
-            ci_platform: uwp
+          - ci_platform: uwp
             ci_arch: x64
             ci_lib_type: lib
             ci_compiler: msvc
             ci_build_type: both
-            job_name: UWP
           # Mobile: Android builds
-          - os: ubuntu-latest
-            ci_platform: android
+          - ci_platform: android
             ci_arch: arm64-v8a
             ci_lib_type: lib
             ci_compiler: clang
             ci_build_type: both
-            job_name: Android
-          - os: ubuntu-latest
-            ci_platform: android
+          - ci_platform: android
             ci_arch: armeabi-v7a
             ci_lib_type: lib
             ci_compiler: clang
             ci_build_type: both
-            job_name: Android
-          - os: ubuntu-latest
-            ci_platform: android
+          - ci_platform: android
             ci_arch: x86_64
             ci_lib_type: lib
             ci_compiler: clang
             ci_build_type: both
-            job_name: Android
           # Mobile: iOS builds
-          - os: macos-latest
-            ci_platform: ios
+          - ci_platform: ios
             ci_arch: universal
             ci_lib_type: lib
             ci_compiler: clang
             ci_build_type: both
-            job_name: iOS
           # Mobile: Web builds
-          - os: ubuntu-latest
-            ci_platform: web
+          - ci_platform: web
             ci_arch: wasm
             ci_lib_type: lib
             ci_compiler: emscripten
             ci_build_type: both
-            job_name: Web
 
     env:
       ci_platform: ${{ matrix.ci_platform }}
@@ -408,10 +378,9 @@ jobs:
                         (github.repository == 'rbfx/rbfx')  &&
                         (github.ref == 'refs/heads/master')
                       }}
-      ci_itch: ${{ (github.ref == 'refs/heads/master') }}
+      ci_itch: ${{ (github.ref == 'refs/heads/master') && (github.repository == 'rbfx/rbfx') }}
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
       BINARYEN_CORES: 1
-      CMAKE_PREFIX_PATH: ${{ github.workspace }}/cached-sdk
 
     steps:
       # Mobile-specific: Checkout emsdk (Web only)
@@ -451,7 +420,7 @@ jobs:
             *)            TOOLS_PLATFORM='' ;;
           esac
 
-          BUILD_ID='${{ matrix.job_name }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}'
+          BUILD_ID='${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}'
           CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
           HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
 
@@ -614,7 +583,7 @@ jobs:
           name: 'rbfx-iOS-${{ env.ci_lib_type }}-${{ env.SHORT_SHA }}'
           path: '**/*.app'
 
-      # Test projects (Desktop/UWP/Web only): Empty project using current branch (if present)
+      # Test projects (Desktop/UWP/Web only)
       - uses: actions/checkout@v5
         if: matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web'
         id: empty_project_checkout
@@ -626,7 +595,6 @@ jobs:
           fetch-depth: 1
           submodules: true
 
-      # Empty project using master branch
       - uses: actions/checkout@v5
         if: (matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web') && steps.empty_project_checkout.outcome != 'success'
         with:
@@ -636,59 +604,18 @@ jobs:
           fetch-depth: 1
           submodules: true
 
-      - name: Test empty_project build with SDK
+      - name: Test empty-project with SDK
+        if: matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web'
         shell: bash
-        run: |
-          source_dir='${{ github.workspace }}/empty-project'
-          build_dir='${{ github.workspace }}/empty-project-sdk-build'
-          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+        run: ${{ env.ci_build_script }} test-project empty-project sdk
 
-          # Build cmake args array
-          cmake_args=(-S "$source_dir" -B "$build_dir" -DBUILD_SHARED_LIBS=$shared -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo")
-
-          # Platform-specific configuration
-          if [[ "${{ matrix.ci_platform }}" == "windows" ]]; then
-            arch=$([[ '${{ matrix.ci_arch }}' == "x86" ]] && echo Win32 || echo x64)
-            cmake_args+=(-A "$arch" '-DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }}/share')
-          elif [[ "${{ matrix.ci_platform }}" == "linux" ]]; then
-            export CC=${ci_compiler}
-            export CXX=${ci_compiler/gcc/g}++
-            cmake_args+=(-G 'Ninja Multi-Config' -DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }})
-          else  # macOS
-            cmake_args+=(-DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }})
-          fi
-
-          cmake "${cmake_args[@]}"
-          cmake --build $build_dir --config Debug
-          cmake --build $build_dir --config RelWithDebInfo
-
-      - name: Test empty_project configure with engine source
+      - name: Test empty-project with engine source
+        if: matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web'
         shell: bash
-        run: |
-          source_dir='${{ github.workspace }}/empty-project'
-          build_dir='${{ github.workspace }}/empty-project-source-build'
-          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+        run: ${{ env.ci_build_script }} test-project empty-project source
 
-          # Build cmake args array
-          cmake_args=(-S "$source_dir" -B "$build_dir" -DBUILD_SHARED_LIBS=$shared -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo")
-
-          # Platform-specific configuration
-          if [[ "${{ matrix.ci_platform }}" == "windows" ]]; then
-            arch=$([[ '${{ matrix.ci_arch }}' == "x86" ]] && echo Win32 || echo x64)
-            cmake_args+=(-A "$arch" '-DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake')
-          elif [[ "${{ matrix.ci_platform }}" == "linux" ]]; then
-            export CC=${ci_compiler}
-            export CXX=${ci_compiler/gcc/g}++
-            cmake_args+=(-G 'Ninja Multi-Config' -DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake)
-          else  # macOS
-            cmake_args+=(-DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake)
-          fi
-
-          cmake "${cmake_args[@]}"
-          # Skip building as it would require full engine build
-
-      # Sample project using current branch (if present)
       - uses: actions/checkout@v5
+        if: matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web'
         id: sample_project_checkout
         continue-on-error: true
         with:
@@ -698,9 +625,8 @@ jobs:
           fetch-depth: 1
           submodules: true
 
-      # Sample project using master branch
       - uses: actions/checkout@v5
-        if: steps.sample_project_checkout.outcome != 'success'
+        if: (matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web') && steps.sample_project_checkout.outcome != 'success'
         with:
           repository: rbfx/sample-project
           path: ${{ github.workspace }}/sample-project
@@ -708,56 +634,15 @@ jobs:
           fetch-depth: 1
           submodules: true
 
-      - name: Test sample_project build with SDK
+      - name: Test sample-project with SDK
+        if: matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web'
         shell: bash
-        run: |
-          source_dir='${{ github.workspace }}/sample-project'
-          build_dir='${{ github.workspace }}/sample-project-sdk-build'
-          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
+        run: ${{ env.ci_build_script }} test-project sample-project sdk
 
-          # Build cmake args array
-          cmake_args=(-S "$source_dir" -B "$build_dir" -DBUILD_SHARED_LIBS=$shared -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo")
-
-          # Platform-specific configuration
-          if [[ "${{ matrix.ci_platform }}" == "windows" ]]; then
-            arch=$([[ '${{ matrix.ci_arch }}' == "x86" ]] && echo Win32 || echo x64)
-            cmake_args+=(-A "$arch" '-DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }}/share')
-          elif [[ "${{ matrix.ci_platform }}" == "linux" ]]; then
-            export CC=${ci_compiler}
-            export CXX=${ci_compiler/gcc/g}++
-            cmake_args+=(-G 'Ninja Multi-Config' -DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }})
-          else  # macOS
-            cmake_args+=(-DCMAKE_PREFIX_PATH=${{ env.ci_sdk_dir }})
-          fi
-
-          cmake "${cmake_args[@]}"
-          cmake --build $build_dir --config Debug
-          cmake --build $build_dir --config RelWithDebInfo
-
-      - name: Test sample_project configure with engine source
+      - name: Test sample-project with engine source
+        if: matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web'
         shell: bash
-        run: |
-          source_dir='${{ github.workspace }}/sample-project'
-          build_dir='${{ github.workspace }}/sample-project-source-build'
-          shared=$([[ '${{ matrix.ci_lib_type }}' == 'dll' ]] && echo ON || echo OFF)
-
-          # Build cmake args array
-          cmake_args=(-S "$source_dir" -B "$build_dir" -DBUILD_SHARED_LIBS=$shared -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo")
-
-          # Platform-specific configuration
-          if [[ "${{ matrix.ci_platform }}" == "windows" ]]; then
-            arch=$([[ '${{ matrix.ci_arch }}' == "x86" ]] && echo Win32 || echo x64)
-            cmake_args+=(-A "$arch" '-DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake')
-          elif [[ "${{ matrix.ci_platform }}" == "linux" ]]; then
-            export CC=${ci_compiler}
-            export CXX=${ci_compiler/gcc/g}++
-            cmake_args+=(-G 'Ninja Multi-Config' -DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake)
-          else  # macOS
-            cmake_args+=(-DCMAKE_PREFIX_PATH=${{ env.ci_source_dir }}/CMake)
-          fi
-
-          cmake "${cmake_args[@]}"
-          # Skip building as it would require full engine build
+        run: ${{ env.ci_build_script }} test-project sample-project source
 
       - name: Zip SDK
         if: ${{ env.ci_release_sdk == 'true' }}
@@ -770,14 +655,13 @@ jobs:
 
       - name: Release SDK
         if: ${{ env.ci_release_sdk == 'true' }}
-        uses: WebFreak001/deploy-nightly@v3.0.0
-        with:
-          upload_url: ${{ env.ci_latest_release_url }}
-          release_id: ${{ env.ci_latest_release_id }}
-          asset_path: ${{ github.workspace }}/SDK.zip
-          asset_name: 'rebelfork-sdk-${{ matrix.job_name }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip'
-          asset_content_type: application/zip
-          max_releases: 1
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          name="rebelfork-sdk-${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip"
+          mv '${{ github.workspace }}/SDK.zip' $name
+          gh release upload latest $name --repo '${{ github.repository }}' --clobber
 
       - name: Zip binaries
         if: ${{ env.ci_release_bin == 'true' }}
@@ -790,14 +674,13 @@ jobs:
 
       - name: Release binaries
         if: ${{ env.ci_release_bin == 'true' }}
-        uses: WebFreak001/deploy-nightly@v3.0.0
-        with:
-          upload_url: ${{ env.ci_latest_release_url }}
-          release_id: ${{ env.ci_latest_release_id }}
-          asset_path: ${{ github.workspace }}/SDK-bin.zip
-          asset_name: 'rebelfork-bin-${{ matrix.job_name }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip'
-          asset_content_type: application/zip
-          max_releases: 1
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          name="rebelfork-bin-${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip"
+          mv '${{ github.workspace }}/SDK-bin.zip' $name
+          gh release upload latest $name --repo '${{ github.repository }}' --clobber
 
       - name: Publish to itch.io
         if: ${{ (env.ci_itch == 'true') && (vars.DISABLE_ITCH != 'true') }}
@@ -890,7 +773,7 @@ jobs:
 
             for (const job of buildJobs) {
               const status = job.conclusion || job.status;
-              let statusIcon = ';
+              let statusIcon = '';
 
               switch (status) {
                 case 'success':
