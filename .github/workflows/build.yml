@@ -344,7 +344,7 @@ jobs:
             ci_lib_type: lib
             ci_compiler: clang
             ci_build_type: both
-          # Mobile: Web builds
+          # Web builds
           - ci_platform: web
             ci_arch: wasm
             ci_lib_type: lib
@@ -412,6 +412,14 @@ jobs:
           # Gather values
           SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
 
+          # Platform group
+          case "${{ matrix.ci_platform }}" in
+            windows|linux|macos)  PLATFORM_GROUP='desktop' ;;
+            android|ios)          PLATFORM_GROUP='mobile' ;;
+            uwp)                  PLATFORM_GROUP='uwp' ;;
+            web)                  PLATFORM_GROUP='web' ;;
+          esac
+
           # Platform-specific TOOLS_PLATFORM
           case "${{ matrix.ci_platform }}" in
             android|web)  TOOLS_PLATFORM='Linux' ;;
@@ -439,6 +447,7 @@ jobs:
 
           # Display values
           echo "SHORT_SHA=$SHORT_SHA"
+          echo "PLATFORM_GROUP=$PLATFORM_GROUP"
           echo "BUILD_ID=$BUILD_ID"
           echo "CACHE_ID=$CACHE_ID"
           echo "HASH_THIRDPARTY=$HASH_THIRDPARTY"
@@ -446,6 +455,7 @@ jobs:
 
           # Save values to environment
           echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+          echo "PLATFORM_GROUP=$PLATFORM_GROUP" >> $GITHUB_ENV
           echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
           echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
           echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
@@ -464,7 +474,7 @@ jobs:
             ${{ env.CACHE_ID }}
 
       - name: Download cached tools
-        if: matrix.ci_platform == 'uwp' || matrix.ci_platform == 'android' || matrix.ci_platform == 'ios' || matrix.ci_platform == 'web'
+        if: env.PLATFORM_GROUP != 'desktop'
         id: cached_tools
         shell: bash
         run: bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_TOOLS" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/host-sdk' --required
@@ -583,9 +593,9 @@ jobs:
           name: 'rbfx-iOS-${{ env.ci_lib_type }}-${{ env.SHORT_SHA }}'
           path: '**/*.app'
 
-      # Test projects (Desktop/UWP/Web only)
+      # Test projects (Desktop/UWP/Web only, excluding Android/iOS)
       - uses: actions/checkout@v5
-        if: matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web'
+        if: env.PLATFORM_GROUP != 'mobile'
         id: empty_project_checkout
         continue-on-error: true
         with:
@@ -596,7 +606,7 @@ jobs:
           submodules: true
 
       - uses: actions/checkout@v5
-        if: (matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web') && steps.empty_project_checkout.outcome != 'success'
+        if: env.PLATFORM_GROUP != 'mobile' && steps.empty_project_checkout.outcome != 'success'
         with:
           repository: rbfx/empty-project
           path: ${{ github.workspace }}/empty-project
@@ -605,17 +615,17 @@ jobs:
           submodules: true
 
       - name: Test empty-project with SDK
-        if: matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web'
+        if: env.PLATFORM_GROUP != 'mobile'
         shell: bash
         run: ${{ env.ci_build_script }} test-project empty-project sdk
 
       - name: Test empty-project with engine source
-        if: matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web'
+        if: env.PLATFORM_GROUP != 'mobile'
         shell: bash
         run: ${{ env.ci_build_script }} test-project empty-project source
 
       - uses: actions/checkout@v5
-        if: matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web'
+        if: env.PLATFORM_GROUP != 'mobile'
         id: sample_project_checkout
         continue-on-error: true
         with:
@@ -626,7 +636,7 @@ jobs:
           submodules: true
 
       - uses: actions/checkout@v5
-        if: (matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web') && steps.sample_project_checkout.outcome != 'success'
+        if: env.PLATFORM_GROUP != 'mobile' && steps.sample_project_checkout.outcome != 'success'
         with:
           repository: rbfx/sample-project
           path: ${{ github.workspace }}/sample-project
@@ -635,12 +645,12 @@ jobs:
           submodules: true
 
       - name: Test sample-project with SDK
-        if: matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web'
+        if: env.PLATFORM_GROUP != 'mobile'
         shell: bash
         run: ${{ env.ci_build_script }} test-project sample-project sdk
 
       - name: Test sample-project with engine source
-        if: matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos' || matrix.ci_platform == 'uwp' || matrix.ci_platform == 'web'
+        if: env.PLATFORM_GROUP != 'mobile'
         shell: bash
         run: ${{ env.ci_build_script }} test-project sample-project source
 
