@@ -235,7 +235,7 @@ function action-dependencies() {
         brew install pkg-config ccache bash
     else
         # Windows/UWP dependencies
-        choco install -y ccache
+        choco install -y ccache zip
         if [[ "$ci_platform" == "uwp" ]];
         then
             choco install -y windows-sdk-10-version-2104-all
@@ -455,6 +455,74 @@ function action-test-project() {
     else
         echo "Skipping build for $project_name in source mode as it would take too long."
     fi
+}
+
+# Function to download and verify release from GitHub
+# Usage: download_github_release <url> <extract_dir> <id_file_path> <expected_id>
+# Returns: 0 if successful, 1 if failed or ID mismatch
+download_github_release() {
+    local url="$1"
+    local extract_dir="$2"
+    local id_file_path="$3"
+    local expected_id="$4"
+
+    echo "Attempting to download: $url"
+
+    # Download the zip
+    if ! curl -fsSL "$url" -o download.zip; then
+        echo "Failed to download from releases"
+        return 1
+    fi
+
+    echo "Downloaded successfully"
+
+    # Extract id file to verify version
+    local temp_id_dir="temp-id-$$"
+    if ! unzip -q -j download.zip "$id_file_path" -d "$temp_id_dir" 2>/dev/null; then
+        echo "Could not extract ID file: $id_file_path"
+        rm -f download.zip
+        return 1
+    fi
+
+    local id_filename=$(basename "$id_file_path")
+    local cached_id=$(cat "$temp_id_dir/$id_filename")
+    echo "Cached ID: $cached_id"
+    echo "Expected ID: $expected_id"
+
+    if [[ "$cached_id" != "$expected_id" ]]; then
+        echo "ID mismatch! Download is outdated."
+        rm -rf "$temp_id_dir"
+        rm -f download.zip
+        return 1
+    fi
+
+    echo "ID matches, extracting..."
+    if ! unzip -q download.zip; then
+        echo "Failed to extract archive"
+        rm -rf "$temp_id_dir"
+        rm -f download.zip
+        return 1
+    fi
+
+    # Extract the zip filename from URL and remove .zip extension to get the top-level directory name
+    local zip_name=$(basename "$url")
+    local top_level_dir="${zip_name%.zip}"
+    mv "$top_level_dir" "$extract_dir"
+
+    rm -rf "$temp_id_dir"
+    rm -f download.zip
+    echo "Extraction successful"
+    return 0
+}
+
+# Action to download a release from GitHub
+# Usage: ci_build.sh download-release -- <url> <extract_dir> <id_file_path> <expected_id>
+function action-download-release() {
+    if [ ${#extra_cmake_args[@]} -ne 4 ]; then
+        echo "Error: download-release requires 4 arguments: url extract_dir id_file_path expected_id"
+        return 1
+    fi
+    download_github_release "${extra_cmake_args[0]}" "${extra_cmake_args[1]}" "${extra_cmake_args[2]}" "${extra_cmake_args[3]}"
 }
 
 # Invoke requested action.

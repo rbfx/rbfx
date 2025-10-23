@@ -70,7 +70,7 @@ jobs:
     name: Web Hooks
     runs-on: ubuntu-latest
     continue-on-error: true
-    if: github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master'
+    if: github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/rk/ci-simplify'
     steps:
       - name: Discord Commits
         uses: rbfx/github_discord_notifier@latest
@@ -83,7 +83,7 @@ jobs:
   Release-Latest:
     name: Release 'latest'
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/rk/ci-simplify'
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -148,7 +148,7 @@ jobs:
           CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
           HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
           HASH_TOOLS=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
-          ARTIFACT_ID_TOOLS="rbfx-$BUILD_ID-$HASH_TOOLS-$HASH_THIRDPARTY"
+          ARTIFACT_ID_TOOLS="$HASH_TOOLS-$HASH_THIRDPARTY"
 
           # Determine number of processors
           if [ "$BUILD_ID" == "Linux-Tools" ];
@@ -164,6 +164,16 @@ jobs:
             NUMBER_OF_PROCESSORS=1
           fi
 
+          # Determine platform for release naming
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            PLATFORM_NAME="windows"
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            PLATFORM_NAME="linux"
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            PLATFORM_NAME="macos"
+          fi
+          TOOLS_RELEASE_NAME="rebelfork-tools-${PLATFORM_NAME}-x64-latest.zip"
+
           # Display values
           echo "SHORT_SHA=$SHORT_SHA"
           echo "BUILD_ID=$BUILD_ID"
@@ -172,6 +182,7 @@ jobs:
           echo "HASH_TOOLS=$HASH_TOOLS"
           echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS"
           echo "NUMBER_OF_PROCESSORS=$NUMBER_OF_PROCESSORS"
+          echo "TOOLS_RELEASE_NAME=$TOOLS_RELEASE_NAME"
 
           # Save values to environment
           echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
@@ -181,13 +192,23 @@ jobs:
           echo "HASH_TOOLS=$HASH_TOOLS" >> $GITHUB_ENV
           echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS" >> $GITHUB_ENV
           echo "NUMBER_OF_PROCESSORS=$NUMBER_OF_PROCESSORS" >> $GITHUB_ENV
+          echo "TOOLS_RELEASE_NAME=$TOOLS_RELEASE_NAME" >> $GITHUB_ENV
 
-
-      - name: Check for cached build
+      - name: Download cached tools from releases
         id: cache-check
         if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
         shell: bash
-        run: echo "tools-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' '${{ env.ARTIFACT_ID_TOOLS }}' '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk' --check-only)" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+        run: |
+          if ${{ env.ci_build_script }} download-release -- \
+            "https://github.com/${{ github.repository }}/releases/download/latest/${{ env.TOOLS_RELEASE_NAME }}" \
+            "${{ github.workspace }}/cached-sdk" \
+            "${TOOLS_RELEASE_NAME%.zip}/tools-id.txt" \
+            "${{ env.ARTIFACT_ID_TOOLS }}"; then
+            echo "tools-cached=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tools-cached=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build Cache
         uses: actions/cache@v4
@@ -204,34 +225,38 @@ jobs:
           cmake-version: '${{ env.CMAKE_VERSION }}'
 
       - name: Dependencies
-        if: ${{ steps.cache-check.outputs.tools-cached != 'true' && matrix.os == 'ubuntu-latest' }}
+        if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
         shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ninja-build ccache xvfb libgl1-mesa-dev libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev \
-            libxrender-dev libxss-dev libasound2-dev libpulse-dev libibus-1.0-dev libdbus-1-dev libreadline6-dev libudev-dev uuid-dev libtbb-dev
+        run: ${{ env.ci_build_script }} dependencies
 
       - name: Generate
         if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
         shell: bash
-        run: cmake '-S${{ env.ci_source_dir }}' '-B${{ env.ci_build_dir }}' -DBUILD_SHARED_LIBS=OFF '-DCMAKE_INSTALL_PREFIX=${{ env.ci_sdk_dir }}' -DCMAKE_BUILD_TYPE=Release -DURHO3D_PARALLEL_BUILD=$NUMBER_OF_PROCESSORS
+        run: cmake '-S${{ env.ci_source_dir }}' '-B${{ env.ci_build_dir }}' -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DURHO3D_PARALLEL_BUILD=$NUMBER_OF_PROCESSORS
 
       - name: Build
         if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
         shell: bash
-        run: |
-          cmake --build '${{ env.ci_build_dir }}' --config Release --parallel $NUMBER_OF_PROCESSORS
+        run: cmake --build '${{ env.ci_build_dir }}' --config Release --parallel $NUMBER_OF_PROCESSORS
 
       - name: Install
         if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
         shell: bash
-        run: cmake --install '${{ env.ci_build_dir }}' --config Release --component Tools
+        run: |
+          cmake --install '${{ env.ci_build_dir }}' --config Release --component Tools
+          echo "$ARTIFACT_ID_TOOLS" > '${{ env.ci_sdk_dir }}/tools-id.txt'
 
-      - uses: actions/upload-artifact@v4
-        if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
-        with:
-          name: '${{ env.ARTIFACT_ID_TOOLS }}-${{ env.SHORT_SHA }}'
-          path: ${{ env.ci_sdk_dir }}
+      - name: Release Tools to latest
+        if: ${{ steps.cache-check.outputs.tools-cached != 'true' && github.ref == 'refs/heads/rk/ci-simplify' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Rename SDK to match the release name (without .zip), zip, and rename back
+          zip_name="${TOOLS_RELEASE_NAME%.zip}"
+          mv SDK "$zip_name"
+          zip -r -q "$TOOLS_RELEASE_NAME" "$zip_name"
+          gh release upload latest "$TOOLS_RELEASE_NAME" --repo '${{ github.repository }}' --clobber
 
       - uses: actions/upload-artifact@v4
         if: ${{ env.CCACHE_DEBUG == '1' }}
@@ -358,27 +383,20 @@ jobs:
       ci_compiler: ${{ matrix.ci_compiler }}
       ci_build_type: ${{ matrix.ci_build_type }}
       ci_artifacts: ${{ (
-                          github.ref == 'refs/heads/master'           ||
+                          github.ref == 'refs/heads/rk/ci-simplify'           ||
                           startsWith(github.ref, 'refs/tags/nuget/')  ||
                           startsWith(github.ref, 'refs/heads/nuget/')
                         )
                     }}
-      ci_release_sdk: ${{
-                        (
-                          (matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos') &&
-                          (matrix.ci_arch == 'x64') &&
-                          (matrix.ci_lib_type == 'dll')
-                        ) ||
-                        (matrix.ci_platform == 'web')
-                      }}
+      ci_upload_sdk: ${{ github.ref == 'refs/heads/rk/ci-simplify' }}
       ci_release_bin: ${{
                         (matrix.ci_platform == 'windows' || matrix.ci_platform == 'linux' || matrix.ci_platform == 'macos') &&
                         (matrix.ci_arch == 'x64')           &&
                         (matrix.ci_lib_type == 'dll')       &&
                         (github.repository == 'rbfx/rbfx')  &&
-                        (github.ref == 'refs/heads/master')
+                        (github.ref == 'refs/heads/rk/ci-simplify')
                       }}
-      ci_itch: ${{ (github.ref == 'refs/heads/master') && (github.repository == 'rbfx/rbfx') }}
+      ci_itch: ${{ (github.ref == 'refs/heads/rk/ci-simplify') && (github.repository == 'rbfx/rbfx') }}
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
       BINARYEN_CORES: 1
 
@@ -420,14 +438,6 @@ jobs:
             web)                  PLATFORM_GROUP='web' ;;
           esac
 
-          # Platform-specific TOOLS_PLATFORM
-          case "${{ matrix.ci_platform }}" in
-            android|web)  TOOLS_PLATFORM='Linux' ;;
-            ios)          TOOLS_PLATFORM='MacOS' ;;
-            uwp)          TOOLS_PLATFORM='Windows' ;;
-            *)            TOOLS_PLATFORM='' ;;
-          esac
-
           BUILD_ID='${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}'
           CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
           HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
@@ -436,13 +446,26 @@ jobs:
           ARTIFACT_ID_SDK="rbfx-$BUILD_ID-$HASH_THIRDPARTY"
 
           # Tools artifact (for mobile platforms)
-          if [[ -n "$TOOLS_PLATFORM" ]]; then
+          if [[ "$PLATFORM_GROUP" != "desktop" ]];
+          then
             HASH_TOOLS=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
-            ARTIFACT_ID_TOOLS="rbfx-${TOOLS_PLATFORM}-Tools-$HASH_TOOLS-$HASH_THIRDPARTY"
+            ARTIFACT_ID_TOOLS="$HASH_TOOLS-$HASH_THIRDPARTY"
+
+            # Determine platform for tools download
+            case "${{ matrix.ci_platform }}" in
+              ios)          TOOLS_DOWNLOAD_PLATFORM="macos" ;;
+              android|web)  TOOLS_DOWNLOAD_PLATFORM="linux" ;;
+              uwp)          TOOLS_DOWNLOAD_PLATFORM="windows" ;;
+              *)            TOOLS_DOWNLOAD_PLATFORM="linux" ;;
+            esac
+            TOOLS_RELEASE_NAME="rebelfork-tools-${TOOLS_DOWNLOAD_PLATFORM}-x64-latest.zip"
+
             echo "HASH_TOOLS=$HASH_TOOLS"
             echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS"
+            echo "TOOLS_RELEASE_NAME=$TOOLS_RELEASE_NAME"
             echo "HASH_TOOLS=$HASH_TOOLS" >> $GITHUB_ENV
             echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS" >> $GITHUB_ENV
+            echo "TOOLS_RELEASE_NAME=$TOOLS_RELEASE_NAME" >> $GITHUB_ENV
           fi
 
           # Display values
@@ -473,11 +496,17 @@ jobs:
           restore-keys: |
             ${{ env.CACHE_ID }}
 
-      - name: Download cached tools
+      - name: Download cached tools from releases
         if: env.PLATFORM_GROUP != 'desktop'
         id: cached_tools
         shell: bash
-        run: bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_TOOLS" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/host-sdk' --required
+        continue-on-error: true
+        run: |
+          ${{ env.ci_build_script }} download-release -- \
+            "https://github.com/${{ github.repository }}/releases/download/latest/${{ env.TOOLS_RELEASE_NAME }}" \
+            "${{ github.workspace }}/host-sdk" \
+            "${TOOLS_RELEASE_NAME%.zip}/tools-id.txt" \
+            "${{ env.ARTIFACT_ID_TOOLS }}"
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v4
@@ -502,17 +531,35 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} dependencies
 
-      - name: Download cached SDK
+      - name: Download cached SDK from releases
         id: cached_sdk
-        if: ${{ !contains(github.event.head_commit.message, '#full-build') && env.ci_release_sdk != 'true' }}
+        if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
         shell: bash
+        continue-on-error: true
         run: |
-          echo "sdk-cached=$(bash '${{ env.ci_source_dir }}/script/ci_download_artifact.sh' "$ARTIFACT_ID_SDK" '${{ github.token }}' '${{ github.repository }}' '${{ github.workspace }}/cached-sdk')" >> "$GITHUB_OUTPUT"
+          if ${{ env.ci_build_script }} download-release -- \
+            "https://github.com/${{ github.repository }}/releases/download/latest/rebelfork-sdk-${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip" \
+            "${{ github.workspace }}/cached-sdk" \
+            "rebelfork-sdk-${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest/thirdparty-id.txt" \
+            "${{ env.HASH_THIRDPARTY }}"; then
+            echo "sdk-cached=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "sdk-cached=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Generate
+        id: generate
         if: matrix.ci_platform != 'android'
         shell: bash
-        run: ${{ env.ci_build_script }} generate
+        run: |
+          ${{ env.ci_build_script }} generate 2>&1 | tee generate.log
+          if grep -q "Could NOT find Urho3DThirdParty" generate.log; then
+            echo "thirdparty-used=false" >> "$GITHUB_OUTPUT"
+            echo "ThirdParty will be built from source"
+          else
+            echo "thirdparty-used=true" >> "$GITHUB_OUTPUT"
+            echo "Using cached Urho3DThirdParty"
+          fi
 
       - name: Build
         shell: bash
@@ -547,7 +594,7 @@ jobs:
         run: ${{ env.ci_build_script }} cstest rel
 
       - name: Copy cached SDK (ThirdParty component)
-        if: steps.cached_sdk.outputs.sdk-cached == 'true'
+        if: steps.cached_sdk.outputs.sdk-cached == 'true' && steps.generate.outputs.thirdparty-used == 'true'
         shell: bash
         run: |
           src='${{ github.workspace }}/cached-sdk'
@@ -564,15 +611,22 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ matrix.ci_build_type }}" == "both" ]]; then
-            ${{ env.ci_build_script }} install dbg
-            ${{ env.ci_build_script }} install rel
+            ${{ env.ci_build_script }} install dbg -- --prefix '${{ env.ci_sdk_dir }}'
+            ${{ env.ci_build_script }} install rel -- --prefix '${{ env.ci_sdk_dir }}'
           else
-            ${{ env.ci_build_script }} install
+            ${{ env.ci_build_script }} install -- --prefix '${{ env.ci_sdk_dir }}'
+          fi
+
+          if [[ "${{ matrix.ci_platform }}" == "android" ]];
+          then
+            find '${{ env.ci_source_dir }}/android/.cxx' -type d -path '*/${{ matrix.ci_arch }}/install' -exec sh -c 'echo "${{ env.HASH_THIRDPARTY }}" > "$0/thirdparty-id.txt"' {} \;
+          else
+            echo "${{ env.HASH_THIRDPARTY }}" > '${{ env.ci_sdk_dir }}/thirdparty-id.txt'
           fi
 
       # Web-specific: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
-        if: matrix.ci_platform == 'web' && github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master'
+        if: matrix.ci_platform == 'web' && github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/rk/ci-simplify'
         uses: peaceiris/actions-gh-pages@v3
         with:
           personal_token: ${{ secrets.RBFX_DOCS_DEPLOY_TOKEN }}
@@ -583,6 +637,7 @@ jobs:
           publish_branch: master
 
       - uses: actions/upload-artifact@v4
+        if: ${{ startsWith(github.ref, 'refs/tags/nuget/') || startsWith(github.ref, 'refs/heads/nuget/') }}
         with:
           name: '${{ env.ARTIFACT_ID_SDK }}-${{ env.SHORT_SHA }}'
           path: ${{ env.ci_sdk_dir }}
@@ -596,13 +651,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true' && matrix.ci_platform == 'android'
         with:
-          name: 'rbfx-Android-apks-${{ matrix.ci_arch }}-${{ env.SHORT_SHA }}'
+          name: 'rebelfork-bin-${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.SHORT_SHA }}'
           path: '**/*.apk'
 
       - uses: actions/upload-artifact@v4
         if: env.ci_artifacts == 'true' && matrix.ci_platform == 'ios'
         with:
-          name: 'rbfx-iOS-${{ env.ci_lib_type }}-${{ env.SHORT_SHA }}'
+          name: 'rebelfork-bin-${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.SHORT_SHA }}'
           path: '**/*.app'
 
       # Test projects (Desktop/UWP/Web only, excluding Android/iOS)
@@ -667,22 +722,22 @@ jobs:
         run: ${{ env.ci_build_script }} test-project sample-project source
 
       - name: Zip SDK
-        if: ${{ env.ci_release_sdk == 'true' }}
-        uses: TheDoctor0/zip-release@0.7.6
-        with:
-          directory: ${{ github.workspace }}
-          filename: ${{ github.workspace }}/SDK.zip
-          path: 'SDK'
-          exclusions: "${{ matrix.ci_platform == 'windows' && 'SDK/cmake-build' || '/SDK/cmake-build/*' }}"
+        if: ${{ env.ci_upload_sdk == 'true' }}
+        shell: bash
+        run: |
+          # Rename SDK to match the release name (without .zip), zip, and rename back
+          zip_name="rebelfork-sdk-${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest"
+          mv SDK "$zip_name"
+          zip -r -q "${zip_name}.zip" "$zip_name"
+          mv "$zip_name" SDK
 
       - name: Release SDK
-        if: ${{ env.ci_release_sdk == 'true' }}
+        if: ${{ env.ci_upload_sdk == 'true' }}
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           name="rebelfork-sdk-${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip"
-          mv '${{ github.workspace }}/SDK.zip' $name
           gh release upload latest $name --repo '${{ github.repository }}' --clobber
 
       - name: Zip binaries
@@ -748,7 +803,7 @@ jobs:
 
   Docs:
     runs-on: ubuntu-latest
-    if: github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master'
+    if: github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/rk/ci-simplify'
     needs:
       - Build
       - CheckSkipCI
