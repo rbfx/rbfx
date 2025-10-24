@@ -596,7 +596,7 @@ jobs:
           ${{ env.ci_build_script }} install dbg -- --component ThirdParty --prefix '${{ env.ci_sdk_dir }}'
           ${{ env.ci_build_script }} install rel -- --component ThirdParty --prefix '${{ env.ci_sdk_dir }}'
           echo "${{ env.HASH_THIRDPARTY }}" > '${{ env.ci_sdk_dir }}/thirdparty-id.txt'
-          find '${{ env.ci_sdk_dir }}' -mindepth 1 -type f -printf '%P\n' > '${{ env.ci_sdk_dir }}/thirdparty-files.txt'
+          (cd '${{ env.ci_sdk_dir }}' && find . -type f | sed 's|^\./||' > thirdparty-files.txt)
 
           # Install rest of files
           ${{ env.ci_build_script }} install dbg -- --prefix '${{ env.ci_sdk_dir }}'

@@ -359,8 +359,8 @@ function action-install() {
         copy-runtime-libraries-for-executables "$ci_sdk_dir/bin"
     fi
 
-    # Create deploy directory on Web.
-    if [[ "$ci_platform" == "web" && "$ci_build_type" == "rel" ]];
+    # Create deploy directory on Web (only when not installing specific components).
+    if [[ "$ci_platform" == "web" && "$ci_build_type" == "rel" && ! " ${extra_cmake_args[@]} " =~ " --component " ]];
     then
         mkdir -p $ci_sdk_dir/deploy/
         cp -r \
