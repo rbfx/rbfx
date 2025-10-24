@@ -42,6 +42,18 @@ if (APPLE)
     enable_language(OBJCXX)
 endif ()
 
+# Normalize CPU architecture for compatibility checking across builds
+set(rbfx_SYSTEM_PROCESSOR "${CMAKE_SYSTEM_PROCESSOR}")
+if(rbfx_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64)$")
+    set(rbfx_SYSTEM_PROCESSOR "x86_64")
+elseif(rbfx_SYSTEM_PROCESSOR MATCHES "^(i386|i686|x86)$")
+    set(rbfx_SYSTEM_PROCESSOR "x86")
+elseif(rbfx_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+    set(rbfx_SYSTEM_PROCESSOR "aarch64")
+elseif(rbfx_SYSTEM_PROCESSOR MATCHES "^(armv7|armv7l|armv7-a)$")
+    set(rbfx_SYSTEM_PROCESSOR "armv7")
+endif()
+
 if (BUILD_SHARED_LIBS OR WEB)
     set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif ()
