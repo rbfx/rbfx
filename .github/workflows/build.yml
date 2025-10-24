@@ -122,6 +122,8 @@ jobs:
       URHO3D_SHADER_TRANSLATOR: OFF
       URHO3D_SHADER_OPTIMIZER: OFF
       URHO3D_TOOLS: "swig;PackageTool"
+      ci_platform: ${{ matrix.os == 'windows-latest' && 'windows' || (matrix.os == 'ubuntu-latest' && 'linux' || 'macos') }}
+      ci_arch: x64
 
     steps:
       - uses: actions/checkout@v5
@@ -243,7 +245,7 @@ jobs:
         if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
         shell: bash
         run: |
-          cmake --install '${{ env.ci_build_dir }}' --config Release --component Tools
+          cmake --install '${{ env.ci_build_dir }}' --config Release --component Tools --prefix '${{ env.ci_sdk_dir }}'
           echo "$ARTIFACT_ID_TOOLS" > '${{ env.ci_sdk_dir }}/tools-id.txt'
 
       - name: Release Tools to latest
@@ -288,100 +290,82 @@ jobs:
             ci_arch: x64
             ci_lib_type: dll
             ci_compiler: msvc
-            ci_build_type: both
           - ci_platform: windows
             ci_arch: x64
             ci_lib_type: lib
             ci_compiler: msvc
-            ci_build_type: both
           - ci_platform: windows
             ci_arch: x86
             ci_lib_type: dll
             ci_compiler: msvc
-            ci_build_type: both
           - ci_platform: windows
             ci_arch: x86
             ci_lib_type: lib
             ci_compiler: msvc
-            ci_build_type: both
           # Desktop: Linux builds
           - ci_platform: linux
             ci_arch: x64
             ci_lib_type: dll
             ci_compiler: gcc
-            ci_build_type: both
           - ci_platform: linux
             ci_arch: x64
             ci_lib_type: lib
             ci_compiler: gcc
-            ci_build_type: both
           - ci_platform: linux
             ci_arch: x64
             ci_lib_type: dll
             ci_compiler: clang
-            ci_build_type: both
           - ci_platform: linux
             ci_arch: x64
             ci_lib_type: lib
             ci_compiler: clang
-            ci_build_type: both
           # Desktop: MacOS builds
           - ci_platform: macos
             ci_arch: x64
             ci_lib_type: dll
             ci_compiler: clang
-            ci_build_type: both
           - ci_platform: macos
             ci_arch: x64
             ci_lib_type: lib
             ci_compiler: clang
-            ci_build_type: both
           # Mobile: UWP builds
           - ci_platform: uwp
             ci_arch: x64
             ci_lib_type: dll
             ci_compiler: msvc
-            ci_build_type: both
           - ci_platform: uwp
             ci_arch: x64
             ci_lib_type: lib
             ci_compiler: msvc
-            ci_build_type: both
           # Mobile: Android builds
           - ci_platform: android
             ci_arch: arm64-v8a
             ci_lib_type: lib
             ci_compiler: clang
-            ci_build_type: both
           - ci_platform: android
             ci_arch: armeabi-v7a
             ci_lib_type: lib
             ci_compiler: clang
-            ci_build_type: both
           - ci_platform: android
             ci_arch: x86_64
             ci_lib_type: lib
             ci_compiler: clang
-            ci_build_type: both
           # Mobile: iOS builds
           - ci_platform: ios
             ci_arch: universal
             ci_lib_type: lib
             ci_compiler: clang
-            ci_build_type: both
           # Web builds
           - ci_platform: web
             ci_arch: wasm
             ci_lib_type: lib
             ci_compiler: emscripten
-            ci_build_type: both
 
     env:
       ci_platform: ${{ matrix.ci_platform }}
       ci_arch: ${{ matrix.ci_arch }}
       ci_lib_type: ${{ matrix.ci_lib_type }}
       ci_compiler: ${{ matrix.ci_compiler }}
-      ci_build_type: ${{ matrix.ci_build_type }}
       ci_artifacts: ${{ (
                           github.ref == 'refs/heads/rk/ci-simplify'           ||
                           startsWith(github.ref, 'refs/tags/nuget/')  ||
@@ -438,7 +422,7 @@ jobs:
             web)                  PLATFORM_GROUP='web' ;;
           esac
 
-          BUILD_ID='${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ matrix.ci_build_type }}'
+          BUILD_ID='${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}'
           CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
           HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
 
@@ -561,35 +545,33 @@ jobs:
             echo "Using cached Urho3DThirdParty"
           fi
 
-      - name: Build
+      - name: Build Debug
         shell: bash
-        run: |
-          if [[ "${{ matrix.ci_build_type }}" == "both" ]]; then
-            ${{ env.ci_build_script }} build dbg
-            ${{ env.ci_build_script }} build rel
-          else
-            ${{ env.ci_build_script }} build ${{ matrix.ci_build_type }}
-          fi
+        run: ${{ env.ci_build_script }} build dbg
+
+      - name: Build Release
+        shell: bash
+        run: ${{ env.ci_build_script }} build rel
 
       - name: Test Debug (Native)
-        if: matrix.ci_build_type == 'both' && (matrix.ci_compiler == 'msvc' || matrix.ci_platform == 'linux')
+        if: (matrix.ci_compiler == 'msvc' || matrix.ci_platform == 'linux')
         shell: bash
         run: ${{ env.ci_build_script }} test dbg
 
       - name: Test Debug (Managed)
         # TODO: Fix C# on x86, issue #733.
-        if: matrix.ci_build_type == 'both' && matrix.ci_platform == 'windows' && matrix.ci_compiler == 'msvc' && matrix.ci_lib_type == 'dll' && matrix.ci_arch == 'x64'
+        if: matrix.ci_platform == 'windows' && matrix.ci_compiler == 'msvc' && matrix.ci_lib_type == 'dll' && matrix.ci_arch == 'x64'
         shell: bash
         run: ${{ env.ci_build_script }} cstest dbg
 
       - name: Test Release (Native)
-        if: matrix.ci_build_type == 'both' && (matrix.ci_compiler == 'msvc' || matrix.ci_platform == 'linux')
+        if: (matrix.ci_compiler == 'msvc' || matrix.ci_platform == 'linux')
         shell: bash
         run: ${{ env.ci_build_script }} test rel
 
       - name: Test Release (Managed)
         # TODO: Fix C# on x86, issue #733.
-        if: matrix.ci_build_type == 'both' && matrix.ci_platform == 'windows' && matrix.ci_compiler == 'msvc' && matrix.ci_lib_type == 'dll' && matrix.ci_arch == 'x64'
+        if: matrix.ci_platform == 'windows' && matrix.ci_compiler == 'msvc' && matrix.ci_lib_type == 'dll' && matrix.ci_arch == 'x64'
         shell: bash
         run: ${{ env.ci_build_script }} cstest rel
 
@@ -610,19 +592,15 @@ jobs:
       - name: Install
         shell: bash
         run: |
-          if [[ "${{ matrix.ci_build_type }}" == "both" ]]; then
-            ${{ env.ci_build_script }} install dbg -- --prefix '${{ env.ci_sdk_dir }}'
-            ${{ env.ci_build_script }} install rel -- --prefix '${{ env.ci_sdk_dir }}'
-          else
-            ${{ env.ci_build_script }} install -- --prefix '${{ env.ci_sdk_dir }}'
-          fi
+          # Prepare ThirdParty file manifests
+          ${{ env.ci_build_script }} install dbg -- --component ThirdParty --prefix '${{ env.ci_sdk_dir }}'
+          ${{ env.ci_build_script }} install rel -- --component ThirdParty --prefix '${{ env.ci_sdk_dir }}'
+          echo "${{ env.HASH_THIRDPARTY }}" > '${{ env.ci_sdk_dir }}/thirdparty-id.txt'
+          find '${{ env.ci_sdk_dir }}' -mindepth 1 -type f -printf '%P\n' > '${{ env.ci_sdk_dir }}/thirdparty-files.txt'
 
-          if [[ "${{ matrix.ci_platform }}" == "android" ]];
-          then
-            find '${{ env.ci_source_dir }}/android/.cxx' -type d -path '*/${{ matrix.ci_arch }}/install' -exec sh -c 'echo "${{ env.HASH_THIRDPARTY }}" > "$0/thirdparty-id.txt"' {} \;
-          else
-            echo "${{ env.HASH_THIRDPARTY }}" > '${{ env.ci_sdk_dir }}/thirdparty-id.txt'
-          fi
+          # Install rest of files
+          ${{ env.ci_build_script }} install dbg -- --prefix '${{ env.ci_sdk_dir }}'
+          ${{ env.ci_build_script }} install rel -- --prefix '${{ env.ci_sdk_dir }}'
 
       # Web-specific: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
