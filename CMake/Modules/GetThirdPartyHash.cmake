@@ -24,16 +24,21 @@
 # This hash changes when:
 # - Files are added/removed from git in the ThirdParty directory
 # - Any tracked file content changes (even if not staged/committed)
-# FNV-1a hash function
+# FNV-1a hash function - processes hex string (SHA1 hash)
 function(fnv1a_hash input output)
   set(_hash "2166136261")  # FNV offset basis (32-bit)
   string(LENGTH "${input}" _len)
-  math(EXPR _len "${_len} - 1")
 
-  foreach(_i RANGE 0 ${_len})
-    string(SUBSTRING "${input}" ${_i} 1 _char)
-    string(HEX "${_char}" _byte)
-    math(EXPR _hash "(${_hash} ^ 0x${_byte}) * 16777619")
+  # Process input as hex digits (2 chars = 1 byte)
+  math(EXPR _num_bytes "${_len} / 2")
+  math(EXPR _last_byte "${_num_bytes} - 1")
+
+  foreach(_i RANGE 0 ${_last_byte})
+    math(EXPR _pos "${_i} * 2")
+    string(SUBSTRING "${input}" ${_pos} 2 _hex_byte)
+    # Convert hex string to decimal
+    math(EXPR _byte "0x${_hex_byte}" OUTPUT_FORMAT DECIMAL)
+    math(EXPR _hash "(${_hash} ^ ${_byte}) * 16777619")
     math(EXPR _hash "${_hash} & 0xFFFFFFFF")  # Keep 32-bit
   endforeach()
 
@@ -140,7 +145,20 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
 
                 # Calculate current file content hash (this includes local modifications)
                 if(EXISTS "${FULL_FILE_PATH}")
-                    file(SHA1 "${FULL_FILE_PATH}" CURRENT_HASH)
+                    # Use git hash-object to get consistent hash regardless of line endings
+                    # This matches how git stores the object, normalizing line endings
+                    execute_process(
+                        COMMAND ${GIT_EXECUTABLE} hash-object "${FULL_FILE_PATH}"
+                        WORKING_DIRECTORY "${GIT_ROOT}"
+                        OUTPUT_VARIABLE CURRENT_HASH
+                        OUTPUT_STRIP_TRAILING_WHITESPACE
+                        ERROR_QUIET
+                        RESULT_VARIABLE HASH_RESULT
+                    )
+                    if(NOT HASH_RESULT EQUAL 0)
+                        # Fallback to file SHA1 if git hash-object fails
+                        file(SHA1 "${FULL_FILE_PATH}" CURRENT_HASH)
+                    endif()
                 else()
                     # File was deleted locally
                     set(CURRENT_HASH "deleted")
@@ -152,24 +170,34 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
         endif()
     endforeach()
 
-    # Also include names of files with working-tree modifications in the directory
-    # so that any file tree change (modify/move/delete) affects the version.
-    # Equivalent to: git diff --name-only -- <REL_DIR>
-    set(DIFF_FILE_LIST "")
+    # Also check for untracked files in the directory
+    # This ensures new files affect the version even before being tracked
     execute_process(
-        COMMAND ${GIT_EXECUTABLE} diff --name-only -- ${REL_DIR}
+        COMMAND ${GIT_EXECUTABLE} ls-files --others --exclude-standard ${REL_DIR}
         WORKING_DIRECTORY "${GIT_ROOT}"
-        OUTPUT_VARIABLE GIT_DIFF_OUTPUT
+        OUTPUT_VARIABLE UNTRACKED_OUTPUT
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
-        RESULT_VARIABLE GIT_DIFF_RESULT
+        RESULT_VARIABLE UNTRACKED_RESULT
     )
-    if(GIT_DIFF_RESULT EQUAL 0 AND GIT_DIFF_OUTPUT)
-        string(REPLACE "\n" ";" GIT_DIFF_LINES "${GIT_DIFF_OUTPUT}")
-        foreach(DIFF_PATH ${GIT_DIFF_LINES})
-            if(NOT DIFF_PATH STREQUAL "")
-                # Prefix entries to avoid collision with ls-files lines
-                list(APPEND FILE_HASH_LIST "diff\t${DIFF_PATH}")
+    if(UNTRACKED_RESULT EQUAL 0 AND UNTRACKED_OUTPUT)
+        string(REPLACE "\n" ";" UNTRACKED_LINES "${UNTRACKED_OUTPUT}")
+        foreach(UNTRACKED_PATH ${UNTRACKED_LINES})
+            if(NOT UNTRACKED_PATH STREQUAL "")
+                # Hash untracked files too
+                set(UNTRACKED_FULL_PATH "${GIT_ROOT}/${UNTRACKED_PATH}")
+                if(EXISTS "${UNTRACKED_FULL_PATH}")
+                    execute_process(
+                        COMMAND ${GIT_EXECUTABLE} hash-object "${UNTRACKED_FULL_PATH}"
+                        WORKING_DIRECTORY "${GIT_ROOT}"
+                        OUTPUT_VARIABLE UNTRACKED_HASH
+                        OUTPUT_STRIP_TRAILING_WHITESPACE
+                        ERROR_QUIET
+                    )
+                    if(UNTRACKED_HASH)
+                        list(APPEND FILE_HASH_LIST "untracked ${UNTRACKED_HASH} 0\t${UNTRACKED_PATH}")
+                    endif()
+                endif()
             endif()
         endforeach()
     endif()

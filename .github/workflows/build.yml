@@ -340,15 +340,15 @@ jobs:
           # Mobile: Android builds
           - ci_platform: android
             ci_arch: arm64-v8a
-            ci_lib_type: lib
+            ci_lib_type: dll
             ci_compiler: clang
           - ci_platform: android
             ci_arch: armeabi-v7a
-            ci_lib_type: lib
+            ci_lib_type: dll
             ci_compiler: clang
           - ci_platform: android
             ci_arch: x86_64
-            ci_lib_type: lib
+            ci_lib_type: dll
             ci_compiler: clang
           # Mobile: iOS builds
           - ci_platform: ios
