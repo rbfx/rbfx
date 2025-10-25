@@ -33,7 +33,7 @@
 
 #include <atomic>
 
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
 namespace enki
 {
 class ICompletable;
@@ -191,7 +191,7 @@ private:
 
     template <class T> static TaskFunction WrapTask(T&& task);
 
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
     template <class T> void SetupInternalTask(T* internalTask, TaskFunction&& task, TaskPriority priority);
 
     /// Thread-safe pool for infrequent low-priority tasks.

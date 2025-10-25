@@ -132,6 +132,16 @@
     #error Unsupported platform
 #endif
 
+// Threading support macros:
+// URHO3D_THREADING_GENERAL: Arbitrary thread creation is supported via any standard means: std::thread, std::async, etc
+// URHO3D_THREADING_WORKERS: Limited threading support via posting tasks to WorkQueue.
+#ifdef URHO3D_THREADING
+    #ifndef URHO3D_PLATFORM_WEB
+        #define URHO3D_THREADING_GENERAL
+    #endif
+    #define URHO3D_THREADING_WORKERS
+#endif
+
 namespace Urho3D
 {
 }

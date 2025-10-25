@@ -89,7 +89,7 @@ bool FileWatcher::StartWatching(const ea::string& pathName, bool watchSubDirs)
 
     SetName("Watcher for " + pathName);
 
-#if defined(URHO3D_FILEWATCHER) && defined(URHO3D_THREADING)
+#if defined(URHO3D_FILEWATCHER) && defined(URHO3D_THREADING_GENERAL)
 #ifdef _WIN32
     ea::string nativePath = GetNativePath(RemoveTrailingSlash(pathName));
 

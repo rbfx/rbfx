@@ -31,7 +31,7 @@
 #include "Urho3D/Core/Timer.h"
 #include "Urho3D/IO/Log.h"
 
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
     #include <enkiTS/src/TaskScheduler.h>
 #endif
 
@@ -45,7 +45,7 @@ namespace
 unsigned threadIndexCount{};
 WorkQueue* workQueue{};
 
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
 template <class T> struct ReleaseInternalTask : enki::ICompletable
 {
     enki::Dependency dependency_;
@@ -69,7 +69,7 @@ TaskPriority ConvertLegacyPriority(unsigned priority)
 
 } // namespace
 
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
 
 template <class T> WorkQueue::TaskPool<T>::TaskPool()
 {
@@ -256,7 +256,7 @@ WorkQueue::WorkQueue(Context* context)
 
 WorkQueue::~WorkQueue()
 {
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
     if (taskScheduler_)
     {
         taskScheduler_->ShutdownNow();
@@ -281,7 +281,7 @@ void WorkQueue::Initialize(unsigned numThreads)
     numProcessingThreads_ = numThreads + 1;
     threadIndexCount = 1;
 
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
     if (numThreads > 0)
     {
         taskScheduler_ = ea::make_unique<enki::TaskScheduler>();
@@ -302,6 +302,12 @@ void WorkQueue::Initialize(unsigned numThreads)
 
         URHO3D_LOGINFO("Created {} worker thread{}", numThreads, numThreads > 1 ? "s" : "");
     }
+    else
+    {
+        URHO3D_LOGINFO("Worker threads are disabled on initialization");
+    }
+#else
+    URHO3D_LOGINFO("Worker threads are disabled in this build");
 #endif
 }
 
@@ -313,7 +319,7 @@ void WorkQueue::Update()
 
 void WorkQueue::ProcessPostedTasks()
 {
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
     if (taskScheduler_)
     {
         CompleteImmediateForThisThread();
@@ -342,7 +348,7 @@ void WorkQueue::ProcessPostedTasks()
 
 bool WorkQueue::ProcessMainThreadTasks()
 {
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
     if (taskScheduler_)
         taskScheduler_->RunPinnedTasks();
 #endif
@@ -366,7 +372,7 @@ void WorkQueue::PurgeProcessedTasksInFallbackQueue()
         [](const ea::pair<TaskPriority, TaskFunction>& priorityAndTask) { return !priorityAndTask.second; });
 }
 
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
 template <class T> void WorkQueue::SetupInternalTask(T* internalTask, TaskFunction&& task, TaskPriority priority)
 {
     internalTask->function_ = ea::move(task);
@@ -385,7 +391,7 @@ void WorkQueue::PostTask(TaskFunction&& task, TaskPriority priority)
         return;
     }
 
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
     if (taskScheduler_)
     {
         if (priority == TaskPriority::Immediate)
@@ -422,7 +428,7 @@ void WorkQueue::PostTaskForThread(TaskFunction&& task, TaskPriority priority, un
         return;
     }
 
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
     if (taskScheduler_)
     {
         if (priority == TaskPriority::Immediate)
@@ -451,7 +457,7 @@ void WorkQueue::PostTaskForThread(TaskFunction&& task, TaskPriority priority, un
 
 void WorkQueue::PostTaskForMainThread(TaskFunction&& task, TaskPriority priority)
 {
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
     if (taskScheduler_ && IsProcessingThread())
     {
         PostTaskForThread(ea::move(task), priority, 0);
@@ -473,7 +479,7 @@ void WorkQueue::PostDelayedTaskForMainThread(TaskFunction&& task)
 
 void WorkQueue::CompleteImmediateForAnotherThread(unsigned threadIndex)
 {
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
     static const auto priority = static_cast<enki::TaskPriority>(TaskPriority::Immediate);
     if (taskScheduler_)
     {
@@ -499,7 +505,7 @@ void WorkQueue::CompleteImmediateForAnotherThread(unsigned threadIndex)
 
 void WorkQueue::CompleteImmediateForThisThread()
 {
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
     if (taskScheduler_)
     {
         const unsigned threadIndex = GetThreadIndex();
@@ -511,7 +517,7 @@ void WorkQueue::CompleteImmediateForThisThread()
 
 void WorkQueue::CompleteAll()
 {
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
     if (taskScheduler_)
         taskScheduler_->WaitforAll();
 #endif
@@ -559,7 +565,7 @@ SharedPtr<WorkItem> WorkQueue::AddWorkItem(ea::function<void(unsigned threadInde
 unsigned WorkQueue::GetNumIncomplete() const
 {
     unsigned result = fallbackTaskQueue_.size();
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
     result += globalTaskPool_.GetNumUsed();
     result += globalPinnedTaskPool_.GetNumUsed();
 #endif
@@ -573,7 +579,7 @@ bool WorkQueue::IsCompleted() const
 
 unsigned WorkQueue::GetThreadIndex()
 {
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_WORKERS
     if (workQueue && workQueue->taskScheduler_)
         return workQueue->taskScheduler_->GetThreadNum();
 #endif

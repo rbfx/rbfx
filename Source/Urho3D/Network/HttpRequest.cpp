@@ -186,7 +186,7 @@ HttpRequest::HttpRequest(
 
     if (requestHandle_)
         state_ = HTTP_OPEN;
-#elif defined(URHO3D_THREADING)
+#elif defined(URHO3D_THREADING_GENERAL)
     static bool sslInitialized = false;
     if (!sslInitialized)
     {

@@ -41,7 +41,7 @@
 namespace Urho3D
 {
 
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_GENERAL
 #ifdef _WIN32
 
 #if !defined(UWP)
@@ -118,7 +118,7 @@ void* Thread::ThreadFunctionStatic(void* data)
 }
 
 #endif
-#endif // URHO3D_THREADING
+#endif // URHO3D_THREADING_GENERAL
 
 ThreadID Thread::mainThreadID;
 
@@ -136,7 +136,7 @@ Thread::~Thread()
 
 bool Thread::Run()
 {
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_GENERAL
     // Check if already running
     if (handle_)
         return false;
@@ -154,12 +154,12 @@ bool Thread::Run()
     return handle_ != nullptr;
 #else
     return false;
-#endif // URHO3D_THREADING
+#endif // URHO3D_THREADING_GENERAL
 }
 
 void Thread::Stop()
 {
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_GENERAL
     // Check if already stopped
     if (!handle_)
         return;
@@ -174,12 +174,12 @@ void Thread::Stop()
         pthread_join(thread, nullptr);
 #endif
     handle_ = nullptr;
-#endif // URHO3D_THREADING
+#endif // URHO3D_THREADING_GENERAL
 }
 
 void Thread::SetPriority(int priority)
 {
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_GENERAL
 #ifdef _WIN32
     if (handle_)
         SetThreadPriority((HANDLE)handle_, priority);
@@ -188,7 +188,7 @@ void Thread::SetPriority(int priority)
     if (thread)
         pthread_setschedprio(thread, priority);
 #endif
-#endif // URHO3D_THREADING
+#endif // URHO3D_THREADING_GENERAL
 }
 
 void Thread::SetMainThread()
@@ -198,7 +198,7 @@ void Thread::SetMainThread()
 
 ThreadID Thread::GetCurrentThreadID()
 {
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_GENERAL
 #ifdef _WIN32
     return GetCurrentThreadId();
 #else
@@ -206,16 +206,16 @@ ThreadID Thread::GetCurrentThreadID()
 #endif
 #else
     return ThreadID();
-#endif // URHO3D_THREADING
+#endif // URHO3D_THREADING_GENERAL
 }
 
 bool Thread::IsMainThread()
 {
-#ifdef URHO3D_THREADING
+#ifdef URHO3D_THREADING_GENERAL
     return GetCurrentThreadID() == mainThreadID;
 #else
     return true;
-#endif // URHO3D_THREADING
+#endif // URHO3D_THREADING_GENERAL
 }
 
 void Thread::SetName(const ea::string& name)

@@ -33,6 +33,8 @@
 namespace Urho3D
 {
 
+#ifdef URHO3D_THREADING_GENERAL
+
 class Resource;
 class ResourceCache;
 
@@ -84,5 +86,7 @@ private:
     /// Resources that are queued for background loading.
     ea::unordered_map<ea::pair<StringHash, StringHash>, BackgroundLoadItem> backgroundLoadQueue_;
 };
+
+#endif
 
 }

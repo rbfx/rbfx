@@ -241,8 +241,10 @@ private:
     ea::unordered_map<StringHash, ResourceGroup> resourceGroups_;
     /// Dependent resources. Only used with automatic reload to eg. trigger reload of a cube texture when any of its faces change.
     ea::unordered_map<StringHash, ea::hash_set<StringHash> > dependentResources_;
+#ifdef URHO3D_THREADING_GENERAL
     /// Resource background loader.
     SharedPtr<BackgroundLoader> backgroundLoader_;
+#endif
     /// Resource routers.
     ea::vector<SharedPtr<ResourceRouter> > resourceRouters_;
     /// Return failed resources flag.

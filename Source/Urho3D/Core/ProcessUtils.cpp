@@ -78,6 +78,8 @@ extern "C" unsigned SDL_TVOS_GetActiveProcessorCount();
 
 #if defined(__EMSCRIPTEN__) && defined(__EMSCRIPTEN_PTHREADS__)
 #include <emscripten/threading.h>
+#include <emscripten/bind.h>
+#include <emscripten/val.h>
 #endif
 
 #if defined(__i386__)
@@ -118,12 +120,30 @@ extern "C" RPCRTAPI RPC_STATUS RPC_ENTRY RpcStringFreeA(RPC_CSTR* String);
 namespace Urho3D
 {
 
+namespace
+{
+
 #ifdef _WIN32
 static bool consoleOpened = false;
 #endif
 static ea::string currentLine;
 static ea::vector<ea::string> arguments;
 static ea::string miniDumpDir;
+
+#ifdef URHO3D_PLATFORM_WEB
+unsigned GetNumPthreadWorkers()
+{
+    const auto varPThread = emscripten::val::global("PThread");
+    if (varPThread.isUndefined())
+        return 0;
+
+    const int numUnusedWorkers = varPThread["unusedWorkers"]["length"].as<int>();
+    const int numRunningWorkers = varPThread["runningWorkers"]["length"].as<int>();
+    return static_cast<unsigned>(numUnusedWorkers + numRunningWorkers);
+}
+#endif
+
+} // namespace
 
 void InitFPU()
 {
@@ -461,6 +481,8 @@ unsigned GetNumPhysicalCPUs()
 #elif defined(URHO3D_PLATFORM_WEB)
 #ifndef __EMSCRIPTEN_PTHREADS__
     cpuCount = 1; // Targeting a single-threaded Emscripten build.
+#else
+    cpuCount = GetNumPthreadWorkers() + 1;
 #endif  // __EMSCRIPTEN_PTHREADS__
 #elif defined(URHO3D_PLATFORM_WINDOWS)
     DWORD bufferSize = 0;
