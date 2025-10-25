@@ -492,8 +492,11 @@ endfunction ()
 
 function (web_executable TARGET)
     # TARGET target_name                            - A name of target.
+    # THREADING                                     - Whether to enable multithreading for this target.
     # Sets up a target for deployment to web.
     # Use this macro on targets that should compile for web platform, possibly right after add_executable().
+    cmake_parse_arguments(WEB_EXECUTABLE "THREADING" "" "" ${ARGN})
+
     if (WEB)
         set_target_properties (${TARGET} PROPERTIES SUFFIX .html)
         target_link_libraries(${TARGET} PRIVATE -sNO_EXIT_RUNTIME=1 -sFORCE_FILESYSTEM=1 -sASSERTIONS=0 -lidbfs.js)
@@ -512,6 +515,9 @@ function (web_executable TARGET)
                 "SHELL:--js-library ${LIBDATACHANNEL_WASM_DIR}/wasm/js/webrtc.js"
                 "SHELL:--js-library ${LIBDATACHANNEL_WASM_DIR}/wasm/js/websocket.js"
             )
+        endif ()
+        if (WEB_EXECUTABLE_THREADING)
+            target_link_libraries (${TARGET} PRIVATE "-sPTHREAD_POOL_SIZE=\"!!globalThis.SharedArrayBuffer && self.crossOriginIsolated ? navigator.hardwareConcurrency - 1 : 0\"")
         endif ()
     endif ()
 endfunction ()

@@ -302,6 +302,12 @@ void WorkQueue::Initialize(unsigned numThreads)
 
         URHO3D_LOGINFO("Created {} worker thread{}", numThreads, numThreads > 1 ? "s" : "");
     }
+    else
+    {
+        URHO3D_LOGINFO("Worker threads are disabled on initialization");
+    }
+#else
+    URHO3D_LOGINFO("Worker threads are disabled in this build");
 #endif
 }
 

@@ -50,10 +50,7 @@ add_subdirectory(fmt)
 add_subdirectory(spdlog)
 add_subdirectory(SDL)
 add_subdirectory(ETCPACK)
-
-if (NOT WEB)
-    add_subdirectory(enkiTS)
-endif ()
+add_subdirectory(enkiTS)
 
 add_subdirectory(tinygltf)
 if (URHO3D_TESTING)
