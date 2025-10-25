@@ -335,15 +335,21 @@ bool Project::ExecuteRemoteCommand(const ea::string& command, ea::string* output
 
 void Project::ExecuteRemoteCommandAsync(const ea::string& command, CommandExecutedCallback callback)
 {
+#ifdef URHO3D_THREADING
     PendingRemoteCommand remoteCommand;
     remoteCommand.callback_ = ea::move(callback);
-    remoteCommand.result_ = std::async([=]()
+    remoteCommand.result_ = std::async(std::launch::async, [=]()
     {
         ea::string output;
         const bool success = ExecuteRemoteCommand(command, &output);
         return ea::make_pair(success, output);
     });
     pendingRemoteCommands_.push_back(ea::move(remoteCommand));
+#else
+    ea::string output;
+    const bool success = ExecuteRemoteCommand(command, &output);
+    callback(success, output);
+#endif
 }
 
 void Project::Destroy()

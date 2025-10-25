@@ -1,9 +1,11 @@
-Module['preRun'].push(function() {
-    Module['addRunDependency']('@RESOURCES@.loader')
-	var s = document.createElement('script');
-	s.src = '@RESOURCES@';
-	document.body.appendChild(s);
-	s.onload = function() {
-		Module['removeRunDependency']('@RESOURCES@.loader')
-	};
-});
+if (!ENVIRONMENT_IS_WORKER) {
+	Module['preRun'].push(function() {
+		Module['addRunDependency']('@RESOURCES@.loader')
+		var s = document.createElement('script');
+		s.src = '@RESOURCES@';
+		document.body.appendChild(s);
+		s.onload = function() {
+			Module['removeRunDependency']('@RESOURCES@.loader')
+		};
+	});
+}

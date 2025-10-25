@@ -30,8 +30,15 @@
 #include "../Core/Thread.h"
 #include "../Math/StringHash.h"
 
+// BackgroundLoader is not supported for Web now.
+// TODO: Migrate BackgroundLoader to WorkQueue and avoid this extra toggle
+#if defined(URHO3D_THREADING) && !defined(URHO3D_PLATFORM_WEB)
+    #define URHO3D_BACKGROUND_LOADER
+#endif
+
 namespace Urho3D
 {
+
 
 class Resource;
 class ResourceCache;

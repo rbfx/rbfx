@@ -646,7 +646,7 @@ int FileSystem::SystemSpawn(const ea::string& fileName, const ea::vector<ea::str
 
 unsigned FileSystem::SystemCommandAsync(const ea::string& commandLine)
 {
-#ifdef URHO3D_THREADING
+#if defined(URHO3D_THREADING) && !defined(URHO3D_PLATFORM_WEB)
     if (allowedPaths_.empty())
     {
         unsigned requestID = nextAsyncExecID_;
@@ -667,7 +667,7 @@ unsigned FileSystem::SystemCommandAsync(const ea::string& commandLine)
 
 unsigned FileSystem::SystemRunAsync(const ea::string& fileName, const ea::vector<ea::string>& arguments)
 {
-#ifdef URHO3D_THREADING
+#if defined(URHO3D_THREADING) && !defined(URHO3D_PLATFORM_WEB)
     if (allowedPaths_.empty())
     {
         unsigned requestID = nextAsyncExecID_;

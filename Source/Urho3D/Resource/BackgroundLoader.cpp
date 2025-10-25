@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-#ifdef URHO3D_THREADING
-
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
@@ -35,6 +33,8 @@
 
 namespace Urho3D
 {
+
+#ifdef URHO3D_BACKGROUND_LOADER
 
 BackgroundLoader::BackgroundLoader(ResourceCache* owner) :
     owner_(owner)
@@ -301,6 +301,6 @@ void BackgroundLoader::FinishBackgroundLoading(BackgroundLoadItem& item)
     }
 }
 
-}
-
 #endif
+
+}
