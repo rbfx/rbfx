@@ -400,6 +400,42 @@ function action-publish-to-itch() {
     butler push "$ci_build_dir/bin" "rebelfork/rebelfork:$ci_platform-$ci_arch-$ci_lib_type-$ci_compiler-$ci_build_type"
 }
 
+function action-release-mobile-artifacts() {
+    if [[ -z "${GH_TOKEN}" ]]; then
+        echo "No GH_TOKEN detected. Can't release artifacts."
+        return 1
+    fi
+
+    # Determine file pattern and zip options based on platform
+    local pattern zip_opts
+    case "$ci_platform" in
+        android)
+            pattern="*.apk"
+            zip_opts="-q"
+            ;;
+        ios)
+            pattern="*.app"
+            zip_opts="-r -q"
+            ;;
+        *)
+            echo "⚠ Warning: action-release-mobile-artifacts called for non-mobile platform: $ci_platform"
+            return 1
+            ;;
+    esac
+
+    # Find and release the artifact
+    local artifact=$(find . -name "$pattern" $([[ "$ci_platform" == "ios" ]] && echo "-type d") | head -n 1)
+    if [ -n "$artifact" ]; then
+        local zip_name="rebelfork-bin-${BUILD_ID}-latest.zip"
+        zip $zip_opts "$zip_name" "$artifact"
+        gh release upload latest "$zip_name" --repo "${GITHUB_REPOSITORY}" --clobber
+        echo "✓ Released $zip_name"
+    else
+        echo "⚠ Warning: No $pattern file found"
+        return 1
+    fi
+}
+
 function action-test-project() {
     # Usage: test-project <project_name> <mode>
     # project_name: empty-project or sample-project
@@ -523,6 +559,59 @@ function action-download-release() {
         return 1
     fi
     download_github_release "${extra_cmake_args[0]}" "${extra_cmake_args[1]}" "${extra_cmake_args[2]}" "${extra_cmake_args[3]}"
+}
+
+# Action to gather build information and set environment variables
+# Usage: ci_build.sh gather-info [tools|build]
+function action-gather-info() {
+    # Define env variables
+    SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
+    HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${ci_source_dir}/Source/ThirdParty" -DHASH_FORMAT=short -P "${ci_source_dir}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+    HASH_TOOLS=$(cmake -DDIRECTORY_PATH="${ci_source_dir}/Source/Tools" -DHASH_FORMAT=short -P "${ci_source_dir}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+    BUILD_ID="${ci_platform}-${ci_compiler}-${ci_lib_type}-${ci_arch}"
+    ARTIFACT_ID_TOOLS="$HASH_TOOLS-$HASH_THIRDPARTY"
+    CACHE_ID="${ccache_prefix}-$BUILD_ID"
+    case "$ci_platform" in
+        windows|linux|macos)  PLATFORM_GROUP='desktop' ;;
+        android|ios)          PLATFORM_GROUP='mobile' ;;
+        uwp)                  PLATFORM_GROUP='uwp' ;;
+        web)                  PLATFORM_GROUP='web' ;;
+    esac
+
+    # Determine number of processors
+    case "$ci_platform" in
+        linux|android|web)
+            NUMBER_OF_PROCESSORS=$(nproc)
+            TOOLS_RELEASE_NAME="rebelfork-tools-linux-gcc-lib-x64.zip"
+            ;;
+        macos|ios)
+            NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
+            TOOLS_RELEASE_NAME="rebelfork-tools-macos-clang-lib-x64.zip"
+            ;;
+        windows|uwp)
+            NUMBER_OF_PROCESSORS=${NUMBER_OF_PROCESSORS:-1} # Already set on windows
+            TOOLS_RELEASE_NAME="rebelfork-tools-windows-msvc-lib-x64.zip"
+            ;;
+    esac
+
+    NUMBER_OF_PROCESSORS=$(( (NUMBER_OF_PROCESSORS + 1) / 2 ))
+    if [ "$NUMBER_OF_PROCESSORS" -lt 1 ]; then
+        NUMBER_OF_PROCESSORS=1
+    fi
+
+    # Save to GitHub Actions environment if available
+    if [ -n "$GITHUB_ENV" ]; then
+        echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+        echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
+        echo "PLATFORM_GROUP=$PLATFORM_GROUP" >> $GITHUB_ENV
+        echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
+        echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
+        echo "HASH_TOOLS=$HASH_TOOLS" >> $GITHUB_ENV
+        echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS" >> $GITHUB_ENV
+        echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK" >> $GITHUB_ENV
+        echo "TOOLS_RELEASE_NAME=$TOOLS_RELEASE_NAME" >> $GITHUB_ENV
+        echo "NUMBER_OF_PROCESSORS=$NUMBER_OF_PROCESSORS" >> $GITHUB_ENV
+    fi
 }
 
 # Invoke requested action.

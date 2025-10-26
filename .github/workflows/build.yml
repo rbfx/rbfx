@@ -114,7 +114,7 @@ jobs:
           - os: ubuntu-latest
           - os: macos-latest
     env:
-      BUILD_SHARED_LIBS: ON
+      BUILD_SHARED_LIBS: OFF
       URHO3D_GRAPHICS_API: OpenGL
       URHO3D_ENABLE_ALL: OFF
       URHO3D_SAMPLES: OFF
@@ -123,7 +123,9 @@ jobs:
       URHO3D_SHADER_OPTIMIZER: OFF
       URHO3D_TOOLS: "swig;PackageTool"
       ci_platform: ${{ matrix.os == 'windows-latest' && 'windows' || (matrix.os == 'ubuntu-latest' && 'linux' || 'macos') }}
+      ci_compiler: ${{ matrix.os == 'windows-latest' && 'msvc'    || (matrix.os == 'ubuntu-latest' && 'gcc'   || 'clang') }}
       ci_arch: x64
+      ci_lib_type: lib
 
     steps:
       - uses: actions/checkout@v5
@@ -133,68 +135,7 @@ jobs:
 
       - name: Gather information
         shell: bash
-        run: |
-          if [[ "${{ matrix.os }}" == "windows-latest" ]];
-          then
-            BUILD_ID='Windows-Tools'
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]];
-          then
-            BUILD_ID='Linux-Tools'
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]];
-          then
-            BUILD_ID='MacOS-Tools'
-          fi
-
-          # Gather values
-          SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
-          CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
-          HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
-          HASH_TOOLS=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
-          ARTIFACT_ID_TOOLS="$HASH_TOOLS-$HASH_THIRDPARTY"
-
-          # Determine number of processors
-          if [ "$BUILD_ID" == "Linux-Tools" ];
-          then
-            NUMBER_OF_PROCESSORS=$(nproc)
-          elif [ "$BUILD_ID" == "MacOS-Tools" ];
-          then
-            NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
-          fi
-          NUMBER_OF_PROCESSORS=$(( (NUMBER_OF_PROCESSORS + 1) / 2 ))
-          if [ "$NUMBER_OF_PROCESSORS" -lt 1 ];
-          then
-            NUMBER_OF_PROCESSORS=1
-          fi
-
-          # Determine platform for release naming
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            PLATFORM_NAME="windows"
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            PLATFORM_NAME="linux"
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            PLATFORM_NAME="macos"
-          fi
-          TOOLS_RELEASE_NAME="rebelfork-tools-${PLATFORM_NAME}-x64-latest.zip"
-
-          # Display values
-          echo "SHORT_SHA=$SHORT_SHA"
-          echo "BUILD_ID=$BUILD_ID"
-          echo "CACHE_ID=$CACHE_ID"
-          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY"
-          echo "HASH_TOOLS=$HASH_TOOLS"
-          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS"
-          echo "NUMBER_OF_PROCESSORS=$NUMBER_OF_PROCESSORS"
-          echo "TOOLS_RELEASE_NAME=$TOOLS_RELEASE_NAME"
-
-          # Save values to environment
-          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
-          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
-          echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
-          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
-          echo "HASH_TOOLS=$HASH_TOOLS" >> $GITHUB_ENV
-          echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS" >> $GITHUB_ENV
-          echo "NUMBER_OF_PROCESSORS=$NUMBER_OF_PROCESSORS" >> $GITHUB_ENV
-          echo "TOOLS_RELEASE_NAME=$TOOLS_RELEASE_NAME" >> $GITHUB_ENV
+        run: ${{ env.ci_build_script }} gather-info
 
       - name: Download cached tools from releases
         id: cache-check
@@ -206,7 +147,8 @@ jobs:
             "https://github.com/${{ github.repository }}/releases/download/latest/${{ env.TOOLS_RELEASE_NAME }}" \
             "${{ github.workspace }}/cached-sdk" \
             "${TOOLS_RELEASE_NAME%.zip}/tools-id.txt" \
-            "${{ env.ARTIFACT_ID_TOOLS }}"; then
+            "${{ env.ARTIFACT_ID_TOOLS }}";
+          then
             echo "tools-cached=true" >> "$GITHUB_OUTPUT"
           else
             echo "tools-cached=false" >> "$GITHUB_OUTPUT"
@@ -410,63 +352,7 @@ jobs:
 
       - name: Gather information
         shell: bash
-        run: |
-          # Gather values
-          SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
-
-          # Platform group
-          case "${{ matrix.ci_platform }}" in
-            windows|linux|macos)  PLATFORM_GROUP='desktop' ;;
-            android|ios)          PLATFORM_GROUP='mobile' ;;
-            uwp)                  PLATFORM_GROUP='uwp' ;;
-            web)                  PLATFORM_GROUP='web' ;;
-          esac
-
-          BUILD_ID='${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}'
-          CACHE_ID="${{ env.ccache_prefix }}-$BUILD_ID"
-          HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/ThirdParty" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
-
-          # Platform-specific ARTIFACT_ID_SDK
-          ARTIFACT_ID_SDK="rbfx-$BUILD_ID-$HASH_THIRDPARTY"
-
-          # Tools artifact (for mobile platforms)
-          if [[ "$PLATFORM_GROUP" != "desktop" ]];
-          then
-            HASH_TOOLS=$(cmake -DDIRECTORY_PATH="${{ env.ci_source_dir }}/Source/Tools" -DHASH_FORMAT=short -P "${{ env.ci_source_dir }}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
-            ARTIFACT_ID_TOOLS="$HASH_TOOLS-$HASH_THIRDPARTY"
-
-            # Determine platform for tools download
-            case "${{ matrix.ci_platform }}" in
-              ios)          TOOLS_DOWNLOAD_PLATFORM="macos" ;;
-              android|web)  TOOLS_DOWNLOAD_PLATFORM="linux" ;;
-              uwp)          TOOLS_DOWNLOAD_PLATFORM="windows" ;;
-              *)            TOOLS_DOWNLOAD_PLATFORM="linux" ;;
-            esac
-            TOOLS_RELEASE_NAME="rebelfork-tools-${TOOLS_DOWNLOAD_PLATFORM}-x64-latest.zip"
-
-            echo "HASH_TOOLS=$HASH_TOOLS"
-            echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS"
-            echo "TOOLS_RELEASE_NAME=$TOOLS_RELEASE_NAME"
-            echo "HASH_TOOLS=$HASH_TOOLS" >> $GITHUB_ENV
-            echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS" >> $GITHUB_ENV
-            echo "TOOLS_RELEASE_NAME=$TOOLS_RELEASE_NAME" >> $GITHUB_ENV
-          fi
-
-          # Display values
-          echo "SHORT_SHA=$SHORT_SHA"
-          echo "PLATFORM_GROUP=$PLATFORM_GROUP"
-          echo "BUILD_ID=$BUILD_ID"
-          echo "CACHE_ID=$CACHE_ID"
-          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY"
-          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK"
-
-          # Save values to environment
-          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
-          echo "PLATFORM_GROUP=$PLATFORM_GROUP" >> $GITHUB_ENV
-          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
-          echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
-          echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
-          echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK" >> $GITHUB_ENV
+        run: ${{ env.ci_build_script }} gather-info
 
       - name: Set up butler
         if: ${{ (env.ci_itch == 'true') && (vars.DISABLE_ITCH != 'true') }}
@@ -522,9 +408,9 @@ jobs:
         continue-on-error: true
         run: |
           if ${{ env.ci_build_script }} download-release -- \
-            "https://github.com/${{ github.repository }}/releases/download/latest/rebelfork-sdk-${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip" \
+            "https://github.com/${{ github.repository }}/releases/download/latest/rebelfork-sdk-${{ env.BUILD_ID }}-latest.zip" \
             "${{ github.workspace }}/cached-sdk" \
-            "rebelfork-sdk-${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest/thirdparty-id.txt" \
+            "rebelfork-sdk-${{ env.BUILD_ID }}-latest/thirdparty-id.txt" \
             "${{ env.HASH_THIRDPARTY }}"; then
             echo "sdk-cached=true" >> "$GITHUB_OUTPUT"
           else
@@ -536,7 +422,7 @@ jobs:
         if: matrix.ci_platform != 'android'
         shell: bash
         run: |
-          ${{ env.ci_build_script }} generate 2>&1 | tee generate.log
+          ${{ env.ci_build_script }} generate -- -DURHO3D_PARALLEL_BUILD=$NUMBER_OF_PROCESSORS 2>&1 | tee generate.log
           if grep -q "Could NOT find Urho3DThirdParty" generate.log; then
             echo "thirdparty-used=false" >> "$GITHUB_OUTPUT"
             echo "ThirdParty will be built from source"
@@ -547,11 +433,11 @@ jobs:
 
       - name: Build Debug
         shell: bash
-        run: ${{ env.ci_build_script }} build dbg
+        run: ${{ env.ci_build_script }} build dbg -- --parallel $NUMBER_OF_PROCESSORS
 
       - name: Build Release
         shell: bash
-        run: ${{ env.ci_build_script }} build rel
+        run: ${{ env.ci_build_script }} build rel -- --parallel $NUMBER_OF_PROCESSORS
 
       - name: Test Debug (Native)
         if: (matrix.ci_compiler == 'msvc' || matrix.ci_platform == 'linux')
@@ -614,29 +500,19 @@ jobs:
           publish_dir: ${{ env.ci_sdk_dir }}/deploy
           publish_branch: master
 
-      - uses: actions/upload-artifact@v4
-        if: ${{ startsWith(github.ref, 'refs/tags/nuget/') || startsWith(github.ref, 'refs/heads/nuget/') }}
-        with:
-          name: '${{ env.ARTIFACT_ID_SDK }}-${{ env.SHORT_SHA }}'
-          path: ${{ env.ci_sdk_dir }}
-
       # Android-specific: Build APK
       - name: Build APK
         if: matrix.ci_platform == 'android'
         shell: bash
         run: ${{ env.ci_build_script }} apk rel
 
-      - uses: actions/upload-artifact@v4
-        if: env.ci_artifacts == 'true' && matrix.ci_platform == 'android'
-        with:
-          name: 'rebelfork-bin-${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.SHORT_SHA }}'
-          path: '**/*.apk'
-
-      - uses: actions/upload-artifact@v4
-        if: env.ci_artifacts == 'true' && matrix.ci_platform == 'ios'
-        with:
-          name: 'rebelfork-bin-${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-${{ env.SHORT_SHA }}'
-          path: '**/*.app'
+      - name: Release Mobile Artifacts
+        if: env.ci_artifacts == 'true' && (matrix.ci_platform == 'android' || matrix.ci_platform == 'ios')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: ${{ env.ci_build_script }} release-mobile-artifacts
 
       # Test projects (Desktop/UWP/Web only, excluding Android/iOS)
       - uses: actions/checkout@v5
@@ -704,7 +580,7 @@ jobs:
         shell: bash
         run: |
           # Rename SDK to match the release name (without .zip), zip, and rename back
-          zip_name="rebelfork-sdk-${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest"
+          zip_name="rebelfork-sdk-${{ env.BUILD_ID }}-latest"
           mv SDK "$zip_name"
           zip -r -q "${zip_name}.zip" "$zip_name"
           mv "$zip_name" SDK
@@ -715,7 +591,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          name="rebelfork-sdk-${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip"
+          name="rebelfork-sdk-${{ env.BUILD_ID }}-latest.zip"
           gh release upload latest $name --repo '${{ github.repository }}' --clobber
 
       - name: Zip binaries
@@ -733,7 +609,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          name="rebelfork-bin-${{ matrix.ci_platform }}-${{ matrix.ci_compiler }}-${{ matrix.ci_lib_type }}-${{ matrix.ci_arch }}-latest.zip"
+          name="rebelfork-bin-${{ env.BUILD_ID }}-latest.zip"
           mv '${{ github.workspace }}/SDK-bin.zip' $name
           gh release upload latest $name --repo '${{ github.repository }}' --clobber
 
@@ -765,9 +641,36 @@ jobs:
         id: vars
         run: echo "sha_short=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_OUTPUT
 
-      - uses: actions/download-artifact@v4
-        with:
-          path: source-code/packaging/nuget/
+      - name: Download SDKs from releases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: source-code/packaging/nuget/
+        run: |
+          # Define all SDK configurations that need to be downloaded for NuGet packaging
+          platforms=(
+            "windows-msvc-dll-x64"
+            "linux-gcc-dll-x64"
+            "macos-clang-dll-x64"
+            "uwp-msvc-dll-x64"
+            "android-clang-dll-arm64-v8a"
+            "android-clang-dll-armeabi-v7a"
+            "android-clang-dll-x86_64"
+            "ios-clang-lib-universal"
+          )
+
+          echo "Downloading SDKs from releases..."
+          for platform in "${platforms[@]}"; do
+            sdk_name="rebelfork-sdk-${platform}-latest.zip"
+            echo "Downloading $sdk_name..."
+            if gh release download latest --repo '${{ github.repository }}' --pattern "$sdk_name" --dir .; then
+              echo "✓ Downloaded $sdk_name"
+              unzip -q "$sdk_name"
+              rm "$sdk_name"
+            else
+              echo "⚠ Warning: Failed to download $sdk_name (may not exist yet)"
+            fi
+          done
 
       - name: Nuget
         shell: bash
