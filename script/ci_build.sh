@@ -223,19 +223,19 @@ function action-dependencies() {
 
         # Common dependencies
         sudo apt-get update
-        sudo apt-get install -y ninja-build ccache xvfb "${dev_packages[@]}"
+        sudo apt-get install -y ninja-build ccache xvfb p7zip-full "${dev_packages[@]}"
     elif [[ "$ci_platform" == "web" || "$ci_platform" == "android" ]];
     then
         # Web / android dependencies
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends uuid-dev ninja-build ccache
+        sudo apt-get install -y --no-install-recommends uuid-dev ninja-build ccache p7zip-full
     elif [[ "$ci_platform" == "macos" || "$ci_platform" == "ios" ]];
     then
         # iOS/MacOS dependencies
-        brew install pkg-config ccache bash
+        brew install pkg-config ccache bash p7zip
     else
         # Windows/UWP dependencies
-        choco install -y ccache zip
+        choco install -y ccache 7zip
         if [[ "$ci_platform" == "uwp" ]];
         then
             choco install -y windows-sdk-10-version-2104-all
@@ -406,16 +406,14 @@ function action-release-mobile-artifacts() {
         return 1
     fi
 
-    # Determine file pattern and zip options based on platform
-    local pattern zip_opts
+    # Determine file pattern based on platform
+    local pattern
     case "$ci_platform" in
         android)
             pattern="*.apk"
-            zip_opts="-q"
             ;;
         ios)
             pattern="*.app"
-            zip_opts="-r -q"
             ;;
         *)
             echo "⚠ Warning: action-release-mobile-artifacts called for non-mobile platform: $ci_platform"
@@ -426,10 +424,10 @@ function action-release-mobile-artifacts() {
     # Find and release the artifact
     local artifact=$(find . -name "$pattern" $([[ "$ci_platform" == "ios" ]] && echo "-type d") | head -n 1)
     if [ -n "$artifact" ]; then
-        local zip_name="rebelfork-bin-${BUILD_ID}-latest.zip"
-        zip $zip_opts "$zip_name" "$artifact"
-        gh release upload latest "$zip_name" --repo "${GITHUB_REPOSITORY}" --clobber
-        echo "✓ Released $zip_name"
+        local archive_name="rebelfork-bin-${BUILD_ID}-latest.7z"
+        7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "$archive_name" "$artifact"
+        gh release upload latest "$archive_name" --repo "${GITHUB_REPOSITORY}" --clobber
+        echo "✓ Released $archive_name"
     else
         echo "⚠ Warning: No $pattern file found"
         return 1
@@ -504,8 +502,8 @@ download_github_release() {
 
     echo "Attempting to download: $url"
 
-    # Download the zip
-    if ! curl -fsSL "$url" -o download.zip; then
+    # Download the archive
+    if ! curl -fsSL "$url" -o download.7z; then
         echo "Failed to download from releases"
         return 1
     fi
@@ -514,9 +512,11 @@ download_github_release() {
 
     # Extract id file to verify version
     local temp_id_dir="temp-id-$$"
-    if ! unzip -q -j download.zip "$id_file_path" -d "$temp_id_dir" 2>/dev/null; then
+    mkdir -p "$temp_id_dir"
+    if ! 7z e -y "download.7z" "$id_file_path" -o"$temp_id_dir" >/dev/null 2>&1; then
         echo "Could not extract ID file: $id_file_path"
-        rm -f download.zip
+        rm -f download.7z
+        rm -rf "$temp_id_dir"
         return 1
     fi
 
@@ -528,25 +528,25 @@ download_github_release() {
     if [[ "$cached_id" != "$expected_id" ]]; then
         echo "ID mismatch! Download is outdated."
         rm -rf "$temp_id_dir"
-        rm -f download.zip
+        rm -f download.7z
         return 1
     fi
 
     echo "ID matches, extracting..."
-    if ! unzip -q download.zip; then
+    if ! 7z x -y download.7z >/dev/null; then
         echo "Failed to extract archive"
         rm -rf "$temp_id_dir"
-        rm -f download.zip
+        rm -f download.7z
         return 1
     fi
 
-    # Extract the zip filename from URL and remove .zip extension to get the top-level directory name
-    local zip_name=$(basename "$url")
-    local top_level_dir="${zip_name%.zip}"
+    # Extract the archive filename from URL and remove .7z extension to get the top-level directory name
+    local archive_name=$(basename "$url")
+    local top_level_dir="${archive_name%.7z}"
     mv "$top_level_dir" "$extract_dir"
 
     rm -rf "$temp_id_dir"
-    rm -f download.zip
+    rm -f download.7z
     echo "Extraction successful"
     return 0
 }
@@ -582,15 +582,15 @@ function action-gather-info() {
     case "$ci_platform" in
         linux|android|web)
             NUMBER_OF_PROCESSORS=$(nproc)
-            TOOLS_RELEASE_NAME="rebelfork-tools-linux-gcc-lib-x64.zip"
+            TOOLS_RELEASE_NAME="rebelfork-tools-linux-gcc-lib-x64.7z"
             ;;
         macos|ios)
             NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
-            TOOLS_RELEASE_NAME="rebelfork-tools-macos-clang-lib-x64.zip"
+            TOOLS_RELEASE_NAME="rebelfork-tools-macos-clang-lib-x64.7z"
             ;;
         windows|uwp)
             NUMBER_OF_PROCESSORS=${NUMBER_OF_PROCESSORS:-1} # Already set on windows
-            TOOLS_RELEASE_NAME="rebelfork-tools-windows-msvc-lib-x64.zip"
+            TOOLS_RELEASE_NAME="rebelfork-tools-windows-msvc-lib-x64.7z"
             ;;
     esac
 

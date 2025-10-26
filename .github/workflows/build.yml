@@ -146,7 +146,7 @@ jobs:
           if ${{ env.ci_build_script }} download-release -- \
             "https://github.com/${{ github.repository }}/releases/download/latest/${{ env.TOOLS_RELEASE_NAME }}" \
             "${{ github.workspace }}/cached-sdk" \
-            "${TOOLS_RELEASE_NAME%.zip}/tools-id.txt" \
+            "${TOOLS_RELEASE_NAME%.7z}/tools-id.txt" \
             "${{ env.ARTIFACT_ID_TOOLS }}";
           then
             echo "tools-cached=true" >> "$GITHUB_OUTPUT"
@@ -196,16 +196,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Rename SDK to match the release name (without .zip), zip, and rename back
-          zip_name="${TOOLS_RELEASE_NAME%.zip}"
-          mv SDK "$zip_name"
-          zip -r -q "$TOOLS_RELEASE_NAME" "$zip_name"
+          # Rename SDK to match the release name (without .7z), compress with 7z, and rename back
+          archive_name="${TOOLS_RELEASE_NAME%.7z}"
+          mv SDK "$archive_name"
+          7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "$TOOLS_RELEASE_NAME" "$archive_name"
           gh release upload latest "$TOOLS_RELEASE_NAME" --repo '${{ github.repository }}' --clobber
 
       - uses: actions/upload-artifact@v4
         if: ${{ env.CCACHE_DEBUG == '1' }}
         with:
-          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          name: 'ccache-debug-tools-${{ env.BUILD_ID }}-${{ github.run_id }}'
           path: ${{ env.CCACHE_DEBUGDIR }}
           if-no-files-found: ignore
 
@@ -375,7 +375,7 @@ jobs:
           ${{ env.ci_build_script }} download-release -- \
             "https://github.com/${{ github.repository }}/releases/download/latest/${{ env.TOOLS_RELEASE_NAME }}" \
             "${{ github.workspace }}/host-sdk" \
-            "${TOOLS_RELEASE_NAME%.zip}/tools-id.txt" \
+            "${TOOLS_RELEASE_NAME%.7z}/tools-id.txt" \
             "${{ env.ARTIFACT_ID_TOOLS }}"
 
       - name: Setup dotnet
@@ -408,7 +408,7 @@ jobs:
         continue-on-error: true
         run: |
           if ${{ env.ci_build_script }} download-release -- \
-            "https://github.com/${{ github.repository }}/releases/download/latest/rebelfork-sdk-${{ env.BUILD_ID }}-latest.zip" \
+            "https://github.com/${{ github.repository }}/releases/download/latest/rebelfork-sdk-${{ env.BUILD_ID }}-latest.7z" \
             "${{ github.workspace }}/cached-sdk" \
             "rebelfork-sdk-${{ env.BUILD_ID }}-latest/thirdparty-id.txt" \
             "${{ env.HASH_THIRDPARTY }}"; then
@@ -575,15 +575,15 @@ jobs:
         shell: bash
         run: ${{ env.ci_build_script }} test-project sample-project source
 
-      - name: Zip SDK
+      - name: Compress SDK
         if: ${{ env.ci_upload_sdk == 'true' }}
         shell: bash
         run: |
-          # Rename SDK to match the release name (without .zip), zip, and rename back
-          zip_name="rebelfork-sdk-${{ env.BUILD_ID }}-latest"
-          mv SDK "$zip_name"
-          zip -r -q "${zip_name}.zip" "$zip_name"
-          mv "$zip_name" SDK
+          # Rename SDK to match the release name (without .7z), compress with 7z max compression
+          archive_name="rebelfork-sdk-${{ env.BUILD_ID }}-latest"
+          mv SDK "$archive_name"
+          7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "${archive_name}.7z" "$archive_name"
+          mv "$archive_name" SDK
 
       - name: Release SDK
         if: ${{ env.ci_upload_sdk == 'true' }}
@@ -591,17 +591,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          name="rebelfork-sdk-${{ env.BUILD_ID }}-latest.zip"
+          name="rebelfork-sdk-${{ env.BUILD_ID }}-latest.7z"
           gh release upload latest $name --repo '${{ github.repository }}' --clobber
 
-      - name: Zip binaries
+      - name: Compress binaries
         if: ${{ env.ci_release_bin == 'true' }}
-        uses: TheDoctor0/zip-release@0.7.6
-        with:
-          directory: ${{ matrix.ci_platform == 'windows' && format('{0}/SDK/bin/RelWithDebInfo/', github.workspace) || format('{0}/SDK/bin/', github.workspace) }}
-          filename: ${{ github.workspace }}/SDK-bin.zip
-          path: '.'
-          exclusions: "${{ matrix.ci_platform == 'windows' && '.' || '/Autoload/* /CoreData/* /Data/* /EditorData/* /shell.html' }}"
+        shell: bash
+        run: |
+          src_dir="${{ matrix.ci_platform == 'windows' && format('{0}/SDK/bin/RelWithDebInfo/', github.workspace) || format('{0}/SDK/bin/', github.workspace) }}"
+          cd "$src_dir"
+          7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "${{ github.workspace }}/SDK-bin.7z" .
 
       - name: Release binaries
         if: ${{ env.ci_release_bin == 'true' }}
@@ -609,8 +608,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          name="rebelfork-bin-${{ env.BUILD_ID }}-latest.zip"
-          mv '${{ github.workspace }}/SDK-bin.zip' $name
+          name="rebelfork-bin-${{ env.BUILD_ID }}-latest.7z"
+          mv '${{ github.workspace }}/SDK-bin.7z' $name
           gh release upload latest $name --repo '${{ github.repository }}' --clobber
 
       - name: Publish to itch.io
@@ -621,7 +620,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: ${{ env.CCACHE_DEBUG == '1' }}
         with:
-          name: 'ccache-debug-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          name: 'ccache-debug-build-${{ env.BUILD_ID }}-${{ github.run_id }}'
           path: ${{ env.CCACHE_DEBUGDIR }}
           if-no-files-found: ignore
 
@@ -661,11 +660,11 @@ jobs:
 
           echo "Downloading SDKs from releases..."
           for platform in "${platforms[@]}"; do
-            sdk_name="rebelfork-sdk-${platform}-latest.zip"
+            sdk_name="rebelfork-sdk-${platform}-latest.7z"
             echo "Downloading $sdk_name..."
             if gh release download latest --repo '${{ github.repository }}' --pattern "$sdk_name" --dir .; then
               echo "✓ Downloaded $sdk_name"
-              unzip -q "$sdk_name"
+              7z x -y "$sdk_name"
               rm "$sdk_name"
             else
               echo "⚠ Warning: Failed to download $sdk_name (may not exist yet)"
@@ -696,87 +695,3 @@ jobs:
         shell: bash
         run: |
           gh workflow run --repo rbfx/rbfx-docs Documentation
-
-  BuildSummary:
-    name: Build Summary
-    runs-on: ubuntu-latest
-    if: always()
-    needs:
-      - Build
-      - Tools
-
-    steps:
-      - name: Generate Build Summary
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const jobs = context.workflow_run ? context.workflow_run.jobs : [];
-
-            // Get job information from the workflow run
-            const workflowRun = await github.rest.actions.listJobsForWorkflowRun({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.runId
-            });
-
-            // Create summary table
-            let summary = '## Build Summary\n\n';
-            summary += '| Job | Status | Duration |\n';
-            summary += '|-----|--------|----------|\n';
-
-            // Filter and sort jobs (exclude utility jobs)
-            const buildJobs = workflowRun.data.jobs.filter(job =>
-              !['CheckSkipCI', 'Web Hooks', "Release 'latest'", 'Build Summary', 'Docs', 'NuGet'].includes(job.name)
-            ).sort((a, b) => a.name.localeCompare(b.name));
-
-            for (const job of buildJobs) {
-              const status = job.conclusion || job.status;
-              let statusIcon = '';
-
-              switch (status) {
-                case 'success':
-                  statusIcon = '✅';
-                  break;
-                case 'failure':
-                  statusIcon = '❌';
-                  break;
-                case 'cancelled':
-                  statusIcon = '🚫';
-                  break;
-                case 'skipped':
-                  statusIcon = '⏭️';
-                  break;
-                default:
-                  statusIcon = '⏳';
-              }
-
-              // Calculate duration
-              let duration = 'N/A';
-              if (job.started_at && job.completed_at) {
-                const start = new Date(job.started_at);
-                const end = new Date(job.completed_at);
-                const durationMs = end - start;
-                const minutes = Math.floor(durationMs / 60000);
-                const seconds = Math.floor((durationMs % 60000) / 1000);
-                duration = `${minutes}m ${seconds}s`;
-              } else if (job.started_at) {
-                duration = 'In progress...';
-              }
-
-              summary += `| ${job.name} | ${statusIcon} ${status} | ${duration} |\n`;
-            }
-
-            // Add summary statistics
-            const successCount = buildJobs.filter(j => j.conclusion === 'success').length;
-            const failureCount = buildJobs.filter(j => j.conclusion === 'failure').length;
-            const totalCount = buildJobs.length;
-
-            summary += '\n### Summary Statistics\n\n';
-            summary += `- Total build jobs: ${totalCount}\n`;
-            summary += `- Successful: ${successCount}\n`;
-            summary += `- Failed: ${failureCount}\n`;
-
-            // Write to job summary
-            await core.summary
-              .addRaw(summary)
-              .write();
