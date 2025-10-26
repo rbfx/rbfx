@@ -166,12 +166,6 @@ if (NOT DEFINED VS_DEBUGGER_WORKING_DIRECTORY)
     set (VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 endif ()
 
-if (MULTI_CONFIG_PROJECT)
-    set (URHO3D_CONFIG $<CONFIG>)
-else ()
-    set (URHO3D_CONFIG ${CMAKE_BUILD_TYPE})
-endif ()
-
 # Configure for web
 if (WEB)
     # Emscripten-specific setup

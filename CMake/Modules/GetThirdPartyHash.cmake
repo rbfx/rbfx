@@ -105,8 +105,7 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
     # Calculate relative path from git root to our directory
     file(RELATIVE_PATH REL_DIR "${GIT_ROOT}" "${DIRECTORY_PATH}")
 
-    # Get list of all git-tracked files in the directory with their object info
-    # This is equivalent to: git ls-files -s ${REL_DIR}
+    # Get list of all git-tracked files in the directory with their index hashes
     execute_process(
         COMMAND ${GIT_EXECUTABLE} ls-files -s ${REL_DIR}
         WORKING_DIRECTORY "${GIT_ROOT}"
@@ -126,7 +125,29 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
         return()
     endif()
 
-    # Parse the git ls-files output and collect current file hashes
+    # Get list of modified files (files that differ from index)
+    # This is MUCH faster than hashing every file individually
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} diff-files --name-only ${REL_DIR}
+        WORKING_DIRECTORY "${GIT_ROOT}"
+        OUTPUT_VARIABLE MODIFIED_FILES
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+
+    # Convert modified files list to a set for O(1) lookup
+    set(MODIFIED_SET "")
+    if(MODIFIED_FILES)
+        string(REPLACE "\n" ";" MODIFIED_LINES "${MODIFIED_FILES}")
+        foreach(MOD_FILE ${MODIFIED_LINES})
+            if(NOT MOD_FILE STREQUAL "")
+                set(MODIFIED_SET_${MOD_FILE} TRUE)
+            endif()
+        endforeach()
+    endif()
+
+    # Collect files that need hashing (modified + deleted)
+    set(FILES_TO_HASH "")
     set(FILE_HASH_LIST "")
     string(REPLACE "\n" ";" GIT_LINES "${GIT_INDEX_OUTPUT}")
 
@@ -140,38 +161,86 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
                 set(STAGE "${CMAKE_MATCH_3}")
                 set(FILE_PATH "${CMAKE_MATCH_4}")
 
-                # Get absolute path to file
                 set(FULL_FILE_PATH "${GIT_ROOT}/${FILE_PATH}")
 
-                # Calculate current file content hash (this includes local modifications)
-                if(EXISTS "${FULL_FILE_PATH}")
-                    # Use git hash-object to get consistent hash regardless of line endings
-                    # This matches how git stores the object, normalizing line endings
-                    execute_process(
-                        COMMAND ${GIT_EXECUTABLE} hash-object "${FULL_FILE_PATH}"
-                        WORKING_DIRECTORY "${GIT_ROOT}"
-                        OUTPUT_VARIABLE CURRENT_HASH
-                        OUTPUT_STRIP_TRAILING_WHITESPACE
-                        ERROR_QUIET
-                        RESULT_VARIABLE HASH_RESULT
-                    )
-                    if(NOT HASH_RESULT EQUAL 0)
-                        # Fallback to file SHA1 if git hash-object fails
-                        file(SHA1 "${FULL_FILE_PATH}" CURRENT_HASH)
-                    endif()
-                else()
+                # Check if file is modified or deleted
+                if(NOT EXISTS "${FULL_FILE_PATH}")
                     # File was deleted locally
-                    set(CURRENT_HASH "deleted")
+                    list(APPEND FILE_HASH_LIST "${FILE_MODE} deleted ${STAGE}\t${FILE_PATH}")
+                elseif(DEFINED MODIFIED_SET_${FILE_PATH})
+                    # File is modified, collect it for batch hashing
+                    list(APPEND FILES_TO_HASH "${FULL_FILE_PATH}")
+                    list(APPEND FILE_HASH_LIST "${FILE_MODE} PLACEHOLDER_${FILE_PATH} ${STAGE}\t${FILE_PATH}")
+                else()
+                    # File unchanged, use index hash
+                    list(APPEND FILE_HASH_LIST "${FILE_MODE} ${INDEX_HASH} ${STAGE}\t${FILE_PATH}")
                 endif()
-
-                # Create entry similar to git ls-files -s but with current content hash
-                list(APPEND FILE_HASH_LIST "${FILE_MODE} ${CURRENT_HASH} ${STAGE}\t${FILE_PATH}")
             endif()
         endif()
     endforeach()
 
-    # Also check for untracked files in the directory
-    # This ensures new files affect the version even before being tracked
+    # Batch hash all modified files in one git command (huge performance win!)
+    if(FILES_TO_HASH)
+        execute_process(
+            COMMAND ${GIT_EXECUTABLE} hash-object --stdin-paths
+            WORKING_DIRECTORY "${GIT_ROOT}"
+            INPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/files_to_hash.txt"
+            OUTPUT_VARIABLE BATCH_HASHES
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+            RESULT_VARIABLE HASH_RESULT
+        )
+
+        # Write files to a temp file for stdin-paths
+        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/files_to_hash.txt" "")
+        foreach(FILE_PATH ${FILES_TO_HASH})
+            file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/files_to_hash.txt" "${FILE_PATH}\n")
+        endforeach()
+
+        # Re-run with the file created
+        execute_process(
+            COMMAND ${GIT_EXECUTABLE} hash-object --stdin-paths
+            WORKING_DIRECTORY "${GIT_ROOT}"
+            INPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/files_to_hash.txt"
+            OUTPUT_VARIABLE BATCH_HASHES
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+            RESULT_VARIABLE HASH_RESULT
+        )
+
+        if(HASH_RESULT EQUAL 0 AND BATCH_HASHES)
+            # Replace placeholders with actual hashes
+            string(REPLACE "\n" ";" HASH_LINES "${BATCH_HASHES}")
+            list(LENGTH FILES_TO_HASH NUM_FILES)
+            list(LENGTH HASH_LINES NUM_HASHES)
+
+            if(NUM_FILES EQUAL NUM_HASHES)
+                # Build a map of file->hash
+                math(EXPR LAST_INDEX "${NUM_FILES} - 1")
+                foreach(IDX RANGE 0 ${LAST_INDEX})
+                    list(GET FILES_TO_HASH ${IDX} FILE_PATH)
+                    list(GET HASH_LINES ${IDX} HASH_VALUE)
+                    file(RELATIVE_PATH REL_FILE "${GIT_ROOT}" "${FILE_PATH}")
+                    set(HASH_MAP_${REL_FILE} "${HASH_VALUE}")
+                endforeach()
+
+                # Update FILE_HASH_LIST with actual hashes
+                set(UPDATED_LIST "")
+                foreach(ENTRY ${FILE_HASH_LIST})
+                    if(ENTRY MATCHES "PLACEHOLDER_(.+) ")
+                        set(REL_FILE "${CMAKE_MATCH_1}")
+                        if(DEFINED HASH_MAP_${REL_FILE})
+                            string(REPLACE "PLACEHOLDER_${REL_FILE}" "${HASH_MAP_${REL_FILE}}" ENTRY "${ENTRY}")
+                        endif()
+                    endif()
+                    list(APPEND UPDATED_LIST "${ENTRY}")
+                endforeach()
+                set(FILE_HASH_LIST "${UPDATED_LIST}")
+            endif()
+        endif()
+    endif()
+
+    # Also check for untracked files (these still need individual hashing, but typically fewer)
     execute_process(
         COMMAND ${GIT_EXECUTABLE} ls-files --others --exclude-standard ${REL_DIR}
         WORKING_DIRECTORY "${GIT_ROOT}"
@@ -181,25 +250,63 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
         RESULT_VARIABLE UNTRACKED_RESULT
     )
     if(UNTRACKED_RESULT EQUAL 0 AND UNTRACKED_OUTPUT)
+        # Batch hash untracked files too
+        set(UNTRACKED_FILES "")
         string(REPLACE "\n" ";" UNTRACKED_LINES "${UNTRACKED_OUTPUT}")
         foreach(UNTRACKED_PATH ${UNTRACKED_LINES})
             if(NOT UNTRACKED_PATH STREQUAL "")
-                # Hash untracked files too
                 set(UNTRACKED_FULL_PATH "${GIT_ROOT}/${UNTRACKED_PATH}")
                 if(EXISTS "${UNTRACKED_FULL_PATH}")
-                    execute_process(
-                        COMMAND ${GIT_EXECUTABLE} hash-object "${UNTRACKED_FULL_PATH}"
-                        WORKING_DIRECTORY "${GIT_ROOT}"
-                        OUTPUT_VARIABLE UNTRACKED_HASH
-                        OUTPUT_STRIP_TRAILING_WHITESPACE
-                        ERROR_QUIET
-                    )
-                    if(UNTRACKED_HASH)
-                        list(APPEND FILE_HASH_LIST "untracked ${UNTRACKED_HASH} 0\t${UNTRACKED_PATH}")
-                    endif()
+                    list(APPEND UNTRACKED_FILES "${UNTRACKED_FULL_PATH}")
+                    list(APPEND FILE_HASH_LIST "untracked PLACEHOLDER_UNTRACKED_${UNTRACKED_PATH} 0\t${UNTRACKED_PATH}")
                 endif()
             endif()
         endforeach()
+
+        if(UNTRACKED_FILES)
+            file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/untracked_files.txt" "")
+            foreach(FILE_PATH ${UNTRACKED_FILES})
+                file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/untracked_files.txt" "${FILE_PATH}\n")
+            endforeach()
+
+            execute_process(
+                COMMAND ${GIT_EXECUTABLE} hash-object --stdin-paths
+                WORKING_DIRECTORY "${GIT_ROOT}"
+                INPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/untracked_files.txt"
+                OUTPUT_VARIABLE UNTRACKED_HASHES
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
+            )
+
+            if(UNTRACKED_HASHES)
+                string(REPLACE "\n" ";" UNTRACKED_HASH_LINES "${UNTRACKED_HASHES}")
+                list(LENGTH UNTRACKED_FILES NUM_UNTRACKED)
+                list(LENGTH UNTRACKED_HASH_LINES NUM_UNTRACKED_HASHES)
+
+                if(NUM_UNTRACKED EQUAL NUM_UNTRACKED_HASHES)
+                    math(EXPR LAST_INDEX "${NUM_UNTRACKED} - 1")
+                    foreach(IDX RANGE 0 ${LAST_INDEX})
+                        list(GET UNTRACKED_FILES ${IDX} FILE_PATH)
+                        list(GET UNTRACKED_HASH_LINES ${IDX} HASH_VALUE)
+                        file(RELATIVE_PATH REL_FILE "${GIT_ROOT}" "${FILE_PATH}")
+                        set(UNTRACKED_HASH_MAP_${REL_FILE} "${HASH_VALUE}")
+                    endforeach()
+
+                    # Update FILE_HASH_LIST with actual hashes
+                    set(UPDATED_LIST "")
+                    foreach(ENTRY ${FILE_HASH_LIST})
+                        if(ENTRY MATCHES "PLACEHOLDER_UNTRACKED_(.+) ")
+                            set(REL_FILE "${CMAKE_MATCH_1}")
+                            if(DEFINED UNTRACKED_HASH_MAP_${REL_FILE})
+                                string(REPLACE "PLACEHOLDER_UNTRACKED_${REL_FILE}" "${UNTRACKED_HASH_MAP_${REL_FILE}}" ENTRY "${ENTRY}")
+                            endif()
+                        endif()
+                        list(APPEND UPDATED_LIST "${ENTRY}")
+                    endforeach()
+                    set(FILE_HASH_LIST "${UPDATED_LIST}")
+                endif()
+            endif()
+        endif()
     endif()
 
     # Sort the list for deterministic results
@@ -208,6 +315,14 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
     # Join all entries and hash the result
     string(JOIN "\n" HASH_INPUT ${FILE_HASH_LIST})
     string(SHA1 FINAL_HASH "${HASH_INPUT}")
+
+    # Clean up temporary files
+    if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/files_to_hash.txt")
+        file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/files_to_hash.txt")
+    endif()
+    if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/untracked_files.txt")
+        file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/untracked_files.txt")
+    endif()
 
     # Return based on requested format
     if(ARG_HASH_FORMAT STREQUAL "short")

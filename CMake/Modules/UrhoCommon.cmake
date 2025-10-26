@@ -29,6 +29,25 @@ include(${CMAKE_CURRENT_LIST_DIR}/CCache.cmake)
 
 get_cmake_property(MULTI_CONFIG_PROJECT GENERATOR_IS_MULTI_CONFIG)
 
+# Prevent use of undefined build type, default to Debug. Done here instead of later so that URHO3D_CONFIG
+# is properly set. Also normalize the case of CMAKE_BUILD_TYPE to match CMAKE_CONFIGURATION_TYPES.
+if (NOT MULTI_CONFIG_PROJECT)
+    if (NOT CMAKE_BUILD_TYPE)
+        string(TOUPPER "${CMAKE_CONFIGURATION_TYPES}" CONFIG_TYPES_UPPER)
+        string(TOUPPER "${CMAKE_BUILD_TYPE}" BUILD_TYPE_UPPER)
+        list(FIND CONFIG_TYPES_UPPER "${BUILD_TYPE_UPPER}" CONFIG_INDEX)
+        if (CONFIG_INDEX GREATER_EQUAL 0)
+            list(GET CMAKE_CONFIGURATION_TYPES ${CONFIG_INDEX} NORMALIZED_BUILD_TYPE)
+        endif()
+    endif ()
+
+    if (NOT CMAKE_BUILD_TYPE)
+        set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Specifies the build type." FORCE)
+    endif ()
+
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
+endif ()
+
 if (MULTI_CONFIG_PROJECT)
     set (URHO3D_CONFIG $<CONFIG>)
 else ()
@@ -107,14 +126,6 @@ endif ()
 if (EMSCRIPTEN)
     set (EMPACKAGER python ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py CACHE PATH "file_packager.py")
     set (EMCC_WITH_SOURCE_MAPS_FLAG -gsource-map --source-map-base=. -fdebug-compilation-dir='.' -gseparate-dwarf)
-endif ()
-
-# Prevent use of undefined build type, default to Debug. Done here instead of UrhoOptions.cmake so that user projects
-# can take advantage of this behavior as UrhoCommon.cmake will be included earlier, most likely before any targets are
-# defined.
-if (NOT MULTI_CONFIG_PROJECT AND NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Specifies the build type." FORCE)
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
 endif ()
 
 # Generate CMake.props which will be included in .csproj files. This function should be called after all targets are
