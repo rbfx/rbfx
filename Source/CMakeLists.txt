@@ -20,16 +20,11 @@
 # THE SOFTWARE.
 #
 
-if (MSVC)
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-    # Enable parallel builds
-    if (URHO3D_PARALLEL_BUILD GREATER_EQUAL 2)
-        ucm_add_flags(/MP${URHO3D_PARALLEL_BUILD})
-    elseif (URHO3D_PARALLEL_BUILD)
-        cmake_host_system_information(RESULT URHO3D_PARALLEL_BUILD QUERY NUMBER_OF_PHYSICAL_CORES)
-        ucm_add_flags(/MP${URHO3D_PARALLEL_BUILD})
-    endif ()
-endif ()
+# Enable parallel builds in Visual Studio
+add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/MP>)
+
+# Silence annoying warnings
+add_compile_definitions($<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 
 # Package is found in the main CMakeLists.txt
 if (Urho3DThirdParty_FOUND)

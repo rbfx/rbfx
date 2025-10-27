@@ -175,7 +175,7 @@ jobs:
 
       - name: Generate
         if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
-        run: cmake '-S${{ env.ci_source_dir }}' '-B${{ env.ci_build_dir }}' -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DURHO3D_PARALLEL_BUILD=$NUMBER_OF_PROCESSORS
+        run: cmake '-S${{ env.ci_source_dir }}' '-B${{ env.ci_build_dir }}' -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
@@ -403,7 +403,7 @@ jobs:
         id: generate
         if: matrix.ci_platform != 'android'
         run: |
-          ${{ env.ci_build_script }} generate -- -DURHO3D_PARALLEL_BUILD=$NUMBER_OF_PROCESSORS 2>&1 | tee generate.log
+          ${{ env.ci_build_script }} generate 2>&1 | tee generate.log
           if grep -q "Could NOT find Urho3DThirdParty" generate.log; then
             echo "thirdparty-used=false" >> "$GITHUB_OUTPUT"
             echo "ThirdParty will be built from source"
