@@ -13,30 +13,34 @@
 # ci_sdk_dir:      sdk installation directory
 
 # Parse arguments: action [build_type] [-- extra cmake args]
-if [ $# -eq 0 ]; then
+if [ $# -eq 0 ];
+then
     echo "Usage: $0 action [build_type] [-- extra cmake args]"
     exit 1
 fi
 
 ci_action=$1; shift;
 ci_build_type=""
-extra_cmake_args=()
+extra_args=()
 
 # Check if we have more arguments
-if [ $# -gt 0 ]; then
+if [ $# -gt 0 ];
+then
     # Check if next argument is "--" (meaning no build_type)
-    if [ "$1" = "--" ]; then
+    if [ "$1" = "--" ];
+    then
         shift
-        extra_cmake_args=("$@")
+        extra_args=("$@")
     else
         # We have a build_type
         ci_build_type="$1"
         shift
 
         # Check for remaining arguments after build_type
-        if [ $# -gt 0 ] && [ "$1" = "--" ]; then
+        if [ $# -gt 0 ] && [ "$1" = "--" ];
+        then
             shift
-            extra_cmake_args=("$@")
+            extra_args=("$@")
         fi
     fi
 fi
@@ -69,7 +73,10 @@ declare -A types=(
 )
 
 # Web builds cannot handle RelWithDebInfo configuration.
-if [[ "$ci_platform" == "web" ]]; then types[rel]='Release'; fi
+if [[ "$ci_platform" == "web" ]];
+then
+    types[rel]='Release';
+fi
 
 declare -A android_build_types=(
     [dbg]='buildCMakeDebug'
@@ -168,9 +175,11 @@ copy-runtime-libraries-for-file() {
     local filename=$(basename "$file")
     shopt -s nocasematch
     for dep in "${dependencies[@]}"; do
-        if [[ "$dep" =~ (vcruntime.+dll)|(msvcp.+dll)|(D3DCOMPILER.*dll) ]]; then
+        if [[ "$dep" =~ (vcruntime.+dll)|(msvcp.+dll)|(D3DCOMPILER.*dll) ]];
+        then
             local depName=$(basename "$dep")
-            if [ "$dep" != "$dir/$depName" ]  && [[ ! -f "$dir/$depName" ]]; then
+            if [ "$dep" != "$dir/$depName" ]  && [[ ! -f "$dir/$depName" ]];
+            then
                 echo "Depends on $dep, making a copy to $dir"
                 cp "$dep" "$dir"
             fi
@@ -277,7 +286,8 @@ function action-generate() {
         "-DURHO3D_NETFX=net$DOTNET_VERSION"
     )
 
-    if [[ "$ci_platform" == "web" ]]; then
+    if [[ "$ci_platform" == "web" ]];
+    then
         CMAKE_PREFIX_PATH='CMAKE_FIND_ROOT_PATH'
     else
         CMAKE_PREFIX_PATH='CMAKE_PREFIX_PATH'
@@ -293,7 +303,8 @@ function action-generate() {
         )
     fi
 
-    if [[ -n "${BUTLER_API_KEY}" ]]; then
+    if [[ -n "${BUTLER_API_KEY}" ]];
+    then
         echo "BUTLER_API_KEY detected. Enabling URHO3D_COPY_DATA_DIRS option."
         ci_cmake_params+=(
             "-DURHO3D_COPY_DATA_DIRS=ON"
@@ -306,7 +317,7 @@ function action-generate() {
     )
 
     # Add any extra CMake arguments passed after --
-    ci_cmake_params+=("${extra_cmake_args[@]}")
+    ci_cmake_params+=("${extra_args[@]}")
 
     ci_cmake_params+=(-B $ci_build_dir -S "$ci_source_dir")
 
@@ -348,19 +359,21 @@ function action-apk() {
 }
 
 function action-install() {
-    if [[ "$ci_platform" == "android" ]]; then
-        cmake --install $ci_source_dir/android/.cxx/${types[$ci_build_type]}/*/$ci_arch --config ${types[$ci_build_type]} ${extra_cmake_args[@]}
+    if [[ "$ci_platform" == "android" ]];
+    then
+        cmake --install $ci_source_dir/android/.cxx/${types[$ci_build_type]}/*/$ci_arch --config ${types[$ci_build_type]} ${extra_args[@]}
     else
-        cmake --install $ci_build_dir --config "${types[$ci_build_type]}" ${extra_cmake_args[@]}
+        cmake --install $ci_build_dir --config "${types[$ci_build_type]}" ${extra_args[@]}
     fi
 
     # Copy .NET runtime libraries for executables on windows.
-    if [[ "$ci_platform" == "windows" ]]; then
+    if [[ "$ci_platform" == "windows" ]];
+    then
         copy-runtime-libraries-for-executables "$ci_sdk_dir/bin"
     fi
 
     # Create deploy directory on Web (only when not installing specific components).
-    if [[ "$ci_platform" == "web" && "$ci_build_type" == "rel" && ! " ${extra_cmake_args[@]} " =~ " --component " ]];
+    if [[ "$ci_platform" == "web" && "$ci_build_type" == "rel" && ! " ${extra_args[@]} " =~ " --component " ]];
     then
         mkdir -p $ci_sdk_dir/deploy/
         cp -r \
@@ -382,18 +395,21 @@ function action-cstest() {
     cd "$ci_build_dir/bin/${types[$ci_build_type]}"
     # We don't want to fail C# tests if build was without C# support.
     test_file="Urho3DNet.Tests.dll"
-    if test -f "$test_file"; then
+    if test -f "$test_file";
+    then
         dotnet test $test_file
     fi
 }
 
 function action-publish-to-itch() {
-    if [[ -z "${BUTLER_API_KEY}" ]]; then
+    if [[ -z "${BUTLER_API_KEY}" ]];
+    then
         echo "No BUTLER_API_KEY detected. Can't publish to itch.io."
         return 0
     fi
 
-    if [[ "$ci_platform" == "windows" ]]; then
+    if [[ "$ci_platform" == "windows" ]];
+    then
         copy-runtime-libraries-for-executables "$ci_build_dir/bin"
     fi
 
@@ -401,7 +417,8 @@ function action-publish-to-itch() {
 }
 
 function action-release-mobile-artifacts() {
-    if [[ -z "${GH_TOKEN}" ]]; then
+    if [[ -z "${GH_TOKEN}" ]];
+    then
         echo "No GH_TOKEN detected. Can't release artifacts."
         return 1
     fi
@@ -409,21 +426,16 @@ function action-release-mobile-artifacts() {
     # Determine file pattern based on platform
     local pattern
     case "$ci_platform" in
-        android)
-            pattern="*.apk"
-            ;;
-        ios)
-            pattern="*.app"
-            ;;
-        *)
-            echo "⚠ Warning: action-release-mobile-artifacts called for non-mobile platform: $ci_platform"
-            return 1
-            ;;
+        android) pattern="*.apk" ;;
+        ios)     pattern="*.app" ;;
+        *)       echo "⚠ Warning: action-release-mobile-artifacts called for non-mobile platform: $ci_platform"
+                 return 1        ;;
     esac
 
     # Find and release the artifact
     local artifact=$(find . -name "$pattern" $([[ "$ci_platform" == "ios" ]] && echo "-type d") | head -n 1)
-    if [ -n "$artifact" ]; then
+    if [ -n "$artifact" ];
+    then
         local archive_name="rebelfork-bin-${BUILD_ID}-latest.7z"
         7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "$archive_name" "$artifact"
         gh release upload latest "$archive_name" --repo "${GITHUB_REPOSITORY}" --clobber
@@ -491,19 +503,29 @@ function action-test-project() {
     fi
 }
 
-# Function to download and verify release from GitHub
-# Usage: download_github_release <url> <extract_dir> <id_file_path> <expected_id>
-# Returns: 0 if successful, 1 if failed or ID mismatch
-download_github_release() {
-    local url="$1"
-    local extract_dir="$2"
-    local id_file_path="$3"
-    local expected_id="$4"
+# Action to download and verify a release from GitHub
+# Usage: ci_build.sh download-release -- <url> <extract_dir> <id_file_path> <expected_id>
+function action-download-release() {
+    if [ ${#extra_args[@]} -ne 4 ];
+    then
+        echo "Error: download-release requires 4 arguments: url extract_dir id_file_path expected_id"
+        return 1
+    fi
+
+    local url="${extra_args[0]}"
+    local extract_dir="${extra_args[1]}"
+    local id_file_path="${extra_args[2]}"
+    local expected_id="${extra_args[3]}"
+    local temp_id_dir="temp-id-$$"
+
+    # Set up automatic cleanup on function exit
+    trap 'rm -rf "$temp_id_dir" download.7z' RETURN
 
     echo "Attempting to download: $url"
 
     # Download the archive
-    if ! curl -fsSL "$url" -o download.7z; then
+    if ! curl -fsSL "$url" -o download.7z;
+    then
         echo "Failed to download from releases"
         return 1
     fi
@@ -511,12 +533,10 @@ download_github_release() {
     echo "Downloaded successfully"
 
     # Extract id file to verify version
-    local temp_id_dir="temp-id-$$"
     mkdir -p "$temp_id_dir"
-    if ! 7z e -y "download.7z" "$id_file_path" -o"$temp_id_dir" >/dev/null 2>&1; then
+    if ! 7z e -y "download.7z" "$id_file_path" -o"$temp_id_dir" >/dev/null 2>&1;
+    then
         echo "Could not extract ID file: $id_file_path"
-        rm -f download.7z
-        rm -rf "$temp_id_dir"
         return 1
     fi
 
@@ -525,18 +545,16 @@ download_github_release() {
     echo "Cached ID: $cached_id"
     echo "Expected ID: $expected_id"
 
-    if [[ "$cached_id" != "$expected_id" ]]; then
+    if [[ "$cached_id" != "$expected_id" ]];
+    then
         echo "ID mismatch! Download is outdated."
-        rm -rf "$temp_id_dir"
-        rm -f download.7z
         return 1
     fi
 
     echo "ID matches, extracting..."
-    if ! 7z x -y download.7z >/dev/null; then
+    if ! 7z x -y download.7z >/dev/null;
+    then
         echo "Failed to extract archive"
-        rm -rf "$temp_id_dir"
-        rm -f download.7z
         return 1
     fi
 
@@ -545,20 +563,86 @@ download_github_release() {
     local top_level_dir="${archive_name%.7z}"
     mv "$top_level_dir" "$extract_dir"
 
-    rm -rf "$temp_id_dir"
-    rm -f download.7z
     echo "Extraction successful"
     return 0
 }
 
-# Action to download a release from GitHub
-# Usage: ci_build.sh download-release -- <url> <extract_dir> <id_file_path> <expected_id>
-function action-download-release() {
-    if [ ${#extra_cmake_args[@]} -ne 4 ]; then
-        echo "Error: download-release requires 4 arguments: url extract_dir id_file_path expected_id"
+# Action to download multiple SDKs for NuGet packaging
+# Usage: ci_build.sh download-nuget-sdks -- <github_repository>
+function action-download-nuget-sdks() {
+    if [ ${#extra_args[@]} -ne 1 ];
+    then
+        echo "Error: download-nuget-sdks requires 1 argument: github_repository"
         return 1
     fi
-    download_github_release "${extra_cmake_args[0]}" "${extra_cmake_args[1]}" "${extra_cmake_args[2]}" "${extra_cmake_args[3]}"
+
+    local github_repository="${extra_args[0]}"
+
+    # Define all SDK configurations that need to be downloaded for NuGet packaging
+    local platforms=(
+        "windows-msvc-dll-x64"
+        "linux-gcc-dll-x64"
+        "macos-clang-dll-x64"
+        "uwp-msvc-dll-x64"
+        "android-clang-dll-arm64-v8a"
+        "android-clang-dll-armeabi-v7a"
+        "android-clang-dll-x86_64"
+        "ios-clang-lib-universal"
+    )
+
+    echo "Downloading SDKs from releases..."
+    for platform in "${platforms[@]}"; do
+        local sdk_name="rebelfork-sdk-${platform}-latest.7z"
+        echo "Downloading $sdk_name..."
+        if gh release download latest --repo "$github_repository" --pattern "$sdk_name" --dir .;
+        then
+            echo "✓ Downloaded $sdk_name"
+            7z x -y "$sdk_name"
+            rm "$sdk_name"
+        else
+            echo "⚠ Warning: Failed to download $sdk_name (may not exist yet)"
+        fi
+    done
+}
+
+# Action to copy cached SDK files from a cached directory
+# Usage: ci_build.sh copy-cached-sdk <src_dir> <dst_dir>
+# Expects thirdparty-files.txt to exist in src_dir with relative file paths
+function action-copy-cached-sdk() {
+    local src="$1"
+    local dst="$2"
+
+    if [ -z "$src" ] || [ -z "$dst" ];
+    then
+        echo "Error: copy-cached-sdk requires source and destination directories"
+        exit 1
+    fi
+
+    # Convert paths with cygpath on Windows/UWP
+    if [[ "$ci_platform" == "windows" || "$ci_platform" == "uwp" ]];
+    then
+        src=$(cygpath "$src")
+        dst=$(cygpath "$dst")
+    fi
+
+    mkdir -p "$dst"
+
+    # Copy only files listed in thirdparty-files.txt
+    if [[ -f "$src/thirdparty-files.txt" ]];
+    then
+        echo "Copying files from cached SDK..."
+        while IFS= read -r file; do
+            if [[ -n "$file" ]];
+            then
+                mkdir -p "$dst/$(dirname "$file")"
+                cp -p "$src/$file" "$dst/$file"
+            fi
+        done < "$src/thirdparty-files.txt"
+        echo "✓ Cached SDK files copied successfully"
+    else
+        echo "Error: thirdparty-files.txt not found in cached SDK"
+        exit 1
+    fi
 }
 
 # Action to gather build information and set environment variables
@@ -572,10 +656,10 @@ function action-gather-info() {
     ARTIFACT_ID_TOOLS="$HASH_TOOLS-$HASH_THIRDPARTY"
     CACHE_ID="${ccache_prefix}-$BUILD_ID"
     case "$ci_platform" in
-        windows|linux|macos)  PLATFORM_GROUP='desktop' ;;
-        android|ios)          PLATFORM_GROUP='mobile' ;;
-        uwp)                  PLATFORM_GROUP='uwp' ;;
-        web)                  PLATFORM_GROUP='web' ;;
+        windows|linux|macos)  PLATFORM_GROUP='desktop'  ;;
+        android|ios)          PLATFORM_GROUP='mobile'   ;;
+        uwp)                  PLATFORM_GROUP='uwp'      ;;
+        web)                  PLATFORM_GROUP='web'      ;;
     esac
 
     # Determine number of processors
@@ -595,12 +679,14 @@ function action-gather-info() {
     esac
 
     NUMBER_OF_PROCESSORS=$(( (NUMBER_OF_PROCESSORS + 1) / 2 ))
-    if [ "$NUMBER_OF_PROCESSORS" -lt 1 ]; then
+    if [ "$NUMBER_OF_PROCESSORS" -lt 1 ];
+    then
         NUMBER_OF_PROCESSORS=1
     fi
 
     # Save to GitHub Actions environment if available
-    if [ -n "$GITHUB_ENV" ]; then
+    if [ -n "$GITHUB_ENV" ];
+    then
         echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
         echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
         echo "PLATFORM_GROUP=$PLATFORM_GROUP" >> $GITHUB_ENV
