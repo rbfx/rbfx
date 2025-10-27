@@ -518,9 +518,29 @@ function action-test-project() {
     local sdk_suffix=''
     local sdk_path=''
 
+    # Platform-specific configuration
+    CMAKE_PREFIX_PATH='CMAKE_PREFIX_PATH'
     if [[ "$ci_platform" == "windows" ]];
     then
+        local arch=$([[ "$ci_arch" == "x86" ]] && echo Win32 || echo x64)
+        cmake_args+=(-G 'Visual Studio 17 2022' -A "$arch")
         sdk_suffix='/share'
+    elif [[ "$ci_platform" == "linux" ]];
+    then
+        export CC=${ci_compiler}
+        export CXX=${ci_compiler/gcc/g++}
+        cmake_args+=(-G 'Ninja Multi-Config')
+    elif [[ "$ci_platform" == "web" ]];
+    then
+        cmake_args+=(-G 'Ninja Multi-Config')
+        cmake_args+=("-DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake")
+        cmake_args+=("-DEMSCRIPTEN_ROOT_PATH=$EMSDK/upstream/emscripten/")
+        CMAKE_PREFIX_PATH='CMAKE_FIND_ROOT_PATH'
+    elif [[ "$ci_platform" == "ios" ]];
+    then
+        cmake_args+=('-DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/IOS.cmake')
+        cmake_args+=('-DPLATFORM=SIMULATOR64')
+        cmake_args+=('-DDEPLOYMENT_TARGET=12')
     fi
 
     # Determine CMAKE_PREFIX_PATH based on mode
@@ -531,19 +551,8 @@ function action-test-project() {
         sdk_path="$ci_source_dir/CMake"
     fi
 
-    # Platform-specific configuration
-    if [[ "$ci_platform" == "windows" ]];
-    then
-        local arch=$([[ "$ci_arch" == "x86" ]] && echo Win32 || echo x64)
-        cmake_args+=(-A "$arch")
-    elif [[ "$ci_platform" == "linux" ]];
-    then
-        export CC=${ci_compiler}
-        export CXX=${ci_compiler/gcc/g++}
-        cmake_args+=(-G 'Ninja Multi-Config')
-    fi
-
-    cmake_args+=("-DCMAKE_PREFIX_PATH=$sdk_path;${ci_workspace_dir}/host-sdk")
+    # Use CMAKE_FIND_ROOT_PATH for web, CMAKE_PREFIX_PATH for others
+    cmake_args+=("-D$CMAKE_PREFIX_PATH=$sdk_path;${ci_workspace_dir}/host-sdk")
 
     echo "Configuring $project_name with $mode mode..."
     cmake "${cmake_args[@]}"
@@ -552,8 +561,8 @@ function action-test-project() {
     if [[ "$mode" == "sdk" ]];
     then
         echo "Building $project_name..."
-        cmake --build "$build_dir" --config Debug
-        cmake --build "$build_dir" --config RelWithDebInfo
+        cmake --build "$build_dir" --config "${types[dbg]}"
+        cmake --build "$build_dir" --config "${types[rel]}"
     else
         echo "Skipping build for $project_name in source mode as it would take too long."
     fi

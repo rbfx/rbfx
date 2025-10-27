@@ -44,13 +44,13 @@ endif ()
 
 # Normalize CPU architecture for compatibility checking across builds
 set(rbfx_SYSTEM_PROCESSOR "${CMAKE_SYSTEM_PROCESSOR}")
-if(rbfx_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64)$")
+if(rbfx_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64|x64)$")
     set(rbfx_SYSTEM_PROCESSOR "x86_64")
-elseif(rbfx_SYSTEM_PROCESSOR MATCHES "^(i386|i686|x86)$")
+elseif(rbfx_SYSTEM_PROCESSOR MATCHES "^(i386|i686|x86|Win32)$")
     set(rbfx_SYSTEM_PROCESSOR "x86")
 elseif(rbfx_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
     set(rbfx_SYSTEM_PROCESSOR "aarch64")
-elseif(rbfx_SYSTEM_PROCESSOR MATCHES "^(armv7|armv7l|armv7-a)$")
+elseif(rbfx_SYSTEM_PROCESSOR MATCHES "^(armv7|armv7l|armv7-a|ARM)$")
     set(rbfx_SYSTEM_PROCESSOR "armv7")
 endif()
 
