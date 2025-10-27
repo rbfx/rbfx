@@ -659,7 +659,7 @@ function (install_third_party_tools)
                 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
                 LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
                 ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                COMPONENT Tools
+                COMPONENT ThirdParty
                 PERMISSIONS ${PERMISSIONS_755})
             # Also add to Urho3DTools export
             install (TARGETS ${TARGET}
