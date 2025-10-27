@@ -1,54 +1,96 @@
 #!/usr/bin/env bash
 
-# build.sh <action> ...
-# ci_action:       dependencies|generate|build|install|test
-# ci_platform:     windows|linux|macos|android|ios|web
-# ci_arch:         x86|x64|arm|arm64
-# ci_compiler:     msvc|gcc|gcc-*|clang|clang-*|mingw
-# ci_build_type:   dbg|rel
-# ci_lib_type:     lib|dll
-# ci_workspace_dir: actions workspace directory
-# ci_source_dir:   source code directory
-# ci_build_dir:    cmake cache directory
-# ci_sdk_dir:      sdk installation directory
+# ci_build.sh <action> [options] [-- extra cmake args]
+#
+# Actions: dependencies|generate|build|install|test|cstest|apk|publish-to-itch|
+#          release-mobile-artifacts|test-project|download-release|download-nuget-sdks|
+#          copy-cached-sdk|gather-info
+#
+# Environment variables (used for defaults):
+#   ci_platform:      windows|linux|macos|android|ios|web
+#   ci_arch:          x86|x64|arm|arm64
+#   ci_compiler:      msvc|gcc|gcc-*|clang|clang-*|mingw
+#   ci_lib_type:      lib|dll
+#   ci_workspace_dir: actions workspace directory
+#   ci_source_dir:    source code directory
+#   ci_build_dir:     cmake cache directory
+#   ci_sdk_dir:       sdk installation directory
 
-# Parse arguments: action [build_type] [-- extra cmake args]
+# Parse action (required positional argument)
 if [ $# -eq 0 ];
 then
-    echo "Usage: $0 action [build_type] [-- extra cmake args]"
+    echo "Usage: $0 <action> [options] [-- extra_args]"
+    echo ""
+    echo "Actions:"
+    echo "  dependencies              Install build dependencies"
+    echo "  generate                  Generate build files with CMake"
+    echo "  build                     Build the project"
+    echo "  install                   Install build artifacts"
+    echo "  test                      Run native tests"
+    echo "  cstest                    Run C# tests"
+    echo "  apk                       Build Android APK"
+    echo "  publish-to-itch           Publish to itch.io"
+    echo "  release-mobile-artifacts  Release mobile artifacts"
+    echo "  test-project              Test external project"
+    echo "  download-release          Download and verify release"
+    echo "  download-nuget-sdks       Download SDKs for NuGet"
+    echo "  copy-cached-sdk           Copy cached SDK files"
+    echo "  gather-info               Gather build information"
+    echo ""
+    echo "Options:"
+    echo "  --build-type TYPE         Build type: dbg or rel (default: rel)"
+    echo ""
+    echo "Extra arguments after -- are passed to the action"
     exit 1
 fi
 
 ci_action=$1; shift;
-ci_build_type=""
-extra_args=()
 
-# Check if we have more arguments
-if [ $# -gt 0 ];
-then
-    # Check if next argument is "--" (meaning no build_type)
-    if [ "$1" = "--" ];
-    then
-        shift
-        extra_args=("$@")
-    else
-        # We have a build_type
-        ci_build_type="$1"
-        shift
-
-        # Check for remaining arguments after build_type
-        if [ $# -gt 0 ] && [ "$1" = "--" ];
-        then
-            shift
-            extra_args=("$@")
-        fi
-    fi
-fi
-
-# default values
+# Default values
 ci_compiler=${ci_compiler:-"default"}
-ci_build_type=${ci_build_type:-"rel"}
 ci_lib_type=${ci_lib_type:-"dll"}
+
+# Parse all arguments into arg_* variables
+# Long options (--name value) become arg_name=value
+# Arguments after -- become arg_extra array
+# Positional arguments become arg_positional array
+declare -a arg_extra=()
+declare -a arg_positional=()
+
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --)
+                shift
+                arg_extra=("$@")
+                break
+                ;;
+            --*)
+                # Extract option name (remove leading --)
+                local opt_name="${1#--}"
+                # Convert dashes to underscores for variable names
+                local var_name="arg_${opt_name//-/_}"
+
+                if [[ -n "$2" && "$2" != --* ]]; then
+                    # Next argument is the value
+                    declare -g "$var_name=$2"
+                    shift 2
+                else
+                    echo "Error: $1 requires an argument"
+                    exit 1
+                fi
+                ;;
+            *)
+                # Positional argument
+                arg_positional+=("$1")
+                shift
+                ;;
+        esac
+    done
+}
+
+# Parse arguments
+parse_args "$@"
 
 # fix paths on windows by replacing \ with /.
 ci_source_dir=$(echo $ci_source_dir | tr "\\" "/" 2>/dev/null)
@@ -60,7 +102,6 @@ echo "ci_action=$ci_action"
 echo "ci_platform=$ci_platform"
 echo "ci_arch=$ci_arch"
 echo "ci_compiler=$ci_compiler"
-echo "ci_build_type=$ci_build_type"
 echo "ci_lib_type=$ci_lib_type"
 echo "ci_workspace_dir=$ci_workspace_dir"
 echo "ci_source_dir=$ci_source_dir"
@@ -188,6 +229,7 @@ copy-runtime-libraries-for-file() {
 }
 
 function action-dependencies() {
+    # Arguments: none
     # Make tools executable.
     # TODO: This should not be necessary, but for some reason installed tools lose executable flag.
     if [[ -e $ci_workspace_dir/host-sdk ]];
@@ -253,6 +295,7 @@ function action-dependencies() {
 }
 
 function action-generate() {
+    # Arguments: -- <extra_cmake_args...>
     # Change a default compiler.
     case "$ci_platform-$ci_compiler" in
         linux-clang*)
@@ -278,7 +321,7 @@ function action-generate() {
     v="quirks_${ci_lib_type}[@]";                           ci_cmake_params+=("${!v}")
     v="quirks_${ci_platform}_${ci_compiler}_${ci_arch}[@]"; ci_cmake_params+=("${!v}")
     v="quirks_${ci_platform}_${ci_arch}[@]";                ci_cmake_params+=("${!v}")
-    v="quirks_${ci_platform}_${ci_build_type}[@]";          ci_cmake_params+=("${!v}")
+    v="quirks_${ci_platform}_${arg_build_type}[@]";         ci_cmake_params+=("${!v}")
     v="quirks_${ci_platform}[@]";                           ci_cmake_params+=("${!v}")
 
     ci_cmake_params+=(
@@ -317,7 +360,7 @@ function action-generate() {
     )
 
     # Add any extra CMake arguments passed after --
-    ci_cmake_params+=("${extra_args[@]}")
+    ci_cmake_params+=("${arg_extra[@]}")
 
     ci_cmake_params+=(-B $ci_build_dir -S "$ci_source_dir")
 
@@ -326,13 +369,14 @@ function action-generate() {
 }
 
 function action-build() {
+    # Arguments: --build-type <dbg|rel>, -- <extra_args...>
     if [[ "$ci_compiler" == "msvc" ]];
     then
       # Custom compiler build paths used only on windows.
       ccache_path=$(realpath /c/ProgramData/chocolatey/lib/ccache/tools/ccache-*)
       cp $ccache_path/ccache.exe $ccache_path/cl.exe  # https://github.com/ccache/ccache/wiki/MS-Visual-Studio
       $ccache_path/ccache.exe -s
-      cmake --build $ci_build_dir --config "${types[$ci_build_type]}" -- -r -maxcpucount:$NUMBER_OF_PROCESSORS -p:TrackFileAccess=false -p:UseMultiToolTask=true -p:CLToolPath=$ccache_path \
+      cmake --build $ci_build_dir --config "${types[$arg_build_type]}" -- -r -maxcpucount:$NUMBER_OF_PROCESSORS -p:TrackFileAccess=false -p:UseMultiToolTask=true -p:CLToolPath=$ccache_path \
         '-p:ObjectFileName=$(IntDir)%(FileName).obj' -p:DebugInformationFormat=OldStyle && \
       $ccache_path/ccache.exe -s
     elif [[ "$ci_platform" == "android" ]];
@@ -341,29 +385,31 @@ function action-build() {
       cd $ci_source_dir/android
       ccache -s
       gradle wrapper                                                  && \
-      ./gradlew "${android_build_types[$ci_build_type]}[${ci_arch}]"  && \
+      ./gradlew "${android_build_types[$arg_build_type]}[${ci_arch}]"  && \
       ccache -s
     else
       # Default build path using plain CMake.
       # ci_platform:     windows|linux|macos|android|ios|web
       ccache -s
-      cmake --build $ci_build_dir --parallel $NUMBER_OF_PROCESSORS --config "${types[$ci_build_type]}" && \
+      cmake --build $ci_build_dir --parallel $NUMBER_OF_PROCESSORS --config "${types[$arg_build_type]}" && \
       ccache -s
     fi
 }
 
 function action-apk() {
+    # Arguments: --build-type <dbg|rel>
     cd $ci_source_dir/android
     gradle wrapper                                   && \
-    ./gradlew "${android_apk_types[$ci_build_type]}"
+    ./gradlew "${android_apk_types[$arg_build_type]}"
 }
 
 function action-install() {
+    # Arguments: --build-type <dbg|rel>, -- <extra_cmake_args...>
     if [[ "$ci_platform" == "android" ]];
     then
-        cmake --install $ci_source_dir/android/.cxx/${types[$ci_build_type]}/*/$ci_arch --config ${types[$ci_build_type]} ${extra_args[@]}
+        cmake --install $ci_source_dir/android/.cxx/${types[$arg_build_type]}/*/$ci_arch --config ${types[$arg_build_type]} ${arg_extra[@]}
     else
-        cmake --install $ci_build_dir --config "${types[$ci_build_type]}" ${extra_args[@]}
+        cmake --install $ci_build_dir --config "${types[$arg_build_type]}" ${arg_extra[@]}
     fi
 
     # Copy .NET runtime libraries for executables on windows.
@@ -373,26 +419,28 @@ function action-install() {
     fi
 
     # Create deploy directory on Web (only when not installing specific components).
-    if [[ "$ci_platform" == "web" && "$ci_build_type" == "rel" && ! " ${extra_args[@]} " =~ " --component " ]];
+    if [[ "$ci_platform" == "web" && "$arg_build_type" == "rel" && ! " ${arg_extra[@]} " =~ " --component " ]];
     then
         mkdir -p $ci_sdk_dir/deploy/
         cp -r \
-            $ci_sdk_dir/bin/${types[$ci_build_type]}/Resources.js        \
-            $ci_sdk_dir/bin/${types[$ci_build_type]}/Resources.js.data   \
-            $ci_sdk_dir/bin/${types[$ci_build_type]}/Samples.js          \
-            $ci_sdk_dir/bin/${types[$ci_build_type]}/Samples.wasm        \
-            $ci_sdk_dir/bin/${types[$ci_build_type]}/Samples.html        \
+            $ci_sdk_dir/bin/${types[$arg_build_type]}/Resources.js        \
+            $ci_sdk_dir/bin/${types[$arg_build_type]}/Resources.js.data   \
+            $ci_sdk_dir/bin/${types[$arg_build_type]}/Samples.js          \
+            $ci_sdk_dir/bin/${types[$arg_build_type]}/Samples.wasm        \
+            $ci_sdk_dir/bin/${types[$arg_build_type]}/Samples.html        \
             $ci_sdk_dir/deploy/
     fi
 }
 
 function action-test() {
+    # Arguments: --build-type <dbg|rel>
     cd $ci_build_dir
-    ctest --output-on-failure -C "${types[$ci_build_type]}" -j $NUMBER_OF_PROCESSORS
+    ctest --output-on-failure -C "${types[$arg_build_type]}" -j $NUMBER_OF_PROCESSORS
 }
 
 function action-cstest() {
-    cd "$ci_build_dir/bin/${types[$ci_build_type]}"
+    # Arguments: --build-type <dbg|rel>
+    cd "$ci_build_dir/bin/${types[$arg_build_type]}"
     # We don't want to fail C# tests if build was without C# support.
     test_file="Urho3DNet.Tests.dll"
     if test -f "$test_file";
@@ -402,6 +450,7 @@ function action-cstest() {
 }
 
 function action-publish-to-itch() {
+    # Arguments: none
     if [[ -z "${BUTLER_API_KEY}" ]];
     then
         echo "No BUTLER_API_KEY detected. Can't publish to itch.io."
@@ -413,10 +462,11 @@ function action-publish-to-itch() {
         copy-runtime-libraries-for-executables "$ci_build_dir/bin"
     fi
 
-    butler push "$ci_build_dir/bin" "rebelfork/rebelfork:$ci_platform-$ci_arch-$ci_lib_type-$ci_compiler-$ci_build_type"
+    butler push "$ci_build_dir/bin" "rebelfork/rebelfork:$ci_platform-$ci_arch-$ci_lib_type-$ci_compiler-$arg_build_type"
 }
 
 function action-release-mobile-artifacts() {
+    # Arguments: none
     if [[ -z "${GH_TOKEN}" ]];
     then
         echo "No GH_TOKEN detected. Can't release artifacts."
@@ -447,11 +497,17 @@ function action-release-mobile-artifacts() {
 }
 
 function action-test-project() {
-    # Usage: test-project <project_name> <mode>
+    # Arguments: <project_name> <mode>
     # project_name: empty-project or sample-project
     # mode: sdk or source
-    local project_name=$1
-    local mode=$2
+
+    if [ ${#arg_positional[@]} -ne 2 ]; then
+        echo "Error: test-project requires exactly 2 arguments: <project_name> <mode>"
+        exit 1
+    fi
+
+    local project_name="${arg_positional[0]}"
+    local mode="${arg_positional[1]}"
 
     local source_dir="$ci_workspace_dir/$project_name"
     local build_dir="$ci_workspace_dir/${project_name}-${mode}-build"
@@ -506,16 +562,17 @@ function action-test-project() {
 # Action to download and verify a release from GitHub
 # Usage: ci_build.sh download-release -- <url> <extract_dir> <id_file_path> <expected_id>
 function action-download-release() {
-    if [ ${#extra_args[@]} -ne 4 ];
+    # Arguments: -- <url> <extract_dir> <id_file_path> <expected_id>
+    if [ ${#arg_extra[@]} -ne 4 ];
     then
-        echo "Error: download-release requires 4 arguments: url extract_dir id_file_path expected_id"
+        echo "Error: download-release requires 4 arguments after --: <url> <extract_dir> <id_file_path> <expected_id>"
         return 1
     fi
 
-    local url="${extra_args[0]}"
-    local extract_dir="${extra_args[1]}"
-    local id_file_path="${extra_args[2]}"
-    local expected_id="${extra_args[3]}"
+    local url="${arg_extra[0]}"
+    local extract_dir="${arg_extra[1]}"
+    local id_file_path="${arg_extra[2]}"
+    local expected_id="${arg_extra[3]}"
     local temp_id_dir="temp-id-$$"
 
     # Set up automatic cleanup on function exit
@@ -570,13 +627,14 @@ function action-download-release() {
 # Action to download multiple SDKs for NuGet packaging
 # Usage: ci_build.sh download-nuget-sdks -- <github_repository>
 function action-download-nuget-sdks() {
-    if [ ${#extra_args[@]} -ne 1 ];
+    # Arguments: -- <github_repository>
+    if [ ${#arg_extra[@]} -ne 1 ];
     then
-        echo "Error: download-nuget-sdks requires 1 argument: github_repository"
+        echo "Error: download-nuget-sdks requires 1 argument after --: <github_repository>"
         return 1
     fi
 
-    local github_repository="${extra_args[0]}"
+    local github_repository="${arg_extra[0]}"
 
     # Define all SDK configurations that need to be downloaded for NuGet packaging
     local platforms=(
@@ -609,14 +667,14 @@ function action-download-nuget-sdks() {
 # Usage: ci_build.sh copy-cached-sdk <src_dir> <dst_dir>
 # Expects thirdparty-files.txt to exist in src_dir with relative file paths
 function action-copy-cached-sdk() {
-    local src="$1"
-    local dst="$2"
-
-    if [ -z "$src" ] || [ -z "$dst" ];
-    then
-        echo "Error: copy-cached-sdk requires source and destination directories"
+    # Arguments: <src_dir> <dst_dir>
+    if [ ${#arg_positional[@]} -ne 2 ]; then
+        echo "Error: copy-cached-sdk requires 2 arguments: <src_dir> <dst_dir>"
         exit 1
     fi
+
+    local src="${arg_positional[0]}"
+    local dst="${arg_positional[1]}"
 
     # Convert paths with cygpath on Windows/UWP
     if [[ "$ci_platform" == "windows" || "$ci_platform" == "uwp" ]];
@@ -646,8 +704,9 @@ function action-copy-cached-sdk() {
 }
 
 # Action to gather build information and set environment variables
-# Usage: ci_build.sh gather-info [tools|build]
+# Usage: ci_build.sh gather-info
 function action-gather-info() {
+    # Arguments: none
     # Define env variables
     SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
     HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${ci_source_dir}/Source/ThirdParty" -DHASH_FORMAT=short -P "${ci_source_dir}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)

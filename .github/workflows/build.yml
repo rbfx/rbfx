@@ -413,28 +413,28 @@ jobs:
           fi
 
       - name: Build Debug
-        run: ${{ env.ci_build_script }} build dbg -- --parallel $NUMBER_OF_PROCESSORS
+        run: ${{ env.ci_build_script }} build --build-type dbg -- --parallel $NUMBER_OF_PROCESSORS
 
       - name: Build Release
-        run: ${{ env.ci_build_script }} build rel -- --parallel $NUMBER_OF_PROCESSORS
+        run: ${{ env.ci_build_script }} build --build-type rel -- --parallel $NUMBER_OF_PROCESSORS
 
       - name: Test Debug (Native)
         if: (matrix.ci_compiler == 'msvc' || matrix.ci_platform == 'linux')
-        run: ${{ env.ci_build_script }} test dbg
+        run: ${{ env.ci_build_script }} test --build-type dbg
 
       - name: Test Debug (Managed)
         # TODO: Fix C# on x86, issue #733.
         if: matrix.ci_platform == 'windows' && matrix.ci_compiler == 'msvc' && matrix.ci_lib_type == 'dll' && matrix.ci_arch == 'x64'
-        run: ${{ env.ci_build_script }} cstest dbg
+        run: ${{ env.ci_build_script }} cstest --build-type dbg
 
       - name: Test Release (Native)
         if: (matrix.ci_compiler == 'msvc' || matrix.ci_platform == 'linux')
-        run: ${{ env.ci_build_script }} test rel
+        run: ${{ env.ci_build_script }} test --build-type rel
 
       - name: Test Release (Managed)
         # TODO: Fix C# on x86, issue #733.
         if: matrix.ci_platform == 'windows' && matrix.ci_compiler == 'msvc' && matrix.ci_lib_type == 'dll' && matrix.ci_arch == 'x64'
-        run: ${{ env.ci_build_script }} cstest rel
+        run: ${{ env.ci_build_script }} cstest --build-type rel
 
       - name: Copy cached SDK (ThirdParty component)
         if: steps.cached_sdk.outputs.sdk-cached == 'true' && steps.generate.outputs.thirdparty-used == 'true'
@@ -443,14 +443,14 @@ jobs:
       - name: Install
         run: |
           # Prepare ThirdParty file manifests
-          ${{ env.ci_build_script }} install dbg -- --component ThirdParty --prefix '${{ env.ci_sdk_dir }}'
-          ${{ env.ci_build_script }} install rel -- --component ThirdParty --prefix '${{ env.ci_sdk_dir }}'
+          ${{ env.ci_build_script }} install --build-type dbg -- --component ThirdParty --prefix '${{ env.ci_sdk_dir }}'
+          ${{ env.ci_build_script }} install --build-type rel -- --component ThirdParty --prefix '${{ env.ci_sdk_dir }}'
           echo "${{ env.HASH_THIRDPARTY }}" > '${{ env.ci_sdk_dir }}/thirdparty-id.txt'
           (cd '${{ env.ci_sdk_dir }}' && find . -type f | sed 's|^\./||' > thirdparty-files.txt)
 
           # Install rest of files
-          ${{ env.ci_build_script }} install dbg -- --prefix '${{ env.ci_sdk_dir }}'
-          ${{ env.ci_build_script }} install rel -- --prefix '${{ env.ci_sdk_dir }}'
+          ${{ env.ci_build_script }} install --build-type dbg -- --prefix '${{ env.ci_sdk_dir }}'
+          ${{ env.ci_build_script }} install --build-type rel -- --prefix '${{ env.ci_sdk_dir }}'
 
       # Web-specific: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
@@ -467,7 +467,7 @@ jobs:
       # Android-specific: Build APK
       - name: Build APK
         if: matrix.ci_platform == 'android'
-        run: ${{ env.ci_build_script }} apk rel
+        run: ${{ env.ci_build_script }} apk --build-type rel
 
       - name: Release Mobile Artifacts
         if: env.PLATFORM_GROUP == 'mobile' && env.ci_release_artifacts == 'true'
