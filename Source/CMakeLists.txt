@@ -101,7 +101,7 @@ if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
             -restore -noLogo -interactive:false -nr:false -p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/
             -consoleLoggerParameters:ErrorsOnly -p:Platform=${URHO3D_PLATFORM} -p:Configuration=${URHO3D_CONFIG}
             ${DOTNET_LINUX_MSBUILD_WORKAROUND}
-        DEPENDS Urho3D)
+        DEPENDS Urho3D COMMAND_EXPAND_LISTS)
     foreach (TARGET libEditorWrapper libPlayer)
         if (TARGET ${TARGET})
             add_dependencies(BuildManagedTargets ${TARGET})

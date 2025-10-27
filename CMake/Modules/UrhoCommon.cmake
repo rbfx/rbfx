@@ -484,7 +484,6 @@ function (csharp_bind_target)
             # Real C# target
             add_dependencies(${BIND_MANAGED_TARGET} ${BIND_TARGET} ${BIND_EMBED})
         endif ()
-        install (FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll DESTINATION ${CMAKE_INSTALL_BINDIR})
     endif ()
 endfunction ()
 

@@ -188,7 +188,7 @@ jobs:
           echo "$ARTIFACT_ID_TOOLS" > '${{ env.ci_sdk_dir }}/tools-id.txt'
 
       - name: Release Tools to latest
-        if: ${{ steps.cache-check.outputs.tools-cached != 'true' && github.ref == env.ci_release_artifacts }}
+        if: ${{ steps.cache-check.outputs.tools-cached != 'true' && env.ci_release_artifacts == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

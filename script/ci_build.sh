@@ -514,7 +514,7 @@ function action-test-project() {
     local shared=$([[ "$ci_lib_type" == 'dll' ]] && echo ON || echo OFF)
 
     # Build cmake args array
-    local cmake_args=(-S "$source_dir" -B "$build_dir" -DBUILD_SHARED_LIBS=$shared -DCMAKE_CONFIGURATION_TYPES="Debug;RelWithDebInfo")
+    local cmake_args=(-S "$source_dir" -B "$build_dir" -DBUILD_SHARED_LIBS=$shared -DCMAKE_CONFIGURATION_TYPES="${types[dbg]};${types[rel]}")
     local sdk_suffix=''
     local sdk_path=''
 
