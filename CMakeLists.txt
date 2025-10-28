@@ -42,18 +42,6 @@ if (APPLE)
     enable_language(OBJCXX)
 endif ()
 
-# Normalize CPU architecture for compatibility checking across builds
-set(rbfx_SYSTEM_PROCESSOR "${CMAKE_SYSTEM_PROCESSOR}")
-if(rbfx_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64|x64)$")
-    set(rbfx_SYSTEM_PROCESSOR "x86_64")
-elseif(rbfx_SYSTEM_PROCESSOR MATCHES "^(i386|i686|x86|Win32)$")
-    set(rbfx_SYSTEM_PROCESSOR "x86")
-elseif(rbfx_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
-    set(rbfx_SYSTEM_PROCESSOR "aarch64")
-elseif(rbfx_SYSTEM_PROCESSOR MATCHES "^(armv7|armv7l|armv7-a|ARM)$")
-    set(rbfx_SYSTEM_PROCESSOR "armv7")
-endif()
-
 if (BUILD_SHARED_LIBS OR WEB)
     set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif ()
@@ -366,7 +354,7 @@ install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/S
 file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 if (NOT ANDROID)
     # Multi-config projects store data files in parent dir of binary files.
-    string (REPLACE "/$<CONFIG>" "" RUNTIME_OUTPUT_DIRECTORY_NO_CONFIG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    string (REPLACE "/${URHO3D_CONFIG}" "" RUNTIME_OUTPUT_DIRECTORY_NO_CONFIG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
     # Copy data directories for development
     set (INSTALL_DATA_DIRS Data CoreData EditorData Autoload)
     foreach(dir ${INSTALL_DATA_DIRS})

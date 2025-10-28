@@ -90,7 +90,7 @@ endif ()
 set(RBFX_CSPROJ_LIST "" CACHE STRING "A list of C# projects." FORCE)
 
 if (NOT DESKTOP)
-    find_package(Urho3DTools QUIET NO_CMAKE_INSTALL_PREFIX)
+    find_package(Urho3DTools NO_CMAKE_INSTALL_PREFIX)
     if (URHO3D_PACKAGING AND (NOT Urho3DTools_FOUND OR NOT TARGET PackageTool))
         message(FATAL_ERROR "PackageTool not found, please provide Urho3DTools in CMAKE_PREFIX_PATH")
     endif ()
@@ -147,7 +147,6 @@ function (rbfx_configure_cmake_props)
 
     # Variables of interest
     foreach (var
-        CMAKE_GENERATOR
         CMAKE_RUNTIME_OUTPUT_DIRECTORY
         CMAKE_CONFIGURATION_TYPES
         URHO3D_CSHARP

@@ -283,7 +283,7 @@ function action-dependencies() {
     elif [[ "$ci_platform" == "macos" || "$ci_platform" == "ios" ]];
     then
         # iOS/MacOS dependencies
-        brew install pkg-config ccache bash p7zip
+        brew install ccache bash
     else
         # Windows/UWP dependencies
         choco install -y ccache 7zip
@@ -336,7 +336,14 @@ function action-generate() {
         CMAKE_PREFIX_PATH='CMAKE_PREFIX_PATH'
     fi
 
-    ci_cmake_params+=("-D$CMAKE_PREFIX_PATH=${ci_workspace_dir}/cached-sdk;${ci_workspace_dir}/host-sdk")
+    # TODO: Ideally this should not be necessary.
+    sdk_suffix=''
+    if [[ "$ci_platform" == "windows" || "$ci_platform" == "uwp" ]];
+    then
+        sdk_suffix='share'
+    fi
+
+    ci_cmake_params+=("-D$CMAKE_PREFIX_PATH=${ci_workspace_dir}/cached-sdk/${sdk_suffix};${ci_workspace_dir}/host-sdk/${sdk_suffix}")
 
     if [[ "$ci_compiler" != "msvc" ]];
     then
@@ -520,11 +527,15 @@ function action-test-project() {
 
     # Platform-specific configuration
     CMAKE_PREFIX_PATH='CMAKE_PREFIX_PATH'
-    if [[ "$ci_platform" == "windows" ]];
+    if [[ "$ci_platform" == "windows" || "$ci_platform" == "uwp" ]];
     then
         local arch=$([[ "$ci_arch" == "x86" ]] && echo Win32 || echo x64)
         cmake_args+=(-G 'Visual Studio 17 2022' -A "$arch")
         sdk_suffix='/share'
+        if [[ "$ci_platform" == "uwp" ]];
+        then
+            cmake_args+=('-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0')
+        fi
     elif [[ "$ci_platform" == "linux" ]];
     then
         export CC=${ci_compiler}
