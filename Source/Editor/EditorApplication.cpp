@@ -201,8 +201,7 @@ void EditorApplication::Setup()
 
     // TODO: Consider scaling fonts based on DPI. ImGuiConfigFlags_DpiEnableScaleFonts seems to create issues on Retina.
     unsigned imguiFlags = 0;
-    if (GetPlatform() == PlatformId::Windows)
-        imguiFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
+    imguiFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
 #if URHO3D_SYSTEMUI_VIEWPORTS
     imguiFlags |= ImGuiConfigFlags_ViewportsEnable;
 #endif
