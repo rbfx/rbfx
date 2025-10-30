@@ -344,7 +344,7 @@ void EditorApplication::Render()
 
     const bool hasToolbar = project_ != nullptr;
     const float toolbarButtonHeight = Widgets::GetSmallButtonSize();
-    const float toolbarWindowPadding = ea::max(3.0f, IM_ROUND(toolbarButtonHeight / 2));
+    const float toolbarWindowPadding = g.Style.ItemSpacing.y;
     const float toolbarHeight = hasToolbar
         ? toolbarButtonHeight + (2 * toolbarWindowPadding)
         : 0.0f;
@@ -361,7 +361,7 @@ void EditorApplication::Render()
     flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
     ui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ui::Begin("DockSpace", nullptr, flags);
-    ui::PopStyleVar();
+    ui::PopStyleVar();  // TODO: Technically illegal, should go after End().
 
     RenderMenuBar();
     RenderAboutDialog();
@@ -422,7 +422,7 @@ void EditorApplication::Render()
 
     const float menuBarHeight = ui::GetCurrentWindow()->MenuBarHeight;
 
-    ui::End();
+    ui::End();  // DockSpace
     ui::PopStyleVar();
 
     // TODO(editor): Refactor this function
@@ -436,13 +436,14 @@ void EditorApplication::Render()
             | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
         ui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
         ui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(toolbarWindowPadding, toolbarWindowPadding));
+        ui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
         ui::Begin("Toolbar", nullptr, toolbarWindowFlags);
 
         if (project_)
             project_->RenderToolbar();
 
         ui::End();
-        ui::PopStyleVar(2);
+        ui::PopStyleVar(3);
     }
 
     // Dialog for a warning when application is being closed with unsaved resources.
