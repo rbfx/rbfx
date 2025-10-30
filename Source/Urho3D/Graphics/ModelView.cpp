@@ -1230,6 +1230,14 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
         morphRangeCounts[index] = vertexBufferData.morphRangeCount_;
     }
 
+    // Inplace mode: preserve unused vertex buffers
+    if (inplace)
+    {
+        vertexBuffers = model->GetVertexBuffers();
+        morphRangeStarts.resize(vertexBuffers.size());
+        morphRangeCounts.resize(vertexBuffers.size());
+    }
+
     // Create morphs
     ea::vector<ModelMorph> morphs(morphs_.size());
     for (unsigned i = 0; i < morphs_.size(); ++i)
