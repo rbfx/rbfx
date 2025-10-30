@@ -1421,6 +1421,9 @@ SceneComponentIndex* Scene::GetMutableComponentIndex(StringHash componentType)
 
 void RegisterSceneLibrary(Context* context)
 {
+    context->AddAbstractReflection<Component>(Category_Scene);
+    context->AddAbstractReflection<LogicComponent>(Category_Scene);
+
     ValueAnimation::RegisterObject(context);
     ObjectAnimation::RegisterObject(context);
     Node::RegisterObject(context);
