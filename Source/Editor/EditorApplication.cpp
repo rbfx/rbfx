@@ -344,9 +344,9 @@ void EditorApplication::Render()
 
     const bool hasToolbar = project_ != nullptr;
     const float toolbarButtonHeight = Widgets::GetSmallButtonSize();
-    const float toolbarWindowPadding = ea::max(3.0f, (g.Style.WindowMinSize.y - toolbarButtonHeight) / 2);
+    const float toolbarWindowPadding = ea::max(3.0f, IM_ROUND(toolbarButtonHeight / 2));
     const float toolbarHeight = hasToolbar
-        ? Widgets::GetSmallButtonSize() + 2 * (toolbarWindowPadding + 0)//g.Style.FramePadding.y)
+        ? toolbarButtonHeight + (2 * toolbarWindowPadding)
         : 0.0f;
     const float toolbarEffectiveHeight = toolbarHeight + 1;
 
@@ -357,7 +357,7 @@ void EditorApplication::Render()
     ui::SetNextWindowSize(viewport->Size - ImVec2(0, toolbarEffectiveHeight));
     ui::SetNextWindowViewport(viewport->ID);
     ui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+    flags |= ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove;
     flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
     ui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
     ui::Begin("DockSpace", nullptr, flags);
@@ -432,9 +432,8 @@ void EditorApplication::Render()
         ui::SetNextWindowSize(ImVec2(viewport->Size.x, toolbarHeight));
         ui::SetNextWindowViewport(viewport->ID);
 
-        const ImGuiWindowFlags toolbarWindowFlags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar
-            | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar
-            | ImGuiWindowFlags_NoSavedSettings;
+        const ImGuiWindowFlags toolbarWindowFlags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoDecoration
+            | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
         ui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
         ui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(toolbarWindowPadding, toolbarWindowPadding));
         ui::Begin("Toolbar", nullptr, toolbarWindowFlags);
