@@ -127,7 +127,7 @@ jobs:
       URHO3D_TOOLS: "swig;PackageTool"
       ci_platform: ${{ matrix.os == 'windows-latest' && 'windows' || (matrix.os == 'ubuntu-latest' && 'linux' || 'macos') }}
       ci_compiler: ${{ matrix.os == 'windows-latest' && 'msvc'    || (matrix.os == 'ubuntu-latest' && 'gcc'   || 'clang') }}
-      ci_arch: x64
+      ci_arch: ${{ matrix.os == 'macos-latest' && 'arm64' || 'x64' }}
       ci_lib_type: lib
 
     steps:
@@ -175,7 +175,7 @@ jobs:
 
       - name: Generate
         if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
-        run: cmake '-S${{ env.ci_source_dir }}' '-B${{ env.ci_build_dir }}' -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release
+        run: cmake --preset 'tools-${{ env.ci_platform }}-${{ env.ci_compiler }}-${{ env.ci_arch }}-${{ env.ci_lib_type }}' -S '${{ env.ci_source_dir }}' -B '${{ env.ci_build_dir }}' -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
@@ -221,7 +221,7 @@ jobs:
        contains(inputs.ci_jobs, 'android') ||
        contains(inputs.ci_jobs, 'ios') ||
        contains(inputs.ci_jobs, 'web'))
-    runs-on: ${{ (matrix.ci_platform == 'windows' || matrix.ci_platform == 'uwp') && 'windows-latest' || ((matrix.ci_platform == 'macos' || matrix.ci_platform == 'ios') && 'macos-13' || 'ubuntu-latest') }}
+    runs-on: ${{ (matrix.ci_platform == 'windows' || matrix.ci_platform == 'uwp') && 'windows-latest' || ((matrix.ci_platform == 'macos' || matrix.ci_platform == 'ios') && 'macos-latest' || 'ubuntu-latest') }}
     needs:
       - Tools
 
@@ -265,11 +265,11 @@ jobs:
             ci_compiler: clang
           # Desktop: MacOS builds
           - ci_platform: macos
-            ci_arch: x64
+            ci_arch: arm64
             ci_lib_type: dll
             ci_compiler: clang
           - ci_platform: macos
-            ci_arch: x64
+            ci_arch: arm64
             ci_lib_type: lib
             ci_compiler: clang
           # Mobile: UWP builds

@@ -119,80 +119,6 @@ then
     types[rel]='Release';
 fi
 
-declare -A android_build_types=(
-    [dbg]='buildCMakeDebug'
-    [rel]='buildCMakeRelWithDebInfo'
-)
-
-declare -A android_apk_types=(
-    [dbg]='assembleDebug'
-    [rel]='assembleRelease'
-)
-
-generators_windows_mingw=('-G' 'Ninja Multi-Config')
-generators_windows=('-G' 'Visual Studio 17 2022')
-generators_uwp=('-G' 'Visual Studio 17 2022' '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0' '-DURHO3D_PACKAGING=ON')
-generators_linux=('-G' 'Ninja Multi-Config')
-generators_web=('-G' 'Ninja Multi-Config')
-generators_macos=()
-generators_ios=()
-
-toolchains_ios=(
-    '-DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/IOS.cmake'
-    '-DPLATFORM=SIMULATOR64'
-    '-DDEPLOYMENT_TARGET=12'
-)
-toolchains_web=(
-    "-DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
-    "-DEMSCRIPTEN_ROOT_PATH=$EMSDK/upstream/emscripten/"
-    '-DURHO3D_PROFILING=OFF'
-)
-
-lib_types_lib=('-DBUILD_SHARED_LIBS=OFF')
-lib_types_dll=('-DBUILD_SHARED_LIBS=ON')
-
-# !! ccache only supports GCC precompiled headers. https://ccache.dev/manual/latest.html#_precompiled_headers
-quirks_mingw=(
-    '-DURHO3D_PROFILING=OFF'
-    '-DURHO3D_CSHARP=OFF'
-    '-DURHO3D_TESTING=OFF'
-    '-DURHO3D_PCH=OFF'
-)
-quirks_msvc=(
-    '-DURHO3D_PCH=OFF'
-)
-quirks_ios=(
-    '-DURHO3D_CSHARP=OFF'
-)
-quirks_android=(
-    '-DURHO3D_CSHARP=OFF'
-)
-quirks_web=(
-    '-DURHO3D_PROFILING=OFF'
-    '-DURHO3D_CSHARP=OFF'
-    '-DCI_WEB_BUILD=ON'
-    '-DURHO3D_NO_EDITOR_PLAYER_EXE=ON'
-)
-quirks_dll=('-DURHO3D_CSHARP=ON')
-quirks_windows_msvc_x64=('-A' 'x64')
-quirks_windows_msvc_x86=('-A' 'Win32')
-quirks_uwp_msvc_arm=('-A' 'ARM')
-quirks_uwp_msvc_arm64=('-A' 'ARM64')
-quirks_clang=('-DTRACY_TIMER_FALLBACK=ON')                  # Tracy, includes macos and ios
-quirks_macos_x86=('-DCMAKE_OSX_ARCHITECTURES=i386')
-quirks_macos_x64=('-DCMAKE_OSX_ARCHITECTURES=x86_64')
-quirks_linux_x86=(
-    '-DCMAKE_C_FLAGS=-m32'
-    '-DCMAKE_CXX_FLAGS=-m32'
-)
-quirks_linux_x64=(
-    '-DCMAKE_C_FLAGS=-m64'
-    '-DCMAKE_CXX_FLAGS=-m64'
-)
-quirks_linux_clang_x64=(
-    '-DURHO3D_PCH=OFF' # Keep PCH disabled somewhere to catch missing includes
-)
-
 if [[ "$ci_platform" == "macos" || "$ci_platform" == "ios" ]];
 then
     NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
@@ -296,39 +222,9 @@ function action-dependencies() {
 
 function action-generate() {
     # Arguments: -- <extra_cmake_args...>
-    # Change a default compiler.
-    case "$ci_platform-$ci_compiler" in
-        linux-clang*)
-            export CC=${ci_compiler}            # clang or clang-XX
-            export CXX=${ci_compiler}++         # clang++ or clang-XX++
-            ;;
-        linux-gcc*)
-            export CC=${ci_compiler}            # gcc or gcc-XX
-            export CXX=${ci_compiler/gcc/g++}   # g++ or g++-XX
-            ;;
-    esac
 
-    # Generate.
-    ci_cmake_params=()
-    v="generators_${ci_platform}_${ci_compiler}[@]";        ci_cmake_params+=("${!v}")
-    if [[ -z "${!v}" ]];
-    then
-        v="generators_${ci_platform}[@]";                   ci_cmake_params+=("${!v}")
-    fi
-    v="toolchains_${ci_platform}[@]";                       ci_cmake_params+=("${!v}")
-    v="lib_types_${ci_lib_type}[@]";                        ci_cmake_params+=("${!v}")
-    v="quirks_${ci_compiler}[@]";                           ci_cmake_params+=("${!v}")
-    v="quirks_${ci_lib_type}[@]";                           ci_cmake_params+=("${!v}")
-    v="quirks_${ci_platform}_${ci_compiler}_${ci_arch}[@]"; ci_cmake_params+=("${!v}")
-    v="quirks_${ci_platform}_${ci_arch}[@]";                ci_cmake_params+=("${!v}")
-    v="quirks_${ci_platform}_${arg_build_type}[@]";         ci_cmake_params+=("${!v}")
-    v="quirks_${ci_platform}[@]";                           ci_cmake_params+=("${!v}")
-
-    ci_cmake_params+=(
-        "-DCMAKE_INSTALL_PREFIX=$ci_sdk_dir"
-        "-DURHO3D_NETFX=net$DOTNET_VERSION"
-    )
-
+    # Handle CMAKE_PREFIX_PATH override
+    # Determine CMAKE_FIND_ROOT_PATH vs CMAKE_PREFIX_PATH based on platform
     if [[ "$ci_platform" == "web" ]];
     then
         CMAKE_PREFIX_PATH='CMAKE_FIND_ROOT_PATH'
@@ -343,33 +239,18 @@ function action-generate() {
         sdk_suffix='share'
     fi
 
-    ci_cmake_params+=("-D$CMAKE_PREFIX_PATH=${ci_workspace_dir}/cached-sdk/${sdk_suffix};${ci_workspace_dir}/host-sdk/${sdk_suffix}")
-
-    if [[ "$ci_compiler" != "msvc" ]];
-    then
-        ci_cmake_params+=(
-            "-DCMAKE_C_COMPILER_LAUNCHER=ccache"
-            "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
-        )
-    fi
-
-    if [[ -n "${BUTLER_API_KEY}" ]];
-    then
-        echo "BUTLER_API_KEY detected. Enabling URHO3D_COPY_DATA_DIRS option."
-        ci_cmake_params+=(
-            "-DURHO3D_COPY_DATA_DIRS=ON"
-        )
-    fi
-
-    # Precise configuration types control
-    ci_cmake_params+=(
-        "-DCMAKE_CONFIGURATION_TYPES=${types[dbg]};${types[rel]}"
+    # Generate using CMake preset if available
+    ci_cmake_params=(
+        --preset "sdk-${ci_platform}-${ci_compiler}-${ci_arch}-${ci_lib_type}"
+        -B "$ci_build_dir" -S "$ci_source_dir"
+        "-DCMAKE_INSTALL_PREFIX=$ci_sdk_dir"
+        "-D$CMAKE_PREFIX_PATH=${ci_workspace_dir}/cached-sdk/${sdk_suffix};${ci_workspace_dir}/host-sdk/${sdk_suffix}"
+        "-DTRACY_TIMER_FALLBACK=ON"
+        $([[ "$ci_compiler" != "msvc" ]] && echo "-DCMAKE_C_COMPILER_LAUNCHER=ccache")
+        $([[ "$ci_compiler" != "msvc" ]] && echo "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache")
+        ${BUTLER_API_KEY:+"-DURHO3D_COPY_DATA_DIRS=ON"}
+        "${arg_extra[@]}"
     )
-
-    # Add any extra CMake arguments passed after --
-    ci_cmake_params+=("${arg_extra[@]}")
-
-    ci_cmake_params+=(-B $ci_build_dir -S "$ci_source_dir")
 
     echo "${ci_cmake_params[@]}"
     cmake "${ci_cmake_params[@]}"
@@ -388,6 +269,10 @@ function action-build() {
       $ccache_path/ccache.exe -s
     elif [[ "$ci_platform" == "android" ]];
     then
+      declare -A android_build_types=(
+        [dbg]='buildCMakeDebug'
+        [rel]='buildCMakeRelWithDebInfo'
+      )
       # Custom platform build paths used only on android.
       cd $ci_source_dir/android
       ccache -s
@@ -405,6 +290,12 @@ function action-build() {
 
 function action-apk() {
     # Arguments: --build-type <dbg|rel>
+
+    declare -A android_apk_types=(
+        [dbg]='assembleDebug'
+        [rel]='assembleRelease'
+    )
+
     cd $ci_source_dir/android
     gradle wrapper                                   && \
     ./gradlew "${android_apk_types[$arg_build_type]}"
@@ -552,6 +443,13 @@ function action-test-project() {
         cmake_args+=('-DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/IOS.cmake')
         cmake_args+=('-DPLATFORM=SIMULATOR64')
         cmake_args+=('-DDEPLOYMENT_TARGET=12')
+    elif [[ "$ci_platform" == "macos" ]];
+    then
+        case "$ci_arch" in
+            x64)    cmake_args+=('-DCMAKE_OSX_ARCHITECTURES=x86_64') ;;
+            arm64)  cmake_args+=('-DCMAKE_OSX_ARCHITECTURES=arm64')  ;;
+            *)                                                       ;;
+        esac
     fi
 
     # Determine CMAKE_PREFIX_PATH based on mode
@@ -749,7 +647,7 @@ function action-gather-info() {
             ;;
         macos|ios)
             NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
-            TOOLS_RELEASE_NAME="rebelfork-tools-macos-clang-lib-x64.7z"
+            TOOLS_RELEASE_NAME="rebelfork-tools-macos-clang-lib-arm64.7z"
             ;;
         windows|uwp)
             NUMBER_OF_PROCESSORS=${NUMBER_OF_PROCESSORS:-1} # Already set on windows

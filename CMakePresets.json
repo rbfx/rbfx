@@ -1,0 +1,704 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/cmake-build/${presetName}",
+      "installDir": "${sourceDir}/cmake-build/${presetName}/install",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "OFF",
+        "URHO3D_TESTING": "ON",
+        "URHO3D_CSHARP": "ON",
+        "URHO3D_SAMPLES": "ON",
+        "URHO3D_PACKAGING": "ON",
+        "URHO3D_ENABLE_ALL": "ON",
+        "URHO3D_NETFX": "net8.0",
+        "CMAKE_CONFIGURATION_TYPES": "Debug;RelWithDebInfo",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5"
+      }
+    },
+    {
+      "name": "tools-base",
+      "hidden": true,
+      "generator": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/cmake-build/${presetName}",
+      "installDir": "${sourceDir}/cmake-build/${presetName}/install",
+      "cacheVariables": {
+        "URHO3D_GRAPHICS_API": "OpenGL",
+        "URHO3D_ENABLE_ALL": "OFF",
+        "URHO3D_SAMPLES": "OFF",
+        "URHO3D_TESTING": "OFF",
+        "URHO3D_SHADER_TRANSLATOR": "OFF",
+        "URHO3D_SHADER_OPTIMIZER": "OFF",
+        "URHO3D_TOOLS": "swig;PackageTool",
+        "BUILD_SHARED_LIBS": "OFF",
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "windows-base",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "Visual Studio 17 2022"
+    },
+    {
+      "name": "sdk-windows-msvc-x64-lib",
+      "inherits": "windows-base",
+      "architecture": "x64",
+      "cacheVariables": {
+        "URHO3D_PCH": "OFF"
+      }
+    },
+    {
+      "name": "sdk-windows-msvc-x64-dll",
+      "inherits": "sdk-windows-msvc-x64-lib",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON"
+      }
+    },
+    {
+      "name": "sdk-windows-msvc-x86-lib",
+      "inherits": "windows-base",
+      "architecture": "Win32",
+      "cacheVariables": {
+        "URHO3D_PCH": "OFF",
+        "URHO3D_CSHARP": "OFF"
+      }
+    },
+    {
+      "name": "sdk-windows-msvc-x86-dll",
+      "inherits": "sdk-windows-msvc-x86-lib",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON"
+      }
+    },
+    {
+      "name": "mingw-base",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "MinGW Makefiles",
+      "cacheVariables": {
+        "URHO3D_PROFILING": "OFF",
+        "URHO3D_CSHARP": "OFF",
+        "URHO3D_TESTING": "OFF",
+        "URHO3D_PCH": "OFF"
+      }
+    },
+    {
+      "name": "sdk-windows-mingw-x64-lib-dbg",
+      "inherits": "mingw-base",
+      "binaryDir": "${sourceDir}/cmake-build/${presetName}",
+      "installDir": "${sourceDir}/cmake-build/${presetName}/install",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "sdk-windows-mingw-x64-lib-rel",
+      "inherits": "mingw-base",
+      "binaryDir": "${sourceDir}/cmake-build/${presetName}",
+      "installDir": "${sourceDir}/cmake-build/${presetName}/install",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "sdk-windows-mingw-x64-dll-dbg",
+      "inherits": "mingw-base",
+      "binaryDir": "${sourceDir}/cmake-build/${presetName}",
+      "installDir": "${sourceDir}/cmake-build/${presetName}/install",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON",
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "sdk-windows-mingw-x64-dll-rel",
+      "inherits": "mingw-base",
+      "binaryDir": "${sourceDir}/cmake-build/${presetName}",
+      "installDir": "${sourceDir}/cmake-build/${presetName}/install",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "sdk-linux-gcc-x64-lib",
+      "inherits": "base",
+      "environment": {
+        "CC": "gcc",
+        "CXX": "g++"
+      },
+      "cacheVariables": {
+        "URHO3D_CSHARP": "OFF",
+        "CMAKE_C_FLAGS": "-m64",
+        "CMAKE_CXX_FLAGS": "-m64"
+      }
+    },
+    {
+      "name": "sdk-linux-gcc-x64-dll",
+      "inherits": "sdk-linux-gcc-x64-lib",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON",
+        "URHO3D_CSHARP": "ON"
+      }
+    },
+    {
+      "name": "sdk-linux-gcc-x86-lib",
+      "inherits": "base",
+      "environment": {
+        "CC": "gcc",
+        "CXX": "g++"
+      },
+      "cacheVariables": {
+        "URHO3D_CSHARP": "OFF",
+        "CMAKE_C_FLAGS": "-m32",
+        "CMAKE_CXX_FLAGS": "-m32"
+      }
+    },
+    {
+      "name": "sdk-linux-gcc-x86-dll",
+      "inherits": "sdk-linux-gcc-x86-lib",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON",
+        "URHO3D_CSHARP": "ON"
+      }
+    },
+    {
+      "name": "sdk-linux-clang-x64-lib",
+      "inherits": "base",
+      "environment": {
+        "CC": "clang",
+        "CXX": "clang++"
+      },
+      "cacheVariables": {
+        "URHO3D_CSHARP": "OFF",
+        "URHO3D_PCH": "OFF",
+        "CMAKE_C_FLAGS": "-m64",
+        "CMAKE_CXX_FLAGS": "-m64"
+      }
+    },
+    {
+      "name": "sdk-linux-clang-x64-dll",
+      "inherits": "sdk-linux-clang-x64-lib",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON",
+        "URHO3D_CSHARP": "ON",
+        "URHO3D_PCH": "ON"
+      }
+    },
+    {
+      "name": "sdk-linux-clang-x86-lib",
+      "inherits": "base",
+      "environment": {
+        "CC": "clang",
+        "CXX": "clang++"
+      },
+      "cacheVariables": {
+        "URHO3D_CSHARP": "OFF",
+        "URHO3D_PCH": "OFF",
+        "CMAKE_C_FLAGS": "-m32",
+        "CMAKE_CXX_FLAGS": "-m32"
+      }
+    },
+    {
+      "name": "sdk-linux-clang-x86-dll",
+      "inherits": "sdk-linux-clang-x86-lib",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON",
+        "URHO3D_CSHARP": "ON",
+        "URHO3D_PCH": "ON"
+      }
+    },
+    {
+      "name": "sdk-macos-clang-x64-lib",
+      "inherits": "base",
+      "environment": {
+        "CC": "clang",
+        "CXX": "clang++"
+      },
+      "cacheVariables": {
+        "URHO3D_CSHARP": "OFF",
+        "CMAKE_OSX_ARCHITECTURES": "x86_64"
+      }
+    },
+    {
+      "name": "sdk-macos-clang-x64-dll",
+      "inherits": "sdk-macos-clang-x64-lib",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON",
+        "URHO3D_CSHARP": "ON"
+      }
+    },
+    {
+      "name": "sdk-macos-clang-arm64-lib",
+      "inherits": "base",
+      "environment": {
+        "CC": "clang",
+        "CXX": "clang++"
+      },
+      "cacheVariables": {
+        "URHO3D_CSHARP": "OFF",
+        "CMAKE_OSX_ARCHITECTURES": "arm64"
+      }
+    },
+    {
+      "name": "sdk-macos-clang-arm64-dll",
+      "inherits": "sdk-macos-clang-arm64-lib",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON",
+        "URHO3D_CSHARP": "ON"
+      }
+    },
+    {
+      "name": "sdk-web-emscripten-wasm-lib",
+      "inherits": "base",
+      "cacheVariables": {
+        "URHO3D_PROFILING": "OFF",
+        "URHO3D_CSHARP": "OFF",
+        "CI_WEB_BUILD": "ON",
+        "URHO3D_NO_EDITOR_PLAYER_EXE": "ON",
+        "CMAKE_CONFIGURATION_TYPES": "Debug;Release",
+        "CMAKE_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+        "EMSCRIPTEN_ROOT_PATH": "$env{EMSDK}/upstream/emscripten/"
+      }
+    },
+    {
+      "name": "sdk-ios-clang-universal-lib",
+      "inherits": "base",
+      "environment": {
+        "CC": "clang",
+        "CXX": "clang++"
+      },
+      "cacheVariables": {
+        "URHO3D_CSHARP": "OFF",
+        "CMAKE_TOOLCHAIN_FILE": "CMake/Toolchains/IOS.cmake",
+        "PLATFORM": "SIMULATOR64",
+        "DEPLOYMENT_TARGET": "12"
+      }
+    },
+    {
+      "name": "sdk-uwp-msvc-x64-lib",
+      "inherits": "windows-base",
+      "architecture": "x64",
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "WindowsStore",
+        "CMAKE_SYSTEM_VERSION": "10.0",
+        "URHO3D_PACKAGING": "ON",
+        "URHO3D_PCH": "OFF",
+        "URHO3D_CSHARP": "OFF",
+        "URHO3D_NETFX": "netstandard2.0",
+        "URHO3D_NETFX_RUNTIME": "net5.0"
+      }
+    },
+    {
+      "name": "sdk-uwp-msvc-x64-dll",
+      "inherits": "sdk-uwp-msvc-x64-lib",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON"
+      }
+    },
+    {
+      "name": "sdk-uwp-msvc-arm-lib",
+      "inherits": "windows-base",
+      "architecture": "ARM",
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "WindowsStore",
+        "CMAKE_SYSTEM_VERSION": "10.0",
+        "URHO3D_PACKAGING": "ON",
+        "URHO3D_PCH": "OFF",
+        "URHO3D_CSHARP": "OFF",
+        "URHO3D_NETFX": "netstandard2.0",
+        "URHO3D_NETFX_RUNTIME": "net5.0"
+      }
+    },
+    {
+      "name": "sdk-uwp-msvc-arm-dll",
+      "inherits": "sdk-uwp-msvc-arm-lib",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON"
+      }
+    },
+    {
+      "name": "sdk-uwp-msvc-arm64-lib",
+      "inherits": "windows-base",
+      "architecture": "ARM64",
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "WindowsStore",
+        "CMAKE_SYSTEM_VERSION": "10.0",
+        "URHO3D_PACKAGING": "ON",
+        "URHO3D_PCH": "OFF",
+        "URHO3D_CSHARP": "OFF",
+        "URHO3D_NETFX": "netstandard2.0",
+        "URHO3D_NETFX_RUNTIME": "net5.0"
+      }
+    },
+    {
+      "name": "sdk-uwp-msvc-arm64-dll",
+      "inherits": "sdk-uwp-msvc-arm64-lib",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON"
+      }
+    },
+    {
+      "name": "tools-windows-msvc-x64-lib",
+      "inherits": "tools-base",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64"
+    },
+    {
+      "name": "tools-linux-gcc-x64-lib",
+      "inherits": "tools-base",
+      "environment": {
+        "CC": "gcc",
+        "CXX": "g++"
+      },
+      "cacheVariables": {
+        "CMAKE_C_FLAGS": "-m64",
+        "CMAKE_CXX_FLAGS": "-m64"
+      }
+    },
+    {
+      "name": "tools-macos-clang-x64-lib",
+      "inherits": "tools-base",
+      "cacheVariables": {
+        "CMAKE_OSX_ARCHITECTURES": "x86_64"
+      }
+    },
+    {
+      "name": "tools-macos-clang-arm64-lib",
+      "inherits": "tools-base",
+      "cacheVariables": {
+        "CMAKE_OSX_ARCHITECTURES": "arm64"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug-base",
+      "hidden": true,
+      "configuration": "Debug"
+    },
+    {
+      "name": "release-base",
+      "hidden": true,
+      "configuration": "RelWithDebInfo"
+    },
+    {
+      "name": "web-release-base",
+      "hidden": true,
+      "configuration": "Release"
+    },
+    {
+      "name": "sdk-windows-msvc-x64-lib-debug",
+      "configurePreset": "sdk-windows-msvc-x64-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-windows-msvc-x64-lib-release",
+      "configurePreset": "sdk-windows-msvc-x64-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-windows-msvc-x64-dll-debug",
+      "configurePreset": "sdk-windows-msvc-x64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-windows-msvc-x64-dll-release",
+      "configurePreset": "sdk-windows-msvc-x64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-windows-msvc-x86-lib-debug",
+      "configurePreset": "sdk-windows-msvc-x86-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-windows-msvc-x86-lib-release",
+      "configurePreset": "sdk-windows-msvc-x86-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-windows-msvc-x86-dll-debug",
+      "configurePreset": "sdk-windows-msvc-x86-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-windows-msvc-x86-dll-release",
+      "configurePreset": "sdk-windows-msvc-x86-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-windows-mingw-x64-lib-debug",
+      "configurePreset": "sdk-windows-mingw-x64-lib-dbg"
+    },
+    {
+      "name": "sdk-windows-mingw-x64-lib-release",
+      "configurePreset": "sdk-windows-mingw-x64-lib-rel"
+    },
+    {
+      "name": "sdk-windows-mingw-x64-dll-debug",
+      "configurePreset": "sdk-windows-mingw-x64-dll-dbg"
+    },
+    {
+      "name": "sdk-windows-mingw-x64-dll-release",
+      "configurePreset": "sdk-windows-mingw-x64-dll-rel"
+    },
+    {
+      "name": "sdk-linux-gcc-x64-lib-debug",
+      "configurePreset": "sdk-linux-gcc-x64-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-linux-gcc-x64-lib-release",
+      "configurePreset": "sdk-linux-gcc-x64-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-linux-gcc-x64-dll-debug",
+      "configurePreset": "sdk-linux-gcc-x64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-linux-gcc-x64-dll-release",
+      "configurePreset": "sdk-linux-gcc-x64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-linux-gcc-x86-lib-debug",
+      "configurePreset": "sdk-linux-gcc-x86-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-linux-gcc-x86-lib-release",
+      "configurePreset": "sdk-linux-gcc-x86-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-linux-gcc-x86-dll-debug",
+      "configurePreset": "sdk-linux-gcc-x86-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-linux-gcc-x86-dll-release",
+      "configurePreset": "sdk-linux-gcc-x86-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-linux-clang-x64-lib-debug",
+      "configurePreset": "sdk-linux-clang-x64-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-linux-clang-x64-lib-release",
+      "configurePreset": "sdk-linux-clang-x64-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-linux-clang-x64-dll-debug",
+      "configurePreset": "sdk-linux-clang-x64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-linux-clang-x64-dll-release",
+      "configurePreset": "sdk-linux-clang-x64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-linux-clang-x86-lib-debug",
+      "configurePreset": "sdk-linux-clang-x86-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-linux-clang-x86-lib-release",
+      "configurePreset": "sdk-linux-clang-x86-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-linux-clang-x86-dll-debug",
+      "configurePreset": "sdk-linux-clang-x86-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-linux-clang-x86-dll-release",
+      "configurePreset": "sdk-linux-clang-x86-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-macos-clang-x64-lib-debug",
+      "configurePreset": "sdk-macos-clang-x64-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-macos-clang-x64-lib-release",
+      "configurePreset": "sdk-macos-clang-x64-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-macos-clang-x64-dll-debug",
+      "configurePreset": "sdk-macos-clang-x64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-macos-clang-x64-dll-release",
+      "configurePreset": "sdk-macos-clang-x64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-macos-clang-arm64-lib-debug",
+      "configurePreset": "sdk-macos-clang-arm64-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-macos-clang-arm64-lib-release",
+      "configurePreset": "sdk-macos-clang-arm64-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-macos-clang-arm64-dll-debug",
+      "configurePreset": "sdk-macos-clang-arm64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-macos-clang-arm64-dll-release",
+      "configurePreset": "sdk-macos-clang-arm64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-web-emscripten-wasm-lib-debug",
+      "configurePreset": "sdk-web-emscripten-wasm-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-web-emscripten-wasm-lib-release",
+      "configurePreset": "sdk-web-emscripten-wasm-lib",
+      "displayName": "release",
+      "inherits": "web-release-base"
+    },
+    {
+      "name": "sdk-ios-clang-universal-lib-debug",
+      "configurePreset": "sdk-ios-clang-universal-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-ios-clang-universal-lib-release",
+      "configurePreset": "sdk-ios-clang-universal-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-uwp-msvc-x64-lib-debug",
+      "configurePreset": "sdk-uwp-msvc-x64-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-uwp-msvc-x64-lib-release",
+      "configurePreset": "sdk-uwp-msvc-x64-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-uwp-msvc-x64-dll-debug",
+      "configurePreset": "sdk-uwp-msvc-x64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-uwp-msvc-x64-dll-release",
+      "configurePreset": "sdk-uwp-msvc-x64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-uwp-msvc-arm-lib-debug",
+      "configurePreset": "sdk-uwp-msvc-arm-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-uwp-msvc-arm-lib-release",
+      "configurePreset": "sdk-uwp-msvc-arm-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-uwp-msvc-arm-dll-debug",
+      "configurePreset": "sdk-uwp-msvc-arm-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-uwp-msvc-arm-dll-release",
+      "configurePreset": "sdk-uwp-msvc-arm-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-uwp-msvc-arm64-lib-debug",
+      "configurePreset": "sdk-uwp-msvc-arm64-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-uwp-msvc-arm64-lib-release",
+      "configurePreset": "sdk-uwp-msvc-arm64-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "sdk-uwp-msvc-arm64-dll-debug",
+      "configurePreset": "sdk-uwp-msvc-arm64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "sdk-uwp-msvc-arm64-dll-release",
+      "configurePreset": "sdk-uwp-msvc-arm64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    }
+  ]
+}
