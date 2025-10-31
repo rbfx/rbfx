@@ -49,7 +49,7 @@ env:
   ci_build_dir: ${{ github.workspace }}/cmake-build
   ci_sdk_dir: ${{ github.workspace }}/SDK
   ci_execute_services: ${{ github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' }}
-  ci_release_artifacts: ${{ github.repository == 'rokups/rbfx-temp' && github.ref == 'refs/heads/rk/ci-simplify' }}
+  ci_release_artifacts: ${{ github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' }}
   # etc
   TRACY_TIMER_FALLBACK: 1
   SOURCE_REF: ${{ github.head_ref || github.ref_name }}
@@ -82,7 +82,7 @@ jobs:
     name: Release 'latest'
     runs-on: ubuntu-latest
     # if: env.ci_release_artifacts == 'true'
-    if: ${{ github.repository == 'rokups/rbfx-temp' && github.ref == 'refs/heads/rk/ci-simplify' }}
+    if: ${{ github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -98,7 +98,7 @@ jobs:
     # - pull request is draft
     # - ci_jobs input does not include any of the Tools-related jobs
     if: |
-      !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'rokups/rbfx-temp') &&
+      !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'rbfx/rbfx') &&
       github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'windows-tools') ||
@@ -211,7 +211,7 @@ jobs:
     # - pull request is draft
     # - ci_jobs input does not include this platform
     if: |
-      !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'rokups/rbfx-temp') &&
+      !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'rbfx/rbfx') &&
       github.event.pull_request.draft == false &&
       (inputs.ci_jobs == '' ||
        contains(inputs.ci_jobs, 'windows') ||
