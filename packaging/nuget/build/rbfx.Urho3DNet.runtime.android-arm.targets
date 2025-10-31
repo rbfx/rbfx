@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <AndroidNativeLibrary Include="$(MSBuildThisFileDirectory)/../in/Android/build/intermediates/cmake/release/obj/armeabi-v7a/*.so">
+      <Abi>armeabi-v7a</Abi>
+    </AndroidNativeLibrary>
+  </ItemGroup>
+</Project>

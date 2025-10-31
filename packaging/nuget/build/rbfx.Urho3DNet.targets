@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Condition=" '$(RuntimeIdentifier)' == 'win-x64' ">
+    <PackageReference Include="rbfx.Urho3DNet.runtime.win-x64" Version="$(Urho3DNetVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(RuntimeIdentifier)' == 'linux-x64' ">
+    <PackageReference Include="rbfx.Urho3DNet.runtime.linux-x64" Version="$(Urho3DNetVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(RuntimeIdentifier)' == 'osx-x64' ">
+    <PackageReference Include="rbfx.Urho3DNet.runtime.osx-x64" Version="$(Urho3DNetVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(RuntimeIdentifier)' == 'android-arm' ">
+    <PackageReference Include="rbfx.Urho3DNet.runtime.android-arm" Version="$(Urho3DNetVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(RuntimeIdentifier)' == 'android-arm64' ">
+    <PackageReference Include="rbfx.Urho3DNet.runtime.android-arm64" Version="$(Urho3DNetVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(RuntimeIdentifier)' == 'android-x86' ">
+    <PackageReference Include="rbfx.Urho3DNet.runtime.android-x86" Version="$(Urho3DNetVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(RuntimeIdentifier)' == 'android-x64' ">
+    <PackageReference Include="rbfx.Urho3DNet.runtime.android-x64" Version="$(Urho3DNetVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidJavaSource Include="$(MSBuildThisFileDirectory)/../content/java/**/*.java">
+      <Link>%(RecursiveDir)%(FileName)%(Extension)</Link>
+    </AndroidJavaSource>
+  </ItemGroup>
+</Project>
