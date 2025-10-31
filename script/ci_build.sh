@@ -156,12 +156,6 @@ copy-runtime-libraries-for-file() {
 
 function action-dependencies() {
     # Arguments: none
-    # Make tools executable.
-    # TODO: This should not be necessary, but for some reason installed tools lose executable flag.
-    if [[ -e $ci_workspace_dir/host-sdk ]];
-    then
-      find $ci_workspace_dir/host-sdk/bin/ -type f -exec chmod +x {} \;
-    fi
 
     if [[ "$ci_platform" == "linux" ]];
     then
@@ -241,7 +235,7 @@ function action-generate() {
 
     # Generate using CMake preset if available
     ci_cmake_params=(
-        --preset "sdk-${ci_platform}-${ci_compiler}-${ci_arch}-${ci_lib_type}"
+        --preset "${ci_platform}-${ci_compiler}-${ci_arch}-${ci_lib_type}"
         -B "$ci_build_dir" -S "$ci_source_dir"
         "-DCMAKE_INSTALL_PREFIX=$ci_sdk_dir"
         "-D$CMAKE_PREFIX_PATH=${ci_workspace_dir}/cached-sdk/${sdk_suffix};${ci_workspace_dir}/host-sdk/${sdk_suffix}"
@@ -628,33 +622,29 @@ function action-gather-info() {
     # Define env variables
     SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
     HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${ci_source_dir}/Source/ThirdParty" -DHASH_FORMAT=short -P "${ci_source_dir}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
-    HASH_TOOLS=$(cmake -DDIRECTORY_PATH="${ci_source_dir}/Source/Tools" -DHASH_FORMAT=short -P "${ci_source_dir}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
     BUILD_ID="${ci_platform}-${ci_compiler}-${ci_lib_type}-${ci_arch}"
-    ARTIFACT_ID_TOOLS="$HASH_TOOLS-$HASH_THIRDPARTY"
     CACHE_ID="${ccache_prefix}-$BUILD_ID"
     case "$ci_platform" in
-        windows|linux|macos)  PLATFORM_GROUP='desktop'  ;;
-        android|ios)          PLATFORM_GROUP='mobile'   ;;
-        uwp)                  PLATFORM_GROUP='uwp'      ;;
-        web)                  PLATFORM_GROUP='web'      ;;
+        windows|linux|macos)  ci_platform_group='desktop'  ;;
+        android|ios)          ci_platform_group='mobile'   ;;
+        uwp)                  ci_platform_group='uwp'      ;;
+        web)                  ci_platform_group='web'      ;;
     esac
 
     # Determine number of processors
     case "$ci_platform" in
         linux|android|web)
             NUMBER_OF_PROCESSORS=$(nproc)
-            TOOLS_RELEASE_NAME="rebelfork-tools-linux-gcc-lib-x64.7z"
             ;;
         macos|ios)
             NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
-            TOOLS_RELEASE_NAME="rebelfork-tools-macos-clang-lib-arm64.7z"
             ;;
         windows|uwp)
             NUMBER_OF_PROCESSORS=${NUMBER_OF_PROCESSORS:-1} # Already set on windows
-            TOOLS_RELEASE_NAME="rebelfork-tools-windows-msvc-lib-x64.7z"
             ;;
     esac
 
+    # Using all available processors may lead to OOM on CI systems
     NUMBER_OF_PROCESSORS=$(( (NUMBER_OF_PROCESSORS + 1) / 2 ))
     if [ "$NUMBER_OF_PROCESSORS" -lt 1 ];
     then
@@ -666,14 +656,11 @@ function action-gather-info() {
     then
         echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
         echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
-        echo "PLATFORM_GROUP=$PLATFORM_GROUP" >> $GITHUB_ENV
         echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
         echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
-        echo "HASH_TOOLS=$HASH_TOOLS" >> $GITHUB_ENV
-        echo "ARTIFACT_ID_TOOLS=$ARTIFACT_ID_TOOLS" >> $GITHUB_ENV
         echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK" >> $GITHUB_ENV
-        echo "TOOLS_RELEASE_NAME=$TOOLS_RELEASE_NAME" >> $GITHUB_ENV
         echo "NUMBER_OF_PROCESSORS=$NUMBER_OF_PROCESSORS" >> $GITHUB_ENV
+        echo "ci_platform_group=$ci_platform_group" >> $GITHUB_ENV
     fi
 }
 

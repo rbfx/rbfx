@@ -97,25 +97,16 @@ elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
 endif ()
 
 # Determine build arch
-string(TOLOWER "${CMAKE_GENERATOR_PLATFORM}" CMAKE_GENERATOR_PLATFORM)
-set(URHO3D_PLATFORM "${CMAKE_GENERATOR_PLATFORM}")
+# Extract architecture from RBFX_PLATFORM_TRIPLE (format: platform-arch-runtime)
+if (RBFX_PLATFORM_TRIPLE)
+    string(REPLACE "-" ";" TRIPLE_PARTS "${RBFX_PLATFORM_TRIPLE}")
+    list(GET TRIPLE_PARTS 1 URHO3D_PLATFORM)
+endif ()
+
 if (CMAKE_SIZEOF_VOID_P MATCHES 8)
     set(URHO3D_64BIT ON)
 else ()
     set(URHO3D_64BIT OFF)
-endif ()
-
-# TODO: Arm support.
-# NOTE: URHO3D_PLATFORM is only used in .csproj
-if (NOT URHO3D_PLATFORM)
-    if (URHO3D_64BIT)
-        set (URHO3D_PLATFORM x64)
-    else ()
-        set (URHO3D_PLATFORM x86)
-    endif ()
-endif ()
-if (URHO3D_PLATFORM STREQUAL "win32")
-    set (URHO3D_PLATFORM x86)
 endif ()
 
 # Build properties

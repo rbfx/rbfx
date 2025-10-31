@@ -89,23 +89,12 @@ endif ()
 # Ensure variable is in the cache.
 set(RBFX_CSPROJ_LIST "" CACHE STRING "A list of C# projects." FORCE)
 
-if (NOT DESKTOP)
-    find_package(Urho3DTools NO_CMAKE_INSTALL_PREFIX)
-    if (URHO3D_PACKAGING AND (NOT Urho3DTools_FOUND OR NOT TARGET PackageTool))
-        message(FATAL_ERROR "PackageTool not found, please provide Urho3DTools in CMAKE_PREFIX_PATH")
-    endif ()
-
-    if (URHO3D_CSHARP AND (NOT Urho3DTools_FOUND OR NOT TARGET swig))
-        message(FATAL_ERROR "swig not found, please provide Urho3DTools in CMAKE_PREFIX_PATH")
-    endif ()
-
+if (NOT DESKTOP AND (URHO3D_CSHARP OR URHO3D_PACKAGING))
+    find_package(Urho3DTools QUIET NO_CMAKE_INSTALL_PREFIX)
     if (Urho3DTools_FOUND)
         message(STATUS "Found Urho3DTools: ${Urho3DTools_VERSION}")
     endif ()
 endif ()
-
-# Note: We use $<TARGET_FILE:swig> and $<TARGET_FILE:PackageTool> directly in commands
-# instead of setting SWIG_EXECUTABLE and PACKAGE_TOOL variables
 
 # Xcode does not support per-config source files, therefore we must lock generated bindings to some config
 # and they wont switch when build config changes in Xcode.
@@ -342,6 +331,25 @@ macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
     endif()
 endmacro()
 
+function (setup_external_tool TARGET VARIABLE_NAME)
+    if (TARGET ${TARGET})
+        set(${VARIABLE_NAME} "$<TARGET_FILE:${TARGET}>" PARENT_SCOPE)
+    else ()
+        if (NOT DEFINED ${VARIABLE_NAME})
+            set(${VARIABLE_NAME} $ENV{${VARIABLE_NAME}})
+        endif ()
+        if (NOT DEFINED ${VARIABLE_NAME})
+            message(FATAL_ERROR "'${TARGET}' not found and variable '${VARIABLE_NAME}' is not defined.")
+        endif ()
+        foreach(item IN LISTS ${VARIABLE_NAME})
+            if (NOT EXISTS "${item}")
+                message(FATAL_ERROR "Variable '${VARIABLE_NAME}' contains '${item}', but the file does not exist.")
+            endif ()
+        endforeach()
+        set(${VARIABLE_NAME} "${${VARIABLE_NAME}}" PARENT_SCOPE)
+    endif ()
+endfunction ()
+
 function (add_target_csharp)
     cmake_parse_arguments (CS "EXE" "TARGET;PROJECT;OUTPUT" "DEPENDS" ${ARGN})
     if (MSVC)
@@ -454,10 +462,11 @@ function (csharp_bind_target)
     file(GENERATE OUTPUT "GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" CONTENT "${GENERATOR_OPTIONS}" CONDITION $<COMPILE_LANGUAGE:CXX>)
 
     # Swig generator command
+    setup_external_tool(swig SWIG_EXECUTABLE)
     add_custom_command(OUTPUT ${BIND_OUT_FILE}
         COMMAND ${CMAKE_COMMAND} -E remove_directory ${BIND_OUT_DIR}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${BIND_OUT_DIR}
-        COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${URHO3D_SWIG_LIB_DIR}" "$<TARGET_FILE:swig>"
+        COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${URHO3D_SWIG_LIB_DIR}" ${SWIG_EXECUTABLE}
         ARGS @"${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" > ${CMAKE_CURRENT_BINARY_DIR}/swig_${BIND_TARGET}.log
 
         MAIN_DEPENDENCY ${BIND_SWIG}
@@ -495,11 +504,12 @@ function (create_pak PAK_DIR PAK_FILE)
         list (APPEND PAK_FLAGS -c)
     endif ()
 
+    setup_external_tool(PackageTool PACKAGE_TOOL_EXECUTABLE)
     set_property (SOURCE ${PAK_FILE} PROPERTY GENERATED TRUE)
     add_custom_command(
         OUTPUT "${PAK_FILE}"
-        COMMAND "$<TARGET_FILE:PackageTool>" "${PAK_DIR}" "${PAK_FILE}" -q ${PAK_FLAGS}
-        DEPENDS PackageTool ${PAK_DEPENDS}
+        COMMAND ${PACKAGE_TOOL_EXECUTABLE} "${PAK_DIR}" "${PAK_FILE}" -q ${PAK_FLAGS}
+        DEPENDS $<TARGET_NAME_IF_EXISTS:PackageTool> ${PAK_DEPENDS}
         COMMENT "Packaging ${NAME}"
     )
 endfunction ()
@@ -562,13 +572,9 @@ function (package_resources_web)
     add_custom_target("${PAK_OUTPUT}"
         COMMAND ${EMPACKAGER} ${PAK_RELATIVE_DIR}${PAK_OUTPUT}.data --preload ${PRELOAD_FILES} --js-output=${PAK_RELATIVE_DIR}${PAK_OUTPUT} --use-preload-cache ${SEPARATE_METADATA}
         SOURCES ${PAK_FILES}
-        DEPENDS ${PAK_FILES}
+        DEPENDS ${PAK_FILES} $<TARGET_NAME_IF_EXISTS:PackageTool>
         COMMENT "Packaging ${PAK_OUTPUT}"
     )
-
-    if (TARGET PackageTool)
-        add_dependencies("${PAK_OUTPUT}" PackageTool)
-    endif ()
 
     if (PAK_INSTALL_TO)
         install(FILES "${PAK_RELATIVE_DIR}${PAK_OUTPUT}" "${PAK_RELATIVE_DIR}${PAK_OUTPUT}.data" DESTINATION ${PAK_INSTALL_TO})

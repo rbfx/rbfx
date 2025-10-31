@@ -47,11 +47,6 @@ if (URHO3D_EDITOR)
     add_subdirectory (Editor)
 endif ()
 
-# Generate platform triples
-include(PlatformTriple)
-rbfx_get_platform_triple(RBFX_PLATFORM_TRIPLE TARGET)
-message(STATUS "Target platform triple: ${RBFX_PLATFORM_TRIPLE}")
-
 # Generate CMake config files for tools export
 if (DESKTOP)
     # Install the tools export file

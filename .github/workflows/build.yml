@@ -13,7 +13,6 @@ on:
       # Examples:
       #   ci_jobs: "Linux"          # Runs only Linux job
       #   ci_jobs: "Linux,Windows"  # Runs Linux and Windows jobs
-      #   ci_jobs: "Android"        # Runs Android and its dependency Linux-Tools
       ci_jobs:
         description: 'Comma-separated list of jobs to run (e.g., "Linux,Android"). Leave empty to run all jobs.'
         required: false
@@ -38,7 +37,7 @@ env:
   CCACHE_HARDLINK: true
   CCACHE_SLOPPINESS: pch_defines,time_macros,include_file_mtime,include_file_ctime
   CCACHE_NOHASHDIR: true
-  CCACHE_MAXSIZE: 10G
+  CCACHE_MAXSIZE: 580M
   CCACHE_LIMIT_MULTIPLE: 0.6
   #CCACHE_DEBUG: 1
   CCACHE_DEBUGDIR: ${{ github.workspace }}/ccache-debug
@@ -92,119 +91,6 @@ jobs:
           git tag -f latest
           git push -f origin latest
 
-  Tools:
-    # Skip CI if:
-    # - pull request is from rbfx/rbfx repository branch
-    # - pull request is draft
-    # - ci_jobs input does not include any of the Tools-related jobs
-    if: |
-      !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'rbfx/rbfx') &&
-      github.event.pull_request.draft == false &&
-      (inputs.ci_jobs == '' ||
-       contains(inputs.ci_jobs, 'windows-tools') ||
-       contains(inputs.ci_jobs, 'linux-tools') ||
-       contains(inputs.ci_jobs, 'macos-tools') ||
-       contains(inputs.ci_jobs, 'uwp') ||
-       contains(inputs.ci_jobs, 'android') ||
-       contains(inputs.ci_jobs, 'web') ||
-       contains(inputs.ci_jobs, 'ios'))
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-          - os: ubuntu-latest
-          - os: macos-latest
-    env:
-      BUILD_SHARED_LIBS: OFF
-      URHO3D_GRAPHICS_API: OpenGL
-      URHO3D_ENABLE_ALL: OFF
-      URHO3D_SAMPLES: OFF
-      URHO3D_TESTING: OFF
-      URHO3D_SHADER_TRANSLATOR: OFF
-      URHO3D_SHADER_OPTIMIZER: OFF
-      URHO3D_TOOLS: "swig;PackageTool"
-      ci_platform: ${{ matrix.os == 'windows-latest' && 'windows' || (matrix.os == 'ubuntu-latest' && 'linux' || 'macos') }}
-      ci_compiler: ${{ matrix.os == 'windows-latest' && 'msvc'    || (matrix.os == 'ubuntu-latest' && 'gcc'   || 'clang') }}
-      ci_arch: ${{ matrix.os == 'macos-latest' && 'arm64' || 'x64' }}
-      ci_lib_type: lib
-
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          path: ${{ env.ci_source_dir }}
-          fetch-depth: 1
-
-      - name: Gather information
-        run: ${{ env.ci_build_script }} gather-info
-
-      - name: Download cached tools from releases
-        id: cache-check
-        if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
-        continue-on-error: true
-        run: |
-          if ${{ env.ci_build_script }} download-release -- \
-            "https://github.com/${{ github.repository }}/releases/download/latest/${{ env.TOOLS_RELEASE_NAME }}" \
-            "${{ github.workspace }}/cached-sdk" \
-            "${TOOLS_RELEASE_NAME%.7z}/tools-id.txt" \
-            "${{ env.ARTIFACT_ID_TOOLS }}";
-          then
-            echo "tools-cached=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "tools-cached=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Build Cache
-        uses: actions/cache@v4
-        if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.CACHE_ID }}-${{ env.SHORT_SHA }}
-          restore-keys: ${{ env.CACHE_ID }}
-
-      - name: Setup cmake
-        if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: '${{ env.CMAKE_VERSION }}'
-
-      - name: Dependencies
-        if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
-        run: ${{ env.ci_build_script }} dependencies
-
-      - name: Generate
-        if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
-        run: cmake --preset 'tools-${{ env.ci_platform }}-${{ env.ci_compiler }}-${{ env.ci_arch }}-${{ env.ci_lib_type }}' -S '${{ env.ci_source_dir }}' -B '${{ env.ci_build_dir }}' -DCMAKE_BUILD_TYPE=Release
-
-      - name: Build
-        if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
-        run: cmake --build '${{ env.ci_build_dir }}' --config Release --parallel $NUMBER_OF_PROCESSORS
-
-      - name: Install
-        if: ${{ steps.cache-check.outputs.tools-cached != 'true' }}
-        run: |
-          cmake --install '${{ env.ci_build_dir }}' --config Release --component Tools --prefix '${{ env.ci_sdk_dir }}'
-          echo "$ARTIFACT_ID_TOOLS" > '${{ env.ci_sdk_dir }}/tools-id.txt'
-
-      - name: Release Tools to latest
-        if: ${{ steps.cache-check.outputs.tools-cached != 'true' && env.ci_release_artifacts == 'true' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # Rename SDK to match the release name (without .7z), compress with 7z, and rename back
-          archive_name="${TOOLS_RELEASE_NAME%.7z}"
-          mv SDK "$archive_name"
-          7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "$TOOLS_RELEASE_NAME" "$archive_name"
-          gh release upload latest "$TOOLS_RELEASE_NAME" --repo '${{ github.repository }}' --clobber
-
-      - uses: actions/upload-artifact@v4
-        if: ${{ env.CCACHE_DEBUG == '1' }}
-        with:
-          name: 'ccache-debug-tools-${{ env.BUILD_ID }}-${{ github.run_id }}'
-          path: ${{ env.CCACHE_DEBUGDIR }}
-          if-no-files-found: ignore
-
   Build:
     # Skip CI if:
     # - pull request is from rbfx/rbfx repository branch
@@ -222,8 +108,6 @@ jobs:
        contains(inputs.ci_jobs, 'ios') ||
        contains(inputs.ci_jobs, 'web'))
     runs-on: ${{ (matrix.ci_platform == 'windows' || matrix.ci_platform == 'uwp') && 'windows-latest' || ((matrix.ci_platform == 'macos' || matrix.ci_platform == 'ios') && 'macos-latest' || 'ubuntu-latest') }}
-    needs:
-      - Tools
 
     strategy:
       fail-fast: false
@@ -351,17 +235,6 @@ jobs:
           restore-keys: |
             ${{ env.CACHE_ID }}
 
-      - name: Download cached tools from releases
-        if: env.PLATFORM_GROUP != 'desktop'
-        id: cached_tools
-        continue-on-error: true
-        run: |
-          ${{ env.ci_build_script }} download-release -- \
-            "https://github.com/${{ github.repository }}/releases/download/latest/${{ env.TOOLS_RELEASE_NAME }}" \
-            "${{ github.workspace }}/host-sdk" \
-            "${TOOLS_RELEASE_NAME%.7z}/tools-id.txt" \
-            "${{ env.ARTIFACT_ID_TOOLS }}"
-
       - name: Setup dotnet
         uses: actions/setup-dotnet@v4
         if: matrix.ci_lib_type == 'dll' || matrix.ci_platform == 'android'
@@ -384,7 +257,7 @@ jobs:
       - name: Dependencies
         run: ${{ env.ci_build_script }} dependencies
 
-      - name: Download cached SDK from releases
+      - name: Download release SDK
         id: cached_sdk
         if: ${{ !contains(github.event.head_commit.message, '#full-build') }}
         continue-on-error: true
@@ -398,6 +271,25 @@ jobs:
           else
             echo "sdk-cached=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Build swig
+        if: matrix.ci_lib_type == 'dll' && env.ci_platform_group != 'desktop'
+        run: |
+          binary_dir='${{ github.workspace }}/swig-build'
+          cmake -S '${{ env.ci_source_dir }}/Source/ThirdParty/swig' -B "$binary_dir" \
+            -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$binary_dir" \
+            -DCMAKE_BUILD_TYPE=Release -DDESKTOP=ON -DURHO3D_CSHARP=ON
+          cmake --build "$binary_dir" --config Release --parallel $NUMBER_OF_PROCESSORS
+          echo "SWIG_EXECUTABLE=$binary_dir/swig" >> $GITHUB_ENV
+
+      - name: Setup PackageTool
+        if: env.ci_platform_group != 'desktop'
+        run: |
+          venv='${{ github.workspace }}/venv-PackageTool'
+          python3 -m venv "$venv"
+          python_exe=$([[ -f "$venv/bin/python" ]] && echo "$venv/bin/python" || echo "$venv/Scripts/python.exe")
+          "$python_exe" -m pip install lz4
+          echo "PACKAGE_TOOL_EXECUTABLE=$python_exe;${{ env.ci_source_dir }}/Source/Tools/PackageTool/PackageTool.py" >> $GITHUB_ENV
 
       - name: Generate
         id: generate
@@ -470,7 +362,7 @@ jobs:
         run: ${{ env.ci_build_script }} apk --build-type rel
 
       - name: Release Mobile Artifacts
-        if: env.PLATFORM_GROUP == 'mobile' && env.ci_release_artifacts == 'true'
+        if: env.ci_platform_group == 'mobile' && env.ci_release_artifacts == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -478,7 +370,7 @@ jobs:
 
       # Test projects (Desktop/UWP/Web only, excluding Android/iOS)
       - uses: actions/checkout@v5
-        if: env.PLATFORM_GROUP != 'mobile'
+        if: env.ci_platform_group != 'mobile'
         id: empty_project_checkout
         continue-on-error: true
         with:
@@ -489,7 +381,7 @@ jobs:
           submodules: true
 
       - uses: actions/checkout@v5
-        if: env.PLATFORM_GROUP != 'mobile' && steps.empty_project_checkout.outcome != 'success'
+        if: env.ci_platform_group != 'mobile' && steps.empty_project_checkout.outcome != 'success'
         with:
           repository: rbfx/empty-project
           path: ${{ github.workspace }}/empty-project
@@ -498,15 +390,15 @@ jobs:
           submodules: true
 
       - name: Test empty-project with SDK
-        if: env.PLATFORM_GROUP != 'mobile'
+        if: env.ci_platform_group != 'mobile'
         run: ${{ env.ci_build_script }} test-project empty-project sdk
 
       - name: Test empty-project with engine source
-        if: env.PLATFORM_GROUP != 'mobile'
+        if: env.ci_platform_group != 'mobile'
         run: ${{ env.ci_build_script }} test-project empty-project source
 
       - uses: actions/checkout@v5
-        if: env.PLATFORM_GROUP != 'mobile'
+        if: env.ci_platform_group != 'mobile'
         id: sample_project_checkout
         continue-on-error: true
         with:
@@ -517,7 +409,7 @@ jobs:
           submodules: true
 
       - uses: actions/checkout@v5
-        if: env.PLATFORM_GROUP != 'mobile' && steps.sample_project_checkout.outcome != 'success'
+        if: env.ci_platform_group != 'mobile' && steps.sample_project_checkout.outcome != 'success'
         with:
           repository: rbfx/sample-project
           path: ${{ github.workspace }}/sample-project
@@ -526,11 +418,11 @@ jobs:
           submodules: true
 
       - name: Test sample-project with SDK
-        if: env.PLATFORM_GROUP != 'mobile'
+        if: env.ci_platform_group != 'mobile'
         run: ${{ env.ci_build_script }} test-project sample-project sdk
 
       - name: Test sample-project with engine source
-        if: env.PLATFORM_GROUP != 'mobile'
+        if: env.ci_platform_group != 'mobile'
         run: ${{ env.ci_build_script }} test-project sample-project source
 
       - name: Release SDK
