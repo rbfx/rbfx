@@ -73,9 +73,9 @@ if (WEB)
                      "${CMAKE_BINARY_DIR}/bin/CoreData.pak"
         RELATIVE_DIR "${CMAKE_BINARY_DIR}/bin"
         OUTPUT       "Resources.js"
-        INSTALL_TO   ${CMAKE_INSTALL_BINDIR}
+        INSTALL_TO   "${CMAKE_INSTALL_BINDIR}"
     )
-    web_link_resources(Samples Resources.js)
+    web_link_resources(Samples "Resources.js")
     target_link_libraries(Samples PRIVATE "--shell-file ${CMAKE_SOURCE_DIR}/bin/shell.html")
     install(FILES "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}/Samples.js" DESTINATION ${CMAKE_INSTALL_BINDIR})
     if (EMSCRIPTEN_WASM)
@@ -151,7 +151,7 @@ if (NOT ANDROID)
         LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
         BUNDLE DESTINATION  ${CMAKE_INSTALL_BINDIR}
     )
-    
+
     # Install runtime dependencies
     install_target_runtime_deps(TARGET Samples COMPONENT Samples)
 endif ()

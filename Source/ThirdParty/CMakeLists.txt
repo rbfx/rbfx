@@ -438,6 +438,12 @@ install(FILES
     DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DThirdParty/CMake
     COMPONENT ThirdParty
 )
+# Install PlatformTriple.cmake module needed by Urho3DThirdPartyConfigVersion.cmake
+install(FILES
+    "${rbfx_SOURCE_DIR}/CMake/Modules/PlatformTriple.cmake"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DThirdParty/CMake/Modules/
+    COMPONENT ThirdParty
+)
 
 # Install the export file
 install(EXPORT Urho3DThirdParty

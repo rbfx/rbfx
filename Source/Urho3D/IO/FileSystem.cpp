@@ -1680,7 +1680,7 @@ ea::string FileSystem::FindResourcePrefixPath() const
 {
     const auto isFileSystemRoot = [](const ea::string& path)
     {
-#if WIN32
+#ifdef WIN32
         return path.length() <= 3;  // Root path of any drive
 #else
         return path == "/";         // Filesystem root

@@ -23,6 +23,10 @@
 
 // Modified by cosmy1, Yao Wei Tjong & Lasse Oorni for Urho3D
 
+#if defined(__ANDROID__) || defined(ANDROID)
+// rbfx fix
+#define fseeko fseek
+#endif
 
 #if defined(__GNUC__) || defined(__MINGW32__)
 #define GCC_VERSION                                                            \
