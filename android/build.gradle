@@ -5,7 +5,7 @@ def projectSourceDir = '..'
 // Relative path to project source code directory. Modify as required.
 def rbfxSourceDir = '..'
 // Minimum required CMake version. This is same as in ../CMakeLists.txt.
-def cmakeVersion = '3.22.0+'
+def cmakeVersion = '3.25.0+'
 
 buildscript {
     repositories {

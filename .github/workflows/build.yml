@@ -27,7 +27,7 @@ env:
   URHO3D_PROFILING_FALLBACK: ON
   URHO3D_PRISTINE_FULL_BUILDS: ON
   DOTNET_VERSION: '8.0'
-  CMAKE_VERSION: 3.24.x
+  CMAKE_VERSION: 3.25.x
   # ccache configuration
   ccache_prefix: ${{ secrets.CACHE_VERSION }}-master
   CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -280,7 +280,9 @@ jobs:
             -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$binary_dir" \
             -DCMAKE_BUILD_TYPE=Release -DDESKTOP=ON -DURHO3D_CSHARP=ON
           cmake --build "$binary_dir" --config Release --parallel $NUMBER_OF_PROCESSORS
-          echo "SWIG_EXECUTABLE=$binary_dir/swig" >> $GITHUB_ENV
+          exe=$([[ "$ci_platform" == 'uwp' ]] && echo '.exe' || echo '')
+          swig_exe=$([[ -f "$binary_dir/swig" ]] && echo "$binary_dir/swig$exe" || echo "$binary_dir/Release/swig$exe")
+          echo "SWIG_EXECUTABLE=$swig_exe" >> $GITHUB_ENV
 
       - name: Setup PackageTool
         if: env.ci_platform_group != 'desktop'
@@ -295,7 +297,9 @@ jobs:
         id: generate
         if: matrix.ci_platform != 'android'
         run: |
-          ${{ env.ci_build_script }} generate 2>&1 | tee generate.log
+          # Try to catch issues with pch disabled at least somewhere.
+          pch=$([[ matrix.ci_platform == 'linux' && matrix.ci_compiler == 'clang' ]] && echo 'OFF' || echo 'ON')
+          ${{ env.ci_build_script }} generate -- -DURHO3D_PCH=$pch 2>&1 | tee generate.log
           if grep -q "Could NOT find Urho3DThirdParty" generate.log; then
             echo "thirdparty-used=false" >> "$GITHUB_OUTPUT"
             echo "ThirdParty will be built from source"

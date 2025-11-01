@@ -62,7 +62,7 @@ if (BISON_FOUND)
   if ("${BISON_VERSION}" VERSION_GREATER_EQUAL "3.5.4")
     set (BISON_NO_COLORS "--color=no")
   endif ()
-  bison_target(SWIG ${CMAKE_CURRENT_SOURCE_DIR}/Source/CParse/parser.y ${CMAKE_CURRENT_SOURCE_DIR}/Source/CParse/parser.c COMPILE_FLAGS "-y -d ${BISON_NO_COLORS}")
+  bison_target(SWIG ${CMAKE_CURRENT_SOURCE_DIR}/Source/CParse/parser.y ${CMAKE_CURRENT_SOURCE_DIR}/Source/CParse/parser.c COMPILE_FLAGS "-y -d --no-lines ${BISON_NO_COLORS}")
 endif ()
 
 file (GLOB_RECURSE SWIG_SOURCES Source/*.c Source/*.cxx Source/*.h)
