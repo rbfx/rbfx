@@ -37,7 +37,7 @@ env:
   CCACHE_HARDLINK: true
   CCACHE_SLOPPINESS: pch_defines,time_macros,include_file_mtime,include_file_ctime
   CCACHE_NOHASHDIR: true
-  CCACHE_MAXSIZE: 580M
+  #CCACHE_MAXSIZE: 580M
   CCACHE_LIMIT_MULTIPLE: 0.6
   #CCACHE_DEBUG: 1
   CCACHE_DEBUGDIR: ${{ github.workspace }}/ccache-debug
@@ -164,8 +164,8 @@ jobs:
         if: ${{ (env.ci_publish == 'true') && (vars.DISABLE_ITCH != 'true') }}
         uses: jdno/setup-butler@v1
 
-      - name: Build Cache
-        uses: actions/cache@v4
+      - name: Restore Build Cache
+        uses: actions/cache/restore@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ env.ci_cache_id }}-${{ env.ci_short_sha }}
@@ -284,6 +284,13 @@ jobs:
           # Install rest of files
           ${{ env.ci_build_script }} install --build-type dbg -- --prefix '${{ env.ci_sdk_dir }}'
           ${{ env.ci_build_script }} install --build-type rel -- --prefix '${{ env.ci_sdk_dir }}'
+
+      - name: Save Build Cache
+        if: env.ci_publish == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ env.ci_cache_id }}-${{ env.ci_short_sha }}
 
       # Web-specific: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
