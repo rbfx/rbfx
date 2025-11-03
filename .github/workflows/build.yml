@@ -97,121 +97,67 @@ jobs:
           git push -f origin latest
 
   Build:
-    runs-on: ${{ (matrix.ci_platform == 'windows' || matrix.ci_platform == 'uwp') && 'windows-latest' || ((matrix.ci_platform == 'macos' || matrix.ci_platform == 'ios') && 'macos-latest' || 'ubuntu-latest') }}
+    runs-on: ${{ (startsWith(matrix.ci_platform_tag, 'windows-') || startsWith(matrix.ci_platform_tag, 'uwp-')) && 'windows-latest' || ((startsWith(matrix.ci_platform_tag, 'macos-') || startsWith(matrix.ci_platform_tag, 'ios-')) && 'macos-latest' || 'ubuntu-latest') }}
 
     strategy:
       fail-fast: false
       matrix:
         include:
           # Desktop: Windows builds
-          - ci_platform: windows
-            ci_arch: x64
-            ci_lib_type: dll
-            ci_compiler: msvc
-          - ci_platform: windows
-            ci_arch: x64
-            ci_lib_type: lib
-            ci_compiler: msvc
-          - ci_platform: windows
-            ci_arch: x86
-            ci_lib_type: dll
-            ci_compiler: msvc
-          - ci_platform: windows
-            ci_arch: x86
-            ci_lib_type: lib
-            ci_compiler: msvc
+          - ci_platform_tag: windows-msvc-x64-dll
+          - ci_platform_tag: windows-msvc-x64-lib
+          - ci_platform_tag: windows-msvc-x86-dll
+          - ci_platform_tag: windows-msvc-x86-lib
           # Desktop: Linux builds
-          - ci_platform: linux
-            ci_arch: x64
-            ci_lib_type: dll
-            ci_compiler: gcc
-          - ci_platform: linux
-            ci_arch: x64
-            ci_lib_type: lib
-            ci_compiler: gcc
-          - ci_platform: linux
-            ci_arch: x64
-            ci_lib_type: dll
-            ci_compiler: clang
-          - ci_platform: linux
-            ci_arch: x64
-            ci_lib_type: lib
-            ci_compiler: clang
+          - ci_platform_tag: linux-gcc-x64-dll
+          - ci_platform_tag: linux-gcc-x64-lib
+          - ci_platform_tag: linux-clang-x64-dll
+          - ci_platform_tag: linux-clang-x64-lib
           # Desktop: MacOS builds
-          - ci_platform: macos
-            ci_arch: arm64
-            ci_lib_type: dll
-            ci_compiler: clang
-          - ci_platform: macos
-            ci_arch: arm64
-            ci_lib_type: lib
-            ci_compiler: clang
+          - ci_platform_tag: macos-clang-arm64-dll
+          - ci_platform_tag: macos-clang-arm64-lib
           # Mobile: UWP builds
-          - ci_platform: uwp
-            ci_arch: x64
-            ci_lib_type: dll
-            ci_compiler: msvc
-          - ci_platform: uwp
-            ci_arch: x64
-            ci_lib_type: lib
-            ci_compiler: msvc
+          - ci_platform_tag: uwp-msvc-x64-dll
+          - ci_platform_tag: uwp-msvc-x64-lib
           # Mobile: Android builds
-          - ci_platform: android
-            ci_arch: arm64-v8a
-            ci_lib_type: dll
-            ci_compiler: clang
-          - ci_platform: android
-            ci_arch: armeabi-v7a
-            ci_lib_type: dll
-            ci_compiler: clang
-          - ci_platform: android
-            ci_arch: x86_64
-            ci_lib_type: dll
-            ci_compiler: clang
+          - ci_platform_tag: android-clang-arm64-dll
+          - ci_platform_tag: android-clang-arm-dll
+          - ci_platform_tag: android-clang-x64-dll
           # Mobile: iOS builds
-          - ci_platform: ios
-            ci_arch: universal
-            ci_lib_type: lib
-            ci_compiler: clang
+          - ci_platform_tag: ios-clang-universal-lib
           # Web builds
-          - ci_platform: web
-            ci_arch: wasm
-            ci_lib_type: lib
-            ci_compiler: emscripten
+          - ci_platform_tag: web-emscripten-wasm-lib
 
     env:
-      ci_platform: ${{ matrix.ci_platform }}
-      ci_arch: ${{ matrix.ci_arch }}
-      ci_lib_type: ${{ matrix.ci_lib_type }}
-      ci_compiler: ${{ matrix.ci_compiler }}
+      ci_platform_tag: ${{ matrix.ci_platform_tag }}
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
       BINARYEN_CORES: 1
 
     steps:
+      - uses: actions/checkout@v5
+        with:
+          path: ${{ env.ci_source_dir }}
+          fetch-depth: 1
+
+      - name: Setup environment
+        run: ${{ env.ci_build_script }} setup-environment
+
       # Mobile-specific: Checkout emsdk (Web only)
       - name: Checkout emsdk
-        if: matrix.ci_platform == 'web'
+        if: env.ci_platform == 'web'
         uses: actions/checkout@v5
         with:
           repository: emscripten-core/emsdk
           path: ${{ github.workspace }}/emsdk
 
       - name: Setup emsdk
-        if: matrix.ci_platform == 'web'
+        if: env.ci_platform == 'web'
         run: |
           cd ${{ github.workspace }}/emsdk
           ./emsdk install latest
           ./emsdk activate latest
           echo "PATH=$PATH:${{ github.workspace }}/emsdk:${{ github.workspace }}/emsdk/upstream/emscripten" >> $GITHUB_ENV
           echo "EMSDK=${{ github.workspace }}/emsdk" >> $GITHUB_ENV
-
-      - uses: actions/checkout@v5
-        with:
-          path: ${{ env.ci_source_dir }}
-          fetch-depth: 1
-
-      - name: Gather information
-        run: ${{ env.ci_build_script }} gather-info
 
       - name: Set up butler
         if: ${{ (env.ci_publish == 'true') && (vars.DISABLE_ITCH != 'true') }}
@@ -221,25 +167,25 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ env.CACHE_ID }}-${{ env.SHORT_SHA }}
+          key: ${{ env.ci_cache_id }}-${{ env.ci_short_sha }}
           restore-keys: |
-            ${{ env.CACHE_ID }}
+            ${{ env.ci_cache_id }}
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v4
-        if: matrix.ci_lib_type == 'dll' || matrix.ci_platform == 'android'
+        if: env.ci_lib_type == 'dll' || env.ci_platform == 'android'
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Setup Gradle
-        if: matrix.ci_platform == 'android'
+        if: env.ci_platform == 'android'
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.14.3'
           add-job-summary: 'never'
 
       - name: Setup cmake
-        if: matrix.ci_platform != 'android'
+        if: env.ci_platform != 'android'
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '${{ env.CMAKE_VERSION }}'
@@ -253,23 +199,23 @@ jobs:
         continue-on-error: true
         run: |
           if ${{ env.ci_build_script }} download-release -- \
-            "https://github.com/${{ github.repository }}/releases/download/latest/rebelfork-sdk-${{ env.BUILD_ID }}-latest.7z" \
+            "https://github.com/${{ github.repository }}/releases/download/latest/rebelfork-sdk-${{ env.ci_build_id }}-latest.7z" \
             "${{ github.workspace }}/cached-sdk" \
-            "rebelfork-sdk-${{ env.BUILD_ID }}-latest/thirdparty-id.txt" \
-            "${{ env.HASH_THIRDPARTY }}"; then
+            "rebelfork-sdk-${{ env.ci_build_id }}-latest/thirdparty-id.txt" \
+            "${{ env.ci_hash_thirdparty }}"; then
             echo "sdk-cached=true" >> "$GITHUB_OUTPUT"
           else
             echo "sdk-cached=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build swig
-        if: matrix.ci_lib_type == 'dll' && env.ci_platform_group != 'desktop'
+        if: env.ci_lib_type == 'dll' && env.ci_platform_group != 'desktop'
         run: |
           binary_dir='${{ github.workspace }}/swig-build'
           cmake -S '${{ env.ci_source_dir }}/Source/ThirdParty/swig' -B "$binary_dir" \
             -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$binary_dir" \
             -DCMAKE_BUILD_TYPE=Release -DDESKTOP=ON -DURHO3D_CSHARP=ON
-          cmake --build "$binary_dir" --config Release --parallel $NUMBER_OF_PROCESSORS
+          cmake --build "$binary_dir" --config Release --parallel $ci_number_of_processors
           exe=$([[ "$ci_platform" == 'uwp' ]] && echo '.exe' || echo '')
           swig_exe=$([[ -f "$binary_dir/swig" ]] && echo "$binary_dir/swig$exe" || echo "$binary_dir/Release/swig$exe")
           echo "SWIG_EXECUTABLE=$swig_exe" >> $GITHUB_ENV
@@ -285,10 +231,10 @@ jobs:
 
       - name: Generate
         id: generate
-        if: matrix.ci_platform != 'android'
+        if: env.ci_platform != 'android'
         run: |
           # Try to catch issues with pch disabled at least somewhere.
-          pch=$([[ matrix.ci_platform == 'linux' && matrix.ci_compiler == 'clang' ]] && echo 'OFF' || echo 'ON')
+          pch=$([[ "$ci_platform" == 'linux' && "$ci_compiler" == 'clang' ]] && echo 'OFF' || echo 'ON')
           ${{ env.ci_build_script }} generate -- -DURHO3D_PCH=$pch 2>&1 | tee generate.log
           if grep -q "Could NOT find Urho3DThirdParty" generate.log; then
             echo "thirdparty-used=false" >> "$GITHUB_OUTPUT"
@@ -299,27 +245,27 @@ jobs:
           fi
 
       - name: Build Debug
-        run: ${{ env.ci_build_script }} build --build-type dbg -- --parallel $NUMBER_OF_PROCESSORS
+        run: ${{ env.ci_build_script }} build --build-type dbg -- --parallel $ci_number_of_processors
 
       - name: Build Release
-        run: ${{ env.ci_build_script }} build --build-type rel -- --parallel $NUMBER_OF_PROCESSORS
+        run: ${{ env.ci_build_script }} build --build-type rel -- --parallel $ci_number_of_processors
 
       - name: Test Debug (Native)
-        if: (matrix.ci_compiler == 'msvc' || matrix.ci_platform == 'linux')
+        if: (env.ci_compiler == 'msvc' || env.ci_platform == 'linux')
         run: ${{ env.ci_build_script }} test --build-type dbg
 
       - name: Test Debug (Managed)
         # TODO: Fix C# on x86, issue #733.
-        if: matrix.ci_platform == 'windows' && matrix.ci_compiler == 'msvc' && matrix.ci_lib_type == 'dll' && matrix.ci_arch == 'x64'
+        if: env.ci_platform == 'windows' && env.ci_compiler == 'msvc' && env.ci_lib_type == 'dll' && env.ci_arch == 'x64'
         run: ${{ env.ci_build_script }} cstest --build-type dbg
 
       - name: Test Release (Native)
-        if: (matrix.ci_compiler == 'msvc' || matrix.ci_platform == 'linux')
+        if: (env.ci_compiler == 'msvc' || env.ci_platform == 'linux')
         run: ${{ env.ci_build_script }} test --build-type rel
 
       - name: Test Release (Managed)
         # TODO: Fix C# on x86, issue #733.
-        if: matrix.ci_platform == 'windows' && matrix.ci_compiler == 'msvc' && matrix.ci_lib_type == 'dll' && matrix.ci_arch == 'x64'
+        if: env.ci_platform == 'windows' && env.ci_compiler == 'msvc' && env.ci_lib_type == 'dll' && env.ci_arch == 'x64'
         run: ${{ env.ci_build_script }} cstest --build-type rel
 
       - name: Copy cached SDK (ThirdParty component)
@@ -331,7 +277,7 @@ jobs:
           # Prepare ThirdParty file manifests
           ${{ env.ci_build_script }} install --build-type dbg -- --component ThirdParty --prefix '${{ env.ci_sdk_dir }}'
           ${{ env.ci_build_script }} install --build-type rel -- --component ThirdParty --prefix '${{ env.ci_sdk_dir }}'
-          echo "${{ env.HASH_THIRDPARTY }}" > '${{ env.ci_sdk_dir }}/thirdparty-id.txt'
+          echo "${{ env.ci_hash_thirdparty }}" > '${{ env.ci_sdk_dir }}/thirdparty-id.txt'
           (cd '${{ env.ci_sdk_dir }}' && find . -type f | sed 's|^\./||' > thirdparty-files.txt)
 
           # Install rest of files
@@ -340,7 +286,7 @@ jobs:
 
       # Web-specific: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
-        if: matrix.ci_platform == 'web' && env.ci_publish == 'true'
+        if: env.ci_platform == 'web' && env.ci_publish == 'true'
         uses: peaceiris/actions-gh-pages@v3
         with:
           personal_token: ${{ secrets.RBFX_DOCS_DEPLOY_TOKEN }}
@@ -352,7 +298,7 @@ jobs:
 
       # Android-specific: Build APK
       - name: Build APK
-        if: matrix.ci_platform == 'android'
+        if: env.ci_platform == 'android'
         run: ${{ env.ci_build_script }} apk --build-type rel
 
       - name: Release Mobile Artifacts
@@ -425,7 +371,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           # Rename SDK to match the release name (without .7z), compress with 7z max compression
-          archive_name="rebelfork-sdk-${{ env.BUILD_ID }}-latest"
+          archive_name="rebelfork-sdk-${{ env.ci_build_id }}-latest"
           mv SDK "$archive_name"
           7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "${archive_name}.7z" "$archive_name"
           gh release upload latest "${archive_name}.7z" --repo '${{ github.repository }}' --clobber
@@ -438,7 +384,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: ${{ env.CCACHE_DEBUG == '1' }}
         with:
-          name: 'ccache-debug-build-${{ env.BUILD_ID }}-${{ github.run_id }}'
+          name: 'ccache-debug-build-${{ env.ci_build_id }}-${{ github.run_id }}'
           path: ${{ env.CCACHE_DEBUGDIR }}
           if-no-files-found: ignore
 

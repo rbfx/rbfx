@@ -32,7 +32,15 @@ android {
             // Use environment variable to build only specific architecture if set
             def targetArch = System.getenv('ci_arch')
             if (targetArch) {
-                abiFilters targetArch
+                // Map simplified arch names to Android ABI names
+                def archMap = [
+                    'arm': 'armeabi-v7a',
+                    'arm64': 'arm64-v8a',
+                    'x86': 'x86',
+                    'x64': 'x86_64'
+                ]
+                def androidAbi = archMap.get(targetArch, targetArch)
+                abiFilters androidAbi
             } else {
                 abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
             }

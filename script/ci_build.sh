@@ -4,13 +4,14 @@
 #
 # Actions: dependencies|generate|build|install|test|cstest|apk|publish-to-itch|
 #          release-mobile-artifacts|test-project|download-release|download-nuget-sdks|
-#          copy-cached-sdk|gather-info
+#          copy-cached-sdk|setup-environment
 #
 # Environment variables (used for defaults):
-#   ci_platform:      windows|linux|macos|android|ios|web
-#   ci_arch:          x86|x64|arm|arm64
-#   ci_compiler:      msvc|gcc|gcc-*|clang|clang-*|mingw
+#   ci_platform:      windows|linux|macos|android|ios|web|uwp
+#   ci_arch:          x86|x64|arm|arm64|wasm|universal
+#   ci_compiler:      msvc|gcc|clang|emscripten|mingw
 #   ci_lib_type:      lib|dll
+#   ci_platform_tag:  platform-compiler-arch-libtype (e.g., android-clang-arm64-dll)
 #   ci_workspace_dir: actions workspace directory
 #   ci_source_dir:    source code directory
 #   ci_build_dir:     cmake cache directory
@@ -35,7 +36,7 @@ then
     echo "  download-release          Download and verify release"
     echo "  download-nuget-sdks       Download SDKs for NuGet"
     echo "  copy-cached-sdk           Copy cached SDK files"
-    echo "  gather-info               Gather build information"
+    echo "  setup-environment               Gather build information"
     echo ""
     echo "Options:"
     echo "  --build-type TYPE         Build type: dbg or rel (default: rel)"
@@ -45,10 +46,6 @@ then
 fi
 
 ci_action=$1; shift;
-
-# Default values
-ci_compiler=${ci_compiler:-"default"}
-ci_lib_type=${ci_lib_type:-"dll"}
 
 # Parse all arguments into arg_* variables
 # Long options (--name value) become arg_name=value
@@ -119,12 +116,26 @@ then
     types[rel]='Release';
 fi
 
-if [[ "$ci_platform" == "macos" || "$ci_platform" == "ios" ]];
-then
-    NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
-else
-    NUMBER_OF_PROCESSORS=$(nproc)
-fi
+# Determine number of processors
+case "$ci_platform" in
+    linux|android|web)
+        ci_number_of_processors=$(nproc)
+        ;;
+    macos|ios)
+        ci_number_of_processors=$(sysctl -n hw.ncpu)
+        ;;
+    windows|uwp)
+        ci_number_of_processors=${NUMBER_OF_PROCESSORS:-1}
+        ;;
+esac
+
+# Map simplified arch names to Android ABI names (used across multiple functions)
+declare -A android_arch_map=(
+    [arm]='armeabi-v7a'
+    [arm64]='arm64-v8a'
+    [x86]='x86'
+    [x64]='x86_64'
+)
 
 copy-runtime-libraries-for-executables() {
     local dir=$1
@@ -258,7 +269,7 @@ function action-build() {
       ccache_path=$(realpath /c/ProgramData/chocolatey/lib/ccache/tools/ccache-*)
       cp $ccache_path/ccache.exe $ccache_path/cl.exe  # https://github.com/ccache/ccache/wiki/MS-Visual-Studio
       $ccache_path/ccache.exe -s
-      cmake --build $ci_build_dir --config "${types[$arg_build_type]}" -- -r -maxcpucount:$NUMBER_OF_PROCESSORS -p:TrackFileAccess=false -p:UseMultiToolTask=true -p:CLToolPath=$ccache_path \
+      cmake --build $ci_build_dir --config "${types[$arg_build_type]}" -- -r -maxcpucount:$ci_number_of_processors -p:TrackFileAccess=false -p:UseMultiToolTask=true -p:CLToolPath=$ccache_path \
         '-p:ObjectFileName=$(IntDir)%(FileName).obj' -p:DebugInformationFormat=OldStyle && \
       $ccache_path/ccache.exe -s
     elif [[ "$ci_platform" == "android" ]];
@@ -267,17 +278,18 @@ function action-build() {
         [dbg]='buildCMakeDebug'
         [rel]='buildCMakeRelWithDebInfo'
       )
+      android_abi="${android_arch_map[$ci_arch]:-$ci_arch}"
       # Custom platform build paths used only on android.
       cd $ci_source_dir/android
       ccache -s
-      gradle wrapper                                                  && \
-      ./gradlew "${android_build_types[$arg_build_type]}[${ci_arch}]"  && \
+      gradle wrapper                                                       && \
+      ./gradlew "${android_build_types[$arg_build_type]}[${android_abi}]"  && \
       ccache -s
     else
       # Default build path using plain CMake.
       # ci_platform:     windows|linux|macos|android|ios|web
       ccache -s
-      cmake --build $ci_build_dir --parallel $NUMBER_OF_PROCESSORS --config "${types[$arg_build_type]}" && \
+      cmake --build $ci_build_dir --parallel $ci_number_of_processors --config "${types[$arg_build_type]}" && \
       ccache -s
     fi
 }
@@ -299,7 +311,8 @@ function action-install() {
     # Arguments: --build-type <dbg|rel>, -- <extra_cmake_args...>
     if [[ "$ci_platform" == "android" ]];
     then
-        cmake --install $ci_source_dir/android/.cxx/${types[$arg_build_type]}/*/$ci_arch --config ${types[$arg_build_type]} ${arg_extra[@]}
+        android_abi="${android_arch_map[$ci_arch]:-$ci_arch}"
+        cmake --install $ci_source_dir/android/.cxx/${types[$arg_build_type]}/*/$android_abi --config ${types[$arg_build_type]} ${arg_extra[@]}
     else
         cmake --install $ci_build_dir --config "${types[$arg_build_type]}" ${arg_extra[@]}
     fi
@@ -327,7 +340,7 @@ function action-install() {
 function action-test() {
     # Arguments: --build-type <dbg|rel>
     cd $ci_build_dir
-    ctest --output-on-failure -C "${types[$arg_build_type]}" -j $NUMBER_OF_PROCESSORS
+    ctest --output-on-failure -C "${types[$arg_build_type]}" -j $ci_number_of_processors
 }
 
 function action-cstest() {
@@ -378,7 +391,7 @@ function action-release-mobile-artifacts() {
     local artifact=$(find . -name "$pattern" $([[ "$ci_platform" == "ios" ]] && echo "-type d") | head -n 1)
     if [ -n "$artifact" ];
     then
-        local archive_name="rebelfork-bin-${BUILD_ID}-latest.7z"
+        local archive_name="rebelfork-bin-${ci_build_id}-latest.7z"
         7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "$archive_name" "$artifact"
         gh release upload latest "$archive_name" --repo "${GITHUB_REPOSITORY}" --clobber
         echo "✓ Released $archive_name"
@@ -550,14 +563,14 @@ function action-download-nuget-sdks() {
 
     # Define all SDK configurations that need to be downloaded for NuGet packaging
     local platforms=(
-        "windows-msvc-dll-x64"
-        "linux-gcc-dll-x64"
-        "macos-clang-dll-x64"
-        "uwp-msvc-dll-x64"
-        "android-clang-dll-arm64-v8a"
-        "android-clang-dll-armeabi-v7a"
-        "android-clang-dll-x86_64"
-        "ios-clang-lib-universal"
+        "windows-msvc-x64-dll"
+        "linux-gcc-x64-dll"
+        "macos-clang-x64-dll"
+        "uwp-msvc-x64-dll"
+        "android-clang-arm64-dll"
+        "android-clang-arm-dll"
+        "android-clang-x64-dll"
+        "ios-clang-universal-lib"
     )
 
     echo "Downloading SDKs from releases..."
@@ -615,15 +628,27 @@ function action-copy-cached-sdk() {
     fi
 }
 
-# Action to gather build information and set environment variables
-# Usage: ci_build.sh gather-info
-function action-gather-info() {
+# Action to set environment variables
+# Usage: ci_build.sh setup-environment
+function action-setup-environment() {
     # Arguments: none
+
+    # Parse ci_platform_tag if provided
+    # Format: platform-compiler-arch-libtype
+    # Examples: windows-msvc-x64-dll, linux-gcc-x64-lib, android-clang-arm64-dll
+    if [[ -n "${ci_platform_tag:-}" ]]; then
+        IFS='-' read -ra TAG_PARTS <<< "$ci_platform_tag"
+        ci_platform="${TAG_PARTS[0]}"
+        ci_compiler="${TAG_PARTS[1]}"
+        ci_arch="${TAG_PARTS[2]}"
+        ci_lib_type="${TAG_PARTS[3]}"
+    fi
+
     # Define env variables
-    SHORT_SHA=$(echo ${GITHUB_SHA} | cut -c1-8)
-    HASH_THIRDPARTY=$(cmake -DDIRECTORY_PATH="${ci_source_dir}/Source/ThirdParty" -DHASH_FORMAT=short -P "${ci_source_dir}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
-    BUILD_ID="${ci_platform}-${ci_compiler}-${ci_lib_type}-${ci_arch}"
-    CACHE_ID="${ccache_prefix}-$BUILD_ID"
+    ci_short_sha=$(echo ${GITHUB_SHA} | cut -c1-8)
+    ci_hash_thirdparty=$(cmake -DDIRECTORY_PATH="${ci_source_dir}/Source/ThirdParty" -DHASH_FORMAT=short -P "${ci_source_dir}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
+    ci_build_id="${ci_platform}-${ci_compiler}-${ci_arch}-${ci_lib_type}"
+    ci_cache_id="${ccache_prefix}-$ci_build_id"
     case "$ci_platform" in
         windows|linux|macos)  ci_platform_group='desktop'  ;;
         android|ios)          ci_platform_group='mobile'   ;;
@@ -631,36 +656,26 @@ function action-gather-info() {
         web)                  ci_platform_group='web'      ;;
     esac
 
-    # Determine number of processors
-    case "$ci_platform" in
-        linux|android|web)
-            NUMBER_OF_PROCESSORS=$(nproc)
-            ;;
-        macos|ios)
-            NUMBER_OF_PROCESSORS=$(sysctl -n hw.ncpu)
-            ;;
-        windows|uwp)
-            NUMBER_OF_PROCESSORS=${NUMBER_OF_PROCESSORS:-1} # Already set on windows
-            ;;
-    esac
-
     # Using all available processors may lead to OOM on CI systems
-    NUMBER_OF_PROCESSORS=$(( (NUMBER_OF_PROCESSORS + 1) / 2 ))
-    if [ "$NUMBER_OF_PROCESSORS" -lt 1 ];
-    then
-        NUMBER_OF_PROCESSORS=1
-    fi
+    #ci_number_of_processors=$(( (ci_number_of_processors + 1) / 2 ))
+    #if [ "$ci_number_of_processors" -lt 1 ];
+    #then
+    #    ci_number_of_processors=1
+    #fi
 
     # Save to GitHub Actions environment if available
     if [ -n "$GITHUB_ENV" ];
     then
-        echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
-        echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
-        echo "CACHE_ID=$CACHE_ID" >> $GITHUB_ENV
-        echo "HASH_THIRDPARTY=$HASH_THIRDPARTY" >> $GITHUB_ENV
-        echo "ARTIFACT_ID_SDK=$ARTIFACT_ID_SDK" >> $GITHUB_ENV
-        echo "NUMBER_OF_PROCESSORS=$NUMBER_OF_PROCESSORS" >> $GITHUB_ENV
+        echo "ci_number_of_processors=$ci_number_of_processors" >> $GITHUB_ENV
+        echo "ci_short_sha=$ci_short_sha" >> $GITHUB_ENV
+        echo "ci_build_id=$ci_build_id" >> $GITHUB_ENV
+        echo "ci_cache_id=$ci_cache_id" >> $GITHUB_ENV
+        echo "ci_hash_thirdparty=$ci_hash_thirdparty" >> $GITHUB_ENV
         echo "ci_platform_group=$ci_platform_group" >> $GITHUB_ENV
+        echo "ci_platform=$ci_platform" >> $GITHUB_ENV
+        echo "ci_compiler=$ci_compiler" >> $GITHUB_ENV
+        echo "ci_arch=$ci_arch" >> $GITHUB_ENV
+        echo "ci_lib_type=$ci_lib_type" >> $GITHUB_ENV
     fi
 }
 
