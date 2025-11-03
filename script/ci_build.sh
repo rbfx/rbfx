@@ -370,7 +370,7 @@ function action-release-mobile-artifacts() {
     case "$ci_platform" in
         android) pattern="*.apk" ;;
         ios)     pattern="*.app" ;;
-        *)       echo "⚠ Warning: action-release-mobile-artifacts called for non-mobile platform: $ci_platform"
+        *)       echo "Warning: action-release-mobile-artifacts called for non-mobile platform: $ci_platform"
                  return 1        ;;
     esac
 
@@ -383,7 +383,7 @@ function action-release-mobile-artifacts() {
         gh release upload latest "$archive_name" --repo "${GITHUB_REPOSITORY}" --clobber
         echo "✓ Released $archive_name"
     else
-        echo "⚠ Warning: No $pattern file found"
+        echo "Warning: No $pattern file found"
         return 1
     fi
 }
@@ -570,7 +570,7 @@ function action-download-nuget-sdks() {
             7z x -y "$sdk_name"
             rm "$sdk_name"
         else
-            echo "⚠ Warning: Failed to download $sdk_name (may not exist yet)"
+            echo "Warning: Failed to download $sdk_name (may not exist yet)"
         fi
     done
 }

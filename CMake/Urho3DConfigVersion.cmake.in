@@ -2,25 +2,25 @@
 
 set(PACKAGE_VERSION "@URHO3D_VERSION@")
 
-# Include platform triple generation module
-include("${CMAKE_CURRENT_LIST_DIR}/Modules/PlatformTriple.cmake")
+# Include platform tag generation module
+include("${CMAKE_CURRENT_LIST_DIR}/Modules/PlatformTag.cmake")
 
 # Platform compatibility check for Urho3D
 function(urho3d_check_platform_compatibility_version)
-    # Generate current platform triple (TARGET mode - checking target platform)
-    rbfx_get_platform_triple(CURRENT_PLATFORM_TRIPLE TARGET)
+    # Generate current platform tag (TARGET mode - checking target platform)
+    rbfx_get_platform_tag(CURRENT_PLATFORM_TAG TARGET)
 
-    # Platform triple that was used at build time (embedded during configuration)
-    set(BUILD_TIME_PLATFORM_TRIPLE "@RBFX_PLATFORM_TRIPLE@")
+    # Platform tag that was used at build time (embedded during configuration)
+    set(BUILD_TIME_PLATFORM_TAG "@RBFX_PLATFORM_TAG@")
 
-    # Compare triples
-    if(NOT CURRENT_PLATFORM_TRIPLE STREQUAL BUILD_TIME_PLATFORM_TRIPLE)
+    # Compare tags
+    if(NOT CURRENT_PLATFORM_TAG STREQUAL BUILD_TIME_PLATFORM_TAG)
         set(PACKAGE_VERSION_UNSUITABLE TRUE PARENT_SCOPE)
         set(PACKAGE_VERSION_COMPATIBLE FALSE PARENT_SCOPE)
         if(NOT Urho3D_FIND_QUIETLY)
-            message(STATUS "Urho3D: Platform triple mismatch detected.")
-            message(STATUS "  Current platform: ${CURRENT_PLATFORM_TRIPLE}")
-            message(STATUS "  Built for:        ${BUILD_TIME_PLATFORM_TRIPLE}")
+            message(STATUS "Urho3D: Platform tag mismatch detected.")
+            message(STATUS "  Current platform: ${CURRENT_PLATFORM_TAG}")
+            message(STATUS "  Built for:        ${BUILD_TIME_PLATFORM_TAG}")
             message(STATUS "  Hint: The Urho3D package was built for a different platform/architecture/runtime.")
             message(STATUS "        Ensure you're using the correct build for your target configuration.")
         endif()

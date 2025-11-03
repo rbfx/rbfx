@@ -97,10 +97,10 @@ elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
 endif ()
 
 # Determine build arch
-# Extract architecture from RBFX_PLATFORM_TRIPLE (format: platform-arch-runtime)
-if (RBFX_PLATFORM_TRIPLE)
-    string(REPLACE "-" ";" TRIPLE_PARTS "${RBFX_PLATFORM_TRIPLE}")
-    list(GET TRIPLE_PARTS 1 URHO3D_PLATFORM)
+# Extract architecture from RBFX_PLATFORM_TAG (format: platform-arch-runtime)
+if (RBFX_PLATFORM_TAG)
+    string(REPLACE "-" ";" TAG_PARTS "${RBFX_PLATFORM_TAG}")
+    list(GET TAG_PARTS 1 URHO3D_PLATFORM)
 endif ()
 
 if (CMAKE_SIZEOF_VOID_P MATCHES 8)

@@ -78,9 +78,9 @@ if (DESKTOP)
         DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DTools/CMake/
         COMPONENT Tools
     )
-    # Install PlatformTriple.cmake module needed by Urho3DToolsConfigVersion.cmake
+    # Install PlatformTag.cmake module needed by Urho3DToolsConfigVersion.cmake
     install(FILES
-        ${rbfx_SOURCE_DIR}/CMake/Modules/PlatformTriple.cmake
+        ${rbfx_SOURCE_DIR}/CMake/Modules/PlatformTag.cmake
         DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DTools/CMake/Modules/
         COMPONENT Tools
     )

@@ -68,10 +68,10 @@ if (URHO3D_PRISTINE_FULL_BUILDS OR (ENV{CI} AND NOT Urho3DThirdParty_FOUND))
     message(STATUS "CCache disabled")
 endif ()
 
-# Generate platform triple
-include(PlatformTriple)
-rbfx_get_platform_triple(RBFX_PLATFORM_TRIPLE TARGET)
-message(STATUS "Target platform triple: ${RBFX_PLATFORM_TRIPLE}")
+# Generate platform tag
+include(PlatformTag)
+rbfx_get_platform_tag(RBFX_PLATFORM_TAG TARGET)
+message(STATUS "Target platform tag: ${RBFX_PLATFORM_TAG}")
 
 # Include common utilities
 include(UrhoCommon)

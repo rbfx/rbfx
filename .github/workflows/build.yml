@@ -47,9 +47,14 @@ env:
   ci_build_script: ./source-code/script/ci_build.sh
   ci_build_dir: ${{ github.workspace }}/cmake-build
   ci_sdk_dir: ${{ github.workspace }}/SDK
-  ci_execute_services: ${{ github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' }}
-  ci_release_artifacts: ${{ github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' }}
-  # etc
+  # WebHooks/documentation/itch.io/gh pages
+  # Note that some of these steps hard-code this condition instead of using ci_publish
+  # variable, because github does not allow using env variables in that context. Be sure
+  # to ctrl+c for "ci_publish" if you need to adjust this variable.
+  ci_publish: ${{ github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' }}
+  # Push artifacts to latest release.
+  ci_artifacts: ${{ github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' }}
+  # CI workers have limited capabilities, allow tracy to fall back to less accurate timers.
   TRACY_TIMER_FALLBACK: 1
   SOURCE_REF: ${{ github.head_ref || github.ref_name }}
 
@@ -66,7 +71,7 @@ jobs:
     name: Web Hooks
     runs-on: ubuntu-latest
     continue-on-error: true
-    # if: env.ci_execute_services == 'true'
+    # if: env.ci_publish == 'true'
     if: ${{ github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' }}
     steps:
       - name: Discord Commits
@@ -80,7 +85,7 @@ jobs:
   Release-Latest:
     name: Release 'latest'
     runs-on: ubuntu-latest
-    # if: env.ci_release_artifacts == 'true'
+    # if: env.ci_artifacts == 'true'
     if: ${{ github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' }}
     steps:
       - name: Checkout Repository
@@ -92,21 +97,6 @@ jobs:
           git push -f origin latest
 
   Build:
-    # Skip CI if:
-    # - pull request is from rbfx/rbfx repository branch
-    # - pull request is draft
-    # - ci_jobs input does not include this platform
-    if: |
-      !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'rbfx/rbfx') &&
-      github.event.pull_request.draft == false &&
-      (inputs.ci_jobs == '' ||
-       contains(inputs.ci_jobs, 'windows') ||
-       contains(inputs.ci_jobs, 'linux') ||
-       contains(inputs.ci_jobs, 'macos') ||
-       contains(inputs.ci_jobs, 'uwp') ||
-       contains(inputs.ci_jobs, 'android') ||
-       contains(inputs.ci_jobs, 'ios') ||
-       contains(inputs.ci_jobs, 'web'))
     runs-on: ${{ (matrix.ci_platform == 'windows' || matrix.ci_platform == 'uwp') && 'windows-latest' || ((matrix.ci_platform == 'macos' || matrix.ci_platform == 'ios') && 'macos-latest' || 'ubuntu-latest') }}
 
     strategy:
@@ -224,7 +214,7 @@ jobs:
         run: ${{ env.ci_build_script }} gather-info
 
       - name: Set up butler
-        if: ${{ (env.ci_execute_services == 'true') && (vars.DISABLE_ITCH != 'true') }}
+        if: ${{ (env.ci_publish == 'true') && (vars.DISABLE_ITCH != 'true') }}
         uses: jdno/setup-butler@v1
 
       - name: Build Cache
@@ -350,7 +340,7 @@ jobs:
 
       # Web-specific: Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
-        if: matrix.ci_platform == 'web' && env.ci_execute_services == 'true'
+        if: matrix.ci_platform == 'web' && env.ci_publish == 'true'
         uses: peaceiris/actions-gh-pages@v3
         with:
           personal_token: ${{ secrets.RBFX_DOCS_DEPLOY_TOKEN }}
@@ -366,7 +356,7 @@ jobs:
         run: ${{ env.ci_build_script }} apk --build-type rel
 
       - name: Release Mobile Artifacts
-        if: env.ci_platform_group == 'mobile' && env.ci_release_artifacts == 'true'
+        if: env.ci_platform_group == 'mobile' && env.ci_artifacts == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -393,14 +383,6 @@ jobs:
           fetch-depth: 1
           submodules: true
 
-      - name: Test empty-project with SDK
-        if: env.ci_platform_group != 'mobile'
-        run: ${{ env.ci_build_script }} test-project empty-project sdk
-
-      - name: Test empty-project with engine source
-        if: env.ci_platform_group != 'mobile'
-        run: ${{ env.ci_build_script }} test-project empty-project source
-
       - uses: actions/checkout@v5
         if: env.ci_platform_group != 'mobile'
         id: sample_project_checkout
@@ -421,6 +403,14 @@ jobs:
           fetch-depth: 1
           submodules: true
 
+      - name: Test empty-project with SDK
+        if: env.ci_platform_group != 'mobile'
+        run: ${{ env.ci_build_script }} test-project empty-project sdk
+
+      - name: Test empty-project with engine source
+        if: env.ci_platform_group != 'mobile'
+        run: ${{ env.ci_build_script }} test-project empty-project source
+
       - name: Test sample-project with SDK
         if: env.ci_platform_group != 'mobile'
         run: ${{ env.ci_build_script }} test-project sample-project sdk
@@ -430,7 +420,7 @@ jobs:
         run: ${{ env.ci_build_script }} test-project sample-project source
 
       - name: Release SDK
-        if: ${{ env.ci_release_artifacts == 'true' }}
+        if: ${{ env.ci_artifacts == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -442,7 +432,7 @@ jobs:
           mv "$archive_name" SDK
 
       - name: Publish to itch.io
-        if: ${{ (env.ci_execute_services == 'true') && (vars.DISABLE_ITCH != 'true') }}
+        if: ${{ (env.ci_publish == 'true') && (vars.DISABLE_ITCH != 'true') }}
         run: ${{ env.ci_build_script }} publish-to-itch
 
       - uses: actions/upload-artifact@v4
@@ -485,7 +475,7 @@ jobs:
 
   Docs:
     runs-on: ubuntu-latest
-    # if: env.ci_execute_services == 'true'
+    # if: env.ci_publish == 'true'
     if: ${{ github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' }}
     needs:
       - Build

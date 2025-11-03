@@ -20,19 +20,40 @@
 # THE SOFTWARE.
 #
 
-# Function to generate platform triple: <platform>-<architecture>-<runtime>
-# Example triples:
+# Function to generate platform tag: <platform>-<architecture>-<runtime>
+# Supported platforms:
+#   - windows
+#   - uwp
+#   - linux
+#   - macos
+#   - ios
+#   - tvos
+#   - android
+#   - emscripten
+#
+# Supported architectures:
+#   - x86
+#   - x64
+#   - arm
+#   - arm64
+#   - wasm (emscripten only)
+#
+# Supported runtimes:
+#   - dll (shared libraries)
+#   - lib (static libraries)
+#
+# Example tags:
 #   - emscripten-wasm-lib
 #   - windows-x64-dll
 #   - uwp-arm64-dll
 #   - uwp-arm-lib
-#   - linux-x86_64-lib
-#   - android-aarch64-lib
+#   - linux-x86-lib
+#   - android-arm64-lib
 #
 # Arguments:
-#   OUT_TRIPLE - Output variable name for the triple
+#   OUT_TAG - Output variable name for the tag
 #   MODE - Optional: "HOST" for host platform, "TARGET" (default) for target platform
-function(rbfx_get_platform_triple OUT_TRIPLE)
+function(rbfx_get_platform_tag OUT_TAG)
     # Parse optional MODE argument
     set(MODE "TARGET")
     if(ARGC GREATER 1)
@@ -127,11 +148,11 @@ function(rbfx_get_platform_triple OUT_TRIPLE)
         set(RUNTIME "lib")
     endif()
 
-    # Construct the triple
-    set(${OUT_TRIPLE} "${PLATFORM_NAME}-${ARCH}-${RUNTIME}" PARENT_SCOPE)
+    # Construct the tag
+    set(${OUT_TAG} "${PLATFORM_NAME}-${ARCH}-${RUNTIME}" PARENT_SCOPE)
 endfunction()
 
-# Function to check if a tool triple is compatible with the host triple
+# Function to check if a tool tag is compatible with the host tag
 # This performs a "relaxed" check suitable for tools/executables:
 #   - Platform must match exactly (windows, linux, macos, etc.)
 #   - Architecture is relaxed: x86 tools can run on x64/arm64, arm tools can run on arm64
@@ -139,18 +160,18 @@ endfunction()
 #
 # Arguments:
 #   OUT_COMPATIBLE - Output variable name for compatibility result (TRUE/FALSE)
-#   HOST_TRIPLE - The host platform triple (where tools will run)
-#   TOOL_TRIPLE - The tool's platform triple (what it was built for)
-function(rbfx_check_tool_triple_compatibility OUT_COMPATIBLE HOST_TRIPLE TOOL_TRIPLE)
-    # Parse triples: platform-arch-runtime
-    string(REPLACE "-" ";" HOST_PARTS "${HOST_TRIPLE}")
-    string(REPLACE "-" ";" TOOL_PARTS "${TOOL_TRIPLE}")
+#   HOST_TAG - The host platform tag (where tools will run)
+#   TOOL_TAG - The tool's platform tag (what it was built for)
+function(rbfx_check_tool_tag_compatibility OUT_COMPATIBLE HOST_TAG TOOL_TAG)
+    # Parse tags: platform-arch-runtime
+    string(REPLACE "-" ";" HOST_PARTS "${HOST_TAG}")
+    string(REPLACE "-" ";" TOOL_PARTS "${TOOL_TAG}")
 
     list(LENGTH HOST_PARTS HOST_PARTS_COUNT)
     list(LENGTH TOOL_PARTS TOOL_PARTS_COUNT)
 
     if(HOST_PARTS_COUNT LESS 2 OR TOOL_PARTS_COUNT LESS 2)
-        # Invalid triple format
+        # Invalid tag format
         set(${OUT_COMPATIBLE} FALSE PARENT_SCOPE)
         return()
     endif()

@@ -2,30 +2,30 @@
 
 set(PACKAGE_VERSION "@URHO3D_VERSION@")
 
-# Include platform triple generation module
-include("${CMAKE_CURRENT_LIST_DIR}/Modules/PlatformTriple.cmake")
+# Include platform tag generation module
+include("${CMAKE_CURRENT_LIST_DIR}/Modules/PlatformTag.cmake")
 
 # Host platform compatibility check for Urho3DTools
 function(urho3d_tools_check_host_platform_compatibility_version)
-    # Generate current host platform triple (HOST mode - checking where tools will run)
-    rbfx_get_platform_triple(CURRENT_HOST_PLATFORM_TRIPLE HOST)
+    # Generate current host platform tag (HOST mode - checking where tools will run)
+    rbfx_get_platform_tag(CURRENT_HOST_PLATFORM_TAG HOST)
 
-    # Host platform triple that was used at build time (embedded during configuration)
-    set(BUILD_TIME_PLATFORM_TRIPLE "@RBFX_PLATFORM_TRIPLE@")
+    # Host platform tag that was used at build time (embedded during configuration)
+    set(BUILD_TIME_PLATFORM_TAG "@RBFX_PLATFORM_TAG@")
 
     # Use relaxed compatibility check for tools
-    rbfx_check_tool_triple_compatibility(TOOLS_COMPATIBLE
-        "${CURRENT_HOST_PLATFORM_TRIPLE}"
-        "${BUILD_TIME_PLATFORM_TRIPLE}")
+    rbfx_check_tool_tag_compatibility(TOOLS_COMPATIBLE
+        "${CURRENT_HOST_PLATFORM_TAG}"
+        "${BUILD_TIME_PLATFORM_TAG}")
 
-    # Compare triples with relaxed check
+    # Compare tags with relaxed check
     if(NOT TOOLS_COMPATIBLE)
         set(PACKAGE_VERSION_UNSUITABLE TRUE PARENT_SCOPE)
         set(PACKAGE_VERSION_COMPATIBLE FALSE PARENT_SCOPE)
         if(NOT Urho3DTools_FIND_QUIETLY)
-            message(STATUS "Urho3DTools: Host platform triple mismatch detected.")
-            message(STATUS "  Current host platform: ${CURRENT_HOST_PLATFORM_TRIPLE}")
-            message(STATUS "  Built for:             ${BUILD_TIME_PLATFORM_TRIPLE}")
+            message(STATUS "Urho3DTools: Host platform tag mismatch detected.")
+            message(STATUS "  Current host platform: ${CURRENT_HOST_PLATFORM_TAG}")
+            message(STATUS "  Built for:             ${BUILD_TIME_PLATFORM_TAG}")
             message(STATUS "  Hint: The Urho3DTools package was built for a different host platform.")
             message(STATUS "        Tools must match the host system where they will be executed.")
         endif()

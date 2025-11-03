@@ -1,5 +1,5 @@
 /* -----------------------------------------------------------------------------
- * This file is part of SWIG, which is licensed as a whole under version 3 
+ * This file is part of SWIG, which is licensed as a whole under version 3
  * (or any later version) of the GNU General Public License. Some additional
  * terms also apply to certain portions of SWIG. The full details of the SWIG
  * license and copyrights can be found in the LICENSE and COPYRIGHT files
@@ -50,7 +50,7 @@ static Symtab  *prev_symtab = 0;
 static Node    *current_class = 0;
 String  *ModuleName = 0;
 static Node    *module_node = 0;
-static String  *Classprefix = 0;  
+static String  *Classprefix = 0;
 static String  *Namespaceprefix = 0;
 static int      inclass = 0;
 static Node    *currentOuterClass = 0; /* for nested classes */
@@ -76,7 +76,7 @@ static Node *currentNode = NULL; /* Pointer to the current node (for post commen
  * ----------------------------------------------------------------------------- */
 
 
- 
+
 /* Called by the parser (yyparse) when an error is found.*/
 static void yyerror (const char *e) {
   (void)e;
@@ -111,7 +111,7 @@ static Node *copy_node(Node *n) {
     }
     if (Strncmp(key,"csym:",5) == 0) continue;
     /* We do copy sym:name.  For templates */
-    if ((strcmp(ckey,"sym:name") == 0) || 
+    if ((strcmp(ckey,"sym:name") == 0) ||
 	(strcmp(ckey,"sym:weak") == 0) ||
 	(strcmp(ckey,"sym:typename") == 0)) {
       String *ci = Copy(k.item);
@@ -138,7 +138,7 @@ static Node *copy_node(Node *n) {
       }
       continue;
     }
-    /* We don't copy the symbol table.  But we drop an attribute 
+    /* We don't copy the symbol table.  But we drop an attribute
        requires_symtab so that functions know it needs to be built */
 
     if (strcmp(ckey,"symtab") == 0) {
@@ -197,7 +197,7 @@ static void set_comment(Node *n, String *comment) {
       p=nextSibling(p);
     }
   }
-  
+
   /* Append same comment to every generated overload */
   name = Getattr(n, "name");
   if (!name)
@@ -236,7 +236,7 @@ void SWIG_cparse_set_compact_default_args(int defargs) {
 
 int SWIG_cparse_template_reduce(int treduce) {
   template_reduce = treduce;
-  return treduce;  
+  return treduce;
 }
 
 /* -----------------------------------------------------------------------------
@@ -370,7 +370,7 @@ static void add_symbols(Node *n) {
     int isfriend = inclass && is_friend(n);
     int iscdecl = Cmp(nodeType(n),"cdecl") == 0;
     int only_csymbol = 0;
-    
+
     if (inclass) {
       String *name = Getattr(n, "name");
       if (isfriend) {
@@ -399,11 +399,11 @@ static void add_symbols(Node *n) {
       } else {
 	/* for member functions, we need to remove the redundant
 	   class scope if provided, as in
-	   
+
 	   struct Foo {
 	   int Foo::method(int a);
 	   };
-	   
+
 	*/
 	String *prefix = name ? Swig_scopename_prefix(name) : 0;
 	if (prefix) {
@@ -455,7 +455,7 @@ static void add_symbols(Node *n) {
     if (!SwigType_isfunction(decl)) {
       String *name = Getattr(n,"name");
       String *makename = Getattr(n,"parser:makename");
-      if (iscdecl) {	
+      if (iscdecl) {
 	String *storage = Getattr(n, "storage");
 	if (Cmp(storage,"typedef") == 0) {
 	  Setattr(n,"kind","typedef");
@@ -494,7 +494,7 @@ static void add_symbols(Node *n) {
         makename = name;
 	symname = make_name(n, makename,0);
       }
-      
+
       if (!symname) {
 	symname = Copy(Getattr(n,"unnamed"));
       }
@@ -508,10 +508,10 @@ static void add_symbols(Node *n) {
       String *name = Getattr(n,"name");
       SwigType *fdecl = Copy(decl);
       SwigType *fun = SwigType_pop_function(fdecl);
-      if (iscdecl) {	
+      if (iscdecl) {
 	Setattr(n,"kind","function");
       }
-      
+
       Swig_features_get(Swig_cparse_features(),Namespaceprefix,name,fun,n);
 
       symname = make_name(n, name,fun);
@@ -519,10 +519,10 @@ static void add_symbols(Node *n) {
 	SetFlag(n, "parsing_template_declaration");
       wrn = Swig_name_warning(n, Namespaceprefix,symname,fun);
       Delattr(n, "parsing_template_declaration");
-      
+
       Delete(fdecl);
       Delete(fun);
-      
+
     }
     if (!symname) {
       n = nextSibling(n);
@@ -867,7 +867,7 @@ static Symtab *set_scope_to_global() {
   Swig_symbol_setscope(symtab);
   return symtab;
 }
- 
+
 /* Remove the block braces, { and }, if the 'noblock' attribute is set.
  * Node *kw can be either a Hash or Parmlist. */
 static String *remove_block(Node *kw, const String *inputcode) {
@@ -878,7 +878,7 @@ static String *remove_block(Node *kw, const String *inputcode) {
      char *cstr = Char(inputcode);
      int len = Len(inputcode);
      if (len && cstr[0] == '{') {
-       --len; ++cstr; 
+       --len; ++cstr;
        if (len && cstr[len - 1] == '}') { --len; }
        /* we now remove the extra spaces */
        while (len && isspace((int)cstr[0])) { --len; ++cstr; }
@@ -900,14 +900,14 @@ static Node *nscope_inner = 0;
 
 /* Remove the scope prefix from cname and return the base name without the prefix.
  * The scopes required for the symbol name are resolved and/or created, if required.
- * For example AA::BB::CC as input returns CC and creates the namespace AA then inner 
+ * For example AA::BB::CC as input returns CC and creates the namespace AA then inner
  * namespace BB in the current scope. */
 static String *resolve_create_node_scope(String *cname, int is_class_definition) {
   Symtab *gscope = 0;
   Node *cname_node = 0;
   String *last = Swig_scopename_last(cname);
   nscope = 0;
-  nscope_inner = 0;  
+  nscope_inner = 0;
 
   if (Strncmp(cname,"::" ,2) != 0) {
     if (is_class_definition) {
@@ -1135,7 +1135,7 @@ Printf(stdout, "comparing current: [%s] found: [%s]\n", current_scopename, found
 
   return cname;
 }
- 
+
 /* look for simple typedef name in typedef list */
 static String *try_to_find_a_name_for_unnamed_structure(const char *storage, Node *decls) {
   String *name = 0;
@@ -1165,7 +1165,7 @@ static void update_nested_classes(Node *n)
 
 /* -----------------------------------------------------------------------------
  * nested_forward_declaration()
- * 
+ *
  * Nested struct handling for C++ code if the nested classes are disabled.
  * Create the nested class/struct/union as a forward declaration.
  * ----------------------------------------------------------------------------- */
@@ -1335,7 +1335,7 @@ static int is_cfunction(Node *n) {
 }
 
 /* If the Node is a function with parameters, check to see if any of the parameters
- * have default arguments. If so create a new function for each defaulted argument. 
+ * have default arguments. If so create a new function for each defaulted argument.
  * The additional functions form a linked list of nodes with the head being the original Node n. */
 static void default_arguments(Node *n) {
   Node *function = n;
@@ -1343,7 +1343,7 @@ static void default_arguments(Node *n) {
   if (function) {
     ParmList *varargs = Getattr(function,"feature:varargs");
     if (varargs) {
-      /* Handles the %varargs directive by looking for "feature:varargs" and 
+      /* Handles the %varargs directive by looking for "feature:varargs" and
        * substituting ... with an alternative set of arguments.  */
       Parm     *p = Getattr(function,"parms");
       Parm     *pp = 0;
@@ -1368,12 +1368,12 @@ static void default_arguments(Node *n) {
 
     /* Do not add in functions if kwargs is being used or if user wants old default argument wrapping
        (one wrapped method per function irrespective of number of default arguments) */
-    if (compact_default_args 
-	|| is_cfunction(function) 
-	|| GetFlag(function,"feature:compactdefaultargs") 
+    if (compact_default_args
+	|| is_cfunction(function)
+	|| GetFlag(function,"feature:compactdefaultargs")
 	|| (GetFlag(function,"feature:kwargs") && kwargs_supported)) {
       ParmList *p = Getattr(function,"parms");
-      if (p) 
+      if (p)
         Setattr(p,"compactdefargs", "1"); /* mark parameters for special handling */
       function = 0; /* don't add in extra methods */
     }
@@ -1461,7 +1461,7 @@ static void default_arguments(Node *n) {
         set_nextSibling(function, new_function);
 	Delete(new_function);
         function = new_function;
-	
+
 	Delete(ntype);
       }
     } else {
@@ -1589,7 +1589,7 @@ static String *add_qualifier_to_declarator(SwigType *type, SwigType *qualifier) 
 
 %token <id> ID
 %token <str> HBLOCK
-%token <id> POUND 
+%token <id> POUND
 %token <id> STRING WSTRING
 %token <loc> INCLUDE IMPORT INSERT
 %token <str> CHARCONST WCHARCONST
@@ -1609,7 +1609,7 @@ static String *add_qualifier_to_declarator(SwigType *type, SwigType *qualifier) 
 %token <node> NAMESPACE
 %token NATIVE INLINE
 %token TYPEMAP EXCEPT ECHO APPLY CLEAR SWIGTEMPLATE FRAGMENT
-%token WARN 
+%token WARN
 %token LESSTHAN GREATERTHAN DELETE_KW DEFAULT
 %token LESSTHANOREQUALTO GREATERTHANOREQUALTO EQUALTO NOTEQUALTO
 %token ARROW
@@ -1712,9 +1712,9 @@ static String *add_qualifier_to_declarator(SwigType *type, SwigType *qualifier) 
 
 program        :  interface {
                    if (!classes) classes = NewHash();
-		   Setattr($1,"classes",classes); 
+		   Setattr($1,"classes",classes);
 		   Setattr($1,"name",ModuleName);
-		   
+
 		   if ((!module_node) && ModuleName) {
 		     module_node = new_node("module");
 		     Setattr(module_node,"name",ModuleName);
@@ -1743,17 +1743,17 @@ program        :  interface {
                }
                ;
 
-interface      : interface declaration {  
+interface      : interface declaration {
                    /* add declaration to end of linked list (the declaration isn't always a single declaration, sometimes it is a linked list itself) */
                    if (currentDeclComment != NULL) {
 		     set_comment($2, currentDeclComment);
 		     currentDeclComment = NULL;
-                   }                                      
+                   }
                    appendChild($1,$2);
                    $$ = $1;
                }
                | interface DOXYGENSTRING {
-                   currentDeclComment = $2; 
+                   currentDeclComment = $2;
                    $$ = $1;
                }
                | interface DOXYGENPOSTSTRING {
@@ -1769,7 +1769,7 @@ interface      : interface declaration {
                ;
 
 declaration    : swig_directive { $$ = $1; }
-               | c_declaration { $$ = $1; } 
+               | c_declaration { $$ = $1; }
                | cpp_declaration { $$ = $1; }
                | SEMI { $$ = 0; }
                | error {
@@ -1782,12 +1782,12 @@ declaration    : swig_directive { $$ = $1; }
 		  exit(1);
                }
 /* Out of class constructor/destructor declarations */
-               | c_constructor_decl { 
+               | c_constructor_decl {
                   if ($$) {
    		      add_symbols($$);
                   }
-                  $$ = $1; 
-	       }              
+                  $$ = $1;
+	       }
 
 /* Out of class conversion operator.  For example:
      inline A::operator char *() const { ... }.
@@ -1805,9 +1805,9 @@ declaration    : swig_directive { $$ = $1; }
                ;
 
 /* ======================================================================
- *                           SWIG DIRECTIVES 
+ *                           SWIG DIRECTIVES
  * ====================================================================== */
-  
+
 swig_directive : extend_directive { $$ = $1; }
                | apply_directive { $$ = $1; }
  	       | clear_directive { $$ = $1; }
@@ -1832,7 +1832,7 @@ swig_directive : extend_directive { $$ = $1; }
                ;
 
 /* ------------------------------------------------------------
-   %extend classname { ... } 
+   %extend classname { ... }
    ------------------------------------------------------------ */
 
 extend_directive : EXTEND options classkeyopt idcolon LBRACE {
@@ -1859,7 +1859,7 @@ extend_directive : EXTEND options classkeyopt idcolon LBRACE {
 		   current_class = 0;
 		 } else {
 		   /* Previous typedef class definition.  Use its symbol table.
-		      Deprecated, just the real name should be used. 
+		      Deprecated, just the real name should be used.
 		      Note that %extend before the class typedef never worked, only %extend after the class typdef. */
 		   prev_symtab = Swig_symbol_setscope(Getattr(cls, "symtab"));
 		   current_class = cls;
@@ -2041,7 +2041,7 @@ echo_directive : ECHO HBLOCK {
 /* ------------------------------------------------------------
    %except(lang) { ... }
    %except { ... }
-   %except(lang);   
+   %except(lang);
    %except;
    ------------------------------------------------------------ */
 
@@ -2069,7 +2069,7 @@ except_directive : EXCEPT LPAREN identifier RPAREN LBRACE {
                ;
 
 /* fragment keyword arguments */
-stringtype    : string LBRACE parm RBRACE {		 
+stringtype    : string LBRACE parm RBRACE {
                  $$ = NewHash();
                  Setattr($$,"value",$1);
 		 Setattr($$,"type",Getattr($3,"type"));
@@ -2126,7 +2126,7 @@ fragment_directive: FRAGMENT LPAREN fname COMMA kwargs RPAREN HBLOCK {
                  ;
 
 /* ------------------------------------------------------------
-   %includefile(option1="xyz", ...) "filename" [ declarations ] 
+   %includefile(option1="xyz", ...) "filename" [ declarations ]
    %importfile(option1="xyz", ...) "filename" [ declarations ]
    ------------------------------------------------------------ */
 
@@ -2134,7 +2134,7 @@ include_directive: includetype options string BEGINFILE {
                      $1.filename = Copy(cparse_file);
 		     $1.line = cparse_line;
 		     scanner_set_location($3,1);
-                     if ($2) { 
+                     if ($2) {
 		       String *maininput = Getattr($2, "maininput");
 		       if (maininput)
 		         scanner_set_main_input_file(NewString(maininput));
@@ -2149,7 +2149,7 @@ include_directive: includetype options string BEGINFILE {
 		       set_nodeType($$,"import");
 		       if (import_mode) --import_mode;
 		     }
-		     
+
 		     Setattr($$,"name",$3);
 		     /* Search for the module (if any) */
 		     {
@@ -2170,7 +2170,7 @@ include_directive: includetype options string BEGINFILE {
 			      node, ie, you imported a .h file
 			      directly.  We are forced then to create
 			      a new import node with a module node.
-			   */			      
+			   */
 			   Node *nint = new_node("import");
 			   Node *mnode = new_node("module");
 			   Setattr(mnode,"name", mname);
@@ -2211,7 +2211,7 @@ inline_directive : INLINE HBLOCK {
 		   Delete($2);
 		   Delete(cpps);
 		 }
-		 
+
 	       }
                | INLINE LBRACE {
                  String *cpps;
@@ -2219,7 +2219,7 @@ inline_directive : INLINE HBLOCK {
 		 skip_balanced('{','}');
 		 if (Namespaceprefix) {
 		   Swig_error(cparse_file, cparse_start_line, "%%inline directive inside a namespace is disallowed.\n");
-		   
+
 		   $$ = 0;
 		 } else {
 		   String *code;
@@ -2228,7 +2228,7 @@ inline_directive : INLINE HBLOCK {
 		   Delitem(scanner_ccode,DOH_END);
 		   code = Copy(scanner_ccode);
 		   Setattr($$,"code", code);
-		   Delete(code);		   
+		   Delete(code);
 		   cpps=Copy(scanner_ccode);
 		   start_inline(Char(cpps), start_line);
 		   Delete(cpps);
@@ -2257,7 +2257,7 @@ insert_directive : HBLOCK {
 		 if (Swig_insert_file($6,code) < 0) {
 		   Swig_error(cparse_file, cparse_line, "Couldn't find '%s'.\n", $6);
 		   $$ = 0;
-		 } 
+		 }
                }
                | INSERT LPAREN idstring options_ex RPAREN HBLOCK {
 		 $$ = new_node("insert");
@@ -2278,7 +2278,7 @@ insert_directive : HBLOCK {
 		 Delete(code);
 	       }
                ;
-      
+
 /* ------------------------------------------------------------
     %module modname
     %module "modname"
@@ -2293,13 +2293,13 @@ module_directive: MODULE options idstring {
 		     if (!cparse_cplusplus) {
 		       Swig_error(cparse_file, cparse_line, "Directors are not supported for C code and require the -c++ option\n");
 		     }
-		   } 
+		   }
 		   if (Getattr($2,"dirprot")) {
 		     Wrapper_director_protected_mode_set(1);
-		   } 
+		   }
 		   if (Getattr($2,"allprotected")) {
 		     Wrapper_all_protected_mode_set(1);
-		   } 
+		   }
 		   if (Getattr($2,"templatereduce")) {
 		     template_reduce = 1;
 		   }
@@ -2314,10 +2314,10 @@ module_directive: MODULE options idstring {
 		   String *mname = Copy(ModuleName);
 		   Setattr($$,"name",mname);
 		   Delete(mname);
-		 } else { 
+		 } else {
 		   /* import mode, we just pass the idstring */
-		   Setattr($$,"name",$3);   
-		 }		 
+		   Setattr($$,"name",$3);
+		 }
 		 if (!module_node) module_node = $$;
 	       }
                ;
@@ -2508,7 +2508,7 @@ rename_directive : rename_namewarn declarator idstring SEMI {
 
 rename_namewarn : RENAME {
 		    $$ = 1;
-                } 
+                }
                 | NAMEWARN {
                     $$ = 0;
                 };
@@ -2590,7 +2590,7 @@ feature_directive : FEATURE LPAREN idstring RPAREN declarator cpp_const stringbr
 
 stringbracesemi : stringbrace { $$ = $1; }
                 | SEMI { $$ = 0; }
-                | PARMS LPAREN parms RPAREN SEMI { $$ = $3; } 
+                | PARMS LPAREN parms RPAREN SEMI { $$ = $3; }
                 ;
 
 featattr        : COMMA idstring EQUAL stringnum {
@@ -2645,7 +2645,7 @@ varargs_directive : VARARGS LPAREN varargs_parms RPAREN declarator cpp_const SEM
               };
 
 varargs_parms   : parms { $$ = $1; }
-                | NUM_INT COMMA parm { 
+                | NUM_INT COMMA parm {
 		  int i;
 		  int n;
 		  Parm *p;
@@ -2781,7 +2781,7 @@ typemap_parm   : type plain_declarator {
                ;
 
 /* ------------------------------------------------------------
-   %types(parmlist); 
+   %types(parmlist);
    %types(parmlist) %{ ... %}
    ------------------------------------------------------------ */
 
@@ -3106,7 +3106,7 @@ warn_directive : WARN string {
  * ====================================================================== */
 
 c_declaration   : c_decl {
-                    $$ = $1; 
+                    $$ = $1;
                     if ($$) {
    		      add_symbols($$);
                       default_arguments($$);
@@ -3322,9 +3322,9 @@ c_decl  : storage_class type declarator cpp_const initializer c_decl_tail {
 
 /* Allow lists of variables and functions to be built up */
 
-c_decl_tail    : SEMI { 
+c_decl_tail    : SEMI {
                    $$ = 0;
-                   Clear(scanner_ccode); 
+                   Clear(scanner_ccode);
                }
                | COMMA declarator cpp_const initializer c_decl_tail {
 		 $$ = new_node("cdecl");
@@ -3351,7 +3351,7 @@ c_decl_tail    : SEMI {
 		   set_nextSibling($$, $5);
 		 }
 	       }
-               | LBRACE { 
+               | LBRACE {
                    skip_balanced('{','}');
                    $$ = 0;
                }
@@ -3688,7 +3688,7 @@ cpp_class_decl  : storage_class cpptype idcolon inherit LBRACE {
 
 		   /* preserve the current scope */
 		   Setattr($<node>$,"prev_symtab",Swig_symbol_current());
-		  
+
 		   /* If the class name is qualified.  We need to create or lookup namespace/scope entries */
 		   scope = resolve_create_node_scope($3, 1);
 		   /* save nscope_inner to the class - it may be overwritten in nested classes*/
@@ -3789,10 +3789,10 @@ cpp_class_decl  : storage_class cpptype idcolon inherit LBRACE {
 		     inclass = 0;
 		   cscope = Getattr($$, "prev_symtab");
 		   Delattr($$, "prev_symtab");
-		   
+
 		   /* Check for pure-abstract class */
 		   Setattr($$,"abstracts", pure_abstracts($7));
-		   
+
 		   /* This bit of code merges in a previously defined %extend directive (if any) */
 		   {
 		     String *clsname = Swig_symbol_qualifiedscopename(0);
@@ -3808,8 +3808,8 @@ cpp_class_decl  : storage_class cpptype idcolon inherit LBRACE {
 		   Setattr(classes, scpname, $$);
 
 		   appendChild($$, $7);
-		   
-		   if (am) 
+
+		   if (am)
 		     Swig_extend_append_previous($$, am);
 
 		   p = $9;
@@ -3819,7 +3819,7 @@ cpp_class_decl  : storage_class cpptype idcolon inherit LBRACE {
 		     else
 		      appendSibling($$, p);
 		   }
-		   
+
 		   if (nscope_inner) {
 		     ty = NewString(scpname); /* if the class is declared out of scope, let the declarator use fully qualified type*/
 		   } else if (cparse_cplusplus && !cparse_externc) {
@@ -4083,7 +4083,7 @@ cpp_opt_declarators :  SEMI { $$ = 0; }
 cpp_forward_class_decl : storage_class cpptype idcolon SEMI {
               if ($1 && (Strcmp($1,"friend") == 0)) {
 		/* Ignore */
-                $$ = 0; 
+                $$ = 0;
 	      } else {
 		$$ = new_node("classforward");
 		Setattr($$,"kind",$2);
@@ -4098,10 +4098,10 @@ cpp_forward_class_decl : storage_class cpptype idcolon SEMI {
    template<...> decl
    ------------------------------------------------------------ */
 
-cpp_template_decl : TEMPLATE LESSTHAN template_parms GREATERTHAN { 
+cpp_template_decl : TEMPLATE LESSTHAN template_parms GREATERTHAN {
 		    if (currentOuterClass)
 		      Setattr(currentOuterClass, "template_parameters", template_parameters);
-		    template_parameters = $3; 
+		    template_parameters = $3;
 		    parsing_template_declaration = 1;
 		  } cpp_template_possible {
 			String *tname = 0;
@@ -4127,7 +4127,7 @@ cpp_template_decl : TEMPLATE LESSTHAN template_parms GREATERTHAN {
 
 			$$ = $6;
 			if ($$) tname = Getattr($$,"name");
-			
+
 			/* Check if the class is a template specialization */
 			if (($$) && (Strchr(tname,'<')) && (!is_operator(tname))) {
 			  /* If a specialization.  Check if defined. */
@@ -4156,10 +4156,10 @@ cpp_template_decl : TEMPLATE LESSTHAN template_parms GREATERTHAN {
 			    if (!Getattr($$,"sym:weak")) {
 			      Setattr($$,"sym:typename","1");
 			    }
-			    
+
 			    if (Len(tlist) != ParmList_len(Getattr(tempn,"templateparms"))) {
 			      Swig_error(Getfile($$),Getline($$),"Inconsistent argument count in template partial specialization. %d %d\n", Len(tlist), ParmList_len(Getattr(tempn,"templateparms")));
-			      
+
 			    } else {
 
 			    /* This code builds the argument list for the partial template
@@ -4173,7 +4173,7 @@ cpp_template_decl : TEMPLATE LESSTHAN template_parms GREATERTHAN {
 			       different.  For example class<int,T>.
 
 			       tp is a copy of the arguments in the original template definition.
-       
+
 			       The patching algorithm walks through the list of supplied
 			       arguments ($3), finds the position in the specialization arguments
 			       (tlist), and then patches the name in the argument list of the
@@ -4208,7 +4208,7 @@ cpp_template_decl : TEMPLATE LESSTHAN template_parms GREATERTHAN {
 				if (!Getattr(p1,"partialarg")) {
 				  Delattr(p1,"name");
 				  Setattr(p1,"type", Getitem(tlist,i));
-				} 
+				}
 				i++;
 				p1 = nextSibling(p1);
 			      }
@@ -4361,13 +4361,13 @@ cpp_template_decl : TEMPLATE LESSTHAN template_parms GREATERTHAN {
 		/* Explicit template instantiation */
                 | TEMPLATE cpptype idcolon {
 		  Swig_warning(WARN_PARSE_EXPLICIT_TEMPLATE, cparse_file, cparse_line, "Explicit template instantiation ignored.\n");
-                  $$ = 0; 
+                  $$ = 0;
 		}
 
 		/* Explicit template instantiation without the translation unit */
 		| EXTERN TEMPLATE cpptype idcolon {
 		  Swig_warning(WARN_PARSE_EXPLICIT_TEMPLATE, cparse_file, cparse_line, "Explicit template instantiation ignored.\n");
-                  $$ = 0; 
+                  $$ = 0;
                 }
                 ;
 
@@ -4408,7 +4408,7 @@ template_parms  : templateparameters {
 		      if ((strncmp(type,"class ",6) == 0) || (strncmp(type,"typename ", 9) == 0)) {
 			char *t = strchr(type,' ');
 			Setattr(p,"name", t+1);
-		      } else 
+		      } else
                       /* Variadic template args */
 		      if ((strncmp(type,"class... ",9) == 0) || (strncmp(type,"typename... ", 12) == 0)) {
 			char *t = strchr(type,' ');
@@ -4492,7 +4492,7 @@ cpp_using_decl : USING idcolon SEMI {
              }
              ;
 
-cpp_namespace_decl : NAMESPACE idcolon LBRACE { 
+cpp_namespace_decl : NAMESPACE idcolon LBRACE {
                 Hash *h;
 		Node *parent_ns = 0;
 		List *scopes = Swig_scopename_tolist($2);
@@ -4549,7 +4549,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		appendChild($<node>4, firstChild($5));
 		Delete($5);
 		$$ = top_ns;
-             } 
+             }
              | NAMESPACE LBRACE {
 	       Hash *h;
 	       $1 = Swig_symbol_current();
@@ -4616,7 +4616,7 @@ cpp_members  : cpp_member cpp_members {
 		     $$ = $2;
 		   }
              }
-             | EXTEND LBRACE { 
+             | EXTEND LBRACE {
 	       extendmode = 1;
 	       if (cplus_mode != CPLUS_PUBLIC) {
 		 Swig_error(cparse_file,cparse_line,"%%extend can only be used in a public section\n");
@@ -4636,7 +4636,7 @@ cpp_members  : cpp_member cpp_members {
 	       skip_decl();
 	       Swig_error(cparse_file,start_line,"Syntax error in input(3).\n");
 	       exit(1);
-	       } cpp_members { 
+	       } cpp_members {
 		 $$ = $3;
    	     }
              ;
@@ -4648,8 +4648,8 @@ cpp_members  : cpp_member cpp_members {
 /* A class member.  May be data or a function. Static or virtual as well */
 
 cpp_member_no_dox : c_declaration { $$ = $1; }
-             | cpp_constructor_decl { 
-                 $$ = $1; 
+             | cpp_constructor_decl {
+                 $$ = $1;
 		 if (extendmode && current_class) {
 		   String *symname;
 		   symname= make_name($$,Getattr($$,"name"), Getattr($$,"decl"));
@@ -4700,7 +4700,7 @@ cpp_member   : cpp_member_no_dox {
             typedef Foo ();
             typedef Foo (*ptr)();
 */
-  
+
 cpp_constructor_decl : storage_class type LPAREN parms RPAREN ctor_end {
               if (inclass || extendmode) {
 		SwigType *decl = NewStringEmpty();
@@ -4901,14 +4901,14 @@ cpp_static_assert : STATIC_ASSERT LPAREN {
               ;
 
 /* public: */
-cpp_protection_decl : PUBLIC COLON { 
+cpp_protection_decl : PUBLIC COLON {
                 $$ = new_node("access");
 		Setattr($$,"kind","public");
                 cplus_mode = CPLUS_PUBLIC;
               }
 
 /* private: */
-              | PRIVATE COLON { 
+              | PRIVATE COLON {
                 $$ = new_node("access");
                 Setattr($$,"kind","private");
 		cplus_mode = CPLUS_PRIVATE;
@@ -4916,7 +4916,7 @@ cpp_protection_decl : PUBLIC COLON {
 
 /* protected: */
 
-              | PROTECTED COLON { 
+              | PROTECTED COLON {
 		$$ = new_node("access");
 		Setattr($$,"kind","protected");
 		cplus_mode = CPLUS_PROTECTED;
@@ -4966,8 +4966,8 @@ cpp_end        : cpp_const SEMI {
 		    $$.nexcept = $1.nexcept;
 		    $$.final = $1.final;
                }
-               | cpp_const LBRACE { 
-		    skip_balanced('{','}'); 
+               | cpp_const LBRACE {
+		    skip_balanced('{','}');
 		    $$.val = 0;
 		    $$.qualifier = $1.qualifier;
 		    $$.refqualifier = $1.refqualifier;
@@ -4979,7 +4979,7 @@ cpp_end        : cpp_const SEMI {
 	       }
                ;
 
-cpp_vend       : cpp_const SEMI { 
+cpp_vend       : cpp_const SEMI {
                      Clear(scanner_ccode);
                      $$.val = 0;
                      $$.qualifier = $1.qualifier;
@@ -4990,25 +4990,25 @@ cpp_vend       : cpp_const SEMI {
                      $$.nexcept = $1.nexcept;
                      $$.final = $1.final;
                 }
-               | cpp_const EQUAL definetype SEMI { 
+               | cpp_const EQUAL definetype SEMI {
                      Clear(scanner_ccode);
                      $$.val = $3.val;
                      $$.qualifier = $1.qualifier;
                      $$.refqualifier = $1.refqualifier;
                      $$.bitfield = 0;
-                     $$.throws = $1.throws; 
-                     $$.throwf = $1.throwf; 
+                     $$.throws = $1.throws;
+                     $$.throwf = $1.throwf;
                      $$.nexcept = $1.nexcept;
                      $$.final = $1.final;
                }
-               | cpp_const LBRACE { 
+               | cpp_const LBRACE {
                      skip_balanced('{','}');
                      $$.val = 0;
                      $$.qualifier = $1.qualifier;
                      $$.refqualifier = $1.refqualifier;
                      $$.bitfield = 0;
-                     $$.throws = $1.throws; 
-                     $$.throwf = $1.throwf; 
+                     $$.throws = $1.throws;
+                     $$.throwf = $1.throwf;
                      $$.nexcept = $1.nexcept;
                      $$.final = $1.final;
                }
@@ -5033,7 +5033,7 @@ anon_bitfield_type : primitive_type { $$ = $1;
                }
                ;
 
-/* ====================================================================== 
+/* ======================================================================
  *                       PRIMITIVES
  * ====================================================================== */
 extern_string :  EXTERN string {
@@ -5218,8 +5218,8 @@ valparm        : parm {
                }
                ;
 
-def_args       : EQUAL definetype { 
-                  $$ = $2; 
+def_args       : EQUAL definetype {
+                  $$ = $2;
 		  if ($2.type == T_ERROR) {
 		    Swig_warning(WARN_PARSE_BAD_DEFAULT,cparse_file, cparse_line, "Can't set default argument (ignored)\n");
 		    $$.val = 0;
@@ -5231,7 +5231,7 @@ def_args       : EQUAL definetype {
 		    $$.final = 0;
 		  }
                }
-               | EQUAL definetype LBRACKET expr RBRACKET { 
+               | EQUAL definetype LBRACKET expr RBRACKET {
 		  $$ = $2;
 		  if ($2.type == T_ERROR) {
 		    Swig_warning(WARN_PARSE_BAD_DEFAULT,cparse_file, cparse_line, "Can't set default argument (ignored)\n");
@@ -5244,8 +5244,8 @@ def_args       : EQUAL definetype {
 		    $$.nexcept = 0;
 		    $$.final = 0;
 		  } else {
-		    $$.val = NewStringf("%s[%s]",$2.val,$4.val); 
-		  }		  
+		    $$.val = NewStringf("%s[%s]",$2.val,$4.val);
+		  }
                }
                | EQUAL LBRACE {
 		 skip_balanced('{','}');
@@ -5258,7 +5258,7 @@ def_args       : EQUAL definetype {
 		 $$.nexcept = 0;
 		 $$.final = 0;
 	       }
-               | COLON expr { 
+               | COLON expr {
 		 $$.val = 0;
 		 $$.rawval = 0;
 		 $$.type = 0;
@@ -5429,7 +5429,7 @@ declarator :  pointer notso_direct_declarator {
 	       Delete($2.type);
 	     }
            }
-           | idcolon DSTAR notso_direct_declarator { 
+           | idcolon DSTAR notso_direct_declarator {
 	     SwigType *t = NewStringEmpty();
 
 	     $$ = $3;
@@ -5439,8 +5439,8 @@ declarator :  pointer notso_direct_declarator {
 	       Delete($$.type);
 	     }
 	     $$.type = t;
-	     } 
-           | pointer idcolon DSTAR notso_direct_declarator { 
+	     }
+           | pointer idcolon DSTAR notso_direct_declarator {
 	     SwigType *t = NewStringEmpty();
 	     $$ = $4;
 	     SwigType_add_memberpointer(t,$2);
@@ -5452,7 +5452,7 @@ declarator :  pointer notso_direct_declarator {
 	     $$.type = $1;
 	     Delete(t);
 	   }
-           | pointer idcolon DSTAR AND notso_direct_declarator { 
+           | pointer idcolon DSTAR AND notso_direct_declarator {
 	     $$ = $5;
 	     SwigType_add_memberpointer($1,$2);
 	     SwigType_add_reference($1);
@@ -5462,7 +5462,7 @@ declarator :  pointer notso_direct_declarator {
 	     }
 	     $$.type = $1;
 	   }
-           | idcolon DSTAR AND notso_direct_declarator { 
+           | idcolon DSTAR AND notso_direct_declarator {
 	     SwigType *t = NewStringEmpty();
 	     $$ = $4;
 	     SwigType_add_memberpointer(t,$1);
@@ -5470,12 +5470,12 @@ declarator :  pointer notso_direct_declarator {
 	     if ($$.type) {
 	       SwigType_push(t,$$.type);
 	       Delete($$.type);
-	     } 
+	     }
 	     $$.type = t;
 	   }
-           
+
            /* Variadic versions eg. MyClasses&... myIds */
-           
+
            |  pointer PERIOD PERIOD PERIOD notso_direct_declarator {
               $$ = $5;
 	      if ($$.type) {
@@ -5526,7 +5526,7 @@ declarator :  pointer notso_direct_declarator {
 	       Delete($5.type);
 	     }
            }
-           | idcolon DSTAR PERIOD PERIOD PERIOD notso_direct_declarator { 
+           | idcolon DSTAR PERIOD PERIOD PERIOD notso_direct_declarator {
 	     SwigType *t = NewStringEmpty();
 
 	     $$ = $6;
@@ -5536,8 +5536,8 @@ declarator :  pointer notso_direct_declarator {
 	       Delete($$.type);
 	     }
 	     $$.type = t;
-	     } 
-           | pointer idcolon DSTAR PERIOD PERIOD PERIOD notso_direct_declarator { 
+	     }
+           | pointer idcolon DSTAR PERIOD PERIOD PERIOD notso_direct_declarator {
 	     SwigType *t = NewStringEmpty();
 	     $$ = $7;
 	     SwigType_add_memberpointer(t,$2);
@@ -5549,7 +5549,7 @@ declarator :  pointer notso_direct_declarator {
 	     $$.type = $1;
 	     Delete(t);
 	   }
-           | pointer idcolon DSTAR AND PERIOD PERIOD PERIOD notso_direct_declarator { 
+           | pointer idcolon DSTAR AND PERIOD PERIOD PERIOD notso_direct_declarator {
 	     $$ = $8;
 	     SwigType_add_memberpointer($1,$2);
 	     SwigType_add_reference($1);
@@ -5559,7 +5559,7 @@ declarator :  pointer notso_direct_declarator {
 	     }
 	     $$.type = $1;
 	   }
-           | pointer idcolon DSTAR LAND PERIOD PERIOD PERIOD notso_direct_declarator { 
+           | pointer idcolon DSTAR LAND PERIOD PERIOD PERIOD notso_direct_declarator {
 	     $$ = $8;
 	     SwigType_add_memberpointer($1,$2);
 	     SwigType_add_rvalue_reference($1);
@@ -5569,7 +5569,7 @@ declarator :  pointer notso_direct_declarator {
 	     }
 	     $$.type = $1;
 	   }
-           | idcolon DSTAR AND PERIOD PERIOD PERIOD notso_direct_declarator { 
+           | idcolon DSTAR AND PERIOD PERIOD PERIOD notso_direct_declarator {
 	     SwigType *t = NewStringEmpty();
 	     $$ = $7;
 	     SwigType_add_memberpointer(t,$1);
@@ -5577,10 +5577,10 @@ declarator :  pointer notso_direct_declarator {
 	     if ($$.type) {
 	       SwigType_push(t,$$.type);
 	       Delete($$.type);
-	     } 
+	     }
 	     $$.type = t;
 	   }
-           | idcolon DSTAR LAND PERIOD PERIOD PERIOD notso_direct_declarator { 
+           | idcolon DSTAR LAND PERIOD PERIOD PERIOD notso_direct_declarator {
 	     SwigType *t = NewStringEmpty();
 	     $$ = $7;
 	     SwigType_add_memberpointer(t,$1);
@@ -5588,7 +5588,7 @@ declarator :  pointer notso_direct_declarator {
 	     if ($$.type) {
 	       SwigType_push(t,$$.type);
 	       Delete($$.type);
-	     } 
+	     }
 	     $$.type = t;
 	   }
            ;
@@ -5643,7 +5643,7 @@ notso_direct_declarator : idcolon {
 		    }
 		    $$.type = t;
 		    }
-                  | notso_direct_declarator LBRACKET RBRACKET { 
+                  | notso_direct_declarator LBRACKET RBRACKET {
 		    SwigType *t;
 		    $$ = $1;
 		    t = NewStringEmpty();
@@ -5654,7 +5654,7 @@ notso_direct_declarator : idcolon {
 		    }
 		    $$.type = t;
                   }
-                  | notso_direct_declarator LBRACKET expr RBRACKET { 
+                  | notso_direct_declarator LBRACKET expr RBRACKET {
 		    SwigType *t;
 		    $$ = $1;
 		    t = NewStringEmpty();
@@ -5691,7 +5691,7 @@ direct_declarator : idcolon {
 		 $$.parms = 0;
 		 $$.have_parms = 0;
                   }
-                  
+
                   | NOT idcolon {
                   $$.id = Char(NewStringf("~%s",$2));
                   $$.type = 0;
@@ -5777,7 +5777,7 @@ direct_declarator : idcolon {
 		    }
 		    $$.type = t;
 		  }
-                  | direct_declarator LBRACKET RBRACKET { 
+                  | direct_declarator LBRACKET RBRACKET {
 		    SwigType *t;
 		    $$ = $1;
 		    t = NewStringEmpty();
@@ -5788,7 +5788,7 @@ direct_declarator : idcolon {
 		    }
 		    $$.type = t;
                   }
-                  | direct_declarator LBRACKET expr RBRACKET { 
+                  | direct_declarator LBRACKET expr RBRACKET {
 		    SwigType *t;
 		    $$ = $1;
 		    t = NewStringEmpty();
@@ -5821,7 +5821,7 @@ direct_declarator : idcolon {
 		 /* This produces one S/R conflict. */
                  | OPERATOR ID LPAREN parms RPAREN {
 		    SwigType *t;
-                    Append($1, " "); /* intervening space is mandatory */
+                    //Append($1, " "); /* intervening space is deprecated in c++23 */
                     Append($1, Char($2));
 		    $$.id = Char($1);
 		    t = NewStringEmpty();
@@ -5846,7 +5846,7 @@ abstract_declarator : pointer {
 		    $$.parms = 0;
 		    $$.have_parms = 0;
                   }
-                  | pointer direct_abstract_declarator { 
+                  | pointer direct_abstract_declarator {
                      $$ = $2;
                      SwigType_push($1,$2.type);
 		     $$.type = $1;
@@ -5919,7 +5919,7 @@ abstract_declarator : pointer {
                     $$.type = NewStringEmpty();
 		    SwigType_add_rvalue_reference($$.type);
                   }
-                  | idcolon DSTAR { 
+                  | idcolon DSTAR {
 		    $$.type = NewStringEmpty();
                     SwigType_add_memberpointer($$.type,$1);
                     $$.id = 0;
@@ -5934,7 +5934,7 @@ abstract_declarator : pointer {
 		    $$.parms = 0;
 		    $$.have_parms = 0;
 		  }
-                  | pointer idcolon DSTAR { 
+                  | pointer idcolon DSTAR {
 		    SwigType *t = NewStringEmpty();
                     $$.type = $1;
 		    $$.id = 0;
@@ -5944,7 +5944,7 @@ abstract_declarator : pointer {
 		    SwigType_push($$.type,t);
 		    Delete(t);
                   }
-                  | pointer idcolon DSTAR direct_abstract_declarator { 
+                  | pointer idcolon DSTAR direct_abstract_declarator {
 		    $$ = $4;
 		    SwigType_add_memberpointer($1,$2);
 		    if ($$.type) {
@@ -5955,7 +5955,7 @@ abstract_declarator : pointer {
                   }
                   ;
 
-direct_abstract_declarator : direct_abstract_declarator LBRACKET RBRACKET { 
+direct_abstract_declarator : direct_abstract_declarator LBRACKET RBRACKET {
 		    SwigType *t;
 		    $$ = $1;
 		    t = NewStringEmpty();
@@ -5966,7 +5966,7 @@ direct_abstract_declarator : direct_abstract_declarator LBRACKET RBRACKET {
 		    }
 		    $$.type = t;
                   }
-                  | direct_abstract_declarator LBRACKET expr RBRACKET { 
+                  | direct_abstract_declarator LBRACKET expr RBRACKET {
 		    SwigType *t;
 		    $$ = $1;
 		    t = NewStringEmpty();
@@ -5977,14 +5977,14 @@ direct_abstract_declarator : direct_abstract_declarator LBRACKET RBRACKET {
 		    }
 		    $$.type = t;
                   }
-                  | LBRACKET RBRACKET { 
+                  | LBRACKET RBRACKET {
 		    $$.type = NewStringEmpty();
 		    $$.id = 0;
 		    $$.parms = 0;
 		    $$.have_parms = 0;
 		    SwigType_add_array($$.type,"");
                   }
-                  | LBRACKET expr RBRACKET { 
+                  | LBRACKET expr RBRACKET {
 		    $$.type = NewStringEmpty();
 		    $$.id = 0;
 		    $$.parms = 0;
@@ -6039,7 +6039,7 @@ direct_abstract_declarator : direct_abstract_declarator LBRACKET RBRACKET {
                   ;
 
 
-pointer    : STAR type_qualifier pointer { 
+pointer    : STAR type_qualifier pointer {
              $$ = NewStringEmpty();
              SwigType_add_pointer($$);
 	     SwigType_push($$,$2);
@@ -6051,8 +6051,8 @@ pointer    : STAR type_qualifier pointer {
 	     SwigType_add_pointer($$);
 	     SwigType_push($$,$2);
 	     Delete($2);
-	   } 
-           | STAR type_qualifier { 
+	   }
+           | STAR type_qualifier {
 	     $$ = NewStringEmpty();
 	     SwigType_add_pointer($$);
 	     SwigType_push($$,$2);
@@ -6144,7 +6144,7 @@ type_right     : primitive_type { $$ = $1;
                | idcolon {
 		  $$ = $1;
                }
-               | cpptype idcolon { 
+               | cpptype idcolon {
 		 $$ = NewStringf("%s %s", $1, $2);
                }
                | decltype {
@@ -6188,7 +6188,7 @@ primitive_type : primitive_type_list {
                }
                ;
 
-primitive_type_list : type_specifier { 
+primitive_type_list : type_specifier {
                  $$ = $1;
                }
                | type_specifier primitive_type_list {
@@ -6242,62 +6242,62 @@ primitive_type_list : type_specifier {
 		      }
 		    }
                }
-               ; 
+               ;
 
 
-type_specifier : TYPE_INT { 
+type_specifier : TYPE_INT {
 		    $$.type = NewString("int");
                     $$.us = 0;
                }
-               | TYPE_SHORT { 
+               | TYPE_SHORT {
                     $$.type = NewString("short");
                     $$.us = 0;
                 }
-               | TYPE_LONG { 
+               | TYPE_LONG {
                     $$.type = NewString("long");
                     $$.us = 0;
                 }
-               | TYPE_CHAR { 
+               | TYPE_CHAR {
                     $$.type = NewString("char");
                     $$.us = 0;
                 }
-               | TYPE_WCHAR { 
+               | TYPE_WCHAR {
                     $$.type = NewString("wchar_t");
                     $$.us = 0;
                 }
-               | TYPE_FLOAT { 
+               | TYPE_FLOAT {
                     $$.type = NewString("float");
                     $$.us = 0;
                 }
-               | TYPE_DOUBLE { 
+               | TYPE_DOUBLE {
                     $$.type = NewString("double");
                     $$.us = 0;
                 }
-               | TYPE_SIGNED { 
+               | TYPE_SIGNED {
                     $$.us = NewString("signed");
                     $$.type = 0;
                 }
-               | TYPE_UNSIGNED { 
+               | TYPE_UNSIGNED {
                     $$.us = NewString("unsigned");
                     $$.type = 0;
                 }
-               | TYPE_COMPLEX { 
+               | TYPE_COMPLEX {
                     $$.type = NewString("complex");
                     $$.us = 0;
                 }
-               | TYPE_NON_ISO_INT8 { 
+               | TYPE_NON_ISO_INT8 {
                     $$.type = NewString("__int8");
                     $$.us = 0;
                 }
-               | TYPE_NON_ISO_INT16 { 
+               | TYPE_NON_ISO_INT16 {
                     $$.type = NewString("__int16");
                     $$.us = 0;
                 }
-               | TYPE_NON_ISO_INT32 { 
+               | TYPE_NON_ISO_INT32 {
                     $$.type = NewString("__int32");
                     $$.us = 0;
                 }
-               | TYPE_NON_ISO_INT64 { 
+               | TYPE_NON_ISO_INT64 {
                     $$.type = NewString("__int64");
                     $$.us = 0;
                 }
@@ -6845,20 +6845,20 @@ access_specifier :  PUBLIC { $$ = (char*)"public"; }
                | PROTECTED { $$ = (char*)"protected"; }
                ;
 
-templcpptype   : CLASS { 
-                   $$ = (char*)"class"; 
+templcpptype   : CLASS {
+                   $$ = (char*)"class";
 		   if (!inherit_list) last_cpptype = $$;
                }
-               | TYPENAME { 
-                   $$ = (char *)"typename"; 
+               | TYPENAME {
+                   $$ = (char *)"typename";
 		   if (!inherit_list) last_cpptype = $$;
                }
-               | CLASS PERIOD PERIOD PERIOD { 
-                   $$ = (char *)"class..."; 
+               | CLASS PERIOD PERIOD PERIOD {
+                   $$ = (char *)"class...";
 		   if (!inherit_list) last_cpptype = $$;
                }
-               | TYPENAME PERIOD PERIOD PERIOD { 
-                   $$ = (char *)"typename..."; 
+               | TYPENAME PERIOD PERIOD PERIOD {
+                   $$ = (char *)"typename...";
 		   if (!inherit_list) last_cpptype = $$;
                }
                ;
@@ -6866,12 +6866,12 @@ templcpptype   : CLASS {
 cpptype        : templcpptype {
                  $$ = $1;
                }
-               | STRUCT { 
-                   $$ = (char*)"struct"; 
+               | STRUCT {
+                   $$ = (char*)"struct";
 		   if (!inherit_list) last_cpptype = $$;
                }
                | UNION {
-                   $$ = (char*)"union"; 
+                   $$ = (char*)"union";
 		   if (!inherit_list) last_cpptype = $$;
                }
                ;
@@ -6960,7 +6960,7 @@ exception_specification : THROW LPAREN parms RPAREN {
                     $$.nexcept = $3.val;
                     $$.final = 0;
 	       }
-	       ;	
+	       ;
 
 qualifiers_exception_specification : cv_ref_qualifier {
                     $$.throws = 0;
@@ -6985,7 +6985,7 @@ qualifiers_exception_specification : cv_ref_qualifier {
 cpp_const      : qualifiers_exception_specification {
                     $$ = $1;
                }
-               | empty { 
+               | empty {
                     $$.throws = 0;
                     $$.throwf = 0;
                     $$.nexcept = 0;
@@ -6995,10 +6995,10 @@ cpp_const      : qualifiers_exception_specification {
                }
                ;
 
-ctor_end       : cpp_const ctor_initializer SEMI { 
-                    Clear(scanner_ccode); 
-                    $$.have_parms = 0; 
-                    $$.defarg = 0; 
+ctor_end       : cpp_const ctor_initializer SEMI {
+                    Clear(scanner_ccode);
+                    $$.have_parms = 0;
+                    $$.defarg = 0;
 		    $$.throws = $1.throws;
 		    $$.throwf = $1.throwf;
 		    $$.nexcept = $1.nexcept;
@@ -7006,10 +7006,10 @@ ctor_end       : cpp_const ctor_initializer SEMI {
                     if ($1.qualifier)
                       Swig_error(cparse_file, cparse_line, "Constructor cannot have a qualifier.\n");
                }
-               | cpp_const ctor_initializer LBRACE { 
-                    skip_balanced('{','}'); 
-                    $$.have_parms = 0; 
-                    $$.defarg = 0; 
+               | cpp_const ctor_initializer LBRACE {
+                    skip_balanced('{','}');
+                    $$.have_parms = 0;
+                    $$.defarg = 0;
                     $$.throws = $1.throws;
                     $$.throwf = $1.throwf;
                     $$.nexcept = $1.nexcept;
@@ -7017,29 +7017,29 @@ ctor_end       : cpp_const ctor_initializer SEMI {
                     if ($1.qualifier)
                       Swig_error(cparse_file, cparse_line, "Constructor cannot have a qualifier.\n");
                }
-               | LPAREN parms RPAREN SEMI { 
-                    Clear(scanner_ccode); 
-                    $$.parms = $2; 
-                    $$.have_parms = 1; 
-                    $$.defarg = 0; 
+               | LPAREN parms RPAREN SEMI {
+                    Clear(scanner_ccode);
+                    $$.parms = $2;
+                    $$.have_parms = 1;
+                    $$.defarg = 0;
 		    $$.throws = 0;
 		    $$.throwf = 0;
 		    $$.nexcept = 0;
 		    $$.final = 0;
                }
                | LPAREN parms RPAREN LBRACE {
-                    skip_balanced('{','}'); 
-                    $$.parms = $2; 
-                    $$.have_parms = 1; 
-                    $$.defarg = 0; 
+                    skip_balanced('{','}');
+                    $$.parms = $2;
+                    $$.have_parms = 1;
+                    $$.defarg = 0;
                     $$.throws = 0;
                     $$.throwf = 0;
                     $$.nexcept = 0;
                     $$.final = 0;
                }
-               | EQUAL definetype SEMI { 
-                    $$.have_parms = 0; 
-                    $$.defarg = $2.val; 
+               | EQUAL definetype SEMI {
+                    $$.have_parms = 0;
+                    $$.defarg = $2.val;
                     $$.throws = 0;
                     $$.throwf = 0;
                     $$.nexcept = 0;
@@ -7108,7 +7108,7 @@ idstringopt    : idstring { $$ = $1; }
                | empty { $$ = 0; }
                ;
 
-idcolon        : idtemplate idcolontail { 
+idcolon        : idtemplate idcolontail {
                   $$ = 0;
 		  if (!$$) $$ = NewStringf("%s%s", $1,$2);
       	          Delete($2);
@@ -7145,7 +7145,7 @@ idcolontail    : DCOLON idtemplatetemplate idcolontail {
                    $$ = NewStringf("::%s",$2);
                }
 /*               | DCOLON CONVERSIONOPERATOR {
-                 $$ = NewString($2);                 
+                 $$ = NewString($2);
 		 } */
 
                | DCNOT idtemplate {
@@ -7182,7 +7182,7 @@ idcolonnt     : identifier idcolontailnt {
                }
                | identifier {
 		 $$ = NewString($1);
-   	       }     
+   	       }
                | NONID DCOLON identifier {
 		 $$ = NewStringf("::%s",$3);
                }
@@ -7210,11 +7210,11 @@ idcolontailnt   : DCOLON identifier idcolontailnt {
                ;
 
 /* Concatenated strings */
-string         : string STRING { 
+string         : string STRING {
                    $$ = NewStringf("%s%s", $1, $2);
                }
                | STRING { $$ = NewString($1);}
-               ; 
+               ;
 /* Concatenated wide strings: L"str1" L"str2" */
 wstring         : wstring WSTRING {
                    $$ = NewStringf("%s%s", $1, $2);
@@ -7251,7 +7251,7 @@ options        : LPAREN kwargs RPAREN {
                      Setattr($$,name, value);
 		     n = nextSibling(n);
 		  }
-               }   
+               }
                | empty { $$ = 0; };
 
 options_ex     : COMMA kwargs {
@@ -7269,7 +7269,7 @@ options_ex     : COMMA kwargs {
                }
                | empty { $$ = 0; }
                ;
- 
+
 /* Keyword arguments */
 kwargs         : idstring EQUAL stringnum {
 		 $$ = NewHash();
