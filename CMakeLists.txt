@@ -60,7 +60,9 @@ message(STATUS "ThirdParty version: ${URHO3D_THIRDPARTY_VERSION} | ${URHO3D_THIR
 
 # Try to find ThirdParty as an external package first
 # Whether we use CCache depends on result of this call
-find_package(Urho3DThirdParty ${URHO3D_THIRDPARTY_VERSION} EXACT NO_CMAKE_INSTALL_PREFIX)
+if (NOT URHO3D_THIRDPARTY_VERSION VERSION_EQUAL "0.0.0")
+    find_package(Urho3DThirdParty ${URHO3D_THIRDPARTY_VERSION} EXACT NO_CMAKE_INSTALL_PREFIX)
+endif ()
 
 # Disable ccache
 if (URHO3D_PRISTINE_FULL_BUILDS OR (ENV{CI} AND NOT Urho3DThirdParty_FOUND))

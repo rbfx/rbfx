@@ -24,25 +24,52 @@
 # This hash changes when:
 # - Files are added/removed from git in the ThirdParty directory
 # - Any tracked file content changes (even if not staged/committed)
-# FNV-1a hash function - processes hex string (SHA1 hash)
-function(fnv1a_hash input output)
-  set(_hash "2166136261")  # FNV offset basis (32-bit)
-  string(LENGTH "${input}" _len)
 
-  # Process input as hex digits (2 chars = 1 byte)
-  math(EXPR _num_bytes "${_len} / 2")
-  math(EXPR _last_byte "${_num_bytes} - 1")
+# Convert full SHA1 hash to a short 8-character hex string
+# Uses XOR folding to incorporate all 40 characters of the hash
+function(hash_to_short input output)
+  # SHA1 produces 40 hex chars (160 bits). We want 8 hex chars (32 bits).
+  # XOR-fold the hash: divide into 5 groups of 8 chars and XOR them together
+  string(SUBSTRING "${input}" 0 8 _part1)
+  string(SUBSTRING "${input}" 8 8 _part2)
+  string(SUBSTRING "${input}" 16 8 _part3)
+  string(SUBSTRING "${input}" 24 8 _part4)
+  string(SUBSTRING "${input}" 32 8 _part5)
 
-  foreach(_i RANGE 0 ${_last_byte})
-    math(EXPR _pos "${_i} * 2")
-    string(SUBSTRING "${input}" ${_pos} 2 _hex_byte)
-    # Convert hex string to decimal
-    math(EXPR _byte "0x${_hex_byte}" OUTPUT_FORMAT DECIMAL)
-    math(EXPR _hash "(${_hash} ^ ${_byte}) * 16777619")
-    math(EXPR _hash "${_hash} & 0xFFFFFFFF")  # Keep 32-bit
-  endforeach()
+  # Convert to integers and XOR them
+  math(EXPR _result "0x${_part1} ^ 0x${_part2} ^ 0x${_part3} ^ 0x${_part4} ^ 0x${_part5}" OUTPUT_FORMAT HEXADECIMAL)
 
-  set(${output} ${_hash} PARENT_SCOPE)
+  # Remove "0x" prefix and ensure 8 characters with leading zeros
+  string(SUBSTRING "${_result}" 2 -1 _hex)
+  string(LENGTH "${_hex}" _len)
+  if(_len LESS 8)
+    string(REPEAT "0" ${_len} _zeros)
+    string(SUBSTRING "${_zeros}" 0 ${_len} _padding)
+    math(EXPR _needed "8 - ${_len}")
+    string(REPEAT "0" ${_needed} _padding)
+    set(_hex "${_padding}${_hex}")
+  endif()
+
+  set(${output} "${_hex}" PARENT_SCOPE)
+endfunction()
+
+# Convert SHA1 hash to version number format
+# Uses XOR folding to incorporate the entire hash into the version components
+function(hash_to_version input output)
+  # First get the XOR-folded short hash
+  hash_to_short("${input}" _short_hash)
+
+  # Split the 8-character hash into version components
+  string(SUBSTRING "${_short_hash}" 0 2 _major_hex)
+  string(SUBSTRING "${_short_hash}" 2 3 _minor_hex)
+  string(SUBSTRING "${_short_hash}" 5 3 _patch_hex)
+
+  # Convert to decimal
+  math(EXPR _major "0x${_major_hex}")
+  math(EXPR _minor "0x${_minor_hex}")
+  math(EXPR _patch "0x${_patch_hex}")
+
+  set(${output} "${_major}.${_minor}.${_patch}" PARENT_SCOPE)
 endfunction()
 
 function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
@@ -136,13 +163,10 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
     )
 
     # Convert modified files list to a set for O(1) lookup
-    set(MODIFIED_SET "")
     if(MODIFIED_FILES)
         string(REPLACE "\n" ";" MODIFIED_LINES "${MODIFIED_FILES}")
         foreach(MOD_FILE ${MODIFIED_LINES})
-            if(NOT MOD_FILE STREQUAL "")
-                set(MODIFIED_SET_${MOD_FILE} TRUE)
-            endif()
+            set(MODIFIED_SET_${MOD_FILE} TRUE)
         endforeach()
     endif()
 
@@ -152,52 +176,37 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
     string(REPLACE "\n" ";" GIT_LINES "${GIT_INDEX_OUTPUT}")
 
     foreach(LINE ${GIT_LINES})
-        if(NOT LINE STREQUAL "")
-            # Parse line format: <mode> <object> <stage> <file>
-            string(REGEX MATCH "^([0-9]+) ([a-f0-9]+) ([0-9]+)\t(.+)$" MATCHED "${LINE}")
-            if(MATCHED)
-                set(FILE_MODE "${CMAKE_MATCH_1}")
-                set(INDEX_HASH "${CMAKE_MATCH_2}")
-                set(STAGE "${CMAKE_MATCH_3}")
-                set(FILE_PATH "${CMAKE_MATCH_4}")
+        # Parse line format: <mode> <object> <stage> <file>
+        string(REGEX MATCH "^([0-9]+) ([a-f0-9]+) ([0-9]+)\t(.+)$" MATCHED "${LINE}")
+        if(MATCHED)
+            set(FILE_MODE "${CMAKE_MATCH_1}")
+            set(INDEX_HASH "${CMAKE_MATCH_2}")
+            set(STAGE "${CMAKE_MATCH_3}")
+            set(FILE_PATH "${CMAKE_MATCH_4}")
 
-                set(FULL_FILE_PATH "${GIT_ROOT}/${FILE_PATH}")
+            set(FULL_FILE_PATH "${GIT_ROOT}/${FILE_PATH}")
 
-                # Check if file is modified or deleted
-                if(NOT EXISTS "${FULL_FILE_PATH}")
-                    # File was deleted locally
-                    list(APPEND FILE_HASH_LIST "${FILE_MODE} deleted ${STAGE}\t${FILE_PATH}")
-                elseif(DEFINED MODIFIED_SET_${FILE_PATH})
-                    # File is modified, collect it for batch hashing
-                    list(APPEND FILES_TO_HASH "${FULL_FILE_PATH}")
-                    list(APPEND FILE_HASH_LIST "${FILE_MODE} PLACEHOLDER_${FILE_PATH} ${STAGE}\t${FILE_PATH}")
-                else()
-                    # File unchanged, use index hash
-                    list(APPEND FILE_HASH_LIST "${FILE_MODE} ${INDEX_HASH} ${STAGE}\t${FILE_PATH}")
-                endif()
+            # Check if file is modified or deleted
+            if(NOT EXISTS "${FULL_FILE_PATH}")
+                # File was deleted locally
+                list(APPEND FILE_HASH_LIST "${FILE_MODE} deleted ${STAGE}\t${FILE_PATH}")
+            elseif(DEFINED MODIFIED_SET_${FILE_PATH})
+                # File is modified, collect it for batch hashing
+                list(APPEND FILES_TO_HASH "${FULL_FILE_PATH}")
+                list(APPEND FILES_TO_HASH_INFO "${FILE_MODE}|${STAGE}|${FILE_PATH}")
+            else()
+                # File unchanged, use index hash
+                list(APPEND FILE_HASH_LIST "${FILE_MODE} ${INDEX_HASH} ${STAGE}\t${FILE_PATH}")
             endif()
         endif()
     endforeach()
 
     # Batch hash all modified files in one git command (huge performance win!)
     if(FILES_TO_HASH)
-        execute_process(
-            COMMAND ${GIT_EXECUTABLE} hash-object --stdin-paths
-            WORKING_DIRECTORY "${GIT_ROOT}"
-            INPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/files_to_hash.txt"
-            OUTPUT_VARIABLE BATCH_HASHES
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            ERROR_QUIET
-            RESULT_VARIABLE HASH_RESULT
-        )
-
         # Write files to a temp file for stdin-paths
-        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/files_to_hash.txt" "")
-        foreach(FILE_PATH ${FILES_TO_HASH})
-            file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/files_to_hash.txt" "${FILE_PATH}\n")
-        endforeach()
+        string(JOIN "\n" FILES_CONTENT ${FILES_TO_HASH})
+        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/files_to_hash.txt" "${FILES_CONTENT}\n")
 
-        # Re-run with the file created
         execute_process(
             COMMAND ${GIT_EXECUTABLE} hash-object --stdin-paths
             WORKING_DIRECTORY "${GIT_ROOT}"
@@ -209,33 +218,23 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
         )
 
         if(HASH_RESULT EQUAL 0 AND BATCH_HASHES)
-            # Replace placeholders with actual hashes
             string(REPLACE "\n" ";" HASH_LINES "${BATCH_HASHES}")
             list(LENGTH FILES_TO_HASH NUM_FILES)
             list(LENGTH HASH_LINES NUM_HASHES)
 
             if(NUM_FILES EQUAL NUM_HASHES)
-                # Build a map of file->hash
+                # Add hashed files to FILE_HASH_LIST with their actual hashes
                 math(EXPR LAST_INDEX "${NUM_FILES} - 1")
                 foreach(IDX RANGE 0 ${LAST_INDEX})
-                    list(GET FILES_TO_HASH ${IDX} FILE_PATH)
+                    list(GET FILES_TO_HASH_INFO ${IDX} FILE_INFO)
                     list(GET HASH_LINES ${IDX} HASH_VALUE)
-                    file(RELATIVE_PATH REL_FILE "${GIT_ROOT}" "${FILE_PATH}")
-                    set(HASH_MAP_${REL_FILE} "${HASH_VALUE}")
+                    # Parse stored info: mode|stage|path
+                    string(REPLACE "|" ";" INFO_PARTS "${FILE_INFO}")
+                    list(GET INFO_PARTS 0 FILE_MODE)
+                    list(GET INFO_PARTS 1 STAGE)
+                    list(GET INFO_PARTS 2 FILE_PATH)
+                    list(APPEND FILE_HASH_LIST "${FILE_MODE} ${HASH_VALUE} ${STAGE}\t${FILE_PATH}")
                 endforeach()
-
-                # Update FILE_HASH_LIST with actual hashes
-                set(UPDATED_LIST "")
-                foreach(ENTRY ${FILE_HASH_LIST})
-                    if(ENTRY MATCHES "PLACEHOLDER_(.+) ")
-                        set(REL_FILE "${CMAKE_MATCH_1}")
-                        if(DEFINED HASH_MAP_${REL_FILE})
-                            string(REPLACE "PLACEHOLDER_${REL_FILE}" "${HASH_MAP_${REL_FILE}}" ENTRY "${ENTRY}")
-                        endif()
-                    endif()
-                    list(APPEND UPDATED_LIST "${ENTRY}")
-                endforeach()
-                set(FILE_HASH_LIST "${UPDATED_LIST}")
             endif()
         endif()
     endif()
@@ -252,22 +251,19 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
     if(UNTRACKED_RESULT EQUAL 0 AND UNTRACKED_OUTPUT)
         # Batch hash untracked files too
         set(UNTRACKED_FILES "")
+        set(UNTRACKED_PATHS "")
         string(REPLACE "\n" ";" UNTRACKED_LINES "${UNTRACKED_OUTPUT}")
         foreach(UNTRACKED_PATH ${UNTRACKED_LINES})
-            if(NOT UNTRACKED_PATH STREQUAL "")
-                set(UNTRACKED_FULL_PATH "${GIT_ROOT}/${UNTRACKED_PATH}")
-                if(EXISTS "${UNTRACKED_FULL_PATH}")
-                    list(APPEND UNTRACKED_FILES "${UNTRACKED_FULL_PATH}")
-                    list(APPEND FILE_HASH_LIST "untracked PLACEHOLDER_UNTRACKED_${UNTRACKED_PATH} 0\t${UNTRACKED_PATH}")
-                endif()
+            set(UNTRACKED_FULL_PATH "${GIT_ROOT}/${UNTRACKED_PATH}")
+            if(EXISTS "${UNTRACKED_FULL_PATH}")
+                list(APPEND UNTRACKED_FILES "${UNTRACKED_FULL_PATH}")
+                list(APPEND UNTRACKED_PATHS "${UNTRACKED_PATH}")
             endif()
         endforeach()
 
         if(UNTRACKED_FILES)
-            file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/untracked_files.txt" "")
-            foreach(FILE_PATH ${UNTRACKED_FILES})
-                file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/untracked_files.txt" "${FILE_PATH}\n")
-            endforeach()
+            string(JOIN "\n" UNTRACKED_CONTENT ${UNTRACKED_FILES})
+            file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/untracked_files.txt" "${UNTRACKED_CONTENT}\n")
 
             execute_process(
                 COMMAND ${GIT_EXECUTABLE} hash-object --stdin-paths
@@ -286,24 +282,10 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
                 if(NUM_UNTRACKED EQUAL NUM_UNTRACKED_HASHES)
                     math(EXPR LAST_INDEX "${NUM_UNTRACKED} - 1")
                     foreach(IDX RANGE 0 ${LAST_INDEX})
-                        list(GET UNTRACKED_FILES ${IDX} FILE_PATH)
+                        list(GET UNTRACKED_PATHS ${IDX} FILE_PATH)
                         list(GET UNTRACKED_HASH_LINES ${IDX} HASH_VALUE)
-                        file(RELATIVE_PATH REL_FILE "${GIT_ROOT}" "${FILE_PATH}")
-                        set(UNTRACKED_HASH_MAP_${REL_FILE} "${HASH_VALUE}")
+                        list(APPEND FILE_HASH_LIST "untracked ${HASH_VALUE} 0\t${FILE_PATH}")
                     endforeach()
-
-                    # Update FILE_HASH_LIST with actual hashes
-                    set(UPDATED_LIST "")
-                    foreach(ENTRY ${FILE_HASH_LIST})
-                        if(ENTRY MATCHES "PLACEHOLDER_UNTRACKED_(.+) ")
-                            set(REL_FILE "${CMAKE_MATCH_1}")
-                            if(DEFINED UNTRACKED_HASH_MAP_${REL_FILE})
-                                string(REPLACE "PLACEHOLDER_UNTRACKED_${REL_FILE}" "${UNTRACKED_HASH_MAP_${REL_FILE}}" ENTRY "${ENTRY}")
-                            endif()
-                        endif()
-                        list(APPEND UPDATED_LIST "${ENTRY}")
-                    endforeach()
-                    set(FILE_HASH_LIST "${UPDATED_LIST}")
                 endif()
             endif()
         endif()
@@ -326,19 +308,16 @@ function(get_thirdparty_hash DIRECTORY_PATH OUTPUT_VAR)
 
     # Return based on requested format
     if(ARG_HASH_FORMAT STREQUAL "short")
-        # Return first 8 characters of the hash
-        string(SUBSTRING "${FINAL_HASH}" 0 8 SHORT_HASH)
+        # Return XOR-folded 8 character hash that incorporates entire hash
+        hash_to_short("${FINAL_HASH}" SHORT_HASH)
         set(${OUTPUT_VAR} "${SHORT_HASH}" PARENT_SCOPE)
     elseif(ARG_HASH_FORMAT STREQUAL "full")
         # Return full SHA1 hash
         set(${OUTPUT_VAR} "${FINAL_HASH}" PARENT_SCOPE)
     else()
-        # Default: Convert hash to version components
-        fnv1a_hash("${FINAL_HASH}" _hash_value)
-        math(EXPR _major "(${_hash_value} >> 24) & 0xFF")
-        math(EXPR _minor "(${_hash_value} >> 12) & 0xFFF")
-        math(EXPR _patch "${_hash_value} & 0xFFF")
-        set(${OUTPUT_VAR} "${_major}.${_minor}.${_patch}" PARENT_SCOPE)
+        # Default: Convert hash to version format (uses XOR-folded hash internally)
+        hash_to_version("${FINAL_HASH}" VERSION_STRING)
+        set(${OUTPUT_VAR} "${VERSION_STRING}" PARENT_SCOPE)
     endif()
 endfunction()
 
