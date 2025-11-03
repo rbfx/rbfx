@@ -53,7 +53,7 @@ env:
   # to ctrl+c for "ci_publish" if you need to adjust this variable.
   ci_publish: ${{ github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' }}
   # Push artifacts to latest release.
-  ci_artifacts: ${{ github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' }}
+  ci_artifacts: ${{ (github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master') || (contains(github.event.head_commit.message, '#ci-artifacts') && github.event_name != 'pull_request') }}
   # CI workers have limited capabilities, allow tracy to fall back to less accurate timers.
   TRACY_TIMER_FALLBACK: 1
   SOURCE_REF: ${{ github.head_ref || github.ref_name }}
@@ -86,7 +86,7 @@ jobs:
     name: Release 'latest'
     runs-on: ubuntu-latest
     # if: env.ci_artifacts == 'true'
-    if: ${{ github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' }}
+    if: ${{ (github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master') || (contains(github.event.head_commit.message, '#ci-artifacts') && github.event_name != 'pull_request') }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -98,6 +98,7 @@ jobs:
 
   Build:
     runs-on: ${{ (startsWith(matrix.ci_platform_tag, 'windows-') || startsWith(matrix.ci_platform_tag, 'uwp-')) && 'windows-latest' || ((startsWith(matrix.ci_platform_tag, 'macos-') || startsWith(matrix.ci_platform_tag, 'ios-')) && 'macos-latest' || 'ubuntu-latest') }}
+    if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'rbfx/rbfx') && github.event.pull_request.draft == false }}
 
     strategy:
       fail-fast: false
@@ -199,9 +200,9 @@ jobs:
         continue-on-error: true
         run: |
           if ${{ env.ci_build_script }} download-release -- \
-            "https://github.com/${{ github.repository }}/releases/download/latest/rebelfork-sdk-${{ env.ci_build_id }}-latest.7z" \
+            "https://github.com/${{ github.repository }}/releases/download/latest/rebelfork-sdk-${{ env.ci_platform_tag }}-latest.7z" \
             "${{ github.workspace }}/cached-sdk" \
-            "rebelfork-sdk-${{ env.ci_build_id }}-latest/thirdparty-id.txt" \
+            "rebelfork-sdk-${{ env.ci_platform_tag }}-latest/thirdparty-id.txt" \
             "${{ env.ci_hash_thirdparty }}"; then
             echo "sdk-cached=true" >> "$GITHUB_OUTPUT"
           else
@@ -371,7 +372,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           # Rename SDK to match the release name (without .7z), compress with 7z max compression
-          archive_name="rebelfork-sdk-${{ env.ci_build_id }}-latest"
+          archive_name="rebelfork-sdk-${{ env.ci_platform_tag }}-latest"
           mv SDK "$archive_name"
           7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "${archive_name}.7z" "$archive_name"
           gh release upload latest "${archive_name}.7z" --repo '${{ github.repository }}' --clobber
@@ -384,7 +385,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: ${{ env.CCACHE_DEBUG == '1' }}
         with:
-          name: 'ccache-debug-build-${{ env.ci_build_id }}-${{ github.run_id }}'
+          name: 'ccache-debug-build-${{ env.ci_platform_tag }}-${{ github.run_id }}'
           path: ${{ env.CCACHE_DEBUGDIR }}
           if-no-files-found: ignore
 

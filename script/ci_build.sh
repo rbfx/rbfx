@@ -391,7 +391,7 @@ function action-release-mobile-artifacts() {
     local artifact=$(find . -name "$pattern" $([[ "$ci_platform" == "ios" ]] && echo "-type d") | head -n 1)
     if [ -n "$artifact" ];
     then
-        local archive_name="rebelfork-bin-${ci_build_id}-latest.7z"
+        local archive_name="rebelfork-bin-${ci_platform_tag}-latest.7z"
         7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "$archive_name" "$artifact"
         gh release upload latest "$archive_name" --repo "${GITHUB_REPOSITORY}" --clobber
         echo "✓ Released $archive_name"
@@ -647,8 +647,7 @@ function action-setup-environment() {
     # Define env variables
     ci_short_sha=$(echo ${GITHUB_SHA} | cut -c1-8)
     ci_hash_thirdparty=$(cmake -DDIRECTORY_PATH="${ci_source_dir}/Source/ThirdParty" -DHASH_FORMAT=short -P "${ci_source_dir}/CMake/Modules/GetThirdPartyHash.cmake" 2>&1)
-    ci_build_id="${ci_platform}-${ci_compiler}-${ci_arch}-${ci_lib_type}"
-    ci_cache_id="${ccache_prefix}-$ci_build_id"
+    ci_cache_id="${ccache_prefix}-$ci_platform_tag"
     case "$ci_platform" in
         windows|linux|macos)  ci_platform_group='desktop'  ;;
         android|ios)          ci_platform_group='mobile'   ;;
@@ -668,7 +667,6 @@ function action-setup-environment() {
     then
         echo "ci_number_of_processors=$ci_number_of_processors" >> $GITHUB_ENV
         echo "ci_short_sha=$ci_short_sha" >> $GITHUB_ENV
-        echo "ci_build_id=$ci_build_id" >> $GITHUB_ENV
         echo "ci_cache_id=$ci_cache_id" >> $GITHUB_ENV
         echo "ci_hash_thirdparty=$ci_hash_thirdparty" >> $GITHUB_ENV
         echo "ci_platform_group=$ci_platform_group" >> $GITHUB_ENV
