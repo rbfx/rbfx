@@ -27,15 +27,39 @@ include(${CMAKE_CURRENT_LIST_DIR}/VSSolution.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/UrhoOptions.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CCache.cmake)
 
-set(CMAKE_INSTALL_BINDIR_BASE ${CMAKE_INSTALL_BINDIR})
 get_cmake_property(MULTI_CONFIG_PROJECT GENERATOR_IS_MULTI_CONFIG)
-if (MULTI_CONFIG_PROJECT)
-    set(CMAKE_INSTALL_BINDIR ${CMAKE_INSTALL_BINDIR}/$<CONFIG>)
-    set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR}/$<CONFIG>)
+
+# Prevent use of undefined build type, default to Debug. Done here instead of later so that URHO3D_CONFIG
+# is properly set. Also normalize the case of CMAKE_BUILD_TYPE to match CMAKE_CONFIGURATION_TYPES.
+if (NOT MULTI_CONFIG_PROJECT)
+    if (NOT CMAKE_BUILD_TYPE)
+        string(TOUPPER "${CMAKE_CONFIGURATION_TYPES}" CONFIG_TYPES_UPPER)
+        string(TOUPPER "${CMAKE_BUILD_TYPE}" BUILD_TYPE_UPPER)
+        list(FIND CONFIG_TYPES_UPPER "${BUILD_TYPE_UPPER}" CONFIG_INDEX)
+        if (CONFIG_INDEX GREATER_EQUAL 0)
+            list(GET CMAKE_CONFIGURATION_TYPES ${CONFIG_INDEX} NORMALIZED_BUILD_TYPE)
+        endif()
+    endif ()
+
+    if (NOT CMAKE_BUILD_TYPE)
+        set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Specifies the build type." FORCE)
+    endif ()
+
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
 endif ()
 
+if (MULTI_CONFIG_PROJECT)
+    set (URHO3D_CONFIG $<CONFIG>)
+else ()
+    set (URHO3D_CONFIG ${CMAKE_BUILD_TYPE})
+endif ()
+
+set(CMAKE_INSTALL_BINDIR_BASE ${CMAKE_INSTALL_BINDIR})
+set(CMAKE_INSTALL_BINDIR ${CMAKE_INSTALL_BINDIR}/${URHO3D_CONFIG})
 if (ANDROID)
-    set (CMAKE_INSTALL_LIBDIR bin)
+    set (CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_BINDIR_BASE}/${URHO3D_CONFIG})
+else ()
+    set(CMAKE_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR}/${URHO3D_CONFIG})
 endif ()
 
 if (Urho3D_IS_SDK)
@@ -65,23 +89,12 @@ endif ()
 # Ensure variable is in the cache.
 set(RBFX_CSPROJ_LIST "" CACHE STRING "A list of C# projects." FORCE)
 
-if (NOT DESKTOP)
+if (NOT DESKTOP AND (URHO3D_CSHARP OR URHO3D_PACKAGING))
     find_package(Urho3DTools QUIET NO_CMAKE_INSTALL_PREFIX)
-    if (URHO3D_PACKAGING AND (NOT Urho3DTools_FOUND OR NOT TARGET PackageTool))
-        message(FATAL_ERROR "PackageTool not found, please provide Urho3DTools in CMAKE_PREFIX_PATH")
-    endif ()
-
-    if (URHO3D_CSHARP AND (NOT Urho3DTools_FOUND OR NOT TARGET swig))
-        message(FATAL_ERROR "swig not found, please provide Urho3DTools in CMAKE_PREFIX_PATH")
-    endif ()
-
     if (Urho3DTools_FOUND)
         message(STATUS "Found Urho3DTools: ${Urho3DTools_VERSION}")
     endif ()
 endif ()
-
-# Note: We use $<TARGET_FILE:swig> and $<TARGET_FILE:PackageTool> directly in commands
-# instead of setting SWIG_EXECUTABLE and PACKAGE_TOOL variables
 
 # Xcode does not support per-config source files, therefore we must lock generated bindings to some config
 # and they wont switch when build config changes in Xcode.
@@ -104,14 +117,6 @@ if (EMSCRIPTEN)
     set (EMCC_WITH_SOURCE_MAPS_FLAG -gsource-map --source-map-base=. -fdebug-compilation-dir='.' -gseparate-dwarf)
 endif ()
 
-# Prevent use of undefined build type, default to Debug. Done here instead of UrhoOptions.cmake so that user projects
-# can take advantage of this behavior as UrhoCommon.cmake will be included earlier, most likely before any targets are
-# defined.
-if (NOT MULTI_CONFIG_PROJECT AND NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Specifies the build type." FORCE)
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${CMAKE_CONFIGURATION_TYPES})
-endif ()
-
 # Generate CMake.props which will be included in .csproj files. This function should be called after all targets are
 # added to the project, because it depends on target properties.
 function (rbfx_configure_cmake_props)
@@ -131,7 +136,6 @@ function (rbfx_configure_cmake_props)
 
     # Variables of interest
     foreach (var
-        CMAKE_GENERATOR
         CMAKE_RUNTIME_OUTPUT_DIRECTORY
         CMAKE_CONFIGURATION_TYPES
         URHO3D_CSHARP
@@ -327,6 +331,25 @@ macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
     endif()
 endmacro()
 
+function (setup_external_tool TARGET VARIABLE_NAME)
+    if (TARGET ${TARGET})
+        set(${VARIABLE_NAME} "$<TARGET_FILE:${TARGET}>" PARENT_SCOPE)
+    else ()
+        if (NOT DEFINED ${VARIABLE_NAME})
+            set(${VARIABLE_NAME} $ENV{${VARIABLE_NAME}})
+        endif ()
+        if (NOT DEFINED ${VARIABLE_NAME})
+            message(FATAL_ERROR "'${TARGET}' not found and variable '${VARIABLE_NAME}' is not defined.")
+        endif ()
+        foreach(item IN LISTS ${VARIABLE_NAME})
+            if (NOT EXISTS "${item}")
+                message(FATAL_ERROR "Variable '${VARIABLE_NAME}' contains '${item}', but the file does not exist.")
+            endif ()
+        endforeach()
+        set(${VARIABLE_NAME} "${${VARIABLE_NAME}}" PARENT_SCOPE)
+    endif ()
+endfunction ()
+
 function (add_target_csharp)
     cmake_parse_arguments (CS "EXE" "TARGET;PROJECT;OUTPUT" "DEPENDS" ${ARGN})
     if (MSVC)
@@ -439,10 +462,11 @@ function (csharp_bind_target)
     file(GENERATE OUTPUT "GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" CONTENT "${GENERATOR_OPTIONS}" CONDITION $<COMPILE_LANGUAGE:CXX>)
 
     # Swig generator command
+    setup_external_tool(swig SWIG_EXECUTABLE)
     add_custom_command(OUTPUT ${BIND_OUT_FILE}
         COMMAND ${CMAKE_COMMAND} -E remove_directory ${BIND_OUT_DIR}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${BIND_OUT_DIR}
-        COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${URHO3D_SWIG_LIB_DIR}" "$<TARGET_FILE:swig>"
+        COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${URHO3D_SWIG_LIB_DIR}" ${SWIG_EXECUTABLE}
         ARGS @"${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" > ${CMAKE_CURRENT_BINARY_DIR}/swig_${BIND_TARGET}.log
 
         MAIN_DEPENDENCY ${BIND_SWIG}
@@ -468,7 +492,6 @@ function (csharp_bind_target)
             # Real C# target
             add_dependencies(${BIND_MANAGED_TARGET} ${BIND_TARGET} ${BIND_EMBED})
         endif ()
-        install (FILES ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll DESTINATION ${CMAKE_INSTALL_BINDIR})
     endif ()
 endfunction ()
 
@@ -481,11 +504,12 @@ function (create_pak PAK_DIR PAK_FILE)
         list (APPEND PAK_FLAGS -c)
     endif ()
 
+    setup_external_tool(PackageTool PACKAGE_TOOL_EXECUTABLE)
     set_property (SOURCE ${PAK_FILE} PROPERTY GENERATED TRUE)
     add_custom_command(
         OUTPUT "${PAK_FILE}"
-        COMMAND "$<TARGET_FILE:PackageTool>" "${PAK_DIR}" "${PAK_FILE}" -q ${PAK_FLAGS}
-        DEPENDS PackageTool ${PAK_DEPENDS}
+        COMMAND ${PACKAGE_TOOL_EXECUTABLE} "${PAK_DIR}" "${PAK_FILE}" -q ${PAK_FLAGS}
+        DEPENDS $<TARGET_NAME_IF_EXISTS:PackageTool> ${PAK_DEPENDS}
         COMMENT "Packaging ${NAME}"
     )
 endfunction ()
@@ -548,13 +572,9 @@ function (package_resources_web)
     add_custom_target("${PAK_OUTPUT}"
         COMMAND ${EMPACKAGER} ${PAK_RELATIVE_DIR}${PAK_OUTPUT}.data --preload ${PRELOAD_FILES} --js-output=${PAK_RELATIVE_DIR}${PAK_OUTPUT} --use-preload-cache ${SEPARATE_METADATA}
         SOURCES ${PAK_FILES}
-        DEPENDS ${PAK_FILES}
+        DEPENDS ${PAK_FILES} $<TARGET_NAME_IF_EXISTS:PackageTool>
         COMMENT "Packaging ${PAK_OUTPUT}"
     )
-
-    if (TARGET PackageTool)
-        add_dependencies("${PAK_OUTPUT}" PackageTool)
-    endif ()
 
     if (PAK_INSTALL_TO)
         install(FILES "${PAK_RELATIVE_DIR}${PAK_OUTPUT}" "${PAK_RELATIVE_DIR}${PAK_OUTPUT}.data" DESTINATION ${PAK_INSTALL_TO})
@@ -643,7 +663,7 @@ function (install_third_party_tools)
                 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
                 LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
                 ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                COMPONENT Tools
+                COMPONENT ThirdParty
                 PERMISSIONS ${PERMISSIONS_755})
             # Also add to Urho3DTools export
             install (TARGETS ${TARGET}

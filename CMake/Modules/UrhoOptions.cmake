@@ -97,25 +97,16 @@ elseif (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
 endif ()
 
 # Determine build arch
-string(TOLOWER "${CMAKE_GENERATOR_PLATFORM}" CMAKE_GENERATOR_PLATFORM)
-set(URHO3D_PLATFORM "${CMAKE_GENERATOR_PLATFORM}")
+# Extract architecture from RBFX_PLATFORM_TAG (format: platform-arch-runtime)
+if (RBFX_PLATFORM_TAG)
+    string(REPLACE "-" ";" TAG_PARTS "${RBFX_PLATFORM_TAG}")
+    list(GET TAG_PARTS 1 URHO3D_PLATFORM)
+endif ()
+
 if (CMAKE_SIZEOF_VOID_P MATCHES 8)
     set(URHO3D_64BIT ON)
 else ()
     set(URHO3D_64BIT OFF)
-endif ()
-
-# TODO: Arm support.
-# NOTE: URHO3D_PLATFORM is only used in .csproj
-if (NOT URHO3D_PLATFORM)
-    if (URHO3D_64BIT)
-        set (URHO3D_PLATFORM x64)
-    else ()
-        set (URHO3D_PLATFORM x86)
-    endif ()
-endif ()
-if (URHO3D_PLATFORM STREQUAL "win32")
-    set (URHO3D_PLATFORM x86)
 endif ()
 
 # Build properties
@@ -205,7 +196,7 @@ cmake_dependent_option(URHO3D_OCULUS_QUEST       "Enable experimental native bui
 cmake_dependent_option(URHO3D_XR                 "Enable OpenXR support"                                 ${URHO3D_ENABLE_ALL} "WIN32 OR URHO3D_OCULUS_QUEST;NOT MINGW;NOT UWP" OFF)
 
 # Features
-cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "BUILD_SHARED_LIBS;NOT MINGW"   OFF)
+cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "(BUILD_SHARED_LIBS OR IOS);NOT MINGW"   OFF)
 # Valid values at https://docs.microsoft.com/en-us/dotnet/standard/frameworks
 # At the moment only netstandard2.1 supported
 set(URHO3D_NETFX netstandard2.1 CACHE STRING "TargetFramework value for .NET libraries")
@@ -234,7 +225,6 @@ cmake_dependent_option(URHO3D_GRAPHICS_NO_VULKAN "Disable Vulkan backend in rend
 
 # Misc
 rbfx_dependent_option(URHO3D_PLUGIN_LIST "List of plugins to be statically linked with Editor and Player executables" "Sample.103_GamePlugin;Sample.113_InputLogger" URHO3D_SAMPLES "")
-option               (URHO3D_PARALLEL_BUILD     "MSVC-only: enable parallel builds. A bool or a number of processors to use." ON)
 
 option(URHO3D_PLAYER                            "Build player application"                              ${URHO3D_ENABLE_ALL})
 cmake_dependent_option(URHO3D_EDITOR            "Build editor application"                              ${URHO3D_ENABLE_ALL} "DESKTOP"                       OFF)

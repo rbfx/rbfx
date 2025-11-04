@@ -21,7 +21,7 @@
 #
 
 # Set CMake minimum version. Also set in android/build.gradle for android projects.
-cmake_minimum_required (VERSION 3.24)
+cmake_minimum_required (VERSION 3.25)
 
 # Get rid of obscene amount of CMake-added targets we do not use.
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
@@ -60,13 +60,20 @@ message(STATUS "ThirdParty version: ${URHO3D_THIRDPARTY_VERSION} | ${URHO3D_THIR
 
 # Try to find ThirdParty as an external package first
 # Whether we use CCache depends on result of this call
-find_package(Urho3DThirdParty ${URHO3D_THIRDPARTY_VERSION} EXACT NO_CMAKE_INSTALL_PREFIX)
+if (NOT URHO3D_THIRDPARTY_VERSION VERSION_EQUAL "0.0.0")
+    find_package(Urho3DThirdParty ${URHO3D_THIRDPARTY_VERSION} EXACT NO_CMAKE_INSTALL_PREFIX)
+endif ()
 
 # Disable ccache
 if (URHO3D_PRISTINE_FULL_BUILDS OR (ENV{CI} AND NOT Urho3DThirdParty_FOUND))
     set(ENV{CCACHE_DISABLE} 1)
     message(STATUS "CCache disabled")
 endif ()
+
+# Generate platform tag
+include(PlatformTag)
+rbfx_get_platform_tag(RBFX_PLATFORM_TAG TARGET)
+message(STATUS "Target platform tag: ${RBFX_PLATFORM_TAG}")
 
 # Include common utilities
 include(UrhoCommon)
@@ -152,12 +159,6 @@ endif ()
 
 if (NOT DEFINED VS_DEBUGGER_WORKING_DIRECTORY)
     set (VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-endif ()
-
-if (MULTI_CONFIG_PROJECT)
-    set (URHO3D_CONFIG $<CONFIG>)
-else ()
-    set (URHO3D_CONFIG ${CMAKE_BUILD_TYPE})
 endif ()
 
 # Configure for web
@@ -360,7 +361,7 @@ install (PROGRAMS ${CMAKE_SCRIPTS} DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3D/S
 file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 if (NOT ANDROID)
     # Multi-config projects store data files in parent dir of binary files.
-    string (REPLACE "/$<CONFIG>" "" RUNTIME_OUTPUT_DIRECTORY_NO_CONFIG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    string (REPLACE "/${URHO3D_CONFIG}" "" RUNTIME_OUTPUT_DIRECTORY_NO_CONFIG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
     # Copy data directories for development
     set (INSTALL_DATA_DIRS Data CoreData EditorData Autoload)
     foreach(dir ${INSTALL_DATA_DIRS})

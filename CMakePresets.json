@@ -1,0 +1,612 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/cmake-build/${presetName}",
+      "installDir": "${sourceDir}/cmake-build/${presetName}/install",
+      "cacheVariables": {
+        "URHO3D_TESTING": "ON",
+        "URHO3D_SAMPLES": "ON",
+        "URHO3D_PACKAGING": "ON",
+        "URHO3D_ENABLE_ALL": "ON",
+        "CMAKE_CONFIGURATION_TYPES": "Debug;RelWithDebInfo",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5",
+        "URHO3D_PCH": "ON"
+      }
+    },
+    {
+      "name": "base-lib",
+      "hidden": true,
+      "inherits": "base",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "OFF"
+      }
+    },
+    {
+      "name": "base-dll",
+      "hidden": true,
+      "inherits": "base",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON",
+        "URHO3D_CSHARP": "ON",
+        "URHO3D_NETFX_RUNTIME": "net8.0",
+        "URHO3D_NETFX": "net8.0"
+      }
+    },
+    {
+      "name": "cmake-prefix-path-windows",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_PREFIX_PATH": "${sourceDir}/cmake-build/windows-msvc-x64-lib/install/share;${sourceDir}/cmake-build/windows-msvc-x64-dll/install/share;${sourceDir}/cmake-build/windows-msvc-x86-lib/install/share;${sourceDir}/cmake-build/windows-msvc-x86-dll/install/share;${sourceDir}/cmake-build/windows-mingw-x64-lib-rel/install/share;${sourceDir}/cmake-build/windows-mingw-x64-lib-dbg/install/share;${sourceDir}/cmake-build/windows-mingw-x64-dll-rel/install/share;${sourceDir}/cmake-build/windows-mingw-x64-dll-dbg/install/share"
+      }
+    },
+    {
+      "name": "cmake-prefix-path-linux",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_PREFIX_PATH": "${sourceDir}/cmake-build/linux-gcc-x64-lib/install;${sourceDir}/cmake-build/linux-gcc-x64-dll/install;${sourceDir}/cmake-build/linux-gcc-x86-lib/install;${sourceDir}/cmake-build/linux-gcc-x86-dll/install;${sourceDir}/cmake-build/linux-clang-x64-lib/install;${sourceDir}/cmake-build/linux-clang-x64-dll/install;${sourceDir}/cmake-build/linux-clang-x86-lib/install;${sourceDir}/cmake-build/linux-clang-x86-dll/install"
+      }
+    },
+    {
+      "name": "cmake-prefix-path-macos",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_PREFIX_PATH": "${sourceDir}/cmake-build/macos-clang-x64-lib/install;${sourceDir}/cmake-build/macos-clang-x64-dll/install;${sourceDir}/cmake-build/macos-clang-arm64-lib/install;${sourceDir}/cmake-build/macos-clang-arm64-dll/install"
+      }
+    },
+    {
+      "name": "cmake-prefix-path-all",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_PREFIX_PATH": "${sourceDir}/cmake-build/windows-msvc-x64-lib/install/share;${sourceDir}/cmake-build/windows-msvc-x64-dll/install/share;${sourceDir}/cmake-build/windows-msvc-x86-lib/install/share;${sourceDir}/cmake-build/windows-msvc-x86-dll/install/share;${sourceDir}/cmake-build/windows-mingw-x64-lib-rel/install/share;${sourceDir}/cmake-build/windows-mingw-x64-lib-dbg/install/share;${sourceDir}/cmake-build/windows-mingw-x64-dll-rel/install/share;${sourceDir}/cmake-build/windows-mingw-x64-dll-dbg/install/share;${sourceDir}/cmake-build/linux-gcc-x64-lib/install;${sourceDir}/cmake-build/linux-gcc-x64-dll/install;${sourceDir}/cmake-build/linux-gcc-x86-lib/install;${sourceDir}/cmake-build/linux-gcc-x86-dll/install;${sourceDir}/cmake-build/linux-clang-x64-lib/install;${sourceDir}/cmake-build/linux-clang-x64-dll/install;${sourceDir}/cmake-build/linux-clang-x86-lib/install;${sourceDir}/cmake-build/linux-clang-x86-dll/install;${sourceDir}/cmake-build/macos-clang-x64-lib/install;${sourceDir}/cmake-build/macos-clang-x64-dll/install;${sourceDir}/cmake-build/macos-clang-arm64-lib/install;${sourceDir}/cmake-build/macos-clang-arm64-dll/install"
+      }
+    },
+    {
+      "name": "windows-base",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "Visual Studio 17 2022"
+    },
+    {
+      "name": "windows-msvc-x64-lib",
+      "inherits": ["windows-base", "base-lib"],
+      "architecture": "x64"
+    },
+    {
+      "name": "windows-msvc-x64-dll",
+      "inherits": ["windows-base", "base-dll"],
+      "architecture": "x64"
+    },
+    {
+      "name": "windows-msvc-x86-lib",
+      "inherits": ["windows-base", "base-lib"],
+      "architecture": "Win32"
+    },
+    {
+      "name": "windows-msvc-x86-dll",
+      "inherits": ["windows-base", "base-dll"],
+      "architecture": "Win32"
+    },
+    {
+      "name": "mingw-base",
+      "hidden": true,
+      "inherits": "base",
+      "generator": "MinGW Makefiles",
+      "cacheVariables": {
+        "URHO3D_PROFILING": "OFF",
+        "URHO3D_TESTING": "OFF",
+        "URHO3D_PCH": "OFF"
+      }
+    },
+    {
+      "name": "windows-mingw-x64-lib-dbg",
+      "inherits": ["mingw-base", "base-lib"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "windows-mingw-x64-lib-rel",
+      "inherits": ["mingw-base", "base-lib"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "windows-mingw-x64-dll-dbg",
+      "inherits": ["mingw-base", "base-dll"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "windows-mingw-x64-dll-rel",
+      "inherits": ["mingw-base", "base-dll"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "base-gnu-x86",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_C_FLAGS": "-m32",
+        "CMAKE_CXX_FLAGS": "-m32"
+      }
+    },
+    {
+      "name": "base-gnu-x64",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_C_FLAGS": "-m64",
+        "CMAKE_CXX_FLAGS": "-m64"
+      }
+    },
+    {
+      "name": "base-gcc",
+      "hidden": true,
+      "environment": {
+        "CC": "gcc",
+        "CXX": "g++"
+      }
+    },
+    {
+      "name": "base-clang",
+      "hidden": true,
+      "environment": {
+        "CC": "clang",
+        "CXX": "clang++"
+      }
+    },
+    {
+      "name": "linux-gcc-x64-lib",
+      "inherits": ["base-gcc", "base-gnu-x64", "base-lib"]
+    },
+    {
+      "name": "linux-gcc-x64-dll",
+      "inherits": ["base-gcc", "base-gnu-x64", "base-dll"]
+    },
+    {
+      "name": "linux-gcc-x86-lib",
+      "inherits": ["base-gcc", "base-gnu-x86", "base-lib"]
+    },
+    {
+      "name": "linux-gcc-x86-dll",
+      "inherits": ["base-gcc", "base-gnu-x86", "base-dll"]
+    },
+    {
+      "name": "linux-clang-x64-lib",
+      "inherits": ["base-clang", "base-gnu-x64", "base-lib"]
+    },
+    {
+      "name": "linux-clang-x64-dll",
+      "inherits": ["base-clang", "base-gnu-x64", "base-dll"]
+    },
+    {
+      "name": "linux-clang-x86-lib",
+      "inherits": ["base-clang", "base-gnu-x86", "base-lib"]
+    },
+    {
+      "name": "linux-clang-x86-dll",
+      "inherits": ["base-clang", "base-gnu-x86", "base-dll"]
+    },
+    {
+      "name": "macos-clang-x64-lib",
+      "inherits": "base-lib",
+      "cacheVariables": {
+        "CMAKE_OSX_ARCHITECTURES": "x86_64"
+      }
+    },
+    {
+      "name": "macos-clang-x64-dll",
+      "inherits": "base-dll",
+      "cacheVariables": {
+        "CMAKE_OSX_ARCHITECTURES": "x86_64"
+      }
+    },
+    {
+      "name": "macos-clang-arm64-lib",
+      "inherits": "base-lib",
+      "cacheVariables": {
+        "CMAKE_OSX_ARCHITECTURES": "arm64"
+      }
+    },
+    {
+      "name": "macos-clang-arm64-dll",
+      "inherits": "base-dll",
+      "cacheVariables": {
+        "CMAKE_OSX_ARCHITECTURES": "arm64"
+      }
+    },
+    {
+      "name": "web-emscripten-wasm-lib",
+      "inherits": ["base-lib", "cmake-prefix-path-all"],
+      "cacheVariables": {
+        "URHO3D_PROFILING": "OFF",
+        "CI_WEB_BUILD": "ON",
+        "URHO3D_NO_EDITOR_PLAYER_EXE": "ON",
+        "CMAKE_CONFIGURATION_TYPES": "Debug;Release",
+        "CMAKE_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+        "EMSCRIPTEN_ROOT_PATH": "$env{EMSDK}/upstream/emscripten/"
+      }
+    },
+    {
+      "name": "ios-clang-universal-lib",
+      "inherits": ["base-lib", "cmake-prefix-path-macos"],
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "CMake/Toolchains/IOS.cmake",
+        "PLATFORM": "SIMULATOR64",
+        "DEPLOYMENT_TARGET": "12"
+      }
+    },
+    {
+      "name": "uwp-base",
+      "hidden": true,
+      "inherits": ["windows-base", "cmake-prefix-path-windows"],
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "WindowsStore",
+        "CMAKE_SYSTEM_VERSION": "10.0",
+        "URHO3D_NETFX_RUNTIME": "netstandard2.0"
+      }
+    },
+    {
+      "name": "uwp-msvc-x64-lib",
+      "inherits": ["uwp-base", "base-lib"],
+      "architecture": "x64"
+    },
+    {
+      "name": "uwp-msvc-x64-dll",
+      "inherits": ["uwp-base", "base-dll"],
+      "architecture": "x64"
+    },
+    {
+      "name": "uwp-msvc-arm-lib",
+      "inherits": ["uwp-base", "base-lib"],
+      "architecture": "ARM"
+    },
+    {
+      "name": "uwp-msvc-arm-dll",
+      "inherits": ["uwp-base", "base-dll"],
+      "architecture": "ARM"
+    },
+    {
+      "name": "uwp-msvc-arm64-lib",
+      "inherits": ["uwp-base", "base-lib"],
+      "architecture": "ARM64"
+    },
+    {
+      "name": "uwp-msvc-arm64-dll",
+      "inherits": ["uwp-base", "base-dll"],
+      "architecture": "ARM64"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug-base",
+      "hidden": true,
+      "configuration": "Debug"
+    },
+    {
+      "name": "release-base",
+      "hidden": true,
+      "configuration": "RelWithDebInfo"
+    },
+    {
+      "name": "web-release-base",
+      "hidden": true,
+      "configuration": "Release"
+    },
+    {
+      "name": "windows-msvc-x64-lib-debug",
+      "configurePreset": "windows-msvc-x64-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "windows-msvc-x64-lib-release",
+      "configurePreset": "windows-msvc-x64-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "windows-msvc-x64-dll-debug",
+      "configurePreset": "windows-msvc-x64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "windows-msvc-x64-dll-release",
+      "configurePreset": "windows-msvc-x64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "windows-msvc-x86-lib-debug",
+      "configurePreset": "windows-msvc-x86-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "windows-msvc-x86-lib-release",
+      "configurePreset": "windows-msvc-x86-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "windows-msvc-x86-dll-debug",
+      "configurePreset": "windows-msvc-x86-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "windows-msvc-x86-dll-release",
+      "configurePreset": "windows-msvc-x86-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "windows-mingw-x64-lib-debug",
+      "configurePreset": "windows-mingw-x64-lib-dbg"
+    },
+    {
+      "name": "windows-mingw-x64-lib-release",
+      "configurePreset": "windows-mingw-x64-lib-rel"
+    },
+    {
+      "name": "windows-mingw-x64-dll-debug",
+      "configurePreset": "windows-mingw-x64-dll-dbg"
+    },
+    {
+      "name": "windows-mingw-x64-dll-release",
+      "configurePreset": "windows-mingw-x64-dll-rel"
+    },
+    {
+      "name": "linux-gcc-x64-lib-debug",
+      "configurePreset": "linux-gcc-x64-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "linux-gcc-x64-lib-release",
+      "configurePreset": "linux-gcc-x64-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "linux-gcc-x64-dll-debug",
+      "configurePreset": "linux-gcc-x64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "linux-gcc-x64-dll-release",
+      "configurePreset": "linux-gcc-x64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "linux-gcc-x86-lib-debug",
+      "configurePreset": "linux-gcc-x86-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "linux-gcc-x86-lib-release",
+      "configurePreset": "linux-gcc-x86-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "linux-gcc-x86-dll-debug",
+      "configurePreset": "linux-gcc-x86-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "linux-gcc-x86-dll-release",
+      "configurePreset": "linux-gcc-x86-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "linux-clang-x64-lib-debug",
+      "configurePreset": "linux-clang-x64-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "linux-clang-x64-lib-release",
+      "configurePreset": "linux-clang-x64-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "linux-clang-x64-dll-debug",
+      "configurePreset": "linux-clang-x64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "linux-clang-x64-dll-release",
+      "configurePreset": "linux-clang-x64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "linux-clang-x86-lib-debug",
+      "configurePreset": "linux-clang-x86-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "linux-clang-x86-lib-release",
+      "configurePreset": "linux-clang-x86-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "linux-clang-x86-dll-debug",
+      "configurePreset": "linux-clang-x86-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "linux-clang-x86-dll-release",
+      "configurePreset": "linux-clang-x86-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "macos-clang-x64-lib-debug",
+      "configurePreset": "macos-clang-x64-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "macos-clang-x64-lib-release",
+      "configurePreset": "macos-clang-x64-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "macos-clang-x64-dll-debug",
+      "configurePreset": "macos-clang-x64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "macos-clang-x64-dll-release",
+      "configurePreset": "macos-clang-x64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "macos-clang-arm64-lib-debug",
+      "configurePreset": "macos-clang-arm64-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "macos-clang-arm64-lib-release",
+      "configurePreset": "macos-clang-arm64-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "macos-clang-arm64-dll-debug",
+      "configurePreset": "macos-clang-arm64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "macos-clang-arm64-dll-release",
+      "configurePreset": "macos-clang-arm64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "web-emscripten-wasm-lib-debug",
+      "configurePreset": "web-emscripten-wasm-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "web-emscripten-wasm-lib-release",
+      "configurePreset": "web-emscripten-wasm-lib",
+      "displayName": "release",
+      "inherits": "web-release-base"
+    },
+    {
+      "name": "ios-clang-universal-lib-debug",
+      "configurePreset": "ios-clang-universal-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "ios-clang-universal-lib-release",
+      "configurePreset": "ios-clang-universal-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "uwp-msvc-x64-lib-debug",
+      "configurePreset": "uwp-msvc-x64-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "uwp-msvc-x64-lib-release",
+      "configurePreset": "uwp-msvc-x64-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "uwp-msvc-x64-dll-debug",
+      "configurePreset": "uwp-msvc-x64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "uwp-msvc-x64-dll-release",
+      "configurePreset": "uwp-msvc-x64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "uwp-msvc-arm-lib-debug",
+      "configurePreset": "uwp-msvc-arm-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "uwp-msvc-arm-lib-release",
+      "configurePreset": "uwp-msvc-arm-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "uwp-msvc-arm-dll-debug",
+      "configurePreset": "uwp-msvc-arm-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "uwp-msvc-arm-dll-release",
+      "configurePreset": "uwp-msvc-arm-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "uwp-msvc-arm64-lib-debug",
+      "configurePreset": "uwp-msvc-arm64-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "uwp-msvc-arm64-lib-release",
+      "configurePreset": "uwp-msvc-arm64-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "uwp-msvc-arm64-dll-debug",
+      "configurePreset": "uwp-msvc-arm64-dll",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "uwp-msvc-arm64-dll-release",
+      "configurePreset": "uwp-msvc-arm64-dll",
+      "displayName": "release",
+      "inherits": "release-base"
+    }
+  ]
+}

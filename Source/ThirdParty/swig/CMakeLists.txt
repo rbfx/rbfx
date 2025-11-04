@@ -19,6 +19,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+cmake_minimum_required(VERSION 3.24)
+
 if (NOT DESKTOP)
   return ()
 endif ()
@@ -60,7 +62,7 @@ if (BISON_FOUND)
   if ("${BISON_VERSION}" VERSION_GREATER_EQUAL "3.5.4")
     set (BISON_NO_COLORS "--color=no")
   endif ()
-  bison_target(SWIG ${CMAKE_CURRENT_SOURCE_DIR}/Source/CParse/parser.y ${CMAKE_CURRENT_SOURCE_DIR}/Source/CParse/parser.c COMPILE_FLAGS "-y -d ${BISON_NO_COLORS}")
+  bison_target(SWIG ${CMAKE_CURRENT_SOURCE_DIR}/Source/CParse/parser.y ${CMAKE_CURRENT_SOURCE_DIR}/Source/CParse/parser.c COMPILE_FLAGS "-y -d --no-lines ${BISON_NO_COLORS}")
 endif ()
 
 file (GLOB_RECURSE SWIG_SOURCES Source/*.c Source/*.cxx Source/*.h)
@@ -68,7 +70,9 @@ add_executable(swig ${SWIG_SOURCES})
 target_link_libraries(swig PUBLIC pcre)
 target_include_directories(swig PRIVATE Source/CParse Source/DOH Source/Include Source/Modules Source/Preprocessor Source/Swig ${CMAKE_CURRENT_BINARY_DIR})
 
-install_third_party_tools(swig)
+if (COMMAND install_third_party_tools)
+  install_third_party_tools(swig)
+endif()
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Lib DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/swig)
 
 file(TIMESTAMP Lib/swigwarn.swg SWIGWARN_SWG_TIMESTAMP "%s")

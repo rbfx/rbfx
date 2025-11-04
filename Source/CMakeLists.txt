@@ -20,16 +20,11 @@
 # THE SOFTWARE.
 #
 
-if (MSVC)
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-    # Enable parallel builds
-    if (URHO3D_PARALLEL_BUILD GREATER_EQUAL 2)
-        ucm_add_flags(/MP${URHO3D_PARALLEL_BUILD})
-    elseif (URHO3D_PARALLEL_BUILD)
-        cmake_host_system_information(RESULT URHO3D_PARALLEL_BUILD QUERY NUMBER_OF_PHYSICAL_CORES)
-        ucm_add_flags(/MP${URHO3D_PARALLEL_BUILD})
-    endif ()
-endif ()
+# Enable parallel builds in Visual Studio
+add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/MP>)
+
+# Silence annoying warnings
+add_compile_definitions($<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 
 # Package is found in the main CMakeLists.txt
 if (Urho3DThirdParty_FOUND)
@@ -83,6 +78,12 @@ if (DESKTOP)
         DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DTools/CMake/
         COMPONENT Tools
     )
+    # Install PlatformTag.cmake module needed by Urho3DToolsConfigVersion.cmake
+    install(FILES
+        ${rbfx_SOURCE_DIR}/CMake/Modules/PlatformTag.cmake
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/Urho3DTools/CMake/Modules/
+        COMPONENT Tools
+    )
 endif ()
 
 if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
@@ -101,7 +102,7 @@ if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
             -restore -noLogo -interactive:false -nr:false -p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/
             -consoleLoggerParameters:ErrorsOnly -p:Platform=${URHO3D_PLATFORM} -p:Configuration=${URHO3D_CONFIG}
             ${DOTNET_LINUX_MSBUILD_WORKAROUND}
-        DEPENDS Urho3D)
+        DEPENDS Urho3D COMMAND_EXPAND_LISTS)
     foreach (TARGET libEditorWrapper libPlayer)
         if (TARGET ${TARGET})
             add_dependencies(BuildManagedTargets ${TARGET})

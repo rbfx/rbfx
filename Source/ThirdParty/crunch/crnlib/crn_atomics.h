@@ -2,6 +2,10 @@
 #ifndef CRN_ATOMICS_H
 #define CRN_ATOMICS_H
 
+#if defined(_WIN32) && !defined(WIN32)
+#define WIN32
+#endif
+
 #ifdef WIN32
 #pragma once
 #endif

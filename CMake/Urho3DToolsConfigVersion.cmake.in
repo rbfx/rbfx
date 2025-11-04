@@ -2,52 +2,32 @@
 
 set(PACKAGE_VERSION "@URHO3D_VERSION@")
 
+# Include platform tag generation module
+include("${CMAKE_CURRENT_LIST_DIR}/Modules/PlatformTag.cmake")
+
 # Host platform compatibility check for Urho3DTools
 function(urho3d_tools_check_host_platform_compatibility_version)
-    set(CURRENT_HOST_WIN32 FALSE)
-    set(CURRENT_HOST_APPLE FALSE)
-    set(CURRENT_HOST_MACOS FALSE)
-    set(CURRENT_HOST_LINUX FALSE)
+    # Generate current host platform tag (HOST mode - checking where tools will run)
+    rbfx_get_platform_tag(CURRENT_HOST_PLATFORM_TAG HOST)
 
-    # Detect current host platform
-    if(CMAKE_HOST_WIN32)
-        set(CURRENT_HOST_WIN32 TRUE)
-    elseif(CMAKE_HOST_APPLE)
-        set(CURRENT_HOST_APPLE TRUE)
-        set(CURRENT_HOST_MACOS TRUE)
-    elseif(CMAKE_HOST_UNIX)
-        set(CURRENT_HOST_LINUX TRUE)
-    endif()
+    # Host platform tag that was used at build time (embedded during configuration)
+    set(BUILD_TIME_PLATFORM_TAG "@RBFX_PLATFORM_TAG@")
 
-    # Check if current host platform matches any supported host platform
-    set(HOST_PLATFORM_SUPPORTED FALSE)
-    if(CURRENT_HOST_WIN32 AND @PLATFORM_WIN32@)
-        set(HOST_PLATFORM_SUPPORTED TRUE)
-    elseif(CURRENT_HOST_LINUX AND @PLATFORM_LINUX@)
-        set(HOST_PLATFORM_SUPPORTED TRUE)
-    elseif(CURRENT_HOST_MACOS AND @PLATFORM_MACOS@)
-        set(HOST_PLATFORM_SUPPORTED TRUE)
-    endif()
+    # Use relaxed compatibility check for tools
+    rbfx_check_tool_tag_compatibility(TOOLS_COMPATIBLE
+        "${CURRENT_HOST_PLATFORM_TAG}"
+        "${BUILD_TIME_PLATFORM_TAG}")
 
-    if(NOT HOST_PLATFORM_SUPPORTED)
-        set(SUPPORTED_HOST_PLATFORMS "")
-        if(@PLATFORM_WIN32@)
-            list(APPEND SUPPORTED_HOST_PLATFORMS "Windows")
-        endif()
-        if(@PLATFORM_LINUX@)
-            list(APPEND SUPPORTED_HOST_PLATFORMS "Linux")
-        endif()
-        if(@PLATFORM_MACOS@)
-            list(APPEND SUPPORTED_HOST_PLATFORMS "macOS")
-        endif()
-
-        string(JOIN ", " SUPPORTED_HOST_PLATFORMS_STR ${SUPPORTED_HOST_PLATFORMS})
+    # Compare tags with relaxed check
+    if(NOT TOOLS_COMPATIBLE)
         set(PACKAGE_VERSION_UNSUITABLE TRUE PARENT_SCOPE)
         set(PACKAGE_VERSION_COMPATIBLE FALSE PARENT_SCOPE)
         if(NOT Urho3DTools_FIND_QUIETLY)
-            message(STATUS "Urho3DTools: Current host platform is not compatible with these build tools. "
-                          "Tools were built for: ${SUPPORTED_HOST_PLATFORMS_STR}. "
-                          "Current host: ${CMAKE_HOST_SYSTEM_NAME}")
+            message(STATUS "Urho3DTools: Host platform tag mismatch detected.")
+            message(STATUS "  Current host platform: ${CURRENT_HOST_PLATFORM_TAG}")
+            message(STATUS "  Built for:             ${BUILD_TIME_PLATFORM_TAG}")
+            message(STATUS "  Hint: The Urho3DTools package was built for a different host platform.")
+            message(STATUS "        Tools must match the host system where they will be executed.")
         endif()
         return()
     endif()
