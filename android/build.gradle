@@ -54,18 +54,14 @@ android {
             cmake {
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21', '-DANDROID=1',
                           '-DBUILD_SHARED_LIBS=ON', '-DURHO3D_SAMPLES=ON', '-DURHO3D_PLAYER=OFF',
-                          '-DCMAKE_POLICY_VERSION_MINIMUM=3.5'
+                          '-DURHO3D_CSHARP=ON', '-DCMAKE_POLICY_VERSION_MINIMUM=3.10'
 
                 def cmakePrefixPath = System.getenv('CMAKE_PREFIX_PATH')
                 if (cmakePrefixPath) {
                     arguments "-DCMAKE_PREFIX_PATH=${cmakePrefixPath}"
                 }
 
-                if (System.getenv('URHO3D_CSHARP') == 'ON') {
-                    targets 'Samples', 'BuildManagedTargets'
-                } else {
-                    targets 'Samples'
-                }
+                targets 'Samples', 'BuildManagedTargets'
             }
         }
     }

@@ -13,6 +13,6 @@
     </metadata>
     <files>
         <file src="build\rbfx.Urho3DNet.runtime.android-x64.targets" target="build\" />
-        <file src="in\Android\build\intermediates\cmake\release\obj\x86_64\libUrho3D.so" target="runtimes\android-x64\native\" />
+        <file src="in\rebelfork-sdk-android-clang-x64-dll-latest\bin\RelWithDebInfo\libUrho3D.so" target="runtimes\android-x64\native\" />
     </files>
 </package>

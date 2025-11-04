@@ -16,12 +16,12 @@
         </dependencies>
     </metadata>
     <files>
-        <file src="in\Linux\bin\*Editor*" target="runtimes\linux-x64\native\" />
-        <file src="in\Linux\bin\*Player*" target="runtimes\linux-x64\native\" />
-        <file src="in\Linux\bin\crunch" target="runtimes\linux-x64\native\crunch" />
-        <file src="in\Linux\bin\PackageTool" target="runtimes\linux-x64\native\PackageTool" />
-        <file src="in\Linux\bin\Profiler" target="runtimes\linux-x64\native\Profiler" />
-        <file src="in\Linux\bin\RampGenerator" target="runtimes\linux-x64\native\RampGenerator" />
-        <file src="in\Linux\bin\SpritePacker" target="runtimes\linux-x64\native\SpritePacker" />
+        <file src="in\rebelfork-sdk-linux-gcc-x64-dll-latest\bin\RelWithDebInfo\*Editor*" target="runtimes\linux-x64\native\" />
+        <file src="in\rebelfork-sdk-linux-gcc-x64-dll-latest\bin\RelWithDebInfo\*Player*" target="runtimes\linux-x64\native\" />
+        <file src="in\rebelfork-sdk-linux-gcc-x64-dll-latest\bin\RelWithDebInfo\crunch" target="runtimes\linux-x64\native\crunch" />
+        <file src="in\rebelfork-sdk-linux-gcc-x64-dll-latest\bin\RelWithDebInfo\PackageTool" target="runtimes\linux-x64\native\PackageTool" />
+        <file src="in\rebelfork-sdk-linux-gcc-x64-dll-latest\bin\RelWithDebInfo\Profiler" target="runtimes\linux-x64\native\Profiler" />
+        <file src="in\rebelfork-sdk-linux-gcc-x64-dll-latest\bin\RelWithDebInfo\RampGenerator" target="runtimes\linux-x64\native\RampGenerator" />
+        <file src="in\rebelfork-sdk-linux-gcc-x64-dll-latest\bin\RelWithDebInfo\SpritePacker" target="runtimes\linux-x64\native\SpritePacker" />
     </files>
 </package>

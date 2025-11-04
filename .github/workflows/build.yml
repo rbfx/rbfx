@@ -41,7 +41,7 @@ env:
   # to ctrl+c for "ci_publish" if you need to adjust this variable.
   ci_publish: ${{ github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master' }}
   # Push artifacts to latest release.
-  ci_artifacts: ${{ (github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master') || (contains(github.event.head_commit.message, '#ci-artifacts') && github.event_name != 'pull_request') }}
+  ci_artifacts: ${{ (github.repository == 'rokups/rbfx-temp' && github.ref == 'refs/heads/master') || (contains(github.event.head_commit.message, '#ci-artifacts') && github.event_name != 'pull_request') }}
   # CI workers have limited capabilities, allow tracy to fall back to less accurate timers.
   TRACY_TIMER_FALLBACK: 1
   SOURCE_REF: ${{ github.head_ref || github.ref_name }}
@@ -74,7 +74,7 @@ jobs:
     name: Release 'latest'
     runs-on: ubuntu-latest
     # if: env.ci_artifacts == 'true'
-    if: ${{ (github.repository == 'rbfx/rbfx' && github.ref == 'refs/heads/master') || (contains(github.event.head_commit.message, '#ci-artifacts') && github.event_name != 'pull_request') }}
+    if: ${{ (github.repository == 'rokups/rbfx-temp' && github.ref == 'refs/heads/master') || (contains(github.event.head_commit.message, '#ci-artifacts') && github.event_name != 'pull_request') }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -113,7 +113,8 @@ jobs:
           - ci_platform_tag: android-clang-arm-dll
           - ci_platform_tag: android-clang-x64-dll
           # Mobile: iOS builds
-          - ci_platform_tag: ios-clang-universal-lib
+          - ci_platform_tag: ios-clang-arm-lib
+          - ci_platform_tag: ios-clang-arm64-lib
           # Web builds
           - ci_platform_tag: web-emscripten-wasm-lib
 
@@ -198,7 +199,7 @@ jobs:
           fi
 
       - name: Build swig
-        if: env.ci_lib_type == 'dll' && env.ci_platform_group != 'desktop'
+        if: (env.ci_lib_type == 'dll' && env.ci_platform_group != 'desktop') || (env.ci_platform == 'ios')
         run: |
           binary_dir='${{ github.workspace }}/swig-build'
           cmake -S '${{ env.ci_source_dir }}/Source/ThirdParty/swig' -B "$binary_dir" \
@@ -383,40 +384,6 @@ jobs:
           name: 'ccache-debug-build-${{ env.ci_platform_tag }}-${{ github.run_id }}'
           path: ${{ env.CCACHE_DEBUGDIR }}
           if-no-files-found: ignore
-
-  NuGet:
-    runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/tags/nuget/') || startsWith(github.ref, 'refs/heads/nuget/') }}
-    needs:
-      - Build
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          path: source-code
-          fetch-depth: 1
-
-      - name: Get short SHA
-        id: vars
-        run: echo "sha_short=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_OUTPUT
-
-      - name: Download SDKs from releases
-        env:
-          GH_TOKEN: ${{ github.token }}
-        working-directory: source-code/packaging/nuget/
-        run: ../../${{ env.ci_build_script }} download-nuget-sdks -- '${{ github.repository }}'
-
-      - name: Nuget
-        working-directory: source-code/packaging/nuget/
-        run: |
-          ./package.sh package
-          for pkg in out/*.nupkg;
-          do
-            if [[ $pkg != *"android"* ]];
-            then
-              dotnet nuget push $pkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-            fi
-          done
 
   Docs:
     runs-on: ubuntu-latest
