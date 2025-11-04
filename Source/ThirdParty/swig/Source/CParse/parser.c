@@ -95,7 +95,7 @@ static Symtab  *prev_symtab = 0;
 static Node    *current_class = 0;
 String  *ModuleName = 0;
 static Node    *module_node = 0;
-static String  *Classprefix = 0;
+static String  *Classprefix = 0;  
 static String  *Namespaceprefix = 0;
 static int      inclass = 0;
 static Node    *currentOuterClass = 0; /* for nested classes */
@@ -121,7 +121,7 @@ static Node *currentNode = NULL; /* Pointer to the current node (for post commen
  * ----------------------------------------------------------------------------- */
 
 
-
+ 
 /* Called by the parser (yyparse) when an error is found.*/
 static void yyerror (const char *e) {
   (void)e;
@@ -156,7 +156,7 @@ static Node *copy_node(Node *n) {
     }
     if (Strncmp(key,"csym:",5) == 0) continue;
     /* We do copy sym:name.  For templates */
-    if ((strcmp(ckey,"sym:name") == 0) ||
+    if ((strcmp(ckey,"sym:name") == 0) || 
 	(strcmp(ckey,"sym:weak") == 0) ||
 	(strcmp(ckey,"sym:typename") == 0)) {
       String *ci = Copy(k.item);
@@ -183,7 +183,7 @@ static Node *copy_node(Node *n) {
       }
       continue;
     }
-    /* We don't copy the symbol table.  But we drop an attribute
+    /* We don't copy the symbol table.  But we drop an attribute 
        requires_symtab so that functions know it needs to be built */
 
     if (strcmp(ckey,"symtab") == 0) {
@@ -242,7 +242,7 @@ static void set_comment(Node *n, String *comment) {
       p=nextSibling(p);
     }
   }
-
+  
   /* Append same comment to every generated overload */
   name = Getattr(n, "name");
   if (!name)
@@ -281,7 +281,7 @@ void SWIG_cparse_set_compact_default_args(int defargs) {
 
 int SWIG_cparse_template_reduce(int treduce) {
   template_reduce = treduce;
-  return treduce;
+  return treduce;  
 }
 
 /* -----------------------------------------------------------------------------
@@ -415,7 +415,7 @@ static void add_symbols(Node *n) {
     int isfriend = inclass && is_friend(n);
     int iscdecl = Cmp(nodeType(n),"cdecl") == 0;
     int only_csymbol = 0;
-
+    
     if (inclass) {
       String *name = Getattr(n, "name");
       if (isfriend) {
@@ -444,11 +444,11 @@ static void add_symbols(Node *n) {
       } else {
 	/* for member functions, we need to remove the redundant
 	   class scope if provided, as in
-
+	   
 	   struct Foo {
 	   int Foo::method(int a);
 	   };
-
+	   
 	*/
 	String *prefix = name ? Swig_scopename_prefix(name) : 0;
 	if (prefix) {
@@ -500,7 +500,7 @@ static void add_symbols(Node *n) {
     if (!SwigType_isfunction(decl)) {
       String *name = Getattr(n,"name");
       String *makename = Getattr(n,"parser:makename");
-      if (iscdecl) {
+      if (iscdecl) {	
 	String *storage = Getattr(n, "storage");
 	if (Cmp(storage,"typedef") == 0) {
 	  Setattr(n,"kind","typedef");
@@ -539,7 +539,7 @@ static void add_symbols(Node *n) {
         makename = name;
 	symname = make_name(n, makename,0);
       }
-
+      
       if (!symname) {
 	symname = Copy(Getattr(n,"unnamed"));
       }
@@ -553,10 +553,10 @@ static void add_symbols(Node *n) {
       String *name = Getattr(n,"name");
       SwigType *fdecl = Copy(decl);
       SwigType *fun = SwigType_pop_function(fdecl);
-      if (iscdecl) {
+      if (iscdecl) {	
 	Setattr(n,"kind","function");
       }
-
+      
       Swig_features_get(Swig_cparse_features(),Namespaceprefix,name,fun,n);
 
       symname = make_name(n, name,fun);
@@ -564,10 +564,10 @@ static void add_symbols(Node *n) {
 	SetFlag(n, "parsing_template_declaration");
       wrn = Swig_name_warning(n, Namespaceprefix,symname,fun);
       Delattr(n, "parsing_template_declaration");
-
+      
       Delete(fdecl);
       Delete(fun);
-
+      
     }
     if (!symname) {
       n = nextSibling(n);
@@ -912,7 +912,7 @@ static Symtab *set_scope_to_global() {
   Swig_symbol_setscope(symtab);
   return symtab;
 }
-
+ 
 /* Remove the block braces, { and }, if the 'noblock' attribute is set.
  * Node *kw can be either a Hash or Parmlist. */
 static String *remove_block(Node *kw, const String *inputcode) {
@@ -923,7 +923,7 @@ static String *remove_block(Node *kw, const String *inputcode) {
      char *cstr = Char(inputcode);
      int len = Len(inputcode);
      if (len && cstr[0] == '{') {
-       --len; ++cstr;
+       --len; ++cstr; 
        if (len && cstr[len - 1] == '}') { --len; }
        /* we now remove the extra spaces */
        while (len && isspace((int)cstr[0])) { --len; ++cstr; }
@@ -945,14 +945,14 @@ static Node *nscope_inner = 0;
 
 /* Remove the scope prefix from cname and return the base name without the prefix.
  * The scopes required for the symbol name are resolved and/or created, if required.
- * For example AA::BB::CC as input returns CC and creates the namespace AA then inner
+ * For example AA::BB::CC as input returns CC and creates the namespace AA then inner 
  * namespace BB in the current scope. */
 static String *resolve_create_node_scope(String *cname, int is_class_definition) {
   Symtab *gscope = 0;
   Node *cname_node = 0;
   String *last = Swig_scopename_last(cname);
   nscope = 0;
-  nscope_inner = 0;
+  nscope_inner = 0;  
 
   if (Strncmp(cname,"::" ,2) != 0) {
     if (is_class_definition) {
@@ -1180,7 +1180,7 @@ Printf(stdout, "comparing current: [%s] found: [%s]\n", current_scopename, found
 
   return cname;
 }
-
+ 
 /* look for simple typedef name in typedef list */
 static String *try_to_find_a_name_for_unnamed_structure(const char *storage, Node *decls) {
   String *name = 0;
@@ -1210,7 +1210,7 @@ static void update_nested_classes(Node *n)
 
 /* -----------------------------------------------------------------------------
  * nested_forward_declaration()
- *
+ * 
  * Nested struct handling for C++ code if the nested classes are disabled.
  * Create the nested class/struct/union as a forward declaration.
  * ----------------------------------------------------------------------------- */
@@ -1380,7 +1380,7 @@ static int is_cfunction(Node *n) {
 }
 
 /* If the Node is a function with parameters, check to see if any of the parameters
- * have default arguments. If so create a new function for each defaulted argument.
+ * have default arguments. If so create a new function for each defaulted argument. 
  * The additional functions form a linked list of nodes with the head being the original Node n. */
 static void default_arguments(Node *n) {
   Node *function = n;
@@ -1388,7 +1388,7 @@ static void default_arguments(Node *n) {
   if (function) {
     ParmList *varargs = Getattr(function,"feature:varargs");
     if (varargs) {
-      /* Handles the %varargs directive by looking for "feature:varargs" and
+      /* Handles the %varargs directive by looking for "feature:varargs" and 
        * substituting ... with an alternative set of arguments.  */
       Parm     *p = Getattr(function,"parms");
       Parm     *pp = 0;
@@ -1413,12 +1413,12 @@ static void default_arguments(Node *n) {
 
     /* Do not add in functions if kwargs is being used or if user wants old default argument wrapping
        (one wrapped method per function irrespective of number of default arguments) */
-    if (compact_default_args
-	|| is_cfunction(function)
-	|| GetFlag(function,"feature:compactdefaultargs")
+    if (compact_default_args 
+	|| is_cfunction(function) 
+	|| GetFlag(function,"feature:compactdefaultargs") 
 	|| (GetFlag(function,"feature:kwargs") && kwargs_supported)) {
       ParmList *p = Getattr(function,"parms");
-      if (p)
+      if (p) 
         Setattr(p,"compactdefargs", "1"); /* mark parameters for special handling */
       function = 0; /* don't add in extra methods */
     }
@@ -1506,7 +1506,7 @@ static void default_arguments(Node *n) {
         set_nextSibling(function, new_function);
 	Delete(new_function);
         function = new_function;
-
+	
 	Delete(ntype);
       }
     } else {
@@ -4682,9 +4682,9 @@ yyreduce:
   case 2: /* program: interface  */
                             {
                    if (!classes) classes = NewHash();
-		   Setattr((yyvsp[0].node),"classes",classes);
+		   Setattr((yyvsp[0].node),"classes",classes); 
 		   Setattr((yyvsp[0].node),"name",ModuleName);
-
+		   
 		   if ((!module_node) && ModuleName) {
 		     module_node = new_node("module");
 		     Setattr(module_node,"name",ModuleName);
@@ -4732,12 +4732,12 @@ yyreduce:
     break;
 
   case 9: /* interface: interface declaration  */
-                                       {
+                                       {  
                    /* add declaration to end of linked list (the declaration isn't always a single declaration, sometimes it is a linked list itself) */
                    if (currentDeclComment != NULL) {
 		     set_comment((yyvsp[0].node), currentDeclComment);
 		     currentDeclComment = NULL;
-                   }
+                   }                                      
                    appendChild((yyvsp[-1].node),(yyvsp[0].node));
                    (yyval.node) = (yyvsp[-1].node);
                }
@@ -4745,7 +4745,7 @@ yyreduce:
 
   case 10: /* interface: interface DOXYGENSTRING  */
                                          {
-                   currentDeclComment = (yyvsp[0].str);
+                   currentDeclComment = (yyvsp[0].str); 
                    (yyval.node) = (yyvsp[-1].node);
                }
     break;
@@ -4795,11 +4795,11 @@ yyreduce:
     break;
 
   case 18: /* declaration: c_constructor_decl  */
-                                    {
+                                    { 
                   if ((yyval.node)) {
    		      add_symbols((yyval.node));
                   }
-                  (yyval.node) = (yyvsp[0].node);
+                  (yyval.node) = (yyvsp[0].node); 
 	       }
     break;
 
@@ -4919,7 +4919,7 @@ yyreduce:
 		   current_class = 0;
 		 } else {
 		   /* Previous typedef class definition.  Use its symbol table.
-		      Deprecated, just the real name should be used.
+		      Deprecated, just the real name should be used. 
 		      Note that %extend before the class typedef never worked, only %extend after the class typdef. */
 		   prev_symtab = Swig_symbol_setscope(Getattr(cls, "symtab"));
 		   current_class = cls;
@@ -5130,7 +5130,7 @@ yyreduce:
     break;
 
   case 55: /* stringtype: string LBRACE parm RBRACE  */
-                                          {
+                                          {		 
                  (yyval.node) = NewHash();
                  Setattr((yyval.node),"value",(yyvsp[-3].str));
 		 Setattr((yyval.node),"type",Getattr((yyvsp[-1].p),"type"));
@@ -5194,7 +5194,7 @@ yyreduce:
                      (yyvsp[-3].loc).filename = Copy(cparse_file);
 		     (yyvsp[-3].loc).line = cparse_line;
 		     scanner_set_location((yyvsp[-1].str),1);
-                     if ((yyvsp[-2].node)) {
+                     if ((yyvsp[-2].node)) { 
 		       String *maininput = Getattr((yyvsp[-2].node), "maininput");
 		       if (maininput)
 		         scanner_set_main_input_file(NewString(maininput));
@@ -5213,7 +5213,7 @@ yyreduce:
 		       set_nodeType((yyval.node),"import");
 		       if (import_mode) --import_mode;
 		     }
-
+		     
 		     Setattr((yyval.node),"name",(yyvsp[-4].str));
 		     /* Search for the module (if any) */
 		     {
@@ -5234,7 +5234,7 @@ yyreduce:
 			      node, ie, you imported a .h file
 			      directly.  We are forced then to create
 			      a new import node with a module node.
-			   */
+			   */			      
 			   Node *nint = new_node("import");
 			   Node *mnode = new_node("module");
 			   Setattr(mnode,"name", mname);
@@ -5276,7 +5276,7 @@ yyreduce:
 		   Delete((yyvsp[0].str));
 		   Delete(cpps);
 		 }
-
+		 
 	       }
     break;
 
@@ -5287,7 +5287,7 @@ yyreduce:
 		 skip_balanced('{','}');
 		 if (Namespaceprefix) {
 		   Swig_error(cparse_file, cparse_start_line, "%%inline directive inside a namespace is disallowed.\n");
-
+		   
 		   (yyval.node) = 0;
 		 } else {
 		   String *code;
@@ -5296,7 +5296,7 @@ yyreduce:
 		   Delitem(scanner_ccode,DOH_END);
 		   code = Copy(scanner_ccode);
 		   Setattr((yyval.node),"code", code);
-		   Delete(code);
+		   Delete(code);		   
 		   cpps=Copy(scanner_ccode);
 		   start_inline(Char(cpps), start_line);
 		   Delete(cpps);
@@ -5321,7 +5321,7 @@ yyreduce:
 		 if (Swig_insert_file((yyvsp[0].str),code) < 0) {
 		   Swig_error(cparse_file, cparse_line, "Couldn't find '%s'.\n", (yyvsp[0].str));
 		   (yyval.node) = 0;
-		 }
+		 } 
                }
     break;
 
@@ -5359,13 +5359,13 @@ yyreduce:
 		     if (!cparse_cplusplus) {
 		       Swig_error(cparse_file, cparse_line, "Directors are not supported for C code and require the -c++ option\n");
 		     }
-		   }
+		   } 
 		   if (Getattr((yyvsp[-1].node),"dirprot")) {
 		     Wrapper_director_protected_mode_set(1);
-		   }
+		   } 
 		   if (Getattr((yyvsp[-1].node),"allprotected")) {
 		     Wrapper_all_protected_mode_set(1);
-		   }
+		   } 
 		   if (Getattr((yyvsp[-1].node),"templatereduce")) {
 		     template_reduce = 1;
 		   }
@@ -5380,10 +5380,10 @@ yyreduce:
 		   String *mname = Copy(ModuleName);
 		   Setattr((yyval.node),"name",mname);
 		   Delete(mname);
-		 } else {
+		 } else { 
 		   /* import mode, we just pass the idstring */
-		   Setattr((yyval.node),"name",(yyvsp[0].id));
-		 }
+		   Setattr((yyval.node),"name",(yyvsp[0].id));   
+		 }		 
 		 if (!module_node) module_node = (yyval.node);
 	       }
     break;
@@ -5733,7 +5733,7 @@ yyreduce:
     break;
 
   case 102: /* varargs_parms: NUM_INT COMMA parm  */
-                                     {
+                                     { 
 		  int i;
 		  int n;
 		  Parm *p;
@@ -6189,7 +6189,7 @@ yyreduce:
 
   case 116: /* c_declaration: c_decl  */
                          {
-                    (yyval.node) = (yyvsp[0].node);
+                    (yyval.node) = (yyvsp[0].node); 
                     if ((yyval.node)) {
    		      add_symbols((yyval.node));
                       default_arguments((yyval.node));
@@ -6424,9 +6424,9 @@ yyreduce:
     break;
 
   case 127: /* c_decl_tail: SEMI  */
-                      {
+                      { 
                    (yyval.node) = 0;
-                   Clear(scanner_ccode);
+                   Clear(scanner_ccode); 
                }
     break;
 
@@ -6459,7 +6459,7 @@ yyreduce:
     break;
 
   case 129: /* c_decl_tail: LBRACE  */
-                        {
+                        { 
                    skip_balanced('{','}');
                    (yyval.node) = 0;
                }
@@ -6831,7 +6831,7 @@ yyreduce:
 
 		   /* preserve the current scope */
 		   Setattr((yyval.node),"prev_symtab",Swig_symbol_current());
-
+		  
 		   /* If the class name is qualified.  We need to create or lookup namespace/scope entries */
 		   scope = resolve_create_node_scope((yyvsp[-2].str), 1);
 		   /* save nscope_inner to the class - it may be overwritten in nested classes*/
@@ -6936,10 +6936,10 @@ yyreduce:
 		     inclass = 0;
 		   cscope = Getattr((yyval.node), "prev_symtab");
 		   Delattr((yyval.node), "prev_symtab");
-
+		   
 		   /* Check for pure-abstract class */
 		   Setattr((yyval.node),"abstracts", pure_abstracts((yyvsp[-2].node)));
-
+		   
 		   /* This bit of code merges in a previously defined %extend directive (if any) */
 		   {
 		     String *clsname = Swig_symbol_qualifiedscopename(0);
@@ -6955,8 +6955,8 @@ yyreduce:
 		   Setattr(classes, scpname, (yyval.node));
 
 		   appendChild((yyval.node), (yyvsp[-2].node));
-
-		   if (am)
+		   
+		   if (am) 
 		     Swig_extend_append_previous((yyval.node), am);
 
 		   p = (yyvsp[0].node);
@@ -6966,7 +6966,7 @@ yyreduce:
 		     else
 		      appendSibling((yyval.node), p);
 		   }
-
+		   
 		   if (nscope_inner) {
 		     ty = NewString(scpname); /* if the class is declared out of scope, let the declarator use fully qualified type*/
 		   } else if (cparse_cplusplus && !cparse_externc) {
@@ -7236,7 +7236,7 @@ yyreduce:
                                                             {
               if ((yyvsp[-3].id) && (Strcmp((yyvsp[-3].id),"friend") == 0)) {
 		/* Ignore */
-                (yyval.node) = 0;
+                (yyval.node) = 0; 
 	      } else {
 		(yyval.node) = new_node("classforward");
 		Setattr((yyval.node),"kind",(yyvsp[-2].id));
@@ -7248,10 +7248,10 @@ yyreduce:
     break;
 
   case 168: /* $@7: %empty  */
-                                                                 {
+                                                                 { 
 		    if (currentOuterClass)
 		      Setattr(currentOuterClass, "template_parameters", template_parameters);
-		    template_parameters = (yyvsp[-1].tparms);
+		    template_parameters = (yyvsp[-1].tparms); 
 		    parsing_template_declaration = 1;
 		  }
     break;
@@ -7281,7 +7281,7 @@ yyreduce:
 
 			(yyval.node) = (yyvsp[0].node);
 			if ((yyval.node)) tname = Getattr((yyval.node),"name");
-
+			
 			/* Check if the class is a template specialization */
 			if (((yyval.node)) && (Strchr(tname,'<')) && (!is_operator(tname))) {
 			  /* If a specialization.  Check if defined. */
@@ -7310,10 +7310,10 @@ yyreduce:
 			    if (!Getattr((yyval.node),"sym:weak")) {
 			      Setattr((yyval.node),"sym:typename","1");
 			    }
-
+			    
 			    if (Len(tlist) != ParmList_len(Getattr(tempn,"templateparms"))) {
 			      Swig_error(Getfile((yyval.node)),Getline((yyval.node)),"Inconsistent argument count in template partial specialization. %d %d\n", Len(tlist), ParmList_len(Getattr(tempn,"templateparms")));
-
+			      
 			    } else {
 
 			    /* This code builds the argument list for the partial template
@@ -7327,7 +7327,7 @@ yyreduce:
 			       different.  For example class<int,T>.
 
 			       tp is a copy of the arguments in the original template definition.
-
+       
 			       The patching algorithm walks through the list of supplied
 			       arguments ($3), finds the position in the specialization arguments
 			       (tlist), and then patches the name in the argument list of the
@@ -7362,7 +7362,7 @@ yyreduce:
 				if (!Getattr(p1,"partialarg")) {
 				  Delattr(p1,"name");
 				  Setattr(p1,"type", Getitem(tlist,i));
-				}
+				} 
 				i++;
 				p1 = nextSibling(p1);
 			      }
@@ -7516,14 +7516,14 @@ yyreduce:
   case 170: /* cpp_template_decl: TEMPLATE cpptype idcolon  */
                                            {
 		  Swig_warning(WARN_PARSE_EXPLICIT_TEMPLATE, cparse_file, cparse_line, "Explicit template instantiation ignored.\n");
-                  (yyval.node) = 0;
+                  (yyval.node) = 0; 
 		}
     break;
 
   case 171: /* cpp_template_decl: EXTERN TEMPLATE cpptype idcolon  */
                                                   {
 		  Swig_warning(WARN_PARSE_EXPLICIT_TEMPLATE, cparse_file, cparse_line, "Explicit template instantiation ignored.\n");
-                  (yyval.node) = 0;
+                  (yyval.node) = 0; 
                 }
     break;
 
@@ -7581,7 +7581,7 @@ yyreduce:
 		      if ((strncmp(type,"class ",6) == 0) || (strncmp(type,"typename ", 9) == 0)) {
 			char *t = strchr(type,' ');
 			Setattr(p,"name", t+1);
-		      } else
+		      } else 
                       /* Variadic template args */
 		      if ((strncmp(type,"class... ",9) == 0) || (strncmp(type,"typename... ", 12) == 0)) {
 			char *t = strchr(type,' ');
@@ -7680,7 +7680,7 @@ yyreduce:
     break;
 
   case 187: /* @8: %empty  */
-                                              {
+                                              { 
                 Hash *h;
 		Node *parent_ns = 0;
 		List *scopes = Swig_scopename_tolist((yyvsp[-1].str));
@@ -7822,7 +7822,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 193: /* $@10: %empty  */
-                             {
+                             { 
 	       extendmode = 1;
 	       if (cplus_mode != CPLUS_PUBLIC) {
 		 Swig_error(cparse_file,cparse_line,"%%extend can only be used in a public section\n");
@@ -7863,7 +7863,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 199: /* cpp_members: error $@12 cpp_members  */
-                             {
+                             { 
 		 (yyval.node) = (yyvsp[0].node);
    	     }
     break;
@@ -7873,8 +7873,8 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 201: /* cpp_member_no_dox: cpp_constructor_decl  */
-                                    {
-                 (yyval.node) = (yyvsp[0].node);
+                                    { 
+                 (yyval.node) = (yyvsp[0].node); 
 		 if (extendmode && current_class) {
 		   String *symname;
 		   symname= make_name((yyval.node),Getattr((yyval.node),"name"), Getattr((yyval.node),"decl"));
@@ -8183,7 +8183,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 231: /* cpp_protection_decl: PUBLIC COLON  */
-                                   {
+                                   { 
                 (yyval.node) = new_node("access");
 		Setattr((yyval.node),"kind","public");
                 cplus_mode = CPLUS_PUBLIC;
@@ -8191,7 +8191,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 232: /* cpp_protection_decl: PRIVATE COLON  */
-                              {
+                              { 
                 (yyval.node) = new_node("access");
                 Setattr((yyval.node),"kind","private");
 		cplus_mode = CPLUS_PRIVATE;
@@ -8199,7 +8199,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 233: /* cpp_protection_decl: PROTECTED COLON  */
-                                {
+                                { 
 		(yyval.node) = new_node("access");
 		Setattr((yyval.node),"kind","protected");
 		cplus_mode = CPLUS_PROTECTED;
@@ -8279,8 +8279,8 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 247: /* cpp_end: cpp_const LBRACE  */
-                                  {
-		    skip_balanced('{','}');
+                                  { 
+		    skip_balanced('{','}'); 
 		    (yyval.dtype).val = 0;
 		    (yyval.dtype).qualifier = (yyvsp[-1].dtype).qualifier;
 		    (yyval.dtype).refqualifier = (yyvsp[-1].dtype).refqualifier;
@@ -8293,7 +8293,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 248: /* cpp_vend: cpp_const SEMI  */
-                                {
+                                { 
                      Clear(scanner_ccode);
                      (yyval.dtype).val = 0;
                      (yyval.dtype).qualifier = (yyvsp[-1].dtype).qualifier;
@@ -8307,28 +8307,28 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 249: /* cpp_vend: cpp_const EQUAL definetype SEMI  */
-                                                 {
+                                                 { 
                      Clear(scanner_ccode);
                      (yyval.dtype).val = (yyvsp[-1].dtype).val;
                      (yyval.dtype).qualifier = (yyvsp[-3].dtype).qualifier;
                      (yyval.dtype).refqualifier = (yyvsp[-3].dtype).refqualifier;
                      (yyval.dtype).bitfield = 0;
-                     (yyval.dtype).throws = (yyvsp[-3].dtype).throws;
-                     (yyval.dtype).throwf = (yyvsp[-3].dtype).throwf;
+                     (yyval.dtype).throws = (yyvsp[-3].dtype).throws; 
+                     (yyval.dtype).throwf = (yyvsp[-3].dtype).throwf; 
                      (yyval.dtype).nexcept = (yyvsp[-3].dtype).nexcept;
                      (yyval.dtype).final = (yyvsp[-3].dtype).final;
                }
     break;
 
   case 250: /* cpp_vend: cpp_const LBRACE  */
-                                  {
+                                  { 
                      skip_balanced('{','}');
                      (yyval.dtype).val = 0;
                      (yyval.dtype).qualifier = (yyvsp[-1].dtype).qualifier;
                      (yyval.dtype).refqualifier = (yyvsp[-1].dtype).refqualifier;
                      (yyval.dtype).bitfield = 0;
-                     (yyval.dtype).throws = (yyvsp[-1].dtype).throws;
-                     (yyval.dtype).throwf = (yyvsp[-1].dtype).throwf;
+                     (yyval.dtype).throws = (yyvsp[-1].dtype).throws; 
+                     (yyval.dtype).throwf = (yyvsp[-1].dtype).throwf; 
                      (yyval.dtype).nexcept = (yyvsp[-1].dtype).nexcept;
                      (yyval.dtype).final = (yyvsp[-1].dtype).final;
                }
@@ -8636,8 +8636,8 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 297: /* def_args: EQUAL definetype  */
-                                  {
-                  (yyval.dtype) = (yyvsp[0].dtype);
+                                  { 
+                  (yyval.dtype) = (yyvsp[0].dtype); 
 		  if ((yyvsp[0].dtype).type == T_ERROR) {
 		    Swig_warning(WARN_PARSE_BAD_DEFAULT,cparse_file, cparse_line, "Can't set default argument (ignored)\n");
 		    (yyval.dtype).val = 0;
@@ -8652,7 +8652,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 298: /* def_args: EQUAL definetype LBRACKET expr RBRACKET  */
-                                                         {
+                                                         { 
 		  (yyval.dtype) = (yyvsp[-3].dtype);
 		  if ((yyvsp[-3].dtype).type == T_ERROR) {
 		    Swig_warning(WARN_PARSE_BAD_DEFAULT,cparse_file, cparse_line, "Can't set default argument (ignored)\n");
@@ -8665,8 +8665,8 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 		    (yyval.dtype).nexcept = 0;
 		    (yyval.dtype).final = 0;
 		  } else {
-		    (yyval.dtype).val = NewStringf("%s[%s]",(yyvsp[-3].dtype).val,(yyvsp[-1].dtype).val);
-		  }
+		    (yyval.dtype).val = NewStringf("%s[%s]",(yyvsp[-3].dtype).val,(yyvsp[-1].dtype).val); 
+		  }		  
                }
     break;
 
@@ -8685,7 +8685,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 300: /* def_args: COLON expr  */
-                            {
+                            { 
 		 (yyval.dtype).val = 0;
 		 (yyval.dtype).rawval = 0;
 		 (yyval.dtype).type = 0;
@@ -8894,7 +8894,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 316: /* declarator: idcolon DSTAR notso_direct_declarator  */
-                                                   {
+                                                   { 
 	     SwigType *t = NewStringEmpty();
 
 	     (yyval.decl) = (yyvsp[0].decl);
@@ -8908,7 +8908,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 317: /* declarator: pointer idcolon DSTAR notso_direct_declarator  */
-                                                           {
+                                                           { 
 	     SwigType *t = NewStringEmpty();
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer(t,(yyvsp[-2].str));
@@ -8923,7 +8923,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 318: /* declarator: pointer idcolon DSTAR AND notso_direct_declarator  */
-                                                               {
+                                                               { 
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer((yyvsp[-4].type),(yyvsp[-3].str));
 	     SwigType_add_reference((yyvsp[-4].type));
@@ -8936,7 +8936,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 319: /* declarator: idcolon DSTAR AND notso_direct_declarator  */
-                                                       {
+                                                       { 
 	     SwigType *t = NewStringEmpty();
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer(t,(yyvsp[-3].str));
@@ -8944,7 +8944,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     if ((yyval.decl).type) {
 	       SwigType_push(t,(yyval.decl).type);
 	       Delete((yyval.decl).type);
-	     }
+	     } 
 	     (yyval.decl).type = t;
 	   }
     break;
@@ -9018,7 +9018,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 326: /* declarator: idcolon DSTAR PERIOD PERIOD PERIOD notso_direct_declarator  */
-                                                                        {
+                                                                        { 
 	     SwigType *t = NewStringEmpty();
 
 	     (yyval.decl) = (yyvsp[0].decl);
@@ -9032,7 +9032,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 327: /* declarator: pointer idcolon DSTAR PERIOD PERIOD PERIOD notso_direct_declarator  */
-                                                                                {
+                                                                                { 
 	     SwigType *t = NewStringEmpty();
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer(t,(yyvsp[-5].str));
@@ -9047,7 +9047,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 328: /* declarator: pointer idcolon DSTAR AND PERIOD PERIOD PERIOD notso_direct_declarator  */
-                                                                                    {
+                                                                                    { 
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer((yyvsp[-7].type),(yyvsp[-6].str));
 	     SwigType_add_reference((yyvsp[-7].type));
@@ -9060,7 +9060,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 329: /* declarator: pointer idcolon DSTAR LAND PERIOD PERIOD PERIOD notso_direct_declarator  */
-                                                                                     {
+                                                                                     { 
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer((yyvsp[-7].type),(yyvsp[-6].str));
 	     SwigType_add_rvalue_reference((yyvsp[-7].type));
@@ -9073,7 +9073,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 330: /* declarator: idcolon DSTAR AND PERIOD PERIOD PERIOD notso_direct_declarator  */
-                                                                            {
+                                                                            { 
 	     SwigType *t = NewStringEmpty();
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer(t,(yyvsp[-6].str));
@@ -9081,13 +9081,13 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     if ((yyval.decl).type) {
 	       SwigType_push(t,(yyval.decl).type);
 	       Delete((yyval.decl).type);
-	     }
+	     } 
 	     (yyval.decl).type = t;
 	   }
     break;
 
   case 331: /* declarator: idcolon DSTAR LAND PERIOD PERIOD PERIOD notso_direct_declarator  */
-                                                                             {
+                                                                             { 
 	     SwigType *t = NewStringEmpty();
 	     (yyval.decl) = (yyvsp[0].decl);
 	     SwigType_add_memberpointer(t,(yyvsp[-6].str));
@@ -9095,7 +9095,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 	     if ((yyval.decl).type) {
 	       SwigType_push(t,(yyval.decl).type);
 	       Delete((yyval.decl).type);
-	     }
+	     } 
 	     (yyval.decl).type = t;
 	   }
     break;
@@ -9154,7 +9154,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 337: /* notso_direct_declarator: notso_direct_declarator LBRACKET RBRACKET  */
-                                                              {
+                                                              { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-2].decl);
 		    t = NewStringEmpty();
@@ -9168,7 +9168,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 338: /* notso_direct_declarator: notso_direct_declarator LBRACKET expr RBRACKET  */
-                                                                   {
+                                                                   { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-3].decl);
 		    t = NewStringEmpty();
@@ -9310,7 +9310,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 349: /* direct_declarator: direct_declarator LBRACKET RBRACKET  */
-                                                        {
+                                                        { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-2].decl);
 		    t = NewStringEmpty();
@@ -9324,7 +9324,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 350: /* direct_declarator: direct_declarator LBRACKET expr RBRACKET  */
-                                                             {
+                                                             { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-3].decl);
 		    t = NewStringEmpty();
@@ -9360,7 +9360,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
   case 352: /* direct_declarator: OPERATOR ID LPAREN parms RPAREN  */
                                                    {
 		    SwigType *t;
-                    //Append($1, " "); /* intervening space is deprecated in c++23 */
+                    Append((yyvsp[-4].str), " "); /* intervening space is mandatory */
                     Append((yyvsp[-4].str), Char((yyvsp[-3].id)));
 		    (yyval.decl).id = Char((yyvsp[-4].str));
 		    t = NewStringEmpty();
@@ -9389,7 +9389,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 354: /* abstract_declarator: pointer direct_abstract_declarator  */
-                                                       {
+                                                       { 
                      (yyval.decl) = (yyvsp[0].decl);
                      SwigType_push((yyvsp[-1].type),(yyvsp[0].decl).type);
 		     (yyval.decl).type = (yyvsp[-1].type);
@@ -9492,7 +9492,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 364: /* abstract_declarator: idcolon DSTAR  */
-                                  {
+                                  { 
 		    (yyval.decl).type = NewStringEmpty();
                     SwigType_add_memberpointer((yyval.decl).type,(yyvsp[-1].str));
                     (yyval.decl).id = 0;
@@ -9513,7 +9513,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 366: /* abstract_declarator: pointer idcolon DSTAR  */
-                                          {
+                                          { 
 		    SwigType *t = NewStringEmpty();
                     (yyval.decl).type = (yyvsp[-2].type);
 		    (yyval.decl).id = 0;
@@ -9526,7 +9526,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 367: /* abstract_declarator: pointer idcolon DSTAR direct_abstract_declarator  */
-                                                                     {
+                                                                     { 
 		    (yyval.decl) = (yyvsp[0].decl);
 		    SwigType_add_memberpointer((yyvsp[-3].type),(yyvsp[-2].str));
 		    if ((yyval.decl).type) {
@@ -9538,7 +9538,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 368: /* direct_abstract_declarator: direct_abstract_declarator LBRACKET RBRACKET  */
-                                                                          {
+                                                                          { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-2].decl);
 		    t = NewStringEmpty();
@@ -9552,7 +9552,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 369: /* direct_abstract_declarator: direct_abstract_declarator LBRACKET expr RBRACKET  */
-                                                                      {
+                                                                      { 
 		    SwigType *t;
 		    (yyval.decl) = (yyvsp[-3].decl);
 		    t = NewStringEmpty();
@@ -9566,7 +9566,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 370: /* direct_abstract_declarator: LBRACKET RBRACKET  */
-                                      {
+                                      { 
 		    (yyval.decl).type = NewStringEmpty();
 		    (yyval.decl).id = 0;
 		    (yyval.decl).parms = 0;
@@ -9576,7 +9576,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 371: /* direct_abstract_declarator: LBRACKET expr RBRACKET  */
-                                           {
+                                           { 
 		    (yyval.decl).type = NewStringEmpty();
 		    (yyval.decl).id = 0;
 		    (yyval.decl).parms = 0;
@@ -9643,7 +9643,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 376: /* pointer: STAR type_qualifier pointer  */
-                                         {
+                                         { 
              (yyval.type) = NewStringEmpty();
              SwigType_add_pointer((yyval.type));
 	     SwigType_push((yyval.type),(yyvsp[-1].str));
@@ -9662,7 +9662,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 378: /* pointer: STAR type_qualifier  */
-                                 {
+                                 { 
 	     (yyval.type) = NewStringEmpty();
 	     SwigType_add_pointer((yyval.type));
 	     SwigType_push((yyval.type),(yyvsp[0].str));
@@ -9801,7 +9801,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 401: /* type_right: cpptype idcolon  */
-                                 {
+                                 { 
 		 (yyval.type) = NewStringf("%s %s", (yyvsp[-1].id), (yyvsp[0].str));
                }
     break;
@@ -9851,7 +9851,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 405: /* primitive_type_list: type_specifier  */
-                                     {
+                                     { 
                  (yyval.ptype) = (yyvsp[0].ptype);
                }
     break;
@@ -9911,98 +9911,98 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 407: /* type_specifier: TYPE_INT  */
-                          {
+                          { 
 		    (yyval.ptype).type = NewString("int");
                     (yyval.ptype).us = 0;
                }
     break;
 
   case 408: /* type_specifier: TYPE_SHORT  */
-                            {
+                            { 
                     (yyval.ptype).type = NewString("short");
                     (yyval.ptype).us = 0;
                 }
     break;
 
   case 409: /* type_specifier: TYPE_LONG  */
-                           {
+                           { 
                     (yyval.ptype).type = NewString("long");
                     (yyval.ptype).us = 0;
                 }
     break;
 
   case 410: /* type_specifier: TYPE_CHAR  */
-                           {
+                           { 
                     (yyval.ptype).type = NewString("char");
                     (yyval.ptype).us = 0;
                 }
     break;
 
   case 411: /* type_specifier: TYPE_WCHAR  */
-                            {
+                            { 
                     (yyval.ptype).type = NewString("wchar_t");
                     (yyval.ptype).us = 0;
                 }
     break;
 
   case 412: /* type_specifier: TYPE_FLOAT  */
-                            {
+                            { 
                     (yyval.ptype).type = NewString("float");
                     (yyval.ptype).us = 0;
                 }
     break;
 
   case 413: /* type_specifier: TYPE_DOUBLE  */
-                             {
+                             { 
                     (yyval.ptype).type = NewString("double");
                     (yyval.ptype).us = 0;
                 }
     break;
 
   case 414: /* type_specifier: TYPE_SIGNED  */
-                             {
+                             { 
                     (yyval.ptype).us = NewString("signed");
                     (yyval.ptype).type = 0;
                 }
     break;
 
   case 415: /* type_specifier: TYPE_UNSIGNED  */
-                               {
+                               { 
                     (yyval.ptype).us = NewString("unsigned");
                     (yyval.ptype).type = 0;
                 }
     break;
 
   case 416: /* type_specifier: TYPE_COMPLEX  */
-                              {
+                              { 
                     (yyval.ptype).type = NewString("complex");
                     (yyval.ptype).us = 0;
                 }
     break;
 
   case 417: /* type_specifier: TYPE_NON_ISO_INT8  */
-                                   {
+                                   { 
                     (yyval.ptype).type = NewString("__int8");
                     (yyval.ptype).us = 0;
                 }
     break;
 
   case 418: /* type_specifier: TYPE_NON_ISO_INT16  */
-                                    {
+                                    { 
                     (yyval.ptype).type = NewString("__int16");
                     (yyval.ptype).us = 0;
                 }
     break;
 
   case 419: /* type_specifier: TYPE_NON_ISO_INT32  */
-                                    {
+                                    { 
                     (yyval.ptype).type = NewString("__int32");
                     (yyval.ptype).us = 0;
                 }
     break;
 
   case 420: /* type_specifier: TYPE_NON_ISO_INT64  */
-                                    {
+                                    { 
                     (yyval.ptype).type = NewString("__int64");
                     (yyval.ptype).us = 0;
                 }
@@ -10742,29 +10742,29 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 515: /* templcpptype: CLASS  */
-                       {
-                   (yyval.id) = (char*)"class";
+                       { 
+                   (yyval.id) = (char*)"class"; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
     break;
 
   case 516: /* templcpptype: TYPENAME  */
-                          {
-                   (yyval.id) = (char *)"typename";
+                          { 
+                   (yyval.id) = (char *)"typename"; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
     break;
 
   case 517: /* templcpptype: CLASS PERIOD PERIOD PERIOD  */
-                                            {
-                   (yyval.id) = (char *)"class...";
+                                            { 
+                   (yyval.id) = (char *)"class..."; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
     break;
 
   case 518: /* templcpptype: TYPENAME PERIOD PERIOD PERIOD  */
-                                               {
-                   (yyval.id) = (char *)"typename...";
+                                               { 
+                   (yyval.id) = (char *)"typename..."; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
     break;
@@ -10776,15 +10776,15 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 520: /* cpptype: STRUCT  */
-                        {
-                   (yyval.id) = (char*)"struct";
+                        { 
+                   (yyval.id) = (char*)"struct"; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
     break;
 
   case 521: /* cpptype: UNION  */
                        {
-                   (yyval.id) = (char*)"union";
+                   (yyval.id) = (char*)"union"; 
 		   if (!inherit_list) last_cpptype = (yyval.id);
                }
     break;
@@ -10946,7 +10946,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 545: /* cpp_const: empty  */
-                       {
+                       { 
                     (yyval.dtype).throws = 0;
                     (yyval.dtype).throwf = 0;
                     (yyval.dtype).nexcept = 0;
@@ -10957,10 +10957,10 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 546: /* ctor_end: cpp_const ctor_initializer SEMI  */
-                                                 {
-                    Clear(scanner_ccode);
-                    (yyval.decl).have_parms = 0;
-                    (yyval.decl).defarg = 0;
+                                                 { 
+                    Clear(scanner_ccode); 
+                    (yyval.decl).have_parms = 0; 
+                    (yyval.decl).defarg = 0; 
 		    (yyval.decl).throws = (yyvsp[-2].dtype).throws;
 		    (yyval.decl).throwf = (yyvsp[-2].dtype).throwf;
 		    (yyval.decl).nexcept = (yyvsp[-2].dtype).nexcept;
@@ -10971,10 +10971,10 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 547: /* ctor_end: cpp_const ctor_initializer LBRACE  */
-                                                   {
-                    skip_balanced('{','}');
-                    (yyval.decl).have_parms = 0;
-                    (yyval.decl).defarg = 0;
+                                                   { 
+                    skip_balanced('{','}'); 
+                    (yyval.decl).have_parms = 0; 
+                    (yyval.decl).defarg = 0; 
                     (yyval.decl).throws = (yyvsp[-2].dtype).throws;
                     (yyval.decl).throwf = (yyvsp[-2].dtype).throwf;
                     (yyval.decl).nexcept = (yyvsp[-2].dtype).nexcept;
@@ -10985,11 +10985,11 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 548: /* ctor_end: LPAREN parms RPAREN SEMI  */
-                                          {
-                    Clear(scanner_ccode);
-                    (yyval.decl).parms = (yyvsp[-2].pl);
-                    (yyval.decl).have_parms = 1;
-                    (yyval.decl).defarg = 0;
+                                          { 
+                    Clear(scanner_ccode); 
+                    (yyval.decl).parms = (yyvsp[-2].pl); 
+                    (yyval.decl).have_parms = 1; 
+                    (yyval.decl).defarg = 0; 
 		    (yyval.decl).throws = 0;
 		    (yyval.decl).throwf = 0;
 		    (yyval.decl).nexcept = 0;
@@ -10999,10 +10999,10 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
 
   case 549: /* ctor_end: LPAREN parms RPAREN LBRACE  */
                                             {
-                    skip_balanced('{','}');
-                    (yyval.decl).parms = (yyvsp[-2].pl);
-                    (yyval.decl).have_parms = 1;
-                    (yyval.decl).defarg = 0;
+                    skip_balanced('{','}'); 
+                    (yyval.decl).parms = (yyvsp[-2].pl); 
+                    (yyval.decl).have_parms = 1; 
+                    (yyval.decl).defarg = 0; 
                     (yyval.decl).throws = 0;
                     (yyval.decl).throwf = 0;
                     (yyval.decl).nexcept = 0;
@@ -11011,9 +11011,9 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 550: /* ctor_end: EQUAL definetype SEMI  */
-                                       {
-                    (yyval.decl).have_parms = 0;
-                    (yyval.decl).defarg = (yyvsp[-1].dtype).val;
+                                       { 
+                    (yyval.decl).have_parms = 0; 
+                    (yyval.decl).defarg = (yyvsp[-1].dtype).val; 
                     (yyval.decl).throws = 0;
                     (yyval.decl).throwf = 0;
                     (yyval.decl).nexcept = 0;
@@ -11090,7 +11090,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 569: /* idcolon: idtemplate idcolontail  */
-                                        {
+                                        { 
                   (yyval.str) = 0;
 		  if (!(yyval.str)) (yyval.str) = NewStringf("%s%s", (yyvsp[-1].str),(yyvsp[0].str));
       	          Delete((yyvsp[0].str));
@@ -11248,7 +11248,7 @@ Printf(stdout, "  Scope %s [creating single scope C++17 style]\n", scopename);
     break;
 
   case 594: /* string: string STRING  */
-                               {
+                               { 
                    (yyval.str) = NewStringf("%s%s", (yyvsp[-1].str), (yyvsp[0].id));
                }
     break;

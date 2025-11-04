@@ -311,13 +311,13 @@ protected:
 inline Color operator *(float lhs, const Color& rhs) { return rhs * lhs; }
 
 /// Create Color from integer with ABGR mask.
-inline Color operator""_abgr(unsigned long long value) { return Color{ static_cast<unsigned>(value), Color::ABGR }; }
+inline Color operator"" _abgr(unsigned long long value) { return Color{ static_cast<unsigned>(value), Color::ABGR }; }
 
 /// Create Color from integer with ARGB mask.
-inline Color operator""_argb(unsigned long long value) { return Color{ static_cast<unsigned>(value), Color::ARGB }; }
+inline Color operator"" _argb(unsigned long long value) { return Color{ static_cast<unsigned>(value), Color::ARGB }; }
 
 /// Create Color from integer with RGB mask.
-inline Color operator""_rgb(unsigned long long value) { return Color{ static_cast<unsigned>(value), Color::RGB }; }
+inline Color operator"" _rgb(unsigned long long value) { return Color{ static_cast<unsigned>(value), Color::RGB }; }
 
 
 }

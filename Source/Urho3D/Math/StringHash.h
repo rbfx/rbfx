@@ -155,7 +155,7 @@ private:
     unsigned value_;
 };
 
-inline constexpr StringHash operator""_sh(const char* str, std::size_t len)
+inline constexpr StringHash operator"" _sh(const char* str, std::size_t len)
 {
     return StringHash{ea::string_view{str, len}, StringHash::NoReverse{}};
 }
