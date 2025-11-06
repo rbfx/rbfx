@@ -217,10 +217,10 @@ void PluginsPage::UpdateLoadedPlugins()
 {
     auto pluginManager = GetSubsystem<PluginManager>();
 
-    if (revision_ == pluginManager->GetRevision())
+    if (revision_ == pluginManager->GetPluginListRevision())
         return;
 
-    revision_ = pluginManager->GetRevision();
+    revision_ = pluginManager->GetPluginListRevision();
     hasChanges_ = false;
     loadedPlugins_ = pluginManager->GetLoadedPlugins();
 }
