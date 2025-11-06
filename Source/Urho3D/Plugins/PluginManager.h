@@ -44,7 +44,8 @@ class URHO3D_API PluginStack : public Object
     URHO3D_OBJECT(PluginStack, Object);
 
 public:
-    PluginStack(PluginManager* manager, const StringVector& plugins);
+    PluginStack(PluginManager* manager, const StringVector& plugins, const ea::string& binaryDirectory,
+        const ea::string& temporaryDirectory, unsigned version);
     ~PluginStack() override;
 
     /// Start application for all plugins in the stack.
@@ -68,13 +69,19 @@ private:
     struct PluginInfo
     {
         ea::string name_;
-        unsigned version_{};
         WeakPtr<PluginApplication> application_;
     };
+
+    void CopyBinariesToTemporaryDirectory();
 
     void LoadPlugins();
     void UnloadPlugins();
     PluginApplication* FindMainPlugin(const ea::string& mainPlugin) const;
+
+private:
+    const ea::string binaryDirectory_;
+    const ea::string temporaryDirectory_;
+    const unsigned version_;
 
     ea::vector<PluginInfo> applications_;
     ea::vector<PluginInfo> mainApplications_;
@@ -116,8 +123,10 @@ public:
     /// Return whether the application is started now.
     bool IsStarted() const { return pluginStack_ && pluginStack_->IsStarted(); }
 
-    /// Return whether the plugins are renamed on load.
-    bool ArePluginsRenamed() const { return renamePluginBinaries_; }
+    /// Return original binary directory.
+    const ea::string& GetOriginalBinaryDirectory() const { return binaryDirectory_; }
+    /// Return temporary binary directory, or main binary directory if temporary copies are disabled.
+    const ea::string& GetTemporaryBinaryDirectory() const { return temporaryDirectory_; }
     /// Set loaded plugins. Order is preserved.
     void SetPluginsLoaded(const StringVector& plugins);
     /// Return whether the plugin is loaded.
@@ -125,9 +134,9 @@ public:
     /// Return loaded plugins.
     const StringVector& GetLoadedPlugins() const { return loadedPlugins_; }
     /// Return revision of loaded plugins.
-    unsigned GetRevision() const { return revision_; }
+    unsigned GetPluginListRevision() const { return listRevision_; }
     /// Return whether the load is pending at the end of the frame.
-    bool IsReloadPending() const { return stackReloadPending_; }
+    bool IsReloadPending() const { return reloadPending_; }
 
     /// Manually add new plugin with dynamic reloading.
     bool AddDynamicPlugin(Plugin* plugin);
@@ -136,7 +145,7 @@ public:
     /// Find or load dynamic plugin by name.
     Plugin* GetDynamicPlugin(const ea::string& name, bool ignoreUnloaded);
     /// Find or load plugin application by name.
-    PluginApplication* GetPluginApplication(const ea::string& name, bool ignoreUnloaded, unsigned* version = nullptr);
+    PluginApplication* GetPluginApplication(const ea::string& name, bool ignoreUnloaded);
     /// Return main plugin. The result is valid after plugin application started.
     PluginApplication* GetMainPlugin() const;
     /// Enumerate dynamic modules available to load.
@@ -149,14 +158,12 @@ private:
     void RestoreStack();
 
     void Update(bool exiting);
-    void UpdatePlugin(Plugin* plugin, bool checkOutOfDate);
+    bool NeedReloadNow() const;
 
     void PerformPluginUnload(Plugin* plugin);
-    void TryReloadPlugin(Plugin* plugin);
     bool CheckAndRemoveUnloadedPlugin(Plugin* plugin);
 
-    template <class T>
-    void ForEachPluginApplication(const T& callback)
+    template <class T> void ForEachPluginApplication(const T& callback)
     {
         for (const auto& [name, plugin] : dynamicPlugins_)
         {
@@ -170,16 +177,19 @@ private:
 
     /// Parameters
     /// @{
-    const bool renamePluginBinaries_{};
+    const bool enableAutoReload_{};
+    const ea::string binaryDirectory_;
+    ea::string temporaryDirectoryBase_;
     unsigned reloadIntervalMs_{1000};
     unsigned reloadTimeoutMs_{10000};
     /// @}
 
     bool startPending_{};
     bool stopPending_{};
-    bool stackReloadPending_{};
+    bool reloadPending_{};
     StringVector loadedPlugins_;
-    unsigned revision_{};
+    unsigned listRevision_{};
+    ea::string temporaryDirectory_;
     SharedPtr<PluginStack> pluginStack_;
     QuitApplicationCallback quitApplication_;
 
@@ -194,8 +204,6 @@ private:
 
     /// Auto-reloading of dynamic plugins
     /// @{
-    bool forceReload_{};
-    bool enableAutoReload_{};
     Timer reloadTimer_;
     /// @}
 
@@ -203,11 +211,11 @@ private:
     struct DynamicLibraryInfo
     {
         /// Last modification time.
-        unsigned mtime_{};
+        unsigned lastModificationTime_{};
         /// Type of plugin.
         ModuleType pluginType_{};
     };
     ea::unordered_map<ea::string, DynamicLibraryInfo> pluginInfoCache_;
 };
 
-}
+} // namespace Urho3D

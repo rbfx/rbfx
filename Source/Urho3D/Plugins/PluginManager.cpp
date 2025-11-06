@@ -52,7 +52,6 @@ auto& GetRegistry()
     return registry;
 }
 
-#if !URHO3D_STATIC
 ea::string PathToName(const ea::string& path)
 {
 #if !_WIN32
@@ -71,19 +70,49 @@ ea::string PathToName(const ea::string& path)
 
     return EMPTY_STRING;
 }
-#endif
 
+void RemoveUnwantedBinaries(StringVector& binaries)
+{
+    static const ea::unordered_set<ea::string> ignoredBinaries{
+        "Urho3D",
+    };
+
+    ea::erase_if(binaries, [](const ea::string& fileName) { return ignoredBinaries.contains(PathToName(fileName)); });
 }
 
-PluginStack::PluginStack(PluginManager* manager, const StringVector& plugins)
-    : Object(manager->GetContext())
+bool IsReloadingEnabled(Context* context)
 {
+    const auto engine = context->GetSubsystem<Engine>();
+    return !engine->IsHeadless() && engine->GetParameter(EP_RELOAD_PLUGINS).GetBool();
+}
+
+/// Don't touch anything related to hot-reloading during application lifetime:
+/// Clear directory once and create unique folders for each reload.
+/// @{
+static bool clearTemporaryDirectories = true;
+static unsigned temporaryDirectoryRevision = 0;
+/// @}
+
+} // namespace
+
+PluginStack::PluginStack(PluginManager* manager, const StringVector& plugins, const ea::string& binaryDirectory,
+    const ea::string& temporaryDirectory, unsigned version)
+    : Object(manager->GetContext())
+    , binaryDirectory_(AddTrailingSlash(binaryDirectory))
+    , temporaryDirectory_(AddTrailingSlash(temporaryDirectory))
+    , version_(version)
+{
+    URHO3D_LOGINFO(
+        "{} plugins enabled{}{}", plugins.size(), plugins.empty() ? "" : ": ", ea::string::joined(plugins, ";"));
+
+    if (!temporaryDirectory_.empty() && !plugins.empty())
+        CopyBinariesToTemporaryDirectory();
+
     for (const ea::string& name : plugins)
     {
-        unsigned version{};
-        if (const WeakPtr<PluginApplication> application{manager->GetPluginApplication(name, false, &version)})
+        if (const WeakPtr<PluginApplication> application{manager->GetPluginApplication(name, false)})
         {
-            const PluginInfo info{name, version, application};
+            const PluginInfo info{name, application};
             applications_.push_back(info);
             if (application->IsMain())
                 mainApplications_.push_back(info);
@@ -98,6 +127,51 @@ PluginStack::~PluginStack()
     if (isStarted_)
         StopApplication();
     UnloadPlugins();
+}
+
+void PluginStack::CopyBinariesToTemporaryDirectory()
+{
+    URHO3D_PROFILE("CopyPlugins");
+
+    auto fs = GetSubsystem<FileSystem>();
+
+    StringVector binaries;
+    fs->ScanDir(binaries, binaryDirectory_, Format("*{}", DYN_LIB_SUFFIX), SCAN_FILES);
+    RemoveUnwantedBinaries(binaries);
+
+    if (!fs->CreateDirsRecursive(temporaryDirectory_))
+    {
+        URHO3D_LOGERROR("Failed to create directory '{}' for plugin hot-reloading", temporaryDirectory_);
+        return;
+    }
+
+    unsigned numFilesCopied = 0;
+    for (const ea::string& relativeFileName : binaries)
+    {
+        if (!fs->Copy(binaryDirectory_ + relativeFileName, temporaryDirectory_ + relativeFileName))
+        {
+            URHO3D_LOGERROR("Failed to copy '{}' from binary directory '{}' to temporary directory '{}'",
+                relativeFileName, binaryDirectory_, temporaryDirectory_);
+            continue;
+        }
+        ++numFilesCopied;
+
+        const ea::string relativePdbFileName = ReplaceExtension(relativeFileName, ".pdb");
+        if (fs->FileExists(binaryDirectory_ + relativePdbFileName))
+        {
+            if (!fs->Copy(binaryDirectory_ + relativePdbFileName,
+                    ModulePlugin::GetTemporaryPdbName(temporaryDirectory_ + relativePdbFileName)))
+            {
+                URHO3D_LOGERROR("Failed to copy '{}' from binary directory '{}' to temporary directory '{}'",
+                    relativePdbFileName, binaryDirectory_, temporaryDirectory_);
+                continue;
+            }
+
+            ++numFilesCopied;
+        }
+    }
+
+    URHO3D_LOGDEBUG("Copied {} files to temporary folder: {}", numFilesCopied, temporaryDirectory_);
 }
 
 void PluginStack::LoadPlugins()
@@ -175,7 +249,7 @@ SerializedPlugins PluginStack::SuspendApplication()
             continue;
 
         BinaryOutputArchive archive{context_, data[info.name_]};
-        info.application_->SuspendApplication(archive, info.version_);
+        info.application_->SuspendApplication(archive, version_);
     }
     return data;
 }
@@ -195,13 +269,13 @@ void PluginStack::ResumeApplication(const SerializedPlugins& serializedPlugins)
 
         const auto iter = serializedPlugins.find(info.name_);
         if (iter == serializedPlugins.end())
-            info.application_->ResumeApplication(nullptr, info.version_);
+            info.application_->ResumeApplication(nullptr, version_);
         else
         {
             const VectorBuffer& pluginData = iter->second;
             MemoryBuffer dataView{pluginData.GetBuffer()};
             BinaryInputArchive archive{context_, dataView};
-            info.application_->ResumeApplication(&archive, info.version_);
+            info.application_->ResumeApplication(&archive, version_);
         }
     }
     isStarted_ = true;
@@ -236,10 +310,26 @@ void PluginManager::RegisterPluginApplication(const ea::string& name, PluginAppl
 
 PluginManager::PluginManager(Context* context)
     : Object(context)
-    , renamePluginBinaries_(context_->GetSubsystem<Engine>()->GetParameter(EP_RENAME_PLUGINS).GetBool())
-    , enableAutoReload_(!context_->GetSubsystem<Engine>()->IsHeadless())
-    , pluginStack_(MakeShared<PluginStack>(this, loadedPlugins_))
+    , enableAutoReload_(IsReloadingEnabled(context_))
+    , binaryDirectory_(context_->GetSubsystem<FileSystem>()->GetProgramDir())
 {
+    // On Windows, copy plugins to temporary directory to avoid locking original files.
+    const bool isWindows =
+        GetPlatform() == PlatformId::Windows || GetPlatform() == PlatformId::UniversalWindowsPlatform;
+    if (enableAutoReload_ && isWindows)
+        temporaryDirectoryBase_ = Format("{}.hotreload/", binaryDirectory_);
+
+    if (clearTemporaryDirectories && !temporaryDirectoryBase_.empty())
+    {
+        clearTemporaryDirectories = false;
+
+        auto fs = GetSubsystem<FileSystem>();
+        fs->RemoveDir(temporaryDirectoryBase_, true);
+        URHO3D_LOGDEBUG("Clearing temporary directory '{}' for hot-reloading", temporaryDirectoryBase_);
+    }
+
+    RestoreStack();
+
     for (const auto& [name, factory] : GetRegistry())
     {
         const auto application = factory(context_);
@@ -275,7 +365,7 @@ void PluginManager::SerializeInBlock(Archive& archive)
 
 void PluginManager::Reload()
 {
-    forceReload_ = true;
+    reloadPending_ = true;
 }
 
 void PluginManager::Commit()
@@ -326,8 +416,8 @@ void PluginManager::QuitApplication()
 void PluginManager::SetPluginsLoaded(const StringVector& plugins)
 {
     loadedPlugins_ = plugins;
-    stackReloadPending_ = true;
-    revision_ = ea::max(1u, revision_ + 1);
+    reloadPending_ = true;
+    listRevision_ = ea::max(1u, listRevision_ + 1);
 }
 
 bool PluginManager::IsPluginLoaded(const ea::string& name)
@@ -346,25 +436,9 @@ bool PluginManager::AddDynamicPlugin(Plugin* plugin)
         return false;
     }
 
-    if (!plugin->Load())
-    {
-        URHO3D_LOGERROR("Failed to load plugin '{}'", name);
-        return false;
-    }
-
-    if (!plugin->GetApplication())
-    {
-        URHO3D_ASSERTLOG(0, "Unexpected behavior of Plugin::Load");
-        return false;
-    }
-
-    const ea::string& internalName = plugin->GetApplication()->GetPluginName();
-    if (name != internalName)
-        URHO3D_LOGWARNING("Plugin file name {} doesn't match plugin class name", name, internalName);
-
     dynamicPlugins_.emplace(name, SharedPtr<Plugin>(plugin));
 
-    URHO3D_LOGINFO("Loaded plugin '{}' version {}", name, plugin->GetVersion());
+    URHO3D_LOGINFO("Added dynamic plugin '{}'", name);
     return true;
 #else
     return false;
@@ -406,19 +480,19 @@ Plugin* PluginManager::GetDynamicPlugin(const ea::string& name, bool ignoreUnloa
 #endif
 }
 
-PluginApplication* PluginManager::GetPluginApplication(const ea::string& name, bool ignoreUnloaded, unsigned* version)
+PluginApplication* PluginManager::GetPluginApplication(const ea::string& name, bool ignoreUnloaded)
 {
-    if (version)
-        *version = 0;
-
     const auto iter = staticPlugins_.find(name);
     if (iter != staticPlugins_.end())
         return iter->second;
 
     if (Plugin* dynamicPlugin = GetDynamicPlugin(name, ignoreUnloaded))
     {
-        if (version)
-            *version = dynamicPlugin->GetVersion();
+        if (!dynamicPlugin->IsLoaded())
+        {
+            if (!dynamicPlugin->Load())
+                return nullptr;
+        }
 
         if (PluginApplication* application = dynamicPlugin->GetApplication())
             return application;
@@ -450,16 +524,25 @@ void PluginManager::RestoreStack()
 {
     URHO3D_ASSERT(pluginStack_ == nullptr);
 
-    pluginStack_ = MakeShared<PluginStack>(this, loadedPlugins_);
+    // TODO: We can avoid bumping this revision when binaries are the same
+    temporaryDirectoryRevision = ea::max(1u, temporaryDirectoryRevision + 1);
+
+    temporaryDirectory_ = !temporaryDirectoryBase_.empty()
+        ? Format("{}{}/", temporaryDirectoryBase_, temporaryDirectoryRevision)
+        : EMPTY_STRING;
+    pluginStack_ = MakeShared<PluginStack>(
+        this, loadedPlugins_, binaryDirectory_, temporaryDirectory_, temporaryDirectoryRevision);
+
     if (wasStarted_)
         pluginStack_->ResumeApplication(restoreBuffer_);
     restoreBuffer_.clear();
-
-    SendEvent(E_ENDPLUGINRELOAD);
 }
 
 void PluginManager::Update(bool exiting)
 {
+    URHO3D_PROFILE("PluginManagerUpdate");
+
+    // Stop plugins before doing anything else
     if (stopPending_)
     {
         pluginStack_->StopApplication();
@@ -468,27 +551,37 @@ void PluginManager::Update(bool exiting)
         stopPending_ = false;
     }
 
-    if (stackReloadPending_)
+    // If hot-reloading is enabled, check for reload
+    if (!exiting && enableAutoReload_ && (reloadTimer_.GetMSec(false) >= reloadIntervalMs_))
     {
-        stackReloadPending_ = false;
-        DisposeStack();
+        if (NeedReloadNow())
+            reloadPending_ = true;
+        reloadTimer_.Reset();
     }
 
-    const bool checkOutOfDate = !exiting && enableAutoReload_ && (reloadTimer_.GetMSec(false) >= reloadIntervalMs_);
-    if (checkOutOfDate)
-        reloadTimer_.Reset();
+    // Unload plugins gracefully
+    if (reloadPending_)
+        DisposeStack();
 
     for (const auto& [name, plugin] : dynamicPlugins_)
-        UpdatePlugin(plugin, checkOutOfDate);
-    forceReload_ = false;
+    {
+        if (reloadPending_ || plugin->IsUnloading())
+            PerformPluginUnload(plugin);
+    }
+
+    reloadPending_ = false;
 
     ea::erase_if(dynamicPlugins_, [&](const auto& item) { return CheckAndRemoveUnloadedPlugin(item.second); });
 
     if (exiting)
         return;
 
+    // Reload and restart
     if (!pluginStack_)
+    {
         RestoreStack();
+        SendEvent(E_ENDPLUGINRELOAD);
+    }
 
     if (startPending_)
     {
@@ -500,19 +593,22 @@ void PluginManager::Update(bool exiting)
     }
 }
 
-void PluginManager::UpdatePlugin(Plugin* plugin, bool checkOutOfDate)
+bool PluginManager::NeedReloadNow() const
 {
-    if (!plugin->GetApplication())
-        return;
+    const bool isAnyOutOfDate = ea::any_of(
+        dynamicPlugins_.begin(), dynamicPlugins_.end(), [](const auto& elem) { return elem.second->IsOutOfDate(); });
 
-    const bool wasApplicationLoaded = plugin->GetApplication()->IsLoaded();
-    const bool pluginOutOfDate = forceReload_ || (checkOutOfDate && plugin->IsOutOfDate());
+    if (!isAnyOutOfDate)
+        return false;
 
-    if (plugin->IsUnloading() || pluginOutOfDate)
-        PerformPluginUnload(plugin);
+    const auto fs = GetSubsystem<FileSystem>();
+    if (fs->FileExists(binaryDirectory_ + ".noreload"))
+        return false;
 
-    if (pluginOutOfDate)
-        TryReloadPlugin(plugin);
+    const bool isAllReady = ea::all_of(dynamicPlugins_.begin(), dynamicPlugins_.end(),
+        [](const auto& elem) { return elem.second->IsReadyToReload(); });
+
+    return isAllReady;
 }
 
 void PluginManager::PerformPluginUnload(Plugin* plugin)
@@ -521,37 +617,6 @@ void PluginManager::PerformPluginUnload(Plugin* plugin)
         DisposeStack();
 
     plugin->PerformUnload();
-}
-
-void PluginManager::TryReloadPlugin(Plugin* plugin)
-{
-    auto guard = ea::make_finally([&]{ plugin->Unload(); });
-
-    if (!plugin->WaitForCompleteFile(reloadTimeoutMs_))
-    {
-        URHO3D_LOGERROR("Reloading plugin '{}' timed out and it was unloaded",
-            GetFileNameAndExtension(plugin->GetName()));
-        return;
-    }
-
-    if (!plugin->Load())
-    {
-        URHO3D_LOGERROR("Reloading plugin '{}' failed and it was unloaded",
-            GetFileNameAndExtension(plugin->GetName()));
-        return;
-    }
-
-    if (!plugin->GetApplication())
-    {
-        URHO3D_ASSERTLOG(0, "Unexpected behavior of Plugin::Load");
-        return;
-    }
-
-    // Keep plugin loaded if everything is good
-    guard.dismiss();
-
-    URHO3D_LOGINFO("Reloaded plugin '{}' version {}",
-        GetFileNameAndExtension(plugin->GetName()), plugin->GetVersion());
 }
 
 bool PluginManager::CheckAndRemoveUnloadedPlugin(Plugin* plugin)
@@ -592,10 +657,10 @@ StringVector PluginManager::ScanAvailableModules()
         const ea::string fullPath = fs->GetProgramDir() + file;
         const unsigned currentModificationTime = fs->GetLastModifiedTime(fullPath);
 
-        if (info.mtime_ != currentModificationTime)
+        if (info.lastModificationTime_ != currentModificationTime)
         {
             // Parse file only if it is outdated or was not parsed already.
-            info.mtime_ = currentModificationTime;
+            info.lastModificationTime_ = currentModificationTime;
             info.pluginType_ = DynamicModule::ReadModuleInformation(context_, fullPath);
         }
 

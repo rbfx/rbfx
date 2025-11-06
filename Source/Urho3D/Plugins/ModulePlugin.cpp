@@ -39,40 +39,43 @@ namespace Urho3D
 
 bool ModulePlugin::Load()
 {
-    ea::string path = NameToPath(name_);
-    if (path.empty())
+    // Locate binaries
+    originalFileName_ = GetAbsoluteFileName(name_, true);
+    temporaryFileName_ = GetAbsoluteFileName(name_, false);
+    if (originalFileName_.empty() || temporaryFileName_.empty())
     {
         URHO3D_LOGERROR("Plugin '{}' is not found", name_);
         return false;
     }
 
-    auto pluginManager = GetSubsystem<PluginManager>();
-    const bool renamePluginBinaries = pluginManager->ArePluginsRenamed();
-    const ea::string pluginPath = renamePluginBinaries ? GetVersionModulePath(path) : path;
+    URHO3D_PROFILE("LoadModule");
 
-    if (pluginPath.empty())
+    // If paths are different, patch pdb name in temporary file
+    if (temporaryFileName_ != originalFileName_)
+        PatchTemporaryBinary(temporaryFileName_);
+
+    // Try to load temporary or original file
+    lastModuleType_ = MODULE_INVALID;
+    if (!module_.Load(temporaryFileName_))
         return false;
 
-    lastModuleType_ = MODULE_INVALID;
-    if (module_.Load(pluginPath))
-    {
-        application_ = module_.InstantiatePlugin();
-        if (application_)
-        {
-            const ea::string& oldName = application_->GetPluginName();
-            if (!oldName.empty() && application_->GetPluginName() != name_)
-                URHO3D_LOGWARNING("Plugin name mismatch: file {} contains plugin {}. This plugin may be incompatible in static build.", name_, oldName);
-            application_->SetPluginName(name_);
+    application_ = module_.InstantiatePlugin();
+    if (!application_)
+        return false;
 
-            path_ = path;
-            mtime_ = context_->GetSubsystem<FileSystem>()->GetLastModifiedTime(pluginPath);
-            ++version_;
-            unloading_ = false;
-            lastModuleType_ = module_.GetModuleType();
-            return true;
-        }
-    }
-    return false;
+    const ea::string& oldName = application_->GetPluginName();
+    if (!oldName.empty() && application_->GetPluginName() != name_)
+        URHO3D_LOGWARNING("Plugin name mismatch: file {} contains plugin {}. This plugin may be incompatible in static build.", name_, oldName);
+    application_->SetPluginName(name_);
+
+    lastModificationTime_ = context_->GetSubsystem<FileSystem>()->GetLastModifiedTime(originalFileName_);
+    ++version_;
+    unloading_ = false;
+    lastModuleType_ = module_.GetModuleType();
+
+    URHO3D_LOGDEBUG("Plugin {} version {} is loaded from {}", name_, version_, temporaryFileName_);
+
+    return true;
 }
 
 bool ModulePlugin::IsLoaded() const
@@ -84,6 +87,8 @@ bool ModulePlugin::PerformUnload()
 {
     if (!application_)
         return false;
+
+    URHO3D_PROFILE("UnloadModule");
 
     // Disposing object requires managed reference to be the last one alive.
     WeakPtr<PluginApplication> application(application_);
@@ -101,71 +106,41 @@ bool ModulePlugin::PerformUnload()
     return true;
 }
 
-ea::string ModulePlugin::NameToPath(const ea::string& name) const
+ea::string ModulePlugin::GetTemporaryPdbName(const ea::string& fileName)
 {
-    FileSystem* fs = context_->GetSubsystem<FileSystem>();
-    ea::string result;
+    ea::string path, file, extension;
+    SplitPath(fileName, path, file, extension);
+    file.back() = '_';
+    return path + file + extension;
+}
 
+ea::string ModulePlugin::GetAbsoluteFileName(const ea::string& name, bool original) const
+{
 #if __linux__ || __APPLE__
-    result = Format("{}lib{}{}", fs->GetProgramDir(), name, DYN_LIB_SUFFIX);
-    if (fs->FileExists(result))
-        return result;
+    static const ea::string_view prefix = "lib";
+#else
+    static const ea::string_view prefix = "";
 #endif
 
-#if !_WIN32
-    result = Format("{}{}{}", fs->GetProgramDir(), name, ".dll");
-    if (fs->FileExists(result))
-        return result;
-#endif
+    auto fs = context_->GetSubsystem<FileSystem>();
+    auto pluginManager = GetSubsystem<PluginManager>();
 
-    result = Format("{}{}{}", fs->GetProgramDir(), name, DYN_LIB_SUFFIX);
-    if (fs->FileExists(result))
-        return result;
+    const ea::string& originalDirectory = pluginManager->GetOriginalBinaryDirectory();
+    const ea::string& temporaryDirectory = pluginManager->GetTemporaryBinaryDirectory();
+    const ea::string& directory = original || temporaryDirectory.empty() ? originalDirectory : temporaryDirectory;
+
+    const ea::string fileName = Format("{}{}{}{}", directory, prefix, name, DYN_LIB_SUFFIX);
+    if (fs->FileExists(fileName))
+        return fileName;
 
     return EMPTY_STRING;
 }
 
-ea::string ModulePlugin::GetVersionModulePath(const ea::string& path)
+void ModulePlugin::PatchTemporaryBinary(const ea::string& fileName)
 {
-    auto* fs = context_->GetSubsystem<FileSystem>();
-    ea::string dir, name, ext;
-    SplitPath(path, dir, name, ext);
-
-    ea::string versionString, shortenedName;
-
-    // Headless utilities do not require reloading. They will load module directly.
-    if (context_->GetSubsystem<Engine>()->IsHeadless())
-    {
-        versionString = "";
-        shortenedName = name;
-    }
-    else
-    {
-        versionString = ea::to_string(version_ + 1);
-        shortenedName = name.substr(0, name.length() - versionString.length());
-    }
-
-    if (shortenedName.length() < 3)
-    {
-        URHO3D_LOGERROR("Plugin file name '{}' is too short.", name);
-        return EMPTY_STRING;
-    }
-
-    const ea::string versionedPath = dir + shortenedName + versionString + ext;
-
-    // Non-versioned modules do not need pdb/version patching.
-    if (context_->GetSubsystem<Engine>()->IsHeadless())
-        return versionedPath;
-
-    if (!fs->Copy(path, versionedPath))
-    {
-        URHO3D_LOGERROR("Copying '{}' to '{}' failed.", path, versionedPath);
-        return EMPTY_STRING;
-    }
-
 #if _MSC_VER || URHO3D_CSHARP
     unsigned pdbOffset = 0, pdbSize = 0;
-    const ModuleType type = DynamicModule::ReadModuleInformation(context_, path, &pdbOffset, &pdbSize);
+    const ModuleType type = DynamicModule::ReadModuleInformation(context_, fileName, &pdbOffset, &pdbSize);
 #if _MSC_VER
     bool hashPdb = true;
 #else
@@ -176,64 +151,39 @@ ea::string ModulePlugin::GetVersionModulePath(const ea::string& path)
         if (pdbOffset != 0)
         {
             File dll(context_);
-            if (dll.Open(versionedPath, FILE_READWRITE))
+            if (dll.Open(fileName, FILE_READWRITE))
             {
-                VectorBuffer fileData(dll, dll.GetSize());
-                char* pdbPointer = (char*)fileData.GetModifiableData() + pdbOffset;
+                dll.Seek(pdbOffset);
 
-                ea::string pdbPath;
-                pdbPath.resize(pdbSize);
-                strncpy(&pdbPath.front(), pdbPointer, pdbSize);
-                SplitPath(pdbPath, dir, name, ext);
+                ea::string pdbName(pdbSize + 1, '\0');
+                dll.Read(pdbName.data(), pdbSize);
+                pdbName = GetTemporaryPdbName(GetFileNameAndExtension(pdbName));
+                pdbName.resize(pdbSize + 1);
 
-                ea::string versionedPdbPath = dir + shortenedName + versionString + ".pdb";
-                assert(versionedPdbPath.length() == pdbPath.length());
-
-                // We have to copy pdbs for native and managed dlls
-                if (!fs->Copy(pdbPath, versionedPdbPath))
-                {
-                    URHO3D_LOGERROR("Copying '{}' to '{}' failed.", pdbPath, versionedPdbPath);
-                    return EMPTY_STRING;
-                }
-
-                strcpy((char*)fileData.GetModifiableData() + pdbOffset, versionedPdbPath.c_str());
-                dll.Seek(0);
-                dll.Write(fileData.GetData(), fileData.GetSize());
+                dll.Seek(pdbOffset);
+                dll.Write(pdbName.data(), pdbSize);
             }
-            else
-                return EMPTY_STRING;
         }
     }
 #if URHO3D_CSHARP
     if (type == MODULE_MANAGED)
     {
         // Managed runtime will modify file version in specified file.
-        Script::GetRuntimeApi()->SetAssemblyVersion(versionedPath, version_ + 1);
+        Script::GetRuntimeApi()->SetAssemblyVersion(fileName, version_ + 1);
     }
 #endif
 #endif
-    return versionedPath;
 }
 
 bool ModulePlugin::IsOutOfDate() const
 {
-    return mtime_ < context_->GetSubsystem<FileSystem>()->GetLastModifiedTime(path_);
+    return lastModificationTime_ < context_->GetSubsystem<FileSystem>()->GetLastModifiedTime(originalFileName_);
 }
 
-bool ModulePlugin::WaitForCompleteFile(unsigned timeoutMs) const
+bool ModulePlugin::IsReadyToReload() const
 {
-    Timer wait;
-    // Plugin change is detected the moment compiler starts linking file. We should wait until linker is done.
-    while (DynamicModule::ReadModuleInformation(context_, path_) != lastModuleType_)
-    {
-        Time::Sleep(0);
-        if (wait.GetMSec(false) >= timeoutMs)
-        {
-            URHO3D_LOGERROR("Plugin module '{}' linking timeout. Plugin will be unloaded.", name_);
-            return false;
-        }
-    }
-    return true;
+    URHO3D_PROFILE("IsModuleReadyToReload");
+    return DynamicModule::ReadModuleInformation(context_, originalFileName_) == lastModuleType_;
 }
 
 }

@@ -41,22 +41,25 @@ public:
     bool Load() override;
     bool IsLoaded() const override;
     bool IsOutOfDate() const override;
-    bool WaitForCompleteFile(unsigned timeoutMs) const override;
+    bool IsReadyToReload() const override;
     bool PerformUnload() override;
     /// @}
 
-protected:
-    /// Converts name to a full plugin file path. Returns empty string on error.
-    ea::string NameToPath(const ea::string& name) const;
-    /// Return path to the current version of the module.
-    ea::string GetVersionModulePath(const ea::string& path);
+    static ea::string GetTemporaryPdbName(const ea::string& fileName);
 
-    /// Unversioned plugin module path.
-    ea::string path_;
+protected:
+    ea::string GetAbsoluteFileName(const ea::string& name, bool original) const;
+    void PatchTemporaryBinary(const ea::string& fileName);
+
+    /// Absolute file name of original plugin.
+    ea::string originalFileName_;
+    /// Absolute file name of temporary copy.
+    ea::string temporaryFileName_;
+
     /// Native module of this plugin.
     DynamicModule module_{context_};
     /// Last modification time.
-    unsigned mtime_{};
+    unsigned lastModificationTime_{};
     /// Last loaded module type.
     ModuleType lastModuleType_{};
 };

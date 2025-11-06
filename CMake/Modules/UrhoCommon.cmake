@@ -868,3 +868,18 @@ function(create_pack_all_target)
         EXCLUDE_FROM_DEFAULT_BUILD ON
         FOLDER "Package")
 endfunction()
+
+# Disables hot-reloading of plugins when building specified targets.
+# Always build [all] target if this feature is used!
+function(disable_reload_when_building)
+    if(NOT TARGET LockBinaries)
+        set(MARKER_FILE "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.noreload")
+        add_custom_target(LockBinaries COMMAND ${CMAKE_COMMAND} -E touch ${MARKER_FILE} COMMENT "Disabling hot-reloading for binaries")
+        add_custom_target(UnlockBinaries ALL COMMAND ${CMAKE_COMMAND} -E rm -f ${MARKER_FILE} COMMENT "Re-enabling hot-reloading for binaries")
+    endif()
+
+    foreach(target IN LISTS ARGN)
+        add_dependencies(${target} LockBinaries)
+        add_dependencies(UnlockBinaries ${target})
+    endforeach()
+endfunction()
