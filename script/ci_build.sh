@@ -36,7 +36,7 @@ then
     echo "  download-release          Download and verify release"
     echo "  download-nuget-sdks       Download SDKs for NuGet"
     echo "  copy-cached-sdk           Copy cached SDK files"
-    echo "  setup-environment               Gather build information"
+    echo "  setup-environment         Gather build information"
     echo ""
     echo "Options:"
     echo "  --build-type TYPE         Build type: dbg or rel (default: rel)"
@@ -249,7 +249,7 @@ function action-generate() {
         --preset "${ci_platform}-${ci_compiler}-${ci_arch}-${ci_lib_type}"
         -B "$ci_build_dir" -S "$ci_source_dir"
         "-DCMAKE_INSTALL_PREFIX=$ci_sdk_dir"
-        "-D$CMAKE_PREFIX_PATH=${ci_workspace_dir}/cached-sdk/${sdk_suffix};${ci_workspace_dir}/host-sdk/${sdk_suffix}"
+        "-D$CMAKE_PREFIX_PATH=${ci_workspace_dir}/cached-sdk/${sdk_suffix}"
         "-DTRACY_TIMER_FALLBACK=ON"
         $([[ "$ci_compiler" != "msvc" ]] && echo "-DCMAKE_C_COMPILER_LAUNCHER=ccache")
         $([[ "$ci_compiler" != "msvc" ]] && echo "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache")
@@ -394,7 +394,7 @@ function action-release-mobile-artifacts() {
         local archive_name="rebelfork-bin-${ci_platform_tag}-latest.7z"
         7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "$archive_name" "$artifact"
         gh release upload latest "$archive_name" --repo "${GITHUB_REPOSITORY}" --clobber
-        echo "✓ Released $archive_name"
+        echo "Released $archive_name"
     else
         echo "Warning: No $pattern file found"
         return 1
@@ -468,7 +468,7 @@ function action-test-project() {
     fi
 
     # Use CMAKE_FIND_ROOT_PATH for web, CMAKE_PREFIX_PATH for others
-    cmake_args+=("-D$CMAKE_PREFIX_PATH=$sdk_path;${ci_workspace_dir}/host-sdk")
+    cmake_args+=("-D$CMAKE_PREFIX_PATH=$sdk_path")
 
     echo "Configuring $project_name with $mode mode..."
     cmake "${cmake_args[@]}"
@@ -621,7 +621,7 @@ function action-copy-cached-sdk() {
                 cp -p "$src/$file" "$dst/$file"
             fi
         done < "$src/thirdparty-files.txt"
-        echo "✓ Cached SDK files copied successfully"
+        echo "Cached SDK files copied successfully"
     else
         echo "Error: thirdparty-files.txt not found in cached SDK"
         exit 1

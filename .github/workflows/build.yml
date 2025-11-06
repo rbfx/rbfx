@@ -6,18 +6,6 @@ on:
       - 'skip-ci-**'
   pull_request:
   workflow_dispatch:
-    inputs:
-      # ci_jobs: Control which jobs run via manual workflow dispatch
-      # Go to Actions -> Build -> Run workflow -> enter job names in ci_jobs field
-      # If not set or empty, all jobs run. Dependencies are automatically included.
-      # Examples:
-      #   ci_jobs: "Linux"          # Runs only Linux job
-      #   ci_jobs: "Linux,Windows"  # Runs Linux and Windows jobs
-      ci_jobs:
-        description: 'Comma-separated list of jobs to run (e.g., "Linux,Android"). Leave empty to run all jobs.'
-        required: false
-        default: ''
-        type: string
 
 env:
   # common settings
@@ -286,7 +274,7 @@ jobs:
           ${{ env.ci_build_script }} install --build-type rel -- --prefix '${{ env.ci_sdk_dir }}'
 
       - name: Save Build Cache
-        if: env.ci_publish == 'true'
+        if: env.ci_artifacts == 'true'
         uses: actions/cache/save@v4
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -381,7 +369,7 @@ jobs:
           # Rename SDK to match the release name (without .7z), compress with 7z max compression
           archive_name="rebelfork-sdk-${{ env.ci_platform_tag }}-latest"
           mv SDK "$archive_name"
-          7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "${archive_name}.7z" "$archive_name"
+          7z a "${archive_name}.7z" "$archive_name"
           gh release upload latest "${archive_name}.7z" --repo '${{ github.repository }}' --clobber
           mv "$archive_name" SDK
 

@@ -27,7 +27,7 @@ add_library(crn_decomp INTERFACE)
 target_include_directories(crn_decomp INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 install_third_party_libs(crn_decomp)
-install (DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ FILES_MATCHING PATTERN *.h)
+install (DIRECTORY include/ COMPONENT ThirdParty DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ FILES_MATCHING PATTERN *.h)
 
 if (NOT URHO3D_TOOLS)
     return ()

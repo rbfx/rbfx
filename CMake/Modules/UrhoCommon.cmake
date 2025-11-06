@@ -380,8 +380,6 @@ function (csharp_bind_target)
         -namespace "${BIND_NAMESPACE}"
         -fastdispatch
         -c++
-        -outdir "${BIND_OUT_DIR}"
-        -o "${BIND_OUT_FILE}"
     )
 
     if (NOT UWP)
@@ -433,7 +431,6 @@ function (csharp_bind_target)
         endforeach()
     endif ()
 
-
     if (INCLUDES)
         list (REMOVE_DUPLICATES INCLUDES)
     endif ()
@@ -443,6 +440,12 @@ function (csharp_bind_target)
     foreach(item ${INCLUDES})
         list(APPEND GENERATOR_OPTIONS -I${item})
     endforeach()
+
+    # Should not be relevant for bindings, breaks on Xcode. See URHO3D_CSHARP_BIND_CONFIG for more info.
+    if (CMAKE_GENERATOR STREQUAL "Xcode")
+        list(FILTER GENERATOR_OPTIONS EXCLUDE REGEX "SDL/include-config-.+$")
+    endif ()
+
     # Defines must have a value, otherwise SWIG gets confused
     foreach(item ${DEFINES})
         string(FIND "${item}" "=" EQUALITY_INDEX)
@@ -467,10 +470,12 @@ function (csharp_bind_target)
         COMMAND ${CMAKE_COMMAND} -E remove_directory ${BIND_OUT_DIR}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${BIND_OUT_DIR}
         COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${URHO3D_SWIG_LIB_DIR}" ${SWIG_EXECUTABLE}
-        ARGS @"${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" > ${CMAKE_CURRENT_BINARY_DIR}/swig_${BIND_TARGET}.log
+        ARGS -outdir "${BIND_OUT_DIR}"
+             -o "${BIND_OUT_FILE}"
+             @"${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" > ${CMAKE_CURRENT_BINARY_DIR}/swig_${BIND_TARGET}.log
 
         MAIN_DEPENDENCY ${BIND_SWIG}
-        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" ${BIND_DEPENDS} swig
+        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" ${BIND_DEPENDS} $<TARGET_NAME_IF_EXISTS:swig>
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "SWIG: Generating C# bindings for ${BIND_TARGET}")
 
@@ -639,50 +644,20 @@ function (install_third_party_libs)
             if (TARGET ${TARGET})
                 install (TARGETS ${TARGET}
                     EXPORT Urho3DThirdParty
+                    COMPONENT ThirdParty
                     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
                     LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
-                    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                    COMPONENT ThirdParty)
+                    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
                 # Also add to main Urho3D export for backward compatibility
                 install (TARGETS ${TARGET}
                     EXPORT Urho3D
+                    COMPONENT ThirdParty
                     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
                     LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
-                    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                    COMPONENT ThirdParty)
+                    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
             endif ()
         endforeach ()
     endif ()
-endfunction ()
-
-function (install_third_party_tools)
-    foreach (TARGET ${ARGV})
-        if (TARGET ${TARGET})
-            install (TARGETS ${TARGET}
-                EXPORT Urho3DThirdParty
-                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-                LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
-                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                COMPONENT ThirdParty
-                PERMISSIONS ${PERMISSIONS_755})
-            # Also add to Urho3DTools export
-            install (TARGETS ${TARGET}
-                EXPORT Urho3DTools
-                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-                LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
-                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                COMPONENT Tools
-                PERMISSIONS ${PERMISSIONS_755})
-            # Also add to main Urho3D export for backward compatibility
-            install (TARGETS ${TARGET}
-                EXPORT Urho3D
-                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-                LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
-                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                COMPONENT Tools
-                PERMISSIONS ${PERMISSIONS_755})
-        endif ()
-    endforeach ()
 endfunction ()
 
 function (install_tools)
@@ -690,18 +665,33 @@ function (install_tools)
         if (TARGET ${TARGET})
             install (TARGETS ${TARGET}
                 EXPORT Urho3DTools
+                COMPONENT Tools
                 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
                 LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
                 ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                COMPONENT Tools
                 PERMISSIONS ${PERMISSIONS_755})
             # Also add to main Urho3D export for backward compatibility
             install (TARGETS ${TARGET}
                 EXPORT Urho3D
+                COMPONENT Tools
                 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
                 LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
                 ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-                COMPONENT Tools
+                PERMISSIONS ${PERMISSIONS_755})
+        endif ()
+    endforeach ()
+endfunction ()
+
+function (install_third_party_tools)
+    install_tools(${ARGV})
+    foreach (TARGET ${ARGV})
+        if (TARGET ${TARGET})
+            install (TARGETS ${TARGET}
+                EXPORT Urho3DThirdParty
+                COMPONENT ThirdParty
+                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+                LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
                 PERMISSIONS ${PERMISSIONS_755})
         endif ()
     endforeach ()
