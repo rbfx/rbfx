@@ -158,7 +158,7 @@ void PredictedKinematicController::OnPhysicsSynchronizedOnClient(NetworkFrame fr
 
 void PredictedKinematicController::ApplyActionsOnClient()
 {
-    kinematicController_->SetWalkIncrement(client_.currentFrameData_.walkVelocity_ * physicsStepTime_);
+    kinematicController_->SetWalkDirection(client_.currentFrameData_.walkVelocity_);
     if (client_.currentFrameData_.needJump_ && kinematicController_->OnGround())
         kinematicController_->Jump();
     client_.currentFrameData_.needJump_ = false;
@@ -220,7 +220,7 @@ void PredictedKinematicController::ApplyPayload(const PredictedKinematicControll
         return;
 
     node_->SetWorldRotation(payload.rotation_);
-    kinematicController_->SetWalkIncrement(payload.walkVelocity_ * physicsStepTime_);
+    kinematicController_->SetWalkDirection(payload.walkVelocity_);
     if (payload.needJump_ && kinematicController_->OnGround())
         kinematicController_->Jump();
 }
