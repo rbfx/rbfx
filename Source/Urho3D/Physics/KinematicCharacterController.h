@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2023-2024 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -11,12 +12,12 @@
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR other DEALINGS IN
 // THE SOFTWARE.
 //
 
@@ -34,6 +35,16 @@ namespace Urho3D
 class PhysicsWorld;
 class DebugRenderer;
 
+/// Flags for property changes that require physics world interaction.
+enum class CharacterDirtyFlag : unsigned
+{
+    None = 0,
+    Shape = 1 << 0,             // Height or Diameter changed
+    CollisionFilter = 1 << 1,   // Collision Layer or Mask changed
+    UpDirection = 1 << 2,       // Up direction changed
+};
+URHO3D_FLAGSET(CharacterDirtyFlag, CharacterDirtyFlags);
+
 class URHO3D_API KinematicCharacterController : public Component
 {
     URHO3D_OBJECT(KinematicCharacterController, Component);
@@ -46,12 +57,13 @@ public:
 
     /// Register object factory and attributes.
     static void RegisterObject(Context* context);
-    void OnSetAttribute(const AttributeInfo& attr, const Variant& src) override;
 
     /// Perform post-load after deserialization. Acquire the components from the scene nodes.
     void ApplyAttributes() override;
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
+
+void OnSetAttribute(const AttributeInfo& attr, const Variant& src) override;
 
     /// Return character position in world space without interpolation.
     Vector3 GetRawPosition() const;
@@ -78,6 +90,10 @@ public:
     void SetGravity(const Vector3 &gravity);
     /// Get gravity.
     const Vector3& GetGravity() const { return gravity_; }
+    /// Set the up direction for the character. Default is Y-axis.
+    void SetUpDirection(const Vector3& up);
+    /// Return the up direction for the character.
+    const Vector3& GetUpDirection() const { return upDirection_; }
     /// Set linear velocity damping factor.
     void SetLinearDamping(float linearDamping);
     /// Return linear velocity damping factor.
@@ -122,13 +138,13 @@ public:
     void SetMaxSlope(float maxSlope);
     /// Return max slope angle in degrees.
     float GetMaxSlope() const { return maxSlope_; }
-    /// Set walk increment. This is neither a direction nor a velocity, but the amount to increment the position each simulation iteration, regardless of dt.
-    void SetWalkIncrement(const Vector3& walkDir);
+    /// Set the character's desired walking velocity for the next simulation step. The physics engine will handle multiplying by delta time.
+    void SetWalkDirection(const Vector3& walkDir);
     /// Check if character in on the ground.
     bool OnGround() const;
-    /// Jump.
+    /// Jump. Applies an immediate velocity change. If jump vector is zero, uses JumpSpeed along the character's up direction.
     void Jump(const Vector3 &jump = Vector3::ZERO);
-    /// ApplyImpulse is same as Jump
+    /// Apply a linear impulse to the character, directly affecting its velocity. Useful for knockback or external forces.
     void ApplyImpulse(const Vector3 &impulse);
     /// Check if character can jump.
     bool CanJump() const;
@@ -148,6 +164,8 @@ protected:
     void ResetShape();
     void ReleaseKinematic();
     void ApplySettings(bool readdToWorld);
+    /// Apply pending property changes to the Bullet controller.
+    void ApplyDirtyFlags();
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
     void OnSceneSet(Scene* previousScene, Scene* scene) override;
     void ActivateIfEnabled();
@@ -180,6 +198,7 @@ protected:
     float angularDamping_{ 0.2f };
     bool activateTriggers_ {true};
     Vector3 gravity_{ Vector3(0.0f, -14.0f, 0.0f) };
+    Vector3 upDirection_{ Vector3(0.0f, 1.0f, 0.0f) };
 
     WeakPtr<PhysicsWorld> physicsWorld_;
     /// Bullet collision shape.
@@ -190,7 +209,9 @@ protected:
     bool activeTriggerFlag_{};
 
     Vector3 colShapeOffset_{ 0.0f, 0.9f, 0.0f };
-    bool readdToWorld_{ false };
+    
+    /// Dirty flags for properties that need to be reapplied to the physics object.
+    CharacterDirtyFlags dirtyFlags_{ CharacterDirtyFlag::None };
 
     /// Offset used for smooth Node position adjustment.
     Vector3 positionOffset_;
