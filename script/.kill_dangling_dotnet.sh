@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# "dotnet msbuild" has a bad habit of leaving stale processes running, which prevents
+# "dotnet build" has a bad habit of leaving stale processes running, which prevents
 # cmake from completing build. Kill them after build is done and get on with our lives.
 pgid=$(ps -o pgid= -p $$)
 dotnet=$(realpath $1)

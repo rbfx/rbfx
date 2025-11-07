@@ -92,8 +92,8 @@ if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
 
     if (LINUX)
         # On linux instance of dotnet may hang indefinitely which prevents CMake from detecting build completion and hangs the build.
-        # TODO: Things seem to have improved. Lets see if anything breaks with this workaround removed, if not - remove permanently.
-        #set (DOTNET_LINUX_MSBUILD_WORKAROUND COMMAND ${rbfx_SOURCE_DIR}/script/.kill_dangling_dotnet.sh ${DOTNET})
+        # 2025-11: Issue persists on CI (dotnet 8.0), even though builds seem to succeed locally.
+        set (DOTNET_LINUX_MSBUILD_WORKAROUND COMMAND ${rbfx_SOURCE_DIR}/script/.kill_dangling_dotnet.sh ${DOTNET})
     elseif ("${CMAKE_GENERATOR}" MATCHES "^Xcode")
         # On MacOS Xcode pollutes environment which causes MSBuild to compile all managed targets into Urho3DNet assembly and compilation fails because file contents is not what next build step expects.
         set (DOTNET_MACOS_MSBUILD_WORKAROUND env -u TARGET_NAME -u TARGETNAME)
