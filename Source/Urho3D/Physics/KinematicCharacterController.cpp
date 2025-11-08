@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2008-2020 the Urho3D project.
+// Copyright (c) 2023-2024 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -41,12 +42,6 @@
 namespace Urho3D
 {
 
-btKinematicCharacterController* newKinematicCharCtrl(btPairCachingGhostObject *ghostCGO,
-                                                     btConvexShape *shape, float stepHeight, const btVector3 &upVec)
-{
-    return new btKinematicCharacterController(ghostCGO, shape, stepHeight, upVec);
-}
-
 #include <Urho3D/DebugNew.h>
 
 //=============================================================================
@@ -75,6 +70,7 @@ void KinematicCharacterController::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Gravity", GetGravity, SetGravity, Vector3, Vector3(0.0f, -14.0f, 0.0f), AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Up Direction", GetUpDirection, SetUpDirection, Vector3, Vector3(0.0f, 1.0f, 0.0f), AM_DEFAULT);
     URHO3D_ATTRIBUTE("Collision Layer", int, colLayer_, 1, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Collision Mask", int, colMask_, 0xffff, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Linear Damping", GetLinearDamping, SetLinearDamping, float, 0.2f, AM_DEFAULT);
@@ -93,19 +89,33 @@ void KinematicCharacterController::RegisterObject(Context* context)
 
 void KinematicCharacterController::OnSetAttribute(const AttributeInfo& attr, const Variant& src)
 {
-    Serializable::OnSetAttribute(attr, src);
+    Component::OnSetAttribute(attr, src);
 
-    readdToWorld_ = true;
+   const StringHash& nameHash = attr.nameHash_;
+
+    static const StringHash A_COLLISION_LAYER("Collision Layer");
+    static const StringHash A_COLLISION_MASK("Collision Mask");
+    static const StringHash A_UP_DIRECTION("Up Direction");
+    static const StringHash A_HEIGHT("Height");
+    static const StringHash A_DIAMETER("Diameter");
+
+    if (nameHash == A_COLLISION_LAYER || nameHash == A_COLLISION_MASK)
+    {
+        dirtyFlags_ |= CharacterDirtyFlag::CollisionFilter;
+    }
+    else if (nameHash == A_UP_DIRECTION)
+    {
+        dirtyFlags_ |= CharacterDirtyFlag::UpDirection;
+    }
+    else if (nameHash == A_HEIGHT || nameHash == A_DIAMETER)
+    {
+        dirtyFlags_ |= CharacterDirtyFlag::Shape;
+    }
 }
 
 void KinematicCharacterController::ApplyAttributes()
 {
     ActivateIfEnabled();
-    if (readdToWorld_)
-    {
-        ApplySettings(true);
-        readdToWorld_ = false;
-    }
 }
 
 void KinematicCharacterController::OnSetEnabled()
@@ -115,7 +125,7 @@ void KinematicCharacterController::OnSetEnabled()
 
 void KinematicCharacterController::ReleaseKinematic()
 {
-    if (kinematicController_ != nullptr)
+    if (kinematicController_)
     {
         RemoveKinematicFromWorld();
     }
@@ -142,17 +152,21 @@ void KinematicCharacterController::OnSceneSet(Scene* previousScene, Scene* scene
         if (physicsWorld_)
         {
             ActivateIfEnabled();
+            SubscribeToEvent(physicsWorld_, E_PHYSICSPREUPDATE, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPreUpdate));
+            SubscribeToEvent(physicsWorld_, E_PHYSICSPOSTSTEP, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPostStep));
+            SubscribeToEvent(physicsWorld_, E_PHYSICSPOSTUPDATE, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPostUpdate));
         }
-        SubscribeToEvent(physicsWorld_, E_PHYSICSPREUPDATE, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPreUpdate));
-        SubscribeToEvent(physicsWorld_, E_PHYSICSPOSTSTEP, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPostStep));
-        SubscribeToEvent(physicsWorld_, E_PHYSICSPOSTUPDATE, URHO3D_HANDLER(KinematicCharacterController, HandlePhysicsPostUpdate));
     }
     else
     {
         RemoveKinematicFromWorld();
-        UnsubscribeFromEvent(physicsWorld_, E_PHYSICSPREUPDATE);
-        UnsubscribeFromEvent(physicsWorld_, E_PHYSICSPOSTSTEP);
-        UnsubscribeFromEvent(physicsWorld_, E_PHYSICSPOSTUPDATE);
+        if (physicsWorld_)
+        {
+            UnsubscribeFromEvent(physicsWorld_, E_PHYSICSPREUPDATE);
+            UnsubscribeFromEvent(physicsWorld_, E_PHYSICSPOSTSTEP);
+            UnsubscribeFromEvent(physicsWorld_, E_PHYSICSPOSTUPDATE);
+        }
+        physicsWorld_ = nullptr;
     }
 }
 
@@ -160,6 +174,8 @@ void KinematicCharacterController::HandlePhysicsPreUpdate(StringHash eventType, 
 {
     if (!IsEnabledEffective())
         return;
+
+    ApplyDirtyFlags();
 
     const Vector3 position = node_->GetWorldPosition();
     if (!position.Equals(latestPosition_, M_LARGE_EPSILON))
@@ -233,7 +249,7 @@ void KinematicCharacterController::SendCollisionEvent(StringHash physicsEvent, S
 
 void KinematicCharacterController::ActivateTriggers()
 {
-    if (!activateTriggers_)
+    if (!activateTriggers_ || !kinematicController_)
         return;
 
     physicsCollisionData_[PhysicsCollision::P_NODEA] = GetNode();
@@ -255,7 +271,6 @@ void KinematicCharacterController::ActivateTriggers()
                     if (!itPair.second)
                     {
                         itPair.first->second = activeTriggerFlag_;
-
                         SendCollisionEvent(E_PHYSICSCOLLISION, E_NODECOLLISION, body);
                     }
                     else
@@ -272,7 +287,6 @@ void KinematicCharacterController::ActivateTriggers()
         if (itKV->second != activeTriggerFlag_)
         {
             SendCollisionEvent(E_PHYSICSCOLLISIONEND, E_NODECOLLISIONEND, itKV->first);
-
             itKV = activeTriggerContacts_.erase(itKV);
         }
         else
@@ -324,26 +338,33 @@ void KinematicCharacterController::AddKinematicToWorld()
         if (kinematicController_ == nullptr)
         {
             btCapsuleShape* btColShape = GetOrCreateShape();
-            pairCachingGhostObject_->setCollisionShape(btColShape);
+            if (pairCachingGhostObject_)
+                pairCachingGhostObject_->setCollisionShape(btColShape);
 
             kinematicController_ = ea::make_unique<btKinematicCharacterController>(
-                pairCachingGhostObject_.get(), btColShape, stepHeight_, ToBtVector3(Vector3::UP));
+                pairCachingGhostObject_.get(), btColShape, stepHeight_, ToBtVector3(upDirection_));
         }
 
-        if (pairCachingGhostObject_->getWorldArrayIndex() < 0)
-        {
-            // apply default settings
-            ApplySettings(false);
+        if (IsAddedToWorld())
+            return;
+            
+        // apply default settings
+        ApplySettings(false);
 
-            btDiscreteDynamicsWorld *phyicsWorld = physicsWorld_->GetWorld();
-            phyicsWorld->addCollisionObject(pairCachingGhostObject_.get(), colLayer_, colMask_);
-            phyicsWorld->addAction(kinematicController_.get());
-        }
+        btDiscreteDynamicsWorld *phyicsWorld = physicsWorld_->GetWorld();
+        phyicsWorld->addCollisionObject(pairCachingGhostObject_.get(), colLayer_, colMask_);
+        phyicsWorld->addAction(kinematicController_.get());
+
+        // Force dirty flags to be applied on next update
+        dirtyFlags_ |= CharacterDirtyFlag::CollisionFilter | CharacterDirtyFlag::Shape | CharacterDirtyFlag::UpDirection;
     }
 }
 
 void KinematicCharacterController::ApplySettings(bool readdToWorld)
 {
+    if (!kinematicController_)
+        return;
+        
     kinematicController_->setGravity(ToBtVector3(gravity_));
     kinematicController_->setLinearDamping(linearDamping_);
     kinematicController_->setAngularDamping(angularDamping_);
@@ -352,22 +373,51 @@ void KinematicCharacterController::ApplySettings(bool readdToWorld)
     kinematicController_->setMaxSlope(M_DEGTORAD * maxSlope_);
     kinematicController_->setJumpSpeed(jumpSpeed_);
     kinematicController_->setFallSpeed(fallSpeed_);
+    kinematicController_->setUp(ToBtVector3(upDirection_));
 
-    if (readdToWorld && pairCachingGhostObject_)
+    if (readdToWorld && pairCachingGhostObject_ && physicsWorld_)
     {
         btDiscreteDynamicsWorld *phyicsWorld = physicsWorld_->GetWorld();
         phyicsWorld->removeCollisionObject(pairCachingGhostObject_.get());
         phyicsWorld->addCollisionObject(pairCachingGhostObject_.get(), colLayer_, colMask_);
     }
 
-    WarpKinematic(node_->GetWorldPosition());
+    if (node_)
+        WarpKinematic(node_->GetWorldPosition());
+}
+
+void KinematicCharacterController::ApplyDirtyFlags()
+{
+    if (dirtyFlags_ == CharacterDirtyFlag::None || !physicsWorld_ || !kinematicController_)
+        return;
+
+    if (dirtyFlags_.Test(CharacterDirtyFlag::UpDirection))
+    {
+        kinematicController_->setUp(ToBtVector3(upDirection_));
+    }
+
+    if (dirtyFlags_.Test(CharacterDirtyFlag::Shape))
+    {
+        ResetShape();
+    }
+
+    if (dirtyFlags_.Test(CharacterDirtyFlag::CollisionFilter))
+    {
+        if (IsAddedToWorld())
+        {
+            btDiscreteDynamicsWorld* world = physicsWorld_->GetWorld();
+            world->removeCollisionObject(pairCachingGhostObject_.get());
+            world->addCollisionObject(pairCachingGhostObject_.get(), colLayer_, colMask_);
+        }
+    }
+
+    dirtyFlags_ = CharacterDirtyFlag::None;
 }
 
 void KinematicCharacterController::RemoveKinematicFromWorld()
 {
     if (IsAddedToWorld())
     {
-        // When RemoveKinematicFromWorld executed from engine destruction the physicsWorld_ may be already gone.
         if (physicsWorld_)
         {
             btDiscreteDynamicsWorld* phyicsWorld = physicsWorld_->GetWorld();
@@ -384,49 +434,37 @@ bool KinematicCharacterController::IsAddedToWorld() const
 
 void KinematicCharacterController::SetCollisionLayer(unsigned layer)
 {
-    if (physicsWorld_)
+    if (layer != colLayer_)
     {
-        if (layer != colLayer_)
-        {
-            colLayer_ = layer;
-            btDiscreteDynamicsWorld *phyicsWorld = physicsWorld_->GetWorld();
-            phyicsWorld->removeCollisionObject(pairCachingGhostObject_.get());
-            phyicsWorld->addCollisionObject(pairCachingGhostObject_.get(), static_cast<int>(colLayer_), static_cast<int>(colMask_));
-        }
+        colLayer_ = layer;
+        dirtyFlags_ |= CharacterDirtyFlag::CollisionFilter;
     }
 }
 
 void KinematicCharacterController::SetCollisionMask(unsigned mask)
 {
-    if (physicsWorld_)
+    if (mask != colMask_)
     {
-        if (mask != colMask_)
-        {
-            colMask_ = mask;
-            btDiscreteDynamicsWorld *phyicsWorld = physicsWorld_->GetWorld();
-            phyicsWorld->removeCollisionObject(pairCachingGhostObject_.get());
-            phyicsWorld->addCollisionObject(pairCachingGhostObject_.get(), static_cast<int>(colLayer_), static_cast<int>(colMask_));
-        }
+        colMask_ = mask;
+        dirtyFlags_ |= CharacterDirtyFlag::CollisionFilter;
     }
 }
 
 void KinematicCharacterController::SetCollisionLayerAndMask(unsigned layer, unsigned mask)
 {
-    if (physicsWorld_)
+    if (layer != colLayer_ || mask != colMask_)
     {
-        if (layer != colLayer_ || mask != colMask_)
-        {
-            colLayer_ = layer;
-            colMask_ = mask;
-            btDiscreteDynamicsWorld *phyicsWorld = physicsWorld_->GetWorld();
-            phyicsWorld->removeCollisionObject(pairCachingGhostObject_.get());
-            phyicsWorld->addCollisionObject(pairCachingGhostObject_.get(), static_cast<int>(colLayer_), static_cast<int>(colMask_));
-        }
+        colLayer_ = layer;
+        colMask_ = mask;
+        dirtyFlags_ |= CharacterDirtyFlag::CollisionFilter;
     }
 }
 
 void KinematicCharacterController::SetTrigger(bool enable)
 {
+    if (!pairCachingGhostObject_)
+        return;
+        
     auto flags = pairCachingGhostObject_->getCollisionFlags();
     if (enable)
         flags |= btCollisionObject::CF_NO_CONTACT_RESPONSE;
@@ -437,12 +475,17 @@ void KinematicCharacterController::SetTrigger(bool enable)
 
 bool KinematicCharacterController::IsTrigger() const
 {
+    if (!pairCachingGhostObject_)
+        return false;
+        
     auto flags = pairCachingGhostObject_->getCollisionFlags();
     return flags & btCollisionObject::CF_NO_CONTACT_RESPONSE;
 }
 
 Vector3 KinematicCharacterController::GetRawPosition() const
 {
+    if (!pairCachingGhostObject_)
+        return node_ ? node_->GetWorldPosition() : Vector3::ZERO;
     btTransform t = pairCachingGhostObject_->getWorldTransform();
     return ToVector3(t.getOrigin()) - colShapeOffset_;
 }
@@ -452,11 +495,14 @@ void KinematicCharacterController::AdjustRawPosition(const Vector3& offset, floa
     smoothingConstant_ = smoothConstant;
     positionOffset_ -= offset;
     WarpKinematic(GetRawPosition() + offset);
-    node_->SetWorldPosition(latestPosition_);
+    if(node_)
+        node_->SetWorldPosition(latestPosition_);
 }
 
 void KinematicCharacterController::WarpKinematic(const Vector3& position)
 {
+    if (!pairCachingGhostObject_)
+        return;
     latestPosition_ = position + positionOffset_;
     previousPosition_ = position;
     nextPosition_ = position;
@@ -470,7 +516,8 @@ void KinematicCharacterController::SetLinearDamping(float linearDamping)
     if (linearDamping != linearDamping_)
     {
         linearDamping_ = linearDamping;
-        kinematicController_->setLinearDamping(linearDamping_);
+        if (kinematicController_)
+            kinematicController_->setLinearDamping(linearDamping_);
     }
 }
 
@@ -479,7 +526,8 @@ void KinematicCharacterController::SetAngularDamping(float angularDamping)
     if (angularDamping != angularDamping_)
     {
         angularDamping_ = angularDamping;
-        kinematicController_->setAngularDamping(angularDamping_);
+        if (kinematicController_)
+            kinematicController_->setAngularDamping(angularDamping_);
     }
 }
 
@@ -488,7 +536,17 @@ void KinematicCharacterController::SetGravity(const Vector3 &gravity)
     if (gravity != gravity_)
     {
         gravity_ = gravity;
-        kinematicController_->setGravity(ToBtVector3(gravity_));
+        if (kinematicController_)
+            kinematicController_->setGravity(ToBtVector3(gravity_));
+    }
+}
+
+void KinematicCharacterController::SetUpDirection(const Vector3& up)
+{
+    if (upDirection_ != up)
+    {
+        upDirection_ = up;
+        dirtyFlags_ |= CharacterDirtyFlag::UpDirection;
     }
 }
 
@@ -497,7 +555,7 @@ void KinematicCharacterController::SetHeight(float height)
     if (height != height_)
     {
         height_ = height;
-        ResetShape();
+        dirtyFlags_ |= CharacterDirtyFlag::Shape;
     }
 }
 
@@ -506,7 +564,7 @@ void KinematicCharacterController::SetDiameter(float diameter)
     if (diameter != diameter_)
     {
         diameter_ = diameter;
-        ResetShape();
+        dirtyFlags_ |= CharacterDirtyFlag::Shape;
     }
 }
 
@@ -535,7 +593,8 @@ void KinematicCharacterController::SetStepHeight(float stepHeight)
     if (stepHeight != stepHeight_)
     {
         stepHeight_ = stepHeight;
-        kinematicController_->setStepHeight(stepHeight_);
+        if (kinematicController_)
+            kinematicController_->setStepHeight(stepHeight_);
     }
 }
 
@@ -544,7 +603,8 @@ void KinematicCharacterController::SetMaxJumpHeight(float maxJumpHeight)
     if (maxJumpHeight != maxJumpHeight_)
     {
         maxJumpHeight_ =  maxJumpHeight;
-        kinematicController_->setMaxJumpHeight(maxJumpHeight_);
+        if (kinematicController_)
+            kinematicController_->setMaxJumpHeight(maxJumpHeight_);
     }
 }
 
@@ -553,7 +613,8 @@ void KinematicCharacterController::SetFallSpeed(float fallSpeed)
     if (fallSpeed != fallSpeed_)
     {
         fallSpeed_ = fallSpeed;
-        kinematicController_->setFallSpeed(fallSpeed_);
+        if (kinematicController_)
+            kinematicController_->setFallSpeed(fallSpeed_);
     }
 }
 
@@ -562,7 +623,8 @@ void KinematicCharacterController::SetJumpSpeed(float jumpSpeed)
     if (jumpSpeed != jumpSpeed_)
     {
         jumpSpeed_ = jumpSpeed;
-        kinematicController_->setJumpSpeed(jumpSpeed_);
+        if (kinematicController_)
+            kinematicController_->setJumpSpeed(jumpSpeed_);
     }
 }
 
@@ -571,58 +633,65 @@ void KinematicCharacterController::SetMaxSlope(float maxSlope)
     if (maxSlope != maxSlope_)
     {
         maxSlope_ = maxSlope;
-        kinematicController_->setMaxSlope(M_DEGTORAD * maxSlope_);
+        if (kinematicController_)
+            kinematicController_->setMaxSlope(M_DEGTORAD * maxSlope_);
     }
 }
 
-void KinematicCharacterController::SetWalkIncrement(const Vector3& walkDir)
+void KinematicCharacterController::SetWalkDirection(const Vector3& walkDir)
 {
-    kinematicController_->setWalkDirection(ToBtVector3(walkDir));
+    if (kinematicController_)
+        kinematicController_->setWalkDirection(ToBtVector3(walkDir));
 }
 
 bool KinematicCharacterController::OnGround() const
 {
-    return kinematicController_->onGround();
+    return kinematicController_ ? kinematicController_->onGround() : false;
 }
 
 void KinematicCharacterController::Jump(const Vector3 &jump)
 {
-    kinematicController_->jump(ToBtVector3(jump));
+    if (kinematicController_)
+        kinematicController_->jump(ToBtVector3(jump));
 }
 
 bool KinematicCharacterController::CanJump() const
 {
-    return kinematicController_->canJump();
+    return kinematicController_ ? kinematicController_->canJump() : false;
 }
 
 void KinematicCharacterController::ApplyImpulse(const Vector3 &impulse)
 {
-	kinematicController_->applyImpulse(ToBtVector3(impulse));
+    if (kinematicController_)
+	    kinematicController_->applyImpulse(ToBtVector3(impulse));
 }
 
 void KinematicCharacterController::SetAngularVelocity(const Vector3 &velocity)
 {
-	kinematicController_->setAngularVelocity(ToBtVector3(velocity));
+    if (kinematicController_)
+	    kinematicController_->setAngularVelocity(ToBtVector3(velocity));
 }
 
 const Vector3 KinematicCharacterController::GetAngularVelocity() const
 {
-    return ToVector3(kinematicController_->getAngularVelocity());
+    return kinematicController_ ? ToVector3(kinematicController_->getAngularVelocity()) : Vector3::ZERO;
 }
 
 void KinematicCharacterController::SetLinearVelocity(const Vector3 &velocity)
 {
-	kinematicController_->setLinearVelocity(ToBtVector3(velocity));
+    if (kinematicController_)
+	    kinematicController_->setLinearVelocity(ToBtVector3(velocity));
 }
 
 const Vector3 KinematicCharacterController::GetLinearVelocity() const
 {
-    return ToVector3(kinematicController_->getLinearVelocity());
+    return kinematicController_ ? ToVector3(kinematicController_->getLinearVelocity()) : Vector3::ZERO;
 }
 
 void KinematicCharacterController::DrawDebugGeometry()
 {
-    kinematicController_->debugDraw(physicsWorld_);
+    if (kinematicController_ && physicsWorld_)
+        kinematicController_->debugDraw(physicsWorld_);
 }
 
 }
