@@ -137,6 +137,8 @@ public:
     unsigned GetPluginListRevision() const { return listRevision_; }
     /// Return whether the load is pending at the end of the frame.
     bool IsReloadPending() const { return reloadPending_; }
+    /// Return whether loaded plugins are out of date.
+    bool AreLoadedPluginsOutOfDate() const { return pluginsOutOfDate_; }
 
     /// Manually add new plugin with dynamic reloading.
     bool AddDynamicPlugin(Plugin* plugin);
@@ -153,12 +155,15 @@ public:
     /// Enumerate already loaded dynamic modules and static plugins.
     StringVector EnumerateLoadedModules();
 
+    /// Return whether reload is blocked for external reasons.
+    bool IsReloadBlocked(ea::string* reason = nullptr) const;
+
 private:
     void DisposeStack();
     void RestoreStack();
 
     void Update(bool exiting);
-    bool NeedReloadNow() const;
+    void CheckOutOfDatePlugins();
 
     void PerformPluginUnload(Plugin* plugin);
     bool CheckAndRemoveUnloadedPlugin(Plugin* plugin);
@@ -187,11 +192,14 @@ private:
     bool startPending_{};
     bool stopPending_{};
     bool reloadPending_{};
+
     StringVector loadedPlugins_;
     unsigned listRevision_{};
     ea::string temporaryDirectory_;
     SharedPtr<PluginStack> pluginStack_;
     QuitApplicationCallback quitApplication_;
+
+    bool pluginsOutOfDate_{};
 
     SerializedPlugins restoreBuffer_;
     bool wasStarted_{};

@@ -554,7 +554,8 @@ void PluginManager::Update(bool exiting)
     // If hot-reloading is enabled, check for reload
     if (!exiting && enableAutoReload_ && (reloadTimer_.GetMSec(false) >= reloadIntervalMs_))
     {
-        if (NeedReloadNow())
+        CheckOutOfDatePlugins();
+        if (pluginsOutOfDate_ && !IsReloadBlocked())
             reloadPending_ = true;
         reloadTimer_.Reset();
     }
@@ -593,22 +594,40 @@ void PluginManager::Update(bool exiting)
     }
 }
 
-bool PluginManager::NeedReloadNow() const
+void PluginManager::CheckOutOfDatePlugins()
 {
-    const bool isAnyOutOfDate = ea::any_of(
+    pluginsOutOfDate_ = ea::any_of(
         dynamicPlugins_.begin(), dynamicPlugins_.end(), [](const auto& elem) { return elem.second->IsOutOfDate(); });
+}
 
-    if (!isAnyOutOfDate)
-        return false;
-
+bool PluginManager::IsReloadBlocked(ea::string* reason) const
+{
     const auto fs = GetSubsystem<FileSystem>();
     if (fs->FileExists(binaryDirectory_ + ".noreload"))
-        return false;
+    {
+        if (reason)
+            *reason = "CMake build in progress";
+        return true;
+    }
 
-    const bool isAllReady = ea::all_of(dynamicPlugins_.begin(), dynamicPlugins_.end(),
-        [](const auto& elem) { return elem.second->IsReadyToReload(); });
+#ifdef URHO3D_PROFILING
+    if (tracy::GetProfiler().IsConnected())
+    {
+        if (reason)
+            *reason = "Profiler is connected";
+        return true;
+    }
+#endif
 
-    return isAllReady;
+    const auto isBinaryReady = [](const auto& elem) { return elem.second->IsReadyToReload(); };
+    if (!ea::all_of(dynamicPlugins_.begin(), dynamicPlugins_.end(), isBinaryReady))
+    {
+        if (reason)
+            *reason = "Binaries cannot be loaded";
+        return true;
+    }
+
+    return false;
 }
 
 void PluginManager::PerformPluginUnload(Plugin* plugin)

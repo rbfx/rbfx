@@ -958,6 +958,14 @@ void Project::RenderPluginReloadToolbar()
 {
     using namespace std::chrono_literals;
 
+    ea::string reloadBlockedReason;
+    if (pluginManager_->AreLoadedPluginsOutOfDate() && pluginManager_->IsReloadBlocked(&reloadBlockedReason))
+    {
+        ui::SameLine();
+        ui::Text("Plugin reload is blocked: %s", reloadBlockedReason.c_str());
+        return;
+    }
+
     if (!pluginReloadEndTime_)
         return;
 
