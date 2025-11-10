@@ -64,7 +64,7 @@ bool ScriptBundlePlugin::Load()
 bool ScriptBundlePlugin::PerformUnload()
 {
     ScriptRuntimeApi* runtime = Script::GetRuntimeApi();
-    if (!runtime)
+    if (!runtime || !application_)
         return false;
 
     application_->Dispose();
