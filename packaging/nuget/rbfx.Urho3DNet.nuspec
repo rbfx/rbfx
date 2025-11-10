@@ -22,9 +22,10 @@
         <file src="../../Source/ThirdParty/SDL/android-project/app/src/main/java/org/libsdl/app/**" target="content/"/>
 
         <file src="in\rebelfork-sdk-windows-msvc-x64-dll-latest\bin\RelWithDebInfo\Urho3DNet.dll" target="runtimes\win-x64\lib\net8.0\"/>
-        <!-- <file src="in\rebelfork-sdk-windows-msvc-x64-dll-latest\bin\RelWithDebInfo\Urho3DNet.pdb" target="runtimes\win-x64\lib\net8.0\"/> -->
         <file src="in\rebelfork-sdk-windows-msvc-x64-dll-latest\bin\RelWithDebInfo\Urho3DNet.Scripts.dll" target="runtimes\win-x64\lib\net8.0\"/>
-        <!-- <file src="in\rebelfork-sdk-windows-msvc-x64-dll-latest\bin\RelWithDebInfo\Urho3DNet.Scripts.pdb" target="runtimes\win-x64\lib\net8.0\"/> -->
+
+        <file src="in\rebelfork-sdk-uwp-msvc-x64-dll-latest\bin\RelWithDebInfo\Urho3DNet.dll" target="runtimes\uap-x64\lib\netstandard2.0\"/>
+        <file src="in\rebelfork-sdk-uwp-msvc-x64-dll-latest\bin\RelWithDebInfo\Urho3DNet.Scripts.dll" target="runtimes\uap-x64\lib\netstandard2.0\"/>
 
         <file src="in\rebelfork-sdk-linux-gcc-x64-dll-latest\bin\RelWithDebInfo\Urho3DNet.dll" target="runtimes\linux-x64\lib\net8.0\"/>
         <file src="in\rebelfork-sdk-linux-gcc-x64-dll-latest\bin\RelWithDebInfo\Urho3DNet.Scripts.dll" target="runtimes\linux-x64\lib\net8.0\"/>

@@ -9,6 +9,9 @@
   <ItemGroup Condition=" '$(RuntimeIdentifier)' == 'osx-x64' ">
     <PackageReference Include="rbfx.Urho3DNet.runtime.osx-x64" Version="$(Urho3DNetVersion)" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(RuntimeIdentifier)' == 'uap-x64' ">
+    <PackageReference Include="rbfx.Urho3DNet.runtime.uap-x64" Version="$(Urho3DNetVersion)" />
+  </ItemGroup>
   <ItemGroup Condition=" '$(RuntimeIdentifier)' == 'android-arm' ">
     <PackageReference Include="rbfx.Urho3DNet.runtime.android-arm" Version="$(Urho3DNetVersion)" />
   </ItemGroup>

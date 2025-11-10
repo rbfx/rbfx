@@ -6,11 +6,6 @@ def projectSourceDir = '..'
 def rbfxSourceDir = '..'
 // Minimum required CMake version. This is same as in ../CMakeLists.txt.
 def cmakeVersion = '3.25.0+'
-// Explicitly specify build targets, so that managed targets can be built on CI.
-def buildTargets = ['Samples']
-if ("$System.env.URHO3D_CSHARP" == 'ON') {
-    buildTargets += 'BuildManagedTargets'
-}
 
 buildscript {
     repositories {
@@ -52,6 +47,8 @@ android {
         }
         externalNativeBuild {
             cmake {
+                // TODO: Due to unknown reasons gradle fails to build some CMake targets.
+                targets 'Samples', 'BuildManagedTargets', 'Sample.103_GamePlugin'
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21', '-DANDROID=1',
                           '-DBUILD_SHARED_LIBS=ON', '-DURHO3D_SAMPLES=ON', '-DURHO3D_PLAYER=OFF',
                           '-DURHO3D_CSHARP=ON', '-DCMAKE_POLICY_VERSION_MINIMUM=3.10'
@@ -60,8 +57,6 @@ android {
                 if (cmakePrefixPath) {
                     arguments "-DCMAKE_PREFIX_PATH=${cmakePrefixPath}"
                 }
-
-                targets 'Samples', 'BuildManagedTargets'
             }
         }
     }
