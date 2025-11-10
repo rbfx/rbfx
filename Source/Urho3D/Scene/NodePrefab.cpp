@@ -160,7 +160,7 @@ void SerializablePrefab::Import(const Serializable* serializable, PrefabSaveFlag
     const ObjectReflection* reflection = serializable->GetReflection();
     if (!reflection)
     {
-        URHO3D_LOGERROR("Serializable '{}' is not reflected and cannot be serialized", reflection->GetTypeName());
+        URHO3D_LOGERROR("Serializable '{}' is not reflected and cannot be serialized", serializable->GetTypeName());
         return;
     }
 
