@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.6)
+cmake_minimum_required (VERSION 3.6...3.25)
 
 project(Diligent-GraphicsEngineOpenGL CXX)
 
@@ -308,7 +308,7 @@ set_target_properties(Diligent-GraphicsEngineOpenGL-static PROPERTIES
 set_target_properties(Diligent-GraphicsEngineOpenGL-shared PROPERTIES
     FOLDER DiligentCore/Graphics
 )
-set_target_properties(Diligent-GLAdapterSelector PROPERTIES 
+set_target_properties(Diligent-GLAdapterSelector PROPERTIES
     FOLDER DiligentCore/Graphics
 )
 

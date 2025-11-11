@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.7)
+cmake_minimum_required(VERSION 3.7...3.25)
 project (libjuice
 	VERSION 1.1.0
 	LANGUAGES C)

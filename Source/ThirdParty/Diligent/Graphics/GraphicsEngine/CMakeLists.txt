@@ -1,8 +1,8 @@
-cmake_minimum_required (VERSION 3.6)
+cmake_minimum_required (VERSION 3.6...3.25)
 
 project(Diligent-GraphicsEngine CXX)
 
-set(INCLUDE 
+set(INCLUDE
     include/BufferBase.hpp
     include/BufferViewBase.hpp
     include/BottomLevelASBase.hpp
@@ -40,7 +40,7 @@ set(INCLUDE
     include/TopLevelASBase.hpp
 )
 
-set(INTERFACE 
+set(INTERFACE
     interface/APIInfo.h
     interface/BlendState.h
     interface/Buffer.h
@@ -113,13 +113,13 @@ set(SOURCE
 add_library(Diligent-GraphicsEngine STATIC ${SOURCE} ${INTERFACE} ${INCLUDE})
 set_common_target_properties(Diligent-GraphicsEngine)
 
-target_include_directories(Diligent-GraphicsEngine 
+target_include_directories(Diligent-GraphicsEngine
 PUBLIC
     include
     interface
 )
 
-target_link_libraries(Diligent-GraphicsEngine 
+target_link_libraries(Diligent-GraphicsEngine
 PRIVATE
     Diligent-BuildSettings
 PUBLIC

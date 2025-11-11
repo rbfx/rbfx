@@ -1,14 +1,14 @@
-cmake_minimum_required (VERSION 3.6)
+cmake_minimum_required (VERSION 3.6...3.25)
 
 project(Diligent-BasicPlatform CXX)
 
-set(SOURCE 
+set(SOURCE
     src/BasicFileSystem.cpp
     src/BasicPlatformDebug.cpp
     src/BasicPlatformMisc.cpp
 )
 
-set(INTERFACE 
+set(INTERFACE
     interface/BasicFileSystem.hpp
     interface/BasicPlatformDebug.hpp
     interface/BasicPlatformMisc.hpp
@@ -27,14 +27,14 @@ endif()
 add_library(Diligent-BasicPlatform STATIC ${SOURCE} ${INTERFACE} ${INCLUDE})
 set_common_target_properties(Diligent-BasicPlatform)
 
-target_include_directories(Diligent-BasicPlatform 
+target_include_directories(Diligent-BasicPlatform
 PUBLIC
     interface
 )
 
-target_link_libraries(Diligent-BasicPlatform 
+target_link_libraries(Diligent-BasicPlatform
 PRIVATE
-    Diligent-BuildSettings 
+    Diligent-BuildSettings
 PUBLIC
     Diligent-Primitives
 )

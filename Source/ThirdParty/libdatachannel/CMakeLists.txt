@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.7...3.25)
 project(libdatachannel
 	VERSION 0.18.0
 	LANGUAGES CXX)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.7...3.25)
 project(datachannel-wasm
 	DESCRIPTION "C++ WebRTC Data Channels for WebAssembly in browsers"
 	VERSION 0.2.1
