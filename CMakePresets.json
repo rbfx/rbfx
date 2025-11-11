@@ -18,7 +18,7 @@
         "URHO3D_PACKAGING": "ON",
         "URHO3D_ENABLE_ALL": "ON",
         "CMAKE_CONFIGURATION_TYPES": "Debug;RelWithDebInfo",
-        "CMAKE_POLICY_VERSION_MINIMUM": "3.5",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.10",
         "URHO3D_PCH": "ON"
       }
     },
@@ -200,6 +200,7 @@
     },
     {
       "name": "macos-clang-x64-lib",
+      "generator": "Xcode",
       "inherits": "base-lib",
       "cacheVariables": {
         "CMAKE_OSX_ARCHITECTURES": "x86_64"
@@ -207,6 +208,7 @@
     },
     {
       "name": "macos-clang-x64-dll",
+      "generator": "Xcode",
       "inherits": "base-dll",
       "cacheVariables": {
         "CMAKE_OSX_ARCHITECTURES": "x86_64"
@@ -214,6 +216,7 @@
     },
     {
       "name": "macos-clang-arm64-lib",
+      "generator": "Xcode",
       "inherits": "base-lib",
       "cacheVariables": {
         "CMAKE_OSX_ARCHITECTURES": "arm64"
@@ -221,6 +224,7 @@
     },
     {
       "name": "macos-clang-arm64-dll",
+      "generator": "Xcode",
       "inherits": "base-dll",
       "cacheVariables": {
         "CMAKE_OSX_ARCHITECTURES": "arm64"
@@ -239,12 +243,27 @@
       }
     },
     {
-      "name": "ios-clang-universal-lib",
+      "name": "ios-clang-arm-lib",
+      "generator": "Xcode",
       "inherits": ["base-lib", "cmake-prefix-path-macos"],
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "CMake/Toolchains/IOS.cmake",
-        "PLATFORM": "SIMULATOR64",
-        "DEPLOYMENT_TARGET": "12"
+        "PLATFORM": "OS",
+        "DEPLOYMENT_TARGET": "12",
+        "URHO3D_CSHARP": "ON",
+        "CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED": "NO"
+      }
+    },
+    {
+      "name": "ios-clang-arm64-lib",
+      "generator": "Xcode",
+      "inherits": ["base-lib", "cmake-prefix-path-macos"],
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "CMake/Toolchains/IOS.cmake",
+        "PLATFORM": "OS64",
+        "DEPLOYMENT_TARGET": "12",
+        "URHO3D_CSHARP": "ON",
+        "CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED": "NO"
       }
     },
     {
@@ -525,14 +544,26 @@
       "inherits": "web-release-base"
     },
     {
-      "name": "ios-clang-universal-lib-debug",
-      "configurePreset": "ios-clang-universal-lib",
+      "name": "ios-clang-arm-lib-debug",
+      "configurePreset": "ios-clang-arm-lib",
       "displayName": "debug",
       "inherits": "debug-base"
     },
     {
-      "name": "ios-clang-universal-lib-release",
-      "configurePreset": "ios-clang-universal-lib",
+      "name": "ios-clang-arm-lib-release",
+      "configurePreset": "ios-clang-arm-lib",
+      "displayName": "release",
+      "inherits": "release-base"
+    },
+    {
+      "name": "ios-clang-arm64-lib-debug",
+      "configurePreset": "ios-clang-arm64-lib",
+      "displayName": "debug",
+      "inherits": "debug-base"
+    },
+    {
+      "name": "ios-clang-arm64-lib-release",
+      "configurePreset": "ios-clang-arm64-lib",
       "displayName": "release",
       "inherits": "release-base"
     },
