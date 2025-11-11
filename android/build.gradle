@@ -51,7 +51,8 @@ android {
                 targets 'Samples', 'BuildManagedTargets', 'Sample.103_GamePlugin'
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21', '-DANDROID=1',
                           '-DBUILD_SHARED_LIBS=ON', '-DURHO3D_SAMPLES=ON', '-DURHO3D_PLAYER=OFF',
-                          '-DURHO3D_CSHARP=ON', '-DCMAKE_POLICY_VERSION_MINIMUM=3.10'
+                          '-DURHO3D_CSHARP=ON', '-DCMAKE_POLICY_VERSION_MINIMUM=3.10',
+                          '--trace-expand', '--trace-redirect='+System.getenv('ci_build_dir')+'/'+System.getenv('ci_arch')+'-'+'cmake_trace.log'
 
                 def cmakePrefixPath = System.getenv('CMAKE_PREFIX_PATH')
                 if (cmakePrefixPath) {

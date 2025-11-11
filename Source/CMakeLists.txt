@@ -102,6 +102,9 @@ if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
         COMMAND ${DOTNET_MACOS_MSBUILD_WORKAROUND} ${DOTNET} build ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.sln
             -restore -noLogo -interactive:false -nr:false -p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/
             -consoleLoggerParameters:ErrorsOnly -p:Platform=${URHO3D_PLATFORM} -p:Configuration=${URHO3D_CONFIG}
+            "-bl:${CMAKE_BINARY_DIR}/ManagedTargets.binlog"
+            "-v:diag"
+            "-flp:logfile=${CMAKE_BINARY_DIR}/ManagedTargets-log.log"
             ${DOTNET_LINUX_MSBUILD_WORKAROUND}
         DEPENDS Urho3D COMMAND_EXPAND_LISTS)
     foreach (TARGET libEditorWrapper libPlayer)

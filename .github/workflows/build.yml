@@ -130,7 +130,9 @@ jobs:
           fetch-depth: 1
 
       - name: Setup environment
-        run: ${{ env.ci_build_script }} setup-environment
+        run: |
+          mkdir -p '${{ env.ci_build_dir }}'
+          ${{ env.ci_build_script }} setup-environment
 
       # Mobile-specific: Checkout emsdk (Web only)
       - name: Checkout emsdk
@@ -383,6 +385,16 @@ jobs:
         with:
           name: 'ccache-debug-build-${{ env.ci_platform_tag }}-${{ github.run_id }}'
           path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
+      - name: Upload CMake trace logs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: 'cmake-trace-${{ env.ci_platform_tag }}-${{ github.run_id }}'
+          path: |
+            **/*log
+            **/cmake_*_output.txt
           if-no-files-found: ignore
 
   Docs:
