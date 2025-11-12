@@ -20,19 +20,20 @@
 // THE SOFTWARE.
 //
 
-#include "SceneWidget.h"
-#include "../Scene/Scene.h"
-#include "../Graphics/Octree.h"
-#include "../Graphics/DebugRenderer.h"
-#include "../Graphics/Skybox.h"
-#include "../Graphics/Zone.h"
-#include "../Graphics/TextureCube.h"
-#include "../Graphics/Model.h"
-#include "../Graphics/Material.h"
-#include "../RenderPipeline/ShaderConsts.h"
-#include "../Resource/ResourceCache.h"
-#include "Urho3D/Graphics/Camera.h"
-#include "Urho3D/Graphics/Light.h"
+#include <Urho3D/SystemUI/SceneWidget.h>
+#include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Graphics/Octree.h>
+#include <Urho3D/Graphics/DebugRenderer.h>
+#include <Urho3D/Graphics/Skybox.h>
+#include <Urho3D/Graphics/Zone.h>
+#include <Urho3D/Graphics/TextureCube.h>
+#include <Urho3D/Graphics/Model.h>
+#include <Urho3D/Graphics/Material.h>
+#include <Urho3D/RenderPipeline/ShaderConsts.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Graphics/Camera.h>
+#include <Urho3D/Graphics/Light.h>
+#include <Urho3D/Input/MoveAndOrbitComponent.h>
 
 namespace Urho3D
 {
@@ -72,7 +73,47 @@ void SceneWidget::RenderContent()
 
     Texture2D* sceneTexture = renderer->GetTexture();
     ui::SetCursorPos(contentPosition);
+    const ImVec2 imageBegin = ui::GetCursorPos();
     Widgets::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
+    const ImVec2 imageEnd = ui::GetCursorPos();
+
+    // Enable basic orbit controls similar to MaterialInspectorWidget
+    if (auto* camera = renderer->GetCamera())
+    {
+        Node* cameraNode = camera->GetNode();
+        auto* moveAndOrbit = cameraNode->GetComponent<MoveAndOrbitComponent>();
+        if (!moveAndOrbit)
+        {
+            moveAndOrbit = cameraNode->CreateComponent<MoveAndOrbitComponent>();
+            const Quaternion& currentRotation = cameraNode->GetRotation();
+            moveAndOrbit->SetYaw(currentRotation.YawAngle());
+            moveAndOrbit->SetPitch(currentRotation.PitchAngle());
+        }
+
+        float distance = cameraNode->GetPosition().Length();
+        // Interact only when the image is hovered
+        if (ui::IsItemHovered())
+        {
+            if (ui::IsMouseDown(MOUSEB_RIGHT))
+            {
+                const Vector2 mouseDelta = ToVector2(ui::GetIO().MouseDelta);
+                moveAndOrbit->SetYaw(moveAndOrbit->GetYaw() + mouseDelta.x_ * 0.9f);
+                moveAndOrbit->SetPitch(moveAndOrbit->GetPitch() + mouseDelta.y_ * 0.9f);
+            }
+
+            if (Abs(ui::GetMouseWheel()) > 0.05f)
+            {
+                if (ui::GetMouseWheel() > 0.0f)
+                    distance *= 0.8f;
+                else
+                    distance *= 1.3f;
+            }
+        }
+        distance = Clamp(distance, 0.5f, 100.0f);
+
+        cameraNode->SetRotation(moveAndOrbit->GetYawPitchRotation());
+        cameraNode->SetPosition(distance * (cameraNode->GetRotation() * Vector3::BACK));
+    }
 }
 
 Scene* SceneWidget::CreateDefaultScene()
