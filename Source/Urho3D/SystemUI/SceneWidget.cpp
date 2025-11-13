@@ -81,14 +81,7 @@ void SceneWidget::RenderContent()
     if (auto* camera = renderer->GetCamera())
     {
         Node* cameraNode = camera->GetNode();
-        auto* moveAndOrbit = cameraNode->GetComponent<MoveAndOrbitComponent>();
-        if (!moveAndOrbit)
-        {
-            moveAndOrbit = cameraNode->CreateComponent<MoveAndOrbitComponent>();
-            const Quaternion& currentRotation = cameraNode->GetRotation();
-            moveAndOrbit->SetYaw(currentRotation.YawAngle());
-            moveAndOrbit->SetPitch(currentRotation.PitchAngle());
-        }
+        auto* moveAndOrbit = cameraNode->GetOrCreateComponent<MoveAndOrbitComponent>();
 
         float distance = cameraNode->GetPosition().Length();
         // Interact only when the image is hovered
@@ -109,7 +102,7 @@ void SceneWidget::RenderContent()
                     distance *= 1.3f;
             }
         }
-        distance = Clamp(distance, 0.5f, 100.0f);
+        distance = Clamp(distance, moveAndOrbit->GetMinDistance(), moveAndOrbit->GetMaxDistance());
 
         cameraNode->SetRotation(moveAndOrbit->GetYawPitchRotation());
         cameraNode->SetPosition(distance * (cameraNode->GetRotation() * Vector3::BACK));

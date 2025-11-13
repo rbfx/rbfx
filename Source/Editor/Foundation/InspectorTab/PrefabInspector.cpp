@@ -1,24 +1,7 @@
-//
+// Copyright (c) 2008-2022 the Urho3D project.
 // Copyright (c) 2025-2025 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #include "../../Foundation/InspectorTab/PrefabInspector.h"
 
@@ -29,9 +12,47 @@
 #include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/SystemUI/ModelInspectorWidget.h>
 #include <Urho3D/SystemUI/SceneWidget.h>
+#include <Urho3D/Input/MoveAndOrbitComponent.h>
 
 namespace Urho3D
 {
+
+namespace
+{
+
+float CalculateCameraDistance(const BoundingBox& bbox, Camera* camera, float margin)
+{
+    const float objectRadius = bbox.Size().Length() * 0.5f;
+    const float verticalFov = camera->GetFov();
+    const float horizontalFov = 2.0f * Atan(Tan(verticalFov * 0.5f) * camera->GetAspectRatio());
+    const float minFov = Min(verticalFov, horizontalFov);
+    const float distance = objectRadius / Tan(minFov * 0.5f) * (1.0f + margin);
+    return distance;
+}
+
+Vector3 CalculateOptimalCameraDirection(const BoundingBox& bbox, float topDominanceMargin)
+{
+    // Calculate visible area for each primary viewing direction
+    const Vector3 size = bbox.Size();
+    const float areaYZ = size.y_ * size.z_; // Looking along X axis
+    const float areaXZ = size.x_ * size.z_; // Looking along Y axis (top/bottom)
+    const float areaXY = size.x_ * size.y_; // Looking along Z axis
+
+    // Heuristic:
+    // - Prefer top-down if object is very thin vertically vs its widest horizontal dimension
+    // - Otherwise, pick the side (RIGHT or FORWARD) that shows the largest visible area
+    // - If top area clearly dominates best side by margin, also pick top
+    const float bestSideArea = Max(areaYZ, areaXY);
+
+    if (areaXZ >= bestSideArea * topDominanceMargin)
+        return Vector3::UP;      // Very thin or clearly best from top: look from top
+    else if (areaYZ >= areaXY)
+        return Vector3::RIGHT;   // Look from the right (Y-Z plane is larger)
+    else
+        return Vector3::FORWARD; // Look from the front (X-Y plane is larger)
+}
+
+} // namespace
 
 void Foundation_PrefabInspector(Context* context, InspectorTab* inspectorTab)
 {
@@ -55,85 +76,56 @@ SharedPtr<ResourceInspectorWidget> PrefabInspector::MakeInspectorWidget(const Re
 
 SharedPtr<BaseWidget> PrefabInspector::MakePreviewWidget(Resource* resource)
 {
-    ea::vector<Drawable*> drawables;
     auto sceneWidget = MakeShared<SceneWidget>(context_);
     auto scene = sceneWidget->CreateDefaultScene();
     auto prefabNode = scene->InstantiatePrefab(resource->Cast<PrefabResource>());
     prefabNode->SetName("Prefab");
-    prefabNode->FindComponents<Drawable>(drawables, ComponentSearchFlag::SelfOrChildrenRecursive | ComponentSearchFlag::Derived);
+
+    // Calculate total bounding box of the prefab
+    ea::vector<Drawable*> drawables;
+    prefabNode->FindComponents<Drawable>(drawables,
+        ComponentSearchFlag::SelfOrChildrenRecursive | ComponentSearchFlag::Derived);
     BoundingBox bbox;
     for (auto* drawable : drawables)
         bbox.Merge(drawable->GetWorldBoundingBox());
 
-    // Center the prefab at origin and calculate size before moving
+    // Scale up small objects
+    const float radius = bbox.Size().Length() * 0.5f;
+    const float minRadius = 10.0f;
+    if (radius > 0.0f && radius < minRadius)
+        prefabNode->SetScale(minRadius / radius);
+
+    // Prefab bbox center is at origin
     prefabNode->SetPosition(-bbox.Center());
 
-    // Find optimal camera position by evaluating visible area from three primary axes
-    // Calculate visible area for each primary viewing direction
-    Vector3 size = bbox.Size();
-    const float x = size.x_;
-    const float y = size.y_;
-    const float z = size.z_;
-    const float areaYZ = y * z; // Looking along X axis
-    const float areaXZ = x * z; // Looking along Y axis (top/bottom)
-    const float areaXY = x * y; // Looking along Z axis
+    // Recalculate bbox after adjustments
+    bbox = BoundingBox();
+    for (auto* drawable : drawables)
+        bbox.Merge(drawable->GetWorldBoundingBox());
 
-    // Heuristic:
-    // - Prefer top-down if object is very thin vertically vs its widest horizontal dimension
-    // - Otherwise, pick the side (RIGHT or FORWARD) that shows the largest visible area
-    // - If top area clearly dominates best side by margin, also pick top
-    const float horizMax = Max(x, z);
-    const float bestSideArea = Max(areaYZ, areaXY);
-    const float topDominanceMargin = 10.0f; // Top area must be at least 10x larger than best side to be chosen
-
-    Vector3 cameraDirection;
-
-    if (areaXZ >= bestSideArea * topDominanceMargin)
-        cameraDirection = Vector3::UP;      // Very thin or clearly best from top: look from top
-    else if (areaYZ >= areaXY)
-        cameraDirection = Vector3::RIGHT;   // Look from the right (Y-Z plane is larger)
-    else
-        cameraDirection = Vector3::FORWARD; // Look from the front (X-Y plane is larger)
-
-    // Add a slight upward angle for side/front views to see the object better
-    if (cameraDirection == Vector3::UP)
+    // Add a slight upward/sideways angle for side/front views to see the object better
+    Vector3 cameraDirection = CalculateOptimalCameraDirection(bbox, 10.0f);
+    if (cameraDirection != Vector3::UP)
     {
-        // Rotate camera direction upward by elevation angle
-        // Find the horizontal component and rotate around the perpendicular axis
-        Vector3 horizontalDir = cameraDirection;
-        horizontalDir.y_ = 0.0f;
-        horizontalDir.Normalize();
-
-        // Create rotation axis perpendicular to horizontal direction (in XZ plane)
-        Vector3 rotationAxis = horizontalDir.CrossProduct(Vector3::UP);
-
-        // Rotate the camera direction upward
-        const float elevationAngle = 20.0f; // degrees
-        Quaternion elevation(elevationAngle, rotationAxis);
-        cameraDirection = elevation * cameraDirection;
+        const float elevationAngle = 20.0f;
+        const float verticalRotationAngle = -30.0f;
+        Vector3 horizontalAxis = cameraDirection.CrossProduct(Vector3::UP);
+        cameraDirection = Quaternion(elevationAngle, horizontalAxis) * cameraDirection;
+        cameraDirection = Quaternion(verticalRotationAngle, Vector3::UP) * cameraDirection;
     }
 
-    // Calculate distance based on camera FOV to fit object in viewport
+    // Position camera to see the prefab.
     auto cameraNode = sceneWidget->GetCamera()->GetNode();
     auto camera = sceneWidget->GetCamera();
-    const float fov = camera->GetFov();
-    const float aspectRatio = camera->GetAspectRatio();
-
-    // Calculate the radius of bounding sphere (worst case for fitting)
-    const float boundingSphereRadius = size.Length() * 0.5f;
-
-    // Calculate distance needed to fit the bounding sphere in view
-    // Use the smaller of vertical or horizontal FOV
-    const float verticalFov = fov;
-    const float horizontalFov = 2.0f * Atan(Tan(verticalFov * 0.5f) * aspectRatio);
-    const float effectiveFov = Min(verticalFov, horizontalFov);
-
-    // Distance = radius / tan(fov/2), with 10% margin
-    const float distance = (boundingSphereRadius / Tan(effectiveFov * 0.5f)) * 1.1f;
-
-    // Position camera relative to origin (0,0,0) since prefab is now centered there
+    const float distance = CalculateCameraDistance(bbox, camera, +0.1f);
     cameraNode->SetPosition(cameraDirection * distance);
-    cameraNode->LookAt(Vector3::ZERO);  // Look at the centered prefab
+    cameraNode->LookAt(Vector3::ZERO);
+
+    // Apply limits to the MoveAndOrbitComponent
+    const float minDistance = CalculateCameraDistance(bbox, camera, -0.9f);
+    const float maxDistance = CalculateCameraDistance(bbox, camera, +0.9f);
+    auto* moveAndOrbit = cameraNode->GetOrCreateComponent<MoveAndOrbitComponent>();
+    moveAndOrbit->SetDistanceLimits(minDistance, maxDistance);
 
     return sceneWidget;
 }
