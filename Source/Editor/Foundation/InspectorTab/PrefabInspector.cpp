@@ -93,15 +93,15 @@ SharedPtr<BaseWidget> PrefabInspector::MakePreviewWidget(Resource* resource)
     const float radius = bbox.Size().Length() * 0.5f;
     const float minRadius = 10.0f;
     if (radius > 0.0f && radius < minRadius)
-        prefabNode->SetScale(minRadius / radius);
+    {
+        const float scale = minRadius / radius;
+        prefabNode->SetScale(scale);
+        bbox.Transform(Matrix3x4::FromScale(scale));
+    }
 
     // Prefab bbox center is at origin
     prefabNode->SetPosition(-bbox.Center());
-
-    // Recalculate bbox after adjustments
-    bbox = BoundingBox();
-    for (auto* drawable : drawables)
-        bbox.Merge(drawable->GetWorldBoundingBox());
+    bbox.Transform(Matrix3x4::FromTranslation(-bbox.Center()));
 
     // Add a slight upward/sideways angle for side/front views to see the object better
     Vector3 cameraDirection = CalculateOptimalCameraDirection(bbox, 10.0f);
