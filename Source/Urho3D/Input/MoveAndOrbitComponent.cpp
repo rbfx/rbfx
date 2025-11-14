@@ -20,8 +20,9 @@
 // THE SOFTWARE.
 //
 
-#include "Urho3D/Core/Context.h"
-#include "Urho3D/Input/MoveAndOrbitComponent.h"
+#include <Urho3D/Core/Context.h>
+#include <Urho3D/Scene/Node.h>
+#include <Urho3D/Input/MoveAndOrbitComponent.h>
 
 namespace Urho3D
 {
@@ -29,12 +30,22 @@ namespace Urho3D
 MoveAndOrbitComponent::MoveAndOrbitComponent(Context* context)
     : BaseClassName(context)
 {
-    
+
 }
 
 void MoveAndOrbitComponent::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<MoveAndOrbitComponent>(Category_Logic);
+}
+
+void MoveAndOrbitComponent::OnNodeSet(Node* previousNode, Node* currentNode)
+{
+    if (currentNode)
+    {
+        const Quaternion& currentRotation = currentNode->GetRotation();
+        SetYaw(currentRotation.YawAngle());
+        SetPitch(currentRotation.PitchAngle());
+    }
 }
 
 void MoveAndOrbitComponent::SetVelocity(const Vector3& velocity)
@@ -50,6 +61,12 @@ void MoveAndOrbitComponent::SetYaw(float yaw)
 void MoveAndOrbitComponent::SetPitch(float pitch)
 {
     pitch_ = Clamp(pitch, -90.0f, 90.0f);
+}
+
+void MoveAndOrbitComponent::SetDistanceLimits(float minDistance, float maxDistance)
+{
+    minDistance_ = minDistance;
+    maxDistance_ = maxDistance;
 }
 
 } // namespace Urho3D
