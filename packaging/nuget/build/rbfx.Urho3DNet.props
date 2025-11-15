@@ -1,5 +1,5 @@
 <Project>
   <PropertyGroup>
-    <Urho3DNetVersion>0.0.99-dev-0e18303595</Urho3DNetVersion>
+    <Urho3DNetVersion>0.0.19-alpha-1bccef4abf</Urho3DNetVersion>
   </PropertyGroup>
 </Project>

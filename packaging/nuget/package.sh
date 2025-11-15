@@ -56,15 +56,26 @@ create() {
 </Project>
 EOF
 
-    rm -r CoreData EditorData Data
+    rm -rf CoreData EditorData Data
     ln -s ../../bin/CoreData CoreData
     ln -s ../../bin/EditorData EditorData
     ln -s ../../bin/Data Data
 
-    for nuspec in rbfx.*.nuspec;
-    do
-        $NUGET pack -OutputDirectory ./out -Version "$version" "$nuspec"
-    done
+    $NUGET pack -OutputDirectory ./out -Version "$version" rbfx.CoreData.nuspec
+    $NUGET pack -OutputDirectory ./out -Version "$version" rbfx.Data.nuspec
+    $NUGET pack -OutputDirectory ./out -Version "$version" rbfx.EditorData.nuspec
+    $NUGET pack -OutputDirectory ./out -Version "$version" rbfx.Tools.nuspec
+    $NUGET pack -OutputDirectory ./out -Version "$version" rbfx.Tools.runtime.linux-x64.nuspec
+    $NUGET pack -OutputDirectory ./out -Version "$version" rbfx.Tools.runtime.osx-arm64.nuspec
+    $NUGET pack -OutputDirectory ./out -Version "$version" rbfx.Tools.runtime.win-x64.nuspec
+    $NUGET pack -OutputDirectory ./out -Version "$version" rbfx.Urho3DNet.nuspec
+    $NUGET pack -OutputDirectory ./out -Version "$version" rbfx.Urho3DNet.runtime.win-x64.nuspec
+    $NUGET pack -OutputDirectory ./out -Version "$version" rbfx.Urho3DNet.runtime.linux-x64.nuspec
+    $NUGET pack -OutputDirectory ./out -Version "$version" rbfx.Urho3DNet.runtime.osx-arm64.nuspec
+    #$NUGET pack -OutputDirectory ./out -Version "$version" rbfx.Urho3DNet.runtime.android-arm64.nuspec
+    #$NUGET pack -OutputDirectory ./out -Version "$version" rbfx.Urho3DNet.runtime.android-arm.nuspec
+    #$NUGET pack -OutputDirectory ./out -Version "$version" rbfx.Urho3DNet.runtime.android-x64.nuspec
+    #$NUGET pack -OutputDirectory ./out -Version "$version" rbfx.Urho3DNet.runtime.uap-x64.nuspec
 
     rm -r CoreData EditorData Data
 }
@@ -88,10 +99,22 @@ local-repository() {
     done
 
     rm -rf ./local-repository
-    for pkg in out/rbfx.*.nupkg;
-    do
-        $NUGET add "$pkg" -source ./local-repository
-    done
+
+    $NUGET add rbfx.CoreData.nuspec                         -source ./local-repository
+    $NUGET add rbfx.Data.nuspec                             -source ./local-repository
+    $NUGET add rbfx.EditorData.nuspec                       -source ./local-repository
+    $NUGET add rbfx.Tools.nuspec                            -source ./local-repository
+    $NUGET add rbfx.Tools.runtime.linux-x64.nuspec          -source ./local-repository
+    $NUGET add rbfx.Tools.runtime.osx-arm64.nuspec          -source ./local-repository
+    $NUGET add rbfx.Tools.runtime.win-x64.nuspec            -source ./local-repository
+    $NUGET add rbfx.Urho3DNet.nuspec                        -source ./local-repository
+    $NUGET add rbfx.Urho3DNet.runtime.win-x64.nuspec        -source ./local-repository
+    $NUGET add rbfx.Urho3DNet.runtime.linux-x64.nuspec      -source ./local-repository
+    $NUGET add rbfx.Urho3DNet.runtime.osx-arm64.nuspec      -source ./local-repository
+    #$NUGET add rbfx.Urho3DNet.runtime.android-arm64.nuspec  -source ./local-repository
+    #$NUGET add rbfx.Urho3DNet.runtime.android-arm.nuspec    -source ./local-repository
+    #$NUGET add rbfx.Urho3DNet.runtime.android-x64.nuspec    -source ./local-repository
+    #$NUGET add rbfx.Urho3DNet.runtime.uap-x64.nuspec        -source ./local-repository
 }
 
 # Main script logic
