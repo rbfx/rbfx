@@ -466,18 +466,25 @@ function (csharp_bind_target)
 
     # Swig generator command
     setup_external_tool(swig SWIG_EXECUTABLE)
-    add_custom_command(OUTPUT ${BIND_OUT_FILE}
+    # Sentinel file marks completion of bindings generation. This helps downstream managed
+    # projects avoid racing with SWIG output when they glob for generated .cs files.
+    set(BIND_SENTINEL ${BIND_OUT_DIR}/.bindings_complete)
+
+    add_custom_command(OUTPUT ${BIND_OUT_FILE} ${BIND_SENTINEL}
         COMMAND ${CMAKE_COMMAND} -E remove_directory ${BIND_OUT_DIR}
         COMMAND ${CMAKE_COMMAND} -E make_directory ${BIND_OUT_DIR}
         COMMAND "${CMAKE_COMMAND}" -E env "SWIG_LIB=${URHO3D_SWIG_LIB_DIR}" ${SWIG_EXECUTABLE}
         ARGS -outdir "${BIND_OUT_DIR}"
              -o "${BIND_OUT_FILE}"
              @"${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" > ${CMAKE_CURRENT_BINARY_DIR}/swig_${BIND_TARGET}.log
-
+        COMMAND ${CMAKE_COMMAND} -E touch ${BIND_SENTINEL}
         MAIN_DEPENDENCY ${BIND_SWIG}
         DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/GeneratorOptions_${BIND_TARGET}_${URHO3D_CSHARP_BIND_CONFIG}.txt" ${BIND_DEPENDS} $<TARGET_NAME_IF_EXISTS:swig>
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "SWIG: Generating C# bindings for ${BIND_TARGET}")
+
+    # Make a dedicated target that can be used for dependencies and ensure it participates in the default build.
+    add_custom_target(${BIND_TARGET}_CSharpBindings ALL DEPENDS ${BIND_OUT_FILE} ${BIND_SENTINEL})
 
     if (BIND_EMBED)
         # Bindings are part of another target
@@ -494,8 +501,8 @@ function (csharp_bind_target)
             PROJECT ${BIND_CSPROJ}
             OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET})
         if (TARGET ${BIND_MANAGED_TARGET})
-            # Real C# target
-            add_dependencies(${BIND_MANAGED_TARGET} ${BIND_TARGET} ${BIND_EMBED})
+            # Real C# target: depend on native target(s) AND completed bindings generation sentinel.
+            add_dependencies(${BIND_MANAGED_TARGET} ${BIND_TARGET} ${BIND_EMBED} ${BIND_TARGET}_CSharpBindings)
         endif ()
     endif ()
 endfunction ()
