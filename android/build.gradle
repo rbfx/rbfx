@@ -53,6 +53,11 @@ android {
                           '-DBUILD_SHARED_LIBS=ON', '-DURHO3D_SAMPLES=ON', '-DURHO3D_PLAYER=OFF',
                           '-DURHO3D_CSHARP=ON', '-DCMAKE_POLICY_VERSION_MINIMUM=3.10'
 
+                // Add CMake trace logging if CI_MAX_DEBUG is set
+                if (System.getenv('CI_MAX_DEBUG')) {
+                    arguments '--trace-expand', '--trace-redirect='+System.getenv('ci_build_dir')+'/'+System.getenv('ci_arch')+'-'+'cmake_trace.log'
+                }
+
                 def cmakePrefixPath = System.getenv('CMAKE_PREFIX_PATH')
                 if (cmakePrefixPath) {
                     arguments "-DCMAKE_PREFIX_PATH=${cmakePrefixPath}"

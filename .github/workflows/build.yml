@@ -16,6 +16,9 @@ env:
   URHO3D_PRISTINE_FULL_BUILDS: ON
   DOTNET_VERSION: '8.0'
   CMAKE_VERSION: 3.25.x
+  # Enable max debug logging (CMake trace, MSBuild diagnostics, etc.)
+  # Uncomment the line below to enable maximum logging for debugging
+  CI_MAX_DEBUG: 1
   # ccache configuration
   ccache_prefix: ${{ secrets.CACHE_VERSION }}-master
   CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -105,6 +108,8 @@ jobs:
           # Desktop: MacOS builds
           - ci_platform_tag: macos-clang-arm64-dll
           - ci_platform_tag: macos-clang-arm64-lib
+          - ci_platform_tag: macos-clang-x64-dll
+          - ci_platform_tag: macos-clang-x64-lib
           # Mobile: UWP builds
           - ci_platform_tag: uwp-msvc-x64-dll
           - ci_platform_tag: uwp-msvc-x64-lib
@@ -130,7 +135,9 @@ jobs:
           fetch-depth: 1
 
       - name: Setup environment
-        run: ${{ env.ci_build_script }} setup-environment
+        run: |
+          mkdir -p '${{ env.ci_build_dir }}'
+          ${{ env.ci_build_script }} setup-environment
 
       # Mobile-specific: Checkout emsdk (Web only)
       - name: Checkout emsdk
@@ -383,6 +390,17 @@ jobs:
         with:
           name: 'ccache-debug-build-${{ env.ci_platform_tag }}-${{ github.run_id }}'
           path: ${{ env.CCACHE_DEBUGDIR }}
+          if-no-files-found: ignore
+
+      - name: Upload CMake trace logs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: 'cmake-trace-${{ env.ci_platform_tag }}-${{ github.run_id }}'
+          path: |
+            **/*.log
+            **/*.binlog
+            **/cmake_*_output.txt
           if-no-files-found: ignore
 
   Docs:

@@ -98,10 +98,28 @@ if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
         # On MacOS Xcode pollutes environment which causes MSBuild to compile all managed targets into Urho3DNet assembly and compilation fails because file contents is not what next build step expects.
         set (DOTNET_MACOS_MSBUILD_WORKAROUND env -u TARGET_NAME -u TARGETNAME)
     endif ()
+
+    # Prepare MSBuild arguments
+    set(MSBUILD_ARGS
+        -restore -noLogo -interactive:false -nr:false
+        -p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/
+        -consoleLoggerParameters:ErrorsOnly
+        -p:Platform=${URHO3D_PLATFORM}
+        -p:Configuration=${URHO3D_CONFIG}
+    )
+
+    # Add max debug logging if CI_MAX_DEBUG is set
+    if(DEFINED ENV{CI_MAX_DEBUG})
+        list(APPEND MSBUILD_ARGS
+            "-bl:${CMAKE_BINARY_DIR}/BuildManagedTargets.binlog"
+            "-v:diag"
+            "-flp:logfile=${CMAKE_BINARY_DIR}/BuildManagedTargets.log"
+        )
+    endif()
+
     add_custom_target(BuildManagedTargets ALL
         COMMAND ${DOTNET_MACOS_MSBUILD_WORKAROUND} ${DOTNET} build ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.sln
-            -restore -noLogo -interactive:false -nr:false -p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/
-            -consoleLoggerParameters:ErrorsOnly -p:Platform=${URHO3D_PLATFORM} -p:Configuration=${URHO3D_CONFIG}
+            ${MSBUILD_ARGS}
             ${DOTNET_LINUX_MSBUILD_WORKAROUND}
         DEPENDS Urho3D COMMAND_EXPAND_LISTS)
     foreach (TARGET libEditorWrapper libPlayer)

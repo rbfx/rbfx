@@ -257,8 +257,25 @@ function action-generate() {
         "${arg_extra[@]}"
     )
 
+    # Add max debug logging if CI_MAX_DEBUG is set
+    if [[ -n "${CI_MAX_DEBUG:-}" ]];
+    then
+        ci_cmake_params+=(
+            "--trace-expand"
+            "--trace-redirect=${ci_build_dir}/cmake_trace_output.txt"
+        )
+    fi
+
+    # Create build directory before running cmake (needed for trace/log file output)
+    mkdir -p "$ci_build_dir"
+
     echo "${ci_cmake_params[@]}"
-    cmake "${ci_cmake_params[@]}"
+    if [[ -n "${CI_MAX_DEBUG:-}" ]];
+    then
+        cmake "${ci_cmake_params[@]}" 2>&1 | tee "${ci_build_dir}/cmake_generate_output.txt"
+    else
+        cmake "${ci_cmake_params[@]}"
+    fi
 }
 
 function action-build() {
@@ -269,8 +286,29 @@ function action-build() {
       ccache_path=$(realpath /c/ProgramData/chocolatey/lib/ccache/tools/ccache-*)
       cp $ccache_path/ccache.exe $ccache_path/cl.exe  # https://github.com/ccache/ccache/wiki/MS-Visual-Studio
       $ccache_path/ccache.exe -s
-      cmake --build $ci_build_dir --config "${types[$arg_build_type]}" -- -r -maxcpucount:$ci_number_of_processors -p:TrackFileAccess=false -p:UseMultiToolTask=true -p:CLToolPath=$ccache_path \
-        '-p:ObjectFileName=$(IntDir)%(FileName).obj' -p:DebugInformationFormat=OldStyle && \
+
+      # Build MSBuild arguments
+      msbuild_args=(
+        -r
+        -maxcpucount:$ci_number_of_processors
+        -p:TrackFileAccess=false
+        -p:UseMultiToolTask=true
+        -p:CLToolPath=$ccache_path
+        '-p:ObjectFileName=$(IntDir)%(FileName).obj'
+        -p:DebugInformationFormat=OldStyle
+      )
+
+      # Add max debug logging if CI_MAX_DEBUG is set
+      if [[ -n "${CI_MAX_DEBUG:-}" ]];
+      then
+        msbuild_args+=(
+          "-v:diag"
+          "-flp:logfile=${ci_build_dir}/msbuild_${arg_build_type}_output.log"
+          "-bl:${ci_build_dir}/msbuild_${arg_build_type}.binlog"
+        )
+      fi
+
+      cmake --build $ci_build_dir --config "${types[$arg_build_type]}" -- "${msbuild_args[@]}" && \
       $ccache_path/ccache.exe -s
     elif [[ "$ci_platform" == "android" ]];
     then
@@ -289,7 +327,21 @@ function action-build() {
       # Default build path using plain CMake.
       # ci_platform:     windows|linux|macos|android|ios|web
       ccache -s
-      cmake --build $ci_build_dir --parallel $ci_number_of_processors --config "${types[$arg_build_type]}" && \
+
+      # Build CMake arguments
+      cmake_build_args=(
+        --build "$ci_build_dir"
+        --parallel $ci_number_of_processors
+        --config "${types[$arg_build_type]}"
+      )
+
+      # Add verbose output if CI_MAX_DEBUG is set
+      if [[ -n "${CI_MAX_DEBUG:-}" ]];
+      then
+        cmake_build_args+=(--verbose)
+      fi
+
+      cmake "${cmake_build_args[@]}" && \
       ccache -s
     fi
 }
@@ -470,15 +522,44 @@ function action-test-project() {
     # Use CMAKE_FIND_ROOT_PATH for web, CMAKE_PREFIX_PATH for others
     cmake_args+=("-D$CMAKE_PREFIX_PATH=$sdk_path")
 
+    # Add max debug logging if CI_MAX_DEBUG is set
+    if [[ -n "${CI_MAX_DEBUG:-}" ]];
+    then
+        cmake_args+=(
+            "--trace-expand"
+            "--trace-redirect=${build_dir}/cmake_trace_output.txt"
+        )
+    fi
+
+    # Create build directory before running cmake (needed for trace/log file output)
+    mkdir -p "$build_dir"
+
     echo "Configuring $project_name with $mode mode..."
-    cmake "${cmake_args[@]}"
+    if [[ -n "${CI_MAX_DEBUG:-}" ]];
+    then
+        cmake "${cmake_args[@]}" 2>&1 | tee "${build_dir}/cmake_generate_output.txt"
+    else
+        cmake "${cmake_args[@]}"
+    fi
 
     # Only build for SDK mode
     if [[ "$mode" == "sdk" ]];
     then
         echo "Building $project_name..."
-        cmake --build "$build_dir" --config "${types[dbg]}"
-        cmake --build "$build_dir" --config "${types[rel]}"
+
+        # Build CMake arguments
+        cmake_build_args_dbg=(--build "$build_dir" --config "${types[dbg]}")
+        cmake_build_args_rel=(--build "$build_dir" --config "${types[rel]}")
+
+        # Add verbose output if CI_MAX_DEBUG is set
+        if [[ -n "${CI_MAX_DEBUG:-}" ]];
+        then
+            cmake_build_args_dbg+=(--verbose)
+            cmake_build_args_rel+=(--verbose)
+        fi
+
+        cmake "${cmake_build_args_dbg[@]}"
+        cmake "${cmake_build_args_rel[@]}"
     else
         echo "Skipping build for $project_name in source mode as it would take too long."
     fi
