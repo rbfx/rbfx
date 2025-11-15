@@ -270,12 +270,7 @@ function action-generate() {
     mkdir -p "$ci_build_dir"
 
     echo "${ci_cmake_params[@]}"
-    if [[ -n "${CI_MAX_DEBUG:-}" ]];
-    then
-        cmake "${ci_cmake_params[@]}" 2>&1 | tee "${ci_build_dir}/cmake_generate_output.txt"
-    else
-        cmake "${ci_cmake_params[@]}"
-    fi
+    cmake "${ci_cmake_params[@]}" 2>&1 | tee "${ci_build_dir}/cmake_generate_output.txt"
 }
 
 function action-build() {
@@ -308,7 +303,7 @@ function action-build() {
         )
       fi
 
-      cmake --build $ci_build_dir --config "${types[$arg_build_type]}" -- "${msbuild_args[@]}" && \
+      cmake --build $ci_build_dir --config "${types[$arg_build_type]}" -- "${msbuild_args[@]}" 2>&1 | tee "${ci_build_dir}/cmake_build_${arg_build_type}_output.txt" && \
       $ccache_path/ccache.exe -s
     elif [[ "$ci_platform" == "android" ]];
     then
@@ -320,8 +315,8 @@ function action-build() {
       # Custom platform build paths used only on android.
       cd $ci_source_dir/android
       ccache -s
-      gradle wrapper                                                       && \
-      ./gradlew "${android_build_types[$arg_build_type]}[${android_abi}]"  && \
+      gradle wrapper 2>&1 | tee "${ci_build_dir}/gradle_wrapper_${arg_build_type}_output.txt" && \
+      ./gradlew "${android_build_types[$arg_build_type]}[${android_abi}]" 2>&1 | tee "${ci_build_dir}/gradle_build_${arg_build_type}_output.txt" && \
       ccache -s
     else
       # Default build path using plain CMake.
@@ -341,7 +336,7 @@ function action-build() {
         cmake_build_args+=(--verbose)
       fi
 
-      cmake "${cmake_build_args[@]}" && \
+      cmake "${cmake_build_args[@]}" 2>&1 | tee "${ci_build_dir}/cmake_build_${arg_build_type}_output.txt" && \
       ccache -s
     fi
 }
@@ -535,12 +530,7 @@ function action-test-project() {
     mkdir -p "$build_dir"
 
     echo "Configuring $project_name with $mode mode..."
-    if [[ -n "${CI_MAX_DEBUG:-}" ]];
-    then
-        cmake "${cmake_args[@]}" 2>&1 | tee "${build_dir}/cmake_generate_output.txt"
-    else
-        cmake "${cmake_args[@]}"
-    fi
+    cmake "${cmake_args[@]}" 2>&1 | tee "${build_dir}/cmake_generate_output.txt"
 
     # Only build for SDK mode
     if [[ "$mode" == "sdk" ]];
@@ -558,8 +548,8 @@ function action-test-project() {
             cmake_build_args_rel+=(--verbose)
         fi
 
-        cmake "${cmake_build_args_dbg[@]}"
-        cmake "${cmake_build_args_rel[@]}"
+        cmake "${cmake_build_args_dbg[@]}" 2>&1 | tee "${build_dir}/cmake_build_dbg_output.txt"
+        cmake "${cmake_build_args_rel[@]}" 2>&1 | tee "${build_dir}/cmake_build_rel_output.txt"
     else
         echo "Skipping build for $project_name in source mode as it would take too long."
     fi
