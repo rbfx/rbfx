@@ -4845,7 +4845,7 @@ content_len = strlen(reply);
 
 
 // Urho3D: Prefer own implementation of clock_gettime() to prevent dependency on pthread library which is not needed otherwise
-#ifdef __MINGW32__
+#if defined(__MINGW32__) && !defined(_POSIX_TIMERS)
 int clock_gettime(clockid_t clk_id, struct timespec *tp)
 {
 	FILETIME ft;
