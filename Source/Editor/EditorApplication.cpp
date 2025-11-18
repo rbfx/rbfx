@@ -19,6 +19,7 @@
 #include "Foundation/InspectorTab/EmptyInspector.h"
 #include "Foundation/InspectorTab/MaterialInspector.h"
 #include "Foundation/InspectorTab/ModelInspector.h"
+#include "Foundation/InspectorTab/PrefabInspector.h"
 #include "Foundation/InspectorTab/NodeComponentInspector.h"
 #include "Foundation/InspectorTab/PlaceholderResourceInspector.h"
 #include "Foundation/InspectorTab/RenderPathInspector.h"
@@ -118,6 +119,7 @@ EditorApplication::EditorApplication(Context* context)
     editorPluginManager_->AddPlugin("Foundation.Inspector.Texture2D", &Foundation_Texture2DInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.TextureCube", &Foundation_TextureCubeInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.Model", &Foundation_ModelInspector);
+    editorPluginManager_->AddPlugin("Foundation.Inspector.Prefab", &Foundation_PrefabInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.Material", &Foundation_MaterialInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.NodeComponent", &Foundation_NodeComponentInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.PlaceholderResource", &Foundation_PlaceholderResourceInspector);
