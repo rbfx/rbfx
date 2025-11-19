@@ -153,7 +153,7 @@ public:
     /// Add a triangle mesh from a node.
     void AddTriangleMesh(Node* node, const Color& color, bool depthTest);
     /// Add a circle.
-    void AddCircle(const Vector3& center, const Vector3& normal, float radius, const Color& color, int steps = 64, bool depthTest = true);
+    void AddCircle(const Vector3& center, const Vector3& normal, float radius, const Color& color, int steps = 64, bool depthTest = true, bool drawNormal = true);
     /// Add a cross.
     void AddCross(const Vector3& center, float size, const Color& color, bool depthTest = true);
     /// Add a quad on the XZ plane.
