@@ -372,7 +372,7 @@ jobs:
           # Rename SDK to match the release name (without .7z), compress with 7z max compression
           archive_name="rebelfork-sdk-${{ env.ci_platform_tag }}-latest"
           mv SDK "$archive_name"
-          7z a "${archive_name}.7z" "$archive_name"
+          7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "${archive_name}.7z" "$archive_name"
           gh release upload latest "${archive_name}.7z" --repo '${{ github.repository }}' --clobber
           mv "$archive_name" SDK
 
