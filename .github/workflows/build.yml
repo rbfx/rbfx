@@ -105,6 +105,8 @@ jobs:
           # Desktop: MacOS builds
           - ci_platform_tag: macos-clang-arm64-dll
           - ci_platform_tag: macos-clang-arm64-lib
+          - ci_platform_tag: macos-clang-x64-dll
+          - ci_platform_tag: macos-clang-x64-lib
           # Mobile: UWP builds
           - ci_platform_tag: uwp-msvc-x64-dll
           - ci_platform_tag: uwp-msvc-x64-lib
@@ -113,7 +115,8 @@ jobs:
           - ci_platform_tag: android-clang-arm-dll
           - ci_platform_tag: android-clang-x64-dll
           # Mobile: iOS builds
-          - ci_platform_tag: ios-clang-universal-lib
+          - ci_platform_tag: ios-clang-arm-lib
+          - ci_platform_tag: ios-clang-arm64-lib
           # Web builds
           - ci_platform_tag: web-emscripten-wasm-lib
 

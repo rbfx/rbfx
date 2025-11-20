@@ -124,6 +124,8 @@ __pycache__
 *venv
 .directory
 .gdbinit
+.cache
+compile_commands.json
 
 # Doxygen mess from absence of 'dot' dependency
 CMakeDoxyFile.in
@@ -132,5 +134,5 @@ CMakeDoxygenDefaults.cmake
 # Packaging
 packaging/nuget/local-repository/
 packaging/nuget/out/
-packaging/nuget/SDK-*
+packaging/nuget/in/
 packaging/nuget/rbfx-*.zip

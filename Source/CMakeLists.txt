@@ -104,7 +104,7 @@ if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
             -consoleLoggerParameters:ErrorsOnly -p:Platform=${URHO3D_PLATFORM} -p:Configuration=${URHO3D_CONFIG}
             ${DOTNET_LINUX_MSBUILD_WORKAROUND}
         DEPENDS Urho3D COMMAND_EXPAND_LISTS)
-    foreach (TARGET libEditorWrapper libPlayer)
+    foreach (TARGET libEditorWrapper libPlayer TestsLib)
         if (TARGET ${TARGET})
             add_dependencies(BuildManagedTargets ${TARGET})
         endif ()
