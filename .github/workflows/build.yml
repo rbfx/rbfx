@@ -201,7 +201,7 @@ jobs:
           fi
 
       - name: Build swig
-        if: env.ci_lib_type == 'dll' && env.ci_platform_group != 'desktop'
+        if: (env.ci_lib_type == 'dll' && env.ci_platform_group != 'desktop') || (env.ci_platform == 'ios')
         run: |
           binary_dir='${{ github.workspace }}/swig-build'
           cmake -S '${{ env.ci_source_dir }}/Source/ThirdParty/swig' -B "$binary_dir" \
