@@ -279,32 +279,24 @@ foreach (dep ${PUBLIC_THIRD_PARTY_DEPENDENCIES})
             # Process include directories to handle prefix paths properly
             set(PROCESSED_INCLUDES)
             foreach(include_dir ${VALUE})
-                # Check if this is an absolute path that starts with a prefix from CMAKE_PREFIX_PATH
-                set(FOUND_PREFIX FALSE)
-                foreach(prefix ${CMAKE_PREFIX_PATH})
-                    if(prefix)
-                        # Normalize the prefix path
-                        get_filename_component(prefix "${prefix}" ABSOLUTE)
-                        # Check if include_dir starts with prefix/include
-                        string(FIND "${include_dir}" "${prefix}/${CMAKE_INSTALL_INCLUDEDIR}" PREFIX_POS)
-                        if(PREFIX_POS EQUAL 0)
-                            # This include path is under a prefix, handle it specially
-                            # For BUILD_INTERFACE, use the absolute path
-                            # For INSTALL_INTERFACE, remove the prefix
-                            string(REPLACE "${prefix}/" "" RELATIVE_INCLUDE "${include_dir}")
-                            list(APPEND PROCESSED_INCLUDES
-                                "$<BUILD_INTERFACE:${include_dir}>"
-                                "$<INSTALL_INTERFACE:${RELATIVE_INCLUDE}>")
-                            set(FOUND_PREFIX TRUE)
-                            break()
-                        endif()
+                # Check if this is an absolute path that starts with ${Urho3DThirdParty_INCLUDE_DIRS}
+                if(Urho3DThirdParty_INCLUDE_DIRS)
+                    # Normalize the prefix path
+                    get_filename_component(prefix "${Urho3DThirdParty_INCLUDE_DIRS}" ABSOLUTE)
+                    # Check if include_dir starts with prefix
+                    string(FIND "${include_dir}" "${prefix}" PREFIX_POS)
+                    if(PREFIX_POS EQUAL 0)
+                        # This include path is under a prefix, handle it specially
+                        # For BUILD_INTERFACE, use the absolute path
+                        # For INSTALL_INTERFACE, remove the prefix
+                        string(REPLACE "${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}" RELATIVE_INCLUDE "${include_dir}")
+                        set(include_dir
+                            "$<BUILD_INTERFACE:${include_dir}>"
+                            "$<INSTALL_INTERFACE:${RELATIVE_INCLUDE}>")
                     endif()
-                endforeach()
-
-                # If not under any prefix, just forward as-is
-                if(NOT FOUND_PREFIX)
-                    list(APPEND PROCESSED_INCLUDES "${include_dir}")
                 endif()
+
+                list(APPEND PROCESSED_INCLUDES "${include_dir}")
             endforeach()
 
             if(PROCESSED_INCLUDES)

@@ -28,7 +28,7 @@ add_compile_definitions($<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 
 # Package is found in the main CMakeLists.txt
 if (Urho3DThirdParty_FOUND)
-    message(STATUS "Using external ThirdParty component")
+    message(STATUS "Using external ThirdParty: ${Urho3DThirdParty_INCLUDE_DIRS}")
 else ()
     message(STATUS "External ThirdParty not found, building from source")
     add_subdirectory (ThirdParty)

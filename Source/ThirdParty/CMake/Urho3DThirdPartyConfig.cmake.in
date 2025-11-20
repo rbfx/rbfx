@@ -23,8 +23,8 @@ endif()
 set(Urho3DThirdParty_FOUND TRUE)
 
 # Provide compatibility variables
-set(Urho3DThirdParty_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
-set(Urho3DThirdParty_LIBRARY_DIRS "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
+set(Urho3DThirdParty_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include")
+set(Urho3DThirdParty_LIBRARY_DIRS "${PACKAGE_PREFIX_DIR}/lib")
 
 # Export platform detection variables
 set(PLATFORM_WIN32 @PLATFORM_WIN32@ CACHE INTERNAL "")
