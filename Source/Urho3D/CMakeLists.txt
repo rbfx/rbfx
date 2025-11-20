@@ -281,8 +281,12 @@ foreach (dep ${PUBLIC_THIRD_PARTY_DEPENDENCIES})
             foreach(include_dir ${VALUE})
                 # Check if this is an absolute path that starts with a prefix from CMAKE_PREFIX_PATH
                 set(FOUND_PREFIX FALSE)
-                foreach(prefix ${CMAKE_PREFIX_PATH})
-                    if(prefix)
+                foreach(prefix ${CMAKE_PREFIX_PATH} ${CMAKE_FIND_ROOT_PATH})
+                    if(prefix AND EXISTS "${prefix}")
+                        if(WIN32)
+                            string(REGEX REPLACE "(/|\\)share(/|\\)?$" "" prefix "${prefix}")
+                        endif()
+
                         # Normalize the prefix path
                         get_filename_component(prefix "${prefix}" ABSOLUTE)
                         # Check if include_dir starts with prefix/include
