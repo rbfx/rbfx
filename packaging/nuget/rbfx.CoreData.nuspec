@@ -4,15 +4,16 @@
         <id>rbfx.CoreData</id>
         <version>$version$</version>
         <title>rbfx.CoreData</title>
-        <authors>Rokas Kupstys</authors>
+        <authors>rbfx contributors</authors>
         <copyright>© rbfx contributors. All rights reserved.</copyright>
         <license type="expression">MIT</license>
-        <projectUrl>https://github.com/rokups/rbfx/</projectUrl>
+        <projectUrl>https://github.com/rbfx/rbfx/</projectUrl>
         <description>rbfx game engine package for CoreData</description>
-        <tags>rbfx Urho3D gamedev csharp dotnet gameengine</tags>
+        <tags>rbfx Urho3D gamedev csharp dotnet game engine</tags>
     </metadata>
     <files>
-        <file src="build/rbfx.CoreData.targets" target="build/" />
-        <file src="SDK-Linux/bin/CoreData/**" target="content/CoreData/" />
+        <file src="../packaging/nuget/build/rbfx.CoreData.targets" target="build/" />
+        <file src="../packaging/nuget/build/rbfx.CoreData.targets" target="buildTransitive/" />
+        <file src="CoreData/**" target="content/CoreData/" />
     </files>
 </package>

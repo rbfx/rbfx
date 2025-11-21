@@ -553,24 +553,22 @@ function action-download-release() {
 # Usage: ci_build.sh download-nuget-sdks -- <github_repository>
 function action-download-nuget-sdks() {
     # Arguments: -- <github_repository>
-    if [ ${#arg_extra[@]} -ne 1 ];
+    if [ ${#arg_extra[@]} -ne 2 ];
     then
-        echo "Error: download-nuget-sdks requires 1 argument after --: <github_repository>"
+        echo "Error: download-nuget-sdks requires 1 argument after --: <github_repository> <output_dir>"
         return 1
     fi
 
     local github_repository="${arg_extra[0]}"
+    local output_dir="${arg_extra[1]}"
 
     # Define all SDK configurations that need to be downloaded for NuGet packaging
     local platforms=(
         "windows-msvc-x64-dll"
         "linux-gcc-x64-dll"
         "macos-clang-x64-dll"
+        "macos-clang-arm64-dll"
         "uwp-msvc-x64-dll"
-        "android-clang-arm64-dll"
-        "android-clang-arm-dll"
-        "android-clang-x64-dll"
-        "ios-clang-universal-lib"
     )
 
     echo "Downloading SDKs from releases..."
@@ -579,8 +577,8 @@ function action-download-nuget-sdks() {
         echo "Downloading $sdk_name..."
         if gh release download latest --repo "$github_repository" --pattern "$sdk_name" --dir .;
         then
-            echo "✓ Downloaded $sdk_name"
-            7z x -y "$sdk_name"
+            echo "Downloaded $sdk_name"
+            7z x -y "$sdk_name" -o"$output_dir"
             rm "$sdk_name"
         else
             echo "Warning: Failed to download $sdk_name (may not exist yet)"
