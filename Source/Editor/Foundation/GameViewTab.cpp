@@ -25,6 +25,8 @@
 #include "../Core/IniHelpers.h"
 
 #include <Urho3D/Core/WorkQueue.h>
+#include <Urho3D/Engine/Engine.h>
+#include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/Engine/StateManager.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/GraphicsEvents.h>
@@ -69,6 +71,7 @@ class GameViewTab::PlayState : public Object
 public:
     PlayState(Context* context, CustomBackbufferTexture* backbuffer)
         : Object(context)
+        , engine_(GetSubsystem<Engine>())
         , renderer_(GetSubsystem<Renderer>())
         , pluginManager_(GetSubsystem<PluginManager>())
         , input_(GetSubsystem<Input>())
@@ -81,6 +84,8 @@ public:
         , project_(GetSubsystem<Project>())
         , backbuffer_(backbuffer)
     {
+        engine_->SetParameter(Param_IsRunningInEditor, true);
+
         UpdateRenderSurface();
 
         legacyUI_->GetRoot()->RemoveAllChildren();
@@ -167,6 +172,8 @@ public:
         renderer_->SetNumViewports(0);
 
         stateManager_->Reset();
+
+        engine_->SetParameter(Param_IsRunningInEditor, Variant::EMPTY);
     }
 
 private:
@@ -190,6 +197,7 @@ private:
         }
     }
 
+    Engine* engine_{};
     Renderer* renderer_{};
     PluginManager* pluginManager_{};
     Input* input_{};

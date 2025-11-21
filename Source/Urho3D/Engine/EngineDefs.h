@@ -99,6 +99,7 @@ URHO3D_GLOBAL_CONSTANT(ConstString EP_PROFILE{"Profile"});
 
 /// Global parameters for user code which go as Engine parameters as convenience.
 /// @{
+URHO3D_GLOBAL_CONSTANT(ConstString Param_IsRunningInEditor{"IsRunningInEditor"});
 URHO3D_GLOBAL_CONSTANT(ConstString Param_SceneName{"SceneName"});
 URHO3D_GLOBAL_CONSTANT(ConstString Param_ScenePosition{"ScenePosition"});
 URHO3D_GLOBAL_CONSTANT(ConstString Param_SceneRotation{"SceneRotation"});
