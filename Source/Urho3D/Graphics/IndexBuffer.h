@@ -79,7 +79,8 @@ public:
     static void UnpackIndexData(const void* source, bool largeIndices, unsigned start, unsigned count, unsigned dest[]);
 
     /// Pack index data from unsigned int array into index buffer.
-    static void PackIndexData(const unsigned source[], void* dest, bool largeIndices, unsigned start, unsigned count);
+    static void PackIndexData(
+        const unsigned source[], void* dest, bool largeIndices, unsigned start, unsigned count, unsigned offset = 0);
 
     /// Return type of index buffer. Null is allowed.
     static IndexBufferType GetIndexBufferType(IndexBuffer* indexBuffer)

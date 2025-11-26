@@ -73,10 +73,10 @@ Vector4 Ubyte4ToVector4(const Ubyte4& value)
     };
 }
 
-/// Convert float to unsigned byte (with clamping).
+/// Convert float to unsigned byte.
 unsigned char FloatToUByte(float value)
 {
-    return static_cast<unsigned char>(Clamp(RoundToInt(value), 0, 255));
+    return static_cast<unsigned char>(value + 0.5f);
 }
 
 /// Convert float vector to unsigned byte vector.
@@ -87,6 +87,17 @@ Ubyte4 Vector4ToUbyte4(const Vector4& value)
         FloatToUByte(value.y_),
         FloatToUByte(value.z_),
         FloatToUByte(value.w_)
+    };
+}
+
+/// Convert float vector to unsigned byte vector (normalized).
+Ubyte4 Vector4ToUbyte4Norm(const Vector4& value)
+{
+    return {
+        FloatToUByte(value.x_ * 255.0f),
+        FloatToUByte(value.y_ * 255.0f),
+        FloatToUByte(value.z_ * 255.0f),
+        FloatToUByte(value.w_ * 255.0f)
     };
 }
 
@@ -121,7 +132,6 @@ int Vector4ToInt(const Vector4& value) { return static_cast<int>(value.x_); }
 float Vector4ToFloat(const Vector4& value) { return value.x_; }
 Vector2 Vector4ToVector2(const Vector4& value) { return { value.x_, value.y_ }; }
 Vector3 Vector4ToVector3(const Vector4& value) { return { value.x_, value.y_, value.z_ }; }
-Ubyte4 Vector4ToUbyte4Norm(const Vector4& value) { return Vector4ToUbyte4(value * 255.0f); }
 /// @}
 
 }

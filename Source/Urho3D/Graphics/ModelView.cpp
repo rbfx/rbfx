@@ -58,19 +58,6 @@ ea::vector<ModelVertex> GetVertexBufferData(const VertexBuffer* vertexBuffer, un
     return result;
 }
 
-/// Write vertex buffer data.
-void SetVertexBufferData(VertexBuffer* vertexBuffer, const ea::vector<ModelVertex>& data)
-{
-    const auto vertexCount = ea::min<unsigned>(vertexBuffer->GetVertexCount(), data.size());
-    const ea::vector<VertexElement>& vertexElements = vertexBuffer->GetElements();
-
-    ea::vector<Vector4> buffer(vertexElements.size() * vertexCount);
-    VertexBuffer::ShuffleUnpackedVertexData(vertexCount,
-        reinterpret_cast<const Vector4*>(data.data()), ModelVertex::VertexElements, buffer.data(), vertexElements);
-
-    vertexBuffer->SetUnpackedData(buffer.data(), 0, vertexCount);
-}
-
 /// Parse vertex elements into simpler format.
 ModelVertexFormat ParseVertexElements(const ea::vector<VertexElement>& elements)
 {
@@ -161,12 +148,6 @@ ea::vector<VertexElement> CollectVertexElements(const ModelVertexFormat& vertexF
 bool IsLargeIndex(unsigned index)
 {
     return index >= 0xffff;
-}
-
-/// Check whether the index buffer has large indices.
-bool HasLargeIndices(const ea::vector<unsigned>& indices)
-{
-    return ea::any_of(indices.begin(), indices.end(), IsLargeIndex);
 }
 
 /// Check if vertex elements can be imported into ModelVertex.
@@ -328,7 +309,297 @@ ModelVertexMorph ReadVertexMorph(const VertexBufferMorph& vertexBufferMorph, uns
     return vertexMorph;
 }
 
+struct VertexBufferBuilder
+{
+    ModelVertexFormat vertexFormat_;
+    ea::vector<const GeometryLODView*> vertexSources_;
+    unsigned numVertices_{};
+
+    // TODO: Remove suboptimal copying of morphs
+    ea::vector<ModelVertexMorphVector> morphs_;
+    unsigned morphRangeStart_{};
+    unsigned morphRangeCount_{};
+
+    SharedPtr<VertexBuffer> buffer_;
+};
+
+struct IndexBufferBuilder
+{
+    bool largeIndices_{};
+    ea::vector<ea::pair<const GeometryLODView*, unsigned>> indexSources_;
+    unsigned numIndices_{};
+
+    SharedPtr<IndexBuffer> buffer_;
+};
+
+struct GeometryRange
+{
+    unsigned vertexBuffer_{};
+    unsigned startVertex_{};
+    unsigned startIndex_{};
+};
+
+using GeometryRangeMap = ea::unordered_map<const GeometryLODView*, GeometryRange>;
+
+unsigned GetMatchingVertexBuffer(ea::vector<VertexBufferBuilder>& vertexBuffers, const ModelVertexFormat& vertexFormat)
+{
+    const auto iter = ea::find_if(vertexBuffers.begin(), vertexBuffers.end(),
+        [&](const VertexBufferBuilder& builder) { return builder.vertexFormat_ == vertexFormat; });
+    const unsigned index = static_cast<unsigned>(iter - vertexBuffers.begin());
+    if (iter == vertexBuffers.end())
+    {
+        VertexBufferBuilder& builder = vertexBuffers.emplace_back();
+        builder.vertexFormat_ = vertexFormat;
+    }
+    return index;
 }
+
+unsigned GetLargestIndex(const GeometryLODView& geometry)
+{
+    return geometry.indices_.empty() ? 0 : *ea::max_element(geometry.indices_.begin(), geometry.indices_.end());
+}
+
+void CreateGeometryBufferBuilders(const ea::vector<GeometryView>& geometries,
+    ea::vector<VertexBufferBuilder>& vertexBufferBuilders, IndexBufferBuilder& indexBufferBuilder,
+    GeometryRangeMap& geometryRanges)
+{
+    for (const GeometryView& sourceGeometry : geometries)
+    {
+        if (!sourceGeometry.exported_)
+            continue;
+
+        for (const GeometryLODView& sourceGeometryLod : sourceGeometry.lods_)
+        {
+            const unsigned vertexBufferIndex =
+                GetMatchingVertexBuffer(vertexBufferBuilders, sourceGeometryLod.vertexFormat_);
+            VertexBufferBuilder& vertexBufferBuilder = vertexBufferBuilders[vertexBufferIndex];
+
+            const unsigned startVertex = vertexBufferBuilder.numVertices_;
+            const unsigned startIndex = indexBufferBuilder.numIndices_;
+            geometryRanges[&sourceGeometryLod] = GeometryRange{vertexBufferIndex, startVertex, startIndex};
+
+            vertexBufferBuilder.vertexSources_.push_back(&sourceGeometryLod);
+            indexBufferBuilder.indexSources_.emplace_back(&sourceGeometryLod, startVertex);
+
+            vertexBufferBuilder.numVertices_ += sourceGeometryLod.vertices_.size();
+            indexBufferBuilder.numIndices_ += sourceGeometryLod.indices_.size();
+
+            indexBufferBuilder.largeIndices_ =
+                indexBufferBuilder.largeIndices_ || IsLargeIndex(startVertex + GetLargestIndex(sourceGeometryLod));
+
+            for (const auto& [morphIndex, morphData] : sourceGeometryLod.morphs_)
+            {
+                if (morphIndex >= vertexBufferBuilder.morphs_.size())
+                    vertexBufferBuilder.morphs_.resize(morphIndex + 1);
+
+                ModelVertexMorphVector& vertexBufferMorph = vertexBufferBuilder.morphs_[morphIndex];
+                const unsigned startMorphVertex = vertexBufferMorph.size();
+                vertexBufferMorph.append(morphData);
+
+                for (unsigned i = startMorphVertex; i < vertexBufferMorph.size(); ++i)
+                    vertexBufferMorph[i].index_ += startVertex;
+            }
+        }
+    }
+}
+
+ea::vector<unsigned> GetExportedGeometries(const ea::vector<GeometryView>& geometries)
+{
+    ea::vector<unsigned> result;
+    for (unsigned geometryIndex = 0; geometryIndex < geometries.size(); ++geometryIndex)
+    {
+        const GeometryView& sourceGeometry = geometries[geometryIndex];
+        if (sourceGeometry.exported_)
+            result.push_back(geometryIndex);
+    }
+    return result;
+}
+
+void ConnectToModelBuffers(
+    Model* model, ea::vector<VertexBufferBuilder>& vertexBufferBuilders, IndexBufferBuilder& indexBufferBuilder)
+{
+    // Validate inplace export
+    const auto& originalVertexBuffers = model->GetVertexBuffers();
+    for (unsigned i = 0; i < vertexBufferBuilders.size(); ++i)
+    {
+        VertexBufferBuilder& vertexBufferBuilder = vertexBufferBuilders[i];
+        VertexBuffer* originalVertexBuffer = i < originalVertexBuffers.size() ? originalVertexBuffers[i] : nullptr;
+        if (!originalVertexBuffer)
+        {
+            URHO3D_LOGERROR("Cannot create Model inplace: Vertex Buffer {} is not found", i);
+            return;
+        }
+
+        if (originalVertexBuffer->GetVertexCount() < vertexBufferBuilder.numVertices_)
+        {
+            URHO3D_LOGERROR("Cannot create Model inplace: Vertex Buffer {} has only {} vertices and {} are required", i,
+                originalVertexBuffer->GetVertexCount(), vertexBufferBuilder.numVertices_);
+            return;
+        }
+
+        if (vertexBufferBuilder.vertexFormat_.ToVertexElements() != originalVertexBuffer->GetElements())
+        {
+            URHO3D_LOGERROR("Cannot create Model inplace: Vertex Buffer {} elements don't match", i);
+            return;
+        }
+
+        vertexBufferBuilder.buffer_ = originalVertexBuffer;
+    }
+
+    const auto& originalIndexBuffers = model->GetIndexBuffers();
+    IndexBuffer* originalIndexBuffer = !originalIndexBuffers.empty() ? originalIndexBuffers.front() : nullptr;
+    if (!originalIndexBuffer)
+    {
+        URHO3D_LOGERROR("Cannot create Model inplace: Index Buffer is not found");
+        return;
+    }
+
+    if (originalIndexBuffer->GetIndexCount() < indexBufferBuilder.numIndices_)
+    {
+        URHO3D_LOGERROR("Cannot create Model inplace: Index Buffer has only {} indices and {} are required",
+            originalIndexBuffer->GetIndexCount(), indexBufferBuilder.numIndices_);
+        return;
+    }
+
+    if (indexBufferBuilder.largeIndices_ && originalIndexBuffer->GetIndexSize() != 4)
+    {
+        URHO3D_LOGERROR("Cannot create Model inplace: Index Buffer index size does not match");
+        return;
+    }
+
+    indexBufferBuilder.buffer_ = originalIndexBuffer;
+}
+
+void AllocateNewBuffers(Context* context, DeviceObjectFlags deviceObjectFlags,
+    ea::vector<VertexBufferBuilder>& vertexBufferBuilders, IndexBufferBuilder& indexBufferBuilder)
+{
+    // Create vertex buffers
+    for (VertexBufferBuilder& vertexBufferBuilder : vertexBufferBuilders)
+    {
+        const auto vertexElements = CollectVertexElements(vertexBufferBuilder.vertexFormat_);
+        if (vertexElements.empty())
+            URHO3D_LOGERROR("No vertex elements in vertex buffer");
+
+        auto vertexBuffer = MakeShared<VertexBuffer>(context, deviceObjectFlags);
+        vertexBuffer->SetShadowed(true);
+        vertexBuffer->SetSize(vertexBufferBuilder.numVertices_, vertexElements);
+
+        vertexBufferBuilder.buffer_ = vertexBuffer;
+    }
+
+    // Create index buffer
+    auto indexBuffer = MakeShared<IndexBuffer>(context, deviceObjectFlags);
+    indexBuffer->SetShadowed(true);
+    indexBuffer->SetSize(indexBufferBuilder.numIndices_, indexBufferBuilder.largeIndices_);
+    indexBufferBuilder.buffer_ = indexBuffer;
+}
+
+void CalculateMorphRange(VertexBufferBuilder& vertexBufferBuilder)
+{
+    unsigned minMorphVertex = M_MAX_UNSIGNED;
+    unsigned maxMorphVertex = 0;
+    for (const ModelVertexMorphVector& morphData : vertexBufferBuilder.morphs_)
+    {
+        for (const ModelVertexMorph& vertexMorph : morphData)
+        {
+            minMorphVertex = ea::min(minMorphVertex, vertexMorph.index_);
+            maxMorphVertex = ea::max(maxMorphVertex, vertexMorph.index_);
+        }
+    }
+
+    if (minMorphVertex <= maxMorphVertex)
+    {
+        vertexBufferBuilder.morphRangeStart_ = minMorphVertex;
+        vertexBufferBuilder.morphRangeCount_ = maxMorphVertex - minMorphVertex + 1;
+    }
+}
+
+ea::vector<unsigned> MapVertexElements(
+    ea::span<const VertexElement> fromElements, ea::span<const VertexElement> toElements)
+{
+    ea::vector<unsigned> result;
+    result.resize(fromElements.size());
+    for (unsigned i = 0; i < fromElements.size(); ++i)
+    {
+        const auto iter =
+            ea::find(toElements.begin(), toElements.end(), fromElements[i], CompareVertexElementSemantics);
+        result[i] = iter != toElements.end() ? static_cast<unsigned>(iter - toElements.begin()) : M_MAX_UNSIGNED;
+    }
+    return result;
+}
+
+void ComposeVertexBufferData(const VertexBufferBuilder& vertexBufferBuilder)
+{
+    if (vertexBufferBuilder.numVertices_ == 0)
+        return;
+
+    VertexBuffer* buffer = vertexBufferBuilder.buffer_;
+    auto* const destData = reinterpret_cast<unsigned char*>(buffer->Map());
+    if (!destData)
+    {
+        URHO3D_LOGERROR("Cannot map VertexBuffer");
+        return;
+    }
+
+    const unsigned destStride = buffer->GetVertexSize();
+    const auto& destElements = buffer->GetElements();
+    const auto& sourceElements = ModelVertex::VertexElements;
+    const auto elementMapping = MapVertexElements(destElements, sourceElements);
+
+    unsigned offset = 0;
+    for (const GeometryLODView* geometry : vertexBufferBuilder.vertexSources_)
+    {
+        if (geometry->vertices_.empty())
+            continue;
+
+        const Vector4* sourceData = geometry->vertices_.front().Data();
+        for (unsigned elementIndex = 0; elementIndex < destElements.size(); ++elementIndex)
+        {
+            const unsigned sourceElementIndex = elementMapping[elementIndex];
+            if (sourceElementIndex == M_MAX_UNSIGNED)
+                continue;
+
+            VertexBuffer::PackVertexData(sourceData + sourceElementIndex, sizeof(ModelVertex), destData, destStride,
+                destElements[elementIndex], offset, geometry->vertices_.size());
+        }
+        offset += geometry->vertices_.size();
+    }
+
+    URHO3D_ASSERT(offset <= buffer->GetVertexCount());
+
+    buffer->Unmap();
+}
+
+void ComposeIndexBufferData(const IndexBufferBuilder& indexBufferBuilder)
+{
+    if (indexBufferBuilder.numIndices_ == 0)
+        return;
+
+    IndexBuffer* buffer = indexBufferBuilder.buffer_;
+    auto* const destData = reinterpret_cast<unsigned char*>(buffer->Map());
+    if (!destData)
+    {
+        URHO3D_LOGERROR("Cannot map IndexBuffer");
+        return;
+    }
+
+    unsigned offset = 0;
+    for (const auto& [geometry, baseIndex] : indexBufferBuilder.indexSources_)
+    {
+        if (geometry->indices_.empty())
+            continue;
+
+        IndexBuffer::PackIndexData(geometry->indices_.data(), destData, buffer->GetIndexSize() == 4, offset,
+            geometry->indices_.size(), baseIndex);
+        offset += geometry->indices_.size();
+    }
+
+    URHO3D_ASSERT(offset <= buffer->GetIndexCount());
+
+    buffer->Unmap();
+}
+
+} // namespace
 
 static_assert(ModelVertex::MaxColors == 4 && ModelVertex::MaxUVs == 4, "Update ModelVertex::VertexElements!");
 
@@ -1051,183 +1322,49 @@ bool ModelView::ImportModel(const Model* model)
 
 void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
 {
-    struct VertexBufferData
-    {
-        unsigned vertexBufferIndex_{M_MAX_UNSIGNED};
-        ea::vector<ModelVertex> vertices_;
-        ea::vector<ModelVertexMorphVector> morphs_;
+    // Prepare buffer layout
+    ea::vector<VertexBufferBuilder> vertexBufferBuilders;
+    IndexBufferBuilder indexBufferBuilder;
+    GeometryRangeMap geometryRanges;
+    CreateGeometryBufferBuilders(geometries_, vertexBufferBuilders, indexBufferBuilder, geometryRanges);
 
-        SharedPtr<VertexBuffer> buffer_;
-        unsigned morphRangeStart_{};
-        unsigned morphRangeCount_{};
-    };
-
-    // Collect vertices and indices
-    ea::unordered_map<ModelVertexFormat, VertexBufferData> vertexBuffersData;
-    ea::vector<unsigned> indexBufferData;
-    SharedPtr<IndexBuffer> indexBuffer;
-
-    ea::vector<unsigned> exportedGeometries;
-    for (unsigned geometryIndex = 0; geometryIndex < geometries_.size(); ++geometryIndex)
-    {
-        const GeometryView& sourceGeometry = geometries_[geometryIndex];
-        if (!sourceGeometry.exported_)
-            continue;
-
-        exportedGeometries.push_back(geometryIndex);
-        for (const GeometryLODView& sourceGeometryLod : sourceGeometry.lods_)
-        {
-            const unsigned newVertexBufferIndex = vertexBuffersData.size();
-
-            VertexBufferData& vertexBufferData = vertexBuffersData[sourceGeometryLod.vertexFormat_];
-            const unsigned startVertex = vertexBufferData.vertices_.size();
-            const unsigned startIndex = indexBufferData.size();
-
-            if (vertexBufferData.vertexBufferIndex_ == M_MAX_UNSIGNED)
-                vertexBufferData.vertexBufferIndex_ = newVertexBufferIndex;
-
-            vertexBufferData.vertices_.append(sourceGeometryLod.vertices_);
-            indexBufferData.append(sourceGeometryLod.indices_);
-
-            for (unsigned i = startIndex; i < indexBufferData.size(); ++i)
-                indexBufferData[i] += startVertex;
-
-            for (const auto& [morphIndex, morphData] : sourceGeometryLod.morphs_)
-            {
-                if (morphIndex >= vertexBufferData.morphs_.size())
-                    vertexBufferData.morphs_.resize(morphIndex + 1);
-
-                ModelVertexMorphVector& vertexBufferMorph = vertexBufferData.morphs_[morphIndex];
-                const unsigned startMorphVertex = vertexBufferMorph.size();
-                vertexBufferMorph.append(morphData);
-
-                for (unsigned i = startMorphVertex; i < vertexBufferMorph.size(); ++i)
-                    vertexBufferMorph[i].index_ += startVertex;
-            }
-        }
-    }
-
-    const unsigned numVertexBuffers = vertexBuffersData.size();
-    const bool largeIndices = HasLargeIndices(indexBufferData);
-
+    // Create buffers or connect to existing buffers
     const bool inplace = flags.Test(ModelViewExportFlag::Inplace);
     if (inplace)
     {
-        // Validate inplace export
-        const auto& vertexBuffers = model->GetVertexBuffers();
-        for (auto& [vertexFormat, vertexBufferData] : vertexBuffersData)
-        {
-            const unsigned index = vertexBufferData.vertexBufferIndex_;
-            VertexBuffer* originalVertexBuffer = index < vertexBuffers.size() ? vertexBuffers[index] : nullptr;
-            if (!originalVertexBuffer)
-            {
-                URHO3D_LOGERROR("Cannot create Model inplace: Vertex Buffer {} is not found", index);
-                return;
-            }
-
-            if (originalVertexBuffer->GetVertexCount() < vertexBufferData.vertices_.size())
-            {
-                URHO3D_LOGERROR(
-                    "Cannot create Model inplace: Vertex Buffer {} has only {} vertices and {} are required", index,
-                    originalVertexBuffer->GetVertexCount(), vertexBufferData.vertices_.size());
-                return;
-            }
-
-            if (vertexFormat.ToVertexElements() != originalVertexBuffer->GetElements())
-            {
-                URHO3D_LOGERROR("Cannot create Model inplace: Vertex Buffer {} elements don't match", index);
-                return;
-            }
-
-            vertexBufferData.buffer_ = originalVertexBuffer;
-        }
-
-        const auto& indexBuffers = model->GetIndexBuffers();
-        IndexBuffer* originalIndexBuffer = !indexBuffers.empty() ? indexBuffers.front() : nullptr;
-        if (!originalIndexBuffer)
-        {
-            URHO3D_LOGERROR("Cannot create Model inplace: Index Buffer is not found");
-            return;
-        }
-
-        if (originalIndexBuffer->GetIndexCount() < indexBufferData.size())
-        {
-            URHO3D_LOGERROR("Cannot create Model inplace: Index Buffer has only {} indices and {} are required",
-                originalIndexBuffer->GetIndexCount(), indexBufferData.size());
-            return;
-        }
-
-        if (largeIndices && originalIndexBuffer->GetIndexSize() != 4)
-        {
-            URHO3D_LOGERROR("Cannot create Model inplace: Index Buffer index size does not match");
-            return;
-        }
-
-        indexBuffer = originalIndexBuffer;
+        ConnectToModelBuffers(model, vertexBufferBuilders, indexBufferBuilder);
     }
     else
     {
         const bool isHeadless = flags.IsAnyOf(ModelViewExportFlag::Headless);
         const auto deviceObjectFlags = isHeadless ? DeviceObjectFlag::Headless : DeviceObjectFlag::None;
 
-        // Create vertex buffers
-        for (auto& [vertexFormat, vertexBufferData] : vertexBuffersData)
-        {
-            const auto vertexElements = CollectVertexElements(vertexFormat);
-            if (vertexElements.empty())
-                URHO3D_LOGERROR("No vertex elements in vertex buffer");
+        AllocateNewBuffers(context_, deviceObjectFlags, vertexBufferBuilders, indexBufferBuilder);
 
-            auto vertexBuffer = MakeShared<VertexBuffer>(context_, deviceObjectFlags);
-            vertexBuffer->SetDebugName(Format("Model '{}' Vertex Buffer", name_));
-            vertexBuffer->SetShadowed(true);
-            vertexBuffer->SetSize(vertexBufferData.vertices_.size(), vertexElements);
-
-            vertexBufferData.buffer_ = vertexBuffer;
-        }
-
-        // Create index buffer
-        indexBuffer = MakeShared<IndexBuffer>(context_, deviceObjectFlags);
-        indexBuffer->SetDebugName(Format("Model '{}' Index Buffer", name_));
-        indexBuffer->SetShadowed(true);
-        indexBuffer->SetSize(indexBufferData.size(), largeIndices);
+        for (unsigned i = 0; i < vertexBufferBuilders.size(); ++i)
+            vertexBufferBuilders[i].buffer_->SetDebugName(Format("Model '{}' Vertex Buffer {}", name_, i));
+        indexBufferBuilder.buffer_->SetDebugName(Format("Model '{}' Index Buffer", name_));
     }
 
     // Copy data
-    for (auto& [_, vertexBufferData] : vertexBuffersData)
-        SetVertexBufferData(vertexBufferData.buffer_, vertexBufferData.vertices_);
-    indexBuffer->SetUnpackedData(indexBufferData.data(), 0, indexBufferData.size());
+    for (const VertexBufferBuilder& vertexBufferBuilder : vertexBufferBuilders)
+        ComposeVertexBufferData(vertexBufferBuilder);
+    ComposeIndexBufferData(indexBufferBuilder);
 
     // Initialize morph info
-    for (auto& [vertexFormat, vertexBufferData] : vertexBuffersData)
-    {
-        unsigned minMorphVertex = M_MAX_UNSIGNED;
-        unsigned maxMorphVertex = 0;
-        for (const ModelVertexMorphVector& morphData : vertexBufferData.morphs_)
-        {
-            for (const ModelVertexMorph& vertexMorph : morphData)
-            {
-                minMorphVertex = ea::min(minMorphVertex, vertexMorph.index_);
-                maxMorphVertex = ea::max(maxMorphVertex, vertexMorph.index_);
-            }
-        }
-
-        if (minMorphVertex <= maxMorphVertex)
-        {
-            vertexBufferData.morphRangeStart_ = minMorphVertex;
-            vertexBufferData.morphRangeCount_ = maxMorphVertex - minMorphVertex + 1;
-        }
-    }
+    for (VertexBufferBuilder& vertexBufferBuilder : vertexBufferBuilders)
+        CalculateMorphRange(vertexBufferBuilder);
 
     // Extract vertex buffers info
+    const unsigned numVertexBuffers = vertexBufferBuilders.size();
     ea::vector<SharedPtr<VertexBuffer>> vertexBuffers(numVertexBuffers);
     ea::vector<unsigned> morphRangeStarts(numVertexBuffers);
     ea::vector<unsigned> morphRangeCounts(numVertexBuffers);
-    for (auto& [_, vertexBufferData] : vertexBuffersData)
+    for (unsigned i = 0; i < numVertexBuffers; ++i)
     {
-        const unsigned index = vertexBufferData.vertexBufferIndex_;
-        vertexBuffers[index] = vertexBufferData.buffer_;
-        morphRangeStarts[index] = vertexBufferData.morphRangeStart_;
-        morphRangeCounts[index] = vertexBufferData.morphRangeCount_;
+        vertexBuffers[i] = vertexBufferBuilders[i].buffer_;
+        morphRangeStarts[i] = vertexBufferBuilders[i].morphRangeStart_;
+        morphRangeCounts[i] = vertexBufferBuilders[i].morphRangeCount_;
     }
 
     // Inplace mode: preserve unused vertex buffers
@@ -1247,21 +1384,20 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
         morphs[i].weight_ = morphs_[i].initialWeight_;
     }
 
-    for (auto& [vertexFormat, vertexBufferData] : vertexBuffersData)
+    for (unsigned i = 0; i < numVertexBuffers; ++i)
     {
-        const unsigned numMorphsForVertexBuffer = vertexBufferData.morphs_.size();
+        const unsigned numMorphsForVertexBuffer = vertexBufferBuilders[i].morphs_.size();
         if (morphs.size() < numMorphsForVertexBuffer)
             morphs.resize(numMorphsForVertexBuffer);
 
-        for (unsigned i = 0; i < numMorphsForVertexBuffer; ++i)
+        for (unsigned j = 0; j < numMorphsForVertexBuffer; ++j)
         {
-            const ModelVertexMorphVector& morphDataForBuffer = vertexBufferData.morphs_[i];
-            ModelMorph& modelMorph = morphs[i];
+            const ModelVertexMorphVector& morphDataForBuffer = vertexBufferBuilders[i].morphs_[j];
+            ModelMorph& modelMorph = morphs[j];
 
-            const unsigned vertexBufferIndex = vertexBuffers.index_of(vertexBufferData.buffer_);
             VertexBufferMorph vertexBufferMorph = CreateVertexBufferMorph(morphDataForBuffer);
             if (vertexBufferMorph.vertexCount_ > 0)
-                modelMorph.buffers_[vertexBufferIndex] = ea::move(vertexBufferMorph);
+                modelMorph.buffers_[i] = ea::move(vertexBufferMorph);
         }
     }
 
@@ -1272,13 +1408,11 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
 
     model->SetBoundingBox(CalculateBoundingBox());
     model->SetVertexBuffers(vertexBuffers, morphRangeStarts, morphRangeCounts);
-    model->SetIndexBuffers({ indexBuffer });
+    model->SetIndexBuffers({indexBufferBuilder.buffer_});
     model->SetMorphs(morphs);
 
     // Write geometries
-    unsigned indexStart = 0;
-    ea::unordered_map<ModelVertexFormat, unsigned> vertexStart;
-
+    const auto exportedGeometries = GetExportedGeometries(geometries_);
     const unsigned numGeometries = exportedGeometries.size();
     model->SetNumGeometries(numGeometries);
     for (unsigned geometryIndex = 0; geometryIndex < numGeometries; ++geometryIndex)
@@ -1297,19 +1431,18 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
             const ModelVertexFormat& vertexFormat = sourceGeometryLod.vertexFormat_;
             const unsigned indexCount = sourceGeometryLod.indices_.size();
             const unsigned vertexCount = sourceGeometryLod.vertices_.size();
+            const GeometryRange& range = geometryRanges[&sourceGeometryLod];
 
             SharedPtr<Geometry> geometry = MakeShared<Geometry>(context_);
 
             geometry->SetNumVertexBuffers(1);
-            geometry->SetVertexBuffer(0, vertexBuffersData[vertexFormat].buffer_);
-            geometry->SetIndexBuffer(indexBuffer);
+            geometry->SetVertexBuffer(0, vertexBufferBuilders[range.vertexBuffer_].buffer_);
+            geometry->SetIndexBuffer(indexBufferBuilder.buffer_);
             geometry->SetLodDistance(sourceGeometryLod.lodDistance_);
-            geometry->SetDrawRange(sourceGeometryLod.primitiveType_, indexStart, indexCount, vertexStart[vertexFormat], vertexCount);
+            geometry->SetDrawRange(
+                sourceGeometryLod.primitiveType_, range.startIndex_, indexCount, range.startVertex_, vertexCount);
 
             model->SetGeometry(geometryIndex, lodIndex, geometry);
-
-            indexStart += indexCount;
-            vertexStart[vertexFormat] += vertexCount;
         }
     }
 

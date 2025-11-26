@@ -271,6 +271,12 @@ void* RawBuffer::Map()
 {
     URHO3D_ASSERT(!IsLocked());
 
+    if (params_.size_ == 0)
+    {
+        URHO3D_LOGWARNING("RawBuffer::Map is called for empty buffer '{}'", debugName_);
+        return nullptr;
+    }
+
     // If shadowed, return shadow data and upload it on unlock
     if (params_.flags_.Test(BufferFlag::Shadowed))
     {

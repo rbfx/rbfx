@@ -97,6 +97,8 @@ struct URHO3D_API ModelVertex
     bool HasBinormal() const { return binormal_ != Vector4::ZERO; }
     /// Return whether the vertex has tangent and binormal combined.
     bool HasTangentBinormalCombined() const { return tangent_ != Vector4::ZERO && tangent_.w_ != 0; }
+    /// Return vertex as array of Vector4 elements.
+    const Vector4* Data() const { return &position_; }
 
     /// Replace given semantics from another vector.
     bool ReplaceElement(const ModelVertex& source, const VertexElement& element);
