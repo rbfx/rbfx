@@ -15,6 +15,12 @@ using dtPolyRef = unsigned int;
 namespace Urho3D
 {
 
+enum NavmeshPartitionType
+{
+    NAVMESH_PARTITION_WATERSHED = 0,
+    NAVMESH_PARTITION_MONOTONE
+};
+
 /// Special area ID. Evaluates to RC_WALKABLE_AREA or 0 depending on polygon slope.
 static constexpr unsigned char DeduceAreaId = 0xff;
 

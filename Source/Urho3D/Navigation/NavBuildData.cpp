@@ -32,6 +32,17 @@
 namespace Urho3D
 {
 
+NavTileData::~NavTileData()
+{
+    dtFree(data);
+}
+
+void NavTileData::Release()
+{
+    data = nullptr;
+    dataSize = 0;
+}
+
 NavBuildData::NavBuildData() :
     ctx_(new rcContext(true)),
     heightField_(nullptr),
@@ -67,22 +78,13 @@ SimpleNavBuildData::~SimpleNavBuildData()
     polyMeshDetail_ = nullptr;
 }
 
-DynamicNavBuildData::DynamicNavBuildData(dtTileCacheAlloc* allocator) :
-    NavBuildData(),
-    contourSet_(nullptr),
-    polyMesh_(nullptr),
-    heightFieldLayers_(nullptr),
-    alloc_(allocator)
+DynamicNavBuildData::DynamicNavBuildData(const ea::shared_ptr<dtTileCacheCompressor>& compressor)
+    : compressor_(compressor)
 {
-    assert(allocator);
 }
 
 DynamicNavBuildData::~DynamicNavBuildData()
 {
-    dtFreeTileCacheContourSet(alloc_, contourSet_);
-    contourSet_ = nullptr;
-    dtFreeTileCachePolyMesh(alloc_, polyMesh_);
-    polyMesh_ = nullptr;
     rcFreeHeightfieldLayerSet(heightFieldLayers_);
     heightFieldLayers_ = nullptr;
 }

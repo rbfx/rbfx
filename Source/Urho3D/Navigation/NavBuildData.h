@@ -5,13 +5,21 @@
 
 #pragma once
 
+#include "Urho3D/Core/NonCopyable.h"
 #include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/Vector2.h"
 #include "Urho3D/Math/Vector3.h"
+#include "Urho3D/Navigation/NavigationDefs.h"
 
+#include <Recast/Recast.h>
+
+#include <EASTL/shared_ptr.h>
+#include <EASTL/unique_ptr.h>
 #include <EASTL/vector.h>
 
 class rcContext;
 
+struct dtTileCacheCompressor;
 struct dtTileCacheContourSet;
 struct dtTileCachePolyMesh;
 struct dtTileCacheAlloc;
@@ -34,16 +42,48 @@ struct URHO3D_API NavAreaStub
     unsigned char areaID_;
 };
 
-/// Navigation build data.
-struct URHO3D_API NavBuildData
+struct URHO3D_API NavTileData : public NonCopyable
 {
-    /// Constructor.
+    ~NavTileData();
+    /// Release owned data without destruction. Should be called if data is successfully added into navigation mesh.
+    void Release();
+
+    unsigned char* data{};
+    int dataSize{};
+};
+
+using NavTileDataPtr = ea::unique_ptr<NavTileData>;
+
+/// Navigation build data.
+struct URHO3D_API NavBuildData : public NonCopyable
+{
     NavBuildData();
-    /// Destructor.
     virtual ~NavBuildData();
 
-    /// World-space bounding box of the navigation mesh tile.
-    BoundingBox worldBoundingBox_;
+    /// Return whether the tile is empty and there is nothing to build.
+    bool IsEmpty() const { return vertices_.empty() || indices_.empty(); }
+
+    /// Tile index.
+    IntVector2 tileIndex_;
+    /// Volume of the tile, ignoring geometry.
+    BoundingBox tileColumn_;
+    /// Bounding box containing all geometry in the tile.
+    BoundingBox tileBoundingBox_;
+    /// Extended bounding box containing all geometry important for tile building.
+    BoundingBox collectGeometryBoundingBox_;
+
+    /// Partition type.
+    NavmeshPartitionType partitionType_{};
+    /// Navigation agent height.
+    float agentHeight_{};
+    /// Navigation agent radius.
+    float agentRadius_{};
+    /// Navigation agent max vertical climb.
+    float agentMaxClimb_{};
+
+    /// Recast configuration for building.
+    rcConfig recastConfig_{};
+
     /// Vertices from geometries.
     ea::vector<Vector3> vertices_;
     /// Triangle indices from geometries.
@@ -83,24 +123,26 @@ struct URHO3D_API SimpleNavBuildData : public NavBuildData
     rcPolyMesh* polyMesh_;
     /// Recast detail poly mesh.
     rcPolyMeshDetail* polyMeshDetail_;
+
+    /// Compiled navigation mesh tile.
+    NavTileDataPtr tileData_;
 };
 
-/// @nobind
 struct URHO3D_API DynamicNavBuildData : public NavBuildData
 {
     /// Constructor.
-    explicit DynamicNavBuildData(dtTileCacheAlloc* allocator);
+    explicit DynamicNavBuildData(const ea::shared_ptr<dtTileCacheCompressor>& compressor);
     /// Destructor.
     ~DynamicNavBuildData() override;
 
-    /// TileCache specific recast contour set.
-    dtTileCacheContourSet* contourSet_;
-    /// TileCache specific recast poly mesh.
-    dtTileCachePolyMesh* polyMesh_;
+    /// Used to compress and decompress tiles.
+    ea::shared_ptr<dtTileCacheCompressor> compressor_;
+
     /// Recast heightfield layer set.
-    rcHeightfieldLayerSet* heightFieldLayers_;
-    /// Allocator from DynamicNavigationMesh instance.
-    dtTileCacheAlloc* alloc_;
+    rcHeightfieldLayerSet* heightFieldLayers_{};
+
+    /// Compiled navigation mesh tiles.
+    ea::vector<NavTileDataPtr> tileData_;
 };
 
 } // namespace Urho3D
