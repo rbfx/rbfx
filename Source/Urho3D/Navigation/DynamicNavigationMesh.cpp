@@ -540,7 +540,10 @@ bool DynamicNavigationMesh::ReadTiles(Deserializer& source, bool silent)
     }
 
     for (unsigned i = 0; i < tileQueue_.size(); ++i)
+    {
         tileCache_->buildNavMeshTilesAt(tileQueue_[i].x_, tileQueue_[i].y_, navMesh_);
+        CancelTileBuild(tileQueue_[i]);
+    }
 
     // Send event
     if (!silent)
@@ -625,7 +628,7 @@ NavBuildDataPtr DynamicNavigationMesh::CreateTileBuildData(
 {
     auto build = ea::make_shared<DynamicNavBuildData>(compressor_);
     InitializeBuildData(*build, tileIndex, geometryList);
-    return !build->IsEmpty() ? build : nullptr;
+    return build;
 }
 
 bool DynamicNavigationMesh::ReplaceTileData(NavBuildData& build)

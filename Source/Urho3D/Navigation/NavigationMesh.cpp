@@ -24,6 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
+#include "../Core/WorkQueue.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/Drawable.h"
 #include "../Graphics/Geometry.h"
@@ -474,6 +475,31 @@ bool NavigationMesh::BuildTiles(const IntVector2& from, const IntVector2& to)
     return true;
 }
 
+void NavigationMesh::BuildTilesAsync(
+    const IntVector2& from, const IntVector2& to, const OnAsyncTileBuildCompleted& callback)
+{
+    URHO3D_PROFILE("BuildPartialNavigationMeshAsync");
+
+    if (!node_)
+        return;
+
+    if (!navMesh_)
+    {
+        URHO3D_LOGERROR("Navigation mesh must first be built or allocated before it can be partially rebuilt");
+        return;
+    }
+
+    ea::vector<NavigationGeometryInfo> geometryList;
+    CollectGeometries(geometryList);
+
+    BuildTilesFromGeometryAsync(geometryList, from, to, callback);
+}
+
+void NavigationMesh::CancelTileBuild(const IntVector2& tileIndex)
+{
+    asyncTileBuilds_.erase(tileIndex);
+}
+
 ea::vector<IntVector2> NavigationMesh::GetAllTileIndices() const
 {
     ea::vector<IntVector2> result;
@@ -532,6 +558,8 @@ void NavigationMesh::RemoveTile(const IntVector2& tileIndex)
     if (!navMesh_)
         return;
 
+    CancelTileBuild(tileIndex);
+
     const dtMeshTile* tilesToRemove[MaxLayers];
     const int numTilesToRemove = navMesh_->getTilesAt(tileIndex.x_, tileIndex.y_, tilesToRemove, MaxLayers);
     for (int i = 0; i < numTilesToRemove; ++i)
@@ -554,6 +582,8 @@ void NavigationMesh::RemoveTile(const IntVector2& tileIndex)
 
 void NavigationMesh::RemoveAllTiles()
 {
+    asyncTileBuilds_.clear();
+
     const dtNavMesh* navMesh = navMesh_;
     for (int i = 0; i < navMesh_->getMaxTiles(); ++i)
     {
@@ -1261,6 +1291,8 @@ bool NavigationMesh::ReadTile(Deserializer& source, bool silent)
         return false;
     }
 
+    CancelTileBuild(IntVector2(x, z));
+
     if (!silent)
         SendTileAddedEvent(IntVector2(x, z));
 
@@ -1514,7 +1546,7 @@ NavBuildDataPtr NavigationMesh::CreateTileBuildData(
 {
     auto build = ea::make_shared<SimpleNavBuildData>();
     InitializeBuildData(*build, tileIndex, geometryList);
-    return !build->IsEmpty() ? build : nullptr;
+    return build;
 }
 
 bool NavigationMesh::ReplaceTileData(NavBuildData& build)
@@ -1542,8 +1574,10 @@ unsigned NavigationMesh::BuildTilesFromGeometry(
     const auto builder = GetTileBuilder();
     for (const IntVector2& tileIndex : IntRect{from, to + IntVector2::ONE})
     {
+        CancelTileBuild(tileIndex);
+
         const auto build = CreateTileBuildData(geometryList, tileIndex);
-        if (!build)
+        if (build->IsEmpty())
             continue;
 
         if (!builder(*build))
@@ -1555,6 +1589,56 @@ unsigned NavigationMesh::BuildTilesFromGeometry(
         ++numTiles;
     }
     return numTiles;
+}
+
+void NavigationMesh::BuildTilesFromGeometryAsync(ea::vector<NavigationGeometryInfo>& geometryList,
+    const IntVector2& from, const IntVector2& to, const OnAsyncTileBuildCompleted& callback)
+{
+    const auto workQueue = GetSubsystem<WorkQueue>();
+    const auto builder = GetTileBuilder();
+    const WeakPtr<NavigationMesh> weakSelf{this};
+
+    for (const IntVector2& tileIndex : IntRect{from, to + IntVector2::ONE})
+    {
+        const auto build = CreateTileBuildData(geometryList, tileIndex);
+        if (build->IsEmpty())
+        {
+            callback(tileIndex, true);
+            continue;
+        }
+
+        asyncTileBuilds_[tileIndex] = build;
+        workQueue->PostTask([builder, build, weakSelf, callback](unsigned, WorkQueue* queue)
+        {
+            URHO3D_PROFILE("BuildTileAsyncWork");
+
+            const bool success = builder(*build);
+
+            queue->PostTaskForMainThread([weakSelf, build, success, callback]()
+            {
+                if (success)
+                {
+                    if (const auto self = weakSelf.Lock())
+                        self->CompleteAsyncTileBuild(build);
+                }
+
+                callback(build->tileIndex_, success);
+            });
+        });
+    }
+}
+
+void NavigationMesh::CompleteAsyncTileBuild(const NavBuildDataPtr& build)
+{
+    URHO3D_PROFILE("BuildTileAsyncComplete");
+
+    const auto iter = asyncTileBuilds_.find(build->tileIndex_);
+    if (iter == asyncTileBuilds_.end() || iter->second != build)
+        return;
+
+    asyncTileBuilds_.erase(iter);
+    ReplaceTileData(*build);
+    SendTileAddedEvent(build->tileIndex_);
 }
 
 bool NavigationMesh::InitializeQuery()
@@ -1588,6 +1672,8 @@ void NavigationMesh::ReleaseNavigationMesh()
 
     dtFreeNavMeshQuery(navMeshQuery_);
     navMeshQuery_ = nullptr;
+
+    asyncTileBuilds_.clear();
 }
 
 void NavigationMesh::SetPartitionType(NavmeshPartitionType partitionType)
