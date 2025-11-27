@@ -30,6 +30,7 @@
 
 #include <EASTL/unique_ptr.h>
 #include <EASTL/unordered_set.h>
+#include <EASTL/unordered_map.h>
 
 class dtNavMesh;
 class dtNavMeshQuery;
@@ -83,6 +84,8 @@ public:
     static constexpr int DefaultMaxTiles = 256;
     /// Maximum number of layers in the single tile.
     static constexpr unsigned MaxLayers = 255;
+    /// Callback invoked when tile async build is completed, both success and failure.
+    using OnAsyncTileBuildCompleted = ea::function<void(const IntVector2& tileIndex, bool success)>;
 
     /// Construct.
     explicit NavigationMesh(Context* context);
@@ -152,6 +155,11 @@ public:
     bool BuildTilesInRegion(const BoundingBox& boundingBox);
     /// Rebuild part of the navigation mesh in the rectangular area. Return true if successful.
     bool BuildTiles(const IntVector2& from, const IntVector2& to);
+    /// Rebuild part of the navigation mesh in the rectangular area. Task may be completed asynchronously.
+    /// Callback is invoked for each tile in range.
+    void BuildTilesAsync(const IntVector2& from, const IntVector2& to, const OnAsyncTileBuildCompleted& callback = {});
+    /// Cancel asynchronous tile build, if any.
+    void CancelTileBuild(const IntVector2& tileIndex);
     /// Rebuild the navigation mesh allocating sufficient maximum number of tiles. Return true if successful.
     bool Rebuild();
 
@@ -331,6 +339,11 @@ protected:
     /// Build mesh tiles from the geometry data. Return number of tiles built.
     unsigned BuildTilesFromGeometry(
         ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to);
+    /// Schedule mesh tile building.
+    void BuildTilesFromGeometryAsync(ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from,
+        const IntVector2& to, const OnAsyncTileBuildCompleted& callback);
+    /// Complete mesh tile building.
+    void CompleteAsyncTileBuild(const NavBuildDataPtr& build);
 
     /// Send rebuild event.
     void SendRebuildEvent();
@@ -418,6 +431,8 @@ protected:
     bool drawNavAreas_;
     /// NavAreas for this NavMesh.
     ea::vector<WeakPtr<NavArea> > areas_;
+    /// Current asynchronous tile build.
+    ea::unordered_map<IntVector2, NavBuildDataPtr> asyncTileBuilds_;
 };
 
 /// Register Navigation library objects.
