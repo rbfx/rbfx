@@ -174,6 +174,7 @@ if (URHO3D_NETWORK)
     set(NO_EXAMPLES ON)
     set(NO_TESTS ON)
     set(CMAKE_PROJECT_VERSION 1.0.0)
+    set(sctp_werror OFF)
     if (WEB)
         add_subdirectory(libdatachannel-wasm)
         install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/libdatachannel-wasm/wasm/include/
