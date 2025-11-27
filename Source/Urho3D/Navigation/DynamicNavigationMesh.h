@@ -103,14 +103,15 @@ public:
     bool GetDrawObstacles() const { return drawObstacles_; }
 
 protected:
-    struct TileCacheData;
-
     /// Override NavigationMesh.
     /// @{
     bool AllocateMesh(unsigned maxTiles) override;
     bool RebuildMesh() override;
-    unsigned BuildTilesFromGeometry(
-        ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to) override;
+
+    TileBuilderFunction GetTileBuilder() const override;
+    NavBuildDataPtr CreateTileBuildData(
+        const ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& tileIndex) const override;
+    bool ReplaceTileData(NavBuildData& build) override;
     /// @}
 
     /// Subscribe to events when assigned to a scene.
@@ -125,12 +126,13 @@ protected:
     /// Used by Obstacle class to remove itself from the tile cache, if 'silent' an event will not be raised.
     void RemoveObstacle(Obstacle* obstacle, bool silent = false);
 
-    /// Build one tile of the navigation mesh. Return true if successful.
-    int BuildTile(ea::vector<NavigationGeometryInfo>& geometryList, int x, int z, TileCacheData* tiles);
     /// Off-mesh connections to be rebuilt in the mesh processor.
     ea::vector<OffMeshConnection*> CollectOffMeshConnections(const BoundingBox& bounds);
     /// Release the navigation mesh, query, and tile cache.
     void ReleaseNavigationMesh() override;
+
+    /// Build dynamic navigation mesh tile.
+    static bool BuildDynamicTileData(DynamicNavBuildData& build);
 
 private:
     /// Write tiles data.
@@ -148,7 +150,7 @@ private:
     /// Used by dtTileCache to allocate blocks of memory.
     ea::unique_ptr<dtTileCacheAlloc> allocator_;
     /// Used by dtTileCache to compress the original tiles to use when reconstructing for changes.
-    ea::unique_ptr<dtTileCacheCompressor> compressor_;
+    ea::shared_ptr<dtTileCacheCompressor> compressor_;
     /// Mesh processor used by Detour, in this case a 'pass-through' processor.
     ea::unique_ptr<dtTileCacheMeshProcess> meshProcessor_;
     /// Maximum number of obstacle objects allowed.

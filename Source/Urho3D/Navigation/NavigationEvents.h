@@ -34,15 +34,6 @@ URHO3D_EVENT(E_NAVIGATION_MESH_REBUILT, NavigationMeshRebuilt)
     URHO3D_PARAM(P_MESH, Mesh); // NavigationMesh pointer
 }
 
-/// Partial bounding box rebuild of navigation mesh.
-URHO3D_EVENT(E_NAVIGATION_AREA_REBUILT, NavigationAreaRebuilt)
-{
-    URHO3D_PARAM(P_NODE, Node); // Node pointer
-    URHO3D_PARAM(P_MESH, Mesh); // NavigationMesh pointer
-    URHO3D_PARAM(P_BOUNDSMIN, BoundsMin); // Vector3
-    URHO3D_PARAM(P_BOUNDSMAX, BoundsMax); // Vector3
-}
-
 /// Mesh tile is added to navigation mesh.
 URHO3D_EVENT(E_NAVIGATION_TILE_ADDED, NavigationTileAdded)
 {

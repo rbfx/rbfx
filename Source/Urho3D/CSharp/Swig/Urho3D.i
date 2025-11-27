@@ -794,12 +794,12 @@ public:
 %ignore Urho3D::NavBuildData::navAreas_;
 %ignore Urho3D::NavigationMesh::FindPath;
 %include "generated/Urho3D/_pre_navigation.i"
+%include "Urho3D/Navigation/NavigationDefs.h"
 %include "Urho3D/Navigation/CrowdAgent.h"
 %include "Urho3D/Navigation/CrowdManager.h"
 %include "Urho3D/Navigation/NavigationMesh.h"
 %include "Urho3D/Navigation/DynamicNavigationMesh.h"
 %include "Urho3D/Navigation/NavArea.h"
-%include "Urho3D/Navigation/NavBuildData.h"
 %include "Urho3D/Navigation/Navigable.h"
 %include "Urho3D/Navigation/Obstacle.h"
 %include "Urho3D/Navigation/OffMeshConnection.h"

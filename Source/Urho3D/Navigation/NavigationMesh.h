@@ -38,19 +38,17 @@ class dtQueryFilter;
 namespace Urho3D
 {
 
-enum NavmeshPartitionType
-{
-    NAVMESH_PARTITION_WATERSHED = 0,
-    NAVMESH_PARTITION_MONOTONE
-};
-
 class Geometry;
 class NavArea;
 class Navigable;
 
 struct FindPathData;
 struct NavBuildData;
+struct SimpleNavBuildData;
+struct DynamicNavBuildData;
 struct NavigationGeometryInfo;
+
+using NavBuildDataPtr = ea::shared_ptr<NavBuildData>;
 
 /// A flag representing the type of path point- none, the start of a path segment, the end of one, or an off-mesh connection.
 enum NavigationPathPointFlag
@@ -315,29 +313,39 @@ private:
     bool ReadTile(Deserializer& source, bool silent);
 
 protected:
+    using TileBuilderFunction = bool(*)(NavBuildData& build);
+
     /// Allocate the navigation mesh without building any tiles. Return true if successful.
     virtual bool AllocateMesh(unsigned maxTiles);
     /// Rebuild the navigation mesh allocating sufficient maximum number of tiles. Return true if successful.
     virtual bool RebuildMesh();
-    /// Build mesh tiles from the geometry data. Return true if successful.
-    virtual unsigned BuildTilesFromGeometry(
+
+    /// Returns functor that builds tile data. The functor may be called from worker thread.
+    virtual TileBuilderFunction GetTileBuilder() const;
+    /// Collect data for tile building.
+    virtual NavBuildDataPtr CreateTileBuildData(
+        const ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& tileIndex) const;
+    /// Replace tile data in navigation mesh.
+    virtual bool ReplaceTileData(NavBuildData& build);
+
+    /// Build mesh tiles from the geometry data. Return number of tiles built.
+    unsigned BuildTilesFromGeometry(
         ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to);
 
     /// Send rebuild event.
     void SendRebuildEvent();
     /// Send tile added event.
     void SendTileAddedEvent(const IntVector2& tileIndex);
+
     /// Collect geometry from under Navigable components.
     void CollectGeometries(ea::vector<NavigationGeometryInfo>& geometryList);
     /// Visit nodes and collect navigable geometry.
     void CollectGeometries(ea::vector<NavigationGeometryInfo>& geometryList, Navigable* navigable, Node* node,
         ea::hash_set<Node*>& processedNodes, bool recursive);
-    /// Get geometry data within a bounding box.
-    void GetTileGeometry(NavBuildData* build, const ea::vector<NavigationGeometryInfo>& geometryList, BoundingBox& box);
-    /// Add a triangle mesh to the geometry data.
-    void AddTriMeshGeometry(NavBuildData* build, Geometry* geometry, const Matrix3x4& transform, unsigned char areaId);
-    /// Build one tile of the navigation mesh. Return true if successful.
-    bool BuildTile(ea::vector<NavigationGeometryInfo>& geometryList, int x, int z);
+
+    /// Initialize navigation build data from component configuration.
+    void InitializeBuildData(
+        NavBuildData& build, const IntVector2& tileIndex, const ea::vector<NavigationGeometryInfo>& geometryList) const;
     /// Ensure that the navigation mesh query is initialized. Return true if successful.
     bool InitializeQuery();
     /// Release the navigation mesh and the query.
@@ -346,6 +354,18 @@ protected:
     /// Draw debug geometry for single tile.
     void DrawDebugTileGeometry(DebugRenderer* debug, bool depthTest, int tileIndex);
 
+    /// Get geometry data within a bounding box.
+    static void CollectTileGeometry(NavBuildData& build, const Matrix3x4& rootTransform,
+        const ea::vector<NavigationGeometryInfo>& geometryList, const BoundingBox& box);
+    /// Add a triangle mesh to the geometry data.
+    static void AddTriMeshGeometry(
+        NavBuildData& build, Geometry* geometry, const Matrix3x4& transform, unsigned char areaId);
+    /// Build compact heightfield.
+    static bool BuildCompactHeightField(NavBuildData& build);
+    /// Build simple navigation mesh tile.
+    static bool BuildSimpleTileData(SimpleNavBuildData& build);
+
+protected:
     /// Identifying name for this navigation mesh.
     ea::string meshName_;
     /// Detour navigation mesh.

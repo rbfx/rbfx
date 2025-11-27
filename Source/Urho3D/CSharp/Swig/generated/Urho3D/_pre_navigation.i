@@ -87,16 +87,6 @@ public static partial class E
         public static implicit operator StringHash(NavigationMeshRebuiltEvent e) { return e._event; }
     }
     public static NavigationMeshRebuiltEvent NavigationMeshRebuilt = new NavigationMeshRebuiltEvent();
-    public class NavigationAreaRebuiltEvent {
-        private StringHash _event = new StringHash("NavigationAreaRebuilt");
-        public StringHash Node = new StringHash("Node");
-        public StringHash Mesh = new StringHash("Mesh");
-        public StringHash BoundsMin = new StringHash("BoundsMin");
-        public StringHash BoundsMax = new StringHash("BoundsMax");
-        public NavigationAreaRebuiltEvent() { }
-        public static implicit operator StringHash(NavigationAreaRebuiltEvent e) { return e._event; }
-    }
-    public static NavigationAreaRebuiltEvent NavigationAreaRebuilt = new NavigationAreaRebuiltEvent();
     public class NavigationTileAddedEvent {
         private StringHash _event = new StringHash("NavigationTileAdded");
         public StringHash Node = new StringHash("Node");
