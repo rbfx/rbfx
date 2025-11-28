@@ -259,6 +259,8 @@ private:
     Vector3 targetPosition_;
     /// Requested target velocity.
     Vector3 targetVelocity_;
+    /// Actual velocity.
+    Vector3 actualVelocity_;
     /// Requested target type.
     CrowdAgentRequestedTarget requestedTargetType_;
     /// Flag indicating the node's position should be updated by Detour crowd manager.

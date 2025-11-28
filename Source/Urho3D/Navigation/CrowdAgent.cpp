@@ -107,6 +107,7 @@ void CrowdAgent::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Target Position", Vector3, targetPosition_, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Target Velocity", Vector3, targetVelocity_, Vector3::ZERO, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Actual Velocity", Vector3, actualVelocity_, Vector3::ZERO, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE("Requested Target Type", requestedTargetType_, crowdAgentRequestedTargetTypeNames,
         DEFAULT_AGENT_REQUEST_TARGET_TYPE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Update Node Position", GetUpdateNodePosition, SetUpdateNodePosition, bool, true, AM_DEFAULT);
@@ -188,9 +189,11 @@ void CrowdAgent::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 
 void CrowdAgent::UpdateParameters(unsigned scope)
 {
-    const dtCrowdAgent* agent = GetDetourCrowdAgent();
+    dtCrowdAgent* agent = GetEditableDetourCrowdAgent();
     if (agent)
     {
+        dtVcopy(agent->vel, actualVelocity_.Data());
+
         dtCrowdAgentParams params = agent->params;
 
         if (scope & SCOPE_NAVIGATION_QUALITY_PARAMS)
@@ -354,6 +357,7 @@ void CrowdAgent::SetTargetVelocity(const Vector3& velocity)
 
 void CrowdAgent::SetActualVelocity(const Vector3& velocity)
 {
+    actualVelocity_ = velocity;
     if (auto agent = GetEditableDetourCrowdAgent())
         dtVcopy(agent->vel, velocity.Data());
 }
@@ -531,8 +535,8 @@ void CrowdAgent::OnCrowdPositionUpdate(dtCrowdAgent* ag, float* /*pos*/, float d
         WeakPtr<CrowdAgent> self(this);
 
         Vector3 newPos(ag->npos);
-        Vector3 newVel(ag->vel);
 
+        actualVelocity_ = Vector3{ag->vel};
         crowdManager_->UpdateAgentPosition(this, dt, newPos);
 
         // Notify parent node of the reposition
@@ -553,7 +557,7 @@ void CrowdAgent::OnCrowdPositionUpdate(dtCrowdAgent* ag, float* /*pos*/, float d
             map[P_NODE] = node_;
             map[P_CROWD_AGENT] = this;
             map[P_POSITION] = newPos;
-            map[P_VELOCITY] = newVel;
+            map[P_VELOCITY] = actualVelocity_;
             map[P_ARRIVED] = HasArrived();
             map[P_TIMESTEP] = dt;
             crowdManager_->SendEvent(E_CROWD_AGENT_REPOSITION, map);
@@ -577,7 +581,7 @@ void CrowdAgent::OnCrowdPositionUpdate(dtCrowdAgent* ag, float* /*pos*/, float d
             map[P_CROWD_TARGET_STATE] = newTargetState;
             map[P_CROWD_AGENT_STATE] = newAgentState;
             map[P_POSITION] = newPos;
-            map[P_VELOCITY] = newVel;
+            map[P_VELOCITY] = actualVelocity_;
             crowdManager_->SendEvent(E_CROWD_AGENT_STATE_CHANGED, map);
             if (self.Expired())
                 return;
@@ -594,7 +598,7 @@ void CrowdAgent::OnCrowdPositionUpdate(dtCrowdAgent* ag, float* /*pos*/, float d
                 map[P_CROWD_TARGET_STATE] = newTargetState;
                 map[P_CROWD_AGENT_STATE] = newAgentState;
                 map[P_POSITION] = newPos;
-                map[P_VELOCITY] = newVel;
+                map[P_VELOCITY] = actualVelocity_;
                 crowdManager_->SendEvent(E_CROWD_AGENT_FAILURE, map);
                 if (self.Expired())
                     return;
