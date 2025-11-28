@@ -48,6 +48,8 @@ public:
         const ea::string& temporaryDirectory, unsigned version);
     ~PluginStack() override;
 
+    /// Return whether suspend/resume is supported.
+    bool IsSuspendSupported() const;
     /// Start application for all plugins in the stack.
     void StartApplication(const ea::string& mainPlugin);
     /// Suspend all plugins in the stack and stop application.

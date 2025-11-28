@@ -214,6 +214,16 @@ PluginApplication* PluginStack::FindMainPlugin(const ea::string& mainPlugin) con
     return nullptr;
 }
 
+bool PluginStack::IsSuspendSupported() const
+{
+    const auto isSupported = [](const PluginInfo& info)
+    {
+        return !info.application_ || info.application_->IsSuspendSupported();
+        //
+    };
+    return ea::all_of(applications_.begin(), applications_.end(), isSupported);
+}
+
 void PluginStack::StartApplication(const ea::string& mainPlugin)
 {
     if (isStarted_)
@@ -602,11 +612,18 @@ void PluginManager::CheckOutOfDatePlugins()
 
 bool PluginManager::IsReloadBlocked(ea::string* reason) const
 {
+    if (pluginStack_ && pluginStack_->IsStarted() && !pluginStack_->IsSuspendSupported())
+    {
+        if (reason)
+            *reason = "Started plugins don't support hot-reload, stop playing";
+        return true;
+    }
+
     const auto fs = GetSubsystem<FileSystem>();
     if (fs->FileExists(binaryDirectory_ + ".noreload"))
     {
         if (reason)
-            *reason = "CMake build in progress";
+            *reason = "CMake build in progress, wait";
         return true;
     }
 
@@ -614,7 +631,7 @@ bool PluginManager::IsReloadBlocked(ea::string* reason) const
     if (tracy::GetProfiler().IsConnected())
     {
         if (reason)
-            *reason = "Profiler is connected";
+            *reason = "Profiler is connected, disconnect TracyClient from this application";
         return true;
     }
 #endif
