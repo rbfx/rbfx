@@ -1,73 +1,55 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Container/Functors.h"
-#include "../Core/Context.h"
-#include "../Core/Exception.h"
-#include "../Core/StringUtils.h"
-#include "../Graphics/AnimatedModel.h"
-#include "../Graphics/Animation.h"
-#include "../Graphics/AnimationController.h"
-#include "../Graphics/AnimationTrack.h"
-#include "../Graphics/Light.h"
-#include "../Graphics/Material.h"
-#include "../Graphics/Model.h"
-#include "../Graphics/ModelView.h"
-#include "../Graphics/Octree.h"
-#include "../Graphics/Technique.h"
-#include "../Graphics/Texture.h"
-#include "../Graphics/Texture2D.h"
-#include "../Graphics/TextureCube.h"
-#include "../Graphics/Skybox.h"
-#include "../Graphics/StaticModel.h"
-#include "../Graphics/Zone.h"
-#include "../IO/ArchiveSerialization.h"
-#include "../IO/FileSystem.h"
-#include "../IO/Log.h"
-#include "../RenderPipeline/ShaderConsts.h"
-#include "../RenderPipeline/RenderPipeline.h"
-#include "../Resource/BinaryFile.h"
-#include "../Resource/Image.h"
-#include "../Resource/ResourceCache.h"
-#include "../Resource/XMLFile.h"
-#include "../Scene/PrefabResource.h"
-#include "../Scene/Scene.h"
-#include "../Utility/GLTFImporter.h"
+#include "Urho3D/Utility/GLTFImporter.h"
 
-#include <tiny_gltf.h>
+#include "Urho3D/Container/Functors.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/Core/Exception.h"
+#include "Urho3D/Core/StringUtils.h"
+#include "Urho3D/Graphics/AnimatedModel.h"
+#include "Urho3D/Graphics/Animation.h"
+#include "Urho3D/Graphics/AnimationController.h"
+#include "Urho3D/Graphics/AnimationTrack.h"
+#include "Urho3D/Graphics/Light.h"
+#include "Urho3D/Graphics/Material.h"
+#include "Urho3D/Graphics/Model.h"
+#include "Urho3D/Graphics/ModelView.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Graphics/Skybox.h"
+#include "Urho3D/Graphics/StaticModel.h"
+#include "Urho3D/Graphics/Technique.h"
+#include "Urho3D/Graphics/Texture.h"
+#include "Urho3D/Graphics/Texture2D.h"
+#include "Urho3D/Graphics/TextureCube.h"
+#include "Urho3D/Graphics/Zone.h"
+#include "Urho3D/IO/ArchiveSerialization.h"
+#include "Urho3D/IO/FileSystem.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/RenderPipeline/RenderPipeline.h"
+#include "Urho3D/RenderPipeline/ShaderConsts.h"
+#include "Urho3D/Resource/BinaryFile.h"
+#include "Urho3D/Resource/Image.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Resource/XMLFile.h"
+#include "Urho3D/Scene/PrefabResource.h"
+#include "Urho3D/Scene/Scene.h"
 
 #include <EASTL/algorithm.h>
 #include <EASTL/numeric.h>
 #include <EASTL/optional.h>
-#include <EASTL/unordered_set.h>
 #include <EASTL/unordered_map.h>
+#include <EASTL/unordered_set.h>
 
 #include <cctype>
 #include <exception>
 #include <regex>
+#include <tiny_gltf.h>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
@@ -718,14 +700,9 @@ struct GLTFBoneTrack
 {
     AnimationChannelFlags channelMask_;
 
-    ea::vector<float> positionKeys_;
-    ea::vector<Vector3> positionValues_;
-
-    ea::vector<float> rotationKeys_;
-    ea::vector<Quaternion> rotationValues_;
-
-    ea::vector<float> scaleKeys_;
-    ea::vector<Vector3> scaleValues_;
+    KeyFrameSet<ea::pair<float, Vector3>> positions_;
+    KeyFrameSet<ea::pair<float, Quaternion>> rotations_;
+    KeyFrameSet<ea::pair<float, Vector3>> scales_;
 };
 
 /// Represents attribute track.
@@ -1594,16 +1571,16 @@ private:
 
                     if (interpolation == KeyFrameInterpolation::TangentSpline)
                     {
-                        const auto morphWeightInTangents = ReadVericalSlice(weightsValues, morphIndex * 3, numMorphs * 3);
-                        const auto morphWeightValues = ReadVericalSlice(weightsValues, morphIndex * 3 + 1, numMorphs * 3);
-                        const auto morphWeightOutTangents = ReadVericalSlice(weightsValues, morphIndex * 3 + 2, numMorphs * 3);
+                        const auto morphWeightInTangents = ReadVerticalSlice(weightsValues, morphIndex * 3, numMorphs * 3);
+                        const auto morphWeightValues = ReadVerticalSlice(weightsValues, morphIndex * 3 + 1, numMorphs * 3);
+                        const auto morphWeightOutTangents = ReadVerticalSlice(weightsValues, morphIndex * 3 + 2, numMorphs * 3);
                         ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.values_));
                         ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.inTangents_));
                         ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.outTangents_));
                     }
                     else
                     {
-                        const auto morphWeightValues = ReadVericalSlice(weightsValues, morphIndex, numMorphs);
+                        const auto morphWeightValues = ReadVerticalSlice(weightsValues, morphIndex, numMorphs);
                         ea::copy(morphWeightValues.begin(), morphWeightValues.end(), ea::back_inserter(track.values_));
                     }
                 }
@@ -1622,38 +1599,44 @@ private:
 
                 if (newChannel == CHANNEL_POSITION)
                 {
-                    track.positionKeys_ = channelKeys;
-                    track.positionValues_ = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
-                    ApplyInlineTransformToPosition(track.positionValues_);
-
+                    auto positionValues = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
                     if (interpolation == KeyFrameInterpolation::TangentSpline)
-                        track.positionValues_ = ReadVericalSlice(track.positionValues_, 1, 3);
+                        positionValues = ReadVerticalSlice(positionValues, 1, 3);
+                    ApplyInlineTransformToPosition(positionValues);
 
-                    if (track.positionValues_.size() != channelKeys.size())
+                    if (positionValues.size() != channelKeys.size())
                         throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
+
+                    track.positions_.RemoveAllKeyFrames();
+                    for (unsigned i = 0; i < positionValues.size(); ++i)
+                        track.positions_.AddKeyFrame({channelKeys[i], positionValues[i]});
                 }
                 else if (newChannel == CHANNEL_ROTATION)
                 {
-                    track.rotationKeys_ = channelKeys;
-                    track.rotationValues_ = bufferReader_.ReadAccessorChecked<Quaternion>(channelValuesAccessor);
-                    ApplyInlineTransformToRotation(track.rotationValues_);
-
+                    auto rotationValues = bufferReader_.ReadAccessorChecked<Quaternion>(channelValuesAccessor);
                     if (interpolation == KeyFrameInterpolation::TangentSpline)
-                        track.rotationValues_ = ReadVericalSlice(track.rotationValues_, 1, 3);
+                        rotationValues = ReadVerticalSlice(rotationValues, 1, 3);
+                    ApplyInlineTransformToRotation(rotationValues);
 
-                    if (track.rotationValues_.size() != channelKeys.size())
+                    if (rotationValues.size() != channelKeys.size())
                         throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
+
+                    track.rotations_.RemoveAllKeyFrames();
+                    for (unsigned i = 0; i < rotationValues.size(); ++i)
+                        track.rotations_.AddKeyFrame({channelKeys[i], rotationValues[i]});
                 }
                 else if (newChannel == CHANNEL_SCALE)
                 {
-                    track.scaleKeys_ = channelKeys;
-                    track.scaleValues_ = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
-
+                    auto scaleValues = bufferReader_.ReadAccessorChecked<Vector3>(channelValuesAccessor);
                     if (interpolation == KeyFrameInterpolation::TangentSpline)
-                        track.scaleValues_ = ReadVericalSlice(track.scaleValues_, 1, 3);
+                        scaleValues = ReadVerticalSlice(scaleValues, 1, 3);
 
-                    if (track.scaleValues_.size() != channelKeys.size())
+                    if (scaleValues.size() != channelKeys.size())
                         throw RuntimeException("Animation #{} channel input and output are mismatched", animation.index_);
+
+                    track.scales_.RemoveAllKeyFrames();
+                    for (unsigned i = 0; i < scaleValues.size(); ++i)
+                        track.scales_.AddKeyFrame({channelKeys[i], scaleValues[i]});
                 }
             }
             else
@@ -1689,9 +1672,9 @@ private:
 
                 if (interpolation == KeyFrameInterpolation::TangentSpline)
                 {
-                    track.inTangents_ = ReadVericalSlice(track.values_, 0, 3);
-                    track.outTangents_ = ReadVericalSlice(track.values_, 2, 3);
-                    track.values_ = ReadVericalSlice(track.values_, 1, 3);
+                    track.inTangents_ = ReadVerticalSlice(track.values_, 0, 3);
+                    track.outTangents_ = ReadVerticalSlice(track.values_, 2, 3);
+                    track.values_ = ReadVerticalSlice(track.values_, 1, 3);
                 }
 
                 if (track.values_.size() != channelKeys.size())
@@ -1870,7 +1853,7 @@ private:
     }
 
     template <class T>
-    static ea::vector<T> ReadVericalSlice(const ea::vector<T>& source, unsigned index, unsigned count)
+    static ea::vector<T> ReadVerticalSlice(const ea::vector<T>& source, unsigned index, unsigned count)
     {
         if (source.size() % count != 0 || index >= count)
             throw RuntimeException("Invalid array slice specified");
@@ -3202,34 +3185,16 @@ private:
             const bool hasRotations = boneTrack.channelMask_.Test(CHANNEL_ROTATION);
             const bool hasScales = boneTrack.channelMask_.Test(CHANNEL_SCALE);
 
-            AnimationTrack* track = animation->CreateTrack(boneName);
-            track->channelMask_ = boneTrack.channelMask_;
-
-            const float epsilon = base_.GetSettings().keyFrameTimeError_;
-            const auto keyTimes = MergeTimes({ &boneTrack.positionKeys_, &boneTrack.rotationKeys_, &boneTrack.scaleKeys_ }, epsilon);
-            const auto keyPositions = RemapAnimationVector(keyTimes, boneTrack.positionKeys_, boneTrack.positionValues_);
-            const auto keyRotations = RemapAnimationVector(keyTimes, boneTrack.rotationKeys_, boneTrack.rotationValues_);
-            const auto keyScales = RemapAnimationVector(keyTimes, boneTrack.scaleKeys_, boneTrack.scaleValues_);
-
-            if (!keyPositions && hasPositions)
+            if (boneTrack.positions_.IsEmpty() && hasPositions)
                 throw RuntimeException("Position array is empty for animation '{}'", animationName);
-            if (!keyRotations && hasRotations)
+            if (boneTrack.rotations_.IsEmpty() && hasRotations)
                 throw RuntimeException("Rotation array is empty for animation '{}'", animationName);
-            if (!keyScales && hasScales)
+            if (boneTrack.scales_.IsEmpty() && hasScales)
                 throw RuntimeException("Scale array is empty for animation '{}'", animationName);
 
-            for (unsigned i = 0; i < keyTimes.size(); ++i)
-            {
-                AnimationKeyFrame keyFrame;
-                keyFrame.time_ = keyTimes[i];
-                if (hasPositions)
-                    keyFrame.position_ = (*keyPositions)[i];
-                if (hasRotations)
-                    keyFrame.rotation_ = (*keyRotations)[i];
-                if (hasScales)
-                    keyFrame.scale_ = (*keyScales)[i];
-                track->AddKeyFrame(keyFrame);
-            }
+            AnimationTrack* track = animation->CreateTrack(boneName);
+            track->CreateMerged(boneTrack.channelMask_, boneTrack.positions_.keyFrames_,
+                boneTrack.rotations_.keyFrames_, boneTrack.scales_.keyFrames_, base_.GetSettings().keyFrameTimeError_);
         }
 
         for (const auto& [attributePath, attributeTrack] : sourceGroup.attributeTracksByPath_)
@@ -3345,55 +3310,6 @@ private:
         return namePrefix + groupSuffix;
     }
 
-    static ea::vector<float> MergeTimes(std::initializer_list<const ea::vector<float>*> vectors, float epsilon)
-    {
-        ea::vector<float> result;
-        for (const auto* input : vectors)
-            result.append(*input);
-        ea::sort(result.begin(), result.end());
-
-        unsigned lastValidIndex = 0;
-        for (unsigned i = 1; i < result.size(); ++i)
-        {
-            if (result[i] - result[lastValidIndex] < epsilon)
-                result[i] = -M_LARGE_VALUE;
-            else
-                lastValidIndex = i;
-        }
-
-        ea::erase_if(result, [](float time) { return time < 0.0f; });
-        return result;
-    }
-
-    template <class T>
-    static ea::optional<ea::vector<T>> RemapAnimationVector(const ea::vector<float>& destKeys,
-        const ea::vector<float>& sourceKeys, const ea::vector<T>& sourceValues)
-    {
-        if (sourceKeys.empty())
-            return ea::nullopt;
-
-        if (sourceKeys.size() != sourceValues.size())
-            throw RuntimeException("Mismathcing keys and values in animation track");
-
-        ea::vector<T> result(destKeys.size());
-        for (unsigned i = 0; i < destKeys.size(); ++i)
-        {
-            const float destKey = destKeys[i];
-            const auto iter = ea::lower_bound(sourceKeys.begin(), sourceKeys.end(), destKey);
-            const unsigned secondIndex = ea::min<unsigned>(sourceKeys.size() - 1, static_cast<unsigned>(iter - sourceKeys.begin()));
-            const unsigned firstIndex = iter == sourceKeys.end() ? secondIndex : ea::max(1u, secondIndex) - 1;
-
-            if (firstIndex == secondIndex)
-                result[i] = sourceValues[firstIndex];
-            else
-            {
-                const float factor = InverseLerp(sourceKeys[firstIndex], sourceKeys[secondIndex], destKey);
-                result[i] = LerpValue(sourceValues[firstIndex], sourceValues[secondIndex], factor);
-            }
-        }
-        return result;
-    }
-
     template <class T>
     static ea::optional<float> GetTrackLength(const T& track)
     {
@@ -3417,9 +3333,6 @@ private:
         }
         return length;
     }
-
-    static Vector3 LerpValue(const Vector3& lhs, const Vector3& rhs, float factor) { return Lerp(lhs, rhs, factor); }
-    static Quaternion LerpValue(const Quaternion& lhs, const Quaternion& rhs, float factor) { return lhs.Slerp(rhs, factor); }
 
     GLTFImporterBase& base_;
     const GLTFHierarchyAnalyzer& hierarchyAnalyzer_;

@@ -1,53 +1,49 @@
-//
-// Copyright (c) 2017-2020 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2017-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
-#include "../Core/Variant.h"
+#include "Urho3D/Core/Assert.h"
+#include "Urho3D/Core/Variant.h"
 
-#include <EASTL/vector.h>
 #include <EASTL/sort.h>
+#include <EASTL/vector.h>
 
 namespace Urho3D
 {
 
+template <class T> float GetKeyFrameTime(const T& keyFrame)
+{
+    return keyFrame.time_;
+}
+
+template <class T, class U> float GetKeyFrameTime(const ea::pair<T, U>& keyFrame)
+{
+    return keyFrame.first;
+}
+
 /// Sorted array of keyframes.
-/// T: must be structure with member `float time_` which is used for ordering.
-template <class T>
-struct KeyFrameSet
+/// T: GetKeyFrameTime(T) must return `float` time to be used for ordering.
+template <class T> struct KeyFrameSet
 {
     using KeyFrame = T;
 
     /// Sort keyframes by time.
     void SortKeyFrames()
     {
-        static const auto compare = [](const KeyFrame& lhs, const KeyFrame& rhs) { return lhs.time_ < rhs.time_; };
+        static const auto compare = [](const KeyFrame& lhs, const KeyFrame& rhs)
+        {
+            return GetKeyFrameTime(lhs) < GetKeyFrameTime(rhs);
+            //
+        };
         ea::sort(keyFrames_.begin(), keyFrames_.end(), compare);
     }
 
     /// Append keyframe preserving container order.
     void AddKeyFrame(const KeyFrame& keyFrame)
     {
-        const bool needSort = keyFrames_.size() > 0 && keyFrames_.back().time_ > keyFrame.time_;
+        const bool needSort = keyFrames_.size() > 0 && GetKeyFrameTime(keyFrames_.back()) > GetKeyFrameTime(keyFrame);
         keyFrames_.push_back(keyFrame);
         if (needSort)
             SortKeyFrames();
@@ -63,24 +59,26 @@ struct KeyFrameSet
     KeyFrame* GetKeyFrame(unsigned index) { return index < keyFrames_.size() ? &keyFrames_[index] : nullptr; }
 
     /// Return number of keyframes.
-    /// @property
     unsigned GetNumKeyFrames() const { return keyFrames_.size(); }
 
+    /// Return whether the set is empty.
+    bool IsEmpty() const { return keyFrames_.empty(); }
+
     /// Return keyframes for interpolation.
-    void GetKeyFrames(float time, float duration, bool isLooped,
-        unsigned& frameIndex, unsigned& nextFrameIndex, float& blendFactor) const
+    void GetKeyFrames(float time, float duration, bool isLooped, unsigned& frameIndex, unsigned& nextFrameIndex,
+        float& blendFactor) const
     {
         GetKeyFrameIndex(time, frameIndex);
 
         const unsigned numFrames = keyFrames_.size();
-        nextFrameIndex = isLooped
-            ? (frameIndex + 1) % numFrames  // Wrap around if looped
-            : ea::min(frameIndex + 1, numFrames - 1);  // Trim if not looped
+        nextFrameIndex = isLooped //
+            ? (frameIndex + 1) % numFrames // Wrap around if looped
+            : ea::min(frameIndex + 1, numFrames - 1); // Trim if not looped
 
         if (frameIndex != nextFrameIndex)
         {
-            const float frameTime = keyFrames_[frameIndex].time_;
-            const float nextFrameTime = keyFrames_[nextFrameIndex].time_;
+            const float frameTime = GetKeyFrameTime(keyFrames_[frameIndex]);
+            const float nextFrameTime = GetKeyFrameTime(keyFrames_[nextFrameIndex]);
 
             float timeInterval = nextFrameTime - frameTime;
             if (timeInterval < 0.0f)
@@ -106,11 +104,11 @@ struct KeyFrameSet
             index = keyFrames_.size() - 1;
 
         // Check for being too far ahead
-        while (index && time < keyFrames_[index].time_)
+        while (index && time < GetKeyFrameTime(keyFrames_[index]))
             --index;
 
         // Check for being too far behind
-        while (index < keyFrames_.size() - 1 && time >= keyFrames_[index + 1].time_)
+        while (index < keyFrames_.size() - 1 && time >= GetKeyFrameTime(keyFrames_[index + 1]))
             ++index;
 
         return true;
@@ -119,5 +117,4 @@ struct KeyFrameSet
     ea::vector<KeyFrame> keyFrames_;
 };
 
-
-}
+} // namespace Urho3D
