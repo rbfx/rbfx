@@ -67,6 +67,7 @@ protected:
         ea::unordered_map<ea::string, ea::string> nodeRenames_;
         ea::unordered_map<ea::string, ResetRootMotionInfo> resetRootMotion_;
         ea::unordered_map<ea::string, StringVariantMap> resourceMetadata_;
+        ea::vector<ea::string> artificialSkinNodes_;
 
         void SerializeInBlock(Archive& archive);
     };
@@ -75,6 +76,7 @@ protected:
     /// @{
     void OnModelLoaded(ModelView& modelView) override;
     void OnAnimationLoaded(Animation& animation) override;
+    ea::vector<ea::string> GetArtificialSkinNodes() override;
     /// @}
 
     /// Tweaks.

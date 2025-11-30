@@ -3718,7 +3718,46 @@ tg::Model LoadGLTFBinary(ConstByteSpan data)
     return model;
 }
 
+void EnumerateChildrenRecursive(ea::vector<int>& nodes, const tg::Model& model, int nodeIndex)
+{
+    const auto& children = model.nodes[nodeIndex].children;
+    nodes.insert(nodes.end(), children.begin(), children.end());
+    for (int childIndex : children)
+        EnumerateChildrenRecursive(nodes, model, childIndex);
 }
+
+void PreprocessModel(tg::Model& model, const GLTFImporterSettings& settings, GLTFImporterCallback* callback)
+{
+    const auto artificialSkinNodeNames = callback->GetArtificialSkinNodes();
+    if (!artificialSkinNodeNames.empty())
+    {
+        ea::optional<int> emptyMeshIndex;
+        for (int i = 0; i < static_cast<int>(model.nodes.size()); ++i)
+        {
+            tg::Node& node = model.nodes[i];
+            if (node.skin >= 0 || !artificialSkinNodeNames.contains(node.name.c_str()))
+                continue;
+
+            if (!emptyMeshIndex)
+            {
+                emptyMeshIndex = static_cast<int>(model.meshes.size());
+                model.meshes.emplace_back();
+            }
+
+            const int skinIndex = static_cast<int>(model.skins.size());
+            tg::Skin& skin = model.skins.emplace_back();
+            node.skin = skinIndex;
+            node.mesh = *emptyMeshIndex;
+
+            ea::vector<int> nodes;
+            EnumerateChildrenRecursive(nodes, model, i);
+            skin.skeleton = i;
+            skin.joints.assign(nodes.begin(), nodes.end());
+        }
+    }
+}
+
+} // namespace
 
 class GLTFImporter::Impl
 {
@@ -3875,8 +3914,12 @@ bool GLTFImporter::Process(
         if (impl_)
             throw RuntimeException("Source GLTF model is already processed");
 
-        impl_ = ea::make_unique<Impl>(context_, settings_, ea::move(*model_), outputPath, resourceNamePrefix,
-            callback ? callback : &defaultCallback_);
+        if (!callback)
+            callback = &defaultCallback_;
+
+        PreprocessModel(*model_, settings_, callback);
+
+        impl_ = ea::make_unique<Impl>(context_, settings_, ea::move(*model_), outputPath, resourceNamePrefix, callback);
         model_ = nullptr;
         return true;
     }

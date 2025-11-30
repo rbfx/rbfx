@@ -149,6 +149,7 @@ void ModelImporter::ModelMetadata::SerializeInBlock(Archive& archive)
         });
 
     SerializeOptionalValue(archive, "resourceMetadata", resourceMetadata_);
+    SerializeOptionalValue(archive, "artificialSkinNodes", artificialSkinNodes_);
 }
 
 ModelImporter::ModelImporter(Context* context)
@@ -361,6 +362,11 @@ void ModelImporter::OnAnimationLoaded(Animation& animation)
         if (frameRateError < 0.01f)
             animation.AddMetadata(AnimationMetadata::FrameRate, frameRate);
     }
+}
+
+ea::vector<ea::string> ModelImporter::GetArtificialSkinNodes()
+{
+    return currentMetadata_->artificialSkinNodes_;
 }
 
 void ModelImporter::ResetRootMotion(Animation& animation, const ResetRootMotionInfo& info)

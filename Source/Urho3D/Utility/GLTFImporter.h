@@ -69,6 +69,9 @@ class URHO3D_API GLTFImporterCallback
 public:
     virtual void OnModelLoaded(ModelView& modelView) {};
     virtual void OnAnimationLoaded(Animation& animation) {};
+
+    /// Creates skin and empty mesh for given nodes (searched globally by name), if not present.
+    virtual ea::vector<ea::string> GetArtificialSkinNodes() { return {}; }
 };
 
 URHO3D_API void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value);
