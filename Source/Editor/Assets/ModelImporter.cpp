@@ -491,7 +491,7 @@ ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromFBX(
         return nullptr;
 
     const ea::string tempGltfFile = Format("{}{}.glb", tempPath, GenerateUUID());
-    const StringVector arguments{"--binary", "--input", fileName, "--output", tempGltfFile};
+    const StringVector arguments{"--binary", "--input", fileName, "--output", tempGltfFile, "--fbx-temp-dir", tempPath};
 
     ea::string commandOutput;
     if (fs->SystemRun(toolManager->GetFBX2glTF(), arguments, commandOutput) != 0)
