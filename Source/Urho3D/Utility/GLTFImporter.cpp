@@ -940,9 +940,8 @@ private:
         for (unsigned meshIndex = 0; meshIndex < numMeshes; ++meshIndex)
         {
             const tg::Mesh& mesh = model_.meshes[meshIndex];
-            if (mesh.primitives.empty())
-                throw RuntimeException("Mesh #{} has no primitives", meshIndex);
-            numMorphsInMesh_[meshIndex] = static_cast<unsigned>(mesh.primitives[0].targets.size());
+            numMorphsInMesh_[meshIndex] =
+                mesh.primitives.empty() ? 0 : static_cast<unsigned>(mesh.primitives[0].targets.size());
         }
     }
 
@@ -3566,6 +3565,7 @@ private:
                 auto animatedModel = node->CreateComponent<AnimatedModel>();
                 InitializeComponentModelAndMaterials(*animatedModel, *skinnedMeshNode.mesh_, *skinnedMeshNode.skin_);
                 InitializeDefaultMorphWeights(*animatedModel, skinnedMeshNode);
+                TweakEmptyAnimatedModel(*animatedModel);
             }
 
             if (animationImporter_.HasAnimations())
@@ -3607,6 +3607,7 @@ private:
                     auto animatedModel = node->CreateComponent<AnimatedModel>();
                     InitializeComponentModelAndMaterials(*animatedModel, *sourceNode.mesh_, -1);
                     InitializeDefaultMorphWeights(*animatedModel, sourceNode);
+                    TweakEmptyAnimatedModel(*animatedModel);
                 }
                 else
                 {
@@ -3715,6 +3716,15 @@ private:
 
         for (unsigned morphIndex = 0; morphIndex < numMorphs; ++morphIndex)
             animatedModel.SetMorphWeight(morphIndex, sourceNode.morphWeights_[morphIndex]);
+    }
+
+    void TweakEmptyAnimatedModel(AnimatedModel& animatedModel)
+    {
+        if (animatedModel.GetNumGeometries() == 0)
+        {
+            animatedModel.SetUpdateInvisible(true);
+            animatedModel.SetAnimationLodBias(0.0f);
+        }
     }
 
     static void RegisterNode(ImportedScene& importedScene, Node& node, const GLTFNode& sourceNode)

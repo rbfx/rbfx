@@ -370,6 +370,9 @@ void CreateGeometryBufferBuilders(const ea::vector<GeometryView>& geometries,
 
         for (const GeometryLODView& sourceGeometryLod : sourceGeometry.lods_)
         {
+            if (sourceGeometryLod.vertices_.empty() || sourceGeometryLod.indices_.empty())
+                continue;
+
             const unsigned vertexBufferIndex =
                 GetMatchingVertexBuffer(vertexBufferBuilders, sourceGeometryLod.vertexFormat_);
             VertexBufferBuilder& vertexBufferBuilder = vertexBufferBuilders[vertexBufferIndex];
@@ -478,7 +481,10 @@ void AllocateNewBuffers(Context* context, DeviceObjectFlags deviceObjectFlags,
     {
         const auto vertexElements = CollectVertexElements(vertexBufferBuilder.vertexFormat_);
         if (vertexElements.empty())
+        {
             URHO3D_LOGERROR("No vertex elements in vertex buffer");
+            continue;
+        }
 
         auto vertexBuffer = MakeShared<VertexBuffer>(context, deviceObjectFlags);
         vertexBuffer->SetShadowed(true);
@@ -488,10 +494,13 @@ void AllocateNewBuffers(Context* context, DeviceObjectFlags deviceObjectFlags,
     }
 
     // Create index buffer
-    auto indexBuffer = MakeShared<IndexBuffer>(context, deviceObjectFlags);
-    indexBuffer->SetShadowed(true);
-    indexBuffer->SetSize(indexBufferBuilder.numIndices_, indexBufferBuilder.largeIndices_);
-    indexBufferBuilder.buffer_ = indexBuffer;
+    if (indexBufferBuilder.numIndices_ != 0)
+    {
+        auto indexBuffer = MakeShared<IndexBuffer>(context, deviceObjectFlags);
+        indexBuffer->SetShadowed(true);
+        indexBuffer->SetSize(indexBufferBuilder.numIndices_, indexBufferBuilder.largeIndices_);
+        indexBufferBuilder.buffer_ = indexBuffer;
+    }
 }
 
 void CalculateMorphRange(VertexBufferBuilder& vertexBufferBuilder)
@@ -1343,7 +1352,8 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
 
         for (unsigned i = 0; i < vertexBufferBuilders.size(); ++i)
             vertexBufferBuilders[i].buffer_->SetDebugName(Format("Model '{}' Vertex Buffer {}", name_, i));
-        indexBufferBuilder.buffer_->SetDebugName(Format("Model '{}' Index Buffer", name_));
+        if (indexBufferBuilder.buffer_)
+            indexBufferBuilder.buffer_->SetDebugName(Format("Model '{}' Index Buffer", name_));
     }
 
     // Copy data
@@ -1408,7 +1418,8 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
 
     model->SetBoundingBox(CalculateBoundingBox());
     model->SetVertexBuffers(vertexBuffers, morphRangeStarts, morphRangeCounts);
-    model->SetIndexBuffers({indexBufferBuilder.buffer_});
+    if (indexBufferBuilder.buffer_)
+        model->SetIndexBuffers({indexBufferBuilder.buffer_});
     model->SetMorphs(morphs);
 
     // Write geometries
@@ -1428,19 +1439,23 @@ void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
         for (unsigned lodIndex = 0; lodIndex < numLods; ++lodIndex)
         {
             const GeometryLODView& sourceGeometryLod = sourceGeometry.lods_[lodIndex];
-            const ModelVertexFormat& vertexFormat = sourceGeometryLod.vertexFormat_;
-            const unsigned indexCount = sourceGeometryLod.indices_.size();
-            const unsigned vertexCount = sourceGeometryLod.vertices_.size();
-            const GeometryRange& range = geometryRanges[&sourceGeometryLod];
+            const auto iterRange = geometryRanges.find(&sourceGeometryLod);
 
             SharedPtr<Geometry> geometry = MakeShared<Geometry>(context_);
 
-            geometry->SetNumVertexBuffers(1);
-            geometry->SetVertexBuffer(0, vertexBufferBuilders[range.vertexBuffer_].buffer_);
-            geometry->SetIndexBuffer(indexBufferBuilder.buffer_);
             geometry->SetLodDistance(sourceGeometryLod.lodDistance_);
-            geometry->SetDrawRange(
-                sourceGeometryLod.primitiveType_, range.startIndex_, indexCount, range.startVertex_, vertexCount);
+            if (iterRange != geometryRanges.end())
+            {
+                const GeometryRange& range = iterRange->second;
+                const unsigned indexCount = sourceGeometryLod.indices_.size();
+                const unsigned vertexCount = sourceGeometryLod.vertices_.size();
+
+                geometry->SetNumVertexBuffers(1);
+                geometry->SetVertexBuffer(0, vertexBufferBuilders[range.vertexBuffer_].buffer_);
+                geometry->SetIndexBuffer(indexBufferBuilder.buffer_);
+                geometry->SetDrawRange(
+                    sourceGeometryLod.primitiveType_, range.startIndex_, indexCount, range.startVertex_, vertexCount);
+            }
 
             model->SetGeometry(geometryIndex, lodIndex, geometry);
         }
@@ -1529,6 +1544,8 @@ BoundingBox ModelView::CalculateBoundingBox(bool exportedOnly) const
                 boundingBox.Merge(vertex.position_.ToVector3());
         }
     }
+    if (!boundingBox.Defined())
+        boundingBox.Merge(Vector3::ZERO);
     return boundingBox;
 }
 
