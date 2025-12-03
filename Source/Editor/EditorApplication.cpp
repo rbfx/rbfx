@@ -208,6 +208,16 @@ void EditorApplication::Setup()
     imguiFlags |= ImGuiConfigFlags_ViewportsEnable;
 #endif
 
+#ifdef __linux__
+    if(const char* xdg_session_type = getenv("XDG_SESSION_TYPE"))
+    {
+        const bool is_wayland = strcmp(xdg_session_type, "wayland") == 0;
+        if (is_wayland)
+            imguiFlags &= ~ImGuiConfigFlags_ViewportsEnable;
+
+    }
+#endif
+
     engineParameters_[EP_SYSTEMUI_FLAGS] = imguiFlags;
 }
 

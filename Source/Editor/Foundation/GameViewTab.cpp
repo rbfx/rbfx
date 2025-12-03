@@ -293,15 +293,17 @@ void GameViewTab::RenderContent()
 
     if (state_)
     {
+        const auto& io = ui::GetIO();
         Texture2D* sceneTexture = backbuffer_->GetTexture();
         Widgets::ImageItem(sceneTexture, ToImGui(sceneTexture->GetSize()));
 
-#if URHO3D_SYSTEMUI_VIEWPORTS
-        const IntVector2 origin = IntVector2::ZERO;
-#else
-        auto graphics = GetSubsystem<Graphics>();
-        const IntVector2 origin = graphics->GetWindowPosition();
-#endif
+        IntVector2 origin = IntVector2::ZERO;
+        if(!(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
+        {
+            auto graphics = GetSubsystem<Graphics>();
+            origin = graphics->GetWindowPosition();
+        }
+
         const IntVector2 windowMin = origin + ToIntVector2(ui::GetItemRectMin());
         const IntVector2 windowMax = origin + ToIntVector2(ui::GetItemRectMax());
         state_->Update({windowMin, windowMax});
