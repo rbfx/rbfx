@@ -1,0 +1,117 @@
+name: NuGet Package Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (format: vX.Y.Z-tag or X.Y.Z-tag)'
+        required: true
+        type: string
+
+env:
+  DOTNET_VERSION: '8.0'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  Package:
+    name: Build and Publish NuGet Packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v5
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Validate version
+        id: version
+        run: |
+          version="${{ github.event.inputs.version }}"
+
+          # Prepend 'v' if it doesn't start with 'v'
+          if [[ ! "$version" =~ ^v ]]; then
+            version="v${version}"
+          fi
+
+          # Validate version format: vX.Y.Z-tag where X, Y, Z are numbers and tag is arbitrary
+          if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-.+ ]]; then
+            echo "Error: Version must match format vX.Y.Z-tag (e.g., v1.2.3-alpha, v2.0.0-rc1)"
+            exit 1
+          fi
+
+          echo "Version: $version"
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Check tag
+        env:
+          version: ${{ steps.version.outputs.version }}
+        run: |
+          tag_name="nuget/$version"
+
+          # Fail early if tag already exists - prevents duplicate releases
+          if git rev-parse "refs/tags/$tag_name" >/dev/null 2>&1; then
+            echo "Error: Tag $tag_name already exists. This version has already been released."
+            exit 1
+          fi
+
+          echo "Tag $tag_name does not exist, proceeding with release."
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup NuGet.exe
+        uses: nuget/setup-nuget@v2
+
+      - name: Install dependencies
+        run: sudo apt-get install -y mono-devel
+
+      - name: Get short SHA
+        id: vars
+        run: echo "sha_short=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Download SDKs from releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: packaging/nuget/
+        run: ../../script/ci_build.sh download-nuget-sdks -- '${{ github.repository }}' ./in
+
+      - name: Build NuGet Packages
+        working-directory: packaging/nuget/
+        run: |
+          # Strip 'v' prefix for NuGet version
+          version="${{ steps.version.outputs.version }}"
+          version="${version#v}"
+          ./package.sh create -v "$version"
+
+      - name: Publish to NuGet.org
+        working-directory: packaging/nuget/
+        run: |
+          for pkg in out/*.nupkg;
+          do
+            echo "Publishing package: $pkg"
+            dotnet nuget push $pkg --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json
+          done
+
+      - name: Create and Push Tag
+        env:
+          version: ${{ steps.version.outputs.version }}
+        run: |
+          tag_name="nuget/$version"
+
+          # Tag is pushed only after successful package upload
+          git tag "$tag_name"
+          git push origin "$tag_name"
+
+          echo "Created and pushed tag: $tag_name"
+
+      - name: Upload NuGet Packages as Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages-${{ steps.version.outputs.version }}
+          path: packaging/nuget/out/*.nupkg
+          if-no-files-found: error

@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+    <metadata minClientVersion="3.0">
+        <id>rbfx.Tools.runtime.win-x64</id>
+        <version>$version$</version>
+        <title>rbfx.Tools.runtime.win-x64</title>
+        <authors>rbfx contributors</authors>
+        <copyright>© rbfx contributors. All rights reserved.</copyright>
+        <license type="expression">MIT</license>
+        <projectUrl>https://github.com/rbfx/rbfx/</projectUrl>
+        <description>Tools of rbfx game engine</description>
+        <tags>rbfx Urho3D gamedev csharp dotnet game engine</tags>
+        <dependencies>
+            <dependency id="rbfx.Urho3DNet" version="$version$" />
+            <dependency id="rbfx.CoreData" version="$version$" />
+            <dependency id="rbfx.EditorData" version="$version$" />
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="in/rebelfork-sdk-windows-msvc-x64-dll-latest/bin/RelWithDebInfo/*Editor.*" target="runtimes/win-x64/native/" />
+        <file src="in/rebelfork-sdk-windows-msvc-x64-dll-latest/bin/RelWithDebInfo/*Player.*" target="runtimes/win-x64/native/" />
+        <file src="in/rebelfork-sdk-windows-msvc-x64-dll-latest/bin/RelWithDebInfo/PackageTool.exe" target="runtimes/win-x64/native/PackageTool.exe" />
+        <file src="in/rebelfork-sdk-windows-msvc-x64-dll-latest/bin/RelWithDebInfo/Profiler.exe" target="runtimes/win-x64/native/Profiler.exe" />
+        <file src="in/rebelfork-sdk-windows-msvc-x64-dll-latest/bin/RelWithDebInfo/RampGenerator.exe" target="runtimes/win-x64/native/RampGenerator.exe" />
+        <file src="in/rebelfork-sdk-windows-msvc-x64-dll-latest/bin/RelWithDebInfo/SpritePacker.exe" target="runtimes/win-x64/native/SpritePacker.exe" />
+    </files>
+</package>

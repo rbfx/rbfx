@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+    <metadata minClientVersion="3.0">
+        <id>rbfx.Tools.runtime.osx-x64</id>
+        <version>$version$</version>
+        <title>rbfx.Tools.runtime.osx-x64</title>
+        <authors>rbfx contributors</authors>
+        <copyright>© rbfx contributors. All rights reserved.</copyright>
+        <license type="expression">MIT</license>
+        <projectUrl>https://github.com/rbfx/rbfx/</projectUrl>
+        <description>Tools of rbfx game engine</description>
+        <tags>rbfx Urho3D gamedev csharp dotnet game engine</tags>
+        <dependencies>
+            <dependency id="rbfx.Urho3DNet" version="$version$" />
+            <dependency id="rbfx.CoreData" version="$version$" />
+            <dependency id="rbfx.EditorData" version="$version$" />
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="in/rebelfork-sdk-macos-clang-x64-dll-latest/bin/RelWithDebInfo/*Editor*" target="runtimes/osx-x64/native/" />
+        <file src="in/rebelfork-sdk-macos-clang-x64-dll-latest/bin/RelWithDebInfo/*Player*" target="runtimes/osx-x64/native/" />
+        <file src="in/rebelfork-sdk-macos-clang-x64-dll-latest/bin/RelWithDebInfo/crunch" target="runtimes/osx-x64/native/crunch" />
+        <file src="in/rebelfork-sdk-macos-clang-x64-dll-latest/bin/RelWithDebInfo/PackageTool" target="runtimes/osx-x64/native/PackageTool" />
+        <file src="in/rebelfork-sdk-macos-clang-x64-dll-latest/bin/RelWithDebInfo/Profiler" target="runtimes/osx-x64/native/Profiler" />
+        <file src="in/rebelfork-sdk-macos-clang-x64-dll-latest/bin/RelWithDebInfo/RampGenerator" target="runtimes/osx-x64/native/RampGenerator" />
+        <file src="in/rebelfork-sdk-macos-clang-x64-dll-latest/bin/RelWithDebInfo/SpritePacker" target="runtimes/osx-x64/native/SpritePacker" />
+    </files>
+</package>

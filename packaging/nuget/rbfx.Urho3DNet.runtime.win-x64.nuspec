@@ -1,19 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
     <metadata minClientVersion="3.0">
-        <id>rbfx.Data</id>
+        <id>rbfx.Urho3DNet.runtime.win-x64</id>
         <version>$version$</version>
-        <title>rbfx.Data</title>
+        <title>rbfx.Urho3DNet.runtime.win-x64</title>
         <authors>rbfx contributors</authors>
         <copyright>© rbfx contributors. All rights reserved.</copyright>
         <license type="expression">MIT</license>
         <projectUrl>https://github.com/rbfx/rbfx/</projectUrl>
-        <description>rbfx game engine package for sample Data</description>
+        <description>rbfx game engine package for C#</description>
         <tags>rbfx Urho3D gamedev csharp dotnet game engine</tags>
+        <dependencies>
+            <dependency id="rbfx.CoreData" version="$version$" />
+        </dependencies>
     </metadata>
     <files>
-        <file src="../packaging/nuget/build/rbfx.Data.targets" target="build/" />
-        <file src="../packaging/nuget/build/rbfx.Data.targets" target="buildTransitive/" />
-        <file src="Data/**" target="content/Data/" />
+        <file src="in/rebelfork-sdk-windows-msvc-x64-dll-latest/bin/RelWithDebInfo/Urho3D.dll" target="runtimes/win-x64/native/"/>
     </files>
 </package>
