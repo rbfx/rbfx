@@ -80,6 +80,7 @@ SharedPtr<BaseWidget> PrefabInspector::MakePreviewWidget(Resource* resource)
     auto scene = sceneWidget->CreateDefaultScene();
     auto prefabNode = scene->InstantiatePrefab(resource->Cast<PrefabResource>());
     prefabNode->SetName("Prefab");
+    prefabNode->SetScale(Vector3::ONE); // Normalize scale because prefab will be rescaled anyway
 
     // Calculate total bounding box of the prefab
     ea::vector<Drawable*> drawables;
@@ -87,7 +88,10 @@ SharedPtr<BaseWidget> PrefabInspector::MakePreviewWidget(Resource* resource)
         ComponentSearchFlag::SelfOrChildrenRecursive | ComponentSearchFlag::Derived);
     BoundingBox bbox;
     for (auto* drawable : drawables)
+    {
+        drawable->Update(FrameInfo{}); // Ensure that bounding boxes are up to date
         bbox.Merge(drawable->GetWorldBoundingBox());
+    }
 
     // Scale up small objects
     const float radius = bbox.Size().Length() * 0.5f;
