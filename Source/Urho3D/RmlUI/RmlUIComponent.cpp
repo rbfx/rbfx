@@ -579,10 +579,7 @@ void RmlUIComponent::RemoveDataModel()
 void RmlUIComponent::InsertVariablePlaceholders(ea::string& content)
 {
     // Replace special placeholders in .rml file contents and model names to allow deriving unique model names
-    auto* node = GetNode();
-    content.replace("{{__ptr}}", Format("{}", (void*)this));
-    content.replace("{{__component_id}}", Format("{}", GetID()));
-    content.replace("{{__node_id}}", Format("{}", node ? node->GetID() : -1));
+    content.replace("{{__data_model_id}}", Format("{}", (void*)this));
 }
 
 void RmlUIComponent::UpdateDocumentOpen()
