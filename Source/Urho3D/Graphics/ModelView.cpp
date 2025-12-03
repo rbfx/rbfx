@@ -361,7 +361,7 @@ unsigned GetLargestIndex(const GeometryLODView& geometry)
 
 void CreateGeometryBufferBuilders(const ea::vector<GeometryView>& geometries,
     ea::vector<VertexBufferBuilder>& vertexBufferBuilders, IndexBufferBuilder& indexBufferBuilder,
-    GeometryRangeMap& geometryRanges)
+    GeometryRangeMap& geometryRanges, bool isInplace)
 {
     for (const GeometryView& sourceGeometry : geometries)
     {
@@ -370,7 +370,8 @@ void CreateGeometryBufferBuilders(const ea::vector<GeometryView>& geometries,
 
         for (const GeometryLODView& sourceGeometryLod : sourceGeometry.lods_)
         {
-            if (sourceGeometryLod.vertices_.empty() || sourceGeometryLod.indices_.empty())
+            // Keep empty geometries when building inplace to have predictable vertex buffer layout.
+            if (!isInplace && (sourceGeometryLod.vertices_.empty() || sourceGeometryLod.indices_.empty()))
                 continue;
 
             const unsigned vertexBufferIndex =
@@ -1331,14 +1332,15 @@ bool ModelView::ImportModel(const Model* model)
 
 void ModelView::ExportModel(Model* model, ModelViewExportFlags flags) const
 {
+    const bool inplace = flags.Test(ModelViewExportFlag::Inplace);
+
     // Prepare buffer layout
     ea::vector<VertexBufferBuilder> vertexBufferBuilders;
     IndexBufferBuilder indexBufferBuilder;
     GeometryRangeMap geometryRanges;
-    CreateGeometryBufferBuilders(geometries_, vertexBufferBuilders, indexBufferBuilder, geometryRanges);
+    CreateGeometryBufferBuilders(geometries_, vertexBufferBuilders, indexBufferBuilder, geometryRanges, inplace);
 
     // Create buffers or connect to existing buffers
-    const bool inplace = flags.Test(ModelViewExportFlag::Inplace);
     if (inplace)
     {
         ConnectToModelBuffers(model, vertexBufferBuilders, indexBufferBuilder);
