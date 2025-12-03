@@ -190,6 +190,7 @@ private:
 
     void CreateDataModel();
     void RemoveDataModel();
+    void InsertVariablePlaceholders(ea::string& dataModelName);
 
     void OnNavigableGroupChanged();
     void DoNavigablePush(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args);

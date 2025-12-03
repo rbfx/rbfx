@@ -58,6 +58,8 @@ public:
 
     /// Returns true if file was opened since last call to ClearOpenedFiles().
     bool IsResourceLoaded(const ea::string& resourceName);
+    /// Add resource to the set of opened files.
+    void AddResourceLoaded(const ea::string& resourceName);
     /// Clear a set of opened files.
     void ClearLoadedResources() { loadedResources_.clear(); }
 
