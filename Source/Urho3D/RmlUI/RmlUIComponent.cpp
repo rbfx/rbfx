@@ -208,6 +208,7 @@ void RmlUIComponent::ScheduleFocusById(const ea::string& elementId)
 
 void RmlUIComponent::OnSetEnabled()
 {
+    BaseClassName::OnSetEnabled();
     UpdateDocumentOpen();
 }
 
