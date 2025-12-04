@@ -347,7 +347,7 @@
 </head>
 
 <body navigation-group="main_menu_group">
-<div id="root-panel" data-model="AdvancedUIWindow">
+<div id="root-panel" data-model="{{__data_model_id}}">
     <!-- Main menu of the game -->
     <div id="left-panel">
     <div class="vertical-align-container">

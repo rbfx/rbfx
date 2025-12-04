@@ -144,7 +144,7 @@ protected:
     /// Callbacks for document loading and unloading.
     /// If load failed, only first callback will be called.
     /// @{
-    virtual ea::string GetDataModelName() { return GetTypeName(); }
+    virtual ea::string GetDataModelName() { return "{{__data_model_id}}"; }
     virtual void OnDataModelInitialized() {}
 
     virtual void OnDocumentPreLoad() {}
