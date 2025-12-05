@@ -25,6 +25,10 @@ add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/MP>)
 
 # Silence annoying warnings
 add_compile_definitions($<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+# Silence C++23 deprecated literal operator warnings
+if (CMAKE_CXX_STANDARD GREATER_EQUAL 23 AND (CLANG OR GCC))
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-literal-operator>)
+endif()
 
 # Package is found in the main CMakeLists.txt
 if (Urho3DThirdParty_FOUND)

@@ -419,6 +419,9 @@ endif ()
 # Disable very annoying warning
 if (GNU OR Clang)
     target_compile_options(Urho3D PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
+    if (CMAKE_CXX_STANDARD GREATER_EQUAL 23)
+        target_compile_options(Urho3D PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-deprecated-literal-operator>)
+    endif ()
 endif ()
 
 if (WEB)
