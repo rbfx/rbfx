@@ -1454,6 +1454,10 @@ SharedPtr<Image> Image::GetNextLevel() const
         return SharedPtr<Image>();
     }
 
+    // No next level for 1x1 (or 1x1x1) images
+    if (width_ <= 1 && height_ <= 1 && depth_ <= 1)
+        return SharedPtr<Image>();
+
     if (nextLevel_)
         return nextLevel_;
 
