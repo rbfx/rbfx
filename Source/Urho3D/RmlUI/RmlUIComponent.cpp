@@ -10,13 +10,16 @@
 #include "Urho3D/Graphics/Material.h"
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/Resource/BinaryFile.h"
+#include "Urho3D/Resource/ResourceCache.h"
 #include "Urho3D/RmlUI/RmlCanvasComponent.h"
 #include "Urho3D/RmlUI/RmlNavigationManager.h"
+#include "Urho3D/RmlUI/RmlFile.h"
 #include "Urho3D/RmlUI/RmlUI.h"
 #include "Urho3D/Scene/Node.h"
 #include "Urho3D/Scene/Scene.h"
 
 #include <RmlUi/Core/ComputedValues.h>
+#include <RmlUi/Core/Core.h>
 
 #include "Urho3D/DebugNew.h"
 
@@ -205,6 +208,7 @@ void RmlUIComponent::ScheduleFocusById(const ea::string& elementId)
 
 void RmlUIComponent::OnSetEnabled()
 {
+    BaseClassName::OnSetEnabled();
     UpdateDocumentOpen();
 }
 
@@ -249,7 +253,19 @@ void RmlUIComponent::OpenInternal()
         modelConstructor_.reset();
     }
 
-    SetDocument(ui->LoadDocument(resource_.name_));
+    // Load .rml file contents and update placeholders.
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto file = cache->GetFile(resource_.name_);
+    auto fileContents = file->ReadString();
+    InsertVariablePlaceholders(fileContents);
+
+    // Mark resource as loaded in RmlFile interface to ensure auto-reload works.
+    auto* fileInterface = static_cast<Detail::RmlFile*>(Rml::GetFileInterface());
+    fileInterface->AddResourceLoaded(resource_.name_);
+
+    // Load document from memory.
+    auto* rmlContext = ui->GetRmlContext();
+    SetDocument(rmlContext->LoadDocumentFromMemory(fileContents.c_str(), resource_.name_));
 
     if (document_ == nullptr)
     {
@@ -535,6 +551,8 @@ void RmlUIComponent::CreateDataModel()
     Rml::Context* context = ui->GetRmlContext();
 
     dataModelName_ = GetDataModelName();
+    InsertVariablePlaceholders(dataModelName_);
+
     typeRegister_.emplace();
     modelConstructor_ =
         ea::make_unique<Rml::DataModelConstructor>(context->CreateDataModel(dataModelName_, &*typeRegister_));
@@ -556,6 +574,13 @@ void RmlUIComponent::RemoveDataModel()
     dataModel_ = nullptr;
     typeRegister_ = ea::nullopt;
     dataModelName_.clear();
+}
+
+
+void RmlUIComponent::InsertVariablePlaceholders(ea::string& content)
+{
+    // Replace special placeholders in .rml file contents and model names to allow deriving unique model names
+    content.replace("{{__data_model_id}}", Format("{}", (void*)this));
 }
 
 void RmlUIComponent::UpdateDocumentOpen()

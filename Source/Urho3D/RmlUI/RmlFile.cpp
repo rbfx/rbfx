@@ -90,6 +90,11 @@ bool RmlFile::IsResourceLoaded(const ea::string& path)
     return loadedResources_.contains(path);
 }
 
+void RmlFile::AddResourceLoaded(const ea::string& resourceName)
+{
+    loadedResources_.insert(resourceName);
+}
+
 }   // namespace Detail
 
 }   // namespace Urho3D

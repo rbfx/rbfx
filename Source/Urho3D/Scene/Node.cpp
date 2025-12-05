@@ -1931,18 +1931,20 @@ void Node::AddComponent(Component* component, unsigned id)
     if (component->GetNode())
         URHO3D_LOGWARNING("Component " + component->GetTypeName() + " already belongs to a node!");
 
-    component->SetNode(this);
-
     // If zero ID specified, or the ID is already taken, let the scene assign
     if (scene_)
     {
         if (!id || scene_->GetComponent(id))
             id = scene_->GetFreeComponentID();
         component->SetID(id);
+        component->SetNode(this);
         scene_->ComponentAdded(component);
     }
     else
+    {
         component->SetID(id);
+        component->SetNode(this);
+    }
 
     component->OnMarkedDirty(this);
 

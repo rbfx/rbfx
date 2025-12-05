@@ -6,7 +6,7 @@
 
 <body template="window" style="width: 300px">
     <p>Sample Window</p>
-    <div data-model="SimpleWindow">
+    <div data-model="{{__data_model_id}}">
         <h3>Text</h3>
         <b>Bold text</b>, <i>italic text</i>, <s><span>striked out text</span></s>.
         <hr/>
@@ -37,8 +37,8 @@
         {{variant_map.int}}<br/>
         {{variant_map.str}}<br/>
         <h3>Progress bars</h3>
-        <progressbar class="progress-horizontal" data-value="progress" />
-        <progressbar class="progress-vertical" direction="top" data-value="progress" style="height: 100dp;"/>
+        <progress class="progress-horizontal" data-value="progress" />
+        <progress class="progress-vertical" direction="top" data-value="progress" style="height: 100dp;"/>
     </div>
 </body>
 </rml>
