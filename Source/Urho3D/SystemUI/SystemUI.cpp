@@ -412,7 +412,7 @@ void SystemUI::ReallocateFontTexture()
     {
         if (monitor.DpiScale == 1.0f)
             continue; // io.Fonts has default scale.
-        ImFontAtlas* atlas = new ImFontAtlas();
+        ImFontAtlas* atlas = IM_NEW(ImFontAtlas);
         io.Fonts->CloneInto(atlas, monitor.DpiScale);
 
         fontTextures_.push_back(AllocateFontTexture(atlas));
@@ -425,7 +425,7 @@ void SystemUI::ClearPerScreenFonts()
     ImGuiIO& io = ui::GetIO();
     fontTextures_.clear();
     for (int i = 1; i < io.AllFonts.Size; i++) // First atlas (which is io.Fonts) is not deleted because it is handled separately by library itself.
-        delete io.AllFonts[i];
+        IM_DELETE(io.AllFonts[i]);
     io.AllFonts.clear();
 }
 
