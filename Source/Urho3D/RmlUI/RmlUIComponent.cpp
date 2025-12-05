@@ -10,10 +10,8 @@
 #include "Urho3D/Graphics/Material.h"
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/Resource/BinaryFile.h"
-#include "Urho3D/Resource/ResourceCache.h"
 #include "Urho3D/RmlUI/RmlCanvasComponent.h"
 #include "Urho3D/RmlUI/RmlNavigationManager.h"
-#include "Urho3D/RmlUI/RmlFile.h"
 #include "Urho3D/RmlUI/RmlUI.h"
 #include "Urho3D/Scene/Node.h"
 #include "Urho3D/Scene/Scene.h"
@@ -28,8 +26,6 @@ namespace Urho3D
 
 namespace
 {
-
-const Rml::String ComponentPtrAttribute = "__RmlUIComponentPtr__";
 
 bool IsElementNavigable(Rml::Element* element)
 {
@@ -253,19 +249,8 @@ void RmlUIComponent::OpenInternal()
         modelConstructor_.reset();
     }
 
-    // Load .rml file contents and update placeholders.
-    auto* cache = GetSubsystem<ResourceCache>();
-    auto file = cache->GetFile(resource_.name_);
-    auto fileContents = file->ReadString();
-    InsertVariablePlaceholders(fileContents);
-
-    // Mark resource as loaded in RmlFile interface to ensure auto-reload works.
-    auto* fileInterface = static_cast<Detail::RmlFile*>(Rml::GetFileInterface());
-    fileInterface->AddResourceLoaded(resource_.name_);
-
-    // Load document from memory.
-    auto* rmlContext = ui->GetRmlContext();
-    SetDocument(rmlContext->LoadDocumentFromMemory(fileContents.c_str(), resource_.name_));
+    // Load document from resource with placeholder substitution.
+    SetDocument(ui->LoadDocument(resource_.name_, this));
 
     if (document_ == nullptr)
     {
@@ -487,13 +472,13 @@ void RmlUIComponent::SetDocument(Rml::ElementDocument* document)
     if (document_ != document)
     {
         if (document_)
-            document_->SetAttribute(ComponentPtrAttribute, static_cast<void*>(nullptr));
+            document_->SetAttribute(Detail::ComponentPtrAttribute, static_cast<void*>(nullptr));
 
         document_ = document;
 
         if (document_)
         {
-            document_->SetAttribute(ComponentPtrAttribute, static_cast<void*>(this));
+            document_->SetAttribute(Detail::ComponentPtrAttribute, static_cast<void*>(this));
             navigationManager_->Reset(document_);
         }
     }
@@ -551,7 +536,7 @@ void RmlUIComponent::CreateDataModel()
     Rml::Context* context = ui->GetRmlContext();
 
     dataModelName_ = GetDataModelName();
-    InsertVariablePlaceholders(dataModelName_);
+    Detail::InsertVariablePlaceholders(dataModelName_, this);
 
     typeRegister_.emplace();
     modelConstructor_ =
@@ -574,13 +559,6 @@ void RmlUIComponent::RemoveDataModel()
     dataModel_ = nullptr;
     typeRegister_ = ea::nullopt;
     dataModelName_.clear();
-}
-
-
-void RmlUIComponent::InsertVariablePlaceholders(ea::string& content)
-{
-    // Replace special placeholders in .rml file contents and model names to allow deriving unique model names
-    content.replace("{{__data_model_id}}", Format("{}", (void*)this));
 }
 
 void RmlUIComponent::UpdateDocumentOpen()
@@ -611,7 +589,7 @@ RmlUIComponent* RmlUIComponent::FromDocument(Rml::ElementDocument* document)
 {
     if (document)
     {
-        if (const Rml::Variant* value = document->GetAttribute(ComponentPtrAttribute))
+        if (const Rml::Variant* value = document->GetAttribute(Detail::ComponentPtrAttribute))
             return static_cast<RmlUIComponent*>(value->Get<void*>());
     }
     return nullptr;

@@ -65,6 +65,17 @@
 namespace Urho3D
 {
 
+namespace Detail
+{
+
+void InsertVariablePlaceholders(ea::string& content, void* dataModelId)
+{
+    // Replace special placeholders in .rml file contents and model names to allow deriving unique model names
+    content.replace("{{__data_model_id}}", Format("{}", dataModelId));
+}
+
+} // namespace Detail
+
 static MouseButton MakeTouchIDMask(int id)
 {
     return static_cast<MouseButton>(1u << static_cast<MouseButtonFlags::Integer>(id)); // NOLINT(misc-misplaced-widening-cast)
@@ -472,9 +483,24 @@ RmlUI::~RmlUI()
     }
 }
 
-Rml::ElementDocument* RmlUI::LoadDocument(const ea::string& path)
+Rml::ElementDocument* RmlUI::LoadDocument(const ea::string& path, void* dataModelId)
 {
-    return rmlContext_->LoadDocument(path);
+    // Load .rml file contents and update placeholders.
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto file = cache->GetFile(path);
+    if (!file)
+        return nullptr;
+
+    auto fileContents = file->ReadString();
+    if (dataModelId)
+        Detail::InsertVariablePlaceholders(fileContents, dataModelId);
+
+    // Mark resource as loaded in RmlFile interface to ensure auto-reload works.
+    auto* fileInterface = static_cast<Detail::RmlFile*>(Rml::GetFileInterface());
+    fileInterface->AddResourceLoaded(path);
+
+    // Load document from memory.
+    return rmlContext_->LoadDocumentFromMemory(fileContents, path);
 }
 
 void RmlUI::SetDebuggerVisible(bool visible)
@@ -928,8 +954,13 @@ Rml::ElementDocument* RmlUI::ReloadDocument(Rml::ElementDocument* document)
     const Rml::Property* oldWidthProperty = document->GetProperty(Rml::PropertyId::Width);
     const Rml::Property* oldHeightProperty = document->GetProperty(Rml::PropertyId::Height);
 
+    // Retrieve placeholder context from original document
+    void* placeholderContext = nullptr;
+    if (const Rml::Variant* value = document->GetAttribute(Detail::ComponentPtrAttribute))
+        placeholderContext = value->Get<void*>();
+
     // Try to reload document
-    Rml::ElementDocument* newDocument = rmlContext_->LoadDocument(document->GetSourceURL());
+    Rml::ElementDocument* newDocument = LoadDocument(document->GetSourceURL(), placeholderContext);
     if (!newDocument)
         return nullptr;
 

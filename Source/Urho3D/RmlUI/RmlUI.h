@@ -40,7 +40,16 @@
 namespace Urho3D
 {
 
-namespace Detail { class RmlContext; class RmlPlugin; }
+namespace Detail
+{
+
+class RmlContext;
+class RmlPlugin;
+
+const Rml::String ComponentPtrAttribute = "__RmlUIComponentPtr__";
+void InsertVariablePlaceholders(ea::string& content, void* ptr);
+
+}   // namespace Detail
 
 struct RmlCanvasResizedArgs
 {
@@ -70,7 +79,9 @@ public:
     ~RmlUI() override;
     /// Load a specified rml document. When resource reloader is active, returned pointer will be invalidated when associated resource change triggers reloading a document.
     /// In such cases it is important to subscribe to documentReloaded_ signal and update handle change of document pointer.
-    Rml::ElementDocument* LoadDocument(const ea::string& path);
+    /// @param path Resource path to the .rml file.
+    /// @param placeholderContext Optional context pointer for placeholder substitution (e.g., RmlUIComponent instance).
+    Rml::ElementDocument* LoadDocument(const ea::string& path, void* placeholderContext = nullptr);
     /// Show or hide RmlUi debugger.
     void SetDebuggerVisible(bool visible);
     /// Return whether RmlUi debugger is visible.
