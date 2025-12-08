@@ -547,7 +547,7 @@ void RmlUI::HandleScreenMode(StringHash, VariantMap& eventData)
     args.oldSize_ = ToIntVector2(rmlContext_->GetDimensions());
     args.newSize_ = GetDesiredCanvasSize();
     rmlContext_->SetDimensions(ToRmlUi(args.newSize_));
-    canvasResizedEvent_(this, args);
+    OnCanvasResizedEvent(this, args);
 }
 
 void RmlUI::HandleMouseButtonDown(StringHash, VariantMap& eventData)
@@ -586,7 +586,7 @@ void RmlUI::HandleMouseMove(StringHash, VariantMap& eventData)
     using namespace MouseMove;
     int modifiers = ModifiersUrho3DToRml(static_cast<QualifierFlags>(eventData[P_QUALIFIERS].GetInt()));
     IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
-    mouseMoveEvent_(this, pos);
+    OnMouseMoveEvent(this, pos);
     if (pos.x_ >= 0 && pos.y_ >= 0)
         rmlContext_->ProcessMouseMove(pos.x_, pos.y_, modifiers);
 }
@@ -611,7 +611,7 @@ void RmlUI::HandleTouchBegin(StringHash, VariantMap& eventData)
     int modifiers = ModifiersUrho3DToRml(input->GetQualifiers());
     int button = MouseButtonUrho3DToRml(touchId);
     IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
-    mouseMoveEvent_(this, pos);
+    OnMouseMoveEvent(this, pos);
     if (pos.x_ >= 0 && pos.y_ >= 0)
         rmlContext_->ProcessMouseMove(pos.x_, pos.y_, modifiers);
     rmlContext_->ProcessMouseButtonDown(button, modifiers);
@@ -635,7 +635,7 @@ void RmlUI::HandleTouchMove(StringHash, VariantMap& eventData)
     // const MouseButton touchId = MakeTouchIDMask(eventData[P_TOUCHID].GetInt());
     int modifiers = ModifiersUrho3DToRml(input->GetQualifiers());
     IntVector2 pos(eventData[P_X].GetInt(), eventData[P_Y].GetInt());
-    mouseMoveEvent_(this, pos);
+    OnMouseMoveEvent(this, pos);
     if (pos.x_ >= 0 && pos.y_ >= 0)
         rmlContext_->ProcessMouseMove(pos.x_, pos.y_, modifiers);
 }
@@ -716,7 +716,7 @@ void RmlUI::SetRenderTarget(RenderSurface* target, const Color& clearColor)
     args.oldSize_ = ToIntVector2(rmlContext_->GetDimensions());
     args.newSize_ = GetDesiredCanvasSize();
     rmlContext_->SetDimensions(ToRmlUi(args.newSize_));
-    canvasResizedEvent_(this, args);
+    OnCanvasResizedEvent(this, args);
 }
 
 void RmlUI::SetRenderTarget(Texture2D* target, const Color& clearColor)
@@ -895,7 +895,7 @@ void RmlUI::Render()
 
 void RmlUI::OnDocumentUnload(Rml::ElementDocument* document)
 {
-    documentClosedEvent_(this, document);
+    OnDocumentClosedEvent(this, document);
 }
 
 void RmlUI::Update(float timeStep)
@@ -905,6 +905,8 @@ void RmlUI::Update(float timeStep)
 
     if (rmlContext_)
         rmlContext_->Update();
+
+    OnUpdated(this);
 }
 
 void RmlUI::HandleResourceReloaded(StringHash eventType, VariantMap& eventData)
@@ -981,7 +983,7 @@ Rml::ElementDocument* RmlUI::ReloadDocument(Rml::ElementDocument* document)
     RmlDocumentReloadedArgs args;
     args.unloadedDocument_ = document;
     args.loadedDocument_ = newDocument;
-    documentReloaded_(this, args);
+    OnDocumentReloaded(this, args);
 
     document->Close();
 

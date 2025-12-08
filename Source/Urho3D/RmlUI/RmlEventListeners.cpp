@@ -282,6 +282,7 @@ void SoundEventListener::ProcessEvent(Rml::Event& event)
         soundNode_ = MakeShared<Node>(context);
         soundPlayer_ = soundNode_->CreateComponent<SoundSource>();
         soundPlayer_->SetGain(volume_);
+        soundPlayer_->SetIgnoreSceneTimeScale(true);
     }
 
     ResourceCache* cache = soundNode_->GetSubsystem<ResourceCache>();

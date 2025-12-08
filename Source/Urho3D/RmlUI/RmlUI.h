@@ -78,7 +78,7 @@ public:
     /// Destruct.
     ~RmlUI() override;
     /// Load a specified rml document. When resource reloader is active, returned pointer will be invalidated when associated resource change triggers reloading a document.
-    /// In such cases it is important to subscribe to documentReloaded_ signal and update handle change of document pointer.
+    /// In such cases it is important to subscribe to OnDocumentReloaded signal and update handle change of document pointer.
     /// @param path Resource path to the .rml file.
     /// @param placeholderContext Optional context pointer for placeholder substitution (e.g., RmlUIComponent instance).
     Rml::ElementDocument* LoadDocument(const ea::string& path, void* placeholderContext = nullptr);
@@ -118,14 +118,17 @@ public:
     /// Unload passed document and load it's rml again, return newly loaded document. This operation preserves document position and size.
     Rml::ElementDocument* ReloadDocument(Rml::ElementDocument* document);
 
+public:
     /// Emitted when mouse input is detected. Should be used for translating mouse coordinates when UI is rendered on 3D objects. Takes 2D screen coordinates as input, they may be modified by subscribers.
-    Signal<void(IntVector2&)> mouseMoveEvent_;
+    Signal<void(IntVector2&)> OnMouseMoveEvent;
     /// Emitted when a window document owned by this subsystem is closed.
-    Signal<void(Rml::ElementDocument*)> documentClosedEvent_;
+    Signal<void(Rml::ElementDocument*)> OnDocumentClosedEvent;
     /// Emitted when underlying UI canvas is resized.
-    Signal<void(const RmlCanvasResizedArgs&)> canvasResizedEvent_;
+    Signal<void(const RmlCanvasResizedArgs&)> OnCanvasResizedEvent;
     /// Emitted when automatic resource reloading triggers reload of a document.
-    Signal<void(const RmlDocumentReloadedArgs&)> documentReloaded_;
+    Signal<void(const RmlDocumentReloadedArgs&)> OnDocumentReloaded;
+    /// Emitted when documents are updated.
+    Signal<void()> OnUpdated;
 
 private:
     /// Returns a size that this UI screen will cover.

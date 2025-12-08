@@ -151,13 +151,17 @@ protected:
     virtual void OnDocumentPostLoad() {}
     virtual void OnDocumentPreUnload() {}
     virtual void OnDocumentPostUnload() {}
+
+    /// Called after all pending changes are processed by RmlUI.
+    virtual void OnDocumentUpdated();
     /// @}
 
     /// Get data model constructor. Only available in OnDataModelInitialized method.
     Rml::DataModelConstructor* GetDataModelConstructor() const { return modelConstructor_.get(); }
     /// If current focus is invalid, focus on the first valid navigable element.
-    void RestoreFocus();
+    bool RestoreFocus();
     /// Schedule element focus by ID on next update. This is useful when focus-ability is not updated yet.
+    /// Empty id focuses on any focusable element.
     void ScheduleFocusById(const ea::string& elementId);
 
     /// Implement Component

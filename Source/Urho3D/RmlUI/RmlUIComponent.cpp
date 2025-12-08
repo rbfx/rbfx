@@ -45,6 +45,36 @@ bool IsElementNavigable(Rml::Element* element)
     return true;
 };
 
+Rml::Input::KeyIdentifier GetKeyArg(const Rml::VariantList& arguments)
+{
+    const auto value = arguments.size() >= 1 ? arguments[0].Get<int>() : 0;
+    return static_cast<Rml::Input::KeyIdentifier>(value);
+}
+
+Rml::Variant IsKeyOk(const Rml::VariantList& arguments)
+{
+    const auto key = GetKeyArg(arguments);
+    return Rml::Variant{key == Rml::Input::KI_RETURN};
+}
+
+Rml::Variant IsKeyCancel(const Rml::VariantList& arguments)
+{
+    const auto key = GetKeyArg(arguments);
+    return Rml::Variant{key == Rml::Input::KI_ESCAPE};
+}
+
+Rml::Variant IsKeySecondary(const Rml::VariantList& arguments)
+{
+    const auto key = GetKeyArg(arguments);
+    return Rml::Variant{key == Rml::Input::KI_SPACE};
+}
+
+Rml::Variant IsKeyTertiary(const Rml::VariantList& arguments)
+{
+    const auto key = GetKeyArg(arguments);
+    return Rml::Variant{key == Rml::Input::KI_BACK};
+}
+
 } // namespace
 
 RmlUIComponent::RmlUIComponent(Context* context)
@@ -80,6 +110,10 @@ void RmlUIComponent::Update(float timeStep)
     navigationManager_->Update();
     // There should be only a few of RmlUIComponent enabled at a time, so this is not a performance issue.
     UpdateConnectedCanvas();
+}
+
+void RmlUIComponent::OnDocumentUpdated()
+{
     UpdatePendingFocus();
 }
 
@@ -170,19 +204,28 @@ void RmlUIComponent::UpdatePendingFocus()
 
     if (pendingFocusId_ && document_)
     {
-        if (Rml::Element* element = document_->GetElementById(*pendingFocusId_))
+        if (pendingFocusId_->empty())
         {
-            if (element->Focus(true))
-            {
-                element->ScrollIntoView(Rml::ScrollAlignment::Nearest);
-                suppressRestoreFocus_ = true;
-            }
+            // If failed to restore focus, keep trying
+            if (RestoreFocus())
+                pendingFocusId_ = ea::nullopt;
         }
-        pendingFocusId_ = ea::nullopt;
+        else
+        {
+            if (Rml::Element* element = document_->GetElementById(*pendingFocusId_))
+            {
+                if (element->Focus(true))
+                {
+                    element->ScrollIntoView(Rml::ScrollAlignment::Nearest);
+                    suppressRestoreFocus_ = true;
+                }
+            }
+            pendingFocusId_ = ea::nullopt;
+        }
     }
 }
 
-void RmlUIComponent::RestoreFocus()
+bool RmlUIComponent::RestoreFocus()
 {
     if (document_ && document_->IsVisible() && !suppressRestoreFocus_
         && !IsElementNavigable(document_->GetFocusLeafNode()))
@@ -192,9 +235,11 @@ void RmlUIComponent::RestoreFocus()
             if (nextElement->Focus(true))
             {
                 nextElement->ScrollIntoView(Rml::ScrollAlignment::Nearest);
+                return true;
             }
         }
     }
+    return false;
 }
 
 void RmlUIComponent::ScheduleFocusById(const ea::string& elementId)
@@ -235,9 +280,10 @@ void RmlUIComponent::OpenInternal()
     }
 
     RmlUI* ui = GetUI();
-    ui->documentClosedEvent_.Subscribe(this, &RmlUIComponent::OnDocumentClosed);
-    ui->canvasResizedEvent_.Subscribe(this, &RmlUIComponent::OnUICanvasResized);
-    ui->documentReloaded_.Subscribe(this, &RmlUIComponent::OnDocumentReloaded);
+    ui->OnDocumentClosedEvent.Subscribe(this, &RmlUIComponent::OnDocumentClosed);
+    ui->OnCanvasResizedEvent.Subscribe(this, &RmlUIComponent::OnUICanvasResized);
+    ui->OnDocumentReloaded.Subscribe(this, &RmlUIComponent::OnDocumentReloaded);
+    ui->OnUpdated.Subscribe(this, &RmlUIComponent::OnDocumentUpdated);
 
     OnDocumentPreLoad();
 
@@ -262,6 +308,7 @@ void RmlUIComponent::OpenInternal()
     SetSize(size_);
     document_->Show(modal_ ? Rml::ModalFlag::Modal : Rml::ModalFlag::None, Rml::FocusFlag::None);
     OnDocumentPostLoad();
+    RestoreFocus();
 }
 
 void RmlUIComponent::CloseInternal()
@@ -270,9 +317,10 @@ void RmlUIComponent::CloseInternal()
         return; // Already closed.
 
     RmlUI* ui = static_cast<Detail::RmlContext*>(document_->GetContext())->GetOwnerSubsystem();
-    ui->documentClosedEvent_.Unsubscribe(this);
-    ui->canvasResizedEvent_.Unsubscribe(this);
-    ui->documentReloaded_.Unsubscribe(this);
+    ui->OnDocumentClosedEvent.Unsubscribe(this);
+    ui->OnCanvasResizedEvent.Unsubscribe(this);
+    ui->OnDocumentReloaded.Unsubscribe(this);
+    ui->OnUpdated.Unsubscribe(this);
 
     position_ = GetPosition();
     size_ = GetSize();
@@ -548,6 +596,11 @@ void RmlUIComponent::CreateDataModel()
     modelConstructor_->BindEventCallback("navigable_push", &RmlUIComponent::DoNavigablePush, this);
     modelConstructor_->BindEventCallback("navigable_pop", &RmlUIComponent::DoNavigablePop, this);
     modelConstructor_->BindEventCallback("focus", &RmlUIComponent::DoFocusById, this);
+
+    modelConstructor_->RegisterTransformFunc("is_key_ok", IsKeyOk);
+    modelConstructor_->RegisterTransformFunc("is_key_cancel", IsKeyCancel);
+    modelConstructor_->RegisterTransformFunc("is_key_secondary", IsKeySecondary);
+    modelConstructor_->RegisterTransformFunc("is_key_tertiary", IsKeyTertiary);
 }
 
 void RmlUIComponent::RemoveDataModel()
