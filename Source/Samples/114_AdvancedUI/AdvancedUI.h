@@ -42,26 +42,39 @@ public:
     explicit AdvancedUIWindow(Context* context);
 
 private:
+    enum class PageIndex : unsigned
+    {
+        MainMenu = 0,
+        LoadGame,
+    };
+
     AdvancedUI* GetSample() const;
 
     /// Implement RmlUIComponent
     /// @{
     void Update(float timeStep) override;
     void OnDataModelInitialized() override;
+    void OnDocumentPostLoad() override;
     /// @}
 
     void OnContinue();
     void OnNewGame();
     void OnLoadGame();
+    void OnDeleteGame();
     void OnSettings();
     void OnExit();
 
-    int newGameIndex_{1};
+    void GoBack();
 
+    /// UI state
+    /// @{
+    PageIndex currentPage_{};
+    unsigned selectedGameIndex_{};
     StringVector savedGames_;
-    ea::string gameToLoad_;
-
     bool isGamePlayed_{};
+    /// @}
+
+    unsigned nextGameIndex_{};
     ea::string playedGameName_;
 };
 

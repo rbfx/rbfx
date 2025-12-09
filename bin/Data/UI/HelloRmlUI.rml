@@ -1,14 +1,25 @@
 <rml>
-    <head>
-    <link type="text/template" href="window.rml"/>
+<head>
+    <link type="text/template" href="HelloRmlUI_Window.rml"/>
     <title>Sample Window</title>
+    <style>
+        button, input, select {
+            vertical-align: middle;
+        }
+    </style>
 </head>
 
 <body template="window" style="width: 300px">
-    <p>Sample Window</p>
     <div data-model="{{__data_model_id}}">
-        <h3>Text</h3>
+        <h1>Text Header 1</h1>
+        <h2>Text Header 2</h2>
+        <h3>Text Header 3</h3>
         <b>Bold text</b>, <i>italic text</i>, <s><span>striked out text</span></s>.
+        <pre>
+Text
+   with
+      preserved
+         whitespaces.</pre>
         <hr/>
         <h3>Buttons</h3>
         <button data-event-click="count">Clicked {{counter}} times!</button>
@@ -23,8 +34,8 @@
             <input type="radio" value="1"/> Radio 1<br/>
             <input type="radio" value="2"/> Radio 2<br/>
         </form>
-        <input type="range" min="10" max="50" step="2" data-value="slider_value"/>&nbsp;<span>{{slider_value}}</span>
-        <input type="range" min="10" max="50" step="1" data-value="font_size"/>&nbsp;<span>{{font_size}}px</span>
+        <input type="range" min="10" max="50" step="2" data-value="slider_value"/>&nbsp;<span>{{slider_value}}</span><br/>
+        <input type="range" min="10" max="50" step="1" data-value="font_size"/>&nbsp;<span>{{font_size}}px</span><br/>
         <select>
             <option>Foo</option>
             <option>Bar</option>
@@ -37,8 +48,8 @@
         {{variant_map.int}}<br/>
         {{variant_map.str}}<br/>
         <h3>Progress bars</h3>
-        <progress class="progress-horizontal" data-value="progress" />
-        <progress class="progress-vertical" direction="top" data-value="progress" style="height: 100dp;"/>
+        <progress class="horizontal" data-value="progress" />
+        <progress class="vertical" direction="top" data-value="progress" style="height: 100dp;"/>
     </div>
 </body>
 </rml>

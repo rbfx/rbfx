@@ -6,7 +6,7 @@
 <body id="window">
     <div id="titlebar">
         <handle move_target="#document">
-            <div id="title">Title</div>
+            <div id="title">HelloRmlUI</div>
             <button class="close-window" onclick="event:CloseWindow"></button>
         </handle>
     </div>
