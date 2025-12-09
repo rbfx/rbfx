@@ -49,7 +49,6 @@
 #include "../RmlUI/RmlFile.h"
 #include "../RmlUI/RmlEventListeners.h"
 #include "../RmlUI/RmlCanvasComponent.h"
-#include "../RmlUI/RmlNavigable.h"
 #include "../RmlUI/RmlSerializableInspector.h"
 #include "../RmlUI/RmlUIComponent.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
@@ -426,8 +425,6 @@ RmlUI::RmlUI(Context* context, const char* name)
         Rml::Factory::RegisterEventListenerInstancer(&RmlEventListenerInstancerInstance);
         Rml::Factory::RegisterContextInstancer(&RmlContextInstancerInstance);
         Rml::RegisterPlugin(&RmlPluginInstance);
-
-        RmlNavigable::Register();
     }
     rmlContext_ = static_cast<Detail::RmlContext*>(Rml::CreateContext(name_.c_str(), ToRmlUi(GetDesiredCanvasSize())));
     rmlContext_->SetOwnerSubsystem(this);

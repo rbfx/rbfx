@@ -20,7 +20,6 @@ namespace Urho3D
 {
 
 class RmlCanvasComponent;
-class RmlNavigationManager;
 struct RmlCanvasResizedArgs;
 struct RmlDocumentReloadedArgs;
 
@@ -71,8 +70,6 @@ public:
     RmlUI* GetUI() const;
     /// Return currently open document, may be null.
     Rml::ElementDocument* GetDocument() const { return document_; }
-    /// Return navigation manager.
-    RmlNavigationManager& GetNavigationManager() const { return *navigationManager_; }
 
     /// Set current document body element font size in pixels, also known as "em" unit.
     void SetEmSize(float sizePx);
@@ -195,9 +192,6 @@ private:
     void CreateDataModel();
     void RemoveDataModel();
 
-    void OnNavigableGroupChanged();
-    void DoNavigablePush(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args);
-    void DoNavigablePop(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args);
     void DoFocusById(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args);
 
     /// Attributes
@@ -210,8 +204,6 @@ private:
     bool modal_ = false;
     /// @}
 
-    /// Navigation manager.
-    SharedPtr<RmlNavigationManager> navigationManager_;
     /// Currently open document. Null if document was closed.
     Rml::ElementDocument* document_{};
     /// Component which holds RmlUI instance containing UI managed by this component. May be null if UI is rendered into

@@ -30,7 +30,6 @@
 #include "../IO/Log.h"
 #include "../Resource/JSONFile.h"
 #include "../Resource/ResourceCache.h"
-#include "../RmlUI/RmlNavigationManager.h"
 #include "../RmlUI/RmlUI.h"
 #include "../RmlUI/RmlUIComponent.h"
 #include "../Scene/Node.h"
@@ -81,25 +80,6 @@ ea::optional<ea::pair<ea::string, float>> ParseSound(ea::string_view str)
     const ea::string resource = match.str(2).c_str();
     const float volume = match.str(1).empty() ? 1.0f : FromString<int>(match.str(1).c_str()) / 100.0f;
     return ea::make_pair(resource, volume);
-}
-
-ea::optional<ea::string> ParseNavigate(ea::string_view str)
-{
-    static const std::regex r(R"(\s*(push|pop)\s*(?:\(\s*(\w+)\s*\))?\s*)");
-
-    std::cmatch match;
-    if (!std::regex_match(str.begin(), str.end(), match, r))
-        return ea::nullopt;
-
-    if (match.str(1) == "push")
-    {
-        const std::string group = match.str(2);
-        return ea::string(group.data(), static_cast<unsigned>(group.size()));
-    }
-    else if (match.str(1) == "pop")
-        return EMPTY_STRING;
-    else
-        return ea::nullopt;
 }
 
 Variant ToVariant(const JSONValue& json)
@@ -159,13 +139,10 @@ ea::pair<ea::string, VariantMap> ParseEvent(ea::string_view str)
 
 Rml::EventListener* CreateSingleEventListener(ea::string_view value, Rml::Element* element)
 {
-    static const ea::string_view navigatePrefix = "navigate:";
     static const ea::string_view soundPrefix = "sound:";
     static const ea::string_view eventPrefix = "event:";
 
-    if (value.starts_with(navigatePrefix))
-        return NavigateEventListener::CreateInstancer(value.substr(navigatePrefix.size()), element);
-    else if (value.starts_with(soundPrefix))
+    if (value.starts_with(soundPrefix))
         return SoundEventListener::CreateInstancer(value.substr(soundPrefix.size()), element);
     else if (value.starts_with(eventPrefix))
         return CustomEventListener::CreateInstancer(value.substr(eventPrefix.size()), element);
@@ -208,45 +185,6 @@ void PipeEventListener::ProcessEvent(Rml::Event& event)
 }
 
 void PipeEventListener::OnDetach(Rml::Element* element)
-{
-    delete this;
-}
-
-Rml::EventListener* NavigateEventListener::CreateInstancer(ea::string_view value, Rml::Element* element)
-{
-    const auto group = ParseNavigate(value);
-    if (!group)
-    {
-        URHO3D_LOGWARNING("Invalid syntax for navigate event: '{}'", value);
-        return nullptr;
-    }
-    return new NavigateEventListener(*group);
-}
-
-NavigateEventListener::NavigateEventListener(const ea::string& group)
-    : group_(group)
-{
-}
-
-void NavigateEventListener::ProcessEvent(Rml::Event& event)
-{
-    if (Rml::Element* element = event.GetCurrentElement())
-    {
-        if (Rml::ElementDocument* document = element->GetOwnerDocument())
-        {
-            if (auto component = RmlUIComponent::FromDocument(document))
-            {
-                RmlNavigationManager& manager = component->GetNavigationManager();
-                if (!group_.empty())
-                    manager.PushCursorGroup(group_);
-                else
-                    manager.PopCursorGroup();
-            }
-        }
-    }
-}
-
-void NavigateEventListener::OnDetach(Rml::Element* element)
 {
     delete this;
 }
