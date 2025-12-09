@@ -75,7 +75,8 @@ Time::~Time()
 static unsigned Tick()
 {
 #ifdef __EMSCRIPTEN__
-    return (unsigned)emscripten_get_now();
+    static const double baseValue = emscripten_get_now();
+    return static_cast<unsigned>(emscripten_get_now() - baseValue);
 #else
     return SDL_GetTicks();
 #endif
