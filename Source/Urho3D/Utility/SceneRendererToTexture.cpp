@@ -26,6 +26,7 @@
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/Viewport.h"
+#include "../RmlUI/RmlUI.h"
 #include "../Scene/Scene.h"
 #include "../Utility/SceneRendererToTexture.h"
 
@@ -82,12 +83,13 @@ void CustomBackbufferTexture::Update()
     }
 }
 
-SceneRendererToTexture::SceneRendererToTexture(Scene* scene)
+SceneRendererToTexture::SceneRendererToTexture(Scene* scene, RmlUI* rmlUi)
     : CustomBackbufferTexture(scene->GetContext())
     , scene_(scene)
     , cameraNode_(MakeShared<Node>(context_))
     , camera_(cameraNode_->CreateComponent<Camera>())
     , viewport_(MakeShared<Viewport>(context_, scene_, camera_))
+    , rmlUi_(rmlUi)
 {
     OnRenderSurfaceCreated.Subscribe(this, &SceneRendererToTexture::SetupViewport);
 }
@@ -99,6 +101,9 @@ SceneRendererToTexture::~SceneRendererToTexture()
 void SceneRendererToTexture::SetupViewport(RenderSurface* renderSurface)
 {
     renderSurface->SetViewport(0, viewport_);
+
+    if (rmlUi_)
+        rmlUi_->SetRenderTarget(renderSurface);
 }
 
 Vector3 SceneRendererToTexture::GetCameraPosition() const

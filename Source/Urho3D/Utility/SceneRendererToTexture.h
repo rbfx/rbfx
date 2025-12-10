@@ -35,6 +35,7 @@ namespace Urho3D
 class Camera;
 class Node;
 class RenderSurface;
+class RmlUI;
 class Scene;
 class Texture2D;
 class Viewport;
@@ -77,7 +78,7 @@ class URHO3D_API SceneRendererToTexture : public CustomBackbufferTexture
     URHO3D_OBJECT(SceneRendererToTexture, CustomBackbufferTexture);
 
 public:
-    explicit SceneRendererToTexture(Scene* scene);
+    explicit SceneRendererToTexture(Scene* scene, RmlUI* rmlUi = nullptr);
     ~SceneRendererToTexture() override;
 
     /// Return properties
@@ -97,6 +98,7 @@ private:
     Camera* camera_{};
 
     SharedPtr<Viewport> viewport_;
+    WeakPtr<RmlUI> rmlUi_;
 };
 
 }

@@ -19,9 +19,9 @@
 #include "Foundation/InspectorTab/EmptyInspector.h"
 #include "Foundation/InspectorTab/MaterialInspector.h"
 #include "Foundation/InspectorTab/ModelInspector.h"
-#include "Foundation/InspectorTab/PrefabInspector.h"
 #include "Foundation/InspectorTab/NodeComponentInspector.h"
 #include "Foundation/InspectorTab/PlaceholderResourceInspector.h"
+#include "Foundation/InspectorTab/PrefabInspector.h"
 #include "Foundation/InspectorTab/RenderPathInspector.h"
 #include "Foundation/InspectorTab/SerializableResourceInspector.h"
 #include "Foundation/InspectorTab/SoundInspector.h"
@@ -39,6 +39,7 @@
 #include "Foundation/SceneViewTab/SceneDragAndDropMaterial.h"
 #include "Foundation/SceneViewTab/SceneDragAndDropPrefab.h"
 #include "Foundation/SceneViewTab/SceneHierarchy.h"
+#include "Foundation/SceneViewTab/SceneRmlUiPreview.h"
 #include "Foundation/SceneViewTab/SceneScreenshot.h"
 #include "Foundation/SceneViewTab/SceneSelectionRenderer.h"
 #include "Foundation/SceneViewTab/SceneSelector.h"
@@ -68,6 +69,7 @@
 #include <Urho3D/SystemUI/Widgets.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
+
 #include <nfd.h>
 
 #ifdef WIN32
@@ -112,6 +114,7 @@ EditorApplication::EditorApplication(Context* context)
     editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropMaterial", &Foundation_SceneDragAndDropMaterial);
     editorPluginManager_->AddPlugin("Foundation.SceneView.DebugInfo", &Foundation_SceneDebugInfo);
     editorPluginManager_->AddPlugin("Foundation.SceneView.Screenshot", &Foundation_SceneScreenshot);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.RmlUiPreview", &Foundation_SceneRmlUiPreview);
 
     editorPluginManager_->AddPlugin("Foundation.Inspector.Empty", &Foundation_EmptyInspector);
     editorPluginManager_->AddPlugin("Foundation.Inspector.AssetPipeline", &Foundation_AssetPipelineInspector);

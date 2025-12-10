@@ -24,6 +24,7 @@ struct RmlCanvasResizedArgs;
 struct RmlDocumentReloadedArgs;
 
 class RmlUI;
+class RmlUIManager;
 
 /// Adds a single window to game screen.
 class URHO3D_API RmlUIComponent : public LogicComponent
@@ -95,6 +96,9 @@ public:
     // Bind data model event.
     bool BindDataModelEvent(const ea::string& name, EventFunc eventCallback);
 
+    /// Internal. Reconnect to manager.
+    void ReconnectToManager();
+
 protected:
     /// Data model facade.
     /// @{
@@ -165,6 +169,7 @@ protected:
     /// @{
     void OnSetEnabled() override;
     void OnNodeSet(Node* previousNode, Node* currentNode) override;
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     /// @}
 
 private:
@@ -189,8 +194,8 @@ private:
     void UpdateConnectedCanvas();
     void UpdatePendingFocus();
 
-    void CreateDataModel();
-    void RemoveDataModel();
+    void CreateDataModel(RmlUI* ui);
+    void RemoveDataModel(RmlUI* ui);
 
     void DoFocusById(Rml::DataModelHandle model, Rml::Event& event, const Rml::VariantList& args);
 
@@ -203,6 +208,9 @@ private:
     bool autoSize_ = true;
     bool modal_ = false;
     /// @}
+
+    /// Reference to scene-level subsystem managing all UI documents in the Scene.
+    WeakPtr<RmlUIManager> manager_;
 
     /// Currently open document. Null if document was closed.
     Rml::ElementDocument* document_{};

@@ -44,7 +44,7 @@ public:
     /// Implement SceneViewAddon.
     /// @{
     ea::string GetUniqueName() const override { return "Camera"; }
-    int GetInputPriority() const override { return M_MAX_INT; }
+    int GetInputPriority() const override { return M_MAX_INT - 1; }
     void ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed) override;
     void SerializePageState(Archive& archive, const char* name, ea::any& stateWrapped) const override;
     /// @}

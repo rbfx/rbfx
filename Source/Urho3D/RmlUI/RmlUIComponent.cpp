@@ -12,6 +12,7 @@
 #include "Urho3D/Resource/BinaryFile.h"
 #include "Urho3D/RmlUI/RmlCanvasComponent.h"
 #include "Urho3D/RmlUI/RmlUI.h"
+#include "Urho3D/RmlUI/RmlUIManager.h"
 #include "Urho3D/Scene/Node.h"
 #include "Urho3D/Scene/Scene.h"
 
@@ -243,6 +244,33 @@ void RmlUIComponent::ScheduleFocusById(const ea::string& elementId)
     pendingFocusId_ = elementId;
 }
 
+void RmlUIComponent::ReconnectToManager()
+{
+    const bool isEnabled = IsEnabled();
+    SetEnabled(false);
+
+    manager_ = GetScene() ? GetScene()->GetDerivedComponent<RmlUIManager>() : nullptr;
+
+    SetEnabled(isEnabled);
+}
+
+void RmlUIComponent::OnSceneSet(Scene* previousScene, Scene* scene)
+{
+    BaseClassName::OnSceneSet(previousScene, scene);
+
+    auto newManager = scene ? scene->GetDerivedComponent<RmlUIManager>() : nullptr;
+    if (manager_ == newManager)
+        return;
+
+    if (manager_)
+        manager_->RemoveDocument(this);
+
+    manager_ = newManager;
+
+    if (manager_)
+        manager_->AddDocument(this);
+}
+
 void RmlUIComponent::OnSetEnabled()
 {
     BaseClassName::OnSetEnabled();
@@ -276,6 +304,9 @@ void RmlUIComponent::OpenInternal()
     }
 
     RmlUI* ui = GetUI();
+    if (!ui)
+        return;
+
     ui->OnDocumentClosedEvent.Subscribe(this, &RmlUIComponent::OnDocumentClosed);
     ui->OnCanvasResizedEvent.Subscribe(this, &RmlUIComponent::OnUICanvasResized);
     ui->OnDocumentReloaded.Subscribe(this, &RmlUIComponent::OnDocumentReloaded);
@@ -285,7 +316,7 @@ void RmlUIComponent::OpenInternal()
 
     if (!dataModel_)
     {
-        CreateDataModel();
+        CreateDataModel(ui);
         OnDataModelInitialized();
         dataModel_ = modelConstructor_->GetModelHandle();
         modelConstructor_.reset();
@@ -313,6 +344,9 @@ void RmlUIComponent::CloseInternal()
         return; // Already closed.
 
     RmlUI* ui = static_cast<Detail::RmlContext*>(document_->GetContext())->GetOwnerSubsystem();
+    if (!ui)
+        return;
+
     ui->OnDocumentClosedEvent.Unsubscribe(this);
     ui->OnCanvasResizedEvent.Unsubscribe(this);
     ui->OnDocumentReloaded.Unsubscribe(this);
@@ -326,7 +360,7 @@ void RmlUIComponent::CloseInternal()
     SetDocument(nullptr);
 
     if (dataModel_)
-        RemoveDataModel();
+        RemoveDataModel(ui);
 
     OnDocumentPostUnload();
 }
@@ -454,6 +488,10 @@ RmlUI* RmlUIComponent::GetUI() const
 {
     if (canvasComponent_ != nullptr)
         return canvasComponent_->GetUI();
+
+    if (manager_)
+        return manager_->GetOwner();
+
     return GetSubsystem<RmlUI>();
 }
 
@@ -541,9 +579,8 @@ void RmlUIComponent::DoFocusById(Rml::DataModelHandle model, Rml::Event& event, 
         ScheduleFocusById(id);
 }
 
-void RmlUIComponent::CreateDataModel()
+void RmlUIComponent::CreateDataModel(RmlUI* ui)
 {
-    RmlUI* ui = GetUI();
     Rml::Context* context = ui->GetRmlContext();
 
     dataModelName_ = GetDataModelName();
@@ -562,9 +599,8 @@ void RmlUIComponent::CreateDataModel()
     modelConstructor_->RegisterTransformFunc("is_key_tertiary", IsKeyTertiary);
 }
 
-void RmlUIComponent::RemoveDataModel()
+void RmlUIComponent::RemoveDataModel(RmlUI* ui)
 {
-    RmlUI* ui = GetUI();
     Rml::Context* context = ui->GetRmlContext();
     context->RemoveDataModel(dataModelName_);
 

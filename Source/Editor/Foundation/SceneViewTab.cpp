@@ -44,6 +44,9 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/NodeInspectorWidget.h>
 #include <Urho3D/SystemUI/Widgets.h>
+#include <Urho3D/RmlUI/RmlUI.h>
+#include <Urho3D/RmlUI/RmlUIComponent.h>
+#include <Urho3D/RmlUI/RmlUIManager.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
 
@@ -145,16 +148,32 @@ void Foundation_SceneViewTab(Context* context, Project* project)
 SceneViewPage::SceneViewPage(SceneResource* resource)
     : Object(resource->GetContext())
     , resource_(resource)
+    , rmlUi_(MakeShared<RmlUI>(context_, Format("SceneViewPage_{}", resource->GetName()).c_str()))
     , scene_(resource->GetScene())
-    , renderer_(MakeShared<SceneRendererToTexture>(scene_))
+    , renderer_(MakeShared<SceneRendererToTexture>(scene_, rmlUi_))
     , cfgFileName_(resource_->GetAbsoluteFileName() + ".user.json")
 {
     scene_->SetFileName(resource_->GetAbsoluteFileName());
     scene_->SetUpdateEnabled(false);
+
+    if (!scene_->GetComponent<RmlUIManager>())
+        scene_->CreateComponent<RmlUIManager>()->SetTemporary(true);
+    scene_->GetComponent<RmlUIManager>()->SetOwner(rmlUi_);
+
+    SetActive(false);
 }
 
 SceneViewPage::~SceneViewPage()
 {
+    if (auto manager = scene_->GetComponent<RmlUIManager>())
+        manager->SetOwner(nullptr);
+}
+
+void SceneViewPage::SetActive(bool isActive)
+{
+    renderer_->SetActive(isActive);
+    rmlUi_->SetRendering(isActive);
+    rmlUi_->SetBlockEvents(!isActive);
 }
 
 ea::any& SceneViewPage::GetAddonData(const SceneViewAddon& addon)
@@ -957,13 +976,16 @@ void SceneViewTab::OnResourceUnloaded(const ea::string& resourceName)
 void SceneViewTab::OnActiveResourceChanged(const ea::string& oldResourceName, const ea::string& newResourceName)
 {
     if (SceneViewPage* oldActivePage = GetPage(oldResourceName))
+    {
         oldActivePage->scene_->SetUpdateEnabled(false);
-
-    for (const auto& [name, data] : scenes_)
-        data->renderer_->SetActive(name == newResourceName);
+        oldActivePage->SetActive(false);
+    }
 
     if (SceneViewPage* newActivePage = GetPage(newResourceName))
+    {
+        newActivePage->SetActive(true);
         InspectSelection(*newActivePage);
+    }
 }
 
 void SceneViewTab::OnResourceSaved(const ea::string& resourceName)
@@ -1133,6 +1155,7 @@ void SceneViewTab::UpdateCameraRay()
     const ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
     const auto pos = ToVector2((io.MousePos - viewportRect.Min) / viewportRect.GetSize());
     activePage->cameraRay_ = camera->GetScreenRay(pos.x_, pos.y_);
+    activePage->mousePosition_ = ToVector2(io.MousePos - viewportRect.Min);
 }
 
 bool SceneViewTab::UpdateDropToScene()
@@ -1224,7 +1247,7 @@ SharedPtr<SceneViewPage> SceneViewTab::CreatePage(SceneResource* sceneResource, 
         }
     });
 
-    page->renderer_->SetActive(isActive);
+    page->SetActive(isActive);
 
     WeakPtr<SceneViewPage> weakPage{page};
     page->selection_.OnChanged.Subscribe(this, [weakPage](SceneViewTab* self)

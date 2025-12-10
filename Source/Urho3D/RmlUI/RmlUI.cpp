@@ -51,6 +51,7 @@
 #include "../RmlUI/RmlCanvasComponent.h"
 #include "../RmlUI/RmlSerializableInspector.h"
 #include "../RmlUI/RmlUIComponent.h"
+#include "../RmlUI/RmlUIManager.h"
 #include "Urho3D/RenderAPI/RenderContext.h"
 #include "Urho3D/RenderAPI/RenderDevice.h"
 
@@ -415,6 +416,8 @@ RmlUI::RmlUI(Context* context, const char* name)
     : Object(context)
     , name_(name)
 {
+    const auto primarySubsystem = GetSubsystem<RmlUI>();
+
     // Initializing first instance of RmlUI, initialize backend library as well.
     if (rmlInstanceCounter.fetch_add(1) == 0)
     {
@@ -429,8 +432,8 @@ RmlUI::RmlUI(Context* context, const char* name)
     rmlContext_ = static_cast<Detail::RmlContext*>(Rml::CreateContext(name_.c_str(), ToRmlUi(GetDesiredCanvasSize())));
     rmlContext_->SetOwnerSubsystem(this);
 
-    if (auto* ui = GetSubsystem<RmlUI>())
-        ui->siblingSubsystems_.push_back(WeakPtr(this));
+    if (primarySubsystem)
+        primarySubsystem->siblingSubsystems_.push_back(WeakPtr(this));
 
     Input* input = context_->GetSubsystem<Input>();
     URHO3D_ASSERT(input);
@@ -450,7 +453,8 @@ RmlUI::RmlUI(Context* context, const char* name)
     SubscribeToEvent(E_POSTUPDATE, &RmlUI::HandlePostUpdate);
     SubscribeToEvent(E_ENDALLVIEWSRENDER, &RmlUI::HandleEndAllViewsRender);
 
-    SubscribeToEvent(E_FILECHANGED, &RmlUI::HandleResourceReloaded);
+    if (primarySubsystem)
+        SubscribeToEvent(E_FILECHANGED, &RmlUI::HandleResourceReloaded);
 }
 
 RmlUI::~RmlUI()
@@ -920,17 +924,27 @@ void RmlUI::HandleResourceReloaded(StringHash eventType, VariantMap& eventData)
         Rml::Factory::ClearStyleSheetCache();
         Rml::Factory::ClearTemplateCache();
 
-        ea::fixed_vector<Rml::ElementDocument*, 64> unloadingDocuments;
-        for (int i = 0; i < rmlContext_->GetNumDocuments(); i++)
+        ReloadDocuments();
+        for (RmlUI* siblingSubsystem : siblingSubsystems_)
         {
-            Rml::ElementDocument* document = rmlContext_->GetDocument(i);
-            if (!document->GetSourceURL().empty())
-                unloadingDocuments.push_back(document);
+            if (siblingSubsystem)
+                siblingSubsystem->ReloadDocuments();
         }
-
-        for (Rml::ElementDocument* document : unloadingDocuments)
-            ReloadDocument(document);
     }
+}
+
+void RmlUI::ReloadDocuments()
+{
+    ea::vector<Rml::ElementDocument*> unloadingDocuments;
+    for (int i = 0; i < rmlContext_->GetNumDocuments(); i++)
+    {
+        Rml::ElementDocument* document = rmlContext_->GetDocument(i);
+        if (!document->GetSourceURL().empty())
+            unloadingDocuments.push_back(document);
+    }
+
+    for (Rml::ElementDocument* document : unloadingDocuments)
+        ReloadDocument(document);
 }
 
 Rml::ElementDocument* RmlUI::ReloadDocument(Rml::ElementDocument* document)
@@ -1018,6 +1032,7 @@ void RegisterRmlUILibrary(Context* context)
 {
     context->AddFactoryReflection<RmlUI>();
     RmlUIComponent::RegisterObject(context);
+    RmlUIManager::RegisterObject(context);
     RmlCanvasComponent::RegisterObject(context);
     RmlSerializableInspector::RegisterObject(context);
 }

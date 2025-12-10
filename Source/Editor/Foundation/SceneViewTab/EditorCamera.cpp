@@ -52,6 +52,9 @@ EditorCamera::EditorCamera(SceneViewTab* owner, SettingsPage* settings)
 
 void EditorCamera::ProcessInput(SceneViewPage& scenePage, bool& mouseConsumed)
 {
+    if (mouseConsumed)
+        return;
+
     auto& state = GetOrInitializeState(scenePage);
     Camera* camera = scenePage.renderer_->GetCamera();
     const auto& cfg = settings_->GetValues();

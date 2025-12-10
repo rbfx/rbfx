@@ -45,6 +45,7 @@ void Foundation_SceneViewTab(Context* context, Project* project);
 class SceneViewAddon;
 class SceneViewTab;
 class SimulateSceneAction;
+class RmlUI;
 
 /// Declare Editor-only type to avoid interference with user code.
 class SceneResourceForEditor : public SceneResource
@@ -64,10 +65,13 @@ public:
     explicit SceneViewPage(SceneResource* resource);
     ~SceneViewPage() override;
 
+    void SetActive(bool isActive);
+
     ea::any& GetAddonData(const SceneViewAddon& addon);
 
 public:
     const SharedPtr<SceneResource> resource_;
+    const SharedPtr<RmlUI> rmlUi_;
     const SharedPtr<Scene> scene_;
     const SharedPtr<SceneRendererToTexture> renderer_;
     const ea::string cfgFileName_;
@@ -84,6 +88,7 @@ public:
     SharedPtr<SimulateSceneAction> currentSimulationAction_;
 
     Ray cameraRay_;
+    Vector2 mousePosition_;
 
     PackedSceneData archivedScene_;
     PackedSceneSelection archivedSelection_;

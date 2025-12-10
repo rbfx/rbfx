@@ -137,6 +137,8 @@ private:
     bool IsInputCapturedInternal() const;
     /// Signal that document belonging to this subsystem was closed.
     void OnDocumentUnload(Rml::ElementDocument* document);
+    /// Reload all documents managed by this instance.
+    void ReloadDocuments();
 
     /// Handle screen mode event.
     void HandleScreenMode(StringHash eventType, VariantMap& eventData);
