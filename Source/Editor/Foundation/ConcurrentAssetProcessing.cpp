@@ -22,9 +22,10 @@
 
 #include "../Foundation/ConcurrentAssetProcessing.h"
 
+#include "../Core/SettingsManager.h"
 #include "../Project/AssetManager.h"
 
-#include <Urho3D/Core/ProcessUtils.h>
+#include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/Resource/JSONFile.h>
 
 namespace Urho3D
@@ -32,6 +33,58 @@ namespace Urho3D
 
 namespace
 {
+
+struct ConcurrentAssetProcessingSettings
+{
+    ea::string GetUniqueName() { return "Editor.Assets:Concurrency"; }
+
+    void SerializeInBlock(Archive& archive)
+    {
+        SerializeOptionalValue(
+            archive, "MaxConcurrency", maxConcurrency_, ConcurrentAssetProcessingSettings{}.maxConcurrency_);
+    }
+
+    void RenderSettings()
+    {
+        ui::SliderInt("Max Concurrency", &maxConcurrency_, 1, 16);
+        //
+    }
+
+    int maxConcurrency_{4};
+};
+
+class ConcurrentAssetProcessingSettingsPage : public SimpleSettingsPage<ConcurrentAssetProcessingSettings>
+{
+public:
+    using UpdateCallback = ea::function<void(int)>;
+
+    ConcurrentAssetProcessingSettingsPage(Context* context, const UpdateCallback& callback)
+        : SimpleSettingsPage(context)
+        , updateCallback_(callback)
+    {
+    }
+
+    void RenderSettings() override
+    {
+        const int maxConcurrency = GetValues().maxConcurrency_;
+
+        SimpleSettingsPage::RenderSettings();
+
+        if (GetValues().maxConcurrency_ != maxConcurrency)
+            updateCallback_(GetValues().maxConcurrency_);
+    }
+
+    void SerializeInBlock(Archive& archive) override
+    {
+        SimpleSettingsPage::SerializeInBlock(archive);
+
+        if (archive.IsInput())
+            updateCallback_(GetValues().maxConcurrency_);
+    }
+
+private:
+    UpdateCallback updateCallback_;
+};
 
 const ea::string commandName = "ProcessAsset";
 
@@ -138,11 +191,11 @@ bool ProcessAsset(Project* project, const ea::string& inputName, const ea::strin
     return success;
 }
 
-}
+} // namespace
 
 void Foundation_ConcurrentAssetProcessing(Context* context, Project* project)
 {
-    auto assetManager = project->GetAssetManager();
+    WeakPtr<AssetManager> assetManager{project->GetAssetManager()};
 
     project->OnCommand.Subscribe(project,
         [=](const ea::string& command, const ea::string& args, bool& processed)
@@ -166,8 +219,17 @@ void Foundation_ConcurrentAssetProcessing(Context* context, Project* project)
             RequestProcessAsset(project, input, callback);
         };
 
-        assetManager->SetProcessCallback(callback, GetNumLogicalCPUs());
+        auto updateMaxConcurrency = [=](int value)
+        {
+            if (assetManager)
+                assetManager->SetProcessCallback(callback, value);
+        };
+
+        updateMaxConcurrency(ConcurrentAssetProcessingSettings{}.maxConcurrency_);
+
+        auto settingsPage = MakeShared<ConcurrentAssetProcessingSettingsPage>(context, updateMaxConcurrency);
+        project->GetSettingsManager()->AddPage(settingsPage);
     }
 }
 
-}
+} // namespace Urho3D
