@@ -35,7 +35,7 @@ namespace
 
 const ea::string commandName = "ProcessAsset";
 
-void RequestProcessAsset(Project* project, const AssetTransformerInput& input,
+void RequestProcessAsset(Project* project, const AssetTransformerInputVector& input,
     const AssetManager::OnProcessAssetCompleted& callback)
 {
     auto context = project->GetContext();
@@ -53,13 +53,13 @@ void RequestProcessAsset(Project* project, const AssetTransformerInput& input,
     JSONFile inputFile(context);
     if (!inputFile.SaveObject("input", input))
     {
-        callback(input, ea::nullopt, "Cannot serialize input pipe");
+        callback(input, {}, "Cannot serialize input pipe");
         return;
     }
 
     if (!inputFile.SaveFile(projectPath + inputPath))
     {
-        callback(input, ea::nullopt, "Cannot save input pipe");
+        callback(input, {}, "Cannot save input pipe");
         return;
     }
 
@@ -69,21 +69,21 @@ void RequestProcessAsset(Project* project, const AssetTransformerInput& input,
     {
         if (!success)
         {
-            callback(input, ea::nullopt, commandOutput);
+            callback(input, {}, commandOutput);
             return;
         }
 
         JSONFile outputFile(context);
         if (!outputFile.LoadFile(projectPath + outputPath))
         {
-            callback(input, ea::nullopt, "Cannot load output pipe");
+            callback(input, {}, "Cannot load output pipe");
             return;
         }
 
-        AssetTransformerOutput output;
+        AssetTransformerOutputVector output;
         if (!outputFile.LoadObject("output", output))
         {
-            callback(input, ea::nullopt, "Cannot deserialize output pipe");
+            callback(input, {}, "Cannot deserialize output pipe");
             return;
         }
 
@@ -105,7 +105,7 @@ bool ProcessAsset(Project* project, const ea::string& inputName, const ea::strin
         return false;
     }
 
-    AssetTransformerInput input;
+    AssetTransformerInputVector input;
     if (!inputFile.LoadObject("input", input))
     {
         URHO3D_LOGERROR("Cannot deserialize input pipe");
@@ -113,16 +113,14 @@ bool ProcessAsset(Project* project, const ea::string& inputName, const ea::strin
     }
 
     bool success = false;
-    assetManager->ProcessAsset(input,
-        [&](const AssetTransformerInput& input,
-            const ea::optional<AssetTransformerOutput>& output, const ea::string& error)
+    assetManager->ProcessAssetBatch(input,
+        [&](const AssetTransformerInputVector& input,
+            const AssetTransformerOutputVector& output, const ea::string& error)
     {
-        // Error should be logged by the asset manager
-        if (!output)
-            return;
+        // Processing errors should be logged by the asset manager
 
         JSONFile outputFile(project->GetContext());
-        if (!outputFile.SaveObject("output", *output))
+        if (!outputFile.SaveObject("output", output))
         {
             URHO3D_LOGERROR("Cannot serialize output pipe");
             return;
@@ -163,7 +161,7 @@ void Foundation_ConcurrentAssetProcessing(Context* context, Project* project)
     if (!project->GetFlags().Test(ProjectFlag::SingleProcess))
     {
         using CompletionCallback = AssetManager::OnProcessAssetCompleted;
-        const auto callback = [=](const AssetTransformerInput& input, const CompletionCallback& callback) //
+        const auto callback = [=](const AssetTransformerInputVector& input, const CompletionCallback& callback) //
         { //
             RequestProcessAsset(project, input, callback);
         };

@@ -75,10 +75,13 @@ AssetManager::~AssetManager()
 
 void AssetManager::SetProcessCallback(const OnProcessAssetQueued& callback, unsigned maxConcurrency)
 {
-    const auto defaultCallback = [this](const AssetTransformerInput& input, const OnProcessAssetCompleted& callback)
+    const auto defaultCallback = //
+        [this](const AssetTransformerInputVector& input, const OnProcessAssetCompleted& callback)
     {
-        ProcessAsset(input, callback);
+        ProcessAssetBatch(input, callback);
+        //
     };
+
     processCallback_ = callback ? callback : defaultCallback;
     maxConcurrentRequests_ = ea::max(maxConcurrency, 1u);
 }
@@ -132,21 +135,23 @@ void AssetManager::Update()
 
 void AssetManager::ConsumeAssetQueue()
 {
-    ea::vector<AssetTransformerInput> queue;
+    ea::vector<AssetTransformerInputVector> queue;
     while (!requestQueue_.empty() && numOngoingRequests_ < maxConcurrentRequests_)
     {
         ++numOngoingRequests_;
         ++progress_.second;
-        queue.push_back(requestQueue_.back());
+        queue.push_back(ea::move(requestQueue_.back()));
         requestQueue_.pop_back();
     }
 
-    for (const AssetTransformerInput& input : queue)
+    for (const AssetTransformerInputVector& input : queue)
     {
         processCallback_(input,
-            [this](const AssetTransformerInput& input, const ea::optional<AssetTransformerOutput>& output, const ea::string& message)
+            [this](const AssetTransformerInputVector& input, const AssetTransformerOutputVector& output,
+                const ea::string& message)
         {
-            CompleteAssetProcessing(input, output, message);
+            CompleteAssetBatchProcessing(input, output, message);
+            //
         });
     }
 }
@@ -572,11 +577,11 @@ bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const Ap
     const ea::string tempPath = project_->GetRandomTemporaryPath();
     const ea::string outputResourceName = resourceName + ".d";
     const ea::string outputFileName = tempPath + outputResourceName;
-    requestQueue_.push_back(AssetTransformerInput{input, tempPath, outputFileName, outputResourceName});
+    requestQueue_.push_back(AssetTransformerInputVector{{input, tempPath, outputFileName, outputResourceName}});
     return true;
 }
 
-void AssetManager::ProcessAsset(const AssetTransformerInput& input, const OnProcessAssetCompleted& callback) const
+ea::optional<AssetTransformerOutput> AssetManager::ProcessAsset(const AssetTransformerInput& input) const
 {
     auto fs = GetSubsystem<FileSystem>();
 
@@ -586,13 +591,48 @@ void AssetManager::ProcessAsset(const AssetTransformerInput& input, const OnProc
 
     AssetTransformerOutput output;
     if (AssetTransformer::ExecuteTransformersAndStore(input, cachePath, output, transformers))
-        callback(input, ea::move(output), EMPTY_STRING);
+        return output;
     else
-        callback(input, ea::nullopt, EMPTY_STRING);
+        return ea::nullopt;
 }
 
-void AssetManager::CompleteAssetProcessing(
-    const AssetTransformerInput& input, const ea::optional<AssetTransformerOutput>& output, const ea::string& message)
+void AssetManager::ProcessAssetBatch(const AssetTransformerInputVector& input, const OnProcessAssetCompleted& callback) const
+{
+    const unsigned batchSize = input.size();
+
+    AssetTransformerOutputVector result;
+    result.resize(batchSize);
+    for (unsigned i = 0; i < batchSize; ++i)
+        result[i] = ProcessAsset(input[i]);
+
+    callback(input, result, EMPTY_STRING);
+}
+
+bool AssetManager::CompleteAssetProcessing(
+    const AssetTransformerInput& input, const ea::optional<AssetTransformerOutput>& output)
+{
+    if (!output)
+        return false;
+
+    AssetDesc& assetDesc = assets_[input.resourceName_];
+    assetDesc.resourceName_ = input.resourceName_;
+    assetDesc.modificationTime_ = input.inputFileTime_;
+    assetDesc.dependencyModificationTimes_ = output->dependencyModificationTimes_;
+    assetDesc.outputs_ = output->outputResourceNames_;
+    assetDesc.transformers_ = output->appliedTransformers_;
+
+    if (output->sourceModified_)
+        ignoredAssetUpdates_.insert(input.resourceName_);
+
+    URHO3D_LOGDEBUG("Asset {} was processed with {} ({} files generated{})",
+        input.resourceName_, assetDesc.GetTransformerDebugString(), assetDesc.outputs_.size(),
+        output->sourceModified_ ? ", source modified" : "");
+
+    return true;
+}
+
+void AssetManager::CompleteAssetBatchProcessing(const AssetTransformerInputVector& input,
+    const AssetTransformerOutputVector& output, const ea::string& message)
 {
     if (numOngoingRequests_ > 0)
         --numOngoingRequests_;
@@ -601,29 +641,18 @@ void AssetManager::CompleteAssetProcessing(
 
     ++progress_.first;
 
-    if (output)
+    const unsigned batchSize = input.size();
+    URHO3D_ASSERTLOG(output.empty() || output.size() == batchSize,
+        "AssetManager::CompleteAssetProcessing() called with invalid output size");
+
+    for (unsigned i = 0; i < batchSize; ++i)
     {
-        AssetDesc& assetDesc = assets_[input.resourceName_];
-        assetDesc.resourceName_ = input.resourceName_;
-        assetDesc.modificationTime_ = input.inputFileTime_;
-        assetDesc.dependencyModificationTimes_ = output->dependencyModificationTimes_;
-        assetDesc.outputs_ = output->outputResourceNames_;
-        assetDesc.transformers_ = output->appliedTransformers_;
-
-        if (output->sourceModified_)
-            ignoredAssetUpdates_.insert(input.resourceName_);
-
-        URHO3D_LOGDEBUG("Asset {} was processed with {} ({} files generated{})",
-            input.resourceName_, assetDesc.GetTransformerDebugString(), assetDesc.outputs_.size(),
-            output->sourceModified_ ? ", source modified" : "");
-
-        if (!message.empty())
-            URHO3D_LOGWARNING("{}", message);
+        if (!CompleteAssetProcessing(input[i], i < output.size() ? output[i] : ea::nullopt))
+            URHO3D_LOGWARNING("Asset {} was not processed", input[i].resourceName_);
     }
-    else
-    {
-        URHO3D_LOGWARNING("Asset {} was not processed: {}", input.resourceName_, message.empty() ? "unknown error" : message);
-    }
+
+    if (!message.empty())
+        URHO3D_LOGWARNING("{}", message);
 }
 
 StringVector AssetManager::EnumerateAssetFiles(const ea::string& resourcePath) const

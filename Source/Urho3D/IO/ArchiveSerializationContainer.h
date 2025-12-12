@@ -351,17 +351,34 @@ template <class T, std::enable_if_t<std::is_base_of<Object, T>::value, int> = 0>
 void SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value) { SerializeSharedPtr(archive, name, value); }
 /// @}
 
-
-// This code is non-intuitive, commented out for now.
-#if 0
-/// Serialize optional value, construct if empty.
+/// Serialize optional value.
 template <class T, class TSerializer = Detail::DefaultSerializer>
-void SerializeValue(Archive& archive, const char* name, ea::optional<T>& value, const TSerializer& serializeValue = TSerializer{})
+void SerializeValue(
+    Archive& archive, const char* name, ea::optional<T>& value, const TSerializer& serializeValue = TSerializer{})
 {
-    if (!value.has_value())
-        value.emplace();
-    serializeValue(archive, name, *value);
-}
-#endif
+    ArchiveBlock block = archive.OpenUnorderedBlock(name);
 
+    bool hasValue = value.has_value();
+    serializeValue(archive, "hasValue", hasValue);
+
+    if (archive.IsInput())
+    {
+        if (hasValue)
+        {
+            if (!value.has_value())
+                value.emplace();
+
+            serializeValue(archive, "value", *value);
+        }
+        else
+        {
+            value.reset();
+        }
+    }
+    else if (hasValue)
+    {
+        serializeValue(archive, "value", *value);
+    }
 }
+
+} // namespace Urho3D
