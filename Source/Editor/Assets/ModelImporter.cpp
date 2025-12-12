@@ -490,8 +490,12 @@ ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromFBX(
     if (!fs->FileExists(fileName))
         return nullptr;
 
+    // fbx2gltf generates extra files that we don't want to copy, create another temporary directory for those
+    const TemporaryDir fbxTempFolderHolder{context_, RemoveTrailingSlash(tempPath) + ".2"};
+
     const ea::string tempGltfFile = Format("{}{}.glb", tempPath, GenerateUUID());
-    const StringVector arguments{"--binary", "--input", fileName, "--output", tempGltfFile, "--fbx-temp-dir", tempPath};
+    const StringVector arguments{
+        "--binary", "--input", fileName, "--output", tempGltfFile, "--fbx-temp-dir", fbxTempFolderHolder.GetPath()};
 
     ea::string commandOutput;
     if (fs->SystemRun(toolManager->GetFBX2glTF(), arguments, commandOutput) != 0)
