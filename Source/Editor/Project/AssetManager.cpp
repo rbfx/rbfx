@@ -143,6 +143,15 @@ void AssetManager::ConsumeAssetQueue()
     ea::vector<AssetTransformerInputVector> queue;
     while (!requestQueue_.empty() && numOngoingRequests_ < maxConcurrentRequests_)
     {
+        if (requestQueue_.back().empty())
+        {
+            if (numOngoingRequests_ != 0)
+                break;
+
+            requestQueue_.pop_back();
+            continue;
+        }
+
         ++numOngoingRequests_;
         queue.push_back(ea::move(requestQueue_.back()));
         requestQueue_.pop_back();
@@ -565,6 +574,8 @@ void AssetManager::ScanAssetsInPath(const ea::string& resourcePath, Stats& stats
         else
             ++stats.numUpToDateAssets_;
     }
+
+    ea::reverse(requestQueue_.begin(), requestQueue_.end());
 }
 
 bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const ApplicationFlavor& flavor)
