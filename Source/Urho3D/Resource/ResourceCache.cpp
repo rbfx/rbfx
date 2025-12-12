@@ -882,7 +882,22 @@ void ResourceCache::HandleFileChanged(StringHash eventType, VariantMap& eventDat
         return;
     }
 
-    ReloadResourceWithDependencies(fileName);
+    if (!resourceReloadSuspended_)
+        ReloadResourceWithDependencies(fileName);
+    else
+        pendingResourceReloads_.emplace(fileName);
+}
+
+void ResourceCache::SetResourceReloadSuspended(bool suspended)
+{
+    resourceReloadSuspended_ = suspended;
+
+    if (!suspended)
+    {
+        for (const ea::string& fileName : pendingResourceReloads_)
+            ReloadResourceWithDependencies(fileName);
+        pendingResourceReloads_.clear();
+    }
 }
 
 void RegisterResourceLibrary(Context* context)

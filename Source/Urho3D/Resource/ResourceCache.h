@@ -33,6 +33,7 @@
 
 #include <EASTL/hash_set.h>
 #include <EASTL/unique_ptr.h>
+#include <EASTL/unordered_set.h>
 
 namespace Urho3D
 {
@@ -110,6 +111,8 @@ public:
     bool ReloadResource(Resource* resource);
     /// Reload a resource based on filename. Causes also reload of dependent resources if necessary.
     void ReloadResourceWithDependencies(const ea::string& fileName);
+    /// Suspend or resume resource reloading. Changed resources will be reloaded on resume.
+    void SetResourceReloadSuspended(bool suspended);
     /// Set memory budget for a specific resource type, default 0 is unlimited.
     /// @property
     void SetMemoryBudget(StringHash type, unsigned long long budget);
@@ -253,6 +256,11 @@ private:
     int finishBackgroundResourcesMs_;
     /// List of resources that will not be auto-reloaded if reloading event triggers.
     ea::vector<ea::string> ignoreResourceAutoReload_;
+
+    /// Whether resource reloading is suspended.
+    bool resourceReloadSuspended_{};
+    /// List of resources that will be reloaded when reloading is un-suspended.
+    ea::unordered_set<ea::string> pendingResourceReloads_;
 };
 
 template <class T> T* ResourceCache::GetExistingResource(const ea::string& name)
