@@ -76,7 +76,7 @@ public:
     /// Return current progress of asset processing:
     ProgressInfo GetProgress() const { return progress_; }
     /// Return whether asset manager is currently processing assets.
-    bool IsProcessing() const { return progress_ != ProgressInfo{}; }
+    bool IsProcessing() const { return !requestQueue_.empty() || numOngoingRequests_ != 0; }
 
     /// Serialize
     /// @{

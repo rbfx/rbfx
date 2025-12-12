@@ -108,7 +108,10 @@ void AssetManager::Initialize(bool readOnly)
 
 void AssetManager::Update()
 {
-    if (!requestQueue_.empty() || numOngoingRequests_ != 0)
+    auto cache = GetSubsystem<ResourceCache>();
+    cache->SetResourceReloadSuspended(IsProcessing());
+
+    if (IsProcessing())
     {
         if (!requestQueue_.empty() && numOngoingRequests_ < maxConcurrentRequests_)
             ConsumeAssetQueue();
@@ -130,6 +133,8 @@ void AssetManager::Update()
     {
         EnsureAssetsAndCacheValid();
         ScanAndQueueAssetProcessing();
+
+        progress_.second = requestQueue_.size();
     }
 }
 
@@ -139,7 +144,6 @@ void AssetManager::ConsumeAssetQueue()
     while (!requestQueue_.empty() && numOngoingRequests_ < maxConcurrentRequests_)
     {
         ++numOngoingRequests_;
-        ++progress_.second;
         queue.push_back(ea::move(requestQueue_.back()));
         requestQueue_.pop_back();
     }
@@ -179,6 +183,11 @@ void AssetManager::EnsureAssetsAndCacheValid()
 {
     if (!hasInvalidAssets_)
         return;
+
+    // Suppress resource reloading before files are deleted.
+    // If no processing is queued, this flag will be overwritten on next Update().
+    auto cache = GetSubsystem<ResourceCache>();
+    cache->SetResourceReloadSuspended(true);
 
     CleanupInvalidatedAssets();
     CleanupCacheFolder();
