@@ -70,7 +70,7 @@ using TestVector = ea::vector<AssetTransformer*>;
 TEST_CASE("Asset transformer performs query by flavor and path")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto hierarchy = MakeShared<AssetTransformerHierarchy>(context);
+    auto hierarchy = MakeShared<AssetTransformerHierarchy>(context, false);
     auto addTransformer = [&](const ea::string& path, const ea::string& flavor)
     {
         const auto transformer = MakeShared<TestAssetTransformer>(context);
@@ -151,7 +151,7 @@ TEST_CASE("Asset transformer performs query by flavor and path")
 TEST_CASE("Asset transformer filters duplicates and sorts by flavor and path")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto hierarchy = MakeShared<AssetTransformerHierarchy>(context);
+    auto hierarchy = MakeShared<AssetTransformerHierarchy>(context, false);
     auto addTransformer = [&](const ea::string& path, const ea::string& flavor)
     {
         const auto transformer = MakeShared<TestAssetTransformer>(context);
@@ -186,7 +186,7 @@ TEST_CASE("Asset transformer filters duplicates and sorts by flavor and path")
 TEST_CASE("Asset transformer sorts by type")
 {
     auto context = Tests::GetOrCreateContext(Tests::CreateCompleteContext);
-    auto hierarchy = MakeShared<AssetTransformerHierarchy>(context);
+    auto hierarchy = MakeShared<AssetTransformerHierarchy>(context, false);
     auto addTransformer = [&](int type, const ea::string& path, const ea::string& flavor)
     {
         SharedPtr<AssetTransformer> transformer;
