@@ -324,9 +324,7 @@ PluginManager::PluginManager(Context* context)
     , binaryDirectory_(context_->GetSubsystem<FileSystem>()->GetProgramDir())
 {
     // On Windows, copy plugins to temporary directory to avoid locking original files.
-    const bool isWindows =
-        GetPlatform() == PlatformId::Windows || GetPlatform() == PlatformId::UniversalWindowsPlatform;
-    if (enableAutoReload_ && isWindows)
+    if (enableAutoReload_)
         temporaryDirectoryBase_ = Format("{}.hotreload/", binaryDirectory_);
 
     if (clearTemporaryDirectories && !temporaryDirectoryBase_.empty())
