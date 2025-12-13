@@ -33,6 +33,53 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+ea::vector<ea::string> CollectDirectories(const ea::vector<ea::string>& fileNames)
+{
+    ea::vector<ea::string> result;
+    for (const ea::string& fileName : fileNames)
+        result.push_back(GetPath(fileName));
+
+    ea::sort(result.begin(), result.end());
+    result.erase(ea::unique(result.begin(), result.end()), result.end());
+
+    return result;
+}
+
+void RemoveRedundantPrefixesSorted(ea::vector<ea::string>& prefixes)
+{
+    if (prefixes.empty())
+        return;
+
+    if (prefixes.front().empty())
+    {
+        prefixes.erase(prefixes.begin() + 1, prefixes.end());
+        return;
+    }
+
+    for (unsigned i = 1; i < prefixes.size(); ++i)
+    {
+        const auto isPrefixed = [&](const ea::string& str) { return !str.empty() && prefixes[i].starts_with(str); };
+        if (ea::any_of(prefixes.begin(), prefixes.begin() + i, isPrefixed))
+        {
+            prefixes[i].clear();
+            break;
+        }
+    }
+    ea::erase_if(prefixes, [](const ea::string& str) { return str.empty(); });
+}
+
+ea::vector<ea::string> EnumerateDisjoinedDirectories(const ea::vector<ea::string>& fileNames)
+{
+    auto result = CollectDirectories(fileNames);
+    RemoveRedundantPrefixesSorted(result);
+    return result;
+}
+
+} // namespace
+
 void AssetManager::AssetDesc::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "outputs", outputs_);
@@ -62,8 +109,10 @@ AssetManager::AssetManager(Context* context)
     : Object(context)
     , project_(GetSubsystem<Project>())
     , dataWatcher_(MakeShared<FileWatcher>(context))
-    , transformerHierarchy_(MakeShared<AssetTransformerHierarchy>(context_))
 {
+    for (const bool isPostTransform : {false, true})
+        transformerHierarchy_[isPostTransform] = MakeShared<AssetTransformerHierarchy>(context_, isPostTransform);
+
     dataWatcher_->StartWatching(project_->GetDataPath(), true);
     context_->OnReflectionRemoved.Subscribe(this, &AssetManager::OnReflectionRemoved);
     SetProcessCallback(nullptr);
@@ -133,8 +182,6 @@ void AssetManager::Update()
     {
         EnsureAssetsAndCacheValid();
         ScanAndQueueAssetProcessing();
-
-        progress_.second = requestQueue_.size();
     }
 }
 
@@ -401,7 +448,9 @@ void AssetManager::InvalidateApplicableAssetsInPath(const ea::string& resourcePa
     {
         if (resourceName.starts_with(resourcePath))
         {
-            const AssetTransformerInput input{defaultFlavor_, resourceName, GetFileName(resourceName), assetDesc.modificationTime_};
+            const bool isPostTransform = false; // Not checked by AssetTransformer::IsApplicable
+            const AssetTransformerInput input{
+                isPostTransform, defaultFlavor_, resourceName, GetFileName(resourceName), assetDesc.modificationTime_};
             if (AssetTransformer::IsApplicable(input, transformers))
                 assetDesc.cacheInvalid_ = true;
         }
@@ -546,26 +595,39 @@ void AssetManager::UpdateAssetPipelines()
 
 void AssetManager::UpdateTransformHierarchy()
 {
-    transformerHierarchy_->Clear();
-    for (const AssetPipelineDesc& pipeline : assetPipelines_)
+    for (auto& transformerHierarchy : transformerHierarchy_)
     {
-        for (AssetTransformer* transformer : pipeline.transformers_)
-            transformerHierarchy_->AddTransformer(GetPath(pipeline.resourceName_), transformer);
-        for (const AssetTransformerDependency& link : pipeline.dependencies_)
-            transformerHierarchy_->AddDependency(link.class_, link.dependsOn_);
+        transformerHierarchy->Clear();
+        for (const AssetPipelineDesc& pipeline : assetPipelines_)
+        {
+            for (AssetTransformer* transformer : pipeline.transformers_)
+                transformerHierarchy->AddTransformer(GetPath(pipeline.resourceName_), transformer);
+            for (const AssetTransformerDependency& link : pipeline.dependencies_)
+                transformerHierarchy->AddDependency(link.class_, link.dependsOn_);
+        }
+        transformerHierarchy->CommitDependencies();
     }
-    transformerHierarchy_->CommitDependencies();
 }
 
 void AssetManager::ScanAssetsInPath(const ea::string& resourcePath, Stats& stats)
 {
+    ea::vector<ea::string> queuedAssets;
     for (const ea::string& resourceName : EnumerateAssetFiles(resourcePath))
     {
         const auto iter = assets_.find(resourceName);
         if (iter == assets_.end())
         {
-            if (QueueAssetProcessing(resourceName, defaultFlavor_))
+            AssetTransformerInputVector batch;
+            if (QueueAssetProcessing(batch, resourceName, defaultFlavor_, false /*isPostTransform*/))
+            {
+                queuedAssets.push_back(resourceName);
+                if (!batch.empty())
+                {
+                    requestQueue_.push_back(ea::move(batch));
+                    ++progress_.second;
+                }
                 ++stats.numProcessedAssets_;
+            }
             else
                 ++stats.numIgnoredAssets_;
         }
@@ -575,14 +637,34 @@ void AssetManager::ScanAssetsInPath(const ea::string& resourcePath, Stats& stats
             ++stats.numUpToDateAssets_;
     }
 
+    if (!queuedAssets.empty())
+    {
+        requestQueue_.emplace_back(); // Asset barrier
+
+        for (const ea::string& processedDirectory : EnumerateDisjoinedDirectories(queuedAssets))
+        {
+            AssetTransformerInputVector batch;
+            for (const ea::string& resourceName : EnumerateAssetFiles(processedDirectory))
+                QueueAssetProcessing(batch, resourceName, defaultFlavor_, true /*isPostTransform*/);
+
+            if (!batch.empty())
+            {
+                requestQueue_.push_back(ea::move(batch));
+                ++progress_.second;
+            }
+        }
+    }
+
     ea::reverse(requestQueue_.begin(), requestQueue_.end());
 }
 
-bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const ApplicationFlavor& flavor)
+bool AssetManager::QueueAssetProcessing(AssetTransformerInputVector& queue, const ea::string& resourceName,
+    const ApplicationFlavor& flavor, bool isPostTransform)
 {
     auto fs = GetSubsystem<FileSystem>();
 
-    const AssetTransformerVector transformers = transformerHierarchy_->GetTransformerCandidates(resourceName, flavor);
+    const AssetTransformerVector transformers =
+        transformerHierarchy_[isPostTransform]->GetTransformerCandidates(resourceName, flavor);
     const ea::string fileName = GetFileName(resourceName);
     const FileTime assetModifiedTime = fs->GetLastModifiedTime(fileName, true);
 
@@ -590,14 +672,25 @@ bool AssetManager::QueueAssetProcessing(const ea::string& resourceName, const Ap
     assetDesc.resourceName_ = resourceName;
     assetDesc.modificationTime_ = assetModifiedTime;
 
-    const AssetTransformerInput input{flavor, resourceName, fileName, assetModifiedTime};
+    const AssetTransformerInput input{isPostTransform, flavor, resourceName, fileName, assetModifiedTime};
     if (!AssetTransformer::IsApplicable(input, transformers))
+    {
+        // If post-transformed asset changed, return true to queue post-transform.
+        // Don't queue anything right now.
+        if (!isPostTransform)
+        {
+            const AssetTransformerVector postTransformers =
+                transformerHierarchy_[true /*isPostTransform*/]->GetTransformerCandidates(resourceName, flavor);
+            return !postTransformers.empty();
+        }
+
         return false;
+    }
 
     const ea::string tempPath = project_->GetRandomTemporaryPath();
     const ea::string outputResourceName = resourceName + ".d";
     const ea::string outputFileName = tempPath + outputResourceName;
-    requestQueue_.push_back(AssetTransformerInputVector{{input, tempPath, outputFileName, outputResourceName}});
+    queue.push_back(AssetTransformerInput{input, tempPath, outputFileName, outputResourceName});
     return true;
 }
 
@@ -606,8 +699,8 @@ ea::optional<AssetTransformerOutput> AssetManager::ProcessAsset(const AssetTrans
     auto fs = GetSubsystem<FileSystem>();
 
     const ea::string& cachePath = project_->GetCachePath();
-    const AssetTransformerVector transformers = transformerHierarchy_->GetTransformerCandidates(
-        input.resourceName_, input.flavor_);
+    const AssetTransformerVector transformers =
+        transformerHierarchy_[input.isPostTransform_]->GetTransformerCandidates(input.resourceName_, input.flavor_);
 
     AssetTransformerOutput output;
     if (AssetTransformer::ExecuteTransformersAndStore(input, cachePath, output, transformers))
@@ -686,12 +779,20 @@ StringVector AssetManager::EnumerateAssetFiles(const ea::string& resourcePath) c
     {
         return project_->IsFileNameIgnored(fileName);
     });
+
+    for (ea::string& fileName : result)
+        fileName = AddTrailingSlash(resourcePath) + fileName;
+
     return result;
 }
 
 void AssetManager::OnReflectionRemoved(ObjectReflection* reflection)
 {
-    if (transformerHierarchy_->RemoveTransformers(reflection->GetTypeInfo()))
+    bool anyRemoved = false;
+    for (auto& transformerHierarchy : transformerHierarchy_)
+        anyRemoved = transformerHierarchy->RemoveTransformers(reflection->GetTypeInfo()) || anyRemoved;
+
+    if (anyRemoved)
     {
         InvalidateAssetsInPath("");
         assetPipelines_.clear();

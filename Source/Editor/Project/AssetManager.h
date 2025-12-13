@@ -29,6 +29,7 @@
 #include <Urho3D/Utility/AssetPipeline.h>
 #include <Urho3D/Utility/AssetTransformerHierarchy.h>
 
+#include <EASTL/array.h>
 #include <EASTL/functional.h>
 #include <EASTL/map.h>
 #include <EASTL/optional.h>
@@ -162,7 +163,8 @@ private:
     void ScanAndQueueAssetProcessing();
 
     void ScanAssetsInPath(const ea::string& resourcePath, Stats& stats);
-    bool QueueAssetProcessing(const ea::string& resourceName, const ApplicationFlavor& flavor);
+    bool QueueAssetProcessing(AssetTransformerInputVector& queue, const ea::string& resourceName,
+        const ApplicationFlavor& flavor, bool isPostTransform);
     void ConsumeAssetQueue();
 
     bool CompleteAssetProcessing(const AssetTransformerInput& input, const ea::optional<AssetTransformerOutput>& output);
@@ -186,7 +188,7 @@ private:
     bool scanAssets_{};
 
     AssetPipelineDescVector assetPipelines_;
-    SharedPtr<AssetTransformerHierarchy> transformerHierarchy_;
+    ea::array<SharedPtr<AssetTransformerHierarchy>, 2 /*isPostTransform*/> transformerHierarchy_;
     ea::unordered_map<ea::string, AssetDesc> assets_;
     AssetPipelineList assetPipelineFiles_;
     ea::unordered_set<ea::string> ignoredAssetUpdates_;

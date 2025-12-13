@@ -38,7 +38,7 @@ using AssetTransformerVector = ea::vector<AssetTransformer*>;
 struct URHO3D_API AssetTransformerInput
 {
     AssetTransformerInput() = default;
-    AssetTransformerInput(const ApplicationFlavor& flavor, const ea::string& resourceName,
+    AssetTransformerInput(bool isPostTransform, const ApplicationFlavor& flavor, const ea::string& resourceName,
         const ea::string& inputFileName, FileTime inputFileTime);
     AssetTransformerInput(const AssetTransformerInput& other, const ea::string& tempPath,
         const ea::string& outputFileName, const ea::string& outputResourceName);
@@ -47,6 +47,8 @@ struct URHO3D_API AssetTransformerInput
     static AssetTransformerInput FromBase64(const ea::string& base64);
     ea::string ToBase64() const;
 
+    /// Whether this is post-transform pass.
+    bool isPostTransform_{};
     /// Flavor of the transformer.
     ApplicationFlavor flavor_;
     /// Original resource name. May be different from resource name for nested transformers.
@@ -96,6 +98,7 @@ public:
     explicit AssetTransformer(Context* context);
 
     /// Return whether the transformer array is applied to the given asset in any way.
+    /// It's not checked whether transformers are part of post-transform pass.
     static bool IsApplicable(const AssetTransformerInput& input, const AssetTransformerVector& transformers);
     /// Execute transformer array on the asset.
     static bool ExecuteTransformers(const AssetTransformerInput& input, AssetTransformerOutput& output,
@@ -116,6 +119,9 @@ public:
     virtual bool IsSingleInstanced() { return true; }
     /// Return whether to execute this transformer on the output of the other transformer.
     virtual bool IsExecutedOnOutput() { return false; }
+
+    /// Return whether this transformer should be executed in post-processing pass.
+    virtual bool IsPostTransform() { return false; }
 
     /// Manage requirement flavor of the transformer.
     /// @{

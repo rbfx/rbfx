@@ -87,8 +87,9 @@ bool AssetTransformerHierarchy::TreeNode::ByName::operator()(const ea::unique_pt
     return lhs->name_ < rhs;
 }
 
-AssetTransformerHierarchy::AssetTransformerHierarchy(Context* context)
+AssetTransformerHierarchy::AssetTransformerHierarchy(Context* context, bool isPostTransform)
     : Object(context)
+    , isPostTransform_(isPostTransform)
 {
     Clear();
 }
@@ -218,6 +219,9 @@ AssetTransformerVector AssetTransformerHierarchy::GetTransformerCandidates(
     {
         for (AssetTransformer* transformer : node.transformers_)
         {
+            if (transformer->IsPostTransform() != isPostTransform_)
+                continue;
+
             if (auto flavorMatchPenalty = flavor.Matches(transformer->GetFlavor()))
                 result.push_back(TransformerInfo{transformer, GetTypeOrder(transformer->GetType()), inverseDepth, *flavorMatchPenalty});
         }
