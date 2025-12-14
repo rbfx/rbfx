@@ -19,9 +19,9 @@
 #include "Foundation/InspectorTab/EmptyInspector.h"
 #include "Foundation/InspectorTab/MaterialInspector.h"
 #include "Foundation/InspectorTab/ModelInspector.h"
-#include "Foundation/InspectorTab/PrefabInspector.h"
 #include "Foundation/InspectorTab/NodeComponentInspector.h"
 #include "Foundation/InspectorTab/PlaceholderResourceInspector.h"
+#include "Foundation/InspectorTab/PrefabInspector.h"
 #include "Foundation/InspectorTab/RenderPathInspector.h"
 #include "Foundation/InspectorTab/SerializableResourceInspector.h"
 #include "Foundation/InspectorTab/SoundInspector.h"
@@ -68,6 +68,7 @@
 #include <Urho3D/SystemUI/Widgets.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome6.h>
+
 #include <nfd.h>
 
 #ifdef WIN32

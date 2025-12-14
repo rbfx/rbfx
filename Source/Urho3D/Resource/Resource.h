@@ -221,6 +221,8 @@ public:
     /// Return whether the resource has metadata.
     /// @property
     bool HasMetadata() const;
+    /// Copy metadata from another resource.
+    void CopyMetadata(const ResourceWithMetadata& source);
 
 protected:
     /// Load metadata from <metadata> children of XML element.
@@ -229,8 +231,6 @@ protected:
     void LoadMetadataFromJSON(const JSONArray& array);
     /// Save as <metadata> children of XML element.
     void SaveMetadataToXML(XMLElement& destination) const;
-    /// Copy metadata from another resource.
-    void CopyMetadata(const ResourceWithMetadata& source);
 
 private:
     /// Animation metadata variables.

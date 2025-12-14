@@ -98,10 +98,7 @@
 #include "../Particles/ParticleGraphSystem.h"
 #endif
 #include "../Plugins/PluginManager.h"
-#include "../Utility/AnimationVelocityExtractor.h"
-#include "../Utility/AssetPipeline.h"
-#include "../Utility/AssetTransformer.h"
-#include "../Utility/SceneViewerApplication.h"
+#include "../Utility/UtilityLibrary.h"
 #ifdef URHO3D_ACTIONS
 #include "../Actions/ActionManager.h"
 #endif
@@ -312,10 +309,7 @@ Engine::Engine(Context* context) :
     RegisterVRLibrary(context_);
 #endif
 
-    SceneViewerApplication::RegisterObject();
-    context_->AddFactoryReflection<AssetPipeline>();
-    context_->AddFactoryReflection<AssetTransformer>();
-    AnimationVelocityExtractor::RegisterObject(context_);
+    RegisterUtilityLibrary(context_);
 
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Engine, HandleEndFrame));
