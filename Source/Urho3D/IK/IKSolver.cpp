@@ -53,6 +53,7 @@ void IKSolver::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Solve when Paused", bool, solveWhenPaused_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Solve from Original", bool, solveFromOriginal_, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Continuous Rotation", bool, settings_.continuousRotations_, false, AM_DEFAULT);
 }
 
@@ -101,7 +102,12 @@ void IKSolver::Solve(float timeStep)
         return;
 
     SendIKEvent(true);
-    UpdateOriginalTransforms();
+
+    if (solveFromOriginal_)
+        UpdateOriginalTransforms();
+    else
+        SetOriginalTransforms();
+
     for (IKSolverComponent* solver : solvers_)
     {
         URHO3D_ASSERT(solver);
