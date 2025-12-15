@@ -29,7 +29,7 @@
 namespace Urho3D
 {
 
-class IKSolver : public LogicComponent
+class URHO3D_API IKSolver : public LogicComponent
 {
     URHO3D_OBJECT(IKSolver, LogicComponent);
 
@@ -50,6 +50,8 @@ public:
     /// @{
     void SetSolveWhenPaused(bool value) { solveWhenPaused_ = value; }
     bool IsSolveWhenPaused() const { return solveWhenPaused_; }
+    void SetSolveFromOriginal(bool value) { solveFromOriginal_ = value; }
+    bool IsSolveFromOriginal() const { return solveFromOriginal_; }
     void SetContinuousRotation(bool value) { settings_.continuousRotations_ = value; }
     bool IsContinuousRotation() const { return settings_.continuousRotations_; }
     /// @}
@@ -67,6 +69,7 @@ private:
     void SendIKEvent(bool preSolve);
 
     bool solveWhenPaused_{};
+    bool solveFromOriginal_{true};
     IKSettings settings_;
 
     bool solversDirty_{};
