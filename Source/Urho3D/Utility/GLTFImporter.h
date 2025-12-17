@@ -22,7 +22,7 @@ namespace Urho3D
 class Animation;
 class ModelView;
 
-struct GLTFImporterSettings
+struct URHO3D_API GLTFImporterSettings
 {
     ea::string assetName_{"Asset"};
 
@@ -62,6 +62,8 @@ struct GLTFImporterSettings
 
         bool highRenderQuality_{true};
     } preview_;
+
+    void SerializeInBlock(Archive& archive);
 };
 
 class URHO3D_API GLTFImporterCallback
@@ -73,8 +75,6 @@ public:
     /// Creates skin and empty mesh for given nodes (searched globally by name), if not present.
     virtual ea::vector<ea::string> GetArtificialSkinNodes() { return {}; }
 };
-
-URHO3D_API void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value);
 
 /// Utility class to load GLTF file and save it as Urho resources.
 /// Temporarily loads resources into resource cache, removes them from the cache on destruction.

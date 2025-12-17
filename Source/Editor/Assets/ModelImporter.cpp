@@ -39,6 +39,21 @@ namespace Urho3D
 namespace
 {
 
+// TODO: Move to JSONValue?
+inline void MergeJSONValues(JSONValue& dest, const JSONValue& src)
+{
+    // Overwrite if not object
+    if (!dest.IsObject() || !src.IsObject())
+    {
+        dest = src;
+        return;
+    }
+
+    // Merge recursively otherwise
+    for (const auto& [key, sourceValue] : src.GetObject())
+        MergeJSONValues(dest[key], sourceValue);
+}
+
 const StringVector DefaultSkipTags{"[skip]"};
 
 bool IsFileNameGLTF(const ea::string& fileName, bool strict = true)
@@ -135,19 +150,20 @@ void ModelImporter::ResetRootMotionInfo::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "scaleWeight", scaleWeight_);
 }
 
-void ModelImporter::ModelMetadata::SerializeInBlock(Archive& archive)
+void ModelImporter::TransformerParams::SerializeInBlock(Archive& archive)
 {
+    GLTFImporterSettings::SerializeInBlock(archive);
+
+    SerializeOptionalValue(archive, "repairLooping", repairLooping_);
+    SerializeOptionalValue(archive, "blenderApplyModifiers", blenderApplyModifiers_);
+    SerializeOptionalValue(archive, "blenderDeformingBonesOnly", blenderDeformingBonesOnly_);
+    SerializeOptionalValue(archive, "lightmapUVGenerate", lightmapUVGenerate_);
+    SerializeOptionalValue(archive, "lightmapUVTexelsPerUnit", lightmapUVTexelsPerUnit_);
+    SerializeOptionalValue(archive, "lightmapUVChannel", lightmapUVChannel_);
+
     SerializeOptionalValue(archive, "appendFiles", appendFiles_);
-    SerializeOptionalValue(archive, "nodeRenames", nodeRenames_);
 
-    int placeholder{};
-    SerializeOptionalValue(archive, "animation", placeholder, EmptyObject{},
-        [&](Archive& archive, const char* name, int&) //
-        {
-            const auto block = archive.OpenUnorderedBlock(name);
-            SerializeOptionalValue(archive, "resetRootMotion", resetRootMotion_);
-        });
-
+    SerializeOptionalValue(archive, "resetRootMotion", resetRootMotion_);
     SerializeOptionalValue(archive, "resourceMetadata", resourceMetadata_);
     SerializeOptionalValue(archive, "artificialSkinNodes", artificialSkinNodes_);
 }
@@ -155,32 +171,34 @@ void ModelImporter::ModelMetadata::SerializeInBlock(Archive& archive)
 ModelImporter::ModelImporter(Context* context)
     : AssetTransformer(context)
 {
-    settings_.skipTags_ = DefaultSkipTags;
+    defaultParams_.skipTags_ = DefaultSkipTags;
 }
 
 void ModelImporter::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<ModelImporter>(Category_Transformer);
 
-    URHO3D_ATTRIBUTE("Mirror X", bool, settings_.mirrorX_, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Scale", float, settings_.scale_, 1.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Rotation", Quaternion, settings_.rotation_, Quaternion::IDENTITY, AM_DEFAULT);
+    // clang-format off
+    URHO3D_ATTRIBUTE("Mirror X", bool, defaultParams_.mirrorX_, TransformerParams{}.mirrorX_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Scale", float, defaultParams_.scale_, TransformerParams{}.scale_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Rotation", Quaternion, defaultParams_.rotation_, TransformerParams{}.rotation_, AM_DEFAULT);
 
-    URHO3D_ATTRIBUTE("Fade Transparency", bool, settings_.fadeTransparency_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Fade Transparency", bool, defaultParams_.fadeTransparency_, TransformerParams{}.fadeTransparency_, AM_DEFAULT);
 
-    URHO3D_ATTRIBUTE("Cleanup Bone Names", bool, settings_.cleanupBoneNames_, true, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Cleanup Root Nodes", bool, settings_.cleanupRootNodes_, true, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Combine LODs", bool, settings_.combineLODs_, true, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Skip Tags", StringVector, settings_.skipTags_, DefaultSkipTags, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Keep Names On Merge", bool, settings_.keepNamesOnMerge_, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Add Empty Nodes To Skeleton", bool, settings_.addEmptyNodesToSkeleton_, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Repair Looping", bool, repairLooping_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Cleanup Bone Names", bool, defaultParams_.cleanupBoneNames_, TransformerParams{}.cleanupBoneNames_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Cleanup Root Nodes", bool, defaultParams_.cleanupRootNodes_, TransformerParams{}.cleanupRootNodes_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Combine LODs", bool, defaultParams_.combineLODs_, TransformerParams{}.combineLODs_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Skip Tags", StringVector, defaultParams_.skipTags_, DefaultSkipTags, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Keep Names On Merge", bool, defaultParams_.keepNamesOnMerge_, TransformerParams{}.keepNamesOnMerge_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Add Empty Nodes To Skeleton", bool, defaultParams_.addEmptyNodesToSkeleton_, TransformerParams{}.addEmptyNodesToSkeleton_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Repair Looping", bool, defaultParams_.repairLooping_, TransformerParams{}.repairLooping_, AM_DEFAULT);
 
-    URHO3D_ATTRIBUTE("Blender: Apply Modifiers", bool, blenderApplyModifiers_, true, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Blender: Deforming Bones Only", bool, blenderDeformingBonesOnly_, true, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("LightMap UV: Generate", bool, lightmapUVGenerate_, false, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("LightMap UV: Texels per Unit", float, lightmapUVTexelsPerUnit_, 10.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("LightMap UV: Channel", unsigned, lightmapUVChannel_, 1, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Blender: Apply Modifiers", bool, defaultParams_.blenderApplyModifiers_, TransformerParams{}.blenderApplyModifiers_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Blender: Deforming Bones Only", bool, defaultParams_.blenderDeformingBonesOnly_, TransformerParams{}.blenderDeformingBonesOnly_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("LightMap UV: Generate", bool, defaultParams_.lightmapUVGenerate_, TransformerParams{}.lightmapUVGenerate_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("LightMap UV: Texels per Unit", float, defaultParams_.lightmapUVTexelsPerUnit_, TransformerParams{}.lightmapUVTexelsPerUnit_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("LightMap UV: Channel", unsigned, defaultParams_.lightmapUVChannel_, TransformerParams{}.lightmapUVChannel_, AM_DEFAULT);
+    // clang-format on
 }
 
 ToolManager* ModelImporter::GetToolManager() const
@@ -230,27 +248,26 @@ bool ModelImporter::IsApplicable(const AssetTransformerInput& input)
 bool ModelImporter::Execute(
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
-    const ModelMetadata metadata = LoadMetadata(input.inputFileName_);
-    const GLTFFileHandle handle = LoadData(input.inputFileName_, input.tempPath_);
+    const ea::string paramsFileName = GetParametersFileName(input.inputFileName_);
+    TransformerParams params;
+    if (LoadParameters(params, paramsFileName))
+        AddDependency(input, output, paramsFileName);
+    params.assetName_ = GetFileName(input.originalInputFileName_);
 
+    const GLTFFileHandle handle = LoadData(input.inputFileName_, params, input.tempPath_);
     if (!handle)
         return false;
 
-    return ImportGLTF(handle, metadata, input, output, transformers);
+    return ImportGLTF(handle, params, input, output, transformers);
 }
 
-bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& metadata,
+bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const TransformerParams& params,
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
-    currentMetadata_ = &metadata;
-    const auto metadataGuard = ea::make_finally([&] { currentMetadata_ = nullptr; });
+    currentParams_ = &params;
+    const auto metadataGuard = ea::make_finally([&] { currentParams_ = nullptr; });
 
-    if (!metadata.metadataFileName_.empty())
-        AddDependency(input, output, metadata.metadataFileName_);
-
-    settings_.assetName_ = GetFileName(input.originalInputFileName_);
-    settings_.nodeRenames_ = metadata.nodeRenames_;
-    auto importer = MakeShared<GLTFImporter>(context_, settings_);
+    auto importer = MakeShared<GLTFImporter>(context_, params);
 
     const ea::string outputPath = AddTrailingSlash(input.outputFileName_);
     const ea::string resourceNamePrefix = AddTrailingSlash(input.outputResourceName_);
@@ -260,10 +277,10 @@ bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& m
         return false;
     }
 
-    for (const ea::string& secondaryFileName : metadata.appendFiles_)
+    for (const ea::string& secondaryFileName : params.appendFiles_)
     {
         const ea::string secondaryFilePath = GetPath(input.originalInputFileName_) + secondaryFileName;
-        const GLTFFileHandle secondaryFileHandle = LoadData(secondaryFilePath, input.tempPath_);
+        const GLTFFileHandle secondaryFileHandle = LoadData(secondaryFilePath, params, input.tempPath_);
         if (!secondaryFileHandle)
         {
             URHO3D_LOGWARNING("Failed to load secondary file {} for asset {}", secondaryFilePath, input.resourceName_);
@@ -317,12 +334,12 @@ bool ModelImporter::ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& m
 
 void ModelImporter::OnModelLoaded(ModelView& modelView)
 {
-    if (lightmapUVGenerate_)
+    if (currentParams_->lightmapUVGenerate_)
     {
 #if URHO3D_GLOW
         LightmapUVGenerationSettings settings;
-        settings.texelPerUnit_ = lightmapUVTexelsPerUnit_;
-        settings.uvChannel_ = lightmapUVChannel_;
+        settings.texelPerUnit_ = currentParams_->lightmapUVTexelsPerUnit_;
+        settings.uvChannel_ = currentParams_->lightmapUVChannel_;
         if (!GenerateLightmapUV(modelView, settings))
             throw RuntimeException("Failed to generate lightmap UVs");
 #else
@@ -335,15 +352,15 @@ void ModelImporter::OnAnimationLoaded(Animation& animation)
 {
     AppendResourceMetadata(animation);
 
-    const auto resetRootMotionIter = currentMetadata_->resetRootMotion_.find(animation.GetAnimationName());
-    if (resetRootMotionIter != currentMetadata_->resetRootMotion_.end())
+    const auto resetRootMotionIter = currentParams_->resetRootMotion_.find(animation.GetAnimationName());
+    if (resetRootMotionIter != currentParams_->resetRootMotion_.end())
         ResetRootMotion(animation, resetRootMotionIter->second);
 
     const bool isAnimationLooped = IsAnimationLooped(animation);
     const auto frameStep = GetFrameStep(animation);
 
     // TODO: It would be better to add a keyframe at the end of the animation
-    if (!isAnimationLooped && repairLooping_ && frameStep)
+    if (!isAnimationLooped && currentParams_->repairLooping_ && frameStep)
     {
         animation.SetLength(animation.GetLength() + *frameStep);
         animation.AddMetadata(AnimationMetadata::Looped, true);
@@ -366,7 +383,7 @@ void ModelImporter::OnAnimationLoaded(Animation& animation)
 
 ea::vector<ea::string> ModelImporter::GetArtificialSkinNodes()
 {
-    return currentMetadata_->artificialSkinNodes_;
+    return currentParams_->artificialSkinNodes_;
 }
 
 void ModelImporter::ResetRootMotion(Animation& animation, const ResetRootMotionInfo& info)
@@ -431,47 +448,56 @@ void ModelImporter::ResetRootMotion(Animation& animation, const ResetRootMotionI
 
 void ModelImporter::AppendResourceMetadata(ResourceWithMetadata& resource) const
 {
-    const auto metadataIter = currentMetadata_->resourceMetadata_.find(GetFileName(resource.GetName()));
-    if (metadataIter == currentMetadata_->resourceMetadata_.end())
+    const auto metadataIter = currentParams_->resourceMetadata_.find(GetFileName(resource.GetName()));
+    if (metadataIter == currentParams_->resourceMetadata_.end())
         return;
 
     for (const auto& [name, value] : metadataIter->second)
         resource.AddMetadata(name, value);
 }
 
-ModelImporter::ModelMetadata ModelImporter::LoadMetadata(const ea::string& fileName) const
+ea::string ModelImporter::GetParametersFileName(const ea::string& fileName) const
 {
-    ModelMetadata result;
-    result.metadataFileName_ = fileName + ".d/import.json";
-
-    JSONFile file{context_};
-    if (file.LoadFile(result.metadataFileName_))
-    {
-        if (file.LoadObject("metadata", result))
-            return result;
-    }
-
-    return {};
+    return fileName + ".d/import.json";
 }
 
-ModelImporter::GLTFFileHandle ModelImporter::LoadData(const ea::string& fileName, const ea::string& tempPath) const
+bool ModelImporter::LoadParameters(TransformerParams& params, const ea::string& paramsFileName) const
+{
+    JSONFile baseFile{context_};
+    baseFile.SaveObject("params", defaultParams_);
+
+    JSONFile overrideFile{context_};
+    if (overrideFile.LoadFile(paramsFileName))
+    {
+        MergeJSONValues(baseFile.GetRoot(), overrideFile.GetRoot());
+        if (baseFile.LoadObject("params", params))
+            return true;
+    }
+
+    params = defaultParams_;
+    return false;
+}
+
+ModelImporter::GLTFFileHandle ModelImporter::LoadData(
+    const ea::string& fileName, const TransformerParams& params, const ea::string& tempPath) const
 {
     if (IsFileNameGLTF(fileName, false))
     {
-        return LoadDataNative(fileName);
+        return LoadDataNative(fileName, params);
     }
     else if (IsFileNameFBX(fileName, false))
     {
-        return LoadDataFromFBX(fileName, tempPath);
+        return LoadDataFromFBX(fileName, params, tempPath);
     }
     else if (IsFileNameBlend(fileName, false))
     {
-        return LoadDataFromBlend(fileName, tempPath);
+        return LoadDataFromBlend(fileName, params, tempPath);
     }
     return nullptr;
 }
 
-ModelImporter::GLTFFileHandle ModelImporter::LoadDataNative(const ea::string& fileName) const
+ModelImporter::GLTFFileHandle ModelImporter::LoadDataNative(
+    const ea::string& fileName, const TransformerParams& params) const
 {
     auto fs = context_->GetSubsystem<FileSystem>();
 
@@ -482,7 +508,7 @@ ModelImporter::GLTFFileHandle ModelImporter::LoadDataNative(const ea::string& fi
 }
 
 ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromFBX(
-    const ea::string& fileName, const ea::string& tempPath) const
+    const ea::string& fileName, const TransformerParams& params, const ea::string& tempPath) const
 {
     auto fs = context_->GetSubsystem<FileSystem>();
     const auto toolManager = GetToolManager();
@@ -514,7 +540,7 @@ ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromFBX(
 }
 
 ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromBlend(
-    const ea::string& fileName, const ea::string& tempPath) const
+    const ea::string& fileName, const TransformerParams& params, const ea::string& tempPath) const
 {
     auto fs = context_->GetSubsystem<FileSystem>();
     const auto toolManager = GetToolManager();
@@ -533,7 +559,8 @@ ModelImporter::GLTFFileHandle ModelImporter::LoadDataFromBlend(
         "  export_apply={}, "
         "  export_def_bones={}"
         ");",
-        tempGltfFile, blenderApplyModifiers_ ? "True" : "False", blenderDeformingBonesOnly_ ? "True" : "False");
+        tempGltfFile, params.blenderApplyModifiers_ ? "True" : "False",
+        params.blenderDeformingBonesOnly_ ? "True" : "False");
 
     const StringVector arguments{"-b", fileName, "--python-expr", script};
 

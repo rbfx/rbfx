@@ -3805,37 +3805,35 @@ private:
     GLTFSceneImporter sceneImporter_;
 };
 
-void SerializeValue(Archive& archive, const char* name, GLTFImporterSettings& value)
+void GLTFImporterSettings::SerializeInBlock(Archive& archive)
 {
-    auto block = archive.OpenUnorderedBlock(name);
+    SerializeOptionalValue(archive, "assetName", assetName_);
 
-    SerializeValue(archive, "assetName", value.assetName_);
+    SerializeOptionalValue(archive, "mirrorX", mirrorX_);
+    SerializeOptionalValue(archive, "scale", scale_);
+    SerializeOptionalValue(archive, "rotation", rotation_);
 
-    SerializeValue(archive, "mirrorX", value.mirrorX_);
-    SerializeValue(archive, "scale", value.scale_);
-    SerializeValue(archive, "rotation", value.rotation_);
+    SerializeOptionalValue(archive, "fadeTransparency", fadeTransparency_);
 
-    SerializeValue(archive, "pbrTransparency", value.fadeTransparency_);
+    SerializeOptionalValue(archive, "cleanupBoneNames", cleanupBoneNames_);
+    SerializeOptionalValue(archive, "cleanupRootNodes", cleanupRootNodes_);
+    SerializeOptionalValue(archive, "combineLODs", combineLODs_);
+    SerializeOptionalValue(archive, "skipTag", skipTags_);
+    SerializeOptionalValue(archive, "keepNamesOnMerge", keepNamesOnMerge_);
+    SerializeOptionalValue(archive, "addEmptyNodesToSkeleton", addEmptyNodesToSkeleton_);
 
-    SerializeValue(archive, "cleanupBoneNames", value.cleanupBoneNames_);
-    SerializeValue(archive, "cleanupRootNodes", value.cleanupRootNodes_);
-    SerializeValue(archive, "combineLODs", value.combineLODs_);
-    SerializeValue(archive, "skipTag", value.skipTags_);
-    SerializeValue(archive, "keepNamesOnMerge", value.keepNamesOnMerge_);
-    SerializeValue(archive, "addEmptyNodesToSkeleton", value.addEmptyNodesToSkeleton_);
+    SerializeOptionalValue(archive, "offsetMatrixError", offsetMatrixError_);
+    SerializeOptionalValue(archive, "keyFrameTimeError", keyFrameTimeError_);
+    SerializeOptionalValue(archive, "nodeRenames", nodeRenames_);
 
-    SerializeValue(archive, "offsetMatrixError", value.offsetMatrixError_);
-    SerializeValue(archive, "keyFrameTimeError", value.keyFrameTimeError_);
-    SerializeValue(archive, "nodeRenames", value.nodeRenames_);
+    SerializeOptionalValue(archive, "gpuResources", gpuResources_);
 
-    SerializeValue(archive, "gpuResources", value.gpuResources_);
-
-    SerializeValue(archive, "addLights", value.preview_.addLights_);
-    SerializeValue(archive, "addSkybox", value.preview_.addSkybox_);
-    SerializeValue(archive, "skyboxMaterial", value.preview_.skyboxMaterial_);
-    SerializeValue(archive, "addReflectionProbe", value.preview_.addReflectionProbe_);
-    SerializeValue(archive, "reflectionProbeCubemap", value.preview_.reflectionProbeCubemap_);
-    SerializeValue(archive, "highRenderQuality", value.preview_.highRenderQuality_);
+    SerializeOptionalValue(archive, "addLights", preview_.addLights_);
+    SerializeOptionalValue(archive, "addSkybox", preview_.addSkybox_);
+    SerializeOptionalValue(archive, "skyboxMaterial", preview_.skyboxMaterial_);
+    SerializeOptionalValue(archive, "addReflectionProbe", preview_.addReflectionProbe_);
+    SerializeOptionalValue(archive, "reflectionProbeCubemap", preview_.reflectionProbeCubemap_);
+    SerializeOptionalValue(archive, "highRenderQuality", preview_.highRenderQuality_);
 }
 
 GLTFImporter::GLTFImporter(Context* context, const GLTFImporterSettings& settings)
