@@ -60,11 +60,17 @@ protected:
         void SerializeInBlock(Archive& archive);
     };
 
-    struct ModelMetadata
+    struct TransformerParams : public GLTFImporterSettings
     {
-        ea::string metadataFileName_;
+        bool repairLooping_{false};
+
+        bool blenderApplyModifiers_{true};
+        bool blenderDeformingBonesOnly_{true};
+        bool lightmapUVGenerate_{};
+        float lightmapUVTexelsPerUnit_{10.0f};
+        unsigned lightmapUVChannel_{1};
+
         StringVector appendFiles_;
-        ea::unordered_map<ea::string, ea::string> nodeRenames_;
         ea::unordered_map<ea::string, ResetRootMotionInfo> resetRootMotion_;
         ea::unordered_map<ea::string, StringVariantMap> resourceMetadata_;
         ea::vector<ea::string> artificialSkinNodes_;
@@ -95,29 +101,27 @@ private:
     /// Handler of GLTF file. Deletes temporary file on destruction.
     using GLTFFileHandle = ea::shared_ptr<const GLTFFileInfo>;
 
-    bool ImportGLTF(GLTFFileHandle fileHandle, const ModelMetadata& metadata, const AssetTransformerInput& input,
+    bool ImportGLTF(GLTFFileHandle fileHandle, const TransformerParams& params, const AssetTransformerInput& input,
         AssetTransformerOutput& output, const AssetTransformerVector& transformers);
 
-    ModelMetadata LoadMetadata(const ea::string& fileName) const;
-    GLTFFileHandle LoadData(const ea::string& fileName, const ea::string& tempPath) const;
+    ea::string GetParametersFileName(const ea::string& fileName) const;
+    bool LoadParameters(TransformerParams& params, const ea::string& paramsFileName) const;
 
-    GLTFFileHandle LoadDataNative(const ea::string& fileName) const;
-    GLTFFileHandle LoadDataFromFBX(const ea::string& fileName, const ea::string& tempPath) const;
-    GLTFFileHandle LoadDataFromBlend(const ea::string& fileName, const ea::string& tempPath) const;
+    GLTFFileHandle LoadData(
+        const ea::string& fileName, const TransformerParams& params, const ea::string& tempPath) const;
+
+    GLTFFileHandle LoadDataNative(const ea::string& fileName, const TransformerParams& params) const;
+    GLTFFileHandle LoadDataFromFBX(
+        const ea::string& fileName, const TransformerParams& params, const ea::string& tempPath) const;
+    GLTFFileHandle LoadDataFromBlend(
+        const ea::string& fileName, const TransformerParams& params, const ea::string& tempPath) const;
 
     ToolManager* GetToolManager() const;
 
-    GLTFImporterSettings settings_;
+private:
+    TransformerParams defaultParams_;
 
-    bool repairLooping_{false};
-
-    bool blenderApplyModifiers_{true};
-    bool blenderDeformingBonesOnly_{true};
-    bool lightmapUVGenerate_{};
-    float lightmapUVTexelsPerUnit_{10.0f};
-    unsigned lightmapUVChannel_{1};
-
-    const ModelMetadata* currentMetadata_{};
+    const TransformerParams* currentParams_{};
 };
 
 } // namespace Urho3D
