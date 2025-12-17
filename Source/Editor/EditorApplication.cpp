@@ -886,7 +886,7 @@ void EditorApplication::OpenProfilerApplication()
 #ifdef _WIN32
     profilerPath += ".exe";
 #endif
-    fileSystem->SystemOpen(profilerPath);
+    fileSystem->SystemSpawn(profilerPath, {});
 #else
     URHO3D_LOGERROR("Profiling is not enabled in this build.");
 #endif
