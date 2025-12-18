@@ -458,7 +458,7 @@ void ModelImporter::AppendResourceMetadata(ResourceWithMetadata& resource) const
 
 ea::string ModelImporter::GetParametersFileName(const ea::string& fileName) const
 {
-    return fileName + ".d/import.json";
+    return fileName + ".d/ModelImporter.json";
 }
 
 bool ModelImporter::LoadParameters(TransformerParams& params, const ea::string& paramsFileName) const
