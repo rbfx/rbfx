@@ -72,7 +72,6 @@ EOF
     $NUGET pack rbfx.Tools.runtime.osx-x64.nuspec               -OutputDirectory out -Version "$version"
     $NUGET pack rbfx.Tools.runtime.osx-arm64.nuspec             -OutputDirectory out -Version "$version"
     $NUGET pack rbfx.Tools.runtime.win-x64.nuspec               -OutputDirectory out -Version "$version"
-    $NUGET pack rbfx.Tools.nuspec                               -OutputDirectory out -Version "$version"
     $NUGET pack rbfx.Urho3DNet.runtime.win-x64.nuspec           -OutputDirectory out -Version "$version"
     $NUGET pack rbfx.Urho3DNet.runtime.linux-x64.nuspec         -OutputDirectory out -Version "$version"
     $NUGET pack rbfx.Urho3DNet.runtime.osx-x64.nuspec           -OutputDirectory out -Version "$version"

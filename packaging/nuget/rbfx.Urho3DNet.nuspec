@@ -14,12 +14,6 @@
             <group targetFramework="netstandard2.0">
                 <dependency id="System.CodeDom" version="8.0.0" exclude="Build,Analyzers" />
             </group>
-            <group>
-                <dependency id="rbfx.Urho3DNet.runtime.win-x64" version="$version$" />
-                <dependency id="rbfx.Urho3DNet.runtime.linux-x64" version="$version$" />
-                <dependency id="rbfx.Urho3DNet.runtime.osx-x64" version="$version$" />
-                <dependency id="rbfx.Urho3DNet.runtime.osx-arm64" version="$version$" />
-            </group>
         </dependencies>
     </metadata>
     <files>
@@ -28,27 +22,13 @@
         <file src="../../Source/ThirdParty/SDL/android-project/app/src/main/java/org/libsdl/app/**" target="content/"/>
 
         <!-- Reference assemblies for compile-time (using win-x64 as reference) -->
-        <file src="in/rebelfork-sdk-windows-msvc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.dll" target="lib/net8.0/"/>
-        <file src="in/rebelfork-sdk-windows-msvc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="lib/net8.0/"/>
+        <file src="in/rebelfork-sdk-windows-msvc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.dll" target="ref/net8.0/"/>
+        <file src="in/rebelfork-sdk-windows-msvc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="ref/net8.0/"/>
 
-        <file src="in/rebelfork-sdk-uwp-msvc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.dll" target="lib/netstandard2.0/"/>
-        <file src="in/rebelfork-sdk-uwp-msvc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="lib/netstandard2.0/"/>
+        <file src="in/rebelfork-sdk-uwp-msvc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.dll" target="ref/netstandard2.0/"/>
+        <file src="in/rebelfork-sdk-uwp-msvc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="ref/netstandard2.0/"/>
 
-        <!-- Runtime-specific implementations -->
-        <file src="in/rebelfork-sdk-windows-msvc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.dll" target="runtimes/win-x64/lib/net8.0/"/>
-        <file src="in/rebelfork-sdk-windows-msvc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="runtimes/win-x64/lib/net8.0/"/>
-
-        <file src="in/rebelfork-sdk-uwp-msvc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.dll" target="runtimes/uap-x64/lib/netstandard2.0/"/>
-        <file src="in/rebelfork-sdk-uwp-msvc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="runtimes/uap-x64/lib/netstandard2.0/"/>
-
-        <file src="in/rebelfork-sdk-linux-gcc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.dll" target="runtimes/linux-x64/lib/net8.0/"/>
-        <file src="in/rebelfork-sdk-linux-gcc-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="runtimes/linux-x64/lib/net8.0/"/>
-
-        <file src="in/rebelfork-sdk-macos-clang-arm64-dll-latest/bin/RelWithDebInfo/Urho3DNet.dll" target="runtimes/osx-arm64/lib/net8.0/"/>
-        <file src="in/rebelfork-sdk-macos-clang-arm64-dll-latest/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="runtimes/osx-arm64/lib/net8.0/"/>
-
-        <file src="in/rebelfork-sdk-macos-clang-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.dll" target="runtimes/osx-x64/lib/net8.0/"/>
-        <file src="in/rebelfork-sdk-macos-clang-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="runtimes/osx-x64/lib/net8.0/"/>
+        <!-- Runtime-specific implementations are shipped by rbfx.Urho3DNet.runtime.* packages -->
         <!--
         <file src="in/rebelfork-sdk-android-clang-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.dll" target="runtimes/android-x64/lib/netstandard2.1/"/>
         <file src="in/rebelfork-sdk-android-clang-x64-dll-latest/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="runtimes/android-x64/lib/netstandard2.1/"/>

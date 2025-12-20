@@ -11,7 +11,7 @@
         <description>Tools of rbfx game engine</description>
         <tags>rbfx Urho3D gamedev csharp dotnet game engine</tags>
         <dependencies>
-            <dependency id="rbfx.Urho3DNet" version="$version$" />
+            <dependency id="rbfx.Urho3DNet.runtime.win-x64" version="$version$" />
             <dependency id="rbfx.CoreData" version="$version$" />
             <dependency id="rbfx.EditorData" version="$version$" />
         </dependencies>
