@@ -69,36 +69,6 @@ unsigned numActiveProjects = 0;
 
 const ea::string selfIniEntry{"Project"};
 
-bool IsEscapedChar(const char ch)
-{
-    switch (ch)
-    {
-    case '[':
-    case ']':
-
-    case '(':
-    case ')':
-
-    case '{':
-    case '}':
-
-    case '*':
-    case '+':
-    case '?':
-    case '|':
-
-    case '^':
-    case '$':
-
-    case '.':
-    case '\\':
-        return true;
-
-    default:
-        return false;
-    }
-}
-
 std::regex PatternToRegex(const ea::string& pattern)
 {
     std::string r;
@@ -108,13 +78,12 @@ std::regex PatternToRegex(const ea::string& pattern)
             r += ".*";
         else if (ch == '?')
             r += '.';
-        else if (IsEscapedChar(ch))
+        else
         {
-            r += '\\';
+            if (IsCharacterEscapedInRegex(ch))
+                r += '\\';
             r += ch;
         }
-        else
-            r += ch;
     }
     return std::regex(r, std::regex::ECMAScript | std::regex::icase | std::regex::optimize);
 }

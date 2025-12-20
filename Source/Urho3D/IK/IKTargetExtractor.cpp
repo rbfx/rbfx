@@ -1,24 +1,6 @@
-//
-// Copyright (c) 2022-2022 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2022-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #include "Urho3D/Precompiled.h"
 
@@ -31,6 +13,8 @@
 #include "Urho3D/Scene/Scene.h"
 #include "Urho3D/Utility/AnimationMetadata.h"
 
+#include <regex>
+
 namespace Urho3D
 {
 
@@ -40,11 +24,11 @@ namespace
 struct ExtractedTrack
 {
     WeakPtr<Node> node_;
-    AnimationTrack* track_{};
+    AnimationTrack track_;
     Quaternion rotationOffset_;
 };
 
-ea::vector<ExtractedTrack> GetTracks(AnimatedModel* animatedModel, Animation* destAnimation, bool includeRotations)
+ea::vector<ExtractedTrack> GetTracks(AnimatedModel* animatedModel, const GenerateWorldSpaceTracksParams& params)
 {
     Skeleton& skeleton = animatedModel->GetSkeleton();
     const unsigned numBones = skeleton.GetNumBones();
@@ -53,41 +37,27 @@ ea::vector<ExtractedTrack> GetTracks(AnimatedModel* animatedModel, Animation* de
     for (unsigned i = 0; i < numBones; ++i)
     {
         const Bone& bone = skeleton.GetBones()[i];
-        if (!bone.node_)
+        if (!bone.node_ || (!params.bones_.empty() && !params.bones_.contains(bone.name_)))
             continue;
-
-        const ea::string trackName = bone.name_ + "_Target";
-        AnimationTrack* track = destAnimation->GetTrack(trackName);
-        if (!track)
-            track = destAnimation->CreateTrack(trackName);
-        else
-        {
-            // Skip tracks on name collision
-            if (skeleton.GetBone(trackName) != nullptr)
-                continue;
-
-            track->RemoveAllKeyFrames();
-        }
 
         ExtractedTrack entry;
         entry.node_ = bone.node_;
-        entry.rotationOffset_ = bone.node_->GetWorldRotation();
-        entry.track_ = track;
-        entry.track_->channelMask_ = CHANNEL_POSITION;
-        if (includeRotations)
-            entry.track_->channelMask_ |= CHANNEL_ROTATION;
+        entry.rotationOffset_ = params.deltaRotation_ ? bone.node_->GetWorldRotation() : Quaternion::IDENTITY;
+        entry.track_.name_ = Format(params.targetTrackNameFormat_, bone.name_);
+        entry.track_.channelMask_ = CHANNEL_POSITION;
+        if (params.fillRotations_)
+            entry.track_.channelMask_ |= CHANNEL_ROTATION;
         tracks.push_back(entry);
     }
     return tracks;
 }
 
-ea::vector<ExtractedTrack> GetBendTracks(
-    AnimatedModel* animatedModel, Animation* destAnimation, const StringVariantMap& offsets)
+ea::vector<ExtractedTrack> GetBendTracks(AnimatedModel* animatedModel, const GenerateWorldSpaceTracksParams& params)
 {
     Skeleton& skeleton = animatedModel->GetSkeleton();
 
     ea::vector<ExtractedTrack> tracks;
-    for (const auto& [boneName, offsetVar] : offsets)
+    for (const auto& [boneName, offset] : params.bendTargetOffsets_)
     {
         const Bone* bone = skeleton.GetBone(boneName);
         if (!bone || !bone->node_)
@@ -96,34 +66,67 @@ ea::vector<ExtractedTrack> GetBendTracks(
             continue;
         }
 
-        const ea::string trackName = boneName + "_BendTarget";
-        AnimationTrack* track = destAnimation->GetTrack(trackName);
-        if (!track)
-            track = destAnimation->CreateTrack(trackName);
-        else
-        {
-            // Skip tracks on name collision
-            if (skeleton.GetBone(trackName) != nullptr)
-                continue;
-
-            track->RemoveAllKeyFrames();
-        }
-
         Node* probeNode = bone->node_->CreateChild();
-        probeNode->Translate(offsetVar.GetVector3(), TS_WORLD);
+        probeNode->Translate(offset, TS_WORLD);
 
         ExtractedTrack entry;
         entry.node_ = probeNode;
-        entry.track_ = track;
-        entry.track_->channelMask_ = CHANNEL_POSITION;
+        entry.track_.name_ = Format(params.bendTargetTrackNameFormat_, bone->name_);
+        entry.track_.channelMask_ = CHANNEL_POSITION;
         tracks.push_back(entry);
     }
     return tracks;
 }
 
+std::regex PatternToRegex(const ea::string& pattern)
+{
+    std::string r;
+    for (const char ch : pattern)
+    {
+        if (ch == '*')
+            r += "(.*)";
+        else
+        {
+            if (IsCharacterEscapedInRegex(ch))
+                r += '\\';
+            r += ch;
+        }
+    }
+    return std::regex(r, std::regex::ECMAScript | std::regex::icase | std::regex::optimize);
+}
+
 } // namespace
 
-const ea::string IKTargetExtractor::DefaultNewFileName = "*_Targets.ani";
+void GenerateWorldSpaceTracksParams::SerializeInBlock(Archive& archive)
+{
+    static const GenerateWorldSpaceTracksParams defaults{};
+
+    SerializeOptionalValue(archive, "fillRotations", fillRotations_, defaults.fillRotations_);
+    SerializeOptionalValue(archive, "deltaRotation", deltaRotation_, defaults.deltaRotation_);
+    SerializeOptionalValue(archive, "sampleRate", sampleRate_, defaults.sampleRate_);
+
+    SerializeOptionalValue(archive, "targetTrackNameFormat", targetTrackNameFormat_, defaults.targetTrackNameFormat_);
+    SerializeOptionalValue(
+        archive, "bendTargetTrackNameFormat", bendTargetTrackNameFormat_, defaults.bendTargetTrackNameFormat_);
+
+    SerializeOptionalValue(archive, "bones", bones_);
+    SerializeOptionalValue(archive, "bendTargetOffsets", bendTargetOffsets_);
+}
+
+void IKTargetExtractor::TaskDescription::SerializeInBlock(Archive& archive)
+{
+    GenerateWorldSpaceTracksParams::SerializeInBlock(archive);
+
+    SerializeOptionalValue(archive, "model", model_);
+    SerializeOptionalValue(archive, "sourceAnimation", sourceAnimation_);
+    SerializeOptionalValue(archive, "targetAnimation", targetAnimation_);
+}
+
+void IKTargetExtractor::TransformerParams::SerializeInBlock(Archive& archive)
+{
+    SerializeOptionalValue(archive, "tasks", tasks_);
+    SerializeOptionalValue(archive, "taskTemplates", taskTemplates_);
+}
 
 IKTargetExtractor::IKTargetExtractor(Context* context)
     : AssetTransformer(context)
@@ -137,141 +140,164 @@ IKTargetExtractor::~IKTargetExtractor()
 void IKTargetExtractor::RegisterObject(Context* context)
 {
     context->RegisterFactory<IKTargetExtractor>(Category_Transformer);
-
-    URHO3D_ATTRIBUTE("Extract Rotations", bool, extractRotations_, true, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Sample Rate", float, sampleRate_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Extract to Existing File", bool, extractToExistingFile_, true, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Extract to New File", bool, extractToNewFile_, true, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("New File Name", ea::string, newFileName_, DefaultNewFileName, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Model", ResourceRef, skeletonModel_, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Bend Targets", StringVariantMap, bendTargets_, Variant::emptyStringVariantMap, AM_DEFAULT);
 }
 
 bool IKTargetExtractor::IsApplicable(const AssetTransformerInput& input)
 {
-    return input.inputFileName_.ends_with(".ani", false);
+    return input.resourceName_.ends_with("GenerateWorldSpaceTracks.json", false);
 }
 
 bool IKTargetExtractor::Execute(
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
     auto cache = GetSubsystem<ResourceCache>();
-    SharedPtr<Animation> sourceAnimation{cache->GetResource<Animation>(input.resourceName_)};
-    if (!sourceAnimation)
-        return false;
 
-    // Copy to avoid modifying currently used animation
-    sourceAnimation = sourceAnimation->Clone(sourceAnimation->GetName());
+    const auto parameters = LoadParameters(input.inputFileName_);
+    const ea::string baseResourceName = GetPath(input.resourceName_);
 
-    const ea::string& modelName = GetModelName(sourceAnimation);
-    auto model = cache->GetResource<Model>(modelName);
-    if (!model)
+    auto taskDescriptions = parameters.tasks_;
+    for (const TaskDescription& taskTemplate : parameters.taskTemplates_)
     {
-        URHO3D_LOGERROR(
-            "Model used to evaluate animation is not found. "
-            "You should either specify 'Model' attribute in the transformer "
-            "or add 'Model' variable to the animation metadata.");
-        return false;
+        const auto matches = GetInputFileNames(baseResourceName, taskTemplate.sourceAnimation_);
+        for (const PatternMatch& match : matches)
+        {
+            TaskDescription& task = taskDescriptions.emplace_back(taskTemplate);
+            task.sourceAnimation_ = match.fileName_;
+            task.targetAnimation_ = GetOutputFileName(taskTemplate.targetAnimation_, match);
+        }
     }
 
-    if (extractToNewFile_)
+    ea::vector<GenerateWorldSpaceTracksTask> tasks;
+    for (const TaskDescription& taskDescription : taskDescriptions)
     {
-        if (newFileName_.empty() || newFileName_ == "*")
+        GenerateWorldSpaceTracksTask generateTask;
+        generateTask.model_ = cache->GetTempResource<Model>(baseResourceName + taskDescription.model_);
+        generateTask.sourceAnimation_ =
+            cache->GetTempResource<Animation>(baseResourceName + taskDescription.sourceAnimation_);
+        generateTask.params_ = taskDescription;
+
+        if (taskDescription.targetAnimation_ == taskDescription.sourceAnimation_)
+            generateTask.targetAnimation_ = generateTask.sourceAnimation_;
+        else
         {
-            URHO3D_LOGERROR("New file name should not be empty or identical to existing file name");
-            return false;
+            const ea::string targetResourceName = baseResourceName + taskDescription.targetAnimation_;
+            auto targetAnimation = generateTask.sourceAnimation_->Clone(targetResourceName);
+            targetAnimation->RemoveAllTracks();
+            generateTask.targetAnimation_ = targetAnimation;
         }
 
-        if (ea::count(newFileName_.begin(), newFileName_.end(), '*') > 1)
+        if (!generateTask.model_)
         {
-            URHO3D_LOGERROR("New file name must contain at most one '*' character");
-            return false;
+            URHO3D_LOGERROR("Base model '{}' is not found", taskDescription.model_);
+            continue;
+        }
+        if (!generateTask.sourceAnimation_)
+        {
+            URHO3D_LOGERROR("Source animation '{}' is not found", taskDescription.sourceAnimation_);
+            continue;
         }
 
-        auto targetAnimation = sourceAnimation->Clone(GetNewFileName(sourceAnimation->GetName()));
-        targetAnimation->SetAbsoluteFileName(GetNewFileName(input.tempPath_ + sourceAnimation->GetName()));
-        targetAnimation->RemoveAllTracks();
-
-        ExtractAnimation(sourceAnimation, targetAnimation, model);
-
-        if (!targetAnimation->SaveFile(targetAnimation->GetAbsoluteFileName()))
-            return false;
+        tasks.push_back(generateTask);
     }
 
-    if (extractToExistingFile_)
+    for (const GenerateWorldSpaceTracksTask& task : tasks)
     {
-        ExtractAnimation(sourceAnimation, sourceAnimation, model);
-        if (!sourceAnimation->SaveFile(sourceAnimation->GetAbsoluteFileName()))
-            return false;
-        output.sourceModified_ = true;
+        GenerateTracks(task);
+        task.targetAnimation_->SaveFile(FileIdentifier{input.tempPath_ + task.targetAnimation_->GetName()});
     }
 
     return true;
 }
 
-ea::string IKTargetExtractor::GetNewFileName(const ea::string& fileName) const
-{
-    ea::string path, file, extension;
-    SplitPath(fileName, path, file, extension);
-
-    const ea::string newFile = newFileName_.replaced("*", file);
-    return path + newFile;
-}
-
-ea::string IKTargetExtractor::GetModelName(Animation* sourceAnimation) const
-{
-    const ea::string& modelName = sourceAnimation->GetMetadata(AnimationMetadata::Model).GetString();
-    if (!modelName.empty())
-        return modelName;
-    return skeletonModel_.name_;
-}
-
-void IKTargetExtractor::ExtractAnimation(Animation* sourceAnimation, Animation* destAnimation, Model* model) const
+void IKTargetExtractor::GenerateTracks(const GenerateWorldSpaceTracksTask& task) const
 {
     auto scene = MakeShared<Scene>(context_);
     scene->CreateComponent<Octree>();
     Node* node = scene->CreateChild();
 
     auto animatedModel = node->CreateComponent<AnimatedModel>();
-    animatedModel->SetModel(model);
+    animatedModel->SetModel(task.model_);
     animatedModel->ApplyAnimation();
 
-    ea::vector<ExtractedTrack> tracks = GetTracks(animatedModel, destAnimation, extractRotations_);
-    tracks.append(GetBendTracks(animatedModel, destAnimation, bendTargets_));
-
-    const Variant& whitelistTracksVar = sourceAnimation->GetMetadata(AnimationMetadata::IKTargetTracks);
-    if (!whitelistTracksVar.IsEmpty())
-    {
-        const StringVector& whitelistTracks = whitelistTracksVar.GetStringVector();
-        ea::erase_if(
-            tracks, [&](const ExtractedTrack& track) { return !whitelistTracks.contains(track.track_->name_); });
-    }
+    ea::vector<ExtractedTrack> tracks = GetTracks(animatedModel, task.params_);
+    tracks.append(GetBendTracks(animatedModel, task.params_));
 
     auto animationController = node->CreateComponent<AnimationController>();
     animationController->Update(0.0f);
-    animationController->PlayNew(AnimationParameters{sourceAnimation}.Looped());
+    animationController->PlayNew(AnimationParameters{task.sourceAnimation_}.Looped());
 
-    const float animationLength = sourceAnimation->GetLength();
-    const float animationFrameRate = sourceAnimation->GetMetadata("FrameRate").GetFloat();
+    const float animationLength = task.sourceAnimation_->GetLength();
+    const float animationFrameRate = task.sourceAnimation_->GetMetadata("FrameRate").GetFloat();
 
-    const float sampleRate = sampleRate_ != 0 ? sampleRate_ : animationFrameRate != 0.0f ? animationFrameRate : 30.0f;
+    const float sampleRate = task.params_.sampleRate_ != 0 //
+        ? task.params_.sampleRate_
+        : animationFrameRate != 0.0f //
+            ? animationFrameRate
+            : 30.0f;
+
     const float numFramesEstimate = animationLength * sampleRate;
     const unsigned numFrames = CeilToInt(numFramesEstimate - M_LARGE_EPSILON);
     for (unsigned i = 0; i < numFrames; ++i)
     {
         const float frameTime = ea::min(i / sampleRate, animationLength);
-        animationController->UpdateAnimationTime(sourceAnimation, frameTime);
+        animationController->UpdateAnimationTime(task.sourceAnimation_, frameTime);
         animationController->Update(0.0f);
         animatedModel->ApplyAnimation();
 
         for (ExtractedTrack& track : tracks)
         {
             AnimationKeyFrame frame{frameTime, track.node_->GetWorldPosition()};
-            if (extractRotations_)
+            if (track.track_.channelMask_.IsAnyOf(CHANNEL_ROTATION))
                 frame.rotation_ = track.node_->GetWorldRotation() * track.rotationOffset_.Inverse();
-            track.track_->AddKeyFrame(frame);
+            track.track_.AddKeyFrame(frame);
         }
     }
+
+    for (const ExtractedTrack& track : tracks)
+    {
+        task.targetAnimation_->RemoveTrack(track.track_.name_);
+        AnimationTrack* destTrack = task.targetAnimation_->CreateTrack(track.track_.name_);
+
+        destTrack->channelMask_ = track.track_.channelMask_;
+        destTrack->keyFrames_ = track.track_.keyFrames_;
+    }
+}
+
+IKTargetExtractor::TransformerParams IKTargetExtractor::LoadParameters(const ea::string& fileName) const
+{
+    TransformerParams result;
+
+    JSONFile file{context_};
+    if (file.LoadFile(fileName))
+    {
+        if (file.LoadObject("params", result))
+            return result;
+    }
+
+    return {};
+}
+
+ea::vector<IKTargetExtractor::PatternMatch> IKTargetExtractor::GetInputFileNames(
+    const ea::string& baseResourceName, const ea::string& fileNamePattern) const
+{
+    auto cache = GetSubsystem<ResourceCache>();
+    StringVector fileNames;
+    cache->Scan(fileNames, baseResourceName, "*", SCAN_FILES | SCAN_RECURSIVE);
+
+    ea::vector<IKTargetExtractor::PatternMatch> result;
+    const std::regex regex = PatternToRegex(fileNamePattern);
+    for (const ea::string& fileName : fileNames)
+    {
+        std::cmatch match;
+        if (std::regex_match(fileName.c_str(), match, regex))
+            result.push_back(PatternMatch{fileName, match.size() > 1 ? match[1].str().c_str() : ""});
+    }
+    return result;
+}
+
+ea::string IKTargetExtractor::GetOutputFileName(const ea::string& fileNameTemplate, const PatternMatch& match) const
+{
+    return Format(fileNameTemplate, match.match_);
 }
 
 } // namespace Urho3D

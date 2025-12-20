@@ -269,6 +269,8 @@ public:
 
     /// Clear array or object.
     void Clear();
+    /// Replace with another value recursively. Objects are iterated recursively key by key, other values are replaced.
+    void ReplaceRecursively(const JSONValue& overrideValue);
 
     /// Set value type and number type, internal function.
     void SetType(JSONValueType valueType, JSONNumberType numberType = JSONNT_NAN);

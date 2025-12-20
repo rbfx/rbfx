@@ -100,8 +100,8 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="AnimatedModel" id="817">
-				<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
-				<attribute name="Material" value="Material;Assets/Fox.glb/Materials/fox_material_Lit.xml" />
+				<attribute name="Model" value="Model;Assets/Fox.glb.d/Models/fox1.mdl" />
+				<attribute name="Material" value="Material;Assets/Fox.glb.d/Materials/fox_material_Lit.xml" />
 				<attribute name="Cast Shadows" value="true" />
 				<attribute name="Bone Animation Enabled">
 					<variant type="Bool" value="true" />
@@ -134,7 +134,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Assets/Fox.glb/Animations/Survey.ani" />
+					<variant type="ResourceRef" value="Animation;Assets/Fox.glb.d/Animations/Survey.ani" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -402,7 +402,7 @@
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<component type="AnimatedModel" id="820">
-					<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
+					<attribute name="Model" value="Model;Assets/Fox.glb.d/Models/fox1.mdl" />
 					<attribute name="Material" value="Material;Materials/Constant/GlowingRed.xml" />
 					<attribute name="Cast Shadows" value="true" />
 					<attribute name="Bone Animation Enabled">
@@ -436,7 +436,7 @@
 					<attribute name="Reset Skeleton" value="true" />
 					<attribute name="Animations">
 						<variant type="Int" value="1" />
-						<variant type="ResourceRef" value="Animation;Assets/Fox.glb/Animations/Survey.ani" />
+						<variant type="ResourceRef" value="Animation;Assets/Fox.glb.d/Animations/Survey.ani" />
 						<variant type="Bool" value="true" />
 						<variant type="Bool" value="true" />
 						<variant type="Int" value="0" />
@@ -679,7 +679,7 @@
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<component type="AnimatedModel" id="822">
-					<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
+					<attribute name="Model" value="Model;Assets/Fox.glb.d/Models/fox1.mdl" />
 					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					<attribute name="Cast Shadows" value="true" />
 					<attribute name="Bone Animation Enabled">
@@ -713,7 +713,7 @@
 					<attribute name="Reset Skeleton" value="true" />
 					<attribute name="Animations">
 						<variant type="Int" value="1" />
-						<variant type="ResourceRef" value="Animation;Assets/Fox.glb/Animations/Survey_IK_Only.ani" />
+						<variant type="ResourceRef" value="Animation;Assets/Fox.glb.d/Animations/Survey_IK_Only.ani" />
 						<variant type="Bool" value="true" />
 						<variant type="Bool" value="true" />
 						<variant type="Int" value="0" />
@@ -1141,8 +1141,8 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="AnimatedModel" id="834">
-				<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
-				<attribute name="Material" value="Material;Assets/Fox.glb/Materials/fox_material_Lit.xml" />
+				<attribute name="Model" value="Model;Assets/Fox.glb.d/Models/fox1.mdl" />
+				<attribute name="Material" value="Material;Assets/Fox.glb.d/Materials/fox_material_Lit.xml" />
 				<attribute name="Cast Shadows" value="true" />
 				<attribute name="Bone Animation Enabled">
 					<variant type="Bool" value="true" />
@@ -1175,7 +1175,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Assets/Fox.glb/Animations/Survey_IK_Only.ani" />
+					<variant type="ResourceRef" value="Animation;Assets/Fox.glb.d/Animations/Survey_IK_Only.ani" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -1611,8 +1611,8 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="AnimatedModel" id="764">
-				<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
-				<attribute name="Material" value="Material;Assets/Fox.glb/Materials/fox_material_Lit.xml" />
+				<attribute name="Model" value="Model;Assets/Fox.glb.d/Models/fox1.mdl" />
+				<attribute name="Material" value="Material;Assets/Fox.glb.d/Materials/fox_material_Lit.xml" />
 				<attribute name="Cast Shadows" value="true" />
 				<attribute name="Bone Animation Enabled">
 					<variant type="Bool" value="true" />
@@ -1645,7 +1645,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Assets/Fox.glb/Animations/Run.ani" />
+					<variant type="ResourceRef" value="Animation;Assets/Fox.glb.d/Animations/Run.ani" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -1913,7 +1913,7 @@
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<component type="AnimatedModel" id="252">
-					<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
+					<attribute name="Model" value="Model;Assets/Fox.glb.d/Models/fox1.mdl" />
 					<attribute name="Material" value="Material;Materials/Constant/GlowingRed.xml" />
 					<attribute name="Cast Shadows" value="true" />
 					<attribute name="Bone Animation Enabled">
@@ -1947,7 +1947,7 @@
 					<attribute name="Reset Skeleton" value="true" />
 					<attribute name="Animations">
 						<variant type="Int" value="1" />
-						<variant type="ResourceRef" value="Animation;Assets/Fox.glb/Animations/Run.ani" />
+						<variant type="ResourceRef" value="Animation;Assets/Fox.glb.d/Animations/Run.ani" />
 						<variant type="Bool" value="true" />
 						<variant type="Bool" value="true" />
 						<variant type="Int" value="0" />
@@ -2190,7 +2190,7 @@
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<component type="AnimatedModel" id="236">
-					<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
+					<attribute name="Model" value="Model;Assets/Fox.glb.d/Models/fox1.mdl" />
 					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					<attribute name="Cast Shadows" value="true" />
 					<attribute name="Bone Animation Enabled">
@@ -2224,7 +2224,7 @@
 					<attribute name="Reset Skeleton" value="true" />
 					<attribute name="Animations">
 						<variant type="Int" value="1" />
-						<variant type="ResourceRef" value="Animation;Assets/Fox.glb/Animations/Run_IK_Only.ani" />
+						<variant type="ResourceRef" value="Animation;Assets/Fox.glb.d/Animations/Run_IK_Only.ani" />
 						<variant type="Bool" value="true" />
 						<variant type="Bool" value="true" />
 						<variant type="Int" value="0" />
@@ -2652,8 +2652,8 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="AnimatedModel" id="766">
-				<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
-				<attribute name="Material" value="Material;Assets/Fox.glb/Materials/fox_material_Lit.xml" />
+				<attribute name="Model" value="Model;Assets/Fox.glb.d/Models/fox1.mdl" />
+				<attribute name="Material" value="Material;Assets/Fox.glb.d/Materials/fox_material_Lit.xml" />
 				<attribute name="Cast Shadows" value="true" />
 				<attribute name="Bone Animation Enabled">
 					<variant type="Bool" value="true" />
@@ -2686,7 +2686,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Assets/Fox.glb/Animations/Run_IK_Only.ani" />
+					<variant type="ResourceRef" value="Animation;Assets/Fox.glb.d/Animations/Run_IK_Only.ani" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -3122,8 +3122,8 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="AnimatedModel" id="788">
-				<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
-				<attribute name="Material" value="Material;Assets/Fox.glb/Materials/fox_material_Lit.xml" />
+				<attribute name="Model" value="Model;Assets/Fox.glb.d/Models/fox1.mdl" />
+				<attribute name="Material" value="Material;Assets/Fox.glb.d/Materials/fox_material_Lit.xml" />
 				<attribute name="Cast Shadows" value="true" />
 				<attribute name="Bone Animation Enabled">
 					<variant type="Bool" value="true" />
@@ -3156,7 +3156,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Assets/Fox.glb/Animations/Walk.ani" />
+					<variant type="ResourceRef" value="Animation;Assets/Fox.glb.d/Animations/Walk.ani" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />
@@ -3424,7 +3424,7 @@
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<component type="AnimatedModel" id="791">
-					<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
+					<attribute name="Model" value="Model;Assets/Fox.glb.d/Models/fox1.mdl" />
 					<attribute name="Material" value="Material;Materials/Constant/GlowingRed.xml" />
 					<attribute name="Cast Shadows" value="true" />
 					<attribute name="Bone Animation Enabled">
@@ -3458,7 +3458,7 @@
 					<attribute name="Reset Skeleton" value="true" />
 					<attribute name="Animations">
 						<variant type="Int" value="1" />
-						<variant type="ResourceRef" value="Animation;Assets/Fox.glb/Animations/Walk.ani" />
+						<variant type="ResourceRef" value="Animation;Assets/Fox.glb.d/Animations/Walk.ani" />
 						<variant type="Bool" value="true" />
 						<variant type="Bool" value="true" />
 						<variant type="Int" value="0" />
@@ -3701,7 +3701,7 @@
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
 				<component type="AnimatedModel" id="793">
-					<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
+					<attribute name="Model" value="Model;Assets/Fox.glb.d/Models/fox1.mdl" />
 					<attribute name="Material" value="Material;Materials/Constant/MattTransparentGreen.xml" />
 					<attribute name="Cast Shadows" value="true" />
 					<attribute name="Bone Animation Enabled">
@@ -3735,7 +3735,7 @@
 					<attribute name="Reset Skeleton" value="true" />
 					<attribute name="Animations">
 						<variant type="Int" value="1" />
-						<variant type="ResourceRef" value="Animation;Assets/Fox.glb/Animations/Walk_IK_Only.ani" />
+						<variant type="ResourceRef" value="Animation;Assets/Fox.glb.d/Animations/Walk_IK_Only.ani" />
 						<variant type="Bool" value="true" />
 						<variant type="Bool" value="true" />
 						<variant type="Int" value="0" />
@@ -4163,8 +4163,8 @@
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
 			<component type="AnimatedModel" id="805">
-				<attribute name="Model" value="Model;Assets/Fox.glb/Models/fox1.mdl" />
-				<attribute name="Material" value="Material;Assets/Fox.glb/Materials/fox_material_Lit.xml" />
+				<attribute name="Model" value="Model;Assets/Fox.glb.d/Models/fox1.mdl" />
+				<attribute name="Material" value="Material;Assets/Fox.glb.d/Materials/fox_material_Lit.xml" />
 				<attribute name="Cast Shadows" value="true" />
 				<attribute name="Bone Animation Enabled">
 					<variant type="Bool" value="true" />
@@ -4197,7 +4197,7 @@
 				<attribute name="Reset Skeleton" value="true" />
 				<attribute name="Animations">
 					<variant type="Int" value="1" />
-					<variant type="ResourceRef" value="Animation;Assets/Fox.glb/Animations/Walk_IK_Only.ani" />
+					<variant type="ResourceRef" value="Animation;Assets/Fox.glb.d/Animations/Walk_IK_Only.ani" />
 					<variant type="Bool" value="true" />
 					<variant type="Bool" value="true" />
 					<variant type="Int" value="0" />

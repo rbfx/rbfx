@@ -1,24 +1,6 @@
-//
-// Copyright (c) 2022-2022 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2022-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
@@ -29,35 +11,79 @@
 namespace Urho3D
 {
 
-/// Asset transformer that extracts IK targets from the animation.
+struct GenerateWorldSpaceTracksParams
+{
+    bool fillRotations_{true};
+    bool deltaRotation_{true};
+    float sampleRate_{0.0f};
+
+    ea::string targetTrackNameFormat_{"{}_Target"};
+    ea::string bendTargetTrackNameFormat_{"{}_BendTarget"};
+
+    ea::unordered_set<ea::string> bones_;
+    ea::unordered_map<ea::string, Vector3> bendTargetOffsets_;
+
+    void SerializeInBlock(Archive& archive);
+};
+
+/// Single task for IKTargetExtractor.
+struct GenerateWorldSpaceTracksTask
+{
+    SharedPtr<Model> model_;
+    SharedPtr<Animation> sourceAnimation_;
+    SharedPtr<Animation> targetAnimation_;
+    GenerateWorldSpaceTracksParams params_;
+};
+
+/// Asset transformer that generates world-space tracks for animation. Useful for IK animation.
 class IKTargetExtractor : public AssetTransformer
 {
     URHO3D_OBJECT(IKTargetExtractor, AssetTransformer);
 
 public:
-    static const ea::string DefaultNewFileName;
-
     IKTargetExtractor(Context* context);
     ~IKTargetExtractor() override;
     static void RegisterObject(Context* context);
 
+    void GenerateTracks(const GenerateWorldSpaceTracksTask& task) const;
+
+    /// Implement AssetTransformer.
+    /// @{
     bool IsApplicable(const AssetTransformerInput& input) override;
     bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output,
         const AssetTransformerVector& transformers) override;
-    bool IsExecutedOnOutput() override { return true; }
+    bool IsPostTransform() override { return true; }
+    /// @}
 
 private:
-    void ExtractAnimation(Animation* sourceAnimation, Animation* destAnimation, Model* model) const;
-    ea::string GetNewFileName(const ea::string& fileName) const;
-    ea::string GetModelName(Animation* sourceAnimation) const;
+    struct TaskDescription : public GenerateWorldSpaceTracksParams
+    {
+        ea::string model_;
+        ea::string sourceAnimation_;
+        ea::string targetAnimation_;
 
-    bool extractRotations_{true};
-    float sampleRate_{0.0f};
-    bool extractToExistingFile_{true};
-    bool extractToNewFile_{true};
-    ea::string newFileName_{DefaultNewFileName};
-    ResourceRef skeletonModel_{Model::GetTypeStatic()};
-    StringVariantMap bendTargets_;
+        void SerializeInBlock(Archive& archive);
+    };
+
+    struct TransformerParams
+    {
+        ea::vector<TaskDescription> tasks_;
+        ea::vector<TaskDescription> taskTemplates_;
+
+        void SerializeInBlock(Archive& archive);
+    };
+
+    TransformerParams LoadParameters(const ea::string& fileName) const;
+
+    struct PatternMatch
+    {
+        ea::string fileName_;
+        ea::string match_;
+    };
+
+    ea::vector<PatternMatch> GetInputFileNames(
+        const ea::string& baseResourceName, const ea::string& fileNamePattern) const;
+    ea::string GetOutputFileName(const ea::string& fileNameTemplate, const PatternMatch& match) const;
 };
 
 } // namespace Urho3D

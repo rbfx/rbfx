@@ -88,7 +88,7 @@ void RetargetAnimationsTransformer::RegisterObject(Context* context)
 
 bool RetargetAnimationsTransformer::IsApplicable(const AssetTransformerInput& input)
 {
-    return input.resourceName_.ends_with("RetargetAnimations.json");
+    return input.resourceName_.ends_with("RetargetAnimations.json", false);
 }
 
 bool RetargetAnimationsTransformer::Execute(
@@ -102,7 +102,7 @@ bool RetargetAnimationsTransformer::Execute(
     ea::vector<RetargetAnimationTask> tasks;
     for (const TaskDescription& taskDescription : parameters.tasks_)
     {
-        auto& retargetTask = tasks.emplace_back();
+        RetargetAnimationTask retargetTask;
         retargetTask.sourceModel_ = cache->GetTempResource<Model>(baseResourceName + taskDescription.sourceModel_);
         retargetTask.sourceAnimation_ =
             cache->GetTempResource<Animation>(baseResourceName + taskDescription.sourceAnimation_);
@@ -111,6 +111,24 @@ bool RetargetAnimationsTransformer::Execute(
         retargetTask.sourceToTargetBones_ = taskDescription.boneMapping_;
         retargetTask.targetToSourceBones_ = InvertMap(taskDescription.boneMapping_);
         retargetTask.ikChains_ = taskDescription.ikChains_;
+
+        if (!retargetTask.sourceModel_)
+        {
+            URHO3D_LOGERROR("Source model '{}' is not found", taskDescription.sourceModel_);
+            continue;
+        }
+        if (!retargetTask.sourceAnimation_)
+        {
+            URHO3D_LOGERROR("Source animation '{}' is not found", taskDescription.sourceAnimation_);
+            continue;
+        }
+        if (!retargetTask.targetModel_)
+        {
+            URHO3D_LOGERROR("Target model '{}' is not found", taskDescription.targetModel_);
+            continue;
+        }
+
+        tasks.push_back(retargetTask);
     }
 
     for (const RetargetAnimationTask& task : tasks)
@@ -130,7 +148,7 @@ RetargetAnimationsTransformer::TransformerParams RetargetAnimationsTransformer::
     JSONFile file{context_};
     if (file.LoadFile(fileName))
     {
-        if (file.LoadObject("metadata", result))
+        if (file.LoadObject("params", result))
             return result;
     }
 

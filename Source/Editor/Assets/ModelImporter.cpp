@@ -39,21 +39,6 @@ namespace Urho3D
 namespace
 {
 
-// TODO: Move to JSONValue?
-inline void MergeJSONValues(JSONValue& dest, const JSONValue& src)
-{
-    // Overwrite if not object
-    if (!dest.IsObject() || !src.IsObject())
-    {
-        dest = src;
-        return;
-    }
-
-    // Merge recursively otherwise
-    for (const auto& [key, sourceValue] : src.GetObject())
-        MergeJSONValues(dest[key], sourceValue);
-}
-
 const StringVector DefaultSkipTags{"[skip]"};
 
 bool IsFileNameGLTF(const ea::string& fileName, bool strict = true)
@@ -469,7 +454,7 @@ bool ModelImporter::LoadParameters(TransformerParams& params, const ea::string& 
     JSONFile overrideFile{context_};
     if (overrideFile.LoadFile(paramsFileName))
     {
-        MergeJSONValues(baseFile.GetRoot(), overrideFile.GetRoot());
+        baseFile.GetRoot().ReplaceRecursively(overrideFile.GetRoot());
         if (baseFile.LoadObject("params", params))
             return true;
     }

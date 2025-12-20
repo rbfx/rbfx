@@ -1023,4 +1023,34 @@ ea::vector<unsigned char> DecodeBase64(ea::string encodedString)
     return ret;
 }
 
+bool IsCharacterEscapedInRegex(char ch)
+{
+    switch (ch)
+    {
+    case '[':
+    case ']':
+
+    case '(':
+    case ')':
+
+    case '{':
+    case '}':
+
+    case '*':
+    case '+':
+    case '?':
+    case '|':
+
+    case '^':
+    case '$':
+
+    case '.':
+    case '\\':
+        return true;
+
+    default:
+        return false;
+    }
 }
+
+} // namespace Urho3D

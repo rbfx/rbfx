@@ -162,6 +162,8 @@ URHO3D_API ea::string GetFileSizeString(unsigned long long memorySize);
 URHO3D_API ea::string EncodeBase64(const ea::vector<unsigned char>& buffer);
 /// Decode a base64-encoded string into buffer.
 URHO3D_API ea::vector<unsigned char> DecodeBase64(ea::string encodedString);
+/// Returns whether a character should be escaped in regex.
+URHO3D_API bool IsCharacterEscapedInRegex(char ch);
 /// Parse type from a C string.
 template <class T> T FromString(const char* source);
 
