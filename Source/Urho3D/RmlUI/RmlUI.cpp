@@ -835,7 +835,17 @@ IntVector2 RmlUI::GetDesiredCanvasSize() const
 bool RmlUI::IsHovered() const
 {
     Rml::Element* hover = rmlContext_->GetHoverElement();
-    return hover != nullptr && hover != rmlContext_->GetRootElement();
+
+    if (hover == nullptr)
+        return false;
+
+    if (hover == rmlContext_->GetRootElement())
+        return false;
+
+    if (hover->GetAttribute<bool>("mouse-passthrough", false))
+        return false;
+
+    return true;
 }
 
 bool RmlUI::IsInputCaptured() const
