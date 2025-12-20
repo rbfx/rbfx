@@ -12,9 +12,12 @@
         <tags>rbfx Urho3D gamedev csharp dotnet game engine</tags>
         <dependencies>
             <dependency id="rbfx.CoreData" version="$version$" />
+            <dependency id="rbfx.Urho3DNet" version="$version$" />
         </dependencies>
     </metadata>
     <files>
+        <file src="in/rebelfork-sdk-macos-clang-arm64-dll-latest/bin/RelWithDebInfo/Urho3DNet.dll" target="runtimes/osx-arm64/lib/net8.0/"/>
+        <file src="in/rebelfork-sdk-macos-clang-arm64-dll-latest/bin/RelWithDebInfo/Urho3DNet.Scripts.dll" target="runtimes/osx-arm64/lib/net8.0/"/>
         <file src="in/rebelfork-sdk-macos-clang-arm64-dll-latest/bin/RelWithDebInfo/libUrho3D.dylib" target="runtimes/osx-arm64/native/" />
     </files>
 </package>
