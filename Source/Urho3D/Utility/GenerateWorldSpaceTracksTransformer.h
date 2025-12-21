@@ -17,9 +17,6 @@ struct GenerateWorldSpaceTracksParams
     bool deltaRotation_{true};
     float sampleRate_{0.0f};
 
-    ea::string targetTrackNameFormat_{"{}_Target"};
-    ea::string bendTargetTrackNameFormat_{"{}_BendTarget"};
-
     ea::unordered_set<ea::string> bones_;
     ea::unordered_map<ea::string, Vector3> bendTargetOffsets_;
 

@@ -19,6 +19,19 @@ namespace Urho3D
 namespace
 {
 
+ea::string GetGeneratedTrackName(const ea::string& boneName, bool isBendTarget)
+{
+    return Format(isBendTarget ? "{}_BendTarget" : "{}_Target", boneName);
+}
+
+bool IsBoneIgnored(const ea::string& boneName, const ea::unordered_set<ea::string>& filter)
+{
+    if (boneName.empty() || (!filter.empty() && !filter.contains(boneName)))
+        return true;
+
+    return boneName.ends_with("_BendTarget") || boneName.ends_with("_Target");
+}
+
 struct ExtractedTrack
 {
     WeakPtr<Node> node_;
@@ -35,13 +48,13 @@ ea::vector<ExtractedTrack> GetTracks(AnimatedModel* animatedModel, const Generat
     for (unsigned i = 0; i < numBones; ++i)
     {
         const Bone& bone = skeleton.GetBones()[i];
-        if (!bone.node_ || (!params.bones_.empty() && !params.bones_.contains(bone.name_)))
+        if (!bone.node_ || IsBoneIgnored(bone.name_, params.bones_))
             continue;
 
         ExtractedTrack entry;
         entry.node_ = bone.node_;
         entry.rotationOffset_ = params.deltaRotation_ ? bone.node_->GetWorldRotation() : Quaternion::IDENTITY;
-        entry.track_.name_ = Format(params.targetTrackNameFormat_, bone.name_);
+        entry.track_.name_ = GetGeneratedTrackName(bone.name_, false);
         entry.track_.channelMask_ = CHANNEL_POSITION;
         if (params.fillRotations_)
             entry.track_.channelMask_ |= CHANNEL_ROTATION;
@@ -69,7 +82,7 @@ ea::vector<ExtractedTrack> GetBendTracks(AnimatedModel* animatedModel, const Gen
 
         ExtractedTrack entry;
         entry.node_ = probeNode;
-        entry.track_.name_ = Format(params.bendTargetTrackNameFormat_, bone->name_);
+        entry.track_.name_ = GetGeneratedTrackName(bone->name_, true);
         entry.track_.channelMask_ = CHANNEL_POSITION;
         tracks.push_back(entry);
     }
@@ -85,10 +98,6 @@ void GenerateWorldSpaceTracksParams::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "fillRotations", fillRotations_, defaults.fillRotations_);
     SerializeOptionalValue(archive, "deltaRotation", deltaRotation_, defaults.deltaRotation_);
     SerializeOptionalValue(archive, "sampleRate", sampleRate_, defaults.sampleRate_);
-
-    SerializeOptionalValue(archive, "targetTrackNameFormat", targetTrackNameFormat_, defaults.targetTrackNameFormat_);
-    SerializeOptionalValue(
-        archive, "bendTargetTrackNameFormat", bendTargetTrackNameFormat_, defaults.bendTargetTrackNameFormat_);
 
     SerializeOptionalValue(archive, "bones", bones_);
     SerializeOptionalValue(archive, "bendTargetOffsets", bendTargetOffsets_);
@@ -158,6 +167,7 @@ bool GenerateWorldSpaceTracksTransformer::Execute(
         {
             const ea::string targetResourceName = baseResourceName + taskDescription.targetAnimation_;
             auto targetAnimation = generateTask.sourceAnimation_->Clone(targetResourceName);
+            targetAnimation->SetAbsoluteFileName(EMPTY_STRING);
             targetAnimation->RemoveAllTracks();
             generateTask.targetAnimation_ = targetAnimation;
         }
@@ -179,7 +189,10 @@ bool GenerateWorldSpaceTracksTransformer::Execute(
     for (const GenerateWorldSpaceTracksTask& task : tasks)
     {
         GenerateTracks(task);
-        task.targetAnimation_->SaveFile(FileIdentifier{input.tempPath_ + task.targetAnimation_->GetName()});
+        if (task.targetAnimation_->GetAbsoluteFileName().empty())
+            task.targetAnimation_->SaveFile(FileIdentifier{input.tempPath_ + task.targetAnimation_->GetName()});
+        else
+            task.targetAnimation_->SaveFile(FileIdentifier{task.targetAnimation_->GetAbsoluteFileName()});
     }
 
     return true;

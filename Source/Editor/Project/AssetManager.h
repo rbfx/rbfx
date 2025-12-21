@@ -149,6 +149,7 @@ private:
     void InvalidateTransformedAssetsInPath(const ea::string& resourcePath, const StringVector& transformers);
     void InvalidateApplicableAssetsInPath(const ea::string& resourcePath, const AssetTransformerVector& transformers);
     void InvalidateOutdatedAssetsInPath(const ea::string& resourcePath);
+    void CleanupAssetOutputs(const AssetDesc& assetDesc);
     void CleanupInvalidatedAssets();
     void CleanupCacheFolder();
     /// @}

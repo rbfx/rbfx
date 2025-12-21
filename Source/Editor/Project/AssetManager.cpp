@@ -470,19 +470,23 @@ void AssetManager::InvalidateOutdatedAssetsInPath(const ea::string& resourcePath
     }
 }
 
-void AssetManager::CleanupInvalidatedAssets()
+void AssetManager::CleanupAssetOutputs(const AssetDesc& assetDesc)
 {
     auto fs = GetSubsystem<FileSystem>();
+
+    for (const ea::string& outputResourceName : assetDesc.outputs_)
+    {
+        const ea::string outputFileName = project_->GetCachePath() + outputResourceName;
+        fs->Delete(outputFileName);
+    }
+}
+
+void AssetManager::CleanupInvalidatedAssets()
+{
     for (auto& [resourceName, assetDesc] : assets_)
     {
-        if (!assetDesc.cacheInvalid_)
-            continue;
-
-        for (const ea::string& outputResourceName : assetDesc.outputs_)
-        {
-            const ea::string outputFileName = project_->GetCachePath() + outputResourceName;
-            fs->Delete(outputFileName);
-        }
+        if (assetDesc.cacheInvalid_)
+            CleanupAssetOutputs(assetDesc);
     }
 
     ea::erase_if(assets_, [](const auto& pair) { return pair.second.cacheInvalid_; });
@@ -686,6 +690,11 @@ bool AssetManager::QueueAssetProcessing(AssetTransformerInputVector& queue, cons
 
         return false;
     }
+
+    // In most cases, everything is already cleared.
+    // However, post-transformer processing may be triggered by changes in other files in the directory.
+    // Cleanup all known outputs just in case.
+    CleanupAssetOutputs(assetDesc);
 
     const ea::string tempPath = project_->GetRandomTemporaryPath();
     const ea::string outputResourceName = resourceName + ".d";
