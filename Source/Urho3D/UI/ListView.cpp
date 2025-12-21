@@ -633,7 +633,7 @@ void ListView::RemoveSelection(unsigned index)
     if (index >= GetNumItems())
         return;
 
-    if (selections_.erase_first(index))
+    if (selections_.erase_first(index) != selections_.end())
     {
         using namespace ItemSelected;
 
