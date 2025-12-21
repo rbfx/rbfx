@@ -26,7 +26,7 @@ struct GenerateWorldSpaceTracksParams
     void SerializeInBlock(Archive& archive);
 };
 
-/// Single task for IKTargetExtractor.
+/// Single task for GenerateWorldSpaceTracksTransformer.
 struct GenerateWorldSpaceTracksTask
 {
     SharedPtr<Model> model_;
@@ -36,13 +36,13 @@ struct GenerateWorldSpaceTracksTask
 };
 
 /// Asset transformer that generates world-space tracks for animation. Useful for IK animation.
-class IKTargetExtractor : public AssetTransformer
+class GenerateWorldSpaceTracksTransformer : public AssetTransformer
 {
-    URHO3D_OBJECT(IKTargetExtractor, AssetTransformer);
+    URHO3D_OBJECT(GenerateWorldSpaceTracksTransformer, AssetTransformer);
 
 public:
-    IKTargetExtractor(Context* context);
-    ~IKTargetExtractor() override;
+    GenerateWorldSpaceTracksTransformer(Context* context);
+    ~GenerateWorldSpaceTracksTransformer() override;
     static void RegisterObject(Context* context);
 
     void GenerateTracks(const GenerateWorldSpaceTracksTask& task) const;

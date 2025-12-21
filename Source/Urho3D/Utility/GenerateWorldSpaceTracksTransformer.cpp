@@ -4,7 +4,7 @@
 
 #include "Urho3D/Precompiled.h"
 
-#include "Urho3D/IK/IKTargetExtractor.h"
+#include "Urho3D/Utility/GenerateWorldSpaceTracksTransformer.h"
 
 #include "Urho3D/Graphics/AnimatedModel.h"
 #include "Urho3D/Graphics/AnimationController.h"
@@ -113,7 +113,7 @@ void GenerateWorldSpaceTracksParams::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "bendTargetOffsets", bendTargetOffsets_);
 }
 
-void IKTargetExtractor::TaskDescription::SerializeInBlock(Archive& archive)
+void GenerateWorldSpaceTracksTransformer::TaskDescription::SerializeInBlock(Archive& archive)
 {
     GenerateWorldSpaceTracksParams::SerializeInBlock(archive);
 
@@ -122,32 +122,32 @@ void IKTargetExtractor::TaskDescription::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "targetAnimation", targetAnimation_);
 }
 
-void IKTargetExtractor::TransformerParams::SerializeInBlock(Archive& archive)
+void GenerateWorldSpaceTracksTransformer::TransformerParams::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "tasks", tasks_);
     SerializeOptionalValue(archive, "taskTemplates", taskTemplates_);
 }
 
-IKTargetExtractor::IKTargetExtractor(Context* context)
+GenerateWorldSpaceTracksTransformer::GenerateWorldSpaceTracksTransformer(Context* context)
     : AssetTransformer(context)
 {
 }
 
-IKTargetExtractor::~IKTargetExtractor()
+GenerateWorldSpaceTracksTransformer::~GenerateWorldSpaceTracksTransformer()
 {
 }
 
-void IKTargetExtractor::RegisterObject(Context* context)
+void GenerateWorldSpaceTracksTransformer::RegisterObject(Context* context)
 {
-    context->RegisterFactory<IKTargetExtractor>(Category_Transformer);
+    context->RegisterFactory<GenerateWorldSpaceTracksTransformer>(Category_Transformer);
 }
 
-bool IKTargetExtractor::IsApplicable(const AssetTransformerInput& input)
+bool GenerateWorldSpaceTracksTransformer::IsApplicable(const AssetTransformerInput& input)
 {
     return input.resourceName_.ends_with("GenerateWorldSpaceTracks.json", false);
 }
 
-bool IKTargetExtractor::Execute(
+bool GenerateWorldSpaceTracksTransformer::Execute(
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
     auto cache = GetSubsystem<ResourceCache>();
@@ -209,7 +209,7 @@ bool IKTargetExtractor::Execute(
     return true;
 }
 
-void IKTargetExtractor::GenerateTracks(const GenerateWorldSpaceTracksTask& task) const
+void GenerateWorldSpaceTracksTransformer::GenerateTracks(const GenerateWorldSpaceTracksTask& task) const
 {
     auto scene = MakeShared<Scene>(context_);
     scene->CreateComponent<Octree>();
@@ -263,7 +263,7 @@ void IKTargetExtractor::GenerateTracks(const GenerateWorldSpaceTracksTask& task)
     }
 }
 
-IKTargetExtractor::TransformerParams IKTargetExtractor::LoadParameters(const ea::string& fileName) const
+GenerateWorldSpaceTracksTransformer::TransformerParams GenerateWorldSpaceTracksTransformer::LoadParameters(const ea::string& fileName) const
 {
     TransformerParams result;
 
@@ -277,14 +277,14 @@ IKTargetExtractor::TransformerParams IKTargetExtractor::LoadParameters(const ea:
     return {};
 }
 
-ea::vector<IKTargetExtractor::PatternMatch> IKTargetExtractor::GetInputFileNames(
+ea::vector<GenerateWorldSpaceTracksTransformer::PatternMatch> GenerateWorldSpaceTracksTransformer::GetInputFileNames(
     const ea::string& baseResourceName, const ea::string& fileNamePattern) const
 {
     auto cache = GetSubsystem<ResourceCache>();
     StringVector fileNames;
     cache->Scan(fileNames, baseResourceName, "*", SCAN_FILES | SCAN_RECURSIVE);
 
-    ea::vector<IKTargetExtractor::PatternMatch> result;
+    ea::vector<GenerateWorldSpaceTracksTransformer::PatternMatch> result;
     const std::regex regex = PatternToRegex(fileNamePattern);
     for (const ea::string& fileName : fileNames)
     {
@@ -295,7 +295,7 @@ ea::vector<IKTargetExtractor::PatternMatch> IKTargetExtractor::GetInputFileNames
     return result;
 }
 
-ea::string IKTargetExtractor::GetOutputFileName(const ea::string& fileNameTemplate, const PatternMatch& match) const
+ea::string GenerateWorldSpaceTracksTransformer::GetOutputFileName(const ea::string& fileNameTemplate, const PatternMatch& match) const
 {
     return Format(fileNameTemplate, match.match_);
 }

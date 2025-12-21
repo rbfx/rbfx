@@ -9,6 +9,7 @@
 #include "Urho3D/Utility/AnimationVelocityExtractor.h"
 #include "Urho3D/Utility/AssetPipeline.h"
 #include "Urho3D/Utility/AssetTransformer.h"
+#include "Urho3D/Utility/GenerateWorldSpaceTracksTransformer.h"
 #include "Urho3D/Utility/RetargetAnimationsTransformer.h"
 #include "Urho3D/Utility/SceneViewerApplication.h"
 
@@ -24,6 +25,7 @@ void RegisterUtilityLibrary(Context* context)
 
     AnimationVelocityExtractor::RegisterObject(context);
     RetargetAnimationsTransformer::RegisterObject(context);
+    GenerateWorldSpaceTracksTransformer::RegisterObject(context);
 }
 
 } // namespace Urho3D

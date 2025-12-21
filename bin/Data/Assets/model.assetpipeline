@@ -31,7 +31,7 @@
 			]
 		},
 		{
-			"_Class": "IKTargetExtractor",
+			"_Class": "GenerateWorldSpaceTracksTransformer",
 			"attributes": [
 				{
 					"name": "New File Name",

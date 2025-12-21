@@ -8,7 +8,6 @@
 
 #include "Urho3D/IK/AllSolvers.h"
 #include "Urho3D/IK/IKSolver.h"
-#include "Urho3D/IK/IKTargetExtractor.h"
 
 namespace Urho3D
 {
@@ -28,8 +27,6 @@ void RegisterIKLibrary(Context* context)
     IKHeadSolver::RegisterObject(context);
 
     IKStickTargets::RegisterObject(context);
-
-    IKTargetExtractor::RegisterObject(context);
 }
 
 } // namespace Urho3D
