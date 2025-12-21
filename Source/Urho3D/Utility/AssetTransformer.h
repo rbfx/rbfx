@@ -140,7 +140,7 @@ private:
 
 /// Dependency between two transformer classes.
 /// Note: this dependency is global within a project regardless of transformer scope!
-struct AssetTransformerDependency
+struct URHO3D_API AssetTransformerDependency
 {
     ea::string class_;
     ea::string dependsOn_;

@@ -6,7 +6,7 @@
 
 #include "Urho3D/Graphics/Animation.h"
 #include "Urho3D/Graphics/Model.h"
-#include "Urho3D/Utility/AssetTransformer.h"
+#include "Urho3D/Utility/BaseAssetPostTransformer.h"
 
 namespace Urho3D
 {
@@ -24,9 +24,9 @@ struct RetargetAnimationTask
 };
 
 /// Asset transformer that re-targets animation from one model to another.
-class URHO3D_API RetargetAnimationsTransformer : public AssetTransformer
+class URHO3D_API RetargetAnimationsTransformer : public BaseAssetPostTransformer
 {
-    URHO3D_OBJECT(RetargetAnimationsTransformer, AssetTransformer);
+    URHO3D_OBJECT(RetargetAnimationsTransformer, BaseAssetPostTransformer);
 
 public:
     explicit RetargetAnimationsTransformer(Context* context);
@@ -35,12 +35,11 @@ public:
 
     SharedPtr<Animation> RetargetAnimation(const RetargetAnimationTask& task) const;
 
-    /// Implement AssetTransformer.
+    /// Implement BaseAssetPostTransformer.
     /// @{
-    bool IsApplicable(const AssetTransformerInput& input) override;
+    ea::string_view GetParametersFileName() const override { return "RetargetAnimations.json"; }
     bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output,
         const AssetTransformerVector& transformers) override;
-    bool IsPostTransform() override { return true; }
     /// @}
 
 private:
@@ -62,8 +61,6 @@ private:
 
         void SerializeInBlock(Archive& archive);
     };
-
-    TransformerParams LoadParameters(const ea::string& fileName) const;
 };
 
 } // namespace Urho3D

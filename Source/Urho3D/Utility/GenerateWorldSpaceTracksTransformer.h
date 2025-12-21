@@ -6,7 +6,7 @@
 
 #include "Urho3D/Graphics/Animation.h"
 #include "Urho3D/Graphics/Model.h"
-#include "Urho3D/Utility/AssetTransformer.h"
+#include "Urho3D/Utility/BaseAssetPostTransformer.h"
 
 namespace Urho3D
 {
@@ -36,9 +36,9 @@ struct GenerateWorldSpaceTracksTask
 };
 
 /// Asset transformer that generates world-space tracks for animation. Useful for IK animation.
-class GenerateWorldSpaceTracksTransformer : public AssetTransformer
+class GenerateWorldSpaceTracksTransformer : public BaseAssetPostTransformer
 {
-    URHO3D_OBJECT(GenerateWorldSpaceTracksTransformer, AssetTransformer);
+    URHO3D_OBJECT(GenerateWorldSpaceTracksTransformer, BaseAssetPostTransformer);
 
 public:
     GenerateWorldSpaceTracksTransformer(Context* context);
@@ -47,12 +47,11 @@ public:
 
     void GenerateTracks(const GenerateWorldSpaceTracksTask& task) const;
 
-    /// Implement AssetTransformer.
+    /// Implement BaseAssetPostTransformer.
     /// @{
-    bool IsApplicable(const AssetTransformerInput& input) override;
+    ea::string_view GetParametersFileName() const override { return "GenerateWorldSpaceTracks.json"; }
     bool Execute(const AssetTransformerInput& input, AssetTransformerOutput& output,
         const AssetTransformerVector& transformers) override;
-    bool IsPostTransform() override { return true; }
     /// @}
 
 private:
@@ -72,18 +71,6 @@ private:
 
         void SerializeInBlock(Archive& archive);
     };
-
-    TransformerParams LoadParameters(const ea::string& fileName) const;
-
-    struct PatternMatch
-    {
-        ea::string fileName_;
-        ea::string match_;
-    };
-
-    ea::vector<PatternMatch> GetInputFileNames(
-        const ea::string& baseResourceName, const ea::string& fileNamePattern) const;
-    ea::string GetOutputFileName(const ea::string& fileNameTemplate, const PatternMatch& match) const;
 };
 
 } // namespace Urho3D

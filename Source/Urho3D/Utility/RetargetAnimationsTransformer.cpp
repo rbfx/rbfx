@@ -77,7 +77,7 @@ void RetargetAnimationsTransformer::TransformerParams::SerializeInBlock(Archive&
 }
 
 RetargetAnimationsTransformer::RetargetAnimationsTransformer(Context* context)
-    : AssetTransformer(context)
+    : BaseAssetPostTransformer(context)
 {
 }
 
@@ -86,17 +86,12 @@ void RetargetAnimationsTransformer::RegisterObject(Context* context)
     context->AddFactoryReflection<RetargetAnimationsTransformer>(Category_Transformer);
 }
 
-bool RetargetAnimationsTransformer::IsApplicable(const AssetTransformerInput& input)
-{
-    return input.resourceName_.ends_with("RetargetAnimations.json", false);
-}
-
 bool RetargetAnimationsTransformer::Execute(
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
     auto cache = GetSubsystem<ResourceCache>();
 
-    const auto parameters = LoadParameters(input.inputFileName_);
+    const auto parameters = LoadParameters<TransformerParams>(input.inputFileName_);
     const ea::string baseResourceName = GetPath(input.resourceName_);
 
     ea::vector<RetargetAnimationTask> tasks;
@@ -138,21 +133,6 @@ bool RetargetAnimationsTransformer::Execute(
     }
 
     return true;
-}
-
-RetargetAnimationsTransformer::TransformerParams RetargetAnimationsTransformer::LoadParameters(
-    const ea::string& fileName) const
-{
-    TransformerParams result;
-
-    JSONFile file{context_};
-    if (file.LoadFile(fileName))
-    {
-        if (file.LoadObject("params", result))
-            return result;
-    }
-
-    return {};
 }
 
 SharedPtr<Animation> RetargetAnimationsTransformer::RetargetAnimation(const RetargetAnimationTask& task) const

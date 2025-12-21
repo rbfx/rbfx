@@ -13,8 +13,6 @@
 #include "Urho3D/Scene/Scene.h"
 #include "Urho3D/Utility/AnimationMetadata.h"
 
-#include <regex>
-
 namespace Urho3D
 {
 
@@ -78,23 +76,6 @@ ea::vector<ExtractedTrack> GetBendTracks(AnimatedModel* animatedModel, const Gen
     return tracks;
 }
 
-std::regex PatternToRegex(const ea::string& pattern)
-{
-    std::string r;
-    for (const char ch : pattern)
-    {
-        if (ch == '*')
-            r += "(.*)";
-        else
-        {
-            if (IsCharacterEscapedInRegex(ch))
-                r += '\\';
-            r += ch;
-        }
-    }
-    return std::regex(r, std::regex::ECMAScript | std::regex::icase | std::regex::optimize);
-}
-
 } // namespace
 
 void GenerateWorldSpaceTracksParams::SerializeInBlock(Archive& archive)
@@ -129,7 +110,7 @@ void GenerateWorldSpaceTracksTransformer::TransformerParams::SerializeInBlock(Ar
 }
 
 GenerateWorldSpaceTracksTransformer::GenerateWorldSpaceTracksTransformer(Context* context)
-    : AssetTransformer(context)
+    : BaseAssetPostTransformer(context)
 {
 }
 
@@ -142,28 +123,23 @@ void GenerateWorldSpaceTracksTransformer::RegisterObject(Context* context)
     context->RegisterFactory<GenerateWorldSpaceTracksTransformer>(Category_Transformer);
 }
 
-bool GenerateWorldSpaceTracksTransformer::IsApplicable(const AssetTransformerInput& input)
-{
-    return input.resourceName_.ends_with("GenerateWorldSpaceTracks.json", false);
-}
-
 bool GenerateWorldSpaceTracksTransformer::Execute(
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
     auto cache = GetSubsystem<ResourceCache>();
 
-    const auto parameters = LoadParameters(input.inputFileName_);
+    const auto parameters = LoadParameters<TransformerParams>(input.inputFileName_);
     const ea::string baseResourceName = GetPath(input.resourceName_);
 
     auto taskDescriptions = parameters.tasks_;
     for (const TaskDescription& taskTemplate : parameters.taskTemplates_)
     {
-        const auto matches = GetInputFileNames(baseResourceName, taskTemplate.sourceAnimation_);
+        const auto matches = GetResourcesByPattern(baseResourceName, taskTemplate.sourceAnimation_);
         for (const PatternMatch& match : matches)
         {
             TaskDescription& task = taskDescriptions.emplace_back(taskTemplate);
             task.sourceAnimation_ = match.fileName_;
-            task.targetAnimation_ = GetOutputFileName(taskTemplate.targetAnimation_, match);
+            task.targetAnimation_ = GetMatchFileName(taskTemplate.targetAnimation_, match);
         }
     }
 
@@ -261,43 +237,6 @@ void GenerateWorldSpaceTracksTransformer::GenerateTracks(const GenerateWorldSpac
         destTrack->channelMask_ = track.track_.channelMask_;
         destTrack->keyFrames_ = track.track_.keyFrames_;
     }
-}
-
-GenerateWorldSpaceTracksTransformer::TransformerParams GenerateWorldSpaceTracksTransformer::LoadParameters(const ea::string& fileName) const
-{
-    TransformerParams result;
-
-    JSONFile file{context_};
-    if (file.LoadFile(fileName))
-    {
-        if (file.LoadObject("params", result))
-            return result;
-    }
-
-    return {};
-}
-
-ea::vector<GenerateWorldSpaceTracksTransformer::PatternMatch> GenerateWorldSpaceTracksTransformer::GetInputFileNames(
-    const ea::string& baseResourceName, const ea::string& fileNamePattern) const
-{
-    auto cache = GetSubsystem<ResourceCache>();
-    StringVector fileNames;
-    cache->Scan(fileNames, baseResourceName, "*", SCAN_FILES | SCAN_RECURSIVE);
-
-    ea::vector<GenerateWorldSpaceTracksTransformer::PatternMatch> result;
-    const std::regex regex = PatternToRegex(fileNamePattern);
-    for (const ea::string& fileName : fileNames)
-    {
-        std::cmatch match;
-        if (std::regex_match(fileName.c_str(), match, regex))
-            result.push_back(PatternMatch{fileName, match.size() > 1 ? match[1].str().c_str() : ""});
-    }
-    return result;
-}
-
-ea::string GenerateWorldSpaceTracksTransformer::GetOutputFileName(const ea::string& fileNameTemplate, const PatternMatch& match) const
-{
-    return Format(fileNameTemplate, match.match_);
 }
 
 } // namespace Urho3D
