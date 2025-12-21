@@ -22,6 +22,7 @@
 
 #include "../Project/Project.h"
 
+#include "../Assets/ModelImporter.h"
 #include "../Core/EditorPluginManager.h"
 #include "../Core/IniHelpers.h"
 #include "../Core/SettingsManager.h"
@@ -30,13 +31,13 @@
 #include "../Project/CreateDefaultScene.h"
 #include "../Project/ResourceEditorTab.h"
 
-#include <Urho3D/IO/MountedDirectory.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/Engine/EngineEvents.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/IO/MountedDirectory.h>
 #include <Urho3D/IO/VirtualFileSystem.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/JSONFile.h>
@@ -45,6 +46,10 @@
 #include <Urho3D/RmlUI/RmlUI.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/SystemUI/Widgets.h>
+#include <Urho3D/Utility/AssetPipeline.h>
+#include <Urho3D/Utility/CalculateAnimationVelocityTransformer.h>
+#include <Urho3D/Utility/GenerateWorldSpaceTracksTransformer.h>
+#include <Urho3D/Utility/RetargetAnimationsTransformer.h>
 #include <Urho3D/Utility/SceneViewerApplication.h>
 
 #ifdef URHO3D_XR
@@ -91,12 +96,6 @@ std::regex PatternToRegex(const ea::string& pattern)
 void CreateAssetPipeline(Context* context, const ea::string& fileName)
 {
     JSONFile jsonFile(context);
-    JSONValue& root = jsonFile.GetRoot();
-
-    JSONValue modelTransformer;
-    modelTransformer["_Class"] = "ModelImporter";
-    root["Transformers"].Push(modelTransformer);
-
     jsonFile.SaveFile(fileName);
 }
 
@@ -236,6 +235,8 @@ Project::Project(
 
     if (firstInitialization_)
         InitializeDefaultProject();
+    if (!flags_.IsAnyOf(ProjectFlag::ReadOnly))
+        UpdateDefaultAssetPipeline();
 
 #ifdef URHO3D_XR
     auto virtualReality = GetSubsystem<VirtualReality>();
@@ -247,6 +248,38 @@ Project::Project(
         virtualReality->InitializeSession(sessionParams);
     }
 #endif
+}
+
+void Project::UpdateDefaultAssetPipeline()
+{
+    auto assetPipeline = MakeShared<AssetPipeline>(context_);
+    if (!assetPipeline->LoadFile(defaultAssetPipeline_))
+        return;
+
+    static const StringVector defaultTransformers{
+        ModelImporter::GetTypeNameStatic(),
+        CalculateAnimationVelocityTransformer::GetTypeNameStatic(),
+        GenerateWorldSpaceTracksTransformer::GetTypeNameStatic(),
+        RetargetAnimationsTransformer::GetTypeNameStatic(),
+    };
+
+    bool isUpdated = false;
+    for (const ea::string& className : defaultTransformers)
+    {
+        const auto isMatching = [&](AssetTransformer* transformer) { return transformer->GetTypeName() == className; };
+        const auto transformers = assetPipeline->GetTransformers();
+        if (ea::find_if(transformers.begin(), transformers.end(), isMatching) != transformers.end())
+            continue;
+
+        if (const auto transformer = DynamicCast<AssetTransformer>(context_->CreateObject(className)))
+        {
+            assetPipeline->AddTransformer(transformer);
+            isUpdated = true;
+        }
+    }
+
+    if (isUpdated)
+        assetPipeline->SaveFile(defaultAssetPipeline_);
 }
 
 void Project::SerializeInBlock(Archive& archive)
@@ -576,8 +609,6 @@ void Project::EnsureDirectoryInitialized()
     // Legacy: to support old projects
     if (fs->DirExists(projectPath_ + "Resources/"))
         dataPath_ = projectPath_ + "Resources/";
-    if (fs->FileExists(dataPath_ + "AssetPipeline.json"))
-        fs->Rename(dataPath_ + "AssetPipeline.json", dataPath_ + "Default.assetpipeline");
 
     if (!fs->DirExists(dataPath_))
     {
@@ -592,6 +623,8 @@ void Project::EnsureDirectoryInitialized()
             fs->RemoveDir(uiIniPath_, true);
         pendingResetLayout_ = true;
     }
+
+    defaultAssetPipeline_ = dataPath_ + "Default.assetpipeline";
 }
 
 void Project::InitializeDefaultProject()
@@ -611,8 +644,7 @@ void Project::InitializeDefaultProject()
     const auto request = MakeShared<OpenResourceRequest>(context_, defaultSceneName);
     ProcessRequest(request, nullptr);
 
-    const ea::string defaultAssetPipeline = "Default.assetpipeline";
-    CreateAssetPipeline(context_, dataPath_ + defaultAssetPipeline);
+    CreateAssetPipeline(context_, defaultAssetPipeline_);
 
     Save();
 }
