@@ -1,33 +1,15 @@
-//
-// Copyright (c) 2022-2022 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2022-2025 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "../Utility/AnimationVelocityExtractor.h"
+#include "Urho3D/Utility/AnimationVelocityExtractor.h"
 
-#include "../Graphics/AnimatedModel.h"
-#include "../Graphics/AnimationController.h"
-#include "../Graphics/Octree.h"
-#include "../Math/NumericRange.h"
-#include "../Resource/ResourceCache.h"
-#include "../Scene/Scene.h"
+#include "Urho3D/Graphics/AnimatedModel.h"
+#include "Urho3D/Graphics/AnimationController.h"
+#include "Urho3D/Graphics/Octree.h"
+#include "Urho3D/Math/NumericRange.h"
+#include "Urho3D/Resource/ResourceCache.h"
+#include "Urho3D/Scene/Scene.h"
 
 #include <EASTL/algorithm.h>
 #include <EASTL/numeric.h>
@@ -35,98 +17,29 @@
 namespace Urho3D
 {
 
-AnimationVelocityExtractor::AnimationVelocityExtractor(Context* context)
-    : AssetTransformer(context)
+namespace
 {
-}
 
-AnimationVelocityExtractor::~AnimationVelocityExtractor()
+using PositionTrack = ea::vector<Vector3>;
+
+struct ExtractedTrackSet
 {
-}
+    ea::vector<PositionTrack> tracks_;
+    float sampleRate_{};
+};
 
-void AnimationVelocityExtractor::RegisterObject(Context* context)
+ExtractedTrackSet ExtractAnimationTracks(const CalculateAnimationVelocityTask& task)
 {
-    context->RegisterFactory<AnimationVelocityExtractor>(Category_Transformer);
-
-    URHO3D_ATTRIBUTE("Target Bones", StringVector, targetBones_, Variant::emptyStringVector, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Ground Threshold", float, groundThreshold_, DefaultThreshold, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Sample Rate", float, sampleRate_, 0.0f, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Model", ResourceRef, skeletonModel_, ResourceRef(Model::GetTypeStatic()), AM_DEFAULT);
-}
-
-bool AnimationVelocityExtractor::IsApplicable(const AssetTransformerInput& input)
-{
-    return input.inputFileName_.ends_with(".ani", false);
-}
-
-bool AnimationVelocityExtractor::Execute(
-    const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
-{
-    auto cache = GetSubsystem<ResourceCache>();
-    auto animation = cache->GetResource<Animation>(input.resourceName_);
-    if (!animation)
-        return false;
-
-    const ea::string& modelName = GetModelName(animation);
-    auto model = cache->GetResource<Model>(modelName);
-    if (!model)
-    {
-        URHO3D_LOGERROR(
-            "Model used to evaluate animation is not found. "
-            "You should either specify 'Model' attribute in the transformer "
-            "or add 'Model' variable to the animation metadata.");
-        return false;
-    }
-
-    // Don't run this transformer on animations that are too short.
-    if (animation->GetLength() < M_LARGE_EPSILON)
-        return true;
-
-    const ExtractedTrackSet trackSet = ExtractAnimationTracks(animation, model);
-
-    ea::vector<Vector3> velocities;
-    for (const PositionTrack& track : trackSet.tracks_)
-    {
-        if (const auto velocity = EvaluateVelocity(track, trackSet.sampleRate_))
-            velocities.push_back(*velocity);
-    }
-
-    if (velocities.empty())
-        return true;
-
-    const Vector3 averageVelocity =
-        ea::accumulate(velocities.begin(), velocities.end(), Vector3::ZERO) / velocities.size();
-
-    if (averageVelocity.Length() > M_LARGE_EPSILON)
-        animation->AddMetadata("Velocity", averageVelocity);
-    else
-        animation->AddMetadata("Velocity", Vector3::ZERO);
-
-    animation->SaveFile(animation->GetAbsoluteFileName());
-    return true;
-}
-
-ea::string AnimationVelocityExtractor::GetModelName(Animation* animation) const
-{
-    const ea::string& modelName = animation->GetMetadata("Model").GetString();
-    if (!modelName.empty())
-        return modelName;
-    return skeletonModel_.name_;
-}
-
-AnimationVelocityExtractor::ExtractedTrackSet AnimationVelocityExtractor::ExtractAnimationTracks(
-    Animation* animation, Model* model) const
-{
-    auto scene = MakeShared<Scene>(context_);
+    auto scene = MakeShared<Scene>(task.model_->GetContext());
     scene->CreateComponent<Octree>();
     Node* node = scene->CreateChild();
 
     auto animatedModel = node->CreateComponent<AnimatedModel>();
-    animatedModel->SetModel(model);
+    animatedModel->SetModel(task.model_);
     animatedModel->ApplyAnimation();
 
     ea::vector<Node*> targetNodes;
-    for (const ea::string& boneName : targetBones_)
+    for (const ea::string& boneName : task.params_.targetBones_)
     {
         if (Node* boneNode = node->GetChild(boneName, true))
             targetNodes.push_back(boneNode);
@@ -136,18 +49,22 @@ AnimationVelocityExtractor::ExtractedTrackSet AnimationVelocityExtractor::Extrac
 
     auto animationController = node->CreateComponent<AnimationController>();
     animationController->Update(0.0f);
-    animationController->PlayNew(AnimationParameters{animation}.Looped());
+    animationController->PlayNew(AnimationParameters{task.animation_}.Looped());
 
-    const float animationLength = animation->GetLength();
-    const float animationFrameRate = animation->GetMetadata("FrameRate").GetFloat();
+    const float animationLength = task.animation_->GetLength();
+    const float animationFrameRate = task.animation_->GetMetadata("FrameRate").GetFloat();
 
-    const float sampleRate = sampleRate_ != 0 ? sampleRate_ : animationFrameRate != 0.0f ? animationFrameRate : 30.0f;
+    const float sampleRate = task.params_.sampleRate_ != 0 //
+        ? task.params_.sampleRate_
+        : animationFrameRate != 0.0f //
+            ? animationFrameRate
+            : 30.0f;
     const float numFramesEstimate = animationLength * sampleRate;
     const unsigned numFrames = CeilToInt(numFramesEstimate - M_LARGE_EPSILON);
     for (unsigned i = 0; i < numFrames; ++i)
     {
         const float frameTime = ea::min(i / sampleRate, animationLength);
-        animationController->UpdateAnimationTime(animation, frameTime);
+        animationController->UpdateAnimationTime(task.animation_, frameTime);
         animationController->Update(0.0f);
         animatedModel->ApplyAnimation();
 
@@ -163,7 +80,8 @@ AnimationVelocityExtractor::ExtractedTrackSet AnimationVelocityExtractor::Extrac
     return result;
 }
 
-ea::optional<Vector3> AnimationVelocityExtractor::EvaluateVelocity(const PositionTrack& track, float sampleRate) const
+ea::optional<Vector3> EvaluateVelocity(
+    const PositionTrack& track, float sampleRate, const CalculateAnimationVelocityParams& params)
 {
     if (track.size() <= 3)
         return ea::nullopt;
@@ -172,7 +90,7 @@ ea::optional<Vector3> AnimationVelocityExtractor::EvaluateVelocity(const Positio
     const auto compareY = [](const Vector3& a, const Vector3& b) { return a.y_ < b.y_; };
     const float minY = ea::min_element(track.begin(), track.end(), compareY)->y_;
     const float maxY = ea::max_element(track.begin(), track.end(), compareY)->y_;
-    const FloatRange groundRangeY{minY, ea::min(minY + groundThreshold_, maxY)};
+    const FloatRange groundRangeY{minY, ea::min(minY + params.groundThreshold_, maxY)};
 
     // Find the frames that are on the ground.
     ea::vector<bool> isGrounded(track.size());
@@ -213,7 +131,8 @@ ea::optional<Vector3> AnimationVelocityExtractor::EvaluateVelocity(const Positio
         if (const auto groupIndex = groupIndices[i])
             ++groupLengths[*groupIndex];
     }
-    const auto longestGroupIndex = static_cast<ea::vector<unsigned>::size_type>(ea::max_element(groupLengths.begin(), groupLengths.end()) - groupLengths.begin());
+    const auto longestGroupIndex = static_cast<ea::vector<unsigned>::size_type>(
+        ea::max_element(groupLengths.begin(), groupLengths.end()) - groupLengths.begin());
     const unsigned longestGroupLength = groupLengths[longestGroupIndex];
     if (longestGroupLength < 2)
         return ea::nullopt;
@@ -227,4 +146,128 @@ ea::optional<Vector3> AnimationVelocityExtractor::EvaluateVelocity(const Positio
     return -(lastGroundPosition - firstGroundPosition) / groundTime;
 }
 
+} // namespace
+
+void CalculateAnimationVelocityParams::SerializeInBlock(Archive& archive)
+{
+    static const CalculateAnimationVelocityParams defaults{};
+
+    SerializeOptionalValue(archive, "targetBones", targetBones_, defaults.targetBones_);
+    SerializeOptionalValue(archive, "groundThreshold", groundThreshold_, defaults.groundThreshold_);
+    SerializeOptionalValue(archive, "velocityThreshold", velocityThreshold_, defaults.velocityThreshold_);
+    SerializeOptionalValue(archive, "sampleRate", sampleRate_, defaults.sampleRate_);
 }
+
+void AnimationVelocityExtractor::TaskDescription::SerializeInBlock(Archive& archive)
+{
+    CalculateAnimationVelocityParams::SerializeInBlock(archive);
+
+    SerializeOptionalValue(archive, "model", model_);
+    SerializeOptionalValue(archive, "animation", animation_);
+}
+
+void AnimationVelocityExtractor::TransformerParams::SerializeInBlock(Archive& archive)
+{
+    SerializeOptionalValue(archive, "tasks", tasks_);
+    SerializeOptionalValue(archive, "taskTemplates", taskTemplates_);
+}
+
+AnimationVelocityExtractor::AnimationVelocityExtractor(Context* context)
+    : BaseAssetPostTransformer(context)
+{
+}
+
+AnimationVelocityExtractor::~AnimationVelocityExtractor()
+{
+}
+
+void AnimationVelocityExtractor::RegisterObject(Context* context)
+{
+    context->RegisterFactory<AnimationVelocityExtractor>(Category_Transformer);
+}
+
+bool AnimationVelocityExtractor::Execute(
+    const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
+{
+    auto cache = GetSubsystem<ResourceCache>();
+
+    const auto parameters = LoadParameters<TransformerParams>(input.inputFileName_);
+    const ea::string baseResourceName = GetPath(input.resourceName_);
+
+    auto taskDescriptions = parameters.tasks_;
+    for (const TaskDescription& taskTemplate : parameters.taskTemplates_)
+    {
+        const auto matches = GetResourcesByPattern(baseResourceName, taskTemplate.animation_);
+        for (const PatternMatch& match : matches)
+        {
+            TaskDescription& task = taskDescriptions.emplace_back(taskTemplate);
+            task.animation_ = match.fileName_;
+        }
+    }
+
+    ea::vector<CalculateAnimationVelocityTask> tasks;
+    for (const TaskDescription& taskDescription : taskDescriptions)
+    {
+        CalculateAnimationVelocityTask generateTask;
+        generateTask.model_ = cache->GetTempResource<Model>(baseResourceName + taskDescription.model_);
+        generateTask.animation_ = cache->GetTempResource<Animation>(baseResourceName + taskDescription.animation_);
+        generateTask.params_ = taskDescription;
+
+        if (!generateTask.model_)
+        {
+            URHO3D_LOGERROR("Base model '{}' is not found", taskDescription.model_);
+            continue;
+        }
+        if (!generateTask.animation_)
+        {
+            URHO3D_LOGERROR("Animation '{}' is not found", taskDescription.animation_);
+            continue;
+        }
+
+        tasks.push_back(generateTask);
+    }
+
+    for (const CalculateAnimationVelocityTask& task : tasks)
+    {
+        if (const auto velocity = CalculateVelocity(task))
+        {
+            task.animation_->AddMetadata("Velocity", *velocity);
+            task.animation_->SaveFile(FileIdentifier{task.animation_->GetAbsoluteFileName()});
+        }
+        else
+        {
+            URHO3D_LOGERROR("Cannot calculate velocity for animation '{}'", task.animation_->GetName());
+        }
+    }
+
+    return true;
+}
+
+ea::optional<Vector3> AnimationVelocityExtractor::CalculateVelocity(const CalculateAnimationVelocityTask& task) const
+{
+    // Don't run this transformer on animations that are too short.
+    if (task.animation_->GetLength() < M_LARGE_EPSILON)
+        return ea::nullopt;
+
+    const ExtractedTrackSet trackSet = ExtractAnimationTracks(task);
+
+    ea::vector<Vector3> velocities;
+    for (const PositionTrack& track : trackSet.tracks_)
+    {
+        if (const auto velocity = EvaluateVelocity(track, trackSet.sampleRate_, task.params_))
+            velocities.push_back(*velocity);
+    }
+
+    if (velocities.empty())
+        return ea::nullopt;
+
+    const Vector3 averageVelocity =
+        ea::accumulate(velocities.begin(), velocities.end(), Vector3::ZERO) / velocities.size();
+
+    if (averageVelocity.Length() > task.params_.velocityThreshold_)
+        return averageVelocity;
+    else
+        return Vector3::ZERO;
+}
+
+} // namespace Urho3D
