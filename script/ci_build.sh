@@ -578,7 +578,7 @@ function action-download-nuget-sdks() {
         if gh release download latest --repo "$github_repository" --pattern "$sdk_name" --dir .;
         then
             echo "Downloaded $sdk_name"
-            7z x -y "$sdk_name" -o"$output_dir"
+            7z x -y "$sdk_name" "${sdk_name%.7z}/bin/*" -o"$output_dir"
             rm "$sdk_name"
         else
             echo "Warning: Failed to download $sdk_name (may not exist yet)"
