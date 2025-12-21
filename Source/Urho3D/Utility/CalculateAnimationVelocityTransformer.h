@@ -32,15 +32,15 @@ struct CalculateAnimationVelocityTask
 };
 
 /// Asset transformer that extracts velocity from movement animations.
-class AnimationVelocityExtractor : public BaseAssetPostTransformer
+class CalculateAnimationVelocityTransformer : public BaseAssetPostTransformer
 {
-    URHO3D_OBJECT(AnimationVelocityExtractor, BaseAssetPostTransformer);
+    URHO3D_OBJECT(CalculateAnimationVelocityTransformer, BaseAssetPostTransformer);
 
 public:
     static constexpr float DefaultThreshold = 0.005f;
 
-    AnimationVelocityExtractor(Context* context);
-    ~AnimationVelocityExtractor() override;
+    CalculateAnimationVelocityTransformer(Context* context);
+    ~CalculateAnimationVelocityTransformer() override;
     static void RegisterObject(Context* context);
 
     ea::optional<Vector3> CalculateVelocity(const CalculateAnimationVelocityTask& task) const;

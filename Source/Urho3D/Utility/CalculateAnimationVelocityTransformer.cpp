@@ -2,7 +2,7 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
-#include "Urho3D/Utility/AnimationVelocityExtractor.h"
+#include "Urho3D/Utility/CalculateAnimationVelocityTransformer.h"
 
 #include "Urho3D/Graphics/AnimatedModel.h"
 #include "Urho3D/Graphics/AnimationController.h"
@@ -158,7 +158,7 @@ void CalculateAnimationVelocityParams::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "sampleRate", sampleRate_, defaults.sampleRate_);
 }
 
-void AnimationVelocityExtractor::TaskDescription::SerializeInBlock(Archive& archive)
+void CalculateAnimationVelocityTransformer::TaskDescription::SerializeInBlock(Archive& archive)
 {
     CalculateAnimationVelocityParams::SerializeInBlock(archive);
 
@@ -166,27 +166,27 @@ void AnimationVelocityExtractor::TaskDescription::SerializeInBlock(Archive& arch
     SerializeOptionalValue(archive, "animation", animation_);
 }
 
-void AnimationVelocityExtractor::TransformerParams::SerializeInBlock(Archive& archive)
+void CalculateAnimationVelocityTransformer::TransformerParams::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "tasks", tasks_);
     SerializeOptionalValue(archive, "taskTemplates", taskTemplates_);
 }
 
-AnimationVelocityExtractor::AnimationVelocityExtractor(Context* context)
+CalculateAnimationVelocityTransformer::CalculateAnimationVelocityTransformer(Context* context)
     : BaseAssetPostTransformer(context)
 {
 }
 
-AnimationVelocityExtractor::~AnimationVelocityExtractor()
+CalculateAnimationVelocityTransformer::~CalculateAnimationVelocityTransformer()
 {
 }
 
-void AnimationVelocityExtractor::RegisterObject(Context* context)
+void CalculateAnimationVelocityTransformer::RegisterObject(Context* context)
 {
-    context->RegisterFactory<AnimationVelocityExtractor>(Category_Transformer);
+    context->RegisterFactory<CalculateAnimationVelocityTransformer>(Category_Transformer);
 }
 
-bool AnimationVelocityExtractor::Execute(
+bool CalculateAnimationVelocityTransformer::Execute(
     const AssetTransformerInput& input, AssetTransformerOutput& output, const AssetTransformerVector& transformers)
 {
     auto cache = GetSubsystem<ResourceCache>();
@@ -243,7 +243,8 @@ bool AnimationVelocityExtractor::Execute(
     return true;
 }
 
-ea::optional<Vector3> AnimationVelocityExtractor::CalculateVelocity(const CalculateAnimationVelocityTask& task) const
+ea::optional<Vector3> CalculateAnimationVelocityTransformer::CalculateVelocity(
+    const CalculateAnimationVelocityTask& task) const
 {
     // Don't run this transformer on animations that are too short.
     if (task.animation_->GetLength() < M_LARGE_EPSILON)

@@ -213,7 +213,6 @@ URHO3D_REFCOUNTED(Urho3D::UI);
 URHO3D_REFCOUNTED(Urho3D::UIComponent);
 URHO3D_REFCOUNTED(Urho3D::View3D);
 URHO3D_REFCOUNTED(Urho3D::AssetTransformer);
-URHO3D_REFCOUNTED(Urho3D::AnimationVelocityExtractor);
 URHO3D_REFCOUNTED(Urho3D::AssetPipeline);
 URHO3D_REFCOUNTED(Urho3D::AssetTransformerHierarchy);
 URHO3D_REFCOUNTED(Urho3D::FileSystemReflection);

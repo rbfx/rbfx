@@ -4,7 +4,7 @@
 			"_Class": "ModelImporter"
 		},
 		{
-			"_Class": "AnimationVelocityExtractor"
+			"_Class": "CalculateAnimationVelocityTransformer"
 		},
 		{
 			"_Class": "GenerateWorldSpaceTracksTransformer"
