@@ -3729,7 +3729,7 @@ void EnumerateChildrenRecursive(ea::vector<int>& nodes, const tg::Model& model, 
 void PreprocessModel(tg::Model& model, const GLTFImporterSettings& settings, GLTFImporterCallback* callback)
 {
     const auto artificialSkinNodeNames = callback->GetArtificialSkinNodes();
-    if (!artificialSkinNodeNames.empty())
+    if (!artificialSkinNodeNames.empty() && model.skins.empty())
     {
         ea::optional<int> emptyMeshIndex;
         for (int i = 0; i < static_cast<int>(model.nodes.size()); ++i)

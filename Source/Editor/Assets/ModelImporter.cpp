@@ -177,6 +177,7 @@ void ModelImporter::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Keep Names On Merge", bool, defaultParams_.keepNamesOnMerge_, TransformerParams{}.keepNamesOnMerge_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Add Empty Nodes To Skeleton", bool, defaultParams_.addEmptyNodesToSkeleton_, TransformerParams{}.addEmptyNodesToSkeleton_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Repair Looping", bool, defaultParams_.repairLooping_, TransformerParams{}.repairLooping_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Artificial Skin Nodes", StringVector, defaultParams_.artificialSkinNodes_, TransformerParams{}.artificialSkinNodes_, AM_DEFAULT);
 
     URHO3D_ATTRIBUTE("Blender: Apply Modifiers", bool, defaultParams_.blenderApplyModifiers_, TransformerParams{}.blenderApplyModifiers_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Blender: Deforming Bones Only", bool, defaultParams_.blenderDeformingBonesOnly_, TransformerParams{}.blenderDeformingBonesOnly_, AM_DEFAULT);
