@@ -17,6 +17,7 @@ struct RetargetAnimationTask
     SharedPtr<Model> sourceModel_;
     SharedPtr<Animation> sourceAnimation_;
     SharedPtr<Model> targetModel_;
+    SharedPtr<Animation> targetInitialPose_;
     ea::string targetAnimationName_;
     ea::unordered_map<ea::string, ea::string> sourceToTargetBones_;
     ea::unordered_map<ea::string, ea::string> targetToSourceBones_;
@@ -48,6 +49,7 @@ private:
         ea::string sourceModel_;
         ea::string sourceAnimation_;
         ea::string targetModel_;
+        ea::string targetInitialPose_;
         ea::string targetAnimation_;
         ea::unordered_map<ea::string, ea::string> boneMapping_;
         ea::vector<ea::vector<ea::string>> ikChains_;

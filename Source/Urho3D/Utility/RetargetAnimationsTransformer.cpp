@@ -66,6 +66,7 @@ void RetargetAnimationsTransformer::TaskDescription::SerializeInBlock(Archive& a
     SerializeOptionalValue(archive, "sourceModel", sourceModel_);
     SerializeOptionalValue(archive, "sourceAnimation", sourceAnimation_);
     SerializeOptionalValue(archive, "targetModel", targetModel_);
+    SerializeOptionalValue(archive, "targetInitialPose", targetInitialPose_);
     SerializeOptionalValue(archive, "targetAnimation", targetAnimation_);
     SerializeOptionalValue(archive, "boneMapping", boneMapping_);
     SerializeOptionalValue(archive, "ikChains", ikChains_);
@@ -115,6 +116,8 @@ bool RetargetAnimationsTransformer::Execute(
         retargetTask.sourceAnimation_ =
             cache->GetTempResource<Animation>(baseResourceName + taskDescription.sourceAnimation_);
         retargetTask.targetModel_ = cache->GetTempResource<Model>(baseResourceName + taskDescription.targetModel_);
+        retargetTask.targetInitialPose_ =
+            cache->GetTempResource<Animation>(baseResourceName + taskDescription.targetInitialPose_);
         retargetTask.targetAnimationName_ = baseResourceName + taskDescription.targetAnimation_;
         retargetTask.sourceToTargetBones_ = taskDescription.boneMapping_;
         retargetTask.targetToSourceBones_ = InvertMap(taskDescription.boneMapping_);
@@ -133,6 +136,11 @@ bool RetargetAnimationsTransformer::Execute(
         if (!retargetTask.targetModel_)
         {
             URHO3D_LOGERROR("Target model '{}' is not found", taskDescription.targetModel_);
+            continue;
+        }
+        if (!retargetTask.targetInitialPose_ && !taskDescription.targetInitialPose_.empty())
+        {
+            URHO3D_LOGERROR("Initial target pose animation '{}' is not found", taskDescription.targetInitialPose_);
             continue;
         }
 
@@ -173,6 +181,25 @@ SharedPtr<Animation> RetargetAnimationsTransformer::RetargetAnimation(const Reta
     AnimatedModel* targetAnimatedModel = targetNode->CreateComponent<AnimatedModel>();
     sourceAnimatedModel->SetModel(task.sourceModel_);
     targetAnimatedModel->SetModel(task.targetModel_);
+
+    if (task.targetInitialPose_)
+    {
+        // Override initial transform if requested
+        for (Bone& bone : targetAnimatedModel->GetSkeleton().GetModifiableBones())
+        {
+            if (AnimationTrack* track = task.targetInitialPose_->GetTrack(bone.nameHash_);
+                track && !track->keyFrames_.empty())
+            {
+                const AnimationKeyFrame& keyFrame = track->keyFrames_.front();
+                if (track->channelMask_.IsAnyOf(CHANNEL_POSITION))
+                    bone.initialPosition_ = keyFrame.position_;
+                if (track->channelMask_.IsAnyOf(CHANNEL_ROTATION))
+                    bone.initialRotation_ = keyFrame.rotation_;
+                if (track->channelMask_.IsAnyOf(CHANNEL_SCALE))
+                    bone.initialScale_ = keyFrame.scale_;
+            }
+        }
+    }
 
     auto sourceController = sourceNode->CreateComponent<AnimationController>();
     sourceController->PlayNew(AnimationParameters{task.sourceAnimation_});
