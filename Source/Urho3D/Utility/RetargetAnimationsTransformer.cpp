@@ -74,6 +74,7 @@ void RetargetAnimationsTransformer::TaskDescription::SerializeInBlock(Archive& a
 void RetargetAnimationsTransformer::TransformerParams::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "tasks", tasks_);
+    SerializeOptionalValue(archive, "taskTemplates", taskTemplates_);
 }
 
 RetargetAnimationsTransformer::RetargetAnimationsTransformer(Context* context)
@@ -94,8 +95,20 @@ bool RetargetAnimationsTransformer::Execute(
     const auto parameters = LoadParameters<TransformerParams>(input.inputFileName_);
     const ea::string baseResourceName = GetPath(input.resourceName_);
 
+    auto taskDescriptions = parameters.tasks_;
+    for (const TaskDescription& taskTemplate : parameters.taskTemplates_)
+    {
+        const auto matches = GetResourcesByPattern(baseResourceName, taskTemplate.sourceAnimation_);
+        for (const PatternMatch& match : matches)
+        {
+            TaskDescription& task = taskDescriptions.emplace_back(taskTemplate);
+            task.sourceAnimation_ = match.fileName_;
+            task.targetAnimation_ = GetMatchFileName(taskTemplate.targetAnimation_, match);
+        }
+    }
+
     ea::vector<RetargetAnimationTask> tasks;
-    for (const TaskDescription& taskDescription : parameters.tasks_)
+    for (const TaskDescription& taskDescription : taskDescriptions)
     {
         RetargetAnimationTask retargetTask;
         retargetTask.sourceModel_ = cache->GetTempResource<Model>(baseResourceName + taskDescription.sourceModel_);

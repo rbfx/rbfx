@@ -58,6 +58,7 @@ private:
     struct TransformerParams
     {
         ea::vector<TaskDescription> tasks_;
+        ea::vector<TaskDescription> taskTemplates_;
 
         void SerializeInBlock(Archive& archive);
     };
