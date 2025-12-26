@@ -36,6 +36,7 @@
 #include "Foundation/SceneViewTab/CreatePrefabFromNode.h"
 #include "Foundation/SceneViewTab/EditorCamera.h"
 #include "Foundation/SceneViewTab/SceneDebugInfo.h"
+#include "Foundation/SceneViewTab/SceneDragAndDropAnimation.h"
 #include "Foundation/SceneViewTab/SceneDragAndDropMaterial.h"
 #include "Foundation/SceneViewTab/SceneDragAndDropPrefab.h"
 #include "Foundation/SceneViewTab/SceneHierarchy.h"
@@ -111,6 +112,7 @@ EditorApplication::EditorApplication(Context* context)
     editorPluginManager_->AddPlugin("Foundation.SceneView.TransformGizmo", &Foundation_TransformManipulator);
     editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropPrefab", &Foundation_SceneDragAndDropPrefab);
     editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropMaterial", &Foundation_SceneDragAndDropMaterial);
+    editorPluginManager_->AddPlugin("Foundation.SceneView.DragAndDropAnimation", &Foundation_SceneDragAndDropAnimation);
     editorPluginManager_->AddPlugin("Foundation.SceneView.DebugInfo", &Foundation_SceneDebugInfo);
     editorPluginManager_->AddPlugin("Foundation.SceneView.Screenshot", &Foundation_SceneScreenshot);
 
