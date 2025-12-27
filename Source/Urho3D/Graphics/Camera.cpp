@@ -50,6 +50,15 @@ static const Matrix4 flipMatrix(
     0.0f, 0.0f, 0.0f, 1.0f
 );
 
+Camera::CachedProjection::CachedProjection(
+    const Matrix4& projection, float nearClip, float farClip, bool customProjection)
+    : projection_{{projection, flipMatrix * projection}}
+    , projNearClip_{nearClip}
+    , projFarClip_{farClip}
+    , customProjection_{customProjection}
+{
+}
+
 Camera::Camera(Context* context) :
     Component(context),
     orthographic_(false),
@@ -298,7 +307,7 @@ const Frustum& Camera::GetFrustum() const
     {
         Frustum frustum;
         if (cache.customProjection_)
-            frustum.Define(cache.projection_ * GetView());
+            frustum.Define(cache.projection_[0].value_ * GetView());
         else
         {
             // If not using a custom projection, prefer calculating frustum from projection parameters instead of matrix
@@ -332,7 +341,7 @@ Frustum Camera::GetSplitFrustum(float nearClip, float farClip) const
     {
         // DefineSplit() needs to project the near & far distances, so can not use a combined view-projection matrix.
         // Transform to world space afterward instead
-        ret.DefineSplit(cache.projection_, nearClip, farClip);
+        ret.DefineSplit(cache.projection_[0].value_, nearClip, farClip);
         ret.Transform(GetEffectiveWorldTransform());
     }
     else
@@ -356,7 +365,7 @@ Frustum Camera::GetViewSpaceFrustum() const
     Frustum ret;
 
     if (cache.customProjection_)
-        ret.Define(cache.projection_);
+        ret.Define(cache.projection_[0].value_);
     else
     {
         if (!orthographic_)
@@ -383,7 +392,7 @@ Frustum Camera::GetViewSpaceSplitFrustum(float nearClip, float farClip) const
     Frustum ret;
 
     if (cache.customProjection_)
-        ret.DefineSplit(cache.projection_, nearClip, farClip);
+        ret.DefineSplit(cache.projection_[0].value_, nearClip, farClip);
     else
     {
         if (!orthographic_)
@@ -458,13 +467,20 @@ Vector3 Camera::ScreenToWorldPoint(const Vector3& screenPos) const
     return ray.origin_ + ray.direction_ * rayDistance;
 }
 
-Matrix4 Camera::GetProjection(bool ignoreFlip) const
+const Matrix4& Camera::GetProjection(bool ignoreFlip) const
 {
     if (cachedProjection_.IsInvalidated())
         UpdateProjection();
 
-    const Matrix4& projection = cachedProjection_.Get().projection_;
-    return (flipVertical_ && !ignoreFlip) ? flipMatrix * projection : projection;
+    return cachedProjection_.Get().projection_[flipVertical_ && !ignoreFlip].value_;
+}
+
+const Matrix4& Camera::GetInverseProjection(bool ignoreFlip) const
+{
+    if (cachedProjection_.IsInvalidated())
+        UpdateProjection();
+
+    return cachedProjection_.Get().projection_[flipVertical_ && !ignoreFlip].inverse_;
 }
 
 Matrix4 Camera::GetGPUProjection(bool ignoreFlip) const
@@ -629,30 +645,39 @@ bool Camera::IsProjectionValid() const
     return GetFarClip() > GetNearClip();
 }
 
+void Camera::UpdateView() const
+{
+    // Note: view matrix is unaffected by node or parent scale
+    const Matrix3x4 worldTransform = GetEffectiveWorldTransform();
+    cachedView_.Restore({worldTransform.Inverse(), worldTransform});
+}
+
 const Matrix3x4& Camera::GetView() const
 {
     if (cachedView_.IsInvalidated())
-    {
-        // Note: view matrix is unaffected by node or parent scale
-        const Matrix3x4 view = GetEffectiveWorldTransform().Inverse();
-        cachedView_.Restore(view);
-    }
+        UpdateView();
+    return cachedView_.Get().value_;
+}
 
-    return cachedView_.Get();
+const Matrix3x4& Camera::GetInverseView() const
+{
+    if (cachedView_.IsInvalidated())
+        UpdateView();
+    return cachedView_.Get().inverse_;
 }
 
 const Matrix4& Camera::GetViewProj() const
 {
     if (cachedViewProj_.IsInvalidated())
         UpdateViewProjectionMatrices();
-    return cachedViewProj_.Get().viewProj_;
+    return cachedViewProj_.Get().value_;
 }
 
 const Matrix4& Camera::GetInverseViewProj() const
 {
     if (cachedViewProj_.IsInvalidated())
         UpdateViewProjectionMatrices();
-    return cachedViewProj_.Get().inverseViewProj_;
+    return cachedViewProj_.Get().inverse_;
 }
 
 void Camera::SetAspectRatioInternal(float aspectRatio)
@@ -756,8 +781,7 @@ void Camera::UpdateProjection() const
 void Camera::UpdateViewProjectionMatrices() const
 {
     const Matrix4 viewProj = GetProjection() * GetView();
-    const Matrix4 inverseViewProj = viewProj.Inverse();
-    cachedViewProj_.Restore({ viewProj, inverseViewProj });
+    cachedViewProj_.Restore(viewProj);
 }
 
 const Color& Camera::GetEffectiveAmbientColor() const
