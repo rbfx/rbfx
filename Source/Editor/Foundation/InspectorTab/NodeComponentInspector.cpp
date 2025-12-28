@@ -145,7 +145,7 @@ void NodeComponentInspector::OnProjectRequest(RefCounted* senderTab, ProjectRequ
 NodeComponentInspector::NodeVector NodeComponentInspector::CollectNodes() const
 {
     const auto sceneIter = ea::find_if(nodes_.begin(), nodes_.end(),
-        [](const Node* node) { return node->GetType() == Scene::GetTypeStatic(); });
+        [](const Node* node) { return node && node->GetType() == Scene::GetTypeStatic(); });
 
     // If scene is selected, inspect only it
     if (sceneIter != nodes_.end())
