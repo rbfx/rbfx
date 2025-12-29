@@ -228,6 +228,9 @@ inline T AbsMod(T x, T y)
 /// @specialization{float}
 template <class T> inline T Fract(T value) { return value - floor(value); }
 
+/// Return exact value of y if x is close to it, return x as-is otherwise.
+template <class T> inline T SnapTo(T x, T y, T eps = M_EPSILON) { return Equals(x, y, eps) ? y : x; }
+
 /// Round value down.
 /// @specialization{float}
 template <class T> inline T Floor(T x) { return floor(x); }

@@ -68,12 +68,35 @@ void Matrix4::Decompose(Vector3& translation, Quaternion& rotation, Vector3& sca
     translation.y_ = m13_;
     translation.z_ = m23_;
 
-    scale.x_ = sqrtf(m00_ * m00_ + m10_ * m10_ + m20_ * m20_);
-    scale.y_ = sqrtf(m01_ * m01_ + m11_ * m11_ + m21_ * m21_);
-    scale.z_ = sqrtf(m02_ * m02_ + m12_ * m12_ + m22_ * m22_);
+    // Avoid noise in scale
+    scale.x_ = SnapTo(sqrtf(m00_ * m00_ + m10_ * m10_ + m20_ * m20_), 1.0f, M_EPSILON);
+    scale.y_ = SnapTo(sqrtf(m01_ * m01_ + m11_ * m11_ + m21_ * m21_), 1.0f, M_EPSILON);
+    scale.z_ = SnapTo(sqrtf(m02_ * m02_ + m12_ * m12_ + m22_ * m22_), 1.0f, M_EPSILON);
+
+    // Always mirror X axis to disambiguate decomposition
+    const Matrix3 rotationScaleMatrix = ToMatrix3();
+    if (rotationScaleMatrix.Determinant() < 0.0f)
+        scale.x_ = -scale.x_;
 
     Vector3 invScale(1.0f / scale.x_, 1.0f / scale.y_, 1.0f / scale.z_);
-    rotation = Quaternion(ToMatrix3().Scaled(invScale));
+    rotation = Quaternion(rotationScaleMatrix.Scaled(invScale));
+}
+
+float Matrix4::Determinant() const
+{
+    float v0 = m20_ * m31_ - m21_ * m30_;
+    float v1 = m20_ * m32_ - m22_ * m30_;
+    float v2 = m20_ * m33_ - m23_ * m30_;
+    float v3 = m21_ * m32_ - m22_ * m31_;
+    float v4 = m21_ * m33_ - m23_ * m31_;
+    float v5 = m22_ * m33_ - m23_ * m32_;
+
+    float i00 = (v5 * m11_ - v4 * m12_ + v3 * m13_);
+    float i10 = -(v5 * m10_ - v2 * m12_ + v1 * m13_);
+    float i20 = (v4 * m10_ - v2 * m11_ + v0 * m13_);
+    float i30 = -(v3 * m10_ - v1 * m11_ + v0 * m12_);
+
+    return (i00 * m00_ + i10 * m01_ + i20 * m02_ + i30 * m03_);
 }
 
 Matrix4 Matrix4::Inverse() const

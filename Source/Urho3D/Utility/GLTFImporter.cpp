@@ -1017,7 +1017,12 @@ private:
             if (!sourceNode.rotation.empty())
                 node.rotation_ = ReadQuaternion(sourceNode.rotation);
             if (!sourceNode.scale.empty())
+            {
                 node.scale_ = ReadVector3(sourceNode.scale);
+                node.scale_.x_ = SnapTo(node.scale_.x_, 1.0f, M_EPSILON);
+                node.scale_.y_ = SnapTo(node.scale_.y_, 1.0f, M_EPSILON);
+                node.scale_.z_ = SnapTo(node.scale_.z_, 1.0f, M_EPSILON);
+            }
         }
 
         for (const GLTFNodePtr& child : node.children_)
