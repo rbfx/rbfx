@@ -51,17 +51,6 @@
 namespace Urho3D
 {
 
-bool NeedToReloadDependencies(Resource* resource)
-{
-    // It should always return true in perfect world, but I never tested it.
-    if (!resource)
-        return true;
-    const ea::string extension = GetExtension(resource->GetName());
-    return extension == ".xml"
-        || extension == ".glsl"
-        || extension == ".hlsl";
-}
-
 static const char* checkDirs[] =
 {
     "Fonts",
@@ -140,7 +129,7 @@ bool ResourceCache::AddManualResource(Resource* resource)
 void ResourceCache::ReleaseResource(StringHash type, const ea::string& name, bool force)
 {
     StringHash nameHash(name);
-    const SharedPtr<Resource>& existingRes = FindResource(type, nameHash);
+    const SharedPtr<Resource>& existingRes = FindSpecificResource(type, nameHash);
     if (!existingRes)
         return;
 
@@ -297,13 +286,6 @@ void ResourceCache::ReleaseAllResources(bool force)
     } while (released && !force);
 }
 
-bool ResourceCache::ReloadResource(const ea::string_view resourceName)
-{
-    if (Resource* resource = FindResource(StringHash::Empty, resourceName))
-        return ReloadResource(resource);
-    return false;
-}
-
 bool ResourceCache::ReloadResource(Resource* resource)
 {
     if (!resource)
@@ -332,39 +314,30 @@ bool ResourceCache::ReloadResource(Resource* resource)
 
 void ResourceCache::ReloadResourceWithDependencies(const ea::string& fileName)
 {
-    StringHash fileNameHash(fileName);
+    const StringHash fileNameHash(fileName);
+
     // If the filename is a resource we keep track of, reload it
-    const SharedPtr<Resource>& resource = FindResource(fileNameHash);
-    if (resource)
+    ea::vector<SharedPtr<Resource>> resources;
+    FindMatchingResources(fileNameHash, resources);
+    for (Resource* resource : resources)
     {
-        URHO3D_LOGDEBUG("Reloading changed resource " + fileName);
-        ReloadResource(resource.Get());
+        URHO3D_LOGDEBUG("Reloading changed {} resource {}", resource->GetTypeName(), fileName);
+        ReloadResource(resource);
     }
-    // Always perform dependency resource check for resource loaded from XML file as it could be used in inheritance
-    if (NeedToReloadDependencies(resource))
+
+    // Check and reload all dependent resources
+    if (const auto iter = dependentResources_.find(fileNameHash); iter != dependentResources_.end())
     {
-        // Check if this is a dependency resource, reload dependents
-        auto j = dependentResources_.find(
-            fileNameHash);
-        if (j != dependentResources_.end())
+        resources.clear();
+
+        for (const StringHash dependentResourceNameHash : iter->second)
+            FindMatchingResources(dependentResourceNameHash, resources);
+
+        for (Resource* resource : resources)
         {
-            // Reloading a resource may modify the dependency tracking structure. Therefore collect the
-            // resources we need to reload first
-            ea::vector<SharedPtr<Resource> > dependents;
-            dependents.reserve(j->second.size());
-
-            for (auto k = j->second.begin(); k != j->second.end(); ++k)
-            {
-                const SharedPtr<Resource>& dependent = FindResource(*k);
-                if (dependent)
-                    dependents.push_back(dependent);
-            }
-
-            for (unsigned k = 0; k < dependents.size(); ++k)
-            {
-                URHO3D_LOGDEBUG("Reloading resource " + dependents[k]->GetName() + " depending on " + fileName);
-                ReloadResource(dependents[k].Get());
-            }
+            URHO3D_LOGDEBUG(
+                "Reloading {} resource {} depending on {}", resource->GetTypeName(), resource->GetName(), fileName);
+            ReloadResource(resource);
         }
     }
 }
@@ -430,6 +403,12 @@ AbstractFilePtr ResourceCache::GetFile(const ea::string& name, bool sendEventOnF
 
 Resource* ResourceCache::GetExistingResource(StringHash type, const ea::string& name)
 {
+    if (type == StringHash::Empty)
+    {
+        URHO3D_LOGERROR("ResourceCache::GetExistingResource is called with unspecified type");
+        return nullptr;
+    }
+
     ea::string sanitatedName = SanitateResourceName(name);
 
     if (!Thread::IsMainThread())
@@ -442,10 +421,7 @@ Resource* ResourceCache::GetExistingResource(StringHash type, const ea::string& 
     if (sanitatedName.empty())
         return nullptr;
 
-    StringHash nameHash(sanitatedName);
-
-    const SharedPtr<Resource>& existing = type != StringHash::Empty ? FindResource(type, nameHash) : FindResource(nameHash);
-    return existing;
+    return FindSpecificResource(type, sanitatedName);
 }
 
 Resource* ResourceCache::GetResource(StringHash type, const ea::string& name, bool sendEventOnFailure)
@@ -469,7 +445,7 @@ Resource* ResourceCache::GetResource(StringHash type, const ea::string& name, bo
     backgroundLoader_->WaitForResource(type, nameHash);
 #endif
 
-    const SharedPtr<Resource>& existing = FindResource(type, nameHash);
+    const SharedPtr<Resource>& existing = FindSpecificResource(type, nameHash);
     if (existing)
         return existing;
 
@@ -535,7 +511,7 @@ bool ResourceCache::BackgroundLoadResource(StringHash type, const ea::string& na
 
     // First check if already exists as a loaded resource
     StringHash nameHash(sanitatedName);
-    if (FindResource(type, nameHash) != noResource)
+    if (FindSpecificResource(type, nameHash) != noResource)
         return false;
 
     return backgroundLoader_->QueueResource(type, sanitatedName, sendEventOnFailure, caller);
@@ -760,7 +736,7 @@ ea::string ResourceCache::PrintMemoryUsage() const
     return output;
 }
 
-const SharedPtr<Resource>& ResourceCache::FindResource(StringHash type, StringHash nameHash)
+const SharedPtr<Resource>& ResourceCache::FindSpecificResource(StringHash type, StringHash nameHash)
 {
     MutexLock lock(resourceMutex_);
 
@@ -774,19 +750,15 @@ const SharedPtr<Resource>& ResourceCache::FindResource(StringHash type, StringHa
     return j->second;
 }
 
-const SharedPtr<Resource>& ResourceCache::FindResource(StringHash nameHash)
+void ResourceCache::FindMatchingResources(StringHash nameHash, ea::vector<SharedPtr<Resource>>& resources)
 {
     MutexLock lock(resourceMutex_);
 
-    for (auto i = resourceGroups_.begin(); i !=
-        resourceGroups_.end(); ++i)
+    for (const auto& [_, group] : resourceGroups_)
     {
-        auto j = i->second.resources_.find(nameHash);
-        if (j != i->second.resources_.end())
-            return j->second;
+        if (const auto iter = group.resources_.find(nameHash); iter != group.resources_.end())
+            resources.push_back(iter->second);
     }
-
-    return noResource;
 }
 
 void ResourceCache::ReleasePackageResources(PackageFile* package, bool force)

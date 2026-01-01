@@ -106,8 +106,6 @@ public:
     /// Release all resources. When called with the force flag false, releases all currently unused resources.
     void ReleaseAllResources(bool force = false);
     /// Reload a resource. Return true on success. The resource will not be removed from the cache in case of failure.
-    bool ReloadResource(const ea::string_view resourceName);
-    /// Reload a resource. Return true on success. The resource will not be removed from the cache in case of failure.
     bool ReloadResource(Resource* resource);
     /// Reload a resource based on filename. Causes also reload of dependent resources if necessary.
     void ReloadResourceWithDependencies(const ea::string& fileName);
@@ -224,9 +222,9 @@ public:
 
 private:
     /// Find a resource.
-    const SharedPtr<Resource>& FindResource(StringHash type, StringHash nameHash);
+    const SharedPtr<Resource>& FindSpecificResource(StringHash type, StringHash nameHash);
     /// Find a resource by name only. Searches all type groups.
-    const SharedPtr<Resource>& FindResource(StringHash nameHash);
+    void FindMatchingResources(StringHash nameHash, ea::vector<SharedPtr<Resource>>& resources);
     /// Release resources loaded from a package file.
     void ReleasePackageResources(PackageFile* package, bool force = false);
     /// Update a resource group. Recalculate memory use and release resources if over memory budget.

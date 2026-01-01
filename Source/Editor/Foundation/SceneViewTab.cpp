@@ -1022,16 +1022,6 @@ void SceneViewTab::SavePageScene(SceneViewPage& page) const
             page->ignoreNextReload_ = true;
             needReload = true;
         }
-
-        // Sadly, ResourceCache can only reload one resource type for each name. Force reload here.
-        // TODO: Fix resource cache
-        auto cache = GetSubsystem<ResourceCache>();
-        if (auto prefabResource = cache->GetExistingResource<PrefabResource>(resourceName))
-            cache->ReloadResource(prefabResource);
-        if (auto sceneResource = cache->GetExistingResource<SceneResource>(resourceName))
-            cache->ReloadResource(sceneResource);
-        if (auto xmlResource = cache->GetExistingResource<XMLFile>(resourceName))
-            cache->ReloadResource(xmlResource);
     });
 }
 
