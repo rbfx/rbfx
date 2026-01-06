@@ -47,7 +47,6 @@ static const float DEFAULT_AGENT_MAX_ACCEL = 0.f;
 static const unsigned DEFAULT_AGENT_QUERY_FILTER_TYPE = 0;
 static const unsigned DEFAULT_AGENT_OBSTACLE_AVOIDANCE_TYPE = 0;
 static const NavigationQuality DEFAULT_AGENT_AVOIDANCE_QUALITY = NAVIGATIONQUALITY_HIGH;
-static const NavigationPushiness DEFAULT_AGENT_NAVIGATION_PUSHINESS = NAVIGATIONPUSHINESS_MEDIUM;
 
 static const unsigned SCOPE_NAVIGATION_QUALITY_PARAMS = 1;
 static const unsigned SCOPE_NAVIGATION_PUSHINESS_PARAMS = 2;
@@ -87,7 +86,6 @@ CrowdAgent::CrowdAgent(Context* context) :
     queryFilterType_(DEFAULT_AGENT_QUERY_FILTER_TYPE),
     obstacleAvoidanceType_(DEFAULT_AGENT_OBSTACLE_AVOIDANCE_TYPE),
     navQuality_(DEFAULT_AGENT_AVOIDANCE_QUALITY),
-    navPushiness_(DEFAULT_AGENT_NAVIGATION_PUSHINESS),
     previousTargetState_(CA_TARGET_NONE),
     previousAgentState_(CA_STATE_WALKING),
     ignoreTransformChanges_(false)
@@ -117,7 +115,8 @@ void CrowdAgent::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Height", float, height_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Query Filter Type", unsigned, queryFilterType_, DEFAULT_AGENT_QUERY_FILTER_TYPE, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Obstacle Avoidance Type", unsigned, obstacleAvoidanceType_, DEFAULT_AGENT_OBSTACLE_AVOIDANCE_TYPE, AM_DEFAULT);
-    URHO3D_ENUM_ATTRIBUTE("Navigation Pushiness", navPushiness_, crowdAgentPushinessNames, DEFAULT_AGENT_NAVIGATION_PUSHINESS, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Collision Query Range", float, collisionQueryRange_, DefaultCollisionQueryRange, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Separation Weight", float, separationWeight_, DefaultSeparationWeight, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE("Navigation Quality", navQuality_, crowdAgentAvoidanceQualityNames, DEFAULT_AGENT_AVOIDANCE_QUALITY, AM_DEFAULT);
 }
 
@@ -230,28 +229,8 @@ void CrowdAgent::UpdateParameters(unsigned scope)
 
         if (scope & SCOPE_NAVIGATION_PUSHINESS_PARAMS)
         {
-            switch (navPushiness_)
-            {
-            case NAVIGATIONPUSHINESS_LOW:
-                params.separationWeight = 4.0f;
-                params.collisionQueryRange = radius_ * 16.0f;
-                break;
-
-            case NAVIGATIONPUSHINESS_MEDIUM:
-                params.separationWeight = 2.0f;
-                params.collisionQueryRange = radius_ * 8.0f;
-                break;
-
-            case NAVIGATIONPUSHINESS_HIGH:
-                params.separationWeight = 0.5f;
-                params.collisionQueryRange = radius_ * 2.0f;
-                break;
-
-            case NAVIGATIONPUSHINESS_NONE:
-                params.separationWeight = 0.0f;
-                params.collisionQueryRange = radius_ * 2.0f;
-                break;
-            }
+            params.separationWeight = separationWeight_;
+            params.collisionQueryRange = collisionQueryRange_;
         }
 
         if (scope & SCOPE_BASE_PARAMS)
@@ -458,11 +437,20 @@ void CrowdAgent::SetNavigationQuality(NavigationQuality val)
     }
 }
 
-void CrowdAgent::SetNavigationPushiness(NavigationPushiness val)
+void CrowdAgent::SetCollisionQueryRange(float range)
 {
-    if (val != navPushiness_)
+    if (collisionQueryRange_ != range)
     {
-        navPushiness_ = val;
+        collisionQueryRange_ = range;
+        UpdateParameters(SCOPE_NAVIGATION_PUSHINESS_PARAMS);
+    }
+}
+
+void CrowdAgent::SetSeparationWeight(float weight)
+{
+    if (separationWeight_ != weight)
+    {
+        separationWeight_ = weight;
         UpdateParameters(SCOPE_NAVIGATION_PUSHINESS_PARAMS);
     }
 }

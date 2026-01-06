@@ -62,14 +62,6 @@ enum NavigationQuality
     NAVIGATIONQUALITY_HIGH = 2
 };
 
-enum NavigationPushiness
-{
-    NAVIGATIONPUSHINESS_LOW = 0,
-    NAVIGATIONPUSHINESS_MEDIUM,
-    NAVIGATIONPUSHINESS_HIGH,
-    NAVIGATIONPUSHINESS_NONE
-};
-
 /// Crowd agent component, requires a CrowdManager component in the scene. When not set explicitly, agent's radius and height are defaulted to navigation mesh's agent radius and height, respectively.
 class URHO3D_API CrowdAgent : public Component
 {
@@ -77,6 +69,10 @@ class URHO3D_API CrowdAgent : public Component
 
     friend class CrowdManager;
     friend void CrowdAgentUpdateCallback(bool positionUpdate, dtCrowdAgent* ag, float* pos, float dt);
+
+public:
+    static constexpr float DefaultCollisionQueryRange = 5.0f;
+    static constexpr float DefaultSeparationWeight = 2.0f;
 
 public:
     /// Construct.
@@ -139,9 +135,8 @@ public:
     /// Set the agent's navigation quality.
     /// @property
     void SetNavigationQuality(NavigationQuality val);
-    /// Set the agent's navigation pushiness.
-    /// @property
-    void SetNavigationPushiness(NavigationPushiness val);
+    void SetCollisionQueryRange(float range);
+    void SetSeparationWeight(float weight);
 
     /// Return the agent's position.
     /// @property
@@ -207,9 +202,9 @@ public:
     /// @property
     NavigationQuality GetNavigationQuality() const { return navQuality_; }
 
-    /// Get the agent's navigation pushiness.
-    /// @property
-    NavigationPushiness GetNavigationPushiness() const { return navPushiness_; }
+    float GetCollisionQueryRange() const { return collisionQueryRange_; }
+
+    float GetSeparationWeight() const { return separationWeight_; }
 
     /// Return true when the agent has a target.
     /// @property{get_requestedTarget}
@@ -265,6 +260,7 @@ private:
     CrowdAgentRequestedTarget requestedTargetType_;
     /// Flag indicating the node's position should be updated by Detour crowd manager.
     bool updateNodePosition_;
+
     /// Agent's max acceleration.
     float maxAccel_;
     /// Agent's max Velocity.
@@ -279,8 +275,9 @@ private:
     unsigned obstacleAvoidanceType_;
     /// Agent's navigation quality. The higher the setting, the higher the CPU usage during crowd simulation.
     NavigationQuality navQuality_;
-    /// Agent's navigation pushiness. The higher the setting, the stronger the agent pushes its colliding neighbours around.
-    NavigationPushiness navPushiness_;
+    float collisionQueryRange_{DefaultCollisionQueryRange};
+    float separationWeight_{DefaultSeparationWeight};
+
     /// Agent's previous position used to check for position changes.
     Vector3 previousPosition_;
     /// Agent's previous target state used to check for state changes.

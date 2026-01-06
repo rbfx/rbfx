@@ -3,7 +3,6 @@
 %csconstvalue("0") Urho3D::NAVIGATIONQUALITY_LOW;
 %csconstvalue("1") Urho3D::NAVIGATIONQUALITY_MEDIUM;
 %csconstvalue("2") Urho3D::NAVIGATIONQUALITY_HIGH;
-%csconstvalue("0") Urho3D::NAVIGATIONPUSHINESS_LOW;
 %csconstvalue("0") Urho3D::NAVMESH_PARTITION_WATERSHED;
 %csconstvalue("0") Urho3D::NAVPATHFLAG_NONE;
 %csconstvalue("1") Urho3D::NAVPATHFLAG_START;
@@ -35,7 +34,6 @@
 %csattribute(Urho3D::CrowdAgent, %arg(unsigned int), QueryFilterType, GetQueryFilterType, SetQueryFilterType);
 %csattribute(Urho3D::CrowdAgent, %arg(unsigned int), ObstacleAvoidanceType, GetObstacleAvoidanceType, SetObstacleAvoidanceType);
 %csattribute(Urho3D::CrowdAgent, %arg(Urho3D::NavigationQuality), NavigationQuality, GetNavigationQuality, SetNavigationQuality);
-%csattribute(Urho3D::CrowdAgent, %arg(Urho3D::NavigationPushiness), NavigationPushiness, GetNavigationPushiness, SetNavigationPushiness);
 %csattribute(Urho3D::CrowdAgent, %arg(bool), IsInCrowd, IsInCrowd);
 %csattribute(Urho3D::NavigationMesh, %arg(ea::vector<IntVector2>), AllTileIndices, GetAllTileIndices);
 %csattribute(Urho3D::NavigationMesh, %arg(ea::string), MeshName, GetMeshName, SetMeshName);
