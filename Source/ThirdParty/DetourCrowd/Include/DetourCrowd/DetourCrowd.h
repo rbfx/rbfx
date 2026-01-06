@@ -100,6 +100,12 @@ struct dtCrowdAgentParams
 
 	/// User defined data attached to the agent.
 	void* userData;
+
+	/// Urho3D: Layer and mask bitmasks for filtering agent interactions.
+	/// The agent is only affected by neighbor agents when (ag->mask & nei->layer) is non-zero.
+	/// If layer is 0, filtering is disabled.
+	unsigned int layer;
+	unsigned int mask;
 };
 
 enum MoveRequestState

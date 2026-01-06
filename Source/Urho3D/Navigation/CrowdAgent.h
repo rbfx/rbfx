@@ -73,6 +73,8 @@ class URHO3D_API CrowdAgent : public Component
 public:
     static constexpr float DefaultCollisionQueryRange = 5.0f;
     static constexpr float DefaultSeparationWeight = 2.0f;
+    static constexpr unsigned DefaultCollisionLayer = 0;
+    static constexpr unsigned DefaultCollisionMask = 0xffffffff;
 
 public:
     /// Construct.
@@ -137,6 +139,8 @@ public:
     void SetNavigationQuality(NavigationQuality val);
     void SetCollisionQueryRange(float range);
     void SetSeparationWeight(float weight);
+    void SetCollisionLayer(unsigned layer);
+    void SetCollisionMask(unsigned mask);
 
     /// Return the agent's position.
     /// @property
@@ -205,6 +209,10 @@ public:
     float GetCollisionQueryRange() const { return collisionQueryRange_; }
 
     float GetSeparationWeight() const { return separationWeight_; }
+
+    unsigned GetCollisionLayer() const { return collisionLayer_; }
+
+    unsigned GetCollisionMask() const { return collisionMask_; }
 
     /// Return true when the agent has a target.
     /// @property{get_requestedTarget}
@@ -277,6 +285,8 @@ private:
     NavigationQuality navQuality_;
     float collisionQueryRange_{DefaultCollisionQueryRange};
     float separationWeight_{DefaultSeparationWeight};
+    unsigned collisionLayer_{DefaultCollisionLayer};
+    unsigned collisionMask_{DefaultCollisionMask};
 
     /// Agent's previous position used to check for position changes.
     Vector3 previousPosition_;

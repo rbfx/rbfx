@@ -117,6 +117,8 @@ void CrowdAgent::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Obstacle Avoidance Type", unsigned, obstacleAvoidanceType_, DEFAULT_AGENT_OBSTACLE_AVOIDANCE_TYPE, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Collision Query Range", float, collisionQueryRange_, DefaultCollisionQueryRange, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Separation Weight", float, separationWeight_, DefaultSeparationWeight, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Collision Layer", unsigned, collisionLayer_, DefaultCollisionLayer, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Collision Mask", unsigned, collisionMask_, DefaultCollisionMask, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE("Navigation Quality", navQuality_, crowdAgentAvoidanceQualityNames, DEFAULT_AGENT_AVOIDANCE_QUALITY, AM_DEFAULT);
 }
 
@@ -242,6 +244,8 @@ void CrowdAgent::UpdateParameters(unsigned scope)
             params.pathOptimizationRange = radius_ * 30.0f;
             params.queryFilterType = (unsigned char)queryFilterType_;
             params.obstacleAvoidanceType = (unsigned char)obstacleAvoidanceType_;
+            params.layer = collisionLayer_;
+            params.mask = collisionMask_;
         }
 
         crowdManager_->GetCrowd()->updateAgentParameters(agentCrowdId_, &params);
@@ -452,6 +456,24 @@ void CrowdAgent::SetSeparationWeight(float weight)
     {
         separationWeight_ = weight;
         UpdateParameters(SCOPE_NAVIGATION_PUSHINESS_PARAMS);
+    }
+}
+
+void CrowdAgent::SetCollisionLayer(unsigned layer)
+{
+    if (collisionLayer_ != layer)
+    {
+        collisionLayer_ = layer;
+        UpdateParameters(SCOPE_BASE_PARAMS);
+    }
+}
+
+void CrowdAgent::SetCollisionMask(unsigned mask)
+{
+    if (collisionMask_ != mask)
+    {
+        collisionMask_ = mask;
+        UpdateParameters(SCOPE_BASE_PARAMS);
     }
 }
 
