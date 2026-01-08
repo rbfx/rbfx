@@ -41,7 +41,7 @@ struct Particle
     /// Lifetime.
     float timeToLive_;
     /// Size scaling value.
-    float scale_;
+    Vector2 scale_;
     /// Rotation speed.
     float rotationSpeed_;
     /// Current color animation index.
