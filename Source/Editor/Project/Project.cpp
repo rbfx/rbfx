@@ -361,6 +361,9 @@ void Project::Destroy()
 
     ProcessDelayedSaves(true);
 
+    tabs_.clear();
+    sortedTabs_.clear();
+
     context_->RemoveSubsystem<PluginManager>();
     context_->RegisterSubsystem<PluginManager>();
 }
