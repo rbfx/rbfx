@@ -1302,7 +1302,7 @@ public:
             new (value_.storage_) CustomVariantValueImpl<ea::unique_ptr<T>>(ea::make_unique<T>(ea::move(value)));
     }
 
-    /// Return int or zero on type mismatch. Floats and doubles are converted.
+    /// Return int or zero on type mismatch. Floats, doubles, and bools are converted.
     int GetInt() const
     {
         if (type_ == VAR_INT)
@@ -1313,11 +1313,13 @@ public:
             return static_cast<int>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<int>(value_.double_);
+        else if (type_ == VAR_BOOL)
+            return value_.bool_ ? 1 : 0;
         else
             return 0;
     }
 
-    /// Return 64 bit int or zero on type mismatch. Floats and doubles are converted.
+    /// Return 64 bit int or zero on type mismatch. Floats, doubles, and bools are converted.
     long long GetInt64() const
     {
         if (type_ == VAR_INT64)
@@ -1328,11 +1330,13 @@ public:
             return static_cast<long long>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<long long>(value_.double_);
+        else if (type_ == VAR_BOOL)
+            return value_.bool_ ? 1 : 0;
         else
             return 0;
     }
 
-    /// Return unsigned 64 bit int or zero on type mismatch. Floats and doubles are converted.
+    /// Return unsigned 64 bit int or zero on type mismatch. Floats, doubles, and bools are converted.
     unsigned long long GetUInt64() const
     {
         if (type_ == VAR_INT64)
@@ -1343,11 +1347,13 @@ public:
             return static_cast<unsigned long long>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<unsigned long long>(value_.double_);
+        else if (type_ == VAR_BOOL)
+            return value_.bool_ ? 1 : 0;
         else
             return 0;
     }
 
-    /// Return unsigned int or zero on type mismatch. Floats and doubles are converted.
+    /// Return unsigned int or zero on type mismatch. Floats, doubles, and bools are converted.
     unsigned GetUInt() const
     {
         if (type_ == VAR_INT)
@@ -1358,6 +1364,8 @@ public:
             return static_cast<unsigned>(value_.float_);
         else if (type_ == VAR_DOUBLE)
             return static_cast<unsigned>(value_.double_);
+        else if (type_ == VAR_BOOL)
+            return value_.bool_ ? 1 : 0;
         else
             return 0;
     }
@@ -1381,7 +1389,7 @@ public:
         }
     }
 
-    /// Return float or zero on type mismatch. Ints and doubles are converted.
+    /// Return float or zero on type mismatch. Ints, doubles, and bools are converted.
     float GetFloat() const
     {
         if (type_ == VAR_FLOAT)
@@ -1392,11 +1400,13 @@ public:
             return static_cast<float>(value_.int_);
         else if (type_ == VAR_INT64)
             return static_cast<float>(value_.int64_);
+        else if (type_ == VAR_BOOL)
+            return value_.bool_ ? 1.0f : 0.0f;
         else
             return 0.0f;
     }
 
-    /// Return double or zero on type mismatch. Ints and floats are converted.
+    /// Return double or zero on type mismatch. Ints, floats, and bools are converted.
     double GetDouble() const
     {
         if (type_ == VAR_DOUBLE)
@@ -1407,6 +1417,8 @@ public:
             return static_cast<double>(value_.int_);
         else if (type_ == VAR_INT64)
             return static_cast<double>(value_.int64_);
+        else if (type_ == VAR_BOOL)
+            return value_.bool_ ? 1.0 : 0.0;
         else
             return 0.0;
     }
