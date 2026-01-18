@@ -28,6 +28,7 @@ else ()
 endif ()
 
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME ThirdParty)
+set(BUILD_SHARED_LIBS_SAVED ${BUILD_SHARED_LIBS})
 
 # CI builds should not use ccache for dependencies, as dependencies are
 # reused from older SDK uploads.
@@ -210,6 +211,27 @@ endif ()
 if (URHO3D_PHYSICS)
     add_subdirectory (Bullet)
     add_subdirectory (StanHull)
+
+    set (BUILD_SHARED_LIBS OFF)
+    set (USE_STATIC_MSVC_RUNTIME_LIBRARY ${URHO3D_STATIC_RUNTIME})
+    set (DEBUG_RENDERER_IN_DISTRIBUTION ON)
+    set (PROFILER_IN_DISTRIBUTION ON)
+    set (FLOATING_POINT_EXCEPTIONS_ENABLED OFF)
+    set (JPH_USE_DX12 OFF)
+    set (JPH_USE_MTL OFF)
+    set (JPH_USE_VK OFF)
+    set (ENABLE_ALL_WARNINGS OFF)
+    set (ENABLE_INSTALL OFF)
+    add_subdirectory (JoltPhysics/Build)
+    set (BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS_SAVED})
+    if (IOS)
+        target_compile_options(Jolt PRIVATE -fno-objc-arc)
+    endif ()
+    install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/JoltPhysics/Jolt/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Jolt
+        FILES_MATCHING PATTERN "*.h"
+    )
+    install_third_party_libs(Jolt)
 endif ()
 
 if (DESKTOP AND (URHO3D_PROFILING OR URHO3D_TOOLS OR URHO3D_EDITOR))
@@ -237,7 +259,6 @@ if (URHO3D_PROFILING)
         install_third_party_libs(zstd)
 
         # Configure capstone as static library
-        set(BUILD_SHARED_LIBS_SAVED ${BUILD_SHARED_LIBS})
         set(BUILD_SHARED_LIBS OFF)
         set(CAPSTONE_BUILD_STATIC ON CACHE BOOL "" FORCE)
         set(CAPSTONE_BUILD_SHARED OFF CACHE BOOL "" FORCE)

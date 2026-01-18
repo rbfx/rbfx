@@ -74,6 +74,7 @@ endif ()
 
 if (URHO3D_PHYSICS)
     define_engine_source_files (Physics)
+    define_engine_source_files (Jolt)
 endif ()
 
 if (URHO3D_URHO2D)
@@ -210,6 +211,7 @@ set (PUBLIC_THIRD_PARTY_DEPENDENCIES
     Vulkan-Headers
     datachannel-static
     TracyClient
+    Jolt
 )
 
 # Private dependencies that are hidden from the user and are not exposed in the public API or headers

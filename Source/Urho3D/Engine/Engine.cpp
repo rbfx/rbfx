@@ -68,6 +68,7 @@
 #ifdef URHO3D_PHYSICS
 #include "../Physics/PhysicsWorld.h"
 #include "../Physics/RaycastVehicle.h"
+#include "../Jolt/Physics.h"
 #endif
 #ifdef URHO3D_PHYSICS2D
 #include "../Physics2D/Physics2D.h"
@@ -291,6 +292,7 @@ Engine::Engine(Context* context) :
 
 #ifdef URHO3D_PHYSICS
     RegisterPhysicsLibrary(context_);
+    RegisterJoltLibrary(context_);
 #endif
 
 #ifdef URHO3D_PHYSICS2D
