@@ -504,7 +504,7 @@ void CollisionShape::DrawDebugGeometry(DebugRenderer* debug, const Color& color,
     {
         const auto* convexData = static_cast<ConvexData*>(GetGeometryData());
         const Matrix3x4 shapeTransform{
-            worldTransform * position_, worldTransform.Rotation() * rotation_, worldTransform.Scale()};
+            worldTransform * position_, worldTransform.Rotation() * rotation_, worldTransform.Scale() * size_ * 2.0f};
 
         if (convexData)
         {
