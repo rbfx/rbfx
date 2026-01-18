@@ -25,6 +25,8 @@
 #include "../IO/ArchiveSerializationBasic.h"
 #include "../IO/ArchiveSerializationVariant.h"
 
+#include <EASTL/variant.h>
+
 namespace Urho3D
 {
 
@@ -33,7 +35,7 @@ namespace Detail
 
 /// Serialize tie of vectors of the same size. Each tie of elements is serialized as separate block.
 template <class T, class U, size_t... Is>
-inline void SerializeVectorTie(Archive& archive, const char* name, T& vectorTie, const char* element, const U& serializeValue, ea::index_sequence<Is...>)
+void SerializeVectorTie(Archive& archive, const char* name, T& vectorTie, const char* element, const U& serializeValue, ea::index_sequence<Is...>)
 {
     const unsigned sizes[] = { ea::get<Is>(vectorTie).size()... };
 
@@ -57,6 +59,18 @@ inline void SerializeVectorTie(Archive& archive, const char* name, T& vectorTie,
         const auto elementTuple = ea::tie(ea::get<Is>(vectorTie)[i]...);
         serializeValue(archive, element, elementTuple);
     }
+}
+
+template <class T, std::size_t... Is> void EmplaceByIndex(T& v, unsigned index, ea::index_sequence<Is...>)
+{
+    const bool matched = ((index == Is ? (v.template emplace<Is>(), true) : false) || ...);
+    if (!matched)
+        throw ArchiveException("Invalid variant index {}", index);
+}
+
+template <class T> void EmplaceByIndex(T& v, unsigned index)
+{
+    EmplaceByIndex(v, index, ea::make_index_sequence<ea::variant_size_v<T>>{});
 }
 
 URHO3D_TYPE_TRAIT(IsVectorType, (\
@@ -379,6 +393,22 @@ void SerializeValue(
     {
         serializeValue(archive, "value", *value);
     }
+}
+
+/// Serialize variant value.
+template <class... T, class TSerializer = Detail::DefaultSerializer>
+void SerializeValue(
+    Archive& archive, const char* name, ea::variant<T...>& value, const TSerializer& serializeValue = TSerializer{})
+{
+    ArchiveBlock block = archive.OpenUnorderedBlock(name);
+
+    auto index = static_cast<unsigned>(value.index());
+    SerializeValue(archive, "index", index);
+
+    if (archive.IsInput())
+        Detail::EmplaceByIndex(value, index);
+
+    ea::visit([&](auto& value) { serializeValue(archive, "value", value); }, value);
 }
 
 } // namespace Urho3D
