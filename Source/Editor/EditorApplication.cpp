@@ -166,13 +166,6 @@ void EditorApplication::Setup()
     }
 #endif
 
-    resourcePrefixPath_ = fs->FindResourcePrefixPath();
-    if (resourcePrefixPath_.empty())
-    {
-        ErrorDialog("Cannot launch Editor", "Prefix path is not found, unable to continue. Prefix path must contain CoreData and EditorData.");
-        engine_->Exit();
-    }
-
     log->SetLogFormat("[%H:%M:%S] [%l] [%n] : %v");
 
     SetRandomSeed(Time::GetTimeSinceEpoch());
@@ -197,12 +190,15 @@ void EditorApplication::Setup()
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
     engineParameters_[EP_AUTOLOAD_PATHS] = "";
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;EditorData";
-    engineParameters_[EP_RESOURCE_PREFIX_PATHS] = resourcePrefixPath_;
     engineParameters_[EP_RESOURCE_ROOT_FILE] = "";
     engineParameters_[EP_WINDOW_MAXIMIZE] = true;
     engineParameters_[EP_ENGINE_AUTO_LOAD_SCRIPTS] = false;
     engineParameters_[EP_RELOAD_PLUGINS] = true;
     engineParameters_[EP_PROFILE] = true;
+
+    // Use detected prefix path as default. Could be overriden with command line.
+    if (const ea::string prefixPath = fs->FindResourcePrefixPath(); !prefixPath.empty())
+        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = prefixPath;
 
     // TODO: Consider scaling fonts based on DPI. ImGuiConfigFlags_DpiEnableScaleFonts seems to create issues on Retina.
     unsigned imguiFlags = 0;

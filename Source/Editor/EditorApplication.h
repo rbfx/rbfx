@@ -58,7 +58,6 @@ protected:
 
     /// Editor paths
     /// @{
-    ea::string resourcePrefixPath_;
     ea::string tempJsonPath_;
     ea::string settingsJsonPath_;
     /// @}
