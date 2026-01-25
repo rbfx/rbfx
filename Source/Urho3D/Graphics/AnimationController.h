@@ -54,17 +54,17 @@ public:
 
     /// Factory helpers.
     /// @{
-    AnimationParameters& Looped();
+    AnimationParameters& Looped(bool value = true);
     AnimationParameters& StartBone(ea::string_view startBone);
     AnimationParameters& Layer(unsigned layer);
     AnimationParameters& Time(float time);
     AnimationParameters& TimeRange(float minTime, float maxTime);
-    AnimationParameters& Additive();
+    AnimationParameters& Additive(bool value = true);
     AnimationParameters& Weight(float weight);
     AnimationParameters& Speed(float speed);
     AnimationParameters& AutoFadeOut(float fadeOut);
-    AnimationParameters& KeepOnCompletion();
-    AnimationParameters& KeepOnZeroWeight();
+    AnimationParameters& KeepOnCompletion(bool value = true);
+    AnimationParameters& KeepOnZeroWeight(bool value = true);
     /// @}
 
     /// Getters for read-only properties.

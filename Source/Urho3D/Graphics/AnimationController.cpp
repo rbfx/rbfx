@@ -146,9 +146,9 @@ bool AnimationParameters::RemoveDelayed(float fadeTime)
     return changed;
 }
 
-AnimationParameters& AnimationParameters::Looped()
+AnimationParameters& AnimationParameters::Looped(bool value)
 {
-    looped_ = true;
+    looped_ = value;
     return *this;
 }
 
@@ -176,9 +176,9 @@ AnimationParameters& AnimationParameters::TimeRange(float minTime, float maxTime
     return *this;
 }
 
-AnimationParameters& AnimationParameters::Additive()
+AnimationParameters& AnimationParameters::Additive(bool value)
 {
-    blendMode_ = ABM_ADDITIVE;
+    blendMode_ = value ? ABM_ADDITIVE : ABM_LERP;
     return *this;
 }
 
@@ -201,15 +201,15 @@ AnimationParameters& AnimationParameters::AutoFadeOut(float fadeOut)
     return *this;
 }
 
-AnimationParameters& AnimationParameters::KeepOnCompletion()
+AnimationParameters& AnimationParameters::KeepOnCompletion(bool value)
 {
-    removeOnCompletion_ = false;
+    removeOnCompletion_ = !value;
     return *this;
 }
 
-AnimationParameters& AnimationParameters::KeepOnZeroWeight()
+AnimationParameters& AnimationParameters::KeepOnZeroWeight(bool value)
 {
-    removeOnZeroWeight_ = false;
+    removeOnZeroWeight_ = !value;
     return *this;
 }
 
