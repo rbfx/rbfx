@@ -740,7 +740,7 @@ unsigned AnimationController::PlayNewExclusive(const AnimationParameters& params
 
 unsigned AnimationController::PlayExisting(const AnimationParameters& params, float fadeInTime)
 {
-    const unsigned index = FindLastAnimation(params.GetAnimation());
+    const unsigned index = FindLastAnimation(params.GetAnimation(), params.layer_);
     if (index == M_MAX_UNSIGNED)
     {
         PlayNew(params, fadeInTime);
