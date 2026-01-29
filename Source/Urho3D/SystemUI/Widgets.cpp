@@ -916,6 +916,18 @@ bool EditVariantInt(Variant& var, const EditVariantOptions& options)
     return false;
 }
 
+bool EditVariantInt64(Variant& var, const EditVariantOptions& options)
+{
+    long long value = var.GetInt64();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+    if (ui::InputScalar("", ImGuiDataType_S64, &value))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
 bool EditVariantString(Variant& var, const EditVariantOptions& options)
 {
     ea::string value = var.GetString();
@@ -1144,7 +1156,10 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
         return EditVariantRect(var, options);
 
     // case VAR_INTVECTOR3:
-    // case VAR_INT64:
+
+    case VAR_INT64:
+        return EditVariantInt64(var, options);
+
     // case VAR_VARIANTCURVE:
 
     case VAR_STRINGVARIANTMAP:
