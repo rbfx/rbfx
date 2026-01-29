@@ -116,7 +116,6 @@ if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
 endif ()
 install(FILES
     ${rbfx_SOURCE_DIR}/script/rbfx.natvis
-    ${rbfx_SOURCE_DIR}/script/rbfx.vscode.unix.natvis
     DESTINATION ${CMAKE_INSTALL_DATADIR})
 
 # This is a normal install that users are supposed to use.
