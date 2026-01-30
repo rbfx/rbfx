@@ -133,7 +133,7 @@ Blink::Blink(Context* context)
 void Blink::SerializeInBlock(Archive& archive)
 {
     BaseClassName::SerializeInBlock(archive);
-    SerializeOptionalValue(archive, "times", times_, 1);
+    SerializeOptionalValue(archive, "times", times_, 1u);
 }
 
 /// Create new action state from the action.

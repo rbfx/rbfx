@@ -383,9 +383,8 @@ void SerializeOptionalValue(Archive& archive, const char* name, T& value, const 
         serializeValue(archive, name, value);
     else if (loading)
     {
-        // Don't try to cast from AlwaysSerialize
-        if constexpr(!std::is_base_of_v<AlwaysSerialize, U>)
-            value = static_cast<T>(defaultValue);
+        if constexpr (std::is_constructible_v<T, U>)
+            value = T{defaultValue};
     }
 }
 

@@ -375,13 +375,13 @@ void ControllerButtonMapping::SerializeInBlock(Archive& archive)
     SerializeOptionalValue(archive, "controller", controller_, false);
     if (controller_)
     {
-        SerializeOptionalValue(archive, "button", button_, 0,
+        SerializeOptionalValue(archive, "button", button_, 0u,
             [&](Archive& archive, const char* name, auto& value)
             { SerializeEnum<unsigned, unsigned>(archive, name, value, InputMap::GetControllerButtonNames()); });
     }
     else
     {
-        SerializeOptionalValue(archive, "button", button_, 0);
+        SerializeOptionalValue(archive, "button", button_, 0u);
     }
 }
 
@@ -410,7 +410,7 @@ ControllerAxisMapping::ControllerAxisMapping(unsigned axisIndex, float neutral, 
 void ControllerAxisMapping::SerializeInBlock(Archive& archive)
 {
     SerializeOptionalValue(archive, "controller", controller_, false);
-    SerializeOptionalValue(archive, "axis", axis_, 0);
+    SerializeOptionalValue(archive, "axis", axis_, 0u);
     SerializeOptionalValue(archive, "neutral", neutral_, 0.0f);
     SerializeOptionalValue(archive, "pressed", pressed_, 1.0f);
 }
@@ -457,7 +457,7 @@ ControllerHatMapping::ControllerHatMapping(unsigned hatPosition)
 
 void ControllerHatMapping::SerializeInBlock(Archive& archive)
 {
-    SerializeOptionalValue(archive, "hat", hatPosition_, 0,
+    SerializeOptionalValue(archive, "hat", hatPosition_, 0u,
         [&](Archive& archive, const char* name, auto& value)
         { SerializeEnum<unsigned, unsigned>(archive, name, value, InputMap::GetControllerHatNames()); });
 }
@@ -473,7 +473,7 @@ MouseButtonMapping::MouseButtonMapping(unsigned mouseButton)
 
 void MouseButtonMapping::SerializeInBlock(Archive& archive)
 {
-    SerializeOptionalValue(archive, "button", mouseButton_, 0,
+    SerializeOptionalValue(archive, "button", mouseButton_, 0u,
         [&](Archive& archive, const char* name, auto& value)
         { SerializeEnum<unsigned, unsigned>(archive, name, value, InputMap::GetMouseButtonNames()); });
 }
