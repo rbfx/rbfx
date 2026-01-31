@@ -136,6 +136,7 @@ bool SceneResource::BeginLoad(Deserializer& source)
     case InternalResourceFormat::Json:
     {
         loadJsonFile_ = MakeShared<JSONFile>(context_);
+        loadJsonFile_->SetName(source.GetName());
         if (!loadJsonFile_->Load(source))
             return false;
 
@@ -145,6 +146,7 @@ bool SceneResource::BeginLoad(Deserializer& source)
     case InternalResourceFormat::Xml:
     {
         loadXmlFile_ = MakeShared<XMLFile>(context_);
+        loadXmlFile_->SetName(source.GetName());
         if (!loadXmlFile_->Load(source))
             return false;
 
@@ -154,6 +156,7 @@ bool SceneResource::BeginLoad(Deserializer& source)
     case InternalResourceFormat::Binary:
     {
         loadBinaryFile_ = MakeShared<BinaryFile>(context_);
+        loadBinaryFile_->SetName(source.GetName());
         loadBinaryFile_->Load(source);
 
         loadFormat_ = format;
