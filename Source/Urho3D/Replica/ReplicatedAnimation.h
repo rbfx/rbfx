@@ -13,7 +13,9 @@ namespace Urho3D
 
 class Animation;
 class AnimationController;
+class AnimatedModel;
 class AnimationParameters;
+class IKSolver;
 
 /// Behavior that replicates animation over network.
 class URHO3D_API ReplicatedAnimation : public NetworkBehavior
@@ -82,6 +84,10 @@ private:
     void DecodeSnapshot(const AnimationSnapshot& snapshot, ea::vector<AnimationParameters>& result) const;
 
     WeakPtr<AnimationController> animationController_;
+    WeakPtr<AnimatedModel> animatedModel_;
+#ifdef URHO3D_IK
+    WeakPtr<IKSolver> ikSolver_;
+#endif
 
     /// Attributes independent on the client and the server.
     /// @{

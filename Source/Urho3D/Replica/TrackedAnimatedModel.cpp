@@ -51,7 +51,7 @@ void TrackedAnimatedModel::RegisterObject(Context* context)
 
 void TrackedAnimatedModel::InitializeOnServer()
 {
-    animatedModel_ = GetComponent<AnimatedModel>();
+    animatedModel_ = node_->GetDerivedComponent<AnimatedModel>();
     if (!animatedModel_)
         return;
 

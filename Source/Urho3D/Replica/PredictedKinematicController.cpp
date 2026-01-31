@@ -115,8 +115,8 @@ void PredictedKinematicController::InitializeCommon()
 {
     UnsubscribeFromEvent(E_PHYSICSPRESTEP);
 
-    replicatedTransform_ = node_->GetComponent<ReplicatedTransform>();
-    kinematicController_ = node_->GetComponent<KinematicCharacterController>();
+    replicatedTransform_ = node_->GetDerivedComponent<ReplicatedTransform>();
+    kinematicController_ = node_->GetDerivedComponent<KinematicCharacterController>();
 
     previousPosition_ = node_->GetWorldPosition();
 

@@ -7,10 +7,14 @@
 #include "Urho3D/Replica/ReplicatedAnimation.h"
 
 #include "Urho3D/Core/Context.h"
+#include "Urho3D/Graphics/AnimatedModel.h"
 #include "Urho3D/Graphics/Animation.h"
 #include "Urho3D/Graphics/AnimationController.h"
 #include "Urho3D/Network/NetworkEvents.h"
 #include "Urho3D/Resource/ResourceCache.h"
+#ifdef URHO3D_IK
+    #include "Urho3D/IK/IKSolver.h"
+#endif
 
 namespace Urho3D
 {
@@ -79,6 +83,9 @@ void ReplicatedAnimation::InitializeOnServer()
 
 void ReplicatedAnimation::WriteSnapshot(NetworkFrame frame, Serializer& dest)
 {
+    if (!animationController_)
+        return;
+
     dest.WriteVLE(animationLookup_.size());
     for (const auto& [nameHash, name] : animationLookup_)
         dest.WriteString(name);
@@ -108,12 +115,17 @@ void ReplicatedAnimation::InitializeFromSnapshot(NetworkFrame frame, Deserialize
 
 void ReplicatedAnimation::InitializeCommon()
 {
-    animationController_ = GetComponent<AnimationController>();
+    animationController_ = node_->GetDerivedComponent<AnimationController>();
     if (!animationController_)
         return;
 
     // Update controller manually
     animationController_->SetEnabled(false);
+
+    animatedModel_ = node_->GetDerivedComponent<AnimatedModel>();
+#ifdef URHO3D_IK
+    ikSolver_ = node_->GetDerivedComponent<IKSolver>();
+#endif
 }
 
 void ReplicatedAnimation::OnServerFrameEnd(NetworkFrame frame)
@@ -281,11 +293,21 @@ void ReplicatedAnimation::PostUpdate(float replicaTimeStep, float inputTimeStep)
     if (!animationController_)
         return;
 
+    const float timeStep = IsAnimationReplicated() ? replicaTimeStep : inputTimeStep;
+    animationController_->Update(timeStep);
+
+    // On server, force updates now because there may be no Viewport.
     NetworkObject* networkObject = GetNetworkObject();
-    if (IsAnimationReplicated())
-        animationController_->Update(replicaTimeStep);
-    else
-        animationController_->Update(inputTimeStep);
+    if (networkObject->IsServer())
+    {
+        if (animatedModel_)
+            animatedModel_->ApplyAnimation();
+
+#ifdef URHO3D_IK
+        if (ikSolver_)
+            ikSolver_->Solve(timeStep);
+#endif
+    }
 }
 
 } // namespace Urho3D
