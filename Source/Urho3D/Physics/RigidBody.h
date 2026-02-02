@@ -295,6 +295,9 @@ public:
     /// Remove the rigid body.
     void ReleaseBody();
 
+    /// Called before world origin is updated.
+    void PrepareToWorldOriginUpdate() { hasSimulated_ = false; }
+
 protected:
     /// Handle node being assigned.
     void OnNodeSet(Node* previousNode, Node* currentNode) override;

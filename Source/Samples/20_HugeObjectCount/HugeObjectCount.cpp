@@ -75,12 +75,9 @@ void HugeObjectCount::CreateScene()
     auto* cache = GetSubsystem<ResourceCache>();
 
     if (!scene_)
-        scene_ = new Scene(context_);
+        scene_ = MakeShared<Scene>(context_);
     else
-    {
         scene_->Clear();
-        boxNodes_.clear();
-    }
 
     // Create the Octree component to the scene so that drawable objects can be rendered. Use default volume
     // (-1000, -1000, -1000) to (1000, 1000, 1000)
@@ -100,6 +97,7 @@ void HugeObjectCount::CreateScene()
     auto* light = lightNode->CreateComponent<Light>();
     light->SetLightType(LIGHT_DIRECTIONAL);
 
+    boxNodes_.clear();
     if (!useGroups_)
     {
         light->SetColor(Color(0.7f, 0.35f, 0.0f));
@@ -149,10 +147,12 @@ void HugeObjectCount::CreateScene()
         }
     }
 
-    // Create the camera. Create it outside the scene so that we can clear the whole scene without affecting it
-    if (!cameraNode_)
+    // Create or reattach the camera.
+    if (cameraNode_)
+        scene_->AddChild(cameraNode_);
+    else
     {
-        cameraNode_ = new Node(context_);
+        cameraNode_ = scene_->CreateChild("Camera");
         cameraNode_->CreateComponent<FreeFlyController>();
         cameraNode_->SetPosition(Vector3(0.0f, 10.0f, -100.0f));
         auto* camera = cameraNode_->CreateComponent<Camera>();

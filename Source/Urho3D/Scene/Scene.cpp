@@ -48,11 +48,35 @@
 #include "Urho3D/Scene/SplinePath.h"
 #include "Urho3D/Scene/UnknownComponent.h"
 #include "Urho3D/Scene/ValueAnimation.h"
+#include "Urho3D/Scene/WorldOrigin.h"
 
 #include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {
+
+namespace
+{
+
+void UpdateNodeWorldOrigin(Node* node, const Vector3& offset)
+{
+    switch (node->GetWorldOriginUpdateMode())
+    {
+    case WorldOriginUpdateMode::Ignore: break;
+    case WorldOriginUpdateMode::Move:
+    {
+        node->SetPosition(node->GetPosition() - offset);
+        break;
+    };
+    case WorldOriginUpdateMode::Recurse:
+    {
+        for (Node* child : node->GetChildren())
+            UpdateNodeWorldOrigin(child, offset);
+    }
+    }
+}
+
+} // namespace
 
 const StringVector Scene::DefaultUpdateEvents = {
     "@SceneForcedUpdate", // E_SCENEFORCEDUPDATE
@@ -77,6 +101,7 @@ Scene::Scene(Context* context) :
     lightmaps_(Texture2D::GetTypeStatic())
 {
     SetUpdateEvents(DefaultUpdateEvents);
+    SetWorldOriginUpdateMode(WorldOriginUpdateMode::Recurse);
 
     // Assign an ID to self so that nodes can refer to this node as a parent
     SetID(GetFreeNodeID());
@@ -109,6 +134,7 @@ void Scene::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Next Component ID", unsigned, replicatedComponentID_, FIRST_REPLICATED_ID, AM_DEFAULT | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Update Events", GetUpdateEvents, SetUpdateEvents, StringVector, DefaultUpdateEvents, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("World Origin", IntVector3, worldOrigin_, IntVector3::ZERO, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Lightmaps", ResourceRefList, lightmaps_, ReloadLightmaps, ResourceRefList(Texture2D::GetTypeStatic()), AM_DEFAULT);
 }
 
@@ -321,6 +347,57 @@ void Scene::SetUpdateEvents(const StringVector& events)
         const ea::string_view eventName = isForced ? ea::string_view{event}.substr(1) : event;
         cookedUpdateEvents_.emplace_back(StringHash{eventName}, isForced);
     }
+}
+
+void Scene::UpdateWorldOrigin(const IntVector3& worldOrigin)
+{
+    if (worldOrigin_ != worldOrigin)
+    {
+        const IntVector3 oldWorldOrigin = worldOrigin_;
+        const IntVector3 newWorldOrigin = worldOrigin;
+        const IntVector3 offset = newWorldOrigin - oldWorldOrigin;
+
+        const auto sendEvent = [&](StringHash eventType)
+        {
+            VariantMap& eventData = GetEventDataMap();
+            using namespace WorldOriginUpdate;
+            eventData[P_SCENE] = this;
+            eventData[P_OLDORIGIN] = oldWorldOrigin;
+            eventData[P_NEWORIGIN] = newWorldOrigin;
+            eventData[P_DELTA] = offset;
+            SendEvent(eventType, eventData);
+        };
+
+        URHO3D_LOGDEBUG(
+            "Rebasing world origin from ({}) to ({})", oldWorldOrigin.ToString(), newWorldOrigin.ToString());
+
+        sendEvent(E_WORLDORIGINUPDATE);
+
+        worldOrigin_ = worldOrigin;
+        UpdateNodeWorldOrigin(this, offset.ToVector3());
+
+        sendEvent(E_WORLDORIGINPOSTUPDATE);
+    }
+}
+
+DoubleVector3 Scene::ToAbsoluteWorldPosition(const Vector3& position) const
+{
+    return position.Cast<DoubleVector3>() + worldOrigin_.Cast<DoubleVector3>();
+}
+
+Vector3 Scene::ToRelativeWorldPosition(const DoubleVector3& position) const
+{
+    return (position - worldOrigin_.Cast<DoubleVector3>()).Cast<Vector3>();
+}
+
+DoubleTransform Scene::ToAbsoluteWorldTransform(const Transform& transform) const
+{
+    return {ToAbsoluteWorldPosition(transform.position_), transform.rotation_, transform.scale_};
+}
+
+Transform Scene::ToRelativeWorldTransform(const DoubleTransform& transform) const
+{
+    return {ToRelativeWorldPosition(transform.position_), transform.rotation_, transform.scale_};
 }
 
 bool Scene::LoadXML(Deserializer& source)
@@ -1435,6 +1512,7 @@ void RegisterSceneLibrary(Context* context)
     PrefabReference::RegisterObject(context);
     PrefabResource::RegisterObject(context);
     ShakeComponent::RegisterObject(context);
+    WorldOrigin::RegisterObject(context);
 }
 
 }

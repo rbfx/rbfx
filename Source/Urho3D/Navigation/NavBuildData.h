@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "Urho3D/Container/ByteVector.h"
 #include "Urho3D/Core/NonCopyable.h"
 #include "Urho3D/Math/BoundingBox.h"
 #include "Urho3D/Math/Vector2.h"
@@ -42,17 +43,25 @@ struct URHO3D_API NavAreaStub
     unsigned char areaID_;
 };
 
-struct URHO3D_API NavTileData : public NonCopyable
+struct DetourDeleter
 {
-    ~NavTileData();
-    /// Release owned data without destruction. Should be called if data is successfully added into navigation mesh.
-    void Release();
-
-    unsigned char* data{};
-    int dataSize{};
+    void operator()(void* p) const noexcept;
 };
 
-using NavTileDataPtr = ea::unique_ptr<NavTileData>;
+struct DetourAllocation
+{
+    using Pointer = ea::unique_ptr<unsigned char, DetourDeleter>;
+    Pointer data_{};
+    int dataSize_{};
+
+    DetourAllocation() = default;
+    DetourAllocation(unsigned char* data, int dataSize) : data_{data}, dataSize_{dataSize} {}
+
+    void Release();
+
+    operator bool() const { return dataSize_ != 0; }
+    ByteSpan ToByteSpan() const { return {data_.get(), data_.get() + dataSize_}; }
+};
 
 /// Navigation build data.
 struct URHO3D_API NavBuildData : public NonCopyable
@@ -108,6 +117,10 @@ struct URHO3D_API NavBuildData : public NonCopyable
     rcCompactHeightfield* compactHeightField_;
     /// Pretransformed navigation areas, no correlation to the geometry above.
     ea::vector<NavAreaStub> navAreas_;
+
+    /// Offset to be applied to the tile when it's done building.
+    IntVector2 pendingTileOffset_;
+    int pendingOffsetY_{};
 };
 
 struct URHO3D_API SimpleNavBuildData : public NavBuildData
@@ -125,7 +138,7 @@ struct URHO3D_API SimpleNavBuildData : public NavBuildData
     rcPolyMeshDetail* polyMeshDetail_;
 
     /// Compiled navigation mesh tile.
-    NavTileDataPtr tileData_;
+    DetourAllocation tileData_;
 };
 
 struct URHO3D_API DynamicNavBuildData : public NavBuildData
@@ -142,7 +155,7 @@ struct URHO3D_API DynamicNavBuildData : public NavBuildData
     rcHeightfieldLayerSet* heightFieldLayers_{};
 
     /// Compiled navigation mesh tiles.
-    ea::vector<NavTileDataPtr> tileData_;
+    ea::vector<DetourAllocation> tileData_;
 };
 
 } // namespace Urho3D

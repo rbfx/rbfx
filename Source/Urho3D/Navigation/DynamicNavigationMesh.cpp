@@ -228,6 +228,48 @@ void DynamicNavigationMesh::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Draw Obstacles", GetDrawObstacles, SetDrawObstacles, bool, false, AM_DEFAULT);
 }
 
+void DynamicNavigationMesh::OffsetCacheTile(ByteSpan tileData, const IntVector2& tileOffset, int offsetY)
+{
+    if (tileData.size() < sizeof(dtTileCacheLayerHeader))
+    {
+        URHO3D_LOGERROR("Cannot offset dtCompressedTile: data is corrupted");
+        return;
+    }
+
+    const Vector2 offset = tileOffset.ToVector2() * (tileSize_ * cellSize_);
+
+    auto layerHeader = reinterpret_cast<dtTileCacheLayerHeader*>(tileData.data());
+    layerHeader->tx += tileOffset.x_;
+    layerHeader->ty += tileOffset.y_;
+    layerHeader->bmin[0] += offset.x_;
+    layerHeader->bmin[1] += offsetY;
+    layerHeader->bmin[2] += offset.y_;
+    layerHeader->bmax[0] += offset.x_;
+    layerHeader->bmax[1] += offsetY;
+    layerHeader->bmax[2] += offset.y_;
+}
+
+void DynamicNavigationMesh::OffsetTileData(ByteSpan tileData, const IntVector3& delta)
+{
+    const auto tileOffset = CalculateTileOffset(delta, tileSize_, cellSize_);
+    if (!tileOffset)
+        return;
+
+    MemoryBuffer buffer(tileData.data(), static_cast<unsigned>(tileData.size()));
+    while (!buffer.IsEof())
+    {
+        const unsigned readPos = buffer.GetPosition();
+        auto tileCacheLayer = ReadDetourBuffer(buffer);
+        if (!tileCacheLayer)
+            break;
+
+        OffsetCacheTile(tileCacheLayer.ToByteSpan(), tileOffset->first, tileOffset->second);
+
+        buffer.Seek(readPos);
+        WriteDetourBuffer(buffer, tileCacheLayer);
+    }
+}
+
 bool DynamicNavigationMesh::AllocateMesh(unsigned maxTiles)
 {
     if (!NavigationMesh::AllocateMesh(maxTiles * maxLayers_))
@@ -502,10 +544,7 @@ void DynamicNavigationMesh::WriteTile(Serializer& dest, int x, int z, int layer)
     if (!tile || !tile->header || !tile->dataSize)
         return;
 
-    // The header conveniently has the majority of the information required
-    dest.Write(tile->header, sizeof(dtTileCacheLayerHeader));
-    dest.WriteInt(tile->dataSize);
-    dest.Write(tile->data, static_cast<unsigned>(tile->dataSize));
+    WriteDetourBuffer(dest, tile->data, tile->dataSize);
 }
 
 bool DynamicNavigationMesh::ReadTiles(Deserializer& source, bool silent)
@@ -513,28 +552,26 @@ bool DynamicNavigationMesh::ReadTiles(Deserializer& source, bool silent)
     tileQueue_.clear();
     while (!source.IsEof())
     {
-        dtTileCacheLayerHeader header;      // NOLINT(hicpp-member-init)
-        source.Read(&header, sizeof(dtTileCacheLayerHeader));
-        const int dataSize = source.ReadInt();
-
-        auto* data = (unsigned char*)dtAlloc(dataSize, DT_ALLOC_PERM);
-        if (!data)
+        auto buffer = ReadDetourBuffer(source);
+        if (!buffer)
         {
             URHO3D_LOGERROR("Could not allocate data for navigation mesh tile");
             return false;
         }
 
-        source.Read(data, (unsigned)dataSize);
-        if (dtStatusFailed(tileCache_->addTile(data, dataSize, DT_TILE_FREE_DATA, nullptr)))
+        if (dtStatusFailed(tileCache_->addTile(buffer.data_.get(), buffer.dataSize_, DT_TILE_FREE_DATA, nullptr)))
         {
             URHO3D_LOGERROR("Failed to add tile");
-            dtFree(data);
             return false;
         }
 
-        const IntVector2 tileIdx = IntVector2(header.tx, header.ty);
-        if (tileQueue_.empty() || tileQueue_.back() != tileIdx)
-            tileQueue_.push_back(tileIdx);
+        const auto header = reinterpret_cast<const dtTileCacheLayerHeader*>(buffer.data_.get());
+        const IntVector2 tileIndex = IntVector2(header->tx, header->ty);
+
+        buffer.data_.release();
+
+        if (tileQueue_.empty() || tileQueue_.back() != tileIndex)
+            tileQueue_.push_back(tileIndex);
     }
 
     for (unsigned i = 0; i < tileQueue_.size(); ++i)
@@ -594,14 +631,17 @@ bool DynamicNavigationMesh::BuildDynamicTileData(DynamicNavBuildData& build)
         header.hmin = (unsigned short)layer->hmin;
         header.hmax = (unsigned short)layer->hmax;
 
-        NavTileData& tileData = *build.tileData_.emplace_back(ea::make_unique<NavTileData>());
+        unsigned char* data{};
+        int dataSize{};
         if (dtStatusFailed(dtBuildTileCacheLayer(build.compressor_.get(), &header, layer->heights, layer->areas,
-                layer->cons, &tileData.data, &tileData.dataSize)))
+                layer->cons, &data, &dataSize)))
         {
             URHO3D_LOGERROR("Failed to build tile cache layers");
             build.tileData_.clear();
             return false;
         }
+
+        build.tileData_.push_back(DetourAllocation{data, dataSize});
     }
 
     return true;
@@ -631,8 +671,11 @@ NavBuildDataPtr DynamicNavigationMesh::CreateTileBuildData(
 
 bool DynamicNavigationMesh::ReplaceTileData(NavBuildData& build)
 {
-    const IntVector2& tileIndex = build.tileIndex_;
-    ea::vector<NavTileDataPtr>& tileData = static_cast<DynamicNavBuildData&>(build).tileData_;
+    const IntVector2 tileIndex = build.tileIndex_ + build.pendingTileOffset_;
+    ea::vector<DetourAllocation>& tileData = static_cast<DynamicNavBuildData&>(build).tileData_;
+
+    for (const auto& tileLayerData : tileData)
+        OffsetCacheTile(tileLayerData.ToByteSpan(), build.pendingTileOffset_, build.pendingOffsetY_);
 
     // Remove existing tiles from tile cache and navigation mesh
     dtCompressedTileRef tilesToRemove[MaxLayers];
@@ -647,9 +690,10 @@ bool DynamicNavigationMesh::ReplaceTileData(NavBuildData& build)
     bool result = false;
     for (unsigned i = 0; i < tileData.size(); ++i)
     {
-        NavTileData& data = *tileData[i];
+        DetourAllocation& data = tileData[i];
         dtCompressedTileRef tileRef;
-        if (dtStatusFailed(tileCache_->addTile(data.data, data.dataSize, DT_COMPRESSEDTILE_FREE_DATA, &tileRef)))
+        if (dtStatusFailed(
+                tileCache_->addTile(data.data_.get(), data.dataSize_, DT_COMPRESSEDTILE_FREE_DATA, &tileRef)))
         {
             URHO3D_LOGERROR("Failed to add tile into tile cache");
             continue;
@@ -666,6 +710,39 @@ bool DynamicNavigationMesh::ReplaceTileData(NavBuildData& build)
         result = true;
     }
     return result;
+}
+
+void DynamicNavigationMesh::OffsetTilesGeometry(const IntVector2& tileOffset, int offsetY)
+{
+    NavigationMesh::OffsetTilesGeometry(tileOffset, offsetY);
+
+    URHO3D_PROFILE("OffsetDynamicTilesGeometry");
+
+    ea::vector<const dtCompressedTile*> tilesToRemove;
+    for (int i = 0; i < tileCache_->getTileCount(); ++i)
+    {
+        const dtCompressedTile* meshTile = const_cast<const dtTileCache*>(tileCache_)->getTile(i);
+        if (meshTile->data)
+        {
+            const_cast<dtCompressedTile*>(meshTile)->flags &= ~DT_COMPRESSEDTILE_FREE_DATA; // Disable dtFree.
+            tilesToRemove.push_back(meshTile);
+        }
+    }
+
+    ea::vector<ByteSpan> tiles;
+    for (const dtCompressedTile* meshTile : tilesToRemove)
+    {
+        unsigned char* data{};
+        int dataSize{};
+        tileCache_->removeTile(tileCache_->getTileRef(meshTile), &data, &dataSize);
+        tiles.push_back(ByteSpan{data, data + dataSize});
+    }
+
+    for (ByteSpan& tileData : tiles)
+    {
+        OffsetCacheTile(tileData, -tileOffset, -offsetY);
+        tileCache_->addTile(tileData.data(), tileData.size(), DT_COMPRESSEDTILE_FREE_DATA, nullptr);
+    }
 }
 
 ea::vector<OffMeshConnection*> DynamicNavigationMesh::CollectOffMeshConnections(const BoundingBox& bounds)
@@ -723,6 +800,8 @@ void DynamicNavigationMesh::UpdateTileCache()
 
 void DynamicNavigationMesh::OnSceneSet(Scene* previousScene, Scene* scene)
 {
+    BaseClassName::OnSceneSet(previousScene, scene);
+
     // Subscribe to the scene subsystem update, which will trigger the tile cache to update the nav mesh
     if (scene)
         SubscribeToEvent(scene, E_SCENESUBSYSTEMUPDATE, URHO3D_HANDLER(DynamicNavigationMesh, HandleSceneSubsystemUpdate));

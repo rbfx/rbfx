@@ -657,7 +657,8 @@ void CrowdManager::OnSceneSet(Scene* previousScene, Scene* scene)
             return;
         }
 
-        SubscribeToEvent(scene, E_SCENESUBSYSTEMUPDATE, URHO3D_HANDLER(CrowdManager, HandleSceneSubsystemUpdate));
+        SubscribeToEvent(scene, E_SCENESUBSYSTEMUPDATE, &CrowdManager::HandleSceneSubsystemUpdate);
+        SubscribeToEvent(scene, E_WORLDORIGINPOSTUPDATE, &CrowdManager::HandleWorldOriginPostUpdate);
 
         // Attempt to auto discover a NavigationMesh component (or its derivative) under the scene node
         if (navigationMeshId_ == 0)
@@ -675,6 +676,7 @@ void CrowdManager::OnSceneSet(Scene* previousScene, Scene* scene)
     else
     {
         UnsubscribeFromEvent(E_SCENESUBSYSTEMUPDATE);
+        UnsubscribeFromEvent(E_WORLDORIGINPOSTUPDATE);
         UnsubscribeFromEvent(E_NAVIGATION_MESH_REBUILT);
         UnsubscribeFromEvent(E_COMPONENTADDED);
         UnsubscribeFromEvent(E_COMPONENTREMOVED);
@@ -703,6 +705,23 @@ dtCrowdAgent* CrowdManager::GetEditableDetourCrowdAgent(int agent)
 const dtQueryFilter* CrowdManager::GetDetourQueryFilter(unsigned queryFilterType) const
 {
     return crowd_ ? crowd_->getFilter(queryFilterType) : nullptr;
+}
+
+void CrowdManager::HandleWorldOriginPostUpdate(VariantMap& eventData)
+{
+    if (!crowd_)
+        return;
+
+    const Vector3 delta = eventData[WorldOriginPostUpdate::P_DELTA].GetIntVector3().ToVector3();
+    for (int i = 0; i < crowd_->getAgentCount(); i++)
+    {
+        const dtCrowdAgent* ag = crowd_->getAgent(i);
+        if (!ag->active)
+            continue;
+
+        auto* crowdAgent = static_cast<CrowdAgent*>(ag->params.userData);
+        crowdAgent->UpdateWorldOrigin(delta);
+    }
 }
 
 void CrowdManager::HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& eventData)

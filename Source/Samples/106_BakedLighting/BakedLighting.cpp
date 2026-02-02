@@ -85,7 +85,6 @@ void BakedLighting::CreateScene()
     navMesh->Rebuild();
 
     agent_ = scene_->FindComponent<CrowdAgent>();
-    agent_->SetUpdateNodePosition(false);
 
     auto animController = agent_->GetNode()->FindComponent<AnimationController>();
     animController->PlayNewExclusive(AnimationParameters{context_, "Models/Mutant/Mutant_Idle0.ani"}.Looped());
@@ -181,9 +180,6 @@ void BakedLighting::Update(float timeStep)
         animController->PlayExistingExclusive(AnimationParameters{idleAnimation}.Looped(), 0.2f);
     }
 
-    // Snap position to ground
-    agent_->GetNode()->SetWorldPosition(agent_->GetPosition() * Vector3(1, 0, 1));
-
     // Toggle textures
     if (input->GetKeyPress(KEY_TAB))
     {
@@ -196,8 +192,4 @@ void BakedLighting::Update(float timeStep)
         else
             animModel->SetMaterial(cache->GetResource<Material>("Materials/DefaultWhite.xml"));
     }
-
-    // Draw debug geometry
-    //auto navmesh = scene_->GetComponent<NavigationMesh>();
-    //navmesh->DrawDebugGeometry(true);
 }

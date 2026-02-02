@@ -57,7 +57,7 @@ void TrackedAnimatedModel::InitializeOnServer()
 
     const auto replicationManager = GetNetworkObject()->GetReplicationManager();
     const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
-    transformTrace_.Resize(traceDuration);
+    nodeTransformTrace_.Resize(traceDuration);
     boundingBoxTrace_.Resize(traceDuration);
 
     SubscribeToEvent(E_ENDSERVERNETWORKFRAME,
@@ -79,46 +79,49 @@ void TrackedAnimatedModel::OnServerFrameEnd(NetworkFrame frame)
     const auto& bones = animatedModel_->GetSkeleton().GetBones();
     const unsigned numBones = bones.size();
 
-    if (bonePositionsTrace_.Size() != numBones)
+    if (boneTransformsTrace_.Size() != numBones)
     {
         const auto replicationManager = GetNetworkObject()->GetReplicationManager();
         const unsigned traceDuration = replicationManager->GetTraceDurationInFrames();
 
-        bonePositionsTrace_.Resize(numBones, traceDuration);
-        boneRotationsTrace_.Resize(numBones, traceDuration);
+        boneTransformsTrace_.Resize(numBones, traceDuration);
     }
 
-    transformTrace_.Set(frame, node_->GetWorldTransform());
-    boundingBoxTrace_.Set(frame, animatedModel_->GetWorldBoundingBox());
+    Scene* scene = GetScene();
 
-    const auto positions = bonePositionsTrace_.SetUninitialized(frame);
-    const auto rotations = boneRotationsTrace_.SetUninitialized(frame);
+    const auto nodeTransform = Transform::FromMatrix3x4(node_->GetWorldTransform());
 
+    BoundingBox boundingBox = animatedModel_->GetWorldBoundingBox();
+    boundingBox.min_ -= nodeTransform.position_;
+    boundingBox.max_ -= nodeTransform.position_;
+
+    nodeTransformTrace_.Set(frame, scene->ToAbsoluteWorldTransform(nodeTransform));
+    boundingBoxTrace_.Set(frame, boundingBox);
+
+    const auto transforms = boneTransformsTrace_.SetUninitialized(frame);
     for (unsigned i = 0; i < numBones; ++i)
     {
+        Transform boneTransform;
         if (Node* node = bones[i].node_)
         {
-            positions[i] = node->GetWorldPosition();
-            rotations[i] = node->GetWorldRotation();
+            boneTransform.position_ = node->GetWorldPosition();
+            boneTransform.rotation_ = node->GetWorldRotation();
+            boneTransform.scale_ = node->GetWorldScale();
         }
-        else
-        {
-            positions[i] = Vector3::ZERO;
-            rotations[i] = Quaternion::IDENTITY;
-        }
+        transforms[i] = scene->ToAbsoluteWorldTransform(boneTransform);
     }
 }
 
-Vector3 TrackedAnimatedModel::SampleTemporalBonePosition(const NetworkTime& time, unsigned index) const
+DoubleVector3 TrackedAnimatedModel::SampleTemporalBonePosition(const NetworkTime& time, unsigned index) const
 {
-    const auto result = bonePositionsTrace_.SampleValid(time);
-    return index < result.Size() ? result[index] : Vector3::ZERO;
+    const auto result = boneTransformsTrace_.SampleValid(time);
+    return index < result.Size() ? result[index].position_ : DoubleVector3::ZERO;
 }
 
 Quaternion TrackedAnimatedModel::SampleTemporalBoneRotation(const NetworkTime& time, unsigned index) const
 {
-    const auto result = boneRotationsTrace_.SampleValid(time);
-    return index < result.Size() ? result[index] : Quaternion::IDENTITY;
+    const auto result = boneTransformsTrace_.SampleValid(time);
+    return index < result.Size() ? result[index].rotation_ : Quaternion::IDENTITY;
 }
 
 void TrackedAnimatedModel::ProcessTemporalRayQuery(const NetworkTime& time, const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) const
@@ -128,25 +131,24 @@ void TrackedAnimatedModel::ProcessTemporalRayQuery(const NetworkTime& time, cons
 
     const auto& bones = animatedModel_->GetSkeleton().GetBones();
     const unsigned numBones = bones.size();
-    if (numBones != bonePositionsTrace_.Size() || numBones != boneRotationsTrace_.Size())
+    if (numBones != boneTransformsTrace_.Size())
         return;
 
-    const BoundingBox worldBoundingBox = boundingBoxTrace_.GetClosestRaw(time.Frame());
-    const Matrix3x4 worldTransform = transformTrace_.SampleValid(time);
-    const auto bonePositions = bonePositionsTrace_.SampleValid(time);
-    const auto boneRotations = boneRotationsTrace_.SampleValid(time);
+    Scene* scene = GetScene();
+    const Transform nodeTransform = scene->ToRelativeWorldTransform(nodeTransformTrace_.SampleValid(time));
+    const Matrix3x4 worldTransform = nodeTransform.ToMatrix3x4();
+
+    BoundingBox worldBoundingBox = boundingBoxTrace_.GetClosestRaw(time.Frame());
+    worldBoundingBox.min_ += nodeTransform.position_;
+    worldBoundingBox.max_ += nodeTransform.position_;
+
+    const auto globalBoneTransforms = boneTransformsTrace_.SampleValid(time);
 
     thread_local ea::vector<Matrix3x4> boneTransformsStorage;
     auto& boneTransforms = boneTransformsStorage;
-    auto boneTransforms11 = boneTransformsStorage;
     boneTransforms.resize(numBones);
     for (unsigned i = 0; i < numBones; ++i)
-    {
-        const Vector3 position = bonePositions[i];
-        const Quaternion rotation = boneRotations[i];
-        const Vector3 scale = bones[i].node_ ? bones[i].node_->GetWorldScale() : Vector3::ONE;
-        boneTransforms[i] = Matrix3x4{position, rotation, scale};
-    }
+        boneTransforms[i] = scene->ToRelativeWorldTransform(globalBoneTransforms[i]).ToMatrix3x4();
 
     animatedModel_->ProcessCustomRayQuery(query, worldBoundingBox, worldTransform, boneTransforms, results);
 }

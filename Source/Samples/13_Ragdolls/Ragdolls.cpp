@@ -166,7 +166,7 @@ void Ragdolls::CreateScene()
 
     // Create the camera. Limit far clip distance to match the fog. Note: now we actually create the camera node outside
     // the scene, because we want it to be unaffected by scene load / save
-    cameraNode_ = new Node(context_);
+    cameraNode_ = scene_->CreateChild("Camera");
     cameraNode_->CreateComponent<FreeFlyController>();
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(300.0f);
@@ -185,7 +185,6 @@ void Ragdolls::CreateInstructions()
     instructionText->SetText(
         "Use WASD keys and mouse/touch to move\n"
         "LMB to spawn physics objects\n"
-        "F5 to save scene, F7 to load\n"
         "Space to toggle physics debug geometry"
     );
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
@@ -218,18 +217,6 @@ void Ragdolls::MoveCamera(float timeStep)
     // "Shoot" a physics object with left mousebutton
     if (input->GetMouseButtonPress(MOUSEB_LEFT))
         SpawnObject();
-
-    // Check for loading / saving the scene
-    if (input->GetKeyPress(KEY_F5))
-    {
-        File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/Ragdolls.xml", FILE_WRITE);
-        scene_->SaveXML(saveFile);
-    }
-    if (input->GetKeyPress(KEY_F7))
-    {
-        File loadFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/Ragdolls.xml", FILE_READ);
-        scene_->LoadXML(loadFile);
-    }
 
     // Toggle physics debug geometry with space
     if (input->GetKeyPress(KEY_SPACE))

@@ -257,6 +257,20 @@ void ParticleEmitter2D::UpdateSourceBatches()
     sourceBatchesDirty_ = false;
 }
 
+void ParticleEmitter2D::PostUpdateWorldOrigin(
+    const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta)
+{
+    const Vector3 offset = delta.ToVector3();
+    for (Particle2D& particle : particles_)
+    {
+        particle.position_ -= offset;
+        particle.startPos_.x_ -= offset.x_;
+        particle.startPos_.y_ -= offset.y_;
+    }
+    boundingBoxMinPoint_ -= offset;
+    boundingBoxMaxPoint_ -= offset;
+}
+
 void ParticleEmitter2D::UpdateMaterial()
 {
     if (sprite_ && renderer_)

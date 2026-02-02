@@ -24,8 +24,9 @@
 
 #pragma once
 
-#include "../Replica/BehaviorNetworkObject.h"
-#include "../Replica/NetworkValue.h"
+#include "Urho3D/Math/Transform.h"
+#include "Urho3D/Replica/BehaviorNetworkObject.h"
+#include "Urho3D/Replica/NetworkValue.h"
 
 namespace Urho3D
 {
@@ -52,7 +53,7 @@ public:
 
     /// Getters for network properties
     /// @{
-    Vector3 SampleTemporalBonePosition(const NetworkTime& time, unsigned index) const;
+    DoubleVector3 SampleTemporalBonePosition(const NetworkTime& time, unsigned index) const;
     Quaternion SampleTemporalBoneRotation(const NetworkTime& time, unsigned index) const;
     void ProcessTemporalRayQuery(const NetworkTime& time, const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) const;
     /// @}
@@ -67,11 +68,9 @@ private:
 
     WeakPtr<AnimatedModel> animatedModel_;
 
-    NetworkValue<Matrix3x4> transformTrace_;
+    NetworkValue<DoubleTransform> nodeTransformTrace_;
     NetworkValue<BoundingBox> boundingBoxTrace_;
-
-    NetworkValueVector<Vector3> bonePositionsTrace_;
-    NetworkValueVector<Quaternion> boneRotationsTrace_;
+    NetworkValueVector<DoubleTransform> boneTransformsTrace_;
 };
 
 };

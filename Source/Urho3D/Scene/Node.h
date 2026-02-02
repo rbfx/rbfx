@@ -89,6 +89,17 @@ enum TransformSpace
     TS_WORLD
 };
 
+/// Reaction to world origin updated.
+enum class WorldOriginUpdateMode
+{
+    /// This node is moved automatically. Children nodes are ignored.
+    Move,
+    /// This node and its children are ignored.
+    Ignore,
+    /// This node is ignored. Children nodes are checked instead.
+    Recurse,
+};
+
 /// Internal implementation structure for less performance-critical Node variables.
 struct URHO3D_API NodeImpl
 {
@@ -194,6 +205,11 @@ public:
     bool RemoveTag(const ea::string& tag);
     /// Remove all tags.
     void RemoveAllTags();
+
+    /// Set world origin update mode.
+    void SetWorldOriginUpdateMode(WorldOriginUpdateMode mode) { worldOriginUpdateMode_ = mode; };
+    /// Return world origin update mode.
+    WorldOriginUpdateMode GetWorldOriginUpdateMode() const { return worldOriginUpdateMode_; }
 
     /// Set position in parent space. If the scene node is on the root level (is child of the scene itself), this is same as world space.
     /// @property
@@ -867,6 +883,8 @@ private:
 protected:
     /// User variables.
     StringVariantMap vars_;
+    /// World origin update mode.
+    WorldOriginUpdateMode worldOriginUpdateMode_{};
 };
 
 template <class T> T* Node::CreateComponent(unsigned id)

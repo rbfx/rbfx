@@ -4,12 +4,63 @@
 
 #include "Urho3D/Precompiled.h"
 
+#include "Urho3D/IO/Log.h"
 #include "Urho3D/Navigation/NavigationUtils.h"
 
+#include <Detour/DetourAlloc.h>
 #include <Recast/Recast.h>
 
 namespace Urho3D
 {
+
+DetourAllocation ReadDetourBuffer(Deserializer& source)
+{
+    const int dataSize = source.ReadInt();
+    auto* data = reinterpret_cast<unsigned char*>(dtAlloc(dataSize, DT_ALLOC_PERM));
+    if (!data)
+        return {};
+
+    source.Read(data, dataSize);
+    return DetourAllocation{data, dataSize};
+}
+
+void WriteDetourBuffer(Serializer& dest, const DetourAllocation& buffer)
+{
+    WriteDetourBuffer(dest, buffer.data_.get(), + buffer.dataSize_);
+}
+
+void WriteDetourBuffer(Serializer& dest, const unsigned char* data, int dataSize)
+{
+    WriteDetourBuffer(dest, ConstByteSpan{data, data + dataSize});
+}
+
+void WriteDetourBuffer(Serializer& dest, const ConstByteSpan& buffer)
+{
+    dest.WriteInt(buffer.size());
+    if (buffer.size() != 0)
+        dest.Write(buffer.data(), static_cast<unsigned>(buffer.size()));
+}
+
+ea::optional<ea::pair<IntVector2, int>> CalculateTileOffset(const IntVector3& delta, int tileSize, float cellSize)
+{
+    const int tileEdgeLength = RoundToInt(tileSize * cellSize);
+    if (tileEdgeLength <= 0 || !Equals(tileSize * cellSize, static_cast<float>(tileEdgeLength)))
+    {
+        URHO3D_LOGERROR("Tile width should be integer for NavigationMesh rebase: {} * {} = {}",
+            tileSize, cellSize, tileSize * cellSize);
+        return ea::nullopt;
+    }
+
+    if (delta.x_ % tileEdgeLength != 0 || delta.z_ % tileEdgeLength != 0)
+    {
+        URHO3D_LOGERROR("Delta must be a multiple of navigation mesh tile width for NavigationMesh rebase: {}/{}",
+            delta.ToString(), tileEdgeLength);
+        return ea::nullopt;
+    }
+
+    const IntVector3 tileDelta = delta / tileEdgeLength;
+    return ea::make_pair(IntVector2{tileDelta.x_, tileDelta.z_}, delta.y_);
+}
 
 BoundingBox CalculateBoundingBox(const ea::vector<NavigationGeometryInfo>& geometryList, const Vector3& padding)
 {

@@ -48,6 +48,13 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+const StringVector worldOriginUpdateModeNames{"Move", "Ignore", "Recurse"};
+
+}
+
 Node::Node(Context* context) :
     Serializable(context),
     worldTransform_(Matrix3x4::IDENTITY),
@@ -79,6 +86,7 @@ void Node::RegisterObject(Context* context)
 {
     context->AddFactoryReflection<Node>();
 
+    // clang-format off
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Tags", GetTags, SetTags, StringVector, Variant::emptyStringVector, AM_DEFAULT);
@@ -86,6 +94,8 @@ void Node::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Scale", GetScale, SetScale, Vector3, Vector3::ONE, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Variables", StringVariantMap, vars_, Variant::emptyStringVariantMap, AM_DEFAULT);
+    URHO3D_ENUM_ATTRIBUTE("World Origin Update Mode", worldOriginUpdateMode_, worldOriginUpdateModeNames, WorldOriginUpdateMode::Move, AM_DEFAULT);
+    // clang-format on
 }
 
 void Node::SerializeInBlock(Archive& archive)

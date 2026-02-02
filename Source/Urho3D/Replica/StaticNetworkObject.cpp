@@ -78,8 +78,9 @@ void StaticNetworkObject::WriteSnapshot(NetworkFrame frame, Serializer& dest)
     dest.WriteString(clientPrefab_ ? clientPrefab_->GetName() : EMPTY_STRING);
     dest.WriteString(node_->GetName());
 
-    dest.WriteVector3(node_->GetWorldPosition());
-    dest.WritePackedQuaternion(node_->GetWorldRotation());
+    const DoubleVector3 absolutePosition = GetScene()->ToAbsoluteWorldPosition(node_->GetWorldPosition());
+    dest.WritePackedVector3(absolutePosition, VectorBinaryEncoding::Double);
+    dest.WritePackedQuaternion(node_->GetWorldRotation(), VectorBinaryEncoding::Int16);
     dest.WriteVector3(node_->GetSignedWorldScale());
 }
 
@@ -100,8 +101,9 @@ void StaticNetworkObject::InitializeFromSnapshot(NetworkFrame frame, Deserialize
 
     node_->SetName(src.ReadString());
 
-    const Vector3 worldPosition = src.ReadVector3();
-    const Quaternion worldRotation = src.ReadPackedQuaternion();
+    const DoubleVector3 absolutePosition = src.ReadPackedVector3(VectorBinaryEncoding::Double);
+    const Vector3 worldPosition = GetScene()->ToRelativeWorldPosition(absolutePosition);
+    const Quaternion worldRotation = src.ReadPackedQuaternion(VectorBinaryEncoding::Int16);
     const Vector3 worldScale = src.ReadVector3();
     const Matrix3x4 worldTransform{ worldPosition, worldRotation, worldScale };
     const Matrix3x4 localTransform = node_->IsTransformHierarchyRoot()

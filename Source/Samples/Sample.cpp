@@ -20,14 +20,17 @@
 // THE SOFTWARE.
 //
 
-#if URHO3D_RMLUI
-#   include <Urho3D/RmlUI/RmlUI.h>
-#endif
-
 #include "Sample.h"
+
 #include "SamplesManager.h"
-#include <Urho3D/Graphics/Skybox.h>
+
+#include <Urho3D/Core/WorkQueue.h>
 #include <Urho3D/Graphics/Model.h>
+#include <Urho3D/Graphics/Skybox.h>
+
+#if URHO3D_RMLUI
+    #include <Urho3D/RmlUI/RmlUI.h>
+#endif
 
 Sample::Sample(Context* context) :
     ApplicationState(context),
@@ -269,6 +272,26 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
             if (filterMode > FILTER_ANISOTROPIC)
                 filterMode = FILTER_NEAREST;
             renderer->SetTextureFilterMode((TextureFilterMode)filterMode);
+        }
+
+        // Update world origin
+        else if (key == '8')
+        {
+            // These almost arbitrary numbers for testing.
+            // However, offset should be a multiple of navigation mesh tile size in world space.
+            static const IntVector3 worldOriginOffset{9, 3, 18};
+
+            auto workQueue = GetSubsystem<WorkQueue>();
+            workQueue->PostDelayedTaskForMainThread([scene = scene_]
+            {
+                if (scene)
+                {
+                    // Toggle world origin between two points.
+                    const IntVector3 worldOrigin =
+                        scene->GetWorldOrigin() == IntVector3::ZERO ? worldOriginOffset : IntVector3::ZERO;
+                    scene->UpdateWorldOrigin(worldOrigin);
+                }
+            });
         }
 
         // Take screenshot

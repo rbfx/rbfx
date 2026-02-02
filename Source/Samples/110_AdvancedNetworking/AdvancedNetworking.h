@@ -95,11 +95,11 @@ private:
     /// Process movement of the client on the client side.
     void ProcessClientMovement(NetworkObject* clientObject);
     /// Return aim position from a screen ray.
-    Vector3 GetAimPosition(const Vector3& playerPosition, const Ray& screenRay) const;
+    DoubleVector3 GetAimPosition(const DoubleVector3& playerPosition, const Ray& screenRay) const;
     /// Perform a raycast request on the client side.
     void RequestClientRaycast(NetworkObject* clientObject, const Ray& screenRay);
     /// Add debug marker for ray hits.
-    void AddHitMarker(const Vector3& position, bool isConfirmed);
+    void AddHitMarker(const DoubleVector3& position, bool isConfirmed);
 
     /// UI with client and server settings.
     AdvancedNetworkingUI* ui_{};

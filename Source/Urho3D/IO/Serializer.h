@@ -23,6 +23,7 @@
 #pragma once
 
 #include "Urho3D/Core/Variant.h"
+#include "Urho3D/IO/IODefs.h"
 #include "Urho3D/Math/BoundingBox.h"
 #include "Urho3D/Math/MathDefs.h"
 #include "Urho3D/Math/StringHash.h"
@@ -86,14 +87,14 @@ public:
     bool WriteVector2(const Vector2& value);
     /// Write a Vector3.
     bool WriteVector3(const Vector3& value);
-    /// Write a Vector3 packed into 3 x 16 bits with the specified maximum absolute range.
-    bool WritePackedVector3(const Vector3& value, float maxAbsCoord);
+    /// Write a DoubleVector3 packed with specified encoding.
+    bool WritePackedVector3(const DoubleVector3& value, VectorBinaryEncoding encoding, float param = 1.0f);
     /// Write a Vector4.
     bool WriteVector4(const Vector4& value);
     /// Write a quaternion.
     bool WriteQuaternion(const Quaternion& value);
     /// Write a quaternion with each component packed in 16 bits.
-    bool WritePackedQuaternion(const Quaternion& value);
+    bool WritePackedQuaternion(const Quaternion& value, VectorBinaryEncoding encoding);
     /// Write a Matrix3.
     bool WriteMatrix3(const Matrix3& value);
     /// Write a Matrix3x4.

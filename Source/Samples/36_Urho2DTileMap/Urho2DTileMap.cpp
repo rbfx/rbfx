@@ -190,7 +190,7 @@ void Urho2DTileMap::HandleMouseButtonDown(StringHash eventType, VariantMap& even
     auto* map = tileMapNode->GetComponent<TileMap2D>();
     TileMapLayer2D* layer = map->GetLayer(0);
 
-    Vector2 pos = GetMousePositionXY();
+    Vector2 pos = GetMousePositionXY() - tileMapNode->GetPosition2D();
     int x, y;
     if (map->PositionToTileIndex(x, y, pos))
     {

@@ -48,8 +48,10 @@
 #include "../Physics/CollisionShape.h"
 #endif
 #include "../Scene/Scene.h"
+#include "../Scene/SceneEvents.h"
 
 #include <cfloat>
+#include <Detour/DetourCommon.h>
 #include <Detour/DetourNavMesh.h>
 #include <Detour/DetourNavMeshBuilder.h>
 #include <Detour/DetourNavMeshQuery.h>
@@ -69,7 +71,7 @@ const char* navmeshPartitionTypeNames[] =
     nullptr
 };
 
-static const int DEFAULT_TILE_SIZE = 128;
+static const int DEFAULT_TILE_SIZE = 120;
 static const float DEFAULT_CELL_SIZE = 0.3f;
 static const float DEFAULT_CELL_HEIGHT = 0.2f;
 static const float DEFAULT_AGENT_HEIGHT = 2.0f;
@@ -100,15 +102,6 @@ struct FindPathData
 
 namespace
 {
-
-/// Write dtMeshTile to the stream.
-void WriteTile(Serializer& dest, const dtMeshTile* tile)
-{
-    dest.WriteInt(tile->header->x);
-    dest.WriteInt(tile->header->y);
-    dest.WriteInt(tile->dataSize);
-    dest.Write(tile->data, static_cast<unsigned>(tile->dataSize));
-}
 
 /// Return polygon vertices.
 ea::pair<ea::array<Vector3, DT_VERTS_PER_POLYGON>, Vector3> GetPolygonVerticesAndCenter(
@@ -344,6 +337,17 @@ void NavigationMesh::SetPadding(const Vector3& padding)
     padding_ = padding;
 }
 
+void NavigationMesh::OnSceneSet(Scene* previousScene, Scene* scene)
+{
+    BaseClassName::OnSceneSet(previousScene, scene);
+
+    if (previousScene)
+        UnsubscribeFromEvent(E_WORLDORIGINUPDATE);
+
+    if (scene)
+        SubscribeToEvent(scene, E_WORLDORIGINUPDATE, &NavigationMesh::HandleWorldOriginUpdate);
+}
+
 bool NavigationMesh::AllocateMesh(unsigned maxTiles)
 {
     // Release existing navigation data
@@ -442,6 +446,91 @@ bool NavigationMesh::Rebuild()
     return true;
 }
 
+void NavigationMesh::OffsetMeshTile(ByteSpan tileData, const IntVector2& tileOffset, int offsetY)
+{
+    const Vector2 offset = tileOffset.ToVector2() * (tileSize_ * cellSize_);
+
+    // Copied from dtNavMesh::addTile
+    // @{
+    dtMeshHeader* header = reinterpret_cast<dtMeshHeader*>(tileData.data());
+    const int headerSize = dtAlign4(sizeof(dtMeshHeader));
+    const int vertsSize = dtAlign4(sizeof(float) * 3 * header->vertCount);
+    const int polysSize = dtAlign4(sizeof(dtPoly) * header->polyCount);
+    const int linksSize = dtAlign4(sizeof(dtLink) * (header->maxLinkCount));
+    const int detailMeshesSize = dtAlign4(sizeof(dtPolyDetail) * header->detailMeshCount);
+    const int detailVertsSize = dtAlign4(sizeof(float) * 3 * header->detailVertCount);
+    const int detailTrisSize = dtAlign4(sizeof(unsigned char) * 4 * header->detailTriCount);
+    const int bvtreeSize = dtAlign4(sizeof(dtBVNode) * header->bvNodeCount);
+    const int offMeshLinksSize = dtAlign4(sizeof(dtOffMeshConnection) * header->offMeshConCount);
+
+    unsigned char* d = tileData.data() + headerSize;
+    float* vertices = dtGetThenAdvanceBufferPointer<float>(d, vertsSize);
+    dtGetThenAdvanceBufferPointer<dtPoly>(d, polysSize);
+    dtGetThenAdvanceBufferPointer<dtLink>(d, linksSize);
+    dtGetThenAdvanceBufferPointer<dtPolyDetail>(d, detailMeshesSize);
+    float* detailVertices = dtGetThenAdvanceBufferPointer<float>(d, detailVertsSize);
+    dtGetThenAdvanceBufferPointer<unsigned char>(d, detailTrisSize);
+    dtGetThenAdvanceBufferPointer<dtBVNode>(d, bvtreeSize);
+    dtOffMeshConnection* offMeshConnections = dtGetThenAdvanceBufferPointer<dtOffMeshConnection>(d, offMeshLinksSize);
+    // @}
+
+    if (d - tileData.data() > tileData.size())
+    {
+        URHO3D_LOGERROR("Cannot offset dtMeshTile: data is corrupted");
+        return;
+    }
+
+    header->x += tileOffset.x_;
+    header->y += tileOffset.y_;
+    header->bmin[0] += offset.x_;
+    header->bmin[1] += offsetY;
+    header->bmin[2] += offset.y_;
+    header->bmax[0] += offset.x_;
+    header->bmax[1] += offsetY;
+    header->bmax[2] += offset.y_;
+
+    for (int i = 0; i < header->vertCount; ++i)
+    {
+        vertices[i * 3 + 0] += offset.x_;
+        vertices[i * 3 + 1] += offsetY;
+        vertices[i * 3 + 2] += offset.y_;
+    }
+
+    for (int i = 0; i < header->detailVertCount; ++i)
+    {
+        detailVertices[i * 3 + 0] += offset.x_;
+        detailVertices[i * 3 + 1] += offsetY;
+        detailVertices[i * 3 + 2] += offset.y_;
+    }
+
+    for (int i = 0; i < header->offMeshConCount; ++i)
+    {
+        offMeshConnections[i].pos[0 + 0] += offset.x_;
+        offMeshConnections[i].pos[0 + 1] += offsetY;
+        offMeshConnections[i].pos[0 + 2] += offset.y_;
+        offMeshConnections[i].pos[3 + 0] += offset.x_;
+        offMeshConnections[i].pos[3 + 1] += offsetY;
+        offMeshConnections[i].pos[3 + 2] += offset.y_;
+    }
+}
+
+void NavigationMesh::OffsetTileData(ByteSpan tileData, const IntVector3& delta)
+{
+    const auto tileOffset = CalculateTileOffset(delta, tileSize_, cellSize_);
+    if (!tileOffset)
+        return;
+
+    MemoryBuffer buffer(tileData.data(), static_cast<unsigned>(tileData.size()));
+    auto meshTile = ReadDetourBuffer(buffer);
+    if (!meshTile)
+        return;
+
+    OffsetMeshTile(meshTile.ToByteSpan(), tileOffset->first, tileOffset->second);
+
+    buffer.Seek(0);
+    WriteDetourBuffer(buffer, meshTile);
+}
+
 bool NavigationMesh::BuildTilesInRegion(const BoundingBox& boundingBox)
 {
     const IntVector2 beginTileIndex = GetTileIndex(boundingBox.min_);
@@ -521,7 +610,7 @@ ea::vector<unsigned char> NavigationMesh::GetTileData(const IntVector2& tileInde
         return {};
 
     VectorBuffer ret;
-    WriteTile(ret, tile);
+    WriteDetourBuffer(ret, tile->data, tile->dataSize);
     return ret.GetBuffer();
 }
 
@@ -896,6 +985,13 @@ void NavigationMesh::SetNavigationDataAttr(const ea::vector<unsigned char>& valu
     params.maxTiles = buffer.ReadInt();
     params.maxPolys = buffer.ReadInt();
 
+    // TODO: Replace it with overwriting?
+    if (!Equals(params.tileWidth, cellSize_ * tileSize_))
+    {
+        URHO3D_LOGWARNING("Incompatible navigation mesh parameters, please rebuild navigation data");
+        return;
+    }
+
     navMesh_ = dtAllocNavMesh();
     if (!navMesh_)
     {
@@ -947,7 +1043,7 @@ ea::vector<unsigned char> NavigationMesh::GetNavigationDataAttr() const
             if (!tile || !tile->header || !tile->dataSize)
                 continue;
 
-            WriteTile(ret, tile);
+            WriteDetourBuffer(ret, tile->data, tile->dataSize);
         }
     }
 
@@ -1273,31 +1369,43 @@ void NavigationMesh::AddTriMeshGeometry(
 
 bool NavigationMesh::ReadTile(Deserializer& source, bool silent)
 {
-    const int x = source.ReadInt();
-    const int z = source.ReadInt();
-    unsigned navDataSize = source.ReadUInt();
-
-    auto* navData = (unsigned char*)dtAlloc(navDataSize, DT_ALLOC_PERM);
-    if (!navData)
+    auto buffer = ReadDetourBuffer(source);
+    if (!buffer)
     {
         URHO3D_LOGERROR("Could not allocate data for navigation mesh tile");
         return false;
     }
 
-    source.Read(navData, navDataSize);
-    if (dtStatusFailed(navMesh_->addTile(navData, navDataSize, DT_TILE_FREE_DATA, 0, nullptr)))
+    if (dtStatusFailed(navMesh_->addTile(buffer.data_.get(), buffer.dataSize_, DT_TILE_FREE_DATA, 0, nullptr)))
     {
         URHO3D_LOGERROR("Failed to add navigation mesh tile");
-        dtFree(navData);
         return false;
     }
 
-    CancelTileBuild(IntVector2(x, z));
+    const auto header = reinterpret_cast<const dtMeshHeader*>(buffer.data_.get());
+    const IntVector2 tileIndex{header->x, header->y};
+
+    buffer.data_.release();
+
+    CancelTileBuild(tileIndex);
 
     if (!silent)
-        SendTileAddedEvent(IntVector2(x, z));
+        SendTileAddedEvent(tileIndex);
 
     return true;
+}
+
+void NavigationMesh::HandleWorldOriginUpdate(VariantMap& eventData)
+{
+    if (!navMesh_)
+        return;
+
+    const IntVector3 delta = eventData[WorldOriginUpdate::P_DELTA].GetIntVector3();
+    const auto tileOffset = CalculateTileOffset(delta, tileSize_, cellSize_);
+    if (!tileOffset)
+        return;
+
+    OffsetTilesGeometry(tileOffset->first, tileOffset->second);
 }
 
 void NavigationMesh::SendTileAddedEvent(const IntVector2& tileIndex)
@@ -1518,12 +1626,15 @@ bool NavigationMesh::BuildSimpleTileData(SimpleNavBuildData& build)
         params.offMeshConDir = &build.offMeshDir_[0];
     }
 
-    build.tileData_ = ea::make_unique<NavTileData>();
-    if (!dtCreateNavMeshData(&params, &build.tileData_->data, &build.tileData_->dataSize))
+    unsigned char* data{};
+    int dataSize{};
+    if (!dtCreateNavMeshData(&params, &data, &dataSize))
     {
         URHO3D_LOGERROR("Could not build navigation mesh tile data");
         return false;
     }
+
+    build.tileData_ = {data, dataSize};
 
     return true;
 }
@@ -1552,12 +1663,14 @@ NavBuildDataPtr NavigationMesh::CreateTileBuildData(
 
 bool NavigationMesh::ReplaceTileData(NavBuildData& build)
 {
-    const IntVector2& tileIndex = build.tileIndex_;
-    NavTileData& tileData = *static_cast<SimpleNavBuildData&>(build).tileData_;
+    const IntVector2 tileIndex = build.tileIndex_ + build.pendingTileOffset_;
+    DetourAllocation& tileData = static_cast<SimpleNavBuildData&>(build).tileData_;
+
+    OffsetMeshTile(tileData.ToByteSpan(), build.pendingTileOffset_, build.pendingOffsetY_);
 
     navMesh_->removeTile(navMesh_->getTileRefAt(tileIndex.x_, tileIndex.y_, 0), nullptr, nullptr);
 
-    if (dtStatusFailed(navMesh_->addTile(tileData.data, tileData.dataSize, DT_TILE_FREE_DATA, 0, nullptr)))
+    if (dtStatusFailed(navMesh_->addTile(tileData.data_.get(), tileData.dataSize_, DT_TILE_FREE_DATA, 0, nullptr)))
     {
         URHO3D_LOGERROR("Failed to add navigation mesh tile");
         return false;
@@ -1565,6 +1678,43 @@ bool NavigationMesh::ReplaceTileData(NavBuildData& build)
 
     tileData.Release();
     return true;
+}
+
+void NavigationMesh::OffsetTilesGeometry(const IntVector2& tileOffset, int offsetY)
+{
+    URHO3D_PROFILE("OffsetTilesGeometry");
+
+    for (const auto& [_, buildData] : asyncTileBuilds_)
+    {
+        buildData->pendingTileOffset_ -= tileOffset;
+        buildData->pendingOffsetY_ -= offsetY;
+    }
+
+    ea::vector<const dtMeshTile*> tilesToRemove;
+    for (int i = 0; i < navMesh_->getMaxTiles(); ++i)
+    {
+        const dtMeshTile* meshTile = const_cast<const dtNavMesh*>(navMesh_)->getTile(i);
+        if (meshTile->data)
+        {
+            const_cast<dtMeshTile*>(meshTile)->flags &= ~DT_TILE_FREE_DATA; // Disable dtFree.
+            tilesToRemove.push_back(meshTile);
+        }
+    }
+
+    ea::vector<ByteSpan> tiles;
+    for (const dtMeshTile* meshTile : tilesToRemove)
+    {
+        unsigned char* data{};
+        int dataSize{};
+        navMesh_->removeTile(navMesh_->getTileRef(meshTile), &data, &dataSize);
+        tiles.push_back(ByteSpan{data, data + dataSize});
+    }
+
+    for (ByteSpan& tileData : tiles)
+    {
+        OffsetMeshTile(tileData, -tileOffset, -offsetY);
+        navMesh_->addTile(tileData.data(), tileData.size(), DT_TILE_FREE_DATA, 0, nullptr);
+    }
 }
 
 unsigned NavigationMesh::BuildTilesFromGeometry(

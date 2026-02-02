@@ -97,7 +97,7 @@ void VehicleDemo::CreateScene()
 
     // Create camera and define viewport. We will be doing load / save, so it's convenient to create the camera outside the scene,
     // so that it won't be destroyed and recreated, and we don't have to redefine the viewport on load
-    cameraNode_ = new Node(context_);
+    cameraNode_ = scene_->CreateChild("Camera");
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(500.0f);
     SetViewport(0, new Viewport(context_, scene_, camera));
@@ -179,8 +179,7 @@ void VehicleDemo::CreateInstructions()
     // Construct new Text object, set string to display and font to use
     auto* instructionText = GetUIRoot()->CreateChild<Text>();
     instructionText->SetText(
-        "Use WASD keys to drive, mouse/touch to rotate camera\n"
-        "F5 to save scene, F7 to load"
+        "Use WASD keys to drive, mouse/touch to rotate camera"
     );
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
     // The text has multiple rows. Center them in relation to each other
@@ -199,40 +198,6 @@ void VehicleDemo::SubscribeToEvents()
 
     // Unsubscribe the SceneUpdate event from base class as the camera node is being controlled in HandlePostUpdate() in this sample
     UnsubscribeFromEvent(E_SCENEUPDATE);
-}
-
-void VehicleDemo::Update(float timeStep)
-{
-    using namespace Update;
-
-    auto* input = GetSubsystem<Input>();
-
-    if (vehicle_)
-    {
-        auto* ui = GetSubsystem<UI>();
-
-        // Get movement controls and assign them to the vehicle component. If UI has a focused element, clear controls
-        if (!ui->GetFocusElement())
-        {
-            // Check for loading / saving the scene
-            if (input->GetKeyPress(KEY_F5))
-            {
-                File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/VehicleDemo.xml",
-                    FILE_WRITE);
-                scene_->SaveXML(saveFile);
-            }
-            if (input->GetKeyPress(KEY_F7))
-            {
-                File loadFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/VehicleDemo.xml", FILE_READ);
-                scene_->LoadXML(loadFile);
-                // After loading we have to reacquire the weak pointer to the Vehicle component, as it has been recreated
-                // Simply find the vehicle's scene node by name as there's only one of them
-                Node* vehicleNode = scene_->GetChild("Vehicle", true);
-                if (vehicleNode)
-                    vehicle_ = vehicleNode->GetComponent<Vehicle>();
-            }
-        }
-    }
 }
 
 void VehicleDemo::HandlePostUpdate(StringHash eventType, VariantMap& eventData)

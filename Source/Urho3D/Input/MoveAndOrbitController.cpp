@@ -99,7 +99,7 @@ void MoveAndOrbitController::SetRotationUIElement(UIElement* element)
 
 void MoveAndOrbitController::OnNodeSet(Node* previousNode, Node* currentNode)
 {
-    Component::OnNodeSet(previousNode, currentNode);
+    BaseClassName::OnNodeSet(previousNode, currentNode);
 
     connectToComponentCalled_ = false;
     UpdateEventSubscription();

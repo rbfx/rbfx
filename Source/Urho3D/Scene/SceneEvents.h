@@ -206,14 +206,22 @@ URHO3D_EVENT(E_COMPONENTCLONED, ComponentCloned)
     URHO3D_PARAM(P_CLONECOMPONENT, CloneComponent); // Component pointer
 }
 
-/// A network attribute update from the server has been intercepted.
-URHO3D_EVENT(E_INTERCEPTNETWORKUPDATE, InterceptNetworkUpdate)
+/// World origin is about to be updated.
+URHO3D_EVENT(E_WORLDORIGINUPDATE, WorldOriginUpdate)
 {
-    URHO3D_PARAM(P_SERIALIZABLE, Serializable);    // Serializable pointer
-    URHO3D_PARAM(P_TIMESTAMP, TimeStamp);          // unsigned (0-255)
-    URHO3D_PARAM(P_INDEX, Index);                  // unsigned
-    URHO3D_PARAM(P_NAME, Name);                    // String
-    URHO3D_PARAM(P_VALUE, Value);                  // Variant
+    URHO3D_PARAM(P_SCENE, Scene);                   // Scene pointer
+    URHO3D_PARAM(P_OLDORIGIN, OldOrigin);           // IntVector3
+    URHO3D_PARAM(P_NEWORIGIN, NewOrigin);           // IntVector3
+    URHO3D_PARAM(P_DELTA, Delta);                   // IntVector3
 }
 
+/// World origin was updated.
+URHO3D_EVENT(E_WORLDORIGINPOSTUPDATE, WorldOriginPostUpdate)
+{
+    URHO3D_PARAM(P_SCENE, Scene);                   // Scene pointer
+    URHO3D_PARAM(P_OLDORIGIN, OldOrigin);           // IntVector3
+    URHO3D_PARAM(P_NEWORIGIN, NewOrigin);           // IntVector3
+    URHO3D_PARAM(P_DELTA, Delta);                   // IntVector3
 }
+
+} // namespace Urho3D

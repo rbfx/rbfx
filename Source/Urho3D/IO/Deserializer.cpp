@@ -32,8 +32,6 @@
 namespace Urho3D
 {
 
-static const float invQ = 1.0f / 32767.0f;
-
 Deserializer::Deserializer() :
     position_(0),
     size_(0)
@@ -180,13 +178,42 @@ Vector3 Deserializer::ReadVector3()
     return Vector3(data);
 }
 
-Vector3 Deserializer::ReadPackedVector3(float maxAbsCoord)
+DoubleVector3 Deserializer::ReadPackedVector3(VectorBinaryEncoding encoding, float param)
 {
-    float invV = maxAbsCoord / 32767.0f;
-    short coords[3];
-    Read(coords, sizeof coords);
-    Vector3 ret(coords[0] * invV, coords[1] * invV, coords[2] * invV);
-    return ret;
+    switch (encoding)
+    {
+    case VectorBinaryEncoding::Float:
+    {
+        Vector3 data;
+        Read(data.MutableData(), sizeof(Vector3));
+        return data.Cast<DoubleVector3>();
+    }
+
+    case VectorBinaryEncoding::Double:
+    {
+        DoubleVector3 data;
+        Read(data.MutableData(), sizeof(DoubleVector3));
+        return data;
+    }
+
+    case VectorBinaryEncoding::Int32:
+    {
+        IntVector3 intValue;
+        Read(intValue.MutableData(), sizeof(IntVector3));
+        return intValue.Cast<DoubleVector3>() / static_cast<double>(M_MAX_INT) * static_cast<double>(param);
+    }
+
+    case VectorBinaryEncoding::Int16:
+    {
+        using ShortVector3 = BaseIntegerVector3<short>;
+        ShortVector3 intValue;
+        Read(intValue.MutableData(), sizeof(ShortVector3));
+        return intValue.Cast<DoubleVector3>() / static_cast<double>(M_MAX_SHORT) * static_cast<double>(param);
+    }
+
+    default:
+        return DoubleVector3::ZERO;
+    }
 }
 
 Vector4 Deserializer::ReadVector4()
@@ -203,13 +230,25 @@ Quaternion Deserializer::ReadQuaternion()
     return Quaternion(data);
 }
 
-Quaternion Deserializer::ReadPackedQuaternion()
+Quaternion Deserializer::ReadPackedQuaternion(VectorBinaryEncoding encoding)
 {
-    short coords[4];
-    Read(coords, sizeof coords);
-    Quaternion ret(coords[0] * invQ, coords[1] * invQ, coords[2] * invQ, coords[3] * invQ);
-    ret.Normalize();
-    return ret;
+    switch (encoding)
+    {
+    case VectorBinaryEncoding::Double: // Not implemented
+    case VectorBinaryEncoding::Int32: // Not implemented
+    case VectorBinaryEncoding::Float: return ReadQuaternion();
+
+    case VectorBinaryEncoding::Int16:
+    {
+        short coords[4];
+        Read(coords, sizeof(coords));
+        const float invQ = static_cast<float>(M_MAX_SHORT);
+        Quaternion ret(coords[0] * invQ, coords[1] * invQ, coords[2] * invQ, coords[3] * invQ);
+        ret.Normalize();
+        return ret;
+    }
+    default: return Quaternion::IDENTITY;
+    }
 }
 
 Matrix3 Deserializer::ReadMatrix3()

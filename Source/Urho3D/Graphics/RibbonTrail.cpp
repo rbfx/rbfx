@@ -449,6 +449,22 @@ void RibbonTrail::OnWorldBoundingBoxUpdate()
     worldBoundingBox_ = worldBox;
 }
 
+void RibbonTrail::PostUpdateWorldOrigin(
+    const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta)
+{
+    const Vector3 offset = delta.ToVector3();
+    for (TrailPoint& point : points_)
+    {
+        point.position_ -= offset;
+        point.parentPos_ -= offset;
+    }
+    previousPosition_ -= offset;
+    previousOffset_ -= offset;
+    endTail_.position_ -= offset;
+    endTail_.parentPos_ -= offset;
+    forceUpdate_ = true;
+}
+
 void RibbonTrail::UpdateBufferSize()
 {
     numPoints_ = points_.size();

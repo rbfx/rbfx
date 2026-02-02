@@ -88,6 +88,9 @@ public:
     void UpdateGeometry(const FrameInfo& frame) override;
     /// Return whether a geometry update is necessary, and if it can happen in a worker thread.
     UpdateGeometryType GetUpdateGeometryType() override;
+    /// Called on world origin post-update.
+    void PostUpdateWorldOrigin(
+        const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta) override;
 
     /// Set material.
     /// @property
