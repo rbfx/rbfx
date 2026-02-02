@@ -43,8 +43,12 @@ public:
     /// Solve the IK forcibly.
     void Solve(float timeStep);
 
+    /// Implement LogicComponent.
+    /// @{
     void PostUpdate(float timeStep) override;
     StringHash GetPostUpdateEvent() const override { return E_SCENEDRAWABLEUPDATEFINISHED; }
+    void UpdateWorldOrigin(const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta) override;
+    /// @}
 
     /// Attributes.
     /// @{

@@ -60,6 +60,11 @@ public:
     /// @nobind
     static void RegisterObject(Context* context);
 
+    /// Offset internal tile cache data (dtCompressedTile) by tile offset and Y.
+    void OffsetCacheTile(ByteSpan tileData, const IntVector2& tileOffset, int offsetY);
+    /// Offset serialized tile data.
+    virtual void OffsetTileData(ByteSpan tileData, const IntVector3& delta);
+
     /// Return tile data.
     ea::vector<unsigned char> GetTileData(const IntVector2& tileIndex) const override;
     /// Return whether the Obstacle is touching the given tile.
@@ -120,6 +125,7 @@ protected:
     NavBuildDataPtr CreateTileBuildData(
         const ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& tileIndex) const override;
     bool ReplaceTileData(NavBuildData& build) override;
+    void OffsetTilesGeometry(const IntVector2& tileOffset, int offsetY) override;
     /// @}
 
     /// Subscribe to events when assigned to a scene.

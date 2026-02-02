@@ -79,7 +79,7 @@ class URHO3D_API NavigationMesh : public Component
 
 public:
     /// Version of compiled navigation data. Navigation data should be discarded and rebuilt on mismatch.
-    static constexpr int NavigationDataVersion = 1;
+    static constexpr int NavigationDataVersion = 2;
     /// Default maximum number of tiles.
     static constexpr int DefaultMaxTiles = 256;
     /// Maximum number of layers in the single tile.
@@ -162,6 +162,11 @@ public:
     void CancelTileBuild(const IntVector2& tileIndex);
     /// Rebuild the navigation mesh allocating sufficient maximum number of tiles. Return true if successful.
     bool Rebuild();
+
+    /// Offset internal mesh tile data (dtMeshTile) by tile offset and Y.
+    void OffsetMeshTile(ByteSpan tileData, const IntVector2& tileOffset, int offsetY);
+    /// Offset serialized tile data.
+    virtual void OffsetTileData(ByteSpan tileData, const IntVector3& delta);
 
     /// Enumerate all tiles.
     ea::vector<IntVector2> GetAllTileIndices() const;
@@ -319,9 +324,16 @@ public:
 private:
     /// Read tile data to the navigation mesh.
     bool ReadTile(Deserializer& source, bool silent);
+    /// Handle world origin update.
+    void HandleWorldOriginUpdate(VariantMap& eventData);
 
 protected:
     using TileBuilderFunction = bool(*)(NavBuildData& build);
+
+    /// Implement Component.
+    /// @{
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
+    /// @}
 
     /// Allocate the navigation mesh without building any tiles. Return true if successful.
     virtual bool AllocateMesh(unsigned maxTiles);
@@ -335,6 +347,8 @@ protected:
         const ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& tileIndex) const;
     /// Replace tile data in navigation mesh.
     virtual bool ReplaceTileData(NavBuildData& build);
+    /// Offset geometry of all tiles by a given offset.
+    virtual void OffsetTilesGeometry(const IntVector2& tileOffset, int offsetY);
 
     /// Build mesh tiles from the geometry data. Return number of tiles built.
     unsigned BuildTilesFromGeometry(

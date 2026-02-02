@@ -24,14 +24,15 @@
 
 #pragma once
 
-#include "../Replica/BehaviorNetworkObject.h"
-#include "../Replica/NetworkValue.h"
+#include "Urho3D/IO/IODefs.h"
+#include "Urho3D/Replica/BehaviorNetworkObject.h"
+#include "Urho3D/Replica/NetworkValue.h"
 
 namespace Urho3D
 {
 
 /// Position-velocity pair, can be used to interpolate and extrapolate object position.
-using PositionAndVelocity = ValueWithDerivative<Vector3>;
+using PositionAndVelocity = ValueWithDerivative<DoubleVector3>;
 
 /// Rotation-velocity pair, can be used to interpolate and extrapolate object rotation.
 using RotationAndVelocity = ValueWithDerivative<Quaternion>;
@@ -55,19 +56,31 @@ public:
     static constexpr float DefaultSmoothingConstant = 15.0f;
     static constexpr float DefaultMovementThreshold = 0.001f;
     static constexpr float DefaultSnapThreshold = 5.0f;
+
     static constexpr bool DefaultSynchronizePosition = true;
     static constexpr ReplicatedRotationMode DefaultSynchronizeRotation = ReplicatedRotationMode::XYZ;
     static constexpr bool DefaultExtrapolatePosition = true;
     static constexpr bool DefaultExtrapolateRotation = false;
 
+    static constexpr VectorBinaryEncoding DefaultPositionEncoding = VectorBinaryEncoding::Float;
+    static constexpr VectorBinaryEncoding DefaultRotationEncoding = VectorBinaryEncoding::Float;
+    static constexpr VectorBinaryEncoding DefaultVelocityEncoding = VectorBinaryEncoding::Float;
+    static constexpr VectorBinaryEncoding DefaultAngularVelocityEncoding = VectorBinaryEncoding::Float;
+    static constexpr float DefaultPositionEncodingParameter = 1024000.0f;
+    static constexpr float DefaultVelocityEncodingParameter = 100.0f;
+    static constexpr float DefaultAngularVelocityEncodingParameter = 100.0f;
+
     static constexpr NetworkCallbackFlags CallbackMask =
         NetworkCallbackMask::UpdateTransformOnServer | NetworkCallbackMask::UnreliableDelta | NetworkCallbackMask::InterpolateState;
 
+public:
     explicit ReplicatedTransform(Context* context);
     ~ReplicatedTransform() override;
 
     static void RegisterObject(Context* context);
 
+    /// Attributes.
+    /// @{
     void SetNumUploadAttempts(unsigned value) { numUploadAttempts_ = value; }
     unsigned GetNumUploadAttempts() const { return numUploadAttempts_; }
     void SetReplicateOwner(bool value) { replicateOwner_ = value; }
@@ -91,6 +104,23 @@ public:
     bool GetExtrapolatePosition() const { return extrapolatePosition_; }
     void SetExtrapolateRotation(bool value) { extrapolateRotation_ = value; }
     bool GetExtrapolateRotation() const { return extrapolateRotation_; }
+
+    void SetPositionEncoding(VectorBinaryEncoding encoding) { positionEncoding_ = encoding; }
+    VectorBinaryEncoding GetPositionEncoding() const { return positionEncoding_; }
+    void SetRotationEncoding(VectorBinaryEncoding encoding) { rotationEncoding_ = encoding; }
+    VectorBinaryEncoding GetRotationEncoding() const { return rotationEncoding_; }
+    void SetVelocityEncoding(VectorBinaryEncoding encoding) { velocityEncoding_ = encoding; }
+    VectorBinaryEncoding GetVelocityEncoding() const { return velocityEncoding_; }
+    void SetAngularVelocityEncoding(VectorBinaryEncoding encoding) { angularVelocityEncoding_ = encoding; }
+    VectorBinaryEncoding GetAngularVelocityEncoding() const { return angularVelocityEncoding_; }
+
+    void SetPositionEncodingParameter(float value) { positionEncodingParameter_ = value; }
+    float GetPositionEncodingParameter() const { return positionEncodingParameter_; }
+    void SetVelocityEncodingParameter(float value) { velocityEncodingParameter_ = value; }
+    float GetVelocityEncodingParameter() const { return velocityEncodingParameter_; }
+    void SetAngularVelocityEncodingParameter(float value) { angularVelocityEncodingParameter_ = value; }
+    float GetAngularVelocityEncodingParameter() const { return angularVelocityEncodingParameter_; }
+    /// @}
 
     /// Implement NetworkBehavior.
     /// @{
@@ -130,12 +160,24 @@ private:
     float snapThreshold_{DefaultSnapThreshold};
     /// @}
 
-    /// Attributes matching on the client and the server.
+    /// Attributes matching on the client and the server. Replicated automatically.
     /// @{
     bool synchronizePosition_{DefaultSynchronizePosition};
     ReplicatedRotationMode synchronizeRotation_{DefaultSynchronizeRotation};
     bool extrapolatePosition_{DefaultExtrapolatePosition};
     bool extrapolateRotation_{DefaultExtrapolateRotation};
+    /// @}
+
+    /// Attributes matching on the client and the server. Replicated automatically.
+    /// @{
+    VectorBinaryEncoding positionEncoding_{DefaultPositionEncoding};
+    VectorBinaryEncoding rotationEncoding_{DefaultRotationEncoding};
+    VectorBinaryEncoding velocityEncoding_{DefaultVelocityEncoding};
+    VectorBinaryEncoding angularVelocityEncoding_{DefaultAngularVelocityEncoding};
+
+    float positionEncodingParameter_{DefaultPositionEncodingParameter};
+    float velocityEncodingParameter_{DefaultVelocityEncodingParameter};
+    float angularVelocityEncodingParameter_{DefaultAngularVelocityEncodingParameter};
     /// @}
 
     NetworkValue<PositionAndVelocity> positionTrace_;
@@ -145,16 +187,16 @@ private:
     {
         unsigned pendingUploadAttempts_{};
 
-        Vector3 previousPosition_;
+        DoubleVector3 previousPosition_;
         Quaternion previousRotation_;
 
-        Vector3 position_;
+        DoubleVector3 position_;
         Quaternion rotation_;
-        Vector3 velocity_;
+        DoubleVector3 velocity_;
         Vector3 angularVelocity_;
 
         bool movedDuringFrame_{};
-        Vector3 latestSentPosition_;
+        DoubleVector3 latestSentPosition_;
         Quaternion latestSentRotation_;
     } server_;
 

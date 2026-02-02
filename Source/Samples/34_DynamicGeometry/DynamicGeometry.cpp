@@ -264,7 +264,7 @@ void DynamicGeometry::CreateScene()
     }
 
     // Create the camera
-    cameraNode_ = new Node(context_);
+    cameraNode_ = scene_->CreateChild("Camera");
     cameraNode_->CreateComponent<FreeFlyController>();
     cameraNode_->SetPosition(Vector3(0.0f, 2.0f, -20.0f));
     auto* camera = cameraNode_->CreateComponent<Camera>();

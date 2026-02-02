@@ -98,7 +98,8 @@ void RibbonTrailDemo::CreateScene()
     light->SetShadowCascade(CascadeParameters(10.0f, 50.0f, 200.0f, 0.0f, 0.8f));
 
     // Create first box for face camera trail demo with 1 column.
-    boxNode1_ = scene_->CreateChild("Box1");
+    Node* boxContainer = scene_->CreateChild("BoxContainer");
+    boxNode1_ = boxContainer->CreateChild("Box1");
     auto* box1 = boxNode1_->CreateComponent<StaticModel>();
     box1->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
     box1->SetCastShadows(true);
@@ -111,7 +112,7 @@ void RibbonTrailDemo::CreateScene()
 
     // Create second box for face camera trail demo with 4 column.
     // This will produce less distortion than first trail.
-    boxNode2_ = scene_->CreateChild("Box2");
+    boxNode2_ = boxContainer->CreateChild("Box2");
     auto* box2 = boxNode2_->CreateComponent<StaticModel>();
     box2->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
     box2->SetCastShadows(true);

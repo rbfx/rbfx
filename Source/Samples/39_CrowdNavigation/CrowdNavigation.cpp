@@ -134,7 +134,7 @@ void CrowdNavigation::CreateScene()
     // Create a DynamicNavigationMesh component to the scene root
     auto* navMesh = scene_->CreateComponent<DynamicNavigationMesh>();
     // Set small tiles to show navigation mesh streaming
-    navMesh->SetTileSize(32);
+    navMesh->SetTileSize(30);
     // Enable drawing debug geometry for obstacles and off-mesh connections
     navMesh->SetDrawObstacles(true);
     navMesh->SetDrawOffMeshConnections(true);
@@ -180,7 +180,7 @@ void CrowdNavigation::CreateScene()
 
     // Create the camera. Set far clip to match the fog. Note: now we actually create the camera node outside the scene, because
     // we want it to be unaffected by scene load / save
-    cameraNode_ = new Node(context_);
+    cameraNode_ = scene_->CreateChild("Camera");
     auto* camera = cameraNode_->CreateComponent<Camera>();
     camera->SetFarClip(300.0f);
 
@@ -212,7 +212,6 @@ void CrowdNavigation::CreateUI()
         "Use WASD keys to move, RMB to rotate view\n"
         "LMB to set destination, SHIFT+LMB to spawn a Jack\n"
         "MMB or O key to add obstacles or remove obstacles/agents\n"
-        "F5 to save scene, F7 to load\n"
         "Tab to toggle navigation mesh streaming\n"
         "Space to toggle debug geometry\n"
         "F12 to toggle this instruction text"
@@ -447,18 +446,6 @@ void CrowdNavigation::MoveCamera(float timeStep)
     else if (input->GetMouseButtonPress(MOUSEB_MIDDLE) || input->GetKeyPress(KEY_O))
         AddOrRemoveObject();
 
-    // Check for loading/saving the scene from/to the file Data/Scenes/CrowdNavigation.xml relative to the executable directory
-    if (input->GetKeyPress(KEY_F5))
-    {
-        File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/CrowdNavigation.xml", FILE_WRITE);
-        scene_->SaveXML(saveFile);
-    }
-    else if (input->GetKeyPress(KEY_F7))
-    {
-        File loadFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/CrowdNavigation.xml", FILE_READ);
-        scene_->LoadXML(loadFile);
-    }
-
     // Toggle debug geometry with space
     else if (input->GetKeyPress(KEY_SPACE))
         drawDebug_ = !drawDebug_;
@@ -543,11 +530,21 @@ void CrowdNavigation::Update(float timeStep)
 
     // Update streaming
     auto* input = GetSubsystem<Input>();
-    if (input->GetKeyPress(KEY_TAB))
+    if (scene_->GetWorldOrigin() != IntVector3::ZERO)
+    {
+        if (useStreaming_)
+        {
+            // Streaming and world offset can work together, but it is beyond the scope of this sample.
+            useStreaming_ = false;
+            ToggleStreaming(false);
+        }
+    }
+    else if (input->GetKeyPress(KEY_TAB))
     {
         useStreaming_ = !useStreaming_;
         ToggleStreaming(useStreaming_);
     }
+
     if (useStreaming_)
         UpdateStreaming();
 

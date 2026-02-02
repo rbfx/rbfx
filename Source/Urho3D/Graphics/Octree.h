@@ -281,8 +281,14 @@ public:
     void DrawDebugGeometry(bool depthTest);
 
 private:
+    /// Handle scene being assigned.
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     /// Handle render update in case of headless execution.
     void HandleRenderUpdate(StringHash eventType, VariantMap& eventData);
+    /// Handle world origin update event.
+    void HandleWorldOriginUpdate(StringHash eventType, VariantMap& eventData);
+    /// Handle world origin post-update event.
+    void HandleWorldOriginPostUpdate(StringHash eventType, VariantMap& eventData);
     /// Update octree size.
     void UpdateOctreeSize() { SetSize(worldBoundingBox_, numLevels_); }
 

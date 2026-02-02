@@ -20,15 +20,15 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../IO/Log.h"
+#include "Urho3D/IO/Log.h"
 #if defined(URHO3D_PHYSICS) || defined(URHO3D_PHYSICS2D)
-#include "../Physics/PhysicsEvents.h"
+    #include "Urho3D/Physics/PhysicsEvents.h"
 #endif
-#include "../Scene/LogicComponent.h"
-#include "../Scene/Scene.h"
-#include "../Scene/SceneEvents.h"
+#include "Urho3D/Scene/LogicComponent.h"
+#include "Urho3D/Scene/Scene.h"
+#include "Urho3D/Scene/SceneEvents.h"
 
 namespace Urho3D
 {
@@ -61,6 +61,16 @@ void LogicComponent::FixedUpdate(float timeStep)
 }
 
 void LogicComponent::FixedPostUpdate(float timeStep)
+{
+}
+
+void LogicComponent::UpdateWorldOrigin(
+    const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta)
+{
+}
+
+void LogicComponent::PostUpdateWorldOrigin(
+    const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta)
 {
 }
 
@@ -105,6 +115,8 @@ void LogicComponent::OnSceneSet(Scene* previousScene, Scene* scene)
     {
         UnsubscribeFromEvent(GetUpdateEvent());
         UnsubscribeFromEvent(GetPostUpdateEvent());
+        UnsubscribeFromEvent(E_WORLDORIGINUPDATE);
+        UnsubscribeFromEvent(E_WORLDORIGINPOSTUPDATE);
 #if defined(URHO3D_PHYSICS) || defined(URHO3D_PHYSICS2D)
         UnsubscribeFromEvent(E_PHYSICSPRESTEP);
         UnsubscribeFromEvent(E_PHYSICSPOSTSTEP);
@@ -121,58 +133,38 @@ void LogicComponent::UpdateEventSubscription()
 
     bool enabled = IsEnabledEffective();
 
-    bool needUpdate = enabled && ((updateEventMask_ & USE_UPDATE) || !delayedStartCalled_);
-    if (needUpdate && !(currentEventMask_ & USE_UPDATE))
+    const auto updateSubscription =
+        [&](auto sender, StringHash eventType, UpdateEvent updateEvent, auto handler, bool alwaysSubscribe)
     {
-        SubscribeToEvent(scene, GetUpdateEvent(), URHO3D_HANDLER(LogicComponent, HandleSceneUpdate));
-        currentEventMask_ |= USE_UPDATE;
-    }
-    else if (!needUpdate && (currentEventMask_ & USE_UPDATE))
-    {
-        UnsubscribeFromEvent(scene, GetUpdateEvent());
-        currentEventMask_ &= ~USE_UPDATE;
-    }
+        const bool hasSubscription = currentEventMask_.IsAnyOf(updateEvent);
+        const bool needSubscription = enabled && ((updateEventMask_.IsAnyOf(updateEvent)) || alwaysSubscribe);
+        if (needSubscription && !hasSubscription)
+        {
+            SubscribeToEvent(sender, eventType, handler);
+            currentEventMask_.Set(updateEvent, true);
+        }
+        else if (!needSubscription && hasSubscription)
+        {
+            UnsubscribeFromEvent(sender, eventType);
+            currentEventMask_.Set(updateEvent, false);
+        }
+    };
 
-    bool needPostUpdate = enabled && (updateEventMask_ & USE_POSTUPDATE);
-    if (needPostUpdate && !(currentEventMask_ & USE_POSTUPDATE))
-    {
-        SubscribeToEvent(scene, GetPostUpdateEvent(), URHO3D_HANDLER(LogicComponent, HandleScenePostUpdate));
-        currentEventMask_ |= USE_POSTUPDATE;
-    }
-    else if (!needPostUpdate && (currentEventMask_ & USE_POSTUPDATE))
-    {
-        UnsubscribeFromEvent(scene, GetPostUpdateEvent());
-        currentEventMask_ &= ~USE_POSTUPDATE;
-    }
+    updateSubscription(scene, GetUpdateEvent(), USE_UPDATE, &LogicComponent::HandleSceneUpdate, !delayedStartCalled_);
+    updateSubscription(scene, GetPostUpdateEvent(), USE_POSTUPDATE, &LogicComponent::HandleScenePostUpdate, false);
+
+    updateSubscription(
+        scene, E_WORLDORIGINUPDATE, USE_WORLDORIGINUPDATE, &LogicComponent::HandleWorldOriginUpdate, false);
+    updateSubscription(
+        scene, E_WORLDORIGINPOSTUPDATE, USE_WORLDORIGINPOSTUPDATE, &LogicComponent::HandleWorldOriginPostUpdate, false);
 
 #if defined(URHO3D_PHYSICS) || defined(URHO3D_PHYSICS2D)
     Component* world = GetFixedUpdateSource();
     if (!world)
         return;
 
-    bool needFixedUpdate = enabled && (updateEventMask_ & USE_FIXEDUPDATE);
-    if (needFixedUpdate && !(currentEventMask_ & USE_FIXEDUPDATE))
-    {
-        SubscribeToEvent(world, E_PHYSICSPRESTEP, URHO3D_HANDLER(LogicComponent, HandlePhysicsPreStep));
-        currentEventMask_ |= USE_FIXEDUPDATE;
-    }
-    else if (!needFixedUpdate && (currentEventMask_ & USE_FIXEDUPDATE))
-    {
-        UnsubscribeFromEvent(world, E_PHYSICSPRESTEP);
-        currentEventMask_ &= ~USE_FIXEDUPDATE;
-    }
-
-    bool needFixedPostUpdate = enabled && (updateEventMask_ & USE_FIXEDPOSTUPDATE);
-    if (needFixedPostUpdate && !(currentEventMask_ & USE_FIXEDPOSTUPDATE))
-    {
-        SubscribeToEvent(world, E_PHYSICSPOSTSTEP, URHO3D_HANDLER(LogicComponent, HandlePhysicsPostStep));
-        currentEventMask_ |= USE_FIXEDPOSTUPDATE;
-    }
-    else if (!needFixedPostUpdate && (currentEventMask_ & USE_FIXEDPOSTUPDATE))
-    {
-        UnsubscribeFromEvent(world, E_PHYSICSPOSTSTEP);
-        currentEventMask_ &= ~USE_FIXEDPOSTUPDATE;
-    }
+    updateSubscription(world, E_PHYSICSPRESTEP, USE_FIXEDUPDATE, &LogicComponent::HandlePhysicsPreStep, false);
+    updateSubscription(world, E_PHYSICSPOSTSTEP, USE_FIXEDPOSTUPDATE, &LogicComponent::HandlePhysicsPostStep, false);
 #endif
 }
 
@@ -234,4 +226,20 @@ void LogicComponent::HandlePhysicsPostStep(StringHash eventType, VariantMap& eve
 
 #endif
 
+void LogicComponent::HandleWorldOriginUpdate(StringHash eventType, VariantMap& eventData)
+{
+    using namespace WorldOriginUpdate;
+
+    UpdateWorldOrigin(eventData[P_OLDORIGIN].GetIntVector3(), eventData[P_NEWORIGIN].GetIntVector3(),
+        eventData[P_DELTA].GetIntVector3());
 }
+
+void LogicComponent::HandleWorldOriginPostUpdate(StringHash eventType, VariantMap& eventData)
+{
+    using namespace WorldOriginPostUpdate;
+
+    PostUpdateWorldOrigin(eventData[P_OLDORIGIN].GetIntVector3(), eventData[P_NEWORIGIN].GetIntVector3(),
+        eventData[P_DELTA].GetIntVector3());
+}
+
+} // namespace Urho3D

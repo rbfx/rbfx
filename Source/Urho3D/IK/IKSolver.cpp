@@ -38,6 +38,7 @@ namespace Urho3D
 IKSolver::IKSolver(Context* context)
     : LogicComponent(context)
 {
+    SetUpdateEventMask(USE_POSTUPDATE | USE_WORLDORIGINUPDATE);
 }
 
 IKSolver::~IKSolver()
@@ -84,6 +85,14 @@ void IKSolver::PostUpdate(float timeStep)
 
     if (scene->IsUpdateEnabled() || solveWhenPaused_)
         Solve(timeStep);
+}
+
+void IKSolver::UpdateWorldOrigin(const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta)
+{
+    for (auto& [_, ikNode] : solverNodes_)
+        ikNode.previousPosition_ -= delta.ToVector3();
+    for (IKSolverComponent* solver : solvers_)
+        solver->UpdateWorldOrigin(oldOrigin, newOrigin, delta);
 }
 
 void IKSolver::Solve(float timeStep)

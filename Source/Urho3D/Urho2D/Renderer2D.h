@@ -98,12 +98,18 @@ public:
     bool CheckVisibility(Drawable2D* drawable) const;
 
 private:
+    /// Handle scene being assigned.
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
     /// Recalculate the world-space bounding box.
     void OnWorldBoundingBoxUpdate() override;
     /// Create material by texture and blend mode.
     SharedPtr<Material> CreateMaterial(Texture2D* texture, BlendMode blendMode);
     /// Handle view update begin event. Determine Drawable2D's and their batches here.
     void HandleBeginViewUpdate(StringHash eventType, VariantMap& eventData);
+    /// Handle world origin update event.
+    void HandleWorldOriginUpdate(StringHash eventType, VariantMap& eventData);
+    /// Handle world origin post-update event.
+    void HandleWorldOriginPostUpdate(StringHash eventType, VariantMap& eventData);
     /// Get all drawables in node.
     void GetDrawables(ea::vector<Drawable2D*>& drawables, Node* node);
     /// Update view batch info.

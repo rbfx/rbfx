@@ -100,7 +100,7 @@ void Sample2D::CreateCollisionShapesFromTMXObjects(Node* tileMapNode, TileMapLay
                 CreatePolyLineShape(tileMapNode, tileMapObject);
             }
             break;
-                
+
             // Ignore unsupported tiles.
             case OT_TILE:
                 break;
@@ -174,7 +174,8 @@ CollisionChain2D* Sample2D::CreatePolyLineShape(Node* node, TileMapObject2D* obj
 Node* Sample2D::CreateCharacter(const TileMapInfo2D& info, float friction, const Vector3& position, float scale)
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    Node* spriteNode = scene_->CreateChild("Imp");
+    Node* characterNode = scene_->CreateChild("Characters");
+    Node* spriteNode = characterNode->CreateChild("Imp");
     spriteNode->SetPosition(position);
     spriteNode->SetScale(scale);
     auto* animatedSprite = spriteNode->CreateComponent<AnimatedSprite2D>();
@@ -273,6 +274,11 @@ void Sample2D::PopulateMovingEntities(TileMapLayer2D* movingEntitiesLayer)
     Node* enemyNode = CreateEnemy();
     Node* orcNode = CreateOrc();
     Node* platformNode = CreateMovingPlatform();
+
+    Node* movingEntities = scene_->CreateChild("Moving Entities");
+    enemyNode->SetParent(movingEntities);
+    orcNode->SetParent(movingEntities);
+    platformNode->SetParent(movingEntities);
 
     // Instantiate enemies and moving platforms at each placeholder (placeholders are Poly Line objects defining a path from points)
     for (unsigned i=0; i < movingEntitiesLayer->GetNumObjects(); ++i)
@@ -476,7 +482,7 @@ void Sample2D::CreateUIContent(const ea::string& demoTitle, int remainingLifes, 
 
     // Create the instructions
     auto* instructionText = ui->GetRoot()->CreateChild<Text>("Instructions");
-    instructionText->SetText("Use WASD keys or Arrows to move\nPageUp/PageDown/MouseWheel to zoom\nF5/F7 to save/reload scene\n'Z' to toggle debug geometry\nSpace to fight");
+    instructionText->SetText("Use WASD keys or Arrows to move\nPageUp/PageDown/MouseWheel to zoom\n'Z' to toggle debug geometry\nSpace to fight");
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
     instructionText->SetTextAlignment(HA_CENTER); // Center rows in relation to each other
     instructionText->SetAlignment(HA_CENTER, VA_CENTER);

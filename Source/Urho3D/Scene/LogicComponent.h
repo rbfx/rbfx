@@ -24,8 +24,8 @@
 
 #pragma once
 
-#include "../Container/FlagSet.h"
-#include "../Scene/Component.h"
+#include "Urho3D/Container/FlagSet.h"
+#include "Urho3D/Scene/Component.h"
 
 namespace Urho3D
 {
@@ -42,6 +42,10 @@ enum UpdateEvent : unsigned
     USE_FIXEDUPDATE = 0x4,
     /// Bitmask for using the physics post-update event.
     USE_FIXEDPOSTUPDATE = 0x8,
+    /// Bitmask for using the world origin update event.
+    USE_WORLDORIGINUPDATE = 0x10,
+    /// Bitmask for using the post world origin update event.
+    USE_WORLDORIGINPOSTUPDATE = 0x20,
 };
 URHO3D_FLAGSET(UpdateEvent, UpdateEventFlags);
 
@@ -76,6 +80,11 @@ public:
     virtual void FixedUpdate(float timeStep);
     /// Called on physics post-update, fixed timestep.
     virtual void FixedPostUpdate(float timeStep);
+    /// Called on world origin update.
+    virtual void UpdateWorldOrigin(const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta);
+    /// Called on world origin post-update.
+    virtual void PostUpdateWorldOrigin(
+        const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta);
 
     /// Return update event type. Should stay the same for any given instance of the component.
     /// DelayedStart is invoked before the first update event of this type.
@@ -111,6 +120,12 @@ private:
     /// Handle physics post-step event.
     void HandlePhysicsPostStep(StringHash eventType, VariantMap& eventData);
 #endif
+    /// Handle world origin update event.
+    void HandleWorldOriginUpdate(StringHash eventType, VariantMap& eventData);
+    /// Handle world origin post-update event.
+    void HandleWorldOriginPostUpdate(StringHash eventType, VariantMap& eventData);
+
+private:
     /// Requested event subscription mask.
     UpdateEventFlags updateEventMask_;
     /// Current event subscription mask.

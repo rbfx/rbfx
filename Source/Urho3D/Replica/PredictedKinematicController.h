@@ -24,7 +24,7 @@ struct PredictedKinematicControllerFrame
     bool needJump_{};
 
     /// Client only: body position in the beginning of the frame.
-    Vector3 startPosition_;
+    DoubleVector3 startPosition_;
 };
 
 /// Kinematic controller of the player replicated over network.
@@ -86,7 +86,7 @@ private:
     WeakPtr<KinematicCharacterController> kinematicController_;
     WeakPtr<PhysicsWorld> physicsWorld_;
 
-    Vector3 previousPosition_;
+    DoubleVector3 previousPosition_;
     Vector3 effectiveVelocity_;
 
     float networkStepTime_{};

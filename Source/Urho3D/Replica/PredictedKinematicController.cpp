@@ -107,7 +107,7 @@ void PredictedKinematicController::InterpolateState(
         ReplicationManager* replicationManager = networkObject->GetReplicationManager();
         const float derivativeTimeStep = 1.0f / replicationManager->GetUpdateFrequency();
         const auto positionAndVelocity = replicatedTransform_->SampleTemporalPosition(NetworkTime{replicaTime.Frame()});
-        effectiveVelocity_ = positionAndVelocity.derivative_ * derivativeTimeStep;
+        effectiveVelocity_ = positionAndVelocity.derivative_.Cast<Vector3>() * derivativeTimeStep;
     }
 }
 
@@ -118,13 +118,11 @@ void PredictedKinematicController::InitializeCommon()
     replicatedTransform_ = node_->GetDerivedComponent<ReplicatedTransform>();
     kinematicController_ = node_->GetDerivedComponent<KinematicCharacterController>();
 
-    previousPosition_ = node_->GetWorldPosition();
+    Scene* scene = node_->GetScene();
+    previousPosition_ = scene->ToAbsoluteWorldPosition(node_->GetWorldPosition());
 
-    if (Scene* scene = node_->GetScene())
-    {
-        physicsWorld_ = scene->GetComponent<PhysicsWorld>();
-        physicsStepTime_ = physicsWorld_ ? 1.0f / physicsWorld_->GetFps() : 0.0f;
-    }
+    physicsWorld_ = scene->GetComponent<PhysicsWorld>();
+    physicsStepTime_ = physicsWorld_ ? 1.0f / physicsWorld_->GetFps() : 0.0f;
 
     NetworkObject* networkObject = GetNetworkObject();
     const auto replicationManager = networkObject->GetReplicationManager();
@@ -148,7 +146,8 @@ void PredictedKinematicController::OnPhysicsSynchronizedOnClient(NetworkFrame fr
 
     CheckAndCorrectController(frame);
 
-    client_.currentFrameData_.startPosition_ = kinematicController_->GetRawPosition();
+    client_.currentFrameData_.startPosition_ =
+        GetScene()->ToAbsoluteWorldPosition(kinematicController_->GetRawPosition());
     client_.currentFrameData_.rotation_ = node_->GetWorldRotation();
     CreateFrameOnClient(frame, client_.currentFrameData_);
 
@@ -166,8 +165,8 @@ void PredictedKinematicController::ApplyActionsOnClient()
 
 void PredictedKinematicController::UpdateEffectiveVelocity(float timeStep)
 {
-    const Vector3 currentPosition = node_->GetWorldPosition();
-    effectiveVelocity_ = (currentPosition - previousPosition_) / timeStep;
+    const DoubleVector3 currentPosition = GetScene()->ToAbsoluteWorldPosition(node_->GetWorldPosition());
+    effectiveVelocity_ = (currentPosition - previousPosition_).Cast<Vector3>() / timeStep;
     previousPosition_ = currentPosition;
 }
 
@@ -205,7 +204,7 @@ bool PredictedKinematicController::AdjustConfirmedFrame(
     const auto confirmedPosition = replicatedTransform_->GetTemporalPosition(confirmedFrame);
     URHO3D_ASSERT(confirmedPosition);
 
-    const Vector3 offset = confirmedPosition->value_ - nextInput.startPosition_;
+    const Vector3 offset = (confirmedPosition->value_ - nextInput.startPosition_).Cast<Vector3>();
     if (!offset.Equals(Vector3::ZERO, movementThreshold))
     {
         kinematicController_->AdjustRawPosition(offset, smoothingConstant);

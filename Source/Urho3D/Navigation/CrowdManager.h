@@ -202,6 +202,8 @@ protected:
 private:
     /// Handle the scene subsystem update event.
     void HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& eventData);
+    /// Handle world origin post update.
+    void HandleWorldOriginPostUpdate(VariantMap& eventData);
     /// Handle navigation mesh changed event. It can be navmesh being rebuilt or being removed from its node.
     void HandleNavMeshChanged(StringHash eventType, VariantMap& eventData);
     /// Handle component added in the scene to check for late addition of the navmesh.

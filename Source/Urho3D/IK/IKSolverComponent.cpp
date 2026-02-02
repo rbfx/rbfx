@@ -104,6 +104,12 @@ void IKSolverComponent::Solve(const IKSettings& settings, float timeStep)
     }
 }
 
+void IKSolverComponent::UpdateWorldOrigin(
+    const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta)
+{
+    UpdateWorldOriginInternal(delta.ToVector3());
+}
+
 void IKSolverComponent::OnTreeDirty()
 {
     if (auto solver = GetComponent<IKSolver>())

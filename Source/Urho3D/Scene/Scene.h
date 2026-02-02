@@ -152,6 +152,22 @@ public:
     /// Return update events.
     const StringVector& GetUpdateEvents() const { return updateEvents_; }
 
+    /// Rebase world origin and update scene contents accordingly.
+    /// Should be called outside of scene update and rendering.
+    void UpdateWorldOrigin(const IntVector3& worldOrigin);
+    /// Convert world position from relative to world origin to absolute.
+    DoubleVector3 ToAbsoluteWorldPosition(const Vector3& position) const;
+    /// Convert world position from absolute to relative to world origin.
+    Vector3 ToRelativeWorldPosition(const DoubleVector3& position) const;
+    /// Convert world transform from relative to world origin to absolute.
+    DoubleTransform ToAbsoluteWorldTransform(const Transform& transform) const;
+    /// Convert world transform from absolute to relative to world origin.
+    Transform ToRelativeWorldTransform(const DoubleTransform& transform) const;
+    /// Set world origin without any scene updates.
+    void SetWorldOrigin(const IntVector3& worldOrigin) { worldOrigin_ = worldOrigin; }
+    /// Return world origin.
+    const IntVector3& GetWorldOrigin() const { return worldOrigin_; }
+
     /// Load from an XML file. Return true if successful.
     bool LoadXML(Deserializer& source);
     /// Load from a JSON file. Return true if successful.
@@ -369,6 +385,9 @@ private:
     /// Update events to be sent on every update.
     StringVector updateEvents_;
     ea::vector<ea::pair<StringHash, bool>> cookedUpdateEvents_;
+
+    /// World origin. This is position that corresponds to zero world position.
+    IntVector3 worldOrigin_;
 };
 
 /// Register Scene library objects.

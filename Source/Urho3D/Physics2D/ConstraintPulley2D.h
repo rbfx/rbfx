@@ -79,6 +79,11 @@ public:
 
 
 private:
+    /// Handle scene being assigned.
+    void OnSceneSet(Scene* previousScene, Scene* scene) override;
+    /// Handle world origin post update.
+    void HandleWorldOriginPostUpdate(VariantMap& eventData);
+
     /// Return Joint def.
     b2JointDef* GetJointDef() override;
 

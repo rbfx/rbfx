@@ -838,10 +838,14 @@ void PhysicsWorld::OnSceneSet(Scene* previousScene, Scene* scene)
     if (scene)
     {
         scene_ = GetScene();
-        SubscribeToEvent(scene_, E_SCENESUBSYSTEMUPDATE, URHO3D_HANDLER(PhysicsWorld, HandleSceneSubsystemUpdate));
+        SubscribeToEvent(scene_, E_SCENESUBSYSTEMUPDATE, &PhysicsWorld::HandleSceneSubsystemUpdate);
+        SubscribeToEvent(scene_, E_WORLDORIGINUPDATE, &PhysicsWorld::HandleWorldOriginUpdate);
     }
     else
+    {
         UnsubscribeFromEvent(E_SCENESUBSYSTEMUPDATE);
+        UnsubscribeFromEvent(E_WORLDORIGINUPDATE);
+    }
 }
 
 void PhysicsWorld::HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& eventData)
@@ -851,6 +855,12 @@ void PhysicsWorld::HandleSceneSubsystemUpdate(StringHash eventType, VariantMap& 
 
     using namespace SceneSubsystemUpdate;
     Update(eventData[P_TIMESTEP].GetFloat());
+}
+
+void PhysicsWorld::HandleWorldOriginUpdate(StringHash eventType, VariantMap& eventData)
+{
+    for (RigidBody* rigidBody : rigidBodies_)
+        rigidBody->PrepareToWorldOriginUpdate();
 }
 
 void PhysicsWorld::PreUpdate(float timeStep)

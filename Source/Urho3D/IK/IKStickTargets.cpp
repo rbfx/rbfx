@@ -83,6 +83,16 @@ void IKStickTargets::SolveInternal(const Transform& frameOfReference, const IKSe
     CommitWorldTransforms();
 }
 
+void IKStickTargets::UpdateWorldOriginInternal(const Vector3& delta)
+{
+    for (TargetInfo& targetInfo : targets_)
+    {
+        targetInfo.desiredWorldTransform_.position_ -= delta;
+        if (targetInfo.overrideWorldTransform_)
+            targetInfo.overrideWorldTransform_->position_ -= delta;
+    }
+}
+
 void IKStickTargets::CollectDesiredWorldTransforms()
 {
     for (TargetInfo& info : targets_)

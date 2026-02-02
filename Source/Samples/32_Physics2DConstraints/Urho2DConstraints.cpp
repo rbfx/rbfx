@@ -482,13 +482,6 @@ void Urho2DConstraints::Update(float timeStep)
     // Toggle physics debug geometry with space
     if (input->GetKeyPress(KEY_SPACE))
         drawDebug_ = !drawDebug_;
-
-    // Save scene
-    if (input->GetKeyPress(KEY_F5))
-    {
-        File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/Constraints.xml", FILE_WRITE);
-        scene_->SaveXML(saveFile);
-    }
 }
 
 void Urho2DConstraints::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)

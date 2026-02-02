@@ -89,6 +89,10 @@ public:
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
 
+    /// Called on world origin post-update.
+    void PostUpdateWorldOrigin(
+        const IntVector3& oldOrigin, const IntVector3& newOrigin, const IntVector3& delta) override;
+
     /// Set particle effect.
     /// @property
     void SetEffect(ParticleEffect2D* effect);

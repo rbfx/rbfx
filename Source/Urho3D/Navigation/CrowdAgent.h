@@ -225,6 +225,9 @@ public:
     /// @property
     bool IsInCrowd() const;
 
+    /// Update world origin.
+    void UpdateWorldOrigin(const Vector3& delta);
+
 protected:
     /// Handle crowd agent pre-update.
     virtual void OnCrowdVelocityUpdate(dtCrowdAgent* ag, float* pos, float dt);

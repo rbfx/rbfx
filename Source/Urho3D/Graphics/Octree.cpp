@@ -415,6 +415,23 @@ Octree::Octree(Context* context) :
         SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(Octree, HandleRenderUpdate));
 }
 
+void Octree::OnSceneSet(Scene* previousScene, Scene* scene)
+{
+    BaseClassName::OnSceneSet(previousScene, scene);
+
+    if (previousScene)
+    {
+        UnsubscribeFromEvent(E_WORLDORIGINUPDATE);
+        UnsubscribeFromEvent(E_WORLDORIGINPOSTUPDATE);
+    }
+
+    if (scene)
+    {
+        SubscribeToEvent(scene, E_WORLDORIGINUPDATE, &Octree::HandleWorldOriginUpdate);
+        SubscribeToEvent(scene, E_WORLDORIGINPOSTUPDATE, &Octree::HandleWorldOriginPostUpdate);
+    }
+}
+
 Octree::~Octree()
 {
     // Reset root pointer from all child octants now so that they do not move their drawables to root
@@ -779,6 +796,36 @@ void Octree::HandleRenderUpdate(StringHash eventType, VariantMap& eventData)
     frame.camera_ = nullptr;
 
     Update(frame);
+}
+
+void Octree::HandleWorldOriginUpdate(StringHash eventType, VariantMap& eventData)
+{
+    using namespace WorldOriginUpdate;
+
+    const IntVector3 oldOrigin = eventData[P_OLDORIGIN].GetIntVector3();
+    const IntVector3 newOrigin = eventData[P_NEWORIGIN].GetIntVector3();
+    const IntVector3 delta = eventData[P_DELTA].GetIntVector3();
+
+    for (Drawable* drawable : drawables_)
+    {
+        if (drawable)
+            drawable->UpdateWorldOrigin(oldOrigin, newOrigin, delta);
+    }
+}
+
+void Octree::HandleWorldOriginPostUpdate(StringHash eventType, VariantMap& eventData)
+{
+    using namespace WorldOriginPostUpdate;
+
+    const IntVector3 oldOrigin = eventData[P_OLDORIGIN].GetIntVector3();
+    const IntVector3 newOrigin = eventData[P_NEWORIGIN].GetIntVector3();
+    const IntVector3 delta = eventData[P_DELTA].GetIntVector3();
+
+    for (Drawable* drawable : drawables_)
+    {
+        if (drawable)
+            drawable->PostUpdateWorldOrigin(oldOrigin, newOrigin, delta);
+    }
 }
 
 }

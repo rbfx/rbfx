@@ -27,20 +27,21 @@
 #include "../Navigation/NavBuildData.h"
 
 #include <DetourTileCache/DetourTileCacheBuilder.h>
+#include <Detour/DetourAlloc.h>
 #include <Recast/Recast.h>
 
 namespace Urho3D
 {
 
-NavTileData::~NavTileData()
+void DetourDeleter::operator()(void* p) const noexcept
 {
-    dtFree(data);
+    dtFree(p);
 }
 
-void NavTileData::Release()
+void DetourAllocation::Release()
 {
-    data = nullptr;
-    dataSize = 0;
+    data_.release();
+    dataSize_ = 0;
 }
 
 NavBuildData::NavBuildData() :

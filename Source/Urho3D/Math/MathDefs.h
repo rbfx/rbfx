@@ -62,6 +62,8 @@ static const int M_MIN_INT = 0x80000000;
 static const int M_MAX_INT = 0x7fffffff;
 static const unsigned M_MIN_UNSIGNED = 0x00000000;
 static const unsigned M_MAX_UNSIGNED = 0xffffffff;
+static const int M_MIN_SHORT = 0x8000;
+static const int M_MAX_SHORT = 0x7fff;
 
 static const float M_EPSILON = 0.000001f;
 static const float M_LARGE_EPSILON = 0.00005f;

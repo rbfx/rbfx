@@ -91,6 +91,7 @@ void WindowSettingsDemo::CreateScene()
 
     auto* zone = scene_->CreateComponent<Zone>();
     zone->SetAmbientColor(Color::WHITE);
+    zone->SetBoundingBox(BoundingBox{-1000.0f, 1000.0f});
 
     // Create 3D object
     Node* objectNode = scene_->CreateChild("Object");

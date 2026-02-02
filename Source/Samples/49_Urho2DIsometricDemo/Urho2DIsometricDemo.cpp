@@ -246,13 +246,6 @@ void Urho2DIsometricDemo::Update(float timeStep)
     // Toggle debug geometry with 'Z' key
     if (input->GetKeyPress(KEY_Z))
         drawDebug_ = !drawDebug_;
-
-    // Check for loading / saving the scene
-    if (input->GetKeyPress(KEY_F5))
-        sample2D_->SaveScene(false);
-
-    if (input->GetKeyPress(KEY_F7))
-        ReloadScene(false);
 }
 
 void Urho2DIsometricDemo::HandlePostUpdate(StringHash eventType, VariantMap& eventData)
@@ -261,7 +254,7 @@ void Urho2DIsometricDemo::HandlePostUpdate(StringHash eventType, VariantMap& eve
         return;
 
     Node* character2DNode = character2D_->GetNode();
-    cameraNode_->SetPosition(Vector3(character2DNode->GetPosition().x_, character2DNode->GetPosition().y_, -10.0f)); // Camera tracks character
+    cameraNode_->SetPosition(character2DNode->GetWorldPosition() + Vector3{0.0f, 0.0f, -10.0f}); // Camera tracks character
 }
 
 void Urho2DIsometricDemo::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData)

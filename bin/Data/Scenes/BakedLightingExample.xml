@@ -38,6 +38,7 @@
 		</attribute>
 	</component>
 	<component type="NavigationMesh" id="363">
+		<attribute name="Tile Size" value="30" />
 		<attribute name="Cell Height" value="0.050000" />
 		<attribute name="Agent Height" value="0.200000" />
 		<attribute name="Agent Radius" value="0.100000" />

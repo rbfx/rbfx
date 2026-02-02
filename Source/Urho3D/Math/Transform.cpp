@@ -11,4 +11,6 @@ namespace Urho3D
 
 const Transform Transform::Identity{Vector3{}, Quaternion{}, Vector3{1.0f, 1.0f, 1.0f}};
 
+const DoubleTransform DoubleTransform::Identity{DoubleVector3{}, Quaternion{}, Vector3{1.0f, 1.0f, 1.0f}};
+
 }

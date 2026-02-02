@@ -26,6 +26,8 @@
 #include "../Physics2D/ConstraintPulley2D.h"
 #include "../Physics2D/PhysicsUtils2D.h"
 #include "../Physics2D/RigidBody2D.h"
+#include "../Scene/Scene.h"
+#include "../Scene/SceneEvents.h"
 
 #include "../DebugNew.h"
 
@@ -105,6 +107,35 @@ void ConstraintPulley2D::SetRatio(float ratio)
         return;
 
     jointDef_.ratio = ratio;
+
+    RecreateJoint();
+}
+
+void ConstraintPulley2D::OnSceneSet(Scene* previousScene, Scene* scene)
+{
+    Constraint2D::OnSceneSet(previousScene, scene);
+
+    if (previousScene)
+        UnsubscribeFromEvent(E_WORLDORIGINPOSTUPDATE);
+
+    if (scene)
+        SubscribeToEvent(scene, E_WORLDORIGINPOSTUPDATE, &ConstraintPulley2D::HandleWorldOriginPostUpdate);
+}
+
+void ConstraintPulley2D::HandleWorldOriginPostUpdate(VariantMap& eventData)
+{
+    using namespace WorldOriginPostUpdate;
+    const Vector3 delta = eventData[P_DELTA].GetIntVector3().ToVector3();
+
+    b2Body* bodyA = ownerBody_->GetBody();
+    b2Body* bodyB = otherBody_->GetBody();
+    if (!bodyA || !bodyB)
+        return;
+
+    ownerBodyGroundAnchor_ -= delta.ToVector2();
+    otherBodyGroundAnchor_ -= delta.ToVector2();
+    ownerBodyAnchor_ = ToVector2(bodyA->GetWorldPoint(jointDef_.localAnchorA));
+    otherBodyAnchor_ = ToVector2(bodyB->GetWorldPoint(jointDef_.localAnchorB));
 
     RecreateJoint();
 }

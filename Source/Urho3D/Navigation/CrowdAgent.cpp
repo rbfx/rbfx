@@ -521,6 +521,12 @@ bool CrowdAgent::IsInCrowd() const
     return crowdManager_ && agentCrowdId_ != -1;
 }
 
+void CrowdAgent::UpdateWorldOrigin(const Vector3& delta)
+{
+    if (requestedTargetType_ == CA_REQUESTEDTARGET_POSITION)
+        SetTargetPosition(targetPosition_ - delta);
+}
+
 void CrowdAgent::OnCrowdVelocityUpdate(dtCrowdAgent* ag, float* pos, float dt)
 {
     assert (ag);
@@ -659,7 +665,8 @@ void CrowdAgent::OnMarkedDirty(Node* node)
                 agentPos = nodePos;
 
                 // If the node has been externally altered, provide the opportunity for DetourCrowd to reevaluate the crowd agent
-                if (agent->state == CA_STATE_INVALID)
+                // It's not possible to place agent on off-mesh connection, reset to "walking" too.
+                if (agent->state != CA_STATE_WALKING)
                     agent->state = CA_STATE_WALKING;
             }
         }

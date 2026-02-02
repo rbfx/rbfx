@@ -61,6 +61,7 @@ InputLogger::ViewportData InputLogger::CreateViewport(const Color& color, const 
     // Create zone
     Node* zoneNode = scene->CreateChild("Zone");
     auto zone = zoneNode->CreateComponent<Zone>();
+    zone->SetBoundingBox(BoundingBox{-1000.0f, 1000.0f});
     zone->SetFogColor(color);
 
     // Create camera
