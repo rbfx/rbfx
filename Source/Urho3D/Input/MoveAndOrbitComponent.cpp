@@ -40,6 +40,8 @@ void MoveAndOrbitComponent::RegisterObject(Context* context)
 
 void MoveAndOrbitComponent::OnNodeSet(Node* previousNode, Node* currentNode)
 {
+    BaseClassName::OnNodeSet(previousNode, currentNode);
+
     if (currentNode)
     {
         const Quaternion& currentRotation = currentNode->GetRotation();
