@@ -71,14 +71,14 @@ void Obstacle::OnSetEnabled()
 void Obstacle::SetHeight(float newHeight)
 {
     height_ = newHeight;
-    if (ownerMesh_)
+    if (IsEnabledEffective() && ownerMesh_)
         ownerMesh_->ObstacleChanged(this);
 }
 
 void Obstacle::SetRadius(float newRadius)
 {
     radius_ = newRadius;
-    if (ownerMesh_)
+    if (IsEnabledEffective() && ownerMesh_)
         ownerMesh_->ObstacleChanged(this);
 }
 
@@ -101,7 +101,8 @@ void Obstacle::OnSceneSet(Scene* previousScene, Scene* scene)
             ownerMesh_ = node_->FindComponent<DynamicNavigationMesh>(ComponentSearchFlag::ParentRecursive);
         if (ownerMesh_)
         {
-            ownerMesh_->AddObstacle(this);
+            if (IsEnabledEffective())
+                ownerMesh_->AddObstacle(this);
             SubscribeToEvent(ownerMesh_, E_NAVIGATION_TILE_ADDED, URHO3D_HANDLER(Obstacle, HandleNavigationTileAdded));
         }
     }

@@ -113,24 +113,22 @@ struct MeshProcess : public dtTileCacheMeshProcess
 
         if (offMeshConnections.size() > 0)
         {
-            if (offMeshConnections.size() != offMeshRadii_.size())
+            Matrix3x4 inverse = owner_->GetNode()->GetWorldTransform().Inverse();
+            ClearConnectionData();
+            for (unsigned i = 0; i < offMeshConnections.size(); ++i)
             {
-                Matrix3x4 inverse = owner_->GetNode()->GetWorldTransform().Inverse();
-                ClearConnectionData();
-                for (unsigned i = 0; i < offMeshConnections.size(); ++i)
-                {
-                    OffMeshConnection* connection = offMeshConnections[i];
-                    Vector3 start = inverse * connection->GetNode()->GetWorldPosition();
-                    Vector3 end = inverse * connection->GetEndPoint()->GetWorldPosition();
+                OffMeshConnection* connection = offMeshConnections[i];
+                Vector3 start = inverse * connection->GetNode()->GetWorldPosition();
+                Vector3 end = inverse * connection->GetEndPoint()->GetWorldPosition();
 
-                    offMeshVertices_.push_back(start);
-                    offMeshVertices_.push_back(end);
-                    offMeshRadii_.push_back(connection->GetRadius());
-                    offMeshFlags_.push_back((unsigned short) connection->GetMask());
-                    offMeshAreas_.push_back((unsigned char) connection->GetAreaID());
-                    offMeshDir_.push_back((unsigned char) (connection->IsBidirectional() ? DT_OFFMESH_CON_BIDIR : 0));
-                }
+                offMeshVertices_.push_back(start);
+                offMeshVertices_.push_back(end);
+                offMeshRadii_.push_back(connection->GetRadius());
+                offMeshFlags_.push_back((unsigned short) connection->GetMask());
+                offMeshAreas_.push_back((unsigned char) connection->GetAreaID());
+                offMeshDir_.push_back((unsigned char) (connection->IsBidirectional() ? DT_OFFMESH_CON_BIDIR : 0));
             }
+
             params->offMeshConCount = offMeshRadii_.size();
             params->offMeshConVerts = &offMeshVertices_[0].x_;
             params->offMeshConRad = &offMeshRadii_[0];
@@ -698,15 +696,29 @@ void DynamicNavigationMesh::ReleaseTileCache()
 {
     dtFreeTileCache(tileCache_);
     tileCache_ = nullptr;
+    obstacleQueue_.clear();
 }
 
 void DynamicNavigationMesh::UpdateTileCache()
 {
-    bool upToDate = false;
-    do
+    URHO3D_PROFILE("UpdateTileCache");
+
+    while (!obstacleQueue_.empty())
     {
-        tileCache_->update(0, navMesh_, &upToDate);
-    } while (!upToDate);
+        const unsigned maxTileUpdates = 64; // dtTileCache::MAX_UPDATE
+        const unsigned maxObstacleUpdates = ea::max(1u, maxTileUpdates / DT_MAX_TOUCHED_TILES / 2);
+        for (unsigned i = 0; i < maxObstacleUpdates && !obstacleQueue_.empty(); ++i)
+        {
+            ProcessObstacleUpdate(obstacleQueue_.back());
+            obstacleQueue_.pop_back();
+        }
+
+        bool upToDate = false;
+        do
+        {
+            tileCache_->update(0, navMesh_, &upToDate);
+        } while (!upToDate);
+    }
 }
 
 void DynamicNavigationMesh::OnSceneSet(Scene* previousScene, Scene* scene)
@@ -718,28 +730,89 @@ void DynamicNavigationMesh::OnSceneSet(Scene* previousScene, Scene* scene)
         UnsubscribeFromEvent(E_SCENESUBSYSTEMUPDATE);
 }
 
-void DynamicNavigationMesh::AddObstacle(Obstacle* obstacle, bool silent)
+DynamicNavigationMesh::ObstacleUpdate& DynamicNavigationMesh::GetObstacleUpdate(Obstacle* obstacle)
+{
+    const auto isSame = [&](const ObstacleUpdate& update) { return update.obstacle_ == obstacle; };
+    const auto iter = ea::find_if(obstacleQueue_.begin(), obstacleQueue_.end(), isSame);
+    if (iter != obstacleQueue_.end())
+        return *iter;
+
+    ObstacleUpdate& update = obstacleQueue_.emplace_back();
+    update.obstacle_ = obstacle;
+    const auto obstacleParams = tileCache_->getObstacleByRef(obstacle->GetObstacleID());
+    update.oldObstacleId_ = obstacleParams && obstacleParams->state != 0 ? obstacle->GetObstacleID() : 0;
+    return update;
+}
+
+void DynamicNavigationMesh::AddObstacle(Obstacle* obstacle)
 {
     if (tileCache_)
     {
-        float pos[3];
-        Vector3 obsPos = obstacle->GetNode()->GetWorldPosition();
-        rcVcopy(pos, &obsPos.x_);
+        auto& update = GetObstacleUpdate(obstacle);
+        update.removed_ = false;
+        // "Added" event is postponed until update is processed.
+        update.sendEvents_ = true;
+    }
+}
+
+void DynamicNavigationMesh::ObstacleChanged(Obstacle* obstacle)
+{
+    if (tileCache_)
+        (void)GetObstacleUpdate(obstacle);
+}
+
+void DynamicNavigationMesh::RemoveObstacle(Obstacle* obstacle)
+{
+    if (tileCache_)
+    {
+        auto& update = GetObstacleUpdate(obstacle);
+        update.removed_ = true;
+
+        // "Removed" event is sent immediately.
+        if (obstacle->GetObstacleID() != 0)
+        {
+            obstacle->obstacleId_ = 0;
+
+            using namespace NavigationObstacleRemoved;
+            VariantMap& eventData = GetContext()->GetEventDataMap();
+            eventData[P_NODE] = obstacle->GetNode();
+            eventData[P_OBSTACLE] = obstacle;
+            eventData[P_POSITION] = obstacle->GetNode()->GetWorldPosition();
+            eventData[P_RADIUS] = obstacle->GetRadius();
+            eventData[P_HEIGHT] = obstacle->GetHeight();
+            SendEvent(E_NAVIGATION_OBSTACLE_REMOVED, eventData);
+        }
+    }
+}
+
+void DynamicNavigationMesh::ProcessObstacleUpdate(ObstacleUpdate& update)
+{
+    if (update.oldObstacleId_ != 0)
+    {
+        if (dtStatusFailed(tileCache_->removeObstacle(update.oldObstacleId_)))
+        {
+            URHO3D_LOGERROR("Failed to remove obstacle");
+            return;
+        }
+    }
+
+    Obstacle* obstacle = update.obstacle_;
+    if (!update.removed_ && obstacle)
+    {
+        const Vector3 position = obstacle->GetNode()->GetWorldPosition();
+
         dtObstacleRef refHolder;
-
-        // Because dtTileCache doesn't process obstacle requests while updating tiles
-        // it's necessary update until sufficient request space is available
-        UpdateTileCache();
-
-        if (dtStatusFailed(tileCache_->addObstacle(pos, obstacle->GetRadius(), obstacle->GetHeight(), &refHolder)))
+        if (dtStatusFailed(
+                tileCache_->addObstacle(position.Data(), obstacle->GetRadius(), obstacle->GetHeight(), &refHolder)))
         {
             URHO3D_LOGERROR("Failed to add obstacle");
             return;
         }
-        obstacle->obstacleId_ = refHolder;
-        assert(refHolder > 0);
 
-        if (!silent)
+        obstacle->obstacleId_ = refHolder;
+        URHO3D_ASSERT(refHolder > 0);
+
+        if (update.sendEvents_)
         {
             using namespace NavigationObstacleAdded;
             VariantMap& eventData = GetContext()->GetEventDataMap();
@@ -749,44 +822,6 @@ void DynamicNavigationMesh::AddObstacle(Obstacle* obstacle, bool silent)
             eventData[P_RADIUS] = obstacle->GetRadius();
             eventData[P_HEIGHT] = obstacle->GetHeight();
             SendEvent(E_NAVIGATION_OBSTACLE_ADDED, eventData);
-        }
-    }
-}
-
-void DynamicNavigationMesh::ObstacleChanged(Obstacle* obstacle)
-{
-    if (tileCache_)
-    {
-        RemoveObstacle(obstacle, true);
-        AddObstacle(obstacle, true);
-    }
-}
-
-void DynamicNavigationMesh::RemoveObstacle(Obstacle* obstacle, bool silent)
-{
-    if (tileCache_ && obstacle->obstacleId_ > 0)
-    {
-        // Because dtTileCache doesn't process obstacle requests while updating tiles
-        // it's necessary update until sufficient request space is available
-        UpdateTileCache();
-
-        if (dtStatusFailed(tileCache_->removeObstacle(obstacle->obstacleId_)))
-        {
-            URHO3D_LOGERROR("Failed to remove obstacle");
-            return;
-        }
-        obstacle->obstacleId_ = 0;
-        // Require a node in order to send an event
-        if (!silent && obstacle->GetNode())
-        {
-            using namespace NavigationObstacleRemoved;
-            VariantMap& eventData = GetContext()->GetEventDataMap();
-            eventData[P_NODE] = obstacle->GetNode();
-            eventData[P_OBSTACLE] = obstacle;
-            eventData[P_POSITION] = obstacle->GetNode()->GetWorldPosition();
-            eventData[P_RADIUS] = obstacle->GetRadius();
-            eventData[P_HEIGHT] = obstacle->GetHeight();
-            SendEvent(E_NAVIGATION_OBSTACLE_REMOVED, eventData);
         }
     }
 }
