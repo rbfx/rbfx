@@ -533,8 +533,9 @@ bool NavigationMesh::AddTile(const ea::vector<unsigned char>& tileData)
 
 bool NavigationMesh::HasTile(const IntVector2& tileIndex) const
 {
+    const dtMeshTile* placeholder{};
     if (navMesh_)
-        return navMesh_->getTilesAt(tileIndex.x_, tileIndex.y_, static_cast<dtMeshTile const**>(nullptr), 0) > 0;
+        return navMesh_->getTilesAt(tileIndex.x_, tileIndex.y_, &placeholder, 1) != 0;
     return false;
 }
 
