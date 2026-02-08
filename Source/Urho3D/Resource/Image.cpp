@@ -177,8 +177,9 @@ bool Image::BeginLoad(Deserializer& source)
 
         // Calculate the size of the data
         const IntVector3 dimensions = ToIntVector3(ddsd.dwWidth_, ddsd.dwHeight_, ddsd.dwDepth_);
+        const unsigned numLevels = ea::max(1u, ddsd.dwMipMapCount_);
         unsigned dataSize = 0;
-        for (unsigned level = 0; level < ddsd.dwMipMapCount_; ++level)
+        for (unsigned level = 0; level < numLevels; ++level)
             dataSize += GetMipLevelSizeInBytes(compressedFormat_, dimensions, level);
 
         // Do not use a shared ptr here, in case nothing is refcounting the image outside this function.
@@ -196,7 +197,7 @@ bool Image::BeginLoad(Deserializer& source)
             currentImage->height_ = ddsd.dwHeight_;
             currentImage->depth_ = ddsd.dwDepth_;
 
-            currentImage->numCompressedLevels_ = ddsd.dwMipMapCount_;
+            currentImage->numCompressedLevels_ = numLevels;
             if (!currentImage->numCompressedLevels_)
                 currentImage->numCompressedLevels_ = 1;
 
