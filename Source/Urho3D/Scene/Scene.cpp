@@ -203,6 +203,7 @@ bool Scene::Load(Deserializer& source)
     Clear();
 
     // Load the whole scene, then perform post-load if successfully loaded
+    source.Seek(source.GetPosition() + sceneBinaryMagic.size());
     if (Node::Load(source))
     {
         FinishLoading(&source);
