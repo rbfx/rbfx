@@ -442,6 +442,10 @@ void RibbonTrail::OnWorldBoundingBoxUpdate()
         worldBox.Merge(BoundingBox(p - scale, p + scale));
     }
 
+    // Avoid degenerate bounding boxes.
+    if (points_.empty())
+        worldBox.Merge(node_->GetWorldPosition());
+
     worldBoundingBox_ = worldBox;
 }
 
