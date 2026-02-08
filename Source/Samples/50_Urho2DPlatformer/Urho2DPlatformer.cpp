@@ -79,9 +79,6 @@ void Urho2DPlatformer::Start()
 
     sample2D_ = new Sample2D(context_);
 
-    // Set filename for load/save functions
-    sample2D_->demoFilename_ = "Platformer2D";
-
     // Create the scene content
     CreateScene();
 
@@ -376,12 +373,9 @@ void Urho2DPlatformer::HandlePostRenderUpdate(StringHash eventType, VariantMap& 
 
 void Urho2DPlatformer::ReloadScene(bool reInit)
 {
-    ea::string filename = sample2D_->demoFilename_;
-    if (!reInit)
-        filename += "InGame";
+    sample2D_->savedScene_.Seek(0);
+    scene_->Load(sample2D_->savedScene_);
 
-    File loadFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/" + filename + ".xml", FILE_READ);
-    scene_->LoadXML(loadFile);
     // After loading we have to reacquire the weak pointer to the Character2D component, as it has been recreated
     // Simply find the character's scene node by name as there's only one of them
     Node* character2DNode = scene_->GetChild("Imp", true);

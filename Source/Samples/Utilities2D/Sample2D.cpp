@@ -495,11 +495,8 @@ void Sample2D::HandleExitButton(StringHash eventType, VariantMap& eventData)
 
 void Sample2D::SaveScene(bool initial)
 {
-    ea::string filename = demoFilename_;
-    if (!initial)
-        filename += "InGame";
-    File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/" + filename + ".xml", FILE_WRITE);
-    scene_->SaveXML(saveFile);
+    savedScene_.Clear();
+    scene_->Save(savedScene_);
 }
 
 void Sample2D::CreateBackgroundSprite(const TileMapInfo2D& info, float scale, const ea::string& texture)
