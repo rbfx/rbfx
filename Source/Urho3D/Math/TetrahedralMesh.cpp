@@ -188,23 +188,23 @@ void TetrahedralMesh::CollectEdges(ea::vector<ea::pair<unsigned, unsigned>>& edg
 HighPrecisionSphere TetrahedralMesh::GetTetrahedronCircumsphere(unsigned tetIndex) const
 {
     const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
-    const HighPrecisionVector3 p0{ vertices_[tetrahedron.indices_[0]] };
-    const HighPrecisionVector3 p1{ vertices_[tetrahedron.indices_[1]] };
-    const HighPrecisionVector3 p2{ vertices_[tetrahedron.indices_[2]] };
-    const HighPrecisionVector3 p3{ vertices_[tetrahedron.indices_[3]] };
-    const HighPrecisionVector3 u1 = p1 - p0;
-    const HighPrecisionVector3 u2 = p2 - p0;
-    const HighPrecisionVector3 u3 = p3 - p0;
+    const auto p0 = vertices_[tetrahedron.indices_[0]].Cast<DoubleVector3>();
+    const auto p1 = vertices_[tetrahedron.indices_[1]].Cast<DoubleVector3>();
+    const auto p2 = vertices_[tetrahedron.indices_[2]].Cast<DoubleVector3>();
+    const auto p3 = vertices_[tetrahedron.indices_[3]].Cast<DoubleVector3>();
+    const DoubleVector3 u1 = p1 - p0;
+    const DoubleVector3 u2 = p2 - p0;
+    const DoubleVector3 u3 = p3 - p0;
 
     const double d01 = u1.LengthSquared();
     const double d02 = u2.LengthSquared();
     const double d03 = u3.LengthSquared();
 
-    const HighPrecisionVector3 u2u3 = u2.CrossProduct(u3);
-    const HighPrecisionVector3 u3u1 = u3.CrossProduct(u1);
-    const HighPrecisionVector3 u1u2 = u1.CrossProduct(u2);
+    const DoubleVector3 u2u3 = u2.CrossProduct(u3);
+    const DoubleVector3 u3u1 = u3.CrossProduct(u1);
+    const DoubleVector3 u1u2 = u1.CrossProduct(u2);
 
-    const HighPrecisionVector3 radiusNum = u2u3 * d01 + u3u1 * d02 + u1u2 * d03;
+    const DoubleVector3 radiusNum = u2u3 * d01 + u3u1 * d02 + u1u2 * d03;
     const double radiusDen = 2 * u1.DotProduct(u2u3);
 
     if (Abs(radiusDen) < M_EPSILON * M_EPSILON)
@@ -213,7 +213,7 @@ HighPrecisionSphere TetrahedralMesh::GetTetrahedronCircumsphere(unsigned tetInde
         return HighPrecisionSphere{ {}, M_LARGE_VALUE * M_LARGE_VALUE };
     }
 
-    const HighPrecisionVector3 center = p0 + radiusNum * (1.0 / radiusDen);
+    const DoubleVector3 center = p0 + radiusNum * (1.0 / radiusDen);
 
     // Radius is the minimum distance
     const double squaredDistances[4] = {
@@ -680,7 +680,7 @@ bool TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
 
     // Verify that all hole triangles are faced in right direction
     bool valid = true;
-    const HighPrecisionVector3 p0{ position };
+    const auto p0 = position.Cast<DoubleVector3>();
     for (TetrahedralMeshSurfaceTriangle& triangle : holeSurface.faces_)
     {
         // Outer triangles are always oriented right
@@ -690,10 +690,10 @@ bool TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
         // Normalize triangle orientation
         triangle.Normalize(vertices_);
 
-        const HighPrecisionVector3 p1{ vertices_[triangle.indices_[0]] };
-        const HighPrecisionVector3 p2{ vertices_[triangle.indices_[1]] };
-        const HighPrecisionVector3 p3{ vertices_[triangle.indices_[2]] };
-        const HighPrecisionVector3 normal = (p2 - p1).CrossProduct(p3 - p1);
+        const auto p1 = vertices_[triangle.indices_[0]].Cast<DoubleVector3>();
+        const auto p2 = vertices_[triangle.indices_[1]].Cast<DoubleVector3>();
+        const auto p3 = vertices_[triangle.indices_[2]].Cast<DoubleVector3>();
+        const DoubleVector3 normal = (p2 - p1).CrossProduct(p3 - p1);
         const double distance = (p0 - p1).DotProduct(normal);
 
         // If coplanar or worse, cannot add new vertex

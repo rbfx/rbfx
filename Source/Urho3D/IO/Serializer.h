@@ -22,24 +22,20 @@
 
 #pragma once
 
-#include <EASTL/unordered_map.h>
+#include "Urho3D/Core/Variant.h"
+#include "Urho3D/Math/BoundingBox.h"
+#include "Urho3D/Math/MathDefs.h"
+#include "Urho3D/Math/StringHash.h"
 
-#include "../Core/Variant.h"
-#include "../Math/BoundingBox.h"
-#include "../Math/StringHash.h"
+#include <EASTL/unordered_map.h>
 
 namespace Urho3D
 {
 
 class Color;
 class IntRect;
-class IntVector2;
-class IntVector3;
 class Quaternion;
 class Rect;
-class Vector2;
-class Vector3;
-class Vector4;
 
 /// Abstract stream for writing.
 /// @nocount

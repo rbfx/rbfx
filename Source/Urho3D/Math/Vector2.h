@@ -22,21 +22,19 @@
 
 #pragma once
 
-#include "../Container/Str.h"
-#include "../Math/MathDefs.h"
+#include "Urho3D/Math/VectorCommon.h"
 
+#include <EASTL/string.h>
 #include <EASTL/tuple.h>
 
 namespace Urho3D
 {
 class Vector2;
-class Vector3;
 class Vector4;
 class IntVector2;
-class IntVector3;
 
 /// Two-dimensional vector with integer values.
-class URHO3D_API IntVector2
+class URHO3D_API IntVector2 : public Detail::VectorTraits<int, 2>
 {
 public:
     /// Construct a zero vector.
@@ -194,7 +192,7 @@ public:
 };
 
 /// Two-dimensional vector.
-class URHO3D_API Vector2
+class URHO3D_API Vector2 : public Detail::VectorTraits<float, 2>
 {
 public:
     /// Construct a zero vector.

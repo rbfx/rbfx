@@ -32,6 +32,7 @@
 
 #include "../Container/Ptr.h"
 #include "../Container/ByteVector.h"
+#include "../Container/Str.h"
 #include "../Core/Assert.h"
 #include "../Core/Exception.h"
 #include "../Core/TypeTrait.h"

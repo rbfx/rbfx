@@ -1086,14 +1086,13 @@ using ImGuiConfigFlags = unsigned;
 %template(VertexBufferMorphMap)         eastl::unordered_map<unsigned, Urho3D::VertexBufferMorph>;
 %template(ObjectMap)                    eastl::unordered_map<Urho3D::StringHash, Urho3D::SharedPtr<Urho3D::Object>>;
 
-using Vector3 = Urho3D::Vector3;
 %template(StringHashList)                   eastl::vector<Urho3D::StringHash>;
 %template(Vector2List)                      eastl::vector<Urho3D::Vector2>;
-%template(Vector3List)                      eastl::vector<Urho3D::Vector3>;
-%template(Vector3Matrix)                    eastl::vector<eastl::vector<Urho3D::Vector3>>;
+%template(Vector3List)                      eastl::vector<Urho3D::BaseVector3<float>>;
+%template(Vector3Matrix)                    eastl::vector<eastl::vector<Urho3D::BaseVector3<float>>>;
 %template(Vector4List)                      eastl::vector<Urho3D::Vector4>;
 %template(IntVector2List)                   eastl::vector<Urho3D::IntVector2>;
-%template(IntVector3List)                   eastl::vector<Urho3D::IntVector3>;
+%template(IntVector3List)                   eastl::vector<Urho3D::BaseIntegerVector3<int>>;
 %template(QuaternionList)                   eastl::vector<Urho3D::Quaternion>;
 %template(RectList)                         eastl::vector<Urho3D::Rect>;
 %template(IntRectList)                      eastl::vector<Urho3D::IntRect>;

@@ -43,6 +43,18 @@
 namespace Urho3D
 {
 
+// TODO: Convert other vectors to templates
+class Vector2;
+class Vector4;
+class IntVector2;
+
+template <class T> class BaseVector3;
+template <class T> class BaseIntegerVector3;
+
+using IntVector3 = BaseIntegerVector3<int>;
+using Vector3 = BaseVector3<float>;
+using DoubleVector3 = BaseVector3<double>;
+
 #undef M_PI
 static const float M_PI = 3.14159265358979323846264338327950288f;
 static const float M_HALF_PI = M_PI * 0.5f;

@@ -22,13 +22,16 @@
 
 #pragma once
 
-#include "../Math/Vector3.h"
+#include "Urho3D/Math/Vector3.h"
+#include "Urho3D/Math/VectorCommon.h"
+
+#include <EASTL/string.h>
 
 namespace Urho3D
 {
 
 /// Four-dimensional vector.
-class URHO3D_API Vector4
+class URHO3D_API Vector4 : public Detail::VectorTraits<float, 4>
 {
 public:
     /// Construct a zero vector.
@@ -288,8 +291,9 @@ inline Vector4 IntVector2::ToVector4(float z, float w) const { return { static_c
 inline Vector4 Vector2::ToVector4(float z, float w) const { return { x_, y_, z, w }; }
 
 /// Return Vector4 vector.
-inline Vector4 IntVector3::ToVector4(float w) const { return { static_cast<float>(x_), static_cast<float>(y_), static_cast<float>(z_), w }; }
+template <class T> inline Vector4 BaseIntegerVector3<T>::ToVector4(float w) const { return Cast<Vector4>(w); }
 
 /// Return Vector4 vector.
-inline Vector4 Vector3::ToVector4(float w) const { return { x_, y_, z_, w }; }
+template <class T>
+inline Vector4 BaseVector3<T>::ToVector4(float w) const { return Cast<Vector4>(w); }
 }

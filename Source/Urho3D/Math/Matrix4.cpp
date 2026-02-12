@@ -20,14 +20,16 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#include "Urho3D/Precompiled.h"
 
-#include "../Math/Matrix3x4.h"
-#include "../Math/Matrix4.h"
+#include "Urho3D/Math/Matrix4.h"
+
+#include "Urho3D/Container/Str.h"
+#include "Urho3D/Math/Matrix3x4.h"
 
 #include <cstdio>
 
-#include "../DebugNew.h"
+#include "Urho3D/DebugNew.h"
 
 namespace Urho3D
 {

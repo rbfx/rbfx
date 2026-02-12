@@ -24,15 +24,14 @@
 
 #pragma once
 
-#include "../Container/FlagSet.h"
-#include "../Container/Hash.h"
-#include "../Math/StringHash.h"
-#include "../RenderAPI/RenderAPIDefs.h"
+#include "Urho3D/Container/FlagSet.h"
+#include "Urho3D/Container/Hash.h"
+#include "Urho3D/Math/MathDefs.h"
+#include "Urho3D/Math/StringHash.h"
+#include "Urho3D/RenderAPI/RenderAPIDefs.h"
 
 namespace Urho3D
 {
-
-class Vector3;
 
 /// %Geometry type for vertex shader geometry variations.
 enum GeometryType

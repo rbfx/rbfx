@@ -23,6 +23,7 @@
 #pragma once
 
 #include "Urho3D/Container/Ptr.h"
+#include "Urho3D/Math/Hash.h"
 
 #include <EASTL/span.h>
 #include <EASTL/unordered_map.h>
@@ -32,57 +33,6 @@
 
 #include <cstddef>
 #include <type_traits>
-
-namespace Urho3D
-{
-
-/// Combine hash into result value.
-template <class T>
-inline void CombineHash(T& result, unsigned hash, ea::enable_if_t<sizeof(T) == 4, int>* = 0)
-{
-    result ^= hash + 0x9e3779b9 + (result << 6) + (result >> 2);
-}
-
-template <class T>
-inline void CombineHash(T& result, unsigned long long hash, ea::enable_if_t<sizeof(T) == 8, int>* = 0)
-{
-    result ^= hash + 0x9e3779b97f4a7c15ull + (result << 6) + (result >> 2);
-}
-
-/// Fold 64-bit hash to 32-bit.
-inline unsigned FoldHash(unsigned long long value)
-{
-    const auto lowValue = static_cast<unsigned>(value);
-    const auto highValue = static_cast<unsigned>(value >> 32ull);
-    if (highValue == 0)
-        return lowValue;
-
-    auto result = lowValue;
-    CombineHash(result, highValue);
-    return result;
-}
-
-/// Make hash for floating-point variable with zero error tolerance.
-inline unsigned MakeHash(float value)
-{
-    unsigned uintValue{};
-    memcpy(&uintValue, &value, sizeof(float));
-    CombineHash(uintValue, 0u); // shuffle it a bit
-    return uintValue;
-}
-
-/// Make hash template helper.
-template <class T>
-inline unsigned MakeHash(const T& value)
-{
-    const auto hash = ea::hash<T>{}(value);
-    if constexpr (sizeof(hash) > 4)
-        return FoldHash(hash);
-    else
-        return hash;
-}
-
-}
 
 namespace eastl
 {
