@@ -3160,6 +3160,12 @@ if(SDL_STATIC)
   if(NOT ANDROID)
     set_target_properties(SDL2-static PROPERTIES DEBUG_POSTFIX "${SDL_CMAKE_DEBUG_POSTFIX}")
   endif()
+  
+  # RBFX: Fix compilation bug for iOS
+  if(IOS)
+    set_target_properties(SDL2-static PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_WEAK YES)
+  endif()
+
   # Use `Compatible Interface Properties` to allow consumers to enforce a shared/static library
   set_property(TARGET SDL2-static PROPERTY INTERFACE_SDL2_SHARED FALSE)
   set_property(TARGET SDL2-static APPEND PROPERTY COMPATIBLE_INTERFACE_BOOL SDL2_SHARED)
