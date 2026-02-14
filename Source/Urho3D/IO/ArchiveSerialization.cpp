@@ -32,7 +32,10 @@ namespace Urho3D
 namespace Detail
 {
 
-ea::string NumberArrayToString(float* values, unsigned size)
+namespace
+{
+
+template <class T> ea::string NumberArrayToStringDouble(T* values, unsigned size)
 {
     ea::string result;
     for (unsigned i = 0; i < size; ++i)
@@ -42,6 +45,18 @@ ea::string NumberArrayToString(float* values, unsigned size)
         result += ea::string(ea::string::CtorSprintf(), "%g", values[i]);
     }
     return result;
+}
+
+} // namespace
+
+ea::string NumberArrayToString(float* values, unsigned size)
+{
+    return NumberArrayToStringDouble(values, size);
+}
+
+ea::string NumberArrayToString(double* values, unsigned size)
+{
+    return NumberArrayToStringDouble(values, size);
 }
 
 ea::string NumberArrayToString(int* values, unsigned size)
@@ -62,6 +77,16 @@ unsigned StringToNumberArray(const ea::string& string, float* values, unsigned m
     const unsigned size = elements.size() < maxSize ? elements.size() : maxSize;
     for (unsigned i = 0; i < size; ++i)
         values[i] = ToFloat(elements[i]);
+
+    return elements.size();
+}
+
+unsigned StringToNumberArray(const ea::string& string, double* values, unsigned maxSize)
+{
+    const ea::vector<ea::string> elements = string.split(' ');
+    const unsigned size = elements.size() < maxSize ? elements.size() : maxSize;
+    for (unsigned i = 0; i < size; ++i)
+        values[i] = ToDouble(elements[i]);
 
     return elements.size();
 }

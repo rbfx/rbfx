@@ -44,8 +44,10 @@ namespace Detail
 {
 
 URHO3D_API ea::string NumberArrayToString(float* values, unsigned size);
+URHO3D_API ea::string NumberArrayToString(double* values, unsigned size);
 URHO3D_API ea::string NumberArrayToString(int* values, unsigned size);
 URHO3D_API unsigned StringToNumberArray(const ea::string& string, float* values, unsigned maxSize);
+URHO3D_API unsigned StringToNumberArray(const ea::string& string, double* values, unsigned maxSize);
 URHO3D_API unsigned StringToNumberArray(const ea::string& string, int* values, unsigned maxSize);
 
 /// Serialize primitive array type as bytes or as formatted string.
@@ -256,6 +258,7 @@ inline void SerializeValue(Archive& archive, const char* name, StringHash& value
 /// @{
 inline void SerializeValue(Archive& archive, const char* name, Vector2& value) { Detail::SerializePrimitiveArray<2>(archive, name, value); }
 inline void SerializeValue(Archive& archive, const char* name, Vector3& value) { Detail::SerializePrimitiveArray<3>(archive, name, value); }
+inline void SerializeValue(Archive& archive, const char* name, DoubleVector3& value) { Detail::SerializePrimitiveArray<3>(archive, name, value); }
 inline void SerializeValue(Archive& archive, const char* name, Vector4& value) { Detail::SerializePrimitiveArray<4>(archive, name, value); }
 inline void SerializeValue(Archive& archive, const char* name, Matrix3& value) { Detail::SerializePrimitiveArray<9>(archive, name, value); }
 inline void SerializeValue(Archive& archive, const char* name, Matrix3x4& value) { Detail::SerializePrimitiveArray<12>(archive, name, value); }
