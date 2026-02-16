@@ -481,6 +481,14 @@ void WorkQueue::PostDelayedTaskForMainThread(TaskFunction&& task)
     mainThreadTasks_.push_back(ea::move(task));
 }
 
+void WorkQueue::RunTaskOnMainThread(TaskFunction&& task)
+{
+    if (Thread::IsMainThread())
+        task(0, this);
+    else
+        PostDelayedTaskForMainThread(ea::move(task));
+}
+
 void WorkQueue::CompleteImmediateForAnotherThread(unsigned threadIndex)
 {
 #ifdef URHO3D_THREADING

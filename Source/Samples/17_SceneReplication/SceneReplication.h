@@ -23,17 +23,23 @@
 #pragma once
 
 #include "Sample.h"
+#include <Urho3D/Network/ReplicatedPeer.h>
 
 namespace Urho3D
 {
 
 class Button;
-class Connection;
+class DataChannelConnection;
+class DataChannelServer;
+class LineEdit;
+class NetworkConnection;
 class Scene;
 class Text;
 class UIElement;
 
 }
+
+class ReplicatedDataChannelConnection;
 
 /// Scene network replication example.
 /// This sample demonstrates:
@@ -51,6 +57,9 @@ public:
 
     /// Setup after engine initialization and before running the main loop.
     void Start(const ea::vector<ea::string>& args) override;
+
+    /// Stop the server and disconnect clients.
+    void Stop() override;
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
@@ -80,7 +89,7 @@ private:
     /// Update visibility of buttons according to connection and server status.
     void UpdateButtons();
     /// Create a controllable ball object and return its scene node.
-    Node* CreateControllableObject(Connection* owner);
+    Node* CreateControllableObject(SharedPtr<AbstractConnection, RefCounted> owner);
     /// Find player object on client side.
     Node* GetPlayerObject();
     /// Read input and move the camera.
@@ -95,17 +104,13 @@ private:
     void HandleDisconnect(StringHash eventType, VariantMap& eventData);
     /// Handle pressing the start server button.
     void HandleStartServer(StringHash eventType, VariantMap& eventData);
-    /// Handle connection status change (just update the buttons that should be shown.)
-    void HandleConnectionStatus(StringHash eventType, VariantMap& eventData);
-    /// Handle a client connecting to the server.
-    void HandleClientConnected(StringHash eventType, VariantMap& eventData);
-    /// Handle a client disconnecting from the server.
-    void HandleClientDisconnected(StringHash eventType, VariantMap& eventData);
-    /// Handle remote event from server which tells our controlled object node ID.
-    void HandleClientObjectID(StringHash eventType, VariantMap& eventData);
+    /// Handle server-side connection established.
+    void HandleServerConnected(NetworkConnection* connection);
+    /// Handle server-side connection closed.
+    void HandleServerDisconnected(NetworkConnection* connection);
 
-    /// Mapping from client connections to controllable objects.
-    ea::unordered_map<Connection*, WeakPtr<Node> > serverObjects_;
+    /// Server-side connections.
+    ea::unordered_set<NetworkConnection*> serverConnections_;
     /// Button container element.
     SharedPtr<UIElement> buttonContainer_;
     /// Server address line editor element.
@@ -130,6 +135,10 @@ private:
     SharedPtr<Text> connections_;
     /// IsServerRunning status
     SharedPtr<Text> serverRunning_;
+    /// Local data channel server.
+    SharedPtr<DataChannelServer> server_;
+    /// Client connection to server.
+    SharedPtr<ReplicatedDataChannelConnection> clientConnection_;
     /// Packet counter UI update timer
     Timer packetCounterTimer_;
 };

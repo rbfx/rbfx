@@ -23,12 +23,17 @@
 #pragma once
 
 #include "Sample.h"
+#include <Urho3D/Network/Protocol.h>
 
 namespace Urho3D
 {
 
 class Button;
+class DataChannelConnection;
+class DataChannelServer;
 class LineEdit;
+class MemoryBuffer;
+class NetworkConnection;
 class Text;
 class UIElement;
 
@@ -48,6 +53,9 @@ public:
 
     /// Setup after engine initialization and before running the main loop.
     void Start() override;
+
+    /// Stop the server and disconnect clients.
+    void Stop() override;
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
@@ -83,10 +91,18 @@ private:
     void HandleDisconnect(StringHash eventType, VariantMap& eventData);
     /// Handle pressing the start server button.
     void HandleStartServer(StringHash eventType, VariantMap& eventData);
+    /// Handle server-side connection established.
+    void HandleServerConnected(NetworkConnection* connection);
+    /// Handle server-side connection closed.
+    void HandleServerDisconnected(NetworkConnection* connection);
+    /// Handle client connection established.
+    void HandleClientConnected();
+    /// Handle client connection closed.
+    void HandleClientDisconnected();
     /// Handle an incoming network message.
-    void HandleNetworkMessage(StringHash eventType, VariantMap& eventData);
-    /// Handle connection status change (just update the buttons that should be shown.)
-    void HandleConnectionStatus(StringHash eventType, VariantMap& eventData);
+    void HandleNetworkMessage(NetworkConnection* connection, NetworkMessageId messageId, MemoryBuffer& message, bool& handled);
+    /// Return whether a connection belongs to the local server.
+    bool IsServerConnection(NetworkConnection* connection) const;
     /// Strings printed so far.
     ea::vector<ea::string> chatHistory_;
     /// Chat text element.
@@ -103,4 +119,10 @@ private:
     SharedPtr<Button> disconnectButton_;
     /// Start server button.
     SharedPtr<Button> startServerButton_;
+    /// Local data channel server.
+    SharedPtr<DataChannelServer> server_;
+    /// Client connection to a data channel server.
+    SharedPtr<DataChannelConnection> clientConnection_;
+    /// Server-side connections.
+    ea::vector<WeakPtr<NetworkConnection>> serverConnections_;
 };

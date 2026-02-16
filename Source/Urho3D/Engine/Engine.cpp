@@ -571,12 +571,6 @@ bool Engine::Initialize(const StringVariantMap& applicationParameters, const Str
     if (HasParameter(EP_TOUCH_EMULATION))
         GetSubsystem<Input>()->SetTouchEmulation(GetParameter(EP_TOUCH_EMULATION).GetBool());
 
-    // Initialize network
-#ifdef URHO3D_NETWORK
-    if (HasParameter(EP_PACKAGE_CACHE_DIR))
-        GetSubsystem<Network>()->SetPackageCacheDir(GetParameter(EP_PACKAGE_CACHE_DIR).GetString());
-#endif
-
     if (HasParameter(EP_TIME_OUT))
         timeOut_ = GetParameter(EP_TIME_OUT).GetInt() * 1000000LL;
 

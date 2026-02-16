@@ -9,9 +9,9 @@
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Core/Exception.h"
 #include "Urho3D/IO/Log.h"
-#include "Urho3D/Network/Connection.h"
 #include "Urho3D/Network/MessageUtils.h"
 #include "Urho3D/Network/Network.h"
+#include "Urho3D/Network/ReplicatedPeer.h"
 #include "Urho3D/Replica/NetworkObject.h"
 #include "Urho3D/Replica/NetworkSettingsConsts.h"
 #include "Urho3D/Scene/Scene.h"
@@ -340,13 +340,13 @@ void ReplicationManager::StartServer()
     URHO3D_LOGINFO("Started server for scene replication");
 }
 
-void ReplicationManager::StartClient(AbstractConnection* connectionToServer)
+void ReplicationManager::StartClient(SharedPtr<AbstractConnection, RefCounted> connectionToServer)
 {
     Stop();
 
     mode_ = ReplicationManagerMode::Client;
 
-    client_ = ClientData{WeakPtr<AbstractConnection>(connectionToServer)};
+    client_ = ClientData{connectionToServer};
     RemoveAllNetworkObjects();
 
     URHO3D_LOGINFO("Started client for scene replication");
@@ -407,7 +407,7 @@ bool ReplicationManager::ProcessMessage(
     return false;
 }
 
-void ReplicationManager::DropConnection(AbstractConnection* connection)
+void ReplicationManager::DropConnection(SharedPtr<AbstractConnection, RefCounted> connection)
 {
     if (server_)
         server_->RemoveConnection(connection);
@@ -423,7 +423,6 @@ bool ReplicationManager::ProcessMessageOnUninitializedClient(
     if (messageId == MSG_CONFIGURE)
     {
         const auto msg = ReadSerializedMessage<MsgConfigure>(messageData);
-        connection->LogMessagePayload(messageId, msg);
 
         client_->ackMagic_ = msg.magic_;
         client_->serverSettings_ = msg.settings_;
@@ -431,7 +430,6 @@ bool ReplicationManager::ProcessMessageOnUninitializedClient(
     else if (messageId == MSG_SCENE_CLOCK)
     {
         const auto msg = ReadSerializedMessage<MsgSceneClock>(messageData);
-        connection->LogMessagePayload(messageId, msg);
 
         client_->initialClock_ = msg;
     }
@@ -443,11 +441,15 @@ bool ReplicationManager::ProcessMessageOnUninitializedClient(
     // If ready, initialize
     if (connection->IsClockSynchronized() && client_->IsReadyToInitialize())
     {
-        client_->replica_ =
-            MakeShared<ClientReplica>(GetScene(), connection, *client_->initialClock_, *client_->serverSettings_);
+        const auto connectionShared = client_->connection_;
+        if (!connectionShared)
+            return false;
 
-        WriteSerializedMessage(
-            *connection, MSG_SYNCHRONIZED, MsgSynchronized{*client_->ackMagic_}, PacketType::ReliableUnordered);
+        client_->replica_ =
+            MakeShared<ClientReplica>(GetScene(), connectionShared, *client_->initialClock_, *client_->serverSettings_);
+
+        WriteSerializedMessage(*connection->GetConnection(), MSG_SYNCHRONIZED, MsgSynchronized{*client_->ackMagic_},
+            PacketType::ReliableUnordered);
     }
 
     return true;

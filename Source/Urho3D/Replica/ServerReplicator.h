@@ -112,7 +112,7 @@ class ClientSynchronizationState : public RefCounted
 {
 public:
     ClientSynchronizationState(
-        NetworkObjectRegistry* objectRegistry, AbstractConnection* connection, const VariantMap& settings);
+        NetworkObjectRegistry* objectRegistry, SharedPtr<AbstractConnection, RefCounted> connection, const VariantMap& settings);
 
     /// Begin network frame. Overtime indicates how much time has passed since actual frame start time.
     void BeginNetworkFrame(NetworkFrame currentFrame, float overtime);
@@ -135,7 +135,7 @@ protected:
     void OnInputReceived(NetworkFrame inputFrame);
 
     const WeakPtr<NetworkObjectRegistry> objectRegistry_;
-    const WeakPtr<AbstractConnection> connection_;
+    const WeakPtr<AbstractConnection, RefCounted> connection_;
     VariantMap settings_;
     const unsigned updateFrequency_{};
 
@@ -169,7 +169,7 @@ struct ClientReplicationState : public ClientSynchronizationState
 {
 public:
     ClientReplicationState(
-        NetworkObjectRegistry* objectRegistry, AbstractConnection* connection, const VariantMap& settings);
+        NetworkObjectRegistry* objectRegistry, SharedPtr<AbstractConnection, RefCounted> connection, const VariantMap& settings);
 
     /// Perform network update from the perspective of this client connection.
     void UpdateNetworkObjects(SharedReplicationState& sharedState);
@@ -199,6 +199,7 @@ private:
     ea::vector<ea::pair<NetworkObject*, bool>> pendingUpdatedObjects_;
 
     VectorBuffer componentBuffer_;
+    VectorBuffer buffer_;
 
     float reportedLoss_{};
 };
@@ -212,8 +213,8 @@ public:
     explicit ServerReplicator(Scene* scene);
     ~ServerReplicator() override;
 
-    void AddConnection(AbstractConnection* connection);
-    void RemoveConnection(AbstractConnection* connection);
+    void AddConnection(SharedPtr<AbstractConnection, RefCounted> connection);
+    void RemoveConnection(SharedPtr<AbstractConnection, RefCounted> connection);
     bool ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
     void ProcessSceneUpdate(StringHash eventType);
     void ReportInputLoss(AbstractConnection* connection, float percentLoss);

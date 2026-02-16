@@ -1,74 +1,43 @@
-//
 // Copyright (c) 2008-2020 the Urho3D project.
-// Copyright (c) 2022 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2022-2026 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Engine/Engine.h>
+#include <Urho3D/IO/Log.h>
 #include <Urho3D/Graphics/Animation.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/Light.h>
-#include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/Skybox.h>
-#include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/TextureCube.h>
 #include <Urho3D/Graphics/Zone.h>
-#include <Urho3D/Input/Input.h>
-#include <Urho3D/Input/MoveAndOrbitController.h>
+#include <Urho3D/Input/FreeFlyController.h>
 #include <Urho3D/Math/RandomEngine.h>
-#include <Urho3D/Network/Connection.h>
-#include <Urho3D/Network/Network.h>
-#include <Urho3D/Network/NetworkEvents.h>
 #include <Urho3D/Physics/CollisionShape.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
 #include <Urho3D/Physics/RigidBody.h>
-#include <Urho3D/Replica/PredictedKinematicController.h>
 #include <Urho3D/Replica/ReplicatedAnimation.h>
-#include <Urho3D/Replica/ReplicatedTransform.h>
 #include <Urho3D/Replica/ReplicationManager.h>
-#include <Urho3D/Replica/TrackedAnimatedModel.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/RmlUI/RmlUI.h>
-#include <Urho3D/Scene/PrefabResource.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Font.h>
 #include <Urho3D/UI/Text.h>
 #include <Urho3D/UI/UI.h>
 
 #include "AdvancedNetworking.h"
+#include "AdvancedNetworkingClientConnection.h"
 #include "AdvancedNetworkingPlayer.h"
+#include "AdvancedNetworkingServer.h"
 #include "AdvancedNetworkingUI.h"
-#include "AdvancedNetworkingRaycast.h"
 
 #include <Urho3D/DebugNew.h>
-
-static constexpr float CAMERA_DISTANCE = 5.0f;
-static constexpr float CAMERA_OFFSET = 2.0f;
-static constexpr float WALK_VELOCITY = 3.35f;
-static constexpr float HIT_DISTANCE = 100.0f;
 
 AdvancedNetworking::AdvancedNetworking(Context* context) :
     Sample(context)
@@ -111,6 +80,12 @@ void AdvancedNetworking::Start(const ea::vector<ea::string>& args)
         else if (args[1] == "Connect")
             ui_->ConnectToServer("localhost");
     }
+}
+
+void AdvancedNetworking::Stop()
+{
+    StopNetworking();
+    BaseClassName::Stop();
 }
 
 void AdvancedNetworking::CreateScene()
@@ -212,13 +187,19 @@ void AdvancedNetworking::CreateScene()
     // Set an initial position for the camera scene node above the plane
     cameraNode_->SetPosition(Vector3(0.0f, 5.0f, 0.0f));
 
-    inputMap_ = InputMap::Load(context_, "Input/MoveAndOrbit.inputmap");
+    freeFlyController_ = cameraNode_->CreateComponent<FreeFlyController>();
+    freeFlyController_->SetEnabled(false);
 }
 
 void AdvancedNetworking::CreateUI()
 {
     Node* node = scene_->CreateChild("UI");
     ui_ = node->CreateComponent<AdvancedNetworkingUI>();
+    ui_->OnStartServer.Subscribe(this, &AdvancedNetworking::StartServer);
+    ui_->OnConnectToServer.Subscribe(this, &AdvancedNetworking::ConnectToServer);
+    ui_->OnStop.Subscribe(this, &AdvancedNetworking::StopNetworking);
+    ui_->SetServerRunning(false);
+    ui_->SetClientConnected(false);
 
     if (GetSubsystem<Engine>()->IsHeadless())
         return;
@@ -266,357 +247,10 @@ void AdvancedNetworking::SetupViewport()
 
 void AdvancedNetworking::SubscribeToEvents()
 {
-    // Subscribe to raycast events.
-    SubscribeToEvent(E_ADVANCEDNETWORKING_RAYCAST,
-        [this](VariantMap& eventData)
-    {
-        using namespace AdvancedNetworkingRaycast;
-        ServerRaycastInfo info;
-
-        info.clientConnection_.Reset(static_cast<Connection*>(eventData[RemoteEventData::P_CONNECTION].GetPtr()));
-        info.origin_ = eventData[P_ORIGIN].GetVector3().Cast<DoubleVector3>();
-        info.target_ = eventData[P_TARGET].GetVector3().Cast<DoubleVector3>();
-        info.replicaTime_ = NetworkTime{static_cast<NetworkFrame>(eventData[P_REPLICA_FRAME].GetInt64()), eventData[P_REPLICA_SUBFRAME].GetFloat()};
-        info.inputTime_ = NetworkTime{static_cast<NetworkFrame>(eventData[P_INPUT_FRAME].GetInt64()), eventData[P_INPUT_SUBFRAME].GetFloat()};
-
-        serverRaycasts_.push_back(info);
-    });
-
-    // Subscribe to rayhit events.
-    SubscribeToEvent(E_ADVANCEDNETWORKING_RAYHIT,
-        [this](VariantMap& eventData)
-    {
-        using namespace AdvancedNetworkingRayhit;
-        const Variant& position = eventData[P_POSITION];
-        if (!position.IsEmpty())
-            AddHitMarker(position.GetVector3().Cast<DoubleVector3>(), true);
-    });
-
-    // Subscribe HandlePostUpdate() method for processing update events. Subscribe to PostUpdate instead
-    // of the usual Update so that physics simulation has already proceeded for the frame, and can
-    // accurately follow the object with the camera
-    SubscribeToEvent(E_POSTUPDATE,
-        [this]
-    {
-        ProcessRaycastsOnServer();
-        if (!GetSubsystem<Engine>()->IsHeadless())
-        {
-            MoveCamera();
-            UpdateStats();
-        }
-    });
-
-    // Subscribe to network events
-    SubscribeToEvent(E_CLIENTCONNECTED, URHO3D_HANDLER(AdvancedNetworking, HandleClientConnected));
-    SubscribeToEvent(E_CLIENTDISCONNECTED, URHO3D_HANDLER(AdvancedNetworking, HandleClientDisconnected));
-
-    auto* network = GetSubsystem<Network>();
-    network->RegisterRemoteEvent(E_ADVANCEDNETWORKING_RAYCAST);
-    network->RegisterRemoteEvent(E_ADVANCEDNETWORKING_RAYHIT);
-}
-
-void AdvancedNetworking::ProcessRaycastsOnServer()
-{
-    auto* replicationManager = scene_->GetComponent<ReplicationManager>();
-    ServerReplicator* serverReplicator = replicationManager ? replicationManager->GetServerReplicator() : nullptr;
-    if (!serverReplicator)
-        return;
-
-    // Process and dequeue raycasts when possible.
-    const NetworkTime serverTime = serverReplicator->GetServerTime();
-
-    ea::erase_if(serverRaycasts_,
-        [&](const ServerRaycastInfo& raycastInfo)
-    {
-        if (!raycastInfo.clientConnection_)
-            return true;
-
-        // Don't process too early, server time should be greater than input time on client.
-        if (serverTime - raycastInfo.inputTime_ < 0.0f)
-            return false;
-
-        ProcessSingleRaycastOnServer(raycastInfo);
-        return true;
-    });
-}
-
-void AdvancedNetworking::ProcessSingleRaycastOnServer(const ServerRaycastInfo& raycastInfo)
-{
-    auto* replicationManager = scene_->GetComponent<ReplicationManager>();
-    ServerReplicator* serverReplicator = replicationManager->GetServerReplicator();
-
-    // Get reliable origin from server data, not trusting client with this
-    NetworkObject* clientObject = serverReplicator->GetNetworkObjectOwnedByConnection(raycastInfo.clientConnection_);
-    auto replicatedTransform = clientObject->GetNode()->FindComponent<ReplicatedTransform>();
-    const Vector3 origin = scene_->ToRelativeWorldPosition(replicatedTransform->SampleTemporalPosition(raycastInfo.inputTime_).value_) + Vector3::UP * CAMERA_OFFSET;
-    const Vector3 target = scene_->ToRelativeWorldPosition(raycastInfo.target_);
-
-    // Perform raycast using target position instead of ray direction
-    // to get better precision on origin mismatch.
-    auto* octree = scene_->GetComponent<Octree>();
-    const Ray ray{origin, target - origin};
-
-    // Query static scene geometry
-    RayOctreeQuery query(ray, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY, IMPORTANT_VIEW_MASK);
-    octree->RaycastSingle(query);
-
-    // Query dynamic network objects
-    for (NetworkObject* networkObject : replicationManager->GetNetworkObjects())
-    {
-        // Ignore caster
-        if (networkObject == clientObject)
-            continue;
-
-        auto behaviorNetworkObject = dynamic_cast<BehaviorNetworkObject*>(networkObject);
-        if (!behaviorNetworkObject)
-            continue;
-
-        auto trackedModelAnimation = behaviorNetworkObject->GetNetworkBehavior<TrackedAnimatedModel>();
-        if (!trackedModelAnimation)
-            continue;
-
-        trackedModelAnimation->ProcessTemporalRayQuery(raycastInfo.replicaTime_, query, query.result_);
-    }
-
-    // Sort by distance
-    ea::quick_sort(query.result_.begin(), query.result_.end(),
-        [](const RayQueryResult& lhs, const RayQueryResult& rhs) { return lhs.distance_ < rhs.distance_; });
-
-    // Send result to the client
-    using namespace AdvancedNetworkingRayhit;
-    auto& eventData = GetEventDataMap();
-    eventData[P_ORIGIN] = scene_->ToAbsoluteWorldPosition(origin).Cast<Vector3>();
-    if (!query.result_.empty())
-        eventData[P_POSITION] = scene_->ToAbsoluteWorldPosition(query.result_[0].position_).Cast<Vector3>();
-    raycastInfo.clientConnection_->SendRemoteEvent(E_ADVANCEDNETWORKING_RAYHIT, false, eventData);
-}
-
-Node* AdvancedNetworking::CreateControllableObject(Connection* owner)
-{
-    auto* cache = GetSubsystem<ResourceCache>();
-    auto prefab = cache->GetResource<PrefabResource>("Prefabs/AdvancedNetworkingPlayer.prefab");
-
-    // Instantiate most of the components from prefab so they will be replicated on the client.
-    const Vector3 position{Random(20.0f) - 10.0f, 5.0f, Random(20.0f) - 10.0f};
-    Node* playerNode = scene_->InstantiatePrefab(prefab->GetNodePrefab(), position, Quaternion::IDENTITY);
-
-    // NetworkObject should never be a part of client prefab
-    auto networkObject = playerNode->CreateComponent<BehaviorNetworkObject>();
-    networkObject->SetClientPrefab(prefab);
-    networkObject->SetOwner(owner);
-
-    // Change light color on the server only
-    Light* playerLight = playerNode->FindComponent<Light>();
-    playerLight->SetColor(Color::GREEN);
-
-    return playerNode;
-}
-
-void AdvancedNetworking::MoveCamera()
-{
-    auto* ui = GetSubsystem<UI>();
-    auto* input = GetSubsystem<Input>();
-
-    // Right mouse button controls mouse cursor visibility: hide when pressed
-    const bool isCameraMoving = input->GetMouseButtonDown(MOUSEB_RIGHT);
-    SetMouseMode(isCameraMoving ? MM_RELATIVE : MM_FREE);
-    SetMouseVisible(!isCameraMoving);
-
-    // Mouse sensitivity as degrees per pixel
-    const float MOUSE_SENSITIVITY = 0.1f;
-
-    // Use this frame's mouse motion to adjust camera node yaw and pitch. Clamp the pitch and only move the camera
-    // when the cursor is hidden
-    if (isCameraMoving)
-    {
-        IntVector2 mouseMove = input->GetMouseMove();
-        yaw_ += MOUSE_SENSITIVITY * mouseMove.x_;
-        pitch_ += MOUSE_SENSITIVITY * mouseMove.y_;
-        pitch_ = Clamp(pitch_, 1.0f, 90.0f);
-    }
-
-    // Construct new orientation for the camera scene node from yaw and pitch. Roll is fixed to zero
-    cameraNode_->SetRotation(Quaternion(pitch_, yaw_, 0.0f));
-
-    // Only move the camera / show instructions if we have a controllable object
-    bool showInstructions = false;
-
-    // Process client-side input
-    auto replicationManager = scene_->GetComponent<ReplicationManager>();
-    auto clientReplica = replicationManager ? replicationManager->GetClientReplica() : nullptr;
-    if (clientReplica && clientReplica->HasOwnedNetworkObjects())
-    {
-        NetworkObject* clientObject = clientReplica->GetOwnedNetworkObject();
-
-        ProcessClientMovement(clientObject);
-
-        bool autoClick = false;
-        if (ui_->GetCheatAutoClick())
-        {
-            autoClick = autoClickTimer_.GetMSec(false) >= 250;
-            if (autoClick)
-                autoClickTimer_.Reset();
-        }
-
-        if (input->GetMouseButtonPress(MOUSEB_LEFT) || autoClick)
-        {
-            auto* renderer = GetSubsystem<Renderer>();
-            Viewport* viewport = renderer->GetViewport(0);
-            const IntVector2 mousePos = input->GetMousePosition();
-            const Ray screenRay = viewport->GetScreenRay(mousePos.x_, mousePos.y_);
-
-            RequestClientRaycast(clientObject, screenRay);
-        }
-
-        showInstructions = true;
-    }
-
-    instructionsText_->SetVisible(showInstructions);
-}
-
-void AdvancedNetworking::ProcessClientMovement(NetworkObject* clientObject)
-{
-    auto* input = GetSubsystem<Input>();
-
-    Node* clientNode = clientObject->GetNode();
-    auto clientController = clientNode->GetComponent<PredictedKinematicController>();
-
-    // Process auto movement cheat
-    const bool autoMovement = ui_->GetCheatAutoMovementCircle();
-    if (autoMovement && autoMovementTimer_.GetMSec(false) >= 1000)
-    {
-        autoMovementTimer_.Reset();
-        autoMovementPhase_ = (autoMovementPhase_ + 1) % 4;
-    }
-
-    // Calculate movement direction
-    const Quaternion rotation(0.0f, yaw_, 0.0f);
-    Vector3 direction;
-    if (inputMap_)
-    {
-        if (inputMap_->Evaluate(MoveAndOrbitController::ACTION_FORWARD) > 0.5f
-            || (autoMovement && autoMovementPhase_ == 3))
-            direction += rotation * Vector3::FORWARD;
-        if (inputMap_->Evaluate(MoveAndOrbitController::ACTION_BACK) > 0.5f
-            || (autoMovement && autoMovementPhase_ == 1))
-            direction += rotation * Vector3::BACK;
-        if (inputMap_->Evaluate(MoveAndOrbitController::ACTION_LEFT) > 0.5f
-            || (autoMovement && autoMovementPhase_ == 2))
-            direction += rotation * Vector3::LEFT;
-        if (inputMap_->Evaluate(MoveAndOrbitController::ACTION_RIGHT) > 0.5f
-            || (autoMovement && autoMovementPhase_ == 0))
-            direction += rotation * Vector3::RIGHT;
-    }
-    direction = direction.NormalizedOrDefault();
-
-    // Ability to jump is checked inside of PredictedKinematicController
-    const bool needJump = input->GetKeyDown(KEY_SPACE);
-
-    // Apply user input. It may happen at any point in game cycle.
-    // Note that this input will not take effect immediately.
-    clientController->SetWalkVelocity(direction * WALK_VELOCITY);
-    if (needJump)
-        clientController->SetJump();
-
-    // Focus camera on client node
-    cameraNode_->SetPosition(clientNode->GetPosition()
-        + cameraNode_->GetRotation() * Vector3::BACK * CAMERA_DISTANCE + Vector3::UP * CAMERA_OFFSET);
-}
-
-DoubleVector3 AdvancedNetworking::GetAimPosition(const DoubleVector3& playerPosition, const Ray& screenRay) const
-{
-    if (ui_->GetCheatAutoAimHand())
-    {
-        ea::vector<AnimatedModel*> models;
-        scene_->FindComponents(models);
-
-        AnimatedModel* closestModel{};
-        float closestDistance{};
-        for (AnimatedModel* model : models)
-        {
-            if (model->GetViewMask() == UNIMPORTANT_VIEW_MASK)
-                continue;
-
-            const float distance =
-                model->GetNode()->GetWorldPosition().DistanceToPoint(scene_->ToRelativeWorldPosition(playerPosition));
-            if (!closestModel || distance < closestDistance)
-            {
-                closestModel = model;
-                closestDistance = distance;
-            }
-        }
-
-        if (closestModel)
-        {
-            Node* aimNode = closestModel->GetSkeleton().GetBone("Mutant:RightHandIndex2")->node_;
-            return scene_->ToAbsoluteWorldPosition(aimNode->GetWorldPosition());
-        }
-    }
-
-    const Vector3 defaultAimPosition = screenRay.origin_ + screenRay.direction_ * HIT_DISTANCE;
-    return scene_->ToAbsoluteWorldPosition(RaycastImportantGeometries(screenRay).value_or(defaultAimPosition));
-}
-
-void AdvancedNetworking::RequestClientRaycast(NetworkObject* clientObject, const Ray& screenRay)
-{
-    auto* network = GetSubsystem<Network>();
-    Connection* serverConnection = network->GetServerConnection();
-
-    // Get current client times so server knows when the raycast was performed
-    auto* replicationManager = scene_->GetComponent<ReplicationManager>();
-    ClientReplica* clientReplica = replicationManager->GetClientReplica();
-
-    const NetworkTime replicaTime = clientReplica->GetReplicaTime();
-    const NetworkTime inputTime = clientReplica->GetInputTime();
-
-    // Second, perform an actual raycast from the player model to the aim point.
-    const DoubleVector3 playerPosition = scene_->ToAbsoluteWorldPosition(clientObject->GetNode()->GetWorldPosition());
-    const DoubleVector3 aimPosition = GetAimPosition(playerPosition, screenRay);
-    const DoubleVector3 origin = playerPosition + DoubleVector3::UP * CAMERA_OFFSET;
-    const Ray castRay{scene_->ToRelativeWorldPosition(origin), (aimPosition - origin).Cast<Vector3>()};
-
-    // If hit on client, add marker
-    if (auto hitPosition = RaycastImportantGeometries(castRay))
-        AddHitMarker(scene_->ToAbsoluteWorldPosition(*hitPosition), false);
-
-    // Send event to the server regardless
-    using namespace AdvancedNetworkingRaycast;
-    VariantMap& eventData = GetEventDataMap();
-    eventData[P_ORIGIN] = origin.Cast<Vector3>();
-    eventData[P_TARGET] = aimPosition.Cast<Vector3>();
-    eventData[P_REPLICA_FRAME] = static_cast<long long>(replicaTime.Frame());
-    eventData[P_REPLICA_SUBFRAME] = replicaTime.Fraction();
-    eventData[P_INPUT_FRAME] = static_cast<long long>(inputTime.Frame());
-    eventData[P_INPUT_SUBFRAME] = inputTime.Fraction();
-    serverConnection->SendRemoteEvent(E_ADVANCEDNETWORKING_RAYCAST, false, eventData);
-}
-
-void AdvancedNetworking::AddHitMarker(const DoubleVector3& position, bool isConfirmed)
-{
-    auto* cache = GetSubsystem<ResourceCache>();
-
-    // Prevent overflow
-    if (hitMarkers_->GetNumChildren() >= 200)
-        hitMarkers_->GetChild(0u)->Remove();
-
-    // Add new marker: red sphere for client hits, green cube for server confirmations
-    Node* markerNode = hitMarkers_->CreateChild("Client Hit");
-    markerNode->SetPosition(position.Cast<Vector3>());
-
-    auto markerModel = markerNode->CreateComponent<StaticModel>();
-    markerModel->SetViewMask(UNIMPORTANT_VIEW_MASK);
-    if (isConfirmed)
-    {
-        markerNode->SetScale(0.15f);
-        markerModel->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
-        markerModel->SetMaterial(cache->GetResource<Material>("Materials/Constant/GlowingGreen.xml"));
-    }
-    else
-    {
-        markerNode->SetScale(0.2f);
-        markerModel->SetModel(cache->GetResource<Model>("Models/Sphere.mdl"));
-        markerModel->SetMaterial(cache->GetResource<Material>("Materials/Constant/GlowingRed.xml"));
-    }
+    // Subscribe to PostUpdate instead of the usual Update so that physics simulation has
+    // already proceeded for the frame, and can accurately follow the object with the camera
+    if (!GetSubsystem<Engine>()->IsHeadless())
+        SubscribeToEvent(E_POSTUPDATE, &AdvancedNetworking::UpdateStats);
 }
 
 void AdvancedNetworking::UpdateStats()
@@ -624,45 +258,72 @@ void AdvancedNetworking::UpdateStats()
     if (statsTimer_.GetMSec(false) >= 333)
     {
         statsTimer_.Reset();
-        auto network = GetSubsystem<Network>();
-        statsText_->SetText(network->GetDebugInfo());
+        if (IsClientConnected())
+            statsText_->SetText("Client connected");
+        else if (IsServerRunning())
+            statsText_->SetText(Format("Server running, clients: {}", server_->GetClientCount()));
+        else
+            statsText_->SetText("No network stats");
     }
 }
 
-ea::optional<Vector3> AdvancedNetworking::RaycastImportantGeometries(const Ray& ray) const
+void AdvancedNetworking::StartServer(unsigned short port)
 {
-    auto* octree = scene_->GetComponent<Octree>();
+    StopNetworking();
 
-    RayOctreeQuery query(ray, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY, IMPORTANT_VIEW_MASK);
-    octree->RaycastSingle(query);
-
-    if (!query.result_.empty())
-        return query.result_[0].position_;
-    return ea::nullopt;
+    server_ = MakeShared<AdvancedNetworkingServer>(scene_);
+    server_->onListenStart_.Subscribe(this, [this]() { HandleClientConnectionState(false); });
+    server_->onListenStop_.Subscribe(this, [this]() { HandleClientConnectionState(false); });
+    auto* replicationManager = scene_->GetComponent<ReplicationManager>();
+    replicationManager->StartServer();
+    ui_->SetServerRunning(server_->Start(port));
 }
 
-void AdvancedNetworking::HandleClientConnected(StringHash eventType, VariantMap& eventData)
+void AdvancedNetworking::ConnectToServer(const ea::string& address, unsigned short port)
 {
-    using namespace ClientConnected;
+    StopNetworking();
 
-    // When a client connects, assign to scene to begin scene replication
-    auto* newConnection = static_cast<Connection*>(eventData[P_CONNECTION].GetPtr());
-    newConnection->SetScene(scene_);
-
-    // Then create a controllable object for that client
-    Node* newObject = CreateControllableObject(newConnection);
-    serverObjects_[newConnection] = newObject;
+    clientConnection_ = MakeShared<AdvancedNetworkingClientConnection>(scene_, ui_);
+    clientConnection_->onConnected_.Subscribe(this, [this]() { HandleClientConnectionState(true); });
+    clientConnection_->onDisconnected_.Subscribe(this, [this]() { HandleClientConnectionState(false); });
+    freeFlyController_->SetEnabled(false);
+    ui_->SetClientConnected(clientConnection_->Connect(address, port));
 }
 
-void AdvancedNetworking::HandleClientDisconnected(StringHash eventType, VariantMap& eventData)
+void AdvancedNetworking::StopNetworking()
 {
-    using namespace ClientConnected;
+    auto* replicationManager = scene_->GetComponent<ReplicationManager>();
 
-    // When a client disconnects, remove the controlled object
-    auto* connection = static_cast<Connection*>(eventData[P_CONNECTION].GetPtr());
-    Node* object = serverObjects_[connection];
-    if (object)
-        object->Remove();
+    if (clientConnection_)
+    {
+        clientConnection_->Disconnect();
+        clientConnection_ = nullptr;
+    }
 
-    serverObjects_.erase(connection);
+    if (server_)
+    {
+        server_->Stop();
+        server_ = nullptr;
+        replicationManager->StartStandalone();
+    }
+
+    ui_->SetServerRunning(false);
+    ui_->SetClientConnected(false);
+    freeFlyController_->SetEnabled(false);
+}
+
+bool AdvancedNetworking::IsServerRunning() const
+{
+    return server_ && server_->IsListening();
+}
+
+bool AdvancedNetworking::IsClientConnected() const
+{
+    return clientConnection_ && clientConnection_->IsConnected();
+}
+
+void AdvancedNetworking::HandleClientConnectionState(bool connected)
+{
+    ui_->SetClientConnected(connected);
+    freeFlyController_->SetEnabled(IsServerRunning() && !connected);
 }

@@ -38,7 +38,11 @@ public:
     /// Construct as read-only with a pointer and size.
     MemoryBuffer(const void* data, unsigned size);
     /// Construct as read-only from string.
+    explicit MemoryBuffer(const char* text);
+    /// Construct as read-only from string.
     explicit MemoryBuffer(ea::string_view text);
+    /// Construct as read-only from string.
+    explicit MemoryBuffer(const ea::string& text);
     /// Construct from a vector, which must not go out of scope before MemoryBuffer.
     explicit MemoryBuffer(ByteVector& data);
     /// Construct from a read-only vector, which must not go out of scope before MemoryBuffer.
@@ -47,6 +51,10 @@ public:
     explicit MemoryBuffer(VectorBuffer& data);
     /// Construct from a read-only vector buffer, which must not go out of scope before MemoryBuffer.
     explicit MemoryBuffer(const VectorBuffer& data);
+    /// Construct as read-only from a span.
+    explicit MemoryBuffer(ea::span<unsigned char> data);
+    /// Construct as read-only from a span.
+    explicit MemoryBuffer(ea::span<const unsigned char> data);
 
     /// Read bytes from the memory area. Return number of bytes actually read.
     unsigned Read(void* dest, unsigned size) override;
