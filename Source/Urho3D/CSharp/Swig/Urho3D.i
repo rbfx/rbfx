@@ -813,12 +813,8 @@ public:
 %ignore Urho3D::PackageUpload;
 
 %include "generated/Urho3D/_pre_network.i"
-%include "Urho3D/Network/AbstractConnection.h"
-%include "Urho3D/Network/Connection.h"
 %include "Urho3D/Network/Network.h"
 %include "Urho3D/Network/Protocol.h"
-
-%template(ConnectionVector) eastl::vector<Urho3D::SharedPtr<Urho3D::Connection>>;
 
 %typemap(csbase) Urho3D::NetworkFrame "long";
 %csconstvalue("long.MinValue") Urho3D::NetworkFrame::Min;

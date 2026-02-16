@@ -22,8 +22,11 @@
 
 #pragma once
 
-#include "../Container/ByteVector.h"
-#include "../IO/AbstractFile.h"
+#include "Urho3D/Container/ByteVector.h"
+#include "Urho3D/IO/AbstractFile.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+
+#include <EASTL/span.h>
 
 namespace Urho3D
 {
@@ -40,6 +43,8 @@ public:
     VectorBuffer(const void* data, unsigned size);
     /// Construct from a stream.
     VectorBuffer(Deserializer& source, unsigned size);
+    /// Construct from a MemoryBuffer.
+    explicit VectorBuffer(const MemoryBuffer& source);
 
     /// Returns name of this object.
     const ea::string& GetName() const override;
@@ -72,6 +77,8 @@ public:
     const ByteVector& GetBuffer() const { return buffer_; }
     /// Return the buffer.
     ByteVector& GetBuffer() { return buffer_; }
+
+    operator MemoryBuffer() const { return MemoryBuffer(GetData(), size_); }
 
 private:
     /// Dynamic data buffer.

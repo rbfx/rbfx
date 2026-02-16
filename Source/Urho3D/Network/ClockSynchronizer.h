@@ -127,9 +127,9 @@ private:
     unsigned GetTimestamp() const;
     void UpdateClocks(unsigned localSent, unsigned remoteReceived, unsigned remoteSent, unsigned localReceived);
 
-    const ea::function<unsigned()> getTimestamp_;
-    const unsigned pingIntervalMs_{};
-    const unsigned maxPingMs_{};
+    ea::function<unsigned()> getTimestamp_;
+    unsigned pingIntervalMs_{};
+    unsigned maxPingMs_{};
 
     ea::optional<unsigned> latestProbeTimestamp_;
     ea::vector<PendingPing> pendingPings_;

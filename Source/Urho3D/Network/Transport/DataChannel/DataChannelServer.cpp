@@ -20,12 +20,16 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Core/Context.h>
-#include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
-#include <Urho3D/Network/Transport/DataChannel/DataChannelConnection.h>
+#include "Urho3D/Network/Transport/DataChannel/DataChannelServer.h"
+
+#include "Urho3D/Core/Assert.h"
+#include "Urho3D/Core/Context.h"
+#include "Urho3D/IO/Log.h"
+#include "Urho3D/Network/Transport/DataChannel/DataChannelConnection.h"
+#include "Urho3D/Network/Transport/NetworkConnection.h"
 
 #ifndef URHO3D_PLATFORM_WEB
-#include <rtc/websocketserver.hpp>
+    #include <rtc/websocketserver.hpp>
 #endif
 
 namespace Urho3D
@@ -34,6 +38,7 @@ namespace Urho3D
 DataChannelServer::DataChannelServer(Context* context)
     : NetworkServer(context)
 {
+    SetConnectionFactory([this] { return MakeShared<DataChannelConnection>(context_); });
 }
 
 void DataChannelServer::RegisterObject(Context* context)
@@ -43,6 +48,12 @@ void DataChannelServer::RegisterObject(Context* context)
 
 bool DataChannelServer::Listen(const URL& url)
 {
+    if (IsListening())
+    {
+        URHO3D_LOGERROR("DataChannelServer::Listen called while already listening.");
+        return false;
+    }
+
 #ifndef URHO3D_PLATFORM_WEB
     // Signaling server
     rtc::WebSocketServer::Configuration config = {};
@@ -62,11 +73,24 @@ bool DataChannelServer::Listen(const URL& url)
     webSocketServer_ = ea::make_shared<rtc::WebSocketServer>(config);
     webSocketServer_->onClient([this](std::shared_ptr<rtc::WebSocket> ws)
     {
-        SharedPtr<DataChannelConnection> connection = MakeShared<DataChannelConnection>(context_);
-        connection->InitializeFromSocket(this, ws);
-        connections_.push_back(connection);
+        SharedPtr<NetworkConnection> connection = CreateConnection();
+        SharedPtr<DataChannelConnection> dcConnection;
+        dcConnection.DynamicCast(connection);
+        URHO3D_ASSERT(dcConnection);
+        dcConnection->InitializeFromSocket(this, ws);
     });
+
+    DoOnListenStart();
     return true;
+#else
+    return false;
+#endif
+}
+
+bool DataChannelServer::IsListening() const
+{
+#ifndef URHO3D_PLATFORM_WEB
+    return webSocketServer_ != nullptr;
 #else
     return false;
 #endif
@@ -75,23 +99,21 @@ bool DataChannelServer::Listen(const URL& url)
 void DataChannelServer::Stop()
 {
 #ifndef URHO3D_PLATFORM_WEB
-    webSocketServer_->stop();
+    if (!webSocketServer_)
+        return;
+
+    auto webSocketServer = ea::move(webSocketServer_);
+    webSocketServer->stop();
+    DoOnListenStop();
 #endif
 }
 
-void DataChannelServer::OnDisconnected(DataChannelConnection* connection)
-{
-#ifndef URHO3D_PLATFORM_WEB
-    onDisconnected_(connection);
-    connections_.erase_first(SharedPtr<DataChannelConnection>(connection));
-#endif
-}
-
-void DataChannelServer::SetTLSCertificate(ea::string_view certificatePemFile, ea::string_view keyPemFile, ea::string_view keyPassword)
+void DataChannelServer::SetTLSCertificate(
+    ea::string_view certificatePemFile, ea::string_view keyPemFile, ea::string_view keyPassword)
 {
     certificatePemFile_ = certificatePemFile;
     keyPemFile_ = keyPemFile;
     keyPassword_ = keyPassword;
 }
 
-}   // namespace Urho3D
+} // namespace Urho3D

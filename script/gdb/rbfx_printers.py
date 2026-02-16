@@ -621,6 +621,110 @@ class _Urho3DCustomVariantValueImplPrinter(object):
             return
 
 
+class _Urho3DMemoryBufferPrinter(object):
+    def __init__(self, val):
+        self.val = val
+
+    def _size(self):
+        return _find_member(self.val, 'size_')
+
+    def _position(self):
+        return _find_member(self.val, 'position_')
+
+    def _buffer(self):
+        return _find_member(self.val, 'buffer_')
+
+    def _read_only(self):
+        return _find_member(self.val, 'readOnly_')
+
+    def to_string(self):
+        try:
+            size = self._size()
+            pos = self._position()
+            ro = self._read_only()
+            buf = self._buffer()
+
+            parts = []
+            if size is not None:
+                parts.append('size=' + str(_try_int(size)))
+            if pos is not None:
+                parts.append('pos=' + str(_try_int(pos)))
+            if ro is not None:
+                parts.append('readOnly=' + str(bool(_try_int(ro))))
+            if buf is not None:
+                parts.append('data=' + str(_as_void_ptr(buf)))
+
+            if parts:
+                return 'MemoryBuffer(' + ', '.join(parts) + ')'
+            return 'MemoryBuffer'
+        except Exception:
+            return 'MemoryBuffer(?)'
+
+    def children(self):
+        try:
+            size = self._size()
+            pos = self._position()
+            ro = self._read_only()
+            buf = self._buffer()
+
+            if size is not None:
+                yield ('size_', size)
+            if pos is not None:
+                yield ('position_', pos)
+            if ro is not None:
+                yield ('readOnly_', ro)
+            if buf is not None:
+                yield ('buffer_', buf)
+        except Exception:
+            return
+
+
+class _Urho3DVectorBufferPrinter(object):
+    def __init__(self, val):
+        self.val = val
+
+    def _size(self):
+        return _find_member(self.val, 'size_')
+
+    def _position(self):
+        return _find_member(self.val, 'position_')
+
+    def _buffer(self):
+        return _find_member(self.val, 'buffer_')
+
+    def to_string(self):
+        try:
+            size = self._size()
+            pos = self._position()
+
+            parts = []
+            if size is not None:
+                parts.append('size=' + str(_try_int(size)))
+            if pos is not None:
+                parts.append('pos=' + str(_try_int(pos)))
+
+            if parts:
+                return 'VectorBuffer(' + ', '.join(parts) + ')'
+            return 'VectorBuffer'
+        except Exception:
+            return 'VectorBuffer(?)'
+
+    def children(self):
+        try:
+            size = self._size()
+            pos = self._position()
+            buf = self._buffer()
+
+            if size is not None:
+                yield ('size_', size)
+            if pos is not None:
+                yield ('position_', pos)
+            if buf is not None:
+                yield ('buffer_', buf)
+        except Exception:
+            return
+
+
 class _Urho3DVariantPrinter(object):
 
     def __init__(self, val):
@@ -778,6 +882,9 @@ def build_pretty_printers():
 
     pp.add_printer('Urho3D::Node', '^Urho3D::Node$', _Urho3DNodePrinter)
     pp.add_printer('Urho3D::Resource', '^Urho3D::Resource$', _Urho3DResourcePrinter)
+
+    pp.add_printer('Urho3D::MemoryBuffer', '^Urho3D::MemoryBuffer$', _Urho3DMemoryBufferPrinter)
+    pp.add_printer('Urho3D::VectorBuffer', '^Urho3D::VectorBuffer$', _Urho3DVectorBufferPrinter)
 
     return pp
 

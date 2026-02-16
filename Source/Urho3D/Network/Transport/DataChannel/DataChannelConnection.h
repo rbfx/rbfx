@@ -23,7 +23,8 @@
 #pragma once
 
 #include <Urho3D/Core/Object.h>
-#include <Urho3D/Network/AbstractConnection.h>
+#include <Urho3D/IO/MemoryBuffer.h>
+#include <Urho3D/IO/VectorBuffer.h>
 #include <Urho3D/Network/Transport/NetworkConnection.h>
 #include <Urho3D/Network/URL.h>
 
@@ -44,6 +45,7 @@ class DataChannelServer;
 class URHO3D_API DataChannelConnection : public NetworkConnection
 {
     friend class DataChannelServer;
+
     URHO3D_OBJECT(DataChannelConnection, NetworkConnection);
 public:
     explicit DataChannelConnection(Context* context);
@@ -52,22 +54,19 @@ public:
     /// Address may be a full URL and port may be set to 0. Otherwise, port is appended to address.
     bool Connect(const URL& url) override;
     void Disconnect() override;
-    void SendMessage(ea::string_view data, PacketTypeFlags type = PacketType::ReliableOrdered) override;
+    bool SendData(const MemoryBuffer& data, PacketTypeFlags type = PacketType::ReliableOrdered) override;
     unsigned GetMaxMessageSize() const override;
 
 protected:
     void InitializeFromSocket(DataChannelServer* server, std::shared_ptr<rtc::WebSocket> websocket);
     void OnDataChannelConnected(int index);
-    void OnDataChannelDisconnected(int index);
+    void OnDataChannelDisconnected(int index, bool notifyCallbacks = true);
 
-    Mutex mutex_;
-    WeakPtr<DataChannelServer> server_ = {};
     std::shared_ptr<rtc::WebSocket> websocket_ = {};
     std::shared_ptr<rtc::PeerConnection> peer_ = {};
     std::shared_ptr<rtc::DataChannel> dataChannels_[4] = {};
     VectorBuffer buffer_;
     bool websocketWasOpened_ = false;
-    SharedPtr<DataChannelConnection> selfHolder_;
 };
 
 }   // namespace Urho3D

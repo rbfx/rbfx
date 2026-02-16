@@ -23,25 +23,67 @@
 #pragma once
 
 #include <Urho3D/Core/Object.h>
+#include <Urho3D/Core/Signal.h>
+#include <Urho3D/Container/Ptr.h>
 #include <Urho3D/Network/URL.h>
 #include <Urho3D/Network/Transport/NetworkConnection.h>
+
+#include <EASTL/internal/function.h>
+#include <EASTL/functional.h>
+#include <EASTL/vector.h>
 
 
 namespace Urho3D
 {
 
+class WorkQueue;
+
 class URHO3D_API NetworkServer : public Object
 {
     URHO3D_OBJECT(NetworkServer, Object);
 public:
-    explicit NetworkServer(Context* context) : Object(context) { }
+    explicit NetworkServer(Context* context);
+    /// Start listening for incoming connections. Returns true on success.
     virtual bool Listen(const URL& url) = 0;
+    /// Stop listening and disconnect all clients.
     virtual void Stop() = 0;
+    /// Return true if server is currently listening for incoming connections.
+    virtual bool IsListening() const = 0;
 
-    /// Called once, when new connection is established and ready to be used. May be called from non-main thread.
-    ea::function<void(NetworkConnection*)> onConnected_;
-    /// Called once, when a fully established connection disconnects gracefully or is aborted abruptly. May be called from non-main thread.
-    ea::function<void(NetworkConnection*)> onDisconnected_;
+    /// Return snapshot of active connections.
+    const ea::vector<SharedPtr<NetworkConnection>>& GetConnections() const;
+    /// Set factory for creating connection instances. Must be set before calling Listen.
+    void SetConnectionFactory(ea::function<SharedPtr<NetworkConnection>()> factory) { connectionFactory_ = ea::move(factory); }
+    /// Creates a new connection instance. May be called from non-main thread.
+    SharedPtr<NetworkConnection> CreateConnection();
+
+    Signal<void(NetworkConnection*), NetworkServer> onConnected_;
+    Signal<void(NetworkConnection*), NetworkServer> onDisconnected_;
+    Signal<void(), NetworkServer> onListenStart_;
+    Signal<void(), NetworkServer> onListenStop_;
+
+protected:
+    /// Called once, when new connection is established and ready to be used. Is called from the main thread.
+    virtual void OnConnected(NetworkConnection* connection) { onConnected_(this, connection); }
+    /// Called once, when a fully established connection disconnects gracefully or is aborted abruptly. Is called from the main thread.
+    virtual void OnDisconnected(NetworkConnection* connection) { onDisconnected_(this, connection); }
+    /// Called once, when server starts listening. Is called from the main thread.
+    virtual void OnListenStart() { onListenStart_(this); }
+    /// Called once, when server stops listening. Is called from the main thread.
+    virtual void OnListenStop() { onListenStop_(this); }
+
+    template<typename Callback, bool Add>
+    void ExecuteCallbackHelper(NetworkConnection* connection);
+    void DoOnConnected(NetworkConnection* connection);
+    void DoOnDisconnected(NetworkConnection* connection);
+    void DoOnListenStart();
+    void DoOnListenStop();
+    void AddConnection(NetworkConnection* connection);
+    void RemoveConnection(NetworkConnection* connection);
+
+    WorkQueue* workQueue_ = nullptr;
+    ea::vector<SharedPtr<NetworkConnection>> connections_;
+    ea::function<SharedPtr<NetworkConnection>()> connectionFactory_;
 };
 
 }   // namespace Urho3D

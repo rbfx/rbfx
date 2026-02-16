@@ -30,9 +30,11 @@
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/MemoryBuffer.h>
 #include <Urho3D/IO/VectorBuffer.h>
-#include <Urho3D/Network/Network.h>
-#include <Urho3D/Network/NetworkEvents.h>
 #include <Urho3D/Network/Protocol.h>
+#include <Urho3D/Network/Transport/DataChannel/DataChannelConnection.h>
+#include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
+#include <Urho3D/Network/Transport/NetworkConnection.h>
+#include <Urho3D/Network/URL.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/Button.h>
@@ -79,6 +81,12 @@ void Chat::Start()
     // Set the mouse mode to use in the sample
     SetMouseMode(MM_FREE);
     SetMouseVisible(true);
+}
+
+void Chat::Stop()
+{
+    HandleDisconnect({}, GetEventDataMap());
+    BaseClassName::Stop();
 }
 
 void Chat::CreateUI()
@@ -134,12 +142,6 @@ void Chat::SubscribeToEvents()
 
     // Subscribe to log messages so that we can pipe them to the chat window
     SubscribeToEvent(E_LOGMESSAGE, URHO3D_HANDLER(Chat, HandleLogMessage));
-
-    // Subscribe to network events
-    SubscribeToEvent(E_NETWORKMESSAGE, URHO3D_HANDLER(Chat, HandleNetworkMessage));
-    SubscribeToEvent(E_SERVERCONNECTED, URHO3D_HANDLER(Chat, HandleConnectionStatus));
-    SubscribeToEvent(E_SERVERDISCONNECTED, URHO3D_HANDLER(Chat, HandleConnectionStatus));
-    SubscribeToEvent(E_CONNECTFAILED, URHO3D_HANDLER(Chat, HandleConnectionStatus));
 }
 
 Button* Chat::CreateButton(const ea::string& text, int width)
@@ -174,15 +176,14 @@ void Chat::ShowChatText(const ea::string& row)
 
 void Chat::UpdateButtons()
 {
-    auto* network = GetSubsystem<Network>();
-    Connection* serverConnection = network->GetServerConnection();
-    bool serverRunning = network->IsServerRunning();
+    const bool clientConnected = clientConnection_ && clientConnection_->IsConnected();
+    const bool serverRunning = server_ && server_->IsListening();
 
     // Show and hide buttons so that eg. Connect and Disconnect are never shown at the same time
-    sendButton_->SetVisible(serverConnection != nullptr);
-    connectButton_->SetVisible(!serverConnection && !serverRunning);
-    disconnectButton_->SetVisible(serverConnection || serverRunning);
-    startServerButton_->SetVisible(!serverConnection && !serverRunning);
+    sendButton_->SetVisible(clientConnected);
+    connectButton_->SetVisible(!clientConnected && !serverRunning);
+    disconnectButton_->SetVisible(clientConnected || serverRunning);
+    startServerButton_->SetVisible(!clientConnected && !serverRunning);
 }
 
 void Chat::HandleLogMessage(StringHash /*eventType*/, VariantMap& eventData)
@@ -198,16 +199,13 @@ void Chat::HandleSend(StringHash /*eventType*/, VariantMap& eventData)
     if (text.empty())
         return; // Do not send an empty message
 
-    auto* network = GetSubsystem<Network>();
-    Connection* serverConnection = network->GetServerConnection();
-
-    if (serverConnection)
+    if (clientConnection_ && clientConnection_->IsConnected())
     {
         // A VectorBuffer object is convenient for constructing a message to send
         VectorBuffer msg;
         msg.WriteString(text);
         // Send the chat message as in-order and reliable
-        serverConnection->SendMessage(MSG_CHAT, msg);
+        clientConnection_->SendMessage(MSG_CHAT, msg);
         // Empty the text edit after sending
         textEdit_->SetText(EMPTY_STRING);
     }
@@ -215,7 +213,6 @@ void Chat::HandleSend(StringHash /*eventType*/, VariantMap& eventData)
 
 void Chat::HandleConnect(StringHash /*eventType*/, VariantMap& eventData)
 {
-    auto* network = GetSubsystem<Network>();
     ea::string address = textEdit_->GetText();
     address.trim();
     if (address.empty())
@@ -223,69 +220,123 @@ void Chat::HandleConnect(StringHash /*eventType*/, VariantMap& eventData)
     // Empty the text edit after reading the address to connect to
     textEdit_->SetText(EMPTY_STRING);
 
-    // Connect to server, do not specify a client scene as we are not using scene replication, just messages.
-    // At connect time we could also send identity parameters (such as username) in a VariantMap, but in this
-    // case we skip it for simplicity
-    network->Connect(URL(Format("{}:{}", address, CHAT_SERVER_PORT)), nullptr);
+    if (!clientConnection_)
+    {
+        clientConnection_ = MakeShared<DataChannelConnection>(context_);
+        clientConnection_->onConnected_.Subscribe(this, &Chat::HandleClientConnected);
+        clientConnection_->onDisconnected_.Subscribe(this, &Chat::HandleClientDisconnected);
+        clientConnection_->onMessage_.SubscribeWithSender(this, &Chat::HandleNetworkMessage);
+    }
+
+    if (!clientConnection_->IsDisconnected())
+        return;
+
+    clientConnection_->Connect(URL(Format("{}:{}", address, CHAT_SERVER_PORT)));
 
     UpdateButtons();
 }
 
 void Chat::HandleDisconnect(StringHash /*eventType*/, VariantMap& eventData)
 {
-    auto* network = GetSubsystem<Network>();
-    Connection* serverConnection = network->GetServerConnection();
-    // If we were connected to server, disconnect
-    if (serverConnection)
-        serverConnection->Disconnect();
-    // Or if we were running a server, stop it
-    else if (network->IsServerRunning())
-        network->StopServer();
+    if (clientConnection_ && !clientConnection_->IsDisconnected())
+    {
+        clientConnection_->Disconnect();
+    }
+    else if (server_ && server_->IsListening())
+    {
+        for (const auto& connection : serverConnections_)
+        {
+            if (auto connectionPtr = connection.Lock())
+                connectionPtr->Disconnect();
+        }
+        serverConnections_.clear();
+        server_->Stop();
+    }
 
     UpdateButtons();
 }
 
 void Chat::HandleStartServer(StringHash /*eventType*/, VariantMap& eventData)
 {
-    auto* network = GetSubsystem<Network>();
-    network->StartServer(CHAT_SERVER_PORT);
-
-    UpdateButtons();
-}
-
-void Chat::HandleNetworkMessage(StringHash /*eventType*/, VariantMap& eventData)
-{
-    auto* network = GetSubsystem<Network>();
-
-    using namespace NetworkMessage;
-
-    int msgID = eventData[P_MESSAGEID].GetInt();
-    if (msgID == MSG_CHAT)
+    if (!server_)
     {
-        const ea::vector<unsigned char>& data = eventData[P_DATA].GetBuffer();
-        // Use a MemoryBuffer to read the message data so that there is no unnecessary copying
-        MemoryBuffer msg(data);
-        ea::string text = msg.ReadString();
-
-        // If we are the server, prepend the sender's IP address and port and echo to everyone
-        // If we are a client, just display the message
-        if (network->IsServerRunning())
-        {
-            auto* sender = static_cast<Connection*>(eventData[P_CONNECTION].GetPtr());
-
-            text = sender->ToString() + " " + text;
-
-            VectorBuffer sendMsg;
-            sendMsg.WriteString(text);
-            // Broadcast as in-order and reliable
-            network->BroadcastMessage(MSG_CHAT, sendMsg);
-        }
-
-        ShowChatText(text);
+        server_ = MakeShared<DataChannelServer>(context_);
+        server_->onConnected_.Subscribe(this, &Chat::HandleServerConnected);
+        server_->onDisconnected_.Subscribe(this, &Chat::HandleServerDisconnected);
     }
+
+    const URL listenUrl(Format("ws://0.0.0.0:{}", CHAT_SERVER_PORT));
+    server_->Listen(listenUrl);
+
+    UpdateButtons();
 }
 
-void Chat::HandleConnectionStatus(StringHash /*eventType*/, VariantMap& eventData)
+void Chat::HandleServerConnected(NetworkConnection* connection)
+{
+    serverConnections_.push_back(WeakPtr<NetworkConnection>{});
+    serverConnections_.back() = connection;
+    connection->onMessage_.SubscribeWithSender(this, &Chat::HandleNetworkMessage);
+    UpdateButtons();
+}
+
+void Chat::HandleServerDisconnected(NetworkConnection* connection)
+{
+    for (unsigned i = 0; i < serverConnections_.size();)
+    {
+        if (serverConnections_[i].Get() == connection)
+            serverConnections_.erase(serverConnections_.begin() + i);
+        else
+            ++i;
+    }
+    UpdateButtons();
+}
+
+void Chat::HandleClientConnected()
 {
     UpdateButtons();
+}
+
+void Chat::HandleClientDisconnected()
+{
+    UpdateButtons();
+}
+
+void Chat::HandleNetworkMessage(NetworkConnection* connection, NetworkMessageId messageId, MemoryBuffer& message, bool& handled)
+{
+    if (messageId != MSG_CHAT)
+        return;
+
+    ea::string text = message.ReadString();
+
+    if (server_ && server_->IsListening() && IsServerConnection(connection))
+    {
+        ea::string senderLabel = connection->GetAddress();
+        if (senderLabel.empty())
+            senderLabel = "Unknown";
+        if (connection->GetPort() != 0)
+            senderLabel = Format("{}:{}", senderLabel, connection->GetPort());
+
+        text = senderLabel + " " + text;
+
+        VectorBuffer sendMsg;
+        sendMsg.WriteString(text);
+        for (const auto& serverConnection : serverConnections_)
+        {
+            if (auto connectionPtr = serverConnection.Lock())
+                connectionPtr->SendMessage(MSG_CHAT, sendMsg);
+        }
+    }
+
+    ShowChatText(text);
+    handled = true;
+}
+
+bool Chat::IsServerConnection(NetworkConnection* connection) const
+{
+    for (const auto& serverConnection : serverConnections_)
+    {
+        if (serverConnection.Get() == connection)
+            return true;
+    }
+    return false;
 }

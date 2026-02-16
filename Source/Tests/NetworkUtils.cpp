@@ -22,6 +22,8 @@
 
 #include "NetworkUtils.h"
 #include "CommonUtils.h"
+#include "Urho3D/Container/RefCounted.h"
+#include "Urho3D/Core/Assert.h"
 
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Engine/Engine.h>
@@ -40,10 +42,12 @@ unsigned currentSimulationStep = 0;
 unsigned ManualConnection::systemTime = 0;
 
 ManualConnection::ManualConnection(Context* context, ReplicationManager* sink, unsigned seed)
-    : AbstractConnection(context)
+    : NetworkConnection(context)
+    , AbstractConnection(this)
     , sink_(sink)
     , random_(seed)
 {
+    SetMaxPacketSize(MaxNetworkPacketSize);
 }
 
 void ManualConnection::IncrementTime(unsigned delta)
@@ -57,8 +61,16 @@ void ManualConnection::IncrementTime(unsigned delta)
     SendUnorderedMessages(messages_[true][false]);
 }
 
-void ManualConnection::SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType)
+bool ManualConnection::SendData(const MemoryBuffer& data, PacketTypeFlags packetType)
 {
+    const unsigned dataSize = data.GetSize() - data.GetPosition();
+    if (!dataSize)
+        return false;
+
+    MemoryBuffer packet{data.GetData() + data.GetPosition(), dataSize};
+    const auto messageId = static_cast<NetworkMessageId>(packet.ReadVLE());
+    const unsigned payloadSize = packet.GetSize() - packet.GetPosition();
+
     const double currentDropRatio = droppedMessages_ / ea::max(1.0, static_cast<double>(totalUnreliableMessages_));
     const double currentShuffleRatio = shuffledMessages_ / ea::max(1.0, static_cast<double>(totalUnorderedMessages_));
     const bool reliable = packetType & PacketType::Reliable;
@@ -74,7 +86,7 @@ void ManualConnection::SendMessageInternal(NetworkMessageId messageId, const uns
     if (!reliable && currentDropRatio < quality_.dropRate_)
     {
         ++droppedMessages_;
-        return;
+        return false;
     }
 
     // Simulate shuffle
@@ -89,7 +101,8 @@ void ManualConnection::SendMessageInternal(NetworkMessageId messageId, const uns
     InternalMessage& msg = *outgoingQueue.emplace(outgoingQueue.begin() + index);
     msg.receiveTime_ = currentTime_ + GetPing();
     msg.messageId_ = messageId;
-    msg.data_.assign(data, data + numBytes);
+    msg.data_.assign(packet.GetData() + packet.GetPosition(), packet.GetData() + packet.GetPosition() + payloadSize);
+    return true;
 }
 
 unsigned ManualConnection::GetPing()
@@ -248,7 +261,7 @@ void NetworkSimulator::SimulateTimeCallback(
     }
 }
 
-AbstractConnection* NetworkSimulator::GetServerToClientConnection(Scene* clientScene)
+SharedPtr<AbstractConnection, RefCounted> NetworkSimulator::GetServerToClientConnection(Scene* clientScene)
 {
     const auto iter = FindClientIter(clientScene);
     return iter != clients_.end() ? iter->serverToClient_ : nullptr;

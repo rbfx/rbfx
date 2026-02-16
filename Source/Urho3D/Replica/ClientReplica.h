@@ -24,12 +24,14 @@
 
 #pragma once
 
-#include "../IO/MemoryBuffer.h"
-#include "../IO/VectorBuffer.h"
-#include "../Replica/TickSynchronizer.h"
-#include "../Replica/NetworkId.h"
-#include "../Replica/NetworkTime.h"
-#include "../Replica/ProtocolMessages.h"
+#include "Urho3D/Container/ByteVector.h"
+#include "Urho3D/IO/MemoryBuffer.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Network/Transport/NetworkConnection.h"
+#include "Urho3D/Replica/TickSynchronizer.h"
+#include "Urho3D/Replica/NetworkId.h"
+#include "Urho3D/Replica/NetworkTime.h"
+#include "Urho3D/Replica/ProtocolMessages.h"
 
 #include <EASTL/optional.h>
 #include <EASTL/unordered_set.h>
@@ -50,8 +52,8 @@ struct NetworkSetting;
 class URHO3D_API ClientReplicaClock : public Object
 {
 public:
-    ClientReplicaClock(Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock,
-        const VariantMap& serverSettings);
+    ClientReplicaClock(Scene* scene, WeakPtr<AbstractConnection, RefCounted> connection,
+        const MsgSceneClock& initialClock, const VariantMap& serverSettings);
     ~ClientReplicaClock();
 
     /// Return constant properties of replica.
@@ -90,7 +92,7 @@ protected:
     void UpdateClientClocks(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates);
 
     const WeakPtr<Scene> scene_;
-    const WeakPtr<AbstractConnection> connection_;
+    const WeakPtr<AbstractConnection, RefCounted> connection_;
 
 private:
     SoftNetworkTime InitializeSoftTime() const;
@@ -125,8 +127,8 @@ class URHO3D_API ClientReplica : public ClientReplicaClock
     URHO3D_OBJECT(ClientReplica, ClientReplicaClock);
 
 public:
-    ClientReplica(Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock,
-        const VariantMap& serverSettings);
+    ClientReplica(Scene* scene, WeakPtr<AbstractConnection, RefCounted> connection,
+        const MsgSceneClock& initialClock, const VariantMap& serverSettings);
     ~ClientReplica() override;
 
     bool ProcessMessage(NetworkMessageId messageId, MemoryBuffer& messageData);
@@ -159,6 +161,7 @@ private:
     ea::unordered_set<WeakPtr<NetworkObject>> ownedObjects_;
 
     VectorBuffer componentBuffer_;
+    VectorBuffer buffer_;
 };
 
 }
