@@ -27,59 +27,6 @@
 namespace Urho3D
 {
 
-/// Server connection established.
-URHO3D_EVENT(E_SERVERCONNECTED, ServerConnected)
-{
-}
-
-/// Server connection disconnected.
-URHO3D_EVENT(E_SERVERDISCONNECTED, ServerDisconnected)
-{
-}
-
-/// Server connection failed.
-URHO3D_EVENT(E_CONNECTFAILED, ConnectFailed)
-{
-}
-
-/// Server connection failed because its already connected or tries to connect already.
-URHO3D_EVENT(E_CONNECTIONINPROGRESS, ConnectionInProgress)
-{
-}
-
-/// New client connection established.
-URHO3D_EVENT(E_CLIENTCONNECTED, ClientConnected)
-{
-    URHO3D_PARAM(P_CONNECTION, Connection);        // Connection pointer
-}
-
-/// Client connection disconnected.
-URHO3D_EVENT(E_CLIENTDISCONNECTED, ClientDisconnected)
-{
-    URHO3D_PARAM(P_CONNECTION, Connection);        // Connection pointer
-}
-
-/// Client has sent identity: identity map is in the event data.
-URHO3D_EVENT(E_CLIENTIDENTITY, ClientIdentity)
-{
-    URHO3D_PARAM(P_CONNECTION, Connection);        // Connection pointer
-    URHO3D_PARAM(P_ALLOW, Allow);                  // bool
-}
-
-/// Client has informed to have loaded the scene.
-URHO3D_EVENT(E_CLIENTSCENELOADED, ClientSceneLoaded)
-{
-    URHO3D_PARAM(P_CONNECTION, Connection);        // Connection pointer
-}
-
-/// Unhandled network message received.
-URHO3D_EVENT(E_NETWORKMESSAGE, NetworkMessage)
-{
-    URHO3D_PARAM(P_CONNECTION, Connection);        // Connection pointer
-    URHO3D_PARAM(P_MESSAGEID, MessageID);          // int
-    URHO3D_PARAM(P_DATA, Data);                    // Buffer
-}
-
 /// Incoming network messages are processed on the client or server.
 URHO3D_EVENT(E_NETWORKINPUTPROCESSED, NetworkInputProcessed)
 {
@@ -122,18 +69,6 @@ URHO3D_EVENT(E_NETWORKUPDATE, NetworkUpdate)
 URHO3D_EVENT(E_NETWORKUPDATESENT, NetworkUpdateSent)
 {
     URHO3D_PARAM(P_ISSERVER, IsServer);                 // bool
-}
-
-/// Scene load failed, either due to file not found or checksum error.
-URHO3D_EVENT(E_NETWORKSCENELOADFAILED, NetworkSceneLoadFailed)
-{
-    URHO3D_PARAM(P_CONNECTION, Connection);      // Connection pointer
-}
-
-/// Remote event: adds Connection parameter to the event data.
-URHO3D_EVENT(E_REMOTEEVENTDATA, RemoteEventData)
-{
-    URHO3D_PARAM(P_CONNECTION, Connection);      // Connection pointer
 }
 
 /// When LAN discovery found hosted server.

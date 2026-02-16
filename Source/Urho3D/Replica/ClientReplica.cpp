@@ -10,10 +10,10 @@
 #include "Urho3D/Core/CoreEvents.h"
 #include "Urho3D/Core/Exception.h"
 #include "Urho3D/IO/Log.h"
-#include "Urho3D/Network/Connection.h"
 #include "Urho3D/Network/MessageUtils.h"
 #include "Urho3D/Network/Network.h"
 #include "Urho3D/Network/NetworkEvents.h"
+#include "Urho3D/Network/ReplicatedPeer.h"
 #include "Urho3D/Replica/NetworkObject.h"
 #include "Urho3D/Replica/NetworkSettingsConsts.h"
 #include "Urho3D/Replica/ReplicationManager.h"
@@ -26,7 +26,8 @@ namespace Urho3D
 {
 
 ClientReplicaClock::ClientReplicaClock(
-    Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock, const VariantMap& serverSettings)
+    Scene* scene, WeakPtr<AbstractConnection, RefCounted> connection, const MsgSceneClock& initialClock,
+    const VariantMap& serverSettings)
     : Object(scene->GetContext())
     , scene_(scene)
     , connection_(connection)
@@ -111,7 +112,8 @@ NetworkTime ClientReplicaClock::ToInputTime(const NetworkTime& serverTime) const
 }
 
 ClientReplica::ClientReplica(
-    Scene* scene, AbstractConnection* connection, const MsgSceneClock& initialClock, const VariantMap& serverSettings)
+    Scene* scene, WeakPtr<AbstractConnection, RefCounted> connection, const MsgSceneClock& initialClock,
+    const VariantMap& serverSettings)
     : ClientReplicaClock(scene, connection, initialClock, serverSettings)
     , network_(GetSubsystem<Network>())
     , objectRegistry_(scene->GetComponent<ReplicationManager>())
@@ -143,7 +145,6 @@ bool ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
     case MSG_SCENE_CLOCK:
     {
         const auto msg = ReadSerializedMessage<MsgSceneClock>(messageData);
-        connection_->LogMessagePayload(messageId, msg);
 
         ProcessSceneClock(msg);
         return true;
@@ -158,9 +159,13 @@ bool ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
     case MSG_ADD_OBJECTS:
     case MSG_ADD_OBJECTS_INCOMPLETE:
     {
-        LargeMessageReader reader{*connection_, MSG_ADD_OBJECTS_INCOMPLETE, MSG_ADD_OBJECTS};
+        LargeMessageReader reader{buffer_, MSG_ADD_OBJECTS_INCOMPLETE, MSG_ADD_OBJECTS};
         reader.OnMessage(messageId, messageData, //
-            [this](MemoryBuffer& fullMessageData) { ProcessAddObjects(fullMessageData); });
+            [this](MemoryBuffer& fullMessageData)
+        {
+            ProcessAddObjects(fullMessageData);
+            buffer_.Clear();
+        });
 
         return true;
     }
@@ -168,9 +173,13 @@ bool ClientReplica::ProcessMessage(NetworkMessageId messageId, MemoryBuffer& mes
     case MSG_UPDATE_OBJECTS_RELIABLE:
     case MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE:
     {
-        LargeMessageReader reader{*connection_, MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE, MSG_UPDATE_OBJECTS_RELIABLE};
-        reader.OnMessage(messageId, messageData,
-            [this](MemoryBuffer& fullMessageData) { ProcessUpdateObjectsReliable(fullMessageData); });
+        LargeMessageReader reader{buffer_, MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE, MSG_UPDATE_OBJECTS_RELIABLE};
+        reader.OnMessage(messageId, messageData, //
+            [this](MemoryBuffer& fullMessageData)
+        {
+            ProcessUpdateObjectsReliable(fullMessageData);
+            buffer_.Clear();
+        });
 
         return true;
     }
@@ -396,7 +405,8 @@ void ClientReplica::OnNetworkUpdate()
 
 void ClientReplica::SendObjectsFeedbackUnreliable(NetworkFrame feedbackFrame)
 {
-    MultiMessageWriter writer{*connection_, MSG_OBJECTS_FEEDBACK_UNRELIABLE, PacketType::UnreliableUnordered};
+    MultiMessageWriter writer{
+        *connection_->GetConnection(), buffer_, MSG_OBJECTS_FEEDBACK_UNRELIABLE, PacketType::UnreliableUnordered};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();
@@ -428,4 +438,4 @@ void ClientReplica::SendObjectsFeedbackUnreliable(NetworkFrame feedbackFrame)
     }
 }
 
-}
+} // namespace Urho3D

@@ -12,7 +12,7 @@
 #include "Urho3D/Core/Timer.h"
 #include "Urho3D/IO/Log.h"
 #include "Urho3D/Math/RandomEngine.h"
-#include "Urho3D/Network/Connection.h"
+#include "Urho3D/Network/ReplicatedPeer.h"
 #include "Urho3D/Network/MessageUtils.h"
 #include "Urho3D/Network/Network.h"
 #include "Urho3D/Network/NetworkEvents.h"
@@ -189,7 +189,7 @@ ConstByteSpan SharedReplicationState::GetSpanData(const DeltaBufferSpan& span) c
 }
 
 ClientSynchronizationState::ClientSynchronizationState(
-    NetworkObjectRegistry* objectRegistry, AbstractConnection* connection, const VariantMap& settings)
+    NetworkObjectRegistry* objectRegistry, SharedPtr<AbstractConnection, RefCounted> connection, const VariantMap& settings)
     : objectRegistry_(objectRegistry)
     , connection_(connection)
     , settings_(settings)
@@ -221,7 +221,7 @@ void ClientSynchronizationState::SendMessages()
     {
         const unsigned magic = MakeMagic();
         WriteSerializedMessage(
-            *connection_, MSG_CONFIGURE, MsgConfigure{magic, settings_}, PacketType::ReliableUnordered);
+            *connection_->GetConnection(), MSG_CONFIGURE, MsgConfigure{magic, settings_}, PacketType::ReliableUnordered);
         synchronizationMagic_ = magic;
     }
 
@@ -235,7 +235,7 @@ void ClientSynchronizationState::SendMessages()
         UpdateInputBuffer();
 
         const MsgSceneClock msg{frame_, frameLocalTime_, inputDelay_ + inputBufferSize_};
-        WriteSerializedMessage(*connection_, MSG_SCENE_CLOCK, msg, PacketType::UnreliableUnordered);
+        WriteSerializedMessage(*connection_->GetConnection(), MSG_SCENE_CLOCK, msg, PacketType::UnreliableUnordered);
     }
 }
 
@@ -283,7 +283,6 @@ bool ClientSynchronizationState::ProcessMessage(NetworkMessageId messageId, Memo
     case MSG_SYNCHRONIZED:
     {
         const auto msg = ReadSerializedMessage<MsgSynchronized>(messageData);
-        connection_->LogMessagePayload(messageId, msg);
 
         ProcessSynchronized(msg);
         return true;
@@ -303,7 +302,7 @@ unsigned ClientSynchronizationState::MakeMagic() const
 }
 
 ClientReplicationState::ClientReplicationState(
-    NetworkObjectRegistry* objectRegistry, AbstractConnection* connection, const VariantMap& settings)
+    NetworkObjectRegistry* objectRegistry, SharedPtr<AbstractConnection, RefCounted> connection, const VariantMap& settings)
     : ClientSynchronizationState(objectRegistry, connection, settings)
 {
 }
@@ -375,7 +374,7 @@ void ClientReplicationState::ProcessObjectsFeedbackUnreliable(MemoryBuffer& mess
 
 void ClientReplicationState::SendRemoveObjects()
 {
-    MultiMessageWriter writer{*connection_, MSG_REMOVE_OBJECTS, PacketType::ReliableOrdered};
+    MultiMessageWriter writer{*connection_->GetConnection(), buffer_, MSG_REMOVE_OBJECTS, PacketType::ReliableOrdered};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();
@@ -400,7 +399,7 @@ void ClientReplicationState::SendRemoveObjects()
 
 void ClientReplicationState::SendAddObjects()
 {
-    LargeMessageWriter writer{*connection_, MSG_ADD_OBJECTS_INCOMPLETE, MSG_ADD_OBJECTS};
+    LargeMessageWriter writer{*connection_->GetConnection(), buffer_, MSG_ADD_OBJECTS_INCOMPLETE, MSG_ADD_OBJECTS};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();
@@ -436,7 +435,7 @@ void ClientReplicationState::SendAddObjects()
 
 void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationState& sharedState)
 {
-    LargeMessageWriter writer{*connection_, MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE, MSG_UPDATE_OBJECTS_RELIABLE};
+    LargeMessageWriter writer{*connection_->GetConnection(), buffer_, MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE, MSG_UPDATE_OBJECTS_RELIABLE};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();
@@ -476,7 +475,7 @@ void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationSt
 void ClientReplicationState::SendUpdateObjectsUnreliable(
     NetworkFrame currentFrame, const SharedReplicationState& sharedState)
 {
-    MultiMessageWriter writer{*connection_, MSG_UPDATE_OBJECTS_UNRELIABLE, PacketType::UnreliableUnordered};
+    MultiMessageWriter writer{*connection_->GetConnection(), buffer_, MSG_UPDATE_OBJECTS_UNRELIABLE, PacketType::UnreliableUnordered};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();
@@ -679,7 +678,7 @@ void ServerReplicator::OnNetworkUpdate()
         clientState->SendMessages(currentFrame_, *sharedState_);
 }
 
-void ServerReplicator::AddConnection(AbstractConnection* connection)
+void ServerReplicator::AddConnection(SharedPtr<AbstractConnection, RefCounted> connection)
 {
     if (connections_.contains(connection))
     {
@@ -694,7 +693,7 @@ void ServerReplicator::AddConnection(AbstractConnection* connection)
     URHO3D_LOGINFO("Connection {} is added", connection->ToString());
 }
 
-void ServerReplicator::RemoveConnection(AbstractConnection* connection)
+void ServerReplicator::RemoveConnection(SharedPtr<AbstractConnection, RefCounted> connection)
 {
     if (!connections_.contains(connection))
     {

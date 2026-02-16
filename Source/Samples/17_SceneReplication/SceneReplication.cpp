@@ -32,9 +32,12 @@
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Input/Input.h>
-#include <Urho3D/Network/Connection.h>
-#include <Urho3D/Network/Network.h>
-#include <Urho3D/Network/NetworkEvents.h>
+#include <Urho3D/Network/NetworkStatisticsCounter.h>
+#include <Urho3D/Network/ReplicatedPeer.h>
+#include <Urho3D/Network/Transport/DataChannel/DataChannelConnection.h>
+#include <Urho3D/Network/Transport/DataChannel/DataChannelServer.h>
+#include <Urho3D/Network/Transport/NetworkConnection.h>
+#include <Urho3D/Network/URL.h>
 #include <Urho3D/Physics/CollisionShape.h>
 #include <Urho3D/Physics/PhysicsEvents.h>
 #include <Urho3D/Physics/PhysicsWorld.h>
@@ -58,8 +61,6 @@
 
 // UDP port we will use
 static const unsigned short SERVER_PORT = 2345;
-// Identifier for the node ID parameter in the event data
-static const StringHash P_ID("ID");
 
 // Control bits we define
 static const unsigned CTRL_FORWARD = 1;
@@ -72,6 +73,28 @@ static const ea::string PACKETS_OUT_TITLE   = "Packets out";
 static const ea::string BYTES_IN_TITLE      = "Bytes    in";
 static const ea::string BYTES_OUT_TITLE     = "Bytes   out";
 static const ea::string CONNECTIONS_TITLE   = "Connections";
+
+//
+class ReplicatedDataChannelConnection : public DataChannelConnection
+{
+public:
+    explicit ReplicatedDataChannelConnection(Context* context)
+        : DataChannelConnection(context)
+        , replicatedPeer_(this)
+    {
+        stats_.Attach(this);
+    }
+
+    SharedPtr<AbstractConnection, RefCounted> GetReplicatedPeer() { return SharedPtr<AbstractConnection, RefCounted>(&replicatedPeer_, this); }
+    NetworkStatisticsSnapshot GetStatisticsSnapshot() { return stats_.GetSnapshot(); }
+    void SetControlledObject(Node* object) { object_ = object; }
+    Node* GetControlledObject() const { return object_; }
+
+private:
+    AbstractConnection replicatedPeer_;
+    NetworkStatisticsCounter stats_{};
+    WeakPtr<Node> object_;
+};
 
 /// Controls data.
 struct PlayerControls
@@ -182,6 +205,12 @@ void SceneReplication::Start(const ea::vector<ea::string>& args)
         else if (args[1] == "Connect")
             HandleConnect({}, GetEventDataMap());
     }
+}
+
+void SceneReplication::Stop()
+{
+    HandleDisconnect({}, GetEventDataMap());
+    BaseClassName::Stop();
 }
 
 void SceneReplication::CreateScene()
@@ -299,8 +328,6 @@ void SceneReplication::CreateUI()
     connectButton_ = CreateButton("Connect", 90);
     disconnectButton_ = CreateButton("Disconnect", 100);
     startServerButton_ = CreateButton("Start Server", 110);
-
-    UpdateButtons();
 }
 
 void SceneReplication::SetupViewport()
@@ -326,13 +353,6 @@ void SceneReplication::SubscribeToEvents()
     SubscribeToEvent(connectButton_, E_RELEASED, URHO3D_HANDLER(SceneReplication, HandleConnect));
     SubscribeToEvent(disconnectButton_, E_RELEASED, URHO3D_HANDLER(SceneReplication, HandleDisconnect));
     SubscribeToEvent(startServerButton_, E_RELEASED, URHO3D_HANDLER(SceneReplication, HandleStartServer));
-
-    // Subscribe to network events
-    SubscribeToEvent(E_SERVERCONNECTED, URHO3D_HANDLER(SceneReplication, HandleConnectionStatus));
-    SubscribeToEvent(E_SERVERDISCONNECTED, URHO3D_HANDLER(SceneReplication, HandleConnectionStatus));
-    SubscribeToEvent(E_CONNECTFAILED, URHO3D_HANDLER(SceneReplication, HandleConnectionStatus));
-    SubscribeToEvent(E_CLIENTCONNECTED, URHO3D_HANDLER(SceneReplication, HandleClientConnected));
-    SubscribeToEvent(E_CLIENTDISCONNECTED, URHO3D_HANDLER(SceneReplication, HandleClientDisconnected));
 }
 
 Button* SceneReplication::CreateButton(const ea::string& text, int width)
@@ -354,18 +374,17 @@ Button* SceneReplication::CreateButton(const ea::string& text, int width)
 
 void SceneReplication::UpdateButtons()
 {
-    auto* network = GetSubsystem<Network>();
-    Connection* serverConnection = network->GetServerConnection();
-    bool serverRunning = network->IsServerRunning();
+    const bool clientConnected = clientConnection_ && clientConnection_->IsConnected();
+    const bool serverRunning = server_ && server_->IsListening();
 
     // Show and hide buttons so that eg. Connect and Disconnect are never shown at the same time
-    connectButton_->SetVisible(!serverConnection && !serverRunning);
-    disconnectButton_->SetVisible(serverConnection || serverRunning);
-    startServerButton_->SetVisible(!serverConnection && !serverRunning);
-    textEdit_->SetVisible(!serverConnection && !serverRunning);
+    connectButton_->SetVisible(!clientConnected && !serverRunning);
+    disconnectButton_->SetVisible(clientConnected || serverRunning);
+    startServerButton_->SetVisible(!clientConnected && !serverRunning);
+    textEdit_->SetVisible(!clientConnected && !serverRunning);
 }
 
-Node* SceneReplication::CreateControllableObject(Connection* owner)
+Node* SceneReplication::CreateControllableObject(SharedPtr<AbstractConnection, RefCounted> owner)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto prefab = cache->GetResource<PrefabResource>("Prefabs/SceneReplicationPlayer.prefab");
@@ -478,22 +497,14 @@ void SceneReplication::UpdateOverlay(unsigned packetsIn, unsigned packetsOut, un
     SetOverlayText(bytesIn_, BYTES_IN_TITLE, bytesIn);
     SetOverlayText(bytesOut_, BYTES_OUT_TITLE, bytesOut);
     SetOverlayText(connections_, CONNECTIONS_TITLE, connections);
-    const auto* network = GetSubsystem<Network>();
-    serverRunning_->SetText(network->IsServerRunning() ? "Server on" : "");
-}
-
-void SampleConnection(const Connection* connection, unsigned& packetsIn, unsigned& packetsOut, unsigned& bytesIn, unsigned& bytesOut)
-{
-    packetsIn += connection->GetPacketsInPerSec();
-    packetsOut += connection->GetPacketsOutPerSec();
-    bytesIn += connection->GetBytesInPerSec();
-    bytesOut += connection->GetBytesOutPerSec();
+    serverRunning_->SetText(server_ && server_->IsListening() ? "Server on" : "");
 }
 
 void SceneReplication::HandlePostUpdate(StringHash eventType, VariantMap& eventData)
 {
     // We only rotate the camera according to mouse movement since last frame, so do not need the time step
     MoveCamera();
+    UpdateButtons();
 
     if (packetCounterTimer_.GetMSec(false) < 1000)
     {
@@ -502,27 +513,26 @@ void SceneReplication::HandlePostUpdate(StringHash eventType, VariantMap& eventD
 
     packetCounterTimer_.Reset();
 
-    const auto* network = GetSubsystem<Network>();
-
-    unsigned packetsIn = 0;
-    unsigned packetsOut = 0;
-    unsigned bytesIn = 0;
-    unsigned bytesOut = 0;
+    NetworkStatisticsSnapshot totalStats;
     unsigned connectionCount = 0;
 
-    if (auto* connectionToServer = network->GetServerConnection())
+    if (clientConnection_ && clientConnection_->IsConnected())
     {
         connectionCount = 1;
-        SampleConnection(connectionToServer, packetsIn, packetsOut, bytesIn, bytesOut);
+        totalStats += clientConnection_->GetStatisticsSnapshot();
     }
     else
     {
-        connectionCount = network->GetClientConnections().size();
-        for (const auto& connection : network->GetClientConnections())
-            SampleConnection(connection, packetsIn, packetsOut, bytesIn, bytesOut);
+        connectionCount = serverConnections_.size();
+        for (NetworkConnection* connection : serverConnections_)
+        {
+            auto* replicatedConnection = static_cast<ReplicatedDataChannelConnection*>(connection);
+            totalStats += replicatedConnection->GetStatisticsSnapshot();
+        }
     }
 
-    UpdateOverlay(packetsIn, packetsOut, bytesIn, bytesOut, connectionCount);
+    UpdateOverlay(static_cast<unsigned>(totalStats.packetsInPerSec_), static_cast<unsigned>(totalStats.packetsOutPerSec_),
+        static_cast<unsigned>(totalStats.bytesInPerSec_), static_cast<unsigned>(totalStats.bytesOutPerSec_), connectionCount);
 }
 
 void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& eventData)
@@ -530,11 +540,11 @@ void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& ev
     // This function is different on the client and server. The client collects controls (WASD controls + yaw angle)
     // and sets them to its server connection object, so that they will be sent to the server automatically at a
     // fixed rate, by default 30 FPS. The server will actually apply the controls (authoritative simulation.)
-    auto* network = GetSubsystem<Network>();
-    Connection* serverConnection = network->GetServerConnection();
+    const bool isClientConnected = clientConnection_ && clientConnection_->IsConnected();
+    const bool isServerRunning = server_ && server_->IsListening();
 
     // Client: collect controls
-    if (serverConnection)
+    if (isClientConnected)
     {
         auto* ui = GetSubsystem<UI>();
         auto* input = GetSubsystem<Input>();
@@ -559,15 +569,13 @@ void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& ev
         }
     }
     // Server: apply controls to client objects
-    else if (network->IsServerRunning())
+    else if (isServerRunning)
     {
-        const ea::vector<SharedPtr<Connection> >& connections = network->GetClientConnections();
-
-        for (unsigned i = 0; i < connections.size(); ++i)
+        for (NetworkConnection* connection : serverConnections_)
         {
-            Connection* connection = connections[i];
             // Get the object this connection is controlling
-            Node* playerNode = serverObjects_[connection];
+            auto* replicatedConnection = static_cast<ReplicatedDataChannelConnection*>(connection);
+            Node* playerNode = replicatedConnection->GetControlledObject();
             if (!playerNode)
                 continue;
 
@@ -598,72 +606,96 @@ void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& ev
 
 void SceneReplication::HandleConnect(StringHash eventType, VariantMap& eventData)
 {
-    auto* network = GetSubsystem<Network>();
+    // Disconnect previous connection
+    if (clientConnection_)
+    {
+        clientConnection_->Disconnect();
+        clientConnection_ = nullptr;
+    }
+
     ea::string address = textEdit_->GetText();
     address.trim();
     if (address.empty())
         address = "localhost"; // Use localhost to connect if nothing else specified
 
-    // Connect to server, specify scene to use as a client for replication
-    network->Connect(URL(Format("{}:{}", address, SERVER_PORT)), scene_);
+    clientConnection_ = MakeShared<ReplicatedDataChannelConnection>(context_);
 
-    UpdateButtons();
+    // Attach scene replication manager to the connection.
+    // This immediately enables scene replication for the connection once it becomes active.
+    auto* replicationManager = scene_->GetComponent<ReplicationManager>();
+    clientConnection_->GetReplicatedPeer()->SetReplicationManager(replicationManager);
+
+    // Proceed to connect.
+    clientConnection_->Connect(URL(Format("ws://{}:{}", address, SERVER_PORT)));
 }
 
 void SceneReplication::HandleDisconnect(StringHash eventType, VariantMap& eventData)
 {
-    auto* network = GetSubsystem<Network>();
-    Connection* serverConnection = network->GetServerConnection();
+    auto* replicationManager = scene_->GetComponent<ReplicationManager>();
+
     // If we were connected to server, disconnect. Or if we were running a server, stop it. In both cases clear the
     // scene of all replicated content, but let the local nodes & components (the static world + camera) stay
-    if (serverConnection)
+    if (clientConnection_ && clientConnection_->IsConnected())
     {
-        serverConnection->Disconnect();
+        clientConnection_->Disconnect();
+        clientConnection_ = nullptr;
     }
     // Or if we were running a server, stop it
-    else if (network->IsServerRunning())
+    else if (server_ && server_->IsListening())
     {
-        network->StopServer();
-    }
+        // Disconnect all clients
+        for (NetworkConnection* connection : serverConnections_)
+            connection->Disconnect();
+        serverConnections_.clear();
 
-    UpdateButtons();
+        // Stop accepting incoming connections
+        server_->Stop();
+
+        // Disable replication
+        replicationManager->StartStandalone();
+    }
 }
 
 void SceneReplication::HandleStartServer(StringHash eventType, VariantMap& eventData)
 {
-    auto* network = GetSubsystem<Network>();
-    network->StartServer(SERVER_PORT);
+    if (!server_)
+    {
+        server_ = MakeShared<DataChannelServer>(context_);
+        server_->SetConnectionFactory([this]() { return MakeShared<ReplicatedDataChannelConnection>(context_); });
+        server_->onConnected_.Subscribe(this, &SceneReplication::HandleServerConnected);
+        server_->onDisconnected_.Subscribe(this, &SceneReplication::HandleServerDisconnected);
+    }
 
-    UpdateButtons();
+    // Initialize server side replication for this scene.
+    auto* replicationManager = scene_->GetComponent<ReplicationManager>();
+    replicationManager->StartServer();
+
+    // Listen for incoming connections.
+    server_->Listen(URL(Format("ws://0.0.0.0:{}", SERVER_PORT)));
 }
 
-void SceneReplication::HandleConnectionStatus(StringHash eventType, VariantMap& eventData)
+// A new connection connects to a server.
+void SceneReplication::HandleServerConnected(NetworkConnection* connection)
 {
-    UpdateButtons();
+    auto* replicationManager = scene_->GetComponent<ReplicationManager>();
+    auto* replicatedConnection = static_cast<ReplicatedDataChannelConnection*>(connection);
+    auto peer = replicatedConnection->GetReplicatedPeer();
+    peer->SetReplicationManager(replicationManager);
+    replicatedConnection->SetControlledObject(CreateControllableObject(peer));
+    serverConnections_.insert(connection);
 }
 
-void SceneReplication::HandleClientConnected(StringHash eventType, VariantMap& eventData)
+// A connection disconnects from a server.
+void SceneReplication::HandleServerDisconnected(NetworkConnection* connection)
 {
-    using namespace ClientConnected;
+    const auto iter = serverConnections_.find(connection);
+    if (iter == serverConnections_.end())
+        return;
 
-    // When a client connects, assign to scene to begin scene replication
-    auto* newConnection = static_cast<Connection*>(eventData[P_CONNECTION].GetPtr());
-    newConnection->SetScene(scene_);
-
-    // Then create a controllable object for that client
-    Node* newObject = CreateControllableObject(newConnection);
-    serverObjects_[newConnection] = newObject;
-}
-
-void SceneReplication::HandleClientDisconnected(StringHash eventType, VariantMap& eventData)
-{
-    using namespace ClientConnected;
-
-    // When a client disconnects, remove the controlled object
-    auto* connection = static_cast<Connection*>(eventData[P_CONNECTION].GetPtr());
-    Node* object = serverObjects_[connection];
-    if (object)
+    auto* replicatedConnection = static_cast<ReplicatedDataChannelConnection*>(connection);
+    if (Node* object = replicatedConnection->GetControlledObject())
         object->Remove();
 
-    serverObjects_.erase(connection);
+    serverConnections_.erase(iter);
 }
+

@@ -143,6 +143,9 @@ public:
     /// Post delayed task for main thread. It is guaranteed to be invoked between frames.
     void PostDelayedTaskForMainThread(TaskFunction&& task);
     template <class T> void PostDelayedTaskForMainThread(T task);
+    /// Ensure task is executed on main thread. If called from main thread, task is executed immediately. Otherwise, it runs between frames on main thread.
+    void RunTaskOnMainThread(TaskFunction&& task);
+    template <class T> void RunTaskOnMainThread(T task);
 
     /// Complete tasks with Immediate priority, posted from this thread.
     /// Can be called only from main thread or from another task.
@@ -402,6 +405,11 @@ template <class T> void WorkQueue::PostTaskForMainThread(T task, TaskPriority pr
 template <class T> void WorkQueue::PostDelayedTaskForMainThread(T task)
 {
     PostDelayedTaskForMainThread(WrapTask(ea::move(task)));
+}
+
+template <class T> void WorkQueue::RunTaskOnMainThread(T task)
+{
+    RunTaskOnMainThread(WrapTask(ea::move(task)));
 }
 
 }

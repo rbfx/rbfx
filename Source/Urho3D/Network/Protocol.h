@@ -22,39 +22,20 @@
 
 #pragma once
 
-#include "../Math/MathDefs.h"
+#include <stdint.h>
 
 namespace Urho3D
 {
 
-enum NetworkMessageId : uint16_t
+/// Known message IDs used by networking system. User-defined message IDs should start from MSG_USER.
+/// Expect values of these message IDs to change between versions.
+enum NetworkMessageId : uint32_t
 {
-    /// Client->server: send VariantMap of identity and authentication data.
-    MSG_IDENTITY = 0x87,
-    /// Server->client: notify that server can not accept any more connections. Proceeds to close connection immediately.
-    MSG_CONNECTION_LIMIT_EXCEEDED = 0x88,
-    /// Client->server: scene has been loaded and client is ready to proceed.
-    MSG_SCENELOADED = 0x89,
-    /// Client->server: request a package file.
-    MSG_REQUESTPACKAGE = 0x8A,
-
-    /// Server->client: package file data fragment.
-    MSG_PACKAGEDATA = 0x8B,
-    /// Server->client: load new scene. In case of empty filename the client should just empty the scene.
-    MSG_LOADSCENE = 0x8C,
-    /// Server->client: wrong scene checksum, can not participate.
-    MSG_SCENECHECKSUMERROR = 0x8D,
-
-    /// Client->server and server->client: remote event.
-    MSG_REMOTEEVENT = 0x96,
-    /// Server->client: info about package.
-    MSG_PACKAGEINFO = 0x98,
-
     /// Message used to synchronize clock between client and server.
-    MSG_CLOCK_SYNC = 0x9A,
+    MSG_CLOCK_SYNC,
 
     /// Server->Client. ReplicationManager message. Deliver networking settings.
-    MSG_CONFIGURE = 200,
+    MSG_CONFIGURE,
     /// Server->Client. ReplicationManager message. Send server time and dynamic properties of the client connection.
     MSG_SCENE_CLOCK,
     /// Client->Server. ReplicationManager message. Notify server that the client is ready for replication.
@@ -73,10 +54,10 @@ enum NetworkMessageId : uint16_t
     MSG_OBJECTS_FEEDBACK_UNRELIABLE,
 
     /// Message IDs starting from MSG_USER are reserved for the end user.
-    MSG_USER = 512,
+    MSG_USER,
 
     /// Max message ID value.
-    MSG_MAX = 0xFFFF,
+    MSG_MAX = 0xFFFFFFFF,
 };
 
 /// Conservative limit for the size of the packet transmitted over underlying transport.
@@ -86,9 +67,9 @@ static constexpr unsigned MaxNetworkPacketSize = 1024;
 /// Maximum possible size of network message payload. Transport limitations are not considered.
 /// Real limit may be lower.
 /// @see AbstractConnection::GetMaxMessageSize
-static constexpr unsigned MaxNetworkMessageSize = 0xffff;
+static constexpr unsigned MaxNetworkMessageSize = 0xFFFF;
 
-/// Size of the message header (message id and size).
-static constexpr unsigned NetworkMessageHeaderSize = 4;
+/// Max size of the message header (message id only).
+static constexpr unsigned NetworkMessageHeaderSize = 5;
 
 } // namespace Urho3D
