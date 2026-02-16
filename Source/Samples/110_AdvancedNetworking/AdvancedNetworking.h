@@ -1,40 +1,20 @@
-//
 // Copyright (c) 2008-2020 the Urho3D project.
-// Copyright (c) 2022 the rbfx project.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-//
+// Copyright (c) 2022-2026 the rbfx project.
+// This work is licensed under the terms of the MIT license.
+// For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #pragma once
 
 #include "Sample.h"
-#include "AdvancedNetworkingRaycast.h"
-
-#include <Urho3D/Network/Connection.h>
-#include <Urho3D/Input/InputMap.h>
-
-#include <EASTL/optional.h>
 
 namespace Urho3D
 {
-class NetworkObject;
+class FreeFlyController;
+class Text;
 }
+
+class AdvancedNetworkingClientConnection;
+class AdvancedNetworkingServer;
 
 class AdvancedNetworkingUI;
 
@@ -55,6 +35,9 @@ public:
     /// Setup after engine initialization and before running the main loop.
     void Start(const ea::vector<ea::string>& args) override;
 
+    /// Stop the server and disconnect clients.
+    void Stop() override;
+
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
     ea::string GetScreenJoystickPatchString() const override { return
@@ -74,56 +57,39 @@ private:
     void SetupViewport();
     /// Subscribe to update, UI and network events.
     void SubscribeToEvents();
-    /// Read input and move the camera.
-    void MoveCamera();
     /// Update statistics text.
     void UpdateStats();
-    /// Perform raycast against important geometries in the scene.
-    ea::optional<Vector3> RaycastImportantGeometries(const Ray& ray) const;
-
-    /// Process pending raycasts on the server.
-    void ProcessRaycastsOnServer();
-    /// Process single raycast on the server.
-    void ProcessSingleRaycastOnServer(const ServerRaycastInfo& raycastInfo);
-    /// Create a controllable ball object and return its scene node.
-    Node* CreateControllableObject(Connection* owner);
-    /// Handle a client connecting to the server.
-    void HandleClientConnected(StringHash eventType, VariantMap& eventData);
-    /// Handle a client disconnecting from the server.
-    void HandleClientDisconnected(StringHash eventType, VariantMap& eventData);
-
-    /// Process movement of the client on the client side.
-    void ProcessClientMovement(NetworkObject* clientObject);
-    /// Return aim position from a screen ray.
-    DoubleVector3 GetAimPosition(const DoubleVector3& playerPosition, const Ray& screenRay) const;
-    /// Perform a raycast request on the client side.
-    void RequestClientRaycast(NetworkObject* clientObject, const Ray& screenRay);
-    /// Add debug marker for ray hits.
-    void AddHitMarker(const DoubleVector3& position, bool isConfirmed);
+    /// Start local server.
+    void StartServer(unsigned short port);
+    /// Connect local client to server.
+    void ConnectToServer(const ea::string& address, unsigned short port);
+    /// Stop local networking.
+    void StopNetworking();
+    /// Return whether local server is running.
+    bool IsServerRunning() const;
+    /// Return whether local client is connected.
+    bool IsClientConnected() const;
+    /// Handle client-side connection state.
+    void HandleClientConnectionState(bool connected);
 
     /// UI with client and server settings.
     AdvancedNetworkingUI* ui_{};
 
     /// Collection of temporary nodes used for hit markers.
     Node* hitMarkers_{};
-    /// Mapping from client connections to controllable objects.
-    ea::unordered_map<Connection*, WeakPtr<Node> > serverObjects_;
-    /// Queue of pending raycast requests on the server.
-    ea::vector<ServerRaycastInfo> serverRaycasts_;
+    /// Free-fly camera controller used in server-only mode.
+    FreeFlyController* freeFlyController_{};
     /// Instructions text.
     SharedPtr<Text> instructionsText_;
-    /// Input map.
-    SharedPtr<InputMap> inputMap_;
+
+    /// Local network server wrapper.
+    SharedPtr<AdvancedNetworkingServer> server_;
+    /// Client connection to server.
+    SharedPtr<AdvancedNetworkingClientConnection> clientConnection_;
 
     /// Text with statistics
     SharedPtr<Text> statsText_;
     /// Statistics UI update timer
     Timer statsTimer_;
 
-    /// Timer used for auto movement.
-    Timer autoMovementTimer_{};
-    /// Current phase of auto movement.
-    unsigned autoMovementPhase_{};
-    /// Timer used for auto clicker.
-    Timer autoClickTimer_{};
 };

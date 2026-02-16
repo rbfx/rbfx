@@ -48,6 +48,11 @@ VectorBuffer::VectorBuffer(Deserializer& source, unsigned size)
     SetData(source, size);
 }
 
+VectorBuffer::VectorBuffer(const MemoryBuffer& source)
+{
+    SetData(source.GetData(), source.GetSize());
+}
+
 unsigned VectorBuffer::Read(void* dest, unsigned size)
 {
     if (size + position_ > size_)

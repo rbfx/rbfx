@@ -22,9 +22,10 @@
 
 #pragma once
 
+#include "Urho3D/Network/Transport/NetworkConnection.h"
 #include <Urho3D/Container/ByteVector.h>
 #include <Urho3D/Math/RandomEngine.h>
-#include <Urho3D/Network/AbstractConnection.h>
+#include <Urho3D/Network/ReplicatedPeer.h>
 #include <Urho3D/Replica/ReplicationManager.h>
 
 #include <EASTL/vector.h>
@@ -53,8 +54,10 @@ struct ConnectionQuality
 };
 
 /// Test implementation of AbstractConnection with manual control over message transmission.
-class ManualConnection : public AbstractConnection
+class ManualConnection : public NetworkConnection, public AbstractConnection
 {
+    URHO3D_OBJECT(ManualConnection, Object);
+
 public:
     static unsigned systemTime;
 
@@ -63,7 +66,10 @@ public:
     void SetSinkConnection(AbstractConnection* sinkConnection) { sinkConnection_ = sinkConnection; }
     void SetQuality(const ConnectionQuality& quality) { quality_ = quality; }
 
-    void SendMessageInternal(NetworkMessageId messageId, const unsigned char* data, unsigned numBytes, PacketTypeFlags packetType = PacketType::ReliableOrdered) override;
+    bool Connect(const URL& url) override { return true; }
+    void Disconnect() override {}
+
+    bool SendData(const MemoryBuffer& data, PacketTypeFlags packetType = PacketType::ReliableOrdered) override;
     ea::string ToString() const override { return "Manual Connection"; }
     bool IsClockSynchronized() const override { return true; }
     unsigned RemoteToLocalTime(unsigned time) const override { return time; }
@@ -126,7 +132,7 @@ public:
     void SimulateEngineFrame(float timeStep);
     void SimulateTime(float time, unsigned millisecondsInQuant = MillisecondsInQuant);
 
-    AbstractConnection* GetServerToClientConnection(Scene* clientScene);
+    SharedPtr<AbstractConnection, RefCounted> GetServerToClientConnection(Scene* clientScene);
 
     RandomEngine& GetRandom() { return random_; }
 

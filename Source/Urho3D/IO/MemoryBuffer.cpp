@@ -46,7 +46,21 @@ MemoryBuffer::MemoryBuffer(const void* data, unsigned size) :
         size_ = 0;
 }
 
+MemoryBuffer::MemoryBuffer(const char* text)
+    : AbstractFile(static_cast<unsigned>(strlen(text)))
+    , buffer_(const_cast<unsigned char*>(reinterpret_cast<const unsigned char*>(text)))
+    , readOnly_(true)
+{
+}
+
 MemoryBuffer::MemoryBuffer(ea::string_view text)
+    : AbstractFile(static_cast<unsigned>(text.size()))
+    , buffer_(const_cast<unsigned char*>(reinterpret_cast<const unsigned char*>(text.data())))
+    , readOnly_(true)
+{
+}
+
+MemoryBuffer::MemoryBuffer(const ea::string& text)
     : AbstractFile(static_cast<unsigned>(text.size()))
     , buffer_(const_cast<unsigned char*>(reinterpret_cast<const unsigned char*>(text.data())))
     , readOnly_(true)
@@ -78,6 +92,20 @@ MemoryBuffer::MemoryBuffer(const VectorBuffer& data) :
     AbstractFile(data.GetSize()),
     buffer_(const_cast<unsigned char*>(data.GetData())),
     readOnly_(true)
+{
+}
+
+MemoryBuffer::MemoryBuffer(ea::span<unsigned char> data)
+    : AbstractFile(static_cast<unsigned>(data.size()))
+    , buffer_(data.data())
+    , readOnly_(false)
+{
+}
+
+MemoryBuffer::MemoryBuffer(ea::span<const unsigned char> data)
+    : AbstractFile(static_cast<unsigned>(data.size()))
+    , buffer_(const_cast<unsigned char*>(data.data()))
+    , readOnly_(true)
 {
 }
 

@@ -5,14 +5,15 @@
 #include "Urho3D/Precompiled.h"
 
 #include "Urho3D/Network/MessageUtils.h"
+#include "Urho3D/Network/Transport/NetworkConnection.h"
 
 namespace Urho3D
 {
 
 LargeMessageWriter::LargeMessageWriter(
-    AbstractConnection& connection, NetworkMessageId incompleteMessageId, NetworkMessageId lastMessageId)
+    NetworkConnection& connection, VectorBuffer& buffer, NetworkMessageId incompleteMessageId, NetworkMessageId lastMessageId)
     : connection_(connection)
-    , buffer_(connection_.GetOutgoingMessageBuffer())
+    , buffer_(buffer)
     , debugInfo_(connection_.GetDebugInfoBuffer())
     , incompleteMessageId_(incompleteMessageId)
     , lastMessageId_(lastMessageId)
@@ -50,9 +51,10 @@ LargeMessageWriter::~LargeMessageWriter()
             const unsigned chunkSize = isLastChunk ? buffer_.GetSize() % maxMessageSize : maxMessageSize;
             const auto chunkData = payload.subspan(chunkOffset, chunkSize);
             const ea::string& chunkDebugInfo = isLastChunk ? debugInfo_ : EMPTY_STRING;
-            connection_.SendMessage(messageId, chunkData, PacketType::ReliableOrdered, chunkDebugInfo);
+            connection_.SendMessage(messageId, MemoryBuffer(chunkData), PacketType::ReliableOrdered, chunkDebugInfo);
         }
     }
+    buffer_.Clear();
 }
 
 void LargeMessageWriter::Discard()
@@ -61,37 +63,39 @@ void LargeMessageWriter::Discard()
 }
 
 LargeMessageReader::LargeMessageReader(
-    AbstractConnection& connection, NetworkMessageId incompleteMessageId, NetworkMessageId lastMessageId)
-    : buffer_(connection.GetIncomingMessageBuffer())
+    VectorBuffer& buffer, NetworkMessageId incompleteMessageId, NetworkMessageId lastMessageId)
+    : buffer_(buffer)
     , incompleteMessageId_(incompleteMessageId)
     , lastMessageId_(lastMessageId)
 {
+    buffer_.Clear();
 }
 
 void LargeMessageReader::OnMessage(NetworkMessageId messageId, MemoryBuffer& messageData, Callback onMessageReceived)
 {
     URHO3D_ASSERT(messageId == incompleteMessageId_ || messageId == lastMessageId_);
 
-    if (messageId == lastMessageId_ && buffer_.empty())
+    if (messageId == lastMessageId_ && buffer_.GetSize() == 0)
     {
         onMessageReceived(messageData);
     }
     else
     {
-        buffer_.insert(buffer_.end(), messageData.GetData(), messageData.GetData() + messageData.GetSize());
+        buffer_.Seek(buffer_.GetSize());
+        buffer_.Write(messageData.GetData(), messageData.GetSize());
         if (messageId == lastMessageId_)
         {
             MemoryBuffer memoryBuffer{buffer_};
             onMessageReceived(memoryBuffer);
-            buffer_.clear();
+            buffer_.Clear();
         }
     }
 }
 
 MultiMessageWriter::MultiMessageWriter(
-    AbstractConnection& connection, NetworkMessageId messageId, PacketTypeFlags packetType)
+    NetworkConnection& connection, VectorBuffer& buffer, NetworkMessageId messageId, PacketTypeFlags packetType)
     : connection_(connection)
-    , buffer_(connection_.GetOutgoingMessageBuffer())
+    , buffer_(buffer)
     , debugInfo_(connection_.GetDebugInfoBuffer())
     , messageId_(messageId)
     , packetType_(packetType)
@@ -104,6 +108,8 @@ MultiMessageWriter::~MultiMessageWriter()
 {
     if (nextPayloadOffset_ != headerSize_)
         SendPreviousPayloads();
+    buffer_.Clear();
+    debugInfo_.clear();
 }
 
 void MultiMessageWriter::CompleteHeader()
@@ -159,7 +165,7 @@ ea::string* MultiMessageWriter::GetDebugInfo()
 
 void MultiMessageWriter::SendPreviousPayloads()
 {
-    const auto payload = ConstByteSpan{buffer_.GetBuffer()}.subspan(0, nextPayloadOffset_);
+    MemoryBuffer payload(buffer_.GetData(), nextPayloadOffset_);
     const auto debugInfo = ea::string_view{debugInfo_}.substr(0, nextDebugInfoOffset_);
     connection_.SendMessage(messageId_, payload, packetType_, debugInfo);
 }

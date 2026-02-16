@@ -5,7 +5,8 @@
 #pragma once
 
 #include "Urho3D/IO/MemoryBuffer.h"
-#include "Urho3D/Network/AbstractConnection.h"
+#include "Urho3D/IO/VectorBuffer.h"
+#include "Urho3D/Network/Transport/NetworkConnection.h"
 
 #include <EASTL/optional.h>
 
@@ -19,7 +20,7 @@ class URHO3D_API LargeMessageWriter
 {
 public:
     LargeMessageWriter(
-        AbstractConnection& connection, NetworkMessageId incompleteMessageId, NetworkMessageId lastMessageId);
+        NetworkConnection& connection, VectorBuffer& buffer, NetworkMessageId incompleteMessageId, NetworkMessageId lastMessageId);
     ~LargeMessageWriter();
 
     void Discard();
@@ -28,7 +29,7 @@ public:
     ea::string* GetDebugInfo();
 
 private:
-    AbstractConnection& connection_;
+    NetworkConnection& connection_;
     VectorBuffer& buffer_;
     ea::string& debugInfo_;
     const NetworkMessageId incompleteMessageId_;
@@ -44,12 +45,12 @@ public:
     using Callback = ea::function<void(MemoryBuffer& messageData)>;
 
     LargeMessageReader(
-        AbstractConnection& connection, NetworkMessageId incompleteMessageId, NetworkMessageId lastMessageId);
+        VectorBuffer& buffer, NetworkMessageId incompleteMessageId, NetworkMessageId lastMessageId);
 
     void OnMessage(NetworkMessageId messageId, MemoryBuffer& messageData, Callback onMessageReceived);
 
 private:
-    ByteVector& buffer_;
+    VectorBuffer& buffer_;
     const NetworkMessageId incompleteMessageId_;
     const NetworkMessageId lastMessageId_;
 };
@@ -61,7 +62,7 @@ private:
 class URHO3D_API MultiMessageWriter
 {
 public:
-    MultiMessageWriter(AbstractConnection& connection, NetworkMessageId messageId, PacketTypeFlags packetType);
+    MultiMessageWriter(NetworkConnection& connection, VectorBuffer& buffer, NetworkMessageId messageId, PacketTypeFlags packetType);
     ~MultiMessageWriter();
 
     /// Complete shared header that is going to be sent for each individual message. Could be empty.
@@ -75,7 +76,7 @@ public:
 private:
     void SendPreviousPayloads();
 
-    AbstractConnection& connection_;
+    NetworkConnection& connection_;
     VectorBuffer& buffer_;
     ea::string& debugInfo_;
     const NetworkMessageId messageId_;
@@ -96,7 +97,7 @@ template <class T> T ReadSerializedMessage(MemoryBuffer& src)
 
 /// Write simple network message from object.
 template <class T>
-void WriteSerializedMessage(AbstractConnection& connection, NetworkMessageId messageId, const T& message,
+void WriteSerializedMessage(NetworkConnection& connection, NetworkMessageId messageId, const T& message,
     PacketTypeFlags messageType = PacketType::ReliableOrdered)
 {
 #ifdef URHO3D_LOGGING
@@ -105,10 +106,9 @@ void WriteSerializedMessage(AbstractConnection& connection, NetworkMessageId mes
     const ea::string& debugInfo = EMPTY_STRING;
 #endif
 
-    VectorBuffer& buffer = connection.GetOutgoingMessageBuffer();
-    buffer.Clear();
-    message.Save(buffer);
-    connection.SendMessage(messageId, buffer.GetBuffer(), messageType, debugInfo);
+    auto builder = connection.BeginMessage(messageId, messageType, debugInfo);
+    message.Save(builder.buffer_);
+    connection.EndMessage(builder);
 }
 
 } // namespace Urho3D

@@ -51,13 +51,11 @@ public:
     /// Supports "ws" and "wss" schemes. "wss" scheme requires calling %SetTLSCertificate before calling %Listen.
     bool Listen(const URL& url) override;
     void Stop() override;
+    bool IsListening() const override;
     void SetTLSCertificate(ea::string_view certificatePemFile, ea::string_view keyPemFile, ea::string_view keyPassword);
 
 protected:
-    void OnDisconnected(DataChannelConnection* connection);
-
     ea::shared_ptr<rtc::WebSocketServer> webSocketServer_ = {};
-    ea::vector<SharedPtr<DataChannelConnection>> connections_;
     ea::string certificatePemFile_;
     ea::string keyPemFile_;
     ea::string keyPassword_;
