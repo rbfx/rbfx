@@ -93,13 +93,13 @@ bool IKLimbSolver::InitializeNodes(IKNodeCache& nodeCache)
     return true;
 }
 
-void IKLimbSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
+void IKLimbSolver::UpdateChainLengths(const Transform& inverseLocalFrameOfReference)
 {
     chain_.UpdateLengths();
 
-    local_.bendDirection_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * bendDirection_;
-    local_.targetDirection_ = inverseFrameOfReference.rotation_
-        * (chain_.GetEndNode()->position_ - chain_.GetBeginNode()->position_).Normalized();
+    local_.bendDirection_ = inverseLocalFrameOfReference.rotation_ * bendDirection_;
+    local_.targetDirection_ = inverseLocalFrameOfReference.rotation_
+        * (chain_.GetEndNode()->localOriginalPosition_ - chain_.GetBeginNode()->localOriginalPosition_).Normalized();
 }
 
 void IKLimbSolver::EnsureInitialized()

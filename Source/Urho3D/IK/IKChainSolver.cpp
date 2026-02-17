@@ -72,7 +72,7 @@ bool IKChainSolver::InitializeNodes(IKNodeCache& nodeCache)
     return true;
 }
 
-void IKChainSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
+void IKChainSolver::UpdateChainLengths(const Transform& inverseLocalFrameOfReference)
 {
     chain_.UpdateLengths();
 }

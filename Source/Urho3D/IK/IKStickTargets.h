@@ -57,7 +57,7 @@ protected:
     /// Implement IKSolverComponent
     /// @{
     bool InitializeNodes(IKNodeCache& nodeCache) override;
-    void UpdateChainLengths(const Transform& inverseFrameOfReference) override;
+    void UpdateChainLengths(const Transform& inverseLocalFrameOfReference) override;
     void SolveInternal(const Transform& frameOfReference, const IKSettings& settings, float timeStep) override;
     void UpdateWorldOriginInternal(const Vector3& delta) override;
     /// @}
