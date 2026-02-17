@@ -76,7 +76,7 @@ bool IKIdentitySolver::InitializeNodes(IKNodeCache& nodeCache)
     return true;
 }
 
-void IKIdentitySolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
+void IKIdentitySolver::UpdateChainLengths(const Transform& inverseLocalFrameOfReference)
 {
 }
 

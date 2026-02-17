@@ -77,10 +77,19 @@ Transform IKSolverComponent::GetFrameOfReferenceTransform() const
         return {};
 }
 
+Transform IKSolverComponent::GetLocalFrameOfReferenceTransform() const
+{
+    if (!frameOfReferenceNode_)
+        return {};
+
+    const Matrix3x4 localTransform = IKSolverComponent::GetParentTransform(frameOfReferenceNode_, node_);
+    return Transform::FromMatrix3x4(localTransform);
+}
+
 void IKSolverComponent::NotifyPositionsReady()
 {
-    const Transform frameOfReference = GetFrameOfReferenceTransform();
-    UpdateChainLengths(frameOfReference.Inverse());
+    const Transform localFrameOfReference = GetLocalFrameOfReferenceTransform();
+    UpdateChainLengths(localFrameOfReference.Inverse());
 }
 
 void IKSolverComponent::Solve(const IKSettings& settings, float timeStep)
@@ -114,6 +123,17 @@ void IKSolverComponent::OnTreeDirty()
 {
     if (auto solver = GetComponent<IKSolver>())
         solver->MarkSolversDirty();
+}
+
+Matrix3x4 IKSolverComponent::GetParentTransform(Node* node, Node* parent)
+{
+    Matrix3x4 result = node->GetTransformMatrix();
+    while (node->GetParent() && node->GetParent() != parent)
+    {
+        node = node->GetParent();
+        result = node->GetTransformMatrix() * result;
+    }
+    return result;
 }
 
 IKNode* IKSolverComponent::AddSolverNode(IKNodeCache& nodeCache, const ea::string& name)

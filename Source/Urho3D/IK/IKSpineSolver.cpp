@@ -101,7 +101,7 @@ bool IKSpineSolver::InitializeNodes(IKNodeCache& nodeCache)
     return true;
 }
 
-void IKSpineSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
+void IKSpineSolver::UpdateChainLengths(const Transform& inverseLocalFrameOfReference)
 {
     if (twistRotationOffset_ == Quaternion::ZERO)
         UpdateTwistRotationOffset();
@@ -113,12 +113,13 @@ void IKSpineSolver::UpdateChainLengths(const Transform& inverseFrameOfReference)
     for (ea::vector<IKNode*>::size_type i = 0; i < bones.size(); ++i)
     {
         const IKNode& bone = *bones[i];
-        local_.defaultTransforms_[i] = inverseFrameOfReference * Transform{bone.position_, bone.rotation_};
+        local_.defaultTransforms_[i] =
+            inverseLocalFrameOfReference * Transform{bone.localOriginalPosition_, bone.localOriginalRotation_};
     }
 
-    const Vector3 baseDirection = (bones[1]->position_ - bones[0]->position_).Normalized();
-    local_.baseDirection_ = inverseFrameOfReference.rotation_ * baseDirection;
-    local_.zeroTwistRotation_ = inverseFrameOfReference.rotation_ * node_->GetWorldRotation() * twistRotationOffset_;
+    const Vector3 baseDirection = (bones[1]->localOriginalPosition_ - bones[0]->localOriginalPosition_).Normalized();
+    local_.baseDirection_ = inverseLocalFrameOfReference.rotation_ * baseDirection;
+    local_.zeroTwistRotation_ = inverseLocalFrameOfReference.rotation_ * twistRotationOffset_;
 }
 
 void IKSpineSolver::SetOriginalTransforms(const Transform& frameOfReference)

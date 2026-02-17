@@ -67,7 +67,7 @@ bool IKStickTargets::InitializeNodes(IKNodeCache& nodeCache)
     return true;
 }
 
-void IKStickTargets::UpdateChainLengths(const Transform& inverseFrameOfReference)
+void IKStickTargets::UpdateChainLengths(const Transform& inverseLocalFrameOfReference)
 {
 }
 

@@ -176,9 +176,12 @@ void IKSolver::RebuildSolvers()
 
 void IKSolver::SetOriginalTransforms()
 {
-    const Matrix3x4 inverseWorldTransform = node_->GetWorldTransform().Inverse();
+    const Matrix3x4 worldTransform = node_->GetWorldTransform();
     for (auto& [node, solverNode] : solverNodes_)
-        solverNode.SetOriginalTransform(node->GetWorldPosition(), node->GetWorldRotation(), inverseWorldTransform);
+    {
+        const Matrix3x4 localTransform = IKSolverComponent::GetParentTransform(node, node_);
+        solverNode.SetOriginalTransform(localTransform.Translation(), localTransform.Rotation(), worldTransform);
+    }
 }
 
 void IKSolver::UpdateOriginalTransforms()

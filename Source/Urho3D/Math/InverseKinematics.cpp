@@ -67,16 +67,17 @@ IKNode::IKNode(const Vector3& position, const Quaternion& rotation)
 }
 
 void IKNode::SetOriginalTransform(
-    const Vector3& position, const Quaternion& rotation, const Matrix3x4& inverseWorldTransform)
+    const Vector3& position, const Quaternion& rotation, const Matrix3x4& worldTransform)
 {
-    localOriginalPosition_ = inverseWorldTransform * position;
-    localOriginalRotation_ = inverseWorldTransform.Rotation() * rotation;
-    originalPosition_ = position;
-    originalRotation_ = rotation;
-    position_ = position;
-    rotation_ = rotation;
-    previousPosition_ = position;
-    previousRotation_ = rotation;
+    const Quaternion worldRotation = worldTransform.Rotation();
+    localOriginalPosition_ = position;
+    localOriginalRotation_ = rotation;
+    originalPosition_ = worldTransform * position;
+    originalRotation_ = worldRotation * rotation;
+    position_ = worldTransform * position;
+    rotation_ = worldRotation * rotation;
+    previousPosition_ = worldTransform * position;
+    previousRotation_ = worldRotation * rotation;
 }
 
 void IKNode::UpdateOriginalTransform(const Matrix3x4& worldTransform)
@@ -141,7 +142,7 @@ Vector3 IKNodeSegment::CalculateDirection() const
 
 void IKNodeSegment::UpdateLength()
 {
-    length_ = (endNode_->position_ - beginNode_->position_).Length();
+    length_ = (endNode_->localOriginalPosition_ - beginNode_->localOriginalPosition_).Length();
 }
 
 void IKNodeSegment::UpdateRotationInNodes(bool fromPrevious, bool isLastSegment)
@@ -278,10 +279,16 @@ void IKEyeChain::Initialize(IKNode* rootNode)
     rootNode_ = rootNode;
 }
 
-void IKEyeChain::SetLocalEyeTransform(const Vector3& eyeOffset, const Vector3& eyeDirection)
+void IKEyeChain::SetEyeTransform(const Vector3& eyeOffset, const Vector3& eyeDirection)
 {
     eyeOffset_ = eyeOffset;
     eyeDirection_ = eyeDirection;
+}
+
+void IKEyeChain::SetLocalEyeTransform(const Vector3& eyeOffset, const Vector3& eyeDirection)
+{
+    eyeOffset_ = rootNode_->localOriginalRotation_.Inverse() * eyeOffset;
+    eyeDirection_ = rootNode_->localOriginalRotation_.Inverse() * eyeDirection;
 }
 
 void IKEyeChain::SetWorldEyeTransform(const Vector3& eyeOffset, const Vector3& eyeDirection)
