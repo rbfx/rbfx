@@ -608,10 +608,15 @@ void Octree::RemoveManualDrawable(Drawable* drawable)
 
 void Octree::AddDrawable(Drawable* drawable)
 {
+    if (locked_)
+    {
+        URHO3D_ASSERTLOG(false, "Cannot add Drawable during rendering sequence");
+        return;
+    }
+
     if (drawable->GetDrawableIndex() != M_MAX_UNSIGNED)
     {
-        URHO3D_LOGERROR("Cannot add Drawable that is already added to Octree");
-        assert(0);
+        URHO3D_ASSERTLOG(false, "Cannot add Drawable that is already added to Octree");
         return;
     }
 
@@ -639,11 +644,16 @@ void Octree::AddDrawable(Drawable* drawable)
 
 void Octree::RemoveDrawable(Drawable* drawable, Octant* octant)
 {
+    if (locked_)
+    {
+        URHO3D_ASSERTLOG(false, "Cannot add Drawable during rendering sequence");
+        return;
+    }
+
     const unsigned index = drawable->GetDrawableIndex();
     if (index >= drawables_.size() || drawables_[index] != drawable)
     {
-        URHO3D_LOGERROR("Cannot remove Drawable that doesn't belong to Octree");
-        assert(0);
+        URHO3D_ASSERTLOG(false, "Cannot remove Drawable that doesn't belong to Octree");
         return;
     }
 

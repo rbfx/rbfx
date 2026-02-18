@@ -499,6 +499,9 @@ void Renderer::Render()
     for (RenderPipelineView* renderPipelineView : ea::reverse(renderPipelineViews_))
         renderPipelineView->Render();
 
+    for (Octree* octree : updatedOctrees_)
+        octree->SetLocked(false);
+
     // All views done, custom rendering can now be done before UI
     SendEvent(E_ENDALLVIEWSRENDER);
 }
@@ -599,6 +602,7 @@ void Renderer::UpdateQueuedViewport(unsigned index)
         if (frame_.viewSize_ == IntVector2::ZERO)
             frame_.viewSize_ = IntVector2(graphics_->GetWidth(), graphics_->GetHeight());
         octree->Update(frame_);
+        octree->SetLocked(true);
         updatedOctrees_.insert(octree);
 
         // Set also the view for the debug renderer already here, so that it can use culling
