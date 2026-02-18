@@ -827,8 +827,9 @@ void SceneViewTab::RenderToolbar()
 
     {
         const bool canRewind = activePage && activePage->IsSimulationActive();
+        const ea::string tooltip = Format("Rewind Scene Simulation ({})", Hotkey_RewindSimulation.ToString());
         ui::BeginDisabled(!canRewind);
-        if (Widgets::ToolbarButton(ICON_FA_CIRCLE_CHEVRON_LEFT, "Rewind Scene Simulation"))
+        if (Widgets::ToolbarButton(ICON_FA_CIRCLE_CHEVRON_LEFT, tooltip.c_str()))
             RewindSimulation();
         ui::EndDisabled();
     }
@@ -837,9 +838,10 @@ void SceneViewTab::RenderToolbar()
         const bool isStarted = activePage && activePage->IsSimulationActive();
         const bool isUpdating = activePage && activePage->scene_->IsUpdateEnabled();
         const char* label = isUpdating ? ICON_FA_CIRCLE_PAUSE : ICON_FA_CIRCLE_PLAY;
-        const char* tooltip = isUpdating ? "Pause Scene Simulation" : (isStarted ? "Resume Scene Simulation" : "Start Scene Simulation");
+        const ea::string tooltip = Format(isUpdating ? "Pause Scene Simulation ({})" : (isStarted ? "Resume Scene Simulation ({})" : "Start Scene Simulation ({})"),
+            Hotkey_TogglePaused.ToString());
         ui::BeginDisabled(!activePage);
-        if (Widgets::ToolbarButton(label, tooltip))
+        if (Widgets::ToolbarButton(label, tooltip.c_str()))
             ToggleSimulationPaused();
         ui::EndDisabled();
     }
