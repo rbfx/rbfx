@@ -1765,7 +1765,7 @@ void NavigationMesh::BuildTilesFromGeometryAsync(ea::vector<NavigationGeometryIn
 
             const bool success = builder(*build);
 
-            queue->PostTaskForMainThread([weakSelf, build, success, callback]()
+            queue->PostDelayedTaskForMainThread([weakSelf, build, success, callback]()
             {
                 if (success)
                 {
