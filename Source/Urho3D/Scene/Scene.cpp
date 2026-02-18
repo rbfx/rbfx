@@ -1245,8 +1245,71 @@ void Scene::PreloadResources(AbstractFilePtr file, bool isSceneFile)
         PreloadResources(file, false);
 #endif
 }
-
 void Scene::PreloadResourcesXML(const XMLElement& element)
+{
+    if (element.GetName() == "resource")
+    {
+        PreloadResourcesResourceXML(element);
+    }
+    else
+    {
+        PreloadResourcesSceneXML(element);
+    }
+}
+void Scene::PreloadResources(const NodePrefab& prefab)
+{
+    auto* cache = GetSubsystem<ResourceCache>();
+
+#ifdef URHO3D_THREADING
+    for (auto& component : prefab.GetComponents())
+    {
+        for (auto& attribute : component.GetAttributes())
+        {
+            if (attribute.GetType() == VAR_RESOURCEREF)
+            {
+                ResourceRef ref = attribute.GetValue().GetResourceRef();
+                const bool success = cache->BackgroundLoadResource(ref.type_, ref.name_);
+                if (success)
+                {
+                    ++asyncProgress_.totalResources_;
+                    asyncProgress_.resources_.insert(StringHash(ref.name_));
+                }
+            }
+            else if (attribute.GetType() == VAR_RESOURCEREFLIST)
+            {
+                ResourceRefList refList = attribute.GetValue().GetResourceRefList();
+                for (unsigned k = 0; k < refList.names_.size(); ++k)
+                {
+                    ea::string name = cache->SanitateResourceName(refList.names_[k]);
+                    const bool success = cache->BackgroundLoadResource(refList.type_, name);
+                    if (success)
+                    {
+                        ++asyncProgress_.totalResources_;
+                        asyncProgress_.resources_.insert(StringHash(name));
+                    }
+                }
+            }
+        }
+    }
+    for (auto& node : prefab.GetChildren())
+    {
+        PreloadResources(node);
+    }
+#endif
+}
+
+void Scene::PreloadResourcesResourceXML(const XMLElement& element)
+{
+#ifdef URHO3D_THREADING
+    NodePrefab prefab;
+    XMLInputArchive archive(context_, element);
+    ArchiveBlock block = archive.OpenUnorderedBlock(element.GetName().c_str());
+    prefab.SerializeInBlock(archive, PrefabArchiveFlag::None, true);
+    PreloadResources(prefab);
+#endif
+}
+
+void Scene::PreloadResourcesSceneXML(const XMLElement& element)
 {
     // If not threaded, can not background load resources, so rather load synchronously later when needed
 #ifdef URHO3D_BACKGROUND_LOADER
