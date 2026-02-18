@@ -92,6 +92,10 @@ public:
     /// Return HTTP response status code, e.g. 200(OK) or 404(NOT_FOUND).
     int GetStatusCode() const;
 
+    ///Return map with response headers
+    ea::map<ea::string,ea::string> GetResponseHeaders() const;
+    ///Return response header by name
+    ea::optional<ea::string> GetResponseHeader(ea::string) const;
 private:
     /// URL.
     URL url_;
@@ -113,6 +117,8 @@ private:
     unsigned readPosition_ = 0;
     /// HTTP response status code, e.g. 200(OK) or 404(NOT_FOUND).
     int statusCode_ = 0;
+    /// HTTP response headers
+    ea::map<ea::string,ea::string> responseHeaders_;
 #ifdef URHO3D_PLATFORM_WEB
     /// HTTP request handle.
     void* requestHandle_ = nullptr;
