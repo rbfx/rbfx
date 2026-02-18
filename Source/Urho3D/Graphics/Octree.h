@@ -277,6 +277,8 @@ public:
     /// Queue Node transform update to be applied after threaded update.
     /// Should be called only during Drawable::Update.
     void QueueNodeTransformUpdate(Node* node, const Transform& transform);
+    /// Set whether Octree is locked for modification.
+    void SetLocked(bool locked) { locked_ = locked; }
     /// Visualize the component as debug geometry.
     void DrawDebugGeometry(bool depthTest);
 
@@ -312,6 +314,8 @@ private:
     BoundingBox worldBoundingBox_;
     /// Zones.
     ZoneLookupIndex zones_;
+    /// Whether Octree is locked for modification.
+    bool locked_{};
 };
 
 }
