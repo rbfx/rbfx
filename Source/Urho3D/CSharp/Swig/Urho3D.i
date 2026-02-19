@@ -504,8 +504,8 @@ public:
 %include "Urho3D/Resource/ResourceCache.h"
 
 %template(ImageVector)       eastl::vector<Urho3D::SharedPtr<Urho3D::Image>>;
-%template(FaceVectorPair)    eastl::pair<Urho3D::CubeMapFace, Urho3D::Vector2>;
-%template(FaceIntVectorPair) eastl::pair<Urho3D::CubeMapFace, Urho3D::IntVector2>;
+%template(FaceVectorPair)    eastl::pair<Urho3D::CubeMapFace, Urho3D::BaseVector2<float>>;
+%template(FaceIntVectorPair) eastl::pair<Urho3D::CubeMapFace, Urho3D::BaseIntegerVector2<int>>;
 
 
 // --------------------------------------- Scene ---------------------------------------
@@ -1087,11 +1087,11 @@ using ImGuiConfigFlags = unsigned;
 %template(ObjectMap)                    eastl::unordered_map<Urho3D::StringHash, Urho3D::SharedPtr<Urho3D::Object>>;
 
 %template(StringHashList)                   eastl::vector<Urho3D::StringHash>;
-%template(Vector2List)                      eastl::vector<Urho3D::Vector2>;
+%template(Vector2List)                      eastl::vector<Urho3D::BaseVector2<float>>;
 %template(Vector3List)                      eastl::vector<Urho3D::BaseVector3<float>>;
 %template(Vector3Matrix)                    eastl::vector<eastl::vector<Urho3D::BaseVector3<float>>>;
 %template(Vector4List)                      eastl::vector<Urho3D::Vector4>;
-%template(IntVector2List)                   eastl::vector<Urho3D::IntVector2>;
+%template(IntVector2List)                   eastl::vector<Urho3D::BaseIntegerVector2<int>>;
 %template(IntVector3List)                   eastl::vector<Urho3D::BaseIntegerVector3<int>>;
 %template(QuaternionList)                   eastl::vector<Urho3D::Quaternion>;
 %template(RectList)                         eastl::vector<Urho3D::Rect>;

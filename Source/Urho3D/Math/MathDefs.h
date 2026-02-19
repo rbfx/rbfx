@@ -44,13 +44,16 @@ namespace Urho3D
 {
 
 // TODO: Convert other vectors to templates
-class Vector2;
 class Vector4;
-class IntVector2;
+
+template <class T> class BaseVector2;
+template <class T> class BaseIntegerVector2;
+using IntVector2 = BaseIntegerVector2<int>;
+using Vector2 = BaseVector2<float>;
+using DoubleVector2 = BaseVector2<double>;
 
 template <class T> class BaseVector3;
 template <class T> class BaseIntegerVector3;
-
 using IntVector3 = BaseIntegerVector3<int>;
 using Vector3 = BaseVector3<float>;
 using DoubleVector3 = BaseVector3<double>;

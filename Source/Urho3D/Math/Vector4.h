@@ -285,15 +285,15 @@ inline Vector4 VectorRound(const Vector4& vec) { return Vector4(Round(vec.x_), R
 inline Vector4 VectorCeil(const Vector4& vec) { return Vector4(Ceil(vec.x_), Ceil(vec.y_), Ceil(vec.z_), Ceil(vec.w_)); }
 
 /// Return Vector4 vector.
-inline Vector4 IntVector2::ToVector4(float z, float w) const { return { static_cast<float>(x_), static_cast<float>(y_), z, w }; }
+template <class T> Vector4 BaseIntegerVector2<T>::ToVector4(float z, float w) const { return Cast<Vector4>(z, w); }
 
 /// Return Vector4 vector.
-inline Vector4 Vector2::ToVector4(float z, float w) const { return { x_, y_, z, w }; }
+template <class T> Vector4 BaseVector2<T>::ToVector4(float z, float w) const { return Cast<Vector4>(z, w); }
 
 /// Return Vector4 vector.
-template <class T> inline Vector4 BaseIntegerVector3<T>::ToVector4(float w) const { return Cast<Vector4>(w); }
+template <class T> Vector4 BaseIntegerVector3<T>::ToVector4(float w) const { return Cast<Vector4>(w); }
 
 /// Return Vector4 vector.
-template <class T>
-inline Vector4 BaseVector3<T>::ToVector4(float w) const { return Cast<Vector4>(w); }
-}
+template <class T> Vector4 BaseVector3<T>::ToVector4(float w) const { return Cast<Vector4>(w); }
+
+} // namespace Urho3D

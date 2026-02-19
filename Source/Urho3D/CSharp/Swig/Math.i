@@ -90,8 +90,8 @@ namespace Urho3D
 URHO3D_BINARY_COMPATIBLE_TYPE(Color, pod::float4);
 URHO3D_BINARY_COMPATIBLE_TYPE(Rect, pod::float4);
 URHO3D_BINARY_COMPATIBLE_TYPE(IntRect, pod::int4);
-URHO3D_BINARY_COMPATIBLE_TYPE(Vector2, pod::float2);
-URHO3D_BINARY_COMPATIBLE_TYPE(IntVector2, pod::int2);
+URHO3D_BINARY_COMPATIBLE_TYPE_EX(Vector2, Urho3D::BaseVector2<float>, pod::float2);
+URHO3D_BINARY_COMPATIBLE_TYPE_EX(IntVector2, Urho3D::BaseIntegerVector2<int>, pod::int2);
 URHO3D_BINARY_COMPATIBLE_TYPE_EX(Vector3, Urho3D::BaseVector3<float>, pod::float3);
 URHO3D_BINARY_COMPATIBLE_TYPE_EX(IntVector3, Urho3D::BaseIntegerVector3<int>, pod::int3);
 URHO3D_BINARY_COMPATIBLE_TYPE(Vector4, pod::float4);

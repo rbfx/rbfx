@@ -222,7 +222,7 @@ public:
     }
 
     /// Construct from 2D vector in X0Z plane.
-    static constexpr BaseVector3 FromXZ(const Vector2& vector, T y = T{0}) { return {vector.x_, y, vector.y_}; }
+    static constexpr BaseVector3 FromXZ(const BaseVector2<T>& vector, T y = T{0}) { return {vector.x_, y, vector.y_}; }
 
     /// Convert to tuple.
     constexpr auto Tie() const { return ea::tie(x_, y_, z_); }
@@ -496,7 +496,7 @@ public:
     Vector4 ToVector4(float w = 0.0f) const;
 
     /// Return x and z components as 2D vector (y component is ignored).
-    Vector2 ToXZ() const { return CastXZ<Vector2>(); }
+    BaseVector2<T> ToXZ() const { return CastXZ<BaseVector2<T>>(); }
 
     /// X coordinate.
     T x_{};
@@ -524,67 +524,67 @@ public:
 };
 
 /// Multiply BaseVector3 with a scalar.
-template <class T> inline BaseVector3<T> operator *(T lhs, const BaseVector3<T>& rhs) { return rhs * lhs; }
+template <class T> BaseVector3<T> operator *(T lhs, const BaseVector3<T>& rhs) { return rhs * lhs; }
 
 /// Multiply BaseIntegerVector3 with a scalar.
-template <class T> inline BaseIntegerVector3<T> operator *(T lhs, const BaseIntegerVector3<T>& rhs) { return rhs * lhs; }
+template <class T> BaseIntegerVector3<T> operator *(T lhs, const BaseIntegerVector3<T>& rhs) { return rhs * lhs; }
 
 /// Per-component linear interpolation between two 3-vectors.
-template <class T> inline BaseVector3<T> VectorLerp(const BaseVector3<T>& lhs, const BaseVector3<T>& rhs, const BaseVector3<T>& t) { return lhs + (rhs - lhs) * t; }
+template <class T> BaseVector3<T> VectorLerp(const BaseVector3<T>& lhs, const BaseVector3<T>& rhs, const BaseVector3<T>& t) { return lhs + (rhs - lhs) * t; }
 
 /// Per-component min of two 3-vectors.
-template <class T> inline BaseVector3<T> VectorMin(const BaseVector3<T>& lhs, const BaseVector3<T>& rhs) { return BaseVector3<T>(Min(lhs.x_, rhs.x_), Min(lhs.y_, rhs.y_), Min(lhs.z_, rhs.z_)); }
+template <class T> BaseVector3<T> VectorMin(const BaseVector3<T>& lhs, const BaseVector3<T>& rhs) { return BaseVector3<T>(Min(lhs.x_, rhs.x_), Min(lhs.y_, rhs.y_), Min(lhs.z_, rhs.z_)); }
 
 /// Per-component max of two 3-vectors.
-template <class T> inline BaseVector3<T> VectorMax(const BaseVector3<T>& lhs, const BaseVector3<T>& rhs) { return BaseVector3<T>(Max(lhs.x_, rhs.x_), Max(lhs.y_, rhs.y_), Max(lhs.z_, rhs.z_)); }
+template <class T> BaseVector3<T> VectorMax(const BaseVector3<T>& lhs, const BaseVector3<T>& rhs) { return BaseVector3<T>(Max(lhs.x_, rhs.x_), Max(lhs.y_, rhs.y_), Max(lhs.z_, rhs.z_)); }
 
 /// Per-component floor of 3-vector.
-template <class T> inline BaseVector3<T> VectorFloor(const BaseVector3<T>& vec) { return BaseVector3<T>(Floor(vec.x_), Floor(vec.y_), Floor(vec.z_)); }
+template <class T> BaseVector3<T> VectorFloor(const BaseVector3<T>& vec) { return BaseVector3<T>(Floor(vec.x_), Floor(vec.y_), Floor(vec.z_)); }
 
 /// Per-component round of 3-vector.
-template <class T> inline BaseVector3<T> VectorRound(const BaseVector3<T>& vec) { return BaseVector3<T>(Round(vec.x_), Round(vec.y_), Round(vec.z_)); }
+template <class T> BaseVector3<T> VectorRound(const BaseVector3<T>& vec) { return BaseVector3<T>(Round(vec.x_), Round(vec.y_), Round(vec.z_)); }
 
 /// Per-component ceil of 3-vector.
-template <class T> inline BaseVector3<T> VectorCeil(const BaseVector3<T>& vec) { return BaseVector3<T>(Ceil(vec.x_), Ceil(vec.y_), Ceil(vec.z_)); }
+template <class T> BaseVector3<T> VectorCeil(const BaseVector3<T>& vec) { return BaseVector3<T>(Ceil(vec.x_), Ceil(vec.y_), Ceil(vec.z_)); }
 
 /// Per-component absolute value of 3-vector.
-template <class T> inline BaseVector3<T> VectorAbs(const BaseVector3<T>& vec) { return BaseVector3<T>(Abs(vec.x_), Abs(vec.y_), Abs(vec.z_)); }
+template <class T> BaseVector3<T> VectorAbs(const BaseVector3<T>& vec) { return BaseVector3<T>(Abs(vec.x_), Abs(vec.y_), Abs(vec.z_)); }
 
 /// Per-component square root of 3-vector.
-template <class T> inline BaseVector3<T> VectorSqrt(const BaseVector3<T>& vec) { return BaseVector3<T>(Sqrt(vec.x_), Sqrt(vec.y_), Sqrt(vec.z_)); }
+template <class T> BaseVector3<T> VectorSqrt(const BaseVector3<T>& vec) { return BaseVector3<T>(Sqrt(vec.x_), Sqrt(vec.y_), Sqrt(vec.z_)); }
 
 /// Per-component floor of 3-vector. Returns BaseIntegerVector3.
-template <class T> inline IntVector3 VectorFloorToInt(const BaseVector3<T>& vec) { return IntVector3(FloorToInt(vec.x_), FloorToInt(vec.y_), FloorToInt(vec.z_)); }
+template <class T> IntVector3 VectorFloorToInt(const BaseVector3<T>& vec) { return IntVector3(FloorToInt(vec.x_), FloorToInt(vec.y_), FloorToInt(vec.z_)); }
 
 /// Per-component round of 3-vector. Returns BaseIntegerVector3.
-template <class T> inline IntVector3 VectorRoundToInt(const BaseVector3<T>& vec) { return IntVector3(RoundToInt(vec.x_), RoundToInt(vec.y_), RoundToInt(vec.z_)); }
+template <class T> IntVector3 VectorRoundToInt(const BaseVector3<T>& vec) { return IntVector3(RoundToInt(vec.x_), RoundToInt(vec.y_), RoundToInt(vec.z_)); }
 
 /// Per-component ceil of 3-vector. Returns BaseIntegerVector3.
-template <class T> inline IntVector3 VectorCeilToInt(const BaseVector3<T>& vec) { return IntVector3(CeilToInt(vec.x_), CeilToInt(vec.y_), CeilToInt(vec.z_)); }
+template <class T> IntVector3 VectorCeilToInt(const BaseVector3<T>& vec) { return IntVector3(CeilToInt(vec.x_), CeilToInt(vec.y_), CeilToInt(vec.z_)); }
 
 /// Per-component min of two integer 3-vectors.
-template <class T> inline BaseIntegerVector3<T> VectorMin(const BaseIntegerVector3<T>& lhs, const BaseIntegerVector3<T>& rhs) { return BaseIntegerVector3<T>(Min(lhs.x_, rhs.x_), Min(lhs.y_, rhs.y_), Min(lhs.z_, rhs.z_)); }
+template <class T> BaseIntegerVector3<T> VectorMin(const BaseIntegerVector3<T>& lhs, const BaseIntegerVector3<T>& rhs) { return BaseIntegerVector3<T>(Min(lhs.x_, rhs.x_), Min(lhs.y_, rhs.y_), Min(lhs.z_, rhs.z_)); }
 
 /// Per-component max of two integer 3-vectors.
-template <class T> inline BaseIntegerVector3<T> VectorMax(const BaseIntegerVector3<T>& lhs, const BaseIntegerVector3<T>& rhs) { return BaseIntegerVector3<T>(Max(lhs.x_, rhs.x_), Max(lhs.y_, rhs.y_), Max(lhs.z_, rhs.z_)); }
+template <class T> BaseIntegerVector3<T> VectorMax(const BaseIntegerVector3<T>& lhs, const BaseIntegerVector3<T>& rhs) { return BaseIntegerVector3<T>(Max(lhs.x_, rhs.x_), Max(lhs.y_, rhs.y_), Max(lhs.z_, rhs.z_)); }
 
 /// Per-component absolute value of integer 3-vector.
-template <class T> inline BaseIntegerVector3<T> VectorAbs(const BaseIntegerVector3<T>& vec) { return BaseIntegerVector3<T>(Abs(vec.x_), Abs(vec.y_), Abs(vec.z_)); }
+template <class T> BaseIntegerVector3<T> VectorAbs(const BaseIntegerVector3<T>& vec) { return BaseIntegerVector3<T>(Abs(vec.x_), Abs(vec.y_), Abs(vec.z_)); }
 
 /// Return a random value from [0, 1) from 3-vector seed.
-inline float StableRandom(const Vector3& seed) { return StableRandom(Vector2(StableRandom(Vector2(seed.x_, seed.y_)), seed.z_)); }
+template <class T> T StableRandom(const BaseVector3<T>& seed) { return StableRandom(BaseVector2<T>(StableRandom(BaseVector2<T>(seed.x_, seed.y_)), seed.z_)); }
 
 /// Return IntVector3 vector.
-inline IntVector3 IntVector2::ToIntVector3(int z) const { return { x_, y_, z }; }
+template <class T> IntVector3 BaseIntegerVector2<T>::ToIntVector3(int z) const { return Cast<IntVector3>(z); }
 
 /// Return IntVector3 vector.
-inline IntVector3 Vector2::ToIntVector3(int z) const { return { static_cast<int>(x_), static_cast<int>(y_), z }; }
+template <class T> IntVector3 BaseVector2<T>::ToIntVector3(int z) const { return Cast<IntVector3>(z); }
 
 /// Return Vector3 vector.
-inline Vector3 IntVector2::ToVector3(float z) const { return { static_cast<float>(x_), static_cast<float>(y_), z }; }
+template <class T> Vector3 BaseIntegerVector2<T>::ToVector3(float z) const { return Cast<Vector3>(z); }
 
 /// Return Vector3 vector.
-inline Vector3 Vector2::ToVector3(float z) const { return { x_, y_, z }; }
+template <class T> Vector3 BaseVector2<T>::ToVector3(float z) const { return Cast<Vector3>(z); }
 
 /// Return Vector3 vector.
 template <class T> Vector3 BaseIntegerVector3<T>::ToVector3() const { return Cast<Vector3>(); }
