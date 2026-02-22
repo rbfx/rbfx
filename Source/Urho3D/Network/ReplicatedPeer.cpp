@@ -3,12 +3,12 @@
 // For a copy, see <https://opensource.org/licenses/MIT> or the accompanying LICENSE file.
 
 #include "Urho3D/Core/Assert.h"
+#include "Urho3D/Core/CoreEvents.h"
 #include "Urho3D/Network/ClockSynchronizer.h"
 #include "Urho3D/Network/MessageUtils.h"
 #include "Urho3D/Network/ReplicatedPeer.h"
 #include "Urho3D/Network/Transport/NetworkConnection.h"
 #include "Urho3D/Replica/ReplicationManager.h"
-#include "Urho3D/Core/CoreEvents.h"
 
 namespace Urho3D
 {
