@@ -553,7 +553,10 @@ void CrowdAgent::OnCrowdPositionUpdate(dtCrowdAgent* ag, float* /*pos*/, float d
         Vector3 newPos(ag->npos);
 
         actualVelocity_ = Vector3{ag->vel};
+
+        ignoreTransformChanges_ = true;
         crowdManager_->UpdateAgentPosition(this, dt, newPos);
+        ignoreTransformChanges_ = false;
 
         // Notify parent node of the reposition
         if (newPos != previousPosition_)
