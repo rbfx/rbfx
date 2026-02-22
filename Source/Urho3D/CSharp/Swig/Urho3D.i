@@ -811,6 +811,7 @@ public:
 %ignore Urho3D::Network::MakeHttpRequest;
 %ignore Urho3D::PackageDownload;
 %ignore Urho3D::PackageUpload;
+%typemap(csbase) Urho3D::NetworkMessageId "uint"
 
 %include "generated/Urho3D/_pre_network.i"
 %include "Urho3D/Network/Network.h"
