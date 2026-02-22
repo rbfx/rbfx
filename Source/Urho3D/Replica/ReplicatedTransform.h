@@ -149,6 +149,9 @@ private:
     void InitializeCommon();
     void OnServerFrameEnd(NetworkFrame frame);
 
+    void WriteUnreliableDeltaForFrame(NetworkFrame frame, Serializer& dest);
+    void ReadUnreliableDeltaForFrame(NetworkFrame frame, Deserializer& src);
+
     /// Attributes independent on the client and the server.
     /// @{
     unsigned numUploadAttempts_{DefaultNumUploadAttempts};
@@ -166,9 +169,11 @@ private:
     ReplicatedRotationMode synchronizeRotation_{DefaultSynchronizeRotation};
     bool extrapolatePosition_{DefaultExtrapolatePosition};
     bool extrapolateRotation_{DefaultExtrapolateRotation};
+    bool includePreviousFrame_{}; // Deduced from numUploadAttempts_
     /// @}
 
-    /// Attributes matching on the client and the server. Replicated automatically.
+    /// Attributes matching on the client and the server.
+    /// TODO: Replicate automatically.
     /// @{
     VectorBinaryEncoding positionEncoding_{DefaultPositionEncoding};
     VectorBinaryEncoding rotationEncoding_{DefaultRotationEncoding};

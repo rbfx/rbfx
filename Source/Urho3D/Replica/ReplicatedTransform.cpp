@@ -94,6 +94,8 @@ void ReplicatedTransform::InitializeOnServer()
     server_.latestSentPosition_ = server_.previousPosition_;
     server_.latestSentRotation_ = server_.previousRotation_;
 
+    includePreviousFrame_ = numUploadAttempts_ != 0;
+
     SubscribeToEvent(E_ENDSERVERNETWORKFRAME,
         [this](VariantMap& eventData)
     {
@@ -110,6 +112,7 @@ void ReplicatedTransform::WriteSnapshot(NetworkFrame frame, Serializer& dest)
     flags[1] = synchronizeRotation_ != ReplicatedRotationMode::None;
     flags[2] = extrapolatePosition_;
     flags[3] = extrapolateRotation_;
+    flags[4] = includePreviousFrame_;
     dest.WriteVLE(flags.to_uint32());
 }
 
@@ -122,6 +125,7 @@ void ReplicatedTransform::InitializeFromSnapshot(NetworkFrame frame, Deserialize
     synchronizeRotation_ = flags[1] ? ReplicatedRotationMode::XYZ : ReplicatedRotationMode::None;
     extrapolatePosition_ = flags[2];
     extrapolateRotation_ = flags[3];
+    includePreviousFrame_ = flags[4];
 
     const auto replicationManager = GetNetworkObject()->GetReplicationManager();
     const unsigned updateFrequency = replicationManager->GetUpdateFrequency();
@@ -226,23 +230,29 @@ bool ReplicatedTransform::PrepareUnreliableDelta(NetworkFrame frame)
     return server_.pendingUploadAttempts_ > 0 || numUploadAttempts_ == 0;
 }
 
-void ReplicatedTransform::WriteUnreliableDelta(NetworkFrame frame, Serializer& dest)
+void ReplicatedTransform::WriteUnreliableDeltaForFrame(NetworkFrame frame, Serializer& dest)
 {
     if (synchronizePosition_)
     {
-        dest.WritePackedVector3(server_.position_, positionEncoding_, positionEncodingParameter_);
-        dest.WritePackedVector3(server_.velocity_, velocityEncoding_, velocityEncodingParameter_);
+        const PositionAndVelocity defaultPositionData{server_.position_, server_.velocity_};
+        const auto positionData = positionTrace_.GetRaw(frame).value_or(defaultPositionData);
+
+        dest.WritePackedVector3(positionData.value_, positionEncoding_, positionEncodingParameter_);
+        dest.WritePackedVector3(positionData.derivative_, velocityEncoding_, velocityEncodingParameter_);
     }
 
     if (synchronizeRotation_ == ReplicatedRotationMode::XYZ)
     {
-        dest.WritePackedQuaternion(server_.rotation_, rotationEncoding_);
-        dest.WritePackedVector3(server_.angularVelocity_.Cast<DoubleVector3>(), angularVelocityEncoding_,
+        const RotationAndVelocity defaultRotationData{server_.rotation_, server_.angularVelocity_};
+        const auto rotationData = rotationTrace_.GetRaw(frame).value_or(defaultRotationData);
+
+        dest.WritePackedQuaternion(rotationData.value_, rotationEncoding_);
+        dest.WritePackedVector3(rotationData.derivative_.Cast<DoubleVector3>(), angularVelocityEncoding_,
             angularVelocityEncodingParameter_);
     }
 }
 
-void ReplicatedTransform::ReadUnreliableDelta(NetworkFrame frame, Deserializer& src)
+void ReplicatedTransform::ReadUnreliableDeltaForFrame(NetworkFrame frame, Deserializer& src)
 {
     if (synchronizePosition_)
     {
@@ -260,6 +270,20 @@ void ReplicatedTransform::ReadUnreliableDelta(NetworkFrame frame, Deserializer& 
 
         rotationTrace_.Set(frame, {rotation, angularVelocity});
     }
+}
+
+void ReplicatedTransform::WriteUnreliableDelta(NetworkFrame frame, Serializer& dest)
+{
+    WriteUnreliableDeltaForFrame(frame, dest);
+    if (includePreviousFrame_)
+        WriteUnreliableDeltaForFrame(frame - 1, dest);
+}
+
+void ReplicatedTransform::ReadUnreliableDelta(NetworkFrame frame, Deserializer& src)
+{
+    ReadUnreliableDeltaForFrame(frame, src);
+    if (includePreviousFrame_)
+        ReadUnreliableDeltaForFrame(frame - 1, src);
 }
 
 PositionAndVelocity ReplicatedTransform::SampleTemporalPosition(const NetworkTime& time) const
