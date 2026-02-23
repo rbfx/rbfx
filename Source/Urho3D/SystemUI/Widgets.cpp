@@ -480,8 +480,10 @@ bool EditVariantType(VariantType& value, const char* button)
         VAR_BOOL,
         VAR_FLOAT,
         VAR_VECTOR2,
+        VAR_DOUBLEVECTOR2,
         VAR_VECTOR3,
         VAR_VECTOR4,
+        VAR_DOUBLEVECTOR3,
         VAR_QUATERNION,
         VAR_COLOR,
         VAR_STRING,
@@ -774,6 +776,36 @@ bool EditVariantColor(Variant& var, const EditVariantOptions& options)
         return true;
     }
 
+    return false;
+}
+
+bool EditVariantDoubleVector2(Variant& var, const EditVariantOptions& options)
+{
+    DoubleVector2 value = var.GetDoubleVector2();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+
+    const char* format = "%.6f";
+    if (ui::DragScalarN(
+            "", ImGuiDataType_Double, value.MutableData(), 2, options.step_, &options.min_, &options.max_, format))
+    {
+        var = value;
+        return true;
+    }
+    return false;
+}
+
+bool EditVariantDoubleVector3(Variant& var, const EditVariantOptions& options)
+{
+    DoubleVector3 value = var.GetDoubleVector3();
+    ui::SetNextItemWidth(ui::GetContentRegionAvail().x);
+
+    const char* format = "%.6f";
+    if (ui::DragScalarN(
+            "", ImGuiDataType_Double, value.MutableData(), 3, options.step_, &options.min_, &options.max_, format))
+    {
+        var = value;
+        return true;
+    }
     return false;
 }
 
@@ -1104,11 +1136,17 @@ bool EditVariant(Variant& var, const EditVariantOptions& options)
     case VAR_VECTOR2:
         return EditVariantVector2(var, options);
 
+    case VAR_DOUBLEVECTOR2:
+        return EditVariantDoubleVector2(var, options);
+
     case VAR_VECTOR3:
         if (options.asColor_)
             return EditVariantColor(var, options);
         else
             return EditVariantVector3(var, options);
+
+    case VAR_DOUBLEVECTOR3:
+        return EditVariantDoubleVector3(var, options);
 
     case VAR_VECTOR4:
         if (options.asColor_)

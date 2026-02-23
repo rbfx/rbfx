@@ -257,6 +257,7 @@ inline void SerializeValue(Archive& archive, const char* name, StringHash& value
 /// @name Serialize primitive array types
 /// @{
 inline void SerializeValue(Archive& archive, const char* name, Vector2& value) { Detail::SerializePrimitiveArray<2>(archive, name, value); }
+inline void SerializeValue(Archive& archive, const char* name, DoubleVector2& value) { Detail::SerializePrimitiveArray<2>(archive, name, value); }
 inline void SerializeValue(Archive& archive, const char* name, Vector3& value) { Detail::SerializePrimitiveArray<3>(archive, name, value); }
 inline void SerializeValue(Archive& archive, const char* name, DoubleVector3& value) { Detail::SerializePrimitiveArray<3>(archive, name, value); }
 inline void SerializeValue(Archive& archive, const char* name, Vector4& value) { Detail::SerializePrimitiveArray<4>(archive, name, value); }

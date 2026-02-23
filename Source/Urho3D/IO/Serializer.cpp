@@ -319,8 +319,14 @@ bool Serializer::WriteVariantData(const Variant& value)
     case VAR_VECTOR2:
         return WriteVector2(value.GetVector2());
 
+    case VAR_DOUBLEVECTOR2:
+        return Write(value.GetDoubleVector2().Data(), sizeof(DoubleVector2)) == sizeof(DoubleVector2);
+
     case VAR_VECTOR3:
         return WriteVector3(value.GetVector3());
+
+    case VAR_DOUBLEVECTOR3:
+        return Write(value.GetDoubleVector3().Data(), sizeof(DoubleVector3)) == sizeof(DoubleVector3);
 
     case VAR_VECTOR4:
         return WriteVector4(value.GetVector4());

@@ -90,6 +90,14 @@ URHO3D_API Vector2 ToVector2(const char* source);
 URHO3D_API Vector3 ToVector3(const ea::string& source);
 /// Parse a Vector3 from a C string.
 URHO3D_API Vector3 ToVector3(const char* source);
+/// Parse a DoubleVector2 from a string.
+URHO3D_API DoubleVector2 ToDoubleVector2(const ea::string& source);
+/// Parse a DoubleVector2 from a C string.
+URHO3D_API DoubleVector2 ToDoubleVector2(const char* source);
+/// Parse a DoubleVector3 from a string.
+URHO3D_API DoubleVector3 ToDoubleVector3(const ea::string& source);
+/// Parse a DoubleVector3 from a C string.
+URHO3D_API DoubleVector3 ToDoubleVector3(const char* source);
 /// Parse a Vector4 from a string.
 URHO3D_API Vector4 ToVector4(const ea::string& source, bool allowMissingCoords = false);
 /// Parse a Vector4 from a C string.

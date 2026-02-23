@@ -372,8 +372,22 @@ Variant Deserializer::ReadVariant(VariantType type, Context* context)
     case VAR_VECTOR2:
         return Variant(ReadVector2());
 
+    case VAR_DOUBLEVECTOR2:
+    {
+        DoubleVector2 v;
+        Read(v.MutableData(), sizeof(DoubleVector2));
+        return Variant(v);
+    }
+
     case VAR_VECTOR3:
         return Variant(ReadVector3());
+
+    case VAR_DOUBLEVECTOR3:
+    {
+        DoubleVector3 v;
+        Read(v.MutableData(), sizeof(DoubleVector3));
+        return Variant(v);
+    }
 
     case VAR_VECTOR4:
         return Variant(ReadVector4());
