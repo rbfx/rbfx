@@ -164,7 +164,7 @@ struct ResourceRefListStringCaster
 
 void SerializeVariantAsType(Archive& archive, const char* name, Variant& value, VariantType variantType)
 {
-    static_assert(MAX_VAR_TYPES == 30, "Update me");
+    static_assert(MAX_VAR_TYPES == 32, "Update me");
     switch (variantType)
     {
     case VAR_NONE:
@@ -186,8 +186,16 @@ void SerializeVariantAsType(Archive& archive, const char* name, Variant& value, 
         Detail::SerializeVariantAsType<Vector2>(archive, name, value);
         return;
 
+    case VAR_DOUBLEVECTOR2:
+        Detail::SerializeVariantAsType<DoubleVector2>(archive, name, value);
+        return;
+
     case VAR_VECTOR3:
         Detail::SerializeVariantAsType<Vector3>(archive, name, value);
+        return;
+
+    case VAR_DOUBLEVECTOR3:
+        Detail::SerializeVariantAsType<DoubleVector3>(archive, name, value);
         return;
 
     case VAR_VECTOR4:

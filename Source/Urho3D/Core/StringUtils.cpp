@@ -387,6 +387,47 @@ Vector3 ToVector3(const char* source)
     return ret;
 }
 
+DoubleVector2 ToDoubleVector2(const ea::string& source)
+{
+    return ToDoubleVector2(source.c_str());
+}
+
+DoubleVector2 ToDoubleVector2(const char* source)
+{
+    DoubleVector2 ret(DoubleVector2::ZERO);
+
+    unsigned elements = CountElements(source, ' ');
+    if (elements < 2)
+        return ret;
+
+    auto* ptr = (char*)source;
+    ret.x_ = strtod(ptr, &ptr);
+    ret.y_ = strtod(ptr, &ptr);
+
+    return ret;
+}
+
+DoubleVector3 ToDoubleVector3(const ea::string& source)
+{
+    return ToDoubleVector3(source.c_str());
+}
+
+DoubleVector3 ToDoubleVector3(const char* source)
+{
+    DoubleVector3 ret(DoubleVector3::ZERO);
+
+    unsigned elements = CountElements(source, ' ');
+    if (elements < 3)
+        return ret;
+
+    auto* ptr = (char*)source;
+    ret.x_ = strtod(ptr, &ptr);
+    ret.y_ = strtod(ptr, &ptr);
+    ret.z_ = strtod(ptr, &ptr);
+
+    return ret;
+}
+
 Vector4 ToVector4(const ea::string& source, bool allowMissingCoords)
 {
     return ToVector4(source.c_str(), allowMissingCoords);
