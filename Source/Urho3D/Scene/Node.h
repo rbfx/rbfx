@@ -753,7 +753,9 @@ public:
     template <class U>
     void FindComponents(
         U& destVector, ComponentSearchFlags flags = ComponentSearchFlag::Default, bool clearVector = true) const;
-
+    /// Find components. Return true to continue or false if search is over.
+    template <class Callback>
+    bool FindComponents(ComponentSearchFlags flags, StringHash typeId, const Callback& callback) const;
 
     /// Find and return child node inplace if pointer is null, do nothing if pointer is already initialized.
     /// Return true if child node is found or is already initialized.
@@ -844,8 +846,6 @@ private:
     Node* GetChildByNameOrIndex(ea::string_view name, bool recursive = false) const;
     /// Find component by name. If name is empty, returns the owner node itself.
     Serializable* GetSerializableByName(ea::string_view name) const;
-    /// Find components. Returns true to continue or false if search is over.
-    template <typename Callback> bool FindComponents(ComponentSearchFlags flags, StringHash typeId, const Callback& callback) const;
 
     /// World-space transform matrix.
     mutable Matrix3x4 worldTransform_;
