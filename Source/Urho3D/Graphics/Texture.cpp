@@ -136,6 +136,20 @@ void Texture::SetShadowCompare(bool enable)
     SetSamplerStateDesc(desc);
 }
 
+void Texture::SetMinLod(float minLod)
+{
+    auto desc = GetSamplerStateDesc();
+    desc.minLod_ = minLod;
+    SetSamplerStateDesc(desc);
+}
+
+void Texture::SetMaxLod(float maxLod)
+{
+    auto desc = GetSamplerStateDesc();
+    desc.maxLod_ = maxLod;
+    SetSamplerStateDesc(desc);
+}
+
 void Texture::SetLinear(bool linear)
 {
     linear_ = linear;
@@ -241,7 +255,13 @@ void Texture::SetParameters(const XMLElement& element)
         }
 
         if (name == "mipmap")
+        {
             SetNumLevels(paramElem.GetBool("enable") ? 0 : 1);
+            if (paramElem.HasAttribute("minlod"))
+                SetMinLod(paramElem.GetFloat("minlod"));
+            if (paramElem.HasAttribute("maxlod"))
+                SetMaxLod(paramElem.GetFloat("maxlod"));
+        }
 
         if (name == "quality")
         {

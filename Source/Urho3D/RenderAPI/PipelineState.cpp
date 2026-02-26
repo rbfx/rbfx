@@ -119,8 +119,8 @@ void InitializeImmutableSampler(Diligent::ImmutableSamplerDesc& destSampler, con
     destSampler.Desc.AddressW = addressMode[sourceSampler.addressMode_[TextureCoordinate::W]];
     destSampler.Desc.MaxAnisotropy = anisotropy;
     destSampler.Desc.ComparisonFunc = Diligent::COMPARISON_FUNC_LESS_EQUAL;
-    destSampler.Desc.MinLOD = -M_INFINITY;
-    destSampler.Desc.MaxLOD = M_INFINITY;
+    destSampler.Desc.MinLOD = sourceSampler.minLod_;
+    destSampler.Desc.MaxLOD = sourceSampler.maxLod_;
 }
 
 void InitializeImmutableSamplers(ea::vector<Diligent::ImmutableSamplerDesc>& result, const ImmutableSamplersDesc& desc,

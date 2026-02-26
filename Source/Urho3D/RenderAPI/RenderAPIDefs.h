@@ -470,6 +470,8 @@ struct URHO3D_API SamplerStateDesc
     unsigned char anisotropy_{};
     bool shadowCompare_{};
     EnumArray<TextureAddressMode, TextureCoordinate> addressMode_{ADDRESS_WRAP};
+    float minLod_{0.0f};
+    float maxLod_{M_LARGE_VALUE};
 
     /// Constructors.
     /// @{
@@ -513,7 +515,10 @@ struct URHO3D_API SamplerStateDesc
             shadowCompare_, //
             addressMode_[TextureCoordinate::U], //
             addressMode_[TextureCoordinate::V], //
-            addressMode_[TextureCoordinate::W]);
+            addressMode_[TextureCoordinate::W], //
+            minLod_, //
+            maxLod_ //
+        );
     }
 #endif
 

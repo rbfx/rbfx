@@ -68,6 +68,10 @@ public:
     void SetAnisotropy(unsigned level);
     /// Set shadow compare mode.
     void SetShadowCompare(bool enable);
+    /// Set minimum mip level.
+    void SetMinLod(float minLod);
+    /// Set maximum mip level.
+    void SetMaxLod(float maxLod);
 
     /// @}
 
@@ -135,6 +139,11 @@ public:
     /// Return texture max. anisotropy level. Value 0 means to use the default value from Renderer.
     /// @property
     unsigned GetAnisotropy() const { return GetSamplerStateDesc().anisotropy_; }
+
+    /// Return minimum mip level.
+    float GetMinLod() const { return GetSamplerStateDesc().minLod_; }
+    /// Return maximum mip level.
+    float GetMaxLod() const { return GetSamplerStateDesc().maxLod_; }
 
     /// Return whether shadow compare is enabled.
     bool GetShadowCompare() const { return GetSamplerStateDesc().shadowCompare_; }
