@@ -35,14 +35,14 @@ namespace Detail
 namespace
 {
 
-template <class T> ea::string NumberArrayToStringDouble(T* values, unsigned size)
+template <class T> ea::string NumberArrayToStringDouble(T* values, unsigned size, const char* format)
 {
     ea::string result;
     for (unsigned i = 0; i < size; ++i)
     {
         if (i > 0)
             result += " ";
-        result += ea::string(ea::string::CtorSprintf(), "%g", values[i]);
+        result += ea::string(ea::string::CtorSprintf(), format, values[i]);
     }
     return result;
 }
@@ -51,12 +51,12 @@ template <class T> ea::string NumberArrayToStringDouble(T* values, unsigned size
 
 ea::string NumberArrayToString(float* values, unsigned size)
 {
-    return NumberArrayToStringDouble(values, size);
+    return NumberArrayToStringDouble(values, size, "%.6g");
 }
 
 ea::string NumberArrayToString(double* values, unsigned size)
 {
-    return NumberArrayToStringDouble(values, size);
+    return NumberArrayToStringDouble(values, size, "%.15g");
 }
 
 ea::string NumberArrayToString(int* values, unsigned size)
