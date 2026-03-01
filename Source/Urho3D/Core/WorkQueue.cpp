@@ -319,6 +319,8 @@ void WorkQueue::Update()
 
 void WorkQueue::ProcessPostedTasks()
 {
+    URHO3D_PROFILE("AnyThreadTasks");
+
 #ifdef URHO3D_THREADING
     if (taskScheduler_)
     {
@@ -348,6 +350,8 @@ void WorkQueue::ProcessPostedTasks()
 
 bool WorkQueue::ProcessMainThreadTasks()
 {
+    URHO3D_PROFILE("MainThreadTasks");
+
 #ifdef URHO3D_THREADING
     if (taskScheduler_)
         taskScheduler_->RunPinnedTasks();
@@ -517,6 +521,8 @@ void WorkQueue::CompleteImmediateForThisThread()
 
 void WorkQueue::CompleteAll()
 {
+    URHO3D_PROFILE("CompleteWorkQueueTasks");
+
 #ifdef URHO3D_THREADING
     if (taskScheduler_)
         taskScheduler_->WaitforAll();
