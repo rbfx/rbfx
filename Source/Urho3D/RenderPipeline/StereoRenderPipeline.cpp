@@ -508,6 +508,8 @@ void StereoRenderPipelineView::Update(const FrameInfo& frameInfo)
     if (renderPath_)
         renderPath_->Update(state_);
 
+    UpdateFrameParameters();
+
     SendViewEvent(E_ENDVIEWUPDATE);
     OnUpdateEnd(this, frameInfo_);
 }
@@ -547,13 +549,17 @@ void StereoRenderPipelineView::Render()
     };
 
     if (depthPrePass_)
+    {
         sceneProcessor_->RenderSceneBatches(
-            "DepthPrePass", camera, depthPrePass_->GetBaseBatches(), {}, cameraParameters, 2);
+            "DepthPrePass", camera, depthPrePass_->GetBaseBatches(), {}, cameraParameters, frameParameters_, 2);
+    }
 
-    sceneProcessor_->RenderSceneBatches("OpaqueBase", camera, opaquePass_->GetBaseBatches(), {}, cameraParameters, 2);
-    sceneProcessor_->RenderSceneBatches("OpaqueLight", camera, opaquePass_->GetLightBatches(), {}, cameraParameters, 2);
     sceneProcessor_->RenderSceneBatches(
-        "PostOpaque", camera, postOpaquePass_->GetBaseBatches(), {}, cameraParameters, 2);
+        "OpaqueBase", camera, opaquePass_->GetBaseBatches(), {}, cameraParameters, frameParameters_, 2);
+    sceneProcessor_->RenderSceneBatches(
+        "OpaqueLight", camera, opaquePass_->GetLightBatches(), {}, cameraParameters, frameParameters_, 2);
+    sceneProcessor_->RenderSceneBatches(
+        "PostOpaque", camera, postOpaquePass_->GetBaseBatches(), {}, cameraParameters, frameParameters_, 2);
 
     if (hasRefraction)
         renderBufferManager_->SwapColorBuffers(true);
@@ -564,8 +570,9 @@ void StereoRenderPipelineView::Render()
     };
 
     sceneProcessor_->RenderSceneBatches(
-        "Alpha", camera, alphaPass_->GetBatches(), depthAndColorTextures, cameraParameters, 2);
-    sceneProcessor_->RenderSceneBatches("PostAlpha", camera, postAlphaPass_->GetBatches(), {}, {}, 2);
+        "Alpha", camera, alphaPass_->GetBatches(), depthAndColorTextures, cameraParameters, frameParameters_, 2);
+    sceneProcessor_->RenderSceneBatches(
+        "PostAlpha", camera, postAlphaPass_->GetBatches(), {}, cameraParameters, frameParameters_, 2);
 
     if (outlineBuffer_->IsEnabled())
     {

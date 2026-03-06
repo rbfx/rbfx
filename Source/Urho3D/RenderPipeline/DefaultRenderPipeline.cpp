@@ -318,6 +318,8 @@ void DefaultRenderPipelineView::Update(const FrameInfo& frameInfo)
     if (renderPath_)
         renderPath_->Update(state_);
 
+    UpdateFrameParameters();
+
     SendViewEvent(E_ENDVIEWUPDATE);
     OnUpdateEnd(this, frameInfo_);
 }
@@ -359,7 +361,10 @@ void DefaultRenderPipelineView::Render()
         renderBufferManager_->ClearOutput(effectiveFogColor, 1.0f, 0);
 
         if (depthPrePass_)
-            sceneProcessor_->RenderSceneBatches("DepthPrePass", camera, depthPrePass_->GetBaseBatches());
+        {
+            sceneProcessor_->RenderSceneBatches(
+                "DepthPrePass", camera, depthPrePass_->GetBaseBatches(), {}, {}, frameParameters_);
+        }
 
         RenderBuffer* const gBuffer[] = {
             renderBufferManager_->GetColorOutput(),
@@ -369,7 +374,8 @@ void DefaultRenderPipelineView::Render()
         };
 
         renderBufferManager_->SetRenderTargets(renderBufferManager_->GetDepthStencilOutput(), gBuffer);
-        sceneProcessor_->RenderSceneBatches("GeometryBuffer", camera, opaquePass_->GetDeferredBatches());
+        sceneProcessor_->RenderSceneBatches(
+            "GeometryBuffer", camera, opaquePass_->GetDeferredBatches(), {}, {}, frameParameters_);
         if (canReadDepth && !deferredDecalPass_->GetDeferredBatches().batches_.empty())
         {
             renderBufferManager_->SetRenderTargets(renderBufferManager_->GetDepthStencilOutput(), gBuffer, true);
@@ -378,7 +384,8 @@ void DefaultRenderPipelineView::Render()
                 {ShaderResources::DepthBuffer, renderBufferManager_->GetDepthStencilTexture()},
             };
 
-            sceneProcessor_->RenderSceneBatches("DeferredDecals", camera, deferredDecalPass_->GetDeferredBatches(), depthAndColorTextures);
+            sceneProcessor_->RenderSceneBatches("DeferredDecals", camera, deferredDecalPass_->GetDeferredBatches(),
+                depthAndColorTextures, {}, frameParameters_);
         }
 
         // Draw deferred lights
@@ -394,7 +401,8 @@ void DefaultRenderPipelineView::Render()
         };
 
         renderBufferManager_->SetOutputRenderTargets(true);
-        sceneProcessor_->RenderLightVolumeBatches("LightVolumes", camera, geometryBuffer, cameraParameters);
+        sceneProcessor_->RenderLightVolumeBatches(
+            "LightVolumes", camera, geometryBuffer, cameraParameters, frameParameters_);
         renderBufferManager_->SetOutputRenderTargets();
     }
     else
@@ -403,7 +411,10 @@ void DefaultRenderPipelineView::Render()
         renderBufferManager_->SetOutputRenderTargets();
 
         if (depthPrePass_)
-            sceneProcessor_->RenderSceneBatches("DepthPrePass", camera, depthPrePass_->GetBaseBatches());
+        {
+            sceneProcessor_->RenderSceneBatches(
+                "DepthPrePass", camera, depthPrePass_->GetBaseBatches(), {}, frameParameters_);
+        }
     }
 
     const ShaderParameterDesc cameraParameters[] = {
@@ -411,9 +422,12 @@ void DefaultRenderPipelineView::Render()
         {PSP_GBUFFERINVSIZE, renderBufferManager_->GetInvOutputSize()},
     };
 
-    sceneProcessor_->RenderSceneBatches("OpaqueBase", camera, opaquePass_->GetBaseBatches(), {}, cameraParameters);
-    sceneProcessor_->RenderSceneBatches("OpaqueLight", camera, opaquePass_->GetLightBatches(), {}, cameraParameters);
-    sceneProcessor_->RenderSceneBatches("PostOpaque", camera, postOpaquePass_->GetBaseBatches(), {}, cameraParameters);
+    sceneProcessor_->RenderSceneBatches(
+        "OpaqueBase", camera, opaquePass_->GetBaseBatches(), {}, cameraParameters, frameParameters_);
+    sceneProcessor_->RenderSceneBatches(
+        "OpaqueLight", camera, opaquePass_->GetLightBatches(), {}, cameraParameters, frameParameters_);
+    sceneProcessor_->RenderSceneBatches(
+        "PostOpaque", camera, postOpaquePass_->GetBaseBatches(), {}, cameraParameters, frameParameters_);
 
     if (hasRefraction)
         renderBufferManager_->SwapColorBuffers(true);
@@ -426,9 +440,10 @@ void DefaultRenderPipelineView::Render()
     if (canReadDepth)
         renderBufferManager_->SetOutputRenderTargets(true);
 
-    sceneProcessor_->RenderSceneBatches("Alpha", camera, alphaPass_->GetBatches(),
-        depthAndColorTextures, cameraParameters);
-    sceneProcessor_->RenderSceneBatches("PostAlpha", camera, postAlphaPass_->GetBatches());
+    sceneProcessor_->RenderSceneBatches(
+        "Alpha", camera, alphaPass_->GetBatches(), depthAndColorTextures, cameraParameters, frameParameters_);
+    sceneProcessor_->RenderSceneBatches(
+        "PostAlpha", camera, postAlphaPass_->GetBatches(), {}, cameraParameters, frameParameters_);
 
     if (outlineBuffer_->IsEnabled())
     {
@@ -449,7 +464,7 @@ void DefaultRenderPipelineView::Render()
 
         renderBufferManager_->SetRenderTargets(nullptr, renderTargets);
         renderBufferManager_->ClearColor(renderTargets[0], Color::TRANSPARENT_BLACK);
-        sceneProcessor_->RenderSceneBatches("Outline", camera, batches, {}, cameraParameters);
+        sceneProcessor_->RenderSceneBatches("Outline", camera, batches, {}, cameraParameters, frameParameters_);
     }
 
     if (renderPath_)

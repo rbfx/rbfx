@@ -88,6 +88,18 @@ RenderPipelineView::RenderPipelineView(RenderPipeline* renderPipeline)
 {
 }
 
+void RenderPipelineView::UpdateFrameParameters()
+{
+    frameParameters_.clear();
+
+    if (!renderPipeline_)
+        return;
+
+    const auto& params = renderPipeline_->GetFrameShaderParameters();
+    for (const auto& [name, value] : params)
+        frameParameters_.push_back(ShaderParameterDesc{name, value});
+}
+
 RenderPipeline::RenderPipeline(Context* context)
     : Component(context)
 {
@@ -112,6 +124,7 @@ void RenderPipeline::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Render Passes", GetRenderPassesAttr, SetRenderPassesAttr, VariantVector, Variant::emptyVariantVector, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Render Path Parameters", GetRenderPathParameters, SetRenderPathParameters, StringVariantMap, Variant::emptyVariantMap, AM_DEFAULT)
         .SetMetadata(AttributeMetadata::DynamicMetadata, true);
+    URHO3D_ACCESSOR_ATTRIBUTE("Frame Shader Parameters", GetFrameShaderParameters, SetFrameShaderParameters, StringVariantMap, Variant::emptyVariantMap, AM_DEFAULT);
 
     URHO3D_ENUM_ATTRIBUTE_EX("Color Space", settings_.renderBufferManager_.colorSpace_, MarkSettingsDirty, colorSpaceNames, RenderPipelineColorSpace::GammaLDR, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE_EX("Material Quality", settings_.sceneProcessor_.materialQuality_, MarkSettingsDirty, materialQualityNames, SceneProcessorSettings{}.materialQuality_, AM_DEFAULT);
@@ -224,6 +237,50 @@ void RenderPipeline::UpdateRenderPathParameters(const VariantMap& params)
     }
     if (modified)
         OnParametersChanged(this);
+}
+
+void RenderPipeline::UpdateRenderPathParameter(const StringHash& nameHash, const Variant& value)
+{
+    const auto iter = renderPathParameters_.find_by_hash(nameHash.Value());
+    if (iter == renderPathParameters_.end())
+        return;
+
+    if (iter->second != value)
+    {
+        iter->second = value;
+        OnParametersChanged(this);
+    }
+}
+
+void RenderPipeline::SetFrameShaderParameters(const StringVariantMap& params)
+{
+    frameShaderParameters_ = params;
+}
+
+void RenderPipeline::UpdateFrameShaderParameters(const VariantMap& params)
+{
+    for (const auto& [nameHash, newValue] : params)
+    {
+        const auto iter = frameShaderParameters_.find_by_hash(nameHash.Value());
+        if (iter == frameShaderParameters_.end())
+            continue;
+
+        iter->second = newValue;
+    }
+}
+
+void RenderPipeline::UpdateFrameShaderParameter(const StringHash& nameHash, const Variant& value)
+{
+    const auto iter = frameShaderParameters_.find_by_hash(nameHash.Value());
+    if (iter == frameShaderParameters_.end())
+        return;
+
+    iter->second = value;
+}
+
+void RenderPipeline::SetFrameShaderParameter(const ea::string& name, const Variant& value)
+{
+    frameShaderParameters_[name] = value;
 }
 
 void RenderPipeline::SetRenderPassEnabled(const ea::string& passName, bool enabled)

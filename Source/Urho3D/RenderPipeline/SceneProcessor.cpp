@@ -403,21 +403,26 @@ void SceneProcessor::RenderShadowMaps()
 }
 
 void SceneProcessor::RenderSceneBatches(ea::string_view debugName, Camera* camera,
-    const PipelineBatchGroup<PipelineBatchByState>& batchGroup,
-    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier)
+    const PipelineBatchGroup<PipelineBatchByState>& batchGroup, ea::span<const ShaderResourceDesc> globalResources,
+    ea::span<const ShaderParameterDesc> cameraParameters, ea::span<const ShaderParameterDesc> frameParameters,
+    unsigned instanceMultiplier)
 {
-    RenderBatchesInternal(debugName, camera, batchGroup, globalResources, cameraParameters, instanceMultiplier);
+    RenderBatchesInternal(
+        debugName, camera, batchGroup, globalResources, cameraParameters, frameParameters, instanceMultiplier);
 }
 
 void SceneProcessor::RenderSceneBatches(ea::string_view debugName, Camera* camera,
-    const PipelineBatchGroup<PipelineBatchBackToFront>& batchGroup,
-    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier)
+    const PipelineBatchGroup<PipelineBatchBackToFront>& batchGroup, ea::span<const ShaderResourceDesc> globalResources,
+    ea::span<const ShaderParameterDesc> cameraParameters, ea::span<const ShaderParameterDesc> frameParameters,
+    unsigned instanceMultiplier)
 {
-    RenderBatchesInternal(debugName, camera, batchGroup, globalResources, cameraParameters, instanceMultiplier);
+    RenderBatchesInternal(
+        debugName, camera, batchGroup, globalResources, cameraParameters, frameParameters, instanceMultiplier);
 }
 
 void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera* camera,
-    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier)
+    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters,
+    ea::span<const ShaderParameterDesc> frameParameters, unsigned instanceMultiplier)
 {
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->BeginPass(debugName);
@@ -430,6 +435,7 @@ void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera*
     ctx.instanceMultiplier_ = instanceMultiplier;
     ctx.globalResources_ = globalResources;
     ctx.cameraParameters_ = cameraParameters;
+    ctx.frameParameters_ = frameParameters;
 
     batchRenderer_->RenderLightVolumeBatches(ctx, GetLightVolumeBatches());
 
@@ -440,8 +446,10 @@ void SceneProcessor::RenderLightVolumeBatches(ea::string_view debugName, Camera*
 }
 
 template <class T>
-void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* camera, const PipelineBatchGroup<T>& batchGroup,
-    ea::span<const ShaderResourceDesc> globalResources, ea::span<const ShaderParameterDesc> cameraParameters, unsigned instanceMultiplier)
+void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* camera,
+    const PipelineBatchGroup<T>& batchGroup, ea::span<const ShaderResourceDesc> globalResources,
+    ea::span<const ShaderParameterDesc> cameraParameters, ea::span<const ShaderParameterDesc> frameParameters,
+    unsigned instanceMultiplier)
 {
     if (RenderPipelineDebugger::IsSnapshotInProgress(debugger_))
         debugger_->BeginPass(debugName);
@@ -457,6 +465,7 @@ void SceneProcessor::RenderBatchesInternal(ea::string_view debugName, Camera* ca
     ctx.instanceMultiplier_ = instanceMultiplier;
     ctx.globalResources_ = globalResources;
     ctx.cameraParameters_ = cameraParameters;
+    ctx.frameParameters_ = frameParameters;
 
     if (batchGroup.scissorRect_ != IntRect::ZERO)
         drawQueue_->SetScissorRect(batchGroup.scissorRect_);
