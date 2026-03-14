@@ -151,7 +151,7 @@ unsigned AdvancedNetworkingServer::GetClientCount() const
     return serverObjects_.size();
 }
 
-Node* AdvancedNetworkingServer::CreateControllableObject(SharedPtr<AbstractConnection, RefCounted> owner)
+Node* AdvancedNetworkingServer::CreateControllableObject(SharedPtr<ReplicatedPeer, RefCounted> owner)
 {
     if (!scene_)
         return nullptr;

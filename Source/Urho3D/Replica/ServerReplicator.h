@@ -42,7 +42,7 @@
 namespace Urho3D
 {
 
-class AbstractConnection;
+class ReplicatedPeer;
 class Network;
 class NetworkObject;
 class NetworkObjectRegistry;
@@ -68,7 +68,7 @@ public:
     const ea::unordered_set<NetworkId>& GetRecentlyRemovedObjects() const { return recentlyRemovedObjects_; }
     const ea::vector<NetworkObject*>& GetSortedObjects() const { return sortedNetworkObjects_; }
     unsigned GetIndexUpperBound() const;
-    const ea::unordered_set<NetworkObject*>& GetOwnedObjectsByConnection(AbstractConnection* connection) const;
+    const ea::unordered_set<NetworkObject*>& GetOwnedObjectsByConnection(ReplicatedPeer* connection) const;
     ea::optional<ConstByteSpan> GetReliableUpdateByIndex(unsigned index) const;
     ea::optional<ConstByteSpan> GetUnreliableUpdateByIndex(unsigned index) const;
     /// @}
@@ -104,7 +104,7 @@ private:
     ea::vector<DeltaBufferSpan> reliableDeltaUpdateData_;
     ea::vector<DeltaBufferSpan> unreliableDeltaUpdateData_;
 
-    ea::unordered_map<AbstractConnection*, ea::unordered_set<NetworkObject*>> ownedObjectsByConnection_;
+    ea::unordered_map<ReplicatedPeer*, ea::unordered_set<NetworkObject*>> ownedObjectsByConnection_;
 };
 
 /// Clock synchronization state specific to individual client connection.
@@ -112,7 +112,7 @@ class ClientSynchronizationState : public RefCounted
 {
 public:
     ClientSynchronizationState(
-        NetworkObjectRegistry* objectRegistry, SharedPtr<AbstractConnection, RefCounted> connection, const VariantMap& settings);
+        NetworkObjectRegistry* objectRegistry, SharedPtr<ReplicatedPeer, RefCounted> connection, const VariantMap& settings);
 
     /// Begin network frame. Overtime indicates how much time has passed since actual frame start time.
     void BeginNetworkFrame(NetworkFrame currentFrame, float overtime);
@@ -135,7 +135,7 @@ protected:
     void OnInputReceived(NetworkFrame inputFrame);
 
     const WeakPtr<NetworkObjectRegistry> objectRegistry_;
-    const WeakPtr<AbstractConnection, RefCounted> connection_;
+    const WeakPtr<ReplicatedPeer, RefCounted> peer_;
     VariantMap settings_;
     const unsigned updateFrequency_{};
 
@@ -169,7 +169,7 @@ struct ClientReplicationState : public ClientSynchronizationState
 {
 public:
     ClientReplicationState(
-        NetworkObjectRegistry* objectRegistry, SharedPtr<AbstractConnection, RefCounted> connection, const VariantMap& settings);
+        NetworkObjectRegistry* objectRegistry, SharedPtr<ReplicatedPeer, RefCounted> connection, const VariantMap& settings);
 
     /// Perform network update from the perspective of this client connection.
     void UpdateNetworkObjects(SharedReplicationState& sharedState);
@@ -213,11 +213,11 @@ public:
     explicit ServerReplicator(Scene* scene);
     ~ServerReplicator() override;
 
-    void AddConnection(SharedPtr<AbstractConnection, RefCounted> connection);
-    void RemoveConnection(SharedPtr<AbstractConnection, RefCounted> connection);
-    bool ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
+    void AddConnection(SharedPtr<ReplicatedPeer, RefCounted> connection);
+    void RemoveConnection(SharedPtr<ReplicatedPeer, RefCounted> connection);
+    bool ProcessMessage(ReplicatedPeer* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
     void ProcessSceneUpdate(StringHash eventType);
-    void ReportInputLoss(AbstractConnection* connection, float percentLoss);
+    void ReportInputLoss(ReplicatedPeer* connection, float percentLoss);
 
     void SetCurrentFrame(NetworkFrame frame);
 
@@ -225,9 +225,9 @@ public:
     /// @{
     ea::string GetDebugInfo() const;
     const Variant& GetSetting(const NetworkSetting& setting) const;
-    unsigned GetFeedbackDelay(AbstractConnection* connection) const;
-    const ea::unordered_set<NetworkObject*>& GetNetworkObjectsOwnedByConnection(AbstractConnection* connection) const;
-    NetworkObject* GetNetworkObjectOwnedByConnection(AbstractConnection* connection) const;
+    unsigned GetFeedbackDelay(ReplicatedPeer* connection) const;
+    const ea::unordered_set<NetworkObject*>& GetNetworkObjectsOwnedByConnection(ReplicatedPeer* connection) const;
+    NetworkObject* GetNetworkObjectOwnedByConnection(ReplicatedPeer* connection) const;
     NetworkTime GetServerTime() const { return NetworkTime{currentFrame_}; }
     unsigned GetUpdateFrequency() const { return updateFrequency_; }
     NetworkFrame GetCurrentFrame() const { return currentFrame_; }
@@ -237,7 +237,7 @@ private:
     void OnInputReady(float timeStep, bool isUpdateNow, float overtime);
     void OnNetworkUpdate();
 
-    ClientReplicationState* GetClientState(AbstractConnection* connection) const;
+    ClientReplicationState* GetClientState(ReplicatedPeer* connection) const;
 
     const WeakPtr<Network> network_;
     const WeakPtr<Scene> scene_;
@@ -251,7 +251,7 @@ private:
     SharedPtr<SceneUpdateSynchronizer> updateSync_;
 
     SharedPtr<SharedReplicationState> sharedState_;
-    ea::unordered_map<AbstractConnection*, SharedPtr<ClientReplicationState>> connections_;
+    ea::unordered_map<ReplicatedPeer*, SharedPtr<ClientReplicationState>> connections_;
 };
 
 }

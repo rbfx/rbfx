@@ -40,7 +40,7 @@
 namespace Urho3D
 {
 
-class AbstractConnection;
+class ReplicatedPeer;
 class Network;
 class NetworkObjectRegistry;
 class NetworkObject;
@@ -52,14 +52,14 @@ struct NetworkSetting;
 class URHO3D_API ClientReplicaClock : public Object
 {
 public:
-    ClientReplicaClock(Scene* scene, WeakPtr<AbstractConnection, RefCounted> connection,
+    ClientReplicaClock(Scene* scene, WeakPtr<ReplicatedPeer, RefCounted> connection,
         const MsgSceneClock& initialClock, const VariantMap& serverSettings);
     ~ClientReplicaClock();
 
     /// Return constant properties of replica.
     /// @{
     Scene* GetScene() const { return scene_; }
-    AbstractConnection* GetConnection() const { return connection_; }
+    ReplicatedPeer* GetConnection() const { return peer_; }
     unsigned GetConnectionId() const { return thisConnectionId_; }
     unsigned GetUpdateFrequency() const { return updateFrequency_; }
     double SecondsToFrames(double value) const { return value * updateFrequency_; }
@@ -92,7 +92,7 @@ protected:
     void UpdateClientClocks(float timeStep, const ea::vector<MsgSceneClock>& pendingClockUpdates);
 
     const WeakPtr<Scene> scene_;
-    const WeakPtr<AbstractConnection, RefCounted> connection_;
+    const WeakPtr<ReplicatedPeer, RefCounted> peer_;
 
 private:
     SoftNetworkTime InitializeSoftTime() const;
@@ -127,7 +127,7 @@ class URHO3D_API ClientReplica : public ClientReplicaClock
     URHO3D_OBJECT(ClientReplica, ClientReplicaClock);
 
 public:
-    ClientReplica(Scene* scene, WeakPtr<AbstractConnection, RefCounted> connection,
+    ClientReplica(Scene* scene, WeakPtr<ReplicatedPeer, RefCounted> connection,
         const MsgSceneClock& initialClock, const VariantMap& serverSettings);
     ~ClientReplica() override;
 

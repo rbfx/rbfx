@@ -19,21 +19,13 @@ namespace Urho3D
 
 class NetworkConnection;
 
-class AbstractConnectionListener : public Object
-{
-    URHO3D_OBJECT(AbstractConnectionListener, Object);
-
-public:
-    explicit AbstractConnectionListener(Context* context) : Object(context) {}
-};
-
 /// Replication-oriented interface attached to transport connection.
-class URHO3D_API AbstractConnection // TODO: This must be renamed.
+class URHO3D_API ReplicatedPeer
 {
 public:
-    explicit AbstractConnection(NetworkConnection* connection, unsigned pingIntervalMs=250, unsigned maxPingMs=10000, unsigned clockBufferSize=40,
+    explicit ReplicatedPeer(NetworkConnection* connection, unsigned pingIntervalMs=250, unsigned maxPingMs=10000, unsigned clockBufferSize=40,
         unsigned pingBufferSize=10, ea::function<unsigned()> getTimestamp = [] { return Time::GetSystemTime(); });
-    virtual ~AbstractConnection() = default;
+    virtual ~ReplicatedPeer() = default;
 
     /// Return unique peer ID.
     unsigned GetObjectID() const { return idFamily_.GetObjectID(); }
@@ -67,7 +59,15 @@ public:
     /// @}
 
 private:
-    SharedPtr<AbstractConnection, RefCounted> AsSharedPtr();
+    class Listener : public Object
+    {
+        URHO3D_OBJECT(ReplicatedPeer::Listener, Object);
+
+    public:
+        explicit Listener(Context* context) : Object(context) {}
+    };
+
+    SharedPtr<ReplicatedPeer, RefCounted> AsSharedPtr();
     void OnConnected();
     void OnDisconnected();
 
@@ -78,8 +78,8 @@ private:
 
     NetworkConnection* connection_ = nullptr;
     ClockSynchronizer clock_;
-    AbstractConnectionListener listener_;
-    IDFamily<AbstractConnection> idFamily_{};
+    Listener listener_;
+    IDFamily<ReplicatedPeer> idFamily_{};
     WeakPtr<ReplicationManager> replicationManager_;
 };
 

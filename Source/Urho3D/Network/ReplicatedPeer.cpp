@@ -15,7 +15,7 @@
 namespace Urho3D
 {
 
-AbstractConnection::AbstractConnection(NetworkConnection* connection, unsigned pingIntervalMs, unsigned maxPingMs, unsigned clockBufferSize,
+ReplicatedPeer::ReplicatedPeer(NetworkConnection* connection, unsigned pingIntervalMs, unsigned maxPingMs, unsigned clockBufferSize,
         unsigned pingBufferSize, ea::function<unsigned()> getTimestamp)
     : connection_(connection)
     , clock_(pingIntervalMs, maxPingMs, clockBufferSize, pingBufferSize, getTimestamp)
@@ -30,7 +30,7 @@ AbstractConnection::AbstractConnection(NetworkConnection* connection, unsigned p
     connection_->onDisconnected_.Subscribe(&listener_, [this](bool) { OnDisconnected(); });
 }
 
-void AbstractConnection::SetReplicationManager(ReplicationManager* replicationManager)
+void ReplicatedPeer::SetReplicationManager(ReplicationManager* replicationManager)
 {
     URHO3D_ASSERT(connection_);
 
@@ -48,12 +48,12 @@ void AbstractConnection::SetReplicationManager(ReplicationManager* replicationMa
         OnConnected();
 }
 
-SharedPtr<AbstractConnection, RefCounted> AbstractConnection::AsSharedPtr()
+SharedPtr<ReplicatedPeer, RefCounted> ReplicatedPeer::AsSharedPtr()
 {
-    return SharedPtr<AbstractConnection, RefCounted>(this, connection_);
+    return SharedPtr<ReplicatedPeer, RefCounted>(this, connection_);
 }
 
-void AbstractConnection::ProcessReplicationMessage(NetworkMessageId messageId, MemoryBuffer& msg, bool& handled)
+void ReplicatedPeer::ProcessReplicationMessage(NetworkMessageId messageId, MemoryBuffer& msg, bool& handled)
 {
     if (handled || !replicationManager_)
         return;
@@ -67,10 +67,10 @@ void AbstractConnection::ProcessReplicationMessage(NetworkMessageId messageId, M
     }
 
     if (replicationManager_)
-        handled |= replicationManager_->ProcessMessage(static_cast<AbstractConnection*>(this), messageId, msg);
+        handled |= replicationManager_->ProcessMessage(static_cast<ReplicatedPeer*>(this), messageId, msg);
 }
 
-void AbstractConnection::SendReplicationMessages()
+void ReplicatedPeer::SendReplicationMessages()
 {
     if (!connection_ || !connection_->IsConnected() || !replicationManager_)
         return;
@@ -79,14 +79,14 @@ void AbstractConnection::SendReplicationMessages()
         WriteSerializedMessage(*connection_, MSG_CLOCK_SYNC, *clockMessage, PacketType::UnreliableUnordered);
 }
 
-ea::string AbstractConnection::ToString() const
+ea::string ReplicatedPeer::ToString() const
 {
     if (!connection_ || connection_->IsDisconnected())
         return Format("#{} <disconnected>", GetObjectID());
     return Format("#{} {}:{}", GetObjectID(), connection_->GetAddress(), connection_->GetPort());
 }
 
-void AbstractConnection::OnConnected()
+void ReplicatedPeer::OnConnected()
 {
     URHO3D_ASSERT(connection_);
 
@@ -99,7 +99,7 @@ void AbstractConnection::OnConnected()
         replicationManager_->StartClient(AsSharedPtr());
 }
 
-void AbstractConnection::OnDisconnected()
+void ReplicatedPeer::OnDisconnected()
 {
     URHO3D_ASSERT(connection_);
 
