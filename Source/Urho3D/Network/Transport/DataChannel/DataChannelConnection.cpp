@@ -152,10 +152,10 @@ void DataChannelConnection::OnDataChannelConnected(int index)
         address_ = peer_->remoteAddress().value().c_str();
 #endif
 
+    DoOnConnected();
+
     if (auto* server = static_cast<DataChannelServer*>(GetServer()))
         server->DoOnConnected(this);
-
-    DoOnConnected();
 
     // Signaling server connection is no longer needed.
     websocket_->close();
