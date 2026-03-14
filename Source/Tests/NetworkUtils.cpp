@@ -135,7 +135,7 @@ unsigned ManualConnection::systemTime = 0;
 
 ManualConnection::ManualConnection(Context* context, ReplicationManager* sink, unsigned seed)
     : NetworkConnection(context)
-    , AbstractConnection(this)
+    , ReplicatedPeer(this)
     , sink_(sink)
     , random_(seed)
 {
@@ -353,7 +353,7 @@ void NetworkSimulator::SimulateTimeCallback(
     }
 }
 
-SharedPtr<AbstractConnection, RefCounted> NetworkSimulator::GetServerToClientConnection(Scene* clientScene)
+SharedPtr<ReplicatedPeer, RefCounted> NetworkSimulator::GetServerToClientConnection(Scene* clientScene)
 {
     const auto iter = FindClientIter(clientScene);
     return iter != clients_.end() ? iter->serverToClient_ : nullptr;

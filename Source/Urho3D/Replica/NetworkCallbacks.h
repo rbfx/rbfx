@@ -34,7 +34,7 @@
 namespace Urho3D
 {
 
-class AbstractConnection;
+class ReplicatedPeer;
 class Deserializer;
 class Serializer;
 
@@ -78,7 +78,7 @@ public:
 
     /// Return whether the component should be replicated for specified client connection, and how frequently.
     /// The first reported valid relevance is used.
-    virtual ea::optional<NetworkObjectRelevance> GetRelevanceForClient(AbstractConnection* connection) { return ea::nullopt; }
+    virtual ea::optional<NetworkObjectRelevance> GetRelevanceForClient(ReplicatedPeer* connection) { return ea::nullopt; }
     /// Called when world transform or parent of the object is updated in Server mode.
     virtual void UpdateTransformOnServer() {}
 

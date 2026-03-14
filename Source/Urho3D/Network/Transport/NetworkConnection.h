@@ -25,7 +25,7 @@ namespace Urho3D
 
 class NetworkConnection;
 class WorkQueue;
-class AbstractConnection;
+class ReplicatedPeer;
 class NetworkServer;
 
 #ifndef SWIG

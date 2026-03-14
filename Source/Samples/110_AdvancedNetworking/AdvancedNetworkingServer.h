@@ -31,7 +31,7 @@ public:
     unsigned GetClientCount() const;
 
 private:
-    Node* CreateControllableObject(SharedPtr<AbstractConnection, RefCounted> owner);
+    Node* CreateControllableObject(SharedPtr<ReplicatedPeer, RefCounted> owner);
     void ProcessSingleRaycast(const ServerRaycastInfo& raycastInfo);
     void HandleServerConnected(NetworkConnection* connection);
     void HandleServerDisconnected(NetworkConnection* connection);

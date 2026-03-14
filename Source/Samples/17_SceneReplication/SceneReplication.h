@@ -89,7 +89,7 @@ private:
     /// Update visibility of buttons according to connection and server status.
     void UpdateButtons();
     /// Create a controllable ball object and return its scene node.
-    Node* CreateControllableObject(SharedPtr<AbstractConnection, RefCounted> owner);
+    Node* CreateControllableObject(SharedPtr<ReplicatedPeer, RefCounted> owner);
     /// Find player object on client side.
     Node* GetPlayerObject();
     /// Read input and move the camera.

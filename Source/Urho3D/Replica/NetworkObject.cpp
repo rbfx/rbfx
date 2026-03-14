@@ -37,7 +37,7 @@ NetworkObject::NetworkObject(Context* context)
 
 NetworkObject::~NetworkObject() = default;
 
-void NetworkObject::SetOwner(SharedPtr<AbstractConnection, RefCounted> owner)
+void NetworkObject::SetOwner(SharedPtr<ReplicatedPeer, RefCounted> owner)
 {
     if (networkMode_ != NetworkObjectMode::Standalone)
     {

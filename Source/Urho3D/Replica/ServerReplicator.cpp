@@ -59,7 +59,7 @@ void SharedReplicationState::OnNetworkObjectRemoved(NetworkObject* networkObject
     if (recentlyAddedObjects_.erase(networkObject->GetNetworkId()) == 0)
         recentlyRemovedObjects_.insert(networkObject->GetNetworkId());
 
-    if (AbstractConnection* ownerConnection = networkObject->GetOwnerConnection())
+    if (ReplicatedPeer* ownerConnection = networkObject->GetOwnerConnection())
     {
         auto& ownedObjects = ownedObjectsByConnection_[ownerConnection];
         ownedObjects.erase(networkObject);
@@ -111,7 +111,7 @@ void SharedReplicationState::InitializeNewObjects()
         networkObject->InitializeOnServer();
         networkObject->SetNetworkMode(NetworkObjectMode::Server);
 
-        if (AbstractConnection* ownerConnection = networkObject->GetOwnerConnection())
+        if (ReplicatedPeer* ownerConnection = networkObject->GetOwnerConnection())
             ownedObjectsByConnection_[ownerConnection].insert(networkObject);
     }
     recentlyAddedObjects_.clear();
@@ -165,7 +165,7 @@ unsigned SharedReplicationState::GetIndexUpperBound() const
 }
 
 const ea::unordered_set<NetworkObject*>& SharedReplicationState::GetOwnedObjectsByConnection(
-    AbstractConnection* connection) const
+    ReplicatedPeer* connection) const
 {
     static const ea::unordered_set<NetworkObject*> emptyCollection;
     const auto iter = ownedObjectsByConnection_.find(connection);
@@ -193,23 +193,23 @@ ConstByteSpan SharedReplicationState::GetSpanData(const DeltaBufferSpan& span) c
 }
 
 ClientSynchronizationState::ClientSynchronizationState(
-    NetworkObjectRegistry* objectRegistry, SharedPtr<AbstractConnection, RefCounted> connection, const VariantMap& settings)
+    NetworkObjectRegistry* objectRegistry, SharedPtr<ReplicatedPeer, RefCounted> connection, const VariantMap& settings)
     : objectRegistry_(objectRegistry)
-    , connection_(connection)
+    , peer_(connection)
     , settings_(settings)
     , updateFrequency_(GetSetting(NetworkSettings::UpdateFrequency).GetUInt())
     , inputDelayFilter_(GetSetting(NetworkSettings::InputDelayFilterBufferSize).GetUInt())
     , inputStats_(GetSetting(NetworkSettings::InputBufferingWindowSize).GetUInt(), InputStatsSafetyLimit)
     , inputBufferFilter_(GetSetting(NetworkSettings::InputBufferingFilterBufferSize).GetUInt())
 {
-    SetNetworkSetting(settings_, NetworkSettings::ConnectionId, connection_->GetObjectID());
+    SetNetworkSetting(settings_, NetworkSettings::ConnectionId, peer_->GetObjectID());
 }
 
 void ClientSynchronizationState::BeginNetworkFrame(NetworkFrame currentFrame, float overtime)
 {
     const float timeStep = 1.0f / updateFrequency_;
     frame_ = currentFrame;
-    frameLocalTime_ = connection_->GetLocalTime() - RoundToInt(overtime * 1000);
+    frameLocalTime_ = peer_->GetLocalTime() - RoundToInt(overtime * 1000);
     clockTimeAccumulator_ += timeStep;
 }
 
@@ -225,7 +225,7 @@ void ClientSynchronizationState::SendMessages()
     {
         const unsigned magic = MakeMagic();
         WriteSerializedMessage(
-            *connection_->GetConnection(), MSG_CONFIGURE, MsgConfigure{magic, settings_}, PacketType::ReliableUnordered);
+            *peer_->GetConnection(), MSG_CONFIGURE, MsgConfigure{magic, settings_}, PacketType::ReliableUnordered);
         synchronizationMagic_ = magic;
     }
 
@@ -239,18 +239,18 @@ void ClientSynchronizationState::SendMessages()
         UpdateInputBuffer();
 
         const MsgSceneClock msg{frame_, frameLocalTime_, inputDelay_ + inputBufferSize_};
-        WriteSerializedMessage(*connection_->GetConnection(), MSG_SCENE_CLOCK, msg, PacketType::UnreliableUnordered);
+        WriteSerializedMessage(*peer_->GetConnection(), MSG_SCENE_CLOCK, msg, PacketType::UnreliableUnordered);
     }
 }
 
 void ClientSynchronizationState::UpdateInputDelay()
 {
-    const unsigned latestPingTimestamp = connection_->GetLocalTimeOfLatestRoundtrip();
+    const unsigned latestPingTimestamp = peer_->GetLocalTimeOfLatestRoundtrip();
     if (latestProcessedPingTimestamp_ == latestPingTimestamp)
         return;
     latestProcessedPingTimestamp_ = latestPingTimestamp;
 
-    const double inputDelayInFrames = 0.001 * connection_->GetPing() * updateFrequency_;
+    const double inputDelayInFrames = 0.001 * peer_->GetPing() * updateFrequency_;
     inputDelayFilter_.AddValue(CeilToInt(inputDelayInFrames));
     inputDelay_ = inputDelayFilter_.GetStabilizedAverageMaxValue();
 }
@@ -273,7 +273,7 @@ void ClientSynchronizationState::ProcessSynchronized(const MsgSynchronized& msg)
     if (synchronizationMagic_ != msg.magic_)
     {
         URHO3D_LOGWARNING(
-            "Connection {}: Unexpected synchronization acknowledgement received", connection_->ToString());
+            "Connection {}: Unexpected synchronization acknowledgement received", peer_->ToString());
         return;
     }
 
@@ -306,7 +306,7 @@ unsigned ClientSynchronizationState::MakeMagic() const
 }
 
 ClientReplicationState::ClientReplicationState(
-    NetworkObjectRegistry* objectRegistry, SharedPtr<AbstractConnection, RefCounted> connection, const VariantMap& settings)
+    NetworkObjectRegistry* objectRegistry, SharedPtr<ReplicatedPeer, RefCounted> connection, const VariantMap& settings)
     : ClientSynchronizationState(objectRegistry, connection, settings)
 {
 }
@@ -345,7 +345,7 @@ void ClientReplicationState::ProcessObjectsFeedbackUnreliable(MemoryBuffer& mess
 {
     if (!IsSynchronized())
     {
-        URHO3D_LOGWARNING("Connection {}: Received unexpected feedback", connection_->ToString());
+        URHO3D_LOGWARNING("Connection {}: Received unexpected feedback", peer_->ToString());
         return;
     }
 
@@ -360,15 +360,15 @@ void ClientReplicationState::ProcessObjectsFeedbackUnreliable(MemoryBuffer& mess
         NetworkObject* networkObject = objectRegistry_->GetNetworkObject(networkId);
         if (!networkObject)
         {
-            URHO3D_LOGWARNING("Connection {}: Received feedback for unknown NetworkObject {}", connection_->ToString(),
+            URHO3D_LOGWARNING("Connection {}: Received feedback for unknown NetworkObject {}", peer_->ToString(),
                 ToString(networkId));
             continue;
         }
 
-        if (networkObject->GetOwnerConnection() != connection_)
+        if (networkObject->GetOwnerConnection() != peer_)
         {
             URHO3D_LOGWARNING("Connection {}: Received feedback for NetworkObject {} owned by connection #{}",
-                connection_->ToString(), ToString(networkId), networkObject->GetOwnerConnectionId());
+                peer_->ToString(), ToString(networkId), networkObject->GetOwnerConnectionId());
             continue;
         }
 
@@ -380,7 +380,7 @@ void ClientReplicationState::ProcessObjectsFeedbackUnreliable(MemoryBuffer& mess
 
 void ClientReplicationState::SendRemoveObjects()
 {
-    MultiMessageWriter writer{*connection_->GetConnection(), buffer_, MSG_REMOVE_OBJECTS, PacketType::ReliableOrdered};
+    MultiMessageWriter writer{*peer_->GetConnection(), buffer_, MSG_REMOVE_OBJECTS, PacketType::ReliableOrdered};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();
@@ -405,7 +405,7 @@ void ClientReplicationState::SendRemoveObjects()
 
 void ClientReplicationState::SendAddObjects()
 {
-    LargeMessageWriter writer{*connection_->GetConnection(), buffer_, MSG_ADD_OBJECTS_INCOMPLETE, MSG_ADD_OBJECTS};
+    LargeMessageWriter writer{*peer_->GetConnection(), buffer_, MSG_ADD_OBJECTS_INCOMPLETE, MSG_ADD_OBJECTS};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();
@@ -441,7 +441,7 @@ void ClientReplicationState::SendAddObjects()
 
 void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationState& sharedState)
 {
-    LargeMessageWriter writer{*connection_->GetConnection(), buffer_, MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE, MSG_UPDATE_OBJECTS_RELIABLE};
+    LargeMessageWriter writer{*peer_->GetConnection(), buffer_, MSG_UPDATE_OBJECTS_RELIABLE_INCOMPLETE, MSG_UPDATE_OBJECTS_RELIABLE};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();
@@ -481,7 +481,7 @@ void ClientReplicationState::SendUpdateObjectsReliable(const SharedReplicationSt
 void ClientReplicationState::SendUpdateObjectsUnreliable(
     NetworkFrame currentFrame, const SharedReplicationState& sharedState)
 {
-    MultiMessageWriter writer{*connection_->GetConnection(), buffer_, MSG_UPDATE_OBJECTS_UNRELIABLE, PacketType::UnreliableUnordered};
+    MultiMessageWriter writer{*peer_->GetConnection(), buffer_, MSG_UPDATE_OBJECTS_UNRELIABLE, PacketType::UnreliableUnordered};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();
@@ -568,7 +568,7 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
         {
             // Begin replication of the object if both the object and its parent are relevant
             objectsRelevance_[index] =
-                networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::NormalUpdates);
+                networkObject->GetRelevanceForClient(peer_).value_or(NetworkObjectRelevance::NormalUpdates);
             if (objectsRelevance_[index] != NetworkObjectRelevance::Irrelevant)
             {
                 objectsRelevanceTimeouts_[index] = relevanceTimeout;
@@ -582,7 +582,7 @@ void ClientReplicationState::UpdateNetworkObjects(SharedReplicationState& shared
             if (objectsRelevanceTimeouts_[index] < 0.0f || !isParentRelevant)
             {
                 objectsRelevance_[index] = isParentRelevant
-                    ? networkObject->GetRelevanceForClient(connection_).value_or(NetworkObjectRelevance::NormalUpdates)
+                    ? networkObject->GetRelevanceForClient(peer_).value_or(NetworkObjectRelevance::NormalUpdates)
                     : NetworkObjectRelevance::Irrelevant;
 
                 if (objectsRelevance_[index] == NetworkObjectRelevance::Irrelevant)
@@ -688,7 +688,7 @@ void ServerReplicator::OnNetworkUpdate()
         clientState->SendMessages(currentFrame_, *sharedState_);
 }
 
-void ServerReplicator::AddConnection(SharedPtr<AbstractConnection, RefCounted> connection)
+void ServerReplicator::AddConnection(SharedPtr<ReplicatedPeer, RefCounted> connection)
 {
     if (connections_.contains(connection))
     {
@@ -703,7 +703,7 @@ void ServerReplicator::AddConnection(SharedPtr<AbstractConnection, RefCounted> c
     URHO3D_LOGINFO("Connection {} is added", connection->ToString());
 }
 
-void ServerReplicator::RemoveConnection(SharedPtr<AbstractConnection, RefCounted> connection)
+void ServerReplicator::RemoveConnection(SharedPtr<ReplicatedPeer, RefCounted> connection)
 {
     if (!connections_.contains(connection))
     {
@@ -716,7 +716,7 @@ void ServerReplicator::RemoveConnection(SharedPtr<AbstractConnection, RefCounted
 }
 
 bool ServerReplicator::ProcessMessage(
-    AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
+    ReplicatedPeer* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
     if (ClientReplicationState* clientState = GetClientState(connection))
         return clientState->ProcessMessage(messageId, messageData);
@@ -738,7 +738,7 @@ void ServerReplicator::ProcessSceneUpdate(StringHash eventType)
     }
 }
 
-void ServerReplicator::ReportInputLoss(AbstractConnection* connection, float percentLoss)
+void ServerReplicator::ReportInputLoss(ReplicatedPeer* connection, float percentLoss)
 {
     if (ClientReplicationState* clientState = GetClientState(connection))
         clientState->SetReportedInputLoss(percentLoss);
@@ -749,7 +749,7 @@ void ServerReplicator::SetCurrentFrame(NetworkFrame frame)
     currentFrame_ = frame;
 }
 
-ClientReplicationState* ServerReplicator::GetClientState(AbstractConnection* connection) const
+ClientReplicationState* ServerReplicator::GetClientState(ReplicatedPeer* connection) const
 {
     auto iter = connections_.find(connection);
     return iter != connections_.end() ? iter->second : nullptr;
@@ -777,19 +777,19 @@ const Variant& ServerReplicator::GetSetting(const NetworkSetting& setting) const
     return GetNetworkSetting(settings_, setting);
 }
 
-unsigned ServerReplicator::GetFeedbackDelay(AbstractConnection* connection) const
+unsigned ServerReplicator::GetFeedbackDelay(ReplicatedPeer* connection) const
 {
     const auto iter = connections_.find(connection);
     return iter != connections_.end() ? iter->second->GetInputDelay() + iter->second->GetInputBufferSize() : 0;
 }
 
 const ea::unordered_set<NetworkObject*>& ServerReplicator::GetNetworkObjectsOwnedByConnection(
-    AbstractConnection* connection) const
+    ReplicatedPeer* connection) const
 {
     return sharedState_->GetOwnedObjectsByConnection(connection);
 }
 
-NetworkObject* ServerReplicator::GetNetworkObjectOwnedByConnection(AbstractConnection* connection) const
+NetworkObject* ServerReplicator::GetNetworkObjectOwnedByConnection(ReplicatedPeer* connection) const
 {
     const auto& ownedObjects = GetNetworkObjectsOwnedByConnection(connection);
     return ownedObjects.size() == 1 ? *ownedObjects.begin() : nullptr;

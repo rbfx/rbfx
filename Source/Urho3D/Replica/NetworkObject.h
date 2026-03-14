@@ -37,7 +37,7 @@
 namespace Urho3D
 {
 
-class AbstractConnection;
+class ReplicatedPeer;
 
 enum class NetworkObjectMode
 {
@@ -71,7 +71,7 @@ public:
     ~NetworkObject() override;
 
     /// Server-only: set owner connection which is allowed to send feedback for this object.
-    void SetOwner(SharedPtr<AbstractConnection, RefCounted> owner);
+    void SetOwner(SharedPtr<ReplicatedPeer, RefCounted> owner);
 
     static void RegisterObject(Context* context);
 
@@ -95,7 +95,7 @@ public:
     NetworkId GetParentNetworkId() const;
     NetworkObject* GetParentNetworkObject() const { return parentNetworkObject_; }
     const ea::vector<WeakPtr<NetworkObject>>& GetChildrenNetworkObjects() const { return childrenNetworkObjects_; }
-    AbstractConnection* GetOwnerConnection() const { return ownerConnection_; }
+    ReplicatedPeer* GetOwnerConnection() const { return ownerConnection_; }
     unsigned GetOwnerConnectionId() const { return ownerConnection_ ? ownerConnection_->GetObjectID() : 0; }
 
     /// Return network mode.
@@ -129,7 +129,7 @@ private:
 
     /// ReplicationManager corresponding to the NetworkObject.
     NetworkObjectMode networkMode_{};
-    WeakPtr<AbstractConnection, RefCounted> ownerConnection_{};
+    WeakPtr<ReplicatedPeer, RefCounted> ownerConnection_{};
 
     /// NetworkObject hierarchy
     /// @{

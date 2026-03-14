@@ -93,8 +93,8 @@ private:
     ea::vector<VectorBuffer> outgoing_;
 };
 
-/// Test implementation of AbstractConnection with manual control over message transmission.
-class ManualConnection : public NetworkConnection, public AbstractConnection
+/// Test implementation of ReplicatedPeer with manual control over message transmission.
+class ManualConnection : public NetworkConnection, public ReplicatedPeer
 {
     URHO3D_OBJECT(ManualConnection, Object);
 
@@ -103,7 +103,7 @@ public:
 
     ManualConnection(Context* context, ReplicationManager* sink, unsigned seed);
 
-    void SetSinkConnection(AbstractConnection* sinkConnection) { sinkConnection_ = sinkConnection; }
+    void SetSinkConnection(ReplicatedPeer* sinkConnection) { sinkConnection_ = sinkConnection; }
     void SetQuality(const ConnectionQuality& quality) { quality_ = quality; }
 
     bool Connect(const URL& url) override { return true; }
@@ -134,7 +134,7 @@ private:
     void SendUnorderedMessages(ea::vector<InternalMessage>& messages);
 
     ReplicationManager* sink_{};
-    AbstractConnection* sinkConnection_{};
+    ReplicatedPeer* sinkConnection_{};
     RandomEngine random_;
 
     ConnectionQuality quality_;
@@ -172,7 +172,7 @@ public:
     void SimulateEngineFrame(float timeStep);
     void SimulateTime(float time, unsigned millisecondsInQuant = MillisecondsInQuant);
 
-    SharedPtr<AbstractConnection, RefCounted> GetServerToClientConnection(Scene* clientScene);
+    SharedPtr<ReplicatedPeer, RefCounted> GetServerToClientConnection(Scene* clientScene);
 
     RandomEngine& GetRandom() { return random_; }
 

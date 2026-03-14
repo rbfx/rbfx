@@ -128,7 +128,7 @@ template <class T> void BaseFeedbackBehavior<T>::OnServerFrameBegin(NetworkFrame
 
         const auto replicationManager = GetNetworkObject()->GetReplicationManager();
         ServerReplicator* serverReplicator = replicationManager->GetServerReplicator();
-        if (AbstractConnection* ownerConnection = GetNetworkObject()->GetOwnerConnection())
+        if (ReplicatedPeer* ownerConnection = GetNetworkObject()->GetOwnerConnection())
             serverReplicator->ReportInputLoss(ownerConnection, loss);
     }
 }
