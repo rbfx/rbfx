@@ -25,6 +25,8 @@
 #include <string>
 #include <regex>
 
+#include "Urho3D/DebugNew.h"
+
 namespace Urho3D
 {
 

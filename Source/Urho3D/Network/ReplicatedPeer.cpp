@@ -10,6 +10,8 @@
 #include "Urho3D/Network/Transport/NetworkConnection.h"
 #include "Urho3D/Replica/ReplicationManager.h"
 
+#include "Urho3D/DebugNew.h"
+
 namespace Urho3D
 {
 
