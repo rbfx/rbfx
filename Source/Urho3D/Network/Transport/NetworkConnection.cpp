@@ -103,8 +103,8 @@ void NetworkConnection::DoOnConnected()
     SharedPtr<NetworkConnection> ref(this);
     TaskFunction&& cb = [self = std::move(ref)](unsigned, WorkQueue*)
     {
-        self->OnConnected();
         self->state_ = State::Connected;
+        self->OnConnected();
     };
     workQueue_->RunTaskOnMainThread(cb);
 }
@@ -114,8 +114,8 @@ void NetworkConnection::DoOnDisconnected()
     SharedPtr<NetworkConnection> ref(this);
     TaskFunction&& cb = [self = std::move(ref)](unsigned, WorkQueue*)
     {
-        self->OnDisconnected();
         self->state_ = State::Disconnected;
+        self->OnDisconnected();
         self->selfRef_ = nullptr;
     };
     workQueue_->RunTaskOnMainThread(cb);

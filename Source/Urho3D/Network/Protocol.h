@@ -53,6 +53,11 @@ enum NetworkMessageId : uint32_t
     /// Client->Server. ReplicationManager message. Perform unordered and unreliable update of owned NetworkObjects from client to server.
     MSG_OBJECTS_FEEDBACK_UNRELIABLE,
 
+    /// Server->Client. Request client to load scene file and report result.
+    MSG_LOAD_SCENE,
+    /// Client->Server. Report scene loading result.
+    MSG_SCENE_LOAD_RESULT,
+
     /// Message IDs starting from MSG_USER are reserved for the end user.
     MSG_USER,
 
