@@ -39,6 +39,98 @@ namespace Tests
 // For easier debugging
 unsigned currentSimulationStep = 0;
 
+TestNetworkServer::TestNetworkServer(Context* context)
+    : NetworkServer(context)
+{
+}
+
+bool TestNetworkServer::Listen(const URL& url)
+{
+    (void)url;
+    listening_ = true;
+    return true;
+}
+
+void TestNetworkServer::Stop()
+{
+    listening_ = false;
+}
+
+bool TestNetworkServer::IsListening() const
+{
+    return listening_;
+}
+
+InMemoryConnection::InMemoryConnection(Context* context)
+    : NetworkConnection(context)
+{
+}
+
+bool InMemoryConnection::Connect(const URL& url)
+{
+    (void)url;
+    return true;
+}
+
+void InMemoryConnection::Disconnect()
+{
+    if (state_ == State::Disconnected)
+        return;
+
+    state_ = State::Disconnected;
+    this->OnDisconnected();
+}
+
+bool InMemoryConnection::SendData(const MemoryBuffer& data, PacketTypeFlags type)
+{
+    (void)type;
+    if (!this->IsConnected() || !peer_)
+        return false;
+
+    VectorBuffer packet;
+    const unsigned size = data.GetSize() - data.GetPosition();
+    if (size != 0)
+        packet.Write(data.GetData() + data.GetPosition(), size);
+    outgoing_.push_back(ea::move(packet));
+    return true;
+}
+
+void InMemoryConnection::SetPeer(InMemoryConnection* peer)
+{
+    peer_ = peer;
+}
+
+void InMemoryConnection::SetServerSide(NetworkServer* server)
+{
+    this->SetServer(server);
+}
+
+void InMemoryConnection::DispatchConnected()
+{
+    this->DoOnConnected();
+}
+
+unsigned InMemoryConnection::FlushOutgoing()
+{
+    if (!peer_)
+        return 0;
+
+    unsigned numPackets = 0;
+    auto outgoing = ea::move(outgoing_);
+    for (auto& packet : outgoing)
+    {
+        MemoryBuffer message(packet.GetData(), packet.GetSize());
+        peer_->DoOnData(message);
+        ++numPackets;
+    }
+    return numPackets;
+}
+
+unsigned InMemoryConnection::GetNumPendingPackets() const
+{
+    return outgoing_.size();
+}
+
 unsigned ManualConnection::systemTime = 0;
 
 ManualConnection::ManualConnection(Context* context, ReplicationManager* sink, unsigned seed)

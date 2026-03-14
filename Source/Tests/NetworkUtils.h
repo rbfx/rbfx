@@ -23,6 +23,7 @@
 #pragma once
 
 #include "Urho3D/Network/Transport/NetworkConnection.h"
+#include "Urho3D/Network/Transport/NetworkServer.h"
 #include <Urho3D/Container/ByteVector.h>
 #include <Urho3D/Math/RandomEngine.h>
 #include <Urho3D/Network/ReplicatedPeer.h>
@@ -51,6 +52,45 @@ struct ConnectionQuality
     float spikePing_{};
     float dropRate_{};
     float shuffleRate_{};
+};
+
+/// Minimal test server used by in-memory transport tests.
+class TestNetworkServer : public NetworkServer
+{
+    URHO3D_OBJECT(TestNetworkServer, NetworkServer);
+
+public:
+    explicit TestNetworkServer(Context* context);
+
+    bool Listen(const URL& url) override;
+    void Stop() override;
+    bool IsListening() const override;
+
+private:
+    bool listening_{};
+};
+
+/// Minimal in-memory transport that exercises NetworkConnection message dispatch.
+class InMemoryConnection : public NetworkConnection
+{
+    URHO3D_OBJECT(InMemoryConnection, NetworkConnection);
+
+public:
+    explicit InMemoryConnection(Context* context);
+
+    bool Connect(const URL& url) override;
+    void Disconnect() override;
+    bool SendData(const MemoryBuffer& data, PacketTypeFlags type = PacketType::ReliableOrdered) override;
+
+    void SetPeer(InMemoryConnection* peer);
+    void SetServerSide(NetworkServer* server);
+    void DispatchConnected();
+    unsigned FlushOutgoing();
+    unsigned GetNumPendingPackets() const;
+
+private:
+    InMemoryConnection* peer_{};
+    ea::vector<VectorBuffer> outgoing_;
 };
 
 /// Test implementation of AbstractConnection with manual control over message transmission.
