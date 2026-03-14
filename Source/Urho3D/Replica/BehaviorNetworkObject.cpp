@@ -228,7 +228,7 @@ void BehaviorNetworkObject::InitializeFromSnapshot(NetworkFrame frame, Deseriali
         connectedBehavior.component_->InitializeFromSnapshot(frame, src, isOwned);
 }
 
-ea::optional<NetworkObjectRelevance> BehaviorNetworkObject::GetRelevanceForClient(AbstractConnection* connection)
+ea::optional<NetworkObjectRelevance> BehaviorNetworkObject::GetRelevanceForClient(ReplicatedPeer* connection)
 {
     if (callbackMask_.Test(NetworkCallbackMask::GetRelevanceForClient))
     {

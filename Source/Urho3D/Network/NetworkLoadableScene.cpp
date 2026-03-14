@@ -32,7 +32,7 @@ ReplicationManager* GetSceneReplicationManager(Scene* scene)
     return scene ? scene->GetComponent<ReplicationManager>() : nullptr;
 }
 
-void AssignConnectionReplicationManager(AbstractConnection* replicatedPeer, Scene* scene)
+void AssignConnectionReplicationManager(ReplicatedPeer* replicatedPeer, Scene* scene)
 {
     if (replicatedPeer)
         replicatedPeer->SetReplicationManager(GetSceneReplicationManager(scene));
@@ -46,7 +46,7 @@ NetworkLoadableScene::NetworkLoadableScene(Context* context)
 }
 
 NetworkLoadableScene::NetworkLoadableScene(
-    NetworkConnection* connection, SharedPtr<AbstractConnection, RefCounted> replicatedPeer)
+    NetworkConnection* connection, SharedPtr<ReplicatedPeer, RefCounted> replicatedPeer)
     : Object(connection->GetContext())
 {
     URHO3D_ASSERT(connection);
@@ -79,7 +79,7 @@ void NetworkLoadableScene::OnRemoteLoadSceneFinished(const ea::string& sceneFile
 }
 
 void NetworkLoadableScene::Attach(
-    NetworkConnection* connection, SharedPtr<AbstractConnection, RefCounted> replicatedPeer)
+    NetworkConnection* connection, SharedPtr<ReplicatedPeer, RefCounted> replicatedPeer)
 {
     if (connection_.Get() == connection)
     {

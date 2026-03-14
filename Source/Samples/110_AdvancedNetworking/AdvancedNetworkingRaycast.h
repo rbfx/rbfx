@@ -18,7 +18,7 @@ using namespace Urho3D;
 struct ServerRaycastInfo
 {
     WeakPtr<NetworkConnection> clientConnection_;
-    SharedPtr<AbstractConnection, RefCounted> clientPeer_;
+    SharedPtr<ReplicatedPeer, RefCounted> clientPeer_;
     DoubleVector3 origin_;
     DoubleVector3 target_;
     NetworkTime replicaTime_;
@@ -48,7 +48,7 @@ inline void WriteRaycastRequest(VectorBuffer& msg, const DoubleVector3& origin, 
     WriteNetworkTime(msg, inputTime);
 }
 
-inline ServerRaycastInfo ReadRaycastRequest(NetworkConnection* connection, SharedPtr<AbstractConnection, RefCounted> peer,
+inline ServerRaycastInfo ReadRaycastRequest(NetworkConnection* connection, SharedPtr<ReplicatedPeer, RefCounted> peer,
     MemoryBuffer& message)
 {
     ServerRaycastInfo info;

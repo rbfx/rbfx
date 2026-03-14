@@ -40,7 +40,7 @@
 namespace Urho3D
 {
 
-class AbstractConnection;
+class ReplicatedPeer;
 class Network;
 class NetworkObject;
 struct NetworkSetting;
@@ -106,11 +106,11 @@ public:
     /// Start new server from current state.
     void StartServer();
     /// Start new client from specified connection. Removes all existing objects.
-    void StartClient(SharedPtr<AbstractConnection, RefCounted> connectionToServer);
+    void StartClient(SharedPtr<ReplicatedPeer, RefCounted> connectionToServer);
     /// Process network message either as client or as server.
-    bool ProcessMessage(AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
+    bool ProcessMessage(ReplicatedPeer* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
     /// Process connection dropped. Removes client connection for server, converts scene to standalone for client.
-    void DropConnection(SharedPtr<AbstractConnection, RefCounted> connection);
+    void DropConnection(SharedPtr<ReplicatedPeer, RefCounted> connection);
 
     /// Attributes.
     /// @{
@@ -147,7 +147,7 @@ private:
     void InitializeObjectsStandalone();
     void Stop();
     bool ProcessMessageOnUninitializedClient(
-        AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
+        ReplicatedPeer* connection, NetworkMessageId messageId, MemoryBuffer& messageData);
     ea::string GetUninitializedClientDebugInfo() const;
 
     struct StandaloneData
@@ -157,12 +157,12 @@ private:
 
     struct ClientData
     {
-        WeakPtr<AbstractConnection, RefCounted> connection_;
+        WeakPtr<ReplicatedPeer, RefCounted> peer_;
         ea::optional<MsgSceneClock> initialClock_;
         ea::optional<VariantMap> serverSettings_;
         ea::optional<unsigned> ackMagic_;
 
-        bool IsReadyToInitialize() const { return connection_ && initialClock_ && serverSettings_ && ackMagic_; }
+        bool IsReadyToInitialize() const { return peer_ && initialClock_ && serverSettings_ && ackMagic_; }
 
         SharedPtr<ClientReplica> replica_;
     };

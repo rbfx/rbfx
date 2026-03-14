@@ -31,7 +31,7 @@ class Scene;
 /// - After loading finishes, the client sends success/failure back to the server.
 /// - The server receives the result and may finalize higher-level logic such as switching replication managers,
 ///   spawning player objects, or handling failure.
-/// - If an optional replication-oriented `AbstractConnection` handle is provided to the constructor or `Attach()`,
+/// - If an optional replication-oriented `ReplicatedPeer` handle is provided to the constructor or `Attach()`,
 ///   the helper automatically assigns the scene's `ReplicationManager` when the client scene is ready and when the
 ///   server confirms a remote scene switch.
 ///
@@ -98,11 +98,11 @@ public:
     /// Construct helper and attach it to a network connection.
     /// Optional `replicationConnection` enables automatic `ReplicationManager` rebinding.
     explicit NetworkLoadableScene(
-        NetworkConnection* connection, SharedPtr<AbstractConnection, RefCounted> replicationConnection = {});
+        NetworkConnection* connection, SharedPtr<ReplicatedPeer, RefCounted> replicationConnection = {});
 
     /// Subscribe to connection signals for automatic load-scene handling.
     /// Optional `replicationConnection` enables automatic `ReplicationManager` rebinding.
-    void Attach(NetworkConnection* connection, SharedPtr<AbstractConnection, RefCounted> replicationConnection = {});
+    void Attach(NetworkConnection* connection, SharedPtr<ReplicatedPeer, RefCounted> replicationConnection = {});
 
     /// Set scene. Helper stores scene in SharedPtr and assumes ownership.
     /// On server-side connection this sends load-scene request to client.
@@ -172,7 +172,7 @@ private:
     void HandleAsyncLoadFinished(StringHash eventType, VariantMap& eventData);
 
     WeakPtr<NetworkConnection> connection_{};
-    SharedPtr<AbstractConnection, RefCounted> replicationConnection_{};
+    SharedPtr<ReplicatedPeer, RefCounted> replicationConnection_{};
     SharedPtr<Scene> scene_{};
     LoadState loadState_{LoadState::Idle};
 

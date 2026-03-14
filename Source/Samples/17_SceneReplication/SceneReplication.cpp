@@ -85,13 +85,13 @@ public:
         stats_.Attach(this);
     }
 
-    SharedPtr<AbstractConnection, RefCounted> GetReplicatedPeer() { return SharedPtr<AbstractConnection, RefCounted>(&replicatedPeer_, this); }
+    SharedPtr<ReplicatedPeer, RefCounted> GetReplicatedPeer() { return SharedPtr<ReplicatedPeer, RefCounted>(&replicatedPeer_, this); }
     NetworkStatisticsSnapshot GetStatisticsSnapshot() { return stats_.GetSnapshot(); }
     void SetControlledObject(Node* object) { object_ = object; }
     Node* GetControlledObject() const { return object_; }
 
 private:
-    AbstractConnection replicatedPeer_;
+    ReplicatedPeer replicatedPeer_;
     NetworkStatisticsCounter stats_{};
     WeakPtr<Node> object_;
 };
@@ -384,7 +384,7 @@ void SceneReplication::UpdateButtons()
     textEdit_->SetVisible(!clientConnected && !serverRunning);
 }
 
-Node* SceneReplication::CreateControllableObject(SharedPtr<AbstractConnection, RefCounted> owner)
+Node* SceneReplication::CreateControllableObject(SharedPtr<ReplicatedPeer, RefCounted> owner)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto prefab = cache->GetResource<PrefabResource>("Prefabs/SceneReplicationPlayer.prefab");
