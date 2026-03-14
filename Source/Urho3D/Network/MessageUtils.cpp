@@ -7,6 +7,8 @@
 #include "Urho3D/Network/MessageUtils.h"
 #include "Urho3D/Network/Transport/NetworkConnection.h"
 
+#include "Urho3D/DebugNew.h"
+
 namespace Urho3D
 {
 

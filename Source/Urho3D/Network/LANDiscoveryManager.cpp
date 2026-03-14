@@ -35,6 +35,8 @@
 #endif
 #include <fcntl.h>
 
+#include "Urho3D/DebugNew.h"
+
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
 #endif
