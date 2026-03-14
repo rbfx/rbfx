@@ -21,11 +21,11 @@ public:
     {
     }
 
-    SharedPtr<AbstractConnection, RefCounted> GetReplicatedPeer()
+    SharedPtr<ReplicatedPeer, RefCounted> GetReplicatedPeer()
     {
-        return SharedPtr<AbstractConnection, RefCounted>(&replicatedPeer_, this);
+        return SharedPtr<ReplicatedPeer, RefCounted>(&replicatedPeer_, this);
     }
 
 private:
-    AbstractConnection replicatedPeer_;
+    ReplicatedPeer replicatedPeer_;
 };

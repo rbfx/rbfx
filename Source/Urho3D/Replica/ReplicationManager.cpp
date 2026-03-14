@@ -340,7 +340,7 @@ void ReplicationManager::StartServer()
     URHO3D_LOGINFO("Started server for scene replication");
 }
 
-void ReplicationManager::StartClient(SharedPtr<AbstractConnection, RefCounted> connectionToServer)
+void ReplicationManager::StartClient(SharedPtr<ReplicatedPeer, RefCounted> connectionToServer)
 {
     Stop();
 
@@ -390,7 +390,7 @@ const Variant& ReplicationManager::GetSetting(const NetworkSetting& setting) con
 }
 
 bool ReplicationManager::ProcessMessage(
-    AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
+    ReplicatedPeer* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
     if (client_)
     {
@@ -407,16 +407,16 @@ bool ReplicationManager::ProcessMessage(
     return false;
 }
 
-void ReplicationManager::DropConnection(SharedPtr<AbstractConnection, RefCounted> connection)
+void ReplicationManager::DropConnection(SharedPtr<ReplicatedPeer, RefCounted> connection)
 {
     if (server_)
         server_->RemoveConnection(connection);
-    else if (client_ && client_->connection_ == connection)
+    else if (client_ && client_->peer_ == connection)
         StartStandalone();
 }
 
 bool ReplicationManager::ProcessMessageOnUninitializedClient(
-    AbstractConnection* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
+    ReplicatedPeer* connection, NetworkMessageId messageId, MemoryBuffer& messageData)
 {
     URHO3D_ASSERT(client_ && !client_->replica_);
 
@@ -441,7 +441,7 @@ bool ReplicationManager::ProcessMessageOnUninitializedClient(
     // If ready, initialize
     if (connection->IsClockSynchronized() && client_->IsReadyToInitialize())
     {
-        const auto connectionShared = client_->connection_;
+        const auto connectionShared = client_->peer_;
         if (!connectionShared)
             return false;
 
@@ -458,7 +458,7 @@ bool ReplicationManager::ProcessMessageOnUninitializedClient(
 ea::string ReplicationManager::GetUninitializedClientDebugInfo() const
 {
     ea::vector<ea::string> waitList;
-    if (client_->connection_ && !client_->connection_->IsClockSynchronized())
+    if (client_->peer_ && !client_->peer_->IsClockSynchronized())
         waitList.push_back("system clock");
     if (!client_->serverSettings_)
         waitList.push_back("settings");

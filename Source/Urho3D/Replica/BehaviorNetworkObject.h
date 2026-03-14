@@ -98,7 +98,7 @@ public:
     void WriteSnapshot(NetworkFrame frame, Serializer& dest) override;
     void InitializeFromSnapshot(NetworkFrame frame, Deserializer& src, bool isOwned) override;
 
-    ea::optional<NetworkObjectRelevance> GetRelevanceForClient(AbstractConnection* connection) override;
+    ea::optional<NetworkObjectRelevance> GetRelevanceForClient(ReplicatedPeer* connection) override;
     void UpdateTransformOnServer() override;
     void InterpolateState(float replicaTimeStep, float inputTimeStep, const NetworkTime& replicaTime, const NetworkTime& inputTime) override;
 

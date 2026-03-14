@@ -51,7 +51,7 @@ void FilteredByDistance::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Distance", float, distance_, DefaultDistance, AM_DEFAULT);
 }
 
-ea::optional<NetworkObjectRelevance> FilteredByDistance::GetRelevanceForClient(AbstractConnection* connection)
+ea::optional<NetworkObjectRelevance> FilteredByDistance::GetRelevanceForClient(ReplicatedPeer* connection)
 {
     // Never filter owned objects
     if (GetNetworkObject()->GetOwnerConnection() == connection)

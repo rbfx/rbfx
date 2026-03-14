@@ -25,7 +25,7 @@ public:
 
     /// Implement NetworkBehavior.
     /// @{
-    ea::optional<NetworkObjectRelevance> GetRelevanceForClient(AbstractConnection* connection) override;
+    ea::optional<NetworkObjectRelevance> GetRelevanceForClient(ReplicatedPeer* connection) override;
     /// @}
 };
 

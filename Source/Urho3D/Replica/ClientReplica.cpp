@@ -26,11 +26,11 @@ namespace Urho3D
 {
 
 ClientReplicaClock::ClientReplicaClock(
-    Scene* scene, WeakPtr<AbstractConnection, RefCounted> connection, const MsgSceneClock& initialClock,
+    Scene* scene, WeakPtr<ReplicatedPeer, RefCounted> connection, const MsgSceneClock& initialClock,
     const VariantMap& serverSettings)
     : Object(scene->GetContext())
     , scene_(scene)
-    , connection_(connection)
+    , peer_(connection)
     , serverSettings_(serverSettings)
     , thisConnectionId_(GetSetting(NetworkSettings::ConnectionId).GetUInt())
     , updateFrequency_(GetSetting(NetworkSettings::UpdateFrequency).GetUInt())
@@ -89,8 +89,8 @@ void ClientReplicaClock::UpdateServerTime(const MsgSceneClock& msg, bool skipOut
     if (skipOutdated && (msg.latestFrame_ < latestServerFrame_))
         return;
 
-    const unsigned serverFrameTime = connection_->RemoteToLocalTime(msg.latestFrameTime_);
-    const auto offsetMs = static_cast<int>(connection_->GetLocalTime() - serverFrameTime);
+    const unsigned serverFrameTime = peer_->RemoteToLocalTime(msg.latestFrameTime_);
+    const auto offsetMs = static_cast<int>(peer_->GetLocalTime() - serverFrameTime);
 
     inputDelay_ = msg.inputDelay_;
     latestServerFrame_ = msg.latestFrame_;
@@ -102,7 +102,7 @@ NetworkTime ClientReplicaClock::ToReplicaTime(const NetworkTime& serverTime) con
 {
     const double interpolationDelay = GetSetting(NetworkSettings::InterpolationDelay).GetDouble();
     const double interpolationLimit = GetSetting(NetworkSettings::InterpolationLimit).GetDouble();
-    const double clientDelay = ea::min(interpolationLimit, interpolationDelay + connection_->GetPing() * 0.001);
+    const double clientDelay = ea::min(interpolationLimit, interpolationDelay + peer_->GetPing() * 0.001);
     return serverTime - SecondsToFrames(clientDelay);
 }
 
@@ -112,7 +112,7 @@ NetworkTime ClientReplicaClock::ToInputTime(const NetworkTime& serverTime) const
 }
 
 ClientReplica::ClientReplica(
-    Scene* scene, WeakPtr<AbstractConnection, RefCounted> connection, const MsgSceneClock& initialClock,
+    Scene* scene, WeakPtr<ReplicatedPeer, RefCounted> connection, const MsgSceneClock& initialClock,
     const VariantMap& serverSettings)
     : ClientReplicaClock(scene, connection, initialClock, serverSettings)
     , network_(GetSubsystem<Network>())
@@ -366,7 +366,7 @@ ea::string ClientReplica::GetDebugInfo() const
     const double replicaDelayMs = (GetServerTime() - GetReplicaTime()) / GetUpdateFrequency() * 1000.0f;
     return Format("Scene '{}': Ping {}ms, Time {}ms+#{}-{}ms, Sync since #{}\n",
         sceneName,
-        connection_->GetPing(),
+        peer_->GetPing(),
         ea::max(0, CeilToInt(inputDelayMs)),
         GetServerTime().Frame(),
         ea::max(0, CeilToInt(replicaDelayMs)),
@@ -406,7 +406,7 @@ void ClientReplica::OnNetworkUpdate()
 void ClientReplica::SendObjectsFeedbackUnreliable(NetworkFrame feedbackFrame)
 {
     MultiMessageWriter writer{
-        *connection_->GetConnection(), buffer_, MSG_OBJECTS_FEEDBACK_UNRELIABLE, PacketType::UnreliableUnordered};
+        *peer_->GetConnection(), buffer_, MSG_OBJECTS_FEEDBACK_UNRELIABLE, PacketType::UnreliableUnordered};
 
     VectorBuffer& msg = writer.GetBuffer();
     ea::string* debugInfo = writer.GetDebugInfo();
