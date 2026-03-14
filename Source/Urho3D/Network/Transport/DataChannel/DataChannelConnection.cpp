@@ -15,6 +15,8 @@
 #include <rtc/peerconnection.hpp>
 #include <rtc/websocket.hpp>
 
+#include "Urho3D/DebugNew.h"
+
 namespace Urho3D
 {
 

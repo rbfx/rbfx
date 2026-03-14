@@ -8,6 +8,8 @@
 #include "Urho3D/IO/MemoryBuffer.h"
 #include "Urho3D/Network/Transport/NetworkConnection.h"
 
+#include "Urho3D/DebugNew.h"
+
 namespace Urho3D
 {
 

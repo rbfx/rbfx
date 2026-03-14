@@ -32,6 +32,8 @@
     #include <rtc/websocketserver.hpp>
 #endif
 
+#include "Urho3D/DebugNew.h"
+
 namespace Urho3D
 {
 
