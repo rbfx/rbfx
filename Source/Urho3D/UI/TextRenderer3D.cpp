@@ -69,6 +69,7 @@ void TextRenderer3D::DelayedStart()
     containerNode_ = scene->GetChild(containerNodeName);
     if (!containerNode_)
         containerNode_ = scene->CreateChild(containerNodeName, 0, true);
+    containerNode_->SetWorldOriginUpdateMode(WorldOriginUpdateMode::Recurse);
 }
 
 void TextRenderer3D::PostUpdate(float timeStep)
